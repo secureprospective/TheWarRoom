@@ -177,6 +177,8 @@ Christopher cannot code without collaboration. Claude cannot always help Christo
 | Approved data sources | docs/sources/Approved_Sources.md |
 | Historical examples | docs/league-history/League_History_v1.md |
 | Roadmap, open questions, locked decisions, calibration backlog | docs/roadmap/Roadmap_and_Open_Questions.md |
+| Build sequence + progress (the checkable tracker — read every session) | docs/build-handoffs/Build_Tracker.md |
+| Session handoff routine + template (last act of every session) | docs/build-handoffs/Handoff_Protocol.md |
 
 ## What This Application Is Not
 
