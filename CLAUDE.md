@@ -52,13 +52,13 @@ All architecture documents are on disk. Engine specification, 10 position rubric
 **Forward source of truth:** `docs/build-handoffs/Build_Tracker.md` — the 38-session checkable sequence. Read at the start and end of every build session. Every session closes by writing the next session's handoff per `docs/build-handoffs/Handoff_Protocol.md`.
 
 **Immediate next steps (in order) — pre-B0 confidence pass COMPLETE (all 4 metrics ≥80%):**
-1. **Merge `session/go-overlay-g0`** (coding-standards) once Christopher confirms — the Go overlay (G0) is now complete and verified (Gates 1/2 + filelen all enforced). **B0 cannot start until this is merged.** Then merge TheWarRoom `session/confidence-to-80` (docs) after Christopher's visual confirm.
+1. ~~Merge the G0 overlay~~ — **DONE 2026-06-13.** `session/go-overlay-g0` squash-merged to coding-standards `main` (PR #8, `cf45454`, all 6 CI checks green); TheWarRoom `session/confidence-to-80` merged to `main` (`bbe7cf0`). **B0 is unblocked.**
 2. Resolve OQ-004 (EDGE mapping) and OQ-005 (salary adjustment) before B3.
 3. Build and validate the Layer 4 testing harness per `docs/build-handoffs/Testing_App_Specification.md` (Session 13).
 4. First code build: B0 — Project Scaffold (Session 1). **B0 carries forward:** copy the G0 overlay (`.golangci.yml`, `playerid/`, `tools/ifaceguard/`, Makefile, pre-commit) into the repo; commit a pinned toolchain for agy/Claude parity (9.6); apply the B1 fixes from T4 (stale `client.go:36` comment, `time.NewTimer`+`Stop`, `rps>0` guard).
 - **DONE this session:** PAT/Friction #12 (FIXED, branches pushed) · AD-06 + interface{} enforcement (LOCKED) · Section 9 collab workflow (REBUILT + VALIDATED, both channels live).
 
-**Next branch:** none active — `session/confidence-to-80` (this session) and `session/prebuild-friction-testing` are pushed to origin. After Christopher merges G0, the next branch is the first build session (`session/b0-scaffold` or similar). **Collaboration model: Claude + agy only (local-AI cut — see Open Items / `[[strategic-pivot-claude-agy-only]]`).**
+**Next branch:** all session work merged to `main` (both repos); session branches cleaned up. The next branch is the first build session — **B0 — Project Scaffold** (`session/b0-scaffold`). **Collaboration model: Claude + agy only (local-AI cut — see Open Items / `[[strategic-pivot-claude-agy-only]]`).**
 
 **SL-022 still active:** WR SL-019 excluded for v1.0 (SL-OQ-043 closed, Option A). Layer 3 carries WR aging. Calibration revisit flagged for v1.1.
 
@@ -132,7 +132,7 @@ All architecture documents are on disk. Engine specification, 10 position rubric
 | Planning arc Session 1 | COMPLETE — 26 blocks defined. Plan at `/root/.claude/plans/yes-each-module-is-immutable-wigderson.md` |
 | Planning arc Session 2 | COMPLETE — 32-session build plan + 6 wireframes. Plan at `/root/.claude/plans/very-good-now-i-replicated-feigenbaum.md` |
 | Planning arc Session 3 | COMPLETE — PASS WITH FLAGS; 25 decisions AD-01–25 locked; `/root/.claude/plans/session-3-audit-build-sequencing.md` |
-| Go overlay (Phase 2 in coding-standards repo) | **COMPLETE**, not merged — `session/go-overlay-g0` @ `b77709b` (pushed to origin). All gaps closed (AD-06 struct-wrap, interface{} ifaceguard, file-cap filelen); 7/7 + 2 gates verified firing. Awaiting Christopher's merge confirm — **B0 blocker** |
+| Go overlay (Phase 2 in coding-standards repo) | **MERGED to main** — PR #8 (squash `cf45454`), all 6 CI checks green. AD-06 struct-wrap, interface{} ifaceguard, file-cap filelen; 7/7 + 2 gates verified. **B0 unblocked.** |
 | Per-team roster view — block assignment | RESOLVED — M1 drill-down (already specced as M1 output); M1b split only if scope tightens (AD-20) |
 | B7 sub-session design | RESOLVED — split foundation-first into B7a (coordinator) + B7b/c/d by mechanic group (AD-02) |
 | GitHub PAT push access (Friction #12) | **FIXED** — new fine-grained PAT (TheWarRoom + coding-standards, Contents R/W). All branches pushed; T3-as-designed validated the shared-repo channel live |
