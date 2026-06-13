@@ -1,6 +1,6 @@
-# Legacy NFL Fantasy — Project CLAUDE.md
+# TheWarRoom — Project CLAUDE.md
 **Version:** 1.4 — June 2026
-**Project path:** `/mnt/storage/claudebox/projects/legacy-nfl-fantasy/`
+**Project path:** `/mnt/storage/claudebox/projects/TheWarRoom/`
 **Pillars:** Business, Technical
 
 ---

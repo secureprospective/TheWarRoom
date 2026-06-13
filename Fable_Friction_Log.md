@@ -1,6 +1,6 @@
 # Fable Friction Log — Pre-Build Friction Testing Phase
 **Started:** 2026-06-13
-**Branches:** `session/prebuild-friction-testing` (legacy-nfl-fantasy), `session/go-overlay-g0` (christopher-coding-standards)
+**Branches:** `session/prebuild-friction-testing` (TheWarRoom), `session/go-overlay-g0` (christopher-coding-standards)
 **Purpose:** Append-only running log of every gate, divergence, relay round-trip, and surprise from T1/T2/T3 and any exploratory work. Pass/fail is binary; this log is the map.
 
 ---
@@ -390,7 +390,7 @@ rather than research + code generation.
 agy reported **8 findings** (7 Invisible Risk, 1 Structural Drift), 4 marked
 "blocking for B0 sign-off." Per Section 9.4 ("Claude triages"), each was
 checked against the actual source
-(`/mnt/storage/claudebox/projects/legacy-nfl-fantasy/internal/mfl/client.go`):
+(`/mnt/storage/claudebox/projects/TheWarRoom/internal/mfl/client.go`):
 
 | # | agy's finding | Severity (agy) | Triage result |
 |---|---|---|---|
