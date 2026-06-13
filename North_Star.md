@@ -1,4 +1,4 @@
-# Legacy NFL Fantasy Application — North Star
+# TheWarRoom — North Star
 Version: 1.2 — June 2026
 Status: Strategic navigation document. Read first in every future session. The technical specifications are authoritative on implementation detail. This document is authoritative on purpose, scope, and how the pieces connect.
 
