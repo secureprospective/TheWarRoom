@@ -459,4 +459,147 @@ eventual real implementation, and resolve the #5 skeleton-vs-brief tension
 `DiscoverHost` as an explicitly-sanctioned second exported surface for
 B1 specifically).
 
-*(Append entries below as final synthesis proceeds.)*
+---
+
+## Final Synthesis — measured confidence assessment
+
+The mission framing going in carried four placeholder numbers: plan-fidelity
+~85%, realized-enforcement ~55%, collab-plumbing ~50%, end-goal ~45-70%. Below
+is each, replaced with a measured figure and the evidence behind it. All 13
+numbered frictions found across T1-T3 are referenced by number.
+
+### Plan-fidelity: ~85% → **~78%**
+
+The build plan's *intent* held up well — B1's brief, derived faithfully from
+the WF1A skeleton and the companion plan's Section 6 "do better" guidance,
+produced code that was structurally almost exactly right (T2 Structural 2/2,
+T3 triage found only one structural issue — #5 — and that issue is a
+**pre-existing contradiction inside the planning artifacts themselves**, not
+a deviation from them: WF1A's skeleton text says "Do is the ONLY exported
+surface" while the companion plan's own B1 "do better" section instructs
+exporting host discovery as "a first-class method"). That's a real
+planning-document inconsistency, found only by building against it.
+
+Lower than 85% because three of the plan's *enforcement-mechanism*
+assumptions didn't survive contact with the actual tools: Friction #8 (the
+depguard glob bug would have made the three-layer-law check — arguably the
+single most load-bearing automated rule across all 38 sessions — fire on
+**zero files**), Friction #6 (AD-06's enforcement mechanism, forbidigo, cannot
+do what AD-06 needs), and Friction #11/#12 (Section 9.2's "shared committed
+config via shared repo" assumes CT105 can push to the shared repo, and it
+cannot). None of these are wrong *goals* — every one of them is a case where
+the plan said "X will enforce/enable Y" and X, as configured, did not. All
+three are now identified; two are fixed (#8, and #6 has a documented B0
+remediation path); #12 is not.
+
+### Realized-enforcement: ~55% → **~72%**
+
+Post-fix gate-fire summary (T1): **5/7 deliberate violations now fire
+cleanly** (errcheck, gosec×2, gochecknoglobals, depguard — the last only after
+the Friction #8 fix). 2/7 remain silent by design-gap, both already scoped as
+B0 architectural decisions with documented remediation paths (Friction #6:
+AD-06 needs a `playerid.PlayerID` struct-wrap for compile-time enforcement;
+Friction #10: `interface{}`/`any` escapes need either a custom `go/analysis`
+checker or a code-review checklist item — no lint-only fix exists).
+
+The jump from 55% to 72% is mostly Friction #8: before the fix, the
+three-layer architectural law — the plan's single most important automated
+guardrail for a 38-session, multi-model build — was **silently
+unenforced** (0% on that rule specifically). After the fix it works
+correctly in both directions (catches the violating import, no longer
+false-positives on the legitimate `internal/db` import). The remaining gap
+to 100% is the two known-and-scoped silent gates, which need a B0 decision,
+not more lint config.
+
+### Collab-plumbing: ~50% → **~58%**
+
+Mixed, with a genuine surprise on each side:
+
+- **Up**: agy (CT104) is a far more capable collaborator than "weak local
+  model" framing suggested — Friction #11 showed it has a standing,
+  self-updating repo clone and live research, and T3 showed its
+  First-Instance Template Review caught two real logic bugs (#2, #4 in the
+  T3 table) that T2's 10/10 lint pass had no mechanism to catch. SSH-relay
+  (scp) between CT105 and CT104 is fast (~6 min round trip) and friction-free
+  — a viable, simple channel.
+- **Down**: the collaboration design's *specified* channel — Section 9.2's
+  "shared, committed enforcement file... both agents run audits against the
+  same committed config" — assumes CT105 can push to the shared repo.
+  Friction #12 found it cannot (stored PAT has read but not write access,
+  403 on push). This is the SAME SHAPE of problem as the original
+  2026-06-12 Friction #1 (agy couldn't read CT105's plan file due to a
+  filesystem split) — a second instance of "the planned cross-machine
+  channel doesn't actually exist yet," found in the channel's *replacement*.
+  SSH-relay is a viable stand-in but is manual/ad-hoc, not "commit, both
+  pull."
+- **Also down, smaller**: agy's review output requires triage — Friction #13
+  found a confident, line-specific, "blocking"-severity finding (#1 in the
+  T3 table) that was simply wrong. Triage cost was small here (~5 min,
+  because the claim was concrete enough to check directly against source),
+  but it means agy's output cannot be auto-applied; every review needs a
+  Claude pass before any finding is acted on.
+
+Net: the *agents* are more capable than budgeted; the *plumbing between them*
+has one known broken link (needs a Christopher-side PAT fix) and one
+known-required triage step (small, but real, per review).
+
+### End-goal: ~45-70% → **~60%, narrower band**
+
+The headline result of T2+T3 together is genuinely encouraging: a strong
+model, given a well-constructed self-contained brief plus a skeleton plus
+(uninvited) repo access, produced a near-production transport client in
+~10 minutes, and a second strong model's review of that output — even with
+one false positive — surfaced two real pre-B0 bugs in ~6 minutes. That loop,
+**Build → Review → Triage**, works, end to end, today, on real code.
+
+What keeps the band at ~60% rather than higher:
+
+1. **The original T2 question — can a genuinely weak local model
+   (qwen2.5-coder via Ollama, ~35% predicted) produce conforming code from a
+   brief — remains completely untested.** Aider/AiderBox/Beelink were all
+   ruled out or unreachable this session. If the 38-session build's labor
+   allocation leans on cheap/local models for routine fetcher sessions (as
+   the "~70% path" framing implies), this is the single largest unmeasured
+   risk in the whole plan — bigger than anything found in T1 or T3.
+2. **Section 9's collaboration design needs a credential fix (Friction #12)
+   before it runs as specified** for all 38 sessions. The workaround
+   (SSH-relay) works but wasn't the designed mechanism and adds manual steps
+   per review.
+3. **Two enforcement gaps (AD-06, `interface{}`) need B0-level architectural
+   decisions**, not just config — Christopher's input is required before B0
+   can close.
+
+What moves the band UP from the original 45-70%: the worst-case finding in
+the original range — "the three-layer law's enforcement is silently
+broken" — was TRUE (Friction #8) and is now FIXED. Finding and fixing the
+single most severe possible gap *before* B0, for the cost of one friction
+test session, is close to the best-case outcome this kind of testing can
+produce. The remaining ~40% of uncertainty is concentrated in #1 above
+(weak-model conformance, unmeasured) and #2 (one credential fix away from
+resolved, not architecturally broken).
+
+### Open items carried to Christopher (not resolved this session)
+
+1. **Friction #12** — `~/.git-credentials` PAT for `secureprospective` can
+   read but not push to `github.com/secureprospective/TheWarRoom`. Needs a
+   new/rotated PAT with `repo` write scope, set up by Christopher (per
+   global CLAUDE.md, not via `paste.md` with a real token in it — Christopher
+   should run the credential update himself in his own session).
+2. **AD-06 enforcement** (Friction #6) — recommend struct-wrapping
+   `playerid.PlayerID` (`type PlayerID struct { id string }`) for B0;
+   alternatives documented in the overlay README.
+3. **`interface{}`/`any` escape enforcement** (Friction #10) — no lint-only
+   fix exists; B0 needs to pick code-review-checklist vs. custom
+   `go/analysis` checker.
+4. **B1 template fixes** (Friction #13, T3 table items #2/#4) — two real
+   logic bugs in the B1 transport-client output, to be carried into B1's
+   real implementation: force `host="api"` for the league/discovery call
+   regardless of `c.host`; set `JSON=1` after the caller-params loop (or
+   reserve the `"JSON"` key).
+5. **#5 skeleton/brief tension** (Friction #13, T3 table item #5) — decide
+   whether `DiscoverHost` is a sanctioned second exported method for B1, or
+   amend WF1A's "Do is the ONLY exported surface" line.
+
+The `f9c25f4`/`f0a1202` commits (B1 code + full friction log) are on
+`session/prebuild-friction-testing` locally, NOT on `origin` (blocked by
+#12). Branch is ready to push once the PAT is fixed.
