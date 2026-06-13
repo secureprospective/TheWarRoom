@@ -1,0 +1,796 @@
+# Fable Friction Log — Pre-Build Friction Testing Phase
+**Started:** 2026-06-13
+**Branches:** `session/prebuild-friction-testing` (legacy-nfl-fantasy), `session/go-overlay-g0` (christopher-coding-standards)
+**Purpose:** Append-only running log of every gate, divergence, relay round-trip, and surprise from T1/T2/T3 and any exploratory work. Pass/fail is binary; this log is the map.
+
+---
+
+## Pre-flight — environment confirmation (2026-06-13)
+
+| Check | Result | Note |
+|---|---|---|
+| CT105 Go toolchain | **MISSING** — `go: command not found` | apt candidate is `golang-go 2:1.19~1` (2022-era). Will install a modern Go via official tarball, not apt. **Friction #1: G0 assumed Go existed on CT105; it does not.** |
+| CT105 golangci-lint | **MISSING** | Must install — version pin TBD, agy/web-research to confirm current stable in Section 8B style. |
+| CT105 pre-commit | **MISSING** | pipx/pip install needed. |
+| CT105 gitleaks | **MISSING** | Binary release install needed. |
+| agy / CT104 (`ssh antigravitybox`) | **REACHABLE** — `agy --version` → 1.0.8 | Good for T2 (redesigned) and T3. |
+| AiderBox / CT106 (`ssh aiderbox`, 192.168.1.106) | **NO ROUTE TO HOST** | Not "paused at Phase 7" — fully unreachable from CT105 right now. Moot: Christopher ruled out Aider for this phase regardless. **Friction #2.** |
+| Beelink (192.168.1.190) | Ping OK, **SSH refused (port 22)** | Possibly related to the unresolved hard-reboot issue. Not currently needed — T2 redesigned around agy — but flagging since the homelab doc marks this URGENT. **Friction #3.** |
+| Internet (CT105) | OK — `https://go.dev` returns 200 | Toolchain installs from official sources are viable. |
+
+## Decision log
+
+- **2026-06-13 — T2 redesign.** Original T2 used qwen2.5-coder:14b via AiderBox/CT106 or Beelink Ollama. Christopher: "Do not use aider, only agy." With CT106 unreachable and Beelink SSH refused anyway, Christopher chose: **agy itself (CT104, Antigravity) is the weak-model build subject for T2** — `ssh antigravitybox 'agy -p "..."'` builds B1 directly, scored on the same rubric. This is a structural change from the original plan (agy was cast as Recon/Audit in T3); for T2 it is the builder. Both roles are tracked as separate, self-contained interactions — agy's statelessness (Section 9.6) makes this safe to do without role confusion bleeding across.
+
+---
+
+## T1 — G0 Overlay Build (2026-06-13)
+
+### Toolchain bring-up (CT105 was bare)
+
+Installed from scratch, all verified-checksum manual installs (no `--no-verify`,
+no disabled checks):
+
+| Tool | Version | Note |
+|---|---|---|
+| Go | 1.26.4 | Official tarball. |
+| golangci-lint | 2.12.2 | **Friction #4: golangci-lint's own `install.sh` fails checksum verification** for v2.12.2/linux-amd64 — the script compares the tarball's hash against the `.sbom.json` line in `checksums.txt`, not the tarball's own line. Worked around with manual `sha256sum -c` against the correct line. Documented in overlay README as a confirmed upstream bug. |
+| pre-commit | 3.0.4 | apt install OK alone. |
+| gitleaks | 8.30.1 | **Friction #5: `apt-get install -y -qq pre-commit gitleaks` fails entirely** ("Unable to locate package gitleaks") — apt aborts the WHOLE transaction on one missing package, including the package that WAS available. Had to split into separate installs; gitleaks via direct binary release. |
+
+### Baseline lint findings — clean "good" code fails lint as specified (Friction #6, #7)
+
+Before writing any deliberate violations, built a scratch verification module
+(`/tmp/g0-verify`) mirroring TheWarRoom's canonical `internal/` layout
+(`playerid`, `engine`, `ingestion` per Section 3.1) using the companion plan's
+OWN skeleton patterns, and ran `golangci-lint run ./...` as a sanity check.
+**Result: 2 issues on code that should be "good."**
+
+**Friction #6 — forbidigo cannot enforce AD-06 as specified.** The companion
+plan (Section 3.3) proposed a forbidigo rule banning the bypass conversion
+`playerid.PlayerID("0531")` outside `internal/playerid`. As configured
+(`analyze-types: true`, pattern `^playerid\.PlayerID$`), it ALSO flagged the
+type reference in a normal function signature
+(`func ValidateRawID(raw string) (playerid.PlayerID, error)`) — forbidigo has
+no call-vs-type-position distinction. A pattern narrow enough to catch the
+bypass conversion bans using the type at all outside its own package, which
+contradicts AD-06's own requirement that domain structs use
+`playerid.PlayerID` as a field type. **This is not a config typo — it's a
+structural limitation of forbidigo for this use case.** Rule removed from
+`.golangci.yml`. Real fix recommended for B0: struct-wrap `PlayerID` with an
+unexported field (the plan's own "heavier alternative") so the bypass
+conversion fails to *compile*, not just to lint. Documented as "Known
+limitation: AD-06" in the overlay README with three ranked options.
+
+**Friction #7 — Section 4 WF 1B skeleton fails wrapcheck as written.** The
+WF1B skeleton (`return playerid.New(raw)`, unwrapped) is flagged by
+`wrapcheck` (default config — no exemption added) because it crosses a
+package boundary without `fmt.Errorf("...: %w", err)`. This is NOT a config
+bug — Section 3.3's own `normalize.Roster` example wraps correctly; WF1B's
+skeleton is the inconsistent one. **Errata documented in overlay README**:
+WF1B's skeleton needs the wrap added before B0, so a weaker model copying it
+verbatim doesn't inherit a day-one lint failure.
+
+**Resolution applied:** `.golangci.yml` forbidigo rule removed (defaults
+retained — still bans `fmt.Print*`/`println`); `/tmp/g0-verify`'s
+`good.go` updated to wrap the error. Re-ran `golangci-lint run ./...` →
+**0 issues.** Baseline is now clean; proceeding to the deliberate-violation
+(`bad.go`) test.
+
+**Why these matter for the friction-test hypothesis:** the test predicted
+"1-2 tooling/config gaps." These ARE that — but notably, both gaps were found
+not by writing bad code, but by writing the plan's own "good" skeleton code
+and running the plan's own proposed linter config against it. The companion
+plan's skeletons and its linter spec were authored without cross-checking
+each other against a real toolchain. **If a weaker model (agy, T2) is handed
+the WF1B skeleton verbatim and the G0 overlay verbatim, it inherits a
+pre-existing lint failure it did not cause** — this is exactly the kind of
+"silent ungated drift" the friction-test phase exists to surface before B0.
+
+### Deliberate-violation test (`bad.go`) — gate-fire results
+
+Built `/tmp/g0-verify/internal/scratch/bad.go` (7 violations, one per gate per
+README spec) plus `/tmp/g0-verify/internal/ingestion/bad_depguard.go` (the
+depguard cross-layer case, since it requires a file actually located inside
+`internal/ingestion/`). Ran `go build ./...` (OK — lint issues don't block
+compilation), `golangci-lint run ./...`, and `git commit` against
+pre-commit-installed hooks.
+
+**Friction #8 — SEVERE, FIXED. depguard `files:` globs need a `**/` prefix
+or they never match — every layering rule was silently inert, AND the
+negated SQL-confinement rule would false-positive on its own intended
+exception.** The companion plan's Section 3.1 layout gave `files:` patterns
+like `"internal/ingestion/**"`, `"internal/engine/**"`,
+`"!internal/db/**"` — written exactly as the directory tree reads. Empirically
+verified (isolated single-rule configs, multiple pattern variants):
+- `"internal/ingestion/**"` → **0 matches**, even for
+  `internal/ingestion/bad_depguard.go`. Only `"**/internal/ingestion/**"`
+  (leading `**/`) matched.
+- The negated form `"!internal/db/**"` has the SAME bug in reverse: since
+  `internal/db/**` never matches anything, the negation never excludes
+  anything, so `sql-confined-to-data-layer` would ALSO fire on
+  `internal/db/db.go`'s own legitimate `database/sql` import — a **false
+  positive on the one package the rule exists to allow**. Confirmed with a
+  throwaway `internal/db/db.go` (`sql.Open(...)`): OLD pattern flagged it,
+  NEW pattern (`"!**/internal/db/**"`) correctly excluded it.
+
+**Impact if shipped as-written:** all SIX depguard layering rules
+(layer1-no-upward-import, engine-is-pure, store-*-no-siblings ×3,
+transactions-only-through-coordinator) would NEVER fire — the entire
+"three-layer architectural law becomes a build error" mechanism (Section
+8A.2, the central justification for AD-19/G0) would be **silently
+decorative**. Simultaneously, `sql-confined-to-data-layer` would
+false-positive on `internal/db` and `internal/store` themselves, breaking
+the build for CORRECT code on day one of B0 — a weaker model (or Christopher)
+would see a lint failure on legitimate code and have no reason to suspect the
+*rule's file-matching*, not the code, was wrong.
+
+**Fixed:** all 9 `files:` glob entries across the 6 depguard rules in
+`.golangci.yml` now prefixed with `**/`. Re-verified:
+`internal/ingestion/bad_depguard.go` (imports `internal/engine`) → depguard
+fires correctly; `internal/db/db.go` (imports `database/sql`) → no longer
+flagged.
+
+**This is the single highest-value finding of T1** — it's exactly the class
+of "1-2 tooling/config gaps" the test hypothesized, except structural rather
+than cosmetic: a config that *looks* correct, passes `golangci-lint run`
+without error, and produces zero issues — making it indistinguishable from
+"the rules are working and the code is clean" until tested against a
+deliberate violation.
+
+**Friction #9 — gitleaks allowlists the canonical AWS-docs example key.**
+`AKIAIOSFODNN7EXAMPLE` (used as the hardcoded-credential violation in
+`bad.go`) was caught by `gosec` (G101) but **gitleaks reported "Passed" — did
+not flag it**. This string is AWS's own documentation placeholder and is
+allowlisted by gitleaks' default ruleset as a known test fixture. Two
+takeaways: (a) gosec provides real defense-in-depth here — if it were ever
+disabled, this exact credential shape would slip past gitleaks too; (b) don't
+reuse `AKIAIOSFODNN7EXAMPLE` as the "must-be-caught" fixture in any future
+gate test — it's a false negative by gitleaks design, not a gap. Use a
+fake-but-non-allowlisted key shape instead.
+
+**Friction #10 — confirmed silent gate, no clean fix found. `interface{}`/
+`any` parameter/return escapes are NOT caught by the configured linter set.**
+`func Anything(v interface{}) interface{} { return v }` produces **zero
+findings** from `gocritic`, `interfacebloat`, or any other enabled linter.
+Root cause: `interfacebloat` only checks INTERFACE TYPE DECLARATIONS with too
+many methods (default max 5) — irrelevant to a function parameter/return
+type. `revive`'s `use-any` rule (cosmetic — flags literal `interface{}`
+syntax, suggests the `any` alias) is not in revive's default rule set as
+configured here, and even if enabled would not flag `any` itself, so it
+would not address the underlying weak-typing concern either way. **Section 2
+item 1's claim ("gocritic + interfacebloat reject interface{}/any escapes")
+is FALSE for this configuration.** No lint-level fix identified — this
+appears to require either a custom `go/analysis` checker or a code-review
+checklist item. Flagged for B0; not fixed in this overlay.
+
+### T1 gate-fire summary
+
+| # | Violation | Linter | Result |
+|---|---|---|---|
+| 1 | Unchecked error (`db.Exec`, `db.Query`) | errcheck | **FIRED** ×2 |
+| 2 | `fmt.Sprintf`-built SQL | gosec G201 | **FIRED** |
+| 3 | Hardcoded AWS-style key | gosec G101 | **FIRED** |
+| 3b | (same key) | gitleaks | silent — Friction #9 (by design, documented) |
+| 4 | Package-level `var` | gochecknoglobals | **FIRED** |
+| 5 | `playerid.PlayerID("99")` bypass conversion | forbidigo | silent — Friction #6 (documented limitation, AD-06 needs struct-wrap) |
+| 6 | `interface{}` param/return | gocritic/interfacebloat | silent — Friction #10 (no fix found) |
+| 7 | `internal/ingestion` → `internal/engine` cross-layer import | depguard | **FIRED** (after Friction #8 fix) |
+| bonus | `database/sql` import outside db/store | depguard | **FIRED** |
+
+`make lint` → exit 2 (non-zero). `git commit` → **blocked** by
+`golangci-lint-full` pre-commit hook (gitleaks hook passed — see #9).
+
+### T1 verdict
+
+**Strict pass/fail (companion plan's stated criterion — "fail = any silent
+gate"): FAIL.** Two of seven specified gates (#5 AD-06 bypass, #6
+`interface{}` escape) stayed silent.
+
+**But measured against the friction test's actual purpose** (find and fix
+config gaps before B0, don't just pass/fail a checklist): T1 found FOUR
+distinct config issues (#6 forbidigo type/call ambiguity, #7 WF1B wrapcheck
+errata, #8 depguard glob prefix, #9 gitleaks allowlist), FIXED two of them in
+the overlay (#7, #8), root-caused and documented remediation paths for the
+other two (#5/#6 → AD-06 struct-wrap; #6 interface{} → code-review item), and
+caught #8 — which on its own would have made G0's central enforcement
+mechanism (the three-layer law) completely decorative without ever throwing
+an error. **The overlay as committed is materially stronger than the overlay
+as first written**, which is the actual deliverable.
+
+Remaining open items for B0 (not fixed here, by design — these are
+architectural decisions for Christopher, not config fixes):
+- AD-06 enforcement: adopt struct-wrapped `PlayerID` (changes public API
+  shape of `internal/playerid`) or accept code-review-only enforcement.
+- `interface{}`/`any` escapes: no lint-level enforcement found; needs either
+  a custom analyzer or a code-review checklist item.
+
+---
+
+## T2 — agy builds B1 end-to-end (2026-06-13, redesigned per Christopher: agy-as-builder)
+
+### Setup
+
+Assembled a self-contained brief (`/tmp/b1_brief.md`, ~100 lines): WF 1A
+skeleton verbatim, B1 trap/contingency/do-better (Section 6), the relevant
+Section 5.1/5.7 constants (League ID 14432, host-discovery rule, `JSON=1`,
+429 backoff shape), the G0 overlay's enabled linter list + key settings, and
+AGENTS.md's hard rules (no hardcoded secrets/hosts, wrap errors, close
+response bodies, ctx-first). Copied to CT104, ran:
+`ssh antigravitybox 'agy -p "$(cat /tmp/b1_brief.md)"'`.
+
+**Wall clock: ~10-12 minutes** (one invocation, ran in background, completed
+between a 120s and a 240s poll).
+
+### What agy actually did — bigger than the brief asked
+
+agy did NOT operate as a stateless, brief-only session. Its own
+chain-of-thought (captured verbatim in the output) shows it:
+1. Listed `/mnt/storage/antigravitybox/`, found a **full existing clone of
+   `github.com/secureprospective/TheWarRoom`** (on `main`, clean except its
+   own new files, remote up to date — `050b71f docs: showpiece README + Go
+   overlay (G0) handoff`, 2026-06-10, pre-existing, not agy's).
+2. Read `docs/multi-agent-roles.md`, the project `CLAUDE.md`,
+   `Build_Tracker.md`, and **`MFL_API_Specification.md` /
+   `MFL_API_Reference.md`** — none of which were in my brief.
+3. Checked `go version` and `golangci-lint` availability, ran `git status`.
+4. Wrote `internal/mfl/types.go` and `internal/mfl/client.go` directly into
+   that clone (untracked, **not committed** — confirmed via `git status`
+   showing `??` for both files plus `GEMINI.md` and
+   `docs/multi-agent-roles.md`. No commit, no push — hard constraint held).
+
+**This is itself a major finding (Friction #11):** the "self-contained
+prompt / memory-symmetry" framing (Section 9.6) assumes agy has no
+persistent context — but agy on CT104 has a **standing, up-to-date clone of
+the real repo** and will research it regardless of what the prompt says.
+For T2 specifically this produced a BETTER artifact (agy's host-discovery
+logic correctly mirrors MFL's real API convention — query
+`api.myfantasyleague.com/{year}/export?TYPE=league&L={id}&JSON=1`, read
+`league.baseURL`, extract the subdomain — which is NOT in my brief and
+which agy got right only because it read `MFL_API_Specification.md`). But it
+means **"self-contained brief" is not actually achievable as a constraint on
+agy** — any future T2-style session should assume agy will pull live repo
+context, and brief accordingly (or explicitly instruct it NOT to, and verify
+it complies — itself worth testing).
+
+### Gate results on agy's output (CT105, G0 overlay)
+
+Copied `internal/mfl/{types.go,client.go}` into a scratch module
+(`/tmp/b1-verify`) with the G0 `.golangci.yml` and `golang.org/x/time` dep.
+
+- `go build ./...` → **OK**
+- `go vet ./...` → **OK**
+- `go test -race ./...` → no test files (agy did not write tests — my brief
+  didn't explicitly ask for them; AGENTS.md requires tests for every
+  functional change. **Process gap in my brief, not scored against agy.**)
+- `golangci-lint run ./...` → **1 issue**: `gofmt` — a struct field comment
+  (`host string // discovered league host (e.g. www47), cached`) had extra
+  alignment spaces, copied verbatim from the WF1A skeleton's own markdown
+  (which is itself not gofmt-clean). `gofmt -w` fixed it in one pass → **0
+  issues** after.
+- File size: `client.go` 221 lines (well under the 250 target / 400 cap).
+- `grep -rn "www47\|14432"` → **zero hardcoded occurrences** (the only
+  "www47" is inside a copied comment, not a literal; League ID is a
+  `DiscoverHost` parameter, not baked in).
+
+### Conformance Rubric score
+
+| Criterion | Score | Notes |
+|---|---|---|
+| Structural | 2/2 | `New`/`Do` match WF1A signatures exactly; no domain types leaked (`Request`/`Response`/`leagueResponse` all transport-level). One divergence: added exported `DiscoverHost(ctx, year, leagueID) error` — but this is the LITERAL "do better" instruction ("make host discovery a first-class method"), not an invention. Also followed the Section-4 file-ordering convention (types → constructor → exported → unexported helpers) that was NOT in my brief. |
+| Standards | 2/2 | 0 issues after one trivial, skeleton-inherited gofmt fix. No `--no-verify` needed. |
+| Correctness | 2/2 | Rate limiter `Wait()`, 429 backoff (exact 1→2→4→8→16→32→60s sequence, error after exhaustion), and host discovery are all REAL implementations, not stubs. Host-discovery logic matches MFL's actual documented discovery convention (verified by agy reading the real API spec). |
+| No-hallucination | 2/2 | Zero hardcoded `www47`/`14432`/other invented constants. League ID fully parameterized. |
+| Slop tax (inverse) | 2/2 | One `gofmt -w` (1 line, inherited from the skeleton's own formatting). No test file (brief gap, not agy's). |
+| **TOTAL** | **10/10** | |
+
+### T2 verdict — READ THE SCOPE CAREFULLY
+
+**10/10 is real but does NOT validate the original T2 hypothesis.** The
+original Test 2 asked: *can a genuinely weak 7B-14B local model (qwen2.5-coder
+via Ollama), given ONLY a self-contained brief, produce standards-conforming
+code?* Predicted ~35%. **That question is still UNANSWERED.** What was
+actually measured here: *can agy — a capable agentic CLI (Gemini-class, live
+web search, persistent repo access) — given a strong brief + skeleton +
+(uninvited but real) repo access, produce a near-production-ready
+template-setter file?* Answer: yes, essentially perfectly, in ~10 minutes.
+
+This is still valuable — it's a strong, *measured* data point for the
+"strong-model-sets-template" half of the build's labor-allocation question
+(Section 6's "~70% path" framing), and for agy's viability as a genuine
+peer-builder for template-setter sessions, not just Recon/Audit. But it
+should NOT be reported as "the weak-model premise is validated at 100%" —
+the weak-model premise (the ~35% predicted number, the actual `qwen2.5-coder`
+test) was never run, because Aider/AiderBox/Beelink were all ruled out or
+unreachable. **The honest state: weak-local-model conformance remains an
+open, unmeasured risk for the 38-session build**, separate from and
+unresolved by this 10/10.
+
+---
+
+## T3 — Cross-pollination live run
+
+### Friction #12 (SEVERE — blocks T3 as designed): CT105's stored GitHub credential cannot push
+
+T3 as designed required: commit companion plan + B1 output to
+`session/prebuild-friction-testing` on the shared repo, push from CT105, then
+have agy on CT104 `git pull` the same branch from its standing clone.
+
+Step 1 (local commit) succeeded — `f9c25f4` committed cleanly on
+`session/prebuild-friction-testing` (companion plan, friction log T1+T2
+results, and agy's gofmt-fixed B1 `internal/mfl/{types.go,client.go}`).
+
+Step 2 (`git push -u origin session/prebuild-friction-testing`) **failed**:
+
+```
+remote: Permission to secureprospective/TheWarRoom.git denied to secureprospective.
+fatal: unable to access 'https://github.com/secureprospective/TheWarRoom.git/': The requested URL returned error: 403
+```
+
+Diagnosis:
+- `credential.helper=store`, `~/.git-credentials` has a stored PAT for user
+  `secureprospective` over HTTPS.
+- **Read access works** — `git ls-remote origin HEAD` succeeds (returned
+  `050b71f`, current `main` tip).
+- **Write access does not** — push is denied 403 for the same user/token.
+- No SSH key for `github.com` exists in `~/.ssh/` (only `antigravitybox` and
+  `aiderbox` keys, which are for CT105→CT10x SSH, not GitHub).
+
+Root cause is almost certainly a **PAT scoped read-only (or missing `repo`
+write scope, or a fine-grained PAT that excludes write on this repo)**. This
+is a credential Christopher would need to rotate/regrant — not something
+fixable from inside this session, and per the global CLAUDE.md secrets rule
+this is exactly the kind of thing that must NOT be worked around by stuffing
+a new token into `paste.md` without Christopher's explicit action.
+
+**This is a second, DIFFERENT instance of the 2026-06-12 #1 "agy couldn't read
+the CT105 plan file" friction** — not the same bug, but the same SHAPE: the
+"shared GitHub repo" plumbing that both T2's redesign and T3's design assumed
+would Just Work has a credential gap on the CT105 side that was never
+exercised before (all prior commits in this session were made but never
+pushed). **The shared-repo approach for cross-machine collaboration is NOT
+currently viable from CT105 without Christopher rotating the PAT.**
+
+### T3 pivot — SSH file relay instead of git push
+
+Rather than block T3 entirely on a credential fix, pivoting to the mechanism
+that #1 (2026-06-12) was ALSO eventually going to need as a fallback: **direct
+SSH file transfer from CT105 to CT104**, landing the review artifacts in a
+clearly-separate `/tmp` path on CT104 (NOT inside agy's tracked clone — agy
+never commits/edits living docs, and we don't want Claude-placed files
+mistaken for agy's own working tree state).
+
+agy's standing clone of `TheWarRoom` on CT104 already has `main` (commit
+`050b71f`) — it has full context on `Build_Tracker.md`, conventions, AGENTS.md,
+etc. without needing the new commits at all. What agy needs for the
+First-Instance Template Review is just the **new artifacts**: the companion
+plan, the B1 output files, and (for context) the relevant friction-log
+sections. SCPing those three things to `/tmp/t3-review/` on CT104 and pointing
+agy at that path — while it separately has its own clone for "what does the
+repo currently look like" comparison — is a faithful enough proxy for "agy
+reviews new template-setter output against the existing repo's conventions"
+to satisfy T3's intent, with a noted caveat: **this is SSH-relay, not the
+shared-git-history mechanism T3 was designed to validate.** That mechanism
+remains unvalidated pending the PAT fix.
+
+### SSH-relay execution
+
+`scp` the companion plan, the full friction log, and the gofmt-fixed B1
+output (`internal/mfl/{types.go,client.go}`) to `/tmp/t3-review/` on CT104 —
+**worked cleanly, no friction**. agy was given a self-contained,
+defensive-invariant-framed First-Instance Template Review prompt (9.6
+framing) covering 9 concrete invariants derived from the B1 brief, with
+explicit instructions not to edit/commit anything. Round trip (assemble
+prompt → scp → run agy → fetch its written artifact back) took ~6 minutes
+wall clock — faster than T2, likely because the task was read-only analysis
+rather than research + code generation.
+
+### agy's First-Instance Template Review — results and triage
+
+agy reported **8 findings** (7 Invisible Risk, 1 Structural Drift), 4 marked
+"blocking for B0 sign-off." Per Section 9.4 ("Claude triages"), each was
+checked against the actual source
+(`/mnt/storage/claudebox/projects/legacy-nfl-fantasy/internal/mfl/client.go`):
+
+| # | agy's finding | Severity (agy) | Triage result |
+|---|---|---|---|
+| 1 | `client.go:125` — `domain` is "immediately overwritten" with `h`, making the `.myfantasyleague.com` suffix useless | Blocking | **FALSE — hallucination.** Line 125 is `} else {`. The actual logic (lines 122-127: `if !strings.Contains(h, ".") { domain = h + ".myfantasyleague.com" } else { domain = h }`) is correct — there is no second assignment that overwrites `domain`. Verified on both CT105's copy and the exact bytes agy read on CT104 (`sed -n '115,142p'` over SSH). |
+| 2 | `client.go:89` — `DiscoverHost` calls `c.Do`, which routes to the cached `c.host` if already set; a stale/down cached host can't be recovered from by re-running discovery | Blocking | **REAL.** Confirmed: in `Do`, the `else if host == ""` branch (line 48) only forces `host = "api"` when `c.host` is currently empty. If `c.host` already holds a (possibly stale) value, `DiscoverHost`'s own `Do` call will query *that* host, not `api`, for the `TYPE=league` discovery request. A genuine re-discovery/recovery gap. |
+| 3 | `client.go:89-92` — host discovery "lacks a fallback to `api.myfantasyleague.com`" on failure, violating MFL rule 6 | Blocking | **OVERSTATED, partially valid.** A fallback DOES exist — `DiscoverHost`'s doc comment says "If the discovery call fails, c.host remains unchanged," and if `c.host` started `""` (the intended initial state per `New("", rps)`), `Do`'s empty-host branch (line 48-49) sends ordinary data calls to `api` anyway. But this fallback is *implicit*, split across two functions, and silently breaks if `New` is ever called with a non-empty seed host. Real but non-blocking robustness/documentation gap, not an absent fallback. |
+| 4 | `client.go:136-139` — the `params` loop runs after `q.Set("JSON","1")`, so a caller-supplied `"JSON"` key in `Request.Params` overwrites the mandatory `JSON=1` | Blocking | **REAL.** Confirmed by direct read — `for k, v := range params { q.Set(k, v) }` runs strictly after `q.Set("JSON", "1")` with no guard. Low practical likelihood (no caller in this codebase passes a `"JSON"` param) but a genuine ordering bug relative to the brief's "JSON=1, unconditionally" requirement. |
+| 5 | `client.go:80` — exporting `DiscoverHost` in addition to `Do` is Structural Drift against "Do is the ONLY exported surface" | Non-blocking | **VALID, but root cause is upstream.** The B1 *brief itself* (written by Claude from the companion plan's own Section "do better" for B1) explicitly instructed "make host discovery a first-class method" — agy correctly caught a real tension between the WF1A skeleton's literal text and the companion plan's own guidance for B1. Not agy's miss, not agy's invention — a pre-existing inconsistency in the planning artifacts that this test surfaced. |
+| 6 | `client.go:183` — `time.After(dur)` inside `select` leaks the timer if `ctx` is cancelled first | Non-blocking | **VALID, minor.** Correct as a general Go idiom point (prefer `time.NewTimer` + `defer Stop`); largely mitigated by Go's post-1.23 timer GC improvements (module is `go 1.26`), but still worth a one-line fix for B0 cleanliness. |
+| 7 | `client.go:28,80` — `New`/`DiscoverHost` have no input validation (`rps<=0`, empty `leagueID`/`year`) | Non-blocking | **VALID.** Confirmed absent. `New("", 0)` would create a limiter with rate 0 (effectively permanent `Wait` block) with no error surfaced. Worth a guard for B0. |
+| 8 | `client.go:46` — the `"L"` params-map check is case-sensitive | Non-blocking | **VALID, minor.** Confirmed (`req.Params["L"]` is a literal-key map lookup). Low risk since "L" is MFL's documented canonical key and all callers in this codebase will use the constant, but it's a real fragility if a future caller typos the key. |
+
+**Scorecard: 6/8 real (2 of those — #2, #4 — are genuine LOGIC bugs in code that
+scored 10/10 on T2's lint-based conformance rubric), 1/8 overstated, 1/8 a
+confident, specific, "blocking"-severity hallucination with a precise (wrong)
+line number and a plausible-sounding mechanism.**
+
+### Friction #13 (the headline finding): peer review both WORKS and needs a human/Claude in the loop — in the same pass
+
+This is arguably the most important single result of the whole three-test
+exercise, and it cuts both ways:
+
+- **The collaboration loop has real, measured value.** T2 scored B1 at 10/10
+  using `golangci-lint` + `go vet` + `go build` — a thorough *style and safety*
+  pass. None of those tools, and therefore none of that 10/10, had any way to
+  catch #2 (re-discovery can't recover from a stale cached host) or #4 (a
+  `JSON` key in `Request.Params` can silently disable `JSON=1`). Both are
+  *logic* bugs — invisible to linters, visible to a second model reading the
+  code for what it *does* rather than how it's *shaped*. Section 9's premise
+  ("a second vantage catches what the first context has normalized as fine")
+  is now a measured result, not just a design argument.
+
+- **agy's findings are not self-certifying, even when confidently scoped to an
+  exact line number and marked "blocking."** Finding #1 is wrong in a way that
+  would have been *very* easy to ship as-is: it cites a specific line, a
+  specific variable, a specific (superficially plausible) failure mode
+  ("HTTP requests fail with invalid hosts" — exactly the kind of thing a
+  transport client bug WOULD look like), and a "blocking for B0" severity.
+  Without the triage step, this finding is indistinguishable in *form* from
+  #2 and #4, which are real. **The triage step is not optional overhead — it
+  is the load-bearing part of Section 9.4's "Claude triages" clause**, and it
+  worked here in ~5 minutes because the claim was concrete enough to check
+  against source directly (read the file, count the lines, done). A vaguer
+  finding ("there might be a host-resolution issue around line 125") would
+  have been much harder to either confirm or dismiss.
+
+### T3 verdict
+
+T3-as-designed (shared git history, agy pulls from `origin`) is **blocked**
+by Friction #12 (push 403) and remains unvalidated. The SSH-relay pivot
+**substituted successfully** for the narrow mechanical question ("can agy
+read Claude's new output") and additionally produced a substantively richer
+result than the original T3 design even asked for: a real, triaged,
+First-Instance Template Review with 2 genuine pre-B0 fixes identified
+(#2, #4), one cross-document inconsistency surfaced (#5), and one concrete,
+now-documented data point on agy-as-reviewer's hallucination rate on
+concrete/checkable claims (1-in-8, important caveat: this is a sample size
+of one review).
+
+**Action items for B0** (to carry forward, not resolved in this session):
+fix #2 (force `host="api"` for the `TYPE=league` discovery call specifically,
+regardless of `c.host`'s current value), fix #4 (set `JSON=1` after the
+params loop, or reserve the `"JSON"` key), consider #6/#7/#8 as part of B1's
+eventual real implementation, and resolve the #5 skeleton-vs-brief tension
+(either amend WF1A's "Do is the ONLY exported surface" line, or note
+`DiscoverHost` as an explicitly-sanctioned second exported surface for
+B1 specifically).
+
+---
+
+## Final Synthesis — measured confidence assessment
+
+The mission framing going in carried four placeholder numbers: plan-fidelity
+~85%, realized-enforcement ~55%, collab-plumbing ~50%, end-goal ~45-70%. Below
+is each, replaced with a measured figure and the evidence behind it. All 13
+numbered frictions found across T1-T3 are referenced by number.
+
+### Plan-fidelity: ~85% → **~78%**
+
+The build plan's *intent* held up well — B1's brief, derived faithfully from
+the WF1A skeleton and the companion plan's Section 6 "do better" guidance,
+produced code that was structurally almost exactly right (T2 Structural 2/2,
+T3 triage found only one structural issue — #5 — and that issue is a
+**pre-existing contradiction inside the planning artifacts themselves**, not
+a deviation from them: WF1A's skeleton text says "Do is the ONLY exported
+surface" while the companion plan's own B1 "do better" section instructs
+exporting host discovery as "a first-class method"). That's a real
+planning-document inconsistency, found only by building against it.
+
+Lower than 85% because three of the plan's *enforcement-mechanism*
+assumptions didn't survive contact with the actual tools: Friction #8 (the
+depguard glob bug would have made the three-layer-law check — arguably the
+single most load-bearing automated rule across all 38 sessions — fire on
+**zero files**), Friction #6 (AD-06's enforcement mechanism, forbidigo, cannot
+do what AD-06 needs), and Friction #11/#12 (Section 9.2's "shared committed
+config via shared repo" assumes CT105 can push to the shared repo, and it
+cannot). None of these are wrong *goals* — every one of them is a case where
+the plan said "X will enforce/enable Y" and X, as configured, did not. All
+three are now identified; two are fixed (#8, and #6 has a documented B0
+remediation path); #12 is not.
+
+### Realized-enforcement: ~55% → **~72%**
+
+Post-fix gate-fire summary (T1): **5/7 deliberate violations now fire
+cleanly** (errcheck, gosec×2, gochecknoglobals, depguard — the last only after
+the Friction #8 fix). 2/7 remain silent by design-gap, both already scoped as
+B0 architectural decisions with documented remediation paths (Friction #6:
+AD-06 needs a `playerid.PlayerID` struct-wrap for compile-time enforcement;
+Friction #10: `interface{}`/`any` escapes need either a custom `go/analysis`
+checker or a code-review checklist item — no lint-only fix exists).
+
+The jump from 55% to 72% is mostly Friction #8: before the fix, the
+three-layer architectural law — the plan's single most important automated
+guardrail for a 38-session, multi-model build — was **silently
+unenforced** (0% on that rule specifically). After the fix it works
+correctly in both directions (catches the violating import, no longer
+false-positives on the legitimate `internal/db` import). The remaining gap
+to 100% is the two known-and-scoped silent gates, which need a B0 decision,
+not more lint config.
+
+### Collab-plumbing: ~50% → **~58%**
+
+Mixed, with a genuine surprise on each side:
+
+- **Up**: agy (CT104) is a far more capable collaborator than "weak local
+  model" framing suggested — Friction #11 showed it has a standing,
+  self-updating repo clone and live research, and T3 showed its
+  First-Instance Template Review caught two real logic bugs (#2, #4 in the
+  T3 table) that T2's 10/10 lint pass had no mechanism to catch. SSH-relay
+  (scp) between CT105 and CT104 is fast (~6 min round trip) and friction-free
+  — a viable, simple channel.
+- **Down**: the collaboration design's *specified* channel — Section 9.2's
+  "shared, committed enforcement file... both agents run audits against the
+  same committed config" — assumes CT105 can push to the shared repo.
+  Friction #12 found it cannot (stored PAT has read but not write access,
+  403 on push). This is the SAME SHAPE of problem as the original
+  2026-06-12 Friction #1 (agy couldn't read CT105's plan file due to a
+  filesystem split) — a second instance of "the planned cross-machine
+  channel doesn't actually exist yet," found in the channel's *replacement*.
+  SSH-relay is a viable stand-in but is manual/ad-hoc, not "commit, both
+  pull."
+- **Also down, smaller**: agy's review output requires triage — Friction #13
+  found a confident, line-specific, "blocking"-severity finding (#1 in the
+  T3 table) that was simply wrong. Triage cost was small here (~5 min,
+  because the claim was concrete enough to check directly against source),
+  but it means agy's output cannot be auto-applied; every review needs a
+  Claude pass before any finding is acted on.
+
+Net: the *agents* are more capable than budgeted; the *plumbing between them*
+has one known broken link (needs a Christopher-side PAT fix) and one
+known-required triage step (small, but real, per review).
+
+### End-goal: ~45-70% → **~60%, narrower band**
+
+The headline result of T2+T3 together is genuinely encouraging: a strong
+model, given a well-constructed self-contained brief plus a skeleton plus
+(uninvited) repo access, produced a near-production transport client in
+~10 minutes, and a second strong model's review of that output — even with
+one false positive — surfaced two real pre-B0 bugs in ~6 minutes. That loop,
+**Build → Review → Triage**, works, end to end, today, on real code.
+
+What keeps the band at ~60% rather than higher:
+
+1. **The original T2 question — can a genuinely weak local model
+   (qwen2.5-coder via Ollama, ~35% predicted) produce conforming code from a
+   brief — remains completely untested.** Aider/AiderBox/Beelink were all
+   ruled out or unreachable this session. If the 38-session build's labor
+   allocation leans on cheap/local models for routine fetcher sessions (as
+   the "~70% path" framing implies), this is the single largest unmeasured
+   risk in the whole plan — bigger than anything found in T1 or T3.
+2. **Section 9's collaboration design needs a credential fix (Friction #12)
+   before it runs as specified** for all 38 sessions. The workaround
+   (SSH-relay) works but wasn't the designed mechanism and adds manual steps
+   per review.
+3. **Two enforcement gaps (AD-06, `interface{}`) need B0-level architectural
+   decisions**, not just config — Christopher's input is required before B0
+   can close.
+
+What moves the band UP from the original 45-70%: the worst-case finding in
+the original range — "the three-layer law's enforcement is silently
+broken" — was TRUE (Friction #8) and is now FIXED. Finding and fixing the
+single most severe possible gap *before* B0, for the cost of one friction
+test session, is close to the best-case outcome this kind of testing can
+produce. The remaining ~40% of uncertainty is concentrated in #1 above
+(weak-model conformance, unmeasured) and #2 (one credential fix away from
+resolved, not architecturally broken).
+
+### Open items carried to Christopher (not resolved this session)
+
+1. **Friction #12** — `~/.git-credentials` PAT for `secureprospective` can
+   read but not push to `github.com/secureprospective/TheWarRoom`. Needs a
+   new/rotated PAT with `repo` write scope, set up by Christopher (per
+   global CLAUDE.md, not via `paste.md` with a real token in it — Christopher
+   should run the credential update himself in his own session).
+2. **AD-06 enforcement** (Friction #6) — recommend struct-wrapping
+   `playerid.PlayerID` (`type PlayerID struct { id string }`) for B0;
+   alternatives documented in the overlay README.
+3. **`interface{}`/`any` escape enforcement** (Friction #10) — no lint-only
+   fix exists; B0 needs to pick code-review-checklist vs. custom
+   `go/analysis` checker.
+4. **B1 template fixes** (Friction #13, T3 table items #2/#4) — two real
+   logic bugs in the B1 transport-client output, to be carried into B1's
+   real implementation: force `host="api"` for the league/discovery call
+   regardless of `c.host`; set `JSON=1` after the caller-params loop (or
+   reserve the `"JSON"` key).
+5. **#5 skeleton/brief tension** (Friction #13, T3 table item #5) — decide
+   whether `DiscoverHost` is a sanctioned second exported method for B1, or
+   amend WF1A's "Do is the ONLY exported surface" line.
+
+The `f9c25f4`/`f0a1202` commits (B1 code + full friction log) are on
+`session/prebuild-friction-testing` locally, NOT on `origin` (blocked by
+#12). Branch is ready to push once the PAT is fixed.
+
+---
+
+## T1 Re-Run — AD-06 + interface{} gates now fire (Confidence-80 session, 2026-06-13)
+
+After Christopher's Gate 1/2 decisions (struct-wrap for AD-06; custom vettool
+for interface{}), both mechanisms were implemented in
+`christopher-coding-standards` (`session/go-overlay-g0` @ `e48e352`) and the T1
+deliberate-violation test was re-run in a fresh scratch module
+(`/tmp/g0-verify2`, module path `github.com/secureprospective/TheWarRoom` so the
+depguard prefixes match) carrying the G0 `.golangci.yml`, the new
+`internal/playerid` struct-wrap template, and the `schema` template.
+
+**A surprise, surfaced by the re-run (same shape as the original T1 findings):**
+the first draft of the `playerid` struct-wrap implemented `driver.Valuer` /
+`sql.Scanner`, which imports `database/sql/driver`. golangci-lint **correctly
+rejected it** — depguard's `sql-confined-to-data-layer` rule fired, because a
+domain-identifier package is not part of the data layer. This is the rule
+working as designed (and incidentally a second live confirmation that the
+Friction #8 `**/`-prefix fix holds). Resolved by removing `Scan`/`Value` from
+`PlayerID` and serializing at the store boundary via `String()`/`New(text)`
+instead — a cleaner design that keeps the domain type free of I/O coupling.
+
+### Re-run gate-fire results
+
+| # | Violation | Mechanism | Result |
+|---|---|---|---|
+| 1 | Unchecked error | errcheck | FIRED (unchanged) |
+| 2 | `fmt.Sprintf` SQL | gosec G201 | FIRED (unchanged) |
+| 3 | Hardcoded key | gosec G101 | FIRED (unchanged) |
+| 4 | Package-level `var` | gochecknoglobals | FIRED (unchanged) |
+| 5 | **`playerid.PlayerID("99")` bypass** | **struct-wrap → compiler** | **`go build` FAILS: "cannot convert \"99\" to type playerid.PlayerID"** ✅ (was silent) |
+| 6 | **`interface{}` param + return** | **ifaceguard vettool** | **`go vet -vettool` FIRES ×2 (param + result), exit 1** ✅ (was silent) |
+| 7 | Cross-layer import | depguard | FIRED (unchanged) |
+| — | clean templates (playerid + schema) | golangci-lint + ifaceguard | **0 issues / 0 diagnostics** (no false positives; `//ifaceguard:allow` validated via analysistest) |
+
+**Verdict: 7/7 specified gates now fire (was 5/7), plus a new ifaceguard gate.**
+The two previously-silent gates are closed with the *strongest available*
+mechanism each: AD-06 at compile time (not lint), interface{} via a tested,
+pinned custom analyzer. `make lint` orchestration verified end-to-end: clean
+module → exit 0; any exported `interface{}` → ifaceguard halts the build (make
+exit 2). ifaceguard's own `analysistest` suite passes; `go mod verify` clean.
+
+### Plan-fidelity sweep — a THIRD unenforced-claim case (file-length cap)
+
+Sweeping the plan's "tool X enforces Y" claims for a third case beyond #6/#8/#10
+turned one up: the plan's **250-line target / 400-line hard cap** file rule
+("a design constraint, not a cleanup step," lines 40–41/313/626; it drives the
+AD-14/AD-17 pre-splits), and the overlay's `funlen` comment claiming it
+"supports the 250/400-line file rule." But **`funlen` caps FUNCTION size, not
+FILE size** (`lines:60`), and **no enabled linter measures file length** — a
+600-line file of small functions passes clean. The cap's only enforcement was
+design-time pre-splitting; the *automated* gate the comment implied did not
+exist. Lower-severity than #8 (the cap has a real design-time mechanism), but a
+genuine overclaim.
+
+**Closed, not just documented:** added a pure-shell `filelen` Makefile target
+(fails any non-test `.go` file > 400 lines) wired into `make lint`, and
+corrected the `funlen` comment. **A second Friction-#8-shape trap surfaced and
+was caught in verification:** the first `filelen` draft used `find -exec awk
+'…exit 1…'`, but `find` does **not** propagate an `-exec` command's exit status
+— so it printed the violation and still exited 0 (a decorative gate). Rewritten
+to collect offenders in the shell and fail there; re-verified: clean → exit 0,
+461-line file → exit 2. (The lesson repeats: a custom gate is only real once a
+deliberate violation has been seen to fail it.)
+
+---
+
+## T4 — Rebuilt-workflow live re-run (Confidence-80 session, 2026-06-13)
+
+Per Gate 6 (Expanded) and Christopher's go-ahead, ran the optional T4: a
+second-pass First-Instance Template Review of the now-fixed
+`internal/mfl/client.go` (+ `types.go`), via the **SSH-relay secondary channel**
+(9.2), to confirm the rebuilt workflow *works*, not just reads well. Artifacts
+scp'd to `/tmp/t4-review/` on CT104 (NOT agy's tracked clone); agy given a
+self-contained, 9-invariant defensive-framed prompt with explicit no-edit/
+no-commit rules; findings scp'd back. Round trip clean, no relay friction.
+
+### agy's findings, triaged per the NEW 9.8 protocol
+
+agy reported all 9 invariants **Hold** + 3 detailed findings + 1 self-dismissed
+note. Every concrete `file:line` citation was checked against source:
+
+| agy finding | Class | 9.8 triage verdict |
+|---|---|---|
+| Invariants 1–9 | all Hold | **Confirmed** — L37/L86/L95, L47–51, L146–147, L179, L42–44/L115–117, L154–162, L28, L101 all match source exactly |
+| A — timer leak (`time.After` in `select`, L188–192) | Invisible Risk | **REAL, minor** — consistent with T3 finding #6; `time.NewTimer`+`Stop` fix (largely GC-mitigated on go 1.26) |
+| B — no jitter in backoff (L154–162) | Normalized Complexity | **VALID but context-overstated** — thundering-herd-across-clients barely applies to a single-user desktop app; note, not blocking |
+| C — no `rps>0` validation in `New` (L28/L31) | Invisible Risk | **REAL, minor** — consistent with T3 finding #7; `New("",0)` → `Do` blocks forever |
+| Note on Inv 8 (L101 unwrapped error) | — | **Correctly self-dismissed** — no underlying error to `%w`; agy flagged-then-cleared it (good calibration) |
+
+### T4 verdict — the rebuilt workflow holds
+
+- **Zero hallucinations this pass** (vs. 1-in-8 in T3). Every concrete claim was
+  checkable and checked out. The 9.8 triage protocol applied cleanly and cheaply.
+- **Stable calibration:** agy independently re-found A and C, consistent with
+  T3's #6/#7 — its concrete findings are repeatable, not noise.
+- **Claude-in-loop value, both directions:** agy *missed* the one real (cosmetic)
+  defect — `client.go:36`'s comment still reads "Do is the ONLY exported
+  surface" while `DiscoverHost` is exported right below it (the same contradiction
+  Gate 5 fixed in the plan skeleton). Triage caught what review missed; review
+  caught (in T3) logic bugs linting missed. Both halves of Section 9's premise
+  are now measured.
+- **Channel validated:** SSH-relay (9.2 SECONDARY) is confirmed fast and
+  reliable for ad-hoc read-only review. The PRIMARY git channel (9.2) remains
+  unexercised pending the Gate 3 PAT (see Confidence-80 results below).
+
+**Carry to B1 real implementation:** fix the stale `client.go:36` comment;
+adopt `time.NewTimer`+`Stop` (A); add `rps>0` guard in `New` (C); jitter (B) is
+optional and low-priority for a single-client desktop app.
+
+---
+
+## Confidence-80 Session Results (2026-06-13)
+
+### Decision gates — outcomes
+
+| Gate | Christopher's choice | One-line rationale |
+|---|---|---|
+| **1 — AD-06 bypass** | **Struct-wrap** | Compiler-enforced, zero refactor cost (no `playerid` code existed yet), no tool to maintain. Implemented `playerid/example.go`; bypass now fails `go build`. |
+| **2 — interface{} escapes** | **Custom analyzer** | The only mechanism that actually moves realized-enforcement to target; no linter covers it. Built `tools/ifaceguard` (vettool, pinned, `analysistest`-guarded). |
+| **6 — Collab rebuild scope** | **Expanded** | "Must not be a blind spot." Did minimal + SSH-relay formalization (9.2) + 9.6 memory rewrite + the optional T4 — all completed. |
+| **3 — GitHub PAT** | **FIXED** | New fine-grained PAT (TheWarRoom + coding-standards, Contents R/W). Took one retry — first token lacked `Contents:write` and `~/.git-credentials` had a shadowing stale line. Both branches now pushed; Friction #12 CLOSED. |
+| **4 — CT106 weak-model test** | **DESCOPED (not deferred)** | CT106 confirmed dead (no route, infra-level). Christopher cut the local-AI idea entirely — CT106/AiderBox retired, hardware upgrade needed. The weak-model conformance risk is *removed*, not left open. Collaboration refocuses on Claude + agy. |
+| **5 — WF1A wording** | **CONFIRMED/FIXED** | "Do is the ONLY exported surface" reconciled with B1's "first-class host discovery": `Do` + `DiscoverHost` sanctioned, `DiscoverHost` routes through `Do`. |
+
+### Re-measured confidence — all four metrics, with evidence
+
+**Plan-fidelity: 78% → ~85%.** Gate 5's real contradiction fixed in the WF1A
+skeleton. Gates 1 & 2 recorded as LOCKED decisions with rationale (companion
+plan Section 10), no longer "documented gaps." The plan-fidelity sweep found a
+*third* "tool X enforces Y" overclaim (the 400-line file cap was unenforced —
+funlen caps functions, not files) and **closed** it with a `filelen` gate
+rather than just documenting it. Residual to <100%: the two-blueprint package-
+tree tension (companion plan's own Section 1, `internal/...` vs `core/...`) is
+documented but not resolved, and a 4th unenforced-claim case can't be ruled out
+without B0 contact. Evidence: commits `a0b73c6`, `34a176b` (TheWarRoom);
+`e48e352`, `b77709b` (coding-standards).
+
+**Realized-enforcement: 72% → ~90%.** T1 re-run: **7/7 specified gates fire
+(was 5/7)** plus a new ifaceguard gate and a new filelen gate. The two
+previously-silent gates are closed with the strongest available mechanism each
+— AD-06 at *compile* time (`go build` rejects the bypass), interface{} via a
+tested, pinned analyzer. `make lint` orchestration verified end-to-end in
+`/tmp/g0-verify2` (clean → 0; violation → make exit 2). Residual: the semantic
+"Layer 2/4 zero scoring leak" rule is enforced at the *import* boundary
+(depguard) and *typing* boundary (ifaceguard) but a scoring reference *within*
+an allowed package still needs review (no tool sees intent); and toolchain
+parity (9.6) isn't yet locked by a committed pinned toolchain (a B0 item — no
+`go.mod` pre-build). Evidence: T1 re-run table above; `e48e352`.
+
+**Collab-plumbing: 58% → ~85%.** Both channels now validated live:
+- **PRIMARY (git):** T3-as-designed PASSED — agy's standing clone
+  (`/mnt/storage/antigravitybox/TheWarRoom`) fetched the pushed
+  `session/confidence-to-80` branch and read the committed companion plan +
+  friction log directly from git (`git show origin/...`), working tree
+  untouched. Section 9.2's "shared committed config, both pull" mechanism works
+  now that Friction #12 is closed.
+- **SECONDARY (SSH-relay):** T4 validated it end-to-end (~clean round trip).
+- Section 9 rebuilt: 9.8 Triage Protocol (new), 9.2 dual-channel split, 9.6
+  memory-symmetry corrected. The triage protocol was *exercised* in T4 with **0
+  hallucinations** (vs 1-in-8 in T3). Residual: the per-session review cadence
+  (9.3) hasn't run across the real 38-session build; toolchain-parity pin
+  pending B0.
+
+**End-goal: ~60% → ~80%.** Re-framed by Christopher's strategic decision rather
+than by the originally-planned measurement. The friction synthesis named the
+**weak-local-model conformance test as the single largest unmeasured risk** —
+that path is now **cut** (local-AI idea dropped; CT106 retired). The risk is
+*removed*, not left open, which legitimately raises the band. What remains is
+the Build → Review → Triage loop, now measured working three times (T2 build
+10/10, T3 review caught 2 real logic bugs, T4 0 hallucinations + clean triage)
+with enforcement gaps closed (Gates 1/2 + filelen) and both collab channels
+live. **Why not higher than ~80%:** no build session has actually run yet (B0
+not started); execution variance across the 38 sessions — especially the hard
+rubric sessions (B5b-DT et al.) — is unproven, and cutting local models removes
+the "cheap routine session" lever so all 38 carry full Claude+agy cost. This is
+the metric most likely to be revised once B0–B5 provide real build-execution
+evidence; it is a confidence in the *method* (well-instrumented) more than in
+*execution at scale* (untested).
+
+### Net
+
+All four metrics now sit at or above the 80% target (≈85 / ≈90 / ≈85 / ≈80),
+each with a named, honest residual rather than a padded number. The two
+hard-blockers that gated this from the prior session — Friction #12 (push) and
+the AD-06/interface{} enforcement gaps — are both fully closed. The one item
+that could not be measured (weak-model conformance) was resolved by descoping,
+not by inflation. **Pre-B0 readiness: the Go overlay (G0) is now complete and
+verified; B0 can proceed once `session/go-overlay-g0` is merged** (Christopher's
+confirm). Carry-forward items for B0 are listed in the project `CLAUDE.md`.
