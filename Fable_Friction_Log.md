@@ -645,3 +645,71 @@ mechanism each: AD-06 at compile time (not lint), interface{} via a tested,
 pinned custom analyzer. `make lint` orchestration verified end-to-end: clean
 module → exit 0; any exported `interface{}` → ifaceguard halts the build (make
 exit 2). ifaceguard's own `analysistest` suite passes; `go mod verify` clean.
+
+### Plan-fidelity sweep — a THIRD unenforced-claim case (file-length cap)
+
+Sweeping the plan's "tool X enforces Y" claims for a third case beyond #6/#8/#10
+turned one up: the plan's **250-line target / 400-line hard cap** file rule
+("a design constraint, not a cleanup step," lines 40–41/313/626; it drives the
+AD-14/AD-17 pre-splits), and the overlay's `funlen` comment claiming it
+"supports the 250/400-line file rule." But **`funlen` caps FUNCTION size, not
+FILE size** (`lines:60`), and **no enabled linter measures file length** — a
+600-line file of small functions passes clean. The cap's only enforcement was
+design-time pre-splitting; the *automated* gate the comment implied did not
+exist. Lower-severity than #8 (the cap has a real design-time mechanism), but a
+genuine overclaim.
+
+**Closed, not just documented:** added a pure-shell `filelen` Makefile target
+(fails any non-test `.go` file > 400 lines) wired into `make lint`, and
+corrected the `funlen` comment. **A second Friction-#8-shape trap surfaced and
+was caught in verification:** the first `filelen` draft used `find -exec awk
+'…exit 1…'`, but `find` does **not** propagate an `-exec` command's exit status
+— so it printed the violation and still exited 0 (a decorative gate). Rewritten
+to collect offenders in the shell and fail there; re-verified: clean → exit 0,
+461-line file → exit 2. (The lesson repeats: a custom gate is only real once a
+deliberate violation has been seen to fail it.)
+
+---
+
+## T4 — Rebuilt-workflow live re-run (Confidence-80 session, 2026-06-13)
+
+Per Gate 6 (Expanded) and Christopher's go-ahead, ran the optional T4: a
+second-pass First-Instance Template Review of the now-fixed
+`internal/mfl/client.go` (+ `types.go`), via the **SSH-relay secondary channel**
+(9.2), to confirm the rebuilt workflow *works*, not just reads well. Artifacts
+scp'd to `/tmp/t4-review/` on CT104 (NOT agy's tracked clone); agy given a
+self-contained, 9-invariant defensive-framed prompt with explicit no-edit/
+no-commit rules; findings scp'd back. Round trip clean, no relay friction.
+
+### agy's findings, triaged per the NEW 9.8 protocol
+
+agy reported all 9 invariants **Hold** + 3 detailed findings + 1 self-dismissed
+note. Every concrete `file:line` citation was checked against source:
+
+| agy finding | Class | 9.8 triage verdict |
+|---|---|---|
+| Invariants 1–9 | all Hold | **Confirmed** — L37/L86/L95, L47–51, L146–147, L179, L42–44/L115–117, L154–162, L28, L101 all match source exactly |
+| A — timer leak (`time.After` in `select`, L188–192) | Invisible Risk | **REAL, minor** — consistent with T3 finding #6; `time.NewTimer`+`Stop` fix (largely GC-mitigated on go 1.26) |
+| B — no jitter in backoff (L154–162) | Normalized Complexity | **VALID but context-overstated** — thundering-herd-across-clients barely applies to a single-user desktop app; note, not blocking |
+| C — no `rps>0` validation in `New` (L28/L31) | Invisible Risk | **REAL, minor** — consistent with T3 finding #7; `New("",0)` → `Do` blocks forever |
+| Note on Inv 8 (L101 unwrapped error) | — | **Correctly self-dismissed** — no underlying error to `%w`; agy flagged-then-cleared it (good calibration) |
+
+### T4 verdict — the rebuilt workflow holds
+
+- **Zero hallucinations this pass** (vs. 1-in-8 in T3). Every concrete claim was
+  checkable and checked out. The 9.8 triage protocol applied cleanly and cheaply.
+- **Stable calibration:** agy independently re-found A and C, consistent with
+  T3's #6/#7 — its concrete findings are repeatable, not noise.
+- **Claude-in-loop value, both directions:** agy *missed* the one real (cosmetic)
+  defect — `client.go:36`'s comment still reads "Do is the ONLY exported
+  surface" while `DiscoverHost` is exported right below it (the same contradiction
+  Gate 5 fixed in the plan skeleton). Triage caught what review missed; review
+  caught (in T3) logic bugs linting missed. Both halves of Section 9's premise
+  are now measured.
+- **Channel validated:** SSH-relay (9.2 SECONDARY) is confirmed fast and
+  reliable for ad-hoc read-only review. The PRIMARY git channel (9.2) remains
+  unexercised pending the Gate 3 PAT (see Confidence-80 results below).
+
+**Carry to B1 real implementation:** fix the stale `client.go:36` comment;
+adopt `time.NewTimer`+`Stop` (A); add `rps>0` guard in `New` (C); jitter (B) is
+optional and low-priority for a single-client desktop app.
