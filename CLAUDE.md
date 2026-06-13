@@ -97,6 +97,7 @@ All architecture documents are on disk. Engine specification, 10 position rubric
 
 | Need | Document |
 |---|---|
+| **Build doctrine — LOAD BEFORE any build/review (both agents)** | `docs/agent-codex.md` — 17 motifs w/ receipts, slop catalog, security baseline, canon→motif map (canonical in coding-standards) |
 | Full engine architecture | `docs/scoring-engine/Engine_Specification.md` |
 | Any position's rubric | `docs/scoring-engine/<POSITION>_Rubric.md` |
 | All rubric parameters in one place | `docs/build-handoffs/Layer4_PreBuild_Audit.md` (Section 1C) |
