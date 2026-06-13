@@ -207,4 +207,105 @@ architectural decisions for Christopher, not config fixes):
 
 ---
 
-*(Append entries below as T2/T3 proceed.)*
+## T2 — agy builds B1 end-to-end (2026-06-13, redesigned per Christopher: agy-as-builder)
+
+### Setup
+
+Assembled a self-contained brief (`/tmp/b1_brief.md`, ~100 lines): WF 1A
+skeleton verbatim, B1 trap/contingency/do-better (Section 6), the relevant
+Section 5.1/5.7 constants (League ID 14432, host-discovery rule, `JSON=1`,
+429 backoff shape), the G0 overlay's enabled linter list + key settings, and
+AGENTS.md's hard rules (no hardcoded secrets/hosts, wrap errors, close
+response bodies, ctx-first). Copied to CT104, ran:
+`ssh antigravitybox 'agy -p "$(cat /tmp/b1_brief.md)"'`.
+
+**Wall clock: ~10-12 minutes** (one invocation, ran in background, completed
+between a 120s and a 240s poll).
+
+### What agy actually did — bigger than the brief asked
+
+agy did NOT operate as a stateless, brief-only session. Its own
+chain-of-thought (captured verbatim in the output) shows it:
+1. Listed `/mnt/storage/antigravitybox/`, found a **full existing clone of
+   `github.com/secureprospective/TheWarRoom`** (on `main`, clean except its
+   own new files, remote up to date — `050b71f docs: showpiece README + Go
+   overlay (G0) handoff`, 2026-06-10, pre-existing, not agy's).
+2. Read `docs/multi-agent-roles.md`, the project `CLAUDE.md`,
+   `Build_Tracker.md`, and **`MFL_API_Specification.md` /
+   `MFL_API_Reference.md`** — none of which were in my brief.
+3. Checked `go version` and `golangci-lint` availability, ran `git status`.
+4. Wrote `internal/mfl/types.go` and `internal/mfl/client.go` directly into
+   that clone (untracked, **not committed** — confirmed via `git status`
+   showing `??` for both files plus `GEMINI.md` and
+   `docs/multi-agent-roles.md`. No commit, no push — hard constraint held).
+
+**This is itself a major finding (Friction #11):** the "self-contained
+prompt / memory-symmetry" framing (Section 9.6) assumes agy has no
+persistent context — but agy on CT104 has a **standing, up-to-date clone of
+the real repo** and will research it regardless of what the prompt says.
+For T2 specifically this produced a BETTER artifact (agy's host-discovery
+logic correctly mirrors MFL's real API convention — query
+`api.myfantasyleague.com/{year}/export?TYPE=league&L={id}&JSON=1`, read
+`league.baseURL`, extract the subdomain — which is NOT in my brief and
+which agy got right only because it read `MFL_API_Specification.md`). But it
+means **"self-contained brief" is not actually achievable as a constraint on
+agy** — any future T2-style session should assume agy will pull live repo
+context, and brief accordingly (or explicitly instruct it NOT to, and verify
+it complies — itself worth testing).
+
+### Gate results on agy's output (CT105, G0 overlay)
+
+Copied `internal/mfl/{types.go,client.go}` into a scratch module
+(`/tmp/b1-verify`) with the G0 `.golangci.yml` and `golang.org/x/time` dep.
+
+- `go build ./...` → **OK**
+- `go vet ./...` → **OK**
+- `go test -race ./...` → no test files (agy did not write tests — my brief
+  didn't explicitly ask for them; AGENTS.md requires tests for every
+  functional change. **Process gap in my brief, not scored against agy.**)
+- `golangci-lint run ./...` → **1 issue**: `gofmt` — a struct field comment
+  (`host string // discovered league host (e.g. www47), cached`) had extra
+  alignment spaces, copied verbatim from the WF1A skeleton's own markdown
+  (which is itself not gofmt-clean). `gofmt -w` fixed it in one pass → **0
+  issues** after.
+- File size: `client.go` 221 lines (well under the 250 target / 400 cap).
+- `grep -rn "www47\|14432"` → **zero hardcoded occurrences** (the only
+  "www47" is inside a copied comment, not a literal; League ID is a
+  `DiscoverHost` parameter, not baked in).
+
+### Conformance Rubric score
+
+| Criterion | Score | Notes |
+|---|---|---|
+| Structural | 2/2 | `New`/`Do` match WF1A signatures exactly; no domain types leaked (`Request`/`Response`/`leagueResponse` all transport-level). One divergence: added exported `DiscoverHost(ctx, year, leagueID) error` — but this is the LITERAL "do better" instruction ("make host discovery a first-class method"), not an invention. Also followed the Section-4 file-ordering convention (types → constructor → exported → unexported helpers) that was NOT in my brief. |
+| Standards | 2/2 | 0 issues after one trivial, skeleton-inherited gofmt fix. No `--no-verify` needed. |
+| Correctness | 2/2 | Rate limiter `Wait()`, 429 backoff (exact 1→2→4→8→16→32→60s sequence, error after exhaustion), and host discovery are all REAL implementations, not stubs. Host-discovery logic matches MFL's actual documented discovery convention (verified by agy reading the real API spec). |
+| No-hallucination | 2/2 | Zero hardcoded `www47`/`14432`/other invented constants. League ID fully parameterized. |
+| Slop tax (inverse) | 2/2 | One `gofmt -w` (1 line, inherited from the skeleton's own formatting). No test file (brief gap, not agy's). |
+| **TOTAL** | **10/10** | |
+
+### T2 verdict — READ THE SCOPE CAREFULLY
+
+**10/10 is real but does NOT validate the original T2 hypothesis.** The
+original Test 2 asked: *can a genuinely weak 7B-14B local model (qwen2.5-coder
+via Ollama), given ONLY a self-contained brief, produce standards-conforming
+code?* Predicted ~35%. **That question is still UNANSWERED.** What was
+actually measured here: *can agy — a capable agentic CLI (Gemini-class, live
+web search, persistent repo access) — given a strong brief + skeleton +
+(uninvited but real) repo access, produce a near-production-ready
+template-setter file?* Answer: yes, essentially perfectly, in ~10 minutes.
+
+This is still valuable — it's a strong, *measured* data point for the
+"strong-model-sets-template" half of the build's labor-allocation question
+(Section 6's "~70% path" framing), and for agy's viability as a genuine
+peer-builder for template-setter sessions, not just Recon/Audit. But it
+should NOT be reported as "the weak-model premise is validated at 100%" —
+the weak-model premise (the ~35% predicted number, the actual `qwen2.5-coder`
+test) was never run, because Aider/AiderBox/Beelink were all ruled out or
+unreachable. **The honest state: weak-local-model conformance remains an
+open, unmeasured risk for the 38-session build**, separate from and
+unresolved by this 10/10.
+
+---
+
+*(Append entries below as T3 proceeds.)*
