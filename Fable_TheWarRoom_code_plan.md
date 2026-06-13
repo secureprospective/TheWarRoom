@@ -327,12 +327,30 @@ type Client struct {
 
 func New(host string, rps float64) *Client { /* ... */ }
 
-// Do is the ONLY exported surface. Transport in, transport out. No Player, no Schedule.
+// Do and DiscoverHost are the two sanctioned exported surfaces for B1.
+// Transport in, transport out. No Player, no Schedule — no domain types.
 func (c *Client) Do(ctx context.Context, req Request) (Response, error) {
 	// rate-limit wait → execute → on 429: exponential backoff 1→2→4…→60s, then return error (caller decides)
 	// close resp.Body (bodyclose linter enforces)
 }
+
+// DiscoverHost is host-discovery-specific (the "do better" instruction for B1,
+// Section 6) and MUST itself route through Do, so it inherits rate-limiting and
+// backoff. It is the ONLY other permitted exported method; no third exported
+// surface may be added without a plan amendment.
+func (c *Client) DiscoverHost(ctx context.Context, year, leagueID string) error {
+	// query api.myfantasyleague.com/{year}/export?TYPE=league&L={id}&JSON=1 via Do,
+	// read league.baseURL, extract+cache the subdomain. For the TYPE=league
+	// discovery call specifically, force host="api" regardless of c.host so a
+	// stale cached host can't block re-discovery (T3 finding #2, fixed in B1).
+}
 ```
+> **Reconciliation note (Confidence-80 session, Gate 5 / Friction #13 finding #5,
+> 2026-06-13):** this skeleton previously read "Do is the ONLY exported surface,"
+> which contradicted B1's own "do better" guidance below (line ~549, "make host
+> discovery a first-class method"). Building B1 surfaced the contradiction. Both
+> are now sanctioned, with `DiscoverHost` explicitly constrained to route through
+> `Do`. Recorded as a plan-fidelity fix, not a scope change.
 **Trap:** the host (`www47`) is not constant — discover it from the league endpoint on startup, cache it, re-verify weekly/at season change, fall back to `api.myfantasyleague.com` if it fails. Never hardcode `www47`.
 
 ### WF 1B — fetcher (B2 / B2b)
@@ -673,6 +691,24 @@ agy cannot (and should not) edit the living standard docs — that boundary stay
 2. Claude reviews it, and if adopted, **commits it** to the living docs / `.golangci.yml` / ADR.
 3. Both agents thereafter run audits against the *same committed config*. Drift becomes a build failure, not a style argument.
 
+**Two channels, deliberately split (clarified after Frictions #11/#12,
+2026-06-13):**
+- **PRIMARY — git.** The shared, committed enforcement layer (`.golangci.yml`,
+  the pinned toolchain, `tools/ifaceguard/`) lives in the repo; both agents
+  pull it and audit against identical config. This is the channel that makes
+  "drift = build failure" true for all 38 sessions. It depends on CT105 being
+  able to **push** — the gap Friction #12 found and the Confidence-80 session's
+  Gate 3 (fine-grained PAT) closes. Until a push lands, this channel is not
+  actually exercised, only assumed.
+- **SECONDARY — SSH file relay.** For fast, ad-hoc, **read-only** review
+  requests, `scp` the specific artifact (a new file or diff) to a clearly
+  separate `/tmp/<topic>/` path on the target machine — **never** into agy's
+  tracked clone — prompt agy at that path, and `scp` its written findings back.
+  Measured at ~6 min round trip (T3). This is the right channel for "review this
+  one new thing now," and it is **not** a substitute for the shared committed
+  config (it carries no toolchain parity guarantee). Use git for "what both
+  agents build against"; use SSH-relay for "look at this specific output."
+
 ### 9.3 Cross-pollination cadence — three triggers, not "review everything"
 Post-commit review on all 38 sessions is relay fatigue and noise. agy's review fires on three triggers instead:
 
@@ -705,11 +741,110 @@ agy classifies every finding as **Structural Drift** (ADR / Technical-Pillar vio
 
 ### 9.6 Engagement framing, memory symmetry, toolchain parity (the operational hygiene)
 - **Framing — defensive invariants, not euphemisms.** agy was clear: do not disguise a security ask. Phrase it as a concrete, closed-ended invariant. *Not* "audit for SQL injection" → *"verify every SQLite query uses parameterized placeholders and performs no string interpolation."* *Not* "find memory leaks" → *"check slice growth bounds and verify goroutine lifetimes close."* This engages agy's expertise without tripping its safety guard, because it is what Claude actually means.
-- **Memory symmetry.** agy is effectively stateless across sessions and truncates at ~135k tokens; it does **not** retain prior-turn context the way Claude does. Every review request must be **self-contained**: exact file path or contents, the exact function or diff to analyze, no "as we discussed."
+- **Memory symmetry — corrected (Friction #11, 2026-06-13).** The original framing
+  assumed agy is a stateless, prompt-only reviewer blind to repo state. That is
+  **false in practice.** agy on CT104 has a **standing, self-updating clone of
+  the real TheWarRoom repo** plus live web research, and it **will** read that
+  clone (`Build_Tracker.md`, `AGENTS.md`, the MFL specs, conventions) regardless
+  of how the prompt is framed. T3 proved this is a **feature, not a leak**:
+  agy's host-discovery logic was correct *because* it read the real
+  `MFL_API_Specification.md`, which was not in the brief. Two consequences:
+  - **Do NOT assume agy is blind to repo state.** Review prompts should not be
+    written as if agy can only see what is pasted in; it sees the committed repo
+    too, and that context improves repo-aware reviews.
+  - **The self-contained discipline still applies to the *artifact under
+    review*** — the new file or diff agy does not yet have. Send that exactly
+    (path + contents), because it is the one thing not in agy's clone. What is
+    already committed, agy already has; do not waste relay budget re-sending it,
+    and do not rely on "as we discussed" for prior-turn *conversation* (that, it
+    genuinely does not retain — it truncates ~135k tokens, no cross-session
+    chat memory). Repo state: yes. Chat history: no.
 - **Toolchain parity (CT 104 vs CT 105).** The two agents run on separate LXCs with potentially different Go/linter/SQLite versions — a source of false-positive findings. **B0 commits a pinned toolchain definition and `.golangci.yml`; both agents run audits with matching commands.** Without this, a "finding" may just be a version skew.
 
 ### 9.7 What this changes about how to read the rest of this guide
 Section 8's line that "this guide is the most junior voice in the room" stands for the *building model* against hooks and locked decisions — but it does **not** describe the Claude↔agy relationship. Between the two agents, neither is junior; authority is split by instrument (9.1), and on tooling and the open-audit blind-spot work, agy leads. A building model that hits a structural fork it cannot resolve should not guess — it should produce the 9.4 Complexity-vs-Benefit matrix and surface it for Christopher.
+
+### 9.8 Triage Protocol — every concrete agy finding is checked against source before it escalates
+Friction #13 (2026-06-13) measured why 9.4's "Claude triages" clause is
+load-bearing, not ceremony: in a single First-Instance Template Review, agy
+returned 8 findings — 6 real, 1 overstated, and **1 confident, line-specific,
+"blocking"-severity finding that was simply wrong** (it cited `client.go:125`,
+a specific variable, and a plausible failure mode; the cited line was actually
+`} else {`). In *form* it was indistinguishable from the two findings that were
+genuine logic bugs. Triage is what separated them, and it was cheap (~5 min)
+precisely because the claim was concrete enough to check directly. The protocol:
+
+1. **Every agy finding that cites a `file:line` or a specific symbol MUST be
+   checked against the actual source before it is escalated to Christopher as a
+   defect or acted on.** Read the cited range; confirm the claim describes what
+   the code actually does, on the exact bytes agy read (verify cross-machine if
+   the relay introduced any copy).
+2. A finding that **survives** is escalated/fixed with the triage note attached
+   ("confirmed at `client.go:NN`").
+3. A finding that **does not survive** is logged in the friction record (for
+   agy-calibration tracking) but **not** escalated and **not** acted on. It is
+   not bounced back to a fresh agy for argument — a clean-frame model has no new
+   information and will only add noise (9.4.2).
+4. Vague findings ("there may be a host-resolution issue near line 125") are the
+   expensive case — neither confirmable nor dismissible by direct read. Ask agy
+   to make the claim concrete (exact line, exact mechanism) or drop it; never
+   escalate an unfalsifiable finding.
+
+This applies to all three review triggers (9.3) and to Open Audits (9.5). It is
+the single most important operational lesson of the T1–T3 friction tests:
+**peer review has real, measured value AND its output is not self-certifying —
+both at once.** (T3: agy's review caught two genuine logic bugs that the 10/10
+golangci-lint pass had no mechanism to see — invisible to linters, visible to a
+second model reading for what the code *does*.)
+
+---
+
+## Section 10 — Locked Enforcement Decisions (Confidence-80 session, 2026-06-13)
+
+Two enforcement mechanisms left open by the G0 overlay (Frictions #6 and #10)
+were decided by Christopher this session and are now **LOCKED** — implemented,
+tested, and committed in `christopher-coding-standards` (`session/go-overlay-g0`
+@ `e48e352`). They are no longer "documented gaps." B0 inherits them as built.
+
+### 10.1 AD-06 / RISK-003 — `playerid.PlayerID` bypass → struct-wrap (Gate 1)
+
+**Decision:** `internal/playerid` defines `type PlayerID struct { id string }`
+with an **unexported** field, not `type PlayerID string`.
+
+**Rationale:** the original forbidigo rule could not distinguish a bypass
+conversion (`playerid.PlayerID("99")`) from a legitimate type reference in a
+signature, so it was unusable (Friction #6). A string newtype can always be
+bypassed; a struct with an unexported field cannot — `playerid.PlayerID("99")`
+from any other package fails to **compile**, making `New()` the only path to a
+value and guaranteeing leading-zero normalization ("99" → "0099") can never be
+skipped. This converts a lint-time social contract into a compile-time
+guarantee. Cost was near-zero: no `playerid` code existed yet, so this is just
+how the template is written the first time. Reference implementation:
+`templates/go/playerid/example.go`.
+
+**Consequence for B0 skeletons:** `PlayerID` is constructed via `playerid.New`,
+stringified via `.String()`, and JSON round-trips through `New`
+(`UnmarshalJSON`). It deliberately does **not** implement `driver.Valuer` /
+`sql.Scanner` — the store layer serializes via `String()`/`New(text)` so the
+domain package imports no `database/sql` (the depguard `sql-confined-to-data-
+layer` rule confirmed this by rejecting a `Scan`/`Value` draft). All SQLite id
+columns remain TEXT.
+
+### 10.2 `interface{}`/`any` escapes → `ifaceguard` custom vettool (Gate 2)
+
+**Decision:** a small custom `go/analysis` vettool (`tools/ifaceguard/`) flags
+`interface{}`/`any` in **exported** signatures; it is run via `go vet -vettool`,
+wired into `make lint` and pre-commit. `//ifaceguard:allow` is the escape hatch
+for deliberate generic boundaries.
+
+**Rationale:** no enabled golangci-lint linter catches a bare empty interface in
+a signature (Friction #10) — `interfacebloat` only checks interface
+declarations. A bare `interface{}` at a layer boundary turns off the type
+checker there, which for the "Layer 2/4 zero scoring leak" rules is a silent
+correctness hole. This was the one gap a checklist could not close at the
+metric target, so a tool was proportionate — kept narrow (exported-only,
+own-module, x/tools pinned by `go.sum`, `analysistest` regression guard) to stay
+inside the same supply-chain discipline the overlay holds everywhere.
 
 ---
 

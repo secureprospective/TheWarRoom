@@ -603,3 +603,45 @@ resolved, not architecturally broken).
 The `f9c25f4`/`f0a1202` commits (B1 code + full friction log) are on
 `session/prebuild-friction-testing` locally, NOT on `origin` (blocked by
 #12). Branch is ready to push once the PAT is fixed.
+
+---
+
+## T1 Re-Run — AD-06 + interface{} gates now fire (Confidence-80 session, 2026-06-13)
+
+After Christopher's Gate 1/2 decisions (struct-wrap for AD-06; custom vettool
+for interface{}), both mechanisms were implemented in
+`christopher-coding-standards` (`session/go-overlay-g0` @ `e48e352`) and the T1
+deliberate-violation test was re-run in a fresh scratch module
+(`/tmp/g0-verify2`, module path `github.com/secureprospective/TheWarRoom` so the
+depguard prefixes match) carrying the G0 `.golangci.yml`, the new
+`internal/playerid` struct-wrap template, and the `schema` template.
+
+**A surprise, surfaced by the re-run (same shape as the original T1 findings):**
+the first draft of the `playerid` struct-wrap implemented `driver.Valuer` /
+`sql.Scanner`, which imports `database/sql/driver`. golangci-lint **correctly
+rejected it** — depguard's `sql-confined-to-data-layer` rule fired, because a
+domain-identifier package is not part of the data layer. This is the rule
+working as designed (and incidentally a second live confirmation that the
+Friction #8 `**/`-prefix fix holds). Resolved by removing `Scan`/`Value` from
+`PlayerID` and serializing at the store boundary via `String()`/`New(text)`
+instead — a cleaner design that keeps the domain type free of I/O coupling.
+
+### Re-run gate-fire results
+
+| # | Violation | Mechanism | Result |
+|---|---|---|---|
+| 1 | Unchecked error | errcheck | FIRED (unchanged) |
+| 2 | `fmt.Sprintf` SQL | gosec G201 | FIRED (unchanged) |
+| 3 | Hardcoded key | gosec G101 | FIRED (unchanged) |
+| 4 | Package-level `var` | gochecknoglobals | FIRED (unchanged) |
+| 5 | **`playerid.PlayerID("99")` bypass** | **struct-wrap → compiler** | **`go build` FAILS: "cannot convert \"99\" to type playerid.PlayerID"** ✅ (was silent) |
+| 6 | **`interface{}` param + return** | **ifaceguard vettool** | **`go vet -vettool` FIRES ×2 (param + result), exit 1** ✅ (was silent) |
+| 7 | Cross-layer import | depguard | FIRED (unchanged) |
+| — | clean templates (playerid + schema) | golangci-lint + ifaceguard | **0 issues / 0 diagnostics** (no false positives; `//ifaceguard:allow` validated via analysistest) |
+
+**Verdict: 7/7 specified gates now fire (was 5/7), plus a new ifaceguard gate.**
+The two previously-silent gates are closed with the *strongest available*
+mechanism each: AD-06 at compile time (not lint), interface{} via a tested,
+pinned custom analyzer. `make lint` orchestration verified end-to-end: clean
+module → exit 0; any exported `interface{}` → ifaceguard halts the build (make
+exit 2). ifaceguard's own `analysistest` suite passes; `go mod verify` clean.
