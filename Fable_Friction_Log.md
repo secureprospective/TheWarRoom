@@ -308,4 +308,155 @@ unresolved by this 10/10.
 
 ---
 
-*(Append entries below as T3 proceeds.)*
+## T3 — Cross-pollination live run
+
+### Friction #12 (SEVERE — blocks T3 as designed): CT105's stored GitHub credential cannot push
+
+T3 as designed required: commit companion plan + B1 output to
+`session/prebuild-friction-testing` on the shared repo, push from CT105, then
+have agy on CT104 `git pull` the same branch from its standing clone.
+
+Step 1 (local commit) succeeded — `f9c25f4` committed cleanly on
+`session/prebuild-friction-testing` (companion plan, friction log T1+T2
+results, and agy's gofmt-fixed B1 `internal/mfl/{types.go,client.go}`).
+
+Step 2 (`git push -u origin session/prebuild-friction-testing`) **failed**:
+
+```
+remote: Permission to secureprospective/TheWarRoom.git denied to secureprospective.
+fatal: unable to access 'https://github.com/secureprospective/TheWarRoom.git/': The requested URL returned error: 403
+```
+
+Diagnosis:
+- `credential.helper=store`, `~/.git-credentials` has a stored PAT for user
+  `secureprospective` over HTTPS.
+- **Read access works** — `git ls-remote origin HEAD` succeeds (returned
+  `050b71f`, current `main` tip).
+- **Write access does not** — push is denied 403 for the same user/token.
+- No SSH key for `github.com` exists in `~/.ssh/` (only `antigravitybox` and
+  `aiderbox` keys, which are for CT105→CT10x SSH, not GitHub).
+
+Root cause is almost certainly a **PAT scoped read-only (or missing `repo`
+write scope, or a fine-grained PAT that excludes write on this repo)**. This
+is a credential Christopher would need to rotate/regrant — not something
+fixable from inside this session, and per the global CLAUDE.md secrets rule
+this is exactly the kind of thing that must NOT be worked around by stuffing
+a new token into `paste.md` without Christopher's explicit action.
+
+**This is a second, DIFFERENT instance of the 2026-06-12 #1 "agy couldn't read
+the CT105 plan file" friction** — not the same bug, but the same SHAPE: the
+"shared GitHub repo" plumbing that both T2's redesign and T3's design assumed
+would Just Work has a credential gap on the CT105 side that was never
+exercised before (all prior commits in this session were made but never
+pushed). **The shared-repo approach for cross-machine collaboration is NOT
+currently viable from CT105 without Christopher rotating the PAT.**
+
+### T3 pivot — SSH file relay instead of git push
+
+Rather than block T3 entirely on a credential fix, pivoting to the mechanism
+that #1 (2026-06-12) was ALSO eventually going to need as a fallback: **direct
+SSH file transfer from CT105 to CT104**, landing the review artifacts in a
+clearly-separate `/tmp` path on CT104 (NOT inside agy's tracked clone — agy
+never commits/edits living docs, and we don't want Claude-placed files
+mistaken for agy's own working tree state).
+
+agy's standing clone of `TheWarRoom` on CT104 already has `main` (commit
+`050b71f`) — it has full context on `Build_Tracker.md`, conventions, AGENTS.md,
+etc. without needing the new commits at all. What agy needs for the
+First-Instance Template Review is just the **new artifacts**: the companion
+plan, the B1 output files, and (for context) the relevant friction-log
+sections. SCPing those three things to `/tmp/t3-review/` on CT104 and pointing
+agy at that path — while it separately has its own clone for "what does the
+repo currently look like" comparison — is a faithful enough proxy for "agy
+reviews new template-setter output against the existing repo's conventions"
+to satisfy T3's intent, with a noted caveat: **this is SSH-relay, not the
+shared-git-history mechanism T3 was designed to validate.** That mechanism
+remains unvalidated pending the PAT fix.
+
+### SSH-relay execution
+
+`scp` the companion plan, the full friction log, and the gofmt-fixed B1
+output (`internal/mfl/{types.go,client.go}`) to `/tmp/t3-review/` on CT104 —
+**worked cleanly, no friction**. agy was given a self-contained,
+defensive-invariant-framed First-Instance Template Review prompt (9.6
+framing) covering 9 concrete invariants derived from the B1 brief, with
+explicit instructions not to edit/commit anything. Round trip (assemble
+prompt → scp → run agy → fetch its written artifact back) took ~6 minutes
+wall clock — faster than T2, likely because the task was read-only analysis
+rather than research + code generation.
+
+### agy's First-Instance Template Review — results and triage
+
+agy reported **8 findings** (7 Invisible Risk, 1 Structural Drift), 4 marked
+"blocking for B0 sign-off." Per Section 9.4 ("Claude triages"), each was
+checked against the actual source
+(`/mnt/storage/claudebox/projects/legacy-nfl-fantasy/internal/mfl/client.go`):
+
+| # | agy's finding | Severity (agy) | Triage result |
+|---|---|---|---|
+| 1 | `client.go:125` — `domain` is "immediately overwritten" with `h`, making the `.myfantasyleague.com` suffix useless | Blocking | **FALSE — hallucination.** Line 125 is `} else {`. The actual logic (lines 122-127: `if !strings.Contains(h, ".") { domain = h + ".myfantasyleague.com" } else { domain = h }`) is correct — there is no second assignment that overwrites `domain`. Verified on both CT105's copy and the exact bytes agy read on CT104 (`sed -n '115,142p'` over SSH). |
+| 2 | `client.go:89` — `DiscoverHost` calls `c.Do`, which routes to the cached `c.host` if already set; a stale/down cached host can't be recovered from by re-running discovery | Blocking | **REAL.** Confirmed: in `Do`, the `else if host == ""` branch (line 48) only forces `host = "api"` when `c.host` is currently empty. If `c.host` already holds a (possibly stale) value, `DiscoverHost`'s own `Do` call will query *that* host, not `api`, for the `TYPE=league` discovery request. A genuine re-discovery/recovery gap. |
+| 3 | `client.go:89-92` — host discovery "lacks a fallback to `api.myfantasyleague.com`" on failure, violating MFL rule 6 | Blocking | **OVERSTATED, partially valid.** A fallback DOES exist — `DiscoverHost`'s doc comment says "If the discovery call fails, c.host remains unchanged," and if `c.host` started `""` (the intended initial state per `New("", rps)`), `Do`'s empty-host branch (line 48-49) sends ordinary data calls to `api` anyway. But this fallback is *implicit*, split across two functions, and silently breaks if `New` is ever called with a non-empty seed host. Real but non-blocking robustness/documentation gap, not an absent fallback. |
+| 4 | `client.go:136-139` — the `params` loop runs after `q.Set("JSON","1")`, so a caller-supplied `"JSON"` key in `Request.Params` overwrites the mandatory `JSON=1` | Blocking | **REAL.** Confirmed by direct read — `for k, v := range params { q.Set(k, v) }` runs strictly after `q.Set("JSON", "1")` with no guard. Low practical likelihood (no caller in this codebase passes a `"JSON"` param) but a genuine ordering bug relative to the brief's "JSON=1, unconditionally" requirement. |
+| 5 | `client.go:80` — exporting `DiscoverHost` in addition to `Do` is Structural Drift against "Do is the ONLY exported surface" | Non-blocking | **VALID, but root cause is upstream.** The B1 *brief itself* (written by Claude from the companion plan's own Section "do better" for B1) explicitly instructed "make host discovery a first-class method" — agy correctly caught a real tension between the WF1A skeleton's literal text and the companion plan's own guidance for B1. Not agy's miss, not agy's invention — a pre-existing inconsistency in the planning artifacts that this test surfaced. |
+| 6 | `client.go:183` — `time.After(dur)` inside `select` leaks the timer if `ctx` is cancelled first | Non-blocking | **VALID, minor.** Correct as a general Go idiom point (prefer `time.NewTimer` + `defer Stop`); largely mitigated by Go's post-1.23 timer GC improvements (module is `go 1.26`), but still worth a one-line fix for B0 cleanliness. |
+| 7 | `client.go:28,80` — `New`/`DiscoverHost` have no input validation (`rps<=0`, empty `leagueID`/`year`) | Non-blocking | **VALID.** Confirmed absent. `New("", 0)` would create a limiter with rate 0 (effectively permanent `Wait` block) with no error surfaced. Worth a guard for B0. |
+| 8 | `client.go:46` — the `"L"` params-map check is case-sensitive | Non-blocking | **VALID, minor.** Confirmed (`req.Params["L"]` is a literal-key map lookup). Low risk since "L" is MFL's documented canonical key and all callers in this codebase will use the constant, but it's a real fragility if a future caller typos the key. |
+
+**Scorecard: 6/8 real (2 of those — #2, #4 — are genuine LOGIC bugs in code that
+scored 10/10 on T2's lint-based conformance rubric), 1/8 overstated, 1/8 a
+confident, specific, "blocking"-severity hallucination with a precise (wrong)
+line number and a plausible-sounding mechanism.**
+
+### Friction #13 (the headline finding): peer review both WORKS and needs a human/Claude in the loop — in the same pass
+
+This is arguably the most important single result of the whole three-test
+exercise, and it cuts both ways:
+
+- **The collaboration loop has real, measured value.** T2 scored B1 at 10/10
+  using `golangci-lint` + `go vet` + `go build` — a thorough *style and safety*
+  pass. None of those tools, and therefore none of that 10/10, had any way to
+  catch #2 (re-discovery can't recover from a stale cached host) or #4 (a
+  `JSON` key in `Request.Params` can silently disable `JSON=1`). Both are
+  *logic* bugs — invisible to linters, visible to a second model reading the
+  code for what it *does* rather than how it's *shaped*. Section 9's premise
+  ("a second vantage catches what the first context has normalized as fine")
+  is now a measured result, not just a design argument.
+
+- **agy's findings are not self-certifying, even when confidently scoped to an
+  exact line number and marked "blocking."** Finding #1 is wrong in a way that
+  would have been *very* easy to ship as-is: it cites a specific line, a
+  specific variable, a specific (superficially plausible) failure mode
+  ("HTTP requests fail with invalid hosts" — exactly the kind of thing a
+  transport client bug WOULD look like), and a "blocking for B0" severity.
+  Without the triage step, this finding is indistinguishable in *form* from
+  #2 and #4, which are real. **The triage step is not optional overhead — it
+  is the load-bearing part of Section 9.4's "Claude triages" clause**, and it
+  worked here in ~5 minutes because the claim was concrete enough to check
+  against source directly (read the file, count the lines, done). A vaguer
+  finding ("there might be a host-resolution issue around line 125") would
+  have been much harder to either confirm or dismiss.
+
+### T3 verdict
+
+T3-as-designed (shared git history, agy pulls from `origin`) is **blocked**
+by Friction #12 (push 403) and remains unvalidated. The SSH-relay pivot
+**substituted successfully** for the narrow mechanical question ("can agy
+read Claude's new output") and additionally produced a substantively richer
+result than the original T3 design even asked for: a real, triaged,
+First-Instance Template Review with 2 genuine pre-B0 fixes identified
+(#2, #4), one cross-document inconsistency surfaced (#5), and one concrete,
+now-documented data point on agy-as-reviewer's hallucination rate on
+concrete/checkable claims (1-in-8, important caveat: this is a sample size
+of one review).
+
+**Action items for B0** (to carry forward, not resolved in this session):
+fix #2 (force `host="api"` for the `TYPE=league` discovery call specifically,
+regardless of `c.host`'s current value), fix #4 (set `JSON=1` after the
+params loop, or reserve the `"JSON"` key), consider #6/#7/#8 as part of B1's
+eventual real implementation, and resolve the #5 skeleton-vs-brief tension
+(either amend WF1A's "Do is the ONLY exported surface" line, or note
+`DiscoverHost` as an explicitly-sanctioned second exported surface for
+B1 specifically).
+
+*(Append entries below as final synthesis proceeds.)*
