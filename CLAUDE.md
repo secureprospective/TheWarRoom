@@ -1,5 +1,5 @@
 # Legacy NFL Fantasy — Project CLAUDE.md
-**Version:** 1.2 — June 2026
+**Version:** 1.3 — June 2026
 **Project path:** `/mnt/storage/claudebox/projects/legacy-nfl-fantasy/`
 **Pillars:** Business, Technical
 
@@ -35,15 +35,24 @@ All architecture documents are on disk. Engine specification, 10 position rubric
 - ~~Planning arc Session 3 (Build Sequencing Audit, Opus 4.8)~~ — **COMPLETE.** Verdict PASS WITH FLAGS; 25 decisions locked (AD-01–AD-25), reviewed piece-by-piece with Christopher. Audit at `/root/.claude/plans/session-3-audit-build-sequencing.md`. Build plan grew 32→38 sessions (B7 split into B7a–d; B2b split schema-first + 3 fetcher groups; QB-first/DT-second rubric order).
 - ~~Three Session 2 open flags~~ — **RESOLVED.** Per-team roster view → M1 drill-down (AD-20); B7 sub-session design → foundation-first split (AD-02); Go overlay label → corrected, reframed as net-new authoring (AD-19).
 
+**Session 8 completions (2026-06-13, Pre-Build Friction Testing):**
+- ~~G0 Go overlay~~ — **AUTHORED.** `.golangci.yml` (v2), `.pre-commit-config.yaml` (SHA-pinned), `Makefile.snippet`, `schema/example.go`, `README.md` added to `christopher-coding-standards` on `session/go-overlay-g0` (commit `86bcde6`, NOT YET MERGED). Found and fixed a SEVERE depguard glob bug (`files:` patterns need a leading `**/`, or the three-layer-law check fires on **zero files**).
+- ~~T1/T2/T3 friction tests~~ — **COMPLETE.** Full log at `Fable_Friction_Log.md` (13 numbered frictions + final synthesis). Measured (not estimated) confidence: plan-fidelity 78%, realized-enforcement 72%, collab-plumbing 58%, end-goal ~60%.
+- ~~B1 transport client (`internal/mfl`)~~ — agy (CT104) built it end-to-end from a self-contained brief, scored 10/10 on T2's lint-based conformance rubric. agy's own First-Instance Template Review (T3) then found 2 real LOGIC bugs the lint pass couldn't see (host-discovery couldn't recover from a stale cached host; a caller-supplied `JSON` param could override the mandatory `JSON=1`) — **both fixed and verified**, commit `d573420` on `session/prebuild-friction-testing`.
+- **NEW BLOCKER FOUND:** Friction #12 — CT105's stored GitHub PAT can read but not push to `secureprospective/TheWarRoom` (403). Both session branches (`session/prebuild-friction-testing` @ `d573420`, `session/go-overlay-g0` @ `86bcde6`) are committed locally but **not on origin**.
+
 **Forward source of truth:** `docs/build-handoffs/Build_Tracker.md` — the 38-session checkable sequence. Read at the start and end of every build session. Every session closes by writing the next session's handoff per `docs/build-handoffs/Handoff_Protocol.md`.
 
-**Immediate next steps (in order):**
-1. Author the **Go overlay** in `christopher-coding-standards` (golangci-lint ruleset, Go pre-commit config, Go naming conventions). Net-new — does not exist yet; repo has the TypeScript overlay only. **B0 cannot start until this is merged.**
-2. Resolve OQ-004 (EDGE mapping) and OQ-005 (salary adjustment) before B3.
-3. Build and validate the Layer 4 testing harness per `docs/build-handoffs/Testing_App_Specification.md` (Session 13).
-4. First code build: B0 — Project Scaffold (Session 1).
+**Immediate next steps (in order) — see `Fable_Confidence_80_Brief.md` for the full session brief:**
+1. Christopher rotates/scopes a new GitHub PAT (fine-grained, `secureprospective/TheWarRoom` only, Contents R/W) and updates `~/.git-credentials` on CT105 — unblocks pushing both pending branches and validates the Section 9.2 shared-repo collab mechanism for the first time.
+2. Christopher decides AD-06 enforcement mechanism (struct-wrap `playerid.PlayerID` recommended) and `interface{}`/`any` enforcement mechanism (custom analyzer vs. code-review checklist) — both are documented G0 gaps, both block calling the Go overlay "done."
+3. Rebuild/validate the Claude↔agy collaboration workflow (Section 9 of `Fable_TheWarRoom_code_plan.md`) in light of T1-T3 findings — formalize the "Claude triages agy findings" step, decide SSH-relay's role alongside git, re-test the shared-repo channel once the PAT is fixed.
+4. Merge `session/go-overlay-g0` (Go overlay) once Christopher confirms — **B0 cannot start until this is merged.**
+5. Resolve OQ-004 (EDGE mapping) and OQ-005 (salary adjustment) before B3.
+6. Build and validate the Layer 4 testing harness per `docs/build-handoffs/Testing_App_Specification.md` (Session 13).
+7. First code build: B0 — Project Scaffold (Session 1).
 
-**Next branch:** TBD at next session start (this audit closed on `session/planning-arc-audit`).
+**Next branch:** `session/confidence-to-80` (recommended name — see `Fable_Confidence_80_Brief.md`). Two prior session branches (`session/prebuild-friction-testing`, `session/go-overlay-g0` in the coding-standards repo) remain open, committed, unpushed.
 
 **SL-022 still active:** WR SL-019 excluded for v1.0 (SL-OQ-043 closed, Option A). Layer 3 carries WR aging. Calibration revisit flagged for v1.1.
 
@@ -59,7 +68,7 @@ All architecture documents are on disk. Engine specification, 10 position rubric
    - Data pipeline work → `docs/data-layer/`
    - Transaction work → `docs/transactions/`
    - Testing → `docs/build-handoffs/Testing_App_Specification.md`
-4. Build command: not yet defined (pre-first-build). Will be added when the Go module is initialized.
+4. Build command: not yet defined (pre-first-build, no `go.mod` in this repo yet). Go 1.26.4 toolchain IS installed on CT105 (`/usr/local/go/bin`, not on default `$PATH` — Friction #1, 2026-06-13) along with golangci-lint 2.12.2 and pre-commit 3.0.4, ready for B0.
 
 ---
 
@@ -94,6 +103,9 @@ All architecture documents are on disk. Engine specification, 10 position rubric
 | Build sequence + progress (checkable) | `docs/build-handoffs/Build_Tracker.md` |
 | Session handoff routine + template | `docs/build-handoffs/Handoff_Protocol.md` |
 | Session 3 audit (decisions AD-01–25) | `/root/.claude/plans/session-3-audit-build-sequencing.md` |
+| Code companion plan + Claude↔agy collab workflow (Section 9) | `Fable_TheWarRoom_code_plan.md` |
+| Pre-build friction test results (T1-T3, 13 frictions, synthesis) | `Fable_Friction_Log.md` |
+| Next session brief — path to 80%+ confidence on all 4 metrics | `Fable_Confidence_80_Brief.md` |
 
 ---
 
@@ -114,9 +126,14 @@ All architecture documents are on disk. Engine specification, 10 position rubric
 | Planning arc Session 1 | COMPLETE — 26 blocks defined. Plan at `/root/.claude/plans/yes-each-module-is-immutable-wigderson.md` |
 | Planning arc Session 2 | COMPLETE — 32-session build plan + 6 wireframes. Plan at `/root/.claude/plans/very-good-now-i-replicated-feigenbaum.md` |
 | Planning arc Session 3 | COMPLETE — PASS WITH FLAGS; 25 decisions AD-01–25 locked; `/root/.claude/plans/session-3-audit-build-sequencing.md` |
-| Go overlay (Phase 2 in coding-standards repo) | OPEN — net-new authoring (does not exist yet; repo has TS overlay only); critical-path prereq before B0 (AD-19) |
+| Go overlay (Phase 2 in coding-standards repo) | AUTHORED, not merged — `session/go-overlay-g0` @ `86bcde6`, has 2 known gaps (AD-06, `interface{}`) needing Christopher's decision before merge |
 | Per-team roster view — block assignment | RESOLVED — M1 drill-down (already specced as M1 output); M1b split only if scope tightens (AD-20) |
 | B7 sub-session design | RESOLVED — split foundation-first into B7a (coordinator) + B7b/c/d by mechanic group (AD-02) |
+| GitHub PAT push access (Friction #12) | OPEN — CT105's stored PAT can read but not push to `secureprospective/TheWarRoom`; blocks pushing 2 committed branches and the Section 9.2 shared-repo collab mechanism |
+| AD-06 enforcement mechanism (`playerid.PlayerID` bypass) | OPEN — struct-wrap recommended; needs Christopher's decision (see `Fable_Confidence_80_Brief.md`) |
+| `interface{}`/`any` escape enforcement | OPEN — no lint-only fix exists; needs Christopher's decision (custom analyzer vs. code-review checklist) |
+| B1 transport client (`internal/mfl`) | 2 real logic bugs found by agy's review + FIXED (commit `d573420`); not yet pushed (#12) |
+| Claude↔agy collab workflow (Section 9) | NEEDS REBUILD/VALIDATION — designed shared-repo channel (9.2) untested due to #12; SSH-relay worked as a substitute but is ad-hoc |
 
 ---
 
