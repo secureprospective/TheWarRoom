@@ -43,9 +43,15 @@ func (c *Client) Do(ctx context.Context, req Request) (Response, error) {
 	host := c.host
 	c.mu.RUnlock()
 
-	if req.Params == nil || req.Params["L"] == "" {
+	switch {
+	case req.Type == "league":
+		// Host discovery (and any other "league" lookup) always targets the
+		// canonical api host, regardless of c.host — a stale or down cached
+		// host must not block re-discovery.
 		host = "api"
-	} else if host == "" {
+	case req.Params == nil || req.Params["L"] == "":
+		host = "api"
+	case host == "":
 		host = "api"
 	}
 
@@ -132,11 +138,13 @@ func (c *Client) buildURL(host, year, endpoint string, params map[string]string)
 		Path:   fmt.Sprintf("/%s/export", year),
 	}
 	q := u.Query()
-	q.Set("TYPE", endpoint)
-	q.Set("JSON", "1")
 	for k, v := range params {
 		q.Set(k, v)
 	}
+	// TYPE and JSON are transport-mandated; set last so caller-supplied
+	// params can never override them.
+	q.Set("TYPE", endpoint)
+	q.Set("JSON", "1")
 	u.RawQuery = q.Encode()
 	return u.String()
 }
