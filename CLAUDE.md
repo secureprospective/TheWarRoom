@@ -1,5 +1,5 @@
 # Legacy NFL Fantasy — Project CLAUDE.md
-**Version:** 1.3 — June 2026
+**Version:** 1.4 — June 2026
 **Project path:** `/mnt/storage/claudebox/projects/legacy-nfl-fantasy/`
 **Pillars:** Business, Technical
 
@@ -41,18 +41,24 @@ All architecture documents are on disk. Engine specification, 10 position rubric
 - ~~B1 transport client (`internal/mfl`)~~ — agy (CT104) built it end-to-end from a self-contained brief, scored 10/10 on T2's lint-based conformance rubric. agy's own First-Instance Template Review (T3) then found 2 real LOGIC bugs the lint pass couldn't see (host-discovery couldn't recover from a stale cached host; a caller-supplied `JSON` param could override the mandatory `JSON=1`) — **both fixed and verified**, commit `d573420` on `session/prebuild-friction-testing`.
 - **NEW BLOCKER FOUND:** Friction #12 — CT105's stored GitHub PAT can read but not push to `secureprospective/TheWarRoom` (403). Both session branches (`session/prebuild-friction-testing` @ `d573420`, `session/go-overlay-g0` @ `86bcde6`) are committed locally but **not on origin**.
 
+**Session 9 completions (2026-06-13, Confidence-80 pass — all four metrics ≥80%):**
+- ~~Gate 1 — AD-06 enforcement~~ — **LOCKED: struct-wrap.** `playerid.PlayerID` is now `struct { id string }` (unexported field); the bypass `playerid.PlayerID("99")` fails to **compile**. Template `templates/go/playerid/example.go` in coding-standards (`session/go-overlay-g0` @ `b77709b`).
+- ~~Gate 2 — `interface{}`/`any` escapes~~ — **LOCKED: custom `ifaceguard` vettool** (`tools/ifaceguard/`), pinned + `analysistest`-guarded, wired into `make lint` + pre-commit. Closes the gap no golangci-lint linter covered.
+- ~~Plan-fidelity sweep~~ — **third unenforced-claim found + closed:** the 400-line file cap had no gate (funlen caps functions, not files); added a `filelen` Makefile gate. Gate 5 WF1A contradiction reconciled; Gates 1/2 recorded LOCKED in companion plan Section 10.
+- ~~Collab workflow (Section 9)~~ — **REBUILT + VALIDATED.** 9.8 Triage Protocol (new), 9.2 git/SSH-relay dual-channel, 9.6 memory-symmetry corrected. T1 re-run (7/7 gates fire), T4 (agy re-review, **0 hallucinations**, triage exercised), and **T3-as-designed PASSED** (agy's standing clone pulls the pushed branch from git — primary channel live).
+- ~~Friction #12 (PAT)~~ — **FIXED.** New fine-grained PAT (TheWarRoom + coding-standards, Contents R/W). All branches pushed to origin.
+- **STRATEGIC PIVOT (Christopher, 2026-06-13):** the **local-AI idea is cut.** CT106/AiderBox **retired** (hardware upgrade needed, no fix), Hermes/Ollama brain cut, weak-local-model conformance path **descoped** (not deferred). Collaboration refocuses on **Claude (CT105) + agy/CT104** only — agy is a capable agentic CLI, not a local model, so it is unaffected. See `[[strategic-pivot-claude-agy-only]]` in auto-memory.
+
 **Forward source of truth:** `docs/build-handoffs/Build_Tracker.md` — the 38-session checkable sequence. Read at the start and end of every build session. Every session closes by writing the next session's handoff per `docs/build-handoffs/Handoff_Protocol.md`.
 
-**Immediate next steps (in order) — see `Fable_Confidence_80_Brief.md` for the full session brief:**
-1. Christopher rotates/scopes a new GitHub PAT (fine-grained, `secureprospective/TheWarRoom` only, Contents R/W) and updates `~/.git-credentials` on CT105 — unblocks pushing both pending branches and validates the Section 9.2 shared-repo collab mechanism for the first time.
-2. Christopher decides AD-06 enforcement mechanism (struct-wrap `playerid.PlayerID` recommended) and `interface{}`/`any` enforcement mechanism (custom analyzer vs. code-review checklist) — both are documented G0 gaps, both block calling the Go overlay "done."
-3. Rebuild/validate the Claude↔agy collaboration workflow (Section 9 of `Fable_TheWarRoom_code_plan.md`) in light of T1-T3 findings — formalize the "Claude triages agy findings" step, decide SSH-relay's role alongside git, re-test the shared-repo channel once the PAT is fixed.
-4. Merge `session/go-overlay-g0` (Go overlay) once Christopher confirms — **B0 cannot start until this is merged.**
-5. Resolve OQ-004 (EDGE mapping) and OQ-005 (salary adjustment) before B3.
-6. Build and validate the Layer 4 testing harness per `docs/build-handoffs/Testing_App_Specification.md` (Session 13).
-7. First code build: B0 — Project Scaffold (Session 1).
+**Immediate next steps (in order) — pre-B0 confidence pass COMPLETE (all 4 metrics ≥80%):**
+1. **Merge `session/go-overlay-g0`** (coding-standards) once Christopher confirms — the Go overlay (G0) is now complete and verified (Gates 1/2 + filelen all enforced). **B0 cannot start until this is merged.** Then merge TheWarRoom `session/confidence-to-80` (docs) after Christopher's visual confirm.
+2. Resolve OQ-004 (EDGE mapping) and OQ-005 (salary adjustment) before B3.
+3. Build and validate the Layer 4 testing harness per `docs/build-handoffs/Testing_App_Specification.md` (Session 13).
+4. First code build: B0 — Project Scaffold (Session 1). **B0 carries forward:** copy the G0 overlay (`.golangci.yml`, `playerid/`, `tools/ifaceguard/`, Makefile, pre-commit) into the repo; commit a pinned toolchain for agy/Claude parity (9.6); apply the B1 fixes from T4 (stale `client.go:36` comment, `time.NewTimer`+`Stop`, `rps>0` guard).
+- **DONE this session:** PAT/Friction #12 (FIXED, branches pushed) · AD-06 + interface{} enforcement (LOCKED) · Section 9 collab workflow (REBUILT + VALIDATED, both channels live).
 
-**Next branch:** `session/confidence-to-80` (recommended name — see `Fable_Confidence_80_Brief.md`). Two prior session branches (`session/prebuild-friction-testing`, `session/go-overlay-g0` in the coding-standards repo) remain open, committed, unpushed.
+**Next branch:** none active — `session/confidence-to-80` (this session) and `session/prebuild-friction-testing` are pushed to origin. After Christopher merges G0, the next branch is the first build session (`session/b0-scaffold` or similar). **Collaboration model: Claude + agy only (local-AI cut — see Open Items / `[[strategic-pivot-claude-agy-only]]`).**
 
 **SL-022 still active:** WR SL-019 excluded for v1.0 (SL-OQ-043 closed, Option A). Layer 3 carries WR aging. Calibration revisit flagged for v1.1.
 
@@ -126,14 +132,17 @@ All architecture documents are on disk. Engine specification, 10 position rubric
 | Planning arc Session 1 | COMPLETE — 26 blocks defined. Plan at `/root/.claude/plans/yes-each-module-is-immutable-wigderson.md` |
 | Planning arc Session 2 | COMPLETE — 32-session build plan + 6 wireframes. Plan at `/root/.claude/plans/very-good-now-i-replicated-feigenbaum.md` |
 | Planning arc Session 3 | COMPLETE — PASS WITH FLAGS; 25 decisions AD-01–25 locked; `/root/.claude/plans/session-3-audit-build-sequencing.md` |
-| Go overlay (Phase 2 in coding-standards repo) | AUTHORED, not merged — `session/go-overlay-g0` @ `86bcde6`, has 2 known gaps (AD-06, `interface{}`) needing Christopher's decision before merge |
+| Go overlay (Phase 2 in coding-standards repo) | **COMPLETE**, not merged — `session/go-overlay-g0` @ `b77709b` (pushed to origin). All gaps closed (AD-06 struct-wrap, interface{} ifaceguard, file-cap filelen); 7/7 + 2 gates verified firing. Awaiting Christopher's merge confirm — **B0 blocker** |
 | Per-team roster view — block assignment | RESOLVED — M1 drill-down (already specced as M1 output); M1b split only if scope tightens (AD-20) |
 | B7 sub-session design | RESOLVED — split foundation-first into B7a (coordinator) + B7b/c/d by mechanic group (AD-02) |
-| GitHub PAT push access (Friction #12) | OPEN — CT105's stored PAT can read but not push to `secureprospective/TheWarRoom`; blocks pushing 2 committed branches and the Section 9.2 shared-repo collab mechanism |
-| AD-06 enforcement mechanism (`playerid.PlayerID` bypass) | OPEN — struct-wrap recommended; needs Christopher's decision (see `Fable_Confidence_80_Brief.md`) |
-| `interface{}`/`any` escape enforcement | OPEN — no lint-only fix exists; needs Christopher's decision (custom analyzer vs. code-review checklist) |
-| B1 transport client (`internal/mfl`) | 2 real logic bugs found by agy's review + FIXED (commit `d573420`); not yet pushed (#12) |
-| Claude↔agy collab workflow (Section 9) | NEEDS REBUILD/VALIDATION — designed shared-repo channel (9.2) untested due to #12; SSH-relay worked as a substitute but is ad-hoc |
+| GitHub PAT push access (Friction #12) | **FIXED** — new fine-grained PAT (TheWarRoom + coding-standards, Contents R/W). All branches pushed; T3-as-designed validated the shared-repo channel live |
+| AD-06 enforcement mechanism (`playerid.PlayerID` bypass) | **RESOLVED — struct-wrap** (Gate 1). Bypass fails to compile. `templates/go/playerid/example.go` |
+| `interface{}`/`any` escape enforcement | **RESOLVED — `ifaceguard` vettool** (Gate 2). `tools/ifaceguard/`, pinned + tested, wired into `make lint` + pre-commit |
+| 400-line file cap enforcement | **RESOLVED — `filelen` Makefile gate** (plan-fidelity sweep). funlen caps functions not files; this is the file gate |
+| B1 transport client (`internal/mfl`) | T3 fixes pushed (`d573420`). T4 re-review flagged 3 more minor items for the *real* B1 (Session 2): stale `client.go:36` comment, timer leak (`time.NewTimer`+`Stop`), `rps>0` guard |
+| Claude↔agy collab workflow (Section 9) | **REBUILT + VALIDATED** — 9.8 Triage Protocol, 9.2 dual-channel (git primary / SSH-relay secondary), 9.6 memory corrected. T3-as-designed + T4 passed (T4: 0 hallucinations) |
+| Local-AI idea / CT106 / Hermes | **CUT (2026-06-13)** — local-AI dropped; CT106/AiderBox retired (hardware), weak-model path descoped; collab = Claude + agy only. See `[[strategic-pivot-claude-agy-only]]` |
+| Cross-project cleanup (pivot follow-up) | OPEN — coding-standards Layer-11/Phase-3 (local-model guidance) now moot; Local AI Stack project CLAUDE.md needs a wind-down pass |
 
 ---
 

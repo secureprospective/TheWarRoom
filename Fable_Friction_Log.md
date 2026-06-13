@@ -713,3 +713,84 @@ note. Every concrete `file:line` citation was checked against source:
 **Carry to B1 real implementation:** fix the stale `client.go:36` comment;
 adopt `time.NewTimer`+`Stop` (A); add `rps>0` guard in `New` (C); jitter (B) is
 optional and low-priority for a single-client desktop app.
+
+---
+
+## Confidence-80 Session Results (2026-06-13)
+
+### Decision gates — outcomes
+
+| Gate | Christopher's choice | One-line rationale |
+|---|---|---|
+| **1 — AD-06 bypass** | **Struct-wrap** | Compiler-enforced, zero refactor cost (no `playerid` code existed yet), no tool to maintain. Implemented `playerid/example.go`; bypass now fails `go build`. |
+| **2 — interface{} escapes** | **Custom analyzer** | The only mechanism that actually moves realized-enforcement to target; no linter covers it. Built `tools/ifaceguard` (vettool, pinned, `analysistest`-guarded). |
+| **6 — Collab rebuild scope** | **Expanded** | "Must not be a blind spot." Did minimal + SSH-relay formalization (9.2) + 9.6 memory rewrite + the optional T4 — all completed. |
+| **3 — GitHub PAT** | **FIXED** | New fine-grained PAT (TheWarRoom + coding-standards, Contents R/W). Took one retry — first token lacked `Contents:write` and `~/.git-credentials` had a shadowing stale line. Both branches now pushed; Friction #12 CLOSED. |
+| **4 — CT106 weak-model test** | **DESCOPED (not deferred)** | CT106 confirmed dead (no route, infra-level). Christopher cut the local-AI idea entirely — CT106/AiderBox retired, hardware upgrade needed. The weak-model conformance risk is *removed*, not left open. Collaboration refocuses on Claude + agy. |
+| **5 — WF1A wording** | **CONFIRMED/FIXED** | "Do is the ONLY exported surface" reconciled with B1's "first-class host discovery": `Do` + `DiscoverHost` sanctioned, `DiscoverHost` routes through `Do`. |
+
+### Re-measured confidence — all four metrics, with evidence
+
+**Plan-fidelity: 78% → ~85%.** Gate 5's real contradiction fixed in the WF1A
+skeleton. Gates 1 & 2 recorded as LOCKED decisions with rationale (companion
+plan Section 10), no longer "documented gaps." The plan-fidelity sweep found a
+*third* "tool X enforces Y" overclaim (the 400-line file cap was unenforced —
+funlen caps functions, not files) and **closed** it with a `filelen` gate
+rather than just documenting it. Residual to <100%: the two-blueprint package-
+tree tension (companion plan's own Section 1, `internal/...` vs `core/...`) is
+documented but not resolved, and a 4th unenforced-claim case can't be ruled out
+without B0 contact. Evidence: commits `a0b73c6`, `34a176b` (TheWarRoom);
+`e48e352`, `b77709b` (coding-standards).
+
+**Realized-enforcement: 72% → ~90%.** T1 re-run: **7/7 specified gates fire
+(was 5/7)** plus a new ifaceguard gate and a new filelen gate. The two
+previously-silent gates are closed with the strongest available mechanism each
+— AD-06 at *compile* time (`go build` rejects the bypass), interface{} via a
+tested, pinned analyzer. `make lint` orchestration verified end-to-end in
+`/tmp/g0-verify2` (clean → 0; violation → make exit 2). Residual: the semantic
+"Layer 2/4 zero scoring leak" rule is enforced at the *import* boundary
+(depguard) and *typing* boundary (ifaceguard) but a scoring reference *within*
+an allowed package still needs review (no tool sees intent); and toolchain
+parity (9.6) isn't yet locked by a committed pinned toolchain (a B0 item — no
+`go.mod` pre-build). Evidence: T1 re-run table above; `e48e352`.
+
+**Collab-plumbing: 58% → ~85%.** Both channels now validated live:
+- **PRIMARY (git):** T3-as-designed PASSED — agy's standing clone
+  (`/mnt/storage/antigravitybox/TheWarRoom`) fetched the pushed
+  `session/confidence-to-80` branch and read the committed companion plan +
+  friction log directly from git (`git show origin/...`), working tree
+  untouched. Section 9.2's "shared committed config, both pull" mechanism works
+  now that Friction #12 is closed.
+- **SECONDARY (SSH-relay):** T4 validated it end-to-end (~clean round trip).
+- Section 9 rebuilt: 9.8 Triage Protocol (new), 9.2 dual-channel split, 9.6
+  memory-symmetry corrected. The triage protocol was *exercised* in T4 with **0
+  hallucinations** (vs 1-in-8 in T3). Residual: the per-session review cadence
+  (9.3) hasn't run across the real 38-session build; toolchain-parity pin
+  pending B0.
+
+**End-goal: ~60% → ~80%.** Re-framed by Christopher's strategic decision rather
+than by the originally-planned measurement. The friction synthesis named the
+**weak-local-model conformance test as the single largest unmeasured risk** —
+that path is now **cut** (local-AI idea dropped; CT106 retired). The risk is
+*removed*, not left open, which legitimately raises the band. What remains is
+the Build → Review → Triage loop, now measured working three times (T2 build
+10/10, T3 review caught 2 real logic bugs, T4 0 hallucinations + clean triage)
+with enforcement gaps closed (Gates 1/2 + filelen) and both collab channels
+live. **Why not higher than ~80%:** no build session has actually run yet (B0
+not started); execution variance across the 38 sessions — especially the hard
+rubric sessions (B5b-DT et al.) — is unproven, and cutting local models removes
+the "cheap routine session" lever so all 38 carry full Claude+agy cost. This is
+the metric most likely to be revised once B0–B5 provide real build-execution
+evidence; it is a confidence in the *method* (well-instrumented) more than in
+*execution at scale* (untested).
+
+### Net
+
+All four metrics now sit at or above the 80% target (≈85 / ≈90 / ≈85 / ≈80),
+each with a named, honest residual rather than a padded number. The two
+hard-blockers that gated this from the prior session — Friction #12 (push) and
+the AD-06/interface{} enforcement gaps — are both fully closed. The one item
+that could not be measured (weak-model conformance) was resolved by descoping,
+not by inflation. **Pre-B0 readiness: the Go overlay (G0) is now complete and
+verified; B0 can proceed once `session/go-overlay-g0` is merged** (Christopher's
+confirm). Carry-forward items for B0 are listed in the project `CLAUDE.md`.
