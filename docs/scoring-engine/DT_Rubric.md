@@ -1,13 +1,13 @@
 # Legacy NFL Position Group Rubric — Defensive Tackle (DT)
 **Version:** 1.0 — June 2026
-**Status:** Locked. **First position with hybrid tier architecture** — Medium-tier classification with elevated High-tier RAS treatment and two DT-unique mechanics (dynamic Year 1 / Year 2+ PFF EMA, Late-Career Cushion Guard). New locked decision **SL-021** packages the full DT tier resolution per Christopher's call on the SL-004 vs. SL-005 contradiction. Gemini's DT open questions reconciled into SL-OQ-039 and CAL-031.
+**Status:** Locked. **First position with hybrid tier architecture** (see Section 1 for the SL-021 resolution and the two DT-unique mechanics). Gemini's DT open questions reconciled into SL-OQ-039 and CAL-031.
 **Companion:** Engine_Specification.md Layer 4 is authoritative on baseline mechanics. This rubric specifies position-specific values, the hybrid tier configuration, and the two DT-unique mechanics.
 
 ---
 
 ## 1. Architectural Baseline
 
-- **Layer 4 RAS Tier (resolved):** **Medium classification with elevated High-tier RAS treatment.** Resolves the SL-004 vs. SL-005 contradiction noted in the Deliverable 2 handoff (SL-004 places DT at Low tier; SL-005 says "RAS is the primary Layer 4 signal" for DT). Christopher's resolution: amend SL-004 to make DT a hybrid case — Medium-tier scouting weight treatment (SL-005 film compression applied), High-tier RAS schedule and cap (RAS is primary at year 0 baseline, recedes per High-tier schedule as NFL data accumulates), and two DT-unique mechanics described below. **Locked as SL-021.**
+- **Layer 4 RAS Tier (SL-021 hybrid):** Resolves the SL-004 vs. SL-005 contradiction (SL-004 places DT at Low tier; SL-005 says RAS is primary at DT). Resolution: Medium-tier scouting weight (SL-005 film compression) + High-tier RAS schedule and cap (RAS primary at year 0, receding per High-tier schedule as NFL data accumulates), plus the two DT-unique mechanics below.
 - **Layer 3 Peak Limit:** 30 years.
 - **DT-unique mechanic 1 — Dynamic Year 1 / Year 2+ PFF EMA:** Standard fixed-α model replaced for PFF specifically. PFF α = 0.50 in Year 1 of NFL data accumulation (aggressive blend, forces new NFL grades into the model quickly to displace rookie-era RAS dominance), then α = 0.10 in Year 2+ (slow blend, stable vet signal). Carried by SL-021 as part of the DT resolution package. The mechanic addresses the cold-start problem at DT where rookie-era valuation is RAS-anchored and real NFL grades need to overwrite that anchor quickly when they arrive.
 - **DT-unique mechanic 2 — Late-Career Cushion Guard:** If Raw RAS ≥ 8.00, late-career penalty velocity reduced by 10%. Applied at two points: (a) Layer 3 age_pull beyond peak, (b) breakout component Age Trajectory sub-signal beyond peak. **Decline-rate interpretation:** cushioned value = peak − (peak − base) × 0.90 (NOT deviation-from-neutral interpretation). Carried by SL-021. The mechanic is DT's equivalent of SL-019's late-career buffer but with binary threshold and conservative 10% flat reduction; reflects that DT athletic profile is less cleanly predictive of longevity than coverage positions.
@@ -461,7 +461,7 @@ Prior sessions surfaced SL-OQ-013 through SL-OQ-036 and CAL-015 through CAL-029.
 
 ## 7. Position-Specific Notes
 
-- **Hybrid tier architecture (SL-021):** DT is the first position with explicitly hybrid tier configuration. Film treated as Medium-with-SL-005-compression (cap ±3%, steepness 10.0); RAS treated as High-tier (cap ±8%, schedule 1.00 / 0.50 / 0.10); plus two DT-unique mechanics (dynamic PFF α, Cushion Guard). The hybrid is intentional and resolves the SL-004 vs. SL-005 contradiction — DT's film signal genuinely is thin (Medium treatment justified) AND RAS is genuinely primary at year 0 baseline (High treatment justified). The architecture handles both truths simultaneously rather than forcing one tier classification.
+- **Hybrid tier architecture (SL-021):** DT is the first position with explicitly hybrid tier configuration (see Section 1 — Layer 4 RAS Tier for the SL-004/SL-005 resolution). Concretely: Film treated as Medium-with-SL-005-compression (cap ±3%, steepness 10.0); RAS treated as High-tier (cap ±8%, schedule 1.00 / 0.50 / 0.10); plus the two DT-unique mechanics (dynamic PFF α, Cushion Guard).
 
 - **Dynamic Year 1 / Year 2+ PFF α at DT — the cold-start mechanism:** At year 0, a rookie DT's valuation is RAS-anchored (RAS_position_weight = 1.00 at High-tier cap ±8% can drive Layer 4 to ~1.08). When real NFL grades arrive in Year 1, those grades need to integrate fast enough to displace the RAS anchor before mis-valuation persists into Year 2. Dynamic α = 0.50 in Year 1 achieves this by aggressively blending new PFF data into the running estimate. By Year 2+, the model has stabilized and standard α = 0.10 preserves vet signal stability. Mechanic is currently DT-unique pending Session 3 cross-rubric review (SL-OQ-038).
 

@@ -7,7 +7,7 @@
 
 ## What this document is, and how to use it
 
-This is a **field guide for the models that will write TheWarRoom's code** — one Go/Wails session at a time, across the 38 sessions in `docs/build-handoffs/Build_Tracker.md`. Those models will often be smaller and more local than the model that wrote the plan. This document exists to keep them on the rails: to stop spaghetti before it starts, to hand them copy-ready code skeletons that already satisfy the strict standards, and to point out — session by session — where the previous planning left a trap a weaker model will fall into.
+This is a **field guide for the models that will write TheWarRoom's code** across the 38 sessions in `docs/build-handoffs/Build_Tracker.md`. It keeps weaker models on the rails: copy-ready skeletons that already satisfy the strict standards, session-by-session traps flagged, and an answer to *"I am a model in the middle of session N — how do I do this well, in idiomatic Go, without breaking the architecture?"*
 
 **It does not replace anything.** The build still runs off:
 - `docs/build-handoffs/Build_Tracker.md` — the 38-session sequence (the *what* and *when*).
@@ -15,8 +15,6 @@ This is a **field guide for the models that will write TheWarRoom's code** — o
 - The six structural wireframes — the module shapes (the *anti-spaghetti contracts*).
 - `christopher-coding-standards/AGENTS.md` — the rules every diff must satisfy.
 - This project's `CLAUDE.md` Hard Constraints.
-
-This document sits **beside** those and answers a different question: *"I am a model in the middle of session N. How do I do this well, in idiomatic Go, without breaking the architecture or producing code the next session's model can't read?"*
 
 **How a building model should use it:**
 1. At session start, read the matching **per-session brief** in Section 6.
@@ -115,7 +113,7 @@ Must-enable, security and correctness first:
 
 ## Section 2 — The ten ways a weaker model produces slop here, and the guardrail for each
 
-These are Go-specific failure modes, cross-referenced against *this* architecture by the agy Go-architect agent and confirmed against the coding standards. Each one is a real, observed pattern in weaker-model Go output. For each: the trap, and the mechanical guardrail that catches it (a linter, a flag, or a type idiom — never "remember not to").
+These are Go-specific failure modes, cross-referenced against this architecture by the agy Go-architect agent and confirmed against the coding standards. For each: the trap, and the mechanical guardrail that catches it (a linter, a flag, or a type idiom — never "remember not to").
 
 | # | The trap a weaker model falls into | The guardrail that catches it |
 |---|---|---|
