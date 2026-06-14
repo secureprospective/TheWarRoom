@@ -120,7 +120,6 @@ All architecture documents are on disk. Engine specification, 10 position rubric
 
 | Item | Status |
 |---|---|
-| OQ-001 MFL League ID | RESOLVED — League ID 14432, host www47 (synced to roadmap, AD-24) |
 | OQ-004 EDGE position mapping source | OPEN |
 | OQ-005 Salary adjustment line item | OPEN |
 | OQ-006 Cap tier calibration | OPEN — resolve after live data |
@@ -128,14 +127,8 @@ All architecture documents are on disk. Engine specification, 10 position rubric
 | OQ-008 Franchise tag calculation timing | OPEN |
 | OQ-009 RFA eligibility window | OPEN |
 | OQ-010 Playoff bid rules trigger | OPEN — needs commissioner confirmation |
-| SL-OQ-043 WR SL-019 status | CLOSED — Option A; SL-022 assigned; v1.1 calibration revisit flagged |
 | Session 3 audit pass | COMPLETE — Engine_Spec v3.0, Universal_Rubric_Template v1.2 |
-| Planning arc Session 1 | COMPLETE — 26 blocks defined. Plan at `/root/.claude/plans/yes-each-module-is-immutable-wigderson.md` |
-| Planning arc Session 2 | COMPLETE — 32-session build plan + 6 wireframes. Plan at `/root/.claude/plans/very-good-now-i-replicated-feigenbaum.md` |
-| Planning arc Session 3 | COMPLETE — PASS WITH FLAGS; 25 decisions AD-01–25 locked; `/root/.claude/plans/session-3-audit-build-sequencing.md` |
 | Go overlay (Phase 2 in coding-standards repo) | **MERGED to main** — PR #8 (squash `cf45454`), all 6 CI checks green. AD-06 struct-wrap, interface{} ifaceguard, file-cap filelen; 7/7 + 2 gates verified. **B0 unblocked.** |
-| Per-team roster view — block assignment | RESOLVED — M1 drill-down (already specced as M1 output); M1b split only if scope tightens (AD-20) |
-| B7 sub-session design | RESOLVED — split foundation-first into B7a (coordinator) + B7b/c/d by mechanic group (AD-02) |
 | GitHub PAT push access (Friction #12) | **FIXED** — new fine-grained PAT (TheWarRoom + coding-standards, Contents R/W). All branches pushed; T3-as-designed validated the shared-repo channel live |
 | AD-06 enforcement mechanism (`playerid.PlayerID` bypass) | **RESOLVED — struct-wrap** (Gate 1). Bypass fails to compile. `templates/go/playerid/example.go` |
 | `interface{}`/`any` escape enforcement | **RESOLVED — `ifaceguard` vettool** (Gate 2). `tools/ifaceguard/`, pinned + tested, wired into `make lint` + pre-commit |
