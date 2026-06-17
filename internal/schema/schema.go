@@ -10,6 +10,19 @@
 // RULE: never pass a raw external value (a string from JSON, a CSV cell)
 // into business logic. Decode it into a Raw* struct, call Validate(), and
 // only then convert into a domain type.
+//
+// UNKNOWN-FIELD POLICY (decided at B0, Gemini Round-2 finding #2):
+//   - EXTERNAL, 3rd-party input we do NOT control (MFL API responses, scouting
+//     feeds): TOLERATE unknown fields. Do NOT call dec.DisallowUnknownFields().
+//     These providers add telemetry/status fields without versioning; rejecting
+//     them turns a benign upstream addition into a full ingestion outage. Postel's
+//     law: be liberal in what you accept. Correctness is guaranteed by Validate()
+//     asserting the fields we DO depend on, not by forbidding fields we ignore.
+//   - INTERNAL, trusted input we DO control (our own frontend's IPC payloads):
+//     be STRICT — call dec.DisallowUnknownFields(). There an unknown field signals
+//     a bug on our side and should fail loudly.
+//
+// RawPlayerRecord below is MFL (external), so it is lenient.
 package schema
 
 import (
@@ -31,12 +44,13 @@ type RawPlayerRecord struct {
 	Salary   string `json:"salary"`
 }
 
-// DecodePlayerRecord reads exactly one JSON object and rejects unknown
-// fields. DisallowUnknownFields is the Go equivalent of Zod's .strict() —
-// extra fields from an API change fail loudly instead of passing silently.
+// DecodePlayerRecord reads exactly one JSON object from the MFL players endpoint.
+// It deliberately does NOT call dec.DisallowUnknownFields(): MFL is an external
+// API we do not control and adds fields without versioning, so unknown fields are
+// tolerated and ignored (see the package "unknown-field policy"). The guarantee
+// of correctness is Validate() below, which asserts the fields we depend on.
 func DecodePlayerRecord(r io.Reader) (RawPlayerRecord, error) {
 	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
 
 	var rec RawPlayerRecord
 	if err := dec.Decode(&rec); err != nil {
