@@ -10,7 +10,7 @@ import (
 )
 
 //go:embed all:frontend/dist
-var assets embed.FS //nolint:gochecknoglobals // go:embed requires a package-level var; this is the one sanctioned global (see Go overlay README).
+var assets embed.FS // populated by the //go:embed directive above; gochecknoglobals exempts embed vars (no nolint needed).
 
 func main() {
 	// Create an instance of the app structure

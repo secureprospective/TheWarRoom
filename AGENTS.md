@@ -61,7 +61,7 @@ If a locked decision creates a constraint that feels wrong, **flag it to Christo
 - Do not edit `.git/`, `node_modules/`, `frontend/dist/`, `build/bin/`, or `frontend/wailsjs/` (generated bindings — regenerate with `wails generate module`).
 - Do not pin third-party CI actions or pre-commit hooks to mutable tags. Pin to commit SHAs (the trivy-action lesson).
 - Do not introduce a new top-level directory or `internal/` package without updating `SYSTEM_MAP.md`.
-- Do not add a package-level `var` except a sentinel error (`//nolint:gochecknoglobals`) or the `go:embed` assets var. Everything else is the failure mode the linter exists to stop.
+- Do not add a package-level `var`. The only sanctioned globals: sentinel errors (`var ErrFoo = errors.New(...)` with `//nolint:gochecknoglobals` + explanation — `nolintlint` requires it) and `//go:embed` vars (auto-exempt, no nolint). Everything else is the failure mode the linter exists to stop. `nolintlint` rejects any unused or unexplained `//nolint`.
 - Do not generate an architecture-overview section in this file (inflates tokens, does not change behavior).
 
 ## Where to look
