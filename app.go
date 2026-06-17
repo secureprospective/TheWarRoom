@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
 )
@@ -75,10 +76,15 @@ func (a *App) Ping() PingResult {
 	if a.pools == nil {
 		return PingResult{OK: false, Message: "pong", Detail: "database not initialized"}
 	}
-	if err := a.pools.Health(a.ctx); err != nil {
+	// Derive a bounded context from the app-lifetime ctx: an IPC method must never
+	// block the frontend indefinitely if the data layer stalls. Every IPC method
+	// inherits this pattern (Gemini Round-2 finding #1).
+	ctx, cancel := context.WithTimeout(a.ctx, 3*time.Second)
+	defer cancel()
+	if err := a.pools.Health(ctx); err != nil {
 		return PingResult{OK: false, Message: "pong", Detail: err.Error()}
 	}
-	mode, err := a.pools.JournalMode(a.ctx)
+	mode, err := a.pools.JournalMode(ctx)
 	if err != nil {
 		return PingResult{OK: false, Message: "pong", Detail: err.Error()}
 	}

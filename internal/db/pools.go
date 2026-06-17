@@ -24,6 +24,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
@@ -55,11 +56,16 @@ func Open(ctx context.Context, path string) (*Pools, error) {
 		return nil, fmt.Errorf("db: open write pool: %w", err)
 	}
 	write.SetMaxOpenConns(1)    // ONE writer — serializes writes, no SQLITE_BUSY race.
+	write.SetMaxIdleConns(1)    // keep the single writer warm — no open/close churn.
 	write.SetConnMaxLifetime(0) // never recycle the writer connection.
 
 	// Force the connection (and thus the file + WAL header) into existence, then
 	// confirm WAL is genuinely on. A pragma that silently fails to apply is
 	// invisible until it deadlocks under load — so we assert it here, at startup.
+	//
+	// ORDERING DEPENDENCY (do not reorder): this query also MATERIALIZES the
+	// database file. It must run BEFORE the read pool opens with mode=ro, since a
+	// read-only open fails if the file does not yet exist (Gemini Round-2 #6).
 	mode, err := journalMode(ctx, write)
 	if err != nil {
 		_ = write.Close()
@@ -80,6 +86,7 @@ func Open(ctx context.Context, path string) (*Pools, error) {
 		return nil, fmt.Errorf("db: open read pool: %w", err)
 	}
 	read.SetMaxOpenConns(10) // many concurrent readers (Wails IPC goroutines).
+	read.SetMaxIdleConns(10) // match idle to open — no connection thrashing under burst.
 
 	if err := read.PingContext(ctx); err != nil {
 		_ = read.Close()
@@ -118,18 +125,18 @@ func (p *Pools) JournalMode(ctx context.Context) (string, error) {
 
 // Close releases both pools. Safe to call on a partially-open Pools.
 func (p *Pools) Close() error {
-	var first error
+	var errs []error
 	if p.read != nil {
 		if err := p.read.Close(); err != nil {
-			first = fmt.Errorf("db: close read pool: %w", err)
+			errs = append(errs, fmt.Errorf("db: close read pool: %w", err))
 		}
 	}
 	if p.write != nil {
-		if err := p.write.Close(); err != nil && first == nil {
-			first = fmt.Errorf("db: close write pool: %w", err)
+		if err := p.write.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("db: close write pool: %w", err))
 		}
 	}
-	return first
+	return errors.Join(errs...)
 }
 
 // journalMode reads PRAGMA journal_mode from a pool. Executing it on the write
