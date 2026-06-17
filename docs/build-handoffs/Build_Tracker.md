@@ -48,7 +48,7 @@ This is the document opened at the start and end of every build session. One lin
 
 | # | Status | Session | Scope | Gate | WF | L |
 |---|---|---|---|---|---|---|
-| 1 | `[~]` | **B0 — Project Scaffold** | Go module, Wails v2, React+Tailwind+Zustand, SQLite WAL lifecycle hooks, golangci-lint + pre-commit, AGENTS.md + SYSTEM_MAP.md, IPC ping-pong. Locks the 5 patterns (AD-03). **Code complete + build green (commit `0501ea3`, session/b0-scaffold); awaiting agy review + Beelink functional verify before merge.** | G0 closed | B0 | — |
+| 1 | `[x]` | **B0 — Project Scaffold** | Go module, Wails v2, React+Tailwind+Zustand, SQLite WAL lifecycle hooks, golangci-lint + pre-commit, AGENTS.md + SYSTEM_MAP.md, IPC ping-pong. Locks the 5 patterns (AD-03). **COMPLETE 2026-06-17: all 3 gates passed — build green (make lint 0 / go test -race / wails build); First-Instance review via Gemini Collaboration Loop (agy out of usage), findings applied; functional verify on Beelink (window + Ping → ✓ pong, journal mode wal). Handoff 02-B1.md written.** | G0 closed | B0 | — |
 
 ### Tier 1 — Data Pipeline (Layer 1)
 
