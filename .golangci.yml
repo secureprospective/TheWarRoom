@@ -1,0 +1,204 @@
+# Go overlay — golangci-lint v2 configuration.
+# Part of christopher-coding-standards, Phase 2. Mirrors the TS overlay's biome.json role.
+#
+# ASSUMPTION TO CONFIRM AT B0: the depguard rules below assume the module path
+# `github.com/secureprospective/TheWarRoom` and the internal/ tree from
+# Fable_TheWarRoom_code_plan.md Section 3.1. If go.mod declares a different
+# module path, find/replace it across the `deny` entries below before B0 closes.
+
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  # Start from nothing; enable exactly the must-have set (Section 1 + 2 of the
+  # companion plan). Avoids surprise linters a weaker model can't reason about.
+  default: none
+  enable:
+    # Security and correctness first.
+    - gosec          # SAST: SQL string-building, weak crypto, path traversal.
+    - errcheck       # Unchecked errors. Non-negotiable in a scoring/financial engine.
+    - govet          # Standard vet suite.
+    - staticcheck    # High-value correctness (SA checks).
+    - ineffassign    # Ineffectual assignments.
+    - unused         # Dead code.
+
+    # Structure and complexity.
+    - gocyclo        # Cyclomatic complexity ceiling.
+    - funlen         # FUNCTION length only (lines:60/statements:40). Note: this
+                     # does NOT enforce the 250/400-line FILE cap — no linter
+                     # does. The file cap is gated by the Makefile `filelen`
+                     # target (Confidence-80 sweep, 2026-06-13).
+    - revive         # gofmt-plus style/naming layer.
+
+    # Resource and DB hygiene.
+    - bodyclose      # Unclosed HTTP response bodies (B1 fetchers).
+    - sqlclosecheck  # Unclosed sql.Rows / sql.Stmt.
+    - rowserrcheck   # Unchecked rows.Err().
+
+    # Context discipline (B1/B2 take context.Context as first arg).
+    - containedctx
+    - contextcheck
+
+    # The five weaker-model failure modes this guardrail set targets directly.
+    - gochecknoglobals  # Failure mode #5: package-level globals / hidden state.
+    - depguard          # Failure mode #9: cross-layer / cyclic imports → build error.
+    - gocritic          # Failure mode #1: interface{}/any escapes, style/perf issues.
+    - interfacebloat    # Failure mode #1: oversized interfaces (any-shaped escapes).
+    - wrapcheck         # Failure mode #8: silent error drops / unwrapped errors.
+    - forbidigo         # Default rule set: bans fmt.Print*/println debug statements.
+                        # NOTE: AD-06 (playerid.PlayerID bypass conversion) is NOT
+                        # enforced here — forbidigo cannot tell a conversion call from
+                        # a type reference (Friction #6). It is enforced at COMPILE
+                        # time instead by struct-wrapping PlayerID (unexported field;
+                        # see templates/go/playerid/example.go). interface{}/any escapes
+                        # (Friction #10) are enforced by the ifaceguard vettool
+                        # (tools/ifaceguard), run from `make lint` + pre-commit.
+
+  settings:
+    gocyclo:
+      min-complexity: 15
+
+    funlen:
+      lines: 60
+      statements: 40
+
+    gochecknoglobals:
+      # No exceptions. A "but this one global is fine" is exactly the failure
+      # mode this linter exists to prevent (Section 2, item 5).
+      {}
+
+    wrapcheck:
+      # Defaults are fine: every error from an external package must be
+      # wrapped (fmt.Errorf("...: %w", err)) before crossing a function
+      # boundary back into our own code.
+      {}
+
+    depguard:
+      rules:
+        # Layer 1 (transport + ingestion) never imports up into the engine,
+        # stores, transactions, or the IPC/API layer (companion plan Section
+        # 8A.2 — "the three-layer law becomes a build error").
+        layer1-no-upward-import:
+          list-mode: lax
+          files:
+            - "**/internal/mfl/**"
+            - "**/internal/ingestion/**"
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/engine
+              desc: "Layer 1 (transport/ingestion) cannot import the engine (Layer 2/3)"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/store
+              desc: "Layer 1 cannot import stores"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/transactions
+              desc: "Layer 1 cannot import the transaction coordinator"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/api
+              desc: "Layer 1 cannot import the IPC/API layer"
+            - pkg: database/sql
+              desc: "Layer 1 performs no I/O beyond HTTP transport — no direct DB access"
+
+        # The engine is a pure-function pipeline (Section 3.5). It must not
+        # reach sideways into ingestion, stores, transactions, the DB driver,
+        # or the IPC layer — every input arrives as a parameter.
+        engine-is-pure:
+          list-mode: lax
+          files:
+            - "**/internal/engine/**"
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/mfl
+              desc: "engine cannot import the transport client"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/ingestion
+              desc: "engine cannot import ingestion"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/store
+              desc: "engine cannot import stores — all state arrives as parameters"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/transactions
+              desc: "engine cannot import the transaction coordinator"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/db
+              desc: "engine performs no I/O"
+            - pkg: database/sql
+              desc: "engine performs no I/O"
+
+        # Stores never import each other (companion plan Section 8A.3 — "no
+        # store package imports another store package"). Three rules, one
+        # per sibling, each denying the other two.
+        store-rulebook-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/store/rulebook/**"
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/store/state
+              desc: "stores never import each other — rulebook cannot import state"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/store/params
+              desc: "stores never import each other — rulebook cannot import params"
+
+        store-state-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/store/state/**"
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/store/rulebook
+              desc: "stores never import each other — state cannot import rulebook"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/store/params
+              desc: "stores never import each other — state cannot import params"
+
+        store-params-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/store/params/**"
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/store/rulebook
+              desc: "stores never import each other — params cannot import rulebook"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/store/state
+              desc: "stores never import each other — params cannot import state"
+
+        # SQL stays confined to the db and store packages (Section 2, item 6
+        # — "depguard keeps SQL out of non-repository packages"). Every other
+        # package — including transactions handlers, the engine, ingestion,
+        # and the IPC layer — gets a Store/ReadOnlyStore, never raw SQL.
+        sql-confined-to-data-layer:
+          list-mode: lax
+          files:
+            - "!**/internal/db/**"
+            - "!**/internal/store/**"
+          deny:
+            - pkg: database/sql
+              desc: "raw database/sql is confined to internal/db and internal/store"
+            - pkg: modernc.org/sqlite
+              desc: "the sqlite driver is confined to internal/db and internal/store"
+
+        # Only the B7 coordinator (internal/transactions root package) is
+        # importable from the rest of the app. Handler subpackages
+        # (acquisitions/contracts/deadcap) are implementation detail behind
+        # the Coordinator.Execute interface (AD-02, Section 4 WF 6).
+        transactions-only-through-coordinator:
+          list-mode: lax
+          files:
+            - "!**/internal/transactions/**"
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/transactions/acquisitions
+              desc: "transaction handlers are internal to the coordinator — call Coordinator.Execute"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/transactions/contracts
+              desc: "transaction handlers are internal to the coordinator — call Coordinator.Execute"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/transactions/deadcap
+              desc: "transaction handlers are internal to the coordinator — call Coordinator.Execute"
+
+  exclusions:
+    generated: lax
+    warn-unused: true
+    presets:
+      - comments
+      - std-error-handling
+      - common-false-positives
+    rules:
+      # Standard test-file relief: table-driven tests legitimately exceed
+      # cyclomatic/length limits and don't need full error-wrap ceremony.
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - funlen
+          - wrapcheck
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
