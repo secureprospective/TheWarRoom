@@ -38,7 +38,7 @@ This is the document opened at the start and end of every build session. One lin
 
 ## Pre-Build Gate (must close before Session 1)
 
-- `[ ]` **G0 — Go overlay** — Author and merge the Go overlay in `christopher-coding-standards` (golangci-lint ruleset, Go pre-commit config, Go naming conventions). **Net-new authoring — does not exist yet** (AD-19). B0's tooling spec cannot be locked without it. Fix the Phase-label mismatch (CLAUDE.md "Phase 1D" vs repo "Phase 2") as housekeeping.
+- `[x]` **G0 — Go overlay** — **MERGED 2026-06-13** (christopher-coding-standards PR #8, squash `cf45454`, all 6 CI checks green). golangci-lint v2 + depguard three-layer rules, struct-wrap playerid, ifaceguard vettool, filelen gate, SHA-pinned pre-commit. Copied into TheWarRoom + proven by deliberate-violation test at B0.
 
 ---
 
@@ -48,7 +48,7 @@ This is the document opened at the start and end of every build session. One lin
 
 | # | Status | Session | Scope | Gate | WF | L |
 |---|---|---|---|---|---|---|
-| 1 | `[ ]` | **B0 — Project Scaffold** | Go module, Wails v2, React+Tailwind+Zustand, SQLite WAL lifecycle hooks, golangci-lint + pre-commit, AGENTS.md + SYSTEM_MAP.md, IPC ping-pong. Locks the 5 patterns (AD-03). | G0 closed | B0 | — |
+| 1 | `[x]` | **B0 — Project Scaffold** | Go module, Wails v2, React+Tailwind+Zustand, SQLite WAL lifecycle hooks, golangci-lint + pre-commit, AGENTS.md + SYSTEM_MAP.md, IPC ping-pong. Locks the 5 patterns (AD-03). **COMPLETE 2026-06-17: all 3 gates passed — build green (make lint 0 / go test -race / wails build); First-Instance review via Gemini Collaboration Loop (agy out of usage), findings applied; functional verify on Beelink (window + Ping → ✓ pong, journal mode wal). Handoff 02-B1.md written.** | G0 closed | B0 | — |
 
 ### Tier 1 — Data Pipeline (Layer 1)
 

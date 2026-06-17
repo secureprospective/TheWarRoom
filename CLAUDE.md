@@ -15,7 +15,7 @@ A 32-team dynasty fantasy football ranking engine and full-stack desktop applica
 
 ## Current Build State (June 2026)
 
-**Documentation phase complete. Pre-build phase.**
+**B0 — Project Scaffold COMPLETE (2026-06-17). First code build done; build phase active. Next: B1.**
 
 All architecture documents are on disk. Engine specification, 10 position rubrics, UI architecture, backend architecture, Layer 4 pre-build audit, and testing harness specification are complete. MFL scoring rules decoded and verified.
 
@@ -58,7 +58,7 @@ All architecture documents are on disk. Engine specification, 10 position rubric
 4. First code build: B0 — Project Scaffold (Session 1). **B0 carries forward:** copy the G0 overlay (`.golangci.yml`, `playerid/`, `tools/ifaceguard/`, Makefile, pre-commit) into the repo; commit a pinned toolchain for agy/Claude parity (9.6); apply the B1 fixes from T4 (stale `client.go:36` comment, `time.NewTimer`+`Stop`, `rps>0` guard).
 - **DONE this session:** PAT/Friction #12 (FIXED, branches pushed) · AD-06 + interface{} enforcement (LOCKED) · Section 9 collab workflow (REBUILT + VALIDATED, both channels live).
 
-**Next branch:** all session work merged to `main` (both repos); session branches cleaned up. The next branch is the first build session — **B0 — Project Scaffold** (`session/b0-scaffold`). **Collaboration model: Claude + agy only (local-AI cut — see Open Items / `[[strategic-pivot-claude-agy-only]]`).**
+**Next branch:** B0 merged to `main` (`session/b0-scaffold`, all 3 gates passed 2026-06-17). The next branch is **B1 — MFL API Client** (`session/b1-mfl-client`) — handoff ready at `docs/build-handoffs/handoffs/02-B1.md`. Note: B1 **formalizes the EXISTING `internal/mfl` friction client + applies 3 T4 fixes** (it is not greenfield). **Collaboration model: Claude + agy only; agy was out of usage 2026-06-17, so the B0 First-Instance review ran via the Gemini Collaboration Loop.** Beelink is now a working Wails dev machine (Go 1.26.4 + Wails 2.12 + pnpm 9 + WebKit 4.1; build/run with `-tags webkit2_41`).
 
 **SL-022 still active:** WR SL-019 excluded for v1.0 (SL-OQ-043 closed, Option A). Layer 3 carries WR aging. Calibration revisit flagged for v1.1.
 

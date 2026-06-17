@@ -1,0 +1,34 @@
+repos:
+  # golangci-lint: full lint suite on staged commit (Section 1 linter set).
+  # Pinned to the commit SHA for tag v2.12.2 — verify with:
+  #   git ls-remote https://github.com/golangci/golangci-lint v2.12.2
+  - repo: https://github.com/golangci/golangci-lint
+    rev: c0d3ddc9cf3faa61a4e378e879ece580256d76e5  # v2.12.2
+    hooks:
+      - id: golangci-lint-full
+
+  # Gitleaks: scan staged files for secrets before they enter git history.
+  # Pinned to the commit SHA for tag v8.30.1 — verify with:
+  #   git ls-remote https://github.com/gitleaks/gitleaks v8.30.1
+  # Reason: supply chain attacks target mutable tags (docs/adr/0001-why-this-standard-exists.md,
+  # the trivy-action lesson — AGENTS.md hard rule).
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # ifaceguard: custom go/analysis vettool — blocks empty-interface
+  # (interface{}/any) escapes in exported signatures (the gap no golangci-lint
+  # linter covers — Fable Friction #10). It is local (not a pinned remote repo)
+  # because the analyzer source lives in this repo under tools/ifaceguard; its
+  # OWN supply chain is pinned in tools/ifaceguard/go.mod + go.sum. The hook
+  # delegates to `make ifaceguard`, which builds the vettool and runs
+  # `go vet -vettool`.
+  - repo: local
+    hooks:
+      - id: ifaceguard
+        name: ifaceguard (empty-interface escapes in exported signatures)
+        entry: make ifaceguard
+        language: system
+        types: [go]
+        pass_filenames: false
