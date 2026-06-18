@@ -4,9 +4,10 @@
 
 ### A dynasty fantasy football intelligence engine that scores what real players do in real games — and out-thinks the stock platforms doing it.
 
-[![Status](https://img.shields.io/badge/status-pre--build%20·%20planning%20complete-blue)](docs/build-handoffs/Build_Tracker.md)
-[![Build Plan](https://img.shields.io/badge/build-38%20sessions%20sequenced-success)](docs/build-handoffs/Build_Tracker.md)
-[![Phase](https://img.shields.io/badge/phase-1%20·%20personal%20tool-orange)](#-the-road)
+[![Status](https://img.shields.io/badge/status-🔨%20BUILDING%20·%20data%20pipeline%20LIVE-brightgreen)](docs/build-handoffs/Build_Tracker.md)
+[![Progress](https://img.shields.io/badge/build-4%20of%2038%20sessions%20·%20foundation%20laid-success)](docs/build-handoffs/Build_Tracker.md)
+[![Verified](https://img.shields.io/badge/live%20data-1217%20players%20·%2032%20teams%20·%20verified-blue)](#-its-alive--the-pipeline-is-live)
+[![Phase](https://img.shields.io/badge/phase-1%20·%20personal%20tool-orange)](#️-the-road)
 
 [![Go](https://img.shields.io/badge/Go-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Wails](https://img.shields.io/badge/Wails%20v2-DF0000?logo=wails&logoColor=white)](https://wails.io)
@@ -14,7 +15,7 @@
 [![Tailwind](https://img.shields.io/badge/Tailwind-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![SQLite](https://img.shields.io/badge/SQLite%20WAL-003B57?logo=sqlite&logoColor=white)](https://sqlite.org)
 
-*32 teams. Six scoring layers. Ten position models. Twenty-one scouting sources. One number per player.*
+*32 teams. Six scoring layers. Ten position models. Twenty-one scouting sources. **One number per player.***
 
 </div>
 
@@ -32,6 +33,26 @@ It also replaces the part nobody enjoys: the bid math, the dead-cap arithmetic, 
 
 ---
 
+## 🔥 It's Alive — The Pipeline Is *Live*
+
+This stopped being a plan and started being a program. The entire **MFL data pipeline** — scaffold, transport, ingestion, normalization — is **built, merged, and verified end-to-end against real league data.**
+
+```
+   real MFL league  ──►  transport  ──►  ingestion  ──►  normalization  ──►  typed records
+      (live API)         rate-limited     boundary-        raw → domain         ready for the
+                         host-routed      guarded          (talent ≠ age)         engine
+
+   ✅ LIVE RUN (CT105 → MFL):  1,217 rostered players  ·  32 franchises  ·  zero data loss
+                               dead-cap ledger reconciled to the penny ($5.495 ≈ $5.49 displayed)
+                               commissioner-created players recovered  ·  reserved-ID invariant clean
+```
+
+This isn't a mock or a fixture. It's the **actual Legacy NFL league**, pulled live, normalized into a locked type system the scoring engine will run on. The hard part of any data product — getting *real* messy data in *clean* and *trustworthy* — is done and proven.
+
+**What's next:** the scouting schema, then the engine lights up.
+
+---
+
 ## 🧠 Pillar 1 — The Scoring Engine
 
 The valuation brain. Six layers, run in order, every value MFL-sourced or admin-tunable — nothing hardcoded.
@@ -41,7 +62,7 @@ The valuation brain. Six layers, run in order, every value MFL-sourced or admin-
                                       │
                                       ▼
    ┌──────────────────────────────────────────────────────────────┐
-   │  L1  Data Hygiene        clean inputs, enforce contract floors │
+   │  L1  Data Hygiene        clean inputs, enforce contract floors │  ◄── LIVE
    │  L2  Rulebook Scoring    this league's exact scoring matrix    │
    │  L3  Age Decay           position-specific aging curves        │
    │  L4  Scouting Layer      Film × RAS × Breakout (Madden-checked)│
@@ -107,12 +128,13 @@ The engine is only as good as its calibration. Every parameter that *should* be 
 
 ## 🛡️ Built to Last
 
-This isn't a weekend hack. The architecture is governed by hard rules so it stays maintainable as it grows:
+This isn't a weekend hack. The architecture is governed by hard rules so it stays maintainable as it grows — and those rules are **already enforced in the code that's shipping today:**
 
 - **A three-layer law** — real-football data is read-only; the app owns its logic; users mutate state *only* through validated transactions. No layer bleeds into another.
 - **One writer to league state** — a single coordinator is the only thing that can change who-owns-what. Everything else reads.
 - **Historical scores are immutable** — every score is stamped with its scoring config. Change the engine, and last season stays exactly as it was scored. The record is the record.
-- **Enforced by the compiler, not by hope** — architectural rules are wired into the type system and the linter, so a violation is a build failure, not a code review note.
+- **Enforced by the compiler, not by hope** — architectural rules are wired into the type system and a custom linter, so a violation is a *build failure*, not a code-review note. (Player IDs literally cannot be forged — the bypass doesn't compile.)
+- **Fail loud, never silent** — every fetcher already caught a real bug a linter couldn't: MFL collapses single-element arrays, returns HTTP 200 with an error body, and omits commissioner-created players. Each one would have silently corrupted league data. Each one is now guarded and tested.
 - **A 38-session build plan** — every session sized to one context window, every session closes with a ready-to-go handoff. Spaghetti has nowhere to hide.
 
 📋 Full build sequence: **[`docs/build-handoffs/Build_Tracker.md`](docs/build-handoffs/Build_Tracker.md)**
@@ -140,15 +162,22 @@ Phase 1 ships as a desktop app. Phase 2 opens it to the league. Phase 3 sets it 
 
 ---
 
-## 📍 Status
+## 📍 Status — Foundation Laid, Engine Next
 
-**Documentation and planning complete. First code build is next.**
+**The data pipeline is live. The scoring engine is the next thing to light up.**
 
-The entire engine, all ten rubrics, the data pipeline, the transaction rules, the UI and backend architecture, and a 38-session build plan are specified and audited. The first build session is the project scaffold; the engine follows.
+| ✓ Done & verified | ▸ Up next |
+|---|---|
+| **B0** — Project scaffold (Go · Wails · React · SQLite WAL) | **B2b** — Scouting schema, all 10 positions |
+| **B1** — MFL transport client (live: host `www47`, 200 OK) | **B3b/B3c** — Rulebook + league-state store |
+| **B2** — Data ingestion (live: 32 franchises, 16 matchups) | **B5a** — The six-layer engine pipeline |
+| **B3** — Data normalization (live: 1,217 players, type system locked) | **B5b** — Ten position models, one at a time |
 
 ```
-[████████████████████░░░░░░░░░░]  Planning ✓   →   Building (next)
+[█████░░░░░░░░░░░░░░░░░░░░░░░░░░]  4 / 38 sessions   ·   data pipeline ✓   →   engine (next)
 ```
+
+Every layer ships only after a build passes clean, an independent AI review (Gemini, with agy on deck) signs off, and it's verified against **real league data** on real hardware. No layer is "done" until it's been *used*, not just compiled.
 
 ---
 
