@@ -126,6 +126,10 @@ Status: OPEN — needs commissioner confirmation
 MFL rules endpoint must confirm whether position-specific tackle/assist values are applied additively on top of a universal base or as standalone overrides.
 Status: RESOLVED — Additive mechanic confirmed. Universal base: TK 1.5 / AS 1.0. DT/DE +1.0/+0.5 additive → 2.5/1.5. CB/S +0.5/+0.0 additive → 2.0/1.0. LB base only. See docs/data-layer/MFL_Scoring_Rules_Decode.md.
 
+**OQ-012: League (Fantasy) Schedule Source & Schema**
+The league's weekly matchup schedule — which of the 32 franchises play each other each week — is **commissioner-defined when the league goes live**, NOT derived from MFL's `nflSchedule` endpoint (that endpoint returns real NFL game matchups, ingested by `internal/ingestion/schedule` at B2, for live-scoring windows only — a separate concern, do not conflate). Christopher will supply a **default schedule schema** to help the commissioner populate the league schedule; it does not exist yet (noted 2026-06-18). Open: (a) the schema shape (await Christopher's default), and (b) whether the populated schedule is also readable from MFL's fantasy `schedule` TYPE or is purely commissioner-entered/app-side. Gates any matchup-prediction (M3) or league-schedule view work.
+Status: OPEN — awaiting Christopher's default schedule schema; not on the near-term critical path.
+
 ---
 
 ## Known Technical Risks
@@ -260,7 +264,7 @@ CAL-001 through CAL-021 documented in individual rubrics. Session 2 additions:
 
 | Series | Next Available | Last Used | Last Source |
 |---|---|---|---|
-| OQ- | 012 | OQ-011 | True Position tackle split |
+| OQ- | 013 | OQ-012 | League (fantasy) schedule source & schema |
 | DECISION- | 011 | DECISION-010 | Historical score preservation |
 | SL- | 023 | SL-022 | WR SL-019 exclusion v1.0 (SL-OQ-043 closed) |
 | SL-OQ- | 044 | SL-OQ-043 | WR SL-019 status (CLOSED — Option A, SL-022 assigned) |
