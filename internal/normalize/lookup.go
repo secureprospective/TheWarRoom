@@ -1,0 +1,143 @@
+// Package normalize is the B3 Raw* → typed-domain boundary (WF 1C): it joins the
+// rosters feed with the players database and produces domain.Roster / PlayerRecord.
+// It is a PURE transformation — no I/O, no fetching, no scoring. It is Layer 1
+// (depguard layer1-no-upward-import covers it): it imports ingestion + playerid +
+// domain only, never store/engine/db.
+//
+// This file holds the cross-reference Lookup: the players database indexed by
+// canonical player id, with each player's position classified ONCE at build time
+// (so a roster join is a map read, not a re-classification per row). Building the
+// Lookup is also where the reserved-range policy runs (B2 review item #1).
+package normalize
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
+)
+
+// lookupEntry is one player's resolved facts from the players database: position
+// already mapped to the engine set, rookie flag already derived. The raw MFL codes
+// do not survive into here.
+type lookupEntry struct {
+	name        string
+	position    domain.Position
+	isAggregate bool // a team/positional aggregate ("Def", "TMWR", …) — never rostered
+	team        string
+	isRookie    bool
+}
+
+// Lookup is the players database keyed by canonical player id (playerid form), the
+// read side of the B3 cross-reference join.
+type Lookup struct {
+	byID map[string]lookupEntry
+}
+
+// entry returns the resolved player for a canonical id, and whether it exists.
+func (l Lookup) entry(id playerid.PlayerID) (lookupEntry, bool) {
+	e, ok := l.byID[id.String()]
+	return e, ok
+}
+
+// NewLookup builds the cross-reference index from the raw players feed. It
+// canonicalizes every id through playerid.New (RISK-003) and classifies each
+// position once. It also applies the reserved-range policy (B2 review item #1):
+// MFL's id range [151,782] is RESERVED for team aggregates, so a record there that
+// we did NOT recognize as a known aggregate is an anomaly — either a real player the
+// rosters ID-filter is wrongly dropping, or an unrecognized aggregate code. Such a
+// record is FLAGGED for admin review and the build continues (Christopher, B3): one
+// odd id must not halt the whole league's normalization.
+func NewLookup(raws []players.RawPlayer) (Lookup, error) {
+	posMap := newPositionMap()
+	aggSet := newAggregateSet()
+	byID := make(map[string]lookupEntry, len(raws))
+
+	for _, rp := range raws {
+		id, err := playerid.New(rp.ID)
+		if err != nil {
+			return Lookup{}, fmt.Errorf("normalize: players id %q: %w", rp.ID, err)
+		}
+		pos, isAgg := classifyPosition(rp.Position, posMap, aggSet)
+
+		// Reserved-range policy (Christopher, B3): [151,782] is reserved for team
+		// aggregates, so a NON-aggregate record there is an anomaly. FLAG it for
+		// admin review and CONTINUE rather than halt the whole league's
+		// normalization — one odd id must not block the pipeline. NOTE: the rosters
+		// fetcher independently drops roster ids in this range, so such a record is
+		// not currently reachable through a roster join; this flag is the
+		// players-DB-side signal that the reserved-range assumption slipped.
+		if !isAgg && ingestion.IsTeamAggregateID(rp.ID) {
+			pos = domain.PosFlag
+		}
+
+		byID[id.String()] = lookupEntry{
+			name:        rp.Name,
+			position:    pos,
+			isAggregate: isAgg,
+			team:        rp.Team,
+			isRookie:    rp.Status == "R",
+		}
+	}
+	return Lookup{byID: byID}, nil
+}
+
+// classifyPosition maps a raw MFL position code onto the engine set. Aggregate
+// codes return (_, true) so the join can reject a roster that references one;
+// "PK"→K and "EDGE"→DE are the two real remaps (OQ-004: MFL labels edge rushers
+// DE); "XX" and any unknown code become PosFlag for admin review. The maps are
+// passed in (built once by NewLookup) so this stays allocation-free per call.
+func classifyPosition(raw string, posMap map[string]domain.Position, aggSet map[string]struct{}) (domain.Position, bool) {
+	code := strings.TrimSpace(raw)
+	if _, ok := aggSet[code]; ok {
+		return "", true
+	}
+	if pos, ok := posMap[code]; ok {
+		return pos, false
+	}
+	return domain.PosFlag, false
+}
+
+// newPositionMap is the raw-MFL-code → engine-position table. Real codes pass
+// through; PK→K and EDGE→DE are the remaps; XX is intentionally absent so it falls
+// through to PosFlag in classifyPosition.
+func newPositionMap() map[string]domain.Position {
+	return map[string]domain.Position{
+		"QB":   domain.PosQB,
+		"RB":   domain.PosRB,
+		"WR":   domain.PosWR,
+		"TE":   domain.PosTE,
+		"PK":   domain.PosK, // MFL uses PK, engine uses K
+		"DE":   domain.PosDE,
+		"EDGE": domain.PosDE, // OQ-004: MFL labels edge rushers DE; no separate EDGE
+		"DT":   domain.PosDT,
+		"LB":   domain.PosLB,
+		"CB":   domain.PosCB,
+		"S":    domain.PosS,
+	}
+}
+
+// newAggregateSet is the set of MFL team/positional aggregate codes that are never
+// real players and must be filtered (they reach normalize only via the players DB,
+// never via a roster, since rosters drops the aggregate ID range upstream).
+func newAggregateSet() map[string]struct{} {
+	return map[string]struct{}{
+		"PN":    {},
+		"Coach": {},
+		"Def":   {},
+		"ST":    {},
+		"Off":   {},
+		"TMQB":  {},
+		"TMRB":  {},
+		"TMWR":  {},
+		"TMTE":  {},
+		"TMPK":  {},
+		"TMPN":  {},
+		"TMDL":  {},
+		"TMLB":  {},
+		"TMDB":  {},
+	}
+}

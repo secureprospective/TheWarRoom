@@ -94,11 +94,11 @@ Status: RESOLVED — Discrete separate events (P40, R20, R40, C20, C40) in playe
 
 **OQ-004: EDGE Position Mapping**
 MFL may classify some players as EDGE. The scoring engine requires explicit DE or LB before Layer 2 (True Position split) executes. What is the authoritative mapping source — MFL position tags, NFL.com, or a manually maintained league list?
-Status: OPEN
+Status: RESOLVED (2026-06-18, Christopher) — **EDGE → DE.** MFL labels edge rushers DE; there is no separate EDGE class (live-confirmed: 0 EDGE records across 2578 global / 2621 league players, 224 DE). `normalize` maps `EDGE→DE` directly; the rubric's "pass-rush-primary consensus check" was over-engineering a distinction MFL does not make. (XX and any unknown code → PosFlag for admin review.)
 
 **OQ-005: Salary Adjustment Line Item**
 The Arizona Cardinals MFL export showed a $5.49 salary adjustment. The API must account for these adjustments in cap calculations. Need to confirm what endpoint exposes salary adjustments and how they are applied.
-Status: OPEN
+Status: RESOLVED (2026-06-18) — Source is the **`salaryAdjustments`** export type (league-scoped, www47, L=14432): the per-franchise DEAD-CAP ledger of unclaimed drops. Fields `franchise_id / amount / description / id / timestamp`. Live-verified: franchise 0025 = 20 entries summing **$5.495** ≈ the displayed $5.49. **Cap usage = Σ(roster player salaries) + Σ(salaryAdjustments.amount) per franchise.** Built as `internal/ingestion/salaryadjustments` (B3, 2026-06-18). The actual cap-usage AGGREGATION is downstream engine work (deferred). **Negative amounts are VALID** (commissioner cap credits) — cap math must not Abs()/reject them.
 
 ### Important — Resolve Before Relevant Module Build
 
@@ -129,6 +129,14 @@ Status: RESOLVED — Additive mechanic confirmed. Universal base: TK 1.5 / AS 1.
 **OQ-012: League (Fantasy) Schedule Source & Schema**
 The league's weekly matchup schedule — which of the 32 franchises play each other each week — is **commissioner-defined when the league goes live**, NOT derived from MFL's `nflSchedule` endpoint (that endpoint returns real NFL game matchups, ingested by `internal/ingestion/schedule` at B2, for live-scoring windows only — a separate concern, do not conflate). Christopher will supply a **default schedule schema** to help the commissioner populate the league schedule; it does not exist yet (noted 2026-06-18). Open: (a) the schema shape (await Christopher's default), and (b) whether the populated schedule is also readable from MFL's fantasy `schedule` TYPE or is purely commissioner-entered/app-side. Gates any matchup-prediction (M3) or league-schedule view work.
 Status: OPEN — awaiting Christopher's default schedule schema; not on the near-term critical path.
+
+**OQ-013: Created → Official Player-ID Reconciliation Ramp**
+Owners can bid on players not yet in MFL's database; the commissioner then creates a **league-local player** (live: ids 0816 Gosnell / 0820 Roberts / 0835 Childress / 0838 Robinson, present in the LEAGUE players feed but absent from the global `api` feed — this is why `internal/ingestion/players` is a LEAGUE-scoped call, B3). When MFL later assigns the player an official global id, the commissioner **manually swaps** it on the roster. A future **auto-matching ramp** could detect this on each refresh and replace the created id with the official one. Open: build it (and where — the refresh/sync layer, NOT B3), and the match key (name-matching is fuzzy → needs its own review gate before it can rewrite a roster).
+Status: OPEN — deferred to the refresh/sync layer; manual swap is the working fallback. Noted 2026-06-18 (B3).
+
+**OQ-014: Money Representation & Cap-Math Precision**
+All money (salary, cap, adjustments) arrives from MFL as decimal STRINGS ("7", "1.30", "0.1155"). `domain.PlayerRecord.Salary` is currently `float64` (B3). At this scale (values < ~150, ≤4 decimals, ~80 summed/franchise) float64 drift is ~1e-13 — safe for the VALUES, but cap math must avoid exact float equality (`availableCap == 0`) — use epsilon/rounding, OR introduce a `domain.Money` (scaled-integer micro-dollars / decimal) for exactness-by-construction. Decision deferred to the cap-math session (no consumer of the type exists yet). Recommended: keep float64 + comparison discipline unless Christopher prefers a Money type.
+Status: OPEN — type-system decision for the cap-math layer (B5/engine). Recommendation logged. Noted 2026-06-18 (B3).
 
 ---
 

@@ -151,7 +151,8 @@ Normalization rule: strip whitespace, then:
 ```
 https://api.myfantasyleague.com/2026/export?TYPE=players&JSON=1
 ```
-Cache: ONCE PER DAY MAXIMUM. MFL enforces this. Use load-balanced host, not www47.
+Cache: ONCE PER DAY MAXIMUM. MFL enforces this.
+**Host correction (B3, 2026-06-18): use the LEAGUE host (www47, L=14432), NOT the global `api` host.** The global feed (2578 live) OMITS commissioner-created players — an owner bids on someone not yet in MFL's DB and the commissioner creates a league-local record (live ids 0816/0820/0835/0838). The league feed (2621) is a superset that includes them, so every rostered id resolves at the B3 join. `internal/ingestion/players` is therefore a league-scoped, DiscoverHost-first call.
 
 **Confirmed fields from live response:**
 ```
@@ -182,7 +183,7 @@ S           S
 PN          —                  Punter — not scored, filter out
 Coach       —                  Filter out
 XX          FLAG               Unclassified — manual resolution required
-EDGE        FLAG               Route through pass-rush-primary consensus check
+EDGE        DE                 OQ-004 RESOLVED: MFL labels edge rushers DE; no separate EDGE class (0 live)
 TMWR        —                  Team WR aggregate — filter out
 TMRB        —                  Team RB aggregate — filter out
 TMDL        —                  Team DL aggregate — filter out
@@ -347,10 +348,15 @@ OQ-003  Long play bonus format in playerScores
         See docs/data-layer/MFL_Scoring_Rules_Decode.md.
 
 OQ-005  Salary adjustment line items
-        Cardinals export showed a $5.49 adjustment. Which endpoint 
-        exposes these? How are they applied to cap calculations?
-        Resolve: inspect salaries endpoint payload shape.
-        Status: OPEN
+        RESOLVED (B3, 2026-06-18). Source = the salaryAdjustments export
+        type (league-scoped), the per-franchise DEAD-CAP ledger of unclaimed
+        drops: fields franchise_id/amount/description/id/timestamp. NOT the
+        salaries endpoint (that is per-player, league-level, no franchise key,
+        no adjustment field). Live: franchise 0025 = 20 entries = $5.495.
+        Cap usage = Sum(roster salaries) + Sum(salaryAdjustments.amount) per
+        franchise. Negative amounts are VALID (commissioner cap credits).
+        Built: internal/ingestion/salaryadjustments. Aggregation deferred to
+        the cap-math engine.
 
 OQ-011  True Position split in league endpoint
         RESOLVED — Additive mechanic confirmed. Universal base: TK 1.5 / AS 1.0.

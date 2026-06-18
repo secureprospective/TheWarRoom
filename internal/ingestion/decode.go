@@ -4,7 +4,34 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 )
+
+// mflAPIError is MFL's standard error envelope. MFL returns HTTP 200 with
+// {"error":{"$t":"..."}} for many failures (invalid league id, maintenance,
+// rate-limit) rather than a non-2xx status. A fetcher that treats an empty decode as
+// a VALID empty result — e.g. salaryadjustments, where an empty ledger is legitimate
+// and there is no zero-length sentinel — MUST check this BEFORE flattening, or an
+// error payload silently reads as "no data" and wipes real state downstream.
+type mflAPIError struct {
+	Error *struct {
+		Text string `json:"$t"`
+	} `json:"error"`
+}
+
+// CheckAPIError returns a non-nil error when body is an MFL API-error payload. It is
+// decode-tolerant: malformed JSON is not its concern (the caller's real decode will
+// surface that), so it fires only on a well-formed MFL {"error":{"$t":...}} shape.
+func CheckAPIError(body []byte) error {
+	var e mflAPIError
+	// Decode-tolerant: only act on a cleanly-decoded MFL error shape. Malformed
+	// JSON is left for the caller's real decode to surface (hence we proceed only
+	// when Unmarshal succeeds, rather than returning nil on its error).
+	if json.Unmarshal(body, &e) == nil && e.Error != nil && strings.TrimSpace(e.Error.Text) != "" {
+		return fmt.Errorf("ingestion: MFL API error: %s", strings.TrimSpace(e.Error.Text))
+	}
+	return nil
+}
 
 // MFLList decodes an MFL JSON field that is either a JSON array or — when MFL's
 // legacy XML→JSON converter emits exactly one element — a bare object with the
