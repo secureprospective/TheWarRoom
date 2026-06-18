@@ -4,6 +4,7 @@ go 1.26.4
 
 require (
 	github.com/wailsapp/wails/v2 v2.12.0
+	go.uber.org/goleak v1.3.0
 	golang.org/x/time v0.8.0
 	modernc.org/sqlite v1.52.0
 )

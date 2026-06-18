@@ -15,7 +15,9 @@ A 32-team dynasty fantasy football ranking engine and full-stack desktop applica
 
 ## Current Build State (June 2026)
 
-**B0 — Project Scaffold COMPLETE (2026-06-17). First code build done; build phase active. Next: B1.**
+**B1 — MFL API Client COMPLETE (2026-06-18). Transport layer locked + live-tested. Next: B2 (MFL Data Ingestion).**
+
+**B1 close (2026-06-18):** `internal/mfl` formalized to WF 1A + 3 T4 fixes; the transport template (`New`/`Do`/`DiscoverHost`, rate-limit + 429 backoff + host routing) is locked — fetchers inherit it, never re-implement it. TWO Gemini 3.1 Pro first-instance reviews (client, then the live test) each caught real BLOCKERs the linters could not: a `NaN` rate slipping past `rps<=0` into the limiter (→ `Wait` blocks forever), and retries bypassing the limiter (→ concurrent storm). Both triaged against source (M13) and fixed. Live smoke test (`TWR_LIVE_MFL=1`, opt-in) PASSED on the Beelink: discovered host `www47`, `Do(rosters)` → 200 with a 140KB real rosters payload. Squash-merged to main. **Q2.1 deferred (Christopher blessed):** a league-specific call made before discovery falls back to the `api` host rather than hard-erroring — "discover first" is a B2 ingestion responsibility, not a transport constraint.
 
 All architecture documents are on disk. Engine specification, 10 position rubrics, UI architecture, backend architecture, Layer 4 pre-build audit, and testing harness specification are complete. MFL scoring rules decoded and verified.
 
@@ -58,7 +60,7 @@ All architecture documents are on disk. Engine specification, 10 position rubric
 4. First code build: B0 — Project Scaffold (Session 1). **B0 carries forward:** copy the G0 overlay (`.golangci.yml`, `playerid/`, `tools/ifaceguard/`, Makefile, pre-commit) into the repo; commit a pinned toolchain for agy/Claude parity (9.6); apply the B1 fixes from T4 (stale `client.go:36` comment, `time.NewTimer`+`Stop`, `rps>0` guard).
 - **DONE this session:** PAT/Friction #12 (FIXED, branches pushed) · AD-06 + interface{} enforcement (LOCKED) · Section 9 collab workflow (REBUILT + VALIDATED, both channels live).
 
-**Next branch:** B0 merged to `main` (`session/b0-scaffold`, all 3 gates passed 2026-06-17). The next branch is **B1 — MFL API Client** (`session/b1-mfl-client`) — handoff ready at `docs/build-handoffs/handoffs/02-B1.md`. Note: B1 **formalizes the EXISTING `internal/mfl` friction client + applies 3 T4 fixes** (it is not greenfield). **Collaboration model: Claude + agy only; agy was out of usage 2026-06-17, so the B0 First-Instance review ran via the Gemini Collaboration Loop.** Beelink is now a working Wails dev machine (Go 1.26.4 + Wails 2.12 + pnpm 9 + WebKit 4.1; build/run with `-tags webkit2_41`).
+**Next branch:** B1 merged to `main` (`session/b1-mfl-client`, all 3 gates passed 2026-06-18). The next branch is **B2 — MFL Data Ingestion** (`session/b2-mfl-ingestion`) — handoff ready at `docs/build-handoffs/handoffs/03-B2.md`. B2 builds Layer-1 fetchers (WF 1B) on top of the locked `internal/mfl` transport: rosters fetcher FIRST (template-setter, gets the first-instance review), then schedule. **OQ-005 (salary adjustment) is OPEN and gates the CONTRACTS/salary fetcher only — defer it; rosters + schedule proceed.** **Collaboration model: Claude + agy; agy returns Friday — until then the review gate is Gemini 3.1 Pro (two clean first-instance reviews on B1).** Beelink is the Wails/live-test dev machine (Go 1.26.4 + Wails 2.12 + pnpm + WebKit 4.1; `-tags webkit2_41`) — see Functional Verification above.
 
 **SL-022 still active:** WR SL-019 excluded for v1.0 (SL-OQ-043 closed, Option A). Layer 3 carries WR aging. Calibration revisit flagged for v1.1.
 
@@ -74,7 +76,20 @@ All architecture documents are on disk. Engine specification, 10 position rubric
    - Data pipeline work → `docs/data-layer/`
    - Transaction work → `docs/transactions/`
    - Testing → `docs/build-handoffs/Testing_App_Specification.md`
-4. Build command: not yet defined (pre-first-build, no `go.mod` in this repo yet). Go 1.26.4 toolchain IS installed on CT105 (`/usr/local/go/bin`, not on default `$PATH` — Friction #1, 2026-06-13) along with golangci-lint 2.12.2 and pre-commit 3.0.4, ready for B0.
+4. Build command: `make lint` (ifaceguard + filelen + golangci-lint, all must pass) then `make test` (`go test -race ./...`). Go 1.26.4 is at `/usr/local/go/bin` (NOT on default `$PATH` — Friction #1; prepend it). **On CT105 (2GB RAM), `golangci-lint run ./...` OOM-kills unless you warm the build cache first (`go build ./...`) and cap memory — run lint as `GOMEMLIMIT=1500MiB GOGC=20 golangci-lint run ./...` (or via `make lint` with those env vars set). `.golangci.yml` already pins `concurrency: 1`.** `wails build` produces the desktop binary (needs the GUI libs; headless CT105 compiles it but cannot display it).
+
+---
+
+## Functional Verification on the Beelink (READ before asking Christopher to run anything)
+
+CT105 is headless and its firewall may block outbound — GUI runs and live network tests happen on the **Beelink (192.168.1.190)**. To avoid the B1 round-trips, follow this every time:
+
+1. **PUSH the session branch to origin from CT105 FIRST.** The Beelink pulls from origin; it cannot see an unpushed local branch. (B1 cost a round-trip because the branch wasn't pushed.)
+2. The Beelink clone is **`/home/chris/TheWarRoom`** (the CT105 `/mnt/storage/...` path does NOT exist there; `/home/chris/.config/TheWarRoom` is just the SQLite data dir). Go is `/usr/local/go/bin/go`.
+3. The Beelink may be on a **stale branch** — the paste.md batch must `git fetch origin` before `git checkout <branch>`.
+4. Per [[feedback_paste_md_copypaste]]: any command Christopher runs goes in `/root/paste.md`, labeled with why + where (target machine, repo path) + what PASS looks like.
+
+Live/network tests are **opt-in and env-gated** (e.g. `TWR_LIVE_MFL=1`) so they never fire in the default suite/CI; they still compile + lint with everything else (no build tag). Copy `internal/mfl/client_live_test.go` as the pattern.
 
 ---
 
@@ -120,8 +135,10 @@ All architecture documents are on disk. Engine specification, 10 position rubric
 
 | Item | Status |
 |---|---|
-| OQ-004 EDGE position mapping source | OPEN |
-| OQ-005 Salary adjustment line item | OPEN |
+| B1 — MFL API Client | **COMPLETE 2026-06-18** — transport template locked + live-tested (www47, rosters 200). Merged to main. 2 Gemini reviews, 2 real BLOCKERs fixed |
+| OQ-004 EDGE position mapping source | OPEN — gates B3 |
+| OQ-005 Salary adjustment line item | OPEN — gates the B2 contracts fetcher + B3; rosters/schedule fetchers proceed without it |
+| Q2.1 league-call-before-discovery | **DEFERRED to B2 (Christopher blessed)** — transport falls back to `api` host; "discover first" is an ingestion responsibility, not a transport hard-error |
 | OQ-006 Cap tier calibration | OPEN — resolve after live data |
 | OQ-007 Scouting layer weight | OPEN — resolve after testing |
 | OQ-008 Franchise tag calculation timing | OPEN |

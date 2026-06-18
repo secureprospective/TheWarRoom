@@ -54,7 +54,7 @@ This is the document opened at the start and end of every build session. One lin
 
 | # | Status | Session | Scope | Gate | WF | L |
 |---|---|---|---|---|---|---|
-| 2 | `[ ]` | **B1 — MFL API Client** | HTTP transport only: rate limiting, backoff, host routing. One exported `Do()`. No domain types. | B0 | 1A | 1 |
+| 2 | `[x]` | **B1 — MFL API Client** | HTTP transport only: rate limiting, backoff, host routing. `Do()` + `DiscoverHost()`. No domain types. **COMPLETE 2026-06-18: all 3 gates passed — build green (make lint 0 / go test -race, 8 tests); TWO Gemini first-instance reviews (client + live test) caught 2 real BLOCKERs the linters missed (NaN past rps>0 guard; retries bypassing the limiter → storm), both triaged + fixed; live smoke test PASS on Beelink (host www47, rosters 200, 140386 bytes, real payload). Squash-merged to main. Handoff 03-B2.md written.** | B0 | 1A | 1 |
 | 3 | `[ ]` | **B2 — MFL Data Ingestion** | Fetch schedule, raw record storage. Consumes B1. | B1 · **OQ-005** | 1B | 1 |
 | 4 | `[ ]` | **B3 — MFL Data Normalization** | Raw → typed internal records. RISK-003 via `internal/playerid` (AD-06). Internal types locked — **reviewed deliverable** (AD-18). | B2 · **OQ-004, OQ-005** | 1C | 1 |
 | 5 | `[ ]` | **B2b-Schema — Scouting Schema** | Design + lock the unified scouting schema, all 10 positions. **Human review gate before Session 14** — walk every position's inputs; decide SL-OQ-035/036 field reservation (AD-16). | B1 · B3 *(design-ordering, not code dep — AD-13)* | 1B | 1 |
