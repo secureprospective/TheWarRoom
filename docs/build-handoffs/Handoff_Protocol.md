@@ -24,6 +24,19 @@ When Christopher clears the session and opens a fresh one, he pastes the saved h
 
 ---
 
+## Recon Phase (Haiku fan-out) — default opening move, every remaining session
+
+The 38-module build runs on a standing pattern: **before design or build, spin up a Haiku Explore subagent to fan out over this session's `READ FIRST` docs and return a consolidated inventory** — not file dumps, the conclusions. Haiku is the cheap, disposable **recon/fetch tier** (per the Technical pillar's Multi-Agent Orchestration; agy remains the whole-deliverable tier when back). It reads breadth so the cold context window doesn't have to.
+
+Mandatory guardrails (learned B3 / B2b-Schema):
+- **Recon gathers; judgment stays with Claude + Christopher.** A subagent never owns a design decision, a human-review gate (AD-16), or a locked-decision reversal.
+- **Verify the load-bearing claims against source before acting.** A subagent — like any review agent — can't see what the driver can. Spot-check the items a decision rests on (file:line) before they move a build.
+- Good recon jobs: input inventories, endpoint/shape probes, cross-doc constraint sweeps, "which positions reference X" boundary checks. Bad jobs: anything that writes code, scores, or locks a decision.
+
+Reflected in the `== RECON ==` field of the template below — fill it every session.
+
+---
+
 ## The Template
 
 Copy verbatim. Fill every field. Mark unknowns explicitly — never guess.
@@ -42,6 +55,13 @@ Project: TheWarRoom · Stack: Go · Wails v2 · React+Tailwind+Zustand · SQLite
 - Wireframe <#> in the Session 2 plan — the structure this session's code must match
 - <position rubric / module spec / store spec for this block>
 - <any SL decision or rubric section that governs this session>
+
+== RECON (Haiku fan-out — run before design/build) ==
+- Spin a Haiku Explore subagent over the READ FIRST docs; ask for: <the specific
+  consolidated inventory this session needs — e.g., "every input field per position",
+  "exact endpoint shape", "which SL decisions bite here">.
+- Verify its load-bearing claims against source (file:line) before acting.
+- Recon gathers only; design/gates/locked-decision reversals stay with Claude + Christopher.
 
 == GATE CHECK (confirm before writing code) ==
 - Upstream complete: <list — e.g., B5a, B2b-Off>. Verified: <yes/no>

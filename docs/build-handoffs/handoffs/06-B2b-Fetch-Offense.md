@@ -23,6 +23,15 @@ Project: TheWarRoom · Stack: Go · Wails v2 · React+Tailwind+Zustand · SQLite
 - internal/ingestion/ (the boundary-helper pattern: MFLList, ValidatePlayerID,
   CheckAPIError — reuse, do not re-implement).
 
+== RECON (Haiku fan-out — run before design/build) ==
+- Spin a Haiku Explore subagent over the QB/RB/WR/TE rubrics + Scouting_Schema.md and
+  ask for: per-position offense sub-signal → scouting.Profile field map, each source's
+  weight, and the column "what data source / ingestion path does each sub-signal need"
+  (the source-access question is this session's real gate).
+- Verify the source-access claims against the rubrics + MFL refs (file:line) before
+  building any fetcher. Do NOT let recon invent a data source.
+- Recon gathers only; the source-path decisions stay with Claude + Christopher.
+
 == GATE CHECK (confirm before writing code) ==
 - Upstream complete: B2b-Schema (scouting.Profile). Verified: yes.
 - Open questions that block this session: none hard. SOURCE ACCESS is the real
