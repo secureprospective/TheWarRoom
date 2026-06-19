@@ -191,6 +191,9 @@ No hardcoded cap amounts, scoring values, or roster limits in the engine. All co
 **DECISION-010: Historical season scores are preserved under the original scoring config.**
 Changing engine parameters does not retroactively re-score prior seasons. Every engine output record carries a `scoring_config_id`. Historical scores are immutable. New config → new records only.
 
+**DECISION-011: Kicker Layer-4 valuation is Madden-driven (Christopher, 2026-06-19).**
+K's Layer-4 Film component is ACTIVE, with sub-signals **Madden 0.60 / NFLProduction 0.40** (Madden kick power/accuracy is the one genuinely scoutable kicker signal). RAS stays excluded (SL-020, routed to L6); Breakout stays excluded. This **reverses** the K rubric's prior structural-exclusion model (flat 1.000 Layer 4; Madden "archival only"), **AD-10** (K combine = 1.000), and **SL-020's** forcing of all three K Layer-4 components to 1.000. Schema impact: none structural — `scouting.Profile.MaddenFilm` already covers it (B2b-Schema). Carried to **B5b-K**: the Film component cap/curve calibration and the formal K-rubric + AD-10 + SL-020 mechanics rewrite. See docs/scoring-engine/Scouting_Schema.md.
+
 ---
 
 ---
@@ -238,8 +241,8 @@ SL-OQ-001 through SL-OQ-028 documented in individual rubrics and `Engine_Specifi
 | SL-OQ-032 | DL-dominated-system context normalization for LB college production share | LB | Gemini-originated |
 | SL-OQ-033 | CB subjective scouting anchor strength — PFF + NGS dominance vs. thin TDN/RSP CB coverage | CB | Open |
 | SL-OQ-034 | Targets-starved elite CB NGS interpretation ("Revis Island" problem) | CB | Gemini-originated |
-| SL-OQ-035 | Box-safety vs. deep-safety rubric branching — split S into S_BOX and S_DEEP sub-rubrics? | S | Open |
-| SL-OQ-036 | Role-specific sub-signal weighting within monolithic S rubric (alternative to SL-OQ-035) | S | Gemini-originated |
+| SL-OQ-035 | Box-safety vs. deep-safety rubric branching — split S into S_BOX and S_DEEP sub-rubrics? | S | Open — schema reserves `scouting.SafetyRole` (B2b-Schema, AD-16); S monolithic v1.0; resolve post-live-data |
+| SL-OQ-036 | Role-specific sub-signal weighting within monolithic S rubric (alternative to SL-OQ-035) | S | Open — covered by the same reserved `scouting.SafetyRole` field; resolves with SL-OQ-035 post-live-data |
 | SL-OQ-037 | Cushion Guard threshold — binary 8.00 vs. continuous RAS scaling | DT | Open |
 | SL-OQ-038 | Dynamic Year 1 / Year 2+ PFF α propagation — should this become cross-rubric? | DT | Session 3 venue |
 | SL-OQ-039 | Dynamic α down-shift trigger — when exactly does Year 1 end? | DT | Gemini-originated |
@@ -273,7 +276,7 @@ CAL-001 through CAL-021 documented in individual rubrics. Session 2 additions:
 | Series | Next Available | Last Used | Last Source |
 |---|---|---|---|
 | OQ- | 013 | OQ-012 | League (fantasy) schedule source & schema |
-| DECISION- | 011 | DECISION-010 | Historical score preservation |
+| DECISION- | 012 | DECISION-011 | K Layer-4 Madden-driven valuation |
 | SL- | 023 | SL-022 | WR SL-019 exclusion v1.0 (SL-OQ-043 closed) |
 | SL-OQ- | 044 | SL-OQ-043 | WR SL-019 status (CLOSED — Option A, SL-022 assigned) |
 | CAL- | 033 | CAL-032 | K Madden archival utility |
