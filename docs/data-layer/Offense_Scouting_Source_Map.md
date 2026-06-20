@@ -29,6 +29,7 @@ Both independent votes converged on D. The deciding argument (the "rookie proble
 
 | Field(s) | Source & exact access | Quality / Durability | Status |
 |---|---|---|---|
+| **MFL↔gsis crosswalk (FOUNDATION)** | dynastyprocess `https://raw.githubusercontent.com/dynastyprocess/data/master/files/db_playerids.csv` (`mfl_id`,`gsis_id`) | High / Med (3rd-party maintained) | ✅ BUILT + live-verified (`internal/ingestion/crosswalk`, 7979 entries, 2026-06-20) |
 | NFLProduction | nflverse `…/releases/download/player_stats/player_stats_season_{year}.csv` | High / High | ✅ verified 200 |
 | TouchShare (RB) | nflverse `…/releases/download/snap_counts/snap_counts_{year}.csv` | High / High | ✅ verified 200 |
 | CollegeProductionShare | CFBD `GET api.collegefootballdata.com/stats/player/season?year=&team=&category=rushing\|receiving` + local Go team-sum | High / High | ⚠ needs key (401) + targets check (§4) |
@@ -41,6 +42,8 @@ Both independent votes converged on D. The deciding argument (the "rookie proble
 | **Rookie consensus film** | **MANUAL** consensus-rank CSV (`Rank, Player, Position, College`), normalized [0,1] within class | — | the 1 surviving manual input |
 
 **ELIMINATED (no clean automatable source — two sweeps):** PFFGrade, RSPQualitative, DraftNetwork, SharpFootball.
+
+**GAP CLOSED (2026-06-20, B2b-Fetch build):** the original §2 had no gsis→MFL crosswalk, yet `scouting.Profile` is keyed by MFL id and every nflverse source keys on `gsis_id` — so as written no nflverse signal could attach to a rostered player. nflverse `players.csv` does NOT carry `mfl_id` (verified live; it has gsis/pfr/espn only). Fix: dynastyprocess `db_playerids.csv` (row above). **Direction is MFL→gsis** (keyed by the unique side): gsis→MFL is genuinely one-to-many because MFL keeps duplicate player records (live: gsis `00-0031320` → mfl `12459` AND `12571`). The R-generated source encodes missing cells as the literal string `"NA"`, not empty — both are skipped at the boundary. Built as the foundation leaf all other offense fetchers join through.
 
 **Defense-session note (B2b-Fetch-Defense, do not build here):** NGS receiving = `…/releases/download/nextgen_stats/ngs_receiving.csv.gz` (GZIPPED) is the CB/S Coverage anchor.
 
