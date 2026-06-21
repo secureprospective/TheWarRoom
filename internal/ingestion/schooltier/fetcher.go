@@ -19,10 +19,10 @@
 // player via that player's college (school name), so no gsis/MFL crosswalk is needed.
 //
 // CFBD IS AN AUTHED JSON API, NOT A STATIC CSV — it does NOT use extcsv.go. It needs a
-// bearer token and (from CT105) HTTP/1.1 (see NewClient). The minimal CFBD client here
-// is intentionally LOCAL to this package for now; when CollegeProductionShare (the 2nd
-// CFBD fetcher) lands, extract the shared auth/JSON/HTTP-1.1 client to a shared
-// ingestion/cfbd.go then, not before (Codex M17 — extract on the second instance).
+// bearer token and (from CT105) HTTP/1.1. The shared CFBD client + bearer-authed,
+// byte-capped GET now live in ingestion/cfbd.go (extracted at the 2nd CFBD caller,
+// collegeshare — Codex M17); this fetcher keeps only its own lenient decode into the
+// team shape.
 //
 // ZERO-LEAK (hard constraint): a competition tier carries no fantasy points, projected
 // volume, or MFL scoring — a leak is structurally unrepresentable here.
@@ -30,14 +30,13 @@ package schooltier
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/scouting"
 )
 
@@ -70,19 +69,6 @@ type team struct {
 	Classification string `json:"classification"`
 }
 
-// NewClient returns an *http.Client for the CFBD API with HTTP/2 DISABLED.
-// api.collegefootballdata.com returns an HTTP/2 PROTOCOL_ERROR from CT105 (verified
-// live 2026-06-21: curl --http1.1 succeeds where default h2 fails); pinning the
-// transport's TLSNextProto to a non-nil empty map forces HTTP/1.1.
-func NewClient(timeout time.Duration) *http.Client {
-	return &http.Client{
-		Timeout: timeout,
-		Transport: &http.Transport{
-			TLSNextProto: map[string]func(string, *tls.Conn) http.RoundTripper{},
-		},
-	}
-}
-
 // Fetch retrieves the CFBD teams for a season and returns a school-name -> SchoolTier
 // map. client, baseURL, apiKey, and year are injected (no package globals) so the
 // fetcher is unit-testable against a fixture server and source-move safe. A school
@@ -106,26 +92,15 @@ func Fetch(ctx context.Context, client *http.Client, baseURL, apiKey string, yea
 	return out, nil
 }
 
-// getTeams performs the authed GET and decodes the team slice (lenient).
+// getTeams performs the shared CFBD authed GET and decodes the team slice (lenient).
 func getTeams(ctx context.Context, client *http.Client, baseURL, apiKey string, year int) ([]team, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"?year="+strconv.Itoa(year), nil)
+	body, err := ingestion.GetCFBD(ctx, client, baseURL+"?year="+strconv.Itoa(year), apiKey, ingestion.DefaultMaxCFBDBytes)
 	if err != nil {
-		return nil, fmt.Errorf("schooltier: build request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("schooltier: fetch teams: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("schooltier: CFBD /teams unexpected status %d", resp.StatusCode)
+		return nil, fmt.Errorf("schooltier: %w", err)
 	}
 
 	var teams []team
-	if err := json.NewDecoder(resp.Body).Decode(&teams); err != nil {
+	if err := json.Unmarshal(body, &teams); err != nil {
 		return nil, fmt.Errorf("schooltier: decode teams: %w", err)
 	}
 	return teams, nil

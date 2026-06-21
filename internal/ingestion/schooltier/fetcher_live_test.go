@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/scouting"
 )
 
@@ -30,7 +31,7 @@ func TestLive_SchoolTierFetch(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	out, err := Fetch(ctx, NewClient(60*time.Second), TeamsURL, key, 2024)
+	out, err := Fetch(ctx, ingestion.NewCFBDClient(60*time.Second), TeamsURL, key, 2024)
 	if err != nil {
 		t.Fatalf("Fetch against live CFBD: %v", err)
 	}
