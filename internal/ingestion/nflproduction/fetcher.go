@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -144,18 +143,18 @@ func rowProduction(cols map[string]int, rec []string, gsis string) (RawProductio
 		colGames, colCompletions, colAttempts, colPassTDs, colInts, colCarries,
 		colRushTDs, colReceptions, colTargets, colRecTDs,
 	} {
-		v, err := intCell(rec, cols[name], name)
+		v, err := ingestion.IntCell(rec, cols[name], name)
 		if err != nil {
-			return RawProduction{}, err
+			return RawProduction{}, fmt.Errorf("nflproduction: %w", err)
 		}
 		ints[name] = v
 	}
 
 	floats := map[string]float64{}
 	for _, name := range []string{colPassYds, colRushYds, colRecYds} {
-		v, err := floatCell(rec, cols[name], name)
+		v, err := ingestion.FloatCell(rec, cols[name], name)
 		if err != nil {
-			return RawProduction{}, err
+			return RawProduction{}, fmt.Errorf("nflproduction: %w", err)
 		}
 		floats[name] = v
 	}
@@ -176,31 +175,4 @@ func rowProduction(cols map[string]int, rec []string, gsis string) (RawProductio
 		ReceivingYards: floats[colRecYds],
 		ReceivingTDs:   ints[colRecTDs],
 	}, nil
-}
-
-// intCell parses a counting-stat cell: a missing/NA cell is a legitimate 0 (the
-// player recorded none); a present-but-unparseable cell fails loud.
-func intCell(rec []string, idx int, name string) (int, error) {
-	v := strings.TrimSpace(rec[idx])
-	if ingestion.IsMissing(v) {
-		return 0, nil
-	}
-	n, err := strconv.Atoi(v)
-	if err != nil {
-		return 0, fmt.Errorf("nflproduction: column %q value %q: %w", name, v, err)
-	}
-	return n, nil
-}
-
-// floatCell parses a yardage cell, same missing-is-zero / malformed-fails-loud rule.
-func floatCell(rec []string, idx int, name string) (float64, error) {
-	v := strings.TrimSpace(rec[idx])
-	if ingestion.IsMissing(v) {
-		return 0, nil
-	}
-	f, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return 0, fmt.Errorf("nflproduction: column %q value %q: %w", name, v, err)
-	}
-	return f, nil
 }

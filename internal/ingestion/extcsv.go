@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -91,4 +92,37 @@ func CSVColumns(header []string, names ...string) (map[string]int, error) {
 		pos[name] = idx
 	}
 	return pos, nil
+}
+
+// IntCell parses a counting-stat cell at rec[idx]: a missing/NA cell is a legitimate
+// 0 (the entity recorded none), while a present-but-unparseable cell fails loud — a
+// value that is present yet won't parse is corruption, not zero, and silently
+// zeroing it would hide the corruption. label names the column in the error so a
+// failure points at the offending source field. Shared by the numeric fetchers
+// (nflproduction, touchshare, …) so the missing-is-zero / malformed-fails-loud rule
+// is defined once, not copy-pasted (Codex M17).
+func IntCell(rec []string, idx int, label string) (int, error) {
+	v := strings.TrimSpace(rec[idx])
+	if IsMissing(v) {
+		return 0, nil
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, fmt.Errorf("ingestion: column %q value %q: %w", label, v, err)
+	}
+	return n, nil
+}
+
+// FloatCell parses a numeric cell, applying the same missing-is-zero /
+// malformed-fails-loud rule as IntCell for fractional values (yardage, share/pct).
+func FloatCell(rec []string, idx int, label string) (float64, error) {
+	v := strings.TrimSpace(rec[idx])
+	if IsMissing(v) {
+		return 0, nil
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return 0, fmt.Errorf("ingestion: column %q value %q: %w", label, v, err)
+	}
+	return f, nil
 }
