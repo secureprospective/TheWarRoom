@@ -66,6 +66,75 @@ func FetchCSV(ctx context.Context, client *http.Client, url string, maxBytes int
 	return records, nil
 }
 
+// StreamCSV GETs an external CSV over plain HTTP and invokes fn once per DATA row
+// (header excluded), reading the body row-by-row instead of buffering it whole. It is
+// the streaming sibling of FetchCSV for sources too large to hold in memory at once:
+// play-by-play is hundreds of MB, so FetchCSV's csv.ReadAll would buffer the entire
+// body and risk OOM on a small host (CT105 is 2 GB). Peak memory here is one row,
+// regardless of file size — the caller accumulates only the aggregates it needs and
+// the row is discarded each iteration.
+//
+// It keeps every FetchCSV guarantee: status-checked, byte-capped via io.LimitedReader
+// (fails loud over the cap rather than silently truncating a tail of rows), and the
+// header bound BY NAME (required columns asserted present, BOM stripped). The bound
+// column map is built once from the header and passed into every fn call; returning an
+// error from fn aborts the stream with that error (the per-row fail-loud hook). The
+// response body is always closed.
+//
+// The record slice passed to fn is REUSED between calls (csv ReuseRecord) to avoid a
+// per-row allocation across tens of thousands of rows: fn may read/copy cell values
+// (each cell string is freshly allocated) but MUST NOT retain the rec slice itself.
+func StreamCSV(ctx context.Context, client *http.Client, url string, maxBytes int64,
+	required []string, fn func(cols map[string]int, rec []string) error) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("ingestion: build CSV request: %w", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("ingestion: fetch CSV %s: %w", url, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ingestion: CSV %s unexpected status %d", url, resp.StatusCode)
+	}
+
+	// Read one byte past the cap (as FetchCSV does): if the LimitedReader is fully
+	// consumed (N == 0) by the end of the stream the source was over budget.
+	lr := &io.LimitedReader{R: resp.Body, N: maxBytes + 1}
+	r := csv.NewReader(lr)
+	r.ReuseRecord = true
+
+	header, err := r.Read()
+	if err != nil {
+		return fmt.Errorf("ingestion: read CSV %s header: %w", url, err)
+	}
+	cols, err := CSVColumns(header, required...)
+	if err != nil {
+		return fmt.Errorf("ingestion: %w", err)
+	}
+
+	for {
+		rec, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("ingestion: read CSV %s: %w", url, err)
+		}
+		if err := fn(cols, rec); err != nil {
+			return err
+		}
+	}
+
+	if lr.N == 0 {
+		return fmt.Errorf("ingestion: CSV %s exceeds %d-byte cap", url, maxBytes)
+	}
+	return nil
+}
+
 // CSVColumns binds each named column to its index in the CSV header, stripping a
 // leading UTF-8 BOM from the first cell (an invisible byte some exporters emit that
 // would otherwise defeat a name match — Technical pillar Debugging Discipline). It

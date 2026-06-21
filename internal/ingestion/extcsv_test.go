@@ -66,6 +66,78 @@ func TestFetchCSV_RaggedRowFailsLoud(t *testing.T) {
 	}
 }
 
+// M3 gate-proof for the streaming path: the byte cap is not real until a deliberate
+// over-cap payload is seen to fail it. A single-column body keeps truncation clean
+// (no field-count noise), so the failure is unambiguously the cap, not a parse error.
+func TestStreamCSV_ExceedsCapFailsLoud(t *testing.T) {
+	t.Parallel()
+	body := "col\n" + strings.Repeat("a", 600) + "\n"
+	client, url := serveCSV(t, http.StatusOK, body)
+
+	err := StreamCSV(context.Background(), client, url, 50, []string{"col"},
+		func(_ map[string]int, _ []string) error { return nil })
+	if err == nil {
+		t.Fatal("expected a cap-exceeded error, got nil")
+	}
+	if !strings.Contains(err.Error(), "exceeds") {
+		t.Fatalf("want a cap-exceeded error, got %v", err)
+	}
+}
+
+// A per-row callback error aborts the stream and surfaces loudly (the malformed-row
+// half of the gate) — and rows after the offending one are not processed.
+func TestStreamCSV_CallbackErrorAborts(t *testing.T) {
+	t.Parallel()
+	client, url := serveCSV(t, http.StatusOK, "n\n5\nbad\n7\n")
+
+	seen := 0
+	err := StreamCSV(context.Background(), client, url, DefaultMaxCSVBytes, []string{"n"},
+		func(cols map[string]int, rec []string) error {
+			seen++
+			_, err := IntCell(rec, cols["n"], "n")
+			return err
+		})
+	if err == nil || !strings.Contains(err.Error(), "bad") {
+		t.Fatalf("want a malformed-cell error naming the value, got %v", err)
+	}
+	if seen != 2 {
+		t.Fatalf("stream did not abort: saw %d rows, want 2 (5, then bad)", seen)
+	}
+}
+
+// The happy path: every data row is delivered once, columns are bound by name, and a
+// cell value copied out of the reused record survives (ReuseRecord copy-safety).
+func TestStreamCSV_StreamsAllRows(t *testing.T) {
+	t.Parallel()
+	client, url := serveCSV(t, http.StatusOK, "a,b\n1,2\n3,4\n5,6\n")
+
+	var got []string
+	err := StreamCSV(context.Background(), client, url, DefaultMaxCSVBytes, []string{"a", "b"},
+		func(cols map[string]int, rec []string) error {
+			if cols["a"] != 0 || cols["b"] != 1 {
+				t.Errorf("columns bound wrong: %v", cols)
+			}
+			got = append(got, rec[cols["a"]])
+			return nil
+		})
+	if err != nil {
+		t.Fatalf("StreamCSV: %v", err)
+	}
+	if want := []string{"1", "3", "5"}; strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("got rows %v, want %v", got, want)
+	}
+}
+
+func TestStreamCSV_Non200(t *testing.T) {
+	t.Parallel()
+	client, url := serveCSV(t, http.StatusNotFound, "nope")
+	err := StreamCSV(context.Background(), client, url, DefaultMaxCSVBytes, nil,
+		func(_ map[string]int, _ []string) error { return nil })
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+}
+
 func TestCSVColumns(t *testing.T) {
 	t.Parallel()
 
