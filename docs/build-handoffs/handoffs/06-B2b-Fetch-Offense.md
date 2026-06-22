@@ -1,84 +1,73 @@
-HANDOFF — Session 6: B2b-Fetch-Offense — Scouting fetchers for offense sources
+HANDOFF — Session 6: B2b-Fetch-Offense — Scouting fetchers for offense
 Project: TheWarRoom · Stack: Go · Wails v2 · React+Tailwind+Zustand · SQLite WAL
 
 == WHERE WE ARE ==
-- Just completed: Session 5 (B2b-Schema — Scouting Schema). Build green: yes
-  (make lint 0; go test -race ./... green). Branch merged: <confirm
-  session/b2b-scouting-schema is squash-merged to main before starting>.
-- Working tree: clean on main. The unified scouting shape is LOCKED at
-  internal/scouting (Profile + OffenseFilm/IDPFilm/NGSCoverage conditional groups
-  + SchoolTier/SafetyRole enums). AD-16 walk passed. It is a leaf (imports only
-  playerid); it does NOT fetch and does NOT score.
-- This session's branch: session/b2b-fetch-offense (branch from main).
+- B2b-Schema (Session 5) merged: internal/scouting shape LOCKED.
+- 2026-06-19 SOURCE-ACCESS RECON SESSION (no fetcher code written yet): the source-access
+  question — flagged as this session's "real gate" — is now RESOLVED with a strategic pivot.
+  Branch session/b2b-fetch-offense exists; only DOCS changed (source map, OQ-015, this handoff,
+  CLAUDE.md). No internal/ code yet.
+- READ THIS FIRST, it changes the build: docs/data-layer/Offense_Scouting_Source_Map.md
+  (the complete decision + every verified endpoint + zero-leak ledger + open items).
+
+== THE PIVOT (supersedes the old "manual manifest" plan) ==
+DECISION (Option D, owner-confirmed via dual Claude+Gemini vote): ELIMINATE manual entry.
+- Veterans → 0 manual. Rookies → exactly 1 manual input/yr (a consensus draft-rank CSV).
+- PFF / Matt Waldman RSP / The Draft Network / Sharp Football are ELIMINATED (no clean
+  automatable source — verified two sweeps). Do NOT build a manifest importer for them.
 
 == READ FIRST ==
-- internal/scouting/types.go + constants.go (the shape you populate — do NOT change
-  it without cause; if a source needs a field that isn't there, flag it, don't
-  silently widen the schema).
-- docs/scoring-engine/Scouting_Schema.md (the per-position coverage table + zero-leak
-  invariant + scale convention [0,1]).
-- docs/scoring-engine/{QB,RB,WR,TE}_Rubric.md (the offense sub-signals + weights).
-- docs/data-layer/MFL_API_Reference.md + MFL_API_Specification.md (only if a source
-  routes through MFL; most scouting sources do NOT — see below).
-- internal/ingestion/ (the boundary-helper pattern: MFLList, ValidatePlayerID,
-  CheckAPIError — reuse, do not re-implement).
+- docs/data-layer/Offense_Scouting_Source_Map.md  ← THE canonical reference for this build
+- internal/scouting/types.go + constants.go  (the output shape; do not widen without cause)
+- docs/roadmap/Roadmap_and_Open_Questions.md → OQ-015 (resolved → Option D)
+- internal/ingestion/ (boundary-helper pattern: MFLList, ValidatePlayerID, CheckAPIError — reuse)
+- internal/mfl/ (transport template — NOTE: these new sources are NOT MFL; see below)
 
-== RECON (Haiku fan-out — run before design/build) ==
-- Spin a Haiku Explore subagent over the QB/RB/WR/TE rubrics + Scouting_Schema.md and
-  ask for: per-position offense sub-signal → scouting.Profile field map, each source's
-  weight, and the column "what data source / ingestion path does each sub-signal need"
-  (the source-access question is this session's real gate).
-- Verify the source-access claims against the rubrics + MFL refs (file:line) before
-  building any fetcher. Do NOT let recon invent a data source.
-- Recon gathers only; the source-path decisions stay with Claude + Christopher.
+== HARD GATE — CLOSE BEFORE WRITING FETCHER CODE ==
+1. CFBD API KEY: ask Christopher to mint one at collegefootballdata.com/key (endpoint 401s
+   without it; none stored). Then run a live /stats/player/season?category=receiving call to
+   settle whether CFBD exposes TARGETS — strong prior is NO, so receiver CollegeProductionShare
+   becomes RECEPTION/YARDAGE share, not target share. Confirm before coding the share math.
+2. Confirm the Madden decision still holds: current-season EA API is BLOCKED (all m26 variants
+   500). Birthdates safe via a historical slug; current MaddenFilm = lower-durability scraper
+   fallback. FTN is the PRIMARY veteran film signal, not Madden.
 
-== GATE CHECK (confirm before writing code) ==
-- Upstream complete: B2b-Schema (scouting.Profile). Verified: yes.
-- Open questions that block this session: none hard. SOURCE ACCESS is the real
-  question — most scouting sources (PFF, RSP, Sharp Football, The Draft Network,
-  Madden, RAS, college production) are NOT MFL endpoints. Confirm with Christopher
-  the ingestion path for each offense source (manual CSV import? scrape? API?)
-  BEFORE building a fetcher against an assumed source. Do not invent a data source.
-- DECISION-011 (K Madden-majority) does NOT touch this session — K is a later
-  Kicker/Archival fetch session, not offense.
+== WHAT THIS SESSION BUILDS (Layer 1 fetchers; import scouting for the type, never score) ==
+These sources are NOT MFL — they are external HTTP file/REST sources. They still inherit the
+ingestion discipline (fail-loud, shape-validate, [0,1] normalize at the boundary, live-verify).
+- CFBD fetcher: /stats/player/season (rushing|receiving) → team-sum aggregation in Go →
+  CollegeProductionShare; /teams → SchoolTier. (Bearer key from env, never hard-coded.)
+- nflverse fetchers (fetch GitHub release CSVs directly; some are .csv.gz → compress/gzip):
+  · player_stats_season_{year}.csv → NFLProduction
+  · snap_counts_{year}.csv → TouchShare (RB only)
+  · players.csv → NFL-vet birth_date → AgeTrajectory
+  · combine.csv → homebrew RAS (per-position z-score in Go; it's a RAS-EQUIVALENT, flag it) +
+    prospect DOB seed
+  · ftn_charting_{year}.csv + play_by_play_{year}.csv → JOIN on (game_id, play_id), attribute to
+    receiver/rusher/passer_player_id, aggregate to per-player film trait rates (VETERAN FILM).
+- Madden fetcher: EA ratings-api.ea.com/v2/entities/m{NN}-ratings — use a working HISTORICAL
+  slug for plyrBirthdate; current-season ratings via scraper fallback ONLY if needed (lower
+  durability). CheckAPIError-equivalent: EA returns {count,docs[]}; treat empty docs as a glitch.
+- Rookie consensus-rank: a MANUAL CSV import path (Rank,Player,Position,College) normalized
+  [0,1] within the rookie class. This is the ONE manual surface. Keep it tiny and well-documented.
 
-== WHAT THIS SESSION BUILDS ==
-- Output: the scouting fetcher(s) that populate scouting.Profile for the OFFENSE
-  positions (QB/RB/WR/TE): the universal core (PFFGrade, DraftNetwork, MaddenFilm,
-  NFLProduction, RAS, BreakoutAge, SchoolTier, CollegeProductionShare, AgeTrajectory)
-  plus the offense-conditional group OffenseFilm (RSPQualitative, SharpFootball) and
-  RB-only TouchShare.
-- Each input is normalized to [0,1] at the fetcher boundary (scale convention).
-- Layer: 1 (data population). Fetchers live under internal/ingestion (or a scouting
-  subpackage) and import scouting for the output type — they never score.
+== CONSTRAINTS ACTIVE (zero-leak ledger in the source map §7) ==
+- FTN verified clean (column-level). Raw NFLProduction/TouchShare are VOLUME — cap/watch, don't
+  let them dominate a scouting rank. REJECT FantasyPros ecrData (fantasy leak) and CFBD PPA
+  (points leak — use success rate / havoc for college "how").
+- Set only offense-relevant scouting.Profile fields; leave IDPFilm/Coverage nil. TouchShare RB only.
+- Standards: <250-line target / 400 cap; gofmt -w; on CT105 GOMEMLIMIT=1500MiB GOGC=20 make lint.
+- RUN AGAINST LIVE DATA before declaring done.
 
-== CONSTRAINTS ACTIVE THIS SESSION ==
-- ZERO-LEAK (hard): no fetched field may encode fantasy points, projected volume,
-  MFL scoring config, or format-dependent volume stats. Touch share is OK (it is
-  snap/opportunity, not fantasy points) — but verify each source field.
-- Set ONLY the offense-relevant fields. Leave IDPFilm / Coverage nil (those are
-  defense; B2b-Fetch-Defense owns them). TouchShare is RB only.
-- Any MFL-sourced fetch MUST call ingestion.CheckAPIError first (B3 learning: MFL
-  returns HTTP 200 with {"error":{...}} on failure — empty-as-valid silently wipes).
-- Standards: <250-line target / 400 cap; leaf-ish; gofmt -w before make lint
-  (comment alignment trips the gate); on CT105 run GOMEMLIMIT=1500MiB GOGC=20 make lint.
-- RUN AGAINST LIVE DATA before declaring done (B3 learning — units alone missed the
-  commissioner-created players). If a source isn't live-reachable from CT105, gate
-  the live test (TWR_LIVE_*) and verify on the Beelink.
+== DO NOT DO IN THIS SESSION (it's a separate, deliberate job) ==
+- Do NOT set new rubric weights. The Film component must be redesigned (eliminated sources were
+  100% of QB/WR/TE Film) — but reweighting is a CALIBRATION-against-data pass, not a blind number.
+  Two locked principles: durability NEVER influences a weight; quality only as a fidelity discount
+  via calibration. The fetchers populate the data; the recalibration is its own session/CAL pass.
 
-== CARRIED FROM LAST SESSION (B2b-Schema learnings) ==
-- The pointer-group design means "position doesn't use this" = nil group, not zero
-  fields. Populate OffenseFilm as a non-nil struct for QB/RB/WR/TE; leave it nil only
-  if that genuinely shouldn't exist (it shouldn't be nil for any offense position).
-- CollegeProductionShare is ONE field; the position-specific definition (QB start %,
-  RB touch %, WR/TE target %) is computed in the fetcher, not the schema.
-- Gemini is the review gate (agy still out); it found a real money BLOCKER in B3.
-  Triage every finding against source — it suggested a ToUpper that would have
-  broken MFL's case-specific codes. You can see the code; Gemini can't.
-
-== CLOSE GATE FOR THIS SESSION ==
-- Offense fetchers populate scouting.Profile for QB/RB/WR/TE with every offense field
-  set and the correct conditional groups; defense/coverage groups left nil.
-- Zero-leak verified field-by-field on the fetched data.
-- Build green: make lint 0 + go test -race. Live smoke run where reachable.
-- Handoff: write Session 7's handoff (B2b-Fetch-Defense) before clearing.
+== CLOSE GATE ==
+- Offense scouting.Profile populated from the automated sources for QB/RB/WR/TE; defense groups nil.
+- Zero-leak verified field-by-field on fetched data. Live smoke run where reachable.
+- Build green: make lint 0 + go test -race. Gemini review (agy out).
+- Handoff: write Session 7 (B2b-Fetch-Defense) — note NGS receiving = ngs_receiving.csv.gz
+  (gzipped) is the CB/S Coverage anchor.

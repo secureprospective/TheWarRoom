@@ -16,8 +16,12 @@ type Profile struct {
 	MFLID playerid.PlayerID // canonical, validated id (RISK-003)
 
 	// --- Universal core (Film anchors present at every scored position) ---
-	PFFGrade      float64 // PFF position grade
-	DraftNetwork  float64 // The Draft Network qualitative (static)
+	// SOURCE-DRIFT NOTE (Option D, 2026-06-19): PFFGrade and DraftNetwork name sources
+	// ELIMINATED from the automatable rubric (no clean source — source map §2). The
+	// fields are retained pending the Film-component redesign (a separate calibration
+	// pass — Offense_Scouting_Source_Map §5/§6); no fetcher populates them today.
+	PFFGrade      float64 // ELIMINATED source (retained pending Film redesign) — was PFF position grade
+	DraftNetwork  float64 // ELIMINATED source (retained pending Film redesign) — was The Draft Network qualitative
 	MaddenFilm    float64 // Madden sub-attribute composite (Approach D); K's MAJORITY Layer-4 signal (DECISION-011)
 	NFLProduction float64 // accumulating NFL production signal
 
@@ -36,7 +40,7 @@ type Profile struct {
 	OffenseFilm *OffenseFilm // QB / RB / WR / TE
 	IDPFilm     *IDPFilm     // DT / DE / LB / CB / S
 	Coverage    *NGSCoverage // CB / S ONLY (hard boundary)
-	TouchShare  *float64     // RB ONLY (FantasyPros touch share)
+	TouchShare  *float64     // RB ONLY (snap-count workload share — Option D; was FantasyPros touch share)
 
 	// --- Reserved (SL-OQ-035/036; S only; unset in v1.0) ---
 	SafetyRole SafetyRole
@@ -44,9 +48,15 @@ type Profile struct {
 
 // OffenseFilm holds the offense-only qualitative film sources. Present at QB, RB,
 // WR, and TE; nil at every defensive position and K.
+//
+// SOURCE-DRIFT NOTE (Option D, 2026-06-19): both fields name sources ELIMINATED from
+// the automatable rubric (no clean source — source map §2). The new offense film signal
+// is FTN-charting (primary) + Madden (fallback); these fields are retained pending the
+// Film-component redesign (a separate calibration pass, source map §5/§6) and are not
+// populated by any fetcher today.
 type OffenseFilm struct {
-	RSPQualitative float64 // Matt Waldman Rookie Scouting Portfolio
-	SharpFootball  float64 // Sharp Football Analysis
+	RSPQualitative float64 // ELIMINATED source (retained pending Film redesign) — was Matt Waldman RSP
+	SharpFootball  float64 // ELIMINATED source (retained pending Film redesign) — was Sharp Football Analysis
 }
 
 // IDPFilm holds the IDP-only film sources. Present at DT, DE, LB, CB, and S; nil at
