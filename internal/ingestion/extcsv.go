@@ -1,6 +1,7 @@
 package ingestion
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/csv"
 	"fmt"
@@ -31,6 +32,54 @@ const DefaultMaxCSVBytes = 64 << 20
 // IsMissing reports whether a CSV cell is absent — empty or the "NA" sentinel.
 func IsMissing(s string) bool { return s == "" || s == NACell }
 
+// openCappedCSV GETs an external CSV, validates the status, and returns a csv.Reader
+// over the CSV bytes capped at maxBytes (+1 sentinel byte for the over-cap check),
+// the LimitedReader backing that check, and a cleanup func that closes the body (and
+// the gzip reader when gz). It is the shared HTTP+cap plumbing under FetchCSV/StreamCSV
+// and their *Gz siblings, so the request/status/cap discipline is defined once, not
+// copy-pasted across four entry points (Codex M17).
+//
+// When gz, the body is gunzipped BEFORE the cap, so maxBytes bounds the DECOMPRESSED
+// CSV bytes — the same quantity the plain path caps and the quantity that actually
+// lands in memory (this also bounds a gzip bomb's expansion; the compressed download
+// is bounded by ctx). gzip.NewReader reads the gzip header eagerly, so a body that is
+// not gzip FAILS LOUD here ("gunzip ... invalid header") rather than mis-parsing.
+func openCappedCSV(ctx context.Context, client *http.Client, url string, maxBytes int64, gz bool,
+) (*csv.Reader, *io.LimitedReader, func(), error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("ingestion: build CSV request: %w", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("ingestion: fetch CSV %s: %w", url, err)
+	}
+	cleanup := func() { _ = resp.Body.Close() }
+
+	if resp.StatusCode != http.StatusOK {
+		cleanup()
+		return nil, nil, nil, fmt.Errorf("ingestion: CSV %s unexpected status %d", url, resp.StatusCode)
+	}
+
+	var src io.Reader = resp.Body
+	if gz {
+		zr, gzErr := gzip.NewReader(resp.Body)
+		if gzErr != nil {
+			cleanup()
+			return nil, nil, nil, fmt.Errorf("ingestion: gunzip CSV %s: %w", url, gzErr)
+		}
+		base := cleanup
+		cleanup = func() { _ = zr.Close(); base() }
+		src = zr
+	}
+
+	// Read one byte past the cap: if the LimitedReader is fully consumed (N == 0)
+	// the source was over budget, so callers error instead of using a truncated file.
+	lr := &io.LimitedReader{R: src, N: maxBytes + 1}
+	return csv.NewReader(lr), lr, cleanup, nil
+}
+
 // FetchCSV GETs an external CSV over plain HTTP, validates the status, and returns
 // all records (header included). It reads at most maxBytes and FAILS LOUD if the
 // source exceeds that ceiling rather than silently truncating — a silently
@@ -38,25 +87,24 @@ func IsMissing(s string) bool { return s == "" || s == NACell }
 // a clean failure. ctx bounds the request (and, via the request context, the body
 // read); the response body is always closed.
 func FetchCSV(ctx context.Context, client *http.Client, url string, maxBytes int64) ([][]string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	return fetchCSV(ctx, client, url, maxBytes, false)
+}
+
+// FetchCSVGz is FetchCSV for a gzip-compressed source (e.g. nflverse next_gen_stats,
+// served as ngs_*.csv.gz). maxBytes bounds the DECOMPRESSED bytes; a non-gzip body
+// fails loud. See openCappedCSV for the cap and gzip semantics.
+func FetchCSVGz(ctx context.Context, client *http.Client, url string, maxBytes int64) ([][]string, error) {
+	return fetchCSV(ctx, client, url, maxBytes, true)
+}
+
+func fetchCSV(ctx context.Context, client *http.Client, url string, maxBytes int64, gz bool) ([][]string, error) {
+	r, lr, cleanup, err := openCappedCSV(ctx, client, url, maxBytes, gz)
 	if err != nil {
-		return nil, fmt.Errorf("ingestion: build CSV request: %w", err)
+		return nil, err
 	}
+	defer cleanup()
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("ingestion: fetch CSV %s: %w", url, err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("ingestion: CSV %s unexpected status %d", url, resp.StatusCode)
-	}
-
-	// Read one byte past the cap: if the LimitedReader is fully consumed (N == 0)
-	// the source was over budget, so we error instead of parsing a truncated file.
-	lr := &io.LimitedReader{R: resp.Body, N: maxBytes + 1}
-	records, err := csv.NewReader(lr).ReadAll()
+	records, err := r.ReadAll()
 	if err != nil {
 		return nil, fmt.Errorf("ingestion: read CSV %s: %w", url, err)
 	}
@@ -86,25 +134,25 @@ func FetchCSV(ctx context.Context, client *http.Client, url string, maxBytes int
 // (each cell string is freshly allocated) but MUST NOT retain the rec slice itself.
 func StreamCSV(ctx context.Context, client *http.Client, url string, maxBytes int64,
 	required []string, fn func(cols map[string]int, rec []string) error) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	return streamCSV(ctx, client, url, maxBytes, false, required, fn)
+}
+
+// StreamCSVGz is StreamCSV for a gzip-compressed source. maxBytes bounds the
+// DECOMPRESSED bytes; a non-gzip body fails loud. This is the variant for a large
+// gzipped file (e.g. a gzipped play-by-play or next_gen_stats export) where buffering
+// the whole decompressed body would risk OOM. See openCappedCSV for cap/gzip semantics.
+func StreamCSVGz(ctx context.Context, client *http.Client, url string, maxBytes int64,
+	required []string, fn func(cols map[string]int, rec []string) error) error {
+	return streamCSV(ctx, client, url, maxBytes, true, required, fn)
+}
+
+func streamCSV(ctx context.Context, client *http.Client, url string, maxBytes int64, gz bool,
+	required []string, fn func(cols map[string]int, rec []string) error) error {
+	r, lr, cleanup, err := openCappedCSV(ctx, client, url, maxBytes, gz)
 	if err != nil {
-		return fmt.Errorf("ingestion: build CSV request: %w", err)
+		return err
 	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("ingestion: fetch CSV %s: %w", url, err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("ingestion: CSV %s unexpected status %d", url, resp.StatusCode)
-	}
-
-	// Read one byte past the cap (as FetchCSV does): if the LimitedReader is fully
-	// consumed (N == 0) by the end of the stream the source was over budget.
-	lr := &io.LimitedReader{R: resp.Body, N: maxBytes + 1}
-	r := csv.NewReader(lr)
+	defer cleanup()
 	r.ReuseRecord = true
 
 	header, err := r.Read()

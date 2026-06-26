@@ -61,16 +61,33 @@ type OffenseFilm struct {
 
 // IDPFilm holds the IDP-only film sources. Present at DT, DE, LB, CB, and S; nil at
 // every offensive position and K.
+//
+// SOURCE-DRIFT NOTE (IDP Option-D parallel, 2026-06-26): all three fields name sources
+// ELIMINATED from the automatable rubric. Recon found no clean Go-reachable feed for any
+// IDP film source — The IDP Show, The IDP Guru, and Dynasty Nerds are subjective
+// content/paywalled brands, not data feeds (and the rubric film component's other two
+// sources, PFF and The Draft Network, were already eliminated on offense). The IDP film
+// signal is redesigned around Madden defense sub-attributes (already fetched in the
+// madden RawMaddenRating.Attributes map — tackle/manCoverage/zoneCoverage/hitPower/…) +
+// NFLProduction + pfrcoverage. These fields are retained pending the Film-component
+// redesign (a separate calibration pass — weights UNSET) and are populated by no fetcher.
+// See docs/data-layer/Defense_Scouting_Source_Map.md.
 type IDPFilm struct {
-	IDPShow      float64 // The IDP Show
-	IDPGuru      float64 // IDP Guru
-	DynastyNerds float64 // Dynasty Nerds
+	IDPShow      float64 // ELIMINATED source (retained pending Film redesign) — was The IDP Show
+	IDPGuru      float64 // ELIMINATED source (retained pending Film redesign) — was The IDP Guru
+	DynastyNerds float64 // ELIMINATED source (retained pending Film redesign) — was Dynasty Nerds
 }
 
-// NGSCoverage holds NFL Next Gen Stats coverage metrics — the analytical anchor.
-// RESERVED FOR CB AND S ONLY: this group is nil at every other position. (Hard
-// constraint: the NGS coverage anchor applies at CB/S exclusively; it must not
-// bleed to any other position.)
+// NGSCoverage holds the defender COVERAGE anchor — the analytical anchor. RESERVED FOR
+// CB AND S ONLY: this group is nil at every other position. (Hard constraint: the
+// coverage anchor applies at CB/S exclusively; it must not bleed to any other position.)
+//
+// SOURCE-DRIFT NOTE (rebind, 2026-06-26): named NGSCoverage after NFL Next Gen Stats, but
+// recon found nflverse publishes NO defender NGS file (its nextgen_stats release is
+// offense-only). Christopher's call: rebind the anchor onto PFR advanced-defense coverage
+// (the pfrcoverage fetcher — targets, completion % / yards allowed, passer rating
+// allowed). It is coverage-allowed quality, not tracking separation; the field name is
+// retained, the source substitution is documented in the Defense source map.
 type NGSCoverage struct {
-	CoverageMetrics float64 // NGS coverage/range, analytical anchor
+	CoverageMetrics float64 // coverage anchor — PFR coverage-allowed (pfrcoverage), engine-normalized
 }
