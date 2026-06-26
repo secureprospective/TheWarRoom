@@ -36,18 +36,17 @@
 //
 // CFBD IS AN AUTHED JSON API — it uses the shared ingestion/cfbd.go client (HTTP/1.1
 // pinned; bearer; byte-capped) and a LENIENT decode into a concrete row type. The CFBD
-// long-format plumbing (statRow, fetchCategory, the espn->gsis poison-drop emit, the
-// stat parsers, GSISResolver) mirrors collegeshare; extracting the shared CFBD helpers is
-// a flagged module-close item (this is the 2nd CFBD long-format consumer, Codex M17).
+// long-format plumbing (CFBDStatRow, FetchCFBDCategory, CFBDInt/CFBDFloat, Share, and
+// the EmitDropAmbiguous espn->gsis poison-drop emit) lives in the shared ingestion
+// package (extracted at this 2nd CFBD long-format consumer, Codex M17); this fetcher
+// owns only its category list, its accumulator types, and how it builds RawCollegeDefense.
 package collegedefense
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -80,16 +79,6 @@ type GSISResolver func(espnID string) (gsis string, ok bool)
 // CFBD feed is never legitimately empty and the bridge resolves thousands, so an empty
 // result means a truncated download, a wrong year, or a broken bridge, surfaced loudly.
 var errEmpty = errors.New("collegedefense: resolved zero gsis-keyed records")
-
-// statRow is the slice of a CFBD long-format season-stats record this fetcher needs.
-// CFBD returns more fields; decoding is LENIENT (external 3rd-party boundary).
-type statRow struct {
-	PlayerID string `json:"playerId"`
-	Player   string `json:"player"`
-	Team     string `json:"team"`
-	StatType string `json:"statType"`
-	Stat     string `json:"stat"`
-}
 
 // RawCollegeDefense is one defender's raw college defensive production and within-team
 // component shares for a season, keyed by nflverse gsis_id. Counts are the clean college
@@ -158,9 +147,9 @@ func Fetch(ctx context.Context, client *http.Client, baseURL, apiKey string, yea
 // accumulators.
 func accumulate(ctx context.Context, client *http.Client, baseURL, apiKey string, year int, category string,
 	players map[string]*playerAgg, teams map[string]*teamTotals) error {
-	rows, err := fetchCategory(ctx, client, baseURL, apiKey, year, category)
+	rows, err := ingestion.FetchCFBDCategory(ctx, client, baseURL, apiKey, year, category)
 	if err != nil {
-		return err
+		return fmt.Errorf("collegedefense: %w", err)
 	}
 	for i := range rows {
 		if err := foldRow(&rows[i], players, teams); err != nil {
@@ -170,25 +159,10 @@ func accumulate(ctx context.Context, client *http.Client, baseURL, apiKey string
 	return nil
 }
 
-// fetchCategory performs the shared CFBD authed GET for one category and leniently
-// decodes the long-format row slice.
-func fetchCategory(ctx context.Context, client *http.Client, baseURL, apiKey string, year int, category string) ([]statRow, error) {
-	url := baseURL + "?year=" + strconv.Itoa(year) + "&category=" + category
-	body, err := ingestion.GetCFBD(ctx, client, url, apiKey, ingestion.DefaultMaxCFBDBytes)
-	if err != nil {
-		return nil, fmt.Errorf("collegedefense: %w", err)
-	}
-	var rows []statRow
-	if err := json.Unmarshal(body, &rows); err != nil {
-		return nil, fmt.Errorf("collegedefense: decode %s: %w", category, err)
-	}
-	return rows, nil
-}
-
 // foldRow attributes one long-format stat row to its player and team accumulators,
 // creating either on first sight. A row with no player or team key is skipped. Only the
 // statTypes the rubrics need are folded; all others (SOLO, QB HUR, TD, YDS, AVG) ignored.
-func foldRow(r *statRow, players map[string]*playerAgg, teams map[string]*teamTotals) error {
+func foldRow(r *ingestion.CFBDStatRow, players map[string]*playerAgg, teams map[string]*teamTotals) error {
 	espn := strings.TrimSpace(r.PlayerID)
 	if ingestion.IsMissing(espn) || ingestion.IsMissing(strings.TrimSpace(r.Team)) {
 		return nil
@@ -221,10 +195,10 @@ func foldRow(r *statRow, players map[string]*playerAgg, teams map[string]*teamTo
 }
 
 // foldInt adds an integer counting stat to both the player and team accumulators.
-func foldInt(r *statRow, pDst, tDst *int) error {
-	n, err := parseInt(r)
+func foldInt(r *ingestion.CFBDStatRow, pDst, tDst *int) error {
+	n, err := ingestion.CFBDInt(*r)
 	if err != nil {
-		return err
+		return fmt.Errorf("collegedefense: %w", err)
 	}
 	*pDst += n
 	*tDst += n
@@ -233,10 +207,10 @@ func foldInt(r *statRow, pDst, tDst *int) error {
 
 // foldFloat adds a fractional counting stat (sacks/TFL come in half increments) to both
 // the player and team accumulators.
-func foldFloat(r *statRow, pDst, tDst *float64) error {
-	f, err := parseFloat(r)
+func foldFloat(r *ingestion.CFBDStatRow, pDst, tDst *float64) error {
+	f, err := ingestion.CFBDFloat(*r)
 	if err != nil {
-		return err
+		return fmt.Errorf("collegedefense: %w", err)
 	}
 	*pDst += f
 	*tDst += f
@@ -248,73 +222,27 @@ func foldFloat(r *statRow, pDst, tDst *float64) error {
 // resolve to the SAME gsis the record is ambiguous and dropped entirely (collegeshare /
 // crosswalk drop-ambiguous precedent — a clean miss beats a mis-attributed line).
 func emit(players map[string]*playerAgg, teams map[string]*teamTotals, year int, resolve GSISResolver) map[string]RawCollegeDefense {
-	out := map[string]RawCollegeDefense{}
-	poisoned := map[string]bool{}
-	for _, p := range players {
-		gsis, ok := resolve(p.espn)
-		if !ok || poisoned[gsis] {
-			continue
-		}
-		if _, dup := out[gsis]; dup {
-			delete(out, gsis)
-			poisoned[gsis] = true
-			continue
-		}
-		t := teams[p.team]
-		out[gsis] = RawCollegeDefense{
-			GSISID:            gsis,
-			ESPNID:            p.espn,
-			Player:            p.name,
-			Team:              p.team,
-			Season:            year,
-			Tackles:           p.tackles,
-			Sacks:             p.sacks,
-			TacklesForLoss:    p.tfl,
-			PassesDefended:    p.passDef,
-			Interceptions:     p.interceptions,
-			TackleShare:       share(float64(p.tackles), float64(t.tackles)),
-			SackShare:         share(p.sacks, t.sacks),
-			TFLShare:          share(p.tfl, t.tfl),
-			PassDefShare:      share(float64(p.passDef), float64(t.passDef)),
-			InterceptionShare: share(float64(p.interceptions), float64(t.interceptions)),
-		}
-	}
-	return out
-}
-
-// share returns num/denom, or 0 when denom is 0 (a team with zero of a stat — the
-// numerator is then 0 too, since a player's stat is part of his team's sum).
-func share(num, denom float64) float64 {
-	if denom == 0 {
-		return 0
-	}
-	return num / denom
-}
-
-// parseInt parses a counting-stat cell, failing loud on a present-but-unparseable value
-// (corruption, not zero); a missing/NA cell is a legitimate 0.
-func parseInt(r *statRow) (int, error) {
-	v := strings.TrimSpace(r.Stat)
-	if ingestion.IsMissing(v) {
-		return 0, nil
-	}
-	n, err := strconv.Atoi(v)
-	if err != nil {
-		return 0, fmt.Errorf("collegedefense: %s %q for player %q: %w", r.StatType, v, r.PlayerID, err)
-	}
-	return n, nil
-}
-
-// parseFloat parses a fractional stat cell with the same missing-is-zero /
-// malformed-fails-loud rule as parseInt (sacks and TFL arrive in half increments).
-func parseFloat(r *statRow) (float64, error) {
-	v := strings.TrimSpace(r.Stat)
-	if ingestion.IsMissing(v) {
-		return 0, nil
-	}
-	f, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return 0, fmt.Errorf("collegedefense: %s %q for player %q: %w", r.StatType, v, r.PlayerID, err)
-	}
-	return f, nil
+	return ingestion.EmitDropAmbiguous(players,
+		func(p *playerAgg) string { return p.espn },
+		resolve,
+		func(p *playerAgg, gsis string) RawCollegeDefense {
+			t := teams[p.team]
+			return RawCollegeDefense{
+				GSISID:            gsis,
+				ESPNID:            p.espn,
+				Player:            p.name,
+				Team:              p.team,
+				Season:            year,
+				Tackles:           p.tackles,
+				Sacks:             p.sacks,
+				TacklesForLoss:    p.tfl,
+				PassesDefended:    p.passDef,
+				Interceptions:     p.interceptions,
+				TackleShare:       ingestion.Share(float64(p.tackles), float64(t.tackles)),
+				SackShare:         ingestion.Share(p.sacks, t.sacks),
+				TFLShare:          ingestion.Share(p.tfl, t.tfl),
+				PassDefShare:      ingestion.Share(float64(p.passDef), float64(t.passDef)),
+				InterceptionShare: ingestion.Share(float64(p.interceptions), float64(t.interceptions)),
+			}
+		})
 }

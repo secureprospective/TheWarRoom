@@ -255,6 +255,69 @@ func TestFetch_ESPNNAAndIdenticalDup(t *testing.T) {
 	}
 }
 
+// --- pfr_id -> gsis bridge (third map) ---
+
+// A header carrying pfr_id (optional, by-name) resolves the pfr bridge alongside the
+// others; PFRMap exposes it and LenPFR counts it.
+func TestFetch_PFRBridge(t *testing.T) {
+	t.Parallel()
+	body := "name,gsis_id,pfr_id,team,mfl_id\n" +
+		"Pat Veteran,00-0011000,VetePa00,KC,13294\n" + // pfr + mfl resolve
+		"NflVet NoPfr,00-0022000,,DET,531\n" + // mfl resolves, pfr absent
+		"PfrOnly Guy,00-0033000,OnlyPf00,FA,\n" // pfr resolves, no mfl
+	m, err := serve(t, http.StatusOK, body)
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	pfr := m.PFRMap()
+	if pfr["VetePa00"] != "00-0011000" || pfr["OnlyPf00"] != "00-0033000" {
+		t.Errorf("PFRMap wrong: %v", pfr)
+	}
+	if _, ok := pfr["nope"]; ok {
+		t.Error("unknown pfr id should miss")
+	}
+	if m.LenPFR() != 2 {
+		t.Errorf("LenPFR = %d, want 2", m.LenPFR())
+	}
+	// PFRMap is a defensive copy: mutating it must not affect the crosswalk.
+	pfr["VetePa00"] = "tampered"
+	if again := m.PFRMap(); again["VetePa00"] != "00-0011000" {
+		t.Error("PFRMap must return a copy, not the internal map")
+	}
+}
+
+// A source omitting pfr_id still resolves MFL->gsis and yields an empty pfr bridge.
+func TestFetch_PFRColumnOptional(t *testing.T) {
+	t.Parallel()
+	m, err := serve(t, http.StatusOK, goodCSV) // no pfr_id column
+	if err != nil {
+		t.Fatalf("Fetch should not require pfr_id: %v", err)
+	}
+	if m.LenPFR() != 0 {
+		t.Errorf("LenPFR = %d, want 0 when the column is absent", m.LenPFR())
+	}
+}
+
+// A pfr id mapping to two different gsis is dropped (shared drop-ambiguous policy),
+// without erroring the fetch.
+func TestFetch_PFRConflictDropped(t *testing.T) {
+	t.Parallel()
+	body := "gsis_id,pfr_id,mfl_id\n" +
+		"00-0011000,DupePf00,13294\n" +
+		"00-0099999,DupePf00,17464\n" + // same pfr, different gsis -> drop
+		"00-0088000,GoodPf00,531\n"
+	m, err := serve(t, http.StatusOK, body)
+	if err != nil {
+		t.Fatalf("ambiguous pfr should drop-and-continue, not error: %v", err)
+	}
+	if _, ok := m.PFRMap()["DupePf00"]; ok {
+		t.Error("ambiguous pfr id must be dropped")
+	}
+	if m.PFRMap()["GoodPf00"] != "00-0088000" {
+		t.Error("unrelated pfr id must still resolve")
+	}
+}
+
 func TestFetch_ContextCancelled(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

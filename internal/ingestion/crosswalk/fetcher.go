@@ -32,9 +32,23 @@
 // miss rather than a silently-wrong gsis. The MFL side stays fail-loud: it is the
 // foundation, has zero live conflicts, and a conflict there would be real corruption.
 //
+// THIRD BRIDGE — pfr_id -> gsis_id. db_playerids.csv also carries a pfr_id column
+// (Pro-Football-Reference's player id), the key three nflverse scouting sources are
+// joined on: snap_counts (touchshare), combine (ras), and pfr advanced defense
+// (pfrcoverage). Each of those fetchers used to build its OWN pfr->gsis map from this
+// same file in a duplicated live-test helper (Codex M17); the bridge is promoted here
+// so the file is read once and the dedup policy is defined in one place. Like espn_id
+// it is OPTIONAL (a future source dropping it must not break the MFL->gsis foundation)
+// and AMBIGUOUS (live: 3 of ~7800 pfr ids tag two distinct players' gsis — CartKy01,
+// HarrAl00, MillSt00). Mirroring the espn/RAS drop-ambiguous precedent, such a pfr id
+// is dropped from the bridge entirely (a clean miss beats a silently-wrong gsis),
+// replacing the old helpers' silent last-write-wins. Consumers take the bridge as a
+// map[string]string via PFRMap() (a defensive copy), matching their existing
+// per-row-lookup shape.
+//
 // The external-HTTP-CSV plumbing (fetch, byte cap, by-name column binding, the "NA"
 // missing-cell sentinel) lives in the shared ingestion helpers (extcsv.go); this
-// fetcher owns only the crosswalk-specific shape: its columns, the two map types,
+// fetcher owns only the crosswalk-specific shape: its columns, the three map types,
 // and the conflict/empty integrity checks.
 package crosswalk
 
@@ -63,6 +77,7 @@ const (
 	colMFLID = "mfl_id"
 	colGSIS  = "gsis_id"
 	colESPN  = "espn_id"
+	colPFR   = "pfr_id"
 )
 
 // errEmpty guards a crosswalk that resolved zero entries. The map is never
@@ -79,6 +94,7 @@ var errEmpty = errors.New("crosswalk: source resolved zero MFL->gsis entries")
 type Map struct {
 	byMFL  map[playerid.PlayerID]string
 	byESPN map[string]string
+	byPFR  map[string]string
 }
 
 // Lookup returns the nflverse gsis_id for an MFL PlayerID and whether it was
@@ -108,6 +124,23 @@ func (m Map) Len() int { return len(m.byMFL) }
 // sanity-check the bridge coverage (collegeshare fails loud if it is implausibly low).
 func (m Map) LenESPN() int { return len(m.byESPN) }
 
+// PFRMap returns the pfr_id -> gsis_id bridge as a fresh map the caller owns. It is a
+// defensive copy so a consumer cannot mutate the crosswalk's internal state; the
+// pfr-keyed scouting fetchers (touchshare, ras, pfrcoverage) take this map and resolve
+// each row's pfr_id through it. A copy is cheap relative to the network fetch that
+// built the Map and is requested once per pipeline run.
+func (m Map) PFRMap() map[string]string {
+	out := make(map[string]string, len(m.byPFR))
+	for k, v := range m.byPFR {
+		out[k] = v
+	}
+	return out
+}
+
+// LenPFR reports the number of resolved pfr->gsis entries, for callers/tests to
+// sanity-check bridge coverage against the source size.
+func (m Map) LenPFR() int { return len(m.byPFR) }
+
 // Fetch retrieves the crosswalk CSV from url using client and returns the resolved
 // MFL->gsis Map. client and url are injected (not package globals) so the fetcher
 // is unit-testable against a fixture server and survives a source move; pass
@@ -133,28 +166,34 @@ func Fetch(ctx context.Context, client *http.Client, url string) (Map, error) {
 	}
 	mflIdx, gsisIdx := cols[colMFLID], cols[colGSIS]
 	espnIdx := optionalColumn(records[0], colESPN) // -1 if the source omits espn_id
+	pfrIdx := optionalColumn(records[0], colPFR)   // -1 if the source omits pfr_id
 
 	byMFL := make(map[playerid.PlayerID]string)
 	byESPN := make(map[string]string)
+	byPFR := make(map[string]string)
 	poisonedESPN := make(map[string]bool) // espn ids dropped for resolving to 2+ gsis
+	poisonedPFR := make(map[string]bool)  // pfr ids dropped for resolving to 2+ gsis
 	for _, rec := range records[1:] {
 		gsis := strings.TrimSpace(rec[gsisIdx])
 		if ingestion.IsMissing(gsis) {
-			continue // no gsis: this row feeds neither bridge (both target gsis)
+			continue // no gsis: this row feeds no bridge (all three target gsis)
 		}
 
 		if err := addMFL(byMFL, strings.TrimSpace(rec[mflIdx]), gsis); err != nil {
 			return Map{}, err
 		}
 		if espnIdx >= 0 {
-			addESPN(byESPN, poisonedESPN, strings.TrimSpace(rec[espnIdx]), gsis)
+			addBridge(byESPN, poisonedESPN, strings.TrimSpace(rec[espnIdx]), gsis)
+		}
+		if pfrIdx >= 0 {
+			addBridge(byPFR, poisonedPFR, strings.TrimSpace(rec[pfrIdx]), gsis)
 		}
 	}
 
 	if len(byMFL) == 0 {
 		return Map{}, errEmpty
 	}
-	return Map{byMFL: byMFL, byESPN: byESPN}, nil
+	return Map{byMFL: byMFL, byESPN: byESPN, byPFR: byPFR}, nil
 }
 
 // optionalColumn returns the index of name in header, or -1 if absent. Unlike
@@ -188,20 +227,22 @@ func addMFL(byMFL map[playerid.PlayerID]string, rawMFL, gsis string) error {
 	return nil
 }
 
-// addESPN inserts an espn->gsis entry. A missing/NA espn id is skipped. An espn id
-// that resolves to two DIFFERENT gsis is ambiguous source data (live: 4 of ~7900
-// espn ids tag two distinct players) — per the RAS combine-collision precedent it is
-// dropped from the bridge entirely and recorded as poisoned so a later row cannot
-// resurrect it, giving collegeshare a clean miss rather than a silently-wrong gsis. An
-// identical repeat (same espn -> same gsis, from MFL's duplicate records) is deduped.
-func addESPN(byESPN map[string]string, poisoned map[string]bool, espn, gsis string) {
-	if ingestion.IsMissing(espn) || poisoned[espn] {
+// addBridge inserts a secondary-id -> gsis entry into one of the optional bridges
+// (espn or pfr — both share this drop-ambiguous policy, so the logic lives once;
+// Codex M17). A missing/NA id is skipped. An id that resolves to two DIFFERENT gsis is
+// ambiguous source data (live: 4 of ~7900 espn ids and 3 of ~7800 pfr ids tag two
+// distinct players) — per the RAS combine-collision precedent it is dropped from the
+// bridge entirely and recorded as poisoned so a later row cannot resurrect it, giving
+// the consumer a clean miss rather than a silently-wrong gsis. An identical repeat
+// (same id -> same gsis, from MFL's duplicate records) is deduped.
+func addBridge(bridge map[string]string, poisoned map[string]bool, id, gsis string) {
+	if ingestion.IsMissing(id) || poisoned[id] {
 		return
 	}
-	if existing, dup := byESPN[espn]; dup && existing != gsis {
-		delete(byESPN, espn)
-		poisoned[espn] = true
+	if existing, dup := bridge[id]; dup && existing != gsis {
+		delete(bridge, id)
+		poisoned[id] = true
 		return
 	}
-	byESPN[espn] = gsis
+	bridge[id] = gsis
 }

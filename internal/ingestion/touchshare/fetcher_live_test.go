@@ -4,11 +4,10 @@ import (
 	"context"
 	"net/http"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 )
 
 // TestLive_TouchShareFetch exercises Fetch against the REAL nflverse snap_counts
@@ -26,10 +25,13 @@ func TestLive_TouchShareFetch(t *testing.T) {
 	defer cancel()
 	client := &http.Client{Timeout: 90 * time.Second}
 
-	pfrToGSIS, err := livePfrToGSIS(ctx, client)
+	// The pfr->gsis bridge comes from the shared crosswalk (one db_playerids fetch,
+	// drop-ambiguous dedup), mirroring how the assembly layer supplies it in production.
+	cw, err := crosswalk.Fetch(ctx, client, crosswalk.SourceURL)
 	if err != nil {
-		t.Fatalf("build live pfr->gsis crosswalk: %v", err)
+		t.Fatalf("build live crosswalk: %v", err)
 	}
+	pfrToGSIS := cw.PFRMap()
 	t.Logf("crosswalk resolved %d pfr->gsis entries", len(pfrToGSIS))
 
 	m, err := Fetch(ctx, client, SeasonURL("2024"), pfrToGSIS)
@@ -44,29 +46,4 @@ func TestLive_TouchShareFetch(t *testing.T) {
 		t.Errorf("resolved only %d gsis-keyed touch-share records; expected >300 for a full season", len(m))
 	}
 	t.Logf("resolved %d gsis-keyed touch-share records", len(m))
-}
-
-// livePfrToGSIS builds the pfr_player_id -> gsis_id map from the dynastyprocess
-// db_playerids.csv (the same source the crosswalk fetcher uses), mirroring how the
-// assembly layer will supply it in production.
-func livePfrToGSIS(ctx context.Context, client *http.Client) (map[string]string, error) {
-	const src = "https://raw.githubusercontent.com/dynastyprocess/data/master/files/db_playerids.csv"
-	records, err := ingestion.FetchCSV(ctx, client, src, ingestion.DefaultMaxCSVBytes)
-	if err != nil {
-		return nil, err
-	}
-	cols, err := ingestion.CSVColumns(records[0], "pfr_id", "gsis_id")
-	if err != nil {
-		return nil, err
-	}
-	out := make(map[string]string)
-	for _, rec := range records[1:] {
-		pfr := strings.TrimSpace(rec[cols["pfr_id"]])
-		gsis := strings.TrimSpace(rec[cols["gsis_id"]])
-		if ingestion.IsMissing(pfr) || ingestion.IsMissing(gsis) {
-			continue
-		}
-		out[pfr] = gsis
-	}
-	return out, nil
 }

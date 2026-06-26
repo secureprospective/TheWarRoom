@@ -47,11 +47,9 @@ package collegeshare
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -84,17 +82,6 @@ type GSISResolver func(espnID string) (gsis string, ok bool)
 // empty result means a truncated download, a wrong year, or a silently-broken bridge,
 // surfaced loudly rather than as "no college production".
 var errEmpty = errors.New("collegeshare: resolved zero gsis-keyed records")
-
-// statRow is the slice of a CFBD long-format season-stats record this fetcher needs.
-// CFBD returns more fields (conference); decoding is LENIENT (external 3rd-party
-// boundary). stat is a string in the source ("10", "1") and is parsed per statType.
-type statRow struct {
-	PlayerID string `json:"playerId"`
-	Player   string `json:"player"`
-	Team     string `json:"team"`
-	StatType string `json:"statType"`
-	Stat     string `json:"stat"`
-}
 
 // RawCollegeShare is one player's raw college production and within-team shares for a
 // season, keyed by nflverse gsis_id. Counts are the clean college box score; shares
@@ -162,9 +149,9 @@ func Fetch(ctx context.Context, client *http.Client, baseURL, apiKey string, yea
 // testable and the functions short.
 func accumulate(ctx context.Context, client *http.Client, baseURL, apiKey string, year int, category string,
 	players map[string]*playerAgg, teams map[string]*teamTotals) error {
-	rows, err := fetchCategory(ctx, client, baseURL, apiKey, year, category)
+	rows, err := ingestion.FetchCFBDCategory(ctx, client, baseURL, apiKey, year, category)
 	if err != nil {
-		return err
+		return fmt.Errorf("collegeshare: %w", err)
 	}
 	for i := range rows {
 		if err := foldRow(&rows[i], category, players, teams); err != nil {
@@ -174,25 +161,10 @@ func accumulate(ctx context.Context, client *http.Client, baseURL, apiKey string
 	return nil
 }
 
-// fetchCategory performs the shared CFBD authed GET for one category and leniently
-// decodes the long-format row slice.
-func fetchCategory(ctx context.Context, client *http.Client, baseURL, apiKey string, year int, category string) ([]statRow, error) {
-	url := baseURL + "?year=" + strconv.Itoa(year) + "&category=" + category
-	body, err := ingestion.GetCFBD(ctx, client, url, apiKey, ingestion.DefaultMaxCFBDBytes)
-	if err != nil {
-		return nil, fmt.Errorf("collegeshare: %w", err)
-	}
-	var rows []statRow
-	if err := json.Unmarshal(body, &rows); err != nil {
-		return nil, fmt.Errorf("collegeshare: decode %s: %w", category, err)
-	}
-	return rows, nil
-}
-
 // foldRow attributes one long-format stat row to its player and team accumulators,
 // creating either on first sight, then delegating to the per-category fold. A row with
 // no player or team key cannot be attributed and is skipped.
-func foldRow(r *statRow, category string, players map[string]*playerAgg, teams map[string]*teamTotals) error {
+func foldRow(r *ingestion.CFBDStatRow, category string, players map[string]*playerAgg, teams map[string]*teamTotals) error {
 	espn := strings.TrimSpace(r.PlayerID)
 	if ingestion.IsMissing(espn) || ingestion.IsMissing(strings.TrimSpace(r.Team)) {
 		return nil
@@ -217,19 +189,19 @@ func foldRow(r *statRow, category string, players map[string]*playerAgg, teams m
 
 // foldReceiving folds a receiving row's REC/YDS into the player and team totals; other
 // receiving statTypes (TD/LONG/YPR) are ignored. A malformed stat fails loud.
-func foldReceiving(r *statRow, p *playerAgg, t *teamTotals) error {
+func foldReceiving(r *ingestion.CFBDStatRow, p *playerAgg, t *teamTotals) error {
 	switch r.StatType {
 	case statReceptions:
-		n, err := parseInt(r)
+		n, err := ingestion.CFBDInt(*r)
 		if err != nil {
-			return err
+			return fmt.Errorf("collegeshare: %w", err)
 		}
 		p.receptions += n
 		t.receptions += n
 	case statYards:
-		f, err := parseFloat(r)
+		f, err := ingestion.CFBDFloat(*r)
 		if err != nil {
-			return err
+			return fmt.Errorf("collegeshare: %w", err)
 		}
 		p.receivingYards += f
 		t.receivingYards += f
@@ -239,18 +211,18 @@ func foldReceiving(r *statRow, p *playerAgg, t *teamTotals) error {
 
 // foldRushing folds a rushing row's CAR/YDS; carries accumulate per player only (the
 // rushing share is yardage-based), team rushing yards form the share denominator.
-func foldRushing(r *statRow, p *playerAgg, t *teamTotals) error {
+func foldRushing(r *ingestion.CFBDStatRow, p *playerAgg, t *teamTotals) error {
 	switch r.StatType {
 	case statCarries:
-		n, err := parseInt(r)
+		n, err := ingestion.CFBDInt(*r)
 		if err != nil {
-			return err
+			return fmt.Errorf("collegeshare: %w", err)
 		}
 		p.carries += n
 	case statYards:
-		f, err := parseFloat(r)
+		f, err := ingestion.CFBDFloat(*r)
 		if err != nil {
-			return err
+			return fmt.Errorf("collegeshare: %w", err)
 		}
 		p.rushingYards += f
 		t.rushingYards += f
@@ -265,70 +237,24 @@ func foldRushing(r *statRow, p *playerAgg, t *teamTotals) error {
 // mirroring the crosswalk's drop-ambiguous policy — a clean miss beats a silently
 // mis-attributed college line.
 func emit(players map[string]*playerAgg, teams map[string]*teamTotals, year int, resolve GSISResolver) map[string]RawCollegeShare {
-	out := map[string]RawCollegeShare{}
-	poisoned := map[string]bool{}
-	for _, p := range players {
-		gsis, ok := resolve(p.espn)
-		if !ok || poisoned[gsis] {
-			continue
-		}
-		if _, dup := out[gsis]; dup {
-			delete(out, gsis)
-			poisoned[gsis] = true
-			continue
-		}
-		t := teams[p.team]
-		out[gsis] = RawCollegeShare{
-			GSISID:             gsis,
-			ESPNID:             p.espn,
-			Player:             p.name,
-			Team:               p.team,
-			Season:             year,
-			Receptions:         p.receptions,
-			ReceivingYards:     p.receivingYards,
-			RushingYards:       p.rushingYards,
-			RushingCarries:     p.carries,
-			ReceptionShare:     share(float64(p.receptions), float64(t.receptions)),
-			ReceivingYardShare: share(p.receivingYards, t.receivingYards),
-			RushingYardShare:   share(p.rushingYards, t.rushingYards),
-		}
-	}
-	return out
-}
-
-// share returns num/denom, or 0 when denom is 0 (a player with zero of a stat — the
-// numerator is then 0 too, since a player's stat is part of his team's sum).
-func share(num, denom float64) float64 {
-	if denom == 0 {
-		return 0
-	}
-	return num / denom
-}
-
-// parseInt parses a counting-stat cell, failing loud on a present-but-unparseable
-// value (corruption, not zero); a missing/NA cell is a legitimate 0.
-func parseInt(r *statRow) (int, error) {
-	v := strings.TrimSpace(r.Stat)
-	if ingestion.IsMissing(v) {
-		return 0, nil
-	}
-	n, err := strconv.Atoi(v)
-	if err != nil {
-		return 0, fmt.Errorf("collegeshare: %s %q for player %q: %w", r.StatType, v, r.PlayerID, err)
-	}
-	return n, nil
-}
-
-// parseFloat parses a fractional/yardage stat cell with the same missing-is-zero /
-// malformed-fails-loud rule as parseInt.
-func parseFloat(r *statRow) (float64, error) {
-	v := strings.TrimSpace(r.Stat)
-	if ingestion.IsMissing(v) {
-		return 0, nil
-	}
-	f, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return 0, fmt.Errorf("collegeshare: %s %q for player %q: %w", r.StatType, v, r.PlayerID, err)
-	}
-	return f, nil
+	return ingestion.EmitDropAmbiguous(players,
+		func(p *playerAgg) string { return p.espn },
+		resolve,
+		func(p *playerAgg, gsis string) RawCollegeShare {
+			t := teams[p.team]
+			return RawCollegeShare{
+				GSISID:             gsis,
+				ESPNID:             p.espn,
+				Player:             p.name,
+				Team:               p.team,
+				Season:             year,
+				Receptions:         p.receptions,
+				ReceivingYards:     p.receivingYards,
+				RushingYards:       p.rushingYards,
+				RushingCarries:     p.carries,
+				ReceptionShare:     ingestion.Share(float64(p.receptions), float64(t.receptions)),
+				ReceivingYardShare: ingestion.Share(p.receivingYards, t.receivingYards),
+				RushingYardShare:   ingestion.Share(p.rushingYards, t.rushingYards),
+			}
+		})
 }

@@ -250,7 +250,7 @@ SL-OQ-001 through SL-OQ-028 documented in individual rubrics and `Engine_Specifi
 | SL-OQ-037 | Cushion Guard threshold — binary 8.00 vs. continuous RAS scaling | DT | Open |
 | SL-OQ-038 | Dynamic Year 1 / Year 2+ PFF α propagation — should this become cross-rubric? | DT | Session 3 venue |
 | SL-OQ-039 | Dynamic α down-shift trigger — when exactly does Year 1 end? | DT | Gemini-originated |
-| SL-OQ-042 | Madden API ingestion pipeline optimization at K — archival-only data | K | Gemini-originated |
+| SL-OQ-042 | Madden API ingestion pipeline optimization at K — archival-only data | K | **RESOLVED 2026-06-26.** Premise superseded by DECISION-011: Madden K (kick power/accuracy) is now a LIVE Layer-4 valuation signal (0.60), not archival, so disabling its pull was never on the table. The `madden` fetcher pulls the whole roster in one paged call (not position-conditional), so "keep K in routine pulls" (the v1.0 recommendation) holds with zero new logic. CAL-032 (future predictive utility) stays open as a calibration question. |
 | SL-OQ-043 | WR SL-019 status — **RESOLVED: Option A (excluded for v1.0).** SL-022 assigned. Calibration revisit flagged for v1.1. | WR | CLOSED |
 
 ---
