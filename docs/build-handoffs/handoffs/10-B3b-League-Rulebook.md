@@ -87,9 +87,10 @@ Confirm with Christopher which rule fields are in-scope for B3b v1.0 vs deferred
   go test -race ./... . Go 1.26.4 at /usr/local/go/bin. Live MFL is env-gated (TWR_LIVE_MFL=1),
   opt-in, never in the default suite. Beelink is the Wails/GUI machine.
 - Every custom gate proven by a planted failure (M3). Shared logic extracted not copy-pasted
-  (M17). Review gate: Gemini 3.1 (agy out; re-auth via pct enter 104 if it returns) — TRIAGE
-  every finding against source (its blind-review false-positive rate is high; the B2b-Fetch
-  arc-close review produced 6 findings, all false positives).
+  (M17). Review gate (UPDATED 2026-06-26): GLM 5.2 (Z.ai Coding Plan, via OpenCode on bird).
+  agy/Gemini RETIRED as code reviewer. The reviewer works BLIND; output is leads, not
+  findings — TRIAGE every finding against source (the blind-review false-positive rate is
+  high; the last Gemini arc-close review produced 6 findings, all false positives).
 
 == CLOSE GATE ==
 - Build: make lint 0 + go test -race ./... green + (if it hits MFL) env-gated live PASS
