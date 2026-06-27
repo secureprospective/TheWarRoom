@@ -59,7 +59,16 @@ func SampleRookies() []composition.PlayerSpec {
 		// (Higbee-like). SL-019 gives him little modulator help; his breakout stays below Alpha's.
 		{MFLID: "0402", Name: "TE Bravo", Position: domain.PosTE, BasePoints: 150, Age: 31, RAS: 6.0, HasRAS: true, Salary: 3,
 			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.15, HasCollegeShare: true},
-		{MFLID: "0501", Name: "DE Alpha", Position: domain.PosDE, BasePoints: 175, Age: 22, RAS: 9.1, HasRAS: true, Salary: 8},
+		// Two DEs with contrasting athletic-and-draft profiles so the B5b-DE rubric's SL-019
+		// RAS-modulator visibly separates them (the §5 Garrett/Lawrence finding — the SECOND
+		// SL-019 instance, reusing curve.SL019). DE Alpha: athletic profile — high RAS, early
+		// breakout, Power Four, dominant Sack+TFL market share (Garrett-like).
+		{MFLID: "0501", Name: "DE Alpha", Position: domain.PosDE, BasePoints: 175, Age: 22, RAS: 9.1, HasRAS: true, Salary: 8,
+			BreakoutAge: 19, HasBreakoutAge: true, SchoolTier: scouting.SchoolPowerFour, CollegeShare: 0.30, HasCollegeShare: true},
+		// DE Bravo: non-athletic profile — low RAS, late breakout, Group of Five, thin share
+		// (Lawrence-like). SL-019 gives him little modulator help; his breakout stays below Alpha's.
+		{MFLID: "0502", Name: "DE Bravo", Position: domain.PosDE, BasePoints: 165, Age: 23, RAS: 6.0, HasRAS: true, Salary: 4,
+			BreakoutAge: 21, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.15, HasCollegeShare: true},
 		{MFLID: "0601", Name: "CB Alpha", Position: domain.PosCB, BasePoints: 165, Age: 21, RAS: 8.9, HasRAS: true, Salary: 6},
 		// Two DTs with contrasting RAS + breakout so the B5b-DT rubric visibly separates them
 		// (active RAS component + breakout; film is Data-Parity neutral — IDP weights unset).

@@ -19,6 +19,7 @@ func realRegistry() RubricRegistry {
 		domain.PosWR: offense.NewWR(),
 		domain.PosTE: offense.NewTE(),
 		domain.PosDT: defense.NewDT(),
+		domain.PosDE: defense.NewDE(),
 		domain.PosK:  engine.IdentityLayer4(),
 	}
 }
@@ -179,16 +180,14 @@ func TestRealWRRankingDifferentiates(t *testing.T) {
 }
 
 // TestRealTERegistryFlips3M is the B5b-TE close gate: with the TE rubric registered, case 3M
-// (SL-019 RAS-modulator lifts breakout with athletic profile) flips PENDING → PASS, the suite
-// has ZERO failures, and 3E stays PENDING — TE is the first SL-019 instance but 3E remains
-// DE's canonical instance (its position is still unregistered), the three-state model holding.
+// (SL-019 RAS-modulator lifts breakout with athletic profile) flips PENDING → PASS and the
+// suite has ZERO failures. (3E — TE does not gate it; it is DE's canonical instance — now also
+// PASSES because realRegistry registers DE alongside TE as of B5b-DE; see
+// TestRealDERegistryFlips3E for that gate. 3M's contract is that TE alone flips 3M.)
 func TestRealTERegistryFlips3M(t *testing.T) {
 	results := RunValidationSuite(realRegistry())
 	if r := find(t, results, "3M"); r.State != StatePass {
 		t.Fatalf("3M should PASS with the real TE rubric, got %s (%s)", r.State, r.Detail)
-	}
-	if r := find(t, results, "3E"); r.State != StatePending {
-		t.Fatalf("3E should stay PENDING (DE absent — TE does not gate it), got %s", r.State)
 	}
 	if s := Summarize(results); s.Fail != 0 {
 		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
@@ -216,6 +215,49 @@ func TestRealTERankingDifferentiates(t *testing.T) {
 	}
 	if !(alpha.Result.Layer4Output.Combined > bravo.Result.Layer4Output.Combined) {
 		t.Fatalf("TE Alpha L4 %v should exceed Bravo %v",
+			alpha.Result.Layer4Output.Combined, bravo.Result.Layer4Output.Combined)
+	}
+}
+
+// TestRealDERegistryFlips3E is the B5b-DE close gate: with the DE rubric registered, case 3E
+// (SL-019 RAS-modulator lifts breakout — the SECOND SL-019 instance, reusing curve.SL019) flips
+// PENDING → PASS, the suite has ZERO failures, and 3G stays PENDING — DE is registered but 3G's
+// PFFAlpha-assertion wiring is deferred (it is a gatedPending, never auto-passing), the
+// three-state model holding.
+func TestRealDERegistryFlips3E(t *testing.T) {
+	results := RunValidationSuite(realRegistry())
+	if r := find(t, results, "3E"); r.State != StatePass {
+		t.Fatalf("3E should PASS with the real DE rubric, got %s (%s)", r.State, r.Detail)
+	}
+	if r := find(t, results, "3G"); r.State != StatePending {
+		t.Fatalf("3G should stay PENDING (assertion-wiring deferred), got %s", r.State)
+	}
+	if s := Summarize(results); s.Fail != 0 {
+		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
+	}
+}
+
+// TestRealDERankingDifferentiates is the §5 Garrett/Lawrence structural finding through Module 1:
+// two DEs with different athletic-and-draft profile strength land apart. DE Alpha (athletic —
+// high RAS + early breakout + strong static profile) out-scores DE Bravo (non-athletic — low RAS
+// + late breakout + weak static profile) on both the breakout component (where SL-019 adds
+// athletic credit) and the Layer-4 Combined.
+func TestRealDERankingDifferentiates(t *testing.T) {
+	rows := RankRookies(testAssembler(), SampleRookies(), realRegistry())
+	byID := map[string]RookieRow{}
+	for _, r := range rows {
+		byID[r.MFLID] = r
+	}
+	alpha, bravo := byID["0501"], byID["0502"]
+	if alpha.Err != "" || bravo.Err != "" {
+		t.Fatalf("DE rows errored: alpha=%q bravo=%q", alpha.Err, bravo.Err)
+	}
+	if !(alpha.Result.Layer4Output.BreakoutEffective > bravo.Result.Layer4Output.BreakoutEffective) {
+		t.Fatalf("DE Alpha breakout %v should exceed Bravo %v (SL-019 + static profile)",
+			alpha.Result.Layer4Output.BreakoutEffective, bravo.Result.Layer4Output.BreakoutEffective)
+	}
+	if !(alpha.Result.Layer4Output.Combined > bravo.Result.Layer4Output.Combined) {
+		t.Fatalf("DE Alpha L4 %v should exceed Bravo %v",
 			alpha.Result.Layer4Output.Combined, bravo.Result.Layer4Output.Combined)
 	}
 }
