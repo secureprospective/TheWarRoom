@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/composition"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine"
+	"github.com/secureprospective/TheWarRoom/internal/engine/l4/offense"
 	"github.com/secureprospective/TheWarRoom/internal/harness"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
@@ -17,10 +20,19 @@ type sandboxCap struct{}
 
 func (sandboxCap) GetSalaryCap() string { return "1000" }
 
-// rubrics is the B5b Layer-4 registry. EMPTY today (identity L4 only): Module 1 shows the
-// scouting baseline and the rubric-gated Module 3 cases report PENDING. Each B5b block adds
-// its position here, which both differentiates the rankings and auto-evaluates its cases.
-func (a *App) rubrics() harness.RubricRegistry { return harness.RubricRegistry{} }
+// rubrics is the B5b Layer-4 registry. Each B5b block adds its position here, which both
+// differentiates the rankings and auto-evaluates its Module-3 cases. QB (B5b-QB) is the
+// first REAL rubric. K is registered with the IDENTITY Layer 4 as a documented PLACEHOLDER:
+// case 3C (SL-020) gates on BOTH QB and K, and SL-020 forces K's RAS to 1.000 with an empty
+// input scoring neutral by Data-Parity — which identity satisfies. B5b-K REPLACES this with
+// the real Madden-driven K rubric (DECISION-011); registering it here now is what lets 3C
+// flip green this session without weakening its assertion.
+func (a *App) rubrics() harness.RubricRegistry {
+	return harness.RubricRegistry{
+		domain.PosQB: offense.NewQB(),
+		domain.PosK:  engine.IdentityLayer4(), // PLACEHOLDER — real K is B5b-K (DECISION-011)
+	}
+}
 
 // assembler builds the composition boundary over the real params store and the sandbox cap.
 func (a *App) assembler() (*composition.Assembler, error) {

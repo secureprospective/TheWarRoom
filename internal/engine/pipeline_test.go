@@ -192,7 +192,7 @@ func TestPipelineEndToEndIdentityLayer4(t *testing.T) {
 	p := basePlayer()
 	c := baseCalibration()
 
-	res, err := pl.Score(p, c)
+	res, err := pl.Score(p, ScoutingInput{}, c)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -221,7 +221,7 @@ func TestPipelineDecayedHotTier(t *testing.T) {
 	p.Salary = 12 // 6% of 200 → Hot
 	c := baseCalibration()
 
-	res, err := pl.Score(p, c)
+	res, err := pl.Score(p, ScoutingInput{}, c)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -241,7 +241,7 @@ func TestPipelineConcurrentScore(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if _, err := pl.Score(basePlayer(), c); err != nil {
+			if _, err := pl.Score(basePlayer(), ScoutingInput{}, c); err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
 		}()

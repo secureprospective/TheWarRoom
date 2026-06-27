@@ -7,6 +7,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine"
+	"github.com/secureprospective/TheWarRoom/internal/scouting"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
@@ -73,15 +74,15 @@ func (a *Assembler) Calibration(pos domain.Position) (engine.Calibration, error)
 }
 
 // Assemble validates a spec and returns the engine inputs for it: the per-player
-// PlayerInput plus the position's Calibration. This is the single call the harness IPC
-// layer makes per player before invoking engine.Pipeline.Score.
-func (a *Assembler) Assemble(s PlayerSpec) (engine.PlayerInput, engine.Calibration, error) {
+// PlayerInput, the L4 ScoutingInput, and the position's Calibration. This is the single
+// call the harness IPC layer makes per player before invoking engine.Pipeline.Score.
+func (a *Assembler) Assemble(s PlayerSpec) (engine.PlayerInput, engine.ScoutingInput, engine.Calibration, error) {
 	if err := s.Validate(); err != nil {
-		return engine.PlayerInput{}, engine.Calibration{}, err
+		return engine.PlayerInput{}, engine.ScoutingInput{}, engine.Calibration{}, err
 	}
 	cal, err := a.Calibration(s.Position)
 	if err != nil {
-		return engine.PlayerInput{}, engine.Calibration{}, err
+		return engine.PlayerInput{}, engine.ScoutingInput{}, engine.Calibration{}, err
 	}
 	// When RAS is absent the raw value is meaningless: zero it so a partially-populated
 	// spec cannot ride a stray (even non-finite) RAS into the engine (GLM review l1). L1
@@ -99,7 +100,32 @@ func (a *Assembler) Assemble(s PlayerSpec) (engine.PlayerInput, engine.Calibrati
 		Salary:     s.Salary,
 		IsVeteran:  s.IsVeteran,
 	}
-	return in, cal, nil
+	return in, a.scouting(s), cal, nil
+}
+
+// scouting maps the spec's raw L4 sub-signals into the engine's ScoutingInput. The school
+// tier is normalized here (position-independent template); the position-specific curves
+// (breakout age, college share, age trajectory) are the rubric's job, so those values pass
+// through raw. Validate has already rejected a poisoned value and an unknown tier, so the
+// schoolTierNorm lookup here is total. Film rides through only when HasFilm; otherwise the
+// composite is zeroed so a stray value cannot reach the rubric (mirrors the RAS handling).
+func (a *Assembler) scouting(s PlayerSpec) engine.ScoutingInput {
+	film := s.FilmComposite
+	if !s.HasFilm {
+		film = 0
+	}
+	tierNorm, _ := schoolTierNorm(s.SchoolTier)
+	return engine.ScoutingInput{
+		FilmComposite: film,
+		HasFilm:       s.HasFilm,
+
+		BreakoutAge:     s.BreakoutAge,
+		HasBreakoutAge:  s.HasBreakoutAge,
+		SchoolTierNorm:  tierNorm,
+		HasSchoolTier:   s.SchoolTier != scouting.SchoolUnset,
+		CollegeShare:    s.CollegeShare,
+		HasCollegeShare: s.HasCollegeShare,
+	}
 }
 
 // leagueCap parses the rulebook's string cap amount into the float the engine reads,

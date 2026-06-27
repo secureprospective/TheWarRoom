@@ -1,6 +1,9 @@
 package composition
 
-import "github.com/secureprospective/TheWarRoom/internal/domain"
+import (
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/scouting"
+)
 
 // L1 hygiene defaults composition supplies until B4/admin tables own them. These are
 // documented constants, not invented: RASFallback is the engine spec's stated fallback
@@ -16,6 +19,29 @@ const (
 // so a uniform 0 is a safe, inert default (every position ties on scarcity, falling
 // through to the next tiebreaker) until the real ranks land.
 const DefaultScarcityRank = 0
+
+// schoolTierNorm maps a college-competition tier to its normalized [0,1] breakout weight.
+// This mapping is the rubrics' "template default" (QB_Rubric §4) and is position-INDEPENDENT
+// — so it lives at the boundary, not in any one rubric, and the engine receives a plain
+// normalized value. SchoolUnset maps to 0 (no positive tier signal — the breakout component
+// just gets no lift from school tier). ok is false only for an unrecognized enum value, which
+// the spec validator rejects. A function (not a map) keeps gochecknoglobals happy (M17).
+func schoolTierNorm(t scouting.SchoolTier) (float64, bool) {
+	switch t {
+	case scouting.SchoolPowerFour:
+		return 1.00, true
+	case scouting.SchoolGroupOfFive:
+		return 0.70, true
+	case scouting.SchoolFCS:
+		return 0.40, true
+	case scouting.SchoolNonFCS:
+		return 0.10, true
+	case scouting.SchoolUnset:
+		return 0.0, true
+	default:
+		return 0, false
+	}
+}
 
 // peakLimit returns the Layer-3 age peak limit for a position — the age past which
 // decay applies (Engine_Specification:118, "Current Peak Limit Defaults"). These are

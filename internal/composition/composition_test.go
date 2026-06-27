@@ -7,6 +7,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine"
+	"github.com/secureprospective/TheWarRoom/internal/scouting"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
@@ -45,7 +46,7 @@ func goodSpec() PlayerSpec {
 func TestAssembleHappyPath(t *testing.T) {
 	p, c := goodStores()
 	a := New(p, c)
-	in, cal, err := a.Assemble(goodSpec())
+	in, _, cal, err := a.Assemble(goodSpec())
 	if err != nil {
 		t.Fatalf("Assemble: unexpected error: %v", err)
 	}
@@ -72,21 +73,27 @@ func TestAssembleRejectsBadSpec(t *testing.T) {
 	p, c := goodStores()
 	a := New(p, c)
 	cases := map[string]func(s *PlayerSpec){
-		"empty id":          func(s *PlayerSpec) { s.MFLID = "" },
-		"empty name":        func(s *PlayerSpec) { s.Name = "" },
-		"flag position":     func(s *PlayerSpec) { s.Position = domain.PosFlag },
-		"unknown position":  func(s *PlayerSpec) { s.Position = domain.Position("ZZ") },
-		"non-positive age":  func(s *PlayerSpec) { s.Age = 0 },
-		"negative salary":   func(s *PlayerSpec) { s.Salary = -1 },
-		"NaN base points":   func(s *PlayerSpec) { s.BasePoints = math.NaN() },
-		"Inf age":           func(s *PlayerSpec) { s.Age = math.Inf(1) },
-		"NaN ras with flag": func(s *PlayerSpec) { s.HasRAS = true; s.RAS = math.NaN() },
+		"empty id":              func(s *PlayerSpec) { s.MFLID = "" },
+		"empty name":            func(s *PlayerSpec) { s.Name = "" },
+		"flag position":         func(s *PlayerSpec) { s.Position = domain.PosFlag },
+		"unknown position":      func(s *PlayerSpec) { s.Position = domain.Position("ZZ") },
+		"non-positive age":      func(s *PlayerSpec) { s.Age = 0 },
+		"negative salary":       func(s *PlayerSpec) { s.Salary = -1 },
+		"NaN base points":       func(s *PlayerSpec) { s.BasePoints = math.NaN() },
+		"Inf age":               func(s *PlayerSpec) { s.Age = math.Inf(1) },
+		"NaN ras with flag":     func(s *PlayerSpec) { s.HasRAS = true; s.RAS = math.NaN() },
+		"negative breakout age": func(s *PlayerSpec) { s.BreakoutAge = -1 },
+		"NaN college share":     func(s *PlayerSpec) { s.CollegeShare = math.NaN() },
+		"college share > 1":     func(s *PlayerSpec) { s.CollegeShare = 1.5 },
+		"film flag bad comp":    func(s *PlayerSpec) { s.HasFilm = true; s.FilmComposite = 2.0 },
+		"film flag NaN comp":    func(s *PlayerSpec) { s.HasFilm = true; s.FilmComposite = math.NaN() },
+		"unknown school tier":   func(s *PlayerSpec) { s.SchoolTier = scouting.SchoolTier("BIG_TEN") },
 	}
 	for name, mut := range cases {
 		t.Run(name, func(t *testing.T) {
 			s := goodSpec()
 			mut(&s)
-			if _, _, err := a.Assemble(s); err == nil {
+			if _, _, _, err := a.Assemble(s); err == nil {
 				t.Fatalf("expected error for %q, got nil", name)
 			}
 		})
@@ -134,7 +141,7 @@ func TestAssembleZerosAbsentRAS(t *testing.T) {
 	s := goodSpec()
 	s.HasRAS = false
 	s.RAS = math.NaN()
-	in, _, err := New(p, c).Assemble(s)
+	in, _, _, err := New(p, c).Assemble(s)
 	if err != nil {
 		t.Fatalf("Assemble should accept absent RAS: %v", err)
 	}
@@ -176,11 +183,11 @@ func TestAssembleFeedsEngineEndToEnd(t *testing.T) {
 	s := goodSpec()
 	s.Age = 22    // below WR peak 29 → AgePull 1.0
 	s.Salary = 30 // 30/1000 = 3% → between 1.2 and 4.8 → Neutral ×1.0
-	in, cal, err := a.Assemble(s)
+	in, sc, cal, err := a.Assemble(s)
 	if err != nil {
 		t.Fatalf("Assemble: %v", err)
 	}
-	res, err := engine.NewPipeline(nil).Score(in, cal)
+	res, err := engine.NewPipeline(nil).Score(in, sc, cal)
 	if err != nil {
 		t.Fatalf("Score: %v", err)
 	}

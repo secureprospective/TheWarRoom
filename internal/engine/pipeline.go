@@ -24,14 +24,15 @@ func NewPipeline(layer4 Layer4) *Pipeline {
 //	AdjustedScore    = ScoutingAdjusted × CapMultiplier
 //
 // L1's cleaned salary feeds L5 and its cleaned RAS feeds L6, so hygiene is applied once
-// and reused. An invalid league cap surfaces as an error rather than a poisoned score.
-func (pl *Pipeline) Score(p PlayerInput, c Calibration) (Result, error) {
+// and reused. The scouting sub-signals (sc) feed L4 only. An invalid league cap surfaces
+// as an error rather than a poisoned score.
+func (pl *Pipeline) Score(p PlayerInput, sc ScoutingInput, c Calibration) (Result, error) {
 	cleaned := ApplyHygiene(p, c)
 	agePull, err := ApplyDecay(p.Age, c.PeakLimit, c.DecayRate)
 	if err != nil {
 		return Result{}, err
 	}
-	l4 := pl.layer4.Apply(Layer4Input{Player: p})
+	l4 := pl.layer4.Apply(Layer4Input{Player: p, Scouting: sc})
 
 	scoutingAdjusted := p.BasePoints * agePull * l4.Combined
 

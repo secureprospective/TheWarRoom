@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/scouting"
 )
 
 // PlayerSpec is one player's harness-supplied input: the fields a fixture or the manual
@@ -25,6 +26,23 @@ type PlayerSpec struct {
 	HasRAS     bool // false → L1 imputes DefaultRASFallback
 	Salary     float64
 	IsVeteran  bool
+
+	// --- Layer-4 scouting sub-signals (raw, position-blind) ---
+	// These feed the per-position L4 rubric (B5b). Positions without a registered rubric
+	// run identity L4 and ignore them; the boundary still validates them so a poisoned
+	// value never rides into a rubric that DOES use them.
+	FilmComposite float64 // upstream film composite in [0,1] (valid only when HasFilm)
+	HasFilm       bool    // false → the rubric forces a neutral film component (Data-Parity Rule)
+
+	// Breakout sub-signals. The Has* flags distinguish ABSENT from a real zero (a zero
+	// breakout age or college share would otherwise be read as an extreme, not neutral).
+	// School-tier presence is inferred from the enum (SchoolUnset == absent), so it needs
+	// no separate flag.
+	BreakoutAge     float64             // breakout age in years; the rubric maps it to [0,1]
+	HasBreakoutAge  bool                // false → breakout age is treated as neutral
+	SchoolTier      scouting.SchoolTier // college-competition tier; mapped to a [0,1] norm at assemble
+	CollegeShare    float64             // college production/usage share in [0,1]
+	HasCollegeShare bool                // false → college share is treated as neutral (0 is a real share)
 }
 
 // knownPositions is the engine's scorable set (domain.PosFlag is excluded — an
@@ -65,6 +83,29 @@ func (s PlayerSpec) Validate() error {
 	}
 	if s.Salary < 0 {
 		return fmt.Errorf("composition: player %q has negative salary %v", s.MFLID, s.Salary)
+	}
+	return s.validateScouting()
+}
+
+// validateScouting fail-louds on a poisoned L4 sub-signal (non-finite, or out of its
+// documented range) so the pure rubric never normalizes garbage. It deliberately does NOT
+// require the signals to be present: an absent signal (zero / SchoolUnset) is allowed and
+// handled by the rubric's Data-Parity Rule — only an actively-corrupt value is rejected.
+func (s PlayerSpec) validateScouting() error {
+	if !finite(s.BreakoutAge, s.CollegeShare) {
+		return fmt.Errorf("composition: player %q has a non-finite scouting field (breakoutAge=%v collegeShare=%v)", s.MFLID, s.BreakoutAge, s.CollegeShare)
+	}
+	if s.BreakoutAge < 0 {
+		return fmt.Errorf("composition: player %q has negative breakout age %v", s.MFLID, s.BreakoutAge)
+	}
+	if s.CollegeShare < 0 || s.CollegeShare > 1 {
+		return fmt.Errorf("composition: player %q college share %v out of [0,1]", s.MFLID, s.CollegeShare)
+	}
+	if s.HasFilm && (!finite(s.FilmComposite) || s.FilmComposite < 0 || s.FilmComposite > 1) {
+		return fmt.Errorf("composition: player %q has HasFilm but film composite %v out of [0,1]", s.MFLID, s.FilmComposite)
+	}
+	if _, ok := schoolTierNorm(s.SchoolTier); !ok {
+		return fmt.Errorf("composition: player %q has unknown school tier %q", s.MFLID, s.SchoolTier)
 	}
 	return nil
 }

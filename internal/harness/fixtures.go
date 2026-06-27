@@ -3,6 +3,7 @@ package harness
 import (
 	"github.com/secureprospective/TheWarRoom/internal/composition"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/scouting"
 )
 
 // SampleRookies is the versioned hardcoded scaffold for Module 1: a synthetic, clearly-
@@ -12,13 +13,20 @@ import (
 // for a scouting claim. When the MFL pull and real fixtures land they REPLACE this; until
 // then it is the deterministic input that exercises the composition boundary + pipeline.
 //
-// Under identity L4 (today) ranking is driven by BasePoints × AgePull × CapMultiplier —
-// the scouting baseline. RAS/film/breakout do not yet move it; that is the point of the
-// "identity / scouting baseline" label on the Module 1 view.
+// Positions with a REGISTERED B5b rubric (QB today) now differentiate on their L4
+// scouting sub-signals; positions still on identity L4 ignore the scouting fields (which
+// are zero/absent here) and rank on BasePoints × AgePull × CapMultiplier — the scouting
+// baseline. The two QBs carry contrasting breakout profiles so the QB rubric visibly
+// separates them once registered. Film is absent (HasFilm false — no source until the film
+// calibration pass), so the QB rubric forces a neutral film component (Data-Parity Rule).
 func SampleRookies() []composition.PlayerSpec {
 	return []composition.PlayerSpec{
-		{MFLID: "0101", Name: "QB Alpha", Position: domain.PosQB, BasePoints: 280, Age: 22, RAS: 8.1, HasRAS: true, Salary: 12},
-		{MFLID: "0102", Name: "QB Bravo", Position: domain.PosQB, BasePoints: 240, Age: 23, RAS: 6.0, HasRAS: true, Salary: 6},
+		// Elite breakout: true-freshman starter, Power Four, dominant college share.
+		{MFLID: "0101", Name: "QB Alpha", Position: domain.PosQB, BasePoints: 280, Age: 22, RAS: 8.1, HasRAS: true, Salary: 12,
+			BreakoutAge: 20, HasBreakoutAge: true, SchoolTier: scouting.SchoolPowerFour, CollegeShare: 0.70, HasCollegeShare: true},
+		// Weaker breakout: later starter, Group of Five, moderate share.
+		{MFLID: "0102", Name: "QB Bravo", Position: domain.PosQB, BasePoints: 240, Age: 23, RAS: 6.0, HasRAS: true, Salary: 6,
+			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.50, HasCollegeShare: true},
 		{MFLID: "0201", Name: "RB Alpha", Position: domain.PosRB, BasePoints: 210, Age: 21, RAS: 9.4, HasRAS: true, Salary: 9},
 		{MFLID: "0202", Name: "RB Bravo", Position: domain.PosRB, BasePoints: 195, Age: 24, RAS: 7.2, HasRAS: true, Salary: 4},
 		{MFLID: "0301", Name: "WR Alpha", Position: domain.PosWR, BasePoints: 250, Age: 21, RAS: 9.8, HasRAS: true, Salary: 14},

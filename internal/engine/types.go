@@ -55,11 +55,45 @@ type Calibration struct {
 	ScarcityRank int // positional scarcity rank, higher wins (per-position; B5b)
 }
 
-// Layer4Input is what the pluggable Layer 4 receives. The identity default needs
-// nothing from it; B5b's real implementations read the player's sub-signals through
-// the composition-filled fields added here when those layers land.
+// ScoutingInput carries the Layer-4 scouting sub-signals the composition boundary
+// assembles for a player. They are kept OFF PlayerInput so the L1/L3/L5 hygiene path
+// never sees film/breakout signals and the L4 inputs never see cap/salary mechanics —
+// the layers stay value-isolated. Every field is position-BLIND raw data; per-position
+// normalization (breakout-age / college-share / age-trajectory curves) lives in each
+// B5b rubric (Approach A — the engine normalizes). The one exception is SchoolTierNorm,
+// which is position-INDEPENDENT and so arrives already normalized from the boundary.
+//
+// FilmComposite is the upstream-weighted film signal in [0,1]; HasFilm is false until
+// the film-source redesign/calibration lands, in which case the rubric applies the QB
+// Data-Parity Rule and returns a neutral 1.000 film component (no penalty for absent data).
+// Each breakout sub-signal carries a Has* presence flag (mirroring HasRAS/HasFilm). An
+// ABSENT sub-signal must NOT be confused with a real zero: e.g. a zero breakout age would
+// map to the curve ceiling (elite), a zero college share to the floor, silently corrupting
+// the score. The Has* flags let the rubric apply the Data-Parity Rule per sub-signal —
+// neutralizing what is absent rather than reading it as an extreme. Presence handling lives
+// in the rubric (not this position-blind boundary): K, for one, legitimately has no breakout
+// sub-signals at all.
+type ScoutingInput struct {
+	FilmComposite float64 // normalized [0,1] film composite (weights are a calibration concern, set upstream)
+	HasFilm       bool    // false → Data-Parity Rule: film component is forced neutral (1.000)
+
+	BreakoutAge    float64 // raw breakout age in years; the rubric maps it to [0,1]
+	HasBreakoutAge bool    // false → the rubric treats breakout age as neutral (no lift/penalty)
+
+	SchoolTierNorm float64 // pre-normalized school-competition tier in [0,1] (position-independent)
+	HasSchoolTier  bool    // false → the rubric treats school tier as neutral
+
+	CollegeShare    float64 // raw college production/usage share in [0,1]; the rubric maps it to its index
+	HasCollegeShare bool    // false → the rubric treats college share as neutral (0 is a REAL share, not "absent")
+}
+
+// Layer4Input is what the pluggable Layer 4 receives: the per-player facts (Player) plus
+// the scouting sub-signals (Scouting). The identity default reads nothing from it; B5b's
+// real implementations read the sub-signals. Age trajectory reads Player.Age — there is no
+// duplicate age field on Scouting.
 type Layer4Input struct {
-	Player PlayerInput
+	Player   PlayerInput
+	Scouting ScoutingInput
 }
 
 // Layer4Output is the scouting layer's result. Combined is the product of the three

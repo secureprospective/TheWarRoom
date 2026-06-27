@@ -31,13 +31,13 @@ func RankRookies(a *composition.Assembler, specs []composition.PlayerSpec, reg R
 	rows := make([]RookieRow, 0, len(specs))
 	for _, s := range specs {
 		row := RookieRow{MFLID: s.MFLID, Name: s.Name, Position: string(s.Position), Age: s.Age, RASImputed: !s.HasRAS}
-		in, cal, err := a.Assemble(s)
+		in, sc, cal, err := a.Assemble(s)
 		if err != nil {
 			row.Err = err.Error()
 			rows = append(rows, row)
 			continue
 		}
-		res, err := engine.NewPipeline(reg[s.Position]).Score(in, cal)
+		res, err := engine.NewPipeline(reg[s.Position]).Score(in, sc, cal)
 		if err != nil {
 			row.Err = err.Error()
 			rows = append(rows, row)
