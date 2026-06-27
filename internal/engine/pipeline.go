@@ -32,6 +32,11 @@ func (pl *Pipeline) Score(p PlayerInput, sc ScoutingInput, c Calibration) (Resul
 	if err != nil {
 		return Result{}, err
 	}
+	// L3 cushion guard (SL-021): a per-position decay modulator that slows late-career
+	// decline for high-RAS players. It reads the player's RAW RAS and the strength the
+	// position's rubric shipped via Calibration; it is a no-op everywhere the threshold is
+	// zero (every position but DT in v1.0).
+	agePull = ApplyCushionGuard(agePull, p.RAS, p.HasRAS, c.CushionRASThreshold, c.CushionDeclineFactor)
 	l4 := pl.layer4.Apply(Layer4Input{Player: p, Scouting: sc})
 
 	scoutingAdjusted := p.BasePoints * agePull * l4.Combined

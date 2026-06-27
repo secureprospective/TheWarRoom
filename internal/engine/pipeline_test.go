@@ -75,6 +75,7 @@ func TestApplyDecayNonFiniteRejected(t *testing.T) {
 		{"Inf peak", 30, math.Inf(1), 0.03},
 		{"NaN rate", 30, 32, math.NaN()},
 		{"rate>1 negative base", 35, 32, 1.5},
+		{"rate<0 inflates with age", 35, 32, -0.5}, // GLM m3: negative rate grows the pull
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -82,6 +83,61 @@ func TestApplyDecayNonFiniteRejected(t *testing.T) {
 				t.Fatalf("ApplyDecay(%v,%v,%v): expected error, got nil", c.age, c.peak, c.rate)
 			}
 		})
+	}
+}
+
+// TestApplyCushionGuard covers the SL-021 L3 modulator: it slows decline for a qualifying
+// high-RAS player and is a strict no-op otherwise. Below peak the raw pull is 1.0, so the
+// formula is inert regardless of RAS.
+func TestApplyCushionGuard(t *testing.T) {
+	raw, err := ApplyDecay(33, 30, 0.03) // three years past peak ⇒ 0.97^3
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	cases := []struct {
+		name                         string
+		rawPull, ras                 float64
+		hasRAS                       bool
+		threshold, decline, wantSame float64 // wantSame==1 ⇒ expect raw unchanged
+	}{
+		{"qualifying RAS slows decline", raw, 9.0, true, 8.0, 0.90, 0},
+		{"at threshold qualifies", raw, 8.0, true, 8.0, 0.90, 0},
+		{"just below threshold unchanged", raw, 7.99, true, 8.0, 0.90, 1},
+		{"absent RAS never cushioned", raw, 9.0, false, 8.0, 0.90, 1},
+		{"disabled (threshold 0) unchanged", raw, 9.0, true, 0, 0.90, 1},
+		{"factor<0 misconfig disabled", raw, 9.0, true, 8.0, -0.5, 1}, // GLM m2: would boost above peak
+		{"factor>1 misconfig disabled", raw, 9.0, true, 8.0, 1.5, 1},  // GLM m2: would amplify decline
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := ApplyCushionGuard(c.rawPull, c.ras, c.hasRAS, c.threshold, c.decline)
+			if c.wantSame == 1 {
+				if got != c.rawPull {
+					t.Fatalf("expected no-op, got %v (raw %v)", got, c.rawPull)
+				}
+				return
+			}
+			want := 1.0 - (1.0-c.rawPull)*c.decline
+			if !approxEq(got, want) {
+				t.Fatalf("cushioned = %v, want %v", got, want)
+			}
+			if !(got > c.rawPull) {
+				t.Fatalf("cushion must lift the pull above raw %v, got %v", c.rawPull, got)
+			}
+		})
+	}
+}
+
+// PLANTED FAILURE (M3): the cushion guard MUST change the decay outcome at the threshold —
+// a qualifying high-RAS DT past peak decays slower than an otherwise-identical sub-threshold
+// DT. Would FAIL if ApplyCushionGuard were a no-op (the cushion not wired). This is the
+// engine half of case 3F.
+func TestApplyCushionGuardSeenAtThreshold(t *testing.T) {
+	raw, _ := ApplyDecay(33, 30, 0.03)
+	hi := ApplyCushionGuard(raw, 8.00, true, 8.0, 0.90)
+	lo := ApplyCushionGuard(raw, 7.99, true, 8.0, 0.90)
+	if !(hi > lo) {
+		t.Fatalf("RAS 8.00 (%v) must decay slower than RAS 7.99 (%v)", hi, lo)
 	}
 }
 

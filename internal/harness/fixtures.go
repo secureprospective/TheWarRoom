@@ -35,5 +35,13 @@ func SampleRookies() []composition.PlayerSpec {
 		{MFLID: "0401", Name: "TE Alpha", Position: domain.PosTE, BasePoints: 160, Age: 22, RAS: 8.6, HasRAS: true, Salary: 5},
 		{MFLID: "0501", Name: "DE Alpha", Position: domain.PosDE, BasePoints: 175, Age: 22, RAS: 9.1, HasRAS: true, Salary: 8},
 		{MFLID: "0601", Name: "CB Alpha", Position: domain.PosCB, BasePoints: 165, Age: 21, RAS: 8.9, HasRAS: true, Salary: 6},
+		// Two DTs with contrasting RAS + breakout so the B5b-DT rubric visibly separates them
+		// (active RAS component + breakout; film is Data-Parity neutral — IDP weights unset).
+		// DT Alpha: elite athlete, early breakout, dominant TFL+Sack share, Power Four.
+		{MFLID: "0701", Name: "DT Alpha", Position: domain.PosDT, BasePoints: 185, Age: 22, RAS: 9.2, HasRAS: true, Salary: 9,
+			BreakoutAge: 20, HasBreakoutAge: true, SchoolTier: scouting.SchoolPowerFour, CollegeShare: 0.24, HasCollegeShare: true},
+		// DT Bravo: weaker athlete, later breakout, moderate share, Group of Five.
+		{MFLID: "0702", Name: "DT Bravo", Position: domain.PosDT, BasePoints: 170, Age: 23, RAS: 6.4, HasRAS: true, Salary: 4,
+			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.15, HasCollegeShare: true},
 	}
 }

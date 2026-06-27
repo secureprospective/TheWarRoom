@@ -43,6 +43,18 @@ func schoolTierNorm(t scouting.SchoolTier) (float64, bool) {
 	}
 }
 
+// cushionGuard returns the SL-021 Late-Career Cushion Guard strength for a position: the
+// raw-RAS threshold and the decline-velocity multiplier the engine's ApplyCushionGuard
+// consumes (DT_Rubric §1/§3). It is per-position and ships WITH the rubric — only DT uses
+// it in v1.0; every other position returns a zero threshold, which DISABLES the guard (a
+// safe no-op). A function (not a package map) keeps gochecknoglobals happy (M17).
+func cushionGuard(p domain.Position) (threshold, declineFactor float64) {
+	if p == domain.PosDT {
+		return 8.00, 0.90 // RAS ≥ 8.00 → late-career decline slowed 10%
+	}
+	return 0, 0 // disabled at every other position
+}
+
 // peakLimit returns the Layer-3 age peak limit for a position — the age past which
 // decay applies (Engine_Specification:118, "Current Peak Limit Defaults"). These are
 // admin-tunable per SL-017; B4 does not seed them yet, so composition supplies the spec

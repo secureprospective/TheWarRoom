@@ -67,16 +67,14 @@ func validationCases() []case3 {
 			domain.PosRB),
 		{id: "3C", name: "SL-020 — QB & K Layer-4 RAS forced to exactly 1.000", b5bBlock: "B5b-QB / B5b-K", eval: eval3C},
 		gatedPending("3D", "SL-005 — film compression ±3% at LB/DT vs ±5% elsewhere",
-			"B5b-LB / B5b-DT", "film_raw (pre-effective) not on Layer4Output",
+			"B5b-LB / B5b-DT", "FilmRaw hook on Layer4Output (built); awaiting LB + WR rubrics",
 			domain.PosLB, domain.PosDT, domain.PosWR),
 		gatedPending("3E", "SL-019 — breakout modulator lifts with RAS (DE)",
 			"B5b-DE", "modulated breakout intermediate not on Layer4Output",
 			domain.PosDE),
-		gatedPending("3F", "SL-021 — DT cushion guard (RAS ≥ 8.00 → 10% decel)",
-			"B5b-DT", "L3 cushion-guard modulator (per-position strength) not built",
-			domain.PosDT),
+		{id: "3F", name: "SL-021 — DT cushion guard (RAS ≥ 8.00 → 10% decel)", b5bBlock: "B5b-DT", eval: eval3F},
 		gatedPending("3G", "SL-021 — DT dynamic PFF alpha (0.50 Y1 → 0.10 Y2+)",
-			"B5b-DT", "PFF blend alpha is a rubric internal, no hook yet",
+			"B5b-DT", "DT.PFFAlpha introspection hook (built); awaiting DE rubric",
 			domain.PosDT, domain.PosDE),
 		subSignalPending("3H", "Confidence floor — all-Unknown component → effective 1.000",
 			"B5b (first rubric)", "component confidence inputs not on Layer4Input"),
@@ -115,6 +113,44 @@ func eval3C(reg RubricRegistry) (CaseState, string) {
 		return StateFail, fmt.Sprintf("K Combined %.4f, want exactly 1.0000", kout.Combined)
 	}
 	return StatePass, "QB RASEffective=1.0000 at RAS 0.10 and 9.99; K Combined=1.0000"
+}
+
+// eval3F is the B5b-DT close gate (SL-021 Late-Career Cushion Guard). The guard has TWO
+// halves and this case closes BOTH (GLM review M4): (1) the L3 decay modulator at the
+// engine level — past peak, a DT with raw RAS ≥ 8.00 decays SLOWER than an identical DT
+// below threshold, and a sub-threshold RAS leaves the raw pull unchanged; (2) the L4
+// breakout Age-Trajectory cushion inside the REGISTERED DT rubric — past peak a qualifying
+// DT's breakout component is lifted vs an identical sub-threshold DT. The cushion strength
+// is the per-position value the DT rubric ships via Calibration (8.00 / 0.90).
+func eval3F(reg RubricRegistry) (CaseState, string) {
+	if st, why, ok := requireRubrics(reg, domain.PosDT); !ok {
+		return st, why
+	}
+	// --- Half 1: L3 decay modulator ---
+	const peak, rate, age = 30.0, 0.03, 33.0 // three years past the DT peak
+	const threshold, decline = 8.00, 0.90
+	raw, err := engine.ApplyDecay(age, peak, rate)
+	if err != nil {
+		return StateFail, fmt.Sprintf("raw decay errored: %v", err)
+	}
+	cushioned := engine.ApplyCushionGuard(raw, 8.00, true, threshold, decline) // qualifying RAS
+	below := engine.ApplyCushionGuard(raw, 7.99, true, threshold, decline)     // just under threshold
+	if !(cushioned > raw) {
+		return StateFail, fmt.Sprintf("L3: cushion did not slow decay: cushioned %.4f not > raw %.4f", cushioned, raw)
+	}
+	if below != raw {
+		return StateFail, fmt.Sprintf("L3: sub-threshold RAS must not be cushioned: got %.4f, want raw %.4f", below, raw)
+	}
+	// --- Half 2: L4 breakout Age-Trajectory cushion through the registered DT rubric ---
+	dt := reg[domain.PosDT]
+	bk := engine.ScoutingInput{BreakoutAge: 22, HasBreakoutAge: true, SchoolTierNorm: 0.70, HasSchoolTier: true, CollegeShare: 0.15, HasCollegeShare: true}
+	hi := dt.Apply(engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosDT, Age: 32, RAS: 9.0, HasRAS: true}, Scouting: bk})
+	lo := dt.Apply(engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosDT, Age: 32, RAS: 7.0, HasRAS: true}, Scouting: bk})
+	if !(hi.BreakoutEffective > lo.BreakoutEffective) {
+		return StateFail, fmt.Sprintf("L4: age-32 cushioned breakout %.5f not > un-cushioned %.5f", hi.BreakoutEffective, lo.BreakoutEffective)
+	}
+	return StatePass, fmt.Sprintf("L3 age33 pull %.4f→%.4f at RAS 8.00 (RAS 7.99 stays %.4f); L4 age32 breakout %.5f (RAS 9) > %.5f (RAS 7)",
+		raw, cushioned, below, hi.BreakoutEffective, lo.BreakoutEffective)
 }
 
 // eval3L runs today: MFL player IDs are strings and leading zeros are significant. It

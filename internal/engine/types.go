@@ -47,6 +47,15 @@ type Calibration struct {
 	// L3 decay
 	PeakLimit float64 // age past which decay applies (per-position; B5b)
 	DecayRate float64 // annual age-decay rate (B4 global, default 0.03)
+	// L3 cushion guard (SL-021, DT-only in v1.0; no-op elsewhere). The Late-Career
+	// Cushion Guard is a per-position L3 DECAY modulator: when a player's RAW RAS is at or
+	// above CushionRASThreshold, the age-decay pull's decline past peak is slowed by
+	// CushionDeclineFactor (see ApplyCushionGuard). It rides on Calibration — the strength
+	// ships WITH the position's B5b rubric — so the pure engine consumes it as plain
+	// parameters and never reaches a store. A zero threshold DISABLES the guard (every
+	// position but DT), so the zero value is a safe no-op (B5b-DT gate decision).
+	CushionRASThreshold  float64 // raw RAS at/above which the guard applies; 0 disables
+	CushionDeclineFactor float64 // decline-velocity multiplier past peak (DT: 0.90 = 10% slower)
 	// L5 cap scaling
 	LeagueCap   float64 // the cap AMOUNT (B3b rulebook), in the same units as Salary
 	ColdCeiling float64 // salary% below this is Cold (B4 global, default 1.2)
@@ -102,6 +111,7 @@ type Layer4Input struct {
 // caps are the natural bounds (Backend_Architecture:256).
 type Layer4Output struct {
 	FilmEffective     float64
+	FilmRaw           float64 // pre-effective normalized film input — DEBUG/sandbox only, never UI (case 3D hook)
 	RASEffective      float64
 	BreakoutEffective float64
 	Combined          float64
