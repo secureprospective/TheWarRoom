@@ -1,5 +1,207 @@
+export namespace engine {
+	
+	export class Layer4Output {
+	    FilmEffective: number;
+	    RASEffective: number;
+	    BreakoutEffective: number;
+	    Combined: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Layer4Output(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.FilmEffective = source["FilmEffective"];
+	        this.RASEffective = source["RASEffective"];
+	        this.BreakoutEffective = source["BreakoutEffective"];
+	        this.Combined = source["Combined"];
+	    }
+	}
+	export class TiebreakerKey {
+	    IsVeteran: boolean;
+	    RAS: number;
+	    ScarcityRank: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new TiebreakerKey(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.IsVeteran = source["IsVeteran"];
+	        this.RAS = source["RAS"];
+	        this.ScarcityRank = source["ScarcityRank"];
+	    }
+	}
+	export class Result {
+	    BasePoints: number;
+	    AgePull: number;
+	    Layer4Output: Layer4Output;
+	    ScoutingAdjusted: number;
+	    CapMultiplier: number;
+	    CapTier: string;
+	    AdjustedScore: number;
+	    Tiebreaker: TiebreakerKey;
+	
+	    static createFrom(source: any = {}) {
+	        return new Result(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.BasePoints = source["BasePoints"];
+	        this.AgePull = source["AgePull"];
+	        this.Layer4Output = this.convertValues(source["Layer4Output"], Layer4Output);
+	        this.ScoutingAdjusted = source["ScoutingAdjusted"];
+	        this.CapMultiplier = source["CapMultiplier"];
+	        this.CapTier = source["CapTier"];
+	        this.AdjustedScore = source["AdjustedScore"];
+	        this.Tiebreaker = this.convertValues(source["Tiebreaker"], TiebreakerKey);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
+export namespace harness {
+	
+	export class CaseResult {
+	    id: string;
+	    name: string;
+	    state: string;
+	    detail: string;
+	    b5bBlock: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CaseResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.state = source["state"];
+	        this.detail = source["detail"];
+	        this.b5bBlock = source["b5bBlock"];
+	    }
+	}
+	export class RookieRow {
+	    mflID: string;
+	    name: string;
+	    position: string;
+	    age: number;
+	    rasImputed: boolean;
+	    result: engine.Result;
+	    err: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RookieRow(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.mflID = source["mflID"];
+	        this.name = source["name"];
+	        this.position = source["position"];
+	        this.age = source["age"];
+	        this.rasImputed = source["rasImputed"];
+	        this.result = this.convertValues(source["result"], engine.Result);
+	        this.err = source["err"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Summary {
+	    pass: number;
+	    fail: number;
+	    pending: number;
+	    total: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Summary(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.pass = source["pass"];
+	        this.fail = source["fail"];
+	        this.pending = source["pending"];
+	        this.total = source["total"];
+	    }
+	}
+
+}
+
 export namespace main {
 	
+	export class ParamsResult {
+	    ok: boolean;
+	    error: string;
+	    params: params.ParamDef[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ParamsResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.error = source["error"];
+	        this.params = this.convertValues(source["params"], params.ParamDef);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class PingResult {
 	    ok: boolean;
 	    message: string;
@@ -16,6 +218,121 @@ export namespace main {
 	        this.message = source["message"];
 	        this.journalMode = source["journalMode"];
 	        this.detail = source["detail"];
+	    }
+	}
+	export class RookiesResult {
+	    ok: boolean;
+	    error: string;
+	    l4Mode: string;
+	    rows: harness.RookieRow[];
+	
+	    static createFrom(source: any = {}) {
+	        return new RookiesResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.error = source["error"];
+	        this.l4Mode = source["l4Mode"];
+	        this.rows = this.convertValues(source["rows"], harness.RookieRow);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class SetParamResult {
+	    ok: boolean;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SetParamResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.error = source["error"];
+	    }
+	}
+	export class ValidationResult {
+	    ok: boolean;
+	    cases: harness.CaseResult[];
+	    summary: harness.Summary;
+	
+	    static createFrom(source: any = {}) {
+	        return new ValidationResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.cases = this.convertValues(source["cases"], harness.CaseResult);
+	        this.summary = this.convertValues(source["summary"], harness.Summary);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
+export namespace params {
+	
+	export class ParamDef {
+	    Key: string;
+	    Position: string;
+	    Type: string;
+	    Default: number;
+	    Min: number;
+	    Max: number;
+	    IsCalibrated: boolean;
+	    Description: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ParamDef(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Key = source["Key"];
+	        this.Position = source["Position"];
+	        this.Type = source["Type"];
+	        this.Default = source["Default"];
+	        this.Min = source["Min"];
+	        this.Max = source["Max"];
+	        this.IsCalibrated = source["IsCalibrated"];
+	        this.Description = source["Description"];
 	    }
 	}
 

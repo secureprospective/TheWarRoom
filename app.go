@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
 // App is the Wails application root and the composition root for the backend.
@@ -21,7 +22,8 @@ type App struct {
 	// backend calls (B0 first-instance decision — see SYSTEM_MAP.md).
 	ctx        context.Context
 	pools      *db.Pools
-	startupErr error // captured at startup; surfaced via Ping (Wails OnStartup cannot fail).
+	params     *params.Store // B4 calibration store; backs the harness admin panel
+	startupErr error         // captured at startup; surfaced via Ping (Wails OnStartup cannot fail).
 }
 
 // NewApp creates a new App. Resources are acquired in startup, not here, so the
@@ -57,6 +59,16 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 	a.pools = pools
+
+	// Construct and seed the B4 params store: the harness reads cap-tier % and decay
+	// rate from it and the admin panel tunes them live. Initialize seeds the shipped
+	// defaults once on a fresh DB and loads existing calibration on restart.
+	pstore := params.New(pools)
+	if err := pstore.Initialize(ctx); err != nil {
+		a.startupErr = fmt.Errorf("startup: initialize params store: %w", err)
+		return
+	}
+	a.params = pstore
 }
 
 // shutdown is the Wails OnShutdown hook. It releases the SQLite pools.
