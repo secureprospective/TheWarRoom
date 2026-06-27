@@ -62,9 +62,7 @@ func validationCases() []case3 {
 		gatedPending("3A", "Lockett pattern — L4 near-neutral for declining elite vets",
 			"B5b-WR / B5b-QB", "film_composite + static breakout sub-signals on Layer4Input",
 			domain.PosWR, domain.PosQB),
-		gatedPending("3B", "Herbert pattern — L4 pulls below 1.00 for weak-profile vets",
-			"B5b-RB", "film_composite + breakout-age sub-signals on Layer4Input",
-			domain.PosRB),
+		{id: "3B", name: "Herbert pattern — L4 pulls below 1.00 for weak-profile vets", b5bBlock: "B5b-RB", eval: eval3B},
 		{id: "3C", name: "SL-020 — QB & K Layer-4 RAS forced to exactly 1.000", b5bBlock: "B5b-QB / B5b-K", eval: eval3C},
 		gatedPending("3D", "SL-005 — film compression ±3% at LB/DT vs ±5% elsewhere",
 			"B5b-LB / B5b-DT", "FilmRaw hook on Layer4Output (built); awaiting LB + WR rubrics",
@@ -113,6 +111,53 @@ func eval3C(reg RubricRegistry) (CaseState, string) {
 		return StateFail, fmt.Sprintf("K Combined %.4f, want exactly 1.0000", kout.Combined)
 	}
 	return StatePass, "QB RASEffective=1.0000 at RAS 0.10 and 9.99; K Combined=1.0000"
+}
+
+// eval3B is the B5b-RB close gate (the Herbert pattern): Layer 4 PULLS BELOW 1.000 for a
+// genuinely-thin-profile vet, while staying above 1.000 for a strong-profile RB. With film
+// Data-Parity neutral this session (no offense film source), the sub-1.000 pull is driven by
+// the BREAKOUT component — a late breakout age, low college workload, smaller school, and a
+// post-peak age push the breakout composite below the 0.50 inflection (RB_Rubric §7). The
+// spec's literal Khalil Herbert is a borderline profile whose sub-1.000 result in §5 is
+// film-driven; that half reproduces when the film source lands. RAS rides on PlayerInput, so
+// this needs no new Layer4Input field — only the registered RB rubric.
+func eval3B(reg RubricRegistry) (CaseState, string) {
+	if st, why, ok := requireRubrics(reg, domain.PosRB); !ok {
+		return st, why
+	}
+	rb := reg[domain.PosRB]
+	// Genuinely-thin vet: breakout age 22 (≥21 → 0.20), Group of Five (0.70), college workload
+	// 18% (≤20% → 0.15), age 28 (trajectory 0.05) → breakout composite well below 0.50.
+	thin := rb.Apply(engine.Layer4Input{
+		Player: engine.PlayerInput{Position: domain.PosRB, Age: 28, RAS: 6.0, HasRAS: true},
+		Scouting: engine.ScoutingInput{
+			BreakoutAge: 22, HasBreakoutAge: true,
+			SchoolTierNorm: 0.75, HasSchoolTier: true, // RB G5 norm (RB_Rubric §4 softer non-P4)
+			CollegeShare: 0.18, HasCollegeShare: true,
+		},
+	})
+	// Strong profile (Bijan pattern): true-freshman breakout, Power Four, dominant workload.
+	strong := rb.Apply(engine.Layer4Input{
+		Player: engine.PlayerInput{Position: domain.PosRB, Age: 24, RAS: 9.55, HasRAS: true},
+		Scouting: engine.ScoutingInput{
+			BreakoutAge: 19, HasBreakoutAge: true,
+			SchoolTierNorm: 1.00, HasSchoolTier: true,
+			CollegeShare: 0.53, HasCollegeShare: true,
+		},
+	})
+	if !(thin.Combined < 1.0) {
+		return StateFail, fmt.Sprintf("thin-profile RB Combined %.4f, want < 1.0000 (the Herbert pull)", thin.Combined)
+	}
+	if !(strong.Combined > 1.0) {
+		return StateFail, fmt.Sprintf("strong-profile RB Combined %.4f, want > 1.0000", strong.Combined)
+	}
+	if !(strong.Combined > thin.Combined) {
+		return StateFail, fmt.Sprintf("strong RB %.4f should out-score thin RB %.4f", strong.Combined, thin.Combined)
+	}
+	if thin.FilmEffective != 1.0 {
+		return StateFail, fmt.Sprintf("film must be Data-Parity neutral (no source), got %.4f", thin.FilmEffective)
+	}
+	return StatePass, fmt.Sprintf("thin RB Combined=%.4f (<1, breakout-driven) vs strong RB %.4f (>1); film neutral", thin.Combined, strong.Combined)
 }
 
 // eval3F is the B5b-DT close gate (SL-021 Late-Career Cushion Guard). The guard has TWO

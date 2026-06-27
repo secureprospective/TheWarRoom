@@ -15,6 +15,7 @@ import (
 func realRegistry() RubricRegistry {
 	return RubricRegistry{
 		domain.PosQB: offense.NewQB(),
+		domain.PosRB: offense.NewRB(),
 		domain.PosDT: defense.NewDT(),
 		domain.PosK:  engine.IdentityLayer4(),
 	}
@@ -34,6 +35,49 @@ func TestRealQBRegistryFlips3C(t *testing.T) {
 	// 3A stays PENDING — it also gates on WR (B5b-WR), which is not registered this session.
 	if r := find(t, results, "3A"); r.State != StatePending {
 		t.Fatalf("3A should stay PENDING (needs WR rubric), got %s", r.State)
+	}
+}
+
+// TestRealRBRegistryFlips3B is the B5b-RB close gate: with the RB rubric registered, case 3B
+// (the Herbert pattern — L4 pulls below 1.000 for a thin-profile vet) flips PENDING → PASS,
+// the suite has ZERO failures, and 3A stays PENDING (it also gates on WR, not registered).
+func TestRealRBRegistryFlips3B(t *testing.T) {
+	results := RunValidationSuite(realRegistry())
+	if r := find(t, results, "3B"); r.State != StatePass {
+		t.Fatalf("3B should PASS with the real RB rubric, got %s (%s)", r.State, r.Detail)
+	}
+	if s := Summarize(results); s.Fail != 0 {
+		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
+	}
+	if r := find(t, results, "3A"); r.State != StatePending {
+		t.Fatalf("3A should stay PENDING (needs WR rubric), got %s", r.State)
+	}
+}
+
+// TestRealRBRankingDifferentiates proves the RB rubric separates two RBs on its ACTIVE
+// components: RB Alpha (elite RAS + early breakout + dominant workload) out-scores RB Bravo
+// (thin profile) on the Layer-4 Combined, and Bravo's thin profile pulls his Combined below
+// 1.000 (the §7 Herbert pattern, breakout-driven while film is neutral).
+func TestRealRBRankingDifferentiates(t *testing.T) {
+	rows := RankRookies(testAssembler(), SampleRookies(), realRegistry())
+	var alpha, bravo RookieRow
+	for _, r := range rows {
+		switch r.MFLID {
+		case "0201":
+			alpha = r
+		case "0202":
+			bravo = r
+		}
+	}
+	if alpha.Err != "" || bravo.Err != "" {
+		t.Fatalf("RB rows errored: alpha=%q bravo=%q", alpha.Err, bravo.Err)
+	}
+	if !(alpha.Result.Layer4Output.Combined > bravo.Result.Layer4Output.Combined) {
+		t.Fatalf("RB Alpha L4 %v should exceed Bravo %v",
+			alpha.Result.Layer4Output.Combined, bravo.Result.Layer4Output.Combined)
+	}
+	if !(bravo.Result.Layer4Output.Combined < 1.0) {
+		t.Fatalf("RB Bravo (thin profile) L4 Combined %v should pull below 1.000", bravo.Result.Layer4Output.Combined)
 	}
 }
 

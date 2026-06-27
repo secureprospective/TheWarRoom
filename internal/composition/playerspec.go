@@ -104,7 +104,7 @@ func (s PlayerSpec) validateScouting() error {
 	if s.HasFilm && (!finite(s.FilmComposite) || s.FilmComposite < 0 || s.FilmComposite > 1) {
 		return fmt.Errorf("composition: player %q has HasFilm but film composite %v out of [0,1]", s.MFLID, s.FilmComposite)
 	}
-	if _, ok := schoolTierNorm(s.SchoolTier); !ok {
+	if _, ok := schoolTierNorm(s.Position, s.SchoolTier); !ok {
 		return fmt.Errorf("composition: player %q has unknown school tier %q", s.MFLID, s.SchoolTier)
 	}
 	return nil

@@ -33,6 +33,7 @@ func (sandboxCap) GetSalaryCap() string { return "1000" }
 func (a *App) rubrics() harness.RubricRegistry {
 	return harness.RubricRegistry{
 		domain.PosQB: offense.NewQB(),
+		domain.PosRB: offense.NewRB(),         // B5b-RB: standard offense rubric (flips case 3B)
 		domain.PosDT: defense.NewDT(),         // B5b-DT: the defense skeleton-setter (first IDP rubric)
 		domain.PosK:  engine.IdentityLayer4(), // PLACEHOLDER — real K is B5b-K (DECISION-011)
 	}

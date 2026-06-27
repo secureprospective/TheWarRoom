@@ -27,8 +27,15 @@ func SampleRookies() []composition.PlayerSpec {
 		// Weaker breakout: later starter, Group of Five, moderate share.
 		{MFLID: "0102", Name: "QB Bravo", Position: domain.PosQB, BasePoints: 240, Age: 23, RAS: 6.0, HasRAS: true, Salary: 6,
 			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.50, HasCollegeShare: true},
-		{MFLID: "0201", Name: "RB Alpha", Position: domain.PosRB, BasePoints: 210, Age: 21, RAS: 9.4, HasRAS: true, Salary: 9},
-		{MFLID: "0202", Name: "RB Bravo", Position: domain.PosRB, BasePoints: 195, Age: 24, RAS: 7.2, HasRAS: true, Salary: 4},
+		// Two RBs with contrasting profiles so the B5b-RB rubric visibly separates them (active
+		// Medium-tier RAS + breakout; film Data-Parity neutral). RB Alpha: elite athlete, early
+		// breakout, Power Four, dominant college workload. RB Bravo: thin profile — later
+		// breakout, Group of Five, low workload, older — pulls Layer 4 below 1.000 (the §7
+		// Herbert pattern, breakout-driven while film is neutral).
+		{MFLID: "0201", Name: "RB Alpha", Position: domain.PosRB, BasePoints: 210, Age: 21, RAS: 9.4, HasRAS: true, Salary: 9,
+			BreakoutAge: 19, HasBreakoutAge: true, SchoolTier: scouting.SchoolPowerFour, CollegeShare: 0.45, HasCollegeShare: true},
+		{MFLID: "0202", Name: "RB Bravo", Position: domain.PosRB, BasePoints: 195, Age: 28, RAS: 6.0, HasRAS: true, Salary: 4,
+			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.18, HasCollegeShare: true},
 		{MFLID: "0301", Name: "WR Alpha", Position: domain.PosWR, BasePoints: 250, Age: 21, RAS: 9.8, HasRAS: true, Salary: 14},
 		{MFLID: "0302", Name: "WR Bravo", Position: domain.PosWR, BasePoints: 220, Age: 22, RAS: 0, HasRAS: false, Salary: 7},
 		{MFLID: "0303", Name: "WR Charlie", Position: domain.PosWR, BasePoints: 180, Age: 23, RAS: 5.5, HasRAS: true, Salary: 2},

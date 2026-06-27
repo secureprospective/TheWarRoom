@@ -117,7 +117,7 @@ func (a *Assembler) scouting(s PlayerSpec) engine.ScoutingInput {
 	if !s.HasFilm {
 		film = 0
 	}
-	tierNorm, _ := schoolTierNorm(s.SchoolTier)
+	tierNorm, _ := schoolTierNorm(s.Position, s.SchoolTier)
 	return engine.ScoutingInput{
 		FilmComposite: film,
 		HasFilm:       s.HasFilm,

@@ -70,7 +70,9 @@ type Calibration struct {
 // the layers stay value-isolated. Every field is position-BLIND raw data; per-position
 // normalization (breakout-age / college-share / age-trajectory curves) lives in each
 // B5b rubric (Approach A — the engine normalizes). The one exception is SchoolTierNorm,
-// which is position-INDEPENDENT and so arrives already normalized from the boundary.
+// which arrives already normalized from the boundary — but its mapping is position-DEPENDENT
+// there (RB applies a softer non-P4 penalty than the QB/WR/DT template, RB_Rubric §4), so the
+// engine still receives a plain per-position-normalized value.
 //
 // FilmComposite is the upstream-weighted film signal in [0,1]; HasFilm is false until
 // the film-source redesign/calibration lands, in which case the rubric applies the QB
@@ -89,7 +91,7 @@ type ScoutingInput struct {
 	BreakoutAge    float64 // raw breakout age in years; the rubric maps it to [0,1]
 	HasBreakoutAge bool    // false → the rubric treats breakout age as neutral (no lift/penalty)
 
-	SchoolTierNorm float64 // pre-normalized school-competition tier in [0,1] (position-independent)
+	SchoolTierNorm float64 // school-competition tier in [0,1], normalized per-position at the boundary (RB softer than the template)
 	HasSchoolTier  bool    // false → the rubric treats school tier as neutral
 
 	CollegeShare    float64 // raw college production/usage share in [0,1]; the rubric maps it to its index
