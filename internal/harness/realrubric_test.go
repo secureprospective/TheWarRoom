@@ -24,6 +24,7 @@ func realRegistry() RubricRegistry {
 		domain.PosDE: defense.NewDE(),
 		domain.PosLB: defense.NewLB(),
 		domain.PosCB: defense.NewCB(),
+		domain.PosS:  defense.NewS(),
 		domain.PosK:  engine.IdentityLayer4(),
 	}
 }
@@ -373,6 +374,50 @@ func TestRealCBRankingDifferentiates(t *testing.T) {
 	}
 	if !(alpha.Result.Layer4Output.Combined > bravo.Result.Layer4Output.Combined) {
 		t.Fatalf("CB Alpha L4 %v should exceed Bravo %v",
+			alpha.Result.Layer4Output.Combined, bravo.Result.Layer4Output.Combined)
+	}
+}
+
+// TestRealSRegistryHolds3I is the B5b-S close gate: with the real S rubric registered ALONGSIDE
+// CB, case 3I STAYS PASS — S co-asserts the NGS anchor (eval3I already loops {PosCB, PosS} and
+// requires every registered NGS position to report it). There is no PENDING→PASS flip for S (3I
+// is already green from CB); the point is S registering does not BREAK 3I. The suite has ZERO
+// failures and 3G stays PENDING — the three-state model holding through a second NGS position.
+func TestRealSRegistryHolds3I(t *testing.T) {
+	results := RunValidationSuite(realRegistry())
+	if r := find(t, results, "3I"); r.State != StatePass {
+		t.Fatalf("3I should STAY PASS with the real S rubric co-asserting the NGS anchor, got %s (%s)", r.State, r.Detail)
+	}
+	if r := find(t, results, "3G"); r.State != StatePending {
+		t.Fatalf("3G should stay PENDING (assertion-wiring deferred), got %s", r.State)
+	}
+	if s := Summarize(results); s.Fail != 0 {
+		t.Fatalf("real registry with S must produce zero FAIL, got %d", s.Fail)
+	}
+}
+
+// TestRealSRankingDifferentiates proves the S rubric separates two safeties through Module 1.
+// Film is Data-Parity neutral (coverage weights unset), so the gap is driven by the active
+// High-tier RAS component and the breakout composite — where SL-019 (at the 0.30 strength) adds
+// athletic credit. S Alpha (high RAS + early breakout + dominant INT+Tackle share + Power Four)
+// out-scores S Bravo (low RAS + late breakout + thin share + Group of Five) on both the breakout
+// component and the Layer-4 Combined.
+func TestRealSRankingDifferentiates(t *testing.T) {
+	rows := RankRookies(testAssembler(), SampleRookies(), realRegistry())
+	byID := map[string]RookieRow{}
+	for _, r := range rows {
+		byID[r.MFLID] = r
+	}
+	alpha, bravo := byID["0901"], byID["0902"]
+	if alpha.Err != "" || bravo.Err != "" {
+		t.Fatalf("S rows errored: alpha=%q bravo=%q", alpha.Err, bravo.Err)
+	}
+	if !(alpha.Result.Layer4Output.BreakoutEffective > bravo.Result.Layer4Output.BreakoutEffective) {
+		t.Fatalf("S Alpha breakout %v should exceed Bravo %v (SL-019 + static profile)",
+			alpha.Result.Layer4Output.BreakoutEffective, bravo.Result.Layer4Output.BreakoutEffective)
+	}
+	if !(alpha.Result.Layer4Output.Combined > bravo.Result.Layer4Output.Combined) {
+		t.Fatalf("S Alpha L4 %v should exceed Bravo %v",
 			alpha.Result.Layer4Output.Combined, bravo.Result.Layer4Output.Combined)
 	}
 }

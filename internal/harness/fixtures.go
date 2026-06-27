@@ -98,5 +98,17 @@ func SampleRookies() []composition.PlayerSpec {
 		// DT Bravo: weaker athlete, later breakout, moderate share, Group of Five.
 		{MFLID: "0702", Name: "DT Bravo", Position: domain.PosDT, BasePoints: 170, Age: 23, RAS: 6.4, HasRAS: true, Salary: 4,
 			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.15, HasCollegeShare: true},
+		// Two safeties with contrasting athletic-and-draft profiles so the B5b-S rubric's SL-019
+		// RAS-modulator (the FOURTH instance, at the 0.30 strength matching CB) visibly separates
+		// them (the §5 Hamilton/Mathieu mechanism). S Alpha: athletic profile — high RAS, early
+		// breakout, Power Four, dominant INT+Tackle market share (Hamilton-like; College Share at
+		// the S max threshold 0.20). Film is Data-Parity neutral (coverage weights unset), so the
+		// gap is RAS + breakout driven.
+		{MFLID: "0901", Name: "S Alpha", Position: domain.PosS, BasePoints: 165, Age: 21, RAS: 8.9, HasRAS: true, Salary: 6,
+			BreakoutAge: 19, HasBreakoutAge: true, SchoolTier: scouting.SchoolPowerFour, CollegeShare: 0.20, HasCollegeShare: true},
+		// S Bravo: non-athletic profile — low RAS, late breakout, Group of Five, thin share.
+		// SL-019 gives him little modulator help; his breakout stays below Alpha's.
+		{MFLID: "0902", Name: "S Bravo", Position: domain.PosS, BasePoints: 150, Age: 23, RAS: 6.0, HasRAS: true, Salary: 3,
+			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.08, HasCollegeShare: true},
 	}
 }
