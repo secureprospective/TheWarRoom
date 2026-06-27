@@ -30,8 +30,8 @@ func find(t *testing.T, results []CaseResult, id string) CaseResult {
 // showing red for unimplemented rules.
 func TestSuiteDefaultStateIsHonest(t *testing.T) {
 	results := RunValidationSuite(RubricRegistry{})
-	if len(results) != 12 {
-		t.Fatalf("expected 12 cases, got %d", len(results))
+	if len(results) != 13 {
+		t.Fatalf("expected 13 cases, got %d", len(results))
 	}
 	s := Summarize(results)
 	if s.Fail != 0 {
@@ -40,8 +40,8 @@ func TestSuiteDefaultStateIsHonest(t *testing.T) {
 	if s.Pass != 1 {
 		t.Fatalf("only 3L should pass today; got %d passes", s.Pass)
 	}
-	if s.Pending != 11 {
-		t.Fatalf("expected 11 pending, got %d", s.Pending)
+	if s.Pending != 12 {
+		t.Fatalf("expected 12 pending, got %d", s.Pending)
 	}
 	if r := find(t, results, "3L"); r.State != StatePass {
 		t.Fatalf("3L should PASS now, got %s (%s)", r.State, r.Detail)

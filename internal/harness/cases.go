@@ -55,9 +55,10 @@ func subSignalPending(id, name, b5b, detail string) case3 {
 	}}
 }
 
-// validationCases returns the 12 architectural cases in 3A..3L order. The two fully-wired
+// validationCases returns the 13 architectural cases in 3A..3M order. The two fully-wired
 // exemplars (3C, 3L) run today; 3C auto-flips the moment a QB/K rubric registers. The rest
-// are encoded with the rule and the block that will turn them green.
+// are encoded with the rule and the block that will turn them green. 3M is the SL-019
+// RAS-modulator gate at TE (the first SL-019 instance; 3E remains DE's canonical instance).
 func validationCases() []case3 {
 	return []case3{
 		{id: "3A", name: "Lockett pattern — L4 stays non-negative for declining elite-draft vets", b5bBlock: "B5b-WR / B5b-QB", eval: eval3A},
@@ -82,6 +83,7 @@ func validationCases() []case3 {
 			"B5b-DE / B5b-LB + dispatch", "position-resolution dispatch (pass_rush_snap_share) not built"),
 		{id: "3K", name: "S-curve boundary safety — output clamped to [1-cap, 1+cap]", b5bBlock: "B5b-WR", eval: eval3K},
 		{id: "3L", name: "MFL player-ID string enforcement (leading zeros preserved)", b5bBlock: "(none — testable now)", eval: eval3L},
+		{id: "3M", name: "SL-019 — RAS-modulator lifts breakout with athletic profile (TE)", b5bBlock: "B5b-TE", eval: eval3M},
 	}
 }
 
@@ -296,6 +298,63 @@ func eval3K(reg RubricRegistry) (CaseState, string) {
 		}
 	}
 	return StatePass, "extreme/NaN/Inf inputs stay clamped to [1-cap,1+cap] for film(±5%) RAS(±8%) breakout(±5%)"
+}
+
+// eval3M is the B5b-TE close gate (SL-019, TE_Rubric §4): the RAS-modulator lifts the breakout
+// component by the player's athletic profile. For the SAME aging-late TE (age 32 past peak,
+// breakout age 22 — both sub-signals carry headroom), a higher RAS yields a higher breakout
+// component (more athletic → more credit on breakout-age + age-trajectory), and an ABSENT RAS
+// gives the LEAST (the modulator's Data-Parity stance — no athletic credit, modulated = base).
+// TE is the first SL-019 instance; 3E stays DE's canonical instance. RAS rides on PlayerInput,
+// so this needs no new Layer4Input field — only the registered TE rubric. Film stays neutral.
+func eval3M(reg RubricRegistry) (CaseState, string) {
+	if st, why, ok := requireRubrics(reg, domain.PosTE); !ok {
+		return st, why
+	}
+	te := reg[domain.PosTE]
+	// Aging-late TE: age 32 (trajectory base 0.10) + breakout age 22 (base 0.50) → both
+	// modulated sub-signals have headroom. Group of Five + 15% usage anchor the static half.
+	bk := engine.ScoutingInput{
+		BreakoutAge: 22, HasBreakoutAge: true,
+		SchoolTierNorm: 0.70, HasSchoolTier: true,
+		CollegeShare: 0.15, HasCollegeShare: true,
+	}
+	at := func(age, ras float64, hasRAS bool, s engine.ScoutingInput) engine.Layer4Output {
+		return te.Apply(engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosTE, Age: age, RAS: ras, HasRAS: hasRAS}, Scouting: s})
+	}
+	hi := at(32, 9.5, true, bk)
+	lo := at(32, 4.0, true, bk)
+	absent := at(32, 0, false, bk)
+	if !(hi.BreakoutEffective > lo.BreakoutEffective && lo.BreakoutEffective > absent.BreakoutEffective) {
+		return StateFail, fmt.Sprintf("SL-019: breakout must rise with RAS: hi %.5f > lo %.5f > absent %.5f", hi.BreakoutEffective, lo.BreakoutEffective, absent.BreakoutEffective)
+	}
+	// Isolate (a) breakout-age: a YOUNG TE (age 25 → trajectory base 1.00, modulator inert) with
+	// a late breakout age present — only the breakout-age sub-signal can move with RAS.
+	baHi := at(25, 9.5, true, bk)
+	baLo := at(25, 4.0, true, bk)
+	if !(baHi.BreakoutEffective > baLo.BreakoutEffective) {
+		return StateFail, fmt.Sprintf("SL-019(a): breakout-age not RAS-modulated in isolation: %.5f not > %.5f", baHi.BreakoutEffective, baLo.BreakoutEffective)
+	}
+	// Isolate (b) age-trajectory: breakout age ABSENT (neutral, un-modulated) at age 32 — only the
+	// age-trajectory sub-signal can move with RAS.
+	noBA := engine.ScoutingInput{SchoolTierNorm: 0.70, HasSchoolTier: true, CollegeShare: 0.15, HasCollegeShare: true}
+	atHi := at(32, 9.5, true, noBA)
+	atLo := at(32, 4.0, true, noBA)
+	if !(atHi.BreakoutEffective > atLo.BreakoutEffective) {
+		return StateFail, fmt.Sprintf("SL-019(b): age-trajectory not RAS-modulated in isolation: %.5f not > %.5f", atHi.BreakoutEffective, atLo.BreakoutEffective)
+	}
+	// Negative contract: with BOTH modulated sub-signals inert (breakout age absent + young age
+	// → trajectory base 1.00), school tier and college usage must NOT move with RAS — the breakout
+	// component is flat across the RAS sweep (SL-019 touches only breakout-age + age-trajectory).
+	flatHi := at(25, 9.5, true, noBA)
+	flatLo := at(25, 0.5, true, noBA)
+	if math.Abs(flatHi.BreakoutEffective-flatLo.BreakoutEffective) > 1e-9 {
+		return StateFail, fmt.Sprintf("SL-019: school/college must NOT be RAS-modulated, but breakout moved %.6f→%.6f", flatLo.BreakoutEffective, flatHi.BreakoutEffective)
+	}
+	if hi.FilmEffective != 1.0 {
+		return StateFail, fmt.Sprintf("film must be Data-Parity neutral (no source), got %.4f", hi.FilmEffective)
+	}
+	return StatePass, fmt.Sprintf("SL-019 lifts breakout-age AND age-trajectory with RAS (hi=%.5f>lo=%.5f>absent=%.5f); school/college un-modulated; film neutral", hi.BreakoutEffective, lo.BreakoutEffective, absent.BreakoutEffective)
 }
 
 // eval3L runs today: MFL player IDs are strings and leading zeros are significant. It

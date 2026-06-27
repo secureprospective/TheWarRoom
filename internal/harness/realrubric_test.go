@@ -17,6 +17,7 @@ func realRegistry() RubricRegistry {
 		domain.PosQB: offense.NewQB(),
 		domain.PosRB: offense.NewRB(),
 		domain.PosWR: offense.NewWR(),
+		domain.PosTE: offense.NewTE(),
 		domain.PosDT: defense.NewDT(),
 		domain.PosK:  engine.IdentityLayer4(),
 	}
@@ -174,6 +175,48 @@ func TestRealWRRankingDifferentiates(t *testing.T) {
 	// WR Bravo's RAS is absent → Data-Parity neutral RAS (exactly 1.000), never forced or zeroed.
 	if bravo.Result.Layer4Output.RASEffective != 1.0 {
 		t.Fatalf("WR Bravo absent RAS must be Data-Parity neutral 1.000, got %v", bravo.Result.Layer4Output.RASEffective)
+	}
+}
+
+// TestRealTERegistryFlips3M is the B5b-TE close gate: with the TE rubric registered, case 3M
+// (SL-019 RAS-modulator lifts breakout with athletic profile) flips PENDING → PASS, the suite
+// has ZERO failures, and 3E stays PENDING — TE is the first SL-019 instance but 3E remains
+// DE's canonical instance (its position is still unregistered), the three-state model holding.
+func TestRealTERegistryFlips3M(t *testing.T) {
+	results := RunValidationSuite(realRegistry())
+	if r := find(t, results, "3M"); r.State != StatePass {
+		t.Fatalf("3M should PASS with the real TE rubric, got %s (%s)", r.State, r.Detail)
+	}
+	if r := find(t, results, "3E"); r.State != StatePending {
+		t.Fatalf("3E should stay PENDING (DE absent — TE does not gate it), got %s", r.State)
+	}
+	if s := Summarize(results); s.Fail != 0 {
+		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
+	}
+}
+
+// TestRealTERankingDifferentiates is the §5 Higbee/Henry structural finding through Module 1:
+// two aging TEs with similar age but different athletic-and-draft profile strength land apart.
+// TE Alpha (athletic vet — high RAS + strong static profile) out-scores TE Bravo (non-athletic
+// vet — low RAS + weak static profile) on both the breakout component (where SL-019 adds
+// athletic credit) and the Layer-4 Combined.
+func TestRealTERankingDifferentiates(t *testing.T) {
+	rows := RankRookies(testAssembler(), SampleRookies(), realRegistry())
+	byID := map[string]RookieRow{}
+	for _, r := range rows {
+		byID[r.MFLID] = r
+	}
+	alpha, bravo := byID["0401"], byID["0402"]
+	if alpha.Err != "" || bravo.Err != "" {
+		t.Fatalf("TE rows errored: alpha=%q bravo=%q", alpha.Err, bravo.Err)
+	}
+	if !(alpha.Result.Layer4Output.BreakoutEffective > bravo.Result.Layer4Output.BreakoutEffective) {
+		t.Fatalf("TE Alpha breakout %v should exceed Bravo %v (SL-019 + static profile)",
+			alpha.Result.Layer4Output.BreakoutEffective, bravo.Result.Layer4Output.BreakoutEffective)
+	}
+	if !(alpha.Result.Layer4Output.Combined > bravo.Result.Layer4Output.Combined) {
+		t.Fatalf("TE Alpha L4 %v should exceed Bravo %v",
+			alpha.Result.Layer4Output.Combined, bravo.Result.Layer4Output.Combined)
 	}
 }
 

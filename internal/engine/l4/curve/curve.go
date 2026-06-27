@@ -64,6 +64,38 @@ func Present(has bool, norm float64) float64 {
 	return norm
 }
 
+// SL019 is the RAS-modulator interaction (SL-019, TE_Rubric §4) — the shared mechanic TE
+// introduces and DE/LB inherit (M17 — extracted on the FIRST use into curve, since it is
+// generalizable per the rubric and the second caller is already known). It lifts an
+// already-normalized breakout sub-signal toward 1.0 by the player's athletic profile:
+//
+//	modulated = base + (1 − base) × strength × RAS_normalized
+//
+// strength is the TE-specific 0.35 (passed in, never hardcoded here — DE/LB may differ).
+// RAS_normalized is raw RAS / 10, clamped to [0,1] so the lift is a true fraction of the
+// (1 − base) headroom and can never push the signal above 1.0 (a stray out-of-range RAS
+// cannot manufacture an extreme). When RAS is ABSENT, or non-finite, the modulator
+// contributes NOTHING (modulated = base) — the Data-Parity stance: an absent athletic
+// profile neither lifts nor penalizes (TE_Rubric §4 design call; the engine never imputes).
+// A base already at 1.00 (early breakout / young age) is unaffected, since (1 − base) = 0.
+func SL019(base, rasNorm, strength float64, hasRAS bool) float64 {
+	// Defense-in-depth: this is a SHARED helper (DE/LB reuse it) and must not assume the caller
+	// wraps the result in Scurve's NaN backstop. A non-finite base is "unknown" → neutral.
+	if math.IsNaN(base) || math.IsInf(base, 0) {
+		return NeutralNorm
+	}
+	if !hasRAS || math.IsNaN(rasNorm) || math.IsInf(rasNorm, 0) {
+		return base
+	}
+	if rasNorm < 0 {
+		rasNorm = 0
+	}
+	if rasNorm > 1 {
+		rasNorm = 1
+	}
+	return base + (1.0-base)*strength*rasNorm
+}
+
 // Breakpoint is one (X, Y) anchor of a piecewise-linear normalization curve.
 type Breakpoint struct {
 	X, Y float64

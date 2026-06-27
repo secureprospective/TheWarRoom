@@ -35,6 +35,7 @@ func (a *App) rubrics() harness.RubricRegistry {
 		domain.PosQB: offense.NewQB(),
 		domain.PosRB: offense.NewRB(),         // B5b-RB: standard offense rubric (flips case 3B)
 		domain.PosWR: offense.NewWR(),         // B5b-WR: the offense skill template (flips case 3A, 3K)
+		domain.PosTE: offense.NewTE(),         // B5b-TE: first SL-019 RAS-modulator instance (flips case 3M)
 		domain.PosDT: defense.NewDT(),         // B5b-DT: the defense skeleton-setter (first IDP rubric)
 		domain.PosK:  engine.IdentityLayer4(), // PLACEHOLDER — real K is B5b-K (DECISION-011)
 	}

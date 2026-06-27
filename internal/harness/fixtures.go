@@ -48,7 +48,17 @@ func SampleRookies() []composition.PlayerSpec {
 			BreakoutAge: 21, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.22, HasCollegeShare: true},
 		{MFLID: "0303", Name: "WR Charlie", Position: domain.PosWR, BasePoints: 180, Age: 23, RAS: 5.5, HasRAS: true, Salary: 2,
 			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolFCS, CollegeShare: 0.16, HasCollegeShare: true},
-		{MFLID: "0401", Name: "TE Alpha", Position: domain.PosTE, BasePoints: 160, Age: 22, RAS: 8.6, HasRAS: true, Salary: 5},
+		// Two aging TEs with contrasting athletic-and-draft profiles so the B5b-TE rubric's
+		// SL-019 RAS-modulator visibly separates them (the §5 Higbee/Henry structural finding):
+		// past-peak age, but the athletic vet's high RAS + strong static signals keep his breakout
+		// up while the non-athletic vet's low RAS + weak static signals do not. TE Alpha: athletic
+		// vet — high RAS, early breakout, Power Four, strong target share (Henry-like).
+		{MFLID: "0401", Name: "TE Alpha", Position: domain.PosTE, BasePoints: 160, Age: 31, RAS: 9.2, HasRAS: true, Salary: 5,
+			BreakoutAge: 20, HasBreakoutAge: true, SchoolTier: scouting.SchoolPowerFour, CollegeShare: 0.22, HasCollegeShare: true},
+		// TE Bravo: non-athletic vet — low RAS, late breakout, Group of Five, thin target share
+		// (Higbee-like). SL-019 gives him little modulator help; his breakout stays below Alpha's.
+		{MFLID: "0402", Name: "TE Bravo", Position: domain.PosTE, BasePoints: 150, Age: 31, RAS: 6.0, HasRAS: true, Salary: 3,
+			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.15, HasCollegeShare: true},
 		{MFLID: "0501", Name: "DE Alpha", Position: domain.PosDE, BasePoints: 175, Age: 22, RAS: 9.1, HasRAS: true, Salary: 8},
 		{MFLID: "0601", Name: "CB Alpha", Position: domain.PosCB, BasePoints: 165, Age: 21, RAS: 8.9, HasRAS: true, Salary: 6},
 		// Two DTs with contrasting RAS + breakout so the B5b-DT rubric visibly separates them
