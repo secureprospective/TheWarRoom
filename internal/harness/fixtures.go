@@ -69,7 +69,17 @@ func SampleRookies() []composition.PlayerSpec {
 		// (Lawrence-like). SL-019 gives him little modulator help; his breakout stays below Alpha's.
 		{MFLID: "0502", Name: "DE Bravo", Position: domain.PosDE, BasePoints: 165, Age: 23, RAS: 6.0, HasRAS: true, Salary: 4,
 			BreakoutAge: 21, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.15, HasCollegeShare: true},
-		{MFLID: "0601", Name: "CB Alpha", Position: domain.PosCB, BasePoints: 165, Age: 21, RAS: 8.9, HasRAS: true, Salary: 6},
+		// Two CBs with contrasting athletic-and-draft profiles so the B5b-CB rubric's SL-019
+		// RAS-modulator (the THIRD instance, at the REDUCED 0.30 strength) visibly separates them
+		// (the §5 Surtain/Peterson mechanism). CB Alpha: athletic profile — high RAS, early
+		// breakout, Power Four, dominant PD+INT market share (Surtain-like). Film is Data-Parity
+		// neutral (coverage film weights unset), so the gap is RAS + breakout driven.
+		{MFLID: "0601", Name: "CB Alpha", Position: domain.PosCB, BasePoints: 165, Age: 21, RAS: 8.9, HasRAS: true, Salary: 6,
+			BreakoutAge: 19, HasBreakoutAge: true, SchoolTier: scouting.SchoolPowerFour, CollegeShare: 0.24, HasCollegeShare: true},
+		// CB Bravo: non-athletic profile — low RAS, late breakout, Group of Five, thin share.
+		// SL-019 gives him little modulator help; his breakout stays below Alpha's.
+		{MFLID: "0602", Name: "CB Bravo", Position: domain.PosCB, BasePoints: 150, Age: 23, RAS: 6.0, HasRAS: true, Salary: 3,
+			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.10, HasCollegeShare: true},
 		// Two LBs with contrasting breakout-and-share profiles so the B5b-LB rubric visibly
 		// separates them. LB is Medium-tier (residual RAS) and scheme-dependent, so the gap is
 		// driven mainly by breakout + College Production Share (0.40, the highest weight of any

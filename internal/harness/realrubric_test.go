@@ -23,6 +23,7 @@ func realRegistry() RubricRegistry {
 		domain.PosDT: defense.NewDT(),
 		domain.PosDE: defense.NewDE(),
 		domain.PosLB: defense.NewLB(),
+		domain.PosCB: defense.NewCB(),
 		domain.PosK:  engine.IdentityLayer4(),
 	}
 }
@@ -329,6 +330,50 @@ func TestRealEDGERoutingThroughRankings(t *testing.T) {
 	}
 	if got := byID["0902"].Position; got != "LB" {
 		t.Fatalf("off-ball LB-tagged defender should stay LB, got %q", got)
+	}
+}
+
+// TestRealCBRegistryFlips3I is the B5b-CB close gate: with the real CB rubric registered, case
+// 3I (the NGS coverage anchor is present only at CB & S) flips PENDING → PASS — CB alone flips it
+// because eval3I asserts the property per-registered-position (CB reports the anchor, the WR
+// control does not), so it no longer waits on S. The suite has ZERO failures, and 3G stays
+// PENDING (its PFFAlpha-assertion wiring is still deferred) — the three-state model holding.
+func TestRealCBRegistryFlips3I(t *testing.T) {
+	results := RunValidationSuite(realRegistry())
+	if r := find(t, results, "3I"); r.State != StatePass {
+		t.Fatalf("3I should PASS with the real CB rubric (NGS anchor introspection), got %s (%s)", r.State, r.Detail)
+	}
+	if r := find(t, results, "3G"); r.State != StatePending {
+		t.Fatalf("3G should stay PENDING (assertion-wiring deferred), got %s", r.State)
+	}
+	if s := Summarize(results); s.Fail != 0 {
+		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
+	}
+}
+
+// TestRealCBRankingDifferentiates proves the CB rubric separates two CBs through Module 1. Film
+// is Data-Parity neutral (coverage weights unset), so the gap is driven by the active High-tier
+// RAS component and the breakout composite — where SL-019 (at the reduced 0.30 strength) adds
+// athletic credit. CB Alpha (high RAS + early breakout + dominant PD+INT share + Power Four)
+// out-scores CB Bravo (low RAS + late breakout + thin share + Group of Five) on both the breakout
+// component and the Layer-4 Combined.
+func TestRealCBRankingDifferentiates(t *testing.T) {
+	rows := RankRookies(testAssembler(), SampleRookies(), realRegistry())
+	byID := map[string]RookieRow{}
+	for _, r := range rows {
+		byID[r.MFLID] = r
+	}
+	alpha, bravo := byID["0601"], byID["0602"]
+	if alpha.Err != "" || bravo.Err != "" {
+		t.Fatalf("CB rows errored: alpha=%q bravo=%q", alpha.Err, bravo.Err)
+	}
+	if !(alpha.Result.Layer4Output.BreakoutEffective > bravo.Result.Layer4Output.BreakoutEffective) {
+		t.Fatalf("CB Alpha breakout %v should exceed Bravo %v (SL-019 + static profile)",
+			alpha.Result.Layer4Output.BreakoutEffective, bravo.Result.Layer4Output.BreakoutEffective)
+	}
+	if !(alpha.Result.Layer4Output.Combined > bravo.Result.Layer4Output.Combined) {
+		t.Fatalf("CB Alpha L4 %v should exceed Bravo %v",
+			alpha.Result.Layer4Output.Combined, bravo.Result.Layer4Output.Combined)
 	}
 }
 

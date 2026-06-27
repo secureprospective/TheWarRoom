@@ -92,3 +92,43 @@ func eval3J(reg RubricRegistry) (CaseState, string) {
 	}
 	return StatePass, "EDGE routing: 75%→DE, 25%→LB, LB@80%→DE, LB@50%→DE (≥ boundary, role overrides tag); share-less tag unchanged"
 }
+
+// ngsAnchorRubric is the case-3I introspection contract: a rubric whose film composite carries a
+// dedicated NFL Next Gen Stats coverage anchor (CB_Rubric §2/§7) reports it via this method. Only
+// CB (and S, once built) implement it; every other rubric does not, so the type assertion fails
+// and the harness reads them as having no anchor. It mirrors the DT.PFFAlpha pattern — a rubric
+// INTERNAL the harness inspects, never a Layer4Output (production-surface) field.
+type ngsAnchorRubric interface{ HasNGSAnchor() bool }
+
+func reportsNGSAnchor(r engine.Layer4) bool {
+	n, ok := r.(ngsAnchorRubric)
+	return ok && n.HasNGSAnchor()
+}
+
+// eval3I is the B5b-CB close gate: the NGS coverage anchor is present ONLY at the NGS-coverage
+// positions (CB, and S once registered) and ABSENT everywhere else. The film weights are unset in
+// v1.0, so NGS-presence is invisible at the engine boundary (Layer4Output); the rubric exposes it
+// via the HasNGSAnchor introspection hook instead. The case asserts the property PER-REGISTERED-
+// POSITION (like eval3A asserts on both WR and QB): it gates on CB being registered, asserts every
+// NGS position present reports the anchor, and asserts a non-NGS control (WR) does NOT — so CB
+// alone flips it green and S strengthens it without being required (3I no longer waits on S).
+func eval3I(reg RubricRegistry) (CaseState, string) {
+	if st, why, ok := requireRubrics(reg, domain.PosCB); !ok {
+		return st, why
+	}
+	for _, pos := range []domain.Position{domain.PosCB, domain.PosS} {
+		r, ok := reg[pos]
+		if !ok {
+			continue // S may not be registered yet — assert only what is present
+		}
+		if !reportsNGSAnchor(r) {
+			return StateFail, fmt.Sprintf("%s must report an NGS coverage anchor (CB_Rubric §2/§7)", pos)
+		}
+	}
+	// Negative contract: a non-coverage position must NOT report an NGS anchor (NGS is CB/S-only,
+	// CB_Rubric §7). WR is the registered control — if it ever grew the method this would FAIL.
+	if wr, ok := reg[domain.PosWR]; ok && reportsNGSAnchor(wr) {
+		return StateFail, "WR must NOT report an NGS coverage anchor (NGS is CB/S-only)"
+	}
+	return StatePass, "NGS coverage anchor present at CB (and S when registered), absent at WR"
+}

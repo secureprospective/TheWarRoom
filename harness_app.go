@@ -39,6 +39,7 @@ func (a *App) rubrics() harness.RubricRegistry {
 		domain.PosDT: defense.NewDT(),         // B5b-DT: the defense skeleton-setter (first IDP rubric)
 		domain.PosDE: defense.NewDE(),         // B5b-DE: 2nd SL-019 instance, reuses curve.SL019 (flips case 3E)
 		domain.PosLB: defense.NewLB(),         // B5b-LB: first non-SL-019 IDP; SL-005 film + Medium RAS (flips 3D, 3J)
+		domain.PosCB: defense.NewCB(),         // B5b-CB: first NGS-anchor + 3rd SL-019 (reduced 0.30); flips case 3I
 		domain.PosK:  engine.IdentityLayer4(), // PLACEHOLDER — real K is B5b-K (DECISION-011)
 	}
 }
