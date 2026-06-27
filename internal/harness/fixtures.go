@@ -70,6 +70,16 @@ func SampleRookies() []composition.PlayerSpec {
 		{MFLID: "0502", Name: "DE Bravo", Position: domain.PosDE, BasePoints: 165, Age: 23, RAS: 6.0, HasRAS: true, Salary: 4,
 			BreakoutAge: 21, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.15, HasCollegeShare: true},
 		{MFLID: "0601", Name: "CB Alpha", Position: domain.PosCB, BasePoints: 165, Age: 21, RAS: 8.9, HasRAS: true, Salary: 6},
+		// Two LBs with contrasting breakout-and-share profiles so the B5b-LB rubric visibly
+		// separates them. LB is Medium-tier (residual RAS) and scheme-dependent, so the gap is
+		// driven mainly by breakout + College Production Share (0.40, the highest weight of any
+		// position), NOT by RAS — film is Data-Parity neutral (IDP weights unset). LB Alpha: early
+		// breakout, Power Four, dominant tackle+sack+TFL market share. LB Bravo: later breakout,
+		// Group of Five, thin share.
+		{MFLID: "0801", Name: "LB Alpha", Position: domain.PosLB, BasePoints: 180, Age: 21, RAS: 7.5, HasRAS: true, Salary: 7,
+			BreakoutAge: 20, HasBreakoutAge: true, SchoolTier: scouting.SchoolPowerFour, CollegeShare: 0.25, HasCollegeShare: true},
+		{MFLID: "0802", Name: "LB Bravo", Position: domain.PosLB, BasePoints: 165, Age: 22, RAS: 6.0, HasRAS: true, Salary: 4,
+			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.12, HasCollegeShare: true},
 		// Two DTs with contrasting RAS + breakout so the B5b-DT rubric visibly separates them
 		// (active RAS component + breakout; film is Data-Parity neutral — IDP weights unset).
 		// DT Alpha: elite athlete, early breakout, dominant TFL+Sack share, Power Four.

@@ -3,10 +3,12 @@ package harness
 import (
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/composition"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/engine/l4/defense"
 	"github.com/secureprospective/TheWarRoom/internal/engine/l4/offense"
+	"github.com/secureprospective/TheWarRoom/internal/scouting"
 )
 
 // realRegistry mirrors harness_app.rubrics(): the real QB + DT rubrics plus the identity K
@@ -20,6 +22,7 @@ func realRegistry() RubricRegistry {
 		domain.PosTE: offense.NewTE(),
 		domain.PosDT: defense.NewDT(),
 		domain.PosDE: defense.NewDE(),
+		domain.PosLB: defense.NewLB(),
 		domain.PosK:  engine.IdentityLayer4(),
 	}
 }
@@ -85,18 +88,17 @@ func TestRealRBRankingDifferentiates(t *testing.T) {
 }
 
 // TestRealDTRegistryFlips3F is the B5b-DT close gate: with the DT rubric registered, case
-// 3F (SL-021 cushion guard) flips PENDING → PASS, and the co-gated cases 3D and 3G stay
-// PENDING because their other positions (LB/WR, DE) are not registered this session — the
-// three-state model holding correctly.
+// 3F (SL-021 cushion guard) flips PENDING → PASS, and the gatedPending case 3G stays PENDING
+// (its PFFAlpha-assertion wiring is deferred). 3D no longer stays PENDING here — realRegistry
+// now also registers LB (B5b-LB) alongside DT+WR, so 3D flips; its gate is asserted in
+// TestRealLBRegistryFlips3DAnd3J.
 func TestRealDTRegistryFlips3F(t *testing.T) {
 	results := RunValidationSuite(realRegistry())
 	if r := find(t, results, "3F"); r.State != StatePass {
 		t.Fatalf("3F should PASS with the real DT rubric, got %s (%s)", r.State, r.Detail)
 	}
-	for _, id := range []string{"3D", "3G"} {
-		if r := find(t, results, id); r.State != StatePending {
-			t.Fatalf("%s should stay PENDING (co-gated positions absent), got %s", id, r.State)
-		}
+	if r := find(t, results, "3G"); r.State != StatePending {
+		t.Fatalf("3G should stay PENDING (assertion-wiring deferred), got %s", r.State)
 	}
 	if s := Summarize(results); s.Fail != 0 {
 		t.Fatalf("real QB+DT registry must produce zero FAIL, got %d", s.Fail)
@@ -133,17 +135,15 @@ func TestRealDTRankingDifferentiates(t *testing.T) {
 
 // TestRealWRRegistryFlips3AAnd3K is the B5b-WR close gate: with the WR rubric registered,
 // case 3A (the Lockett pattern — L4 stays non-negative for declining elite-draft vets) and
-// case 3K (S-curve boundary clamp) both flip PENDING → PASS, the suite has ZERO failures, and
-// 3D stays PENDING because its co-gate LB is still unregistered (three-state holding).
+// case 3K (S-curve boundary clamp) both flip PENDING → PASS and the suite has ZERO failures.
+// (3D used to gate on WR as the ±5% control while LB was absent; as of B5b-LB realRegistry
+// registers LB+DT+WR, so 3D now flips — its gate moved to TestRealLBRegistryFlips3DAnd3J.)
 func TestRealWRRegistryFlips3AAnd3K(t *testing.T) {
 	results := RunValidationSuite(realRegistry())
 	for _, id := range []string{"3A", "3K"} {
 		if r := find(t, results, id); r.State != StatePass {
 			t.Fatalf("%s should PASS with the real WR rubric, got %s (%s)", id, r.State, r.Detail)
 		}
-	}
-	if r := find(t, results, "3D"); r.State != StatePending {
-		t.Fatalf("3D should stay PENDING (co-gate LB absent), got %s", r.State)
 	}
 	if s := Summarize(results); s.Fail != 0 {
 		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
@@ -259,6 +259,76 @@ func TestRealDERankingDifferentiates(t *testing.T) {
 	if !(alpha.Result.Layer4Output.Combined > bravo.Result.Layer4Output.Combined) {
 		t.Fatalf("DE Alpha L4 %v should exceed Bravo %v",
 			alpha.Result.Layer4Output.Combined, bravo.Result.Layer4Output.Combined)
+	}
+}
+
+// TestRealLBRegistryFlips3DAnd3J is the B5b-LB close gate: with the LB rubric registered
+// alongside DT+WR (3D) and DE (3J), case 3D (SL-005 film compression cross-position) and case 3J
+// (EDGE classification routing) both flip PENDING → PASS, and the suite has ZERO failures. 3G
+// stays PENDING (PFFAlpha-assertion wiring still deferred) — the three-state model holding.
+func TestRealLBRegistryFlips3DAnd3J(t *testing.T) {
+	results := RunValidationSuite(realRegistry())
+	for _, id := range []string{"3D", "3J"} {
+		if r := find(t, results, id); r.State != StatePass {
+			t.Fatalf("%s should PASS with the real LB rubric registered, got %s (%s)", id, r.State, r.Detail)
+		}
+	}
+	if r := find(t, results, "3G"); r.State != StatePending {
+		t.Fatalf("3G should stay PENDING (assertion-wiring deferred), got %s", r.State)
+	}
+	if s := Summarize(results); s.Fail != 0 {
+		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
+	}
+}
+
+// TestRealLBRankingDifferentiates proves the LB rubric separates two LBs through Module 1. LB is
+// scheme-dependent and Medium-tier, so the separation is driven more by breakout + College
+// Production Share (0.40, the highest weight of any position) than by the residual Medium RAS:
+// LB Alpha (early breakout + dominant tackle/sack/TFL share + Power Four) out-scores LB Bravo
+// (late breakout + thin share + Group of Five) on both the breakout component and the Combined.
+func TestRealLBRankingDifferentiates(t *testing.T) {
+	rows := RankRookies(testAssembler(), SampleRookies(), realRegistry())
+	byID := map[string]RookieRow{}
+	for _, r := range rows {
+		byID[r.MFLID] = r
+	}
+	alpha, bravo := byID["0801"], byID["0802"]
+	if alpha.Err != "" || bravo.Err != "" {
+		t.Fatalf("LB rows errored: alpha=%q bravo=%q", alpha.Err, bravo.Err)
+	}
+	if !(alpha.Result.Layer4Output.BreakoutEffective > bravo.Result.Layer4Output.BreakoutEffective) {
+		t.Fatalf("LB Alpha breakout %v should exceed Bravo %v (College Production Share dominant)",
+			alpha.Result.Layer4Output.BreakoutEffective, bravo.Result.Layer4Output.BreakoutEffective)
+	}
+	if !(alpha.Result.Layer4Output.Combined > bravo.Result.Layer4Output.Combined) {
+		t.Fatalf("LB Alpha L4 %v should exceed Bravo %v",
+			alpha.Result.Layer4Output.Combined, bravo.Result.Layer4Output.Combined)
+	}
+}
+
+// TestRealEDGERoutingThroughRankings proves the 3J dispatch is LIVE in Module 1, not just in the
+// validation suite: a pass-rush-primary LB-tagged defender is scored through the DE rubric (its
+// row Position reads "DE"), while an off-ball LB-tagged defender stays "LB". The two share an
+// identical profile and differ only in pass-rush snap share, so the routing is the sole cause.
+func TestRealEDGERoutingThroughRankings(t *testing.T) {
+	base := composition.PlayerSpec{
+		Name: "Edge Hybrid", Position: domain.PosLB, BasePoints: 170, Age: 23, RAS: 8.5, HasRAS: true, Salary: 6,
+		BreakoutAge: 20, HasBreakoutAge: true, SchoolTier: scouting.SchoolPowerFour, CollegeShare: 0.22, HasCollegeShare: true,
+	}
+	rusher := base
+	rusher.MFLID, rusher.PassRushSnapShare, rusher.HasPassRushSnapShare = "0901", 0.80, true
+	offBall := base
+	offBall.MFLID, offBall.PassRushSnapShare, offBall.HasPassRushSnapShare = "0902", 0.20, true
+	rows := RankRookies(testAssembler(), []composition.PlayerSpec{rusher, offBall}, realRegistry())
+	byID := map[string]RookieRow{}
+	for _, r := range rows {
+		byID[r.MFLID] = r
+	}
+	if got := byID["0901"].Position; got != "DE" {
+		t.Fatalf("pass-rush-primary LB-tagged defender should route to DE rubric, got %q", got)
+	}
+	if got := byID["0902"].Position; got != "LB" {
+		t.Fatalf("off-ball LB-tagged defender should stay LB, got %q", got)
 	}
 }
 

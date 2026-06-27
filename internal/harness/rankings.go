@@ -30,6 +30,10 @@ type RookieRow struct {
 func RankRookies(a *composition.Assembler, specs []composition.PlayerSpec, reg RubricRegistry) []RookieRow {
 	rows := make([]RookieRow, 0, len(specs))
 	for _, s := range specs {
+		// EDGE classification routing (test 3J): resolve the TRUE scoring position from the
+		// consensus role BEFORE assembling, so a pass-rush-primary LB-tagged defender is scored
+		// fully as a DE (rubric AND calibration). Non-defenders and share-less specs are unchanged.
+		s.Position = composition.ResolveRubricPosition(s)
 		row := RookieRow{MFLID: s.MFLID, Name: s.Name, Position: string(s.Position), Age: s.Age, RASImputed: !s.HasRAS}
 		in, sc, cal, err := a.Assemble(s)
 		if err != nil {

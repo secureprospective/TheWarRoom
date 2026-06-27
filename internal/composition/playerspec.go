@@ -43,6 +43,41 @@ type PlayerSpec struct {
 	SchoolTier      scouting.SchoolTier // college-competition tier; mapped to a [0,1] norm at assemble
 	CollegeShare    float64             // college production/usage share in [0,1]
 	HasCollegeShare bool                // false → college share is treated as neutral (0 is a real share)
+
+	// EDGE classification routing (OQ-004 / SL-OQ-030, Module-3 test 3J). The TRUE position
+	// for a pass-rush/off-ball defender is its CONSENSUS ROLE, not its MFL tag: a pass-rush-
+	// primary defender is scored as a DE regardless of tag (DE/EDGE/3-4 OLB), an off-ball LB
+	// as an LB. PassRushSnapShare in [0,1] is that signal — manual entry in the harness,
+	// NGS-sourced in production. Absent → the MFL position passes through unchanged.
+	PassRushSnapShare    float64
+	HasPassRushSnapShare bool
+}
+
+// edgePassRushThreshold is the majority share (≥50% of snaps rushing the passer) at which a
+// defender is "pass-rush primary" and routes to the DE rubric (Module-3 test 3J boundary:
+// 75%→DE, 25%→LB). The comparison is >= (spec: "≥ 0.50 routes to DE"), so an exact coin-flip
+// (0.50) is pass-rush primary → DE. The exact cutoff is a documented boundary default pending
+// SL-OQ-030 calibration.
+const edgePassRushThreshold = 0.50
+
+// ResolveRubricPosition applies the OQ-004 / SL-OQ-030 EDGE classification rule: among the
+// pass-rush/off-ball ambiguous pair (DE — MFL also tags edge rushers DE per OQ-004 — and LB),
+// a pass-rush-PRIMARY defender (PassRushSnapShare ≥ threshold) is scored as a DE and an off-ball
+// defender as an LB, regardless of MFL tag. Every other position, and any defender without a
+// pass-rush share, passes through unchanged (the MFL tag stands). This is the position-RESOLUTION
+// step: it runs BEFORE Assemble so the resolved role drives BOTH the rubric AND the calibration
+// (peak limit, cushion) — the role IS the position. It lives at the boundary, not in any pure
+// rubric (the engine never sees the MFL tag or the snap share).
+func ResolveRubricPosition(s PlayerSpec) domain.Position {
+	// Only the pass-rush/off-ball ambiguous pair (DE/LB) is re-routed by role; every other
+	// position, and any defender without a pass-rush share, keeps its MFL tag.
+	if !s.HasPassRushSnapShare || (s.Position != domain.PosDE && s.Position != domain.PosLB) {
+		return s.Position
+	}
+	if s.PassRushSnapShare >= edgePassRushThreshold {
+		return domain.PosDE
+	}
+	return domain.PosLB
 }
 
 // knownPositions is the engine's scorable set (domain.PosFlag is excluded — an
@@ -103,6 +138,9 @@ func (s PlayerSpec) validateScouting() error {
 	}
 	if s.HasFilm && (!finite(s.FilmComposite) || s.FilmComposite < 0 || s.FilmComposite > 1) {
 		return fmt.Errorf("composition: player %q has HasFilm but film composite %v out of [0,1]", s.MFLID, s.FilmComposite)
+	}
+	if s.HasPassRushSnapShare && (!finite(s.PassRushSnapShare) || s.PassRushSnapShare < 0 || s.PassRushSnapShare > 1) {
+		return fmt.Errorf("composition: player %q has HasPassRushSnapShare but share %v out of [0,1]", s.MFLID, s.PassRushSnapShare)
 	}
 	if _, ok := schoolTierNorm(s.Position, s.SchoolTier); !ok {
 		return fmt.Errorf("composition: player %q has unknown school tier %q", s.MFLID, s.SchoolTier)
