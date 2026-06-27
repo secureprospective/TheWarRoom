@@ -16,6 +16,7 @@ func realRegistry() RubricRegistry {
 	return RubricRegistry{
 		domain.PosQB: offense.NewQB(),
 		domain.PosRB: offense.NewRB(),
+		domain.PosWR: offense.NewWR(),
 		domain.PosDT: defense.NewDT(),
 		domain.PosK:  engine.IdentityLayer4(),
 	}
@@ -32,9 +33,9 @@ func TestRealQBRegistryFlips3C(t *testing.T) {
 	if s := Summarize(results); s.Fail != 0 {
 		t.Fatalf("real QB registry must produce zero FAIL, got %d", s.Fail)
 	}
-	// 3A stays PENDING — it also gates on WR (B5b-WR), which is not registered this session.
-	if r := find(t, results, "3A"); r.State != StatePending {
-		t.Fatalf("3A should stay PENDING (needs WR rubric), got %s", r.State)
+	// 3A now flips PASS — WR (B5b-WR) is registered alongside QB in realRegistry.
+	if r := find(t, results, "3A"); r.State != StatePass {
+		t.Fatalf("3A should PASS (WR + QB registered), got %s (%s)", r.State, r.Detail)
 	}
 }
 
@@ -49,8 +50,8 @@ func TestRealRBRegistryFlips3B(t *testing.T) {
 	if s := Summarize(results); s.Fail != 0 {
 		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
 	}
-	if r := find(t, results, "3A"); r.State != StatePending {
-		t.Fatalf("3A should stay PENDING (needs WR rubric), got %s", r.State)
+	if r := find(t, results, "3A"); r.State != StatePass {
+		t.Fatalf("3A should PASS (WR registered alongside QB), got %s (%s)", r.State, r.Detail)
 	}
 }
 
@@ -125,6 +126,54 @@ func TestRealDTRankingDifferentiates(t *testing.T) {
 	if !(alpha.Result.Layer4Output.BreakoutEffective > bravo.Result.Layer4Output.BreakoutEffective) {
 		t.Fatalf("DT Alpha breakout %v should exceed Bravo %v",
 			alpha.Result.Layer4Output.BreakoutEffective, bravo.Result.Layer4Output.BreakoutEffective)
+	}
+}
+
+// TestRealWRRegistryFlips3AAnd3K is the B5b-WR close gate: with the WR rubric registered,
+// case 3A (the Lockett pattern — L4 stays non-negative for declining elite-draft vets) and
+// case 3K (S-curve boundary clamp) both flip PENDING → PASS, the suite has ZERO failures, and
+// 3D stays PENDING because its co-gate LB is still unregistered (three-state holding).
+func TestRealWRRegistryFlips3AAnd3K(t *testing.T) {
+	results := RunValidationSuite(realRegistry())
+	for _, id := range []string{"3A", "3K"} {
+		if r := find(t, results, id); r.State != StatePass {
+			t.Fatalf("%s should PASS with the real WR rubric, got %s (%s)", id, r.State, r.Detail)
+		}
+	}
+	if r := find(t, results, "3D"); r.State != StatePending {
+		t.Fatalf("3D should stay PENDING (co-gate LB absent), got %s", r.State)
+	}
+	if s := Summarize(results); s.Fail != 0 {
+		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
+	}
+}
+
+// TestRealWRRankingDifferentiates proves the WR rubric separates the three sample WRs on its
+// ACTIVE components: WR Alpha (elite RAS + true-freshman breakout + dominant usage) out-scores
+// both Bravo and Charlie on the Layer-4 Combined. Unlike RB Bravo, WR Charlie's thin-but-real
+// draft profile keeps his Combined from collapsing the way the Herbert pattern does — the §5
+// Lockett structural point, visible end to end through Module 1.
+func TestRealWRRankingDifferentiates(t *testing.T) {
+	rows := RankRookies(testAssembler(), SampleRookies(), realRegistry())
+	byID := map[string]RookieRow{}
+	for _, r := range rows {
+		byID[r.MFLID] = r
+	}
+	alpha, bravo, charlie := byID["0301"], byID["0302"], byID["0303"]
+	if alpha.Err != "" || bravo.Err != "" || charlie.Err != "" {
+		t.Fatalf("WR rows errored: alpha=%q bravo=%q charlie=%q", alpha.Err, bravo.Err, charlie.Err)
+	}
+	if !(alpha.Result.Layer4Output.Combined > bravo.Result.Layer4Output.Combined) {
+		t.Fatalf("WR Alpha L4 %v should exceed Bravo %v",
+			alpha.Result.Layer4Output.Combined, bravo.Result.Layer4Output.Combined)
+	}
+	if !(alpha.Result.Layer4Output.Combined > charlie.Result.Layer4Output.Combined) {
+		t.Fatalf("WR Alpha L4 %v should exceed Charlie %v",
+			alpha.Result.Layer4Output.Combined, charlie.Result.Layer4Output.Combined)
+	}
+	// WR Bravo's RAS is absent → Data-Parity neutral RAS (exactly 1.000), never forced or zeroed.
+	if bravo.Result.Layer4Output.RASEffective != 1.0 {
+		t.Fatalf("WR Bravo absent RAS must be Data-Parity neutral 1.000, got %v", bravo.Result.Layer4Output.RASEffective)
 	}
 }
 

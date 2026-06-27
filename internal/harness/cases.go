@@ -2,6 +2,7 @@ package harness
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -59,13 +60,11 @@ func subSignalPending(id, name, b5b, detail string) case3 {
 // are encoded with the rule and the block that will turn them green.
 func validationCases() []case3 {
 	return []case3{
-		gatedPending("3A", "Lockett pattern — L4 near-neutral for declining elite vets",
-			"B5b-WR / B5b-QB", "film_composite + static breakout sub-signals on Layer4Input",
-			domain.PosWR, domain.PosQB),
+		{id: "3A", name: "Lockett pattern — L4 stays non-negative for declining elite-draft vets", b5bBlock: "B5b-WR / B5b-QB", eval: eval3A},
 		{id: "3B", name: "Herbert pattern — L4 pulls below 1.00 for weak-profile vets", b5bBlock: "B5b-RB", eval: eval3B},
 		{id: "3C", name: "SL-020 — QB & K Layer-4 RAS forced to exactly 1.000", b5bBlock: "B5b-QB / B5b-K", eval: eval3C},
 		gatedPending("3D", "SL-005 — film compression ±3% at LB/DT vs ±5% elsewhere",
-			"B5b-LB / B5b-DT", "FilmRaw hook on Layer4Output (built); awaiting LB + WR rubrics",
+			"B5b-LB / B5b-DT", "FilmRaw hook on Layer4Output (built); WR registered, awaiting LB rubric",
 			domain.PosLB, domain.PosDT, domain.PosWR),
 		gatedPending("3E", "SL-019 — breakout modulator lifts with RAS (DE)",
 			"B5b-DE", "modulated breakout intermediate not on Layer4Output",
@@ -81,9 +80,7 @@ func validationCases() []case3 {
 			domain.PosCB, domain.PosS),
 		subSignalPending("3J", "EDGE classification routing (pass-rush share → DE vs LB)",
 			"B5b-DE / B5b-LB + dispatch", "position-resolution dispatch (pass_rush_snap_share) not built"),
-		gatedPending("3K", "S-curve boundary safety — output clamped to [1-cap, 1+cap]",
-			"B5b (first rubric with S-curve)", "film/breakout extreme inputs not on Layer4Input",
-			domain.PosWR),
+		{id: "3K", name: "S-curve boundary safety — output clamped to [1-cap, 1+cap]", b5bBlock: "B5b-WR", eval: eval3K},
 		{id: "3L", name: "MFL player-ID string enforcement (leading zeros preserved)", b5bBlock: "(none — testable now)", eval: eval3L},
 	}
 }
@@ -196,6 +193,109 @@ func eval3F(reg RubricRegistry) (CaseState, string) {
 	}
 	return StatePass, fmt.Sprintf("L3 age33 pull %.4f→%.4f at RAS 8.00 (RAS 7.99 stays %.4f); L4 age32 breakout %.5f (RAS 9) > %.5f (RAS 7)",
 		raw, cushioned, below, hi.BreakoutEffective, lo.BreakoutEffective)
+}
+
+// eval3A is the B5b-WR close gate (the Lockett pattern, WR_Rubric §5 / SL-OQ-017): Layer 4
+// does NOT pull a declining elite-draft-profile vet below 1.000 — the deliberate contrast to
+// RB's Herbert (3B), which DOES. The mechanism is the breakout component: a declining WR's
+// STATIC draft-era sub-signals (early breakout age, Power-Four school, strong college usage)
+// reflect what he was at entry and offset the age-trajectory crater (0.00 past age 32), so his
+// breakout stays ≥ 1.000 even at age 33; a genuinely-thin declining WR (late breakout, smaller
+// school, low usage) has no such offset and his breakout pulls below 1.000. Film is Data-Parity
+// neutral this session, and RAS ships rookie-weight-only — so the architectural claim is asserted
+// on the BREAKOUT component, the half WR_Rubric §5 attributes the structural finding to (the same
+// principled substitution as 3B). 3A co-gates WR AND QB: the structural finding (SL-OQ-017 —
+// veteran static breakout signals offset the age crater) is not WR-specific, so the case
+// asserts it on BOTH registered offense rubrics, and a QB that loses the property is a real
+// FAIL (the QB gate is exercised, not dead weight — GLM review MED2).
+func eval3A(reg RubricRegistry) (CaseState, string) {
+	if st, why, ok := requireRubrics(reg, domain.PosWR, domain.PosQB); !ok {
+		return st, why
+	}
+	wr := reg[domain.PosWR]
+	// Declining ELITE-draft profile: age 33 (trajectory 0.00), breakout age 19 (1.00), Power
+	// Four (1.00), strong college usage 0.32 (≈0.85) → composite ≈ 0.82 → breakout > 1.000.
+	elite := wr.Apply(engine.Layer4Input{
+		Player: engine.PlayerInput{Position: domain.PosWR, Age: 33, RAS: 8.5, HasRAS: true},
+		Scouting: engine.ScoutingInput{
+			BreakoutAge: 19, HasBreakoutAge: true,
+			SchoolTierNorm: 1.00, HasSchoolTier: true, // Power Four (template)
+			CollegeShare: 0.32, HasCollegeShare: true,
+		},
+	})
+	// Declining THIN profile: same age-33 crater but weak static signals — late breakout age 22
+	// (0.10), FCS (0.40), low usage 0.16 (≈0.14) → composite ≈ 0.17 → breakout < 1.000.
+	thin := wr.Apply(engine.Layer4Input{
+		Player: engine.PlayerInput{Position: domain.PosWR, Age: 33, RAS: 8.5, HasRAS: true},
+		Scouting: engine.ScoutingInput{
+			BreakoutAge: 22, HasBreakoutAge: true,
+			SchoolTierNorm: 0.40, HasSchoolTier: true, // FCS (template)
+			CollegeShare: 0.16, HasCollegeShare: true,
+		},
+	})
+	if !(elite.BreakoutEffective >= 1.0) {
+		return StateFail, fmt.Sprintf("declining elite-profile WR breakout %.4f, want ≥ 1.0000 (static signals offset age)", elite.BreakoutEffective)
+	}
+	if !(thin.BreakoutEffective < 1.0) {
+		return StateFail, fmt.Sprintf("declining thin-profile WR breakout %.4f, want < 1.0000 (no static offset)", thin.BreakoutEffective)
+	}
+	if elite.FilmEffective != 1.0 {
+		return StateFail, fmt.Sprintf("film must be Data-Parity neutral (no source), got %.4f", elite.FilmEffective)
+	}
+	// The same non-negative property must hold at QB (the co-gate): a declining elite-draft QB
+	// — early breakout, Power Four, dominant college share — at age 36 (past the QB peak 32)
+	// keeps his breakout ≥ 1.000 because the static signals offset the age crater (SL-OQ-017).
+	qbElite := reg[domain.PosQB].Apply(engine.Layer4Input{
+		Player: engine.PlayerInput{Position: domain.PosQB, Age: 36, RAS: 8.0, HasRAS: true},
+		Scouting: engine.ScoutingInput{
+			BreakoutAge: 20, HasBreakoutAge: true, // ≤20 → 1.00
+			SchoolTierNorm: 1.00, HasSchoolTier: true, // Power Four (template)
+			CollegeShare: 0.65, HasCollegeShare: true, // ≥0.65 → 1.00
+		},
+	})
+	if !(qbElite.BreakoutEffective >= 1.0) {
+		return StateFail, fmt.Sprintf("declining elite-profile QB breakout %.4f, want ≥ 1.0000 (static offset holds at QB too)", qbElite.BreakoutEffective)
+	}
+	return StatePass, fmt.Sprintf("declining elite WR breakout=%.4f & QB %.4f (both ≥1, static offset) vs thin WR %.4f (<1); film neutral", elite.BreakoutEffective, qbElite.BreakoutEffective, thin.BreakoutEffective)
+}
+
+// eval3K is the B5b-WR close gate for S-curve boundary safety: pathological inputs (overflow,
+// NaN, +Inf) driven through the registered WR rubric must never push a component past its
+// documented asymptote (film ±5%, RAS ±8%, breakout ±5%) and must never escape as non-finite
+// (the curve.Scurve NaN guard + clamp, M3). WR is 3K's sole gate. The rb_test/qb_test
+// M3 clamp test is the unit-level template; this asserts it through the real registered rubric.
+func eval3K(reg RubricRegistry) (CaseState, string) {
+	if st, why, ok := requireRubrics(reg, domain.PosWR); !ok {
+		return st, why
+	}
+	wr := reg[domain.PosWR]
+	for _, bad := range []float64{1e9, math.NaN(), math.Inf(1)} {
+		out := wr.Apply(engine.Layer4Input{
+			Player: engine.PlayerInput{Position: domain.PosWR, Age: 24, RAS: bad, HasRAS: true},
+			Scouting: engine.ScoutingInput{
+				FilmComposite: bad, HasFilm: true,
+				BreakoutAge: bad, HasBreakoutAge: true,
+				SchoolTierNorm: bad, HasSchoolTier: true,
+				CollegeShare: bad, HasCollegeShare: true,
+			},
+		})
+		for _, c := range []struct {
+			name    string
+			v, band float64
+		}{
+			{"film", out.FilmEffective, 0.05},
+			{"RAS", out.RASEffective, 0.08},
+			{"breakout", out.BreakoutEffective, 0.05},
+		} {
+			if math.IsNaN(c.v) || math.IsInf(c.v, 0) {
+				return StateFail, fmt.Sprintf("%s effect %v non-finite — an input escaped the NaN guard (bad=%v)", c.name, c.v, bad)
+			}
+			if c.v < 1-c.band-1e-9 || c.v > 1+c.band+1e-9 {
+				return StateFail, fmt.Sprintf("%s effect %v escaped band ±%v (bad=%v)", c.name, c.v, c.band, bad)
+			}
+		}
+	}
+	return StatePass, "extreme/NaN/Inf inputs stay clamped to [1-cap,1+cap] for film(±5%) RAS(±8%) breakout(±5%)"
 }
 
 // eval3L runs today: MFL player IDs are strings and leading zeros are significant. It

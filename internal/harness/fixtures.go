@@ -36,9 +36,18 @@ func SampleRookies() []composition.PlayerSpec {
 			BreakoutAge: 19, HasBreakoutAge: true, SchoolTier: scouting.SchoolPowerFour, CollegeShare: 0.45, HasCollegeShare: true},
 		{MFLID: "0202", Name: "RB Bravo", Position: domain.PosRB, BasePoints: 195, Age: 28, RAS: 6.0, HasRAS: true, Salary: 4,
 			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.18, HasCollegeShare: true},
-		{MFLID: "0301", Name: "WR Alpha", Position: domain.PosWR, BasePoints: 250, Age: 21, RAS: 9.8, HasRAS: true, Salary: 14},
-		{MFLID: "0302", Name: "WR Bravo", Position: domain.PosWR, BasePoints: 220, Age: 22, RAS: 0, HasRAS: false, Salary: 7},
-		{MFLID: "0303", Name: "WR Charlie", Position: domain.PosWR, BasePoints: 180, Age: 23, RAS: 5.5, HasRAS: true, Salary: 2},
+		// Three WRs with contrasting profiles so the B5b-WR rubric visibly separates them (active
+		// High-tier RAS + breakout; film Data-Parity neutral — offense film weights unset). WR
+		// Alpha: elite athlete, true-freshman breakout, Power Four, dominant target share. WR
+		// Bravo: RAS ABSENT (Data-Parity neutral RAS) but a solid draft profile. WR Charlie: thin
+		// profile — late breakout, smaller school, low usage, older — but the static signals keep
+		// his breakout from collapsing the way RB Bravo's does (the §5 Lockett structural point).
+		{MFLID: "0301", Name: "WR Alpha", Position: domain.PosWR, BasePoints: 250, Age: 21, RAS: 9.8, HasRAS: true, Salary: 14,
+			BreakoutAge: 19, HasBreakoutAge: true, SchoolTier: scouting.SchoolPowerFour, CollegeShare: 0.40, HasCollegeShare: true},
+		{MFLID: "0302", Name: "WR Bravo", Position: domain.PosWR, BasePoints: 220, Age: 22, RAS: 0, HasRAS: false, Salary: 7,
+			BreakoutAge: 21, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.22, HasCollegeShare: true},
+		{MFLID: "0303", Name: "WR Charlie", Position: domain.PosWR, BasePoints: 180, Age: 23, RAS: 5.5, HasRAS: true, Salary: 2,
+			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolFCS, CollegeShare: 0.16, HasCollegeShare: true},
 		{MFLID: "0401", Name: "TE Alpha", Position: domain.PosTE, BasePoints: 160, Age: 22, RAS: 8.6, HasRAS: true, Salary: 5},
 		{MFLID: "0501", Name: "DE Alpha", Position: domain.PosDE, BasePoints: 175, Age: 22, RAS: 9.1, HasRAS: true, Salary: 8},
 		{MFLID: "0601", Name: "CB Alpha", Position: domain.PosCB, BasePoints: 165, Age: 21, RAS: 8.9, HasRAS: true, Salary: 6},
