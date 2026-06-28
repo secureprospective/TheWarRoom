@@ -12,9 +12,11 @@ import (
 
 // eval3C is the fully-wired exemplar that auto-flips when a QB/K rubric registers. SL-020
 // forces Layer-4 RAS to exactly 1.000 for QB and K regardless of the athlete's RAS, so a
-// very-low (0.10) and an elite (9.99) QB RAS must both yield RASEffective == 1.0000, and a
-// K's Combined must be exactly 1.0000. RAS rides in on PlayerInput, so this needs no new
-// Layer4Input field — only the rubric.
+// very-low (0.10) and an elite (9.99) QB RAS must both yield RASEffective == 1.0000. For K
+// (B5b-K, whose film is now ACTIVE per DECISION-011) it asserts both halves: Combined is
+// exactly 1.0000 when no film is present (Data-Parity), AND with film populated the active
+// film does not leak into RAS/breakout (both stay exactly 1.000, Combined == film). RAS rides
+// in on PlayerInput, so this needs no new Layer4Input field — only the rubric.
 func eval3C(reg RubricRegistry) (CaseState, string) {
 	if st, why, ok := requireRubrics(reg, domain.PosQB, domain.PosK); !ok {
 		return st, why
@@ -28,11 +30,30 @@ func eval3C(reg RubricRegistry) (CaseState, string) {
 			return StateFail, fmt.Sprintf("QB RAS %.2f → RASEffective %.4f, want exactly 1.0000", ras, out.RASEffective)
 		}
 	}
+	// Empty input: K's film is Data-Parity neutral (no Madden/NFLProduction), so all three
+	// components are 1.000 and Combined is exactly 1.000.
 	kout := reg[domain.PosK].Apply(engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosK}})
 	if kout.Combined != 1.0 {
 		return StateFail, fmt.Sprintf("K Combined %.4f, want exactly 1.0000", kout.Combined)
 	}
-	return StatePass, "QB RASEffective=1.0000 at RAS 0.10 and 9.99; K Combined=1.0000"
+	// Populated film: the real B5b-K rubric's active film must NOT leak into RAS or breakout —
+	// both stay forced to exactly 1.000 (SL-020 partial / no breakout framework), and Combined
+	// equals the film component alone. This keeps 3C strong now that K has an active film path
+	// (the placeholder identity rubric could not exercise it).
+	kfilm := reg[domain.PosK].Apply(engine.Layer4Input{
+		Player:   engine.PlayerInput{Position: domain.PosK},
+		Scouting: engine.ScoutingInput{MaddenFilm: 0.90, HasMaddenFilm: true, NFLProduction: 0.80, HasNFLProduction: true},
+	})
+	if kfilm.RASEffective != 1.0 {
+		return StateFail, fmt.Sprintf("K RASEffective %.4f with film populated, want exactly 1.0000", kfilm.RASEffective)
+	}
+	if kfilm.BreakoutEffective != 1.0 {
+		return StateFail, fmt.Sprintf("K BreakoutEffective %.4f with film populated, want exactly 1.0000", kfilm.BreakoutEffective)
+	}
+	if kfilm.Combined != kfilm.FilmEffective {
+		return StateFail, fmt.Sprintf("K Combined %.6f != FilmEffective %.6f (RAS/breakout must not move it)", kfilm.Combined, kfilm.FilmEffective)
+	}
+	return StatePass, "QB RASEffective=1.0000 at RAS 0.10/9.99; K RAS+breakout forced 1.0000 with active film; K Combined=1.0000 when film absent"
 }
 
 // eval3B is the B5b-RB close gate (the Herbert pattern): Layer 4 PULLS BELOW 1.000 for a

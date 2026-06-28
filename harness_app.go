@@ -7,8 +7,8 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/composition"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/engine/l4/defense"
+	"github.com/secureprospective/TheWarRoom/internal/engine/l4/kicker"
 	"github.com/secureprospective/TheWarRoom/internal/engine/l4/offense"
 	"github.com/secureprospective/TheWarRoom/internal/harness"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
@@ -24,24 +24,22 @@ func (sandboxCap) GetSalaryCap() string { return "1000" }
 // rubrics is the B5b Layer-4 registry. Each B5b block adds its position here, which both
 // differentiates the rankings and auto-evaluates its Module-3 cases. QB (B5b-QB) is the
 // first REAL offense rubric; DT (B5b-DT) is the first REAL defense rubric (the IDP
-// skeleton-setter) and flips case 3F (SL-021 cushion guard). K is registered with the
-// IDENTITY Layer 4 as a documented PLACEHOLDER:
-// case 3C (SL-020) gates on BOTH QB and K, and SL-020 forces K's RAS to 1.000 with an empty
-// input scoring neutral by Data-Parity — which identity satisfies. B5b-K REPLACES this with
-// the real Madden-driven K rubric (DECISION-011); registering it here now is what lets 3C
-// flip green this session without weakening its assertion.
+// skeleton-setter) and flips case 3F (SL-021 cushion guard). K (B5b-K) is the LAST L4 build:
+// the real Madden-driven rubric (DECISION-011) — film ACTIVE (Madden 0.60 / NFLProduction 0.40),
+// RAS + breakout forced to exactly 1.000, so Combined = film. Its RAS stays 1.000, keeping
+// case 3C (SL-020, gates on BOTH QB and K) green. All 10/10 positions now run a real rubric.
 func (a *App) rubrics() harness.RubricRegistry {
 	return harness.RubricRegistry{
 		domain.PosQB: offense.NewQB(),
-		domain.PosRB: offense.NewRB(),         // B5b-RB: standard offense rubric (flips case 3B)
-		domain.PosWR: offense.NewWR(),         // B5b-WR: the offense skill template (flips case 3A, 3K)
-		domain.PosTE: offense.NewTE(),         // B5b-TE: first SL-019 RAS-modulator instance (flips case 3M)
-		domain.PosDT: defense.NewDT(),         // B5b-DT: the defense skeleton-setter (first IDP rubric)
-		domain.PosDE: defense.NewDE(),         // B5b-DE: 2nd SL-019 instance, reuses curve.SL019 (flips case 3E)
-		domain.PosLB: defense.NewLB(),         // B5b-LB: first non-SL-019 IDP; SL-005 film + Medium RAS (flips 3D, 3J)
-		domain.PosCB: defense.NewCB(),         // B5b-CB: first NGS-anchor + 3rd SL-019 (reduced 0.30); flips case 3I
-		domain.PosS:  defense.NewS(),          // B5b-S: 2nd NGS-anchor + 4th SL-019 (0.30); co-asserts case 3I
-		domain.PosK:  engine.IdentityLayer4(), // PLACEHOLDER — real K is B5b-K (DECISION-011)
+		domain.PosRB: offense.NewRB(), // B5b-RB: standard offense rubric (flips case 3B)
+		domain.PosWR: offense.NewWR(), // B5b-WR: the offense skill template (flips case 3A, 3K)
+		domain.PosTE: offense.NewTE(), // B5b-TE: first SL-019 RAS-modulator instance (flips case 3M)
+		domain.PosDT: defense.NewDT(), // B5b-DT: the defense skeleton-setter (first IDP rubric)
+		domain.PosDE: defense.NewDE(), // B5b-DE: 2nd SL-019 instance, reuses curve.SL019 (flips case 3E)
+		domain.PosLB: defense.NewLB(), // B5b-LB: first non-SL-019 IDP; SL-005 film + Medium RAS (flips 3D, 3J)
+		domain.PosCB: defense.NewCB(), // B5b-CB: first NGS-anchor + 3rd SL-019 (reduced 0.30); flips case 3I
+		domain.PosS:  defense.NewS(),  // B5b-S: 2nd NGS-anchor + 4th SL-019 (0.30); co-asserts case 3I
+		domain.PosK:  kicker.NewK(),   // B5b-K: real Madden-driven film (DECISION-011); RAS+breakout forced 1.000 (keeps 3C green)
 	}
 }
 

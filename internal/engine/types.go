@@ -88,6 +88,18 @@ type ScoutingInput struct {
 	FilmComposite float64 // normalized [0,1] film composite (weights are a calibration concern, set upstream)
 	HasFilm       bool    // false → Data-Parity Rule: film component is forced neutral (1.000)
 
+	// K-specific film sub-signals (DECISION-011, B5b-K). K is the ONE position whose film is
+	// active AND whose film sub-signal split is PINNED in the engine (Madden 0.60 /
+	// NFLProduction 0.40), so — unlike FilmComposite, which other positions receive
+	// already-blended — K receives the two normalized [0,1] components separately and the
+	// kicker rubric blends them at its call site. Each carries a Has* flag so an ABSENT
+	// component is neutralized by Data-Parity rather than read as a real 0 (a 0 Madden kick
+	// rating is the floor, not "no data"). Positions other than K ignore these fields.
+	MaddenFilm       float64 // normalized [0,1] Madden kick power/accuracy composite (K film 0.60)
+	HasMaddenFilm    bool    // false → Data-Parity: the Madden component is neutral
+	NFLProduction    float64 // normalized [0,1] NFL on-field kicking production (K film 0.40)
+	HasNFLProduction bool    // false → Data-Parity: the NFL-production component is neutral
+
 	BreakoutAge    float64 // raw breakout age in years; the rubric maps it to [0,1]
 	HasBreakoutAge bool    // false → the rubric treats breakout age as neutral (no lift/penalty)
 

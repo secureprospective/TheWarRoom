@@ -110,5 +110,14 @@ func SampleRookies() []composition.PlayerSpec {
 		// SL-019 gives him little modulator help; his breakout stays below Alpha's.
 		{MFLID: "0902", Name: "S Bravo", Position: domain.PosS, BasePoints: 150, Age: 23, RAS: 6.0, HasRAS: true, Salary: 3,
 			BreakoutAge: 22, HasBreakoutAge: true, SchoolTier: scouting.SchoolGroupOfFive, CollegeShare: 0.08, HasCollegeShare: true},
+		// Two kickers with contrasting Madden/NFLProduction profiles so the B5b-K rubric
+		// (DECISION-011: film ACTIVE, Madden 0.60 / NFLProduction 0.40, RAS + breakout forced
+		// 1.000) visibly separates them. Base/age/salary are held IDENTICAL so the ranking gap
+		// is driven PURELY by the Layer-4 film component (Combined == film). K Alpha: strong
+		// Madden kick power/accuracy + solid NFL production. K Bravo: weak on both.
+		{MFLID: "1001", Name: "K Alpha", Position: domain.PosK, BasePoints: 120, Age: 24, RAS: 5.0, HasRAS: true, Salary: 3,
+			MaddenFilm: 0.90, HasMaddenFilm: true, NFLProduction: 0.80, HasNFLProduction: true},
+		{MFLID: "1002", Name: "K Bravo", Position: domain.PosK, BasePoints: 120, Age: 24, RAS: 5.0, HasRAS: true, Salary: 3,
+			MaddenFilm: 0.30, HasMaddenFilm: true, NFLProduction: 0.25, HasNFLProduction: true},
 	}
 }

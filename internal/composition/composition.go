@@ -117,10 +117,25 @@ func (a *Assembler) scouting(s PlayerSpec) engine.ScoutingInput {
 	if !s.HasFilm {
 		film = 0
 	}
+	// K film sub-signals ride through only when present; otherwise zeroed so a stray value
+	// cannot reach the kicker rubric (mirrors the FilmComposite/RAS handling).
+	madden := s.MaddenFilm
+	if !s.HasMaddenFilm {
+		madden = 0
+	}
+	nflProd := s.NFLProduction
+	if !s.HasNFLProduction {
+		nflProd = 0
+	}
 	tierNorm, _ := schoolTierNorm(s.Position, s.SchoolTier)
 	return engine.ScoutingInput{
 		FilmComposite: film,
 		HasFilm:       s.HasFilm,
+
+		MaddenFilm:       madden,
+		HasMaddenFilm:    s.HasMaddenFilm,
+		NFLProduction:    nflProd,
+		HasNFLProduction: s.HasNFLProduction,
 
 		BreakoutAge:     s.BreakoutAge,
 		HasBreakoutAge:  s.HasBreakoutAge,

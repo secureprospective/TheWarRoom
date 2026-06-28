@@ -34,6 +34,14 @@ type PlayerSpec struct {
 	FilmComposite float64 // upstream film composite in [0,1] (valid only when HasFilm)
 	HasFilm       bool    // false → the rubric forces a neutral film component (Data-Parity Rule)
 
+	// K film sub-signals (DECISION-011, B5b-K): the kicker rubric is the one position whose
+	// film is built from these two normalized [0,1] components at a PINNED 0.60/0.40 split in
+	// the engine, rather than a pre-blended FilmComposite. Non-K positions leave them zero/absent.
+	MaddenFilm       float64 // normalized [0,1] Madden kick rating composite (valid only when HasMaddenFilm)
+	HasMaddenFilm    bool    // false → the K rubric treats the Madden component as neutral
+	NFLProduction    float64 // normalized [0,1] NFL on-field kicking production (valid only when HasNFLProduction)
+	HasNFLProduction bool    // false → the K rubric treats the NFL-production component as neutral
+
 	// Breakout sub-signals. The Has* flags distinguish ABSENT from a real zero (a zero
 	// breakout age or college share would otherwise be read as an extreme, not neutral).
 	// School-tier presence is inferred from the enum (SchoolUnset == absent), so it needs
@@ -136,14 +144,34 @@ func (s PlayerSpec) validateScouting() error {
 	if s.CollegeShare < 0 || s.CollegeShare > 1 {
 		return fmt.Errorf("composition: player %q college share %v out of [0,1]", s.MFLID, s.CollegeShare)
 	}
-	if s.HasFilm && (!finite(s.FilmComposite) || s.FilmComposite < 0 || s.FilmComposite > 1) {
-		return fmt.Errorf("composition: player %q has HasFilm but film composite %v out of [0,1]", s.MFLID, s.FilmComposite)
-	}
-	if s.HasPassRushSnapShare && (!finite(s.PassRushSnapShare) || s.PassRushSnapShare < 0 || s.PassRushSnapShare > 1) {
-		return fmt.Errorf("composition: player %q has HasPassRushSnapShare but share %v out of [0,1]", s.MFLID, s.PassRushSnapShare)
+	// Each present-gated [0,1] sub-signal: rejected only when actively corrupt (non-finite or
+	// out of range); absent (Has* false) is allowed and neutralized by the rubric's Data-Parity.
+	for _, c := range []struct {
+		name    string
+		present bool
+		v       float64
+	}{
+		{"film composite", s.HasFilm, s.FilmComposite},
+		{"Madden film", s.HasMaddenFilm, s.MaddenFilm},
+		{"NFL production", s.HasNFLProduction, s.NFLProduction},
+		{"pass-rush snap share", s.HasPassRushSnapShare, s.PassRushSnapShare},
+	} {
+		if err := s.checkUnitRange(c.name, c.present, c.v); err != nil {
+			return err
+		}
 	}
 	if _, ok := schoolTierNorm(s.Position, s.SchoolTier); !ok {
 		return fmt.Errorf("composition: player %q has unknown school tier %q", s.MFLID, s.SchoolTier)
+	}
+	return nil
+}
+
+// checkUnitRange fail-louds when a PRESENT sub-signal is non-finite or outside [0,1]. An
+// absent signal is allowed (the rubric's Data-Parity Rule neutralizes it). Shared so each
+// present-gated scouting field validates identically (M17) and validateScouting stays simple.
+func (s PlayerSpec) checkUnitRange(name string, present bool, v float64) error {
+	if present && (!finite(v) || v < 0 || v > 1) {
+		return fmt.Errorf("composition: player %q has a present %s %v out of [0,1]", s.MFLID, name, v)
 	}
 	return nil
 }

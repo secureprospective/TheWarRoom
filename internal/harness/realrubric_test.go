@@ -5,15 +5,15 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/composition"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/engine/l4/defense"
+	"github.com/secureprospective/TheWarRoom/internal/engine/l4/kicker"
 	"github.com/secureprospective/TheWarRoom/internal/engine/l4/offense"
 	"github.com/secureprospective/TheWarRoom/internal/scouting"
 )
 
-// realRegistry mirrors harness_app.rubrics(): the real QB + DT rubrics plus the identity K
-// placeholder. Keeping it here lets the harness tests prove the close-gate claim against
-// the SAME registry the app wires, without a package-main test.
+// realRegistry mirrors harness_app.rubrics(): all 10 real B5b rubrics (K is the last, the
+// Madden-driven kicker). Keeping it here lets the harness tests prove the close-gate claim
+// against the SAME registry the app wires, without a package-main test.
 func realRegistry() RubricRegistry {
 	return RubricRegistry{
 		domain.PosQB: offense.NewQB(),
@@ -25,7 +25,7 @@ func realRegistry() RubricRegistry {
 		domain.PosLB: defense.NewLB(),
 		domain.PosCB: defense.NewCB(),
 		domain.PosS:  defense.NewS(),
-		domain.PosK:  engine.IdentityLayer4(),
+		domain.PosK:  kicker.NewK(),
 	}
 }
 
@@ -447,5 +447,36 @@ func TestRealQBRankingDifferentiates(t *testing.T) {
 	if alpha.Result.Layer4Output.RASEffective != 1.0 || bravo.Result.Layer4Output.RASEffective != 1.0 {
 		t.Fatalf("QB RASEffective must be 1.000 (SL-020); got alpha=%v bravo=%v",
 			alpha.Result.Layer4Output.RASEffective, bravo.Result.Layer4Output.RASEffective)
+	}
+}
+
+// TestRealKRankingDifferentiates proves the B5b-K rubric separates two kickers through Module 1
+// purely by the active film component (DECISION-011): RAS + breakout are forced to exactly 1.000,
+// so Combined == film. K Alpha (strong Madden 0.90 / NFLProduction 0.80) out-scores K Bravo (weak
+// 0.30 / 0.25) on the Layer-4 Combined; both keep RAS + breakout at exactly 1.000 (SL-020 partial /
+// no breakout framework). Base/age/salary are identical in the fixtures, so the gap is the film alone.
+func TestRealKRankingDifferentiates(t *testing.T) {
+	rows := RankRookies(testAssembler(), SampleRookies(), realRegistry())
+	byID := map[string]RookieRow{}
+	for _, r := range rows {
+		byID[r.MFLID] = r
+	}
+	alpha, bravo := byID["1001"], byID["1002"]
+	if alpha.Err != "" || bravo.Err != "" {
+		t.Fatalf("K rows errored: alpha=%q bravo=%q", alpha.Err, bravo.Err)
+	}
+	if !(alpha.Result.Layer4Output.Combined > bravo.Result.Layer4Output.Combined) {
+		t.Fatalf("K Alpha L4 %v should exceed Bravo %v (active Madden film)",
+			alpha.Result.Layer4Output.Combined, bravo.Result.Layer4Output.Combined)
+	}
+	// Combined is film alone: RAS + breakout forced to exactly 1.000 for both kickers.
+	for _, r := range []RookieRow{alpha, bravo} {
+		o := r.Result.Layer4Output
+		if o.RASEffective != 1.0 || o.BreakoutEffective != 1.0 {
+			t.Fatalf("K %s RAS/breakout must be 1.000; got RAS=%v breakout=%v", r.MFLID, o.RASEffective, o.BreakoutEffective)
+		}
+		if o.Combined != o.FilmEffective {
+			t.Fatalf("K %s Combined %v must equal FilmEffective %v", r.MFLID, o.Combined, o.FilmEffective)
+		}
 	}
 }
