@@ -156,6 +156,8 @@ linters:
               desc: "stores never import each other — rulebook cannot import state"
             - pkg: github.com/secureprospective/TheWarRoom/internal/store/params
               desc: "stores never import each other — rulebook cannot import params"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/output
+              desc: "stores never import each other — rulebook cannot import the output store"
 
         store-state-no-siblings:
           list-mode: lax
@@ -166,6 +168,8 @@ linters:
               desc: "stores never import each other — state cannot import rulebook"
             - pkg: github.com/secureprospective/TheWarRoom/internal/store/params
               desc: "stores never import each other — state cannot import params"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/output
+              desc: "stores never import each other — state cannot import the output store"
 
         store-params-no-siblings:
           list-mode: lax
@@ -176,6 +180,25 @@ linters:
               desc: "stores never import each other — params cannot import rulebook"
             - pkg: github.com/secureprospective/TheWarRoom/internal/store/state
               desc: "stores never import each other — params cannot import state"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/output
+              desc: "stores never import each other — params cannot import the output store"
+
+        # The output store (internal/output, B6) is a Layer-2 store too — it holds
+        # engine OUTPUT, not config/runtime state. It clones the store template but is
+        # subject to the same isolation law: it imports the engine (for the pure Result
+        # value type) but NEVER another store. It is denied the three config/state stores
+        # exactly as they are denied it above.
+        store-output-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/output/**"
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/store/rulebook
+              desc: "stores never import each other — output cannot import rulebook"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/store/state
+              desc: "stores never import each other — output cannot import state"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/store/params
+              desc: "stores never import each other — output cannot import params"
 
         # SQL stays confined to the db and store packages (Section 2, item 6
         # — "depguard keeps SQL out of non-repository packages"). Every other
@@ -186,11 +209,12 @@ linters:
           files:
             - "!**/internal/db/**"
             - "!**/internal/store/**"
+            - "!**/internal/output/**"
           deny:
             - pkg: database/sql
-              desc: "raw database/sql is confined to internal/db and internal/store"
+              desc: "raw database/sql is confined to internal/db, internal/store, and internal/output"
             - pkg: modernc.org/sqlite
-              desc: "the sqlite driver is confined to internal/db and internal/store"
+              desc: "the sqlite driver is confined to internal/db, internal/store, and internal/output"
 
         # Only the B7 coordinator (internal/transactions root package) is
         # importable from the rest of the app. Handler subpackages
