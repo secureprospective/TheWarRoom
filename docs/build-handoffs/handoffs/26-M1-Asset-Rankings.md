@@ -30,15 +30,19 @@ not a new pure layer:
 == THE BLOCKER TO RESOLVE FIRST — BasePoints (L2 is deferred) ==
 `engine.PlayerInput.BasePoints` is a SUPPLIED input — B5a deliberately did NOT build L2 base
 scoring (no L2 file; the harness fed fixed sandbox values). A real ranked board needs a real
-BasePoints per player, or the rankings are meaningless. This is the FIRST gate-check question,
-before any code. Options (gate-check with Christopher):
-  (a) Build a minimal L2 now from MFL weekly scoring history (the league's own fantasy points)
-      as BasePoints — most faithful, but it is a new fetch + aggregation block (scope grows).
-  (b) v1.0 visible-validation placeholder: feed MFL season fantasy points (or a documented proxy)
-      as BasePoints, clearly labeled "L2 pending", so the board renders and the engine path is
-      validated end to end now; swap in real L2 later. (Recommended to keep M1 visible-first.)
-  (c) Defer M1 until a real L2 block ships.
-Do NOT pick silently — the choice changes M1's scope materially.
+BasePoints per player, or the rankings are meaningless.
+
+**DECIDED (Christopher, 2026-06-28) → option (b): a LABELED MFL-fantasy-points placeholder.**
+Feed MFL fantasy points (season total, or a documented proxy) as BasePoints, clearly labeled
+"L2 pending" in the UI and the source map, so the board renders and the engine path is validated
+end to end NOW; swap in a real L2 block later. Concretely for this session:
+  - Source the per-player fantasy points from MFL (the league's own scoring history / playerScores
+    export) — verify the exact endpoint live before wiring (recon-first, the standing pattern).
+  - The placeholder MUST be visibly labeled wherever a score is shown — this is a validation board,
+    not a published ranking. Do not let the proxy masquerade as final L2 output.
+  - Keep the seam clean: BasePoints enters via the orchestrator as a parameter (the engine already
+    takes it as a supplied input), so the real L2 block later swaps the SOURCE, not the engine.
+Rejected: (a) build minimal L2 now (scope creep for a visible-first milestone), (c) defer M1.
 
 == WHAT M1 BUILDS ==
 - A "score-the-league" orchestrator (likely extend `internal/composition`, or a new sibling that
@@ -59,8 +63,8 @@ Do NOT pick silently — the choice changes M1's scope materially.
   drift guard (ErrDuplicate). Decide the UX: skip-if-present, or require a config bump. Gate-check.
 
 == GATE CHECK (confirm with Christopher BEFORE writing code) ==
-1. **BasePoints / L2** — option (a) build minimal L2, (b) labeled placeholder proxy (recommended,
-   keeps M1 visible-first), or (c) defer. His call — it sets M1's scope.
+1. **BasePoints / L2** — DECIDED → (b) labeled MFL-fantasy-points placeholder (see the blocker
+   section above). Items 2–5 still open.
 2. **Scope / M1b split** — ship global + per-team + position + cap-efficiency in one session, or
    split the per-team drill-down to M1b (Build_Tracker note) if scope tightens. His call.
 3. **`scoring_config_id` source** — confirm rulebook active version via a new public accessor,
