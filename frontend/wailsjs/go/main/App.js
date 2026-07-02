@@ -6,12 +6,20 @@ export function GetParams() {
   return window['go']['main']['App']['GetParams']();
 }
 
+export function GetRankings() {
+  return window['go']['main']['App']['GetRankings']();
+}
+
 export function Ping() {
   return window['go']['main']['App']['Ping']();
 }
 
 export function RunValidationSuite() {
   return window['go']['main']['App']['RunValidationSuite']();
+}
+
+export function ScoreLeague() {
+  return window['go']['main']['App']['ScoreLeague']();
 }
 
 export function ScoreRookies() {

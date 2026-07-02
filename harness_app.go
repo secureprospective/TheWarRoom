@@ -14,13 +14,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
-// sandboxCap is the harness league-cap source. v1 runs without a loaded MFL league, so it
-// supplies a fixed cap amount; production wires *rulebook.Store (GetSalaryCap) here instead.
-// The salary-% cap tiers it feeds are still the real, admin-tunable B4 values.
-type sandboxCap struct{}
-
-func (sandboxCap) GetSalaryCap() string { return "1000" }
-
 // rubrics is the B5b Layer-4 registry. Each B5b block adds its position here, which both
 // differentiates the rankings and auto-evaluates its Module-3 cases. QB (B5b-QB) is the
 // first REAL offense rubric; DT (B5b-DT) is the first REAL defense rubric (the IDP
@@ -43,12 +36,14 @@ func (a *App) rubrics() harness.RubricRegistry {
 	}
 }
 
-// assembler builds the composition boundary over the real params store and the sandbox cap.
+// assembler builds the composition boundary over the real params store and the
+// REAL rulebook cap (M1 — the sandboxCap fixed "1000" is gone: the league is
+// loaded now, so the harness and the M1 board score against the same cap).
 func (a *App) assembler() (*composition.Assembler, error) {
-	if a.params == nil {
-		return nil, fmt.Errorf("params store not initialized")
+	if a.params == nil || a.rulebook == nil {
+		return nil, fmt.Errorf("stores not initialized (params=%t rulebook=%t)", a.params != nil, a.rulebook != nil)
 	}
-	return composition.New(a.params, sandboxCap{}), nil
+	return composition.New(a.params, a.rulebook), nil
 }
 
 // RookiesResult is the Module 1 payload: the ranked rows plus the active Layer-4 mode so the

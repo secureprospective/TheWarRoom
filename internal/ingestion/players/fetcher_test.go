@@ -24,6 +24,11 @@ func TestRawPlayer_Validate(t *testing.T) {
 		{"empty team tolerated", func(p *RawPlayer) { p.Team = "" }, false},
 		// Raw position codes pass the fetcher untouched; normalize maps/flags them.
 		{"raw EDGE code tolerated", func(p *RawPlayer) { p.Position = "EDGE" }, false},
+		// Birthdate (DETAILS=1): absent is legitimate (commissioner-created players);
+		// a present value must be a parseable epoch-seconds integer.
+		{"absent birthdate tolerated", func(p *RawPlayer) { p.Birthdate = "" }, false},
+		{"valid epoch birthdate", func(p *RawPlayer) { p.Birthdate = "239432400" }, false},
+		{"non-numeric birthdate", func(p *RawPlayer) { p.Birthdate = "1979-08-03" }, true},
 	}
 
 	for _, tt := range tests {
@@ -42,7 +47,7 @@ func TestRawPlayer_Validate(t *testing.T) {
 // raw passthrough of position codes / rookie status.
 func TestDecode_RealShape(t *testing.T) {
 	const body = `{"players":{"timestamp":"1750000000","player":[` +
-		`{"id":"0531","name":"Mahomes, Patrick","position":"QB","team":"KCC"},` +
+		`{"id":"0531","name":"Mahomes, Patrick","position":"QB","team":"KCC","birthdate":"495176400"},` +
 		`{"id":"15283","name":"Moore, Rondale","position":"XX","team":"MIN"},` +
 		`{"id":"14999","name":"Rookie, Some","position":"WR","team":"FA","status":"R"}` +
 		`]}}`
@@ -60,6 +65,12 @@ func TestDecode_RealShape(t *testing.T) {
 	}
 	if got[0].ID != "0531" || got[0].Position != "QB" || got[0].Team != "KCC" {
 		t.Fatalf("player 0 mapped wrong: %+v", got[0])
+	}
+	if got[0].Birthdate != "495176400" {
+		t.Fatalf("player 0 birthdate not mapped raw: %+v", got[0])
+	}
+	if got[1].Birthdate != "" { // no DETAILS field on this record → stays absent
+		t.Fatalf("player 1 birthdate should be absent: %+v", got[1])
 	}
 	if got[1].Position != "XX" { // raw code preserved, not flagged here
 		t.Fatalf("player 1 position not raw: %+v", got[1])

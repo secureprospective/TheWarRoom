@@ -4,9 +4,13 @@ import {main} from '../models';
 
 export function GetParams():Promise<main.ParamsResult>;
 
+export function GetRankings():Promise<main.RankingsResult>;
+
 export function Ping():Promise<main.PingResult>;
 
 export function RunValidationSuite():Promise<main.ValidationResult>;
+
+export function ScoreLeague():Promise<main.ScoreLeagueResult>;
 
 export function ScoreRookies():Promise<main.RookiesResult>;
 

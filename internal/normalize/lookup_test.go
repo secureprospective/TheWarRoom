@@ -101,3 +101,42 @@ func TestNewLookup_CanonicalizesAndDerivesRookie(t *testing.T) {
 		t.Fatalf("rookie flag not derived from status==R: %+v ok=%v", rookie, ok)
 	}
 }
+
+// TestFacts locks the M1 orchestrator's read surface: identity + birthdate
+// resolution, canonical-id matching, and the aggregate/unknown → ok=false rule.
+func TestFacts(t *testing.T) {
+	lk, err := NewLookup([]players.RawPlayer{
+		{ID: "0099", Name: "Young, Bryce", Position: "QB", Team: "CAR", Birthdate: "996642000"},
+		{ID: "0816", Name: "Gosnell, Created", Position: "WR", Team: "FA"}, // commissioner-created: no birthdate
+		{ID: "0200", Name: "", Position: "TMQB", Team: "FA"},               // aggregate
+	})
+	if err != nil {
+		t.Fatalf("NewLookup: %v", err)
+	}
+
+	f, ok := lk.Facts("99") // canonical form matches "0099"
+	if !ok || f.Name != "Young, Bryce" || !f.HasBirthdate || f.Birthdate != 996642000 {
+		t.Fatalf("Facts(99) = %+v ok=%v, want Young w/ birthdate 996642000", f, ok)
+	}
+	created, ok := lk.Facts("0816")
+	if !ok || created.HasBirthdate {
+		t.Fatalf("Facts(0816) = %+v ok=%v, want present with HasBirthdate=false", created, ok)
+	}
+	if _, ok := lk.Facts("0200"); ok {
+		t.Fatal("Facts(0200) should be ok=false for a team aggregate")
+	}
+	if _, ok := lk.Facts("55555"); ok {
+		t.Fatal("Facts(55555) should be ok=false for an unknown id")
+	}
+}
+
+// TestNewLookup_MalformedBirthdateFailsLoud proves a corrupt DETAILS=1 birthdate
+// cannot ride into the typed lookup (the fetcher validates too — defense in depth).
+func TestNewLookup_MalformedBirthdateFailsLoud(t *testing.T) {
+	_, err := NewLookup([]players.RawPlayer{
+		{ID: "0099", Name: "Young, Bryce", Position: "QB", Team: "CAR", Birthdate: "1979-08-03"},
+	})
+	if err == nil {
+		t.Fatal("NewLookup should error on a non-epoch birthdate, got nil")
+	}
+}

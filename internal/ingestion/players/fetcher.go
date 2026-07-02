@@ -36,6 +36,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -58,6 +59,11 @@ type RawPlayer struct {
 	Position string // raw MFL position code; mapped at B3
 	Team     string // 3-letter NFL code, or "FA" for free agent
 	Status   string // "R" for a 2026 rookie; empty otherwise
+	// Birthdate is the raw epoch-seconds string DETAILS=1 adds ("239432400"), or
+	// empty when MFL has none — commissioner-created players and some deep-database
+	// rows legitimately lack it (M1 recon: 6 of 1232 rostered). The consumer (M1
+	// age derivation) owns the absent-birthdate policy; the fetcher passes it raw.
+	Birthdate string
 }
 
 // Validate checks the raw record's SHAPE before anything downstream runs. It does
@@ -74,6 +80,13 @@ func (p RawPlayer) Validate() error {
 	if strings.TrimSpace(p.Position) == "" {
 		return fmt.Errorf("players: record %s (%q) missing position", p.ID, p.Name)
 	}
+	// A PRESENT birthdate must be a parseable epoch-seconds integer; absent is
+	// legitimate (see the field comment) and judged by the consumer, not here.
+	if bd := strings.TrimSpace(p.Birthdate); bd != "" {
+		if _, err := strconv.ParseInt(bd, 10, 64); err != nil {
+			return fmt.Errorf("players: record %s (%q) non-numeric birthdate %q: %w", p.ID, p.Name, p.Birthdate, err)
+		}
+	}
 	return nil
 }
 
@@ -89,11 +102,12 @@ type playersEnvelope struct {
 }
 
 type playerBlock struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Position string `json:"position"`
-	Team     string `json:"team"`
-	Status   string `json:"status"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Position  string `json:"position"`
+	Team      string `json:"team"`
+	Status    string `json:"status"`
+	Birthdate string `json:"birthdate"` // epoch seconds; present only with DETAILS=1
 }
 
 // Fetch retrieves the league's player database for the given season+league and
@@ -108,10 +122,13 @@ func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) ([]RawPlay
 		return nil, fmt.Errorf("players: discover host: %w", err)
 	}
 
+	// DETAILS=1 adds the extended per-player fields; M1 needs birthdate (the age
+	// input for L3 decay). The base fields are unchanged, so existing consumers
+	// (the B3 cross-reference join) see the same shape plus one optional column.
 	resp, err := c.Do(ctx, mfl.Request{
 		Type:   "players",
 		Year:   year,
-		Params: map[string]string{"L": leagueID},
+		Params: map[string]string{"L": leagueID, "DETAILS": "1"},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("players: fetch: %w", err)

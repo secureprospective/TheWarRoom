@@ -2,6 +2,7 @@ export namespace engine {
 	
 	export class Layer4Output {
 	    FilmEffective: number;
+	    FilmRaw: number;
 	    RASEffective: number;
 	    BreakoutEffective: number;
 	    Combined: number;
@@ -13,6 +14,7 @@ export namespace engine {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.FilmEffective = source["FilmEffective"];
+	        this.FilmRaw = source["FilmRaw"];
 	        this.RASEffective = source["RASEffective"];
 	        this.BreakoutEffective = source["BreakoutEffective"];
 	        this.Combined = source["Combined"];
@@ -220,6 +222,84 @@ export namespace main {
 	        this.detail = source["detail"];
 	    }
 	}
+	export class RankRow {
+	    rank: number;
+	    mflID: string;
+	    name: string;
+	    position: string;
+	    franchiseID: string;
+	    salary: number;
+	    basePoints: number;
+	    agePull: number;
+	    l4Combined: number;
+	    capTier: string;
+	    adjustedScore: number;
+	    capEff: number;
+	    capEffOK: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new RankRow(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.rank = source["rank"];
+	        this.mflID = source["mflID"];
+	        this.name = source["name"];
+	        this.position = source["position"];
+	        this.franchiseID = source["franchiseID"];
+	        this.salary = source["salary"];
+	        this.basePoints = source["basePoints"];
+	        this.agePull = source["agePull"];
+	        this.l4Combined = source["l4Combined"];
+	        this.capTier = source["capTier"];
+	        this.adjustedScore = source["adjustedScore"];
+	        this.capEff = source["capEff"];
+	        this.capEffOK = source["capEffOK"];
+	    }
+	}
+	export class RankingsResult {
+	    ok: boolean;
+	    error: string;
+	    warning: string;
+	    label: string;
+	    season: number;
+	    configVersion: number;
+	    rows: RankRow[];
+	
+	    static createFrom(source: any = {}) {
+	        return new RankingsResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.error = source["error"];
+	        this.warning = source["warning"];
+	        this.label = source["label"];
+	        this.season = source["season"];
+	        this.configVersion = source["configVersion"];
+	        this.rows = this.convertValues(source["rows"], RankRow);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class RookiesResult {
 	    ok: boolean;
 	    error: string;
@@ -236,6 +316,42 @@ export namespace main {
 	        this.error = source["error"];
 	        this.l4Mode = source["l4Mode"];
 	        this.rows = this.convertValues(source["rows"], harness.RookieRow);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ScoreLeagueResult {
+	    ok: boolean;
+	    error: string;
+	    label: string;
+	    report: rankings.Report;
+	
+	    static createFrom(source: any = {}) {
+	        return new ScoreLeagueResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.error = source["error"];
+	        this.label = source["label"];
+	        this.report = this.convertValues(source["report"], rankings.Report);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -334,6 +450,73 @@ export namespace params {
 	        this.IsCalibrated = source["IsCalibrated"];
 	        this.Description = source["Description"];
 	    }
+	}
+
+}
+
+export namespace rankings {
+	
+	export class Exclusion {
+	    mflID: string;
+	    name: string;
+	    franchiseID: string;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Exclusion(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.mflID = source["mflID"];
+	        this.name = source["name"];
+	        this.franchiseID = source["franchiseID"];
+	        this.reason = source["reason"];
+	    }
+	}
+	export class Report {
+	    season: number;
+	    configVersion: number;
+	    scored: number;
+	    skippedExisting: boolean;
+	    existing: number;
+	    zeroBase: number;
+	    negativeBase: number;
+	    excluded: Exclusion[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Report(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.configVersion = source["configVersion"];
+	        this.scored = source["scored"];
+	        this.skippedExisting = source["skippedExisting"];
+	        this.existing = source["existing"];
+	        this.zeroBase = source["zeroBase"];
+	        this.negativeBase = source["negativeBase"];
+	        this.excluded = this.convertValues(source["excluded"], Exclusion);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 
 }

@@ -45,5 +45,19 @@ func TestLive_PlayersFetch(t *testing.T) {
 	if len(all) < 1000 {
 		t.Errorf("fetched only %d players; expected >1000 for the full database", len(all))
 	}
-	t.Logf("fetched %d player records", len(all))
+
+	// DETAILS=1 gate (M1): the MAJORITY of the database must carry a birthdate.
+	// Recon 2026-07-02 saw 2021 of 2630 (~77%) — commissioner-created players and
+	// deep-database rows legitimately lack it, so we assert >50%, not all. A drop
+	// to near-zero means the DETAILS param regressed and M1's age input is gone.
+	var withBirthdate int
+	for _, p := range all {
+		if p.Birthdate != "" {
+			withBirthdate++
+		}
+	}
+	if withBirthdate*2 < len(all) {
+		t.Errorf("only %d of %d records carry a birthdate; DETAILS=1 appears broken", withBirthdate, len(all))
+	}
+	t.Logf("fetched %d player records (%d with birthdate)", len(all), withBirthdate)
 }

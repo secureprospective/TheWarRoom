@@ -5,10 +5,22 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
+	"github.com/secureprospective/TheWarRoom/internal/mfl"
+	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/output"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
+	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
 // App is the Wails application root and the composition root for the backend.
@@ -22,8 +34,62 @@ type App struct {
 	// backend calls (B0 first-instance decision — see SYSTEM_MAP.md).
 	ctx        context.Context
 	pools      *db.Pools
-	params     *params.Store // B4 calibration store; backs the harness admin panel
-	startupErr error         // captured at startup; surfaced via Ping (Wails OnStartup cannot fail).
+	params     *params.Store   // B4 calibration store; backs the harness admin panel
+	rulebook   *rulebook.Store // B3b league config; active version stamps B6 (M1)
+	state      *state.Store    // B3c runtime rosters/contracts; the M1 roster source
+	output     *output.Store   // B6 per-season engine output; the M1 board reads it
+	mflClient  *mfl.Client     // shared transport; rate limit + host cache live here
+	season     int             // ingestion.SeasonYear parsed once at startup
+	startupErr error           // captured at startup; surfaced via Ping (Wails OnStartup cannot fail).
+
+	// players-DB directory, fetched at most once per process (MFL caps the
+	// endpoint at once/day): the state seed (fresh DB only) and every M1
+	// name/position/birthdate resolution share this one cached Lookup.
+	// Guarded by lookupMu — Wails runs IPC calls concurrently.
+	lookupMu  sync.Mutex
+	lookup    normalize.Lookup
+	hasLookup bool
+}
+
+// directory returns the cached players-DB Lookup, fetching and normalizing it on
+// first use. The mutex makes concurrent first calls collapse into one fetch.
+func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
+	a.lookupMu.Lock()
+	defer a.lookupMu.Unlock()
+	if a.hasLookup {
+		return a.lookup, nil
+	}
+	raws, err := players.Fetch(ctx, a.mflClient, ingestion.SeasonYear, ingestion.LeagueID)
+	if err != nil {
+		return normalize.Lookup{}, fmt.Errorf("app: fetch players db: %w", err)
+	}
+	lk, err := normalize.NewLookup(raws)
+	if err != nil {
+		return normalize.Lookup{}, fmt.Errorf("app: build players lookup: %w", err)
+	}
+	a.lookup, a.hasLookup = lk, true
+	return lk, nil
+}
+
+// rosterSeedSource adapts the Layer-1 rosters fetch + normalize join into the
+// state.Source seam. It is invoked by state.Initialize ONLY on a fresh DB — an
+// existing database loads as-is with no network (B3c seed-once law).
+type rosterSeedSource struct{ app *App }
+
+func (s rosterSeedSource) Rosters(ctx context.Context) ([]domain.Roster, error) {
+	lk, err := s.app.directory(ctx)
+	if err != nil {
+		return nil, err
+	}
+	raws, err := rosters.Fetch(ctx, s.app.mflClient, ingestion.SeasonYear, ingestion.LeagueID)
+	if err != nil {
+		return nil, fmt.Errorf("app: fetch rosters seed: %w", err)
+	}
+	seed, err := normalize.Rosters(raws, lk)
+	if err != nil {
+		return nil, fmt.Errorf("app: normalize roster seed: %w", err)
+	}
+	return seed, nil
 }
 
 // NewApp creates a new App. Resources are acquired in startup, not here, so the
@@ -69,6 +135,46 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 	a.params = pstore
+
+	// M1 store floor. The MFL client is shared so rate limiting and the
+	// discovered league host are process-wide. Season is parsed once — the
+	// canonical ingestion.SeasonYear is a string for URL building.
+	season, err := strconv.Atoi(ingestion.SeasonYear)
+	if err != nil {
+		a.startupErr = fmt.Errorf("startup: parse season %q: %w", ingestion.SeasonYear, err)
+		return
+	}
+	a.season = season
+	client, err := mfl.New("api", 2)
+	if err != nil {
+		a.startupErr = fmt.Errorf("startup: mfl client: %w", err)
+		return
+	}
+	a.mflClient = client
+
+	// Each store seeds from live MFL ONLY on a fresh DB and loads from SQLite
+	// after (their Initialize contracts) — so first launch needs the network,
+	// every later launch comes up offline.
+	rb := rulebook.New(pools)
+	if err := rb.Initialize(ctx, league.APISource{Client: client, Year: ingestion.SeasonYear, LeagueID: ingestion.LeagueID}); err != nil {
+		a.startupErr = fmt.Errorf("startup: initialize rulebook: %w", err)
+		return
+	}
+	a.rulebook = rb
+
+	st := state.New(pools, ingestion.LeagueID, season)
+	if err := st.Initialize(ctx, rosterSeedSource{app: a}); err != nil {
+		a.startupErr = fmt.Errorf("startup: initialize league state: %w", err)
+		return
+	}
+	a.state = st
+
+	out := output.New(pools)
+	if err := out.Initialize(ctx); err != nil {
+		a.startupErr = fmt.Errorf("startup: initialize output store: %w", err)
+		return
+	}
+	a.output = out
 }
 
 // shutdown is the Wails OnShutdown hook. It releases the SQLite pools.

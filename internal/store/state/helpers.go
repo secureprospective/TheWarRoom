@@ -9,10 +9,14 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
 
-// effectiveSalary is the dollar figure a player counts against the cap: the adjusted
+// EffectiveSalary is the dollar figure a player counts against the cap: the adjusted
 // salary once B7 has set one, otherwise the base annual salary. Pure derivation —
-// the cap USAGE, never stored as truth (AD-21).
-func effectiveSalary(p PlayerState) float64 {
+// the cap USAGE, never stored as truth (AD-21). Exported at M1 so the rankings
+// orchestrator feeds the engine (L5 cap scaling) and the cap-efficiency view the
+// SAME figure this store's CapUsed derivation uses — one definition, two consumers
+// (M17), or the board and the cap page would silently disagree once B7 adjusts a
+// salary.
+func EffectiveSalary(p PlayerState) float64 {
 	if p.AdjustedSalary > 0 {
 		return p.AdjustedSalary
 	}
@@ -72,7 +76,7 @@ func scanState(rows *sql.Rows) (map[string]*FranchiseState, map[string]string, e
 			fr[p.FranchiseID] = f
 		}
 		f.Players = append(f.Players, p)
-		f.CapUsed += effectiveSalary(p)
+		f.CapUsed += EffectiveSalary(p)
 		idx[p.MFLID] = p.FranchiseID
 	}
 	if err := rows.Err(); err != nil {

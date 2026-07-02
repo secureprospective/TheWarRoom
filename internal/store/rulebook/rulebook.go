@@ -309,6 +309,16 @@ func (s *Store) setActive(ctx context.Context, ver int) error {
 	return nil
 }
 
+// ActiveVersion returns the ACTIVE config version number, or 0 when none is set
+// yet (a fresh store before Initialize). It exists for the M1 orchestrator: B6
+// output rows are STAMPED with the scoring config they were scored under
+// (DECISION-010), the rulebook active version is that provenance, and the output
+// store never mints it — so the stamp must be readable here, at its source. A
+// caller must treat 0 as "no config loaded" and refuse to score, never stamp it.
+func (s *Store) ActiveVersion(ctx context.Context) (int, error) {
+	return s.activeVersion(ctx)
+}
+
 // activeVersion returns the active version number, or 0 when none is set yet.
 func (s *Store) activeVersion(ctx context.Context) (int, error) {
 	var ver int

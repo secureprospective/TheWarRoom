@@ -3,16 +3,18 @@ import { useHarnessStore } from './store/harness';
 import { RookieTable } from './components/RookieTable';
 import { ValidationBoard } from './components/ValidationBoard';
 import { AdminPanel } from './components/AdminPanel';
+import { RankingsBoard } from './components/RankingsBoard';
 
-type Tab = 'rookies' | 'validation';
+type Tab = 'rankings' | 'rookies' | 'validation';
 
-// App is the testing-harness shell: a tab between Module 1 (rookie rankings) and Module 3
-// (architectural validation), with the live admin panel as a persistent right sidebar.
-// Debuggability over polish — minimal chrome, every output on screen.
+// App shell: M1 (the real 32-team asset rankings, the first live module) plus the
+// testing-harness tabs (rookie sandbox, architectural validation), with the live
+// admin panel as a persistent right sidebar. Debuggability over polish — minimal
+// chrome, every output on screen.
 function App() {
   const loadAll = useHarnessStore((s) => s.loadAll);
   const loading = useHarnessStore((s) => s.loading);
-  const [tab, setTab] = useState<Tab>('rookies');
+  const [tab, setTab] = useState<Tab>('rankings');
 
   useEffect(() => {
     void loadAll();
@@ -30,8 +32,11 @@ function App() {
       <div className="flex">
         <main className="flex-1 p-6">
           <nav className="mb-4 flex gap-2">
+            <TabButton active={tab === 'rankings'} onClick={() => setTab('rankings')}>
+              M1: Asset Rankings
+            </TabButton>
             <TabButton active={tab === 'rookies'} onClick={() => setTab('rookies')}>
-              Module 1: Rookie Rankings
+              Sandbox: Rookie Rankings
             </TabButton>
             <TabButton active={tab === 'validation'} onClick={() => setTab('validation')}>
               Module 3: Architectural Tests
@@ -45,7 +50,7 @@ function App() {
             </button>
           </nav>
 
-          {tab === 'rookies' ? <RookieTable /> : <ValidationBoard />}
+          {tab === 'rankings' ? <RankingsBoard /> : tab === 'rookies' ? <RookieTable /> : <ValidationBoard />}
         </main>
 
         <aside className="w-80 border-l border-slate-700 p-4">

@@ -4,6 +4,8 @@ import {
   RunValidationSuite,
   GetParams,
   SetParam,
+  ScoreLeague,
+  GetRankings,
 } from '../../wailsjs/go/main/App';
 import { main } from '../../wailsjs/go/models';
 
@@ -13,16 +15,24 @@ interface HarnessState {
   rookies: main.RookiesResult | null;
   validation: main.ValidationResult | null;
   params: main.ParamsResult | null;
+  rankings: main.RankingsResult | null;
+  scoreReport: main.ScoreLeagueResult | null;
+  scoring: boolean;
   loading: boolean;
   error: string;
   loadAll: () => Promise<void>;
   setParam: (key: string, value: number) => Promise<void>;
+  loadRankings: () => Promise<void>;
+  scoreLeague: () => Promise<void>;
 }
 
 export const useHarnessStore = create<HarnessState>((set, get) => ({
   rookies: null,
   validation: null,
   params: null,
+  rankings: null,
+  scoreReport: null,
+  scoring: false,
   loading: false,
   error: '',
 
@@ -52,5 +62,34 @@ export const useHarnessStore = create<HarnessState>((set, get) => ({
       return;
     }
     await get().loadAll();
+  },
+
+  // loadRankings reads the persisted M1 board back from B6. Read-only — empty rows
+  // means ScoreLeague has not run for the active config yet.
+  loadRankings: async () => {
+    set({ error: '' });
+    try {
+      const rankings = await GetRankings();
+      set({ rankings, error: rankings.ok ? '' : rankings.error });
+    } catch (e) {
+      set({ error: String(e) });
+    }
+  },
+
+  // scoreLeague runs the M1 orchestrator (fetch the labeled YTD proxy, score all 32
+  // rosters, persist to B6 stamped with the active config), then re-reads the board.
+  // The report (exclusions with reasons, zero-base count, skip-if-present) is kept
+  // for display — an invisible exclusion is a silent lie.
+  scoreLeague: async () => {
+    set({ scoring: true, error: '' });
+    try {
+      const scoreReport = await ScoreLeague();
+      set({ scoreReport, scoring: false, error: scoreReport.ok ? '' : scoreReport.error });
+      if (scoreReport.ok) {
+        await get().loadRankings();
+      }
+    } catch (e) {
+      set({ scoring: false, error: String(e) });
+    }
   },
 }));

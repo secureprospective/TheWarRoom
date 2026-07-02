@@ -12,6 +12,7 @@ package normalize
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -24,11 +25,13 @@ import (
 // already mapped to the engine set, rookie flag already derived. The raw MFL codes
 // do not survive into here.
 type lookupEntry struct {
-	name        string
-	position    domain.Position
-	isAggregate bool // a team/positional aggregate ("Def", "TMWR", …) — never rostered
-	team        string
-	isRookie    bool
+	name         string
+	position     domain.Position
+	isAggregate  bool // a team/positional aggregate ("Def", "TMWR", …) — never rostered
+	team         string
+	isRookie     bool
+	birthdate    int64 // epoch seconds, valid only when hasBirthdate
+	hasBirthdate bool  // MFL DETAILS=1 birthdate present (commissioner-created players lack it)
 }
 
 // Lookup is the players database keyed by canonical player id (playerid form), the
@@ -74,15 +77,60 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 			pos = domain.PosFlag
 		}
 
-		byID[id.String()] = lookupEntry{
+		entry := lookupEntry{
 			name:        rp.Name,
 			position:    pos,
 			isAggregate: isAgg,
 			team:        rp.Team,
 			isRookie:    rp.Status == "R",
 		}
+		// Birthdate (DETAILS=1) is typed HERE — the Raw→domain boundary. The fetcher
+		// already validated a present value parses; absent stays absent (the M1
+		// consumer owns the missing-birthdate policy, this join just carries the fact).
+		if bd := strings.TrimSpace(rp.Birthdate); bd != "" {
+			v, perr := strconv.ParseInt(bd, 10, 64)
+			if perr != nil {
+				return Lookup{}, fmt.Errorf("normalize: players id %q birthdate %q: %w", rp.ID, rp.Birthdate, perr)
+			}
+			entry.birthdate, entry.hasBirthdate = v, true
+		}
+		byID[id.String()] = entry
 	}
 	return Lookup{byID: byID}, nil
+}
+
+// PlayerFacts is the per-player DISPLAY/derivation fact set the M1 orchestrator
+// reads for each rostered id: identity fields from the players DB plus the raw
+// birthdate for age derivation. It is deliberately NOT domain.PlayerRecord — no
+// roster/contract fields, because runtime contract state is B3c's job and must
+// never be duplicated out of a static players-feed join.
+type PlayerFacts struct {
+	Name         string
+	Position     domain.Position
+	IsRookie     bool
+	Birthdate    int64 // epoch seconds, valid only when HasBirthdate
+	HasBirthdate bool
+}
+
+// Facts resolves one canonical player id to its players-DB facts. ok is false when
+// the id is unknown OR resolves to a team aggregate — an aggregate is never a
+// scorable player, so a caller treats both identically ("not in the players DB").
+func (l Lookup) Facts(id string) (PlayerFacts, bool) {
+	pid, err := playerid.New(id)
+	if err != nil {
+		return PlayerFacts{}, false
+	}
+	e, ok := l.entry(pid)
+	if !ok || e.isAggregate {
+		return PlayerFacts{}, false
+	}
+	return PlayerFacts{
+		Name:         e.name,
+		Position:     e.position,
+		IsRookie:     e.isRookie,
+		Birthdate:    e.birthdate,
+		HasBirthdate: e.hasBirthdate,
+	}, true
 }
 
 // classifyPosition maps a raw MFL position code onto the engine set. Aggregate
