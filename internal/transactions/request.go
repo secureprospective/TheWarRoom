@@ -49,9 +49,17 @@ func (Trade) sealed()    {}
 // validate rejects a structurally broken trade BEFORE a transaction is opened: no legs,
 // a blank player/target, or the same player moved twice in one trade (ambiguous — the
 // last write would silently win).
+// maxTradeLegs caps a single trade's legs. Real trades are a handful of players; the
+// ceiling is a boundary guard so a malformed/hostile request can't allocate a giant
+// slice or run thousands of UPDATEs in one tx (GLM-B7a — unbounded req.Moves).
+const maxTradeLegs = 256
+
 func (t Trade) validate() error {
 	if len(t.Moves) == 0 {
 		return fmt.Errorf("transactions: trade has no moves")
+	}
+	if len(t.Moves) > maxTradeLegs {
+		return fmt.Errorf("transactions: trade has %d moves, exceeds max %d", len(t.Moves), maxTradeLegs)
 	}
 	seen := make(map[string]struct{}, len(t.Moves))
 	for i, m := range t.Moves {

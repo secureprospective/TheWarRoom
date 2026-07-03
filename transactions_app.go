@@ -98,6 +98,11 @@ func (a *App) GetFranchiseState(franchiseID string) FranchiseStateResult {
 	if a.state == nil {
 		return FranchiseStateResult{Detail: "state store not initialized"}
 	}
+	// If a prior transaction committed but its reload failed, in-memory reads are stale —
+	// surface that instead of confidently showing a pre-transaction roster (GLM-B7a).
+	if err := a.state.Err(); err != nil {
+		return FranchiseStateResult{FranchiseID: franchiseID, Detail: "state is stale after a failed reload: " + err.Error()}
+	}
 	fs, ok := a.state.Reader().FranchiseState(franchiseID)
 	if !ok {
 		return FranchiseStateResult{FranchiseID: franchiseID, Detail: "no such franchise (or it holds no players)"}

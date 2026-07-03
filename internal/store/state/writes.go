@@ -36,6 +36,12 @@ func (s *Store) WriteTx(ctx context.Context, fn func(TxWriter) error) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 
+	// A poisoned store has stale memory from a prior committed-but-not-reloaded tx;
+	// refuse to mutate on top of an untrustworthy in-memory view (fail loud).
+	if err := s.Err(); err != nil {
+		return fmt.Errorf("state: store poisoned — memory is stale from a prior failed reload; refusing to write: %w", err)
+	}
+
 	tx, err := s.pools.Write().BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("state: begin tx: %w", err)
@@ -48,7 +54,19 @@ func (s *Store) WriteTx(ctx context.Context, fn func(TxWriter) error) error {
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("state: commit: %w", err)
 	}
-	return s.load(ctx)
+
+	// The tx is COMMITTED — the DB is mutated. The in-memory view must now be reloaded
+	// to match, or every later read is stale. A reload failure here is NOT a rolled-back
+	// transaction: retry once for a transient read hiccup, and if it still fails, POISON
+	// the store so subsequent reads/writes fail loud instead of silently serving stale
+	// state (GLM-B7a MAJOR — the committed-but-not-reloaded drift window).
+	if err := s.reload(ctx); err != nil {
+		if err2 := s.reload(ctx); err2 != nil {
+			s.poison(err2)
+			return fmt.Errorf("state: transaction COMMITTED but in-memory reload failed — state is now STALE, store poisoned: %w", err2)
+		}
+	}
+	return nil
 }
 
 // The three single-op mutators remain on *Store for the direct/admin path and the
@@ -85,8 +103,15 @@ func (w *txWriter) MovePlayer(ctx context.Context, mflID, toFranchiseID string) 
 	if strings.TrimSpace(toFranchiseID) == "" {
 		return fmt.Errorf("state: MovePlayer requires a target franchise")
 	}
-	if !w.s.exists(mflID) {
+	cur, ok := w.s.currentFranchise(mflID)
+	if !ok {
 		return fmt.Errorf("state: MovePlayer %q: %w", mflID, errUnknownPlayer)
+	}
+	if cur == toFranchiseID {
+		// A move to the player's own franchise is a no-op that would still touch 1 row
+		// and report success — reject it (no-silent-no-op, GLM-B7a). Genuine A↔B swaps
+		// are unaffected: each player's target differs from its current franchise.
+		return fmt.Errorf("state: MovePlayer %q: already on franchise %q (no-op move rejected)", mflID, toFranchiseID)
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
 	if err := w.s.execPlayer(ctx, w.tx,
@@ -150,9 +175,20 @@ func (s *Store) exists(mflID string) bool {
 	return ok
 }
 
-// execPlayer runs a parameterized player-scoped UPDATE on the shared tx. setArgs fill
-// the SET-clause placeholders; the helper appends the fixed (league_id, season, mfl_id)
-// WHERE tail, so every mutation is scoped to exactly one player in this league+season.
+// currentFranchise returns the franchise a player is currently on. Caller holds wmu.
+func (s *Store) currentFranchise(mflID string) (string, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	fid, ok := s.byPlayer[mflID]
+	return fid, ok
+}
+
+// execPlayer runs a parameterized player-scoped UPDATE on the shared tx. CONTRACT: the
+// query's SET clause is filled by setArgs (SET values ONLY, in order), and the helper
+// appends the fixed (league_id, season, mfl_id) WHERE tail — so mflID is bound to the
+// WHERE, never a SET column, and every mutation is scoped to exactly one player in this
+// league+season. A caller that slips an mflID into setArgs (or a SET value into the mflID
+// arg) would compile and mis-scope the write; keep setArgs to SET values, nothing else.
 func (s *Store) execPlayer(ctx context.Context, tx *sql.Tx, query, mflID string, setArgs ...any) error {
 	args := make([]any, 0, len(setArgs)+3)
 	args = append(args, setArgs...)

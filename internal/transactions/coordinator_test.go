@@ -3,6 +3,7 @@ package transactions
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -74,6 +75,15 @@ func (w *fakeWriter) Player(string) (state.PlayerState, bool)   { return state.P
 func (w *fakeWriter) Franchises() []string                      { return nil }
 
 func newFake() *fakeWriter { return &fakeWriter{tw: &fakeTxWriter{}} }
+
+// makeMoves builds n distinct trade legs (for the leg-count boundary test).
+func makeMoves(n int) []PlayerMove {
+	m := make([]PlayerMove, n)
+	for i := range m {
+		m[i] = PlayerMove{MFLID: fmt.Sprintf("p%d", i), ToFranchiseID: "0002"}
+	}
+	return m
+}
 
 func newCoord(t *testing.T, w state.Writer) *Coordinator {
 	t.Helper()
@@ -166,6 +176,7 @@ func TestExecute_InvalidTradeRejectedBeforeTx(t *testing.T) {
 			{MFLID: "0001", ToFranchiseID: "0002"},
 			{MFLID: "0001", ToFranchiseID: "0003"},
 		}}},
+		{"too many legs", Trade{Moves: makeMoves(maxTradeLegs + 1)}},
 		{"empty status player", RosterStatusChange{Status: domain.RosterActive}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

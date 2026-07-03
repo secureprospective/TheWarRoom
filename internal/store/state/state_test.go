@@ -2,7 +2,9 @@ package state
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -333,6 +335,78 @@ func TestWriteTxRollsBackOnStepError(t *testing.T) {
 	}
 	if used, _ := s.CapUsed("0001"); used != 15 { // untouched: $10 + $5
 		t.Fatalf("cap changed after a rolled-back trade: 0001=%v (want 15)", used)
+	}
+}
+
+// TestWriteTxPoisonsOnPostCommitReloadFailure is the GLM-B7a MAJOR gate: when a tx
+// COMMITS but the follow-up reload fails, the DB is mutated yet memory is stale. The
+// store must (a) surface a distinct error, (b) NOT silently serve the stale view, and
+// (c) refuse further writes. We inject the reload failure via the reload seam.
+func TestWriteTxPoisonsOnPostCommitReloadFailure(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
+	ctx := context.Background()
+
+	// Force both the reload and its one retry to fail AFTER the commit lands.
+	s.reload = func(context.Context) error { return fmt.Errorf("injected reload failure") }
+
+	err := s.MovePlayer(ctx, "0001", "0002")
+	if err == nil {
+		t.Fatal("MovePlayer returned nil despite a failed post-commit reload")
+	}
+	if !strings.Contains(err.Error(), "COMMITTED") {
+		t.Fatalf("error must flag the committed-but-stale condition, got: %v", err)
+	}
+
+	// (a) the DB DID commit — read the row directly, bypassing stale memory.
+	var franchise string
+	if qerr := s.pools.Read().QueryRowContext(ctx,
+		`SELECT franchise_id FROM rosters WHERE mfl_id = ?`, "0001").Scan(&franchise); qerr != nil {
+		t.Fatalf("direct DB read: %v", qerr)
+	}
+	if franchise != "0002" {
+		t.Fatalf("DB franchise = %q, want 0002 (the tx should have committed)", franchise)
+	}
+	// (b) the store is poisoned and (c) refuses further writes rather than serving stale.
+	if s.Err() == nil {
+		t.Fatal("store not poisoned after a committed-but-stale reload")
+	}
+	if werr := s.SetRosterStatus(ctx, "0003", domain.RosterActive); werr == nil {
+		t.Fatal("a poisoned store accepted a further write")
+	}
+}
+
+// TestWriteTxRecoversOnReloadRetry proves the transient case: a reload that fails once
+// then succeeds is NOT poisoned and the write is visible.
+func TestWriteTxRecoversOnReloadRetry(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
+	ctx := context.Background()
+
+	calls := 0
+	realLoad := s.load
+	s.reload = func(c context.Context) error {
+		calls++
+		if calls == 1 {
+			return fmt.Errorf("transient reload hiccup")
+		}
+		return realLoad(c)
+	}
+	if err := s.MovePlayer(ctx, "0001", "0002"); err != nil {
+		t.Fatalf("MovePlayer should recover on retry: %v", err)
+	}
+	if s.Err() != nil {
+		t.Fatalf("store poisoned despite a successful retry: %v", s.Err())
+	}
+	if p, _ := s.Player("0001"); p.FranchiseID != "0002" {
+		t.Fatalf("memory not refreshed after retry: 0001@%s", p.FranchiseID)
+	}
+}
+
+// TestMovePlayerRejectsSelfMove is the GLM-B7a no-silent-no-op gate: moving a player to
+// the franchise it already holds must fail, not report a phantom 1-player move.
+func TestMovePlayerRejectsSelfMove(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
+	if err := s.MovePlayer(context.Background(), "0001", "0001"); err == nil {
+		t.Fatal("MovePlayer accepted a no-op move to the player's own franchise")
 	}
 }
 
