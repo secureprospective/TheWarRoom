@@ -21,6 +21,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
+	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
 
 // App is the Wails application root and the composition root for the backend.
@@ -32,15 +33,17 @@ type App struct {
 	//nolint:containedctx // Wails binds IPC methods with no per-call context; the
 	// app-lifetime context captured at OnStartup is the sanctioned source for
 	// backend calls (B0 first-instance decision — see SYSTEM_MAP.md).
-	ctx        context.Context
-	pools      *db.Pools
-	params     *params.Store   // B4 calibration store; backs the harness admin panel
-	rulebook   *rulebook.Store // B3b league config; active version stamps B6 (M1)
-	state      *state.Store    // B3c runtime rosters/contracts; the M1 roster source
-	output     *output.Store   // B6 per-season engine output; the M1 board reads it
-	mflClient  *mfl.Client     // shared transport; rate limit + host cache live here
-	season     int             // ingestion.SeasonYear parsed once at startup
-	startupErr error           // captured at startup; surfaced via Ping (Wails OnStartup cannot fail).
+	ctx      context.Context
+	pools    *db.Pools
+	params   *params.Store   // B4 calibration store; backs the harness admin panel
+	rulebook *rulebook.Store // B3b league config; active version stamps B6 (M1)
+	state    *state.Store    // B3c runtime rosters/contracts; the M1 roster source
+	output   *output.Store   // B6 per-season engine output; the M1 board reads it
+	//nolint:lll // field comment
+	coordinator *transactions.Coordinator // B7a sole runtime mutator; holds the ONLY state.Writer
+	mflClient   *mfl.Client               // shared transport; rate limit + host cache live here
+	season      int                       // ingestion.SeasonYear parsed once at startup
+	startupErr  error                     // captured at startup; surfaced via Ping (Wails OnStartup cannot fail).
 
 	// players-DB directory, fetched at most once per process (MFL caps the
 	// endpoint at once/day): the state seed (fresh DB only) and every M1
@@ -126,19 +129,9 @@ func (a *App) startup(ctx context.Context) {
 	}
 	a.pools = pools
 
-	// Construct and seed the B4 params store: the harness reads cap-tier % and decay
-	// rate from it and the admin panel tunes them live. Initialize seeds the shipped
-	// defaults once on a fresh DB and loads existing calibration on restart.
-	pstore := params.New(pools)
-	if err := pstore.Initialize(ctx); err != nil {
-		a.startupErr = fmt.Errorf("startup: initialize params store: %w", err)
-		return
-	}
-	a.params = pstore
-
-	// M1 store floor. The MFL client is shared so rate limiting and the
-	// discovered league host are process-wide. Season is parsed once — the
-	// canonical ingestion.SeasonYear is a string for URL building.
+	// The MFL client is shared so rate limiting and the discovered league host are
+	// process-wide. Season is parsed once — canonical ingestion.SeasonYear is a string
+	// for URL building.
 	season, err := strconv.Atoi(ingestion.SeasonYear)
 	if err != nil {
 		a.startupErr = fmt.Errorf("startup: parse season %q: %w", ingestion.SeasonYear, err)
@@ -152,29 +145,54 @@ func (a *App) startup(ctx context.Context) {
 	}
 	a.mflClient = client
 
-	// Each store seeds from live MFL ONLY on a fresh DB and loads from SQLite
-	// after (their Initialize contracts) — so first launch needs the network,
-	// every later launch comes up offline.
-	rb := rulebook.New(pools)
-	if err := rb.Initialize(ctx, league.APISource{Client: client, Year: ingestion.SeasonYear, LeagueID: ingestion.LeagueID}); err != nil {
-		a.startupErr = fmt.Errorf("startup: initialize rulebook: %w", err)
+	if err := a.initStoreFloor(ctx); err != nil {
+		a.startupErr = err
 		return
+	}
+}
+
+// initStoreFloor constructs and initializes the full store floor plus the B7a
+// transaction coordinator. Each store seeds from live MFL ONLY on a fresh DB and loads
+// from SQLite after (their Initialize contracts) — so first launch needs the network,
+// every later launch comes up offline. Split out of startup to keep that hook within
+// the function-length budget and to give the data layer one wiring site.
+func (a *App) initStoreFloor(ctx context.Context) error {
+	// B4 params: the harness reads cap-tier % and decay rate from it and the admin
+	// panel tunes them live. Initialize seeds shipped defaults once, loads calibration
+	// on restart.
+	pstore := params.New(a.pools)
+	if err := pstore.Initialize(ctx); err != nil {
+		return fmt.Errorf("startup: initialize params store: %w", err)
+	}
+	a.params = pstore
+
+	rb := rulebook.New(a.pools)
+	if err := rb.Initialize(ctx, league.APISource{Client: a.mflClient, Year: ingestion.SeasonYear, LeagueID: ingestion.LeagueID}); err != nil {
+		return fmt.Errorf("startup: initialize rulebook: %w", err)
 	}
 	a.rulebook = rb
 
-	st := state.New(pools, ingestion.LeagueID, season)
+	st := state.New(a.pools, ingestion.LeagueID, a.season)
 	if err := st.Initialize(ctx, rosterSeedSource{app: a}); err != nil {
-		a.startupErr = fmt.Errorf("startup: initialize league state: %w", err)
-		return
+		return fmt.Errorf("startup: initialize league state: %w", err)
 	}
 	a.state = st
 
-	out := output.New(pools)
+	// B7a: the transaction Coordinator is the SOLE holder of the state Writer in the
+	// whole process (AD-02). Wired here, once, right after the state store comes up —
+	// nothing else calls st.Writer().
+	coord, err := transactions.New(st.Writer())
+	if err != nil {
+		return fmt.Errorf("startup: initialize transaction coordinator: %w", err)
+	}
+	a.coordinator = coord
+
+	out := output.New(a.pools)
 	if err := out.Initialize(ctx); err != nil {
-		a.startupErr = fmt.Errorf("startup: initialize output store: %w", err)
-		return
+		return fmt.Errorf("startup: initialize output store: %w", err)
 	}
 	a.output = out
+	return nil
 }
 
 // shutdown is the Wails OnShutdown hook. It releases the SQLite pools.

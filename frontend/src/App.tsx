@@ -4,8 +4,9 @@ import { RookieTable } from './components/RookieTable';
 import { ValidationBoard } from './components/ValidationBoard';
 import { AdminPanel } from './components/AdminPanel';
 import { RankingsBoard } from './components/RankingsBoard';
+import { TransactionsPanel } from './components/TransactionsPanel';
 
-type Tab = 'rankings' | 'rookies' | 'validation';
+type Tab = 'rankings' | 'rookies' | 'validation' | 'transactions';
 
 // App shell: M1 (the real 32-team asset rankings, the first live module) plus the
 // testing-harness tabs (rookie sandbox, architectural validation), with the live
@@ -41,6 +42,9 @@ function App() {
             <TabButton active={tab === 'validation'} onClick={() => setTab('validation')}>
               Module 3: Architectural Tests
             </TabButton>
+            <TabButton active={tab === 'transactions'} onClick={() => setTab('transactions')}>
+              B7a: Transactions (dev)
+            </TabButton>
             <button
               type="button"
               onClick={() => void loadAll()}
@@ -50,7 +54,15 @@ function App() {
             </button>
           </nav>
 
-          {tab === 'rankings' ? <RankingsBoard /> : tab === 'rookies' ? <RookieTable /> : <ValidationBoard />}
+          {tab === 'rankings' ? (
+            <RankingsBoard />
+          ) : tab === 'rookies' ? (
+            <RookieTable />
+          ) : tab === 'validation' ? (
+            <ValidationBoard />
+          ) : (
+            <TransactionsPanel />
+          )}
         </main>
 
         <aside className="w-80 border-l border-slate-700 p-4">

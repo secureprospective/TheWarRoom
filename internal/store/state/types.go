@@ -61,11 +61,26 @@ type Reader interface {
 
 // Writer is the MUTATION surface. It is injected via dependency injection to
 // B7a ONLY (the transaction coordinator), which is the SOLE runtime mutator of
-// league state (AD-02). It embeds Reader because B7 reads current state before
-// it writes. B3c DEFINES this interface and the atomic write path; it does NOT wire
-// B7 (that is B7a's session).
+// league state (AD-02). It embeds Reader because B7 reads current state before it
+// writes. Every mutation goes through WriteTx: the Coordinator hands a callback that
+// performs one OR MANY per-player ops on the supplied TxWriter, and the whole set
+// commits (and reloads memory) atomically or rolls back as a unit. There is no
+// standalone single-op mutator on this interface by design — a mutation IS a
+// transaction (a single-step change is just a one-op transaction). B3c DEFINES this
+// interface and the atomic write path; it does NOT wire B7 (that is B7a's session).
 type Writer interface {
 	Reader
+	WriteTx(ctx context.Context, fn func(TxWriter) error) error
+}
+
+// TxWriter is the mutation surface INSIDE one spanning transaction. It exposes the
+// same per-player ops as Writer, but each runs against a single shared SQLite tx and
+// does NOT commit or reload memory — the enclosing WriteTx does that once, at the end.
+// The transaction Coordinator (B7a) sequences a multi-step transaction (e.g. a trade =
+// N MovePlayer + contract updates) through one TxWriter so the whole set is atomic:
+// any step's error rolls the ENTIRE transaction back (AD-02 single-writer law, now
+// single-transaction too). It carries no context field — each op takes ctx explicitly.
+type TxWriter interface {
 	MovePlayer(ctx context.Context, mflID, toFranchiseID string) error
 	SetRosterStatus(ctx context.Context, mflID string, status domain.RosterStatus) error
 	ApplyContract(ctx context.Context, mflID string, c ContractChange) error

@@ -280,6 +280,71 @@ func TestLoadFailsLoudOnOrphanRoster(t *testing.T) {
 	}
 }
 
+// TestWriteTxTradeCommitsAtomically runs a multi-step trade in one WriteTx: swap the
+// $10 player (0001) and the $7 player (0003) between the two franchises. Both moves
+// must land together and the derived cap must reflect the swap on both sides.
+func TestWriteTxTradeCommitsAtomically(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
+	ctx := context.Background()
+
+	err := s.WriteTx(ctx, func(w TxWriter) error {
+		if err := w.MovePlayer(ctx, "0001", "0002"); err != nil {
+			return err
+		}
+		return w.MovePlayer(ctx, "0003", "0001")
+	})
+	if err != nil {
+		t.Fatalf("WriteTx trade: %v", err)
+	}
+
+	p1, _ := s.Player("0001")
+	p3, _ := s.Player("0003")
+	if p1.FranchiseID != "0002" || p3.FranchiseID != "0001" {
+		t.Fatalf("trade did not swap: 0001@%s 0003@%s", p1.FranchiseID, p3.FranchiseID)
+	}
+	from, _ := s.CapUsed("0001") // lost $10, gained $7, kept the $5 taxi
+	to, _ := s.CapUsed("0002")   // lost $7, gained $10
+	if from != 12 || to != 10 {
+		t.Fatalf("cap after trade: 0001=%v (want 12) 0002=%v (want 10)", from, to)
+	}
+}
+
+// TestWriteTxRollsBackOnStepError is the atomicity proof: a WriteTx whose FIRST step
+// succeeds but whose SECOND step fails must commit NOTHING. After the error, the first
+// move must be invisible — no half-applied trade. This is the whole point of the
+// spanning-tx surface over chaining self-contained single-op writes.
+func TestWriteTxRollsBackOnStepError(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
+	ctx := context.Background()
+
+	err := s.WriteTx(ctx, func(w TxWriter) error {
+		if err := w.MovePlayer(ctx, "0001", "0002"); err != nil { // valid, executes in the tx
+			return err
+		}
+		return w.MovePlayer(ctx, "9999", "0001") // unknown player → fails the transaction
+	})
+	if err == nil {
+		t.Fatal("WriteTx succeeded despite an unknown-player step")
+	}
+
+	p1, _ := s.Player("0001")
+	if p1.FranchiseID != "0001" {
+		t.Fatalf("first move was NOT rolled back: 0001@%s (want 0001)", p1.FranchiseID)
+	}
+	if used, _ := s.CapUsed("0001"); used != 15 { // untouched: $10 + $5
+		t.Fatalf("cap changed after a rolled-back trade: 0001=%v (want 15)", used)
+	}
+}
+
+// TestWriteTxNilFuncFails guards the entry point: a nil transaction function is a
+// programmer error, surfaced immediately, not a silent no-op commit.
+func TestWriteTxNilFuncFails(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
+	if err := s.WriteTx(context.Background(), nil); err == nil {
+		t.Fatal("WriteTx accepted a nil transaction function")
+	}
+}
+
 func TestReadsDoNotAlias(t *testing.T) {
 	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
 	players, _ := s.Roster("0001")
