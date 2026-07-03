@@ -49,17 +49,45 @@ type Store struct {
 	mu         sync.RWMutex
 	franchises map[string]*FranchiseState // keyed franchise id; values owned by store
 	byPlayer   map[string]string          // mflID -> franchiseID index
+	poisoned   error                      // sticky: set if a post-commit reload fails (memory is stale)
+
+	// reload refreshes in-memory state from the DB after a committed transaction. It
+	// is a field (defaulting to load) ONLY so a test can inject a post-commit reload
+	// failure — the GLM-B7a MAJOR: a committed tx whose reload fails leaves memory
+	// stale, and serving that silently would corrupt a cap engine.
+	reload func(ctx context.Context) error
 }
 
 // New constructs an unseeded store for one league + season over the given pools.
 // Call Initialize before any read.
 func New(pools *db.Pools, leagueID string, season int) *Store {
-	return &Store{
+	s := &Store{
 		pools:      pools,
 		leagueID:   leagueID,
 		season:     season,
 		franchises: map[string]*FranchiseState{},
 		byPlayer:   map[string]string{},
+	}
+	s.reload = s.load
+	return s
+}
+
+// Err returns the store's poison error, if any. A non-nil result means a transaction
+// committed to the DB but the follow-up in-memory reload failed — so in-memory reads are
+// STALE and must not be trusted. Read consumers on the mutation path check this before
+// serving state. Cleared only by a fresh, successful Initialize.
+func (s *Store) Err() error {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.poisoned
+}
+
+// poison records the sticky stale-memory condition (first cause wins).
+func (s *Store) poison(err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.poisoned == nil {
+		s.poisoned = err
 	}
 }
 
