@@ -8,7 +8,7 @@ import { main } from '../../wailsjs/go/models';
 // B7b. Every mutation goes through one IPC call (ExecuteTransaction), which the backend
 // runs as one atomic transaction; a failed transaction changes nothing.
 
-type Kind = 'TRADE' | 'ROSTER_STATUS' | 'WAIVER';
+type Kind = 'TRADE' | 'ROSTER_STATUS' | 'WAIVER' | 'RESTRUCTURE';
 type Leg = { mflID: string; toFranchiseID: string };
 
 export function TransactionsPanel() {
@@ -17,6 +17,8 @@ export function TransactionsPanel() {
   const [statusMflID, setStatusMflID] = useState('');
   const [status, setStatus] = useState('ROSTER');
   const [waiverMflID, setWaiverMflID] = useState('');
+  const [restructureMflID, setRestructureMflID] = useState('');
+  const [moveMillions, setMoveMillions] = useState('');
   const [result, setResult] = useState<main.TransactionResult | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -29,8 +31,16 @@ export function TransactionsPanel() {
       const req = main.TransactionRequest.createFrom({
         kind,
         moves: kind === 'TRADE' ? legs : [],
-        mflID: kind === 'ROSTER_STATUS' ? statusMflID : kind === 'WAIVER' ? waiverMflID : '',
+        mflID:
+          kind === 'ROSTER_STATUS'
+            ? statusMflID
+            : kind === 'WAIVER'
+              ? waiverMflID
+              : kind === 'RESTRUCTURE'
+                ? restructureMflID
+                : '',
         status: kind === 'ROSTER_STATUS' ? status : '',
+        moveMillions: kind === 'RESTRUCTURE' ? moveMillions : '',
       });
       setResult(await ExecuteTransaction(req));
       if (franchise) setFranchise(await GetFranchiseState(franchise.franchiseID)); // auto-confirm
@@ -49,7 +59,7 @@ export function TransactionsPanel() {
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Execute Transaction</h2>
         <div className="flex gap-2">
-          {(['TRADE', 'ROSTER_STATUS', 'WAIVER'] as Kind[]).map((k) => (
+          {(['TRADE', 'ROSTER_STATUS', 'WAIVER', 'RESTRUCTURE'] as Kind[]).map((k) => (
             <button
               key={k}
               type="button"
@@ -58,7 +68,13 @@ export function TransactionsPanel() {
                 kind === k ? 'bg-emerald-700 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >
-              {k === 'TRADE' ? 'Trade' : k === 'ROSTER_STATUS' ? 'Roster status' : 'Waiver (cut)'}
+              {k === 'TRADE'
+                ? 'Trade'
+                : k === 'ROSTER_STATUS'
+                  ? 'Roster status'
+                  : k === 'WAIVER'
+                    ? 'Waiver (cut)'
+                    : 'Restructure'}
             </button>
           ))}
         </div>
@@ -119,7 +135,7 @@ export function TransactionsPanel() {
               <option value="TAXI_SQUAD">TAXI_SQUAD</option>
             </select>
           </div>
-        ) : (
+        ) : kind === 'WAIVER' ? (
           <div className="space-y-1">
             <input
               className="w-32 rounded bg-slate-800 px-2 py-1 text-sm"
@@ -130,6 +146,29 @@ export function TransactionsPanel() {
             <p className="text-xs text-slate-400">
               Cut releases the player and charges §8 dead cap (35% × salary × remaining
               years, 50% if restructured) against the current season.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <div className="flex gap-2">
+              <input
+                className="w-32 rounded bg-slate-800 px-2 py-1 text-sm"
+                placeholder="player mflID"
+                value={restructureMflID}
+                onChange={(e) => setRestructureMflID(e.target.value)}
+              />
+              <input
+                className="w-32 rounded bg-slate-800 px-2 py-1 text-sm"
+                placeholder="move ($M) e.g. 3"
+                value={moveMillions}
+                onChange={(e) => setMoveMillions(e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-slate-400">
+              §11 restructure: lowers the player's cap-counting salary by the move (owner's
+              choice, bounded by the tier max — ≥$3M→$1M, ≥$6M→$2M, ≥$12M→$3M) and flags the
+              contract restructured (a later cut then charges 50% dead cap). One per team per
+              year, one per contract.
             </p>
           </div>
         )}

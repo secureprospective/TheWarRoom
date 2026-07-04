@@ -100,6 +100,17 @@ type TxWriter interface {
 	// Season is the absolute league year this store operates on — the handler derives
 	// "remaining years" (expiration_year − season) for the §8 charge from it.
 	Season() int
+
+	// OpCount reads how many times a franchise has run a given op_kind THIS season — the
+	// durable per-season limit counter (§11 "one restructure per team per year", and the
+	// §9/§10/§12 op limits to come). It reflects COMMITTED state, not this tx's own
+	// uncommitted IncOpCount; a single read-check-then-bump op is consistent because the
+	// single-writer law serializes transactions. Zero for an unseen (franchise, op) key.
+	OpCount(ctx context.Context, franchiseID, opKind string) (int, error)
+	// IncOpCount increments that per-season counter by one inside the shared tx (an upsert
+	// on (league, franchise, season, op_kind)). A handler that enforces a per-season limit
+	// pairs it with OpCount: read, check the limit, mutate, bump — all atomic in WriteTx.
+	IncOpCount(ctx context.Context, franchiseID, opKind string) error
 }
 
 // DeadCapEntry is one append-only dead-cap charge against a franchise's cap for an

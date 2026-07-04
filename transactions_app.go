@@ -17,14 +17,17 @@ type MoveDTO struct {
 
 // TransactionRequest is the typed IPC payload the dev transaction form sends. Kind
 // selects which fields are read: TRADE reads Moves; ROSTER_STATUS reads MFLID + Status;
-// WAIVER reads MFLID (the §8 cut — every money figure is resolved server-side).
+// WAIVER reads MFLID (the §8 cut); RESTRUCTURE reads MFLID + MoveMillions (the §11 move,
+// in millions of dollars — parsed to exact cents server-side, never as a JS number). Every
+// money figure and limit is resolved server-side from authoritative state.
 // It stays fully typed (no any/interface{}) so the ifaceguard boundary holds; the App
 // method translates it into the sealed transactions.Request the Coordinator executes.
 type TransactionRequest struct {
-	Kind   string    `json:"kind"`
-	Moves  []MoveDTO `json:"moves"`
-	MFLID  string    `json:"mflID"`
-	Status string    `json:"status"`
+	Kind         string    `json:"kind"`
+	Moves        []MoveDTO `json:"moves"`
+	MFLID        string    `json:"mflID"`
+	Status       string    `json:"status"`
+	MoveMillions string    `json:"moveMillions"`
 }
 
 // TransactionResult is the typed IPC outcome: OK plus the committed Receipt fields, or
@@ -139,6 +142,13 @@ func buildRequest(req TransactionRequest) (transactions.Request, error) {
 		}, nil
 	case string(transactions.KindWaiver):
 		return transactions.Waiver{MFLID: req.MFLID}, nil
+	case string(transactions.KindRestructure):
+		// Millions string → exact cents at the boundary (no float money math frontend-side).
+		move, err := domain.ParseMoneyMillions(req.MoveMillions)
+		if err != nil {
+			return nil, fmt.Errorf("restructure move: %w", err)
+		}
+		return transactions.Restructure{MFLID: req.MFLID, Move: move}, nil
 	default:
 		return nil, fmt.Errorf("unknown transaction kind %q", req.Kind)
 	}

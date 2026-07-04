@@ -8,6 +8,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 	"github.com/secureprospective/TheWarRoom/internal/transactions/acquisitions"
+	"github.com/secureprospective/TheWarRoom/internal/transactions/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/transactions/deadcap"
 )
 
@@ -18,6 +19,7 @@ const (
 	KindTrade        Kind = "TRADE"
 	KindRosterStatus Kind = "ROSTER_STATUS"
 	KindWaiver       Kind = "WAIVER"
+	KindRestructure  Kind = "RESTRUCTURE"
 )
 
 // Request is a transaction the Coordinator can execute. The concrete types live in THIS
@@ -139,6 +141,38 @@ func (wv Waiver) validate() error {
 func (wv Waiver) apply(ctx context.Context, w state.TxWriter) (int, error) {
 	if _, err := deadcap.Waive(ctx, w, wv.MFLID); err != nil {
 		return 0, fmt.Errorf("waiver: %w", err)
+	}
+	return 1, nil
+}
+
+// Restructure lowers a player's cap-counting salary by the owner-chosen Move (§11),
+// bounded by the tier max ($1M/$2M/$3M by contract-year salary), and flags the contract
+// restructured (a later §8 cut then charges 50%). The tier, limits, and every money figure
+// are resolved from authoritative state inside apply — the request carries only the intent.
+type Restructure struct {
+	MFLID string
+	Move  domain.Money
+}
+
+func (Restructure) Kind() Kind { return KindRestructure }
+func (Restructure) sealed()    {}
+
+// validate rejects an empty player id or a non-positive move here; the tier max, the
+// eligibility floor, and the per-season/per-contract limits are enforced against real state
+// inside apply, never trusted from the request.
+func (r Restructure) validate() error {
+	if strings.TrimSpace(r.MFLID) == "" {
+		return fmt.Errorf("transactions: restructure has an empty player id")
+	}
+	if r.Move <= 0 {
+		return fmt.Errorf("transactions: restructure move must be positive")
+	}
+	return nil
+}
+
+func (r Restructure) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if err := contracts.Restructure(ctx, w, r.MFLID, r.Move); err != nil {
+		return 0, fmt.Errorf("restructure: %w", err)
 	}
 	return 1, nil
 }

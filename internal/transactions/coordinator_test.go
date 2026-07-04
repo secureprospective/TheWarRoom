@@ -23,11 +23,12 @@ type recordedMove struct {
 // fakeTxWriter records every op and can be told to fail on the Nth call (1-indexed),
 // so a test can plant a mid-transaction failure.
 type fakeTxWriter struct {
-	calls   []recordedMove
-	failOn  int // 0 = never
-	failErr error
-	player  state.PlayerState // the one player Player() resolves (for waiver tests)
-	season  int               // the league year Season() reports
+	calls    []recordedMove
+	failOn   int // 0 = never
+	failErr  error
+	player   state.PlayerState // the one player Player() resolves (for waiver tests)
+	season   int               // the league year Season() reports
+	opCounts map[string]int    // per-(franchise/op_kind) counters for OpCount/IncOpCount
 }
 
 func (f *fakeTxWriter) maybeFail() error {
@@ -72,6 +73,19 @@ func (f *fakeTxWriter) Player(mflID string) (state.PlayerState, bool) {
 }
 
 func (f *fakeTxWriter) Season() int { return f.season }
+
+func (f *fakeTxWriter) OpCount(_ context.Context, franchiseID, opKind string) (int, error) {
+	return f.opCounts[franchiseID+"/"+opKind], nil
+}
+
+func (f *fakeTxWriter) IncOpCount(_ context.Context, franchiseID, opKind string) error {
+	f.calls = append(f.calls, recordedMove{op: "incop", mflID: opKind, target: franchiseID})
+	if f.opCounts == nil {
+		f.opCounts = map[string]int{}
+	}
+	f.opCounts[franchiseID+"/"+opKind]++
+	return f.maybeFail()
+}
 
 // fakeWriter is a state.Writer whose WriteTx drives the fakeTxWriter. It records whether
 // WriteTx ran (to prove validation short-circuits before a transaction is opened) and
