@@ -62,6 +62,20 @@ and triage EVERY number vs source before coding. Suggested order (dependency wei
 - `internal/rankings/` (the cross-store read pattern the Tag aggregation should mirror)
 - Build_Tracker row 27
 
+== TAG §9 DESIGN — LOCKED 2026-07-04 (Christopher: "simple rule, puts the salary in a mathematica box, lightest weight") ==
+The tag is: compute ONE number, write it to the salary box, flag is_tagged. Lightest path:
+1. **Price computed AUTHORITATIVELY in the Coordinator** (not caller-supplied): inject a
+   `Directory` port (normalize.Lookup, the SAME seam M1 uses) into the Coordinator. A pure
+   `tagPrice(reader, dir, pos)` sweeps `reader.Franchises()`→`reader.Roster()`, filters to the
+   position via `dir.Facts(mflID).Position`, takes the top-5 salaries, averages. Request stays
+   sealed `Tag{MFLID}` — NO money crosses the IPC boundary, so a wrong price is unrepresentable.
+2. **Prior-year salary = the player's CURRENT `Salary`** (tag is at the season boundary, so
+   current annual_salary IS last year's). Floor = `max(tagPrice, 1.20 × ps.Salary)`. No history table.
+3. **Consecutive-year + 2nd-tag-120% DEFERRED** — the ONLY parts needing cross-season per-player
+   history (same bucket as buyout's season-phase). v1 handler = read player → op-count check
+   (op_kind "TAG", one per team per season via transaction_counts) → `ApplyContract(AnnualSalary=floorPrice, IsTagged=true)`
+   → IncOpCount. A near-clone of Restructure. No new table, no new store method, state stays position-blind.
+
 == GATE-CHECK BEFORE CODE (Tag) ==
 - Confirm the top-5 aggregation is over CURRENT rostered salaries at the position (adjusted
   vs base — likely base Contract-Year Salary, mirror §11's base-tier choice; confirm w/

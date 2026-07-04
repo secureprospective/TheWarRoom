@@ -25,6 +25,10 @@ import (
 // per year" limit (a row in transaction_counts).
 const restructureOpKind = "RESTRUCTURE"
 
+// tagOpKind is the per-season op-counter key for §9's "one tag per team per year" limit
+// (its own row in transaction_counts, independent of restructure).
+const tagOpKind = "TAG"
+
 // million is $1,000,000 in exact cents ($1M = 1e6 dollars × 100 cents = 1e8 cents) — the
 // unit of the §11 restructure tier table.
 const million = domain.Money(100_000_000)
@@ -120,6 +124,57 @@ func Restructure(ctx context.Context, w state.TxWriter, mflID string, move domai
 	}
 	if err := w.IncOpCount(ctx, ps.FranchiseID, restructureOpKind); err != nil {
 		return fmt.Errorf("contracts: restructure %q: bump per-season counter: %w", mflID, err)
+	}
+	return nil
+}
+
+// Tag applies a §9 franchise tag against the shared tx writer: it sets the player's
+// cap-counting salary to the already-resolved tag price and flags the contract tagged. The
+// price (the §9 top-5-by-position average, floored at 120% of the prior year) is computed
+// AUTHORITATIVELY by the Coordinator from committed state before this runs — the handler
+// never trusts a caller figure and never re-reads the league, it just writes the box. Flat
+// math: CapUsed is the sum of contracts, so setting the salary sets the cap contribution.
+// Enforces §9's "one tag per franchise per season" via the durable op counter. Fails loud on
+// an unknown player, an already-tagged contract, a non-positive price, or a spent allowance.
+//
+// v1 sets ONLY the salary + is_tagged (Christopher 2026-07-04, "lightest weight"): the
+// "two consecutive years" / "second tag = 120% of first" mechanics need cross-season
+// per-player history and are DEFERRED (handoff 30), so this does not touch contract length.
+func Tag(ctx context.Context, w state.TxWriter, mflID string, price domain.Money) error {
+	ps, ok := w.Player(mflID)
+	if !ok {
+		return fmt.Errorf("contracts: tag %q: player not on any roster", mflID)
+	}
+	if ps.IsTagged {
+		return fmt.Errorf("contracts: tag %q: contract already tagged (§9)", mflID)
+	}
+	if price <= 0 {
+		return fmt.Errorf("contracts: tag %q: resolved tag price must be positive, got %s", mflID, price)
+	}
+
+	// §9: one tag per franchise per season.
+	spent, err := w.OpCount(ctx, ps.FranchiseID, tagOpKind)
+	if err != nil {
+		return fmt.Errorf("contracts: tag %q: %w", mflID, err)
+	}
+	if spent >= 1 {
+		return fmt.Errorf("contracts: tag: franchise %q has already tagged a player this season (one per team per year, §9)", ps.FranchiseID)
+	}
+
+	change := state.ContractChange{
+		AnnualSalary:   price, // the tag IS a new salary (the §9 box); base and cap-counting both become the price
+		AdjustedSalary: price,
+		ContractYears:  ps.ContractYears,
+		ExpirationYear: ps.ExpirationYear,
+		ContractStatus: ps.ContractStatus,
+		IsRestructured: ps.IsRestructured,
+		IsTagged:       true,
+	}
+	if err := w.ApplyContract(ctx, mflID, change); err != nil {
+		return fmt.Errorf("contracts: tag %q: %w", mflID, err)
+	}
+	if err := w.IncOpCount(ctx, ps.FranchiseID, tagOpKind); err != nil {
+		return fmt.Errorf("contracts: tag %q: bump per-season counter: %w", mflID, err)
 	}
 	return nil
 }

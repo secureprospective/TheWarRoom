@@ -52,15 +52,31 @@ func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
 		return TransactionResult{Detail: "transaction coordinator not initialized"}
 	}
 
+	// Bounded context: an IPC method must never block the frontend indefinitely if the
+	// data layer stalls (the Ping/M1 pattern). A tag additionally fetches the players-DB
+	// Lookup, so it gets a longer budget.
+	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
+	defer cancel()
+
+	// TAG (§9) runs a distinct Coordinator verb: the price is resolved server-side from the
+	// top-5-by-position league-wide average, which needs the players-DB position join
+	// (the Lookup). It never crosses the wire — the frontend sends only the player id.
+	if req.Kind == string(transactions.KindTag) {
+		dir, derr := a.directory(ctx)
+		if derr != nil {
+			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §9 tag price: " + derr.Error()}
+		}
+		rec, terr := a.coordinator.ExecuteTag(ctx, req.MFLID, dir)
+		if terr != nil {
+			return TransactionResult{Kind: req.Kind, Detail: terr.Error()}
+		}
+		return TransactionResult{OK: true, Kind: string(rec.Kind), PlayersAffected: rec.PlayersAffected, At: rec.At.Format(time.RFC3339)}
+	}
+
 	txn, err := buildRequest(req)
 	if err != nil {
 		return TransactionResult{Detail: err.Error()}
 	}
-
-	// Bounded context: an IPC method must never block the frontend indefinitely if the
-	// data layer stalls (the Ping/M1 pattern).
-	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
-	defer cancel()
 
 	rec, err := a.coordinator.Execute(ctx, txn)
 	if err != nil {

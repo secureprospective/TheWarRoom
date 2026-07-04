@@ -67,3 +67,27 @@ func (c *Coordinator) Execute(ctx context.Context, req Request) (Receipt, error)
 	}
 	return Receipt{Kind: req.Kind(), PlayersAffected: affected, At: c.now().UTC()}, nil
 }
+
+// ExecuteTag runs a §9 franchise tag. It RESOLVES the tag price here — the top-5-by-position
+// league-wide average, floored at 120% of the player's prior-year salary — from the
+// Coordinator's own authoritative Reader plus the supplied Directory (the players-DB
+// position join), then delegates to Execute. The price is computed in this trusted core, not
+// carried across the IPC boundary: the frontend sends only a player id. The Directory is
+// passed per-call because the app builds its players-DB Lookup lazily (it is not available at
+// startup when the Coordinator is constructed). Fails loud before opening any transaction if
+// the player is unrostered or has no resolvable position.
+func (c *Coordinator) ExecuteTag(ctx context.Context, mflID string, dir Directory) (Receipt, error) {
+	if dir == nil {
+		return Receipt{}, fmt.Errorf("transactions: tag %q: nil directory (position join required for the §9 price)", mflID)
+	}
+	ps, ok := c.writer.Player(mflID)
+	if !ok {
+		return Receipt{}, fmt.Errorf("transactions: tag %q: player not on any roster", mflID)
+	}
+	facts, ok := dir.Facts(mflID)
+	if !ok {
+		return Receipt{}, fmt.Errorf("transactions: tag %q: no players-DB record — cannot resolve position for the §9 top-5 average", mflID)
+	}
+	price := tagFloorPrice(tagPrice(c.writer, dir, facts.Position), ps.Salary)
+	return c.Execute(ctx, Tag{MFLID: mflID, price: price})
+}
