@@ -148,19 +148,31 @@ A commissioner can write **any cell directly**, bypassing the rule engine. This 
 
 ---
 
-## 7. Re-fit of shipped work (Pass 2 — after the foundation is panel-approved + built)
+## 7. Re-fit of shipped work — the cutover sequence (Panel-2 corrected)
 
-These are merged and functionally verified on the single-`Salary` model; they change shape, they are not discarded:
+The four merged ops are verified on the single-`Salary` model; they change shape, not discarded. **Panel 2 (GLM 5.2 + Gemini, 2026-07-04) corrected the cutover order** — the naive "shadow → refit writes → flip reads" is UNSOUND (the shadow dual-writes OLD semantics; once §11's write becomes cell-movement the cells hold data the old column can't represent → the parity assert goes red or gets silently relaxed = rot). Correct order:
 
-| Shipped | Re-fit |
-|---------|--------|
-| **§8 dead cap (B7b)** | "remaining years × salary" reads real per-year cells instead of `annual_salary × contract_years`. |
-| **§11 restructure** | Move applies to specific year cell(s); tier max still off the base cell. |
-| **§9 tag** | Tag price already league-wide top-5; now writes a single-year cell + resets flags. |
-| **Cents migration** | Ledger cells are already int64 cents; retire the single-salary column as truth. |
-| **M1 rankings / B6 output** | Read cap/salary from the ledger column-sum instead of `EffectiveSalary(ps)`. |
+| Ship | What ships | Safety |
+|------|-----------|--------|
+| **1. Foundation (additive)** | `contract_years` + `contract_year_changes` + seed + override + the cell-sourced cap-math read functions (present, UNUSED). | Zero live risk — no integration with existing ops yet. Shippable. |
+| **2. Refit ALL ops + shadow** | Refit **every** op (§8 dead cap, §9 tag, §11 restructure, extension) to write cells AND dual-write the old column. A `ShadowAssert` middleware compares **derived current-season cap usage** under both models in-tx and **logs** divergence (never fails the tx). Per-commit green, any order. | Moderate. **§8 is NOT special — it refits here.** New §11 cell-movement is safe alongside the old column because the parity check is on *derived cap*, not fields (old `adjusted_salary` == Σ current-season cells, even post-restructure). |
+| **3. ATOMIC FLIP (the one hot commit)** | Switch **ALL** reads to cells in ONE commit — cap usage + **§8 dead cap** + M1 rankings + B6 output; delete old-column reads; delete `EffectiveSalary`/`AdjustedSalary` + callers; delete the dual-write shims. | Only behavior-changing commit; **mostly deletions → easy to review**. Never serves two cap numbers. |
+| **4. Cleanup** | Drop legacy REAL columns + `adjusted_salary(_cents)` + the "adjusted salary" concept. | Removal. Only the column-drop trails. |
 
-**§10 Extension** then falls out almost for free — it is "append cells at 150% of the max remaining cell, floored," which is trivial once the ledger exists.
+**KEY INSIGHT (DeepSeek, triple-verified):** the shadow parity assertion compares **derived cap usage**, never the write targets — that is what lets new §11 semantics coexist with the old column during Ship 2. **Everything before Ship 3 is additive; Ship 3 is deletion-heavy but atomic; only Ship 3 changes behavior.** `EffectiveSalary`/`AdjustedSalary` are a **read-migration, not dead code** (M1 + B6 actively read them) — their callers migrate in Ship 2, the symbols delete in Ship 3 (the same commit that stops referencing them), so `make lint` never sees a half-deleted symbol.
+
+**§10 Extension** then falls out almost for free — "append cells at `max(1.5 × highest remaining PAID cell, position_floor)`, $10k-snapped," once the ledger + generation marker exist.
+
+### 7a. Panel-2 adopted decisions (bind the re-fit)
+- **Pre-split files FIRST** — a preliminary refactor PR creates file headroom before any ledger code, so the 400-line `filelen` cap never trips mid-refit. Ledger lives in its own package `internal/contractyears/`, split up front (`store.go`/`writes.go`/`seed.go`/`changes.go`, each <400). depguard: `contract_years` writable ONLY by the ledger store (store-no-siblings); the `contracts` store loses all salary writes.
+- **Contract-term identity on the cell** — a `contract_id` (UUID, DeepSeek's lean — cleanest term boundary) OR a `generation INTEGER` (GLM/Gemini): a new Bid/seed mints a new term; an extension reuses the same term on its new cells. "6 total years" = `COUNT(PAID cells for the current term)`; "no 2nd extension off a prior extension" = "does the current term already have an EXTENSION cell?". Old cells from an expired term persist but are excluded by term scope — this is what kills the stale-EXTENSION-cell false block. **Delete `is_restructured`/`is_tagged`** as competing truth — derive from cells scoped to the current term (`is_tagged` = a TAG-source cell; the 50%-dead-cap "was this contract restructured" = `MAX(restructured)` over the term's cells).
+- **One rounding fn** — `domain.RoundToNearest10k(Money) Money`, pure, applied **after** the %-half-up. Policed by a planted half-up test + a "no other `*1_000_000`" sweep test + review (no custom vettool).
+- **Money-mover math-out-of-React** — two-phase, all math in Go: (1) **preview** — React sends intent `{playerId, moves:[{fromYear,toYear,amountCents}]}`, Go returns `{resulting_cells, tier_applied, warnings, preview_hash}` (Go does tier-max, conservation, non-negative, $10k snap); React only *renders* the cells. (2) **confirm** — React resends the intent **+ the `preview_hash`** (proves the user acted on the Go-computed result, not a stale one) → Go writes + logs. A bounds DTO `[{year, maxMoveCents, currentCents}]` binds the slider `max` (pure boundary-binding, NO math). Wails is in-process so per-tick preview is a local call — latency is irrelevant. Plant a test that a client-pre-rounded payload is re-snapped/rejected by Go.
+- **Commissioner override goes THROUGH the Coordinator** with an authenticated admin context (the "sovereign / bypasses op-limiter" behavior is a Coordinator-internal branch, NOT a depguard exception).
+- **Parity tests** prove the 4 ops' OLD behavior preserved during the shadow phase; §11 post-refit needs NEW first-principles tests (conservation, tier-max-per-source, $10k snap, non-negativity — cell movement changes its semantics by design, so parity can't cover it). Beelink functional gate asserts **displayed cap == cells-derived cap in the DB** for tag/restructure/waive/extend.
+- **Anti-rot** — each scaffold (shadow shims, `EffectiveSalary` adapter, REAL columns) has a tracked deletion trigger in a repo `MIGRATION_STATUS.md` manifest (artifact | created-in | removed-in | status); a **post-merge CI rot-detector** greps for `annual_salary_cents`/`adjusted_salary_cents`/`EffectiveSalary`/`AdjustedSalary` and fails if any survive after Ship 3/4; a PR-template checkbox blocks merge of any scaffold without a named deletion commit; no new features while the migration branch is open.
+- **VOID × dead cap** — waive computes the 35%/50% charge from the remaining PAID cells FIRST, writes `dead_cap_ledger`, THEN marks those cells `VOID` (terminal, counts 0 toward active cap). The **default** cell query (`GetCells`) returns only `PAID`/`UFA`; VOID requires an explicit `include_voided` flag — so the safe path is the default and a forgotten filter can't leak a VOID cell into active cap (`state.ActiveCells()` helper enforces `WHERE year_status='PAID'`).
+- **OPEN RULING (rounding scope)** — does the $10k snap hit *derived charges* (dead cap/retirement/buyout) or only *salaries*? GLM: only salaries + owner-directed moves; derived charges are exact-cents, summed exactly, rounded for display only (matches §1's literal "salaries"). Gemini: snap each per-year charge component so cells+totals align. **Provisional = GLM's reading, pending Christopher confirm.** Recorded in `Math_Rules_Reference.md §0`.
 
 ---
 
