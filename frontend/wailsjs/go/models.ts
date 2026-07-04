@@ -189,6 +189,7 @@ export namespace main {
 	    moves: MoveDTO[];
 	    mflID: string;
 	    status: string;
+	    moveMillions: string;
 
 	    static createFrom(source: any = {}) {
 	        return new TransactionRequest(source);
@@ -200,6 +201,7 @@ export namespace main {
 	        this.moves = source["moves"];
 	        this.mflID = source["mflID"];
 	        this.status = source["status"];
+	        this.moveMillions = source["moveMillions"];
 	    }
 	}
 	export class TransactionResult {

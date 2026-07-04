@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -233,6 +234,45 @@ func (w *txWriter) Player(mflID string) (PlayerState, bool) { return w.s.Player(
 
 // Season is the absolute league year this store operates on.
 func (w *txWriter) Season() int { return w.s.season }
+
+// OpCount reads a franchise's committed per-season op counter (0 if unseen). It queries
+// the read pool, NOT the shared write tx, so it reflects committed state — the intended
+// read-check-then-bump pattern (single-writer law serializes the transactions, so no
+// concurrent bump can slip between the read and the IncOpCount that follows).
+func (w *txWriter) OpCount(ctx context.Context, franchiseID, opKind string) (int, error) {
+	var n int
+	row := w.s.pools.Read().QueryRowContext(ctx, `
+SELECT count FROM transaction_counts
+WHERE league_id = ? AND franchise_id = ? AND season = ? AND op_kind = ?`,
+		w.s.leagueID, franchiseID, w.s.season, opKind)
+	switch err := row.Scan(&n); {
+	case errors.Is(err, sql.ErrNoRows):
+		return 0, nil
+	case err != nil:
+		return 0, fmt.Errorf("state: op count (%s/%s): %w", franchiseID, opKind, err)
+	default:
+		return n, nil
+	}
+}
+
+// IncOpCount bumps a franchise's per-season op counter by one inside the shared tx (upsert
+// on the (league, franchise, season, op_kind) primary key). It commits with the rest of
+// the transaction, so a rolled-back op never leaves an orphan increment.
+func (w *txWriter) IncOpCount(ctx context.Context, franchiseID, opKind string) error {
+	if strings.TrimSpace(franchiseID) == "" || strings.TrimSpace(opKind) == "" {
+		return fmt.Errorf("state: IncOpCount requires a franchise and op kind")
+	}
+	_, err := w.tx.ExecContext(ctx, `
+INSERT INTO transaction_counts (league_id, franchise_id, season, op_kind, count)
+VALUES (?, ?, ?, ?, 1)
+ON CONFLICT (league_id, franchise_id, season, op_kind)
+DO UPDATE SET count = count + 1`,
+		w.s.leagueID, franchiseID, w.s.season, opKind)
+	if err != nil {
+		return fmt.Errorf("state: inc op count (%s/%s): %w", franchiseID, opKind, err)
+	}
+	return nil
+}
 
 // exists reports whether the player is currently in state. Caller holds wmu.
 func (s *Store) exists(mflID string) bool {

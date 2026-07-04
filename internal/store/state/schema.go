@@ -8,7 +8,9 @@ import (
 
 // initSchema creates the rosters, contracts, and dead_cap_ledger tables if absent
 // (Backend_Architecture §8). B3c OWNS rosters + contracts; B7b added dead_cap_ledger
-// (the §8 waiver-cut charge surface). waiver_order / league_state stay out of scope.
+// (the §8 waiver-cut charge surface); B7c added transaction_counts (the durable
+// per-franchise-per-season op counter that enforces limits like §11 "one restructure per
+// team per year"). waiver_order / league_state stay out of scope.
 //
 // dead_cap_ledger is APPEND-ONLY, enforced BOTH in Go (no update/delete API — WriteTx
 // only exposes AddDeadCap) AND at the DB via BEFORE UPDATE/DELETE RAISE(ABORT) triggers
@@ -63,7 +65,15 @@ BEFORE UPDATE ON dead_cap_ledger
 BEGIN SELECT RAISE(ABORT, 'dead_cap_ledger is append-only'); END;
 CREATE TRIGGER IF NOT EXISTS dead_cap_ledger_no_delete
 BEFORE DELETE ON dead_cap_ledger
-BEGIN SELECT RAISE(ABORT, 'dead_cap_ledger is append-only'); END;`
+BEGIN SELECT RAISE(ABORT, 'dead_cap_ledger is append-only'); END;
+CREATE TABLE IF NOT EXISTS transaction_counts (
+	league_id    TEXT NOT NULL,
+	franchise_id TEXT NOT NULL,
+	season       INTEGER NOT NULL,
+	op_kind      TEXT NOT NULL,
+	count        INTEGER NOT NULL DEFAULT 0 CHECK (count >= 0),
+	PRIMARY KEY (league_id, franchise_id, season, op_kind)
+);`
 	if _, err := s.pools.Write().ExecContext(ctx, ddl); err != nil {
 		return fmt.Errorf("state: init schema: %w", err)
 	}
