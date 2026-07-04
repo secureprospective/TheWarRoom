@@ -20,7 +20,19 @@ import (
 // dead_cap_cents is exact cents (OQ-014) with a CHECK(>= 0): rollover is off, so cap debt
 // never goes negative (§1).
 func (s *Store) initSchema(ctx context.Context) error {
-	const ddl = `
+	if _, err := s.pools.Write().ExecContext(ctx, baseSchemaDDL); err != nil {
+		return fmt.Errorf("state: init schema: %w", err)
+	}
+	if err := s.initLedgerSchema(ctx); err != nil {
+		return err
+	}
+	return s.migrateMoneyCents(ctx)
+}
+
+// baseSchemaDDL creates the rosters, contracts, dead_cap_ledger, and transaction_counts
+// tables (B3c/B7b/B7c). The per-year ledger tables are created separately by
+// initLedgerSchema (own file, store-no-siblings + the 400-line cap).
+const baseSchemaDDL = `
 CREATE TABLE IF NOT EXISTS rosters (
 	id            TEXT PRIMARY KEY,
 	league_id     TEXT NOT NULL,
@@ -74,11 +86,6 @@ CREATE TABLE IF NOT EXISTS transaction_counts (
 	count        INTEGER NOT NULL DEFAULT 0 CHECK (count >= 0),
 	PRIMARY KEY (league_id, franchise_id, season, op_kind)
 );`
-	if _, err := s.pools.Write().ExecContext(ctx, ddl); err != nil {
-		return fmt.Errorf("state: init schema: %w", err)
-	}
-	return s.migrateMoneyCents(ctx)
-}
 
 // migrateMoneyCents is the additive REAL→int64-cents migration (OQ-014). On a fresh DB
 // the cents columns already exist from the DDL and this is a no-op. On an existing DB

@@ -63,6 +63,27 @@ func ParseMoneyMillions(raw string) (Money, error) {
 	return Money(millions*centsPerMillion + fracCents), nil
 }
 
+// centsPer10k is $10,000 expressed in cents: 10,000 dollars × 100 cents = 1,000,000 cents.
+// It is the league's universal money granularity — every salary, owner-directed move, and
+// derived charge snaps to a multiple of it (rulebook §1, Christopher 2026-07-04: one flat
+// rule, applied everywhere, never individualized per op).
+const centsPer10k = 1_000_000
+
+// RoundToNearest10k snaps a Money amount to the nearest $10,000, half-up (a value exactly
+// halfway rounds AWAY from zero). This is the SINGLE rounding implementation the whole
+// league shares — every op (tag, extension, restructure, dead cap, retirement, buyout,
+// seed) applies it AFTER its exact-cents math, never before and never reversed. Keeping it
+// here (one function, DRY / Agent Codex) is what stops each op re-deriving the rule and
+// drifting. Flat math: no per-op scope, no salaries-vs-charges split.
+func RoundToNearest10k(m Money) Money {
+	c := int64(m)
+	half := int64(centsPer10k / 2)
+	if c < 0 {
+		return Money(-(((-c) + half) / centsPer10k * centsPer10k))
+	}
+	return Money((c + half) / centsPer10k * centsPer10k)
+}
+
 // Millions returns the amount as a float64 number of millions of dollars. It is for the
 // engine's dimensionless cap-ratio (L5) and for display/IPC edges ONLY — never for money
 // math or storage, both of which stay in integer cents.

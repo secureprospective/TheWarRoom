@@ -232,6 +232,12 @@ func (s *Store) seed(ctx context.Context, rosters []domain.Roster) error {
 			if err := seedPlayer(ctx, tx, s.leagueID, s.season, now, r.FranchiseID, p); err != nil {
 				return err
 			}
+			// Ship 1: flat-fill the per-year ledger alongside the legacy contract row, in
+			// the SAME tx. Additive — nothing reads these cells yet, so the live cap path
+			// is untouched and main stays green.
+			if err := seedLedgerPlayer(ctx, tx, s.leagueID, s.season, now, p); err != nil {
+				return err
+			}
 		}
 	}
 	if err := tx.Commit(); err != nil {
