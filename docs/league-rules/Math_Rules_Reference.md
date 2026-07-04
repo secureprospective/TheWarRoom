@@ -15,7 +15,9 @@
 | Display | millions, 2 decimals | §1 | `$10.99M`. Display only — never the stored precision. |
 | Cap (2026) | **$125M** per team | §1 | Per-SEASON value ("for 2026") — sourced from MFL/config (B3b), not hardcoded. Teams under cap **at all times**. |
 
-**MISSED-STEP GUARD — rounding order (OPEN RULING, see §14):** a percentage rule (35% dead cap, 30% retirement, 120% tag, 150% extension, buyout %, RFA %) produces an exact cents figure that must then snap to the $10k grid. Order + direction must be ONE deterministic rule everywhere. Shipped §8 uses **round-half-up**; the $10k snap is not yet applied anywhere. Resolve before the refit.
+**MISSED-STEP GUARD — the $10k snap.** All percentage math (35% dead cap, 30% retirement, buyout %, 120% tag, 150% extension, RFA %) computes to exact cents **round-half-up FIRST**, then the $10k snap is applied via ONE shared `domain.RoundToNearest10k(Money)` — `result = pct(base).RoundToNearest10k()`, never the reverse (rounding-first vs -last diverges by up to $10k/op). The $10k snap is applied NOWHERE in current code — add it in the refit.
+
+**OPEN RULING — snap SCOPE (Panel 2, GLM vs Gemini; provisional = GLM):** does the $10k snap hit *derived charges* (dead cap/retirement/buyout) or only *salaries*? **Provisional (GLM):** §1 literally says "all **salaries** round to $10k" → snap **salary cells + owner-directed money moves only** (seed, tag price, restructure destinations, extension terms); derived **charges** are exact-cents, summed exactly, and rounded only **for display**. Gemini's alternative: snap each per-year charge component so cells+totals align. **Awaiting Christopher's confirm** — this is the ONE unresolved money ruling.
 
 ---
 
@@ -82,7 +84,7 @@
 - **50%** (not 35%) per remaining year if the contract **was restructured** (§11).
 - **0** dead cap if the player is **claimed** on waivers, or in his final/expiring year (0 remaining).
 - Whole charge lands in the **cut year** (flat, no spread) — already shipped (B7b, `dead_cap_ledger`).
-- Rounding: round-half-up (shipped) + the §0 $10k snap (OPEN, §14). Cannot re-sign a waived player for the rest of that season.
+- Rounding: exact-cents round-half-up per remaining cell; the $10k snap on the charge is the §0 OPEN scope ruling (provisional GLM: charge stays exact, salaries snap). Cannot re-sign a waived player for the rest of that season.
 
 ---
 
@@ -197,7 +199,7 @@ Starting lineup = **21 starters** (9 off / 12 def, §3); invalid lineup zeroes t
 
 ## 14. RULINGS — all RESOLVED with Christopher 2026-07-04
 
-1. **Rounding order + direction** — RESOLVED: compute the % to exact cents, **then snap to nearest $10,000** (half-up). One rule everywhere (dead cap, retirement, buyout, tag-120%, extension-150%, RFA %s). The $10k snap is currently applied NOWHERE — add it in the refit.
+1. **Rounding order + direction** — RESOLVED: %-math round-half-up to exact cents FIRST, **then** `RoundToNearest10k` (never reversed). **SCOPE still OPEN** (see §0): provisional GLM = snap salaries + owner-directed moves only; derived charges exact + display-rounded. Awaiting Christopher's confirm.
 2. **Experience minimum-salary floor** — RESOLVED: applies **only to UFA free-agency bidding** (§6). It does NOT floor extension or restructure results (extension has its own §10 position floor).
 3. **Buyout at 1 year remaining** — RESOLVED: **disallowed** — nobody buys out a 1-year deal. A 1-year-left exit is the normal §8 waiver (35% × the one remaining cell).
 4. **Retirement per-cell** — RESOLVED: **`30% × each remaining cell, summed`** — same flat per-cell shape as §4 dead cap, at 30%.
