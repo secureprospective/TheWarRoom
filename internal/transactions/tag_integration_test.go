@@ -134,3 +134,49 @@ func TestIntegration_TagRejectsAndRollsBack(t *testing.T) {
 		t.Fatal("tagging an unrostered player was accepted")
 	}
 }
+
+// TestIntegration_TagResetsRestructureFlag proves the GLM-M4 fix: tagging a
+// previously-restructured player is allowed (a tag is a fresh contract) and RESETS the
+// restructure flag, so a later §8 cut of the tagged player charges the standard 35% dead
+// cap — NOT the restructured 50% on the tag figure.
+func TestIntegration_TagResetsRestructureFlag(t *testing.T) {
+	s, c, dir := tagStore(t)
+	ctx := context.Background()
+
+	// 0010 ($10M base) is restructure-eligible. Restructure, then tag him.
+	if _, err := c.Execute(ctx, transactions.Restructure{MFLID: "0010", Move: 1 * mil}); err != nil {
+		t.Fatalf("restructure 0010: %v", err)
+	}
+	if p, _ := s.Player("0010"); !p.IsRestructured {
+		t.Fatal("0010 not flagged restructured after restructure")
+	}
+	// Tag is a different op_kind, so it is NOT blocked by the restructure per-season counter.
+	if _, err := c.ExecuteTag(ctx, "0010", dir); err != nil {
+		t.Fatalf("tag of a restructured player was rejected: %v", err)
+	}
+	p, _ := s.Player("0010")
+	if p.IsRestructured {
+		t.Fatal("tag did NOT reset the restructure flag — a later cut would wrongly charge 50%")
+	}
+	if !p.IsTagged {
+		t.Fatal("0010 not flagged tagged")
+	}
+}
+
+// TestIntegration_RestructureRejectsTaggedPlayer proves the GLM-M4a guard: a
+// franchise-tagged contract is a fixed one-year deal and cannot be restructured.
+func TestIntegration_RestructureRejectsTaggedPlayer(t *testing.T) {
+	s, c, dir := tagStore(t)
+	ctx := context.Background()
+
+	if _, err := c.ExecuteTag(ctx, "0010", dir); err != nil {
+		t.Fatalf("tag 0010: %v", err)
+	}
+	before, _ := s.CapUsed("0001")
+	if _, err := c.Execute(ctx, transactions.Restructure{MFLID: "0010", Move: 1 * mil}); err == nil {
+		t.Fatal("restructuring a franchise-tagged player was accepted")
+	}
+	if after, _ := s.CapUsed("0001"); after != before {
+		t.Fatalf("rejected restructure of a tagged player moved the cap: %s -> %s", before, after)
+	}
+}

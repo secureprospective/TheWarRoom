@@ -77,6 +77,13 @@ func Restructure(ctx context.Context, w state.TxWriter, mflID string, move domai
 	if ps.IsRestructured {
 		return fmt.Errorf("contracts: restructure %q: contract already restructured (one per contract, §11)", mflID)
 	}
+	// A franchise tag is a fixed one-year salary, not a multi-year contract — restructuring it
+	// is meaningless, so reject it (GLM M4a, Christopher-confirmed). The reverse (tagging a
+	// previously-restructured player) IS allowed: the tag is a fresh contract and Tag resets
+	// the restructure flag.
+	if ps.IsTagged {
+		return fmt.Errorf("contracts: restructure %q: a franchise-tagged contract is a fixed one-year deal and cannot be restructured (§9/§11)", mflID)
+	}
 
 	// §11 tiers on the base Contract-Year Salary (ps.Salary), never the adjusted figure.
 	maxMove, eligible := MaxMove(ps.Salary)
@@ -167,7 +174,11 @@ func Tag(ctx context.Context, w state.TxWriter, mflID string, price domain.Money
 		ContractYears:  ps.ContractYears,
 		ExpirationYear: ps.ExpirationYear,
 		ContractStatus: ps.ContractStatus,
-		IsRestructured: ps.IsRestructured,
+		// A franchise tag is a FRESH one-year contract, not a restructured deal — reset the
+		// restructure flag (GLM M4). Otherwise cutting a restructured-then-tagged player would
+		// charge §8 dead cap at the restructured 50% on the tag figure; a tag contract that has
+		// not itself been restructured must charge the standard 35%.
+		IsRestructured: false,
 		IsTagged:       true,
 	}
 	if err := w.ApplyContract(ctx, mflID, change); err != nil {
