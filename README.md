@@ -4,10 +4,11 @@
 
 ### A dynasty fantasy football intelligence engine that scores what real players do in real games — and out-thinks the stock platforms doing it.
 
-[![Status](https://img.shields.io/badge/status-🔥%20ENGINE%20LIVE%20·%20scoring%20players-brightgreen)](docs/build-handoffs/Build_Tracker.md)
-[![Progress](https://img.shields.io/badge/build-20%20of%2038%20sessions%20·%2053%25%20·%20past%20halfway-success)](docs/build-handoffs/Build_Tracker.md)
-[![Models](https://img.shields.io/badge/position%20models-7%20of%2010%20scoring-blue)](#-pillar-1--the-scoring-engine)
-[![Verified](https://img.shields.io/badge/live%20data-1217%20players%20·%2032%20teams%20·%20verified-blueviolet)](#-its-alive--from-raw-data-to-a-score)
+[![Status](https://img.shields.io/badge/status-🔥%20ENGINE%20COMPLETE%20·%20transactions%20live-brightgreen)](docs/build-handoffs/Build_Tracker.md)
+[![Progress](https://img.shields.io/badge/build-27%20of%2038%20sessions%20·%2071%25%20·%20final%20third-success)](docs/build-handoffs/Build_Tracker.md)
+[![Models](https://img.shields.io/badge/position%20models-10%20of%2010%20·%20ALL%20LIVE-blue)](#-pillar-1--the-scoring-engine--✅-complete)
+[![Verified](https://img.shields.io/badge/live%20data-1217%20players%20·%2032%20teams%20·%20verified-blueviolet)](#-its-alive--from-raw-data-to-a-decision)
+[![Money](https://img.shields.io/badge/money-int64%20cents%20·%20exact%20to%20the%20penny-9cf)](#-pillar-2--the-transaction-engine--🔥-live)
 [![Phase](https://img.shields.io/badge/phase-1%20·%20personal%20tool-orange)](#️-the-road)
 
 [![Go](https://img.shields.io/badge/Go-00ADD8?logo=go&logoColor=white)](https://go.dev)
@@ -34,36 +35,39 @@ It also replaces the part nobody enjoys: the bid math, the dead-cap arithmetic, 
 
 ---
 
-## 🔥 It's Alive — From Raw Data to a Score
+## 🚀 It's Alive — From Raw Data to a Decision
 
-Six months ago this was a plan. **Today it pulls a real league, scores real players, and ranks them on screen.** The whole spine — data in, engine in the middle, a number out, on a desktop board you can drive — is built, merged, and verified end-to-end.
+A year ago this was a plan. **Today it pulls a real league, scores real players, ranks them on screen, and executes real transactions with the cap math done automatically.** The entire scoring spine — data in, engine in the middle, a number out, on a board you can drive, with mutations that move real money — is built, merged, and verified end-to-end on real hardware.
 
 ```
-   real MFL league ──► transport ──► ingestion ──► normalize ──► ENGINE ──► Adjusted Score ──► ranked board
-      (live API)       rate-limited   boundary-     raw→domain    6 layers    one number        on screen,
-                       host-routed    guarded       talent≠age    7 models    per player        live-tunable
+  real MFL league ─► transport ─► ingestion ─► normalize ─► ENGINE ─► Adjusted Score ─► ranked board ─► TRANSACTIONS
+     (live API)      rate-limited   boundary-    raw→domain   6 layers   one number       live board      trades · cuts
+                     host-routed    guarded      talent≠age  10 models   per player        on screen       dead-cap auto
 
-   ✅ DATA   1,217 rostered players · 32 franchises · zero loss · dead-cap reconciled to the penny
-   ✅ ENGINE pure-function pipeline · fail-loud on bad input · nothing hardcoded · compiler-enforced layers
-   ✅ MODELS QB · RB · WR · TE · DT · DE · LB  scoring live  (CB · S · K next)
-   ✅ PROOF  every build: green tests + blind AI review + used live on real hardware before it counts as "done"
+   ✅ DATA     1,217 rostered players · 32 franchises · zero loss · dead cap reconciled to the penny
+   ✅ ENGINE   6-layer pure-function pipeline · ALL 10 position models calibrated · nothing hardcoded
+   ✅ BOARD    real 32-team rankings on screen · re-ranks the instant you turn a calibration knob
+   ✅ MONEY    int64-cents exact · cut a player and watch §8 dead cap hit the cap — verified live
+   ✅ PROOF    every build: green tests + blind AI review + used on real hardware before it counts as "done"
 ```
 
-This isn't a mock or a fixture. It's the **actual Legacy NFL league**, pulled live, normalized into a locked type system, run through the scoring pipeline, and rendered on a board that re-ranks the instant you change a calibration knob. The hard parts of any data product — clean ingestion, a trustworthy engine, a working UI loop — are **done and proven.**
+This isn't a mock or a fixture. It's the **actual Legacy NFL league**, pulled live, normalized into a locked type system, scored through the full pipeline, ranked on a board that re-ranks the moment you change a calibration knob — and now, a coordinator that executes trades atomically and cuts players with the §8 dead-cap penalty computed and applied on the spot. The hard parts of any data product — clean ingestion, a trustworthy engine, a working UI loop, **and safe money-moving transactions** — are **done and proven.**
 
 ---
 
-## 📈 Build Progress — Past the Halfway Line
+## 📈 Build Progress — Into the Final Third
 
 ```
-Tier 0  Scaffold            [██████████]  1/1    ✅ DONE
-Tier 1  Data Pipeline       [██████████]  7/7    ✅ DONE   — live, end-to-end
-Tier 2  Logic Engine        [██████████]  5/5    ✅ DONE   — stores + pipeline + harness
-Tier 2  Position Models     [███████░░░]  7/10   🔥 LIVE   — QB RB WR TE DT DE LB · CB S K next
-Tier 2  Output Store        [░░░░░░░░░░]  0/1    ▸ next
-Tier 3  Modules + Trades    [░░░░░░░░░░]  0/14   ▸ ahead
+Tier 0  Scaffold            [██████████]  1/1     ✅ DONE
+Tier 1  Data Pipeline       [██████████]  7/7     ✅ DONE   — live, end-to-end
+Tier 2  Logic Stores        [██████████]  4/4     ✅ DONE   — rulebook · state · params · output
+Tier 2  Scoring Engine      [██████████]  1/1     ✅ DONE   — six-layer pure pipeline
+Tier 2  Testing Harness     [██████████]  1/1     ✅ DONE   — validation board + live tuning
+Tier 2  Position Models     [██████████]  10/10   ✅ DONE   — every position calibrated & scoring
+Tier 3  Board + Trades      [██░░░░░░░░]  3/14    🔥 LIVE   — rankings board · trades · dead-cap
+Tier 3  The War Room        [░░░░░░░░░░]  0/…     ▸ ahead   — the 8 modules turn scores into calls
 
-         OVERALL            [████████████████░░░░░░░░░░░░░░]   20 / 38   ·   53%
+         OVERALL            [█████████████████████░░░░░░░░]   27 / 38   ·   71%
 ```
 
 | Milestone | Status |
@@ -71,17 +75,19 @@ Tier 3  Modules + Trades    [░░░░░░░░░░]  0/14   ▸ ahead
 | 🏗️ **Foundation** — Go · Wails · React · SQLite WAL, compiler-enforced architecture | ✅ Shipped |
 | 🔌 **Data pipeline** — MFL transport → ingestion → normalization, live against the real league | ✅ Shipped |
 | 📋 **Scouting schema** — all 10 positions, 21 sources wired and fetching | ✅ Shipped |
-| 🗄️ **Logic stores** — rulebook, league state, admin parameters (versioned, single-writer) | ✅ Shipped |
+| 🗄️ **Logic stores** — rulebook · league state · parameters · **immutable output store** | ✅ Shipped |
 | ⚙️ **The engine** — six-layer pure-function scoring pipeline | ✅ Shipped |
 | 🧪 **Testing harness** — three-state validation board, live admin tuning loop | ✅ Shipped |
-| 🧠 **Position models** — 7 of 10 calibrated and scoring | 🔥 In flight |
-| 💾 **Output store → Modules → Transactions** | ▸ The back half |
+| 🧠 **Position models** — **all 10 calibrated and scoring** | ✅ Shipped |
+| 📊 **Asset Rankings board** — all 32 rosters ranked on screen from real data | ✅ Shipped |
+| 🔧 **Transaction engine** — atomic trades + waivers with **automated §8 dead cap** | 🔥 In flight |
+| 💾 **Contract ops → the 8 modules → live bidding** | ▸ The back half |
 
 ---
 
-## 🧠 Pillar 1 — The Scoring Engine
+## 🧠 Pillar 1 — The Scoring Engine · ✅ COMPLETE
 
-The valuation brain. Six layers, run in order, every value MFL-sourced or admin-tunable — nothing hardcoded.
+The valuation brain. Six layers, run in order, every value MFL-sourced or admin-tunable — nothing hardcoded. **All six layers and all ten position models are built, calibrated, and scoring live.**
 
 ```
               MFL API  +  21 scouting sources (PFF · RAS · NGS · Madden · film)
@@ -91,7 +97,7 @@ The valuation brain. Six layers, run in order, every value MFL-sourced or admin-
    │  L1  Data Hygiene        clean inputs, enforce contract floors │  ◄── LIVE
    │  L2  Rulebook Scoring    this league's exact scoring matrix    │  ◄── store live
    │  L3  Age Decay           position-specific aging curves        │  ◄── LIVE
-   │  L4  Scouting Layer      Film × RAS × Breakout (Madden-checked)│  ◄── 7/10 LIVE
+   │  L4  Scouting Layer      Film × RAS × Breakout (Madden-checked)│  ◄── 10/10 LIVE
    │  L5  Cap Efficiency      value per dollar, by cap tier         │  ◄── LIVE
    │  L6  Tiebreaker          tenure → RAS → positional scarcity    │  ◄── LIVE
    └──────────────────────────────────────────────────────────────┘
@@ -100,7 +106,7 @@ The valuation brain. Six layers, run in order, every value MFL-sourced or admin-
                        ⭐ Adjusted Score  (one number per player)
 ```
 
-**Ten position models, each individually calibrated** — because a shutdown corner and a power back aren't graded on the same curve. Seven are live and scoring:
+**Ten position models, each individually calibrated** — because a shutdown corner and a power back aren't graded on the same curve. **Every one is live and scoring:**
 
 | Position | Model | What makes it its own thing |
 |:--|:--:|:--|
@@ -111,44 +117,50 @@ The valuation brain. Six layers, run in order, every value MFL-sourced or admin-
 | 🧱 **DT** | ✅ live | Film compression + a late-career "Cushion Guard" for elite athletes |
 | 💨 **DE** | ✅ live | College pass-rush production share — the cleanest pre-NFL signal |
 | 🛡️ **LB** | ✅ live | Most scheme-dependent position; college production weighted highest |
-| 🔒 **CB** | ▸ next | NGS coverage metrics anchor the grade |
-| 🦅 **S** | ▸ next | NGS-anchored; free vs. box safety roles |
-| 🦵 **K** | ▸ next | Madden-driven; its own scoring path entirely |
+| 🔒 **CB** | ✅ live | NGS coverage metrics anchor the grade — passer rating allowed, not hype |
+| 🦅 **S** | ✅ live | NGS-anchored twin of CB; tuned for the box-to-deep athletic spread |
+| 🦵 **K** | ✅ live | Madden-driven film on its own scoring path entirely |
 
-Under the hood: athletic testing (RAS) is weighted *per position* — gold at receiver, neutral at quarterback. NGS coverage metrics will anchor the cornerback and safety models. Madden ratings *regulate* subjective scouting takes so hype doesn't leak into the score. A late-career "Cushion Guard" keeps elite athletes from falling off a cliff on paper before they do on the field. And every model reuses the same proven mechanics — the architecture **composes**, so each new position is a calibration, not a rebuild.
+Under the hood: athletic testing (RAS) is weighted *per position* — gold at receiver, neutral at quarterback. NGS coverage metrics anchor the cornerback and safety models. Madden ratings *regulate* subjective scouting takes so hype doesn't leak into the score. A late-career "Cushion Guard" keeps elite athletes from falling off a cliff on paper before they do on the field. And every model reuses the same proven mechanics — the architecture **composes**, so each new position was a calibration, not a rebuild. That's why 10 of 10 shipped.
 
 ---
 
-## 🔧 Pillar 2 — The Transaction Engine
+## 🔧 Pillar 2 — The Transaction Engine · 🔥 LIVE
 
-Nine transaction types, fully validated, with the math done for you:
+The thing every other tool leaves you to do by hand. Nine transaction types, fully validated, with the math done for you — and the first ones **already execute against real league state:**
 
 `UFA bidding` · `RFA offer sheets` · `Waivers` · `Trades` · `Trade block` · `Franchise tag` · `Extensions` · `Restructures` · `Buyouts`
 
-- ✅ **Dead-cap auto-calculator** — no more manual `salary × 35% × years` on every waiver
-- ✅ **Bid validation** — wrong term, bad increment, over-cap, over-roster: rejected before it's ever posted
-- ⏱️ **24-hour clock + snipe detection** *(Phase 2)* — the 20-hour rule, enforced
-- 🗳️ **DOT vote tracking** *(Phase 2)* — closes at 3-0 either way
-- 🚫 **Trade-deadline hard block** — a 7-minute miss is caught by a timestamp, not a human
+- ✅ **Trades — LIVE & atomic.** A multi-leg swap either lands *entirely* or rolls back *whole*. No half-executed trade can ever exist; a single bad leg reverts everything. Verified on real hardware.
+- ✅ **Waiver cut + dead-cap auto-calculator — LIVE.** Cut a player and the §8 penalty (`35% × salary × remaining years`, 50% on a restructured deal) is computed and charged to your cap **automatically** — no more manual arithmetic on every release. Watched move real money on the live league.
+- ✅ **Exact money, everywhere.** Every dollar is stored as integer cents — no floating-point drift, reconciled to the penny. The cap is never "about right."
+- 🔜 **Franchise tag · Extensions · Restructures · Buyouts** — the contract-ops suite, up next.
+- ⏱️ **UFA/RFA bidding · 24-hour clock · snipe detection** *(Phase 2)* — the 20-hour rule, enforced by a timestamp.
+- 🗳️ **DOT vote tracking** *(Phase 2)* — closes at 3-0 either way.
+- 🚫 **Trade-deadline hard block** — a 7-minute miss is caught by a clock, not a human.
 
 > It removes the friction. It never replaces the judgment. The trade analyzer surfaces value — the DOT still decides what's good for the league.
+
+**How it stays safe:** a *single* transaction coordinator is the only thing in the entire system allowed to change who-owns-what. Every mutation runs inside one atomic database transaction. Everything else can only read. That is the difference between a spreadsheet and a system of record.
 
 ---
 
 ## 📊 Pillar 3 — The Modules
 
-The war room itself. Eight views into the engine, plus two admin surfaces:
+The war room itself. Eight views into the engine, plus two admin surfaces. **M1 is live — the rest are the road ahead:**
 
-| Module | What it does |
-|---|---|
-| **M1 · Asset Rankings** | All 32 rosters ranked into one league-wide board, with per-team and cap-efficiency views |
-| **M2 · Power Rankings** | Weekly team strength — roster value, trend, and strength of schedule, not just record |
-| **M3 · Matchup Predictions** | Projected scores with floor/ceiling and boom-bust flags |
-| **M4 · Transaction UI** | The Pillar 2 interface — every transaction type in-app |
-| **M5 · Free Agency Intel** | The FA pool ranked, with team-need overlays and live bid tracking |
-| **M6 · Rookie Draft Intel** | Prospect boards with the scouting layer applied, live draft board |
-| **M7 · Trade Analyzer** | Side-by-side value, cap impact, and historical comps — for both teams and the DOT |
-| **M8 · Commissioner Dashboard** | League health, compliance flags, and the pending-decision queue at a glance |
+| Module | What it does | |
+|---|---|:--:|
+| **M1 · Asset Rankings** | All 32 rosters ranked into one league-wide board, with per-team drill-down and cap-efficiency views | ✅ **live** |
+| **M2 · Power Rankings** | Weekly team strength — roster value, trend, and strength of schedule, not just record | ▸ ahead |
+| **M3 · Matchup Predictions** | Projected scores with floor/ceiling and boom-bust flags | ▸ ahead |
+| **M4 · Transaction UI** | The Pillar 2 interface — every transaction type in-app | 🔧 building |
+| **M5 · Free Agency Intel** | The FA pool ranked, with team-need overlays and live bid tracking | ▸ ahead |
+| **M6 · Rookie Draft Intel** | Prospect boards with the scouting layer applied, live draft board | ▸ ahead |
+| **M7 · Trade Analyzer** | Side-by-side value, cap impact, and historical comps — for both teams and the DOT | ▸ ahead |
+| **M8 · Commissioner Dashboard** | League health, compliance flags, and the pending-decision queue at a glance | ▸ ahead |
+
+The engine is the hard part, and the engine is done. The modules are the payoff — each one is a **view** onto a score that already exists.
 
 ---
 
@@ -163,11 +175,13 @@ The engine is only as good as its calibration. Every parameter that *should* be 
 This isn't a weekend hack. The architecture is governed by hard rules so it stays maintainable as it grows — and those rules are **already enforced in the code that's shipping today:**
 
 - **A three-layer law** — real-football data is read-only; the app owns its logic; users mutate state *only* through validated transactions. No layer bleeds into another.
-- **One writer to league state** — a single coordinator is the only thing that can change who-owns-what. Everything else reads. A planted test *proves* the read-only handle can't be cast back into a writer.
+- **One writer to league state** — a single coordinator is the only thing that can change who-owns-what, and every change is one atomic transaction. Everything else reads. A planted test *proves* the read-only handle can't be cast back into a writer.
 - **A pure engine** — the entire scoring pipeline imports no database, no network, no clock. Inputs come in as parameters; a score comes out. A custom linter fails the build if anything dirties it.
-- **Historical scores are immutable** — every score is stamped with its scoring config. Change the engine, and last season stays exactly as it was scored. The record is the record.
+- **Money is exact by construction** — every dollar is integer cents, never a float; a value parsed from MFL never round-trips through floating point. The cap can't drift.
+- **Historical records are immutable** — every score is stamped with its scoring config; the dead-cap ledger is append-only and the database itself rejects an edit. Change the engine, and last season stays exactly as it was scored. The record is the record.
 - **Enforced by the compiler, not by hope** — architectural rules are wired into the type system and custom linters, so a violation is a *build failure*, not a code-review note. (Player IDs literally cannot be forged — the bypass doesn't compile.)
 - **Fail loud, never silent** — every fetcher already caught a real bug a linter couldn't: MFL collapses single-element arrays, returns HTTP 200 with an error body, and omits commissioner-created players. Each one would have silently corrupted league data. Each one is now guarded and tested.
+- **Reviewed by an adversary** — every build is checked by an **independent blind AI reviewer** whose findings are treated as leads to triage against the source, never rubber-stamped. It has earned its keep with real catches.
 - **A 38-session build plan** — every session sized to one context window, every session closes with a ready-to-go handoff. Spaghetti has nowhere to hide.
 
 📋 Full build sequence: **[`docs/build-handoffs/Build_Tracker.md`](docs/build-handoffs/Build_Tracker.md)**
@@ -195,24 +209,25 @@ Phase 1 ships as a desktop app. Phase 2 opens it to the league. Phase 3 sets it 
 
 ---
 
-## 📍 Status — Engine Lit, Models Filling In
+## 📍 Status — Engine Complete, Transactions Live
 
-**The pipeline is live, the engine scores, and 7 of 10 position models are calibrated. The next three close out scoring; then the output store and the modules turn scores into decisions.**
+**The full scoring spine is done: data pipeline, all four logic stores, the six-layer engine, all ten position models, and the live rankings board. The transaction engine is now executing — trades commit atomically, and cutting a player charges §8 dead cap to the cap automatically. From here, it's contract ops and the eight war-room modules that turn scores into decisions.**
 
 | ✓ Done & verified | ▸ Up next |
 |---|---|
-| **B0–B3** — Pipeline live (1,217 players · 32 teams · type system locked) | **B5b-CB / S / K** — the last 3 position models |
-| **B2b** — Scouting schema + 21 sources, all 10 positions | **B6** — Per-season output store (immutable, config-stamped) |
-| **B3b/c/B4** — Rulebook · league-state · parameter stores | **M1** — Asset Rankings: the first real-data board |
-| **B5a** — Six-layer engine pipeline (pure, fail-loud) | **B7** — Transaction engine + dead-cap coordinator |
-| **Harness** — three-state validation board + live tuning loop | **M2–M9** — the rest of the war room |
-| **B5b** — 7 of 10 position models scoring (QB·RB·WR·TE·DT·DE·LB) | |
+| **B0–B3** — Pipeline live (1,217 players · 32 teams · type system locked) | **B7c** — Contract ops: tag · extension · restructure · buyout |
+| **B2b** — Scouting schema + 21 sources, all 10 positions | **Free agency** — the FA pool + UFA/RFA bidding |
+| **B3b/c · B4 · B6** — Rulebook · state · parameter · **immutable output** stores | **M2–M8** — power rankings, matchups, trade analyzer, commissioner |
+| **B5a** — Six-layer engine pipeline (pure, fail-loud) | **Phase 2** — multi-user, live clock, DOT voting, mobile |
+| **B5b** — **all 10 position models** scoring (QB·RB·WR·TE·DT·DE·LB·CB·S·K) | |
+| **M1** — Asset Rankings: the real-data 32-team board, live | |
+| **B7a/b** — Transaction coordinator: atomic trades + waiver dead cap | |
 
 ```
-[████████████████░░░░░░░░░░░░░░]  20 / 38 sessions   ·   data ✓   engine ✓   models 7/10   →   output + modules
+[█████████████████████░░░░░░░░]  27 / 38 sessions  ·  data ✓  engine ✓  models 10/10 ✓  board ✓  trades ✓  →  contract ops + modules
 ```
 
-Every layer ships only after a build passes clean, an **independent blind AI review** (GLM 5.2) signs off, and it's verified against **real league data** on real hardware. No layer is "done" until it's been *used*, not just compiled.
+Every layer ships only after a build passes clean, an **independent blind AI review** signs off, and it's verified against **real league data** on real hardware. No layer is "done" until it's been *used*, not just compiled.
 
 ---
 
