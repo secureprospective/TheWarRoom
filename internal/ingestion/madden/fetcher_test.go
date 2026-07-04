@@ -155,6 +155,30 @@ func TestFetch_StringRatingSkipped(t *testing.T) {
 	}
 }
 
+// A JSON null rating must be skipped like a string-valued rating, not silently
+// unmarshaled into 0 (GLM whole-repo audit 2026-06-28, Pass C MAJOR-1) — a null
+// "speed_rating" must never be indistinguishable from a real speed of 0.
+func TestFetch_NullRatingSkipped(t *testing.T) {
+	t.Parallel()
+	rec := `{"firstName":"Aaron","lastName":"Banks","plyrBirthdate":"9/3/1997",
+		"overall_rating":72,"speed_rating":null}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"count":1,"docs":[` + rec + `]}`))
+	}))
+	t.Cleanup(srv.Close)
+	out, err := Fetch(context.Background(), srv.Client(), srv.URL, resolver)
+	if err != nil {
+		t.Fatalf("a null-valued rating must be skipped, not error: %v", err)
+	}
+	r := out["00-0000001"]
+	if r.Overall != 72 {
+		t.Errorf("the non-null rating should still parse: overall %d", r.Overall)
+	}
+	if _, present := r.Attributes["speed"]; present {
+		t.Error("a null-valued rating must not appear in Attributes as 0")
+	}
+}
+
 func TestFetch_Non200FailsLoud(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

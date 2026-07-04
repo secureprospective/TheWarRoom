@@ -19,6 +19,8 @@ func TestNew(t *testing.T) {
 		{"rejects empty", "", "", true},
 		{"rejects whitespace-only", "   ", "", true},
 		{"rejects non-numeric", "abc", "", true},
+		{"rejects leading plus sign", "+99", "", true},
+		{"rejects leading minus sign", "-5", "", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
