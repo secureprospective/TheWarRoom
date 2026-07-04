@@ -134,6 +134,28 @@ func TestSeedLedgerAbsentContractYearCoversSeason(t *testing.T) {
 	}
 }
 
+// TestLedgerParityCatchesDrift gives the parity gate teeth: moving money between a player's
+// cells WITHOUT a matching legacy change drifts the two models, and CheckLedgerParity must
+// fail loud. (In real ops the two are always written together; this plants the drift.)
+func TestLedgerParityCatchesDrift(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: ledgerRosters(t)})
+	ctx := context.Background()
+
+	// Seed parity holds.
+	if err := s.CheckLedgerParity(ctx); err != nil {
+		t.Fatalf("seed parity should hold: %v", err)
+	}
+	// Move $10k out of the current-season (2026) cell into 2028 — legacy columns untouched.
+	if err := s.WriteTx(ctx, func(w TxWriter) error {
+		return w.MoveCellMoney(ctx, "0001", 2026, 2028, 1_000_000, "planted drift")
+	}); err != nil {
+		t.Fatalf("WriteTx move: %v", err)
+	}
+	if err := s.CheckLedgerParity(ctx); err == nil {
+		t.Fatal("parity passed despite a ledger-only change — the gate has no teeth")
+	}
+}
+
 // TestContractYearChangesImmutable proves the double-immutability: the BEFORE UPDATE and
 // BEFORE DELETE triggers abort a raw write that bypasses the (nonexistent) Go mutation API.
 func TestContractYearChangesImmutable(t *testing.T) {

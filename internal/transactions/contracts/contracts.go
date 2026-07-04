@@ -129,6 +129,22 @@ func Restructure(ctx context.Context, w state.TxWriter, mflID string, move domai
 	if err := w.ApplyContract(ctx, mflID, change); err != nil {
 		return fmt.Errorf("contracts: restructure %q: %w", mflID, err)
 	}
+	// Ledger dual-write: a restructure is money MOVEMENT between the player's year cells,
+	// conserving the contract total (the real §11, which the single-salary model could not
+	// express). The relief comes out of the CURRENT season cell (matching the legacy adjusted
+	// drop) and lands in the last PAID year — the v1 destination default until the owner-pick
+	// money-mover UI ships. The last paid year is the contract's expiration year (the seed and
+	// every op keep expiration_year == the last PAID cell). A contract that ends this season
+	// has no future paid year to absorb the move, so it cannot restructure — a correctness
+	// tightening the old single-number model silently swallowed (the relief just vanished).
+	dest := ps.ExpirationYear
+	if dest <= w.Season() {
+		return fmt.Errorf("contracts: restructure %q: no future paid year to move money into (contract ends in %d, this season is %d)", mflID, dest, w.Season())
+	}
+	reason := fmt.Sprintf("§11 restructure: moved %s from %d to %d", move, w.Season(), dest)
+	if err := w.MoveCellMoney(ctx, mflID, w.Season(), dest, move, reason); err != nil {
+		return fmt.Errorf("contracts: restructure %q: %w", mflID, err)
+	}
 	if err := w.IncOpCount(ctx, ps.FranchiseID, restructureOpKind); err != nil {
 		return fmt.Errorf("contracts: restructure %q: bump per-season counter: %w", mflID, err)
 	}

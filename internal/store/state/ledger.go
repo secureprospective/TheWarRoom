@@ -54,6 +54,33 @@ func seedLedgerPlayer(ctx context.Context, tx *sql.Tx, leagueID string, season i
 	return insertCell(ctx, tx, leagueID, mflID, contractID, lastPaid+1, 0, yearStatusUFA, now)
 }
 
+// LedgerCells returns a player's PAID contract-year cells (league_year → salary) from
+// committed state — the cap-bearing cells. It is the read side the Ship-3 read-flip and the
+// money-mover UI will consume; today it also lets tests and an admin audit verify the ledger
+// directly. UFA/VOID cells are omitted (they carry no cap).
+func (s *Store) LedgerCells(ctx context.Context, mflID string) (map[int]domain.Money, error) {
+	rows, err := s.pools.Read().QueryContext(ctx, `
+SELECT league_year, salary_cents FROM contract_years
+WHERE league_id = ? AND mfl_id = ? AND year_status = ?`, s.leagueID, mflID, yearStatusPaid)
+	if err != nil {
+		return nil, fmt.Errorf("state: ledger cells %q: %w", mflID, err)
+	}
+	defer func() { _ = rows.Close() }()
+	out := map[int]domain.Money{}
+	for rows.Next() {
+		var year int
+		var cents int64
+		if err := rows.Scan(&year, &cents); err != nil {
+			return nil, fmt.Errorf("state: ledger cells scan %q: %w", mflID, err)
+		}
+		out[year] = domain.Money(cents)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("state: ledger cells iterate %q: %w", mflID, err)
+	}
+	return out, nil
+}
+
 // insertCell writes one contract_years cell and its INIT change-log row atomically within
 // the seed tx. The change row records the cell's birth (old 0 → new salary) with a dated
 // reason, the first entry in the human-verifiable audit trail for that cell.

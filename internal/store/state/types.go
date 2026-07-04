@@ -97,6 +97,15 @@ type TxWriter interface {
 	// restructured before releasing him. It reflects committed state, NOT this tx's own
 	// uncommitted writes; a single read-then-write op (waiver, tag) is consistent.
 	Player(mflID string) (PlayerState, bool)
+
+	// MoveCellMoney moves `amount` from one contract-year cell to another for a player,
+	// conserving the contract total (the §11 restructure primitive — "just moving money
+	// from year to year"). It subtracts from fromYear, adds to toYear, and logs BOTH cell
+	// deltas to the immutable change log with the given reason, all in the shared tx. The
+	// store conserves by construction (one move = equal and opposite deltas); the rule math
+	// (tier max, which years) is the handler's. Fails loud if a cell is missing or would go
+	// negative.
+	MoveCellMoney(ctx context.Context, mflID string, fromYear, toYear int, amount domain.Money, reason string) error
 	// Season is the absolute league year this store operates on — the handler derives
 	// "remaining years" (expiration_year − season) for the §8 charge from it.
 	Season() int
