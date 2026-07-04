@@ -20,6 +20,7 @@ const (
 	KindRosterStatus Kind = "ROSTER_STATUS"
 	KindWaiver       Kind = "WAIVER"
 	KindRestructure  Kind = "RESTRUCTURE"
+	KindTag          Kind = "TAG"
 )
 
 // Request is a transaction the Coordinator can execute. The concrete types live in THIS
@@ -173,6 +174,36 @@ func (r Restructure) validate() error {
 func (r Restructure) apply(ctx context.Context, w state.TxWriter) (int, error) {
 	if err := contracts.Restructure(ctx, w, r.MFLID, r.Move); err != nil {
 		return 0, fmt.Errorf("restructure: %w", err)
+	}
+	return 1, nil
+}
+
+// Tag applies a §9 franchise tag: the player's salary becomes the top-5-by-position
+// league-wide average (floored at 120% of his prior-year salary). The price is NOT a field
+// a caller sets — it is resolved authoritatively by Coordinator.ExecuteTag from committed
+// state and stored in the unexported price field, so the IPC boundary carries only the
+// player id. A zero-price Tag (constructed directly, never resolved) is rejected in apply.
+type Tag struct {
+	MFLID string
+	price domain.Money // resolved by Coordinator.ExecuteTag; unexported so no caller supplies it
+}
+
+func (Tag) Kind() Kind { return KindTag }
+func (Tag) sealed()    {}
+
+// validate rejects only an empty player id here; the position, the top-5 average, the 120%
+// floor, and the per-season limit are all resolved/enforced against authoritative state
+// (ExecuteTag + the handler), never trusted from the request.
+func (t Tag) validate() error {
+	if strings.TrimSpace(t.MFLID) == "" {
+		return fmt.Errorf("transactions: tag has an empty player id")
+	}
+	return nil
+}
+
+func (t Tag) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if err := contracts.Tag(ctx, w, t.MFLID, t.price); err != nil {
+		return 0, fmt.Errorf("tag: %w", err)
 	}
 	return 1, nil
 }

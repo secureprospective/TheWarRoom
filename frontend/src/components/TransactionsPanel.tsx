@@ -8,7 +8,7 @@ import { main } from '../../wailsjs/go/models';
 // B7b. Every mutation goes through one IPC call (ExecuteTransaction), which the backend
 // runs as one atomic transaction; a failed transaction changes nothing.
 
-type Kind = 'TRADE' | 'ROSTER_STATUS' | 'WAIVER' | 'RESTRUCTURE';
+type Kind = 'TRADE' | 'ROSTER_STATUS' | 'WAIVER' | 'RESTRUCTURE' | 'TAG';
 type Leg = { mflID: string; toFranchiseID: string };
 
 export function TransactionsPanel() {
@@ -19,6 +19,7 @@ export function TransactionsPanel() {
   const [waiverMflID, setWaiverMflID] = useState('');
   const [restructureMflID, setRestructureMflID] = useState('');
   const [moveMillions, setMoveMillions] = useState('');
+  const [tagMflID, setTagMflID] = useState('');
   const [result, setResult] = useState<main.TransactionResult | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -38,7 +39,9 @@ export function TransactionsPanel() {
               ? waiverMflID
               : kind === 'RESTRUCTURE'
                 ? restructureMflID
-                : '',
+                : kind === 'TAG'
+                  ? tagMflID
+                  : '',
         status: kind === 'ROSTER_STATUS' ? status : '',
         moveMillions: kind === 'RESTRUCTURE' ? moveMillions : '',
       });
@@ -59,7 +62,7 @@ export function TransactionsPanel() {
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Execute Transaction</h2>
         <div className="flex gap-2">
-          {(['TRADE', 'ROSTER_STATUS', 'WAIVER', 'RESTRUCTURE'] as Kind[]).map((k) => (
+          {(['TRADE', 'ROSTER_STATUS', 'WAIVER', 'RESTRUCTURE', 'TAG'] as Kind[]).map((k) => (
             <button
               key={k}
               type="button"
@@ -74,7 +77,9 @@ export function TransactionsPanel() {
                   ? 'Roster status'
                   : k === 'WAIVER'
                     ? 'Waiver (cut)'
-                    : 'Restructure'}
+                    : k === 'RESTRUCTURE'
+                      ? 'Restructure'
+                      : 'Tag (§9)'}
             </button>
           ))}
         </div>
@@ -148,7 +153,7 @@ export function TransactionsPanel() {
               years, 50% if restructured) against the current season.
             </p>
           </div>
-        ) : (
+        ) : kind === 'RESTRUCTURE' ? (
           <div className="space-y-1">
             <div className="flex gap-2">
               <input
@@ -169,6 +174,20 @@ export function TransactionsPanel() {
               choice, bounded by the tier max — ≥$3M→$1M, ≥$6M→$2M, ≥$12M→$3M) and flags the
               contract restructured (a later cut then charges 50% dead cap). One per team per
               year, one per contract.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <input
+              className="w-32 rounded bg-slate-800 px-2 py-1 text-sm"
+              placeholder="player mflID"
+              value={tagMflID}
+              onChange={(e) => setTagMflID(e.target.value)}
+            />
+            <p className="text-xs text-slate-400">
+              §9 franchise tag: sets the player's salary to the average of the top-5 salaries
+              at his position league-wide, floored at 120% of his prior-year salary. The price
+              is resolved server-side (nothing to enter). One tag per team per year.
             </p>
           </div>
         )}

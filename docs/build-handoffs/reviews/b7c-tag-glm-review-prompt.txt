@@ -1,0 +1,787 @@
+You are doing a BLIND code review of a single Go build for a fantasy-football cap engine
+(TheWarRoom). Report LEADS, not verdicts — anything you'd want a human to check, ranked
+MAJOR / MINOR / NOTE. I will triage each against the source. Do not assume access to the
+repo; everything you need is inlined below.
+
+=== THE RULE BEING IMPLEMENTED (league rulebook §9, Franchise Tag) ===
+- One tag per team per year (optional).
+- Tag price = average salary of the top-5 players at that position, league-wide.
+- If tag price < player's previous-year salary: tag = 120% of previous year.
+- (DEFERRED this build: "max two consecutive years" and "2nd tag = 120% of first" — they
+  need cross-season per-player history that does not exist yet. NOT in scope. Do not flag
+  their absence as a bug; do flag if the code half-implements them incorrectly.)
+
+=== ARCHITECTURE FACTS (invariants you can rely on) ===
+- Money is domain.Money = int64 CENTS. $1M = 100_000_000 cents. NO float money anywhere.
+- CapUsed is DERIVED = the exact-cents SUM of a franchise's contract salaries (no proration,
+  no spreading — this league's math is FLAT). So setting a player's cap-counting salary sets
+  his cap contribution directly.
+- The state store is POSITION-BLIND: PlayerState has no position. Position comes from a
+  separate players-DB "Directory" (normalize.Lookup) — the same seam M1 uses.
+- state.Reader has Franchises() []string, Roster(fid) ([]PlayerState, bool), Player(id).
+- The Coordinator is the SOLE state mutator; every write runs inside one spanning tx
+  (WriteTx). Handlers run behind a depguard (only reachable via Coordinator.Execute).
+- TxWriter.OpCount/IncOpCount back a durable per-(franchise,season,op_kind) counter table
+  used for per-season op limits. OpCount reads COMMITTED state (not this tx's own bumps) —
+  fine for one-check-one-bump ops.
+- EffectiveSalary(ps) = AdjustedSalary if set, else Salary.
+
+=== DESIGN DECISIONS (locked with the owner — review for correctness, not for taste) ===
+1. Tag price resolved AUTHORITATIVELY in Coordinator.ExecuteTag from committed state; the
+   request carries only the player id (price is an unexported field). No money over IPC.
+2. "Previous-year salary" for the 120% floor = the player's CURRENT Salary (tag happens at
+   the season boundary, so current annual salary IS last year's). No history store.
+3. Averages/floor round HALF-UP on integer cents.
+
+Focus your review on: money/rounding correctness, the top-5 selection + edge cases (fewer
+than 5, position filtering, the tagged player himself in the pool), the floor math, the
+per-season limit enforcement + rollback, concurrency/consistency of the read-then-write,
+and any way a rule violation could become representable. Here is the source:
+
+
+================ FILE: internal/transactions/pricing.go ================
+
+package transactions
+
+import (
+	"sort"
+
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
+)
+
+// Directory resolves a rostered mfl id to its players-DB facts (position is the one this
+// package needs). normalize.Lookup satisfies it; a fake drops in for tests. This mirrors
+// rankings.Directory — the store is deliberately position-blind, so §9's top-5-by-position
+// average joins to the players DB here, not in the state store.
+type Directory interface {
+	Facts(mflID string) (normalize.PlayerFacts, bool)
+}
+
+// tagTopN is the §9 pool size: the tag price is the average of the top-N salaries at the
+// position, league-wide.
+const tagTopN = 5
+
+// tagFloorNum / tagFloorDen express the §9 floor "120% of the player's previous-year
+// salary" as an exact integer ratio (no float money).
+const (
+	tagFloorNum = 120
+	tagFloorDen = 100
+)
+
+// tagPrice computes the §9 franchise-tag price for a position: the average of the top-5
+// (tagTopN) current salaries at that position across every roster, league-wide. It is a
+// pure read over authoritative state — the Coordinator calls it BEFORE opening the write
+// transaction (the single-writer law means committed state can't shift underneath it), so
+// the resulting figure is authoritative and no money crosses the IPC boundary. Salaries are
+// exact cents; the average rounds half-up to the cent. Returns 0 only if NO rostered player
+// plays the position (impossible for a real tag, since the tagged player himself is one).
+func tagPrice(r state.Reader, dir Directory, pos domain.Position) domain.Money {
+	var salaries []domain.Money
+	for _, fid := range r.Franchises() {
+		roster, ok := r.Roster(fid)
+		if !ok {
+			continue
+		}
+		for _, ps := range roster {
+			facts, ok := dir.Facts(ps.MFLID)
+			if !ok || facts.Position != pos {
+				continue
+			}
+			salaries = append(salaries, ps.Salary)
+		}
+	}
+	if len(salaries) == 0 {
+		return 0
+	}
+	// Top-N by salary, descending.
+	sort.Slice(salaries, func(i, j int) bool { return salaries[i] > salaries[j] })
+	n := tagTopN
+	if len(salaries) < n {
+		n = len(salaries)
+	}
+	var sum domain.Money
+	for i := 0; i < n; i++ {
+		sum += salaries[i]
+	}
+	// Average, rounded half-up to the cent: (sum + n/2) / n on exact-cents integers.
+	return (sum + domain.Money(n)/2) / domain.Money(n)
+}
+
+// tagFloorPrice applies the §9 floor: the tag is the greater of the top-5 average and 120%
+// of the player's previous-year salary. At tag time (the season boundary) a player's CURRENT
+// annual salary IS his previous year's, so priorSalary is ps.Salary — no history store (v1
+// decision, Christopher 2026-07-04). The 120% is exact integer ratio math (round half-up).
+func tagFloorPrice(topFive, priorSalary domain.Money) domain.Money {
+	floor := (priorSalary*tagFloorNum + tagFloorDen/2) / tagFloorDen
+	if floor > topFive {
+		return floor
+	}
+	return topFive
+}
+
+================ FILE: internal/transactions/coordinator.go ================
+
+// Package transactions is the B7a transaction layer: the ONE component that mutates
+// league state at runtime (AD-02 single-writer law). Everything before it reads; the
+// Coordinator writes. It holds the injected state.Writer — the SOLE holder in the
+// process — and exposes exactly one verb, Execute(ctx, Request) (Receipt, error).
+//
+// Every transaction runs inside state's spanning transaction (Writer.WriteTx): the
+// Coordinator hands the request's steps to one TxWriter, so a multi-leg trade commits
+// as a unit or rolls back whole. Request types are defined in this root package (see
+// request.go) so callers never import a handler subpackage; the handlers themselves
+// live in acquisitions/ (and, once Money is locked, contracts/ + deadcap/) behind the
+// transactions-only-through-coordinator depguard rule.
+package transactions
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
+)
+
+// Coordinator is the sole runtime mutator of league state. Construct with New.
+type Coordinator struct {
+	writer state.Writer
+	now    func() time.Time // injectable clock so a Receipt's timestamp is testable
+}
+
+// New wires the Coordinator with the single state.Writer it will ever hold. A nil
+// writer is a wiring error surfaced HERE, at construction — never a Coordinator that
+// silently no-ops every transaction at run time (the rankings.New fail-loud rule).
+func New(w state.Writer) (*Coordinator, error) {
+	if w == nil {
+		return nil, fmt.Errorf("transactions: nil state.Writer — the coordinator is the sole runtime mutator and requires it")
+	}
+	return &Coordinator{writer: w, now: time.Now}, nil
+}
+
+// Receipt is the outcome of one executed transaction: what kind ran, how many players
+// it moved, and when it committed. It is returned only on success — a failed
+// transaction returns a zero Receipt and the error, never a partial receipt.
+type Receipt struct {
+	Kind            Kind      `json:"kind"`
+	PlayersAffected int       `json:"playersAffected"`
+	At              time.Time `json:"at"`
+}
+
+// Execute validates the request, then runs its steps in ONE spanning transaction. On
+// any error — validation, a failed step, or a commit failure — nothing is persisted
+// (WriteTx rolls back) and a zero Receipt is returned with the error. On success the
+// Receipt reflects the committed change.
+func (c *Coordinator) Execute(ctx context.Context, req Request) (Receipt, error) {
+	if req == nil {
+		return Receipt{}, fmt.Errorf("transactions: Execute called with a nil request")
+	}
+	if err := req.validate(); err != nil {
+		return Receipt{}, err // rejected before a transaction is even opened
+	}
+
+	var affected int
+	err := c.writer.WriteTx(ctx, func(w state.TxWriter) error {
+		n, aerr := req.apply(ctx, w)
+		affected = n
+		return aerr
+	})
+	if err != nil {
+		return Receipt{}, fmt.Errorf("transactions: execute %s: %w", req.Kind(), err)
+	}
+	return Receipt{Kind: req.Kind(), PlayersAffected: affected, At: c.now().UTC()}, nil
+}
+
+// ExecuteTag runs a §9 franchise tag. It RESOLVES the tag price here — the top-5-by-position
+// league-wide average, floored at 120% of the player's prior-year salary — from the
+// Coordinator's own authoritative Reader plus the supplied Directory (the players-DB
+// position join), then delegates to Execute. The price is computed in this trusted core, not
+// carried across the IPC boundary: the frontend sends only a player id. The Directory is
+// passed per-call because the app builds its players-DB Lookup lazily (it is not available at
+// startup when the Coordinator is constructed). Fails loud before opening any transaction if
+// the player is unrostered or has no resolvable position.
+func (c *Coordinator) ExecuteTag(ctx context.Context, mflID string, dir Directory) (Receipt, error) {
+	if dir == nil {
+		return Receipt{}, fmt.Errorf("transactions: tag %q: nil directory (position join required for the §9 price)", mflID)
+	}
+	ps, ok := c.writer.Player(mflID)
+	if !ok {
+		return Receipt{}, fmt.Errorf("transactions: tag %q: player not on any roster", mflID)
+	}
+	facts, ok := dir.Facts(mflID)
+	if !ok {
+		return Receipt{}, fmt.Errorf("transactions: tag %q: no players-DB record — cannot resolve position for the §9 top-5 average", mflID)
+	}
+	price := tagFloorPrice(tagPrice(c.writer, dir, facts.Position), ps.Salary)
+	return c.Execute(ctx, Tag{MFLID: mflID, price: price})
+}
+
+================ FILE: internal/transactions/contracts/contracts.go ================
+
+// Package contracts holds the §9–§13 contract-op handlers that run BEHIND the B7a
+// Coordinator: the per-player steps of a restructure (and, later, tag/extension/buyout)
+// executed against a state.TxWriter inside the Coordinator's spanning transaction. Like
+// the acquisitions/deadcap siblings it is implementation detail — depguard
+// (transactions-only-through-coordinator) denies importing it from outside
+// internal/transactions, so the ONLY way to run one of these is Coordinator.Execute. The
+// handlers neither open nor commit a transaction; they sequence TxWriter calls and fail
+// loud, and the enclosing WriteTx makes the set atomic.
+//
+// The math is FLAT (this league has no proration/acceleration — that NFL-model leakage was
+// struck from OQ-014). CapUsed is the exact-cents SUM of a franchise's contracts, so a
+// restructure that lowers a player's cap-counting salary by the owner's move lowers the cap
+// by exactly that move — no spreading, no future-year bookkeeping.
+package contracts
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
+)
+
+// restructureOpKind is the per-season op-counter key for §11's "one restructure per team
+// per year" limit (a row in transaction_counts).
+const restructureOpKind = "RESTRUCTURE"
+
+// tagOpKind is the per-season op-counter key for §9's "one tag per team per year" limit
+// (its own row in transaction_counts, independent of restructure).
+const tagOpKind = "TAG"
+
+// million is $1,000,000 in exact cents ($1M = 1e6 dollars × 100 cents = 1e8 cents) — the
+// unit of the §11 restructure tier table.
+const million = domain.Money(100_000_000)
+
+// MaxMove returns the §11 maximum restructure "move" for a given Contract-Year Salary, and
+// whether the contract is eligible to restructure at all. It is the rulebook §11 table
+// encoded as a pure step function, so a move outside the allowed band is impossible by
+// construction:
+//
+//	Contract-Year Salary  Max Move
+//	≥ $12M                $3M
+//	≥ $6M                 $2M
+//	≥ $3M                 $1M
+//	<  $3M                ineligible (ok=false)
+//
+// Every tier's max is strictly below its threshold, so subtracting a valid move from an
+// eligible salary always leaves a positive cap-counting figure.
+func MaxMove(contractYearSalary domain.Money) (maxMove domain.Money, eligible bool) {
+	switch {
+	case contractYearSalary >= 12*million:
+		return 3 * million, true
+	case contractYearSalary >= 6*million:
+		return 2 * million, true
+	case contractYearSalary >= 3*million:
+		return 1 * million, true
+	default:
+		return 0, false
+	}
+}
+
+// Restructure applies a §11 contract restructure against the shared tx writer: it lowers a
+// player's cap-counting (adjusted) salary by the owner-chosen move and flags the contract
+// restructured, so a later §8 cut charges 50% dead cap instead of 35%. It enforces both
+// rulebook limits — one restructure per contract (is_restructured) and one per franchise
+// per season (the durable op counter) — and validates the move against the §11 tier max
+// read off the base Contract-Year Salary. The move amount is the owner's strategic choice
+// WITHIN those bounds (Christopher, 2026-07-04): the rules ARE the boundary, so no rule
+// violation is representable. Flat math — lowering the adjusted salary lowers CapUsed by
+// exactly the move. Fails loud on an unknown player, an already-restructured or ineligible
+// contract, an over-max move, or a spent per-season allowance.
+func Restructure(ctx context.Context, w state.TxWriter, mflID string, move domain.Money) error {
+	ps, ok := w.Player(mflID)
+	if !ok {
+		return fmt.Errorf("contracts: restructure %q: player not on any roster", mflID)
+	}
+	if ps.IsRestructured {
+		return fmt.Errorf("contracts: restructure %q: contract already restructured (one per contract, §11)", mflID)
+	}
+
+	// §11 tiers on the base Contract-Year Salary (ps.Salary), never the adjusted figure.
+	maxMove, eligible := MaxMove(ps.Salary)
+	if !eligible {
+		return fmt.Errorf("contracts: restructure %q: contract-year salary %s is below the $3M restructure floor (§11)", mflID, ps.Salary)
+	}
+	if move <= 0 {
+		return fmt.Errorf("contracts: restructure %q: move must be positive, got %s", mflID, move)
+	}
+	if move > maxMove {
+		return fmt.Errorf("contracts: restructure %q: move %s exceeds the §11 tier max %s for a %s contract-year salary", mflID, move, maxMove, ps.Salary)
+	}
+
+	// §11: one restructure per franchise per season.
+	spent, err := w.OpCount(ctx, ps.FranchiseID, restructureOpKind)
+	if err != nil {
+		return fmt.Errorf("contracts: restructure %q: %w", mflID, err)
+	}
+	if spent >= 1 {
+		return fmt.Errorf("contracts: restructure: franchise %q has already restructured a contract this season (one per team per year, §11)", ps.FranchiseID)
+	}
+
+	// Flat math: drop the cap-counting salary by the move. §11 tiers on the BASE salary, but
+	// the money comes out of the cap-counting (effective) figure — equal in v1 (no prior
+	// adjustments). Bound the move by the current effective salary so newAdjusted can NEVER
+	// go negative even if a future downward adjustment made effective < base: the invariant
+	// is asserted LOCALLY here, not left to ApplyContract's non-negative backstop. This only
+	// adds a floor; it never widens the §11 tier band.
+	eff := state.EffectiveSalary(ps)
+	if move > eff {
+		return fmt.Errorf("contracts: restructure %q: move %s exceeds the player's cap-counting salary %s", mflID, move, eff)
+	}
+	newAdjusted := eff - move
+	change := state.ContractChange{
+		AnnualSalary:   ps.Salary, // base salary is unchanged — only the cap-counting figure drops
+		AdjustedSalary: newAdjusted,
+		ContractYears:  ps.ContractYears,
+		ExpirationYear: ps.ExpirationYear,
+		ContractStatus: ps.ContractStatus,
+		IsRestructured: true,
+		IsTagged:       ps.IsTagged,
+	}
+	if err := w.ApplyContract(ctx, mflID, change); err != nil {
+		return fmt.Errorf("contracts: restructure %q: %w", mflID, err)
+	}
+	if err := w.IncOpCount(ctx, ps.FranchiseID, restructureOpKind); err != nil {
+		return fmt.Errorf("contracts: restructure %q: bump per-season counter: %w", mflID, err)
+	}
+	return nil
+}
+
+// Tag applies a §9 franchise tag against the shared tx writer: it sets the player's
+// cap-counting salary to the already-resolved tag price and flags the contract tagged. The
+// price (the §9 top-5-by-position average, floored at 120% of the prior year) is computed
+// AUTHORITATIVELY by the Coordinator from committed state before this runs — the handler
+// never trusts a caller figure and never re-reads the league, it just writes the box. Flat
+// math: CapUsed is the sum of contracts, so setting the salary sets the cap contribution.
+// Enforces §9's "one tag per franchise per season" via the durable op counter. Fails loud on
+// an unknown player, an already-tagged contract, a non-positive price, or a spent allowance.
+//
+// v1 sets ONLY the salary + is_tagged (Christopher 2026-07-04, "lightest weight"): the
+// "two consecutive years" / "second tag = 120% of first" mechanics need cross-season
+// per-player history and are DEFERRED (handoff 30), so this does not touch contract length.
+func Tag(ctx context.Context, w state.TxWriter, mflID string, price domain.Money) error {
+	ps, ok := w.Player(mflID)
+	if !ok {
+		return fmt.Errorf("contracts: tag %q: player not on any roster", mflID)
+	}
+	if ps.IsTagged {
+		return fmt.Errorf("contracts: tag %q: contract already tagged (§9)", mflID)
+	}
+	if price <= 0 {
+		return fmt.Errorf("contracts: tag %q: resolved tag price must be positive, got %s", mflID, price)
+	}
+
+	// §9: one tag per franchise per season.
+	spent, err := w.OpCount(ctx, ps.FranchiseID, tagOpKind)
+	if err != nil {
+		return fmt.Errorf("contracts: tag %q: %w", mflID, err)
+	}
+	if spent >= 1 {
+		return fmt.Errorf("contracts: tag: franchise %q has already tagged a player this season (one per team per year, §9)", ps.FranchiseID)
+	}
+
+	change := state.ContractChange{
+		AnnualSalary:   price, // the tag IS a new salary (the §9 box); base and cap-counting both become the price
+		AdjustedSalary: price,
+		ContractYears:  ps.ContractYears,
+		ExpirationYear: ps.ExpirationYear,
+		ContractStatus: ps.ContractStatus,
+		IsRestructured: ps.IsRestructured,
+		IsTagged:       true,
+	}
+	if err := w.ApplyContract(ctx, mflID, change); err != nil {
+		return fmt.Errorf("contracts: tag %q: %w", mflID, err)
+	}
+	if err := w.IncOpCount(ctx, ps.FranchiseID, tagOpKind); err != nil {
+		return fmt.Errorf("contracts: tag %q: bump per-season counter: %w", mflID, err)
+	}
+	return nil
+}
+
+================ FILE: internal/transactions/request.go ================
+
+package transactions
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
+	"github.com/secureprospective/TheWarRoom/internal/transactions/acquisitions"
+	"github.com/secureprospective/TheWarRoom/internal/transactions/contracts"
+	"github.com/secureprospective/TheWarRoom/internal/transactions/deadcap"
+)
+
+// Kind names a transaction type — the discriminator carried on a Receipt and logged.
+type Kind string
+
+const (
+	KindTrade        Kind = "TRADE"
+	KindRosterStatus Kind = "ROSTER_STATUS"
+	KindWaiver       Kind = "WAIVER"
+	KindRestructure  Kind = "RESTRUCTURE"
+	KindTag          Kind = "TAG"
+)
+
+// Request is a transaction the Coordinator can execute. The concrete types live in THIS
+// root package, so a caller (the IPC layer) builds one directly and never imports a
+// handler subpackage (the depguard boundary). The set is closed by the unexported
+// sealed marker — a new transaction type is added here, deliberately, never externally.
+type Request interface {
+	Kind() Kind
+	validate() error
+	// apply runs the transaction's steps against the shared tx writer and returns how
+	// many players it touched. It performs no commit — WriteTx owns the transaction.
+	apply(ctx context.Context, w state.TxWriter) (int, error)
+	sealed()
+}
+
+// PlayerMove is one leg of a trade: which player goes to which franchise.
+type PlayerMove struct {
+	MFLID         string
+	ToFranchiseID string
+}
+
+// Trade reassigns a set of players between franchises atomically (an N-leg swap). Every
+// leg lands or none does.
+type Trade struct {
+	Moves []PlayerMove
+}
+
+func (Trade) Kind() Kind { return KindTrade }
+func (Trade) sealed()    {}
+
+// validate rejects a structurally broken trade BEFORE a transaction is opened: no legs,
+// a blank player/target, or the same player moved twice in one trade (ambiguous — the
+// last write would silently win).
+// maxTradeLegs caps a single trade's legs. Real trades are a handful of players; the
+// ceiling is a boundary guard so a malformed/hostile request can't allocate a giant
+// slice or run thousands of UPDATEs in one tx (GLM-B7a — unbounded req.Moves).
+const maxTradeLegs = 256
+
+func (t Trade) validate() error {
+	if len(t.Moves) == 0 {
+		return fmt.Errorf("transactions: trade has no moves")
+	}
+	if len(t.Moves) > maxTradeLegs {
+		return fmt.Errorf("transactions: trade has %d moves, exceeds max %d", len(t.Moves), maxTradeLegs)
+	}
+	seen := make(map[string]struct{}, len(t.Moves))
+	for i, m := range t.Moves {
+		if strings.TrimSpace(m.MFLID) == "" {
+			return fmt.Errorf("transactions: trade move %d has an empty player id", i)
+		}
+		if strings.TrimSpace(m.ToFranchiseID) == "" {
+			return fmt.Errorf("transactions: trade move %d (player %q) has an empty target franchise", i, m.MFLID)
+		}
+		if _, dup := seen[m.MFLID]; dup {
+			return fmt.Errorf("transactions: trade moves player %q more than once", m.MFLID)
+		}
+		seen[m.MFLID] = struct{}{}
+	}
+	return nil
+}
+
+func (t Trade) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	moves := make([]acquisitions.Move, len(t.Moves))
+	for i, m := range t.Moves {
+		moves[i] = acquisitions.Move{MFLID: m.MFLID, ToFranchiseID: m.ToFranchiseID}
+	}
+	if err := acquisitions.Trade(ctx, w, moves); err != nil {
+		return 0, fmt.Errorf("trade: %w", err)
+	}
+	return len(moves), nil
+}
+
+// RosterStatusChange moves one player between roster statuses (active ↔ taxi/IR).
+type RosterStatusChange struct {
+	MFLID  string
+	Status domain.RosterStatus
+}
+
+func (RosterStatusChange) Kind() Kind { return KindRosterStatus }
+func (RosterStatusChange) sealed()    {}
+
+// validate checks only the player id here; the status whitelist is enforced once, in the
+// state layer, so the two never drift.
+func (r RosterStatusChange) validate() error {
+	if strings.TrimSpace(r.MFLID) == "" {
+		return fmt.Errorf("transactions: roster-status change has an empty player id")
+	}
+	return nil
+}
+
+func (r RosterStatusChange) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if err := acquisitions.SetStatus(ctx, w, r.MFLID, r.Status); err != nil {
+		return 0, fmt.Errorf("roster status: %w", err)
+	}
+	return 1, nil
+}
+
+// Waiver cuts one player (§8): the releasing franchise loses him from its roster and
+// owes the §8 dead-cap penalty (35% × annual salary × remaining years, 50% if
+// restructured) against the current season's cap. v1 models the UNCLAIMED cut; a claim
+// (which ends the dead-cap obligation and moves the player) arrives with free agency.
+type Waiver struct {
+	MFLID string
+}
+
+func (Waiver) Kind() Kind { return KindWaiver }
+func (Waiver) sealed()    {}
+
+// validate rejects only an empty player id here; whether the player is actually rostered
+// (and every money figure) is resolved from authoritative state inside apply, never
+// trusted from the request.
+func (wv Waiver) validate() error {
+	if strings.TrimSpace(wv.MFLID) == "" {
+		return fmt.Errorf("transactions: waiver has an empty player id")
+	}
+	return nil
+}
+
+func (wv Waiver) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if _, err := deadcap.Waive(ctx, w, wv.MFLID); err != nil {
+		return 0, fmt.Errorf("waiver: %w", err)
+	}
+	return 1, nil
+}
+
+// Restructure lowers a player's cap-counting salary by the owner-chosen Move (§11),
+// bounded by the tier max ($1M/$2M/$3M by contract-year salary), and flags the contract
+// restructured (a later §8 cut then charges 50%). The tier, limits, and every money figure
+// are resolved from authoritative state inside apply — the request carries only the intent.
+type Restructure struct {
+	MFLID string
+	Move  domain.Money
+}
+
+func (Restructure) Kind() Kind { return KindRestructure }
+func (Restructure) sealed()    {}
+
+// validate rejects an empty player id or a non-positive move here; the tier max, the
+// eligibility floor, and the per-season/per-contract limits are enforced against real state
+// inside apply, never trusted from the request.
+func (r Restructure) validate() error {
+	if strings.TrimSpace(r.MFLID) == "" {
+		return fmt.Errorf("transactions: restructure has an empty player id")
+	}
+	if r.Move <= 0 {
+		return fmt.Errorf("transactions: restructure move must be positive")
+	}
+	return nil
+}
+
+func (r Restructure) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if err := contracts.Restructure(ctx, w, r.MFLID, r.Move); err != nil {
+		return 0, fmt.Errorf("restructure: %w", err)
+	}
+	return 1, nil
+}
+
+// Tag applies a §9 franchise tag: the player's salary becomes the top-5-by-position
+// league-wide average (floored at 120% of his prior-year salary). The price is NOT a field
+// a caller sets — it is resolved authoritatively by Coordinator.ExecuteTag from committed
+// state and stored in the unexported price field, so the IPC boundary carries only the
+// player id. A zero-price Tag (constructed directly, never resolved) is rejected in apply.
+type Tag struct {
+	MFLID string
+	price domain.Money // resolved by Coordinator.ExecuteTag; unexported so no caller supplies it
+}
+
+func (Tag) Kind() Kind { return KindTag }
+func (Tag) sealed()    {}
+
+// validate rejects only an empty player id here; the position, the top-5 average, the 120%
+// floor, and the per-season limit are all resolved/enforced against authoritative state
+// (ExecuteTag + the handler), never trusted from the request.
+func (t Tag) validate() error {
+	if strings.TrimSpace(t.MFLID) == "" {
+		return fmt.Errorf("transactions: tag has an empty player id")
+	}
+	return nil
+}
+
+func (t Tag) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if err := contracts.Tag(ctx, w, t.MFLID, t.price); err != nil {
+		return 0, fmt.Errorf("tag: %w", err)
+	}
+	return 1, nil
+}
+
+================ FILE: transactions_app.go ================
+
+package main
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/transactions"
+)
+
+// MoveDTO is one leg of a trade as it crosses the IPC boundary.
+type MoveDTO struct {
+	MFLID         string `json:"mflID"`
+	ToFranchiseID string `json:"toFranchiseID"`
+}
+
+// TransactionRequest is the typed IPC payload the dev transaction form sends. Kind
+// selects which fields are read: TRADE reads Moves; ROSTER_STATUS reads MFLID + Status;
+// WAIVER reads MFLID (the §8 cut); RESTRUCTURE reads MFLID + MoveMillions (the §11 move,
+// in millions of dollars — parsed to exact cents server-side, never as a JS number). Every
+// money figure and limit is resolved server-side from authoritative state.
+// It stays fully typed (no any/interface{}) so the ifaceguard boundary holds; the App
+// method translates it into the sealed transactions.Request the Coordinator executes.
+type TransactionRequest struct {
+	Kind         string    `json:"kind"`
+	Moves        []MoveDTO `json:"moves"`
+	MFLID        string    `json:"mflID"`
+	Status       string    `json:"status"`
+	MoveMillions string    `json:"moveMillions"`
+}
+
+// TransactionResult is the typed IPC outcome: OK plus the committed Receipt fields, or
+// OK=false with a human-readable Detail. A failed transaction changed nothing (the
+// Coordinator rolls back), so the frontend can safely re-read state after any result.
+type TransactionResult struct {
+	OK              bool   `json:"ok"`
+	Kind            string `json:"kind"`
+	PlayersAffected int    `json:"playersAffected"`
+	At              string `json:"at"`
+	Detail          string `json:"detail"`
+}
+
+// ExecuteTransaction is the dev-surface IPC method (functional gate for B7a): it runs a
+// trade or roster-status change through the Coordinator and returns a typed result. The
+// UI is deliberately minimal — debuggability over polish; a full transaction UI is B7b.
+func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
+	if a.startupErr != nil {
+		return TransactionResult{Detail: a.startupErr.Error()}
+	}
+	if a.coordinator == nil {
+		return TransactionResult{Detail: "transaction coordinator not initialized"}
+	}
+
+	// Bounded context: an IPC method must never block the frontend indefinitely if the
+	// data layer stalls (the Ping/M1 pattern). A tag additionally fetches the players-DB
+	// Lookup, so it gets a longer budget.
+	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
+	defer cancel()
+
+	// TAG (§9) runs a distinct Coordinator verb: the price is resolved server-side from the
+	// top-5-by-position league-wide average, which needs the players-DB position join
+	// (the Lookup). It never crosses the wire — the frontend sends only the player id.
+	if req.Kind == string(transactions.KindTag) {
+		dir, derr := a.directory(ctx)
+		if derr != nil {
+			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §9 tag price: " + derr.Error()}
+		}
+		rec, terr := a.coordinator.ExecuteTag(ctx, req.MFLID, dir)
+		if terr != nil {
+			return TransactionResult{Kind: req.Kind, Detail: terr.Error()}
+		}
+		return TransactionResult{OK: true, Kind: string(rec.Kind), PlayersAffected: rec.PlayersAffected, At: rec.At.Format(time.RFC3339)}
+	}
+
+	txn, err := buildRequest(req)
+	if err != nil {
+		return TransactionResult{Detail: err.Error()}
+	}
+
+	rec, err := a.coordinator.Execute(ctx, txn)
+	if err != nil {
+		return TransactionResult{Kind: req.Kind, Detail: err.Error()}
+	}
+	return TransactionResult{
+		OK:              true,
+		Kind:            string(rec.Kind),
+		PlayersAffected: rec.PlayersAffected,
+		At:              rec.At.Format(time.RFC3339),
+	}
+}
+
+// FranchisePlayerDTO is one player's live state as the dev surface renders it.
+type FranchisePlayerDTO struct {
+	MFLID          string  `json:"mflID"`
+	RosterStatus   string  `json:"rosterStatus"`
+	Salary         float64 `json:"salary"`
+	AdjustedSalary float64 `json:"adjustedSalary"`
+}
+
+// FranchiseStateResult is a read of one franchise's runtime state: its cap usage and
+// roster. It backs the "load → transact → reload" flow that IS the B7a functional gate.
+type FranchiseStateResult struct {
+	OK          bool                 `json:"ok"`
+	FranchiseID string               `json:"franchiseID"`
+	CapUsed     float64              `json:"capUsed"`
+	Players     []FranchisePlayerDTO `json:"players"`
+	Detail      string               `json:"detail"`
+}
+
+// GetFranchiseState reads one franchise's current roster + derived cap through the
+// read-only surface (never the writer), so the dev form can confirm a transaction's
+// effect with a fresh read after it commits.
+func (a *App) GetFranchiseState(franchiseID string) FranchiseStateResult {
+	if a.startupErr != nil {
+		return FranchiseStateResult{Detail: a.startupErr.Error()}
+	}
+	if a.state == nil {
+		return FranchiseStateResult{Detail: "state store not initialized"}
+	}
+	// If a prior transaction committed but its reload failed, in-memory reads are stale —
+	// surface that instead of confidently showing a pre-transaction roster (GLM-B7a).
+	if err := a.state.Err(); err != nil {
+		return FranchiseStateResult{FranchiseID: franchiseID, Detail: "state is stale after a failed reload: " + err.Error()}
+	}
+	fs, ok := a.state.Reader().FranchiseState(franchiseID)
+	if !ok {
+		return FranchiseStateResult{FranchiseID: franchiseID, Detail: "no such franchise (or it holds no players)"}
+	}
+	players := make([]FranchisePlayerDTO, len(fs.Players))
+	for i, p := range fs.Players {
+		players[i] = FranchisePlayerDTO{
+			MFLID:        p.MFLID,
+			RosterStatus: string(p.RosterStatus),
+			// Money → float millions at the display edge; cents-on-the-wire + React
+			// formatting is a B7c follow-up (no money math happens frontend-side).
+			Salary:         p.Salary.Millions(),
+			AdjustedSalary: p.AdjustedSalary.Millions(),
+		}
+	}
+	return FranchiseStateResult{OK: true, FranchiseID: franchiseID, CapUsed: fs.CapUsed.Millions(), Players: players}
+}
+
+// buildRequest maps the wire DTO onto a sealed transactions.Request. An unknown Kind is
+// rejected here, at the boundary, before the Coordinator is touched.
+func buildRequest(req TransactionRequest) (transactions.Request, error) {
+	switch req.Kind {
+	case string(transactions.KindTrade):
+		moves := make([]transactions.PlayerMove, len(req.Moves))
+		for i, m := range req.Moves {
+			moves[i] = transactions.PlayerMove{MFLID: m.MFLID, ToFranchiseID: m.ToFranchiseID}
+		}
+		return transactions.Trade{Moves: moves}, nil
+	case string(transactions.KindRosterStatus):
+		return transactions.RosterStatusChange{
+			MFLID:  req.MFLID,
+			Status: domain.RosterStatus(req.Status),
+		}, nil
+	case string(transactions.KindWaiver):
+		return transactions.Waiver{MFLID: req.MFLID}, nil
+	case string(transactions.KindRestructure):
+		// Millions string → exact cents at the boundary (no float money math frontend-side).
+		move, err := domain.ParseMoneyMillions(req.MoveMillions)
+		if err != nil {
+			return nil, fmt.Errorf("restructure move: %w", err)
+		}
+		return transactions.Restructure{MFLID: req.MFLID, Move: move}, nil
+	default:
+		return nil, fmt.Errorf("unknown transaction kind %q", req.Kind)
+	}
+}
