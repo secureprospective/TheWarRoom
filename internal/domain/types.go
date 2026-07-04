@@ -12,7 +12,7 @@ type PlayerRecord struct {
 	Name           string            // "Last, First", from the players DB
 	Position       Position          // normalized engine position (PosFlag = needs review)
 	NFLTeam        string            // 3-letter NFL code, or "FA"
-	Salary         float64           // millions, parsed from the raw string
+	Salary         Money             // exact cents, parsed from the raw millions string
 	ContractYear   int               // final contract year (0 if absent)
 	ContractStatus ContractStatus    // normalized (CStatusFlag = needs review)
 	ContractInfo   string            // free-text MFL note — DISPLAY ONLY

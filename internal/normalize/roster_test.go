@@ -65,14 +65,14 @@ func TestParseSalary(t *testing.T) {
 	id := mustID(t, "0531")
 	tests := []struct {
 		raw     string
-		want    float64
+		want    domain.Money // exact cents ($1M = 1e8 cents)
 		wantErr bool
 	}{
-		{"7", 7, false},
-		{"1.30", 1.30, false},
-		{"17.70", 17.70, false},
+		{"7", 700_000_000, false},
+		{"1.30", 130_000_000, false},
+		{"17.70", 1_770_000_000, false},
 		{"", 0, false}, // empty is legitimately $0
-		{"  2.5 ", 2.5, false},
+		{"  2.5 ", 250_000_000, false},
 		{"free", 0, true},
 	}
 	for _, tt := range tests {
@@ -137,7 +137,7 @@ func TestPlayer_Join(t *testing.T) {
 	if pr.MFLID.String() != "0815" || pr.Name != "Kelce, Travis" || pr.Position != domain.PosTE {
 		t.Fatalf("join wrong: %+v", pr)
 	}
-	if pr.Salary != 17.70 || pr.ContractYear != 2026 || pr.ContractStatus != domain.CStatusUFA {
+	if pr.Salary != domain.Money(1_770_000_000) || pr.ContractYear != 2026 || pr.ContractStatus != domain.CStatusUFA {
 		t.Fatalf("field parse wrong: %+v", pr)
 	}
 	if pr.RosterStatus != domain.RosterActive || pr.NeedsAdminReview() {

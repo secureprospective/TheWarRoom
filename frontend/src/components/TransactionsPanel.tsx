@@ -8,7 +8,7 @@ import { main } from '../../wailsjs/go/models';
 // B7b. Every mutation goes through one IPC call (ExecuteTransaction), which the backend
 // runs as one atomic transaction; a failed transaction changes nothing.
 
-type Kind = 'TRADE' | 'ROSTER_STATUS';
+type Kind = 'TRADE' | 'ROSTER_STATUS' | 'WAIVER';
 type Leg = { mflID: string; toFranchiseID: string };
 
 export function TransactionsPanel() {
@@ -16,6 +16,7 @@ export function TransactionsPanel() {
   const [legs, setLegs] = useState<Leg[]>([{ mflID: '', toFranchiseID: '' }]);
   const [statusMflID, setStatusMflID] = useState('');
   const [status, setStatus] = useState('ROSTER');
+  const [waiverMflID, setWaiverMflID] = useState('');
   const [result, setResult] = useState<main.TransactionResult | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -28,7 +29,7 @@ export function TransactionsPanel() {
       const req = main.TransactionRequest.createFrom({
         kind,
         moves: kind === 'TRADE' ? legs : [],
-        mflID: kind === 'ROSTER_STATUS' ? statusMflID : '',
+        mflID: kind === 'ROSTER_STATUS' ? statusMflID : kind === 'WAIVER' ? waiverMflID : '',
         status: kind === 'ROSTER_STATUS' ? status : '',
       });
       setResult(await ExecuteTransaction(req));
@@ -48,7 +49,7 @@ export function TransactionsPanel() {
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Execute Transaction</h2>
         <div className="flex gap-2">
-          {(['TRADE', 'ROSTER_STATUS'] as Kind[]).map((k) => (
+          {(['TRADE', 'ROSTER_STATUS', 'WAIVER'] as Kind[]).map((k) => (
             <button
               key={k}
               type="button"
@@ -57,7 +58,7 @@ export function TransactionsPanel() {
                 kind === k ? 'bg-emerald-700 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >
-              {k === 'TRADE' ? 'Trade' : 'Roster status'}
+              {k === 'TRADE' ? 'Trade' : k === 'ROSTER_STATUS' ? 'Roster status' : 'Waiver (cut)'}
             </button>
           ))}
         </div>
@@ -101,7 +102,7 @@ export function TransactionsPanel() {
               + add leg
             </button>
           </div>
-        ) : (
+        ) : kind === 'ROSTER_STATUS' ? (
           <div className="flex gap-2">
             <input
               className="w-32 rounded bg-slate-800 px-2 py-1 text-sm"
@@ -117,6 +118,19 @@ export function TransactionsPanel() {
               <option value="ROSTER">ROSTER</option>
               <option value="TAXI_SQUAD">TAXI_SQUAD</option>
             </select>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <input
+              className="w-32 rounded bg-slate-800 px-2 py-1 text-sm"
+              placeholder="player mflID"
+              value={waiverMflID}
+              onChange={(e) => setWaiverMflID(e.target.value)}
+            />
+            <p className="text-xs text-slate-400">
+              Cut releases the player and charges §8 dead cap (35% × salary × remaining
+              years, 50% if restructured) against the current season.
+            </p>
           </div>
         )}
 

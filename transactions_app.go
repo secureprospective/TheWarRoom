@@ -16,7 +16,8 @@ type MoveDTO struct {
 }
 
 // TransactionRequest is the typed IPC payload the dev transaction form sends. Kind
-// selects which fields are read: TRADE reads Moves; ROSTER_STATUS reads MFLID + Status.
+// selects which fields are read: TRADE reads Moves; ROSTER_STATUS reads MFLID + Status;
+// WAIVER reads MFLID (the §8 cut — every money figure is resolved server-side).
 // It stays fully typed (no any/interface{}) so the ifaceguard boundary holds; the App
 // method translates it into the sealed transactions.Request the Coordinator executes.
 type TransactionRequest struct {
@@ -110,13 +111,15 @@ func (a *App) GetFranchiseState(franchiseID string) FranchiseStateResult {
 	players := make([]FranchisePlayerDTO, len(fs.Players))
 	for i, p := range fs.Players {
 		players[i] = FranchisePlayerDTO{
-			MFLID:          p.MFLID,
-			RosterStatus:   string(p.RosterStatus),
-			Salary:         p.Salary,
-			AdjustedSalary: p.AdjustedSalary,
+			MFLID:        p.MFLID,
+			RosterStatus: string(p.RosterStatus),
+			// Money → float millions at the display edge; cents-on-the-wire + React
+			// formatting is a B7c follow-up (no money math happens frontend-side).
+			Salary:         p.Salary.Millions(),
+			AdjustedSalary: p.AdjustedSalary.Millions(),
 		}
 	}
-	return FranchiseStateResult{OK: true, FranchiseID: franchiseID, CapUsed: fs.CapUsed, Players: players}
+	return FranchiseStateResult{OK: true, FranchiseID: franchiseID, CapUsed: fs.CapUsed.Millions(), Players: players}
 }
 
 // buildRequest maps the wire DTO onto a sealed transactions.Request. An unknown Kind is
@@ -134,6 +137,8 @@ func buildRequest(req TransactionRequest) (transactions.Request, error) {
 			MFLID:  req.MFLID,
 			Status: domain.RosterStatus(req.Status),
 		}, nil
+	case string(transactions.KindWaiver):
+		return transactions.Waiver{MFLID: req.MFLID}, nil
 	default:
 		return nil, fmt.Errorf("unknown transaction kind %q", req.Kind)
 	}

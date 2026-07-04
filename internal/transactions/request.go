@@ -8,6 +8,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 	"github.com/secureprospective/TheWarRoom/internal/transactions/acquisitions"
+	"github.com/secureprospective/TheWarRoom/internal/transactions/deadcap"
 )
 
 // Kind names a transaction type — the discriminator carried on a Receipt and logged.
@@ -16,6 +17,7 @@ type Kind string
 const (
 	KindTrade        Kind = "TRADE"
 	KindRosterStatus Kind = "ROSTER_STATUS"
+	KindWaiver       Kind = "WAIVER"
 )
 
 // Request is a transaction the Coordinator can execute. The concrete types live in THIS
@@ -109,6 +111,34 @@ func (r RosterStatusChange) validate() error {
 func (r RosterStatusChange) apply(ctx context.Context, w state.TxWriter) (int, error) {
 	if err := acquisitions.SetStatus(ctx, w, r.MFLID, r.Status); err != nil {
 		return 0, fmt.Errorf("roster status: %w", err)
+	}
+	return 1, nil
+}
+
+// Waiver cuts one player (§8): the releasing franchise loses him from its roster and
+// owes the §8 dead-cap penalty (35% × annual salary × remaining years, 50% if
+// restructured) against the current season's cap. v1 models the UNCLAIMED cut; a claim
+// (which ends the dead-cap obligation and moves the player) arrives with free agency.
+type Waiver struct {
+	MFLID string
+}
+
+func (Waiver) Kind() Kind { return KindWaiver }
+func (Waiver) sealed()    {}
+
+// validate rejects only an empty player id here; whether the player is actually rostered
+// (and every money figure) is resolved from authoritative state inside apply, never
+// trusted from the request.
+func (wv Waiver) validate() error {
+	if strings.TrimSpace(wv.MFLID) == "" {
+		return fmt.Errorf("transactions: waiver has an empty player id")
+	}
+	return nil
+}
+
+func (wv Waiver) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if _, err := deadcap.Waive(ctx, w, wv.MFLID); err != nil {
+		return 0, fmt.Errorf("waiver: %w", err)
 	}
 	return 1, nil
 }

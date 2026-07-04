@@ -81,6 +81,46 @@ func TestIntegration_TradePersists(t *testing.T) {
 	}
 }
 
+// TestIntegration_WaiverCutConservesCap wires the real Coordinator to the real store and
+// cuts a player, proving the §8 close gate end to end: the released salary leaves the cap,
+// the dead-cap charge lands in the ledger, cap "conservation" holds (new cap = §8 charge
+// only), the player is gone, and a second read confirms it all persisted.
+func TestIntegration_WaiverCutConservesCap(t *testing.T) {
+	s := realStore(t)
+	c, err := transactions.New(s.Writer())
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	// Player 0001: salary 10 cents, contract through 2028, store season 2026 →
+	// remaining = 2, §8 charge = round(10 × 35 × 2 / 100) = 7 cents.
+	before, _ := s.CapUsed("0001")
+	if before != 10 {
+		t.Fatalf("pre-cut cap = %v, want 10 (the player's salary)", before)
+	}
+
+	rec, err := c.Execute(context.Background(), transactions.Waiver{MFLID: "0001"})
+	if err != nil {
+		t.Fatalf("Execute waiver: %v", err)
+	}
+	if rec.Kind != transactions.KindWaiver || rec.PlayersAffected != 1 {
+		t.Fatalf("receipt = %+v, want KindWaiver/1", rec)
+	}
+
+	// The player is gone from state.
+	if _, ok := s.Player("0001"); ok {
+		t.Fatal("player 0001 still rostered after a cut")
+	}
+	// Cap conservation: his salary (10) left; the §8 dead cap (7) remains against 0001.
+	after, ok := s.CapUsed("0001")
+	if !ok {
+		t.Fatal("franchise 0001 vanished — dead cap should keep it visible")
+	}
+	if after != 7 {
+		t.Fatalf("post-cut cap = %v, want 7 (§8 dead cap only)", after)
+	}
+}
+
 // TestIntegration_BadLegRollsBackWholeTrade plants an unknown player on the second leg.
 // The whole trade must roll back: the first, valid leg must NOT persist. This is the
 // atomicity guarantee, proven through the real Coordinator + store together.

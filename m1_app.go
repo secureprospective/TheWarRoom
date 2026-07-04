@@ -201,7 +201,8 @@ func (a *App) GetRankings() RankingsResult {
 		}
 		if p, ok := a.state.Reader().Player(s.MFLID); ok {
 			row.FranchiseID = p.FranchiseID
-			row.Salary = state.EffectiveSalary(p)
+			// Money → float millions at the display edge (cap-efficiency = score per $M).
+			row.Salary = state.EffectiveSalary(p).Millions()
 			if row.Salary > 0 {
 				row.CapEff, row.CapEffOK = s.AdjustedScore/row.Salary, true
 			}

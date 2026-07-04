@@ -16,8 +16,8 @@ type PlayerState struct {
 	MFLID          string                // canonical player id (string, leading zeros)
 	FranchiseID    string                // owning franchise, "0001"–"0032"
 	RosterStatus   domain.RosterStatus   // ROSTER or TAXI_SQUAD
-	Salary         float64               // annual_salary (millions)
-	AdjustedSalary float64               // after adjustment items; 0 until B7 sets it
+	Salary         domain.Money          // annual_salary, exact cents
+	AdjustedSalary domain.Money          // after adjustment items, exact cents; 0 until B7 sets it
 	ContractYears  int                   // years remaining; 0 until B7 computes it
 	ExpirationYear int                   // final contract year (seeded from normalize)
 	ContractStatus domain.ContractStatus // UFA/RFA/FT1/FT2
@@ -31,15 +31,15 @@ type PlayerState struct {
 type FranchiseState struct {
 	FranchiseID string
 	Players     []PlayerState
-	CapUsed     float64
+	CapUsed     domain.Money
 }
 
 // ContractChange is the full set of contract terms B7 applies to a player (a tag, a
 // restructure, an extension, a year rollover all land here). It replaces the
 // player's live contract fields atomically.
 type ContractChange struct {
-	AnnualSalary   float64
-	AdjustedSalary float64
+	AnnualSalary   domain.Money
+	AdjustedSalary domain.Money
 	ContractYears  int
 	ExpirationYear int
 	ContractStatus domain.ContractStatus
@@ -54,7 +54,7 @@ type ContractChange struct {
 type Reader interface {
 	FranchiseState(franchiseID string) (FranchiseState, bool)
 	Roster(franchiseID string) ([]PlayerState, bool)
-	CapUsed(franchiseID string) (float64, bool)
+	CapUsed(franchiseID string) (domain.Money, bool)
 	Player(mflID string) (PlayerState, bool)
 	Franchises() []string
 }
@@ -84,6 +84,37 @@ type TxWriter interface {
 	MovePlayer(ctx context.Context, mflID, toFranchiseID string) error
 	SetRosterStatus(ctx context.Context, mflID string, status domain.RosterStatus) error
 	ApplyContract(ctx context.Context, mflID string, c ContractChange) error
+	AddDeadCap(ctx context.Context, e DeadCapEntry) error
+	// ReleasePlayer removes a player from his franchise entirely (deletes the rosters +
+	// contracts rows) — the roster side of a §8 waiver cut. His salary leaves CapUsed;
+	// the dead-cap charge is recorded separately via AddDeadCap. Fails loud on an unknown
+	// player. There is no undo — a release is terminal (the player re-enters via free
+	// agency, a later build).
+	ReleasePlayer(ctx context.Context, mflID string) error
+
+	// Player reads a player's CURRENT state (the pre-transaction snapshot) so a handler
+	// can compute new terms — e.g. the §8 dead-cap charge reads salary/expiration/
+	// restructured before releasing him. It reflects committed state, NOT this tx's own
+	// uncommitted writes; a single read-then-write op (waiver, tag) is consistent.
+	Player(mflID string) (PlayerState, bool)
+	// Season is the absolute league year this store operates on — the handler derives
+	// "remaining years" (expiration_year − season) for the §8 charge from it.
+	Season() int
+}
+
+// DeadCapEntry is one append-only dead-cap charge against a franchise's cap for an
+// ABSOLUTE league year — the §8 waiver-cut penalty (or §11/§12/§13 charges in B7c).
+// The store records it verbatim; the §8 formula (35%/50% × salary × remaining years,
+// 0 if claimed) is COMPUTED by the B7c/deadcap handler, never here — this store runs no
+// rule logic (the B3c divergence). DeadCap is exact cents (OQ-014); it is keyed by an
+// absolute LeagueYear, never a relative slot, so a charge lands in the right cap year
+// regardless of when it is queried. Reason is a required audit string.
+type DeadCapEntry struct {
+	FranchiseID string
+	MFLID       string       // the released player the charge is attributed to
+	LeagueYear  int          // ABSOLUTE league year the charge counts against
+	DeadCap     domain.Money // exact cents, >= 0
+	Reason      string       // audit trail, e.g. "waiver-cut §8"
 }
 
 // Source is the SEED source B3c pulls from at Initialize — the normalized rosters

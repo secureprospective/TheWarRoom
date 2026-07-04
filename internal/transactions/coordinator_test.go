@@ -26,6 +26,8 @@ type fakeTxWriter struct {
 	calls   []recordedMove
 	failOn  int // 0 = never
 	failErr error
+	player  state.PlayerState // the one player Player() resolves (for waiver tests)
+	season  int               // the league year Season() reports
 }
 
 func (f *fakeTxWriter) maybeFail() error {
@@ -50,6 +52,27 @@ func (f *fakeTxWriter) ApplyContract(_ context.Context, _ string, _ state.Contra
 	return f.maybeFail()
 }
 
+func (f *fakeTxWriter) AddDeadCap(_ context.Context, e state.DeadCapEntry) error {
+	f.calls = append(f.calls, recordedMove{op: "deadcap", mflID: e.MFLID, target: e.FranchiseID})
+	return f.maybeFail()
+}
+
+func (f *fakeTxWriter) ReleasePlayer(_ context.Context, mflID string) error {
+	f.calls = append(f.calls, recordedMove{op: "release", mflID: mflID})
+	return f.maybeFail()
+}
+
+// fakePlayer is the one player the fake will resolve for a waiver; the zero value's
+// ok=false lets a test exercise the unknown-player path.
+func (f *fakeTxWriter) Player(mflID string) (state.PlayerState, bool) {
+	if f.player.MFLID == mflID {
+		return f.player, true
+	}
+	return state.PlayerState{}, false
+}
+
+func (f *fakeTxWriter) Season() int { return f.season }
+
 // fakeWriter is a state.Writer whose WriteTx drives the fakeTxWriter. It records whether
 // WriteTx ran (to prove validation short-circuits before a transaction is opened) and
 // whether the callback returned an error (to prove rollback intent propagates).
@@ -70,7 +93,7 @@ func (w *fakeWriter) FranchiseState(string) (state.FranchiseState, bool) {
 	return state.FranchiseState{}, false
 }
 func (w *fakeWriter) Roster(string) ([]state.PlayerState, bool) { return nil, false }
-func (w *fakeWriter) CapUsed(string) (float64, bool)            { return 0, false }
+func (w *fakeWriter) CapUsed(string) (domain.Money, bool)       { return 0, false }
 func (w *fakeWriter) Player(string) (state.PlayerState, bool)   { return state.PlayerState{}, false }
 func (w *fakeWriter) Franchises() []string                      { return nil }
 
@@ -207,6 +230,60 @@ func TestExecute_RosterStatusChange(t *testing.T) {
 	}
 	if len(w.tw.calls) != 1 || w.tw.calls[0] != (recordedMove{"status", "0001", string(domain.RosterTaxi)}) {
 		t.Fatalf("status not dispatched: %+v", w.tw.calls)
+	}
+}
+
+// TestExecute_WaiverReleasesThenCharges proves a waiver dispatches the roster release
+// AND the dead-cap charge, in that order, through the shared tx writer.
+func TestExecute_WaiverReleasesThenCharges(t *testing.T) {
+	w := newFake()
+	w.tw.season = 2026
+	w.tw.player = state.PlayerState{
+		MFLID: "0001", FranchiseID: "0001", Salary: 10 * 100_000_000, ExpirationYear: 2028,
+	}
+	c := newCoord(t, w)
+
+	rec, err := c.Execute(context.Background(), Waiver{MFLID: "0001"})
+	if err != nil {
+		t.Fatalf("Execute waiver: %v", err)
+	}
+	if rec.Kind != KindWaiver || rec.PlayersAffected != 1 {
+		t.Fatalf("receipt = %+v, want KindWaiver/1", rec)
+	}
+	got := w.tw.calls
+	if len(got) != 2 || got[0].op != "release" || got[1].op != "deadcap" {
+		t.Fatalf("waiver did not release-then-charge: %+v", got)
+	}
+	if got[0].mflID != "0001" || got[1].mflID != "0001" || got[1].target != "0001" {
+		t.Fatalf("waiver dispatched wrong player/franchise: %+v", got)
+	}
+}
+
+// TestExecute_WaiverUnknownPlayerFails proves a cut of a non-rostered player fails the
+// transaction (and, since the release never runs, nothing is dispatched).
+func TestExecute_WaiverUnknownPlayerFails(t *testing.T) {
+	w := newFake()
+	w.tw.season = 2026 // no player set on the fake → Player() returns ok=false
+	c := newCoord(t, w)
+
+	if _, err := c.Execute(context.Background(), Waiver{MFLID: "9999"}); err == nil {
+		t.Fatal("waiver of an unknown player succeeded")
+	}
+	for _, call := range w.tw.calls {
+		if call.op == "release" || call.op == "deadcap" {
+			t.Fatalf("unknown-player waiver still dispatched %q", call.op)
+		}
+	}
+}
+
+func TestExecute_WaiverEmptyPlayerRejectedBeforeTx(t *testing.T) {
+	w := newFake()
+	c := newCoord(t, w)
+	if _, err := c.Execute(context.Background(), Waiver{MFLID: "  "}); err == nil {
+		t.Fatal("empty-id waiver accepted")
+	}
+	if w.writeTxRan {
+		t.Fatal("empty-id waiver opened a transaction (validation must run first)")
 	}
 }
 

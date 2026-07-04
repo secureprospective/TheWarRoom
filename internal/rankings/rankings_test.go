@@ -39,7 +39,7 @@ func (f fakeState) FranchiseState(id string) (state.FranchiseState, bool) {
 	r, ok := f.franchises[id]
 	return state.FranchiseState{FranchiseID: id, Players: r}, ok
 }
-func (f fakeState) CapUsed(string) (float64, bool) { return 0, false }
+func (f fakeState) CapUsed(string) (domain.Money, bool) { return 0, false }
 func (f fakeState) Player(mflID string) (state.PlayerState, bool) {
 	for _, r := range f.franchises {
 		for _, p := range r {

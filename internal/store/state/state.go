@@ -158,7 +158,7 @@ func (s *Store) Roster(franchiseID string) ([]PlayerState, bool) {
 
 // CapUsed returns one franchise's derived cap usage. ok is false for an unknown
 // franchise.
-func (s *Store) CapUsed(franchiseID string) (float64, bool) {
+func (s *Store) CapUsed(franchiseID string) (domain.Money, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	fs, ok := s.franchises[franchiseID]
@@ -195,44 +195,7 @@ func (s *Store) Franchises() []string {
 	return sortedKeys(s.franchises)
 }
 
-// --- Persistence: schema, presence, seed, load -----------------------------
-
-// initSchema creates the rosters and contracts tables if absent (Backend_Architecture
-// §8). B3c OWNS these two tables; waiver_order / dead_cap_ledger / league_state are
-// out of B3c v1.0 scope (B7 / B6 own them).
-func (s *Store) initSchema(ctx context.Context) error {
-	const ddl = `
-CREATE TABLE IF NOT EXISTS rosters (
-	id            TEXT PRIMARY KEY,
-	league_id     TEXT NOT NULL,
-	mfl_id        TEXT NOT NULL,
-	franchise_id  TEXT NOT NULL,
-	roster_status TEXT NOT NULL,
-	season        INTEGER NOT NULL,
-	as_of         TEXT NOT NULL,
-	UNIQUE (league_id, season, mfl_id)
-);
-CREATE TABLE IF NOT EXISTS contracts (
-	id              TEXT PRIMARY KEY,
-	league_id       TEXT NOT NULL,
-	mfl_id          TEXT NOT NULL,
-	franchise_id    TEXT NOT NULL,
-	annual_salary   REAL NOT NULL DEFAULT 0,
-	adjusted_salary REAL NOT NULL DEFAULT 0,
-	contract_years  INTEGER NOT NULL DEFAULT 0,
-	expiration_year INTEGER NOT NULL DEFAULT 0,
-	contract_status TEXT NOT NULL DEFAULT '',
-	is_restructured INTEGER NOT NULL DEFAULT 0,
-	is_tagged       INTEGER NOT NULL DEFAULT 0,
-	season          INTEGER NOT NULL,
-	last_updated    TEXT NOT NULL,
-	UNIQUE (league_id, season, mfl_id)
-);`
-	if _, err := s.pools.Write().ExecContext(ctx, ddl); err != nil {
-		return fmt.Errorf("state: init schema: %w", err)
-	}
-	return nil
-}
+// --- Persistence: presence, seed, load -------------------------------------
 
 // hasState reports whether any roster rows already exist for this league + season.
 func (s *Store) hasState(ctx context.Context) (bool, error) {
@@ -283,7 +246,7 @@ func (s *Store) seed(ctx context.Context, rosters []domain.Roster) error {
 func (s *Store) load(ctx context.Context) error {
 	rows, err := s.pools.Read().QueryContext(ctx, `
 SELECT r.franchise_id, r.mfl_id, r.roster_status,
-       c.annual_salary, c.adjusted_salary, c.contract_years, c.expiration_year,
+       c.annual_salary_cents, c.adjusted_salary_cents, c.contract_years, c.expiration_year,
        c.contract_status, c.is_restructured, c.is_tagged
 FROM rosters r
 JOIN contracts c
@@ -311,8 +274,54 @@ ORDER BY r.franchise_id, r.mfl_id`, s.leagueID, s.season)
 		return fmt.Errorf("state: load matched %d of %d roster rows (contract rows missing)", len(idx), want)
 	}
 
+	// CapUsed = live contracts (already summed in scanState) PLUS this season's dead-cap
+	// charges (B7b): the §8 waiver penalty counts against the cap for its absolute year.
+	// A franchise that carries dead cap but no current players still appears here (its cap
+	// is non-zero) — a deliberate extension of the player-derived identity rule.
+	dc, err := s.loadDeadCap(ctx)
+	if err != nil {
+		return err
+	}
+	for fid, amt := range dc {
+		f, ok := fr[fid]
+		if !ok {
+			f = &FranchiseState{FranchiseID: fid}
+			fr[fid] = f
+		}
+		f.CapUsed += amt
+	}
+
 	s.mu.Lock()
 	s.franchises, s.byPlayer = fr, idx
 	s.mu.Unlock()
 	return nil
+}
+
+// loadDeadCap sums the dead-cap ledger charges per franchise for THIS store's season
+// (league_year == season — dead cap is keyed to an absolute year, and CapUsed is a
+// current-season figure). Returns cents-typed Money keyed by franchise id.
+func (s *Store) loadDeadCap(ctx context.Context) (map[string]domain.Money, error) {
+	rows, err := s.pools.Read().QueryContext(ctx, `
+SELECT franchise_id, COALESCE(SUM(dead_cap_cents), 0)
+FROM dead_cap_ledger
+WHERE league_id = ? AND league_year = ?
+GROUP BY franchise_id`, s.leagueID, s.season)
+	if err != nil {
+		return nil, fmt.Errorf("state: load dead cap: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	out := map[string]domain.Money{}
+	for rows.Next() {
+		var fid string
+		var cents int64
+		if err := rows.Scan(&fid, &cents); err != nil {
+			return nil, fmt.Errorf("state: dead cap scan: %w", err)
+		}
+		out[fid] = domain.Money(cents)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("state: dead cap iterate: %w", err)
+	}
+	return out, nil
 }

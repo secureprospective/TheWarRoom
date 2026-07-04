@@ -2,6 +2,37 @@ HANDOFF — Session 28: B7b — Money→int64-cents migration + Contract Ops + (
 Project: TheWarRoom · Stack: Go · Wails v2 · React+Tailwind+Zustand · SQLite WAL
 Written: 2026-07-03 (B7a session close)
 
+== PROGRESS (updated 2026-07-04, session in flight on branch session/b7b-contract-ops) ==
+- v1 rescoped (rulebook audit): B7b = 3 commits — (1) money→int64 cents, (2) dead_cap_ledger
+  store, (3) waiver-cut op. Restructure/tag/extension/buyout/§13 → B7c. NFL-model leakage
+  (signing bonus, Hamilton distribution, per-game/÷5 rationale) STRUCK from OQ-014 + this
+  handoff. See the corrected GATE CHECK / dead-cap section below.
+- [x] COMMIT 1/3 DONE — money→int64 cents. `domain.Money` (cents) + exact string→cents
+  parser (no float64), additive cents-column migration (fresh DDL CHECK>=0 + idempotent
+  ALTER/backfill/0-mismatch-verify for existing DBs), state store fully cents-typed, float
+  only at 3 documented edges (engine L5 cap-ratio, M1 + txn IPC display DTOs). No behavior
+  change. Gate: build ok / lint 0 / race green (+ money & migration tests). Commits 64faa3d
+  (docs) + 0daec43 (code), on branch, NOT yet merged to main.
+- [x] COMMIT 2/3 DONE — dead_cap_ledger store surface. Append-only table keyed
+  (league_id, franchise_id, league_year, mfl_id), dead_cap_cents INTEGER CHECK(>=0), BEFORE
+  UPDATE/DELETE RAISE(ABORT) triggers (B6 double-immutability). TxWriter.AddDeadCap append
+  primitive (WriteTx-only); store records verbatim, no §8 formula (B3c divergence). CapUsed
+  = live contracts + this-season ledger charges (league_year==season); dead-cap-only
+  franchise still surfaces. Split schema/migration into schema.go (AD-17 cap). Gate: build
+  ok / lint 0 / race green (+5 dead-cap tests). Commit c0c4aa6, on branch, NOT merged.
+- [x] COMMIT 3/3 DONE — §8 waiver-cut op. Waiver{MFLID} sealed Request +
+  internal/transactions/deadcap (pure Charge() §8 formula + Waive() read→compute→release→
+  charge in one spanning tx). Depguard PROVEN (planted used import from rankings fired the
+  deny, reverted). Remaining years = expiration_year − season (exclusive; final-year/UFA =
+  0 → $0), CONFIRMED w/ Christopher. state.TxWriter gained ReleasePlayer/Player/Season.
+  Whole §8 charge lands in the CUT year (LeagueYear = season). IPC + React "Waiver (cut)"
+  wired = live gate surface. Gate: build ok / lint 0 / race green / tsc+vite clean.
+  Commit 2fbc08b, on branch, NOT merged.
+- [ ] CLOSE GATE PENDING — (1) push branch, live Beelink cut → dead cap hits ledger, cap
+  moves (salary out / §8 in), conservation holds, 2nd read persists; (2) BLIND review —
+  GLM 5.2 DOWN this session, so Christopher hand-delivers to Gemini (leads-not-findings,
+  triage vs source); (3) squash-merge after Christopher confirms live → then handoff 29.
+
 == WHERE WE ARE ==
 - B7a (squash on main 2026-07-03) is MERGED and functionally verified on the Beelink: a
   real trade persists (state + cap change on both franchises), and a bad-leg trade rolls
@@ -15,9 +46,12 @@ Written: 2026-07-03 (B7a session close)
   (`state.Err()`, retry-once-then-poison, reads/writes fail loud); no-op self-move rejected;
   trade legs capped (maxTradeLegs 256). All planted-tested.
 - **OQ-014 is RESOLVED (2026-07-03, expert panel): money = `int64` CENTS.** Full record in
-  `docs/roadmap/Roadmap_and_Open_Questions.md`. Companion league-rules locks: dead-cap v1
-  = SIMPLE (salary + signing-bonus proration only); NO cap rollover (`cap_used ≥ 0` /
-  `dead_cap ≥ 0` is a hard invariant).
+  `docs/roadmap/Roadmap_and_Open_Questions.md`. Companion league-rules locks (rulebook-
+  grounded, CORRECTED 2026-07-04): dead-cap = the §8 waiver formula **35% × annual salary ×
+  remaining years** (50% if restructured, §11), ZERO if claimed off waivers. There is NO
+  signing-bonus concept in this league — the earlier "signing-bonus proration" was NFL-model
+  leakage and is STRUCK. NO cap rollover (`cap_used ≥ 0` / `dead_cap ≥ 0` is a hard
+  invariant — §1 fixes a $125M/yr cap with no carry-forward).
 
 == WHAT B7b IS ==
 Build_Tracker row 27. The money-bearing transactions, now unblocked by the OQ-014 lock.
@@ -32,12 +66,16 @@ Three parts, in order:
 2. **Contract Ops** (`internal/transactions/contracts` handler behind the Coordinator):
    tag / restructure / extension / year-rollover via the existing `ApplyContract` path,
    now cents-typed. These are single-op transactions; validate cents ≥ 0.
-3. **(simple) Dead-Cap** (`internal/transactions/deadcap`): on a cut/trade, accelerate a
-   fraction of remaining guaranteed salary onto the franchise's cap. **Round the total
-   ONCE at cents, then distribute with the largest-remainder (Hamilton) method** (ties →
-   earliest year first) so `Σ splits == total` exactly. Key dead-cap rows to an ABSOLUTE
+3. **Dead-Cap** (`internal/transactions/deadcap`): on a WAIVER/cut, the releasing franchise
+   owes the §8 formula **35% × annual salary × remaining years** (50% if the contract was
+   restructured, §11); ZERO if the player is claimed. This is FLAT MATH, exact in integer
+   cents — there is NO fractional distribution, so no Hamilton/largest-remainder step (that
+   was NFL-model leakage; see the OQ-014 correction). Key dead-cap rows to an ABSOLUTE
    league year, never relative slots. Dead-cap is a NEW store surface — decide table shape
    (a `dead_cap` ledger keyed (franchise, league_year)) at gate-check.
+   NOTE: trades do NOT create dead cap in this league (§14: salary-cap trading abolished
+   2017; a traded player's contract goes with him). Dead cap arises on waivers/cuts (§8),
+   restructure-then-waive (§11), buyout (§12), and retirement (§13, 30%).
 
 == READ FIRST ==
 - `docs/roadmap/Roadmap_and_Open_Questions.md` → OQ-014 (the locked money decision + all mechanics)
@@ -51,20 +89,45 @@ Three parts, in order:
    folded into B7b? An existing Beelink DB has live REAL rows to convert.
 2. Dead-cap store shape — a new `dead_cap` ledger table (append-only, keyed by absolute
    league_year) vs derived columns on contracts. The rollover=OFF lock simplifies this.
-3. Acceleration rule — what fraction accelerates, and over how many years, for a cut vs a
-   trade? (League-rules input; drives the largest-remainder split.)
-4. Signing-bonus proration model for v1 (the ONE fraction in scope) — straight-line over
-   contract years? Confirm the divisor.
+3. B7b SCOPE — RESOLVED 2026-07-04 with Christopher. **B7b v1 = cents migration +
+   dead_cap_ledger + WAIVER-cut (§8) ONLY.** All three fully rulebook-grounded. Deferred to
+   **B7c ("Contract Ops II")**: restructure §11, tag §9, extension §10, buyout §12,
+   retirement/death/cap-relief §13 — each drags a heavier dependency (cross-store position
+   aggregation for tag, a season-phase/offseason concept for buyout, position-floor tables +
+   multi-op history for extension) or is admin/commish (§13). Waiver has NO per-season limit
+   and its re-sign gate is a no-op until FA exists, so v1 needs NO eligibility-counter
+   surface (transaction_log defers to B7c with restructure).
+   NOTE for B7c restructure (§11): the "move" AMOUNT is the OWNER's strategic decision,
+   BOUNDED by the tier max ($1M/$2M/$3M by contract-year salary) — NOT a mechanically uniform
+   formula. §6 (flat salaries) and §11 both apply; do not blend them. is_restructured → a
+   later waive reads 50% dead cap instead of 35%.
+   [RESOLVED — items 3 (acceleration fraction) and 4 (signing-bonus proration) STRUCK: both
+   were NFL-model leakage. Dead cap is the flat §8 formula; no signing bonus exists.]
 
 == CARRIED FORWARD — leads, not blockers ==
 - Add/drop (waiver/FA) still deferred — needs a free-agent-pool concept in state (not yet
   modeled). Its own build after B7b.
+- [GEMINI B7b REVIEW, triaged] dead_cap_ledger UNIQUE (league,franchise,year,mfl) assumes
+  ONE cut per player-per-franchise-per-year. Sound today (§8 bars re-signing a cut player;
+  no FA path returns a released player to a roster). WHEN FA/re-acquisition lands, a valid
+  second cut becomes possible → the ledger must key on the cut EVENT (seq/nano in the PK,
+  drop the UNIQUE) or the second AddDeadCap aborts. Documented in writes.go:AddDeadCap. Do
+  the fix WITH the FA build, not before (the guard also blocks accidental double-charge).
+  Corollary: $0 dead-cap rows (expiring-player cuts) occupy the same slot — resolves with
+  the same change.
+- [GEMINI B7b REVIEW, triaged] cap-CEILING enforcement is unbuilt everywhere (nothing
+  rejects a transaction that busts the $125M cap). TxWriter is intentionally cap-blind. If
+  a future rule enforces the ceiling mid-transaction, TxWriter needs a CapUsed read; if
+  the Coordinator validates pre-tx, no change. Out of B7b scope — its own build.
 - Poison policy currently guards WriteTx + GetFranchiseState; the M1/other read IPCs do NOT
   yet check `state.Err()` — extend the read-side poison guard when convenient (low-risk).
 - WAL read-after-commit visibility across the split pools is relied upon (sound under wmu);
   a one-shot driver-pinning test is a nice-to-have (GLM could-not-verify #2).
-- Money property test (randomized-ordering sum == byte-identical) is the load-bearing
-  drift-catcher — write it WITH the cents migration, not after.
+- Money test floor (CORRECTED): string→cents parse exactness, migration 0-mismatch
+  (REAL↔cents backfill), round-trip idempotency, non-negativity, and each contract-op
+  formula pinned to its rulebook value — write these WITH the cents migration, not after.
+  (The randomized-ordering byte-identical property test is RETIRED: no fractional
+  distribution exists in this league to drift under reordering.)
 - GLM track record: B7a 3 (1 MAJOR+2 MINOR) / M1 3 / B6 1 / K 0 / S 0 / CB 0 / LB 0 / DE 0
   / TE 0 / WR 1 / RB 1 / DT 3 / QB 2.
 

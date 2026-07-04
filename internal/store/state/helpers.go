@@ -16,7 +16,7 @@ import (
 // SAME figure this store's CapUsed derivation uses — one definition, two consumers
 // (M17), or the board and the cap page would silently disagree once B7 adjusts a
 // salary.
-func EffectiveSalary(p PlayerState) float64 {
+func EffectiveSalary(p PlayerState) domain.Money {
 	if p.AdjustedSalary > 0 {
 		return p.AdjustedSalary
 	}
@@ -44,12 +44,14 @@ func seedPlayer(ctx context.Context, tx *sql.Tx, leagueID string, season int, no
 		"r:"+key, leagueID, mflID, franchiseID, string(p.RosterStatus), season, now); err != nil {
 		return fmt.Errorf("state: seed roster %q: %w", mflID, err)
 	}
+	// Money is seeded into the exact-cents columns; the legacy REAL columns are frozen
+	// (default 0, unread) and dropped in B7c. adjusted_salary_cents starts 0 until B7 sets it.
 	if _, err := tx.ExecContext(ctx,
-		`INSERT INTO contracts (id, league_id, mfl_id, franchise_id, annual_salary,
-		   adjusted_salary, contract_years, expiration_year, contract_status,
+		`INSERT INTO contracts (id, league_id, mfl_id, franchise_id, annual_salary_cents,
+		   adjusted_salary_cents, contract_years, expiration_year, contract_status,
 		   is_restructured, is_tagged, season, last_updated)
 		 VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?, 0, 0, ?, ?)`,
-		"c:"+key, leagueID, mflID, franchiseID, p.Salary, p.ContractYear,
+		"c:"+key, leagueID, mflID, franchiseID, p.Salary.Cents(), p.ContractYear,
 		string(p.ContractStatus), season, now); err != nil {
 		return fmt.Errorf("state: seed contract %q: %w", mflID, err)
 	}

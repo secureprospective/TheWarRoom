@@ -78,7 +78,7 @@ func TestLive_NormalizePipeline(t *testing.T) {
 				t.Errorf("franchise %s: zero player id leaked through normalize", r.FranchiseID)
 			}
 			if p.Salary < 0 {
-				t.Errorf("franchise %s player %s: negative salary %.2f", r.FranchiseID, p.MFLID, p.Salary)
+				t.Errorf("franchise %s player %s: negative salary %s", r.FranchiseID, p.MFLID, p.Salary)
 			}
 			if p.RosterStatus != domain.RosterActive && p.RosterStatus != domain.RosterTaxi {
 				t.Errorf("franchise %s player %s: bad roster status %q", r.FranchiseID, p.MFLID, p.RosterStatus)

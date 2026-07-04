@@ -221,8 +221,10 @@ func (r *Runner) scorePlayer(fid string, p state.PlayerState, asOf time.Time) (o
 		Position:   facts.Position,
 		BasePoints: basePts,
 		Age:        age,
-		Salary:     state.EffectiveSalary(p),
-		IsVeteran:  !facts.IsRookie,
+		// Money → float millions ONLY here: the engine's L5 cap scaling is a
+		// dimensionless salary-as-%-of-cap ratio, not stored money (OQ-014 edge).
+		Salary:    state.EffectiveSalary(p).Millions(),
+		IsVeteran: !facts.IsRookie,
 		// No RAS (L1 imputes the fallback) and no scouting sub-signals: every Has*
 		// stays false → Data-Parity neutral in the rubrics (gate-check item 5).
 	}

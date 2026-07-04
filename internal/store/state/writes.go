@@ -18,7 +18,7 @@ type readerView struct{ s *Store }
 
 func (r readerView) FranchiseState(id string) (FranchiseState, bool) { return r.s.FranchiseState(id) }
 func (r readerView) Roster(id string) ([]PlayerState, bool)          { return r.s.Roster(id) }
-func (r readerView) CapUsed(id string) (float64, bool)               { return r.s.CapUsed(id) }
+func (r readerView) CapUsed(id string) (domain.Money, bool)          { return r.s.CapUsed(id) }
 func (r readerView) Player(mflID string) (PlayerState, bool)         { return r.s.Player(mflID) }
 func (r readerView) Franchises() []string                            { return r.s.Franchises() }
 
@@ -154,11 +154,11 @@ func (w *txWriter) ApplyContract(ctx context.Context, mflID string, c ContractCh
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
 	res, err := w.tx.ExecContext(ctx, `
-UPDATE contracts SET annual_salary = ?, adjusted_salary = ?, contract_years = ?,
+UPDATE contracts SET annual_salary_cents = ?, adjusted_salary_cents = ?, contract_years = ?,
        expiration_year = ?, contract_status = ?, is_restructured = ?, is_tagged = ?,
        last_updated = ?
 WHERE league_id = ? AND season = ? AND mfl_id = ?`,
-		c.AnnualSalary, c.AdjustedSalary, c.ContractYears, c.ExpirationYear,
+		c.AnnualSalary.Cents(), c.AdjustedSalary.Cents(), c.ContractYears, c.ExpirationYear,
 		string(c.ContractStatus), boolToInt(c.IsRestructured), boolToInt(c.IsTagged),
 		now, w.s.leagueID, w.s.season, mflID)
 	if err != nil {
@@ -166,6 +166,73 @@ WHERE league_id = ? AND season = ? AND mfl_id = ?`,
 	}
 	return requireOneRow(res, mflID)
 }
+
+// AddDeadCap appends one dead-cap charge to the ledger in the shared tx. It is
+// APPEND-ONLY: there is no update/delete method here, and the DB triggers reject a raw
+// mutation even if one were attempted. The store records the charge VERBATIM — the §8
+// formula that produced e.DeadCap is the handler's job, not this pure data layer's. The
+// UNIQUE (league_id, franchise_id, league_year, mfl_id) key rejects a duplicate charge
+// for the same player+year (a double-cut) with a constraint error. Fails loud on a
+// negative amount, a missing field, or a non-absolute league year.
+//
+// ASSUMPTION (v1, sound while free agency is unmodeled): at most ONE dead-cap charge per
+// (franchise, player, year). §8 bars a team from re-signing a player it cut that season,
+// and a released player has no path back onto any roster until FA exists — so the same
+// franchise cannot cut the same player twice in one year on any modeled path. When FA /
+// waiver-claim / re-acquisition lands, a legitimate second cut becomes possible; at that
+// point the ledger must key on the cut EVENT (add a sequence/nano to the PK and drop this
+// UNIQUE), or this INSERT will abort the second cut. Do NOT drop the guard before then —
+// today it also stops an accidental double-submit from double-charging. (Gemini B7b review.)
+func (w *txWriter) AddDeadCap(ctx context.Context, e DeadCapEntry) error {
+	if e.DeadCap < 0 {
+		return fmt.Errorf("state: AddDeadCap: negative dead cap %d", e.DeadCap)
+	}
+	if strings.TrimSpace(e.FranchiseID) == "" {
+		return fmt.Errorf("state: AddDeadCap requires a franchise")
+	}
+	if strings.TrimSpace(e.MFLID) == "" {
+		return fmt.Errorf("state: AddDeadCap requires a player id")
+	}
+	if strings.TrimSpace(e.Reason) == "" {
+		return fmt.Errorf("state: AddDeadCap requires a reason")
+	}
+	if e.LeagueYear <= 0 {
+		return fmt.Errorf("state: AddDeadCap requires an absolute league year, got %d", e.LeagueYear)
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	id := fmt.Sprintf("d:%s:%s:%d:%s", w.s.leagueID, e.FranchiseID, e.LeagueYear, e.MFLID)
+	res, err := w.tx.ExecContext(ctx, `
+INSERT INTO dead_cap_ledger (id, league_id, franchise_id, league_year, mfl_id,
+       dead_cap_cents, reason, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		id, w.s.leagueID, e.FranchiseID, e.LeagueYear, e.MFLID, e.DeadCap.Cents(), e.Reason, now)
+	if err != nil {
+		return fmt.Errorf("state: add dead cap: %w", err)
+	}
+	return requireOneRow(res, e.MFLID)
+}
+
+// ReleasePlayer deletes a player's rosters + contracts rows in the shared tx — the
+// roster side of a §8 cut. requireOneRow on each delete fails loud if memory and the DB
+// disagree (drift). The dead-cap charge is a separate AddDeadCap call in the same tx, so
+// the cut and its penalty commit atomically.
+func (w *txWriter) ReleasePlayer(ctx context.Context, mflID string) error {
+	if !w.s.exists(mflID) {
+		return fmt.Errorf("state: ReleasePlayer %q: %w", mflID, errUnknownPlayer)
+	}
+	if err := w.s.execPlayer(ctx, w.tx,
+		`DELETE FROM contracts WHERE league_id = ? AND season = ? AND mfl_id = ?`, mflID); err != nil {
+		return err
+	}
+	return w.s.execPlayer(ctx, w.tx,
+		`DELETE FROM rosters WHERE league_id = ? AND season = ? AND mfl_id = ?`, mflID)
+}
+
+// Player exposes the store's current-snapshot read to a handler inside the tx.
+func (w *txWriter) Player(mflID string) (PlayerState, bool) { return w.s.Player(mflID) }
+
+// Season is the absolute league year this store operates on.
+func (w *txWriter) Season() int { return w.s.season }
 
 // exists reports whether the player is currently in state. Caller holds wmu.
 func (s *Store) exists(mflID string) bool {

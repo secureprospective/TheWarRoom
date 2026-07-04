@@ -92,19 +92,15 @@ func Rosters(raws []rosters.RawRoster, lookup Lookup) ([]domain.Roster, error) {
 	return out, nil
 }
 
-// parseSalary converts the raw salary string (millions) to a float. An empty
-// salary is a legitimate $0 (e.g. an unsigned slot), not an error; a non-empty
-// non-numeric value is schema drift and fails loud.
-func parseSalary(raw string, id playerid.PlayerID) (float64, error) {
-	s := strings.TrimSpace(raw)
-	if s == "" {
-		return 0, nil
-	}
-	f, err := strconv.ParseFloat(s, 64)
+// parseSalary converts the raw salary string (millions) straight to exact cents via
+// domain.Money — no float64 intermediate (OQ-014). An empty salary is a legitimate $0
+// (e.g. an unsigned slot), not an error; a non-numeric value is schema drift and fails loud.
+func parseSalary(raw string, id playerid.PlayerID) (domain.Money, error) {
+	m, err := domain.ParseMoneyMillions(raw)
 	if err != nil {
 		return 0, fmt.Errorf("normalize: player %s salary %q: %w", id, raw, err)
 	}
-	return f, nil
+	return m, nil
 }
 
 // parseContractYear converts the raw contract-year string to an int. Empty is 0
