@@ -95,11 +95,17 @@ func Restructure(ctx context.Context, w state.TxWriter, mflID string, move domai
 		return fmt.Errorf("contracts: restructure: franchise %q has already restructured a contract this season (one per team per year, §11)", ps.FranchiseID)
 	}
 
-	// Flat math: drop the cap-counting salary by the move. The move is bounded below the
-	// base salary by the tier table, so on the v1 path (no prior adjustments, effective ==
-	// base) the result is always positive; ApplyContract's non-negative guard is the
-	// backstop if a future downward adjustment ever pushed effective below the move.
-	newAdjusted := state.EffectiveSalary(ps) - move
+	// Flat math: drop the cap-counting salary by the move. §11 tiers on the BASE salary, but
+	// the money comes out of the cap-counting (effective) figure — equal in v1 (no prior
+	// adjustments). Bound the move by the current effective salary so newAdjusted can NEVER
+	// go negative even if a future downward adjustment made effective < base: the invariant
+	// is asserted LOCALLY here, not left to ApplyContract's non-negative backstop. This only
+	// adds a floor; it never widens the §11 tier band.
+	eff := state.EffectiveSalary(ps)
+	if move > eff {
+		return fmt.Errorf("contracts: restructure %q: move %s exceeds the player's cap-counting salary %s", mflID, move, eff)
+	}
+	newAdjusted := eff - move
 	change := state.ContractChange{
 		AnnualSalary:   ps.Salary, // base salary is unchanged — only the cap-counting figure drops
 		AdjustedSalary: newAdjusted,

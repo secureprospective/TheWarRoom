@@ -301,6 +301,70 @@ func TestExecute_WaiverEmptyPlayerRejectedBeforeTx(t *testing.T) {
 	}
 }
 
+// TestExecute_RestructureAppliesThenBumps proves the §11 handler dispatches in the
+// atomic order the rollback guarantee depends on: it applies the contract change FIRST,
+// then bumps the per-season counter — both inside the one transaction.
+func TestExecute_RestructureAppliesThenBumps(t *testing.T) {
+	w := newFake()
+	w.tw.player = state.PlayerState{
+		MFLID: "0001", FranchiseID: "0001", Salary: 6 * 100_000_000, // $6M → tier max $2M
+	}
+	c := newCoord(t, w)
+
+	if _, err := c.Execute(context.Background(), Restructure{MFLID: "0001", Move: 2 * 100_000_000}); err != nil {
+		t.Fatalf("Execute restructure: %v", err)
+	}
+	got := w.tw.calls
+	if len(got) != 2 || got[0].op != "contract" || got[1].op != "incop" {
+		t.Fatalf("restructure did not apply-then-bump: %+v", got)
+	}
+	if got[1].mflID != "RESTRUCTURE" || got[1].target != "0001" {
+		t.Fatalf("counter bumped with wrong op/franchise: %+v", got[1])
+	}
+}
+
+// TestExecute_RestructureCounterFailRollsBack plants a failure on the counter bump (the
+// LAST step). The transaction must fail and return a zero receipt — the contract change
+// applied one step earlier must NOT be reported as committed (the real store rolls the
+// whole WriteTx back; here we prove the error propagates and no partial success leaks).
+func TestExecute_RestructureCounterFailRollsBack(t *testing.T) {
+	w := newFake()
+	w.tw.player = state.PlayerState{MFLID: "0001", FranchiseID: "0001", Salary: 6 * 100_000_000}
+	w.tw.failOn = 2 // fail the incop (call 1 = contract, call 2 = incop)
+	w.tw.failErr = errors.New("counter boom")
+	c := newCoord(t, w)
+
+	rec, err := c.Execute(context.Background(), Restructure{MFLID: "0001", Move: 1 * 100_000_000})
+	if err == nil {
+		t.Fatal("restructure succeeded despite a failing counter bump")
+	}
+	if rec != (Receipt{}) {
+		t.Fatalf("failed restructure returned a non-zero receipt: %+v", rec)
+	}
+}
+
+func TestRestructure_ValidateRejectsBeforeTx(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		req  Restructure
+	}{
+		{"empty id", Restructure{MFLID: "  ", Move: 1 * 100_000_000}},
+		{"zero move", Restructure{MFLID: "0001", Move: 0}},
+		{"negative move", Restructure{MFLID: "0001", Move: -100}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			w := newFake()
+			c := newCoord(t, w)
+			if _, err := c.Execute(context.Background(), tc.req); err == nil {
+				t.Fatal("invalid restructure accepted")
+			}
+			if w.writeTxRan {
+				t.Fatal("invalid restructure opened a transaction (validation must run first)")
+			}
+		})
+	}
+}
+
 // TestExecute_ReceiptTimestampUsesClock pins the Receipt time to the injected clock.
 func TestExecute_ReceiptTimestampUsesClock(t *testing.T) {
 	w := newFake()
