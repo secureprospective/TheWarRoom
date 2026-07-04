@@ -17,6 +17,11 @@
 [![Tailwind](https://img.shields.io/badge/Tailwind-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![SQLite](https://img.shields.io/badge/SQLite%20WAL-003B57?logo=sqlite&logoColor=white)](https://sqlite.org)
 
+[![Claude](https://img.shields.io/badge/Claude-Anthropic-D97757?logo=anthropic&logoColor=white)](https://anthropic.com)
+[![GLM](https://img.shields.io/badge/GLM-Z.ai-6E3AF2?logo=zhipuai&logoColor=white)](https://z.ai)
+[![Gemini](https://img.shields.io/badge/Gemini-Google-8E75B2?logo=googlegemini&logoColor=white)](https://gemini.google.com)
+[![Ornith](https://img.shields.io/badge/Ornith-local%20model-4B5563)](#-built-to-last)
+
 *32 teams. Six scoring layers. Ten position models. Twenty-one scouting sources. **One number per player.***
 
 </div>
@@ -233,7 +238,7 @@ Every layer ships only after a build passes clean, an **independent blind AI rev
 
 <div align="center">
 
-*Built by Christopher Campbell with Claude (Anthropic).*
+*Built by Christopher Campbell with Claude (Anthropic), with contributions from GLM, Gemini, and Ornith.*
 **MFL gives you the league. TheWarRoom helps you win it.**
 
 </div>
