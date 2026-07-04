@@ -20,6 +20,7 @@
 [![Claude](https://img.shields.io/badge/Claude-Anthropic-D97757?logo=anthropic&logoColor=white)](https://anthropic.com)
 [![GLM](https://img.shields.io/badge/GLM-Z.ai-6E3AF2?logo=zhipuai&logoColor=white)](https://z.ai)
 [![Gemini](https://img.shields.io/badge/Gemini-Google-8E75B2?logo=googlegemini&logoColor=white)](https://gemini.google.com)
+[![DeepSeek](https://img.shields.io/badge/DeepSeek-reasoning-4D6BFE?logo=deepseek&logoColor=white)](https://deepseek.com)
 [![Ornith](https://img.shields.io/badge/Ornith-local%20model-4B5563)](#-built-to-last)
 
 *32 teams. Six scoring layers. Ten position models. Twenty-one scouting sources. **One number per player.***
@@ -186,10 +187,26 @@ This isn't a weekend hack. The architecture is governed by hard rules so it stay
 - **Historical records are immutable** — every score is stamped with its scoring config; the dead-cap ledger is append-only and the database itself rejects an edit. Change the engine, and last season stays exactly as it was scored. The record is the record.
 - **Enforced by the compiler, not by hope** — architectural rules are wired into the type system and custom linters, so a violation is a *build failure*, not a code-review note. (Player IDs literally cannot be forged — the bypass doesn't compile.)
 - **Fail loud, never silent** — every fetcher already caught a real bug a linter couldn't: MFL collapses single-element arrays, returns HTTP 200 with an error body, and omits commissioner-created players. Each one would have silently corrupted league data. Each one is now guarded and tested.
-- **Reviewed by an adversary** — every build is checked by an **independent blind AI reviewer** whose findings are treated as leads to triage against the source, never rubber-stamped. It has earned its keep with real catches.
+- **Reviewed by an adversary** — every build is checked by an **independent blind AI reviewer** whose findings are treated as leads to triage against the source, never rubber-stamped. It has earned its keep with real catches. And when a decision is *architectural* — the kind you only get to make once — it goes to a **panel of independent models** (GLM, Gemini, DeepSeek), each briefed cold, their answers cross-examined against each other and the rulebook before a line is written.
 - **A 38-session build plan** — every session sized to one context window, every session closes with a ready-to-go handoff. Spaghetti has nowhere to hide.
 
 📋 Full build sequence: **[`docs/build-handoffs/Build_Tracker.md`](docs/build-handoffs/Build_Tracker.md)**
+
+---
+
+## 🤝 The Council — How It Gets Built
+
+One human holds the vision and the veto. A rotating council of AIs does the rest, each in the seat it's best in:
+
+- **Claude** — the builder and the head brain: writes the code, drives the reviews, keeps the map.
+- **GLM** — the standing blind reviewer: reads every build cold and hunts for the bug the tests can't see.
+- **Gemini** — the second opinion: called in when a problem needs a fresh pair of eyes.
+- **DeepSeek** — the reasoner: brought to the table for the hardest architectural calls.
+- **Ornith** — the local model, running on hardware in the room, for the work that stays home.
+
+> **The day it mattered most:** deep into the contract system, a root flaw surfaced — the money model tracked *one* salary per player when a dynasty league needs *every year*. Left alone, it would have rotted the whole cap engine. Instead the redesign went to the full council — GLM, Gemini, **and DeepSeek** — each pressure-testing the fix from a cold brief. DeepSeek's insight — *check what the numbers **derive to**, not where they're written* — became the exact safety rail that lets the old model and the new ledger run side by side without ever disagreeing. A quiet architectural save that may have rescued the entire build. The council earns its keep on days like that.
+
+No model gets rubber-stamped, and no model gets to guess. Every finding is a lead, triaged against the source. The machine proposes; the human — and the rulebook — decide.
 
 ---
 
@@ -238,7 +255,7 @@ Every layer ships only after a build passes clean, an **independent blind AI rev
 
 <div align="center">
 
-*Built by Christopher Campbell with Claude (Anthropic), with contributions from GLM, Gemini, and Ornith.*
+*Built by Christopher Campbell with Claude (Anthropic) — reviewed, challenged, and sharpened by a council of GLM, Gemini, DeepSeek, and Ornith.*
 **MFL gives you the league. TheWarRoom helps you win it.**
 
 </div>
