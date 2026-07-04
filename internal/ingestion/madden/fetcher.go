@@ -246,6 +246,15 @@ func fillRatings(rec *RawMaddenRating, fields map[string]json.RawMessage) error 
 		if len(val) > 0 && val[0] == '"' {
 			continue
 		}
+		// A JSON null rating is neither a string nor a number, so it fell through
+		// this guard into json.Unmarshal(null, &n), which succeeds with n=0 and no
+		// error (Go spec) — a silent zero indistinguishable from a real 0 rating.
+		// Madden is K's 0.60-majority Layer-4 signal (DECISION-011), so an unnoticed
+		// null would corrupt a whole position (GLM whole-repo audit 2026-06-28,
+		// Pass C MAJOR-1, MED confidence pending a live-response null check).
+		if string(val) == "null" {
+			continue
+		}
 		var n int
 		if err := json.Unmarshal(val, &n); err != nil {
 			return fmt.Errorf("madden: rating %q value %s: %w", key, val, err)

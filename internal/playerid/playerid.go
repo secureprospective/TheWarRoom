@@ -42,6 +42,16 @@ func New(raw string) (PlayerID, error) {
 	if trimmed == "" {
 		return PlayerID{}, fmt.Errorf("playerid: empty id")
 	}
+	// Digits only. strconv.Atoi alone accepts a leading sign ("+99", "-5"), and
+	// TrimLeft below only strips '0' runes, so a signed input would survive into
+	// the canonical id ("+99" -> "0+99") and silently fail to cross-reference
+	// against the same player's unsigned id elsewhere (GLM whole-repo audit
+	// 2026-06-28, Pass B MAJOR-1).
+	for _, r := range trimmed {
+		if r < '0' || r > '9' {
+			return PlayerID{}, fmt.Errorf("playerid: %q is not numeric", raw)
+		}
+	}
 	if _, err := strconv.Atoi(trimmed); err != nil {
 		return PlayerID{}, fmt.Errorf("playerid: %q is not numeric: %w", raw, err)
 	}
