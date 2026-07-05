@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"log"
+	"os"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -13,6 +14,14 @@ import (
 var assets embed.FS // populated by the //go:embed directive above; gochecknoglobals exempts embed vars (no nolint needed).
 
 func main() {
+	// Headless startup diagnostic: `thewarroom -probe` runs the real store-floor
+	// init chain with per-step timing + timeout and exits, no Wails/UI. Used to see
+	// exactly where startup stalls or errors without a GUI (Ship-4 hang triage).
+	if len(os.Args) > 1 && os.Args[1] == "-probe" {
+		runProbe()
+		return
+	}
+
 	// Create an instance of the app structure
 	app := NewApp()
 
