@@ -82,7 +82,8 @@ type paidCell struct {
 func (w *txWriter) readPaidCells(ctx context.Context, mflID string) ([]paidCell, error) {
 	rows, err := w.tx.QueryContext(ctx, `
 SELECT league_year, salary_cents FROM contract_years
-WHERE league_id = ? AND mfl_id = ? AND year_status = ?`, w.s.leagueID, mflID, yearStatusPaid)
+WHERE league_id = ? AND mfl_id = ? AND year_status = ?
+ORDER BY league_year`, w.s.leagueID, mflID, yearStatusPaid)
 	if err != nil {
 		return nil, fmt.Errorf("state: VoidCells %q: read paid cells: %w", mflID, err)
 	}
@@ -106,18 +107,24 @@ WHERE league_id = ? AND mfl_id = ? AND year_status = ?`, w.s.leagueID, mflID, ye
 // cap-bearing value change. The caller has already read oldCents (the pre-void salary the log
 // records).
 func (w *txWriter) voidCell(ctx context.Context, mflID string, year int, oldCents int64, reason string) error {
-	now := time.Now().UTC().Format(time.RFC3339)
+	t := time.Now().UTC()
+	now := t.Format(time.RFC3339)
+	// Guard year_status = PAID at write time (not just at the read): if anything flipped the
+	// cell out of PAID between readPaidCells and here, this matches 0 rows and requireOneRow
+	// fails loud rather than silently voiding a non-PAID cell (defense-in-depth — DeepSeek ①).
 	res, err := w.tx.ExecContext(ctx, `
 UPDATE contract_years SET salary_cents = 0, year_status = ?, last_updated = ?
-WHERE league_id = ? AND mfl_id = ? AND league_year = ?`,
-		yearStatusVoid, now, w.s.leagueID, mflID, year)
+WHERE league_id = ? AND mfl_id = ? AND league_year = ? AND year_status = ?`,
+		yearStatusVoid, now, w.s.leagueID, mflID, year, yearStatusPaid)
 	if err != nil {
 		return fmt.Errorf("state: voidCell %q/%d write: %w", mflID, year, err)
 	}
 	if rerr := requireOneRow(res, mflID); rerr != nil {
 		return rerr
 	}
-	id := fmt.Sprintf("cyc:%s:%s:%d:%d", w.s.leagueID, mflID, year, time.Now().UnixNano())
+	// The change-log ID shares the same clock reading as changed_at (one time.Now), so the
+	// ID's embedded nanoseconds never drift from the row's timestamp (DeepSeek ②).
+	id := fmt.Sprintf("cyc:%s:%s:%d:%d", w.s.leagueID, mflID, year, t.UnixNano())
 	if _, err := w.tx.ExecContext(ctx, `
 INSERT INTO contract_year_changes (id, league_id, mfl_id, league_year, old_cents, new_cents, reason, source, changed_at)
 VALUES (?, ?, ?, ?, ?, 0, ?, 'op', ?)`,
