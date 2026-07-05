@@ -1,7 +1,9 @@
 package state
 
 import (
+	"bytes"
 	"context"
+	"log"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -186,10 +188,11 @@ func TestDropLegacyMoneyColumns_Ship3Era(t *testing.T) {
 	}
 }
 
-// TestLoadFailsLoudOnMissingCell gives the M1 drift guard TEETH: a rostered player who carries
-// a base salary but has NO PAID current-season ledger cell must make load() fail loud, not
-// silently serve him at $0 cap. Stands up the same Ship-3-era DB but WITHOUT the player's cell.
-func TestLoadFailsLoudOnMissingCell(t *testing.T) {
+// TestLoadWarnsAndContinuesOnMissingCell pins the M1 drift guard's contract (GLM-5.2 Ship-4
+// review): a rostered player who carries a base salary but has NO PAID current-season ledger
+// cell must NOT brick startup — load() surfaces the drift with a loud WARNING and serves him at
+// $0 cap (degraded but open). Stands up the same Ship-3-era DB but WITHOUT the player's cell.
+func TestLoadWarnsAndContinuesOnMissingCell(t *testing.T) {
 	ctx := context.Background()
 	pools, err := db.Open(ctx, filepath.Join(t.TempDir(), "nocell.db"))
 	if err != nil {
@@ -218,13 +221,24 @@ func TestLoadFailsLoudOnMissingCell(t *testing.T) {
 		t.Fatalf("init ledger schema: %v", err)
 	}
 
-	err = s.Initialize(ctx, &fakeSource{})
-	if err == nil {
-		t.Fatal("load served a salaried player with no PAID cell — the M1 drift guard has no teeth")
+	// Capture the warning: the guard must surface the drift loudly even though it does not fail.
+	var logbuf bytes.Buffer
+	prev := log.Writer()
+	log.SetOutput(&logbuf)
+	defer log.SetOutput(prev)
+
+	if err := s.Initialize(ctx, &fakeSource{}); err != nil {
+		t.Fatalf("load hard-failed on a drift row — must warn and continue, not brick: %v", err)
 	}
-	// Match the guard's own message prefix, not a bare "PAID" substring — a schema-setup failure
-	// that happened to mention year_status 'PAID' must not be mis-attributed to the M1 guard.
-	if !strings.Contains(err.Error(), `state: load: rostered player "0001" has base salary`) {
-		t.Fatalf("wrong error, want the M1 cell-drift guard: %v", err)
+	if !strings.Contains(logbuf.String(), `state: load: WARNING rostered player "0001" has base salary`) {
+		t.Fatalf("drift not surfaced — the M1 guard logged no warning; got: %q", logbuf.String())
+	}
+	// Degraded-but-open: the drift player is served at $0 cap until reconciled.
+	players, ok := s.Roster("0001")
+	if !ok || len(players) != 1 {
+		t.Fatalf("franchise 0001 roster missing after drift-warn: ok=%v players=%d", ok, len(players))
+	}
+	if players[0].CapSalary != 0 {
+		t.Fatalf("drift player CapSalary = %s, want $0 (no PAID cell)", players[0].CapSalary)
 	}
 }

@@ -149,21 +149,38 @@ WHERE ABS(annual_salary_cents / 100000000.0 - annual_salary) > 0.000000005`).Sca
 // AFTER migrateMoneyCents so a pre-cents DB is backfilled into annual_salary_cents before its
 // REAL source column is dropped. Idempotent across every DB vintage: each column is dropped
 // only if present, so a fresh Ship-4 DB (never had them) and an already-dropped DB both no-op.
+// All three drops run in ONE transaction (GLM-5.2 Ship-4 review): the per-column present-guard
+// already makes a partial drop recover cleanly next startup, but a single tx closes that window
+// entirely at zero cost — either all dead columns are gone or none are, never a torn schema.
 func (s *Store) dropLegacyMoneyColumns(ctx context.Context) error {
+	present := make([]string, 0, 3)
 	for _, col := range []string{"annual_salary", "adjusted_salary", "adjusted_salary_cents"} {
 		have, err := s.columnExists(ctx, "contracts", col)
 		if err != nil {
 			return err
 		}
-		if !have {
-			continue
+		if have {
+			present = append(present, col)
 		}
-		// col is a fixed literal from the loop above, never caller input — no injection surface
+	}
+	if len(present) == 0 {
+		return nil // fresh Ship-4 DB or already dropped — nothing to do
+	}
+	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("state: drop legacy columns begin: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }() // no-op after a successful Commit
+	for _, col := range present {
+		// col is a fixed literal from the list above, never caller input — no injection surface
 		// (same pattern as columnExists's pragma call). ALTER TABLE cannot bind identifiers.
-		if _, err := s.pools.Write().ExecContext(ctx,
+		if _, err := tx.ExecContext(ctx,
 			fmt.Sprintf("ALTER TABLE contracts DROP COLUMN %s", col)); err != nil {
 			return fmt.Errorf("state: drop legacy column %s: %w", col, err)
 		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("state: drop legacy columns commit: %w", err)
 	}
 	return nil
 }

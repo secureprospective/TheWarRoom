@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -294,17 +295,18 @@ ORDER BY r.franchise_id, r.mfl_id`, s.leagueID, s.season)
 			p := &f.Players[i]
 			cs, ok := perPlayer[p.MFLID]
 			// M1 carry-forward (DeepSeek): with cap now cell-derived, a rostered player who
-			// carries a base salary but has NO PAID current-season cell would silently count
-			// $0 against the cap — a ledger drift the read-flip can no longer absorb. Fail loud
-			// rather than serve a phantom-free player (parallels the roster⋈contract reconcile
-			// above). A genuinely $0 base salary needs no cell, so the guard gates on Salary > 0.
-			// A VOID cell counts as absent here (perPlayer holds only PAID) — and that is CORRECT,
-			// not a false positive: VoidCells runs ONLY inside deadcap.Waive, which de-rosters the
-			// player (ReleasePlayer) in the SAME tx, so a still-rostered player's current cell is
-			// PAID or absent, never VOID. If a VOID cell ever coexists with a rostered salaried
-			// player it is itself drift, and firing loud is the right response.
+			// carries a base salary but has NO PAID current-season cell will count $0 against
+			// the cap — a ledger drift the read-flip can no longer absorb. We SURFACE it but do
+			// NOT hard-fail: load() runs on every startup, and a single drift row must never
+			// render the app unopenable (GLM-5.2 Ship-4 review — blast radius). A genuinely $0
+			// base salary needs no cell, so the check gates on Salary > 0. A VOID cell counts as
+			// absent here (perPlayer holds only PAID); that is CORRECT, not a false positive:
+			// VoidCells runs ONLY inside deadcap.Waive, which de-rosters the player in the SAME
+			// tx, so a still-rostered player's current cell is PAID or absent, never VOID. Real
+			// drift is logged loudly (visible in the terminal) and the player counts $0 until
+			// reconciled — degraded but open, not bricked.
 			if !ok && p.Salary > 0 {
-				return fmt.Errorf("state: load: rostered player %q has base salary %s but no PAID %d ledger cell (cell drift)", p.MFLID, p.Salary, s.season)
+				log.Printf("state: load: WARNING rostered player %q has base salary %s but no PAID %d ledger cell (cell drift) — counting $0 cap until reconciled", p.MFLID, p.Salary, s.season)
 			}
 			p.CapSalary = cs
 		}
