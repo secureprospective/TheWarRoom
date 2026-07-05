@@ -188,6 +188,19 @@ func TestSetCellSetsAbsoluteAndLogs(t *testing.T) {
 	if n != 5 {
 		t.Fatalf("got %d change rows, want 5 (4 seed + 1 set)", n)
 	}
+	// The set's log row records the correct old→new transition and reason (content, not just
+	// count — a swapped old/new or a wrong-value log would pass a count-only check). GLM lead.
+	var oldC, newC int64
+	var reason string
+	if err := s.pools.Read().QueryRowContext(ctx,
+		`SELECT old_cents, new_cents, reason FROM contract_year_changes
+		 WHERE league_id = ? AND mfl_id = ? AND league_year = ? ORDER BY changed_at DESC, rowid DESC LIMIT 1`,
+		testLeague, "0001", 2026).Scan(&oldC, &newC, &reason); err != nil {
+		t.Fatalf("read set log row: %v", err)
+	}
+	if oldC != 2_000_000 || newC != 5_000_000 || reason != "tag test" {
+		t.Fatalf("set log row = {old %d, new %d, reason %q}, want {2000000, 5000000, \"tag test\"}", oldC, newC, reason)
+	}
 }
 
 // TestSetCellFailsLoud proves SetCell rejects a missing cell and a negative value rather
