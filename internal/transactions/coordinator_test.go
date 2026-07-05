@@ -79,6 +79,11 @@ func (f *fakeTxWriter) MoveCellMoney(_ context.Context, mflID string, _, _ int, 
 	return f.maybeFail()
 }
 
+func (f *fakeTxWriter) SetCell(_ context.Context, mflID string, _ int, _ domain.Money, _ string) error {
+	f.calls = append(f.calls, recordedMove{op: "setcell", mflID: mflID})
+	return f.maybeFail()
+}
+
 func (f *fakeTxWriter) OpCount(_ context.Context, franchiseID, opKind string) (int, error) {
 	return f.opCounts[franchiseID+"/"+opKind], nil
 }

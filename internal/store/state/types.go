@@ -98,14 +98,10 @@ type TxWriter interface {
 	// uncommitted writes; a single read-then-write op (waiver, tag) is consistent.
 	Player(mflID string) (PlayerState, bool)
 
-	// MoveCellMoney moves `amount` from one contract-year cell to another for a player,
-	// conserving the contract total (the §11 restructure primitive — "just moving money
-	// from year to year"). It subtracts from fromYear, adds to toYear, and logs BOTH cell
-	// deltas to the immutable change log with the given reason, all in the shared tx. The
-	// store conserves by construction (one move = equal and opposite deltas); the rule math
-	// (tier max, which years) is the handler's. Fails loud if a cell is missing or would go
-	// negative.
-	MoveCellMoney(ctx context.Context, mflID string, fromYear, toYear int, amount domain.Money, reason string) error
+	// LedgerWriter carries the per-year cell mutations (the §9/§11 primitives). It is
+	// embedded rather than inlined so TxWriter stays within the interfacebloat cap as more
+	// cell ops land — an embedded interface counts as one member.
+	LedgerWriter
 	// Season is the absolute league year this store operates on — the handler derives
 	// "remaining years" (expiration_year − season) for the §8 charge from it.
 	Season() int
@@ -124,6 +120,26 @@ type TxWriter interface {
 	// on (league, franchise, season, op_kind)). A handler that enforces a per-season limit
 	// pairs it with OpCount: read, check the limit, mutate, bump — all atomic in WriteTx.
 	IncOpCount(ctx context.Context, franchiseID, opKind string) error
+}
+
+// LedgerWriter is the per-year salary-cell mutation surface — the money primitives the
+// ledger cutover ops write through. It is embedded in TxWriter so the cell ops group under
+// one member of that interface (the interfacebloat cap). The store owns the mechanics
+// (read-through-tx, immutable change log, non-negativity); each handler owns the rule math.
+type LedgerWriter interface {
+	// MoveCellMoney moves `amount` from one contract-year cell to another for a player,
+	// conserving the contract total (the §11 restructure primitive — "just moving money
+	// from year to year"). It subtracts from fromYear, adds to toYear, and logs BOTH cell
+	// deltas to the immutable change log with the given reason, all in the shared tx. The
+	// store conserves by construction (one move = equal and opposite deltas); the rule math
+	// (tier max, which years) is the handler's. Fails loud if a cell is missing or would go
+	// negative.
+	MoveCellMoney(ctx context.Context, mflID string, fromYear, toYear int, amount domain.Money, reason string) error
+	// SetCell sets one PAID cell to an ABSOLUTE value and logs the old→new change, in the
+	// shared tx. Unlike MoveCellMoney it does NOT conserve the contract total — it is the §9
+	// franchise-tag primitive (replace the season salary with the resolved tag price). Fails
+	// loud if the cell is missing or the value is negative.
+	SetCell(ctx context.Context, mflID string, year int, value domain.Money, reason string) error
 }
 
 // DeadCapEntry is one append-only dead-cap charge against a franchise's cap for an

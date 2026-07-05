@@ -156,6 +156,58 @@ func TestLedgerParityCatchesDrift(t *testing.T) {
 	}
 }
 
+// TestSetCellSetsAbsoluteAndLogs proves the §9 tag primitive: SetCell overwrites one cell
+// with an absolute value (not a delta), logs the old→new change, and leaves other cells
+// untouched. Unlike MoveCellMoney it does not conserve the contract total.
+func TestSetCellSetsAbsoluteAndLogs(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: ledgerRosters(t)})
+	ctx := context.Background()
+
+	if err := s.WriteTx(ctx, func(w TxWriter) error {
+		return w.SetCell(ctx, "0001", 2026, 5_000_000, "tag test")
+	}); err != nil {
+		t.Fatalf("WriteTx SetCell: %v", err)
+	}
+	cells := readCells(t, s, "0001")
+	if cells[2026].salary != 5_000_000 {
+		t.Fatalf("cell 2026 = %d, want 5000000 (set)", cells[2026].salary)
+	}
+	// Non-conserving: the other PAID cells are unchanged (money was not moved out of them).
+	for _, y := range []int{2027, 2028} {
+		if cells[y].salary != 2_000_000 {
+			t.Fatalf("cell %d = %d, want 2000000 (untouched)", y, cells[y].salary)
+		}
+	}
+	// One extra change-log row beyond the 4 seed rows.
+	var n int
+	if err := s.pools.Read().QueryRowContext(ctx,
+		`SELECT COUNT(1) FROM contract_year_changes WHERE league_id = ? AND mfl_id = ?`,
+		testLeague, "0001").Scan(&n); err != nil {
+		t.Fatalf("count changes: %v", err)
+	}
+	if n != 5 {
+		t.Fatalf("got %d change rows, want 5 (4 seed + 1 set)", n)
+	}
+}
+
+// TestSetCellFailsLoud proves SetCell rejects a missing cell and a negative value rather
+// than silently no-op'ing or corrupting the ledger.
+func TestSetCellFailsLoud(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: ledgerRosters(t)})
+	ctx := context.Background()
+
+	if err := s.WriteTx(ctx, func(w TxWriter) error {
+		return w.SetCell(ctx, "0001", 2099, 5_000_000, "no such cell")
+	}); err == nil {
+		t.Fatal("SetCell on a nonexistent cell succeeded, want fail-loud")
+	}
+	if err := s.WriteTx(ctx, func(w TxWriter) error {
+		return w.SetCell(ctx, "0001", 2026, -1, "negative")
+	}); err == nil {
+		t.Fatal("SetCell with a negative value succeeded, want fail-loud")
+	}
+}
+
 // TestContractYearChangesImmutable proves the double-immutability: the BEFORE UPDATE and
 // BEFORE DELETE triggers abort a raw write that bypasses the (nonexistent) Go mutation API.
 func TestContractYearChangesImmutable(t *testing.T) {

@@ -200,6 +200,15 @@ func Tag(ctx context.Context, w state.TxWriter, mflID string, price domain.Money
 	if err := w.ApplyContract(ctx, mflID, change); err != nil {
 		return fmt.Errorf("contracts: tag %q: %w", mflID, err)
 	}
+	// Ledger dual-write: a tag SETS the current-season cell to the resolved price (a fresh
+	// one-year §9 figure — non-conserving, unlike restructure's money MOVEMENT). Parity
+	// checks only the current-season derived cap, so setting the season cell = the same price
+	// the legacy column just took keeps parity green by construction. v1 does not touch
+	// contract length, so only the season cell changes; the seed guarantees it exists.
+	reason := fmt.Sprintf("§9 franchise tag: season salary set to %s", price)
+	if err := w.SetCell(ctx, mflID, w.Season(), price, reason); err != nil {
+		return fmt.Errorf("contracts: tag %q: %w", mflID, err)
+	}
 	if err := w.IncOpCount(ctx, ps.FranchiseID, tagOpKind); err != nil {
 		return fmt.Errorf("contracts: tag %q: bump per-season counter: %w", mflID, err)
 	}

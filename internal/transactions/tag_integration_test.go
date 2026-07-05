@@ -180,3 +180,36 @@ func TestIntegration_RestructureRejectsTaggedPlayer(t *testing.T) {
 		t.Fatalf("rejected restructure of a tagged player moved the cap: %s -> %s", before, after)
 	}
 }
+
+// TestIntegration_TagDualWritesCellAndHoldsParity proves Ship 2 (2/4): a tag SETS the
+// current-season ledger cell to the resolved price (dual-write alongside the legacy column),
+// and derived-cap parity stays green because both models took the same figure. The $2M WR
+// (0022) tags to the $6M top-5 average, so his 2026 cell becomes $6M while 2027/2028 stay $2M
+// (non-conserving — a tag replaces the season salary, it does not move money between years).
+func TestIntegration_TagDualWritesCellAndHoldsParity(t *testing.T) {
+	s, c, dir := tagStore(t)
+	ctx := context.Background()
+
+	if err := s.CheckLedgerParity(ctx); err != nil {
+		t.Fatalf("pre-tag parity should hold: %v", err)
+	}
+	if _, err := c.ExecuteTag(ctx, "0022", dir); err != nil {
+		t.Fatalf("ExecuteTag: %v", err)
+	}
+
+	cells, err := s.LedgerCells(ctx, "0022")
+	if err != nil {
+		t.Fatalf("LedgerCells: %v", err)
+	}
+	if cells[2026] != 6*mil {
+		t.Fatalf("2026 cell = %s, want $6M (tag price)", cells[2026])
+	}
+	for _, y := range []int{2027, 2028} {
+		if cells[y] != 2*mil {
+			t.Fatalf("cell %d = %s, want $2M (untouched — tag is non-conserving)", y, cells[y])
+		}
+	}
+	if err := s.CheckLedgerParity(ctx); err != nil {
+		t.Fatalf("post-tag parity broke — legacy column and cell disagree on derived cap: %v", err)
+	}
+}
