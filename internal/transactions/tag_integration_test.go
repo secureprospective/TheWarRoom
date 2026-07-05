@@ -213,3 +213,37 @@ func TestIntegration_TagDualWritesCellAndHoldsParity(t *testing.T) {
 		t.Fatalf("post-tag parity broke — legacy column and cell disagree on derived cap: %v", err)
 	}
 }
+
+// TestIntegration_TagThenCutVoidsCellsAndHoldsParity proves the GLM carry-forward from the
+// §9 tag review: after a player is tagged (his 2026 cell set to $6M) and then §8-cut, the
+// cut VOIDs the tagged player's ledger cells so no orphan $6M cell survives, and derived-cap
+// parity holds (both the legacy release and the ledger void drop him from the cap together).
+func TestIntegration_TagThenCutVoidsCellsAndHoldsParity(t *testing.T) {
+	s, c, dir := tagStore(t)
+	ctx := context.Background()
+
+	if _, err := c.ExecuteTag(ctx, "0022", dir); err != nil {
+		t.Fatalf("ExecuteTag: %v", err)
+	}
+	// Sanity: the tag set the season cell to the $6M price before the cut.
+	if pre, err := s.LedgerCells(ctx, "0022"); err != nil || pre[2026] != 6*mil {
+		t.Fatalf("pre-cut 2026 cell = %s (err %v), want $6M", pre[2026], err)
+	}
+
+	if _, err := c.Execute(ctx, transactions.Waiver{MFLID: "0022"}); err != nil {
+		t.Fatalf("Execute Waiver: %v", err)
+	}
+
+	// Every cap-bearing cell of the cut player is gone (voided, not deleted) — no orphan.
+	cells, err := s.LedgerCells(ctx, "0022")
+	if err != nil {
+		t.Fatalf("LedgerCells after cut: %v", err)
+	}
+	if len(cells) != 0 {
+		t.Fatalf("cut player still has PAID cells %v, want none (all voided)", cells)
+	}
+	// Parity holds: the legacy release and the ledger void dropped him from the cap together.
+	if err := s.CheckLedgerParity(ctx); err != nil {
+		t.Fatalf("post-cut parity broke: %v", err)
+	}
+}

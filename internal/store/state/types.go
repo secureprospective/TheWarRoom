@@ -140,6 +140,11 @@ type LedgerWriter interface {
 	// franchise-tag primitive (replace the season salary with the resolved tag price). Fails
 	// loud if the cell is missing or the value is negative.
 	SetCell(ctx context.Context, mflID string, year int, value domain.Money, reason string) error
+	// VoidCells marks ALL of a player's PAID cells VOID ($0 cap, kept for history) and logs
+	// each old→0 change, in the shared tx — the §8 waiver-cut primitive: a cut relieves every
+	// remaining cap-bearing cell while preserving the contract's history (cells are flipped to
+	// VOID, never deleted). Fails loud if the player has no PAID cell to void.
+	VoidCells(ctx context.Context, mflID string, reason string) error
 }
 
 // DeadCapEntry is one append-only dead-cap charge against a franchise's cap for an

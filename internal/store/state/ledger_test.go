@@ -221,6 +221,68 @@ func TestSetCellFailsLoud(t *testing.T) {
 	}
 }
 
+// TestVoidCellsVoidsAllPaidAndLogs proves the §8 waiver primitive: VoidCells flips EVERY
+// PAID cell to $0/VOID (relieving the whole contract, not one year), logs each old→0 change,
+// removes the cells from the cap-bearing read (LedgerCells) and keeps them for history (the
+// rows are not deleted). Player 0001 has PAID 2026/2027/2028 → all three void.
+func TestVoidCellsVoidsAllPaidAndLogs(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: ledgerRosters(t)})
+	ctx := context.Background()
+
+	if err := s.WriteTx(ctx, func(w TxWriter) error {
+		return w.VoidCells(ctx, "0001", "waiver test")
+	}); err != nil {
+		t.Fatalf("WriteTx VoidCells: %v", err)
+	}
+	cells := readCells(t, s, "0001")
+	for _, y := range []int{2026, 2027, 2028} {
+		c, ok := cells[y]
+		if !ok {
+			t.Fatalf("cell %d was DELETED, want kept as VOID (history preserved)", y)
+		}
+		if c.status != yearStatusVoid || c.salary != 0 {
+			t.Fatalf("cell %d = {%d, %s}, want {0, VOID}", y, c.salary, c.status)
+		}
+	}
+	// The cap-bearing read now returns no PAID cell for the cut player.
+	paid, err := s.LedgerCells(ctx, "0001")
+	if err != nil {
+		t.Fatalf("LedgerCells: %v", err)
+	}
+	if len(paid) != 0 {
+		t.Fatalf("LedgerCells after void = %v, want empty (no cap-bearing cell)", paid)
+	}
+	// Three void change-log rows beyond the 4 seed rows, each old=2M→new=0.
+	var n int
+	if err := s.pools.Read().QueryRowContext(ctx,
+		`SELECT COUNT(1) FROM contract_year_changes WHERE league_id = ? AND mfl_id = ? AND new_cents = 0 AND old_cents = 2000000`,
+		testLeague, "0001").Scan(&n); err != nil {
+		t.Fatalf("count void changes: %v", err)
+	}
+	if n != 3 {
+		t.Fatalf("got %d void change rows (old 2M→new 0), want 3", n)
+	}
+}
+
+// TestVoidCellsFailsLoudOnNoPaidCell proves VoidCells fails loud rather than silently no-op'ing
+// when a player has no PAID cell (already voided) — the fail-loud house style.
+func TestVoidCellsFailsLoudOnNoPaidCell(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: ledgerRosters(t)})
+	ctx := context.Background()
+
+	if err := s.WriteTx(ctx, func(w TxWriter) error {
+		return w.VoidCells(ctx, "0001", "first cut")
+	}); err != nil {
+		t.Fatalf("first VoidCells: %v", err)
+	}
+	// Second void: every PAID cell is already VOID → nothing to void → fail loud.
+	if err := s.WriteTx(ctx, func(w TxWriter) error {
+		return w.VoidCells(ctx, "0001", "second cut")
+	}); err == nil {
+		t.Fatal("VoidCells with no PAID cell succeeded, want fail-loud")
+	}
+}
+
 // TestContractYearChangesImmutable proves the double-immutability: the BEFORE UPDATE and
 // BEFORE DELETE triggers abort a raw write that bypasses the (nonexistent) Go mutation API.
 func TestContractYearChangesImmutable(t *testing.T) {

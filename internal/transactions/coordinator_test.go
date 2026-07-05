@@ -84,6 +84,11 @@ func (f *fakeTxWriter) SetCell(_ context.Context, mflID string, _ int, _ domain.
 	return f.maybeFail()
 }
 
+func (f *fakeTxWriter) VoidCells(_ context.Context, mflID string, _ string) error {
+	f.calls = append(f.calls, recordedMove{op: "voidcells", mflID: mflID})
+	return f.maybeFail()
+}
+
 func (f *fakeTxWriter) OpCount(_ context.Context, franchiseID, opKind string) (int, error) {
 	return f.opCounts[franchiseID+"/"+opKind], nil
 }
@@ -275,10 +280,10 @@ func TestExecute_WaiverReleasesThenCharges(t *testing.T) {
 		t.Fatalf("receipt = %+v, want KindWaiver/1", rec)
 	}
 	got := w.tw.calls
-	if len(got) != 2 || got[0].op != "release" || got[1].op != "deadcap" {
-		t.Fatalf("waiver did not release-then-charge: %+v", got)
+	if len(got) != 3 || got[0].op != "release" || got[1].op != "deadcap" || got[2].op != "voidcells" {
+		t.Fatalf("waiver did not release-then-charge-then-void: %+v", got)
 	}
-	if got[0].mflID != "0001" || got[1].mflID != "0001" || got[1].target != "0001" {
+	if got[0].mflID != "0001" || got[1].mflID != "0001" || got[1].target != "0001" || got[2].mflID != "0001" {
 		t.Fatalf("waiver dispatched wrong player/franchise: %+v", got)
 	}
 }

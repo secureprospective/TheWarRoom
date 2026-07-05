@@ -17,6 +17,7 @@ import (
 const (
 	yearStatusPaid = "PAID"
 	yearStatusUFA  = "UFA"
+	yearStatusVoid = "VOID"
 )
 
 // seedLedgerPlayer flat-fills one player's per-year salary cells from the single seed

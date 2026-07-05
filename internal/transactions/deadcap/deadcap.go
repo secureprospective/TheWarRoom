@@ -88,5 +88,14 @@ func Waive(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapEn
 	if err := w.AddDeadCap(ctx, entry); err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: charge %q: %w", mflID, err)
 	}
+	// Ledger dual-write: a cut VOIDs the player's remaining PAID cells (relieving every
+	// cap-bearing year while preserving history — the ledger is king), so the ledger-derived
+	// cap drops with the legacy release and no orphan cell survives to be re-counted if the
+	// player later re-rosters via free agency. The dead-cap charge is a SEPARATE ledger
+	// (dead_cap_ledger), not a contract cell — the two are distinct cap components.
+	reason := fmt.Sprintf("%s: contract voided, dead cap %s", waiverReason, charge)
+	if err := w.VoidCells(ctx, mflID, reason); err != nil {
+		return state.DeadCapEntry{}, fmt.Errorf("deadcap: void cells %q: %w", mflID, err)
+	}
 	return entry, nil
 }
