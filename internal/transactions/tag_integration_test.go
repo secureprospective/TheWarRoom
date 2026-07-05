@@ -297,6 +297,12 @@ func TestIntegration_TagOffGridPriceHoldsParity(t *testing.T) {
 	dir := tagDir{"0010": domain.PosWR, "0011": domain.PosWR, "0020": domain.PosWR, "0021": domain.PosWR, "0022": domain.PosWR}
 	ctx := context.Background()
 
+	// Establish the baseline: the seed itself is parity-clean, so a post-tag pass genuinely
+	// proves the tag held parity (not that it was already broken before the tag). (DeepSeek ⑤.)
+	if err := s.CheckLedgerParity(ctx); err != nil {
+		t.Fatalf("seed parity should hold before the tag: %v", err)
+	}
+
 	// The tag commits — the in-tx parity gate passed on an off-grid price.
 	if _, err := c.ExecuteTag(ctx, "0022", dir); err != nil {
 		t.Fatalf("ExecuteTag (off-grid price rejected by the parity gate?): %v", err)

@@ -148,8 +148,11 @@ func applyCells(t *testing.T, s *Store, fn func(*txWriter) error) error {
 	if err != nil {
 		t.Fatalf("begin tx: %v", err)
 	}
+	// Deferred rollback fires on an early error return OR a panic in fn (matching WriteTx's
+	// own idiom); it is a harmless no-op once Commit has succeeded (database/sql returns
+	// ErrTxDone, ignored). This keeps a panicking primitive test from leaking the write lock.
+	defer func() { _ = tx.Rollback() }()
 	if ferr := fn(&txWriter{s: s, tx: tx}); ferr != nil {
-		_ = tx.Rollback()
 		return ferr
 	}
 	if err := tx.Commit(); err != nil {
