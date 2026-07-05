@@ -73,8 +73,8 @@ func TestMigrateMoneyCents_BackfillsExactly(t *testing.T) {
 	// straight from the DB rather than through the removed EffectiveSalary/AdjustedSalary API.
 	var adjCents int64
 	if err := pools.Read().QueryRowContext(ctx,
-		`SELECT adjusted_salary_cents FROM contracts WHERE league_id = ? AND mfl_id = ?`,
-		league, "0001").Scan(&adjCents); err != nil {
+		`SELECT adjusted_salary_cents FROM contracts WHERE league_id = ? AND season = ? AND mfl_id = ?`,
+		league, season, "0001").Scan(&adjCents); err != nil {
 		t.Fatalf("read adjusted_salary_cents: %v", err)
 	}
 	if adjCents != 130_000_000 {

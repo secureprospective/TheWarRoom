@@ -31,11 +31,11 @@ func TestCharge(t *testing.T) {
 		{"no remaining years", 10 * m, 0, false, false, 0},
 		{"negative remaining clamps to zero", 10 * m, -1, false, false, 0},
 		{"zero salary", 0, 3, false, false, 0},
-		// Rounding: 35% of a non-round cent value rounds half-up on the final cent.
-		// salary = 3 cents, 1 year: 3 × 35 / 100 = 1.05 → 1 cent.
-		{"round down", 3, 1, false, false, 1},
-		// salary = 10 cents, 1 year: 10 × 35 / 100 = 3.5 → 4 cents (half-up).
-		{"round half up", 10, 1, false, false, 4},
+		// $10k snap (universal grid, governs over the old cent rounding): the charge lands on
+		// the nearest $10,000. 35% × $6,010,000 × 1 = $2,103,500 → snaps DOWN to $2,100,000.
+		{"snaps down to $10k grid", 601_000_000, 1, false, false, 210_000_000},
+		// 35% × $6,100,000 × 1 = $2,135,000 → snaps half-up to $2,140,000.
+		{"snaps half-up to $10k grid", 610_000_000, 1, false, false, 214_000_000},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got := Charge(tc.salary, tc.remaining, tc.isRestructured, tc.claimed)
