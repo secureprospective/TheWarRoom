@@ -85,8 +85,8 @@ func TestIntegration_TagSetsCapToTopFiveAverage(t *testing.T) {
 	if !p.IsTagged {
 		t.Fatal("player 0022 not flagged tagged")
 	}
-	if p.AdjustedSalary != 6*mil { // the $6M top-5 WR average
-		t.Fatalf("tagged cap-counting salary = %s, want $6M (top-5 avg)", p.AdjustedSalary)
+	if p.CapSalary != 6*mil { // the $6M top-5 WR average — the current-season cell
+		t.Fatalf("tagged cap-counting salary = %s, want $6M (top-5 avg)", p.CapSalary)
 	}
 	if got, _ := s.CapUsed("0002"); got != 16*mil { // $6M + $4M + $6M (was $2M, now $6M)
 		t.Fatalf("post-tag cap = %s, want $16M", got)
@@ -101,8 +101,8 @@ func TestIntegration_TagFloorLifts(t *testing.T) {
 	if _, err := c.ExecuteTag(context.Background(), "0010", dir); err != nil {
 		t.Fatalf("ExecuteTag: %v", err)
 	}
-	if p, _ := s.Player("0010"); p.AdjustedSalary != 12*mil { // 120% × $10M beats the $6M avg
-		t.Fatalf("tagged salary = %s, want $12M (120%% floor lifts above the average)", p.AdjustedSalary)
+	if p, _ := s.Player("0010"); p.CapSalary != 12*mil { // 120% × $10M beats the $6M avg
+		t.Fatalf("tagged salary = %s, want $12M (120%% floor lifts above the average)", p.CapSalary)
 	}
 	if got, _ := s.CapUsed("0001"); got != 20*mil { // $12M + $8M
 		t.Fatalf("post-tag cap = %s, want $20M", got)
@@ -181,18 +181,14 @@ func TestIntegration_RestructureRejectsTaggedPlayer(t *testing.T) {
 	}
 }
 
-// TestIntegration_TagDualWritesCellAndHoldsParity proves Ship 2 (2/4): a tag SETS the
-// current-season ledger cell to the resolved price (dual-write alongside the legacy column),
-// and derived-cap parity stays green because both models took the same figure. The $2M WR
-// (0022) tags to the $6M top-5 average, so his 2026 cell becomes $6M while 2027/2028 stay $2M
-// (non-conserving — a tag replaces the season salary, it does not move money between years).
-func TestIntegration_TagDualWritesCellAndHoldsParity(t *testing.T) {
+// TestIntegration_TagSetsCurrentCell proves the §9 tag primitive end to end: a tag SETS the
+// current-season ledger cell (the KING) to the resolved price without conserving the contract
+// total. The $2M WR (0022) tags to the $6M top-5 average, so his 2026 cell becomes $6M while
+// 2027/2028 stay $2M (a tag replaces the season salary, it does not move money between years).
+func TestIntegration_TagSetsCurrentCell(t *testing.T) {
 	s, c, dir := tagStore(t)
 	ctx := context.Background()
 
-	if err := s.CheckLedgerParity(ctx); err != nil {
-		t.Fatalf("pre-tag parity should hold: %v", err)
-	}
 	if _, err := c.ExecuteTag(ctx, "0022", dir); err != nil {
 		t.Fatalf("ExecuteTag: %v", err)
 	}
@@ -209,16 +205,13 @@ func TestIntegration_TagDualWritesCellAndHoldsParity(t *testing.T) {
 			t.Fatalf("cell %d = %s, want $2M (untouched — tag is non-conserving)", y, cells[y])
 		}
 	}
-	if err := s.CheckLedgerParity(ctx); err != nil {
-		t.Fatalf("post-tag parity broke — legacy column and cell disagree on derived cap: %v", err)
-	}
 }
 
-// TestIntegration_TagThenCutVoidsCellsAndHoldsParity proves the GLM carry-forward from the
-// §9 tag review: after a player is tagged (his 2026 cell set to $6M) and then §8-cut, the
-// cut VOIDs the tagged player's ledger cells so no orphan $6M cell survives, and derived-cap
-// parity holds (both the legacy release and the ledger void drop him from the cap together).
-func TestIntegration_TagThenCutVoidsCellsAndHoldsParity(t *testing.T) {
+// TestIntegration_TagThenCutVoidsCells proves the GLM carry-forward from the §9 tag review:
+// after a player is tagged (his 2026 cell set to $6M) and then §8-cut, the cut VOIDs the
+// tagged player's ledger cells so no orphan $6M cap-bearing cell survives — the cut drops him
+// from the cell-derived cap cleanly.
+func TestIntegration_TagThenCutVoidsCells(t *testing.T) {
 	s, c, dir := tagStore(t)
 	ctx := context.Background()
 
@@ -241,10 +234,6 @@ func TestIntegration_TagThenCutVoidsCellsAndHoldsParity(t *testing.T) {
 	}
 	if len(cells) != 0 {
 		t.Fatalf("cut player still has PAID cells %v, want none (all voided)", cells)
-	}
-	// Parity holds: the legacy release and the ledger void dropped him from the cap together.
-	if err := s.CheckLedgerParity(ctx); err != nil {
-		t.Fatalf("post-cut parity broke: %v", err)
 	}
 }
 
@@ -273,14 +262,14 @@ func (s offGridSeed) Rosters(context.Context) ([]domain.Roster, error) {
 	}, nil
 }
 
-// TestIntegration_TagOffGridPriceHoldsParity is the deferred GLM carry-forward pin: derived-cap
-// parity holds because both models snap the SAME per-player figure to $10k (snap(x)==snap(x)),
-// NOT because the figures are $10k multiples. Tagging 0022 resolves an off-grid $6,001,000
-// price; the tag writes that exact off-grid figure to BOTH the legacy adjusted-salary column
-// and the 2026 ledger cell, so the in-tx parity gate must PASS (the WriteTx commits) even though
-// neither side is on the $10k grid. If parity were (wrongly) implemented to require or force
-// $10k-multiple values, this tag would either be rejected by the gate or drift the two models.
-func TestIntegration_TagOffGridPriceHoldsParity(t *testing.T) {
+// TestIntegration_TagOffGridPriceSnapsInCap pins the Ship 3 money model on an OFF-$10k-grid
+// price: the ledger CELL holds the exact cent-precise figure (the KING — no rounding at rest),
+// while the franchise's derived CapUsed SNAPS each cell to $10k (universal rounding, applied at
+// aggregation). Tagging 0022 resolves an off-grid $6,001,000 average: the 2026 cell and the
+// player's CapSalary hold $6,001,000 exactly, but that cell contributes a snapped $6,000,000 to
+// the franchise cap. This is the carry-forward of the §9 snap lesson, now expressed as the
+// single cell-derived truth rather than a legacy/ledger parity.
+func TestIntegration_TagOffGridPriceSnapsInCap(t *testing.T) {
 	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "offgrid.db"))
 	if err != nil {
 		t.Fatalf("db.Open: %v", err)
@@ -297,15 +286,8 @@ func TestIntegration_TagOffGridPriceHoldsParity(t *testing.T) {
 	dir := tagDir{"0010": domain.PosWR, "0011": domain.PosWR, "0020": domain.PosWR, "0021": domain.PosWR, "0022": domain.PosWR}
 	ctx := context.Background()
 
-	// Establish the baseline: the seed itself is parity-clean, so a post-tag pass genuinely
-	// proves the tag held parity (not that it was already broken before the tag). (DeepSeek ⑤.)
-	if err := s.CheckLedgerParity(ctx); err != nil {
-		t.Fatalf("seed parity should hold before the tag: %v", err)
-	}
-
-	// The tag commits — the in-tx parity gate passed on an off-grid price.
 	if _, err := c.ExecuteTag(ctx, "0022", dir); err != nil {
-		t.Fatalf("ExecuteTag (off-grid price rejected by the parity gate?): %v", err)
+		t.Fatalf("ExecuteTag: %v", err)
 	}
 
 	// The resolved price is genuinely OFF the $10k grid — otherwise this test proves nothing.
@@ -313,11 +295,11 @@ func TestIntegration_TagOffGridPriceHoldsParity(t *testing.T) {
 	if domain.RoundToNearest10k(offGrid) == offGrid {
 		t.Fatalf("test scaffolding broken: %s is already a $10k multiple", offGrid)
 	}
+	// The cap-counting figure (current-season cell) is the EXACT off-grid price — no rounding at rest.
 	p, _ := s.Player("0022")
-	if p.AdjustedSalary != offGrid {
-		t.Fatalf("tagged salary = %s, want %s (off-grid top-5 average)", p.AdjustedSalary, offGrid)
+	if p.CapSalary != offGrid {
+		t.Fatalf("CapSalary = %s, want %s (off-grid top-5 average, held exactly in the cell)", p.CapSalary, offGrid)
 	}
-	// The ledger cell took the same off-grid figure (dual-write), and parity still holds.
 	cells, err := s.LedgerCells(ctx, "0022")
 	if err != nil {
 		t.Fatalf("LedgerCells: %v", err)
@@ -325,7 +307,8 @@ func TestIntegration_TagOffGridPriceHoldsParity(t *testing.T) {
 	if cells[2026] != offGrid {
 		t.Fatalf("2026 cell = %s, want %s (off-grid tag price)", cells[2026], offGrid)
 	}
-	if err := s.CheckLedgerParity(ctx); err != nil {
-		t.Fatalf("parity broke on an off-grid tag price — it must hold by symmetric snap: %v", err)
+	// The franchise cap SNAPS the cell: 0020 $6M + 0021 $4M + 0022 snap($6.001M)=$6M = $16M.
+	if got, _ := s.CapUsed("0002"); got != 16*mil {
+		t.Fatalf("CapUsed(0002) = %s, want $16M (off-grid $6.001M cell snapped to $6M in the aggregate)", got)
 	}
 }

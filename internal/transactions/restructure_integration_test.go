@@ -90,16 +90,15 @@ func TestIntegration_RestructureLowersCapFlat(t *testing.T) {
 	if !p.IsRestructured {
 		t.Fatal("player 0010 not flagged restructured")
 	}
-	if p.AdjustedSalary != 9*mil { // $12M − $3M
-		t.Fatalf("adjusted salary = %s, want $9M", p.AdjustedSalary)
+	if p.CapSalary != 9*mil { // $12M − $3M — the cap-counting figure is the current-season cell
+		t.Fatalf("cap-counting salary = %s, want $9M", p.CapSalary)
 	}
 	if got, _ := s.CapUsed("0001"); got != 15*mil { // $18M − $3M move
 		t.Fatalf("post-restructure cap = %s, want $15M (dropped by exactly the move)", got)
 	}
 
-	// Ledger dual-write: the $3M left the current-season (2026) cell and landed in the last
-	// paid year (2028), conserving the contract total; parity between the ledger and the
-	// legacy columns must hold.
+	// Ledger: the $3M left the current-season (2026) cell and landed in the last paid year
+	// (2028), conserving the contract total — the sole mechanism for the cap drop (Ship 3).
 	cells := readPlayerCells(t, s, "0010")
 	if cells[2026] != 9*mil { // $12M − $3M moved out
 		t.Fatalf("2026 cell = %s, want $9M (move left this year)", cells[2026])
@@ -109,9 +108,6 @@ func TestIntegration_RestructureLowersCapFlat(t *testing.T) {
 	}
 	if cells[2027] != 12*mil { // untouched middle year
 		t.Fatalf("2027 cell = %s, want $12M (untouched)", cells[2027])
-	}
-	if err := s.CheckLedgerParity(context.Background()); err != nil {
-		t.Fatalf("ledger parity failed after restructure: %v", err)
 	}
 
 	// A §8 cut now charges 50% (restructured) × $9M effective × 2 remaining years = $9M.
@@ -151,8 +147,8 @@ func TestIntegration_RestructureRejectsFinalYearContract(t *testing.T) {
 	if p, _ := s.Player("0030"); p.IsRestructured {
 		t.Fatal("rejected final-year restructure still flagged the contract")
 	}
-	if err := s.CheckLedgerParity(context.Background()); err != nil {
-		t.Fatalf("parity broke after a rejected restructure: %v", err)
+	if got, _ := s.CapUsed("0003"); got != 6*mil {
+		t.Fatalf("cap moved on a rejected final-year restructure: %s, want $6M (unchanged)", got)
 	}
 }
 
@@ -180,8 +176,8 @@ func TestIntegration_RestructureRejectsAndRollsBack(t *testing.T) {
 	if _, err := c.Execute(ctx, transactions.Restructure{MFLID: "0010", Move: 4 * mil}); err == nil {
 		t.Fatal("over-max move ($4M) was accepted")
 	}
-	if p, _ := s.Player("0010"); p.IsRestructured || p.AdjustedSalary != 0 {
-		t.Fatal("rejected over-max move still mutated the contract")
+	if p, _ := s.Player("0010"); p.IsRestructured || p.CapSalary != 12*mil {
+		t.Fatal("rejected over-max move still mutated the contract (cap-counting cell must be unchanged $12M)")
 	}
 	if got, _ := s.CapUsed("0001"); got != 18*mil {
 		t.Fatalf("cap moved on a rejected restructure: %s, want $18M", got)

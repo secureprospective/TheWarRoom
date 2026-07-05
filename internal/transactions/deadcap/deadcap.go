@@ -70,10 +70,10 @@ func Waive(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapEn
 	if remaining < 0 {
 		remaining = 0
 	}
-	// §8 reads "annual salary"; EffectiveSalary is that base salary until a restructure
-	// (§11, B7c) sets an adjusted figure, at which point the restructured cap hit is the
-	// right base — one definition, forward-consistent (v1 has no restructures, so equal).
-	charge := Charge(state.EffectiveSalary(ps), remaining, ps.IsRestructured, false)
+	// §8 charges on the CAP-COUNTING salary — the player's current-season ledger cell
+	// (CapSalary). Before any restructure this equals the base annual salary; after a §11
+	// restructure it is the reduced cap hit, the right base for the dead-cap charge.
+	charge := Charge(ps.CapSalary, remaining, ps.IsRestructured, false)
 
 	if err := w.ReleasePlayer(ctx, mflID); err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: release %q: %w", mflID, err)

@@ -252,7 +252,7 @@ func (s *Store) seed(ctx context.Context, rosters []domain.Roster) error {
 func (s *Store) load(ctx context.Context) error {
 	rows, err := s.pools.Read().QueryContext(ctx, `
 SELECT r.franchise_id, r.mfl_id, r.roster_status,
-       c.annual_salary_cents, c.adjusted_salary_cents, c.contract_years, c.expiration_year,
+       c.annual_salary_cents, c.contract_years, c.expiration_year,
        c.contract_status, c.is_restructured, c.is_tagged
 FROM rosters r
 JOIN contracts c
@@ -280,10 +280,25 @@ ORDER BY r.franchise_id, r.mfl_id`, s.leagueID, s.season)
 		return fmt.Errorf("state: load matched %d of %d roster rows (contract rows missing)", len(idx), want)
 	}
 
-	// CapUsed = live contracts (already summed in scanState) PLUS this season's dead-cap
-	// charges (B7b): the §8 waiver penalty counts against the cap for its absolute year.
-	// A franchise that carries dead cap but no current players still appears here (its cap
-	// is non-zero) — a deliberate extension of the player-derived identity rule.
+	// Ship 3 read-flip: cap usage is DERIVED from the ledger cells (the KING), not the frozen
+	// legacy salary columns. loadCellCap gives each player's raw cap-counting salary (CapSalary)
+	// and each franchise's cell cap ($10k-snapped per cell). Set both here — scanState no longer
+	// touches money beyond the base Salary column.
+	perPlayer, perFranchise, err := loadCellCap(ctx, s.pools.Read(), s.leagueID, s.season)
+	if err != nil {
+		return err
+	}
+	for fid, f := range fr {
+		f.CapUsed = perFranchise[fid]
+		for i := range f.Players {
+			f.Players[i].CapSalary = perPlayer[f.Players[i].MFLID]
+		}
+	}
+
+	// CapUsed then adds this season's dead-cap charges (B7b): the §8 waiver penalty counts
+	// against the cap for its absolute year. A franchise that carries dead cap but no current
+	// players still appears here (its cap is non-zero) — a deliberate extension of the
+	// player-derived identity rule.
 	dc, err := s.loadDeadCap(ctx)
 	if err != nil {
 		return err

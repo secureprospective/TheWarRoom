@@ -68,12 +68,17 @@ func TestMigrateMoneyCents_BackfillsExactly(t *testing.T) {
 	if p.Salary != domain.Money(700_000_000) {
 		t.Errorf("annual salary = %d cents, want 700000000", p.Salary)
 	}
-	if p.AdjustedSalary != domain.Money(130_000_000) {
-		t.Errorf("adjusted salary = %d cents, want 130000000", p.AdjustedSalary)
+	// The migration still backfills the (now frozen, Ship-4-doomed) adjusted_salary_cents
+	// column exactly; post-Ship-3 nothing loads it into PlayerState, so verify the column
+	// straight from the DB rather than through the removed EffectiveSalary/AdjustedSalary API.
+	var adjCents int64
+	if err := pools.Read().QueryRowContext(ctx,
+		`SELECT adjusted_salary_cents FROM contracts WHERE league_id = ? AND mfl_id = ?`,
+		league, "0001").Scan(&adjCents); err != nil {
+		t.Fatalf("read adjusted_salary_cents: %v", err)
 	}
-	// EffectiveSalary picks the adjusted value once set.
-	if got := EffectiveSalary(p); got != domain.Money(130_000_000) {
-		t.Errorf("effective salary = %d, want 130000000", got)
+	if adjCents != 130_000_000 {
+		t.Errorf("adjusted_salary_cents = %d, want 130000000 (backfilled)", adjCents)
 	}
 
 	// Idempotent: a second Initialize on the migrated DB sees the cents columns present

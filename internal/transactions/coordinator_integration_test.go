@@ -25,11 +25,11 @@ func (s seedSource) Rosters(context.Context) ([]domain.Roster, error) {
 	}
 	return []domain.Roster{
 		{FranchiseID: "0001", Players: []domain.PlayerRecord{
-			{MFLID: id("0001"), Salary: 10, ContractYear: 2028,
+			{MFLID: id("0001"), Salary: 10 * mil, ContractYear: 2028,
 				RosterStatus: domain.RosterActive, ContractStatus: domain.CStatusUFA},
 		}},
 		{FranchiseID: "0002", Players: []domain.PlayerRecord{
-			{MFLID: id("0003"), Salary: 7, ContractYear: 2029,
+			{MFLID: id("0003"), Salary: 7 * mil, ContractYear: 2029,
 				RosterStatus: domain.RosterActive, ContractStatus: domain.CStatusFT1},
 		}},
 	}, nil
@@ -76,8 +76,8 @@ func TestIntegration_TradePersists(t *testing.T) {
 	if p1.FranchiseID != "0002" || p3.FranchiseID != "0001" {
 		t.Fatalf("trade did not persist: 0001@%s 0003@%s", p1.FranchiseID, p3.FranchiseID)
 	}
-	if used, _ := s.CapUsed("0001"); used != 7 {
-		t.Fatalf("cap after trade: 0001=%v, want 7", used)
+	if used, _ := s.CapUsed("0001"); used != 7*mil {
+		t.Fatalf("cap after trade: 0001=%v, want %v", used, 7*mil)
 	}
 }
 
@@ -92,11 +92,11 @@ func TestIntegration_WaiverCutConservesCap(t *testing.T) {
 		t.Fatalf("New: %v", err)
 	}
 
-	// Player 0001: salary 10 cents, contract through 2028, store season 2026 →
-	// remaining = 2, §8 charge = round(10 × 35 × 2 / 100) = 7 cents.
+	// Player 0001: salary $10M, contract through 2028, store season 2026 → remaining = 2,
+	// §8 charge = 35% × $10M × 2 = $7M (a clean $10k multiple).
 	before, _ := s.CapUsed("0001")
-	if before != 10 {
-		t.Fatalf("pre-cut cap = %v, want 10 (the player's salary)", before)
+	if before != 10*mil {
+		t.Fatalf("pre-cut cap = %v, want %v (the player's salary)", before, 10*mil)
 	}
 
 	rec, err := c.Execute(context.Background(), transactions.Waiver{MFLID: "0001"})
@@ -111,13 +111,13 @@ func TestIntegration_WaiverCutConservesCap(t *testing.T) {
 	if _, ok := s.Player("0001"); ok {
 		t.Fatal("player 0001 still rostered after a cut")
 	}
-	// Cap conservation: his salary (10) left; the §8 dead cap (7) remains against 0001.
+	// Cap conservation: his salary ($10M) left; the §8 dead cap ($7M) remains against 0001.
 	after, ok := s.CapUsed("0001")
 	if !ok {
 		t.Fatal("franchise 0001 vanished — dead cap should keep it visible")
 	}
-	if after != 7 {
-		t.Fatalf("post-cut cap = %v, want 7 (§8 dead cap only)", after)
+	if after != 7*mil {
+		t.Fatalf("post-cut cap = %v, want %v (§8 dead cap only)", after, 7*mil)
 	}
 }
 

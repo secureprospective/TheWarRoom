@@ -268,7 +268,8 @@ func TestExecute_WaiverReleasesThenCharges(t *testing.T) {
 	w := newFake()
 	w.tw.season = 2026
 	w.tw.player = state.PlayerState{
-		MFLID: "0001", FranchiseID: "0001", Salary: 10 * 100_000_000, ExpirationYear: 2028,
+		MFLID: "0001", FranchiseID: "0001", Salary: 10 * 100_000_000, CapSalary: 10 * 100_000_000,
+		ExpirationYear: 2028,
 	}
 	c := newCoord(t, w)
 
@@ -323,7 +324,7 @@ func TestExecute_RestructureAppliesThenBumps(t *testing.T) {
 	w := newFake()
 	w.tw.season = 2026
 	w.tw.player = state.PlayerState{
-		MFLID: "0001", FranchiseID: "0001", Salary: 6 * 100_000_000, // $6M → tier max $2M
+		MFLID: "0001", FranchiseID: "0001", Salary: 6 * 100_000_000, CapSalary: 6 * 100_000_000, // $6M → tier max $2M
 		ExpirationYear: 2028, // a future paid year exists to absorb the move
 	}
 	c := newCoord(t, w)
@@ -349,7 +350,7 @@ func TestExecute_RestructureAppliesThenBumps(t *testing.T) {
 func TestExecute_RestructureCounterFailRollsBack(t *testing.T) {
 	w := newFake()
 	w.tw.season = 2026
-	w.tw.player = state.PlayerState{MFLID: "0001", FranchiseID: "0001", Salary: 6 * 100_000_000, ExpirationYear: 2028}
+	w.tw.player = state.PlayerState{MFLID: "0001", FranchiseID: "0001", Salary: 6 * 100_000_000, CapSalary: 6 * 100_000_000, ExpirationYear: 2028}
 	w.tw.failOn = 3 // fail the incop (call 1 = contract, call 2 = movecell, call 3 = incop)
 	w.tw.failErr = errors.New("counter boom")
 	c := newCoord(t, w)

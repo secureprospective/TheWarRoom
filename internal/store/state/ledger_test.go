@@ -134,13 +134,10 @@ func TestSeedLedgerAbsentContractYearCoversSeason(t *testing.T) {
 	}
 }
 
-// applyCells commits a ledger cell primitive through a RAW write tx, deliberately BYPASSING
-// WriteTx's parity gate. The gate rejects a ledger-only change (legacy/ledger disagree) at
-// commit — correct for production, where every money op dual-writes both sides — but these
-// white-box tests exercise ONE cell primitive in isolation, so they need a committed
-// ledger-only write to inspect. The full dual-write ops (restructure/tag/waiver) are covered
-// by the transactions integration tests, where parity DOES hold end-to-end. It does not reload
-// memory: these tests read cells straight from the DB via readCells.
+// applyCells commits a ledger cell primitive through a RAW write tx (no memory reload) so a
+// white-box test can inspect ONE primitive's effect straight from the DB via readCells. It
+// exercises the txWriter cell ops (SetCell/VoidCells) in isolation; the full ops that compose
+// them (restructure/tag/waiver) are covered by the transactions integration tests.
 func applyCells(t *testing.T, s *Store, fn func(*txWriter) error) error {
 	t.Helper()
 	ctx := context.Background()
@@ -159,37 +156,6 @@ func applyCells(t *testing.T, s *Store, fn func(*txWriter) error) error {
 		t.Fatalf("commit: %v", err)
 	}
 	return nil
-}
-
-// TestParityGateRollsBackDrift gives the in-tx parity gate teeth (Ship 2, 4/4): a WriteTx that
-// moves money between a player's cells WITHOUT a matching legacy change drifts the two models,
-// so the gate must REJECT the whole transaction before commit — a stronger guarantee than the
-// diagnostic CheckLedgerParity (which only observes committed state). After the rejection
-// nothing is committed: the cells are unchanged and parity still holds. (In real ops the two
-// sides are always written together; this plants a ledger-only drift.)
-func TestParityGateRollsBackDrift(t *testing.T) {
-	s := newStore(t, &fakeSource{rosters: ledgerRosters(t)})
-	ctx := context.Background()
-
-	// Seed parity holds.
-	if err := s.CheckLedgerParity(ctx); err != nil {
-		t.Fatalf("seed parity should hold: %v", err)
-	}
-	// Move $10k out of the current-season (2026) cell into 2028 — legacy columns untouched.
-	// The gate sees the drift on the uncommitted tx and rolls the WHOLE transaction back.
-	err := s.WriteTx(ctx, func(w TxWriter) error {
-		return w.MoveCellMoney(ctx, "0001", 2026, 2028, 1_000_000, "planted drift")
-	})
-	if err == nil {
-		t.Fatal("WriteTx committed a ledger-only drift — the parity gate has no teeth")
-	}
-	// Nothing committed: the 2026 cell is still its seeded $20k, and parity still holds.
-	if got := readCells(t, s, "0001")[2026].salary; got != 2_000_000 {
-		t.Fatalf("rolled-back drift still moved the 2026 cell to %d, want 2000000 (untouched)", got)
-	}
-	if err := s.CheckLedgerParity(ctx); err != nil {
-		t.Fatalf("parity broke after a rejected+rolled-back drift: %v", err)
-	}
 }
 
 // TestSetCellSetsAbsoluteAndLogs proves the §9 tag primitive: SetCell overwrites one cell

@@ -13,11 +13,14 @@ import (
 // is only the state B7 mutates at runtime — name/position live in the players DB and
 // are looked up separately, never duplicated into mutable state.
 type PlayerState struct {
-	MFLID          string                // canonical player id (string, leading zeros)
-	FranchiseID    string                // owning franchise, "0001"–"0032"
-	RosterStatus   domain.RosterStatus   // ROSTER or TAXI_SQUAD
-	Salary         domain.Money          // annual_salary, exact cents
-	AdjustedSalary domain.Money          // after adjustment items, exact cents; 0 until B7 sets it
+	MFLID        string              // canonical player id (string, leading zeros)
+	FranchiseID  string              // owning franchise, "0001"–"0032"
+	RosterStatus domain.RosterStatus // ROSTER or TAXI_SQUAD
+	Salary       domain.Money        // annual (BASE) salary, exact cents — the §9/§11 rule base
+	// CapSalary is the cap-counting salary: DERIVED from the current-season PAID ledger cell
+	// (the KING), NOT stored competing truth. Equals Salary until a §11 restructure moves
+	// money out of this year's cell (Ship 3 read-flip).
+	CapSalary      domain.Money
 	ContractYears  int                   // years remaining; 0 until B7 computes it
 	ExpirationYear int                   // final contract year (seeded from normalize)
 	ContractStatus domain.ContractStatus // UFA/RFA/FT1/FT2
@@ -39,7 +42,6 @@ type FranchiseState struct {
 // player's live contract fields atomically.
 type ContractChange struct {
 	AnnualSalary   domain.Money
-	AdjustedSalary domain.Money
 	ContractYears  int
 	ExpirationYear int
 	ContractStatus domain.ContractStatus

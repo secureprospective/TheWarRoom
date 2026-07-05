@@ -92,10 +92,10 @@ func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
 
 // FranchisePlayerDTO is one player's live state as the dev surface renders it.
 type FranchisePlayerDTO struct {
-	MFLID          string  `json:"mflID"`
-	RosterStatus   string  `json:"rosterStatus"`
-	Salary         float64 `json:"salary"`
-	AdjustedSalary float64 `json:"adjustedSalary"`
+	MFLID        string  `json:"mflID"`
+	RosterStatus string  `json:"rosterStatus"`
+	Salary       float64 `json:"salary"`    // base (annual) salary
+	CapSalary    float64 `json:"capSalary"` // cap-counting figure, derived from the ledger cell
 }
 
 // FranchiseStateResult is a read of one franchise's runtime state: its cap usage and
@@ -134,8 +134,8 @@ func (a *App) GetFranchiseState(franchiseID string) FranchiseStateResult {
 			RosterStatus: string(p.RosterStatus),
 			// Money → float millions at the display edge; cents-on-the-wire + React
 			// formatting is a B7c follow-up (no money math happens frontend-side).
-			Salary:         p.Salary.Millions(),
-			AdjustedSalary: p.AdjustedSalary.Millions(),
+			Salary:    p.Salary.Millions(),
+			CapSalary: p.CapSalary.Millions(),
 		}
 	}
 	return FranchiseStateResult{OK: true, FranchiseID: franchiseID, CapUsed: fs.CapUsed.Millions(), Players: players}
