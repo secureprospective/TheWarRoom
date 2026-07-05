@@ -10,7 +10,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playerscores"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/rankings"
-	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
 // m1Timeout bounds the M1 IPC calls. ScoreLeague may fetch two MFL exports and
@@ -202,7 +201,7 @@ func (a *App) GetRankings() RankingsResult {
 		if p, ok := a.state.Reader().Player(s.MFLID); ok {
 			row.FranchiseID = p.FranchiseID
 			// Money → float millions at the display edge (cap-efficiency = score per $M).
-			row.Salary = state.EffectiveSalary(p).Millions()
+			row.Salary = p.CapSalary.Millions()
 			if row.Salary > 0 {
 				row.CapEff, row.CapEffOK = s.AdjustedScore/row.Salary, true
 			}

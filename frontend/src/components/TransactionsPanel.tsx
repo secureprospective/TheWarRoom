@@ -241,7 +241,7 @@ export function TransactionsPanel() {
                 {franchise.players.map((p) => (
                   <li key={p.mflID}>
                     {p.mflID} · {p.rosterStatus} · ${p.salary}
-                    {p.adjustedSalary > 0 ? ` (adj ${p.adjustedSalary})` : ''}
+                    {p.capSalary !== p.salary ? ` (cap $${p.capSalary})` : ''}
                   </li>
                 ))}
               </ul>

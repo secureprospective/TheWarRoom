@@ -74,6 +74,21 @@ func (f *fakeTxWriter) Player(mflID string) (state.PlayerState, bool) {
 
 func (f *fakeTxWriter) Season() int { return f.season }
 
+func (f *fakeTxWriter) MoveCellMoney(_ context.Context, mflID string, _, _ int, _ domain.Money, _ string) error {
+	f.calls = append(f.calls, recordedMove{op: "movecell", mflID: mflID})
+	return f.maybeFail()
+}
+
+func (f *fakeTxWriter) SetCell(_ context.Context, mflID string, _ int, _ domain.Money, _ string) error {
+	f.calls = append(f.calls, recordedMove{op: "setcell", mflID: mflID})
+	return f.maybeFail()
+}
+
+func (f *fakeTxWriter) VoidCells(_ context.Context, mflID string, _ string) error {
+	f.calls = append(f.calls, recordedMove{op: "voidcells", mflID: mflID})
+	return f.maybeFail()
+}
+
 func (f *fakeTxWriter) OpCount(_ context.Context, franchiseID, opKind string) (int, error) {
 	return f.opCounts[franchiseID+"/"+opKind], nil
 }
@@ -253,7 +268,8 @@ func TestExecute_WaiverReleasesThenCharges(t *testing.T) {
 	w := newFake()
 	w.tw.season = 2026
 	w.tw.player = state.PlayerState{
-		MFLID: "0001", FranchiseID: "0001", Salary: 10 * 100_000_000, ExpirationYear: 2028,
+		MFLID: "0001", FranchiseID: "0001", Salary: 10 * 100_000_000, CapSalary: 10 * 100_000_000,
+		ExpirationYear: 2028,
 	}
 	c := newCoord(t, w)
 
@@ -265,10 +281,10 @@ func TestExecute_WaiverReleasesThenCharges(t *testing.T) {
 		t.Fatalf("receipt = %+v, want KindWaiver/1", rec)
 	}
 	got := w.tw.calls
-	if len(got) != 2 || got[0].op != "release" || got[1].op != "deadcap" {
-		t.Fatalf("waiver did not release-then-charge: %+v", got)
+	if len(got) != 3 || got[0].op != "release" || got[1].op != "deadcap" || got[2].op != "voidcells" {
+		t.Fatalf("waiver did not release-then-charge-then-void: %+v", got)
 	}
-	if got[0].mflID != "0001" || got[1].mflID != "0001" || got[1].target != "0001" {
+	if got[0].mflID != "0001" || got[1].mflID != "0001" || got[1].target != "0001" || got[2].mflID != "0001" {
 		t.Fatalf("waiver dispatched wrong player/franchise: %+v", got)
 	}
 }
@@ -306,8 +322,10 @@ func TestExecute_WaiverEmptyPlayerRejectedBeforeTx(t *testing.T) {
 // then bumps the per-season counter — both inside the one transaction.
 func TestExecute_RestructureAppliesThenBumps(t *testing.T) {
 	w := newFake()
+	w.tw.season = 2026
 	w.tw.player = state.PlayerState{
-		MFLID: "0001", FranchiseID: "0001", Salary: 6 * 100_000_000, // $6M → tier max $2M
+		MFLID: "0001", FranchiseID: "0001", Salary: 6 * 100_000_000, CapSalary: 6 * 100_000_000, // $6M → tier max $2M
+		ExpirationYear: 2028, // a future paid year exists to absorb the move
 	}
 	c := newCoord(t, w)
 
@@ -315,11 +333,13 @@ func TestExecute_RestructureAppliesThenBumps(t *testing.T) {
 		t.Fatalf("Execute restructure: %v", err)
 	}
 	got := w.tw.calls
-	if len(got) != 2 || got[0].op != "contract" || got[1].op != "incop" {
-		t.Fatalf("restructure did not apply-then-bump: %+v", got)
+	// Dual-write order: apply the legacy contract, move money between cells, then bump the
+	// per-season counter — all inside the one transaction.
+	if len(got) != 3 || got[0].op != "contract" || got[1].op != "movecell" || got[2].op != "incop" {
+		t.Fatalf("restructure did not apply→move→bump: %+v", got)
 	}
-	if got[1].mflID != "RESTRUCTURE" || got[1].target != "0001" {
-		t.Fatalf("counter bumped with wrong op/franchise: %+v", got[1])
+	if got[2].mflID != "RESTRUCTURE" || got[2].target != "0001" {
+		t.Fatalf("counter bumped with wrong op/franchise: %+v", got[2])
 	}
 }
 
@@ -329,8 +349,9 @@ func TestExecute_RestructureAppliesThenBumps(t *testing.T) {
 // whole WriteTx back; here we prove the error propagates and no partial success leaks).
 func TestExecute_RestructureCounterFailRollsBack(t *testing.T) {
 	w := newFake()
-	w.tw.player = state.PlayerState{MFLID: "0001", FranchiseID: "0001", Salary: 6 * 100_000_000}
-	w.tw.failOn = 2 // fail the incop (call 1 = contract, call 2 = incop)
+	w.tw.season = 2026
+	w.tw.player = state.PlayerState{MFLID: "0001", FranchiseID: "0001", Salary: 6 * 100_000_000, CapSalary: 6 * 100_000_000, ExpirationYear: 2028}
+	w.tw.failOn = 3 // fail the incop (call 1 = contract, call 2 = movecell, call 3 = incop)
 	w.tw.failErr = errors.New("counter boom")
 	c := newCoord(t, w)
 

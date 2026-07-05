@@ -52,6 +52,11 @@ func (s *Store) WriteTx(ctx context.Context, fn func(TxWriter) error) error {
 	if err := fn(&txWriter{s: s, tx: tx}); err != nil {
 		return err // deferred Rollback undoes any steps already executed in this tx
 	}
+
+	// (Ship 3) The dual-write parity gate is retired: the ledger cells are now the sole cap
+	// source of truth, so there is no legacy figure left to reconcile against. Cell integrity
+	// is guaranteed by the primitives themselves — MoveCellMoney conserves the contract total,
+	// SetCell/VoidCells log every old→new delta to the immutable change log.
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("state: commit: %w", err)
 	}
@@ -147,19 +152,21 @@ func (w *txWriter) ApplyContract(ctx context.Context, mflID string, c ContractCh
 	if !validContractStatus(c.ContractStatus) {
 		return fmt.Errorf("state: ApplyContract: unknown contract status %q", c.ContractStatus)
 	}
-	if c.AnnualSalary < 0 || c.AdjustedSalary < 0 || c.ContractYears < 0 {
+	if c.AnnualSalary < 0 || c.ContractYears < 0 {
 		return fmt.Errorf("state: ApplyContract: negative salary or years")
 	}
 	if !w.s.exists(mflID) {
 		return fmt.Errorf("state: ApplyContract %q: %w", mflID, errUnknownPlayer)
 	}
+	// Ship 3: only the BASE (annual) salary column is written — the cap-counting figure lives
+	// in the ledger cell (SetCell/MoveCellMoney) — the adjusted_salary column is gone (Ship 4).
 	now := time.Now().UTC().Format(time.RFC3339)
 	res, err := w.tx.ExecContext(ctx, `
-UPDATE contracts SET annual_salary_cents = ?, adjusted_salary_cents = ?, contract_years = ?,
+UPDATE contracts SET annual_salary_cents = ?, contract_years = ?,
        expiration_year = ?, contract_status = ?, is_restructured = ?, is_tagged = ?,
        last_updated = ?
 WHERE league_id = ? AND season = ? AND mfl_id = ?`,
-		c.AnnualSalary.Cents(), c.AdjustedSalary.Cents(), c.ContractYears, c.ExpirationYear,
+		c.AnnualSalary.Cents(), c.ContractYears, c.ExpirationYear,
 		string(c.ContractStatus), boolToInt(c.IsRestructured), boolToInt(c.IsTagged),
 		now, w.s.leagueID, w.s.season, mflID)
 	if err != nil {

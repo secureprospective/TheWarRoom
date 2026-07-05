@@ -9,18 +9,44 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
 
-// EffectiveSalary is the dollar figure a player counts against the cap: the adjusted
-// salary once B7 has set one, otherwise the base annual salary. Pure derivation —
-// the cap USAGE, never stored as truth (AD-21). Exported at M1 so the rankings
-// orchestrator feeds the engine (L5 cap scaling) and the cap-efficiency view the
-// SAME figure this store's CapUsed derivation uses — one definition, two consumers
-// (M17), or the board and the cap page would silently disagree once B7 adjusts a
-// salary.
-func EffectiveSalary(p PlayerState) domain.Money {
-	if p.AdjustedSalary > 0 {
-		return p.AdjustedSalary
+// rowQuerier is the read surface the cell-cap loader needs — satisfied by *sql.DB (the
+// committed read pool used at load) and *sql.Tx (a future in-tx reader).
+type rowQuerier interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
+// loadCellCap reads every current-season PAID ledger cell joined to its franchise, returning
+// (a) each player's RAW cap-counting cents (PlayerState.CapSalary — the §8/§11 rule base) and
+// (b) each franchise's cap usage = the sum of its cells SNAPPED to $10k (universal rounding).
+// The ledger cell is the money source of truth (KING) as of Ship 3 — the legacy contract
+// salary columns are frozen and unread. Exactly one PAID cell exists per rostered player for
+// the current year (PK league_id, mfl_id, league_year), so a per-cell snap is a per-player
+// snap; a player with no current PAID cell contributes 0 (an expired/UFA year).
+func loadCellCap(ctx context.Context, q rowQuerier, leagueID string, season int) (perPlayer, perFranchise map[string]domain.Money, err error) {
+	rows, err := q.QueryContext(ctx, `
+SELECT r.franchise_id, cy.mfl_id, cy.salary_cents
+FROM contract_years cy
+JOIN rosters r ON r.league_id = cy.league_id AND r.mfl_id = cy.mfl_id AND r.season = ?
+WHERE cy.league_id = ? AND cy.league_year = ? AND cy.year_status = ?`,
+		season, leagueID, season, yearStatusPaid)
+	if err != nil {
+		return nil, nil, fmt.Errorf("state: cell cap read: %w", err)
 	}
-	return p.Salary
+	defer func() { _ = rows.Close() }()
+	perPlayer, perFranchise = map[string]domain.Money{}, map[string]domain.Money{}
+	for rows.Next() {
+		var fid, mflID string
+		var cents int64
+		if err := rows.Scan(&fid, &mflID, &cents); err != nil {
+			return nil, nil, fmt.Errorf("state: cell cap scan: %w", err)
+		}
+		perPlayer[mflID] = domain.Money(cents)
+		perFranchise[fid] += domain.RoundToNearest10k(domain.Money(cents))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("state: cell cap iterate: %w", err)
+	}
+	return perPlayer, perFranchise, nil
 }
 
 // seedPlayerCount totals the players across all seed rosters (the empty-seed guard).
@@ -44,13 +70,14 @@ func seedPlayer(ctx context.Context, tx *sql.Tx, leagueID string, season int, no
 		"r:"+key, leagueID, mflID, franchiseID, string(p.RosterStatus), season, now); err != nil {
 		return fmt.Errorf("state: seed roster %q: %w", mflID, err)
 	}
-	// Money is seeded into the exact-cents columns; the legacy REAL columns are frozen
-	// (default 0, unread) and dropped in B7c. adjusted_salary_cents starts 0 until B7 sets it.
+	// Money is seeded into the exact-cents base column; the cap-counting figure lives in the
+	// ledger cells (seedLedgerPlayer), never in a contracts money column. The legacy REAL
+	// columns and adjusted_salary_cents were dropped in Ship 4.
 	if _, err := tx.ExecContext(ctx,
 		`INSERT INTO contracts (id, league_id, mfl_id, franchise_id, annual_salary_cents,
-		   adjusted_salary_cents, contract_years, expiration_year, contract_status,
+		   contract_years, expiration_year, contract_status,
 		   is_restructured, is_tagged, season, last_updated)
-		 VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?, 0, 0, ?, ?)`,
+		 VALUES (?, ?, ?, ?, ?, 0, ?, ?, 0, 0, ?, ?)`,
 		"c:"+key, leagueID, mflID, franchiseID, p.Salary.Cents(), p.ContractYear,
 		string(p.ContractStatus), season, now); err != nil {
 		return fmt.Errorf("state: seed contract %q: %w", mflID, err)
@@ -67,7 +94,7 @@ func scanState(rows *sql.Rows) (map[string]*FranchiseState, map[string]string, e
 		var p PlayerState
 		var restructured, tagged int
 		if err := rows.Scan(&p.FranchiseID, &p.MFLID, &p.RosterStatus,
-			&p.Salary, &p.AdjustedSalary, &p.ContractYears, &p.ExpirationYear,
+			&p.Salary, &p.ContractYears, &p.ExpirationYear,
 			&p.ContractStatus, &restructured, &tagged); err != nil {
 			return nil, nil, fmt.Errorf("state: scan: %w", err)
 		}
@@ -77,8 +104,9 @@ func scanState(rows *sql.Rows) (map[string]*FranchiseState, map[string]string, e
 			f = &FranchiseState{FranchiseID: p.FranchiseID}
 			fr[p.FranchiseID] = f
 		}
+		// CapSalary and CapUsed are set from the ledger cells AFTER the scan (load()); the
+		// legacy salary columns are frozen. Salary here is only the BASE (annual) figure.
 		f.Players = append(f.Players, p)
-		f.CapUsed += EffectiveSalary(p)
 		idx[p.MFLID] = p.FranchiseID
 	}
 	if err := rows.Err(); err != nil {

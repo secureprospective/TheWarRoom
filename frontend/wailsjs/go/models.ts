@@ -228,7 +228,7 @@ export namespace main {
 	    mflID: string;
 	    rosterStatus: string;
 	    salary: number;
-	    adjustedSalary: number;
+	    capSalary: number;
 
 	    static createFrom(source: any = {}) {
 	        return new FranchisePlayerDTO(source);
@@ -239,7 +239,7 @@ export namespace main {
 	        this.mflID = source["mflID"];
 	        this.rosterStatus = source["rosterStatus"];
 	        this.salary = source["salary"];
-	        this.adjustedSalary = source["adjustedSalary"];
+	        this.capSalary = source["capSalary"];
 	    }
 	}
 	export class FranchiseStateResult {

@@ -14,6 +14,16 @@ import (
 
 const mil = domain.Money(100_000_000) // $1M in cents
 
+// readPlayerCells reads a player's PAID ledger cells (year → salary) from committed state.
+func readPlayerCells(t *testing.T, s *state.Store, mflID string) map[int]domain.Money {
+	t.Helper()
+	m, err := s.LedgerCells(context.Background(), mflID)
+	if err != nil {
+		t.Fatalf("LedgerCells(%q): %v", mflID, err)
+	}
+	return m
+}
+
 // richSeed is a $-scale league that reaches the §11 restructure tiers (the shared
 // integration seed uses cents-scale salaries too small to be eligible). Franchise 0001
 // holds a $12M and a $6M player; 0002 holds a $2M player (below the $3M restructure floor).
@@ -80,11 +90,24 @@ func TestIntegration_RestructureLowersCapFlat(t *testing.T) {
 	if !p.IsRestructured {
 		t.Fatal("player 0010 not flagged restructured")
 	}
-	if p.AdjustedSalary != 9*mil { // $12M − $3M
-		t.Fatalf("adjusted salary = %s, want $9M", p.AdjustedSalary)
+	if p.CapSalary != 9*mil { // $12M − $3M — the cap-counting figure is the current-season cell
+		t.Fatalf("cap-counting salary = %s, want $9M", p.CapSalary)
 	}
 	if got, _ := s.CapUsed("0001"); got != 15*mil { // $18M − $3M move
 		t.Fatalf("post-restructure cap = %s, want $15M (dropped by exactly the move)", got)
+	}
+
+	// Ledger: the $3M left the current-season (2026) cell and landed in the last paid year
+	// (2028), conserving the contract total — the sole mechanism for the cap drop (Ship 3).
+	cells := readPlayerCells(t, s, "0010")
+	if cells[2026] != 9*mil { // $12M − $3M moved out
+		t.Fatalf("2026 cell = %s, want $9M (move left this year)", cells[2026])
+	}
+	if cells[2028] != 15*mil { // $12M + $3M moved in
+		t.Fatalf("2028 cell = %s, want $15M (move landed here)", cells[2028])
+	}
+	if cells[2027] != 12*mil { // untouched middle year
+		t.Fatalf("2027 cell = %s, want $12M (untouched)", cells[2027])
 	}
 
 	// A §8 cut now charges 50% (restructured) × $9M effective × 2 remaining years = $9M.
@@ -95,6 +118,51 @@ func TestIntegration_RestructureLowersCapFlat(t *testing.T) {
 	if got, _ := s.CapUsed("0001"); got != 15*mil {
 		t.Fatalf("post-cut cap = %s, want $15M ($6M live + $9M @ 50%% dead cap)", got)
 	}
+}
+
+// TestIntegration_RestructureRejectsFinalYearContract proves the ledger tightening: a
+// contract whose last paid year IS the current season has nowhere to move money, so §11 is
+// rejected (the single-salary model silently swallowed this — money vanished with no
+// future-year home). Nothing mutates.
+func TestIntegration_RestructureRejectsFinalYearContract(t *testing.T) {
+	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "fy.db"))
+	if err != nil {
+		t.Fatalf("db.Open: %v", err)
+	}
+	t.Cleanup(func() { _ = pools.Close() })
+	s := state.New(pools, "14432", 2026)
+	// A $6M player whose contract ENDS this season (2026) — eligible by salary, but no future
+	// paid cell to absorb a move.
+	seed := finalYearSeed{t: t}
+	if err := s.Initialize(context.Background(), seed); err != nil {
+		t.Fatalf("Initialize: %v", err)
+	}
+	c, err := transactions.New(s.Writer())
+	if err != nil {
+		t.Fatalf("New coordinator: %v", err)
+	}
+	if _, err := c.Execute(context.Background(), transactions.Restructure{MFLID: "0030", Move: 1 * mil}); err == nil {
+		t.Fatal("restructure of a final-year contract was accepted (no future year to move into)")
+	}
+	if p, _ := s.Player("0030"); p.IsRestructured {
+		t.Fatal("rejected final-year restructure still flagged the contract")
+	}
+	if got, _ := s.CapUsed("0003"); got != 6*mil {
+		t.Fatalf("cap moved on a rejected final-year restructure: %s, want $6M (unchanged)", got)
+	}
+}
+
+type finalYearSeed struct{ t *testing.T }
+
+func (s finalYearSeed) Rosters(context.Context) ([]domain.Roster, error) {
+	p, err := playerid.New("0030")
+	if err != nil {
+		s.t.Fatalf("playerid.New: %v", err)
+	}
+	return []domain.Roster{{FranchiseID: "0003", Players: []domain.PlayerRecord{
+		{MFLID: p, Salary: 6 * mil, ContractYear: 2026, // ends the current season
+			RosterStatus: domain.RosterActive, ContractStatus: domain.CStatusUFA},
+	}}}, nil
 }
 
 // TestIntegration_RestructureRejectsAndRollsBack proves every §11 boundary is enforced and
@@ -108,8 +176,8 @@ func TestIntegration_RestructureRejectsAndRollsBack(t *testing.T) {
 	if _, err := c.Execute(ctx, transactions.Restructure{MFLID: "0010", Move: 4 * mil}); err == nil {
 		t.Fatal("over-max move ($4M) was accepted")
 	}
-	if p, _ := s.Player("0010"); p.IsRestructured || p.AdjustedSalary != 0 {
-		t.Fatal("rejected over-max move still mutated the contract")
+	if p, _ := s.Player("0010"); p.IsRestructured || p.CapSalary != 12*mil {
+		t.Fatal("rejected over-max move still mutated the contract (cap-counting cell must be unchanged $12M)")
 	}
 	if got, _ := s.CapUsed("0001"); got != 18*mil {
 		t.Fatalf("cap moved on a rejected restructure: %s, want $18M", got)

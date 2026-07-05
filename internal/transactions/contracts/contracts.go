@@ -106,20 +106,19 @@ func Restructure(ctx context.Context, w state.TxWriter, mflID string, move domai
 		return fmt.Errorf("contracts: restructure: franchise %q has already restructured a contract this season (one per team per year, §11)", ps.FranchiseID)
 	}
 
-	// Flat math: drop the cap-counting salary by the move. §11 tiers on the BASE salary, but
-	// the money comes out of the cap-counting (effective) figure — equal in v1 (no prior
-	// adjustments). Bound the move by the current effective salary so newAdjusted can NEVER
-	// go negative even if a future downward adjustment made effective < base: the invariant
-	// is asserted LOCALLY here, not left to ApplyContract's non-negative backstop. This only
-	// adds a floor; it never widens the §11 tier band.
-	eff := state.EffectiveSalary(ps)
-	if move > eff {
-		return fmt.Errorf("contracts: restructure %q: move %s exceeds the player's cap-counting salary %s", mflID, move, eff)
+	// Flat math: the move comes out of the CAP-COUNTING salary (the current-season cell,
+	// CapSalary). Bound it by that figure so the cell can NEVER go negative — the invariant
+	// is asserted LOCALLY here, in addition to MoveCellMoney's own non-negativity guard. This
+	// only adds a floor; it never widens the §11 tier band (which bands on the base Salary).
+	capSalary := ps.CapSalary
+	if move > capSalary {
+		return fmt.Errorf("contracts: restructure %q: move %s exceeds the player's cap-counting salary %s", mflID, move, capSalary)
 	}
-	newAdjusted := eff - move
+	// Ship 3: the cap drop is realized SOLELY by moving money between cells (below) — the
+	// ledger cell is the KING, so there is no legacy adjusted figure to write. ApplyContract
+	// only flips the restructure flag (and re-persists the unchanged base terms).
 	change := state.ContractChange{
-		AnnualSalary:   ps.Salary, // base salary is unchanged — only the cap-counting figure drops
-		AdjustedSalary: newAdjusted,
+		AnnualSalary:   ps.Salary, // base salary is unchanged — only the cap-counting cell drops
 		ContractYears:  ps.ContractYears,
 		ExpirationYear: ps.ExpirationYear,
 		ContractStatus: ps.ContractStatus,
@@ -127,6 +126,22 @@ func Restructure(ctx context.Context, w state.TxWriter, mflID string, move domai
 		IsTagged:       ps.IsTagged,
 	}
 	if err := w.ApplyContract(ctx, mflID, change); err != nil {
+		return fmt.Errorf("contracts: restructure %q: %w", mflID, err)
+	}
+	// Ledger dual-write: a restructure is money MOVEMENT between the player's year cells,
+	// conserving the contract total (the real §11, which the single-salary model could not
+	// express). The relief comes out of the CURRENT season cell (matching the legacy adjusted
+	// drop) and lands in the last PAID year — the v1 destination default until the owner-pick
+	// money-mover UI ships. The last paid year is the contract's expiration year (the seed and
+	// every op keep expiration_year == the last PAID cell). A contract that ends this season
+	// has no future paid year to absorb the move, so it cannot restructure — a correctness
+	// tightening the old single-number model silently swallowed (the relief just vanished).
+	dest := ps.ExpirationYear
+	if dest <= w.Season() {
+		return fmt.Errorf("contracts: restructure %q: no future paid year to move money into (contract ends in %d, this season is %d)", mflID, dest, w.Season())
+	}
+	reason := fmt.Sprintf("§11 restructure: moved %s from %d to %d", move, w.Season(), dest)
+	if err := w.MoveCellMoney(ctx, mflID, w.Season(), dest, move, reason); err != nil {
 		return fmt.Errorf("contracts: restructure %q: %w", mflID, err)
 	}
 	if err := w.IncOpCount(ctx, ps.FranchiseID, restructureOpKind); err != nil {
@@ -169,8 +184,7 @@ func Tag(ctx context.Context, w state.TxWriter, mflID string, price domain.Money
 	}
 
 	change := state.ContractChange{
-		AnnualSalary:   price, // the tag IS a new salary (the §9 box); base and cap-counting both become the price
-		AdjustedSalary: price,
+		AnnualSalary:   price, // the tag IS a new base salary (the §9 box); SetCell writes the cap-counting cell
 		ContractYears:  ps.ContractYears,
 		ExpirationYear: ps.ExpirationYear,
 		ContractStatus: ps.ContractStatus,
@@ -182,6 +196,15 @@ func Tag(ctx context.Context, w state.TxWriter, mflID string, price domain.Money
 		IsTagged:       true,
 	}
 	if err := w.ApplyContract(ctx, mflID, change); err != nil {
+		return fmt.Errorf("contracts: tag %q: %w", mflID, err)
+	}
+	// Ledger dual-write: a tag SETS the current-season cell to the resolved price (a fresh
+	// one-year §9 figure — non-conserving, unlike restructure's money MOVEMENT). Parity
+	// checks only the current-season derived cap, so setting the season cell = the same price
+	// the legacy column just took keeps parity green by construction. v1 does not touch
+	// contract length, so only the season cell changes; the seed guarantees it exists.
+	reason := fmt.Sprintf("§9 franchise tag: season salary set to %s", price)
+	if err := w.SetCell(ctx, mflID, w.Season(), price, reason); err != nil {
 		return fmt.Errorf("contracts: tag %q: %w", mflID, err)
 	}
 	if err := w.IncOpCount(ctx, ps.FranchiseID, tagOpKind); err != nil {

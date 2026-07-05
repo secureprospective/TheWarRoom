@@ -74,3 +74,27 @@ func TestMoney_String(t *testing.T) {
 func formatMillions(f float64) string {
 	return strconv.FormatFloat(f, 'f', 8, 64)
 }
+
+func TestRoundToNearest10k(t *testing.T) {
+	tests := []struct {
+		name string
+		in   Money // exact cents
+		want Money // snapped cents
+	}{
+		{"exact 10k multiple stays", 2_000_000, 2_000_000}, // $20,000 → $20,000
+		{"round down below half", 20_499_999, 20_000_000},  // $204,999.99 → $200,000
+		{"round up at half (away)", 500_000, 1_000_000},    // $5,000 → $10,000
+		{"round up above half", 700_000, 1_000_000},        // $7,000 → $10,000
+		{"zero", 0, 0}, // $0 → $0
+		{"already snapped large", 125_000_000_000, 125_000_000_000}, // $1.25M... cap-scale multiple
+		{"just under a 10k step rounds down", 499_999, 0},           // $4,999.99 → $0
+		{"negative half rounds away", -500_000, -1_000_000},         // symmetric
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := RoundToNearest10k(tt.in); got != tt.want {
+				t.Fatalf("RoundToNearest10k(%d) = %d, want %d", tt.in, got, tt.want)
+			}
+		})
+	}
+}

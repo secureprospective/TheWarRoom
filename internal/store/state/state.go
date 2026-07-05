@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -232,6 +233,12 @@ func (s *Store) seed(ctx context.Context, rosters []domain.Roster) error {
 			if err := seedPlayer(ctx, tx, s.leagueID, s.season, now, r.FranchiseID, p); err != nil {
 				return err
 			}
+			// Ship 1: flat-fill the per-year ledger alongside the legacy contract row, in
+			// the SAME tx. Additive — nothing reads these cells yet, so the live cap path
+			// is untouched and main stays green.
+			if err := seedLedgerPlayer(ctx, tx, s.leagueID, s.season, now, p); err != nil {
+				return err
+			}
 		}
 	}
 	if err := tx.Commit(); err != nil {
@@ -246,7 +253,7 @@ func (s *Store) seed(ctx context.Context, rosters []domain.Roster) error {
 func (s *Store) load(ctx context.Context) error {
 	rows, err := s.pools.Read().QueryContext(ctx, `
 SELECT r.franchise_id, r.mfl_id, r.roster_status,
-       c.annual_salary_cents, c.adjusted_salary_cents, c.contract_years, c.expiration_year,
+       c.annual_salary_cents, c.contract_years, c.expiration_year,
        c.contract_status, c.is_restructured, c.is_tagged
 FROM rosters r
 JOIN contracts c
@@ -274,10 +281,41 @@ ORDER BY r.franchise_id, r.mfl_id`, s.leagueID, s.season)
 		return fmt.Errorf("state: load matched %d of %d roster rows (contract rows missing)", len(idx), want)
 	}
 
-	// CapUsed = live contracts (already summed in scanState) PLUS this season's dead-cap
-	// charges (B7b): the §8 waiver penalty counts against the cap for its absolute year.
-	// A franchise that carries dead cap but no current players still appears here (its cap
-	// is non-zero) — a deliberate extension of the player-derived identity rule.
+	// Ship 3 read-flip: cap usage is DERIVED from the ledger cells (the KING), not the frozen
+	// legacy salary columns. loadCellCap gives each player's raw cap-counting salary (CapSalary)
+	// and each franchise's cell cap ($10k-snapped per cell). Set both here — scanState no longer
+	// touches money beyond the base Salary column.
+	perPlayer, perFranchise, err := loadCellCap(ctx, s.pools.Read(), s.leagueID, s.season)
+	if err != nil {
+		return err
+	}
+	for fid, f := range fr {
+		f.CapUsed = perFranchise[fid]
+		for i := range f.Players {
+			p := &f.Players[i]
+			cs, ok := perPlayer[p.MFLID]
+			// M1 carry-forward (DeepSeek): with cap now cell-derived, a rostered player who
+			// carries a base salary but has NO PAID current-season cell will count $0 against
+			// the cap — a ledger drift the read-flip can no longer absorb. We SURFACE it but do
+			// NOT hard-fail: load() runs on every startup, and a single drift row must never
+			// render the app unopenable (GLM-5.2 Ship-4 review — blast radius). A genuinely $0
+			// base salary needs no cell, so the check gates on Salary > 0. A VOID cell counts as
+			// absent here (perPlayer holds only PAID); that is CORRECT, not a false positive:
+			// VoidCells runs ONLY inside deadcap.Waive, which de-rosters the player in the SAME
+			// tx, so a still-rostered player's current cell is PAID or absent, never VOID. Real
+			// drift is logged loudly (visible in the terminal) and the player counts $0 until
+			// reconciled — degraded but open, not bricked.
+			if !ok && p.Salary > 0 {
+				log.Printf("state: load: WARNING rostered player %q has base salary %s but no PAID %d ledger cell (cell drift) — counting $0 cap until reconciled", p.MFLID, p.Salary, s.season)
+			}
+			p.CapSalary = cs
+		}
+	}
+
+	// CapUsed then adds this season's dead-cap charges (B7b): the §8 waiver penalty counts
+	// against the cap for its absolute year. A franchise that carries dead cap but no current
+	// players still appears here (its cap is non-zero) — a deliberate extension of the
+	// player-derived identity rule.
 	dc, err := s.loadDeadCap(ctx)
 	if err != nil {
 		return err

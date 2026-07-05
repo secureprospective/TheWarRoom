@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -116,6 +117,17 @@ type PingResult struct {
 // startupErr and reported through Ping rather than silently swallowed.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+
+	// Wails OnStartup cannot return an error, so a failure here is captured in
+	// startupErr and surfaced through Ping. But nothing in the shell pings on load,
+	// so a broken startup shows only as a downstream "store not initialized" from a
+	// panel — masking the real cause. Log it to stderr too so a terminal launch
+	// prints the underlying error directly (Ship-4 diagnostic).
+	defer func() {
+		if a.startupErr != nil {
+			log.Printf("the war room: startup failed: %v", a.startupErr)
+		}
+	}()
 
 	path, err := databasePath()
 	if err != nil {

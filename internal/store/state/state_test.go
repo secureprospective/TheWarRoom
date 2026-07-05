@@ -18,6 +18,11 @@ const (
 	testSeason = 2026
 )
 
+// capUnit is $10,000 in cents — the universal rounding grain (domain.RoundToNearest10k).
+// Fixtures use whole multiples of it so each cell's $10k snap is a no-op and the cell-derived
+// cap (Ship 3) equals the sum of the seeded salaries, keeping the cap arithmetic legible.
+const capUnit domain.Money = 1_000_000
+
 // fakeSource is a controllable seed Source: tests set the rosters (or an error) it
 // yields, with no normalize/network dependency.
 type fakeSource struct {
@@ -43,13 +48,13 @@ func baseRosters(t *testing.T) []domain.Roster {
 	t.Helper()
 	return []domain.Roster{
 		{FranchiseID: "0001", Players: []domain.PlayerRecord{
-			{MFLID: mustID(t, "0001"), Salary: 10, ContractYear: 2028,
+			{MFLID: mustID(t, "0001"), Salary: 10 * capUnit, ContractYear: 2028,
 				RosterStatus: domain.RosterActive, ContractStatus: domain.CStatusUFA},
-			{MFLID: mustID(t, "0002"), Salary: 5, ContractYear: 2027,
+			{MFLID: mustID(t, "0002"), Salary: 5 * capUnit, ContractYear: 2027,
 				RosterStatus: domain.RosterTaxi, ContractStatus: domain.CStatusRFA},
 		}},
 		{FranchiseID: "0002", Players: []domain.PlayerRecord{
-			{MFLID: mustID(t, "0003"), Salary: 7, ContractYear: 2029,
+			{MFLID: mustID(t, "0003"), Salary: 7 * capUnit, ContractYear: 2029,
 				RosterStatus: domain.RosterActive, ContractStatus: domain.CStatusFT1},
 		}},
 	}
@@ -79,8 +84,8 @@ func TestInitializeAndReads(t *testing.T) {
 	if !ok || len(fs.Players) != 2 {
 		t.Fatalf("FranchiseState(0001) = %+v ok=%v", fs, ok)
 	}
-	if fs.CapUsed != 15 { // 10 + 5, no adjustments yet
-		t.Fatalf("CapUsed(0001) = %v, want 15", fs.CapUsed)
+	if fs.CapUsed != 15*capUnit { // cell-derived: 10 + 5 units
+		t.Fatalf("CapUsed(0001) = %v, want %v", fs.CapUsed, 15*capUnit)
 	}
 	p, ok := s.Player("0003")
 	if !ok || p.FranchiseID != "0002" || p.ExpirationYear != 2029 {
@@ -132,11 +137,11 @@ func TestMovePlayerRecomputesCap(t *testing.T) {
 	}
 	from, _ := s.CapUsed("0001")
 	to, _ := s.CapUsed("0002")
-	if from != 5 { // lost the $10 player, $5 taxi remains
-		t.Fatalf("CapUsed(0001) = %v, want 5", from)
+	if from != 5*capUnit { // lost the 10-unit player, 5-unit taxi remains
+		t.Fatalf("CapUsed(0001) = %v, want %v", from, 5*capUnit)
 	}
-	if to != 17 { // 7 + the moved 10
-		t.Fatalf("CapUsed(0002) = %v, want 17", to)
+	if to != 17*capUnit { // 7 + the moved 10
+		t.Fatalf("CapUsed(0002) = %v, want %v", to, 17*capUnit)
 	}
 	p, ok := s.Player("0001")
 	if !ok || p.FranchiseID != "0002" {
@@ -144,24 +149,29 @@ func TestMovePlayerRecomputesCap(t *testing.T) {
 	}
 }
 
-func TestApplyContractUsesAdjustedForCap(t *testing.T) {
+// TestApplyContractSetsTermsNotCap: after the Ship 3 read-flip, cap usage is DERIVED from the
+// ledger cells, so ApplyContract — which writes only the base contract terms + flags — does
+// NOT move CapUsed. The cap changes only when a cell op (SetCell/MoveCellMoney/VoidCells) runs.
+// This proves the separation the pivot exists to enforce: the buttons carry no money math.
+func TestApplyContractSetsTermsNotCap(t *testing.T) {
 	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
 	ctx := context.Background()
 
+	before, _ := s.CapUsed("0001")
 	err := s.ApplyContract(ctx, "0001", ContractChange{
-		AnnualSalary: 10, AdjustedSalary: 25, ContractYears: 3,
+		AnnualSalary: 10 * capUnit, ContractYears: 3,
 		ExpirationYear: 2029, ContractStatus: domain.CStatusFT1, IsTagged: true,
 	})
 	if err != nil {
 		t.Fatalf("ApplyContract: %v", err)
 	}
-	used, _ := s.CapUsed("0001")
-	if used != 30 { // adjusted 25 + the $5 taxi player
-		t.Fatalf("CapUsed(0001) = %v, want 30 (adjusted)", used)
+	after, _ := s.CapUsed("0001")
+	if after != before {
+		t.Fatalf("CapUsed changed on ApplyContract: before %v, after %v (cap is cell-derived, unaffected)", before, after)
 	}
 	p, _ := s.Player("0001")
-	if !p.IsTagged || p.AdjustedSalary != 25 || p.ContractYears != 3 {
-		t.Fatalf("contract not applied: %+v", p)
+	if !p.IsTagged || p.ContractYears != 3 || p.ExpirationYear != 2029 {
+		t.Fatalf("contract terms not applied: %+v", p)
 	}
 }
 
@@ -220,14 +230,14 @@ func TestInitializeDoesNotReseed(t *testing.T) {
 	s2 := New(pools, testLeague, testSeason)
 	if err := s2.Initialize(ctx, &fakeSource{rosters: []domain.Roster{
 		{FranchiseID: "0001", Players: []domain.PlayerRecord{
-			{MFLID: mustID(t, "0001"), Salary: 99, RosterStatus: domain.RosterActive,
+			{MFLID: mustID(t, "0001"), Salary: 99 * capUnit, RosterStatus: domain.RosterActive,
 				ContractStatus: domain.CStatusUFA},
 		}},
 	}}); err != nil {
 		t.Fatalf("second Initialize: %v", err)
 	}
 	p, ok := s2.Player("0001")
-	if !ok || p.FranchiseID != "0002" || p.Salary != 10 {
+	if !ok || p.FranchiseID != "0002" || p.Salary != 10*capUnit {
 		t.Fatalf("state was reseeded: %+v ok=%v (want franchise 0002, salary 10)", p, ok)
 	}
 }
@@ -304,10 +314,10 @@ func TestWriteTxTradeCommitsAtomically(t *testing.T) {
 	if p1.FranchiseID != "0002" || p3.FranchiseID != "0001" {
 		t.Fatalf("trade did not swap: 0001@%s 0003@%s", p1.FranchiseID, p3.FranchiseID)
 	}
-	from, _ := s.CapUsed("0001") // lost $10, gained $7, kept the $5 taxi
-	to, _ := s.CapUsed("0002")   // lost $7, gained $10
-	if from != 12 || to != 10 {
-		t.Fatalf("cap after trade: 0001=%v (want 12) 0002=%v (want 10)", from, to)
+	from, _ := s.CapUsed("0001") // lost 10, gained 7, kept the 5 taxi
+	to, _ := s.CapUsed("0002")   // lost 7, gained 10
+	if from != 12*capUnit || to != 10*capUnit {
+		t.Fatalf("cap after trade: 0001=%v (want %v) 0002=%v (want %v)", from, 12*capUnit, to, 10*capUnit)
 	}
 }
 
@@ -333,8 +343,8 @@ func TestWriteTxRollsBackOnStepError(t *testing.T) {
 	if p1.FranchiseID != "0001" {
 		t.Fatalf("first move was NOT rolled back: 0001@%s (want 0001)", p1.FranchiseID)
 	}
-	if used, _ := s.CapUsed("0001"); used != 15 { // untouched: $10 + $5
-		t.Fatalf("cap changed after a rolled-back trade: 0001=%v (want 15)", used)
+	if used, _ := s.CapUsed("0001"); used != 15*capUnit { // untouched: 10 + 5
+		t.Fatalf("cap changed after a rolled-back trade: 0001=%v (want %v)", used, 15*capUnit)
 	}
 }
 

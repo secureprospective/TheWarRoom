@@ -39,9 +39,13 @@ const (
 // where pct is 50 for a restructured contract (§11) else 35. It is ZERO when the player
 // was claimed off waivers (§8: the claim ends the obligation), has no remaining years
 // (an expiring/UFA deal — remaining years = expiration_year − season), or carries no
-// salary. Pure — no I/O, no clock. The final cent is rounded half-up (pct is a whole
-// percent, so this only matters for salaries that aren't a round multiple of a cent-per-
-// percent — the parser can produce any cent value).
+// salary. Pure — no I/O, no clock.
+//
+// The result is SNAPPED to the nearest $10k (domain.RoundToNearest10k) so the dead-cap
+// figure lands on the universal rounding grid, same as every other cap figure — a §8
+// charge is stored and displayed on-grid, so CapUsed (snapped cells + dead cap) is always
+// a $10k multiple. This snap governs over the earlier round-to-the-cent (B7b): the
+// salary-ledger pivot locked FLAT $10k rounding on every figure (Christopher 2026-07-05).
 func Charge(annualSalary domain.Money, remainingYears int, isRestructured, claimed bool) domain.Money {
 	if claimed || remainingYears <= 0 || annualSalary <= 0 {
 		return 0
@@ -51,7 +55,8 @@ func Charge(annualSalary domain.Money, remainingYears int, isRestructured, claim
 		pct = restructuredCutPct
 	}
 	num := int64(annualSalary) * pct * int64(remainingYears) // cents × whole-percent × years
-	return domain.Money((num + 50) / 100)                    // ÷100 for the percent, round half-up
+	cents := domain.Money((num + 50) / 100)                  // ÷100 for the percent, round half-up
+	return domain.RoundToNearest10k(cents)                   // land on the universal $10k grid
 }
 
 // Waive executes a §8 cut against the shared tx writer: it reads the player's current
@@ -70,10 +75,10 @@ func Waive(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapEn
 	if remaining < 0 {
 		remaining = 0
 	}
-	// §8 reads "annual salary"; EffectiveSalary is that base salary until a restructure
-	// (§11, B7c) sets an adjusted figure, at which point the restructured cap hit is the
-	// right base — one definition, forward-consistent (v1 has no restructures, so equal).
-	charge := Charge(state.EffectiveSalary(ps), remaining, ps.IsRestructured, false)
+	// §8 charges on the CAP-COUNTING salary — the player's current-season ledger cell
+	// (CapSalary). Before any restructure this equals the base annual salary; after a §11
+	// restructure it is the reduced cap hit, the right base for the dead-cap charge.
+	charge := Charge(ps.CapSalary, remaining, ps.IsRestructured, false)
 
 	if err := w.ReleasePlayer(ctx, mflID); err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: release %q: %w", mflID, err)
@@ -87,6 +92,15 @@ func Waive(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapEn
 	}
 	if err := w.AddDeadCap(ctx, entry); err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: charge %q: %w", mflID, err)
+	}
+	// Ledger dual-write: a cut VOIDs the player's remaining PAID cells (relieving every
+	// cap-bearing year while preserving history — the ledger is king), so the ledger-derived
+	// cap drops with the legacy release and no orphan cell survives to be re-counted if the
+	// player later re-rosters via free agency. The dead-cap charge is a SEPARATE ledger
+	// (dead_cap_ledger), not a contract cell — the two are distinct cap components.
+	reason := fmt.Sprintf("%s: contract voided, dead cap %s", waiverReason, charge)
+	if err := w.VoidCells(ctx, mflID, reason); err != nil {
+		return state.DeadCapEntry{}, fmt.Errorf("deadcap: void cells %q: %w", mflID, err)
 	}
 	return entry, nil
 }
