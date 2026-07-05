@@ -159,7 +159,7 @@ func (w *txWriter) ApplyContract(ctx context.Context, mflID string, c ContractCh
 		return fmt.Errorf("state: ApplyContract %q: %w", mflID, errUnknownPlayer)
 	}
 	// Ship 3: only the BASE (annual) salary column is written — the cap-counting figure lives
-	// in the ledger cell (SetCell/MoveCellMoney), never in the frozen adjusted_salary column.
+	// in the ledger cell (SetCell/MoveCellMoney) — the adjusted_salary column is gone (Ship 4).
 	now := time.Now().UTC().Format(time.RFC3339)
 	res, err := w.tx.ExecContext(ctx, `
 UPDATE contracts SET annual_salary_cents = ?, contract_years = ?,

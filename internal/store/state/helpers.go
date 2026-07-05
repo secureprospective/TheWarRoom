@@ -70,13 +70,14 @@ func seedPlayer(ctx context.Context, tx *sql.Tx, leagueID string, season int, no
 		"r:"+key, leagueID, mflID, franchiseID, string(p.RosterStatus), season, now); err != nil {
 		return fmt.Errorf("state: seed roster %q: %w", mflID, err)
 	}
-	// Money is seeded into the exact-cents columns; the legacy REAL columns are frozen
-	// (default 0, unread) and dropped in B7c. adjusted_salary_cents starts 0 until B7 sets it.
+	// Money is seeded into the exact-cents base column; the cap-counting figure lives in the
+	// ledger cells (seedLedgerPlayer), never in a contracts money column. The legacy REAL
+	// columns and adjusted_salary_cents were dropped in Ship 4.
 	if _, err := tx.ExecContext(ctx,
 		`INSERT INTO contracts (id, league_id, mfl_id, franchise_id, annual_salary_cents,
-		   adjusted_salary_cents, contract_years, expiration_year, contract_status,
+		   contract_years, expiration_year, contract_status,
 		   is_restructured, is_tagged, season, last_updated)
-		 VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?, 0, 0, ?, ?)`,
+		 VALUES (?, ?, ?, ?, ?, 0, ?, ?, 0, 0, ?, ?)`,
 		"c:"+key, leagueID, mflID, franchiseID, p.Salary.Cents(), p.ContractYear,
 		string(p.ContractStatus), season, now); err != nil {
 		return fmt.Errorf("state: seed contract %q: %w", mflID, err)
