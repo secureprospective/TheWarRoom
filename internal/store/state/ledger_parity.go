@@ -16,8 +16,9 @@ type rowQuerier interface {
 
 // CheckLedgerParity runs the parity comparison against COMMITTED state (the read pool) — a
 // diagnostic/verification entry point (tests, an admin audit) usable outside a tx. The
-// in-transaction gate (Ship 2e) will call assertParity directly on the tx so a drift rolls
-// back; both share the same comparison via the rowQuerier seam.
+// in-transaction gate (WriteTx, Ship 2 4/4) calls assertParity directly on the tx so a drift
+// rolls the whole transaction back before commit; both share the same comparison via the
+// rowQuerier seam.
 func (s *Store) CheckLedgerParity(ctx context.Context) error {
 	return assertParity(ctx, s.pools.Read(), s.leagueID, s.season)
 }
@@ -84,7 +85,14 @@ WHERE c.league_id = ? AND c.season = ?`, leagueID, season)
 }
 
 // cellCapByFranchise sums each franchise's current-season PAID ledger cells, attributed to
-// the franchise via the current-season roster join (cells are player-keyed).
+// the franchise via the current-season roster join (cells are player-keyed). Each cell is
+// snapped to $10k BEFORE summing — the SAME per-player snap legacyCapByFranchise applies —
+// so the two sides compare the identical derived quantity: parity holds because
+// snap(x)==snap(x), NOT because the stored figures are $10k multiples. This matters for any
+// op that stores a cent-precise figure (the §9 tag price rounds half-up to the cent, not to
+// $10k): both the legacy column and the ledger cell hold the same off-grid cents, and both
+// snap to the same bucket here. There is one PAID cell per player for the current season
+// (league_year = season), so a per-cell snap IS a per-player snap.
 func cellCapByFranchise(ctx context.Context, q rowQuerier, leagueID string, season int) (map[string]domain.Money, error) {
 	rows, err := q.QueryContext(ctx, `
 SELECT r.franchise_id, cy.salary_cents
@@ -103,7 +111,7 @@ WHERE cy.league_id = ? AND cy.league_year = ? AND cy.year_status = ?`,
 		if err := rows.Scan(&fid, &cents); err != nil {
 			return nil, fmt.Errorf("state: parity cell scan: %w", err)
 		}
-		out[fid] += domain.Money(cents)
+		out[fid] += domain.RoundToNearest10k(domain.Money(cents))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("state: parity cell iterate: %w", err)

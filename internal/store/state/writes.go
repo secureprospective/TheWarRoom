@@ -52,6 +52,16 @@ func (s *Store) WriteTx(ctx context.Context, fn func(TxWriter) error) error {
 	if err := fn(&txWriter{s: s, tx: tx}); err != nil {
 		return err // deferred Rollback undoes any steps already executed in this tx
 	}
+
+	// Ledger parity GATE (Ship 2, 4/4): before committing, assert every franchise's derived
+	// current-season cap agrees between the legacy contract columns and the ledger PAID cells,
+	// reading through THIS tx so it sees the uncommitted writes fn just made. Every money op
+	// now dual-writes (restructure/tag/waiver), so any divergence is a real bug — fail loud and
+	// let the deferred Rollback undo the WHOLE transaction rather than commit drift. The
+	// committed-state CheckLedgerParity remains a separate diagnostic; this is the enforcing gate.
+	if err := assertParity(ctx, tx, s.leagueID, s.season); err != nil {
+		return fmt.Errorf("state: transaction rejected — %w", err)
+	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("state: commit: %w", err)
 	}

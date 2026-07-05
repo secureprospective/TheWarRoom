@@ -247,3 +247,79 @@ func TestIntegration_TagThenCutVoidsCellsAndHoldsParity(t *testing.T) {
 		t.Fatalf("post-cut parity broke: %v", err)
 	}
 }
+
+// offGridSeed's five WRs average to an OFF-$10k-grid price: (10 + 8 + 6 + 4 + 2.005)/5 =
+// $6,001,000, whose cents (600_100_000) are NOT a multiple of $10k (1_000_000 cents). The
+// $2,005,000 WR (0022) is the tag target.
+type offGridSeed struct{ t *testing.T }
+
+func (s offGridSeed) Rosters(context.Context) ([]domain.Roster, error) {
+	id := func(raw string) playerid.PlayerID {
+		p, err := playerid.New(raw)
+		if err != nil {
+			s.t.Fatalf("playerid.New(%q): %v", raw, err)
+		}
+		return p
+	}
+	mk := func(raw string, sal domain.Money) domain.PlayerRecord {
+		return domain.PlayerRecord{MFLID: id(raw), Salary: sal, ContractYear: 2028,
+			RosterStatus: domain.RosterActive, ContractStatus: domain.CStatusUFA}
+	}
+	return []domain.Roster{
+		{FranchiseID: "0001", Players: []domain.PlayerRecord{mk("0010", 10*mil), mk("0011", 8*mil)}},
+		// 0022 = $2,005,000 (off-$10k-grid on its own, but seeded cells snap to $2,000,000);
+		// the tag price it resolves to is the off-grid $6,001,000 average.
+		{FranchiseID: "0002", Players: []domain.PlayerRecord{mk("0020", 6*mil), mk("0021", 4*mil), mk("0022", 200_500_000)}},
+	}, nil
+}
+
+// TestIntegration_TagOffGridPriceHoldsParity is the deferred GLM carry-forward pin: derived-cap
+// parity holds because both models snap the SAME per-player figure to $10k (snap(x)==snap(x)),
+// NOT because the figures are $10k multiples. Tagging 0022 resolves an off-grid $6,001,000
+// price; the tag writes that exact off-grid figure to BOTH the legacy adjusted-salary column
+// and the 2026 ledger cell, so the in-tx parity gate must PASS (the WriteTx commits) even though
+// neither side is on the $10k grid. If parity were (wrongly) implemented to require or force
+// $10k-multiple values, this tag would either be rejected by the gate or drift the two models.
+func TestIntegration_TagOffGridPriceHoldsParity(t *testing.T) {
+	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "offgrid.db"))
+	if err != nil {
+		t.Fatalf("db.Open: %v", err)
+	}
+	t.Cleanup(func() { _ = pools.Close() })
+	s := statepkg.New(pools, "14432", 2026)
+	if err := s.Initialize(context.Background(), offGridSeed{t}); err != nil {
+		t.Fatalf("Initialize: %v", err)
+	}
+	c, err := transactions.New(s.Writer())
+	if err != nil {
+		t.Fatalf("New coordinator: %v", err)
+	}
+	dir := tagDir{"0010": domain.PosWR, "0011": domain.PosWR, "0020": domain.PosWR, "0021": domain.PosWR, "0022": domain.PosWR}
+	ctx := context.Background()
+
+	// The tag commits — the in-tx parity gate passed on an off-grid price.
+	if _, err := c.ExecuteTag(ctx, "0022", dir); err != nil {
+		t.Fatalf("ExecuteTag (off-grid price rejected by the parity gate?): %v", err)
+	}
+
+	// The resolved price is genuinely OFF the $10k grid — otherwise this test proves nothing.
+	const offGrid = domain.Money(600_100_000) // $6,001,000
+	if domain.RoundToNearest10k(offGrid) == offGrid {
+		t.Fatalf("test scaffolding broken: %s is already a $10k multiple", offGrid)
+	}
+	p, _ := s.Player("0022")
+	if p.AdjustedSalary != offGrid {
+		t.Fatalf("tagged salary = %s, want %s (off-grid top-5 average)", p.AdjustedSalary, offGrid)
+	}
+	// The ledger cell took the same off-grid figure (dual-write), and parity still holds.
+	cells, err := s.LedgerCells(ctx, "0022")
+	if err != nil {
+		t.Fatalf("LedgerCells: %v", err)
+	}
+	if cells[2026] != offGrid {
+		t.Fatalf("2026 cell = %s, want %s (off-grid tag price)", cells[2026], offGrid)
+	}
+	if err := s.CheckLedgerParity(ctx); err != nil {
+		t.Fatalf("parity broke on an off-grid tag price — it must hold by symmetric snap: %v", err)
+	}
+}

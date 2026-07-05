@@ -134,10 +134,37 @@ func TestSeedLedgerAbsentContractYearCoversSeason(t *testing.T) {
 	}
 }
 
-// TestLedgerParityCatchesDrift gives the parity gate teeth: moving money between a player's
-// cells WITHOUT a matching legacy change drifts the two models, and CheckLedgerParity must
-// fail loud. (In real ops the two are always written together; this plants the drift.)
-func TestLedgerParityCatchesDrift(t *testing.T) {
+// applyCells commits a ledger cell primitive through a RAW write tx, deliberately BYPASSING
+// WriteTx's parity gate. The gate rejects a ledger-only change (legacy/ledger disagree) at
+// commit — correct for production, where every money op dual-writes both sides — but these
+// white-box tests exercise ONE cell primitive in isolation, so they need a committed
+// ledger-only write to inspect. The full dual-write ops (restructure/tag/waiver) are covered
+// by the transactions integration tests, where parity DOES hold end-to-end. It does not reload
+// memory: these tests read cells straight from the DB via readCells.
+func applyCells(t *testing.T, s *Store, fn func(*txWriter) error) error {
+	t.Helper()
+	ctx := context.Background()
+	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatalf("begin tx: %v", err)
+	}
+	if ferr := fn(&txWriter{s: s, tx: tx}); ferr != nil {
+		_ = tx.Rollback()
+		return ferr
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatalf("commit: %v", err)
+	}
+	return nil
+}
+
+// TestParityGateRollsBackDrift gives the in-tx parity gate teeth (Ship 2, 4/4): a WriteTx that
+// moves money between a player's cells WITHOUT a matching legacy change drifts the two models,
+// so the gate must REJECT the whole transaction before commit — a stronger guarantee than the
+// diagnostic CheckLedgerParity (which only observes committed state). After the rejection
+// nothing is committed: the cells are unchanged and parity still holds. (In real ops the two
+// sides are always written together; this plants a ledger-only drift.)
+func TestParityGateRollsBackDrift(t *testing.T) {
 	s := newStore(t, &fakeSource{rosters: ledgerRosters(t)})
 	ctx := context.Background()
 
@@ -146,13 +173,19 @@ func TestLedgerParityCatchesDrift(t *testing.T) {
 		t.Fatalf("seed parity should hold: %v", err)
 	}
 	// Move $10k out of the current-season (2026) cell into 2028 — legacy columns untouched.
-	if err := s.WriteTx(ctx, func(w TxWriter) error {
+	// The gate sees the drift on the uncommitted tx and rolls the WHOLE transaction back.
+	err := s.WriteTx(ctx, func(w TxWriter) error {
 		return w.MoveCellMoney(ctx, "0001", 2026, 2028, 1_000_000, "planted drift")
-	}); err != nil {
-		t.Fatalf("WriteTx move: %v", err)
+	})
+	if err == nil {
+		t.Fatal("WriteTx committed a ledger-only drift — the parity gate has no teeth")
 	}
-	if err := s.CheckLedgerParity(ctx); err == nil {
-		t.Fatal("parity passed despite a ledger-only change — the gate has no teeth")
+	// Nothing committed: the 2026 cell is still its seeded $20k, and parity still holds.
+	if got := readCells(t, s, "0001")[2026].salary; got != 2_000_000 {
+		t.Fatalf("rolled-back drift still moved the 2026 cell to %d, want 2000000 (untouched)", got)
+	}
+	if err := s.CheckLedgerParity(ctx); err != nil {
+		t.Fatalf("parity broke after a rejected+rolled-back drift: %v", err)
 	}
 }
 
@@ -163,10 +196,10 @@ func TestSetCellSetsAbsoluteAndLogs(t *testing.T) {
 	s := newStore(t, &fakeSource{rosters: ledgerRosters(t)})
 	ctx := context.Background()
 
-	if err := s.WriteTx(ctx, func(w TxWriter) error {
+	if err := applyCells(t, s, func(w *txWriter) error {
 		return w.SetCell(ctx, "0001", 2026, 5_000_000, "tag test")
 	}); err != nil {
-		t.Fatalf("WriteTx SetCell: %v", err)
+		t.Fatalf("SetCell: %v", err)
 	}
 	cells := readCells(t, s, "0001")
 	if cells[2026].salary != 5_000_000 {
@@ -229,10 +262,10 @@ func TestVoidCellsVoidsAllPaidAndLogs(t *testing.T) {
 	s := newStore(t, &fakeSource{rosters: ledgerRosters(t)})
 	ctx := context.Background()
 
-	if err := s.WriteTx(ctx, func(w TxWriter) error {
+	if err := applyCells(t, s, func(w *txWriter) error {
 		return w.VoidCells(ctx, "0001", "waiver test")
 	}); err != nil {
-		t.Fatalf("WriteTx VoidCells: %v", err)
+		t.Fatalf("VoidCells: %v", err)
 	}
 	cells := readCells(t, s, "0001")
 	for _, y := range []int{2026, 2027, 2028} {
@@ -270,13 +303,13 @@ func TestVoidCellsFailsLoudOnNoPaidCell(t *testing.T) {
 	s := newStore(t, &fakeSource{rosters: ledgerRosters(t)})
 	ctx := context.Background()
 
-	if err := s.WriteTx(ctx, func(w TxWriter) error {
+	if err := applyCells(t, s, func(w *txWriter) error {
 		return w.VoidCells(ctx, "0001", "first cut")
 	}); err != nil {
 		t.Fatalf("first VoidCells: %v", err)
 	}
 	// Second void: every PAID cell is already VOID → nothing to void → fail loud.
-	if err := s.WriteTx(ctx, func(w TxWriter) error {
+	if err := applyCells(t, s, func(w *txWriter) error {
 		return w.VoidCells(ctx, "0001", "second cut")
 	}); err == nil {
 		t.Fatal("VoidCells with no PAID cell succeeded, want fail-loud")
