@@ -4,8 +4,10 @@
 
 ### A dynasty fantasy football intelligence engine that scores what real players do in real games — and out-thinks the stock platforms doing it.
 
-[![Status](https://img.shields.io/badge/status-🔥%20ENGINE%20COMPLETE%20·%20transactions%20live-brightgreen)](docs/build-handoffs/Build_Tracker.md)
-[![Progress](https://img.shields.io/badge/build-27%20of%2038%20sessions%20·%2071%25%20·%20final%20third-success)](docs/build-handoffs/Build_Tracker.md)
+[![Status](https://img.shields.io/badge/status-🔥%20ENGINE%20COMPLETE%20·%20contract%20ops%20live-brightgreen)](docs/build-handoffs/Build_Tracker.md)
+[![Progress](https://img.shields.io/badge/build-29%20of%2038%20sessions%20·%2076%25%20·%20final%20quarter-success)](docs/build-handoffs/Build_Tracker.md)
+[![Ledger](https://img.shields.io/badge/salary%20ledger-per--year%20cells%20·%20sole%20cap%20truth-gold)](#-pillar-2--the-transaction-engine--🔥-live)
+[![Vision](https://img.shields.io/badge/vision-three%20horizons%20·%20chat%20·%20portfolio%20·%20planner-blueviolet)](docs/roadmap/Vision_2026.md)
 [![Models](https://img.shields.io/badge/position%20models-10%20of%2010%20·%20ALL%20LIVE-blue)](#-pillar-1--the-scoring-engine--✅-complete)
 [![Verified](https://img.shields.io/badge/live%20data-1217%20players%20·%2032%20teams%20·%20verified-blueviolet)](#-its-alive--from-raw-data-to-a-decision)
 [![Money](https://img.shields.io/badge/money-int64%20cents%20·%20exact%20to%20the%20penny-9cf)](#-pillar-2--the-transaction-engine--🔥-live)
@@ -70,10 +72,10 @@ Tier 2  Logic Stores        [██████████]  4/4     ✅ DONE  
 Tier 2  Scoring Engine      [██████████]  1/1     ✅ DONE   — six-layer pure pipeline
 Tier 2  Testing Harness     [██████████]  1/1     ✅ DONE   — validation board + live tuning
 Tier 2  Position Models     [██████████]  10/10   ✅ DONE   — every position calibrated & scoring
-Tier 3  Board + Trades      [██░░░░░░░░]  3/14    🔥 LIVE   — rankings board · trades · dead-cap
+Tier 3  Board + Contracts   [████░░░░░░]  5/14    🔥 LIVE   — board · trades · dead-cap · restructure · tag · LEDGER
 Tier 3  The War Room        [░░░░░░░░░░]  0/…     ▸ ahead   — the 8 modules turn scores into calls
 
-         OVERALL            [█████████████████████░░░░░░░░]   27 / 38   ·   71%
+         OVERALL            [███████████████████████░░░░░░]   29 / 38   ·   76%
 ```
 
 | Milestone | Status |
@@ -86,8 +88,10 @@ Tier 3  The War Room        [░░░░░░░░░░]  0/…     ▸ ahea
 | 🧪 **Testing harness** — three-state validation board, live admin tuning loop | ✅ Shipped |
 | 🧠 **Position models** — **all 10 calibrated and scoring** | ✅ Shipped |
 | 📊 **Asset Rankings board** — all 32 rosters ranked on screen from real data | ✅ Shipped |
-| 🔧 **Transaction engine** — atomic trades + waivers with **automated §8 dead cap** | 🔥 In flight |
-| 💾 **Contract ops → the 8 modules → live bidding** | ▸ The back half |
+| 🔧 **Transaction engine** — atomic trades + waivers with **automated §8 dead cap** | ✅ Shipped |
+| 📒 **The salary ledger** — per-year contract cells, the sole source of cap truth, append-only audit trail | ✅ Shipped |
+| ✍️ **Contract ops** — franchise tag + restructure live; extension & buyout next | 🔥 In flight |
+| 💾 **The 8 modules → the three horizons: chat · portfolio · planner** | ▸ The back half |
 
 ---
 
@@ -140,7 +144,10 @@ The thing every other tool leaves you to do by hand. Nine transaction types, ful
 - ✅ **Trades — LIVE & atomic.** A multi-leg swap either lands *entirely* or rolls back *whole*. No half-executed trade can ever exist; a single bad leg reverts everything. Verified on real hardware.
 - ✅ **Waiver cut + dead-cap auto-calculator — LIVE.** Cut a player and the §8 penalty (`35% × salary × remaining years`, 50% on a restructured deal) is computed and charged to your cap **automatically** — no more manual arithmetic on every release. Watched move real money on the live league.
 - ✅ **Exact money, everywhere.** Every dollar is stored as integer cents — no floating-point drift, reconciled to the penny. The cap is never "about right."
-- 🔜 **Franchise tag · Extensions · Restructures · Buyouts** — the contract-ops suite, up next.
+- ✅ **The per-year salary ledger — LIVE, and the single source of cap truth.** Every contract is a row of per-year cells; every change is an append-only, dated, immutable audit entry; the cap is *derived* from the cells, never stored as a competing number. When the money model needed to be right, it was rebuilt right — the database itself rejects an edit to history.
+- ✅ **Franchise tag (§9) — LIVE.** Top-5-by-position pricing with a 120%-of-prior floor, priced authoritatively in the engine — the UI sends a player id, never a dollar figure. One per team per season, enforced in the schema.
+- ✅ **Contract restructure (§11) — LIVE.** Owner-chosen cap moves bounded by the rulebook's tier table; a rule violation is *unrepresentable*, not just rejected.
+- 🔜 **Extensions (§10) · Buyouts (§12)** — the rest of the contract-ops suite, up next.
 - ⏱️ **UFA/RFA bidding · 24-hour clock · snipe detection** *(Phase 2)* — the 20-hour rule, enforced by a timestamp.
 - 🗳️ **DOT vote tracking** *(Phase 2)* — closes at 3-0 either way.
 - 🚫 **Trade-deadline hard block** — a 7-minute miss is caught by a clock, not a human.
@@ -210,14 +217,42 @@ No model gets rubber-stamped, and no model gets to guess. Every finding is a lea
 
 ---
 
+## 🔭 Where This Goes — The Three Horizons
+
+Everything above is the foundation. Here's what it's the foundation *for* — the full vision, on the record: **[`docs/roadmap/Vision_2026.md`](docs/roadmap/Vision_2026.md)**.
+
+The premise behind all of it: **TheWarRoom is not a fantasy app.** It's a deterministic contract-and-valuation engine whose first interface is buttons, whose second will be **language**, and whose third will be **time** — the same engine, asked increasingly interesting questions. And the deliberately simple UI isn't modesty; thin surfaces over a thick, exact engine is the *only* architecture where you can safely put an AI in front of money math.
+
+### 🗣️ Horizon 1 — The Capologist
+
+A first-class chat interface running on a **small local model** — your front office, not a search box. It answers *"what's my dead cap in 2028 if I cut him?"* from the actual ledger, **with receipts** — every number traceable to the transaction that created it. It answers *"why is X ranked above Y?"* by diffing two scoring pipelines and narrating the divergence — a register **no fantasy platform has ever had**, because no other platform's engine shows its work. It prices a franchise tag the moment you ask, because pricing is a pure function and asking costs nothing. And it doesn't wait to be asked: *"your tag window closes in 9 days — three candidates, priced."*
+
+Two iron rules make it trustworthy: **numbers never come from the model** (the UI renders engine output verbatim; the model only narrates), and **every write is staged and human-confirmed**. The chat proposes. The ledger disposes. You decide.
+
+### 💼 Horizon 2 — The Portfolio Desk
+
+Dynasty GMs don't play one league — they run **portfolios**: multiple teams across multiple leagues, correlated positions and all. Nobody manages that today; you click through a dozen league sites and hold the picture in your head. TheWarRoom's engine already scores players under *any* league's rules — config is a parameter, not a hardcode — which means one engine can value the same player under five different leagues' scoring **simultaneously**. Your exposure ("one ACL tears 60% of your RB value"), your arbitrage ("sell him in the league that overvalues him"), every deadline in every league in one briefing. **Asset management for dynasty football.** No other platform can build this without rebuilding their engine first.
+
+### 🎖️ Horizon 3 — The January War Room
+
+The name was always the roadmap. In the offseason, you **fork your franchise** — an exact copy of the ledger, not a spreadsheet guess — and branch futures like a developer branches code: *Plan A: let him walk, tag the corner, chase two linemen. Plan B: restructure into 2027, extend the young core.* Every branch runs through the **real transaction engine** — same validation, same pricing, same rounding — so the cap consequences aren't projections. They're **the truth, dated forward**. Compare plans side by side. Pick one. Then the finishing move nobody builds: your plan becomes **the season's script** — when the tag window opens, the app says *"Plan A calls for tagging him. The price is now $14.2M. Execute?"*
+
+Strategy practiced before it's executed. The sandbox that becomes the checklist.
+
+### 🏁 And the quiet part, out loud
+
+Today TheWarRoom runs harnessed to MyFantasyLeague. **The harness is temporary.** The ledger is already the source of cap truth — MFL's numbers are a mirror we reconcile against, not the record. Next the scoring goes independent (the rulebook is already stored; the stat feeds already flow). Then waivers, then the draft room — each dependency cut only after a full season of running it in **parity**, with a discrepancy report that audits *them*. This platform is designed for a world where it doesn't need MFL at all. Where 32-team contract dynasty is played **on TheWarRoom**.
+
+---
+
 ## 🛣️ The Road
 
 | Phase | What it is | Who it's for |
 |:---:|---|---|
 | **1** | Personal tool — all 32 teams, one GM's edge | Christopher |
 | **2** | League-wide alpha — multi-user, live bidding, mobile | The Legacy NFL |
-| **3** | Self-hosted beta — any MFL league runs its own instance | The world |
-| **4** | Long-term — computer-use automation, historical analytics, offseason cap planner | Someday |
+| **3** | Two products, one codebase — the **League Instance** (self-hosted system of record) and the **Owner's Cockpit** (your whole portfolio, no league buy-in needed) | Any dynasty GM |
+| **∞** | The three horizons — the Capologist · the Portfolio Desk · the January War Room | How the game gets played |
 
 *No deadline. No defined endpoint. It grows as the league grows.*
 
@@ -231,22 +266,24 @@ Phase 1 ships as a desktop app. Phase 2 opens it to the league. Phase 3 sets it 
 
 ---
 
-## 📍 Status — Engine Complete, Transactions Live
+## 📍 Status — Engine Complete, Contract Ops Live, Ledger is King
 
-**The full scoring spine is done: data pipeline, all four logic stores, the six-layer engine, all ten position models, and the live rankings board. The transaction engine is now executing — trades commit atomically, and cutting a player charges §8 dead cap to the cap automatically. From here, it's contract ops and the eight war-room modules that turn scores into decisions.**
+**The full scoring spine is done: data pipeline, all four logic stores, the six-layer engine, all ten position models, and the live rankings board. The transaction engine is executing for real — atomic trades, automated §8 dead cap, live franchise tags and restructures — and the money model was rebuilt right: a per-year salary ledger is now the sole source of cap truth, with an append-only audit trail the database itself defends. From here: the rest of contract ops, the eight war-room modules, and the road to the three horizons.**
 
 | ✓ Done & verified | ▸ Up next |
 |---|---|
-| **B0–B3** — Pipeline live (1,217 players · 32 teams · type system locked) | **B7c** — Contract ops: tag · extension · restructure · buyout |
-| **B2b** — Scouting schema + 21 sources, all 10 positions | **Free agency** — the FA pool + UFA/RFA bidding |
-| **B3b/c · B4 · B6** — Rulebook · state · parameter · **immutable output** stores | **M2–M8** — power rankings, matchups, trade analyzer, commissioner |
-| **B5a** — Six-layer engine pipeline (pure, fail-loud) | **Phase 2** — multi-user, live clock, DOT voting, mobile |
-| **B5b** — **all 10 position models** scoring (QB·RB·WR·TE·DT·DE·LB·CB·S·K) | |
-| **M1** — Asset Rankings: the real-data 32-team board, live | |
+| **B0–B3** — Pipeline live (1,217 players · 32 teams · type system locked) | **B7c** — Extension §10 · Buyout §12 (+ the season calendar) |
+| **B2b** — Scouting schema + 21 sources, all 10 positions | **The shadow ledger** — dry-run any transaction against a forked cap |
+| **B3b/c · B4 · B6** — Rulebook · state · parameter · **immutable output** stores | **Free agency** — the FA pool + UFA/RFA bidding |
+| **B5a** — Six-layer engine pipeline (pure, fail-loud) | **M2–M8** — power rankings, matchups, trade analyzer, commissioner |
+| **B5b** — **all 10 position models** scoring (QB·RB·WR·TE·DT·DE·LB·CB·S·K) | **Horizon 0.5** — ask-the-ledger: the first chat over the tool surface |
+| **M1** — Asset Rankings: the real-data 32-team board, live | **Phase 2** — multi-user, live clock, DOT voting, mobile |
 | **B7a/b** — Transaction coordinator: atomic trades + waiver dead cap | |
+| **B7c** — Franchise tag §9 + Restructure §11, live on real league state | |
+| **⭐ The Ledger Cutover** — per-year contract cells = the sole cap truth | |
 
 ```
-[█████████████████████░░░░░░░░]  27 / 38 sessions  ·  data ✓  engine ✓  models 10/10 ✓  board ✓  trades ✓  →  contract ops + modules
+[███████████████████████░░░░░░]  29 / 38 sessions  ·  data ✓  engine ✓  models 10/10 ✓  board ✓  trades ✓  ledger ✓  →  contract ops → the horizons
 ```
 
 Every layer ships only after a build passes clean, an **independent blind AI review** signs off, and it's verified against **real league data** on real hardware. No layer is "done" until it's been *used*, not just compiled.
@@ -256,6 +293,8 @@ Every layer ships only after a build passes clean, an **independent blind AI rev
 <div align="center">
 
 *Built by Christopher Campbell with Claude (Anthropic) — reviewed, challenged, and sharpened by a council of GLM, Gemini, DeepSeek, and Ornith.*
+
 **MFL gives you the league. TheWarRoom helps you win it.**
+**And one day, the league gets played here.**
 
 </div>
