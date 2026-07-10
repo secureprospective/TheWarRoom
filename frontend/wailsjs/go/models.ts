@@ -169,71 +169,17 @@ export namespace harness {
 }
 
 export namespace main {
-
-	export class MoveDTO {
-	    mflID: string;
-	    toFranchiseID: string;
-
-	    static createFrom(source: any = {}) {
-	        return new MoveDTO(source);
-	    }
-
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.mflID = source["mflID"];
-	        this.toFranchiseID = source["toFranchiseID"];
-	    }
-	}
-	export class TransactionRequest {
-	    kind: string;
-	    moves: MoveDTO[];
-	    mflID: string;
-	    status: string;
-	    moveMillions: string;
-
-	    static createFrom(source: any = {}) {
-	        return new TransactionRequest(source);
-	    }
-
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.kind = source["kind"];
-	        this.moves = source["moves"];
-	        this.mflID = source["mflID"];
-	        this.status = source["status"];
-	        this.moveMillions = source["moveMillions"];
-	    }
-	}
-	export class TransactionResult {
-	    ok: boolean;
-	    kind: string;
-	    playersAffected: number;
-	    at: string;
-	    detail: string;
-
-	    static createFrom(source: any = {}) {
-	        return new TransactionResult(source);
-	    }
-
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.ok = source["ok"];
-	        this.kind = source["kind"];
-	        this.playersAffected = source["playersAffected"];
-	        this.at = source["at"];
-	        this.detail = source["detail"];
-	    }
-	}
+	
 	export class FranchisePlayerDTO {
 	    mflID: string;
 	    rosterStatus: string;
 	    salary: number;
 	    capSalary: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new FranchisePlayerDTO(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.mflID = source["mflID"];
@@ -248,18 +194,50 @@ export namespace main {
 	    capUsed: number;
 	    players: FranchisePlayerDTO[];
 	    detail: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new FranchiseStateResult(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ok = source["ok"];
 	        this.franchiseID = source["franchiseID"];
 	        this.capUsed = source["capUsed"];
-	        this.players = source["players"];
+	        this.players = this.convertValues(source["players"], FranchisePlayerDTO);
 	        this.detail = source["detail"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class MoveDTO {
+	    mflID: string;
+	    toFranchiseID: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MoveDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.mflID = source["mflID"];
+	        this.toFranchiseID = source["toFranchiseID"];
 	    }
 	}
 	export class ParamsResult {
@@ -476,6 +454,66 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ok = source["ok"];
 	        this.error = source["error"];
+	    }
+	}
+	export class TransactionRequest {
+	    kind: string;
+	    moves: MoveDTO[];
+	    mflID: string;
+	    status: string;
+	    moveMillions: string;
+	    addedYears: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new TransactionRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	        this.moves = this.convertValues(source["moves"], MoveDTO);
+	        this.mflID = source["mflID"];
+	        this.status = source["status"];
+	        this.moveMillions = source["moveMillions"];
+	        this.addedYears = source["addedYears"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class TransactionResult {
+	    ok: boolean;
+	    kind: string;
+	    playersAffected: number;
+	    at: string;
+	    detail: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new TransactionResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.kind = source["kind"];
+	        this.playersAffected = source["playersAffected"];
+	        this.at = source["at"];
+	        this.detail = source["detail"];
 	    }
 	}
 	export class ValidationResult {

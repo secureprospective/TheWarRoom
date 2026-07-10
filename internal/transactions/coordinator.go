@@ -91,3 +91,28 @@ func (c *Coordinator) ExecuteTag(ctx context.Context, mflID string, dir Director
 	price := tagFloorPrice(tagPrice(c.writer, dir, facts.Position), ps.Salary)
 	return c.Execute(ctx, Tag{MFLID: mflID, price: price})
 }
+
+// ExecuteExtension runs a §10 contract extension. It resolves the position FLOOR here — the
+// one figure that needs the players-DB position join (via the supplied Directory) — and hands
+// it to the handler, which resolves the 150%-of-highest-remaining price from the player's own
+// committed cells inside the transaction. No money crosses the IPC boundary: the frontend sends
+// only the player id and the added-year count. The Directory is passed per-call (the app builds
+// its players-DB Lookup lazily, after the Coordinator is constructed). Fails loud before opening
+// any transaction if the player is unrostered or his position has no §10 floor.
+func (c *Coordinator) ExecuteExtension(ctx context.Context, mflID string, addedYears int, dir Directory) (Receipt, error) {
+	if dir == nil {
+		return Receipt{}, fmt.Errorf("transactions: extension %q: nil directory (position join required for the §10 floor)", mflID)
+	}
+	if _, ok := c.writer.Player(mflID); !ok {
+		return Receipt{}, fmt.Errorf("transactions: extension %q: player not on any roster", mflID)
+	}
+	facts, ok := dir.Facts(mflID)
+	if !ok {
+		return Receipt{}, fmt.Errorf("transactions: extension %q: no players-DB record — cannot resolve position for the §10 floor", mflID)
+	}
+	floor, ok := PositionFloor(facts.Position)
+	if !ok {
+		return Receipt{}, fmt.Errorf("transactions: extension %q: position %q has no §10 floor", mflID, facts.Position)
+	}
+	return c.Execute(ctx, Extension{MFLID: mflID, AddedYears: addedYears, floor: floor})
+}

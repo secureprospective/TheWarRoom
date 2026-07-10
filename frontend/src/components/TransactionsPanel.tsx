@@ -8,7 +8,7 @@ import { main } from '../../wailsjs/go/models';
 // B7b. Every mutation goes through one IPC call (ExecuteTransaction), which the backend
 // runs as one atomic transaction; a failed transaction changes nothing.
 
-type Kind = 'TRADE' | 'ROSTER_STATUS' | 'WAIVER' | 'RESTRUCTURE' | 'TAG';
+type Kind = 'TRADE' | 'ROSTER_STATUS' | 'WAIVER' | 'RESTRUCTURE' | 'TAG' | 'EXTENSION';
 type Leg = { mflID: string; toFranchiseID: string };
 
 export function TransactionsPanel() {
@@ -20,6 +20,8 @@ export function TransactionsPanel() {
   const [restructureMflID, setRestructureMflID] = useState('');
   const [moveMillions, setMoveMillions] = useState('');
   const [tagMflID, setTagMflID] = useState('');
+  const [extMflID, setExtMflID] = useState('');
+  const [addedYears, setAddedYears] = useState('1');
   const [result, setResult] = useState<main.TransactionResult | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -41,9 +43,12 @@ export function TransactionsPanel() {
                 ? restructureMflID
                 : kind === 'TAG'
                   ? tagMflID
-                  : '',
+                  : kind === 'EXTENSION'
+                    ? extMflID
+                    : '',
         status: kind === 'ROSTER_STATUS' ? status : '',
         moveMillions: kind === 'RESTRUCTURE' ? moveMillions : '',
+        addedYears: kind === 'EXTENSION' ? Number(addedYears) || 0 : 0,
       });
       setResult(await ExecuteTransaction(req));
       if (franchise) setFranchise(await GetFranchiseState(franchise.franchiseID)); // auto-confirm
@@ -62,7 +67,7 @@ export function TransactionsPanel() {
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Execute Transaction</h2>
         <div className="flex gap-2">
-          {(['TRADE', 'ROSTER_STATUS', 'WAIVER', 'RESTRUCTURE', 'TAG'] as Kind[]).map((k) => (
+          {(['TRADE', 'ROSTER_STATUS', 'WAIVER', 'RESTRUCTURE', 'TAG', 'EXTENSION'] as Kind[]).map((k) => (
             <button
               key={k}
               type="button"
@@ -79,7 +84,9 @@ export function TransactionsPanel() {
                     ? 'Waiver (cut)'
                     : k === 'RESTRUCTURE'
                       ? 'Restructure'
-                      : 'Tag (§9)'}
+                      : k === 'TAG'
+                        ? 'Tag (§9)'
+                        : 'Extend (§10)'}
             </button>
           ))}
         </div>
@@ -176,7 +183,7 @@ export function TransactionsPanel() {
               year, one per contract.
             </p>
           </div>
-        ) : (
+        ) : kind === 'TAG' ? (
           <div className="space-y-1">
             <input
               className="w-32 rounded bg-slate-800 px-2 py-1 text-sm"
@@ -188,6 +195,32 @@ export function TransactionsPanel() {
               §9 franchise tag: sets the player's salary to the average of the top-5 salaries
               at his position league-wide, floored at 120% of his prior-year salary. The price
               is resolved server-side (nothing to enter). One tag per team per year.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <div className="flex gap-2">
+              <input
+                className="w-32 rounded bg-slate-800 px-2 py-1 text-sm"
+                placeholder="player mflID"
+                value={extMflID}
+                onChange={(e) => setExtMflID(e.target.value)}
+              />
+              <select
+                className="rounded bg-slate-800 px-2 py-1 text-sm"
+                value={addedYears}
+                onChange={(e) => setAddedYears(e.target.value)}
+              >
+                <option value="1">+1 year</option>
+                <option value="2">+2 years</option>
+                <option value="3">+3 years</option>
+              </select>
+            </div>
+            <p className="text-xs text-slate-400">
+              §10 extension: adds 1–3 years (max 6 total) at 150% of the highest-paid remaining
+              year, raised to the position floor. Priced server-side (nothing to enter but the
+              year count). One extension per team per year; not for UFAs or already-extended
+              contracts; unlocks one more restructure.
             </p>
           </div>
         )}

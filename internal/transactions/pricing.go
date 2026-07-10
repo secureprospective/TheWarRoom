@@ -66,6 +66,37 @@ func tagPrice(r state.Reader, dir Directory, pos domain.Position) domain.Money {
 	return (sum + domain.Money(n)/2) / domain.Money(n)
 }
 
+// extMillion is $1,000,000 in exact cents — the unit of the §10 position-floor table.
+const extMillion = domain.Money(100_000_000)
+
+// PositionFloor returns the §10 extension salary floor for a position — the minimum an
+// extension year may be priced at (the greater of this and 150% of the highest remaining year)
+// — and whether the position has a floor at all. It is the rulebook §10 table encoded once, as
+// a pure step function. An unclassified position (FLAG) or any position off the table returns
+// (0, false) so the Coordinator fails loud rather than extending with no floor.
+func PositionFloor(pos domain.Position) (domain.Money, bool) {
+	switch pos {
+	case domain.PosQB:
+		return 15 * extMillion, true
+	case domain.PosWR:
+		return 10 * extMillion, true
+	case domain.PosRB, domain.PosTE, domain.PosLB:
+		return 8 * extMillion, true
+	case domain.PosDE:
+		return 7 * extMillion, true
+	case domain.PosS:
+		return 5 * extMillion, true
+	case domain.PosDT:
+		return 4 * extMillion, true
+	case domain.PosCB, domain.PosK:
+		return 3 * extMillion, true
+	case domain.PosFlag:
+		return 0, false // unclassified — admin must resolve the position before an extension
+	default:
+		return 0, false
+	}
+}
+
 // tagFloorPrice applies the §9 floor: the tag is the greater of the top-5 average and 120%
 // of the player's previous-year salary. At tag time (the season boundary) a player's CURRENT
 // annual salary IS his previous year's, so priorSalary is ps.Salary — no history store (v1

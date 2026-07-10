@@ -23,12 +23,13 @@ type recordedMove struct {
 // fakeTxWriter records every op and can be told to fail on the Nth call (1-indexed),
 // so a test can plant a mid-transaction failure.
 type fakeTxWriter struct {
-	calls    []recordedMove
-	failOn   int // 0 = never
-	failErr  error
-	player   state.PlayerState // the one player Player() resolves (for waiver tests)
-	season   int               // the league year Season() reports
-	opCounts map[string]int    // per-(franchise/op_kind) counters for OpCount/IncOpCount
+	calls     []recordedMove
+	failOn    int // 0 = never
+	failErr   error
+	player    state.PlayerState             // the one player Player() resolves (for waiver tests)
+	season    int                           // the league year Season() reports
+	opCounts  map[string]int                // per-(franchise/op_kind) counters for OpCount/IncOpCount
+	paidCells map[string][]state.LedgerCell // per-player PAID cells PaidCells() returns
 }
 
 func (f *fakeTxWriter) maybeFail() error {
@@ -86,6 +87,15 @@ func (f *fakeTxWriter) SetCell(_ context.Context, mflID string, _ int, _ domain.
 
 func (f *fakeTxWriter) VoidCells(_ context.Context, mflID string, _ string) error {
 	f.calls = append(f.calls, recordedMove{op: "voidcells", mflID: mflID})
+	return f.maybeFail()
+}
+
+func (f *fakeTxWriter) PaidCells(_ context.Context, mflID string) ([]state.LedgerCell, error) {
+	return f.paidCells[mflID], f.maybeFail()
+}
+
+func (f *fakeTxWriter) AppendExtensionYears(_ context.Context, mflID string, _ int, _ domain.Money, _ string) error {
+	f.calls = append(f.calls, recordedMove{op: "appendext", mflID: mflID})
 	return f.maybeFail()
 }
 

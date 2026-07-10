@@ -29,6 +29,17 @@ const restructureOpKind = "RESTRUCTURE"
 // (its own row in transaction_counts, independent of restructure).
 const tagOpKind = "TAG"
 
+// extensionOpKind is the per-season op-counter key for §10's "one extension per GM per season"
+// limit (its own row in transaction_counts, independent of tag/restructure).
+const extensionOpKind = "EXTENSION"
+
+// §10 extension bounds: an extension adds 1..maxExtensionYears years, and no contract may
+// exceed maxTotalContractYears total years (existing PAID cells + the added years).
+const (
+	maxExtensionYears     = 3
+	maxTotalContractYears = 6
+)
+
 // million is $1,000,000 in exact cents ($1M = 1e6 dollars × 100 cents = 1e8 cents) — the
 // unit of the §11 restructure tier table.
 const million = domain.Money(100_000_000)
@@ -209,6 +220,147 @@ func Tag(ctx context.Context, w state.TxWriter, mflID string, price domain.Money
 	}
 	if err := w.IncOpCount(ctx, ps.FranchiseID, tagOpKind); err != nil {
 		return fmt.Errorf("contracts: tag %q: bump per-season counter: %w", mflID, err)
+	}
+	return nil
+}
+
+// extensionYearPrice is the §10 price of each added year: 150% of the player's highest-paid
+// remaining year, snapped to $10k (§1), then raised to the position floor if that is greater
+// (the resolved floor from the Coordinator). The 150% is exact integer math — ×3 then ÷2,
+// rounding half up to the cent — so no float money enters. Both inputs are $10k multiples, so
+// the result is too.
+func extensionYearPrice(highestRemaining, floor domain.Money) domain.Money {
+	scaled := domain.RoundToNearest10k((highestRemaining*3 + 1) / 2)
+	if floor > scaled {
+		return floor
+	}
+	return scaled
+}
+
+// extendEligible runs the §10 pre-cell eligibility gates (cheap argument + single-player
+// checks) and returns the player's current state for the caller to price against. It rejects a
+// bad added-year count, an unresolved floor, an unknown player, a franchise-tagged player (his
+// extension prices at 120% of the tag — a §9 cross-rule out of scope in v1), or a player with
+// no year remaining (UFAs ineligible; remaining is EXCLUSIVE of the elapsed count, so
+// expiration_year must be strictly beyond the current season — the §8 convention).
+func extendEligible(w state.TxWriter, mflID string, addedYears int, floor domain.Money) (state.PlayerState, error) {
+	if addedYears < 1 || addedYears > maxExtensionYears {
+		return state.PlayerState{}, fmt.Errorf("contracts: extend %q: added years %d out of range 1..%d (§10)", mflID, addedYears, maxExtensionYears)
+	}
+	if floor <= 0 {
+		return state.PlayerState{}, fmt.Errorf("contracts: extend %q: position floor must be positive (resolve via ExecuteExtension)", mflID)
+	}
+	ps, ok := w.Player(mflID)
+	if !ok {
+		return state.PlayerState{}, fmt.Errorf("contracts: extend %q: player not on any roster", mflID)
+	}
+	if ps.IsTagged {
+		return state.PlayerState{}, fmt.Errorf("contracts: extend %q: a franchise-tagged player's extension prices at 120%% of the tag (§9) and is out of scope in v1", mflID)
+	}
+	if ps.ExpirationYear <= w.Season() {
+		return state.PlayerState{}, fmt.Errorf("contracts: extend %q: no year remaining (contract ends %d, season is %d) — UFAs are ineligible (§10)", mflID, ps.ExpirationYear, w.Season())
+	}
+	return ps, nil
+}
+
+// scanExtensionCells makes one pass over a player's PAID cells, returning: the highest-paid
+// REMAINING year (the §10 pricing base — "remaining" is EXCLUSIVE of the current season, year
+// > season, matching the §8 remaining-years convention AND this handler's own eligibility gate,
+// so the two definitions of "remaining" agree — GLM M1); whether any cell was written by a
+// prior extension (source "extension" — the no-second-extension marker); and the last PAID year
+// (for the term-vs-ledger drift guard in Extend).
+func scanExtensionCells(cells []state.LedgerCell, season int) (highestRemaining domain.Money, alreadyExtended bool, lastPaidYear int) {
+	for _, c := range cells {
+		if c.Source == state.SourceExtension {
+			alreadyExtended = true
+		}
+		if c.Year > season && c.Salary > highestRemaining {
+			highestRemaining = c.Salary
+		}
+		if c.Year > lastPaidYear {
+			lastPaidYear = c.Year
+		}
+	}
+	return highestRemaining, alreadyExtended, lastPaidYear
+}
+
+// Extend applies a §10 contract extension against the shared tx writer: it appends addedYears
+// new PAID contract-year cells priced at 150% of the player's highest-paid remaining year
+// (raised to the position floor, resolved by the Coordinator and passed as floor), lengthens
+// the contract term, and RESETS is_restructured — the §10 unlock, where each extension
+// re-allows one §11 restructure. Every §10 limit is enforced against authoritative state so a
+// rule violation is unrepresentable: at least one year remaining (UFAs ineligible), no prior
+// extension on this contract, 1..3 added years, no more than 6 total contract years, and one
+// extension per franchise per season. A franchise-tagged player is OUT OF SCOPE in v1 (his
+// extension years price at 120% of the tag — a §9 cross-rule, deferred) and is rejected. Fails
+// loud on an unknown player, any limit breach, or a non-positive floor (an Extension not
+// resolved through Coordinator.ExecuteExtension).
+func Extend(ctx context.Context, w state.TxWriter, mflID string, addedYears int, floor domain.Money) error {
+	ps, err := extendEligible(w, mflID, addedYears, floor)
+	if err != nil {
+		return err
+	}
+	cells, err := w.PaidCells(ctx, mflID)
+	if err != nil {
+		return fmt.Errorf("contracts: extend %q: %w", mflID, err)
+	}
+	// §10: no second extension based on a prior extension (must reach free agency first). A
+	// prior extension is recorded ON THE CELLS (source "extension"), the ledger's own marker —
+	// no is_extended flag. The whole-contract check is correct because free agency mints a fresh
+	// contract_id whose cells are seed-sourced, so a re-signed player is eligible again. The scan
+	// also returns the highest-paid remaining year, the §10 pricing base.
+	highestRemaining, alreadyExtended, lastPaidYear := scanExtensionCells(cells, w.Season())
+	if alreadyExtended {
+		return fmt.Errorf("contracts: extend %q: contract already carries an extension — no second extension off a prior one (§10)", mflID)
+	}
+	if highestRemaining <= 0 {
+		return fmt.Errorf("contracts: extend %q: no remaining paid year to price the extension from (§10)", mflID)
+	}
+	// Drift guard (GLM M3): the term (expiration_year, in the contracts table) and the ledger
+	// tail (last PAID cell) must agree before we lengthen BOTH from them independently —
+	// AppendExtensionYears extends from the cell tail, this handler bumps expiration_year. The
+	// domain invariant keeps them equal; assert it rather than silently write a term that
+	// diverges from the cells (fail loud, the house style).
+	if lastPaidYear != ps.ExpirationYear {
+		return fmt.Errorf("contracts: extend %q: term/ledger drift — expiration_year %d != last paid cell %d", mflID, ps.ExpirationYear, lastPaidYear)
+	}
+	// §10: no more than 6 total contract years (existing PAID cells + the added years).
+	if total := len(cells) + addedYears; total > maxTotalContractYears {
+		return fmt.Errorf("contracts: extend %q: %d existing + %d added = %d exceeds the %d-year max (§10)",
+			mflID, len(cells), addedYears, total, maxTotalContractYears)
+	}
+	// §10: one extension per franchise per season.
+	spent, err := w.OpCount(ctx, ps.FranchiseID, extensionOpKind)
+	if err != nil {
+		return fmt.Errorf("contracts: extend %q: %w", mflID, err)
+	}
+	if spent >= 1 {
+		return fmt.Errorf("contracts: extend: franchise %q has already extended a contract this season (one per team per year, §10)", ps.FranchiseID)
+	}
+
+	price := extensionYearPrice(highestRemaining, floor)
+	reason := fmt.Sprintf("§10 extension: +%d years at %s (150%% of %s, floor %s)", addedYears, price, highestRemaining, floor)
+	if err := w.AppendExtensionYears(ctx, mflID, addedYears, price, reason); err != nil {
+		return fmt.Errorf("contracts: extend %q: %w", mflID, err)
+	}
+	// Lengthen the term and RESET is_restructured (the §10 unlock). The base annual salary is
+	// UNCHANGED — an extension adds future years at their own price; the existing deal's face
+	// figure stands and the cells carry the per-year truth. ContractYears is left as-is (it is
+	// not the store's computed value — expiration_year is the load-bearing term field, and the
+	// cells are the source of truth for total length; tag/restructure leave it untouched too).
+	change := state.ContractChange{
+		AnnualSalary:   ps.Salary,
+		ContractYears:  ps.ContractYears,
+		ExpirationYear: ps.ExpirationYear + addedYears,
+		ContractStatus: ps.ContractStatus,
+		IsRestructured: false,
+		IsTagged:       ps.IsTagged, // false here — a tagged player was rejected above
+	}
+	if err := w.ApplyContract(ctx, mflID, change); err != nil {
+		return fmt.Errorf("contracts: extend %q: %w", mflID, err)
+	}
+	if err := w.IncOpCount(ctx, ps.FranchiseID, extensionOpKind); err != nil {
+		return fmt.Errorf("contracts: extend %q: bump per-season counter: %w", mflID, err)
 	}
 	return nil
 }

@@ -147,6 +147,37 @@ type LedgerWriter interface {
 	// remaining cap-bearing cell while preserving the contract's history (cells are flipped to
 	// VOID, never deleted). Fails loud if the player has no PAID cell to void.
 	VoidCells(ctx context.Context, mflID string, reason string) error
+	// PaidCells returns a player's PAID contract-year cells (year, salary, source), ordered by
+	// year, read THROUGH the shared tx. It is a READ grouped onto this cell interface (rather
+	// than TxWriter, which sits at the interfacebloat cap) because it serves the cell ops: the
+	// §10 extension handler derives its rule facts from it — the highest-paid remaining year
+	// (§10 pricing), the total contract length (the ≤6-year cap), and whether the contract
+	// already carries an extension cell (source "extension" — the "no second extension off a
+	// prior extension" guard, answered from the cells per the ledger_schema design intent, no
+	// is_extended flag). UFA/VOID cells are omitted (they carry no cap).
+	PaidCells(ctx context.Context, mflID string) ([]LedgerCell, error)
+	// AppendExtensionYears appends `addedYears` new PAID contract-year cells at pricePerYear —
+	// the §10 extension write primitive. It PROMOTES the UFA placeholder slot (the offseason
+	// after the last paid year) to the first new PAID year, inserts any further added years as
+	// new PAID cells, and creates a fresh UFA slot the offseason after the new last paid year,
+	// so the ledger invariant (contiguous PAID cells followed by exactly one UFA slot) still
+	// holds. Every new/promoted cell is tagged source "extension" (the prior-extension marker)
+	// and logged to the immutable change log, in the shared tx. The store owns the mechanics;
+	// the §10 rule math (price, added-year bounds, ≤6 total, position floors) is the handler's,
+	// already resolved into the arguments. Fails loud on a non-positive addedYears/price, a
+	// player with no PAID cell, or a missing/misplaced UFA slot (drift).
+	AppendExtensionYears(ctx context.Context, mflID string, addedYears int, pricePerYear domain.Money, reason string) error
+}
+
+// LedgerCell is one contract-year cell exposed to a handler for reading — the league year,
+// its cap-bearing salary (exact cents), and the source tag recording what wrote it ("seed",
+// "op", or "extension"). The §10 handler derives its rule facts from a player's cells (the
+// highest-paid remaining year, the total contract length, whether a prior extension exists)
+// without the store running any rule logic — the store returns data, the handler judges it.
+type LedgerCell struct {
+	Year   int
+	Salary domain.Money
+	Source string
 }
 
 // DeadCapEntry is one append-only dead-cap charge against a franchise's cap for an

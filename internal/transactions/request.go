@@ -21,6 +21,7 @@ const (
 	KindWaiver       Kind = "WAIVER"
 	KindRestructure  Kind = "RESTRUCTURE"
 	KindTag          Kind = "TAG"
+	KindExtension    Kind = "EXTENSION"
 )
 
 // Request is a transaction the Coordinator can execute. The concrete types live in THIS
@@ -204,6 +205,42 @@ func (t Tag) validate() error {
 func (t Tag) apply(ctx context.Context, w state.TxWriter) (int, error) {
 	if err := contracts.Tag(ctx, w, t.MFLID, t.price); err != nil {
 		return 0, fmt.Errorf("tag: %w", err)
+	}
+	return 1, nil
+}
+
+// Extension applies a §10 contract extension: it appends AddedYears (1..3) new PAID years
+// priced at 150% of the player's highest-paid remaining year, raised to the position floor.
+// The floor is NOT a caller field — it is resolved authoritatively by
+// Coordinator.ExecuteExtension from the player's position and stored in the unexported floor
+// field, so the IPC boundary carries only the id and the year count. Every §10 limit (≥1 year
+// remaining, ≤6 total years, no prior extension, one per franchise per season) is enforced
+// against real state in the handler, never trusted from the request.
+type Extension struct {
+	MFLID      string
+	AddedYears int
+	floor      domain.Money // resolved by Coordinator.ExecuteExtension; unexported so no caller supplies it
+}
+
+func (Extension) Kind() Kind { return KindExtension }
+func (Extension) sealed()    {}
+
+// validate rejects only an empty player id or an out-of-range year count here (the cheap
+// pre-transaction gate); the floor, the 150% price, and every eligibility/limit rule are
+// resolved and enforced against authoritative state (ExecuteExtension + the handler).
+func (e Extension) validate() error {
+	if strings.TrimSpace(e.MFLID) == "" {
+		return fmt.Errorf("transactions: extension has an empty player id")
+	}
+	if e.AddedYears < 1 || e.AddedYears > 3 {
+		return fmt.Errorf("transactions: extension adds %d years, must be 1..3 (§10)", e.AddedYears)
+	}
+	return nil
+}
+
+func (e Extension) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if err := contracts.Extend(ctx, w, e.MFLID, e.AddedYears, e.floor); err != nil {
+		return 0, fmt.Errorf("extension: %w", err)
 	}
 	return 1, nil
 }

@@ -123,3 +123,32 @@ func TestTagFloorPrice(t *testing.T) {
 		t.Fatalf("floor rounding = %d cents, want 8", got)
 	}
 }
+
+// TestPositionFloor pins the §10 extension floor table: every position maps to its rulebook
+// minimum, and an unclassified position has no floor (so the Coordinator fails loud rather
+// than extending with none).
+func TestPositionFloor(t *testing.T) {
+	cases := []struct {
+		pos  domain.Position
+		want domain.Money
+		ok   bool
+	}{
+		{domain.PosQB, 15 * tm, true},
+		{domain.PosWR, 10 * tm, true},
+		{domain.PosRB, 8 * tm, true},
+		{domain.PosTE, 8 * tm, true},
+		{domain.PosLB, 8 * tm, true},
+		{domain.PosDE, 7 * tm, true},
+		{domain.PosS, 5 * tm, true},
+		{domain.PosDT, 4 * tm, true},
+		{domain.PosCB, 3 * tm, true},
+		{domain.PosK, 3 * tm, true},
+		{domain.PosFlag, 0, false},
+	}
+	for _, tc := range cases {
+		got, ok := PositionFloor(tc.pos)
+		if ok != tc.ok || got != tc.want {
+			t.Fatalf("PositionFloor(%s) = (%s, %v), want (%s, %v)", tc.pos, got, ok, tc.want, tc.ok)
+		}
+	}
+}

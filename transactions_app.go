@@ -28,6 +28,7 @@ type TransactionRequest struct {
 	MFLID        string    `json:"mflID"`
 	Status       string    `json:"status"`
 	MoveMillions string    `json:"moveMillions"`
+	AddedYears   int       `json:"addedYears"` // EXTENSION (§10): years to add (1..3)
 }
 
 // TransactionResult is the typed IPC outcome: OK plus the committed Receipt fields, or
@@ -67,6 +68,21 @@ func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
 			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §9 tag price: " + derr.Error()}
 		}
 		rec, terr := a.coordinator.ExecuteTag(ctx, req.MFLID, dir)
+		if terr != nil {
+			return TransactionResult{Kind: req.Kind, Detail: terr.Error()}
+		}
+		return TransactionResult{OK: true, Kind: string(rec.Kind), PlayersAffected: rec.PlayersAffected, At: rec.At.Format(time.RFC3339)}
+	}
+
+	// EXTENSION (§10) also runs a distinct Coordinator verb: the per-year price is 150% of the
+	// highest remaining year (resolved inside the tx), but the POSITION FLOOR needs the
+	// players-DB position join (the Lookup). Only the id and the added-year count cross the wire.
+	if req.Kind == string(transactions.KindExtension) {
+		dir, derr := a.directory(ctx)
+		if derr != nil {
+			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §10 position floor: " + derr.Error()}
+		}
+		rec, terr := a.coordinator.ExecuteExtension(ctx, req.MFLID, req.AddedYears, dir)
 		if terr != nil {
 			return TransactionResult{Kind: req.Kind, Detail: terr.Error()}
 		}
