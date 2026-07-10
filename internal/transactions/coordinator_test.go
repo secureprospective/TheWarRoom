@@ -30,6 +30,7 @@ type fakeTxWriter struct {
 	season    int                           // the league year Season() reports
 	opCounts  map[string]int                // per-(franchise/op_kind) counters for OpCount/IncOpCount
 	paidCells map[string][]state.LedgerCell // per-player PAID cells PaidCells() returns
+	phase     domain.Phase                  // current season phase CurrentPhase() reports (defaults OFFSEASON)
 }
 
 func (f *fakeTxWriter) maybeFail() error {
@@ -74,6 +75,15 @@ func (f *fakeTxWriter) Player(mflID string) (state.PlayerState, bool) {
 }
 
 func (f *fakeTxWriter) Season() int { return f.season }
+
+// CurrentPhase reports the fake's phase, defaulting to OFFSEASON when unset so a test that
+// doesn't care about the phase gate still exercises the offseason-legal ops.
+func (f *fakeTxWriter) CurrentPhase(_ context.Context) (domain.Phase, error) {
+	if f.phase == "" {
+		return domain.PhaseOffseason, nil
+	}
+	return f.phase, nil
+}
 
 func (f *fakeTxWriter) MoveCellMoney(_ context.Context, mflID string, _, _ int, _ domain.Money, _ string) error {
 	f.calls = append(f.calls, recordedMove{op: "movecell", mflID: mflID})

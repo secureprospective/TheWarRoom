@@ -104,24 +104,41 @@ type TxWriter interface {
 	// embedded rather than inlined so TxWriter stays within the interfacebloat cap as more
 	// cell ops land — an embedded interface counts as one member.
 	LedgerWriter
+	// SeasonScope carries the season-scoped bookkeeping surface (the league year, the
+	// per-season op counters, and the current phase). Embedded so TxWriter stays within the
+	// interfacebloat cap — the same grouping device as LedgerWriter.
+	SeasonScope
+}
+
+// SeasonScope is the season-scoped bookkeeping surface: the absolute league year, the durable
+// per-season op-limit counters, and the current season phase. Grouped into one embedded
+// interface so TxWriter stays within the interfacebloat cap as season-scoped reads/writes
+// accrue. All three sit at the same conceptual level — state keyed to (league, season) that
+// gates and prices the transactions of that season.
+type SeasonScope interface {
 	// Season is the absolute league year this store operates on — the handler derives
-	// "remaining years" (expiration_year − season) for the §8 charge from it.
+	// "remaining years" (expiration_year − season) for the §8/§12 charge from it. Per the
+	// locked invariant (domain.Phase), during OFFSEASON this is the UPCOMING managed season.
 	Season() int
 
 	// OpCount reads how many times a franchise has run a given op_kind THIS season — the
 	// durable per-season limit counter (§11 "one restructure per team per year", and the
-	// §9/§10/§12 op limits to come). It reflects COMMITTED state, not this tx's own
-	// uncommitted IncOpCount; a single read-check-then-bump op is consistent because the
-	// single-writer law serializes transactions. Zero for an unseen (franchise, op) key.
-	// FOOTGUN: because it reads committed state, a handler that bumps the SAME counter twice
-	// in one tx would not see its own first bump on a second OpCount — safe for the current
-	// one-check-one-bump ops (restructure), but a multi-bump op must track its increments
-	// in-handler, not re-read via OpCount.
+	// §9/§10/§12 op limits). It reflects COMMITTED state, not this tx's own uncommitted
+	// IncOpCount; a single read-check-then-bump op is consistent because the single-writer
+	// law serializes transactions. Zero for an unseen (franchise, op) key. FOOTGUN: because it
+	// reads committed state, a handler that bumps the SAME counter twice in one tx would not
+	// see its own first bump on a second OpCount — safe for the current one-check-one-bump ops,
+	// but a multi-bump op must track its increments in-handler, not re-read via OpCount.
 	OpCount(ctx context.Context, franchiseID, opKind string) (int, error)
 	// IncOpCount increments that per-season counter by one inside the shared tx (an upsert
 	// on (league, franchise, season, op_kind)). A handler that enforces a per-season limit
 	// pairs it with OpCount: read, check the limit, mutate, bump — all atomic in WriteTx.
 	IncOpCount(ctx context.Context, franchiseID, opKind string) error
+	// CurrentPhase returns the league-year's current season phase (the latest transition's
+	// to_phase). It reflects COMMITTED state — the op-eligibility gate checks the phase as it
+	// stood before the op, which the single-writer law makes race-free. Fails loud on a missing
+	// seed row (no fallback — the seed is the one source of truth) or a stored non-phase (drift).
+	CurrentPhase(ctx context.Context) (domain.Phase, error)
 }
 
 // LedgerWriter is the per-year salary-cell mutation surface — the money primitives the
