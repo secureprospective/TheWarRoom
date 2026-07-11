@@ -137,15 +137,22 @@ func TestIntegration_BuyoutLockoutBlocksSign(t *testing.T) {
 	if pool := poolOf(t, s); !contains(pool, "0012") {
 		t.Fatalf("after buyout, pool = %v, want to contain 0012", pool)
 	}
-	// Same season: locked.
+	// Same season, OFFSEASON: locked.
 	if _, err := c.Execute(ctx, transactions.Sign{MFLID: "0012", FranchiseID: "0002", Salary: 2 * mil, Years: 1}); err == nil {
-		t.Fatal("signed a bought-out player in the buyout season, want §12 lockout rejection")
+		t.Fatal("signed a bought-out player in the buyout season (offseason), want §12 lockout rejection")
 	}
-	// Roll to 2027 (PLAYOFFS-gated). The lockout lifts.
-	for _, to := range []domain.Phase{domain.PhaseRegularSeason, domain.PhasePlayoffs} {
-		if _, err := c.Execute(ctx, transactions.AdvancePhase{To: to}); err != nil {
-			t.Fatalf("advance to %s: %v", to, err)
-		}
+	// Still season N, now REGULAR_SEASON (SIGN is in-window here) — the lockout must STILL hold. A
+	// regression that lifted it before the season rolled would slip past the offseason check above,
+	// so this in-window attempt gives the lockout real teeth (GLM L7).
+	if _, err := c.Execute(ctx, transactions.AdvancePhase{To: domain.PhaseRegularSeason}); err != nil {
+		t.Fatalf("advance to REGULAR_SEASON: %v", err)
+	}
+	if _, err := c.Execute(ctx, transactions.Sign{MFLID: "0012", FranchiseID: "0002", Salary: 2 * mil, Years: 1}); err == nil {
+		t.Fatal("signed a bought-out player in REGULAR_SEASON of the buyout season, want §12 lockout still in force")
+	}
+	// Roll to 2027 (PLAYOFFS-gated). Already in REGULAR_SEASON, so advance only to PLAYOFFS.
+	if _, err := c.Execute(ctx, transactions.AdvancePhase{To: domain.PhasePlayoffs}); err != nil {
+		t.Fatalf("advance to PLAYOFFS: %v", err)
 	}
 	if _, err := c.Execute(ctx, transactions.RolloverSeason{Note: "roll"}); err != nil {
 		t.Fatalf("rollover: %v", err)
@@ -231,5 +238,33 @@ func TestIntegration_SignValidationRejectsBadShape(t *testing.T) {
 		if _, err := c.Execute(ctx, req); err == nil {
 			t.Fatalf("bad sign %d (%+v) succeeded, want validation rejection", i, req)
 		}
+	}
+}
+
+// TestIntegration_SignRejectsUnknownFranchise proves the phantom-franchise guard (GLM L2): signing
+// a free agent to a franchise id that fields no roster is rejected, so a typo can't strand a player
+// in a franchise CapUsed/GetFranchiseState will never surface.
+func TestIntegration_SignRejectsUnknownFranchise(t *testing.T) {
+	_, c := signStore(t)
+	ctx := context.Background()
+	if _, err := c.Execute(ctx, transactions.Waiver{MFLID: "0011"}); err != nil {
+		t.Fatalf("waive 0011: %v", err)
+	}
+	if _, err := c.Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "9X9X", Salary: 3 * mil, Years: 2}); err == nil {
+		t.Fatal("signed to an unknown franchise, want rejection (phantom-franchise guard)")
+	}
+}
+
+// TestIntegration_SignRejectsSubGridSalary proves the post-round $0 guard (GLM L4): a salary that
+// is positive but rounds below the $10k grid to $0 is rejected, not laid as a free contract.
+func TestIntegration_SignRejectsSubGridSalary(t *testing.T) {
+	_, c := signStore(t)
+	ctx := context.Background()
+	if _, err := c.Execute(ctx, transactions.Waiver{MFLID: "0011"}); err != nil {
+		t.Fatalf("waive 0011: %v", err)
+	}
+	// $100 (10_000 cents) is > 0 at validate but snaps to $0 on the $10k grid.
+	if _, err := c.Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: domain.Money(10_000), Years: 1}); err == nil {
+		t.Fatal("signed at a sub-$10k salary that rounds to $0, want rejection")
 	}
 }

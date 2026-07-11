@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -32,10 +33,19 @@ func (w *txWriter) SignContract(ctx context.Context, mflID, franchiseID string, 
 	if w.s.exists(mflID) {
 		return fmt.Errorf("state: SignContract %q: already on a roster", mflID)
 	}
+	season := w.s.season
+	// The target franchise must be a KNOWN franchise — one that currently fields a roster this
+	// season (GLM L2). state derives franchises from roster occupancy (there is no separate
+	// registry), so a typo'd/phantom id has NO roster presence and is rejected here rather than
+	// stranding the player in a franchise CapUsed/GetFranchiseState will never surface. Checked
+	// BEFORE any mutation. Tradeoff: a fully-gutted franchise (zero current players) can't sign
+	// until it holds one again — vanishingly rare in a 32-team dynasty, resolvable via a trade.
+	if err := w.requireKnownFranchise(ctx, franchiseID, season); err != nil {
+		return err
+	}
 	if err := w.clearPriorCells(ctx, mflID, reason); err != nil {
 		return err
 	}
-	season := w.s.season
 	if err := w.insertSignedRosterRows(ctx, mflID, franchiseID, salary, years, season); err != nil {
 		return err
 	}
@@ -47,6 +57,23 @@ func (w *txWriter) SignContract(ctx context.Context, mflID, franchiseID string, 
 	}
 	// The UFA placeholder slot the offseason after the last paid year ($0, not cap-counting).
 	return w.layCell(ctx, mflID, contractID, season+years, 0, yearStatusUFA, source, reason)
+}
+
+// requireKnownFranchise fails loud if franchiseID fields no roster this season — the proxy for
+// "known franchise" (state has no separate franchise registry; franchises are derived from roster
+// occupancy). The single-row read is fully consumed, so the cursor closes before any write.
+func (w *txWriter) requireKnownFranchise(ctx context.Context, franchiseID string, season int) error {
+	var one int
+	row := w.tx.QueryRowContext(ctx,
+		`SELECT 1 FROM rosters WHERE league_id = ? AND franchise_id = ? AND season = ? LIMIT 1`,
+		w.s.leagueID, franchiseID, season)
+	switch err := row.Scan(&one); {
+	case errors.Is(err, sql.ErrNoRows):
+		return fmt.Errorf("state: SignContract: unknown franchise %q (no roster this season)", franchiseID)
+	case err != nil:
+		return fmt.Errorf("state: SignContract: check franchise %q: %w", franchiseID, err)
+	}
+	return nil
 }
 
 // clearPriorCells removes every existing contract_years cell for a player (any status) inside the

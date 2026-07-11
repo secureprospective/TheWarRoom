@@ -85,6 +85,12 @@ func Sign(ctx context.Context, w state.TxWriter, mflID, franchiseID string, sala
 	}
 
 	salary = domain.RoundToNearest10k(salary)
+	// Guard AFTER the $10k snap (GLM L4): validate() rejects a non-positive PRE-rounded salary, but
+	// a sub-$5k figure rounds to $0 — and with experience unknown (v1) the §6 floor that would
+	// catch it is skipped. A $0 contract would roster a player for free, so reject it here.
+	if salary <= 0 {
+		return fmt.Errorf("freeagency: sign %q: salary rounds to $0 (below the $10k grid) — enter at least $10k", mflID)
+	}
 	if experienceKnown {
 		if floor := MinSalaryFloor(experienceYears); salary < floor {
 			return fmt.Errorf("freeagency: sign %q: salary %s is below the §6 minimum %s for %d years experience", mflID, salary, floor, experienceYears)
