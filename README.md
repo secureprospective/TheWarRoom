@@ -245,7 +245,27 @@ The engine is the hard part, and the engine is **done**. What's ahead is the pay
 
 ## 🤝 How It Gets Built — The Council
 
-One human holds the vision and the veto. A rotating council of AIs does the rest, each in the seat it's best in: **Claude** builds and drives the reviews; **GLM** is the standing blind code reviewer; **Gemini** and **DeepSeek** are pulled in for the hardest architectural calls; **Ornith** runs local for the work that stays home. No model gets rubber-stamped and no model gets to guess — every finding is a *lead*, triaged against the source. The machine proposes; the human and the rulebook decide.
+One human holds the vision and the veto. A council of AIs does the rest, each in the seat it's best in. No model gets rubber-stamped and no model gets to guess — every finding is a *lead*, triaged against the source. The machine proposes; the human and the rulebook decide.
+
+<div align="center">
+
+[![Claude](https://img.shields.io/badge/Claude-The%20Builder%20·%20Head%20Brain-D97757?style=for-the-badge&logo=anthropic&logoColor=white)](https://anthropic.com)
+[![GLM](https://img.shields.io/badge/GLM%205.2-The%20Blind%20Reviewer-6E3AF2?style=for-the-badge)](https://z.ai)
+[![Gemini](https://img.shields.io/badge/Gemini-The%20Second%20Opinion-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)](https://gemini.google.com)
+[![DeepSeek](https://img.shields.io/badge/DeepSeek-The%20Reasoner-4D6BFE?style=for-the-badge&logo=deepseek&logoColor=white)](https://deepseek.com)
+[![Ornith](https://img.shields.io/badge/Ornith-The%20Heir%20·%20Local-10B981?style=for-the-badge&logo=ollama&logoColor=white)](#)
+
+</div>
+
+| Seat | Model | The job |
+|:--:|:--|:--|
+| 🛠️ | **Claude** *(Anthropic)* | The builder and head brain — writes the code, drives the reviews, keeps the map. |
+| 🔍 | **GLM 5.2** *(Z.ai)* | The standing **blind code reviewer** — reads every build cold and hunts the bug the tests can't see. |
+| 🎯 | **Gemini** *(Google)* | The second opinion — pulled in when a problem needs a fresh pair of eyes. |
+| 🧩 | **DeepSeek** | The reasoner — brought to the table for the hardest, once-only architectural calls. |
+| 🦅 | **Ornith** *(local — the heir)* | Runs on hardware **in the room**. Today it takes the work that stays home; **it is being trained for the job it will one day hold outright — the daily maintainer of this codebase once TheWarRoom goes enterprise.** Every review it shadows, every lesson it logs, is an apprenticeship. The plan is a self-hosted system of record maintained by a model that never leaves the building. |
+
+> **Ornith is not the junior seat — it's the succession plan.** GLM, Gemini, and DeepSeek sharpen the code today; Ornith is learning to *own* it tomorrow. When this goes enterprise, the maintainer is already home.
 
 ---
 
