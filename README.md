@@ -98,7 +98,8 @@ A **single transaction coordinator** is the only thing in the entire system allo
 | ✅ **Franchise tag (§9)** | Top-5-by-position pricing, 120%-of-prior floor — UI sends a player id, never a dollar |
 | ✅ **Restructure (§11)** | Owner cap moves bounded by the rulebook — a violation is *unrepresentable* |
 | ✅ **Extension §10 · Buyout §12 · special situations §13–§14** | Full contract rulebook, phase-gated |
-| ✅ **Free Agency §6 (v1)** | Live free-agent pool + record-a-signing, with §12 buyout lockout & UFA promotion on rollover |
+| ✅ **Free Agency §6 (v1)** | Live free-agent pool + record-a-signing, with §12 buyout lockout, min-salary floor & UFA promotion on rollover |
+| ✅ **Commissioner UFA calendar (§6)** | A signing window the commissioner opens/closes on top of the phase gate — closed blocks every signing, and it persists until toggled |
 
 ### ⚡ Go-Powered, Local-First Performance
 Zero cloud latency. Absolute privacy. Near-instant processing from a clean, compiled backend. The rankings board **re-ranks the instant you turn a calibration knob** in the admin console — the live tuning loop already works. Native desktop app; your league never leaves your machine.
@@ -190,7 +191,6 @@ A multi-block system design where the boundaries aren't conventions — they're 
 The engine is the hard part, and the engine is **done**. What's ahead is the payoff — each capability a new *view* onto a score and a ledger that already exist.
 
 **On the clock**
-- 🧮 **First-class commissioner UFA calendar** — a signing window that closes at Super Bowl kickoff and reopens on commissioner command (the seam is already wired).
 - 📊 **The war-room modules** — Power Rankings, Matchup Predictions, Trade Analyzer, Free-Agency Intel, Rookie Draft board, Commissioner Dashboard.
 - 🕳️ **The shadow ledger** — dry-run any transaction against a *forked* cap before you commit it.
 

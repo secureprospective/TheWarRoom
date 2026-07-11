@@ -41,6 +41,9 @@ type TransactionRequest struct {
 	// cents server-side) + Years (1..4). Eligibility, lockout, and the min-salary floor resolve in-tx.
 	SalaryMillions string `json:"salaryMillions"`
 	Years          int    `json:"years"`
+	// SET_SIGNING_WINDOW (§6 UFA calendar): WindowOpen toggles the commissioner signing window
+	// open (true) / closed (false); Note is the freeform reason. It changes no phase and no player.
+	WindowOpen bool `json:"windowOpen"`
 }
 
 // TransactionResult is the typed IPC outcome: OK plus the committed Receipt fields, or
@@ -270,6 +273,10 @@ func buildRequest(req TransactionRequest) (transactions.Request, error) {
 		// §14: the season boundary, PLAYOFFS(N)→OFFSEASON(N+1). Commissioner-confirmed; carries
 		// only a freeform note (its sole precondition, current phase == PLAYOFFS, is enforced in-tx).
 		return transactions.RolloverSeason{Note: req.Note}, nil
+	case string(transactions.KindSetSigningWindow):
+		// §6 UFA calendar: open/close the commissioner signing window without changing the phase.
+		// The redundancy guard (already in the requested state) is enforced in-tx.
+		return transactions.SetSigningWindow{Open: req.WindowOpen, Note: req.Note}, nil
 	case string(transactions.KindRetirement):
 		// §13: 30% of remaining contract as dead cap; every figure resolved in-tx.
 		return transactions.Retirement{MFLID: req.MFLID}, nil

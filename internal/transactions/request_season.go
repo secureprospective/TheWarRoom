@@ -68,3 +68,31 @@ func (r RolloverSeason) apply(ctx context.Context, w state.TxWriter) (int, error
 	}
 	return 0, nil
 }
+
+// SetSigningWindow is the commissioner's UFA-CALENDAR toggle (§6, Free_Agency_Design Q4): it OPENS
+// or CLOSES the free-agency signing window WITHOUT changing the season phase. A CLOSED window blocks
+// every SIGN even in an otherwise-legal phase (the SIGN phase gate consults it); reopening restores
+// it. The directive persists until the next toggle — carrying across phase transitions and rollovers
+// ("closes when the Super Bowl goes live, stays closed until the commissioner reopens it"). It
+// touches no players (0) and is legal in every phase (the commissioner sets the calendar whenever).
+// It rides the append-only season_phases log via the meta slot, not a phase transition. Note is a
+// freeform reason.
+type SetSigningWindow struct {
+	Open bool
+	Note string
+}
+
+func (SetSigningWindow) Kind() Kind { return KindSetSigningWindow }
+func (SetSigningWindow) sealed()    {}
+
+// validate has no request shape to check — the toggle carries only a bool and an optional note. The
+// redundancy guard (already in the requested state) needs committed state and so is enforced in the
+// store primitive, atomically.
+func (SetSigningWindow) validate() error { return nil }
+
+func (s SetSigningWindow) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if err := w.AppendSigningWindow(ctx, s.Open, s.Note); err != nil {
+		return 0, fmt.Errorf("set signing window: %w", err)
+	}
+	return 0, nil
+}

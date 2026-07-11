@@ -197,6 +197,21 @@ type SeasonScope interface {
 	// rows are untouched (per-year audit; the new season reads them as 0 by absence) and
 	// is_restructured is left intact (§11 lifetime guard, D4). `note` is a freeform reason.
 	RolloverSeason(ctx context.Context, note string) error
+	// SigningWindowClosed reports whether the §6 free-agency signing window has been CLOSED by an
+	// explicit commissioner directive — the COMMISSIONER UFA-CALENDAR read (Free_Agency_Design Q4).
+	// Absent any directive it returns false (OPEN by default — the v1 posture where SIGN's only
+	// phase restriction is the playoffs block). The directive is the latest season_phases row that
+	// carries a ufa_window meta value, so it PERSISTS across phase transitions and rollovers (which
+	// write meta='') — "closes when the Super Bowl goes live, stays closed until the commissioner
+	// reopens it". Reads committed state; the SIGN phase gate consults it inside the tx.
+	SigningWindowClosed(ctx context.Context) (bool, error)
+	// AppendSigningWindow records a commissioner UFA-window toggle by APPENDING a season_phases row
+	// that keeps the current phase (from == to) and carries the ufa_window directive in meta — the
+	// COMMISSIONER UFA-CALENDAR write primitive (Free_Agency_Design Q4). It is NOT a phase transition;
+	// it rides the same append-only log because meta is the slot built for sub-phase granularity.
+	// Rejects a redundant toggle (the window is already in the requested state — the no-silent-no-op
+	// house rule). `note` is a freeform reason.
+	AppendSigningWindow(ctx context.Context, open bool, note string) error
 }
 
 // LedgerWriter is the per-year salary-cell mutation surface — the money primitives the

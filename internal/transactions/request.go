@@ -16,19 +16,20 @@ import (
 type Kind string
 
 const (
-	KindTrade          Kind = "TRADE"
-	KindRosterStatus   Kind = "ROSTER_STATUS"
-	KindWaiver         Kind = "WAIVER"
-	KindRestructure    Kind = "RESTRUCTURE"
-	KindTag            Kind = "TAG"
-	KindExtension      Kind = "EXTENSION"
-	KindBuyout         Kind = "BUYOUT"
-	KindAdvancePhase   Kind = "ADVANCE_PHASE"
-	KindRolloverSeason Kind = "ROLLOVER_SEASON"
-	KindRetirement     Kind = "RETIREMENT"
-	KindDeath          Kind = "DEATH"
-	KindCapRelief      Kind = "CAP_RELIEF"
-	KindSign           Kind = "SIGN"
+	KindTrade            Kind = "TRADE"
+	KindRosterStatus     Kind = "ROSTER_STATUS"
+	KindWaiver           Kind = "WAIVER"
+	KindRestructure      Kind = "RESTRUCTURE"
+	KindTag              Kind = "TAG"
+	KindExtension        Kind = "EXTENSION"
+	KindBuyout           Kind = "BUYOUT"
+	KindAdvancePhase     Kind = "ADVANCE_PHASE"
+	KindRolloverSeason   Kind = "ROLLOVER_SEASON"
+	KindRetirement       Kind = "RETIREMENT"
+	KindDeath            Kind = "DEATH"
+	KindCapRelief        Kind = "CAP_RELIEF"
+	KindSign             Kind = "SIGN"
+	KindSetSigningWindow Kind = "SET_SIGNING_WINDOW"
 )
 
 // Request is a transaction the Coordinator can execute. The concrete types live in THIS

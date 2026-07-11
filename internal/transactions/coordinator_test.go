@@ -35,6 +35,8 @@ type fakeTxWriter struct {
 	status      domain.PlayerStatus // the status CurrentStatus() reports for statusMFLID
 	statusMFLID string              // the one player CurrentStatus() resolves (for SIGN eligibility tests)
 	lockedMFLID string              // the one player ActiveBuyoutLockout() reports locked
+
+	windowClosed bool // SigningWindowClosed() reports this (the §6 commissioner UFA-calendar state)
 }
 
 func (f *fakeTxWriter) maybeFail() error {
@@ -146,6 +148,29 @@ func (f *fakeTxWriter) RolloverSeason(ctx context.Context, _ string) error {
 	}
 	f.season++
 	f.phase = domain.PhaseOffseason
+	return nil
+}
+
+// SigningWindowClosed reports the fake's commissioner UFA-calendar state (default open).
+func (f *fakeTxWriter) SigningWindowClosed(_ context.Context) (bool, error) {
+	return f.windowClosed, nil
+}
+
+// AppendSigningWindow records the toggle and flips the fake's window, rejecting a redundant toggle
+// (mirrors the store primitive's no-op guard so handler-level tests see the same behavior).
+func (f *fakeTxWriter) AppendSigningWindow(_ context.Context, open bool, _ string) error {
+	if open == !f.windowClosed {
+		word := "closed"
+		if !f.windowClosed {
+			word = "open"
+		}
+		return fmt.Errorf("signing window already %s (no-op rejected)", word)
+	}
+	f.calls = append(f.calls, recordedMove{op: "setwindow", target: fmt.Sprintf("%v", open)})
+	if err := f.maybeFail(); err != nil {
+		return err
+	}
+	f.windowClosed = !open
 	return nil
 }
 

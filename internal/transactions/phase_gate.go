@@ -27,10 +27,12 @@ import (
 func phasePolicy(kind Kind) ([]domain.Phase, bool) {
 	switch kind {
 	case KindTrade, KindRosterStatus, KindWaiver, KindRestructure, KindTag, KindExtension, KindAdvancePhase,
-		KindRetirement, KindDeath, KindCapRelief:
+		KindRetirement, KindDeath, KindCapRelief, KindSetSigningWindow:
 		// §13 special situations (retirement, death, cap relief) can happen in any phase — a
 		// player retires or dies whenever, and a commissioner cap-relief appeal is not
-		// phase-bound. Only §12 buyout is offseason-restricted in v1.
+		// phase-bound. SET_SIGNING_WINDOW (§6 UFA calendar) is likewise every-phase — the
+		// commissioner sets the window whenever, and it is the sub-phase directive that changes
+		// SIGN's window, not a signing itself. Only §12 buyout is offseason-restricted in v1.
 		return allPhases(), true
 	case KindBuyout:
 		// §12: buyouts are OFFSEASON-only. This is the one phase-restricted op in v1.
@@ -47,16 +49,17 @@ func phasePolicy(kind Kind) ([]domain.Phase, bool) {
 	}
 }
 
-// signingWindow returns the phases in which a free-agency SIGN is legal. v1 = OFFSEASON +
-// REGULAR_SEASON: playoffs are blocked to protect postseason competitive integrity (no churning
-// the pool to patch or block during the bracket).
+// signingWindow returns the PHASES in which a free-agency SIGN is legal: OFFSEASON + REGULAR_SEASON,
+// with PLAYOFFS blocked to protect postseason competitive integrity (no churning the pool during
+// the bracket — this is the automatic "closes when the Super Bowl goes live"). It is the coarse,
+// always-on floor of SIGN legality.
 //
-// FORWARD SEAM (Free_Agency_Design Q4, Christopher): a future first-class COMMISSIONER-DISCRETION
-// UFA calendar is coming — the UFA window CLOSES when the Super Bowl goes live, STAYS closed until
-// the commissioner reopens it, and STAYS open until it closes again (finer than the 3-phase model;
-// the season_phases.meta slot carries that granularity). This function is the SINGLE point that
-// window plugs into: replace the hardcoded phase set with the commissioner-toggled window state
-// and neither the SIGN handler nor gatePhase changes.
+// The COMMISSIONER-DISCRETION UFA calendar (Free_Agency_Design Q4) layers ON TOP of this in
+// gatePhase: within the legal phase set, a commissioner-CLOSED window (SigningWindowClosed) still
+// blocks a SIGN, and reopening restores it (the window "stays closed until the commissioner reopens
+// it"). That toggle rides season_phases.meta and is set by SET_SIGNING_WINDOW — so the calendar
+// plugs in WITHOUT touching the SIGN handler: the phase floor here + the window override in
+// gatePhase together are SIGN's single legality predicate.
 func signingWindow() []domain.Phase {
 	return []domain.Phase{domain.PhaseOffseason, domain.PhaseRegularSeason}
 }
@@ -79,10 +82,38 @@ func gatePhase(ctx context.Context, w state.TxWriter, kind Kind) error {
 	if err != nil {
 		return fmt.Errorf("transactions: phase gate for %q: %w", kind, err)
 	}
-	for _, p := range allowed {
-		if p == cur {
-			return nil
+	if !phaseAllowed(allowed, cur) {
+		return fmt.Errorf("transactions: op %q is not permitted in phase %q", kind, cur)
+	}
+	// SIGN alone carries a second, finer gate: the COMMISSIONER UFA-CALENDAR window (§6,
+	// Free_Agency_Design Q4). Even inside its legal phase set, a commissioner-closed window blocks
+	// a signing. The window rides season_phases.meta and defaults OPEN, so this is a no-op for every
+	// league that never touches the calendar — v1 behavior is preserved exactly.
+	//
+	// LOAD-BEARING (same class as the phase read above): SigningWindowClosed reads COMMITTED state
+	// off the read pool, which is correct ONLY because Coordinator.Execute runs exactly one Request
+	// per WriteTx — so a SET_SIGNING_WINDOW toggle can never co-reside with a SIGN in the same tx
+	// and be missed here. Any future batch/composite path MUST keep SET_SIGNING_WINDOW in its own tx
+	// (the same sole-occupancy discipline RolloverSeason documents), or a SIGN would slip through a
+	// window closed earlier in the same transaction.
+	if kind == KindSign {
+		closed, werr := w.SigningWindowClosed(ctx)
+		if werr != nil {
+			return fmt.Errorf("transactions: signing-window gate: %w", werr)
+		}
+		if closed {
+			return fmt.Errorf("transactions: op %q rejected — the free-agency signing window is closed by the commissioner (§6 UFA calendar)", kind)
 		}
 	}
-	return fmt.Errorf("transactions: op %q is not permitted in phase %q", kind, cur)
+	return nil
+}
+
+// phaseAllowed reports whether the current phase is in an op's allow-list.
+func phaseAllowed(allowed []domain.Phase, cur domain.Phase) bool {
+	for _, p := range allowed {
+		if p == cur {
+			return true
+		}
+	}
+	return false
 }
