@@ -105,6 +105,43 @@ Zero cloud latency. Absolute privacy. Near-instant processing from a clean, comp
 
 ---
 
+## 📈 Build Progress — *the engine is done; we're building the war room around it*
+
+A disciplined, 38-session build plan — every session sized to a single context window, every session closed only after green tests, a **blind AI code review**, and real-hardware verification. Here's the board:
+
+```
+   Foundation & Scaffold      [██████████]  100%   ✅  Go · Wails · React · SQLite WAL · compiler-enforced arch
+   Multi-Block Data Pipeline  [██████████]  100%   ✅  live MFL ingest → normalize → type-locked state
+   Logic Stores               [██████████]  100%   ✅  rulebook · state · params · immutable output
+   Scoring Engine (6 layers)  [██████████]  100%   ✅  pure, fail-loud pipeline
+   Position Models            [██████████]  100%   ✅  QB·RB·WR·TE·DT·DE·LB·CB·S·K  — 10 / 10 calibrated
+   Asset Rankings Board (M1)  [██████████]  100%   ✅  real 32-team board, live re-rank on tune
+   Salary Ledger (cutover)    [██████████]  100%   ✅  per-year cells = sole cap truth, append-only
+   Transaction Rulebook       [██████████]  100%   ✅  trades · §8–§14 contract ops · §6 free agency v1
+   War-Room Modules (M2–M8)   [█░░░░░░░░░]   ~10%   ▸   power rankings · matchups · trade analyzer · commish
+   Admin / Calibration UIs    [██░░░░░░░░]   ~20%   ▸   engine tuning + governance surfaces
+
+   ────────────────────────────────────────────────────────────────────────────────────────────
+   OVERALL   [███████████████████████░░░░░]   ~30 / 38 sessions   ·   ~80%   ·   into the final quarter
+```
+
+| Layer | Milestone | Status |
+|:--|:--|:--:|
+| 🏗️ | **Foundation** — Go · Wails · React · SQLite WAL, compiler-enforced architecture | ✅ Shipped |
+| 🛰️ | **Multi-block pipeline** — MFL transport → ingestion → normalize, live vs the real league | ✅ Shipped |
+| 🗄️ | **Logic stores** — rulebook · state · params · **immutable output** | ✅ Shipped |
+| ⚙️ | **The engine** — six-layer pure-function scoring pipeline | ✅ Shipped |
+| 🧠 | **Position models** — **all 10 calibrated and scoring** | ✅ Shipped |
+| 📊 | **Asset Rankings (M1)** — all 32 rosters ranked on screen from real data | ✅ Shipped |
+| 📒 | **The salary ledger** — per-year cells, sole cap truth, append-only audit trail | ✅ Shipped |
+| 🔧 | **Transaction rulebook** — atomic trades, §8–§14 contract ops, **§6 free agency v1** | ✅ Shipped |
+| 🖥️ | **War-room modules (M2–M8)** — the views that turn scores into calls | ▸ The back half |
+| 🎛️ | **Admin / calibration UIs** — tune the engine, govern the rules | ▸ Ahead |
+
+📋 Full session-by-session ledger: **[`docs/build-handoffs/Build_Tracker.md`](docs/build-handoffs/Build_Tracker.md)** — *the engine and the entire contract rulebook are done; what remains is the front-end that surfaces them.*
+
+---
+
 ## 🏛️ 4 · The War Room Architecture
 
 A multi-block system design where the boundaries aren't conventions — they're **compiler-enforced law**. A violation is a *build failure*, not a code-review note.
