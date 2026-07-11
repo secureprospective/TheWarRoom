@@ -64,6 +64,13 @@ type RawPlayer struct {
 	// rows legitimately lack it (M1 recon: 6 of 1232 rostered). The consumer (M1
 	// age derivation) owns the absent-birthdate policy; the fetcher passes it raw.
 	Birthdate string
+	// DraftYear is the raw draft-year string DETAILS=1 adds ("2020"), the source for
+	// the §6 free-agency min-salary floor (experience = season − draft year). MFL
+	// sends the field for every player but uses sentinels for the undrafted/unknown —
+	// "0" and its epoch placeholder "1970" — so a present value is NOT necessarily a
+	// real draft year. The consumer (the §6 signing handler) owns the sentinel /
+	// plausibility policy; the fetcher passes it raw.
+	DraftYear string
 }
 
 // Validate checks the raw record's SHAPE before anything downstream runs. It does
@@ -87,6 +94,13 @@ func (p RawPlayer) Validate() error {
 			return fmt.Errorf("players: record %s (%q) non-numeric birthdate %q: %w", p.ID, p.Name, p.Birthdate, err)
 		}
 	}
+	// A PRESENT draft year must be a parseable integer; absent is legitimate and the
+	// "0"/"1970" sentinels are numeric (the consumer judges plausibility, not here).
+	if dy := strings.TrimSpace(p.DraftYear); dy != "" {
+		if _, err := strconv.Atoi(dy); err != nil {
+			return fmt.Errorf("players: record %s (%q) non-numeric draft year %q: %w", p.ID, p.Name, p.DraftYear, err)
+		}
+	}
 	return nil
 }
 
@@ -107,7 +121,8 @@ type playerBlock struct {
 	Position  string `json:"position"`
 	Team      string `json:"team"`
 	Status    string `json:"status"`
-	Birthdate string `json:"birthdate"` // epoch seconds; present only with DETAILS=1
+	Birthdate string `json:"birthdate"`  // epoch seconds; present only with DETAILS=1
+	DraftYear string `json:"draft_year"` // draft year; present with DETAILS=1 ("0"/"1970" = undrafted sentinel)
 }
 
 // Fetch retrieves the league's player database for the given season+league and

@@ -106,9 +106,9 @@ func TestNewLookup_CanonicalizesAndDerivesRookie(t *testing.T) {
 // resolution, canonical-id matching, and the aggregate/unknown → ok=false rule.
 func TestFacts(t *testing.T) {
 	lk, err := NewLookup([]players.RawPlayer{
-		{ID: "0099", Name: "Young, Bryce", Position: "QB", Team: "CAR", Birthdate: "996642000"},
-		{ID: "0816", Name: "Gosnell, Created", Position: "WR", Team: "FA"}, // commissioner-created: no birthdate
-		{ID: "0200", Name: "", Position: "TMQB", Team: "FA"},               // aggregate
+		{ID: "0099", Name: "Young, Bryce", Position: "QB", Team: "CAR", Birthdate: "996642000", DraftYear: "2023"},
+		{ID: "0816", Name: "Gosnell, Created", Position: "WR", Team: "FA", DraftYear: "0"}, // commissioner-created: no birthdate, "0" undrafted sentinel
+		{ID: "0200", Name: "", Position: "TMQB", Team: "FA"},                               // aggregate
 	})
 	if err != nil {
 		t.Fatalf("NewLookup: %v", err)
@@ -118,9 +118,15 @@ func TestFacts(t *testing.T) {
 	if !ok || f.Name != "Young, Bryce" || !f.HasBirthdate || f.Birthdate != 996642000 {
 		t.Fatalf("Facts(99) = %+v ok=%v, want Young w/ birthdate 996642000", f, ok)
 	}
+	if !f.HasDraftYear || f.DraftYear != 2023 {
+		t.Fatalf("Facts(99) draft year = %d has=%v, want 2023 present", f.DraftYear, f.HasDraftYear)
+	}
 	created, ok := lk.Facts("0816")
 	if !ok || created.HasBirthdate {
 		t.Fatalf("Facts(0816) = %+v ok=%v, want present with HasBirthdate=false", created, ok)
+	}
+	if created.HasDraftYear { // "0" is the undrafted sentinel → dropped at typing
+		t.Fatalf("Facts(0816) draft year = %d has=%v, want HasDraftYear=false (sentinel \"0\")", created.DraftYear, created.HasDraftYear)
 	}
 	if _, ok := lk.Facts("0200"); ok {
 		t.Fatal("Facts(0200) should be ok=false for a team aggregate")
@@ -138,5 +144,16 @@ func TestNewLookup_MalformedBirthdateFailsLoud(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("NewLookup should error on a non-epoch birthdate, got nil")
+	}
+}
+
+// TestNewLookup_MalformedDraftYearFailsLoud proves a corrupt DETAILS=1 draft year cannot ride into
+// the typed lookup (the fetcher validates too — defense in depth).
+func TestNewLookup_MalformedDraftYearFailsLoud(t *testing.T) {
+	_, err := NewLookup([]players.RawPlayer{
+		{ID: "0099", Name: "Young, Bryce", Position: "QB", Team: "CAR", DraftYear: "twenty-twenty"},
+	})
+	if err == nil {
+		t.Fatal("NewLookup should error on a non-numeric draft year, got nil")
 	}
 }

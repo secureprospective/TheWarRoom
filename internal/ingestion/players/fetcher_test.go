@@ -29,6 +29,12 @@ func TestRawPlayer_Validate(t *testing.T) {
 		{"absent birthdate tolerated", func(p *RawPlayer) { p.Birthdate = "" }, false},
 		{"valid epoch birthdate", func(p *RawPlayer) { p.Birthdate = "239432400" }, false},
 		{"non-numeric birthdate", func(p *RawPlayer) { p.Birthdate = "1979-08-03" }, true},
+		// DraftYear (DETAILS=1): absent is legitimate; a present value must parse as an integer
+		// (the "0"/"1970" undrafted sentinels are numeric and pass — the consumer judges them).
+		{"absent draft year tolerated", func(p *RawPlayer) { p.DraftYear = "" }, false},
+		{"valid draft year", func(p *RawPlayer) { p.DraftYear = "2020" }, false},
+		{"undrafted sentinel tolerated", func(p *RawPlayer) { p.DraftYear = "0" }, false},
+		{"non-numeric draft year", func(p *RawPlayer) { p.DraftYear = "rookie" }, true},
 	}
 
 	for _, tt := range tests {
@@ -47,7 +53,7 @@ func TestRawPlayer_Validate(t *testing.T) {
 // raw passthrough of position codes / rookie status.
 func TestDecode_RealShape(t *testing.T) {
 	const body = `{"players":{"timestamp":"1750000000","player":[` +
-		`{"id":"0531","name":"Mahomes, Patrick","position":"QB","team":"KCC","birthdate":"495176400"},` +
+		`{"id":"0531","name":"Mahomes, Patrick","position":"QB","team":"KCC","birthdate":"495176400","draft_year":"2017"},` +
 		`{"id":"15283","name":"Moore, Rondale","position":"XX","team":"MIN"},` +
 		`{"id":"14999","name":"Rookie, Some","position":"WR","team":"FA","status":"R"}` +
 		`]}}`
@@ -69,8 +75,14 @@ func TestDecode_RealShape(t *testing.T) {
 	if got[0].Birthdate != "495176400" {
 		t.Fatalf("player 0 birthdate not mapped raw: %+v", got[0])
 	}
+	if got[0].DraftYear != "2017" { // DETAILS draft_year mapped raw
+		t.Fatalf("player 0 draft year not mapped raw: %+v", got[0])
+	}
 	if got[1].Birthdate != "" { // no DETAILS field on this record → stays absent
 		t.Fatalf("player 1 birthdate should be absent: %+v", got[1])
+	}
+	if got[1].DraftYear != "" { // no DETAILS field on this record → stays absent
+		t.Fatalf("player 1 draft year should be absent: %+v", got[1])
 	}
 	if got[1].Position != "XX" { // raw code preserved, not flagged here
 		t.Fatalf("player 1 position not raw: %+v", got[1])

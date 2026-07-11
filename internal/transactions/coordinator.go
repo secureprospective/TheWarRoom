@@ -123,3 +123,23 @@ func (c *Coordinator) ExecuteExtension(ctx context.Context, mflID string, addedY
 	}
 	return c.Execute(ctx, Extension{MFLID: mflID, AddedYears: addedYears, floor: floor})
 }
+
+// ExecuteSign runs a §6 free-agency signing. It resolves the player's DRAFT YEAR here — the
+// experience source for the §6 min-salary floor — from the supplied Directory (the players-DB
+// join), stamps it on the unexported request fields, and delegates to Execute, which derives
+// experience against the authoritative in-tx season and enforces the floor. Only the id, salary,
+// and year count crossed the IPC boundary; the draft year is resolved server-side. Unlike a tag or
+// extension the signee is NOT rostered, so there is no roster lookup — eligibility (must be a
+// signable free agent) is judged against status events inside the tx. A player absent from the
+// players DB (commissioner-created) or carrying no real draft year keeps hasDraftYear=false, so the
+// handler applies the rookie floor (Christopher's missing-draft-data → rookie-floor ruling). The
+// Directory is passed per-call because the app builds its players-DB Lookup lazily.
+func (c *Coordinator) ExecuteSign(ctx context.Context, sign Sign, dir Directory) (Receipt, error) {
+	if dir == nil {
+		return Receipt{}, fmt.Errorf("transactions: sign %q: nil directory (draft-year join required for the §6 min-salary floor)", sign.MFLID)
+	}
+	if facts, ok := dir.Facts(sign.MFLID); ok && facts.HasDraftYear {
+		sign.draftYear, sign.hasDraftYear = facts.DraftYear, true
+	}
+	return c.Execute(ctx, sign)
+}

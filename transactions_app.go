@@ -106,6 +106,13 @@ func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
 		return TransactionResult{Detail: err.Error()}
 	}
 
+	// SIGN (§6) runs a distinct Coordinator verb: the min-salary floor's experience input is the
+	// player's DRAFT YEAR, resolved server-side from the players-DB join (the Lookup). Only the id,
+	// salary, and year count crossed the wire — the draft year never does.
+	if sign, ok := txn.(transactions.Sign); ok {
+		return a.executeSign(ctx, req.Kind, sign)
+	}
+
 	rec, err := a.coordinator.Execute(ctx, txn)
 	if err != nil {
 		return TransactionResult{Kind: req.Kind, Detail: err.Error()}
@@ -116,6 +123,22 @@ func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
 		PlayersAffected: rec.PlayersAffected,
 		At:              rec.At.Format(time.RFC3339),
 	}
+}
+
+// executeSign resolves the players-DB Lookup (the §6 draft-year → experience source for the
+// min-salary floor) and runs the signing through the Coordinator's ExecuteSign verb. Split out of
+// ExecuteTransaction to keep that dispatcher within the funlen cap, mirroring the tag/extension
+// directory-backed verbs.
+func (a *App) executeSign(ctx context.Context, kind string, sign transactions.Sign) TransactionResult {
+	dir, derr := a.directory(ctx)
+	if derr != nil {
+		return TransactionResult{Kind: kind, Detail: "resolve players DB for the §6 min-salary floor: " + derr.Error()}
+	}
+	rec, terr := a.coordinator.ExecuteSign(ctx, sign, dir)
+	if terr != nil {
+		return TransactionResult{Kind: kind, Detail: terr.Error()}
+	}
+	return TransactionResult{OK: true, Kind: string(rec.Kind), PlayersAffected: rec.PlayersAffected, At: rec.At.Format(time.RFC3339)}
 }
 
 // FranchisePlayerDTO is one player's live state as the dev surface renders it.

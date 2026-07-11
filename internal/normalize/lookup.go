@@ -32,6 +32,8 @@ type lookupEntry struct {
 	isRookie     bool
 	birthdate    int64 // epoch seconds, valid only when hasBirthdate
 	hasBirthdate bool  // MFL DETAILS=1 birthdate present (commissioner-created players lack it)
+	draftYear    int   // MFL DETAILS=1 draft year, valid only when hasDraftYear
+	hasDraftYear bool  // a REAL draft year is present (the "0" undrafted sentinel is dropped here)
 }
 
 // Lookup is the players database keyed by canonical player id (playerid form), the
@@ -94,6 +96,18 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 			}
 			entry.birthdate, entry.hasBirthdate = v, true
 		}
+		// Draft year (DETAILS=1) is typed HERE. MFL sends "0" for the undrafted/unknown — a
+		// non-year — so only a positive value is a candidate draft year; its season-relative
+		// plausibility (MFL's "1970" epoch placeholder, future years) is the §6 consumer's policy.
+		if dy := strings.TrimSpace(rp.DraftYear); dy != "" {
+			v, perr := strconv.Atoi(dy)
+			if perr != nil {
+				return Lookup{}, fmt.Errorf("normalize: players id %q draft year %q: %w", rp.ID, rp.DraftYear, perr)
+			}
+			if v > 0 {
+				entry.draftYear, entry.hasDraftYear = v, true
+			}
+		}
 		byID[id.String()] = entry
 	}
 	return Lookup{byID: byID}, nil
@@ -110,6 +124,8 @@ type PlayerFacts struct {
 	IsRookie     bool
 	Birthdate    int64 // epoch seconds, valid only when HasBirthdate
 	HasBirthdate bool
+	DraftYear    int  // MFL draft year, valid only when HasDraftYear; the §6 experience source
+	HasDraftYear bool // a real (positive) draft year is present — undrafted/created players lack it
 }
 
 // Facts resolves one canonical player id to its players-DB facts. ok is false when
@@ -130,6 +146,8 @@ func (l Lookup) Facts(id string) (PlayerFacts, bool) {
 		IsRookie:     e.isRookie,
 		Birthdate:    e.birthdate,
 		HasBirthdate: e.hasBirthdate,
+		DraftYear:    e.draftYear,
+		HasDraftYear: e.hasDraftYear,
 	}, true
 }
 
