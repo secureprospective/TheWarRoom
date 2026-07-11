@@ -22,6 +22,7 @@ const (
 	KindRestructure  Kind = "RESTRUCTURE"
 	KindTag          Kind = "TAG"
 	KindExtension    Kind = "EXTENSION"
+	KindBuyout       Kind = "BUYOUT"
 	KindAdvancePhase Kind = "ADVANCE_PHASE"
 )
 
@@ -242,6 +243,35 @@ func (e Extension) validate() error {
 func (e Extension) apply(ctx context.Context, w state.TxWriter) (int, error) {
 	if err := contracts.Extend(ctx, w, e.MFLID, e.AddedYears, e.floor); err != nil {
 		return 0, fmt.Errorf("extension: %w", err)
+	}
+	return 1, nil
+}
+
+// Buyout executes a §12 contract buyout: the franchise releases the player and owes a §12
+// dead-cap charge (rate by years remaining — 60/75/90% for 2/3/4 — times his average remaining
+// salary) against the current season's cap. It is OFFSEASON-only (the Coordinator phase gate)
+// and capped at two per franchise per season (transaction_counts, op_kind "BUYOUT"). Every money
+// figure and the remaining-year count are resolved from authoritative state inside apply; the
+// request carries only the player id.
+type Buyout struct {
+	MFLID string
+}
+
+func (Buyout) Kind() Kind { return KindBuyout }
+func (Buyout) sealed()    {}
+
+// validate rejects only an empty player id here; roster membership, the §12 rate/charge, the
+// 2..4-remaining-year range, and the per-season limit are all resolved against real state in apply.
+func (b Buyout) validate() error {
+	if strings.TrimSpace(b.MFLID) == "" {
+		return fmt.Errorf("transactions: buyout has an empty player id")
+	}
+	return nil
+}
+
+func (b Buyout) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if _, err := deadcap.Buyout(ctx, w, b.MFLID); err != nil {
+		return 0, fmt.Errorf("buyout: %w", err)
 	}
 	return 1, nil
 }

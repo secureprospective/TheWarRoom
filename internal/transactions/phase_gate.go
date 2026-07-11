@@ -28,6 +28,9 @@ func phasePolicy(kind Kind) ([]domain.Phase, bool) {
 	switch kind {
 	case KindTrade, KindRosterStatus, KindWaiver, KindRestructure, KindTag, KindExtension, KindAdvancePhase:
 		return allPhases(), true
+	case KindBuyout:
+		// §12: buyouts are OFFSEASON-only. This is the one phase-restricted op in v1.
+		return []domain.Phase{domain.PhaseOffseason}, true
 	default:
 		return nil, false
 	}
