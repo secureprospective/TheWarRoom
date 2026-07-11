@@ -185,47 +185,7 @@ A multi-block system design where the boundaries aren't conventions — they're 
 
 ---
 
-## 🛠️ 5 · Getting Started
-
-**Prerequisites:** Go `1.26+` · Node + `pnpm` · the [Wails v2 CLI](https://wails.io/docs/gettingstarted/installation) · a WebKit runtime (`webkit2gtk` on Linux) · a MyFantasyLeague league id + API credentials.
-
-```bash
-# 1 · Clone the war room
-git clone https://github.com/secureprospective/TheWarRoom.git
-cd TheWarRoom
-
-# 2 · Pull the Go module graph + the frontend deps
-go mod download
-cd frontend && pnpm install && cd ..
-
-# 3 · Configure ingestion (league id, MFL API host, season)
-#     nothing leaves your machine — this is a local-first system of record
-#     see docs/ for the ingestion parameters
-
-# 4 · Fire it up in dev (hot-reload UI + Go backend)
-wails dev
-
-# 5 · …or build the native desktop binary
-wails build
-./build/bin/thewarroom
-```
-
-**Verify the backend without the GUI** — the headless startup probe runs the real store-floor init chain (db.Open → params → rulebook → state → transactions → output), each step timed and timeout-bounded, so a hang or corruption surfaces instantly:
-
-```bash
-./build/bin/thewarroom -probe
-```
-
-**Quality gates** (every commit passes these — no `--no-verify`, ever):
-
-```bash
-GOMEMLIMIT=3000MiB GOGC=40 make lint     # golangci-lint + ifaceguard + filelen(400)
-go test -race ./...                       # -race is non-negotiable
-```
-
----
-
-## 🗺️ 6 · The Draft Board — Roadmap
+## 🗺️ 5 · The Draft Board — Roadmap
 
 The engine is the hard part, and the engine is **done**. What's ahead is the payoff — each capability a new *view* onto a score and a ledger that already exist.
 
@@ -266,6 +226,20 @@ One human holds the vision and the veto. A council of AIs does the rest, each in
 | 🦅 | **Ornith** *(local — the heir)* | Runs on hardware **in the room**. Today it takes the work that stays home; **it is being trained for the job it will one day hold outright — the daily maintainer of this codebase once TheWarRoom goes enterprise.** Every review it shadows, every lesson it logs, is an apprenticeship. The plan is a self-hosted system of record maintained by a model that never leaves the building. |
 
 > **Ornith is not the junior seat — it's the succession plan.** GLM, Gemini, and DeepSeek sharpen the code today; Ornith is learning to *own* it tomorrow. When this goes enterprise, the maintainer is already home.
+
+---
+
+## 📜 License & Ownership
+
+**TheWarRoom is source-available, not open-source — free to run and tinker with, never to sell.**
+
+- 🆓 **Free forever for non-commercial use** — released under the [**PolyForm Noncommercial License 1.0.0**](LICENSE). Run it, fork it, self-host it, study it, share it. Homelabbers and hobbyists: this is yours to play with.
+- 🏛️ **Owned, in full, by SecureProspective LLC** (Texas) — all rights reserved. Copyright never leaves the owner.
+- 🙏 **Tech Freedom Ministries holds a perpetual, irrevocable, free-use grant** — including commercial use — that **survives any change of ownership.** TFM is the inspiration for this project; its rights are permanent and cannot be altered by any future buyer. See [`docs/licensing/TFM-Grant.md`](docs/licensing/TFM-Grant.md).
+- 💼 **Commercial use and sale are reserved to SecureProspective.** Want to use TheWarRoom commercially? [Contact SecureProspective](https://secureprospective.com) for terms.
+- 🤝 **Contributions welcome** — by contributing you agree to the [Contributor License Agreement](CLA.md), which keeps ownership consolidated with SecureProspective while you keep the copyright to your own work. Start with [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+> 📖 The whole licensing picture in plain English: [`docs/licensing/README-license-summary.md`](docs/licensing/README-license-summary.md).
 
 ---
 
