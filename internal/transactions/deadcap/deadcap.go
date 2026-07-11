@@ -80,7 +80,7 @@ func Waive(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapEn
 	// restructure it is the reduced cap hit, the right base for the dead-cap charge.
 	charge := Charge(ps.CapSalary, remaining, ps.IsRestructured, false)
 
-	if err := w.ReleasePlayer(ctx, mflID); err != nil {
+	if err := w.ReleasePlayer(ctx, mflID, domain.PlayerFreeAgent, waiverReason); err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: release %q: %w", mflID, err)
 	}
 	entry := state.DeadCapEntry{

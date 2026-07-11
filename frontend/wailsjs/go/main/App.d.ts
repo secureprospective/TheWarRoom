@@ -8,6 +8,8 @@ export function GetCurrentPhase():Promise<main.PhaseResult>;
 
 export function GetFranchiseState(arg1:string):Promise<main.FranchiseStateResult>;
 
+export function GetFreeAgents():Promise<main.FreeAgentsResult>;
+
 export function GetParams():Promise<main.ParamsResult>;
 
 export function GetRankings():Promise<main.RankingsResult>;

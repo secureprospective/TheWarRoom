@@ -194,6 +194,15 @@ VALUES (?, ?, ?, ?, ?, '', ?)`,
 		w.s.leagueID, next, string(domain.PhasePlayoffs), string(domain.PhaseOffseason), note, now); err != nil {
 		return fmt.Errorf("state: RolloverSeason: append transition %d→%d: %w", cur, next, err)
 	}
+	// UFA promotion (§14, Free_Agency_Design): release every player whose contract has no PAID
+	// cell for the upcoming season `next` into the free-agent pool, at $0 dead cap (expiry ≠ cut).
+	// It runs BEFORE the snapshot advance below — while roster rows still carry season `cur`, so
+	// ReleasePlayer's season-scoped delete (bound to w.s.season == cur, unchanged until load()
+	// re-derives post-commit) matches — but "expired" is judged against `next`. The survivors are
+	// what the advance then carries forward. Ordering is the panel's Q2 must-get-right.
+	if err := w.promoteExpiredContracts(ctx, next); err != nil {
+		return fmt.Errorf("state: RolloverSeason: promote expired: %w", err)
+	}
 	// Advance the mutable snapshot to N+1 (rosters + contracts are runtime state, not append-only).
 	if _, err := w.tx.ExecContext(ctx,
 		`UPDATE rosters SET season = ? WHERE league_id = ? AND season = ?`, next, w.s.leagueID, cur); err != nil {
@@ -204,6 +213,62 @@ VALUES (?, ?, ?, ?, ?, '', ?)`,
 		return fmt.Errorf("state: RolloverSeason: advance contract snapshot: %w", err)
 	}
 	return nil
+}
+
+// ufaExpiryReason is the audit string on the §14 rollover UFA-expiry status event.
+const ufaExpiryReason = "ufa-expiry §14"
+
+// promoteExpiredContracts releases every rostered player whose contract has no PAID cell for the
+// UPCOMING season `next` into the free-agent pool (status FREE_AGENT) at $0 dead cap — an expired
+// contract is an expiry, not a cut, so no dead-cap charge is written. Called ONLY from
+// RolloverSeason, BEFORE the roster/contract snapshot advance: roster rows still carry the current
+// season (matching ReleasePlayer's season-scoped delete), while "expired" is evaluated against
+// `next` (the PAID-cell existence check). The roster cursor is fully drained and closed BEFORE any
+// ReleasePlayer write — one tx shares one SQLite connection, so a read cursor must not overlap the
+// writes. A player with a PAID cell in year >= next survives and is advanced by the caller.
+func (w *txWriter) promoteExpiredContracts(ctx context.Context, next int) error {
+	expired, err := w.readExpiredRosterIDs(ctx, next)
+	if err != nil {
+		return err
+	}
+	for _, id := range expired {
+		if rerr := w.ReleasePlayer(ctx, id, domain.PlayerFreeAgent, ufaExpiryReason); rerr != nil {
+			return fmt.Errorf("state: promoteExpiredContracts: release %q: %w", id, rerr)
+		}
+	}
+	return nil
+}
+
+// readExpiredRosterIDs drains the mfl ids of every current-season roster player with no PAID cell
+// for `next` (the upcoming season) — the expired contracts — and closes the cursor before
+// returning, so the caller's ReleasePlayer writes never overlap an open read on the shared
+// connection.
+func (w *txWriter) readExpiredRosterIDs(ctx context.Context, next int) ([]string, error) {
+	rows, err := w.tx.QueryContext(ctx, `
+SELECT r.mfl_id FROM rosters r
+WHERE r.league_id = ? AND r.season = ?
+  AND NOT EXISTS (
+	SELECT 1 FROM contract_years cy
+	WHERE cy.league_id = r.league_id AND cy.mfl_id = r.mfl_id
+	  AND cy.year_status = ? AND cy.league_year >= ?
+  )
+ORDER BY r.mfl_id`, w.s.leagueID, w.s.season, yearStatusPaid, next)
+	if err != nil {
+		return nil, fmt.Errorf("state: promoteExpiredContracts: read: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var expired []string
+	for rows.Next() {
+		var id string
+		if serr := rows.Scan(&id); serr != nil {
+			return nil, fmt.Errorf("state: promoteExpiredContracts: scan: %w", serr)
+		}
+		expired = append(expired, id)
+	}
+	if ierr := rows.Err(); ierr != nil {
+		return nil, fmt.Errorf("state: promoteExpiredContracts: iterate: %w", ierr)
+	}
+	return expired, nil
 }
 
 // CurrentPhase returns the league-year's current season phase — the latest transition's

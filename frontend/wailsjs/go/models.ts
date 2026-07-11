@@ -226,6 +226,22 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class FreeAgentsResult {
+	    ok: boolean;
+	    mflIDs: string[];
+	    detail: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new FreeAgentsResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.mflIDs = source["mflIDs"];
+	        this.detail = source["detail"];
+	    }
+	}
 	export class MoveDTO {
 	    mflID: string;
 	    toFranchiseID: string;
@@ -484,7 +500,9 @@ export namespace main {
 	    franchiseID: string;
 	    amountMillions: string;
 	    reason: string;
-
+	    salaryMillions: string;
+	    years: number;
+	
 	    static createFrom(source: any = {}) {
 	        return new TransactionRequest(source);
 	    }
@@ -502,6 +520,8 @@ export namespace main {
 	        this.franchiseID = source["franchiseID"];
 	        this.amountMillions = source["amountMillions"];
 	        this.reason = source["reason"];
+	        this.salaryMillions = source["salaryMillions"];
+	        this.years = source["years"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

@@ -8,8 +8,10 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
-// buyoutReason is the audit string on every §12 dead-cap ledger row.
-const buyoutReason = "buyout §12"
+// BuyoutReason is the audit string on every §12 dead-cap ledger row. Exported because the
+// free-agency SIGN handler derives the §12 "no re-bid until the following offseason" lockout from
+// the presence of a dead_cap row carrying this reason (Free_Agency_Design Q3).
+const BuyoutReason = "buyout §12"
 
 // buyoutOpKind is the transaction_counts op_kind for the §12 per-season buyout limit.
 const buyoutOpKind = "BUYOUT"
@@ -105,7 +107,7 @@ func Buyout(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapE
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: buyout %q: %d remaining year(s) is outside §12's 2..4 range — route to the §13 commissioner cap-relief path", mflID, remaining)
 	}
 
-	if err := w.ReleasePlayer(ctx, mflID); err != nil {
+	if err := w.ReleasePlayer(ctx, mflID, domain.PlayerFreeAgent, BuyoutReason); err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: buyout %q: release: %w", mflID, err)
 	}
 	entry := state.DeadCapEntry{
@@ -113,12 +115,12 @@ func Buyout(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapE
 		MFLID:       mflID,
 		LeagueYear:  w.Season(),
 		DeadCap:     charge,
-		Reason:      buyoutReason,
+		Reason:      BuyoutReason,
 	}
 	if err := w.AddDeadCap(ctx, entry); err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: buyout %q: charge: %w", mflID, err)
 	}
-	reason := fmt.Sprintf("%s: contract bought out, dead cap %s", buyoutReason, charge)
+	reason := fmt.Sprintf("%s: contract bought out, dead cap %s", BuyoutReason, charge)
 	if err := w.VoidCells(ctx, mflID, reason); err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: buyout %q: void cells: %w", mflID, err)
 	}

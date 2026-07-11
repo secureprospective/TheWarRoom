@@ -220,11 +220,14 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 	return requireOneRow(res, e.MFLID)
 }
 
-// ReleasePlayer deletes a player's rosters + contracts rows in the shared tx — the
-// roster side of a §8 cut. requireOneRow on each delete fails loud if memory and the DB
-// disagree (drift). The dead-cap charge is a separate AddDeadCap call in the same tx, so
-// the cut and its penalty commit atomically.
-func (w *txWriter) ReleasePlayer(ctx context.Context, mflID string) error {
+// ReleasePlayer deletes a player's rosters + contracts rows in the shared tx AND records his
+// destination availability status — the roster side of a §8 cut and the shared removal path for
+// buyout/retirement/death/rollover-expiry. requireOneRow on each delete fails loud if memory and
+// the DB disagree (drift). The dead-cap charge (when any) is a separate AddDeadCap call in the
+// same tx, so the removal and its penalty commit atomically. The status event is written LAST so
+// a removal always carries the marker (the enforced chokepoint) — it commits or rolls back with
+// the deletes. Fails loud on an unknown player, an invalid status, or an empty reason.
+func (w *txWriter) ReleasePlayer(ctx context.Context, mflID string, status domain.PlayerStatus, reason string) error {
 	if !w.s.exists(mflID) {
 		return fmt.Errorf("state: ReleasePlayer %q: %w", mflID, errUnknownPlayer)
 	}
@@ -232,8 +235,11 @@ func (w *txWriter) ReleasePlayer(ctx context.Context, mflID string) error {
 		`DELETE FROM contracts WHERE league_id = ? AND season = ? AND mfl_id = ?`, mflID); err != nil {
 		return err
 	}
-	return w.s.execPlayer(ctx, w.tx,
-		`DELETE FROM rosters WHERE league_id = ? AND season = ? AND mfl_id = ?`, mflID)
+	if err := w.s.execPlayer(ctx, w.tx,
+		`DELETE FROM rosters WHERE league_id = ? AND season = ? AND mfl_id = ?`, mflID); err != nil {
+		return err
+	}
+	return w.RecordStatus(ctx, mflID, status, reason)
 }
 
 // Player exposes the store's current-snapshot read to a handler inside the tx.

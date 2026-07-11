@@ -94,11 +94,15 @@ type TxWriter interface {
 	// subtracts it. Fails loud on a non-positive amount or a missing field.
 	AddCapRelief(ctx context.Context, e CapReliefEntry) error
 	// ReleasePlayer removes a player from his franchise entirely (deletes the rosters +
-	// contracts rows) — the roster side of a §8 waiver cut. His salary leaves CapUsed;
-	// the dead-cap charge is recorded separately via AddDeadCap. Fails loud on an unknown
-	// player. There is no undo — a release is terminal (the player re-enters via free
-	// agency, a later build).
-	ReleasePlayer(ctx context.Context, mflID string) error
+	// contracts rows) AND records where he went via a mandatory player-status event — the
+	// roster side of a §8 waiver cut, and the shared removal path for buyout (§12), retirement
+	// and death (§13), and the §14 rollover UFA-expiry. His salary leaves CapUsed; any dead-cap
+	// charge is recorded separately via AddDeadCap. The status param is the ENFORCED chokepoint
+	// (expert-panel top risk): every removal MUST declare the player's destination status
+	// (FREE_AGENT / RETIRED / DECEASED) so a removed player is never left unfindable. Fails loud
+	// on an unknown player, an invalid status, or an empty reason. There is no undo — a release
+	// is terminal; a FREE_AGENT re-enters a roster only via a SIGN.
+	ReleasePlayer(ctx context.Context, mflID string, status domain.PlayerStatus, reason string) error
 
 	// Player reads a player's CURRENT state (the pre-transaction snapshot) so a handler
 	// can compute new terms — e.g. the §8 dead-cap charge reads salary/expiration/
@@ -114,6 +118,40 @@ type TxWriter interface {
 	// per-season op counters, and the current phase). Embedded so TxWriter stays within the
 	// interfacebloat cap — the same grouping device as LedgerWriter.
 	SeasonScope
+	// StatusWriter carries the free-agency pool's availability surface (record a status event,
+	// read the current status). Embedded so TxWriter stays within the interfacebloat cap — the
+	// same grouping device as LedgerWriter / SeasonScope.
+	StatusWriter
+}
+
+// StatusWriter is the free-agency pool's availability surface — the player-status primitives.
+// A removed player's destination (FREE_AGENT / RETIRED / DECEASED) is recorded as an append-only
+// event; the current status is the latest event. It is embedded in TxWriter so the pool ops group
+// under one member of that interface (the interfacebloat cap). The store owns the mechanics
+// (append-only, immutable, latest-row read); the rule of which status a given release maps to is
+// the handler's (a cut/expiry → FREE_AGENT, retirement → RETIRED, death → DECEASED).
+type StatusWriter interface {
+	// RecordStatus appends one availability event for a player in the shared tx. Called by
+	// ReleasePlayer (the enforced chokepoint) so no removal path can forget it. Fails loud on an
+	// unknown status or an empty reason.
+	RecordStatus(ctx context.Context, mflID string, status domain.PlayerStatus, reason string) error
+	// CurrentStatus returns a player's latest availability status and whether any event exists.
+	// It reflects COMMITTED state (a prior release), which the single-writer law makes race-free
+	// — the SIGN eligibility gate reads the status as it stood before the op. found=false means
+	// the player was never released (rostered or unknown). Fails loud on a stored non-status.
+	CurrentStatus(ctx context.Context, mflID string) (domain.PlayerStatus, bool, error)
+	// SignContract rosters a free agent on a NEW flat contract (the SIGN write primitive): it
+	// clears the player's prior cells (logged), inserts the roster+contract parent rows, and lays
+	// `years` contiguous PAID cells at the current season onward plus one trailing UFA slot, each
+	// tagged `source`. The rule math (eligibility, min-salary floor, 1..4 years, lockout) is the
+	// handler's, already resolved into the args. Fails loud on years < 1, a negative salary, or a
+	// player already on a roster.
+	SignContract(ctx context.Context, mflID, franchiseID string, salary domain.Money, years int, source, reason string) error
+	// ActiveBuyoutLockout reports whether a buyout lockout is still active for the player — a
+	// dead_cap_ledger row with `reason` whose league_year >= season (§12 "cannot bid on a
+	// bought-out player until the following offseason"). Derived, zero new writes. The reason is
+	// passed in so the store stays agnostic to the deadcap package's audit string.
+	ActiveBuyoutLockout(ctx context.Context, mflID, reason string, season int) (bool, error)
 }
 
 // SeasonScope is the season-scoped bookkeeping surface: the absolute league year, the durable

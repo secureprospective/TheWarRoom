@@ -37,6 +37,10 @@ type TransactionRequest struct {
 	FranchiseID    string `json:"franchiseID"`
 	AmountMillions string `json:"amountMillions"`
 	Reason         string `json:"reason"`
+	// SIGN (§6 free agency): MFLID + FranchiseID + SalaryMillions (per-year flat, parsed to exact
+	// cents server-side) + Years (1..4). Eligibility, lockout, and the min-salary floor resolve in-tx.
+	SalaryMillions string `json:"salaryMillions"`
+	Years          int    `json:"years"`
 }
 
 // TransactionResult is the typed IPC outcome: OK plus the committed Receipt fields, or
@@ -191,6 +195,32 @@ func (a *App) GetCurrentPhase() PhaseResult {
 	return PhaseResult{OK: true, Phase: string(ph)}
 }
 
+// FreeAgentsResult is a read of the free-agent pool — the mfl ids of players whose latest status
+// is FREE_AGENT and who are on no roster (the signable set). Backs the dev SIGN control.
+type FreeAgentsResult struct {
+	OK     bool     `json:"ok"`
+	MFLIDs []string `json:"mflIDs"`
+	Detail string   `json:"detail"`
+}
+
+// GetFreeAgents reads the free-agency pool off the concrete store (a read-only query, never the
+// writer). Backs the dev control that lists signable free agents and drives a SIGN.
+func (a *App) GetFreeAgents() FreeAgentsResult {
+	if a.startupErr != nil {
+		return FreeAgentsResult{Detail: a.startupErr.Error()}
+	}
+	if a.state == nil {
+		return FreeAgentsResult{Detail: "state store not initialized"}
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
+	defer cancel()
+	ids, err := a.state.FreeAgents(ctx)
+	if err != nil {
+		return FreeAgentsResult{Detail: err.Error()}
+	}
+	return FreeAgentsResult{OK: true, MFLIDs: ids}
+}
+
 // buildRequest maps the wire DTO onto a sealed transactions.Request. An unknown Kind is
 // rejected here, at the boundary, before the Coordinator is touched.
 func buildRequest(req TransactionRequest) (transactions.Request, error) {
@@ -223,21 +253,39 @@ func buildRequest(req TransactionRequest) (transactions.Request, error) {
 	case string(transactions.KindDeath):
 		// §13 Gaines Adams Rule: remove with zero dead cap.
 		return transactions.Death{MFLID: req.MFLID}, nil
+	default:
+		// The money-bearing kinds (their millions→cents parse can error) live in a sibling
+		// builder so this switch stays under the cyclomatic cap.
+		return buildMoneyRequest(req)
+	}
+}
+
+// buildMoneyRequest maps the DTO onto the sealed requests that carry a caller-supplied money
+// figure (parsed millions-string → exact cents at the boundary, never a JS number): §13 cap
+// relief, §11 restructure, and §6 signing. An unknown Kind is the final rejection.
+func buildMoneyRequest(req TransactionRequest) (transactions.Request, error) {
+	switch req.Kind {
 	case string(transactions.KindCapRelief):
-		// §13 Cap Relief Appeal: commissioner credit. Millions string → exact cents at the
-		// boundary (no float money math frontend-side); Amount is discretionary, not resolved.
+		// §13 Cap Relief Appeal: commissioner credit. Amount is discretionary, not resolved.
 		amount, err := domain.ParseMoneyMillions(req.AmountMillions)
 		if err != nil {
 			return nil, fmt.Errorf("cap relief amount: %w", err)
 		}
 		return transactions.CapRelief{FranchiseID: req.FranchiseID, Amount: amount, Reason: req.Reason}, nil
 	case string(transactions.KindRestructure):
-		// Millions string → exact cents at the boundary (no float money math frontend-side).
 		move, err := domain.ParseMoneyMillions(req.MoveMillions)
 		if err != nil {
 			return nil, fmt.Errorf("restructure move: %w", err)
 		}
 		return transactions.Restructure{MFLID: req.MFLID, Move: move}, nil
+	case string(transactions.KindSign):
+		// §6 free-agency signing: the salary IS the commissioner's agreed figure (no formula to
+		// resolve). Eligibility / buyout lockout / min-salary floor resolve in-tx.
+		salary, err := domain.ParseMoneyMillions(req.SalaryMillions)
+		if err != nil {
+			return nil, fmt.Errorf("sign salary: %w", err)
+		}
+		return transactions.Sign{MFLID: req.MFLID, FranchiseID: req.FranchiseID, Salary: salary, Years: req.Years}, nil
 	default:
 		return nil, fmt.Errorf("unknown transaction kind %q", req.Kind)
 	}
