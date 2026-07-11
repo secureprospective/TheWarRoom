@@ -101,6 +101,8 @@ A **single transaction coordinator** is the only thing in the entire system allo
 | ✅ **Free Agency §6 (v1)** | Live free-agent pool + record-a-signing, with §12 buyout lockout, min-salary floor & UFA promotion on rollover |
 | ✅ **Commissioner UFA calendar (§6)** | A signing window the commissioner opens/closes on top of the phase gate — closed blocks every signing, and it persists until toggled |
 
+*Every op above is verified end-to-end through the live transaction panel on real hardware — not just unit-tested.*
+
 ### ⚡ Go-Powered, Local-First Performance
 Zero cloud latency. Absolute privacy. Near-instant processing from a clean, compiled backend. The rankings board **re-ranks the instant you turn a calibration knob** in the admin console — the live tuning loop already works. Native desktop app; your league never leaves your machine.
 
