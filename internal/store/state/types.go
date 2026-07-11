@@ -139,6 +139,11 @@ type SeasonScope interface {
 	// stood before the op, which the single-writer law makes race-free. Fails loud on a missing
 	// seed row (no fallback — the seed is the one source of truth) or a stored non-phase (drift).
 	CurrentPhase(ctx context.Context) (domain.Phase, error)
+	// AppendPhaseTransition advances the phase by appending one transition row (current → to)
+	// in the shared tx — the ADVANCE_PHASE write primitive. It rejects a no-op (to == current);
+	// any real target is allowed (v1 commissioner correction/rollback). `note` is a freeform
+	// reason. Fails loud on an unknown target phase or a missing seed.
+	AppendPhaseTransition(ctx context.Context, to domain.Phase, note string) error
 }
 
 // LedgerWriter is the per-year salary-cell mutation surface — the money primitives the

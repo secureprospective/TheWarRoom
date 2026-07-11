@@ -85,6 +85,21 @@ func (f *fakeTxWriter) CurrentPhase(_ context.Context) (domain.Phase, error) {
 	return f.phase, nil
 }
 
+// AppendPhaseTransition records the transition and updates the fake's current phase, rejecting
+// a no-op (mirrors the store primitive's guard so handler-level tests see the same behavior).
+func (f *fakeTxWriter) AppendPhaseTransition(ctx context.Context, to domain.Phase, _ string) error {
+	cur, _ := f.CurrentPhase(ctx)
+	if to == cur {
+		return fmt.Errorf("already in phase %q (no-op rejected)", to)
+	}
+	f.calls = append(f.calls, recordedMove{op: "advancephase", target: string(to)})
+	if err := f.maybeFail(); err != nil {
+		return err
+	}
+	f.phase = to
+	return nil
+}
+
 func (f *fakeTxWriter) MoveCellMoney(_ context.Context, mflID string, _, _ int, _ domain.Money, _ string) error {
 	f.calls = append(f.calls, recordedMove{op: "movecell", mflID: mflID})
 	return f.maybeFail()
@@ -208,6 +223,41 @@ func TestExecute_TradeDispatchesEveryLegInOrder(t *testing.T) {
 		got[0] != (recordedMove{"move", "0001", "0002"}) ||
 		got[1] != (recordedMove{"move", "0003", "0001"}) {
 		t.Fatalf("trade legs dispatched wrong/out of order: %+v", got)
+	}
+}
+
+// TestExecute_AdvancePhase runs the ADVANCE_PHASE op: a valid target appends a transition
+// (0 players affected), a no-op (target == current) is rejected inside the tx, and an unknown
+// target is rejected before a tx is even opened.
+func TestExecute_AdvancePhase(t *testing.T) {
+	w := newFake()
+	w.tw.phase = domain.PhaseOffseason
+	c := newCoord(t, w)
+
+	rec, err := c.Execute(context.Background(), AdvancePhase{To: domain.PhaseRegularSeason, Note: "kickoff"})
+	if err != nil {
+		t.Fatalf("advance to REGULAR_SEASON: %v", err)
+	}
+	if rec.Kind != KindAdvancePhase || rec.PlayersAffected != 0 {
+		t.Fatalf("receipt = %+v, want KindAdvancePhase/0", rec)
+	}
+	if len(w.tw.calls) != 1 || w.tw.calls[0] != (recordedMove{op: "advancephase", target: string(domain.PhaseRegularSeason)}) {
+		t.Fatalf("advance-phase call not recorded: %+v", w.tw.calls)
+	}
+
+	// No-op: advancing to the now-current phase is rejected (inside the tx).
+	if _, err := c.Execute(context.Background(), AdvancePhase{To: domain.PhaseRegularSeason}); err == nil {
+		t.Fatal("no-op advance succeeded, want rejection")
+	}
+
+	// Unknown target is rejected at validate — no tx opened.
+	w2 := newFake()
+	c2 := newCoord(t, w2)
+	if _, err := c2.Execute(context.Background(), AdvancePhase{To: domain.Phase("PRESEASON")}); err == nil {
+		t.Fatal("unknown target phase succeeded, want rejection")
+	}
+	if w2.writeTxRan {
+		t.Fatal("an invalid advance-phase opened a transaction, want short-circuit before tx")
 	}
 }
 

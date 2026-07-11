@@ -59,6 +59,57 @@ VALUES (?, ?, ?, ?, 'test-advance', '', ?)`,
 	}
 }
 
+// advance runs AppendPhaseTransition through a WriteTx.
+func advance(t *testing.T, s *Store, to domain.Phase, note string) error {
+	t.Helper()
+	return s.WriteTx(context.Background(), func(w TxWriter) error {
+		return w.AppendPhaseTransition(context.Background(), to, note)
+	})
+}
+
+// TestAppendPhaseTransition: a valid target advances the current phase and records from→to;
+// a no-op (to == current) and an unknown target are both rejected, leaving the phase unchanged.
+func TestAppendPhaseTransition(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
+
+	if err := advance(t, s, domain.PhaseRegularSeason, "kickoff"); err != nil {
+		t.Fatalf("advance to REGULAR_SEASON: %v", err)
+	}
+	if got := readPhase(t, s); got != domain.PhaseRegularSeason {
+		t.Fatalf("phase = %q, want REGULAR_SEASON", got)
+	}
+
+	// No-op: advancing to the current phase is rejected.
+	if err := advance(t, s, domain.PhaseRegularSeason, "again"); err == nil {
+		t.Fatal("no-op transition succeeded, want rejection")
+	} else if !strings.Contains(err.Error(), "no-op") {
+		t.Fatalf("no-op error = %v, want a no-op rejection", err)
+	}
+
+	// Unknown target is rejected.
+	if err := advance(t, s, domain.Phase("PRESEASON"), "bad"); err == nil {
+		t.Fatal("unknown target phase succeeded, want rejection")
+	}
+
+	// The from→to pair was recorded on the advancing row.
+	var from, to string
+	if err := s.pools.Read().QueryRowContext(context.Background(),
+		`SELECT from_phase, to_phase FROM season_phases WHERE note = 'kickoff'`).Scan(&from, &to); err != nil {
+		t.Fatalf("read transition row: %v", err)
+	}
+	if from != string(domain.PhaseOffseason) || to != string(domain.PhaseRegularSeason) {
+		t.Fatalf("transition row = %s→%s, want OFFSEASON→REGULAR_SEASON", from, to)
+	}
+
+	// Rollback is allowed (v1 commissioner correction).
+	if err := advance(t, s, domain.PhaseOffseason, "rollback"); err != nil {
+		t.Fatalf("rollback to OFFSEASON: %v", err)
+	}
+	if got := readPhase(t, s); got != domain.PhaseOffseason {
+		t.Fatalf("after rollback, phase = %q, want OFFSEASON", got)
+	}
+}
+
 // TestSeasonPhaseAppendOnlyTriggers proves the double-immutability: a raw UPDATE or DELETE
 // that bypasses the (write-only) Go API still aborts at the DB. A gate that never sees a
 // planted violation proves nothing — these are the plants.

@@ -85,6 +85,36 @@ VALUES (?, ?, '', ?, 'seed', '', ?)`,
 	return nil
 }
 
+// AppendPhaseTransition advances the season phase by APPENDING one transition row (from the
+// current phase → to) inside the shared tx — the ADVANCE_PHASE write primitive. It reads the
+// committed current phase for the `from` side, rejects a no-op (to == current — the no-silent-
+// no-op house rule), and writes the row through w.tx so the transition commits or rolls back
+// with the op. Any target phase is permitted (v1 supports commissioner correction/rollback);
+// the append-only log audits it, and rollback does NOT auto-reverse transaction_counts — a
+// documented v1 posture (expert-panel A6), bounded by the per-season op ceilings. `note` is the
+// commissioner's freeform reason (may be empty). Fails loud on an unknown target phase, a
+// missing seed (via CurrentPhase), or a no-op.
+func (w *txWriter) AppendPhaseTransition(ctx context.Context, to domain.Phase, note string) error {
+	if !to.Valid() {
+		return fmt.Errorf("state: AppendPhaseTransition: %q is not a known phase", to)
+	}
+	from, err := w.CurrentPhase(ctx)
+	if err != nil {
+		return fmt.Errorf("state: AppendPhaseTransition: read current phase: %w", err)
+	}
+	if to == from {
+		return fmt.Errorf("state: AppendPhaseTransition: already in phase %q (no-op rejected)", to)
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	if _, err := w.tx.ExecContext(ctx, `
+INSERT INTO season_phases (league_id, season, from_phase, to_phase, note, meta, at)
+VALUES (?, ?, ?, ?, ?, '', ?)`,
+		w.s.leagueID, w.s.season, string(from), string(to), note, now); err != nil {
+		return fmt.Errorf("state: AppendPhaseTransition %s→%s: insert: %w", from, to, err)
+	}
+	return nil
+}
+
 // CurrentPhase returns the league-year's current season phase — the latest transition's
 // to_phase. It reads the read pool (committed state), NOT this tx's own uncommitted writes,
 // which is exactly right for the op-eligibility gate: the gate checks the phase as it stood
