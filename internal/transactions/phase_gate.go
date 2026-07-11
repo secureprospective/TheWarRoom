@@ -1,0 +1,60 @@
+package transactions
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
+)
+
+// phasePolicy is the DECLARATIVE season-phase eligibility policy (Vision-2026 D3): which season
+// phases an op_kind is legal in, and whether the kind has a policy at all. Encoded as a pure
+// step function (the house idiom, like PositionFloor) rather than a package-level map. Execute
+// enforces it as the FIRST step inside the spanning transaction, so the check is atomic with the
+// mutation it guards and reads the committed current phase (race-free under the single-writer law).
+//
+// It is DEFAULT-DENY: an op_kind that falls through to `default` returns ok=false and is rejected
+// (a new op must be classified here deliberately, never silently allowed — proven by
+// TestExecute_DefaultDenyUnknownKind).
+//
+// v1 policy (locked with Christopher, expert-panel triaged): every shipped op is legal in ALL
+// phases — no behavior change to already-verified ops — with the real windows (the §14 Week-9
+// trade deadline, offseason-only tags/extensions) deferred until finer in-season phases exist
+// (added as one enum constant + one case, no schema change). The ONE phase-restricted op is
+// BUYOUT (§12), offseason-only. ADVANCE_PHASE is legal in every phase — it is the op that
+// changes the phase.
+func phasePolicy(kind Kind) ([]domain.Phase, bool) {
+	switch kind {
+	case KindTrade, KindRosterStatus, KindWaiver, KindRestructure, KindTag, KindExtension, KindAdvancePhase:
+		return allPhases(), true
+	default:
+		return nil, false
+	}
+}
+
+// allPhases is the "legal in every phase" allow-list. A new phase added to the enum applies to
+// every v1 no-restriction op automatically.
+func allPhases() []domain.Phase {
+	return []domain.Phase{domain.PhaseOffseason, domain.PhaseRegularSeason, domain.PhasePlayoffs}
+}
+
+// gatePhase enforces the op→phase policy for one request inside the transaction. It denies an
+// unmapped op_kind (default-deny) and an op whose current phase is not in its allow-list, reading
+// the phase once, up front, before any domain mutation runs.
+func gatePhase(ctx context.Context, w state.TxWriter, kind Kind) error {
+	allowed, ok := phasePolicy(kind)
+	if !ok {
+		return fmt.Errorf("transactions: op %q has no season-phase policy (default-deny) — classify it in phasePolicy", kind)
+	}
+	cur, err := w.CurrentPhase(ctx)
+	if err != nil {
+		return fmt.Errorf("transactions: phase gate for %q: %w", kind, err)
+	}
+	for _, p := range allowed {
+		if p == cur {
+			return nil
+		}
+	}
+	return fmt.Errorf("transactions: op %q is not permitted in phase %q", kind, cur)
+}

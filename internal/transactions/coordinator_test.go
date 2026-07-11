@@ -261,6 +261,50 @@ func TestExecute_AdvancePhase(t *testing.T) {
 	}
 }
 
+// bogusReq is a Request with a Kind absent from opPhaseGate — the PLANT that proves the phase
+// gate is default-deny. apply records a call so the test can assert it never ran.
+type bogusReq struct{ tw *fakeTxWriter }
+
+func (bogusReq) Kind() Kind      { return Kind("BOGUS") }
+func (bogusReq) validate() error { return nil }
+func (bogusReq) sealed()         {}
+func (b bogusReq) apply(_ context.Context, _ state.TxWriter) (int, error) {
+	b.tw.calls = append(b.tw.calls, recordedMove{op: "bogus-apply-ran"})
+	return 1, nil
+}
+
+// TestExecute_DefaultDenyUnknownKind: an op_kind with no phase policy is rejected by the gate,
+// and its apply NEVER runs (the gate is the first step inside the tx). This is the planted
+// violation that proves default-deny — a gate that only ever passes proves nothing.
+func TestExecute_DefaultDenyUnknownKind(t *testing.T) {
+	w := newFake()
+	c := newCoord(t, w)
+
+	if _, err := c.Execute(context.Background(), bogusReq{tw: w.tw}); err == nil {
+		t.Fatal("an unmapped op_kind was permitted — default-deny did not fire")
+	}
+	for _, cl := range w.tw.calls {
+		if cl.op == "bogus-apply-ran" {
+			t.Fatal("apply ran despite the phase gate denying the op")
+		}
+	}
+}
+
+// TestExecute_GateAllowsMappedOpEveryPhase: a shipped op mapped to all phases passes the gate
+// in OFFSEASON, REGULAR_SEASON, and PLAYOFFS (the v1 no-restriction policy). The phase-
+// RESTRICTION branch (current phase not in the allow-list) is proven by the §12 buyout in the
+// wrong phase, in its own commit.
+func TestExecute_GateAllowsMappedOpEveryPhase(t *testing.T) {
+	for _, ph := range []domain.Phase{domain.PhaseOffseason, domain.PhaseRegularSeason, domain.PhasePlayoffs} {
+		w := newFake()
+		w.tw.phase = ph
+		c := newCoord(t, w)
+		if _, err := c.Execute(context.Background(), RosterStatusChange{MFLID: "0001", Status: domain.RosterTaxi}); err != nil {
+			t.Fatalf("mapped op denied in phase %q: %v", ph, err)
+		}
+	}
+}
+
 // TestExecute_StepErrorPropagates plants a failure on the SECOND leg. Execute must
 // return the error and a ZERO receipt — never a partial success. (The actual rollback
 // is the state layer's job, proven in its own tests; here we prove the error surfaces.)
