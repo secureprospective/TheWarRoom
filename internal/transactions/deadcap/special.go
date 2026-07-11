@@ -65,7 +65,7 @@ func Retire(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapE
 	}
 	charge := retirementCharge(cells, w.Season())
 
-	if err := w.ReleasePlayer(ctx, mflID); err != nil {
+	if err := w.ReleasePlayer(ctx, mflID, domain.PlayerRetired, retirementReason); err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: retire %q: release: %w", mflID, err)
 	}
 	entry := state.DeadCapEntry{
@@ -96,7 +96,7 @@ func Death(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapEn
 	if !ok {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: death %q: player not on any roster", mflID)
 	}
-	if err := w.ReleasePlayer(ctx, mflID); err != nil {
+	if err := w.ReleasePlayer(ctx, mflID, domain.PlayerDeceased, gainesAdamsReason); err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: death %q: release: %w", mflID, err)
 	}
 	entry := state.DeadCapEntry{

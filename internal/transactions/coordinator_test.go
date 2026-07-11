@@ -31,6 +31,10 @@ type fakeTxWriter struct {
 	opCounts  map[string]int                // per-(franchise/op_kind) counters for OpCount/IncOpCount
 	paidCells map[string][]state.LedgerCell // per-player PAID cells PaidCells() returns
 	phase     domain.Phase                  // current season phase CurrentPhase() reports (defaults OFFSEASON)
+
+	status      domain.PlayerStatus // the status CurrentStatus() reports for statusMFLID
+	statusMFLID string              // the one player CurrentStatus() resolves (for SIGN eligibility tests)
+	lockedMFLID string              // the one player ActiveBuyoutLockout() reports locked
 }
 
 func (f *fakeTxWriter) maybeFail() error {
@@ -65,9 +69,33 @@ func (f *fakeTxWriter) AddCapRelief(_ context.Context, e state.CapReliefEntry) e
 	return f.maybeFail()
 }
 
-func (f *fakeTxWriter) ReleasePlayer(_ context.Context, mflID string) error {
-	f.calls = append(f.calls, recordedMove{op: "release", mflID: mflID})
+func (f *fakeTxWriter) ReleasePlayer(_ context.Context, mflID string, status domain.PlayerStatus, _ string) error {
+	f.calls = append(f.calls, recordedMove{op: "release", mflID: mflID, target: string(status)})
 	return f.maybeFail()
+}
+
+func (f *fakeTxWriter) RecordStatus(_ context.Context, mflID string, status domain.PlayerStatus, _ string) error {
+	f.calls = append(f.calls, recordedMove{op: "status", mflID: mflID, target: string(status)})
+	return f.maybeFail()
+}
+
+// CurrentStatus reports the fake's status for one player, defaulting to found=false (never
+// released) so a test that doesn't set it exercises the not-a-free-agent path.
+func (f *fakeTxWriter) CurrentStatus(_ context.Context, mflID string) (domain.PlayerStatus, bool, error) {
+	if f.status != "" && f.statusMFLID == mflID {
+		return f.status, true, nil
+	}
+	return "", false, nil
+}
+
+func (f *fakeTxWriter) SignContract(_ context.Context, mflID, franchiseID string, _ domain.Money, _ int, _, _ string) error {
+	f.calls = append(f.calls, recordedMove{op: "sign", mflID: mflID, target: franchiseID})
+	return f.maybeFail()
+}
+
+// ActiveBuyoutLockout reports the fake's lockout flag for one player (default false = not locked).
+func (f *fakeTxWriter) ActiveBuyoutLockout(_ context.Context, mflID, _ string, _ int) (bool, error) {
+	return f.lockedMFLID == mflID, nil
 }
 
 // fakePlayer is the one player the fake will resolve for a waiver; the zero value's

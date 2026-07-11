@@ -14,6 +14,10 @@ export function GetFranchiseState(arg1) {
   return window['go']['main']['App']['GetFranchiseState'](arg1);
 }
 
+export function GetFreeAgents() {
+  return window['go']['main']['App']['GetFreeAgents']();
+}
+
 export function GetParams() {
   return window['go']['main']['App']['GetParams']();
 }

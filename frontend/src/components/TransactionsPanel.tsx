@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ExecuteTransaction, GetFranchiseState, GetCurrentPhase } from '../../wailsjs/go/main/App';
+import {
+  ExecuteTransaction,
+  GetFranchiseState,
+  GetCurrentPhase,
+  GetFreeAgents,
+} from '../../wailsjs/go/main/App';
 import { main } from '../../wailsjs/go/models';
 
 // TransactionsPanel is the B7a dev surface (functional gate): execute a trade or a
@@ -20,7 +25,8 @@ type Kind =
   | 'ROLLOVER_SEASON'
   | 'RETIREMENT'
   | 'DEATH'
-  | 'CAP_RELIEF';
+  | 'CAP_RELIEF'
+  | 'SIGN';
 type Leg = { mflID: string; toFranchiseID: string };
 const PHASES = ['OFFSEASON', 'REGULAR_SEASON', 'PLAYOFFS'] as const;
 
@@ -41,6 +47,11 @@ export function TransactionsPanel() {
   const [reliefFranchise, setReliefFranchise] = useState('');
   const [reliefAmount, setReliefAmount] = useState('');
   const [reliefReason, setReliefReason] = useState('');
+  const [signMflID, setSignMflID] = useState('');
+  const [signFranchise, setSignFranchise] = useState('');
+  const [signSalary, setSignSalary] = useState('');
+  const [signYears, setSignYears] = useState('1');
+  const [freeAgents, setFreeAgents] = useState<string[]>([]);
   const [toPhase, setToPhase] = useState<(typeof PHASES)[number]>('REGULAR_SEASON');
   const [phaseNote, setPhaseNote] = useState('');
   const [result, setResult] = useState<main.TransactionResult | null>(null);
@@ -56,6 +67,7 @@ export function TransactionsPanel() {
   }
   useEffect(() => {
     void refreshPhase();
+    void refreshFreeAgents();
   }, []);
 
   async function run() {
@@ -81,18 +93,24 @@ export function TransactionsPanel() {
                         ? retireMflID
                         : kind === 'DEATH'
                           ? deathMflID
-                          : '',
+                          : kind === 'SIGN'
+                            ? signMflID
+                            : '',
         status: kind === 'ROSTER_STATUS' ? status : '',
         moveMillions: kind === 'RESTRUCTURE' ? moveMillions : '',
         addedYears: kind === 'EXTENSION' ? Number(addedYears) || 0 : 0,
         toPhase: kind === 'ADVANCE_PHASE' ? toPhase : '',
         note: kind === 'ADVANCE_PHASE' || kind === 'ROLLOVER_SEASON' ? phaseNote : '',
-        franchiseID: kind === 'CAP_RELIEF' ? reliefFranchise : '',
+        franchiseID: kind === 'CAP_RELIEF' ? reliefFranchise : kind === 'SIGN' ? signFranchise : '',
         amountMillions: kind === 'CAP_RELIEF' ? reliefAmount : '',
         reason: kind === 'CAP_RELIEF' ? reliefReason : '',
+        salaryMillions: kind === 'SIGN' ? signSalary : '',
+        years: kind === 'SIGN' ? Number(signYears) || 0 : 0,
       });
       setResult(await ExecuteTransaction(req));
       if (kind === 'ADVANCE_PHASE' || kind === 'ROLLOVER_SEASON') await refreshPhase();
+      // A signing or a rollover changes the pool — refresh it so the gate sees the effect.
+      if (kind === 'SIGN' || kind === 'ROLLOVER_SEASON') await refreshFreeAgents();
       if (franchise) setFranchise(await GetFranchiseState(franchise.franchiseID)); // auto-confirm
     } finally {
       setBusy(false);
@@ -102,6 +120,11 @@ export function TransactionsPanel() {
   async function loadFranchise() {
     if (!lookupID.trim()) return;
     setFranchise(await GetFranchiseState(lookupID.trim()));
+  }
+
+  async function refreshFreeAgents() {
+    const r = await GetFreeAgents();
+    setFreeAgents(r.ok ? r.mflIDs : []);
   }
 
   return (
@@ -134,6 +157,7 @@ export function TransactionsPanel() {
               'RETIREMENT',
               'DEATH',
               'CAP_RELIEF',
+              'SIGN',
             ] as Kind[]
           ).map((k) => (
             <button
@@ -166,7 +190,9 @@ export function TransactionsPanel() {
                                 ? 'Retire (§13)'
                                 : k === 'DEATH'
                                   ? 'Death (§13)'
-                                  : 'Cap relief (§13)'}
+                                  : k === 'CAP_RELIEF'
+                                    ? 'Cap relief (§13)'
+                                    : 'Sign (§6)'}
             </button>
           ))}
         </div>
@@ -387,7 +413,7 @@ export function TransactionsPanel() {
               — his salary leaves and no dead cap lands. Any phase.
             </p>
           </div>
-        ) : (
+        ) : kind === 'CAP_RELIEF' ? (
           <div className="space-y-1">
             <div className="flex gap-2">
               <input
@@ -413,6 +439,46 @@ export function TransactionsPanel() {
               §13 Cap Relief Appeal (commissioner): reduces the franchise's cap hit by the relief
               amount (career-ending injury, recurring injury, behavioral suspension). Appends a
               credit to the append-only cap-relief ledger; CapUsed drops (floored at $0). Any phase.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <div className="flex flex-wrap gap-2">
+              <input
+                className="w-28 rounded bg-slate-800 px-2 py-1 text-sm"
+                placeholder="player mflID"
+                value={signMflID}
+                onChange={(e) => setSignMflID(e.target.value)}
+              />
+              <input
+                className="w-28 rounded bg-slate-800 px-2 py-1 text-sm"
+                placeholder="→ franchise"
+                value={signFranchise}
+                onChange={(e) => setSignFranchise(e.target.value)}
+              />
+              <input
+                className="w-28 rounded bg-slate-800 px-2 py-1 text-sm"
+                placeholder="salary/yr ($M)"
+                value={signSalary}
+                onChange={(e) => setSignSalary(e.target.value)}
+              />
+              <select
+                className="rounded bg-slate-800 px-2 py-1 text-sm"
+                value={signYears}
+                onChange={(e) => setSignYears(e.target.value)}
+              >
+                <option value="1">1 year</option>
+                <option value="2">2 years</option>
+                <option value="3">3 years</option>
+                <option value="4">4 years</option>
+              </select>
+            </div>
+            <p className="text-xs text-slate-400">
+              §6 free-agency signing (offseason + regular season): rosters a free agent on a NEW flat
+              1–4 year contract at the entered salary. Only a FREE_AGENT is signable (retired/deceased
+              barred); a bought-out player is locked until the following offseason (§12). The cap is
+              not blocked (it just reflects the signing). The min-salary floor is skipped until
+              experience data exists. See the free-agent pool on the right.
             </p>
           </div>
         )}
@@ -474,6 +540,38 @@ export function TransactionsPanel() {
           ) : (
             <p className="text-xs text-red-300">{franchise.detail}</p>
           ))}
+
+        <div className="flex items-center gap-2 pt-2">
+          <h3 className="text-sm font-semibold">Free-agent pool</h3>
+          <span className="text-xs text-slate-400">({freeAgents.length})</span>
+          <button
+            type="button"
+            className="ml-auto rounded bg-slate-700 px-2 py-0.5 text-xs hover:bg-slate-600"
+            onClick={() => void refreshFreeAgents()}
+          >
+            refresh
+          </button>
+        </div>
+        {freeAgents.length === 0 ? (
+          <p className="text-xs text-slate-500">No free agents (sign or roll a season to populate).</p>
+        ) : (
+          <ul className="max-h-40 space-y-0.5 overflow-y-auto rounded bg-slate-800 p-2 text-xs text-slate-300">
+            {freeAgents.map((id) => (
+              <li key={id}>
+                <button
+                  type="button"
+                  className="hover:text-emerald-300"
+                  onClick={() => {
+                    setKind('SIGN');
+                    setSignMflID(id);
+                  }}
+                >
+                  {id}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

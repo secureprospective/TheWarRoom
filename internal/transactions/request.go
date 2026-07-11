@@ -28,6 +28,7 @@ const (
 	KindRetirement     Kind = "RETIREMENT"
 	KindDeath          Kind = "DEATH"
 	KindCapRelief      Kind = "CAP_RELIEF"
+	KindSign           Kind = "SIGN"
 )
 
 // Request is a transaction the Coordinator can execute. The concrete types live in THIS

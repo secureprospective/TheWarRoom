@@ -231,6 +231,8 @@ linters:
               desc: "transaction handlers are internal to the coordinator — call Coordinator.Execute"
             - pkg: github.com/secureprospective/TheWarRoom/internal/transactions/deadcap
               desc: "transaction handlers are internal to the coordinator — call Coordinator.Execute"
+            - pkg: github.com/secureprospective/TheWarRoom/internal/transactions/freeagency
+              desc: "transaction handlers are internal to the coordinator — call Coordinator.Execute"
 
   exclusions:
     generated: lax
