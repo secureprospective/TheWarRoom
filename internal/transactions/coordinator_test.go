@@ -30,6 +30,7 @@ type fakeTxWriter struct {
 	season    int                           // the league year Season() reports
 	opCounts  map[string]int                // per-(franchise/op_kind) counters for OpCount/IncOpCount
 	paidCells map[string][]state.LedgerCell // per-player PAID cells PaidCells() returns
+	phase     domain.Phase                  // current season phase CurrentPhase() reports (defaults OFFSEASON)
 }
 
 func (f *fakeTxWriter) maybeFail() error {
@@ -74,6 +75,30 @@ func (f *fakeTxWriter) Player(mflID string) (state.PlayerState, bool) {
 }
 
 func (f *fakeTxWriter) Season() int { return f.season }
+
+// CurrentPhase reports the fake's phase, defaulting to OFFSEASON when unset so a test that
+// doesn't care about the phase gate still exercises the offseason-legal ops.
+func (f *fakeTxWriter) CurrentPhase(_ context.Context) (domain.Phase, error) {
+	if f.phase == "" {
+		return domain.PhaseOffseason, nil
+	}
+	return f.phase, nil
+}
+
+// AppendPhaseTransition records the transition and updates the fake's current phase, rejecting
+// a no-op (mirrors the store primitive's guard so handler-level tests see the same behavior).
+func (f *fakeTxWriter) AppendPhaseTransition(ctx context.Context, to domain.Phase, _ string) error {
+	cur, _ := f.CurrentPhase(ctx)
+	if to == cur {
+		return fmt.Errorf("already in phase %q (no-op rejected)", to)
+	}
+	f.calls = append(f.calls, recordedMove{op: "advancephase", target: string(to)})
+	if err := f.maybeFail(); err != nil {
+		return err
+	}
+	f.phase = to
+	return nil
+}
 
 func (f *fakeTxWriter) MoveCellMoney(_ context.Context, mflID string, _, _ int, _ domain.Money, _ string) error {
 	f.calls = append(f.calls, recordedMove{op: "movecell", mflID: mflID})
@@ -198,6 +223,133 @@ func TestExecute_TradeDispatchesEveryLegInOrder(t *testing.T) {
 		got[0] != (recordedMove{"move", "0001", "0002"}) ||
 		got[1] != (recordedMove{"move", "0003", "0001"}) {
 		t.Fatalf("trade legs dispatched wrong/out of order: %+v", got)
+	}
+}
+
+// TestExecute_AdvancePhase runs the ADVANCE_PHASE op: a valid target appends a transition
+// (0 players affected), a no-op (target == current) is rejected inside the tx, and an unknown
+// target is rejected before a tx is even opened.
+func TestExecute_AdvancePhase(t *testing.T) {
+	w := newFake()
+	w.tw.phase = domain.PhaseOffseason
+	c := newCoord(t, w)
+
+	rec, err := c.Execute(context.Background(), AdvancePhase{To: domain.PhaseRegularSeason, Note: "kickoff"})
+	if err != nil {
+		t.Fatalf("advance to REGULAR_SEASON: %v", err)
+	}
+	if rec.Kind != KindAdvancePhase || rec.PlayersAffected != 0 {
+		t.Fatalf("receipt = %+v, want KindAdvancePhase/0", rec)
+	}
+	if len(w.tw.calls) != 1 || w.tw.calls[0] != (recordedMove{op: "advancephase", target: string(domain.PhaseRegularSeason)}) {
+		t.Fatalf("advance-phase call not recorded: %+v", w.tw.calls)
+	}
+
+	// No-op: advancing to the now-current phase is rejected (inside the tx).
+	if _, err := c.Execute(context.Background(), AdvancePhase{To: domain.PhaseRegularSeason}); err == nil {
+		t.Fatal("no-op advance succeeded, want rejection")
+	}
+
+	// Unknown target is rejected at validate — no tx opened.
+	w2 := newFake()
+	c2 := newCoord(t, w2)
+	if _, err := c2.Execute(context.Background(), AdvancePhase{To: domain.Phase("PRESEASON")}); err == nil {
+		t.Fatal("unknown target phase succeeded, want rejection")
+	}
+	if w2.writeTxRan {
+		t.Fatal("an invalid advance-phase opened a transaction, want short-circuit before tx")
+	}
+}
+
+// bogusReq is a Request with a Kind absent from opPhaseGate — the PLANT that proves the phase
+// gate is default-deny. apply records a call so the test can assert it never ran.
+type bogusReq struct{ tw *fakeTxWriter }
+
+func (bogusReq) Kind() Kind      { return Kind("BOGUS") }
+func (bogusReq) validate() error { return nil }
+func (bogusReq) sealed()         {}
+func (b bogusReq) apply(_ context.Context, _ state.TxWriter) (int, error) {
+	b.tw.calls = append(b.tw.calls, recordedMove{op: "bogus-apply-ran"})
+	return 1, nil
+}
+
+// TestExecute_DefaultDenyUnknownKind: an op_kind with no phase policy is rejected by the gate,
+// and its apply NEVER runs (the gate is the first step inside the tx). This is the planted
+// violation that proves default-deny — a gate that only ever passes proves nothing.
+func TestExecute_DefaultDenyUnknownKind(t *testing.T) {
+	w := newFake()
+	c := newCoord(t, w)
+
+	if _, err := c.Execute(context.Background(), bogusReq{tw: w.tw}); err == nil {
+		t.Fatal("an unmapped op_kind was permitted — default-deny did not fire")
+	}
+	for _, cl := range w.tw.calls {
+		if cl.op == "bogus-apply-ran" {
+			t.Fatal("apply ran despite the phase gate denying the op")
+		}
+	}
+}
+
+// TestExecute_GateAllowsMappedOpEveryPhase: a shipped op mapped to all phases passes the gate
+// in OFFSEASON, REGULAR_SEASON, and PLAYOFFS (the v1 no-restriction policy). The phase-
+// RESTRICTION branch (current phase not in the allow-list) is proven by the §12 buyout in the
+// wrong phase, in its own commit.
+func TestExecute_GateAllowsMappedOpEveryPhase(t *testing.T) {
+	for _, ph := range []domain.Phase{domain.PhaseOffseason, domain.PhaseRegularSeason, domain.PhasePlayoffs} {
+		w := newFake()
+		w.tw.phase = ph
+		c := newCoord(t, w)
+		if _, err := c.Execute(context.Background(), RosterStatusChange{MFLID: "0001", Status: domain.RosterTaxi}); err != nil {
+			t.Fatalf("mapped op denied in phase %q: %v", ph, err)
+		}
+	}
+}
+
+// TestExecute_BuyoutAppliesThenBumps pins the §12 atomic order the rollback guarantee depends
+// on: release → dead-cap charge → void cells → bump the per-season counter, all in one tx, with
+// the counter bump LAST (a rolled-back buyout leaves no orphan increment).
+func TestExecute_BuyoutAppliesThenBumps(t *testing.T) {
+	w := newFake()
+	w.tw.season = 2026
+	w.tw.player = state.PlayerState{MFLID: "0001", FranchiseID: "0001"}
+	w.tw.paidCells = map[string][]state.LedgerCell{ // remaining after 2026 = 2 → §12 rate applies
+		"0001": {{Year: 2027, Salary: 6 * 100_000_000}, {Year: 2028, Salary: 6 * 100_000_000}},
+	}
+	c := newCoord(t, w)
+
+	if _, err := c.Execute(context.Background(), Buyout{MFLID: "0001"}); err != nil {
+		t.Fatalf("Execute buyout: %v", err)
+	}
+	got := w.tw.calls
+	if len(got) != 4 || got[0].op != "release" || got[1].op != "deadcap" || got[2].op != "voidcells" || got[3].op != "incop" {
+		t.Fatalf("buyout did not release→deadcap→void→bump: %+v", got)
+	}
+	if got[3].mflID != "BUYOUT" || got[3].target != "0001" {
+		t.Fatalf("counter bumped with wrong op/franchise: %+v", got[3])
+	}
+}
+
+// TestExecute_BuyoutCounterFailRollsBack plants a failure on the counter bump (the LAST step).
+// The transaction must fail with a zero receipt — the release/charge/void applied earlier must
+// NOT be reported as committed (the real store rolls the whole WriteTx back; here we prove the
+// error propagates and no partial success leaks). Parity with the restructure rollback proof.
+func TestExecute_BuyoutCounterFailRollsBack(t *testing.T) {
+	w := newFake()
+	w.tw.season = 2026
+	w.tw.player = state.PlayerState{MFLID: "0001", FranchiseID: "0001"}
+	w.tw.paidCells = map[string][]state.LedgerCell{
+		"0001": {{Year: 2027, Salary: 6 * 100_000_000}, {Year: 2028, Salary: 6 * 100_000_000}},
+	}
+	w.tw.failOn = 4 // release(1) deadcap(2) voidcells(3) incop(4)
+	w.tw.failErr = errors.New("counter boom")
+	c := newCoord(t, w)
+
+	rec, err := c.Execute(context.Background(), Buyout{MFLID: "0001"})
+	if err == nil {
+		t.Fatal("buyout succeeded despite a failing counter bump")
+	}
+	if rec != (Receipt{}) {
+		t.Fatalf("failed buyout returned a non-zero receipt: %+v", rec)
 	}
 }
 

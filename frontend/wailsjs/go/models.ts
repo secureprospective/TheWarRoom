@@ -274,6 +274,22 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class PhaseResult {
+	    ok: boolean;
+	    phase: string;
+	    detail: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PhaseResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.phase = source["phase"];
+	        this.detail = source["detail"];
+	    }
+	}
 	export class PingResult {
 	    ok: boolean;
 	    message: string;
@@ -463,6 +479,8 @@ export namespace main {
 	    status: string;
 	    moveMillions: string;
 	    addedYears: number;
+	    toPhase: string;
+	    note: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new TransactionRequest(source);
@@ -476,6 +494,8 @@ export namespace main {
 	        this.status = source["status"];
 	        this.moveMillions = source["moveMillions"];
 	        this.addedYears = source["addedYears"];
+	        this.toPhase = source["toPhase"];
+	        this.note = source["note"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

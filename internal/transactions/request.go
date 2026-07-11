@@ -22,6 +22,8 @@ const (
 	KindRestructure  Kind = "RESTRUCTURE"
 	KindTag          Kind = "TAG"
 	KindExtension    Kind = "EXTENSION"
+	KindBuyout       Kind = "BUYOUT"
+	KindAdvancePhase Kind = "ADVANCE_PHASE"
 )
 
 // Request is a transaction the Coordinator can execute. The concrete types live in THIS
@@ -243,4 +245,63 @@ func (e Extension) apply(ctx context.Context, w state.TxWriter) (int, error) {
 		return 0, fmt.Errorf("extension: %w", err)
 	}
 	return 1, nil
+}
+
+// Buyout executes a §12 contract buyout: the franchise releases the player and owes a §12
+// dead-cap charge (rate by years remaining — 60/75/90% for 2/3/4 — times his average remaining
+// salary) against the current season's cap. It is OFFSEASON-only (the Coordinator phase gate)
+// and capped at two per franchise per season (transaction_counts, op_kind "BUYOUT"). Every money
+// figure and the remaining-year count are resolved from authoritative state inside apply; the
+// request carries only the player id.
+type Buyout struct {
+	MFLID string
+}
+
+func (Buyout) Kind() Kind { return KindBuyout }
+func (Buyout) sealed()    {}
+
+// validate rejects only an empty player id here; roster membership, the §12 rate/charge, the
+// 2..4-remaining-year range, and the per-season limit are all resolved against real state in apply.
+func (b Buyout) validate() error {
+	if strings.TrimSpace(b.MFLID) == "" {
+		return fmt.Errorf("transactions: buyout has an empty player id")
+	}
+	return nil
+}
+
+func (b Buyout) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if _, err := deadcap.Buyout(ctx, w, b.MFLID); err != nil {
+		return 0, fmt.Errorf("buyout: %w", err)
+	}
+	return 1, nil
+}
+
+// AdvancePhase moves the league-year's season phase to To (Vision-2026 D3) — a first-class,
+// commissioner-confirmed transition appended to the append-only season_phases log. It touches
+// no players (PlayersAffected 0). Any real target phase is allowed in v1 (correction/rollback);
+// a no-op (To == current) is rejected in the store primitive. Note is the commissioner's
+// freeform reason (optional). ADVANCE_PHASE is itself legal in every phase (it is the op that
+// changes the phase), so the op-eligibility gate never blocks it.
+type AdvancePhase struct {
+	To   domain.Phase
+	Note string
+}
+
+func (AdvancePhase) Kind() Kind { return KindAdvancePhase }
+func (AdvancePhase) sealed()    {}
+
+// validate rejects an unknown target phase before a transaction is opened; the no-op guard
+// (To == current) needs the committed phase and so is enforced in apply, atomically.
+func (a AdvancePhase) validate() error {
+	if !a.To.Valid() {
+		return fmt.Errorf("transactions: advance-phase target %q is not a known phase", a.To)
+	}
+	return nil
+}
+
+func (a AdvancePhase) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if err := w.AppendPhaseTransition(ctx, a.To, a.Note); err != nil {
+		return 0, fmt.Errorf("advance phase: %w", err)
+	}
+	return 0, nil
 }

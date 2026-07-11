@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function ExecuteTransaction(arg1:main.TransactionRequest):Promise<main.TransactionResult>;
 
+export function GetCurrentPhase():Promise<main.PhaseResult>;
+
 export function GetFranchiseState(arg1:string):Promise<main.FranchiseStateResult>;
 
 export function GetParams():Promise<main.ParamsResult>;

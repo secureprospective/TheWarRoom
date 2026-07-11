@@ -6,6 +6,10 @@ export function ExecuteTransaction(arg1) {
   return window['go']['main']['App']['ExecuteTransaction'](arg1);
 }
 
+export function GetCurrentPhase() {
+  return window['go']['main']['App']['GetCurrentPhase']();
+}
+
 export function GetFranchiseState(arg1) {
   return window['go']['main']['App']['GetFranchiseState'](arg1);
 }

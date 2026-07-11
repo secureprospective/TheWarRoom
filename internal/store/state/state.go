@@ -128,6 +128,12 @@ func (s *Store) Initialize(ctx context.Context, src Source) error {
 			return err
 		}
 	}
+	// Seed the genesis season-phase row (→ OFFSEASON) if the phase log is empty. Independent
+	// of the roster seed so a DB that pre-dates the phase feature also gets it on first startup;
+	// idempotent, so an existing transition history is never clobbered.
+	if err := s.seedInitialPhase(ctx); err != nil {
+		return err
+	}
 	return s.load(ctx)
 }
 

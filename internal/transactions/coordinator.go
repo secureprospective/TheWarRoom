@@ -58,6 +58,13 @@ func (c *Coordinator) Execute(ctx context.Context, req Request) (Receipt, error)
 
 	var affected int
 	err := c.writer.WriteTx(ctx, func(w state.TxWriter) error {
+		// Season-phase eligibility is the FIRST step inside the tx (Vision-2026 D3): read the
+		// committed current phase and reject an op the phase disallows BEFORE any mutation or
+		// counter read runs — fail-fast, atomic with the write, race-free under the single
+		// writer. Default-deny an unmapped op_kind.
+		if perr := gatePhase(ctx, w, req.Kind()); perr != nil {
+			return perr
+		}
 		n, aerr := req.apply(ctx, w)
 		affected = n
 		return aerr

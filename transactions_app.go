@@ -29,6 +29,8 @@ type TransactionRequest struct {
 	Status       string    `json:"status"`
 	MoveMillions string    `json:"moveMillions"`
 	AddedYears   int       `json:"addedYears"` // EXTENSION (§10): years to add (1..3)
+	ToPhase      string    `json:"toPhase"`    // ADVANCE_PHASE (D3): target season phase
+	Note         string    `json:"note"`       // ADVANCE_PHASE: commissioner's freeform reason
 }
 
 // TransactionResult is the typed IPC outcome: OK plus the committed Receipt fields, or
@@ -157,6 +159,32 @@ func (a *App) GetFranchiseState(franchiseID string) FranchiseStateResult {
 	return FranchiseStateResult{OK: true, FranchiseID: franchiseID, CapUsed: fs.CapUsed.Millions(), Players: players}
 }
 
+// PhaseResult is a read of the league-year's current season phase (D3), for the dev surface
+// that drives the §12 gate (advance the phase → run a buyout).
+type PhaseResult struct {
+	OK     bool   `json:"ok"`
+	Phase  string `json:"phase"`
+	Detail string `json:"detail"`
+}
+
+// GetCurrentPhase reads the current season phase off the concrete store (a read-only query,
+// never the writer). Backs the dev control that shows and advances the phase.
+func (a *App) GetCurrentPhase() PhaseResult {
+	if a.startupErr != nil {
+		return PhaseResult{Detail: a.startupErr.Error()}
+	}
+	if a.state == nil {
+		return PhaseResult{Detail: "state store not initialized"}
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
+	defer cancel()
+	ph, err := a.state.CurrentPhase(ctx)
+	if err != nil {
+		return PhaseResult{Detail: err.Error()}
+	}
+	return PhaseResult{OK: true, Phase: string(ph)}
+}
+
 // buildRequest maps the wire DTO onto a sealed transactions.Request. An unknown Kind is
 // rejected here, at the boundary, before the Coordinator is touched.
 func buildRequest(req TransactionRequest) (transactions.Request, error) {
@@ -174,6 +202,11 @@ func buildRequest(req TransactionRequest) (transactions.Request, error) {
 		}, nil
 	case string(transactions.KindWaiver):
 		return transactions.Waiver{MFLID: req.MFLID}, nil
+	case string(transactions.KindBuyout):
+		// §12: offseason-only, two per team per season; every figure resolved in-tx.
+		return transactions.Buyout{MFLID: req.MFLID}, nil
+	case string(transactions.KindAdvancePhase):
+		return transactions.AdvancePhase{To: domain.Phase(req.ToPhase), Note: req.Note}, nil
 	case string(transactions.KindRestructure):
 		// Millions string → exact cents at the boundary (no float money math frontend-side).
 		move, err := domain.ParseMoneyMillions(req.MoveMillions)
