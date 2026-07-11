@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ExecuteTransaction, GetFranchiseState } from '../../wailsjs/go/main/App';
+import { useEffect, useState } from 'react';
+import { ExecuteTransaction, GetFranchiseState, GetCurrentPhase } from '../../wailsjs/go/main/App';
 import { main } from '../../wailsjs/go/models';
 
 // TransactionsPanel is the B7a dev surface (functional gate): execute a trade or a
@@ -8,8 +8,17 @@ import { main } from '../../wailsjs/go/models';
 // B7b. Every mutation goes through one IPC call (ExecuteTransaction), which the backend
 // runs as one atomic transaction; a failed transaction changes nothing.
 
-type Kind = 'TRADE' | 'ROSTER_STATUS' | 'WAIVER' | 'RESTRUCTURE' | 'TAG' | 'EXTENSION';
+type Kind =
+  | 'TRADE'
+  | 'ROSTER_STATUS'
+  | 'WAIVER'
+  | 'RESTRUCTURE'
+  | 'TAG'
+  | 'EXTENSION'
+  | 'BUYOUT'
+  | 'ADVANCE_PHASE';
 type Leg = { mflID: string; toFranchiseID: string };
+const PHASES = ['OFFSEASON', 'REGULAR_SEASON', 'PLAYOFFS'] as const;
 
 export function TransactionsPanel() {
   const [kind, setKind] = useState<Kind>('TRADE');
@@ -22,11 +31,23 @@ export function TransactionsPanel() {
   const [tagMflID, setTagMflID] = useState('');
   const [extMflID, setExtMflID] = useState('');
   const [addedYears, setAddedYears] = useState('1');
+  const [buyoutMflID, setBuyoutMflID] = useState('');
+  const [toPhase, setToPhase] = useState<(typeof PHASES)[number]>('REGULAR_SEASON');
+  const [phaseNote, setPhaseNote] = useState('');
   const [result, setResult] = useState<main.TransactionResult | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [phase, setPhase] = useState<string>('…');
   const [lookupID, setLookupID] = useState('');
   const [franchise, setFranchise] = useState<main.FranchiseStateResult | null>(null);
+
+  async function refreshPhase() {
+    const r = await GetCurrentPhase();
+    setPhase(r.ok ? r.phase : `? (${r.detail})`);
+  }
+  useEffect(() => {
+    void refreshPhase();
+  }, []);
 
   async function run() {
     setBusy(true);
@@ -45,12 +66,17 @@ export function TransactionsPanel() {
                   ? tagMflID
                   : kind === 'EXTENSION'
                     ? extMflID
-                    : '',
+                    : kind === 'BUYOUT'
+                      ? buyoutMflID
+                      : '',
         status: kind === 'ROSTER_STATUS' ? status : '',
         moveMillions: kind === 'RESTRUCTURE' ? moveMillions : '',
         addedYears: kind === 'EXTENSION' ? Number(addedYears) || 0 : 0,
+        toPhase: kind === 'ADVANCE_PHASE' ? toPhase : '',
+        note: kind === 'ADVANCE_PHASE' ? phaseNote : '',
       });
       setResult(await ExecuteTransaction(req));
+      if (kind === 'ADVANCE_PHASE') await refreshPhase();
       if (franchise) setFranchise(await GetFranchiseState(franchise.franchiseID)); // auto-confirm
     } finally {
       setBusy(false);
@@ -66,8 +92,30 @@ export function TransactionsPanel() {
     <div className="grid grid-cols-2 gap-6">
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Execute Transaction</h2>
-        <div className="flex gap-2">
-          {(['TRADE', 'ROSTER_STATUS', 'WAIVER', 'RESTRUCTURE', 'TAG', 'EXTENSION'] as Kind[]).map((k) => (
+        <div className="flex items-center gap-2 rounded bg-slate-800 px-3 py-1.5 text-sm">
+          <span className="text-slate-400">Season phase:</span>
+          <span className="font-semibold text-amber-300">{phase}</span>
+          <button
+            type="button"
+            className="ml-auto rounded bg-slate-700 px-2 py-0.5 text-xs hover:bg-slate-600"
+            onClick={() => void refreshPhase()}
+          >
+            refresh
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              'TRADE',
+              'ROSTER_STATUS',
+              'WAIVER',
+              'RESTRUCTURE',
+              'TAG',
+              'EXTENSION',
+              'BUYOUT',
+              'ADVANCE_PHASE',
+            ] as Kind[]
+          ).map((k) => (
             <button
               key={k}
               type="button"
@@ -86,7 +134,11 @@ export function TransactionsPanel() {
                       ? 'Restructure'
                       : k === 'TAG'
                         ? 'Tag (§9)'
-                        : 'Extend (§10)'}
+                        : k === 'EXTENSION'
+                          ? 'Extend (§10)'
+                          : k === 'BUYOUT'
+                            ? 'Buyout (§12)'
+                            : 'Advance phase'}
             </button>
           ))}
         </div>
@@ -197,7 +249,7 @@ export function TransactionsPanel() {
               is resolved server-side (nothing to enter). One tag per team per year.
             </p>
           </div>
-        ) : (
+        ) : kind === 'EXTENSION' ? (
           <div className="space-y-1">
             <div className="flex gap-2">
               <input
@@ -221,6 +273,48 @@ export function TransactionsPanel() {
               year, raised to the position floor. Priced server-side (nothing to enter but the
               year count). One extension per team per year; not for UFAs or already-extended
               contracts; unlocks one more restructure.
+            </p>
+          </div>
+        ) : kind === 'BUYOUT' ? (
+          <div className="space-y-1">
+            <input
+              className="w-32 rounded bg-slate-800 px-2 py-1 text-sm"
+              placeholder="player mflID"
+              value={buyoutMflID}
+              onChange={(e) => setBuyoutMflID(e.target.value)}
+            />
+            <p className="text-xs text-slate-400">
+              §12 buyout (OFFSEASON only): releases the player and charges dead cap of 60/75/90%
+              (for 2/3/4 years remaining) of his average remaining salary against the current
+              season. Priced server-side. Two per team per season; 1 or 5+ remaining years route
+              to the §13 commissioner path.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <div className="flex gap-2">
+              <select
+                className="rounded bg-slate-800 px-2 py-1 text-sm"
+                value={toPhase}
+                onChange={(e) => setToPhase(e.target.value as (typeof PHASES)[number])}
+              >
+                {PHASES.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+              <input
+                className="w-40 rounded bg-slate-800 px-2 py-1 text-sm"
+                placeholder="note (optional)"
+                value={phaseNote}
+                onChange={(e) => setPhaseNote(e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-slate-400">
+              D3 season phase (commissioner): appends a transition to the append-only phase log.
+              Gates which ops are legal (e.g. §12 buyouts are OFFSEASON-only). A no-op (already in
+              the target phase) is rejected.
             </p>
           </div>
         )}

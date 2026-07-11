@@ -122,14 +122,22 @@ VALUES (?, ?, ?, ?, ?, '', ?)`,
 // between. Fails loud on a missing seed row (no fallback — the seed is the one source of
 // truth) or on a stored value that is not a known phase (drift).
 func (w *txWriter) CurrentPhase(ctx context.Context) (domain.Phase, error) {
+	return w.s.CurrentPhase(ctx)
+}
+
+// CurrentPhase reads the current season phase off the read pool (committed state). It backs
+// both the txWriter surface (the op-eligibility gate) and a read-only caller (the dev IPC that
+// shows the phase). It is deliberately NOT on the Reader interface — the App holds the concrete
+// *Store and calls it directly, so the read-only boundary contract stays at five methods.
+func (s *Store) CurrentPhase(ctx context.Context) (domain.Phase, error) {
 	var p string
-	row := w.s.pools.Read().QueryRowContext(ctx, `
+	row := s.pools.Read().QueryRowContext(ctx, `
 SELECT to_phase FROM season_phases
 WHERE league_id = ? AND season = ?
-ORDER BY seq DESC LIMIT 1`, w.s.leagueID, w.s.season)
+ORDER BY seq DESC LIMIT 1`, s.leagueID, s.season)
 	switch err := row.Scan(&p); {
 	case errors.Is(err, sql.ErrNoRows):
-		return "", fmt.Errorf("state: CurrentPhase: no phase row for league %q season %d (seed missing)", w.s.leagueID, w.s.season)
+		return "", fmt.Errorf("state: CurrentPhase: no phase row for league %q season %d (seed missing)", s.leagueID, s.season)
 	case err != nil:
 		return "", fmt.Errorf("state: CurrentPhase: %w", err)
 	}
