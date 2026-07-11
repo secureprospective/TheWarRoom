@@ -502,6 +502,7 @@ export namespace main {
 	    reason: string;
 	    salaryMillions: string;
 	    years: number;
+	    windowOpen: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new TransactionRequest(source);
@@ -522,6 +523,7 @@ export namespace main {
 	        this.reason = source["reason"];
 	        this.salaryMillions = source["salaryMillions"];
 	        this.years = source["years"];
+	        this.windowOpen = source["windowOpen"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

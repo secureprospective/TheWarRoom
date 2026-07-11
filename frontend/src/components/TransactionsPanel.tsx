@@ -26,7 +26,8 @@ type Kind =
   | 'RETIREMENT'
   | 'DEATH'
   | 'CAP_RELIEF'
-  | 'SIGN';
+  | 'SIGN'
+  | 'SET_SIGNING_WINDOW';
 type Leg = { mflID: string; toFranchiseID: string };
 const PHASES = ['OFFSEASON', 'REGULAR_SEASON', 'PLAYOFFS'] as const;
 
@@ -51,6 +52,8 @@ export function TransactionsPanel() {
   const [signFranchise, setSignFranchise] = useState('');
   const [signSalary, setSignSalary] = useState('');
   const [signYears, setSignYears] = useState('1');
+  const [windowOpen, setWindowOpen] = useState(false); // default action = CLOSE (open is the league default)
+  const [windowNote, setWindowNote] = useState('');
   const [freeAgents, setFreeAgents] = useState<string[]>([]);
   const [toPhase, setToPhase] = useState<(typeof PHASES)[number]>('REGULAR_SEASON');
   const [phaseNote, setPhaseNote] = useState('');
@@ -100,7 +103,13 @@ export function TransactionsPanel() {
         moveMillions: kind === 'RESTRUCTURE' ? moveMillions : '',
         addedYears: kind === 'EXTENSION' ? Number(addedYears) || 0 : 0,
         toPhase: kind === 'ADVANCE_PHASE' ? toPhase : '',
-        note: kind === 'ADVANCE_PHASE' || kind === 'ROLLOVER_SEASON' ? phaseNote : '',
+        note:
+          kind === 'ADVANCE_PHASE' || kind === 'ROLLOVER_SEASON'
+            ? phaseNote
+            : kind === 'SET_SIGNING_WINDOW'
+              ? windowNote
+              : '',
+        windowOpen: kind === 'SET_SIGNING_WINDOW' ? windowOpen : false,
         franchiseID: kind === 'CAP_RELIEF' ? reliefFranchise : kind === 'SIGN' ? signFranchise : '',
         amountMillions: kind === 'CAP_RELIEF' ? reliefAmount : '',
         reason: kind === 'CAP_RELIEF' ? reliefReason : '',
@@ -124,7 +133,10 @@ export function TransactionsPanel() {
 
   async function refreshFreeAgents() {
     const r = await GetFreeAgents();
-    setFreeAgents(r.ok ? r.mflIDs : []);
+    // An empty pool marshals as `mflIDs: null` (Go nil slice → JSON null), so guard it — a null
+    // here would crash the render at freeAgents.length and unmount the whole app root (the B7a
+    // tab-click lockup). Matches the codebase's `?? []` list idiom (RankingsBoard).
+    setFreeAgents(r.ok ? (r.mflIDs ?? []) : []);
   }
 
   return (
@@ -158,6 +170,7 @@ export function TransactionsPanel() {
               'DEATH',
               'CAP_RELIEF',
               'SIGN',
+              'SET_SIGNING_WINDOW',
             ] as Kind[]
           ).map((k) => (
             <button
@@ -192,7 +205,9 @@ export function TransactionsPanel() {
                                   ? 'Death (§13)'
                                   : k === 'CAP_RELIEF'
                                     ? 'Cap relief (§13)'
-                                    : 'Sign (§6)'}
+                                    : k === 'SIGN'
+                                      ? 'Sign (§6)'
+                                      : 'UFA window (§6)'}
             </button>
           ))}
         </div>
@@ -441,7 +456,7 @@ export function TransactionsPanel() {
               credit to the append-only cap-relief ledger; CapUsed drops (floored at $0). Any phase.
             </p>
           </div>
-        ) : (
+        ) : kind === 'SIGN' ? (
           <div className="space-y-1">
             <div className="flex flex-wrap gap-2">
               <input
@@ -479,6 +494,32 @@ export function TransactionsPanel() {
               barred); a bought-out player is locked until the following offseason (§12). The cap is
               not blocked (it just reflects the signing). The min-salary floor is skipped until
               experience data exists. See the free-agent pool on the right.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <div className="flex gap-2">
+              <select
+                className="rounded bg-slate-800 px-2 py-1 text-sm"
+                value={windowOpen ? 'open' : 'closed'}
+                onChange={(e) => setWindowOpen(e.target.value === 'open')}
+              >
+                <option value="closed">CLOSE window</option>
+                <option value="open">OPEN window</option>
+              </select>
+              <input
+                className="w-40 rounded bg-slate-800 px-2 py-1 text-sm"
+                placeholder="note (optional)"
+                value={windowNote}
+                onChange={(e) => setWindowNote(e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-slate-400">
+              §6 commissioner UFA calendar: opens or closes the free-agency signing window without
+              changing the phase (rides the append-only season_phases.meta as a from==to directive).
+              A CLOSED window blocks every SIGN on top of its phase floor until reopened; it persists
+              across phase transitions and season rollovers. The window defaults OPEN; toggling it to
+              the state it is already in is rejected (no-op).
             </p>
           </div>
         )}
