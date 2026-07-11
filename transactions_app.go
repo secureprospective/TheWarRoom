@@ -31,6 +31,12 @@ type TransactionRequest struct {
 	AddedYears   int       `json:"addedYears"` // EXTENSION (§10): years to add (1..3)
 	ToPhase      string    `json:"toPhase"`    // ADVANCE_PHASE (D3): target season phase
 	Note         string    `json:"note"`       // ADVANCE_PHASE: commissioner's freeform reason
+	// §13 special situations. RETIREMENT/DEATH read MFLID. CAP_RELIEF reads FranchiseID +
+	// AmountMillions (parsed to exact cents server-side, never a JS number) + Reason (the
+	// commissioner's audit basis).
+	FranchiseID    string `json:"franchiseID"`
+	AmountMillions string `json:"amountMillions"`
+	Reason         string `json:"reason"`
 }
 
 // TransactionResult is the typed IPC outcome: OK plus the committed Receipt fields, or
@@ -207,6 +213,20 @@ func buildRequest(req TransactionRequest) (transactions.Request, error) {
 		return transactions.Buyout{MFLID: req.MFLID}, nil
 	case string(transactions.KindAdvancePhase):
 		return transactions.AdvancePhase{To: domain.Phase(req.ToPhase), Note: req.Note}, nil
+	case string(transactions.KindRetirement):
+		// §13: 30% of remaining contract as dead cap; every figure resolved in-tx.
+		return transactions.Retirement{MFLID: req.MFLID}, nil
+	case string(transactions.KindDeath):
+		// §13 Gaines Adams Rule: remove with zero dead cap.
+		return transactions.Death{MFLID: req.MFLID}, nil
+	case string(transactions.KindCapRelief):
+		// §13 Cap Relief Appeal: commissioner credit. Millions string → exact cents at the
+		// boundary (no float money math frontend-side); Amount is discretionary, not resolved.
+		amount, err := domain.ParseMoneyMillions(req.AmountMillions)
+		if err != nil {
+			return nil, fmt.Errorf("cap relief amount: %w", err)
+		}
+		return transactions.CapRelief{FranchiseID: req.FranchiseID, Amount: amount, Reason: req.Reason}, nil
 	case string(transactions.KindRestructure):
 		// Millions string → exact cents at the boundary (no float money math frontend-side).
 		move, err := domain.ParseMoneyMillions(req.MoveMillions)

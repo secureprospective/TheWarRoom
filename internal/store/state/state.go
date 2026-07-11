@@ -318,10 +318,26 @@ ORDER BY r.franchise_id, r.mfl_id`, s.leagueID, s.season)
 		}
 	}
 
-	// CapUsed then adds this season's dead-cap charges (B7b): the §8 waiver penalty counts
-	// against the cap for its absolute year. A franchise that carries dead cap but no current
-	// players still appears here (its cap is non-zero) — a deliberate extension of the
-	// player-derived identity rule.
+	// CapUsed then adds this season's dead-cap charges (B7b) and subtracts the commissioner
+	// cap-relief credits (§13).
+	if err := s.applyDeadCap(ctx, fr); err != nil {
+		return err
+	}
+	if err := s.applyCapRelief(ctx, fr); err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	s.franchises, s.byPlayer = fr, idx
+	s.mu.Unlock()
+	return nil
+}
+
+// applyDeadCap ADDS this season's dead-cap charges (B7b) to the derived per-franchise CapUsed:
+// the §8/§12/§13 penalties count against the cap for their absolute year. A franchise that
+// carries dead cap but no current players still appears here (its cap is non-zero) — a deliberate
+// extension of the player-derived identity rule.
+func (s *Store) applyDeadCap(ctx context.Context, fr map[string]*FranchiseState) error {
 	dc, err := s.loadDeadCap(ctx)
 	if err != nil {
 		return err
@@ -334,10 +350,6 @@ ORDER BY r.franchise_id, r.mfl_id`, s.leagueID, s.season)
 		}
 		f.CapUsed += amt
 	}
-
-	s.mu.Lock()
-	s.franchises, s.byPlayer = fr, idx
-	s.mu.Unlock()
 	return nil
 }
 

@@ -481,7 +481,10 @@ export namespace main {
 	    addedYears: number;
 	    toPhase: string;
 	    note: string;
-	
+	    franchiseID: string;
+	    amountMillions: string;
+	    reason: string;
+
 	    static createFrom(source: any = {}) {
 	        return new TransactionRequest(source);
 	    }
@@ -496,6 +499,9 @@ export namespace main {
 	        this.addedYears = source["addedYears"];
 	        this.toPhase = source["toPhase"];
 	        this.note = source["note"];
+	        this.franchiseID = source["franchiseID"];
+	        this.amountMillions = source["amountMillions"];
+	        this.reason = source["reason"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

@@ -16,7 +16,10 @@ type Kind =
   | 'TAG'
   | 'EXTENSION'
   | 'BUYOUT'
-  | 'ADVANCE_PHASE';
+  | 'ADVANCE_PHASE'
+  | 'RETIREMENT'
+  | 'DEATH'
+  | 'CAP_RELIEF';
 type Leg = { mflID: string; toFranchiseID: string };
 const PHASES = ['OFFSEASON', 'REGULAR_SEASON', 'PLAYOFFS'] as const;
 
@@ -32,6 +35,11 @@ export function TransactionsPanel() {
   const [extMflID, setExtMflID] = useState('');
   const [addedYears, setAddedYears] = useState('1');
   const [buyoutMflID, setBuyoutMflID] = useState('');
+  const [retireMflID, setRetireMflID] = useState('');
+  const [deathMflID, setDeathMflID] = useState('');
+  const [reliefFranchise, setReliefFranchise] = useState('');
+  const [reliefAmount, setReliefAmount] = useState('');
+  const [reliefReason, setReliefReason] = useState('');
   const [toPhase, setToPhase] = useState<(typeof PHASES)[number]>('REGULAR_SEASON');
   const [phaseNote, setPhaseNote] = useState('');
   const [result, setResult] = useState<main.TransactionResult | null>(null);
@@ -68,12 +76,19 @@ export function TransactionsPanel() {
                     ? extMflID
                     : kind === 'BUYOUT'
                       ? buyoutMflID
-                      : '',
+                      : kind === 'RETIREMENT'
+                        ? retireMflID
+                        : kind === 'DEATH'
+                          ? deathMflID
+                          : '',
         status: kind === 'ROSTER_STATUS' ? status : '',
         moveMillions: kind === 'RESTRUCTURE' ? moveMillions : '',
         addedYears: kind === 'EXTENSION' ? Number(addedYears) || 0 : 0,
         toPhase: kind === 'ADVANCE_PHASE' ? toPhase : '',
         note: kind === 'ADVANCE_PHASE' ? phaseNote : '',
+        franchiseID: kind === 'CAP_RELIEF' ? reliefFranchise : '',
+        amountMillions: kind === 'CAP_RELIEF' ? reliefAmount : '',
+        reason: kind === 'CAP_RELIEF' ? reliefReason : '',
       });
       setResult(await ExecuteTransaction(req));
       if (kind === 'ADVANCE_PHASE') await refreshPhase();
@@ -114,6 +129,9 @@ export function TransactionsPanel() {
               'EXTENSION',
               'BUYOUT',
               'ADVANCE_PHASE',
+              'RETIREMENT',
+              'DEATH',
+              'CAP_RELIEF',
             ] as Kind[]
           ).map((k) => (
             <button
@@ -138,7 +156,13 @@ export function TransactionsPanel() {
                           ? 'Extend (§10)'
                           : k === 'BUYOUT'
                             ? 'Buyout (§12)'
-                            : 'Advance phase'}
+                            : k === 'ADVANCE_PHASE'
+                              ? 'Advance phase'
+                              : k === 'RETIREMENT'
+                                ? 'Retire (§13)'
+                                : k === 'DEATH'
+                                  ? 'Death (§13)'
+                                  : 'Cap relief (§13)'}
             </button>
           ))}
         </div>
@@ -290,7 +314,7 @@ export function TransactionsPanel() {
               to the §13 commissioner path.
             </p>
           </div>
-        ) : (
+        ) : kind === 'ADVANCE_PHASE' ? (
           <div className="space-y-1">
             <div className="flex gap-2">
               <select
@@ -315,6 +339,61 @@ export function TransactionsPanel() {
               D3 season phase (commissioner): appends a transition to the append-only phase log.
               Gates which ops are legal (e.g. §12 buyouts are OFFSEASON-only). A no-op (already in
               the target phase) is rejected.
+            </p>
+          </div>
+        ) : kind === 'RETIREMENT' ? (
+          <div className="space-y-1">
+            <input
+              className="w-32 rounded bg-slate-800 px-2 py-1 text-sm"
+              placeholder="player mflID"
+              value={retireMflID}
+              onChange={(e) => setRetireMflID(e.target.value)}
+            />
+            <p className="text-xs text-slate-400">
+              §13 retirement: releases the player and charges dead cap of 30% of his remaining
+              contract (the salary of every year after the current season) against the current
+              season. Resolved server-side. Any phase, no per-season limit.
+            </p>
+          </div>
+        ) : kind === 'DEATH' ? (
+          <div className="space-y-1">
+            <input
+              className="w-32 rounded bg-slate-800 px-2 py-1 text-sm"
+              placeholder="player mflID"
+              value={deathMflID}
+              onChange={(e) => setDeathMflID(e.target.value)}
+            />
+            <p className="text-xs text-slate-400">
+              §13 Gaines Adams Rule (death): removes the player from his roster with NO cap penalty
+              — his salary leaves and no dead cap lands. Any phase.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <div className="flex gap-2">
+              <input
+                className="w-28 rounded bg-slate-800 px-2 py-1 text-sm"
+                placeholder="franchise id"
+                value={reliefFranchise}
+                onChange={(e) => setReliefFranchise(e.target.value)}
+              />
+              <input
+                className="w-28 rounded bg-slate-800 px-2 py-1 text-sm"
+                placeholder="relief ($M) e.g. 3"
+                value={reliefAmount}
+                onChange={(e) => setReliefAmount(e.target.value)}
+              />
+              <input
+                className="w-40 rounded bg-slate-800 px-2 py-1 text-sm"
+                placeholder="reason (required)"
+                value={reliefReason}
+                onChange={(e) => setReliefReason(e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-slate-400">
+              §13 Cap Relief Appeal (commissioner): reduces the franchise's cap hit by the relief
+              amount (career-ending injury, recurring injury, behavioral suspension). Appends a
+              credit to the append-only cap-relief ledger; CapUsed drops (floored at $0). Any phase.
             </p>
           </div>
         )}

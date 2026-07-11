@@ -24,6 +24,9 @@ const (
 	KindExtension    Kind = "EXTENSION"
 	KindBuyout       Kind = "BUYOUT"
 	KindAdvancePhase Kind = "ADVANCE_PHASE"
+	KindRetirement   Kind = "RETIREMENT"
+	KindDeath        Kind = "DEATH"
+	KindCapRelief    Kind = "CAP_RELIEF"
 )
 
 // Request is a transaction the Coordinator can execute. The concrete types live in THIS
@@ -302,6 +305,95 @@ func (a AdvancePhase) validate() error {
 func (a AdvancePhase) apply(ctx context.Context, w state.TxWriter) (int, error) {
 	if err := w.AppendPhaseTransition(ctx, a.To, a.Note); err != nil {
 		return 0, fmt.Errorf("advance phase: %w", err)
+	}
+	return 0, nil
+}
+
+// Retirement executes a §13 retirement: the franchise releases the player and owes a §13
+// dead-cap charge (30% of his remaining contract — the salary of every year strictly after the
+// current season). It reuses the §8 release/void path; every money figure and the remaining-year
+// sum are resolved from authoritative state inside apply — the request carries only the id.
+type Retirement struct {
+	MFLID string
+}
+
+func (Retirement) Kind() Kind { return KindRetirement }
+func (Retirement) sealed()    {}
+
+// validate rejects only an empty player id here; roster membership and the §13 charge are
+// resolved against real state in apply.
+func (r Retirement) validate() error {
+	if strings.TrimSpace(r.MFLID) == "" {
+		return fmt.Errorf("transactions: retirement has an empty player id")
+	}
+	return nil
+}
+
+func (r Retirement) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if _, err := deadcap.Retire(ctx, w, r.MFLID); err != nil {
+		return 0, fmt.Errorf("retirement: %w", err)
+	}
+	return 1, nil
+}
+
+// Death executes a §13 Gaines Adams Rule removal: a player's death removes him from his roster
+// with NO cap penalty (a cut with zero dead cap). It reuses the §8 release/void path and records
+// a $0 dead-cap audit row. The request carries only the id.
+type Death struct {
+	MFLID string
+}
+
+func (Death) Kind() Kind { return KindDeath }
+func (Death) sealed()    {}
+
+// validate rejects only an empty player id here; roster membership is resolved in apply.
+func (d Death) validate() error {
+	if strings.TrimSpace(d.MFLID) == "" {
+		return fmt.Errorf("transactions: death has an empty player id")
+	}
+	return nil
+}
+
+func (d Death) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if _, err := deadcap.Death(ctx, w, d.MFLID); err != nil {
+		return 0, fmt.Errorf("death: %w", err)
+	}
+	return 1, nil
+}
+
+// CapRelief executes a §13 Cap Relief Appeal: the commissioner reduces a franchise's cap hit by
+// Amount (career-ending injury, recurring injury, behavioral suspension). It appends a positive
+// credit to the cap-relief ledger, which CapUsed subtracts — a franchise-scoped adjustment with
+// no player release. Unlike the priced ops, Amount IS a caller field: it is the commissioner's
+// discretionary figure (there is no formula to resolve), carried as exact cents and validated for
+// shape here and at the store.
+type CapRelief struct {
+	FranchiseID string
+	Amount      domain.Money
+	Reason      string
+}
+
+func (CapRelief) Kind() Kind { return KindCapRelief }
+func (CapRelief) sealed()    {}
+
+// validate enforces the shape a commissioner relief must have — a franchise, a positive amount,
+// and a reason for the audit trail — before a transaction is opened.
+func (c CapRelief) validate() error {
+	if strings.TrimSpace(c.FranchiseID) == "" {
+		return fmt.Errorf("transactions: cap relief has an empty franchise id")
+	}
+	if c.Amount <= 0 {
+		return fmt.Errorf("transactions: cap relief amount must be positive")
+	}
+	if strings.TrimSpace(c.Reason) == "" {
+		return fmt.Errorf("transactions: cap relief requires a reason (audit trail)")
+	}
+	return nil
+}
+
+func (c CapRelief) apply(ctx context.Context, w state.TxWriter) (int, error) {
+	if err := deadcap.Relieve(ctx, w, c.FranchiseID, c.Amount, c.Reason); err != nil {
+		return 0, fmt.Errorf("cap relief: %w", err)
 	}
 	return 0, nil
 }

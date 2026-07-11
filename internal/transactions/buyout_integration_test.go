@@ -177,3 +177,64 @@ func TestIntegration_BuyoutRejectionConsumesNoSlot(t *testing.T) {
 		}
 	}
 }
+
+// unequalSeed rosters one WR alone on his franchise so a buyout's CapUsed isolates the dead-cap
+// charge. 0071 is $8M exp 2028 (paid cells 2026/27/28 = $8M each). A §10 extension appends 2029 at
+// 150%×$8M = $12M (above the $10M WR floor) — creating UNEQUAL remaining cells (8,8,12) that a
+// flat approximation would get wrong. The §12 buyout averages the ACTUAL cells.
+type unequalSeed struct{ t *testing.T }
+
+func (s unequalSeed) Rosters(context.Context) ([]domain.Roster, error) {
+	p, err := playerid.New("0071")
+	if err != nil {
+		s.t.Fatalf("playerid.New: %v", err)
+	}
+	return []domain.Roster{{FranchiseID: "0007", Players: []domain.PlayerRecord{
+		{MFLID: p, Salary: 8 * mil, ContractYear: 2028, RosterStatus: domain.RosterActive, ContractStatus: domain.CStatusUFA},
+	}}}, nil
+}
+
+// TestIntegration_BuyoutUnequalCellsUsesMean closes the §12 carry-forward: a buyout of a contract
+// with UNEQUAL remaining-year salaries charges on the MEAN of the actual cells, not a flat
+// current-cell approximation. 0071 is extended to remaining cells 2027/28/29 = $8M/$8M/$12M
+// (mean $9,333,333.33); at 3 years remaining the rate is 75% → exactly $7M dead cap. A wrong impl
+// that dropped the $12M extension year would average $8M → $6M, so the $7M assertion pins the mean.
+func TestIntegration_BuyoutUnequalCellsUsesMean(t *testing.T) {
+	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "unequal.db"))
+	if err != nil {
+		t.Fatalf("db.Open: %v", err)
+	}
+	t.Cleanup(func() { _ = pools.Close() })
+	s := statepkg.New(pools, "14432", 2026)
+	if err := s.Initialize(context.Background(), unequalSeed{t}); err != nil {
+		t.Fatalf("Initialize: %v", err)
+	}
+	c, err := transactions.New(s.Writer())
+	if err != nil {
+		t.Fatalf("New coordinator: %v", err)
+	}
+	ctx := context.Background()
+	dir := tagDir{"0071": domain.PosWR}
+
+	// Extend +1 year: 2029 lands at $12M (150%×$8M beats the $10M WR floor), making the remaining
+	// cells unequal.
+	if _, err := c.ExecuteExtension(ctx, "0071", 1, dir); err != nil {
+		t.Fatalf("ExecuteExtension: %v", err)
+	}
+	cells, _ := s.LedgerCells(ctx, "0071")
+	if cells[2029] != 12*mil {
+		t.Fatalf("extension cell 2029 = %s, want $12M (unequal-cell setup)", cells[2029])
+	}
+
+	// Buyout in OFFSEASON (fresh-store default). 75% × mean(8,8,12)M = 75% × $9,333,333.33 = $7M.
+	if _, err := c.Execute(ctx, transactions.Buyout{MFLID: "0071"}); err != nil {
+		t.Fatalf("buyout: %v", err)
+	}
+	if _, ok := s.Reader().Player("0071"); ok {
+		t.Fatal("player still rostered after buyout")
+	}
+	got, ok := s.Reader().CapUsed("0007")
+	if !ok || got != 7*mil {
+		t.Fatalf("dead cap = %v (ok=%v), want $7M (75%% of the $9.33M mean of unequal cells)", got, ok)
+	}
+}

@@ -29,6 +29,9 @@ func (s *Store) initSchema(ctx context.Context) error {
 	if err := s.initSeasonPhaseSchema(ctx); err != nil {
 		return err
 	}
+	if err := s.initCapReliefSchema(ctx); err != nil {
+		return err
+	}
 	if err := s.migrateMoneyCents(ctx); err != nil {
 		return err
 	}

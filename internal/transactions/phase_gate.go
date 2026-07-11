@@ -26,7 +26,11 @@ import (
 // changes the phase.
 func phasePolicy(kind Kind) ([]domain.Phase, bool) {
 	switch kind {
-	case KindTrade, KindRosterStatus, KindWaiver, KindRestructure, KindTag, KindExtension, KindAdvancePhase:
+	case KindTrade, KindRosterStatus, KindWaiver, KindRestructure, KindTag, KindExtension, KindAdvancePhase,
+		KindRetirement, KindDeath, KindCapRelief:
+		// §13 special situations (retirement, death, cap relief) can happen in any phase — a
+		// player retires or dies whenever, and a commissioner cap-relief appeal is not
+		// phase-bound. Only §12 buyout is offseason-restricted in v1.
 		return allPhases(), true
 	case KindBuyout:
 		// §12: buyouts are OFFSEASON-only. This is the one phase-restricted op in v1.

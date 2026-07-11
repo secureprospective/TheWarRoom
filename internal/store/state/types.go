@@ -87,6 +87,12 @@ type TxWriter interface {
 	SetRosterStatus(ctx context.Context, mflID string, status domain.RosterStatus) error
 	ApplyContract(ctx context.Context, mflID string, c ContractChange) error
 	AddDeadCap(ctx context.Context, e DeadCapEntry) error
+	// AddCapRelief appends one commissioner cap-relief CREDIT (§13 Cap Relief Appeal) to the
+	// cap_relief_ledger in the shared tx — a franchise-scoped reduction of the season's cap hit.
+	// It is the sibling of AddDeadCap: a positive credit against an absolute league year, kept in
+	// its own append-only ledger so the dead-cap non-negativity invariant stays pure. CapUsed
+	// subtracts it. Fails loud on a non-positive amount or a missing field.
+	AddCapRelief(ctx context.Context, e CapReliefEntry) error
 	// ReleasePlayer removes a player from his franchise entirely (deletes the rosters +
 	// contracts rows) — the roster side of a §8 waiver cut. His salary leaves CapUsed;
 	// the dead-cap charge is recorded separately via AddDeadCap. Fails loud on an unknown
@@ -215,6 +221,19 @@ type DeadCapEntry struct {
 	LeagueYear  int          // ABSOLUTE league year the charge counts against
 	DeadCap     domain.Money // exact cents, >= 0
 	Reason      string       // audit trail, e.g. "waiver-cut §8"
+}
+
+// CapReliefEntry is one append-only commissioner cap-relief credit (§13 Cap Relief Appeal)
+// against a franchise's cap for an ABSOLUTE league year. Unlike DeadCapEntry it is
+// FRANCHISE-scoped (no player id): a relief appeal reduces the franchise's cap hit, not a single
+// player's dead-cap row. Amount is exact cents and strictly positive (a $0 relief is a no-op).
+// Reason is a required audit string recording the commissioner's basis (career-ending injury,
+// recurring injury, behavioral suspension). CapUsed subtracts the sum of these credits.
+type CapReliefEntry struct {
+	FranchiseID string
+	LeagueYear  int          // ABSOLUTE league year the credit counts against
+	Amount      domain.Money // exact cents, > 0
+	Reason      string       // audit trail, e.g. "cap-relief §13: career-ending injury"
 }
 
 // Source is the SEED source B3c pulls from at Initialize — the normalized rosters

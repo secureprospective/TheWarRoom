@@ -60,6 +60,11 @@ func (f *fakeTxWriter) AddDeadCap(_ context.Context, e state.DeadCapEntry) error
 	return f.maybeFail()
 }
 
+func (f *fakeTxWriter) AddCapRelief(_ context.Context, e state.CapReliefEntry) error {
+	f.calls = append(f.calls, recordedMove{op: "caprelief", target: e.FranchiseID})
+	return f.maybeFail()
+}
+
 func (f *fakeTxWriter) ReleasePlayer(_ context.Context, mflID string) error {
 	f.calls = append(f.calls, recordedMove{op: "release", mflID: mflID})
 	return f.maybeFail()
