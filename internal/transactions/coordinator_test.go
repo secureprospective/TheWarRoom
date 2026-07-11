@@ -105,6 +105,22 @@ func (f *fakeTxWriter) AppendPhaseTransition(ctx context.Context, to domain.Phas
 	return nil
 }
 
+// RolloverSeason records the rollover and advances the fake to OFFSEASON of the next season,
+// rejecting a from-phase other than PLAYOFFS (mirrors the store primitive's guard).
+func (f *fakeTxWriter) RolloverSeason(ctx context.Context, _ string) error {
+	cur, _ := f.CurrentPhase(ctx)
+	if cur != domain.PhasePlayoffs {
+		return fmt.Errorf("only legal from PLAYOFFS (current phase is %q)", cur)
+	}
+	f.calls = append(f.calls, recordedMove{op: "rolloverseason"})
+	if err := f.maybeFail(); err != nil {
+		return err
+	}
+	f.season++
+	f.phase = domain.PhaseOffseason
+	return nil
+}
+
 func (f *fakeTxWriter) MoveCellMoney(_ context.Context, mflID string, _, _ int, _ domain.Money, _ string) error {
 	f.calls = append(f.calls, recordedMove{op: "movecell", mflID: mflID})
 	return f.maybeFail()

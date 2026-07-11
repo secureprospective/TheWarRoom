@@ -213,6 +213,10 @@ func buildRequest(req TransactionRequest) (transactions.Request, error) {
 		return transactions.Buyout{MFLID: req.MFLID}, nil
 	case string(transactions.KindAdvancePhase):
 		return transactions.AdvancePhase{To: domain.Phase(req.ToPhase), Note: req.Note}, nil
+	case string(transactions.KindRolloverSeason):
+		// §14: the season boundary, PLAYOFFS(N)→OFFSEASON(N+1). Commissioner-confirmed; carries
+		// only a freeform note (its sole precondition, current phase == PLAYOFFS, is enforced in-tx).
+		return transactions.RolloverSeason{Note: req.Note}, nil
 	case string(transactions.KindRetirement):
 		// §13: 30% of remaining contract as dead cap; every figure resolved in-tx.
 		return transactions.Retirement{MFLID: req.MFLID}, nil

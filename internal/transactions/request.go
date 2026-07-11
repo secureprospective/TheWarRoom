@@ -16,17 +16,18 @@ import (
 type Kind string
 
 const (
-	KindTrade        Kind = "TRADE"
-	KindRosterStatus Kind = "ROSTER_STATUS"
-	KindWaiver       Kind = "WAIVER"
-	KindRestructure  Kind = "RESTRUCTURE"
-	KindTag          Kind = "TAG"
-	KindExtension    Kind = "EXTENSION"
-	KindBuyout       Kind = "BUYOUT"
-	KindAdvancePhase Kind = "ADVANCE_PHASE"
-	KindRetirement   Kind = "RETIREMENT"
-	KindDeath        Kind = "DEATH"
-	KindCapRelief    Kind = "CAP_RELIEF"
+	KindTrade          Kind = "TRADE"
+	KindRosterStatus   Kind = "ROSTER_STATUS"
+	KindWaiver         Kind = "WAIVER"
+	KindRestructure    Kind = "RESTRUCTURE"
+	KindTag            Kind = "TAG"
+	KindExtension      Kind = "EXTENSION"
+	KindBuyout         Kind = "BUYOUT"
+	KindAdvancePhase   Kind = "ADVANCE_PHASE"
+	KindRolloverSeason Kind = "ROLLOVER_SEASON"
+	KindRetirement     Kind = "RETIREMENT"
+	KindDeath          Kind = "DEATH"
+	KindCapRelief      Kind = "CAP_RELIEF"
 )
 
 // Request is a transaction the Coordinator can execute. The concrete types live in THIS
@@ -277,36 +278,6 @@ func (b Buyout) apply(ctx context.Context, w state.TxWriter) (int, error) {
 		return 0, fmt.Errorf("buyout: %w", err)
 	}
 	return 1, nil
-}
-
-// AdvancePhase moves the league-year's season phase to To (Vision-2026 D3) — a first-class,
-// commissioner-confirmed transition appended to the append-only season_phases log. It touches
-// no players (PlayersAffected 0). Any real target phase is allowed in v1 (correction/rollback);
-// a no-op (To == current) is rejected in the store primitive. Note is the commissioner's
-// freeform reason (optional). ADVANCE_PHASE is itself legal in every phase (it is the op that
-// changes the phase), so the op-eligibility gate never blocks it.
-type AdvancePhase struct {
-	To   domain.Phase
-	Note string
-}
-
-func (AdvancePhase) Kind() Kind { return KindAdvancePhase }
-func (AdvancePhase) sealed()    {}
-
-// validate rejects an unknown target phase before a transaction is opened; the no-op guard
-// (To == current) needs the committed phase and so is enforced in apply, atomically.
-func (a AdvancePhase) validate() error {
-	if !a.To.Valid() {
-		return fmt.Errorf("transactions: advance-phase target %q is not a known phase", a.To)
-	}
-	return nil
-}
-
-func (a AdvancePhase) apply(ctx context.Context, w state.TxWriter) (int, error) {
-	if err := w.AppendPhaseTransition(ctx, a.To, a.Note); err != nil {
-		return 0, fmt.Errorf("advance phase: %w", err)
-	}
-	return 0, nil
 }
 
 // Retirement executes a §13 retirement: the franchise releases the player and owes a §13

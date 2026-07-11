@@ -35,6 +35,10 @@ func phasePolicy(kind Kind) ([]domain.Phase, bool) {
 	case KindBuyout:
 		// §12: buyouts are OFFSEASON-only. This is the one phase-restricted op in v1.
 		return []domain.Phase{domain.PhaseOffseason}, true
+	case KindRolloverSeason:
+		// §14: the season rollover is legal ONLY from PLAYOFFS — it moves PLAYOFFS(N)→OFFSEASON(N+1),
+		// so any other from-phase would strand the current season's ledgers (Season_Rollover_Design D5).
+		return []domain.Phase{domain.PhasePlayoffs}, true
 	default:
 		return nil, false
 	}

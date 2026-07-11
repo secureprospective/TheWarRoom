@@ -17,6 +17,7 @@ type Kind =
   | 'EXTENSION'
   | 'BUYOUT'
   | 'ADVANCE_PHASE'
+  | 'ROLLOVER_SEASON'
   | 'RETIREMENT'
   | 'DEATH'
   | 'CAP_RELIEF';
@@ -85,13 +86,13 @@ export function TransactionsPanel() {
         moveMillions: kind === 'RESTRUCTURE' ? moveMillions : '',
         addedYears: kind === 'EXTENSION' ? Number(addedYears) || 0 : 0,
         toPhase: kind === 'ADVANCE_PHASE' ? toPhase : '',
-        note: kind === 'ADVANCE_PHASE' ? phaseNote : '',
+        note: kind === 'ADVANCE_PHASE' || kind === 'ROLLOVER_SEASON' ? phaseNote : '',
         franchiseID: kind === 'CAP_RELIEF' ? reliefFranchise : '',
         amountMillions: kind === 'CAP_RELIEF' ? reliefAmount : '',
         reason: kind === 'CAP_RELIEF' ? reliefReason : '',
       });
       setResult(await ExecuteTransaction(req));
-      if (kind === 'ADVANCE_PHASE') await refreshPhase();
+      if (kind === 'ADVANCE_PHASE' || kind === 'ROLLOVER_SEASON') await refreshPhase();
       if (franchise) setFranchise(await GetFranchiseState(franchise.franchiseID)); // auto-confirm
     } finally {
       setBusy(false);
@@ -129,6 +130,7 @@ export function TransactionsPanel() {
               'EXTENSION',
               'BUYOUT',
               'ADVANCE_PHASE',
+              'ROLLOVER_SEASON',
               'RETIREMENT',
               'DEATH',
               'CAP_RELIEF',
@@ -158,7 +160,9 @@ export function TransactionsPanel() {
                             ? 'Buyout (§12)'
                             : k === 'ADVANCE_PHASE'
                               ? 'Advance phase'
-                              : k === 'RETIREMENT'
+                              : k === 'ROLLOVER_SEASON'
+                                ? 'Roll season (§14)'
+                                : k === 'RETIREMENT'
                                 ? 'Retire (§13)'
                                 : k === 'DEATH'
                                   ? 'Death (§13)'
@@ -339,6 +343,21 @@ export function TransactionsPanel() {
               D3 season phase (commissioner): appends a transition to the append-only phase log.
               Gates which ops are legal (e.g. §12 buyouts are OFFSEASON-only). A no-op (already in
               the target phase) is rejected.
+            </p>
+          </div>
+        ) : kind === 'ROLLOVER_SEASON' ? (
+          <div className="space-y-1">
+            <input
+              className="w-40 rounded bg-slate-800 px-2 py-1 text-sm"
+              placeholder="note (optional)"
+              value={phaseNote}
+              onChange={(e) => setPhaseNote(e.target.value)}
+            />
+            <p className="text-xs text-slate-400">
+              §14 season rollover (commissioner, PLAYOFFS only): closes the season, moving
+              PLAYOFFS(N) → OFFSEASON(N+1). The cap rolls to next year's contract cells, per-season
+              op limits reset, and this season's dead cap / cap relief drop off. One-way — the season
+              never moves backward.
             </p>
           </div>
         ) : kind === 'RETIREMENT' ? (

@@ -65,15 +65,15 @@ func (s *Store) initSeasonPhaseSchema(ctx context.Context) error {
 func (s *Store) seedInitialPhase(ctx context.Context) error {
 	var seq int64
 	row := s.pools.Read().QueryRowContext(ctx,
-		`SELECT seq FROM season_phases WHERE league_id = ? AND season = ? ORDER BY seq DESC LIMIT 1`,
-		s.leagueID, s.season)
+		`SELECT seq FROM season_phases WHERE league_id = ? ORDER BY seq DESC LIMIT 1`,
+		s.leagueID)
 	switch err := row.Scan(&seq); {
 	case errors.Is(err, sql.ErrNoRows):
 		// empty log — insert the genesis row below
 	case err != nil:
 		return fmt.Errorf("state: seed initial phase: probe: %w", err)
 	default:
-		return nil // a phase already exists for this league-year — never reseed
+		return nil // a phase already exists for this league — never reseed (league-global, D1/D7)
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
 	if _, err := s.pools.Write().ExecContext(ctx, `
@@ -81,6 +81,40 @@ INSERT INTO season_phases (league_id, season, from_phase, to_phase, note, meta, 
 VALUES (?, ?, '', ?, 'seed', '', ?)`,
 		s.leagueID, s.season, string(domain.PhaseOffseason), now); err != nil {
 		return fmt.Errorf("state: seed initial phase: insert: %w", err)
+	}
+	return nil
+}
+
+// deriveCurrentSeason reads the league-global latest phase row's season — the runtime source of
+// truth for "current season" once a ROLLOVER_SEASON op has moved it past the config seed year
+// (Season_Rollover_Design D1/D7). The season is DERIVED from the append-only phase log, never
+// stored as a competing mutable cursor. Returns found=false only when the phase log is empty (a
+// brand-new DB, before seedInitialPhase), in which case the caller keeps the config season.
+func (s *Store) deriveCurrentSeason(ctx context.Context) (season int, found bool, err error) {
+	row := s.pools.Read().QueryRowContext(ctx,
+		`SELECT season FROM season_phases WHERE league_id = ? ORDER BY seq DESC LIMIT 1`,
+		s.leagueID)
+	switch scanErr := row.Scan(&season); {
+	case errors.Is(scanErr, sql.ErrNoRows):
+		return 0, false, nil
+	case scanErr != nil:
+		return 0, false, fmt.Errorf("state: derive current season: %w", scanErr)
+	}
+	return season, true, nil
+}
+
+// refreshSeason re-derives s.season from the phase log and updates the frozen field. Called under
+// wmu (from Initialize and load) — s.season is written only here and read only under wmu (SQL
+// scoping in load/rosterCount/writes) so no separate lock is needed. This is the make-or-break
+// rollover seam (Season_Rollover_Design D6): after a rollover commits, every scoped read must track
+// the new year, or the cap engine silently computes against the wrong season.
+func (s *Store) refreshSeason(ctx context.Context) error {
+	season, found, err := s.deriveCurrentSeason(ctx)
+	if err != nil {
+		return err
+	}
+	if found {
+		s.season = season
 	}
 	return nil
 }
@@ -115,6 +149,63 @@ VALUES (?, ?, ?, ?, ?, '', ?)`,
 	return nil
 }
 
+// RolloverSeason advances the league from PLAYOFFS(N) to OFFSEASON(N+1) — the ROLLOVER_SEASON write
+// primitive (Season_Rollover_Design D5/D7). In the shared tx it (1) appends the PLAYOFFS→OFFSEASON
+// transition row carrying season N+1 (the season bump lives in this row, so D1's "latest row's
+// season" derivation makes N+1 the current season after commit), and (2) advances the mutable
+// roster/contract snapshot from N to N+1 so every season-scoped read follows the new year. It does
+// NOT touch dead_cap_ledger / cap_relief_ledger (per-year audit rows stay put; the new season sums
+// them to 0 by absence), transaction_counts (N+1 reads 0 by absence — the per-season limits reset),
+// or is_restructured (the §11 lifetime guard is not season-scoped, D4). The season is MONOTONIC:
+// this is the only primitive that moves it, forward by exactly one. Legal ONLY from PLAYOFFS — the
+// op-eligibility gate enforces it, and this asserts it again as defense in depth (a rollover from
+// any other phase would strand the current season's ledgers). load() re-derives s.season post-commit.
+func (w *txWriter) RolloverSeason(ctx context.Context, note string) error {
+	from, err := w.CurrentPhase(ctx)
+	if err != nil {
+		return fmt.Errorf("state: RolloverSeason: read current phase: %w", err)
+	}
+	if from != domain.PhasePlayoffs {
+		return fmt.Errorf("state: RolloverSeason: only legal from PLAYOFFS (current phase is %q)", from)
+	}
+	// Monotonic guard (D5): re-derive the committed latest season from the log and assert the
+	// in-memory season agrees before rolling. Today they always agree (refreshSeason set s.season
+	// from this same row at load), so this is defense in depth — but it makes a drifted or
+	// out-of-band season row fail LOUD here rather than silently rolling off the wrong year, the
+	// posture the rest of the store holds. It also pins the +1 to the committed log, not just memory.
+	logSeason, found, err := w.s.deriveCurrentSeason(ctx)
+	if err != nil {
+		return fmt.Errorf("state: RolloverSeason: derive current season: %w", err)
+	}
+	if !found || logSeason != w.s.season {
+		return fmt.Errorf("state: RolloverSeason: in-memory season %d disagrees with phase log %d (found=%v) — refusing to roll a drifted season", w.s.season, logSeason, found)
+	}
+	// SOLE-OCCUPANCY INVARIANT (D6): a rollover MUST be the only op in its WriteTx. It moves the
+	// season to N+1 while every co-resident contract op would still read w.s.season == N (load has
+	// not run yet) and charge dead cap to the wrong year — silently. Enforced structurally today:
+	// Coordinator.Execute runs exactly one leaf Request per WriteTx and RolloverSeason is a leaf, so
+	// nothing can co-reside. Any future composite/batch op must keep a rollover in its own tx.
+	cur := w.s.season
+	next := cur + 1
+	now := time.Now().UTC().Format(time.RFC3339)
+	if _, err := w.tx.ExecContext(ctx, `
+INSERT INTO season_phases (league_id, season, from_phase, to_phase, note, meta, at)
+VALUES (?, ?, ?, ?, ?, '', ?)`,
+		w.s.leagueID, next, string(domain.PhasePlayoffs), string(domain.PhaseOffseason), note, now); err != nil {
+		return fmt.Errorf("state: RolloverSeason: append transition %d→%d: %w", cur, next, err)
+	}
+	// Advance the mutable snapshot to N+1 (rosters + contracts are runtime state, not append-only).
+	if _, err := w.tx.ExecContext(ctx,
+		`UPDATE rosters SET season = ? WHERE league_id = ? AND season = ?`, next, w.s.leagueID, cur); err != nil {
+		return fmt.Errorf("state: RolloverSeason: advance roster snapshot: %w", err)
+	}
+	if _, err := w.tx.ExecContext(ctx,
+		`UPDATE contracts SET season = ? WHERE league_id = ? AND season = ?`, next, w.s.leagueID, cur); err != nil {
+		return fmt.Errorf("state: RolloverSeason: advance contract snapshot: %w", err)
+	}
+	return nil
+}
+
 // CurrentPhase returns the league-year's current season phase — the latest transition's
 // to_phase. It reads the read pool (committed state), NOT this tx's own uncommitted writes,
 // which is exactly right for the op-eligibility gate: the gate checks the phase as it stood
@@ -133,11 +224,11 @@ func (s *Store) CurrentPhase(ctx context.Context) (domain.Phase, error) {
 	var p string
 	row := s.pools.Read().QueryRowContext(ctx, `
 SELECT to_phase FROM season_phases
-WHERE league_id = ? AND season = ?
-ORDER BY seq DESC LIMIT 1`, s.leagueID, s.season)
+WHERE league_id = ?
+ORDER BY seq DESC LIMIT 1`, s.leagueID)
 	switch err := row.Scan(&p); {
 	case errors.Is(err, sql.ErrNoRows):
-		return "", fmt.Errorf("state: CurrentPhase: no phase row for league %q season %d (seed missing)", s.leagueID, s.season)
+		return "", fmt.Errorf("state: CurrentPhase: no phase row for league %q (seed missing)", s.leagueID)
 	case err != nil:
 		return "", fmt.Errorf("state: CurrentPhase: %w", err)
 	}

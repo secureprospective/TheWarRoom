@@ -150,6 +150,15 @@ type SeasonScope interface {
 	// any real target is allowed (v1 commissioner correction/rollback). `note` is a freeform
 	// reason. Fails loud on an unknown target phase or a missing seed.
 	AppendPhaseTransition(ctx context.Context, to domain.Phase, note string) error
+	// RolloverSeason advances the league from PLAYOFFS(N) to OFFSEASON(N+1) — the ROLLOVER_SEASON
+	// write primitive (Season_Rollover_Design D5/D7). In the shared tx it appends the
+	// PLAYOFFS→OFFSEASON transition carrying season N+1 (so the derived current season becomes
+	// N+1) and advances the roster/contract snapshot to N+1. The season is MONOTONIC — this is the
+	// ONLY primitive that moves it, and only forward by one. Requires the current phase to be
+	// PLAYOFFS (the op gate enforces it; asserted here for defense in depth). Dead-cap/relief/count
+	// rows are untouched (per-year audit; the new season reads them as 0 by absence) and
+	// is_restructured is left intact (§11 lifetime guard, D4). `note` is a freeform reason.
+	RolloverSeason(ctx context.Context, note string) error
 }
 
 // LedgerWriter is the per-year salary-cell mutation surface — the money primitives the

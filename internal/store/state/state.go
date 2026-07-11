@@ -112,6 +112,13 @@ func (s *Store) Initialize(ctx context.Context, src Source) error {
 	if err := s.initSchema(ctx); err != nil {
 		return err
 	}
+	// Derive the runtime season from the phase log BEFORE hasState/seed (D7 boot-order fix): a
+	// rolled-over DB rebooted with an unchanged MFL config would otherwise find no rosters at the
+	// config season and RE-SEED. On a brand-new DB the phase log is empty and the config season
+	// stands until seedInitialPhase writes the genesis row below.
+	if err := s.refreshSeason(ctx); err != nil {
+		return err
+	}
 	has, err := s.hasState(ctx)
 	if err != nil {
 		return err
@@ -257,6 +264,12 @@ func (s *Store) seed(ctx context.Context, rosters []domain.Roster) error {
 // concurrent readers always see a consistent snapshot. Called after seed and after
 // every mutation (32 teams is small; a full reload keeps memory and DB identical).
 func (s *Store) load(ctx context.Context) error {
+	// Re-derive the season from the phase log FIRST (D6 rollover seam): load runs after every
+	// mutation, so a committed ROLLOVER_SEASON's advanced year must be picked up here before any
+	// scoped read below, or memory would serve the prior season's cap. Cheap (one indexed read).
+	if err := s.refreshSeason(ctx); err != nil {
+		return err
+	}
 	rows, err := s.pools.Read().QueryContext(ctx, `
 SELECT r.franchise_id, r.mfl_id, r.roster_status,
        c.annual_salary_cents, c.contract_years, c.expiration_year,
