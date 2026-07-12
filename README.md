@@ -101,7 +101,9 @@ A **single transaction coordinator** is the only thing in the entire system allo
 | ✅ **Free Agency §6 (v1)** | Live free-agent pool + record-a-signing, with §12 buyout lockout, min-salary floor & UFA promotion on rollover |
 | ✅ **Commissioner UFA calendar (§6)** | A signing window the commissioner opens/closes on top of the phase gate — closed blocks every signing, and it persists until toggled |
 
-*Every op above is verified end-to-end through the live transaction panel on real hardware — not just unit-tested.*
+**🖥️ The operator workspace** — a subject-centric front office drives it all: pick a franchise → see its roster by *real player name* → click a player and the panel offers **only the moves that are legal this phase** (an offseason-only buyout simply isn't there mid-season). Priced moves — cut, tag, extend, restructure, buyout, sign — **quote before they commit**: the engine dry-runs the *real* handler and rolls it back, so you see "this will commit" or the authoritative rejection reason *before* anything is written. You never type a player id or a dollar figure — the UI sends the intent, the engine computes the money.
+
+*Every op above is verified end-to-end through the live operator workspace on real hardware — not just unit-tested.*
 
 ### ⚡ Go-Powered, Local-First Performance
 Zero cloud latency. Absolute privacy. Near-instant processing from a clean, compiled backend. The rankings board **re-ranks the instant you turn a calibration knob** in the admin console — the live tuning loop already works. Native desktop app; your league never leaves your machine.
