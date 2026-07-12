@@ -9,7 +9,7 @@ import { main } from '../../../wailsjs/go/models';
 // the parent owns that call so the number is always recomputed server-side (invariant 1).
 
 export type Pending = {
-  kind: 'ROSTER_STATUS' | 'WAIVER' | 'SIGN';
+  kind: 'ROSTER_STATUS' | 'WAIVER' | 'SIGN' | 'TAG' | 'EXTENSION' | 'BUYOUT' | 'RESTRUCTURE';
   title: string;
   subject: string; // player name for the header
   meta: string; // "WR · Free agent" etc.
@@ -106,7 +106,13 @@ export function ConfirmModal({
                   : 'bg-[#34d399] text-[#06251a] hover:bg-[#4ade9f]'
               }`}
             >
-              {busy ? 'Committing…' : pending.kind === 'WAIVER' ? 'Confirm cut' : 'Confirm move'}
+              {busy
+                ? 'Committing…'
+                : pending.kind === 'WAIVER'
+                  ? 'Confirm cut'
+                  : pending.kind === 'BUYOUT'
+                    ? 'Confirm buyout'
+                    : 'Confirm move'}
             </button>
           )}
         </div>

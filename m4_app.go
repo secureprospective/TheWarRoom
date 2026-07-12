@@ -171,6 +171,43 @@ func (a *App) GetFranchises() FranchisesResult {
 	return FranchisesResult{OK: true, Franchises: out}
 }
 
+// LegalOpsResult is the set of per-player op kinds the operator workspace may stage in the league's
+// CURRENT season phase (Vision-2026 D1: only phase-legal ops appear). Kinds are the string op_kinds
+// (ROSTER_STATUS/WAIVER/SIGN/TAG/EXTENSION/BUYOUT/RESTRUCTURE/TRADE) the frontend matches against.
+type LegalOpsResult struct {
+	OK     bool     `json:"ok"`
+	Phase  string   `json:"phase"`
+	Kinds  []string `json:"kinds"`
+	Detail string   `json:"detail"`
+}
+
+// GetLegalOps returns the op kinds phase-legal in the current season phase, straight from the
+// engine's single phasePolicy source of truth (transactions.LegalOps) — so the workspace shows only
+// phase-legal moves without re-encoding the policy and drifting from it. It is the coarse phase
+// filter (hides never-legal ops like an offseason-only buyout mid-season); the authoritative gate is
+// still the in-tx phase check, and a shown op can still be rejected at preview/commit (e.g. a SIGN
+// with the commissioner window closed).
+func (a *App) GetLegalOps() LegalOpsResult {
+	if a.startupErr != nil {
+		return LegalOpsResult{Detail: a.startupErr.Error()}
+	}
+	if a.state == nil {
+		return LegalOpsResult{Detail: "state store not initialized"}
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
+	defer cancel()
+	ph, err := a.state.CurrentPhase(ctx)
+	if err != nil {
+		return LegalOpsResult{Detail: err.Error()}
+	}
+	kinds := transactions.LegalOps(ph)
+	out := make([]string, len(kinds))
+	for i, k := range kinds {
+		out[i] = string(k)
+	}
+	return LegalOpsResult{OK: true, Phase: string(ph), Kinds: out}
+}
+
 // PreviewTransaction dry-runs a request through the Coordinator (design D5): it validates,
 // phase-gates, and applies EXACTLY as ExecuteTransaction would, then rolls back — so the
 // staged-confirm UI learns whether the move would commit (OK=true) or the authoritative reason
@@ -189,6 +226,27 @@ func (a *App) PreviewTransaction(req TransactionRequest) TransactionResult {
 	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
 	defer cancel()
 
+	// TAG (§9) and EXTENSION (§10) resolve their price/floor server-side through the players-DB
+	// directory join, so — exactly like ExecuteTransaction — they preview through their own
+	// directory-backed verbs (PreviewTag/PreviewExtension), NOT the generic buildRequest path.
+	// Only the id (and, for extension, the added-year count) crosses the wire; no money does.
+	switch req.Kind {
+	case string(transactions.KindTag):
+		dir, derr := a.directory(ctx)
+		if derr != nil {
+			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §9 tag price: " + derr.Error()}
+		}
+		rec, terr := a.coordinator.PreviewTag(ctx, req.MFLID, dir)
+		return receiptResult(req.Kind, rec, terr)
+	case string(transactions.KindExtension):
+		dir, derr := a.directory(ctx)
+		if derr != nil {
+			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §10 position floor: " + derr.Error()}
+		}
+		rec, terr := a.coordinator.PreviewExtension(ctx, req.MFLID, req.AddedYears, dir)
+		return receiptResult(req.Kind, rec, terr)
+	}
+
 	txn, err := buildRequest(req)
 	if err != nil {
 		return TransactionResult{Detail: err.Error()}
@@ -199,14 +257,20 @@ func (a *App) PreviewTransaction(req TransactionRequest) TransactionResult {
 			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §6 min-salary floor: " + derr.Error()}
 		}
 		rec, terr := a.coordinator.PreviewSign(ctx, sign, dir)
-		if terr != nil {
-			return TransactionResult{Kind: req.Kind, Detail: terr.Error()}
-		}
-		return TransactionResult{OK: true, Kind: string(rec.Kind), PlayersAffected: rec.PlayersAffected, At: rec.At.Format(time.RFC3339)}
+		return receiptResult(req.Kind, rec, terr)
 	}
-	rec, err := a.coordinator.Preview(ctx, txn)
+	// BUYOUT (§12) and RESTRUCTURE (§11) are plain sealed requests whose figures resolve entirely
+	// in-tx, so the generic Preview dry-runs them with no directory needed.
+	rec, terr := a.coordinator.Preview(ctx, txn)
+	return receiptResult(req.Kind, rec, terr)
+}
+
+// receiptResult maps a Coordinator (Receipt, error) outcome onto the IPC TransactionResult: a
+// rejection becomes OK=false + the authoritative reason (Detail), a success becomes the receipt
+// fields. Shared by every PreviewTransaction branch so the mapping never drifts between ops.
+func receiptResult(kind string, rec transactions.Receipt, err error) TransactionResult {
 	if err != nil {
-		return TransactionResult{Kind: req.Kind, Detail: err.Error()}
+		return TransactionResult{Kind: kind, Detail: err.Error()}
 	}
 	return TransactionResult{OK: true, Kind: string(rec.Kind), PlayersAffected: rec.PlayersAffected, At: rec.At.Format(time.RFC3339)}
 }

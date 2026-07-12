@@ -125,19 +125,44 @@ func (c *Coordinator) Preview(ctx context.Context, req Request) (Receipt, error)
 // startup when the Coordinator is constructed). Fails loud before opening any transaction if
 // the player is unrostered or has no resolvable position.
 func (c *Coordinator) ExecuteTag(ctx context.Context, mflID string, dir Directory) (Receipt, error) {
+	tag, err := c.resolveTag(mflID, dir)
+	if err != nil {
+		return Receipt{}, err
+	}
+	return c.Execute(ctx, tag)
+}
+
+// PreviewTag is the dry-run counterpart of ExecuteTag (design D5): it resolves the §9 price through
+// the SAME resolveTag path, then previews (rolls back) instead of committing, so the staged-confirm
+// UI can surface an "unrostered" / "no position" / any in-tx rejection BEFORE any write. Because both
+// verbs build the Tag from one resolver, a preview's price can never drift from the commit's.
+func (c *Coordinator) PreviewTag(ctx context.Context, mflID string, dir Directory) (Receipt, error) {
+	tag, err := c.resolveTag(mflID, dir)
+	if err != nil {
+		return Receipt{}, err
+	}
+	return c.Preview(ctx, tag)
+}
+
+// resolveTag resolves the §9 tag price — the top-5-by-position league-wide average, floored at 120%
+// of the player's prior-year salary — from the Coordinator's authoritative Reader plus the supplied
+// Directory (the players-DB position join), and returns the sealed Tag request the tx handler runs.
+// The price is computed in this trusted core, never carried across the IPC boundary (the frontend
+// sends only a player id). Fails loud if the player is unrostered or has no resolvable position.
+func (c *Coordinator) resolveTag(mflID string, dir Directory) (Tag, error) {
 	if dir == nil {
-		return Receipt{}, fmt.Errorf("transactions: tag %q: nil directory (position join required for the §9 price)", mflID)
+		return Tag{}, fmt.Errorf("transactions: tag %q: nil directory (position join required for the §9 price)", mflID)
 	}
 	ps, ok := c.writer.Player(mflID)
 	if !ok {
-		return Receipt{}, fmt.Errorf("transactions: tag %q: player not on any roster", mflID)
+		return Tag{}, fmt.Errorf("transactions: tag %q: player not on any roster", mflID)
 	}
 	facts, ok := dir.Facts(mflID)
 	if !ok {
-		return Receipt{}, fmt.Errorf("transactions: tag %q: no players-DB record — cannot resolve position for the §9 top-5 average", mflID)
+		return Tag{}, fmt.Errorf("transactions: tag %q: no players-DB record — cannot resolve position for the §9 top-5 average", mflID)
 	}
 	price := tagFloorPrice(tagPrice(c.writer, dir, facts.Position), ps.Salary)
-	return c.Execute(ctx, Tag{MFLID: mflID, price: price})
+	return Tag{MFLID: mflID, price: price}, nil
 }
 
 // ExecuteExtension runs a §10 contract extension. It resolves the position FLOOR here — the
@@ -148,21 +173,46 @@ func (c *Coordinator) ExecuteTag(ctx context.Context, mflID string, dir Director
 // its players-DB Lookup lazily, after the Coordinator is constructed). Fails loud before opening
 // any transaction if the player is unrostered or his position has no §10 floor.
 func (c *Coordinator) ExecuteExtension(ctx context.Context, mflID string, addedYears int, dir Directory) (Receipt, error) {
+	ext, err := c.resolveExtension(mflID, addedYears, dir)
+	if err != nil {
+		return Receipt{}, err
+	}
+	return c.Execute(ctx, ext)
+}
+
+// PreviewExtension is the dry-run counterpart of ExecuteExtension (design D5): it resolves the same
+// §10 position floor through the SAME resolveExtension path, then previews (rolls back) instead of
+// committing, so the staged-confirm UI can surface an "unrostered" / "no floor" / any in-tx rejection
+// BEFORE any write. One resolver for both verbs means a preview can never drift from the commit.
+func (c *Coordinator) PreviewExtension(ctx context.Context, mflID string, addedYears int, dir Directory) (Receipt, error) {
+	ext, err := c.resolveExtension(mflID, addedYears, dir)
+	if err != nil {
+		return Receipt{}, err
+	}
+	return c.Preview(ctx, ext)
+}
+
+// resolveExtension resolves the §10 position FLOOR (the one figure needing the players-DB position
+// join via the supplied Directory) and returns the sealed Extension request; the handler resolves the
+// 150%-of-highest-remaining price from the player's own committed cells inside the transaction. No
+// money crosses the IPC boundary — the frontend sends only the id and the added-year count. Fails loud
+// if the player is unrostered or his position has no §10 floor.
+func (c *Coordinator) resolveExtension(mflID string, addedYears int, dir Directory) (Extension, error) {
 	if dir == nil {
-		return Receipt{}, fmt.Errorf("transactions: extension %q: nil directory (position join required for the §10 floor)", mflID)
+		return Extension{}, fmt.Errorf("transactions: extension %q: nil directory (position join required for the §10 floor)", mflID)
 	}
 	if _, ok := c.writer.Player(mflID); !ok {
-		return Receipt{}, fmt.Errorf("transactions: extension %q: player not on any roster", mflID)
+		return Extension{}, fmt.Errorf("transactions: extension %q: player not on any roster", mflID)
 	}
 	facts, ok := dir.Facts(mflID)
 	if !ok {
-		return Receipt{}, fmt.Errorf("transactions: extension %q: no players-DB record — cannot resolve position for the §10 floor", mflID)
+		return Extension{}, fmt.Errorf("transactions: extension %q: no players-DB record — cannot resolve position for the §10 floor", mflID)
 	}
 	floor, ok := PositionFloor(facts.Position)
 	if !ok {
-		return Receipt{}, fmt.Errorf("transactions: extension %q: position %q has no §10 floor", mflID, facts.Position)
+		return Extension{}, fmt.Errorf("transactions: extension %q: position %q has no §10 floor", mflID, facts.Position)
 	}
-	return c.Execute(ctx, Extension{MFLID: mflID, AddedYears: addedYears, floor: floor})
+	return Extension{MFLID: mflID, AddedYears: addedYears, floor: floor}, nil
 }
 
 // ExecuteSign runs a §6 free-agency signing. It resolves the player's DRAFT YEAR here — the

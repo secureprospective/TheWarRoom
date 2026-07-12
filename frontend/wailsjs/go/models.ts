@@ -350,6 +350,24 @@ export namespace main {
 	        this.detail = source["detail"];
 	    }
 	}
+	export class LegalOpsResult {
+	    ok: boolean;
+	    phase: string;
+	    kinds: string[];
+	    detail: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new LegalOpsResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.phase = source["phase"];
+	        this.kinds = source["kinds"];
+	        this.detail = source["detail"];
+	    }
+	}
 	
 	
 	export class MoveDTO {

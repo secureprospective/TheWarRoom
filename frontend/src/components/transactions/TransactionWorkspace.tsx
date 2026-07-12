@@ -4,6 +4,7 @@ import {
   GetRoster,
   GetFreeAgentPool,
   GetCurrentPhase,
+  GetLegalOps,
   PreviewTransaction,
   ExecuteTransaction,
 } from '../../../wailsjs/go/main/App';
@@ -34,12 +35,21 @@ export function TransactionWorkspace() {
   const [pool, setPool] = useState<main.FreeAgentPoolResult | null>(null);
   const [selected, setSelected] = useState<main.M4Player | null>(null);
   const [phase, setPhase] = useState('…');
+  // legalOps = the op kinds the engine says are phase-legal right now (GetLegalOps → phasePolicy,
+  // the single source of truth). A contract button renders iff its kind is in this set (D1) — so an
+  // offseason-only buyout is ABSENT (not greyed) mid-season, and never re-encodes the engine's rules.
+  const [legalOps, setLegalOps] = useState<string[]>([]);
   const [filter, setFilter] = useState('');
 
   // SIGN form (only shown when a free agent is selected on a signable phase)
   const [signFranchise, setSignFranchise] = useState('');
   const [signSalary, setSignSalary] = useState('');
   const [signYears, setSignYears] = useState('1');
+
+  // Contract-op inputs for a rostered player: EXTENSION added-years (1..3) and the §11 RESTRUCTURE
+  // move ($M into signing bonus). TAG and BUYOUT need no input (price/dead-cap resolve server-side).
+  const [extYears, setExtYears] = useState('1');
+  const [restructureMove, setRestructureMove] = useState('');
 
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false);
@@ -48,13 +58,17 @@ export function TransactionWorkspace() {
   // reopening a modal for an abandoned — possibly destructive — move (GLM L3).
   const stageGen = useRef(0);
 
-  const signable = phase === 'OFFSEASON' || phase === 'REGULAR_SEASON';
+  // SIGN legality reads from the engine's legalOps (GetLegalOps → phasePolicy), NOT a re-encoded
+  // phase check — the same single-source rule the contract buttons use (D1). Keeping a second
+  // hardcoded `phase === 'OFFSEASON' || …` would be exactly the drift D1 exists to prevent.
+  const signable = legalOps.includes('SIGN');
 
   useEffect(() => {
     void (async () => {
-      const [fr, ph] = await Promise.all([GetFranchises(), GetCurrentPhase()]);
+      const [fr, ph, ops] = await Promise.all([GetFranchises(), GetCurrentPhase(), GetLegalOps()]);
       setFranchises(fr.ok ? (fr.franchises ?? []) : []);
       setPhase(ph.ok ? ph.phase : `? (${ph.detail})`);
+      setLegalOps(ops.ok ? (ops.kinds ?? []) : []);
     })();
   }, []);
 
@@ -107,16 +121,14 @@ export function TransactionWorkspace() {
     }
 
     // Priced op — open the modal in a previewing state, then fill it from PreviewTransaction (D5).
+    const copy = opCopy(kind, player);
     const base: Pending = {
       kind,
-      title: kind === 'WAIVER' ? 'Waiver · cut' : 'Free agency · sign',
-      subject: kind === 'WAIVER' ? `Cut ${player.name}?` : `Sign ${player.name}?`,
-      meta: `${player.position} · ${kind === 'WAIVER' ? selectedFr : 'Free agent'}`,
-      note:
-        kind === 'WAIVER'
-          ? 'Cutting releases the player and charges §8 dead cap. The dead-cap figure lands on the roster after you confirm.'
-          : `Signs ${player.name} to franchise ${signFranchise} at ${money(Number(signSalary) || 0)}/yr for ${signYears} year(s).`,
-      destructive: kind === 'WAIVER',
+      title: copy.title,
+      subject: copy.subject,
+      meta: copy.meta,
+      note: copy.note,
+      destructive: copy.destructive,
       previewing: true,
       previewOK: null,
       detail: '',
@@ -135,6 +147,63 @@ export function TransactionWorkspace() {
     });
   }
 
+  // opCopy is the modal's human framing for a priced op — no money math (the engine owns the figures);
+  // every dollar shown is either what the operator typed (SIGN/RESTRUCTURE) or lands on the roster
+  // after the commit (WAIVER dead cap, TAG price, EXTENSION future cap, BUYOUT dead cap).
+  function opCopy(kind: Pending['kind'], player: main.M4Player) {
+    const rosterMeta = `${player.position} · ${selectedFr}`;
+    switch (kind) {
+      case 'WAIVER':
+        return {
+          title: 'Waiver · cut',
+          subject: `Cut ${player.name}?`,
+          meta: rosterMeta,
+          note: 'Cutting releases the player and charges §8 dead cap. The dead-cap figure lands on the roster after you confirm.',
+          destructive: true,
+        };
+      case 'TAG':
+        return {
+          title: 'Franchise tag · §9',
+          subject: `Tag ${player.name}?`,
+          meta: rosterMeta,
+          note: 'The engine resolves the §9 tag price — the top-5-by-position average, floored at 120% of prior salary. The new cap figure lands on the roster after you confirm.',
+          destructive: false,
+        };
+      case 'EXTENSION':
+        return {
+          title: 'Extension · §10',
+          subject: `Extend ${player.name} +${extYears}yr?`,
+          meta: rosterMeta,
+          note: `Adds ${extYears} year(s) at the §10 price (150% of the highest remaining year, position-floored). Only FUTURE cap is added — the current season is unchanged.`,
+          destructive: false,
+        };
+      case 'RESTRUCTURE':
+        return {
+          title: 'Restructure · §11',
+          subject: `Restructure ${player.name}?`,
+          meta: rosterMeta,
+          note: `Moves ${money(Number(restructureMove) || 0)} into a signing bonus (§11). The engine resolves the exact cap effect and the new figure lands on the roster.`,
+          destructive: false,
+        };
+      case 'BUYOUT':
+        return {
+          title: 'Buyout · §12',
+          subject: `Buy out ${player.name}?`,
+          meta: rosterMeta,
+          note: 'Buys out the contract (offseason only, two per team per season). Dead cap is charged; the figure lands on the roster after you confirm.',
+          destructive: true,
+        };
+      default: // SIGN
+        return {
+          title: 'Free agency · sign',
+          subject: `Sign ${player.name}?`,
+          meta: `${player.position} · Free agent`,
+          note: `Signs ${player.name} to franchise ${signFranchise} at ${money(Number(signSalary) || 0)}/yr for ${signYears} year(s).`,
+          destructive: false,
+        };
+    }
+  }
+
   function buildReq(kind: Pending['kind'], player: main.M4Player): main.TransactionRequest | null {
     if (kind === 'ROSTER_STATUS') {
       return main.TransactionRequest.createFrom({
@@ -143,8 +212,24 @@ export function TransactionWorkspace() {
         status: player.rosterStatus === 'TAXI_SQUAD' ? 'ROSTER' : 'TAXI_SQUAD',
       });
     }
-    if (kind === 'WAIVER') {
+    // WAIVER / TAG / BUYOUT carry only the player id — every figure resolves server-side.
+    if (kind === 'WAIVER' || kind === 'TAG' || kind === 'BUYOUT') {
       return main.TransactionRequest.createFrom({ kind, mflID: player.mflID });
+    }
+    if (kind === 'EXTENSION') {
+      return main.TransactionRequest.createFrom({
+        kind,
+        mflID: player.mflID,
+        addedYears: Number(extYears) || 0,
+      });
+    }
+    if (kind === 'RESTRUCTURE') {
+      if (!restructureMove.trim()) return null;
+      return main.TransactionRequest.createFrom({
+        kind,
+        mflID: player.mflID,
+        moveMillions: restructureMove.trim(), // parsed to exact cents server-side, never a JS number
+      });
     }
     // SIGN — validate the form
     if (!signFranchise.trim() || !signSalary.trim()) return null;
@@ -238,12 +323,17 @@ export function TransactionWorkspace() {
             player={selected}
             isFreeAgent={selectedFr === FA}
             signable={signable}
+            legalOps={legalOps}
             signFranchise={signFranchise}
             signSalary={signSalary}
             signYears={signYears}
             setSignFranchise={setSignFranchise}
             setSignSalary={setSignSalary}
             setSignYears={setSignYears}
+            extYears={extYears}
+            setExtYears={setExtYears}
+            restructureMove={restructureMove}
+            setRestructureMove={setRestructureMove}
             onStage={stage}
           />
         )}
@@ -424,26 +514,37 @@ function ActionPanel({
   player,
   isFreeAgent,
   signable,
+  legalOps,
   signFranchise,
   signSalary,
   signYears,
   setSignFranchise,
   setSignSalary,
   setSignYears,
+  extYears,
+  setExtYears,
+  restructureMove,
+  setRestructureMove,
   onStage,
 }: {
   player: main.M4Player;
   isFreeAgent: boolean;
   signable: boolean;
+  legalOps: string[];
   signFranchise: string;
   signSalary: string;
   signYears: string;
   setSignFranchise: (v: string) => void;
   setSignSalary: (v: string) => void;
   setSignYears: (v: string) => void;
+  extYears: string;
+  setExtYears: (v: string) => void;
+  restructureMove: string;
+  setRestructureMove: (v: string) => void;
   onStage: (kind: Pending['kind'], p: main.M4Player) => void;
 }) {
   const toTaxi = player.rosterStatus !== 'TAXI_SQUAD';
+  const can = (kind: string) => legalOps.includes(kind); // phase-legal per the engine (D1)
   return (
     <>
       <div className="border-b border-[#202a3d] px-[18px] pb-3.5 pt-[18px]">
@@ -513,13 +614,74 @@ function ActionPanel({
               Roster moves
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Act onClick={() => onStage('ROSTER_STATUS', player)}>{toTaxi ? 'Move to Taxi' : 'Activate'}</Act>
-              <Act danger onClick={() => onStage('WAIVER', player)}>
-                Cut
-              </Act>
+              {can('ROSTER_STATUS') && (
+                <Act onClick={() => onStage('ROSTER_STATUS', player)}>{toTaxi ? 'Move to Taxi' : 'Activate'}</Act>
+              )}
+              {can('WAIVER') && (
+                <Act danger onClick={() => onStage('WAIVER', player)}>
+                  Cut
+                </Act>
+              )}
             </div>
-            <p className="mt-3 text-[11px] text-[#64748b]">
-              Trade, Tag, Extend, Restructure and the commissioner moves land in later slices.
+
+            {/* Contract moves — each shown only where the engine says it's phase-legal (D1). */}
+            <div className="mt-5 mb-2.5 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-[#64748b]">
+              Contract moves
+            </div>
+            {can('TAG') || can('EXTENSION') || can('RESTRUCTURE') || can('BUYOUT') ? (
+              <div className="space-y-2">
+                {can('TAG') && <Act onClick={() => onStage('TAG', player)}>Franchise tag (§9)</Act>}
+
+                {can('EXTENSION') && (
+                  <div className="flex gap-2">
+                    <select
+                      className="h-9 border border-[#29344a] bg-[#1e2636] px-2 text-[13px] outline-none focus:border-[#5b9dff]"
+                      value={extYears}
+                      onChange={(e) => setExtYears(e.target.value)}
+                      aria-label="Years to add"
+                    >
+                      <option value="1">+1 yr</option>
+                      <option value="2">+2 yr</option>
+                      <option value="3">+3 yr</option>
+                    </select>
+                    <div className="min-w-0 flex-1">
+                      <Act onClick={() => onStage('EXTENSION', player)}>Extend (§10)</Act>
+                    </div>
+                  </div>
+                )}
+
+                {can('RESTRUCTURE') && (
+                  <div className="flex gap-2">
+                    <input
+                      className="h-9 min-w-0 flex-1 border border-[#29344a] bg-[#1e2636] px-2.5 text-[13px] outline-none focus:border-[#5b9dff]"
+                      placeholder="move ($M)"
+                      inputMode="decimal"
+                      value={restructureMove}
+                      onChange={(e) => setRestructureMove(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      disabled={!restructureMove.trim()}
+                      onClick={() => onStage('RESTRUCTURE', player)}
+                      className="h-9 flex-none bg-[#1e2636] px-3 text-[13px] font-semibold text-[#e2e8f0] outline outline-1 outline-[#29344a] hover:bg-[rgba(91,157,255,0.12)] hover:text-[#5b9dff] hover:outline-[#5b9dff] disabled:opacity-40"
+                    >
+                      Restructure (§11)
+                    </button>
+                  </div>
+                )}
+
+                {can('BUYOUT') && (
+                  <Act danger onClick={() => onStage('BUYOUT', player)}>
+                    Buy out contract (§12)
+                  </Act>
+                )}
+              </div>
+            ) : (
+              <p className="text-[11px] text-[#64748b]">No contract moves are legal in this phase.</p>
+            )}
+
+            <p className="mt-4 text-[11px] text-[#64748b]">
+              Trades and the commissioner surfaces land in a later slice.
             </p>
           </>
         )}
@@ -541,7 +703,7 @@ function Act({
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-[38px] items-center justify-center bg-[#1e2636] text-[13px] font-semibold text-[#e2e8f0] outline outline-1 outline-[#29344a] transition-colors ${
+      className={`flex h-[38px] w-full items-center justify-center bg-[#1e2636] text-[13px] font-semibold text-[#e2e8f0] outline outline-1 outline-[#29344a] transition-colors ${
         danger
           ? 'hover:bg-[rgba(248,113,113,0.12)] hover:text-[#f87171] hover:outline-[#f87171]'
           : 'hover:bg-[rgba(91,157,255,0.12)] hover:text-[#5b9dff] hover:outline-[#5b9dff]'

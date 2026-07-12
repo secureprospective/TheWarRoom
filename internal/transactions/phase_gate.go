@@ -70,6 +70,28 @@ func allPhases() []domain.Phase {
 	return []domain.Phase{domain.PhaseOffseason, domain.PhaseRegularSeason, domain.PhasePlayoffs}
 }
 
+// LegalOps returns the OPERATOR-facing op kinds that are phase-legal in phase p, straight from the
+// single phasePolicy source of truth. It lets the M4 workspace show only phase-legal moves
+// (Vision-2026 D1) without re-encoding — and drifting from — the engine's policy: the UI shows a
+// button iff the kind is in this set. It reports only the per-player ops the workspace can stage;
+// pure commissioner/calendar ops (ADVANCE_PHASE / ROLLOVER_SEASON / SET_SIGNING_WINDOW / CAP_RELIEF /
+// RETIREMENT / DEATH) live on their own surfaces and are excluded here. It does NOT apply the finer
+// SIGN signing-window override (committed state, read in-tx): a SIGN shown here can still be rejected
+// at preview/commit if the commissioner has closed the window — gatePhase remains the authoritative
+// gate, this is only the coarse phase filter that hides never-legal ops.
+func LegalOps(p domain.Phase) []Kind {
+	candidates := []Kind{
+		KindRosterStatus, KindWaiver, KindSign, KindTag, KindExtension, KindBuyout, KindRestructure, KindTrade,
+	}
+	out := make([]Kind, 0, len(candidates))
+	for _, k := range candidates {
+		if allowed, ok := phasePolicy(k); ok && phaseAllowed(allowed, p) {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
 // gatePhase enforces the op→phase policy for one request inside the transaction. It denies an
 // unmapped op_kind (default-deny) and an op whose current phase is not in its allow-list, reading
 // the phase once, up front, before any domain mutation runs.

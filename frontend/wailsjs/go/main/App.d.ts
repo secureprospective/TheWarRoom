@@ -14,6 +14,8 @@ export function GetFreeAgentPool():Promise<main.FreeAgentPoolResult>;
 
 export function GetFreeAgents():Promise<main.FreeAgentsResult>;
 
+export function GetLegalOps():Promise<main.LegalOpsResult>;
+
 export function GetParams():Promise<main.ParamsResult>;
 
 export function GetRankings():Promise<main.RankingsResult>;

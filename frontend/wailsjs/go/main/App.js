@@ -26,6 +26,10 @@ export function GetFreeAgents() {
   return window['go']['main']['App']['GetFreeAgents']();
 }
 
+export function GetLegalOps() {
+  return window['go']['main']['App']['GetLegalOps']();
+}
+
 export function GetParams() {
   return window['go']['main']['App']['GetParams']();
 }
