@@ -101,18 +101,22 @@ A **single transaction coordinator** is the only thing in the entire system allo
 | ✅ **Free Agency §6 (v1)** | Live free-agent pool + record-a-signing, with §12 buyout lockout, min-salary floor & UFA promotion on rollover |
 | ✅ **Commissioner UFA calendar (§6)** | A signing window the commissioner opens/closes on top of the phase gate — closed blocks every signing, and it persists until toggled |
 
-**🖥️ The operator workspace** — a subject-centric front office drives it all: pick a franchise → see its roster by *real player name* → click a player and the panel offers **only the moves that are legal this phase** (an offseason-only buyout simply isn't there mid-season). Priced moves — cut, tag, extend, restructure, buyout, sign — **quote before they commit**: the engine dry-runs the *real* handler and rolls it back, so you see "this will commit" or the authoritative rejection reason *before* anything is written. You never type a player id or a dollar figure — the UI sends the intent, the engine computes the money.
+**🖥️ The operator workspace** — a subject-centric front office drives it all: pick a franchise by its *real team name* → see its roster by *real player name* → click a player and the panel offers **only the moves that are legal this phase** (an offseason-only buyout simply isn't there mid-season). Priced moves — cut, tag, extend, restructure, buyout, sign — **quote before they commit**: the engine dry-runs the *real* handler and rolls it back, so you see "this will commit" or the authoritative rejection reason *before* anything is written. You never type a player id or a dollar figure — the UI sends the intent, the engine computes the money.
 
-*Every op above is verified end-to-end through the live operator workspace on real hardware — not just unit-tested.*
+**🔁 The trade builder** — its own surface, because a trade is the only move that spans *multiple* franchises. Browse any team's roster, add players to a cart, set each one's destination, and stage a single **atomic multi-leg swap** — the same quote-before-commit gate confirms the whole trade lands together or rolls back whole.
+
+**🎖️ Commissioner controls** — the league-calendar and off-common-path powers live on their own surface, segregated from the per-player workspace: advance the season phase, roll the season over (§14), open or close the free-agency signing window (§6), and — under a red, irreversible divider — retirement, death, and cap-relief appeals (§13). Every one runs through the same dry-run-then-confirm gate.
+
+*The contract ops (cut · tag · extend · restructure · buyout · sign) are verified end-to-end through the live operator workspace on real hardware — not just unit-tested. The trade builder and commissioner surfaces are built and awaiting the same live-hardware gate.*
 
 ### ⚡ Go-Powered, Local-First Performance
 Zero cloud latency. Absolute privacy. Near-instant processing from a clean, compiled backend. The rankings board **re-ranks the instant you turn a calibration knob** in the admin console — the live tuning loop already works. Native desktop app; your league never leaves your machine.
 
 ---
 
-## 📈 Build Progress — *the engine is done; we're building the war room around it*
+## 📈 Build Progress — *engine done · contract rulebook done · the operator front office is going in*
 
-A disciplined, 38-session build plan — every session sized to a single context window, every session closed only after green tests, a **blind AI code review**, and real-hardware verification. Here's the board:
+A disciplined, session-by-session build — every session sized to a single context window, every session closed only after green tests, a **blind AI code review**, and real-hardware verification. Forty-plus sessions in, the whole logic core is shipped and the operator UI that drives it is well underway. Here's the board:
 
 ```
    Foundation & Scaffold      [██████████]  100%   ✅  Go · Wails · React · SQLite WAL · compiler-enforced arch
@@ -123,11 +127,12 @@ A disciplined, 38-session build plan — every session sized to a single context
    Asset Rankings Board (M1)  [██████████]  100%   ✅  real 32-team board, live re-rank on tune
    Salary Ledger (cutover)    [██████████]  100%   ✅  per-year cells = sole cap truth, append-only
    Transaction Rulebook       [██████████]  100%   ✅  trades · §8–§14 contract ops · §6 free agency v1
-   War-Room Modules (M2–M8)   [█░░░░░░░░░]   ~10%   ▸   power rankings · matchups · trade analyzer · commish
-   Admin / Calibration UIs    [██░░░░░░░░]   ~20%   ▸   engine tuning + governance surfaces
+   Operator Workspace (M4)    [████████░░]  ~80%   ▸   phase-legal quote→commit · contract ops · trade builder · commish
+   War-Room Modules (M2–M8)   [██░░░░░░░░]  ~15%   ▸   power rankings · matchups · trade analyzer · shadow ledger
+   Admin / Calibration UIs    [███░░░░░░░]  ~25%   ▸   engine tuning + governance surfaces
 
    ────────────────────────────────────────────────────────────────────────────────────────────
-   OVERALL   [███████████████████████░░░░░]   ~30 / 38 sessions   ·   ~80%   ·   into the final quarter
+   OVERALL   [████████████████████████░░░░]   logic core 100%   ·   operator UI in progress   ·   ~85%
 ```
 
 | Layer | Milestone | Status |
@@ -140,10 +145,11 @@ A disciplined, 38-session build plan — every session sized to a single context
 | 📊 | **Asset Rankings (M1)** — all 32 rosters ranked on screen from real data | ✅ Shipped |
 | 📒 | **The salary ledger** — per-year cells, sole cap truth, append-only audit trail | ✅ Shipped |
 | 🔧 | **Transaction rulebook** — atomic trades, §8–§14 contract ops, **§6 free agency v1** | ✅ Shipped |
-| 🖥️ | **War-room modules (M2–M8)** — the views that turn scores into calls | ▸ The back half |
+| 🖥️ | **Operator workspace (M4)** — phase-legal quote→commit UI: contract ops **shipped**; trade builder + commissioner controls **built, gating** | ◕ In progress |
+| 📊 | **War-room modules (M2–M8)** — the analytical views that turn scores into calls | ▸ The back half |
 | 🎛️ | **Admin / calibration UIs** — tune the engine, govern the rules | ▸ Ahead |
 
-📋 Full session-by-session ledger: **[`docs/build-handoffs/Build_Tracker.md`](docs/build-handoffs/Build_Tracker.md)** — *the engine and the entire contract rulebook are done; what remains is the front-end that surfaces them.*
+📋 Full session-by-session ledger: **[`docs/build-handoffs/Build_Tracker.md`](docs/build-handoffs/Build_Tracker.md)** — *the engine and the entire contract rulebook are done; the operator UI that surfaces them is being built out slice by slice.*
 
 ---
 
@@ -155,7 +161,7 @@ A multi-block system design where the boundaries aren't conventions — they're 
    ┌──────────────────────────────────────────────────────────────────────────┐
    │                          THE DESKTOP INTERFACE                            │
    │              Wails v2  ·  React + Tailwind + Zustand                      │
-   │        Asset Rankings board · Admin console · Transactions panel          │
+   │      Asset Rankings · Operator workspace · Trade builder · Commissioner      │
    └───────────────────────────────┬──────────────────────────────────────────┘
                                     │  IPC (typed, one-way: UI reads / requests)
    ┌───────────────────────────────▼──────────────────────────────────────────┐
@@ -192,7 +198,7 @@ A multi-block system design where the boundaries aren't conventions — they're 
 
 ## 🗺️ 5 · The Draft Board — Roadmap
 
-The engine is the hard part, and the engine is **done**. What's ahead is the payoff — each capability a new *view* onto a score and a ledger that already exist.
+The engine is the hard part, and the engine is **done** — and the front office that operates it is already going in (roster moves, contract ops, trades, and commissioner controls all run live against the real ledger). What's ahead is the payoff on top: each remaining capability a new *analytical view* onto a score and a ledger that already exist.
 
 **On the clock**
 - 📊 **The war-room modules** — Power Rankings, Matchup Predictions, Trade Analyzer, Free-Agency Intel, Rookie Draft board, Commissioner Dashboard.
