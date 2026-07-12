@@ -14,6 +14,14 @@ export function GetFranchiseState(arg1) {
   return window['go']['main']['App']['GetFranchiseState'](arg1);
 }
 
+export function GetFranchises() {
+  return window['go']['main']['App']['GetFranchises']();
+}
+
+export function GetFreeAgentPool() {
+  return window['go']['main']['App']['GetFreeAgentPool']();
+}
+
 export function GetFreeAgents() {
   return window['go']['main']['App']['GetFreeAgents']();
 }
@@ -26,8 +34,16 @@ export function GetRankings() {
   return window['go']['main']['App']['GetRankings']();
 }
 
+export function GetRoster(arg1) {
+  return window['go']['main']['App']['GetRoster'](arg1);
+}
+
 export function Ping() {
   return window['go']['main']['App']['Ping']();
+}
+
+export function PreviewTransaction(arg1) {
+  return window['go']['main']['App']['PreviewTransaction'](arg1);
 }
 
 export function RunValidationSuite() {

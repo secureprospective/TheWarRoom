@@ -13,11 +13,18 @@ package transactions
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
+
+// errDryRun is the sentinel a Preview returns from inside WriteTx to force a rollback AFTER
+// the request has been fully validated, phase-gated, and applied. WriteTx rolls back on ANY
+// closure error, so returning this after a clean apply proves the transaction WOULD commit —
+// while persisting nothing. It never escapes to a caller (Preview maps it to success).
+var errDryRun = errors.New("transactions: dry-run rollback (not an error)")
 
 // Coordinator is the sole runtime mutator of league state. Construct with New.
 type Coordinator struct {
@@ -71,6 +78,40 @@ func (c *Coordinator) Execute(ctx context.Context, req Request) (Receipt, error)
 	})
 	if err != nil {
 		return Receipt{}, fmt.Errorf("transactions: execute %s: %w", req.Kind(), err)
+	}
+	return Receipt{Kind: req.Kind(), PlayersAffected: affected, At: c.now().UTC()}, nil
+}
+
+// Preview runs a request exactly as Execute would — same validation, same phase gate, same
+// apply, through the same single write path — but ALWAYS rolls back, so nothing is persisted.
+// It answers "would this transaction commit, and if not, why?" for the staged-and-confirm UI,
+// reusing the REAL handler so a preview can never drift from the commit (design D5). A rejection
+// returns the authoritative error (eligibility, phase gate, signing window, min-salary floor, …);
+// success returns a Receipt whose PlayersAffected the confirm step displays. The commit that
+// FOLLOWS a preview re-sends the SAME intent and recomputes authoritatively — the preview is
+// advisory only, never fed back in as input (design D4).
+func (c *Coordinator) Preview(ctx context.Context, req Request) (Receipt, error) {
+	if req == nil {
+		return Receipt{}, fmt.Errorf("transactions: Preview called with a nil request")
+	}
+	if err := req.validate(); err != nil {
+		return Receipt{}, err // rejected before a transaction is even opened
+	}
+
+	var affected int
+	err := c.writer.WriteTx(ctx, func(w state.TxWriter) error {
+		if perr := gatePhase(ctx, w, req.Kind()); perr != nil {
+			return perr
+		}
+		n, aerr := req.apply(ctx, w)
+		if aerr != nil {
+			return aerr
+		}
+		affected = n
+		return errDryRun // fully applied and valid — roll it all back, persist nothing
+	})
+	if err != nil && !errors.Is(err, errDryRun) {
+		return Receipt{}, fmt.Errorf("transactions: preview %s: %w", req.Kind(), err)
 	}
 	return Receipt{Kind: req.Kind(), PlayersAffected: affected, At: c.now().UTC()}, nil
 }
@@ -142,4 +183,17 @@ func (c *Coordinator) ExecuteSign(ctx context.Context, sign Sign, dir Directory)
 		sign.draftYear, sign.hasDraftYear = facts.DraftYear, true
 	}
 	return c.Execute(ctx, sign)
+}
+
+// PreviewSign is the dry-run counterpart of ExecuteSign: it resolves the same draft-year floor
+// input, then previews (rolls back) instead of committing, so the staged-confirm UI can surface
+// a "below §6 minimum" / "signing window closed" / "not a free agent" rejection BEFORE any write.
+func (c *Coordinator) PreviewSign(ctx context.Context, sign Sign, dir Directory) (Receipt, error) {
+	if dir == nil {
+		return Receipt{}, fmt.Errorf("transactions: preview sign %q: nil directory (draft-year join required for the §6 min-salary floor)", sign.MFLID)
+	}
+	if facts, ok := dir.Facts(sign.MFLID); ok && facts.HasDraftYear {
+		sign.draftYear, sign.hasDraftYear = facts.DraftYear, true
+	}
+	return c.Preview(ctx, sign)
 }

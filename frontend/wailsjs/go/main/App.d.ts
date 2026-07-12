@@ -8,13 +8,21 @@ export function GetCurrentPhase():Promise<main.PhaseResult>;
 
 export function GetFranchiseState(arg1:string):Promise<main.FranchiseStateResult>;
 
+export function GetFranchises():Promise<main.FranchisesResult>;
+
+export function GetFreeAgentPool():Promise<main.FreeAgentPoolResult>;
+
 export function GetFreeAgents():Promise<main.FreeAgentsResult>;
 
 export function GetParams():Promise<main.ParamsResult>;
 
 export function GetRankings():Promise<main.RankingsResult>;
 
+export function GetRoster(arg1:string):Promise<main.RosterResult>;
+
 export function Ping():Promise<main.PingResult>;
+
+export function PreviewTransaction(arg1:main.TransactionRequest):Promise<main.TransactionResult>;
 
 export function RunValidationSuite():Promise<main.ValidationResult>;
 

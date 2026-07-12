@@ -226,6 +226,114 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class M4Franchise {
+	    franchiseID: string;
+	    name: string;
+	    playerCount: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new M4Franchise(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchiseID = source["franchiseID"];
+	        this.name = source["name"];
+	        this.playerCount = source["playerCount"];
+	    }
+	}
+	export class FranchisesResult {
+	    ok: boolean;
+	    franchises: M4Franchise[];
+	    detail: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new FranchisesResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.franchises = this.convertValues(source["franchises"], M4Franchise);
+	        this.detail = source["detail"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class M4Player {
+	    mflID: string;
+	    name: string;
+	    position: string;
+	    rosterStatus: string;
+	    salary: number;
+	    capSalary: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new M4Player(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.mflID = source["mflID"];
+	        this.name = source["name"];
+	        this.position = source["position"];
+	        this.rosterStatus = source["rosterStatus"];
+	        this.salary = source["salary"];
+	        this.capSalary = source["capSalary"];
+	    }
+	}
+	export class FreeAgentPoolResult {
+	    ok: boolean;
+	    players: M4Player[];
+	    warning: string;
+	    detail: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new FreeAgentPoolResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.players = this.convertValues(source["players"], M4Player);
+	        this.warning = source["warning"];
+	        this.detail = source["detail"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class FreeAgentsResult {
 	    ok: boolean;
 	    mflIDs: string[];
@@ -242,6 +350,8 @@ export namespace main {
 	        this.detail = source["detail"];
 	    }
 	}
+	
+	
 	export class MoveDTO {
 	    mflID: string;
 	    toFranchiseID: string;
@@ -418,6 +528,46 @@ export namespace main {
 	        this.error = source["error"];
 	        this.l4Mode = source["l4Mode"];
 	        this.rows = this.convertValues(source["rows"], harness.RookieRow);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class RosterResult {
+	    ok: boolean;
+	    franchiseID: string;
+	    capUsed: number;
+	    players: M4Player[];
+	    warning: string;
+	    detail: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RosterResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.franchiseID = source["franchiseID"];
+	        this.capUsed = source["capUsed"];
+	        this.players = this.convertValues(source["players"], M4Player);
+	        this.warning = source["warning"];
+	        this.detail = source["detail"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

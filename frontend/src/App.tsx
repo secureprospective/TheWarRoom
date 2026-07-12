@@ -5,8 +5,15 @@ import { ValidationBoard } from './components/ValidationBoard';
 import { AdminPanel } from './components/AdminPanel';
 import { RankingsBoard } from './components/RankingsBoard';
 import { TransactionsPanel } from './components/TransactionsPanel';
+import { TransactionWorkspace } from './components/transactions/TransactionWorkspace';
+import { LeagueControls } from './components/transactions/LeagueControls';
 
-type Tab = 'rankings' | 'rookies' | 'validation' | 'transactions';
+type Tab = 'rankings' | 'rookies' | 'validation' | 'workspace' | 'league' | 'transactions';
+
+// D8 phased shell cutover: the real M4 operator UI ("Transactions" workspace + "League Controls")
+// ships alongside the OLD raw-mflID dev panel, which stays reachable behind this flag until all 14
+// ops port into the workspace — then it is deleted. Flip to hide the dev tab.
+const SHOW_DEV_PANEL = true;
 
 // App shell: M1 (the real 32-team asset rankings, the first live module) plus the
 // testing-harness tabs (rookie sandbox, architectural validation), with the live
@@ -15,7 +22,7 @@ type Tab = 'rankings' | 'rookies' | 'validation' | 'transactions';
 function App() {
   const loadAll = useHarnessStore((s) => s.loadAll);
   const loading = useHarnessStore((s) => s.loading);
-  const [tab, setTab] = useState<Tab>('rankings');
+  const [tab, setTab] = useState<Tab>('workspace');
 
   useEffect(() => {
     void loadAll();
@@ -33,6 +40,12 @@ function App() {
       <div className="flex">
         <main className="flex-1 p-6">
           <nav className="mb-4 flex gap-2">
+            <TabButton active={tab === 'workspace'} onClick={() => setTab('workspace')}>
+              Transactions
+            </TabButton>
+            <TabButton active={tab === 'league'} onClick={() => setTab('league')}>
+              League Controls
+            </TabButton>
             <TabButton active={tab === 'rankings'} onClick={() => setTab('rankings')}>
               M1: Asset Rankings
             </TabButton>
@@ -42,9 +55,11 @@ function App() {
             <TabButton active={tab === 'validation'} onClick={() => setTab('validation')}>
               Module 3: Architectural Tests
             </TabButton>
-            <TabButton active={tab === 'transactions'} onClick={() => setTab('transactions')}>
-              B7a: Transactions (dev)
-            </TabButton>
+            {SHOW_DEV_PANEL && (
+              <TabButton active={tab === 'transactions'} onClick={() => setTab('transactions')}>
+                B7a: Transactions (dev)
+              </TabButton>
+            )}
             <button
               type="button"
               onClick={() => void loadAll()}
@@ -54,7 +69,11 @@ function App() {
             </button>
           </nav>
 
-          {tab === 'rankings' ? (
+          {tab === 'workspace' ? (
+            <TransactionWorkspace />
+          ) : tab === 'league' ? (
+            <LeagueControls />
+          ) : tab === 'rankings' ? (
             <RankingsBoard />
           ) : tab === 'rookies' ? (
             <RookieTable />
