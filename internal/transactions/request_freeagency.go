@@ -64,7 +64,7 @@ func (s Sign) validate() error {
 	return nil
 }
 
-func (s Sign) apply(ctx context.Context, w state.TxWriter) (int, error) {
+func (s Sign) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
 	// Derive §6 experience from the resolved draft year against the AUTHORITATIVE in-tx season
 	// (w.Season()): experience = season − draftYear (a rookie's draft class = 0). Missing draft
 	// data, or a draft year outside a plausible career window (MFL's "1970"/"0" sentinels, or a
@@ -76,7 +76,9 @@ func (s Sign) apply(ctx context.Context, w state.TxWriter) (int, error) {
 		}
 	}
 	if err := freeagency.Sign(ctx, w, s.MFLID, s.FranchiseID, s.Salary, s.Years, experienceYears); err != nil {
-		return 0, fmt.Errorf("sign: %w", err)
+		return applyResult{}, fmt.Errorf("sign: %w", err)
 	}
-	return 1, nil
+	// The signee's fresh cap salary hitting the franchise cap is not yet surfaced pre-commit; it
+	// lands on the post-commit refresh. Deadcap-first breakdown slice.
+	return applyResult{PlayersAffected: 1}, nil
 }

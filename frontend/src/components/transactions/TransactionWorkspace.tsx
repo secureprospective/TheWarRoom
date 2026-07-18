@@ -115,6 +115,7 @@ export function TransactionWorkspace() {
         previewOK: null,
         detail: '',
         playersAffected: 0,
+        capDeltas: [],
         request: req,
       });
       return;
@@ -133,6 +134,7 @@ export function TransactionWorkspace() {
       previewOK: null,
       detail: '',
       playersAffected: 0,
+      capDeltas: [],
       request: req,
     };
     setPending(base);
@@ -144,6 +146,7 @@ export function TransactionWorkspace() {
       previewOK: res.ok,
       detail: res.detail,
       playersAffected: res.playersAffected,
+      capDeltas: res.capDeltas ?? [],
     });
   }
 
@@ -681,7 +684,8 @@ function ActionPanel({
             )}
 
             <p className="mt-4 text-[11px] text-[#64748b]">
-              Trades and the commissioner surfaces land in a later slice.
+              Multi-player trades are built on the Trade tab; commissioner calendar and powers live on
+              the League Controls tab.
             </p>
           </>
         )}

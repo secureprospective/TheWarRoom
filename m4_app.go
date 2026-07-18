@@ -130,8 +130,9 @@ func (a *App) GetFreeAgentPool() FreeAgentPoolResult {
 	return FreeAgentPoolResult{OK: true, Players: players, Warning: warning}
 }
 
-// M4Franchise is one entry in the franchise rail: its id, a display name (empty until the
-// franchise-name follow-up lands — the UI falls back to the id), and its roster size.
+// M4Franchise is one entry in the franchise rail: its id, a display name (from the MFL
+// league export's franchise directory; empty when the active config version predates the
+// directory or MFL carries a blank name — the UI falls back to the id), and its roster size.
 type M4Franchise struct {
 	FranchiseID string `json:"franchiseID"`
 	Name        string `json:"name"`
@@ -145,8 +146,9 @@ type FranchisesResult struct {
 	Detail     string        `json:"detail"`
 }
 
-// GetFranchises lists the league's franchises (id + roster size) for the rail. Franchise
-// display names are deferred (see the file header); the id is the stable label until then.
+// GetFranchises lists the league's franchises (id + display name + roster size) for the
+// rail. Names come from the rulebook's franchise directory (the MFL league export); a
+// franchise absent from it keeps an empty name and the UI falls back to the id.
 func (a *App) GetFranchises() FranchisesResult {
 	if a.startupErr != nil {
 		return FranchisesResult{Detail: a.startupErr.Error()}
@@ -157,6 +159,10 @@ func (a *App) GetFranchises() FranchisesResult {
 	if err := a.state.Err(); err != nil {
 		return FranchisesResult{Detail: "state is stale after a failed reload: " + err.Error()}
 	}
+	names := map[string]string{}
+	if a.rulebook != nil {
+		names = a.rulebook.FranchiseNames()
+	}
 	r := a.state.Reader()
 	ids := r.Franchises()
 	sort.Strings(ids) // stable rail order (franchise ids are zero-padded, so lexical == numeric)
@@ -166,7 +172,7 @@ func (a *App) GetFranchises() FranchisesResult {
 		if fs, ok := r.FranchiseState(id); ok {
 			count = len(fs.Players)
 		}
-		out = append(out, M4Franchise{FranchiseID: id, PlayerCount: count})
+		out = append(out, M4Franchise{FranchiseID: id, Name: names[id], PlayerCount: count})
 	}
 	return FranchisesResult{OK: true, Franchises: out}
 }
@@ -237,14 +243,14 @@ func (a *App) PreviewTransaction(req TransactionRequest) TransactionResult {
 			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §9 tag price: " + derr.Error()}
 		}
 		rec, terr := a.coordinator.PreviewTag(ctx, req.MFLID, dir)
-		return receiptResult(req.Kind, rec, terr)
+		return a.receiptResult(req.Kind, rec, terr)
 	case string(transactions.KindExtension):
 		dir, derr := a.directory(ctx)
 		if derr != nil {
 			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §10 position floor: " + derr.Error()}
 		}
 		rec, terr := a.coordinator.PreviewExtension(ctx, req.MFLID, req.AddedYears, dir)
-		return receiptResult(req.Kind, rec, terr)
+		return a.receiptResult(req.Kind, rec, terr)
 	}
 
 	txn, err := buildRequest(req)
@@ -257,22 +263,55 @@ func (a *App) PreviewTransaction(req TransactionRequest) TransactionResult {
 			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §6 min-salary floor: " + derr.Error()}
 		}
 		rec, terr := a.coordinator.PreviewSign(ctx, sign, dir)
-		return receiptResult(req.Kind, rec, terr)
+		return a.receiptResult(req.Kind, rec, terr)
 	}
 	// BUYOUT (§12) and RESTRUCTURE (§11) are plain sealed requests whose figures resolve entirely
 	// in-tx, so the generic Preview dry-runs them with no directory needed.
 	rec, terr := a.coordinator.Preview(ctx, txn)
-	return receiptResult(req.Kind, rec, terr)
+	return a.receiptResult(req.Kind, rec, terr)
 }
 
 // receiptResult maps a Coordinator (Receipt, error) outcome onto the IPC TransactionResult: a
 // rejection becomes OK=false + the authoritative reason (Detail), a success becomes the receipt
-// fields. Shared by every PreviewTransaction branch so the mapping never drifts between ops.
-func receiptResult(kind string, rec transactions.Receipt, err error) TransactionResult {
+// fields plus the pre-commit cap-impact breakdown (the dead-cap charge / relief credit a Preview
+// computed). Shared by every PreviewTransaction branch so the mapping never drifts between ops.
+func (a *App) receiptResult(kind string, rec transactions.Receipt, err error) TransactionResult {
 	if err != nil {
 		return TransactionResult{Kind: kind, Detail: err.Error()}
 	}
-	return TransactionResult{OK: true, Kind: string(rec.Kind), PlayersAffected: rec.PlayersAffected, At: rec.At.Format(time.RFC3339)}
+	return TransactionResult{
+		OK:              true,
+		Kind:            string(rec.Kind),
+		PlayersAffected: rec.PlayersAffected,
+		At:              rec.At.Format(time.RFC3339),
+		CapDeltas:       a.capDeltaDTOs(rec.CapDeltas),
+	}
+}
+
+// capDeltaDTOs projects the Coordinator's signed cap deltas onto the IPC DTOs, resolving each
+// franchise's display name server-side (id fallback when the rulebook predates the franchise
+// directory) and formatting a signed dollar string (+ for a charge, − for a credit). Always
+// returns a non-nil slice so the modal's `?? []` guard is never load-bearing on success.
+func (a *App) capDeltaDTOs(deltas []transactions.CapDelta) []CapDeltaDTO {
+	names := map[string]string{}
+	if a.rulebook != nil {
+		names = a.rulebook.FranchiseNames()
+	}
+	out := make([]CapDeltaDTO, 0, len(deltas))
+	for _, d := range deltas {
+		amount := d.Cents.String()
+		if d.Cents > 0 {
+			amount = "+" + amount // a charge; Money.String already prefixes − on a credit
+		}
+		out = append(out, CapDeltaDTO{
+			FranchiseID:   d.FranchiseID,
+			FranchiseName: names[d.FranchiseID],
+			Amount:        amount,
+			Cents:         d.Cents.Cents(),
+			Reason:        d.Reason,
+		})
+	}
+	return out
 }
 
 // resolveDirectory returns the cached players-DB Lookup, DEGRADING on failure: a nil-facts

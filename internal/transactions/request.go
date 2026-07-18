@@ -39,9 +39,10 @@ const (
 type Request interface {
 	Kind() Kind
 	validate() error
-	// apply runs the transaction's steps against the shared tx writer and returns how
-	// many players it touched. It performs no commit — WriteTx owns the transaction.
-	apply(ctx context.Context, w state.TxWriter) (int, error)
+	// apply runs the transaction's steps against the shared tx writer and returns how many
+	// players it touched plus its pre-commit cap-impact line items (applyResult). It performs
+	// no commit — WriteTx owns the transaction; a Preview reads the applyResult and rolls back.
+	apply(ctx context.Context, w state.TxWriter) (applyResult, error)
 	sealed()
 }
 
@@ -91,15 +92,17 @@ func (t Trade) validate() error {
 	return nil
 }
 
-func (t Trade) apply(ctx context.Context, w state.TxWriter) (int, error) {
+func (t Trade) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
 	moves := make([]acquisitions.Move, len(t.Moves))
 	for i, m := range t.Moves {
 		moves[i] = acquisitions.Move{MFLID: m.MFLID, ToFranchiseID: m.ToFranchiseID}
 	}
 	if err := acquisitions.Trade(ctx, w, moves); err != nil {
-		return 0, fmt.Errorf("trade: %w", err)
+		return applyResult{}, fmt.Errorf("trade: %w", err)
 	}
-	return len(moves), nil
+	// The per-leg cap movement (each traded contract leaves one cap, joins another) is not yet
+	// surfaced pre-commit; it lands on the post-commit refresh. Deadcap-first breakdown slice.
+	return applyResult{PlayersAffected: len(moves)}, nil
 }
 
 // RosterStatusChange moves one player between roster statuses (active ↔ taxi/IR).
@@ -120,11 +123,12 @@ func (r RosterStatusChange) validate() error {
 	return nil
 }
 
-func (r RosterStatusChange) apply(ctx context.Context, w state.TxWriter) (int, error) {
+func (r RosterStatusChange) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
 	if err := acquisitions.SetStatus(ctx, w, r.MFLID, r.Status); err != nil {
-		return 0, fmt.Errorf("roster status: %w", err)
+		return applyResult{}, fmt.Errorf("roster status: %w", err)
 	}
-	return 1, nil
+	// A roster-status move (active ↔ taxi/IR) changes no cap figure, so it carries no cap delta.
+	return applyResult{PlayersAffected: 1}, nil
 }
 
 // Waiver cuts one player (§8): the releasing franchise loses him from its roster and
@@ -148,11 +152,12 @@ func (wv Waiver) validate() error {
 	return nil
 }
 
-func (wv Waiver) apply(ctx context.Context, w state.TxWriter) (int, error) {
-	if _, err := deadcap.Waive(ctx, w, wv.MFLID); err != nil {
-		return 0, fmt.Errorf("waiver: %w", err)
+func (wv Waiver) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
+	entry, err := deadcap.Waive(ctx, w, wv.MFLID)
+	if err != nil {
+		return applyResult{}, fmt.Errorf("waiver: %w", err)
 	}
-	return 1, nil
+	return applyResult{PlayersAffected: 1, Deltas: deadCapDeltas(entry)}, nil
 }
 
 // Restructure lowers a player's cap-counting salary by the owner-chosen Move (§11),
@@ -180,11 +185,13 @@ func (r Restructure) validate() error {
 	return nil
 }
 
-func (r Restructure) apply(ctx context.Context, w state.TxWriter) (int, error) {
+func (r Restructure) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
 	if err := contracts.Restructure(ctx, w, r.MFLID, r.Move); err != nil {
-		return 0, fmt.Errorf("restructure: %w", err)
+		return applyResult{}, fmt.Errorf("restructure: %w", err)
 	}
-	return 1, nil
+	// A §11 restructure MOVES money between the player's own cells (conserved) — the current-season
+	// cap drop is not yet surfaced pre-commit; it lands on the post-commit refresh.
+	return applyResult{PlayersAffected: 1}, nil
 }
 
 // Tag applies a §9 franchise tag: the player's salary becomes the top-5-by-position
@@ -210,11 +217,13 @@ func (t Tag) validate() error {
 	return nil
 }
 
-func (t Tag) apply(ctx context.Context, w state.TxWriter) (int, error) {
+func (t Tag) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
 	if err := contracts.Tag(ctx, w, t.MFLID, t.price); err != nil {
-		return 0, fmt.Errorf("tag: %w", err)
+		return applyResult{}, fmt.Errorf("tag: %w", err)
 	}
-	return 1, nil
+	// A §9 tag raises the player's cap salary to the resolved price — the cap increase is not yet
+	// surfaced pre-commit; it lands on the post-commit refresh.
+	return applyResult{PlayersAffected: 1}, nil
 }
 
 // Extension applies a §10 contract extension: it appends AddedYears (1..3) new PAID years
@@ -246,11 +255,13 @@ func (e Extension) validate() error {
 	return nil
 }
 
-func (e Extension) apply(ctx context.Context, w state.TxWriter) (int, error) {
+func (e Extension) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
 	if err := contracts.Extend(ctx, w, e.MFLID, e.AddedYears, e.floor); err != nil {
-		return 0, fmt.Errorf("extension: %w", err)
+		return applyResult{}, fmt.Errorf("extension: %w", err)
 	}
-	return 1, nil
+	// A §10 extension appends future PAID years priced off the highest remaining year; the current
+	// season's cap is unchanged, so any breakdown is a future-year concern (post-commit refresh).
+	return applyResult{PlayersAffected: 1}, nil
 }
 
 // Buyout executes a §12 contract buyout: the franchise releases the player and owes a §12
@@ -275,11 +286,12 @@ func (b Buyout) validate() error {
 	return nil
 }
 
-func (b Buyout) apply(ctx context.Context, w state.TxWriter) (int, error) {
-	if _, err := deadcap.Buyout(ctx, w, b.MFLID); err != nil {
-		return 0, fmt.Errorf("buyout: %w", err)
+func (b Buyout) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
+	entry, err := deadcap.Buyout(ctx, w, b.MFLID)
+	if err != nil {
+		return applyResult{}, fmt.Errorf("buyout: %w", err)
 	}
-	return 1, nil
+	return applyResult{PlayersAffected: 1, Deltas: deadCapDeltas(entry)}, nil
 }
 
 // Retirement executes a §13 retirement: the franchise releases the player and owes a §13
@@ -302,11 +314,12 @@ func (r Retirement) validate() error {
 	return nil
 }
 
-func (r Retirement) apply(ctx context.Context, w state.TxWriter) (int, error) {
-	if _, err := deadcap.Retire(ctx, w, r.MFLID); err != nil {
-		return 0, fmt.Errorf("retirement: %w", err)
+func (r Retirement) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
+	entry, err := deadcap.Retire(ctx, w, r.MFLID)
+	if err != nil {
+		return applyResult{}, fmt.Errorf("retirement: %w", err)
 	}
-	return 1, nil
+	return applyResult{PlayersAffected: 1, Deltas: deadCapDeltas(entry)}, nil
 }
 
 // Death executes a §13 Gaines Adams Rule removal: a player's death removes him from his roster
@@ -327,11 +340,14 @@ func (d Death) validate() error {
 	return nil
 }
 
-func (d Death) apply(ctx context.Context, w state.TxWriter) (int, error) {
-	if _, err := deadcap.Death(ctx, w, d.MFLID); err != nil {
-		return 0, fmt.Errorf("death: %w", err)
+func (d Death) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
+	entry, err := deadcap.Death(ctx, w, d.MFLID)
+	if err != nil {
+		return applyResult{}, fmt.Errorf("death: %w", err)
 	}
-	return 1, nil
+	// Gaines Adams Rule: removal at $0 dead cap. deadCapDeltas returns no line for a zero charge,
+	// so the quote correctly shows a removal with no cap penalty.
+	return applyResult{PlayersAffected: 1, Deltas: deadCapDeltas(entry)}, nil
 }
 
 // CapRelief executes a §13 Cap Relief Appeal: the commissioner reduces a franchise's cap hit by
@@ -364,9 +380,15 @@ func (c CapRelief) validate() error {
 	return nil
 }
 
-func (c CapRelief) apply(ctx context.Context, w state.TxWriter) (int, error) {
-	if err := deadcap.Relieve(ctx, w, c.FranchiseID, c.Amount, c.Reason); err != nil {
-		return 0, fmt.Errorf("cap relief: %w", err)
+func (c CapRelief) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
+	entry, err := deadcap.Relieve(ctx, w, c.FranchiseID, c.Amount, c.Reason)
+	if err != nil {
+		return applyResult{}, fmt.Errorf("cap relief: %w", err)
 	}
-	return 0, nil
+	// A §13 relief is a NEGATIVE cap delta — a credit CapUsed subtracts (Σcells + Σdead_cap −
+	// Σcap_relief). Use the store's SNAPPED amount AND its own reason (entry.Amount/entry.Reason,
+	// the commissioner's audit basis) so the quote matches the committed ledger row verbatim — the
+	// same reason-from-the-entry rule the dead-cap deltas follow (GLM slice-3 review L2). No player
+	// is released (PlayersAffected 0).
+	return applyResult{PlayersAffected: 0, Deltas: []CapDelta{{FranchiseID: c.FranchiseID, Cents: -entry.Amount, Reason: entry.Reason}}}, nil
 }

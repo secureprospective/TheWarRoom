@@ -50,11 +50,28 @@ type TransactionRequest struct {
 // OK=false with a human-readable Detail. A failed transaction changed nothing (the
 // Coordinator rolls back), so the frontend can safely re-read state after any result.
 type TransactionResult struct {
-	OK              bool   `json:"ok"`
-	Kind            string `json:"kind"`
-	PlayersAffected int    `json:"playersAffected"`
-	At              string `json:"at"`
-	Detail          string `json:"detail"`
+	OK              bool          `json:"ok"`
+	Kind            string        `json:"kind"`
+	PlayersAffected int           `json:"playersAffected"`
+	At              string        `json:"at"`
+	Detail          string        `json:"detail"`
+	CapDeltas       []CapDeltaDTO `json:"capDeltas"`
+}
+
+// CapDeltaDTO is one cap-impact line item of a PREVIEW's pre-commit dollar breakdown as it crosses
+// the IPC boundary — the signed figure a staged-confirm quote shows before the commissioner commits.
+// Amount is a display dollar string (domain.Money.String(), e.g. "$4,410,000"), signed with a
+// leading "+"/"−" so the UI shows a charge vs a credit without re-deriving the sign; Cents is the
+// raw signed cents behind it. FranchiseName is resolved server-side (id fallback when the rulebook
+// predates the franchise directory); Reason is the store's own audit label. Never null on a
+// success — an op with no breakdown yet carries an empty slice (Wails marshals nil→null, guarded
+// `?? []` in the modal). It is populated only by PreviewTransaction; an executed result omits it.
+type CapDeltaDTO struct {
+	FranchiseID   string `json:"franchiseID"`
+	FranchiseName string `json:"franchiseName"`
+	Amount        string `json:"amount"`
+	Cents         int64  `json:"cents"`
+	Reason        string `json:"reason"`
 }
 
 // ExecuteTransaction is the dev-surface IPC method (functional gate for B7a): it runs a

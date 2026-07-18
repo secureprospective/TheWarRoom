@@ -25,6 +25,17 @@ type RawConfig struct {
 	RosterLimits          []PositionLimit // per-position roster min-max ("0-0" = unlimited)
 	Starters              Starters        // starter requirements
 	ScoringRules          []PositionRuleSet
+	Franchises            []Franchise // the league's franchise directory (id -> display name)
+}
+
+// Franchise is one entry in the league's franchise directory: its stable MFL id
+// ("0001"–"0032", matching the rosters feed's franchise id) and its commissioner-set
+// display name. It is DIRECTORY data (who the teams are), not a scoring rule — the
+// rulebook stores it in the versioned payload and GetFranchises serves the name;
+// an absent/empty name is tolerated (the UI falls back to the id).
+type Franchise struct {
+	ID   string
+	Name string
 }
 
 // PositionLimit is one position's min-max bound ("QB" -> "1", "RB" -> "2-4"),
@@ -87,12 +98,25 @@ type leagueEnvelope struct {
 			IDPStarters string                      `json:"idp_starters"`
 			Position    ingestion.MFLList[posLimit] `json:"position"`
 		} `json:"starters"`
+		Franchises struct {
+			// MFL collapses a single-element array to a bare object; a 32-team league
+			// returns an array, but MFLList tolerates both (same device as rosters).
+			Franchise ingestion.MFLList[franchiseEntry] `json:"franchise"`
+		} `json:"franchises"`
 	} `json:"league"`
 }
 
 type posLimit struct {
 	Name  string `json:"name"`
 	Limit string `json:"limit"`
+}
+
+// franchiseEntry is one franchise row in the MFL `league` export's franchises block.
+// It carries many fields (owner, division, contact); we decode only the id and the
+// display name — the rest is not directory data the app needs.
+type franchiseEntry struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // rulesEnvelope mirrors the MFL `rules` export. positionRules and each block's rule

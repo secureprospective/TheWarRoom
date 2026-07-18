@@ -1,0 +1,15 @@
+{
+  "phase": "complete",
+  "chunks_total": 8,
+  "chunks_complete": 8,
+  "findings_logged": 13,
+  "current_chunk": "",
+  "running_pid": 0,
+  "retry_count": 0,
+  "model_used": "zai/glm-5.2",
+  "paused": false,
+  "alert": "",
+  "pin_sha": "f624467f74a9f99f59a8b609f99aff3873be5561",
+  "last_updated": "2026-07-14T22:43:18Z",
+  "launched_epoch": 1784045145
+}

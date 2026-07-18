@@ -140,8 +140,23 @@ func mapLeague(le leagueEnvelope) RawConfig {
 			IDPStarters: l.Starters.IDPStarters,
 			Positions:   mapLimits(l.Starters.Position),
 		},
+		Franchises: mapFranchises(l.Franchises.Franchise),
 	}
 	return cfg
+}
+
+// mapFranchises copies the decoded franchise directory into the public slice. An
+// entry with an empty id is dropped (unusable as a key); the name is kept verbatim
+// (a blank name is tolerated — the UI falls back to the id).
+func mapFranchises(in []franchiseEntry) []Franchise {
+	out := make([]Franchise, 0, len(in))
+	for _, f := range in {
+		if f.ID == "" {
+			continue
+		}
+		out = append(out, Franchise(f))
+	}
+	return out
 }
 
 // mapLimits converts decoded position rows into the public PositionLimit slice.

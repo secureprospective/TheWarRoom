@@ -14,7 +14,11 @@ const leagueBody = `{"league":{
 	"startWeek":"1","endWeek":"17","lastRegularSeasonWeek":"13",
 	"rosterLimits":{"position":[{"name":"QB","limit":"0-0"},{"name":"RB","limit":"0-0"}]},
 	"starters":{"count":"21","iop_starters":"8","idp_starters":"12",
-		"position":{"name":"QB","limit":"1"}}}}`
+		"position":{"name":"QB","limit":"1"}},
+	"franchises":{"franchise":[
+		{"id":"0001","name":"Gridiron Gurus","owner_name":"x"},
+		{"id":"0002","name":""},
+		{"name":"no id — dropped"}]}}}`
 
 const rulesBody = `{"rules":{"positionRules":[
 	{"positions":"CB|S","rule":[
@@ -41,6 +45,24 @@ func TestAssemble_DecodesBothExports(t *testing.T) {
 	}
 	if cfg.Starters.IDPStarters != "12" {
 		t.Errorf("idp starters = %q, want 12", cfg.Starters.IDPStarters)
+	}
+}
+
+func TestAssemble_DecodesFranchiseDirectory(t *testing.T) {
+	cfg, err := assemble([]byte(leagueBody), []byte(rulesBody))
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	// Two entries survive (the id-less row is dropped); the blank name is kept raw
+	// (FranchiseNames, not the fetcher, decides to omit it).
+	if len(cfg.Franchises) != 2 {
+		t.Fatalf("franchises = %+v, want 2 (id-less dropped)", cfg.Franchises)
+	}
+	if cfg.Franchises[0].ID != "0001" || cfg.Franchises[0].Name != "Gridiron Gurus" {
+		t.Errorf("franchise[0] = %+v, want 0001/Gridiron Gurus", cfg.Franchises[0])
+	}
+	if cfg.Franchises[1].ID != "0002" || cfg.Franchises[1].Name != "" {
+		t.Errorf("franchise[1] = %+v, want 0002 with blank name", cfg.Franchises[1])
 	}
 }
 

@@ -36,11 +36,11 @@ func (a AdvancePhase) validate() error {
 	return nil
 }
 
-func (a AdvancePhase) apply(ctx context.Context, w state.TxWriter) (int, error) {
+func (a AdvancePhase) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
 	if err := w.AppendPhaseTransition(ctx, a.To, a.Note); err != nil {
-		return 0, fmt.Errorf("advance phase: %w", err)
+		return applyResult{}, fmt.Errorf("advance phase: %w", err)
 	}
-	return 0, nil
+	return applyResult{}, nil
 }
 
 // RolloverSeason advances the league from PLAYOFFS(N) to OFFSEASON(N+1) — the season boundary
@@ -62,11 +62,11 @@ func (RolloverSeason) sealed()    {}
 // gate and the store primitive inside the transaction, never trusted from the request.
 func (RolloverSeason) validate() error { return nil }
 
-func (r RolloverSeason) apply(ctx context.Context, w state.TxWriter) (int, error) {
+func (r RolloverSeason) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
 	if err := w.RolloverSeason(ctx, r.Note); err != nil {
-		return 0, fmt.Errorf("season rollover: %w", err)
+		return applyResult{}, fmt.Errorf("season rollover: %w", err)
 	}
-	return 0, nil
+	return applyResult{}, nil
 }
 
 // SetSigningWindow is the commissioner's UFA-CALENDAR toggle (§6, Free_Agency_Design Q4): it OPENS
@@ -90,9 +90,9 @@ func (SetSigningWindow) sealed()    {}
 // store primitive, atomically.
 func (SetSigningWindow) validate() error { return nil }
 
-func (s SetSigningWindow) apply(ctx context.Context, w state.TxWriter) (int, error) {
+func (s SetSigningWindow) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
 	if err := w.AppendSigningWindow(ctx, s.Open, s.Note); err != nil {
-		return 0, fmt.Errorf("set signing window: %w", err)
+		return applyResult{}, fmt.Errorf("set signing window: %w", err)
 	}
-	return 0, nil
+	return applyResult{}, nil
 }

@@ -122,7 +122,7 @@ func Death(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapEn
 // a franchise-scoped adjustment, no player release. Every figure is the commissioner's judgment,
 // validated only for shape (positive amount, non-empty franchise/reason) by the store. Legal in
 // every phase. It touches no players (returns nothing to release).
-func Relieve(ctx context.Context, w state.TxWriter, franchiseID string, amount domain.Money, reason string) error {
+func Relieve(ctx context.Context, w state.TxWriter, franchiseID string, amount domain.Money, reason string) (state.CapReliefEntry, error) {
 	entry := state.CapReliefEntry{
 		FranchiseID: franchiseID,
 		LeagueYear:  w.Season(),
@@ -134,7 +134,9 @@ func Relieve(ctx context.Context, w state.TxWriter, franchiseID string, amount d
 		Reason: reason,
 	}
 	if err := w.AddCapRelief(ctx, entry); err != nil {
-		return fmt.Errorf("deadcap: cap relief %q: %w", franchiseID, err)
+		return state.CapReliefEntry{}, fmt.Errorf("deadcap: cap relief %q: %w", franchiseID, err)
 	}
-	return nil
+	// Return the entry so the pre-commit breakdown shows the SNAPPED amount CapUsed will actually
+	// subtract — not the raw request figure, which could be off-grid and drift from the ledger.
+	return entry, nil
 }

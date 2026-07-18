@@ -6,9 +6,10 @@ import { AdminPanel } from './components/AdminPanel';
 import { RankingsBoard } from './components/RankingsBoard';
 import { TransactionsPanel } from './components/TransactionsPanel';
 import { TransactionWorkspace } from './components/transactions/TransactionWorkspace';
+import { TradeBuilder } from './components/transactions/TradeBuilder';
 import { LeagueControls } from './components/transactions/LeagueControls';
 
-type Tab = 'rankings' | 'rookies' | 'validation' | 'workspace' | 'league' | 'transactions';
+type Tab = 'rankings' | 'rookies' | 'validation' | 'workspace' | 'trade' | 'league' | 'transactions';
 
 // D8 phased shell cutover: the real M4 operator UI ("Transactions" workspace + "League Controls")
 // ships alongside the OLD raw-mflID dev panel, which stays reachable behind this flag until all 14
@@ -43,6 +44,9 @@ function App() {
             <TabButton active={tab === 'workspace'} onClick={() => setTab('workspace')}>
               Transactions
             </TabButton>
+            <TabButton active={tab === 'trade'} onClick={() => setTab('trade')}>
+              Trade
+            </TabButton>
             <TabButton active={tab === 'league'} onClick={() => setTab('league')}>
               League Controls
             </TabButton>
@@ -71,6 +75,8 @@ function App() {
 
           {tab === 'workspace' ? (
             <TransactionWorkspace />
+          ) : tab === 'trade' ? (
+            <TradeBuilder />
           ) : tab === 'league' ? (
             <LeagueControls />
           ) : tab === 'rankings' ? (

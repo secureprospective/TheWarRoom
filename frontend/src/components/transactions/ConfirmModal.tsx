@@ -9,9 +9,24 @@ import { main } from '../../../wailsjs/go/models';
 // the parent owns that call so the number is always recomputed server-side (invariant 1).
 
 export type Pending = {
-  kind: 'ROSTER_STATUS' | 'WAIVER' | 'SIGN' | 'TAG' | 'EXTENSION' | 'BUYOUT' | 'RESTRUCTURE';
+  kind:
+    | 'ROSTER_STATUS'
+    | 'WAIVER'
+    | 'SIGN'
+    | 'TAG'
+    | 'EXTENSION'
+    | 'BUYOUT'
+    | 'RESTRUCTURE'
+    | 'TRADE'
+    // D6 commissioner surfaces (calendar + segregated destructive ops).
+    | 'ADVANCE_PHASE'
+    | 'ROLLOVER_SEASON'
+    | 'SET_SIGNING_WINDOW'
+    | 'RETIREMENT'
+    | 'DEATH'
+    | 'CAP_RELIEF';
   title: string;
-  subject: string; // player name for the header
+  subject: string; // player name (or, for a TRADE, a summary like "3-leg trade") for the header
   meta: string; // "WR · Free agent" etc.
   note: string; // human sentence describing the effect
   destructive: boolean;
@@ -19,8 +34,40 @@ export type Pending = {
   previewOK: boolean | null; // null = not previewed yet (plain confirm), true/false after
   detail: string; // rejection reason (previewOK === false)
   playersAffected: number;
+  // capDeltas is the preview's pre-commit dollar breakdown (a §8/§12/§13 dead-cap charge, a §13
+  // relief credit). Empty for an op not yet wired for a breakdown; the quote then shows only the
+  // will-commit line and the dollar lands on the post-commit roster/cap refresh. Signed via `cents`
+  // (positive = a charge that raises cap used, negative = a credit that lowers it).
+  capDeltas: main.CapDeltaDTO[];
   request: main.TransactionRequest;
 };
+
+// confirmLabel is the confirm button's verb per op kind, so the terminal action reads
+// naturally (a cut vs. a buyout vs. a season rollover) instead of a generic "Confirm".
+function confirmLabel(kind: Pending['kind']): string {
+  switch (kind) {
+    case 'WAIVER':
+      return 'Confirm cut';
+    case 'BUYOUT':
+      return 'Confirm buyout';
+    case 'TRADE':
+      return 'Confirm trade';
+    case 'ADVANCE_PHASE':
+      return 'Advance phase';
+    case 'ROLLOVER_SEASON':
+      return 'Roll season over';
+    case 'SET_SIGNING_WINDOW':
+      return 'Apply window';
+    case 'RETIREMENT':
+      return 'Confirm retirement';
+    case 'DEATH':
+      return 'Confirm';
+    case 'CAP_RELIEF':
+      return 'Grant relief';
+    default:
+      return 'Confirm move';
+  }
+}
 
 export function ConfirmModal({
   pending,
@@ -71,6 +118,30 @@ export function ConfirmModal({
           ) : (
             <>
               <p className="mb-3.5 text-[12px] text-[#93a1b8]">{pending.note}</p>
+              {pending.previewOK === true && (pending.capDeltas ?? []).length > 0 && (
+                <div className="mb-3.5 border border-[#29344a] bg-[#111725] px-3 py-2.5">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#93a1b8]">
+                    Cap impact (pre-commit)
+                  </div>
+                  <ul className="mt-1.5 space-y-1">
+                    {(pending.capDeltas ?? []).map((d, i) => (
+                      <li key={i} className="flex items-baseline justify-between gap-3 text-[12px]">
+                        <span className="text-[#cbd5e1]">
+                          {d.franchiseName || d.franchiseID}
+                          <span className="ml-1.5 text-[10.5px] text-[#64748b]">{d.reason}</span>
+                        </span>
+                        <span
+                          className={`font-semibold tabular-nums ${
+                            d.cents < 0 ? 'text-[#34d399]' : 'text-[#f87171]'
+                          }`}
+                        >
+                          {d.amount}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {pending.previewOK === true && (
                 <div className="flex items-start gap-1.5 text-[11px] text-[#64748b]">
                   <span className="mt-px text-[#34d399]">✓</span>
@@ -106,13 +177,7 @@ export function ConfirmModal({
                   : 'bg-[#34d399] text-[#06251a] hover:bg-[#4ade9f]'
               }`}
             >
-              {busy
-                ? 'Committing…'
-                : pending.kind === 'WAIVER'
-                  ? 'Confirm cut'
-                  : pending.kind === 'BUYOUT'
-                    ? 'Confirm buyout'
-                    : 'Confirm move'}
+              {busy ? 'Committing…' : confirmLabel(pending.kind)}
             </button>
           )}
         </div>

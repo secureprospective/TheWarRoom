@@ -9,7 +9,25 @@ func cloneConfig(c league.RawConfig) league.RawConfig {
 	c.ScoringRules = cloneScoring(c.ScoringRules)
 	c.RosterLimits = cloneLimits(c.RosterLimits)
 	c.Starters.Positions = cloneLimits(c.Starters.Positions)
+	c.Franchises = append([]league.Franchise(nil), c.Franchises...)
 	return c
+}
+
+// FranchiseNames returns the active config's franchise directory as an id->display-name
+// map, for the operator UI's rail and trade dropdowns. Only non-empty names are
+// included, so a caller can range the map and fall back to the id for any franchise
+// absent from it (an older config version stored before franchises were captured, or a
+// blank MFL name). Reads are snapshot-consistent under the store's read lock.
+func (s *Store) FranchiseNames() map[string]string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make(map[string]string, len(s.active.Franchises))
+	for _, f := range s.active.Franchises {
+		if f.Name != "" {
+			out[f.ID] = f.Name
+		}
+	}
+	return out
 }
 
 // cloneScoring deep-copies the position rule sets and each block's rule slice.

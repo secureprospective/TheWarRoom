@@ -49,6 +49,12 @@ type Receipt struct {
 	Kind            Kind      `json:"kind"`
 	PlayersAffected int       `json:"playersAffected"`
 	At              time.Time `json:"at"`
+	// CapDeltas is the pre-commit cap-impact breakdown — the signed dollar line items the handler
+	// computed (a dead-cap charge, a cap-relief credit). It is populated primarily by Preview (the
+	// staged-confirm quote); an Execute Receipt carries it too, but the authoritative post-commit
+	// figure is the reloaded franchise cap, not this list. Empty for an op not wired for a
+	// breakdown. A committed transaction that FAILED returns a zero Receipt (nil CapDeltas).
+	CapDeltas []CapDelta `json:"capDeltas"`
 }
 
 // Execute validates the request, then runs its steps in ONE spanning transaction. On
@@ -63,7 +69,7 @@ func (c *Coordinator) Execute(ctx context.Context, req Request) (Receipt, error)
 		return Receipt{}, err // rejected before a transaction is even opened
 	}
 
-	var affected int
+	var res applyResult
 	err := c.writer.WriteTx(ctx, func(w state.TxWriter) error {
 		// Season-phase eligibility is the FIRST step inside the tx (Vision-2026 D3): read the
 		// committed current phase and reject an op the phase disallows BEFORE any mutation or
@@ -72,14 +78,14 @@ func (c *Coordinator) Execute(ctx context.Context, req Request) (Receipt, error)
 		if perr := gatePhase(ctx, w, req.Kind()); perr != nil {
 			return perr
 		}
-		n, aerr := req.apply(ctx, w)
-		affected = n
+		r, aerr := req.apply(ctx, w)
+		res = r
 		return aerr
 	})
 	if err != nil {
 		return Receipt{}, fmt.Errorf("transactions: execute %s: %w", req.Kind(), err)
 	}
-	return Receipt{Kind: req.Kind(), PlayersAffected: affected, At: c.now().UTC()}, nil
+	return Receipt{Kind: req.Kind(), PlayersAffected: res.PlayersAffected, At: c.now().UTC(), CapDeltas: res.Deltas}, nil
 }
 
 // Preview runs a request exactly as Execute would — same validation, same phase gate, same
@@ -98,22 +104,22 @@ func (c *Coordinator) Preview(ctx context.Context, req Request) (Receipt, error)
 		return Receipt{}, err // rejected before a transaction is even opened
 	}
 
-	var affected int
+	var res applyResult
 	err := c.writer.WriteTx(ctx, func(w state.TxWriter) error {
 		if perr := gatePhase(ctx, w, req.Kind()); perr != nil {
 			return perr
 		}
-		n, aerr := req.apply(ctx, w)
+		r, aerr := req.apply(ctx, w)
 		if aerr != nil {
 			return aerr
 		}
-		affected = n
+		res = r
 		return errDryRun // fully applied and valid — roll it all back, persist nothing
 	})
 	if err != nil && !errors.Is(err, errDryRun) {
 		return Receipt{}, fmt.Errorf("transactions: preview %s: %w", req.Kind(), err)
 	}
-	return Receipt{Kind: req.Kind(), PlayersAffected: affected, At: c.now().UTC()}, nil
+	return Receipt{Kind: req.Kind(), PlayersAffected: res.PlayersAffected, At: c.now().UTC(), CapDeltas: res.Deltas}, nil
 }
 
 // ExecuteTag runs a §9 franchise tag. It RESOLVES the tag price here — the top-5-by-position

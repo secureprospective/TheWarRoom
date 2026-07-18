@@ -34,7 +34,16 @@ func TestIntegration_PreviewLeavesStateUnchanged(t *testing.T) {
 		t.Fatalf("preview receipt = %+v, want KindBuyout/1", rec)
 	}
 
-	// The whole point: nothing persisted.
+	// The pre-commit dollar breakdown: the §12 dead-cap charge (60% × $6M = $3.6M) must travel
+	// OUT of the rolled-back preview as one POSITIVE cap delta — the figure the confirm quote
+	// shows before any write. It survives the rollback because it is the handler's RETURN, not a
+	// post-apply re-read (the in-tx read wall).
+	if len(rec.CapDeltas) != 1 {
+		t.Fatalf("preview cap breakdown = %+v, want exactly 1 line (the §12 dead-cap charge)", rec.CapDeltas)
+	}
+	if got := rec.CapDeltas[0]; got.Cents != 3_600_000*100 || got.FranchiseID == "" || got.Reason == "" {
+		t.Fatalf("preview dead-cap delta = %+v, want +$3.6M (360000000c) with a franchise + reason", got)
+	}
 	if _, stillOK := s.Reader().Player("0001"); !stillOK {
 		t.Fatalf("preview RELEASED player 0001 — it must roll back")
 	}

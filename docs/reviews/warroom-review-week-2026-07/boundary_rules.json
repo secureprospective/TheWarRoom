@@ -1,0 +1,130 @@
+{
+  "_meta": {
+    "author": "ornith-proposal + claude-corrections 2026-07-11",
+    "corrections": [
+      "A1 shared-type carve-out added (domain/schema importable by every chunk \u2014 Ornith's chunk-level rules would have false-flagged 38 legitimate type imports)",
+      "engine-and-domain tightened: must NOT import db-and-store (Ornith allowed it); low confidence, adjudicate"
+    ],
+    "adjudicate_later": [
+      "db-and-store -> internal.ingestion (3 edges) \u2014 suspicious, persistence importing external-data code",
+      "transactions-engine -> internal.normalize/output/composition \u2014 cross-chunk, possibly legit",
+      "engine-and-domain -> internal.db/store (3 edges) \u2014 should use interfaces"
+    ]
+  },
+  "shared_type_carveout": {
+    "domains": [
+      "internal.domain",
+      "internal.schema"
+    ],
+    "rule": "Imports whose target_domain is in this list are ALWAYS OK, for every chunk. Do not flag them."
+  },
+  "boundary_rules": [
+    {
+      "chunk": "config-and-secrets",
+      "may_import": [],
+      "must_not_import": [],
+      "confidence": "high",
+      "reason": "Config files (go.mod, wails.json, Makefile, .github) are metadata; they do not import any application code."
+    },
+    {
+      "chunk": "db-and-store",
+      "may_import": [],
+      "must_not_import": [
+        "transactions-engine",
+        "wails-binding-surface",
+        "ingestion-and-external",
+        "engine-and-domain",
+        "frontend-ui"
+      ],
+      "confidence": "high",
+      "reason": "Persistence layer must remain a leaf package; it constructs queries and wraps transactions but must never reference business logic, UI, or external data."
+    },
+    {
+      "chunk": "transactions-engine",
+      "may_import": [
+        "db-and-store",
+        "engine-and-domain",
+        "config-and-secrets"
+      ],
+      "must_not_import": [
+        "wails-binding-surface",
+        "frontend-ui",
+        "ingestion-and-external"
+      ],
+      "confidence": "high",
+      "reason": "Ledger and rankings are the financial core; they read from and write to the store but must not reach into the binding layer or external data."
+    },
+    {
+      "chunk": "wails-binding-surface",
+      "may_import": [
+        "transactions-engine",
+        "engine-and-domain",
+        "db-and-store",
+        "config-and-secrets"
+      ],
+      "must_not_import": [
+        "frontend-ui",
+        "ingestion-and-external"
+      ],
+      "confidence": "high",
+      "reason": "The Wails bridge exposes Go methods to JS; it may call business logic but must not import React components or external data consumers."
+    },
+    {
+      "chunk": "ingestion-and-external",
+      "may_import": [
+        "db-and-store"
+      ],
+      "must_not_import": [
+        "transactions-engine",
+        "engine-and-domain",
+        "wails-binding-surface",
+        "frontend-ui"
+      ],
+      "confidence": "high",
+      "reason": "External data ingestion (MFL API, file loads) must not mutate business-logic engines; it may persist normalized data to the store only."
+    },
+    {
+      "chunk": "engine-and-domain",
+      "may_import": [
+        "config-and-secrets"
+      ],
+      "must_not_import": [
+        "db-and-store",
+        "frontend-ui",
+        "ingestion-and-external",
+        "wails-binding-surface"
+      ],
+      "confidence": "low",
+      "reason": "Pure business rules; direct db/store imports should go through interfaces \u2014 real edges exist (1x db, 2x store), flag for adjudication."
+    },
+    {
+      "chunk": "frontend-ui",
+      "may_import": [
+        "wails-binding-surface"
+      ],
+      "must_not_import": [
+        "db-and-store",
+        "transactions-engine",
+        "engine-and-domain",
+        "ingestion-and-external"
+      ],
+      "confidence": "high",
+      "reason": "React components only call bound methods on the Wails surface; they must not import Go packages, the store, or business logic."
+    },
+    {
+      "chunk": "tests-and-tools",
+      "may_import": [
+        "config-and-secrets",
+        "db-and-store",
+        "transactions-engine",
+        "wails-binding-surface",
+        "ingestion-and-external",
+        "engine-and-domain",
+        "frontend-ui"
+      ],
+      "must_not_import": [],
+      "confidence": "high",
+      "reason": "Tests and tools are exempt per the rules; they may import any chunk for verification and cleanup purposes."
+    }
+  ]
+}

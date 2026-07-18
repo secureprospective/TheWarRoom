@@ -335,6 +335,32 @@ func TestExecute_AdvancePhase(t *testing.T) {
 	}
 }
 
+// TestPreview_CapReliefBreakdown proves the pre-commit dollar breakdown for a §13 cap relief: a
+// Preview returns a single NEGATIVE cap delta (a credit CapUsed subtracts) carrying the SNAPPED
+// amount, not the raw off-grid request figure — so the confirm quote matches the ledger. The
+// preview rolls back (errDryRun), yet the delta still travels out on the Receipt because it is the
+// handler's return, not a post-apply re-read.
+func TestPreview_CapReliefBreakdown(t *testing.T) {
+	w := newFake()
+	c := newCoord(t, w)
+
+	// $3,006,000 is off the $10k grid → the store snaps it to $3,010,000; the breakdown must show
+	// the snapped figure, negated.
+	rec, err := c.Preview(context.Background(), CapRelief{FranchiseID: "0007", Amount: 3_006_000 * 100, Reason: "career-ending injury"})
+	if err != nil {
+		t.Fatalf("preview of a valid cap relief errored: %v", err)
+	}
+	if rec.Kind != KindCapRelief || rec.PlayersAffected != 0 {
+		t.Fatalf("receipt = %+v, want KindCapRelief/0", rec)
+	}
+	if len(rec.CapDeltas) != 1 {
+		t.Fatalf("cap breakdown = %+v, want exactly 1 credit line", rec.CapDeltas)
+	}
+	if got := rec.CapDeltas[0]; got.FranchiseID != "0007" || got.Cents != -3_010_000*100 || got.Reason != "career-ending injury" {
+		t.Fatalf("relief delta = %+v, want franchise 0007 / −$3.01M (−301000000c) / the commissioner's own reason", got)
+	}
+}
+
 // bogusReq is a Request with a Kind absent from opPhaseGate — the PLANT that proves the phase
 // gate is default-deny. apply records a call so the test can assert it never ran.
 type bogusReq struct{ tw *fakeTxWriter }
@@ -342,9 +368,16 @@ type bogusReq struct{ tw *fakeTxWriter }
 func (bogusReq) Kind() Kind      { return Kind("BOGUS") }
 func (bogusReq) validate() error { return nil }
 func (bogusReq) sealed()         {}
-func (b bogusReq) apply(_ context.Context, _ state.TxWriter) (int, error) {
+func (b bogusReq) apply(_ context.Context, _ state.TxWriter) (applyResult, error) {
 	b.tw.calls = append(b.tw.calls, recordedMove{op: "bogus-apply-ran"})
-	return 1, nil
+	return applyResult{PlayersAffected: 1}, nil
+}
+
+// nonZeroReceipt reports whether a Receipt carries any committed content. Receipt is no longer
+// comparable with != (it holds a []CapDelta), so a failed-transaction "zero receipt" assertion
+// checks the fields directly.
+func nonZeroReceipt(r Receipt) bool {
+	return r.Kind != "" || r.PlayersAffected != 0 || !r.At.IsZero() || r.CapDeltas != nil
 }
 
 // TestExecute_DefaultDenyUnknownKind: an op_kind with no phase policy is rejected by the gate,
@@ -422,7 +455,7 @@ func TestExecute_BuyoutCounterFailRollsBack(t *testing.T) {
 	if err == nil {
 		t.Fatal("buyout succeeded despite a failing counter bump")
 	}
-	if rec != (Receipt{}) {
+	if rec.Kind != "" || rec.PlayersAffected != 0 || !rec.At.IsZero() || rec.CapDeltas != nil {
 		t.Fatalf("failed buyout returned a non-zero receipt: %+v", rec)
 	}
 }
@@ -443,7 +476,7 @@ func TestExecute_StepErrorPropagates(t *testing.T) {
 	if err == nil {
 		t.Fatal("Execute succeeded despite a failing leg")
 	}
-	if rec != (Receipt{}) {
+	if nonZeroReceipt(rec) {
 		t.Fatalf("a failed transaction returned a non-zero receipt: %+v", rec)
 	}
 	if !w.writeTxRan {
@@ -595,7 +628,7 @@ func TestExecute_RestructureCounterFailRollsBack(t *testing.T) {
 	if err == nil {
 		t.Fatal("restructure succeeded despite a failing counter bump")
 	}
-	if rec != (Receipt{}) {
+	if nonZeroReceipt(rec) {
 		t.Fatalf("failed restructure returned a non-zero receipt: %+v", rec)
 	}
 }
