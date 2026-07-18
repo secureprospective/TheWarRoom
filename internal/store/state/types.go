@@ -86,13 +86,6 @@ type TxWriter interface {
 	MovePlayer(ctx context.Context, mflID, toFranchiseID string) error
 	SetRosterStatus(ctx context.Context, mflID string, status domain.RosterStatus) error
 	ApplyContract(ctx context.Context, mflID string, c ContractChange) error
-	AddDeadCap(ctx context.Context, e DeadCapEntry) error
-	// AddCapRelief appends one commissioner cap-relief CREDIT (§13 Cap Relief Appeal) to the
-	// cap_relief_ledger in the shared tx — a franchise-scoped reduction of the season's cap hit.
-	// It is the sibling of AddDeadCap: a positive credit against an absolute league year, kept in
-	// its own append-only ledger so the dead-cap non-negativity invariant stays pure. CapUsed
-	// subtracts it. Fails loud on a non-positive amount or a missing field.
-	AddCapRelief(ctx context.Context, e CapReliefEntry) error
 	// ReleasePlayer removes a player from his franchise entirely (deletes the rosters +
 	// contracts rows) AND records where he went via a mandatory player-status event — the
 	// roster side of a §8 waiver cut, and the shared removal path for buyout (§12), retirement
@@ -110,6 +103,11 @@ type TxWriter interface {
 	// uncommitted writes; a single read-then-write op (waiver, tag) is consistent.
 	Player(mflID string) (PlayerState, bool)
 
+	// CapLedgerWriter carries the two cap-ledger append primitives (dead cap + cap relief). They
+	// are siblings — a debit and a credit against an absolute league year, each in its own
+	// append-only ledger — so they group under one embedded member to keep TxWriter within the
+	// interfacebloat cap, the same grouping device as LedgerWriter / SeasonScope.
+	CapLedgerWriter
 	// LedgerWriter carries the per-year cell mutations (the §9/§11 primitives). It is
 	// embedded rather than inlined so TxWriter stays within the interfacebloat cap as more
 	// cell ops land — an embedded interface counts as one member.
@@ -122,6 +120,43 @@ type TxWriter interface {
 	// read the current status). Embedded so TxWriter stays within the interfacebloat cap — the
 	// same grouping device as LedgerWriter / SeasonScope.
 	StatusWriter
+	// CalendarWriter carries the commissioner-calendar append surface (schedule/reschedule/cancel/
+	// fire, all as append-only rows). Embedded so TxWriter stays within the interfacebloat cap —
+	// the same grouping device as LedgerWriter / SeasonScope / StatusWriter.
+	CalendarWriter
+}
+
+// CapLedgerWriter is the cap-ledger append surface — the two sibling primitives that move a
+// franchise's season cap hit: AddDeadCap (a debit into the append-only dead_cap_ledger) and
+// AddCapRelief (a credit into the sibling cap_relief_ledger). They are kept in SEPARATE ledgers so
+// the dead-cap non-negativity invariant (CHECK ≥ 0) stays pure while a relief remains a positive
+// credit; CapUsed sums the debits and subtracts the credits. Both fail loud on a non-positive
+// amount or a missing field. Grouped under one embedded member to keep TxWriter within the
+// interfacebloat cap — the same grouping device as LedgerWriter / SeasonScope.
+type CapLedgerWriter interface {
+	// AddDeadCap appends one dead-cap charge (§8/§12/§13) against an absolute league year in the
+	// shared tx. The ledger is append-only and non-negative; a duplicate is rejected. Fails loud
+	// on a non-positive amount or a missing field.
+	AddDeadCap(ctx context.Context, e DeadCapEntry) error
+	// AddCapRelief appends one commissioner cap-relief CREDIT (§13 Cap Relief Appeal) to the
+	// cap_relief_ledger in the shared tx — a franchise-scoped reduction of the season's cap hit.
+	// It is the sibling of AddDeadCap: a positive credit against an absolute league year, kept in
+	// its own append-only ledger so the dead-cap non-negativity invariant stays pure. CapUsed
+	// subtracts it. Fails loud on a non-positive amount or a missing field.
+	AddCapRelief(ctx context.Context, e CapReliefEntry) error
+}
+
+// CalendarWriter is the commissioner-calendar's append surface — the single write primitive behind
+// the append-only calendar_events log. Scheduling, rescheduling (a drag to a new time), cancelling,
+// and firing a blob all APPEND a row sharing the logical event_id; the store never updates or
+// deletes (the DB triggers reject it too). The store owns the mechanics (append-only, immutable,
+// latest-row-per-event_id read); which status a given op writes is the handler's rule. It is
+// embedded in TxWriter so the calendar op groups under one member of that interface.
+type CalendarWriter interface {
+	// AppendCalendarEvent appends one calendar row in the shared tx. The payload (the eventual op's
+	// fields) is stored VERBATIM and NOT executed here — the calendar records intent only. Fails
+	// loud on a missing field, an unparseable RFC3339 scheduled_at, or an unknown status.
+	AppendCalendarEvent(ctx context.Context, e CalendarEvent) error
 }
 
 // StatusWriter is the free-agency pool's availability surface — the player-status primitives.

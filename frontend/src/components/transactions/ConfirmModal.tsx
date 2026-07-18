@@ -24,7 +24,11 @@ export type Pending = {
     | 'SET_SIGNING_WINDOW'
     | 'RETIREMENT'
     | 'DEATH'
-    | 'CAP_RELIEF';
+    | 'CAP_RELIEF'
+    // Commissioner calendar CRUD-by-append (schedule / drag-reschedule / cancel a blob).
+    | 'SCHEDULE_EVENT'
+    | 'RESCHEDULE_EVENT'
+    | 'CANCEL_EVENT';
   title: string;
   subject: string; // player name (or, for a TRADE, a summary like "3-leg trade") for the header
   meta: string; // "WR · Free agent" etc.
@@ -64,6 +68,12 @@ function confirmLabel(kind: Pending['kind']): string {
       return 'Confirm';
     case 'CAP_RELIEF':
       return 'Grant relief';
+    case 'SCHEDULE_EVENT':
+      return 'Schedule';
+    case 'RESCHEDULE_EVENT':
+      return 'Reschedule';
+    case 'CANCEL_EVENT':
+      return 'Cancel event';
     default:
       return 'Confirm move';
   }

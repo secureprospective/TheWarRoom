@@ -174,6 +174,13 @@ func (f *fakeTxWriter) AppendSigningWindow(_ context.Context, open bool, _ strin
 	return nil
 }
 
+// AppendCalendarEvent records the calendar append (keyed by the logical event id) so handler-level
+// tests can assert a calendar op reached the store, and honors the maybeFail hook like the others.
+func (f *fakeTxWriter) AppendCalendarEvent(_ context.Context, e state.CalendarEvent) error {
+	f.calls = append(f.calls, recordedMove{op: "calendar", target: e.EventID})
+	return f.maybeFail()
+}
+
 func (f *fakeTxWriter) MoveCellMoney(_ context.Context, mflID string, _, _ int, _ domain.Money, _ string) error {
 	f.calls = append(f.calls, recordedMove{op: "movecell", mflID: mflID})
 	return f.maybeFail()

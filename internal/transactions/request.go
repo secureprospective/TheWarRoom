@@ -30,6 +30,9 @@ const (
 	KindCapRelief        Kind = "CAP_RELIEF"
 	KindSign             Kind = "SIGN"
 	KindSetSigningWindow Kind = "SET_SIGNING_WINDOW"
+	KindScheduleEvent    Kind = "SCHEDULE_EVENT"
+	KindRescheduleEvent  Kind = "RESCHEDULE_EVENT"
+	KindCancelEvent      Kind = "CANCEL_EVENT"
 )
 
 // Request is a transaction the Coordinator can execute. The concrete types live in THIS

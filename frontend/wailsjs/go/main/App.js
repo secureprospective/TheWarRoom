@@ -10,6 +10,10 @@ export function ExecuteTransaction(arg1) {
   return window['go']['main']['App']['ExecuteTransaction'](arg1);
 }
 
+export function GetCalendarEvents() {
+  return window['go']['main']['App']['GetCalendarEvents']();
+}
+
 export function GetCurrentPhase() {
   return window['go']['main']['App']['GetCurrentPhase']();
 }

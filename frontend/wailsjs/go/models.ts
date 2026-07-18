@@ -174,17 +174,75 @@ export namespace main {
 	    version: string;
 	    commit: string;
 	    buildDate: string;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new AppInfo(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.version = source["version"];
 	        this.commit = source["commit"];
 	        this.buildDate = source["buildDate"];
 	    }
+}
+	export class CalendarEventDTO {
+	    eventID: string;
+	    kind: string;
+	    scheduledAt: string;
+	    payload: string;
+	    status: string;
+	    note: string;
+	    createdAt: string;
+
+	    static createFrom(source: any = {}) {
+	        return new CalendarEventDTO(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.eventID = source["eventID"];
+	        this.kind = source["kind"];
+	        this.scheduledAt = source["scheduledAt"];
+	        this.payload = source["payload"];
+	        this.status = source["status"];
+	        this.note = source["note"];
+	        this.createdAt = source["createdAt"];
+	    }
+}
+	export class CalendarEventsResult {
+	    ok: boolean;
+	    events: CalendarEventDTO[];
+	    detail: string;
+
+	    static createFrom(source: any = {}) {
+	        return new CalendarEventsResult(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.events = this.convertValues(source["events"], CalendarEventDTO);
+	        this.detail = source["detail"];
+	    }
+
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class CapDeltaDTO {
 	    franchiseID: string;
@@ -192,11 +250,11 @@ export namespace main {
 	    amount: string;
 	    cents: number;
 	    reason: string;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new CapDeltaDTO(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.franchiseID = source["franchiseID"];
@@ -800,6 +858,10 @@ export namespace main {
 	    salaryMillions: string;
 	    years: number;
 	    windowOpen: boolean;
+	    eventID: string;
+	    eventKind: string;
+	    scheduledAt: string;
+	    payload: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new TransactionRequest(source);
@@ -821,6 +883,10 @@ export namespace main {
 	        this.salaryMillions = source["salaryMillions"];
 	        this.years = source["years"];
 	        this.windowOpen = source["windowOpen"];
+	        this.eventID = source["eventID"];
+	        this.eventKind = source["eventKind"];
+	        this.scheduledAt = source["scheduledAt"];
+	        this.payload = source["payload"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

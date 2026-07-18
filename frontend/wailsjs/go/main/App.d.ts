@@ -6,6 +6,8 @@ export function AppInfo():Promise<main.AppInfo>;
 
 export function ExecuteTransaction(arg1:main.TransactionRequest):Promise<main.TransactionResult>;
 
+export function GetCalendarEvents():Promise<main.CalendarEventsResult>;
+
 export function GetCurrentPhase():Promise<main.PhaseResult>;
 
 export function GetFranchiseState(arg1:string):Promise<main.FranchiseStateResult>;

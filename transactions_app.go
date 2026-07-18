@@ -44,6 +44,15 @@ type TransactionRequest struct {
 	// SET_SIGNING_WINDOW (§6 UFA calendar): WindowOpen toggles the commissioner signing window
 	// open (true) / closed (false); Note is the freeform reason. It changes no phase and no player.
 	WindowOpen bool `json:"windowOpen"`
+	// Commissioner calendar (SCHEDULE_EVENT / RESCHEDULE_EVENT / CANCEL_EVENT): EventID is the
+	// logical blob id (the frontend mints it on schedule and re-sends it on reschedule/cancel);
+	// EventKind is the EVENTUAL op the blob will run (ADVANCE_PHASE / … / CAP_RELIEF); ScheduledAt
+	// is its ISO-8601 time; Payload is the opaque JSON of the eventual op's fields, stored verbatim
+	// and executed only when the blob fires, never at schedule time.
+	EventID     string `json:"eventID"`
+	EventKind   string `json:"eventKind"`
+	ScheduledAt string `json:"scheduledAt"`
+	Payload     string `json:"payload"`
 }
 
 // TransactionResult is the typed IPC outcome: OK plus the committed Receipt fields, or
@@ -300,6 +309,12 @@ func buildRequest(req TransactionRequest) (transactions.Request, error) {
 	case string(transactions.KindDeath):
 		// §13 Gaines Adams Rule: remove with zero dead cap.
 		return transactions.Death{MFLID: req.MFLID}, nil
+	case string(transactions.KindScheduleEvent):
+		return transactions.ScheduleEvent{Event: calendarEvent(req)}, nil
+	case string(transactions.KindRescheduleEvent):
+		return transactions.RescheduleEvent{Event: calendarEvent(req)}, nil
+	case string(transactions.KindCancelEvent):
+		return transactions.CancelEvent{Event: calendarEvent(req)}, nil
 	default:
 		// The money-bearing kinds (their millions→cents parse can error) live in a sibling
 		// builder so this switch stays under the cyclomatic cap.
