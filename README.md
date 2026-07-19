@@ -8,6 +8,8 @@
 
 <br/>
 
+[![Road to Alpha](https://img.shields.io/badge/🚨%20ROAD%20TO%20ALPHA-mapped%20·%20pipeline%20proven%20·%20league%20testing%20ahead-crimson?style=for-the-badge)](#-the-command-console--the-road-to-alpha)
+
 [![Powered by Go](https://img.shields.io/badge/Powered%20by-Go%201.26-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Multi-Block Architecture](https://img.shields.io/badge/Architecture-Multi--Block%20·%20Compiler%20Enforced-4B5563)](#-4--the-war-room-architecture)
 [![Local-First](https://img.shields.io/badge/Local--First-Zero%20Cloud%20·%20Total%20Privacy-brightgreen)](#-2--the-problem--the-solution)
@@ -37,6 +39,8 @@ Stock fantasy platforms and fragile spreadsheets fall apart the instant a league
 TheWarRoom is that system: a local-first, compiled Go engine that pulls your live league, runs every rostered player through a **six-layer valuation pipeline** built on *your* exact ruleset, and turns the result into a single **Adjusted Score** — then hands you a war room of tools that convert that score into decisions. Who to bid on. What a trade is really worth. What a contract costs you three years from now. And it executes those moves *atomically*, with the cap arithmetic computed and applied automatically.
 
 No cloud. No latency. No data leaving your machine. **Just an edge.**
+
+And it's about to stop being a one-seat edge: the road to a **league-wide Alpha** is mapped, the design engine is live, and the console build is next. *The front office is opening its doors.*
 
 ---
 
@@ -153,6 +157,43 @@ A disciplined, session-by-session build — every session sized to a single cont
 
 ---
 
+## 🎛️ The Command Console — The Road to Alpha
+
+> The engine is done. The rulebook is done. The moves execute atomically against a ledger that's exact to the penny.
+> **Now it gets a cockpit worthy of it — and then it leaves the building.**
+
+The next front is the one you can *see*: transforming the operator workspace into a true **command console**. The bar is Anduril, not SaaS — dark, precise, data-dense without a pixel of waste. Confident hierarchy. Controls that look like they actuate real hardware, because here they *do*: every button is wired to an engine that moves real cap dollars atomically. The UI should communicate capability before you click anything.
+
+### How it's being designed — an AI design engine, on a leash
+
+Wireframes don't come from a template here. A creative design engine (**GLM-5.2**) is fired with divergent provocations — *instrument cluster* vs *density gradient*, *tactical amber* vs *naval CIC* — the head brain (**Claude**) triages the directions against the locked architecture, renders the survivors as wireframes, and the commissioner judges **vision only**. Session 0 just proved the whole loop live: brief → design direction in **40 seconds** → triaged draft on screen. The machine proposes fast; the human decides once.
+
+![Session 0 wireframe — shell + M1 Asset Rankings](docs/ui/wireframes/session-0-test/README-hero.png)
+
+*Session 0, first light: the four-column shell, the M1 board as the instrument — "the table is the instrument, everything else is bezel" (GLM's words, adopted on the spot) — earned-elevation rules, and the quick-dash strip: comms and calendar summonable from any screen, zero footprint when idle. Greyscale by discipline; atmosphere is a later session's job, and it's going to hit.*
+
+### What the console is hiding under the hood
+
+- **⚡ Snappy is law, not a wish.** Every control acknowledges in under 100ms. Optimistic UI, skeletons over spinners, motion only as feedback. A console that responds like a mechanism.
+- **🪜 Three altitudes, one surface.** *Glance* — a casual reads their league's state in seconds from color alone. *Operate* — the working tier. *Interrogate* — full Matrix density, keyboard-driven, every engine intermediate on screen. Depth is **discovered, never demanded**: no "Pro Mode" switch will ever exist. Built to serve the 1-league casual and the 25-league portfolio shark from the same screen.
+- **📅 A fully functional league calendar** — Google-Calendar fluidity (click-to-create, drag-to-move, live ghost + snap) on top of the house's append-only ledger: dragging a deadline doesn't *edit* history, it *appends* a superseding revision. The commissioner's schedule becomes an operational overlay — the signing-window deadline appears **on the SIGN button**, not just in a calendar tab.
+- **⌨️ Every control is secretly a command.** A **Command Ledger** maps every button, slider, and shortcut to a verb in a future chat-terminal language — because one day this whole console will be drivable from a chat box the way a terminal drives Linux. The UI being built now is the beautiful projection of that command layer.
+
+### The ladder to Alpha
+
+```
+   DESIGN   A grid → B components → C atmosphere → D chat+calendar command layer → E mobile harvest
+   BUILD    B-1 shell & tokens → B-2 module migration → B-3 CALENDAR (full function)
+            → B-4 home & inspector → B-5 alpha hardening
+            ─────────────────────────────────────────────────────────────
+   🚨 ALPHA GATE — versioned, stamped builds leave the machine.
+      Real league members. Real seasons. Real-world testing begins.
+```
+
+Every build rung under the full gate stack — 11-layer coding standards, race-clean tests, blind AI review, live-hardware verification. The same discipline that shipped a penny-exact engine now ships the cockpit. Full battle plan: [`docs/ui/Wireframe_Session_Plan.md`](docs/ui/Wireframe_Session_Plan.md) · worked example: [`Session 0`](docs/ui/wireframes/session-0-test/Session-0-Example.md).
+
+---
+
 ## 🏛️ 4 · The War Room Architecture
 
 A multi-block system design where the boundaries aren't conventions — they're **compiler-enforced law**. A violation is a *build failure*, not a code-review note.
@@ -201,7 +242,8 @@ A multi-block system design where the boundaries aren't conventions — they're 
 The engine is the hard part, and the engine is **done** — and the front office that operates it is already going in (roster moves, contract ops, trades, and commissioner controls all run live against the real ledger). What's ahead is the payoff on top: each remaining capability a new *analytical view* onto a score and a ledger that already exist.
 
 **On the clock**
-- 📊 **The war-room modules** — Power Rankings, Matchup Predictions, Trade Analyzer, Free-Agency Intel, Rookie Draft board, Commissioner Dashboard.
+- 🎛️ **The command console + league Alpha** — the design-and-build ladder above, ending with stamped binaries in real league members' hands. The moment TheWarRoom stops being one operator's edge and starts being *the league's home field*.
+- 📊 **The war-room modules** — Power Rankings (live!), Matchup Predictions, Trade Analyzer, Free-Agency Intel, Rookie Draft board, Commissioner Dashboard.
 - 🕳️ **The shadow ledger** — dry-run any transaction against a *forked* cap before you commit it.
 
 **Later rounds — the three horizons**

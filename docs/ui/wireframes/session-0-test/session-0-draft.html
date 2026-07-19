@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TheWarRoom — Session 0 Wireframe (shell + M1 board)</title>
+<style>
+  /* Session 0 test draft — greyscale-only per the wireframe template (tokens land in Session C).
+     Spatial system per GLM direction: 4px base, three-zone instrument cluster, earned elevation. */
+  :root{
+    --u1:4px;--u2:8px;--u3:12px;--u4:16px;--u6:24px;--u8:32px;
+    --bg:#101114;--surface:#16181c;--surface-2:#1b1e23;
+    --line-1:#2a2e35;--line-2:#3a3f48;
+    --text-1:#e8eaed;--text-2:#9aa0a8;--text-3:#5f6570;
+    --accent:#c8cdd4; /* greyscale stand-in — real accent is Session C's job */
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text-2);font:13px/1.45 "Inter",system-ui,sans-serif;padding:var(--u6)}
+  .num{font-variant-numeric:tabular-nums}
+  .callout{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;
+    background:#fff;color:#000;font:700 10px/1 sans-serif;vertical-align:top;margin-left:var(--u1)}
+  /* draft header strip */
+  .meta{border:1px dashed var(--line-2);padding:var(--u3) var(--u4);margin-bottom:var(--u6);font-size:11px;color:var(--text-3)}
+  .meta b{color:var(--text-2)}
+  /* shell */
+  .shell{display:grid;grid-template-columns:176px 1fr 240px 48px;gap:var(--u6);min-height:640px}
+  .panel{background:var(--surface);border:1px solid var(--line-1)}
+  .p-head{height:32px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 var(--u2);border-bottom:1px solid var(--line-1)}
+  .p-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
+  .chip{font-size:11px;color:var(--text-3)}
+  /* nav rail */
+  .nav .item{height:36px;display:flex;align-items:center;gap:var(--u2);padding:0 var(--u3);
+    color:var(--text-3);font-size:12px;font-weight:500}
+  .nav .item.active{color:var(--text-1);background:var(--surface-2);box-shadow:inset 2px 0 0 var(--accent)}
+  .nav .sq{width:14px;height:14px;border:1px solid var(--line-2);flex:none}
+  .nav .divider{border-top:1px solid var(--line-1);margin:var(--u2) 0}
+  .nav .league{padding:var(--u3);font-size:12px;color:var(--text-1);border-bottom:1px solid var(--line-1)}
+  .nav .league small{display:block;color:var(--text-3);font-size:10px;margin-top:2px}
+  /* workspace: control band + read zone */
+  .band{height:40px;display:flex;align-items:center;justify-content:space-between;
+    border:1px solid var(--line-1);background:var(--surface);padding:0 var(--u3);margin-bottom:var(--u3)}
+  .seg{display:flex;gap:var(--u4);font-size:11px;font-weight:600;letter-spacing:.06em}
+  .seg span{padding:var(--u2) 0;color:var(--text-3)}
+  .seg span.on{color:var(--text-1);box-shadow:0 2px 0 var(--accent)}
+  .views{display:flex;gap:var(--u2);font-size:11px}
+  .views span{padding:var(--u1) var(--u2);color:var(--text-3);border:1px solid transparent}
+  .views span.on{color:var(--text-1);border-color:var(--line-2)}
+  .board-head{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 var(--u3);
+    border-bottom:1px solid var(--line-1)}
+  .board-title{font-size:13px;font-weight:600;color:var(--text-1);letter-spacing:.04em}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);font-weight:600;
+    height:28px;text-align:left;padding:0 var(--u2);border-bottom:1px solid var(--line-1)}
+  td{height:28px;padding:0 var(--u2);font-size:12px;color:var(--text-2);white-space:nowrap}
+  td.r,th.r{text-align:right}
+  td.adj{color:var(--text-1);font-weight:600}
+  td.dim{color:var(--text-3)}
+  tr.sel td{background:var(--surface-2)}
+  tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--accent)}
+  /* inspector */
+  .insp .block{padding:var(--u3);border-bottom:1px solid var(--line-1)}
+  .insp .name{color:var(--text-1);font-weight:600;font-size:14px}
+  .insp .big{font-size:26px;font-weight:700;color:var(--text-1);margin:var(--u2) 0}
+  .bar{height:6px;background:var(--surface-2);margin:var(--u2) 0 var(--u3)}
+  .bar i{display:block;height:100%;background:var(--text-3)}
+  .kv{display:flex;justify-content:space-between;font-size:11px;padding:2px 0}
+  .kv b{color:var(--text-2);font-weight:500}
+  /* comms strip (collapsed 48px — quick-dash trigger) */
+  .strip{display:flex;flex-direction:column;align-items:center;gap:var(--u3);padding:var(--u3) 0}
+  .strip .sq{width:20px;height:20px;border:1px solid var(--line-2);position:relative}
+  .strip .sq.badge::after{content:"3";position:absolute;top:-6px;right:-6px;background:#fff;color:#000;
+    font:700 9px/1 sans-serif;padding:2px 4px;border-radius:6px}
+  .strip .cal{margin-top:auto}
+  /* footnotes */
+  .notes{margin-top:var(--u6);border:1px dashed var(--line-2);padding:var(--u4);font-size:11px;color:var(--text-3)}
+  .notes h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);margin-bottom:var(--u2)}
+  .notes li{margin:var(--u1) 0 var(--u1) var(--u4)}
+  .rip{margin-top:var(--u4);border:1px solid var(--line-2);padding:var(--u3) var(--u4)}
+  .rip b{color:var(--text-1);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<div class="meta">
+  <b>SESSION 0 — TEST DRAFT</b> · shell + M1 Asset Rankings · greyscale (tokens = Session C) · GLM-5.2 direction, 1 run, 40s ·
+  2026-07-19 · triage: 4px scale ADOPTED · three-zone instrument thesis ADOPTED · earned-elevation rule ADOPTED ·
+  M1 treatment ADOPTED · delta-edge ADAPTED (folded into inspector) · 1 RIPCORD below
+</div>
+
+<div class="shell">
+
+  <!-- NAV RAIL -->
+  <div class="panel nav">
+    <div class="league">LEGACY NFL <small>32-team dynasty · IDP</small></div>
+    <div class="item"><span class="sq"></span>Home</div>
+    <div class="item active"><span class="sq"></span>War Room<span class="callout">1</span></div>
+    <div class="item"><span class="sq"></span>Franchise HQ</div>
+    <div class="item"><span class="sq"></span>Trade Floor</div>
+    <div class="item"><span class="sq"></span>League Pulse</div>
+    <div class="item"><span class="sq"></span>Control Room</div>
+    <div class="divider"></div>
+    <div class="item" style="font-size:11px">⌘K quick-dash<span class="callout">5</span></div>
+  </div>
+
+  <!-- WORKSPACE: control band + read zone -->
+  <div>
+    <div class="band">
+      <div class="seg"><span class="on">ALL</span><span>QB</span><span>RB</span><span>WR</span><span>TE</span><span>DEF</span><span class="callout">2</span></div>
+      <div class="views"><span class="on">Global</span><span>By franchise</span><span>Cap efficiency</span></div>
+    </div>
+    <div class="panel">
+      <div class="board-head">
+        <span class="board-title">M1 // ASSET RANKINGS</span>
+        <span class="chip num">412 assets · as of 09:41<span class="callout">3</span></span>
+      </div>
+      <table>
+        <tr><th class="r">Rk</th><th>Player</th><th>Pos</th><th>Frn</th><th class="r">Base</th><th class="r">Adj Score</th><th class="r">Salary</th></tr>
+        <tr><td class="r num">1</td><td style="color:var(--text-1)">Justin Jefferson</td><td class="dim">WR</td><td class="dim">MIN</td><td class="r num">318.4</td><td class="r num adj">96.2</td><td class="r num dim">$14.2M</td></tr>
+        <tr class="sel"><td class="r num">2</td><td style="color:var(--text-1)">Ja'Marr Chase</td><td class="dim">WR</td><td class="dim">CIN</td><td class="r num">311.0</td><td class="r num adj">95.7</td><td class="r num dim">$13.8M</td></tr>
+        <tr><td class="r num">3</td><td style="color:var(--text-1)">Bijan Robinson</td><td class="dim">RB</td><td class="dim">ATL</td><td class="r num">287.6</td><td class="r num adj">93.4</td><td class="r num dim">$11.5M</td></tr>
+        <tr><td class="r num">4</td><td style="color:var(--text-1)">Micah Parsons</td><td class="dim">LB</td><td class="dim">DAL</td><td class="r num">276.9</td><td class="r num adj">91.8</td><td class="r num dim">$9.9M</td></tr>
+        <tr><td class="r num">5</td><td style="color:var(--text-1)">CeeDee Lamb</td><td class="dim">WR</td><td class="dim">DAL</td><td class="r num">280.2</td><td class="r num adj">90.6</td><td class="r num dim">$12.7M</td></tr>
+        <tr><td class="r num">6</td><td style="color:var(--text-1)">Jahmyr Gibbs</td><td class="dim">RB</td><td class="dim">DET</td><td class="r num">262.8</td><td class="r num adj">89.9</td><td class="r num dim">$8.4M</td></tr>
+        <tr><td class="r num">7</td><td style="color:var(--text-1)">Malik Nabers</td><td class="dim">WR</td><td class="dim">NYG</td><td class="r num">255.1</td><td class="r num adj">88.7</td><td class="r num dim">$6.1M</td></tr>
+        <tr><td class="r num">8</td><td style="color:var(--text-1)">Brock Bowers</td><td class="dim">TE</td><td class="dim">LV</td><td class="r num">243.5</td><td class="r num adj">87.3</td><td class="r num dim">$5.9M</td></tr>
+        <tr><td class="r num">9</td><td style="color:var(--text-1)">Josh Allen</td><td class="dim">QB</td><td class="dim">BUF</td><td class="r num">340.7</td><td class="r num adj">86.8</td><td class="r num dim">$15.0M</td></tr>
+        <tr><td class="r num">10</td><td style="color:var(--text-1)">Nik Bonitto</td><td class="dim">DE</td><td class="dim">DEN</td><td class="r num">231.2</td><td class="r num adj">85.1</td><td class="r num dim">$4.2M</td></tr>
+        <tr><td class="r num">11</td><td style="color:var(--text-1)">Puka Nacua</td><td class="dim">WR</td><td class="dim">LAR</td><td class="r num">238.9</td><td class="r num adj">84.6</td><td class="r num dim">$7.7M</td></tr>
+        <tr><td class="r num">12</td><td style="color:var(--text-1)">Sauce Gardner</td><td class="dim">CB</td><td class="dim">NYJ</td><td class="r num">201.4</td><td class="r num adj">83.0</td><td class="r num dim">$6.8M</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- CONTEXTUAL INSPECTOR -->
+  <div class="panel insp">
+    <div class="p-head"><span class="p-label">Inspector</span><span class="chip">pinned</span></div>
+    <div class="block">
+      <div class="name">Ja'Marr Chase</div>
+      <div class="chip">WR · CIN · age 26</div>
+      <div class="big num">95.7<span class="callout">4</span></div>
+      <div class="chip">L4 scouting</div><div class="bar"><i style="width:88%"></i></div>
+      <div class="chip">L3 age curve</div><div class="bar"><i style="width:74%"></i></div>
+      <div class="chip">Contract eff.</div><div class="bar"><i style="width:61%"></i></div>
+    </div>
+    <div class="block">
+      <div class="kv"><span>Salary</span><b class="num">$13.8M / yr</b></div>
+      <div class="kv"><span>Term</span><b class="num">2026–2029 + UFA</b></div>
+      <div class="kv"><span>Tier</span><b>Hot</b></div>
+      <div class="kv"><span>Dead cap if cut</span><b class="num">$4.1M</b></div>
+    </div>
+    <div class="block">
+      <div class="kv"><span>GM note</span><b>★★★★☆</b></div>
+      <div class="chip" style="margin-top:4px">"Untouchable unless 2 firsts + …"</div>
+    </div>
+  </div>
+
+  <!-- COMMS COLLAPSED STRIP -->
+  <div class="panel strip">
+    <span class="sq badge"></span>
+    <span class="sq"></span>
+    <span class="sq cal"></span>
+    <span class="callout" style="margin-top:4px">5</span>
+  </div>
+
+</div>
+
+<div class="notes">
+  <h2>Callouts — the decisions this draft embodies</h2>
+  <ol>
+    <li><b>1 — Nav rail:</b> six locked modules, active = inset 2px edge rule (no fill). League identity on top; switcher scales by recency at 25+ leagues.</li>
+    <li><b>2 — Control band:</b> 40px, full width, never reflows. Position filter = segmented text w/ 2px bottom rule; view toggle = bordered text, no pills, no fills.</li>
+    <li><b>3 — Freshness chip:</b> "as of 09:41" — the data-age honesty grammar (tokens + behavior land in Sessions C/D).</li>
+    <li><b>4 — Adjusted Score dominates:</b> the one bold value per row and the inspector's headline number; salary/tricode recede. 28px rows, tabular numerals, no striping, hover = 4% overlay.</li>
+    <li><b>5 — Quick-dash:</b> comms + calendar live as a 48px trigger strip, summonable from any screen (⌘K), zero workspace cost when idle.</li>
+  </ol>
+  <div class="rip">
+    <b>Ripcord item (GLM, verbatim thrust)</b> — challenge the comms panel as a persistent fourth column (~18% of a 1440px viewport for an interrupt surface); make it a summoned overlay with the 48px strip as trigger, density-aware default (Matrix may keep it open).
+    <span style="color:var(--text-2)">Claude's read: this largely AGREES with the locked quick-dash rule — recommend adopting "collapsed by default, summon-over" as the Session A baseline. Christopher pulls or blesses.</span>
+  </div>
+</div>
+
+</body>
+</html>
