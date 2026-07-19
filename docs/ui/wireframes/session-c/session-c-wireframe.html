@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TheWarRoom — Session C: Color, Dark Mode &amp; Atmosphere</title>
+<style>
+  :root{
+    /* ================= 1. SURFACE RAMP — cold CIC base (ruling 1) ================= */
+    --surface-canvas:  hsl(220,20%,6%);
+    --surface-sunken:  hsl(220,22%,4%);
+    --surface-tile:    hsl(220,18%,9%);
+    --surface-raised:  hsl(220,18%,11%);   /* hover */
+    --surface-overlay: hsl(220,22%,13%);   /* modals */
+
+    /* ================= 2. OPTICAL ELEVATION & EDGES ================= */
+    --bevel-hi:  hsl(220,15%,16%);
+    --bevel-lo:  hsl(220,25%,2%);
+    --hairline:  hsl(220,15%,14%);
+
+    /* ================= 3. TEXT & CHROME ================= */
+    --text-primary:   hsl(220,20%,92%);
+    --text-secondary: hsl(220,12%,65%);
+    --text-tertiary:  hsl(220,10%,45%);    /* sort arrows, chrome icons */
+    --text-disabled:  hsl(220,10%,30%);
+
+    /* ================= 4. SEMANTIC RAMPS — mid-sat, tuned for cold base (ruling 2) ==== */
+    --green-muted: hsl(145,35%,45%); --green-base: hsl(145,45%,55%); --green-loud: hsl(145,55%,68%);
+    --blue-muted:  hsl(210,45%,50%); --blue-base:  hsl(210,60%,62%); --blue-loud:  hsl(210,75%,75%);
+    --amber-muted: hsl(35,40%,45%);  --amber-base: hsl(35,60%,58%);  --amber-loud: hsl(35,80%,70%);
+    --red-muted:   hsl(0,40%,50%);   --red-base:   hsl(0,55%,62%);   --red-loud:   hsl(0,70%,72%);
+
+    /* ================= 5. STATE EDGES (rulings 6 & 7) ================= */
+    --edge-focus:     var(--blue-base);        /* keyboard focus = BLUE, not amber */
+    --edge-selection: var(--text-primary);     /* selection = NEUTRAL axis, never green */
+
+    /* ================= 6. FRESHNESS — composed (ruling 4) ================= */
+    --fresh-live:  var(--blue-base);
+    --fresh-stale: var(--amber-muted);
+    --fresh-fail:  var(--red-loud);
+
+    /* ================= 8. MOTION ================= */
+    --motion-mult: 1;                          /* Matrix tier → 0 */
+    --m-feed: 100ms ease-out;
+    --m-fire: 150ms linear;
+    --m-reject: 150ms ease-in-out;
+
+    --mono:"JetBrains Mono","SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  /* ---- position badges (categorical) — PRE-EMPTED off the semantic hues ---- */
+  .badge{font-family:var(--mono);font-size:9px;letter-spacing:.04em;padding:0 5px;line-height:15px;height:15px;display:inline-block;
+    border:1px solid;border-radius:2px;background:hsla(var(--bh),14%,21%,.6);border-color:hsla(var(--bh),34%,52%,.6);color:hsla(var(--bh),46%,80%,1)}
+  /* categorical hues held OFF the 5 semantic hues (red0/amber35/green145/blue210); RB↔WR on opposite temperatures so they never blend */
+  .b-qb{--bh:290}   /* violet */
+  .b-rb{--bh:330}   /* magenta-rose (warm-purple) */
+  .b-wr{--bh:175}   /* teal (cool) — 155° from RB, the RB/WR blend is gone */
+  .b-te{--bh:250}   /* indigo */
+  .b-def{--bh:220}  /* slate, held low-sat so it never reads as blue-info */
+  .b-k{background:hsla(0,0%,22%,.55);border:1px solid hsl(0,0%,40%);color:hsl(0,0%,74%)} /* achromatic */
+
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--surface-sunken);color:var(--text-secondary);font-family:var(--sans);font-size:13px;-webkit-font-smoothing:antialiased}
+  .page{max-width:1180px;margin:0 auto;padding:24px}
+  h1,h2,h3{margin:0;font-weight:600}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .up{text-transform:uppercase;letter-spacing:.08em}
+  .r{text-align:right}
+
+  .strip{border:1px solid var(--hairline);background:var(--surface-tile);padding:14px 18px;margin-bottom:16px;
+    box-shadow:inset 0 1px 0 0 var(--bevel-hi)}
+  .strip h1{font-size:16px;color:var(--text-primary);letter-spacing:.04em}
+  .strip .meta{margin-top:6px;color:var(--text-tertiary);font-size:11px;display:flex;gap:18px;flex-wrap:wrap}
+  .strip .meta b{color:var(--text-secondary);font-weight:500}
+
+  .sec{border:1px solid var(--hairline);background:var(--surface-canvas);margin-bottom:16px}
+  .sec>.sh{display:flex;align-items:baseline;gap:10px;min-height:32px;padding:6px 14px;background:var(--surface-tile);border-bottom:1px solid var(--hairline)}
+  .sec>.sh .n{font-size:10px;color:var(--text-tertiary);font-family:var(--mono)}
+  .sec>.sh h2{font-size:11px;color:var(--text-primary);letter-spacing:.06em;text-transform:uppercase}
+  .sec>.sh .s{font-size:10px;color:var(--text-tertiary);margin-left:auto}
+  .sb{padding:16px 14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .lbl{font-size:9px;color:var(--text-tertiary);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+  .callout{display:inline-block;min-width:15px;height:15px;line-height:15px;text-align:center;border:1px solid var(--text-tertiary);color:var(--text-secondary);font-size:9px;font-family:var(--mono);margin-right:6px}
+  .note{font-size:11px;color:var(--text-tertiary);line-height:1.6;margin:0}
+  .note b{color:var(--text-secondary);font-weight:500}
+
+  /* ---- score → hue banding (ruling 3) ---- */
+  .s-elite{color:var(--green-loud)} .s-strong{color:var(--green-base)}
+  .s-good{color:var(--blue-base)}   .s-watch{color:var(--amber-base)} .s-weak{color:var(--red-base)}
+
+  /* ---- token sheet swatches ---- */
+  .swrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .sw{width:96px;border:1px solid var(--hairline);font-size:8px;font-family:var(--mono);color:var(--text-primary)}
+  .sw .chip{height:34px} .sw .cap{padding:3px 5px;color:var(--text-tertiary);background:var(--surface-tile)}
+  .sw .cap b{color:var(--text-secondary);font-weight:400;display:block}
+
+  /* ---- M1 board ---- */
+  .board{border:1px solid var(--hairline);background:var(--surface-canvas)}
+  .b-sub{display:grid;height:36px;align-items:center;padding:0 12px;background:var(--surface-sunken);border-bottom:1px solid var(--hairline);
+    font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-secondary)}
+  .b-sub .r,.trow .r{justify-self:end}
+  .sort{color:var(--text-primary)} .isort{color:var(--text-disabled)}
+  .trow{display:grid;align-items:center;height:32px;padding:0 12px;border-bottom:1px solid var(--hairline);border-left:2px solid transparent}
+  .trow .rank{color:var(--text-tertiary);font-family:var(--mono);font-size:11px}
+  .trow .plyr{color:var(--text-primary);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:7px}
+  .trow .fr{color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .trow .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .trow .base{color:var(--text-secondary)}
+  .trow .adj{font-weight:700;font-size:14px}      /* hue = score band */
+  .trow .sal{color:var(--text-tertiary)}
+  .m1{grid-template-columns:34px 1fr 46px 150px 66px 92px 78px}
+  .trow.st-hover{background:var(--surface-raised);box-shadow:inset 1px 1px 0 var(--bevel-hi)}
+  .trow.st-active{background:var(--surface-tile);box-shadow:inset -1px -1px 0 var(--bevel-hi)}
+  .trow.st-sel{background:var(--surface-tile);border-left:2px solid var(--edge-selection)}
+  .trow.st-sel .plyr{color:#fff}
+  .trow.st-focus{box-shadow:inset 0 0 0 1px var(--edge-focus)}   /* keyboard focus = blue */
+
+  .mtx .b-sub,.mtx .trow{height:22px}
+  .mtx .b-sub{font-size:9px}
+  .mtx .trow{font-size:11px}
+  .mtx .trow .adj{font-size:11px;color:var(--text-primary)!important;font-weight:600}  /* Matrix yield */
+  .mtx .trow .adj.danger{color:var(--red-loud)!important}                                /* except red-danger */
+  .m1mtx{grid-template-columns:24px 1fr 40px 72px 72px}
+
+  /* ---- delta in weight + hue reinforcement ---- */
+  .dpos{font-family:var(--mono);font-weight:600;color:var(--green-base)}
+  .dneg{font-family:var(--mono);font-weight:400;color:var(--red-base)}
+
+  /* ---- inspector ---- */
+  .insp{width:320px;border:1px solid var(--hairline);border-left:1px solid var(--bevel-hi);background:var(--surface-tile);display:flex;flex-direction:column}
+  .insp-hdr{height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:var(--surface-canvas);border-bottom:1px solid var(--hairline)}
+  .insp-hdr .t{font-size:10px;color:var(--text-tertiary);letter-spacing:.06em}
+  .insp-hdr .x{width:14px;height:14px;border:1px solid var(--text-tertiary);color:var(--text-tertiary);font-size:10px;text-align:center;line-height:12px}
+  .insp-body{padding:14px 12px;display:flex;flex-direction:column;gap:16px}
+  .ih-name{color:var(--text-primary);font-size:14px;font-weight:600}
+  .ih-sub{color:var(--text-tertiary);font-size:10px;margin-top:2px;font-family:var(--mono)}
+  .ih-score{font-family:var(--mono);font-size:24px;font-weight:700;line-height:1;margin-top:10px;font-variant-numeric:tabular-nums}
+  .ih-score small{font-size:10px;color:var(--text-tertiary);font-weight:500;letter-spacing:.05em;text-transform:uppercase;font-family:var(--sans)}
+  .bar{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .bar .k{width:88px;font-size:10px;color:var(--text-tertiary)}
+  .bar .track{flex:1;height:4px;background:var(--surface-sunken);border:1px solid var(--hairline)}
+  .bar .fill{height:100%}
+  .bar .v{width:38px;text-align:right;font-size:10px;color:var(--text-secondary);font-family:var(--mono)}
+  .term{font-family:var(--mono);font-size:11px;color:var(--text-secondary);line-height:1.7}
+  .term b{color:var(--text-tertiary);font-weight:400}
+  .term .hi{color:var(--text-primary)}
+  .notes{font-size:11px;color:var(--text-tertiary);line-height:1.5}
+
+  /* ---- confirm modal ---- */
+  .modal-stage{position:relative;border:1px solid var(--hairline);background:var(--surface-canvas);height:250px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .modal-stage .dim{position:absolute;inset:0;background:var(--surface-sunken);opacity:.5}
+  .modal{position:relative;width:100%;max-width:340px;border:1px solid var(--bevel-hi);background:var(--surface-overlay);box-shadow:inset 1px 1px 0 var(--bevel-hi)}
+  .modal .mh{padding:11px 13px;border-bottom:1px solid var(--hairline);font-size:12px;font-weight:600;color:var(--text-primary)}
+  .modal .mp{padding:11px 13px;font-family:var(--mono);font-size:11px;color:var(--text-secondary);line-height:1.75;border-bottom:1px solid var(--hairline)}
+  .modal .mp b{color:var(--text-tertiary);font-weight:400}
+  .modal .mp .hi{color:var(--text-primary)}
+  .modal .mf{padding:13px}
+  .fire{position:relative;height:36px;border:1px solid var(--bevel-hi);background:var(--surface-tile);color:var(--text-primary);
+    font-size:12px;letter-spacing:.12em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;box-shadow:inset 1px 1px 0 var(--bevel-hi);overflow:hidden}
+  .fire .prog{position:absolute;left:0;top:0;bottom:0;width:0}
+  .fire .ft{position:relative}
+  .fire.armed .prog{width:0}
+  .fire.firing{box-shadow:inset -1px -1px 0 var(--bevel-hi)}
+  .fire.firing .prog{width:62%;background:var(--blue-muted)}      /* fill = blue… */
+  .fire.done .prog{width:100%;background:var(--green-muted)}       /* …→ green at complete */
+  .fire.reject{border-color:var(--red-base);color:var(--red-loud);font-weight:800;box-shadow:inset 0 0 0 1px var(--red-base)}
+  .mstate{font-size:9px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.07em;text-align:center;margin-top:8px}
+  .rzlabel{font-size:9px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;text-align:center;margin-top:6px}
+
+  /* ---- freshness states ---- */
+  .fbox{border:1px solid var(--hairline);background:var(--surface-canvas);min-height:120px}
+  .fbox .fh{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-secondary);padding:8px 12px;background:var(--surface-sunken)}
+  .fbox.live .fh{border-top:1px solid var(--fresh-live)}
+  .fbox.stale .fh{border-top:1px solid var(--fresh-stale)}
+  .fbox.fail .fh{border-top:2px solid var(--fresh-fail)}
+  .fbox .fbody{padding:10px 12px;display:flex;flex-direction:column;gap:9px}
+  .frow{display:grid;grid-template-columns:1fr 60px;font-family:var(--mono);font-size:11px}
+  .frow .n{color:var(--text-primary)} .frow .v{text-align:right}
+  .ts{font-family:var(--mono);font-size:10px;margin-top:4px}
+  .ts.live{color:var(--text-secondary)} .ts.stale{color:var(--amber-base)} .ts.fail{color:var(--red-loud)}
+
+  /* ---- atmosphere board ---- */
+  .atmo{border:1px solid var(--bevel-hi);background:var(--surface-canvas)}
+  .atmo-hdr{display:flex;align-items:baseline;gap:10px;padding:9px 14px;background:var(--surface-tile);border-bottom:1px solid var(--hairline)}
+  .atmo-hdr h3{font-size:12px;color:var(--text-primary);letter-spacing:.05em;text-transform:uppercase}
+  .atmo-hdr span{font-size:10px;color:var(--text-tertiary);margin-left:auto}
+  .atmo-body{padding:14px}
+  .sig-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--hairline)}
+  .sig-legend .si{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--text-tertiary)}
+  .sig-legend .dot{width:10px;height:10px;border-radius:2px}
+
+  /* triage */
+  .triage{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--hairline)}
+  .triage .col{padding:12px;border-right:1px solid var(--hairline)}
+  .triage .col:last-child{border-right:0}
+  .triage .th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+  .triage .adopt{color:var(--text-primary)}.triage .adapt{color:var(--text-secondary)}.triage .reject{color:var(--text-tertiary)}
+  .triage li{font-size:11px;color:var(--text-tertiary);line-height:1.5;margin-bottom:7px;list-style:none}
+  .triage li b{color:var(--text-secondary);font-weight:500}
+  .foot{color:var(--text-tertiary);font-size:10px;text-align:center;padding:14px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="strip">
+    <h1>SESSION C — Color, Dark Mode &amp; Atmosphere</h1>
+    <div class="meta">
+      <span><b>Date</b> 2026-07-19</span>
+      <span><b>GLM-5.2 runs</b> 3 (tactical-ops warm / naval-CIC cold / synthesis)</span>
+      <span><b>Base ruling</b> cold CIC · hsl(220…)</span>
+      <span><b>Binds on</b> Session A shell + Session B component language</span>
+    </div>
+  </div>
+
+  <!-- TRIAGE -->
+  <div class="sec">
+    <div class="sh"><span class="n">§</span><h2>Triage — two directions → head-brain rulings</h2><span class="s">leads, not findings</span></div>
+    <div class="sb" style="padding:0">
+      <div class="triage">
+        <div class="col">
+          <div class="th adopt">ADOPTED</div>
+          <li><b>Cold CIC base</b> (Run 2) — disciplined navy depth; warm anthracite drifted sepia + fought amber, which Run 1 itself confessed.</li>
+          <li><b>Score→hue banding</b> (Run 1) — the only run to spell out ≥90/80s/70s/55-69/&lt;55 mapped to real bands.</li>
+          <li><b>Restraint doctrine</b> — "Color is Data and State; structure is achromatic." No row tinting, ever.</li>
+        </div>
+        <div class="col">
+          <div class="th adapt">ADAPTED / FUSED</div>
+          <li><b>Ramps re-tuned</b> — Run 1's mid-sat values, lightness nudged to stay legible on the cold ground (Run 2's loud phosphor green rejected as Christmas-tree risk).</li>
+          <li><b>Freshness composed</b> — Run 2's 3-edge grammar (live-blue / stale-amber / fail-2px-red + suffix) under Run 1's guardrail: never wash out the DATA, only the chrome.</li>
+          <li><b>Focus = blue</b> (not amber — amber is a semantic); <b>selection = neutral axis</b> (not green — selecting isn't a verdict).</li>
+        </div>
+        <div class="col">
+          <div class="th reject">REJECTED / CORRECTED</div>
+          <li><b>Warm base</b> — rejected (amber legibility + sepia drift).</li>
+          <li><b>Run 2 phosphor #00FF9D</b> — rejected as too loud for a 500-row green-heavy board.</li>
+          <li><b>Badge palette — RE-SPACED.</b> Gemini flagged RB/WR blending (a real catch); its neon/pastel fixes re-collided with signal hues + broke restraint, so REJECTED. Kept the recessive outlined style, put RB(magenta-rose 330) &amp; WR(teal 175) on opposite temperatures — 155° apart, blend gone; all 6 held off the 5 semantic hues; K achromatic.</li>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOKEN SHEET -->
+  <div class="sec">
+    <div class="sh"><span class="n">1</span><h2>The Token Sheet</h2><span class="s">every token named + valued</span></div>
+    <div class="sb">
+      <div class="lbl">Surface ramp — cold base, optical elevation only</div>
+      <div class="swrow">
+        <div class="sw"><div class="chip" style="background:var(--surface-sunken)"></div><div class="cap"><b>--surface-sunken</b>220 22% 4%</div></div>
+        <div class="sw"><div class="chip" style="background:var(--surface-canvas)"></div><div class="cap"><b>--surface-canvas</b>220 20% 6%</div></div>
+        <div class="sw"><div class="chip" style="background:var(--surface-tile)"></div><div class="cap"><b>--surface-tile</b>220 18% 9%</div></div>
+        <div class="sw"><div class="chip" style="background:var(--surface-raised)"></div><div class="cap"><b>--surface-raised</b>220 18% 11%</div></div>
+        <div class="sw"><div class="chip" style="background:var(--surface-overlay)"></div><div class="cap"><b>--surface-overlay</b>220 22% 13%</div></div>
+      </div>
+      <div class="lbl" style="margin-top:14px">Semantic ramps — muted · base · loud (one meaning each, locked)</div>
+      <div class="swrow">
+        <div class="sw"><div class="chip" style="background:var(--green-muted)"></div><div class="cap"><b>green</b>elite/positive</div></div>
+        <div class="sw"><div class="chip" style="background:var(--green-base)"></div><div class="cap">base</div></div>
+        <div class="sw"><div class="chip" style="background:var(--green-loud)"></div><div class="cap">loud ≥90</div></div>
+        <div class="sw"><div class="chip" style="background:var(--blue-muted)"></div><div class="cap"><b>blue</b>good/info</div></div>
+        <div class="sw"><div class="chip" style="background:var(--blue-base)"></div><div class="cap">base 70-79</div></div>
+        <div class="sw"><div class="chip" style="background:var(--blue-loud)"></div><div class="cap">loud</div></div>
+        <div class="sw"><div class="chip" style="background:var(--amber-muted)"></div><div class="cap"><b>amber</b>watch</div></div>
+        <div class="sw"><div class="chip" style="background:var(--amber-base)"></div><div class="cap">base 55-69</div></div>
+        <div class="sw"><div class="chip" style="background:var(--amber-loud)"></div><div class="cap">loud clock</div></div>
+        <div class="sw"><div class="chip" style="background:var(--red-muted)"></div><div class="cap"><b>red</b>danger</div></div>
+        <div class="sw"><div class="chip" style="background:var(--red-base)"></div><div class="cap">base &lt;55</div></div>
+        <div class="sw"><div class="chip" style="background:var(--red-loud)"></div><div class="cap">loud snipe</div></div>
+      </div>
+      <div class="lbl" style="margin-top:14px">Text &amp; chrome · state edges · position badges (pre-empted)</div>
+      <div class="swrow">
+        <div class="sw"><div class="chip" style="background:var(--text-primary)"></div><div class="cap"><b>--text-primary</b>data/headers</div></div>
+        <div class="sw"><div class="chip" style="background:var(--text-secondary)"></div><div class="cap"><b>--text-secondary</b>labels</div></div>
+        <div class="sw"><div class="chip" style="background:var(--text-tertiary)"></div><div class="cap"><b>--text-tertiary</b>chrome/arrows</div></div>
+        <div class="sw"><div class="chip" style="background:var(--surface-tile);border-color:var(--edge-focus);box-shadow:inset 0 0 0 2px var(--edge-focus)"></div><div class="cap"><b>focus</b>blue inset</div></div>
+        <div class="sw"><div class="chip" style="background:var(--surface-tile);border-left:3px solid var(--edge-selection)"></div><div class="cap"><b>selection</b>neutral axis</div></div>
+      </div>
+      <div class="swrow">
+        <span class="badge b-qb">QB</span><span class="badge b-rb">RB</span><span class="badge b-wr">WR</span>
+        <span class="badge b-te">TE</span><span class="badge b-def">DL</span><span class="badge b-k">K</span>
+        <span class="note" style="margin-left:10px;align-self:center">Categorical, not semantic — low-sat bordered tags in the Pos column. All 6 hues off the 5 signal hues; RB (magenta-rose) &amp; WR (teal) on opposite temperatures so they never blend; K achromatic.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- M1 RE-SKIN -->
+  <div class="sec">
+    <div class="sh"><span class="n">2</span><h2>M1 Board — re-skinned</h2><span class="s">Session B rows + score→hue + delta + badges</span></div>
+    <div class="sb">
+      <div class="lbl">Tactical — Adjusted column carries the score band; row 4 keyboard-focused (blue), row 3 selected (neutral axis). <span class="callout">A</span></div>
+      <div class="board">
+        <div class="b-sub m1">
+          <span>RNK</span><span>Player</span><span>Pos</span><span>Franchise</span>
+          <span class="r">Base <span class="isort">¦</span></span><span class="r">Adj <span class="sort">▼</span></span><span class="r">Salary <span class="isort">¦</span></span>
+        </div>
+        <div class="trow m1"><span class="rank">1</span><span class="plyr">Amon-Ra St. Brown <span class="badge b-wr">WR</span></span><span class="pos"></span><span class="fr">Motor City Maulers</span><span class="num base r">78.60</span><span class="num adj r s-elite">91.05</span><span class="num sal r">$48.20</span></div>
+        <div class="trow m1 st-hover"><span class="rank">2</span><span class="plyr">Ja'Marr Chase <span class="badge b-wr">WR</span></span><span class="pos"></span><span class="fr">Queen City Kings</span><span class="num base r">80.10</span><span class="num adj r s-elite">90.40</span><span class="num sal r">$52.00</span></div>
+        <div class="trow m1 st-sel"><span class="rank">3</span><span class="plyr">Bijan Robinson <span class="badge b-rb">RB</span></span><span class="pos"></span><span class="fr">ATL Fire Ants</span><span class="num base r">74.90</span><span class="num adj r s-strong">89.15</span><span class="num sal r">$39.75</span></div>
+        <div class="trow m1 st-focus"><span class="rank">4</span><span class="plyr">Jahmyr Gibbs <span class="badge b-rb">RB</span></span><span class="pos"></span><span class="fr">Motor City Maulers</span><span class="num base r">71.20</span><span class="num adj r s-strong">88.40</span><span class="num sal r">$42.10</span></div>
+        <div class="trow m1"><span class="rank">5</span><span class="plyr">Sam LaPorta <span class="badge b-te">TE</span></span><span class="pos"></span><span class="fr">Coastal Surge</span><span class="num base r">64.40</span><span class="num adj r s-good">77.90</span><span class="num sal r">$21.50</span></div>
+        <div class="trow m1"><span class="rank">6</span><span class="plyr">Jaylen Warren <span class="badge b-rb">RB</span></span><span class="pos"></span><span class="fr">Steel City Forge</span><span class="num base r">55.80</span><span class="num adj r s-watch">63.25</span><span class="num sal r">$8.00</span></div>
+        <div class="trow m1"><span class="rank">7</span><span class="plyr">Tyler Boyd <span class="badge b-wr">WR</span></span><span class="pos"></span><span class="fr">Gotham Guard</span><span class="num base r">44.10</span><span class="num adj r s-weak">48.60</span><span class="num sal r">$3.20</span></div>
+      </div>
+      <div class="lbl" style="margin-top:18px">Matrix (22px) — semantic hue YIELDS to primary text; only red-danger survives (row 5, benchable). Delta-in-weight still carries. <span class="callout">B</span></div>
+      <div class="board mtx">
+        <div class="b-sub m1mtx"><span>#</span><span>Player</span><span>Pos</span><span class="r">Adj <span class="sort">▼</span></span><span class="r">Δ</span></div>
+        <div class="trow m1mtx"><span class="rank">1</span><span class="plyr">A. St. Brown</span><span class="pos"><span class="badge b-wr">WR</span></span><span class="num adj r">91.05</span><span class="num r dpos">+2.6</span></div>
+        <div class="trow m1mtx"><span class="rank">2</span><span class="plyr">J. Chase</span><span class="pos"><span class="badge b-wr">WR</span></span><span class="num adj r">90.40</span><span class="num r dpos">+1.1</span></div>
+        <div class="trow m1mtx"><span class="rank">3</span><span class="plyr">B. Robinson</span><span class="pos"><span class="badge b-rb">RB</span></span><span class="num adj r">89.15</span><span class="num r dneg">−0.8</span></div>
+        <div class="trow m1mtx"><span class="rank">14</span><span class="plyr">Z. Charbonnet</span><span class="pos"><span class="badge b-rb">RB</span></span><span class="num adj r danger">41.30</span><span class="num r dneg">−12.4</span></div>
+      </div>
+      <p class="note" style="margin-top:12px"><span class="callout">A</span>Adjusted Score is the ONLY board column tinted (ruling 3, ruling 8). Base &amp; Salary stay achromatic; row backgrounds never tint by value. <span class="callout">B</span>Matrix trades hue for scan speed — the value ranking is already carried by position + weight, so color is spent only where danger must survive.</p>
+    </div>
+  </div>
+
+  <!-- INSPECTOR + CONFIRMMODAL -->
+  <div class="grid2">
+    <div class="sec">
+      <div class="sh"><span class="n">3</span><h2>Inspector — re-skinned</h2><span class="s">score band + layer bars</span></div>
+      <div class="sb" style="display:flex;justify-content:center">
+        <div class="insp">
+          <div class="insp-hdr"><span class="t up">Asset Dossier</span><span class="x">×</span></div>
+          <div class="insp-body">
+            <div>
+              <div class="ih-name">Jahmyr Gibbs <span class="badge b-rb">RB</span></div>
+              <div class="ih-sub">AGE 23 · MOTOR CITY MAULERS</div>
+              <div class="ih-score s-strong">88.40 <small>Adjusted</small></div>
+            </div>
+            <div>
+              <div class="lbl">Layer Breakdown — fill hue = the layer's own band <span class="callout">C</span></div>
+              <div class="bar"><span class="k">L2 Base</span><span class="track"><span class="fill" style="width:80%;background:var(--blue-base)"></span></span><span class="v">71.2</span></div>
+              <div class="bar"><span class="k">L3 Age Curve</span><span class="track"><span class="fill" style="width:94%;background:var(--green-base)"></span></span><span class="v s-strong">+9%</span></div>
+              <div class="bar"><span class="k">L4 Scouting</span><span class="track"><span class="fill" style="width:88%;background:var(--green-base)"></span></span><span class="v">1.11</span></div>
+              <div class="bar"><span class="k">L5 Cap Scale</span><span class="track"><span class="fill" style="width:70%;background:var(--text-tertiary)"></span></span><span class="v">×1.0</span></div>
+              <div class="bar"><span class="k">L6 Tiebreak</span><span class="track"><span class="fill" style="width:52%;background:var(--text-tertiary)"></span></span><span class="v">—</span></div>
+            </div>
+            <div>
+              <div class="lbl">Contract</div>
+              <div class="term"><b>SALARY:</b> <span class="hi">$42.10</span><br><b>YEARS:</b> <span class="hi">3</span> (through 2028)<br><b>CAP HIT:</b> <span class="hi">$14.03</span>/yr<br><b>STATUS:</b> <span class="hi">SIGNED</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sh"><span class="n">4</span><h2>ConfirmModal — motion + state color</h2><span class="s">blue fill → green · red reject</span></div>
+      <div class="sb">
+        <div class="grid3">
+          <div>
+            <div class="modal-stage"><div class="dim"></div>
+              <div class="modal"><div class="mh">Confirm Trade</div>
+                <div class="mp"><b>CAP Δ</b> <span class="hi">+$9.90</span></div>
+                <div class="mf"><div class="fire armed"><span class="prog"></span><span class="ft">Hold to fire</span></div><div class="mstate">Armed</div></div>
+              </div></div>
+            <div class="rzlabel">armed</div>
+          </div>
+          <div>
+            <div class="modal-stage"><div class="dim"></div>
+              <div class="modal"><div class="mh">Confirm Trade</div>
+                <div class="mp"><b>CAP Δ</b> <span class="hi">+$9.90</span></div>
+                <div class="mf"><div class="fire firing"><span class="prog"></span><span class="ft">Firing…</span></div><div class="mstate">blue fill ≤600ms</div></div>
+              </div></div>
+            <div class="rzlabel">firing → (green at complete)</div>
+          </div>
+          <div>
+            <div class="modal-stage"><div class="dim"></div>
+              <div class="modal"><div class="mh">Confirm Trade</div>
+                <div class="mp"><b>CAP Δ</b> <span style="color:var(--red-loud)">exceeds ceiling</span></div>
+                <div class="mf"><div class="fire reject"><span class="ft">Rejected: cap</span></div><div class="mstate">holds · non-dismissable</div></div>
+              </div></div>
+            <div class="rzlabel">engine reject</div>
+          </div>
+        </div>
+        <p class="note" style="margin-top:12px"><span class="callout">C</span>State color lives on the FILL and the reject edge only — the modal chrome stays achromatic. Fill transitions blue→green at 100% (transform scaleX, <span class="mono">--m-fire 150ms</span>); reject flashes red opacity (<span class="mono">--m-reject</span>) then holds.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FRESHNESS -->
+  <div class="sec">
+    <div class="sh"><span class="n">5</span><h2>Data-Freshness Honesty</h2><span class="s">live · cache · failed — money-trust grammar</span></div>
+    <div class="sb">
+      <div class="grid3">
+        <div class="fbox live">
+          <div class="fh">M1 · Live <span style="float:right;font-weight:400;color:var(--fresh-live)">▲ blue edge</span></div>
+          <div class="fbody">
+            <div class="frow"><span class="n">Adjusted</span><span class="v s-strong">88.40</span></div>
+            <div class="frow"><span class="n">Cap used</span><span class="v" style="color:var(--text-primary)">$46.7M</span></div>
+            <div class="ts live">fetched 09:42:07</div>
+          </div>
+        </div>
+        <div class="fbox stale">
+          <div class="fh">M1 · Cache <span style="float:right;font-weight:400;color:var(--fresh-stale)">▲ amber edge</span></div>
+          <div class="fbody">
+            <div class="frow"><span class="n">Adjusted</span><span class="v s-strong">88.40</span></div>
+            <div class="frow"><span class="n">Cap used</span><span class="v" style="color:var(--text-primary)">$46.7M</span></div>
+            <div class="ts stale">as of 08:15 (cache)</div>
+          </div>
+        </div>
+        <div class="fbox fail">
+          <div class="fh">M1 · Stale <span style="float:right;font-weight:400;color:var(--fresh-fail)">▲ 2px red edge</span></div>
+          <div class="fbody">
+            <div class="frow"><span class="n">Adjusted</span><span class="v s-strong">88.40</span></div>
+            <div class="frow"><span class="n">Cap used</span><span class="v" style="color:var(--text-primary)">$46.7M</span></div>
+            <div class="ts fail">refresh failed 09:41 (offline)</div>
+          </div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:12px"><b>The guardrail:</b> only the top edge + the timestamp change across states — <b>the data itself stays fully colored and legible in all three.</b> A failed refresh never greys out the numbers you're deciding on; it flags that they're old. Consistent on every surface (reinforces Session B's cache-only state-line).</p>
+    </div>
+  </div>
+
+  <!-- ATMOSPHERE BOARD -->
+  <div class="sec" style="border-color:var(--bevel-hi)">
+    <div class="sh"><span class="n">★</span><h2>Atmosphere Board — all four signals firing at once</h2><span class="s">the console under load</span></div>
+    <div class="sb">
+      <div class="atmo">
+        <div class="atmo-hdr"><h3>Command Console · Live</h3><span>cold CIC base · signals float above the plot</span></div>
+        <div class="atmo-body">
+          <div class="grid4">
+            <div class="fbox live" style="min-height:auto">
+              <div class="fh" style="font-size:10px">◷ UFA Window</div>
+              <div class="fbody"><div class="frow"><span class="n">closes in</span><span class="v" style="color:var(--amber-loud);font-weight:600">47m</span></div><div class="ts stale" style="color:var(--amber-loud)">bid clock &lt; 1hr — escalated</div></div>
+            </div>
+            <div class="fbox live" style="min-height:auto">
+              <div class="fh" style="font-size:10px">Top asset</div>
+              <div class="fbody"><div class="frow"><span class="n">St. Brown</span><span class="v s-elite">91.05</span></div><div class="ts live">elite band</div></div>
+            </div>
+            <div class="fbox live" style="min-height:auto">
+              <div class="fh" style="font-size:10px">Trade offer</div>
+              <div class="fbody"><div class="frow"><span class="n">from Kings</span><span class="v" style="color:var(--blue-base);font-weight:600">NEW</span></div><div class="ts live" style="color:var(--blue-base)">info · awaiting you</div></div>
+            </div>
+            <div class="fbox live" style="min-height:auto">
+              <div class="fh" style="font-size:10px">Snipe alert</div>
+              <div class="fbody"><div class="frow"><span class="n">Warren</span><span class="v" style="color:var(--red-loud);font-weight:600">OUTBID</span></div><div class="ts fail">danger · act now</div></div>
+            </div>
+          </div>
+          <div class="sig-legend">
+            <div class="si"><span class="dot" style="background:var(--green-loud)"></span>GREEN — elite / positive</div>
+            <div class="si"><span class="dot" style="background:var(--blue-base)"></span>BLUE — good / info</div>
+            <div class="si"><span class="dot" style="background:var(--amber-loud)"></span>AMBER — watch / clock</div>
+            <div class="si"><span class="dot" style="background:var(--red-loud)"></span>RED — danger</div>
+            <div class="si"><span class="dot" style="background:var(--text-tertiary)"></span>GRAY — muted / everything else</div>
+          </div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:12px">Four signals live simultaneously and each still reads instantly — because <b>everything not a signal is achromatic</b>. Against the cold navy ground, amber &amp; red carry heat (Run 2's insight survives the fusion) while green &amp; blue read cool. This is the restraint doctrine paying off: color is scarce, so color is loud.</p>
+    </div>
+  </div>
+
+  <div class="foot">TheWarRoom · Session C atmosphere board · cold CIC base hsl(220…) · binds on Sessions A+B · branch session/ui-session-a-grid</div>
+
+</div>
+</body>
+</html>

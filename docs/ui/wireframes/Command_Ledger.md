@@ -36,3 +36,14 @@ Verb grammar is provisional (Guix-simple: `domain.verb key=value`), refined when
 | B7 | Priced-op preview | Transaction action panel | `txn.preview kind=<sign\|waiver\|tag\|extension\|buyout\|trade>` | Dry-run; routes its result into the ConfirmModal (B2) |
 | B8 | Density set (keyboard) | Global | `view.density tier=<narrative\|tactical\|matrix>` | Keyboard `1/2/3`; keyboard projection of A4 |
 | B9 | Selection move (keyboard) | Any board | `nav.down` / `nav.up` | Keyboard `J`/`K`; Matrix+Tactical only |
+
+## Session C — Color, Dark Mode & Atmosphere (semantic tokens, motion, freshness)
+
+Session C introduces **no new actuating controls** — color/motion/freshness are presentation tokens, not verbs. The rows below record the two *state-driven behaviors* the future chat terminal must be able to read/announce, plus the token contract every later surface consumes. (Verbs are provisional; these are read-side/announce-side, not new mutations.)
+
+| # | Behavior | Surface | Command / query mapping | Notes |
+|---|---|---|---|---|
+| C1 | Data-freshness state | Any live/cached surface | `data.freshness?` → `live \| cache \| failed` | Read-side. Drives the `--freshness-*` edge + timestamp grammar (live=blue 1px / cache=amber 1px / failed=red 2px + `(cache)`/`(offline)` suffix). Guardrail: NEVER washes out the data itself. The terminal can answer "how fresh is this board?" |
+| C2 | Event escalation / recession | Feed · calendar · trade cards | `event.escalate` / `event.recede` (Session D owns the grammar) | Session C sets the *color* of escalation (amber→amber-loud clock under 1hr; red-loud snipe/danger). The event-visibility rules land in Session D; the atmosphere board previews the fired states. |
+
+**Token contract (not verbs — the standing color law every later surface binds):** score→hue banding (Adjusted Score value + inspector layer bar only: ≥90 green-loud / 80-89 green-base / 70-79 blue-base / 55-69 amber-base / <55 red-base); **restraint doctrine** — color is DATA + STATE only, structure is achromatic, no row/tile/canvas ever tinted by value; **Matrix yields** all semantic hue to `--text-primary` except red-danger; keyboard **focus = blue** inset (never amber — amber is a semantic); **selection = neutral axis** (never green — selecting is not a verdict); delta-in-weight (Session B) is the baseline signal, hue is redundant reinforcement. Position badges are categorical, off the 5 semantic hues (**WR rose 330 / TE teal 175 pre-empted** off gold/forest which aliased amber/green; K achromatic).
