@@ -21,3 +21,4 @@ Verb grammar is provisional (Guix-simple: `domain.verb key=value`), refined when
 | A9 | Inspector collapse/expand | Inspector zone | `ui.toggle target=inspector` | `transform: translateX` overlay, not width-trade |
 | A10 | Comms summon/collapse | Right-edge 48px strip (any screen) | `ui.summon target=comms` / `ui.collapse target=comms` | quick-dash, transform overlay |
 | A11 | Calendar summon/collapse | Top-right 32px seam (any screen) | `ui.summon target=calendar` / `ui.collapse target=calendar` | quick-dash, generous overlay; full anatomy = Session D |
+| A12 | Panel edge-resize (drag) | Zone dividers (nav\|workspace\|inspector) | `ui.resize target=<inspector\|nav> width=<px>` | Christopher-named 2026-07-19; handle anatomy + 4 states = Session B, build = B-1. Drag shows a 1px ghost guide, commits width on RELEASE (no live per-frame reflow — WebKitGTK floor). Presets ship canned widths (e.g. Draft Mode). |
