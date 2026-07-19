@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TheWarRoom — Session D: Communication, Calendar &amp; the Command Layer</title>
+<style>
+  :root{
+    /* ===== Session C token sheet — inherited verbatim (cold CIC base) ===== */
+    --surface-canvas:  hsl(220,20%,6%);
+    --surface-sunken:  hsl(220,22%,4%);
+    --surface-tile:    hsl(220,18%,9%);
+    --surface-raised:  hsl(220,18%,11%);
+    --surface-overlay: hsl(220,22%,13%);
+    --bevel-hi:  hsl(220,15%,16%);
+    --bevel-lo:  hsl(220,25%,2%);
+    --hairline:  hsl(220,15%,14%);
+    --text-primary:   hsl(220,20%,92%);
+    --text-secondary: hsl(220,12%,65%);
+    --text-tertiary:  hsl(220,10%,45%);
+    --text-disabled:  hsl(220,10%,30%);
+    --green-muted: hsl(145,35%,45%); --green-base: hsl(145,45%,55%); --green-loud: hsl(145,55%,68%);
+    --blue-muted:  hsl(210,45%,50%); --blue-base:  hsl(210,60%,62%); --blue-loud:  hsl(210,75%,75%);
+    --amber-muted: hsl(35,40%,45%);  --amber-base: hsl(35,60%,58%);  --amber-loud: hsl(35,80%,70%);
+    --red-muted:   hsl(0,40%,50%);   --red-base:   hsl(0,55%,62%);   --red-loud:   hsl(0,70%,72%);
+    --edge-focus:     var(--blue-base);
+    --edge-selection: var(--text-primary);
+    --fresh-live:  var(--blue-base);
+    --fresh-stale: var(--amber-muted);
+    --fresh-fail:  var(--red-loud);
+    --motion-mult: 1;
+    --m-feed: 100ms ease-out;
+    --m-fire: 150ms linear;
+    --m-reject: 150ms ease-in-out;
+    --mono:"JetBrains Mono","SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  /* position badges (categorical) — Session C palette */
+  .badge{font-family:var(--mono);font-size:9px;letter-spacing:.04em;padding:0 5px;line-height:15px;height:15px;display:inline-block;
+    border:1px solid;border-radius:2px;background:hsla(var(--bh),14%,21%,.6);border-color:hsla(var(--bh),34%,52%,.6);color:hsla(var(--bh),46%,80%,1)}
+  .b-qb{--bh:290}.b-rb{--bh:330}.b-wr{--bh:175}.b-te{--bh:250}.b-def{--bh:220}
+  .b-k{background:hsla(0,0%,22%,.55);border:1px solid hsl(0,0%,40%);color:hsl(0,0%,74%)}
+
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--surface-sunken);color:var(--text-secondary);font-family:var(--sans);font-size:13px;-webkit-font-smoothing:antialiased}
+  .page{max-width:1180px;margin:0 auto;padding:24px}
+  h1,h2,h3{margin:0;font-weight:600}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .up{text-transform:uppercase;letter-spacing:.08em}
+  .r{text-align:right}
+
+  .strip{border:1px solid var(--hairline);background:var(--surface-tile);padding:14px 18px;margin-bottom:16px;box-shadow:inset 0 1px 0 0 var(--bevel-hi)}
+  .strip h1{font-size:16px;color:var(--text-primary);letter-spacing:.04em}
+  .strip .meta{margin-top:6px;color:var(--text-tertiary);font-size:11px;display:flex;gap:18px;flex-wrap:wrap}
+  .strip .meta b{color:var(--text-secondary);font-weight:500}
+
+  .sec{border:1px solid var(--hairline);background:var(--surface-canvas);margin-bottom:16px}
+  .sec>.sh{display:flex;align-items:baseline;gap:10px;min-height:32px;padding:6px 14px;background:var(--surface-tile);border-bottom:1px solid var(--hairline)}
+  .sec>.sh .n{font-size:10px;color:var(--text-tertiary);font-family:var(--mono)}
+  .sec>.sh h2{font-size:11px;color:var(--text-primary);letter-spacing:.06em;text-transform:uppercase}
+  .sec>.sh .s{font-size:10px;color:var(--text-tertiary);margin-left:auto}
+  .sb{padding:16px 14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .lbl{font-size:9px;color:var(--text-tertiary);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+  .callout{display:inline-block;min-width:15px;height:15px;line-height:15px;text-align:center;border:1px solid var(--text-tertiary);color:var(--text-secondary);font-size:9px;font-family:var(--mono);margin-right:6px}
+  .note{font-size:11px;color:var(--text-tertiary);line-height:1.6;margin:0}
+  .note b{color:var(--text-secondary);font-weight:500}
+  .s-elite{color:var(--green-loud)}.s-strong{color:var(--green-base)}.s-good{color:var(--blue-base)}.s-watch{color:var(--amber-base)}.s-weak{color:var(--red-base)}
+
+  /* ============ micro-switch (verb affordance / control) ============ */
+  .msw{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:0 8px;height:18px;line-height:16px;
+    display:inline-flex;align-items:center;border:1px solid var(--bevel-hi);background:var(--surface-tile);color:var(--text-secondary);box-shadow:inset 1px 1px 0 var(--bevel-hi)}
+  .msw.pressed{box-shadow:inset -1px -1px 0 var(--bevel-hi);color:var(--text-primary)}
+
+  /* ============ 1. UNIFIED EVENT GRAMMAR ============ */
+  /* anatomy legend — sample row + aligned captions underneath (no overlap) */
+  .anat{border:1px solid var(--hairline);background:var(--surface-tile)}
+  .anat .arow{display:grid;grid-template-columns:16px 60px 1fr 96px;align-items:center;gap:14px;min-height:34px;padding:0 12px 0 0;border-bottom:1px solid var(--hairline)}
+  .anat .arow .sp2{width:2px;height:22px;justify-self:center;background:var(--text-tertiary)}
+  .anat .arow .ts2{font-family:var(--mono);font-size:11px;color:var(--text-tertiary)}
+  .anat .arow .pl2 .subj{color:var(--text-primary);font-weight:600}
+  .anat .arow .pl2 .pred{color:var(--text-secondary);font-weight:400}
+  .anat .acaps{display:grid;grid-template-columns:16px 60px 1fr 96px;gap:14px;padding:6px 12px 8px 0}
+  .anat .acaps div{font-family:var(--mono);font-size:8px;letter-spacing:.02em;color:var(--text-tertiary);line-height:1.4}
+
+  .feed{border:1px solid var(--hairline);background:var(--surface-canvas)}
+  .feed-hdr{display:flex;align-items:center;gap:10px;height:30px;padding:0 10px;background:var(--surface-sunken);border-bottom:1px solid var(--hairline)}
+  .feed-hdr .t{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary)}
+  .lg-toggle{margin-left:auto;display:inline-flex;border:1px solid var(--bevel-hi)}
+  .lg-toggle span{font-family:var(--mono);font-size:9px;padding:2px 8px;color:var(--text-tertiary)}
+  .lg-toggle span.on{background:var(--surface-raised);color:var(--text-primary)}
+  .alerts-band{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-tertiary);
+    padding:4px 10px;background:var(--surface-sunken);border-bottom:1px solid var(--hairline)}
+  .alerts-band b{color:var(--amber-base);font-weight:500}
+  .alerts-band .esc-hint{float:right;color:var(--text-disabled)}
+
+  .erow{position:relative;display:flex;align-items:center;gap:10px;min-height:32px;padding:0 10px 0 0;border-bottom:1px solid var(--hairline)}
+  .erow .sp{width:2px;align-self:stretch;background:var(--text-tertiary)}   /* FIX: default spine ACHROMATIC, hue earned */
+  .erow .ts{font-family:var(--mono);font-size:11px;width:50px;flex:none;color:var(--text-tertiary)}
+  .erow .pl{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .erow .pl .subj{color:var(--text-primary);font-weight:600}      /* subject weight 600 */
+  .erow .pl .pred{color:var(--text-secondary);font-weight:400}    /* predicate weight 400 */
+  .erow .aff{flex:none}
+  /* escalation (R-F): spine widens 2→4px + semantic hue + optical raise. no loop. */
+  .erow.esc-amber{background:var(--surface-raised)}
+  .erow.esc-amber .sp{width:4px;background:var(--amber-loud)}
+  .erow.esc-amber .ts{color:var(--amber-loud)}
+  .erow.esc-red{background:var(--surface-raised)}
+  .erow.esc-red .sp{width:4px;background:var(--red-loud)}
+  .erow.esc-red .ts{color:var(--red-loud)}
+  /* recession (R): 50% opacity, no unread badge */
+  .erow.recessed{opacity:.5}
+  .erow.recessed .aff{display:none}
+  /* freshness rides the spine (R-E) */
+  .erow .sp.stale{background:var(--fresh-stale)}
+  .erow .ts.stale-ts{color:var(--amber-base)}
+
+  /* VAV columns */
+  .vav-op .erow .aff{opacity:0}
+  .vav-op .erow.esc-amber .aff,.vav-op .erow.esc-red .aff{opacity:1}   /* escalated forces persistent */
+  .vav-op .erow.hov .aff{opacity:1}                                    /* simulated :hover / :focus-within */
+  .vav-op .erow.hov{background:var(--surface-raised)}
+
+  /* ============ 2. TERMINAL-LOG COMMS ============ */
+  .comms{width:320px;border:1px solid var(--hairline);background:var(--surface-tile);display:flex;flex-direction:column;height:430px}
+  .comms-hdr{height:30px;display:flex;align-items:center;padding:0 10px;background:var(--surface-canvas);border-bottom:1px solid var(--hairline);
+    font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-tertiary)}
+  .thread{flex:1;overflow:hidden;background:var(--surface-canvas)}
+  .trow2{padding:6px 10px;border-bottom:1px solid var(--hairline);line-height:1.5}
+  .trow2 .tt{font-family:var(--mono);font-size:9px;color:var(--text-disabled);margin-right:6px}
+  .trow2.human .msg{color:var(--text-primary)}
+  .trow2.human .who{color:var(--text-secondary);font-weight:600}
+  .trow2.cmd{font-family:var(--mono);font-size:12px;color:var(--text-secondary)}
+  .trow2.cmd .pfx{color:var(--text-tertiary)}
+  .trow2.sys{font-family:var(--mono);font-size:11px;color:var(--text-tertiary)}
+  .trow2.sys .pfx{color:var(--text-disabled)}
+  /* in-thread control card */
+  .ccard{margin:8px 10px;border:1px solid var(--bevel-hi);background:var(--surface-raised);box-shadow:inset 1px 1px 0 var(--bevel-hi)}
+  .ccard .ch{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-tertiary);padding:6px 9px;border-bottom:1px solid var(--hairline)}
+  .ccard .cb{padding:8px 9px;font-size:11px;color:var(--text-secondary);line-height:1.6}
+  .ccard .cb .hi{color:var(--text-primary);font-weight:500}
+  .ccard .cf{display:flex;gap:6px;padding:8px 9px;border-top:1px solid var(--hairline)}
+  .ccard.locked{opacity:.5}
+  /* prompt */
+  .prompt{height:34px;display:flex;align-items:center;gap:6px;padding:0 10px;background:var(--surface-sunken);border-top:1px solid var(--hairline)}
+  .prompt .pf{font-family:var(--mono);color:var(--text-tertiary)}
+  .prompt .ph{color:var(--text-disabled);font-size:12px}
+  .prompt.cmd-mode{box-shadow:inset 2px 0 0 var(--edge-focus)}
+  .prompt.cmd-mode .pf,.prompt.cmd-mode .ph{font-family:var(--mono);color:var(--text-secondary)}
+
+  /* ============ 3. CALENDAR ============ */
+  .cal{border:1px solid var(--hairline);background:var(--surface-canvas)}
+  .cal-hdr{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;background:var(--surface-tile);border-bottom:1px solid var(--hairline)}
+  .cal-hdr .m{font-size:12px;color:var(--text-primary);font-weight:600}
+  .cal-views{margin-left:auto;display:inline-flex;border:1px solid var(--bevel-hi)}
+  .cal-views span{font-family:var(--mono);font-size:9px;padding:2px 9px;color:var(--text-tertiary)}
+  .cal-views span.on{background:var(--surface-raised);color:var(--text-primary)}
+  .cal-wrap{display:grid;grid-template-columns:150px 1fr}
+  /* mini-month */
+  .mini{border-right:1px solid var(--hairline);padding:10px}
+  .mini .mm{font-size:10px;color:var(--text-secondary);text-align:center;margin-bottom:8px;letter-spacing:.04em}
+  .mini .dg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .mini .dg span{font-family:var(--mono);font-size:9px;text-align:center;line-height:16px;color:var(--text-tertiary)}
+  .mini .dg span.dow{color:var(--text-disabled)}
+  .mini .dg span.today{background:var(--surface-raised);color:var(--text-primary);box-shadow:inset 0 0 0 1px var(--edge-focus)}
+  .mini .dg span.hasev{color:var(--text-primary)}
+  .mini .op{margin-top:12px}
+  .mini .op .lbl{margin-bottom:6px}
+  /* week grid */
+  .wk{position:relative}
+  .wk-days{display:grid;grid-template-columns:34px repeat(4,1fr);border-bottom:1px solid var(--hairline)}
+  .wk-days span{font-family:var(--mono);font-size:9px;color:var(--text-tertiary);text-align:center;line-height:22px;border-left:1px solid var(--hairline)}
+  .wk-days span:first-child{border-left:0}
+  .wk-days span.today{color:var(--text-primary)}
+  .wk-grid{display:grid;grid-template-columns:34px repeat(4,1fr);position:relative}
+  .wk-grid .hh{font-family:var(--mono);font-size:9px;color:var(--text-disabled);text-align:right;padding-right:5px;line-height:44px;border-top:1px solid var(--hairline)}
+  .wk-col{border-left:1px solid var(--hairline);position:relative}
+  .wk-col .slot{height:44px;border-top:1px solid var(--hairline)}
+  /* event chip: 2px left color bar; bg = --surface-tile (FIX, was --surface-base) */
+  .chip{position:absolute;left:3px;right:3px;background:var(--surface-tile);border:1px solid var(--hairline);
+    box-shadow:inset 1px 1px 0 var(--bevel-hi);padding:2px 5px 2px 7px;overflow:hidden}
+  .chip::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--bar,var(--text-tertiary))}
+  .chip .ct{font-size:10px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+  .chip .cm{font-family:var(--mono);font-size:9px;color:var(--text-tertiary)}
+  .chip.waiver{--bar:var(--blue-base)}
+  .chip.trade{--bar:var(--amber-base)}
+  .chip.draft{--bar:var(--green-base)}
+  .chip.lock{--bar:var(--red-base)}
+  .chip.ghost{background:var(--surface-raised);border-style:dashed;border-color:var(--bevel-hi);opacity:.85}
+  .chip.orig-faded{opacity:.5}
+  .chip.share{right:51%}
+  .chip.share.b{left:51%;right:3px}
+  .nmore{position:absolute;left:3px;right:3px;font-family:var(--mono);font-size:9px;color:var(--text-secondary);
+    background:var(--surface-sunken);border:1px solid var(--hairline);padding:1px 5px;text-align:center}
+  /* snackbar */
+  .snack{display:inline-flex;align-items:center;gap:12px;background:var(--surface-overlay);border:1px solid var(--bevel-hi);
+    box-shadow:inset 1px 1px 0 var(--bevel-hi);padding:7px 12px;font-size:11px;color:var(--text-secondary)}
+  .snack .mono{color:var(--text-tertiary)}
+
+  /* operational overlay projections */
+  .proj{border:1px solid var(--hairline);background:var(--surface-tile)}
+  .proj-hdr{display:flex;align-items:center;height:30px;padding:0 10px;background:var(--surface-canvas);border-bottom:1px solid var(--hairline);
+    font-size:11px;color:var(--text-primary);font-weight:600}
+  .proj-hdr .dl{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--amber-base)}
+  .topbar{display:flex;align-items:center;height:26px;padding:0 10px;background:var(--surface-sunken);border-bottom:1px solid var(--hairline);
+    font-size:10px;color:var(--text-tertiary);letter-spacing:.04em}
+  .topbar .clk{margin-left:auto;font-family:var(--mono);color:var(--amber-loud);font-weight:600}
+
+  /* ledger table */
+  .ledger{width:100%;border-collapse:collapse;font-size:11px}
+  .ledger th,.ledger td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--hairline);vertical-align:top}
+  .ledger th{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-tertiary);background:var(--surface-sunken)}
+  .ledger td.v{font-family:var(--mono);color:var(--text-primary);white-space:nowrap}
+  .ledger td.a{font-family:var(--mono);color:var(--text-tertiary);white-space:nowrap}
+  .ledger td.d{color:var(--text-secondary)}
+
+  /* triage */
+  .triage{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--hairline)}
+  .triage .col{padding:12px;border-right:1px solid var(--hairline)}
+  .triage .col:last-child{border-right:0}
+  .triage .th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+  .triage .adopt{color:var(--text-primary)}.triage .adapt{color:var(--text-secondary)}.triage .reject{color:var(--text-tertiary)}
+  .triage li{font-size:11px;color:var(--text-tertiary);line-height:1.5;margin-bottom:7px;list-style:none}
+  .triage li b{color:var(--text-secondary);font-weight:500}
+  .foot{color:var(--text-tertiary);font-size:10px;text-align:center;padding:14px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="strip">
+    <h1>SESSION D — Communication, Calendar &amp; the Command Layer</h1>
+    <div class="meta">
+      <span><b>Date</b> 2026-07-19</span>
+      <span><b>GLM-5.2 runs</b> 3 (Watch Floor / Ops Room / synthesis)</span>
+      <span><b>Spine ruling</b> one timeline, verb-triaged</span>
+      <span><b>Binds on</b> Sessions A + B + C</span>
+    </div>
+  </div>
+
+  <!-- TRIAGE -->
+  <div class="sec">
+    <div class="sh"><span class="n">§</span><h2>Triage — two directions → head-brain rulings</h2><span class="s">leads, not findings</span></div>
+    <div class="sb" style="padding:0">
+      <div class="triage">
+        <div class="col">
+          <div class="th adopt">ADOPTED</div>
+          <li><b>One-timeline substrate</b> (Watch Floor) — every occurrence is one time-ordered event object; feed/calendar/chat are lenses, not apps.</li>
+          <li><b>Triage Tributary</b> (Watch Floor's own ripcord fix) — escalated events pin to a top ALERTS group so the operator teleports to the fire instead of scrolling; <span class="mono">Esc</span> releases.</li>
+          <li><b>Terminal-log thread</b> (Watch Floor) — full-width, hairline-separated, no persona.</li>
+          <li><b>Append-only honesty + operational overlay</b> (both) — drag = appended revision; deadlines project onto the surfaces they govern.</li>
+        </div>
+        <div class="col">
+          <div class="th adapt">ADAPTED / FUSED</div>
+          <li><b>VAV</b> (Ops Room) layered onto the timeline — verb affordances scale casual (always shown) → operator (on hover/focus); an altitude, never a mode toggle.</li>
+          <li><b>/-pivot prompt</b> (Ops Room) + <b>in-thread Control Card</b> (both) — the <span class="mono">/offer</span> card is a control surface living in the conversation.</li>
+          <li><b>Freshness on the spine + <span class="mono">/history</span> verb</b> (Ops Room catches) — a stale event's spine goes amber-muted; resolved events recede but stay auditable.</li>
+        </div>
+        <div class="col">
+          <div class="th reject">REJECTED / CORRECTED</div>
+          <li><b>Bubbles</b> (Ops Room) — rejected; right/left chat bubbles are the SaaS tell we avoid.</li>
+          <li><b>Native edge-resize</b> (Ops Room's guarded transform) — rejected; the APU compositor <i>hard-locks</i>, so "detect a bad transform" is a bad bet. Drag-MOVE ships; resize is stepper-only.</li>
+          <li><b>Pulsating affordance</b> — cut; a persistent loop is decoration, which the C motion doctrine forbids.</li>
+          <li><b>Blue-default spine → CORRECTED to achromatic</b> (blue is a semantic + collides with focus); token names pinned to <span class="mono">--surface-tile</span> / <span class="mono">--hairline</span>.</li>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. UNIFIED EVENT GRAMMAR -->
+  <div class="sec">
+    <div class="sh"><span class="n">1</span><h2>The Unified Event Grammar</h2><span class="s">one object · escalation · recession · VAV</span></div>
+    <div class="sb">
+      <div class="lbl">Event-row anatomy — feed event / chat msg / calendar deadline / trade card / system alert all render THIS <span class="callout">A</span></div>
+      <div class="anat" style="margin-bottom:18px">
+        <div class="arow">
+          <span class="sp2"></span>
+          <span class="ts2">09:41</span>
+          <span class="pl2"><span class="subj">Bijan Robinson</span> <span class="pred">cleared waivers</span></span>
+          <span><span class="msw">ADD</span></span>
+        </div>
+        <div class="acaps">
+          <div>spine<br>2px · achromatic</div>
+          <div>timestamp<br>mono</div>
+          <div>subject (weight 600) + predicate (weight 400)</div>
+          <div>verb affordance<br>micro-switch</div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <!-- The Feed -->
+        <div>
+          <div class="lbl">The Feed — chronological river + pinned ALERTS tributary <span class="callout">B</span></div>
+          <div class="feed">
+            <div class="feed-hdr"><span class="t">Pulse</span>
+              <span class="lg-toggle"><span class="on">L: ACTIVE</span><span>L: ALL</span></span>
+            </div>
+            <div class="alerts-band"><b>▲ Alerts (2)</b> — escalated, pinned above the flow <span class="esc-hint">Esc ↓ release</span></div>
+            <div class="erow esc-red"><span class="sp"></span><span class="ts">00:12</span><span class="pl"><span class="subj">Jaylen Warren</span> <span class="pred">— you were OUTBID (snipe)</span></span><span class="aff"><span class="msw">RE-BID</span></span></div>
+            <div class="erow esc-amber"><span class="sp"></span><span class="ts">47m</span><span class="pl"><span class="subj">UFA window</span> <span class="pred">closes — bid clock &lt; 1hr</span></span><span class="aff"><span class="msw">REVIEW</span></span></div>
+            <div class="erow"><span class="sp"></span><span class="ts">09:41</span><span class="pl"><span class="subj">Bijan Robinson</span> <span class="pred">cleared waivers</span></span><span class="aff"><span class="msw">ADD</span></span></div>
+            <div class="erow"><span class="sp"></span><span class="ts">09:38</span><span class="pl"><span class="subj">Queen City Kings</span> <span class="pred">offered a trade</span></span><span class="aff"><span class="msw">OPEN</span></span></div>
+            <div class="erow"><span class="sp stale"></span><span class="ts stale-ts">08:15</span><span class="pl"><span class="subj">Commissioner</span> <span class="pred">set signing window (cache)</span></span><span class="aff"></span></div>
+            <div class="erow recessed"><span class="sp"></span><span class="ts">08:02</span><span class="pl"><span class="subj">Waiver run</span> <span class="pred">processed — resolved</span></span></div>
+          </div>
+          <p class="note" style="margin-top:8px"><span class="callout">B</span>Escalation (R-F): spine widens 2→4px + takes the semantic hue + row raises — <b>no modal, no loop</b>. Recession: the resolved run fades to 50% and drops its affordance; it stays in <span class="mono">/history</span> and the calendar log — zero unread-badge debt. Row 5's spine is amber-muted: a <b>stale</b> event (freshness rides the spine, data stays legible).</p>
+        </div>
+
+        <!-- VAV -->
+        <div>
+          <div class="lbl">VAV — one grammar, two altitudes (not a mode toggle) <span class="callout">C</span></div>
+          <div class="grid2" style="gap:10px">
+            <div>
+              <div class="feed">
+                <div class="feed-hdr"><span class="t" style="color:var(--text-secondary)">Casual · 1–2 lgs</span></div>
+                <div class="erow"><span class="sp"></span><span class="ts">09:41</span><span class="pl"><span class="subj">Bijan R.</span></span><span class="aff"><span class="msw">ADD</span></span></div>
+                <div class="erow"><span class="sp"></span><span class="ts">09:38</span><span class="pl"><span class="subj">Trade</span></span><span class="aff"><span class="msw">OPEN</span></span></div>
+                <div class="erow esc-amber"><span class="sp"></span><span class="ts">47m</span><span class="pl"><span class="subj">UFA</span></span><span class="aff"><span class="msw">REVIEW</span></span></div>
+              </div>
+              <p class="note" style="margin-top:6px">Verbs always visible — the queue is short; it reads as a calm checklist.</p>
+            </div>
+            <div>
+              <div class="feed vav-op">
+                <div class="feed-hdr"><span class="t" style="color:var(--text-secondary)">Operator · 25 lgs</span></div>
+                <div class="erow"><span class="sp"></span><span class="ts">09:41</span><span class="pl"><span class="subj">Bijan R.</span></span><span class="aff"><span class="msw">ADD</span></span></div>
+                <div class="erow hov"><span class="sp"></span><span class="ts">09:38</span><span class="pl"><span class="subj">Trade</span></span><span class="aff"><span class="msw">OPEN</span></span></div>
+                <div class="erow esc-amber"><span class="sp"></span><span class="ts">47m</span><span class="pl"><span class="subj">UFA</span></span><span class="aff"><span class="msw">REVIEW</span></span></div>
+              </div>
+              <p class="note" style="margin-top:6px">Verbs hidden until <span class="mono">:hover</span>/<span class="mono">:focus</span> (row 2 shown hovered); escalated rows force them persistent. Reads as a scannable matrix.</p>
+            </div>
+          </div>
+          <p class="note" style="margin-top:8px"><span class="callout">C</span>Same rows, same data, same tokens — only affordance visibility scales. Depth is discovered, never demanded; no "Pro Mode" switch.</p>
+        </div>
+      </div>
+      <p class="note" style="margin-top:14px"><span class="callout">A</span>The substrate carries <span class="mono">is_scheduled</span>/<span class="mono">duration</span> — an instantaneous chat message renders in Feed + Comms but is filtered OUT of the calendar grid (R-I). Cross-league is a <b>ledger-flagged seam</b> only: the <span class="mono">L: ALL</span> toggle marks it; v1 renders single-league clean.</p>
+    </div>
+  </div>
+
+  <!-- 2. TERMINAL-LOG COMMS -->
+  <div class="sec">
+    <div class="sh"><span class="n">2</span><h2>Chat as the Terminal's Visual Home</h2><span class="s">terminal-log thread · /-pivot · in-thread control card</span></div>
+    <div class="sb">
+      <div class="grid2">
+        <div style="display:flex;justify-content:center">
+          <div class="comms">
+            <div class="comms-hdr">Comms · summoned over (320px)</div>
+            <div class="thread">
+              <div class="trow2 human"><span class="tt">12:01</span><span class="who">Kings:</span> <span class="msg">you want Warren for a 2026 2nd?</span></div>
+              <div class="trow2 cmd"><span class="tt">12:04</span><span class="pfx">&gt; </span>/offer warren for 2026-2nd</div>
+              <div class="trow2 sys"><span class="tt">12:04</span><span class="pfx">↳ </span>staged — confirm below</div>
+              <!-- in-thread control card -->
+              <div class="ccard">
+                <div class="ch">/offer · trade card</div>
+                <div class="cb">OUT <span class="hi">Jaylen Warren</span> <span class="badge b-rb">RB</span> &nbsp;·&nbsp; IN <span class="hi">2026 2nd</span><br><span style="color:var(--text-tertiary)">cap Δ</span> <span class="hi">−$8.00</span></div>
+                <div class="cf"><span class="msw">ACCEPT</span><span class="msw">COUNTER</span><span class="msw">DECLINE</span></div>
+              </div>
+              <div class="trow2 sys"><span class="tt">12:05</span><span class="pfx">↳ </span>Accept → hold-to-fire opens</div>
+            </div>
+            <div class="prompt"><span class="pf">›</span><span class="ph">Message or /command…</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="lbl">Thread grammar</div>
+          <p class="note" style="margin-bottom:14px">
+            <b>Human chatter</b> — Inter 13px, primary. &nbsp;<b>Typed command</b> — Mono <span class="mono">&gt; /verb</span>, secondary. &nbsp;<b>System answer</b> — Mono <span class="mono">↳</span>, tertiary, <b>no assistant persona</b> (raw data). One scannable, non-bubble thread — bubbles were rejected as the SaaS tell.
+          </p>
+          <div class="lbl">The /-pivot prompt <span class="callout">D</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+            <div class="prompt" style="border:1px solid var(--hairline)"><span class="pf">›</span><span class="ph">Message or /command… <span style="color:var(--text-tertiary)">(text mode · Inter)</span></span></div>
+            <div class="prompt cmd-mode" style="border:1px solid var(--hairline)"><span class="pf">/</span><span class="ph mono">offer warren for 2026-2nd <span style="color:var(--text-tertiary)">(command mode · blue axis)</span></span></div>
+          </div>
+          <div class="lbl">Control surface in the conversation</div>
+          <p class="note"><b>Accept / Counter / Decline</b> are inset micro-switches inside the thread card; Accept routes to the Session B <b>ConfirmModal</b> (480px, hold-to-fire). While the modal is live the card locks to 50%; on commit it recedes to <span class="mono">[ COMMITTED — 12:06 ]</span>. Every switch has a Ledger verb.</p>
+          <p class="note" style="margin-top:10px"><span class="callout">D</span>Typing <span class="mono">/</span> flips the prompt to Mono + a blue focus axis — it cues the operator into command mode without alienating the casual, who just types text. The visual home is a command line; the engine that reads it is <b>not</b> designed here.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. CALENDAR -->
+  <div class="sec">
+    <div class="sh"><span class="n">3</span><h2>The Calendar — fully buildable</h2><span class="s">Google-Calendar-from-a-console · append-only</span></div>
+    <div class="sb">
+      <div class="cal">
+        <div class="cal-hdr"><span class="m">March 2026</span>
+          <span class="cal-views"><span class="on">Week</span><span>Month</span><span>Agenda</span></span>
+        </div>
+        <div class="cal-wrap">
+          <!-- mini-month + operational note -->
+          <div class="mini">
+            <div class="mm">March 2026</div>
+            <div class="dg">
+              <span class="dow">S</span><span class="dow">M</span><span class="dow">T</span><span class="dow">W</span><span class="dow">T</span><span class="dow">F</span><span class="dow">S</span>
+              <span>1</span><span>2</span><span class="hasev">3</span><span>4</span><span class="hasev">5</span><span>6</span><span>7</span>
+              <span>8</span><span>9</span><span class="today">10</span><span class="hasev">11</span><span>12</span><span class="hasev">13</span><span>14</span>
+              <span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span>
+            </div>
+            <div class="op">
+              <div class="lbl">Hue = deadline kind</div>
+              <p class="note" style="line-height:1.9">
+                <span style="color:var(--blue-base)">▉</span> Waiver run<br>
+                <span style="color:var(--amber-base)">▉</span> Trade deadline<br>
+                <span style="color:var(--green-base)">▉</span> Draft / live<br>
+                <span style="color:var(--red-base)">▉</span> Roster lock
+              </p>
+              <p class="note" style="margin-top:8px">No position badges here — calendar hue is <b>semantic</b>, not categorical.</p>
+            </div>
+          </div>
+          <!-- week grid -->
+          <div class="wk">
+            <div class="wk-days"><span></span><span>TUE 10</span><span class="today">WED 11</span><span>THU 12</span><span>FRI 13</span></div>
+            <div class="wk-grid">
+              <div class="hh">12p</div>
+              <div class="wk-col">
+                <div class="slot"></div><div class="slot"></div>
+                <div class="chip waiver" style="top:6px;height:38px"><div class="ct">Waiver run</div><div class="cm">12:00</div></div>
+              </div>
+              <div class="wk-col">
+                <div class="slot"></div><div class="slot"></div>
+                <!-- column-share overlap -->
+                <div class="chip trade share" style="top:50px;height:40px"><div class="ct">Trade deadline</div><div class="cm">1:00</div></div>
+                <div class="chip lock share b" style="top:50px;height:40px"><div class="ct">Roster lock</div><div class="cm">1:00</div></div>
+              </div>
+              <div class="wk-col">
+                <div class="slot"></div><div class="slot"></div>
+                <!-- drag-move ghost + faded original -->
+                <div class="chip draft orig-faded" style="top:4px;height:36px"><div class="ct">Draft (orig)</div><div class="cm">12:00</div></div>
+                <div class="chip draft ghost" style="top:52px;height:36px"><div class="ct">Draft ⇕ snap</div><div class="cm">1:00</div></div>
+              </div>
+              <div class="wk-col">
+                <div class="slot"></div><div class="slot"></div>
+                <div class="nmore" style="top:6px">+3 more ▾</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid3" style="margin-top:14px">
+        <div>
+          <div class="lbl">Create</div>
+          <p class="note">Click-empty → quick-create popover (title + verb map). Click-drag → a <span class="mono">--surface-raised</span> ghost snapping to a 15-min grid; release commits <span class="mono">calendar.create</span>.</p>
+        </div>
+        <div>
+          <div class="lbl">Move vs. resize <span class="callout">E</span></div>
+          <p class="note">Drag-<b>move</b> is native (translate ghost + snap, commit on release — WED shows the ghost + 50% faded original). Duration is a <b>stepper</b> in the inspector, <b>not</b> a native edge-drag (APU cheap-paint floor).</p>
+          <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+            <span class="msw">− 15m</span><span class="mono" style="font-size:11px;color:var(--text-primary)">1h 00m</span><span class="msw">+ 15m</span>
+          </div>
+        </div>
+        <div>
+          <div class="lbl">Append-only honesty</div>
+          <p class="note" style="margin-bottom:8px">A move never mutates — it appends <span class="mono">EventSuperseded</span>. Undo appends again, never deletes. History is honest.</p>
+          <div class="snack">Event moved. <span class="mono">rev 2 appended</span> <span class="msw">UNDO</span></div>
+        </div>
+      </div>
+
+      <div class="lbl" style="margin-top:18px">Operational overlay — deadlines project onto the surfaces they govern (not only the calendar) <span class="callout">F</span></div>
+      <div class="grid2">
+        <div class="proj">
+          <div class="proj-hdr">Trade Builder <span class="dl">Trade Deadline · 4d 12h</span></div>
+          <div class="sb" style="padding:12px"><p class="note">The deadline badge rides the builder header (and the ConfirmModal header) in <span class="mono" style="color:var(--amber-base)">--amber-base</span> — you never have to open the calendar to feel the clock.</p></div>
+        </div>
+        <div class="proj">
+          <div class="topbar">Transaction Panel · roster lock <span class="clk">00:47:12</span></div>
+          <div class="sb" style="padding:12px"><p class="note">A persistent workspace top-bar counts the roster lock down; under 1 hour it ticks <span class="mono" style="color:var(--amber-loud)">--amber-loud</span> (the C clock&lt;1hr rule).</p></div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:12px"><span class="callout">E</span>Guarded native edge-resize is a v-next revisit IF the compositor floor improves. <span class="callout">F</span>Column-share overlap splits the column with a 1px hairline (WED 1:00 = Trade ∥ Roster-lock); &gt;3 overlaps collapse to a <span class="mono">+N more</span> chip (FRI) opening a tactical dropdown.</p>
+    </div>
+  </div>
+
+  <!-- 4. COMMAND LEDGER -->
+  <div class="sec">
+    <div class="sh"><span class="n">4</span><h2>Command Ledger — Session D verbs</h2><span class="s">every control → a verb (Guix-simple)</span></div>
+    <div class="sb" style="padding:0">
+      <table class="ledger">
+        <thead><tr><th style="width:150px">Verb</th><th style="width:210px">Args</th><th>Action / notes</th></tr></thead>
+        <tbody>
+          <tr><td class="v">comms.send</td><td class="a">text, league_id</td><td class="d">Human chat input into the thread.</td></tr>
+          <tr><td class="v">cmd.execute</td><td class="a">verb, payload</td><td class="d">The /-pivot route; dispatches /offer, /history, … to the (future) engine.</td></tr>
+          <tr><td class="v">feed.ack</td><td class="a">event_id</td><td class="d">Acknowledge — recedes an escalated event out of the ALERTS tributary.</td></tr>
+          <tr><td class="v">ui.event.resolve</td><td class="a">event_id</td><td class="d">Resolve → 150ms fade to 50%; stays in /history + calendar log. No unread badge.</td></tr>
+          <tr><td class="v">txn.commit</td><td class="a">action=accept|counter|decline, target_id</td><td class="d">Trade-card verbs → Session B ConfirmModal (480px hold-to-fire).</td></tr>
+          <tr><td class="v">calendar.create</td><td class="a">start, duration, type</td><td class="d">Quick-create or drag-create ghost → appends EventCreated.</td></tr>
+          <tr><td class="v">calendar.move</td><td class="a">event_id, new_start</td><td class="d">Native drag-move → appends EventSuperseded; triggers UNDO snackbar.</td></tr>
+          <tr><td class="v">calendar.resize</td><td class="a">event_id, duration_delta</td><td class="d">Inspector stepper (no native edge-drag). Appends EventSuperseded.</td></tr>
+          <tr><td class="v">ui.calendar.view</td><td class="a">mode=week|month|agenda</td><td class="d">Switch calendar lens.</td></tr>
+          <tr><td class="v">ui.summon</td><td class="a">target=comms|calendar</td><td class="d">Quick-dash from any screen (confirms A10 / A11).</td></tr>
+          <tr><td class="v">ui.snackbar.dismiss</td><td class="a">action_id</td><td class="d">Dismiss the append-only UNDO snackbar.</td></tr>
+          <tr><td class="v">history</td><td class="a">range, filter</td><td class="d">Dumps a 100%-opacity mono log of resolved/expired events in the terminal.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="foot">TheWarRoom · Session D · one timeline, verb-triaged · terminal-log comms · buildable append-only calendar · binds on A+B+C · branch session/ui-session-a-grid</div>
+
+</div>
+</body>
+</html>
