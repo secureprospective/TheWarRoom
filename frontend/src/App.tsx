@@ -4,12 +4,21 @@ import { RookieTable } from './components/RookieTable';
 import { ValidationBoard } from './components/ValidationBoard';
 import { AdminPanel } from './components/AdminPanel';
 import { RankingsBoard } from './components/RankingsBoard';
+import { PowerRankingsBoard } from './components/PowerRankingsBoard';
 import { TransactionsPanel } from './components/TransactionsPanel';
 import { TransactionWorkspace } from './components/transactions/TransactionWorkspace';
 import { TradeBuilder } from './components/transactions/TradeBuilder';
 import { LeagueControls } from './components/transactions/LeagueControls';
 
-type Tab = 'rankings' | 'rookies' | 'validation' | 'workspace' | 'trade' | 'league' | 'transactions';
+type Tab =
+  | 'rankings'
+  | 'power'
+  | 'rookies'
+  | 'validation'
+  | 'workspace'
+  | 'trade'
+  | 'league'
+  | 'transactions';
 
 // D8 phased shell cutover: the real M4 operator UI ("Transactions" workspace + "League Controls")
 // ships alongside the OLD raw-mflID dev panel, which stays reachable behind this flag until all 14
@@ -53,6 +62,9 @@ function App() {
             <TabButton active={tab === 'rankings'} onClick={() => setTab('rankings')}>
               M1: Asset Rankings
             </TabButton>
+            <TabButton active={tab === 'power'} onClick={() => setTab('power')}>
+              M2: Power Rankings
+            </TabButton>
             <TabButton active={tab === 'rookies'} onClick={() => setTab('rookies')}>
               Sandbox: Rookie Rankings
             </TabButton>
@@ -81,6 +93,8 @@ function App() {
             <LeagueControls />
           ) : tab === 'rankings' ? (
             <RankingsBoard />
+          ) : tab === 'power' ? (
+            <PowerRankingsBoard />
           ) : tab === 'rookies' ? (
             <RookieTable />
           ) : tab === 'validation' ? (

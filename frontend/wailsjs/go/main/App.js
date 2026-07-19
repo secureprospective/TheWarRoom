@@ -34,6 +34,10 @@ export function GetParams() {
   return window['go']['main']['App']['GetParams']();
 }
 
+export function GetPowerRankings(arg1, arg2) {
+  return window['go']['main']['App']['GetPowerRankings'](arg1, arg2);
+}
+
 export function GetRankings() {
   return window['go']['main']['App']['GetRankings']();
 }

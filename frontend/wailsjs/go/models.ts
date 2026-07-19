@@ -472,6 +472,99 @@ export namespace main {
 	        this.detail = source["detail"];
 	    }
 	}
+	export class PowerRow {
+	    rank: number;
+	    franchiseID: string;
+	    name: string;
+	    powerScore: number;
+	    scoutingZ: number;
+	    mflPerfZ: number;
+	    scoutingScore: number;
+	    allPlayWinPct: number;
+	    h2hW: number;
+	    h2hL: number;
+	    h2hT: number;
+	    allPlayW: number;
+	    allPlayL: number;
+	    allPlayT: number;
+	    pf: number;
+	    pa: number;
+	    pp: number;
+	    pwr: number;
+	    altPwr: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PowerRow(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.rank = source["rank"];
+	        this.franchiseID = source["franchiseID"];
+	        this.name = source["name"];
+	        this.powerScore = source["powerScore"];
+	        this.scoutingZ = source["scoutingZ"];
+	        this.mflPerfZ = source["mflPerfZ"];
+	        this.scoutingScore = source["scoutingScore"];
+	        this.allPlayWinPct = source["allPlayWinPct"];
+	        this.h2hW = source["h2hW"];
+	        this.h2hL = source["h2hL"];
+	        this.h2hT = source["h2hT"];
+	        this.allPlayW = source["allPlayW"];
+	        this.allPlayL = source["allPlayL"];
+	        this.allPlayT = source["allPlayT"];
+	        this.pf = source["pf"];
+	        this.pa = source["pa"];
+	        this.pp = source["pp"];
+	        this.pwr = source["pwr"];
+	        this.altPwr = source["altPwr"];
+	    }
+	}
+	export class PowerRankingsResult {
+	    ok: boolean;
+	    error: string;
+	    label: string;
+	    season: number;
+	    weight: number;
+	    aggMode: string;
+	    starterN: number;
+	    rows: PowerRow[];
+	
+	    static createFrom(source: any = {}) {
+	        return new PowerRankingsResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.error = source["error"];
+	        this.label = source["label"];
+	        this.season = source["season"];
+	        this.weight = source["weight"];
+	        this.aggMode = source["aggMode"];
+	        this.starterN = source["starterN"];
+	        this.rows = this.convertValues(source["rows"], PowerRow);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	export class RankRow {
 	    rank: number;
 	    mflID: string;

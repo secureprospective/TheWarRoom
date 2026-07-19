@@ -18,6 +18,8 @@ export function GetLegalOps():Promise<main.LegalOpsResult>;
 
 export function GetParams():Promise<main.ParamsResult>;
 
+export function GetPowerRankings(arg1:number,arg2:string):Promise<main.PowerRankingsResult>;
+
 export function GetRankings():Promise<main.RankingsResult>;
 
 export function GetRoster(arg1:string):Promise<main.RosterResult>;
