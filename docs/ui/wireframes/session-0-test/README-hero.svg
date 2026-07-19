@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 640" font-family="Segoe UI, Inter, system-ui, sans-serif">
+  <style>
+    .lbl{font-size:11px;font-weight:600;letter-spacing:1px;fill:#9aa0a8}
+    .dim{fill:#5f6570}.t2{fill:#9aa0a8}.t1{fill:#e8eaed}
+    .th{font-size:10px;font-weight:600;letter-spacing:1px;fill:#5f6570}
+    .td{font-size:12px;fill:#9aa0a8}.num{font-family:Consolas,monospace}
+    .name{font-size:12px;fill:#e8eaed}
+    .adj{font-size:12px;font-weight:700;fill:#e8eaed}
+    .panel{fill:#16181c;stroke:#2a2e35;stroke-width:1}
+    .line{stroke:#2a2e35;stroke-width:1}
+    .sq{fill:none;stroke:#3a3f48;stroke-width:1}
+  </style>
+
+  <rect width="1440" height="640" fill="#101114"/>
+
+  <!-- ══ NAV RAIL ══ -->
+  <rect x="24" y="24" width="176" height="560" class="panel"/>
+  <text x="36" y="52" class="t1" font-size="12" font-weight="600">LEGACY NFL</text>
+  <text x="36" y="68" class="dim" font-size="10">32-team dynasty · IDP</text>
+  <line x1="24" y1="80" x2="200" y2="80" class="line"/>
+  <g font-size="12" font-weight="500">
+    <rect x="30" y="92" width="12" height="12" class="sq"/><text x="52" y="102" class="dim">Home</text>
+    <rect x="25" y="118" width="175" height="30" fill="#1b1e23"/><rect x="25" y="118" width="2" height="30" fill="#c8cdd4"/>
+    <rect x="30" y="127" width="12" height="12" class="sq"/><text x="52" y="137" class="t1">War Room</text>
+    <rect x="30" y="162" width="12" height="12" class="sq"/><text x="52" y="172" class="dim">Franchise HQ</text>
+    <rect x="30" y="197" width="12" height="12" class="sq"/><text x="52" y="207" class="dim">Trade Floor</text>
+    <rect x="30" y="232" width="12" height="12" class="sq"/><text x="52" y="242" class="dim">League Pulse</text>
+    <rect x="30" y="267" width="12" height="12" class="sq"/><text x="52" y="277" class="dim">Control Room</text>
+  </g>
+  <line x1="24" y1="296" x2="200" y2="296" class="line"/>
+  <text x="36" y="318" class="dim" font-size="11">⌘K quick-dash</text>
+
+  <!-- ══ CONTROL BAND ══ -->
+  <rect x="224" y="24" width="928" height="40" class="panel"/>
+  <g font-size="11" font-weight="600" letter-spacing="1">
+    <text x="240" y="49" class="t1">ALL</text><rect x="240" y="55" width="22" height="2" fill="#c8cdd4"/>
+    <text x="286" y="49" class="dim">QB</text><text x="326" y="49" class="dim">RB</text>
+    <text x="366" y="49" class="dim">WR</text><text x="410" y="49" class="dim">TE</text><text x="452" y="49" class="dim">DEF</text>
+  </g>
+  <g font-size="11">
+    <rect x="924" y="34" width="52" height="21" fill="none" stroke="#3a3f48"/><text x="934" y="49" class="t1">Global</text>
+    <text x="992" y="49" class="dim">By franchise</text><text x="1072" y="49" class="dim">Cap efficiency</text>
+  </g>
+
+  <!-- ══ M1 BOARD ══ -->
+  <rect x="224" y="76" width="928" height="508" class="panel"/>
+  <text x="240" y="101" class="t1" font-size="13" font-weight="600" letter-spacing="0.5">M1 // ASSET RANKINGS</text>
+  <text x="1136" y="101" text-anchor="end" class="dim" font-size="11">412 assets · as of 09:41</text>
+  <line x1="224" y1="116" x2="1152" y2="116" class="line"/>
+  <!-- header row -->
+  <g class="th">
+    <text x="268" y="136" text-anchor="end">RK</text><text x="288" y="136">PLAYER</text>
+    <text x="560" y="136">POS</text><text x="640" y="136">FRN</text>
+    <text x="810" y="136" text-anchor="end">BASE</text><text x="960" y="136" text-anchor="end">ADJ SCORE</text>
+    <text x="1120" y="136" text-anchor="end">SALARY</text>
+  </g>
+  <line x1="224" y1="144" x2="1152" y2="144" class="line"/>
+  <!-- rows: y = 144 + n*32 -->
+  <g>
+    <g class="td num" font-size="12">
+      <text x="268" y="166" text-anchor="end">1</text><text x="268" y="198" text-anchor="end">2</text>
+      <text x="268" y="230" text-anchor="end">3</text><text x="268" y="262" text-anchor="end">4</text>
+      <text x="268" y="294" text-anchor="end">5</text><text x="268" y="326" text-anchor="end">6</text>
+      <text x="268" y="358" text-anchor="end">7</text><text x="268" y="390" text-anchor="end">8</text>
+      <text x="268" y="422" text-anchor="end">9</text><text x="268" y="454" text-anchor="end">10</text>
+      <text x="268" y="486" text-anchor="end">11</text><text x="268" y="518" text-anchor="end">12</text>
+    </g>
+    <!-- selected row 2 -->
+    <rect x="225" y="176" width="926" height="30" fill="#1b1e23"/>
+    <rect x="225" y="176" width="2" height="30" fill="#c8cdd4"/>
+    <g class="name">
+      <text x="288" y="166">Justin Jefferson</text><text x="288" y="198">Ja'Marr Chase</text>
+      <text x="288" y="230">Bijan Robinson</text><text x="288" y="262">Micah Parsons</text>
+      <text x="288" y="294">CeeDee Lamb</text><text x="288" y="326">Jahmyr Gibbs</text>
+      <text x="288" y="358">Malik Nabers</text><text x="288" y="390">Brock Bowers</text>
+      <text x="288" y="422">Josh Allen</text><text x="288" y="454">Nik Bonitto</text>
+      <text x="288" y="486">Puka Nacua</text><text x="288" y="518">Sauce Gardner</text>
+    </g>
+    <g font-size="11" fill="#5f6570">
+      <text x="560" y="166">WR</text><text x="640" y="166">MIN</text>
+      <text x="560" y="198">WR</text><text x="640" y="198">CIN</text>
+      <text x="560" y="230">RB</text><text x="640" y="230">ATL</text>
+      <text x="560" y="262">LB</text><text x="640" y="262">DAL</text>
+      <text x="560" y="294">WR</text><text x="640" y="294">DAL</text>
+      <text x="560" y="326">RB</text><text x="640" y="326">DET</text>
+      <text x="560" y="358">WR</text><text x="640" y="358">NYG</text>
+      <text x="560" y="390">TE</text><text x="640" y="390">LV</text>
+      <text x="560" y="422">QB</text><text x="640" y="422">BUF</text>
+      <text x="560" y="454">DE</text><text x="640" y="454">DEN</text>
+      <text x="560" y="486">WR</text><text x="640" y="486">LAR</text>
+      <text x="560" y="518">CB</text><text x="640" y="518">NYJ</text>
+    </g>
+    <g class="td num" text-anchor="end">
+      <text x="810" y="166">318.4</text><text x="810" y="198">311.0</text><text x="810" y="230">287.6</text>
+      <text x="810" y="262">276.9</text><text x="810" y="294">280.2</text><text x="810" y="326">262.8</text>
+      <text x="810" y="358">255.1</text><text x="810" y="390">243.5</text><text x="810" y="422">340.7</text>
+      <text x="810" y="454">231.2</text><text x="810" y="486">238.9</text><text x="810" y="518">201.4</text>
+    </g>
+    <g class="adj num" text-anchor="end">
+      <text x="960" y="166">96.2</text><text x="960" y="198">95.7</text><text x="960" y="230">93.4</text>
+      <text x="960" y="262">91.8</text><text x="960" y="294">90.6</text><text x="960" y="326">89.9</text>
+      <text x="960" y="358">88.7</text><text x="960" y="390">87.3</text><text x="960" y="422">86.8</text>
+      <text x="960" y="454">85.1</text><text x="960" y="486">84.6</text><text x="960" y="518">83.0</text>
+    </g>
+    <g class="num" font-size="12" fill="#5f6570" text-anchor="end">
+      <text x="1120" y="166">$14.2M</text><text x="1120" y="198">$13.8M</text><text x="1120" y="230">$11.5M</text>
+      <text x="1120" y="262">$9.9M</text><text x="1120" y="294">$12.7M</text><text x="1120" y="326">$8.4M</text>
+      <text x="1120" y="358">$6.1M</text><text x="1120" y="390">$5.9M</text><text x="1120" y="422">$15.0M</text>
+      <text x="1120" y="454">$4.2M</text><text x="1120" y="486">$7.7M</text><text x="1120" y="518">$6.8M</text>
+    </g>
+  </g>
+
+  <!-- ══ INSPECTOR ══ -->
+  <rect x="1176" y="24" width="188" height="560" class="panel"/>
+  <text x="1188" y="47" class="lbl">INSPECTOR</text>
+  <text x="1352" y="47" text-anchor="end" class="dim" font-size="10">pinned</text>
+  <line x1="1176" y1="56" x2="1364" y2="56" class="line"/>
+  <text x="1188" y="82" class="t1" font-size="14" font-weight="600">Ja'Marr Chase</text>
+  <text x="1188" y="98" class="dim" font-size="11">WR · CIN · age 26</text>
+  <text x="1188" y="134" class="t1 num" font-size="28" font-weight="700">95.7</text>
+  <text x="1188" y="158" class="dim" font-size="10">L4 SCOUTING</text>
+  <rect x="1188" y="164" width="164" height="6" fill="#1b1e23"/><rect x="1188" y="164" width="144" height="6" fill="#5f6570"/>
+  <text x="1188" y="188" class="dim" font-size="10">L3 AGE CURVE</text>
+  <rect x="1188" y="194" width="164" height="6" fill="#1b1e23"/><rect x="1188" y="194" width="121" height="6" fill="#5f6570"/>
+  <text x="1188" y="218" class="dim" font-size="10">CONTRACT EFF.</text>
+  <rect x="1188" y="224" width="164" height="6" fill="#1b1e23"/><rect x="1188" y="224" width="100" height="6" fill="#5f6570"/>
+  <line x1="1176" y1="248" x2="1364" y2="248" class="line"/>
+  <g font-size="11">
+    <text x="1188" y="272" class="dim">Salary</text><text x="1352" y="272" text-anchor="end" class="t2 num">$13.8M / yr</text>
+    <text x="1188" y="292" class="dim">Term</text><text x="1352" y="292" text-anchor="end" class="t2">2026–2029 + UFA</text>
+    <text x="1188" y="312" class="dim">Tier</text><text x="1352" y="312" text-anchor="end" class="t2">Hot</text>
+    <text x="1188" y="332" class="dim">Dead cap if cut</text><text x="1352" y="332" text-anchor="end" class="t2">$4.1M</text>
+  </g>
+  <line x1="1176" y1="352" x2="1364" y2="352" class="line"/>
+  <text x="1188" y="376" class="dim" font-size="11">GM note</text>
+  <text x="1352" y="376" text-anchor="end" class="t2" font-size="11">★★★★☆</text>
+  <text x="1188" y="394" class="dim" font-size="10">"Untouchable unless 2 firsts + …"</text>
+
+  <!-- ══ QUICK-DASH STRIP ══ -->
+  <rect x="1388" y="24" width="28" height="560" class="panel"/>
+  <rect x="1394" y="40" width="16" height="16" class="sq"/>
+  <circle cx="1412" cy="40" r="7" fill="#e8eaed"/><text x="1412" y="43" text-anchor="middle" font-size="9" font-weight="700" fill="#000">3</text>
+  <rect x="1394" y="72" width="16" height="16" class="sq"/>
+  <rect x="1394" y="552" width="16" height="16" class="sq"/>
+
+  <!-- caption -->
+  <text x="24" y="616" class="dim" font-size="10" letter-spacing="1">SESSION 0 · WIREFRAME ROUGH DRAFT · GREYSCALE BY DISCIPLINE — ATMOSPHERE IS A LATER SESSION'S JOB · THE TABLE IS THE INSTRUMENT, EVERYTHING ELSE IS BEZEL</text>
+</svg>

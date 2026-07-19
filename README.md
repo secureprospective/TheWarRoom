@@ -8,7 +8,7 @@
 
 <br/>
 
-[![Road to Alpha](https://img.shields.io/badge/🚨%20ROAD%20TO%20ALPHA-mapped%20·%20pipeline%20proven%20·%20league%20testing%20ahead-crimson?style=for-the-badge)](#-the-command-console--the-road-to-alpha)
+[![Road to Alpha](https://img.shields.io/badge/ROAD_TO_ALPHA-MAPPED_·_PIPELINE_PROVEN_·_LEAGUE_TESTING_AHEAD-DC143C?style=for-the-badge&labelColor=0d1117)](#-the-command-console--the-road-to-alpha)
 
 [![Powered by Go](https://img.shields.io/badge/Powered%20by-Go%201.26-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Multi-Block Architecture](https://img.shields.io/badge/Architecture-Multi--Block%20·%20Compiler%20Enforced-4B5563)](#-4--the-war-room-architecture)
@@ -26,6 +26,19 @@
 *32 teams. Six scoring layers. Ten position models. Twenty-one scouting sources. **One number per player.***
 
 </div>
+
+```
+ ┌──────────────────────────────────────────────────────────────────────────────┐
+ │  THEWARROOM // SYSTEM READOUT                                                │
+ │                                                                              │
+ │  ENGINE ......... ONLINE     6 layers · 10 position models · pure & fail-loud│
+ │  PIPELINE ....... LIVE       1,217 players · 32 franchises · zero loss       │
+ │  LEDGER ......... EXACT      int64 cents · append-only · $0.00 drift, ever   │
+ │  RULEBOOK ....... ARMED      §6–§14 phase-gated · atomic · quote-then-commit │
+ │  CONSOLE ........ BUILDING   design engine live · Session 0 gate PASSED      │
+ │  ALPHA .......... MAPPED     stamped builds → real league hands              │
+ └──────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -162,13 +175,21 @@ A disciplined, session-by-session build — every session sized to a single cont
 > The engine is done. The rulebook is done. The moves execute atomically against a ledger that's exact to the penny.
 > **Now it gets a cockpit worthy of it — and then it leaves the building.**
 
+<div align="center">
+
+[![Design Bar](https://img.shields.io/badge/DESIGN_BAR-ANDURIL,_NOT_SAAS-0d1117?style=for-the-badge&labelColor=1b1e23)](docs/ui/Wireframe_Session_Plan.md)
+[![Speed Law](https://img.shields.io/badge/SPEED_LAW-%3C100ms_OR_IT_DOESN'T_SHIP-0d1117?style=for-the-badge&labelColor=1b1e23)](docs/ui/Wireframe_Session_Plan.md)
+[![Command Layer](https://img.shields.io/badge/DEEP_TRUTH-EVERY_BUTTON_IS_A_COMMAND-0d1117?style=for-the-badge&labelColor=1b1e23)](docs/ui/Wireframe_Session_Plan.md)
+
+</div>
+
 The next front is the one you can *see*: transforming the operator workspace into a true **command console**. The bar is Anduril, not SaaS — dark, precise, data-dense without a pixel of waste. Confident hierarchy. Controls that look like they actuate real hardware, because here they *do*: every button is wired to an engine that moves real cap dollars atomically. The UI should communicate capability before you click anything.
 
 ### How it's being designed — an AI design engine, on a leash
 
 Wireframes don't come from a template here. A creative design engine (**GLM-5.2**) is fired with divergent provocations — *instrument cluster* vs *density gradient*, *tactical amber* vs *naval CIC* — the head brain (**Claude**) triages the directions against the locked architecture, renders the survivors as wireframes, and the commissioner judges **vision only**. Session 0 just proved the whole loop live: brief → design direction in **40 seconds** → triaged draft on screen. The machine proposes fast; the human decides once.
 
-![Session 0 wireframe — shell + M1 Asset Rankings](docs/ui/wireframes/session-0-test/README-hero.png)
+![Session 0 wireframe — shell + M1 Asset Rankings](docs/ui/wireframes/session-0-test/README-hero.svg)
 
 *Session 0, first light: the four-column shell, the M1 board as the instrument — "the table is the instrument, everything else is bezel" (GLM's words, adopted on the spot) — earned-elevation rules, and the quick-dash strip: comms and calendar summonable from any screen, zero footprint when idle. Greyscale by discipline; atmosphere is a later session's job, and it's going to hit.*
 
