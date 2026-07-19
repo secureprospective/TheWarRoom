@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TheWarRoom — Session A Wireframe: Grid &amp; Spatial System</title>
+<style>
+  :root{
+    --g950:#0a0a0b; --g925:#0f0f11; --g900:#141417; --g850:#1b1b1f;
+    --g800:#26262b; --g700:#3a3a41; --g600:#55555e; --g500:#83838d;
+    --g400:#a6a6ae; --g200:#d6d6db; --g50:#f4f4f6;
+    --hair:#26262b; --lift:#141417;
+    --base:4px;
+    --nav-w:192px; --insp-w:320px; --comms-w:48px;
+    --hdr-h:32px; --filt-h:36px; --row-h:32px;
+    --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:#050506;color:var(--g200);font-family:var(--sans);font-size:13px;-webkit-font-smoothing:antialiased}
+  .page{max-width:1560px;margin:0 auto;padding:24px}
+  h1,h2,h3{margin:0;font-weight:600}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .up{text-transform:uppercase;letter-spacing:.09em}
+
+  /* ---- header strip ---- */
+  .strip{border:1px solid var(--hair);background:var(--g900);padding:14px 18px;margin-bottom:20px}
+  .strip h1{font-size:16px;color:var(--g50);letter-spacing:.04em}
+  .strip .meta{margin-top:6px;color:var(--g500);font-size:11px;display:flex;gap:18px;flex-wrap:wrap}
+  .strip .meta b{color:var(--g400);font-weight:500}
+
+  /* ---- the console shell ---- */
+  .console-wrap{position:relative;border:1px solid var(--hair);background:var(--g950);height:720px;overflow:hidden}
+  .console{display:grid;grid-template-columns:var(--nav-w) 1fr var(--insp-w) var(--comms-w);height:100%}
+
+  /* nav rail */
+  .nav{background:var(--g925);border-right:1px solid var(--hair);display:flex;flex-direction:column}
+  .portfolio{height:160px;border-bottom:1px solid var(--hair);padding:10px;position:relative}
+  .portfolio .lbl{font-size:9px;color:var(--g600);margin-bottom:9px}
+  .p-crest{display:flex;align-items:center;gap:8px;padding:7px;border:1px solid var(--g700);background:var(--g900);margin-bottom:8px}
+  .p-crest .dot{width:22px;height:22px;border:1px solid var(--g600);background:var(--g850);flex:0 0 auto}
+  .p-crest .nm{font-size:11px;color:var(--g200)}
+  .p-crest .nm small{display:block;color:var(--g500);font-size:9px}
+  .micro{display:flex;gap:5px;flex-wrap:wrap}
+  .micro .m{width:20px;height:20px;border:1px solid var(--g700);background:var(--g850)}
+  .micro .m.on{border-color:var(--g400);background:var(--g800)}
+  .modules{padding:8px 0;flex:1}
+  .modules .ml{font-size:9px;color:var(--g600);padding:2px 12px 8px}
+  .mod{display:flex;align-items:center;gap:9px;height:34px;padding:0 12px;color:var(--g400);cursor:default;border-left:2px solid transparent}
+  .mod .ic{width:14px;height:14px;border:1px solid var(--g600)}
+  .mod.active{color:var(--g50);background:var(--lift);border-left:2px solid var(--g200)}
+  .mod.active .ic{border-color:var(--g200);background:var(--g700)}
+
+  /* workspace */
+  .ws{display:flex;flex-direction:column;min-width:0;position:relative;background:var(--g950)}
+  .ws-hdr{height:var(--hdr-h);display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:var(--g900);border-bottom:1px solid var(--hair)}
+  .ws-hdr .t{font-size:11px;color:var(--g50);font-weight:600}
+  .seg{display:flex;border:1px solid var(--g700)}
+  .seg button{font:inherit;font-size:10px;letter-spacing:.05em;background:var(--g850);color:var(--g500);border:0;border-right:1px solid var(--g700);padding:3px 9px;cursor:default}
+  .seg button:last-child{border-right:0}
+  .seg button.on{background:var(--g700);color:var(--g50)}
+  .cal-seam{display:flex;align-items:center;gap:6px;height:20px;padding:0 8px;border:1px solid var(--g700);background:var(--g850);color:var(--g500);font-size:10px}
+  .cal-seam .sq{width:11px;height:11px;border:1px solid var(--g600)}
+
+  .ws-filt{height:var(--filt-h);display:flex;align-items:center;gap:6px;padding:0 12px;background:var(--g925);border-bottom:1px solid var(--hair);position:sticky;top:0}
+  .chip{font-size:10px;padding:3px 8px;border:1px solid var(--g700);background:var(--g850);color:var(--g500)}
+  .chip.on{border-color:var(--g400);background:var(--g800);color:var(--g50)}
+  .filt-spacer{flex:1}
+  .filt-note{font-size:9px;color:var(--g600)}
+
+  /* M1 table */
+  .tbl{flex:1;overflow:auto}
+  .trow{display:grid;grid-template-columns:34px 1fr 42px 148px 64px 92px 78px;align-items:center;height:var(--row-h);border-bottom:1px solid var(--g850);padding:0 12px;border-left:2px solid transparent}
+  .trow.head{position:sticky;top:0;height:26px;background:var(--g900);border-bottom:1px solid var(--hair);color:var(--g600);font-size:9px;letter-spacing:.06em}
+  .trow.head .r{cursor:default}
+  .trow .r{text-align:right}
+  .trow .rank{color:var(--g600);font-size:11px}
+  .trow .plyr{color:var(--g50);font-weight:500}
+  .trow .pos{color:var(--g500)}
+  .trow .fr{color:var(--g500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .trow .base{color:var(--g400)}
+  /* dominant data point */
+  .trow .adj{color:var(--g50);font-weight:600;font-size:14px}
+  .trow .sal{color:var(--g500)}
+  .trow:hover{background:var(--g900)}
+  .trow.sel{background:var(--lift);border-left:2px solid var(--g200)}
+  .trow.sel .plyr{color:#fff}
+
+  /* inspector */
+  .insp{background:var(--g925);border-left:1px solid var(--hair);display:flex;flex-direction:column;overflow:auto}
+  .insp-hdr{height:var(--hdr-h);display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:var(--g900);border-bottom:1px solid var(--hair)}
+  .insp-hdr .t{font-size:10px;color:var(--g500)}
+  .insp-hdr .x{width:14px;height:14px;border:1px solid var(--g600);color:var(--g500);font-size:10px;text-align:center;line-height:12px}
+  .insp-body{padding:14px 12px;display:flex;flex-direction:column;gap:16px}
+  .score-hero{border:1px solid var(--g700);background:var(--g900);padding:12px}
+  .score-hero .nm{color:var(--g50);font-size:14px;font-weight:600}
+  .score-hero .sub{color:var(--g500);font-size:10px;margin-top:2px}
+  .score-hero .big{color:#fff;font-size:34px;font-weight:700;line-height:1;margin-top:10px;font-variant-numeric:tabular-nums}
+  .score-hero .big small{font-size:11px;color:var(--g500);font-weight:500;letter-spacing:.05em}
+  .sec-l{font-size:9px;color:var(--g600);margin-bottom:8px}
+  .bar{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .bar .k{width:66px;font-size:10px;color:var(--g500)}
+  .bar .track{flex:1;height:8px;background:var(--g850);border:1px solid var(--g800)}
+  .bar .fill{height:100%;background:var(--g600)}
+  .bar .v{width:30px;text-align:right;font-size:10px;color:var(--g400)}
+  .kv{display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid var(--g850)}
+  .kv .k{color:var(--g500)}.kv .v{color:var(--g200)}
+  .notes{font-size:11px;color:var(--g500);line-height:1.5;border:1px dashed var(--g700);padding:8px}
+
+  /* comms strip */
+  .comms{background:var(--g900);border-left:1px solid var(--hair);display:flex;flex-direction:column;align-items:center;padding-top:12px;gap:14px}
+  .comms .vlabel{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;letter-spacing:.14em;color:var(--g500)}
+  .comms .badge{width:22px;height:22px;border:1px solid var(--g600);color:var(--g400);font-size:10px;text-align:center;line-height:20px}
+  .comms .badge.alert{border-color:var(--g400);color:var(--g50)}
+
+  /* summoned-overlay ghosts */
+  .ghost{position:absolute;border:1px dashed var(--g600);background:rgba(20,20,23,.72);color:var(--g400);font-size:10px;padding:8px 10px;z-index:5}
+  .ghost .gt{color:var(--g200);font-size:11px;font-weight:600;margin-bottom:3px}
+  .ghost.comms{top:0;right:var(--comms-w);width:272px;height:100%;display:flex;flex-direction:column}
+  .ghost.cal{top:var(--hdr-h);right:var(--comms-w);width:360px;height:300px}
+  .ghost .arrow{color:var(--g500);font-size:9px;margin-top:auto}
+
+  /* numbered callouts */
+  .co{position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;color:#000;font-size:10px;font-weight:700;text-align:center;line-height:18px;z-index:20;box-shadow:0 0 0 2px #000}
+
+  /* lower sheet */
+  .sheet{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .card{border:1px solid var(--hair);background:var(--g900);padding:16px 18px}
+  .card.full{grid-column:1 / -1}
+  .card h2{font-size:11px;color:var(--g400);letter-spacing:.08em;margin-bottom:12px}
+  .co-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+  .co-list li{display:flex;gap:10px;font-size:12px;color:var(--g400);line-height:1.45}
+  .co-list .n{flex:0 0 18px;height:18px;border-radius:50%;background:#fff;color:#000;font-size:10px;font-weight:700;text-align:center;line-height:18px}
+  .tri{display:grid;gap:9px}
+  .tri .row{font-size:12px;line-height:1.45}
+  .tri .tag{display:inline-block;font-size:9px;letter-spacing:.06em;padding:1px 6px;border:1px solid var(--g700);color:var(--g400);margin-right:8px;vertical-align:middle}
+  .tri .tag.ad{border-color:var(--g500);color:var(--g200)}
+  .tri .tag.adp{border-color:var(--g600);color:var(--g400)}
+  .tri .tag.rj{border-color:var(--g700);color:var(--g500)}
+  .lg-tbl{width:100%;border-collapse:collapse;font-size:11px}
+  .lg-tbl th,.lg-tbl td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--g850);vertical-align:top}
+  .lg-tbl th{color:var(--g600);font-size:9px;letter-spacing:.05em}
+  .lg-tbl td.v{font-family:var(--mono);color:var(--g400)}
+  .lg-tbl td .ctl{color:var(--g200)}
+  .rc{border:1px solid var(--g700);background:var(--g925);padding:12px 14px;font-size:12px;color:var(--g400);line-height:1.5}
+  .legend{font-size:10px;color:var(--g600);margin-top:10px;line-height:1.6}
+  .legend b{color:var(--g400);font-weight:500}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 1. HEADER STRIP -->
+  <div class="strip">
+    <h1>SESSION A — GRID &amp; SPATIAL SYSTEM</h1>
+    <div class="meta">
+      <span><b>TheWarRoom</b> UI Wireframe · rough draft</span>
+      <span>Date <b>2026-07-19</b></span>
+      <span>GLM runs consumed <b>3</b> (2 divergent: instrument-cluster + density-gradient · 1 synthesis)</span>
+      <span>Direction doc <b>UI_Direction_Document.md (June 2026, locked IA)</b></span>
+      <span>Density <b>Tactical (default)</b> · greyscale (color = Session C)</span>
+    </div>
+  </div>
+
+  <!-- 3. THE WIREFRAME PROPER -->
+  <div class="console-wrap">
+    <!-- callouts -->
+    <div class="co" style="left:2px;top:2px">1</div>
+    <div class="co" style="left:2px;top:150px">2</div>
+    <div class="co" style="left:200px;top:2px">3</div>
+    <div class="co" style="left:200px;top:34px">4</div>
+    <div class="co" style="left:640px;top:96px">5</div>
+    <div class="co" style="right:344px;top:2px">6</div>
+    <div class="co" style="right:2px;top:2px">7</div>
+    <div class="co" style="right:60px;top:36px">8</div>
+
+    <div class="console">
+      <!-- NAV RAIL -->
+      <nav class="nav">
+        <div class="portfolio">
+          <div class="lbl up">Portfolio Sector</div>
+          <div class="p-crest">
+            <div class="dot"></div>
+            <div class="nm">Legacy NFL <small>32-team dynasty · active</small></div>
+          </div>
+          <div class="micro">
+            <div class="m on"></div><div class="m"></div><div class="m"></div>
+            <div class="m"></div><div class="m"></div><div class="m"></div>
+          </div>
+        </div>
+        <div class="modules">
+          <div class="ml up">Module Sector</div>
+          <div class="mod"><span class="ic"></span>Home</div>
+          <div class="mod active"><span class="ic"></span>War Room · Assets</div>
+          <div class="mod"><span class="ic"></span>League Pulse</div>
+          <div class="mod"><span class="ic"></span>Transactions</div>
+          <div class="mod"><span class="ic"></span>Trade</div>
+          <div class="mod"><span class="ic"></span>Control Room</div>
+        </div>
+      </nav>
+
+      <!-- WORKSPACE : M1 ASSET RANKINGS -->
+      <section class="ws">
+        <div class="ws-hdr">
+          <span class="t up">Asset Rankings</span>
+          <div class="seg">
+            <button class="on">GLOBAL</button>
+            <button>BY FRANCHISE</button>
+            <button>CAP EFFICIENCY</button>
+          </div>
+          <div class="cal-seam"><span class="sq"></span>JUL · W29</div>
+        </div>
+        <div class="ws-filt">
+          <span class="chip on">ALL</span>
+          <span class="chip">QB</span><span class="chip">RB</span><span class="chip">WR</span>
+          <span class="chip">TE</span><span class="chip">DL</span><span class="chip">LB</span>
+          <span class="chip">DB</span><span class="chip">K</span>
+          <span class="filt-spacer"></span>
+          <span class="filt-note">432 rostered · sorted Adjusted ↓</span>
+        </div>
+        <div class="tbl">
+          <div class="trow head">
+            <span class="rank">#</span><span>PLAYER</span><span>POS</span><span>FRANCHISE</span>
+            <span class="r">BASE</span><span class="r">ADJ SCORE</span><span class="r">SALARY</span>
+          </div>
+          <!-- rows -->
+          <div class="trow"><span class="rank mono">1</span><span class="plyr">Jayden Daniels</span><span class="pos">QB</span><span class="fr">Bayou Blitz</span><span class="r base mono">94.1</span><span class="r adj mono">98.6</span><span class="r sal mono">$41.0</span></div>
+          <div class="trow"><span class="rank mono">2</span><span class="plyr">Malik Nabers</span><span class="pos">WR</span><span class="fr">Steel Curtain</span><span class="r base mono">92.7</span><span class="r adj mono">97.2</span><span class="r sal mono">$33.5</span></div>
+          <div class="trow sel"><span class="rank mono">3</span><span class="plyr">Marvin Harrison Jr.</span><span class="pos">WR</span><span class="fr">Gridiron Kings</span><span class="r base mono">91.4</span><span class="r adj mono">96.0</span><span class="r sal mono">$29.2</span></div>
+          <div class="trow"><span class="rank mono">4</span><span class="plyr">Brock Bowers</span><span class="pos">TE</span><span class="fr">Motor City Maulers</span><span class="r base mono">89.9</span><span class="r adj mono">95.1</span><span class="r sal mono">$22.8</span></div>
+          <div class="trow"><span class="rank mono">5</span><span class="plyr">Bijan Robinson</span><span class="pos">RB</span><span class="fr">Queen City Reign</span><span class="r base mono">90.6</span><span class="r adj mono">94.3</span><span class="r sal mono">$36.1</span></div>
+          <div class="trow"><span class="rank mono">6</span><span class="plyr">Caleb Williams</span><span class="pos">QB</span><span class="fr">Windy City Vice</span><span class="r base mono">88.2</span><span class="r adj mono">93.7</span><span class="r sal mono">$27.9</span></div>
+          <div class="trow"><span class="rank mono">7</span><span class="plyr">Jahmyr Gibbs</span><span class="pos">RB</span><span class="fr">Motor City Maulers</span><span class="r base mono">89.1</span><span class="r adj mono">92.8</span><span class="r sal mono">$31.4</span></div>
+          <div class="trow"><span class="rank mono">8</span><span class="plyr">Rome Odunze</span><span class="pos">WR</span><span class="fr">Emerald Empire</span><span class="r base mono">86.5</span><span class="r adj mono">91.9</span><span class="r sal mono">$18.7</span></div>
+          <div class="trow"><span class="rank mono">9</span><span class="plyr">Drake Maye</span><span class="pos">QB</span><span class="fr">Bay State Bolts</span><span class="r base mono">85.8</span><span class="r adj mono">91.0</span><span class="r sal mono">$19.3</span></div>
+          <div class="trow"><span class="rank mono">10</span><span class="plyr">Brian Thomas Jr.</span><span class="pos">WR</span><span class="fr">Riverboat Gamblers</span><span class="r base mono">86.0</span><span class="r adj mono">90.4</span><span class="r sal mono">$21.0</span></div>
+          <div class="trow"><span class="rank mono">11</span><span class="plyr">Nico Collins</span><span class="pos">WR</span><span class="fr">Space City Command</span><span class="r base mono">87.3</span><span class="r adj mono">89.8</span><span class="r sal mono">$25.6</span></div>
+          <div class="trow"><span class="rank mono">12</span><span class="plyr">De'Von Achane</span><span class="pos">RB</span><span class="fr">South Beach Surge</span><span class="r base mono">85.1</span><span class="r adj mono">89.1</span><span class="r sal mono">$23.9</span></div>
+          <div class="trow"><span class="rank mono">13</span><span class="plyr">Ladd McConkey</span><span class="pos">WR</span><span class="fr">Golden Gate Gale</span><span class="r base mono">83.7</span><span class="r adj mono">88.5</span><span class="r sal mono">$14.2</span></div>
+          <div class="trow"><span class="rank mono">14</span><span class="plyr">Trey McBride</span><span class="pos">TE</span><span class="fr">Desert Mirage</span><span class="r base mono">84.4</span><span class="r adj mono">87.9</span><span class="r sal mono">$20.5</span></div>
+          <div class="trow"><span class="rank mono">15</span><span class="plyr">Bo Nix</span><span class="pos">QB</span><span class="fr">Mile High Marshals</span><span class="r base mono">81.9</span><span class="r adj mono">87.2</span><span class="r sal mono">$16.8</span></div>
+          <div class="trow"><span class="rank mono">16</span><span class="plyr">Sam LaPorta</span><span class="pos">TE</span><span class="fr">Motor City Maulers</span><span class="r base mono">82.6</span><span class="r adj mono">86.6</span><span class="r sal mono">$18.1</span></div>
+          <div class="trow"><span class="rank mono">17</span><span class="plyr">Garrett Wilson</span><span class="pos">WR</span><span class="fr">Gotham Guard</span><span class="r base mono">84.0</span><span class="r adj mono">86.0</span><span class="r sal mono">$26.3</span></div>
+          <div class="trow"><span class="rank mono">18</span><span class="plyr">Jonathon Brooks</span><span class="pos">RB</span><span class="fr">Queen City Reign</span><span class="r base mono">79.5</span><span class="r adj mono">85.3</span><span class="r sal mono">$11.0</span></div>
+        </div>
+      </section>
+
+      <!-- INSPECTOR -->
+      <aside class="insp">
+        <div class="insp-hdr"><span class="t up">Inspector</span><span class="x">×</span></div>
+        <div class="insp-body">
+          <div class="score-hero">
+            <div class="nm">Marvin Harrison Jr.</div>
+            <div class="sub">WR · Gridiron Kings · Age 23 · signed thru 2028</div>
+            <div class="big">96.0<small> ADJ</small></div>
+          </div>
+          <div>
+            <div class="sec-l up">Layer breakdown</div>
+            <div class="bar"><span class="k">Base (L2)</span><span class="track"><span class="fill" style="width:91%"></span></span><span class="v mono">91.4</span></div>
+            <div class="bar"><span class="k">Scouting L4</span><span class="track"><span class="fill" style="width:88%"></span></span><span class="v mono">+4.1</span></div>
+            <div class="bar"><span class="k">Age pull</span><span class="track"><span class="fill" style="width:82%"></span></span><span class="v mono">+2.2</span></div>
+            <div class="bar"><span class="k">Cap mult L5</span><span class="track"><span class="fill" style="width:74%"></span></span><span class="v mono">×0.99</span></div>
+          </div>
+          <div>
+            <div class="sec-l up">Contract</div>
+            <div class="kv"><span class="k">Salary</span><span class="v mono">$29.2M</span></div>
+            <div class="kv"><span class="k">Cap %</span><span class="v mono">17.6%</span></div>
+            <div class="kv"><span class="k">Years left</span><span class="v mono">3</span></div>
+            <div class="kv"><span class="k">Status</span><span class="v">Signed</span></div>
+          </div>
+          <div>
+            <div class="sec-l up">Notes</div>
+            <div class="notes">Cornerstone WR. Cap-efficient at current deal; extension window opens next offseason.</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- COMMS RIGHT-EDGE STRIP (idle) -->
+      <aside class="comms">
+        <div class="badge alert">3</div>
+        <div class="vlabel up">Comms · League Feed</div>
+        <div class="badge">✎</div>
+      </aside>
+    </div><!-- /console -->
+
+    <!-- SUMMONED-OVERLAY GHOSTS (annotation of the quick-dash motion) -->
+    <div class="ghost comms">
+      <div class="gt">Comms — summoned</div>
+      translateX(−272px) → 320px overlay over the Inspector.
+      6 channels + auto League Feed. Pushes nothing; pure transform.
+      <div class="arrow">◀ idle = the 48px strip on the right edge</div>
+    </div>
+    <div class="ghost cal">
+      <div class="gt">Calendar — summoned</div>
+      Drops from the 32px top-right seam via translateY.
+      640×480 generous overlay — room for a real week / month grid (full anatomy = Session D).
+      <div class="arrow">▲ idle seam sits in the workspace header</div>
+    </div>
+  </div><!-- /console-wrap -->
+
+  <div class="legend">
+    <b>Reading the frame:</b> solid = the built shell at Tactical density. Dashed translucent blocks = the two quick-dash <b>summoned</b> states drawn in-place so their geometry is judgeable (they are collapsed in normal use). White numbers key to the callouts below.
+  </div>
+
+  <!-- LOWER SHEET -->
+  <div class="sheet">
+
+    <!-- 4. NUMBERED CALLOUTS -->
+    <div class="card">
+      <h2 class="up">Callouts — the design decisions</h2>
+      <ul class="co-list">
+        <li><span class="n">1</span><span><b style="color:var(--g200)">Portfolio sector, top of rail.</b> League switcher lives at the top 160px; a pinned overview crest + recency micro-crests scale 1→25+ honestly. (Ruling 4.)</span></li>
+        <li><span class="n">2</span><span><b style="color:var(--g200)">Phase-3 injection seam.</b> The 1px divider at y=160px is exactly where a future cross-league portfolio module drops in — no rail redesign.</span></li>
+        <li><span class="n">3</span><span><b style="color:var(--g200)">32px module header.</b> Title + view-toggle as heavy segmented buttons. Denser than a SaaS toolbar; every pixel earns its keep.</span></li>
+        <li><span class="n">4</span><span><b style="color:var(--g200)">36px sticky filter sub-header.</b> Position chips pin on scroll (68px total fixed overhead). The board never loses its filter state.</span></li>
+        <li><span class="n">5</span><span><b style="color:var(--g200)">Adjusted Score dominates.</b> 14px bright tabular-nums, right-aligned — the "speedometer" read. Base/Salary recede to muted gray. Fixed zones, gradient fill.</span></li>
+        <li><span class="n">6</span><span><b style="color:var(--g200)">Inspector = fixed 320px bay.</b> Populates on any row click (no navigation); slides in/out via <span class="mono">translateX</span> overlay — it does NOT reflow the workspace width per click (honors the &lt;100ms snappy law).</span></li>
+        <li><span class="n">7</span><span><b style="color:var(--g200)">Comms right-edge strip.</b> 48px idle, summons left as an overlay — costs zero table rows (this resolves Run 1's own ripcord).</span></li>
+        <li><span class="n">8</span><span><b style="color:var(--g200)">Calendar seam.</b> 32px top-right idle → generous 640×480 summon-over overlay. Both quick-dash panels are pure transforms, summonable from any screen.</span></li>
+      </ul>
+    </div>
+
+    <!-- 2. TRIAGE BLOCK -->
+    <div class="card">
+      <h2 class="up">Triage — GLM leads vs source</h2>
+      <div class="tri">
+        <div class="row"><span class="tag ad">ADOPTED</span>4px base + scale, no-dropshadow inset-bevel elevation, CSS-var density tiers (48/32/22), Home as a deliberate slow-down break, Adjusted-Score dominance — <b style="color:var(--g200)">both runs converged</b>, treated as settled.</div>
+        <div class="row"><span class="tag ad">ADOPTED</span><b style="color:var(--g200)">Fixed instrument zones</b> (Run 1) for the shell + <b style="color:var(--g200)">density-gradient fill</b> (Run 2) inside each zone. Grid soul = fix the zones, fill by gradient.</div>
+        <div class="row"><span class="tag ad">ADOPTED</span><b style="color:var(--g200)">Comms right-edge</b> (Run 2) + <b style="color:var(--g200)">league switcher top sector</b> (Run 1) + <b style="color:var(--g200)">32px header / 36px sticky filter</b> split.</div>
+        <div class="row"><span class="tag adp">ADAPTED</span>Inspector width: synthesis proposed <b>384px</b>; adapted to <b style="color:var(--g200)">320px</b> to honor the locked direction-doc range (~200–320px).</div>
+        <div class="row"><span class="tag adp">ADAPTED</span>Calendar: rejected Run 1's small corner popover; adopted a <b style="color:var(--g200)">generous 640×480 overlay</b> so a real week/month grid fits later (Session D).</div>
+        <div class="row"><span class="tag rj">REJECTED</span>Run 2's <b>fluid workspace⇄inspector width-trade</b> — a per-click reflow violates the WebKitGTK cheap-paint floor and the &lt;100ms law. Inspector is a transform overlay instead.</div>
+      </div>
+    </div>
+
+    <!-- 5. RIPCORD -->
+    <div class="card full">
+      <h2 class="up">Ripcord items</h2>
+      <div class="rc"><b style="color:var(--g200)">None this session.</b> Run 1's ripcord (the 48px comms strip eating premium vertical rows) is <b style="color:var(--g200)">resolved by adopting Run 2's right-edge placement</b> — a vertical strip over the inspector costs zero table rows. Run 2 raised none. The comms-as-summoned-overlay direction was itself your Session-0 ruling, now the shell baseline.</div>
+    </div>
+
+    <!-- 6. COMMAND LEDGER DELTA -->
+    <div class="card full">
+      <h2 class="up">Command Ledger delta — every actuating control → future chat verb (§1.1)</h2>
+      <table class="lg-tbl">
+        <tr><th>#</th><th>Control</th><th>Command mapping</th><th>Note</th></tr>
+        <tr><td class="v">A1</td><td><span class="ctl">Nav module select</span></td><td class="v">nav.goto module=&lt;home|assets|pulse|txn|trade|control&gt;</td><td>6 locked modules</td></tr>
+        <tr><td class="v">A2</td><td><span class="ctl">League switch</span></td><td class="v">league.switch id=&lt;leagueId&gt;</td><td>recency-sorted at scale</td></tr>
+        <tr><td class="v">A3</td><td><span class="ctl">Portfolio overview</span></td><td class="v">league.portfolio</td><td><b style="color:var(--g400)">RETURN-SESSION</b> (Phase-3)</td></tr>
+        <tr><td class="v">A4</td><td><span class="ctl">Density tier set</span></td><td class="v">view.density tier=&lt;narrative|tactical|matrix&gt;</td><td>curiosity trigger</td></tr>
+        <tr><td class="v">A5</td><td><span class="ctl">M1 view toggle</span></td><td class="v">assets.view mode=&lt;global|franchise|capeff&gt;</td><td>3 client views</td></tr>
+        <tr><td class="v">A6</td><td><span class="ctl">M1 position filter</span></td><td class="v">assets.filter pos=&lt;QB|RB|…|all&gt;</td><td>chip toggle</td></tr>
+        <tr><td class="v">A7</td><td><span class="ctl">M1 column sort</span></td><td class="v">assets.sort col=&lt;adjusted|base|salary|rank&gt; dir=&lt;asc|desc&gt;</td><td>tabular cols</td></tr>
+        <tr><td class="v">A8</td><td><span class="ctl">Entity select → inspector</span></td><td class="v">inspect entity=&lt;playerId&gt;</td><td>no navigation</td></tr>
+        <tr><td class="v">A9</td><td><span class="ctl">Inspector toggle</span></td><td class="v">ui.toggle target=inspector</td><td>translateX overlay</td></tr>
+        <tr><td class="v">A10</td><td><span class="ctl">Comms summon/collapse</span></td><td class="v">ui.summon target=comms · ui.collapse target=comms</td><td>any screen</td></tr>
+        <tr><td class="v">A11</td><td><span class="ctl">Calendar summon/collapse</span></td><td class="v">ui.summon target=calendar · ui.collapse target=calendar</td><td>anatomy = Session D</td></tr>
+      </table>
+    </div>
+
+  </div><!-- /sheet -->
+</div>
+</body>
+</html>
