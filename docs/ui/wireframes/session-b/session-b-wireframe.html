@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TheWarRoom — Session B Wireframe: Component Hierarchy &amp; Typography</title>
+<style>
+  :root{
+    --g950:#0a0a0b; --g925:#0f0f11; --g900:#141417; --g850:#1b1b1f;
+    --g800:#26262b; --g700:#3a3a41; --g600:#55555e; --g500:#83838d;
+    --g400:#a6a6ae; --g200:#d6d6db; --g100:#e9e9ec; --g50:#f4f4f6;
+    --hair:#26262b; --lift:#141417;
+    --mono:"JetBrains Mono","SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:#050506;color:var(--g200);font-family:var(--sans);font-size:13px;-webkit-font-smoothing:antialiased}
+  .page{max-width:1180px;margin:0 auto;padding:24px}
+  h1,h2,h3{margin:0;font-weight:600}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .up{text-transform:uppercase;letter-spacing:.08em}
+  .r{text-align:right}
+
+  /* header strip */
+  .strip{border:1px solid var(--hair);background:var(--g900);padding:14px 18px;margin-bottom:16px}
+  .strip h1{font-size:16px;color:var(--g50);letter-spacing:.04em}
+  .strip .meta{margin-top:6px;color:var(--g500);font-size:11px;display:flex;gap:18px;flex-wrap:wrap}
+  .strip .meta b{color:var(--g400);font-weight:500}
+
+  /* section shell */
+  .sec{border:1px solid var(--hair);background:var(--g950);margin-bottom:16px}
+  .sec>.sh{display:flex;align-items:baseline;gap:10px;height:32px;padding:0 14px;background:var(--g900);border-bottom:1px solid var(--hair)}
+  .sec>.sh .n{font-size:10px;color:var(--g600);font-family:var(--mono)}
+  .sec>.sh h2{font-size:11px;color:var(--g50);letter-spacing:.06em;text-transform:uppercase}
+  .sec>.sh .s{font-size:10px;color:var(--g500);margin-left:auto}
+  .sb{padding:16px 14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .lbl{font-size:9px;color:var(--g600);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+  .callout{display:inline-block;min-width:15px;height:15px;line-height:15px;text-align:center;border:1px solid var(--g600);color:var(--g400);font-size:9px;font-family:var(--mono);margin-right:6px}
+
+  /* ---- 1. TYPE SCALE ---- */
+  .type-row{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--g850)}
+  .type-row .spec{font-size:10px;color:var(--g500);font-family:var(--mono);line-height:1.5}
+  .t-hero{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--g50);font-variant-numeric:tabular-nums}
+  .t-sub{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--g400)}
+  .t-body{font-size:13px;color:var(--g100)}
+  .t-bodym{font-family:var(--mono);font-size:13px;color:var(--g100);font-variant-numeric:tabular-nums}
+  .t-micro{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--g500)}
+  .delta-pos{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--g50)}
+  .delta-neg{font-family:var(--mono);font-size:13px;font-weight:400;color:var(--g500)}
+
+  /* ---- 2/3. TABLE ---- */
+  .board{border:1px solid var(--hair);background:var(--g950)}
+  .b-sub{display:grid;height:36px;align-items:center;padding:0 12px;background:var(--g925);border-bottom:1px solid var(--hair);
+    font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--g400)}
+  .b-sub .r,.trow .r{justify-self:end}
+  .sort{color:var(--g50)}
+  .isort{color:var(--g800)}
+  .trow{display:grid;align-items:center;height:32px;padding:0 12px;border-bottom:1px solid var(--g850);border-left:2px solid transparent}
+  .trow .rank{color:var(--g600);font-family:var(--mono);font-size:11px}
+  .trow .plyr{color:var(--g50);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .trow .pos{color:var(--g500)}
+  .trow .fr{color:var(--g500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .trow .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .trow .base{color:var(--g400)}
+  .trow .adj{color:var(--g50);font-weight:700;font-size:14px}
+  .trow .sal{color:var(--g500)}
+  /* M1 grid: Rank Player Pos Franchise Base Adj Salary */
+  .m1{grid-template-columns:34px 1fr 42px 150px 66px 92px 78px}
+  .trow.st-hover{background:var(--g900);box-shadow:inset 1px 1px 0 var(--g700)}
+  .trow.st-active{background:var(--g850);box-shadow:inset -1px -1px 0 var(--g700)}
+  .trow.st-sel{background:var(--lift);border-left:2px solid var(--g200)}
+  .trow.st-sel .plyr{color:#fff}
+  .tag{font-size:9px;font-family:var(--mono);color:var(--g600);border:1px solid var(--g700);padding:0 4px;margin-left:6px}
+
+  /* matrix variant */
+  .mtx .b-sub,.mtx .trow{height:22px}
+  .mtx .b-sub{font-size:9px}
+  .mtx .trow{font-size:11px}
+  .mtx .trow .adj{font-size:11px}
+  .m1mtx{grid-template-columns:24px 1fr 36px 72px 72px}
+
+  /* ---- 4. INSPECTOR ---- */
+  .insp{width:320px;border:1px solid var(--hair);border-left:1px solid var(--g800);background:var(--g925);display:flex;flex-direction:column}
+  .insp-hdr{height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:var(--g900);border-bottom:1px solid var(--hair)}
+  .insp-hdr .t{font-size:10px;color:var(--g500);letter-spacing:.06em}
+  .insp-hdr .x{width:14px;height:14px;border:1px solid var(--g600);color:var(--g500);font-size:10px;text-align:center;line-height:12px}
+  .insp-body{padding:14px 12px;display:flex;flex-direction:column;gap:16px}
+  .ih-name{color:var(--g50);font-size:14px;font-weight:600}
+  .ih-sub{color:var(--g500);font-size:10px;margin-top:2px;font-family:var(--mono)}
+  .ih-score{color:var(--g50);font-family:var(--mono);font-size:24px;font-weight:700;line-height:1;margin-top:10px;font-variant-numeric:tabular-nums}
+  .ih-score small{font-size:10px;color:var(--g500);font-weight:500;letter-spacing:.05em;text-transform:uppercase;font-family:var(--sans)}
+  .bar{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .bar .k{width:88px;font-size:10px;color:var(--g500)}
+  .bar .track{flex:1;height:4px;background:var(--g800)}
+  .bar .fill{height:100%;background:var(--g100)}
+  .bar .v{width:34px;text-align:right;font-size:10px;color:var(--g400);font-family:var(--mono)}
+  .term{font-family:var(--mono);font-size:11px;color:var(--g400);line-height:1.7}
+  .term b{color:var(--g500);font-weight:400}
+  .term .hi{color:var(--g100)}
+  .notes{font-size:11px;color:var(--g500);line-height:1.5}
+
+  /* ---- 5. CARDS ---- */
+  .card{border:1px solid var(--g800);background:var(--g900);box-shadow:inset 1px 1px 0 var(--g850);padding:12px;min-height:96px}
+  .card .ct{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--g500);margin-bottom:10px}
+  .card .cm{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--g50);font-variant-numeric:tabular-nums}
+  .card .cf{font-size:11px;color:var(--g400);margin-top:8px}
+  .card.seasonal{border-left:3px solid var(--g500)}
+  .card.seasonal .ct{color:var(--g400)}
+
+  /* ---- 6. CONTROLS ---- */
+  .ctlgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:center}
+  .ctlgrid .cl{font-size:9px;color:var(--g600);text-transform:uppercase;letter-spacing:.07em;grid-column:1/-1;margin-top:4px}
+  .btn{font:inherit;font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:6px 12px;border:1px solid var(--g700);background:var(--g850);color:var(--g200);text-align:center}
+  .btn.rest{box-shadow:inset 1px 1px 0 var(--g700)}
+  .btn.hover{background:var(--g800);box-shadow:inset 1px 1px 0 var(--g600);color:var(--g50)}
+  .btn.press{box-shadow:inset -1px -1px 0 var(--g700);transform:translate(1px,1px);background:var(--g800)}
+  .btn.dis{opacity:.4;color:var(--g500)}
+  .chip{font-size:10px;padding:3px 9px;border:1px solid var(--g700);background:var(--g850);color:var(--g500);text-align:center}
+  .chip.on{border-color:var(--g400);background:var(--g800);color:var(--g50)}
+  .inp{font:inherit;font-size:11px;padding:5px 8px;background:var(--g900);border:1px solid var(--g700);color:var(--g200)}
+  .inp.foc{border-color:var(--g400);color:var(--g50)}
+  .slider{grid-column:1/-1;display:flex;align-items:center;gap:10px}
+  .strack{flex:1;height:2px;background:var(--g800);position:relative}
+  .sthumb{position:absolute;top:-3px;width:8px;height:8px;background:var(--g100);left:60%}
+  .sthumb.drag{width:10px;height:10px;top:-4px;background:var(--g50)}
+
+  /* ---- 7. CONFIRM MODAL ---- */
+  .modal-stage{position:relative;border:1px solid var(--g850);background:var(--g950);height:270px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .modal-stage .dim{position:absolute;inset:0;background:var(--g900);opacity:.5}
+  .modal{position:relative;width:420px;border:1px solid var(--g600);background:var(--g950);box-shadow:inset 1px 1px 0 var(--g800)}
+  .modal .mh{padding:12px 14px;border-bottom:1px solid var(--hair);font-size:13px;font-weight:600;color:var(--g50);letter-spacing:.03em}
+  .modal .mp{padding:12px 14px;font-family:var(--mono);font-size:11px;color:var(--g400);line-height:1.8;border-bottom:1px solid var(--hair)}
+  .modal .mp b{color:var(--g500);font-weight:400}
+  .modal .mp .hi{color:var(--g100)}
+  .modal .mf{padding:14px}
+  .fire{position:relative;height:38px;border:1px solid var(--g600);background:var(--g850);color:var(--g100);
+    font-size:12px;letter-spacing:.12em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;box-shadow:inset 1px 1px 0 var(--g700);overflow:hidden}
+  .fire .prog{position:absolute;left:0;top:0;bottom:0;background:var(--g700);width:0}
+  .fire .ft{position:relative}
+  .fire.firing{box-shadow:inset -1px -1px 0 var(--g600);color:var(--g50)}
+  .fire.firing .prog{width:62%}
+  .fire.reject{border-color:var(--g400);color:var(--g50);font-weight:800;box-shadow:inset -1px -1px 0 var(--g600)}
+  .mstate{font-size:9px;color:var(--g600);text-transform:uppercase;letter-spacing:.07em;text-align:center;margin-top:8px}
+
+  /* ---- 8. DATA STATES ---- */
+  .stbox{border:1px solid var(--g800);background:var(--g950);height:150px;display:flex;flex-direction:column}
+  .stbox .stt{font-size:9px;color:var(--g600);letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;border-bottom:1px solid var(--g850);background:var(--g900)}
+  .stbox .stbody{flex:1;padding:12px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+  .engrave{border:1px dashed var(--g700);color:var(--g600);font-size:9px;letter-spacing:.05em;text-transform:uppercase;padding:10px;text-align:center;line-height:1.8}
+  .sk{height:11px;background:var(--g800);animation:pulse 800ms ease-in-out infinite alternate}
+  .sk.hero{height:20px;width:60px}
+  .sk.w1{width:70%}.sk.w2{width:45%}.sk.w3{width:88%}
+  @keyframes pulse{from{opacity:1}to{opacity:.75}}
+  .cacheline{font-size:11px;font-weight:600;color:var(--g200);border-top:2px solid var(--g500);padding-top:8px}
+  .cacheline small{display:block;color:var(--g500);font-weight:400;font-family:var(--mono);margin-top:3px}
+  .offseason{color:var(--g500);font-size:13px;text-align:center}
+
+  /* ---- 9. KEYBOARD ---- */
+  table.kbd{width:100%;border-collapse:collapse;font-size:11px}
+  table.kbd th{text-align:left;font-size:9px;color:var(--g600);text-transform:uppercase;letter-spacing:.06em;padding:6px 10px;border-bottom:1px solid var(--hair)}
+  table.kbd td{padding:6px 10px;border-bottom:1px solid var(--g850);color:var(--g400)}
+  table.kbd kbd{font-family:var(--mono);font-size:11px;color:var(--g50);border:1px solid var(--g700);background:var(--g850);padding:0 6px;box-shadow:inset 1px 1px 0 var(--g700)}
+  table.kbd .verb{font-family:var(--mono);color:var(--g500)}
+  table.kbd .scope{color:var(--g600);font-size:10px}
+
+  /* ---- 10. EDGE RESIZE ---- */
+  .rz{display:flex;gap:0;height:120px;border:1px solid var(--g800)}
+  .rz .pane{flex:1;background:var(--g925);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--g600);text-transform:uppercase;letter-spacing:.06em}
+  .rz .handle{width:4px;background:transparent;position:relative}
+  .rz.hover .handle{background:var(--g900)}
+  .rz.hover .handle:before{content:"";position:absolute;left:1px;top:0;bottom:0;width:1px;background:var(--g600)}
+  .rz.drag .handle:before{content:"";position:absolute;left:40px;top:0;bottom:0;width:1px;background:var(--g400)}
+  .rz.commit .pane.left{flex:1.6}
+  .rzlabel{font-size:9px;color:var(--g600);text-transform:uppercase;letter-spacing:.06em;text-align:center;margin-top:6px}
+
+  /* triage + ledger */
+  .triage{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--hair)}
+  .triage .col{padding:12px;border-right:1px solid var(--hair)}
+  .triage .col:last-child{border-right:0}
+  .triage .th{font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+  .triage .adopt{color:var(--g200)}.triage .adapt{color:var(--g400)}.triage .reject{color:var(--g500)}
+  .triage li{font-size:11px;color:var(--g500);line-height:1.5;margin-bottom:7px;list-style:none}
+  .triage li b{color:var(--g200);font-weight:500}
+  table.led{width:100%;border-collapse:collapse;font-size:11px}
+  table.led th{text-align:left;font-size:9px;color:var(--g600);text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-bottom:1px solid var(--hair)}
+  table.led td{padding:6px 8px;border-bottom:1px solid var(--g850);color:var(--g400);vertical-align:top}
+  table.led .id{font-family:var(--mono);color:var(--g500)}
+  table.led .v{font-family:var(--mono);color:var(--g200)}
+  .foot{color:var(--g600);font-size:10px;text-align:center;padding:14px}
+  .note{font-size:11px;color:var(--g500);line-height:1.6;margin:0}
+  .fnlist{margin:10px 0 0;padding:0}
+  .fnlist li{list-style:none;font-size:11px;color:var(--g500);line-height:1.6;margin-bottom:5px}
+  .fnlist b{color:var(--g400);font-weight:500}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="strip">
+    <h1>SESSION B — Component Hierarchy &amp; Typography</h1>
+    <div class="meta">
+      <span><b>Date</b> 2026-07-19</span>
+      <span><b>GLM-5.2 runs</b> 3 (placard / terminal-forward / synthesis)</span>
+      <span><b>Direction doc</b> UI_Direction_Document (locked) + Session A confirmed</span>
+      <span><b>Fidelity</b> greyscale — color is Session C</span>
+    </div>
+  </div>
+
+  <!-- TRIAGE -->
+  <div class="sec">
+    <div class="sh"><span class="n">§</span><h2>Triage — GLM leads → head-brain rulings</h2><span class="s">leads, not findings</span></div>
+    <div class="sb" style="padding:0">
+      <div class="triage">
+        <div class="col">
+          <div class="th adopt">ADOPTED</div>
+          <li><b>Delta-in-weight</b> — positive Δ = weight 600, negative = 400. Greyscale-honest, pre-solves a Session-C hue need (Run 2's best idea).</li>
+          <li><b>Typographic sort indicator</b> — ▼/▲ gray-50 active, ¦ gray-800 inactive. No icon chrome (Run 2).</li>
+          <li><b>HOLD-TO-FIRE</b> commit actuation + terminal-style contract block (Run 2).</li>
+          <li><b>Inset-bevel default + engraved empty state</b> (Run 1).</li>
+        </div>
+        <div class="col">
+          <div class="th adapt">ADAPTED</div>
+          <li><b>ConfirmModal = fused</b> — Run 1's 480px CENTERED geometry (a commit gate seizes focus) + Run 2's HOLD-TO-FIRE actuation → one ledger verb <span class="mono">txn.commit</span>, killing Run 1's flagged double-verb problem.</li>
+          <li><b>No-gridline rows</b> (Run 2 restraint) inside Run 1's optically-contained shell — dense tables drop vertical rules, keep the row-hover bleed.</li>
+          <li><b>MFL-unreachable</b> rendered greyscale (weight 600 + 2px edge); red reserved for Session C.</li>
+        </div>
+        <div class="col">
+          <div class="th reject">REJECTED / CORRECTED</div>
+          <li><b>Zero-chrome as global default</b> — REJECTED. Run 2's own RIPCORD proved it breaks the casual's first 5 min. Kept only inside dense tables.</li>
+          <li><b>Synthesis M1 columns drifted</b> to Rank/Player/Pos/Age/Val/Action — CORRECTED back to the locked facet map: <b>Rank · Player · Pos · Franchise · Base · Adjusted · Salary</b>.</li>
+          <li><b>Two-button ARM→FIRE</b> — dropped for the single HOLD gesture.</li>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. TYPE SCALE -->
+  <div class="sec">
+    <div class="sh"><span class="n">1</span><h2>Type Scale &amp; Numerics</h2><span class="s">Inter = text · JetBrains Mono = data</span></div>
+    <div class="sb">
+      <div class="type-row"><div class="spec">HERO NUMERIC<br>24 / Mono / 700<br>tabular · right · g50</div><div><span class="t-hero">88.40</span> <span class="callout">1</span></div></div>
+      <div class="type-row"><div class="spec">STICKY SUB-HEADER<br>12 / Inter / 700<br>0.05em · upper · g400</div><div class="t-sub">Adjusted Score</div></div>
+      <div class="type-row"><div class="spec">ROW DATA<br>13 / Inter · Mono<br>g100</div><div><span class="t-body">Jahmyr Gibbs</span> &nbsp; <span class="t-bodym">42.10</span></div></div>
+      <div class="type-row"><div class="spec">DELTA NUMERIC<br>13 / Mono<br>+ = 600 · − = 400</div><div><span class="delta-pos">+17.20</span> &nbsp;&nbsp; <span class="delta-neg">−4.05</span> <span class="callout">2</span></div></div>
+      <div class="type-row"><div class="spec">MICRO / SECTION LABEL<br>11 / Inter / 500<br>0.05em · upper · g500</div><div class="t-micro">Contract · Layer Breakdown</div></div>
+      <div class="type-row" style="border-bottom:0"><div class="spec">MATRIX OVERRIDE<br>11 / line-height 1.1<br>hero → 16</div><div><span class="mono" style="font-size:11px;color:var(--g100)">A. St. Brown</span> &nbsp; <span class="mono" style="font-size:16px;font-weight:700;color:var(--g50)">91.05</span></div></div>
+    </div>
+  </div>
+
+  <!-- 2/3. TABLE + COLUMN SPEC -->
+  <div class="sec">
+    <div class="sh"><span class="n">2·3</span><h2>M1 Board — Row Anatomy &amp; Column Spec</h2><span class="s">Tactical 32px · states + Matrix 22px</span></div>
+    <div class="sb">
+      <div class="lbl">M1 Asset Rankings — Tactical (default). Row states shown live. <span class="callout">3</span></div>
+      <div class="board">
+        <div class="b-sub m1">
+          <span>RNK</span><span>Player</span><span>Pos</span><span>Franchise</span>
+          <span class="r">Base <span class="isort">¦</span></span><span class="r">Adj <span class="sort">▼</span></span><span class="r">Salary <span class="isort">¦</span></span>
+        </div>
+        <div class="trow m1"><span class="rank">1</span><span class="plyr">Amon-Ra St. Brown</span><span class="pos">WR</span><span class="fr">Motor City Maulers</span><span class="num base r">78.60</span><span class="num adj r">91.05</span><span class="num sal r">$48.20</span></div>
+        <div class="trow m1 st-hover"><span class="rank">2</span><span class="plyr">Ja'Marr Chase</span><span class="pos">WR</span><span class="fr">Queen City Kings</span><span class="num base r">80.10</span><span class="num adj r">90.40</span><span class="num sal r">$52.00</span></div>
+        <div class="trow m1 st-sel"><span class="rank">3</span><span class="plyr">Bijan Robinson<span class="tag">TAG</span></span><span class="pos">RB</span><span class="fr">ATL Fire Ants</span><span class="num base r">74.90</span><span class="num adj r">89.15</span><span class="num sal r">$39.75</span></div>
+        <div class="trow m1 st-active"><span class="rank">4</span><span class="plyr">Jahmyr Gibbs</span><span class="pos">RB</span><span class="fr">Motor City Maulers</span><span class="num base r">71.20</span><span class="num adj r">88.40</span><span class="num sal r">$42.10</span></div>
+        <div class="trow m1"><span class="rank">5</span><span class="plyr">Puka Nacua</span><span class="pos">WR</span><span class="fr">Coastal Surge</span><span class="num base r">73.40</span><span class="num adj r">87.90</span><span class="num sal r">$31.50</span></div>
+        <div class="trow m1"><span class="rank">6</span><span class="plyr">Malik Nabers</span><span class="pos">WR</span><span class="fr">Gotham Guard</span><span class="num base r">69.80</span><span class="num adj r">86.25</span><span class="num sal r">$18.00</span></div>
+      </div>
+      <ul class="fnlist">
+        <li><span class="callout">1</span><b>Adjusted dominates</b> — 14px/700 gray-50; Base + Salary recede to gray-400/500. The eye lands on the value column with zero hue.</li>
+        <li><span class="callout">3</span><b>Four row states</b> top→bottom: rest · hover (raised inset + bleed) · selected (2px left axis, inspector-bound) · active/pressed (bottom-right inset). No vertical gridlines.</li>
+      </ul>
+
+      <div class="lbl" style="margin-top:18px">Same board — Matrix (22px). Drops Franchise + Base; hero → 16px; pure scan for the 32-team sweep. <span class="callout">4</span></div>
+      <div class="board mtx">
+        <div class="b-sub m1mtx"><span>#</span><span>Player</span><span>Pos</span><span class="r">Adj <span class="sort">▼</span></span><span class="r">Sal</span></div>
+        <div class="trow m1mtx"><span class="rank">1</span><span class="plyr">A. St. Brown</span><span class="pos">WR</span><span class="num adj r">91.05</span><span class="num sal r">$48.2</span></div>
+        <div class="trow m1mtx"><span class="rank">2</span><span class="plyr">J. Chase</span><span class="pos">WR</span><span class="num adj r">90.40</span><span class="num sal r">$52.0</span></div>
+        <div class="trow m1mtx"><span class="rank">3</span><span class="plyr">B. Robinson</span><span class="pos">RB</span><span class="num adj r">89.15</span><span class="num sal r">$39.8</span></div>
+        <div class="trow m1mtx"><span class="rank">4</span><span class="plyr">J. Gibbs</span><span class="pos">RB</span><span class="num adj r">88.40</span><span class="num sal r">$42.1</span></div>
+      </div>
+      <p class="note" style="margin-top:12px">Grid templates — <span class="mono">Tactical</span> <b class="mono" style="color:var(--g400)">34px 1fr 42px 150px 66px 92px 78px</b> · <span class="mono">Matrix</span> <b class="mono" style="color:var(--g400)">24px 1fr 36px 72px 72px</b> · <span class="mono">Narrative (48px)</span> expands Player to a 2nd line (bye · contract yrs left). Sortable: Base · Adjusted (default) · Salary. M2 &amp; roster reuse the identical row grammar.</p>
+    </div>
+  </div>
+
+  <!-- 4 + 5 + 6 -->
+  <div class="grid2">
+    <!-- INSPECTOR -->
+    <div class="sec">
+      <div class="sh"><span class="n">4</span><h2>Contextual Inspector</h2><span class="s">320px · translateX overlay</span></div>
+      <div class="sb" style="display:flex;justify-content:center">
+        <div class="insp">
+          <div class="insp-hdr"><span class="t up">Asset Dossier</span><span class="x">×</span></div>
+          <div class="insp-body">
+            <div>
+              <div class="ih-name">Jahmyr Gibbs</div>
+              <div class="ih-sub">RB · AGE 23 · MOTOR CITY MAULERS</div>
+              <div class="ih-score">88.40 <small>Adjusted</small></div>
+            </div>
+            <div>
+              <div class="lbl">Layer Breakdown <span class="callout">5</span></div>
+              <div class="bar"><span class="k">L2 Base</span><span class="track"><span class="fill" style="width:80%"></span></span><span class="v">71.2</span></div>
+              <div class="bar"><span class="k">L3 Age Curve</span><span class="track"><span class="fill" style="width:94%"></span></span><span class="v">+9%</span></div>
+              <div class="bar"><span class="k">L4 Scouting</span><span class="track"><span class="fill" style="width:88%"></span></span><span class="v">1.11</span></div>
+              <div class="bar"><span class="k">L5 Cap Scale</span><span class="track"><span class="fill" style="width:70%"></span></span><span class="v">×1.0</span></div>
+              <div class="bar"><span class="k">L6 Tiebreak</span><span class="track"><span class="fill" style="width:52%"></span></span><span class="v">—</span></div>
+            </div>
+            <div>
+              <div class="lbl">Contract</div>
+              <div class="term"><b>SALARY:</b> <span class="hi">$42.10</span><br><b>YEARS:</b> <span class="hi">3</span> (through 2028)<br><b>CAP HIT:</b> <span class="hi">$14.03</span>/yr<br><b>STATUS:</b> <span class="hi">SIGNED</span></div>
+            </div>
+            <div>
+              <div class="lbl">Notes</div>
+              <div class="notes">Extension-eligible after 2026. Franchise cornerstone; not on the block.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <!-- CARDS -->
+      <div class="sec">
+        <div class="sh"><span class="n">5</span><h2>Cards — Home 2×2 &amp; Seasonal</h2><span class="s">Narrative · boxed containment</span></div>
+        <div class="sb">
+          <div class="grid2" style="gap:10px">
+            <div class="card"><div class="ct">Cap Space</div><div class="cm">$36.8M</div><div class="cf">4 of 32 franchises over</div></div>
+            <div class="card"><div class="ct">Roster Score</div><div class="cm">1,842</div><div class="cf">League rank · 6th</div></div>
+            <div class="card seasonal"><div class="ct">◷ UFA Window</div><div class="cm">6d</div><div class="cf">closes Sun · summoned from calendar</div></div>
+            <div class="card"><div class="ct">Open Trades</div><div class="cm">2</div><div class="cf">1 awaiting your response</div></div>
+          </div>
+          <p class="note" style="margin-top:12px"><b style="color:var(--g400)">Card vs row:</b> a card is an aggregate entity summary (boxed, stacked title→metric→context); a row is a flat comparative state in a continuous list. Seasonal card carries a 3px left axis = calendar state. <span class="callout">6</span></p>
+        </div>
+      </div>
+
+      <!-- CONTROLS -->
+      <div class="sec">
+        <div class="sh"><span class="n">6</span><h2>Buttons &amp; Form Controls</h2><span class="s">4 states · &lt;100ms pressed</span></div>
+        <div class="sb">
+          <div class="ctlgrid">
+            <div class="cl">Button — rest / hover / pressed / disabled</div>
+            <div class="btn rest">Sign</div><div class="btn hover">Sign</div><div class="btn press">Sign</div><div class="btn dis">Sign</div>
+            <div class="cl">Position chips</div>
+            <div class="chip on">QB</div><div class="chip">RB</div><div class="chip">WR</div><div class="chip">TE</div>
+            <div class="cl">Text input — rest / focus</div>
+            <div class="inp" style="grid-column:1/3">$ amount…</div><div class="inp foc" style="grid-column:3/5">3.00</div>
+            <div class="cl">M2 weight slider — thumb grows on drag</div>
+            <div class="slider"><span class="mono" style="font-size:10px;color:var(--g500)">SCOUT</span><span class="strack"><span class="sthumb drag"></span></span><span class="mono" style="font-size:10px;color:var(--g500)">FORM</span></div>
+          </div>
+          <p class="note" style="margin-top:12px">Pressed = instant bottom/right inset swap; async work never blocks the pressed paint. <span class="callout">7</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. CONFIRM MODAL -->
+  <div class="sec">
+    <div class="sh"><span class="n">7</span><h2>ConfirmModal — the commit gate</h2><span class="s">arm → HOLD-TO-FIRE → commit / reject · verb txn.commit</span></div>
+    <div class="sb">
+      <div class="grid3">
+        <div>
+          <div class="modal-stage"><div class="dim"></div>
+            <div class="modal">
+              <div class="mh">Confirm Trade — 2 legs</div>
+              <div class="mp"><b>SEND</b> <span class="hi">J. Gibbs</span> + 2026 1st<br><b>RECV</b> <span class="hi">J. Chase</span><br><b>CAP Δ</b> <span class="hi">+$9.90</span> → $46.7 used</div>
+              <div class="mf"><div class="fire"><span class="ft">Hold to fire</span></div><div class="mstate">Armed · rest</div></div>
+            </div>
+          </div>
+          <div class="rzlabel">State 1 — armed</div>
+        </div>
+        <div>
+          <div class="modal-stage"><div class="dim"></div>
+            <div class="modal">
+              <div class="mh">Confirm Trade — 2 legs</div>
+              <div class="mp"><b>SEND</b> <span class="hi">J. Gibbs</span> + 2026 1st<br><b>RECV</b> <span class="hi">J. Chase</span><br><b>CAP Δ</b> <span class="hi">+$9.90</span> → $46.7 used</div>
+              <div class="mf"><div class="fire firing"><span class="prog"></span><span class="ft">Firing…</span></div><div class="mstate">Mousedown · ≤600ms fill · release cancels</div></div>
+            </div>
+          </div>
+          <div class="rzlabel">State 2 — firing</div>
+        </div>
+        <div>
+          <div class="modal-stage"><div class="dim"></div>
+            <div class="modal">
+              <div class="mh">Confirm Trade — 2 legs</div>
+              <div class="mp"><b>SEND</b> <span class="hi">J. Gibbs</span> + 2026 1st<br><b>RECV</b> <span class="hi">J. Chase</span><br><b>CAP Δ</b> <span style="color:var(--g50)">exceeds ceiling</span></div>
+              <div class="mf"><div class="fire reject"><span class="ft">Rejected: cap exceeded</span></div><div class="mstate">Engine reject · modal holds · non-dismissable</div></div>
+            </div>
+          </div>
+          <div class="rzlabel">State 3 — rejected</div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:12px">480px centered, workspace dims to 0.5 opacity, no backdrop blur (WebKitGTK floor). The hold gesture is the honest "arm-and-fire" — no theater, one command verb, an accidental release before completion cancels cleanly.</p>
+    </div>
+  </div>
+
+  <!-- 8. DATA STATES -->
+  <div class="sec">
+    <div class="sh"><span class="n">8</span><h2>Empty / Loading / Error — one class, four honest states</h2><span class="s">firing on real cases</span></div>
+    <div class="sb">
+      <div class="grid2" style="grid-template-columns:1fr 1fr 1fr 1fr">
+        <div class="stbox">
+          <div class="stt">No data — fresh install</div>
+          <div class="stbody"><div class="engrave">M1 Asset Rankings<br>— awaiting league import —<br>connect an MFL league</div></div>
+        </div>
+        <div class="stbox">
+          <div class="stt">Fetch in flight</div>
+          <div class="stbody"><div class="sk hero"></div><div class="sk w3"></div><div class="sk w1"></div><div class="sk w2"></div></div>
+        </div>
+        <div class="stbox">
+          <div class="stt">MFL unreachable</div>
+          <div class="stbody"><div class="cacheline">STATE: CACHE ONLY<small>MFL unreachable · as of 09:42</small></div><div class="note" style="font-size:10px">Board stays fully interactive from cache.</div></div>
+        </div>
+        <div class="stbox">
+          <div class="stt">Seasonal emptiness</div>
+          <div class="stbody"><div class="offseason">OFFSEASON<br><span style="font-size:10px;color:var(--g600)">no matchup data</span></div></div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:12px"><span class="callout">8</span>Empty ≠ broken. Fresh-install engraves where data will live (a casual's first 5 minutes feel oriented). Skeletons are data-shaped pulses, never spinners. Cache-only is a state line + 2px edge, not an alarm (red is Session C). Offseason has no edge and no skeleton — empty <em>by nature</em>.</p>
+    </div>
+  </div>
+
+  <!-- 9 + 10 -->
+  <div class="grid2">
+    <div class="sec">
+      <div class="sh"><span class="n">9</span><h2>Global Keyboard Map</h2><span class="s">3 faces of one command surface</span></div>
+      <div class="sb" style="padding:0">
+        <table class="kbd">
+          <thead><tr><th>Key</th><th>Action</th><th>Ledger verb</th><th>Density</th></tr></thead>
+          <tbody>
+            <tr><td><kbd>J</kbd> <kbd>K</kbd></td><td>Move selection ↓ / ↑</td><td class="verb">nav.down / nav.up</td><td class="scope">Matrix · Tactical</td></tr>
+            <tr><td><kbd>Enter</kbd></td><td>Open Inspector</td><td class="verb">inspect</td><td class="scope">Matrix · Tactical</td></tr>
+            <tr><td><kbd>T</kbd></td><td>Send to Trade Builder</td><td class="verb">trade.add</td><td class="scope">Matrix · Tactical</td></tr>
+            <tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>Density Narr / Tac / Matrix</td><td class="verb">view.density</td><td class="scope">Global</td></tr>
+            <tr><td><kbd>/</kbd></td><td>Focus search</td><td class="verb">search.focus</td><td class="scope">Global</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Close modal / clear</td><td class="verb">ui.escape</td><td class="scope">Global</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sh"><span class="n">10</span><h2>Edge-Resize Handle</h2><span class="s">Ledger A12 · commit on release</span></div>
+      <div class="sb">
+        <div class="grid3" style="gap:10px">
+          <div><div class="rz"><div class="pane left">nav</div><div class="handle"></div><div class="pane">work</div></div><div class="rzlabel">idle — 4px hit area</div></div>
+          <div><div class="rz hover"><div class="pane left">nav</div><div class="handle"></div><div class="pane">work</div></div><div class="rzlabel">hover — 1px guide</div></div>
+          <div><div class="rz drag"><div class="pane left">nav</div><div class="handle"></div><div class="pane">work</div></div><div class="rzlabel">drag — ghost @ target</div></div>
+        </div>
+        <p class="note" style="margin-top:12px">4th state — <b style="color:var(--g400)">released-commit</b>: grid snaps to the ghost, CSS <span class="mono">--nav-w</span> updates once. No live per-frame reflow (APU paint floor). Presets ship canned widths.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMAND LEDGER DELTA -->
+  <div class="sec">
+    <div class="sh"><span class="n">§1.1</span><h2>Command Ledger delta — Session B</h2><span class="s">every actuating control → a verb</span></div>
+    <div class="sb" style="padding:0">
+      <table class="led">
+        <thead><tr><th>#</th><th>Control</th><th>Verb + args</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="id">B1</td><td>Column sort</td><td class="v">assets.sort col=&lt;base|adjusted|salary&gt; dir=&lt;asc|desc&gt;</td><td>▼/▲ active, ¦ inactive; refines A7</td></tr>
+          <tr><td class="id">B2</td><td>Confirm / commit gate</td><td class="v">txn.commit id=&lt;txnId&gt;</td><td>single verb; HOLD gesture; reject holds modal</td></tr>
+          <tr><td class="id">B3</td><td>Trade builder add</td><td class="v">trade.add entity=&lt;playerId&gt;</td><td>keyboard T; row action</td></tr>
+          <tr><td class="id">B4</td><td>Search focus</td><td class="v">search.focus</td><td>global; `/`</td></tr>
+          <tr><td class="id">B5</td><td>Escape / dismiss</td><td class="v">ui.escape</td><td>global; non-dismissable during firing</td></tr>
+          <tr><td class="id">B6</td><td>M2 weight blend</td><td class="v">m2.weight pct=&lt;0-100&gt;</td><td>slider; commit on release (no live re-blend)</td></tr>
+          <tr><td class="id">B7</td><td>Priced ops (from action panel)</td><td class="v">txn.preview kind=&lt;sign|waiver|tag|ext|buyout&gt;</td><td>routes into ConfirmModal (B2)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="foot">TheWarRoom · Session B component sheet · greyscale (color = Session C) · branch session/ui-session-a-grid</div>
+
+</div>
+</body>
+</html>

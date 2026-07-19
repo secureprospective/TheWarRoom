@@ -1,0 +1,32 @@
+# SESSION B — Component Language SYNTHESIS
+
+You are the conceptual design lead for "TheWarRoom" — a 32-team dynasty fantasy-football command console (Go + Wails desktop, React + Tailwind, dark-only greyscale-for-now, desktop-first). Target: Anduril, not SaaS. You already produced TWO divergent Session B directions. The head designer has triaged them and made the fusion rulings below. Your job now is to produce ONE unified component-language spec that IMPLEMENTS these rulings — do NOT relitigate them. Where a ruling picks a winner, honor it; where it fuses, fuse exactly as stated.
+
+## The two directions you produced (for reference)
+- **RUN 1 "Aerospace Placard":** hierarchy from labeling + positional memory; machined inset-bevel components; 24px JetBrains Mono hero numerics; ARM→FIRE two-button 480px center ConfirmModal; engraved-wireframe empty state. Its own RIPCORD pulled permanent labels OUT of rows (sub-headers/inspector only).
+- **RUN 2 "Terminal-Forward":** chrome→zero, type+alignment carry everything; delta encoded in font-weight; purely typographic sort indicators (`▼`/`¦`); terminal-style contract block; 320px HOLD-TO-FIRE ConfirmModal; its RIPCORD admitted zero-chrome breaks the casual's first 5 minutes.
+
+## HEAD-BRAIN RULINGS — implement these, do not re-open
+1. **Labels:** BOTH directions converged — permanent text labels live ONLY in the 36px sticky sub-header (column headers) and the Inspector. Data ROWS are label-free readouts relying on positional memory + right-alignment. Labels appear on rows only at Narrative density or on hover.
+2. **Chrome floor = Run 1's optical containment is the default.** Keep the Session-A inset-bevel language (1px hairlines + inset top/left raised → inset bottom/right pressed). Zero-chrome is REJECTED as the global default (Run 2's own RIPCORD proved it fails the casual). BUT adopt Run 2's restraint INSIDE dense tables — table rows have no vertical gridlines; separation is optical spacing + the row-hover bleed, not per-cell borders.
+3. **Numerics = Run 1 wins.** Hero numeric (Adjusted Score, cap figures) = **24px JetBrains Mono, weight 700, tabular-nums, right-aligned, gray-50.** All numeric columns mono + tabular + right-aligned. Text (names, labels) = Inter.
+4. **Delta-in-weight = ADOPT (Run 2's best idea).** A positive delta renders at weight 600, negative at weight 400 — a greyscale-honest signal that pre-solves what Session C would otherwise need hue for. Note it as a Session-C revisit (hue may reinforce later) but ship the weight encoding now.
+5. **Sort indicator = Run 2 wins.** Purely typographic: `▼`/`▲` in gray-50 next to the active sorted header, faint `¦` (gray-800) on inactive sortable headers. No icon chrome.
+6. **ConfirmModal = FUSE.** Geometry from Run 1: a **480px CENTERED overlay** (a commit gate seizes focus, does not hug an edge; workspace dims to opacity 0.5, NO backdrop blur — WebKitGTK floor). Actuation from Run 2: **HOLD-TO-FIRE**, not a second click. Rest = "HOLD TO FIRE" with 1px top/left inset (armed/raised); mousedown = instantly swaps to bottom/right inset + text "FIRING" + a ≤600ms progress fill via transform only; release-before-complete cancels; on engine reject the modal HOLDS (non-dismissable) showing "REJECTED: <reason>" at weight 800. This maps to ONE ledger verb `txn.commit` (kills Run 1's flagged double-verb problem). The preview (dollar breakdown or rejection reason) sits above the fire button as pure mono text.
+7. **Contract block = Run 2's terminal-output style** inside the Inspector (`SALARY: $42.10` / `YEARS: 3 (through 2026)`), but the Inspector panel itself keeps Run 1's optical containment (1px left hairline, no box-per-field).
+8. **Empty/Loading/Error:** fresh-install = Run 1's engraved-wireframe-of-the-UI with 11px placard labels ("M1 ASSET RANKINGS — AWAITING LEAGUE IMPORT"); skeletons = pulsing gray-800 blocks shaped like the data they replace (opacity 1.0→0.8, 800ms, NO spinners); MFL-unreachable = a sticky sub-header state line "STATE: CACHE ONLY (MFL UNREACHABLE) · as of <ts>" (reserve red for Session C — greyscale now: weight 600 + a 2px top edge), data stays fully interactive; offseason = clean gray-500 "OFFSEASON — NO MATCHUP DATA", explicitly NOT an error (no edge, no skeleton).
+
+## What to deliver (the unified spec — target ≤250 lines, committed values only)
+Produce the single reconciled spec covering, in order:
+1. **Type scale** — every step: px, family (Inter/JetBrains Mono), weight, tracking, greyscale value, and its role. Include the Matrix-density overrides. State the numeric rule (ruling 3) and the delta-in-weight rule (ruling 4).
+2. **Table & row anatomy** — the glance/operate/interrogate reads of ONE M1 player row; rest/hover/active/pressed states in the inset-bevel language; the no-vertical-gridlines rule (ruling 2); how a 32-row board scans at Matrix 22px.
+3. **M1 / M2 / roster column specs** — per-density `grid-template-columns` (real px), alignment + sortability per column, which columns drop at Matrix and which expand at Narrative. Sort indicator per ruling 5.
+4. **Contextual Inspector (320px)** — engine-score-dominant header, the 6 layer-breakdown bars (4px height, gray-800 track, gray-100 fill), the terminal-style contract block (ruling 7), notes block; its three altitudes.
+5. **Card anatomy** — Home 2×2 card (Narrative) and seasonal card, and the one-line rule for how a card differs from a table row.
+6. **Buttons & form controls** — the 4 states (rest/hover/pressed/disabled) for buttons, chips, text inputs, selects, the M2 weight slider; <100ms pressed acknowledgment as a hard rule.
+7. **The ConfirmModal** — full anatomy + the arm/HOLD-TO-FIRE/commit/reject path exactly per ruling 6.
+8. **Empty / Loading / Error** — one component class, the four states per ruling 8.
+9. **Global keyboard map** — a table: Key · Action · Command Ledger verb · density scope (Matrix floor J/K/Enter/T + `1/2/3` density + `/` search + `Esc`; Tactical subset; Narrative near-zero). Each row names its verb.
+10. **Edge-resize handle** — the 4 states (idle / hover / dragging-with-1px-ghost / released-commit), commit-on-RELEASE, no live reflow (Session A Ledger A12).
+
+Commit to specifics — named px, named weights, named states. Where a residual choice remains that the rulings did not cover, MAKE it and note it in a short "Residual choices" section (≤5 lines). No RIPCORD needed — the rulings are final.
