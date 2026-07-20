@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -12,6 +14,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playerscores"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/ras"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/schooltier"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/rankings"
 	"github.com/secureprospective/TheWarRoom/internal/scouting/assembly"
@@ -111,11 +114,12 @@ func (a *App) ScoreLeague() ScoreLeagueResult {
 	if err != nil {
 		return ScoreLeagueResult{Error: err.Error(), Label: a.proxyLabel()}
 	}
-	// S-Phase 0: build the RAS scouting profiles and inject them through the
-	// ScoutingDirectory port. A fetch failure surfaces loudly — a RAS-less
-	// league should be visible, matching the app's fail-loud posture (graceful
-	// degradation is a separate Christopher decision, not the v1 default).
-	scout, err := a.buildRASDirectory(ctx, lk)
+	// S-Phase 0/1: build the scouting profiles (RAS + SchoolTier) and inject
+	// them through the ScoutingDirectory port. A fetch failure surfaces loudly —
+	// a signal-less league should be visible, matching the app's fail-loud
+	// posture (graceful degradation is a separate Christopher decision, not the
+	// v1 default; the one exception is an UNCONFIGURED CFBD key — see below).
+	scout, err := a.buildScoutingDirectory(ctx, lk)
 	if err != nil {
 		return ScoreLeagueResult{Error: err.Error(), Label: a.proxyLabel()}
 	}
@@ -130,28 +134,66 @@ func (a *App) ScoreLeague() ScoreLeagueResult {
 	return ScoreLeagueResult{OK: true, Label: a.proxyLabel(), Report: rep}
 }
 
-// rasFetchTimeout bounds each RAS-pipeline HTTP call (combine.csv + the
-// crosswalk). It is a per-request BACKSTOP — the ScoreLeague context deadline
-// (m1Timeout) still bounds the whole pass. Generous by design: combine.csv is
-// a multi-season release (~5 MB) and the crosswalk ~1 MB, both off the MFL
-// transport on static CDNs; a tight timeout would fail on a cold cache.
+// rasFetchTimeout bounds each scouting-pipeline HTTP call (combine.csv, the
+// crosswalk, and the CFBD /teams call). It is a per-request BACKSTOP — the
+// ScoreLeague context deadline (m1Timeout) still bounds the whole pass.
+// Generous by design: combine.csv is a multi-season release (~5 MB) and the
+// crosswalk ~1 MB, both off the MFL transport on static CDNs; a tight timeout
+// would fail on a cold cache.
 const rasFetchTimeout = 90 * time.Second
 
-// buildRASDirectory wires the S-Phase 0 RAS pipeline: collect rostered MFL
-// ids, fetch combine + crosswalk, compute per-position RAS-equivalent (§3),
-// and wrap the result as a rankings ScoutingDirectory. The PositionLookup
-// adapter rides on the SAME cached normalize.Lookup the orchestrator already
-// builds — position is a players-DB fact, never re-fetched. The rubric-
-// resolved position (composition.ResolveRubricPosition) is identical to the
-// players-DB position this phase: no PassRushSnapShare is wired, so the
-// DE/LB EDGE router is a passthrough today (deferred per the §3 brief note).
-func (a *App) buildRASDirectory(ctx context.Context, lk normalize.Lookup) (rankings.MapScoutingDirectory, error) {
+// cfbdEnvVar is the environment variable carrying the CollegeFootballData
+// bearer token — the credential the SchoolTier (and later CollegeShare) signal
+// needs. It is read at wire time, never stored in the repo. When it is UNSET the
+// school-tier signal is skipped rather than failing the board (see below).
+const cfbdEnvVar = "CFBD_API_KEY"
+
+// buildScoutingDirectory wires the scouting pipeline and wraps the merged result
+// as a rankings ScoutingDirectory. Both signals ride on the SAME cached
+// normalize.Lookup the orchestrator already built (position + college are
+// players-DB facts, never re-fetched) via one scoutLookupAdapter.
+//
+//   - S-Phase 0 (RAS): fetch combine + crosswalk, compute per-position
+//     RAS-equivalent (§3). A fetch failure surfaces loudly. (The rubric-resolved
+//     position equals the players-DB position this phase — no PassRushSnapShare is
+//     wired, so the DE/LB EDGE router is a passthrough today.)
+//   - S-Phase 1 (SchoolTier): fetch CFBD /teams, join each rostered id →
+//     college → tier, and MERGE into the per-player Profile. This needs a CFBD
+//     API key; when the key is UNCONFIGURED the signal is SKIPPED (every player →
+//     SchoolUnset → Data-Parity neutral) rather than failing the whole board, so
+//     an environment without the key still ranks on RAS. A key-PRESENT fetch
+//     failure (network / 401 / parse) still surfaces loudly — a missing key and a
+//     broken fetch are different conditions.
+func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (rankings.MapScoutingDirectory, error) {
 	rosterMFLIDs := collectRosterMFLIDs(a.state.Reader())
 	client := &http.Client{Timeout: rasFetchTimeout}
-	profiles, err := assembly.BuildRAS(ctx, client, ras.SourceURL, crosswalk.SourceURL, rosterMFLIDs, lookupPosAdapter{lk: lk})
+	adapter := scoutLookupAdapter{lk: lk}
+
+	profiles, err := assembly.BuildRAS(ctx, client, ras.SourceURL, crosswalk.SourceURL, rosterMFLIDs, adapter)
 	if err != nil {
 		return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build RAS scouting directory: %w", err)
 	}
+
+	if key := strings.TrimSpace(os.Getenv(cfbdEnvVar)); key != "" {
+		year, cerr := strconv.Atoi(ingestion.SeasonYear)
+		if cerr != nil {
+			return rankings.MapScoutingDirectory{}, fmt.Errorf("app: season year %q not numeric: %w", ingestion.SeasonYear, cerr)
+		}
+		tiers, terr := assembly.BuildSchoolTier(ctx, client, schooltier.TeamsURL, key, year, rosterMFLIDs, adapter)
+		if terr != nil {
+			return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build school-tier scouting directory: %w", terr)
+		}
+		// Merge tiers into the per-player Profile map. A tier-only player (school
+		// known, no combine) gets a fresh Profile carrying just SchoolTier — its
+		// HasRAS stays false, so the RAS rubric still imputes the fallback.
+		for pid, tier := range tiers {
+			p := profiles[pid]
+			p.MFLID = pid
+			p.SchoolTier = tier
+			profiles[pid] = p
+		}
+	}
+
 	return rankings.NewMapScoutingDirectory(profiles), nil
 }
 
@@ -180,20 +222,33 @@ func collectRosterMFLIDs(st state.Reader) []string {
 	return out
 }
 
-// lookupPosAdapter adapts the existing normalize.Lookup to assembly's narrow
-// PositionLookup port. It returns false on an unknown id OR an aggregate (Facts
-// already collapses both to ok=false), keeping the assembly package free of any
-// normalize import.
-type lookupPosAdapter struct {
+// scoutLookupAdapter adapts the existing normalize.Lookup to assembly's narrow
+// scouting ports — PositionLookup (RAS) and SchoolLookup (SchoolTier) — so both
+// signals read the SAME cached players-DB facts and the assembly package stays
+// free of any normalize import. Facts returns ok=false on an unknown id OR an
+// aggregate (collapsed there), which both ports treat as an ordinary miss.
+type scoutLookupAdapter struct {
 	lk normalize.Lookup
 }
 
-func (a lookupPosAdapter) Position(mflID string) (domain.Position, bool) {
+func (a scoutLookupAdapter) Position(mflID string) (domain.Position, bool) {
 	facts, ok := a.lk.Facts(mflID)
 	if !ok {
 		return "", false
 	}
 	return facts.Position, true
+}
+
+// College returns the player's raw MFL college name. ok=false when the player is
+// unknown/aggregate OR MFL carries no college for them (team-D rows, some deep
+// database players) — the school-tier join treats an absent college as a neutral
+// miss (SchoolUnset downstream).
+func (a scoutLookupAdapter) College(mflID string) (string, bool) {
+	facts, ok := a.lk.Facts(mflID)
+	if !ok || facts.College == "" {
+		return "", false
+	}
+	return facts.College, true
 }
 
 // RankRow is one board row: the B6 persisted score joined with identity (players

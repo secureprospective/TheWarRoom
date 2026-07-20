@@ -348,9 +348,9 @@ func TestYearsBetween(t *testing.T) {
 
 // TestRun_ScoutingDirectoryPopulatesRAS proves the ScoutingDirectory port
 // injects RAS through scorePlayer → spec.RAS/HasRAS → composition.Assembler →
-// the engine. Two rostered players: 1002 has a profile (RAS 8.0 threaded
-// through, presence in the map == HasRAS=true), 1001 does not (HasRAS=false →
-// L1 imputes DefaultRASFallback, ApplyHygiene zeroes the raw RAS). The
+// the engine. Two rostered players: 1002 has a profile with HasRAS=true (RAS 8.0
+// threaded through — per-field presence, not directory presence), 1001 does not
+// (HasRAS=false → L1 imputes DefaultRASFallback, ApplyHygiene zeroes the raw RAS). The
 // engine's TiebreakerKey carries the cleaned RAS, which is the surface that
 // distinguishes the two wiring paths — 8.0 for the profile-present player, 0.0
 // (hygiene-zeroed) for the absent-profile player.
@@ -359,7 +359,7 @@ func TestRun_ScoutingDirectoryPopulatesRAS(t *testing.T) {
 	// Give 1002 (Rook, Zero, WR) a RAS profile; leave 1001 and 2001 absent.
 	id1002, _ := playerid.New("1002")
 	scout := NewMapScoutingDirectory(map[playerid.PlayerID]scouting.Profile{
-		id1002: {MFLID: id1002, RAS: 8.0},
+		id1002: {MFLID: id1002, RAS: 8.0, HasRAS: true},
 	})
 
 	out := &fakeOut{}

@@ -30,10 +30,11 @@ type lookupEntry struct {
 	isAggregate  bool // a team/positional aggregate ("Def", "TMWR", …) — never rostered
 	team         string
 	isRookie     bool
-	birthdate    int64 // epoch seconds, valid only when hasBirthdate
-	hasBirthdate bool  // MFL DETAILS=1 birthdate present (commissioner-created players lack it)
-	draftYear    int   // MFL DETAILS=1 draft year, valid only when hasDraftYear
-	hasDraftYear bool  // a REAL draft year is present (the "0" undrafted sentinel is dropped here)
+	birthdate    int64  // epoch seconds, valid only when hasBirthdate
+	hasBirthdate bool   // MFL DETAILS=1 birthdate present (commissioner-created players lack it)
+	draftYear    int    // MFL DETAILS=1 draft year, valid only when hasDraftYear
+	hasDraftYear bool   // a REAL draft year is present (the "0" undrafted sentinel is dropped here)
+	college      string // MFL DETAILS=1 college name, raw (empty when absent); the SchoolTier source
 }
 
 // Lookup is the players database keyed by canonical player id (playerid form), the
@@ -85,6 +86,7 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 			isAggregate: isAgg,
 			team:        rp.Team,
 			isRookie:    rp.Status == "R",
+			college:     strings.TrimSpace(rp.College),
 		}
 		// Birthdate (DETAILS=1) is typed HERE — the Raw→domain boundary. The fetcher
 		// already validated a present value parses; absent stays absent (the M1
@@ -124,8 +126,9 @@ type PlayerFacts struct {
 	IsRookie     bool
 	Birthdate    int64 // epoch seconds, valid only when HasBirthdate
 	HasBirthdate bool
-	DraftYear    int  // MFL draft year, valid only when HasDraftYear; the §6 experience source
-	HasDraftYear bool // a real (positive) draft year is present — undrafted/created players lack it
+	DraftYear    int    // MFL draft year, valid only when HasDraftYear; the §6 experience source
+	HasDraftYear bool   // a real (positive) draft year is present — undrafted/created players lack it
+	College      string // MFL college name, raw (empty when MFL has none); the SchoolTier join source
 }
 
 // Facts resolves one canonical player id to its players-DB facts. ok is false when
@@ -148,6 +151,7 @@ func (l Lookup) Facts(id string) (PlayerFacts, bool) {
 		HasBirthdate: e.hasBirthdate,
 		DraftYear:    e.draftYear,
 		HasDraftYear: e.hasDraftYear,
+		College:      e.college,
 	}, true
 }
 

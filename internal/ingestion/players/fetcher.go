@@ -71,6 +71,15 @@ type RawPlayer struct {
 	// real draft year. The consumer (the §6 signing handler) owns the sentinel /
 	// plausibility policy; the fetcher passes it raw.
 	DraftYear string
+	// College is the raw college-name string DETAILS=1 adds ("Ohio State", "Miami
+	// (FL)"), the source for the SchoolTier scouting signal (S-Phase 1). MFL omits it
+	// for team-defense / coach rows and some deep-database players (~15% league-wide);
+	// absent is legitimate and the consumer (the scouting assembly's school-tier join)
+	// treats a missing/unmatched college as SchoolUnset → Data-Parity neutral, so this
+	// fetcher validates nothing about it and passes it raw. MFL's college vocabulary
+	// does not match CFBD's school vocabulary 1:1 ("Miami (FL)" vs "Miami"); that
+	// reconciliation belongs to the join, not here.
+	College string
 }
 
 // Validate checks the raw record's SHAPE before anything downstream runs. It does
@@ -123,6 +132,7 @@ type playerBlock struct {
 	Status    string `json:"status"`
 	Birthdate string `json:"birthdate"`  // epoch seconds; present only with DETAILS=1
 	DraftYear string `json:"draft_year"` // draft year; present with DETAILS=1 ("0"/"1970" = undrafted sentinel)
+	College   string `json:"college"`    // college name; present with DETAILS=1, omitted for team-D/coach rows
 }
 
 // Fetch retrieves the league's player database for the given season+league and

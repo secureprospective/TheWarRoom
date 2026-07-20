@@ -38,6 +38,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/output"
+	"github.com/secureprospective/TheWarRoom/internal/scouting"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -233,15 +234,22 @@ func (r *Runner) scorePlayer(fid string, p state.PlayerState, asOf time.Time) (o
 		// dimensionless salary-as-%-of-cap ratio, not stored money (OQ-014 edge).
 		Salary:    p.CapSalary.Millions(),
 		IsVeteran: !facts.IsRookie,
-		// RAS flows as of S-Phase 0: if a scouting Profile is present for this
-		// player it carries the assembled RAS-equivalent (0–10) — set HasRAS so
-		// the rubric's RAS component is active. An absent profile keeps HasRAS
-		// false → L1 imputes DefaultRASFallback (the prior behavior). Every
-		// other scouting Has* stays false → Data-Parity neutral in the rubrics.
+		// Scouting signals flow from the assembled Profile, gated PER FIELD (a
+		// profile may carry one signal and not another — see ScoutingDirectory):
+		//   - RAS (S-Phase 0): gate on Profile.HasRAS; absent → L1 imputes
+		//     DefaultRASFallback (the prior behavior).
+		//   - SchoolTier (S-Phase 1): gate on the SchoolUnset sentinel; absent →
+		//     composition derives HasSchoolTier=false → Data-Parity neutral.
+		// Every other scouting Has* stays false → Data-Parity neutral in the rubrics.
 	}
 	if profile, ok := r.scout.Profile(p.MFLID); ok {
-		spec.RAS = profile.RAS
-		spec.HasRAS = true
+		if profile.HasRAS {
+			spec.RAS = profile.RAS
+			spec.HasRAS = true
+		}
+		if profile.SchoolTier != scouting.SchoolUnset {
+			spec.SchoolTier = profile.SchoolTier
+		}
 	}
 	spec.Position = composition.ResolveRubricPosition(spec) // no snap share wired → passthrough today
 

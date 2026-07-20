@@ -28,7 +28,15 @@ type Profile struct {
 	// --- RAS (athletic testing) ---
 	// Excluded at K (SL-020). The engine forces QB's RAS contribution to 1.000
 	// (SL-020 Low-tier); the raw value is still held here.
-	RAS float64 // Relative Athletic Score
+	//
+	// HasRAS distinguishes a real assembled RAS from the zero value. RAS is a bare
+	// float with no natural "absent" sentinel (0 could be a legitimate score), so —
+	// unlike SchoolTier, which has SchoolUnset — presence needs its own flag. Once a
+	// Profile can carry more than one signal (S-Phase 1: SchoolTier), "this player is
+	// in the directory" no longer implies "this player has a RAS"; the consumer must
+	// gate the RAS copy on HasRAS, not on directory presence.
+	RAS    float64 // Relative Athletic Score
+	HasRAS bool    // a real RAS was assembled (false → RAS field is the zero value, not a signal)
 
 	// --- Breakout (college trajectory) ---
 	BreakoutAge            float64    // first college-production season vs. signal threshold

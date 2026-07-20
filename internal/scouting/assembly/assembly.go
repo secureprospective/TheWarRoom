@@ -122,7 +122,7 @@ func BuildRAS(
 		if err != nil {
 			continue // defensive — same id was validated above
 		}
-		out[pid] = scouting.Profile{MFLID: pid, RAS: r}
+		out[pid] = scouting.Profile{MFLID: pid, RAS: r, HasRAS: true}
 	}
 	return out, nil
 }
