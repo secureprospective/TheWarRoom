@@ -11,6 +11,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegeshare"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playerscores"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/ras"
@@ -190,6 +191,22 @@ func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (
 			p := profiles[pid]
 			p.MFLID = pid
 			p.SchoolTier = tier
+			profiles[pid] = p
+		}
+
+		// S-Phase 2 (CollegeShare): fetch the season college-production feed, join
+		// each rostered id → gsis → collapsed position-defined share, and MERGE into
+		// the per-player Profile. Same CFBD key + year as school tier; a share-only
+		// player (no combine, no tier) gets a fresh Profile carrying just the share.
+		shares, serr := assembly.BuildCollegeShare(ctx, client, collegeshare.SeasonStatsURL, crosswalk.SourceURL, key, year, rosterMFLIDs, adapter)
+		if serr != nil {
+			return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build college-share scouting directory: %w", serr)
+		}
+		for pid, share := range shares {
+			p := profiles[pid]
+			p.MFLID = pid
+			p.CollegeProductionShare = share
+			p.HasCollegeProductionShare = true
 			profiles[pid] = p
 		}
 	}

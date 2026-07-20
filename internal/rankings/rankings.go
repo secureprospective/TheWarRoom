@@ -234,22 +234,11 @@ func (r *Runner) scorePlayer(fid string, p state.PlayerState, asOf time.Time) (o
 		// dimensionless salary-as-%-of-cap ratio, not stored money (OQ-014 edge).
 		Salary:    p.CapSalary.Millions(),
 		IsVeteran: !facts.IsRookie,
-		// Scouting signals flow from the assembled Profile, gated PER FIELD (a
-		// profile may carry one signal and not another — see ScoutingDirectory):
-		//   - RAS (S-Phase 0): gate on Profile.HasRAS; absent → L1 imputes
-		//     DefaultRASFallback (the prior behavior).
-		//   - SchoolTier (S-Phase 1): gate on the SchoolUnset sentinel; absent →
-		//     composition derives HasSchoolTier=false → Data-Parity neutral.
-		// Every other scouting Has* stays false → Data-Parity neutral in the rubrics.
+		// Scouting Has* fields start false → Data-Parity neutral; applyScouting
+		// copies in each signal the assembled Profile actually carries (per field).
 	}
 	if profile, ok := r.scout.Profile(p.MFLID); ok {
-		if profile.HasRAS {
-			spec.RAS = profile.RAS
-			spec.HasRAS = true
-		}
-		if profile.SchoolTier != scouting.SchoolUnset {
-			spec.SchoolTier = profile.SchoolTier
-		}
+		applyScouting(&spec, profile)
 	}
 	spec.Position = composition.ResolveRubricPosition(spec) // no snap share wired → passthrough today
 
@@ -264,6 +253,27 @@ func (r *Runner) scorePlayer(fid string, p state.PlayerState, asOf time.Time) (o
 			Reason: fmt.Sprintf("score: %v", err)}, baseReal
 	}
 	return output.ScoreRecord{MFLID: p.MFLID, Result: res}, nil, origin
+}
+
+// applyScouting copies each present scouting signal from the assembled Profile into
+// the PlayerSpec, gated PER FIELD (see ScoutingDirectory) — a profile may carry one
+// signal and not another. A field left untouched keeps its zero value, which the
+// rubric reads as absent and neutralizes via Data-Parity:
+//   - RAS (S-Phase 0): gate on Profile.HasRAS; absent → L1 imputes DefaultRASFallback.
+//   - SchoolTier (S-Phase 1): gate on the SchoolUnset sentinel.
+//   - CollegeShare (S-Phase 2): gate on HasCollegeProductionShare (0 is a real share).
+func applyScouting(spec *composition.PlayerSpec, profile scouting.Profile) {
+	if profile.HasRAS {
+		spec.RAS = profile.RAS
+		spec.HasRAS = true
+	}
+	if profile.SchoolTier != scouting.SchoolUnset {
+		spec.SchoolTier = profile.SchoolTier
+	}
+	if profile.HasCollegeProductionShare {
+		spec.CollegeShare = profile.CollegeProductionShare
+		spec.HasCollegeShare = true
+	}
 }
 
 // yearsBetween is the age derivation: exact days between the instants divided by

@@ -13,10 +13,13 @@ import (
 //
 // PER-FIELD PRESENCE (S-Phase 1 onward — supersedes the S-Phase 0 shortcut): a
 // Profile can now carry MORE THAN ONE signal (S-Phase 0 RAS + S-Phase 1
-// SchoolTier), so "present in the directory" no longer implies "has a RAS". The
-// consumer must gate EACH field on that field's own presence signal:
+// SchoolTier + S-Phase 2 CollegeShare), so "present in the directory" no longer
+// implies "has a RAS". The consumer must gate EACH field on that field's own
+// presence signal:
 //   - RAS is a bare float with no absent-sentinel → gate on Profile.HasRAS.
 //   - SchoolTier has the SchoolUnset sentinel → gate on tier != SchoolUnset.
+//   - CollegeShare is a bare float (0 is a real share) → gate on
+//     Profile.HasCollegeProductionShare.
 //
 // A player present for one signal but absent for another (school tier known, no
 // combine) copies only the present field; the missing one stays neutral. "Absent
@@ -28,8 +31,8 @@ type ScoutingDirectory interface {
 }
 
 // MapScoutingDirectory is the concrete map-backed ScoutingDirectory the app
-// wires over the merged scouting-assembler output (RAS + SchoolTier, and later
-// signals folded into the same per-player Profile). A nil or empty map is legal (an
+// wires over the merged scouting-assembler output (RAS + SchoolTier + CollegeShare,
+// and later signals folded into the same per-player Profile). A nil or empty map is legal (an
 // explicitly-empty directory is a real condition — every player misses); the
 // orchestrator's New nil-guards the directory ITSELF, not the map's contents.
 type MapScoutingDirectory struct {

@@ -39,10 +39,17 @@ type Profile struct {
 	HasRAS bool    // a real RAS was assembled (false → RAS field is the zero value, not a signal)
 
 	// --- Breakout (college trajectory) ---
-	BreakoutAge            float64    // first college-production season vs. signal threshold
-	SchoolTier             SchoolTier // competition tier
-	CollegeProductionShare float64    // monolithic, position-defined upstream (one slot)
-	AgeTrajectory          float64    // age vs. position peak limit
+	BreakoutAge float64    // first college-production season vs. signal threshold
+	SchoolTier  SchoolTier // competition tier
+	// CollegeProductionShare is one player's within-team college production share,
+	// collapsed to a single position-defined value upstream (the assembler picks the
+	// position-appropriate raw share — S-Phase 2). Like RAS it is a bare float with no
+	// natural absent sentinel (0 is a REAL share — the player produced nothing), so
+	// presence needs its own flag: gate the copy on HasCollegeProductionShare, never on
+	// directory presence or a zero test.
+	CollegeProductionShare    float64
+	HasCollegeProductionShare bool
+	AgeTrajectory             float64 // age vs. position peak limit
 
 	// --- Position-conditional groups (nil when the position does not use them) ---
 	OffenseFilm *OffenseFilm // QB / RB / WR / TE
