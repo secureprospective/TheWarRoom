@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegedefense"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegeshare"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/pfrcoverage"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/ras"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/schooltier"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
@@ -70,6 +71,14 @@ func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (
 		return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build RAS scouting directory: %w", err)
 	}
 
+	// Coverage (S-Phase FILM C-4 step 1): the CB/S coverage anchor rides on nflverse PFR
+	// advanced-defense (NO CFBD key), so it merges here alongside RAS — unconditionally, and
+	// before the CFBD-gated block. A fetch failure surfaces loudly (a coverage-less league
+	// must be visible), matching BuildRAS.
+	if err := mergeCoverage(ctx, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
+		return rankings.MapScoutingDirectory{}, err
+	}
+
 	if key := strings.TrimSpace(os.Getenv(cfbdEnvVar)); key != "" {
 		if err := mergeCFBDScouting(ctx, client, key, cw, rosterMFLIDs, adapter, profiles); err != nil {
 			return rankings.MapScoutingDirectory{}, err
@@ -108,6 +117,29 @@ func mergeCFBDScouting(ctx context.Context, client *http.Client, key string, cw 
 		return err
 	}
 	return mergeBreakoutAgeIDP(ctx, client, key, cw, ages, year, rosterMFLIDs, adapter, profiles)
+}
+
+// mergeCoverage (S-Phase FILM C-4 step 1): join each rostered CB/S id → gsis → the
+// engine-ready coverage anchor ([0,1], higher=better — the leaf inverts PFR passer-rating-
+// allowed) into a fresh scouting.NGSCoverage group. A coverage-only player gets a fresh
+// Profile carrying just Coverage; the film-composite blend (K4 = 0.20 of the film budget)
+// is applied downstream in rankings.applyScouting, not here. The season is the same value
+// the CFBD signals use (ingestion.SeasonYear).
+func mergeCoverage(ctx context.Context, client *http.Client, cw crosswalk.Map,
+	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
+	// pfrcoverage keys the season as a string (the CSV's raw column); pass SeasonYear
+	// straight through — no numeric round-trip needed, unlike the CFBD int-year fetchers.
+	cov, err := assembly.BuildCoverage(ctx, client, pfrcoverage.SourceURL, cw, ingestion.SeasonYear, rosterMFLIDs, adapter)
+	if err != nil {
+		return fmt.Errorf("app: build coverage scouting directory: %w", err)
+	}
+	for pid, norm := range cov {
+		p := profiles[pid]
+		p.MFLID = pid
+		p.Coverage = assembly.CoverageGroup(norm)
+		profiles[pid] = p
+	}
+	return nil
 }
 
 // mergeSchoolTier (S-Phase 1): join each rostered id → college → tier. A tier-only

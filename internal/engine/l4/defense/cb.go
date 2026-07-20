@@ -16,11 +16,14 @@ import (
 // is DT-specific; CB carries SL-019 like TE/DE). Per OQ-004, CB scores cornerbacks only;
 // hybrid safety-corner roles route through the S rubric.
 const (
-	// Film component (CB_Rubric §2): S-curve over the coverage film composite (PFF 0.35 + NGS
-	// 0.30 + IDP 0.20 + TDN/Nerds), STANDARD ±5% cap at steepness 12.0. Data-Parity neutral in
-	// v1.0 (film sub-signal weights UNSET — the calibration pass populates them; until then the
-	// composite source is unpopulated, so film returns neutral 1.000). The NGS dedicated anchor
-	// lives INSIDE this composite; it does not change the engine's single [0,1] film input —
+	// Film component (CB_Rubric §2): S-curve over the coverage film composite, STANDARD ±5% cap
+	// at steepness 12.0. FILM Thread C (C-4 step 1) calibrated this composite: the subjective
+	// sources it originally named (PFF/TDN/Nerds/IDP/NGS-tracking) were ELIMINATED, and the ONE
+	// surviving live input is the PFR coverage-allowed anchor, blended UPSTREAM at the locked
+	// K4 weight (0.20 of the film budget, in rankings.applyScouting) into the single [0,1]
+	// FilmComposite this rubric still consumes unchanged. A CB with no coverage anchor keeps
+	// HasFilm=false → film returns neutral 1.000 (Data-Parity). The NGS dedicated anchor lives
+	// INSIDE this composite; it does not change the engine's single [0,1] film input —
 	// NGS-presence is asserted via the HasNGSAnchor introspection hook (case 3I), not the boundary.
 	cbFilmInflection = 0.50
 	cbFilmSteepness  = 12.0

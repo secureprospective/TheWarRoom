@@ -280,7 +280,31 @@ func applyScouting(spec *composition.PlayerSpec, profile scouting.Profile) {
 		spec.BreakoutAge = profile.BreakoutAge
 		spec.HasBreakoutAge = true
 	}
+	// Coverage (S-Phase FILM C-4 step 1, CB/S only): the coverage anchor is the first live
+	// input to the CB/S FILM composite (every subjective source that composite named — PFF,
+	// TDN, NGS-tracking, IDP brands — was eliminated). The composite weights are "set
+	// upstream" (engine.ScoutingInput doc), and this is that upstream: blend the [0,1]
+	// coverage anchor at the LOCKED K4 weight (coverageFilmWeight = 0.20) against the neutral
+	// midpoint, so an all-neutral film budget stays 0.50 (the engine S-curve's neutral
+	// inflection) and a present coverage anchor moves the composite by at most ±0.10. Gated on
+	// the non-nil Coverage group (CB/S only); every other position leaves HasFilm false and
+	// the rubric neutralizes film via Data-Parity.
+	if profile.Coverage != nil {
+		spec.FilmComposite = coverageFilmWeight*profile.Coverage.CoverageMetrics +
+			(1-coverageFilmWeight)*filmNeutralMidpoint
+		spec.HasFilm = true
+	}
 }
+
+// coverageFilmWeight is the LOCKED K4 decision (FILM Thread C, C-3 expert-panel gate): the
+// coverage anchor's share of the CB/S film budget. filmNeutralMidpoint is the film
+// composite's neutral value (the engine film S-curve inflects at 0.50); an unset film
+// sub-signal contributes the midpoint, so the composite stays neutral until a real signal
+// moves it. Both are the single place these two numbers live on the wiring side.
+const (
+	coverageFilmWeight  = 0.20
+	filmNeutralMidpoint = 0.50
+)
 
 // yearsBetween is the age derivation: exact days between the instants divided by
 // the mean tropical year. Fractional on purpose — the engine's age curves are

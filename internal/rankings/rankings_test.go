@@ -400,6 +400,49 @@ func TestRun_ScoutingDirectoryPopulatesRAS(t *testing.T) {
 	}
 }
 
+// TestApplyScouting_CoverageFilmComposite pins the LOCKED K4 blend (FILM Thread C): a
+// present coverage anchor becomes FilmComposite = 0.20·coverage + 0.80·0.50, so a neutral
+// anchor (0.50) leaves the composite neutral (0.50) and the extremes move it only ±0.10 —
+// the 0.20 film-budget weight, damped around the engine S-curve's neutral inflection.
+func TestApplyScouting_CoverageFilmComposite(t *testing.T) {
+	id, _ := playerid.New("1001")
+	cases := []struct {
+		name string
+		cov  float64
+		want float64
+	}{
+		{"neutral coverage stays neutral", 0.50, 0.50},
+		{"elite coverage lifts by +0.10", 1.00, 0.60},
+		{"poor coverage drags by -0.10", 0.00, 0.40},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var spec composition.PlayerSpec
+			applyScouting(&spec, scouting.Profile{
+				MFLID:    id,
+				Coverage: &scouting.NGSCoverage{CoverageMetrics: c.cov},
+			})
+			if !spec.HasFilm {
+				t.Fatalf("coverage present → HasFilm must be true")
+			}
+			if math.Abs(spec.FilmComposite-c.want) > 1e-12 {
+				t.Fatalf("cov=%v: FilmComposite = %v, want %v", c.cov, spec.FilmComposite, c.want)
+			}
+		})
+	}
+}
+
+// TestApplyScouting_NoCoverageLeavesFilmAbsent: without a Coverage group, HasFilm stays
+// false and the rubric neutralizes film via Data-Parity (every non-CB/S position).
+func TestApplyScouting_NoCoverageLeavesFilmAbsent(t *testing.T) {
+	id, _ := playerid.New("1001")
+	var spec composition.PlayerSpec
+	applyScouting(&spec, scouting.Profile{MFLID: id, RAS: 8.0, HasRAS: true})
+	if spec.HasFilm {
+		t.Fatalf("no coverage anchor → HasFilm must stay false (got FilmComposite=%v)", spec.FilmComposite)
+	}
+}
+
 // TestRun_EmptyScoutingDirectoryIsLegal pins the "explicitly-empty map is a
 // legal condition" half of the nil-guard rule. A real ScoreLeague pass might
 // run when the scouting fetch returned nothing for the whole league (network
