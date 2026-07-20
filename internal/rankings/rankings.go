@@ -262,6 +262,8 @@ func (r *Runner) scorePlayer(fid string, p state.PlayerState, asOf time.Time) (o
 //   - RAS (S-Phase 0): gate on Profile.HasRAS; absent → L1 imputes DefaultRASFallback.
 //   - SchoolTier (S-Phase 1): gate on the SchoolUnset sentinel.
 //   - CollegeShare (S-Phase 2): gate on HasCollegeProductionShare (0 is a real share).
+//   - BreakoutAge (S-Phase 4): gate on HasBreakoutAge (a young age is a real, high-value
+//     signal — 0 is not "absent"; the engine curves the RAW age per position).
 func applyScouting(spec *composition.PlayerSpec, profile scouting.Profile) {
 	if profile.HasRAS {
 		spec.RAS = profile.RAS
@@ -273,6 +275,10 @@ func applyScouting(spec *composition.PlayerSpec, profile scouting.Profile) {
 	if profile.HasCollegeProductionShare {
 		spec.CollegeShare = profile.CollegeProductionShare
 		spec.HasCollegeShare = true
+	}
+	if profile.HasBreakoutAge {
+		spec.BreakoutAge = profile.BreakoutAge
+		spec.HasBreakoutAge = true
 	}
 }
 

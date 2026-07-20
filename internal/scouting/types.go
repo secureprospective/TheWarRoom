@@ -39,8 +39,16 @@ type Profile struct {
 	HasRAS bool    // a real RAS was assembled (false → RAS field is the zero value, not a signal)
 
 	// --- Breakout (college trajectory) ---
-	BreakoutAge float64    // first college-production season vs. signal threshold
-	SchoolTier  SchoolTier // competition tier
+	// BreakoutAge is the player's raw age in YEARS at the reference date of his first
+	// college season whose within-team production share crossed the breakout threshold
+	// (S-Phase 4, offense v1). Like RAS and CollegeProductionShare it is a bare float
+	// with no natural absent sentinel — a young breakout age (0 headroom = elite) is a
+	// REAL, high-value signal, and 0 is not "absent" — so presence needs its own flag:
+	// gate the copy on HasBreakoutAge, never on directory presence or a zero test. The
+	// engine consumes the RAW age and maps it through each position's §4 curve.
+	BreakoutAge    float64    // raw age in years at first breakout season (see HasBreakoutAge)
+	HasBreakoutAge bool       // a real breakout age was derived (false → BreakoutAge is the zero value, not a signal)
+	SchoolTier     SchoolTier // competition tier
 	// CollegeProductionShare is one player's within-team college production share,
 	// collapsed to a single position-defined value upstream (the assembler picks the
 	// position-appropriate raw share — S-Phase 2). Like RAS it is a bare float with no

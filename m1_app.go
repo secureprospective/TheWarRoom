@@ -3,24 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
 	"strconv"
-	"strings"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegedefense"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegeshare"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playerscores"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/ras"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/schooltier"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/rankings"
-	"github.com/secureprospective/TheWarRoom/internal/scouting/assembly"
-	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
 // m1Timeout bounds the M1 IPC calls. ScoreLeague may fetch two MFL exports and
@@ -134,157 +123,6 @@ func (a *App) ScoreLeague() ScoreLeagueResult {
 		return ScoreLeagueResult{Error: err.Error(), Label: a.proxyLabel()}
 	}
 	return ScoreLeagueResult{OK: true, Label: a.proxyLabel(), Report: rep}
-}
-
-// rasFetchTimeout bounds each scouting-pipeline HTTP call (combine.csv, the
-// crosswalk, and the CFBD /teams call). It is a per-request BACKSTOP — the
-// ScoreLeague context deadline (m1Timeout) still bounds the whole pass.
-// Generous by design: combine.csv is a multi-season release (~5 MB) and the
-// crosswalk ~1 MB, both off the MFL transport on static CDNs; a tight timeout
-// would fail on a cold cache.
-const rasFetchTimeout = 90 * time.Second
-
-// cfbdEnvVar is the environment variable carrying the CollegeFootballData
-// bearer token — the credential the SchoolTier (and later CollegeShare) signal
-// needs. It is read at wire time, never stored in the repo. When it is UNSET the
-// school-tier signal is skipped rather than failing the board (see below).
-const cfbdEnvVar = "CFBD_API_KEY"
-
-// buildScoutingDirectory wires the scouting pipeline and wraps the merged result
-// as a rankings ScoutingDirectory. Both signals ride on the SAME cached
-// normalize.Lookup the orchestrator already built (position + college are
-// players-DB facts, never re-fetched) via one scoutLookupAdapter.
-//
-//   - S-Phase 0 (RAS): fetch combine + crosswalk, compute per-position
-//     RAS-equivalent (§3). A fetch failure surfaces loudly. (The rubric-resolved
-//     position equals the players-DB position this phase — no PassRushSnapShare is
-//     wired, so the DE/LB EDGE router is a passthrough today.)
-//   - S-Phase 1 (SchoolTier): fetch CFBD /teams, join each rostered id →
-//     college → tier, and MERGE into the per-player Profile. This needs a CFBD
-//     API key; when the key is UNCONFIGURED the signal is SKIPPED (every player →
-//     SchoolUnset → Data-Parity neutral) rather than failing the whole board, so
-//     an environment without the key still ranks on RAS. A key-PRESENT fetch
-//     failure (network / 401 / parse) still surfaces loudly — a missing key and a
-//     broken fetch are different conditions.
-func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (rankings.MapScoutingDirectory, error) {
-	rosterMFLIDs := collectRosterMFLIDs(a.state.Reader())
-	client := &http.Client{Timeout: rasFetchTimeout}
-	adapter := scoutLookupAdapter{lk: lk}
-
-	profiles, err := assembly.BuildRAS(ctx, client, ras.SourceURL, crosswalk.SourceURL, rosterMFLIDs, adapter)
-	if err != nil {
-		return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build RAS scouting directory: %w", err)
-	}
-
-	if key := strings.TrimSpace(os.Getenv(cfbdEnvVar)); key != "" {
-		year, cerr := strconv.Atoi(ingestion.SeasonYear)
-		if cerr != nil {
-			return rankings.MapScoutingDirectory{}, fmt.Errorf("app: season year %q not numeric: %w", ingestion.SeasonYear, cerr)
-		}
-		tiers, terr := assembly.BuildSchoolTier(ctx, client, schooltier.TeamsURL, key, year, rosterMFLIDs, adapter)
-		if terr != nil {
-			return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build school-tier scouting directory: %w", terr)
-		}
-		// Merge tiers into the per-player Profile map. A tier-only player (school
-		// known, no combine) gets a fresh Profile carrying just SchoolTier — its
-		// HasRAS stays false, so the RAS rubric still imputes the fallback.
-		for pid, tier := range tiers {
-			p := profiles[pid]
-			p.MFLID = pid
-			p.SchoolTier = tier
-			profiles[pid] = p
-		}
-
-		// S-Phase 2 (CollegeShare): fetch the season college-production feed, join
-		// each rostered id → gsis → collapsed position-defined share, and MERGE into
-		// the per-player Profile. Same CFBD key + year as school tier; a share-only
-		// player (no combine, no tier) gets a fresh Profile carrying just the share.
-		shares, serr := assembly.BuildCollegeShare(ctx, client, collegeshare.SeasonStatsURL, crosswalk.SourceURL, key, year, rosterMFLIDs, adapter)
-		if serr != nil {
-			return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build college-share scouting directory: %w", serr)
-		}
-		for pid, share := range shares {
-			p := profiles[pid]
-			p.MFLID = pid
-			p.CollegeProductionShare = share
-			p.HasCollegeProductionShare = true
-			profiles[pid] = p
-		}
-
-		// S-Phase 3 (CollegeDefense / IDP): fetch the DEFENSIVE college-production
-		// feed, join each rostered defensive id → gsis → position-averaged share, and
-		// MERGE into the SAME CollegeProductionShare slot. Offense (CollegeShare) and
-		// defense (CollegeDefense) populate DISJOINT positions — each collapse returns
-		// absent for the other side — so a player is filled by at most one feed and the
-		// slot never clobbers. Same CFBD key + year as the offense feeds.
-		defShares, derr := assembly.BuildCollegeDefense(ctx, client, collegedefense.SeasonStatsURL, crosswalk.SourceURL, key, year, rosterMFLIDs, adapter)
-		if derr != nil {
-			return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build college-defense scouting directory: %w", derr)
-		}
-		for pid, share := range defShares {
-			p := profiles[pid]
-			p.MFLID = pid
-			p.CollegeProductionShare = share
-			p.HasCollegeProductionShare = true
-			profiles[pid] = p
-		}
-	}
-
-	return rankings.NewMapScoutingDirectory(profiles), nil
-}
-
-// collectRosterMFLIDs walks every franchise roster and returns the set of
-// rostered MFL ids — the population the RAS pipeline scores against. Order-
-// independent: BuildRAS treats the slice as a set, and the cohort math is
-// order-independent (see internal/scouting/assembly/ras_math.go). Duplicates
-// across franchises are deduped defensively; in practice a player is on
-// exactly one roster (state's invariant).
-func collectRosterMFLIDs(st state.Reader) []string {
-	seen := make(map[string]struct{})
-	out := make([]string, 0, 64)
-	for _, fid := range st.Franchises() {
-		roster, ok := st.Roster(fid)
-		if !ok {
-			continue
-		}
-		for _, p := range roster {
-			if _, dup := seen[p.MFLID]; dup {
-				continue
-			}
-			seen[p.MFLID] = struct{}{}
-			out = append(out, p.MFLID)
-		}
-	}
-	return out
-}
-
-// scoutLookupAdapter adapts the existing normalize.Lookup to assembly's narrow
-// scouting ports — PositionLookup (RAS) and SchoolLookup (SchoolTier) — so both
-// signals read the SAME cached players-DB facts and the assembly package stays
-// free of any normalize import. Facts returns ok=false on an unknown id OR an
-// aggregate (collapsed there), which both ports treat as an ordinary miss.
-type scoutLookupAdapter struct {
-	lk normalize.Lookup
-}
-
-func (a scoutLookupAdapter) Position(mflID string) (domain.Position, bool) {
-	facts, ok := a.lk.Facts(mflID)
-	if !ok {
-		return "", false
-	}
-	return facts.Position, true
-}
-
-// College returns the player's raw MFL college name. ok=false when the player is
-// unknown/aggregate OR MFL carries no college for them (team-D rows, some deep
-// database players) — the school-tier join treats an absent college as a neutral
-// miss (SchoolUnset downstream).
-func (a scoutLookupAdapter) College(mflID string) (string, bool) {
-	facts, ok := a.lk.Facts(mflID)
-	if !ok || facts.College == "" {
-		return "", false
-	}
-	return facts.College, true
 }
 
 // RankRow is one board row: the B6 persisted score joined with identity (players
