@@ -4,6 +4,20 @@
 // all ten positions, with position-conditional groups present only where a
 // position uses them.
 //
+// WIRING STATUS (2026-07-20): this type hierarchy (Profile, OffenseFilm, IDPFilm,
+// NGSCoverage, SafetyRole) and the ~11 scouting fetchers under internal/ingestion
+// (agetrajectory, collegeshare, collegedefense, crosswalk, kicking, madden,
+// nflproduction, pfrcoverage, ras, touchshare, veteranfilm) are DELIBERATE, DESIGNED
+// SCAFFOLDING for the deferred scouting data-integration phase — NOT dead code. The
+// shape + fetchers exist and are unit-tested; the production WIRING (fetch → Profile →
+// engine Layer 4 sub-signals) has not been switched on. The M1 orchestrator states the
+// scouting sub-signals are "Data-Parity ABSENT … no fetcher wired yet," so Layer 4 runs
+// the identity/neutral path until this lands. The plan (Option D hybrid, source maps in
+// docs/data-layer/{Offense,Defense}_Scouting_Source_Map.md) and the retained-field
+// rationale (the SOURCE-DRIFT notes on each type in types.go) are the answer to
+// "why is this in main?" — kept by ruling 2026-07-20 rather than carved out. See
+// SYSTEM_MAP.md → "Deferred / unwired scaffolding".
+//
 // It is a LEAF — it imports only internal/playerid (the shared id value type) and
 // nothing else internal. It does not fetch (fetchers populate it) and it does not
 // score (the engine consumes it). All raw→typed mapping lives in the fetchers.

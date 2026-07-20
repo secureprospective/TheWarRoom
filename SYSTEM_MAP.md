@@ -56,6 +56,26 @@ rules in `.golangci.yml` — they are build errors, not conventions.
 - **Engine calibration params** — shipped defaults in `internal/store/params` (B4), tunable via the M9a admin UI. Never hardcode calibration numbers in engine code.
 - **League rules** — `internal/store/rulebook` (B3b), MFL-sourced + delta overrides.
 
+## Deferred / unwired scaffolding (built ahead of wiring — NOT dead code)
+
+Some code ships in `main` ahead of the phase that switches it on. It is designed,
+unit-tested scaffolding with a documented wiring trigger — retained by ruling
+(2026-07-20) rather than carved out. Flagged here so a reviewer does not read it as rot.
+
+- **Scouting sub-system (~2000 lines).** `internal/scouting` (`Profile`, `OffenseFilm`,
+  `IDPFilm`, `NGSCoverage`, `SafetyRole`) + the ~11 scouting fetchers under
+  `internal/ingestion` (`agetrajectory`, `collegeshare`, `collegedefense`, `crosswalk`,
+  `kicking`, `madden`, `nflproduction`, `pfrcoverage`, `ras`, `touchshare`,
+  `veteranfilm`). The types + `Fetch()` exist and are tested; the production wiring
+  (fetch → `Profile` → engine Layer 4) is **not switched on** — Layer 4 runs the
+  identity/neutral path (M1: "Data-Parity ABSENT … no fetcher wired yet"). **Wiring
+  trigger:** the scouting data-integration sprint (Option D hybrid). **Why retained:**
+  the source maps (`docs/data-layer/{Offense,Defense}_Scouting_Source_Map.md`) + the
+  per-type SOURCE-DRIFT notes in `internal/scouting/types.go` capture eliminated-source
+  research that would be expensive to rediscover. See the `internal/scouting` package doc.
+- **`NewCFBDClient`** (`internal/ingestion/cfbd.go`) — extracted ahead of the CFBD
+  orchestration; wire or drop when that fetcher path lands.
+
 ## What does not exist (intentionally)
 
 - **No ORM.** Raw parameterized `database/sql`, confined to `internal/db` + `internal/store`.
