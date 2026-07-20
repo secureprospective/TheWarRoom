@@ -4,6 +4,8 @@
 
 Verb grammar is provisional (Guix-simple: `domain.verb key=value`), refined when the chat engine is designed. A `RETURN-SESSION` flag means the mapping is non-trivial and deferred, not that the control is exempt.
 
+**Input-normalization mandate (LLM router responsibility — noted 2026-07-20, Christopher, Session E):** the ledger verbs are the *canonical* target, but real user input arrives fuzzy — **misspelled words** (mobile thumb-typos) and **voice-chat transcription errors** (speech-to-text misrepresentations). The LLM router MUST **synthesize/resolve fuzzy input into the canonical verb+args BEFORE the chatbot produces any output** (normalize-then-act — never echo the garbled token, never execute a mis-parsed verb). This is the standing reason the chat backbone is **LLM-backed, not a rigid Guix-simple parser alone**: a declarative grammar can't absorb spelling/voice noise; the LLM is the noise-tolerant front layer mapping sloppy natural language → the exact verb below. This is acute on mobile (voice + thumb-typing are primary). The chat engine is not built in this roadmap — this records the requirement for the return trip. See [[project_thewarroom_react_rationale]].
+
 ---
 
 ## Session A — Grid & Spatial System (shell + M1 + Home + quick-dash)
@@ -66,6 +68,12 @@ The first Session to introduce a large verb set — every actuating control acro
 | D12 | Resolved-event log | Comms terminal | `history range=<…> filter=<…>` | Dumps a 100%-opacity mono log of resolved/expired events — keeps recession calm AND the record exact |
 
 **Session D confirmed design law (binds Session E + the build track):** ONE time-ordered event substrate — feed / chat / calendar-deadline / trade-card / system-alert render ONE row anatomy (2px **achromatic** spine — hue EARNED only on escalation — · mono timestamp · subject weight-600 + predicate weight-400 · verb affordance micro-switch). **Escalation** (R-F): spine widens 2→4px + takes the semantic hue (amber-loud <1hr / red-loud snipe) + row optically raises + pins to the top **ALERTS tributary**; NO modal, NO looping animation. **Recession**: 150ms fade to 50%, no unread badges. **VAV** (Verb Affordance Visibility) is an ALTITUDE not a mode: casual = affordances always visible; operator = hidden until `:hover`/`:focus-within`, escalation forces persistent. **Freshness rides the spine** (stale → amber-muted, data stays legible). Cross-league = **ledger-flagged seam only** (`[L: ALL]/[L: ACTIVE]` header toggle; v1 single-league). Chat is a **terminal-log thread** (no bubbles, no persona); the `/offer` **Control Card is a control surface inside the conversation**. Calendar is **buildable**: semantic-hue chips (NO position badges), Column-Share overlap (>3 → `+N more`), native drag-MOVE + stepper resize, **append-only honest** (drag = appended `EventSuperseded`, undo = another append). **Operational overlay**: deadlines project onto the surfaces they govern (Trade Builder header badge, roster-lock top-bar countdown ticking amber-loud <1hr). Chat instantaneous events (no duration) are filtered OUT of the calendar grid (`is_scheduled && duration>0`).
+
+---
+
+## Session E — Mobile Learning Harvest (chat-first doctrine)
+
+Session E introduces **no new desktop controls** — it is a mobile LEARNING HARVEST (confirmed 2026-07-19/20, "everything is a pass"). Its mobile surfaces reuse the existing A1–D12 verbs. Two Ledger-relevant confirmations: (1) **user-facing slash-aliases** (`/rank`, `/m1`, `/inspect`, `/trade`, `/calendar`, `/offer`) are skins the LLM router resolves to canonical A1–D12 verbs — they are NOT new verbs, they are the mobile entry surface; (2) the **input-normalization mandate** above is confirmed as first-class on mobile (voice + thumb-typos are the primary entry modes, so the LLM normalizes fuzzy input → canonical verb before output). Full direction: `docs/ui/wireframes/session-e/Mobile_Handoff.md`. Phase-3 mobile inherits this; no Phase-1 desktop verb changes.
 
 ---
 

@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TheWarRoom — Session E: Mobile Learning Harvest (chat-first doctrine)</title>
+<style>
+  :root{
+    /* ===== Session C token sheet — inherited verbatim (cold CIC base) ===== */
+    --surface-canvas:  hsl(220,20%,6%);
+    --surface-sunken:  hsl(220,22%,4%);
+    --surface-tile:    hsl(220,18%,9%);
+    --surface-raised:  hsl(220,18%,11%);
+    --surface-overlay: hsl(220,22%,13%);
+    --bevel-hi:  hsl(220,15%,16%);
+    --bevel-lo:  hsl(220,25%,2%);
+    --hairline:  hsl(220,15%,14%);
+    --text-primary:   hsl(220,20%,92%);
+    --text-secondary: hsl(220,12%,65%);
+    --text-tertiary:  hsl(220,10%,45%);
+    --text-disabled:  hsl(220,10%,30%);
+    --green-muted: hsl(145,35%,45%); --green-base: hsl(145,45%,55%); --green-loud: hsl(145,55%,68%);
+    --blue-muted:  hsl(210,45%,50%); --blue-base:  hsl(210,60%,62%); --blue-loud:  hsl(210,75%,75%);
+    --amber-muted: hsl(35,40%,45%);  --amber-base: hsl(35,60%,58%);  --amber-loud: hsl(35,80%,70%);
+    --red-muted:   hsl(0,40%,50%);   --red-base:   hsl(0,55%,62%);   --red-loud:   hsl(0,70%,72%);
+    --edge-focus:     var(--blue-base);
+    --edge-selection: var(--text-primary);
+    --fresh-live:  var(--blue-base);
+    --fresh-stale: var(--amber-muted);
+    --fresh-fail:  var(--red-loud);
+    --mono:"JetBrains Mono","SFMono-Regular",ui-monospace,Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--surface-sunken);color:var(--text-secondary);font-family:var(--sans);font-size:13px;-webkit-font-smoothing:antialiased}
+  .page{max-width:1180px;margin:0 auto;padding:24px}
+  h1,h2,h3{margin:0;font-weight:600}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .up{text-transform:uppercase;letter-spacing:.08em}
+  .r{text-align:right}
+
+  .strip{border:1px solid var(--hairline);background:var(--surface-tile);padding:14px 18px;margin-bottom:16px;box-shadow:inset 0 1px 0 0 var(--bevel-hi)}
+  .strip h1{font-size:16px;color:var(--text-primary);letter-spacing:.04em}
+  .strip .meta{margin-top:6px;color:var(--text-tertiary);font-size:11px;display:flex;gap:18px;flex-wrap:wrap}
+  .strip .meta b{color:var(--text-secondary);font-weight:500}
+
+  .sec{border:1px solid var(--hairline);background:var(--surface-canvas);margin-bottom:16px}
+  .sec>.sh{display:flex;align-items:baseline;gap:10px;min-height:32px;padding:6px 14px;background:var(--surface-tile);border-bottom:1px solid var(--hairline)}
+  .sec>.sh .n{font-size:10px;color:var(--text-tertiary);font-family:var(--mono)}
+  .sec>.sh h2{font-size:11px;color:var(--text-primary);letter-spacing:.06em;text-transform:uppercase}
+  .sec>.sh .s{font-size:10px;color:var(--text-tertiary);margin-left:auto}
+  .sb{padding:16px 14px}
+  .lbl{font-size:9px;color:var(--text-tertiary);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+  .note{font-size:11px;color:var(--text-tertiary);line-height:1.6;margin:0}
+  .note b{color:var(--text-secondary);font-weight:500}
+  .note code{font-family:var(--mono);font-size:10px;color:var(--blue-base)}
+
+  /* ===== triage ===== */
+  .triage{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .tri{border:1px solid var(--hairline);background:var(--surface-tile);padding:10px 12px}
+  .tri h3{font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+  .tri.adopt h3{color:var(--green-base)} .tri.fuse h3{color:var(--blue-base)} .tri.fix h3{color:var(--amber-base)}
+  .tri ul{margin:0;padding-left:15px} .tri li{font-size:11px;line-height:1.65;color:var(--text-secondary);margin-bottom:5px}
+  .tri li b{color:var(--text-primary);font-weight:600} .tri li code{font-family:var(--mono);font-size:10px;color:var(--text-tertiary)}
+
+  /* ===== phone frame ===== */
+  .phones{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+  .pcol{flex:1;min-width:340px}
+  .pcap{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px}
+  .pcap b{color:var(--text-primary)}
+  .pcap .k{font-family:var(--mono);color:var(--text-tertiary);font-size:9px}
+  .phone{width:360px;max-width:100%;border:1px solid var(--bevel-hi);background:var(--surface-canvas);
+    box-shadow:inset 0 1px 0 var(--bevel-hi), 0 0 0 6px var(--surface-sunken), 0 0 0 7px var(--bevel-lo);}
+  /* status bar */
+  .p-status{display:flex;align-items:center;height:22px;padding:0 12px;font-family:var(--mono);font-size:9px;color:var(--text-tertiary);background:var(--surface-sunken);border-bottom:1px solid var(--hairline)}
+  .p-status .r{margin-left:auto;letter-spacing:.1em}
+  /* app bar */
+  .p-bar{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;background:var(--surface-tile);border-bottom:1px solid var(--hairline)}
+  .p-bar .app{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-primary);font-weight:600}
+  .p-bar .lg{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--text-tertiary);border:1px solid var(--bevel-hi);padding:1px 6px}
+  .p-bar .gear{color:var(--text-tertiary);font-size:12px}
+  /* lock-screen push */
+  .p-lock{background:var(--surface-sunken);padding:14px 12px 16px;border-bottom:1px solid var(--hairline)}
+  .p-lock .clock{font-family:var(--mono);font-size:26px;color:var(--text-primary);text-align:center;letter-spacing:.02em}
+  .p-lock .date{font-size:10px;color:var(--text-tertiary);text-align:center;margin:2px 0 14px;text-transform:uppercase;letter-spacing:.1em}
+  .push{border:1px solid var(--hairline);background:var(--surface-raised);border-left:4px solid var(--red-loud);padding:8px 10px;box-shadow:inset 1px 0 0 var(--bevel-hi)}
+  .push .ph{display:flex;gap:8px;align-items:center;font-family:var(--mono);font-size:9px;color:var(--red-loud);letter-spacing:.06em}
+  .push .ph .lgt{margin-left:auto;color:var(--text-tertiary)}
+  .push .pm{font-size:12px;color:var(--text-primary);margin-top:5px;line-height:1.4}
+  .push .pm .subj{font-weight:600}
+  .push .pt{font-family:var(--mono);font-size:9px;color:var(--text-tertiary);margin-top:6px}
+  .taphint{text-align:center;font-size:9px;color:var(--text-disabled);font-family:var(--mono);letter-spacing:.1em;margin-top:10px}
+
+  /* thread body */
+  .p-thread{min-height:300px;padding:8px 0}
+  .p-thread .band{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary);padding:5px 12px;background:var(--surface-sunken);border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline)}
+  .p-thread .band b{color:var(--amber-base);font-weight:500}
+  /* event row (Session D grammar, mobile column) */
+  .row{position:relative;display:flex;gap:9px;padding:8px 12px 8px 0;border-bottom:1px solid var(--hairline)}
+  .row .sp{width:2px;flex:none;align-self:stretch;background:var(--text-tertiary)}
+  .row .body{flex:1;min-width:0}
+  .row .ts{font-family:var(--mono);font-size:9px;color:var(--text-tertiary)}
+  .row .ln{font-size:12px;line-height:1.45;margin-top:1px}
+  .row .ln .subj{color:var(--text-primary);font-weight:600}
+  .row .ln .pred{color:var(--text-secondary);font-weight:400}
+  .row .drawer{font-family:var(--mono);font-size:8px;color:var(--text-disabled);letter-spacing:.08em;margin-top:5px}
+  /* system log line (terminal-log, no bubble) */
+  .sys{display:flex;gap:8px;padding:6px 12px;border-bottom:1px solid var(--hairline);font-family:var(--mono);font-size:11px}
+  .sys .g{color:var(--text-tertiary);flex:none}
+  .sys.human .g{color:var(--text-secondary)} .sys.human .tx{color:var(--text-primary);font-family:var(--sans)}
+  .sys.cmd .g{color:var(--blue-base)} .sys.cmd .tx{color:var(--blue-base)}
+  .sys .tx{color:var(--text-secondary)}
+  .sys .tx .fix{color:var(--red-base);text-decoration:line-through;opacity:.7}
+  .sys .tx .canon{color:var(--green-base)}
+  /* escalated row */
+  .row.esc{background:var(--surface-raised)}
+  .row.esc .sp{width:4px;background:var(--red-loud)}
+  .row.esc .ts{color:var(--red-loud)}
+  .row.recessed{opacity:.5}
+  .row .sp.stale{background:var(--fresh-stale)}
+
+  /* control card (inline, force-persisted) */
+  .ccard{margin:8px 12px 8px 21px;border:1px solid var(--bevel-hi);background:var(--surface-raised);box-shadow:inset 1px 1px 0 var(--bevel-hi)}
+  .ccard .cch{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--hairline);background:var(--surface-overlay)}
+  .ccard .cch .v{font-family:var(--mono);font-size:9px;color:var(--blue-base);letter-spacing:.06em}
+  .ccard .cch .cl{margin-left:auto;font-family:var(--mono);font-size:8px;color:var(--text-tertiary)}
+  .ccard .crow{display:flex;padding:5px 10px;font-size:11px;border-bottom:1px solid var(--hairline)}
+  .ccard .crow .k{color:var(--text-tertiary);width:44px;flex:none;font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+  .ccard .crow .val{color:var(--text-primary)}
+  /* hold-to-fire actuator: fill = blue action axis (in-progress), commit flips green */
+  .hold{margin:8px 10px;position:relative;height:30px;border:1px solid var(--blue-base);overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .hold .fill{position:absolute;left:0;top:0;bottom:0;width:62%;background:var(--blue-base);opacity:.32}
+  .hold .lab{position:relative;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--text-primary)}
+  .hold.decline{border-color:var(--bevel-hi);margin-top:0}
+  .hold.decline .lab{color:var(--text-secondary)}
+  .committed{margin:8px 10px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--green-muted);
+    font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--green-base);background:hsla(145,35%,45%,.08)}
+  .cnote{font-size:9px;color:var(--text-tertiary);padding:0 10px 8px;line-height:1.5}
+
+  /* prompt bar */
+  .p-prompt{border-top:1px solid var(--hairline);background:var(--surface-tile)}
+  .p-prompt .inp{display:flex;align-items:center;gap:8px;padding:7px 10px}
+  .p-prompt .mic{width:26px;height:26px;flex:none;border:1px solid var(--bevel-hi);background:var(--surface-raised);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--blue-base);box-shadow:inset 1px 1px 0 var(--bevel-hi)}
+  .p-prompt .field{flex:1;height:26px;border:1px solid var(--bevel-hi);background:var(--surface-canvas);display:flex;align-items:center;padding:0 9px;font-size:11px;color:var(--text-tertiary)}
+  .p-prompt .field.active{border-color:var(--edge-focus);box-shadow:inset 0 0 0 1px var(--edge-focus)}
+  .p-prompt .field.active .txt{font-family:var(--mono);color:var(--text-primary)}
+  .p-prompt .slash{width:26px;height:26px;flex:none;border:1px solid var(--bevel-hi);background:var(--surface-raised);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--text-secondary);box-shadow:inset 1px 1px 0 var(--bevel-hi)}
+  .p-prompt .rail{display:flex;gap:6px;padding:0 10px 8px;flex-wrap:wrap}
+  .p-prompt .rail .qv{font-family:var(--mono);font-size:9px;color:var(--text-secondary);border:1px solid var(--bevel-hi);background:var(--surface-raised);padding:2px 8px;letter-spacing:.04em}
+  .p-prompt .railcap{font-size:8px;color:var(--text-disabled);font-family:var(--mono);letter-spacing:.08em;padding:0 10px 8px}
+
+  /* survival table */
+  table{border-collapse:collapse;width:100%;font-size:12px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--hairline);vertical-align:top}
+  th{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-tertiary);font-weight:500;background:var(--surface-tile)}
+  td .surf{color:var(--text-primary);font-weight:600}
+  .fate{font-family:var(--mono);font-size:9px;letter-spacing:.04em;padding:1px 6px;border:1px solid;display:inline-block;white-space:nowrap}
+  .f-chat{color:var(--blue-base);border-color:var(--blue-muted)}
+  .f-live{color:var(--green-base);border-color:var(--green-muted)}
+  .f-push{color:var(--amber-base);border-color:var(--amber-muted)}
+  .f-dead{color:var(--text-disabled);border-color:var(--bevel-hi)}
+  td .why{color:var(--text-secondary)} td .esc{color:var(--amber-base);font-weight:500}
+
+  /* lessons ledger */
+  .ledger{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .led{border:1px solid var(--hairline);background:var(--surface-canvas)}
+  .led .lh{padding:6px 12px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--hairline)}
+  .led.binds .lh{color:var(--green-base);background:hsla(145,35%,45%,.07)}
+  .led.breaks .lh{color:var(--amber-base);background:hsla(35,40%,45%,.07)}
+  .led .item{padding:8px 12px;border-bottom:1px solid var(--hairline)}
+  .led .item .t{font-size:11px;color:var(--text-primary);font-weight:600}
+  .led .item .d{font-size:10px;color:var(--text-secondary);line-height:1.55;margin-top:3px}
+  .led .item .d .rep{color:var(--blue-base)}
+  @media(max-width:760px){.triage,.ledger{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="strip">
+    <h1>Session E — Mobile Learning Harvest <span style="color:var(--text-tertiary);font-weight:400">· chat-first doctrine</span></h1>
+    <div class="meta">
+      <span><b>Not a mobile build — a harvest.</b> The desktop (A·B·C·D) is complete; this hands a future mobile session a uniform direction.</span>
+      <span>Thesis <b>R-A:</b> an <b>Inbox that opens onto an Oracle</b></span>
+      <span>Deliverable: survival table + lessons ledger (the real artifact) + one phone-frame proof</span>
+    </div>
+  </div>
+
+  <!-- TRIAGE -->
+  <div class="sec">
+    <div class="sh"><span class="n">△</span><h2>Head-brain triage — two divergent runs → this synthesis</h2><span class="s">leads, not findings</span></div>
+    <div class="sb">
+      <div class="triage">
+        <div class="tri adopt">
+          <h3>◆ Adopted</h3>
+          <ul>
+            <li><b>Thread IS the shell</b> — both runs converged; the terminal-log becomes the whole app (Comms = the OS).</li>
+            <li><b>Zero-typing reactive flow</b> from <b>Run 1 (Inbox)</b> — push deep-links straight into a pre-expanded Control Card.</li>
+            <li><b>Survival table</b> from <b>Run 2 (Oracle)</b> — dense boards become <i>answers-on-demand</i>, not death (M2 is a query, not a corpse).</li>
+            <li><b>Append-only truth</b> binds mobile (Run 2 add) — the timeline scales perfectly to a single column.</li>
+          </ul>
+        </div>
+        <div class="tri fuse">
+          <h3>⧉ Fused</h3>
+          <ul>
+            <li><b>R-A the frame:</b> reactive at the front door (push) + proactive once inside (<code>/</code>-pivot). Neither run is the whole phone — each is one half.</li>
+            <li><b>R-B push-spine graft:</b> Oracle's table + Inbox's <b>escalation-push</b> on deadlines &amp; trade events — closes Oracle's own pull-only RIPCORD.</li>
+            <li><b>R-D VAV:</b> <b>tap-to-expand</b> primary (Run 2) + <b>swipe</b> reserved for ack only (Run 1); escalation force-persists (both).</li>
+          </ul>
+        </div>
+        <div class="tri fix">
+          <h3>✎ Rejected / corrected (5 token fixes)</h3>
+          <ul>
+            <li><code>--c-success</code> → real ramp: hold-fill <code>--blue-base</code> (action axis), commit flips <code>--green-base</code>.</li>
+            <li><code>--t-section/-data/-mute</code> → <code>--text-primary/-secondary/-tertiary</code> + <code>--mono</code>/<code>--sans</code>.</li>
+            <li>"M1 Matchup" → <b>M1 Asset Rankings</b> (factual — M1 is the rankings board).</li>
+            <li><code>/rank /m1 /trade</code> reframed as <b>user aliases the LLM resolves</b> to canonical A1–D12 verbs; dropped <code>/ir</code> (no IR concept).</li>
+            <li><code>sys.normalize</code> = a router <b>preprocessing step</b>, not a Ledger mutation verb.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHONE FRAMES -->
+  <div class="sec">
+    <div class="sh"><span class="n">§1</span><h2>The chat-first shell — the thread is the app (~360px, one column)</h2><span class="s">no hover · no keyboard-first · thumb + voice</span></div>
+    <div class="sb">
+      <div class="phones">
+
+        <!-- REACTIVE FLOW -->
+        <div class="pcol">
+          <div class="pcap"><b>The one flawless flow</b> — reactive, under-clock <span class="k">R-C: zero typing, push deep-linked</span></div>
+          <div class="phone">
+            <div class="p-status"><span>●●● WARROOM</span><span class="r">23:58 · 41%</span></div>
+            <!-- 1. lock-screen push -->
+            <div class="p-lock">
+              <div class="clock">23:58</div>
+              <div class="date">Thu · Nov 14</div>
+              <div class="push">
+                <div class="ph"><span>⚠ SNIPE — BID ESCALATED</span><span class="lgt">[L: ALPHA]</span></div>
+                <div class="pm"><span class="subj">Bijan Robinson</span> — your $42 bid was topped ($45). Expires 00:01.</div>
+                <div class="pt">↳ tap to open the offer, already loaded</div>
+              </div>
+              <div class="taphint">— TAP THE PUSH —</div>
+            </div>
+          </div>
+          <div class="note" style="margin:8px 0 0">Steps 1–2: the push carries the decision. Tapping deep-links past all navigation straight to the thread with the Control Card <b>already expanded</b> (below). The operator never hunts for it.</div>
+        </div>
+
+        <!-- REACTIVE FLOW cont — the thread on open -->
+        <div class="pcol">
+          <div class="pcap"><b>…opens directly to →</b> the escalated Control Card, force-persisted <span class="k">R-D · R-E</span></div>
+          <div class="phone">
+            <div class="p-status"><span>●●● WARROOM</span><span class="r">23:58 · 41%</span></div>
+            <div class="p-bar"><span class="app">The War Room</span><span class="lg">L: ALPHA</span><span class="gear">⚙</span></div>
+            <div class="p-thread">
+              <div class="band"><b>ALERTS</b> · 1 event demands you — <span style="float:right;color:var(--text-disabled)">Esc releases</span></div>
+              <!-- escalated event + inline control card -->
+              <div class="row esc">
+                <div class="sp"></div>
+                <div class="body">
+                  <div class="ts">23:57 · now</div>
+                  <div class="ln"><span class="subj">Rival GM</span> <span class="pred">topped your bid on</span> <span class="subj">Bijan Robinson</span></div>
+                </div>
+              </div>
+              <div class="ccard">
+                <div class="cch"><span class="v">/offer</span><span style="color:var(--text-tertiary);font-size:9px">control card</span><span class="cl">expires 00:01</span></div>
+                <div class="crow"><span class="k">give</span><span class="val">$46 · 2yr &nbsp;<span style="color:var(--text-tertiary)">(counter)</span></span></div>
+                <div class="crow"><span class="k">get</span><span class="val">Bijan Robinson &nbsp;<span class="mono" style="color:var(--green-base)">9.2 elite</span></span></div>
+                <div class="hold"><span class="fill"></span><span class="lab">◉ HOLD TO COUNTER $46</span></div>
+                <div class="hold decline"><span class="lab">DECLINE</span></div>
+                <div class="cnote">Hold-to-fire (≤600ms). Fill = <code style="color:var(--blue-base)">--blue-base</code> action axis. Release cancels; engine-reject holds. The 480px desktop modal is dropped — the gesture lives on the card.</div>
+              </div>
+              <!-- prior thread receding -->
+              <div class="row recessed">
+                <div class="sp stale"></div>
+                <div class="body"><div class="ts">23:45</div><div class="ln"><span class="subj">Waivers</span> <span class="pred">processed — 3 claims cleared</span></div></div>
+              </div>
+            </div>
+            <div class="p-prompt">
+              <div class="inp">
+                <div class="mic">🎙</div>
+                <div class="field"><span>Ask or command…</span></div>
+                <div class="slash">/</div>
+              </div>
+            </div>
+          </div>
+          <div class="note" style="margin:8px 0 0">Steps 3–5: card is force-persisted (escalation overrides tap-to-expand). Hold → commit <code>txn.commit action=counter</code> → <code>[COMMITTED — 23:59]</code> in <b>--green-base</b>, spine recedes to <b>--fresh-stale</b>, row fades 50%. One thumb, no navigation.</div>
+        </div>
+
+        <!-- PROACTIVE / NORMALIZE PATH -->
+        <div class="pcol">
+          <div class="pcap"><b>The everyday path</b> — proactive, calm, fuzzy-tolerant <span class="k">R-F: voice/typo → normalize → act</span></div>
+          <div class="phone">
+            <div class="p-status"><span>●●● WARROOM</span><span class="r">09:12 · 88%</span></div>
+            <div class="p-bar"><span class="app">The War Room</span><span class="lg">L: ALL</span><span class="gear">⚙</span></div>
+            <div class="p-thread" style="min-height:262px">
+              <!-- fuzzy human input (voice or thumb) -->
+              <div class="sys human"><span class="g">🎙</span><span class="tx">"trde cmach for cheetah"</span></div>
+              <!-- normalize-then-act -->
+              <div class="sys"><span class="g">↳ SYS</span><span class="tx">resolved <span class="fix">trde cmach for cheetah</span> → <span class="canon">/trade give=McCaffrey get=Hill</span></span></div>
+              <div class="sys cmd"><span class="g">&gt;</span><span class="tx">trade.add · txn.preview</span></div>
+              <!-- returned actuation-bearing card (not a board) -->
+              <div class="ccard" style="margin-left:12px">
+                <div class="cch"><span class="v">/trade</span><span style="color:var(--text-tertiary);font-size:9px">answer = control card</span><span class="cl">tap to expand</span></div>
+                <div class="crow"><span class="k">give</span><span class="val">C. McCaffrey <span class="mono" style="color:var(--amber-base)">RB · 31</span></span></div>
+                <div class="crow"><span class="k">get</span><span class="val">T. Hill <span class="mono" style="color:var(--green-base)">WR · 8.8</span></span></div>
+                <div class="crow"><span class="k">cap</span><span class="val">+$3.2M room · legal</span></div>
+                <div class="cnote">Resting card shows spine + subject/predicate; <b>tap-to-expand</b> reveals Accept/Counter/Decline (R-D). Dense M1/M2/Inspector return here as <b>cards, never boards</b>.</div>
+              </div>
+            </div>
+            <div class="p-prompt">
+              <div class="inp">
+                <div class="mic" style="color:var(--red-loud);border-color:var(--red-muted)">●</div>
+                <div class="field active"><span class="txt">/trade give=McCaffrey get=Hill▎</span></div>
+                <div class="slash" style="color:var(--blue-base);border-color:var(--edge-focus)">/</div>
+              </div>
+              <div class="rail">
+                <span class="qv">/rank</span><span class="qv">/m1</span><span class="qv">/inspect</span><span class="qv">/calendar</span><span class="qv">/offer</span>
+              </div>
+              <div class="railcap">↑ quick-verb ACCELERATOR — not the only path; free NL + voice are first-class, the LLM normalizes to these verbs</div>
+            </div>
+          </div>
+          <div class="note" style="margin:8px 0 0"><b>Why the backbone is LLM-backed, not a rigid parser:</b> input arrives fuzzy — <b>misspellings</b> (thumb) &amp; <b>voice-transcription errors</b>. The router <b>normalizes → canonical verb BEFORE any output</b> (never echoes the garbled token). Mic is first-class; the verb rail only accelerates.</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- SURVIVAL TABLE -->
+  <div class="sec">
+    <div class="sh"><span class="n">§2</span><h2>The survival table — every desktop surface gets a mobile fate</h2><span class="s">R-B · dense surfaces change state-of-matter, they don't shrink</span></div>
+    <div class="sb">
+      <table>
+        <thead><tr><th style="width:24%">Desktop surface</th><th style="width:20%">Mobile fate</th><th>Why · escalation / push behavior</th></tr></thead>
+        <tbody>
+          <tr><td><span class="surf">M1 Asset Rankings</span></td><td><span class="fate f-chat">CHAT-ANSWERABLE</span></td><td><span class="why">A 32×7 matrix is illegible on a thumb. "top available RBs" → a sorted answer-card, not a board.</span></td></tr>
+          <tr><td><span class="surf">M2 Power Rankings</span></td><td><span class="fate f-chat">CHAT-ANSWERABLE</span></td><td><span class="why">"where do I rank?" → a top-5 summary card. Oracle's honest call — a query, not death.</span></td></tr>
+          <tr><td><span class="surf">Inspector</span></td><td><span class="fate f-chat">CHAT-ANSWERABLE</span></td><td><span class="why">"breakdown Bijan" → a single scroll-frozen entity card. Deep-dive blocks don't survive as a persistent surface.</span></td></tr>
+          <tr><td><span class="surf">Home (2×2)</span></td><td><span class="fate f-dead">DEAD</span></td><td><span class="why">No room for a landing grid — the thread <i>is</i> the home screen. Opens to what needs action.</span></td></tr>
+          <tr><td><span class="surf">Comms thread</span></td><td><span class="fate f-live">LIVE CARD</span></td><td><span class="why">Promoted from a right-edge overlay to the entire shell — the terminal-log thread is the mobile app.</span></td></tr>
+          <tr><td><span class="surf">Feed / Pulse</span></td><td><span class="fate f-live">LIVE CARD</span></td><td><span class="why">The live event substrate persists inline in the thread; ambient events stay calm until they escalate.</span></td></tr>
+          <tr><td><span class="surf">Calendar</span></td><td><span class="fate f-chat">CHAT-ANSWERABLE</span> <span class="fate f-push">+ PUSH</span></td><td><span class="why">"what's due this week?" → an append-only chip list. </span><span class="esc">PUSH when a deadline escalates (&lt;1hr / roster-lock).</span></td></tr>
+          <tr><td><span class="surf">M4 Transaction WS</span></td><td><span class="fate f-dead">DEAD</span> <span class="fate f-push">+ PUSH</span></td><td><span class="why">Nobody builds multi-leg trades on a phone — the builder dies. </span><span class="esc">Escalated trade/bid arrives as PUSH → /offer Control Card.</span></td></tr>
+          <tr><td><span class="surf">Cross-league (25-league)</span></td><td><span class="fate f-push">PUSH</span></td><td><span class="why">The portfolio operator doesn't browse 25 leagues on a phone — they are interrupted. Fires aggregate into one push queue.</span></td></tr>
+        </tbody>
+      </table>
+      <p class="note" style="margin:12px 0 0"><b>The push-spine is the graft that makes the table honest:</b> pull-only (Oracle) is dead when the app is closed at 2am — so <b>every time-critical axis (deadlines, trades, cross-league fires) carries a PUSH</b>. Everything else is calm and answers-on-demand.</p>
+    </div>
+  </div>
+
+  <!-- LESSONS LEDGER -->
+  <div class="sec">
+    <div class="sh"><span class="n">§3</span><h2>The lessons ledger — the real deliverable (handed to a future mobile session cold)</h2><span class="s">R-G</span></div>
+    <div class="sb">
+      <div class="ledger">
+        <div class="led binds">
+          <div class="lh">◆ BINDS mobile — inherited, non-negotiable</div>
+          <div class="item"><div class="t">Color &amp; restraint doctrine</div><div class="d">Color is Data + State; structure is achromatic. A notification list must NOT light up like a Christmas tree — hue is earned strictly via semantic escalation.</div></div>
+          <div class="item"><div class="t">One-thread event grammar</div><div class="d">Spine + timestamp + subject(600)/predicate(400) + verb-affordance is the universal translator — it scales perfectly to a single column. Everything is a message in the log.</div></div>
+          <div class="item"><div class="t">Append-only truth</div><div class="d">Events &amp; actions are never mutated, only superseded (EventSuperseded/EventUndone). Temporal honesty maps 1:1 onto a chat thread.</div></div>
+          <div class="item"><div class="t">Hold-to-fire actuation</div><div class="d">The 480px modal dies; the <i>gesture</i> survives — ≤600ms fill, release-cancels, engine-reject holds. It prevents catastrophic fat-finger commits.</div></div>
+          <div class="item"><div class="t">Token typography</div><div class="d">Inter = text, JetBrains Mono = data/commands; hero numerics keep tabular-nums. The desktop hierarchy is preserved verbatim.</div></div>
+          <div class="item"><div class="t">Optical elevation (no shadows/blur)</div><div class="d">Hairlines + inset bevels + the surface ramp (sunken 4% → tile 9% → raised 11%) carry over — cheap-paint on mobile too. No dropshadows.</div></div>
+          <div class="item"><div class="t">Command Ledger verbs (A1–D12)</div><div class="d">Every action is still a verb — the mobile UI is a generator for <span class="mono" style="font-size:10px">txn.commit / feed.ack / cmd.execute</span>. Slash-aliases (/rank, /trade) are user-facing skins the LLM resolves to these.</div></div>
+          <div class="item"><div class="t">LLM input-normalization</div><div class="d">Fuzzy voice/typo input MUST resolve to a canonical verb <i>before</i> any output (normalize-then-act). This is why the backbone is LLM-backed, not a rigid parser. <span class="mono" style="font-size:10px">(router preprocessing, not a mutation verb)</span></div></div>
+        </div>
+        <div class="led breaks">
+          <div class="lh">✎ MOBILE MAY BREAK — deliberate divergences</div>
+          <div class="item"><div class="t">4-column instrument shell</div><div class="d">A phone has room for ONE thing. <span class="rep">→ Single-column chat-first shell;</span> nav/inspector/calendar splits die, dense boards relegate to chat-answerable cards.</div></div>
+          <div class="item"><div class="t">Hover-dependent VAV</div><div class="d">Capacitive touch has no hover to preview chrome. <span class="rep">→ Tap-to-expand slide-down drawer (primary); swipe reserved for ack/dismiss;</span> escalation force-persists affordances inline.</div></div>
+          <div class="item"><div class="t">480px centered ConfirmModal</div><div class="d">A desktop measure that hijacks the viewport and feels heavy under a clock. <span class="rep">→ Inline hold-to-fire on the Control Card itself</span> — commitment happens in situ.</div></div>
+          <div class="item"><div class="t">Keyboard / J-K-T map</div><div class="d">Phones lack a physical keyboard; a soft one is slow &amp; intrusive. <span class="rep">→ Voice/mic input + the /-pivot &amp; quick-verb accelerator rail;</span> native touch scroll.</div></div>
+          <div class="item"><div class="t">Density tiers (Matrix/Tactical)</div><div class="d">22px rows need a mouse; 44pt touch targets override data-density cramming. <span class="rep">→ One comfortable touch density;</span> the "Matrix" need is met by on-demand summary cards.</div></div>
+          <div class="item"><div class="t">Dedicated boards (Home, M1, M4)</div><div class="d">The operator can't visualize a portfolio at once on a phone. <span class="rep">→ Data exists when interrogated;</span> the board becomes an answer to a question.</div></div>
+        </div>
+      </div>
+      <p class="note" style="margin:12px 0 0"><b>RIPCORD: none new.</b> R-A (Inbox-onto-Oracle) resolves Run 1's proactive-interrogation gap; R-C (push deep-link) resolves Run 2's under-clock-typing gap. The two runs' RIPCORDs cancel each other in the composition.</p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
