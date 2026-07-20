@@ -5,7 +5,6 @@ import { ValidationBoard } from './components/ValidationBoard';
 import { AdminPanel } from './components/AdminPanel';
 import { RankingsBoard } from './components/RankingsBoard';
 import { PowerRankingsBoard } from './components/PowerRankingsBoard';
-import { TransactionsPanel } from './components/TransactionsPanel';
 import { TransactionWorkspace } from './components/transactions/TransactionWorkspace';
 import { TradeBuilder } from './components/transactions/TradeBuilder';
 import { LeagueControls } from './components/transactions/LeagueControls';
@@ -17,13 +16,7 @@ type Tab =
   | 'validation'
   | 'workspace'
   | 'trade'
-  | 'league'
-  | 'transactions';
-
-// D8 phased shell cutover: the real M4 operator UI ("Transactions" workspace + "League Controls")
-// ships alongside the OLD raw-mflID dev panel, which stays reachable behind this flag until all 14
-// ops port into the workspace — then it is deleted. Flip to hide the dev tab.
-const SHOW_DEV_PANEL = true;
+  | 'league';
 
 // App shell: M1 (the real 32-team asset rankings, the first live module) plus the
 // testing-harness tabs (rookie sandbox, architectural validation), with the live
@@ -71,11 +64,6 @@ function App() {
             <TabButton active={tab === 'validation'} onClick={() => setTab('validation')}>
               Module 3: Architectural Tests
             </TabButton>
-            {SHOW_DEV_PANEL && (
-              <TabButton active={tab === 'transactions'} onClick={() => setTab('transactions')}>
-                B7a: Transactions (dev)
-              </TabButton>
-            )}
             <button
               type="button"
               onClick={() => void loadAll()}
@@ -97,10 +85,8 @@ function App() {
             <PowerRankingsBoard />
           ) : tab === 'rookies' ? (
             <RookieTable />
-          ) : tab === 'validation' ? (
-            <ValidationBoard />
           ) : (
-            <TransactionsPanel />
+            <ValidationBoard />
           )}
         </main>
 
