@@ -8,6 +8,7 @@ import {
 } from '../../../wailsjs/go/main/App';
 import { main } from '../../../wailsjs/go/models';
 import { ConfirmModal, type Pending } from './ConfirmModal';
+import { money, initials, Th, Empty } from './format';
 
 // TradeBuilder is the M4 slice-3 multi-franchise/multi-leg TRADE surface (design doc §"TRADE gets
 // its own builder"). Unlike the subject-centric single-player workspace, a trade spans several
@@ -16,15 +17,6 @@ import { ConfirmModal, type Pending } from './ConfirmModal';
 // every leg lands or none). No mflID is typed (D2): names come from the server, the id rides hidden
 // on each leg. The whole trade goes through the same D5 quote → D4 re-send-intent commit path the
 // single-move ops use, reusing ConfirmModal. Every list is guarded `?? []` (D9).
-
-const money = (m: number) => `$${m.toFixed(1)}M`;
-const initials = (name: string) =>
-  name
-    .split(' ')
-    .map((s) => s[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 
 // TradeLeg is one player's move as staged in the cart: the id crosses the wire, the rest is display.
 type TradeLeg = {
@@ -401,18 +393,3 @@ function LegRow({
   );
 }
 
-function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
-  return (
-    <th
-      className={`sticky top-0 z-[1] border-b border-[#29344a] bg-[#0e1420] px-3.5 py-[9px] text-[10.5px] font-semibold uppercase tracking-[0.07em] ${
-        right ? 'text-right' : 'text-left'
-      }`}
-    >
-      {children}
-    </th>
-  );
-}
-
-function Empty({ text }: { text: string }) {
-  return <div className="m-auto max-w-[260px] p-8 text-center text-[13px] text-[#64748b]">{text}</div>;
-}

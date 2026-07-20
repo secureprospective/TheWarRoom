@@ -176,11 +176,3 @@ func requireOneRow(res sql.Result, mflID string) error {
 	}
 	return nil
 }
-
-// boolToInt maps a bool to the 0/1 SQLite integer encoding.
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}

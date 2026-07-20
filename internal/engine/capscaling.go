@@ -3,6 +3,8 @@ package engine
 import (
 	"fmt"
 	"math"
+
+	"github.com/secureprospective/TheWarRoom/internal/numeric"
 )
 
 // The fixed L5 cap multipliers (Engine_Specification:399). These are NOT calibration —
@@ -38,7 +40,7 @@ func ApplyCapScaling(scoutingAdjusted, salary, leagueCap, coldCeiling, hotFloor 
 	}
 	// A non-finite salary or boundary makes every tier comparison false and silently
 	// classifies the player Neutral — a wrong tier label with no error. Reject it.
-	if !finite(salary, coldCeiling, hotFloor) {
+	if !numeric.Finite(salary, coldCeiling, hotFloor) {
 		return CapScaling{}, fmt.Errorf("engine: cap inputs must be finite, got salary=%v cold=%v hot=%v", salary, coldCeiling, hotFloor)
 	}
 	pct := salary / leagueCap * 100

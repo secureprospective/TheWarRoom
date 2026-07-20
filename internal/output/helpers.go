@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math"
 
 	"github.com/secureprospective/TheWarRoom/internal/engine"
+	"github.com/secureprospective/TheWarRoom/internal/numeric"
 	sqlite "modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 )
@@ -68,7 +68,7 @@ func newRowValues(season, scoringConfigID int, rec ScoreRecord, now string) (row
 		return rowValues{}, fmt.Errorf("output: %q has unknown cap tier %q", rec.MFLID, rec.Result.CapTier)
 	}
 	l4 := rec.Result.Layer4Output
-	if !finite(
+	if !numeric.Finite(
 		rec.Result.BasePoints, rec.Result.AgePull,
 		l4.FilmEffective, l4.FilmRaw, l4.RASEffective, l4.BreakoutEffective, l4.Combined,
 		rec.Result.ScoutingAdjusted, rec.Result.CapMultiplier, rec.Result.AdjustedScore,
@@ -93,7 +93,7 @@ func (rv rowValues) args() []any {
 		rv.r.BasePoints, rv.r.AgePull,
 		l4.FilmEffective, l4.FilmRaw, l4.RASEffective, l4.BreakoutEffective, l4.Combined,
 		rv.r.ScoutingAdjusted, rv.r.CapMultiplier, string(rv.r.CapTier), rv.r.AdjustedScore,
-		boolToInt(rv.r.Tiebreaker.IsVeteran), rv.r.Tiebreaker.RAS, rv.r.Tiebreaker.ScarcityRank,
+		numeric.BoolToInt(rv.r.Tiebreaker.IsVeteran), rv.r.Tiebreaker.RAS, rv.r.Tiebreaker.ScarcityRank,
 		rv.createdAt,
 	}
 }
@@ -152,18 +152,6 @@ func validCapTier(t engine.CapTier) bool {
 	}
 }
 
-// finite reports whether every value is a real, non-NaN, non-Inf number. Mirrors the
-// engine's own fail-loud guard; the output store re-checks at the persistence boundary
-// because L5 does not re-validate accumulator finiteness (audit #1).
-func finite(vs ...float64) bool {
-	for _, v := range vs {
-		if math.IsNaN(v) || math.IsInf(v, 0) {
-			return false
-		}
-	}
-	return true
-}
-
 // isUniqueViolation reports whether err is a PRIMARY KEY / UNIQUE constraint failure —
 // the duplicate-key drift signal. It matches modernc's TYPED extended result code, not a
 // message substring: a substring like "constraint failed" also matches CHECK/NOT NULL/FK
@@ -179,12 +167,4 @@ func isUniqueViolation(err error) bool {
 	default:
 		return false
 	}
-}
-
-// boolToInt maps a bool to the 0/1 SQLite integer encoding.
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
 }

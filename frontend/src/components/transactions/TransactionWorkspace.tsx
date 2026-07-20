@@ -10,6 +10,7 @@ import {
 } from '../../../wailsjs/go/main/App';
 import { main } from '../../../wailsjs/go/models';
 import { ConfirmModal, type Pending } from './ConfirmModal';
+import { money, initials, Th, Empty } from './format';
 
 // TransactionWorkspace is the M4 operator UI (design doc §"Slice 1"): a subject-centric IA
 // (D1) — pick a franchise from the rail → see its named roster → click a player → the action
@@ -19,14 +20,6 @@ import { ConfirmModal, type Pending } from './ConfirmModal';
 // guarded `?? []` (D9) so a Go nil-slice→JSON-null can never unmount the root (handoff-36 bug).
 
 const FA = '__FA__'; // sentinel rail selection = the free-agent pool
-const money = (m: number) => `$${m.toFixed(1)}M`;
-const initials = (name: string) =>
-  name
-    .split(' ')
-    .map((s) => s[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 
 export function TransactionWorkspace() {
   const [franchises, setFranchises] = useState<main.M4Franchise[]>([]);
@@ -718,18 +711,3 @@ function Act({
   );
 }
 
-function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
-  return (
-    <th
-      className={`sticky top-0 z-[1] border-b border-[#29344a] bg-[#0e1420] px-3.5 py-[9px] text-[10.5px] font-semibold uppercase tracking-[0.07em] ${
-        right ? 'text-right' : 'text-left'
-      }`}
-    >
-      {children}
-    </th>
-  );
-}
-
-function Empty({ text }: { text: string }) {
-  return <div className="m-auto max-w-[260px] p-8 text-center text-[13px] text-[#64748b]">{text}</div>;
-}

@@ -18,14 +18,6 @@ func atof(s, field string) (float64, error) {
 	return f, nil
 }
 
-// boolToInt maps a bool to the 0/1 SQLite integer encoding.
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 // scanDef reads one param_defaults row into a typed ParamDef, parsing its float
 // fields from their TEXT storage.
 func scanDef(rows *sql.Rows) (ParamDef, error) {

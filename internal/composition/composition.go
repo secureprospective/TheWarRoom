@@ -7,6 +7,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine"
+	"github.com/secureprospective/TheWarRoom/internal/numeric"
 	"github.com/secureprospective/TheWarRoom/internal/scouting"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
@@ -52,7 +53,7 @@ func (a *Assembler) Calibration(pos domain.Position) (engine.Calibration, error)
 	// B4 range-gates these on write, but a bug or future un-gated path must still not reach
 	// the pure engine. decay ∈ [0,1]; cap tiers non-negative with the Cold threshold at or
 	// below the Hot threshold (Neutral is the band between them).
-	if !finite(decay, tiers.ColdCeiling, tiers.HotFloor) {
+	if !numeric.Finite(decay, tiers.ColdCeiling, tiers.HotFloor) {
 		return engine.Calibration{}, fmt.Errorf("composition: non-finite calibration from store (decay=%v cold=%v hot=%v)", decay, tiers.ColdCeiling, tiers.HotFloor)
 	}
 	if decay < 0 || decay > 1 {
@@ -158,7 +159,7 @@ func (a *Assembler) leagueCap() (float64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("composition: salary cap %q is not numeric: %w", raw, err)
 	}
-	if v <= 0 || !finite(v) {
+	if v <= 0 || !numeric.Finite(v) {
 		return 0, fmt.Errorf("composition: salary cap must be positive and finite, got %v", v)
 	}
 	return v, nil

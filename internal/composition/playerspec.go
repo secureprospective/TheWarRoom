@@ -2,9 +2,9 @@ package composition
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/numeric"
 	"github.com/secureprospective/TheWarRoom/internal/scouting"
 )
 
@@ -115,10 +115,10 @@ func (s PlayerSpec) Validate() error {
 	if !validPosition(s.Position) {
 		return fmt.Errorf("composition: player %q has unscorable position %q (resolve FLAG before scoring)", s.MFLID, s.Position)
 	}
-	if !finite(s.BasePoints, s.Age, s.Salary) {
+	if !numeric.Finite(s.BasePoints, s.Age, s.Salary) {
 		return fmt.Errorf("composition: player %q has a non-finite numeric field (base=%v age=%v salary=%v)", s.MFLID, s.BasePoints, s.Age, s.Salary)
 	}
-	if s.HasRAS && !finite(s.RAS) {
+	if s.HasRAS && !numeric.Finite(s.RAS) {
 		return fmt.Errorf("composition: player %q has HasRAS but a non-finite RAS %v", s.MFLID, s.RAS)
 	}
 	if s.Age <= 0 {
@@ -135,7 +135,7 @@ func (s PlayerSpec) Validate() error {
 // require the signals to be present: an absent signal (zero / SchoolUnset) is allowed and
 // handled by the rubric's Data-Parity Rule — only an actively-corrupt value is rejected.
 func (s PlayerSpec) validateScouting() error {
-	if !finite(s.BreakoutAge, s.CollegeShare) {
+	if !numeric.Finite(s.BreakoutAge, s.CollegeShare) {
 		return fmt.Errorf("composition: player %q has a non-finite scouting field (breakoutAge=%v collegeShare=%v)", s.MFLID, s.BreakoutAge, s.CollegeShare)
 	}
 	if s.BreakoutAge < 0 {
@@ -170,19 +170,8 @@ func (s PlayerSpec) validateScouting() error {
 // absent signal is allowed (the rubric's Data-Parity Rule neutralizes it). Shared so each
 // present-gated scouting field validates identically (M17) and validateScouting stays simple.
 func (s PlayerSpec) checkUnitRange(name string, present bool, v float64) error {
-	if present && (!finite(v) || v < 0 || v > 1) {
+	if present && (!numeric.Finite(v) || v < 0 || v > 1) {
 		return fmt.Errorf("composition: player %q has a present %s %v out of [0,1]", s.MFLID, name, v)
 	}
 	return nil
-}
-
-// finite reports whether every value is a real number (no NaN, no Inf). Shared by the
-// spec validator and the assembler's parsed-cap guard (M17).
-func finite(vs ...float64) bool {
-	for _, v := range vs {
-		if math.IsNaN(v) || math.IsInf(v, 0) {
-			return false
-		}
-	}
-	return true
 }

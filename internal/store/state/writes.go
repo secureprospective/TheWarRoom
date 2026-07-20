@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/numeric"
 )
 
 // readerView is the concrete type Store.Reader hands out. It embeds NO *Store, only a
@@ -167,7 +168,7 @@ UPDATE contracts SET annual_salary_cents = ?, contract_years = ?,
        last_updated = ?
 WHERE league_id = ? AND season = ? AND mfl_id = ?`,
 		c.AnnualSalary.Cents(), c.ContractYears, c.ExpirationYear,
-		string(c.ContractStatus), boolToInt(c.IsRestructured), boolToInt(c.IsTagged),
+		string(c.ContractStatus), numeric.BoolToInt(c.IsRestructured), numeric.BoolToInt(c.IsTagged),
 		now, w.s.leagueID, w.s.season, mflID)
 	if err != nil {
 		return fmt.Errorf("state: apply contract: %w", err)

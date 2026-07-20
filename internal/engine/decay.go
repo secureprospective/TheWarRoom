@@ -3,6 +3,8 @@ package engine
 import (
 	"fmt"
 	"math"
+
+	"github.com/secureprospective/TheWarRoom/internal/numeric"
 )
 
 // ApplyDecay is Layer 3: the age pull. Below the position peak limit there is no decay
@@ -20,7 +22,7 @@ import (
 // pull (e.g. decayRate > 1 makes the base negative, and a negative base raised to a
 // fractional exponent is NaN).
 func ApplyDecay(age, peakLimit, decayRate float64) (float64, error) {
-	if !finite(age, peakLimit, decayRate) {
+	if !numeric.Finite(age, peakLimit, decayRate) {
 		return 0, fmt.Errorf("engine: decay inputs must be finite, got age=%v peak=%v rate=%v", age, peakLimit, decayRate)
 	}
 	// decayRate must be in [0,1]. > 1 makes the base negative (sign flip at an integer
@@ -36,7 +38,7 @@ func ApplyDecay(age, peakLimit, decayRate float64) (float64, error) {
 		over = 0
 	}
 	pull := math.Pow(1-decayRate, over)
-	if !finite(pull) {
+	if !numeric.Finite(pull) {
 		return 0, fmt.Errorf("engine: decay produced a non-finite pull (decayRate=%v over=%v)", decayRate, over)
 	}
 	return pull, nil

@@ -18,7 +18,6 @@ const DEFAULT_SCOUTING_WEIGHT = 0.6;
 type SortKey =
   | 'rank'
   | 'scoutingZ'
-  | 'mflPerfZ'
   | 'allPlayWinPct'
   | 'pf'
   | 'pa'
@@ -231,8 +230,6 @@ function getSortVal(r: main.PowerRow, key: SortKey): number {
       return r.rank;
     case 'scoutingZ':
       return r.scoutingZ;
-    case 'mflPerfZ':
-      return r.mflPerfZ;
     case 'allPlayWinPct':
       return r.allPlayWinPct;
     case 'pf':

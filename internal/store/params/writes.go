@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/numeric"
 )
 
 // SetOverride upserts an admin override for (key, position) and refreshes the
@@ -107,7 +109,7 @@ func (s *Store) seedDefaults(ctx context.Context) error {
 			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			d.Key, d.Position, string(d.Type),
 			ftoa(d.Default), ftoa(d.Min), ftoa(d.Max),
-			boolToInt(d.IsCalibrated), d.Description); err != nil {
+			numeric.BoolToInt(d.IsCalibrated), d.Description); err != nil {
 			return fmt.Errorf("params: seed %q: %w", d.Key, err)
 		}
 	}
