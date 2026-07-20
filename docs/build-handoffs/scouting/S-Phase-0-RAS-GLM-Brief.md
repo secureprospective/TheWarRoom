@@ -90,7 +90,7 @@ func BuildRAS(ctx context.Context, client *http.Client, combineURL, crosswalkURL
 
 - `go build ./...` clean; `make lint` 0 (run `GOMEMLIMIT=1500MiB GOGC=20` if on a small box); `go test -race ./...` green.
 - Report: files added/changed, the exact RAS formula as implemented, your hand-computed test vector, and any place you had to make a judgment call (flag each — Claude triages them leads-not-findings).
-- **Do NOT** commit, merge, push, or move any gate. Produce the diff + your report; Claude reviews against source, owns the merge and the live functional gate.
+- **Commit to THIS session branch and push it** (`git add -A && git commit && git push`). **Do NOT merge to main and do NOT move any gate** — Claude reviews your diff against source, owns the merge-to-main and the live functional gate on the Beelink.
 
 ## 8. Reference: exact current shapes (verified 2026-07-20)
 
