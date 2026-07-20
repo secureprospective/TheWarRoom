@@ -280,30 +280,51 @@ func applyScouting(spec *composition.PlayerSpec, profile scouting.Profile) {
 		spec.BreakoutAge = profile.BreakoutAge
 		spec.HasBreakoutAge = true
 	}
-	// Coverage (S-Phase FILM C-4 step 1, CB/S only): the coverage anchor is the first live
-	// input to the CB/S FILM composite (every subjective source that composite named — PFF,
-	// TDN, NGS-tracking, IDP brands — was eliminated). The composite weights are "set
-	// upstream" (engine.ScoutingInput doc), and this is that upstream: blend the [0,1]
-	// coverage anchor at the LOCKED K4 weight (coverageFilmWeight = 0.20) against the neutral
-	// midpoint, so an all-neutral film budget stays 0.50 (the engine S-curve's neutral
-	// inflection) and a present coverage anchor moves the composite by at most ±0.10. Gated on
-	// the non-nil Coverage group (CB/S only); every other position leaves HasFilm false and
-	// the rubric neutralizes film via Data-Parity.
-	if profile.Coverage != nil {
-		spec.FilmComposite = coverageFilmWeight*profile.Coverage.CoverageMetrics +
-			(1-coverageFilmWeight)*filmNeutralMidpoint
+	// IDP film composite (FILM Thread C, C-4 steps 1–2): the DT/DE/LB/CB/S film budget,
+	// built here because the composite weights are "set upstream" (engine.ScoutingInput
+	// doc) — the engine consumes a single [0,1] FilmComposite. Three seats, all LOCKED at
+	// C-3: the Madden defense composite (K1, the primary signal), the CB/S PFR coverage
+	// anchor (K4 = 0.20 — CB/S only), and NFLProduction (K2, ≤0.05 as a pure tiebreaker,
+	// NOT YET wired → its seat is reserved neutral). Any seat whose signal is absent
+	// contributes the neutral midpoint × its weight (Data-Parity), so:
+	//   - DT/DE/LB (no coverage seat): 0.95·Madden + 0.05·neutral
+	//   - CB/S with a coverage anchor:  0.20·coverage + 0.75·Madden + 0.05·neutral
+	// A CB/S carrying a coverage anchor but no Madden record keeps 0.20·coverage +
+	// 0.75·neutral + 0.05·neutral = the EXACT step-1 value (0.20·coverage + 0.80·neutral),
+	// so step 2 is backward-compatible for coverage-only players. A player with neither
+	// leaves HasFilm false and the rubric neutralizes film via Data-Parity.
+	hasCoverage := profile.Coverage != nil
+	hasMadden := profile.IDPFilm != nil
+	if hasCoverage || hasMadden {
+		coverageWeight := 0.0
+		coverageTerm := 0.0
+		if hasCoverage {
+			coverageWeight = coverageFilmWeight // 0.20, CB/S only
+			coverageTerm = coverageWeight * profile.Coverage.CoverageMetrics
+		}
+		maddenWeight := 1 - coverageWeight - nflProductionFilmWeight
+		maddenTerm := maddenWeight * filmNeutralMidpoint // neutral when no Madden record
+		if hasMadden {
+			maddenTerm = maddenWeight * profile.IDPFilm.MaddenComposite
+		}
+		spec.FilmComposite = coverageTerm + maddenTerm +
+			nflProductionFilmWeight*filmNeutralMidpoint // K2 seat reserved neutral (unwired)
 		spec.HasFilm = true
 	}
 }
 
-// coverageFilmWeight is the LOCKED K4 decision (FILM Thread C, C-3 expert-panel gate): the
-// coverage anchor's share of the CB/S film budget. filmNeutralMidpoint is the film
-// composite's neutral value (the engine film S-curve inflects at 0.50); an unset film
-// sub-signal contributes the midpoint, so the composite stays neutral until a real signal
-// moves it. Both are the single place these two numbers live on the wiring side.
+// coverageFilmWeight is the LOCKED K4 decision (the PFR coverage anchor's share of the
+// CB/S film budget). nflProductionFilmWeight is the LOCKED K2 cap (NFLProduction as a
+// pure tiebreaker) — its seat is reserved here at the neutral midpoint until NFLProduction
+// is wired (a later increment), so wiring it is a localized swap of neutral for the real
+// value with no change to the Madden/coverage weights. filmNeutralMidpoint is the film
+// composite's neutral value (the engine film S-curve inflects at 0.50); an unset seat
+// contributes the midpoint, so the composite stays neutral until a real signal moves it.
+// These are the single place the wiring-side film weights live.
 const (
-	coverageFilmWeight  = 0.20
-	filmNeutralMidpoint = 0.50
+	coverageFilmWeight      = 0.20
+	nflProductionFilmWeight = 0.05
+	filmNeutralMidpoint     = 0.50
 )
 
 // yearsBetween is the age derivation: exact days between the instants divided by

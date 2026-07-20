@@ -17,8 +17,11 @@ import (
 // dispatch is a position-resolution concern deferred to B5b-LB (harness case 3J).
 const (
 	// Film component (DE_Rubric §2): S-curve over the IDP film composite, STANDARD ±5% (SL-002
-	// upper bound — NOT DT's SL-005 ±3% compression). Data-Parity neutral in v1.0 (IDP film
-	// weights UNSET — DE film redesigned onto Madden defense sub-attrs, weights unset, same as DT).
+	// upper bound — NOT DT's SL-005 ±3% compression). FILM Thread C (C-4 step 2) wired the
+	// composite: the eliminated subjective sources were replaced by the Madden defense sub-
+	// attribute composite (K1), blended UPSTREAM at 0.95 of the DE film budget
+	// (rankings.applyScouting) into the single [0,1] FilmComposite this rubric consumes
+	// unchanged; a DE whose Madden record did not resolve keeps HasFilm=false → neutral 1.000.
 	deFilmInflection = 0.50
 	deFilmSteepness  = 12.0
 	deFilmCap        = 0.05 // ±5% (standard) — vs DT's SL-005 ±3%

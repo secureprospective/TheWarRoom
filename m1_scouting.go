@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegedefense"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegeshare"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/madden"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/pfrcoverage"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/ras"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/schooltier"
@@ -75,6 +76,9 @@ func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (
 	// advanced-defense (NO CFBD key), so it merges here alongside RAS — unconditionally, and
 	// before the CFBD-gated block. A fetch failure surfaces loudly (a coverage-less league
 	// must be visible), matching BuildRAS.
+	if err := mergeIDPFilm(ctx, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
+		return rankings.MapScoutingDirectory{}, err
+	}
 	if err := mergeCoverage(ctx, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
 		return rankings.MapScoutingDirectory{}, err
 	}
@@ -137,6 +141,28 @@ func mergeCoverage(ctx context.Context, client *http.Client, cw crosswalk.Map,
 		p := profiles[pid]
 		p.MFLID = pid
 		p.Coverage = assembly.CoverageGroup(norm)
+		profiles[pid] = p
+	}
+	return nil
+}
+
+// mergeIDPFilm (FILM C-4 step 2): join each rostered DT/DE/LB/CB/S id → gsis → the
+// engine-ready Madden defense composite ([0,1], higher=better — the leaf equal-weight-
+// means the position's curated Madden sub-attrs, man+zone averaged) into a fresh
+// scouting.IDPFilm group. A Madden-only player gets a fresh Profile carrying just
+// IDPFilm; the film-composite blend (Madden's share of the film budget + the CB/S
+// coverage anchor) is applied downstream in rankings.applyScouting, not here. Runs
+// unconditionally (Madden is an EA feed, no CFBD key needed), before the coverage merge.
+func mergeIDPFilm(ctx context.Context, client *http.Client, cw crosswalk.Map,
+	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
+	film, err := assembly.BuildIDPFilm(ctx, client, madden.RatingsURL, cw, rosterMFLIDs, adapter)
+	if err != nil {
+		return fmt.Errorf("app: build IDP film scouting directory: %w", err)
+	}
+	for pid, norm := range film {
+		p := profiles[pid]
+		p.MFLID = pid
+		p.IDPFilm = assembly.IDPFilmGroup(norm)
 		profiles[pid] = p
 	}
 	return nil

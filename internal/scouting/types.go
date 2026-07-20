@@ -99,6 +99,16 @@ type IDPFilm struct {
 	IDPShow      float64 // ELIMINATED source (retained pending Film redesign) — was The IDP Show
 	IDPGuru      float64 // ELIMINATED source (retained pending Film redesign) — was The IDP Guru
 	DynastyNerds float64 // ELIMINATED source (retained pending Film redesign) — was Dynasty Nerds
+
+	// MaddenComposite is the LIVE IDP film signal (FILM Thread C, C-4 step 2): a [0,1]
+	// equal-weight mean of the position's curated Madden defense sub-attributes (K1;
+	// man+zone coverage averaged into one term), higher = better. It is the primary
+	// term of the IDP film composite the engine consumes; the upstream blend (Madden
+	// share of the film budget + the CB/S coverage anchor) is applied in
+	// rankings.applyScouting. A non-nil IDPFilm carries a real MaddenComposite (a DT/DE/
+	// LB/CB/S whose Madden record resolved); a player whose Madden record did not resolve
+	// simply has a nil IDPFilm and neutralizes film via Data-Parity.
+	MaddenComposite float64
 }
 
 // NGSCoverage holds the defender COVERAGE anchor — the analytical anchor. RESERVED FOR

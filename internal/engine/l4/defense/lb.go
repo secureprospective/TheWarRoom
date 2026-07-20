@@ -21,8 +21,11 @@ import (
 const (
 	// Film component (LB_Rubric §2): S-curve over the IDP film composite, SL-005-compressed.
 	// IDENTICAL to DT's film block — compression is expressed via the cap (±3%) and steepness
-	// (10.0), NOT a position_weight (held at 1.00, reserved for the SL-018 schedule). Data-Parity
-	// neutral in v1.0 (IDP film weights UNSET — same as DT/DE).
+	// (10.0), NOT a position_weight (held at 1.00, reserved for the SL-018 schedule). FILM
+	// Thread C (C-4 step 2) wired the composite onto the Madden defense sub-attribute composite
+	// (K1) — LB's curated set includes zone coverage (its rubric names no man coverage), blended
+	// UPSTREAM at 0.95 of the LB film budget (rankings.applyScouting) into the single [0,1]
+	// FilmComposite this rubric consumes unchanged; an unresolved Madden record → neutral 1.000.
 	lbFilmInflection = 0.50
 	lbFilmSteepness  = 10.0 // SL-005 compression — vs standard 12.0 (matches DT)
 	lbFilmCap        = 0.03 // ±3% (SL-005) — vs standard ±5% (matches DT)

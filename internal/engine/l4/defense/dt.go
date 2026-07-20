@@ -25,7 +25,12 @@ import (
 // NOT applied — the Cushion Guard replaces it (Hard Constraint).
 const (
 	// Film component (DT_Rubric §2): S-curve over the IDP film composite. SL-005 compression
-	// is expressed via the cap (±3%) and steepness (10.0), not a position_weight (1.00).
+	// is expressed via the cap (±3%) and steepness (10.0), not a position_weight (1.00). FILM
+	// Thread C (C-4 step 2) wired that composite: the eliminated subjective sources were
+	// replaced by the Madden defense sub-attribute composite (K1), blended UPSTREAM at 0.95 of
+	// the DT film budget (rankings.applyScouting) into the single [0,1] FilmComposite this
+	// rubric still consumes unchanged; a DT whose Madden record did not resolve keeps
+	// HasFilm=false → film returns neutral 1.000 (Data-Parity).
 	dtFilmInflection = 0.50
 	dtFilmSteepness  = 10.0 // SL-005 compression — vs standard 12.0
 	dtFilmCap        = 0.03 // ±3% (SL-005) — vs standard ±5%

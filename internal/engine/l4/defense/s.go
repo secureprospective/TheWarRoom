@@ -19,12 +19,14 @@ import (
 // in v1.0.
 const (
 	// Film component (S_Rubric §2): S-curve over the coverage film composite, STANDARD ±5% cap
-	// at steepness 12.0. FILM Thread C (C-4 step 1) calibrated this composite: the subjective
-	// sources it originally named (PFF/TDN/Nerds/IDP/NGS-tracking) were ELIMINATED, and the ONE
-	// surviving live input is the PFR coverage-allowed anchor, blended UPSTREAM at the locked
-	// K4 weight (0.20 of the film budget, in rankings.applyScouting) into the single [0,1]
-	// FilmComposite this rubric still consumes unchanged. A safety with no coverage anchor keeps
-	// HasFilm=false → film returns neutral 1.000 (Data-Parity). The NGS dedicated anchor lives
+	// at steepness 12.0. FILM Thread C (C-4 steps 1–2) calibrated this composite: the subjective
+	// sources it originally named (PFF/TDN/Nerds/IDP/NGS-tracking) were ELIMINATED, and TWO live
+	// inputs now feed it, both blended UPSTREAM (rankings.applyScouting) into the single [0,1]
+	// FilmComposite this rubric still consumes unchanged: the Madden defense sub-attribute
+	// composite (K1, 0.75 of the S film budget — its curated set keeps the Madden man+zone
+	// coverage term) and the PFR coverage-allowed anchor (K4, 0.20). The two coverage voices are
+	// statistically independent (C-1 |r|<0.30), so both are kept as additive signals. A safety with
+	// neither keeps HasFilm=false → film returns neutral 1.000 (Data-Parity). The NGS dedicated anchor lives
 	// INSIDE this composite; it does not change the engine's single [0,1] film input —
 	// NGS-presence is asserted via the HasNGSAnchor introspection hook (case 3I), not the boundary.
 	sFilmInflection = 0.50

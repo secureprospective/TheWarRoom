@@ -46,10 +46,23 @@
 // map[string]string via PFRMap() (a defensive copy), matching their existing
 // per-row-lookup shape.
 //
+// FOURTH BRIDGE — (name, birthdate) -> gsis_id. The Madden feed (ingestion/madden)
+// carries no gsis/espn/pfr id — only a player's name, team, position, and birthdate —
+// so its records are keyed to a TheWarRoom player by a normalized name + birthdate
+// match (birthdate disambiguates same-name players). db_playerids.csv carries a name
+// and a birthdate column alongside gsis_id, so the same one-file read that builds the
+// three id bridges also indexes (normalized name | ISO birthdate) -> gsis. This is
+// promoted here from a duplicated live-test helper for the same reason as PFRMap
+// (Codex M17: read the file once, define the match in one place). Like the id bridges
+// the columns are OPTIONAL (a future source dropping them must not break the MFL->gsis
+// foundation) and the index is drop-ambiguous: a (name|birth) key resolving to two
+// different gsis is dropped rather than guessed. Consumers take it as a GSISResolver-
+// shaped closure via MaddenResolver().
+//
 // The external-HTTP-CSV plumbing (fetch, byte cap, by-name column binding, the "NA"
 // missing-cell sentinel) lives in the shared ingestion helpers (extcsv.go); this
-// fetcher owns only the crosswalk-specific shape: its columns, the three map types,
-// and the conflict/empty integrity checks.
+// fetcher owns only the crosswalk-specific shape: its columns, the map types, and the
+// conflict/empty integrity checks.
 package crosswalk
 
 import (
@@ -57,7 +70,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -78,6 +93,8 @@ const (
 	colGSIS  = "gsis_id"
 	colESPN  = "espn_id"
 	colPFR   = "pfr_id"
+	colName  = "name"      // optional — feeds the (name|birth)->gsis Madden resolver
+	colBirth = "birthdate" // optional — feeds the (name|birth)->gsis Madden resolver
 )
 
 // errEmpty guards a crosswalk that resolved zero entries. The map is never
@@ -92,9 +109,10 @@ var errEmpty = errors.New("crosswalk: source resolved zero MFL->gsis entries")
 // only way to obtain a Map is Fetch, and the only way to read it is the Lookup
 // accessors.
 type Map struct {
-	byMFL  map[playerid.PlayerID]string
-	byESPN map[string]string
-	byPFR  map[string]string
+	byMFL       map[playerid.PlayerID]string
+	byESPN      map[string]string
+	byPFR       map[string]string
+	byNameBirth map[string]string // (normName|isoBirth) -> gsis, for the Madden resolver
 }
 
 // Lookup returns the nflverse gsis_id for an MFL PlayerID and whether it was
@@ -141,6 +159,27 @@ func (m Map) PFRMap() map[string]string {
 // sanity-check bridge coverage against the source size.
 func (m Map) LenPFR() int { return len(m.byPFR) }
 
+// MaddenResolver returns a GSISResolver-shaped closure that maps a Madden player's raw
+// name + birthdate to an nflverse gsis_id (ok=false on a miss). ingestion/madden takes
+// exactly this func to key its otherwise-idless records; building it here (from the same
+// db_playerids read that built the id bridges) keeps the brittle name+birthdate match
+// defined in one place. The closure reads the crosswalk's internal index but cannot
+// mutate it (the map is captured read-only through the closure), so no defensive copy is
+// needed. An empty index (the source omitted the name/birthdate columns) yields a
+// resolver that always misses — the caller's madden.Fetch then fails loud on zero
+// resolved records, surfacing the gap rather than silently attaching nothing.
+func (m Map) MaddenResolver() func(fullName, birthdate string) (string, bool) {
+	index := m.byNameBirth
+	return func(fullName, birthdate string) (string, bool) {
+		g, ok := index[nameBirthKey(fullName, birthdate)]
+		return g, ok
+	}
+}
+
+// LenMaddenResolver reports the number of resolved (name|birth)->gsis entries, for
+// callers/tests to sanity-check resolver coverage against the source size.
+func (m Map) LenMaddenResolver() int { return len(m.byNameBirth) }
+
 // Fetch retrieves the crosswalk CSV from url using client and returns the resolved
 // MFL->gsis Map. client and url are injected (not package globals) so the fetcher
 // is unit-testable against a fixture server and survives a source move; pass
@@ -165,18 +204,22 @@ func Fetch(ctx context.Context, client *http.Client, url string) (Map, error) {
 		return Map{}, fmt.Errorf("crosswalk: %w", err)
 	}
 	mflIdx, gsisIdx := cols[colMFLID], cols[colGSIS]
-	espnIdx := optionalColumn(records[0], colESPN) // -1 if the source omits espn_id
-	pfrIdx := optionalColumn(records[0], colPFR)   // -1 if the source omits pfr_id
+	espnIdx := optionalColumn(records[0], colESPN)   // -1 if the source omits espn_id
+	pfrIdx := optionalColumn(records[0], colPFR)     // -1 if the source omits pfr_id
+	nameIdx := optionalColumn(records[0], colName)   // -1 if the source omits name
+	birthIdx := optionalColumn(records[0], colBirth) // -1 if the source omits birthdate
 
 	byMFL := make(map[playerid.PlayerID]string)
 	byESPN := make(map[string]string)
 	byPFR := make(map[string]string)
-	poisonedESPN := make(map[string]bool) // espn ids dropped for resolving to 2+ gsis
-	poisonedPFR := make(map[string]bool)  // pfr ids dropped for resolving to 2+ gsis
+	byNameBirth := make(map[string]string)
+	poisonedESPN := make(map[string]bool)      // espn ids dropped for resolving to 2+ gsis
+	poisonedPFR := make(map[string]bool)       // pfr ids dropped for resolving to 2+ gsis
+	poisonedNameBirth := make(map[string]bool) // name|birth keys dropped for resolving to 2+ gsis
 	for _, rec := range records[1:] {
 		gsis := strings.TrimSpace(rec[gsisIdx])
 		if ingestion.IsMissing(gsis) {
-			continue // no gsis: this row feeds no bridge (all three target gsis)
+			continue // no gsis: this row feeds no bridge (all four target gsis)
 		}
 
 		if err := addMFL(byMFL, strings.TrimSpace(rec[mflIdx]), gsis); err != nil {
@@ -188,12 +231,18 @@ func Fetch(ctx context.Context, client *http.Client, url string) (Map, error) {
 		if pfrIdx >= 0 {
 			addBridge(byPFR, poisonedPFR, strings.TrimSpace(rec[pfrIdx]), gsis)
 		}
+		if nameIdx >= 0 && birthIdx >= 0 {
+			name, birth := normName(rec[nameIdx]), isoBirth(rec[birthIdx])
+			if name != "" && birth != "" { // birthdate is the disambiguator — never a partial key
+				addBridge(byNameBirth, poisonedNameBirth, name+"|"+birth, gsis)
+			}
+		}
 	}
 
 	if len(byMFL) == 0 {
 		return Map{}, errEmpty
 	}
-	return Map{byMFL: byMFL, byESPN: byESPN, byPFR: byPFR}, nil
+	return Map{byMFL: byMFL, byESPN: byESPN, byPFR: byPFR, byNameBirth: byNameBirth}, nil
 }
 
 // optionalColumn returns the index of name in header, or -1 if absent. Unlike
@@ -206,6 +255,34 @@ func optionalColumn(header []string, name string) int {
 		}
 	}
 	return -1
+}
+
+// nameBirthKey builds the Madden resolver's lookup key from a raw name + birthdate,
+// applying the same normalization the index was built with (so a query and an indexed
+// row that describe the same player collide). It is the read-side mirror of the loop in
+// Fetch. A key whose name or birth is empty after normalization can never match an
+// indexed entry (those require both non-empty), so it is a guaranteed miss.
+func nameBirthKey(fullName, birthdate string) string {
+	return normName(fullName) + "|" + isoBirth(birthdate)
+}
+
+var nonAlpha = regexp.MustCompile(`[^a-z]`)
+
+// normName lowercases and strips every non-letter (spaces, punctuation, Jr./III, apostrophes)
+// so "T.J. Watt" and "TJ Watt" collide. Both the EA name and the db_playerids name pass
+// through it.
+func normName(s string) string { return nonAlpha.ReplaceAllString(strings.ToLower(s), "") }
+
+// isoBirth normalizes both EA's M/D/YYYY and db_playerids' ISO YYYY-MM-DD to YYYY-MM-DD,
+// or "" if unparseable (an unparseable birthdate yields a guaranteed non-match, never a
+// partial key).
+func isoBirth(b string) string {
+	for _, layout := range []string{"2006-01-02", "1/2/2006"} {
+		if d, err := time.Parse(layout, strings.TrimSpace(b)); err == nil {
+			return d.Format("2006-01-02")
+		}
+	}
+	return ""
 }
 
 // addMFL inserts an MFL->gsis entry, skipping a missing/NA mfl id (the player exists

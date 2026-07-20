@@ -432,14 +432,65 @@ func TestApplyScouting_CoverageFilmComposite(t *testing.T) {
 	}
 }
 
-// TestApplyScouting_NoCoverageLeavesFilmAbsent: without a Coverage group, HasFilm stays
-// false and the rubric neutralizes film via Data-Parity (every non-CB/S position).
-func TestApplyScouting_NoCoverageLeavesFilmAbsent(t *testing.T) {
+// TestApplyScouting_IDPFilmMaddenComposite pins the C-4 step-2 blend for DT/DE/LB (no
+// coverage seat): FilmComposite = 0.95·Madden + 0.05·neutral, so a neutral Madden
+// composite (0.50) stays neutral and the extremes move it by ±0.95·0.50 damped by the
+// reserved K2 seat.
+func TestApplyScouting_IDPFilmMaddenComposite(t *testing.T) {
+	id, _ := playerid.New("1001")
+	cases := []struct {
+		name   string
+		madden float64
+		want   float64
+	}{
+		{"neutral Madden stays neutral", 0.50, 0.50},
+		{"elite Madden lifts", 1.00, 0.95*1.00 + 0.05*0.50},
+		{"poor Madden drags", 0.00, 0.95*0.00 + 0.05*0.50},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var spec composition.PlayerSpec
+			applyScouting(&spec, scouting.Profile{
+				MFLID:   id,
+				IDPFilm: &scouting.IDPFilm{MaddenComposite: c.madden},
+			})
+			if !spec.HasFilm {
+				t.Fatalf("Madden composite present → HasFilm must be true")
+			}
+			if math.Abs(spec.FilmComposite-c.want) > 1e-12 {
+				t.Fatalf("madden=%v: FilmComposite = %v, want %v", c.madden, spec.FilmComposite, c.want)
+			}
+		})
+	}
+}
+
+// TestApplyScouting_CBSCombinedFilm pins the full CB/S film composite when BOTH the
+// coverage anchor and the Madden composite are present: 0.20·coverage + 0.75·Madden +
+// 0.05·neutral. The three LOCKED seats (K4 coverage 0.20, Madden residual, K2 reserved
+// 0.05) must sum to 1.
+func TestApplyScouting_CBSCombinedFilm(t *testing.T) {
+	id, _ := playerid.New("1001")
+	var spec composition.PlayerSpec
+	applyScouting(&spec, scouting.Profile{
+		MFLID:    id,
+		Coverage: &scouting.NGSCoverage{CoverageMetrics: 0.90},
+		IDPFilm:  &scouting.IDPFilm{MaddenComposite: 0.80},
+	})
+	want := 0.20*0.90 + 0.75*0.80 + 0.05*0.50
+	if !spec.HasFilm || math.Abs(spec.FilmComposite-want) > 1e-12 {
+		t.Fatalf("combined CB/S FilmComposite = %v, want %v", spec.FilmComposite, want)
+	}
+}
+
+// TestApplyScouting_NoFilmSignalsLeavesFilmAbsent: without either a Coverage group or an
+// IDPFilm group, HasFilm stays false and the rubric neutralizes film via Data-Parity
+// (every offense position, and any IDP player whose Madden record did not resolve).
+func TestApplyScouting_NoFilmSignalsLeavesFilmAbsent(t *testing.T) {
 	id, _ := playerid.New("1001")
 	var spec composition.PlayerSpec
 	applyScouting(&spec, scouting.Profile{MFLID: id, RAS: 8.0, HasRAS: true})
 	if spec.HasFilm {
-		t.Fatalf("no coverage anchor → HasFilm must stay false (got FilmComposite=%v)", spec.FilmComposite)
+		t.Fatalf("no film signal → HasFilm must stay false (got FilmComposite=%v)", spec.FilmComposite)
 	}
 }
 
