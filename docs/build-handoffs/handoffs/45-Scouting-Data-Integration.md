@@ -7,6 +7,18 @@ CLOSE — the ~2000 lines of fetchers + scouting.Profile finally connect to the 
 **PLANNING-FIRST session** (enter plan mode): there are hard gates + a sequencing decision
 + a calibration decision to settle BEFORE code. Do not dive straight into wiring.
 
+== EXECUTION MODEL (locked 2026-07-20, Christopher) ==
+INVERTED from the usual review gate. GLM 5.2 does the HEAVY-LIFTING CODE — the scouting
+wiring is loadable in 100–200k-token chunks at cheap price, so GLM WRITES the assembly
+(fetchers → crosswalk join → normalize → Profile → PlayerSpec) per chunk. **Claude is
+HEAD-BRAIN, not the typist:** read/review GLM's output against source, own all judgment —
+sequencing, layer/depguard correctness, the film-weight calibration decision, gate sign-off,
+harness lockstep — and triage GLM's work leads-not-findings (GLM runs without the full context;
+Claude sees the code). Feed GLM self-contained chunk briefs (one signal / one assembly seam at
+a time, per the S-phases below). Do NOT let GLM own a decision, a gate, or a locked-decision
+reversal. First-instance TEMPLATE (RAS) especially: Claude verifies the shape before every other
+signal clones it.
+
 == WHERE WE ARE ==
 - Just completed: SLIM_MAP tiers 1–3 on session/slim-cleanup (pushed). Scouting sub-system
   documented as deferred scaffolding (internal/scouting package doc + SYSTEM_MAP.md).
