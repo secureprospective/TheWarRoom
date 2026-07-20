@@ -11,6 +11,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegedefense"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegeshare"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playerscores"
@@ -203,6 +204,24 @@ func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (
 			return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build college-share scouting directory: %w", serr)
 		}
 		for pid, share := range shares {
+			p := profiles[pid]
+			p.MFLID = pid
+			p.CollegeProductionShare = share
+			p.HasCollegeProductionShare = true
+			profiles[pid] = p
+		}
+
+		// S-Phase 3 (CollegeDefense / IDP): fetch the DEFENSIVE college-production
+		// feed, join each rostered defensive id → gsis → position-averaged share, and
+		// MERGE into the SAME CollegeProductionShare slot. Offense (CollegeShare) and
+		// defense (CollegeDefense) populate DISJOINT positions — each collapse returns
+		// absent for the other side — so a player is filled by at most one feed and the
+		// slot never clobbers. Same CFBD key + year as the offense feeds.
+		defShares, derr := assembly.BuildCollegeDefense(ctx, client, collegedefense.SeasonStatsURL, crosswalk.SourceURL, key, year, rosterMFLIDs, adapter)
+		if derr != nil {
+			return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build college-defense scouting directory: %w", derr)
+		}
+		for pid, share := range defShares {
 			p := profiles[pid]
 			p.MFLID = pid
 			p.CollegeProductionShare = share

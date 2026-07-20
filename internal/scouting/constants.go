@@ -4,15 +4,17 @@
 // all ten positions, with position-conditional groups present only where a
 // position uses them.
 //
-// WIRING STATUS (2026-07-20): this type hierarchy (Profile, OffenseFilm, IDPFilm,
-// NGSCoverage, SafetyRole) and the ~11 scouting fetchers under internal/ingestion
-// (agetrajectory, collegeshare, collegedefense, crosswalk, kicking, madden,
-// nflproduction, pfrcoverage, ras, touchshare, veteranfilm) are DELIBERATE, DESIGNED
-// SCAFFOLDING for the deferred scouting data-integration phase — NOT dead code. The
-// shape + fetchers exist and are unit-tested; the production WIRING (fetch → Profile →
-// engine Layer 4 sub-signals) has not been switched on. The M1 orchestrator states the
-// scouting sub-signals are "Data-Parity ABSENT … no fetcher wired yet," so Layer 4 runs
-// the identity/neutral path until this lands. The plan (Option D hybrid, source maps in
+// WIRING STATUS (updated 2026-07-20, S-Phase 3): the scouting data-integration phase is
+// LANDING signal by signal through internal/scouting/assembly + m1_app.buildScoutingDirectory.
+// WIRED (fetch → crosswalk join → Profile → engine Layer 4): RAS (S-Phase 0), SchoolTier
+// (S-Phase 1), offense CollegeProductionShare (S-Phase 2, collegeshare), and IDP
+// CollegeProductionShare (S-Phase 3, collegedefense). STILL-DEFERRED scaffolding (shape +
+// fetchers exist, unit-tested, NOT yet switched on): BreakoutAge/AgeTrajectory, the Film
+// components (OffenseFilm/IDPFilm via veteranfilm/madden/nflproduction/touchshare) and
+// NGSCoverage (pfrcoverage/SafetyRole) + K film (kicking) — these stay Data-Parity NEUTRAL,
+// and the FILM reweight in particular is a separate decision-gated CALIBRATION pass (do NOT
+// ship blind film weights). For an un-wired sub-signal the rubric runs the identity/neutral
+// path. The plan (Option D hybrid, source maps in
 // docs/data-layer/{Offense,Defense}_Scouting_Source_Map.md) and the retained-field
 // rationale (the SOURCE-DRIFT notes on each type in types.go) are the answer to
 // "why is this in main?" — kept by ruling 2026-07-20 rather than carved out. See
