@@ -131,16 +131,28 @@ export function TransactionWorkspace() {
       request: req,
     };
     setPending(base);
-    const res = await PreviewTransaction(req);
-    if (gen !== stageGen.current) return; // cancelled or restaged while the preview was in flight (L3)
-    setPending({
-      ...base,
-      previewing: false,
-      previewOK: res.ok,
-      detail: res.detail,
-      playersAffected: res.playersAffected,
-      capDeltas: res.capDeltas ?? [],
-    });
+    try {
+      const res = await PreviewTransaction(req);
+      if (gen !== stageGen.current) return; // cancelled or restaged while the preview was in flight (L3)
+      setPending({
+        ...base,
+        previewing: false,
+        previewOK: res.ok,
+        detail: res.detail,
+        playersAffected: res.playersAffected,
+        capDeltas: res.capDeltas ?? [],
+      });
+    } catch (e) {
+      // A thrown IPC call (bridge down, panic) must not leave the modal stuck "previewing…"
+      // forever — fall into the rejected terminal state so the operator can read it and close.
+      if (gen !== stageGen.current) return;
+      setPending({
+        ...base,
+        previewing: false,
+        previewOK: false,
+        detail: `Couldn't preview this move — the engine was unreachable (${e instanceof Error ? e.message : String(e)}).`,
+      });
+    }
   }
 
   // opCopy is the modal's human framing for a priced op — no money math (the engine owns the figures);

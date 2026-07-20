@@ -81,16 +81,28 @@ export function LeagueControls() {
       capDeltas: [],
     };
     setPending(p);
-    const res = await PreviewTransaction(base.request);
-    if (gen !== stageGen.current) return; // cancelled/restaged mid-flight
-    setPending({
-      ...p,
-      previewing: false,
-      previewOK: res.ok,
-      detail: res.detail,
-      playersAffected: res.playersAffected,
-      capDeltas: res.capDeltas ?? [],
-    });
+    try {
+      const res = await PreviewTransaction(base.request);
+      if (gen !== stageGen.current) return; // cancelled/restaged mid-flight
+      setPending({
+        ...p,
+        previewing: false,
+        previewOK: res.ok,
+        detail: res.detail,
+        playersAffected: res.playersAffected,
+        capDeltas: res.capDeltas ?? [],
+      });
+    } catch (e) {
+      // A thrown IPC call (bridge down, panic) must not leave the modal stuck "previewing…"
+      // forever — fall into the rejected terminal state so the operator can read it and close.
+      if (gen !== stageGen.current) return;
+      setPending({
+        ...p,
+        previewing: false,
+        previewOK: false,
+        detail: `Couldn't preview this action — the engine was unreachable (${e instanceof Error ? e.message : String(e)}).`,
+      });
+    }
   }
 
   async function confirm() {
