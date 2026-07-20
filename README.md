@@ -100,7 +100,9 @@ A mathematically flexible framework that crunches *this league's* exact scoring 
    QB · RB · WR · TE · DT · DE · LB · CB · S · K   →  10 / 10 LIVE
 ```
 
-RAS athleticism is weighted *per position* (gold at receiver, neutral at quarterback). NGS coverage metrics anchor the CB/S models. Madden ratings *regulate* subjective takes so hype can't leak into the score. The architecture **composes** — each new position was a calibration, not a rebuild.
+RAS athleticism is weighted *per position* (gold at receiver, neutral at quarterback). The Layer-4 scouting curve is now wired end-to-end for **both offense and IDP** — SchoolTier competition tier, CollegeShare (within-team college production, collapsed for offensive skill *and* IDP defenders), and BreakoutAge (raw age at first college breakout season, offense *and* IDP) all flow live through the same path: fetch → crosswalk-join → Profile → per-position curve. Crosswalk identity mapping and player birthdates are pulled **once** upstream and threaded into every signal, so no source pays for the same lookup twice. The architecture **composes** — each new position was a calibration, not a rebuild.
+
+*Film is the next front, not a shipped claim.* The Madden film composite, the NGS/PFR coverage anchor for CB/S, and the NFL-production blend have their **sources verified and fetchers built** — but their blend weights are **deliberately unset**, being calibrated against live data now. Pipeline proven; film calibration ahead.
 
 ### 📒 The Per-Year Salary Ledger — *the sole source of cap truth*
 Every contract is a row of **per-year cells**. Every change is an append-only, dated, immutable audit entry — the database itself rejects an edit to history. The cap is *derived* from the cells (`CapUsed = Σ paid cells + Σ dead cap − Σ cap relief`, floored at 0), never stored as a competing number. **Money is `int64` cents on a flat $10k grid** — no floating-point drift, exact by construction.
