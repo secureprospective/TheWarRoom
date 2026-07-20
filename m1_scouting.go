@@ -104,7 +104,10 @@ func mergeCFBDScouting(ctx context.Context, client *http.Client, key string, cw 
 	if err := mergeCollegeDefense(ctx, client, key, cw, year, rosterMFLIDs, adapter, profiles); err != nil {
 		return err
 	}
-	return mergeBreakoutAge(ctx, client, key, cw, ages, year, rosterMFLIDs, adapter, profiles)
+	if err := mergeBreakoutAge(ctx, client, key, cw, ages, year, rosterMFLIDs, adapter, profiles); err != nil {
+		return err
+	}
+	return mergeBreakoutAgeIDP(ctx, client, key, cw, ages, year, rosterMFLIDs, adapter, profiles)
 }
 
 // mergeSchoolTier (S-Phase 1): join each rostered id → college → tier. A tier-only
@@ -175,6 +178,30 @@ func mergeBreakoutAge(ctx context.Context, client *http.Client, key string, cw c
 		cw, ages, breakoutSeasons(year), rosterMFLIDs, adapter)
 	if err != nil {
 		return fmt.Errorf("app: build breakout-age scouting directory: %w", err)
+	}
+	for pid, age := range breakouts {
+		p := profiles[pid]
+		p.MFLID = pid
+		p.BreakoutAge = age
+		p.HasBreakoutAge = true
+		profiles[pid] = p
+	}
+	return nil
+}
+
+// mergeBreakoutAgeIDP (S-Phase 4b, defense): the DEFENSIVE clone of mergeBreakoutAge. Scan
+// the last breakoutSeasonsBack seasons of the defensive college feed for each rostered
+// CB/S/LB/DT/DE's earliest crossing of the (lower, calibrated) IDP dominator line, join the
+// SAME already-fetched birthdate + crosswalk maps, and derive the raw breakout age into the
+// SAME Profile.BreakoutAge slot. Offense and defense populate DISJOINT positions (the
+// defensive collapse returns absent for offense positions), so the slot never clobbers.
+func mergeBreakoutAgeIDP(ctx context.Context, client *http.Client, key string, cw crosswalk.Map,
+	ages map[string]agetrajectory.RawAge, year int,
+	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
+	breakouts, err := assembly.BuildBreakoutAgeIDP(ctx, client, collegedefense.SeasonStatsURL, key,
+		cw, ages, breakoutSeasons(year), rosterMFLIDs, adapter)
+	if err != nil {
+		return fmt.Errorf("app: build IDP breakout-age scouting directory: %w", err)
 	}
 	for pid, age := range breakouts {
 		p := profiles[pid]

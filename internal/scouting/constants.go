@@ -4,14 +4,16 @@
 // all ten positions, with position-conditional groups present only where a
 // position uses them.
 //
-// WIRING STATUS (updated 2026-07-20, S-Phase 4): the scouting data-integration phase is
-// LANDING signal by signal through internal/scouting/assembly + m1_app.buildScoutingDirectory.
+// WIRING STATUS (updated 2026-07-20, S-Phase 4b): the scouting data-integration phase is
+// LANDING signal by signal through internal/scouting/assembly + m1_scouting.buildScoutingDirectory.
 // WIRED (fetch → crosswalk join → Profile → engine Layer 4): RAS (S-Phase 0), SchoolTier
 // (S-Phase 1), offense CollegeProductionShare (S-Phase 2, collegeshare), IDP
-// CollegeProductionShare (S-Phase 3, collegedefense), and OFFENSE BreakoutAge (S-Phase 4,
+// CollegeProductionShare (S-Phase 3, collegedefense), OFFENSE BreakoutAge (S-Phase 4,
 // breakoutage — the first MULTI-season signal: earliest college dominator crossing joined
-// to a birthdate). STILL-DEFERRED scaffolding (shape + fetchers exist, unit-tested, NOT yet
-// switched on): IDP BreakoutAge (S-Phase 4b — its own calibrated threshold), AgeTrajectory,
+// to a birthdate) and IDP BreakoutAge (S-Phase 4b, breakoutage_idp — the defensive clone on
+// the averaged collapse share with its own calibrated 0.12 threshold, DISJOINT positions).
+// STILL-DEFERRED scaffolding (shape + fetchers exist, unit-tested, NOT yet
+// switched on): AgeTrajectory,
 // the Film components (OffenseFilm/IDPFilm via veteranfilm/madden/nflproduction/touchshare) and
 // NGSCoverage (pfrcoverage/SafetyRole) + K film (kicking) — these stay Data-Parity NEUTRAL,
 // and the FILM reweight in particular is a separate decision-gated CALIBRATION pass (do NOT
