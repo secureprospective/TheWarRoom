@@ -157,11 +157,26 @@ func (a *App) startup(ctx context.Context) {
 	}
 	a.mflClient = client
 
-	if err := a.initStoreFloor(ctx); err != nil {
+	// TWR-1 (WarRoom review 2026-07): initStoreFloor runs up to four MFL network fetches on
+	// a fresh DB (rulebook league+rules, state players+rosters) on the OnStartup thread. With
+	// the raw OnStartup ctx (no deadline) a slow/unreachable MFL blocks startup INDEFINITELY —
+	// a black window and a downstream "store not initialized" that masks the real cause (the
+	// known black-screen class the -probe diagnostic exists for). Bound it: a hung fetch now
+	// aborts and surfaces through startupErr/Ping (+ the stderr log above) within the deadline
+	// instead of hanging forever. a.ctx keeps the unbounded app-lifetime ctx for later IPC.
+	initCtx, cancel := context.WithTimeout(ctx, storeFloorTimeout)
+	defer cancel()
+	if err := a.initStoreFloor(initCtx); err != nil {
 		a.startupErr = err
 		return
 	}
 }
+
+// storeFloorTimeout bounds the first-launch store-floor initialization (its MFL network
+// fetches). Generous enough for a real fresh-DB sync, finite so a stalled endpoint can never
+// hang OnStartup (TWR-1). Matches the m1 network budget; later launches load offline and
+// return well inside it.
+const storeFloorTimeout = 120 * time.Second
 
 // initStoreFloor constructs and initializes the full store floor plus the B7a
 // transaction coordinator. Each store seeds from live MFL ONLY on a fresh DB and loads
