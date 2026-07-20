@@ -1,9 +1,27 @@
 # Handoff 40 — Versioning & Releases (next phase)
 
-**From:** M2 Power Rankings slice-1 session (2026-07-19, merged `686a574`).
-**For:** the next session — Christopher opening the versioning/releases phase.
-**Type:** PLANNING-FIRST (this is a phase shift, not a Build_Tracker code row). Enter
-plan mode; frame and decide the conventions before writing release plumbing.
+**From:** M2 Power Rankings slice-1 session; **state-refreshed 2026-07-20 at the UI wireframe
+track A–E close.**
+**For:** THE session Christopher runs right after the wireframe-track clear — opening the
+versioning/releases phase.
+**Type:** PLANNING-FIRST (this is a phase shift, not a Build_Tracker code row). **ENTER PLAN
+MODE** (plan mode overrides act-fast — [[feedback_plan_mode_override]]); frame and decide the
+conventions before writing any release plumbing.
+
+## ⚠ STATE REFRESH — current main is `d137a68` (2026-07-20)
+- Since this handoff was first written (`686a574`), the entire **UI wireframe track A–E is
+  COMPLETE + merged** (`e82f01a` + CLAUDE build-state `d137a68`). The design language grid→mobile
+  is now locked as a spec — which SHARPENS the "why now": the app has both a used feature set AND a
+  committed UI direction heading toward the Phase-2 alpha build.
+- **Clean slate STILL HOLDS (verified 2026-07-20):** no git tags, no `VERSION` file, no
+  `wails.json` productVersion, no `-ldflags -X` version injection. This phase starts from zero.
+- **This phase is the gate in front of the build track.** The UI roadmap's build track
+  (B-1…B-5 → ALPHA) hard-depends on this phase finishing first (stamped builds + the D-V6 schema
+  migration story before any binary leaves the machine). Versioning is not optional polish — it is
+  the unblock for Alpha. See [[project_thewarroom_ui_roadmap]] + [[project_thewarroom_versioning_releases]].
+- When D-V2 wiring lands and you tag current main as the first version, pick the number once D-V1
+  is locked (the scaffold's `v0.4.0` placeholder now sits behind M2 + the A–E merge — re-derive it
+  from whatever cadence rule D-V1/D-V4 settle, don't inherit the placeholder blindly).
 
 ## Read first
 1. `docs/roadmap/Versioning_and_Releases_Planning.md` — the framing scaffold: current
