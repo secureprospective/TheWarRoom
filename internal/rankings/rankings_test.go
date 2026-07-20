@@ -12,6 +12,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/output"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
+	"github.com/secureprospective/TheWarRoom/internal/scouting"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
@@ -120,7 +122,7 @@ func birth(years float64) int64 {
 
 func newRunner(t *testing.T, st fakeState, dir fakeDir, base map[string]float64, cfg fakeCfg, out *fakeOut) *Runner {
 	t.Helper()
-	r, err := New(st, dir, base, cfg, out, composition.New(fakeParams{}, fakeCap{}), Registry{})
+	r, err := New(st, dir, MapScoutingDirectory{}, base, cfg, out, composition.New(fakeParams{}, fakeCap{}), Registry{})
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -150,17 +152,23 @@ func healthyFixture() (fakeState, fakeDir, map[string]float64) {
 
 func TestNew_NilDependencyFails(t *testing.T) {
 	st, dir, base := healthyFixture()
-	if _, err := New(nil, dir, base, fakeCfg{ver: 1}, &fakeOut{}, composition.New(fakeParams{}, fakeCap{}), Registry{}); err == nil {
+	if _, err := New(nil, dir, MapScoutingDirectory{}, base, fakeCfg{ver: 1}, &fakeOut{}, composition.New(fakeParams{}, fakeCap{}), Registry{}); err == nil {
 		t.Fatal("New with nil state should error")
 	}
-	if _, err := New(st, dir, nil, fakeCfg{ver: 1}, &fakeOut{}, composition.New(fakeParams{}, fakeCap{}), Registry{}); err == nil {
+	if _, err := New(st, dir, MapScoutingDirectory{}, nil, fakeCfg{ver: 1}, &fakeOut{}, composition.New(fakeParams{}, fakeCap{}), Registry{}); err == nil {
 		t.Fatal("New with nil base map should error")
 	}
 	// The GLM M1 planted gate: a NIL registry reads as identity-L4 for every
 	// position without panicking — a silently wrong-rubric league. Construction
 	// must refuse it; an explicitly-empty Registry{} stays legal.
-	if _, err := New(st, dir, base, fakeCfg{ver: 1}, &fakeOut{}, composition.New(fakeParams{}, fakeCap{}), nil); err == nil {
+	if _, err := New(st, dir, MapScoutingDirectory{}, base, fakeCfg{ver: 1}, &fakeOut{}, composition.New(fakeParams{}, fakeCap{}), nil); err == nil {
 		t.Fatal("New with nil registry should error")
+	}
+	// S-Phase 0: a NIL scouting directory is a wiring error (MapScoutingDirectory
+	// is the empty-but-legal state); a nil one silently neutralizes every
+	// scouting signal — surface it at construction like the other nil deps.
+	if _, err := New(st, dir, nil, base, fakeCfg{ver: 1}, &fakeOut{}, composition.New(fakeParams{}, fakeCap{}), Registry{}); err == nil {
+		t.Fatal("New with nil scouting directory should error")
 	}
 }
 
@@ -333,5 +341,83 @@ func TestYearsBetween(t *testing.T) {
 	got := yearsBetween(b, asOf())
 	if math.Abs(got-26.0) > 0.02 {
 		t.Fatalf("yearsBetween(2000-07-02, 2026-07-02) = %v, want ~26.0", got)
+	}
+}
+
+// --- S-Phase 0 scouting directory -------------------------------------------
+
+// TestRun_ScoutingDirectoryPopulatesRAS proves the ScoutingDirectory port
+// injects RAS through scorePlayer → spec.RAS/HasRAS → composition.Assembler →
+// the engine. Two rostered players: 1002 has a profile (RAS 8.0 threaded
+// through, presence in the map == HasRAS=true), 1001 does not (HasRAS=false →
+// L1 imputes DefaultRASFallback, ApplyHygiene zeroes the raw RAS). The
+// engine's TiebreakerKey carries the cleaned RAS, which is the surface that
+// distinguishes the two wiring paths — 8.0 for the profile-present player, 0.0
+// (hygiene-zeroed) for the absent-profile player.
+func TestRun_ScoutingDirectoryPopulatesRAS(t *testing.T) {
+	st, dir, base := healthyFixture()
+	// Give 1002 (Rook, Zero, WR) a RAS profile; leave 1001 and 2001 absent.
+	id1002, _ := playerid.New("1002")
+	scout := NewMapScoutingDirectory(map[playerid.PlayerID]scouting.Profile{
+		id1002: {MFLID: id1002, RAS: 8.0},
+	})
+
+	out := &fakeOut{}
+	r, err := New(st, dir, scout, base, fakeCfg{ver: 7}, out, composition.New(fakeParams{}, fakeCap{}), Registry{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := r.Run(context.Background(), 2026, asOf()); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	find := func(mflID string) *output.ScoreRecord {
+		for i := range out.gotRecs {
+			if out.gotRecs[i].MFLID == mflID {
+				return &out.gotRecs[i]
+			}
+		}
+		t.Fatalf("%s not in persisted records", mflID)
+		return nil
+	}
+
+	// 1002: profile present → spec.HasRAS=true → RAS threaded through to the
+	// engine's Tiebreaker (ApplyHygiene keeps a finite RAS when HasRAS is true).
+	got1002 := find("1002")
+	if math.Abs(got1002.Result.Tiebreaker.RAS-8.0) > 1e-12 {
+		t.Fatalf("1002: expected Tiebreaker.RAS = 8.0 (profile present, RAS threaded), got %v",
+			got1002.Result.Tiebreaker.RAS)
+	}
+
+	// 1001: absent profile → spec.HasRAS=false → L1 imputes the
+	// DefaultRASFallback (5.00) so the Tiebreaker rides on the fallback value,
+	// NOT a real measured RAS. 8.0-vs-5.0 is the wiring signal: the profile-
+	// present player's real RAS thread through; the absent-profile player
+	// falls through to the L1 imputation unchanged.
+	got1001 := find("1001")
+	if math.Abs(got1001.Result.Tiebreaker.RAS-composition.DefaultRASFallback) > 1e-12 {
+		t.Fatalf("1001: expected Tiebreaker.RAS = DefaultRASFallback (%v) (no profile → L1 imputes), got %v",
+			composition.DefaultRASFallback, got1001.Result.Tiebreaker.RAS)
+	}
+}
+
+// TestRun_EmptyScoutingDirectoryIsLegal pins the "explicitly-empty map is a
+// legal condition" half of the nil-guard rule. A real ScoreLeague pass might
+// run when the scouting fetch returned nothing for the whole league (network
+// outage, every player missed); that is NOT a wiring error, and the pass must
+// complete with every player scored against the L1-imputed RAS fallback.
+func TestRun_EmptyScoutingDirectoryIsLegal(t *testing.T) {
+	st, dir, base := healthyFixture()
+	out := &fakeOut{}
+	// Empty (non-nil) MapScoutingDirectory — every player misses cleanly.
+	r, err := New(st, dir, MapScoutingDirectory{}, base, fakeCfg{ver: 7}, out, composition.New(fakeParams{}, fakeCap{}), Registry{})
+	if err != nil {
+		t.Fatalf("New with empty (non-nil) scouting dir should succeed: %v", err)
+	}
+	rep, err := r.Run(context.Background(), 2026, asOf())
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if rep.Scored != 3 {
+		t.Fatalf("want 3 scored with empty scouting dir, got %d", rep.Scored)
 	}
 }

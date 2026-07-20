@@ -20,9 +20,12 @@
 //   - no YTD score (83 of 1232 live, mostly rookies) → scored with BasePoints 0,
 //     counted in the report; honest for a labeled "L2 pending" board
 //
-// Scouting sub-signals are Data-Parity ABSENT for every player this session (no
-// scouting fetcher is wired into the orchestrator yet); the rubrics neutralize
-// absent signals by design, so the board reflects base × age × cap movement only.
+// Scouting sub-signals flow through this orchestrator as of S-Phase 0 (RAS)
+// via the ScoutingDirectory port: a rostered player whose profile is present
+// gets spec.RAS/HasRAS set; an absent profile falls through to L1's
+// DefaultRASFallback imputation (unchanged behavior). The other scouting
+// sub-signals (film, breakout) remain Data-Parity ABSENT this phase — every
+// other Has* stays false, so the rubrics neutralize them.
 package rankings
 
 import (
@@ -60,6 +63,7 @@ type Registry map[domain.Position]engine.Layer4
 type Runner struct {
 	state state.Reader
 	dir   Directory
+	scout ScoutingDirectory
 	base  map[string]float64 // mflID → YTD fantasy points (the labeled L2 placeholder)
 	cfg   ConfigSource
 	out   output.Writer
@@ -69,20 +73,24 @@ type Runner struct {
 
 // New wires a Runner. Every dependency is required — a nil here is a programmer
 // error surfaced at construction, not a silent zero-scored league at run time.
-func New(st state.Reader, dir Directory, base map[string]float64, cfg ConfigSource,
+// The scouting directory follows the same nil-guard rule as the others: a nil
+// directory is a wiring error, an explicitly-empty MapScoutingDirectory is a
+// legal "no scouting signal this pass" condition (every player misses cleanly,
+// L1 imputes the per-signal fallbacks).
+func New(st state.Reader, dir Directory, scout ScoutingDirectory, base map[string]float64, cfg ConfigSource,
 	out output.Writer, asm *composition.Assembler, reg Registry) (*Runner, error) {
-	if st == nil || dir == nil || cfg == nil || out == nil || asm == nil || reg == nil {
+	if st == nil || dir == nil || scout == nil || cfg == nil || out == nil || asm == nil || reg == nil {
 		// reg is in the guard deliberately (GLM M1 review): a nil map reads as
 		// identity-L4 for EVERY position without panicking, so a miswired app would
 		// silently persist a whole wrong-rubric league that B6 then freezes. An
 		// explicitly-empty Registry{} stays legal — that is a deliberate act.
-		return nil, fmt.Errorf("rankings: nil dependency (state=%t dir=%t cfg=%t out=%t asm=%t reg=%t)",
-			st != nil, dir != nil, cfg != nil, out != nil, asm != nil, reg != nil)
+		return nil, fmt.Errorf("rankings: nil dependency (state=%t dir=%t scout=%t cfg=%t out=%t asm=%t reg=%t)",
+			st != nil, dir != nil, scout != nil, cfg != nil, out != nil, asm != nil, reg != nil)
 	}
 	if base == nil {
 		return nil, fmt.Errorf("rankings: nil BasePoints map — the L2 placeholder source is required (an empty league of zeros must be deliberate, not a wiring accident)")
 	}
-	return &Runner{state: st, dir: dir, base: base, cfg: cfg, out: out, asm: asm, reg: reg}, nil
+	return &Runner{state: st, dir: dir, scout: scout, base: base, cfg: cfg, out: out, asm: asm, reg: reg}, nil
 }
 
 // Exclusion is one rostered player the pass could NOT score, with the reason. The
@@ -225,8 +233,15 @@ func (r *Runner) scorePlayer(fid string, p state.PlayerState, asOf time.Time) (o
 		// dimensionless salary-as-%-of-cap ratio, not stored money (OQ-014 edge).
 		Salary:    p.CapSalary.Millions(),
 		IsVeteran: !facts.IsRookie,
-		// No RAS (L1 imputes the fallback) and no scouting sub-signals: every Has*
-		// stays false → Data-Parity neutral in the rubrics (gate-check item 5).
+		// RAS flows as of S-Phase 0: if a scouting Profile is present for this
+		// player it carries the assembled RAS-equivalent (0–10) — set HasRAS so
+		// the rubric's RAS component is active. An absent profile keeps HasRAS
+		// false → L1 imputes DefaultRASFallback (the prior behavior). Every
+		// other scouting Has* stays false → Data-Parity neutral in the rubrics.
+	}
+	if profile, ok := r.scout.Profile(p.MFLID); ok {
+		spec.RAS = profile.RAS
+		spec.HasRAS = true
 	}
 	spec.Position = composition.ResolveRubricPosition(spec) // no snap share wired → passthrough today
 

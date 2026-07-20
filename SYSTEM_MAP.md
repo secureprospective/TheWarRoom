@@ -28,6 +28,13 @@ rules in `.golangci.yml` — they are build errors, not conventions.
 - `internal/ingestion/` — Layer 1 fetchers → `Raw*` records. Schema-validate, transform nothing. Never imports up. `[planned: B2/B2b]`
 - `internal/normalize/` — `Raw*` → domain types. Pure transformation. `[planned: B3]`
 - `internal/domain/` — leaf shared types (`PlayerRecord`, `EngineRecord`) + `constants.go` (all Section 5 numbers). Imports nothing internal. `[planned: B3]`
+- `internal/scouting/` — `[built]` (types only — see "Deferred / unwired scaffolding" below).
+  - `assembly/` — S-Phase 0 RAS composition leaf: fetches combine + crosswalk, computes the
+    per-position RAS-equivalent (provisional v1 method, see `docs/build-handoffs/scouting/`),
+    and produces `map[playerid.PlayerID]scouting.Profile` with only RAS populated. A
+    composition-class leaf — imports ingestion (`ras`, `crosswalk`), scouting, domain, playerid,
+    numeric; never the engine, stores, transactions, output, normalize's write side, or
+    database/sql. `[built — S-Phase 0]`
 - `internal/store/` — three sibling stores; **none imports another** (depguard). `[planned: B3b/B3c/B4]`
   - `rulebook/` (B3b) · `state/` (B3c — `StateReader`/`StateWriter` split; only B7 gets the writer) · `params/` (B4)
 - `internal/engine/` — pure-function scoring pipeline. **Imports no store, no DB, no I/O** — all state arrives as parameters (depguard `engine-is-pure`). `[planned: B5a]`
@@ -66,13 +73,18 @@ unit-tested scaffolding with a documented wiring trigger — retained by ruling
   `IDPFilm`, `NGSCoverage`, `SafetyRole`) + the ~11 scouting fetchers under
   `internal/ingestion` (`agetrajectory`, `collegeshare`, `collegedefense`, `crosswalk`,
   `kicking`, `madden`, `nflproduction`, `pfrcoverage`, `ras`, `touchshare`,
-  `veteranfilm`). The types + `Fetch()` exist and are tested; the production wiring
-  (fetch → `Profile` → engine Layer 4) is **not switched on** — Layer 4 runs the
-  identity/neutral path (M1: "Data-Parity ABSENT … no fetcher wired yet"). **Wiring
-  trigger:** the scouting data-integration sprint (Option D hybrid). **Why retained:**
-  the source maps (`docs/data-layer/{Offense,Defense}_Scouting_Source_Map.md`) + the
-  per-type SOURCE-DRIFT notes in `internal/scouting/types.go` capture eliminated-source
-  research that would be expensive to rediscover. See the `internal/scouting` package doc.
+  `veteranfilm`). The types + `Fetch()` exist and are tested. **RAS is the first wired
+  signal** (S-Phase 0, 2026-07-20): `internal/scouting/assembly` fetches combine + crosswalk,
+  computes the per-position RAS-equivalent (provisional v1 z-score method), and threads it
+  through `rankings.Runner` via the new `ScoutingDirectory` port → `composition.PlayerSpec`
+  → the engine's RAS-active rubrics (WR/RB/TE/DT/DE/CB/S lift or pull on a real measured
+  value; QB/K stay SL-020-forced). **The other ~10 signals are NOT switched on** — film,
+  breakout, coverage, college production, etc. remain Data-Parity ABSENT, neutralized by
+  the rubrics. **Wiring trigger:** the rest of the scouting data-integration sprint (Option
+  D hybrid, handoff `45-Scouting-Data-Integration`). **Why retained:** the source maps
+  (`docs/data-layer/{Offense,Defense}_Scouting_Source_Map.md`) + the per-type SOURCE-DRIFT
+  notes in `internal/scouting/types.go` capture eliminated-source research that would be
+  expensive to rediscover. See the `internal/scouting` package doc.
 - **`NewCFBDClient`** (`internal/ingestion/cfbd.go`) — extracted ahead of the CFBD
   orchestration; wire or drop when that fetcher path lands.
 
