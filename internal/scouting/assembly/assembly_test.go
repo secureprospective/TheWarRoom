@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/ras"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
@@ -340,11 +341,15 @@ func TestBuildRAS_EndToEnd(t *testing.T) {
 		_, _ = w.Write([]byte(crosswalkCSV))
 	}))
 	defer crosswalkSrv.Close()
+	cwMap, cwErr := crosswalk.Fetch(context.Background(), crosswalkSrv.Client(), crosswalkSrv.URL)
+	if cwErr != nil {
+		t.Fatalf("crosswalk fetch: %v", cwErr)
+	}
 
 	roster := []string{"1001", "1002"}
 	pos := fakePosLookup{"1001": domain.PosRB, "1002": domain.PosRB}
 
-	out, err := BuildRAS(context.Background(), combineSrv.Client(), combineSrv.URL, crosswalkSrv.URL, roster, pos)
+	out, err := BuildRAS(context.Background(), combineSrv.Client(), combineSrv.URL, cwMap, roster, pos)
 	if err != nil {
 		t.Fatalf("BuildRAS: %v", err)
 	}
@@ -398,6 +403,10 @@ func TestBuildRAS_RosterMissesAreOrdinary(t *testing.T) {
 		_, _ = w.Write([]byte(crosswalkCSV))
 	}))
 	defer crosswalkSrv.Close()
+	cwMap, cwErr := crosswalk.Fetch(context.Background(), crosswalkSrv.Client(), crosswalkSrv.URL)
+	if cwErr != nil {
+		t.Fatalf("crosswalk fetch: %v", cwErr)
+	}
 
 	// 1001 resolves + has combine → scores. 1002 resolves but no combine row
 	// → ordinary miss. 1003 has no crosswalk row → ordinary miss. 1004 has no
@@ -406,7 +415,7 @@ func TestBuildRAS_RosterMissesAreOrdinary(t *testing.T) {
 	pos := fakePosLookup{"1001": domain.PosRB, "1002": domain.PosRB, "1003": domain.PosRB}
 	// (1004 and 1005 are not in the pos map → position miss)
 
-	out, err := BuildRAS(context.Background(), combineSrv.Client(), combineSrv.URL, crosswalkSrv.URL, roster, pos)
+	out, err := BuildRAS(context.Background(), combineSrv.Client(), combineSrv.URL, cwMap, roster, pos)
 	if err != nil {
 		t.Fatalf("player-level misses must NOT error: %v", err)
 	}
@@ -423,13 +432,13 @@ func TestBuildRAS_RosterMissesAreOrdinary(t *testing.T) {
 // pin the constructor-time guard: a nil dependency is a wiring error, never a
 // silent zero-score league.
 func TestBuildRAS_NilClientFailsLoud(t *testing.T) {
-	if _, err := BuildRAS(context.Background(), nil, "u", "u", nil, fakePosLookup{}); err == nil {
+	if _, err := BuildRAS(context.Background(), nil, "u", crosswalk.Map{}, nil, fakePosLookup{}); err == nil {
 		t.Fatal("BuildRAS with nil client should error")
 	}
 }
 
 func TestBuildRAS_NilPositionLookupFailsLoud(t *testing.T) {
-	if _, err := BuildRAS(context.Background(), http.DefaultClient, "u", "u", nil, nil); err == nil {
+	if _, err := BuildRAS(context.Background(), http.DefaultClient, "u", crosswalk.Map{}, nil, nil); err == nil {
 		t.Fatal("BuildRAS with nil PositionLookup should error")
 	}
 }

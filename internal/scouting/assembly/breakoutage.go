@@ -40,10 +40,12 @@ const daysPerYear = 365.25
 // each position's §4 curve runs the Data-Parity neutral path).
 //
 // THE JOIN (three feeds, one gsis bridge):
-//   - crosswalk (fetched ONCE): rostered MFL id → gsis, and CFBD/espn id → gsis.
-//   - agetrajectory (fetched ONCE): gsis → raw birth DATE (age is an as-of derivation —
-//     zero-leak; the fetcher never emits an age).
-//   - collegeshare (fetched PER SEASON): gsis-keyed within-team production shares.
+//   - crosswalk (supplied by the caller): rostered MFL id → gsis, and CFBD/espn id → gsis.
+//     The app fetches it once and threads the Map into every signal, so this assembler
+//     never re-fetches it.
+//   - agetrajectory (supplied by the caller): gsis → raw birth DATE (age is an as-of
+//     derivation — zero-leak; the fetcher never emits an age). Also fetched once upstream.
+//   - collegeshare (fetched PER SEASON, here): gsis-keyed within-team production shares.
 //
 // Then, per rostered player: pick the position-appropriate within-team share (WR/TE →
 // receiving-yard share, RB → rushing-yard share; every other position has NO offense
@@ -57,10 +59,10 @@ const daysPerYear = 365.25
 // stays a pure single-year Layer-1 call, and this composition leaf orchestrates the
 // several calls — keeping Layer 1 unaware of the breakout concept.
 //
-// Failures: a genuine fetch failure (crosswalk, birthdates, or ANY scanned season's
-// college feed — network/HTTP/parse or a feed that resolved zero records) is surfaced
-// loudly, matching the sibling assemblers — a breakout-less league should be visible,
-// not silently neutral. A player-level miss (no gsis, no birthdate, a non-offense
+// Failures: a genuine fetch failure on ANY scanned season's college feed (network/HTTP/
+// parse or a feed that resolved zero records) is surfaced loudly, matching the sibling
+// assemblers — a breakout-less league should be visible, not silently neutral. (The
+// crosswalk and birthdate fetch failures now surface upstream at the caller's single fetch.) A player-level miss (no gsis, no birthdate, a non-offense
 // position, no season crossed the line, a non-finite/negative derived age) is ordinary
 // and never an error.
 //
@@ -70,7 +72,9 @@ const daysPerYear = 365.25
 func BuildBreakoutAge(
 	ctx context.Context,
 	client *http.Client,
-	statsBaseURL, ageURL, crosswalkURL, apiKey string,
+	statsBaseURL, apiKey string,
+	cw crosswalk.Map,
+	ages map[string]agetrajectory.RawAge,
 	seasons []int,
 	rosterMFLIDs []string,
 	pos PositionLookup,
@@ -83,15 +87,6 @@ func BuildBreakoutAge(
 	}
 	if len(seasons) == 0 {
 		return nil, fmt.Errorf("assembly: BuildBreakoutAge requires at least one season to scan")
-	}
-
-	cw, err := crosswalk.Fetch(ctx, client, crosswalkURL)
-	if err != nil {
-		return nil, fmt.Errorf("assembly: fetch crosswalk: %w", err)
-	}
-	ages, err := agetrajectory.Fetch(ctx, client, ageURL)
-	if err != nil {
-		return nil, fmt.Errorf("assembly: fetch birthdates: %w", err)
 	}
 
 	scan := append([]int(nil), seasons...)

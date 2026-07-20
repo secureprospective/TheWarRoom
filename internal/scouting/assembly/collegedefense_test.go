@@ -9,6 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegedefense"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
@@ -87,7 +88,7 @@ func cdFinite(a, b float64) bool { return math.Abs(a-b) < 1e-9 }
 // DT = mean(TFL,sack), all joined through the crosswalk's two bridges.
 func TestBuildCollegeDefense_CollapseByPosition(t *testing.T) {
 	stats := cfbdDefenseServer(t, "k")
-	cw := crosswalkServer(t, cdCrosswalkCSV)
+	cw := crosswalkFixture(t, cdCrosswalkCSV)
 
 	roster := []string{"1001", "1002", "1003", "1004"}
 	pos := fakePosLookup{
@@ -97,7 +98,7 @@ func TestBuildCollegeDefense_CollapseByPosition(t *testing.T) {
 		"1004": domain.PosDT,
 	}
 
-	out, err := BuildCollegeDefense(context.Background(), stats.Client(), stats.URL, cw.URL, "k", 2026, roster, pos)
+	out, err := BuildCollegeDefense(context.Background(), stats.Client(), stats.URL, "k", cw, 2026, roster, pos)
 	if err != nil {
 		t.Fatalf("BuildCollegeDefense: %v", err)
 	}
@@ -134,7 +135,7 @@ func TestBuildCollegeDefense_CollapseByPosition(t *testing.T) {
 // defensive college-share source here, an ordinary skip rather than a spurious zero.
 func TestBuildCollegeDefense_OffenseHasNoSource(t *testing.T) {
 	stats := cfbdDefenseServer(t, "k")
-	cw := crosswalkServer(t, cdCrosswalkCSV)
+	cw := crosswalkFixture(t, cdCrosswalkCSV)
 
 	roster := []string{"1001", "1002", "1003"}
 	pos := fakePosLookup{
@@ -143,7 +144,7 @@ func TestBuildCollegeDefense_OffenseHasNoSource(t *testing.T) {
 		"1003": domain.PosK,  // no college-production share → absent
 	}
 
-	out, err := BuildCollegeDefense(context.Background(), stats.Client(), stats.URL, cw.URL, "k", 2026, roster, pos)
+	out, err := BuildCollegeDefense(context.Background(), stats.Client(), stats.URL, "k", cw, 2026, roster, pos)
 	if err != nil {
 		t.Fatalf("BuildCollegeDefense: %v", err)
 	}
@@ -161,7 +162,7 @@ func TestBuildCollegeDefense_OffenseHasNoSource(t *testing.T) {
 // these are player-level misses, never an error.
 func TestBuildCollegeDefense_PlayerMissesAreOrdinary(t *testing.T) {
 	stats := cfbdDefenseServer(t, "k")
-	cw := crosswalkServer(t, cdCrosswalkCSV)
+	cw := crosswalkFixture(t, cdCrosswalkCSV)
 
 	roster := []string{"1001", "1002", "9999", "10X4"}
 	pos := fakePosLookup{
@@ -171,7 +172,7 @@ func TestBuildCollegeDefense_PlayerMissesAreOrdinary(t *testing.T) {
 		"10X4": domain.PosCB, // malformed id → miss
 	}
 
-	out, err := BuildCollegeDefense(context.Background(), stats.Client(), stats.URL, cw.URL, "k", 2026, roster, pos)
+	out, err := BuildCollegeDefense(context.Background(), stats.Client(), stats.URL, "k", cw, 2026, roster, pos)
 	if err != nil {
 		t.Fatalf("player-level misses must NOT error: %v", err)
 	}
@@ -188,8 +189,8 @@ func TestBuildCollegeDefense_FetchFailsLoud(t *testing.T) {
 		_, _ = w.Write([]byte(`[]`))
 	}))
 	t.Cleanup(empty.Close)
-	cw := crosswalkServer(t, cdCrosswalkCSV)
-	if _, err := BuildCollegeDefense(context.Background(), empty.Client(), empty.URL, cw.URL, "k", 2026, []string{"1001"}, fakePosLookup{"1001": domain.PosLB}); err == nil {
+	cw := crosswalkFixture(t, cdCrosswalkCSV)
+	if _, err := BuildCollegeDefense(context.Background(), empty.Client(), empty.URL, "k", cw, 2026, []string{"1001"}, fakePosLookup{"1001": domain.PosLB}); err == nil {
 		t.Fatal("a zero-record college-defense feed should fail loud")
 	}
 }
@@ -198,8 +199,8 @@ func TestBuildCollegeDefense_FetchFailsLoud(t *testing.T) {
 // genuine fetch failure and must error, not return empty.
 func TestBuildCollegeDefense_BadKeyFailsLoud(t *testing.T) {
 	stats := cfbdDefenseServer(t, "right")
-	cw := crosswalkServer(t, cdCrosswalkCSV)
-	if _, err := BuildCollegeDefense(context.Background(), stats.Client(), stats.URL, cw.URL, "wrong", 2026, []string{"1001"}, fakePosLookup{"1001": domain.PosLB}); err == nil {
+	cw := crosswalkFixture(t, cdCrosswalkCSV)
+	if _, err := BuildCollegeDefense(context.Background(), stats.Client(), stats.URL, "wrong", cw, 2026, []string{"1001"}, fakePosLookup{"1001": domain.PosLB}); err == nil {
 		t.Fatal("a non-200 CFBD response should fail loud")
 	}
 }
@@ -207,10 +208,10 @@ func TestBuildCollegeDefense_BadKeyFailsLoud(t *testing.T) {
 // TestBuildCollegeDefense_NilGuards: a nil dependency is a wiring error, never a silent
 // no-signal league.
 func TestBuildCollegeDefense_NilGuards(t *testing.T) {
-	if _, err := BuildCollegeDefense(context.Background(), nil, "u", "u", "k", 2026, nil, fakePosLookup{}); err == nil {
+	if _, err := BuildCollegeDefense(context.Background(), nil, "u", "k", crosswalk.Map{}, 2026, nil, fakePosLookup{}); err == nil {
 		t.Fatal("nil client should error")
 	}
-	if _, err := BuildCollegeDefense(context.Background(), http.DefaultClient, "u", "u", "k", 2026, nil, nil); err == nil {
+	if _, err := BuildCollegeDefense(context.Background(), http.DefaultClient, "u", "k", crosswalk.Map{}, 2026, nil, nil); err == nil {
 		t.Fatal("nil PositionLookup should error")
 	}
 }

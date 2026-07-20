@@ -9,6 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegeshare"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
@@ -66,6 +67,19 @@ func crosswalkServer(t *testing.T, csv string) *httptest.Server {
 	return srv
 }
 
+// crosswalkFixture stands up the crosswalk fixture server and returns the RESOLVED Map.
+// The app now fetches the crosswalk once and threads the Map down into every assembler, so
+// the assembler tests mirror that by fetching here and passing the Map, not a URL.
+func crosswalkFixture(t *testing.T, csv string) crosswalk.Map {
+	t.Helper()
+	srv := crosswalkServer(t, csv)
+	cw, err := crosswalk.Fetch(context.Background(), srv.Client(), srv.URL)
+	if err != nil {
+		t.Fatalf("crosswalk fixture fetch: %v", err)
+	}
+	return cw
+}
+
 // csCrosswalkCSV maps the three fixture players end to end: mfl 1001/1002/1003 →
 // gsis G-1/G-2/G-3 and espn E-1/E-2/E-3 → the SAME gsis, so a rostered mfl id
 // resolves to the college-production row keyed by that gsis.
@@ -82,7 +96,7 @@ func csFinite(a, b float64) bool { return math.Abs(a-b) < 1e-9 }
 // blend, all joined through the crosswalk's two bridges.
 func TestBuildCollegeShare_CollapseByPosition(t *testing.T) {
 	stats := cfbdStatsServer(t, "k")
-	cw := crosswalkServer(t, csCrosswalkCSV)
+	cw := crosswalkFixture(t, csCrosswalkCSV)
 
 	roster := []string{"1001", "1002", "1003"}
 	pos := fakePosLookup{
@@ -91,7 +105,7 @@ func TestBuildCollegeShare_CollapseByPosition(t *testing.T) {
 		"1003": domain.PosRB,
 	}
 
-	out, err := BuildCollegeShare(context.Background(), stats.Client(), stats.URL, cw.URL, "k", 2026, roster, pos)
+	out, err := BuildCollegeShare(context.Background(), stats.Client(), stats.URL, "k", cw, 2026, roster, pos)
 	if err != nil {
 		t.Fatalf("BuildCollegeShare: %v", err)
 	}
@@ -128,7 +142,7 @@ func TestBuildCollegeShare_CollapseByPosition(t *testing.T) {
 // an ordinary skip rather than a spurious zero.
 func TestBuildCollegeShare_QBAndDefenseHaveNoSource(t *testing.T) {
 	stats := cfbdStatsServer(t, "k")
-	cw := crosswalkServer(t, csCrosswalkCSV)
+	cw := crosswalkFixture(t, csCrosswalkCSV)
 
 	roster := []string{"1001", "1002", "1003"}
 	pos := fakePosLookup{
@@ -137,7 +151,7 @@ func TestBuildCollegeShare_QBAndDefenseHaveNoSource(t *testing.T) {
 		"1003": domain.PosLB, // IDP feed, not this one → absent
 	}
 
-	out, err := BuildCollegeShare(context.Background(), stats.Client(), stats.URL, cw.URL, "k", 2026, roster, pos)
+	out, err := BuildCollegeShare(context.Background(), stats.Client(), stats.URL, "k", cw, 2026, roster, pos)
 	if err != nil {
 		t.Fatalf("BuildCollegeShare: %v", err)
 	}
@@ -159,7 +173,7 @@ func TestBuildCollegeShare_QBAndDefenseHaveNoSource(t *testing.T) {
 // — the feed is healthy, so these are player-level misses, never an error.
 func TestBuildCollegeShare_PlayerMissesAreOrdinary(t *testing.T) {
 	stats := cfbdStatsServer(t, "k")
-	cw := crosswalkServer(t, csCrosswalkCSV)
+	cw := crosswalkFixture(t, csCrosswalkCSV)
 
 	roster := []string{"1001", "1002", "9999", "10X4"}
 	pos := fakePosLookup{
@@ -169,7 +183,7 @@ func TestBuildCollegeShare_PlayerMissesAreOrdinary(t *testing.T) {
 		"10X4": domain.PosWR, // malformed id → miss
 	}
 
-	out, err := BuildCollegeShare(context.Background(), stats.Client(), stats.URL, cw.URL, "k", 2026, roster, pos)
+	out, err := BuildCollegeShare(context.Background(), stats.Client(), stats.URL, "k", cw, 2026, roster, pos)
 	if err != nil {
 		t.Fatalf("player-level misses must NOT error: %v", err)
 	}
@@ -186,8 +200,8 @@ func TestBuildCollegeShare_FetchFailsLoud(t *testing.T) {
 		_, _ = w.Write([]byte(`[]`))
 	}))
 	t.Cleanup(empty.Close)
-	cw := crosswalkServer(t, csCrosswalkCSV)
-	if _, err := BuildCollegeShare(context.Background(), empty.Client(), empty.URL, cw.URL, "k", 2026, []string{"1001"}, fakePosLookup{"1001": domain.PosWR}); err == nil {
+	cw := crosswalkFixture(t, csCrosswalkCSV)
+	if _, err := BuildCollegeShare(context.Background(), empty.Client(), empty.URL, "k", cw, 2026, []string{"1001"}, fakePosLookup{"1001": domain.PosWR}); err == nil {
 		t.Fatal("a zero-record college feed should fail loud")
 	}
 }
@@ -196,8 +210,8 @@ func TestBuildCollegeShare_FetchFailsLoud(t *testing.T) {
 // genuine fetch failure and must error, not return empty.
 func TestBuildCollegeShare_BadKeyFailsLoud(t *testing.T) {
 	stats := cfbdStatsServer(t, "right")
-	cw := crosswalkServer(t, csCrosswalkCSV)
-	if _, err := BuildCollegeShare(context.Background(), stats.Client(), stats.URL, cw.URL, "wrong", 2026, []string{"1001"}, fakePosLookup{"1001": domain.PosWR}); err == nil {
+	cw := crosswalkFixture(t, csCrosswalkCSV)
+	if _, err := BuildCollegeShare(context.Background(), stats.Client(), stats.URL, "wrong", cw, 2026, []string{"1001"}, fakePosLookup{"1001": domain.PosWR}); err == nil {
 		t.Fatal("a non-200 CFBD response should fail loud")
 	}
 }
@@ -205,10 +219,10 @@ func TestBuildCollegeShare_BadKeyFailsLoud(t *testing.T) {
 // TestBuildCollegeShare_NilGuards: a nil dependency is a wiring error, never a silent
 // no-signal league.
 func TestBuildCollegeShare_NilGuards(t *testing.T) {
-	if _, err := BuildCollegeShare(context.Background(), nil, "u", "u", "k", 2026, nil, fakePosLookup{}); err == nil {
+	if _, err := BuildCollegeShare(context.Background(), nil, "u", "k", crosswalk.Map{}, 2026, nil, fakePosLookup{}); err == nil {
 		t.Fatal("nil client should error")
 	}
-	if _, err := BuildCollegeShare(context.Background(), http.DefaultClient, "u", "u", "k", 2026, nil, nil); err == nil {
+	if _, err := BuildCollegeShare(context.Background(), http.DefaultClient, "u", "k", crosswalk.Map{}, 2026, nil, nil); err == nil {
 		t.Fatal("nil PositionLookup should error")
 	}
 }

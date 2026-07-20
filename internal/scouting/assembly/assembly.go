@@ -62,7 +62,8 @@ type PositionLookup interface {
 func BuildRAS(
 	ctx context.Context,
 	client *http.Client,
-	combineURL, crosswalkURL string,
+	combineURL string,
+	cw crosswalk.Map,
 	rosterMFLIDs []string,
 	pos PositionLookup,
 ) (map[playerid.PlayerID]scouting.Profile, error) {
@@ -73,10 +74,6 @@ func BuildRAS(
 		return nil, fmt.Errorf("assembly: BuildRAS requires a non-nil PositionLookup")
 	}
 
-	cw, err := crosswalk.Fetch(ctx, client, crosswalkURL)
-	if err != nil {
-		return nil, fmt.Errorf("assembly: fetch crosswalk: %w", err)
-	}
 	combine, err := ras.Fetch(ctx, client, combineURL, cw.PFRMap())
 	if err != nil {
 		return nil, fmt.Errorf("assembly: fetch combine: %w", err)

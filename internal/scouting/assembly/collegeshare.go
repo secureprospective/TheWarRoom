@@ -48,7 +48,8 @@ import (
 func BuildCollegeShare(
 	ctx context.Context,
 	client *http.Client,
-	statsURL, crosswalkURL, apiKey string,
+	statsURL, apiKey string,
+	cw crosswalk.Map,
 	year int,
 	rosterMFLIDs []string,
 	pos PositionLookup,
@@ -60,10 +61,6 @@ func BuildCollegeShare(
 		return nil, fmt.Errorf("assembly: BuildCollegeShare requires a non-nil PositionLookup")
 	}
 
-	cw, err := crosswalk.Fetch(ctx, client, crosswalkURL)
-	if err != nil {
-		return nil, fmt.Errorf("assembly: fetch crosswalk: %w", err)
-	}
 	raw, err := collegeshare.Fetch(ctx, client, statsURL, apiKey, year, cw.GSISForESPN)
 	if err != nil {
 		return nil, fmt.Errorf("assembly: fetch college share: %w", err)

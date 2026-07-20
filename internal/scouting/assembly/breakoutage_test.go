@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/agetrajectory"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegeshare"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
@@ -114,6 +116,19 @@ func baBirthServer(t *testing.T, csv string) *httptest.Server {
 	return srv
 }
 
+// baBirthFixture stands up the birthdate fixture server and returns the RESOLVED birthdate
+// map. Birthdates are now fetched once by the app (behind the CFBD-key gate) and threaded
+// into BuildBreakoutAge, so the test mirrors that by fetching here and passing the map.
+func baBirthFixture(t *testing.T, csv string) map[string]agetrajectory.RawAge {
+	t.Helper()
+	srv := baBirthServer(t, csv)
+	ages, err := agetrajectory.Fetch(context.Background(), srv.Client(), srv.URL)
+	if err != nil {
+		t.Fatalf("birthdate fixture fetch: %v", err)
+	}
+	return ages
+}
+
 func baPosLookup() fakePosLookup {
 	return fakePosLookup{"1001": domain.PosWR, "1002": domain.PosTE, "1003": domain.PosRB, "1004": domain.PosWR}
 }
@@ -126,11 +141,11 @@ func baApprox(a, b float64) bool { return math.Abs(a-b) < 0.02 }
 func TestBuildBreakoutAge_EarliestCrossing(t *testing.T) {
 	t.Parallel()
 	stats := cfbdSeasonServer(t, "SECRET")
-	cw := crosswalkServer(t, baCrosswalkCSV)
-	birth := baBirthServer(t, baBirthCSV)
+	cw := crosswalkFixture(t, baCrosswalkCSV)
+	ages := baBirthFixture(t, baBirthCSV)
 
 	out, err := BuildBreakoutAge(context.Background(), stats.Client(),
-		stats.URL, birth.URL, cw.URL, "SECRET", baSeasons(),
+		stats.URL, "SECRET", cw, ages, baSeasons(),
 		[]string{"1001", "1002", "1003", "1004"}, baPosLookup())
 	if err != nil {
 		t.Fatalf("BuildBreakoutAge: %v", err)
@@ -165,11 +180,11 @@ func TestBuildBreakoutAge_FetchFailsLoud(t *testing.T) {
 		_, _ = w.Write([]byte(`[]`)) // resolves zero records → collegeshare errEmpty
 	}))
 	t.Cleanup(empty.Close)
-	cw := crosswalkServer(t, baCrosswalkCSV)
-	birth := baBirthServer(t, baBirthCSV)
+	cw := crosswalkFixture(t, baCrosswalkCSV)
+	ages := baBirthFixture(t, baBirthCSV)
 
 	_, err := BuildBreakoutAge(context.Background(), empty.Client(),
-		empty.URL, birth.URL, cw.URL, "SECRET", baSeasons(), []string{"1001"}, baPosLookup())
+		empty.URL, "SECRET", cw, ages, baSeasons(), []string{"1001"}, baPosLookup())
 	if err == nil {
 		t.Fatal("expected a loud error when a season's college feed resolves zero records")
 	}
@@ -179,11 +194,11 @@ func TestBuildBreakoutAge_FetchFailsLoud(t *testing.T) {
 func TestBuildBreakoutAge_BadKeyFailsLoud(t *testing.T) {
 	t.Parallel()
 	stats := cfbdSeasonServer(t, "SECRET")
-	cw := crosswalkServer(t, baCrosswalkCSV)
-	birth := baBirthServer(t, baBirthCSV)
+	cw := crosswalkFixture(t, baCrosswalkCSV)
+	ages := baBirthFixture(t, baBirthCSV)
 
 	_, err := BuildBreakoutAge(context.Background(), stats.Client(),
-		stats.URL, birth.URL, cw.URL, "WRONG-KEY", baSeasons(), []string{"1001"}, baPosLookup())
+		stats.URL, "WRONG-KEY", cw, ages, baSeasons(), []string{"1001"}, baPosLookup())
 	if err == nil {
 		t.Fatal("expected a loud error when the CFBD bearer token is rejected")
 	}
@@ -192,13 +207,13 @@ func TestBuildBreakoutAge_BadKeyFailsLoud(t *testing.T) {
 // TestBuildBreakoutAge_Guards proves the nil-client, nil-pos, and empty-seasons guards.
 func TestBuildBreakoutAge_Guards(t *testing.T) {
 	t.Parallel()
-	if _, err := BuildBreakoutAge(context.Background(), nil, "u", "u", "u", "k", baSeasons(), nil, baPosLookup()); err == nil {
+	if _, err := BuildBreakoutAge(context.Background(), nil, "u", "k", crosswalk.Map{}, nil, baSeasons(), nil, baPosLookup()); err == nil {
 		t.Error("expected error for nil *http.Client")
 	}
-	if _, err := BuildBreakoutAge(context.Background(), http.DefaultClient, "u", "u", "u", "k", baSeasons(), nil, nil); err == nil {
+	if _, err := BuildBreakoutAge(context.Background(), http.DefaultClient, "u", "k", crosswalk.Map{}, nil, baSeasons(), nil, nil); err == nil {
 		t.Error("expected error for nil PositionLookup")
 	}
-	if _, err := BuildBreakoutAge(context.Background(), http.DefaultClient, "u", "u", "u", "k", nil, nil, baPosLookup()); err == nil {
+	if _, err := BuildBreakoutAge(context.Background(), http.DefaultClient, "u", "k", crosswalk.Map{}, nil, nil, nil, baPosLookup()); err == nil {
 		t.Error("expected error for empty seasons")
 	}
 }

@@ -56,13 +56,22 @@ func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (
 	client := &http.Client{Timeout: rasFetchTimeout}
 	adapter := scoutLookupAdapter{lk: lk}
 
-	profiles, err := assembly.BuildRAS(ctx, client, ras.SourceURL, crosswalk.SourceURL, rosterMFLIDs, adapter)
+	// Fetch the MFL→gsis crosswalk ONCE here and thread the resolved Map down into every
+	// signal. It was previously re-fetched inside each Build* (four ~1 MB pulls per Score
+	// League); a single fetch removes that redundancy and is the one fail-loud crosswalk
+	// boundary. Birthdates (breakout-only) are fetched once inside mergeCFBDScouting.
+	cw, err := crosswalk.Fetch(ctx, client, crosswalk.SourceURL)
+	if err != nil {
+		return rankings.MapScoutingDirectory{}, fmt.Errorf("app: fetch scouting crosswalk: %w", err)
+	}
+
+	profiles, err := assembly.BuildRAS(ctx, client, ras.SourceURL, cw, rosterMFLIDs, adapter)
 	if err != nil {
 		return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build RAS scouting directory: %w", err)
 	}
 
 	if key := strings.TrimSpace(os.Getenv(cfbdEnvVar)); key != "" {
-		if err := mergeCFBDScouting(ctx, client, key, rosterMFLIDs, adapter, profiles); err != nil {
+		if err := mergeCFBDScouting(ctx, client, key, cw, rosterMFLIDs, adapter, profiles); err != nil {
 			return rankings.MapScoutingDirectory{}, err
 		}
 	}
@@ -73,22 +82,29 @@ func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (
 // mergeCFBDScouting merges every CFBD-sourced signal (S-Phase 1-4) into profiles, in
 // order. All share one key + season year; each signal's fetch failure surfaces loudly
 // (a signal-less league must be visible, not silently neutral).
-func mergeCFBDScouting(ctx context.Context, client *http.Client, key string,
+func mergeCFBDScouting(ctx context.Context, client *http.Client, key string, cw crosswalk.Map,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
 	year, err := strconv.Atoi(ingestion.SeasonYear)
 	if err != nil {
 		return fmt.Errorf("app: season year %q not numeric: %w", ingestion.SeasonYear, err)
 	}
+	// Birthdates feed only the breakout scan; fetch them once here (behind the CFBD-key
+	// gate) rather than inside BuildBreakoutAge, so a second breakout thread (IDP, S-Phase
+	// 4b) reuses the same pull instead of fetching twice.
+	ages, err := agetrajectory.Fetch(ctx, client, agetrajectory.SourceURL)
+	if err != nil {
+		return fmt.Errorf("app: fetch scouting birthdates: %w", err)
+	}
 	if err := mergeSchoolTier(ctx, client, key, year, rosterMFLIDs, adapter, profiles); err != nil {
 		return err
 	}
-	if err := mergeCollegeShare(ctx, client, key, year, rosterMFLIDs, adapter, profiles); err != nil {
+	if err := mergeCollegeShare(ctx, client, key, cw, year, rosterMFLIDs, adapter, profiles); err != nil {
 		return err
 	}
-	if err := mergeCollegeDefense(ctx, client, key, year, rosterMFLIDs, adapter, profiles); err != nil {
+	if err := mergeCollegeDefense(ctx, client, key, cw, year, rosterMFLIDs, adapter, profiles); err != nil {
 		return err
 	}
-	return mergeBreakoutAge(ctx, client, key, year, rosterMFLIDs, adapter, profiles)
+	return mergeBreakoutAge(ctx, client, key, cw, ages, year, rosterMFLIDs, adapter, profiles)
 }
 
 // mergeSchoolTier (S-Phase 1): join each rostered id → college → tier. A tier-only
@@ -111,9 +127,9 @@ func mergeSchoolTier(ctx context.Context, client *http.Client, key string, year 
 
 // mergeCollegeShare (S-Phase 2): join each rostered id → gsis → collapsed position-defined
 // OFFENSE production share. A share-only player gets a fresh Profile carrying just the share.
-func mergeCollegeShare(ctx context.Context, client *http.Client, key string, year int,
+func mergeCollegeShare(ctx context.Context, client *http.Client, key string, cw crosswalk.Map, year int,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	shares, err := assembly.BuildCollegeShare(ctx, client, collegeshare.SeasonStatsURL, crosswalk.SourceURL, key, year, rosterMFLIDs, adapter)
+	shares, err := assembly.BuildCollegeShare(ctx, client, collegeshare.SeasonStatsURL, key, cw, year, rosterMFLIDs, adapter)
 	if err != nil {
 		return fmt.Errorf("app: build college-share scouting directory: %w", err)
 	}
@@ -131,9 +147,9 @@ func mergeCollegeShare(ctx context.Context, client *http.Client, key string, yea
 // position-averaged share into the SAME CollegeProductionShare slot. Offense and defense
 // populate DISJOINT positions — each collapse returns absent for the other side — so a
 // player is filled by at most one feed and the slot never clobbers.
-func mergeCollegeDefense(ctx context.Context, client *http.Client, key string, year int,
+func mergeCollegeDefense(ctx context.Context, client *http.Client, key string, cw crosswalk.Map, year int,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	defShares, err := assembly.BuildCollegeDefense(ctx, client, collegedefense.SeasonStatsURL, crosswalk.SourceURL, key, year, rosterMFLIDs, adapter)
+	defShares, err := assembly.BuildCollegeDefense(ctx, client, collegedefense.SeasonStatsURL, key, cw, year, rosterMFLIDs, adapter)
 	if err != nil {
 		return fmt.Errorf("app: build college-defense scouting directory: %w", err)
 	}
@@ -152,10 +168,11 @@ func mergeCollegeDefense(ctx context.Context, client *http.Client, key string, y
 // earliest dominator crossing, join a birthdate, and derive the raw breakout age. A
 // breakout-only player gets a fresh Profile carrying just the age; HasBreakoutAge (not a
 // zero test — a young age is a real signal) gates the copy downstream.
-func mergeBreakoutAge(ctx context.Context, client *http.Client, key string, year int,
+func mergeBreakoutAge(ctx context.Context, client *http.Client, key string, cw crosswalk.Map,
+	ages map[string]agetrajectory.RawAge, year int,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	breakouts, err := assembly.BuildBreakoutAge(ctx, client, collegeshare.SeasonStatsURL,
-		agetrajectory.SourceURL, crosswalk.SourceURL, key, breakoutSeasons(year), rosterMFLIDs, adapter)
+	breakouts, err := assembly.BuildBreakoutAge(ctx, client, collegeshare.SeasonStatsURL, key,
+		cw, ages, breakoutSeasons(year), rosterMFLIDs, adapter)
 	if err != nil {
 		return fmt.Errorf("app: build breakout-age scouting directory: %w", err)
 	}

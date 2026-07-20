@@ -55,7 +55,8 @@ import (
 func BuildCollegeDefense(
 	ctx context.Context,
 	client *http.Client,
-	statsURL, crosswalkURL, apiKey string,
+	statsURL, apiKey string,
+	cw crosswalk.Map,
 	year int,
 	rosterMFLIDs []string,
 	pos PositionLookup,
@@ -67,10 +68,6 @@ func BuildCollegeDefense(
 		return nil, fmt.Errorf("assembly: BuildCollegeDefense requires a non-nil PositionLookup")
 	}
 
-	cw, err := crosswalk.Fetch(ctx, client, crosswalkURL)
-	if err != nil {
-		return nil, fmt.Errorf("assembly: fetch crosswalk: %w", err)
-	}
 	raw, err := collegedefense.Fetch(ctx, client, statsURL, apiKey, year, cw.GSISForESPN)
 	if err != nil {
 		return nil, fmt.Errorf("assembly: fetch college defense: %w", err)
