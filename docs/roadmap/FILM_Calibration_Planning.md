@@ -1,6 +1,8 @@
 # FILM Calibration — Planning (Thread C)
 
-**Status:** PLANNING-ONLY. No code, no weights written by this document.
+**Status:** CALIBRATION COMPLETE (2026-07-20). C-0→C-3 DONE: reachability verified, live distributions
+sampled, expert-panel gate cleared, all 5 weight knobs LOCKED (see §4 C-3). Remaining = C-4 WIRING
+(execution, unblocked). Weights are now SET — this is no longer planning-only.
 **Created:** 2026-07-20 · Supersedes the Thread-C planning portion of handoff 48.
 **Posture:** planning-first, decision-gated, expert-panel candidate. NO blind film weights — ever.
 **Prereq facts verified on disk this session** (main `971ae50`+): all four film-feed fetchers exist
@@ -69,23 +71,80 @@ into a wiring session:
   the exact columns the redesign names are present + the emitted struct carries no leak field.
   (Most already verified in the source-map recon; re-confirm at build time, don't trust staleness.)
   Deliverable: a one-line PASS per source.
+- **C-0 · DONE (2026-07-20).** All four fetchers re-verified live via their existing `TestLive_*`
+  reachability tests (the token-efficient re-check): `madden` 200 / 1404 gsis-keyed (m24);
+  `nflproduction` 200 / 607 REG records (2024); `pfrcoverage` 200 / 775 coverage records (2024,
+  7782 pfr→gsis); `veteranfilm` 200 / 209 receivers + 45 passers above floor (2025 FTN). Zero-leak
+  confirmed by struct shape — no PPA/EPA/fantasy field on any emitted record. PASS ×4.
 - **C-1 · Live distribution sampling** (throwaway sampler, like `cmd/defsample` was for 4b, deleted
   after). Pull each signal across the real player population and report per-position distributions
   (p50/p75/p90/p95, spread, correlation with the already-wired signals so we don't double-count).
   Deliverable: a distributions sheet — the evidence Christopher's weight decision rests on.
-- **C-2 · Candidate weight schemes.** From the distributions, draft 2–3 candidate blends per position
-  group (NOT one blind number): what share of Layer-4 each film sub-signal carries, the NFLProduction
-  cap, the FTN-vs-Madden fidelity discount, the rookie-vs-veteran split for offense. Frame as reads,
-  with the trade-off each encodes.
-- **C-3 · DECISION GATE (Christopher + expert panel).** Because this sets a durable scouting-weight
-  convention, it goes through the **independent expert-panel decision gate**
-  (`feedback_expert_panel_decision_gate`): same self-contained brief to each panelist, triage answers
-  vs each other + source, surface a recommendation → Christopher picks via AskUserQuestion. **This is
-  where Christopher is needed.** Nothing is wired before this gate clears.
-- **C-4 · Wire ONE group first** (recommend `Coverage`/CB-S — single source, hard boundary, smallest
-  blast radius) using the merged S-Phase shape: caller-supplied crosswalk Map + birthdates, assembly
-  leaf owns any multi-season loop, engine stays pure, Profile a leaf, 400-line cap / funlen 40 /
-  zero-leak. Live-gate it. Then the next group. Each group is its own reviewed+gated increment.
+- **C-2 · DONE (2026-07-20) — candidate schemes framed as 5 decision KNOBS** (evidence:
+  `docs/data-layer/FILM_C1_Distributions.md`). Each knob carries options + a Claude recommendation
+  (a LEAD for the panel, not a locked number). These are the AskUserQuestion + expert-panel inputs:
+
+  - **K1 · Madden composite recipe.** Equal-weight mean of the per-position curated sub-attrs (all
+    validated live present). **man/zone coverage MUST be averaged into ONE coverage term** (C-1 #3:
+    r≈0.85–0.95 collinear — counting both double-weights coverage). → *Rec: adopt; low controversy.*
+  - **K2 · NFLProduction cap + weight.** C-1 #2: volume/role signal, right-skewed, r≈0.6–0.84 with
+    Madden (partial double-count). Options: (a) DROP from scouting entirely (Madden already captures it);
+    (b) cap at group p75, weight ≤0.05 as a tiebreaker; (c) cap at p90, weight ≤0.10. → *Rec: (b) — keep
+    a thin, capped role signal, never primary; leans on the "identity risk" mandate.*
+  - **K3 · Offense film composition (FTN vs Madden).** C-1 #6: FTN sign-checks correct but is thin
+    (veteran-only, n=38–94 above floor). Options: (a) Madden primary always, FTN as a confirmation
+    overlay; (b) FTN primary for players above the charting floor + Madden fallback, with a ~15% FTN
+    fidelity discount; (c) fixed blend. → *Rec: (b) — matches the locked source map, but FTN cannot be
+    the SOLE veteran driver given n; the discount + fallback protect the low-population tail.*
+  - **K4 · Coverage (CB/S) weight.** C-1 #4 (the headline IDP finding): pfr passer-rating-allowed is
+    INDEPENDENT of Madden coverage (|r|<0.30) → a genuine additive signal, deserves a real (not token)
+    weight. Engine must INVERT (lower rating allowed = better). Options: 0.15 / 0.20 / 0.25 of the CB/S
+    Layer-4 film budget. → *Rec: 0.20 — real seat, still Madden-anchored overall.*
+  - **K5 · Rookie vs veteran offense split.** Rookies have no NFL film (no snaps) → the locked Option-D
+    path: consensus-rank (the 1 surviving manual input) + Madden-rookie + combine/RAS + CFBD college
+    advanced (success rate/havoc, NOT PPA). Veterans → K3. → *Rec: keep the manual rookie input; do not
+    collapse rookies to box-score (source map §4 "rookie problem").*
+
+  Locked by C-1 evidence (not open): Madden earns/keeps its promoted-regulator seat and can carry the
+  film anchor at every position; RAS weight need not change (C-1 #5, complementary not redundant);
+  college-vs-film double-count check DEFERRED (structural season-overlap gap — C-1 caveats).
+- **C-3 · DONE (2026-07-20) — expert-panel gate CLEARED, all 5 knobs LOCKED.** Independent panel = Claude
+  lead + DeepSeek + Gemini (same self-contained brief, `/root/paste.md`); triaged vs each other + the
+  source maps; Christopher decided the one split. Panel converged on 4/5; K3 was flipped by BOTH
+  panelists independently naming the same risk.
+
+  **LOCKED DECISIONS:**
+  - **K1 — Madden composite = equal-weight mean of the curated per-position sub-attrs, man+zone coverage
+    AVERAGED into ONE coverage term.** (Unanimous; collinearity r≈0.85–0.95 → averaging kills the implicit
+    coverage double-count without information loss.)
+  - **K2 — KEEP NFLProduction, capped at group p75, weight ≤0.05 as a pure tiebreaker** (Christopher's
+    call, 2026-07-20; DeepSeek+Claude). Gemini dissented (drop entirely for layer purity) — recorded, not
+    adopted. Implementation MUST hold the cap hard so volume can never dominate a scouting rank
+    (identity-risk mandate); it is a middle-of-distribution tiebreaker only, never primary.
+  - **K3 — Madden is the UNIVERSAL offense-film backbone; FTN is a BOUNDED DELTA-OVERLAY** (with the ~15%
+    fidelity discount) applied only where the charting floor is met. **REJECTED the FTN-primary approach**
+    — both panelists flagged the population regime-switch discontinuity at the charting floor (n≈38–94) as
+    the single biggest risk: two near-identical talents must not rank materially apart because one cleared
+    the FTN floor. Revisit a fixed blend only if FTN sample depth passes ~200 with breadth.
+  - **K4 — Coverage (CB/S only) weight = 0.20** of the CB/S film budget; engine INVERTS (lower passer
+    rating allowed = better). (Unanimous; pfr coverage is independent of Madden at CB/S, |r|<0.30 → a real
+    additive seat, not a token.)
+  - **K5 — keep the multi-input rookie framework** (consensus-rank manual + Madden-rookie + combine/RAS +
+    CFBD advanced success-rate/havoc, NOT PPA). **ADDED pre-ship guard (DeepSeek):** before the rookie
+    tower ships, check CFBD success-rate/havoc vs Madden-rookie and RAS — if any pair r>0.5, apply a
+    non-redundancy cap. The ~0-overlap college-vs-film result is a MEASUREMENT gap, not proof of
+    independence — do not treat college production as automatically non-redundant.
+- **C-4 · NEXT (unblocked — weights LOCKED at C-3). The remaining work is EXECUTION, not calibration.**
+  Do the §5 `GSISForPFR` bridge promotion FIRST (mechanical), then wire ONE group at a time, each its own
+  reviewed + live-gated increment, using the merged S-Phase shape (caller-supplied crosswalk Map +
+  birthdates, assembly leaf owns any multi-season loop, engine stays pure, Profile a leaf, 400-line cap /
+  funlen 40 / zero-leak). Recommended order (smallest blast radius first):
+  1. **`Coverage` (CB/S)** — single source (pfrcoverage), hard CB/S boundary, K4=0.20, engine inverts.
+     Reuses the new `GSISForPFR` bridge.
+  2. **`IDPFilm`** — Madden defense composite (K1) + capped NFLProduction (K2) + pfrcoverage supporting.
+  3. **`OffenseFilm`** — Madden backbone + bounded FTN delta-overlay (K3) + capped NFLProduction (K2).
+  4. **Rookie tower** — multi-input (K5) with the pre-ship redundancy check (r>0.5 → non-redundancy cap).
+  Each increment: automated gates green → GLM review if back else waive w/ note → live Beelink gate.
 
 ---
 
@@ -115,8 +174,9 @@ Coverage wiring so C-4 reuses the shared bridge instead of re-cloning the helper
 
 ## 7. One-line summary for the next session
 
-FILM = the calibration frontier. Fetchers exist, sources locked, **weights UNSET by design**. Do NOT
-clone-and-wire: run C-0→C-3 (reachability → live distributions → candidate schemes → expert-panel +
-Christopher gate) FIRST, promote the `GSISForPFR` bridge, then wire `Coverage` (CB/S) as the first
-reviewed increment. Everything obeys the locked principles: durability never weights, quality only as a
-calibrated fidelity discount, Madden is a promoted regulator, zero-leak absolute.
+FILM calibration is DONE — C-0→C-3 complete, expert-panel gate cleared, all 5 weight knobs LOCKED (§4
+C-3): K1 equal-weight Madden composite w/ man+zone averaged · K2 NFLProduction capped p75 / ≤0.05
+tiebreaker · K3 Madden backbone + bounded FTN delta-overlay (NOT FTN-primary) · K4 Coverage CB/S 0.20
+(engine inverts) · K5 multi-input rookie + pre-ship redundancy check. Remaining = C-4 EXECUTION: promote
+the `GSISForPFR` bridge, then wire Coverage (CB/S) → IDPFilm → OffenseFilm → rookie tower, each a
+reviewed + live-gated increment cloning the S-Phase shape. All obeys the locked principles.
