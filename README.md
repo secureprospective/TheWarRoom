@@ -149,6 +149,7 @@ A disciplined, session-by-session build — every session sized to a single cont
    Operator Workspace (M4)    [████████░░]  ~80%   ▸   phase-legal quote→commit · contract ops · trade builder · commish
    War-Room Modules (M2–M8)   [██░░░░░░░░]  ~15%   ▸   power rankings · matchups · trade analyzer · shadow ledger
    Admin / Calibration UIs    [███░░░░░░░]  ~25%   ▸   engine tuning + governance surfaces
+   Command Console (UI shell)  [███░░░░░░░]  ~25%   ▸   design A–E CONFIRMED · B-1 shell & tokens LIVE
 
    ────────────────────────────────────────────────────────────────────────────────────────────
    OVERALL   [████████████████████████░░░░]   logic core 100%   ·   operator UI in progress   ·   ~85%
@@ -167,6 +168,7 @@ A disciplined, session-by-session build — every session sized to a single cont
 | 🖥️ | **Operator workspace (M4)** — phase-legal quote→commit UI: contract ops **shipped**; trade builder + commissioner controls **built, gating** | ◕ In progress |
 | 📊 | **War-room modules (M2–M8)** — the analytical views that turn scores into calls | ▸ The back half |
 | 🎛️ | **Admin / calibration UIs** — tune the engine, govern the rules | ▸ Ahead |
+| 🖼️ | **Command console** — the cockpit: **design language A–E confirmed**, the 4-column instrument shell + cold-CIC token system **now live** (B-1) | ◕ Building |
 
 📋 Full session-by-session ledger: **[`docs/build-handoffs/Build_Tracker.md`](docs/build-handoffs/Build_Tracker.md)** — *the engine and the entire contract rulebook are done; the operator UI that surfaces them is being built out slice by slice.*
 
@@ -187,13 +189,26 @@ A disciplined, session-by-session build — every session sized to a single cont
 
 The next front is the one you can *see*: transforming the operator workspace into a true **command console**. The bar is Anduril, not SaaS — dark, precise, data-dense without a pixel of waste. Confident hierarchy. Controls that look like they actuate real hardware, because here they *do*: every button is wired to an engine that moves real cap dollars atomically. The UI should communicate capability before you click anything.
 
+### The design language — locked, and now shipping
+
+Five design sessions. Each one fired as **divergent AI provocations**, triaged against locked architecture, judged on vision, confirmed. Together they are the finished visual doctrine the app is now being built against — a cold naval-CIC instrument console where **color is data, structure is silence, and nothing moves that isn't feedback.**
+
+> **These are the confirmed design-session artifacts** (greyscale grid → typographic system → color/atmosphere → command layer) — the *spec*, hand-rendered. The live app is now wearing the shell below; the module internals are being re-skinned to match, session by session.
+
+<table>
+<tr>
+<td width="50%"><img src="docs/ui/showcase/design-a-grid.png" alt="Session A — grid & spatial system"><br><sub><b>A · Grid & Spatial System.</b> The fixed four-column instrument shell — nav rail, workspace, 320px contextual inspector as a transform overlay, and the right-edge quick-dash strip. "The table is the instrument; everything else is bezel."</sub></td>
+<td width="50%"><img src="docs/ui/showcase/design-b-components.png" alt="Session B — component hierarchy & typography"><br><sub><b>B · Component Hierarchy & Typography.</b> Inter for text, JetBrains Mono for data. Delta-in-weight. Hold-to-fire commit gate. Four row states. The 7-column asset facet map. Zero icon chrome — the type *is* the interface.</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/ui/showcase/design-c-atmosphere.png" alt="Session C — color, dark mode & atmosphere"><br><sub><b>C · Color, Dark Mode & Atmosphere.</b> Cold-CIC navy. Score→hue banding on the value column only. The restraint doctrine — "color is Data and State; structure is achromatic." Four live signals firing at once and each still reads instantly.</sub></td>
+<td width="50%"><img src="docs/ui/showcase/design-d-command-layer.png" alt="Session D — communication, calendar & command layer"><br><sub><b>D · Command & Calendar Layer.</b> One time-ordered event substrate — feed, chat, deadlines, trade cards, alerts — in a single row grammar. Terminal-log comms. A fully buildable, append-only-honest league calendar.</sub></td>
+</tr>
+</table>
+
 ### How it's being designed — an AI design engine, on a leash
 
-Wireframes don't come from a template here. A creative design engine (**GLM-5.2**) is fired with divergent provocations — *instrument cluster* vs *density gradient*, *tactical amber* vs *naval CIC* — the head brain (**Claude**) triages the directions against the locked architecture, renders the survivors as wireframes, and the commissioner judges **vision only**. Session 0 just proved the whole loop live: brief → design direction in **40 seconds** → triaged draft on screen. The machine proposes fast; the human decides once.
-
-![Session 0 wireframe — shell + M1 Asset Rankings](docs/ui/wireframes/session-0-test/README-hero.svg)
-
-*Session 0, first light: the four-column shell, the M1 board as the instrument — "the table is the instrument, everything else is bezel" (GLM's words, adopted on the spot) — earned-elevation rules, and the quick-dash strip: comms and calendar summonable from any screen, zero footprint when idle. Greyscale by discipline; atmosphere is a later session's job, and it's going to hit.*
+Wireframes don't come from a template here. A creative design engine (**GLM-5.2**) is fired with divergent provocations — *instrument cluster* vs *density gradient*, *tactical amber* vs *naval CIC* — the head brain (**Claude**) triages the directions against the locked architecture, renders the survivors as wireframes, and the commissioner judges **vision only**. The whole loop runs in ~80 seconds a pass: brief → two divergent directions + a synthesis → triaged draft on screen. The machine proposes fast; the human decides once. **All five sessions are confirmed** ("flying colors" / "amazing" / "perfect pass" / "everything is a pass"). The design phase is *done.*
 
 ### What the console is hiding under the hood
 
@@ -205,13 +220,16 @@ Wireframes don't come from a template here. A creative design engine (**GLM-5.2*
 ### The ladder to Alpha
 
 ```
-   DESIGN   A grid → B components → C atmosphere → D chat+calendar command layer → E mobile harvest
-   BUILD    B-1 shell & tokens → B-2 module migration → B-3 CALENDAR (full function)
+   DESIGN ✅ A grid → B components → C atmosphere → D command layer → E mobile harvest   [ALL CONFIRMED]
+   BUILD    ✅ B-1 shell & tokens ── the console is LIVE ── you're looking at its design above
+            ▶  B-2 module migration → B-3 CALENDAR (full function)
             → B-4 home & inspector → B-5 alpha hardening
             ─────────────────────────────────────────────────────────────
    🚨 ALPHA GATE — versioned, stamped builds leave the machine.
       Real league members. Real seasons. Real-world testing begins.
 ```
+
+**B-1 just landed:** the four-column instrument shell and the Session-C token system are *running* — cold-CIC navy, Inter/JetBrains-Mono, density tiers, the transform-overlay inspector, edge-resizable zones. The existing modules are re-homed into it now; B-2 re-skins their internals to the component language above.
 
 Every build rung under the full gate stack — 11-layer coding standards, race-clean tests, blind AI review, live-hardware verification. The same discipline that shipped a penny-exact engine now ships the cockpit. Full battle plan: [`docs/ui/Wireframe_Session_Plan.md`](docs/ui/Wireframe_Session_Plan.md) · worked example: [`Session 0`](docs/ui/wireframes/session-0-test/Session-0-Example.md).
 
