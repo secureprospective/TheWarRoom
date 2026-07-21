@@ -146,6 +146,17 @@ Status: **RESOLVED (architecture) 2026-06-19 → Option D (Pragmatic Scouting Hy
 The FILM Thread C C-4 wiring is complete for veterans + IDP + coverage (steps 1–3 merged). The **rookie film tower (K5)** was specced as multi-input: consensus-rank + Madden-rookie + combine/RAS + CFBD college success-rate/havoc. **Live recon (2026-07-21) found 3 of 4 inputs unobtainable:** Madden-rookie is **dead** (the only populated EA slug is m24=2023 — current rookies aren't in it); **per-player CFBD success-rate/havoc does NOT exist** (both are TEAM-level in `stats/season/advanced`; per-player CFBD advanced is `usage` = production share already wired via CollegeShare/BreakoutAge, or `ppa` = points-based = **zero-leak reject**); **consensus-rank is manual with no auto-source** (the source-map escape-hatch search already failed — no maintained repo compiles a clean per-player consensus scouting board). Only combine/RAS is available and it is **already wired** (rookie-weighted via SL-018). A rookie today already carries RAS + SchoolTier + CollegeProductionShare + BreakoutAge; his FILM slot resolves Data-Parity NEUTRAL (no m24 Madden, no NFL snaps → no FTN). Building a hollow tower was rejected.
 Status: **DEFERRED (Christopher, 2026-07-21).** The scouting engine is declared functionally complete with rookies evaluated on the already-wired non-film signals; the rookie film slot stays Data-Parity neutral. **When Christopher chooses to maintain a per-class consensus CSV:** build a `RookieConsensus` signal — a manual CSV loader (`Rank, Player, Position, College` → normalized [0,1] within draft class) feeding the rookie film slot as the PRIMARY rookie film signal, Data-Parity neutral until supplied, gated on `domain.PlayerRecord.IsRookie`. Run the pre-ship redundancy check (consensus-rank vs RAS; if r>0.5 apply the non-redundancy cap) at that time. If a maintained auto-source ever appears (see source map §1 escape hatch), the last manual input automates too.
 
+**OQ-017: Historical League-Archive Harvest — the Horizon-4 substrate (TIME-SENSITIVE)**
+Horizon 4 (AI Owners, `Vision_2026.md` D6) derives a playable GM fingerprint — risk appetite, time horizon, positional ideology, op fingerprint, timing behavior — from recorded decision history. **That corpus does not exist yet, and nothing in the build schedules its creation.** Christopher's estimate of the full archive is on the order of ~1M decisions across thousands of owner-seasons; unverified, and unverifiable until harvested.
+
+**Two sources, two different problems:**
+1. **MFL transaction history.** Current ingestion pulls *present state only* (rosters, players, contracts) — there is no historical transaction pull anywhere in the pipeline. Likely API-reachable, unscheduled.
+2. **Proboards forum history — the richer and harder source.** The genuinely behavioral material (multi-round bidding wars, declared snipes, RFA match decisions, negotiation posture — see `docs/league-history/League_History_v1.md`) lives in forum threads, not in MFL. **`DECISION-008` locks this as manually curated: no public API, and automated scraping violates Proboards TOS.** So the highest-value behavioral source is deliberately off-limits to automation — a slow, manual/semi-manual harvest by design.
+
+**⏰ THE DEADLINE — this is why it is time-sensitive.** The MFL cutover plan (`Vision_2026.md`) ends at **step 6, "Hosting + comms."** Retiring the platform before extracting its history destroys the Horizon-4 substrate. **The archive harvest is a hard PREREQUISITE of the cutover, not a follow-on.** The same applies to Proboards if league comms ever migrate. Structured MFL transactions may be partially re-derivable; **a 2019 bidding war exists in exactly one place and cannot be reconstructed.**
+
+Status: **OPEN — docketed 2026-07-21.** Not scheduled, no owner, no scope. Needs: (a) confirm what MFL's API actually exposes for historical transactions and how far back; (b) decide the Proboards harvest method within TOS (manual export? commissioner-authorized archive? negotiated access?); (c) define the decision-record schema the fingerprint extractor will read; (d) **sequence the harvest ahead of cutover step 6.** Treat the archive as an asset that can still be LOST, not one already held. Cross-ref `DECISION-008`, `Vision_2026.md` D6 + the MFL Cutover Plan.
+
 ---
 
 ## Known Technical Risks
@@ -283,7 +294,7 @@ CAL-001 through CAL-021 documented in individual rubrics. Session 2 additions:
 
 | Series | Next Available | Last Used | Last Source |
 |---|---|---|---|
-| OQ- | 017 | OQ-016 | Rookie consensus-rank manual input (K5 tower, DEFERRED) |
+| OQ- | 018 | OQ-017 | Historical league-archive harvest (Horizon-4 substrate, TIME-SENSITIVE vs cutover step 6) |
 | DECISION- | 012 | DECISION-011 | K Layer-4 Madden-driven valuation |
 | SL- | 023 | SL-022 | WR SL-019 exclusion v1.0 (SL-OQ-043 closed) |
 | SL-OQ- | 044 | SL-OQ-043 | WR SL-019 status (CLOSED — Option A, SL-022 assigned) |

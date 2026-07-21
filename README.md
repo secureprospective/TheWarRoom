@@ -319,7 +319,7 @@ From that record the engine derives a **GM profile** — not a rating, a *finger
 | **Operational fingerprint** | which moves he reaches for, and how often |
 | **Timing behavior** | how early, how late, how patient |
 
-Layer on a decade-plus of archived league history — real bidding wars, real snipes, real RFA matches between real people who were *trying to win* — and the fingerprint stops being a summary and becomes a **playable style.**
+Layer on a decade-plus of archived league history — real bidding wars, real snipes, real RFA matches between real people who were *trying to win* — and the fingerprint stops being a summary and becomes a **playable style.** *(That archive is a harvest still to be run, not a file already on disk — and one with a clock on it: the record has to be pulled before the old platform's lights go out. Docketed, eyes open — OQ-017.)*
 
 **An empty franchise gets an owner who plays like the league plays.** Not a bot that bids randomly and rots a roster. A GM with a philosophy: one that hoards picks, one that goes all-in on a window, one that always overpays at receiver — because that's what the record says GMs in *this* league actually do. Every move still runs through the same coordinator, the same phase gate, the same penny-exact ledger as a human. **No AI owner gets a rule a human doesn't get.**
 
