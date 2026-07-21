@@ -1,122 +1,195 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useHarnessStore } from './store/harness';
-import { RookieTable } from './components/RookieTable';
-import { ValidationBoard } from './components/ValidationBoard';
-import { AdminPanel } from './components/AdminPanel';
+import { AppShell } from './components/shell/AppShell';
+import { useDensity } from './components/shell/useDensity';
+import { MODULES, type ModuleId } from './components/shell/types';
 import { RankingsBoard } from './components/RankingsBoard';
 import { PowerRankingsBoard } from './components/PowerRankingsBoard';
 import { TransactionWorkspace } from './components/transactions/TransactionWorkspace';
 import { TradeBuilder } from './components/transactions/TradeBuilder';
 import { LeagueControls } from './components/transactions/LeagueControls';
+import { AdminPanel } from './components/AdminPanel';
+import { RookieTable } from './components/RookieTable';
+import { ValidationBoard } from './components/ValidationBoard';
 
-type Tab =
-  | 'rankings'
-  | 'power'
-  | 'rookies'
-  | 'validation'
-  | 'workspace'
-  | 'trade'
-  | 'league';
+// B-1 shell: the confirmed 4-column instrument console (Session A grid + Session C
+// tokens) replaces the flat testing-harness tab bar. The shipped modules are
+// re-homed into the workspace AS-IS this session — restyle to the Session-B
+// component language is B-2. Modules self-fetch through the single Zustand
+// gateway (store/harness.ts, WF5), so they mount here with no prop wiring.
 
-// App shell: M1 (the real 32-team asset rankings, the first live module) plus the
-// testing-harness tabs (rookie sandbox, architectural validation), with the live
-// admin panel as a persistent right sidebar. Debuggability over polish — minimal
-// chrome, every output on screen.
+const MODULE_TITLES: Record<ModuleId, string> = {
+  home: 'HOME',
+  assets: 'M1 · ASSET RANKINGS',
+  pulse: 'M2 · POWER RANKINGS',
+  txn: 'TRANSACT · ROSTER OPS',
+  trade: 'TRADE · MULTI-LEG BUILDER',
+  control: 'CONTROL · COMMISSIONER + DEV',
+};
+
 function App() {
   const loadAll = useHarnessStore((s) => s.loadAll);
-  const loading = useHarnessStore((s) => s.loading);
-  const [tab, setTab] = useState<Tab>('workspace');
+  const { density, setDensity } = useDensity();
+  const [module, setModule] = useState<ModuleId>('assets');
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [summoned, setSummoned] = useState<'comms' | 'calendar' | null>(null);
 
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
 
+  // Global keyboard: density 1/2/3, inspector toggle (I), escape closes overlays.
+  // Ignored while typing in an input/textarea (per the Session-B keyboard map).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) {
+        return;
+      }
+      if (e.key === '1') setDensity('narrative');
+      else if (e.key === '2') setDensity('tactical');
+      else if (e.key === '3') setDensity('matrix');
+      else if (e.key === 'i' || e.key === 'I') setInspectorOpen((v) => !v);
+      else if (e.key === 'Escape') {
+        setSummoned(null);
+        setInspectorOpen(false);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [setDensity]);
+
+  const onSummon = useCallback((target: 'comms' | 'calendar') => {
+    setSummoned((cur) => (cur === target ? null : target));
+  }, []);
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100">
-      <header className="border-b border-slate-700 px-6 py-3">
-        <h1 className="text-xl font-bold">The War Room — Testing Harness</h1>
-        <p className="text-xs text-slate-400">
-          Engine sandbox · identity Layer 4 · validates each B5b rubric as it lands
-        </p>
-      </header>
+    <AppShell
+      module={module}
+      onModule={setModule}
+      density={density}
+      inspectorOpen={inspectorOpen}
+      onInspectorClose={() => setInspectorOpen(false)}
+      onSummon={onSummon}
+      workspaceTitle={MODULE_TITLES[module]}
+    >
+      <ModuleView module={module} />
+      {summoned ? <SummonPlaceholder target={summoned} onClose={() => setSummoned(null)} /> : null}
+    </AppShell>
+  );
+}
 
-      <div className="flex">
-        <main className="flex-1 p-6">
-          <nav className="mb-4 flex gap-2">
-            <TabButton active={tab === 'workspace'} onClick={() => setTab('workspace')}>
-              Transactions
-            </TabButton>
-            <TabButton active={tab === 'trade'} onClick={() => setTab('trade')}>
-              Trade
-            </TabButton>
-            <TabButton active={tab === 'league'} onClick={() => setTab('league')}>
-              League Controls
-            </TabButton>
-            <TabButton active={tab === 'rankings'} onClick={() => setTab('rankings')}>
-              M1: Asset Rankings
-            </TabButton>
-            <TabButton active={tab === 'power'} onClick={() => setTab('power')}>
-              M2: Power Rankings
-            </TabButton>
-            <TabButton active={tab === 'rookies'} onClick={() => setTab('rookies')}>
-              Sandbox: Rookie Rankings
-            </TabButton>
-            <TabButton active={tab === 'validation'} onClick={() => setTab('validation')}>
-              Module 3: Architectural Tests
-            </TabButton>
-            <button
-              type="button"
-              onClick={() => void loadAll()}
-              className="ml-auto rounded bg-slate-700 px-3 py-1 text-sm hover:bg-slate-600"
-            >
-              {loading ? 'Loading…' : 'Reload'}
-            </button>
-          </nav>
+// Maps the 6 locked nav modules onto the surfaces that exist today. Restyle is
+// B-2; wiring is B-1. Sandbox (rookie) + architectural tests live under CONTROL
+// as dev-only surfaces — they are harness tools, not league-facing modules.
+function ModuleView({ module }: { module: ModuleId }) {
+  switch (module) {
+    case 'assets':
+      return <RankingsBoard />;
+    case 'pulse':
+      return <PowerRankingsBoard />;
+    case 'txn':
+      return <TransactionWorkspace />;
+    case 'trade':
+      return <TradeBuilder />;
+    case 'control':
+      return <ControlModule />;
+    case 'home':
+    default:
+      return <HomePlaceholder />;
+  }
+}
 
-          {tab === 'workspace' ? (
-            <TransactionWorkspace />
-          ) : tab === 'trade' ? (
-            <TradeBuilder />
-          ) : tab === 'league' ? (
-            <LeagueControls />
-          ) : tab === 'rankings' ? (
-            <RankingsBoard />
-          ) : tab === 'power' ? (
-            <PowerRankingsBoard />
-          ) : tab === 'rookies' ? (
-            <RookieTable />
-          ) : (
-            <ValidationBoard />
-          )}
-        </main>
+type ControlTab = 'league' | 'admin' | 'sandbox' | 'tests';
 
-        <aside className="w-80 border-l border-slate-700 p-4">
-          <AdminPanel />
-        </aside>
+function ControlModule() {
+  const [tab, setTab] = useState<ControlTab>('league');
+  const tabs: { id: ControlTab; label: string }[] = [
+    { id: 'league', label: 'League Controls' },
+    { id: 'admin', label: 'Engine Admin' },
+    { id: 'sandbox', label: 'Rookie Sandbox (dev)' },
+    { id: 'tests', label: 'Architectural Tests (dev)' },
+  ];
+  return (
+    <div className="p-4">
+      <div className="mb-4 flex gap-2 border-b border-hairline pb-2">
+        {(tabs ?? []).map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`rounded px-3 py-1 font-mono text-[11px] uppercase tracking-wide ${
+              tab === t.id
+                ? 'bg-surface-raised text-text-primary'
+                : 'text-text-secondary hover:bg-surface-tile'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {tab === 'league' ? (
+        <LeagueControls />
+      ) : tab === 'admin' ? (
+        <AdminPanel />
+      ) : tab === 'sandbox' ? (
+        <RookieTable />
+      ) : (
+        <ValidationBoard />
+      )}
+    </div>
+  );
+}
+
+function HomePlaceholder() {
+  return (
+    <div className="flex h-full items-center justify-center p-8 text-center">
+      <div>
+        <div className="font-mono text-[11px] uppercase tracking-[0.06em] text-text-tertiary">
+          HOME
+        </div>
+        <div className="mt-2 max-w-md text-sm text-text-secondary">
+          League landing — the 2×2 seasonal card grid and contextual inspector land in build
+          session B-4. Use the nav rail to reach the live modules.
+        </div>
       </div>
     </div>
   );
 }
 
-function TabButton({
-  active,
-  onClick,
-  children,
+// Placeholder for the summon-over comms/calendar quick-dash (Ledger A10/A11).
+// Full comms + calendar are Session-D / B-3; B-1 proves the summon/collapse gesture.
+function SummonPlaceholder({
+  target,
+  onClose,
 }: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
+  target: 'comms' | 'calendar';
+  onClose: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded px-4 py-1.5 text-sm font-medium ${
-        active ? 'bg-emerald-700 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-      }`}
+    <div
+      className="absolute inset-y-0 right-0 z-30 flex w-80 flex-col border-l border-hairline bg-surface-overlay shadow-bevel"
+      style={{ transition: 'transform calc(150ms * var(--motion-mult)) ease-out' }}
     >
-      {children}
-    </button>
+      <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
+        <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-text-secondary">
+          {target === 'comms' ? 'COMMS' : 'CALENDAR'}
+        </span>
+        <button
+          type="button"
+          aria-label={`Close ${target}`}
+          onClick={onClose}
+          className="font-mono text-text-tertiary hover:text-text-primary"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="flex flex-1 items-center justify-center p-4 text-center text-sm text-text-tertiary">
+        {target === 'comms'
+          ? 'Terminal-log comms thread lands in B-3 (Session D grammar).'
+          : 'Fully-functional calendar lands in B-3.'}
+      </div>
+    </div>
   );
 }
 
