@@ -310,16 +310,16 @@ func applyScouting(spec *composition.PlayerSpec, profile scouting.Profile) {
 		spec.FilmComposite = coverageTerm + maddenTerm +
 			nflProductionFilmWeight*filmNeutralMidpoint // K2 seat reserved neutral (unwired)
 		spec.HasFilm = true
-	}
-
-	// Offense film composite (FILM Thread C, C-4 step 3): the QB/RB/WR/TE film budget. The
-	// assembly leaf already blended BOTH K3 seats (the Madden offense backbone + the bounded
-	// FTN delta-overlay) into Profile.OffenseFilm.Composite, so the only budget arithmetic
-	// here is reserving the SAME K2 NFLProduction seat the defense branch reserves (≤0.05,
-	// NOT YET wired → neutral): QB/RB/WR/TE = 0.95·Composite + 0.05·neutral. Offense and IDP
-	// are mutually exclusive by position (OffenseFilm is nil at every defensive position and
-	// K), so this never double-writes FilmComposite.
-	if profile.OffenseFilm != nil {
+	} else if profile.OffenseFilm != nil {
+		// Offense film composite (FILM Thread C, C-4 step 3): the QB/RB/WR/TE film budget. The
+		// assembly leaf already blended BOTH K3 seats (the Madden offense backbone + the bounded
+		// FTN delta-overlay) into Profile.OffenseFilm.Composite, so the only budget arithmetic
+		// here is reserving the SAME K2 NFLProduction seat the defense branch reserves (≤0.05,
+		// NOT YET wired → neutral): QB/RB/WR/TE = 0.95·Composite + 0.05·neutral. This is an
+		// `else if` because offense and IDP are mutually exclusive by position (OffenseFilm is
+		// nil at every defensive position and K, Coverage/IDPFilm nil at every offense one) —
+		// the else-if makes that invariant STRUCTURAL, so a future classification bug can never
+		// silently double-write FilmComposite (GLM C-4 step-3 review, LOW-3).
 		spec.FilmComposite = (1-nflProductionFilmWeight)*profile.OffenseFilm.Composite +
 			nflProductionFilmWeight*filmNeutralMidpoint // K2 seat reserved neutral (unwired)
 		spec.HasFilm = true

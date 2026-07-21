@@ -143,11 +143,16 @@ func gatherOffenseRows(
 	pos PositionLookup,
 ) []offenseFilmRow {
 	rows := make([]offenseFilmRow, 0, len(rosterMFLIDs))
+	seen := make(map[playerid.PlayerID]bool, len(rosterMFLIDs))
 	for _, mfl := range rosterMFLIDs {
 		pid, err := playerid.New(mfl)
 		if err != nil {
 			continue // malformed — an upstream layer should have caught this; skip
 		}
+		if seen[pid] {
+			continue // a duplicate roster id would double-count in the percentile population
+		}
+		seen[pid] = true
 		gsis, ok := cw.Lookup(pid)
 		if !ok {
 			continue // no MFL->gsis mapping — ordinary miss
@@ -177,7 +182,11 @@ func gatherOffenseRows(
 // Madden backbone; above it, the FTN percentile gap to the backbone is discounted, clamped
 // to ±ftnOverlayBound, and added — the whole thing clamped to [0,1].
 func blendOffenseRow(r offenseFilmRow, ranker rolePercentiles) float64 {
-	if !r.hasFTN {
+	if !r.hasFTN || ranker.popSize(r.role) <= 1 {
+		// Below the floor, OR the only charted player in his role: with no peer
+		// distribution there is no percentile information, so the FTN overlay is inert and
+		// the composite is the pure Madden backbone (same regime as below-floor). This is
+		// deliberately NOT a pull toward the 0.5 midpoint (GLM C-4 step-3 review, MED-3).
 		return r.backbone
 	}
 	ftnScore := ranker.percentile(r.role, r.ftnQuality)
@@ -210,6 +219,14 @@ func offenseMaddenComposite(rc madden.RawMaddenRating, pos domain.Position) (flo
 // their attrs — the same equal-weight principle K1 locked for the coverage term; the mean
 // is robust and the intra-row split carries negligible ordering information. ok=false marks
 // a non-offense position (the hard boundary).
+//
+// INTER-ROW REPEATS ARE DELIBERATE (Christopher, 2026-07-21, ruling on the GLM C-4 step-3
+// review MED-1): some attrs appear in two rows (WR spectacularCatch/catchInTraffic in the
+// "good hands" AND "high-point specialist" rows; TE runBlock/catching/agility; QB awareness),
+// so they carry ~2× weight. That is intended — the rubric ROWS are distinct scoring
+// archetypes, and a player elite at two archetypes that both value an attr legitimately earns
+// it in both. This is the per-row-mean reading of "full union from rubric tables", NOT a
+// flatten-and-dedup; do not "fix" the repeats.
 //
 // NOTE: the EA field names below are the suffix-stripped "_rating" keys the madden fetcher
 // emits (speed is confirmed against live fixtures; the rest follow EA's camelCase
@@ -296,6 +313,13 @@ type rolePercentiles struct {
 
 // newRolePercentiles collects the sorted FTN quality values of every above-floor row, keyed
 // by role — the population each overlay percentile is measured against.
+//
+// POPULATION = MADDEN-RESOLVED above-floor players (Christopher, 2026-07-21, ruling on the
+// GLM C-4 step-3 review MED-2): a row exists only when the Madden backbone resolved, so an
+// above-floor player with no Madden record is NOT in this population. That is intended for
+// v1 — the percentile drives an overlay only for players who receive a composite, and the
+// ±ftnOverlayBound clamp caps any bias from the narrower denominator. Revisit at the film
+// calibration pass if the FTN population should span all above-floor rostered players.
 func newRolePercentiles(rows []offenseFilmRow) rolePercentiles {
 	byRole := map[offenseRole][]float64{}
 	for _, r := range rows {
@@ -309,10 +333,16 @@ func newRolePercentiles(rows []offenseFilmRow) rolePercentiles {
 	return rolePercentiles{byRole: byRole}
 }
 
+// popSize is the above-floor charted population for a role — the peer count a percentile is
+// measured against. blendOffenseRow uses it to make a singleton's overlay inert (no peers).
+func (p rolePercentiles) popSize(role offenseRole) int { return len(p.byRole[role]) }
+
 // percentile maps a quality value to its [0,1] rank within its role population using the
 // midpoint (Hazen) convention: (countBelow + 0.5·countEqual) / n. A singleton population
-// returns 0.5 (a lone charted player has no peers to rank against → neutral overlay input).
+// returns 0.5, but blendOffenseRow short-circuits singletons to the backbone before calling
+// this, so that 0.5 never actually drives an overlay.
 func (p rolePercentiles) percentile(role offenseRole, q float64) float64 {
+	q = clamp01(q) // the Nextafter equal-count trick below is only valid for q ∈ [0,1] (LOW-1)
 	vals := p.byRole[role]
 	n := len(vals)
 	if n <= 1 {
