@@ -13,8 +13,8 @@ import (
 // dominant explanatory variable here), but with a STEEPER steepness (11.0 vs WR's 10.0) — at
 // TE small athletic differences separate outcomes more sharply (TE_Rubric §3).
 const (
-	// Film component (TE_Rubric §2): S-curve over the upstream composite, ±5%. Data-Parity
-	// neutral in v1.0 (offense/IDP film weights UNSET, same as QB/RB/WR).
+	// Film component (TE_Rubric §2): S-curve over the upstream composite, ±5%. The composite
+	// is WIRED (FILM Thread C, C-4 step 3, same as QB/RB/WR), Data-Parity neutral when absent.
 	teFilmInflection = 0.50
 	teFilmSteepness  = 12.0
 	teFilmCap        = 0.05 // ±5%
@@ -51,8 +51,9 @@ const (
 )
 
 // TE is the tight-end Layer-4 rubric. Combined = film × RAS × breakout
-// (Backend_Architecture:256). Film is Data-Parity neutral in v1.0 (offense film weights
-// UNSET), so TEs differentiate on the ACTIVE High-tier RAS component and the breakout
+// (Backend_Architecture:256). Film is the WIRED offense composite (FILM Thread C, C-4
+// step 3), or Data-Parity neutral when absent; TEs also differentiate on the ACTIVE
+// High-tier RAS component and the breakout
 // composite — where SL-019 makes the athletic profile lift the breakout-age and
 // age-trajectory sub-signals (TE_Rubric §4). The Higbee/Henry finding (§5): two aging TEs
 // with similar RAS but different draft-era profile strength land apart, and the modulator
@@ -97,7 +98,7 @@ func (te *TE) Apply(in engine.Layer4Input) engine.Layer4Output {
 	sc := in.Scouting
 	p := in.Player
 
-	filmRaw := curve.NeutralNorm // Data-Parity neutral default (offense film weights unset)
+	filmRaw := curve.NeutralNorm // Data-Parity neutral default (no film composite resolved)
 	film := 1.0
 	if sc.HasFilm {
 		filmRaw = sc.FilmComposite

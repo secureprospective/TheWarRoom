@@ -311,6 +311,19 @@ func applyScouting(spec *composition.PlayerSpec, profile scouting.Profile) {
 			nflProductionFilmWeight*filmNeutralMidpoint // K2 seat reserved neutral (unwired)
 		spec.HasFilm = true
 	}
+
+	// Offense film composite (FILM Thread C, C-4 step 3): the QB/RB/WR/TE film budget. The
+	// assembly leaf already blended BOTH K3 seats (the Madden offense backbone + the bounded
+	// FTN delta-overlay) into Profile.OffenseFilm.Composite, so the only budget arithmetic
+	// here is reserving the SAME K2 NFLProduction seat the defense branch reserves (≤0.05,
+	// NOT YET wired → neutral): QB/RB/WR/TE = 0.95·Composite + 0.05·neutral. Offense and IDP
+	// are mutually exclusive by position (OffenseFilm is nil at every defensive position and
+	// K), so this never double-writes FilmComposite.
+	if profile.OffenseFilm != nil {
+		spec.FilmComposite = (1-nflProductionFilmWeight)*profile.OffenseFilm.Composite +
+			nflProductionFilmWeight*filmNeutralMidpoint // K2 seat reserved neutral (unwired)
+		spec.HasFilm = true
+	}
 }
 
 // coverageFilmWeight is the LOCKED K4 decision (the PFR coverage anchor's share of the

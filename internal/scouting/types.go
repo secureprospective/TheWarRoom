@@ -80,6 +80,18 @@ type Profile struct {
 type OffenseFilm struct {
 	RSPQualitative float64 // ELIMINATED source (retained pending Film redesign) — was Matt Waldman RSP
 	SharpFootball  float64 // ELIMINATED source (retained pending Film redesign) — was Sharp Football Analysis
+
+	// Composite is the LIVE offense film signal (FILM Thread C, C-4 step 3): a [0,1]
+	// value, higher = better, that already carries BOTH K3 seats blended by the assembly
+	// leaf — the Madden offense sub-attribute backbone (equal-weight mean of the position's
+	// curated attrs, /99) PLUS a bounded FTN delta-overlay (percentile-ranked charting
+	// quality, 15%-discounted, clamped to ±0.10) applied only where the FTN charting floor
+	// is met. Below the floor Composite is the pure Madden backbone. It is the primary term
+	// of the offense film composite the engine consumes; the reserved K2 NFLProduction seat
+	// is applied upstream in rankings.applyScouting. A non-nil OffenseFilm carries a real
+	// Composite (a QB/RB/WR/TE whose Madden record resolved); a player whose Madden record
+	// did not resolve has a nil OffenseFilm and neutralizes film via Data-Parity.
+	Composite float64
 }
 
 // IDPFilm holds the IDP-only film sources. Present at DT, DE, LB, CB, and S; nil at

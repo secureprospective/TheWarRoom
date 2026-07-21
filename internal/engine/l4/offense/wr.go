@@ -45,9 +45,10 @@ const (
 )
 
 // WR is the wide-receiver Layer-4 rubric. Combined = film × RAS × breakout
-// (Backend_Architecture:256). Film is Data-Parity neutral in v1.0 (offense film weights
-// UNSET — the four manual WR film sources were eliminated, redesign pending per the offense
-// source map §5), so WRs differentiate on the ACTIVE (High-tier) RAS component and breakout.
+// (Backend_Architecture:256). Film is the WIRED offense composite (FILM Thread C, C-4
+// step 3: Madden backbone + bounded FTN overlay, set upstream in rankings.applyScouting;
+// the eliminated manual WR sources are superseded), or Data-Parity neutral when no Madden
+// record resolved. WRs also differentiate on the ACTIVE (High-tier) RAS component and breakout.
 // A declining ELITE-draft-profile WR stays at/above 1.000 because the static breakout
 // sub-signals (school tier, college usage, early breakout age) reflect draft-era development
 // and offset the age-trajectory crater — the Lockett pattern (WR_Rubric §5 / harness case 3A),
@@ -91,7 +92,7 @@ func (w *WR) Apply(in engine.Layer4Input) engine.Layer4Output {
 	sc := in.Scouting
 	p := in.Player
 
-	filmRaw := curve.NeutralNorm // Data-Parity neutral default (offense film weights unset)
+	filmRaw := curve.NeutralNorm // Data-Parity neutral default (no film composite resolved)
 	film := 1.0
 	if sc.HasFilm {
 		filmRaw = sc.FilmComposite

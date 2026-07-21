@@ -19,6 +19,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/pfrcoverage"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/ras"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/schooltier"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/veteranfilm"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/rankings"
@@ -80,6 +81,9 @@ func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (
 		return rankings.MapScoutingDirectory{}, err
 	}
 	if err := mergeCoverage(ctx, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
+		return rankings.MapScoutingDirectory{}, err
+	}
+	if err := mergeOffenseFilm(ctx, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
 		return rankings.MapScoutingDirectory{}, err
 	}
 
@@ -163,6 +167,35 @@ func mergeIDPFilm(ctx context.Context, client *http.Client, cw crosswalk.Map,
 		p := profiles[pid]
 		p.MFLID = pid
 		p.IDPFilm = assembly.IDPFilmGroup(norm)
+		profiles[pid] = p
+	}
+	return nil
+}
+
+// mergeOffenseFilm (FILM C-4 step 3): join each rostered QB/RB/WR/TE id → gsis → the
+// blended Madden-backbone + bounded-FTN-overlay offense film composite. Rides the EA Madden
+// feed + nflverse FTN/pbp (NO CFBD key), so it merges here alongside RAS/coverage —
+// unconditionally, before the CFBD-gated block. A fetch failure of either feed surfaces
+// loudly (a film-less league must be visible), matching BuildIDPFilm/BuildRAS. The FTN
+// charting season is the prior completed season (SeasonYear − 1 — the current league season
+// is not yet charted); the provisional per-role floors are accepted for v1.
+func mergeOffenseFilm(ctx context.Context, client *http.Client, cw crosswalk.Map,
+	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
+	year, err := strconv.Atoi(ingestion.SeasonYear)
+	if err != nil {
+		return fmt.Errorf("app: season year %q not numeric: %w", ingestion.SeasonYear, err)
+	}
+	ftnSources := veteranfilm.SeasonSources(year - 1) // prior completed season carries charting
+	film, err := assembly.BuildOffenseFilm(ctx, client, madden.RatingsURL, ftnSources,
+		veteranfilm.DefaultReceiverFloor, veteranfilm.DefaultPasserFloor,
+		cw, rosterMFLIDs, adapter)
+	if err != nil {
+		return fmt.Errorf("app: build offense film scouting directory: %w", err)
+	}
+	for pid, composite := range film {
+		p := profiles[pid]
+		p.MFLID = pid
+		p.OffenseFilm = assembly.OffenseFilmGroup(composite)
 		profiles[pid] = p
 	}
 	return nil

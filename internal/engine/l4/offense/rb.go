@@ -46,13 +46,14 @@ const (
 )
 
 // RB is the running-back Layer-4 rubric. Combined = film × RAS × breakout
-// (Backend_Architecture:256). Film is Data-Parity neutral in v1.0 (offense film weights
-// UNSET pending the film-source redesign), so RBs differentiate on the ACTIVE (Medium-tier)
-// RAS component and breakout. A genuinely-thin scouting profile (late breakout age, low
-// college workload, smaller school, post-peak age) pulls breakout — and therefore Combined —
-// below 1.000 (RB_Rubric §7, the Herbert pattern; harness case 3B). TouchShare (RB-only) is
-// NOT consumed in v1.0 (deferred); it grows the boundary only when the film redesign that
-// uses it lands.
+// (Backend_Architecture:256). Film is the WIRED offense composite (FILM Thread C, C-4
+// step 3: Madden backbone + bounded FTN overlay, set upstream in rankings.applyScouting),
+// or Data-Parity neutral when no Madden record resolved. RBs also differentiate on the
+// ACTIVE (Medium-tier) RAS component and breakout. A genuinely-thin scouting profile (late
+// breakout age, low college workload, smaller school, post-peak age) pulls breakout — and
+// therefore Combined — below 1.000 (RB_Rubric §7, the Herbert pattern; harness case 3B).
+// TouchShare (RB-only) is NOT consumed in v1.0 (deferred); it grows the boundary only when
+// a later film component uses it.
 //
 // Curves are held on the struct (not package globals — gochecknoglobals) and built once.
 type RB struct {
@@ -90,7 +91,7 @@ func (r *RB) Apply(in engine.Layer4Input) engine.Layer4Output {
 	sc := in.Scouting
 	p := in.Player
 
-	filmRaw := curve.NeutralNorm // Data-Parity neutral default (offense film weights unset)
+	filmRaw := curve.NeutralNorm // Data-Parity neutral default (no film composite resolved)
 	film := 1.0
 	if sc.HasFilm {
 		filmRaw = sc.FilmComposite

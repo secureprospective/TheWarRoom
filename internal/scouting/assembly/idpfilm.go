@@ -161,6 +161,15 @@ func maddenComposite(rc madden.RawMaddenRating, pos domain.Position) (float64, b
 	if !ok {
 		return 0, false // non-IDP position — the IDP film composite is DT/DE/LB/CB/S ONLY
 	}
+	return averageTerms(rc, terms)
+}
+
+// averageTerms is the shared K1 recipe: the equal-weight mean of the PRESENT terms (each
+// term itself the average of its present attrs, via termValue). ok=false when the record
+// carries none of the curated attributes (fully absent — no signal, never faked as 0.0).
+// Shared by the IDP (idpMaddenTerms) and offense (offenseMaddenTerms) Madden composites so
+// both apply the same locked averaging.
+func averageTerms(rc madden.RawMaddenRating, terms [][]string) (float64, bool) {
 	var sum float64
 	var n int
 	for _, term := range terms {

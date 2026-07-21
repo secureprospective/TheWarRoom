@@ -482,6 +482,38 @@ func TestApplyScouting_CBSCombinedFilm(t *testing.T) {
 	}
 }
 
+// TestApplyScouting_OffenseFilmComposite pins the C-4 step-3 blend for QB/RB/WR/TE: the
+// assembly leaf already blended the Madden backbone + bounded FTN overlay into
+// OffenseFilm.Composite, so applyScouting only reserves the K2 seat neutral:
+// FilmComposite = 0.95·Composite + 0.05·neutral.
+func TestApplyScouting_OffenseFilmComposite(t *testing.T) {
+	id, _ := playerid.New("1001")
+	cases := []struct {
+		name      string
+		composite float64
+		want      float64
+	}{
+		{"neutral stays neutral", 0.50, 0.50},
+		{"elite lifts", 1.00, 0.95*1.00 + 0.05*0.50},
+		{"poor drags", 0.00, 0.95*0.00 + 0.05*0.50},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var spec composition.PlayerSpec
+			applyScouting(&spec, scouting.Profile{
+				MFLID:       id,
+				OffenseFilm: &scouting.OffenseFilm{Composite: c.composite},
+			})
+			if !spec.HasFilm {
+				t.Fatalf("offense film present → HasFilm must be true")
+			}
+			if math.Abs(spec.FilmComposite-c.want) > 1e-12 {
+				t.Fatalf("composite=%v: FilmComposite = %v, want %v", c.composite, spec.FilmComposite, c.want)
+			}
+		})
+	}
+}
+
 // TestApplyScouting_NoFilmSignalsLeavesFilmAbsent: without either a Coverage group or an
 // IDPFilm group, HasFilm stays false and the rubric neutralizes film via Data-Parity
 // (every offense position, and any IDP player whose Madden record did not resolve).
