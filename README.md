@@ -33,10 +33,11 @@
  │                                                                              │
  │  ENGINE ......... ONLINE     6 layers · 10 position models · pure & fail-loud│
  │  PIPELINE ....... LIVE       1,217 players · 32 franchises · zero loss       │
+ │  SCOUTING ....... COMPLETE   RAS · school · production · breakout · FILM     │
  │  LEDGER ......... EXACT      int64 cents · append-only · $0.00 drift, ever   │
  │  RULEBOOK ....... ARMED      §6–§14 phase-gated · atomic · quote-then-commit │
- │  CONSOLE ........ BUILDING   design engine live · Session 0 gate PASSED      │
- │  ALPHA .......... MAPPED     stamped builds → real league hands              │
+ │  CONSOLE ........ BUILDING   design A–E confirmed · instrument shell LIVE    │
+ │  ENDGAME ........ CHARTED    replace the platform · seat the AI owners       │
  └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -53,7 +54,7 @@ TheWarRoom is that system: a local-first, compiled Go engine that pulls your liv
 
 No cloud. No latency. No data leaving your machine. **Just an edge.**
 
-And it's about to stop being a one-seat edge: the road to a **league-wide Alpha** is mapped, the design engine is live, and the console build is next. *The front office is opening its doors.*
+And the edge is not the endgame. MFL provides six things — hosting, scoring, lineups, waivers, the draft, and comms. **TheWarRoom is cutting them one at a time, each cut earned by running it in parity first.** The last thing to go is the platform itself.
 
 ---
 
@@ -100,9 +101,11 @@ A mathematically flexible framework that crunches *this league's* exact scoring 
    QB · RB · WR · TE · DT · DE · LB · CB · S · K   →  10 / 10 LIVE
 ```
 
-RAS athleticism is weighted *per position* (gold at receiver, neutral at quarterback). The Layer-4 scouting curve is now wired end-to-end for **both offense and IDP** — SchoolTier competition tier, CollegeShare (within-team college production, collapsed for offensive skill *and* IDP defenders), and BreakoutAge (raw age at first college breakout season, offense *and* IDP) all flow live through the same path: fetch → crosswalk-join → Profile → per-position curve. Crosswalk identity mapping and player birthdates are pulled **once** upstream and threaded into every signal, so no source pays for the same lookup twice. The architecture **composes** — each new position was a calibration, not a rebuild.
+RAS athleticism is weighted *per position* (gold at receiver, neutral at quarterback). The **Layer-4 scouting engine is complete** — athleticism, school tier, college production share, breakout age, and **film**, wired end-to-end for offense *and* IDP: fetch → crosswalk-join → Profile → per-position curve. Identity mapping and birthdates are pulled **once** upstream and threaded into every signal, so no source pays for the same lookup twice.
 
-*Film is the next front, not a shipped claim.* The Madden film composite, the NGS/PFR coverage anchor for CB/S, and the NFL-production blend have their **sources verified and fetchers built** — but their blend weights are **deliberately unset**, being calibrated against live data now. Pipeline proven; film calibration ahead.
+Film was the one that couldn't be cloned — it's a calibration problem, not a plumbing job, and it was built that way. A Madden sub-attribute backbone per position, with a **bounded** charting overlay on top: a player's charted quality is percentile-ranked against his own position group, and the adjustment is hard-clamped to ±0.10 so a single noisy season can nudge a grade but never invent one. **No weight in this engine was ever guessed.** Every threshold was pinned against a live distribution sample first — the IDP breakout line came out of 25,088 real college defensive player-seasons — and the ones that couldn't be honestly grounded were left neutral rather than faked.
+
+*The architecture composes: each new signal was a calibration, not a rebuild.*
 
 ### 📒 The Per-Year Salary Ledger — *the sole source of cap truth*
 Every contract is a row of **per-year cells**. Every change is an append-only, dated, immutable audit entry — the database itself rejects an edit to history. The cap is *derived* from the cells (`CapUsed = Σ paid cells + Σ dead cap − Σ cap relief`, floored at 0), never stored as a competing number. **Money is `int64` cents on a flat $10k grid** — no floating-point drift, exact by construction.
@@ -143,6 +146,7 @@ A disciplined, session-by-session build — every session sized to a single cont
    Logic Stores               [██████████]  100%   ✅  rulebook · state · params · immutable output
    Scoring Engine (6 layers)  [██████████]  100%   ✅  pure, fail-loud pipeline
    Position Models            [██████████]  100%   ✅  QB·RB·WR·TE·DT·DE·LB·CB·S·K  — 10 / 10 calibrated
+   Scouting Engine (Layer 4)  [██████████]  100%   ✅  RAS · school · production · breakout · FILM
    Asset Rankings Board (M1)  [██████████]  100%   ✅  real 32-team board, live re-rank on tune
    Salary Ledger (cutover)    [██████████]  100%   ✅  per-year cells = sole cap truth, append-only
    Transaction Rulebook       [██████████]  100%   ✅  trades · §8–§14 contract ops · §6 free agency v1
@@ -154,21 +158,6 @@ A disciplined, session-by-session build — every session sized to a single cont
    ────────────────────────────────────────────────────────────────────────────────────────────
    OVERALL   [████████████████████████░░░░]   logic core 100%   ·   operator UI in progress   ·   ~85%
 ```
-
-| Layer | Milestone | Status |
-|:--|:--|:--:|
-| 🏗️ | **Foundation** — Go · Wails · React · SQLite WAL, compiler-enforced architecture | ✅ Shipped |
-| 🛰️ | **Multi-block pipeline** — MFL transport → ingestion → normalize, live vs the real league | ✅ Shipped |
-| 🗄️ | **Logic stores** — rulebook · state · params · **immutable output** | ✅ Shipped |
-| ⚙️ | **The engine** — six-layer pure-function scoring pipeline | ✅ Shipped |
-| 🧠 | **Position models** — **all 10 calibrated and scoring** | ✅ Shipped |
-| 📊 | **Asset Rankings (M1)** — all 32 rosters ranked on screen from real data | ✅ Shipped |
-| 📒 | **The salary ledger** — per-year cells, sole cap truth, append-only audit trail | ✅ Shipped |
-| 🔧 | **Transaction rulebook** — atomic trades, §8–§14 contract ops, **§6 free agency v1** | ✅ Shipped |
-| 🖥️ | **Operator workspace (M4)** — phase-legal quote→commit UI: contract ops **shipped**; trade builder + commissioner controls **built, gating** | ◕ In progress |
-| 📊 | **War-room modules (M2–M8)** — the analytical views that turn scores into calls | ▸ The back half |
-| 🎛️ | **Admin / calibration UIs** — tune the engine, govern the rules | ▸ Ahead |
-| 🖼️ | **Command console** — the cockpit: **design language A–E confirmed**, the 4-column instrument shell + cold-CIC token system **now live** (B-1) | ◕ Building |
 
 📋 Full session-by-session ledger: **[`docs/build-handoffs/Build_Tracker.md`](docs/build-handoffs/Build_Tracker.md)** — *the engine and the entire contract rulebook are done; the operator UI that surfaces them is being built out slice by slice.*
 
@@ -225,9 +214,11 @@ Wireframes don't come from a template here. A creative design engine (**GLM-5.2*
             ▶  B-2 module migration → B-3 CALENDAR (full function)
             → B-4 home & inspector → B-5 alpha hardening
             ─────────────────────────────────────────────────────────────
-   🚨 ALPHA GATE — versioned, stamped builds leave the machine.
-      Real league members. Real seasons. Real-world testing begins.
+   🚨 ALPHA GATE — versioned, stamped builds. A full season run in anger.
+      One operator, one console, one league — proven before it's shared.
 ```
+
+*Alpha is deliberately a seat for one.* The tool gets run hard against a real season by the person who knows exactly what it should say — because a front office that hasn't survived its own commissioner has no business in anyone else's hands. The doors open when the product has earned them, not when the roadmap says so.
 
 **B-1 just landed:** the four-column instrument shell and the Session-C token system are *running* — cold-CIC navy, Inter/JetBrains-Mono, density tiers, the transform-overlay inspector, edge-resizable zones. The existing modules are re-homed into it now; B-2 re-skins their internals to the component language above.
 
@@ -283,7 +274,7 @@ A multi-block system design where the boundaries aren't conventions — they're 
 The engine is the hard part, and the engine is **done** — and the front office that operates it is already going in (roster moves, contract ops, trades, and commissioner controls all run live against the real ledger). What's ahead is the payoff on top: each remaining capability a new *analytical view* onto a score and a ledger that already exist.
 
 **On the clock**
-- 🎛️ **The command console + league Alpha** — the design-and-build ladder above, ending with stamped binaries in real league members' hands. The moment TheWarRoom stops being one operator's edge and starts being *the league's home field*.
+- 🎛️ **The command console + Alpha** — the design-and-build ladder above, ending with stamped, versioned builds and a full season run in anger.
 - 📊 **The war-room modules** — Power Rankings (live!), Matchup Predictions, Trade Analyzer, Free-Agency Intel, Rookie Draft board, Commissioner Dashboard.
 - 🕳️ **The shadow ledger** — dry-run any transaction against a *forked* cap before you commit it.
 
@@ -292,7 +283,50 @@ The engine is the hard part, and the engine is **done** — and the front office
 - 💼 **Horizon 2 · The Portfolio Desk** — one engine valuing the same player under *five* leagues' rules simultaneously. Asset management for dynasty football.
 - 🎖️ **Horizon 3 · The January War Room** — **fork your franchise** and branch offseason futures like a developer branches code, each run through the *real* transaction engine — then your winning plan becomes the season's execution script.
 
-🔭 The full vision, on the record: **[`docs/roadmap/Vision_2026.md`](docs/roadmap/Vision_2026.md)**
+---
+
+### 🩸 The Cutover — retiring the platform, one function at a time
+
+MFL provides six things. **TheWarRoom takes them back in order, and no cut ships until it has run in parity first.**
+
+```
+   ✅ 1 · CAP & CONTRACT BOOKKEEPING ── cut. The per-year ledger is the sole truth;
+                                        MFL's salary fields are a mirror we audit.
+   ▶  2 · SCORING ─────────────────── next. Stored rules × ingested stats.
+      3 · WAIVERS & AUCTION ───────── the first operational cut. Needs the calendar.
+      4 · ROOKIE DRAFT ROOM ───────── same machinery, one round later.
+      5 · LINEUPS ────────────────── needs multi-user. MFL becomes display-only.
+      6 · HOSTING & COMMS ────────── last. The lights go out on the old building.
+```
+
+**The trust-earning feature is the parity report, run as a product:** a full season of automated weekly scoring parity plus one complete offseason transaction window, kept in dual record with a discrepancy ledger. **Trust is earned the day the report catches the platform's error, not ours** — the app audits MFL, not the other way around. No operational cut before one clean parity season. That's the whole discipline in a sentence.
+
+---
+
+### 🤖 Horizon 4 · The AI Owners — the seat that never goes empty
+
+Here is the problem no fantasy platform has ever solved, and it isn't technical. **Finding thirty-two people who will run a franchise with real effort, for years, is genuinely hard.** Owners burn out. Life happens. And when a GM walks, he doesn't leave a clean slate — he leaves a franchise shaped by every decision he made, and someone has to inherit it.
+
+TheWarRoom is quietly building the answer, and it needs **zero new instrumentation** to do it. The append-only ledger is *already* a behavioral record. Every bid in a war that went nine rounds. Every snipe. Every restructure that bought a window. Every cut where a GM ate the dead cap to get free. It's all in there, dated, immutable, and attributable — **because the same append-only design that makes the cap exact makes behavior legible.**
+
+From that record the engine derives a **GM profile** — not a rating, a *fingerprint*:
+
+| Trait | Read from |
+|:--|:--|
+| **Risk appetite** | dead cap absorbed, voluntarily |
+| **Time horizon** | roster age × remaining contract years |
+| **Positional ideology** | where the cap actually goes, not what he says |
+| **Operational fingerprint** | which moves he reaches for, and how often |
+| **Timing behavior** | how early, how late, how patient |
+
+Layer on a decade-plus of archived league history — real bidding wars, real snipes, real RFA matches between real people who were *trying to win* — and the fingerprint stops being a summary and becomes a **playable style.**
+
+**An empty franchise gets an owner who plays like the league plays.** Not a bot that bids randomly and rots a roster. A GM with a philosophy: one that hoards picks, one that goes all-in on a window, one that always overpays at receiver — because that's what the record says GMs in *this* league actually do. Every move still runs through the same coordinator, the same phase gate, the same penny-exact ledger as a human. **No AI owner gets a rule a human doesn't get.**
+
+> A 32-team dynasty league shouldn't die because six people got busy.
+> **The seat stays filled. The league keeps playing.**
+
+🔭 The full vision, on the record: **[`docs/roadmap/Vision_2026.md`](docs/roadmap/Vision_2026.md)** · the human behavior corpus: **[`docs/league-history/League_History_v1.md`](docs/league-history/League_History_v1.md)**
 
 ---
 
@@ -340,7 +374,8 @@ One human holds the vision and the veto. A council of AIs does the rest, each in
 
 *Built by Christopher Campbell with Claude (Anthropic) — reviewed, challenged, and sharpened by a council of GLM, Gemini, DeepSeek, and Ornith.*
 
-**MFL gives you the league. TheWarRoom helps you win it.**
-**And one day, the league gets played here.**
+**Today, MFL gives you the league and TheWarRoom helps you win it.**
+
+**Tomorrow, there is no MFL — and the seat never goes empty.**
 
 </div>
