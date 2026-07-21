@@ -139,12 +139,33 @@ into a wiring session:
   reviewed + live-gated increment, using the merged S-Phase shape (caller-supplied crosswalk Map +
   birthdates, assembly leaf owns any multi-season loop, engine stays pure, Profile a leaf, 400-line cap /
   funlen 40 / zero-leak). Recommended order (smallest blast radius first):
-  1. **`Coverage` (CB/S)** — single source (pfrcoverage), hard CB/S boundary, K4=0.20, engine inverts.
-     Reuses the new `GSISForPFR` bridge.
-  2. **`IDPFilm`** — Madden defense composite (K1) + capped NFLProduction (K2) + pfrcoverage supporting.
-  3. **`OffenseFilm`** — Madden backbone + bounded FTN delta-overlay (K3) + capped NFLProduction (K2).
-  4. **Rookie tower** — multi-input (K5) with the pre-ship redundancy check (r>0.5 → non-redundancy cap).
+  1. **`Coverage` (CB/S)** — ✅ **DONE + MERGED 2026-07-20** (`b0f5f46`). Single source (pfrcoverage), hard
+     CB/S boundary, K4=0.20, engine inverts. Reused the `GSISForPFR`/`PFRMap` bridge (already built by Thread B).
+  2. **`IDPFilm`** — ✅ **DONE + MERGED 2026-07-21** (`a335de6`). Madden defense composite (K1); K2 seat
+     RESERVED NEUTRAL (unwired); pfrcoverage rides at CB/S from step 1.
+  3. **`OffenseFilm`** — ✅ **DONE + MERGED 2026-07-21** (`4e4a0ef`). Madden backbone + bounded FTN
+     delta-overlay (K3, B=0.10, percentile-rank population); K2 seat RESERVED NEUTRAL (unwired). GLM 5.2
+     blind review 0 HIGH.
+  4. **Rookie tower (K5)** — ⛔ **DATA-BLOCKED → DEFERRED to an OQ (Christopher, 2026-07-21).** Live recon
+     found 3 of 4 K5 film inputs unobtainable: **Madden-rookie is dead** (only populated EA slug is m24=2023,
+     no current rookies); **per-player CFBD success-rate/havoc does NOT exist** (both are TEAM-level in
+     `stats/season/advanced`; per-player CFBD advanced = `usage` = production share, already wired via
+     CollegeShare/BreakoutAge, or `ppa` = points-based = zero-leak REJECT); **consensus-rank is manual with
+     no auto-source** (source-map escape hatch already failed). Only combine/RAS is available and it is
+     ALREADY wired (rookie-weighted via SL-018). A rookie today already carries RAS + SchoolTier +
+     CollegeProductionShare + BreakoutAge; his FILM slot resolves Data-Parity NEUTRAL (no m24 Madden, no NFL
+     snaps for FTN). Building a hollow "tower" was rejected. **→ OQ-016 (Roadmap_and_Open_Questions): build a
+     `RookieConsensus` manual-CSV loader (rank → normalized [0,1] within class → rookie film slot as PRIMARY,
+     Data-Parity neutral until supplied) IF/WHEN Christopher chooses to maintain a per-class consensus CSV;
+     run the pre-ship redundancy check (consensus-rank vs RAS r<0.5) at that time.**
+
   Each increment: automated gates green → GLM review if back else waive w/ note → live Beelink gate.
+
+  **STATUS: FILM Thread C wiring is COMPLETE.** Steps 1–3 merged; step 4 (K5) data-blocked/deferred. The
+  offense+IDP+coverage film signals are LIVE end-to-end. **One optional remainder: the K2 NFLProduction seat**
+  is reserved neutral (0.05·midpoint) in BOTH the offense and defense branches of `rankings.applyScouting` —
+  a localized swap-in whenever wired (its own small increment; needs the p75-cap population/scope decision).
+  Not required to consider the scouting film engine functionally complete.
 
 ---
 
