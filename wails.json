@@ -9,5 +9,8 @@
   "author": {
     "name": "Christopher Campbell",
     "email": "secureprospective@gmail.com"
+  },
+  "info": {
+    "productVersion": "0.5.0"
   }
 }

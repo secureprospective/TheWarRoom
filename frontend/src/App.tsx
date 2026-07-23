@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useHarnessStore } from './store/harness';
+import { useAppInfoStore } from './store/appInfo';
 import { AppShell } from './components/shell/AppShell';
 import { useDensity } from './components/shell/useDensity';
 import { MODULES, type ModuleId } from './components/shell/types';
@@ -29,6 +30,7 @@ const MODULE_TITLES: Record<ModuleId, string> = {
 
 function App() {
   const loadAll = useHarnessStore((s) => s.loadAll);
+  const loadAppInfo = useAppInfoStore((s) => s.load);
   const { density, setDensity } = useDensity();
   const [module, setModule] = useState<ModuleId>('assets');
   const [inspectorOpen, setInspectorOpen] = useState(false);
@@ -36,7 +38,8 @@ function App() {
 
   useEffect(() => {
     void loadAll();
-  }, [loadAll]);
+    void loadAppInfo();
+  }, [loadAll, loadAppInfo]);
 
   // Global keyboard: density 1/2/3, inspector toggle (I), escape closes overlays.
   // Ignored while typing in an input/textarea (per the Session-B keyboard map).

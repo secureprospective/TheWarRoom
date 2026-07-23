@@ -170,6 +170,22 @@ export namespace harness {
 
 export namespace main {
 	
+	export class AppInfo {
+	    version: string;
+	    commit: string;
+	    buildDate: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AppInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.version = source["version"];
+	        this.commit = source["commit"];
+	        this.buildDate = source["buildDate"];
+	    }
+	}
 	export class CapDeltaDTO {
 	    franchiseID: string;
 	    franchiseName: string;

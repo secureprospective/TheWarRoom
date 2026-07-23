@@ -1,8 +1,44 @@
 import { MODULES, type ModuleId } from './types';
+import { useAppInfoStore } from '../../store/appInfo';
 
 interface NavRailProps {
   active: ModuleId;
   onSelect: (m: ModuleId) => void;
+}
+
+// BuildStamp pins the running binary's version + short SHA to the base of the
+// rail. The link-time stamp is the single source of truth (D-V2): a stamped
+// release shows its tag; an un-stamped `wails dev` build shows "dev", which is
+// how you tell at a glance which binary is on a given machine during the B-2
+// gate loop. buildDate rides the hover title so the resting UI stays quiet.
+function BuildStamp() {
+  const info = useAppInfoStore((s) => s.info);
+  if (!info) return null;
+  const isDev = info.version === 'dev';
+  const title = info.buildDate ? `built ${info.buildDate}` : undefined;
+  return (
+    <div
+      title={title}
+      style={{
+        borderTop: '1px solid var(--hairline)',
+        padding: '8px 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px',
+        fontFamily: 'var(--mono)',
+        fontSize: '10px',
+        letterSpacing: '0.04em',
+        flexShrink: 0,
+      }}
+    >
+      <span style={{ color: isDev ? 'var(--fresh-stale)' : 'var(--text-secondary)' }}>
+        {isDev ? 'DEV BUILD' : info.version}
+      </span>
+      {info.commit ? (
+        <span style={{ color: 'var(--text-tertiary)' }}>{info.commit}</span>
+      ) : null}
+    </div>
+  );
 }
 
 // Left instrument rail (Session A): a PORTFOLIO sector (app crest + active
@@ -123,6 +159,8 @@ export function NavRail({ active, onSelect }: NavRailProps) {
           );
         })}
       </div>
+
+      <BuildStamp />
     </nav>
   );
 }
