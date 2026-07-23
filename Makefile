@@ -66,8 +66,12 @@ test-coverage:
 
 # Desktop shell. Wails embeds the built frontend; before the frontend is wired
 # substitute `go build ./...`. The build stamp is injected here (see LDFLAGS).
+# WAILS_TAGS defaults to webkit2_41 — the Alpha target is WebKitGTK 4.1 (Wails'
+# bare default links 4.0, absent on the build/gate machines). Override for a
+# 4.0 host: `make build WAILS_TAGS=`  (Beta distro-matrix concern, docketed).
+WAILS_TAGS ?= webkit2_41
 build:
-	wails build -ldflags "$(LDFLAGS)"
+	wails build -tags "$(WAILS_TAGS)" -ldflags "$(LDFLAGS)"
 
 # dev is intentionally UNstamped — the "dev" var defaults make a `wails dev`
 # binary read as a dev build in the UI, which is the point.
