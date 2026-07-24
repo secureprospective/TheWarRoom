@@ -65,7 +65,7 @@ export function RankingsBoard() {
         </button>
         {rankings && (
           <span className="text-xs text-slate-400">
-            season {rankings.season} · config v{rankings.configVersion} · {rows.length} scored
+            season {rankings.season} · rulebook v{rankings.configVersion} · {rows.length} scored
           </span>
         )}
       </div>
@@ -165,8 +165,8 @@ function ScoreReportPanel({ report }: { report: main.ScoreLeagueResult }) {
     <div className="mb-3 border border-slate-700 bg-slate-800 px-3 py-2 text-xs">
       <p>
         {rep.skippedExisting
-          ? `Already scored under config v${rep.configVersion} — ${rep.existing} persisted rows served as-is (append-only; bump the config to re-score).`
-          : `Scored ${rep.scored} players under config v${rep.configVersion} (${rep.zeroBase} with no ${rep.season - 1} YTD record` +
+          ? `Already scored under rulebook v${rep.configVersion} — ${rep.existing} persisted rows served as-is (append-only; bump the rulebook to re-score).`
+          : `Scored ${rep.scored} players under rulebook v${rep.configVersion} (${rep.zeroBase} with no ${rep.season - 1} YTD record` +
             (rep.negativeBase > 0 ? `; ${rep.negativeBase} negative totals floored to 0 — check the proxy data` : '') +
             ').'}
       </p>

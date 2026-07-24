@@ -45,6 +45,7 @@ type App struct {
 	mflClient   *mfl.Client               // shared transport; rate limit + host cache live here
 	season      int                       // ingestion.SeasonYear parsed once at startup
 	startupErr  error                     // captured at startup; surfaced via Ping (Wails OnStartup cannot fail).
+	lockFile    *os.File                  // single-instance advisory lock; held for process lifetime, released at shutdown.
 
 	// players-DB directory, fetched at most once per process (MFL caps the
 	// endpoint at once/day): the state seed (fresh DB only) and every M1
@@ -129,11 +130,29 @@ func (a *App) startup(ctx context.Context) {
 		}
 	}()
 
+	// Disk logging first, so anything below (including a lock or open failure) is
+	// captured on disk as well as stderr. A logging failure is non-fatal.
+	if dir, derr := configDir(); derr != nil {
+		a.startupErr = fmt.Errorf("startup: resolve config dir: %w", derr)
+		return
+	} else if lerr := setupLogging(dir); lerr != nil {
+		log.Printf("the war room: WARNING disk logging unavailable: %v", lerr)
+	}
+
 	path, err := databasePath()
 	if err != nil {
 		a.startupErr = fmt.Errorf("startup: resolve database path: %w", err)
 		return
 	}
+	// Single-instance guard BEFORE opening the DB: a second copy must not attach to
+	// the same ledger (a migration or write from two processes is the hazard).
+	lock, err := acquireInstanceLock(path)
+	if err != nil {
+		a.startupErr = fmt.Errorf("startup: %w", err)
+		return
+	}
+	a.lockFile = lock
+
 	pools, err := db.Open(ctx, path)
 	if err != nil {
 		a.startupErr = fmt.Errorf("startup: open database: %w", err)
@@ -212,6 +231,7 @@ func (a *App) shutdown(_ context.Context) {
 	if a.pools != nil {
 		_ = a.pools.Close()
 	}
+	releaseInstanceLock(a.lockFile)
 }
 
 // Ping is the IPC ping-pong method bound to the frontend. It round-trips a
@@ -244,10 +264,10 @@ func (a *App) Ping() PingResult {
 	}
 }
 
-// databasePath returns the on-disk location of the SQLite file, under the user
-// config dir (e.g. ~/.config/TheWarRoom/thewarroom.db), creating the directory
-// if needed.
-func databasePath() (string, error) {
+// configDir returns the app's on-disk data directory (e.g. ~/.config/TheWarRoom),
+// creating it if needed. The database, the instance lockfile, and the logs dir all
+// live under it.
+func configDir() (string, error) {
 	cfg, err := os.UserConfigDir()
 	if err != nil {
 		return "", fmt.Errorf("user config dir: %w", err)
@@ -256,5 +276,30 @@ func databasePath() (string, error) {
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return "", fmt.Errorf("create data dir %q: %w", dir, err)
 	}
-	return filepath.Join(dir, "thewarroom.db"), nil
+	return dir, nil
+}
+
+// isDevBuild reports whether this is an un-stamped DEV binary (plain `go build` or
+// `wails dev`), where the link-time version default "dev" survives (see version.go).
+func isDevBuild() bool { return version == "dev" }
+
+// dbFileName is the SQLite filename for this build. A DEV build uses a SEPARATE
+// -dev database so development (`wails dev`, un-stamped binaries) can never open —
+// and never migrate or corrupt — the real dynasty ledger (Tier 3 dev-build guard).
+// A stamped release uses the real ledger.
+func dbFileName(devBuild bool) string {
+	if devBuild {
+		return "thewarroom-dev.db"
+	}
+	return "thewarroom.db"
+}
+
+// databasePath returns the on-disk location of the SQLite file under the config dir,
+// selecting the -dev database for an un-stamped build.
+func databasePath() (string, error) {
+	dir, err := configDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, dbFileName(isDevBuild())), nil
 }
