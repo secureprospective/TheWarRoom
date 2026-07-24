@@ -470,6 +470,15 @@ Full Layer 4 Floor Test:
   PASS if Layer_4_Output == 1.000 exactly
 ```
 
+> **How this is realized (WIRED — harness case 3H, `eval3H`).** The engine has no explicit
+> component-confidence multiplier; the floor is the **Data-Parity design**. For **film** and
+> **RAS** the presence flag *is* the confidence gate — flagged absent ⇒ effective exactly 1.000,
+> stray raw ignored (asserted across every registered rubric). **Breakout** has no whole-component
+> flag because age-trajectory is always live, so "all breakout fields Unknown" is the point where
+> the three flagged sub-signals are absent (neutral 0.50) **and** age sits at the position peak
+> (WR = 29 ⇒ age-trajectory 0.50), driving the composite to the 0.50 inflection ⇒ breakout ==
+> 1.000, and with film + RAS also absent, Combined == 1.000 exactly.
+
 ---
 
 ### Test 3I — NGS Anchor Boundary (CB and S only)

@@ -46,6 +46,24 @@ func TestRealQBRegistryFlips3C(t *testing.T) {
 	}
 }
 
+// TestRealWRRegistryFlips3H is the confidence-floor close gate (Test 3H): with the real WR
+// rubric registered (3H's gate), case 3H flips PENDING → PASS. It proves that an absent film /
+// RAS component floors to exactly 1.000 across every registered rubric (stray raw ignored) and
+// that an all-unknown breakout at the WR peak age floors the full Layer-4 Combined to 1.000. The
+// suite has ZERO failures and 3G stays PENDING — the three-state model holding.
+func TestRealWRRegistryFlips3H(t *testing.T) {
+	results := RunValidationSuite(realRegistry())
+	if r := find(t, results, "3H"); r.State != StatePass {
+		t.Fatalf("3H should PASS with the real registry (confidence floor), got %s (%s)", r.State, r.Detail)
+	}
+	if r := find(t, results, "3G"); r.State != StatePending {
+		t.Fatalf("3G should stay PENDING (assertion-wiring deferred), got %s", r.State)
+	}
+	if s := Summarize(results); s.Fail != 0 {
+		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
+	}
+}
+
 // TestRealRBRegistryFlips3B is the B5b-RB close gate: with the RB rubric registered, case 3B
 // (the Herbert pattern — L4 pulls below 1.000 for a thin-profile vet) flips PENDING → PASS,
 // the suite has ZERO failures, and 3A stays PENDING (it also gates on WR, not registered).

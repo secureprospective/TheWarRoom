@@ -44,14 +44,6 @@ func gatedPending(id, name, b5b, detail string, pos ...domain.Position) case3 {
 	}}
 }
 
-// subSignalPending builds a case that has no single rubric gate (it tests dispatch or a
-// cross-component floor) and is simply PENDING on B5b inputs/hooks.
-func subSignalPending(id, name, b5b, detail string) case3 {
-	return case3{id: id, name: name, b5bBlock: b5b, eval: func(_ RubricRegistry) (CaseState, string) {
-		return pendingSubSignals(detail)
-	}}
-}
-
 // validationCases returns the 13 architectural cases in 3A..3M order. The two fully-wired
 // exemplars (3C, 3L) run today; 3C auto-flips the moment a QB/K rubric registers. The rest
 // are encoded with the rule and the block that will turn them green. 3M is the SL-019
@@ -68,8 +60,7 @@ func validationCases() []case3 {
 		gatedPending("3G", "SL-021 — DT dynamic PFF alpha (0.50 Y1 → 0.10 Y2+)",
 			"B5b-DT", "DT.PFFAlpha introspection hook + DE rubric both built; 3G assertion-wiring deferred",
 			domain.PosDT, domain.PosDE),
-		subSignalPending("3H", "Confidence floor — all-Unknown component → effective 1.000",
-			"B5b (first rubric)", "component confidence inputs not on Layer4Input"),
+		{id: "3H", name: "Confidence floor — all-Unknown component → effective 1.000", b5bBlock: "B5b-WR", eval: eval3H},
 		{id: "3I", name: "NGS anchor present only at CB & S", b5bBlock: "B5b-CB / B5b-S", eval: eval3I},
 		{id: "3J", name: "EDGE classification routing (pass-rush share → DE vs LB)", b5bBlock: "B5b-DE / B5b-LB + dispatch", eval: eval3J},
 		{id: "3K", name: "S-curve boundary safety — output clamped to [1-cap, 1+cap]", b5bBlock: "B5b-WR", eval: eval3K},
