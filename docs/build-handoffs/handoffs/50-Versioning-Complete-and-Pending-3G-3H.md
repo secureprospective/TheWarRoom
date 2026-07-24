@@ -35,9 +35,41 @@ as of this session.** Spec: `Testing_App_Specification.md` Tests 3G (line 420) +
   0.10 (year 2+), `internal/engine/l4/defense/dt.go:151`.
 - **The blend it feeds is DORMANT** — DT film is Data-Parity neutral (IDP film weights UNSET,
   Build_Tracker B5b-DT), so the full spec (live EMA → 0.75 vs 0.63) cannot run yet.
-- **Partially wireable now** (assert the α schedule via the hook + a DE fixed-0.15 control).
-  **Full 3G belongs with the pending IDP FILM calibration pass** (the IDP arm of Thread C —
-  only offense/K film shipped so far; see the FILM planning doc / handoff 48).
+- ⛔ **ROOT CAUSE (Christopher, 2026-07-24): PFF cannot be used — TOS-restricted + paywalled,
+  and TheWarRoom uses no pay-walled sources.** This is why the IDP film source was "eliminated
+  pending redesign" and why 3G's blend (and, downstream, the 3H pause) stalled. The α mechanic
+  is fine; the **grade INPUT** has to change.
+
+### ⛑ PFF-REPLACEMENT INVESTIGATION (for the IDP film redesign) — STRONG LEAD ALREADY IN-REPO
+Requirement: a free, TOS-clean, Go-reachable, gsis-bridgeable per-player **pass-rush quality**
+signal to replace PFF grades for the DL/edge IDP film sub-signal (DT/DE, and the pressure side
+of LB).
+
+**Leading answer — it's already downloaded.** The `pfrcoverage` fetcher already pulls
+`advstats_season_def.csv.gz` from the **nflverse data GitHub release drop**
+(`https://github.com/nflverse/nflverse-data/releases/download/pfr_advstats/advstats_season_def.csv.gz`,
+`internal/ingestion/pfrcoverage/fetcher.go:67`) — Pro-Football-Reference **Advanced Defense**,
+2018+. That SAME CSV carries the per-player **pass-rush** columns (pressures / QB hits / hurries
+/ sacks), and the fetcher currently binds only the *coverage* columns from it. So the PFF
+replacement is the same public, CC-licensed, already-trusted "sourced web drop" the project
+already consumes — no paywall, no new trust decision.
+- **Action:** clone/extend `pfrcoverage` into a `pfrpassrush` sibling (or add columns) that binds
+  the pass-rush fields from the identical download; **confirm exact column names from the
+  already-fetched header** (`ingestion.CSVColumns` locates by name — candidates: `sacks`,
+  `qb_hits`, `hurries`/`hrry`, `pressures`/`prss`; verify against the live header, do not guess).
+  Build a per-snap/per-game pressure-rate composite → feed the DT/DE IDP film sub-signal → then
+  the SL-021 α EMA (3G) has live inputs and the case wires end to end. **Zero-leak still applies**
+  (pass-rush counting stats only, never a fantasy stat).
+- **Backup sources if PFR advanced-defense proves insufficient** (all free / non-paywalled;
+  vet TOS + Go-reachability before adopting): nflverse **FTN charting** (`is_pressure`, already
+  integrated for OffenseFilm — but it is offense-perspective, not per-rusher attributed);
+  nflverse **participation/PBP** derived pressures; **SumerSports** public grades (verify TOS,
+  no bulk API); NGS is passing/rushing/receiving only (no public IDP pass-rush). SIS/PFF/TruMedia
+  are all paywalled → EXCLUDED by policy.
+- **Fold 3G into the IDP FILM calibration pass** (the IDP arm of Thread C — only offense/K film
+  shipped; handoff 48). Do NOT ship blind film weights. Once the pass-rush composite lands and
+  the film weight is calibrated, 3G's full spec (0.75 vs 0.63) becomes assertable; until then the
+  α-schedule-only partial assertion (hook + DE control) is the most that can be wired.
 
 ### 3H — Confidence floor: an all-Unknown component → effective 1.000
 - Old stated blocker: "component-confidence inputs are not on `Layer4Input`." Confidence is
@@ -49,6 +81,10 @@ as of this session.** Spec: `Testing_App_Specification.md` Tests 3G (line 420) +
   thing to verify first:** that an all-absent breakout composite (neutral 0.50s through the
   breakout S-curve) lands on exactly 1.000 — S-curve centering is the risk. If it does, 3H is a
   small, self-contained wire-up with no engine change.
+- **3H is NOT actually blocked by the PFF/paywall issue** (Christopher assumed it paused here).
+  The confidence floor is a general engine property independent of which film source is used —
+  it can be wired regardless of the IDP film redesign. It likely got carried alongside 3G only
+  because both were the two open Module-3 cases, not because they share a dependency.
 
 **Recommendation:** wire **3H now** (small, if the floor check holds); fold **3G** into the IDP
 film calibration where its blend goes live. Do NOT ship blind film weights for 3G.
@@ -61,7 +97,10 @@ film calibration where its blend goes live. Do NOT ship blind film weights for 3
 - **League-calendar backend** — branch `session/league-calendar` WIP.
 - **M2 slice-2** — weeklyResults columns.
 - **FILM Thread C (IDP arm)** — OffenseFilm/K shipped; IDP film (Coverage/IDPFilm) + 3G still
-  pending, decision-gated, expert-panel weight gate. Handoff 48.
+  pending, decision-gated, expert-panel weight gate. Handoff 48. **Now unblocked on the SOURCE
+  side:** the PFF-replacement pass-rush signal is available from the nflverse pfr_advstats def
+  drop already in-repo (see the PFF-replacement investigation above) — build `pfrpassrush`, then
+  calibrate the IDP film weight, then 3G wires.
 
 ## OPEN / CARRIED (unchanged)
 - OQ-013 (created→official id ramp), OQ-014 (Money type), OQ-016 (RookieConsensus CSV loader),
