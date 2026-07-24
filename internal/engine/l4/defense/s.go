@@ -111,7 +111,7 @@ func NewS() *S {
 
 // HasNGSAnchor is the case-3I introspection hook: S is the SECOND position (after CB) to elevate
 // NFL Next Gen Stats coverage/range metrics to a dedicated film sub-signal anchor (S_Rubric §2 —
-// 0.30 weight, §7 "NGS pattern extends to S"). Like DT.PFFAlpha and CB.HasNGSAnchor it is a
+// 0.30 weight, §7 "NGS pattern extends to S"). Like DT.SL021Alpha and CB.HasNGSAnchor it is a
 // RUBRIC INTERNAL exposed for the harness only; it deliberately does NOT live on Layer4Output
 // (the production surface) — the film weights are unset in v1.0, so a weight accessor would read
 // 0.00 and NGS-presence is invisible at the engine boundary. CB returns true too; offense and the

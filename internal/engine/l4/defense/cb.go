@@ -104,7 +104,7 @@ func NewCB() *CB {
 
 // HasNGSAnchor is the case-3I introspection hook: CB is the first position to elevate NFL Next
 // Gen Stats coverage metrics to a dedicated film sub-signal anchor (CB_Rubric §2 — 0.30 weight,
-// §7 "NGS as dedicated anchor"). Like DT.PFFAlpha it is a RUBRIC INTERNAL exposed for the
+// §7 "NGS as dedicated anchor"). Like DT.SL021Alpha it is a RUBRIC INTERNAL exposed for the
 // harness only; it deliberately does NOT live on Layer4Output (the production surface) — the
 // film weights are unset in v1.0, so a weight accessor would read 0.00 and NGS-presence is
 // invisible at the engine boundary. S returns true too; offense and the other defensive rubrics

@@ -135,17 +135,18 @@ func assertBand(t *testing.T, name string, v, capBand float64) {
 	}
 }
 
-// TestDTPFFAlpha is the case-3G introspection hook: the dynamic PFF EMA alpha schedule.
-func TestDTPFFAlpha(t *testing.T) {
+// TestDTSL021Alpha is the case-3G introspection hook: the dynamic SL-021 EMA alpha schedule
+// (over the pass-rush grade; PFF is retired).
+func TestDTSL021Alpha(t *testing.T) {
 	dt := NewDT()
 	for _, year := range []int{0, 1} {
-		if got := dt.PFFAlpha(year); got != 0.50 {
-			t.Fatalf("PFFAlpha(%d) = %v, want 0.50 (Year 1)", year, got)
+		if got := dt.SL021Alpha(year); got != 0.50 {
+			t.Fatalf("SL021Alpha(%d) = %v, want 0.50 (Year 1)", year, got)
 		}
 	}
 	for _, year := range []int{2, 5} {
-		if got := dt.PFFAlpha(year); got != 0.10 {
-			t.Fatalf("PFFAlpha(%d) = %v, want 0.10 (Year 2+)", year, got)
+		if got := dt.SL021Alpha(year); got != 0.10 {
+			t.Fatalf("SL021Alpha(%d) = %v, want 0.10 (Year 2+)", year, got)
 		}
 	}
 }

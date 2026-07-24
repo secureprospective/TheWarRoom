@@ -148,14 +148,34 @@ func (d *DT) Apply(in engine.Layer4Input) engine.Layer4Output {
 	}
 }
 
-// PFFAlpha is the case-3G introspection hook: the DT-unique dynamic PFF EMA blend rate
-// (SL-021) — 0.50 in NFL Year 1 (aggressive blend to displace rookie-era RAS dominance),
-// 0.10 in Year 2+ (stable vet signal). It is a RUBRIC INTERNAL exposed for the harness
-// only; it deliberately does NOT live on Layer4Output (the production surface). nflYear is
-// 1-based; year ≤ 1 is the rookie/first NFL season.
-func (d *DT) PFFAlpha(nflYear int) float64 {
+// SL021Alpha is the case-3G introspection hook: the DT-unique dynamic SL-021 EMA blend rate
+// over the pass-rush grade — 0.50 in NFL Year 1 (aggressive blend to displace rookie-era RAS
+// dominance), 0.10 in Year 2+ (stable vet signal). (Formerly "PFFAlpha": PFF is RETIRED —
+// TOS-restricted + paywalled — and the graded input is now the pfrpassrush pressure composite,
+// not a PFF grade; only the SL-021 α schedule survives, unchanged.) It is a RUBRIC INTERNAL
+// exposed for the harness only; it deliberately does NOT live on Layer4Output (the production
+// surface). nflYear is 1-based; year ≤ 1 is the rookie/first NFL season.
+func (d *DT) SL021Alpha(nflYear int) float64 {
 	if nflYear <= 1 {
 		return 0.50
 	}
 	return 0.10
+}
+
+// SL021Blend is the SL-021 pass-rush-grade EMA step (case-3G introspection hook): it folds this
+// season's observed grade into the prior smoothed value at rate alpha —
+// new = (1-alpha)·previous + alpha·observation. It is a PURE, position-agnostic mechanic; the
+// per-position α SCHEDULE is what differs (DT dynamic via SL021Alpha, DE fixed via its control),
+// so this helper takes alpha as a parameter and carries no schedule of its own. Both `previous`
+// and `observation` are [0,1] grades.
+//
+// SCOPE (2026-07-24, α-schedule-only wiring): this is the SL-021 blend MECHANIC exposed for the
+// harness. It is NOT yet fed a live pass-rush observation into production scoring — the pressure
+// composite that would supply `observation` (pfrpassrush) proved largely redundant with the
+// locked Madden IDP film anchor at DT (r≈0.75) and DE (r≈0.82) in the C-1 evidence
+// (docs/data-layer/PassRush_C1_Distributions.md), so a live DT/DE pressure weight is DEFERRED to
+// the expert-panel gate. This helper closes case 3G by proving the α schedule + blend math on
+// the spec's synthetic inputs; it sets no weight and does not touch the locked film budget.
+func SL021Blend(previous, observation, alpha float64) float64 {
+	return (1-alpha)*previous + alpha*observation
 }

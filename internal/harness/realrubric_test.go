@@ -50,14 +50,14 @@ func TestRealQBRegistryFlips3C(t *testing.T) {
 // rubric registered (3H's gate), case 3H flips PENDING → PASS. It proves that an absent film /
 // RAS component floors to exactly 1.000 across every registered rubric (stray raw ignored) and
 // that an all-unknown breakout at the WR peak age floors the full Layer-4 Combined to 1.000. The
-// suite has ZERO failures and 3G stays PENDING — the three-state model holding.
+// suite has ZERO failures and 3G PASSES (DT+DE registered, SL-021 α wired).
 func TestRealWRRegistryFlips3H(t *testing.T) {
 	results := RunValidationSuite(realRegistry())
 	if r := find(t, results, "3H"); r.State != StatePass {
 		t.Fatalf("3H should PASS with the real registry (confidence floor), got %s (%s)", r.State, r.Detail)
 	}
-	if r := find(t, results, "3G"); r.State != StatePending {
-		t.Fatalf("3G should stay PENDING (assertion-wiring deferred), got %s", r.State)
+	if r := find(t, results, "3G"); r.State != StatePass {
+		t.Fatalf("3G should PASS (SL-021 α wired), got %s (%s)", r.State, r.Detail)
 	}
 	if s := Summarize(results); s.Fail != 0 {
 		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
@@ -108,8 +108,8 @@ func TestRealRBRankingDifferentiates(t *testing.T) {
 }
 
 // TestRealDTRegistryFlips3F is the B5b-DT close gate: with the DT rubric registered, case
-// 3F (SL-021 cushion guard) flips PENDING → PASS, and the gatedPending case 3G stays PENDING
-// (its PFFAlpha-assertion wiring is deferred). 3D no longer stays PENDING here — realRegistry
+// 3F (SL-021 cushion guard) flips PENDING → PASS, and case 3G also PASSES (DE co-registered, its
+// SL-021 α schedule wired). 3D no longer stays PENDING here — realRegistry
 // now also registers LB (B5b-LB) alongside DT+WR, so 3D flips; its gate is asserted in
 // TestRealLBRegistryFlips3DAnd3J.
 func TestRealDTRegistryFlips3F(t *testing.T) {
@@ -117,8 +117,8 @@ func TestRealDTRegistryFlips3F(t *testing.T) {
 	if r := find(t, results, "3F"); r.State != StatePass {
 		t.Fatalf("3F should PASS with the real DT rubric, got %s (%s)", r.State, r.Detail)
 	}
-	if r := find(t, results, "3G"); r.State != StatePending {
-		t.Fatalf("3G should stay PENDING (assertion-wiring deferred), got %s", r.State)
+	if r := find(t, results, "3G"); r.State != StatePass {
+		t.Fatalf("3G should PASS (SL-021 α wired), got %s (%s)", r.State, r.Detail)
 	}
 	if s := Summarize(results); s.Fail != 0 {
 		t.Fatalf("real QB+DT registry must produce zero FAIL, got %d", s.Fail)
@@ -241,16 +241,31 @@ func TestRealTERankingDifferentiates(t *testing.T) {
 
 // TestRealDERegistryFlips3E is the B5b-DE close gate: with the DE rubric registered, case 3E
 // (SL-019 RAS-modulator lifts breakout — the SECOND SL-019 instance, reusing curve.SL019) flips
-// PENDING → PASS, the suite has ZERO failures, and 3G stays PENDING — DE is registered but 3G's
-// PFFAlpha-assertion wiring is deferred (it is a gatedPending, never auto-passing), the
-// three-state model holding.
+// PENDING → PASS, the suite has ZERO failures, and 3G PASSES — DE (the fixed-α control) is now
+// registered alongside DT, so the SL-021 α schedule case gates green.
 func TestRealDERegistryFlips3E(t *testing.T) {
 	results := RunValidationSuite(realRegistry())
 	if r := find(t, results, "3E"); r.State != StatePass {
 		t.Fatalf("3E should PASS with the real DE rubric, got %s (%s)", r.State, r.Detail)
 	}
-	if r := find(t, results, "3G"); r.State != StatePending {
-		t.Fatalf("3G should stay PENDING (assertion-wiring deferred), got %s", r.State)
+	if r := find(t, results, "3G"); r.State != StatePass {
+		t.Fatalf("3G should PASS (SL-021 α wired), got %s (%s)", r.State, r.Detail)
+	}
+	if s := Summarize(results); s.Fail != 0 {
+		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
+	}
+}
+
+// TestRealRegistryFlips3G is the case-3G close gate: with DT (dynamic α) and DE (fixed-α control)
+// both registered, case 3G flips PENDING → PASS. It proves the SL-021 blend schedule end to end on
+// the spec's synthetic grades — DT Year 1 blends to 0.75 (α=0.50), Year 2+ to 0.63 (α=0.10), and
+// the DE control to 0.645 (fixed α=0.15, no mid-career switch). This is the α-schedule-only wiring
+// (no live pass-rush weight — deferred to the expert-panel gate per the C-1 redundancy evidence).
+func TestRealRegistryFlips3G(t *testing.T) {
+	results := RunValidationSuite(realRegistry())
+	r := find(t, results, "3G")
+	if r.State != StatePass {
+		t.Fatalf("3G should PASS with DT+DE registered (SL-021 α), got %s (%s)", r.State, r.Detail)
 	}
 	if s := Summarize(results); s.Fail != 0 {
 		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
@@ -285,7 +300,7 @@ func TestRealDERankingDifferentiates(t *testing.T) {
 // TestRealLBRegistryFlips3DAnd3J is the B5b-LB close gate: with the LB rubric registered
 // alongside DT+WR (3D) and DE (3J), case 3D (SL-005 film compression cross-position) and case 3J
 // (EDGE classification routing) both flip PENDING → PASS, and the suite has ZERO failures. 3G
-// stays PENDING (PFFAlpha-assertion wiring still deferred) — the three-state model holding.
+// PASSES (DT+DE registered, SL-021 α wired).
 func TestRealLBRegistryFlips3DAnd3J(t *testing.T) {
 	results := RunValidationSuite(realRegistry())
 	for _, id := range []string{"3D", "3J"} {
@@ -293,8 +308,8 @@ func TestRealLBRegistryFlips3DAnd3J(t *testing.T) {
 			t.Fatalf("%s should PASS with the real LB rubric registered, got %s (%s)", id, r.State, r.Detail)
 		}
 	}
-	if r := find(t, results, "3G"); r.State != StatePending {
-		t.Fatalf("3G should stay PENDING (assertion-wiring deferred), got %s", r.State)
+	if r := find(t, results, "3G"); r.State != StatePass {
+		t.Fatalf("3G should PASS (SL-021 α wired), got %s (%s)", r.State, r.Detail)
 	}
 	if s := Summarize(results); s.Fail != 0 {
 		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
@@ -355,15 +370,15 @@ func TestRealEDGERoutingThroughRankings(t *testing.T) {
 // TestRealCBRegistryFlips3I is the B5b-CB close gate: with the real CB rubric registered, case
 // 3I (the NGS coverage anchor is present only at CB & S) flips PENDING → PASS — CB alone flips it
 // because eval3I asserts the property per-registered-position (CB reports the anchor, the WR
-// control does not), so it no longer waits on S. The suite has ZERO failures, and 3G stays
-// PENDING (its PFFAlpha-assertion wiring is still deferred) — the three-state model holding.
+// control does not), so it no longer waits on S. The suite has ZERO failures, and 3G PASSES
+// (DT+DE registered, SL-021 α wired).
 func TestRealCBRegistryFlips3I(t *testing.T) {
 	results := RunValidationSuite(realRegistry())
 	if r := find(t, results, "3I"); r.State != StatePass {
 		t.Fatalf("3I should PASS with the real CB rubric (NGS anchor introspection), got %s (%s)", r.State, r.Detail)
 	}
-	if r := find(t, results, "3G"); r.State != StatePending {
-		t.Fatalf("3G should stay PENDING (assertion-wiring deferred), got %s", r.State)
+	if r := find(t, results, "3G"); r.State != StatePass {
+		t.Fatalf("3G should PASS (SL-021 α wired), got %s (%s)", r.State, r.Detail)
 	}
 	if s := Summarize(results); s.Fail != 0 {
 		t.Fatalf("real registry must produce zero FAIL, got %d", s.Fail)
@@ -400,14 +415,14 @@ func TestRealCBRankingDifferentiates(t *testing.T) {
 // CB, case 3I STAYS PASS — S co-asserts the NGS anchor (eval3I already loops {PosCB, PosS} and
 // requires every registered NGS position to report it). There is no PENDING→PASS flip for S (3I
 // is already green from CB); the point is S registering does not BREAK 3I. The suite has ZERO
-// failures and 3G stays PENDING — the three-state model holding through a second NGS position.
+// failures and 3G PASSES — the three-state model holding through a second NGS position.
 func TestRealSRegistryHolds3I(t *testing.T) {
 	results := RunValidationSuite(realRegistry())
 	if r := find(t, results, "3I"); r.State != StatePass {
 		t.Fatalf("3I should STAY PASS with the real S rubric co-asserting the NGS anchor, got %s (%s)", r.State, r.Detail)
 	}
-	if r := find(t, results, "3G"); r.State != StatePending {
-		t.Fatalf("3G should stay PENDING (assertion-wiring deferred), got %s", r.State)
+	if r := find(t, results, "3G"); r.State != StatePass {
+		t.Fatalf("3G should PASS (SL-021 α wired), got %s (%s)", r.State, r.Detail)
 	}
 	if s := Summarize(results); s.Fail != 0 {
 		t.Fatalf("real registry with S must produce zero FAIL, got %d", s.Fail)

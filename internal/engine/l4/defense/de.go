@@ -148,3 +148,15 @@ func (de *DE) Apply(in engine.Layer4Input) engine.Layer4Output {
 		Combined:          film * rasEffective * breakout,
 	}
 }
+
+// deControlAlpha is the STANDARD (non-SL-021) pass-rush-grade EMA blend rate: fixed at 0.15 with
+// NO mid-career switch. DE is the case-3G control — it proves the dynamic 0.50→0.10 α schedule is
+// DT-UNIQUE (SL-021); at DE the rate never changes with NFL year.
+const deControlAlpha = 0.15
+
+// SL021Alpha returns DE's FIXED control blend rate (0.15), ignoring nflYear. Same signature as
+// DT.SL021Alpha so both satisfy the harness's α-hook, but DE deliberately does NOT vary α by year
+// — that mid-career switch is the DT-only SL-021 mechanic case 3G asserts against this control.
+func (de *DE) SL021Alpha(_ int) float64 {
+	return deControlAlpha
+}

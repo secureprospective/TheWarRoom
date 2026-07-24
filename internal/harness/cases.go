@@ -24,26 +24,6 @@ func requireRubrics(reg RubricRegistry, positions ...domain.Position) (CaseState
 	return "", "", true
 }
 
-// pendingSubSignals marks a case that cannot evaluate yet because it asserts on rubric
-// INTERNALS (film_raw, modulated breakout, PFF alpha, NGS weight, route) that the current
-// Layer4Output does not expose and Layer4Input does not yet carry. B5b adds those fields
-// AND the assertion body; until then the encoded case documents the rule it will gate.
-func pendingSubSignals(detail string) (CaseState, string) {
-	return StatePending, "needs B5b rubric inputs/hooks: " + detail
-}
-
-// gatedPending builds a case that is PENDING on its rubric(s) and, once those register,
-// still PENDING until B5b adds the sub-signal inputs/hooks it asserts on. The detail names
-// what B5b must expose. This collapses the many same-shaped cases into one builder (M17).
-func gatedPending(id, name, b5b, detail string, pos ...domain.Position) case3 {
-	return case3{id: id, name: name, b5bBlock: b5b, eval: func(reg RubricRegistry) (CaseState, string) {
-		if st, why, ok := requireRubrics(reg, pos...); !ok {
-			return st, why
-		}
-		return pendingSubSignals(detail)
-	}}
-}
-
 // validationCases returns the 13 architectural cases in 3A..3M order. The two fully-wired
 // exemplars (3C, 3L) run today; 3C auto-flips the moment a QB/K rubric registers. The rest
 // are encoded with the rule and the block that will turn them green. 3M is the SL-019
@@ -57,9 +37,7 @@ func validationCases() []case3 {
 		{id: "3D", name: "SL-005 — film compression ±3% at LB/DT vs ±5% elsewhere", b5bBlock: "B5b-LB / B5b-DT", eval: eval3D},
 		{id: "3E", name: "SL-019 — breakout modulator lifts with RAS (DE)", b5bBlock: "B5b-DE", eval: eval3E},
 		{id: "3F", name: "SL-021 — DT cushion guard (RAS ≥ 8.00 → 10% decel)", b5bBlock: "B5b-DT", eval: eval3F},
-		gatedPending("3G", "SL-021 — DT dynamic PFF alpha (0.50 Y1 → 0.10 Y2+)",
-			"B5b-DT", "DT.PFFAlpha introspection hook + DE rubric both built; 3G assertion-wiring deferred",
-			domain.PosDT, domain.PosDE),
+		{id: "3G", name: "SL-021 — DT dynamic pass-rush blend α (0.50 Y1 → 0.10 Y2+; DE control 0.15)", b5bBlock: "B5b-DT / B5b-DE", eval: eval3G},
 		{id: "3H", name: "Confidence floor — all-Unknown component → effective 1.000", b5bBlock: "B5b-WR", eval: eval3H},
 		{id: "3I", name: "NGS anchor present only at CB & S", b5bBlock: "B5b-CB / B5b-S", eval: eval3I},
 		{id: "3J", name: "EDGE classification routing (pass-rush share → DE vs LB)", b5bBlock: "B5b-DE / B5b-LB + dispatch", eval: eval3J},

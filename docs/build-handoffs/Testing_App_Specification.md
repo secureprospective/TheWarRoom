@@ -417,9 +417,24 @@ Player B: Raw RAS 7.50 (< 8.00)
 
 ---
 
-### Test 3G — DT Dynamic PFF Alpha (SL-021)
+### Test 3G — DT Dynamic Pass-Rush Blend Alpha (SL-021)
 
-**Rule being tested:** PFF blending at DT uses α=0.50 in Year 1, drops to α=0.10 in Year 2+. At no other position does PFF α switch mid-career.
+> **Naming note (2026-07-24):** this test was originally "DT Dynamic **PFF** Alpha." **PFF is
+> RETIRED** (TOS-restricted + paywalled). Only the SL-021 α *schedule* survives; the graded
+> `new_observation` it smooths is now the **pfrpassrush pressure composite**, not a PFF grade. The
+> spec math below is unchanged — the α schedule and blend are identical — but read `previous_pff` /
+> `new_observation` as the SL-021 pass-rush grade.
+>
+> **How this is realized (WIRED — harness case 3G, `eval3G`, α-SCHEDULE-ONLY).** The SL-021 blend
+> mechanic is `defense.SL021Blend(previous, observation, alpha)`; the α schedule is `DT.SL021Alpha`
+> (dynamic 0.50→0.10) and the DE control `DE.SL021Alpha` (fixed 0.15). `eval3G` asserts the exact
+> values below on the spec's synthetic grades and the DE≠0.75 guard. **No live pass-rush weight
+> feeds production scoring yet:** the C-1 evidence (`docs/data-layer/PassRush_C1_Distributions.md`)
+> found the pressure composite largely redundant with the locked Madden IDP film anchor at DT
+> (r≈0.75) and DE (r≈0.82), so a live DT/DE pressure weight is DEFERRED to the expert-panel gate.
+> Case 3G proves the mechanic; it sets no weight and does not touch the locked film budget.
+
+**Rule being tested:** the SL-021 pass-rush-grade blend at DT uses α=0.50 in Year 1, drops to α=0.10 in Year 2+. At no other position does the α switch mid-career.
 
 ```python
 DT Year 1:

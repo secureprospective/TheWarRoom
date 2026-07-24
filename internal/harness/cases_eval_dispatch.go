@@ -96,7 +96,7 @@ func eval3J(reg RubricRegistry) (CaseState, string) {
 // ngsAnchorRubric is the case-3I introspection contract: a rubric whose film composite carries a
 // dedicated NFL Next Gen Stats coverage anchor (CB_Rubric §2/§7) reports it via this method. Only
 // CB (and S, once built) implement it; every other rubric does not, so the type assertion fails
-// and the harness reads them as having no anchor. It mirrors the DT.PFFAlpha pattern — a rubric
+// and the harness reads them as having no anchor. It mirrors the DT.SL021Alpha pattern — a rubric
 // INTERNAL the harness inspects, never a Layer4Output (production-surface) field.
 type ngsAnchorRubric interface{ HasNGSAnchor() bool }
 
