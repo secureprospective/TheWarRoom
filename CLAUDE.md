@@ -13,9 +13,11 @@ A 32-team dynasty fantasy football ranking engine and full-stack desktop applica
 
 ---
 
-## Current Build State (2026-07-24, main HEAD `b6b7899`)
+## Current Build State (2026-07-24, main HEAD `c22be1e`)
 
-**Latest:** Module-3 harness 3H wired + `pfrpassrush` IDP fetcher built (both merged). Only 3G remains PENDING in Module 3. pfrpassrush NOT yet wired into the engine — next step is IDP FILM calibration (Thread C IDP arm), decision-gated with an expert-panel weight gate.
+**Latest:** League-calendar **append-only backend MERGED to main** (`c22be1e`) — rebased off its 75-behind branch as a single clean cherry-pick, drift resolved (migration-runner slot-in, `apply`→`applyResult` signature, generated-bindings union), all gates green (build / `-race` / tsc / lint 0). This is backend-only: `internal/store/state/calendar.go` (append-only `calendar_events` + double-immutable triggers + `DuePlannedEvents`), `internal/transactions/request_calendar.go` (SCHEDULE/RESCHEDULE/CANCEL), `GetCalendarEvents` IPC. **No board UI yet** — the B-3 frontend + the two open forks (render-lib choice, auto-fire) are unstarted.
+
+**Prior:** Module-3 harness 3H wired + `pfrpassrush` IDP fetcher built (both merged). Only 3G remains PENDING in Module 3. pfrpassrush NOT yet wired into the engine — IDP FILM calibration (Thread C IDP arm) is decision-gated with an expert-panel weight gate.
 
 **Alpha Versioning & Releases — ALL 3 TIERS DONE** (T1 build-stamp+tag `v0.5.0`, T2 ledger-safety `facb73c`, T3 self-protection `0b971ca`). Nothing downstream is gated on versioning anymore.
 
@@ -23,7 +25,7 @@ A 32-team dynasty fantasy football ranking engine and full-stack desktop applica
 
 **Scouting engine:** S-Phase 0–4, 4b, and Thread B (crosswalk consolidation) all MERGED. FILM Thread C offense arm (`OffenseFilm`) already MERGED + LIVE (`4e4a0ef`); the IDP arm + the weight-calibration pass remain (`docs/roadmap/FILM_Calibration_Planning.md`) — no blind weights, expert-panel gate required.
 
-**➡️ NEXT (pick one):** execute FILM Thread C IDP arm · B-2 module restyle · M2/M4 refactors (handoffs 43/44) · league-calendar backend · M2 slice-2.
+**➡️ NEXT (pick one):** execute FILM Thread C IDP arm · B-2 module restyle · M2/M4 refactors (handoffs 43/44) · **league-calendar B-3 frontend board** (backend now on main; resolve render-lib + auto-fire forks first) · M2 slice-2.
 
 **Full history:** `docs/build-handoffs/handoffs/41-50-*.md` (chronological) + `docs/build-handoffs/Build_Tracker.md` (checkable sequence) + `docs/roadmap/Roadmap_and_Open_Questions.md`. Memory: [[project_thewarroom]], [[project_thewarroom_ui_roadmap]], [[project_thewarroom_versioning_releases]].
 
