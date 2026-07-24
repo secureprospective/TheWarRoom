@@ -16,12 +16,16 @@ import (
 // later costs one new owner string and zero coupling here.
 const stateOwner = "state"
 
-// maxKnownStateVersion is the highest migration version THIS binary understands. If a DB
-// carries a state row newer than this, the binary is older than the data that touched it
-// and refuses to open (checkNoDowngrade) — the two machines (CT105 + Beelink gate clone)
-// will drift, and a forward-only ledger has no down-migration to recover with. Bump this
-// in lockstep with every migration appended to stateMigrations.
-const maxKnownStateVersion = 2
+// maxKnownStateVersion is the highest migration version THIS binary understands — DERIVED
+// from the registry itself (the last, highest version) so it can never drift out of sync
+// with stateMigrations. If a DB carries a state row newer than this, the binary is older
+// than the data that touched it and refuses to open (checkNoDowngrade) — the two machines
+// (CT105 + Beelink gate clone) will drift, and a forward-only ledger has no down-migration
+// to recover with.
+func maxKnownStateVersion() int {
+	migs := stateMigrations()
+	return migs[len(migs)-1].version // registry is ascending; last is the max
+}
 
 // schemaMigrationsDDL is the per-(owner, version) marker table (D-V6). No central
 // coordinator, no PRAGMA user_version. Each owner creates it idempotently, reads its own
@@ -104,12 +108,15 @@ func (s *Store) runMigrations(ctx context.Context) error {
 		}
 	}
 	for _, st := range todo {
-		if err := st.m.apply(s, ctx); err != nil {
-			return err
-		}
-		method := "migrated"
-		if st.already {
-			method = "reconciled"
+		// A version whose effect is already present (data predicate) is stamped WITHOUT
+		// re-invoking apply — 'reconciled' means exactly "found done, did not run". Only a
+		// version that will do real work runs apply, under a backup taken above.
+		method := "reconciled"
+		if !st.already {
+			if err := st.m.apply(s, ctx); err != nil {
+				return err
+			}
+			method = "migrated"
 		}
 		if err := s.stampMigration(ctx, st.m.version, method); err != nil {
 			return err
@@ -149,11 +156,11 @@ func (s *Store) checkNoDowngrade(ctx context.Context) error {
 		stateOwner).Scan(&maxV); err != nil {
 		return fmt.Errorf("state: read max migration version: %w", err)
 	}
-	if maxV > maxKnownStateVersion {
+	if known := maxKnownStateVersion(); maxV > known {
 		return fmt.Errorf(
 			"state: this database was last written by a NEWER version of TheWarRoom "+
 				"(schema state v%d; this build understands up to v%d) — update the app to open it",
-			maxV, maxKnownStateVersion)
+			maxV, known)
 	}
 	return nil
 }
