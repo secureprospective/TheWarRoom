@@ -1,5 +1,16 @@
 # Handoff 50 — Alpha Versioning phase COMPLETE + recovered pending harness cases 3G/3H
 
+> **⚠️ CORRECTION (2026-07-24, later same day — commit `ebe8287`):** the "3H never wired /
+> still `gatedPending`" claim throughout this handoff is **STALE**. Case 3H **was wired and
+> merged to main in `ebe8287`** ("harness: wire case 3H confidence floor (PENDING → live
+> eval)") — landed after this handoff was written. It is a live `eval3H` in
+> `internal/harness/cases_eval_floor.go`, gated on the WR rubric, with the gate test
+> `TestRealWRRegistryFlips3H` passing, and `Testing_App_Specification.md` Test 3H annotated
+> "(WIRED)". The S-curve-centering risk this handoff flagged was resolved in that build (WR
+> peak age 29 → age-trajectory neutral → breakout & Combined floor to exactly 1.000).
+> **Only 3G remains PENDING** (blocked on the IDP film redesign / `pfrpassrush` calibration).
+> Read the 3H section below as historical only.
+
 **From:** the 2026-07-24 session (Alpha Versioning Tiers 2 + 3).
 **For:** the next build session.
 **Type:** STATE MARKER + carried-work recovery. No task is in-flight; pick from NEXT below.
