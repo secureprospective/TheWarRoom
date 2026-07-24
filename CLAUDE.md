@@ -13,9 +13,11 @@ A 32-team dynasty fantasy football ranking engine and full-stack desktop applica
 
 ---
 
-## Current Build State (2026-07-24, main HEAD `c22be1e`)
+## Current Build State (2026-07-24, main HEAD `e149c57`)
 
-**Latest:** League-calendar **append-only backend MERGED to main** (`c22be1e`) — rebased off its 75-behind branch as a single clean cherry-pick, drift resolved (migration-runner slot-in, `apply`→`applyResult` signature, generated-bindings union), all gates green (build / `-race` / tsc / lint 0). This is backend-only: `internal/store/state/calendar.go` (append-only `calendar_events` + double-immutable triggers + `DuePlannedEvents`), `internal/transactions/request_calendar.go` (SCHEDULE/RESCHEDULE/CANCEL), `GetCalendarEvents` IPC. **No board UI yet** — the B-3 frontend + the two open forks (render-lib choice, auto-fire) are unstarted.
+**Latest:** **Module-3 validation harness COMPLETE** — case **3G wired + MERGED** (`e149c57`; 3H was already done `ebe8287`). 3G is the SL-021 dynamic blend-α case, wired **α-schedule-only** (DT dynamic 0.50→0.10, DE fixed-0.15 control, EMA math → spec's 0.75/0.63/0.645, DE≠0.75 guard). **PFF is retired everywhere** (`DT.PFFAlpha`→`DT.SL021Alpha`; input is the pfrpassrush pressure grade, not PFF). **`pfrpassrush` fetcher stays UNWIRED into scoring by decision:** C-1 live evidence (`docs/data-layer/PassRush_C1_Distributions.md`) found the pressure composite largely redundant with the locked Madden IDP anchor at DT (r≈0.75) / DE (r≈0.82), so a **live DT/DE pressure weight is DEFERRED to the expert-panel gate** (no blind weight; locked film budget untouched). GLM 5.2 review gate cleared (H1 evidence-integrity fix + L3/L4 applied). `make lint` 0 / `go test -race ./...` green. **Nothing in Module 3 is PENDING anymore.**
+
+**Prior:** League-calendar **append-only backend MERGED to main** (`c22be1e`) — rebased off its 75-behind branch as a single clean cherry-pick, drift resolved (migration-runner slot-in, `apply`→`applyResult` signature, generated-bindings union), all gates green (build / `-race` / tsc / lint 0). This is backend-only: `internal/store/state/calendar.go` (append-only `calendar_events` + double-immutable triggers + `DuePlannedEvents`), `internal/transactions/request_calendar.go` (SCHEDULE/RESCHEDULE/CANCEL), `GetCalendarEvents` IPC. **No board UI yet** — the B-3 frontend + the two open forks (render-lib choice, auto-fire) are unstarted.
 
 **Prior:** Module-3 harness 3H wired + `pfrpassrush` IDP fetcher built (both merged). Only 3G remains PENDING in Module 3. pfrpassrush NOT yet wired into the engine — IDP FILM calibration (Thread C IDP arm) is decision-gated with an expert-panel weight gate.
 
@@ -25,7 +27,7 @@ A 32-team dynasty fantasy football ranking engine and full-stack desktop applica
 
 **Scouting engine:** S-Phase 0–4, 4b, and Thread B (crosswalk consolidation) all MERGED. FILM Thread C offense arm (`OffenseFilm`) already MERGED + LIVE (`4e4a0ef`); the IDP arm + the weight-calibration pass remain (`docs/roadmap/FILM_Calibration_Planning.md`) — no blind weights, expert-panel gate required.
 
-**➡️ NEXT (pick one):** execute FILM Thread C IDP arm · B-2 module restyle · M2/M4 refactors (handoffs 43/44) · **league-calendar B-3 frontend board** (backend now on main; resolve render-lib + auto-fire forks first) · M2 slice-2.
+**➡️ NEXT (pick one):** **live DT/DE pass-rush weight — EXPERT-PANEL GATE** (pfrpassrush composite → SL-021 EMA `new_observation`; C-1 evidence says small-or-zero at DT/DE given the Madden redundancy, or site it at LB where it's additive r≈0.47 — panel decides, no blind weight) · B-2 module restyle · M2/M4 refactors (handoffs 43/44) · **league-calendar B-3 frontend board** (backend on main; resolve render-lib + auto-fire forks first) · M2 slice-2.
 
 **Full history:** `docs/build-handoffs/handoffs/41-50-*.md` (chronological) + `docs/build-handoffs/Build_Tracker.md` (checkable sequence) + `docs/roadmap/Roadmap_and_Open_Questions.md`. Memory: [[project_thewarroom]], [[project_thewarroom_ui_roadmap]], [[project_thewarroom_versioning_releases]].
 
