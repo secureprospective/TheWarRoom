@@ -40,9 +40,9 @@ func eval3G(reg RubricRegistry) (CaseState, string) {
 	const prev, obs = 0.60, 0.90
 	dtY1 := defense.SL021Blend(prev, obs, dt.SL021Alpha(1))
 	dtY2 := defense.SL021Blend(prev, obs, dt.SL021Alpha(2))
-	deY1 := defense.SL021Blend(prev, obs, de.SL021Alpha(1))
+	deControl := defense.SL021Blend(prev, obs, de.SL021Alpha(1))
 	// Spec FAIL guard: the DE control must NOT produce the DT-dynamic Year-1 value (0.75).
-	if math.Abs(deY1-0.75) < 1e-9 {
+	if math.Abs(deControl-0.75) < 1e-9 {
 		return StateFail, "DE control produced 0.75 — SL-021 dynamic α wrongly applied to DE"
 	}
 	for _, c := range []struct {
@@ -51,12 +51,12 @@ func eval3G(reg RubricRegistry) (CaseState, string) {
 	}{
 		{"DT Y1", dtY1, 0.74, 0.76},
 		{"DT Y2+", dtY2, 0.62, 0.64},
-		{"DE control", deY1, 0.64, 0.65},
+		{"DE control", deControl, 0.64, 0.65},
 	} {
 		if c.got < c.lo || c.got > c.hi {
 			return StateFail, fmt.Sprintf("%s blend %.4f outside [%.2f,%.2f]", c.label, c.got, c.lo, c.hi)
 		}
 	}
 	return StatePass, fmt.Sprintf("SL-021 α: DT Y1 %.3f / Y2+ %.3f (dynamic 0.50→0.10); DE control %.3f (fixed 0.15, no switch)",
-		dtY1, dtY2, deY1)
+		dtY1, dtY2, deControl)
 }

@@ -179,10 +179,13 @@ func TestC1_PassRushDistributions(t *testing.T) {
 func reportSampler(t *testing.T, rush map[string]RawPassRush, mad map[string]madden.RawMaddenRating) {
 	t.Helper()
 	for _, bucket := range []string{"DT", "DE", "LB"} {
-		var maddenPaired []float64 // Madden composite for players present in BOTH feeds
 		perCand := map[string][]float64{}
+		// perCandPaired[c] and maddenByCand[c] are appended IN LOCKSTEP — only when a player has
+		// BOTH a Madden composite AND a valid candidate value — so pearson() sees index-aligned
+		// arrays (a Games==0 player who lacks a per-game candidate must not desync the Madden arm).
 		perCandPaired := map[string][]float64{}
-		var nBucket int
+		maddenByCand := map[string][]float64{}
+		var nBucket, nPaired int
 		for gsis, r := range rush {
 			b, ok := idpBucket(r.Position)
 			if !ok || b != bucket {
@@ -193,9 +196,8 @@ func reportSampler(t *testing.T, rush map[string]RawPassRush, mad map[string]mad
 			if rc, ok := mad[gsis]; ok {
 				mc, hasM = c1MaddenComposite(rc, bucket)
 			}
-			paired := hasM
-			if paired {
-				maddenPaired = append(maddenPaired, mc)
+			if hasM {
+				nPaired++
 			}
 			for _, c := range c1Candidates() {
 				v, ok := c.value(r)
@@ -203,16 +205,17 @@ func reportSampler(t *testing.T, rush map[string]RawPassRush, mad map[string]mad
 					continue
 				}
 				perCand[c.name] = append(perCand[c.name], v)
-				if paired {
+				if hasM {
 					perCandPaired[c.name] = append(perCandPaired[c.name], v)
+					maddenByCand[c.name] = append(maddenByCand[c.name], mc)
 				}
 			}
 		}
-		t.Logf("=== %s (n=%d, paired-with-madden=%d) ===", bucket, nBucket, len(maddenPaired))
+		t.Logf("=== %s (n=%d, paired-with-madden=%d) ===", bucket, nBucket, nPaired)
 		for _, c := range c1Candidates() {
 			vals := append([]float64(nil), perCand[c.name]...)
 			sort.Float64s(vals)
-			r := pearson(perCandPaired[c.name], maddenPaired)
+			r := pearson(perCandPaired[c.name], maddenByCand[c.name])
 			t.Logf("  %-14s n=%3d  p50=%.3f p75=%.3f p90=%.3f p95=%.3f max=%.3f  r(madden)=%+.3f",
 				c.name, len(vals), pctl(vals, .50), pctl(vals, .75), pctl(vals, .90),
 				pctl(vals, .95), pctl(vals, 1.0), r)
