@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useHarnessStore } from '../store/harness';
 import { main } from '../../wailsjs/go/models';
+import { SortHeader, EngraveState, SkeletonState } from './board/primitives';
 
 // DEFAULT_SCOUTING_WEIGHT mirrors Go's powerrankings.DefaultScoutingWeight (0.60).
 // Kept in sync by hand — the Go const is the source of truth; if it moves, move this.
@@ -14,6 +15,11 @@ const DEFAULT_SCOUTING_WEIGHT = 0.6;
 // roster sum OR the top-N starters (toggle). The raw MFL columns (pwr, altpwr,
 // all-play, PF/PA/PP) come free in the same standings call and are shown as sortable
 // context. Read-only: no writes, the live MFL fetch is the only network touch.
+//
+// B-2 restyle: shares the M1 Session-B board grammar (docs/ui/wireframes/session-b)
+// — PowerScore is the dominant hero column, the raw-MFL context columns recede and
+// drop in Matrix (pure scan = Rank·Team·Power·Scout z·AllPlay%). The slider/agg
+// release-fetch logic is unchanged.
 
 type SortKey =
   | 'rank'
@@ -24,6 +30,10 @@ type SortKey =
   | 'pp'
   | 'pwr'
   | 'altPwr';
+
+// Tactical carries the full MFL report; Matrix collapses to the blend essentials.
+const COLS = '34px 1fr 88px 66px 74px 66px 66px 58px 58px 58px 66px 60px';
+const COLS_MTX = '24px 1fr 76px 62px 70px';
 
 export function PowerRankingsBoard() {
   const powerRankings = useHarnessStore((s) => s.powerRankings);
@@ -92,37 +102,33 @@ export function PowerRankingsBoard() {
       setAsc(key === 'rank' || key === 'pa');
     }
   };
+  const dir = asc ? 'asc' : 'desc';
 
   return (
-    <div>
-      <div className="mb-3 flex items-center gap-3">
-        <h2 className="text-lg font-semibold">M2 — Power Rankings (live blend)</h2>
+    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         {powerRankings?.ok && (
-          <span className="text-xs text-slate-400">
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text-tertiary)' }}>
             season {powerRankings.season} · {rows.length} franchises
             {powerLoading && ' · refreshing…'}
           </span>
         )}
       </div>
 
-      {error && (
-        <div className="mb-3 border border-red-700 bg-red-950 px-3 py-2 text-xs text-red-300">
-          {error}
-        </div>
-      )}
+      {error && <div className="twr-banner twr-banner--warn">{error}</div>}
 
       {/* Scouting rides the BasePoints proxy — carry the same honest label M1 shows. */}
-      <div className="mb-3 border border-amber-700 bg-amber-950 px-3 py-2 text-xs text-amber-300">
+      <div className="twr-banner twr-banner--caution">
         {powerRankings?.label ?? 'BasePoints proxy — L2 pending'} · scouting rides the same
         proxy; MFL all-play is live-season actual. Scouting is robust-standardized (median +
         MAD, outlier-resistant) and all-play z-standardized before the weighted blend, then
         scaled 0–1 for display. Scout z of 0 = a typical team.
       </div>
 
-      {/* Weight control: free 0–100% scouting weight, fires on release. */}
-      <div className="mb-4 flex flex-wrap items-center gap-3 border border-slate-700 bg-slate-800 px-3 py-2 text-sm">
-        <span className="font-medium">Blend weight</span>
-        <span className="text-xs text-slate-400">
+      {/* Weight control (Ledger B6): free 0–100% scouting weight, fires on release. */}
+      <div className="twr-panel" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+        <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>Blend weight</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text-tertiary)' }}>
           scouting {(slider * 100).toFixed(0)}% / all-play {((1 - slider) * 100).toFixed(0)}%
         </span>
         <input
@@ -137,86 +143,84 @@ export function PowerRankingsBoard() {
           }}
           onPointerUp={applyWeight}
           onKeyUp={applyWeight}
-          className="h-1 w-56 cursor-pointer accent-sky-500"
+          className="twr-slider"
+          style={{ width: 220 }}
           aria-label="scouting weight"
         />
         <button
           type="button"
+          className="twr-chip"
           onClick={() => {
             interacting.current = false;
             setSlider(DEFAULT_SCOUTING_WEIGHT);
             lastApplied.current = DEFAULT_SCOUTING_WEIGHT;
             void loadPowerRankings(DEFAULT_SCOUTING_WEIGHT, powerAgg);
           }}
-          className="border border-slate-600 px-2 py-1 text-xs text-slate-300 hover:bg-slate-700"
         >
           Reset 60/40
         </button>
 
-        <span className="ml-4 font-medium">Scouting</span>
-        <div className="flex">
-          <AggButton active={powerAgg === 'sum'} onClick={() => setAgg('sum')}>
-            Roster sum
-          </AggButton>
-          <AggButton active={powerAgg === 'topn'} onClick={() => setAgg('topn')}>
-            Top-{powerRankings?.starterN || 'N'} starters
-          </AggButton>
-        </div>
+        <span style={{ marginLeft: 12, fontWeight: 500, color: 'var(--text-primary)' }}>Scouting</span>
+        <button type="button" className={`twr-chip${powerAgg === 'sum' ? ' is-on' : ''}`} aria-pressed={powerAgg === 'sum'} onClick={() => setAgg('sum')}>
+          Roster sum
+        </button>
+        <button type="button" className={`twr-chip${powerAgg === 'topn' ? ' is-on' : ''}`} aria-pressed={powerAgg === 'topn'} onClick={() => setAgg('topn')}>
+          Top-{powerRankings?.starterN || 'N'} starters
+        </button>
       </div>
 
       {rows.length === 0 ? (
-        <p className="text-sm text-slate-400">
-          {powerLoading
-            ? 'Loading live standings…'
-            : error
-              ? 'Could not load power rankings — see the error above.'
-              : 'No power rankings yet — score the M1 board (Asset Rankings tab) first, then reload.'}
-        </p>
+        powerLoading ? (
+          <SkeletonState />
+        ) : (
+          <EngraveState
+            lines={
+              error
+                ? ['M2 Power Rankings', '— could not load standings —', 'see the error above']
+                : ['M2 Power Rankings', '— no blend yet —', 'score the M1 board first, then reload']
+            }
+          />
+        )
       ) : (
-        <table className="w-full text-left text-xs">
-          <thead className="text-slate-400">
-            <tr className="border-b border-slate-700">
-              <SortTh label="#" k="rank" sortKey={sortKey} asc={asc} onSort={onSort} />
-              <th className="py-1 pr-2">Team</th>
-              <th className="py-1 pr-2 text-right">Power</th>
-              <SortTh label="Scout z" k="scoutingZ" sortKey={sortKey} asc={asc} onSort={onSort} align="right" />
-              <SortTh label="AllPlay%" k="allPlayWinPct" sortKey={sortKey} asc={asc} onSort={onSort} align="right" />
-              <th className="py-1 pr-2 text-right">Record</th>
-              <th className="py-1 pr-2 text-right">AllPlay</th>
-              <SortTh label="PF" k="pf" sortKey={sortKey} asc={asc} onSort={onSort} align="right" />
-              <SortTh label="PA" k="pa" sortKey={sortKey} asc={asc} onSort={onSort} align="right" />
-              <SortTh label="PP" k="pp" sortKey={sortKey} asc={asc} onSort={onSort} align="right" />
-              <SortTh label="MFL Pwr" k="pwr" sortKey={sortKey} asc={asc} onSort={onSort} align="right" />
-              <SortTh label="AltPwr" k="altPwr" sortKey={sortKey} asc={asc} onSort={onSort} align="right" />
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((r) => (
-              <tr key={r.franchiseID} className="border-b border-slate-800 hover:bg-slate-800">
-                <td className="py-1 pr-2 text-slate-400">{r.rank}</td>
-                <td className="py-1 pr-2">{r.name}</td>
-                <td className="py-1 pr-2 text-right font-semibold text-sky-300">
-                  {r.powerScore.toFixed(3)}
-                </td>
-                <td className="py-1 pr-2 text-right">{r.scoutingZ.toFixed(2)}</td>
-                <td className="py-1 pr-2 text-right">{(r.allPlayWinPct * 100).toFixed(1)}%</td>
-                <td className="py-1 pr-2 text-right">
-                  {r.h2hW}-{r.h2hL}
-                  {r.h2hT > 0 ? `-${r.h2hT}` : ''}
-                </td>
-                <td className="py-1 pr-2 text-right">
-                  {r.allPlayW}-{r.allPlayL}
-                  {r.allPlayT > 0 ? `-${r.allPlayT}` : ''}
-                </td>
-                <td className="py-1 pr-2 text-right">{r.pf.toFixed(1)}</td>
-                <td className="py-1 pr-2 text-right">{r.pa.toFixed(1)}</td>
-                <td className="py-1 pr-2 text-right">{r.pp.toFixed(1)}</td>
-                <td className="py-1 pr-2 text-right text-slate-400">{r.pwr.toFixed(2)}</td>
-                <td className="py-1 pr-2 text-right text-slate-400">{r.altPwr.toFixed(1)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div
+          className="twr-board"
+          style={{ ['--twr-cols' as string]: COLS, ['--twr-cols-mtx' as string]: COLS_MTX }}
+        >
+          <div className="twr-board__sub">
+            <SortHeader label="#" sortKey="rank" activeKey={sortKey} dir={dir} onSort={onSort} />
+            <span>Team</span>
+            <span className="twr-r">Power</span>
+            <span className="twr-r"><SortHeader label="Scout z" sortKey="scoutingZ" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
+            <span className="twr-r"><SortHeader label="AllPlay%" sortKey="allPlayWinPct" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
+            <span className="twr-r twr-hide-mtx">Record</span>
+            <span className="twr-r twr-hide-mtx">AllPlay</span>
+            <span className="twr-r twr-hide-mtx"><SortHeader label="PF" sortKey="pf" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
+            <span className="twr-r twr-hide-mtx"><SortHeader label="PA" sortKey="pa" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
+            <span className="twr-r twr-hide-mtx"><SortHeader label="PP" sortKey="pp" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
+            <span className="twr-r twr-hide-mtx"><SortHeader label="MFL Pwr" sortKey="pwr" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
+            <span className="twr-r twr-hide-mtx"><SortHeader label="AltPwr" sortKey="altPwr" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
+          </div>
+          {sorted.map((r) => (
+            <div key={r.franchiseID} className="twr-board__row">
+              <span className="twr-c-rank">{r.rank}</span>
+              <span className="twr-c-name">{r.name}</span>
+              <span className="twr-c-adj twr-r">{r.powerScore.toFixed(3)}</span>
+              <span className="twr-c-num twr-r">{r.scoutingZ.toFixed(2)}</span>
+              <span className="twr-c-num twr-r">{(r.allPlayWinPct * 100).toFixed(1)}%</span>
+              <span className="twr-c-num twr-r twr-hide-mtx">
+                {r.h2hW}-{r.h2hL}{r.h2hT > 0 ? `-${r.h2hT}` : ''}
+              </span>
+              <span className="twr-c-num twr-r twr-hide-mtx">
+                {r.allPlayW}-{r.allPlayL}{r.allPlayT > 0 ? `-${r.allPlayT}` : ''}
+              </span>
+              <span className="twr-c-num twr-r twr-hide-mtx">{r.pf.toFixed(1)}</span>
+              <span className="twr-c-num twr-r twr-hide-mtx">{r.pa.toFixed(1)}</span>
+              <span className="twr-c-num twr-r twr-hide-mtx">{r.pp.toFixed(1)}</span>
+              <span className="twr-c-diag twr-r twr-hide-mtx">{r.pwr.toFixed(2)}</span>
+              <span className="twr-c-diag twr-r twr-hide-mtx">{r.altPwr.toFixed(1)}</span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -245,57 +249,4 @@ function getSortVal(r: main.PowerRow, key: SortKey): number {
     default:
       return r.rank;
   }
-}
-
-function SortTh({
-  label,
-  k,
-  sortKey,
-  asc,
-  onSort,
-  align,
-}: {
-  label: string;
-  k: SortKey;
-  sortKey: SortKey;
-  asc: boolean;
-  onSort: (k: SortKey) => void;
-  align?: 'right';
-}) {
-  const active = sortKey === k;
-  return (
-    <th
-      className={`cursor-pointer select-none py-1 pr-2 hover:text-slate-200 ${
-        align === 'right' ? 'text-right' : ''
-      } ${active ? 'text-sky-300' : ''}`}
-      onClick={() => onSort(k)}
-    >
-      {label}
-      {active ? (asc ? ' ▲' : ' ▼') : ''}
-    </th>
-  );
-}
-
-function AggButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`border px-2 py-1 text-xs ${
-        active
-          ? 'border-sky-600 bg-sky-950 text-sky-300'
-          : 'border-slate-600 text-slate-400 hover:bg-slate-800'
-      }`}
-    >
-      {children}
-    </button>
-  );
 }

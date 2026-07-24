@@ -120,3 +120,228 @@ body {
 #root {
   height: 100vh;
 }
+
+/* ============================================================================
+   Session-B board grammar (B-2) — the shared data-table primitive.
+   Source: docs/ui/wireframes/session-b/session-b-wireframe.html §2·3 + §8.
+   The row grammar is deliberately CSS (hover/selected/active states + density)
+   so M1, M2, and the roster/transaction tables reuse ONE contract (wireframe:
+   "M2 & roster reuse the identical row grammar"). Heights come from the density
+   vars already on the shell root (--row-h/--filt-h); a board sets its own column
+   template inline via --twr-cols (+ optional --twr-cols-mtx for the Matrix scan,
+   where dropped cells carry .twr-hide-mtx). Greyscale-honest hierarchy: Adjusted
+   dominates, everything else recedes; no hue on a row (Session-C restraint).
+   ============================================================================ */
+.twr-board {
+  border: 1px solid var(--hairline);
+  background: var(--surface-sunken);
+}
+/* Sticky sub-header — Inter 700 upper, recessed. Grid mirrors the row. */
+.twr-board__sub {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: var(--twr-cols);
+  align-items: center;
+  height: var(--filt-h);
+  padding: 0 12px;
+  background: var(--surface-tile);
+  border-bottom: 1px solid var(--hairline);
+  font-size: calc(11px * var(--font-scale));
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.twr-board__row {
+  display: grid;
+  grid-template-columns: var(--twr-cols);
+  align-items: center;
+  height: var(--row-h);
+  padding: 0 12px;
+  border-bottom: 1px solid var(--hairline);
+  border-left: 2px solid transparent;
+  font-size: calc(13px * var(--font-scale));
+}
+/* Right-aligned numeric cells push to the column end in both header and rows. */
+.twr-board__sub .twr-r,
+.twr-board__row .twr-r {
+  justify-self: end;
+}
+/* Row states (wireframe §2·3, four states). Motion is feedback-only + honors
+   --motion-mult (0 in Matrix). Selected = neutral 2px axis (Session-C ruling 7,
+   selection is achromatic, focus is blue — kept distinct). */
+.twr-board__row {
+  transition: background var(--m-feed);
+}
+.twr-board__row:hover {
+  background: var(--surface-raised);
+  box-shadow: inset 1px 1px 0 var(--bevel-hi);
+}
+.twr-board__row.is-selected {
+  background: var(--surface-overlay);
+  border-left: 2px solid var(--edge-selection);
+}
+.twr-board__row.is-selected .twr-c-name {
+  color: var(--text-primary);
+}
+.twr-board__row:active {
+  box-shadow: inset -1px -1px 0 var(--bevel-hi);
+}
+
+/* Cell roles — the greyscale hierarchy. */
+.twr-c-rank { font-family: var(--mono); font-size: calc(11px * var(--font-scale)); color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.twr-c-name { color: var(--text-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.twr-c-pos  { color: var(--text-secondary); }
+.twr-c-fr   { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.twr-c-num  { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+/* Adjusted is the value the eye lands on — dominant weight/size, zero hue. */
+.twr-c-adj  { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--text-primary); font-weight: 700; font-size: calc(14px * var(--font-scale)); }
+.twr-c-dim  { color: var(--text-tertiary); }
+/* Diagnostic column group (Phase-1 debuggability) — recessed, dropped in Matrix. */
+.twr-c-diag { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--text-tertiary); font-size: calc(11px * var(--font-scale)); }
+
+/* Delta-in-weight (wireframe §1 ADOPTED): +Δ = 600, −Δ = 400. Greyscale-honest
+   — magnitude reads from weight, not hue (Session C may layer hue later). */
+.twr-delta-pos { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary); }
+.twr-delta-neg { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 400; color: var(--text-tertiary); }
+
+/* Typographic sort affordance — active ▼/▲ bright, inactive ¦ near-invisible.
+   No icon chrome (wireframe §1 ADOPTED). Header cell is a real button. */
+.twr-sortbtn {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.twr-sortbtn:focus-visible { outline: 1px solid var(--edge-focus); outline-offset: 2px; }
+.twr-sort  { color: var(--text-primary); }
+.twr-isort { color: var(--text-disabled); }
+
+/* Matrix scan: swap to the tighter column set + hide the dropped cells. */
+[data-density="matrix"] .twr-board__sub,
+[data-density="matrix"] .twr-board__row {
+  grid-template-columns: var(--twr-cols-mtx, var(--twr-cols));
+}
+[data-density="matrix"] .twr-hide-mtx { display: none; }
+
+/* Data states (wireframe §8) — one class, four honest states. Empty ≠ broken. */
+.twr-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 16px;
+  text-align: center;
+}
+.twr-engrave {
+  border: 1px dashed var(--text-tertiary);
+  color: var(--text-tertiary);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 16px 20px;
+  line-height: 1.9;
+}
+.twr-skel { height: 12px; background: var(--surface-raised); animation: twr-pulse 800ms ease-in-out infinite alternate; }
+.twr-skel.is-hero { height: 20px; width: 72px; }
+@keyframes twr-pulse { from { opacity: 1; } to { opacity: 0.7; } }
+/* Cache-only: a state line + 2px stale edge (Session-C freshness), never an alarm. */
+.twr-cacheline {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-top: 2px solid var(--fresh-stale);
+  padding-top: 8px;
+}
+.twr-cacheline small { display: block; color: var(--text-secondary); font-weight: 400; font-family: var(--mono); margin-top: 3px; }
+/* Offseason: empty BY NATURE — no edge, no skeleton. */
+.twr-offseason { color: var(--text-secondary); font-size: 13px; }
+
+/* ----------------------------------------------------------------------------
+   Controls & chrome (wireframe §6) — buttons, chips, selects, banners, panels.
+   Four button states; pressed is an instant inset swap (<100ms, never blocked
+   by async work). Chips are neutral until on. Banners carry a semantic edge but
+   stay legible (Session-C restraint: caution ≠ alarm; red reserved).
+   ---------------------------------------------------------------------------- */
+.twr-btn {
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border: 1px solid var(--bevel-hi);
+  background: var(--surface-tile);
+  color: var(--text-primary);
+  box-shadow: inset 1px 1px 0 var(--bevel-hi);
+  cursor: pointer;
+  transition: background var(--m-feed);
+}
+.twr-btn:hover { background: var(--surface-raised); box-shadow: inset 1px 1px 0 var(--bevel-hi); color: var(--text-primary); }
+.twr-btn:active { box-shadow: inset -1px -1px 0 var(--bevel-hi); transform: translate(1px, 1px); }
+.twr-btn:focus-visible { outline: 1px solid var(--edge-focus); outline-offset: 2px; }
+.twr-btn:disabled { opacity: 0.4; color: var(--text-tertiary); cursor: default; box-shadow: none; transform: none; }
+
+.twr-chip {
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid var(--bevel-hi);
+  background: var(--surface-tile);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.twr-chip.is-on { border-color: var(--text-secondary); background: var(--surface-raised); color: var(--text-primary); }
+.twr-chip:focus-visible { outline: 1px solid var(--edge-focus); outline-offset: 2px; }
+
+.twr-select {
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 8px;
+  background: var(--surface-tile);
+  border: 1px solid var(--bevel-hi);
+  color: var(--text-primary);
+}
+.twr-select:focus-visible { outline: 1px solid var(--edge-focus); outline-offset: 1px; border-color: var(--edge-focus); }
+
+/* M2 weight slider (Ledger B6) — thumb grows on active; commit-on-release is a
+   caller concern (no live re-blend). Uses the native range with themed track. */
+.twr-slider { -webkit-appearance: none; appearance: none; height: 2px; background: var(--bevel-hi); outline: none; }
+.twr-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 8px; height: 8px; background: var(--text-primary); cursor: pointer; }
+.twr-slider:active::-webkit-slider-thumb { width: 10px; height: 10px; }
+.twr-slider::-moz-range-thumb { width: 8px; height: 8px; border: 0; background: var(--text-primary); cursor: pointer; }
+.twr-slider:focus-visible { outline: 1px solid var(--edge-focus); outline-offset: 4px; }
+
+/* Banner — an honest state line with a semantic left edge. */
+.twr-banner {
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 8px 12px;
+  background: var(--surface-tile);
+  border: 1px solid var(--hairline);
+  border-left-width: 2px;
+  color: var(--text-secondary);
+}
+.twr-banner--caution { border-left-color: var(--amber-muted); color: var(--amber-base); }
+.twr-banner--warn { border-left-color: var(--amber-base); color: var(--amber-loud); }
+
+/* Panel — a boxed report/detail block on the sunken surface. */
+.twr-panel {
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 10px 12px;
+  background: var(--surface-tile);
+  border: 1px solid var(--hairline);
+  color: var(--text-secondary);
+}
