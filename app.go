@@ -130,20 +130,19 @@ func (a *App) startup(ctx context.Context) {
 		}
 	}()
 
-	// Disk logging first, so anything below (including a lock or open failure) is
-	// captured on disk as well as stderr. A logging failure is non-fatal.
-	if dir, derr := configDir(); derr != nil {
-		a.startupErr = fmt.Errorf("startup: resolve config dir: %w", derr)
+	// Resolve the data dir ONCE (it creates the dir); logging and the DB path both
+	// derive from it. Disk logging first, so anything below (a lock or open failure)
+	// is captured on disk as well as stderr. A logging failure is non-fatal.
+	dir, err := configDir()
+	if err != nil {
+		a.startupErr = fmt.Errorf("startup: resolve config dir: %w", err)
 		return
-	} else if lerr := setupLogging(dir); lerr != nil {
+	}
+	if lerr := setupLogging(dir); lerr != nil {
 		log.Printf("the war room: WARNING disk logging unavailable: %v", lerr)
 	}
 
-	path, err := databasePath()
-	if err != nil {
-		a.startupErr = fmt.Errorf("startup: resolve database path: %w", err)
-		return
-	}
+	path := filepath.Join(dir, dbFileName(isDevBuild()))
 	// Single-instance guard BEFORE opening the DB: a second copy must not attach to
 	// the same ledger (a migration or write from two processes is the hazard).
 	lock, err := acquireInstanceLock(path)
