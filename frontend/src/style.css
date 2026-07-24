@@ -163,18 +163,17 @@ body {
   border-bottom: 1px solid var(--hairline);
   border-left: 2px solid transparent;
   font-size: calc(13px * var(--font-scale));
+  transition: background var(--m-feed);
 }
 /* Right-aligned numeric cells push to the column end in both header and rows. */
 .twr-board__sub .twr-r,
 .twr-board__row .twr-r {
   justify-self: end;
 }
-/* Row states (wireframe §2·3, four states). Motion is feedback-only + honors
-   --motion-mult (0 in Matrix). Selected = neutral 2px axis (Session-C ruling 7,
-   selection is achromatic, focus is blue — kept distinct). */
-.twr-board__row {
-  transition: background var(--m-feed);
-}
+/* Row states (wireframe §2·3). Hover + pressed ship in B-2; the .is-selected
+   axis is wired to the Inspector in B-4 (kept here as the cohesive row-state
+   grammar). Selected = neutral 2px axis (Session-C ruling 7: selection is
+   achromatic, focus is blue — kept distinct). */
 .twr-board__row:hover {
   background: var(--surface-raised);
   box-shadow: inset 1px 1px 0 var(--bevel-hi);
@@ -198,14 +197,8 @@ body {
 .twr-c-num  { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 /* Adjusted is the value the eye lands on — dominant weight/size, zero hue. */
 .twr-c-adj  { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--text-primary); font-weight: 700; font-size: calc(14px * var(--font-scale)); }
-.twr-c-dim  { color: var(--text-tertiary); }
 /* Diagnostic column group (Phase-1 debuggability) — recessed, dropped in Matrix. */
 .twr-c-diag { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--text-tertiary); font-size: calc(11px * var(--font-scale)); }
-
-/* Delta-in-weight (wireframe §1 ADOPTED): +Δ = 600, −Δ = 400. Greyscale-honest
-   — magnitude reads from weight, not hue (Session C may layer hue later). */
-.twr-delta-pos { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-primary); }
-.twr-delta-neg { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 400; color: var(--text-tertiary); }
 
 /* Typographic sort affordance — active ▼/▲ bright, inactive ¦ near-invisible.
    No icon chrome (wireframe §1 ADOPTED). Header cell is a real button. */
@@ -233,7 +226,9 @@ body {
 }
 [data-density="matrix"] .twr-hide-mtx { display: none; }
 
-/* Data states (wireframe §8) — one class, four honest states. Empty ≠ broken. */
+/* Data states (wireframe §8). B-2 wires the two that have signals today: "no
+   data" (engrave) and "fetch in flight" (skeleton). Cache-only and offseason
+   land in B-5 with their backend freshness / season-phase signals. */
 .twr-state {
   display: flex;
   flex-direction: column;
@@ -255,17 +250,6 @@ body {
 .twr-skel { height: 12px; background: var(--surface-raised); animation: twr-pulse 800ms ease-in-out infinite alternate; }
 .twr-skel.is-hero { height: 20px; width: 72px; }
 @keyframes twr-pulse { from { opacity: 1; } to { opacity: 0.7; } }
-/* Cache-only: a state line + 2px stale edge (Session-C freshness), never an alarm. */
-.twr-cacheline {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-primary);
-  border-top: 2px solid var(--fresh-stale);
-  padding-top: 8px;
-}
-.twr-cacheline small { display: block; color: var(--text-secondary); font-weight: 400; font-family: var(--mono); margin-top: 3px; }
-/* Offseason: empty BY NATURE — no edge, no skeleton. */
-.twr-offseason { color: var(--text-secondary); font-size: 13px; }
 
 /* ----------------------------------------------------------------------------
    Controls & chrome (wireframe §6) — buttons, chips, selects, banners, panels.

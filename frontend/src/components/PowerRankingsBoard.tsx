@@ -190,15 +190,15 @@ export function PowerRankingsBoard() {
             <SortHeader label="#" sortKey="rank" activeKey={sortKey} dir={dir} onSort={onSort} />
             <span>Team</span>
             <span className="twr-r">Power</span>
-            <span className="twr-r"><SortHeader label="Scout z" sortKey="scoutingZ" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
-            <span className="twr-r"><SortHeader label="AllPlay%" sortKey="allPlayWinPct" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
+            <span className="twr-r"><SortHeader label="Scout z" sortKey="scoutingZ" activeKey={sortKey} dir={dir} onSort={onSort} /></span>
+            <span className="twr-r"><SortHeader label="AllPlay%" sortKey="allPlayWinPct" activeKey={sortKey} dir={dir} onSort={onSort} /></span>
             <span className="twr-r twr-hide-mtx">Record</span>
             <span className="twr-r twr-hide-mtx">AllPlay</span>
-            <span className="twr-r twr-hide-mtx"><SortHeader label="PF" sortKey="pf" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
-            <span className="twr-r twr-hide-mtx"><SortHeader label="PA" sortKey="pa" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
-            <span className="twr-r twr-hide-mtx"><SortHeader label="PP" sortKey="pp" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
-            <span className="twr-r twr-hide-mtx"><SortHeader label="MFL Pwr" sortKey="pwr" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
-            <span className="twr-r twr-hide-mtx"><SortHeader label="AltPwr" sortKey="altPwr" activeKey={sortKey} dir={dir} onSort={onSort} numeric /></span>
+            <span className="twr-r twr-hide-mtx"><SortHeader label="PF" sortKey="pf" activeKey={sortKey} dir={dir} onSort={onSort} /></span>
+            <span className="twr-r twr-hide-mtx"><SortHeader label="PA" sortKey="pa" activeKey={sortKey} dir={dir} onSort={onSort} /></span>
+            <span className="twr-r twr-hide-mtx"><SortHeader label="PP" sortKey="pp" activeKey={sortKey} dir={dir} onSort={onSort} /></span>
+            <span className="twr-r twr-hide-mtx"><SortHeader label="MFL Pwr" sortKey="pwr" activeKey={sortKey} dir={dir} onSort={onSort} /></span>
+            <span className="twr-r twr-hide-mtx"><SortHeader label="AltPwr" sortKey="altPwr" activeKey={sortKey} dir={dir} onSort={onSort} /></span>
           </div>
           {sorted.map((r) => (
             <div key={r.franchiseID} className="twr-board__row">

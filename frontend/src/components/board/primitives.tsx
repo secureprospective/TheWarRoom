@@ -10,40 +10,38 @@
 
 export type SortDir = 'asc' | 'desc';
 
-// SortHeader — a sub-header cell that is a real sort button. Active column shows
-// ▼/▲ bright; every other sortable column shows a near-invisible ¦ (wireframe §1
-// ADOPTED: no icon chrome). Numeric columns right-align via .twr-r on the cell.
+// SortHeader — a sort button for a sub-header cell. Active column shows ▼/▲
+// bright; every other sortable column shows a near-invisible ¦ (wireframe §1
+// ADOPTED: no icon chrome). Right-alignment is the CALLER's job: numeric headers
+// wrap this in the grid-child `<span className="twr-r">` (SortHeader is not a
+// grid child itself, so it can't align the cell).
 export function SortHeader<K extends string>({
   label,
   sortKey,
   activeKey,
   dir,
   onSort,
-  numeric = false,
 }: {
   label: string;
   sortKey: K;
   activeKey: K;
   dir: SortDir;
   onSort: (key: K) => void;
-  numeric?: boolean;
 }) {
   const active = sortKey === activeKey;
   const glyph = active ? (dir === 'desc' ? '▼' : '▲') : '¦';
   return (
-    <span className={numeric ? 'twr-r' : undefined}>
-      <button
-        type="button"
-        className="twr-sortbtn"
-        onClick={() => onSort(sortKey)}
-        aria-label={`Sort by ${label} ${active ? (dir === 'desc' ? 'descending' : 'ascending') : ''}`.trim()}
-      >
-        {label}
-        <span className={active ? 'twr-sort' : 'twr-isort'} aria-hidden>
-          {glyph}
-        </span>
-      </button>
-    </span>
+    <button
+      type="button"
+      className="twr-sortbtn"
+      onClick={() => onSort(sortKey)}
+      aria-label={`Sort by ${label} ${active ? (dir === 'desc' ? 'descending' : 'ascending') : ''}`.trim()}
+    >
+      {label}
+      <span className={active ? 'twr-sort' : 'twr-isort'} aria-hidden>
+        {glyph}
+      </span>
+    </button>
   );
 }
 

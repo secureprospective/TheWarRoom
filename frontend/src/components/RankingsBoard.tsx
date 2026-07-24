@@ -14,8 +14,9 @@ import { SortHeader, EngraveState, type SortDir } from './board/primitives';
 // YTD placeholder until the real L2 block ships. Debuggability over polish.
 //
 // B-2 restyle: migrated onto the Session-B board grammar (docs/ui/wireframes/
-// session-b) — Adjusted-dominant facet map, typographic sort, four row states,
-// honest data-states. The locked facet map is Rank·Player·Pos·Franchise·Base·
+// session-b) — Adjusted-dominant facet map, typographic sort, row hover feedback,
+// honest empty state (row selection + keyboard nav land in B-4 with the
+// Inspector). The locked facet map is Rank·Player·Pos·Franchise·Base·
 // Adjusted·Salary; the engine-internal diagnostics (AgePull, L4, CapTier, Adj/$M)
 // are retained as a RECESSED trailing group in Narrative/Tactical and dropped in
 // Matrix — a deliberate Phase-1 deviation from the strict 7-col lock so the tool
@@ -45,7 +46,6 @@ export function RankingsBoard() {
   const [capEffOnly, setCapEffOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('adjusted');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
     void loadRankings();
@@ -76,17 +76,20 @@ export function RankingsBoard() {
     // Cap-efficiency filter: rows WITH a defined efficiency only, never faking a
     // $0-salary row as 0 (matches the prior 'capeff view' exclusion).
     if (capEffOnly) v = v.filter((r) => r.capEffOK);
+    // Rows without a defined Adj/$M are always parked LAST (in either direction),
+    // never faked as a value — partition them out before sorting the rest.
+    const hasVal = (r: main.RankRow): boolean => sortKey !== 'capEff' || r.capEffOK;
     const pick = (r: main.RankRow): number => {
       switch (sortKey) {
         case 'base': return r.basePoints;
         case 'salary': return r.salary;
-        case 'capEff': return r.capEffOK ? r.capEff : -Infinity; // undefined sorts last
+        case 'capEff': return r.capEff;
         default: return r.adjustedScore;
       }
     };
-    const sorted = v.slice().sort((a, b) => pick(b) - pick(a));
-    if (sortDir === 'asc') sorted.reverse();
-    return sorted;
+    const ranked = v.filter(hasVal).sort((a, b) => pick(b) - pick(a));
+    if (sortDir === 'asc') ranked.reverse();
+    return [...ranked, ...v.filter((r) => !hasVal(r))];
   }, [rows, position, franchise, capEffOnly, sortKey, sortDir]);
 
   return (
@@ -132,7 +135,17 @@ export function RankingsBoard() {
           type="button"
           className={`twr-chip${capEffOnly ? ' is-on' : ''}`}
           aria-pressed={capEffOnly}
-          onClick={() => setCapEffOnly((v) => !v)}
+          onClick={() => {
+            // Enabling the filter also sorts by Adj/$M (the old capeff view was
+            // filter-and-sort in one action); disabling leaves the sort as-is.
+            setCapEffOnly((v) => {
+              if (!v) {
+                setSortKey('capEff');
+                setSortDir('desc');
+              }
+              return !v;
+            });
+          }}
         >
           Cap-eff only
         </button>
@@ -153,27 +166,25 @@ export function RankingsBoard() {
             <span>Pos</span>
             <span className="twr-hide-mtx">Franchise</span>
             <span className="twr-r twr-hide-mtx">
-              <SortHeader label="Base" sortKey="base" activeKey={sortKey} dir={sortDir} onSort={onSort} numeric />
+              <SortHeader label="Base" sortKey="base" activeKey={sortKey} dir={sortDir} onSort={onSort} />
             </span>
             <span className="twr-r">
-              <SortHeader label="Adj" sortKey="adjusted" activeKey={sortKey} dir={sortDir} onSort={onSort} numeric />
+              <SortHeader label="Adj" sortKey="adjusted" activeKey={sortKey} dir={sortDir} onSort={onSort} />
             </span>
             <span className="twr-r">
-              <SortHeader label="Salary" sortKey="salary" activeKey={sortKey} dir={sortDir} onSort={onSort} numeric />
+              <SortHeader label="Salary" sortKey="salary" activeKey={sortKey} dir={sortDir} onSort={onSort} />
             </span>
             <span className="twr-r twr-hide-mtx">Age</span>
             <span className="twr-r twr-hide-mtx">L4</span>
             <span className="twr-hide-mtx">Tier</span>
             <span className="twr-r twr-hide-mtx">
-              <SortHeader label="Adj/$M" sortKey="capEff" activeKey={sortKey} dir={sortDir} onSort={onSort} numeric />
+              <SortHeader label="Adj/$M" sortKey="capEff" activeKey={sortKey} dir={sortDir} onSort={onSort} />
             </span>
           </div>
           {visible.map((r) => (
-            <div
-              key={r.mflID}
-              className={`twr-board__row${selected === r.mflID ? ' is-selected' : ''}`}
-              onClick={() => setSelected((cur) => (cur === r.mflID ? null : r.mflID))}
-            >
+            // Row selection (inspector-bound) + keyboard nav land in B-4 with the
+            // Inspector; B-2 ships the hover feedback only. No onClick here yet.
+            <div key={r.mflID} className="twr-board__row">
               <span className="twr-c-rank">{r.rank}</span>
               <span className="twr-c-name">{r.name}</span>
               <span className="twr-c-pos">{r.position}</span>
