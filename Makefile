@@ -2,7 +2,7 @@
 # Go overlay (templates/go/Makefile.snippet). `make lint` runs ifaceguard +
 # filelen + golangci-lint; all must pass to clear. Never bypass with --no-verify.
 
-.PHONY: lint fmt vet test test-coverage build dev mutation-test ifaceguard filelen release sync-product-version
+.PHONY: lint fmt vet test test-coverage build dev mutation-test ifaceguard filelen release sync-product-version verify
 
 # ── Build stamp (D-V2) ────────────────────────────────────────────────────────
 # The git tag is the single source of truth. `git describe` yields the tag
@@ -63,6 +63,14 @@ test-coverage:
 	go tool cover -func=coverage.out
 	@total=$$(go tool cover -func=coverage.out | grep '^total:' | grep -oE '[0-9]+\.[0-9]+'); \
 	awk -v t="$$total" -v min="$(COVERAGE_THRESHOLD)" 'BEGIN { if (t+0 < min+0) { printf "coverage %.1f%% < threshold %d%%\n", t, min; exit 1 } else { printf "coverage %.1f%% >= threshold %d%%\n", t, min } }'
+
+# verify is the pre-push gate (see .pre-commit-config.yaml, stage: pre-push): everything
+# `make lint` already checks, plus the race-enabled test suite and the frontend build.
+# gitleaks is NOT repeated here — it already runs at pre-commit stage on every commit,
+# so anything reaching a push has already cleared it.
+verify: lint
+	go test -race ./...
+	cd frontend && pnpm run build
 
 # Desktop shell. Wails embeds the built frontend; before the frontend is wired
 # substitute `go build ./...`. The build stamp is injected here (see LDFLAGS).

@@ -93,6 +93,7 @@ Live/network tests are **opt-in and env-gated** (e.g. `TWR_LIVE_MFL=1`) so they 
 - **Do not reopen locked decisions.** If a locked decision creates a technical constraint that feels wrong, flag it to Christopher — do not route around it silently.
 - **Do not add features not in the documents** without Christopher's explicit direction.
 - **Never use `git --no-verify`.**
+- **Run `pre-commit install --hook-type pre-push` once per clone.** Direct-to-main has no PR/CI backstop, so the pre-push `verify` hook (`make verify` — lint + `go test -race` + frontend build, `.pre-commit-config.yaml`) is the only gate between a local commit and origin. The standard `pre-commit install` only wires the pre-commit-stage hooks (golangci-lint, gitleaks, ifaceguard); this is a separate, additional install step.
 
 ---
 
