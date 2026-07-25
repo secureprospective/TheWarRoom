@@ -13,6 +13,8 @@ import { AdminPanel } from './components/AdminPanel';
 import { RookieTable } from './components/RookieTable';
 import { ValidationBoard } from './components/ValidationBoard';
 import { CalendarBoard } from './components/calendar/CalendarBoard';
+import { InspectorContent } from './components/inspector/InspectorContent';
+import { useInspectorStore } from './store/inspector';
 
 // B-1 shell: the confirmed 4-column instrument console (Session A grid + Session C
 // tokens) replaces the flat testing-harness tab bar. The shipped modules are
@@ -36,11 +38,20 @@ function App() {
   const [module, setModule] = useState<ModuleId>('assets');
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [summoned, setSummoned] = useState<'comms' | 'calendar' | null>(null);
+  const selectedMflID = useInspectorStore((s) => s.selectedMflID);
+  const openNonce = useInspectorStore((s) => s.openNonce);
 
   useEffect(() => {
     void loadAll();
     void loadAppInfo();
   }, [loadAll, loadAppInfo]);
+
+  // Every player select (an M1 row click → the inspector store bumps openNonce) auto-opens the
+  // inspector — including re-clicking the SAME row after a close (keying on selectedMflID alone would
+  // no-op then). Closing keeps the selection so the 'i' toggle re-opens on the same player.
+  useEffect(() => {
+    if (openNonce > 0) setInspectorOpen(true);
+  }, [openNonce]);
 
   // Global keyboard: density 1/2/3, inspector toggle (I), escape closes overlays.
   // Ignored while typing in an input/textarea (per the Session-B keyboard map).
@@ -76,6 +87,7 @@ function App() {
       onInspectorClose={() => setInspectorOpen(false)}
       onSummon={onSummon}
       workspaceTitle={MODULE_TITLES[module]}
+      inspector={selectedMflID ? <InspectorContent /> : undefined}
     >
       <ModuleView module={module} />
       {summoned === 'calendar' ? (

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useHarnessStore } from '../store/harness';
 import { main } from '../../wailsjs/go/models';
 import { SortHeader, EngraveState, type SortDir } from './board/primitives';
+import { useInspectorStore } from '../store/inspector';
 
 // RankingsBoard is the M1 module view: the REAL 32-team ranked board read back
 // from the B6 output store. Three client-side lenses over the same persisted
@@ -38,8 +39,11 @@ export function RankingsBoard() {
   const rankings = useHarnessStore((s) => s.rankings);
   const scoreReport = useHarnessStore((s) => s.scoreReport);
   const scoring = useHarnessStore((s) => s.scoring);
+  const storeError = useHarnessStore((s) => s.error);
   const loadRankings = useHarnessStore((s) => s.loadRankings);
   const scoreLeague = useHarnessStore((s) => s.scoreLeague);
+  const select = useInspectorStore((s) => s.select);
+  const selectedMflID = useInspectorStore((s) => s.selectedMflID);
 
   const [position, setPosition] = useState<string>('ALL');
   const [franchise, setFranchise] = useState<string>('ALL');
@@ -115,6 +119,20 @@ export function RankingsBoard() {
         <div className="twr-banner twr-banner--warn">{rankings.warning}</div>
       )}
 
+      {/* A failed score must NEVER be silent — ScoreReportPanel renders nothing on !ok, which left an
+          empty board with no reason (the score's network fetch can fail, or it can score zero). Surface
+          the engine's rejection detail (ok:false) or an IPC throw (store error) so the cause is visible. */}
+      {scoreReport && !scoreReport.ok && (
+        <div className="twr-banner twr-banner--warn" style={{ display: 'block' }}>
+          Scoring failed — {scoreReport.error || 'the engine returned no detail.'}
+        </div>
+      )}
+      {!scoreReport && storeError && (
+        <div className="twr-banner twr-banner--warn" style={{ display: 'block' }}>
+          {storeError}
+        </div>
+      )}
+
       {scoreReport && <ScoreReportPanel report={scoreReport} />}
 
       {/* Filters — position + franchise selects, cap-eff chip. */}
@@ -182,9 +200,23 @@ export function RankingsBoard() {
             </span>
           </div>
           {visible.map((r) => (
-            // Row selection (inspector-bound) + keyboard nav land in B-4 with the
-            // Inspector; B-2 ships the hover feedback only. No onClick here yet.
-            <div key={r.mflID} className="twr-board__row">
+            // Row selection (B-4a): click (or Enter/Space) selects the player → the
+            // inspector store fetches the breakdown and App auto-opens the Inspector.
+            // `.is-selected` paints the neutral achromatic axis (Session-C selection).
+            <div
+              key={r.mflID}
+              className={`twr-board__row${r.mflID === selectedMflID ? ' is-selected' : ''}`}
+              role="button"
+              tabIndex={0}
+              aria-pressed={r.mflID === selectedMflID}
+              onClick={() => void select(r.mflID)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  void select(r.mflID);
+                }
+              }}
+            >
               <span className="twr-c-rank">{r.rank}</span>
               <span className="twr-c-name">{r.name}</span>
               <span className="twr-c-pos">{r.position}</span>

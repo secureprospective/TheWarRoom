@@ -174,18 +174,18 @@ export namespace main {
 	    version: string;
 	    commit: string;
 	    buildDate: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new AppInfo(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.version = source["version"];
 	        this.commit = source["commit"];
 	        this.buildDate = source["buildDate"];
 	    }
-}
+	}
 	export class CalendarEventDTO {
 	    eventID: string;
 	    kind: string;
@@ -194,11 +194,11 @@ export namespace main {
 	    status: string;
 	    note: string;
 	    createdAt: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new CalendarEventDTO(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.eventID = source["eventID"];
@@ -209,23 +209,23 @@ export namespace main {
 	        this.note = source["note"];
 	        this.createdAt = source["createdAt"];
 	    }
-}
+	}
 	export class CalendarEventsResult {
 	    ok: boolean;
 	    events: CalendarEventDTO[];
 	    detail: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new CalendarEventsResult(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ok = source["ok"];
 	        this.events = this.convertValues(source["events"], CalendarEventDTO);
 	        this.detail = source["detail"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -250,11 +250,11 @@ export namespace main {
 	    amount: string;
 	    cents: number;
 	    reason: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new CapDeltaDTO(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.franchiseID = source["franchiseID"];
@@ -545,6 +545,92 @@ export namespace main {
 	        this.journalMode = source["journalMode"];
 	        this.detail = source["detail"];
 	    }
+	}
+	export class PlayerScoreDTO {
+	    mflID: string;
+	    name: string;
+	    position: string;
+	    franchiseID: string;
+	    basePoints: number;
+	    agePull: number;
+	    filmEffective: number;
+	    rasEffective: number;
+	    breakoutEffective: number;
+	    l4Combined: number;
+	    scoutingAdjusted: number;
+	    adjustedScore: number;
+	    salary: number;
+	    capMultiplier: number;
+	    capTier: string;
+	    capEff: number;
+	    capEffOK: boolean;
+	    isVeteran: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new PlayerScoreDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.mflID = source["mflID"];
+	        this.name = source["name"];
+	        this.position = source["position"];
+	        this.franchiseID = source["franchiseID"];
+	        this.basePoints = source["basePoints"];
+	        this.agePull = source["agePull"];
+	        this.filmEffective = source["filmEffective"];
+	        this.rasEffective = source["rasEffective"];
+	        this.breakoutEffective = source["breakoutEffective"];
+	        this.l4Combined = source["l4Combined"];
+	        this.scoutingAdjusted = source["scoutingAdjusted"];
+	        this.adjustedScore = source["adjustedScore"];
+	        this.salary = source["salary"];
+	        this.capMultiplier = source["capMultiplier"];
+	        this.capTier = source["capTier"];
+	        this.capEff = source["capEff"];
+	        this.capEffOK = source["capEffOK"];
+	        this.isVeteran = source["isVeteran"];
+	    }
+	}
+	export class PlayerScoreResult {
+	    ok: boolean;
+	    found: boolean;
+	    error: string;
+	    warning: string;
+	    label: string;
+	    player: PlayerScoreDTO;
+	
+	    static createFrom(source: any = {}) {
+	        return new PlayerScoreResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.found = source["found"];
+	        this.error = source["error"];
+	        this.warning = source["warning"];
+	        this.label = source["label"];
+	        this.player = this.convertValues(source["player"], PlayerScoreDTO);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class PowerRow {
 	    rank: number;

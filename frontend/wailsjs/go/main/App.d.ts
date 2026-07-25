@@ -22,6 +22,8 @@ export function GetLegalOps():Promise<main.LegalOpsResult>;
 
 export function GetParams():Promise<main.ParamsResult>;
 
+export function GetPlayerScore(arg1:string):Promise<main.PlayerScoreResult>;
+
 export function GetPowerRankings(arg1:number,arg2:string):Promise<main.PowerRankingsResult>;
 
 export function GetRankings():Promise<main.RankingsResult>;
