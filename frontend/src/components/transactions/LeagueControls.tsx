@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  ExecuteTransaction,
-  GetCurrentPhase,
-  GetFranchises,
-  PreviewTransaction,
-} from '../../../wailsjs/go/main/App';
+import { ExecuteTransaction, PreviewTransaction } from '../../../wailsjs/go/main/App';
 import { main } from '../../../wailsjs/go/models';
+import { useTransactionsStore } from '../../store/transactions';
 import { ConfirmModal, type Pending } from './ConfirmModal';
 
 // LeagueControls is the commissioner off-common-path surface (design D6): the ops that are NOT
@@ -19,8 +15,10 @@ import { ConfirmModal, type Pending } from './ConfirmModal';
 const PHASES = ['OFFSEASON', 'REGULAR_SEASON', 'PLAYOFFS'] as const;
 
 export function LeagueControls() {
-  const [phase, setPhase] = useState('…');
-  const [franchises, setFranchises] = useState<main.M4Franchise[]>([]);
+  const phase = useTransactionsStore((s) => s.phase);
+  const franchises = useTransactionsStore((s) => s.franchises);
+  const loadPhase = useTransactionsStore((s) => s.loadPhase);
+  const loadFranchises = useTransactionsStore((s) => s.loadFranchises);
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false);
   // A ref token that a stage() stamps and confirm()/cancel() compare, so a preview that resolves
@@ -40,20 +38,10 @@ export function LeagueControls() {
   const [reliefAmount, setReliefAmount] = useState('');
   const [reliefReason, setReliefReason] = useState('');
 
-  async function refreshPhase() {
-    const r = await GetCurrentPhase();
-    setPhase(r.ok ? r.phase : `? (${r.detail})`);
-  }
-
-  async function refreshFranchises() {
-    const r = await GetFranchises();
-    setFranchises(r.ok ? (r.franchises ?? []) : []);
-  }
-
   useEffect(() => {
-    void refreshPhase();
-    void refreshFranchises();
-  }, []);
+    void loadPhase();
+    void loadFranchises();
+  }, [loadPhase, loadFranchises]);
 
   function frLabel(id: string) {
     const f = franchises.find((x) => x.franchiseID === id);
@@ -119,8 +107,8 @@ export function LeagueControls() {
       setPending(null);
       // a calendar op moved the phase; a commissioner op (retirement/death) removed a player, so the
       // cap-relief picker's counts would go stale (GLM L2) — refresh both, cheap either way.
-      await refreshPhase();
-      await refreshFranchises();
+      await loadPhase();
+      await loadFranchises();
     } finally {
       setBusy(false);
     }

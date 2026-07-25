@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  GetFranchises,
-  GetRoster,
-  GetLegalOps,
-  PreviewTransaction,
-  ExecuteTransaction,
-} from '../../../wailsjs/go/main/App';
+import { PreviewTransaction, ExecuteTransaction } from '../../../wailsjs/go/main/App';
 import { main } from '../../../wailsjs/go/models';
+import { useTransactionsStore } from '../../store/transactions';
 import { ConfirmModal, type Pending } from './ConfirmModal';
 import { money, initials, Empty } from './format';
 
@@ -34,12 +29,17 @@ type TradeLeg = {
 const ROSTER_COLS = '1fr 46px 84px 74px';
 
 export function TradeBuilder() {
-  const [franchises, setFranchises] = useState<main.M4Franchise[]>([]);
+  const franchises = useTransactionsStore((s) => s.franchises);
+  const roster = useTransactionsStore((s) => s.roster);
+  const phase = useTransactionsStore((s) => s.legalOpsPhase);
+  const loadFranchises = useTransactionsStore((s) => s.loadFranchises);
+  const loadLegalOps = useTransactionsStore((s) => s.loadLegalOps);
+  const loadRoster = useTransactionsStore((s) => s.loadRoster);
+  const clearRoster = useTransactionsStore((s) => s.clearRoster);
+
   const [browseFr, setBrowseFr] = useState<string | null>(null);
-  const [roster, setRoster] = useState<main.RosterResult | null>(null);
   const [legs, setLegs] = useState<TradeLeg[]>([]);
   const [tradeLegal, setTradeLegal] = useState<boolean | null>(null);
-  const [phase, setPhase] = useState('…');
   const [filter, setFilter] = useState('');
 
   const [pending, setPending] = useState<Pending | null>(null);
@@ -50,20 +50,21 @@ export function TradeBuilder() {
 
   useEffect(() => {
     void (async () => {
-      const [fr, ops] = await Promise.all([GetFranchises(), GetLegalOps()]);
-      setFranchises(fr.ok ? (fr.franchises ?? []) : []);
-      setTradeLegal(ops.ok ? (ops.kinds ?? []).includes('TRADE') : false);
-      setPhase(ops.ok ? ops.phase : `? (${ops.detail})`);
+      await Promise.all([loadFranchises(), loadLegalOps()]);
+      // tradeLegal stays local + three-state (null = still loading, so the "not legal" screen
+      // never flashes before the fetch resolves) — read the store's freshly-loaded legalOps
+      // once the fetch settles, matching the original ops.ok-gated computation exactly.
+      setTradeLegal(useTransactionsStore.getState().legalOps.includes('TRADE'));
     })();
-  }, []);
+  }, [loadFranchises, loadLegalOps]);
 
   async function pickFranchise(id: string) {
     setBrowseFr(id);
     // Clear the roster FIRST so RosterPicker shows "Loading…" (no Add buttons) during the fetch. Without
     // this, the rail highlights the new franchise while the OLD roster is still on screen with live Add
     // buttons — and addLeg would stamp the new franchise onto a player who belongs to the old one (GLM M1).
-    setRoster(null);
-    setRoster(await GetRoster(id));
+    clearRoster();
+    await loadRoster(id);
   }
 
   const inCart = useMemo(() => new Set(legs.map((l) => l.mflID)), [legs]);
@@ -166,7 +167,7 @@ export function TradeBuilder() {
       }
       setPending(null);
       setLegs([]);
-      if (browseFr) setRoster(await GetRoster(browseFr));
+      if (browseFr) await loadRoster(browseFr);
     } finally {
       setBusy(false);
     }

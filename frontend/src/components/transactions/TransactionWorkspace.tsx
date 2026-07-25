@@ -1,14 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  GetFranchises,
-  GetRoster,
-  GetFreeAgentPool,
-  GetCurrentPhase,
-  GetLegalOps,
-  PreviewTransaction,
-  ExecuteTransaction,
-} from '../../../wailsjs/go/main/App';
+import { PreviewTransaction, ExecuteTransaction } from '../../../wailsjs/go/main/App';
 import { main } from '../../../wailsjs/go/models';
+import { useTransactionsStore } from '../../store/transactions';
 import { ConfirmModal, type Pending } from './ConfirmModal';
 import { money, initials, Empty } from './format';
 
@@ -30,16 +23,24 @@ const ROSTER_COLS = '1fr 46px 70px 80px 80px';
 const FA_COLS = '1fr 60px';
 
 export function TransactionWorkspace() {
-  const [franchises, setFranchises] = useState<main.M4Franchise[]>([]);
-  const [selectedFr, setSelectedFr] = useState<string | null>(null);
-  const [roster, setRoster] = useState<main.RosterResult | null>(null);
-  const [pool, setPool] = useState<main.FreeAgentPoolResult | null>(null);
-  const [selected, setSelected] = useState<main.M4Player | null>(null);
-  const [phase, setPhase] = useState('…');
+  const franchises = useTransactionsStore((s) => s.franchises);
+  const roster = useTransactionsStore((s) => s.roster);
+  const pool = useTransactionsStore((s) => s.pool);
+  const phase = useTransactionsStore((s) => s.phase);
   // legalOps = the op kinds the engine says are phase-legal right now (GetLegalOps → phasePolicy,
   // the single source of truth). A contract button renders iff its kind is in this set (D1) — so an
   // offseason-only buyout is ABSENT (not greyed) mid-season, and never re-encodes the engine's rules.
-  const [legalOps, setLegalOps] = useState<string[]>([]);
+  const legalOps = useTransactionsStore((s) => s.legalOps);
+  const loadFranchises = useTransactionsStore((s) => s.loadFranchises);
+  const loadPhase = useTransactionsStore((s) => s.loadPhase);
+  const loadLegalOps = useTransactionsStore((s) => s.loadLegalOps);
+  const loadRoster = useTransactionsStore((s) => s.loadRoster);
+  const clearRoster = useTransactionsStore((s) => s.clearRoster);
+  const loadPool = useTransactionsStore((s) => s.loadPool);
+  const clearPool = useTransactionsStore((s) => s.clearPool);
+
+  const [selectedFr, setSelectedFr] = useState<string | null>(null);
+  const [selected, setSelected] = useState<main.M4Player | null>(null);
   const [filter, setFilter] = useState('');
 
   // SIGN form (only shown when a free agent is selected on a signable phase)
@@ -65,29 +66,24 @@ export function TransactionWorkspace() {
   const signable = legalOps.includes('SIGN');
 
   useEffect(() => {
-    void (async () => {
-      const [fr, ph, ops] = await Promise.all([GetFranchises(), GetCurrentPhase(), GetLegalOps()]);
-      setFranchises(fr.ok ? (fr.franchises ?? []) : []);
-      setPhase(ph.ok ? ph.phase : `? (${ph.detail})`);
-      setLegalOps(ops.ok ? (ops.kinds ?? []) : []);
-    })();
-  }, []);
+    void Promise.all([loadFranchises(), loadPhase(), loadLegalOps()]);
+  }, [loadFranchises, loadPhase, loadLegalOps]);
 
   async function pickFranchise(id: string) {
     setSelectedFr(id);
     setSelected(null);
     if (id === FA) {
-      setPool(await GetFreeAgentPool());
-      setRoster(null);
+      await loadPool();
+      clearRoster();
     } else {
-      setRoster(await GetRoster(id));
-      setPool(null);
+      await loadRoster(id);
+      clearPool();
     }
   }
 
   async function refreshCurrent() {
-    if (selectedFr === FA) setPool(await GetFreeAgentPool());
-    else if (selectedFr) setRoster(await GetRoster(selectedFr));
+    if (selectedFr === FA) await loadPool();
+    else if (selectedFr) await loadRoster(selectedFr);
     setSelected(null);
   }
 
