@@ -952,6 +952,8 @@ export namespace main {
 	export class TransactionRequest {
 	    kind: string;
 	    moves: MoveDTO[];
+	    picksNote: string;
+	    rationale: string;
 	    mflID: string;
 	    status: string;
 	    moveMillions: string;
@@ -964,6 +966,7 @@ export namespace main {
 	    salaryMillions: string;
 	    years: number;
 	    windowOpen: boolean;
+	    tradeDeadline: string;
 	    eventID: string;
 	    eventKind: string;
 	    scheduledAt: string;
@@ -977,6 +980,8 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.kind = source["kind"];
 	        this.moves = this.convertValues(source["moves"], MoveDTO);
+	        this.picksNote = source["picksNote"];
+	        this.rationale = source["rationale"];
 	        this.mflID = source["mflID"];
 	        this.status = source["status"];
 	        this.moveMillions = source["moveMillions"];
@@ -989,6 +994,7 @@ export namespace main {
 	        this.salaryMillions = source["salaryMillions"];
 	        this.years = source["years"];
 	        this.windowOpen = source["windowOpen"];
+	        this.tradeDeadline = source["tradeDeadline"];
 	        this.eventID = source["eventID"];
 	        this.eventKind = source["eventKind"];
 	        this.scheduledAt = source["scheduledAt"];

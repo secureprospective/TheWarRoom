@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -37,6 +38,8 @@ type fakeTxWriter struct {
 	lockedMFLID string              // the one player ActiveBuyoutLockout() reports locked
 
 	windowClosed bool // SigningWindowClosed() reports this (the §6 commissioner UFA-calendar state)
+
+	tradeDeadlinePassed bool // TradeDeadlinePassed() reports this (the §14 commissioner deadline state)
 }
 
 func (f *fakeTxWriter) maybeFail() error {
@@ -174,6 +177,29 @@ func (f *fakeTxWriter) AppendSigningWindow(_ context.Context, open bool, _ strin
 	return nil
 }
 
+// LogTradeNote records the trade audit note as a call (no return-value plumbing needed by any
+// test yet — the fake just tracks that it was invoked with the right shape).
+func (f *fakeTxWriter) LogTradeNote(_ context.Context, picksNote, rationale string, involved []string) error {
+	f.calls = append(f.calls, recordedMove{op: "tradenote", mflID: picksNote, target: rationale + "|" + fmt.Sprintf("%v", involved)})
+	return f.maybeFail()
+}
+
+// TradeDeadlinePassed reports the fake's §14 commissioner deadline state (default not-passed).
+func (f *fakeTxWriter) TradeDeadlinePassed(_ context.Context) (bool, error) {
+	return f.tradeDeadlinePassed, nil
+}
+
+// AppendTradeDeadline records the toggle and updates the fake's deadline state — a zero
+// Deadline clears it (mirrors the store primitive).
+func (f *fakeTxWriter) AppendTradeDeadline(_ context.Context, deadline time.Time, _ string) error {
+	f.calls = append(f.calls, recordedMove{op: "settradedeadline", target: deadline.String()})
+	if err := f.maybeFail(); err != nil {
+		return err
+	}
+	f.tradeDeadlinePassed = !deadline.IsZero() && !time.Now().Before(deadline)
+	return nil
+}
+
 // AppendCalendarEvent records the calendar append (keyed by the logical event id) so handler-level
 // tests can assert a calendar op reached the store, and honors the maybeFail hook like the others.
 func (f *fakeTxWriter) AppendCalendarEvent(_ context.Context, e state.CalendarEvent) error {
@@ -289,10 +315,13 @@ func TestExecute_TradeDispatchesEveryLegInOrder(t *testing.T) {
 	w := newFake()
 	c := newCoord(t, w)
 
-	rec, err := c.Execute(context.Background(), Trade{Moves: []PlayerMove{
-		{MFLID: "0001", ToFranchiseID: "0002"},
-		{MFLID: "0003", ToFranchiseID: "0001"},
-	}})
+	rec, err := c.Execute(context.Background(), Trade{
+		Moves: []PlayerMove{
+			{MFLID: "0001", ToFranchiseID: "0002"},
+			{MFLID: "0003", ToFranchiseID: "0001"},
+		},
+		Rationale: "test trade",
+	})
 	if err != nil {
 		t.Fatalf("Execute trade: %v", err)
 	}
@@ -300,10 +329,37 @@ func TestExecute_TradeDispatchesEveryLegInOrder(t *testing.T) {
 		t.Fatalf("receipt = %+v, want KindTrade/2", rec)
 	}
 	got := w.tw.calls
-	if len(got) != 2 ||
+	if len(got) != 3 ||
 		got[0] != (recordedMove{"move", "0001", "0002"}) ||
-		got[1] != (recordedMove{"move", "0003", "0001"}) {
+		got[1] != (recordedMove{"move", "0003", "0001"}) ||
+		got[2].op != "tradenote" {
 		t.Fatalf("trade legs dispatched wrong/out of order: %+v", got)
+	}
+}
+
+// TestExecute_TradeNoteRecordsSourceFranchise proves a ONE-SIDED trade (a single leg, no
+// player coming back the other way) still records BOTH the source and destination franchise in
+// LogTradeNote's involved list — not just the destination. Before this test existed, only
+// ToFranchiseID was collected, so the sending franchise silently vanished from the audit trail
+// for exactly this shape of trade (a data-quality gap only a one-sided trade would surface).
+func TestExecute_TradeNoteRecordsSourceFranchise(t *testing.T) {
+	w := newFake()
+	w.tw.player = state.PlayerState{MFLID: "0001", FranchiseID: "0001"} // source: franchise 0001
+	c := newCoord(t, w)
+
+	_, err := c.Execute(context.Background(), Trade{
+		Moves:     []PlayerMove{{MFLID: "0001", ToFranchiseID: "0002"}}, // destination: 0002
+		Rationale: "one-sided: player for picks",
+	})
+	if err != nil {
+		t.Fatalf("Execute trade: %v", err)
+	}
+	note := w.tw.calls[len(w.tw.calls)-1]
+	if note.op != "tradenote" {
+		t.Fatalf("last call = %+v, want the tradenote", note)
+	}
+	if !strings.Contains(note.target, "0001") || !strings.Contains(note.target, "0002") {
+		t.Fatalf("tradenote involved = %q, want it to mention both franchises 0001 (source) and 0002 (destination)", note.target)
 	}
 }
 
@@ -476,10 +532,13 @@ func TestExecute_StepErrorPropagates(t *testing.T) {
 	w.tw.failErr = errors.New("boom")
 	c := newCoord(t, w)
 
-	rec, err := c.Execute(context.Background(), Trade{Moves: []PlayerMove{
-		{MFLID: "0001", ToFranchiseID: "0002"},
-		{MFLID: "0003", ToFranchiseID: "0001"},
-	}})
+	rec, err := c.Execute(context.Background(), Trade{
+		Moves: []PlayerMove{
+			{MFLID: "0001", ToFranchiseID: "0002"},
+			{MFLID: "0003", ToFranchiseID: "0001"},
+		},
+		Rationale: "test trade",
+	})
 	if err == nil {
 		t.Fatal("Execute succeeded despite a failing leg")
 	}
@@ -504,7 +563,8 @@ func TestExecute_InvalidTradeRejectedBeforeTx(t *testing.T) {
 			{MFLID: "0001", ToFranchiseID: "0002"},
 			{MFLID: "0001", ToFranchiseID: "0003"},
 		}}},
-		{"too many legs", Trade{Moves: makeMoves(maxTradeLegs + 1)}},
+		{"too many legs", Trade{Moves: makeMoves(maxTradeLegs + 1), Rationale: "test trade"}},
+		{"missing rationale", Trade{Moves: []PlayerMove{{MFLID: "0001", ToFranchiseID: "0002"}}}},
 		{"empty status player", RosterStatusChange{Status: domain.RosterActive}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

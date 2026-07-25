@@ -27,13 +27,14 @@ import (
 func phasePolicy(kind Kind) ([]domain.Phase, bool) {
 	switch kind {
 	case KindTrade, KindRosterStatus, KindWaiver, KindRestructure, KindTag, KindExtension, KindAdvancePhase,
-		KindRetirement, KindDeath, KindCapRelief, KindSetSigningWindow,
+		KindRetirement, KindDeath, KindCapRelief, KindSetSigningWindow, KindSetTradeDeadline,
 		KindScheduleEvent, KindRescheduleEvent, KindCancelEvent:
 		// §13 special situations (retirement, death, cap relief) can happen in any phase — a
 		// player retires or dies whenever, and a commissioner cap-relief appeal is not
-		// phase-bound. SET_SIGNING_WINDOW (§6 UFA calendar) is likewise every-phase — the
-		// commissioner sets the window whenever, and it is the sub-phase directive that changes
-		// SIGN's window, not a signing itself. Only §12 buyout is offseason-restricted in v1.
+		// phase-bound. SET_SIGNING_WINDOW (§6 UFA calendar) and SET_TRADE_DEADLINE (§14) are
+		// likewise every-phase — the commissioner sets these calendar directives whenever; it is
+		// the sub-phase directive, consulted inside gatePhase, that actually restricts SIGN/TRADE.
+		// Only §12 buyout is offseason-restricted in v1.
 		return allPhases(), true
 	case KindBuyout:
 		// §12: buyouts are OFFSEASON-only. This is the one phase-restricted op in v1.
@@ -126,6 +127,18 @@ func gatePhase(ctx context.Context, w state.TxWriter, kind Kind) error {
 		}
 		if closed {
 			return fmt.Errorf("transactions: op %q rejected — the free-agency signing window is closed by the commissioner (§6 UFA calendar)", kind)
+		}
+	}
+	// TRADE carries the same second-gate shape as SIGN: the §14 Week-9 trade deadline, a
+	// commissioner directive riding season_phases.meta (SET_TRADE_DEADLINE), consulted here
+	// against committed state under the same single-writer-per-tx guarantee documented above.
+	if kind == KindTrade {
+		passed, werr := w.TradeDeadlinePassed(ctx)
+		if werr != nil {
+			return fmt.Errorf("transactions: trade-deadline gate: %w", werr)
+		}
+		if passed {
+			return fmt.Errorf("transactions: op %q rejected — the trade deadline has passed (§14)", kind)
 		}
 	}
 	return nil

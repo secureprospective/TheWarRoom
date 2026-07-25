@@ -41,6 +41,11 @@ export function TradeBuilder() {
   const [legs, setLegs] = useState<TradeLeg[]>([]);
   const [tradeLegal, setTradeLegal] = useState<boolean | null>(null);
   const [filter, setFilter] = useState('');
+  // Rationale is REQUIRED (Alpha-scope panel lock — every trade must carry the commissioner's
+  // reason); PicksNote is optional free-text (no pick-ownership ledger yet, deliberately
+  // unvalidated on the server too).
+  const [rationale, setRationale] = useState('');
+  const [picksNote, setPicksNote] = useState('');
 
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false);
@@ -96,10 +101,14 @@ export function TradeBuilder() {
     return f?.name || id;
   }
 
-  // A trade is stageable once it has at least one leg and every leg has a destination that isn't the
-  // player's own franchise (an unset destination or a no-op self-move would be rejected in-tx anyway).
+  // A trade is stageable once it has at least one leg, every leg has a destination that isn't the
+  // player's own franchise (an unset destination or a no-op self-move would be rejected in-tx anyway),
+  // and a Rationale is present (the engine rejects an empty one, so gate it here too — no wasted
+  // preview round-trip on a request that will just bounce).
   const stageable =
-    legs.length > 0 && legs.every((l) => l.toFranchiseID && l.toFranchiseID !== l.fromFranchiseID);
+    legs.length > 0 &&
+    legs.every((l) => l.toFranchiseID && l.toFranchiseID !== l.fromFranchiseID) &&
+    rationale.trim() !== '';
 
   function cancel() {
     stageGen.current++;
@@ -111,6 +120,8 @@ export function TradeBuilder() {
     const req = main.TransactionRequest.createFrom({
       kind: 'TRADE',
       moves: legs.map((l) => ({ mflID: l.mflID, toFranchiseID: l.toFranchiseID })),
+      rationale,
+      picksNote,
     });
     const gen = ++stageGen.current;
     const franchiseCount = new Set(legs.flatMap((l) => [l.fromFranchiseID, l.toFranchiseID])).size;
@@ -119,7 +130,10 @@ export function TradeBuilder() {
       title: 'Trade · atomic swap',
       subject: `${legs.length}-leg trade`,
       meta: `${franchiseCount} franchises · ${phase}`,
-      note: 'Every leg lands together or the whole trade rolls back. The engine re-checks each move on confirm; rosters and caps refresh after it commits.',
+      note:
+        'Every leg lands together or the whole trade rolls back. The engine re-checks each move on confirm; rosters and caps refresh after it commits.' +
+        ` Rationale: ${rationale}` +
+        (picksNote ? ` · Picks: ${picksNote}` : ''),
       destructive: false,
       previewing: true,
       previewOK: null,
@@ -167,6 +181,8 @@ export function TradeBuilder() {
       }
       setPending(null);
       setLegs([]);
+      setRationale('');
+      setPicksNote('');
       if (browseFr) await loadRoster(browseFr);
     } finally {
       setBusy(false);
@@ -300,6 +316,30 @@ export function TradeBuilder() {
         </div>
 
         <div style={{ borderTop: '1px solid var(--hairline)', padding: '14px 18px' }}>
+          <label style={{ display: 'block', marginBottom: 10 }}>
+            <span style={{ display: 'block', marginBottom: 4, fontSize: 11, color: 'var(--text-secondary)' }}>
+              Rationale <span style={{ color: 'var(--amber-base)' }}>(required)</span>
+            </span>
+            <textarea
+              className="twr-input"
+              style={{ width: '100%', minHeight: 52, resize: 'vertical', fontSize: 12 }}
+              placeholder="Why is this trade happening?"
+              value={rationale}
+              onChange={(e) => setRationale(e.target.value)}
+            />
+          </label>
+          <label style={{ display: 'block', marginBottom: 10 }}>
+            <span style={{ display: 'block', marginBottom: 4, fontSize: 11, color: 'var(--text-secondary)' }}>
+              Draft picks involved <span style={{ color: 'var(--text-tertiary)' }}>(optional, free text)</span>
+            </span>
+            <textarea
+              className="twr-input"
+              style={{ width: '100%', minHeight: 40, resize: 'vertical', fontSize: 12 }}
+              placeholder="e.g. 2027 1st (Franchise X) to Franchise Y"
+              value={picksNote}
+              onChange={(e) => setPicksNote(e.target.value)}
+            />
+          </label>
           <button
             type="button"
             className="twr-btn"
@@ -309,7 +349,12 @@ export function TradeBuilder() {
           >
             Review trade…
           </button>
-          {legs.length > 0 && !stageable && (
+          {legs.length > 0 && legs.every((l) => l.toFranchiseID && l.toFranchiseID !== l.fromFranchiseID) && !rationale.trim() && (
+            <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--amber-base)' }}>
+              A rationale is required to continue.
+            </p>
+          )}
+          {legs.length > 0 && !legs.every((l) => l.toFranchiseID && l.toFranchiseID !== l.fromFranchiseID) && (
             <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--amber-base)' }}>
               Set a destination for every leg to continue.
             </p>

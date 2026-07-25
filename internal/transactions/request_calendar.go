@@ -27,7 +27,7 @@ import (
 // kind is outside this set is rejected at validate, before a transaction opens (default-deny).
 func schedulableKind(k string) bool {
 	switch Kind(k) {
-	case KindAdvancePhase, KindRolloverSeason, KindSetSigningWindow, KindRetirement, KindDeath, KindCapRelief:
+	case KindAdvancePhase, KindRolloverSeason, KindSetSigningWindow, KindSetTradeDeadline, KindRetirement, KindDeath, KindCapRelief:
 		// The season-clock ops + the §13 commissioner acts — the league-global schedule.
 		return true
 	case KindTrade, KindRosterStatus, KindWaiver, KindRestructure, KindTag, KindExtension, KindBuyout, KindSign,

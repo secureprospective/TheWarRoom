@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
@@ -132,7 +133,9 @@ type TxWriter interface {
 // the dead-cap non-negativity invariant (CHECK ≥ 0) stays pure while a relief remains a positive
 // credit; CapUsed sums the debits and subtracts the credits. Both fail loud on a non-positive
 // amount or a missing field. Grouped under one embedded member to keep TxWriter within the
-// interfacebloat cap — the same grouping device as LedgerWriter / SeasonScope.
+// interfacebloat cap — the same grouping device as LedgerWriter / SeasonScope. LogTradeNote rides
+// along here too (not cap money, but the same "append-only audit row in the shared tx" shape, and
+// TxWriter itself is already at the interfacebloat cap with no room for a sixth embedded member).
 type CapLedgerWriter interface {
 	// AddDeadCap appends one dead-cap charge (§8/§12/§13) against an absolute league year in the
 	// shared tx. The ledger is append-only and non-negative; a duplicate is rejected. Fails loud
@@ -144,6 +147,12 @@ type CapLedgerWriter interface {
 	// its own append-only ledger so the dead-cap non-negativity invariant stays pure. CapUsed
 	// subtracts it. Fails loud on a non-positive amount or a missing field.
 	AddCapRelief(ctx context.Context, e CapReliefEntry) error
+	// LogTradeNote appends the trade_notes audit row for one executed Trade — the event itself
+	// (picksNote + rationale), which MovePlayer alone never records. Alpha scope: picksNote is
+	// free-text and unvalidated (no pick-ownership ledger yet); rationale arrives already
+	// non-empty (Trade.validate() enforces it before the tx opens). involvedFranchises is every
+	// franchise a leg of the trade touched.
+	LogTradeNote(ctx context.Context, picksNote, rationale string, involvedFranchises []string) error
 }
 
 // CalendarWriter is the commissioner-calendar's append surface — the single write primitive behind
@@ -247,6 +256,16 @@ type SeasonScope interface {
 	// Rejects a redundant toggle (the window is already in the requested state — the no-silent-no-op
 	// house rule). `note` is a freeform reason.
 	AppendSigningWindow(ctx context.Context, open bool, note string) error
+	// TradeDeadlinePassed reports whether the §14 Week-9 commissioner trade deadline has passed —
+	// the COMMISSIONER TRADE-DEADLINE read (mirrors SigningWindowClosed). Absent any directive, or
+	// a directive that CLEARED the deadline, it returns false (no block — the v1 default). Reads
+	// committed state; the TRADE phase gate consults it inside the tx.
+	TradeDeadlinePassed(ctx context.Context) (bool, error)
+	// AppendTradeDeadline records a commissioner trade-deadline directive by APPENDING a
+	// season_phases row that keeps the current phase (from == to) and carries the trade_deadline
+	// directive in meta — mirrors AppendSigningWindow. A zero Deadline CLEARS any standing
+	// deadline (the commissioner's "reopen trades" action). `note` is a freeform reason.
+	AppendTradeDeadline(ctx context.Context, deadline time.Time, note string) error
 }
 
 // LedgerWriter is the per-year salary-cell mutation surface — the money primitives the

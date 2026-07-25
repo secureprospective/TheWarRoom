@@ -49,64 +49,8 @@ type Request interface {
 	sealed()
 }
 
-// PlayerMove is one leg of a trade: which player goes to which franchise.
-type PlayerMove struct {
-	MFLID         string
-	ToFranchiseID string
-}
-
-// Trade reassigns a set of players between franchises atomically (an N-leg swap). Every
-// leg lands or none does.
-type Trade struct {
-	Moves []PlayerMove
-}
-
-func (Trade) Kind() Kind { return KindTrade }
-func (Trade) sealed()    {}
-
-// validate rejects a structurally broken trade BEFORE a transaction is opened: no legs,
-// a blank player/target, or the same player moved twice in one trade (ambiguous — the
-// last write would silently win).
-// maxTradeLegs caps a single trade's legs. Real trades are a handful of players; the
-// ceiling is a boundary guard so a malformed/hostile request can't allocate a giant
-// slice or run thousands of UPDATEs in one tx (GLM-B7a — unbounded req.Moves).
-const maxTradeLegs = 256
-
-func (t Trade) validate() error {
-	if len(t.Moves) == 0 {
-		return fmt.Errorf("transactions: trade has no moves")
-	}
-	if len(t.Moves) > maxTradeLegs {
-		return fmt.Errorf("transactions: trade has %d moves, exceeds max %d", len(t.Moves), maxTradeLegs)
-	}
-	seen := make(map[string]struct{}, len(t.Moves))
-	for i, m := range t.Moves {
-		if strings.TrimSpace(m.MFLID) == "" {
-			return fmt.Errorf("transactions: trade move %d has an empty player id", i)
-		}
-		if strings.TrimSpace(m.ToFranchiseID) == "" {
-			return fmt.Errorf("transactions: trade move %d (player %q) has an empty target franchise", i, m.MFLID)
-		}
-		if _, dup := seen[m.MFLID]; dup {
-			return fmt.Errorf("transactions: trade moves player %q more than once", m.MFLID)
-		}
-		seen[m.MFLID] = struct{}{}
-	}
-	return nil
-}
-
-func (t Trade) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
-	moves := make([]acquisitions.Move, len(t.Moves))
-	for i, m := range t.Moves {
-		moves[i] = acquisitions.Move{MFLID: m.MFLID, ToFranchiseID: m.ToFranchiseID}
-	}
-	if err := acquisitions.Trade(ctx, w, moves); err != nil {
-		return applyResult{}, fmt.Errorf("trade: %w", err)
-	}
-	// The per-leg cap movement (each traded contract leaves one cap, joins another) is not yet
-	// surfaced pre-commit; it lands on the post-commit refresh. Deadcap-first breakdown slice.
-	return applyResult{PlayersAffected: len(moves)}, nil
-}
+// Trade, PlayerMove, and maxTradeLegs live in request_trade.go (split out to stay within the
+// 400-line file cap — AD-14/AD-17 pre-splits).
 
 // RosterStatusChange moves one player between roster statuses (active ↔ taxi/IR).
 type RosterStatusChange struct {

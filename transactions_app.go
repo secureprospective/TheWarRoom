@@ -23,14 +23,18 @@ type MoveDTO struct {
 // It stays fully typed (no any/interface{}) so the ifaceguard boundary holds; the App
 // method translates it into the sealed transactions.Request the Coordinator executes.
 type TransactionRequest struct {
-	Kind         string    `json:"kind"`
-	Moves        []MoveDTO `json:"moves"`
-	MFLID        string    `json:"mflID"`
-	Status       string    `json:"status"`
-	MoveMillions string    `json:"moveMillions"`
-	AddedYears   int       `json:"addedYears"` // EXTENSION (§10): years to add (1..3)
-	ToPhase      string    `json:"toPhase"`    // ADVANCE_PHASE (D3): target season phase
-	Note         string    `json:"note"`       // ADVANCE_PHASE: commissioner's freeform reason
+	Kind  string    `json:"kind"`
+	Moves []MoveDTO `json:"moves"`
+	// TRADE: PicksNote is Alpha-scope free text (unvalidated by design — no pick-ownership
+	// ledger yet); Rationale is required (the commissioner's reason, server-validated non-empty).
+	PicksNote    string `json:"picksNote"`
+	Rationale    string `json:"rationale"`
+	MFLID        string `json:"mflID"`
+	Status       string `json:"status"`
+	MoveMillions string `json:"moveMillions"`
+	AddedYears   int    `json:"addedYears"` // EXTENSION (§10): years to add (1..3)
+	ToPhase      string `json:"toPhase"`    // ADVANCE_PHASE (D3): target season phase
+	Note         string `json:"note"`       // ADVANCE_PHASE: commissioner's freeform reason
 	// §13 special situations. RETIREMENT/DEATH read MFLID. CAP_RELIEF reads FranchiseID +
 	// AmountMillions (parsed to exact cents server-side, never a JS number) + Reason (the
 	// commissioner's audit basis).
@@ -44,6 +48,9 @@ type TransactionRequest struct {
 	// SET_SIGNING_WINDOW (§6 UFA calendar): WindowOpen toggles the commissioner signing window
 	// open (true) / closed (false); Note is the freeform reason. It changes no phase and no player.
 	WindowOpen bool `json:"windowOpen"`
+	// SET_TRADE_DEADLINE (§14): TradeDeadline is an ISO-8601 instant; an empty string CLEARS any
+	// standing deadline (the commissioner's "reopen trades" action). Note is the freeform reason.
+	TradeDeadline string `json:"tradeDeadline"`
 	// Commissioner calendar (SCHEDULE_EVENT / RESCHEDULE_EVENT / CANCEL_EVENT): EventID is the
 	// logical blob id (the frontend mints it on schedule and re-sends it on reschedule/cancel);
 	// EventKind is the EVENTUAL op the blob will run (ADVANCE_PHASE / … / CAP_RELIEF); ScheduledAt
@@ -282,7 +289,7 @@ func buildRequest(req TransactionRequest) (transactions.Request, error) {
 		for i, m := range req.Moves {
 			moves[i] = transactions.PlayerMove{MFLID: m.MFLID, ToFranchiseID: m.ToFranchiseID}
 		}
-		return transactions.Trade{Moves: moves}, nil
+		return transactions.Trade{Moves: moves, PicksNote: req.PicksNote, Rationale: req.Rationale}, nil
 	case string(transactions.KindRosterStatus):
 		return transactions.RosterStatusChange{
 			MFLID:  req.MFLID,
@@ -316,17 +323,30 @@ func buildRequest(req TransactionRequest) (transactions.Request, error) {
 	case string(transactions.KindCancelEvent):
 		return transactions.CancelEvent{Event: calendarEvent(req)}, nil
 	default:
-		// The money-bearing kinds (their millions→cents parse can error) live in a sibling
-		// builder so this switch stays under the cyclomatic cap.
+		// The money-bearing kinds (their millions→cents parse can error), plus SET_TRADE_DEADLINE
+		// (its RFC3339 parse can also error), live in a sibling builder so this switch stays under
+		// the cyclomatic cap.
 		return buildMoneyRequest(req)
 	}
 }
 
-// buildMoneyRequest maps the DTO onto the sealed requests that carry a caller-supplied money
-// figure (parsed millions-string → exact cents at the boundary, never a JS number): §13 cap
-// relief, §11 restructure, and §6 signing. An unknown Kind is the final rejection.
+// buildMoneyRequest maps the DTO onto the sealed requests whose construction can itself fail:
+// §13 cap relief, §11 restructure, and §6 signing (each parses a caller-supplied millions-string
+// into exact cents at the boundary, never a JS number), plus §14 SET_TRADE_DEADLINE (parses an
+// RFC3339 instant). An unknown Kind is the final rejection.
 func buildMoneyRequest(req TransactionRequest) (transactions.Request, error) {
 	switch req.Kind {
+	case string(transactions.KindSetTradeDeadline):
+		// §14: TradeDeadline empty → zero time, which SetTradeDeadline.apply treats as "clear".
+		var deadline time.Time
+		if req.TradeDeadline != "" {
+			d, err := time.Parse(time.RFC3339, req.TradeDeadline)
+			if err != nil {
+				return nil, fmt.Errorf("transactions: trade deadline %q is not RFC3339: %w", req.TradeDeadline, err)
+			}
+			deadline = d
+		}
+		return transactions.SetTradeDeadline{Deadline: deadline, Note: req.Note}, nil
 	case string(transactions.KindCapRelief):
 		// §13 Cap Relief Appeal: commissioner credit. Amount is discretionary, not resolved.
 		amount, err := domain.ParseMoneyMillions(req.AmountMillions)

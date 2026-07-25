@@ -26,6 +26,7 @@ export type Pending = {
     | 'ADVANCE_PHASE'
     | 'ROLLOVER_SEASON'
     | 'SET_SIGNING_WINDOW'
+    | 'SET_TRADE_DEADLINE'
     | 'RETIREMENT'
     | 'DEATH'
     | 'CAP_RELIEF'

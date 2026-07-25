@@ -31,6 +31,8 @@ export function LeagueControls() {
   const [rolloverNote, setRolloverNote] = useState('');
   const [windowOpen, setWindowOpen] = useState(true);
   const [windowNote, setWindowNote] = useState('');
+  const [tradeDeadlineInput, setTradeDeadlineInput] = useState(''); // datetime-local; '' = clear
+  const [tradeDeadlineNote, setTradeDeadlineNote] = useState('');
   // Commissioner inputs.
   const [retireID, setRetireID] = useState('');
   const [deathID, setDeathID] = useState('');
@@ -150,6 +152,21 @@ export function LeagueControls() {
     });
   }
 
+  function stageTradeDeadline() {
+    // An empty input CLEARS the deadline server-side (parseTradeDeadline/AppendTradeDeadline both
+    // treat '' as "no deadline"); a filled datetime-local value converts to RFC3339 UTC.
+    const tradeDeadline = tradeDeadlineInput ? new Date(tradeDeadlineInput).toISOString() : '';
+    void stage({
+      kind: 'SET_TRADE_DEADLINE',
+      title: 'Calendar · trade deadline (§14)',
+      subject: tradeDeadline ? `Set trade deadline → ${new Date(tradeDeadline).toLocaleString()}` : 'Clear the trade deadline',
+      meta: `Current phase: ${phase}`,
+      note: 'Sets or clears the §14 trade deadline. Once passed, every TRADE is rejected until the commissioner clears it. Persists across phase transitions and rollovers.',
+      destructive: false,
+      request: main.TransactionRequest.createFrom({ kind: 'SET_TRADE_DEADLINE', tradeDeadline, note: tradeDeadlineNote }),
+    });
+  }
+
   function stageRetirement() {
     if (!retireID.trim()) return;
     void stage({
@@ -237,9 +254,9 @@ export function LeagueControls() {
       <div
         style={{
           marginTop: 12,
-          maxWidth: 860,
+          maxWidth: 1120,
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
+          gridTemplateColumns: 'repeat(4, 1fr)',
           gap: 16,
         }}
       >
@@ -265,6 +282,18 @@ export function LeagueControls() {
           />
           <TextInput value={windowNote} onChange={setWindowNote} placeholder="Note (optional)" />
           <Action onClick={stageSigningWindow}>Apply window…</Action>
+        </Card>
+        <Card title="Trade deadline (§14)">
+          <input
+            type="datetime-local"
+            className="twr-input"
+            style={{ width: '100%' }}
+            value={tradeDeadlineInput}
+            onChange={(e) => setTradeDeadlineInput(e.target.value)}
+          />
+          <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>Leave blank to clear the deadline.</p>
+          <TextInput value={tradeDeadlineNote} onChange={setTradeDeadlineNote} placeholder="Note (optional)" />
+          <Action onClick={stageTradeDeadline}>{tradeDeadlineInput ? 'Set deadline…' : 'Clear deadline…'}</Action>
         </Card>
       </div>
 
