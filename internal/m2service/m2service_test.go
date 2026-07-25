@@ -100,13 +100,90 @@ func TestBuildBoard_AggregatesBlendsAndJoins(t *testing.T) {
 	if byFID["0001"].H2HW != 8 || byFID["0001"].H2HL != 5 {
 		t.Errorf("0001 h2h passthrough = %d-%d, want 8-5", byFID["0001"].H2HW, byFID["0001"].H2HL)
 	}
-	// Rank comes back deterministic (Blend sorts descending), both ranks present exactly once.
-	seen := map[int]bool{}
-	for _, r := range board.Rows {
-		seen[r.Rank] = true
+	// Rank comes back deterministic (Blend sorts descending by PowerScore) — GLM 5.2
+	// review lead A2 (Session 43): a set-membership check alone would pass even if sort
+	// order inverted or both rows landed on the same rank. With only 2 franchises and
+	// weight=0.5, 0001's stronger all-play record (0.667 vs 0.500 win%, a full z-score
+	// apart on a 2-point distribution) outweighs 0002's higher raw scouting sum — this
+	// is powerrankings.Blend's existing z-score math, not something this test asserts
+	// independently; the exact expected ranks were confirmed by running the case, not
+	// derived from scouting-score intuition alone.
+	if byFID["0001"].Rank != 1 {
+		t.Errorf("0001 Rank = %d, want 1 (all-play component dominates at these inputs)", byFID["0001"].Rank)
 	}
-	if !seen[1] || !seen[2] {
-		t.Errorf("ranks not 1,2: %+v", board.Rows)
+	if byFID["0002"].Rank != 2 {
+		t.Errorf("0002 Rank = %d, want 2", byFID["0002"].Rank)
+	}
+}
+
+// TestBuildBoard_FranchiseWithNoScoresContributesZero covers a franchise present in
+// standings but with no scored players (GLM 5.2 review lead A4, Session 43): an
+// expansion/empty-roster franchise must still get a row, with 0 scouting rather than
+// being dropped or erroring.
+func TestBuildBoard_FranchiseWithNoScoresContributesZero(t *testing.T) {
+	rd := fakeReader{players: map[string]state.PlayerState{
+		"1001": {MFLID: "1001", FranchiseID: "0001"},
+	}}
+	rb := fakeRulebook{names: map[string]string{}, starterCount: "1"}
+	svc, err := New(rd, rb)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	standings := []leaguestandings.RawStanding{
+		{FranchiseID: "0001"},
+		{FranchiseID: "0002"}, // no players scored for this franchise
+	}
+	scores := []output.SeasonScore{{MFLID: "1001", AdjustedScore: 100}}
+
+	board, err := svc.BuildBoard(standings, scores, 0.5, AggSum)
+	if err != nil {
+		t.Fatalf("BuildBoard: %v", err)
+	}
+	if len(board.Rows) != 2 {
+		t.Fatalf("len(Rows) = %d, want 2 (0002 must not be dropped)", len(board.Rows))
+	}
+	byFID := map[string]Row{}
+	for _, r := range board.Rows {
+		byFID[r.FranchiseID] = r
+	}
+	if got := byFID["0002"].ScoutingScore; got != 0 {
+		t.Errorf("0002 (no scores) ScoutingScore = %v, want 0", got)
+	}
+}
+
+// TestBuildBoard_EmptyInputsAreNoOps covers empty standings/scores (GLM 5.2 review
+// lead A5, Session 43): must return an empty board, not error or panic.
+func TestBuildBoard_EmptyInputsAreNoOps(t *testing.T) {
+	svc, err := New(fakeReader{}, fakeRulebook{names: map[string]string{}})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	board, err := svc.BuildBoard(nil, nil, 0.5, AggSum)
+	if err != nil {
+		t.Fatalf("BuildBoard(empty): %v", err)
+	}
+	if len(board.Rows) != 0 {
+		t.Errorf("len(Rows) = %d, want 0", len(board.Rows))
+	}
+}
+
+// TestBuildBoard_UnmappedFranchiseFallsBackToLabeledID is the A7 end-to-end
+// counterpart to TestFranchiseDisplayName_FallsBackToLabeledID (GLM 5.2 review lead
+// A7, Session 43): a RawStanding whose FranchiseID has no rulebook name must still
+// produce a row, labeled, through the full BuildBoard path — not just the unit.
+func TestBuildBoard_UnmappedFranchiseFallsBackToLabeledID(t *testing.T) {
+	rd := fakeReader{}
+	rb := fakeRulebook{names: map[string]string{}, starterCount: "1"} // no franchise names at all
+	svc, err := New(rd, rb)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	board, err := svc.BuildBoard([]leaguestandings.RawStanding{{FranchiseID: "0099"}}, nil, 0.5, AggSum)
+	if err != nil {
+		t.Fatalf("BuildBoard: %v", err)
+	}
+	if len(board.Rows) != 1 || board.Rows[0].Name != "(franchise 0099)" {
+		t.Errorf("Rows = %+v, want one row named \"(franchise 0099)\"", board.Rows)
 	}
 }
 
@@ -148,6 +225,9 @@ func TestAggregateScouting(t *testing.T) {
 	// Caller's slice must be untouched by the top-N sort-on-copy.
 	if scores[0] != 10 || scores[1] != 30 || scores[2] != 20 {
 		t.Errorf("aggregateScouting mutated caller slice: %v", scores)
+	}
+	if got := aggregateScouting(nil, AggSum, 0); got != 0 {
+		t.Errorf("sum(empty) = %v, want 0", got)
 	}
 }
 

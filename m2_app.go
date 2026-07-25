@@ -87,10 +87,14 @@ type PowerRankingsResult struct {
 // DTO. The aggregation/blend/join orchestration lives in internal/m2service,
 // mirroring how ScoreLeague delegates to rankings.Runner.
 func (a *App) GetPowerRankings(weight float64, aggMode string) PowerRankingsResult {
+	// Resolved BEFORE fail is defined (GLM 5.2 review lead 1, Session 43): the
+	// pre-fix version echoed the raw, unresolved aggMode argument on every error
+	// path — the pre-extraction code always echoed the normalized "sum"/"topn".
+	mode := m2service.ResolveAggMode(aggMode)
 	fail := func(err error) PowerRankingsResult {
 		return PowerRankingsResult{
 			Error: err.Error(), Label: a.proxyLabel(), Season: a.season,
-			Weight: weight, AggMode: aggMode,
+			Weight: weight, AggMode: mode,
 			Freshness: Freshness{State: FreshFail, Note: err.Error()},
 		}
 	}

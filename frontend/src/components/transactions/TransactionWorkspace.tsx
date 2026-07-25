@@ -72,12 +72,16 @@ export function TransactionWorkspace() {
   async function pickFranchise(id: string) {
     setSelectedFr(id);
     setSelected(null);
+    // Clear the OTHER slot FIRST (GLM 5.2 review lead B2, Session 44): clearing after the
+    // await left a stale opposite-slot value on screen for one intermediate render — e.g.
+    // the FA rail badge briefly showing the old pool count while the new roster was already
+    // in. Same discipline as TradeBuilder.pickFranchise's pre-existing clear-first fix.
     if (id === FA) {
-      await loadPool();
       clearRoster();
+      await loadPool();
     } else {
-      await loadRoster(id);
       clearPool();
+      await loadRoster(id);
     }
   }
 

@@ -96,7 +96,7 @@ func (s *Service) BuildBoard(
 	weight float64,
 	aggMode string,
 ) (Board, error) {
-	mode := resolveAggMode(aggMode)
+	mode := ResolveAggMode(aggMode)
 
 	starterN := s.starterCount()
 	if mode == AggTopN && starterN <= 0 {
@@ -125,9 +125,12 @@ func (s *Service) BuildBoard(
 	}, nil
 }
 
-// resolveAggMode normalizes the caller's aggregation mode, defaulting to sum for an
-// empty or unrecognized value so a bad param never errors the view.
-func resolveAggMode(m string) string {
+// ResolveAggMode normalizes the caller's aggregation mode, defaulting to sum for an
+// empty or unrecognized value so a bad param never errors the view. Exported so the
+// app-layer adapter can echo the SAME resolved value on its early-fail paths (before
+// BuildBoard ever runs) that it echoes on success — GLM 5.2 review lead 1 (Session
+// 43): the pre-fix fail closure echoed the raw, unresolved caller argument.
+func ResolveAggMode(m string) string {
 	if m == AggTopN {
 		return AggTopN
 	}
