@@ -16,12 +16,19 @@ import { useInspectorStore } from '../store/inspector';
 //
 // B-2 restyle: migrated onto the Session-B board grammar (docs/ui/wireframes/
 // session-b) — Adjusted-dominant facet map, typographic sort, row hover feedback,
-// honest empty state (row selection + keyboard nav land in B-4 with the
-// Inspector). The locked facet map is Rank·Player·Pos·Franchise·Base·
-// Adjusted·Salary; the engine-internal diagnostics (AgePull, L4, CapTier, Adj/$M)
-// are retained as a RECESSED trailing group in Narrative/Tactical and dropped in
-// Matrix — a deliberate Phase-1 deviation from the strict 7-col lock so the tool
-// keeps its debuggability until B-4 relocates layer detail into the Inspector.
+// honest empty state. Row selection + keyboard nav landed in B-4a.
+//
+// B-4b: the board now holds the locked facet map EXACTLY —
+// Rank·Player·Pos·Franchise·Base·Adjusted·Salary. The B-2 recessed diagnostic
+// group is gone: AgePull / L4 / CapTier are engine internals that the B-4a
+// Inspector now carries per player, so keeping them on the board duplicated the
+// Inspector at the cost of the 7-col lock.
+//
+// Adj/$M is the exception, and deliberately so: it is not a diagnostic but the
+// locked "Cap efficiency view" (UI_Direction_Document §12.2), a BOARD-level lens
+// (rank the league by efficiency) that the per-player Inspector cannot express.
+// So it is bound to that lens — the column exists only while the cap-eff chip is
+// on, and never in Matrix (which stays the pure Rank·Player·Pos·Adj·Sal scan).
 
 const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DT', 'DE', 'LB', 'CB', 'S'] as const;
 
@@ -29,10 +36,12 @@ const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DT', 'DE', 'LB', 'CB', 'S'] as 
 // column is not sortable — it is the canonical B6 order, always ascending.
 type SortKey = 'base' | 'adjusted' | 'salary' | 'capEff';
 
-// Grid templates (Session-B §2·3). Tactical carries the facet map + the recessed
-// diagnostic group; Matrix collapses to the pure scan (Rank·Player·Pos·Adj·Sal),
-// the extra cells hidden via .twr-hide-mtx so they vacate their grid tracks.
-const COLS = '34px 1fr 42px 148px 66px 92px 80px 60px 54px 66px 72px';
+// Grid templates (Session-B §2·3). Narrative/Tactical carry the locked 7-col
+// facet map, plus the Adj/$M track ONLY while the cap-efficiency lens is on;
+// Matrix collapses to the pure scan (Rank·Player·Pos·Adj·Sal), the extra cells
+// hidden via .twr-hide-mtx so they vacate their grid tracks.
+const COLS = '34px 1fr 42px 148px 66px 92px 80px';
+const COLS_CAPEFF = `${COLS} 72px`;
 const COLS_MTX = '24px 1fr 36px 72px 72px';
 
 export function RankingsBoard() {
@@ -154,15 +163,19 @@ export function RankingsBoard() {
           className={`twr-chip${capEffOnly ? ' is-on' : ''}`}
           aria-pressed={capEffOnly}
           onClick={() => {
-            // Enabling the filter also sorts by Adj/$M (the old capeff view was
-            // filter-and-sort in one action); disabling leaves the sort as-is.
-            setCapEffOnly((v) => {
-              if (!v) {
-                setSortKey('capEff');
-                setSortDir('desc');
-              }
-              return !v;
-            });
+            // The chip IS the cap-efficiency lens (B-4b): it filters to rows with a
+            // defined Adj/$M, reveals the Adj/$M column, and sorts by it — one action,
+            // as the original capeff view was. Turning it off must also drop a capEff
+            // sort, or the board would stay ordered by a column that is no longer
+            // rendered (an invisible sort state with no header to undo it).
+            if (!capEffOnly) {
+              setSortKey('capEff');
+              setSortDir('desc');
+            } else if (sortKey === 'capEff') {
+              setSortKey('adjusted');
+              setSortDir('desc');
+            }
+            setCapEffOnly((v) => !v);
           }}
         >
           Cap-eff only
@@ -176,7 +189,10 @@ export function RankingsBoard() {
       ) : (
         <div
           className="twr-board"
-          style={{ ['--twr-cols' as string]: COLS, ['--twr-cols-mtx' as string]: COLS_MTX }}
+          style={{
+            ['--twr-cols' as string]: capEffOnly ? COLS_CAPEFF : COLS,
+            ['--twr-cols-mtx' as string]: COLS_MTX,
+          }}
         >
           <div className="twr-board__sub">
             <span>#</span>
@@ -192,12 +208,11 @@ export function RankingsBoard() {
             <span className="twr-r">
               <SortHeader label="Salary" sortKey="salary" activeKey={sortKey} dir={sortDir} onSort={onSort} />
             </span>
-            <span className="twr-r twr-hide-mtx">Age</span>
-            <span className="twr-r twr-hide-mtx">L4</span>
-            <span className="twr-hide-mtx">Tier</span>
-            <span className="twr-r twr-hide-mtx">
-              <SortHeader label="Adj/$M" sortKey="capEff" activeKey={sortKey} dir={sortDir} onSort={onSort} />
-            </span>
+            {capEffOnly && (
+              <span className="twr-r twr-hide-mtx">
+                <SortHeader label="Adj/$M" sortKey="capEff" activeKey={sortKey} dir={sortDir} onSort={onSort} />
+              </span>
+            )}
           </div>
           {visible.map((r) => (
             // Row selection (B-4a): click (or Enter/Space) selects the player → the
@@ -224,10 +239,14 @@ export function RankingsBoard() {
               <span className="twr-c-num twr-r twr-hide-mtx">{r.basePoints.toFixed(2)}</span>
               <span className="twr-c-adj twr-r">{r.adjustedScore.toFixed(2)}</span>
               <span className="twr-c-num twr-r">${r.salary.toFixed(2)}</span>
-              <span className="twr-c-diag twr-r twr-hide-mtx">{r.agePull.toFixed(3)}</span>
-              <span className="twr-c-diag twr-r twr-hide-mtx">{r.l4Combined.toFixed(3)}</span>
-              <span className="twr-c-diag twr-hide-mtx">{r.capTier}</span>
-              <span className="twr-c-diag twr-r twr-hide-mtx">{r.capEffOK ? r.capEff.toFixed(2) : '—'}</span>
+              {capEffOnly && (
+                // The '—' arm is unreachable while the column is lens-bound (the lens filters to
+                // capEffOK rows), and is kept only so decoupling the column from the filter later
+                // cannot print a bare NaN. It is a guard, not a second contract. (GLM lead M2.)
+                <span className="twr-c-diag twr-r twr-hide-mtx">
+                  {r.capEffOK ? r.capEff.toFixed(2) : '—'}
+                </span>
+              )}
             </div>
           ))}
         </div>

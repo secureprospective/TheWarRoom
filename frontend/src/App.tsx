@@ -14,6 +14,7 @@ import { RookieTable } from './components/RookieTable';
 import { ValidationBoard } from './components/ValidationBoard';
 import { CalendarBoard } from './components/calendar/CalendarBoard';
 import { InspectorContent } from './components/inspector/InspectorContent';
+import { HomeBoard } from './components/home/HomeBoard';
 import { useInspectorStore } from './store/inspector';
 
 // B-1 shell: the confirmed 4-column instrument console (Session A grid + Session C
@@ -116,7 +117,7 @@ function ModuleView({ module }: { module: ModuleId }) {
       return <ControlModule />;
     case 'home':
     default:
-      return <HomePlaceholder />;
+      return <HomeBoard />;
   }
 }
 
@@ -157,22 +158,6 @@ function ControlModule() {
       ) : (
         <ValidationBoard />
       )}
-    </div>
-  );
-}
-
-function HomePlaceholder() {
-  return (
-    <div className="flex h-full items-center justify-center p-8 text-center">
-      <div>
-        <div className="font-mono text-[11px] uppercase tracking-[0.06em] text-text-tertiary">
-          HOME
-        </div>
-        <div className="mt-2 max-w-md text-sm text-text-secondary">
-          League landing — the 2×2 seasonal card grid and contextual inspector land in build
-          session B-4. Use the nav rail to reach the live modules.
-        </div>
-      </div>
     </div>
   );
 }

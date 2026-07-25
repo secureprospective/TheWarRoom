@@ -358,3 +358,111 @@ body {
   border: 1px solid var(--hairline);
   color: var(--text-secondary);
 }
+
+/* ----------------------------------------------------------------------------
+   Home landing (B-4b) — the 2×2 quadrant grid (UI_Direction §10.4, Session-A §6).
+   A deliberate slow-down break from the boards: no grid rules, generous negative
+   space, narrative scale. The container re-declares data-density="narrative" so
+   the landing stays approachable at any global density without touching the
+   shell's tier. Collapses to a single column when the workspace is narrow
+   (§10.4: "can stack to 1x4").
+   ---------------------------------------------------------------------------- */
+.twr-home {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 20px;
+  padding: 24px;
+  height: 100%;
+  overflow: auto;
+}
+@media (max-width: 1100px) {
+  .twr-home { grid-template-columns: 1fr; grid-auto-rows: auto; }
+}
+
+.twr-home__card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 18px 20px;
+  background: var(--surface-tile);
+  border: 1px solid var(--hairline);
+}
+
+.twr-home__head { margin-bottom: 14px; }
+
+.twr-home__title {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* The card's own statement of what it is showing — carries the honest note when a
+   slot is backed by partial data. Never marketing copy. */
+.twr-home__note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
+.twr-home__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Countdown hero — the one place on the landing that carries scale. */
+.twr-home__hero { padding: 4px 0 8px; }
+.twr-home__herofig {
+  font-family: var(--mono);
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.twr-home__herolab {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--amber-base);
+}
+
+.twr-home__list { list-style: none; margin: 0; padding: 0; }
+
+/* 48px narrative row height (Session-A density table), not the 32px board row. */
+.twr-home__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 2px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.twr-home__item:last-child { border-bottom: 0; }
+
+.twr-home__rank {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  min-width: 20px;
+  text-align: right;
+}
+.twr-home__name { flex: 1; color: var(--text-primary); }
+.twr-home__pos { font-family: var(--mono); font-size: 11px; color: var(--text-tertiary); }
+.twr-home__val {
+  font-family: var(--mono);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.twr-home__line { margin: 0; font-size: 12px; line-height: 1.6; color: var(--text-secondary); }
+.twr-home__foot { margin: 0; font-size: 11px; color: var(--text-tertiary); }
