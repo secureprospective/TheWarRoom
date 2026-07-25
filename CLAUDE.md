@@ -37,14 +37,14 @@ A 32-team dynasty fantasy football ranking engine and full-stack desktop applica
 
 **UI Build Track — COMPLETE.** B-1 shell (`ce710bc`) · B-2 M1/M2 (`433d35b`) + all remaining modules (`13ca56d`) · B-3 calendar agenda board (`f370e5c`) · **B-4 (4a Inspector `f028aaf` + 4b sweep/Home `7f35a6d`)** · **B-5 harden (`53fea25`)**. **➡️ Next is the ALPHA GATE, which is not a build session.** Note the B-3 calendar BOARD UI is still unbuilt (backend merged, no board yet) — deferred, not lost.
 
-**Scouting engine:** S-Phase 0–4, 4b, and Thread B (crosswalk consolidation) all MERGED. FILM Thread C offense arm (`OffenseFilm`) already MERGED + LIVE (`4e4a0ef`); the IDP arm + the weight-calibration pass remain (`docs/roadmap/FILM_Calibration_Planning.md`) — no blind weights, expert-panel gate required.
+**Scouting engine:** S-Phase 0–4, 4b, and Thread B (crosswalk consolidation) all MERGED. FILM Thread C is COMPLETE — offense arm (`OffenseFilm`, `4e4a0ef`), IDP arm (`IDPFilm`, `a335de6`), and Coverage (`b0f5f46`) all MERGED + LIVE; the 5 weight knobs are LOCKED (expert-panel gate cleared 2026-07-20, `docs/roadmap/FILM_Calibration_Planning.md` §4 C-3). **Corrected 2026-07-25 — this line previously said the IDP arm + weight calibration "remain"; verified against source, they were already done.** Only remainder: the K5 rookie-tower manual-CSV loader is DATA-BLOCKED (no viable auto-source), deferred to OQ-016 — not a live gap in the IDP arm.
 
 **➡️ NEXT — THE ALPHA GATE.** The UI build track is done; the next step is **Christopher running his real league on the binary**, not another build session. 📄 **Read `docs/build-handoffs/handoffs/58-B5-Harden-Merged-ALPHA-GATE-NEXT.md` first.** Open items, smallest first:
 
 1. **⚠️ Run the outage test** — the ONE unverified thing in B-5, and the only check that exercises the degradation path itself. ~5 min at a real machine: load M2, disconnect the network, reload M2, confirm 32 franchises still render under an amber `CACHED` strip with the numbers fully readable, reconnect, confirm the strip clears. Script is in this session's `/root/paste.md` history (section D).
 2. **Alpha itself** — use it, and let real friction generate the next backlog instead of guessing at one now.
 
-**Deferred, not lost:** M2/M4 refactors · FILM Thread C IDP arm + weight calibration (expert-panel gate) · the **B-3 calendar board UI** (backend merged, no board yet).
+**Deferred, not lost:** M2/M4 refactors (handoffs 43/44 — verified 2026-07-25, neither was ever done: `m2_app.go` still holds `buildBlendInputs`/`aggregateScouting`/`buildPowerRows`/`parseStanding` unextracted at 368 lines; no `frontend/src/store/transactions.ts` exists and `TransactionWorkspace.tsx` has grown to 817 lines) · M2 slice-2. ~~FILM Thread C IDP arm~~ and ~~B-3 calendar board UI~~ struck 2026-07-25 — both were already MERGED (see Scouting engine line above and handoff 54); this list had gone stale.
 
 **Deferred (not gating Alpha):** **live DT/DE pass-rush weight — EXPERT-PANEL GATE** (pfrpassrush composite → SL-021 EMA `new_observation`; C-1 evidence says small-or-zero at DT/DE given the Madden redundancy, or site it at LB where it's additive r≈0.47 — panel decides, no blind weight) · M2/M4 refactors (handoffs 43/44) · M2 slice-2.
 
