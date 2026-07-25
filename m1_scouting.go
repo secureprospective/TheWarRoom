@@ -131,13 +131,20 @@ func mergeCFBDScouting(ctx context.Context, client *http.Client, key string, cw 
 // engine-ready coverage anchor ([0,1], higher=better — the leaf inverts PFR passer-rating-
 // allowed) into a fresh scouting.NGSCoverage group. A coverage-only player gets a fresh
 // Profile carrying just Coverage; the film-composite blend (K4 = 0.20 of the film budget)
-// is applied downstream in rankings.applyScouting, not here. The season is the same value
-// the CFBD signals use (ingestion.SeasonYear).
+// is applied downstream in rankings.applyScouting, not here. The anchor is the PRIOR completed
+// NFL season (SeasonYear − 1): pfrcoverage is completed-season PFR advanced-defense data, so the
+// current league year is not yet played/charted — same rule as mergeOffenseFilm. (Passing
+// SeasonYear itself resolved zero once the league rolled to a season nflverse has no data for.)
 func mergeCoverage(ctx context.Context, client *http.Client, cw crosswalk.Map,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	// pfrcoverage keys the season as a string (the CSV's raw column); pass SeasonYear
-	// straight through — no numeric round-trip needed, unlike the CFBD int-year fetchers.
-	cov, err := assembly.BuildCoverage(ctx, client, pfrcoverage.SourceURL, cw, ingestion.SeasonYear, rosterMFLIDs, adapter)
+	year, err := strconv.Atoi(ingestion.SeasonYear)
+	if err != nil {
+		return fmt.Errorf("app: season year %q not numeric: %w", ingestion.SeasonYear, err)
+	}
+	// pfrcoverage keys the season as a string (the CSV's raw column); the prior completed season
+	// carries the charting (the current league year is not yet played).
+	coverageSeason := strconv.Itoa(year - 1)
+	cov, err := assembly.BuildCoverage(ctx, client, pfrcoverage.SourceURL, cw, coverageSeason, rosterMFLIDs, adapter)
 	if err != nil {
 		return fmt.Errorf("app: build coverage scouting directory: %w", err)
 	}
