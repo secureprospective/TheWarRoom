@@ -12,6 +12,7 @@ import { LeagueControls } from './components/transactions/LeagueControls';
 import { AdminPanel } from './components/AdminPanel';
 import { RookieTable } from './components/RookieTable';
 import { ValidationBoard } from './components/ValidationBoard';
+import { CalendarBoard } from './components/calendar/CalendarBoard';
 
 // B-1 shell: the confirmed 4-column instrument console (Session A grid + Session C
 // tokens) replaces the flat testing-harness tab bar. The shipped modules are
@@ -77,7 +78,11 @@ function App() {
       workspaceTitle={MODULE_TITLES[module]}
     >
       <ModuleView module={module} />
-      {summoned ? <SummonPlaceholder target={summoned} onClose={() => setSummoned(null)} /> : null}
+      {summoned === 'calendar' ? (
+        <CalendarBoard onClose={() => setSummoned(null)} />
+      ) : summoned === 'comms' ? (
+        <SummonPlaceholder target="comms" onClose={() => setSummoned(null)} />
+      ) : null}
     </AppShell>
   );
 }
@@ -160,15 +165,9 @@ function HomePlaceholder() {
   );
 }
 
-// Placeholder for the summon-over comms/calendar quick-dash (Ledger A10/A11).
-// Full comms + calendar are Session-D / B-3; B-1 proves the summon/collapse gesture.
-function SummonPlaceholder({
-  target,
-  onClose,
-}: {
-  target: 'comms' | 'calendar';
-  onClose: () => void;
-}) {
+// Placeholder for the summon-over COMMS quick-dash (Ledger A10/A11). The calendar summon is now the
+// live CalendarBoard (B-3); comms stays a placeholder until its Session-D terminal-log grammar lands.
+function SummonPlaceholder({ target, onClose }: { target: 'comms'; onClose: () => void }) {
   return (
     <div
       className="absolute inset-y-0 right-0 z-30 flex w-80 flex-col border-l border-hairline bg-surface-overlay shadow-bevel"
@@ -176,7 +175,7 @@ function SummonPlaceholder({
     >
       <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
         <span className="font-mono text-[11px] uppercase tracking-[0.06em] text-text-secondary">
-          {target === 'comms' ? 'COMMS' : 'CALENDAR'}
+          COMMS
         </span>
         <button
           type="button"
@@ -188,9 +187,7 @@ function SummonPlaceholder({
         </button>
       </div>
       <div className="flex flex-1 items-center justify-center p-4 text-center text-sm text-text-tertiary">
-        {target === 'comms'
-          ? 'Terminal-log comms thread lands in B-3 (Session D grammar).'
-          : 'Fully-functional calendar lands in B-3.'}
+        Terminal-log comms thread lands in a later session (Session D grammar).
       </div>
     </div>
   );
