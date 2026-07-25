@@ -40,8 +40,13 @@ repos:
   # race-enabled test suite and the frontend build. Direct-to-main has no PR/CI
   # backstop, so this is the last local check before a commit reaches origin.
   # Runs at the pre-push stage, not pre-commit, so small WIP commits between
-  # pushes stay fast — one `pre-commit install --hook-type pre-push` per clone
-  # is required for this to fire (see CLAUDE.md dev setup).
+  # pushes stay fast — `make setup` wires both hook types per clone (see
+  # CLAUDE.md dev setup). always_run: true (GLM 5.2 review, B1): a hook with
+  # no files/types filter is NOT guaranteed to fire on every push without it —
+  # pre-commit can skip a file-scoped hook when the push's computed file delta
+  # is empty (e.g. a tag-only push, or a merge/rebase that lands an identical
+  # tree). This gate exists precisely for the no-PR/no-CI corner cases, so it
+  # must not have a corner case of its own where it silently no-ops.
   - repo: local
     hooks:
       - id: verify
@@ -49,4 +54,5 @@ repos:
         entry: make verify
         language: system
         pass_filenames: false
+        always_run: true
         stages: [push]
