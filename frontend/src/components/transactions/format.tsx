@@ -1,6 +1,10 @@
 // Shared presentation helpers for the M4 transaction surfaces. TransactionWorkspace and
-// TradeBuilder both render the same franchise/roster tables, so the money/initials
-// formatters and the Th/Empty table primitives live here once (M17: extract on 2nd use).
+// TradeBuilder both render the same franchise/roster boards, so the money/initials
+// formatters and the Empty placeholder live here once (M17: extract on 2nd use).
+//
+// B-2: the roster/FA tables migrated onto the .twr-board* grammar, so the old <table>
+// header helper (Th) is gone — .twr-board__sub carries headers now. Empty stays for the
+// non-engrave placeholders (loading, "pick a franchise").
 
 // money formats a millions value as the league's `$X.XM` cap notation.
 export const money = (m: number) => `$${m.toFixed(1)}M`;
@@ -14,20 +18,20 @@ export const initials = (name: string) =>
     .join('')
     .toUpperCase();
 
-// Th is the sticky, uppercase table header cell shared by the transaction tables.
-export function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
-  return (
-    <th
-      className={`sticky top-0 z-[1] border-b border-[#29344a] bg-[#0e1420] px-3.5 py-[9px] text-[10.5px] font-semibold uppercase tracking-[0.07em] ${
-        right ? 'text-right' : 'text-left'
-      }`}
-    >
-      {children}
-    </th>
-  );
-}
-
 // Empty is the centered placeholder shown when a table or panel has no rows.
 export function Empty({ text }: { text: string }) {
-  return <div className="m-auto max-w-[260px] p-8 text-center text-[13px] text-[#64748b]">{text}</div>;
+  return (
+    <div
+      style={{
+        margin: 'auto',
+        maxWidth: 260,
+        padding: 32,
+        textAlign: 'center',
+        fontSize: 13,
+        color: 'var(--text-tertiary)',
+      }}
+    >
+      {text}
+    </div>
+  );
 }

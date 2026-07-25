@@ -8,7 +8,7 @@ import {
 } from '../../../wailsjs/go/main/App';
 import { main } from '../../../wailsjs/go/models';
 import { ConfirmModal, type Pending } from './ConfirmModal';
-import { money, initials, Th, Empty } from './format';
+import { money, initials, Empty } from './format';
 
 // TradeBuilder is the M4 slice-3 multi-franchise/multi-leg TRADE surface (design doc §"TRADE gets
 // its own builder"). Unlike the subject-centric single-player workspace, a trade spans several
@@ -17,6 +17,9 @@ import { money, initials, Th, Empty } from './format';
 // every leg lands or none). No mflID is typed (D2): names come from the server, the id rides hidden
 // on each leg. The whole trade goes through the same D5 quote → D4 re-send-intent commit path the
 // single-move ops use, reusing ConfirmModal. Every list is guarded `?? []` (D9).
+//
+// B-2 restyle: Session-C token contract; the browsed roster migrated onto the shared .twr-board*
+// grammar (roster reuses M1/M2's row grammar per the wireframe), rail + cart on tokens/controls.
 
 // TradeLeg is one player's move as staged in the cart: the id crosses the wire, the rest is display.
 type TradeLeg = {
@@ -26,6 +29,9 @@ type TradeLeg = {
   fromFranchiseID: string;
   toFranchiseID: string; // '' until the operator picks a destination
 };
+
+// Browsed-roster board template (Player·Pos·Cap·Add).
+const ROSTER_COLS = '1fr 46px 84px 74px';
 
 export function TradeBuilder() {
   const [franchises, setFranchises] = useState<main.M4Franchise[]>([]);
@@ -176,52 +182,71 @@ export function TradeBuilder() {
 
   if (tradeLegal === false) {
     return (
-      <div className="flex h-[calc(100vh-190px)] min-h-[520px] items-center justify-center border border-[#29344a] bg-[#0e1420] text-[13px] text-[#64748b]">
+      <div
+        style={{
+          display: 'flex',
+          height: 'calc(100vh - 190px)',
+          minHeight: 520,
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid var(--hairline)',
+          background: 'var(--surface-canvas)',
+          fontSize: 13,
+          color: 'var(--text-tertiary)',
+        }}
+      >
         Trades are not legal in the current phase ({phase}).
       </div>
     );
   }
 
   return (
-    <div className="flex h-[calc(100vh-190px)] min-h-[520px] border border-[#29344a] bg-[#0e1420] text-[#e2e8f0]">
+    <div
+      style={{
+        display: 'flex',
+        height: 'calc(100vh - 190px)',
+        minHeight: 520,
+        border: '1px solid var(--hairline)',
+        background: 'var(--surface-canvas)',
+        color: 'var(--text-primary)',
+      }}
+    >
       {/* Left rail — browse any franchise's roster */}
-      <nav className="flex w-52 flex-none flex-col border-r border-[#29344a] bg-[#0c121d]">
-        <div className="border-b border-[#202a3d] p-2.5">
+      <nav
+        style={{
+          display: 'flex',
+          width: 208,
+          flex: 'none',
+          flexDirection: 'column',
+          borderRight: '1px solid var(--hairline)',
+          background: 'var(--surface-sunken)',
+        }}
+      >
+        <div style={{ borderBottom: '1px solid var(--hairline)', padding: 10 }}>
           <input
-            className="h-[30px] w-full border border-[#29344a] bg-[#161d2b] px-2.5 text-[12.5px] outline-none focus:border-[#5b9dff]"
+            className="twr-input"
+            style={{ width: '100%' }}
             placeholder="Filter franchises…"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
         </div>
-        <div className="flex-1 overflow-y-auto py-1.5">
+        <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
           {shownFranchises.map((f) => (
-            <button
+            <RailRow
               key={f.franchiseID}
-              type="button"
+              abbr={f.franchiseID}
+              label={f.name || f.franchiseID}
+              count={f.playerCount}
+              active={browseFr === f.franchiseID}
               onClick={() => void pickFranchise(f.franchiseID)}
-              className={`flex w-full items-center gap-2.5 border-l-2 px-3 py-[7px] text-left transition-colors ${
-                browseFr === f.franchiseID
-                  ? 'border-[#5b9dff] bg-[rgba(91,157,255,0.12)]'
-                  : 'border-transparent hover:bg-[#161d2b]'
-              }`}
-            >
-              <span
-                className={`w-8 text-[11px] font-bold ${
-                  browseFr === f.franchiseID ? 'text-[#5b9dff]' : 'text-[#93a1b8]'
-                }`}
-              >
-                {f.franchiseID}
-              </span>
-              <span className="truncate text-[12.5px]">{f.name || f.franchiseID}</span>
-              <span className="ml-auto text-[10.5px] tabular-nums text-[#64748b]">{f.playerCount}</span>
-            </button>
+            />
           ))}
         </div>
       </nav>
 
       {/* Center — the browsed roster; click Add to stage a leg */}
-      <section className="flex min-w-0 flex-1 flex-col">
+      <section style={{ display: 'flex', minWidth: 0, flex: 1, flexDirection: 'column' }}>
         <RosterPicker
           roster={roster}
           browseFr={browseFr}
@@ -232,22 +257,33 @@ export function TradeBuilder() {
       </section>
 
       {/* Right — the trade cart */}
-      <aside className="flex w-[360px] flex-none flex-col border-l border-[#29344a] bg-[#161d2b]">
-        <div className="border-b border-[#202a3d] px-[18px] pb-3.5 pt-[18px]">
-          <h2 className="text-[16px] font-bold">Trade builder</h2>
-          <p className="mt-0.5 text-[11.5px] text-[#93a1b8]">
-            {legs.length === 0 ? 'Add players from any roster to build a swap.' : `${legs.length} leg(s) staged · ${phase}`}
+      <aside
+        style={{
+          display: 'flex',
+          width: 360,
+          flex: 'none',
+          flexDirection: 'column',
+          borderLeft: '1px solid var(--hairline)',
+          background: 'var(--surface-tile)',
+        }}
+      >
+        <div style={{ borderBottom: '1px solid var(--hairline)', padding: '18px 18px 14px' }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Trade builder</h2>
+          <p style={{ margin: '2px 0 0', fontSize: 11.5, color: 'var(--text-secondary)' }}>
+            {legs.length === 0
+              ? 'Add players from any roster to build a swap.'
+              : `${legs.length} leg(s) staged · ${phase}`}
           </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-[18px] py-4">
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px' }}>
           {legs.length === 0 ? (
-            <p className="text-[12px] text-[#64748b]">
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>
               Pick a franchise on the left, then click a player to add a trade leg. Set each player's
               destination franchise here.
             </p>
           ) : (
-            <div className="space-y-2.5">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {legs.map((l) => (
                 <LegRow
                   key={l.mflID}
@@ -262,23 +298,102 @@ export function TradeBuilder() {
           )}
         </div>
 
-        <div className="border-t border-[#202a3d] px-[18px] py-3.5">
+        <div style={{ borderTop: '1px solid var(--hairline)', padding: '14px 18px' }}>
           <button
             type="button"
+            className="twr-btn"
+            style={{ width: '100%', padding: '10px 12px' }}
             disabled={!stageable}
             onClick={() => void stage()}
-            className="h-[38px] w-full bg-[#1e2636] text-[13px] font-semibold text-[#e2e8f0] outline outline-1 outline-[#29344a] hover:bg-[rgba(91,157,255,0.12)] hover:text-[#5b9dff] hover:outline-[#5b9dff] disabled:opacity-40"
           >
             Review trade…
           </button>
           {legs.length > 0 && !stageable && (
-            <p className="mt-2 text-[11px] text-[#f0b429]">Set a destination for every leg to continue.</p>
+            <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--amber-base)' }}>
+              Set a destination for every leg to continue.
+            </p>
           )}
         </div>
       </aside>
 
       <ConfirmModal pending={pending} busy={busy} onConfirm={() => void confirm()} onCancel={cancel} />
     </div>
+  );
+}
+
+// RailRow — a franchise entry in the browse rail (neutral selection axis, per Session-C).
+function RailRow({
+  abbr,
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  abbr: string;
+  label: string;
+  count?: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        width: '100%',
+        alignItems: 'center',
+        gap: 10,
+        borderLeft: `2px solid ${active ? 'var(--edge-selection)' : 'transparent'}`,
+        background: active ? 'var(--surface-overlay)' : 'transparent',
+        padding: '7px 12px',
+        textAlign: 'left',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={(e) => {
+        if (!active) e.currentTarget.style.background = 'var(--surface-raised)';
+      }}
+      onMouseLeave={(e) => {
+        if (!active) e.currentTarget.style.background = 'transparent';
+      }}
+    >
+      <span
+        style={{
+          width: 32,
+          fontSize: 11,
+          fontWeight: 700,
+          fontFamily: 'var(--mono)',
+          color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+        }}
+      >
+        {abbr}
+      </span>
+      <span
+        style={{
+          flex: 1,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          fontSize: 12.5,
+          color: 'var(--text-primary)',
+        }}
+      >
+        {label}
+      </span>
+      {count !== undefined && (
+        <span
+          style={{
+            marginLeft: 'auto',
+            fontSize: 10.5,
+            fontFamily: 'var(--mono)',
+            fontVariantNumeric: 'tabular-nums',
+            color: 'var(--text-tertiary)',
+          }}
+        >
+          {count}
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -302,48 +417,52 @@ function RosterPicker({
 
   return (
     <>
-      <div className="border-b border-[#202a3d] px-[22px] pb-3.5 pt-4">
-        <h1 className="text-[21px] font-bold tracking-[-0.01em]">{label || roster.franchiseID}</h1>
-        <div className="mt-2 text-[13px]">
-          Cap used <b className="tabular-nums text-[#f0b429]">{money(roster.capUsed)}</b>
+      <div style={{ borderBottom: '1px solid var(--hairline)', padding: '16px 22px 14px' }}>
+        <h1 style={{ margin: 0, fontSize: 21, fontWeight: 700, letterSpacing: '-0.01em' }}>
+          {label || roster.franchiseID}
+        </h1>
+        <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
+          Cap used{' '}
+          <b style={{ fontFamily: 'var(--mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--amber-base)' }}>
+            {money(roster.capUsed)}
+          </b>
         </div>
-        {roster.warning && <div className="mt-1 text-[11px] text-[#f0b429]">{roster.warning}</div>}
+        {roster.warning && (
+          <div style={{ marginTop: 4, fontSize: 11, color: 'var(--amber-base)' }}>{roster.warning}</div>
+        )}
       </div>
-      <div className="flex-1 overflow-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="text-[#64748b]">
-              <Th>Player</Th>
-              <Th>Pos</Th>
-              <Th right>Cap</Th>
-              <Th right>Trade</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {players.map((p) => {
-              const staged = inCart.has(p.mflID);
-              return (
-                <tr key={p.mflID} className="border-b border-[#202a3d]">
-                  <td className="px-3.5 py-[9px] text-[13px] font-semibold">{p.name}</td>
-                  <td className="px-3.5 py-[9px] text-[12px] text-[#93a1b8]">{p.position}</td>
-                  <td className="px-3.5 py-[9px] text-right text-[13px] tabular-nums text-[#f0b429]">
-                    {money(p.capSalary)}
-                  </td>
-                  <td className="px-3.5 py-[9px] text-right">
-                    <button
-                      type="button"
-                      disabled={staged}
-                      onClick={() => onAdd(p)}
-                      className="border border-[#29344a] px-2.5 py-1 text-[11.5px] font-semibold text-[#93a1b8] hover:border-[#5b9dff] hover:text-[#5b9dff] disabled:opacity-40"
-                    >
-                      {staged ? 'Staged' : 'Add →'}
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        <div className="twr-board" style={{ ['--twr-cols' as string]: ROSTER_COLS }}>
+          <div className="twr-board__sub">
+            <span>Player</span>
+            <span>Pos</span>
+            <span className="twr-r">Cap</span>
+            <span className="twr-r">Trade</span>
+          </div>
+          {players.map((p) => {
+            const staged = inCart.has(p.mflID);
+            return (
+              <div key={p.mflID} className="twr-board__row">
+                <span className="twr-c-name">{p.name}</span>
+                <span className="twr-c-pos">{p.position}</span>
+                <span className="twr-c-num twr-r" style={{ color: 'var(--amber-base)' }}>
+                  {money(p.capSalary)}
+                </span>
+                <span className="twr-r">
+                  <button
+                    type="button"
+                    className="twr-btn"
+                    style={{ padding: '3px 8px', fontSize: 10 }}
+                    disabled={staged}
+                    onClick={() => onAdd(p)}
+                  >
+                    {staged ? 'Staged' : 'Add →'}
+                  </button>
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </>
   );
@@ -363,14 +482,29 @@ function LegRow({
   onRemove: () => void;
 }) {
   return (
-    <div className="border border-[#29344a] bg-[#1e2636] p-2.5">
-      <div className="flex items-center gap-2.5">
-        <div className="grid h-8 w-8 flex-none place-items-center bg-[#223049] text-[12px] font-bold text-[#5b9dff]">
+    <div style={{ border: '1px solid var(--hairline)', background: 'var(--surface-raised)', padding: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div
+          style={{
+            display: 'grid',
+            height: 32,
+            width: 32,
+            flex: 'none',
+            placeItems: 'center',
+            background: 'var(--surface-overlay)',
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: 'var(--mono)',
+            color: 'var(--text-secondary)',
+          }}
+        >
           {initials(leg.name)}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-semibold">{leg.name}</div>
-          <div className="text-[11px] text-[#93a1b8]">
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 600 }}>
+            {leg.name}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
             {leg.position} · from {frName(leg.fromFranchiseID)}
           </div>
         </div>
@@ -378,15 +512,17 @@ function LegRow({
           type="button"
           onClick={onRemove}
           aria-label="Remove leg"
-          className="flex-none px-2 text-[15px] leading-none text-[#64748b] hover:text-[#f87171]"
+          className="twr-iconbtn"
+          style={{ flex: 'none' }}
         >
           ×
         </button>
       </div>
-      <div className="mt-2 flex items-center gap-2">
-        <span className="text-[11px] text-[#64748b]">→</span>
+      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>→</span>
         <select
-          className="h-8 min-w-0 flex-1 border border-[#29344a] bg-[#161d2b] px-2 text-[12.5px] outline-none focus:border-[#5b9dff]"
+          className="twr-select"
+          style={{ minWidth: 0, flex: 1 }}
           value={leg.toFranchiseID}
           onChange={(e) => onDestination(e.target.value)}
           aria-label="Destination franchise"
@@ -404,4 +540,3 @@ function LegRow({
     </div>
   );
 }
-

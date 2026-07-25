@@ -10,7 +10,7 @@ import {
 } from '../../../wailsjs/go/main/App';
 import { main } from '../../../wailsjs/go/models';
 import { ConfirmModal, type Pending } from './ConfirmModal';
-import { money, initials, Th, Empty } from './format';
+import { money, initials, Empty } from './format';
 
 // TransactionWorkspace is the M4 operator UI (design doc §"Slice 1"): a subject-centric IA
 // (D1) — pick a franchise from the rail → see its named roster → click a player → the action
@@ -18,8 +18,16 @@ import { money, initials, Th, Empty } from './format';
 // from the server, the id rides hidden on the request. Slice 1 wires three ops — ROSTER_STATUS
 // (plain confirm), WAIVER (preview → confirm), SIGN (form → preview → confirm). Every list is
 // guarded `?? []` (D9) so a Go nil-slice→JSON-null can never unmount the root (handoff-36 bug).
+//
+// B-2 restyle: Session-C token contract; the roster / free-agent lists migrated onto the shared
+// .twr-board* grammar with the .is-selected row axis wired to the click-to-select flow. Rail +
+// action panel on tokens/controls.
 
 const FA = '__FA__'; // sentinel rail selection = the free-agent pool
+
+// Board templates: a roster shows the cap columns, the FA pool is a lean two-column scan.
+const ROSTER_COLS = '1fr 46px 70px 80px 80px';
+const FA_COLS = '1fr 60px';
 
 export function TransactionWorkspace() {
   const [franchises, setFranchises] = useState<main.M4Franchise[]>([]);
@@ -276,18 +284,37 @@ export function TransactionWorkspace() {
   }, [franchises, filter]);
 
   return (
-    <div className="flex h-[calc(100vh-190px)] min-h-[520px] border border-[#29344a] bg-[#0e1420] text-[#e2e8f0]">
+    <div
+      style={{
+        display: 'flex',
+        height: 'calc(100vh - 190px)',
+        minHeight: 520,
+        border: '1px solid var(--hairline)',
+        background: 'var(--surface-canvas)',
+        color: 'var(--text-primary)',
+      }}
+    >
       {/* Left rail — franchises + free agents */}
-      <nav className="flex w-52 flex-none flex-col border-r border-[#29344a] bg-[#0c121d]">
-        <div className="border-b border-[#202a3d] p-2.5">
+      <nav
+        style={{
+          display: 'flex',
+          width: 208,
+          flex: 'none',
+          flexDirection: 'column',
+          borderRight: '1px solid var(--hairline)',
+          background: 'var(--surface-sunken)',
+        }}
+      >
+        <div style={{ borderBottom: '1px solid var(--hairline)', padding: 10 }}>
           <input
-            className="h-[30px] w-full border border-[#29344a] bg-[#161d2b] px-2.5 text-[12.5px] outline-none focus:border-[#5b9dff]"
+            className="twr-input"
+            style={{ width: '100%' }}
             placeholder="Filter franchises…"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
         </div>
-        <div className="flex-1 overflow-y-auto py-1.5">
+        <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
           {shownFranchises.map((f) => (
             <RailRow
               key={f.franchiseID}
@@ -298,7 +325,7 @@ export function TransactionWorkspace() {
               onClick={() => void pickFranchise(f.franchiseID)}
             />
           ))}
-          <div className="mx-3 my-1.5 h-px bg-[#202a3d]" />
+          <div style={{ margin: '6px 12px', height: 1, background: 'var(--hairline)' }} />
           <RailRow
             label="Free Agents"
             abbr="FA"
@@ -310,8 +337,8 @@ export function TransactionWorkspace() {
         </div>
       </nav>
 
-      {/* Center — roster or free-agent table */}
-      <section className="flex min-w-0 flex-1 flex-col">
+      {/* Center — roster or free-agent board */}
+      <section style={{ display: 'flex', minWidth: 0, flex: 1, flexDirection: 'column' }}>
         {selectedFr === FA ? (
           <FreeAgentTable pool={pool} selected={selected} onSelect={setSelected} />
         ) : (
@@ -320,9 +347,18 @@ export function TransactionWorkspace() {
       </section>
 
       {/* Right — contextual action panel */}
-      <aside className="flex w-[336px] flex-none flex-col border-l border-[#29344a] bg-[#161d2b]">
+      <aside
+        style={{
+          display: 'flex',
+          width: 336,
+          flex: 'none',
+          flexDirection: 'column',
+          borderLeft: '1px solid var(--hairline)',
+          background: 'var(--surface-tile)',
+        }}
+      >
         {!selected ? (
-          <div className="m-auto max-w-[220px] p-8 text-center text-[13px] text-[#64748b]">
+          <div style={{ margin: 'auto', maxWidth: 220, padding: 32, textAlign: 'center', fontSize: 13, color: 'var(--text-tertiary)' }}>
             Select a {selectedFr === FA ? 'free agent' : 'player'} to see the moves available this
             phase.
           </div>
@@ -367,26 +403,57 @@ function RailRow({
   gold?: boolean;
   onClick: () => void;
 }) {
+  const nameColor = gold ? 'var(--amber-base)' : 'var(--text-primary)';
+  const abbrColor = gold ? 'var(--amber-base)' : active ? 'var(--text-primary)' : 'var(--text-secondary)';
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-2.5 border-l-2 px-3 py-[7px] text-left transition-colors ${
-        active
-          ? 'border-[#5b9dff] bg-[rgba(91,157,255,0.12)]'
-          : 'border-transparent hover:bg-[#161d2b]'
-      }`}
+      style={{
+        display: 'flex',
+        width: '100%',
+        alignItems: 'center',
+        gap: 10,
+        borderLeft: `2px solid ${active ? 'var(--edge-selection)' : 'transparent'}`,
+        background: active ? 'var(--surface-overlay)' : 'transparent',
+        padding: '7px 12px',
+        textAlign: 'left',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={(e) => {
+        if (!active) e.currentTarget.style.background = 'var(--surface-raised)';
+      }}
+      onMouseLeave={(e) => {
+        if (!active) e.currentTarget.style.background = 'transparent';
+      }}
     >
-      <span
-        className={`w-8 text-[11px] font-bold ${
-          gold ? 'text-[#f0b429]' : active ? 'text-[#5b9dff]' : 'text-[#93a1b8]'
-        }`}
-      >
+      <span style={{ width: 32, fontSize: 11, fontWeight: 700, fontFamily: 'var(--mono)', color: abbrColor }}>
         {abbr}
       </span>
-      <span className={`truncate text-[12.5px] ${gold ? 'text-[#f0b429]' : 'text-[#e2e8f0]'}`}>{label}</span>
+      <span
+        style={{
+          flex: 1,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          fontSize: 12.5,
+          color: nameColor,
+        }}
+      >
+        {label}
+      </span>
       {count !== undefined && (
-        <span className="ml-auto text-[10.5px] tabular-nums text-[#64748b]">{count}</span>
+        <span
+          style={{
+            marginLeft: 'auto',
+            fontSize: 10.5,
+            fontFamily: 'var(--mono)',
+            fontVariantNumeric: 'tabular-nums',
+            color: 'var(--text-tertiary)',
+          }}
+        >
+          {count}
+        </span>
       )}
     </button>
   );
@@ -410,12 +477,15 @@ function RosterTable({
 
   return (
     <>
-      <div className="border-b border-[#202a3d] px-[22px] pb-3.5 pt-4">
-        <h1 className="text-[21px] font-bold tracking-[-0.01em]">{roster.franchiseID}</h1>
-        <div className="mt-2 text-[13px]">
-          Cap used <b className="tabular-nums text-[#f0b429]">{money(roster.capUsed)}</b>
+      <div style={{ borderBottom: '1px solid var(--hairline)', padding: '16px 22px 14px' }}>
+        <h1 style={{ margin: 0, fontSize: 21, fontWeight: 700, letterSpacing: '-0.01em' }}>{roster.franchiseID}</h1>
+        <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
+          Cap used{' '}
+          <b style={{ fontFamily: 'var(--mono)', fontVariantNumeric: 'tabular-nums', color: 'var(--amber-base)' }}>
+            {money(roster.capUsed)}
+          </b>
         </div>
-        {roster.warning && <div className="mt-1 text-[11px] text-[#f0b429]">{roster.warning}</div>}
+        {roster.warning && <div style={{ marginTop: 4, fontSize: 11, color: 'var(--amber-base)' }}>{roster.warning}</div>}
       </div>
       <PlayerTable players={players} selected={selected} onSelect={onSelect} showCap />
     </>
@@ -437,12 +507,15 @@ function FreeAgentTable({
 
   return (
     <>
-      <div className="border-b border-[#202a3d] px-[22px] pb-3.5 pt-4">
-        <h1 className="text-[21px] font-bold tracking-[-0.01em] text-[#f0b429]">Free Agents</h1>
-        <div className="mt-2 text-[13px] text-[#93a1b8]">
-          <span className="tabular-nums">{players.length}</span> signable player(s)
+      <div style={{ borderBottom: '1px solid var(--hairline)', padding: '16px 22px 14px' }}>
+        <h1 style={{ margin: 0, fontSize: 21, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--amber-base)' }}>
+          Free Agents
+        </h1>
+        <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
+          <span style={{ fontFamily: 'var(--mono)', fontVariantNumeric: 'tabular-nums' }}>{players.length}</span>{' '}
+          signable player(s)
         </div>
-        {pool.warning && <div className="mt-1 text-[11px] text-[#f0b429]">{pool.warning}</div>}
+        {pool.warning && <div style={{ marginTop: 4, fontSize: 11, color: 'var(--amber-base)' }}>{pool.warning}</div>}
       </div>
       {players.length === 0 ? (
         <Empty text="The pool is empty — sign or roll a season to populate it." />
@@ -465,55 +538,49 @@ function PlayerTable({
   showCap: boolean;
 }) {
   return (
-    <div className="flex-1 overflow-auto">
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="text-[#64748b]">
-            <Th>Player</Th>
-            <Th>Pos</Th>
-            {showCap && <Th>Status</Th>}
-            {showCap && <Th right>Salary</Th>}
-            {showCap && <Th right>Cap</Th>}
-          </tr>
-        </thead>
-        <tbody>
-          {players.map((p) => (
-            <tr
-              key={p.mflID}
-              onClick={() => onSelect(p)}
-              className={`cursor-pointer border-b border-[#202a3d] transition-colors ${
-                selected?.mflID === p.mflID
-                  ? 'bg-[rgba(91,157,255,0.12)] shadow-[inset_2px_0_0_#5b9dff]'
-                  : 'hover:bg-[#161d2b]'
-              }`}
-            >
-              <td className="px-3.5 py-[9px] text-[13px] font-semibold">{p.name}</td>
-              <td className="px-3.5 py-[9px] text-[12px] text-[#93a1b8]">{p.position}</td>
-              {showCap && (
-                <td className="px-3.5 py-[9px]">
-                  <span
-                    className={`px-[7px] py-0.5 text-[10.5px] font-semibold ${
-                      p.rosterStatus === 'TAXI_SQUAD'
-                        ? 'bg-[rgba(91,157,255,0.15)] text-[#5b9dff]'
-                        : 'bg-[#223049] text-[#a9c0e4]'
-                    }`}
-                  >
-                    {p.rosterStatus === 'TAXI_SQUAD' ? 'TAXI' : 'ROSTER'}
-                  </span>
-                </td>
-              )}
-              {showCap && (
-                <td className="px-3.5 py-[9px] text-right text-[13px] tabular-nums">{money(p.salary)}</td>
-              )}
-              {showCap && (
-                <td className="px-3.5 py-[9px] text-right text-[13px] tabular-nums text-[#f0b429]">
-                  {money(p.capSalary)}
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div style={{ flex: 1, overflow: 'auto' }}>
+      <div className="twr-board" style={{ ['--twr-cols' as string]: showCap ? ROSTER_COLS : FA_COLS }}>
+        <div className="twr-board__sub">
+          <span>Player</span>
+          <span>Pos</span>
+          {showCap && <span>Status</span>}
+          {showCap && <span className="twr-r">Salary</span>}
+          {showCap && <span className="twr-r">Cap</span>}
+        </div>
+        {players.map((p) => (
+          <div
+            key={p.mflID}
+            onClick={() => onSelect(p)}
+            className={`twr-board__row${selected?.mflID === p.mflID ? ' is-selected' : ''}`}
+            style={{ cursor: 'pointer' }}
+          >
+            <span className="twr-c-name">{p.name}</span>
+            <span className="twr-c-pos">{p.position}</span>
+            {showCap && (
+              <span>
+                <span
+                  style={{
+                    fontFamily: 'var(--mono)',
+                    fontSize: 10.5,
+                    fontWeight: 600,
+                    padding: '2px 6px',
+                    border: '1px solid var(--hairline)',
+                    color: p.rosterStatus === 'TAXI_SQUAD' ? 'var(--amber-base)' : 'var(--text-tertiary)',
+                  }}
+                >
+                  {p.rosterStatus === 'TAXI_SQUAD' ? 'TAXI' : 'ROSTER'}
+                </span>
+              </span>
+            )}
+            {showCap && <span className="twr-c-num twr-r">{money(p.salary)}</span>}
+            {showCap && (
+              <span className="twr-c-num twr-r" style={{ color: 'var(--amber-base)' }}>
+                {money(p.capSalary)}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -555,50 +622,59 @@ function ActionPanel({
   const can = (kind: string) => legalOps.includes(kind); // phase-legal per the engine (D1)
   return (
     <>
-      <div className="border-b border-[#202a3d] px-[18px] pb-3.5 pt-[18px]">
-        <div className="flex items-center gap-[11px]">
-          <div className="grid h-10 w-10 place-items-center bg-[#223049] text-[15px] font-bold text-[#5b9dff]">
+      <div style={{ borderBottom: '1px solid var(--hairline)', padding: '18px 18px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+          <div
+            style={{
+              display: 'grid',
+              height: 40,
+              width: 40,
+              placeItems: 'center',
+              background: 'var(--surface-overlay)',
+              fontSize: 15,
+              fontWeight: 700,
+              fontFamily: 'var(--mono)',
+              color: 'var(--text-secondary)',
+            }}
+          >
             {initials(player.name)}
           </div>
           <div>
-            <div className="text-[16px] font-bold">{player.name}</div>
-            <div className="mt-px text-[11.5px] text-[#93a1b8]">
-              {player.position} · {isFreeAgent ? 'Free agent' : player.rosterStatus === 'TAXI_SQUAD' ? 'Taxi squad' : 'Active roster'}
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{player.name}</div>
+            <div style={{ marginTop: 1, fontSize: 11.5, color: 'var(--text-secondary)' }}>
+              {player.position} ·{' '}
+              {isFreeAgent ? 'Free agent' : player.rosterStatus === 'TAXI_SQUAD' ? 'Taxi squad' : 'Active roster'}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="overflow-y-auto px-[18px] py-4">
+      <div style={{ overflowY: 'auto', padding: '16px 18px' }}>
         {isFreeAgent ? (
           <>
-            <div className="mb-2.5 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-[#64748b]">
-              Sign to a franchise
-            </div>
+            <SectionLabel>Sign to a franchise</SectionLabel>
             {!signable ? (
-              <p className="text-[12px] text-[#64748b]">
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)' }}>
                 Signing is closed this phase (free agency runs in the offseason and regular season).
               </p>
             ) : (
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <input
-                  className="h-9 w-full border border-[#29344a] bg-[#1e2636] px-2.5 text-[13px] outline-none focus:border-[#5b9dff]"
+                  className="twr-input"
+                  style={{ width: '100%' }}
                   placeholder="→ franchise id"
                   value={signFranchise}
                   onChange={(e) => setSignFranchise(e.target.value)}
                 />
-                <div className="flex gap-2">
+                <div style={{ display: 'flex', gap: 8 }}>
                   <input
-                    className="h-9 min-w-0 flex-1 border border-[#29344a] bg-[#1e2636] px-2.5 text-[13px] outline-none focus:border-[#5b9dff]"
+                    className="twr-input"
+                    style={{ minWidth: 0, flex: 1 }}
                     placeholder="salary/yr ($M)"
                     value={signSalary}
                     onChange={(e) => setSignSalary(e.target.value)}
                   />
-                  <select
-                    className="h-9 border border-[#29344a] bg-[#1e2636] px-2 text-[13px] outline-none focus:border-[#5b9dff]"
-                    value={signYears}
-                    onChange={(e) => setSignYears(e.target.value)}
-                  >
+                  <select className="twr-select" value={signYears} onChange={(e) => setSignYears(e.target.value)}>
                     <option value="1">1 yr</option>
                     <option value="2">2 yr</option>
                     <option value="3">3 yr</option>
@@ -607,9 +683,10 @@ function ActionPanel({
                 </div>
                 <button
                   type="button"
+                  className="twr-btn"
+                  style={{ width: '100%', padding: '10px 12px' }}
                   disabled={!signFranchise.trim() || !signSalary.trim()}
                   onClick={() => onStage('SIGN', player)}
-                  className="h-[38px] w-full bg-[#1e2636] text-[13px] font-semibold text-[#e2e8f0] outline outline-1 outline-[#29344a] hover:bg-[rgba(91,157,255,0.12)] hover:text-[#5b9dff] hover:outline-[#5b9dff] disabled:opacity-40"
                 >
                   Review signing…
                 </button>
@@ -618,10 +695,8 @@ function ActionPanel({
           </>
         ) : (
           <>
-            <div className="mb-2.5 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-[#64748b]">
-              Roster moves
-            </div>
-            <div className="grid grid-cols-2 gap-2">
+            <SectionLabel>Roster moves</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {can('ROSTER_STATUS') && (
                 <Act onClick={() => onStage('ROSTER_STATUS', player)}>{toTaxi ? 'Move to Taxi' : 'Activate'}</Act>
               )}
@@ -633,17 +708,17 @@ function ActionPanel({
             </div>
 
             {/* Contract moves — each shown only where the engine says it's phase-legal (D1). */}
-            <div className="mt-5 mb-2.5 text-[10.5px] font-semibold uppercase tracking-[0.09em] text-[#64748b]">
-              Contract moves
+            <div style={{ marginTop: 20 }}>
+              <SectionLabel>Contract moves</SectionLabel>
             </div>
             {can('TAG') || can('EXTENSION') || can('RESTRUCTURE') || can('BUYOUT') ? (
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {can('TAG') && <Act onClick={() => onStage('TAG', player)}>Franchise tag (§9)</Act>}
 
                 {can('EXTENSION') && (
-                  <div className="flex gap-2">
+                  <div style={{ display: 'flex', gap: 8 }}>
                     <select
-                      className="h-9 border border-[#29344a] bg-[#1e2636] px-2 text-[13px] outline-none focus:border-[#5b9dff]"
+                      className="twr-select"
                       value={extYears}
                       onChange={(e) => setExtYears(e.target.value)}
                       aria-label="Years to add"
@@ -652,16 +727,17 @@ function ActionPanel({
                       <option value="2">+2 yr</option>
                       <option value="3">+3 yr</option>
                     </select>
-                    <div className="min-w-0 flex-1">
+                    <div style={{ minWidth: 0, flex: 1 }}>
                       <Act onClick={() => onStage('EXTENSION', player)}>Extend (§10)</Act>
                     </div>
                   </div>
                 )}
 
                 {can('RESTRUCTURE') && (
-                  <div className="flex gap-2">
+                  <div style={{ display: 'flex', gap: 8 }}>
                     <input
-                      className="h-9 min-w-0 flex-1 border border-[#29344a] bg-[#1e2636] px-2.5 text-[13px] outline-none focus:border-[#5b9dff]"
+                      className="twr-input"
+                      style={{ minWidth: 0, flex: 1 }}
                       placeholder="move ($M)"
                       inputMode="decimal"
                       value={restructureMove}
@@ -669,9 +745,10 @@ function ActionPanel({
                     />
                     <button
                       type="button"
+                      className="twr-btn"
+                      style={{ flex: 'none' }}
                       disabled={!restructureMove.trim()}
                       onClick={() => onStage('RESTRUCTURE', player)}
-                      className="h-9 flex-none bg-[#1e2636] px-3 text-[13px] font-semibold text-[#e2e8f0] outline outline-1 outline-[#29344a] hover:bg-[rgba(91,157,255,0.12)] hover:text-[#5b9dff] hover:outline-[#5b9dff] disabled:opacity-40"
                     >
                       Restructure (§11)
                     </button>
@@ -685,10 +762,12 @@ function ActionPanel({
                 )}
               </div>
             ) : (
-              <p className="text-[11px] text-[#64748b]">No contract moves are legal in this phase.</p>
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>
+                No contract moves are legal in this phase.
+              </p>
             )}
 
-            <p className="mt-4 text-[11px] text-[#64748b]">
+            <p style={{ margin: '16px 0 0', fontSize: 11, color: 'var(--text-tertiary)' }}>
               Multi-player trades are built on the Trade tab; commissioner calendar and powers live on
               the League Controls tab.
             </p>
@@ -696,6 +775,23 @@ function ActionPanel({
         )}
       </div>
     </>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        marginBottom: 10,
+        fontSize: 10.5,
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.09em',
+        color: 'var(--text-tertiary)',
+      }}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -711,15 +807,11 @@ function Act({
   return (
     <button
       type="button"
+      className={`twr-btn${danger ? ' twr-btn--danger' : ''}`}
+      style={{ width: '100%', padding: '10px 12px', textTransform: 'none', letterSpacing: 'normal', fontSize: 13 }}
       onClick={onClick}
-      className={`flex h-[38px] w-full items-center justify-center bg-[#1e2636] text-[13px] font-semibold text-[#e2e8f0] outline outline-1 outline-[#29344a] transition-colors ${
-        danger
-          ? 'hover:bg-[rgba(248,113,113,0.12)] hover:text-[#f87171] hover:outline-[#f87171]'
-          : 'hover:bg-[rgba(91,157,255,0.12)] hover:text-[#5b9dff] hover:outline-[#5b9dff]'
-      }`}
     >
       {children}
     </button>
   );
 }
-

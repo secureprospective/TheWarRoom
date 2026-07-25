@@ -207,30 +207,63 @@ export function LeagueControls() {
   }
 
   return (
-    <div className="border border-[#29344a] bg-[#0e1420] p-8 text-[#e2e8f0]">
-      <div className="flex items-center gap-3">
-        <h2 className="text-[18px] font-bold">League Controls</h2>
-        <div className="inline-flex items-center gap-2 border border-[rgba(240,180,41,0.35)] bg-[rgba(240,180,41,0.14)] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.07em] text-[#f0b429]">
-          <span className="h-[7px] w-[7px] rounded-full bg-[#f0b429]" /> {phase}
-        </div>
+    <div
+      style={{
+        border: '1px solid var(--hairline)',
+        background: 'var(--surface-canvas)',
+        padding: 32,
+        color: 'var(--text-primary)',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>League Controls</h2>
+        <span
+          className="twr-banner twr-banner--caution"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
+        >
+          <span
+            aria-hidden
+            style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--amber-base)' }}
+          />{' '}
+          {phase}
+        </span>
       </div>
-      <p className="mt-2 max-w-[560px] text-[13px] text-[#93a1b8]">
+      <p style={{ margin: '8px 0 0', maxWidth: 560, fontSize: 13, color: 'var(--text-secondary)' }}>
         Commissioner calendar and off-common-path powers. Every action is checked with the engine
         before it commits.
       </p>
 
       {/* Calendar section */}
-      <h3 className="mt-7 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#5b9dff]">
+      <h3
+        style={{
+          margin: '28px 0 0',
+          fontSize: 11,
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          color: 'var(--text-secondary)',
+        }}
+      >
         Season calendar
       </h3>
-      <div className="mt-3 grid max-w-[860px] grid-cols-3 gap-4">
+      <div
+        style={{
+          marginTop: 12,
+          maxWidth: 860,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 16,
+        }}
+      >
         <Card title="Advance phase">
           <Select value={toPhase} onChange={setToPhase} options={PHASES} />
           <TextInput value={phaseNote} onChange={setPhaseNote} placeholder="Note (optional)" />
           <Action onClick={stageAdvancePhase}>Advance phase…</Action>
         </Card>
         <Card title="Roll season (§14)">
-          <p className="text-[11.5px] text-[#93a1b8]">Requires the current phase to be PLAYOFFS.</p>
+          <p style={{ margin: 0, fontSize: 11.5, color: 'var(--text-secondary)' }}>
+            Requires the current phase to be PLAYOFFS.
+          </p>
           <TextInput value={rolloverNote} onChange={setRolloverNote} placeholder="Note (optional)" />
           <Action onClick={stageRollover} destructive>
             Roll season over…
@@ -248,11 +281,28 @@ export function LeagueControls() {
       </div>
 
       {/* Commissioner (destructive) section — red divider */}
-      <div className="mt-8 border-t border-[rgba(248,113,113,0.35)] pt-5">
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#f87171]">
+      <div style={{ marginTop: 32, borderTop: '1px solid var(--red-muted)', paddingTop: 20 }}>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'var(--red-base)',
+          }}
+        >
           Commissioner powers — irreversible
         </h3>
-        <div className="mt-3 grid max-w-[860px] grid-cols-3 gap-4">
+        <div
+          style={{
+            marginTop: 12,
+            maxWidth: 860,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 16,
+          }}
+        >
           <Card title="Retirement (§13)">
             <TextInput value={retireID} onChange={setRetireID} placeholder="Player MFL id" />
             <Action onClick={stageRetirement} destructive>
@@ -286,8 +336,17 @@ export function LeagueControls() {
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-2.5 border border-[#29344a] bg-[#0c121d] p-4">
-      <div className="text-[13px] font-bold">{title}</div>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+        border: '1px solid var(--hairline)',
+        background: 'var(--surface-sunken)',
+        padding: 16,
+      }}
+    >
+      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{title}</div>
       {children}
     </div>
   );
@@ -304,7 +363,8 @@ function TextInput({
 }) {
   return (
     <input
-      className="h-[32px] w-full border border-[#29344a] bg-[#161d2b] px-2.5 text-[12.5px] outline-none focus:border-[#5b9dff]"
+      className="twr-input"
+      style={{ width: '100%' }}
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
@@ -325,7 +385,8 @@ function Select({
 }) {
   return (
     <select
-      className="h-[32px] w-full border border-[#29344a] bg-[#161d2b] px-2 text-[12.5px] outline-none focus:border-[#5b9dff]"
+      className="twr-select"
+      style={{ width: '100%' }}
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -351,11 +412,8 @@ function Action({
     <button
       type="button"
       onClick={onClick}
-      className={`mt-auto h-[34px] text-[12.5px] font-semibold outline outline-1 disabled:opacity-40 ${
-        destructive
-          ? 'bg-[#1e2636] text-[#f87171] outline-[rgba(248,113,113,0.4)] hover:bg-[rgba(248,113,113,0.12)]'
-          : 'bg-[#1e2636] text-[#e2e8f0] outline-[#29344a] hover:bg-[rgba(91,157,255,0.12)] hover:text-[#5b9dff] hover:outline-[#5b9dff]'
-      }`}
+      className={`twr-btn${destructive ? ' twr-btn--danger' : ''}`}
+      style={{ marginTop: 'auto', textTransform: 'none', letterSpacing: 'normal', fontSize: 12.5 }}
     >
       {children}
     </button>

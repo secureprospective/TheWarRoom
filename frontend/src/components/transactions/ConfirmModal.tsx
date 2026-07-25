@@ -7,6 +7,10 @@ import { main } from '../../../wailsjs/go/models';
 //   - rejected : the preview returned the AUTHORITATIVE rejection reason (D5) — no confirm
 // Confirming re-sends the SAME intent to ExecuteTransaction (never the preview result — D4);
 // the parent owns that call so the number is always recomputed server-side (invariant 1).
+//
+// B-2 restyle: Session-C token contract + control classes, off the hardcoded hex. The
+// commit button is the one solid, terminal affordance (.twr-btn--commit); everything else
+// is ghost/tokened per the restraint doctrine.
 
 export type Pending = {
   kind:
@@ -79,6 +83,14 @@ function confirmLabel(kind: Pending['kind']): string {
   }
 }
 
+const labelStyle = (color: string): React.CSSProperties => ({
+  fontSize: 10.5,
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.09em',
+  color,
+});
+
 export function ConfirmModal({
   pending,
   busy,
@@ -94,11 +106,19 @@ export function ConfirmModal({
 
   const rejected = pending.previewOK === false;
   const canConfirm = !pending.previewing && !rejected && !busy;
-  const labelColor = pending.destructive ? 'text-[#f87171]' : 'text-[#5b9dff]';
+  const accent = pending.destructive ? 'var(--red-base)' : 'var(--blue-base)';
 
   return (
     <div
-      className="fixed inset-0 z-20 flex items-center justify-center bg-[rgba(6,10,18,0.66)]"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 20,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'color-mix(in srgb, var(--surface-sunken) 72%, transparent)',
+      }}
       onClick={(e) => {
         // Non-dismissable while a commit is in flight: ExecuteTransaction runs an atomic WriteTx to
         // completion with no abort, so a backdrop-click "cancel" would close the modal while the
@@ -106,44 +126,78 @@ export function ConfirmModal({
         if (e.target === e.currentTarget && !busy) onCancel();
       }}
     >
-      <div className="w-[420px] max-w-[92vw] border border-[#29344a] bg-[#161d2b] shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
-        <div className="border-b border-[#202a3d] px-5 py-4">
-          <div className={`text-[10.5px] font-semibold uppercase tracking-[0.09em] ${labelColor}`}>
-            {pending.title}
-          </div>
-          <h2 className="mt-1 text-[17px] font-bold">{pending.subject}</h2>
-          <div className="mt-0.5 text-[11.5px] text-[#93a1b8]">{pending.meta}</div>
+      <div
+        style={{
+          width: 420,
+          maxWidth: '92vw',
+          border: '1px solid var(--hairline)',
+          background: 'var(--surface-overlay)',
+        }}
+      >
+        <div style={{ borderBottom: '1px solid var(--hairline)', padding: '16px 20px' }}>
+          <div style={labelStyle(accent)}>{pending.title}</div>
+          <h2 style={{ margin: '4px 0 0', fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>
+            {pending.subject}
+          </h2>
+          <div style={{ marginTop: 2, fontSize: 11.5, color: 'var(--text-secondary)' }}>{pending.meta}</div>
         </div>
 
-        <div className="px-5 py-[18px]">
+        <div style={{ padding: '18px 20px' }}>
           {pending.previewing ? (
-            <p className="text-[13px] text-[#93a1b8]">Checking the move with the engine…</p>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
+              Checking the move with the engine…
+            </p>
           ) : rejected ? (
-            <div className="border border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.12)] px-3 py-2.5">
-              <div className="text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[#f87171]">
-                The engine rejected this move
-              </div>
-              <p className="mt-1.5 text-[13px] text-[#e2e8f0]">{pending.detail}</p>
+            <div
+              style={{
+                border: '1px solid var(--red-muted)',
+                borderLeft: '2px solid var(--red-base)',
+                background: 'color-mix(in srgb, var(--red-base) 12%, var(--surface-tile))',
+                padding: '10px 12px',
+              }}
+            >
+              <div style={labelStyle('var(--red-base)')}>The engine rejected this move</div>
+              <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--text-primary)' }}>{pending.detail}</p>
             </div>
           ) : (
             <>
-              <p className="mb-3.5 text-[12px] text-[#93a1b8]">{pending.note}</p>
+              <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--text-secondary)' }}>{pending.note}</p>
               {pending.previewOK === true && (pending.capDeltas ?? []).length > 0 && (
-                <div className="mb-3.5 border border-[#29344a] bg-[#111725] px-3 py-2.5">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#93a1b8]">
-                    Cap impact (pre-commit)
-                  </div>
-                  <ul className="mt-1.5 space-y-1">
+                <div
+                  style={{
+                    marginBottom: 14,
+                    border: '1px solid var(--hairline)',
+                    background: 'var(--surface-sunken)',
+                    padding: '10px 12px',
+                  }}
+                >
+                  <div style={labelStyle('var(--text-secondary)')}>Cap impact (pre-commit)</div>
+                  <ul style={{ margin: '6px 0 0', padding: 0, listStyle: 'none' }}>
                     {(pending.capDeltas ?? []).map((d, i) => (
-                      <li key={i} className="flex items-baseline justify-between gap-3 text-[12px]">
-                        <span className="text-[#cbd5e1]">
+                      <li
+                        key={i}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'baseline',
+                          justifyContent: 'space-between',
+                          gap: 12,
+                          fontSize: 12,
+                          marginTop: i === 0 ? 0 : 4,
+                        }}
+                      >
+                        <span style={{ color: 'var(--text-primary)' }}>
                           {d.franchiseName || d.franchiseID}
-                          <span className="ml-1.5 text-[10.5px] text-[#64748b]">{d.reason}</span>
+                          <span style={{ marginLeft: 6, fontSize: 10.5, color: 'var(--text-tertiary)' }}>
+                            {d.reason}
+                          </span>
                         </span>
                         <span
-                          className={`font-semibold tabular-nums ${
-                            d.cents < 0 ? 'text-[#34d399]' : 'text-[#f87171]'
-                          }`}
+                          style={{
+                            fontWeight: 600,
+                            fontFamily: 'var(--mono)',
+                            fontVariantNumeric: 'tabular-nums',
+                            color: d.cents < 0 ? 'var(--green-base)' : 'var(--red-base)',
+                          }}
                         >
                           {d.amount}
                         </span>
@@ -153,8 +207,8 @@ export function ConfirmModal({
                 </div>
               )}
               {pending.previewOK === true && (
-                <div className="flex items-start gap-1.5 text-[11px] text-[#64748b]">
-                  <span className="mt-px text-[#34d399]">✓</span>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 11, color: 'var(--text-tertiary)' }}>
+                  <span style={{ marginTop: 1, color: 'var(--green-base)' }}>✓</span>
                   <span>
                     The engine confirmed this commits ({pending.playersAffected} player
                     {pending.playersAffected === 1 ? '' : 's'} affected). Confirming re-sends the
@@ -167,25 +221,24 @@ export function ConfirmModal({
           )}
         </div>
 
-        <div className="flex justify-end gap-2.5 border-t border-[#202a3d] px-5 py-3.5">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={busy}
-            className="h-9 border border-[#29344a] px-4 text-[13px] font-semibold text-[#93a1b8] hover:border-[#64748b] hover:text-[#e2e8f0] disabled:opacity-40"
-          >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 10,
+            borderTop: '1px solid var(--hairline)',
+            padding: '14px 20px',
+          }}
+        >
+          <button type="button" className="twr-btn" onClick={onCancel} disabled={busy}>
             {rejected ? 'Close' : 'Cancel'}
           </button>
           {!rejected && (
             <button
               type="button"
+              className={`twr-btn twr-btn--commit${pending.destructive ? ' is-danger' : ''}`}
               disabled={!canConfirm}
               onClick={onConfirm}
-              className={`h-9 px-4 text-[13px] font-semibold disabled:opacity-40 ${
-                pending.destructive
-                  ? 'bg-[#f87171] text-[#2b0808] hover:bg-[#fca5a5]'
-                  : 'bg-[#34d399] text-[#06251a] hover:bg-[#4ade9f]'
-              }`}
             >
               {busy ? 'Committing…' : confirmLabel(pending.kind)}
             </button>

@@ -274,6 +274,16 @@ body {
 .twr-btn:active { box-shadow: inset -1px -1px 0 var(--bevel-hi); transform: translate(1px, 1px); }
 .twr-btn:focus-visible { outline: 1px solid var(--edge-focus); outline-offset: 2px; }
 .twr-btn:disabled { opacity: 0.4; color: var(--text-tertiary); cursor: default; box-shadow: none; transform: none; }
+/* Destructive ghost (cut / buyout / retirement / death) — red text, red-tinted
+   hover; still a ghost button so it never shouts until hovered (Session-C restraint). */
+.twr-btn--danger { color: var(--red-base); }
+.twr-btn--danger:hover { background: color-mix(in srgb, var(--red-base) 14%, var(--surface-tile)); color: var(--red-loud); border-color: var(--red-muted); }
+/* Commit — the ONE solid, terminal button (ConfirmModal). Green go / red for a
+   destructive commit; dark canvas text for contrast on the loud fill. */
+.twr-btn--commit { background: var(--green-base); color: var(--surface-canvas); border-color: var(--green-base); box-shadow: none; }
+.twr-btn--commit:hover { background: var(--green-loud); color: var(--surface-canvas); box-shadow: none; }
+.twr-btn--commit.is-danger { background: var(--red-base); border-color: var(--red-base); }
+.twr-btn--commit.is-danger:hover { background: var(--red-loud); }
 
 .twr-chip {
   font: inherit;
@@ -298,6 +308,25 @@ body {
   color: var(--text-primary);
 }
 .twr-select:focus-visible { outline: 1px solid var(--edge-focus); outline-offset: 1px; border-color: var(--edge-focus); }
+
+/* Text/number input — the select's sibling (the grammar had no input control;
+   every form surface — Admin, League Controls, Trade, Transaction — reuses this). */
+.twr-input {
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 8px;
+  background: var(--surface-tile);
+  border: 1px solid var(--bevel-hi);
+  color: var(--text-primary);
+  outline: none;
+}
+.twr-input::placeholder { color: var(--text-tertiary); }
+.twr-input:focus-visible { outline: 1px solid var(--edge-focus); outline-offset: 1px; border-color: var(--edge-focus); }
+
+/* Icon-only ghost button (a cart-leg remove ×) — quiet until hovered red. */
+.twr-iconbtn { background: none; border: 0; padding: 0 4px; cursor: pointer; font-size: 15px; line-height: 1; color: var(--text-tertiary); }
+.twr-iconbtn:hover { color: var(--red-base); }
+.twr-iconbtn:focus-visible { outline: 1px solid var(--edge-focus); outline-offset: 2px; }
 
 /* M2 weight slider (Ledger B6) — thumb grows on active; commit-on-release is a
    caller concern (no live re-blend). Uses the native range with themed track. */
