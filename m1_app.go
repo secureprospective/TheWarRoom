@@ -138,13 +138,24 @@ type RankRow struct {
 	Salary      float64 `json:"salary"`
 
 	BasePoints    float64 `json:"basePoints"`
-	AgePull       float64 `json:"agePull"`
-	L4Combined    float64 `json:"l4Combined"`
-	CapTier       string  `json:"capTier"`
 	AdjustedScore float64 `json:"adjustedScore"`
+
+	// B-5: AgePull, L4Combined and CapTier were REMOVED here. They moved into the
+	// Contextual Inspector (B-4), which reads its own PlayerScoreDTO — note that DTO
+	// uses the SAME field names, so a bare grep for them looks like they are still in
+	// use. Nothing on the board read them any more, and they were serializing on every
+	// row of every board read (~1200 rows). Per-player diagnostics belong to the
+	// Inspector; the board carries only what it renders.
 
 	CapEff   float64 `json:"capEff"`
 	CapEffOK bool    `json:"capEffOK"`
+
+	// RankDelta is the player's movement since the previous scored config: positive =
+	// moved UP the board. DeltaOK is false when there is no previous board to compare
+	// against (first-ever scoring run), and the UI renders that as ABSENT rather than as
+	// a delta of zero — "held position" and "unknown" are different claims (§1).
+	RankDelta int  `json:"rankDelta"`
+	DeltaOK   bool `json:"deltaOK"`
 }
 
 // RankingsResult is the GetRankings IPC payload: every persisted row for the
@@ -152,13 +163,18 @@ type RankRow struct {
 // tiebreak — the UI never re-sorts). Position/franchise filtering is a client-
 // side view over these rows.
 type RankingsResult struct {
-	OK            bool      `json:"ok"`
-	Error         string    `json:"error"`
-	Warning       string    `json:"warning"` // non-fatal degradation (e.g. names unavailable offline)
-	Label         string    `json:"label"`
-	Season        int       `json:"season"`
-	ConfigVersion int       `json:"configVersion"`
-	Rows          []RankRow `json:"rows"`
+	OK            bool   `json:"ok"`
+	Error         string `json:"error"`
+	Warning       string `json:"warning"` // non-fatal degradation (e.g. names unavailable offline)
+	Label         string `json:"label"`
+	Season        int    `json:"season"`
+	ConfigVersion int    `json:"configVersion"`
+	// Freshness is always LOCAL-live here: the board is persisted engine output read from
+	// SQLite, so it is authoritative regardless of network state. The one network touch is
+	// display-only name resolution, and its failure is a PARTIAL degradation reported in
+	// Warning — not a staleness claim about the scores, which are complete either way.
+	Freshness Freshness `json:"freshness"`
+	Rows      []RankRow `json:"rows"`
 }
 
 // GetRankings reads the persisted board back from B6 and joins display fields.
@@ -191,16 +207,29 @@ func (a *App) GetRankings() RankingsResult {
 		warning = "player names unavailable (players-DB fetch failed: " + err.Error() + ") — scores are persisted and complete"
 	}
 
+	// Prior ranks back the §1 movement indicator. A failure here degrades the DELTA ONLY —
+	// the board is fully persisted and complete without it, so a history read must never be
+	// able to fail a board. No prior board (first run) is the same non-event: priorOK false.
+	prior, priorOK, perr := a.output.Reader().PriorRanks(ctx, a.season, ver)
+	if perr != nil {
+		priorOK = false
+	}
+
 	rows := make([]RankRow, 0, len(scores))
 	for i, s := range scores {
 		row := RankRow{
 			Rank:          i + 1, // B6 order IS the ranking (L6 encoded in the ORDER BY)
 			MFLID:         s.MFLID,
 			BasePoints:    s.BasePoints,
-			AgePull:       s.AgePull,
-			L4Combined:    s.Layer4Output.Combined,
-			CapTier:       string(s.CapTier),
 			AdjustedScore: s.AdjustedScore,
+		}
+		// A player present on the prior board gets a delta; one who is NOT (a new
+		// acquisition, or a player the prior config did not score) gets none. Treating an
+		// absent prior rank as 0 would invent a huge fake jump for every new player.
+		if priorOK {
+			if was, ok := prior[s.MFLID]; ok {
+				row.RankDelta, row.DeltaOK = was-row.Rank, true
+			}
 		}
 		if f, ok := lk.Facts(s.MFLID); ok {
 			row.Name, row.Position = f.Name, string(f.Position)
@@ -217,5 +246,9 @@ func (a *App) GetRankings() RankingsResult {
 		}
 		rows = append(rows, row)
 	}
-	return RankingsResult{OK: true, Warning: warning, Label: a.proxyLabel(), Season: a.season, ConfigVersion: ver, Rows: rows}
+	return RankingsResult{
+		OK: true, Warning: warning, Label: a.proxyLabel(),
+		Season: a.season, ConfigVersion: ver,
+		Freshness: localFreshness(), Rows: rows,
+	}
 }

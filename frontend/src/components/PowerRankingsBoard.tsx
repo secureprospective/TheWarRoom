@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useHarnessStore } from '../store/harness';
 import { main } from '../../wailsjs/go/models';
-import { SortHeader, EngraveState, SkeletonState } from './board/primitives';
+import {
+  SortHeader,
+  EngraveState,
+  SkeletonState,
+  FreshnessBar,
+  PhaseBar,
+} from './board/primitives';
 
 // DEFAULT_SCOUTING_WEIGHT mirrors Go's powerrankings.DefaultScoutingWeight (0.60).
 // Kept in sync by hand — the Go const is the source of truth; if it moves, move this.
@@ -116,6 +122,13 @@ export function PowerRankingsBoard() {
       </div>
 
       {error && <div className="twr-banner twr-banner--warn">{error}</div>}
+
+      {/* B-5 degradation contract: an MFL standings outage now serves the last-known-good
+          board with a CACHED edge rather than blanking M2. The bar states the age; the
+          rows below are untouched and fully readable. PhaseBar is separate and neutral —
+          an offseason board is final, not degraded. */}
+      <FreshnessBar freshness={powerRankings?.freshness} board="Power Rankings" />
+      <PhaseBar phase={powerRankings?.phase} />
 
       {/* Scouting rides the BasePoints proxy — carry the same honest label M1 shows. */}
       <div className="twr-banner twr-banner--caution">

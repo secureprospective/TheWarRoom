@@ -53,6 +53,13 @@ type Reader interface {
 	// Score returns one player's persisted score for a (season, scoring config). ok is
 	// false when no such record exists.
 	Score(ctx context.Context, season, scoringConfigID int, mflID string) (SeasonScore, bool, error)
+	// PriorRanks returns the ranking positions of the most recent EARLIER scoring config
+	// for this season, as mflID → 1-based rank. It backs the §1 rank-delta display: the
+	// board is append-only per (season, config), so a previous config's rows ARE the
+	// previous board — no separate history table is needed to know where a player ranked
+	// before. ok is false when no earlier scored config exists (the first-ever run), which
+	// is a legitimate "no delta to show" and NOT an error.
+	PriorRanks(ctx context.Context, season, beforeConfigID int) (map[string]int, bool, error)
 }
 
 // Writer is the APPEND-ONLY mutation surface, injected to the score/transaction layer

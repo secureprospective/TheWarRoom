@@ -85,6 +85,12 @@ func (f *fakeOut) Scores(_ context.Context, _, _ int) ([]output.SeasonScore, err
 func (f *fakeOut) Score(context.Context, int, int, string) (output.SeasonScore, bool, error) {
 	return output.SeasonScore{}, false, nil
 }
+
+// PriorRanks is part of the read surface but is display-only (the §1 rank delta); the
+// scoring runner never calls it, so the fake reports "no prior board" unconditionally.
+func (f *fakeOut) PriorRanks(context.Context, int, int) (map[string]int, bool, error) {
+	return nil, false, nil
+}
 func (f *fakeOut) Write(_ context.Context, season, ver int, recs []output.ScoreRecord) error {
 	f.writes++
 	f.gotSeason, f.gotVer, f.gotRecs = season, ver, recs

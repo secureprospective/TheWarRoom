@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useHarnessStore } from '../store/harness';
 import { main } from '../../wailsjs/go/models';
-import { SortHeader, EngraveState, type SortDir } from './board/primitives';
+import {
+  SortHeader,
+  EngraveState,
+  DeltaRank,
+  FreshnessBar,
+  type SortDir,
+} from './board/primitives';
+import { useBoardKeys, useScrollCursorIntoView } from './board/keys';
 import { useInspectorStore } from '../store/inspector';
 
 // RankingsBoard is the M1 module view: the REAL 32-team ranked board read back
@@ -36,13 +43,19 @@ const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DT', 'DE', 'LB', 'CB', 'S'] as 
 // column is not sortable — it is the canonical B6 order, always ascending.
 type SortKey = 'base' | 'adjusted' | 'salary' | 'capEff';
 
-// Grid templates (Session-B §2·3). Narrative/Tactical carry the locked 7-col
-// facet map, plus the Adj/$M track ONLY while the cap-efficiency lens is on;
-// Matrix collapses to the pure scan (Rank·Player·Pos·Adj·Sal), the extra cells
-// hidden via .twr-hide-mtx so they vacate their grid tracks.
-const COLS = '34px 1fr 42px 148px 66px 92px 80px';
+// Grid templates (Session-B §2·3). Narrative/Tactical carry the locked facet map plus the
+// Adj/$M track ONLY while the cap-efficiency lens is on; Matrix collapses to the pure scan,
+// the extra cells hidden via .twr-hide-mtx so they vacate their grid tracks.
+//
+// TRACK COUNTS MUST BALANCE — tsc and the linter CANNOT see a violation here, so count by
+// hand on every change. B-5 added the §1 Δ track next to #; it is carried in ALL densities
+// because movement is the point of a scan, not a detail to drop from one.
+//   COLS         8: # · Δ · Player · Pos · Franchise · Base · Adj · Sal
+//   COLS_CAPEFF  9: the above + Adj/$M (cap-efficiency lens only)
+//   COLS_MTX     6: # · Δ · Player · Pos · Adj · Sal   (Franchise + Base are .twr-hide-mtx)
+const COLS = '34px 44px 1fr 42px 148px 66px 92px 80px';
 const COLS_CAPEFF = `${COLS} 72px`;
-const COLS_MTX = '24px 1fr 36px 72px 72px';
+const COLS_MTX = '24px 40px 1fr 36px 72px 72px';
 
 export function RankingsBoard() {
   const rankings = useHarnessStore((s) => s.rankings);
@@ -105,6 +118,21 @@ export function RankingsBoard() {
     return [...ranked, ...v.filter((r) => !hasVal(r))];
   }, [rows, position, franchise, capEffOnly, sortKey, sortDir]);
 
+  // Session-B keyboard map: J/K travel the board, Enter opens the Inspector. The ids are
+  // the DISPLAYED order, so the cursor follows the user's current sort and filters rather
+  // than the underlying rank. Enter is the only thing that fires an IPC fetch — travelling
+  // is free.
+  const visibleIDs = useMemo(() => visible.map((r) => r.mflID), [visible]);
+  const { cursorID, setCursorID } = useBoardKeys(visibleIDs, (id) => void select(id));
+  useScrollCursorIntoView(cursorID);
+
+  // A click both selects AND plants the cursor, so J/K continue from where the user
+  // clicked rather than jumping back to the top of the board.
+  const pickRow = (id: string) => {
+    setCursorID(id);
+    void select(id);
+  };
+
   return (
     <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Command strip — score action + provenance. */}
@@ -127,6 +155,14 @@ export function RankingsBoard() {
       {rankings?.warning && (
         <div className="twr-banner twr-banner--warn">{rankings.warning}</div>
       )}
+
+      {/* M1's board is local SQLite, so this is normally silent (local data reads live).
+          It is wired anyway so every board answers the freshness question the same way —
+          a module that simply omits the signal is indistinguishable from one that is fine. */}
+      <FreshnessBar freshness={rankings?.freshness} board="Rankings" />
+      {/* No PhaseBar here, deliberately: M2's standings are FINAL once the season ends, but
+          an M1 board is scoring output that can legitimately be re-run under a new rulebook
+          config at any time. Labelling it "final" would be false. */}
 
       {/* A failed score must NEVER be silent — ScoreReportPanel renders nothing on !ok, which left an
           empty board with no reason (the score's network fetch can fail, or it can score zero). Surface
@@ -196,6 +232,9 @@ export function RankingsBoard() {
         >
           <div className="twr-board__sub">
             <span>#</span>
+            <span className="twr-r" title="Movement since the previous scoring run">
+              Δ
+            </span>
             <span>Player</span>
             <span>Pos</span>
             <span className="twr-hide-mtx">Franchise</span>
@@ -220,19 +259,29 @@ export function RankingsBoard() {
             // `.is-selected` paints the neutral achromatic axis (Session-C selection).
             <div
               key={r.mflID}
-              className={`twr-board__row${r.mflID === selectedMflID ? ' is-selected' : ''}`}
+              className={`twr-board__row${r.mflID === selectedMflID ? ' is-selected' : ''}${
+                r.mflID === cursorID ? ' is-cursor' : ''
+              }`}
+              data-row-id={r.mflID}
               role="button"
               tabIndex={0}
               aria-pressed={r.mflID === selectedMflID}
-              onClick={() => void select(r.mflID)}
+              // aria-current exposes the KEYBOARD CURSOR, which is a different fact from
+              // aria-pressed (selection) — without it a screen-reader user pressing J/K
+              // hears nothing change at all.
+              aria-current={r.mflID === cursorID ? true : undefined}
+              onClick={() => pickRow(r.mflID)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  void select(r.mflID);
+                  pickRow(r.mflID);
                 }
               }}
             >
               <span className="twr-c-rank">{r.rank}</span>
+              <span className="twr-r">
+                <DeltaRank delta={r.rankDelta} ok={r.deltaOK} />
+              </span>
               <span className="twr-c-name">{r.name}</span>
               <span className="twr-c-pos">{r.position}</span>
               <span className="twr-c-fr twr-hide-mtx">{r.franchiseID || '—'}</span>

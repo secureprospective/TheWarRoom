@@ -444,6 +444,22 @@ export namespace main {
 	        this.detail = source["detail"];
 	    }
 	}
+	export class Freshness {
+	    state: string;
+	    fetchedAt: string;
+	    note: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Freshness(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.state = source["state"];
+	        this.fetchedAt = source["fetchedAt"];
+	        this.note = source["note"];
+	    }
+	}
 	export class LegalOpsResult {
 	    ok: boolean;
 	    phase: string;
@@ -688,6 +704,8 @@ export namespace main {
 	    weight: number;
 	    aggMode: string;
 	    starterN: number;
+	    freshness: Freshness;
+	    phase: string;
 	    rows: PowerRow[];
 	
 	    static createFrom(source: any = {}) {
@@ -703,6 +721,8 @@ export namespace main {
 	        this.weight = source["weight"];
 	        this.aggMode = source["aggMode"];
 	        this.starterN = source["starterN"];
+	        this.freshness = this.convertValues(source["freshness"], Freshness);
+	        this.phase = source["phase"];
 	        this.rows = this.convertValues(source["rows"], PowerRow);
 	    }
 	
@@ -733,12 +753,11 @@ export namespace main {
 	    franchiseID: string;
 	    salary: number;
 	    basePoints: number;
-	    agePull: number;
-	    l4Combined: number;
-	    capTier: string;
 	    adjustedScore: number;
 	    capEff: number;
 	    capEffOK: boolean;
+	    rankDelta: number;
+	    deltaOK: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new RankRow(source);
@@ -753,12 +772,11 @@ export namespace main {
 	        this.franchiseID = source["franchiseID"];
 	        this.salary = source["salary"];
 	        this.basePoints = source["basePoints"];
-	        this.agePull = source["agePull"];
-	        this.l4Combined = source["l4Combined"];
-	        this.capTier = source["capTier"];
 	        this.adjustedScore = source["adjustedScore"];
 	        this.capEff = source["capEff"];
 	        this.capEffOK = source["capEffOK"];
+	        this.rankDelta = source["rankDelta"];
+	        this.deltaOK = source["deltaOK"];
 	    }
 	}
 	export class RankingsResult {
@@ -768,6 +786,7 @@ export namespace main {
 	    label: string;
 	    season: number;
 	    configVersion: number;
+	    freshness: Freshness;
 	    rows: RankRow[];
 	
 	    static createFrom(source: any = {}) {
@@ -782,6 +801,7 @@ export namespace main {
 	        this.label = source["label"];
 	        this.season = source["season"];
 	        this.configVersion = source["configVersion"];
+	        this.freshness = this.convertValues(source["freshness"], Freshness);
 	        this.rows = this.convertValues(source["rows"], RankRow);
 	    }
 	

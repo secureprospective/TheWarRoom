@@ -16,6 +16,7 @@ import { CalendarBoard } from './components/calendar/CalendarBoard';
 import { InspectorContent } from './components/inspector/InspectorContent';
 import { HomeBoard } from './components/home/HomeBoard';
 import { useInspectorStore } from './store/inspector';
+import { isTypingTarget } from './components/board/keys';
 
 // B-1 shell: the confirmed 4-column instrument console (Session A grid + Session C
 // tokens) replaces the flat testing-harness tab bar. The shipped modules are
@@ -56,12 +57,11 @@ function App() {
 
   // Global keyboard: density 1/2/3, inspector toggle (I), escape closes overlays.
   // Ignored while typing in an input/textarea (per the Session-B keyboard map).
+  // Board-local J/K/Enter live in useBoardKeys and share the SAME typing guard — B-5
+  // extracted isTypingTarget so the two handlers can never drift apart.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      const el = e.target as HTMLElement | null;
-      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) {
-        return;
-      }
+      if (isTypingTarget(e.target)) return;
       if (e.key === '1') setDensity('narrative');
       else if (e.key === '2') setDensity('tactical');
       else if (e.key === '3') setDensity('matrix');

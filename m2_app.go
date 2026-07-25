@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
 	"github.com/secureprospective/TheWarRoom/internal/output"
 	"github.com/secureprospective/TheWarRoom/internal/powerrankings"
@@ -55,15 +54,24 @@ type PowerRow struct {
 // disagree. AggMode echoes the scouting aggregation used ("sum" or "topn") and
 // StarterN the N applied for top-N (0 when not applicable). A zero-rows OK result
 // means the M1 board has not been scored yet.
+//
+// Freshness carries the B-5 degradation contract: live when the standings fetch
+// succeeded, stale when the board is built from the last-known-good cache after a failed
+// fetch. Phase is the current season phase, carried alongside — NOT folded into Freshness —
+// because an offseason board is fresh data about a finished season, not stale data (see
+// the Freshness doc comment). An empty Phase means the phase read itself failed, which
+// degrades the label only and never the board.
 type PowerRankingsResult struct {
-	OK       bool       `json:"ok"`
-	Error    string     `json:"error"`
-	Label    string     `json:"label"`
-	Season   int        `json:"season"`
-	Weight   float64    `json:"weight"`
-	AggMode  string     `json:"aggMode"`
-	StarterN int        `json:"starterN"`
-	Rows     []PowerRow `json:"rows"`
+	OK        bool       `json:"ok"`
+	Error     string     `json:"error"`
+	Label     string     `json:"label"`
+	Season    int        `json:"season"`
+	Weight    float64    `json:"weight"`
+	AggMode   string     `json:"aggMode"`
+	StarterN  int        `json:"starterN"`
+	Freshness Freshness  `json:"freshness"`
+	Phase     string     `json:"phase"`
+	Rows      []PowerRow `json:"rows"`
 }
 
 // Scouting aggregation modes for GetPowerRankings.
@@ -76,15 +84,22 @@ const (
 // aggregates the persisted M1 AdjustedScore per franchise, blends them with the
 // caller's scouting weight (default powerrankings.DefaultScoutingWeight, clamped in
 // Blend), and joins the MFL report columns + real team names for display. It is
-// READ-ONLY — no writes, no staged confirm. An MFL standings failure IS fatal here,
-// because the all-play component is the whole 40% and there is no persisted fallback
-// for it (unlike M1 scores, which sit in SQLite).
+// READ-ONLY as far as league state goes — no transactions, no staged confirm.
+//
+// B-5 DEGRADATION: an MFL standings failure is NO LONGER fatal. It used to be, because
+// the all-play component is the whole 40% of the blend and had no persisted fallback
+// (unlike M1 scores, which sit in SQLite). standings_cache now provides that fallback:
+// a successful fetch is cached, and a failed fetch falls back to the last-known-good copy
+// and labels the result stale. Only a failure with NOTHING cached is still fatal — that
+// is the honest "no data at all" case, not a degradation. The single cache write is why
+// this is no longer literally read-only; it touches no league state.
 func (a *App) GetPowerRankings(weight float64, aggMode string) PowerRankingsResult {
 	mode := resolveAggMode(aggMode)
 	fail := func(err error) PowerRankingsResult {
 		return PowerRankingsResult{
 			Error: err.Error(), Label: a.proxyLabel(), Season: a.season,
 			Weight: weight, AggMode: mode,
+			Freshness: Freshness{State: FreshFail, Note: err.Error()},
 		}
 	}
 	if err := a.m1Ready(); err != nil {
@@ -102,7 +117,7 @@ func (a *App) GetPowerRankings(weight float64, aggMode string) PowerRankingsResu
 		return fail(err)
 	}
 
-	standings, err := leaguestandings.Fetch(ctx, a.mflClient, ingestion.SeasonYear, ingestion.LeagueID)
+	standings, fresh, err := a.standingsOrCache(ctx)
 	if err != nil {
 		return fail(fmt.Errorf("power rankings: %w", err))
 	}
@@ -133,6 +148,7 @@ func (a *App) GetPowerRankings(weight float64, aggMode string) PowerRankingsResu
 		OK: true, Label: a.proxyLabel(),
 		Season: a.season, Weight: clampWeight(weight),
 		AggMode: mode, StarterN: n,
+		Freshness: fresh, Phase: a.currentPhaseLabel(),
 		Rows: a.buildPowerRows(blended, parsed),
 	}
 }

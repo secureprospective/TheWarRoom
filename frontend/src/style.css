@@ -189,6 +189,16 @@ body {
   box-shadow: inset -1px -1px 0 var(--bevel-hi);
 }
 
+/* KEYBOARD CURSOR (B-5, Session-B J/K/Enter). The cursor is where the KEYBOARD is
+   pointing; .is-selected is what the Inspector is SHOWING. They are different facts and
+   must look different, or the user cannot tell whether Enter will change anything.
+   Session-C ruling 7 already assigns the axes: focus is BLUE, selection is achromatic —
+   the cursor is a focus-class signal, so it takes the blue edge. A row can be both, and
+   the two treatments compose (selection paints the background, cursor the left edge). */
+.twr-board__row.is-cursor {
+  border-left: 2px solid var(--edge-focus);
+}
+
 /* Cell roles — the greyscale hierarchy. */
 .twr-c-rank { font-family: var(--mono); font-size: calc(11px * var(--font-scale)); color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
 .twr-c-name { color: var(--text-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -226,9 +236,59 @@ body {
 }
 [data-density="matrix"] .twr-hide-mtx { display: none; }
 
-/* Data states (wireframe §8). B-2 wires the two that have signals today: "no
-   data" (engrave) and "fetch in flight" (skeleton). Cache-only and offseason
-   land in B-5 with their backend freshness / season-phase signals. */
+/* FRESHNESS / PHASE BAR (§8 cache-only + offseason, B-5). A thin labelled edge ABOVE the
+   data. The data itself is never dimmed, blurred, or hidden — see freshness.ts: the user
+   is reading those numbers precisely BECAUSE the live path is down, so degrading their
+   legibility is exactly backwards. Only the left border carries the state colour, which
+   keeps the treatment greyscale-survivable (the label word does the real work). */
+.twr-fresh {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 10px;
+  border-left: 2px solid var(--fresh-live);
+  background: var(--bg-raised);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.twr-fresh__label {
+  font-family: var(--mono);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.twr-fresh__note {
+  color: var(--text-secondary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.twr-fresh--stale { border-left-color: var(--fresh-stale); }
+.twr-fresh--stale .twr-fresh__label { color: var(--fresh-stale); }
+/* fail keeps the 2px weight Session-C assigned it — the one state that earns extra edge. */
+.twr-fresh--fail { border-left-width: 2px; border-left-color: var(--fresh-fail); }
+.twr-fresh--fail .twr-fresh__label { color: var(--fresh-fail); }
+/* final is NOT a degradation: neutral axis, no semantic hue, no alarm. */
+.twr-fresh--final { border-left-color: var(--text-tertiary); }
+.twr-fresh--final .twr-fresh__label { color: var(--text-secondary); }
+
+/* §1 DELTA-IN-WEIGHT (Session-B, locked). WEIGHT carries the meaning: +Δ = 600, −Δ = 400.
+   Hue only reinforces — remove all colour and the movement is still readable, which is the
+   greyscale-honest rule. Do not "improve" this by making the colours louder and the
+   weights equal; that inverts the contract. */
+.twr-delta {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+.twr-delta--up { font-weight: 600; color: var(--green-base); }
+.twr-delta--down { font-weight: 400; color: var(--text-secondary); }
+.twr-delta--flat { font-weight: 400; color: var(--text-tertiary); }
+.twr-delta--none { font-weight: 400; color: var(--text-disabled); }
+
+/* Data states (wireframe §8). B-2 wired "no data" (engrave) and "fetch in flight"
+   (skeleton); B-5 completed the set with the freshness/phase bars above. */
 .twr-state {
   display: flex;
   flex-direction: column;

@@ -26,6 +26,64 @@ func (r readerView) Score(ctx context.Context, season, cfg int, mflID string) (S
 	return r.s.Score(ctx, season, cfg, mflID)
 }
 
+func (r readerView) PriorRanks(ctx context.Context, season, before int) (map[string]int, bool, error) {
+	return r.s.PriorRanks(ctx, season, before)
+}
+
+// PriorRanks resolves the previous board's ranking positions for the §1 rank delta. It
+// finds the highest scoring_config_id BELOW before that actually has rows for this season,
+// then ranks that config's players by the SAME deterministic order the live board uses
+// (adjusted_score DESC, mfl_id) so the two rankings are comparable. Ranking with a
+// different tiebreak would manufacture deltas out of nothing.
+//
+// "Highest below" rather than "before minus one": config versions are not guaranteed dense
+// (a version can be created and never scored), so decrementing would silently find an empty
+// config and report every player as unchanged.
+//
+// ok=false means there is no earlier scored config — a first run has nothing to compare
+// against, and the UI must render that as ABSENT, not as a delta of zero. Those are
+// different claims: zero says "held position", absent says "we don't know yet".
+func (s *Store) PriorRanks(ctx context.Context, season, before int) (map[string]int, bool, error) {
+	var prior int
+	// MAX over zero matching rows yields one NULL row, not zero rows — scan through a
+	// nullable so "no earlier config" is detected by validity, not by ErrNoRows.
+	var priorNull sql.NullInt64
+	if err := s.pools.Read().QueryRowContext(ctx, `
+SELECT MAX(scoring_config_id) FROM season_scores
+WHERE season = ? AND scoring_config_id < ?`, season, before).Scan(&priorNull); err != nil {
+		return nil, false, fmt.Errorf("output: find prior scoring config: %w", err)
+	}
+	if !priorNull.Valid {
+		return nil, false, nil
+	}
+	prior = int(priorNull.Int64)
+
+	rows, err := s.pools.Read().QueryContext(ctx, `
+SELECT mfl_id FROM season_scores
+WHERE season = ? AND scoring_config_id = ?
+ORDER BY adjusted_score DESC, mfl_id`, season, prior)
+	if err != nil {
+		return nil, false, fmt.Errorf("output: read prior board: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	ranks := make(map[string]int)
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, false, fmt.Errorf("output: scan prior board: %w", err)
+		}
+		ranks[id] = len(ranks) + 1 // 1-based, in the same order the live board ranks
+	}
+	if err := rows.Err(); err != nil {
+		return nil, false, fmt.Errorf("output: prior board rows: %w", err)
+	}
+	if len(ranks) == 0 {
+		return nil, false, nil // config id existed but yielded nothing — same as no prior
+	}
+	return ranks, true, nil
+}
+
 // insertSQL appends one season_scores row. The column order matches rowValues.args.
 const insertSQL = `
 INSERT INTO season_scores (
