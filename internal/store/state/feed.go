@@ -47,9 +47,13 @@ type FeedEvent struct {
 	//   WAIVER_VOID        — contract_year_changes source="op" + reason matches §8 void
 	//   CONTRACT_CHANGE    — contract_year_changes source="op", uncategorized (future op)
 	// seed rows (source="seed") are excluded — those are initial migrations, not events.
+	// A player_status_events row whose status is none of FREE_AGENT/RETIRED/DECEASED (a
+	// future domain.PlayerStatus the feed CASE was not updated for, or a raw bogus insert)
+	// surfaces as a drift ERROR from Feed — it is never silently bucketed as a release.
 	Kind string
 	// Timestamp is the RFC3339 the source row was written at. The feed is ordered by this
-	// descending; ties are broken by Source+ID for deterministic rendering.
+	// descending; ties are broken by Source then by the numeric value of the seq-cast IDs
+	// (LENGTH-then-lex, so seq 10 does not sort above seq 2) for deterministic rendering.
 	Timestamp string
 	// MFLID is the player id the event concerns. Empty for franchise-only events
 	// (trade_notes does not single out a player — its involved_franchises carries both
@@ -87,6 +91,12 @@ type FeedEvent struct {
 // transaction handlers write (contracts.go §11 restructure, contracts.go §9 tag, deadcap.go
 // §8 waiver void) — kept here as a single source of truth so a handler reason change and the
 // feed classifier cannot drift apart silently.
+//
+// All three are lowercase by convention (the handlers format them that way). Matching is
+// case-INSENSITIVE on both sides to keep SQL and Go in lockstep without depending on that
+// convention: the SQL CASE uses LIKE (SQLite LIKE is ASCII case-insensitive by default), and
+// the Go classifiers fold the reason through strings.ToLower before Contains. A handler that
+// ever wrote an uppercase variant would therefore still classify consistently across both.
 const (
 	opReasonRestructure = "§11 restructure"
 	opReasonTag         = "§9 franchise tag"
@@ -97,7 +107,12 @@ const (
 // source column + the reason text. source="seed" rows must be filtered out BEFORE this is
 // called (the caller's WHERE clause excludes them); the function is total over the rest.
 // source="signing" → SIGN; source="extension" → EXTENSION; source="op" is disambiguated by
-// reason text, defaulting to CONTRACT_CHANGE when no prefix matches (a future op kind).
+// reason text (case-insensitively, mirroring the SQL CASE's LIKE), defaulting to
+// CONTRACT_CHANGE when no prefix matches (a future op kind).
+//
+// NOTE: this function is the Go-side mirror of the feedSQL contract_year_changes CASE — the
+// production feed reads the Kind straight out of SQL, and this function exists so a test
+// (TestClassifyContractChangeKind) can pin the SQL↔Go contract and surface drift.
 func classifyContractChangeKind(source, reason string) string {
 	switch source {
 	case "signing":
@@ -105,12 +120,13 @@ func classifyContractChangeKind(source, reason string) string {
 	case "extension":
 		return "EXTENSION"
 	default:
+		r := strings.ToLower(reason)
 		switch {
-		case strings.Contains(reason, opReasonRestructure):
+		case strings.Contains(r, opReasonRestructure):
 			return "RESTRUCTURE"
-		case strings.Contains(reason, opReasonTag):
+		case strings.Contains(r, opReasonTag):
 			return "TAG"
-		case strings.Contains(reason, opReasonWaiverVoid):
+		case strings.Contains(r, opReasonWaiverVoid):
 			return "WAIVER_VOID"
 		default:
 			return "CONTRACT_CHANGE"
@@ -138,7 +154,7 @@ func deriveProvenance(kind, reason string) string {
 	case "SIGN":
 		return "free-agent-signing"
 	case "DEAD_CAP", "RELEASE":
-		if strings.Contains(reason, opReasonWaiverVoid) {
+		if strings.Contains(strings.ToLower(reason), opReasonWaiverVoid) {
 			return "waiver"
 		}
 		// A natural §14 UFA-expiry release carries no §8 marker — the player was simply
@@ -168,6 +184,13 @@ func deriveProvenance(kind, reason string) string {
 // The contract_year_changes branch CASE-expression mirrors classifyContractChangeKind so the
 // SQL and the Go classifier never drift; if a future reason prefix lands, the default
 // CONTRACT_CHANGE bucket keeps the row visible rather than dropping it.
+//
+// The player_status_events branch CASE enumerates every domain.PlayerStatus (FREE_AGENT,
+// RETIRED, DECEASED) and uses ELSE 'UNKNOWN' — NOT a silent RELEASE. The Go scan layer turns a
+// 'UNKNOWN' kind into a loud drift error (mirroring CurrentStatus's fail-loud-on-unknown-status
+// contract), so a future PlayerStatus addition surfaces immediately rather than miscoloring the
+// row as a release. The three mapped statuses are kept in lockstep with domain.PlayerStatus by
+// the TestFeed_UnknownStatusSurfacesDrift contract.
 const feedSQL = `
 SELECT source, id, kind, ts, mfl_id, franchises_raw, reason, trade_rationale, trade_picks_note FROM (
     SELECT 'trade_notes'              AS source,
@@ -188,7 +211,7 @@ SELECT source, id, kind, ts, mfl_id, franchises_raw, reason, trade_rationale, tr
            CASE status WHEN 'FREE_AGENT' THEN 'RELEASE'
                        WHEN 'RETIRED'    THEN 'RETIREMENT'
                        WHEN 'DECEASED'   THEN 'DEATH'
-                       ELSE 'RELEASE'
+                       ELSE 'UNKNOWN'
            END                        AS kind,
            at                         AS ts,
            mfl_id                     AS mfl_id,
@@ -245,7 +268,12 @@ SELECT source, id, kind, ts, mfl_id, franchises_raw, reason, trade_rationale, tr
     FROM contract_year_changes
     WHERE league_id = ?1 AND source <> 'seed'
 )
-ORDER BY ts DESC, source DESC, id DESC
+-- LENGTH(id) DESC precedes id DESC so the seq-cast ids of player_status_events and
+-- cap_relief_ledger sort NUMERICALLY within a same-timestamp group (a bare id DESC would be
+-- lexicographic and misorder seq 10 above seq 2). For the text-id sources (trade_notes,
+-- dead_cap_ledger, contract_year_changes) LENGTH-then-lex is a different but still-deterministic
+-- tiebreaker, and the tiebreak only fires within a single source (source DESC groups first).
+ORDER BY ts DESC, source DESC, LENGTH(id) DESC, id DESC
 LIMIT ?5`
 
 // Feed reads the Activity / Transaction Feed — every row from every append-only event
@@ -289,7 +317,13 @@ func (s *Store) Feed(ctx context.Context, limit int) ([]FeedEvent, error) {
 		); err != nil {
 			return nil, fmt.Errorf("state: feed scan: %w", err)
 		}
-		kind = normalizeFeedKind(source, kind)
+		// 'UNKNOWN' is the player_status_events CASE ELSE — a status the feed does not
+		// recognize (a future domain.PlayerStatus the CASE was not updated for, or a raw
+		// insert of a bogus status). Fail loud rather than silently mislabel the row; this
+		// mirrors CurrentStatus's drift contract. mfl_id is included so the row is locatable.
+		if kind == "UNKNOWN" {
+			return nil, fmt.Errorf("state: feed: player_status_events row for mfl_id %q classified as UNKNOWN (status drift — add the status to the feed CASE)", mflID)
+		}
 		out = append(out, FeedEvent{
 			Source:         source,
 			ID:             id,
@@ -307,24 +341,6 @@ func (s *Store) Feed(ctx context.Context, limit int) ([]FeedEvent, error) {
 		return nil, fmt.Errorf("state: feed iterate: %w", err)
 	}
 	return out, nil
-}
-
-// normalizeFeedKind collapses the SQL-branch Kind back to what classifyContractChangeKind
-// would have produced if we classified in Go. Today the SQL CASE expression and the Go
-// classifier are in lockstep (the discriminators are bound into the query), so this is the
-// identity; the seam exists so a future divergence surfaces as ONE Go-level normalization,
-// not a silent SQL/Go drift. Kind is the spine's semantic-hue driver — divergence would
-// mis-color rows.
-func normalizeFeedKind(source, kind string) string {
-	if source != "contract_year_changes" {
-		return kind
-	}
-	switch kind {
-	case "RESTRUCTURE", "TAG", "WAIVER_VOID":
-		return kind
-	default:
-		return kind
-	}
 }
 
 // splitFranchises splits trade_notes' comma-joined involved_franchises column into a slice.

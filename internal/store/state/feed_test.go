@@ -279,6 +279,32 @@ func TestFeed_KindFromEachSource(t *testing.T) {
 	}
 }
 
+// TestFeed_UnknownStatusSurfacesDrift pins the fail-loud contract for a player_status_events
+// row whose status the feed CASE does not recognize. The CASE enumerates the three
+// domain.PlayerStatus values (FREE_AGENT / RETIRED / DECEASED) and uses ELSE 'UNKNOWN'; the Go
+// scan layer turns 'UNKNOWN' into an error rather than silently bucketing the row as a release.
+// This mirrors CurrentStatus's drift contract: a future PlayerStatus addition must surface
+// immediately, not miscolor a spine row. Without this, adding e.g. PlayerSuspended would render
+// every suspended player's release event as a cut — wrong hue, wrong predicate, no warning.
+func TestFeed_UnknownStatusSurfacesDrift(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
+	ctx := context.Background()
+	// Plant a row with a status no handler writes today (the engine's RecordStatus chokepoint
+	// would reject this, but a migration or a future enum addition could land it).
+	rawFeedInsert(t, s, "player_status_events",
+		`INSERT INTO player_status_events (seq, league_id, mfl_id, status, reason, at)
+		 VALUES (1, ?, '1234', 'SUSPENDED', 'future unmapped status', ?)`,
+		s.leagueID, isoTime(100))
+
+	got, err := s.Feed(ctx, 100)
+	if err == nil {
+		t.Fatalf("Feed: expected a drift error for an unrecognized status, got nil (rows: %d)", len(got))
+	}
+	if !strings.Contains(err.Error(), "UNKNOWN") && !strings.Contains(err.Error(), "drift") {
+		t.Fatalf("Feed error does not identify the drift: %v", err)
+	}
+}
+
 // TestFeed_SeedContractChangesExcluded proves the WHERE source <> 'seed' guard fires: the
 // seed-only rows every fresh contract creates are NOT feed events (they are initial migration,
 // not a transaction), so they must never appear in the feed.
@@ -373,6 +399,10 @@ func TestFeed_ProvenancePerKind(t *testing.T) {
 		{"SIGN", "SIGN", "free-agency signing §6", "free-agent-signing"},
 		{"DEAD_CAP §8 waiver", "DEAD_CAP", "waiver-cut §8", "waiver"},
 		{"RELEASE §8 waiver", "RELEASE", "waiver-cut §8", "waiver"},
+		// Case-insensitive §8 detection: the SQL feed classifies via LIKE (ASCII
+		// case-insensitive); deriveProvenance must match the same row the SQL matched, so an
+		// uppercase waiver marker still resolves to "waiver" provenance.
+		{"RELEASE §8 waiver uppercase", "RELEASE", "WAIVER-CUT §8", "waiver"},
 		{"DEAD_CAP §12 buyout (not acquisition)", "DEAD_CAP", "buyout §12", ""},
 		{"RELEASE natural expiry (not acquisition)", "RELEASE", "", ""},
 		{"RETIREMENT", "RETIREMENT", "retirement §13", ""},
@@ -393,7 +423,9 @@ func TestFeed_ProvenancePerKind(t *testing.T) {
 
 // TestClassifyContractChangeKind covers the source+reason → Kind table for contract_year_changes
 // rows. SQL mirrors this exactly; this test pins the contract so a divergence between the SQL
-// CASE and the Go classifier surfaces here.
+// CASE and the Go classifier surfaces here. Matching is case-INSENSITIVE (the SQL CASE uses
+// LIKE, which is ASCII case-insensitive; the Go classifier folds the reason through ToLower) —
+// the uppercase-variant cases below pin that parity so the two surfaces cannot drift.
 func TestClassifyContractChangeKind(t *testing.T) {
 	for _, tc := range []struct {
 		source, reason, want string
@@ -405,6 +437,11 @@ func TestClassifyContractChangeKind(t *testing.T) {
 		{"op", "waiver-cut §8", "WAIVER_VOID"},
 		{"op", "future unmapped op", "CONTRACT_CHANGE"},
 		{"", "", "CONTRACT_CHANGE"},
+		// Case-insensitivity parity with SQL LIKE — a handler that ever wrote an uppercase
+		// variant must classify identically on both sides.
+		{"op", "§11 RESTRUCTURE: moved $20", "RESTRUCTURE"},
+		{"op", "§9 FRANCHISE TAG: set to $6M", "TAG"},
+		{"op", "WAIVER-CUT §8", "WAIVER_VOID"},
 	} {
 		if got := classifyContractChangeKind(tc.source, tc.reason); got != tc.want {
 			t.Errorf("classifyContractChangeKind(%q,%q) = %q, want %q", tc.source, tc.reason, got, tc.want)
