@@ -56,7 +56,7 @@ func specialStore(t *testing.T) (*statepkg.Store, *transactions.Coordinator) {
 	if err := s.Initialize(context.Background(), specialSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
-	c, err := transactions.New(s.Writer())
+	c, err := transactions.New(s.Writer(), nil)
 	if err != nil {
 		t.Fatalf("New coordinator: %v", err)
 	}

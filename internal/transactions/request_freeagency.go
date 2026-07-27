@@ -45,6 +45,32 @@ type Sign struct {
 func (Sign) Kind() Kind { return KindSign }
 func (Sign) sealed()    {}
 
+// enforceRosterLimits gates a §6 signing against the roster-size and per-position caps BEFORE the
+// player is rostered. It reads the target franchise's committed roster, resolves the signee's
+// position through the policy (the same players-DB join ExecuteSign uses for the §6 draft-year
+// floor), and rejects if adding him would exceed RosterSize or the per-position max for his
+// position. A 0 cap (or an unresolved position) on either axis skips that axis — the enforcement
+// rejects only on a limit it can actually test, mirroring "rejecting with a clear error if it
+// would violate a limit" (reject on known violations; never false-reject).
+func (s Sign) enforceRosterLimits(ctx context.Context, r state.Reader, p RosterPolicy) error {
+	roster, ok := r.Roster(s.FranchiseID)
+	if !ok {
+		return nil // a franchise with no committed roster (no players yet) cannot be over any cap
+	}
+	if err := checkRosterSize(p, s.FranchiseID, len(roster), 1); err != nil {
+		return err
+	}
+	pos, ok := p.Position(ctx, s.MFLID)
+	if !ok {
+		return nil // unknown position — cannot test the per-position cap; roster-size gate still ran
+	}
+	cur, err := positionCount(ctx, p, roster, pos)
+	if err != nil {
+		return err
+	}
+	return checkPositionLimit(p, s.FranchiseID, pos, cur, 1)
+}
+
 // validate enforces the shape a signing must have — a player, a target franchise, a positive
 // salary, and a §6-legal length (1..4 years) — before a transaction is opened. Free-agent
 // eligibility, the buyout lockout, and the min-salary floor are resolved against real state in apply.

@@ -207,6 +207,13 @@ func (f *fakeTxWriter) AppendCalendarEvent(_ context.Context, e state.CalendarEv
 	return f.maybeFail()
 }
 
+// AppendCorrection records a Session-2 correction append (keyed by tx_id) so handler-level tests
+// can assert a CORRECT op reached the store, honoring the maybeFail hook like the others.
+func (f *fakeTxWriter) AppendCorrection(_ context.Context, e state.CorrectionEntry) error {
+	f.calls = append(f.calls, recordedMove{op: "correction", target: e.TxID})
+	return f.maybeFail()
+}
+
 func (f *fakeTxWriter) MoveCellMoney(_ context.Context, mflID string, _, _ int, _ domain.Money, _ string) error {
 	f.calls = append(f.calls, recordedMove{op: "movecell", mflID: mflID})
 	return f.maybeFail()
@@ -281,7 +288,7 @@ func makeMoves(n int) []PlayerMove {
 
 func newCoord(t *testing.T, w state.Writer) *Coordinator {
 	t.Helper()
-	c, err := New(w)
+	c, err := New(w, nil)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -293,8 +300,8 @@ func newCoord(t *testing.T, w state.Writer) *Coordinator {
 // TestNew_NilWriterFails is the fail-loud construction gate: the sole mutator must be
 // wired with a real writer, never a nil that would no-op every transaction.
 func TestNew_NilWriterFails(t *testing.T) {
-	if _, err := New(nil); err == nil {
-		t.Fatal("New(nil) succeeded — a nil writer must fail at construction")
+	if _, err := New(nil, nil); err == nil {
+		t.Fatal("New(nil, nil) succeeded — a nil writer must fail at construction")
 	}
 }
 

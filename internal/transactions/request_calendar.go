@@ -31,9 +31,10 @@ func schedulableKind(k string) bool {
 		// The season-clock ops + the §13 commissioner acts — the league-global schedule.
 		return true
 	case KindTrade, KindRosterStatus, KindWaiver, KindRestructure, KindTag, KindExtension, KindBuyout, KindSign,
-		KindScheduleEvent, KindRescheduleEvent, KindCancelEvent:
+		KindScheduleEvent, KindRescheduleEvent, KindCancelEvent, KindCorrect:
 		// The per-player transaction ops are NOT schedulable in v1 (the calendar is the commissioner
 		// schedule, not a per-roster to-do list); a calendar op cannot schedule another calendar op.
+		// A correction is likewise not schedulable — it corrects a past entry, it is never a future intent.
 		return false
 	default:
 		// A non-enum string (never a valid Kind) is not schedulable — default-deny.

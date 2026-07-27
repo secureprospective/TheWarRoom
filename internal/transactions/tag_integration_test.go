@@ -58,7 +58,7 @@ func tagStore(t *testing.T) (*statepkg.Store, *transactions.Coordinator, tagDir)
 	if err := s.Initialize(context.Background(), tagSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
-	c, err := transactions.New(s.Writer())
+	c, err := transactions.New(s.Writer(), nil)
 	if err != nil {
 		t.Fatalf("New coordinator: %v", err)
 	}
@@ -279,7 +279,7 @@ func TestIntegration_TagOffGridPriceSnapsInCap(t *testing.T) {
 	if err := s.Initialize(context.Background(), offGridSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
-	c, err := transactions.New(s.Writer())
+	c, err := transactions.New(s.Writer(), nil)
 	if err != nil {
 		t.Fatalf("New coordinator: %v", err)
 	}

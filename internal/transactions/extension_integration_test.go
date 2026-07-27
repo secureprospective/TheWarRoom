@@ -52,7 +52,7 @@ func extStore(t *testing.T) (*statepkg.Store, *transactions.Coordinator, tagDir)
 	if err := s.Initialize(context.Background(), extSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
-	c, err := transactions.New(s.Writer())
+	c, err := transactions.New(s.Writer(), nil)
 	if err != nil {
 		t.Fatalf("New coordinator: %v", err)
 	}

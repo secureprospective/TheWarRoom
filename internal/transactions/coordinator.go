@@ -29,17 +29,22 @@ var errDryRun = errors.New("transactions: dry-run rollback (not an error)")
 // Coordinator is the sole runtime mutator of league state. Construct with New.
 type Coordinator struct {
 	writer state.Writer
+	policy RosterPolicy     // Session 2 roster/position/taxi/IR limit gate; nil = enforcement disabled
 	now    func() time.Time // injectable clock so a Receipt's timestamp is testable
 }
 
-// New wires the Coordinator with the single state.Writer it will ever hold. A nil
-// writer is a wiring error surfaced HERE, at construction — never a Coordinator that
-// silently no-ops every transaction at run time (the rankings.New fail-loud rule).
-func New(w state.Writer) (*Coordinator, error) {
+// New wires the Coordinator with the single state.Writer it will ever hold plus the Session 2
+// roster-composition policy (roster/position/taxi/IR limits). A nil writer is a wiring error
+// surfaced HERE, at construction — never a Coordinator that silently no-ops every transaction at
+// run time (the rankings.New fail-doud rule). A nil policy is valid and disables roster-limit
+// enforcement (tests, an unwired caller) — every roster-affecting op then commits as it did before
+// Session 2. The policy, when non-nil, is the rulebook + players-DB adapter composed in app.go
+// (depguard forbids importing either store here).
+func New(w state.Writer, p RosterPolicy) (*Coordinator, error) {
 	if w == nil {
 		return nil, fmt.Errorf("transactions: nil state.Writer — the coordinator is the sole runtime mutator and requires it")
 	}
-	return &Coordinator{writer: w, now: time.Now}, nil
+	return &Coordinator{writer: w, policy: p, now: time.Now}, nil
 }
 
 // Receipt is the outcome of one executed transaction: what kind ran, how many players
@@ -78,6 +83,18 @@ func (c *Coordinator) Execute(ctx context.Context, req Request) (Receipt, error)
 		if perr := gatePhase(ctx, w, req.Kind()); perr != nil {
 			return perr
 		}
+		// Session 2 roster-limit gate: when a policy is wired and the request opts in via the
+		// rosterAware interface, project its roster effect against the policy BEFORE apply runs —
+		// a limit violation is rejected atomically (nothing committed), with a clear error naming
+		// the offending franchise + limit. Runs after gatePhase so a phase rejection short-circuits
+		// first (the cheaper, more fundamental check). r reflects committed pre-op state.
+		if c.policy != nil {
+			if ra, ok := req.(rosterAware); ok {
+				if rerr := ra.enforceRosterLimits(ctx, c.writer, c.policy); rerr != nil {
+					return rerr
+				}
+			}
+		}
 		r, aerr := req.apply(ctx, w)
 		res = r
 		return aerr
@@ -108,6 +125,16 @@ func (c *Coordinator) Preview(ctx context.Context, req Request) (Receipt, error)
 	err := c.writer.WriteTx(ctx, func(w state.TxWriter) error {
 		if perr := gatePhase(ctx, w, req.Kind()); perr != nil {
 			return perr
+		}
+		// Session 2 roster-limit gate — same position as in Execute (see comment there). A preview
+		// surfaces a limit rejection identically to an execute rejection: the staged-confirm UI
+		// shows "the engine rejected this" before any write, never only on commit.
+		if c.policy != nil {
+			if ra, ok := req.(rosterAware); ok {
+				if rerr := ra.enforceRosterLimits(ctx, c.writer, c.policy); rerr != nil {
+					return rerr
+				}
+			}
 		}
 		r, aerr := req.apply(ctx, w)
 		if aerr != nil {

@@ -62,7 +62,7 @@ func richStore(t *testing.T) (*state.Store, *transactions.Coordinator) {
 	if err := s.Initialize(context.Background(), richSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
-	c, err := transactions.New(s.Writer())
+	c, err := transactions.New(s.Writer(), nil)
 	if err != nil {
 		t.Fatalf("New coordinator: %v", err)
 	}
@@ -137,7 +137,7 @@ func TestIntegration_RestructureRejectsFinalYearContract(t *testing.T) {
 	if err := s.Initialize(context.Background(), seed); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
-	c, err := transactions.New(s.Writer())
+	c, err := transactions.New(s.Writer(), nil)
 	if err != nil {
 		t.Fatalf("New coordinator: %v", err)
 	}

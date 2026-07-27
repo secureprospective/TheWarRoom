@@ -65,7 +65,7 @@ func realStoreWithPools(t *testing.T) (*state.Store, *db.Pools) {
 // franchises and the derived cap reflects it.
 func TestIntegration_TradePersists(t *testing.T) {
 	s, pools := realStoreWithPools(t)
-	c, err := transactions.New(s.Writer())
+	c, err := transactions.New(s.Writer(), nil)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestIntegration_TradePersists(t *testing.T) {
 // only), the player is gone, and a second read confirms it all persisted.
 func TestIntegration_WaiverCutConservesCap(t *testing.T) {
 	s := realStore(t)
-	c, err := transactions.New(s.Writer())
+	c, err := transactions.New(s.Writer(), nil)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -153,7 +153,7 @@ func TestIntegration_WaiverCutConservesCap(t *testing.T) {
 // atomicity guarantee, proven through the real Coordinator + store together.
 func TestIntegration_BadLegRollsBackWholeTrade(t *testing.T) {
 	s := realStore(t)
-	c, err := transactions.New(s.Writer())
+	c, err := transactions.New(s.Writer(), nil)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -180,7 +180,7 @@ func TestIntegration_BadLegRollsBackWholeTrade(t *testing.T) {
 // KindTrade is rejected with the same shape as the existing KindSign/SigningWindowClosed gate.
 func TestIntegration_TradeDeadlineBlocksTrade(t *testing.T) {
 	s := realStore(t)
-	c, err := transactions.New(s.Writer())
+	c, err := transactions.New(s.Writer(), nil)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}

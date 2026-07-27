@@ -153,6 +153,12 @@ type CapLedgerWriter interface {
 	// non-empty (Trade.validate() enforces it before the tx opens). involvedFranchises is every
 	// franchise a leg of the trade touched.
 	LogTradeNote(ctx context.Context, picksNote, rationale string, involvedFranchises []string) error
+	// AppendCorrection appends one Session-2 transaction-correction row (a clerical CORRECTED note
+	// or a REVERSED marker) in the shared tx — the same "no room for a sixth embedded member" reason
+	// LogTradeNote rides here instead of its own CorrectionWriter grouping. A correction is NEVER an
+	// update/delete of the original ledger row (append-only honored); it is a new row tying back to
+	// the original by tx_id. Fails loud on a missing field or an unknown status.
+	AppendCorrection(ctx context.Context, e CorrectionEntry) error
 }
 
 // CalendarWriter is the commissioner-calendar's append surface — the single write primitive behind

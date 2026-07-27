@@ -89,8 +89,8 @@ func runProbe() {
 		return st.Initialize(c, probeSeed{})
 	})
 	probeStep(ctx, "transactions.New", func(_ context.Context) error {
-		_, e := transactions.New(st.Writer())
-		return e //nolint:wrapcheck // diagnostic
+		_, e := transactions.New(st.Writer(), nil) // probe: no policy needed (construction check only)
+		return e                                   //nolint:wrapcheck // diagnostic
 	})
 	probeStep(ctx, "output.Initialize", output.New(pools).Initialize)
 

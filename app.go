@@ -210,8 +210,11 @@ func (a *App) initStoreFloor(ctx context.Context) error {
 
 	// B7a: the transaction Coordinator is the SOLE holder of the state Writer in the
 	// whole process (AD-02). Wired here, once, right after the state store comes up —
-	// nothing else calls st.Writer().
-	coord, err := transactions.New(st.Writer())
+	// nothing else calls st.Writer(). The Session 2 roster-policy adapter (rulebook +
+	// players-DB) supplies the roster/position/taxi/IR enforcement gate; composed here
+	// because depguard forbids the transactions package from importing either store.
+	policy := &rosterPolicyAdapter{rb: rb, app: a}
+	coord, err := transactions.New(st.Writer(), policy)
 	if err != nil {
 		return fmt.Errorf("startup: initialize transaction coordinator: %w", err)
 	}

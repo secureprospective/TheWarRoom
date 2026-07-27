@@ -52,7 +52,7 @@ func rollStore(t *testing.T) (*statepkg.Store, *transactions.Coordinator) {
 	if err := s.Initialize(context.Background(), rollSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
-	c, err := transactions.New(s.Writer())
+	c, err := transactions.New(s.Writer(), nil)
 	if err != nil {
 		t.Fatalf("New coordinator: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestIntegration_RolloverSurvivesReboot(t *testing.T) {
 	if err := s.Initialize(ctx, rollSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
-	c, err := transactions.New(s.Writer())
+	c, err := transactions.New(s.Writer(), nil)
 	if err != nil {
 		t.Fatalf("New coordinator: %v", err)
 	}

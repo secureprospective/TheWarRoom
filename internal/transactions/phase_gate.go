@@ -28,7 +28,7 @@ func phasePolicy(kind Kind) ([]domain.Phase, bool) {
 	switch kind {
 	case KindTrade, KindRosterStatus, KindWaiver, KindRestructure, KindTag, KindExtension, KindAdvancePhase,
 		KindRetirement, KindDeath, KindCapRelief, KindSetSigningWindow, KindSetTradeDeadline,
-		KindScheduleEvent, KindRescheduleEvent, KindCancelEvent:
+		KindScheduleEvent, KindRescheduleEvent, KindCancelEvent, KindCorrect:
 		// §13 special situations (retirement, death, cap relief) can happen in any phase — a
 		// player retires or dies whenever, and a commissioner cap-relief appeal is not
 		// phase-bound. SET_SIGNING_WINDOW (§6 UFA calendar) and SET_TRADE_DEADLINE (§14) are

@@ -33,6 +33,7 @@ const (
 	KindScheduleEvent    Kind = "SCHEDULE_EVENT"
 	KindRescheduleEvent  Kind = "RESCHEDULE_EVENT"
 	KindCancelEvent      Kind = "CANCEL_EVENT"
+	KindCorrect          Kind = "CORRECT"
 )
 
 // Request is a transaction the Coordinator can execute. The concrete types live in THIS
@@ -76,6 +77,51 @@ func (r RosterStatusChange) apply(ctx context.Context, w state.TxWriter) (applyR
 	}
 	// A roster-status move (active ↔ taxi/IR) changes no cap figure, so it carries no cap delta.
 	return applyResult{PlayersAffected: 1}, nil
+}
+
+// enforceRosterLimits gates a roster-status move against the taxi-squad / IR slot caps when the
+// move is INTO taxi or IR (a move OUT frees a slot and cannot overflow). It reads the player's
+// committed franchise roster and counts players already at the target status, then rejects if
+// adding one more would exceed the policy's cap. The roster-SIZE cap is irrelevant here — the
+// player is already on the franchise; a status move changes only his slot, not the total. A 0 cap
+// means unlimited / that slot type is disabled. If the player is unrostered, apply will fail
+// later with errUnknownPlayer — no need to duplicate that check here.
+func (r RosterStatusChange) enforceRosterLimits(_ context.Context, rd state.Reader, p RosterPolicy) error {
+	var limit int
+	switch r.Status {
+	case domain.RosterTaxi:
+		limit = p.TaxiSquad()
+	case domain.RosterIR:
+		limit = p.InjuredReserve()
+	case domain.RosterActive:
+		return nil // a move to ROSTER (active) frees a taxi/IR slot — cannot overflow either
+	default:
+		return nil // any other status (unused today) carries no slot cap to enforce
+	}
+	if limit <= 0 {
+		return nil // unlimited / disabled — do not gate
+	}
+	cur, ok := rd.Player(r.MFLID)
+	if !ok {
+		// Explicit rejection rather than deferring to apply (a review finding: the prior comment's
+		// "apply will reject" was an unsynchronized assumption between this gate and the executor —
+		// if apply's behavior ever changed, an unrostered player could silently bypass the gate).
+		return fmt.Errorf("transactions: roster status change: player %q is not rostered", r.MFLID)
+	}
+	if cur.RosterStatus == r.Status {
+		return nil // already at the target status — a no-op apply will reject; do not false-reject
+	}
+	roster, ok := rd.Roster(cur.FranchiseID)
+	if !ok {
+		return nil // no committed roster to count — defensive (cur exists implies roster exists)
+	}
+	current := countByStatus(roster, r.Status)
+	if current+1 > limit {
+		return &errRosterLimit{detail: fmt.Sprintf(
+			"roster limit: franchise %q would hold %d %s players (cap %d) — exceeds the %s slot limit",
+			cur.FranchiseID, current+1, r.Status, limit, r.Status)}
+	}
+	return nil
 }
 
 // Waiver cuts one player (§8): the releasing franchise loses him from its roster and

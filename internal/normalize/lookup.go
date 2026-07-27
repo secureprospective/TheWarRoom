@@ -171,6 +171,19 @@ func classifyPosition(raw string, posMap map[string]domain.Position, aggSet map[
 	return domain.PosFlag, false
 }
 
+// PositionFromMFL maps a raw MFL position code onto the engine set using the SAME table NewLookup
+// builds (the single source of truth — OQ-004's PK→K and EDGE→DE remaps live here, never copied).
+// It is the public edge for callers that need the MFL→engine translation WITHOUT a full Lookup:
+// the rulebook's rosterLimits (Session 2 enforcement) carry raw MFL codes, and the roster-policy
+// adapter translates each entry to its engine position through this one function. An aggregate or
+// unknown code returns PosFlag (the "needs review" sentinel), so a caller that treats PosFlag as
+// "skip the per-position check" is correct by construction. Returns false ONLY for an aggregate
+// code (defensive — no real roster limit targets an aggregate). The map is built per call (11
+// entries); PositionFromMFL runs a handful of times per roster-affecting op, not per player.
+func PositionFromMFL(raw string) (domain.Position, bool) {
+	return classifyPosition(raw, newPositionMap(), newAggregateSet())
+}
+
 // newPositionMap is the raw-MFL-code → engine-position table. Real codes pass
 // through; PK→K and EDGE→DE are the remaps; XX is intentionally absent so it falls
 // through to PosFlag in classifyPosition.

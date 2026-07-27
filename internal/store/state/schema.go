@@ -47,6 +47,9 @@ func (s *Store) initSchema(ctx context.Context) error {
 	if err := s.initTradeNotesSchema(ctx); err != nil {
 		return err
 	}
+	if err := s.initCorrectionSchema(ctx); err != nil {
+		return err
+	}
 	// The forward-only migration runner owns the two money migrations below (v1/v2): it
 	// tracks them in schema_migrations, reconciles pre-marker DBs on data predicates, and
 	// takes a VACUUM INTO backup before any migration that does real work (D-V6, Tier 2).

@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
 // This file groups the ACTIVITY / TRANSACTION FEED IPC surface — the read-only GetFeed method
@@ -37,6 +40,18 @@ type FeedEventDTO struct {
 	Provenance     string   `json:"provenance"`
 	TradeRationale string   `json:"tradeRationale,omitempty"`
 	TradePicksNote string   `json:"tradePicksNote,omitempty"`
+	// Session 2 correction state — the reconciled/net-state projection. TxID is this event's
+	// logical id (Source + ":" + ID) keyed to the transaction_corrections ledger. CorrectionStatus
+	// is the LATEST correction row's status for this entry (CORRECTED / REVERSED), or "" when the
+	// entry has no correction (POSTED — the implicit default). The correction's note/reason/by/at
+	// are carried alongside so the feed can render BOTH the original and the correction (append-only
+	// honest — the original is never hidden). The IPC stamps these by joining Store.Corrections.
+	TxID             string `json:"txID"`
+	CorrectionStatus string `json:"correctionStatus,omitempty"`
+	CorrectionReason string `json:"correctionReason,omitempty"`
+	CorrectionNote   string `json:"correctionNote,omitempty"`
+	CorrectedBy      string `json:"correctedBy,omitempty"`
+	CorrectedAt      string `json:"correctedAt,omitempty"`
 }
 
 // FeedResult is the typed IPC outcome: OK plus the chronological events, or OK=false with a
@@ -85,6 +100,15 @@ func (a *App) GetFeed() FeedResult {
 		return FeedResult{Detail: err.Error()}
 	}
 
+	// Session 2 reconciled-projection join: read every correction row and reduce to latest-per-tx_id
+	// (the current correction state of each logical entry). Each feed event is then stamped with its
+	// correction state so the frontend renders BOTH the original and the correction (append-only
+	// honest — a REVERSED entry shows struck-through with the correction banner; a CORRECTED entry
+	// shows the original plus the amended note). A read failure here is best-effort: the feed still
+	// renders (uncorrected), with a directory-style warning, never a hard-fail.
+	corr, corrErr := a.state.Corrections(ctx)
+	latest := latestCorrectionByTxID(corr)
+
 	// Display-only joins — best-effort, never fail the feed.
 	dir, dirWarning := a.resolveDirectory(ctx)
 	var franchiseNames map[string]string
@@ -94,41 +118,83 @@ func (a *App) GetFeed() FeedResult {
 
 	out := make([]FeedEventDTO, len(events))
 	for i, e := range events {
-		dto := FeedEventDTO{
-			StableKey:      e.Source + ":" + e.ID,
-			Source:         e.Source,
-			ID:             e.ID,
-			Kind:           e.Kind,
-			Timestamp:      e.Timestamp,
-			MFLID:          e.MFLID,
-			FranchiseIDs:   e.FranchiseIDs,
-			FranchiseNames: resolveFranchiseNames(e.FranchiseIDs, franchiseNames),
-			Reason:         e.Reason,
-			Provenance:     e.Provenance,
-			TradeRationale: e.TradeRationale,
-			TradePicksNote: e.TradePicksNote,
-		}
-		// OQ-013 reconciliation seam: resolve the player id through the players-DB Lookup.
-		// The Lookup is built from MFL's LEAGUE feed, so commissioner-created ids that are
-		// still live resolve normally; a stale created-id (swapped out after MFL assigned an
-		// official id) returns ok=false and surfaces as PlayerUnknown rather than failing.
-		// When a future refresh/sync layer swaps the historical row's id, the SAME call here
-		// will resolve the new official id with no rendering change.
-		if e.MFLID != "" {
-			if facts, ok := dir.Facts(e.MFLID); ok {
-				dto.PlayerName = facts.Name
-				dto.PlayerPosition = string(facts.Position)
-			} else {
-				dto.PlayerUnknown = true
-			}
-		}
-		out[i] = dto
+		out[i] = feedEventDTO(e, latest, dir, franchiseNames)
 	}
 	res := FeedResult{OK: true, Events: out}
 	if dirWarning != "" {
 		res.DirectoryWarning = dirWarning
 	}
+	if corrErr != nil {
+		// A correction-read failure is best-effort: the feed renders uncorrected (POSTED) with a
+		// warning, never a hard-fail (the historical river is still the point).
+		w := "correction ledger unreadable: " + corrErr.Error()
+		if res.DirectoryWarning != "" {
+			res.DirectoryWarning += " · " + w
+		} else {
+			res.DirectoryWarning = w
+		}
+	}
 	return res
+}
+
+// feedEventDTO builds one FeedEventDTO from a raw state.FeedEvent, stamping the display-only joins
+// (franchise names, player name/position via the OQ-013 Lookup) and the Session 2 reconciled
+// correction state (from latest, the tx_id → latest-correction-row map). Split out of GetFeed to
+// keep it under the function-length gate — this is the per-row body of that loop, unchanged.
+func feedEventDTO(e state.FeedEvent, latest map[string]state.CorrectionRow, dir normalize.Lookup, franchiseNames map[string]string) FeedEventDTO {
+	txID := e.Source + ":" + e.ID
+	dto := FeedEventDTO{
+		StableKey:      txID,
+		Source:         e.Source,
+		ID:             e.ID,
+		Kind:           e.Kind,
+		Timestamp:      e.Timestamp,
+		MFLID:          e.MFLID,
+		FranchiseIDs:   e.FranchiseIDs,
+		FranchiseNames: resolveFranchiseNames(e.FranchiseIDs, franchiseNames),
+		Reason:         e.Reason,
+		Provenance:     e.Provenance,
+		TradeRationale: e.TradeRationale,
+		TradePicksNote: e.TradePicksNote,
+		TxID:           txID,
+	}
+	// Stamp the latest correction row for this entry (the reconciled state). Corrections returns
+	// seq-ascending, so latestCorrectionByTxID keeps the newest per tx_id; an entry with no
+	// correction row stays all-zero (POSTED — the implicit default the frontend renders clean).
+	if c, ok := latest[txID]; ok {
+		dto.CorrectionStatus = c.Status
+		dto.CorrectionReason = c.Reason
+		dto.CorrectionNote = c.Note
+		dto.CorrectedBy = c.Commissioner
+		dto.CorrectedAt = c.CreatedAt
+	}
+	// OQ-013 reconciliation seam: resolve the player id through the players-DB Lookup.
+	// The Lookup is built from MFL's LEAGUE feed, so commissioner-created ids that are
+	// still live resolve normally; a stale created-id (swapped out after MFL assigned an
+	// official id) returns ok=false and surfaces as PlayerUnknown rather than failing.
+	// When a future refresh/sync layer swaps the historical row's id, the SAME call here
+	// will resolve the new official id with no rendering change.
+	if e.MFLID != "" {
+		if facts, ok := dir.Facts(e.MFLID); ok {
+			dto.PlayerName = facts.Name
+			dto.PlayerPosition = string(facts.Position)
+		} else {
+			dto.PlayerUnknown = true
+		}
+	}
+	return dto
+}
+
+// latestCorrectionByTxID reduces a seq-ascending correction slice to the LATEST correction row per
+// tx_id — the reconciled/net-state projection (the current correction state of each logical entry).
+// Iterating in seq order and overwriting map[tx_id] = row keeps the newest per tx_id; a nil/empty
+// input yields an empty map (every entry is POSTED — the implicit default).
+func latestCorrectionByTxID(rows []state.CorrectionRow) map[string]state.CorrectionRow {
+	out := make(map[string]state.CorrectionRow, len(rows))
+	for _, r := range rows {
+		out[r.TxID] = r // seq-ascending → last write wins = latest
+	}
+	return out
 }
 
 // resolveFranchiseNames maps each franchise id to its display name from the rulebook directory,
