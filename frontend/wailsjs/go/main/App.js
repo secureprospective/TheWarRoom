@@ -18,6 +18,10 @@ export function GetCurrentPhase() {
   return window['go']['main']['App']['GetCurrentPhase']();
 }
 
+export function GetFeed() {
+  return window['go']['main']['App']['GetFeed']();
+}
+
 export function GetFranchiseState(arg1) {
   return window['go']['main']['App']['GetFranchiseState'](arg1);
 }

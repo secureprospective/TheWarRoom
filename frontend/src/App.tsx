@@ -13,6 +13,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { RookieTable } from './components/RookieTable';
 import { ValidationBoard } from './components/ValidationBoard';
 import { CalendarBoard } from './components/calendar/CalendarBoard';
+import { FeedBoard } from './components/feed/FeedBoard';
 import { InspectorContent } from './components/inspector/InspectorContent';
 import { HomeBoard } from './components/home/HomeBoard';
 import { useInspectorStore } from './store/inspector';
@@ -39,7 +40,10 @@ function App() {
   const { density, setDensity } = useDensity();
   const [module, setModule] = useState<ModuleId>('assets');
   const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [summoned, setSummoned] = useState<'comms' | 'calendar' | null>(null);
+  // 'feed' is the Session-1 backward-looking Activity Feed (Session-D grammar applied to
+  // historical ledger data). 'comms' is the still-future live thread; 'calendar' is the
+  // commissioner-calendar board (B-3).
+  const [summoned, setSummoned] = useState<'comms' | 'calendar' | 'feed' | null>(null);
   const selectedMflID = useInspectorStore((s) => s.selectedMflID);
   const openNonce = useInspectorStore((s) => s.openNonce);
 
@@ -75,7 +79,7 @@ function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [setDensity]);
 
-  const onSummon = useCallback((target: 'comms' | 'calendar') => {
+  const onSummon = useCallback((target: 'comms' | 'calendar' | 'feed') => {
     setSummoned((cur) => (cur === target ? null : target));
   }, []);
 
@@ -93,6 +97,8 @@ function App() {
       <ModuleView module={module} />
       {summoned === 'calendar' ? (
         <CalendarBoard onClose={() => setSummoned(null)} />
+      ) : summoned === 'feed' ? (
+        <FeedBoard onClose={() => setSummoned(null)} />
       ) : summoned === 'comms' ? (
         <SummonPlaceholder target="comms" onClose={() => setSummoned(null)} />
       ) : null}

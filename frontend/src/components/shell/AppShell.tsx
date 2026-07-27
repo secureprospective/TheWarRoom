@@ -11,7 +11,7 @@ interface AppShellProps {
   density: Density;
   inspectorOpen: boolean;
   onInspectorClose: () => void;
-  onSummon: (t: 'comms' | 'calendar') => void;
+  onSummon: (t: 'comms' | 'calendar' | 'feed') => void;
   children: ReactNode; // the active module element
   workspaceTitle?: string;
   inspector?: ReactNode; // inspector body (optional; empty state otherwise)

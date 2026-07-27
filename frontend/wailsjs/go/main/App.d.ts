@@ -10,6 +10,8 @@ export function GetCalendarEvents():Promise<main.CalendarEventsResult>;
 
 export function GetCurrentPhase():Promise<main.PhaseResult>;
 
+export function GetFeed():Promise<main.FeedResult>;
+
 export function GetFranchiseState(arg1:string):Promise<main.FranchiseStateResult>;
 
 export function GetFranchises():Promise<main.FranchisesResult>;
