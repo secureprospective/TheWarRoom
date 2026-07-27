@@ -62,25 +62,28 @@ func cloneLimits(in []league.PositionLimit) []league.PositionLimit {
 // GetSetting. Structured fields (scoring, roster limits, starters) are excluded.
 func settingsMap(c league.RawConfig) map[string]string {
 	return map[string]string{
-		"rosterSize":            c.RosterSize,
-		"taxiSquad":             c.TaxiSquad,
-		"injuredReserve":        c.InjuredReserve,
-		"keeperType":            c.KeeperType,
-		"usesSalaries":          c.UsesSalaries,
-		"usesContractYear":      c.UsesContractYear,
-		"startWeek":             c.StartWeek,
-		"endWeek":               c.EndWeek,
-		"lastRegularSeasonWeek": c.LastRegularSeasonWeek,
-		"includeTaxiWithSalary": c.IncludeTaxiWithSalary,
-		"includeIRWithSalary":   c.IncludeIRWithSalary,
+		"rosterSize":                  c.RosterSize,
+		"taxiSquad":                   c.TaxiSquad,
+		"injuredReserve":              c.InjuredReserve,
+		"keeperType":                  c.KeeperType,
+		"usesSalaries":                c.UsesSalaries,
+		"usesContractYear":            c.UsesContractYear,
+		"startWeek":                   c.StartWeek,
+		"endWeek":                     c.EndWeek,
+		"lastRegularSeasonWeek":       c.LastRegularSeasonWeek,
+		"includeTaxiWithSalary":       c.IncludeTaxiWithSalary,
+		"includeIRWithSalary":         c.IncludeIRWithSalary,
+		"includeTaxiWithContractYear": c.IncludeTaxiWithContractYear,
 	}
 }
 
 // capPercent parses a settingsMap-style percentage string (MFL's "100", "0", or an
-// empty/unset value) to a 0-100 float, defaulting to 100 (no discount) when the
-// raw value is empty or unparseable — matching the historical behavior (every
-// rostered player counted 100% toward cap) for configs stored before this field
-// existed.
+// empty/unset value) to a 0-100 float, defaulting to 100 (no discount) when the raw
+// value is empty or unparseable — matching the historical behavior (every rostered
+// player counted 100% toward cap) for configs stored before this field existed.
+// Clamped to [0, 100]: SetOverride's scopeSetting case accepts any non-empty scalar
+// with no value-domain check, so an out-of-range override (a stray negative or >100
+// value) must not be able to invert or overcount a franchise's cap total here.
 func capPercent(raw string) float64 {
 	v := strings.TrimSpace(raw)
 	if v == "" {
@@ -90,7 +93,14 @@ func capPercent(raw string) float64 {
 	if err != nil {
 		return 100
 	}
-	return pct
+	switch {
+	case pct < 0:
+		return 0
+	case pct > 100:
+		return 100
+	default:
+		return pct
+	}
 }
 
 // TaxiCapPercent returns the pct of a taxi-squad player's cap-counting salary that

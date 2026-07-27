@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -21,6 +22,9 @@ type LeagueSettingResult struct {
 func (a *App) GetLeagueSetting(key string) LeagueSettingResult {
 	if a.rulebook == nil {
 		return LeagueSettingResult{OK: false, Error: "rulebook store not initialized"}
+	}
+	if strings.TrimSpace(key) == "" {
+		return LeagueSettingResult{OK: false, Error: "key must be non-empty"}
 	}
 	v, ok := a.rulebook.GetSetting(key)
 	if !ok {
@@ -42,6 +46,9 @@ type SetLeagueSettingResult struct {
 func (a *App) SetLeagueSettingOverride(key, value, note string) SetLeagueSettingResult {
 	if a.rulebook == nil {
 		return SetLeagueSettingResult{OK: false, Error: "rulebook store not initialized"}
+	}
+	if strings.TrimSpace(key) == "" || strings.TrimSpace(value) == "" {
+		return SetLeagueSettingResult{OK: false, Error: "key and value must be non-empty"}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, 3*time.Second)
 	defer cancel()

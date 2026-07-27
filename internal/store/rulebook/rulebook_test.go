@@ -110,6 +110,28 @@ func TestCapPercent_ReadsMFLValueAndOverride(t *testing.T) {
 	}
 }
 
+// TestCapPercent_ClampsOutOfRangeOverride confirms an out-of-domain override value
+// (SetOverride's scopeSetting accepts any non-empty scalar, with no value-domain
+// check at that boundary) cannot invert or overcount a franchise's cap total —
+// capPercent is the last line of defense, clamping to [0, 100].
+func TestCapPercent_ClampsOutOfRangeOverride(t *testing.T) {
+	s := newStore(t, &fakeSource{cfg: baseConfig()})
+
+	if err := s.SetOverride(context.Background(), scopeSetting, "includeTaxiWithSalary", "-50", "bad input"); err != nil {
+		t.Fatalf("SetOverride: %v", err)
+	}
+	if got := s.TaxiCapPercent(); got != 0 {
+		t.Errorf("TaxiCapPercent with -50 override = %v, want clamped to 0", got)
+	}
+
+	if err := s.SetOverride(context.Background(), scopeSetting, "includeIRWithSalary", "200", "bad input"); err != nil {
+		t.Fatalf("SetOverride: %v", err)
+	}
+	if got := s.IRCapPercent(); got != 100 {
+		t.Errorf("IRCapPercent with 200 override = %v, want clamped to 100", got)
+	}
+}
+
 func TestSetOverride_AppliesAndValidates(t *testing.T) {
 	ctx := context.Background()
 	s := newStore(t, &fakeSource{cfg: baseConfig()})

@@ -40,6 +40,7 @@ func diffScalars(old, cand league.RawConfig) []RuleDelta {
 		{"lastRegularSeasonWeek", old.LastRegularSeasonWeek, cand.LastRegularSeasonWeek},
 		{"includeTaxiWithSalary", old.IncludeTaxiWithSalary, cand.IncludeTaxiWithSalary},
 		{"includeIRWithSalary", old.IncludeIRWithSalary, cand.IncludeIRWithSalary},
+		{"includeTaxiWithContractYear", old.IncludeTaxiWithContractYear, cand.IncludeTaxiWithContractYear},
 		{"starters.count", old.Starters.Count, cand.Starters.Count},
 		{"starters.iop", old.Starters.IOPStarters, cand.Starters.IOPStarters},
 		{"starters.idp", old.Starters.IDPStarters, cand.Starters.IDPStarters},
