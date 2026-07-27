@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ExecuteTransaction,
   GetCalendarEvents,
+  GetLeagueSchedule,
   PreviewTransaction,
 } from '../../../wailsjs/go/main/App';
 import { main } from '../../../wailsjs/go/models';
 import { ConfirmModal, type Pending } from '../transactions/ConfirmModal';
+import { FreshnessBar } from '../board/primitives';
 
 // CalendarBoard is the B-3 COMMISSIONER-CALENDAR surface — the agenda/list render of the
 // append-only calendar_events log (backend merged in c22be1e). It reads the head view
@@ -71,7 +73,15 @@ function timeLabel(rfc: string): string {
     : d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
+// Pane is the drawer's two read surfaces: the commissioner-authored agenda (existing) and
+// the read-only Matchups pane (MFL's own weekly schedule — new). Kept as one drawer shell
+// with a tab toggle rather than two separate components, since they share the same visual
+// real estate and open/close lifecycle; MatchupsPane itself stays fully separate (no shared
+// state, no stage/preview plumbing — it is display-only).
+type Pane = 'agenda' | 'matchups';
+
 export function CalendarBoard({ onClose }: { onClose: () => void }) {
+  const [pane, setPane] = useState<Pane>('agenda');
   const [events, setEvents] = useState<main.CalendarEventDTO[]>([]);
   const [loadErr, setLoadErr] = useState('');
   const [loading, setLoading] = useState(true);
@@ -266,32 +276,64 @@ export function CalendarBoard({ onClose }: { onClose: () => void }) {
           Commissioner Calendar
         </span>
         <div style={{ display: 'flex', gap: 6 }}>
-          <button
-            type="button"
-            className={`twr-chip${showForm ? ' is-on' : ''}`}
-            onClick={() => setShowForm((v) => !v)}
-          >
-            ＋ Schedule
-          </button>
+          {pane === 'agenda' && (
+            <button
+              type="button"
+              className={`twr-chip${showForm ? ' is-on' : ''}`}
+              onClick={() => setShowForm((v) => !v)}
+            >
+              ＋ Schedule
+            </button>
+          )}
           <button type="button" className="twr-iconbtn" aria-label="Close calendar" onClick={onClose}>
             ✕
           </button>
         </div>
       </div>
 
-      {showForm && (
-        <ScheduleForm
-          onCancel={() => setShowForm(false)}
-          onStage={(base) => {
-            setShowForm(false);
-            stage(base);
-          }}
-        />
-      )}
+      {/* Agenda / Matchups toggle — "Schedule" the word is already the commissioner-blob verb
+          above, so the read-only MFL matchup list is labelled "Matchups" to avoid collision. */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 6,
+          padding: '8px 12px',
+          borderBottom: '1px solid var(--hairline)',
+        }}
+      >
+        <button
+          type="button"
+          className={`twr-chip${pane === 'agenda' ? ' is-on' : ''}`}
+          onClick={() => setPane('agenda')}
+        >
+          Agenda
+        </button>
+        <button
+          type="button"
+          className={`twr-chip${pane === 'matchups' ? ' is-on' : ''}`}
+          onClick={() => setPane('matchups')}
+        >
+          Matchups
+        </button>
+      </div>
 
-      {/* Agenda body */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        {loading ? (
+      {pane === 'matchups' ? (
+        <MatchupsPane />
+      ) : (
+        <>
+          {showForm && (
+            <ScheduleForm
+              onCancel={() => setShowForm(false)}
+              onStage={(base) => {
+                setShowForm(false);
+                stage(base);
+              }}
+            />
+          )}
+
+          {/* Agenda body */}
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {loading ? (
           <Note text="Loading the calendar…" />
         ) : loadErr ? (
           <div
@@ -342,7 +384,9 @@ export function CalendarBoard({ onClose }: { onClose: () => void }) {
             </div>
           ))
         )}
-      </div>
+          </div>
+        </>
+      )}
 
       <ConfirmModal pending={pending} busy={busy} onConfirm={() => void confirm()} onCancel={cancelPending} />
     </div>
@@ -551,6 +595,112 @@ function ScheduleForm({
           Schedule…
         </button>
       </div>
+    </div>
+  );
+}
+
+// MatchupsPane is the read-only MFL league-schedule surface: who plays whom each week, real
+// franchise names, scores once played. Deliberately separate from the agenda above — this is
+// MFL-sourced reference data with no commissioner intent behind it, so there is no
+// stage/preview/confirm path, just a load + the shared B-5 FreshnessBar for honest
+// degradation on an MFL outage (mirrors M1/M2's convention, not a new visual language).
+function MatchupsPane() {
+  const [weeks, setWeeks] = useState<main.ScheduleWeekDTO[]>([]);
+  const [freshness, setFreshness] = useState<main.Freshness | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [loadErr, setLoadErr] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      setLoading(true);
+      try {
+        const r = await GetLeagueSchedule();
+        if (cancelled) return;
+        if (r.ok) {
+          setWeeks(r.weeks ?? []);
+          setFreshness(r.freshness);
+          setLoadErr('');
+        } else {
+          setLoadErr(r.detail || 'Could not load the schedule.');
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setLoadErr(`The engine was unreachable (${e instanceof Error ? e.message : String(e)}).`);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '10px 12px 0' }}>
+        <FreshnessBar freshness={freshness} board="Matchups" />
+      </div>
+      {loading ? (
+        <Note text="Loading the schedule…" />
+      ) : loadErr ? (
+        <div className="twr-banner twr-banner--warn" style={{ margin: 12, display: 'block', fontWeight: 500 }}>
+          {loadErr}
+        </div>
+      ) : weeks.length === 0 ? (
+        <Note text="No schedule available yet." />
+      ) : (
+        weeks.map((w) => (
+          <div key={w.week}>
+            <div
+              style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 1,
+                padding: '6px 12px',
+                background: 'var(--surface-sunken)',
+                borderBottom: '1px solid var(--hairline)',
+                fontFamily: 'var(--mono)',
+                fontSize: 10.5,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.07em',
+                color: 'var(--text-tertiary)',
+              }}
+            >
+              Week {w.week}
+            </div>
+            {w.matchups.map((m, i) => (
+              <div
+                key={`${w.week}-${i}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  padding: '8px 12px',
+                  borderBottom: '1px solid var(--hairline)',
+                  fontSize: 13,
+                }}
+              >
+                <span style={{ color: 'var(--text-primary)' }}>{m.homeFranchiseName}</span>
+                <span
+                  style={{
+                    fontFamily: 'var(--mono)',
+                    fontSize: 11.5,
+                    fontVariantNumeric: 'tabular-nums',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  {m.homeScore && m.awayScore ? `${m.homeScore}–${m.awayScore}` : 'vs'}
+                </span>
+                <span style={{ color: 'var(--text-primary)', textAlign: 'right' }}>{m.awayFranchiseName}</span>
+              </div>
+            ))}
+          </div>
+        ))
+      )}
     </div>
   );
 }

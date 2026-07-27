@@ -460,6 +460,96 @@ export namespace main {
 	        this.note = source["note"];
 	    }
 	}
+	export class ScheduleMatchupDTO {
+	    homeFranchiseID: string;
+	    homeFranchiseName: string;
+	    homeScore: string;
+	    awayFranchiseID: string;
+	    awayFranchiseName: string;
+	    awayScore: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ScheduleMatchupDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.homeFranchiseID = source["homeFranchiseID"];
+	        this.homeFranchiseName = source["homeFranchiseName"];
+	        this.homeScore = source["homeScore"];
+	        this.awayFranchiseID = source["awayFranchiseID"];
+	        this.awayFranchiseName = source["awayFranchiseName"];
+	        this.awayScore = source["awayScore"];
+	    }
+	}
+	export class ScheduleWeekDTO {
+	    week: number;
+	    matchups: ScheduleMatchupDTO[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ScheduleWeekDTO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.week = source["week"];
+	        this.matchups = this.convertValues(source["matchups"], ScheduleMatchupDTO);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class LeagueScheduleResult {
+	    ok: boolean;
+	    weeks: ScheduleWeekDTO[];
+	    freshness: Freshness;
+	    detail: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new LeagueScheduleResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.weeks = this.convertValues(source["weeks"], ScheduleWeekDTO);
+	        this.freshness = this.convertValues(source["freshness"], Freshness);
+	        this.detail = source["detail"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class LegalOpsResult {
 	    ok: boolean;
 	    phase: string;
@@ -899,6 +989,8 @@ export namespace main {
 		    return a;
 		}
 	}
+	
+	
 	export class ScoreLeagueResult {
 	    ok: boolean;
 	    error: string;

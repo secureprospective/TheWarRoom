@@ -34,6 +34,10 @@ export function GetFreeAgents() {
   return window['go']['main']['App']['GetFreeAgents']();
 }
 
+export function GetLeagueSchedule() {
+  return window['go']['main']['App']['GetLeagueSchedule']();
+}
+
 export function GetLegalOps() {
   return window['go']['main']['App']['GetLegalOps']();
 }

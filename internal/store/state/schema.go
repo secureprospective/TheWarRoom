@@ -41,6 +41,9 @@ func (s *Store) initSchema(ctx context.Context) error {
 	if err := s.initStandingsCacheSchema(ctx); err != nil {
 		return err
 	}
+	if err := s.initLeagueScheduleCacheSchema(ctx); err != nil {
+		return err
+	}
 	if err := s.initTradeNotesSchema(ctx); err != nil {
 		return err
 	}

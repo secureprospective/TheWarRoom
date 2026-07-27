@@ -18,6 +18,8 @@ export function GetFreeAgentPool():Promise<main.FreeAgentPoolResult>;
 
 export function GetFreeAgents():Promise<main.FreeAgentsResult>;
 
+export function GetLeagueSchedule():Promise<main.LeagueScheduleResult>;
+
 export function GetLegalOps():Promise<main.LegalOpsResult>;
 
 export function GetParams():Promise<main.ParamsResult>;
