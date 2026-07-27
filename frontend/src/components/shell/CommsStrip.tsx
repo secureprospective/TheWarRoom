@@ -1,12 +1,17 @@
 import type { CSSProperties } from 'react';
 
 interface CommsStripProps {
-  onSummon: (target: 'comms' | 'calendar') => void;
+  onSummon: (target: 'comms' | 'calendar' | 'feed') => void;
 }
 
 // Right-edge 48px quick-dash strip (Command Ledger A10/A11). B-1 ships the
 // summon/collapse affordances only; the terminal-log comms thread and the
 // fully-functional calendar land in B-3 (Session D grammar).
+//
+// The third summon target (feed) lands in Session 1 — the backward-looking Activity Feed that
+// reuses the Session-D event grammar on historical ledger data. Kept as its own summon rather
+// than folded into 'comms' so the live (forward-looking) comms thread has a clear slot when it
+// arrives; the two will coexist as separate facets.
 export function CommsStrip({ onSummon }: CommsStripProps) {
   const btn: CSSProperties = {
     width: '32px',
@@ -55,6 +60,15 @@ export function CommsStrip({ onSummon }: CommsStripProps) {
         style={btn}
       >
         ▤
+      </button>
+      <button
+        type="button"
+        aria-label="Summon activity feed"
+        onClick={() => onSummon('feed')}
+        className="focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--edge-focus)]"
+        style={btn}
+      >
+        ▚
       </button>
     </aside>
   );
