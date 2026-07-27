@@ -60,7 +60,7 @@ func TestSeasonDerivedFromPhaseLogOnReboot(t *testing.T) {
 	ctx := context.Background()
 
 	// Seed at the config season (2026): franchise 0001 = player 0001 (exp 2028) + 0002 (exp 2027).
-	s1 := New(pools, testLeague, testSeason)
+	s1 := New(pools, testLeague, testSeason, nil)
 	if err := s1.Initialize(ctx, &fakeSource{rosters: baseRosters(t)}); err != nil {
 		t.Fatalf("seed Initialize: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestSeasonDerivedFromPhaseLogOnReboot(t *testing.T) {
 	simulateRollover(t, pools, testLeague, testSeason, rolled)
 
 	// Reboot with the UNCHANGED config season — must derive 2028 from the phase log.
-	s2 := New(pools, testLeague, testSeason)
+	s2 := New(pools, testLeague, testSeason, nil)
 	if err := s2.Initialize(ctx, &fakeSource{rosters: baseRosters(t)}); err != nil {
 		t.Fatalf("reboot Initialize: %v", err)
 	}

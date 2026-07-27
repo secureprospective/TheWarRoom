@@ -60,7 +60,7 @@ func TestMigrateMoneyCents_BackfillsExactly(t *testing.T) {
 	// up (via the REAL ledger schema, so the fixture can't drift from production) so load()'s M1
 	// drift guard sees a cell for this rostered salaried player. (A pre-ledger DB with no cells
 	// is an unsupported upgrade path — carry-forward, see the project CLAUDE.md.)
-	s := New(pools, league, season)
+	s := New(pools, league, season, nil)
 	if err := s.initLedgerSchema(ctx); err != nil {
 		t.Fatalf("init ledger schema: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestMigrateMoneyCents_BackfillsExactly(t *testing.T) {
 
 	// Idempotent: a second Initialize on the migrated DB sees the cents columns present
 	// and is a no-op (no error, no double-migration).
-	s2 := New(pools, league, season)
+	s2 := New(pools, league, season, nil)
 	if err := s2.Initialize(ctx, &fakeSource{}); err != nil {
 		t.Fatalf("second Initialize (already migrated): %v", err)
 	}
@@ -156,7 +156,7 @@ func TestDropLegacyMoneyColumns_Ship3Era(t *testing.T) {
 		league, season); err != nil {
 		t.Fatalf("seed ship3 contract: %v", err)
 	}
-	s := New(pools, league, season)
+	s := New(pools, league, season, nil)
 	if err := s.initLedgerSchema(ctx); err != nil {
 		t.Fatalf("init ledger schema: %v", err)
 	}
@@ -216,7 +216,7 @@ func TestLoadWarnsAndContinuesOnMissingCell(t *testing.T) {
 		t.Fatalf("seed contract: %v", err)
 	}
 	// The ledger table exists (real schema) but holds NO cell for 0001 — the planted drift.
-	s := New(pools, league, season)
+	s := New(pools, league, season, nil)
 	if err := s.initLedgerSchema(ctx); err != nil {
 		t.Fatalf("init ledger schema: %v", err)
 	}

@@ -58,7 +58,7 @@ func richStore(t *testing.T) (*state.Store, *transactions.Coordinator) {
 		t.Fatalf("db.Open: %v", err)
 	}
 	t.Cleanup(func() { _ = pools.Close() })
-	s := state.New(pools, "14432", 2026)
+	s := state.New(pools, "14432", 2026, nil)
 	if err := s.Initialize(context.Background(), richSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
@@ -130,7 +130,7 @@ func TestIntegration_RestructureRejectsFinalYearContract(t *testing.T) {
 		t.Fatalf("db.Open: %v", err)
 	}
 	t.Cleanup(func() { _ = pools.Close() })
-	s := state.New(pools, "14432", 2026)
+	s := state.New(pools, "14432", 2026, nil)
 	// A $6M player whose contract ENDS this season (2026) — eligible by salary, but no future
 	// paid cell to absorb a move.
 	seed := finalYearSeed{t: t}

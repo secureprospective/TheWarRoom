@@ -293,7 +293,7 @@ func TestContractYearChangesImmutable(t *testing.T) {
 		t.Fatalf("db.Open: %v", err)
 	}
 	t.Cleanup(func() { _ = pools.Close() })
-	s := New(pools, testLeague, testSeason)
+	s := New(pools, testLeague, testSeason, nil)
 	if err := s.Initialize(context.Background(), &fakeSource{rosters: ledgerRosters(t)}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
@@ -304,5 +304,57 @@ func TestContractYearChangesImmutable(t *testing.T) {
 	if _, err := pools.Write().ExecContext(context.Background(),
 		`DELETE FROM contract_year_changes WHERE mfl_id = ?`, "0001"); err == nil {
 		t.Fatal("raw DELETE on contract_year_changes succeeded, want trigger abort")
+	}
+}
+
+// discountRosters is a single franchise with one player on each roster status, so the
+// franchise cap total isolates each status's discount contribution.
+func discountRosters(t *testing.T) []domain.Roster {
+	t.Helper()
+	return []domain.Roster{
+		{FranchiseID: "0001", Players: []domain.PlayerRecord{
+			{MFLID: mustID(t, "0001"), Salary: 10 * capUnit, ContractYear: 2028,
+				RosterStatus: domain.RosterActive, ContractStatus: domain.CStatusUFA},
+			{MFLID: mustID(t, "0002"), Salary: 10 * capUnit, ContractYear: 2028,
+				RosterStatus: domain.RosterTaxi, ContractStatus: domain.CStatusUFA},
+			{MFLID: mustID(t, "0003"), Salary: 10 * capUnit, ContractYear: 2028,
+				RosterStatus: domain.RosterIR, ContractStatus: domain.CStatusUFA},
+		}},
+	}
+}
+
+// TestLoadCellCapAppliesTaxiIRDiscount confirms Session 0's cap-math fix: a taxi/IR
+// player's cap CONTRIBUTION is scaled by the discounts source, while the player's own
+// raw CapSalary (the rule base other math reads) stays undiscounted.
+func TestLoadCellCapAppliesTaxiIRDiscount(t *testing.T) {
+	s := newStoreWithDiscounts(t, &fakeSource{rosters: discountRosters(t)}, fakeDiscounts{taxiPct: 50, irPct: 0})
+
+	fs, ok := s.FranchiseState("0001")
+	if !ok {
+		t.Fatal("FranchiseState(0001) not found")
+	}
+	// 10 (ROSTER, 100%) + 5 (TAXI, 50%) + 0 (IR, 0%) = 15 units.
+	if fs.CapUsed != 15*capUnit {
+		t.Fatalf("CapUsed = %v, want %v", fs.CapUsed, 15*capUnit)
+	}
+	for _, p := range fs.Players {
+		if p.CapSalary != 10*capUnit {
+			t.Fatalf("player %s CapSalary = %v, want undiscounted %v", p.MFLID, p.CapSalary, 10*capUnit)
+		}
+	}
+}
+
+// TestLoadCellCapNilDiscountsIsNoDiscount confirms a nil CapDiscounts source (no
+// rulebook wired, e.g. tests or a pre-Session-0 caller) preserves the historical
+// 100%-for-everyone behavior.
+func TestLoadCellCapNilDiscountsIsNoDiscount(t *testing.T) {
+	s := newStoreWithDiscounts(t, &fakeSource{rosters: discountRosters(t)}, nil)
+
+	fs, ok := s.FranchiseState("0001")
+	if !ok {
+		t.Fatal("FranchiseState(0001) not found")
+	}
+	if fs.CapUsed != 30*capUnit {
+		t.Fatalf("CapUsed = %v, want %v (no discount)", fs.CapUsed, 30*capUnit)
 	}
 }

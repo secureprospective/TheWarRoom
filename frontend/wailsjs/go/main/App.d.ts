@@ -20,6 +20,8 @@ export function GetFreeAgents():Promise<main.FreeAgentsResult>;
 
 export function GetLeagueSchedule():Promise<main.LeagueScheduleResult>;
 
+export function GetLeagueSetting(arg1:string):Promise<main.LeagueSettingResult>;
+
 export function GetLegalOps():Promise<main.LegalOpsResult>;
 
 export function GetParams():Promise<main.ParamsResult>;
@@ -41,5 +43,7 @@ export function RunValidationSuite():Promise<main.ValidationResult>;
 export function ScoreLeague():Promise<main.ScoreLeagueResult>;
 
 export function ScoreRookies():Promise<main.RookiesResult>;
+
+export function SetLeagueSettingOverride(arg1:string,arg2:string,arg3:string):Promise<main.SetLeagueSettingResult>;
 
 export function SetParam(arg1:string,arg2:number):Promise<main.SetParamResult>;

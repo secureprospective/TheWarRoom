@@ -48,7 +48,7 @@ func rollStore(t *testing.T) (*statepkg.Store, *transactions.Coordinator) {
 		t.Fatalf("db.Open: %v", err)
 	}
 	t.Cleanup(func() { _ = pools.Close() })
-	s := statepkg.New(pools, "14432", 2026)
+	s := statepkg.New(pools, "14432", 2026, nil)
 	if err := s.Initialize(context.Background(), rollSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
@@ -128,7 +128,7 @@ func TestIntegration_RolloverSurvivesReboot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("db.Open: %v", err)
 	}
-	s := statepkg.New(pools, "14432", 2026)
+	s := statepkg.New(pools, "14432", 2026, nil)
 	if err := s.Initialize(ctx, rollSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
@@ -157,7 +157,7 @@ func TestIntegration_RolloverSurvivesReboot(t *testing.T) {
 		t.Fatalf("db.Open reboot: %v", err)
 	}
 	t.Cleanup(func() { _ = pools2.Close() })
-	s2 := statepkg.New(pools2, "14432", 2026)
+	s2 := statepkg.New(pools2, "14432", 2026, nil)
 	if err := s2.Initialize(ctx, rollSeed{t}); err != nil {
 		t.Fatalf("reboot Initialize: %v", err)
 	}

@@ -1,6 +1,11 @@
 package rulebook
 
-import "github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+import (
+	"strconv"
+	"strings"
+
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+)
 
 // cloneConfig deep-copies every nested slice of a config so a value returned to a
 // caller shares no backing array with the store's in-memory active snapshot. The
@@ -66,5 +71,38 @@ func settingsMap(c league.RawConfig) map[string]string {
 		"startWeek":             c.StartWeek,
 		"endWeek":               c.EndWeek,
 		"lastRegularSeasonWeek": c.LastRegularSeasonWeek,
+		"includeTaxiWithSalary": c.IncludeTaxiWithSalary,
+		"includeIRWithSalary":   c.IncludeIRWithSalary,
 	}
+}
+
+// capPercent parses a settingsMap-style percentage string (MFL's "100", "0", or an
+// empty/unset value) to a 0-100 float, defaulting to 100 (no discount) when the
+// raw value is empty or unparseable — matching the historical behavior (every
+// rostered player counted 100% toward cap) for configs stored before this field
+// existed.
+func capPercent(raw string) float64 {
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		return 100
+	}
+	pct, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return 100
+	}
+	return pct
+}
+
+// TaxiCapPercent returns the pct of a taxi-squad player's cap-counting salary that
+// counts toward the franchise's cap total, override-aware (GetSetting).
+func (s *Store) TaxiCapPercent() float64 {
+	v, _ := s.GetSetting("includeTaxiWithSalary")
+	return capPercent(v)
+}
+
+// IRCapPercent returns the pct of an IR player's cap-counting salary that counts
+// toward the franchise's cap total, override-aware (GetSetting).
+func (s *Store) IRCapPercent() float64 {
+	v, _ := s.GetSetting("includeIRWithSalary")
+	return capPercent(v)
 }

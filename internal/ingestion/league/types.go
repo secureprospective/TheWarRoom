@@ -11,21 +11,27 @@ import "github.com/secureprospective/TheWarRoom/internal/ingestion"
 // the leading "*" means "per unit of the stat", an absent "*" means a flat award.
 // Interpreting that is the engine's job (Approach A); the rulebook only stores it.
 type RawConfig struct {
-	Source                string          // provenance, e.g. "mfl:2026"
-	SalaryCapAmount       string          // league cap AMOUNT (AD-21), e.g. "120"
-	RosterSize            string          // total roster slots, e.g. "80"
-	TaxiSquad             string          // taxi-squad size, e.g. "8"
-	InjuredReserve        string          // IR slots, e.g. "12"
-	KeeperType            string          // "dynasty"
-	UsesSalaries          string          // "1" when the league runs a salary cap
-	UsesContractYear      string          // "1" when contracts carry a final year
-	StartWeek             string          // first scoring week
-	EndWeek               string          // last scoring week
-	LastRegularSeasonWeek string          // last week before playoffs
-	RosterLimits          []PositionLimit // per-position roster min-max ("0-0" = unlimited)
-	Starters              Starters        // starter requirements
-	ScoringRules          []PositionRuleSet
-	Franchises            []Franchise // the league's franchise directory (id -> display name)
+	Source                string // provenance, e.g. "mfl:2026"
+	SalaryCapAmount       string // league cap AMOUNT (AD-21), e.g. "120"
+	RosterSize            string // total roster slots, e.g. "80"
+	TaxiSquad             string // taxi-squad size, e.g. "8"
+	InjuredReserve        string // IR slots, e.g. "12"
+	KeeperType            string // "dynasty"
+	UsesSalaries          string // "1" when the league runs a salary cap
+	UsesContractYear      string // "1" when contracts carry a final year
+	StartWeek             string // first scoring week
+	EndWeek               string // last scoring week
+	LastRegularSeasonWeek string // last week before playoffs
+	// IncludeTaxiWithSalary/IncludeIRWithSalary are the pct (e.g. "100") of a taxi/IR
+	// player's cap-counting salary that counts toward the franchise's cap total —
+	// loadCellCap's per-status discount reads these (Session 0 cap-math fix).
+	IncludeTaxiWithSalary       string
+	IncludeIRWithSalary         string
+	IncludeTaxiWithContractYear string          // whether taxi years count toward contract length, "0"/"100"
+	RosterLimits                []PositionLimit // per-position roster min-max ("0-0" = unlimited)
+	Starters                    Starters        // starter requirements
+	ScoringRules                []PositionRuleSet
+	Franchises                  []Franchise // the league's franchise directory (id -> display name)
 }
 
 // Franchise is one entry in the league's franchise directory: its stable MFL id
@@ -79,17 +85,20 @@ type ScoringRule struct {
 // correctness comes from validating the fields we depend on, not rejecting extras.
 type leagueEnvelope struct {
 	League struct {
-		SalaryCapAmount       string `json:"salaryCapAmount"`
-		RosterSize            string `json:"rosterSize"`
-		TaxiSquad             string `json:"taxiSquad"`
-		InjuredReserve        string `json:"injuredReserve"`
-		KeeperType            string `json:"keeperType"`
-		UsesSalaries          string `json:"usesSalaries"`
-		UsesContractYear      string `json:"usesContractYear"`
-		StartWeek             string `json:"startWeek"`
-		EndWeek               string `json:"endWeek"`
-		LastRegularSeasonWeek string `json:"lastRegularSeasonWeek"`
-		RosterLimits          struct {
+		SalaryCapAmount             string `json:"salaryCapAmount"`
+		RosterSize                  string `json:"rosterSize"`
+		TaxiSquad                   string `json:"taxiSquad"`
+		InjuredReserve              string `json:"injuredReserve"`
+		KeeperType                  string `json:"keeperType"`
+		UsesSalaries                string `json:"usesSalaries"`
+		UsesContractYear            string `json:"usesContractYear"`
+		StartWeek                   string `json:"startWeek"`
+		EndWeek                     string `json:"endWeek"`
+		LastRegularSeasonWeek       string `json:"lastRegularSeasonWeek"`
+		IncludeTaxiWithSalary       string `json:"includeTaxiWithSalary"`
+		IncludeIRWithSalary         string `json:"includeIRWithSalary"`
+		IncludeTaxiWithContractYear string `json:"includeTaxiWithContractYear"`
+		RosterLimits                struct {
 			Position ingestion.MFLList[posLimit] `json:"position"`
 		} `json:"rosterLimits"`
 		Starters struct {

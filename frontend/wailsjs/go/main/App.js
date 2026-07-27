@@ -38,6 +38,10 @@ export function GetLeagueSchedule() {
   return window['go']['main']['App']['GetLeagueSchedule']();
 }
 
+export function GetLeagueSetting(arg1) {
+  return window['go']['main']['App']['GetLeagueSetting'](arg1);
+}
+
 export function GetLegalOps() {
   return window['go']['main']['App']['GetLegalOps']();
 }
@@ -80,6 +84,10 @@ export function ScoreLeague() {
 
 export function ScoreRookies() {
   return window['go']['main']['App']['ScoreRookies']();
+}
+
+export function SetLeagueSettingOverride(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SetLeagueSettingOverride'](arg1, arg2, arg3);
 }
 
 export function SetParam(arg1, arg2) {

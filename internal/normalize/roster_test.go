@@ -96,7 +96,10 @@ func TestNormalizeRosterStatus(t *testing.T) {
 	if s, err := normalizeRosterStatus("TAXI_SQUAD", id); err != nil || s != domain.RosterTaxi {
 		t.Fatalf("TAXI_SQUAD → (%q,%v)", s, err)
 	}
-	if _, err := normalizeRosterStatus("IR", id); err == nil {
+	if s, err := normalizeRosterStatus("IR", id); err != nil || s != domain.RosterIR {
+		t.Fatalf("IR → (%q,%v)", s, err)
+	}
+	if _, err := normalizeRosterStatus("BOGUS", id); err == nil {
 		t.Fatal("unknown roster status should fail loud")
 	}
 }

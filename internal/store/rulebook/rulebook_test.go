@@ -72,6 +72,44 @@ func TestInitializeAndReads(t *testing.T) {
 	}
 }
 
+// TestCapPercent_DefaultsTo100WhenUnset confirms a config predating the
+// includeTaxiWithSalary/includeIRWithSalary fields (empty string, e.g. an old stored
+// version) is treated as 100% — the historical no-discount behavior — not an error.
+func TestCapPercent_DefaultsTo100WhenUnset(t *testing.T) {
+	s := newStore(t, &fakeSource{cfg: baseConfig()})
+	if got := s.TaxiCapPercent(); got != 100 {
+		t.Errorf("TaxiCapPercent = %v, want 100", got)
+	}
+	if got := s.IRCapPercent(); got != 100 {
+		t.Errorf("IRCapPercent = %v, want 100", got)
+	}
+}
+
+// TestCapPercent_ReadsMFLValueAndOverride confirms TaxiCapPercent/IRCapPercent read
+// the MFL-sourced value, and that a commissioner SetOverride (the toggle-off /
+// slot-count mechanism, scopeSetting) takes precedence — the same override
+// machinery GetSetting already uses, no new code path.
+func TestCapPercent_ReadsMFLValueAndOverride(t *testing.T) {
+	cfg := baseConfig()
+	cfg.IncludeTaxiWithSalary = "100"
+	cfg.IncludeIRWithSalary = "100"
+	s := newStore(t, &fakeSource{cfg: cfg})
+
+	if got := s.TaxiCapPercent(); got != 100 {
+		t.Errorf("TaxiCapPercent = %v, want 100", got)
+	}
+
+	if err := s.SetOverride(context.Background(), scopeSetting, "includeTaxiWithSalary", "50", "commissioner discount"); err != nil {
+		t.Fatalf("SetOverride: %v", err)
+	}
+	if got := s.TaxiCapPercent(); got != 50 {
+		t.Errorf("TaxiCapPercent after override = %v, want 50", got)
+	}
+	if got := s.IRCapPercent(); got != 100 {
+		t.Errorf("IRCapPercent (no override set) = %v, want 100", got)
+	}
+}
+
 func TestSetOverride_AppliesAndValidates(t *testing.T) {
 	ctx := context.Background()
 	s := newStore(t, &fakeSource{cfg: baseConfig()})

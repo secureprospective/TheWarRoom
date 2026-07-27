@@ -144,13 +144,15 @@ func normalizeContractStatus(raw string) domain.ContractStatus {
 }
 
 // normalizeRosterStatus maps MFL's roster status to the domain enum. MFL sends
-// exactly "ROSTER" or "TAXI_SQUAD"; anything else fails loud rather than defaulting.
+// "ROSTER", "TAXI_SQUAD", or "IR"; anything else fails loud rather than defaulting.
 func normalizeRosterStatus(raw string, id playerid.PlayerID) (domain.RosterStatus, error) {
 	switch strings.TrimSpace(raw) {
 	case "ROSTER":
 		return domain.RosterActive, nil
 	case "TAXI_SQUAD":
 		return domain.RosterTaxi, nil
+	case "IR":
+		return domain.RosterIR, nil
 	default:
 		return "", fmt.Errorf("normalize: player %s unknown roster status %q", id, raw)
 	}

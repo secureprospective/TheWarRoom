@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { ExecuteTransaction, PreviewTransaction } from '../../../wailsjs/go/main/App';
+import {
+  ExecuteTransaction,
+  GetLeagueSetting,
+  PreviewTransaction,
+  SetLeagueSettingOverride,
+} from '../../../wailsjs/go/main/App';
 import { main } from '../../../wailsjs/go/models';
 import { useTransactionsStore } from '../../store/transactions';
 import { ConfirmModal, type Pending } from './ConfirmModal';
@@ -39,11 +44,43 @@ export function LeagueControls() {
   const [reliefFranchise, setReliefFranchise] = useState('');
   const [reliefAmount, setReliefAmount] = useState('');
   const [reliefReason, setReliefReason] = useState('');
+  // Roster-limit settings (Session 0): IR/taxi slots. "0" reads as the mechanic
+  // OFF — one override key does both the slot-count and toggle-off job (the
+  // rulebook's scopeSetting override already accepts any scalar, no new
+  // machinery). Loaded on mount, saved on demand — not a B7 transaction (rulebook
+  // writes are the admin-only path, AD-05), so no preview/ConfirmModal here.
+  const [taxiSlots, setTaxiSlots] = useState('');
+  const [irSlots, setIrSlots] = useState('');
+  const [settingsError, setSettingsError] = useState('');
+  const [settingsSaving, setSettingsSaving] = useState<'' | 'taxiSquad' | 'injuredReserve'>('');
 
   useEffect(() => {
     void loadPhase();
     void loadFranchises();
+    void loadRosterLimitSettings();
   }, [loadPhase, loadFranchises]);
+
+  async function loadRosterLimitSettings() {
+    const [taxi, ir] = await Promise.all([GetLeagueSetting('taxiSquad'), GetLeagueSetting('injuredReserve')]);
+    if (taxi.ok) setTaxiSlots(taxi.value);
+    if (ir.ok) setIrSlots(ir.value);
+  }
+
+  async function saveRosterLimitSetting(key: 'taxiSquad' | 'injuredReserve', value: string) {
+    if (!value.trim()) return;
+    setSettingsSaving(key);
+    setSettingsError('');
+    try {
+      const res = await SetLeagueSettingOverride(key, value.trim(), 'commissioner roster-limit control');
+      if (!res.ok) {
+        setSettingsError(res.error);
+        return;
+      }
+      await loadRosterLimitSettings();
+    } finally {
+      setSettingsSaving('');
+    }
+  }
 
   function frLabel(id: string) {
     const f = franchises.find((x) => x.franchiseID === id);
@@ -256,10 +293,44 @@ export function LeagueControls() {
           marginTop: 12,
           maxWidth: 1120,
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: 'repeat(5, 1fr)',
           gap: 16,
         }}
       >
+        <Card title="Roster limits — IR / taxi">
+          <p style={{ margin: 0, fontSize: 11, color: 'var(--text-tertiary)' }}>0 turns the mechanic off.</p>
+          <label style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+            Taxi squad slots
+            <input
+              type="number"
+              min={0}
+              className="twr-input"
+              style={{ width: '100%', marginTop: 4 }}
+              value={taxiSlots}
+              onChange={(e) => setTaxiSlots(e.target.value)}
+            />
+          </label>
+          <Action onClick={() => void saveRosterLimitSetting('taxiSquad', taxiSlots)}>
+            {settingsSaving === 'taxiSquad' ? 'Saving…' : 'Save taxi slots'}
+          </Action>
+          <label style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+            IR slots
+            <input
+              type="number"
+              min={0}
+              className="twr-input"
+              style={{ width: '100%', marginTop: 4 }}
+              value={irSlots}
+              onChange={(e) => setIrSlots(e.target.value)}
+            />
+          </label>
+          <Action onClick={() => void saveRosterLimitSetting('injuredReserve', irSlots)}>
+            {settingsSaving === 'injuredReserve' ? 'Saving…' : 'Save IR slots'}
+          </Action>
+          {settingsError && (
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--red-base)' }}>{settingsError}</p>
+          )}
+        </Card>
         <Card title="Advance phase">
           <Select value={toPhase} onChange={setToPhase} options={PHASES} />
           <TextInput value={phaseNote} onChange={setPhaseNote} placeholder="Note (optional)" />

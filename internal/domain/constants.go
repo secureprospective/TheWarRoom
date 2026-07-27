@@ -40,12 +40,13 @@ const (
 	CStatusFlag ContractStatus = "FLAG" // unknown/dirty value — admin must resolve
 )
 
-// RosterStatus is where a player sits on a franchise. MFL sends exactly "ROSTER"
-// or "TAXI_SQUAD"; an unexpected value fails loud in normalize rather than mapping
-// to a default.
+// RosterStatus is where a player sits on a franchise. MFL sends "ROSTER",
+// "TAXI_SQUAD", or "IR"; an unexpected value fails loud in normalize rather than
+// mapping to a default.
 type RosterStatus string
 
 const (
 	RosterActive RosterStatus = "ROSTER"
 	RosterTaxi   RosterStatus = "TAXI_SQUAD"
+	RosterIR     RosterStatus = "IR"
 )

@@ -40,10 +40,11 @@ var errUnknownPlayer = errors.New("state: player not found")
 // serialize under wmu (the outer write lock), so each DB write and its in-memory
 // reload are one atomic step — identical to B3b's two-lock pattern.
 type Store struct {
-	pools    *db.Pools
-	leagueID string
-	season   int
-	src      Source
+	pools     *db.Pools
+	leagueID  string
+	season    int
+	src       Source
+	discounts CapDiscounts // taxi/IR cap-counting pct source; nil = no discount
 
 	wmu sync.Mutex // serializes mutations (seed + every Writer call) end to end
 
@@ -60,12 +61,15 @@ type Store struct {
 }
 
 // New constructs an unseeded store for one league + season over the given pools.
+// discounts supplies the taxi/IR cap-counting pct (typically the rulebook store,
+// which implements CapDiscounts); nil is valid and means no discount is applied.
 // Call Initialize before any read.
-func New(pools *db.Pools, leagueID string, season int) *Store {
+func New(pools *db.Pools, leagueID string, season int, discounts CapDiscounts) *Store {
 	s := &Store{
 		pools:      pools,
 		leagueID:   leagueID,
 		season:     season,
+		discounts:  discounts,
 		franchises: map[string]*FranchiseState{},
 		byPlayer:   map[string]string{},
 	}
@@ -304,7 +308,7 @@ ORDER BY r.franchise_id, r.mfl_id`, s.leagueID, s.season)
 	// legacy salary columns. loadCellCap gives each player's raw cap-counting salary (CapSalary)
 	// and each franchise's cell cap ($10k-snapped per cell). Set both here — scanState no longer
 	// touches money beyond the base Salary column.
-	perPlayer, perFranchise, err := loadCellCap(ctx, s.pools.Read(), s.leagueID, s.season)
+	perPlayer, perFranchise, err := loadCellCap(ctx, s.pools.Read(), s.leagueID, s.season, s.discounts)
 	if err != nil {
 		return err
 	}

@@ -78,8 +78,8 @@ func runProbe() {
 	// Same order as initStoreFloor. On an already-seeded DB rulebook/state make no
 	// network call; the Ship-4 suspect is state.Initialize (schema + migrateMoneyCents
 	// + dropLegacyMoneyColumns + load).
-	st := state.New(pools, ingestion.LeagueID, season)
 	rb := rulebook.New(pools)
+	st := state.New(pools, ingestion.LeagueID, season, rb)
 
 	probeStep(ctx, "params.Initialize", params.New(pools).Initialize)
 	probeStep(ctx, "rulebook.Initialize", func(c context.Context) error {

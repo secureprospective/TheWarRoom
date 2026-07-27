@@ -52,7 +52,7 @@ func realStoreWithPools(t *testing.T) (*state.Store, *db.Pools) {
 		t.Fatalf("db.Open: %v", err)
 	}
 	t.Cleanup(func() { _ = pools.Close() })
-	s := state.New(pools, "14432", 2026)
+	s := state.New(pools, "14432", 2026, nil)
 	if err := s.Initialize(context.Background(), seedSource{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}

@@ -550,6 +550,22 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class LeagueSettingResult {
+	    ok: boolean;
+	    error: string;
+	    value: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new LeagueSettingResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.error = source["error"];
+	        this.value = source["value"];
+	    }
+	}
 	export class LegalOpsResult {
 	    ok: boolean;
 	    phase: string;
@@ -1026,6 +1042,20 @@ export namespace main {
 		    }
 		    return a;
 		}
+	}
+	export class SetLeagueSettingResult {
+	    ok: boolean;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SetLeagueSettingResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.error = source["error"];
+	    }
 	}
 	export class SetParamResult {
 	    ok: boolean;

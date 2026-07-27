@@ -69,7 +69,7 @@ func TestMigrations_LegacyDBStampedMigratedAndBackedUp(t *testing.T) {
 		 VALUES ('c1', ?, '0001', '0001', 7.0, 1.30, 2, 2028, 'UFA', ?, 'now')`, league, season); err != nil {
 		t.Fatalf("seed contract: %v", err)
 	}
-	s := New(pools, league, season)
+	s := New(pools, league, season, nil)
 	if err := s.initLedgerSchema(ctx); err != nil {
 		t.Fatalf("init ledger schema: %v", err)
 	}
@@ -105,7 +105,7 @@ func TestMigrations_FreshDBReconciledNoBackup(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = pools.Close() })
 
-	s := New(pools, testLeague, testSeason)
+	s := New(pools, testLeague, testSeason, nil)
 	if err := s.Initialize(ctx, &fakeSource{rosters: baseRosters(t)}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
@@ -131,13 +131,13 @@ func TestMigrations_SecondInitializeIsNoOp(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = pools.Close() })
 
-	s1 := New(pools, testLeague, testSeason)
+	s1 := New(pools, testLeague, testSeason, nil)
 	if err := s1.Initialize(ctx, &fakeSource{rosters: baseRosters(t)}); err != nil {
 		t.Fatalf("first Initialize: %v", err)
 	}
 	before := readStateMigrations(ctx, t, s1)
 
-	s2 := New(pools, testLeague, testSeason)
+	s2 := New(pools, testLeague, testSeason, nil)
 	if err := s2.Initialize(ctx, &fakeSource{}); err != nil {
 		t.Fatalf("second Initialize: %v", err)
 	}
@@ -161,7 +161,7 @@ func TestMigrations_DowngradeRefused(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = pools.Close() })
 
-	s1 := New(pools, testLeague, testSeason)
+	s1 := New(pools, testLeague, testSeason, nil)
 	if err := s1.Initialize(ctx, &fakeSource{rosters: baseRosters(t)}); err != nil {
 		t.Fatalf("first Initialize: %v", err)
 	}
@@ -172,7 +172,7 @@ func TestMigrations_DowngradeRefused(t *testing.T) {
 		t.Fatalf("stamp future version: %v", err)
 	}
 
-	s2 := New(pools, testLeague, testSeason)
+	s2 := New(pools, testLeague, testSeason, nil)
 	err = s2.Initialize(ctx, &fakeSource{})
 	if err == nil {
 		t.Fatal("Initialize opened a DB newer than the binary — want a downgrade refusal")

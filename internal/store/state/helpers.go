@@ -15,16 +15,30 @@ type rowQuerier interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
+// CapDiscounts supplies the taxi/IR cap-counting percentages the league config sets
+// via MFL's includeTaxiWithSalary/includeIRWithSalary (or a commissioner override) —
+// the pct of a taxi/IR player's cap-counting salary that counts toward the
+// franchise's cap TOTAL. Queried live (not baked in at construction) so a
+// commissioner override takes effect on the next load, the same way GetSalaryCap
+// is always read fresh. A nil source (tests, callers with no rulebook wired) means
+// "no discount" — every rostered player counts 100%, the historical behavior.
+type CapDiscounts interface {
+	TaxiCapPercent() float64
+	IRCapPercent() float64
+}
+
 // loadCellCap reads every current-season PAID ledger cell joined to its franchise, returning
-// (a) each player's RAW cap-counting cents (PlayerState.CapSalary — the §8/§11 rule base) and
-// (b) each franchise's cap usage = the sum of its cells SNAPPED to $10k (universal rounding).
-// The ledger cell is the money source of truth (KING) as of Ship 3 — the legacy contract
-// salary columns are frozen and unread. Exactly one PAID cell exists per rostered player for
-// the current year (PK league_id, mfl_id, league_year), so a per-cell snap is a per-player
-// snap; a player with no current PAID cell contributes 0 (an expired/UFA year).
-func loadCellCap(ctx context.Context, q rowQuerier, leagueID string, season int) (perPlayer, perFranchise map[string]domain.Money, err error) {
+// (a) each player's RAW cap-counting cents (PlayerState.CapSalary — the §8/§11 rule base,
+// UNDISCOUNTED — dead cap/buyout/tag math reads the full contract figure) and
+// (b) each franchise's cap usage = the sum of its cells, taxi/IR-discounted per discounts
+// then SNAPPED to $10k (universal rounding). The ledger cell is the money source of truth
+// (KING) as of Ship 3 — the legacy contract salary columns are frozen and unread. Exactly
+// one PAID cell exists per rostered player for the current year (PK league_id, mfl_id,
+// league_year), so a per-cell snap is a per-player snap; a player with no current PAID
+// cell contributes 0 (an expired/UFA year).
+func loadCellCap(ctx context.Context, q rowQuerier, leagueID string, season int, discounts CapDiscounts) (perPlayer, perFranchise map[string]domain.Money, err error) {
 	rows, err := q.QueryContext(ctx, `
-SELECT r.franchise_id, cy.mfl_id, cy.salary_cents
+SELECT r.franchise_id, cy.mfl_id, r.roster_status, cy.salary_cents
 FROM contract_years cy
 JOIN rosters r ON r.league_id = cy.league_id AND r.mfl_id = cy.mfl_id AND r.season = ?
 WHERE cy.league_id = ? AND cy.league_year = ? AND cy.year_status = ?`,
@@ -35,18 +49,41 @@ WHERE cy.league_id = ? AND cy.league_year = ? AND cy.year_status = ?`,
 	defer func() { _ = rows.Close() }()
 	perPlayer, perFranchise = map[string]domain.Money{}, map[string]domain.Money{}
 	for rows.Next() {
-		var fid, mflID string
+		var fid, mflID, rosterStatus string
 		var cents int64
-		if err := rows.Scan(&fid, &mflID, &cents); err != nil {
+		if err := rows.Scan(&fid, &mflID, &rosterStatus, &cents); err != nil {
 			return nil, nil, fmt.Errorf("state: cell cap scan: %w", err)
 		}
 		perPlayer[mflID] = domain.Money(cents)
-		perFranchise[fid] += domain.RoundToNearest10k(domain.Money(cents))
+		perFranchise[fid] += domain.RoundToNearest10k(capContribution(domain.Money(cents), domain.RosterStatus(rosterStatus), discounts))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, nil, fmt.Errorf("state: cell cap iterate: %w", err)
 	}
 	return perPlayer, perFranchise, nil
+}
+
+// capContribution applies the roster-status cap discount to one player's raw
+// cap-counting cents: ROSTER always counts 100%; TAXI_SQUAD/IR count at the
+// discounts-supplied pct (a nil source or a nil-safe 100 means no discount).
+func capContribution(cents domain.Money, status domain.RosterStatus, discounts CapDiscounts) domain.Money {
+	var pct float64 = 100
+	switch status {
+	case domain.RosterActive:
+		// 100% — no discount for an active-roster player.
+	case domain.RosterTaxi:
+		if discounts != nil {
+			pct = discounts.TaxiCapPercent()
+		}
+	case domain.RosterIR:
+		if discounts != nil {
+			pct = discounts.IRCapPercent()
+		}
+	}
+	if pct == 100 {
+		return cents
+	}
+	return domain.Money(float64(cents) * pct / 100)
 }
 
 // seedPlayerCount totals the players across all seed rosters (the empty-seed guard).
@@ -147,7 +184,7 @@ func sortedKeys(m map[string]*FranchiseState) []string {
 
 // validRosterStatus accepts only the normalized roster statuses.
 func validRosterStatus(s domain.RosterStatus) bool {
-	return s == domain.RosterActive || s == domain.RosterTaxi
+	return s == domain.RosterActive || s == domain.RosterTaxi || s == domain.RosterIR
 }
 
 // validContractStatus accepts the four real contract statuses (not the review FLAG).

@@ -62,12 +62,25 @@ func baseRosters(t *testing.T) []domain.Roster {
 
 func newStore(t *testing.T, src Source) *Store {
 	t.Helper()
+	return newStoreWithDiscounts(t, src, nil)
+}
+
+// fakeDiscounts is a fixed-percentage CapDiscounts test double.
+type fakeDiscounts struct {
+	taxiPct, irPct float64
+}
+
+func (f fakeDiscounts) TaxiCapPercent() float64 { return f.taxiPct }
+func (f fakeDiscounts) IRCapPercent() float64   { return f.irPct }
+
+func newStoreWithDiscounts(t *testing.T, src Source, discounts CapDiscounts) *Store {
+	t.Helper()
 	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "state.db"))
 	if err != nil {
 		t.Fatalf("db.Open: %v", err)
 	}
 	t.Cleanup(func() { _ = pools.Close() })
-	s := New(pools, testLeague, testSeason)
+	s := New(pools, testLeague, testSeason, discounts)
 	if err := s.Initialize(context.Background(), src); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
@@ -107,7 +120,7 @@ func TestEmptySeedFailsLoud(t *testing.T) {
 		{"nil rosters", &fakeSource{rosters: nil}},
 		{"empty rosters", &fakeSource{rosters: []domain.Roster{{FranchiseID: "0001"}}}},
 	} {
-		s := New(pools, testLeague, testSeason)
+		s := New(pools, testLeague, testSeason, nil)
 		if err := s.Initialize(context.Background(), tc.src); err == nil {
 			t.Fatalf("%s: Initialize succeeded, want errEmptySeed", tc.name)
 		}
@@ -218,7 +231,7 @@ func TestInitializeDoesNotReseed(t *testing.T) {
 	t.Cleanup(func() { _ = pools.Close() })
 	ctx := context.Background()
 
-	s1 := New(pools, testLeague, testSeason)
+	s1 := New(pools, testLeague, testSeason, nil)
 	if err := s1.Initialize(ctx, &fakeSource{rosters: baseRosters(t)}); err != nil {
 		t.Fatalf("first Initialize: %v", err)
 	}
@@ -227,7 +240,7 @@ func TestInitializeDoesNotReseed(t *testing.T) {
 	}
 
 	// A fresh store over the SAME db with a DIFFERENT source must NOT reseed.
-	s2 := New(pools, testLeague, testSeason)
+	s2 := New(pools, testLeague, testSeason, nil)
 	if err := s2.Initialize(ctx, &fakeSource{rosters: []domain.Roster{
 		{FranchiseID: "0001", Players: []domain.PlayerRecord{
 			{MFLID: mustID(t, "0001"), Salary: 99 * capUnit, RosterStatus: domain.RosterActive,
@@ -253,7 +266,7 @@ func TestMutationFailsLoudOnDBDrift(t *testing.T) {
 	t.Cleanup(func() { _ = pools.Close() })
 	ctx := context.Background()
 
-	s := New(pools, testLeague, testSeason)
+	s := New(pools, testLeague, testSeason, nil)
 	if err := s.Initialize(ctx, &fakeSource{rosters: baseRosters(t)}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
@@ -277,7 +290,7 @@ func TestLoadFailsLoudOnOrphanRoster(t *testing.T) {
 	t.Cleanup(func() { _ = pools.Close() })
 	ctx := context.Background()
 
-	s := New(pools, testLeague, testSeason)
+	s := New(pools, testLeague, testSeason, nil)
 	if err := s.Initialize(ctx, &fakeSource{rosters: baseRosters(t)}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
@@ -286,7 +299,7 @@ func TestLoadFailsLoudOnOrphanRoster(t *testing.T) {
 		t.Fatalf("out-of-band delete: %v", err)
 	}
 	// A fresh load over the orphaned DB must fail, not serve 2 of 3 players.
-	s2 := New(pools, testLeague, testSeason)
+	s2 := New(pools, testLeague, testSeason, nil)
 	if err := s2.Initialize(ctx, &fakeSource{rosters: baseRosters(t)}); err == nil {
 		t.Fatal("load served a roster row short of its contract without failing")
 	}

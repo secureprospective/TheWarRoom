@@ -202,7 +202,7 @@ func (a *App) initStoreFloor(ctx context.Context) error {
 	}
 	a.rulebook = rb
 
-	st := state.New(a.pools, ingestion.LeagueID, a.season)
+	st := state.New(a.pools, ingestion.LeagueID, a.season, rb)
 	if err := st.Initialize(ctx, rosterSeedSource{app: a}); err != nil {
 		return fmt.Errorf("startup: initialize league state: %w", err)
 	}

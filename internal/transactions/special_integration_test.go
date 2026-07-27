@@ -52,7 +52,7 @@ func specialStore(t *testing.T) (*statepkg.Store, *transactions.Coordinator) {
 		t.Fatalf("db.Open: %v", err)
 	}
 	t.Cleanup(func() { _ = pools.Close() })
-	s := statepkg.New(pools, "14432", 2026)
+	s := statepkg.New(pools, "14432", 2026, nil)
 	if err := s.Initialize(context.Background(), specialSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
