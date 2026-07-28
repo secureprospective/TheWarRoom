@@ -6,8 +6,8 @@
 
 ## Sessions completed so far
 
-- **Session 1 — Activity/Transaction Feed** (merged `ae584c9`): read-only chronological feed, OQ-013 reconciliation.
-- **Session 2 — Transaction Correction + Roster/Position/Taxi/IR Enforcement** (backend only — merge pending as of this entry): append-only correction ledger + reconciled projection; roster/position/taxi/IR limit enforcement on Sign/Trade/RosterStatusChange. **Frontend correction UI (the "Correct this entry" action in FeedBoard.tsx) is NOT implemented** — GLM's 5-hour quota ran out mid-session before frontend work started. Only the backend/IPC half is live-gateable right now.
+- **Session 1 — Activity/Transaction Feed** (merged `ae584c9`): read-only chronological feed, OQ-013 reconciliation. **LIVE-GATED: PASS (2026-07-28).**
+- **Session 2 — Transaction Correction + Roster/Position/Taxi/IR Enforcement** (backend only, merged `4d80e1c`/`ba0629d`): append-only correction ledger + reconciled projection; roster/position/taxi/IR limit enforcement on Sign/Trade/RosterStatusChange. **Frontend correction UI (the "Correct this entry" action in FeedBoard.tsx) is NOT implemented** — GLM's 5-hour quota ran out mid-session before frontend work started. Only the backend/IPC half was live-gateable. **LIVE-GATED: PASS (2026-07-28)** — the enforcement gate held on the real binary; the correction UI itself remains untested (no affordance exists).
 
 ---
 
