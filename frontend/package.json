@@ -3,7 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+
+  "//pnpm-guardrail": "Fleet standard: this project is pinned to pnpm via corepack + only-allow. See the base TypeScript overlay README for the enforced rules (packageManager pin, only-allow pnpm, --frozen-lockfile). Do not remove these lines.",
+  "packageManager": "pnpm@10.34.3",
+
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
