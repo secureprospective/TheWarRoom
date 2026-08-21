@@ -2,3 +2,11 @@ build/bin
 node_modules
 frontend/dist
 coverage.out
+
+# Scratch / nested repos (added by Bee 2026-08-21)
+REPOS/
+.scratch/
+.codegraph/
+GUIDES/
+WORK_LOGS/
+=
