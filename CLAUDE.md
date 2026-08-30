@@ -45,7 +45,7 @@ A 32-team dynasty fantasy football ranking engine and full-stack desktop applica
 CT105 is headless and its firewall may block outbound — GUI runs and live network tests happen on the **Beelink (192.168.1.190)**. To avoid the B1 round-trips, follow this every time:
 
 1. **PUSH the session branch to origin from CT105 FIRST.** The Beelink pulls from origin; it cannot see an unpushed local branch. (B1 cost a round-trip because the branch wasn't pushed.)
-2. The Beelink clone is **`/home/chris/opencode/TheWarRoom`** (verified 2026-07-04; the CT105 `/mnt/storage/...` path does NOT exist there; `/home/chris/.config/TheWarRoom` is just the SQLite data dir). Go is `/usr/local/go/bin/go`.
+2. The Beelink clone is **`/home/chris/work/TheWarRoom`** (verified 2026-07-04; the CT105 `/mnt/storage/...` path does NOT exist there; `/home/chris/.config/TheWarRoom` is just the SQLite data dir). Go is `/usr/local/go/bin/go`.
 3. The Beelink may be on a **stale branch** — the paste.md batch must `git fetch origin` before `git checkout <branch>`.
 4. Per [[feedback_paste_md_copypaste]]: any command Christopher runs goes in `/root/paste.md`, labeled with why + where (target machine, repo path) + what PASS looks like.
 
@@ -65,7 +65,7 @@ Live/network tests are **opt-in and env-gated** (e.g. `TWR_LIVE_MFL=1`) so they 
 5. Live/functional gate is unchanged — Christopher runs the actual binary on the Beelink and confirms real behavior.
 6. Merge to main only after Christopher confirms the live result, per standing branch discipline.
 
-**One-time setup (2026-07-27):** the Beelink clone (`~/opencode/TheWarRoom`) had **no pre-commit/pre-push hooks installed at all** — the `make verify` safety net that's supposed to gate every push had nothing to run on. Fixed: pre-commit + pinned golangci-lint v2.12.2 + gitleaks v8.30.1 installed, `make setup` wires both hook stages, git push credentials cached via `credential.helper store` (Christopher entered the PAT directly on the Beelink — Claude never saw it). This workflow starts at **Session 1** of the Commissioner Suite sequence — Session 0 (taxi/IR fix) was still Claude-authored.
+**One-time setup (2026-07-27):** the Beelink clone (`~/work/TheWarRoom`) had **no pre-commit/pre-push hooks installed at all** — the `make verify` safety net that's supposed to gate every push had nothing to run on. Fixed: pre-commit + pinned golangci-lint v2.12.2 + gitleaks v8.30.1 installed, `make setup` wires both hook stages, git push credentials cached via `credential.helper store` (Christopher entered the PAT directly on the Beelink — Claude never saw it). This workflow starts at **Session 1** of the Commissioner Suite sequence — Session 0 (taxi/IR fix) was still Claude-authored.
 
 ---
 

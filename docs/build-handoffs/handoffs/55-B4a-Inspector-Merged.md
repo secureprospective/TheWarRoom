@@ -27,4 +27,4 @@ M1 diagnostic **re-home is additive here** (Inspector now carries AgePull/L4/Cap
 Fixed: reopen-on-reselect (openNonce), NaN bar guard + 1.0-neutral color alignment, false "Free agent", stale label clear. Non-issues verified: capEff mirrors GetRankings; `React.ReactNode` matches house pattern (tsc clean); no negative multipliers; value-DTO is house style + `res.ok`-guarded.
 
 ## Next
-Visual gate (`/root/paste.md`, Beelink `/home/chris/opencode/TheWarRoom`). On **PASS** → squash-merge to main (linear history), delete branch, update CLAUDE.md header. Then **B-4b** = sweep the now-redundant diagnostics out of the M1 board + the Home 2×2 + 3–4 Alpha seasonal cards.
+Visual gate (`/root/paste.md`, Beelink `/home/chris/work/TheWarRoom`). On **PASS** → squash-merge to main (linear history), delete branch, update CLAUDE.md header. Then **B-4b** = sweep the now-redundant diagnostics out of the M1 board + the Home 2×2 + 3–4 Alpha seasonal cards.

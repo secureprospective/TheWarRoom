@@ -85,7 +85,7 @@ go build ./... && make lint && go test -race ./...      # lint OOMs on CT105 wit
 cd frontend && npx tsc --noEmit && npm run build
 ```
 
-**Beelink visual gate:** clone is `/home/chris/opencode/TheWarRoom`; `wails dev` **needs `-tags webkit2_41`** (system has webkit2gtk-4.1, not 4.0). Push the branch to origin FIRST — the Beelink pulls from origin and cannot see an unpushed local branch. Commands for Christopher go in `/root/paste.md`, labeled, one batch.
+**Beelink visual gate:** clone is `/home/chris/work/TheWarRoom`; `wails dev` **needs `-tags webkit2_41`** (system has webkit2gtk-4.1, not 4.0). Push the branch to origin FIRST — the Beelink pulls from origin and cannot see an unpushed local branch. Commands for Christopher go in `/root/paste.md`, labeled, one batch.
 
 **GLM 5.2 review gate:** **split the review across bird + Hermes in parallel** — a combined payload past ~6 min of reasoning resets the connection (`curl (56)`, zero-byte body, nothing salvageable). Give each part a prompt naming its *specific* failure modes and front-load the invariants, or the reviewer reports deliberate absences as defects. Recipe: memory `reference_glm_review_over_ssh`; lesson: `lesson_split_the_review_not_retry`. A sentinel file means the job **ended**, not that it **succeeded** — check the exit code and `finish_reason`, not just the sentinel.
 

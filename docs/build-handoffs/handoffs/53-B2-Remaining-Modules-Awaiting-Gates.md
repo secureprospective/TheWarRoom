@@ -23,7 +23,7 @@ B-2 M1/M2 (handoff 52) established the shared grammar; this session migrated **e
 ## GATES
 1. **GLM 5.2 review gate — CLEARED** (`glm-5.2` verified, `finish_reason: stop`, direct z.ai coding-endpoint curl from the Beelink; opencode auth still broken there). 8 leads triaged against source; the 3 valid ones fixed in `2c395c3` (all RookieTable): restore the position filter's `aria-label` (L1), errored rows span to row-end with no spurious Adjusted `—` (L2), EngraveState keys off the UNFILTERED set so a zero-match position filter renders the board rather than claiming "no scored rookies" (L3). Non-issues: `tabular-nums` is set by `.twr-c-num`; `Empty` is still used in `RosterPicker`; the RailRow JS-hover matches the existing `NavRail` pattern.
 2. **Beelink visual gate — the one gate left.** Doctrine: a passing build ≠ a working feature; a UI change merges only after Christopher confirms it live. Branch HEAD is now `2c395c3`.
-   - Beelink clone `/home/chris/opencode/TheWarRoom`; `git fetch origin && git checkout session/ui-b2-remaining-modules`. `wails dev` needs **`-tags webkit2_41`** (webkit2gtk-4.1 on that box).
+   - Beelink clone `/home/chris/work/TheWarRoom`; `git fetch origin && git checkout session/ui-b2-remaining-modules`. `wails dev` needs **`-tags webkit2_41`** (webkit2gtk-4.1 on that box).
    - **Eyeball, per module:**
      - **CONTROL tab → Rookie Sandbox**: dense instrument board (not the old slate table); Adjusted dominant; density 1/2/3 collapses the diagnostic columns to #·Player·Pos·Adj.
      - **CONTROL tab → Architectural Tests**: PASS/PENDING/FAIL tiles read with the right semantic edge (green/amber/red), amber pending ≠ red fail.

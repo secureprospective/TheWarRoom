@@ -16,7 +16,7 @@ Four builds landed on this one branch. The gate covers **all four in a single GU
 
 ## Environment & hygiene (do this first, every time)
 
-**Beelink Wails clone:** `/home/chris/opencode/TheWarRoom`
+**Beelink Wails clone:** `/home/chris/work/TheWarRoom`
 
 **Reset the clone to clean main BEFORE and AFTER the gate** ([[reference_beelink_functional_gate]] — force checkout + `reset --hard` + `clean -fdx` + prune session branches). Record which commit the gate actually ran on. Then check out the branch under test:
 

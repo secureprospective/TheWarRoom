@@ -41,7 +41,7 @@ Inspect → Console, click the tab, READ the error/stack. If silent, bisect the 
 3. Gate H (THIS build) — UFA calendar: SET_SIGNING_WINDOW close → a SIGN that clears the floor is
    REJECTED "signing window is closed by the commissioner"; reopen → same SIGN lands. (Needs a dev-
    panel control for SET_SIGNING_WINDOW — NOT yet built; add it WITH the lockup fix, same panel.)
-Beelink clone /home/chris/opencode/TheWarRoom — reset to clean main before+after ([[reference_beelink_functional_gate]]).
+Beelink clone /home/chris/work/TheWarRoom — reset to clean main before+after ([[reference_beelink_functional_gate]]).
 
 == WHAT ELSE IS NEXT ==
 - Frontend: a commissioner control for SET_SIGNING_WINDOW (open/close toggle) — deferred WITH the

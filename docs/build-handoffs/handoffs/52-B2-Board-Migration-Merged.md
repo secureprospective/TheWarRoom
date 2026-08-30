@@ -20,7 +20,7 @@ Doctrine: a passing build ≠ a working feature; a UI change merges only after C
 1. **M1 board** renders as a dense instrument board (not the old slate table): Adjusted column dominant, Base/Salary recessed, sticky sub-header, hover feedback. Click **Base / Adj / Salary / Adj/$M** headers → sort flips (▼/▲). Toggle **Cap-eff only** → filters and jumps to Adj/$M sort. Cycle density **1/2/3** → Matrix drops Franchise/Base + the diagnostics, leaving Rank·Player·Pos·Adj·Salary.
 2. **M2 board**: Power is the hero column; raw-MFL columns recede and drop in Matrix. The **blend-weight slider** still fires only on release (drag = instant readout, network on mouse-up); **Reset 60/40** and the **Roster-sum / Top-N** chips still work.
 3. Empty state (fresh/unscored) shows the engraved "awaiting scored data" panel; a loading M2 shows skeleton pulses, not a spinner.
-- Beelink clone `/home/chris/opencode/TheWarRoom`. **PASS = the two boards read as the Session-B design and every control above behaves** — confirmed; merged to main + branch deleted.
+- Beelink clone `/home/chris/work/TheWarRoom`. **PASS = the two boards read as the Session-B design and every control above behaves** — confirmed; merged to main + branch deleted.
 
 ## WHAT IS DELIBERATELY DEFERRED (not dropped)
 - **Facet-map deviation, flagged for Christopher:** the locked M1 facet map is exactly 7 columns (Rank·Player·Pos·Franchise·Base·Adjusted·Salary). B-2 keeps the engine-internal **diagnostics** (AgePull, L4, CapTier, Adj/$M) as a **recessed Narrative/Tactical group, dropped in Matrix** — a deliberate Phase-1 choice so the validation tool keeps its debuggability until **B-4** relocates layer detail into the Inspector. If you'd rather strip them to the strict 7-col lock now, say so.

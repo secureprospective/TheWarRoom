@@ -135,7 +135,7 @@ Three parts, in order:
 - Branch `session/b7b-contract-ops`. No work on main. Never --no-verify.
 - CT105 gate: `export PATH=$PATH:/usr/local/go/bin`; `go build ./...`;
   `GOMEMLIMIT=1500MiB GOGC=20 make lint`; `go test -race ./...`. Beelink GUI:
-  `wails dev -tags webkit2_41` (repo at /home/chris/opencode/TheWarRoom).
+  `wails dev -tags webkit2_41` (repo at /home/chris/work/TheWarRoom).
 - Files < 400 lines (AD-17). Engine stays pure. Stores never import each other. New
   handler subpackages (contracts/deadcap) stay behind Coordinator.Execute — the depguard
   rule already denies them; PROVE it with a planted import.

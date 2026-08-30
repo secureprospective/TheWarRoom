@@ -11,7 +11,7 @@ This is a functional-verification session — NOT a build session. Do not write 
 sub-gate fails, capture the exact behavior and stop; the fix is a later code session, not a re-quote.
 
 Branch under test: session/m4-slice3-trade  ·  HEAD efda820 (ed3b2de + this gate doc)
-Beelink Wails clone: /home/chris/opencode/TheWarRoom
+Beelink Wails clone: /home/chris/work/TheWarRoom
 
 Read these three, in order, before touching anything:
   1. TheWarRoom project CLAUDE.md header (full state + every gotcha: lint GOMEMLIMIT, Wails nil→null
