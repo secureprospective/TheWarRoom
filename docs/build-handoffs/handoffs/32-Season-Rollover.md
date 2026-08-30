@@ -67,7 +67,7 @@ Written: 2026-07-11 (B7c §13 Special Situations session close)
 == BUILD GATES (every commit) ==
 - `GOMEMLIMIT=1500MiB GOGC=20 make lint` → 0 (ifaceguard + filelen 400 + golangci-lint);
   `go test -race ./...` green; frontend `tsc` + `vite build` clean; depguard proven.
-- Functional gate live on the Beelink (`/home/chris/opencode/TheWarRoom`, `wails dev -tags
+- Functional gate live on the Beelink (`/home/chris/work/TheWarRoom`, `wails dev -tags
   webkit2_41`); reset the clone to clean main BEFORE and AFTER the gate
   (`[[reference_beelink_functional_gate]]`).
 - GLM-5.2 blind CODE review over SSH to the Beelink (leads-not-findings, triage vs source) —

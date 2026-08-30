@@ -26,4 +26,4 @@ The `calendar` summon target is now a live **agenda/list board** (`frontend/src/
 Fixed: stale-preview race (`stageGen` token), unhandled `ExecuteTransaction` throw (catch → rejected state), empty-datetime reschedule no-op (button disabled). Non-issues: CAP_RELIEF amber dot is an intentional weight axis; head view is `ORDER BY scheduled_at`; `target` prop used in aria-label.
 
 ## Next
-Run the visual gate (commands in `/root/paste.md`, Beelink `/home/chris/opencode/TheWarRoom`). On **PASS** → squash-merge to main (linear history required — `git reset --soft origin/main` + single commit, no merge commit), delete branch, update CLAUDE.md build-state header. Then B-4 (Home + Inspector).
+Run the visual gate (commands in `/root/paste.md`, Beelink `/home/chris/work/TheWarRoom`). On **PASS** → squash-merge to main (linear history required — `git reset --soft origin/main` + single commit, no merge commit), delete branch, update CLAUDE.md build-state header. Then B-4 (Home + Inspector).

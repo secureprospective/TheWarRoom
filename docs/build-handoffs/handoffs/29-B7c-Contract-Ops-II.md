@@ -80,7 +80,7 @@ its own commit since it has no new dependency and completes the B7b dead-cap sto
 - Branch `session/b7c-contract-ops-ii` (or per-op branches). No work on main. Never --no-verify.
 - CT105 gate: `export PATH=$PATH:/usr/local/go/bin`; `go build ./...`;
   `GOMEMLIMIT=1500MiB GOGC=20 make lint`; `go test -race ./...`. Beelink GUI:
-  `wails dev -tags webkit2_41` (repo at /home/chris/opencode/TheWarRoom — verified 2026-07-04).
+  `wails dev -tags webkit2_41` (repo at /home/chris/work/TheWarRoom — verified 2026-07-04).
 - Files < 400 lines (AD-17). Engine stays pure. Stores never import each other. New handler
   subpackages stay behind Coordinator.Execute — depguard already denies contracts/deadcap.
 - Money is int64 cents everywhere in Go; never float64, never a JS number for money. Any

@@ -46,7 +46,7 @@ against main or a fresh branch):
     minimum $330,000"; Sign at 0.7 ($700k) → OK (clears any floor). Proves the floor is live.
   - Gates A–F (deferred §6 click-through): cut→pool→sign, buyout lockout, retired-barred, phase
     window, rollover promotion, phantom-franchise reject.
-Beelink clone /home/chris/opencode/TheWarRoom — reset to clean main before+after ([[reference_beelink_functional_gate]]).
+Beelink clone /home/chris/work/TheWarRoom — reset to clean main before+after ([[reference_beelink_functional_gate]]).
 
 == WHAT ELSE IS NEXT (after the lockup + gate) ==
 - §6 follow-up: the first-class COMMISSIONER UFA CALENDAR — replace signingWindow()'s hardcoded

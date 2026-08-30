@@ -53,7 +53,7 @@ DEFERRED to Beelink (NOT done — the ONE remaining gate, blocks merge):
   LIVE FUNCTIONAL GATE — build a real 2-team (then 3-team) swap, confirm, watch BOTH rosters and BOTH
   caps move on the post-commit refresh; verify a same-franchise/no-destination leg can't be staged.
   Reset the Beelink clone to clean main before AND after ([[reference_beelink_functional_gate]]).
-  Beelink clone = /home/chris/opencode/TheWarRoom.
+  Beelink clone = /home/chris/work/TheWarRoom.
 Only after the live gate passes: squash-merge to main, then session-close's merge steps.
 
 == BUILD ENV (RC or Beelink) ==
