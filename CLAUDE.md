@@ -39,7 +39,7 @@ A 32-team dynasty fantasy football ranking engine and full-stack desktop applica
 
 ## Functional Verification on the Beelink (READ before asking Christopher to run anything)
 
-CT105 is headless and its firewall may block outbound — GUI runs and live network tests happen on the **Beelink (192.168.1.190)**. To avoid the B1 round-trips, follow this every time:
+CT105 is headless and its firewall may block outbound — GUI runs and live network tests happen on the **Beelink (192.168.1.191)**. To avoid the B1 round-trips, follow this every time:
 
 1. **PUSH the session branch to origin from CT105 FIRST.** The Beelink pulls from origin; it cannot see an unpushed local branch. (B1 cost a round-trip because the branch wasn't pushed.)
 2. The Beelink clone is **`/home/chris/work/TheWarRoom`** (verified 2026-07-04; the CT105 `/mnt/storage/...` path does NOT exist there; `/home/chris/.config/TheWarRoom` is just the SQLite data dir). Go is `/usr/local/go/bin/go`.
