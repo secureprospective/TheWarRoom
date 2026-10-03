@@ -1,4 +1,3 @@
-// internal/mfl/client.go
 package mfl
 
 import (
@@ -21,22 +20,18 @@ import (
 // Client is the MFL HTTP transport client.
 type Client struct {
 	http     *http.Client
-	limiter  *rate.Limiter // token bucket; back off on 429, do NOT retry-storm
+	limiter  *rate.Limiter
 	mu       sync.RWMutex
 	host     string          // discovered league host (e.g. www47), cached
-	backoffs []time.Duration // 429 backoff schedule; bounded, so retries can never storm
+	backoffs []time.Duration // 429 backoff schedule
 }
 
-// ErrNonPositiveRate is returned by New when rps is not a positive, real number.
-// A non-positive rate makes the limiter reject every request (rate.Limit(0)
-// allows no events); a NaN slips past a bare rps<=0 check (NaN<=0 is false in Go)
-// and makes limiter.Wait block forever. Both are construction-time errors, not
-// runtime surprises.
+// ErrNonPositiveRate rejects a rate that is not positive and finite. rate.Limit(0) allows
+// nothing, and NaN slips past rps <= 0 and makes Wait block forever.
 var ErrNonPositiveRate = errors.New("mfl: requests-per-second must be a positive, real number")
 
-// New creates and initializes a new Client. rps is the steady-state request rate
-// (requests per second) and must be > 0. An empty host defaults to the canonical
-// api host at request time; the real league host is set by DiscoverHost.
+// New creates a Client at rps requests per second. An empty host means the canonical api
+// host until DiscoverHost sets the league's.
 func New(host string, rps float64) (*Client, error) {
 	if rps <= 0 || math.IsNaN(rps) {
 		return nil, fmt.Errorf("%w: got %g", ErrNonPositiveRate, rps)
@@ -45,8 +40,7 @@ func New(host string, rps float64) (*Client, error) {
 		http:    &http.Client{Timeout: 15 * time.Second},
 		limiter: rate.NewLimiter(rate.Limit(rps), 1),
 		host:    host,
-		// Production 429 backoff: 1→2→4…→60s, then give up and return the error
-		// (the caller decides). Bounded by construction — retries can never storm.
+		// 1s doubling to 60s, then return the error.
 		backoffs: []time.Duration{
 			1 * time.Second, 2 * time.Second, 4 * time.Second, 8 * time.Second,
 			16 * time.Second, 32 * time.Second, 60 * time.Second,
@@ -54,10 +48,8 @@ func New(host string, rps float64) (*Client, error) {
 	}, nil
 }
 
-// Do is the transport primitive: rate-limit wait, execute, back off on 429,
-// transport in and transport out. No Player, no Schedule — no domain types.
-// Do and DiscoverHost are the only two sanctioned exported request methods
-// (WF 1A); DiscoverHost routes through Do so it inherits rate-limiting and backoff.
+// Do is the transport primitive: wait on the rate limit, execute, back off on 429. It and
+// DiscoverHost are the only exported request methods.
 func (c *Client) Do(ctx context.Context, req Request) (Response, error) {
 	c.mu.RLock()
 	host := c.host
@@ -65,9 +57,7 @@ func (c *Client) Do(ctx context.Context, req Request) (Response, error) {
 
 	switch {
 	case req.Type == "league":
-		// Host discovery (and any other "league" lookup) always targets the
-		// canonical api host, regardless of c.host — a stale or down cached
-		// host must not block re-discovery.
+		// League lookups always use the api host, so a stale cached host cannot block rediscovery.
 		host = "api"
 	case req.Params == nil || req.Params["L"] == "":
 		host = "api"
@@ -101,8 +91,8 @@ func (c *Client) Do(ctx context.Context, req Request) (Response, error) {
 	}, nil
 }
 
-// DiscoverHost queries the MFL league endpoint to discover and cache the league's active host server.
-// If the discovery call fails, c.host remains unchanged (or defaults to the initial host).
+// DiscoverHost looks up and caches the league's host server. On failure the host is
+// unchanged.
 func (c *Client) DiscoverHost(ctx context.Context, year string, leagueID string) error {
 	req := Request{
 		Type: "league",
@@ -138,7 +128,7 @@ func (c *Client) DiscoverHost(ctx context.Context, year string, leagueID string)
 	return nil
 }
 
-// buildURL constructs the MFL API URL for the given host, year, type, and params.
+// buildURL builds the API URL for a host, year, endpoint and params.
 func (c *Client) buildURL(host, year, endpoint string, params map[string]string) string {
 	h := host
 	if h == "" {
@@ -159,31 +149,27 @@ func (c *Client) buildURL(host, year, endpoint string, params map[string]string)
 	}
 	q := u.Query()
 	for k, v := range params {
-		// TYPE and JSON are transport-mandated. Skip any caller key that collides
-		// in ANY casing, so a "type"/"Json" param can't smuggle a second query key
-		// alongside the canonical one regardless of how the backend folds case.
+		// TYPE and JSON belong to the transport; a caller key matching either in any case is
+		// dropped so it cannot add a second value.
 		if strings.EqualFold(k, "TYPE") || strings.EqualFold(k, "JSON") {
 			continue
 		}
 		q.Set(k, v)
 	}
-	// Set the mandated params last — the single source of truth for these keys.
 	q.Set("TYPE", endpoint)
 	q.Set("JSON", "1")
 	u.RawQuery = q.Encode()
 	return u.String()
 }
 
-// executeWithRetry executes the HTTP request, with exponential backoff on HTTP 429.
+// executeWithRetry runs the request, backing off on HTTP 429.
 func (c *Client) executeWithRetry(ctx context.Context, httpReq *http.Request) (*http.Response, error) {
 	backoffs := c.backoffs
 
 	attempts := 0
 	for {
-		// Rate-limit EVERY attempt, including retries. If the limiter were only
-		// consulted once (in Do), concurrent fetchers would all wake from their
-		// 429 backoff and fire simultaneously — storming an API that just asked
-		// us to slow down (Gemini review Q2.3). burst=1 serializes the retries.
+		// Every attempt waits on the limiter, retries included; otherwise concurrent fetchers would
+		// all wake from backoff and fire at once.
 		if err := c.limiter.Wait(ctx); err != nil {
 			return nil, fmt.Errorf("rate limiter wait failed: %w", err)
 		}
@@ -210,8 +196,7 @@ func (c *Client) executeWithRetry(ctx context.Context, httpReq *http.Request) (*
 			dur := backoffs[attempts]
 			attempts++
 
-			// time.NewTimer + Stop, not time.After: if ctx is cancelled first the
-			// bare time.After timer leaks until it fires (M9 — concurrency is designed).
+			// NewTimer + Stop, so a cancelled ctx does not leak the timer as time.After would.
 			timer := time.NewTimer(dur)
 			select {
 			case <-ctx.Done():
@@ -226,7 +211,7 @@ func (c *Client) executeWithRetry(ctx context.Context, httpReq *http.Request) (*
 	}
 }
 
-// extractSubdomain extracts the host subdomain from the MFL base URL.
+// extractSubdomain returns the host subdomain of an MFL base URL.
 func extractSubdomain(baseURL string) (string, error) {
 	if baseURL == "" {
 		return "", fmt.Errorf("empty baseURL")

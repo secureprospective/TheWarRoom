@@ -1,4 +1,5 @@
-// internal/mfl/types.go
+// Package mfl is the MFL API transport: rate limiting, host discovery and 429 backoff. It
+// knows no domain types.
 package mfl
 
 // Request represents a transport-level MFL API request.
@@ -14,8 +15,7 @@ type Response struct {
 	Body       []byte // Unprocessed JSON response body
 }
 
-// leagueResponse represents the structure of the league endpoint response
-// needed for host discovery.
+// leagueResponse is the part of the league endpoint used for host discovery.
 type leagueResponse struct {
 	League struct {
 		BaseURL string `json:"baseURL"`
