@@ -27,10 +27,11 @@
 | 0.4 `CORRECT` op | KEEP the backend; its UI is deferred (Commissioner work) | — |
 | 0.5 Standards rules rewritten upstream | DONE: christopher-coding-standards **PR #33**, open for Christopher to merge | `f148127` there |
 | 0.5 Codex re-adopted; `scripts/bloat.sh` ratchet in `make lint`; filelen only reports | DONE | `faec16a` |
-| 0.5 Comment cleanup | IN PROGRESS: root, state and transactions done (`ad18183`, `de301c0`, `bda156b`) | — |
+| 0.5 Comment cleanup | DONE: every package outside the skip list, one commit each (`ad18183` … `bd8dc3e`). Along the way: deleted dead code (`db.Health/JournalMode`, 11 unread `scouting.Profile` fields, the template `internal/schema` package), folded 3 tiny engine files into `pipeline.go`, and fixed 4 comments that stated false facts | — |
 
-**Bloat now:** comment share 25% (was 31%), review history 39 lines (was 68), sub-40-line files 32
-(was 33), dupl 44. The `.bloat-baseline` file is ratcheted down to these numbers.
+**Bloat now:** comment share 20% (was 31%), review history 8 lines (was 68, all in skipped
+packages), sub-40-line files 28 (was 33), dupl 44. The `.bloat-baseline` file is ratcheted down
+to these numbers.
 
 ## 3. Cleanup method (keep using it)
 - **Tools.** Saved in `~/fleet/runs/warroom-dataflow-2026-10-03/tools/`; `/tmp/codesame` may be
@@ -62,30 +63,8 @@
   - Merge files that were split only for size when they share one job.
 
 ## 4. Next actions, in order
-1. **Finish the comment cleanup**, one commit per package or group. Comment lines/total, measured
-   10-03:
-   - `transactions/contracts` 134/366
-   - `harness` 292/965
-   - `store/rulebook` 131/698
-   - `store/params` 110/505
-   - `output` 140/512
-   - `composition` 138/494
-   - `rankings` 145/405
-   - `m2service` 75/343
-   - `powerrankings` 67/204
-   - `normalize` 93/385
-   - `domain` 108/325
-   - `db` 48/150
-   - `mfl` 39/281
-   - `playerid` 48/112
-   - `engine` (non-l4) 174/434
-   - `ingestion` root and the MFL-side packages: league, players, rosters, playerscores,
-     leaguestandings, leagueschedule, salaryadjustments, crosswalk
-   - `scouting` 141/209 (types only)
-
-   **Skip, because Stages 4-5 rewrite them:** `engine/l4/*`, `scouting/assembly`, and the
-   nflverse/CFBD ingestion packages (agetrajectory, collegedefense, collegeshare, madden,
-   pfrcoverage, ras, schooltier, veteranfilm).
+1. ~~Comment cleanup~~ DONE. Skipped, because Stages 4-7 rewrite or retire them:
+   `engine/l4/*`, `scouting/assembly`, `harness`, and the nflverse/CFBD ingestion packages.
 2. **Code refactors found during the cleanup.** These are real code changes, each with tests:
    - `standingsOrCache` / `leagueScheduleOrCache` (app) → one generic live-or-cache helper. The
      two cache tables become one `mfl_cache(kind, …)`; that needs a migration.
@@ -98,10 +77,23 @@
    - TxWriter interface groupings exist only for the `interfacebloat` limit (`LogTradeNote` and
      `AppendCorrection` sit in `CapLedgerWriter`). Restructure, or raise the limit for this
      interface.
+   - Every MFL fetcher repeats DiscoverHost → Do → status → CheckAPIError → decode envelope →
+     flatten. One generic `ingestion.FetchMFL[Env]` would own that, leaving each fetcher its
+     envelope type and Validate. Check that rosters/players/playerscores all call
+     CheckAPIError today (salaryadjustments and leaguestandings do).
+   - `normalize.lookupEntry` duplicates `PlayerFacts` field for field; embed it.
+   - `.pre-commit-config.yaml` uses deprecated stage names (`pre-commit migrate-config`).
+   - Params seed only into an empty `param_defaults` table, so a parameter added in code never
+     reaches an existing database (GetGlobal then errors). Today's live DB has all 5, but
+     Stage 5 adds many. Seed with `INSERT OR IGNORE` on every start; overrides are a separate
+     table and stay untouched. Test: an existing DB gains a new key on restart.
+   - The "one per franchise per season" allowance check is copied in Tag, Extend and
+     Restructure (`contracts.go`). Fold it into the coordinator rework above.
    - `contracts.contract_years` column: never populated (1,374/1,375 rows are 0). Drop it with
      a migration.
 3. **0.2 docs** (CLAUDE.md, SYSTEM_MAP, Hard Constraints per R6/R7, Commissioner plan copied from
-   CT105 marked DEFERRED, Build_Tracker pointer already done). Then the Stage 0 gate:
+   CT105 marked DEFERRED, Build_Tracker pointer already done). Also `docs/scoring-engine/Scouting_Schema.md`:
+   it still lists the 11 deleted Profile fields. Then the Stage 0 gate:
    - one branch line
    - verify green, plus `make bloat`
    - docs match the code
@@ -133,7 +125,7 @@
   Both are fixed.
 
 ## 7. Honest status
-- Stage 0 is about 60% done. The biggest remaining parts are the comment pass on about 15
-  packages, then the refactors.
+- Stage 0 is about 75% done. Left: the refactors (item 2), the docs (item 3), Christopher's
+  three items (item 4).
 - Nothing has been verified in the GUI.
 - Bee and Astra are stopped: no GPT budget.
