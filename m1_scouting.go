@@ -28,41 +28,27 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
-// rasFetchTimeout bounds the scouting fetches. The RAS combine feed is ~2 MB and the
-// crosswalk ~1 MB, both off the MFL transport on static CDNs; a tight timeout would
-// fail on a cold cache.
+// rasFetchTimeout bounds the scouting fetches; the combine and crosswalk files come from static
+// CDNs, so a tight budget fails on a cold cache.
 const rasFetchTimeout = 90 * time.Second
 
-// cfbdEnvVar is the environment variable carrying the CollegeFootballData bearer token
-// — the credential the CFBD-sourced signals (SchoolTier / CollegeShare / CollegeDefense
-// / BreakoutAge) need. It is read at wire time, never stored in the repo. When it is
-// UNSET those signals are skipped rather than failing the board (see below).
+// cfbdEnvVar holds the CollegeFootballData token, read at wire time. Unset skips the CFBD signals.
 const cfbdEnvVar = "CFBD_API_KEY"
 
 // scoutProfiles is the in-progress per-player Profile map the assemblers merge into.
 type scoutProfiles = map[playerid.PlayerID]scouting.Profile
 
-// buildScoutingDirectory wires the scouting pipeline and wraps the merged result as a
-// rankings ScoutingDirectory. Every signal rides on the SAME cached normalize.Lookup
-// the orchestrator already built (position + college are players-DB facts, never
-// re-fetched) via one scoutLookupAdapter.
-//
-//   - S-Phase 0 (RAS): fetch combine + crosswalk, compute per-position RAS-equivalent
-//     (§3). A fetch failure surfaces loudly.
-//   - S-Phase 1-4 (SchoolTier / CollegeShare / CollegeDefense / BreakoutAge): all need a
-//     CFBD API key. When the key is UNCONFIGURED they are SKIPPED wholesale (every player
-//     → Data-Parity neutral) rather than failing the board, so an environment without the
-//     key still ranks on RAS. A key-PRESENT fetch failure still surfaces loudly — a
-//     missing key and a broken fetch are different conditions.
+// buildScoutingDirectory runs every scouting signal against the board's cached players lookup
+// and returns the merged profiles. RAS, film and coverage always run. The CFBD signals (school
+// tier, college share, breakout age) need a key: without one they are skipped and every player
+// is neutral on them, but with a key a failed fetch is an error. A missing key and a broken
+// fetch are different conditions.
 func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (rankings.MapScoutingDirectory, error) {
 	rosterMFLIDs := collectRosterMFLIDs(a.state.Reader())
 	client := &http.Client{Timeout: rasFetchTimeout}
 	adapter := scoutLookupAdapter{lk: lk}
 
-	// Fetch the MFL→gsis crosswalk ONCE here and thread the resolved Map down into every
-	// signal. It was previously re-fetched inside each Build* (four ~1 MB pulls per Score
-	// League); a single fetch removes that redundancy and is the one fail-loud crosswalk
-	// boundary. Birthdates (breakout-only) are fetched once inside mergeCFBDScouting.
+	// One crosswalk fetch, shared by every signal.
 	cw, err := crosswalk.Fetch(ctx, client, crosswalk.SourceURL)
 	if err != nil {
 		return rankings.MapScoutingDirectory{}, fmt.Errorf("app: fetch scouting crosswalk: %w", err)
@@ -73,10 +59,6 @@ func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (
 		return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build RAS scouting directory: %w", err)
 	}
 
-	// Coverage (S-Phase FILM C-4 step 1): the CB/S coverage anchor rides on nflverse PFR
-	// advanced-defense (NO CFBD key), so it merges here alongside RAS — unconditionally, and
-	// before the CFBD-gated block. A fetch failure surfaces loudly (a coverage-less league
-	// must be visible), matching BuildRAS.
 	if err := mergeIDPFilm(ctx, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
 		return rankings.MapScoutingDirectory{}, err
 	}
@@ -96,18 +78,14 @@ func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (
 	return rankings.NewMapScoutingDirectory(profiles), nil
 }
 
-// mergeCFBDScouting merges every CFBD-sourced signal (S-Phase 1-4) into profiles, in
-// order. All share one key + season year; each signal's fetch failure surfaces loudly
-// (a signal-less league must be visible, not silently neutral).
+// mergeCFBDScouting merges the CFBD signals in order; any fetch failure is an error.
 func mergeCFBDScouting(ctx context.Context, client *http.Client, key string, cw crosswalk.Map,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
 	year, err := strconv.Atoi(ingestion.SeasonYear)
 	if err != nil {
 		return fmt.Errorf("app: season year %q not numeric: %w", ingestion.SeasonYear, err)
 	}
-	// Birthdates feed only the breakout scan; fetch them once here (behind the CFBD-key
-	// gate) rather than inside BuildBreakoutAge, so a second breakout thread (IDP, S-Phase
-	// 4b) reuses the same pull instead of fetching twice.
+	// Birthdates feed both breakout scans; fetch them once.
 	ages, err := agetrajectory.Fetch(ctx, client, agetrajectory.SourceURL)
 	if err != nil {
 		return fmt.Errorf("app: fetch scouting birthdates: %w", err)
@@ -127,22 +105,15 @@ func mergeCFBDScouting(ctx context.Context, client *http.Client, key string, cw 
 	return mergeBreakoutAgeIDP(ctx, client, key, cw, ages, year, rosterMFLIDs, adapter, profiles)
 }
 
-// mergeCoverage (S-Phase FILM C-4 step 1): join each rostered CB/S id → gsis → the
-// engine-ready coverage anchor ([0,1], higher=better — the leaf inverts PFR passer-rating-
-// allowed) into a fresh scouting.NGSCoverage group. A coverage-only player gets a fresh
-// Profile carrying just Coverage; the film-composite blend (K4 = 0.20 of the film budget)
-// is applied downstream in rankings.applyScouting, not here. The anchor is the PRIOR completed
-// NFL season (SeasonYear − 1): pfrcoverage is completed-season PFR advanced-defense data, so the
-// current league year is not yet played/charted — same rule as mergeOffenseFilm. (Passing
-// SeasonYear itself resolved zero once the league rolled to a season nflverse has no data for.)
+// mergeCoverage adds the CB/S coverage anchor ([0,1], higher is better) from the prior
+// completed season's PFR advanced defense; the current league year has no charting yet. The film
+// blend is applied in rankings.applyScouting.
 func mergeCoverage(ctx context.Context, client *http.Client, cw crosswalk.Map,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
 	year, err := strconv.Atoi(ingestion.SeasonYear)
 	if err != nil {
 		return fmt.Errorf("app: season year %q not numeric: %w", ingestion.SeasonYear, err)
 	}
-	// pfrcoverage keys the season as a string (the CSV's raw column); the prior completed season
-	// carries the charting (the current league year is not yet played).
 	coverageSeason := strconv.Itoa(year - 1)
 	cov, err := assembly.BuildCoverage(ctx, client, pfrcoverage.SourceURL, cw, coverageSeason, rosterMFLIDs, adapter)
 	if err != nil {
@@ -157,13 +128,8 @@ func mergeCoverage(ctx context.Context, client *http.Client, cw crosswalk.Map,
 	return nil
 }
 
-// mergeIDPFilm (FILM C-4 step 2): join each rostered DT/DE/LB/CB/S id → gsis → the
-// engine-ready Madden defense composite ([0,1], higher=better — the leaf equal-weight-
-// means the position's curated Madden sub-attrs, man+zone averaged) into a fresh
-// scouting.IDPFilm group. A Madden-only player gets a fresh Profile carrying just
-// IDPFilm; the film-composite blend (Madden's share of the film budget + the CB/S
-// coverage anchor) is applied downstream in rankings.applyScouting, not here. Runs
-// unconditionally (Madden is an EA feed, no CFBD key needed), before the coverage merge.
+// mergeIDPFilm adds the Madden defense composite for DT/DE/LB/CB/S. The film blend is applied
+// in rankings.applyScouting.
 func mergeIDPFilm(ctx context.Context, client *http.Client, cw crosswalk.Map,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
 	film, err := assembly.BuildIDPFilm(ctx, client, madden.RatingsURL, cw, rosterMFLIDs, adapter)
@@ -179,20 +145,15 @@ func mergeIDPFilm(ctx context.Context, client *http.Client, cw crosswalk.Map,
 	return nil
 }
 
-// mergeOffenseFilm (FILM C-4 step 3): join each rostered QB/RB/WR/TE id → gsis → the
-// blended Madden-backbone + bounded-FTN-overlay offense film composite. Rides the EA Madden
-// feed + nflverse FTN/pbp (NO CFBD key), so it merges here alongside RAS/coverage —
-// unconditionally, before the CFBD-gated block. A fetch failure of either feed surfaces
-// loudly (a film-less league must be visible), matching BuildIDPFilm/BuildRAS. The FTN
-// charting season is the prior completed season (SeasonYear − 1 — the current league season
-// is not yet charted); the provisional per-role floors are accepted for v1.
+// mergeOffenseFilm adds the QB/RB/WR/TE film composite (Madden backbone plus the bounded FTN
+// overlay), charted from the prior completed season.
 func mergeOffenseFilm(ctx context.Context, client *http.Client, cw crosswalk.Map,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
 	year, err := strconv.Atoi(ingestion.SeasonYear)
 	if err != nil {
 		return fmt.Errorf("app: season year %q not numeric: %w", ingestion.SeasonYear, err)
 	}
-	ftnSources := veteranfilm.SeasonSources(year - 1) // prior completed season carries charting
+	ftnSources := veteranfilm.SeasonSources(year - 1)
 	film, err := assembly.BuildOffenseFilm(ctx, client, madden.RatingsURL, ftnSources,
 		veteranfilm.DefaultReceiverFloor, veteranfilm.DefaultPasserFloor,
 		cw, rosterMFLIDs, adapter)
@@ -208,9 +169,7 @@ func mergeOffenseFilm(ctx context.Context, client *http.Client, cw crosswalk.Map
 	return nil
 }
 
-// mergeSchoolTier (S-Phase 1): join each rostered id → college → tier. A tier-only
-// player (school known, no combine) gets a fresh Profile carrying just SchoolTier — its
-// HasRAS stays false, so the RAS rubric still imputes the fallback.
+// mergeSchoolTier adds each rostered player's college tier.
 func mergeSchoolTier(ctx context.Context, client *http.Client, key string, year int,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
 	tiers, err := assembly.BuildSchoolTier(ctx, client, schooltier.TeamsURL, key, year, rosterMFLIDs, adapter)
@@ -226,8 +185,7 @@ func mergeSchoolTier(ctx context.Context, client *http.Client, key string, year 
 	return nil
 }
 
-// mergeCollegeShare (S-Phase 2): join each rostered id → gsis → collapsed position-defined
-// OFFENSE production share. A share-only player gets a fresh Profile carrying just the share.
+// mergeCollegeShare adds the offense college production share.
 func mergeCollegeShare(ctx context.Context, client *http.Client, key string, cw crosswalk.Map, year int,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
 	shares, err := assembly.BuildCollegeShare(ctx, client, collegeshare.SeasonStatsURL, key, cw, year, rosterMFLIDs, adapter)
@@ -244,10 +202,8 @@ func mergeCollegeShare(ctx context.Context, client *http.Client, key string, cw 
 	return nil
 }
 
-// mergeCollegeDefense (S-Phase 3 / IDP): join each rostered defensive id → gsis →
-// position-averaged share into the SAME CollegeProductionShare slot. Offense and defense
-// populate DISJOINT positions — each collapse returns absent for the other side — so a
-// player is filled by at most one feed and the slot never clobbers.
+// mergeCollegeDefense adds the defense share into the same slot. Offense and defense fill
+// disjoint positions, so neither overwrites the other.
 func mergeCollegeDefense(ctx context.Context, client *http.Client, key string, cw crosswalk.Map, year int,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
 	defShares, err := assembly.BuildCollegeDefense(ctx, client, collegedefense.SeasonStatsURL, key, cw, year, rosterMFLIDs, adapter)
@@ -264,11 +220,8 @@ func mergeCollegeDefense(ctx context.Context, client *http.Client, key string, c
 	return nil
 }
 
-// mergeBreakoutAge (S-Phase 4, offense v1): the first MULTI-season signal. Scan the last
-// breakoutSeasonsBack seasons of the offense college-share feed for each rostered WR/TE/RB's
-// earliest dominator crossing, join a birthdate, and derive the raw breakout age. A
-// breakout-only player gets a fresh Profile carrying just the age; HasBreakoutAge (not a
-// zero test — a young age is a real signal) gates the copy downstream.
+// mergeBreakoutAge scans the last breakoutSeasonsBack offense seasons for each rostered WR/TE/RB's
+// earliest dominator crossing and derives the breakout age from the birthdate.
 func mergeBreakoutAge(ctx context.Context, client *http.Client, key string, cw crosswalk.Map,
 	ages map[string]agetrajectory.RawAge, year int,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
@@ -287,12 +240,8 @@ func mergeBreakoutAge(ctx context.Context, client *http.Client, key string, cw c
 	return nil
 }
 
-// mergeBreakoutAgeIDP (S-Phase 4b, defense): the DEFENSIVE clone of mergeBreakoutAge. Scan
-// the last breakoutSeasonsBack seasons of the defensive college feed for each rostered
-// CB/S/LB/DT/DE's earliest crossing of the (lower, calibrated) IDP dominator line, join the
-// SAME already-fetched birthdate + crosswalk maps, and derive the raw breakout age into the
-// SAME Profile.BreakoutAge slot. Offense and defense populate DISJOINT positions (the
-// defensive collapse returns absent for offense positions), so the slot never clobbers.
+// mergeBreakoutAgeIDP is mergeBreakoutAge for CB/S/LB/DT/DE, against the lower IDP dominator
+// line, into the same slot.
 func mergeBreakoutAgeIDP(ctx context.Context, client *http.Client, key string, cw crosswalk.Map,
 	ages map[string]agetrajectory.RawAge, year int,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
@@ -311,15 +260,12 @@ func mergeBreakoutAgeIDP(ctx context.Context, client *http.Client, key string, c
 	return nil
 }
 
-// breakoutSeasonsBack is how many college seasons (ending at the scoring year) the
-// breakout-age scan pulls — wide enough to cover incoming rookies and recent draftees
-// (the signal's live targets), whose earliest college season sits a few years back.
-// Older veterans fall outside the window → absent breakout → neutral (their other
-// scouting signals carry them). Tunable; each season is one extra CFBD fetch pair.
+// breakoutSeasonsBack is the college window the breakout scan covers: enough for rookies and
+// recent draftees. Older veterans fall outside it and are neutral. Each season costs one CFBD
+// fetch pair.
 const breakoutSeasonsBack = 6
 
-// breakoutSeasons returns the ascending season window [year-(N-1) .. year] the breakout
-// scan covers. Kept tiny and pure so the window is one obvious, testable place.
+// breakoutSeasons returns the ascending window ending at year.
 func breakoutSeasons(year int) []int {
 	out := make([]int, 0, breakoutSeasonsBack)
 	for yr := year - breakoutSeasonsBack + 1; yr <= year; yr++ {
@@ -328,11 +274,7 @@ func breakoutSeasons(year int) []int {
 	return out
 }
 
-// collectRosterMFLIDs walks every franchise roster and returns the set of rostered MFL
-// ids — the population the RAS pipeline scores against. Order-independent: BuildRAS treats
-// the slice as a set, and the cohort math is order-independent (see ras_math.go).
-// Duplicates across franchises are deduped defensively; in practice a player is on
-// exactly one roster (state's invariant).
+// collectRosterMFLIDs returns the set of rostered ids.
 func collectRosterMFLIDs(st state.Reader) []string {
 	seen := make(map[string]struct{})
 	out := make([]string, 0, 64)
@@ -352,11 +294,8 @@ func collectRosterMFLIDs(st state.Reader) []string {
 	return out
 }
 
-// scoutLookupAdapter adapts the existing normalize.Lookup to assembly's narrow scouting
-// ports — PositionLookup (RAS) and SchoolLookup (SchoolTier) — so every signal reads the
-// SAME cached players-DB facts and the assembly package stays free of any normalize
-// import. Facts returns ok=false on an unknown id OR an aggregate (collapsed there), which
-// both ports treat as an ordinary miss.
+// scoutLookupAdapter serves assembly's position and school ports from the cached players lookup,
+// so assembly never imports normalize. An unknown id or an aggregate is an ordinary miss.
 type scoutLookupAdapter struct {
 	lk normalize.Lookup
 }
