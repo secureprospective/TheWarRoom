@@ -2,10 +2,8 @@ package scouting
 
 import "github.com/secureprospective/TheWarRoom/internal/playerid"
 
-// Profile is one player's scouting inputs, keyed by MFLID. It carries no position: the
-// engine already knows it, and holding it would break this package's leaf status.
-// Position-specific groups are pointers, nil where the position does not use them; Coverage
-// is non-nil only at CB and S.
+// Profile is one player's scouting inputs, keyed by MFLID. Position-specific groups are
+// pointers, nil where the position does not use them; Coverage is non-nil only at CB and S.
 type Profile struct {
 	MFLID playerid.PlayerID
 
@@ -33,18 +31,13 @@ type Profile struct {
 
 // OffenseFilm is the offense film signal, present at QB, RB, WR and TE.
 type OffenseFilm struct {
-	// Composite is in [0,1], higher is better: the mean of the position's curated Madden
-	// attributes (/99), plus an FTN charting overlay (percentile-ranked, 15% discounted,
-	// clamped to ±0.10) where the charting sample is large enough. A player without a
-	// Madden record has a nil OffenseFilm.
+	// Composite is in [0,1], higher is better; assembly.BuildOffenseFilm defines it.
 	Composite float64
 }
 
 // IDPFilm is the IDP film signal, present at DT, DE, LB, CB and S.
 type IDPFilm struct {
-	// MaddenComposite is in [0,1]: the mean of the position's curated Madden defense
-	// attributes, man and zone coverage averaged into one. A player without a Madden record
-	// has a nil IDPFilm.
+	// MaddenComposite is in [0,1], higher is better; assembly.BuildIDPFilm defines it.
 	MaddenComposite float64
 }
 
