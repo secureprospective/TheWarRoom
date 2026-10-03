@@ -1,11 +1,6 @@
-// Package leagueschedule is the Layer 1 fetcher for MFL's `schedule` export — the
-// FANTASY LEAGUE'S OWN weekly matchups (who plays whom, real franchise ids), distinct
-// from the already-built `internal/ingestion/schedule` package (MFL's `nflSchedule`,
-// the real-NFL kickoff/game schedule). Like `league`/`rules`, this is a league-scoped
-// call: it discovers the host first, then issues one request carrying the league id.
-// Omitting the optional week param (`W`) returns the whole season's schedule in one
-// call. It transforms nothing — every value stays MFL's raw string; the App seam
-// resolves franchise ids to display names and formats for the frontend.
+// Package leagueschedule fetches the fantasy league's own weekly matchups from MFL's
+// `schedule` export (not the NFL schedule). Without W, one call returns the whole season. The
+// app resolves franchise names.
 package leagueschedule
 
 import (
@@ -20,14 +15,11 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 )
 
-// errEmptySchedule guards the glitch/error shape where the schedule export decodes to
-// zero weeks. A live league always has a full-season schedule once one has been
-// entered in MFL, so an empty response is treated as a fetch failure, not "no games."
+// errEmptySchedule: once a schedule exists in MFL it is never empty, so zero weeks is a failed
+// fetch.
 var errEmptySchedule = errors.New("leagueschedule: response contained zero weeks")
 
-// RawMatchupSide is one franchise's side of a matchup exactly as MFL returns it.
-// IsHome stays the raw "0"/"1" string (converting it is the App seam's job, mirroring
-// how the nflSchedule fetcher keeps IsHome raw); Score is empty until the week plays.
+// RawMatchupSide is one franchise's side. IsHome stays "0"/"1"; Score is empty until played.
 type RawMatchupSide struct {
 	FranchiseID string
 	IsHome      string
@@ -39,26 +31,18 @@ type RawMatchup struct {
 	Franchises [2]RawMatchupSide
 }
 
-// RawScheduleWeek is one week's full slate of matchups, raw week number as a string
-// (MFL convention — every fetcher in this codebase keeps numeric fields as strings
-// until normalize/the App seam parses them).
+// RawScheduleWeek is one week's matchups.
 type RawScheduleWeek struct {
 	Week     string
 	Matchups []RawMatchup
 }
 
-// Validate checks a week's SHAPE: a non-empty week number, and every matchup (if any) carrying
-// exactly two franchise sides with non-empty ids and EXACTLY ONE side marked isHome="1" (the
-// other "0"). The one-home-one-away check matters beyond a bare "0"/"1" format check: the App
-// seam (GetLeagueSchedule) trusts this invariant to decide which side is home with a single
-// `if isHome == "0" { swap }` — a matchup where MFL returned both sides "1" (or both "0") would
-// silently mislabel a team's home/away status rather than fail loud (DeepSeek review finding,
-// blind pass). It converts nothing.
+// Validate requires a week number and, for each matchup, two sides with ids and exactly one
+// home side. The app decides home/away with a single swap on isHome == "0", so two home or two
+// away sides would mislabel silently.
 //
-// A week with ZERO matchups is NOT an error — confirmed live (2026-07-27): a future playoff
-// week whose bracket hasn't been seeded yet (pending final regular-season standings) legitimately
-// has no matchups. Rejecting it would fail the ENTIRE season's fetch over one unseeded week,
-// exactly the outage-shaped failure this fetcher exists to avoid triggering needlessly.
+// A week with no matchups is valid: an unseeded playoff week has none (seen live 2026-07-27),
+// and rejecting it would fail the whole season.
 func (w RawScheduleWeek) Validate() error {
 	if strings.TrimSpace(w.Week) == "" {
 		return fmt.Errorf("leagueschedule: week missing its number")
@@ -108,10 +92,7 @@ type franchiseBlock struct {
 	Score  string `json:"score"`
 }
 
-// Fetch retrieves the league's full-season matchup schedule from MFL: it discovers
-// the host (league-specific calls route to the league's home server), issues one
-// `schedule` request scoped by league id (no `W`, so MFL returns every week), guards
-// MFL's HTTP-200 error envelope, and returns shape-validated RawScheduleWeek records.
+// Fetch discovers the league host and returns every week of the season, validated.
 func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) ([]RawScheduleWeek, error) {
 	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
 		return nil, fmt.Errorf("leagueschedule: discover host: %w", err)
@@ -143,8 +124,7 @@ func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) ([]RawSche
 	return flatten(ctx, env)
 }
 
-// flatten walks the decoded envelope into RawScheduleWeek records, validating each
-// one's shape. A malformed week fails loud, consistent with every sibling fetcher.
+// flatten validates each week; a malformed one fails the fetch.
 func flatten(ctx context.Context, env scheduleEnvelope) ([]RawScheduleWeek, error) {
 	out := make([]RawScheduleWeek, 0, len(env.Schedule.WeeklySchedule))
 	for _, wb := range env.Schedule.WeeklySchedule {
