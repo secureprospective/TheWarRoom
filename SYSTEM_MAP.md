@@ -70,7 +70,8 @@ Every method that takes frontend input validates it before acting. Bindings in
 - **Logs:** one file per launch in `~/.config/TheWarRoom/logs/`, also on stderr. Startup logs
   each step and its time; a failed startup shows a banner in the app.
 - **Headless check:** `thewarroom -probe` runs the full startup without a window and exits
-  non-zero on failure.
+  non-zero on failure. `-version` prints the build label. Any other argument exits 2, so a
+  mistyped flag never opens a window on the real database.
 
 ## External services
 

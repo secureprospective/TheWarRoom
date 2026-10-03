@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -90,5 +92,20 @@ func TestSetupLogging_PrunesToMax(t *testing.T) {
 	}
 	if len(matches) > maxLogFiles {
 		t.Fatalf("pruneLogs kept %d files, want <= %d", len(matches), maxLogFiles)
+	}
+}
+
+// TestRunFlag_UnknownArgumentNeverOpensAWindow: an unknown argument exits 2 with usage instead
+// of falling through to a window on the real database; -version prints the build label.
+func TestRunFlag_UnknownArgumentNeverOpensAWindow(t *testing.T) {
+	for _, args := range [][]string{{"-version", "x"}, {"--version"}, {"-probe", "-version"}, {"run"}} {
+		var out, errOut bytes.Buffer
+		if code := runFlag(args, &out, &errOut); code != 2 || !strings.Contains(errOut.String(), "usage") {
+			t.Errorf("runFlag(%q) = %d, stderr %q; want 2 with usage", args, code, errOut.String())
+		}
+	}
+	var out, errOut bytes.Buffer
+	if code := runFlag([]string{"-version"}, &out, &errOut); code != 0 || strings.TrimSpace(out.String()) != buildLabel() {
+		t.Errorf("-version = %d, stdout %q; want 0 and %q", code, out.String(), buildLabel())
 	}
 }

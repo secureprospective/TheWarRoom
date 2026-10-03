@@ -30,6 +30,8 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
    unless that call is the point.
 6. Headless startup check: `go build -o /tmp/twr . && /tmp/twr -probe`. A dev build uses
    `thewarroom-dev.db`; never point a dev build at the real `thewarroom.db`.
+   - Never run a production binary (`build/bin/thewarroom`) on the Beelink: it opens the real
+     `thewarroom.db` and `history.db`. Check its stamp with `strings` or on Claude-OS.
 
 ## Workflow (R4)
 
