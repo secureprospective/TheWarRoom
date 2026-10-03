@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"embed"
+	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -15,10 +17,10 @@ import (
 var assets embed.FS
 
 func main() {
-	// `thewarroom -probe` runs the real startup with no window and exits 0 if it came up.
-	// The log shows each step's time, so a hang is the last step logged.
-	if len(os.Args) > 1 && os.Args[1] == "-probe" {
-		os.Exit(probe())
+	// No argument opens the window. Any argument must be a known flag: an unknown one once fell
+	// through to a window opened on the real database.
+	if len(os.Args) > 1 {
+		os.Exit(runFlag(os.Args[1:], os.Stdout, os.Stderr))
 	}
 
 	app := NewApp()
@@ -40,6 +42,22 @@ func main() {
 
 	if err != nil {
 		log.Fatalf("the war room: %v", err)
+	}
+}
+
+// runFlag runs a windowless mode and returns the exit code. `-probe` runs the real startup and
+// exits 0 if it came up; the log shows each step's time, so a hang is the last step logged.
+// `-version` prints the build label.
+func runFlag(args []string, stdout, stderr io.Writer) int {
+	switch {
+	case len(args) == 1 && args[0] == "-probe":
+		return probe()
+	case len(args) == 1 && args[0] == "-version":
+		_, _ = fmt.Fprintln(stdout, buildLabel())
+		return 0
+	default:
+		_, _ = fmt.Fprintf(stderr, "thewarroom: unknown arguments %q\nusage: thewarroom [-probe | -version]\n", args)
+		return 2
 	}
 }
 
