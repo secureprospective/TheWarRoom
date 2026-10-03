@@ -1,14 +1,7 @@
-// Package players fetches MFL's player database (id → name, position, team, rookie flag) as
-// raw records; normalize maps the codes.
-//
-// It uses the league-scoped feed, not the global api one, because the global feed omits
-// commissioner-created players: owners can bid on players MFL does not have yet, and the
-// commissioner creates them locally (live ids 0816, 0820, 0835, 0838). Rosters reference those
-// ids, so only the league feed resolves every rostered player. MFL allows this call once a day;
-// caching is the caller's job.
-//
-// Aggregates are not filtered here: this feed carries position, so normalize filters them by
-// position in one place.
+// Package players fetches MFL's player database as raw records. It uses the league-scoped feed:
+// the global one omits commissioner-created players (live ids 0816, 0820, 0835, 0838), which
+// rosters reference. MFL allows this call once a day. Aggregates are filtered by position in
+// normalize.
 package players
 
 import (
@@ -28,20 +21,14 @@ var errEmptyPlayers = errors.New("players: response contained zero players")
 
 // RawPlayer is one player row as MFL sends it.
 type RawPlayer struct {
-	ID       string // "0531"
-	Name     string // "Last, First"
-	Position string // raw MFL code ("PK", "EDGE", "XX")
-	Team     string // 3-letter NFL code, or "FA" for free agent
-	Status   string // "R" for a rookie
-	// Birthdate is epoch seconds as a string, or empty (commissioner-created and some deep
-	// rows lack it). The age consumer decides what absent means.
-	Birthdate string
-	// DraftYear feeds the §6 minimum-salary experience count. MFL uses "0" and "1970" for
-	// undrafted, so present is not necessarily real; the consumer judges.
-	DraftYear string
-	// College feeds SchoolTier. MFL omits it for team-defense and coach rows and about 15% of
-	// players, and its names differ from CFBD's ("Miami (FL)" vs "Miami"); the scouting join
-	// reconciles them.
+	ID        string // "0531"
+	Name      string // "Last, First"
+	Position  string // raw MFL code ("PK", "EDGE", "XX")
+	Team      string // 3-letter NFL code, or "FA" for free agent
+	Status    string // "R" for a rookie
+	Birthdate string // epoch seconds; empty for commissioner-created players
+	DraftYear string // §6 experience; "0" and "1970" mean undrafted
+	// College feeds SchoolTier; MFL's names differ from CFBD's ("Miami (FL)" vs "Miami").
 	College string
 }
 

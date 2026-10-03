@@ -1,14 +1,7 @@
-// Package db owns SQLite access. Only db and store may import database/sql (depguard
-// sql-confined-to-data-layer).
-//
-// SQLite allows one writer, so the pools are split:
-//   - Write: one connection opened with _txlock=immediate, so every transaction takes the
-//     write lock up front and writes never race into SQLITE_BUSY.
-//   - Read: many read-only (mode=ro) connections.
-//
-// Both use one WAL-mode file, so readers and the writer never block each other. The driver
-// is modernc.org/sqlite (pure Go, no C toolchain for Wails); its DSN takes repeated _pragma=
-// parameters.
+// Package db owns SQLite access (only db and store may import database/sql). SQLite allows
+// one writer, so the write pool is one connection with _txlock=immediate (writes never race
+// into SQLITE_BUSY) and the read pool is many read-only connections, over one WAL file. The
+// driver is modernc.org/sqlite: pure Go, so Wails needs no C toolchain.
 package db
 
 import (
