@@ -16,13 +16,17 @@ type fakeParams struct {
 	decay    float64
 	tiersErr error
 	decayErr error
+	globals  map[string]float64 // per-key values; any other key returns decay
 }
 
 func (f fakeParams) GetCapTiers() (params.CapTiers, error) { return f.tiers, f.tiersErr }
 
-func (f fakeParams) GetGlobal(string) (float64, error) {
+func (f fakeParams) GetGlobal(key string) (float64, error) {
 	if f.decayErr != nil {
 		return 0, f.decayErr
+	}
+	if v, ok := f.globals[key]; ok {
+		return v, nil
 	}
 	return f.decay, nil
 }
@@ -158,6 +162,27 @@ func TestCalibrationPropagatesStoreErrors(t *testing.T) {
 	}
 	if _, err := New(fakeParams{decayErr: sentinel}, c).Calibration(domain.PosWR); err == nil {
 		t.Fatal("expected decay error to propagate")
+	}
+}
+
+func TestCushionGuardReadsAdminParams(t *testing.T) {
+	p, c := goodStores()
+	p.globals = map[string]float64{params.KeyCushionGuardRAS: 7.5, params.KeyCushionGuardReduct: 0.2}
+	a := New(p, c)
+
+	dt, err := a.Calibration(domain.PosDT)
+	if err != nil {
+		t.Fatalf("Calibration(DT): %v", err)
+	}
+	if dt.CushionRASThreshold != 7.5 || dt.CushionDeclineFactor != 0.8 {
+		t.Errorf("DT cushion = (%v, %v), want the edited params (7.5, 0.8)", dt.CushionRASThreshold, dt.CushionDeclineFactor)
+	}
+	wr, err := a.Calibration(domain.PosWR)
+	if err != nil {
+		t.Fatalf("Calibration(WR): %v", err)
+	}
+	if wr.CushionRASThreshold != 0 {
+		t.Errorf("WR cushion threshold = %v, want 0 (disabled)", wr.CushionRASThreshold)
 	}
 }
 

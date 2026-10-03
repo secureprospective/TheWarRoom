@@ -1,8 +1,11 @@
 package composition
 
 import (
+	"fmt"
+
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/scouting"
+	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
 // L1 hygiene defaults composition supplies until B4/admin tables own them. These are
@@ -56,16 +59,22 @@ func schoolTierNorm(p domain.Position, t scouting.SchoolTier) (float64, bool) {
 	}
 }
 
-// cushionGuard returns the SL-021 Late-Career Cushion Guard strength for a position: the
-// raw-RAS threshold and the decline-velocity multiplier the engine's ApplyCushionGuard
-// consumes (DT_Rubric §1/§3). It is per-position and ships WITH the rubric — only DT uses
-// it in v1.0; every other position returns a zero threshold, which DISABLES the guard (a
-// safe no-op). A function (not a package map) keeps gochecknoglobals happy (M17).
-func cushionGuard(p domain.Position) (threshold, declineFactor float64) {
-	if p == domain.PosDT {
-		return 8.00, 0.90 // RAS ≥ 8.00 → late-career decline slowed 10%
+// cushionGuard returns the DT late-career cushion (SL-021) from the admin params: the raw-RAS
+// threshold and the decline multiplier (1 − reduction). Every other position gets a zero
+// threshold, which disables the guard.
+func (a *Assembler) cushionGuard(p domain.Position) (threshold, declineFactor float64, err error) {
+	if p != domain.PosDT {
+		return 0, 0, nil
 	}
-	return 0, 0 // disabled at every other position
+	threshold, err = a.params.GetGlobal(params.KeyCushionGuardRAS)
+	if err != nil {
+		return 0, 0, fmt.Errorf("composition: read cushion threshold: %w", err)
+	}
+	reduction, err := a.params.GetGlobal(params.KeyCushionGuardReduct)
+	if err != nil {
+		return 0, 0, fmt.Errorf("composition: read cushion reduction: %w", err)
+	}
+	return threshold, 1 - reduction, nil
 }
 
 // peakLimit returns the Layer-3 age peak limit for a position — the age past which
