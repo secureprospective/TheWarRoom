@@ -6,7 +6,7 @@ repos:
     rev: c0d3ddc9cf3faa61a4e378e879ece580256d76e5  # v2.12.2
     hooks:
       - id: golangci-lint-full
-        stages: [commit]
+        stages: [pre-commit]
 
   # Gitleaks: scan staged files for secrets before they enter git history.
   # Pinned to the commit SHA for tag v8.30.1 — verify with:
@@ -17,7 +17,7 @@ repos:
     rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # v8.30.1
     hooks:
       - id: gitleaks
-        stages: [commit]
+        stages: [pre-commit]
 
   # ifaceguard: custom go/analysis vettool — blocks empty-interface
   # (interface{}/any) escapes in exported signatures (the gap no golangci-lint
@@ -34,7 +34,7 @@ repos:
         language: system
         types: [go]
         pass_filenames: false
-        stages: [commit]
+        stages: [pre-commit]
 
   # verify: the full pre-push gate — everything `make lint` covers plus the
   # race-enabled test suite and the frontend build. Direct-to-main has no PR/CI
@@ -55,4 +55,4 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-        stages: [push]
+        stages: [pre-push]
