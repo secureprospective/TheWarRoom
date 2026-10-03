@@ -46,4 +46,5 @@ between commissioner-facing and GM-facing work.
   not today's `AdjustedScore`.
 - The correction UI (Session 2's missing half) is the cheapest outstanding item: the backend
   and IPC exist.
-- Each session gets a live gate by Christopher on his desktop before merging to main.
+- Each session gets a live gate before merging to main (R12 in the core plan: Claude runs it on
+  Claude-OS).

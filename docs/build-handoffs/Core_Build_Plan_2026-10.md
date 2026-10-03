@@ -32,6 +32,7 @@ and feeds the next.
 | R9 | Approved sources added: nflverse, DynastyProcess crosswalk, CFBD and StatRankings routes (`docs/sources/Approved_Sources.md` v1.2). |
 | R10 | **History is a measure dictionary.** Every number is saved as `player · season · week · measure`, under a measure named for what it means, never for the source it came from. The blend reads measures, never sources. |
 | R11 | **A lost source never stops the board.** It keeps running on the measures still flowing, labelled as running on a reduced set. A rebalance is prepared from history, shown next to the current board, and applied only when Christopher approves it in the Admin Console. |
+| R12 | **Claude runs the live gates** on Claude-OS (ruled 2026-10-03): the production build against a snapshot of the live database, with screenshots and logs as evidence. |
 
 **Effect on CLAUDE.md's Hard Constraints.** Christopher reopened two locked rules on purpose.
 
@@ -126,17 +127,33 @@ exit code. Work happens on a session branch; never on main.
 | Bloat at or under target, in pre-push | PASS. Numbers above; `make bloat` is part of `make lint`, which `make verify` and the pre-push hook run. Ratchet baseline: comment 20, provenance 7, tiny files 28, dupl 38. |
 | build, vet, race tests, lint, frontend build | PASS (`make verify`, plus `go build ./...` and `go vet ./...`). |
 | Docs match the code | PASS. CLAUDE.md, SYSTEM_MAP (21 IPC methods, every package), AGENTS.md, Build_Tracker and North_Star pointers; Fable's June planning docs moved to `archive/2026-06-pre-build/`. |
-| A launch writes a log | PASS on a dev build (`-probe`: a timed line per startup step). The production build is part of Christopher's live gate. |
+| A launch writes a log | PASS: a dev build (`-probe`) and the production build in the live gate each write a timed line per startup step. |
 
 Found and fixed during the check: the DT cushion's Layer 4 half still used the literals 8.00
 and 0.90 (item 4). Both halves now read one `engine.CushionGuard` from the params, with outputs
 bit-identical at the defaults.
 
-**Stage 0 closes when Christopher:**
-1. confirms the stale-branch deletion;
-2. merges christopher-coding-standards PR #33 (the upstream half of item 5);
-3. runs the live gate: a production build writes its log, the board loads, migration v3 runs
-   with its `thewarroom.db.premigration-*` backup, and a forced startup failure shows the banner.
+**Stage 0 closed, 2026-10-03:**
+1. Stale branches deleted, 19 of them, each kept as an `archive/<name>` tag.
+2. christopher-coding-standards PR #33 merged (`93ee82a`), after PR #34 cleared the CVE that
+   had failed its dependency scan since September.
+3. Live gate PASS on Claude-OS (R12), with the production build `v0.5.0-123-g14fb858` run
+   against a snapshot of the live database:
+   - migration v3 ran with its `premigration` backup, and a relaunch did not migrate again;
+   - the board loads 827 scored players;
+   - the log has a timed line per startup step;
+   - a second instance shows the startup-failure banner.
+
+   Evidence: `~/fleet/runs/warroom-dataflow-2026-10-03/live-gate-2026-10-03/`.
+
+The gate also caught four defects, all fixed before close:
+- The version stamp picked up the new archive tags.
+- A Wails cache file marked every build dirty.
+- The rankings board showed bare franchise ids.
+- The filter selects were unreadable on a light GTK theme.
+
+Christopher's real database migrates, with its backup, the first time he runs a production
+build.
 
 ### Stage 1 — Start the clock (storage), as a measure dictionary (R10, R11)
 
@@ -222,6 +239,9 @@ Design and reasoning: `Core_Build_Reasoning_2026-10.md` §5a.
 1. **Refresh** rosters, contracts and ledger, players, standings and injuries from MFL, landing in
    the archive and state. MFL wins (R2).
    - Moves made in the app become what-if scenarios, stored apart from the mirrored state.
+   - Refresh the rulebook too. The live database's only version (2026-07-05) predates the
+     franchise list, so every screen labels teams "Franchise 0014" (found in the Stage 0 live
+     gate).
 2. **One season source**, derived from MFL's league year and the phase. Delete the hard-coded
    `ingestion.SeasonYear`.
 3. **A fresh live database** from a gated live pull on Christopher's machine.
@@ -231,6 +251,7 @@ Design and reasoning: `Core_Build_Reasoning_2026-10.md` §5a.
 **Gate:**
 - Rosters and cap for all 32 teams match MFL. The app's comparison is spot-checked by Christopher
   on several franchises.
+- Every screen shows the 32 franchise names from MFL.
 - Re-running the refresh changes nothing.
 
 ### Stage 3 — Crosswalk
