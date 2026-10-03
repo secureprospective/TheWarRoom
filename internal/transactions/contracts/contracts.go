@@ -28,6 +28,18 @@ const (
 	maxTotalContractYears = 6
 )
 
+// seasonAllowance fails when the franchise has already used this season's one op of kind.
+func seasonAllowance(ctx context.Context, w state.TxWriter, op, mflID, franchiseID, kind, spentMsg string) error {
+	spent, err := w.OpCount(ctx, franchiseID, kind)
+	if err != nil {
+		return fmt.Errorf("contracts: %s %q: %w", op, mflID, err)
+	}
+	if spent >= 1 {
+		return fmt.Errorf("contracts: %s: franchise %q %s", op, franchiseID, spentMsg)
+	}
+	return nil
+}
+
 // million is $1M in cents, the unit of the §11 tier table.
 const million = domain.Money(100_000_000)
 
@@ -84,12 +96,9 @@ func Restructure(ctx context.Context, w state.TxWriter, mflID string, move domai
 		return fmt.Errorf("contracts: restructure %q: move %s exceeds the §11 tier max %s for a %s contract-year salary", mflID, move, maxMove, ps.Salary)
 	}
 
-	spent, err := w.OpCount(ctx, ps.FranchiseID, restructureOpKind)
-	if err != nil {
-		return fmt.Errorf("contracts: restructure %q: %w", mflID, err)
-	}
-	if spent >= 1 {
-		return fmt.Errorf("contracts: restructure: franchise %q has already restructured a contract this season (one per team per year, §11)", ps.FranchiseID)
+	if err := seasonAllowance(ctx, w, "restructure", mflID, ps.FranchiseID, restructureOpKind,
+		"has already restructured a contract this season (one per team per year, §11)"); err != nil {
+		return err
 	}
 
 	// The move leaves the current-season cell, so it cannot exceed that cell.
@@ -141,12 +150,9 @@ func Tag(ctx context.Context, w state.TxWriter, mflID string, price domain.Money
 		return fmt.Errorf("contracts: tag %q: resolved tag price must be positive, got %s", mflID, price)
 	}
 
-	spent, err := w.OpCount(ctx, ps.FranchiseID, tagOpKind)
-	if err != nil {
-		return fmt.Errorf("contracts: tag %q: %w", mflID, err)
-	}
-	if spent >= 1 {
-		return fmt.Errorf("contracts: tag: franchise %q has already tagged a player this season (one per team per year, §9)", ps.FranchiseID)
+	if err := seasonAllowance(ctx, w, "tag", mflID, ps.FranchiseID, tagOpKind,
+		"has already tagged a player this season (one per team per year, §9)"); err != nil {
+		return err
 	}
 
 	change := state.ContractChange{
@@ -191,7 +197,7 @@ func extendEligible(w state.TxWriter, mflID string, addedYears int, floor domain
 		return state.PlayerState{}, fmt.Errorf("contracts: extend %q: added years %d out of range 1..%d (§10)", mflID, addedYears, maxExtensionYears)
 	}
 	if floor <= 0 {
-		return state.PlayerState{}, fmt.Errorf("contracts: extend %q: position floor must be positive (resolve via ExecuteExtension)", mflID)
+		return state.PlayerState{}, fmt.Errorf("contracts: extend %q: position floor must be positive (the coordinator resolves it)", mflID)
 	}
 	ps, ok := w.Player(mflID)
 	if !ok {
@@ -227,7 +233,7 @@ func scanExtensionCells(cells []state.LedgerCell, season int) (highestRemaining 
 // Extend applies a §10 extension: it appends addedYears paid cells at extensionYearPrice,
 // lengthens the term, and resets is_restructured (each extension re-allows one §11 restructure).
 // Limits: a year must remain, no second extension on a contract, 1..3 added years, at most 6
-// total, and one per franchise per season. floor comes from Coordinator.ExecuteExtension.
+// total, and one per franchise per season. The coordinator resolves floor.
 func Extend(ctx context.Context, w state.TxWriter, mflID string, addedYears int, floor domain.Money) error {
 	ps, err := extendEligible(w, mflID, addedYears, floor)
 	if err != nil {
@@ -255,12 +261,9 @@ func Extend(ctx context.Context, w state.TxWriter, mflID string, addedYears int,
 		return fmt.Errorf("contracts: extend %q: %d existing + %d added = %d exceeds the %d-year max (§10)",
 			mflID, len(cells), addedYears, total, maxTotalContractYears)
 	}
-	spent, err := w.OpCount(ctx, ps.FranchiseID, extensionOpKind)
-	if err != nil {
-		return fmt.Errorf("contracts: extend %q: %w", mflID, err)
-	}
-	if spent >= 1 {
-		return fmt.Errorf("contracts: extend: franchise %q has already extended a contract this season (one per team per year, §10)", ps.FranchiseID)
+	if err := seasonAllowance(ctx, w, "extend", mflID, ps.FranchiseID, extensionOpKind,
+		"has already extended a contract this season (one per team per year, §10)"); err != nil {
+		return err
 	}
 
 	price := extensionYearPrice(highestRemaining, floor)
