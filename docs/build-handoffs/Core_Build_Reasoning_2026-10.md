@@ -203,6 +203,47 @@ Three things remain unestablished even after fitting, and must stay labelled in 
   must never see fantasy points or volume. Otherwise it double-counts production and stops
   being independent evidence.
 
+## 5a. Historical data: the measure dictionary (Christopher, 2026-10-03)
+
+Christopher's requirement:
+
+> "The data we save historically [must be] a readable indexing formula that is low
+> maintenance and creates clean outputs for the application... maintainable just in case we
+> lose or gain a data source and we need to rebalance the blend."
+
+**Chosen: a measure dictionary.** Every number is keyed `player · season · week · measure`. The
+measure is named for what it means (`opportunity.targets`), never for its source's column. A
+mapping table (`source_fields`) is the only place a source's vocabulary lives.
+
+Rejected:
+- **One table per source.** Readable one source at a time. But every source change is a schema
+  change plus blend edits, and a lost source leaves a dead table. That is the coupling which
+  makes a source change expensive.
+- **One generic table with each source's own field names.** Cheap to write, but unreadable, and
+  the blend must learn every source's vocabulary. Source churn would still reach the engine.
+
+The rules that make it low-maintenance (plan Stage 1):
+- **Store facts and counts, never derived values.** A formula change never rewrites history.
+- **One measure, one meaning.** Sources with different definitions never silently mix.
+- **Corrections append with `as_of`.** Any past day's knowledge can be rebuilt, and fits can't
+  peek at the future.
+- **No row is dropped for a missing ID match.** Unmatched rows wait for the crosswalk.
+- **The engine and UI read only the features layer.** That is where the "clean outputs" come
+  from.
+- **Registries are checked-in files.** The Measure Dictionary doc is generated from them, so it
+  can't drift.
+
+When a source dies (Christopher's ruling R11), the board keeps running on what still flows and
+says so. A rebalance is prepared from history and shown next to the current board. It is
+applied only on his approval. Param sets record the measure set they were fitted on, so the app
+always knows when its parameters no longer match its data.
+
+Why this suits the blend in particular:
+- The blend's parameters are per measure (k per component, prior coefficients per input).
+- Losing a source removes measures; it does not break the formula.
+- Rebalancing is refitting on the same history with fewer measures. That is a run of the
+  fitting tool, not a rewrite.
+
 ## 6. Christopher's standing bars (apply to every stage)
 
 > "If there is a better way architecturally to do something we need to explore those options,

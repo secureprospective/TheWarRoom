@@ -30,6 +30,8 @@ and feeds the next.
 | R7 | Scouting caps and weights become **adjustable settings**: fitted now, editable in the Admin Console, learned later. |
 | R8 | **Madden is out of the core prior.** |
 | R9 | Approved sources added: nflverse, DynastyProcess crosswalk, CFBD and StatRankings routes (`docs/sources/Approved_Sources.md` v1.2). |
+| R10 | **History is a measure dictionary.** Every number is saved as `player · season · week · measure`, under a measure named for what it means, never for the source it came from. The blend reads measures, never sources. |
+| R11 | **A lost source never stops the board.** It keeps running on the measures still flowing, labelled as running on a reduced set. A rebalance is prepared from history, shown next to the current board, and applied only when Christopher approves it in the Admin Console. |
 
 **Effect on CLAUDE.md's Hard Constraints.** Christopher reopened two locked rules on purpose.
 
@@ -78,26 +80,83 @@ exit code. Work happens on a session branch; never on main.
 - Docs match the code.
 - A launch writes a log.
 
-### Stage 1 — Start the clock (storage)
+### Stage 1 — Start the clock (storage), as a measure dictionary (R10, R11)
 
-1. **Raw fetch archive.** Every network fetch stores: source, URL, fetched_at, sha256 and the
-   compressed body.
-   - It is append-only and content-addressed.
-   - Nothing fetched is ever lost, and a parser fix can replay history.
-2. **Typed observation tables** derived from the archive, per source family.
-   - Covers production, snaps, injuries, draft, combine and college. Each row carries season,
-     week, as_of and its source.
-3. **Player directory.** MFL id ↔ GSIS/PFR/ESPN, plus position, birthdate and draft year, round
-   and pick, kept with history.
-4. **Scoring runs.**
-   - A `scoring_runs` row holds run_id, as_of, a params snapshot and an inputs hash. Scores are
-     keyed by run_id.
-   - This keeps the append-only rule (AD-04) and makes recomputing normal.
-   - Today's `season_scores` key is `(season, config, mfl_id)` and its triggers forbid change, so
-     a board can never be recomputed.
+Design and reasoning: `Core_Build_Reasoning_2026-10.md` §5a.
+
+**Three layers.** Each has one job. The engine reads only the top one.
+
+| Layer | Table(s) | Job |
+|---|---|---|
+| Raw | `raw_archive` (sha256, source, url, fetched_at, compressed body), in a separate `history.db` | Every fetch, exactly as received. Append-only, content-addressed. A parser fix replays it. |
+| Observations | `observations` (player_id, season, week, measure, value, source, as_of) | Every fact, under its measure name. Append-only. |
+| Features | `season_features`, `week_features` (views) | One clean row per player · period · measure, chosen by source priority. **The only thing the engine and UI read.** |
+
+**Registries.** Each is a checked-in file loaded into a table, so changes are reviewed in git.
+- **`measures`:** measure, family, grain, unit, positions and a one-line meaning. The families
+  are exposure, opportunity, outcome, prior, availability and context.
+  - Examples: `exposure.snaps_def`, `opportunity.targets`, `outcome.tackles_solo`,
+    `prior.draft_pick`, `availability.game_status`.
+  - `docs/data-layer/Measure_Dictionary.md` is **generated** from this registry, so the doc can't
+    drift from the data.
+- **`source_fields`:** source + field → measure, with transform and priority. This is the only
+  place a source's vocabulary appears.
+- **`sources`:** status (active / lost / retired), last good fetch, and the measures it feeds.
+- **`player_ids`:** id_type + id_value → player_id. The player_id is the MFL id: a string with
+  leading zeros. The directory adds position, birthdate and draft year, round and pick.
+
+**Rules.** These keep it low-maintenance and its output clean.
+1. **The key is always `player · season · week · measure`.** Week 0 means season-level. Pre-NFL
+   facts (draft, combine, college) sit at the draft season, week 0.
+2. **Store facts and counts, never derived values.** Rates, shares, percentiles and blends are
+   computed in the features layer or the engine. A formula change never rewrites history.
+3. **One measure, one meaning.** A source that defines a stat differently gets its own measure:
+   solo tackles are not combined tackles. Measures never silently mix.
+4. **Corrections append; nothing is updated.**
+   - A corrected value is a new row with a later `as_of`.
+   - Reads take the latest `as_of` on or before the date asked.
+   - So "what did we know on 2026-10-03" can always be rebuilt. The calibration needs this,
+     and it is what stops future data leaking into a fit.
+5. **No row is dropped for a missing match.** Observations without a matched player wait in
+   `unresolved_observations` with their source ID. They resolve when the crosswalk matches.
+6. **Several sources for one measure:**
+   - All rows are kept with their source.
+   - The features layer picks one by priority.
+   - A daily agreement report flags sources that disagree.
+
+**Lifecycle (R11).**
+- **Gaining a source** means a fetcher plus `source_fields` rows.
+  - A source that supplies an existing measure needs no other change: better coverage for free.
+  - A new meaning adds one `measures` row plus a refit.
+  - Neither needs a schema change.
+- **Losing a source:** its status becomes `lost`, and its measures stop updating. History stays
+  intact. Then, in order:
+  1. Scoring runs carry on with the measures still flowing.
+  2. The board is labelled "running on a reduced set".
+  3. A rebalance (a refit on history restricted to the measures that remain) is prepared and
+     shown next to the current board.
+  4. It is applied only on approval.
+- **Param sets record the measure set** they were fitted on (a hash). Scoring runs record their
+  param set. A mismatch between the param set and the measures now flowing is what raises the
+  flag.
+
+**Scoring runs.**
+- A `scoring_runs` row holds run_id, as_of, param set and an inputs hash. Scores are keyed by
+  run_id.
+- This keeps the append-only rule (AD-04) and makes recomputing normal.
+- Today's `season_scores` key is `(season, config, mfl_id)` and its triggers forbid change, so a
+  board can never be recomputed.
 
 **Gate:**
-- A fetch writes an archive row plus typed rows, and running it twice is idempotent.
+- A fetch writes an archive row and observation rows, and running it twice is idempotent.
+- A correction appends, and a read "as of yesterday" still returns the old value.
+- **Source-loss drill on a fixture:**
+  - Mark a source lost.
+  - The board still runs and shows the reduced-set label.
+  - A rebalance is prepared, and nothing changes until it is approved.
+- **Source-gain drill:** add a second source for an existing measure with mapping rows only, and
+  no code change.
+- The generated Measure Dictionary matches the registry.
 - A second scoring run with changed params produces a second board, and both remain readable.
 
 ### Stage 2 — League truth (MFL refresh)
@@ -134,8 +193,9 @@ Week 9 trade deadline.**
 
 ### Stage 4 — Signals into the store, one at a time
 
-Each signal follows the same path: fetcher → archive → typed table → coverage report by position
-→ freshness shown in the app.
+Each signal follows the same path: fetcher → `raw_archive` → `source_fields` mapping →
+`observations` under its measures → coverage report by position → source health and freshness
+shown in the app. Adding a signal adds registry rows; it never adds a table.
 
 1. **Production:**
    - nflverse `stats_player`, the replacement for `player_stats`.
@@ -220,7 +280,13 @@ the Admin Console.
      weighs more.
    - Talent is carried along the position's talent arc. Survival is the survival arc.
    - Cap and contract are applied after and stay separable.
-3. **Age enters once.** Today age is counted twice: the L3 decay and an age-trajectory
+3. **Missing measures are normal, not errors.**
+   - The production composite re-weights over the components present for that player and
+     period.
+   - The prior is fitted with missing-value indicators, so a player without combine data is
+     scored on what exists, not zeroed.
+   - Each output records which measures fed it.
+4. **Age enters once.** Today age is counted twice: the L3 decay and an age-trajectory
    sub-signal inside 9 of the 10 L4 rubrics. In the new design age appears only in the arcs.
    The prior's inputs are pre-NFL facts.
 
