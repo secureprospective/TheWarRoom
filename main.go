@@ -12,7 +12,7 @@ import (
 )
 
 //go:embed all:frontend/dist
-var assets embed.FS // populated by the //go:embed directive above; gochecknoglobals exempts embed vars (no nolint needed).
+var assets embed.FS
 
 func main() {
 	// `thewarroom -probe` runs the real startup with no window and exits 0 if it came up.
@@ -21,10 +21,8 @@ func main() {
 		os.Exit(probe())
 	}
 
-	// Create an instance of the app structure
 	app := NewApp()
 
-	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "The War Room",
 		Width:  1024,

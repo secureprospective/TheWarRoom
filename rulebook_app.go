@@ -7,18 +7,15 @@ import (
 	"time"
 )
 
-// LeagueSettingResult is one scalar rulebook setting's override-aware effective
-// value — the pattern GetSetting/SetOverride already serve for the toggle-off /
-// slot-count IR & taxi controls (Session 0): "0" reads as off, any other value is
-// the slot count.
+// LeagueSettingResult is one rulebook setting's effective value, overrides applied. For the IR
+// and taxi controls, "0" means off and any other value is the slot count.
 type LeagueSettingResult struct {
 	OK    bool   `json:"ok"`
 	Error string `json:"error"`
 	Value string `json:"value"`
 }
 
-// GetLeagueSetting returns one rulebook scalar setting (e.g. "taxiSquad",
-// "injuredReserve"), with any commissioner override already applied.
+// GetLeagueSetting returns one rulebook setting (e.g. "taxiSquad"), overrides applied.
 func (a *App) GetLeagueSetting(key string) LeagueSettingResult {
 	if a.rulebook == nil {
 		return LeagueSettingResult{OK: false, Error: "rulebook store not initialized"}
@@ -33,16 +30,14 @@ func (a *App) GetLeagueSetting(key string) LeagueSettingResult {
 	return LeagueSettingResult{OK: true, Value: v}
 }
 
-// SetLeagueSettingResult is the admin-write payload for a rulebook setting override.
+// SetLeagueSettingResult is the admin-write payload for a rulebook override.
 type SetLeagueSettingResult struct {
 	OK    bool   `json:"ok"`
 	Error string `json:"error"`
 }
 
-// SetLeagueSettingOverride applies a commissioner override to a rulebook scalar
-// setting (scope "setting" — validateOverride accepts any non-empty scalar).
-// Rulebook writes are an admin-only path, never routed through the B7 Coordinator
-// (AD-05) — this calls the store directly, not PreviewTransaction/ExecuteTransaction.
+// SetLeagueSettingOverride applies a commissioner override to a rulebook setting. Rulebook
+// writes are admin-only and go to the store directly, not through the transaction coordinator.
 func (a *App) SetLeagueSettingOverride(key, value, note string) SetLeagueSettingResult {
 	if a.rulebook == nil {
 		return SetLeagueSettingResult{OK: false, Error: "rulebook store not initialized"}

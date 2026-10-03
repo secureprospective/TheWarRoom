@@ -6,13 +6,9 @@ import (
 	"syscall"
 )
 
-// acquireInstanceLock takes an exclusive, non-blocking advisory lock on a sidecar
-// lockfile next to the database so a SECOND running copy of the app cannot open the
-// same ledger concurrently (Tier 3 self-protection). The lock is keyed to the DB
-// path, so a dev build (its own -dev database) and a real build never falsely
-// contend. The returned *os.File MUST stay open for the whole process lifetime —
-// closing it, or process exit, releases the lock. Linux-only (D-V3): flock is the
-// advisory lock every desktop-launcher path goes through.
+// acquireInstanceLock takes a non-blocking flock on a lockfile beside the database, so a
+// second copy of the app cannot open the same ledger. Keep the file open for the life of the
+// process: closing it releases the lock.
 func acquireInstanceLock(dbPath string) (*os.File, error) {
 	path := dbPath + ".lock"
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
@@ -27,8 +23,7 @@ func acquireInstanceLock(dbPath string) (*os.File, error) {
 	return f, nil
 }
 
-// releaseInstanceLock unlocks and closes the lockfile handle. Safe on a nil handle
-// (a startup that failed before the lock was taken).
+// releaseInstanceLock is safe on nil (startup failed before locking).
 func releaseInstanceLock(f *os.File) {
 	if f == nil {
 		return

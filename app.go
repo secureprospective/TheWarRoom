@@ -25,39 +25,30 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
 
-// App is the Wails application root and the composition root for the backend.
-// It owns process-lifetime resources (the SQLite pools) and exposes the
-// IPC-bound methods the frontend calls. Per the three-layer law it stays a thin
-// adapter: it wires dependencies and routes calls — business logic lives in the
-// engine, stores, and transaction packages, never here.
+// App is the Wails root and the backend's composition root: it wires the stores and routes
+// IPC calls. Business logic lives in the engine, store and transaction packages, never here.
 type App struct {
-	//nolint:containedctx // Wails binds IPC methods with no per-call context; the
-	// app-lifetime context captured at OnStartup is the sanctioned source for
-	// backend calls (B0 first-instance decision — see SYSTEM_MAP.md).
-	ctx      context.Context
-	pools    *db.Pools
-	params   *params.Store   // B4 calibration store; backs the harness admin panel
-	rulebook *rulebook.Store // B3b league config; active version stamps B6 (M1)
-	state    *state.Store    // B3c runtime rosters/contracts; the M1 roster source
-	output   *output.Store   // B6 per-season engine output; the M1 board reads it
-	//nolint:lll // field comment
-	coordinator *transactions.Coordinator // B7a sole runtime mutator; holds the ONLY state.Writer
-	mflClient   *mfl.Client               // shared transport; rate limit + host cache live here
-	season      int                       // ingestion.SeasonYear parsed once at startup
-	startupErr  error                     // startup failure; shown in the shell through AppInfo
-	lockFile    *os.File                  // single-instance advisory lock; held for process lifetime, released at shutdown.
+	//nolint:containedctx // Wails IPC methods get no per-call context; this is the app-lifetime one, and each method derives a bounded context from it
+	ctx         context.Context
+	pools       *db.Pools
+	params      *params.Store
+	rulebook    *rulebook.Store
+	state       *state.Store
+	output      *output.Store
+	coordinator *transactions.Coordinator // the only holder of the state Writer
+	mflClient   *mfl.Client               // shared, so rate limit and host discovery are process-wide
+	season      int
+	startupErr  error    // startup failure; shown in the shell through AppInfo
+	lockFile    *os.File // single-instance lock, held until shutdown
 
-	// players-DB directory, fetched at most once per process (MFL caps the
-	// endpoint at once/day): the state seed (fresh DB only) and every M1
-	// name/position/birthdate resolution share this one cached Lookup.
-	// Guarded by lookupMu — Wails runs IPC calls concurrently.
+	// The players directory is fetched at most once per process (MFL allows the endpoint once a
+	// day). Wails runs IPC calls concurrently, hence the mutex.
 	lookupMu  sync.Mutex
 	lookup    normalize.Lookup
 	hasLookup bool
 }
 
-// directory returns the cached players-DB Lookup, fetching and normalizing it on
-// first use. The mutex makes concurrent first calls collapse into one fetch.
+// directory returns the cached players Lookup, fetching it on first use.
 func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 	a.lookupMu.Lock()
 	defer a.lookupMu.Unlock()
@@ -76,9 +67,8 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 	return lk, nil
 }
 
-// rosterSeedSource adapts the Layer-1 rosters fetch + normalize join into the
-// state.Source seam. It is invoked by state.Initialize ONLY on a fresh DB — an
-// existing database loads as-is with no network (B3c seed-once law).
+// rosterSeedSource seeds league state from MFL rosters; state.Initialize calls it only on a
+// fresh DB.
 type rosterSeedSource struct{ app *App }
 
 func (s rosterSeedSource) Rosters(ctx context.Context) ([]domain.Roster, error) {
@@ -97,8 +87,7 @@ func (s rosterSeedSource) Rosters(ctx context.Context) ([]domain.Roster, error) 
 	return seed, nil
 }
 
-// NewApp creates a new App. Resources are acquired in startup, not here, so the
-// struct is cheap to construct and test.
+// NewApp is cheap; resources are acquired in startup.
 func NewApp() *App {
 	return &App{}
 }
@@ -113,9 +102,8 @@ func (a *App) startup(ctx context.Context) {
 		}
 	}()
 
-	// Resolve the data dir ONCE (it creates the dir); logging and the DB path both
-	// derive from it. Disk logging first, so anything below (a lock or open failure)
-	// is captured on disk as well as stderr. A logging failure is non-fatal.
+	// Logging starts first so a lock or open failure below reaches the disk log. A logging
+	// failure is not fatal.
 	dir, err := configDir()
 	if err != nil {
 		a.startupErr = fmt.Errorf("startup: resolve config dir: %w", err)
@@ -126,8 +114,7 @@ func (a *App) startup(ctx context.Context) {
 	}
 
 	path := filepath.Join(dir, dbFileName(isDevBuild()))
-	// Single-instance guard BEFORE opening the DB: a second copy must not attach to
-	// the same ledger (a migration or write from two processes is the hazard).
+	// One running copy per database: two processes writing one ledger is the hazard.
 	lock, err := acquireInstanceLock(path)
 	if err != nil {
 		a.startupErr = fmt.Errorf("startup: %w", err)
@@ -142,9 +129,6 @@ func (a *App) startup(ctx context.Context) {
 	}
 	a.pools = pools
 
-	// The MFL client is shared so rate limiting and the discovered league host are
-	// process-wide. Season is parsed once — canonical ingestion.SeasonYear is a string
-	// for URL building.
 	season, err := strconv.Atoi(ingestion.SeasonYear)
 	if err != nil {
 		a.startupErr = fmt.Errorf("startup: parse season %q: %w", ingestion.SeasonYear, err)
@@ -193,7 +177,7 @@ func (a *App) initStoreFloor(parent context.Context) error {
 			return rb.Initialize(c, league.APISource{Client: a.mflClient, Year: ingestion.SeasonYear, LeagueID: ingestion.LeagueID})
 		}},
 		{"league state", func(c context.Context) error { return st.Initialize(c, rosterSeedSource{app: a}) }},
-		// The coordinator is the only holder of the state Writer (AD-02).
+		// The coordinator is the only holder of the state Writer.
 		{"transaction coordinator", func(context.Context) error {
 			var err error
 			coord, err = transactions.New(st.Writer(), &rosterPolicyAdapter{rb: rb, app: a})
@@ -212,7 +196,7 @@ func (a *App) initStoreFloor(parent context.Context) error {
 	return nil
 }
 
-// shutdown is the Wails OnShutdown hook. It releases the SQLite pools.
+// shutdown releases the database and the instance lock.
 func (a *App) shutdown(_ context.Context) {
 	if a.pools != nil {
 		_ = a.pools.Close()
@@ -220,9 +204,7 @@ func (a *App) shutdown(_ context.Context) {
 	releaseInstanceLock(a.lockFile)
 }
 
-// configDir returns the app's on-disk data directory (e.g. ~/.config/TheWarRoom),
-// creating it if needed. The database, the instance lockfile, and the logs dir all
-// live under it.
+// configDir returns the app's data directory (~/.config/TheWarRoom on Linux), creating it.
 func configDir() (string, error) {
 	cfg, err := os.UserConfigDir()
 	if err != nil {
@@ -235,14 +217,11 @@ func configDir() (string, error) {
 	return dir, nil
 }
 
-// isDevBuild reports whether this is an un-stamped DEV binary (plain `go build` or
-// `wails dev`), where the link-time version default "dev" survives (see version.go).
+// isDevBuild reports an un-stamped build (plain go build or wails dev).
 func isDevBuild() bool { return version == "dev" }
 
-// dbFileName is the SQLite filename for this build. A DEV build uses a SEPARATE
-// -dev database so development (`wails dev`, un-stamped binaries) can never open —
-// and never migrate or corrupt — the real dynasty ledger (Tier 3 dev-build guard).
-// A stamped release uses the real ledger.
+// dbFileName gives dev builds their own database, so development can never migrate or
+// corrupt the real league ledger.
 func dbFileName(devBuild bool) string {
 	if devBuild {
 		return "thewarroom-dev.db"

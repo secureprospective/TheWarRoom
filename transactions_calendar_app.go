@@ -7,17 +7,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
 
-// This file groups the COMMISSIONER-CALENDAR IPC surface — the board read (GetCalendarEvents) and
-// the DTO→request projection its schedule/reschedule/cancel ops share. Split from transactions_app.go
-// to keep both within the 400-line file cap (AD-14/AD-17). The calendar write ops route through the
-// shared buildRequest dispatch in transactions_app.go; only the read + the calendar-field projection
-// live here.
-
-// CalendarEventDTO is one commissioner-calendar blob's current (head) state as it crosses the IPC
-// boundary — the latest row for its logical event id. EventID is the logical blob id; Kind is the
-// EVENTUAL op it will run; ScheduledAt is its ISO-8601 time; Payload is the opaque JSON of that op's
-// fields (the frontend re-sends it verbatim on a reschedule/cancel and decodes it for a "fire now");
-// Status is PLANNED / FIRED / CANCELLED; CreatedAt is when this head row was appended.
+// CalendarEventDTO is one calendar event's current state (its latest row). Payload is the
+// opaque JSON of the operation it will run; the frontend sends it back unchanged on a
+// reschedule or cancel. Status is PLANNED, FIRED or CANCELLED.
 type CalendarEventDTO struct {
 	EventID     string `json:"eventID"`
 	Kind        string `json:"kind"`
@@ -28,19 +20,15 @@ type CalendarEventDTO struct {
 	CreatedAt   string `json:"createdAt"`
 }
 
-// CalendarEventsResult is a read of the commissioner calendar — the head view (latest row per event
-// id), in scheduled order. Events is never null on success (Wails marshals a nil Go slice to JSON
-// null, which the frontend guards with `?? []`; here it is always a non-nil slice, empty for a
-// league with no blobs yet).
+// CalendarEventsResult is the calendar in scheduled order. Events is never nil on success.
 type CalendarEventsResult struct {
 	OK     bool               `json:"ok"`
 	Events []CalendarEventDTO `json:"events"`
 	Detail string             `json:"detail"`
 }
 
-// GetCalendarEvents reads the commissioner calendar's head view off the concrete store (a read-only
-// query, never the writer), so the board can render every blob's current position and status. It
-// surfaces a stale-after-failed-reload state instead of confidently showing an out-of-date schedule.
+// GetCalendarEvents reads every event's current state. After a failed reload it reports stale
+// rather than showing an out-of-date schedule as current.
 func (a *App) GetCalendarEvents() CalendarEventsResult {
 	if a.startupErr != nil {
 		return CalendarEventsResult{Detail: a.startupErr.Error()}
@@ -72,9 +60,8 @@ func (a *App) GetCalendarEvents() CalendarEventsResult {
 	return CalendarEventsResult{OK: true, Events: out}
 }
 
-// calendarEvent projects the DTO's calendar fields onto the transactions.CalendarEvent the three
-// CRUD-by-append ops share. No money parsing happens here — a blob's payload is opaque JSON stored
-// verbatim; the eventual op's own builder parses it (millions→cents server-side) only when it fires.
+// calendarEvent maps the DTO's calendar fields. The payload stays opaque here; the operation's
+// own builder parses it when the event fires.
 func calendarEvent(req TransactionRequest) transactions.CalendarEvent {
 	return transactions.CalendarEvent{
 		EventID:     req.EventID,
