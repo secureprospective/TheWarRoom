@@ -38,22 +38,16 @@ func New(pools *db.Pools) *Store {
 	}
 }
 
-// Initialize ensures the schema, seeds the shipped defaults on a fresh database, and loads
-// defaults and overrides into memory.
+// Initialize ensures the schema, adds any shipped default the database lacks, and loads
+// defaults and overrides into memory. Existing rows are never rewritten.
 func (s *Store) Initialize(ctx context.Context) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	if err := s.initSchema(ctx); err != nil {
 		return err
 	}
-	seeded, err := s.hasDefaults(ctx)
-	if err != nil {
+	if err := s.seedDefaults(ctx); err != nil {
 		return err
-	}
-	if !seeded {
-		if err := s.seedDefaults(ctx); err != nil {
-			return err
-		}
 	}
 	return s.load(ctx)
 }
