@@ -1,14 +1,7 @@
-// Package transactions is the B7a transaction layer: the ONE component that mutates
-// league state at runtime (AD-02 single-writer law). Everything before it reads; the
-// Coordinator writes. It holds the injected state.Writer — the SOLE holder in the
-// process — and exposes exactly one verb, Execute(ctx, Request) (Receipt, error).
-//
-// Every transaction runs inside state's spanning transaction (Writer.WriteTx): the
-// Coordinator hands the request's steps to one TxWriter, so a multi-leg trade commits
-// as a unit or rolls back whole. Request types are defined in this root package (see
-// request.go) so callers never import a handler subpackage; the handlers themselves
-// live in acquisitions/ (and, once Money is locked, contracts/ + deadcap/) behind the
-// transactions-only-through-coordinator depguard rule.
+// Package transactions is the only code that mutates league state at runtime. The Coordinator
+// holds the process's one state.Writer and runs every request inside a single state transaction,
+// so a multi-leg trade commits whole or not at all. Request types live in this package, so callers
+// never import a handler subpackage.
 package transactions
 
 import (
@@ -20,26 +13,19 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
-// errDryRun is the sentinel a Preview returns from inside WriteTx to force a rollback AFTER
-// the request has been fully validated, phase-gated, and applied. WriteTx rolls back on ANY
-// closure error, so returning this after a clean apply proves the transaction WOULD commit —
-// while persisting nothing. It never escapes to a caller (Preview maps it to success).
+// errDryRun makes Preview roll back after a fully validated, applied request: proof it would
+// commit, with nothing stored. Preview turns it into success; it never reaches a caller.
 var errDryRun = errors.New("transactions: dry-run rollback (not an error)")
 
 // Coordinator is the sole runtime mutator of league state. Construct with New.
 type Coordinator struct {
 	writer state.Writer
-	policy RosterPolicy     // Session 2 roster/position/taxi/IR limit gate; nil = enforcement disabled
-	now    func() time.Time // injectable clock so a Receipt's timestamp is testable
+	policy RosterPolicy     // nil disables roster-limit enforcement
+	now    func() time.Time // injectable for tests
 }
 
-// New wires the Coordinator with the single state.Writer it will ever hold plus the Session 2
-// roster-composition policy (roster/position/taxi/IR limits). A nil writer is a wiring error
-// surfaced HERE, at construction — never a Coordinator that silently no-ops every transaction at
-// run time (the rankings.New fail-doud rule). A nil policy is valid and disables roster-limit
-// enforcement (tests, an unwired caller) — every roster-affecting op then commits as it did before
-// Session 2. The policy, when non-nil, is the rulebook + players-DB adapter composed in app.go
-// (depguard forbids importing either store here).
+// New fails on a nil writer, so a miswired Coordinator can't silently no-op. A nil policy is
+// allowed and turns off roster-limit enforcement.
 func New(w state.Writer, p RosterPolicy) (*Coordinator, error) {
 	if w == nil {
 		return nil, fmt.Errorf("transactions: nil state.Writer — the coordinator is the sole runtime mutator and requires it")
@@ -47,47 +33,35 @@ func New(w state.Writer, p RosterPolicy) (*Coordinator, error) {
 	return &Coordinator{writer: w, policy: p, now: time.Now}, nil
 }
 
-// Receipt is the outcome of one executed transaction: what kind ran, how many players
-// it moved, and when it committed. It is returned only on success — a failed
-// transaction returns a zero Receipt and the error, never a partial receipt.
+// Receipt is what a committed transaction did. A failure returns a zero Receipt and the error.
 type Receipt struct {
 	Kind            Kind      `json:"kind"`
 	PlayersAffected int       `json:"playersAffected"`
 	At              time.Time `json:"at"`
-	// CapDeltas is the pre-commit cap-impact breakdown — the signed dollar line items the handler
-	// computed (a dead-cap charge, a cap-relief credit). It is populated primarily by Preview (the
-	// staged-confirm quote); an Execute Receipt carries it too, but the authoritative post-commit
-	// figure is the reloaded franchise cap, not this list. Empty for an op not wired for a
-	// breakdown. A committed transaction that FAILED returns a zero Receipt (nil CapDeltas).
+	// CapDeltas is the handler's signed cap impact (dead-cap charges, relief credits), mostly for
+	// Preview. After a commit, the reloaded franchise cap is the authority.
 	CapDeltas []CapDelta `json:"capDeltas"`
 }
 
-// Execute validates the request, then runs its steps in ONE spanning transaction. On
-// any error — validation, a failed step, or a commit failure — nothing is persisted
-// (WriteTx rolls back) and a zero Receipt is returned with the error. On success the
-// Receipt reflects the committed change.
+// Execute validates the request and runs it in one transaction. Any error persists nothing and
+// returns a zero Receipt.
 func (c *Coordinator) Execute(ctx context.Context, req Request) (Receipt, error) {
 	if req == nil {
 		return Receipt{}, fmt.Errorf("transactions: Execute called with a nil request")
 	}
 	if err := req.validate(); err != nil {
-		return Receipt{}, err // rejected before a transaction is even opened
+		return Receipt{}, err
 	}
 
 	var res applyResult
 	err := c.writer.WriteTx(ctx, func(w state.TxWriter) error {
-		// Season-phase eligibility is the FIRST step inside the tx (Vision-2026 D3): read the
-		// committed current phase and reject an op the phase disallows BEFORE any mutation or
-		// counter read runs — fail-fast, atomic with the write, race-free under the single
-		// writer. Default-deny an unmapped op_kind.
+		// The phase gate runs first inside the transaction, before any mutation; an unmapped op is
+		// denied.
 		if perr := gatePhase(ctx, w, req.Kind()); perr != nil {
 			return perr
 		}
-		// Session 2 roster-limit gate: when a policy is wired and the request opts in via the
-		// rosterAware interface, project its roster effect against the policy BEFORE apply runs —
-		// a limit violation is rejected atomically (nothing committed), with a clear error naming
-		// the offending franchise + limit. Runs after gatePhase so a phase rejection short-circuits
-		// first (the cheaper, more fundamental check). r reflects committed pre-op state.
+		// Roster limits: project the request's roster effect against the policy before applying, so a
+		// violation is rejected atomically and names the franchise and limit.
 		if c.policy != nil {
 			if ra, ok := req.(rosterAware); ok {
 				if rerr := ra.enforceRosterLimits(ctx, c.writer, c.policy); rerr != nil {
@@ -105,20 +79,15 @@ func (c *Coordinator) Execute(ctx context.Context, req Request) (Receipt, error)
 	return Receipt{Kind: req.Kind(), PlayersAffected: res.PlayersAffected, At: c.now().UTC(), CapDeltas: res.Deltas}, nil
 }
 
-// Preview runs a request exactly as Execute would — same validation, same phase gate, same
-// apply, through the same single write path — but ALWAYS rolls back, so nothing is persisted.
-// It answers "would this transaction commit, and if not, why?" for the staged-and-confirm UI,
-// reusing the REAL handler so a preview can never drift from the commit (design D5). A rejection
-// returns the authoritative error (eligibility, phase gate, signing window, min-salary floor, …);
-// success returns a Receipt whose PlayersAffected the confirm step displays. The commit that
-// FOLLOWS a preview re-sends the SAME intent and recomputes authoritatively — the preview is
-// advisory only, never fed back in as input (design D4).
+// Preview runs a request exactly as Execute does, through the same handler, then always rolls
+// back: "would this commit, and if not, why?" The commit that follows recomputes from scratch;
+// the preview is never fed back as input.
 func (c *Coordinator) Preview(ctx context.Context, req Request) (Receipt, error) {
 	if req == nil {
 		return Receipt{}, fmt.Errorf("transactions: Preview called with a nil request")
 	}
 	if err := req.validate(); err != nil {
-		return Receipt{}, err // rejected before a transaction is even opened
+		return Receipt{}, err
 	}
 
 	var res applyResult
@@ -126,9 +95,7 @@ func (c *Coordinator) Preview(ctx context.Context, req Request) (Receipt, error)
 		if perr := gatePhase(ctx, w, req.Kind()); perr != nil {
 			return perr
 		}
-		// Session 2 roster-limit gate — same position as in Execute (see comment there). A preview
-		// surfaces a limit rejection identically to an execute rejection: the staged-confirm UI
-		// shows "the engine rejected this" before any write, never only on commit.
+		// Same roster-limit gate as Execute, so a preview rejects exactly as the commit would.
 		if c.policy != nil {
 			if ra, ok := req.(rosterAware); ok {
 				if rerr := ra.enforceRosterLimits(ctx, c.writer, c.policy); rerr != nil {
@@ -141,7 +108,7 @@ func (c *Coordinator) Preview(ctx context.Context, req Request) (Receipt, error)
 			return aerr
 		}
 		res = r
-		return errDryRun // fully applied and valid — roll it all back, persist nothing
+		return errDryRun // applied and valid: roll back
 	})
 	if err != nil && !errors.Is(err, errDryRun) {
 		return Receipt{}, fmt.Errorf("transactions: preview %s: %w", req.Kind(), err)
@@ -149,14 +116,9 @@ func (c *Coordinator) Preview(ctx context.Context, req Request) (Receipt, error)
 	return Receipt{Kind: req.Kind(), PlayersAffected: res.PlayersAffected, At: c.now().UTC(), CapDeltas: res.Deltas}, nil
 }
 
-// ExecuteTag runs a §9 franchise tag. It RESOLVES the tag price here — the top-5-by-position
-// league-wide average, floored at 120% of the player's prior-year salary — from the
-// Coordinator's own authoritative Reader plus the supplied Directory (the players-DB
-// position join), then delegates to Execute. The price is computed in this trusted core, not
-// carried across the IPC boundary: the frontend sends only a player id. The Directory is
-// passed per-call because the app builds its players-DB Lookup lazily (it is not available at
-// startup when the Coordinator is constructed). Fails loud before opening any transaction if
-// the player is unrostered or has no resolvable position.
+// ExecuteTag runs a §9 franchise tag. The price (top-5 average at the position, floored at 120%
+// of last year's salary) is resolved here from authoritative state; the frontend sends only the
+// player id. dir is per call because the app builds the players directory lazily.
 func (c *Coordinator) ExecuteTag(ctx context.Context, mflID string, dir Directory) (Receipt, error) {
 	tag, err := c.resolveTag(mflID, dir)
 	if err != nil {
@@ -165,10 +127,7 @@ func (c *Coordinator) ExecuteTag(ctx context.Context, mflID string, dir Director
 	return c.Execute(ctx, tag)
 }
 
-// PreviewTag is the dry-run counterpart of ExecuteTag (design D5): it resolves the §9 price through
-// the SAME resolveTag path, then previews (rolls back) instead of committing, so the staged-confirm
-// UI can surface an "unrostered" / "no position" / any in-tx rejection BEFORE any write. Because both
-// verbs build the Tag from one resolver, a preview's price can never drift from the commit's.
+// PreviewTag dry-runs a tag through the same resolver as ExecuteTag, so the prices never differ.
 func (c *Coordinator) PreviewTag(ctx context.Context, mflID string, dir Directory) (Receipt, error) {
 	tag, err := c.resolveTag(mflID, dir)
 	if err != nil {
@@ -177,11 +136,7 @@ func (c *Coordinator) PreviewTag(ctx context.Context, mflID string, dir Director
 	return c.Preview(ctx, tag)
 }
 
-// resolveTag resolves the §9 tag price — the top-5-by-position league-wide average, floored at 120%
-// of the player's prior-year salary — from the Coordinator's authoritative Reader plus the supplied
-// Directory (the players-DB position join), and returns the sealed Tag request the tx handler runs.
-// The price is computed in this trusted core, never carried across the IPC boundary (the frontend
-// sends only a player id). Fails loud if the player is unrostered or has no resolvable position.
+// resolveTag computes the §9 price and returns the Tag request. Unrostered or no position fails.
 func (c *Coordinator) resolveTag(mflID string, dir Directory) (Tag, error) {
 	if dir == nil {
 		return Tag{}, fmt.Errorf("transactions: tag %q: nil directory (position join required for the §9 price)", mflID)
@@ -198,13 +153,9 @@ func (c *Coordinator) resolveTag(mflID string, dir Directory) (Tag, error) {
 	return Tag{MFLID: mflID, price: price}, nil
 }
 
-// ExecuteExtension runs a §10 contract extension. It resolves the position FLOOR here — the
-// one figure that needs the players-DB position join (via the supplied Directory) — and hands
-// it to the handler, which resolves the 150%-of-highest-remaining price from the player's own
-// committed cells inside the transaction. No money crosses the IPC boundary: the frontend sends
-// only the player id and the added-year count. The Directory is passed per-call (the app builds
-// its players-DB Lookup lazily, after the Coordinator is constructed). Fails loud before opening
-// any transaction if the player is unrostered or his position has no §10 floor.
+// ExecuteExtension runs a §10 extension. The position floor needs the players directory, so it
+// is resolved here; the 150%-of-top-year price is resolved in the transaction from the player's
+// cells.
 func (c *Coordinator) ExecuteExtension(ctx context.Context, mflID string, addedYears int, dir Directory) (Receipt, error) {
 	ext, err := c.resolveExtension(mflID, addedYears, dir)
 	if err != nil {
@@ -213,10 +164,7 @@ func (c *Coordinator) ExecuteExtension(ctx context.Context, mflID string, addedY
 	return c.Execute(ctx, ext)
 }
 
-// PreviewExtension is the dry-run counterpart of ExecuteExtension (design D5): it resolves the same
-// §10 position floor through the SAME resolveExtension path, then previews (rolls back) instead of
-// committing, so the staged-confirm UI can surface an "unrostered" / "no floor" / any in-tx rejection
-// BEFORE any write. One resolver for both verbs means a preview can never drift from the commit.
+// PreviewExtension dry-runs an extension through the same resolver as ExecuteExtension.
 func (c *Coordinator) PreviewExtension(ctx context.Context, mflID string, addedYears int, dir Directory) (Receipt, error) {
 	ext, err := c.resolveExtension(mflID, addedYears, dir)
 	if err != nil {
@@ -225,11 +173,8 @@ func (c *Coordinator) PreviewExtension(ctx context.Context, mflID string, addedY
 	return c.Preview(ctx, ext)
 }
 
-// resolveExtension resolves the §10 position FLOOR (the one figure needing the players-DB position
-// join via the supplied Directory) and returns the sealed Extension request; the handler resolves the
-// 150%-of-highest-remaining price from the player's own committed cells inside the transaction. No
-// money crosses the IPC boundary — the frontend sends only the id and the added-year count. Fails loud
-// if the player is unrostered or his position has no §10 floor.
+// resolveExtension finds the §10 position floor and returns the Extension request. Unrostered,
+// or a position with no floor, fails.
 func (c *Coordinator) resolveExtension(mflID string, addedYears int, dir Directory) (Extension, error) {
 	if dir == nil {
 		return Extension{}, fmt.Errorf("transactions: extension %q: nil directory (position join required for the §10 floor)", mflID)
@@ -248,16 +193,10 @@ func (c *Coordinator) resolveExtension(mflID string, addedYears int, dir Directo
 	return Extension{MFLID: mflID, AddedYears: addedYears, floor: floor}, nil
 }
 
-// ExecuteSign runs a §6 free-agency signing. It resolves the player's DRAFT YEAR here — the
-// experience source for the §6 min-salary floor — from the supplied Directory (the players-DB
-// join), stamps it on the unexported request fields, and delegates to Execute, which derives
-// experience against the authoritative in-tx season and enforces the floor. Only the id, salary,
-// and year count crossed the IPC boundary; the draft year is resolved server-side. Unlike a tag or
-// extension the signee is NOT rostered, so there is no roster lookup — eligibility (must be a
-// signable free agent) is judged against status events inside the tx. A player absent from the
-// players DB (commissioner-created) or carrying no real draft year keeps hasDraftYear=false, so the
-// handler applies the rookie floor (Christopher's missing-draft-data → rookie-floor ruling). The
-// Directory is passed per-call because the app builds its players-DB Lookup lazily.
+// ExecuteSign runs a §6 signing. The player's draft year, which sets the min-salary floor, is
+// resolved here from the players directory. A player with no real draft year (commissioner-created
+// or missing data) gets the rookie floor, per Christopher's ruling. Eligibility is judged in the
+// transaction from status events.
 func (c *Coordinator) ExecuteSign(ctx context.Context, sign Sign, dir Directory) (Receipt, error) {
 	if dir == nil {
 		return Receipt{}, fmt.Errorf("transactions: sign %q: nil directory (draft-year join required for the §6 min-salary floor)", sign.MFLID)
@@ -268,9 +207,7 @@ func (c *Coordinator) ExecuteSign(ctx context.Context, sign Sign, dir Directory)
 	return c.Execute(ctx, sign)
 }
 
-// PreviewSign is the dry-run counterpart of ExecuteSign: it resolves the same draft-year floor
-// input, then previews (rolls back) instead of committing, so the staged-confirm UI can surface
-// a "below §6 minimum" / "signing window closed" / "not a free agent" rejection BEFORE any write.
+// PreviewSign dry-runs a signing with the same draft-year input as ExecuteSign.
 func (c *Coordinator) PreviewSign(ctx context.Context, sign Sign, dir Directory) (Receipt, error) {
 	if dir == nil {
 		return Receipt{}, fmt.Errorf("transactions: preview sign %q: nil directory (draft-year join required for the §6 min-salary floor)", sign.MFLID)

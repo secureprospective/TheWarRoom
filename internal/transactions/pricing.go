@@ -8,32 +8,24 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
-// Directory resolves a rostered mfl id to its players-DB facts (position is the one this
-// package needs). normalize.Lookup satisfies it; a fake drops in for tests. This mirrors
-// rankings.Directory — the store is deliberately position-blind, so §9's top-5-by-position
-// average joins to the players DB here, not in the state store.
+// Directory resolves a rostered player to his players-directory facts (position). The state store
+// is position-blind, so §9's by-position average joins here. normalize.Lookup satisfies it.
 type Directory interface {
 	Facts(mflID string) (normalize.PlayerFacts, bool)
 }
 
-// tagTopN is the §9 pool size: the tag price is the average of the top-N salaries at the
-// position, league-wide.
+// tagTopN is the §9 pool: the tag is the average of the top N salaries at the position.
 const tagTopN = 5
 
-// tagFloorNum / tagFloorDen express the §9 floor "120% of the player's previous-year
-// salary" as an exact integer ratio (no float money).
+// The §9 floor, 120% of last year's salary, as an exact ratio.
 const (
 	tagFloorNum = 120
 	tagFloorDen = 100
 )
 
-// tagPrice computes the §9 franchise-tag price for a position: the average of the top-5
-// (tagTopN) current salaries at that position across every roster, league-wide. It is a
-// pure read over authoritative state — the Coordinator calls it BEFORE opening the write
-// transaction (the single-writer law means committed state can't shift underneath it), so
-// the resulting figure is authoritative and no money crosses the IPC boundary. Salaries are
-// exact cents; the average rounds half-up to the cent. Returns 0 only if NO rostered player
-// plays the position (impossible for a real tag, since the tagged player himself is one).
+// tagPrice is the §9 tag price: the average of the top-5 current salaries at the position,
+// league-wide, rounded half-up to the cent. It reads committed state before the transaction
+// opens; nothing can change it underneath, and no money crosses the IPC boundary.
 func tagPrice(r state.Reader, dir Directory, pos domain.Position) domain.Money {
 	var salaries []domain.Money
 	for _, fid := range r.Franchises() {
@@ -52,7 +44,6 @@ func tagPrice(r state.Reader, dir Directory, pos domain.Position) domain.Money {
 	if len(salaries) == 0 {
 		return 0
 	}
-	// Top-N by salary, descending.
 	sort.Slice(salaries, func(i, j int) bool { return salaries[i] > salaries[j] })
 	n := tagTopN
 	if len(salaries) < n {
@@ -62,18 +53,16 @@ func tagPrice(r state.Reader, dir Directory, pos domain.Position) domain.Money {
 	for i := 0; i < n; i++ {
 		sum += salaries[i]
 	}
-	// Average, rounded half-up to the cent: (sum + n/2) / n on exact-cents integers.
+	// Round half-up on exact cents.
 	return (sum + domain.Money(n)/2) / domain.Money(n)
 }
 
-// extMillion is $1,000,000 in exact cents — the unit of the §10 position-floor table.
+// extMillion is $1M in cents, the unit of the §10 floor table.
 const extMillion = domain.Money(100_000_000)
 
-// PositionFloor returns the §10 extension salary floor for a position — the minimum an
-// extension year may be priced at (the greater of this and 150% of the highest remaining year)
-// — and whether the position has a floor at all. It is the rulebook §10 table encoded once, as
-// a pure step function. An unclassified position (FLAG) or any position off the table returns
-// (0, false) so the Coordinator fails loud rather than extending with no floor.
+// PositionFloor is the §10 extension floor for a position (a year is priced at the greater of
+// this and 150% of the top remaining year). An unclassified position has no floor, and the
+// Coordinator then refuses the extension.
 func PositionFloor(pos domain.Position) (domain.Money, bool) {
 	switch pos {
 	case domain.PosQB:
@@ -91,16 +80,14 @@ func PositionFloor(pos domain.Position) (domain.Money, bool) {
 	case domain.PosCB, domain.PosK:
 		return 3 * extMillion, true
 	case domain.PosFlag:
-		return 0, false // unclassified — admin must resolve the position before an extension
+		return 0, false // unclassified: resolve the position first
 	default:
 		return 0, false
 	}
 }
 
-// tagFloorPrice applies the §9 floor: the tag is the greater of the top-5 average and 120%
-// of the player's previous-year salary. At tag time (the season boundary) a player's CURRENT
-// annual salary IS his previous year's, so priorSalary is ps.Salary — no history store (v1
-// decision, Christopher 2026-07-04). The 120% is exact integer ratio math (round half-up).
+// tagFloorPrice is the greater of the top-5 average and 120% of last year's salary. At tag time a
+// player's current salary is last year's, so no salary history is needed (Christopher's ruling).
 func tagFloorPrice(topFive, priorSalary domain.Money) domain.Money {
 	floor := (priorSalary*tagFloorNum + tagFloorDen/2) / tagFloorDen
 	if floor > topFive {

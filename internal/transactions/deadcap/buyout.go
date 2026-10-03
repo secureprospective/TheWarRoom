@@ -8,23 +8,17 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
-// BuyoutReason is the audit string on every §12 dead-cap ledger row. Exported because the
-// free-agency SIGN handler derives the §12 "no re-bid until the following offseason" lockout from
-// the presence of a dead_cap row carrying this reason (Free_Agency_Design Q3).
+// BuyoutReason labels §12 dead-cap rows. Exported because SIGN derives the buyout lockout from a
+// row carrying it.
 const BuyoutReason = "buyout §12"
 
-// buyoutOpKind is the transaction_counts op_kind for the §12 per-season buyout limit.
 const buyoutOpKind = "BUYOUT"
 
-// maxBuyoutsPerSeason is §12's "two buyouts per team per season". The offseason-only rule is
-// enforced upstream by the Coordinator's phase gate, NOT re-checked here (single source of truth).
+// maxBuyoutsPerSeason is §12's two per team per season. Offseason-only is the phase gate's job.
 const maxBuyoutsPerSeason = 2
 
-// buyoutRatePct returns §12's dead-cap rate (whole percent) for a contract with `remaining`
-// years left, and whether §12 defines a rate at all. The rulebook enumerates ONLY 2/3/4 years
-// (60/75/90%). 1 year, or 5–6 (reachable via a §10 extension), have NO defined rate — ok=false,
-// so the handler fails loud and routes the case to the §13 commissioner path rather than
-// inventing a number (expert-panel A6 / locked GQ3).
+// buyoutRatePct is §12's rate for 2, 3 or 4 remaining years (60/75/90%). Any other count has no
+// rate in the rulebook, so it fails and goes to the §13 commissioner path rather than inventing one.
 func buyoutRatePct(remaining int) (int64, bool) {
 	switch remaining {
 	case 2:
@@ -38,10 +32,8 @@ func buyoutRatePct(remaining int) (int64, bool) {
 	}
 }
 
-// buyoutCharge computes the §12 dead-cap charge: rate% × average remaining salary, in exact
-// cents, snapped ONCE to the $10k grid (flat-$10k doctrine, matching §8's Charge). ok=false if
-// `remaining` is outside §12's defined 2..4 range. A non-positive average yields a $0 charge (a
-// valid, if degenerate, buyout — not an error).
+// buyoutCharge is rate × average remaining salary, snapped once to $10k. ok=false outside 2-4
+// years.
 func buyoutCharge(avgRemaining domain.Money, remaining int) (domain.Money, bool) {
 	pct, ok := buyoutRatePct(remaining)
 	if !ok {
@@ -54,10 +46,7 @@ func buyoutCharge(avgRemaining domain.Money, remaining int) (domain.Money, bool)
 	return domain.RoundToNearest10k(domain.Money(cents)), true
 }
 
-// remainingAfter reduces a player's PAID cells to §12's inputs: the count of years strictly
-// AFTER the current season (the "remaining years" convention shared with §8/§10 — exclusive of
-// the current year) and the arithmetic mean of those cells' salaries (round half-up to the cent).
-// Returns (0, 0) when the player has no remaining paid year.
+// remainingAfter returns the PAID years after the current season and their average salary.
 func remainingAfter(cells []state.LedgerCell, season int) (int, domain.Money) {
 	var sum domain.Money
 	var n int
@@ -73,22 +62,15 @@ func remainingAfter(cells []state.LedgerCell, season int) (int, domain.Money) {
 	return n, (sum + domain.Money(n)/2) / domain.Money(n)
 }
 
-// Buyout executes a §12 contract buyout against the shared tx: it reads the player's remaining
-// paid years, computes the §12 dead-cap charge (rate by years remaining × average remaining
-// salary), releases him, records the charge to the current season's cap, voids his cells, and
-// bumps the per-season buyout counter — all in the Coordinator's one spanning transaction, so
-// the release and its penalty land together or not at all. The offseason-only rule is enforced
-// by the Coordinator phase gate before this runs (not re-checked here). Fails loud on an unknown
-// player, a franchise that has used its two buyouts this season, or a remaining-year count
-// outside §12's defined 2..4 range (routed to the §13 commissioner path). Returns the ledger
-// entry it wrote so the caller can surface the charge.
+// Buyout releases the player, charges §12 dead cap to this season, voids his cells and bumps the
+// season's buyout count, in one transaction. Fails on an unknown player, a franchise that has used
+// both buyouts, or a remaining-year count outside 2-4. Returns the ledger entry.
 func Buyout(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapEntry, error) {
 	ps, ok := w.Player(mflID)
 	if !ok {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: buyout %q: player not on any roster", mflID)
 	}
 
-	// §12 "two buyouts per team per season" — read, check, (mutate), bump, all atomic in the tx.
 	used, err := w.OpCount(ctx, ps.FranchiseID, buyoutOpKind)
 	if err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: buyout %q: op count: %w", mflID, err)
