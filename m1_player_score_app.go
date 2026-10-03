@@ -51,7 +51,7 @@ type PlayerScoreResult struct {
 // GetPlayerScore returns one player's stored breakdown on the latest board. A names
 // outage warns but still returns the numbers.
 func (a *App) GetPlayerScore(mflID string) PlayerScoreResult {
-	if err := a.m1Ready(); err != nil {
+	if err := a.ready(); err != nil {
 		return PlayerScoreResult{Error: err.Error(), Label: a.proxyLabel()}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, m1Timeout)

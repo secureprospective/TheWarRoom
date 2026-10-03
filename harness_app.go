@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/composition"
@@ -32,11 +31,8 @@ func (a *App) rubrics() harness.RubricRegistry {
 
 // assembler builds the composition boundary over the params store and the league's real cap,
 // so the harness and the M1 board score against the same cap.
-func (a *App) assembler() (*composition.Assembler, error) {
-	if a.params == nil || a.rulebook == nil {
-		return nil, fmt.Errorf("stores not initialized (params=%t rulebook=%t)", a.params != nil, a.rulebook != nil)
-	}
-	return composition.New(a.params.Snapshot(), a.rulebook), nil
+func (a *App) assembler() *composition.Assembler {
+	return composition.New(a.params.Snapshot(), a.rulebook)
 }
 
 // RookiesResult is the rookie sandbox payload: ranked rows plus the active Layer-4 mode, so the
@@ -50,11 +46,10 @@ type RookiesResult struct {
 
 // ScoreRookies scores the sample rookie set and returns every intermediate for inspection.
 func (a *App) ScoreRookies() RookiesResult {
-	asm, err := a.assembler()
-	if err != nil {
+	if err := a.ready(); err != nil {
 		return RookiesResult{OK: false, Error: err.Error()}
 	}
-	rows := harness.RankRookies(asm, harness.SampleRookies(), a.rubrics())
+	rows := harness.RankRookies(a.assembler(), harness.SampleRookies(), a.rubrics())
 	return RookiesResult{OK: true, L4Mode: "identity / scouting baseline", Rows: rows}
 }
 
@@ -82,8 +77,8 @@ type ParamsResult struct {
 
 // GetParams returns the calibration parameters for the admin panel.
 func (a *App) GetParams() ParamsResult {
-	if a.params == nil {
-		return ParamsResult{OK: false, Error: "params store not initialized"}
+	if err := a.ready(); err != nil {
+		return ParamsResult{OK: false, Error: err.Error()}
 	}
 	return ParamsResult{OK: true, Params: a.params.Definitions()}
 }
@@ -97,8 +92,8 @@ type SetParamResult struct {
 // SetParam applies an admin override to a global calibration value. The params store
 // validates the range.
 func (a *App) SetParam(key string, value float64) SetParamResult {
-	if a.params == nil {
-		return SetParamResult{OK: false, Error: "params store not initialized"}
+	if err := a.ready(); err != nil {
+		return SetParamResult{OK: false, Error: err.Error()}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, 3*time.Second)
 	defer cancel()

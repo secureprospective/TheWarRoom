@@ -17,8 +17,8 @@ type LeagueSettingResult struct {
 
 // GetLeagueSetting returns one rulebook setting (e.g. "taxiSquad"), overrides applied.
 func (a *App) GetLeagueSetting(key string) LeagueSettingResult {
-	if a.rulebook == nil {
-		return LeagueSettingResult{OK: false, Error: "rulebook store not initialized"}
+	if err := a.ready(); err != nil {
+		return LeagueSettingResult{OK: false, Error: err.Error()}
 	}
 	if strings.TrimSpace(key) == "" {
 		return LeagueSettingResult{OK: false, Error: "key must be non-empty"}
@@ -39,8 +39,8 @@ type SetLeagueSettingResult struct {
 // SetLeagueSettingOverride applies a commissioner override to a rulebook setting. Rulebook
 // writes are admin-only and go to the store directly, not through the transaction coordinator.
 func (a *App) SetLeagueSettingOverride(key, value, note string) SetLeagueSettingResult {
-	if a.rulebook == nil {
-		return SetLeagueSettingResult{OK: false, Error: "rulebook store not initialized"}
+	if err := a.ready(); err != nil {
+		return SetLeagueSettingResult{OK: false, Error: err.Error()}
 	}
 	if strings.TrimSpace(key) == "" || strings.TrimSpace(value) == "" {
 		return SetLeagueSettingResult{OK: false, Error: "key and value must be non-empty"}

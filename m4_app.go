@@ -38,11 +38,8 @@ type RosterResult struct {
 
 // GetRoster reads one franchise's roster and joins player names and positions.
 func (a *App) GetRoster(franchiseID string) RosterResult {
-	if a.startupErr != nil {
-		return RosterResult{Detail: a.startupErr.Error()}
-	}
-	if a.whatif == nil {
-		return RosterResult{Detail: "state store not initialized"}
+	if err := a.ready(); err != nil {
+		return RosterResult{Detail: err.Error()}
 	}
 	if err := a.whatif.Err(); err != nil {
 		return RosterResult{FranchiseID: franchiseID, Detail: "state is stale after a failed reload: " + err.Error()}
@@ -84,11 +81,8 @@ type FreeAgentPoolResult struct {
 
 // GetFreeAgentPool reads the free-agent pool with player identity joined.
 func (a *App) GetFreeAgentPool() FreeAgentPoolResult {
-	if a.startupErr != nil {
-		return FreeAgentPoolResult{Detail: a.startupErr.Error()}
-	}
-	if a.whatif == nil {
-		return FreeAgentPoolResult{Detail: "state store not initialized"}
+	if err := a.ready(); err != nil {
+		return FreeAgentPoolResult{Detail: err.Error()}
 	}
 	if err := a.whatif.Err(); err != nil {
 		return FreeAgentPoolResult{Detail: "state is stale after a failed reload: " + err.Error()}
@@ -131,11 +125,8 @@ type FranchisesResult struct {
 
 // GetFranchises lists the franchises with display names and roster sizes.
 func (a *App) GetFranchises() FranchisesResult {
-	if a.startupErr != nil {
-		return FranchisesResult{Detail: a.startupErr.Error()}
-	}
-	if a.whatif == nil {
-		return FranchisesResult{Detail: "state store not initialized"}
+	if err := a.ready(); err != nil {
+		return FranchisesResult{Detail: err.Error()}
 	}
 	if err := a.whatif.Err(); err != nil {
 		return FranchisesResult{Detail: "state is stale after a failed reload: " + err.Error()}
@@ -170,11 +161,8 @@ type LegalOpsResult struct {
 // re-encodes the policy. It is a coarse filter: preview and commit still run the authoritative
 // check.
 func (a *App) GetLegalOps() LegalOpsResult {
-	if a.startupErr != nil {
-		return LegalOpsResult{Detail: a.startupErr.Error()}
-	}
-	if a.whatif == nil {
-		return LegalOpsResult{Detail: "state store not initialized"}
+	if err := a.ready(); err != nil {
+		return LegalOpsResult{Detail: err.Error()}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
 	defer cancel()

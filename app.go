@@ -42,6 +42,7 @@ type App struct {
 	fetches     *archive.Transport        // every outbound HTTP request goes through it
 	season      int                       // from the mirror at startup; a rollover is picked up at the next launch
 	startupErr  error                     // startup failure; shown in the shell through AppInfo
+	started     chan struct{}             // closed when startup returns; read the fields above through ready
 	lockFile    *os.File                  // single-instance lock, held until shutdown
 
 	// The players directory is fetched at most once per process (MFL allows the endpoint once a
@@ -75,12 +76,20 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 
 // NewApp is cheap; resources are acquired in startup.
 func NewApp() *App {
-	return &App{}
+	return &App{started: make(chan struct{})}
+}
+
+// ready waits for startup to finish and returns its failure, if any. On Linux, Wails runs startup
+// alongside the page load, so every IPC method calls ready before it reads a store.
+func (a *App) ready() error {
+	<-a.started
+	return a.startupErr
 }
 
 // startup is the Wails OnStartup hook. OnStartup cannot return an error, so a failure is
 // kept in startupErr, logged, and shown by the shell's banner through AppInfo.
 func (a *App) startup(ctx context.Context) {
+	defer close(a.started)
 	a.ctx = ctx
 	defer func() {
 		if a.startupErr != nil {
@@ -126,9 +135,7 @@ func (a *App) startup(ctx context.Context) {
 // domReady is the Wails OnDomReady hook: the window is up, so the launch refresh runs now, off
 // the startup path. A windowless -probe never reaches it.
 func (a *App) domReady(ctx context.Context) {
-	if a.startupErr == nil && a.launchRefreshDue {
-		a.refreshInBackground(ctx)
-	}
+	a.refreshInBackground(ctx)
 }
 
 // openDatabases takes the instance lock and opens the three databases. Every fetch after this goes
@@ -168,7 +175,7 @@ const startupBudget = 2 * time.Minute
 // fetch after it is archived there. An empty mirror is refreshed from MFL here, and refreshed
 // reports that; otherwise the launch refresh runs in the background. The what-if league seeds
 // from the mirror on a fresh what-if database. Fields are assigned only once every step
-// succeeds: IPC methods treat a nil store as "not initialized".
+// succeeds, so a failed startup leaves no half-built store behind ready.
 func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refreshed bool, err error) {
 	ctx, cancel := context.WithTimeout(parent, startupBudget)
 	defer cancel()

@@ -87,11 +87,8 @@ func (a *App) PreviewTransaction(req TransactionRequest) TransactionResult {
 // the coordinator fetch the players directory on first use, hence the 30s budget. Prices and
 // floors are resolved server-side; only ids and counts cross the wire.
 func (a *App) runTransaction(req TransactionRequest, preview bool) TransactionResult {
-	if a.startupErr != nil {
-		return TransactionResult{Detail: a.startupErr.Error()}
-	}
-	if a.coordinator == nil {
-		return TransactionResult{Detail: "transaction coordinator not initialized"}
+	if err := a.ready(); err != nil {
+		return TransactionResult{Detail: err.Error()}
 	}
 	txn, err := buildRequest(req)
 	if err != nil {
@@ -129,11 +126,8 @@ type PhaseResult struct {
 
 // GetCurrentPhase reads the current season phase.
 func (a *App) GetCurrentPhase() PhaseResult {
-	if a.startupErr != nil {
-		return PhaseResult{Detail: a.startupErr.Error()}
-	}
-	if a.whatif == nil {
-		return PhaseResult{Detail: "state store not initialized"}
+	if err := a.ready(); err != nil {
+		return PhaseResult{Detail: err.Error()}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
 	defer cancel()

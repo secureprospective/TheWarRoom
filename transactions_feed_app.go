@@ -51,11 +51,8 @@ type FeedResult struct {
 // longer resolves (a commissioner-created id later replaced by MFL's) shows as PlayerUnknown with
 // the raw id: the history keeps the id that was live at the time.
 func (a *App) GetFeed() FeedResult {
-	if a.startupErr != nil {
-		return FeedResult{Detail: a.startupErr.Error()}
-	}
-	if a.whatif == nil {
-		return FeedResult{Detail: "state store not initialized"}
+	if err := a.ready(); err != nil {
+		return FeedResult{Detail: err.Error()}
 	}
 	if err := a.whatif.Err(); err != nil {
 		return FeedResult{Detail: "state is stale after a failed reload: " + err.Error()}
