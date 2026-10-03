@@ -240,16 +240,49 @@ ORDER BY seq DESC LIMIT 1`, s.leagueID)
 	return ph, nil
 }
 
-// Signing-window directives. A row carrying one keeps the phase (from == to) and only moves the
-// window; the window stays as set until the next toggle.
+// Directive keys in season_phases.meta. A directive row keeps the phase (from == to) and sets
+// one key; the newest row carrying a key is its current value.
 const (
-	signingWindowMetaOpen   = `{"ufa_window":"open"}`
-	signingWindowMetaClosed = `{"ufa_window":"closed"}`
+	directiveSigningWindow = "ufa_window"     // "open" | "closed"; none means open
+	directiveTradeDeadline = "trade_deadline" // RFC3339, or "" for cleared
 )
 
-// phaseMeta decodes the season_phases.meta JSON slot.
-type phaseMeta struct {
-	UFAWindow string `json:"ufa_window"`
+// latestDirective returns the newest value stored under key, and whether one exists. It reads
+// committed state, not this transaction's writes.
+func (s *Store) latestDirective(ctx context.Context, key string) (string, bool, error) {
+	path := "$." + key
+	var v string
+	row := s.pools.Read().QueryRowContext(ctx, `
+SELECT json_extract(meta, ?) FROM season_phases
+WHERE league_id = ? AND CASE WHEN json_valid(meta) THEN json_type(meta, ?) END IS NOT NULL
+ORDER BY seq DESC LIMIT 1`, path, s.leagueID, path)
+	switch err := row.Scan(&v); {
+	case errors.Is(err, sql.ErrNoRows):
+		return "", false, nil
+	case err != nil:
+		return "", false, fmt.Errorf("state: read %s directive: %w", key, err)
+	}
+	return v, true, nil
+}
+
+// appendDirective appends a row that keeps the current phase and sets key to value.
+func (w *txWriter) appendDirective(ctx context.Context, key, value, note string) error {
+	phase, err := w.CurrentPhase(ctx)
+	if err != nil {
+		return fmt.Errorf("state: %s directive: read current phase: %w", key, err)
+	}
+	meta, err := json.Marshal(map[string]string{key: value})
+	if err != nil {
+		return fmt.Errorf("state: %s directive: encode: %w", key, err)
+	}
+	if _, err := w.tx.ExecContext(ctx, `
+INSERT INTO season_phases (league_id, season, from_phase, to_phase, note, meta, at)
+VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		w.s.leagueID, w.s.season, string(phase), string(phase), note, string(meta),
+		time.Now().UTC().Format(time.RFC3339)); err != nil {
+		return fmt.Errorf("state: %s directive: insert: %w", key, err)
+	}
+	return nil
 }
 
 // SigningWindowClosed lets the SIGN gate read the window inside the transaction.
@@ -257,75 +290,36 @@ func (w *txWriter) SigningWindowClosed(ctx context.Context) (bool, error) {
 	return w.s.signingWindowClosed(ctx)
 }
 
-// signingWindowClosed reads the latest window directive; none means open. An unknown stored value
-// is drift and fails loudly. The LIKE scan is unindexed, which is fine at a handful of rows per
-// season; move the window to its own table if the log grows.
+// signingWindowClosed reads the window; no directive means open, and an unknown value is drift.
 func (s *Store) signingWindowClosed(ctx context.Context) (bool, error) {
-	var meta string
-	row := s.pools.Read().QueryRowContext(ctx, `
-SELECT meta FROM season_phases
-WHERE league_id = ? AND meta LIKE '%ufa_window%'
-ORDER BY seq DESC LIMIT 1`, s.leagueID)
-	switch err := row.Scan(&meta); {
-	case errors.Is(err, sql.ErrNoRows):
-		return false, nil // no directive: open
-	case err != nil:
-		return false, fmt.Errorf("state: signing window: %w", err)
+	v, _, err := s.latestDirective(ctx, directiveSigningWindow)
+	if err != nil {
+		return false, err
 	}
-	var m phaseMeta
-	if err := json.Unmarshal([]byte(meta), &m); err != nil {
-		return false, fmt.Errorf("state: signing window: decode meta %q: %w", meta, err)
-	}
-	switch m.UFAWindow {
+	switch v {
 	case "closed":
 		return true, nil
-	case "open":
+	case "open", "":
 		return false, nil
 	default:
-		return false, fmt.Errorf("state: signing window: stored ufa_window %q is neither open nor closed (drift)", m.UFAWindow)
+		return false, fmt.Errorf("state: signing window: stored value %q is neither open nor closed (drift)", v)
 	}
 }
 
-// AppendSigningWindow appends a window directive that keeps the phase; a redundant toggle is
-// rejected.
+// AppendSigningWindow opens or closes the window; a toggle to the current state is rejected.
 func (w *txWriter) AppendSigningWindow(ctx context.Context, open bool, note string) error {
 	closed, err := w.s.signingWindowClosed(ctx)
 	if err != nil {
-		return fmt.Errorf("state: AppendSigningWindow: read current window: %w", err)
+		return fmt.Errorf("state: AppendSigningWindow: %w", err)
 	}
-	currentlyOpen := !closed
-	if open == currentlyOpen {
-		return fmt.Errorf("state: AppendSigningWindow: signing window already %s (no-op rejected)", windowWord(currentlyOpen))
-	}
-	// from == to: a directive, not a phase change.
-	phase, err := w.CurrentPhase(ctx)
-	if err != nil {
-		return fmt.Errorf("state: AppendSigningWindow: read current phase: %w", err)
-	}
-	meta := signingWindowMetaOpen
-	if !open {
-		meta = signingWindowMetaClosed
-	}
-	now := time.Now().UTC().Format(time.RFC3339)
-	if _, err := w.tx.ExecContext(ctx, `
-INSERT INTO season_phases (league_id, season, from_phase, to_phase, note, meta, at)
-VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		w.s.leagueID, w.s.season, string(phase), string(phase), note, meta, now); err != nil {
-		return fmt.Errorf("state: AppendSigningWindow: insert %s directive: %w", windowWord(open), err)
-	}
-	return nil
-}
-
-func windowWord(open bool) string {
+	word := "closed"
 	if open {
-		return "open"
+		word = "open"
 	}
-	return "closed"
-}
-
-// tradeDeadlineMeta decodes a trade-deadline directive; an empty Deadline means none.
-type tradeDeadlineMeta struct {
-	TradeDeadline string `json:"trade_deadline"`
+	if open == !closed {
+		return fmt.Errorf("state: AppendSigningWindow: signing window already %s (no-op rejected)", word)
+	}
+	return w.appendDirective(ctx, directiveSigningWindow, word, note)
 }
 
 // TradeDeadlinePassed lets the TRADE gate read the deadline inside the transaction.
@@ -333,15 +327,12 @@ func (w *txWriter) TradeDeadlinePassed(ctx context.Context) (bool, error) {
 	return w.s.tradeDeadlinePassed(ctx)
 }
 
-// tradeDeadlinePassed reports whether the latest deadline directive has passed. None, or a
-// cleared one, means no block; an unparseable stamp fails loudly.
+// tradeDeadlinePassed reports whether the current deadline has passed. None or cleared means no
+// block; an unparseable stamp is drift.
 func (s *Store) tradeDeadlinePassed(ctx context.Context) (bool, error) {
-	stamp, err := s.currentTradeDeadlineStamp(ctx)
-	if err != nil {
+	stamp, _, err := s.latestDirective(ctx, directiveTradeDeadline)
+	if err != nil || stamp == "" {
 		return false, err
-	}
-	if stamp == "" {
-		return false, nil // none, or cleared
 	}
 	deadline, err := time.Parse(time.RFC3339, stamp)
 	if err != nil {
@@ -350,36 +341,16 @@ func (s *Store) tradeDeadlinePassed(ctx context.Context) (bool, error) {
 	return !time.Now().Before(deadline), nil
 }
 
-// currentTradeDeadlineStamp returns the latest deadline stamp, or "" when none or cleared.
-func (s *Store) currentTradeDeadlineStamp(ctx context.Context) (string, error) {
-	var meta string
-	row := s.pools.Read().QueryRowContext(ctx, `
-SELECT meta FROM season_phases
-WHERE league_id = ? AND meta LIKE '%trade_deadline%'
-ORDER BY seq DESC LIMIT 1`, s.leagueID)
-	switch err := row.Scan(&meta); {
-	case errors.Is(err, sql.ErrNoRows):
-		return "", nil
-	case err != nil:
-		return "", fmt.Errorf("state: trade deadline: %w", err)
-	}
-	var m tradeDeadlineMeta
-	if err := json.Unmarshal([]byte(meta), &m); err != nil {
-		return "", fmt.Errorf("state: trade deadline: decode meta %q: %w", meta, err)
-	}
-	return m.TradeDeadline, nil
-}
-
-// AppendTradeDeadline appends a deadline directive that keeps the phase; a zero deadline clears
-// it. Re-sending the exact same stamp is rejected, while a different past deadline is accepted.
+// AppendTradeDeadline sets the deadline; a zero deadline clears it. Re-sending the current stamp
+// is rejected, while a different past deadline is accepted.
 func (w *txWriter) AppendTradeDeadline(ctx context.Context, deadline time.Time, note string) error {
 	stamp := ""
 	if !deadline.IsZero() {
 		stamp = deadline.UTC().Format(time.RFC3339)
 	}
-	current, err := w.s.currentTradeDeadlineStamp(ctx)
+	current, _, err := w.s.latestDirective(ctx, directiveTradeDeadline)
 	if err != nil {
-		return fmt.Errorf("state: AppendTradeDeadline: read current directive: %w", err)
+		return fmt.Errorf("state: AppendTradeDeadline: %w", err)
 	}
 	if stamp == current {
 		word := "cleared"
@@ -388,17 +359,5 @@ func (w *txWriter) AppendTradeDeadline(ctx context.Context, deadline time.Time, 
 		}
 		return fmt.Errorf("state: AppendTradeDeadline: already %s (no-op rejected)", word)
 	}
-	phase, err := w.CurrentPhase(ctx)
-	if err != nil {
-		return fmt.Errorf("state: AppendTradeDeadline: read current phase: %w", err)
-	}
-	meta := fmt.Sprintf(`{"trade_deadline":%q}`, stamp)
-	now := time.Now().UTC().Format(time.RFC3339)
-	if _, err := w.tx.ExecContext(ctx, `
-INSERT INTO season_phases (league_id, season, from_phase, to_phase, note, meta, at)
-VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		w.s.leagueID, w.s.season, string(phase), string(phase), note, meta, now); err != nil {
-		return fmt.Errorf("state: AppendTradeDeadline: insert directive: %w", err)
-	}
-	return nil
+	return w.appendDirective(ctx, directiveTradeDeadline, stamp, note)
 }
