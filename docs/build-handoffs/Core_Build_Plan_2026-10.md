@@ -104,10 +104,10 @@ exit code. Work happens on a session branch; never on main.
      a types-only package whose comments are its data's documentation.
    - Provenance in code comments → 0.
 
-   **Measured at the end of Stage 0:** surviving code 14.4%, no package over 20% apart from
-   `scouting` (29%), provenance 0. The packages Stages 4, 5 and 7 rewrite or delete
-   (`engine/l4`, `scouting/assembly`, `harness`, and the nflverse/CFBD fetchers) sit at 34.7% and
-   hold all 8 remaining provenance lines. They were not polished, because the code is going away.
+   **Measured at the end of Stage 0:** surviving code 14.3%, no package over 20% apart from
+   `scouting` (29.5%), provenance 0. The packages Stages 4, 5 and 7 rewrite or delete
+   (`engine/l4`, `scouting/assembly`, `harness`, and the nflverse/CFBD fetchers) sit at 33.6% and
+   hold all 7 remaining provenance lines. They were not polished, because the code is going away.
    The ratchet holds them flat, and the gates of Stages 4, 5 and 7 inherit the same targets for
    whatever replaces them.
 
@@ -117,6 +117,26 @@ exit code. Work happens on a session branch; never on main.
 - `go build`, `go vet`, `go test -race` and `golangci-lint` green, plus the frontend build.
 - Docs match the code.
 - A launch writes a log.
+
+**Gate check, 2026-10-03** (branch `session/m1b-bash`):
+
+| Gate | Result |
+|---|---|
+| One branch line, pushed | PASS. `origin/main` merged in, pre-push fixed, branch pushed. The stale branches are listed and wait on Christopher's go-ahead to delete (each tagged `archive/<name>` first). |
+| Bloat at or under target, in pre-push | PASS. Numbers above; `make bloat` is part of `make lint`, which `make verify` and the pre-push hook run. Ratchet baseline: comment 20, provenance 7, tiny files 28, dupl 38. |
+| build, vet, race tests, lint, frontend build | PASS (`make verify`, plus `go build ./...` and `go vet ./...`). |
+| Docs match the code | PASS. CLAUDE.md, SYSTEM_MAP (21 IPC methods, every package), AGENTS.md, Build_Tracker and North_Star pointers; Fable's June planning docs moved to `archive/2026-06-pre-build/`. |
+| A launch writes a log | PASS on a dev build (`-probe`: a timed line per startup step). The production build is part of Christopher's live gate. |
+
+Found and fixed during the check: the DT cushion's Layer 4 half still used the literals 8.00
+and 0.90 (item 4). Both halves now read one `engine.CushionGuard` from the params, with outputs
+bit-identical at the defaults.
+
+**Stage 0 closes when Christopher:**
+1. confirms the stale-branch deletion;
+2. merges christopher-coding-standards PR #33 (the upstream half of item 5);
+3. runs the live gate: a production build writes its log, the board loads, migration v3 runs
+   with its `thewarroom.db.premigration-*` backup, and a forced startup failure shows the banner.
 
 ### Stage 1 — Start the clock (storage), as a measure dictionary (R10, R11)
 

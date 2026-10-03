@@ -130,4 +130,4 @@ Horizon sequence after the transaction suite:
 
 ---
 
-*Companion documents: `North_Star.md` (purpose, pillars, principles) · `docs/build-handoffs/Build_Tracker.md` (build sequence) · `docs/roadmap/Roadmap_and_Open_Questions.md` (OQs + locked decisions).*
+*Companion documents: `North_Star.md` (purpose, pillars, principles) · `docs/build-handoffs/Core_Build_Plan_2026-10.md` (build plan) · `docs/roadmap/Roadmap_and_Open_Questions.md` (OQs + locked decisions).*

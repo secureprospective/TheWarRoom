@@ -5,7 +5,7 @@
 > sequence is deferred.
 
 **Version:** 1.0 — June 2026
-**Status:** Operational. The forward source of truth for the build. Check a session off only when its close gate fully passes.
+**Status:** History: the build sessions as they were tracked up to 2026-10.
 **Origin:** Session 2 sequencing plan (`very-good-now-i-replicated-feigenbaum.md`) as corrected by the Session 3 audit (`session-3-audit-build-sequencing.md`). Audit decisions referenced as `AD-##`.
 
 This is the document opened at the start and end of every build session. One line per session. Read the legend once; it governs the whole build.
