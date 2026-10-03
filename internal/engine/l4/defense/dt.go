@@ -6,10 +6,8 @@
 //
 // PURITY (depguard engine-is-pure, **/internal/engine/**): this package imports only the
 // engine (for the Layer4 contract types) and the curve package — no store, db, ingestion,
-// or I/O. Every input arrives as a parameter on Layer4Input. The SL-021 L3 cushion guard
-// the DT rubric is paired with lives in the pipeline (engine.ApplyCushionGuard) and rides
-// on Calibration; this rubric carries only the BREAKOUT-internal half of the cushion (the
-// Age-Trajectory sub-signal), which is pure L4.
+// or I/O. Every input arrives as a parameter on Layer4Input, including the SL-021 cushion
+// guard, whose L3 half the pipeline applies to the age pull.
 package defense
 
 import (
@@ -20,8 +18,7 @@ import (
 // DT Layer-4 mechanics (docs/scoring-engine/DT_Rubric.md, locked v1.0). Rubric constants —
 // never admin-exposed (Hard Constraint). DT exercises three mechanics QB did not: an ACTIVE
 // RAS component (not SL-020-forced), SL-005 film compression (±3%, not ±5%), and the SL-021
-// Cushion Guard (whose L3 half is engine.ApplyCushionGuard; the breakout-trajectory half is
-// here). NGS Coverage is CB/S-only and MUST NOT appear here (Hard Constraint). SL-019 is
+// Cushion Guard (engine.CushionGuard; the breakout-trajectory half is applied here). NGS Coverage is CB/S-only and MUST NOT appear here (Hard Constraint). SL-019 is
 // NOT applied — the Cushion Guard replaces it (Hard Constraint).
 const (
 	// Film component (DT_Rubric §2): S-curve over the IDP film composite. SL-005 compression
@@ -57,18 +54,6 @@ const (
 	dtWeightSchoolTier    = 0.20
 	dtWeightCollegeShare  = 0.45
 	dtWeightAgeTrajectory = 0.15
-
-	// SL-021 Cushion Guard constants (DT_Rubric §1/§3). The L3 half ships to the engine via
-	// Calibration (set by composition); these mirror those numbers for the BREAKOUT
-	// Age-Trajectory half, which is pure-L4 and applied here. When raw RAS ≥ threshold AND
-	// age > peak, the trajectory's fall below neutral (0.50) is slowed by declineFactor.
-	dtCushionRAS     = 8.00
-	dtCushionDecline = 0.90 // 10% slower decline
-	// dtPeakAge MIRRORS composition.peakLimit(PosDT) — both anchor to DT_Rubric §1 "Layer 3
-	// Peak Limit: 30". The engine is pure (cannot import composition), so the value is
-	// duplicated by necessity; both cite the same spec line, and drift would desync the L3
-	// and L4 cushion windows (GLM review m1 — accepted, single-spec-sourced).
-	dtPeakAge = 30.0
 )
 
 // DT is the defensive-tackle Layer-4 rubric. Combined = film × RAS × breakout
@@ -106,7 +91,7 @@ func NewDT() *DT {
 // raw RAS / 10 through a High-tier S-curve, scaled by the rookie position weight, or neutral
 // 1.000 when RAS is absent (Data-Parity — an absent signal never penalizes). Breakout weights
 // the four sub-signals; its Age-Trajectory sub-signal is Cushion-Guard-protected past peak
-// for high-RAS DTs (the breakout half of SL-021; the L3 half is engine.ApplyCushionGuard).
+// for high-RAS DTs (the breakout half of SL-021).
 func (d *DT) Apply(in engine.Layer4Input) engine.Layer4Output {
 	sc := in.Scouting
 	p := in.Player
@@ -127,12 +112,9 @@ func (d *DT) Apply(in engine.Layer4Input) engine.Layer4Output {
 		rasEffective = 1.0 + dtRASRookieWeight*(rasCurve-1.0)
 	}
 
-	// Breakout composite. Age trajectory always has a value (age is known); for a qualifying
-	// high-RAS DT past peak the Cushion Guard slows its decline below neutral.
-	ageTraj := curve.Interp(d.ageTrajectory, p.Age)
-	if p.HasRAS && p.RAS >= dtCushionRAS && p.Age > dtPeakAge {
-		ageTraj = curve.NeutralNorm - (curve.NeutralNorm-ageTraj)*dtCushionDecline
-	}
+	// Breakout composite. Age trajectory always has a value (age is known); past peak it falls
+	// below neutral, where the Cushion Guard slows it for a high-RAS DT.
+	ageTraj := in.Cushion.Slow(curve.Interp(d.ageTrajectory, p.Age), curve.NeutralNorm, p.RAS, p.HasRAS)
 	composite := dtWeightBreakoutAge*curve.SubSignal(sc.HasBreakoutAge, d.breakoutAge, sc.BreakoutAge) +
 		dtWeightSchoolTier*curve.Present(sc.HasSchoolTier, sc.SchoolTierNorm) +
 		dtWeightCollegeShare*curve.SubSignal(sc.HasCollegeShare, d.collegeShare, sc.CollegeShare) +

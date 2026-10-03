@@ -30,21 +30,3 @@ func ApplyDecay(age, peakLimit, decayRate float64) (float64, error) {
 	}
 	return pull, nil
 }
-
-// ApplyCushionGuard is the SL-021 Late-Career Cushion Guard (DT_Rubric §1/§3): a measured
-// RAS at or above threshold slows the decline past peak:
-//
-//	cushioned = 1.0 − (1.0 − rawPull) × declineFactor   (DT: 0.90 ⇒ 10% slower)
-//
-// A zero threshold disables it (every position but DT), and an imputed RAS never earns it.
-// A declineFactor outside [0,1] would boost or amplify instead of slowing, so it disables
-// the guard rather than corrupt the score.
-func ApplyCushionGuard(rawPull, ras float64, hasRAS bool, threshold, declineFactor float64) float64 {
-	if threshold <= 0 || !hasRAS || ras < threshold {
-		return rawPull
-	}
-	if declineFactor < 0 || declineFactor > 1 {
-		return rawPull
-	}
-	return 1.0 - (1.0-rawPull)*declineFactor
-}

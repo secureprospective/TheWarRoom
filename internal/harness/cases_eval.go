@@ -109,21 +109,21 @@ func eval3B(reg RubricRegistry) (CaseState, string) {
 // engine level — past peak, a DT with raw RAS ≥ 8.00 decays SLOWER than an identical DT
 // below threshold, and a sub-threshold RAS leaves the raw pull unchanged; (2) the L4
 // breakout Age-Trajectory cushion inside the REGISTERED DT rubric — past peak a qualifying
-// DT's breakout component is lifted vs an identical sub-threshold DT. The cushion strength
-// is the per-position value the DT rubric ships via Calibration (8.00 / 0.90).
+// DT's breakout component is lifted vs an identical sub-threshold DT. Both halves use the one
+// guard, at the DT_Rubric values the params ship (8.00 / 0.90).
 func eval3F(reg RubricRegistry) (CaseState, string) {
 	if st, why, ok := requireRubrics(reg, domain.PosDT); !ok {
 		return st, why
 	}
 	// --- Half 1: L3 decay modulator ---
 	const peak, rate, age = 30.0, 0.03, 33.0 // three years past the DT peak
-	const threshold, decline = 8.00, 0.90
+	guard := engine.CushionGuard{RASThreshold: 8.00, DeclineFactor: 0.90}
 	raw, err := engine.ApplyDecay(age, peak, rate)
 	if err != nil {
 		return StateFail, fmt.Sprintf("raw decay errored: %v", err)
 	}
-	cushioned := engine.ApplyCushionGuard(raw, 8.00, true, threshold, decline) // qualifying RAS
-	below := engine.ApplyCushionGuard(raw, 7.99, true, threshold, decline)     // just under threshold
+	cushioned := guard.Slow(raw, 1.0, 8.00, true) // qualifying RAS
+	below := guard.Slow(raw, 1.0, 7.99, true)     // just under threshold
 	if !(cushioned > raw) {
 		return StateFail, fmt.Sprintf("L3: cushion did not slow decay: cushioned %.4f not > raw %.4f", cushioned, raw)
 	}
@@ -133,8 +133,8 @@ func eval3F(reg RubricRegistry) (CaseState, string) {
 	// --- Half 2: L4 breakout Age-Trajectory cushion through the registered DT rubric ---
 	dt := reg[domain.PosDT]
 	bk := engine.ScoutingInput{BreakoutAge: 22, HasBreakoutAge: true, SchoolTierNorm: 0.70, HasSchoolTier: true, CollegeShare: 0.15, HasCollegeShare: true}
-	hi := dt.Apply(engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosDT, Age: 32, RAS: 9.0, HasRAS: true}, Scouting: bk})
-	lo := dt.Apply(engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosDT, Age: 32, RAS: 7.0, HasRAS: true}, Scouting: bk})
+	hi := dt.Apply(engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosDT, Age: 32, RAS: 9.0, HasRAS: true}, Scouting: bk, Cushion: guard})
+	lo := dt.Apply(engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosDT, Age: 32, RAS: 7.0, HasRAS: true}, Scouting: bk, Cushion: guard})
 	if !(hi.BreakoutEffective > lo.BreakoutEffective) {
 		return StateFail, fmt.Sprintf("L4: age-32 cushioned breakout %.5f not > un-cushioned %.5f", hi.BreakoutEffective, lo.BreakoutEffective)
 	}
