@@ -9,62 +9,49 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
 
-// MoveDTO is one leg of a trade as it crosses the IPC boundary.
+// MoveDTO is one leg of a trade.
 type MoveDTO struct {
 	MFLID         string `json:"mflID"`
 	ToFranchiseID string `json:"toFranchiseID"`
 }
 
-// TransactionRequest is the typed IPC payload the dev transaction form sends. Kind
-// selects which fields are read: TRADE reads Moves; ROSTER_STATUS reads MFLID + Status;
-// WAIVER reads MFLID (the §8 cut); RESTRUCTURE reads MFLID + MoveMillions (the §11 move,
-// in millions of dollars — parsed to exact cents server-side, never as a JS number). Every
-// money figure and limit is resolved server-side from authoritative state.
-// It stays fully typed (no any/interface{}) so the ifaceguard boundary holds; the App
-// method translates it into the sealed transactions.Request the Coordinator executes.
+// TransactionRequest is the typed IPC payload for every transaction. Kind selects which fields
+// are read. Money arrives as millions strings and is parsed to exact cents server-side, never
+// as a JS number; every other figure is resolved from authoritative state.
 type TransactionRequest struct {
 	Kind  string    `json:"kind"`
 	Moves []MoveDTO `json:"moves"`
-	// TRADE: PicksNote is Alpha-scope free text (unvalidated by design — no pick-ownership
-	// ledger yet); Rationale is required (the commissioner's reason, server-validated non-empty).
+	// TRADE: PicksNote is free text (there is no pick-ownership ledger yet); Rationale is required.
 	PicksNote    string `json:"picksNote"`
 	Rationale    string `json:"rationale"`
 	MFLID        string `json:"mflID"`
 	Status       string `json:"status"`
 	MoveMillions string `json:"moveMillions"`
-	AddedYears   int    `json:"addedYears"` // EXTENSION (§10): years to add (1..3)
-	ToPhase      string `json:"toPhase"`    // ADVANCE_PHASE (D3): target season phase
-	Note         string `json:"note"`       // ADVANCE_PHASE: commissioner's freeform reason
-	// §13 special situations. RETIREMENT/DEATH read MFLID. CAP_RELIEF reads FranchiseID +
-	// AmountMillions (parsed to exact cents server-side, never a JS number) + Reason (the
-	// commissioner's audit basis).
+	AddedYears   int    `json:"addedYears"` // EXTENSION: years to add (1-3)
+	ToPhase      string `json:"toPhase"`    // ADVANCE_PHASE: target phase
+	Note         string `json:"note"`
+	// Special situations (rulebook §13): RETIREMENT and DEATH read MFLID; CAP_RELIEF reads
+	// FranchiseID, AmountMillions and Reason.
 	FranchiseID    string `json:"franchiseID"`
 	AmountMillions string `json:"amountMillions"`
 	Reason         string `json:"reason"`
-	// SIGN (§6 free agency): MFLID + FranchiseID + SalaryMillions (per-year flat, parsed to exact
-	// cents server-side) + Years (1..4). Eligibility, lockout, and the min-salary floor resolve in-tx.
+	// SIGN (§6): MFLID, FranchiseID, SalaryMillions (flat per year) and Years (1-4).
 	SalaryMillions string `json:"salaryMillions"`
 	Years          int    `json:"years"`
-	// SET_SIGNING_WINDOW (§6 UFA calendar): WindowOpen toggles the commissioner signing window
-	// open (true) / closed (false); Note is the freeform reason. It changes no phase and no player.
+	// SET_SIGNING_WINDOW (§6): open or close the commissioner signing window.
 	WindowOpen bool `json:"windowOpen"`
-	// SET_TRADE_DEADLINE (§14): TradeDeadline is an ISO-8601 instant; an empty string CLEARS any
-	// standing deadline (the commissioner's "reopen trades" action). Note is the freeform reason.
+	// SET_TRADE_DEADLINE (§14): an ISO-8601 instant; empty clears the deadline.
 	TradeDeadline string `json:"tradeDeadline"`
-	// Commissioner calendar (SCHEDULE_EVENT / RESCHEDULE_EVENT / CANCEL_EVENT): EventID is the
-	// logical blob id (the frontend mints it on schedule and re-sends it on reschedule/cancel);
-	// EventKind is the EVENTUAL op the blob will run (ADVANCE_PHASE / … / CAP_RELIEF); ScheduledAt
-	// is its ISO-8601 time; Payload is the opaque JSON of the eventual op's fields, stored verbatim
-	// and executed only when the blob fires, never at schedule time.
+	// Calendar ops: EventID is minted by the frontend on schedule and resent on reschedule or
+	// cancel. Payload is the eventual op's fields, stored as-is and run only when the event fires.
 	EventID     string `json:"eventID"`
 	EventKind   string `json:"eventKind"`
 	ScheduledAt string `json:"scheduledAt"`
 	Payload     string `json:"payload"`
 }
 
-// TransactionResult is the typed IPC outcome: OK plus the committed Receipt fields, or
-// OK=false with a human-readable Detail. A failed transaction changed nothing (the
-// Coordinator rolls back), so the frontend can safely re-read state after any result.
+// TransactionResult is OK plus the receipt, or OK=false with the reason. A failed transaction
+// changed nothing.
 type TransactionResult struct {
 	OK              bool          `json:"ok"`
 	Kind            string        `json:"kind"`
@@ -74,14 +61,8 @@ type TransactionResult struct {
 	CapDeltas       []CapDeltaDTO `json:"capDeltas"`
 }
 
-// CapDeltaDTO is one cap-impact line item of a PREVIEW's pre-commit dollar breakdown as it crosses
-// the IPC boundary — the signed figure a staged-confirm quote shows before the commissioner commits.
-// Amount is a display dollar string (domain.Money.String(), e.g. "$4,410,000"), signed with a
-// leading "+"/"−" so the UI shows a charge vs a credit without re-deriving the sign; Cents is the
-// raw signed cents behind it. FranchiseName is resolved server-side (id fallback when the rulebook
-// predates the franchise directory); Reason is the store's own audit label. Never null on a
-// success — an op with no breakdown yet carries an empty slice (Wails marshals nil→null, guarded
-// `?? []` in the modal). It is populated only by PreviewTransaction; an executed result omits it.
+// CapDeltaDTO is one line of a preview's cap impact. Amount is a signed display string ("+" a
+// charge, "−" a credit); Cents is the signed raw value. Only previews carry these.
 type CapDeltaDTO struct {
 	FranchiseID   string `json:"franchiseID"`
 	FranchiseName string `json:"franchiseName"`
@@ -90,9 +71,7 @@ type CapDeltaDTO struct {
 	Reason        string `json:"reason"`
 }
 
-// ExecuteTransaction is the dev-surface IPC method (functional gate for B7a): it runs a
-// trade or roster-status change through the Coordinator and returns a typed result. The
-// UI is deliberately minimal — debuggability over polish; a full transaction UI is B7b.
+// ExecuteTransaction runs a request through the coordinator and commits it.
 func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
 	if a.startupErr != nil {
 		return TransactionResult{Detail: a.startupErr.Error()}
@@ -101,15 +80,12 @@ func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
 		return TransactionResult{Detail: "transaction coordinator not initialized"}
 	}
 
-	// Bounded context: an IPC method must never block the frontend indefinitely if the
-	// data layer stalls (the M1 pattern). A tag additionally fetches the players-DB
-	// Lookup, so it gets a longer budget.
+	// A tag also fetches the players directory, hence the longer budget.
 	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
 	defer cancel()
 
-	// TAG (§9) runs a distinct Coordinator verb: the price is resolved server-side from the
-	// top-5-by-position league-wide average, which needs the players-DB position join
-	// (the Lookup). It never crosses the wire — the frontend sends only the player id.
+	// TAG (§9): the price is the top-5 average at the player's position, which needs the players
+	// directory. Only the id crosses the wire.
 	if req.Kind == string(transactions.KindTag) {
 		dir, derr := a.directory(ctx)
 		if derr != nil {
@@ -122,9 +98,8 @@ func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
 		return TransactionResult{OK: true, Kind: string(rec.Kind), PlayersAffected: rec.PlayersAffected, At: rec.At.Format(time.RFC3339)}
 	}
 
-	// EXTENSION (§10) also runs a distinct Coordinator verb: the per-year price is 150% of the
-	// highest remaining year (resolved inside the tx), but the POSITION FLOOR needs the
-	// players-DB position join (the Lookup). Only the id and the added-year count cross the wire.
+	// EXTENSION (§10): the price is resolved in the transaction, but the position floor needs the
+	// players directory.
 	if req.Kind == string(transactions.KindExtension) {
 		dir, derr := a.directory(ctx)
 		if derr != nil {
@@ -142,9 +117,8 @@ func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
 		return TransactionResult{Detail: err.Error()}
 	}
 
-	// SIGN (§6) runs a distinct Coordinator verb: the min-salary floor's experience input is the
-	// player's DRAFT YEAR, resolved server-side from the players-DB join (the Lookup). Only the id,
-	// salary, and year count crossed the wire — the draft year never does.
+	// SIGN (§6): the min-salary floor depends on the player's draft year, from the players
+	// directory.
 	if sign, ok := txn.(transactions.Sign); ok {
 		return a.executeSign(ctx, req.Kind, sign)
 	}
@@ -161,10 +135,7 @@ func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
 	}
 }
 
-// executeSign resolves the players-DB Lookup (the §6 draft-year → experience source for the
-// min-salary floor) and runs the signing through the Coordinator's ExecuteSign verb. Split out of
-// ExecuteTransaction to keep that dispatcher within the funlen cap, mirroring the tag/extension
-// directory-backed verbs.
+// executeSign resolves the players directory for the min-salary floor and runs the signing.
 func (a *App) executeSign(ctx context.Context, kind string, sign transactions.Sign) TransactionResult {
 	dir, derr := a.directory(ctx)
 	if derr != nil {
@@ -177,16 +148,14 @@ func (a *App) executeSign(ctx context.Context, kind string, sign transactions.Si
 	return TransactionResult{OK: true, Kind: string(rec.Kind), PlayersAffected: rec.PlayersAffected, At: rec.At.Format(time.RFC3339)}
 }
 
-// PhaseResult is a read of the league-year's current season phase (D3), for the dev surface
-// that drives the §12 gate (advance the phase → run a buyout).
+// PhaseResult is the league year's current season phase.
 type PhaseResult struct {
 	OK     bool   `json:"ok"`
 	Phase  string `json:"phase"`
 	Detail string `json:"detail"`
 }
 
-// GetCurrentPhase reads the current season phase off the concrete store (a read-only query,
-// never the writer). Backs the dev control that shows and advances the phase.
+// GetCurrentPhase reads the current season phase.
 func (a *App) GetCurrentPhase() PhaseResult {
 	if a.startupErr != nil {
 		return PhaseResult{Detail: a.startupErr.Error()}
@@ -203,8 +172,8 @@ func (a *App) GetCurrentPhase() PhaseResult {
 	return PhaseResult{OK: true, Phase: string(ph)}
 }
 
-// buildRequest maps the wire DTO onto a sealed transactions.Request. An unknown Kind is
-// rejected here, at the boundary, before the Coordinator is touched.
+// buildRequest maps the DTO onto a sealed transactions.Request; an unknown Kind is rejected
+// here.
 func buildRequest(req TransactionRequest) (transactions.Request, error) {
 	switch req.Kind {
 	case string(transactions.KindTrade):
@@ -221,23 +190,20 @@ func buildRequest(req TransactionRequest) (transactions.Request, error) {
 	case string(transactions.KindWaiver):
 		return transactions.Waiver{MFLID: req.MFLID}, nil
 	case string(transactions.KindBuyout):
-		// §12: offseason-only, two per team per season; every figure resolved in-tx.
+		// §12: offseason only, two per team per season.
 		return transactions.Buyout{MFLID: req.MFLID}, nil
 	case string(transactions.KindAdvancePhase):
 		return transactions.AdvancePhase{To: domain.Phase(req.ToPhase), Note: req.Note}, nil
 	case string(transactions.KindRolloverSeason):
-		// §14: the season boundary, PLAYOFFS(N)→OFFSEASON(N+1). Commissioner-confirmed; carries
-		// only a freeform note (its sole precondition, current phase == PLAYOFFS, is enforced in-tx).
+		// §14: the season boundary, PLAYOFFS(N) to OFFSEASON(N+1).
 		return transactions.RolloverSeason{Note: req.Note}, nil
 	case string(transactions.KindSetSigningWindow):
-		// §6 UFA calendar: open/close the commissioner signing window without changing the phase.
-		// The redundancy guard (already in the requested state) is enforced in-tx.
 		return transactions.SetSigningWindow{Open: req.WindowOpen, Note: req.Note}, nil
 	case string(transactions.KindRetirement):
-		// §13: 30% of remaining contract as dead cap; every figure resolved in-tx.
+		// §13: 30% of the remaining contract becomes dead cap.
 		return transactions.Retirement{MFLID: req.MFLID}, nil
 	case string(transactions.KindDeath):
-		// §13 Gaines Adams Rule: remove with zero dead cap.
+		// §13 Gaines Adams Rule: removed with zero dead cap.
 		return transactions.Death{MFLID: req.MFLID}, nil
 	case string(transactions.KindScheduleEvent):
 		return transactions.ScheduleEvent{Event: calendarEvent(req)}, nil
@@ -246,21 +212,17 @@ func buildRequest(req TransactionRequest) (transactions.Request, error) {
 	case string(transactions.KindCancelEvent):
 		return transactions.CancelEvent{Event: calendarEvent(req)}, nil
 	default:
-		// The money-bearing kinds (their millions→cents parse can error), plus SET_TRADE_DEADLINE
-		// (its RFC3339 parse can also error), live in a sibling builder so this switch stays under
-		// the cyclomatic cap.
+		// Kinds whose parsing can fail live in buildMoneyRequest.
 		return buildMoneyRequest(req)
 	}
 }
 
-// buildMoneyRequest maps the DTO onto the sealed requests whose construction can itself fail:
-// §13 cap relief, §11 restructure, and §6 signing (each parses a caller-supplied millions-string
-// into exact cents at the boundary, never a JS number), plus §14 SET_TRADE_DEADLINE (parses an
-// RFC3339 instant). An unknown Kind is the final rejection.
+// buildMoneyRequest maps the kinds whose construction can fail: cap relief, restructure and
+// signing (money parsing) and the trade deadline (time parsing).
 func buildMoneyRequest(req TransactionRequest) (transactions.Request, error) {
 	switch req.Kind {
 	case string(transactions.KindSetTradeDeadline):
-		// §14: TradeDeadline empty → zero time, which SetTradeDeadline.apply treats as "clear".
+		// An empty deadline is the zero time, which clears it.
 		var deadline time.Time
 		if req.TradeDeadline != "" {
 			d, err := time.Parse(time.RFC3339, req.TradeDeadline)
@@ -271,7 +233,7 @@ func buildMoneyRequest(req TransactionRequest) (transactions.Request, error) {
 		}
 		return transactions.SetTradeDeadline{Deadline: deadline, Note: req.Note}, nil
 	case string(transactions.KindCapRelief):
-		// §13 Cap Relief Appeal: commissioner credit. Amount is discretionary, not resolved.
+		// §13 cap relief: a discretionary commissioner credit.
 		amount, err := domain.ParseMoneyMillions(req.AmountMillions)
 		if err != nil {
 			return nil, fmt.Errorf("cap relief amount: %w", err)
@@ -284,8 +246,8 @@ func buildMoneyRequest(req TransactionRequest) (transactions.Request, error) {
 		}
 		return transactions.Restructure{MFLID: req.MFLID, Move: move}, nil
 	case string(transactions.KindSign):
-		// §6 free-agency signing: the salary IS the commissioner's agreed figure (no formula to
-		// resolve). Eligibility / buyout lockout / min-salary floor resolve in-tx.
+		// §6: the salary is the agreed figure. Eligibility, lockout and the floor resolve in the
+		// transaction.
 		salary, err := domain.ParseMoneyMillions(req.SalaryMillions)
 		if err != nil {
 			return nil, fmt.Errorf("sign salary: %w", err)

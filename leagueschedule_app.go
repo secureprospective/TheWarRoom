@@ -13,18 +13,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
-// This file is the LEAGUE-SCHEDULE seam: the fantasy league's own weekly matchups (who plays
-// whom, real franchise ids), read-only and MFL-sourced — distinct from the commissioner
-// calendar (calendar_events), which is a commissioner-AUTHORED intent ledger. Mirrors the M2
-// degradation seam (m2_standings_source.go) exactly: live fetch → cache on success → fall back
-// to the last-known-good cache on failure, reported through the shared Freshness contract
-// (freshness.go) rather than blanking the board on an MFL outage.
-
-// leagueScheduleOrCache is the schedule degradation seam, structured identically to
-// standingsOrCache: it tries the live MFL fetch first; on success it refreshes the cache and
-// reports live. On failure it falls back to the last-known-good cached payload and reports
-// stale, carrying the fetch error as the note. Only a failed fetch with NOTHING cached returns
-// an error.
+// leagueScheduleOrCache returns the league's MFL matchup schedule, live or from the last good
+// cache, the same way standingsOrCache does.
 func (a *App) leagueScheduleOrCache(ctx context.Context) ([]leagueschedule.RawScheduleWeek, Freshness, error) {
 	weeks, ferr := leagueschedule.Fetch(ctx, a.mflClient, ingestion.SeasonYear, ingestion.LeagueID)
 	if ferr == nil {
@@ -35,9 +25,6 @@ func (a *App) leagueScheduleOrCache(ctx context.Context) ([]leagueschedule.RawSc
 			fresh.Note = fmt.Sprintf("schedule not cached (encode failed): %v", merr)
 			return weeks, fresh, nil
 		}
-		// Fresh context on the write, same reason as standingsOrCache: a fetch that succeeded
-		// on the last of its budget would leave ctx nearly expired, and the cache would
-		// silently never populate — invisible until the next outage needed it.
 		wCtx, wCancel := context.WithTimeout(a.fallbackParent(), cacheReadTimeout)
 		defer wCancel()
 		//nolint:contextcheck // NOT inheriting ctx is the whole point — see fallbackParent.
@@ -47,9 +34,6 @@ func (a *App) leagueScheduleOrCache(ctx context.Context) ([]leagueschedule.RawSc
 		return weeks, fresh, nil
 	}
 
-	// The fallback read must not inherit the fetch's deadline, for the same reason
-	// standingsOrCache's fallback doesn't: a timed-out fetch leaves ctx already expired, and
-	// reusing it would fail the local SQLite read instantly while good cached data sits there.
 	fbCtx, fbCancel := context.WithTimeout(a.fallbackParent(), cacheReadTimeout)
 	defer fbCancel()
 
@@ -73,10 +57,8 @@ func (a *App) leagueScheduleOrCache(ctx context.Context) ([]leagueschedule.RawSc
 	return cached, staleFreshness(at, ferr), nil
 }
 
-// ScheduleMatchupDTO is one matchup as it crosses the IPC boundary: both sides' franchise ids
-// resolved to real display names via the rulebook's franchise directory (id fallback when a
-// name is unset, matching the m2service/transactions_app convention). Scores are raw strings,
-// empty until the week has played.
+// ScheduleMatchupDTO is one matchup with both franchises' display names. Scores are empty until
+// the week is played.
 type ScheduleMatchupDTO struct {
 	HomeFranchiseID   string `json:"homeFranchiseID"`
 	HomeFranchiseName string `json:"homeFranchiseName"`
@@ -86,16 +68,13 @@ type ScheduleMatchupDTO struct {
 	AwayScore         string `json:"awayScore"`
 }
 
-// ScheduleWeekDTO is one week's full slate of matchups, Week parsed to an int for the
-// frontend's sort/group convenience (the fetcher keeps it a raw string; parsing happens here,
-// at the IPC boundary, not upstream).
+// ScheduleWeekDTO is one week's matchups; Week is parsed to an int here, at the boundary.
 type ScheduleWeekDTO struct {
 	Week     int                  `json:"week"`
 	Matchups []ScheduleMatchupDTO `json:"matchups"`
 }
 
-// LeagueScheduleResult is a read of the league's full-season matchup schedule. Weeks is never
-// null on success (Wails marshals a nil Go slice to JSON null; here it is always non-nil).
+// LeagueScheduleResult is the full-season schedule. Weeks is never nil on success.
 type LeagueScheduleResult struct {
 	OK        bool              `json:"ok"`
 	Weeks     []ScheduleWeekDTO `json:"weeks"`
@@ -103,9 +82,7 @@ type LeagueScheduleResult struct {
 	Detail    string            `json:"detail"`
 }
 
-// GetLeagueSchedule is the IPC entry point for the Commissioner Calendar's read-only Schedule
-// pane. It is display-only: unlike GetCalendarEvents, nothing here is a commissioner-authored
-// transaction, so there is no stage/preview/confirm path — just a read with honest degradation.
+// GetLeagueSchedule is the read behind the calendar's schedule pane: display-only.
 func (a *App) GetLeagueSchedule() LeagueScheduleResult {
 	if err := a.m1Ready(); err != nil {
 		return LeagueScheduleResult{Detail: err.Error()}
@@ -146,9 +123,7 @@ func (a *App) GetLeagueSchedule() LeagueScheduleResult {
 	return LeagueScheduleResult{OK: true, Weeks: out, Freshness: fresh}
 }
 
-// franchiseDisplayName resolves a franchise id to its league name, falling back to the id
-// itself when the rulebook has no name on file — mirrors internal/m2service's helper of the
-// same name (unexported to each package; no shared dependency to introduce for one line).
+// franchiseDisplayName returns the franchise's league name, or its id when none is on file.
 func franchiseDisplayName(names map[string]string, fid string) string {
 	if n, ok := names[fid]; ok && n != "" {
 		return n

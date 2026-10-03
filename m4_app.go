@@ -9,26 +9,12 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
 
-// m4_app.go holds the M4 Transaction-UI read surface: name-enriched franchise rosters,
-// a name-enriched free-agent pool, and the franchise directory. These back the real
-// operator workspace (a franchise rail → named roster → per-player action panel),
-// replacing the raw-mflID dev panel over time (D8 phased cutover). They are READ-ONLY
-// (never the writer) and resolve player identity server-side so no mflID is ever shown
-// to a human (design decision D2). Player names/positions come from the players-DB
-// Lookup; a Lookup failure DEGRADES (ids + a warning) rather than hiding persisted
-// roster state — the GetRankings idiom.
-//
-// FRANCHISE NAMES are deferred: the league export parsed today (internal/ingestion/league)
-// does not carry franchise names, so the rail shows franchise IDs until a follow-up extends
-// that fetcher. Player identity — the dominant win — is fully resolved here.
-
-// m4Timeout bounds the M4 read IPC calls. On a warm DB the Lookup is cached and these
-// return in microseconds; on the first call after a cold start the lazy players-DB fetch
-// can run, so the budget matches the M1 reads rather than the 3 s ping.
+// m4Timeout bounds the M4 reads: the first call after a cold start may fetch the players
+// directory.
 const m4Timeout = 120 * time.Second
 
-// M4Player is one roster player as the operator workspace renders it: identity resolved,
-// money at the display edge (float millions — no money math happens frontend-side).
+// M4Player is one roster player with identity resolved; money is float millions for display
+// only.
 type M4Player struct {
 	MFLID        string  `json:"mflID"`
 	Name         string  `json:"name"`
@@ -38,8 +24,8 @@ type M4Player struct {
 	CapSalary    float64 `json:"capSalary"`
 }
 
-// RosterResult is one franchise's named roster + derived cap. Warning carries a non-fatal
-// degradation (names unavailable) so the UI can show ids with an explanation rather than fail.
+// RosterResult is one franchise's named roster and cap. Warning reports a names outage, so the
+// UI shows ids with a reason instead of failing.
 type RosterResult struct {
 	OK          bool       `json:"ok"`
 	FranchiseID string     `json:"franchiseID"`
@@ -49,9 +35,7 @@ type RosterResult struct {
 	Detail      string     `json:"detail"`
 }
 
-// GetRoster reads one franchise's current roster through the read-only surface and joins
-// player identity (name/position) from the players-DB Lookup. It powers the center roster
-// table of the transaction workspace.
+// GetRoster reads one franchise's roster and joins player names and positions.
 func (a *App) GetRoster(franchiseID string) RosterResult {
 	if a.startupErr != nil {
 		return RosterResult{Detail: a.startupErr.Error()}
@@ -88,8 +72,8 @@ func (a *App) GetRoster(franchiseID string) RosterResult {
 	return RosterResult{OK: true, FranchiseID: franchiseID, CapUsed: fs.CapUsed.Millions(), Players: players, Warning: warning}
 }
 
-// FreeAgentPoolResult is the name-enriched signable pool (latest status FREE_AGENT, off every
-// roster). Free agents carry no salary/status — those are set by the signing terms.
+// FreeAgentPoolResult is the signable pool (latest status FREE_AGENT, on no roster). Salary
+// and status come from the signing terms.
 type FreeAgentPoolResult struct {
 	OK      bool       `json:"ok"`
 	Players []M4Player `json:"players"`
@@ -97,8 +81,7 @@ type FreeAgentPoolResult struct {
 	Detail  string     `json:"detail"`
 }
 
-// GetFreeAgentPool reads the free-agency pool and joins player identity. It powers the
-// "Free Agents" view the operator signs from.
+// GetFreeAgentPool reads the free-agent pool with player identity joined.
 func (a *App) GetFreeAgentPool() FreeAgentPoolResult {
 	if a.startupErr != nil {
 		return FreeAgentPoolResult{Detail: a.startupErr.Error()}
@@ -130,25 +113,22 @@ func (a *App) GetFreeAgentPool() FreeAgentPoolResult {
 	return FreeAgentPoolResult{OK: true, Players: players, Warning: warning}
 }
 
-// M4Franchise is one entry in the franchise rail: its id, a display name (from the MFL
-// league export's franchise directory; empty when the active config version predates the
-// directory or MFL carries a blank name — the UI falls back to the id), and its roster size.
+// M4Franchise is one entry in the franchise rail. Name is empty when MFL has none on file;
+// the UI then shows the id.
 type M4Franchise struct {
 	FranchiseID string `json:"franchiseID"`
 	Name        string `json:"name"`
 	PlayerCount int    `json:"playerCount"`
 }
 
-// FranchisesResult is the franchise directory backing the left rail.
+// FranchisesResult is the franchise directory behind the left rail.
 type FranchisesResult struct {
 	OK         bool          `json:"ok"`
 	Franchises []M4Franchise `json:"franchises"`
 	Detail     string        `json:"detail"`
 }
 
-// GetFranchises lists the league's franchises (id + display name + roster size) for the
-// rail. Names come from the rulebook's franchise directory (the MFL league export); a
-// franchise absent from it keeps an empty name and the UI falls back to the id.
+// GetFranchises lists the franchises with display names and roster sizes.
 func (a *App) GetFranchises() FranchisesResult {
 	if a.startupErr != nil {
 		return FranchisesResult{Detail: a.startupErr.Error()}
@@ -165,7 +145,7 @@ func (a *App) GetFranchises() FranchisesResult {
 	}
 	r := a.state.Reader()
 	ids := r.Franchises()
-	sort.Strings(ids) // stable rail order (franchise ids are zero-padded, so lexical == numeric)
+	sort.Strings(ids) // ids are zero-padded, so lexical order is numeric
 	out := make([]M4Franchise, 0, len(ids))
 	for _, id := range ids {
 		count := 0
@@ -177,9 +157,7 @@ func (a *App) GetFranchises() FranchisesResult {
 	return FranchisesResult{OK: true, Franchises: out}
 }
 
-// LegalOpsResult is the set of per-player op kinds the operator workspace may stage in the league's
-// CURRENT season phase (Vision-2026 D1: only phase-legal ops appear). Kinds are the string op_kinds
-// (ROSTER_STATUS/WAIVER/SIGN/TAG/EXTENSION/BUYOUT/RESTRUCTURE/TRADE) the frontend matches against.
+// LegalOpsResult is the op kinds that are legal in the current season phase.
 type LegalOpsResult struct {
 	OK     bool     `json:"ok"`
 	Phase  string   `json:"phase"`
@@ -187,12 +165,9 @@ type LegalOpsResult struct {
 	Detail string   `json:"detail"`
 }
 
-// GetLegalOps returns the op kinds phase-legal in the current season phase, straight from the
-// engine's single phasePolicy source of truth (transactions.LegalOps) — so the workspace shows only
-// phase-legal moves without re-encoding the policy and drifting from it. It is the coarse phase
-// filter (hides never-legal ops like an offseason-only buyout mid-season); the authoritative gate is
-// still the in-tx phase check, and a shown op can still be rejected at preview/commit (e.g. a SIGN
-// with the commissioner window closed).
+// GetLegalOps returns the phase-legal op kinds from transactions.LegalOps, so the UI never
+// re-encodes the policy. It is a coarse filter: preview and commit still run the authoritative
+// check.
 func (a *App) GetLegalOps() LegalOpsResult {
 	if a.startupErr != nil {
 		return LegalOpsResult{Detail: a.startupErr.Error()}
@@ -214,14 +189,9 @@ func (a *App) GetLegalOps() LegalOpsResult {
 	return LegalOpsResult{OK: true, Phase: string(ph), Kinds: out}
 }
 
-// PreviewTransaction dry-runs a request through the Coordinator (design D5): it validates,
-// phase-gates, and applies EXACTLY as ExecuteTransaction would, then rolls back — so the
-// staged-confirm UI learns whether the move would commit (OK=true) or the authoritative reason
-// it would be rejected (Detail), with nothing persisted. The confirm step then calls
-// ExecuteTransaction, which re-sends the SAME intent and commits authoritatively (D4) — the
-// preview result is never fed back in as input. SIGN resolves its §6 min-salary-floor draft-year
-// input via the players-DB directory, mirroring executeSign. (TAG/§10 previews, which need their
-// own directory verbs, are a later-slice follow-up; they are not slice-1 ops.)
+// PreviewTransaction dry-runs a request exactly as ExecuteTransaction would, then rolls back:
+// the confirm screen learns whether it would commit, or the reason it would not. Nothing is
+// stored, and the preview result is never fed back as input.
 func (a *App) PreviewTransaction(req TransactionRequest) TransactionResult {
 	if a.startupErr != nil {
 		return TransactionResult{Detail: a.startupErr.Error()}
@@ -232,10 +202,8 @@ func (a *App) PreviewTransaction(req TransactionRequest) TransactionResult {
 	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
 	defer cancel()
 
-	// TAG (§9) and EXTENSION (§10) resolve their price/floor server-side through the players-DB
-	// directory join, so — exactly like ExecuteTransaction — they preview through their own
-	// directory-backed verbs (PreviewTag/PreviewExtension), NOT the generic buildRequest path.
-	// Only the id (and, for extension, the added-year count) crosses the wire; no money does.
+	// TAG and EXTENSION resolve their price or floor server-side from the players directory, so
+	// they preview through their own verbs. Only ids and counts cross the wire, never money.
 	switch req.Kind {
 	case string(transactions.KindTag):
 		dir, derr := a.directory(ctx)
@@ -265,16 +233,12 @@ func (a *App) PreviewTransaction(req TransactionRequest) TransactionResult {
 		rec, terr := a.coordinator.PreviewSign(ctx, sign, dir)
 		return a.receiptResult(req.Kind, rec, terr)
 	}
-	// BUYOUT (§12) and RESTRUCTURE (§11) are plain sealed requests whose figures resolve entirely
-	// in-tx, so the generic Preview dry-runs them with no directory needed.
 	rec, terr := a.coordinator.Preview(ctx, txn)
 	return a.receiptResult(req.Kind, rec, terr)
 }
 
-// receiptResult maps a Coordinator (Receipt, error) outcome onto the IPC TransactionResult: a
-// rejection becomes OK=false + the authoritative reason (Detail), a success becomes the receipt
-// fields plus the pre-commit cap-impact breakdown (the dead-cap charge / relief credit a Preview
-// computed). Shared by every PreviewTransaction branch so the mapping never drifts between ops.
+// receiptResult maps a coordinator outcome onto TransactionResult: a rejection carries the
+// reason; a success carries the receipt and the previewed cap impact.
 func (a *App) receiptResult(kind string, rec transactions.Receipt, err error) TransactionResult {
 	if err != nil {
 		return TransactionResult{Kind: kind, Detail: err.Error()}
@@ -288,10 +252,7 @@ func (a *App) receiptResult(kind string, rec transactions.Receipt, err error) Tr
 	}
 }
 
-// capDeltaDTOs projects the Coordinator's signed cap deltas onto the IPC DTOs, resolving each
-// franchise's display name server-side (id fallback when the rulebook predates the franchise
-// directory) and formatting a signed dollar string (+ for a charge, − for a credit). Always
-// returns a non-nil slice so the modal's `?? []` guard is never load-bearing on success.
+// capDeltaDTOs formats the signed cap deltas with franchise names. Never nil.
 func (a *App) capDeltaDTOs(deltas []transactions.CapDelta) []CapDeltaDTO {
 	names := map[string]string{}
 	if a.rulebook != nil {
@@ -301,7 +262,7 @@ func (a *App) capDeltaDTOs(deltas []transactions.CapDelta) []CapDeltaDTO {
 	for _, d := range deltas {
 		amount := d.Cents.String()
 		if d.Cents > 0 {
-			amount = "+" + amount // a charge; Money.String already prefixes − on a credit
+			amount = "+" + amount // Money.String already prefixes − on a credit
 		}
 		out = append(out, CapDeltaDTO{
 			FranchiseID:   d.FranchiseID,
@@ -314,10 +275,8 @@ func (a *App) capDeltaDTOs(deltas []transactions.CapDelta) []CapDeltaDTO {
 	return out
 }
 
-// resolveDirectory returns the cached players-DB Lookup, DEGRADING on failure: a nil-facts
-// Lookup plus a human warning, so a names-unavailable state (e.g. an MFL outage on a warm DB)
-// surfaces ids with an explanation instead of blanking a perfectly good roster read. Mirrors
-// GetRankings' display-only-join degradation.
+// resolveDirectory returns the players directory, or an empty one plus a warning on failure, so
+// a names outage shows ids instead of blanking a good read.
 func (a *App) resolveDirectory(ctx context.Context) (normalize.Lookup, string) {
 	lk, err := a.directory(ctx)
 	if err != nil {

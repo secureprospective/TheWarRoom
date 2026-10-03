@@ -11,55 +11,43 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
 
-// rosterPolicyAdapter composes the rulebook's override-aware league settings + per-position
-// roster limits with the players-DB Lookup into the transactions.RosterPolicy port — Session 2's
-// roster/position/taxi/IR enforcement gate. It lives in the composition root (app.go's package)
-// because depguard forbids the transactions package from importing either store (the three-layer
-// law); the adapter is the hexagonal seam that satisfies the port without a layering violation.
-//
-// Each limit reads the rulebook's GetSetting (override-aware — the Session 0 "taxi/IR off" pattern
-// and the commissioner's rosterSize/taxiSquad/injuredReserve overrides apply uniformly). A value
-// of "0" or an unparseable string reads as 0, which the enforcement treats as "unlimited / do not
-// gate on this axis" (matching Session 0's "0 = off" convention). Position resolution rides the
-// cached players-DB Lookup (built lazily, shared with every other players-DB consumer).
+// rosterPolicyAdapter implements transactions.RosterPolicy from the rulebook's settings and
+// the players directory. It lives here because the transactions package may not import either
+// store. Every limit is override-aware, and 0 (or an unparseable value) means unlimited.
 type rosterPolicyAdapter struct {
 	rb  *rulebook.Store
 	app *App
 }
 
-// Compile-time assertion that rosterPolicyAdapter satisfies transactions.RosterPolicy.
 var _ transactions.RosterPolicy = (*rosterPolicyAdapter)(nil)
 
-// RosterSize returns the per-franchise total roster cap (override-aware). 0 = unlimited.
+// RosterSize is the per-franchise roster cap; 0 means unlimited.
 func (p *rosterPolicyAdapter) RosterSize() int { return settingInt(p.rb, "rosterSize") }
 
-// TaxiSquad returns the per-franchise taxi-squad slot cap (override-aware). 0 = unlimited / off.
+// TaxiSquad is the taxi-squad slot cap; 0 means off.
 func (p *rosterPolicyAdapter) TaxiSquad() int { return settingInt(p.rb, "taxiSquad") }
 
-// InjuredReserve returns the per-franchise IR slot cap (override-aware). 0 = unlimited / off.
+// InjuredReserve is the IR slot cap; 0 means off.
 func (p *rosterPolicyAdapter) InjuredReserve() int { return settingInt(p.rb, "injuredReserve") }
 
-// PositionLimit returns the inclusive per-position roster max for one engine position, parsed from
-// the league's rosterLimits (MFL "min-max" format, "0-0" = unlimited). Each rosterLimits entry's
-// MFL code is translated to the engine set through normalize.PositionFromMFL (the single source of
-// truth for the MFL→engine map — PK→K and EDGE→DE remaps honored). 0 = unlimited / unconfigured.
+// PositionLimit is the per-position roster max from the league's rosterLimits (MFL "min-max";
+// "0-0" means unlimited). MFL codes map through normalize.PositionFromMFL. 0 means unlimited.
 func (p *rosterPolicyAdapter) PositionLimit(pos domain.Position) int {
 	cfg := p.rb.ActiveConfig()
 	for _, pl := range cfg.RosterLimits {
 		enginePos, ok := normalize.PositionFromMFL(pl.Name)
 		if !ok || enginePos != pos {
-			continue // an unrecognized MFL code must never zero-value-collide with an unresolved player position
+			continue
 		}
 		if m, ok := parseRosterLimitMax(pl.Limit); ok {
 			return m
 		}
 	}
-	return 0 // no rosterLimits entry for this position, or unparseable — unlimited
+	return 0
 }
 
-// Position resolves a player id to its engine position via the cached players-DB Lookup (the same
-// Lookup every other players-DB consumer shares). ok=false for an unknown player (the enforcement
-// then skips the per-position check for that id — it cannot reject on a limit it cannot resolve).
+// Position resolves a player's engine position from the shared directory. ok=false for an
+// unknown player, whose position check is then skipped.
 func (p *rosterPolicyAdapter) Position(ctx context.Context, mflID string) (domain.Position, bool) {
 	lk, err := p.app.directory(ctx)
 	if err != nil {
@@ -72,9 +60,7 @@ func (p *rosterPolicyAdapter) Position(ctx context.Context, mflID string) (domai
 	return facts.Position, true
 }
 
-// settingInt reads one override-aware scalar rulebook setting and parses it to an int. An empty,
-// unset, or unparseable value returns 0 (the "unlimited / do not gate" sentinel the enforcement
-// uses), matching Session 0's "0 = off" convention for taxi/IR slot counts.
+// settingInt parses one rulebook setting; empty or unparseable reads as 0 (unlimited).
 func settingInt(rb *rulebook.Store, key string) int {
 	if rb == nil {
 		return 0
@@ -93,25 +79,19 @@ func settingInt(rb *rulebook.Store, key string) int {
 	return n
 }
 
-// parseRosterLimitMax parses MFL's rosterLimits "min-max" format (e.g. "1-4", "0-0") and returns
-// the max. "0-0" → (0, true) which the enforcement reads as "unlimited". A single integer ("4",
-// no dash) is treated as a max-only form. ok=false for an unparseable value — INCLUDING a
-// malformed multi-dash string ("1-2-3", a bare "-4"): exactly one dash is the only shape MFL
-// emits, so anything else is unparseable data, not a value to guess at (a review flagged that
-// LastIndex previously accepted these silently, extracting an arbitrary segment as if it were
-// legitimate).
+// parseRosterLimitMax returns the max of MFL's "min-max" limit ("1-4", "0-0"). A bare integer
+// is a max. Anything with more than one dash is unparseable: MFL never emits it.
 func parseRosterLimitMax(limit string) (int, bool) {
 	limit = strings.TrimSpace(limit)
 	if limit == "" {
 		return 0, false
 	}
 	if strings.Count(limit, "-") > 1 {
-		return 0, false // malformed — MFL's format has at most one dash
+		return 0, false
 	}
-	// MFL's format is "min-max"; the max is the part after the single dash.
 	if i := strings.Index(limit, "-"); i >= 0 {
 		if i == 0 {
-			return 0, false // a bare "-N" is not "min-max" — unparseable, not a negative min
+			return 0, false
 		}
 		m := strings.TrimSpace(limit[i+1:])
 		n, err := strconv.Atoi(m)
@@ -120,7 +100,6 @@ func parseRosterLimitMax(limit string) (int, bool) {
 		}
 		return n, true
 	}
-	// a bare integer — treat as max-only
 	n, err := strconv.Atoi(limit)
 	if err != nil || n < 0 {
 		return 0, false
