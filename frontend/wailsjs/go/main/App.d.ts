@@ -32,8 +32,6 @@ export function GetRankings():Promise<main.RankingsResult>;
 
 export function GetRoster(arg1:string):Promise<main.RosterResult>;
 
-export function Ping():Promise<main.PingResult>;
-
 export function PreviewTransaction(arg1:main.TransactionRequest):Promise<main.TransactionResult>;
 
 export function RunValidationSuite():Promise<main.ValidationResult>;

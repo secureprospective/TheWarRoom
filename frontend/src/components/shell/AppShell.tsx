@@ -4,6 +4,7 @@ import { NavRail } from './NavRail';
 import { Workspace } from './Workspace';
 import { Inspector } from './Inspector';
 import { CommsStrip } from './CommsStrip';
+import { useAppInfoStore } from '../../store/appInfo';
 
 interface AppShellProps {
   module: ModuleId;
@@ -111,7 +112,10 @@ export function AppShell({
       }}
     >
       <NavRail active={module} onSelect={onModule} />
-      <Workspace title={workspaceTitle}>{children}</Workspace>
+      <Workspace title={workspaceTitle}>
+        <StartupBanner />
+        {children}
+      </Workspace>
       <CommsStrip onSummon={onSummon} />
 
       {/* Inspector overlay — floats over the workspace, left of the comms strip */}
@@ -149,6 +153,29 @@ export function AppShell({
           }}
         />
       ) : null}
+    </div>
+  );
+}
+
+// StartupBanner names the real cause when the backend failed to start, instead of leaving each
+// panel to report "not initialized". It renders nothing when startup succeeded.
+function StartupBanner() {
+  const error = useAppInfoStore((s) => s.info?.startupError);
+  if (!error) return null;
+  return (
+    <div
+      role="alert"
+      style={{
+        borderLeft: '3px solid var(--fresh-fail)',
+        background: 'var(--surface-raised)',
+        padding: '8px 12px',
+        marginBottom: '12px',
+        fontFamily: 'var(--mono)',
+        fontSize: '12px',
+        color: 'var(--text-primary)',
+      }}
+    >
+      <strong style={{ color: 'var(--fresh-fail)' }}>STARTUP FAILED</strong> — {error}
     </div>
   );
 }
