@@ -74,8 +74,38 @@ exit code. Work happens on a session branch; never on main.
      operation (no App mapping).
    - Make the DT cushion read its stored params; delete the literals 8.00 and 0.90.
 
+5. **Standards drift and bloat.** Measured 2026-10-03 on non-test Go: 25,247 lines, of which
+   7,787 (30%) are comment lines, against 15,403 lines of code.
+
+   **Fix the rules that cause the bloat**, in `docs/agent-codex.md`, and the same change
+   upstream in `christopher-coding-standards`:
+
+   | Rule today | Bloat it causes | New rule |
+   |---|---|---|
+   | Hard 400-line file cap (`filelen` gate; target 250), and "one exported job per file" | 19 files cite the cap or an "own file" split. 34 files have under 40 lines of code. Cohesive code is scattered into sibling files. | **Split by responsibility, never by size.** Keep the function limits (`funlen`, `gocyclo`), because they measure complexity. The file cap becomes a report: over 600 lines, say why in the PR. |
+   | Comments "explain why… the spec citation" | Label soup and history in code: 47 files carry review or agent provenance ("GLM review m3", "DeepSeek"). L4 rubrics are 47% comments and carry 124 decision labels in one package. | **Comments say what the code can't, in the fewest lines.** One spec link per unit, at most. No review history, decision IDs or session notes in code: those belong in commits and docs. |
+   | First-Instance Template Review (copy a reviewed pattern) | The pattern was copied as code, not as data: 10 rubrics, and about 15 near-identical ingestion packages. | **A second near-copy is the signal to turn it into data** (M12). Add to the §4 slop catalogue: "parallel units that differ only in constants" and "comment walls restating spec docs". |
+
+   **Clean the code to the new rules:**
+   - Re-merge files that were split only for size.
+   - Fold sub-40-line files into their natural home unless they mark a real boundary.
+   - Strip provenance and label soup from comments.
+   - Convert parallel test suites to table-driven tests (21,411 test lines today).
+
+   **A ratchet so the bloat can't return.** `make bloat` reports four numbers, and the pre-push
+   check fails if any rises:
+   - comment share
+   - provenance hits
+   - files under 40 lines of code
+   - near-duplicate files
+
+   **Targets:**
+   - Comment share 30% → 15% or less, with no package over 20%.
+   - Provenance in code comments → 0.
+
 **Gate:**
 - One branch line, pushed.
+- `make bloat` is at or under its targets and wired into the pre-push check.
 - `go build`, `go vet`, `go test -race` and `golangci-lint` green, plus the frontend build.
 - Docs match the code.
 - A launch writes a log.
@@ -196,6 +226,17 @@ Week 9 trade deadline.**
 Each signal follows the same path: fetcher → `raw_archive` → `source_fields` mapping →
 `observations` under its measures → coverage report by position → source health and freshness
 shown in the app. Adding a signal adds registry rows; it never adds a table.
+
+**Ingestion collapses into one loader.** Today about 15 packages under `internal/ingestion/`
+(touchshare, kicking, nflproduction, ras, madden, pfrcoverage, pfrpassrush and others) each
+hand-parse one CSV into their own struct.
+- One table-driven loader reads `source_fields`: which column, which ID type, which measure.
+- Per-season sums and shares move to the features layer.
+- Each package is deleted as its source moves over.
+- What stays bespoke is only real protocol work: MFL's API, CFBD's key, and HTML for
+  StatRankings.
+- This also fixes a silent gap: `touchshare` reads only offense snap columns, while nflverse
+  carries `defense_snaps` for IDP.
 
 1. **Production:**
    - nflverse `stats_player`, the replacement for `player_stats`.

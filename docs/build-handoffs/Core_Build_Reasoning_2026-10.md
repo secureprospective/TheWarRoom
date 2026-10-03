@@ -244,6 +244,34 @@ Why this suits the blend in particular:
 - Rebalancing is refitting on the same history with fewer measures. That is a run of the
   fitting tool, not a rewrite.
 
+## 5b. Engineering ownership, and how the standard itself drifted (Christopher, 2026-10-03)
+
+> "We created a coding standards just for this project. Which is a big reason why we made it
+> so far. However, even that has created drift where some of the comments and supporting files
+> have bloated the real actionable code... Architecture is where we are falling short... this is
+> Christopher's short coming as he is a novice. So you need to be the engineering expert."
+
+From here, **Claude makes the architecture calls** and explains each in plain terms, with the
+rejected options. Christopher decides product intent and priorities, and can veto.
+
+The diagnosis: the standard got the *local* rules right (typed IDs, errors as values, no globals,
+gates that really fail). Three of its rules produced bloat once agents followed them literally:
+
+1. **A hard file-size cap turns cohesive code into sibling files.** The fix for a big file is a
+   real boundary, not a second file. Function-level limits measure complexity; file length does
+   not.
+2. **"Comments explain why, cite the spec" turned into comments carrying history.** Review
+   findings, decision IDs and session notes accumulated inline (30% of all lines). History
+   belongs in commits and docs, where it doesn't rot inside the code.
+3. **"Copy the reviewed first instance" cloned code where it should have been data.** The
+   standard already said behavior belongs in data (M12). The template rule overrode it in
+   practice: 10 rubrics and about 15 ingestion packages, each a near-copy.
+
+The architecture gap behind all three is the same: **nothing in the process asked "should this
+be data?"** The measure dictionary (§5a), rubric-as-data (Stage 5) and the single ingestion loader
+(Stage 4) all answer it the same way. The `make bloat` ratchet (Stage 0.5) keeps the answer
+enforced rather than aspired to, in line with the standard's own M2: forbid, don't warn.
+
 ## 6. Christopher's standing bars (apply to every stage)
 
 > "If there is a better way architecturally to do something we need to explore those options,
