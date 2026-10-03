@@ -7,9 +7,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 )
 
-// cloneConfig deep-copies every nested slice of a config so a value returned to a
-// caller shares no backing array with the store's in-memory active snapshot. The
-// scalar fields are value-copied by the struct assignment; only the slices alias.
+// cloneConfig deep-copies the slices so a caller never shares a backing array with the
+// in-memory snapshot.
 func cloneConfig(c league.RawConfig) league.RawConfig {
 	c.ScoringRules = cloneScoring(c.ScoringRules)
 	c.RosterLimits = cloneLimits(c.RosterLimits)
@@ -18,11 +17,8 @@ func cloneConfig(c league.RawConfig) league.RawConfig {
 	return c
 }
 
-// FranchiseNames returns the active config's franchise directory as an id->display-name
-// map, for the operator UI's rail and trade dropdowns. Only non-empty names are
-// included, so a caller can range the map and fall back to the id for any franchise
-// absent from it (an older config version stored before franchises were captured, or a
-// blank MFL name). Reads are snapshot-consistent under the store's read lock.
+// FranchiseNames returns the active franchise directory as id -> name. Blank names are left
+// out, so callers fall back to the id.
 func (s *Store) FranchiseNames() map[string]string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -58,8 +54,7 @@ func cloneLimits(in []league.PositionLimit) []league.PositionLimit {
 	return append([]league.PositionLimit(nil), in...)
 }
 
-// settingsMap projects the scalar settings of a config into a key->value map for
-// GetSetting. Structured fields (scoring, roster limits, starters) are excluded.
+// settingsMap projects a config's scalar settings into a key -> value map.
 func settingsMap(c league.RawConfig) map[string]string {
 	return map[string]string{
 		"rosterSize":                  c.RosterSize,
@@ -77,13 +72,9 @@ func settingsMap(c league.RawConfig) map[string]string {
 	}
 }
 
-// capPercent parses a settingsMap-style percentage string (MFL's "100", "0", or an
-// empty/unset value) to a 0-100 float, defaulting to 100 (no discount) when the raw
-// value is empty or unparseable — matching the historical behavior (every rostered
-// player counted 100% toward cap) for configs stored before this field existed.
-// Clamped to [0, 100]: SetOverride's scopeSetting case accepts any non-empty scalar
-// with no value-domain check, so an out-of-range override (a stray negative or >100
-// value) must not be able to invert or overcount a franchise's cap total here.
+// capPercent parses an MFL percentage ("100", "0" or empty) into 0-100. Empty or unparseable
+// means 100, the behavior before the field existed. It clamps because a setting override is
+// not range-checked.
 func capPercent(raw string) float64 {
 	v := strings.TrimSpace(raw)
 	if v == "" {
@@ -103,15 +94,13 @@ func capPercent(raw string) float64 {
 	}
 }
 
-// TaxiCapPercent returns the pct of a taxi-squad player's cap-counting salary that
-// counts toward the franchise's cap total, override-aware (GetSetting).
+// TaxiCapPercent is the share of a taxi player's salary that counts against the cap.
 func (s *Store) TaxiCapPercent() float64 {
 	v, _ := s.GetSetting("includeTaxiWithSalary")
 	return capPercent(v)
 }
 
-// IRCapPercent returns the pct of an IR player's cap-counting salary that counts
-// toward the franchise's cap total, override-aware (GetSetting).
+// IRCapPercent is the share of an IR player's salary that counts against the cap.
 func (s *Store) IRCapPercent() float64 {
 	v, _ := s.GetSetting("includeIRWithSalary")
 	return capPercent(v)

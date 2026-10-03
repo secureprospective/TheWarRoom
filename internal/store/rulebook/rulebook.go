@@ -1,18 +1,11 @@
-// Package rulebook is the B3b League Rulebook: the first Layer-2 CONFIG store. It
-// stores and serves the league's MFL-sourced rules (scoring config, roster rules,
-// salary-cap amount, settings) with a commissioner override layer. It is PURE DATA
-// ACCESS — it computes no scores, tag prices, or dead cap (that is engine/B7 work
-// that READS from here). It sets the store template B3c/B4 clone.
+// Package rulebook stores the league's MFL-sourced rules (scoring, roster limits, salary cap,
+// settings) with a commissioner override layer. It computes nothing; the engine and the
+// transaction coordinator read from it.
 //
-// Stability model (Christopher's call): MFL config is stored as IMMUTABLE versioned
-// snapshots with one explicit ACTIVE pointer. Reload SIDE-LOADS — it fetches, stores
-// a new candidate version, and reports a ChangeSet, but does NOT promote: reads keep
-// serving the stable active version until a human confirms. Promote repoints active
-// to any version, so "update to current" and "roll back bad data" are the same one
-// operation. Commissioner deltas are SEPARATE override records layered at read time.
-//
-// Writes are an admin-only path (AD-05): this store validates its own Set and is
-// NEVER routed through B7 (B7 is the sole writer of league STATE, not config).
+// MFL config is stored as immutable versions with one active pointer. Reload stores a new
+// candidate and reports what changed but does not promote it; Promote repoints the active
+// version, so "update to current" and "roll back" are the same operation. Writes are admin-only
+// and never go through the transaction coordinator, which writes league state, not config.
 package rulebook
 
 import (
@@ -29,19 +22,15 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 )
 
-// Store is the league rulebook config store. Construct with New; seed with
-// Initialize. It is safe for concurrent reads (Wails IPC goroutines) via an RWMutex
-// guarding the in-memory active snapshot + override map.
+// Store is the rulebook. Construct with New, seed with Initialize. Reads are safe from
+// concurrent Wails IPC goroutines.
 type Store struct {
 	pools *db.Pools
 	src   league.Source
 
-	// wmu serializes admin MUTATIONS (Initialize seed, Promote, SetOverride) end to
-	// end, so the SQLite write and the subsequent in-memory loadActive are one
-	// atomic step. Without it, two concurrent admin writers can interleave their
-	// loadActive (read active version, then swap memory) such that a stale swap wins
-	// last and reads serve a version other than the committed active pointer. mu
-	// (below) is the finer reader/snapshot lock; wmu is always the outer lock.
+	// wmu serializes admin writes so the SQLite write and the in-memory reload are one step;
+	// otherwise two writers could leave memory on a version other than the committed pointer. It
+	// is always taken before mu.
 	wmu sync.Mutex
 
 	mu        sync.RWMutex
@@ -87,10 +76,8 @@ func (s *Store) Initialize(ctx context.Context, src league.Source) error {
 	return s.loadActive(ctx)
 }
 
-// Reload re-fetches the live config, stores it as a NEW candidate version, and
-// returns the ChangeSet versus the active config. It does NOT promote — the active
-// version stays live until Promote is called. A non-empty ChangeSet is the
-// commissioner gate's signal.
+// Reload fetches the live config, stores it as a new candidate version and returns what
+// changed versus the active one. It never promotes.
 func (s *Store) Reload(ctx context.Context) (ChangeSet, error) {
 	if s.src == nil {
 		return ChangeSet{}, fmt.Errorf("rulebook: Reload before Initialize")
@@ -114,9 +101,7 @@ func (s *Store) Reload(ctx context.Context) (ChangeSet, error) {
 	}, nil
 }
 
-// Promote repoints the active version to ver after confirming it exists, then
-// reloads the in-memory snapshot. This is the commissioner gate's apply step and
-// the rollback path (promote a prior version). Admin-only (AD-05).
+// Promote makes ver the active version. It is both the apply step and the rollback path.
 func (s *Store) Promote(ctx context.Context, ver int) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
@@ -135,10 +120,8 @@ func (s *Store) Promote(ctx context.Context, ver int) error {
 	return s.loadActive(ctx)
 }
 
-// SetOverride upserts a commissioner override and refreshes the in-memory layer.
-// It validates the override (the data-integrity half of the commissioner gate):
-// known scope, non-empty key/value, and a cap value that parses as a number. This
-// is the guard that stops bad data going live. Admin-only (AD-05).
+// SetOverride validates and upserts a commissioner override: a known scope, a non-empty key
+// and value, and a numeric cap.
 func (s *Store) SetOverride(ctx context.Context, scope, key, value, note string) error {
 	if err := validateOverride(scope, key, value); err != nil {
 		return err
@@ -169,17 +152,14 @@ func validateOverride(scope, key, value string) error {
 			return fmt.Errorf("rulebook: cap override %q is not numeric: %w", value, err)
 		}
 	case scopeSetting:
-		// any non-empty scalar is acceptable; the value stays a raw string
+		// any non-empty value is accepted
 	default:
 		return fmt.Errorf("rulebook: unknown override scope %q", scope)
 	}
 	return nil
 }
 
-// --- Reads -----------------------------------------------------------------
-
-// GetSalaryCap returns the active salary-cap AMOUNT (AD-21), with a cap override
-// applied if one is set.
+// GetSalaryCap returns the active salary-cap amount, override applied.
 func (s *Store) GetSalaryCap() string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -189,17 +169,15 @@ func (s *Store) GetSalaryCap() string {
 	return s.active.SalaryCapAmount
 }
 
-// GetScoringRules returns the active position-additive scoring config (raw MFL
-// values). Scoring changes flow through MFL Reload + Promote, not overrides.
+// GetScoringRules returns the active scoring rules as raw MFL values.
 func (s *Store) GetScoringRules() []league.PositionRuleSet {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return cloneScoring(s.active.ScoringRules)
 }
 
-// GetSetting returns a scalar league setting by key (e.g. "rosterSize",
-// "taxiSquad"), applying a setting override if present. ok is false for an unknown
-// key.
+// GetSetting returns a scalar league setting (e.g. "rosterSize"), override applied. ok is
+// false for an unknown key.
 func (s *Store) GetSetting(key string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -210,16 +188,15 @@ func (s *Store) GetSetting(key string) (string, bool) {
 	return v, ok
 }
 
-// ActiveConfig returns a copy of the active raw config (no scalar overrides applied
-// — use the typed getters for override-aware reads). Intended for the engine's
-// bulk read of the rulebook.
+// ActiveConfig returns a copy of the active config without overrides; use the typed getters
+// for override-aware reads.
 func (s *Store) ActiveConfig() league.RawConfig {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return cloneConfig(s.active)
 }
 
-// Versions lists stored config versions newest-first for the audit/gate surface.
+// Versions lists stored config versions, newest first.
 func (s *Store) Versions(ctx context.Context) ([]VersionMeta, error) {
 	active, err := s.activeVersion(ctx)
 	if err != nil {
@@ -247,10 +224,7 @@ func (s *Store) Versions(ctx context.Context) ([]VersionMeta, error) {
 	return out, nil
 }
 
-// --- Persistence helpers ---------------------------------------------------
-
-// initSchema creates the store's tables if absent. Versions are immutable; one
-// single-row active pointer; overrides are unique per (scope, key).
+// initSchema creates the version, active-pointer and override tables if absent.
 func (s *Store) initSchema(ctx context.Context) error {
 	const ddl = `
 CREATE TABLE IF NOT EXISTS rulebook_versions (
@@ -309,12 +283,8 @@ func (s *Store) setActive(ctx context.Context, ver int) error {
 	return nil
 }
 
-// ActiveVersion returns the ACTIVE config version number, or 0 when none is set
-// yet (a fresh store before Initialize). It exists for the M1 orchestrator: B6
-// output rows are STAMPED with the scoring config they were scored under
-// (DECISION-010), the rulebook active version is that provenance, and the output
-// store never mints it — so the stamp must be readable here, at its source. A
-// caller must treat 0 as "no config loaded" and refuse to score, never stamp it.
+// ActiveVersion returns the active config version, or 0 before Initialize. Scored output is
+// stamped with it; a caller must refuse to score on 0.
 func (s *Store) ActiveVersion(ctx context.Context) (int, error) {
 	return s.activeVersion(ctx)
 }
@@ -333,8 +303,7 @@ func (s *Store) activeVersion(ctx context.Context) (int, error) {
 	}
 }
 
-// loadActive reads the active version's payload and override layer into memory
-// under the write lock, so concurrent readers see a consistent snapshot.
+// loadActive reads the active version and the overrides into memory under the write lock.
 func (s *Store) loadActive(ctx context.Context) error {
 	ver, err := s.activeVersion(ctx)
 	if err != nil {

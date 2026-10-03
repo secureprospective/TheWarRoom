@@ -23,11 +23,9 @@ type RuleDelta struct {
 	New   string
 }
 
-// ChangeSet is the result of a Reload: every difference between the active config
-// and the newly fetched candidate version, plus the version numbers either side. It
-// is the SIGNAL for the commissioner gate — a non-empty ChangeSet means MFL config
-// drifted (a vote, an exploit fix) and a human must confirm a Promote before the new
-// values go live. Reload NEVER auto-promotes: the active config stays stable.
+// ChangeSet is every difference between the active config and a newly fetched candidate. A
+// non-empty set means MFL config drifted, and a human must Promote before the new values go
+// live; Reload never promotes.
 type ChangeSet struct {
 	FromVersion int // the active version the candidate was diffed against
 	ToVersion   int // the newly stored candidate version
@@ -37,11 +35,9 @@ type ChangeSet struct {
 // Empty reports whether the candidate is identical to the active config.
 func (c ChangeSet) Empty() bool { return len(c.Deltas) == 0 }
 
-// Override is a commissioner delta layered over the MFL-sourced default. It is a
-// SEPARATE record, never an in-place mutation of a default — so a Reload can re-pull
-// MFL defaults without clobbering an override. Scope+Key identify the target value;
-// Value is the raw replacement. v1.0 supports scalar overrides (cap, settings);
-// structured changes (scoring tables) flow through MFL Reload + Promote instead.
+// Override is a commissioner value layered over the MFL default at read time, never written
+// into it, so a Reload cannot clobber it. Only scalars (cap, settings) can be overridden;
+// scoring changes go through Reload and Promote.
 type Override struct {
 	Scope     string
 	Key       string
@@ -58,8 +54,7 @@ type VersionMeta struct {
 	Active    bool
 }
 
-// Override scopes. A SetOverride outside this set is rejected (the data-integrity
-// half of the commissioner gate).
+// Override scopes. SetOverride rejects any other.
 const (
 	scopeCap     = "cap"     // the salary-cap amount
 	scopeSetting = "setting" // a scalar league setting (roster size, weeks, …)

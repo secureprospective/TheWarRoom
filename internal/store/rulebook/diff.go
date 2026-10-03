@@ -7,11 +7,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 )
 
-// diffConfigs reports every value difference between an active config and a freshly
-// fetched candidate: scalar settings, the salary cap, scoring rules, and roster /
-// starter limits. The result is deterministic (sorted by field) so the ChangeSet a
-// commissioner reviews is stable across runs. It is comparison only — no value is
-// interpreted or normalized, matching the store's pure-data contract.
+// diffConfigs reports every value difference between the active config and a candidate,
+// sorted by field so the commissioner sees a stable list. It compares raw values only.
 func diffConfigs(old, cand league.RawConfig) []RuleDelta {
 	var d []RuleDelta
 	d = append(d, diffScalars(old, cand)...)
@@ -54,9 +51,7 @@ func diffScalars(old, cand league.RawConfig) []RuleDelta {
 	return out
 }
 
-// diffScoring compares the position-additive scoring rules. Each rule is keyed by
-// position group + event + range, so a points change, a new event, or a removed
-// event is detected precisely.
+// diffScoring compares scoring rules keyed by position group, event and range.
 func diffScoring(old, cand league.RawConfig) []RuleDelta {
 	oldM := scoringMap(old.ScoringRules)
 	candM := scoringMap(cand.ScoringRules)
@@ -78,9 +73,8 @@ func diffScoring(old, cand league.RawConfig) []RuleDelta {
 	return out
 }
 
-// scoringMap flattens position rule sets into a "positions/event[range]" -> points
-// map. A duplicate key (same group+event+range twice) keeps the last — MFL does not
-// emit duplicates, and the store does not interpret them.
+// scoringMap flattens rule sets into a "positions/event[range]" -> points map. MFL emits no
+// duplicate keys; a duplicate would keep the last.
 func scoringMap(sets []league.PositionRuleSet) map[string]string {
 	out := map[string]string{}
 	for _, s := range sets {
