@@ -175,56 +175,57 @@ func (a *App) startup(ctx context.Context) {
 	}
 	a.mflClient = client
 
+	log.Printf("the war room: starting %s (%s) season %d, db %s", version, commit, season, path)
+	began := time.Now()
 	if err := a.initStoreFloor(ctx); err != nil {
 		a.startupErr = err
 		return
 	}
+	log.Printf("the war room: ready in %s", time.Since(began).Round(time.Millisecond))
 }
 
-// initStoreFloor constructs and initializes the full store floor plus the B7a
-// transaction coordinator. Each store seeds from live MFL ONLY on a fresh DB and loads
-// from SQLite after (their Initialize contracts) — so first launch needs the network,
-// every later launch comes up offline. Split out of startup to keep that hook within
-// the function-length budget and to give the data layer one wiring site.
-func (a *App) initStoreFloor(ctx context.Context) error {
-	// B4 params: the harness reads cap-tier % and decay rate from it and the admin
-	// panel tunes them live. Initialize seeds shipped defaults once, loads calibration
-	// on restart.
+// startupBudget bounds store-floor init. A fresh DB seeds from MFL on this thread, so an
+// unreachable MFL would otherwise hang the window black forever.
+const startupBudget = 2 * time.Minute
+
+// initStoreFloor brings up the stores and the transaction coordinator, logging each step's
+// time so a slow or failed launch shows where it stopped. Stores seed from MFL only on a fresh
+// DB. Fields are assigned only once every step succeeds: IPC methods treat a nil store as
+// "not initialized".
+func (a *App) initStoreFloor(parent context.Context) error {
+	ctx, cancel := context.WithTimeout(parent, startupBudget)
+	defer cancel()
+
 	pstore := params.New(a.pools)
-	if err := pstore.Initialize(ctx); err != nil {
-		return fmt.Errorf("startup: initialize params store: %w", err)
-	}
-	a.params = pstore
-
 	rb := rulebook.New(a.pools)
-	if err := rb.Initialize(ctx, league.APISource{Client: a.mflClient, Year: ingestion.SeasonYear, LeagueID: ingestion.LeagueID}); err != nil {
-		return fmt.Errorf("startup: initialize rulebook: %w", err)
-	}
-	a.rulebook = rb
-
 	st := state.New(a.pools, ingestion.LeagueID, a.season, rb)
-	if err := st.Initialize(ctx, rosterSeedSource{app: a}); err != nil {
-		return fmt.Errorf("startup: initialize league state: %w", err)
-	}
-	a.state = st
-
-	// B7a: the transaction Coordinator is the SOLE holder of the state Writer in the
-	// whole process (AD-02). Wired here, once, right after the state store comes up —
-	// nothing else calls st.Writer(). The Session 2 roster-policy adapter (rulebook +
-	// players-DB) supplies the roster/position/taxi/IR enforcement gate; composed here
-	// because depguard forbids the transactions package from importing either store.
-	policy := &rosterPolicyAdapter{rb: rb, app: a}
-	coord, err := transactions.New(st.Writer(), policy)
-	if err != nil {
-		return fmt.Errorf("startup: initialize transaction coordinator: %w", err)
-	}
-	a.coordinator = coord
-
 	out := output.New(a.pools)
-	if err := out.Initialize(ctx); err != nil {
-		return fmt.Errorf("startup: initialize output store: %w", err)
+	var coord *transactions.Coordinator
+	steps := []struct {
+		name string
+		run  func(context.Context) error
+	}{
+		{"params", pstore.Initialize},
+		{"rulebook", func(c context.Context) error {
+			return rb.Initialize(c, league.APISource{Client: a.mflClient, Year: ingestion.SeasonYear, LeagueID: ingestion.LeagueID})
+		}},
+		{"league state", func(c context.Context) error { return st.Initialize(c, rosterSeedSource{app: a}) }},
+		// The coordinator is the only holder of the state Writer (AD-02).
+		{"transaction coordinator", func(context.Context) error {
+			var err error
+			coord, err = transactions.New(st.Writer(), &rosterPolicyAdapter{rb: rb, app: a})
+			return err //nolint:wrapcheck // wrapped below with the step name
+		}},
+		{"output", out.Initialize},
 	}
-	a.output = out
+	for _, s := range steps {
+		began := time.Now()
+		if err := s.run(ctx); err != nil {
+			return fmt.Errorf("startup: initialize %s: %w", s.name, err)
+		}
+		log.Printf("the war room: %s ready in %s", s.name, time.Since(began).Round(time.Millisecond))
+	}
+	a.params, a.rulebook, a.state, a.coordinator, a.output = pstore, rb, st, coord, out
 	return nil
 }
 
@@ -294,14 +295,4 @@ func dbFileName(devBuild bool) string {
 		return "thewarroom-dev.db"
 	}
 	return "thewarroom.db"
-}
-
-// databasePath returns the on-disk location of the SQLite file under the config dir,
-// selecting the -dev database for an un-stamped build.
-func databasePath() (string, error) {
-	dir, err := configDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(dir, dbFileName(isDevBuild())), nil
 }
