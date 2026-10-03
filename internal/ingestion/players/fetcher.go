@@ -13,10 +13,8 @@ package players
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -92,31 +90,13 @@ type playerBlock struct {
 // Fetch discovers the league host, then fetches the league-scoped player database and returns
 // shape-validated records.
 func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) ([]RawPlayer, error) {
-	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
-		return nil, fmt.Errorf("players: discover host: %w", err)
-	}
-
-	// DETAILS=1 adds birthdate, draft year and college.
-	resp, err := c.Do(ctx, mfl.Request{
-		Type:   "players",
-		Year:   year,
-		Params: map[string]string{"L": leagueID, "DETAILS": "1"},
-	})
+	env, err := ingestion.FetchLeagueExport[playersEnvelope](ctx, c, "players", year, leagueID, map[string]string{"DETAILS": "1"})
 	if err != nil {
-		return nil, fmt.Errorf("players: fetch: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("players: unexpected status %d", resp.StatusCode)
-	}
-
-	var env playersEnvelope
-	if err := json.Unmarshal(resp.Body, &env); err != nil {
-		return nil, fmt.Errorf("players: decode: %w", err)
+		return nil, fmt.Errorf("players: %w", err)
 	}
 	if len(env.Players.Player) == 0 {
 		return nil, errEmptyPlayers
 	}
-
 	return flatten(ctx, env)
 }
 

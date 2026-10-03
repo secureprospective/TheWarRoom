@@ -4,10 +4,8 @@ package rosters
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -73,30 +71,13 @@ type playerBlock struct {
 
 // Fetch discovers the league host, then returns every roster row, shape-validated.
 func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) ([]RawRoster, error) {
-	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
-		return nil, fmt.Errorf("rosters: discover host: %w", err)
-	}
-
-	resp, err := c.Do(ctx, mfl.Request{
-		Type:   "rosters",
-		Year:   year,
-		Params: map[string]string{"L": leagueID},
-	})
+	env, err := ingestion.FetchLeagueExport[rostersEnvelope](ctx, c, "rosters", year, leagueID, nil)
 	if err != nil {
-		return nil, fmt.Errorf("rosters: fetch: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("rosters: unexpected status %d", resp.StatusCode)
-	}
-
-	var env rostersEnvelope
-	if err := json.Unmarshal(resp.Body, &env); err != nil {
-		return nil, fmt.Errorf("rosters: decode: %w", err)
+		return nil, fmt.Errorf("rosters: %w", err)
 	}
 	if len(env.Rosters.Franchise) == 0 {
 		return nil, errEmptyRosters
 	}
-
 	return flatten(ctx, env)
 }
 

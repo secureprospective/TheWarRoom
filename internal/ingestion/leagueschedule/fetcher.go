@@ -5,10 +5,8 @@ package leagueschedule
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -94,33 +92,13 @@ type franchiseBlock struct {
 
 // Fetch discovers the league host and returns every week of the season, validated.
 func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) ([]RawScheduleWeek, error) {
-	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
-		return nil, fmt.Errorf("leagueschedule: discover host: %w", err)
-	}
-
-	resp, err := c.Do(ctx, mfl.Request{
-		Type:   "schedule",
-		Year:   year,
-		Params: map[string]string{"L": leagueID},
-	})
+	env, err := ingestion.FetchLeagueExport[scheduleEnvelope](ctx, c, "schedule", year, leagueID, nil)
 	if err != nil {
-		return nil, fmt.Errorf("leagueschedule: fetch: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("leagueschedule: unexpected status %d", resp.StatusCode)
-	}
-	if err := ingestion.CheckAPIError(resp.Body); err != nil {
 		return nil, fmt.Errorf("leagueschedule: %w", err)
-	}
-
-	var env scheduleEnvelope
-	if err := json.Unmarshal(resp.Body, &env); err != nil {
-		return nil, fmt.Errorf("leagueschedule: decode: %w", err)
 	}
 	if len(env.Schedule.WeeklySchedule) == 0 {
 		return nil, errEmptySchedule
 	}
-
 	return flatten(ctx, env)
 }
 

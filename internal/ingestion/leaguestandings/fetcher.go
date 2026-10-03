@@ -3,11 +3,9 @@ package leaguestandings
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -103,34 +101,13 @@ type franchiseStanding struct {
 
 // Fetch discovers the league host, then returns every franchise's standings, validated.
 func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) ([]RawStanding, error) {
-	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
-		return nil, fmt.Errorf("leaguestandings: discover host: %w", err)
-	}
-
-	resp, err := c.Do(ctx, mfl.Request{
-		Type:   "leagueStandings",
-		Year:   year,
-		Params: map[string]string{"L": leagueID},
-	})
+	env, err := ingestion.FetchLeagueExport[standingsEnvelope](ctx, c, "leagueStandings", year, leagueID, nil)
 	if err != nil {
-		return nil, fmt.Errorf("leaguestandings: fetch: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("leaguestandings: unexpected status %d", resp.StatusCode)
-	}
-
-	if err := ingestion.CheckAPIError(resp.Body); err != nil {
 		return nil, fmt.Errorf("leaguestandings: %w", err)
-	}
-
-	var env standingsEnvelope
-	if err := json.Unmarshal(resp.Body, &env); err != nil {
-		return nil, fmt.Errorf("leaguestandings: decode: %w", err)
 	}
 	if len(env.LeagueStandings.Franchise) == 0 {
 		return nil, errEmptyStandings
 	}
-
 	return flatten(ctx, env)
 }
 
