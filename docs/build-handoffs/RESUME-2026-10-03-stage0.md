@@ -66,9 +66,9 @@ to these numbers.
 1. ~~Comment cleanup~~ DONE. Skipped, because Stages 4-7 rewrite or retire them:
    `engine/l4/*`, `scouting/assembly`, `harness`, and the nflverse/CFBD ingestion packages.
 2. **Code refactors found during the cleanup.** These are real code changes, each with tests:
-   - `standingsOrCache` / `leagueScheduleOrCache` (app) → one generic live-or-cache helper. The
-     two cache tables become one `mfl_cache(kind, …)`; that needs a migration.
-   - `franchiseDisplayName` (app), `resolveFranchiseNames` (feed) and the m2service copy → one.
+   - ~~live-or-cache helpers~~ DONE (generic `liveOrCache`). The two tables are left for Stage 4,
+     where `raw_archive` replaces them; a migration now would be thrown away.
+   - ~~franchise names~~ DONE (`domain.FranchiseLabel`).
    - The signing-window and trade-deadline directive read/write → one generic "phase directive by
      key".
    - Coordinator Execute/Preview × Tag/Extension/Sign → resolve the request, then the shared

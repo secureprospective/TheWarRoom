@@ -237,6 +237,9 @@ hand-parse one CSV into their own struct.
   StatRankings.
 - This also fixes a silent gap: `touchshare` reads only offense snap columns, while nflverse
   carries `defense_snaps` for IDP.
+- The MFL standings and schedule caches (`standings_cache`, `league_schedule_cache`) become
+  "latest good `raw_archive` row for this feed"; drop both tables. The app already reaches
+  them through one generic `liveOrCache`, so only its put/read pair changes.
 
 1. **Production:**
    - nflverse `stats_player`, the replacement for `player_stats`.
