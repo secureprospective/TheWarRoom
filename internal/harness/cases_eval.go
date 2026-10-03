@@ -1,13 +1,14 @@
 package harness
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
-	"strings"
+	"strconv"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine"
-	"github.com/secureprospective/TheWarRoom/internal/schema"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
 // eval3C is the fully-wired exemplar that auto-flips when a QB/K rubric registers. SL-020
@@ -364,13 +365,12 @@ func eval3E(reg RubricRegistry) (CaseState, string) {
 // it were going to) and asserts each ID survives byte-for-byte.
 func eval3L(_ RubricRegistry) (CaseState, string) {
 	for _, id := range []string{"0001", "0999", "14263"} {
-		js := fmt.Sprintf(`{"id":%q,"name":"Test","position":"WR","salary":"1"}`, id)
-		rec, err := schema.DecodePlayerRecord(strings.NewReader(js))
-		if err != nil {
+		var got playerid.PlayerID
+		if err := json.Unmarshal([]byte(strconv.Quote(id)), &got); err != nil {
 			return StateFail, fmt.Sprintf("id %q failed decode: %v", id, err)
 		}
-		if rec.ID != id {
-			return StateFail, fmt.Sprintf("id %q mutated to %q (leading zero stripped or int-coerced)", id, rec.ID)
+		if got.String() != id {
+			return StateFail, fmt.Sprintf("id %q mutated to %q (leading zero stripped or int-coerced)", id, got)
 		}
 	}
 	return StatePass, `IDs "0001","0999","14263" preserved as strings with leading zeros`

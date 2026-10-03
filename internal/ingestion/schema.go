@@ -2,6 +2,10 @@
 // transform nothing; normalize builds domain types. depguard forbids importing engine, store,
 // transactions or database/sql from here.
 //
+// External sources add fields without versioning, so decoders tolerate unknown fields and
+// Validate asserts the fields actually used; rejecting extras would turn a harmless upstream
+// addition into an outage.
+//
 // This root package holds the helpers fetchers share; each fetcher is a subpackage.
 package ingestion
 
