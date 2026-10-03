@@ -1,4 +1,9 @@
 # TheWarRoom — Build Tracker
+
+> **2026-10-03: superseded for the core** by `Core_Build_Plan_2026-10.md` (cleanup → the
+> real-player measurable → M2). The sessions below are kept as history; the Commissioner Suite
+> sequence is deferred.
+
 **Version:** 1.0 — June 2026
 **Status:** Operational. The forward source of truth for the build. Check a session off only when its close gate fully passes.
 **Origin:** Session 2 sequencing plan (`very-good-now-i-replicated-feigenbaum.md`) as corrected by the Session 3 audit (`session-3-audit-build-sequencing.md`). Audit decisions referenced as `AD-##`.
