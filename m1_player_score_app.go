@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
 
@@ -11,10 +12,11 @@ import (
 // layer values that build it, and the contract and cap block. FilmRaw is a debug field and never
 // crosses to the UI.
 type PlayerScoreDTO struct {
-	MFLID       string `json:"mflID"`
-	Name        string `json:"name"`
-	Position    string `json:"position"`
-	FranchiseID string `json:"franchiseID"`
+	MFLID         string `json:"mflID"`
+	Name          string `json:"name"`
+	Position      string `json:"position"`
+	FranchiseID   string `json:"franchiseID"`
+	FranchiseName string `json:"franchiseName"`
 
 	BasePoints        float64 `json:"basePoints"`
 	AgePull           float64 `json:"agePull"`
@@ -96,6 +98,7 @@ func (a *App) GetPlayerScore(mflID string) PlayerScoreResult {
 	}
 	if p, ok := a.state.Reader().Player(s.MFLID); ok {
 		dto.FranchiseID = p.FranchiseID
+		dto.FranchiseName = domain.FranchiseLabel(a.rulebook.FranchiseNames(), p.FranchiseID)
 		dto.Salary = p.CapSalary.Millions()
 		if dto.Salary > 0 {
 			dto.CapEff, dto.CapEffOK = s.AdjustedScore/dto.Salary, true

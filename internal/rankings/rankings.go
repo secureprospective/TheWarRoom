@@ -76,7 +76,9 @@ type Exclusion struct {
 	MFLID       string `json:"mflID"`
 	Name        string `json:"name"`
 	FranchiseID string `json:"franchiseID"`
-	Reason      string `json:"reason"`
+	// FranchiseName is a display label, filled in by the App adapter.
+	FranchiseName string `json:"franchiseName"`
+	Reason        string `json:"reason"`
 }
 
 // Report is what one pass scored, under which config, and what it skipped or excluded.

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playerscores"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
@@ -110,18 +111,23 @@ func (a *App) ScoreLeague() ScoreLeagueResult {
 	if err != nil {
 		return ScoreLeagueResult{Error: err.Error(), Label: a.proxyLabel()}
 	}
+	names := a.rulebook.FranchiseNames()
+	for i := range rep.Excluded {
+		rep.Excluded[i].FranchiseName = domain.FranchiseLabel(names, rep.Excluded[i].FranchiseID)
+	}
 	return ScoreLeagueResult{OK: true, Label: a.proxyLabel(), Report: rep}
 }
 
 // RankRow is one board row: the stored score joined with identity and contract. CapEff is
 // AdjustedScore per $M of salary; CapEffOK is false at $0 salary so the UI shows a dash.
 type RankRow struct {
-	Rank        int     `json:"rank"`
-	MFLID       string  `json:"mflID"`
-	Name        string  `json:"name"`
-	Position    string  `json:"position"`
-	FranchiseID string  `json:"franchiseID"`
-	Salary      float64 `json:"salary"`
+	Rank          int     `json:"rank"`
+	MFLID         string  `json:"mflID"`
+	Name          string  `json:"name"`
+	Position      string  `json:"position"`
+	FranchiseID   string  `json:"franchiseID"`
+	FranchiseName string  `json:"franchiseName"`
+	Salary        float64 `json:"salary"`
 
 	BasePoints    float64 `json:"basePoints"`
 	AdjustedScore float64 `json:"adjustedScore"`
@@ -182,6 +188,7 @@ func (a *App) GetRankings() RankingsResult {
 		priorOK = false
 	}
 
+	names := a.rulebook.FranchiseNames()
 	rows := make([]RankRow, 0, len(scores))
 	for i, s := range scores {
 		row := RankRow{
@@ -203,7 +210,7 @@ func (a *App) GetRankings() RankingsResult {
 			row.Name = "(unknown id " + s.MFLID + ")"
 		}
 		if p, ok := a.state.Reader().Player(s.MFLID); ok {
-			row.FranchiseID = p.FranchiseID
+			row.FranchiseID, row.FranchiseName = p.FranchiseID, domain.FranchiseLabel(names, p.FranchiseID)
 			row.Salary = p.CapSalary.Millions()
 			if row.Salary > 0 {
 				row.CapEff, row.CapEffOK = s.AdjustedScore/row.Salary, true

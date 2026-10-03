@@ -93,7 +93,7 @@ function Hero({ player }: { player: main.PlayerScoreDTO }) {
           <span style={{ fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--text-tertiary)' }}>
             {/* '—' not 'Free agent': an empty franchise can also mean the player isn't in the roster
                 store yet (sync lag) — don't assert free-agency we can't confirm (GLM L5). */}
-            {player.franchiseID || '—'}
+            {player.franchiseName || '—'}
           </span>
         </div>
         <div style={{ marginTop: 4, fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>
