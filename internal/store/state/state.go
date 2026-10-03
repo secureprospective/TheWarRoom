@@ -230,7 +230,7 @@ func (s *Store) load(ctx context.Context) error {
 	}
 	rows, err := s.pools.Read().QueryContext(ctx, `
 SELECT r.franchise_id, r.mfl_id, r.roster_status,
-       c.annual_salary_cents, c.contract_years, c.expiration_year,
+       c.annual_salary_cents, c.expiration_year,
        c.contract_status, c.is_restructured, c.is_tagged
 FROM rosters r
 JOIN contracts c

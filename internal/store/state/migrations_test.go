@@ -85,11 +85,17 @@ func TestMigrations_LegacyDBStampedMigratedAndBackedUp(t *testing.T) {
 	}
 
 	got := readStateMigrations(ctx, t, s)
-	if got[1] != "migrated" || got[2] != "migrated" {
-		t.Fatalf("markers = %v, want v1+v2 method='migrated'", got)
+	if got[1] != "migrated" || got[2] != "migrated" || got[3] != "migrated" {
+		t.Fatalf("markers = %v, want v1-v3 method='migrated'", got)
 	}
 	if n := countBackups(t, dbPath); n != 1 {
 		t.Fatalf("backup count = %d, want exactly 1 (pending work → one snapshot)", n)
+	}
+	if have, err := s.columnExists(ctx, "contracts", "contract_years"); err != nil || have {
+		t.Fatalf("contracts.contract_years still present after v3 (have=%v err=%v)", have, err)
+	}
+	if p, ok := s.Player("0001"); !ok || p.ExpirationYear != 2028 {
+		t.Fatalf("contract lost in the v3 drop: %+v ok=%v", p, ok)
 	}
 }
 
@@ -111,8 +117,8 @@ func TestMigrations_FreshDBReconciledNoBackup(t *testing.T) {
 	}
 
 	got := readStateMigrations(ctx, t, s)
-	if got[1] != "reconciled" || got[2] != "reconciled" {
-		t.Fatalf("markers = %v, want v1+v2 method='reconciled'", got)
+	if got[1] != "reconciled" || got[2] != "reconciled" || got[3] != "reconciled" {
+		t.Fatalf("markers = %v, want v1-v3 method='reconciled'", got)
 	}
 	if n := countBackups(t, dbPath); n != 0 {
 		t.Fatalf("backup count = %d, want 0 (nothing pending on a fresh DB)", n)

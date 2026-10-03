@@ -126,10 +126,9 @@ func (w *txWriter) insertSignedRosterRows(ctx context.Context, mflID, franchiseI
 	}
 	if _, err := w.tx.ExecContext(ctx,
 		`INSERT INTO contracts (id, league_id, mfl_id, franchise_id, annual_salary_cents,
-		   contract_years, expiration_year, contract_status,
-		   is_restructured, is_tagged, season, last_updated)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)`,
-		"c:"+key, w.s.leagueID, mflID, franchiseID, salary.Cents(), years, season+years-1,
+		   expiration_year, contract_status, is_restructured, is_tagged, season, last_updated)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)`,
+		"c:"+key, w.s.leagueID, mflID, franchiseID, salary.Cents(), season+years-1,
 		string(domain.CStatusUFA), season, now); err != nil {
 		return fmt.Errorf("state: SignContract %q: insert contract: %w", mflID, err)
 	}

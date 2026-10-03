@@ -124,13 +124,13 @@ func (w *txWriter) SetRosterStatus(ctx context.Context, mflID string, status dom
 		mflID, string(status), now)
 }
 
-// ApplyContract replaces a player's live contract terms. Negative salary or years fail.
+// ApplyContract replaces a player's live contract terms. A negative salary fails.
 func (w *txWriter) ApplyContract(ctx context.Context, mflID string, c ContractChange) error {
 	if !validContractStatus(c.ContractStatus) {
 		return fmt.Errorf("state: ApplyContract: unknown contract status %q", c.ContractStatus)
 	}
-	if c.AnnualSalary < 0 || c.ContractYears < 0 {
-		return fmt.Errorf("state: ApplyContract: negative salary or years")
+	if c.AnnualSalary < 0 {
+		return fmt.Errorf("state: ApplyContract: negative salary")
 	}
 	if !w.s.exists(mflID) {
 		return fmt.Errorf("state: ApplyContract %q: %w", mflID, errUnknownPlayer)
@@ -138,11 +138,10 @@ func (w *txWriter) ApplyContract(ctx context.Context, mflID string, c ContractCh
 	// Only the base salary is written; the cap figure lives in the ledger cells.
 	now := time.Now().UTC().Format(time.RFC3339)
 	res, err := w.tx.ExecContext(ctx, `
-UPDATE contracts SET annual_salary_cents = ?, contract_years = ?,
-       expiration_year = ?, contract_status = ?, is_restructured = ?, is_tagged = ?,
-       last_updated = ?
+UPDATE contracts SET annual_salary_cents = ?, expiration_year = ?, contract_status = ?,
+       is_restructured = ?, is_tagged = ?, last_updated = ?
 WHERE league_id = ? AND season = ? AND mfl_id = ?`,
-		c.AnnualSalary.Cents(), c.ContractYears, c.ExpirationYear,
+		c.AnnualSalary.Cents(), c.ExpirationYear,
 		string(c.ContractStatus), numeric.BoolToInt(c.IsRestructured), numeric.BoolToInt(c.IsTagged),
 		now, w.s.leagueID, w.s.season, mflID)
 	if err != nil {
