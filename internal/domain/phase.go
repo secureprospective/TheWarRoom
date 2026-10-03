@@ -1,13 +1,12 @@
 package domain
 
 // Phase is the league's season phase, which gates the transactions legal at a point in the
-// league-year. The rulebook scatters these boundaries (§5 season, §6 free agency, §14 Week-9
-// deadline); only the three it justifies exist, and a finer phase is one constant plus one
-// gate-map row.
+// league-year. Only the three phases the rulebook justifies exist (§5, §6, §14); a finer one
+// is a constant plus a gate-map row.
 //
 // The loaded season is the season its offseason belongs to: OFFSEASON(N) → REGULAR_SEASON(N)
-// → PLAYOFFS(N) → OFFSEASON(N+1). An offseason buyout therefore charges season N, the season
-// it clears cap for. A fresh DB starts in OFFSEASON at the loaded season.
+// → PLAYOFFS(N) → OFFSEASON(N+1), so an offseason buyout charges the season it clears cap for.
+// A fresh DB starts in OFFSEASON at the loaded season.
 type Phase string
 
 const (
