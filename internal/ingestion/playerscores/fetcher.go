@@ -8,10 +8,8 @@ package playerscores
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -66,34 +64,11 @@ func Fetch(ctx context.Context, c *mfl.Client, year, leagueID, scoreYear string)
 	if strings.TrimSpace(scoreYear) == "" {
 		return nil, fmt.Errorf("playerscores: score year is required")
 	}
-	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
-		return nil, fmt.Errorf("playerscores: discover host: %w", err)
-	}
-
-	resp, err := c.Do(ctx, mfl.Request{
-		Type: "playerScores",
-		Year: year,
-		Params: map[string]string{
-			"L":    leagueID,
-			"W":    "YTD",
-			"YEAR": scoreYear,
-		},
-	})
+	env, err := ingestion.FetchLeagueExport[scoresEnvelope](ctx, c, "playerScores", year, leagueID,
+		map[string]string{"W": "YTD", "YEAR": scoreYear})
 	if err != nil {
-		return nil, fmt.Errorf("playerscores: fetch: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("playerscores: unexpected status %d", resp.StatusCode)
-	}
-	if err := ingestion.CheckAPIError(resp.Body); err != nil {
 		return nil, fmt.Errorf("playerscores: %w", err)
 	}
-
-	var env scoresEnvelope
-	if err := json.Unmarshal(resp.Body, &env); err != nil {
-		return nil, fmt.Errorf("playerscores: decode: %w", err)
-	}
-
 	out, err := flatten(ctx, env)
 	if err != nil {
 		return nil, err

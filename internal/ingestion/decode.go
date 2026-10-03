@@ -2,9 +2,13 @@ package ingestion
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
+
+	"github.com/secureprospective/TheWarRoom/internal/mfl"
 )
 
 // mflAPIError is MFL's error envelope. MFL often returns HTTP 200 with {"error":{"$t":...}},
@@ -54,4 +58,41 @@ func (l *MFLList[T]) UnmarshalJSON(data []byte) error {
 	}
 	*l = []T{one}
 	return nil
+}
+
+// LeagueExport fetches one league-scoped MFL export and returns its body. It fails on a transport
+// error, a non-200 status, or MFL's HTTP-200 error envelope, so an outage never reads as "no
+// data". The caller has already run DiscoverHost.
+func LeagueExport(ctx context.Context, c *mfl.Client, export, year, leagueID string, extra map[string]string) ([]byte, error) {
+	params := map[string]string{"L": leagueID}
+	for k, v := range extra {
+		params[k] = v
+	}
+	resp, err := c.Do(ctx, mfl.Request{Type: export, Year: year, Params: params})
+	if err != nil {
+		return nil, fmt.Errorf("fetch %s: %w", export, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s: unexpected status %d", export, resp.StatusCode)
+	}
+	if err := CheckAPIError(resp.Body); err != nil {
+		return nil, fmt.Errorf("%s: %w", export, err)
+	}
+	return resp.Body, nil
+}
+
+// FetchLeagueExport discovers the league host, fetches export and decodes it into Env.
+func FetchLeagueExport[Env any](ctx context.Context, c *mfl.Client, export, year, leagueID string, extra map[string]string) (Env, error) {
+	var env Env
+	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
+		return env, fmt.Errorf("discover host: %w", err)
+	}
+	body, err := LeagueExport(ctx, c, export, year, leagueID, extra)
+	if err != nil {
+		return env, err
+	}
+	if err := json.Unmarshal(body, &env); err != nil {
+		return env, fmt.Errorf("decode %s: %w", export, err)
+	}
+	return env, nil
 }

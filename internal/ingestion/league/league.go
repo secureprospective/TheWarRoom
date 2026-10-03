@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
@@ -43,13 +42,13 @@ func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) (RawConfig
 		return RawConfig{}, fmt.Errorf("league: discover host: %w", err)
 	}
 
-	leagueBody, err := call(ctx, c, "league", year, leagueID)
+	leagueBody, err := ingestion.LeagueExport(ctx, c, "league", year, leagueID, nil)
 	if err != nil {
-		return RawConfig{}, err
+		return RawConfig{}, fmt.Errorf("league: %w", err)
 	}
-	rulesBody, err := call(ctx, c, "rules", year, leagueID)
+	rulesBody, err := ingestion.LeagueExport(ctx, c, "rules", year, leagueID, nil)
 	if err != nil {
-		return RawConfig{}, err
+		return RawConfig{}, fmt.Errorf("league: %w", err)
 	}
 
 	cfg, err := assemble(leagueBody, rulesBody)
@@ -58,26 +57,6 @@ func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) (RawConfig
 	}
 	cfg.Source = fmt.Sprintf("mfl:%s", year)
 	return cfg, nil
-}
-
-// call fetches one league export, failing on transport error, non-200, or MFL's error
-// envelope.
-func call(ctx context.Context, c *mfl.Client, endpoint, year, leagueID string) ([]byte, error) {
-	resp, err := c.Do(ctx, mfl.Request{
-		Type:   endpoint,
-		Year:   year,
-		Params: map[string]string{"L": leagueID},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("league: fetch %s: %w", endpoint, err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("league: %s unexpected status %d", endpoint, resp.StatusCode)
-	}
-	if err := ingestion.CheckAPIError(resp.Body); err != nil {
-		return nil, fmt.Errorf("league: %s: %w", endpoint, err)
-	}
-	return resp.Body, nil
 }
 
 // assemble decodes both exports and rejects a config that cannot be valid: no scoring rules,

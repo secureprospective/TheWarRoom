@@ -7,9 +7,7 @@ package salaryadjustments
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -72,32 +70,10 @@ type adjustmentBlock struct {
 // Fetch discovers the league host and returns the ledger, validated. An empty ledger returns
 // (nil, nil).
 func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) ([]RawSalaryAdjustment, error) {
-	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
-		return nil, fmt.Errorf("salaryadjustments: discover host: %w", err)
-	}
-
-	resp, err := c.Do(ctx, mfl.Request{
-		Type:   "salaryAdjustments",
-		Year:   year,
-		Params: map[string]string{"L": leagueID},
-	})
+	env, err := ingestion.FetchLeagueExport[salaryAdjustmentsEnvelope](ctx, c, "salaryAdjustments", year, leagueID, nil)
 	if err != nil {
-		return nil, fmt.Errorf("salaryadjustments: fetch: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("salaryadjustments: unexpected status %d", resp.StatusCode)
-	}
-	// With no empty guard, an error payload would decode to zero rows and wipe every franchise's
-	// dead cap.
-	if err := ingestion.CheckAPIError(resp.Body); err != nil {
 		return nil, fmt.Errorf("salaryadjustments: %w", err)
 	}
-
-	var env salaryAdjustmentsEnvelope
-	if err := json.Unmarshal(resp.Body, &env); err != nil {
-		return nil, fmt.Errorf("salaryadjustments: decode: %w", err)
-	}
-
 	return flatten(ctx, env)
 }
 
