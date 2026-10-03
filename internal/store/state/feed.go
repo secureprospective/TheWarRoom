@@ -43,16 +43,16 @@ type FeedEvent struct {
 	TradePicksNote string
 }
 
-// The reason prefixes the transaction handlers write, used to classify source="op" rows. Matching
-// is case-insensitive on both sides: SQL LIKE and strings.ToLower.
+// The reason prefixes the transaction handlers write, used to classify source="op" rows,
+// case-insensitively.
 const (
 	opReasonRestructure = "§11 restructure"
 	opReasonTag         = "§9 franchise tag"
 	opReasonWaiverVoid  = "waiver-cut §8"
 )
 
-// classifyContractChangeKind is the Go copy of feedSQL's contract_year_changes CASE, kept so a
-// test can pin the two together. Seed rows must already be filtered out.
+// classifyContractChangeKind gives a contract_year_changes row its Kind from the row's source and
+// reason. Seed rows are filtered out in SQL.
 func classifyContractChangeKind(source, reason string) string {
 	switch source {
 	case "signing":
@@ -96,8 +96,8 @@ func deriveProvenance(kind, reason string) string {
 
 // feedSQL is one UNION ALL across the append-only ledgers. Every branch projects the same nine
 // columns: source, id, kind, timestamp, mfl_id, franchises (comma-joined), reason, trade rationale,
-// trade picks note. Unknown op reasons land in CONTRACT_CHANGE so they stay visible. The status
-// branch's ELSE is 'UNKNOWN', which Feed turns into a drift error.
+// trade picks note. The contract branch projects its raw source as kind; Feed classifies it in Go.
+// The status branch's ELSE is 'UNKNOWN', which Feed turns into a drift error.
 const feedSQL = `
 SELECT source, id, kind, ts, mfl_id, franchises_raw, reason, trade_rationale, trade_picks_note FROM (
     SELECT 'trade_notes'              AS source,
@@ -158,14 +158,7 @@ SELECT source, id, kind, ts, mfl_id, franchises_raw, reason, trade_rationale, tr
 
     SELECT 'contract_year_changes'    AS source,
            id                         AS id,
-           CASE
-               WHEN source = 'signing'   THEN 'SIGN'
-               WHEN source = 'extension' THEN 'EXTENSION'
-               WHEN reason LIKE '%' || ?2 || '%' THEN 'RESTRUCTURE'
-               WHEN reason LIKE '%' || ?3 || '%' THEN 'TAG'
-               WHEN reason LIKE '%' || ?4 || '%' THEN 'WAIVER_VOID'
-               ELSE 'CONTRACT_CHANGE'
-           END                        AS kind,
+           source                     AS kind,
            changed_at                 AS ts,
            mfl_id                     AS mfl_id,
            ''                         AS franchises_raw,
@@ -181,7 +174,7 @@ SELECT source, id, kind, ts, mfl_id, franchises_raw, reason, trade_rationale, tr
 -- dead_cap_ledger, contract_year_changes) LENGTH-then-lex is a different but still-deterministic
 -- tiebreaker, and the tiebreak only fires within a single source (source DESC groups first).
 ORDER BY ts DESC, source DESC, LENGTH(id) DESC, id DESC
-LIMIT ?5`
+LIMIT ?2`
 
 // Feed returns up to limit events across the ledgers, newest first (non-positive limit: a
 // default). Ids only; the caller resolves names. An empty league returns an empty, non-nil slice.
@@ -189,13 +182,7 @@ func (s *Store) Feed(ctx context.Context, limit int) ([]FeedEvent, error) {
 	if limit <= 0 {
 		limit = 500
 	}
-	rows, err := s.pools.Read().QueryContext(ctx, feedSQL,
-		s.leagueID,
-		opReasonRestructure,
-		opReasonTag,
-		opReasonWaiverVoid,
-		limit,
-	)
+	rows, err := s.pools.Read().QueryContext(ctx, feedSQL, s.leagueID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("state: feed: %w", err)
 	}
@@ -212,6 +199,9 @@ func (s *Store) Feed(ctx context.Context, limit int) ([]FeedEvent, error) {
 			&tradeRationale, &tradePicksNote,
 		); err != nil {
 			return nil, fmt.Errorf("state: feed scan: %w", err)
+		}
+		if source == "contract_year_changes" {
+			kind = classifyContractChangeKind(kind, reason)
 		}
 		// A status the CASE doesn't know: fail loudly rather than mislabel the row.
 		if kind == "UNKNOWN" {
