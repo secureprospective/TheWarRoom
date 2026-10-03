@@ -2,10 +2,8 @@ package transactions_test
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
-	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -30,13 +28,7 @@ func readPlayerCells(t *testing.T, s *state.Store, mflID string) map[int]domain.
 type richSeed struct{ t *testing.T }
 
 func (s richSeed) Rosters(context.Context) ([]domain.Roster, error) {
-	id := func(raw string) playerid.PlayerID {
-		p, err := playerid.New(raw)
-		if err != nil {
-			s.t.Fatalf("playerid.New(%q): %v", raw, err)
-		}
-		return p
-	}
+	id := func(raw string) playerid.PlayerID { return pid(s.t, raw) }
 	return []domain.Roster{
 		{FranchiseID: "0001", Players: []domain.PlayerRecord{
 			{MFLID: id("0010"), Salary: 12 * mil, ContractYear: 2028,
@@ -53,19 +45,7 @@ func (s richSeed) Rosters(context.Context) ([]domain.Roster, error) {
 
 func richStore(t *testing.T) (*state.Store, *transactions.Coordinator) {
 	t.Helper()
-	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "rx.db"))
-	if err != nil {
-		t.Fatalf("db.Open: %v", err)
-	}
-	t.Cleanup(func() { _ = pools.Close() })
-	s := state.New(pools, "14432", 2026, nil)
-	if err := s.Initialize(context.Background(), richSeed{t}); err != nil {
-		t.Fatalf("Initialize: %v", err)
-	}
-	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
-	if err != nil {
-		t.Fatalf("New coordinator: %v", err)
-	}
+	s, c := seededCoordinator(t, richSeed{t})
 	return s, c
 }
 
@@ -125,22 +105,9 @@ func TestIntegration_RestructureLowersCapFlat(t *testing.T) {
 // rejected (the single-salary model silently swallowed this — money vanished with no
 // future-year home). Nothing mutates.
 func TestIntegration_RestructureRejectsFinalYearContract(t *testing.T) {
-	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "fy.db"))
-	if err != nil {
-		t.Fatalf("db.Open: %v", err)
-	}
-	t.Cleanup(func() { _ = pools.Close() })
-	s := state.New(pools, "14432", 2026, nil)
-	// A $6M player whose contract ENDS this season (2026) — eligible by salary, but no future
-	// paid cell to absorb a move.
-	seed := finalYearSeed{t: t}
-	if err := s.Initialize(context.Background(), seed); err != nil {
-		t.Fatalf("Initialize: %v", err)
-	}
-	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
-	if err != nil {
-		t.Fatalf("New coordinator: %v", err)
-	}
+	// A $6M player whose contract ends this season: eligible by salary, but no future paid cell
+	// to absorb a move.
+	s, c := seededCoordinator(t, finalYearSeed{t: t})
 	if _, err := c.Execute(context.Background(), transactions.Restructure{MFLID: "0030", Move: 1 * mil}); err == nil {
 		t.Fatal("restructure of a final-year contract was accepted (no future year to move into)")
 	}

@@ -2,10 +2,8 @@ package transactions_test
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
-	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	statepkg "github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -22,13 +20,7 @@ import (
 type extSeed struct{ t *testing.T }
 
 func (s extSeed) Rosters(context.Context) ([]domain.Roster, error) {
-	id := func(raw string) playerid.PlayerID {
-		p, err := playerid.New(raw)
-		if err != nil {
-			s.t.Fatalf("playerid.New(%q): %v", raw, err)
-		}
-		return p
-	}
+	id := func(raw string) playerid.PlayerID { return pid(s.t, raw) }
 	mk := func(raw string, sal domain.Money, exp int) domain.PlayerRecord {
 		return domain.PlayerRecord{MFLID: id(raw), Salary: sal, ContractYear: exp,
 			RosterStatus: domain.RosterActive, ContractStatus: domain.CStatusUFA}
@@ -43,19 +35,7 @@ func (s extSeed) Rosters(context.Context) ([]domain.Roster, error) {
 
 func extStore(t *testing.T) (*statepkg.Store, *transactions.Coordinator, tagDir) {
 	t.Helper()
-	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "ext.db"))
-	if err != nil {
-		t.Fatalf("db.Open: %v", err)
-	}
-	t.Cleanup(func() { _ = pools.Close() })
-	s := statepkg.New(pools, "14432", 2026, nil)
-	if err := s.Initialize(context.Background(), extSeed{t}); err != nil {
-		t.Fatalf("Initialize: %v", err)
-	}
-	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
-	if err != nil {
-		t.Fatalf("New coordinator: %v", err)
-	}
+	s, c := seededCoordinator(t, extSeed{t})
 	dir := tagDir{
 		"0001": domain.PosWR, "0002": domain.PosWR, "0003": domain.PosWR,
 		"0004": domain.PosWR, "0005": domain.PosFlag,

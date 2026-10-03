@@ -406,115 +406,41 @@ func TestRun_ScoutingDirectoryPopulatesRAS(t *testing.T) {
 	}
 }
 
-// TestApplyScouting_CoverageFilmComposite pins the LOCKED K4 blend (FILM Thread C): a
-// present coverage anchor becomes FilmComposite = 0.20·coverage + 0.80·0.50, so a neutral
-// anchor (0.50) leaves the composite neutral (0.50) and the extremes move it only ±0.10 —
-// the 0.20 film-budget weight, damped around the engine S-curve's neutral inflection.
-func TestApplyScouting_CoverageFilmComposite(t *testing.T) {
+// TestApplyScouting_FilmComposite pins the film blend for every seat combination:
+//   - CB/S coverage only:   0.20·coverage + 0.80·neutral
+//   - IDP Madden only:      0.95·Madden + 0.05·neutral (the NFLProduction seat)
+//   - CB/S both:            0.20·coverage + 0.75·Madden + 0.05·neutral
+//   - offense:              0.95·Composite + 0.05·neutral
+//
+// A neutral (0.50) input leaves the composite neutral.
+func TestApplyScouting_FilmComposite(t *testing.T) {
 	id, _ := playerid.New("1001")
+	cov := func(v float64) *scouting.NGSCoverage { return &scouting.NGSCoverage{CoverageMetrics: v} }
+	idp := func(v float64) *scouting.IDPFilm { return &scouting.IDPFilm{MaddenComposite: v} }
+	off := func(v float64) *scouting.OffenseFilm { return &scouting.OffenseFilm{Composite: v} }
 	cases := []struct {
-		name string
-		cov  float64
-		want float64
+		name    string
+		profile scouting.Profile
+		want    float64
 	}{
-		{"neutral coverage stays neutral", 0.50, 0.50},
-		{"elite coverage lifts by +0.10", 1.00, 0.60},
-		{"poor coverage drags by -0.10", 0.00, 0.40},
+		{"coverage neutral", scouting.Profile{Coverage: cov(0.50)}, 0.50},
+		{"coverage elite +0.10", scouting.Profile{Coverage: cov(1.00)}, 0.60},
+		{"coverage poor -0.10", scouting.Profile{Coverage: cov(0.00)}, 0.40},
+		{"IDP Madden neutral", scouting.Profile{IDPFilm: idp(0.50)}, 0.50},
+		{"IDP Madden elite", scouting.Profile{IDPFilm: idp(1.00)}, 0.95*1.00 + 0.05*0.50},
+		{"IDP Madden poor", scouting.Profile{IDPFilm: idp(0.00)}, 0.95*0.00 + 0.05*0.50},
+		{"CB/S coverage and Madden", scouting.Profile{Coverage: cov(0.90), IDPFilm: idp(0.80)}, 0.20*0.90 + 0.75*0.80 + 0.05*0.50},
+		{"offense neutral", scouting.Profile{OffenseFilm: off(0.50)}, 0.50},
+		{"offense elite", scouting.Profile{OffenseFilm: off(1.00)}, 0.95*1.00 + 0.05*0.50},
+		{"offense poor", scouting.Profile{OffenseFilm: off(0.00)}, 0.95*0.00 + 0.05*0.50},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			c.profile.MFLID = id
 			var spec composition.PlayerSpec
-			applyScouting(&spec, scouting.Profile{
-				MFLID:    id,
-				Coverage: &scouting.NGSCoverage{CoverageMetrics: c.cov},
-			})
-			if !spec.HasFilm {
-				t.Fatalf("coverage present → HasFilm must be true")
-			}
-			if math.Abs(spec.FilmComposite-c.want) > 1e-12 {
-				t.Fatalf("cov=%v: FilmComposite = %v, want %v", c.cov, spec.FilmComposite, c.want)
-			}
-		})
-	}
-}
-
-// TestApplyScouting_IDPFilmMaddenComposite pins the C-4 step-2 blend for DT/DE/LB (no
-// coverage seat): FilmComposite = 0.95·Madden + 0.05·neutral, so a neutral Madden
-// composite (0.50) stays neutral and the extremes move it by ±0.95·0.50 damped by the
-// reserved K2 seat.
-func TestApplyScouting_IDPFilmMaddenComposite(t *testing.T) {
-	id, _ := playerid.New("1001")
-	cases := []struct {
-		name   string
-		madden float64
-		want   float64
-	}{
-		{"neutral Madden stays neutral", 0.50, 0.50},
-		{"elite Madden lifts", 1.00, 0.95*1.00 + 0.05*0.50},
-		{"poor Madden drags", 0.00, 0.95*0.00 + 0.05*0.50},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			var spec composition.PlayerSpec
-			applyScouting(&spec, scouting.Profile{
-				MFLID:   id,
-				IDPFilm: &scouting.IDPFilm{MaddenComposite: c.madden},
-			})
-			if !spec.HasFilm {
-				t.Fatalf("Madden composite present → HasFilm must be true")
-			}
-			if math.Abs(spec.FilmComposite-c.want) > 1e-12 {
-				t.Fatalf("madden=%v: FilmComposite = %v, want %v", c.madden, spec.FilmComposite, c.want)
-			}
-		})
-	}
-}
-
-// TestApplyScouting_CBSCombinedFilm pins the full CB/S film composite when BOTH the
-// coverage anchor and the Madden composite are present: 0.20·coverage + 0.75·Madden +
-// 0.05·neutral. The three LOCKED seats (K4 coverage 0.20, Madden residual, K2 reserved
-// 0.05) must sum to 1.
-func TestApplyScouting_CBSCombinedFilm(t *testing.T) {
-	id, _ := playerid.New("1001")
-	var spec composition.PlayerSpec
-	applyScouting(&spec, scouting.Profile{
-		MFLID:    id,
-		Coverage: &scouting.NGSCoverage{CoverageMetrics: 0.90},
-		IDPFilm:  &scouting.IDPFilm{MaddenComposite: 0.80},
-	})
-	want := 0.20*0.90 + 0.75*0.80 + 0.05*0.50
-	if !spec.HasFilm || math.Abs(spec.FilmComposite-want) > 1e-12 {
-		t.Fatalf("combined CB/S FilmComposite = %v, want %v", spec.FilmComposite, want)
-	}
-}
-
-// TestApplyScouting_OffenseFilmComposite pins the C-4 step-3 blend for QB/RB/WR/TE: the
-// assembly leaf already blended the Madden backbone + bounded FTN overlay into
-// OffenseFilm.Composite, so applyScouting only reserves the K2 seat neutral:
-// FilmComposite = 0.95·Composite + 0.05·neutral.
-func TestApplyScouting_OffenseFilmComposite(t *testing.T) {
-	id, _ := playerid.New("1001")
-	cases := []struct {
-		name      string
-		composite float64
-		want      float64
-	}{
-		{"neutral stays neutral", 0.50, 0.50},
-		{"elite lifts", 1.00, 0.95*1.00 + 0.05*0.50},
-		{"poor drags", 0.00, 0.95*0.00 + 0.05*0.50},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			var spec composition.PlayerSpec
-			applyScouting(&spec, scouting.Profile{
-				MFLID:       id,
-				OffenseFilm: &scouting.OffenseFilm{Composite: c.composite},
-			})
-			if !spec.HasFilm {
-				t.Fatalf("offense film present → HasFilm must be true")
-			}
-			if math.Abs(spec.FilmComposite-c.want) > 1e-12 {
-				t.Fatalf("composite=%v: FilmComposite = %v, want %v", c.composite, spec.FilmComposite, c.want)
+			applyScouting(&spec, c.profile)
+			if !spec.HasFilm || math.Abs(spec.FilmComposite-c.want) > 1e-12 {
+				t.Fatalf("HasFilm=%v FilmComposite=%v, want true and %v", spec.HasFilm, spec.FilmComposite, c.want)
 			}
 		})
 	}

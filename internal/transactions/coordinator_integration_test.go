@@ -25,13 +25,7 @@ func emptyDirectory(context.Context) (transactions.Directory, error) {
 type seedSource struct{ t *testing.T }
 
 func (s seedSource) Rosters(context.Context) ([]domain.Roster, error) {
-	id := func(raw string) playerid.PlayerID {
-		p, err := playerid.New(raw)
-		if err != nil {
-			s.t.Fatalf("playerid.New(%q): %v", raw, err)
-		}
-		return p
-	}
+	id := func(raw string) playerid.PlayerID { return pid(s.t, raw) }
 	return []domain.Roster{
 		{FranchiseID: "0001", Players: []domain.PlayerRecord{
 			{MFLID: id("0001"), Salary: 10 * mil, ContractYear: 2028,
@@ -50,9 +44,15 @@ func realStore(t *testing.T) *state.Store {
 	return s
 }
 
-// realStoreWithPools also hands back the raw *db.Pools — needed by tests that read back a table
-// (like trade_notes) the state.Store package doesn't expose a typed accessor for.
+// realStoreWithPools also hands back the raw *db.Pools, for tests that read a table the store
+// has no accessor for (like trade_notes).
 func realStoreWithPools(t *testing.T) (*state.Store, *db.Pools) {
+	t.Helper()
+	return seededStore(t, seedSource{t})
+}
+
+// seededStore opens a fresh database seeded from src (league 14432, season 2026).
+func seededStore(t *testing.T, src state.Source) (*state.Store, *db.Pools) {
 	t.Helper()
 	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "txn.db"))
 	if err != nil {
@@ -60,10 +60,31 @@ func realStoreWithPools(t *testing.T) (*state.Store, *db.Pools) {
 	}
 	t.Cleanup(func() { _ = pools.Close() })
 	s := state.New(pools, "14432", 2026, nil)
-	if err := s.Initialize(context.Background(), seedSource{t}); err != nil {
+	if err := s.Initialize(context.Background(), src); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
 	return s, pools
+}
+
+// seededCoordinator is seededStore plus a coordinator with an empty players directory.
+func seededCoordinator(t *testing.T, src state.Source) (*state.Store, *transactions.Coordinator) {
+	t.Helper()
+	s, _ := seededStore(t, src)
+	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
+	if err != nil {
+		t.Fatalf("New coordinator: %v", err)
+	}
+	return s, c
+}
+
+// pid builds a PlayerID or fails the test.
+func pid(t *testing.T, raw string) playerid.PlayerID {
+	t.Helper()
+	p, err := playerid.New(raw)
+	if err != nil {
+		t.Fatalf("playerid.New(%q): %v", raw, err)
+	}
+	return p
 }
 
 // TestIntegration_TradePersists wires the real Coordinator to the real state store and

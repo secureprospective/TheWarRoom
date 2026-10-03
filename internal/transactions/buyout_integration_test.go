@@ -2,10 +2,8 @@ package transactions_test
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
-	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	statepkg "github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -27,13 +25,7 @@ import (
 type buySeed struct{ t *testing.T }
 
 func (s buySeed) Rosters(context.Context) ([]domain.Roster, error) {
-	id := func(raw string) playerid.PlayerID {
-		p, err := playerid.New(raw)
-		if err != nil {
-			s.t.Fatalf("playerid.New(%q): %v", raw, err)
-		}
-		return p
-	}
+	id := func(raw string) playerid.PlayerID { return pid(s.t, raw) }
 	mk := func(raw string, exp int) domain.PlayerRecord {
 		return domain.PlayerRecord{MFLID: id(raw), Salary: 6 * mil, ContractYear: exp,
 			RosterStatus: domain.RosterActive, ContractStatus: domain.CStatusUFA}
@@ -56,19 +48,7 @@ func (s buySeed) Rosters(context.Context) ([]domain.Roster, error) {
 
 func buyStore(t *testing.T) (*statepkg.Store, *transactions.Coordinator) {
 	t.Helper()
-	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "buy.db"))
-	if err != nil {
-		t.Fatalf("db.Open: %v", err)
-	}
-	t.Cleanup(func() { _ = pools.Close() })
-	s := statepkg.New(pools, "14432", 2026, nil)
-	if err := s.Initialize(context.Background(), buySeed{t}); err != nil {
-		t.Fatalf("Initialize: %v", err)
-	}
-	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
-	if err != nil {
-		t.Fatalf("New coordinator: %v", err)
-	}
+	s, c := seededCoordinator(t, buySeed{t})
 	return s, c
 }
 
@@ -200,19 +180,7 @@ func (s unequalSeed) Rosters(context.Context) ([]domain.Roster, error) {
 // (mean $9,333,333.33); at 3 years remaining the rate is 75% → exactly $7M dead cap. A wrong impl
 // that dropped the $12M extension year would average $8M → $6M, so the $7M assertion pins the mean.
 func TestIntegration_BuyoutUnequalCellsUsesMean(t *testing.T) {
-	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "unequal.db"))
-	if err != nil {
-		t.Fatalf("db.Open: %v", err)
-	}
-	t.Cleanup(func() { _ = pools.Close() })
-	s := statepkg.New(pools, "14432", 2026, nil)
-	if err := s.Initialize(context.Background(), unequalSeed{t}); err != nil {
-		t.Fatalf("Initialize: %v", err)
-	}
-	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
-	if err != nil {
-		t.Fatalf("New coordinator: %v", err)
-	}
+	s, c := seededCoordinator(t, unequalSeed{t})
 	ctx := context.Background()
 	dir := tagDir{"0071": domain.PosWR}
 
