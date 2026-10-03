@@ -142,7 +142,7 @@ func (a *App) startup(ctx context.Context) {
 	}
 	a.mflClient = client
 
-	log.Printf("the war room: starting %s (%s) season %d, db %s", version, commit, season, path)
+	log.Printf("the war room: starting %s season %d, db %s", buildLabel(), season, path)
 	began := time.Now()
 	if err := a.initStoreFloor(ctx); err != nil {
 		a.startupErr = err
