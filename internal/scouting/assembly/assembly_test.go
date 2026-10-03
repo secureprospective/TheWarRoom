@@ -442,3 +442,25 @@ func TestBuildRAS_NilPositionLookupFailsLoud(t *testing.T) {
 		t.Fatal("BuildRAS with nil PositionLookup should error")
 	}
 }
+
+// TestScoreRASIsDeterministic: the same combine data must score bit-identically on every
+// pass. A float sum taken in map order differs in its last bits from run to run, which breaks
+// the board's exact-equality tiebreak and makes an unchanged pass look like a new board.
+func TestScoreRASIsDeterministic(t *testing.T) {
+	raw := map[string]ras.RawCombine{}
+	pos := map[string]domain.Position{}
+	for i := range 300 {
+		id := "00-" + strings.Repeat("0", 4) + string(rune('a'+i%26)) + string(rune('a'+i/26))
+		x := math.Sqrt(float64(i + 2))
+		raw[id] = ras.RawCombine{GSISID: id, WeightLb: fp(200 + x*3.7), Forty: fp(4.3 + x/17), Vertical: fp(30 + x*1.3)}
+		pos[id] = domain.PosWR
+	}
+	first := scoreRAS(raw, pos)
+	for range 20 {
+		for id, v := range scoreRAS(raw, pos) {
+			if math.Float64bits(v) != math.Float64bits(first[id]) {
+				t.Fatalf("RAS for %s = %v, first pass %v: scoring depends on map order", id, v, first[id])
+			}
+		}
+	}
+}
