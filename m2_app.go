@@ -118,3 +118,16 @@ func (a *App) GetPowerRankings(weight float64, aggMode string) PowerRankingsResu
 		Rows: rows,
 	}
 }
+
+// currentPhaseLabel reads the season phase for labelling only; a failure returns "". It uses
+// its own context because the caller's is usually dead after a failed fetch, which is exactly
+// when the "final" label matters.
+func (a *App) currentPhaseLabel() string {
+	ctx, cancel := context.WithTimeout(a.fallbackParent(), cacheReadTimeout)
+	defer cancel()
+	ph, err := a.state.CurrentPhase(ctx)
+	if err != nil {
+		return ""
+	}
+	return string(ph)
+}
