@@ -20,7 +20,7 @@ READ FIRST — the shaped doctrine this session executes:
 Artifacts on CT105: docs/reviews/warroom-review-week-2026-07/ (REVIEW_LOG.md, ARCHITECTURE_MAP.md,
 ornith-phase0-grades.md, boundary_rules.json). Transcripts on the Beelink at
 /home/chris/opencode/review_logs/warroom/transcripts/. Ornith driver skill: Beelink
-~/ai-workspace/skills/arch-map/. SSH: ssh -i /root/.ssh/beelink chris@192.168.1.190.
+~/scratch/skills/arch-map/. SSH: ssh -i /root/.ssh/beelink chris@192.168.1.190.
 
 GOVERNING DOCTRINE (do not skip)
 - LEADS, not findings. GLM ran BLIND; Ornith at 22% precision. This is not a defect to apologize
@@ -113,7 +113,7 @@ Ornith's current weights. This is the "grade the logs" self-learning loop
 ([[reference_codeword_grade_the_logs]], [[project_hermes_pr_trainer]]) applied here.
 Artifacts on the Beelink: /home/chris/opencode/review_logs/warroom/ (transcripts/, REVIEW_LOG.md,
 ornith-phase0-grades.md, arch-map/lessons.md). Ornith driver skill: Beelink
-~/ai-workspace/skills/arch-map/. SSH: ssh -i /root/.ssh/beelink chris@192.168.1.190.
+~/scratch/skills/arch-map/. SSH: ssh -i /root/.ssh/beelink chris@192.168.1.190.
 
 THE FRAME (doctrine §1 — apply it, don't relitigate it): Ornith's 22% precision was a TASK-DESIGN
 failure, not a size failure — it was handed a judgment prompt for a filtering job. Cheap high-recall
@@ -138,7 +138,7 @@ TRAIN ORNITH (the arch-mapper — the biggest, most concrete win)
     3. Add the mechanical coverage check Ornith skipped (Phase-0 error #1): after grouping, diff the
        union of chunk paths against the inventory and assign the remainder — completeness is a
        mechanical post-check, do it mechanically.
-  Write these as lessons into Beelink ~/ai-workspace/skills/arch-map/lessons.md AND an
+  Write these as lessons into Beelink ~/scratch/skills/arch-map/lessons.md AND an
   ornith-lessons.md (parallel to the PR-trainer's ornith-lessons.md), so the next arch-map run
   loads them. This is real training: the skill the model runs under is the model's behavior.
 
