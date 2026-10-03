@@ -172,7 +172,7 @@ func TestApplyContractSetsTermsNotCap(t *testing.T) {
 
 	before, _ := s.CapUsed("0001")
 	err := s.ApplyContract(ctx, "0001", ContractChange{
-		AnnualSalary: 10 * capUnit, ContractYears: 3,
+		AnnualSalary:   10 * capUnit,
 		ExpirationYear: 2029, ContractStatus: domain.CStatusFT1, IsTagged: true,
 	})
 	if err != nil {
@@ -183,7 +183,7 @@ func TestApplyContractSetsTermsNotCap(t *testing.T) {
 		t.Fatalf("CapUsed changed on ApplyContract: before %v, after %v (cap is cell-derived, unaffected)", before, after)
 	}
 	p, _ := s.Player("0001")
-	if !p.IsTagged || p.ContractYears != 3 || p.ExpirationYear != 2029 {
+	if !p.IsTagged || p.ExpirationYear != 2029 {
 		t.Fatalf("contract terms not applied: %+v", p)
 	}
 }

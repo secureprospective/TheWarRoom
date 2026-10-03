@@ -108,7 +108,6 @@ func Restructure(ctx context.Context, w state.TxWriter, mflID string, move domai
 	}
 	change := state.ContractChange{
 		AnnualSalary:   ps.Salary,
-		ContractYears:  ps.ContractYears,
 		ExpirationYear: ps.ExpirationYear,
 		ContractStatus: ps.ContractStatus,
 		IsRestructured: true,
@@ -157,7 +156,6 @@ func Tag(ctx context.Context, w state.TxWriter, mflID string, price domain.Money
 
 	change := state.ContractChange{
 		AnnualSalary:   price,
-		ContractYears:  ps.ContractYears,
 		ExpirationYear: ps.ExpirationYear,
 		ContractStatus: ps.ContractStatus,
 		// A tag is a fresh contract: a later cut charges the standard 35%, not the
@@ -273,7 +271,6 @@ func Extend(ctx context.Context, w state.TxWriter, mflID string, addedYears int,
 	}
 	change := state.ContractChange{
 		AnnualSalary:   ps.Salary,
-		ContractYears:  ps.ContractYears,
 		ExpirationYear: ps.ExpirationYear + addedYears,
 		ContractStatus: ps.ContractStatus,
 		IsRestructured: false,

@@ -46,6 +46,7 @@ func stateMigrations() []migration {
 	return []migration{
 		{version: 1, apply: (*Store).migrateMoneyCents, isAlreadyApplied: (*Store).moneyCentsApplied},
 		{version: 2, apply: (*Store).dropLegacyMoneyColumns, isAlreadyApplied: (*Store).legacyColumnsDropped},
+		{version: 3, apply: (*Store).dropContractYearsColumn, isAlreadyApplied: (*Store).contractYearsColumnDropped},
 	}
 }
 

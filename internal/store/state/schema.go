@@ -62,7 +62,6 @@ CREATE TABLE IF NOT EXISTS contracts (
 	mfl_id                TEXT NOT NULL,
 	franchise_id          TEXT NOT NULL,
 	annual_salary_cents   INTEGER NOT NULL DEFAULT 0 CHECK (annual_salary_cents >= 0),
-	contract_years  INTEGER NOT NULL DEFAULT 0,
 	expiration_year INTEGER NOT NULL DEFAULT 0,
 	contract_status TEXT NOT NULL DEFAULT '',
 	is_restructured INTEGER NOT NULL DEFAULT 0,
@@ -171,6 +170,25 @@ func (s *Store) dropLegacyMoneyColumns(ctx context.Context) error {
 		return fmt.Errorf("state: drop legacy columns commit: %w", err)
 	}
 	return nil
+}
+
+// dropContractYearsColumn (v3) drops contracts.contract_years. Only SignContract ever wrote it and
+// nothing read it: expiration_year and the contract_years ledger cells carry the term.
+func (s *Store) dropContractYearsColumn(ctx context.Context) error {
+	have, err := s.columnExists(ctx, "contracts", "contract_years")
+	if err != nil || !have {
+		return err
+	}
+	if _, err := s.pools.Write().ExecContext(ctx, `ALTER TABLE contracts DROP COLUMN contract_years`); err != nil {
+		return fmt.Errorf("state: drop contracts.contract_years: %w", err)
+	}
+	return nil
+}
+
+// contractYearsColumnDropped reports whether v3 is already in place (always, on a fresh DB).
+func (s *Store) contractYearsColumnDropped(ctx context.Context) (bool, error) {
+	have, err := s.columnExists(ctx, "contracts", "contract_years")
+	return !have, err
 }
 
 // columnExists reports whether a table has a column.

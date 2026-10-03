@@ -17,7 +17,6 @@ type PlayerState struct {
 	// CapSalary is derived from the current season's PAID ledger cell, the source of truth. It equals
 	// Salary until a restructure moves money out of this year.
 	CapSalary      domain.Money
-	ContractYears  int // never populated (0); the ledger cells hold the real contract length
 	ExpirationYear int
 	ContractStatus domain.ContractStatus
 	IsRestructured bool
@@ -35,7 +34,6 @@ type FranchiseState struct {
 // ContractChange is the full set of contract terms a transaction applies, replaced atomically.
 type ContractChange struct {
 	AnnualSalary   domain.Money
-	ContractYears  int
 	ExpirationYear int
 	ContractStatus domain.ContractStatus
 	IsRestructured bool

@@ -97,9 +97,8 @@ func seedPlayer(ctx context.Context, tx *sql.Tx, leagueID string, season int, no
 	// Only the base salary goes in contracts; the cap figure lives in the ledger cells.
 	if _, err := tx.ExecContext(ctx,
 		`INSERT INTO contracts (id, league_id, mfl_id, franchise_id, annual_salary_cents,
-		   contract_years, expiration_year, contract_status,
-		   is_restructured, is_tagged, season, last_updated)
-		 VALUES (?, ?, ?, ?, ?, 0, ?, ?, 0, 0, ?, ?)`,
+		   expiration_year, contract_status, is_restructured, is_tagged, season, last_updated)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)`,
 		"c:"+key, leagueID, mflID, franchiseID, p.Salary.Cents(), p.ContractYear,
 		string(p.ContractStatus), season, now); err != nil {
 		return fmt.Errorf("state: seed contract %q: %w", mflID, err)
@@ -115,7 +114,7 @@ func scanState(rows *sql.Rows) (map[string]*FranchiseState, map[string]string, e
 		var p PlayerState
 		var restructured, tagged int
 		if err := rows.Scan(&p.FranchiseID, &p.MFLID, &p.RosterStatus,
-			&p.Salary, &p.ContractYears, &p.ExpirationYear,
+			&p.Salary, &p.ExpirationYear,
 			&p.ContractStatus, &restructured, &tagged); err != nil {
 			return nil, nil, fmt.Errorf("state: scan: %w", err)
 		}
