@@ -5,6 +5,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
@@ -152,7 +153,7 @@ func (a *App) GetFranchises() FranchisesResult {
 		if fs, ok := r.FranchiseState(id); ok {
 			count = len(fs.Players)
 		}
-		out = append(out, M4Franchise{FranchiseID: id, Name: names[id], PlayerCount: count})
+		out = append(out, M4Franchise{FranchiseID: id, Name: domain.FranchiseLabel(names, id), PlayerCount: count})
 	}
 	return FranchisesResult{OK: true, Franchises: out}
 }
@@ -266,7 +267,7 @@ func (a *App) capDeltaDTOs(deltas []transactions.CapDelta) []CapDeltaDTO {
 		}
 		out = append(out, CapDeltaDTO{
 			FranchiseID:   d.FranchiseID,
-			FranchiseName: names[d.FranchiseID],
+			FranchiseName: domain.FranchiseLabel(names, d.FranchiseID),
 			Amount:        amount,
 			Cents:         d.Cents.Cents(),
 			Reason:        d.Reason,

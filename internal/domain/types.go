@@ -29,3 +29,12 @@ type Roster struct {
 	FranchiseID string
 	Players     []PlayerRecord
 }
+
+// FranchiseLabel is a franchise's display name from names, or "Franchise <id>" when the
+// league has none for it. Every surface labels franchises through this one function.
+func FranchiseLabel(names map[string]string, id string) string {
+	if n := names[id]; n != "" {
+		return n
+	}
+	return "Franchise " + id
+}

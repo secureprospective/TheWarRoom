@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
@@ -144,23 +145,14 @@ func latestCorrectionByTxID(rows []state.CorrectionRow) map[string]state.Correct
 	return out
 }
 
-// resolveFranchiseNames maps ids to display names, falling back to the id. Nil for no ids, so
-// the JSON is [].
+// resolveFranchiseNames labels each id. Nil for no ids, so the JSON is [].
 func resolveFranchiseNames(ids []string, names map[string]string) []string {
 	if len(ids) == 0 {
 		return nil
 	}
 	out := make([]string, len(ids))
 	for i, id := range ids {
-		if names == nil {
-			out[i] = id
-			continue
-		}
-		if n, ok := names[id]; ok && n != "" {
-			out[i] = n
-			continue
-		}
-		out[i] = id
+		out[i] = domain.FranchiseLabel(names, id)
 	}
 	return out
 }
