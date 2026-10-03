@@ -5,13 +5,14 @@
 .PHONY: lint fmt vet test test-coverage build dev mutation-test ifaceguard filelen bloat release sync-product-version verify setup
 
 # ── Build stamp (D-V2) ────────────────────────────────────────────────────────
-# The git tag is the single source of truth. `git describe` yields the tag
-# (or a bare short SHA before the first tag), `--dirty` marks an uncommitted
+# The release tag (vX.Y.Z) is the single source of truth. `git describe` yields
+# it (or a bare short SHA before the first), matching only release tags so an
+# archive/* tag never becomes a version. `--dirty` marks an uncommitted
 # tree so an unreleased build can never masquerade as a clean tag. These flow
 # into the `main.version/commit/buildDate` vars via `-ldflags -X` (version.go).
 # A plain `go build` / `wails dev` leaves the vars at their "dev" defaults —
 # deliberately visibly distinct from a stamped release.
-VERSION    := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+VERSION    := $(shell git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || echo dev)
 COMMIT     := $(shell git rev-parse --short HEAD 2>/dev/null)
 BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS    := -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.buildDate=$(BUILD_DATE)
