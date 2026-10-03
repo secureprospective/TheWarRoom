@@ -24,15 +24,12 @@ func TestOpenEnablesWAL(t *testing.T) {
 	t.Parallel()
 	pools := tempPools(t)
 
-	mode, err := pools.JournalMode(context.Background())
+	mode, err := journalMode(context.Background(), pools.Read())
 	if err != nil {
-		t.Fatalf("JournalMode: %v", err)
+		t.Fatalf("journalMode: %v", err)
 	}
 	if mode != "wal" {
-		t.Errorf("journal mode = %q, want %q", mode, "wal")
-	}
-	if err := pools.Health(context.Background()); err != nil {
-		t.Errorf("Health: %v", err)
+		t.Errorf("journal mode seen by the read pool = %q, want %q", mode, "wal")
 	}
 }
 
