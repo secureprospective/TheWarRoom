@@ -8,30 +8,21 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
-// L1 hygiene defaults composition supplies until B4/admin tables own them. These are
-// documented constants, not invented: RASFallback is the engine spec's stated fallback
-// (5.00 — see engine.Calibration.RASFallback). SalaryFloor has no league-minimum in the
-// spec, so it defaults to 0 (no artificial floor); an admin sets it per league later.
+// L1 defaults until the params store holds them. RASFallback is the engine spec's 5.00; the
+// spec sets no salary floor, so it is 0.
 const (
 	DefaultRASFallback = 5.00
 	DefaultSalaryFloor = 0.0
 )
 
-// DefaultScarcityRank is the L6 tiebreaker scarcity rank composition supplies until B5b
-// ships per-position scarcity. It affects sort order only among EQUAL adjusted scores,
-// so a uniform 0 is a safe, inert default (every position ties on scarcity, falling
-// through to the next tiebreaker) until the real ranks land.
+// DefaultScarcityRank is the L6 scarcity rank until per-position ranks exist. It only orders
+// exact score ties, so a uniform 0 is inert.
 const DefaultScarcityRank = 0
 
-// schoolTierNorm maps a college-competition tier to its normalized [0,1] breakout weight for
-// a position. The QB/WR/TE/DT template is 1.00/0.70/0.40/0.10; RB applies a SOFTER non-P4
-// penalty — 1.00/0.75/0.45/0.15 (RB_Rubric §4: "small-school RBs convert to NFL production
-// more reliably than small-school WRs — workhorse usage at any FBS level is a meaningful
-// signal"). So the mapping is position-DEPENDENT and lives at the boundary (not in any one
-// rubric, since the engine receives a plain normalized value), following the same per-position
-// switch idiom as peakLimit/cushionGuard. P4 is 1.00 at every position; SchoolUnset maps to 0
-// (no positive tier signal). ok is false only for an unrecognized enum value, which the spec
-// validator rejects. A function (not a map) keeps gochecknoglobals happy (M17).
+// schoolTierNorm maps a college tier to its [0,1] breakout weight for a position: P4/G5/FCS/
+// lower = 1.00/0.70/0.40/0.10, except RB at 1.00/0.75/0.45/0.15, because small-school RBs
+// convert to NFL production more reliably (RB_Rubric §4). SchoolUnset maps to 0. ok is false
+// only for an unknown enum value.
 func schoolTierNorm(p domain.Position, t scouting.SchoolTier) (float64, bool) {
 	rb := p == domain.PosRB
 	switch t {
@@ -59,9 +50,9 @@ func schoolTierNorm(p domain.Position, t scouting.SchoolTier) (float64, bool) {
 	}
 }
 
-// cushionGuard returns the DT late-career cushion (SL-021) from the admin params: the raw-RAS
-// threshold and the decline multiplier (1 − reduction). Every other position gets a zero
-// threshold, which disables the guard.
+// cushionGuard returns the DT late-career cushion (SL-021) from the admin params: the RAS
+// threshold and the decline multiplier (1 − reduction). Other positions get a zero threshold,
+// which disables it.
 func (a *Assembler) cushionGuard(p domain.Position) (threshold, declineFactor float64, err error) {
 	if p != domain.PosDT {
 		return 0, 0, nil
@@ -77,12 +68,9 @@ func (a *Assembler) cushionGuard(p domain.Position) (threshold, declineFactor fl
 	return threshold, 1 - reduction, nil
 }
 
-// peakLimit returns the Layer-3 age peak limit for a position — the age past which
-// decay applies (Engine_Specification:118, "Current Peak Limit Defaults"). These are
-// admin-tunable per SL-017; B4 does not seed them yet, so composition supplies the spec
-// defaults. A function (not a package map) keeps gochecknoglobals happy and makes the
-// source-of-truth a single switch (M17). Unknown positions get the most conservative
-// (latest) peak so an unclassified player is never penalized by an aggressive default.
+// peakLimit is the Layer-3 age past which decay applies (Engine_Specification, "Current Peak
+// Limit Defaults"). These are meant to be admin-tunable (SL-017) but are not in the params
+// store yet. An unknown position gets the latest peak, so it is never penalized early.
 func peakLimit(p domain.Position) float64 {
 	switch p {
 	case domain.PosQB:

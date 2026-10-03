@@ -12,29 +12,22 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
-// Assembler turns a PlayerSpec into the engine's inputs by reading calibration from the
-// stores (through the ports) and supplying the not-yet-stored per-position/L1 values
-// from documented defaults. It holds the readers, not concrete stores, so it is
-// testable with fakes.
+// Assembler turns a PlayerSpec into engine inputs, reading calibration from the stores
+// through the ports and supplying the values not yet stored from defaults.go.
 type Assembler struct {
 	params ParamReader
 	cap    CapReader
 }
 
-// New constructs an Assembler over the param and rulebook readers. Both are required; a
-// nil reader is a programmer error. The live harness path guards a.params != nil before
-// constructing, so a nil reader here surfaces as a nil-dereference panic at first use
-// rather than a silent zero calibration — callers must supply real readers.
+// New builds an Assembler. Both readers are required; a nil one panics on first use rather
+// than scoring with zero calibration.
 func New(p ParamReader, c CapReader) *Assembler {
 	return &Assembler{params: p, cap: c}
 }
 
-// Calibration reads the position-and-global calibration: it does not depend on a specific
-// player, only on the position, so a caller may compute it once per position and reuse it
-// across that group's players. The store reads are cheap and internally synchronized, so
-// Assemble currently calls it per player; a caller that ranks large sets can cache by
-// position. It fails loud if any store value is missing, unparseable, or out of range —
-// a half-built or poisoned calibration must never reach the engine.
+// Calibration reads the calibration for a position; it does not depend on the player, so a
+// caller ranking many players may cache it per position. It fails if any store value is
+// missing, unparseable or out of range.
 func (a *Assembler) Calibration(pos domain.Position) (engine.Calibration, error) {
 	tiers, err := a.params.GetCapTiers()
 	if err != nil {
@@ -48,11 +41,8 @@ func (a *Assembler) Calibration(pos domain.Position) (engine.Calibration, error)
 	if err != nil {
 		return engine.Calibration{}, err
 	}
-	// Defense-in-depth (GLM review B1): the boundary is the engine's fail-loud gate, so it
-	// must not pass through a poisoned STORE value any more than a poisoned player value.
-	// B4 range-gates these on write, but a bug or future un-gated path must still not reach
-	// the pure engine. decay ∈ [0,1]; cap tiers non-negative with the Cold threshold at or
-	// below the Hot threshold (Neutral is the band between them).
+	// The params store range-checks on write; this re-checks so no other path can hand the
+	// engine a poisoned value. Cold must sit at or below Hot.
 	if !numeric.Finite(decay, tiers.ColdCeiling, tiers.HotFloor) {
 		return engine.Calibration{}, fmt.Errorf("composition: non-finite calibration from store (decay=%v cold=%v hot=%v)", decay, tiers.ColdCeiling, tiers.HotFloor)
 	}
@@ -80,9 +70,7 @@ func (a *Assembler) Calibration(pos domain.Position) (engine.Calibration, error)
 	}, nil
 }
 
-// Assemble validates a spec and returns the engine inputs for it: the per-player
-// PlayerInput, the L4 ScoutingInput, and the position's Calibration. This is the single
-// call the harness IPC layer makes per player before invoking engine.Pipeline.Score.
+// Assemble validates a spec and returns the engine inputs for it.
 func (a *Assembler) Assemble(s PlayerSpec) (engine.PlayerInput, engine.ScoutingInput, engine.Calibration, error) {
 	if err := s.Validate(); err != nil {
 		return engine.PlayerInput{}, engine.ScoutingInput{}, engine.Calibration{}, err
@@ -91,9 +79,7 @@ func (a *Assembler) Assemble(s PlayerSpec) (engine.PlayerInput, engine.ScoutingI
 	if err != nil {
 		return engine.PlayerInput{}, engine.ScoutingInput{}, engine.Calibration{}, err
 	}
-	// When RAS is absent the raw value is meaningless: zero it so a partially-populated
-	// spec cannot ride a stray (even non-finite) RAS into the engine (GLM review l1). L1
-	// hygiene imputes RASFallback in this case regardless.
+	// An absent RAS is zeroed so a stray value cannot reach the engine; L1 imputes the fallback.
 	ras := s.RAS
 	if !s.HasRAS {
 		ras = 0
@@ -110,19 +96,14 @@ func (a *Assembler) Assemble(s PlayerSpec) (engine.PlayerInput, engine.ScoutingI
 	return in, a.scouting(s), cal, nil
 }
 
-// scouting maps the spec's raw L4 sub-signals into the engine's ScoutingInput. The school
-// tier is normalized here (position-independent template); the position-specific curves
-// (breakout age, college share, age trajectory) are the rubric's job, so those values pass
-// through raw. Validate has already rejected a poisoned value and an unknown tier, so the
-// schoolTierNorm lookup here is total. Film rides through only when HasFilm; otherwise the
-// composite is zeroed so a stray value cannot reach the rubric (mirrors the RAS handling).
+// scouting maps the spec's raw L4 sub-signals into ScoutingInput. Only school tier is
+// normalized here; the position curves belong to the rubric. Absent film is zeroed, as RAS is.
 func (a *Assembler) scouting(s PlayerSpec) engine.ScoutingInput {
 	film := s.FilmComposite
 	if !s.HasFilm {
 		film = 0
 	}
-	// K film sub-signals ride through only when present; otherwise zeroed so a stray value
-	// cannot reach the kicker rubric (mirrors the FilmComposite/RAS handling).
+	// Absent K film components are zeroed too.
 	madden := s.MaddenFilm
 	if !s.HasMaddenFilm {
 		madden = 0
@@ -150,9 +131,7 @@ func (a *Assembler) scouting(s PlayerSpec) engine.ScoutingInput {
 	}
 }
 
-// leagueCap parses the rulebook's string cap amount into the float the engine reads,
-// failing loud on an empty or non-numeric value (MFL encodes the cap as a string;
-// parsing it is the boundary's job, per the schema package's transform/validate split).
+// leagueCap parses the rulebook's string cap amount, failing on empty or non-numeric.
 func (a *Assembler) leagueCap() (float64, error) {
 	raw := strings.TrimSpace(a.cap.GetSalaryCap())
 	if raw == "" {
