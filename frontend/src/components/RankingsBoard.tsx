@@ -81,10 +81,11 @@ export function RankingsBoard() {
 
   // Franchise list is derived from the persisted rows — the drill-down offers
   // exactly the teams that actually hold scored players.
-  const franchises = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.franchiseID).filter(Boolean))).sort(),
-    [rows],
-  );
+  const franchises = useMemo(() => {
+    const byID = new Map<string, string>();
+    for (const r of rows) if (r.franchiseID) byID.set(r.franchiseID, r.franchiseName);
+    return Array.from(byID, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [rows]);
 
   function onSort(key: SortKey) {
     if (key === sortKey) {
@@ -191,7 +192,7 @@ export function RankingsBoard() {
         <select className="twr-select" value={franchise} onChange={(e) => setFranchise(e.target.value)}>
           <option value="ALL">All teams</option>
           {franchises.map((f) => (
-            <option key={f} value={f}>Franchise {f}</option>
+            <option key={f.id} value={f.id}>{f.name}</option>
           ))}
         </select>
         <button
@@ -284,7 +285,7 @@ export function RankingsBoard() {
               </span>
               <span className="twr-c-name">{r.name}</span>
               <span className="twr-c-pos">{r.position}</span>
-              <span className="twr-c-fr twr-hide-mtx">{r.franchiseID || '—'}</span>
+              <span className="twr-c-fr twr-hide-mtx">{r.franchiseName || '—'}</span>
               <span className="twr-c-num twr-r twr-hide-mtx">{r.basePoints.toFixed(2)}</span>
               <span className="twr-c-adj twr-r">{r.adjustedScore.toFixed(2)}</span>
               <span className="twr-c-num twr-r">${r.salary.toFixed(2)}</span>
@@ -327,7 +328,7 @@ function ScoreReportPanel({ report }: { report: main.ScoreLeagueResult }) {
           <ul style={{ margin: '4px 0 0', paddingLeft: 18, color: 'var(--text-secondary)' }}>
             {rep.excluded.map((e) => (
               <li key={e.mflID}>
-                {e.name || e.mflID} (team {e.franchiseID}): {e.reason}
+                {e.name || e.mflID} ({e.franchiseName}): {e.reason}
               </li>
             ))}
           </ul>

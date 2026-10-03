@@ -673,6 +673,7 @@ export namespace main {
 	    name: string;
 	    position: string;
 	    franchiseID: string;
+	    franchiseName: string;
 	    basePoints: number;
 	    agePull: number;
 	    filmEffective: number;
@@ -698,6 +699,7 @@ export namespace main {
 	        this.name = source["name"];
 	        this.position = source["position"];
 	        this.franchiseID = source["franchiseID"];
+	        this.franchiseName = source["franchiseName"];
 	        this.basePoints = source["basePoints"];
 	        this.agePull = source["agePull"];
 	        this.filmEffective = source["filmEffective"];
@@ -857,6 +859,7 @@ export namespace main {
 	    name: string;
 	    position: string;
 	    franchiseID: string;
+	    franchiseName: string;
 	    salary: number;
 	    basePoints: number;
 	    adjustedScore: number;
@@ -876,6 +879,7 @@ export namespace main {
 	        this.name = source["name"];
 	        this.position = source["position"];
 	        this.franchiseID = source["franchiseID"];
+	        this.franchiseName = source["franchiseName"];
 	        this.salary = source["salary"];
 	        this.basePoints = source["basePoints"];
 	        this.adjustedScore = source["adjustedScore"];
@@ -1255,6 +1259,7 @@ export namespace rankings {
 	    mflID: string;
 	    name: string;
 	    franchiseID: string;
+	    franchiseName: string;
 	    reason: string;
 	
 	    static createFrom(source: any = {}) {
@@ -1266,6 +1271,7 @@ export namespace rankings {
 	        this.mflID = source["mflID"];
 	        this.name = source["name"];
 	        this.franchiseID = source["franchiseID"];
+	        this.franchiseName = source["franchiseName"];
 	        this.reason = source["reason"];
 	    }
 	}
