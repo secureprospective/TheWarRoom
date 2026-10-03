@@ -10,6 +10,14 @@ var (
 	buildDate = ""
 )
 
+// buildLabel is the version, with its commit when the build was stamped with one.
+func buildLabel() string {
+	if commit == "" {
+		return version
+	}
+	return version + " (" + commit + ")"
+}
+
 // AppInfo is what the shell reads once on load: the build stamp, and the startup failure if
 // there was one (empty when startup succeeded).
 type AppInfo struct {
