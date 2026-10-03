@@ -1,12 +1,11 @@
 # The Agent Codex
 
-> **Adopted copy.** Canonical source: `christopher-coding-standards/docs/agent-codex.md`.
-> This copy lives in the TheWarRoom repo so **agy's standing clone gets it on
-> `git pull`** and both agents load it during the build. Do **not** diverge this
-> copy — edit the canonical version and re-adopt. Both agents: **load this before
-> writing or reviewing code.**
+> **Adopted copy** of `christopher-coding-standards/docs/agent-codex.md`. Do not edit here:
+> change the master, then copy it back. Load it before writing or reviewing code.
 
-**A build doctrine for the two agents who write the code: Claude Code (Builder, CT105) and agy / Antigravity (Recon/Audit, CT104).**
+**A build doctrine for the two agents who write the code: Claude Code (Builder, CT105) and the Recon/Audit reviewer — GLM 5.2 (Z.ai Coding Plan via OpenCode on "bird") as of 2026-06-26.**
+
+> Reviewer history: agy / Antigravity (Gemini-based, CT104) was the Recon/Audit agent through the B2b-Fetch arc and is RETIRED as reviewer 2026-06-26 (blind-review false-positive rate too high). §F below is agy's already-triaged historical web recon, kept as-is. The build doctrine (motifs §M1–§M18, slop catalog) is model-agnostic and unchanged.
 
 > This document is **not** for a human. It is the shared brain of the build —
 > written by the agents, for the agents, to be loaded before writing or
@@ -176,10 +175,14 @@ mutation testing on pure logic to prove the asserts actually bite.
 A component's name states its single job; if naming it needs "and"/"or," it does
 too much. Functions and files are bounded so a reader (human or model) can hold
 the whole thing at once.
-- **Apply:** one exported job per file where it fits; function-length and
-  file-size limits enforced, not aspired to.
-- **▸ receipt:** `filelen` gate fails any source file over the cap (because
-  `funlen` caps functions, not files — and nothing else did).
+- **Apply:** split where the job changes, never to satisfy a size. Function
+  length and complexity are enforced (`funlen`, `gocyclo`), because they measure
+  how hard code is to follow. File length is only reported: past 600 lines, give
+  the reason in the PR. A sibling file created only to get under a cap is slop.
+- **▸ receipt:** a hard 400-line file cap, applied literally by agents, scattered
+  cohesive code into sibling files. In one project, 19 files cited the cap as the
+  reason they existed and 34 held under 40 lines of code. The cap became a report
+  (2026-10-03).
 
 ### M12 — Determinism & data-driven behavior; no hidden state
 Same input, same output. Behavior that depends on values lives in *data*
@@ -224,7 +227,14 @@ are reserved for the *why* a reader can't recover from the code — the
 non-obvious trade-off, the spec citation, the "do not reorder, see issue X."
 Comments that restate the code rot and lie.
 - **Apply:** rename before you comment; encode contracts in types; comment the
-  surprising, not the obvious.
+  surprising, not the obvious, in the fewest lines that carry it. One spec link
+  per unit at most. **Never** put history in code: review findings, reviewer or
+  agent names, decision IDs, session or ship labels. They belong in commits and
+  docs, where they don't rot inside the code.
+- **▸ receipt:** "cite the spec" turned into comments that carried history. In one
+  project 30% of all non-test lines were comments; 47 files named the reviewer
+  that prompted a line, and one package carried 124 decision labels. `bloat.sh`
+  now ratchets comment share and review history so they can only fall.
 
 ### M17 — AI-written code needs guardrails the human canon assumes away
 The enterprise canon was written for humans with continuous memory, accountability,
@@ -237,7 +247,9 @@ and judgment. We have none of those by default across sessions. So we add:
   slop. Templates are the unit of reuse.
 - **First-Instance Template Review** — the costliest error is a flaw in a template
   that later sessions clone. Review the *first* instance of any pattern before
-  inheritors build on it.
+  inheritors build on it. **And the second near-copy is the signal to turn the
+  pattern into data (M12)**, not to clone it again: one routine plus a table, never
+  N parallel units that differ only in constants. `dupl` in `bloat.sh` ratchets it.
 - **Anchor against context drift** — long sessions and cross-agent handoffs lose
   coherence; pin intent in committed docs (this Codex, AGENTS.md, ADRs), and
   route a session through an index so it loads only what it needs, coherently.
@@ -252,6 +264,27 @@ and judgment. We have none of those by default across sessions. So we add:
 - **License & provenance gate** — a model can emit copyleft or patented code
   verbatim. Scan generated code for license violations in CI; record provenance
   for anything pulled in. [agy recon — §F]
+
+### M18 — Whole-repo audits are the second vantage at scale
+M13 is the second vantage on a *diff*; M18 is the second vantage on the *whole
+tree*. A large-context auditor (1M-token class) holds an entire repo and hunts
+cross-cutting rot no diff-level review catches — duplicated logic, drifted
+patterns, dead boundaries, slop that no single PR introduced. But scale
+multiplies **hallucination**, not just coverage: a confident finding across 500
+files is still triaged `file:line` against source before it is acted on (M13),
+and the auditor **never writes** — it returns leads; the Builder fixes.
+- **Apply:** dispatch a large-context audit (de-slop / efficiency / drift) scoped
+  to a clear, closed question; triage every finding against source (M13); the
+  auditor never commits or edits living docs (`multi-agent-roles.md`). Front-end
+  QA is the same shape on a *running UI* — **structural (DOM/a11y) +
+  deterministic visual-regression**, never a text model trusted to "see" a
+  screenshot. Full doctrine: `docs/glm-auditor-discipline.md`.
+- **▸ receipt:** 2026-06-20, a GLM large-context recon returned a tidy table of
+  repos/URLs at uniform HIGH confidence; triage found most fabricated — invented
+  repo owners and a pricing claim that *contradicted a live API test we'd just
+  run*. The verified residue (deterministic visual-regression tooling) was the
+  real value. Uniform confidence across a long list is itself the tell. Scale
+  changed the volume of leads, not the duty to triage each.
 
 ---
 
@@ -289,9 +322,15 @@ and judgment. We have none of those by default across sessions. So we add:
 | a hardcoded host/ID/secret | breaks on move; leaks; un-configurable | discover/config/secret store (M12, M15) |
 | a giant "util"/"helper" file | no single job; unsearchable | split by responsibility (M11) |
 | a comment restating the code | rots, lies, adds noise | rename; delete the comment (M16) |
+| history in a comment (review finding, reviewer/agent name, decision ID, session label) | rots in place; buries the code; belongs to version control | move it to the commit or the doc; keep only the why (M16) |
+| a comment wall restating a spec doc inline | two copies drift; the code drowns | one link to the spec (M16) |
+| parallel units that differ only in constants (N rubrics, N fetchers, N handlers) | every fix lands N times; the real design is a table | one routine + a data table (M12, M17) |
+| a sibling file created only to get under a size cap | scatters one job across files | merge it; split only where the job changes (M11) |
 | "I'll add tests later" | the assert never comes; coverage theater | behavior tests now (M10) |
 | copying a pattern before its first instance is reviewed | clones a latent flaw N times | First-Instance Template Review (M17) |
 | acting on a review finding without reading the cited line | propagates a hallucination as a "fix" | triage against source (M13) |
+| trusting a text model to "see" a screenshot | it can't — you get confident fiction about pixels | structural DOM/a11y + deterministic pixel-diff (M18) |
+| taking a large-context audit's list as fixes (esp. uniform HIGH confidence) | scale multiplies hallucination, not reliability | triage each lead against source (M13, M18) |
 
 ---
 

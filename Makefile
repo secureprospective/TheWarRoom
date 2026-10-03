@@ -1,8 +1,8 @@
 # TheWarRoom — Makefile. Targets merged from the christopher-coding-standards
-# Go overlay (templates/go/Makefile.snippet). `make lint` runs ifaceguard +
-# filelen + golangci-lint; all must pass to clear. Never bypass with --no-verify.
+# Go overlay (templates/go/Makefile.snippet). `make lint` runs ifaceguard, filelen,
+# bloat and golangci-lint; all must pass to clear. Never bypass with --no-verify.
 
-.PHONY: lint fmt vet test test-coverage build dev mutation-test ifaceguard filelen release sync-product-version verify setup
+.PHONY: lint fmt vet test test-coverage build dev mutation-test ifaceguard filelen bloat release sync-product-version verify setup
 
 # ── Build stamp (D-V2) ────────────────────────────────────────────────────────
 # The git tag is the single source of truth. `git describe` yields the tag
@@ -28,20 +28,20 @@ $(IFACEGUARD_BIN): tools/ifaceguard/ifaceguard.go tools/ifaceguard/cmd/ifaceguar
 ifaceguard: $(IFACEGUARD_BIN)
 	go vet -vettool=$(abspath $(IFACEGUARD_BIN)) ./...
 
-# filelen — enforces the 400-line file cap (a design constraint, not cleanup;
-# AD-14/AD-17 pre-splits). golangci-lint's funlen caps FUNCTION size, not file
-# size, and no enabled linter measures file length. Test files exempt.
-FILE_CAP := 400
+# filelen reports source files over 600 lines. It does not fail: split code where its job
+# changes, never to satisfy a size (Codex M11). A file over 600 lines needs its reason in the PR.
+FILE_REPORT := 600
 filelen:
-	@offenders=$$(find . -name '*.go' -not -name '*_test.go' -not -path './vendor/*' -not -path './tools/*' \
-	  -exec awk 'END { if (NR > $(FILE_CAP)) printf "  %s (%d lines)\n", FILENAME, NR }' {} \;); \
-	if [ -n "$$offenders" ]; then \
-	  echo "FILE CAP ($(FILE_CAP) lines) exceeded — pre-split per the wireframe (AD-14/AD-17) BEFORE commit:"; \
-	  echo "$$offenders"; exit 1; \
-	else echo "filelen: all source files within the $(FILE_CAP)-line cap"; fi
+	@find . -name '*.go' -not -name '*_test.go' -not -path './vendor/*' -not -path './tools/*' \
+	  -exec awk 'END { if (NR > $(FILE_REPORT)) printf "filelen: %s is %d lines; give the reason in the PR\n", FILENAME, NR }' {} \;
 
-# lint runs ifaceguard, filelen, AND golangci-lint — all must pass to clear.
-lint: ifaceguard filelen
+# bloat is the ratchet on comment share, review history in comments, sub-40-line files and
+# near-duplicate code (scripts/bloat.sh). It fails if any measure rises above .bloat-baseline.
+bloat:
+	scripts/bloat.sh
+
+# lint runs ifaceguard, filelen, bloat AND golangci-lint — all must pass to clear.
+lint: ifaceguard filelen bloat
 	golangci-lint run ./...
 
 fmt:
