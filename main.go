@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"log"
 	"os"
@@ -14,12 +15,10 @@ import (
 var assets embed.FS // populated by the //go:embed directive above; gochecknoglobals exempts embed vars (no nolint needed).
 
 func main() {
-	// Headless startup diagnostic: `thewarroom -probe` runs the real store-floor
-	// init chain with per-step timing + timeout and exits, no Wails/UI. Used to see
-	// exactly where startup stalls or errors without a GUI (Ship-4 hang triage).
+	// `thewarroom -probe` runs the real startup with no window and exits 0 if it came up.
+	// The log shows each step's time, so a hang is the last step logged.
 	if len(os.Args) > 1 && os.Args[1] == "-probe" {
-		runProbe()
-		return
+		os.Exit(probe())
 	}
 
 	// Create an instance of the app structure
@@ -44,4 +43,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("the war room: %v", err)
 	}
+}
+
+func probe() int {
+	app := NewApp()
+	app.startup(context.Background())
+	defer app.shutdown(context.Background())
+	if app.startupErr != nil {
+		return 1
+	}
+	return 0
 }
