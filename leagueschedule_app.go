@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -110,10 +111,10 @@ func (a *App) GetLeagueSchedule() LeagueScheduleResult {
 			}
 			matchups = append(matchups, ScheduleMatchupDTO{
 				HomeFranchiseID:   home.FranchiseID,
-				HomeFranchiseName: franchiseDisplayName(names, home.FranchiseID),
+				HomeFranchiseName: domain.FranchiseLabel(names, home.FranchiseID),
 				HomeScore:         home.Score,
 				AwayFranchiseID:   away.FranchiseID,
-				AwayFranchiseName: franchiseDisplayName(names, away.FranchiseID),
+				AwayFranchiseName: domain.FranchiseLabel(names, away.FranchiseID),
 				AwayScore:         away.Score,
 			})
 		}
@@ -121,12 +122,4 @@ func (a *App) GetLeagueSchedule() LeagueScheduleResult {
 	}
 
 	return LeagueScheduleResult{OK: true, Weeks: out, Freshness: fresh}
-}
-
-// franchiseDisplayName returns the franchise's league name, or its id when none is on file.
-func franchiseDisplayName(names map[string]string, fid string) string {
-	if n, ok := names[fid]; ok && n != "" {
-		return n
-	}
-	return fid
 }

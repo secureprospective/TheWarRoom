@@ -182,8 +182,8 @@ func TestBuildBoard_UnmappedFranchiseFallsBackToLabeledID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildBoard: %v", err)
 	}
-	if len(board.Rows) != 1 || board.Rows[0].Name != "(franchise 0099)" {
-		t.Errorf("Rows = %+v, want one row named \"(franchise 0099)\"", board.Rows)
+	if len(board.Rows) != 1 || board.Rows[0].Name != "Franchise 0099" {
+		t.Errorf("Rows = %+v, want one row named \"Franchise 0099\"", board.Rows)
 	}
 }
 
@@ -274,18 +274,5 @@ func TestClampWeight(t *testing.T) {
 		if got := clampWeight(c.in); got != c.want {
 			t.Errorf("clampWeight(%v) = %v, want %v", c.in, got, c.want)
 		}
-	}
-}
-
-func TestFranchiseDisplayName_FallsBackToLabeledID(t *testing.T) {
-	names := map[string]string{"0001": "Alpha", "0002": ""}
-	if got := franchiseDisplayName(names, "0001"); got != "Alpha" {
-		t.Errorf("known name = %q, want Alpha", got)
-	}
-	if got := franchiseDisplayName(names, "0002"); got != "(franchise 0002)" {
-		t.Errorf("empty name = %q, want fallback", got)
-	}
-	if got := franchiseDisplayName(names, "0099"); got != "(franchise 0099)" {
-		t.Errorf("unmapped name = %q, want fallback", got)
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
 	"github.com/secureprospective/TheWarRoom/internal/output"
@@ -186,7 +187,7 @@ func (s *Service) buildRows(blended []powerrankings.Row, parsed map[string]parse
 		rows = append(rows, Row{
 			Rank:          b.Rank,
 			FranchiseID:   b.FranchiseID,
-			Name:          franchiseDisplayName(names, b.FranchiseID),
+			Name:          domain.FranchiseLabel(names, b.FranchiseID),
 			PowerScore:    b.PowerScore,
 			ScoutingZ:     b.ScoutingZ,
 			MFLPerfZ:      b.MFLPerfZ,
@@ -290,12 +291,4 @@ func clampWeight(w float64) float64 {
 		w = powerrankings.DefaultScoutingWeight
 	}
 	return math.Max(0, math.Min(1, w))
-}
-
-// franchiseDisplayName returns the league name, or a labeled id when unmapped.
-func franchiseDisplayName(names map[string]string, fid string) string {
-	if n, ok := names[fid]; ok && n != "" {
-		return n
-	}
-	return "(franchise " + fid + ")"
 }
