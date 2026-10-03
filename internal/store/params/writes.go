@@ -77,17 +77,9 @@ CREATE TABLE IF NOT EXISTS param_overrides (
 	return nil
 }
 
-// hasDefaults reports whether the defaults table has already been seeded.
-func (s *Store) hasDefaults(ctx context.Context) (bool, error) {
-	var n int
-	row := s.pools.Read().QueryRowContext(ctx, `SELECT COUNT(1) FROM param_defaults`)
-	if err := row.Scan(&n); err != nil {
-		return false, fmt.Errorf("params: count defaults: %w", err)
-	}
-	return n > 0, nil
-}
-
-// seedDefaults inserts the shipped defaults in one transaction (all-or-nothing).
+// seedDefaults inserts every shipped default the table lacks, in one transaction. A
+// parameter added in a later release therefore reaches an existing database; a row already
+// present is left as it is.
 func (s *Store) seedDefaults(ctx context.Context) error {
 	tx, err := s.pools.Write().BeginTx(ctx, nil)
 	if err != nil {
@@ -96,7 +88,7 @@ func (s *Store) seedDefaults(ctx context.Context) error {
 	defer func() { _ = tx.Rollback() }()
 	for _, d := range defaultParams() {
 		if _, err := tx.ExecContext(ctx,
-			`INSERT INTO param_defaults
+			`INSERT OR IGNORE INTO param_defaults
 			   (param_key, position, value_type, default_val, min_val, max_val, is_calibrated, description)
 			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 			d.Key, d.Position, string(d.Type),

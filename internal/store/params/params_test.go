@@ -185,6 +185,37 @@ func TestInitializeDoesNotReseed(t *testing.T) {
 	}
 }
 
+// TestInitializeAddsDefaultsMissingFromAnExistingDB is a database from an older release:
+// seeded, but missing a parameter added since. Restarting must add it and leave the
+// existing rows alone.
+func TestInitializeAddsDefaultsMissingFromAnExistingDB(t *testing.T) {
+	ctx := context.Background()
+	_, pools := openStore(t)
+	if _, err := pools.Write().ExecContext(ctx,
+		`DELETE FROM param_defaults WHERE param_key = ?`, KeyCushionGuardReduct); err != nil {
+		t.Fatalf("simulate older release: %v", err)
+	}
+	if _, err := pools.Write().ExecContext(ctx,
+		`UPDATE param_defaults SET default_val = '0.05' WHERE param_key = ?`, KeyLayer3DecayRate); err != nil {
+		t.Fatalf("simulate an existing row: %v", err)
+	}
+
+	s2 := New(pools)
+	if err := s2.Initialize(ctx); err != nil {
+		t.Fatalf("Initialize on existing DB: %v", err)
+	}
+	if _, err := s2.GetGlobal(KeyCushionGuardReduct); err != nil {
+		t.Fatalf("parameter missing from the existing DB was not added: %v", err)
+	}
+	decay, err := s2.GetGlobal(KeyLayer3DecayRate)
+	if err != nil {
+		t.Fatalf("GetGlobal decay: %v", err)
+	}
+	if decay != 0.05 {
+		t.Fatalf("existing row rewritten: decay = %g, want the stored 0.05", decay)
+	}
+}
+
 // TestConcurrentReadsAndOverride exercises the two-lock idiom under -race.
 func TestConcurrentReadsAndOverride(t *testing.T) {
 	s, _ := openStore(t)
