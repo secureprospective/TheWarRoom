@@ -1,14 +1,6 @@
-// Package freeagency holds the free-agency SIGN handler that runs BEHIND the B7a Coordinator.
-// Like the other transaction handlers it is implementation detail: depguard
-// (transactions-only-through-coordinator) denies importing it from outside internal/transactions,
-// so the ONLY way to sign a free agent is Coordinator.Execute(Sign). It neither opens nor commits
-// a transaction — it checks eligibility, resolves the rules, and sequences the store's
-// SignContract primitive on the shared TxWriter; the enclosing WriteTx makes the whole signing
-// atomic.
-//
-// v1 RECORDS a signing outcome (a commissioner/GM assigns a free agent a new flat contract); it is
-// NOT a live auction (bid points, sniping, RFA tenders, comp picks are deferred as multi-user —
-// Free_Agency_Design §1).
+// Package freeagency holds the SIGN handler, run only through the Coordinator. v1 records a
+// signing outcome (the agreed flat contract); it is not a live auction: bidding, RFA tenders and
+// comp picks are deferred.
 package freeagency
 
 import (
@@ -20,23 +12,17 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/transactions/deadcap"
 )
 
-// signingSource tags every contract_years cell a signing lays (the source facet), distinguishing
-// signed cells from "seed" / "op" / "extension" cells in the ledger.
+// signingSource tags the ledger cells a signing lays.
 const signingSource = "signing"
 
-// signReason is the audit string on the signing's cell-change log rows.
 const signReason = "free-agency signing §6"
 
-// dollars converts a whole-dollar figure to exact cents (domain.Money) — the §6 minimum-salary
-// table is stated in whole dollars, all already on the $10k grid.
+// dollars converts whole dollars to cents; the §6 table is in whole dollars.
 func dollars(d int64) domain.Money { return domain.Money(d * 100) }
 
-// MinSalaryFloor returns the §6 minimum salary for a player with `experienceYears` years of NFL
-// experience. It is the rulebook §6 table encoded once as a pure step function. Exported so a test
-// pins the table. Experience is derived from the player's MFL draft year (season − draft year);
-// when no real draft year is available (undrafted / commissioner-created / MFL sentinel) the caller
-// passes 0, so the rookie floor applies — the lowest §6 minimum, the lenient direction
-// (Free_Agency_Design R1, Christopher's missing-draft-data → rookie-floor ruling).
+// MinSalaryFloor is the §6 minimum salary by years of NFL experience (season minus draft year).
+// With no real draft year the caller passes 0: the rookie floor, the lenient direction
+// (Christopher's ruling).
 func MinSalaryFloor(experienceYears int) domain.Money {
 	switch {
 	case experienceYears <= 0:
@@ -56,17 +42,9 @@ func MinSalaryFloor(experienceYears int) domain.Money {
 	}
 }
 
-// Sign records a free-agency signing against the shared tx: it verifies the player is a signable
-// free agent, that he is not under an active §12 buyout lockout, enforces the §6 minimum-salary
-// floor for `experienceYears` of NFL experience, then lays a new flat `years`-year contract at
-// `salary` and rosters him on `franchiseID` — all in the Coordinator's one spanning transaction.
-// The cap ceiling is NOT enforced (Free_Agency_Design R2 — consistent with every other op; CapUsed
-// simply reflects the signing). Every figure is snapped to the $10k grid (§1 universal rule). Fails
-// loud if the player is not a free agent (rostered / retired / deceased / unknown), is buyout-locked,
-// or is signed below the §6 floor.
-//
-// experienceYears is resolved by Coordinator.ExecuteSign from the player's MFL draft year against
-// the authoritative in-tx season; a player with no real draft year is passed 0 (the rookie floor).
+// Sign checks the player is a signable free agent, not under a §12 buyout lockout and not below
+// the §6 floor, then lays a flat `years` contract at `salary` and rosters him. The cap ceiling is
+// not enforced, consistent with every other op. Figures snap to $10k.
 func Sign(ctx context.Context, w state.TxWriter, mflID, franchiseID string, salary domain.Money, years, experienceYears int) error {
 	status, found, err := w.CurrentStatus(ctx, mflID)
 	if err != nil {
@@ -85,9 +63,7 @@ func Sign(ctx context.Context, w state.TxWriter, mflID, franchiseID string, sala
 	}
 
 	salary = domain.RoundToNearest10k(salary)
-	// Guard AFTER the $10k snap (GLM L4): validate() rejects a non-positive PRE-rounded salary, but
-	// a sub-$5k figure rounds to $0. A $0 contract would roster a player for free, so reject it here
-	// — a distinct, clearer error than the §6 floor (which the $0 would also fail).
+	// Checked after the $10k snap: under $5k rounds to $0, which would roster a player for free.
 	if salary <= 0 {
 		return fmt.Errorf("freeagency: sign %q: salary rounds to $0 (below the $10k grid) — enter at least $10k", mflID)
 	}

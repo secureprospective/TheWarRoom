@@ -1,17 +1,6 @@
-// Package deadcap holds the §8 waiver-cut handler that runs BEHIND the B7a Coordinator.
-// Like the acquisitions handlers, it is implementation detail: depguard
-// (transactions-only-through-coordinator) denies importing it from outside
-// internal/transactions, so the ONLY way to cut a player is Coordinator.Execute(Waiver).
-// It neither opens nor commits a transaction — it reads current terms, computes the flat
-// §8 charge, and sequences ReleasePlayer + AddDeadCap on the shared TxWriter; the
-// enclosing WriteTx makes the release and its penalty atomic.
-//
-// The §8 charge is FLAT INTEGER MATH on exact cents (OQ-014) — there is no fractional
-// distribution in this league (the earlier signing-bonus/proration model was NFL-model
-// leakage, struck from OQ-014). The whole penalty lands in the CUT year's cap
-// (LeagueYear = the current season): the formula yields one total, and the league's dead
-// cap is a single flat number, not a per-year spread. CONFIRMED by Christopher 2026-07-04
-// (a locked money-model decision, not an open choice).
+// Package deadcap holds the §8 waiver, §12 buyout and §13 handlers, run only through the
+// Coordinator. Charges are flat integer math on exact cents, and the whole penalty lands in the cut
+// year's cap: one number, not a per-year spread (Christopher, 2026-07-04).
 package deadcap
 
 import (
@@ -22,30 +11,17 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
-// waiverReason is the audit string on every §8 ledger row.
 const waiverReason = "waiver-cut §8"
 
-// §8 dead-cap percentages: 35% of salary per remaining year, or 50% if the contract was
-// restructured (§11). Whole percents, so the cents math stays exact bar the final round.
+// §8 dead-cap rates: 35% per remaining year, 50% if restructured (§11).
 const (
 	baseCutPct         = 35
 	restructuredCutPct = 50
 )
 
-// Charge computes the §8 dead-cap penalty in exact cents:
-//
-//	pct% × annual salary × remaining years
-//
-// where pct is 50 for a restructured contract (§11) else 35. It is ZERO when the player
-// was claimed off waivers (§8: the claim ends the obligation), has no remaining years
-// (an expiring/UFA deal — remaining years = expiration_year − season), or carries no
-// salary. Pure — no I/O, no clock.
-//
-// The result is SNAPPED to the nearest $10k (domain.RoundToNearest10k) so the dead-cap
-// figure lands on the universal rounding grid, same as every other cap figure — a §8
-// charge is stored and displayed on-grid, so CapUsed (snapped cells + dead cap) is always
-// a $10k multiple. This snap governs over the earlier round-to-the-cent (B7b): the
-// salary-ledger pivot locked FLAT $10k rounding on every figure (Christopher 2026-07-05).
+// Charge is the §8 penalty: pct% × annual salary × remaining years, with pct 50 if restructured,
+// else 35. Zero if claimed off waivers, with no remaining years, or with no salary. Snapped to $10k,
+// like every cap figure (Christopher, 2026-07-05). Pure.
 func Charge(annualSalary domain.Money, remainingYears int, isRestructured, claimed bool) domain.Money {
 	if claimed || remainingYears <= 0 || annualSalary <= 0 {
 		return 0
@@ -59,13 +35,8 @@ func Charge(annualSalary domain.Money, remainingYears int, isRestructured, claim
 	return domain.RoundToNearest10k(cents)                   // land on the universal $10k grid
 }
 
-// Waive executes a §8 cut against the shared tx writer: it reads the player's current
-// terms, computes the flat dead-cap charge, releases him from his franchise, and records
-// the charge to the ledger — all in the Coordinator's one spanning transaction, so the
-// cut and its penalty land together or not at all. It models the UNCLAIMED cut (v1); the
-// claim path (dead cap 0, player moves to the claimer) arrives with free agency, and the
-// claimed=0 rule already lives in Charge for when it does. Returns the ledger entry it
-// wrote so the caller can surface the charge. Fails loud on an unknown player.
+// Waive cuts a player: computes the §8 charge, releases him and records it, in one transaction.
+// v1 models the unclaimed cut; Charge already handles a claim for when free agency adds it.
 func Waive(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapEntry, error) {
 	ps, ok := w.Player(mflID)
 	if !ok {
@@ -75,9 +46,7 @@ func Waive(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapEn
 	if remaining < 0 {
 		remaining = 0
 	}
-	// §8 charges on the CAP-COUNTING salary — the player's current-season ledger cell
-	// (CapSalary). Before any restructure this equals the base annual salary; after a §11
-	// restructure it is the reduced cap hit, the right base for the dead-cap charge.
+	// Charge on the cap salary: after a §11 restructure that is the reduced figure.
 	charge := Charge(ps.CapSalary, remaining, ps.IsRestructured, false)
 
 	if err := w.ReleasePlayer(ctx, mflID, domain.PlayerFreeAgent, waiverReason); err != nil {
@@ -93,11 +62,8 @@ func Waive(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapEn
 	if err := w.AddDeadCap(ctx, entry); err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: charge %q: %w", mflID, err)
 	}
-	// Ledger dual-write: a cut VOIDs the player's remaining PAID cells (relieving every
-	// cap-bearing year while preserving history — the ledger is king), so the ledger-derived
-	// cap drops with the legacy release and no orphan cell survives to be re-counted if the
-	// player later re-rosters via free agency. The dead-cap charge is a SEPARATE ledger
-	// (dead_cap_ledger), not a contract cell — the two are distinct cap components.
+	// Void the remaining PAID cells so no orphan cell is re-counted if he re-rosters. Dead cap is its
+	// own ledger, not a contract cell.
 	reason := fmt.Sprintf("%s: contract voided, dead cap %s", waiverReason, charge)
 	if err := w.VoidCells(ctx, mflID, reason); err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: void cells %q: %w", mflID, err)
