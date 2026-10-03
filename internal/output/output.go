@@ -1,23 +1,10 @@
-// Package output is the B6 Per-Season Output Store: the FIRST persistence layer for
-// engine OUTPUT. The three prior Layer-2 stores hold config (rulebook B3b, params B4)
-// or mutable runtime state (state B3c); this one holds the scores the pure engine
-// pipeline (B5a) computes but never persists. It clones the store template — a
-// Reader/Writer split enforcing the single-writer law (AD-02/AD-05), db.Pools read/write
-// separation (MaxOpenConns=1 on the write pool), the two-lock idiom (wmu outer write
-// mutex + mu reader RWMutex), parameterized SQL, and fail-loud on drift — but adds the
-// mechanic that DEFINES it: DOUBLE immutability (AD-04, DECISION-010).
+// Package output persists engine scores. A season's scores are frozen under the scoring config
+// they were computed with: each row carries a scoring_config_id stamped by the caller from the
+// rulebook's active version, and re-tuning writes new rows under a new id rather than rescoring
+// old ones.
 //
-//   - DECISION-010: a season's scores are frozen under the scoring config they were
-//     computed with. Each record carries a scoring_config_id (stamped by the caller from
-//     B3b's active version, never minted here). Re-tuning params produces NEW records
-//     under a new id; old records are never re-scored.
-//   - AD-04: immutability is enforced BOTH ways. The Go API is APPEND-ONLY (the Writer
-//     has no Update/Delete method), and a SQLite BEFORE UPDATE/DELETE trigger RAISE(ABORT)s
-//     so the database itself rejects mutation even if a future caller bypasses the Go API.
-//
-// It is PURE DATA ACCESS: it persists and serves engine.Result projections and runs no
-// scoring logic. It imports the engine ONLY for the pure Result/Layer4Output/Tiebreaker
-// value types; it imports NO other store (depguard store-output-no-siblings).
+// Rows are immutable twice over: the Writer has no update or delete method, and SQLite triggers
+// abort any UPDATE or DELETE that bypasses it. The package imports no other store.
 package output
 
 import (
@@ -30,19 +17,12 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 )
 
-// ErrDuplicate is returned when a Write would re-persist an existing
-// (season, scoring_config_id, mfl_id). Append-only means a duplicate key is drift, not
-// an upsert — fail loud rather than silently overwrite a frozen score. It is EXPORTED so
-// the caller can react to drift specifically via errors.Is, rather than string-matching a
-// wrapped message (GLM review).
+// ErrDuplicate means a Write tried to re-persist an existing (season, scoring_config_id,
+// mfl_id). Append-only makes that drift, not an upsert.
 var ErrDuplicate = errors.New("output: score already persisted for this (season, scoring_config_id, mfl_id)")
 
-// Store is the per-season output store. Construct with New; prepare with Initialize.
-// Appends serialize under wmu so each batch insert is one atomic step (the single-writer
-// half of the store template). UNLIKE B3c/B4 there is NO reader RWMutex: this store keeps
-// no in-memory cache — reads go straight to the read pool (sql.DB is concurrency-safe),
-// and the DB is the durable, trigger-immutable source of truth. There is no shared memory
-// for a second lock to guard (GLM review — the second lock would be cargo-culted here).
+// Store is the output store. Construct with New, prepare with Initialize. Writes serialize
+// under wmu. There is no in-memory cache, so reads need no lock.
 type Store struct {
 	pools *db.Pools
 
@@ -55,29 +35,23 @@ func New(pools *db.Pools) *Store {
 	return &Store{pools: pools}
 }
 
-// Writer returns the append-only mutation surface. It is intended for the
-// score/transaction layer's dependency injection ONLY — wire it exactly where the single
-// writer lives, nowhere else.
+// Writer returns the append-only surface. Wire it only where the single writer lives.
 func (s *Store) Writer() Writer { return s }
 
-// Reader returns the read-only surface for the ranking modules and IPC handlers. The
-// returned value does NOT embed *Store, so a consumer cannot recover the Writer by type
-// assertion — the boundary is real, not a naming convention (proven by a planted test).
+// Reader returns the read-only surface. The value does not embed *Store, so it cannot be
+// type-asserted back to a Writer.
 func (s *Store) Reader() Reader { return readerView{s: s} }
 
-// Initialize ensures the schema and the immutability triggers exist. It is idempotent
-// (CREATE ... IF NOT EXISTS) and seeds nothing — an output store starts empty and grows
-// only by Write.
+// Initialize creates the table and the immutability triggers if absent. It seeds nothing.
 func (s *Store) Initialize(ctx context.Context) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	return s.initSchema(ctx)
 }
 
-// initSchema creates the season_scores table plus the two BEFORE UPDATE/DELETE triggers
-// that make rows immutable at the database level (AD-04). The (season, scoring_config_id,
-// mfl_id) primary key is the DECISION-010 identity: a new config writes new rows, never
-// touches old ones; a duplicate key is a constraint error the Writer reports as drift.
+// initSchema creates season_scores and the triggers that make its rows immutable. The primary
+// key (season, scoring_config_id, mfl_id) means a new config writes new rows and a repeat is a
+// constraint error.
 func (s *Store) initSchema(ctx context.Context) error {
 	const ddl = `
 CREATE TABLE IF NOT EXISTS season_scores (
@@ -117,11 +91,9 @@ END;`
 	return nil
 }
 
-// Write appends a batch of scores for one (season, scoring config) in a single
-// transaction. It validates EVERY record up front — id well-formed, cap tier known, all
-// score fields finite — before any insert, so a malformed batch rolls back whole (the
-// engine multiplies straight into rankings; a single non-finite field would round-trip
-// into a frozen, immutable record). A duplicate key surfaces as errDuplicate.
+// Write appends one (season, scoring config) batch in a single transaction. Every record is
+// validated before any insert, so one bad record rolls back the batch instead of freezing a
+// NaN into an immutable row. A repeat key returns ErrDuplicate.
 func (s *Store) Write(ctx context.Context, season, scoringConfigID int, recs []ScoreRecord) error {
 	if len(recs) == 0 {
 		return fmt.Errorf("output: Write got no records for season %d config %d", season, scoringConfigID)
@@ -134,8 +106,7 @@ func (s *Store) Write(ctx context.Context, season, scoringConfigID int, recs []S
 		if err != nil {
 			return err
 		}
-		// A duplicate id WITHIN one batch is a self-contradictory input, distinct from
-		// drift against already-persisted rows — report it as such, not as ErrDuplicate.
+		// A repeat id inside one batch is bad input, not drift against stored rows.
 		if _, dup := seen[rv.mflID]; dup {
 			return fmt.Errorf("output: duplicate mfl id %q within one Write batch (season %d config %d)",
 				rv.mflID, season, scoringConfigID)
@@ -167,12 +138,8 @@ func (s *Store) Write(ctx context.Context, season, scoringConfigID int, recs []S
 	return nil
 }
 
-// Scores returns every persisted score for one (season, scoring config) in final ranking
-// order. The ORDER BY encodes the L6 tiebreaker (engine.TiebreakerKey.RanksAbove) the
-// store persists for exactly this purpose: AdjustedScore desc, then veteran, then RAS,
-// then positional scarcity — with mfl id as the final stable key so the order is fully
-// deterministic even when the whole tiebreaker key ties (GLM review — an arbitrary mfl-id
-// tiebreak would ignore the persisted L6 fields).
+// Scores returns one (season, scoring config) in ranking order: the ORDER BY is the L6
+// tiebreaker (engine.TiebreakerKey.RanksAbove), with mfl_id last so the order is total.
 func (s *Store) Scores(ctx context.Context, season, scoringConfigID int) ([]SeasonScore, error) {
 	rows, err := s.pools.Read().QueryContext(ctx, selectCols+`
 WHERE season = ? AND scoring_config_id = ?

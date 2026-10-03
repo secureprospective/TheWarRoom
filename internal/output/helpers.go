@@ -12,10 +12,8 @@ import (
 	sqlite3 "modernc.org/sqlite/lib"
 )
 
-// readerView is the concrete type Store.Reader hands out. It embeds NO *Store, only a
-// private pointer, and implements ONLY Reader by delegation — so a consumer cannot
-// type-assert it back to Writer. This is the compile/runtime half of the single-writer
-// law (proven by a planted test); the DB triggers are the other half (AD-04).
+// readerView holds a private *Store and implements only Reader, so it cannot be asserted back
+// to a Writer.
 type readerView struct{ s *Store }
 
 func (r readerView) Scores(ctx context.Context, season, cfg int) ([]SeasonScore, error) {
@@ -30,23 +28,16 @@ func (r readerView) PriorRanks(ctx context.Context, season, before int) (map[str
 	return r.s.PriorRanks(ctx, season, before)
 }
 
-// PriorRanks resolves the previous board's ranking positions for the §1 rank delta. It
-// finds the highest scoring_config_id BELOW before that actually has rows for this season,
-// then ranks that config's players by the SAME deterministic order the live board uses
-// (adjusted_score DESC, mfl_id) so the two rankings are comparable. Ranking with a
-// different tiebreak would manufacture deltas out of nothing.
+// PriorRanks ranks the highest scoring_config_id below before that has rows this season, in
+// the same order the live board uses, so the delta is real and not a tiebreak artifact.
+// Config ids are not dense (a version can exist unscored), so "before minus one" would be
+// wrong.
 //
-// "Highest below" rather than "before minus one": config versions are not guaranteed dense
-// (a version can be created and never scored), so decrementing would silently find an empty
-// config and report every player as unchanged.
-//
-// ok=false means there is no earlier scored config — a first run has nothing to compare
-// against, and the UI must render that as ABSENT, not as a delta of zero. Those are
-// different claims: zero says "held position", absent says "we don't know yet".
+// ok=false must render as absent, not as zero: zero says "held position", absent says "no
+// earlier board".
 func (s *Store) PriorRanks(ctx context.Context, season, before int) (map[string]int, bool, error) {
 	var prior int
-	// MAX over zero matching rows yields one NULL row, not zero rows — scan through a
-	// nullable so "no earlier config" is detected by validity, not by ErrNoRows.
+	// MAX over no rows returns one NULL row, so absence is detected by validity.
 	var priorNull sql.NullInt64
 	if err := s.pools.Read().QueryRowContext(ctx, `
 SELECT MAX(scoring_config_id) FROM season_scores
@@ -84,7 +75,7 @@ ORDER BY adjusted_score DESC, mfl_id`, season, prior)
 	return ranks, true, nil
 }
 
-// insertSQL appends one season_scores row. The column order matches rowValues.args.
+// insertSQL appends one season_scores row in rowValues.args order.
 const insertSQL = `
 INSERT INTO season_scores (
 	season, scoring_config_id, mfl_id,
@@ -103,9 +94,7 @@ SELECT season, scoring_config_id, mfl_id,
 	tb_is_veteran, tb_ras, tb_scarcity_rank, created_at
 FROM season_scores`
 
-// rowValues is a validated, persist-ready projection of one ScoreRecord. Building it via
-// newRowValues is the single validation gate — every field that reaches the DB passes
-// through here.
+// rowValues is a validated, persist-ready record. newRowValues is the only way to build one.
 type rowValues struct {
 	season, scoringConfigID int
 	mflID                   string
@@ -113,11 +102,7 @@ type rowValues struct {
 	createdAt               string
 }
 
-// newRowValues validates one record and returns its persist-ready form. It rejects a
-// malformed id (must be unsigned digits — the playerid signed-string gap, audit #4), an
-// unknown cap tier, and any non-finite score field (the engine multiplies straight into
-// rankings; a NaN/Inf would freeze into an immutable record — audit #1, L5 does not
-// re-check accumulator finiteness).
+// newRowValues rejects a malformed id, an unknown cap tier and any non-finite score field.
 func newRowValues(season, scoringConfigID int, rec ScoreRecord, now string) (rowValues, error) {
 	if err := validMFLID(rec.MFLID); err != nil {
 		return rowValues{}, err
@@ -137,7 +122,7 @@ func newRowValues(season, scoringConfigID int, rec ScoreRecord, now string) (row
 	return rowValues{
 		season:          season,
 		scoringConfigID: scoringConfigID,
-		mflID:           rec.MFLID, // persisted verbatim (audit #2)
+		mflID:           rec.MFLID,
 		r:               rec.Result,
 		createdAt:       now,
 	}, nil
@@ -183,11 +168,8 @@ func scanScores(rows *sql.Rows) ([]SeasonScore, error) {
 	return out, nil
 }
 
-// validMFLID is a FORM gate: a non-empty, UNSIGNED, all-digit id. It is not a full MFL-id
-// validity check (it accepts "0" and unbounded-length digit strings) — canonical ids
-// arrive from playerid upstream; this guard exists because playerid.New would accept a
-// leading '-' (strconv.Atoi parses signed), the audit #4 gap. The value is persisted
-// verbatim, not re-canonicalized.
+// validMFLID checks form only: non-empty, unsigned digits. Ids arrive canonical from playerid;
+// this is the last check before an immutable write.
 func validMFLID(id string) error {
 	if id == "" {
 		return fmt.Errorf("output: empty mfl id")
@@ -210,10 +192,8 @@ func validCapTier(t engine.CapTier) bool {
 	}
 }
 
-// isUniqueViolation reports whether err is a PRIMARY KEY / UNIQUE constraint failure —
-// the duplicate-key drift signal. It matches modernc's TYPED extended result code, not a
-// message substring: a substring like "constraint failed" also matches CHECK/NOT NULL/FK
-// failures, which would misclassify an unrelated write error as drift (GLM review).
+// isUniqueViolation matches modernc's typed PRIMARY KEY / UNIQUE result codes. A message
+// substring would also match CHECK and NOT NULL failures and misreport them as drift.
 func isUniqueViolation(err error) bool {
 	var se *sqlite.Error
 	if !errors.As(err, &se) {
