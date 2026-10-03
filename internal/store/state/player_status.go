@@ -10,25 +10,11 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
 
-// player_status_events is the append-only PLAYER-AVAILABILITY log — the free-agency pool's
-// membership record (Free_Agency_Design). Each row is one transition of a player's off-roster
-// availability (FREE_AGENT / RETIRED / DECEASED); the CURRENT status is the latest row for a
-// player. There is no CRUD: status changes only by appending a row, never by updating one.
-//
-// It exists because ReleasePlayer — the SOLE roster-removal primitive — is shared by four
-// terminal paths (waiver-cut §8, buyout §12, retirement §13, death §13) plus the §14 rollover
-// UFA-expiry, all of which leave IDENTICAL empty footprints (no rosters/contracts rows). Without
-// this marker a retired or deceased player is indistinguishable from a signable free agent. The
-// pool = players whose latest status is FREE_AGENT; a SIGN appends nothing here (it clears the
-// player by rostering him — the pool query excludes rostered players anyway), and the NEXT
-// release appends his new status. A player may cycle FREE_AGENT → rostered → FREE_AGENT across
-// seasons; the append-only log holds every transition with its reason.
-//
-// Like dead_cap_ledger / cap_relief_ledger / season_phases it is DOUBLE-immutable — no
-// update/delete Go API AND BEFORE UPDATE/DELETE RAISE(ABORT) triggers, so a raw mutation that
-// bypasses the Go layer still aborts (the audit-log idiom). seq is a monotonic INTEGER PRIMARY
-// KEY (rowid alias): inserts are serialized under wmu and rows are never deleted, so "latest row"
-// is an unambiguous ORDER BY seq DESC LIMIT 1 with no reliance on wall-clock ties in `at`.
+// player_status_events is the append-only availability log; a player's current status is his
+// latest row. It exists because every removal path (cut, buyout, retirement, death, contract
+// expiry) leaves the same empty footprint: without it a retired player looks like a signable free
+// agent. The pool is players whose latest status is FREE_AGENT and who are on no roster. Triggers
+// abort update and delete.
 const playerStatusDDL = `
 CREATE TABLE IF NOT EXISTS player_status_events (
 	seq        INTEGER PRIMARY KEY,
@@ -45,9 +31,7 @@ CREATE TRIGGER IF NOT EXISTS player_status_events_no_delete
 BEFORE DELETE ON player_status_events
 BEGIN SELECT RAISE(ABORT, 'player_status_events is append-only'); END;`
 
-// initPlayerStatusSchema creates the player_status_events table and its immutability triggers.
-// Called from initSchema, mirroring initCapReliefSchema / initSeasonPhaseSchema (own file,
-// store-no-siblings + the 400-line cap).
+// initPlayerStatusSchema creates the table and its immutability triggers.
 func (s *Store) initPlayerStatusSchema(ctx context.Context) error {
 	if _, err := s.pools.Write().ExecContext(ctx, playerStatusDDL); err != nil {
 		return fmt.Errorf("state: init player-status schema: %w", err)
@@ -55,12 +39,8 @@ func (s *Store) initPlayerStatusSchema(ctx context.Context) error {
 	return nil
 }
 
-// RecordStatus appends one player-availability event in the shared tx — the pool's write
-// primitive. It is the ENFORCED chokepoint: ReleasePlayer takes a status+reason and calls this,
-// so no release path can silently forget to mark where a removed player went (the expert-panel's
-// unanimous top risk — a player who is neither rostered nor findable). Append-only: no update/
-// delete here, and the DB triggers reject a raw mutation. Fails loud on an unknown status or an
-// empty reason.
+// RecordStatus appends one availability event. ReleasePlayer calls it, so no release can skip
+// marking where the player went.
 func (w *txWriter) RecordStatus(ctx context.Context, mflID string, status domain.PlayerStatus, reason string) error {
 	if !status.Valid() {
 		return fmt.Errorf("state: RecordStatus %q: %q is not a known player status", mflID, status)
@@ -78,21 +58,13 @@ VALUES (?, ?, ?, ?, ?)`,
 	return nil
 }
 
-// CurrentStatus returns a player's latest availability status and whether any status event
-// exists for him. It reads the read pool (COMMITTED state), NOT this tx's own uncommitted
-// writes, which is exactly right for the SIGN eligibility check: SIGN gates on the status as it
-// stood BEFORE the op (set by a prior committed release), and the single-writer law serializes
-// transactions so nothing can slip in between. found=false means the player has never been
-// released (he is rostered, or unknown) — SIGN treats that as not-a-free-agent. Fails loud on a
-// stored value that is not a known status (drift).
+// CurrentStatus returns the latest committed status, which is what SIGN must check: the status
+// before the op. found=false means never released. An unknown stored status is drift.
 func (w *txWriter) CurrentStatus(ctx context.Context, mflID string) (domain.PlayerStatus, bool, error) {
 	return w.s.CurrentStatus(ctx, mflID)
 }
 
-// CurrentStatus reads a player's latest availability status off the read pool (committed state).
-// It backs both the txWriter surface (the SIGN eligibility gate) and read-only callers (the dev
-// IPC pool listing). Deliberately NOT on the Reader interface — the App holds the concrete *Store
-// and calls it directly, so the read-only boundary contract stays at its member count.
+// CurrentStatus reads the committed status. It is not on Reader; the App calls the concrete store.
 func (s *Store) CurrentStatus(ctx context.Context, mflID string) (domain.PlayerStatus, bool, error) {
 	var st string
 	row := s.pools.Read().QueryRowContext(ctx, `
@@ -112,11 +84,8 @@ ORDER BY seq DESC LIMIT 1`, s.leagueID, mflID)
 	return ps, true, nil
 }
 
-// FreeAgents returns the mfl ids of every player currently in the pool — those whose LATEST
-// status event is FREE_AGENT AND who are not on any roster (a signed player keeps his old
-// FREE_AGENT event until his next release, so the roster exclusion is what removes him from the
-// live pool). Ordered by mfl id for a deterministic listing. This is the read the dev IPC pool
-// panel consumes.
+// FreeAgents returns the pool by mfl id: latest status FREE_AGENT and on no roster. (A signed
+// player keeps his old FREE_AGENT row until his next release; the roster check removes him.)
 func (s *Store) FreeAgents(ctx context.Context) ([]string, error) {
 	rows, err := s.pools.Read().QueryContext(ctx, `
 SELECT e.mfl_id FROM player_status_events e

@@ -6,113 +6,53 @@ import (
 	"strings"
 )
 
-// FeedEvent is one row of the Activity / Transaction Feed — a single chronological event
-// projected from ONE row of an append-only ledger table. The read-model is a UNION across
-// the existing append-only event tables (trade_notes, player_status_events, dead_cap_ledger,
-// cap_relief_ledger, contract_year_changes): one source row → one feed event, no collapsing
-// and no dedup across tables, so the feed is a faithful historical river of every recorded
-// ledger mutation. NO writes, NO schema change — this is read-only against tables that
-// already exist for the transaction engine's own audit spine.
-//
-// The Session-D event grammar renders this substrate as a single time-ordered stream
-// (one 2px-spine row per event); the `Kind` drives the spine's semantic hue, the
-// `FranchiseIDs` slice backs the subject line, and `TradeRationale` / `TradePicksNote`
-// surface Session-3's persisted trade text on TRADE rows. Acquisition provenance
-// (MFL's "Player Acquired Info" concept — draft / trade / waiver / free-agent-signing)
-// is DERIVED from the source table + Kind + Reason here in the read-model: no manual field
-// was added to any write path (the groundwork did not exist; this is the home for it).
+// FeedEvent is one activity-feed event, projected from one row of an append-only ledger
+// (trade_notes, player_status_events, dead_cap_ledger, cap_relief_ledger, contract_year_changes).
+// One row, one event: no collapsing, no dedup, no writes. Acquisition provenance is derived here
+// from the source, kind and reason.
 type FeedEvent struct {
-	// Source is the ledger table the row was projected from — "trade_notes",
-	// "player_status_events", "dead_cap_ledger", "cap_relief_ledger", or
-	// "contract_year_changes". Drives the per-source id namespace (the per-row ID is only
-	// unique within its source table) and the frontend's "data origin" affordance.
+	// Source is the ledger table the row came from; IDs are unique only within it.
 	Source string
-	// ID is the source-table row's primary key (trade_notes.id, dead_cap_ledger.id,
-	// contract_year_changes.id, or the INTEGER seq of player_status_events / cap_relief_ledger
-	// cast to TEXT). Unique only within Source; the frontend composes a stable React key as
-	// Source + ":" + ID.
+	// ID is the source row's key as text; the frontend's React key is Source + ":" + ID.
 	ID string
-	// Kind is the coarse event classification the spine renders. Derived from the source
-	// table + its discriminator column (status / source / reason text):
-	//   TRADE              — trade_notes row
-	//   RELEASE            — player_status_events status=FREE_AGENT (cut / waived / expired)
-	//   RETIREMENT         — player_status_events status=RETIRED
-	//   DEATH              — player_status_events status=DECEASED
-	//   DEAD_CAP           — dead_cap_ledger row (the money side of a §8/§12/§13 charge)
-	//   CAP_RELIEF         — cap_relief_ledger row (§13 commissioner credit)
-	//   SIGN               — contract_year_changes source="signing" (§6 free-agency signing)
-	//   EXTENSION          — contract_year_changes source="extension" (§10 extension years)
-	//   RESTRUCTURE        — contract_year_changes source="op" + reason matches §11
-	//   TAG                — contract_year_changes source="op" + reason matches §9
-	//   WAIVER_VOID        — contract_year_changes source="op" + reason matches §8 void
-	//   CONTRACT_CHANGE    — contract_year_changes source="op", uncategorized (future op)
-	// seed rows (source="seed") are excluded — those are initial migrations, not events.
-	// A player_status_events row whose status is none of FREE_AGENT/RETIRED/DECEASED (a
-	// future domain.PlayerStatus the feed CASE was not updated for, or a raw bogus insert)
-	// surfaces as a drift ERROR from Feed — it is never silently bucketed as a release.
+	// Kind classifies the event:
+	//   TRADE                            trade_notes
+	//   RELEASE / RETIREMENT / DEATH     player_status_events FREE_AGENT / RETIRED / DECEASED
+	//   DEAD_CAP, CAP_RELIEF             the two cap ledgers
+	//   SIGN, EXTENSION                  contract_year_changes source signing / extension
+	//   RESTRUCTURE / TAG / WAIVER_VOID  source op, by reason text; CONTRACT_CHANGE otherwise
+	// Seed rows are excluded. An unrecognized player status is a drift error, never a release.
 	Kind string
-	// Timestamp is the RFC3339 the source row was written at. The feed is ordered by this
-	// descending; ties are broken by Source then by the numeric value of the seq-cast IDs
-	// (LENGTH-then-lex, so seq 10 does not sort above seq 2) for deterministic rendering.
+	// Timestamp orders the feed, newest first. Ties break by Source, then by numeric ID
+	// (length-then-lexical, so seq 10 sorts above seq 2).
 	Timestamp string
-	// MFLID is the player id the event concerns. Empty for franchise-only events
-	// (trade_notes does not single out a player — its involved_franchises carries both
-	// sides — and cap_relief_ledger has no player). IDs are the MFL string form (leading
-	// zeros intact, per RISK-003); a stale commissioner-created id that no longer resolves
-	// in the players-DB is rendered as-is and never causes a hard-fail (OQ-013).
+	// MFLID is empty for franchise-only events (trades, cap relief). A stale commissioner-created id
+	// is returned as-is.
 	MFLID string
-	// FranchiseIDs are the franchises the event touched. trade_notes splits its
-	// comma-joined involved_franchises (both sending AND receiving franchises — Session 3
-	// bug-fix); the dead_cap / cap_relief ledgers carry a single franchise_id; the
-	// player_status_events and contract_year_changes tables are player-keyed only and
-	// carry NO franchise (a reliable at-time franchise would require a historical roster
-	// snapshot this codebase does not keep), so those rows return an empty slice and the
-	// frontend renders the player id alone.
+	// FranchiseIDs are the franchises the event touched. Status and contract rows carry none: no
+	// historical roster snapshot exists to say which franchise held the player then.
 	FranchiseIDs []string
-	// Reason is the raw audit text the source row carries — the immutable audit spine the
-	// ledger exists to preserve. The frontend renders it as the predicate line.
+	// Reason is the row's raw audit text.
 	Reason string
-	// Provenance is the derived acquisition category (MFL's "Player Acquired Info"
-	// vocabulary): "trade", "waiver", "free-agent-signing", "draft", or "" when the event
-	// is not an acquisition (a release, a contract mutation, a cap-relief credit, etc.).
-	// Derived from Source + Kind + Reason; "draft" never fires today (no draft handler or
-	// draft table exists yet — it is reserved for the future rookie-draft surface).
+	// Provenance is the acquisition category ("trade", "waiver", "free-agent-signing"), or "".
+	// "draft" is reserved; nothing produces it yet.
 	Provenance string
-	// TradeRationale is the TRADE row's persisted rationale (Session 3: required,
-	// validated non-empty before a tx opens). Empty for every non-TRADE event.
+	// TradeRationale is set on TRADE rows only.
 	TradeRationale string
-	// TradePicksNote is the TRADE row's Alpha-scope free-text picks note (Session 3:
-	// unvalidated by design — no pick-ownership ledger yet). Empty for every non-TRADE event.
+	// TradePicksNote is set on TRADE rows only (unvalidated free text).
 	TradePicksNote string
 }
 
-// feedKindDiscriminators are the literal substrings the contract_year_changes reason text
-// is matched against to classify a source="op" row. They are the exact reason prefixes the
-// transaction handlers write (contracts.go §11 restructure, contracts.go §9 tag, deadcap.go
-// §8 waiver void) — kept here as a single source of truth so a handler reason change and the
-// feed classifier cannot drift apart silently.
-//
-// All three are lowercase by convention (the handlers format them that way). Matching is
-// case-INSENSITIVE on both sides to keep SQL and Go in lockstep without depending on that
-// convention: the SQL CASE uses LIKE (SQLite LIKE is ASCII case-insensitive by default), and
-// the Go classifiers fold the reason through strings.ToLower before Contains. A handler that
-// ever wrote an uppercase variant would therefore still classify consistently across both.
+// The reason prefixes the transaction handlers write, used to classify source="op" rows. Matching
+// is case-insensitive on both sides: SQL LIKE and strings.ToLower.
 const (
 	opReasonRestructure = "§11 restructure"
 	opReasonTag         = "§9 franchise tag"
 	opReasonWaiverVoid  = "waiver-cut §8"
 )
 
-// classifyContractChangeKind maps a contract_year_changes row onto its feed Kind via the
-// source column + the reason text. source="seed" rows must be filtered out BEFORE this is
-// called (the caller's WHERE clause excludes them); the function is total over the rest.
-// source="signing" → SIGN; source="extension" → EXTENSION; source="op" is disambiguated by
-// reason text (case-insensitively, mirroring the SQL CASE's LIKE), defaulting to
-// CONTRACT_CHANGE when no prefix matches (a future op kind).
-//
-// NOTE: this function is the Go-side mirror of the feedSQL contract_year_changes CASE — the
-// production feed reads the Kind straight out of SQL, and this function exists so a test
-// (TestClassifyContractChangeKind) can pin the SQL↔Go contract and surface drift.
+// classifyContractChangeKind is the Go copy of feedSQL's contract_year_changes CASE, kept so a
+// test can pin the two together. Seed rows must already be filtered out.
 func classifyContractChangeKind(source, reason string) string {
 	switch source {
 	case "signing":
@@ -134,19 +74,9 @@ func classifyContractChangeKind(source, reason string) string {
 	}
 }
 
-// deriveProvenance maps a (Kind, Reason) pair onto MFL's "Player Acquired Info"
-// vocabulary. An event that is not an acquisition returns "". The mapping is conservative:
-// only kinds whose semantics unambiguously match an acquisition category are labeled, so a
-// future handler that introduces a new kind surfaces as "" rather than a mislabel.
-//
-//   - TRADE                         → "trade"
-//   - SIGN                          → "free-agent-signing"
-//   - DEAD_CAP / RELEASE with a §8  → "waiver" (the player was acquired-via-waiver at some
-//     prior point and is now being released — the cut is the
-//     waiver event of record)
-//
-// RETIREMENT / DEATH / CAP_RELIEF / EXTENSION / RESTRUCTURE / TAG / WAIVER_VOID /
-// CONTRACT_CHANGE → "" (not acquisitions).
+// deriveProvenance labels only unambiguous acquisitions: TRADE is "trade", SIGN is
+// "free-agent-signing", and a §8 release or dead-cap charge is "waiver". Everything else, and any
+// future kind, is "".
 func deriveProvenance(kind, reason string) string {
 	switch kind {
 	case "TRADE":
@@ -157,40 +87,17 @@ func deriveProvenance(kind, reason string) string {
 		if strings.Contains(strings.ToLower(reason), opReasonWaiverVoid) {
 			return "waiver"
 		}
-		// A natural §14 UFA-expiry release carries no §8 marker — the player was simply
-		// exposed to free agency, not acquired via waiver. Leave provenance empty.
+		// A §14 UFA expiry carries no §8 marker: not a waiver.
 		return ""
 	default:
 		return ""
 	}
 }
 
-// feedSQL is the single UNION ALL across the append-only event tables. Every branch projects
-// to the same nine columns so the rows scan into one FeedEvent shape. The trailing ORDER BY
-// applies to the unioned set (SQLite scopes ORDER BY / LIMIT to the whole result set when the
-// UNION is the top-level statement). LIMIT is bound once at the end.
-//
-// Each branch's columns, in order:
-//  1. source-table label
-//  2. the source row's primary key, as TEXT
-//  3. the coarse Kind
-//  4. timestamp (RFC3339)
-//  5. mfl_id (empty when the table has no player)
-//  6. franchises-raw (the comma-joined form; split in Go)
-//  7. reason
-//  8. trade rationale (TRADE branch only)
-//  9. trade picks note (TRADE branch only)
-//
-// The contract_year_changes branch CASE-expression mirrors classifyContractChangeKind so the
-// SQL and the Go classifier never drift; if a future reason prefix lands, the default
-// CONTRACT_CHANGE bucket keeps the row visible rather than dropping it.
-//
-// The player_status_events branch CASE enumerates every domain.PlayerStatus (FREE_AGENT,
-// RETIRED, DECEASED) and uses ELSE 'UNKNOWN' — NOT a silent RELEASE. The Go scan layer turns a
-// 'UNKNOWN' kind into a loud drift error (mirroring CurrentStatus's fail-loud-on-unknown-status
-// contract), so a future PlayerStatus addition surfaces immediately rather than miscoloring the
-// row as a release. The three mapped statuses are kept in lockstep with domain.PlayerStatus by
-// the TestFeed_UnknownStatusSurfacesDrift contract.
+// feedSQL is one UNION ALL across the append-only ledgers. Every branch projects the same nine
+// columns: source, id, kind, timestamp, mfl_id, franchises (comma-joined), reason, trade rationale,
+// trade picks note. Unknown op reasons land in CONTRACT_CHANGE so they stay visible. The status
+// branch's ELSE is 'UNKNOWN', which Feed turns into a drift error.
 const feedSQL = `
 SELECT source, id, kind, ts, mfl_id, franchises_raw, reason, trade_rationale, trade_picks_note FROM (
     SELECT 'trade_notes'              AS source,
@@ -276,19 +183,8 @@ SELECT source, id, kind, ts, mfl_id, franchises_raw, reason, trade_rationale, tr
 ORDER BY ts DESC, source DESC, LENGTH(id) DESC, id DESC
 LIMIT ?5`
 
-// Feed reads the Activity / Transaction Feed — every row from every append-only event
-// table in this league, projected to one chronological stream. The query is a single UNION
-// ALL (above) executed on the read pool; this function only scans its rows and splits the
-// comma-joined franchise column. NO writes; the read pool is the same one every sibling
-// read-only method (CalendarEvents, FreeAgents, LedgerCells) uses.
-//
-// `limit` caps the row count (most-recent first); a non-positive value falls back to a sane
-// default. The cap is the only pagination v1 offers — full historical scroll is a follow-up
-// once the operator surface asks for it. The caller (the IPC layer) resolves player names
-// and franchise names through the players / rulebook directories; this read returns ids only.
-//
-// An empty result (a fresh league with no executed transactions yet) returns a non-nil empty
-// slice, never nil — the frontend renders an empty state, not a null.
+// Feed returns up to limit events across the ledgers, newest first (non-positive limit: a
+// default). Ids only; the caller resolves names. An empty league returns an empty, non-nil slice.
 func (s *Store) Feed(ctx context.Context, limit int) ([]FeedEvent, error) {
 	if limit <= 0 {
 		limit = 500
@@ -317,10 +213,7 @@ func (s *Store) Feed(ctx context.Context, limit int) ([]FeedEvent, error) {
 		); err != nil {
 			return nil, fmt.Errorf("state: feed scan: %w", err)
 		}
-		// 'UNKNOWN' is the player_status_events CASE ELSE — a status the feed does not
-		// recognize (a future domain.PlayerStatus the CASE was not updated for, or a raw
-		// insert of a bogus status). Fail loud rather than silently mislabel the row; this
-		// mirrors CurrentStatus's drift contract. mfl_id is included so the row is locatable.
+		// A status the CASE doesn't know: fail loudly rather than mislabel the row.
 		if kind == "UNKNOWN" {
 			return nil, fmt.Errorf("state: feed: player_status_events row for mfl_id %q classified as UNKNOWN (status drift — add the status to the feed CASE)", mflID)
 		}
@@ -343,10 +236,7 @@ func (s *Store) Feed(ctx context.Context, limit int) ([]FeedEvent, error) {
 	return out, nil
 }
 
-// splitFranchises splits trade_notes' comma-joined involved_franchises column into a slice.
-// Empty input → nil (so the JSON-marshalled DTO renders an empty array, not [""]). Whitespace
-// around each id is trimmed (defense-in-depth; LogTradeNote joins without spaces today, but a
-// future writer is not bound by that).
+// splitFranchises splits the comma-joined column, trimming spaces. Empty input returns nil.
 func splitFranchises(joined string) []string {
 	joined = strings.TrimSpace(joined)
 	if joined == "" {
