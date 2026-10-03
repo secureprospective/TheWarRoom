@@ -2,10 +2,8 @@ package transactions_test
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
-	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -30,13 +28,7 @@ func (d tagDir) Facts(mflID string) (normalize.PlayerFacts, bool) {
 type tagSeed struct{ t *testing.T }
 
 func (s tagSeed) Rosters(context.Context) ([]domain.Roster, error) {
-	id := func(raw string) playerid.PlayerID {
-		p, err := playerid.New(raw)
-		if err != nil {
-			s.t.Fatalf("playerid.New(%q): %v", raw, err)
-		}
-		return p
-	}
+	id := func(raw string) playerid.PlayerID { return pid(s.t, raw) }
 	mk := func(raw string, sal domain.Money) domain.PlayerRecord {
 		return domain.PlayerRecord{MFLID: id(raw), Salary: sal, ContractYear: 2028,
 			RosterStatus: domain.RosterActive, ContractStatus: domain.CStatusUFA}
@@ -49,19 +41,7 @@ func (s tagSeed) Rosters(context.Context) ([]domain.Roster, error) {
 
 func tagStore(t *testing.T) (*statepkg.Store, *transactions.Coordinator, tagDir) {
 	t.Helper()
-	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "tag.db"))
-	if err != nil {
-		t.Fatalf("db.Open: %v", err)
-	}
-	t.Cleanup(func() { _ = pools.Close() })
-	s := statepkg.New(pools, "14432", 2026, nil)
-	if err := s.Initialize(context.Background(), tagSeed{t}); err != nil {
-		t.Fatalf("Initialize: %v", err)
-	}
-	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
-	if err != nil {
-		t.Fatalf("New coordinator: %v", err)
-	}
+	s, c := seededCoordinator(t, tagSeed{t})
 	dir := tagDir{"0010": domain.PosWR, "0011": domain.PosWR, "0020": domain.PosWR, "0021": domain.PosWR, "0022": domain.PosWR}
 	return s, c, dir
 }
@@ -243,13 +223,7 @@ func TestIntegration_TagThenCutVoidsCells(t *testing.T) {
 type offGridSeed struct{ t *testing.T }
 
 func (s offGridSeed) Rosters(context.Context) ([]domain.Roster, error) {
-	id := func(raw string) playerid.PlayerID {
-		p, err := playerid.New(raw)
-		if err != nil {
-			s.t.Fatalf("playerid.New(%q): %v", raw, err)
-		}
-		return p
-	}
+	id := func(raw string) playerid.PlayerID { return pid(s.t, raw) }
 	mk := func(raw string, sal domain.Money) domain.PlayerRecord {
 		return domain.PlayerRecord{MFLID: id(raw), Salary: sal, ContractYear: 2028,
 			RosterStatus: domain.RosterActive, ContractStatus: domain.CStatusUFA}
@@ -270,19 +244,7 @@ func (s offGridSeed) Rosters(context.Context) ([]domain.Roster, error) {
 // the franchise cap. This is the carry-forward of the §9 snap lesson, now expressed as the
 // single cell-derived truth rather than a legacy/ledger parity.
 func TestIntegration_TagOffGridPriceSnapsInCap(t *testing.T) {
-	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "offgrid.db"))
-	if err != nil {
-		t.Fatalf("db.Open: %v", err)
-	}
-	t.Cleanup(func() { _ = pools.Close() })
-	s := statepkg.New(pools, "14432", 2026, nil)
-	if err := s.Initialize(context.Background(), offGridSeed{t}); err != nil {
-		t.Fatalf("Initialize: %v", err)
-	}
-	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
-	if err != nil {
-		t.Fatalf("New coordinator: %v", err)
-	}
+	s, c := seededCoordinator(t, offGridSeed{t})
 	dir := tagDir{"0010": domain.PosWR, "0011": domain.PosWR, "0020": domain.PosWR, "0021": domain.PosWR, "0022": domain.PosWR}
 	ctx := context.Background()
 
