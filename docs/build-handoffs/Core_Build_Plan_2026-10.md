@@ -250,6 +250,31 @@ Design and reasoning: `Core_Build_Reasoning_2026-10.md` §5a.
 - The generated Measure Dictionary matches the registry.
 - A second scoring run with changed params produces a second board, and both remain readable.
 
+**Stage 1 gate, 2026-10-03.** Built on `session/stage1-measure-store`.
+
+| Gate item | Result |
+|---|---|
+| Fetch → archive and observations; twice is idempotent | PASS. Tests: `TestFetchArchivesOnceAndLoadIsIdempotent`. Live: three MFL loads of 1,650 facts; the second and third added 0. |
+| Correction appends; "as of yesterday" returns the old value | PASS. Test: `TestCorrectionAppendsAndAsOfReadsTheOldValue`. |
+| Source-loss drill | PASS on a fixture: `TestSourceLossDrill`, `TestSourceIsLostOnlyAfterFailingPastItsMaxAge`. Live with MFL blocked: the board still ran, warned that the points were not refreshed, and scored from the points held. Approval waits for Stage 6 (S10). |
+| Source-gain drill | PASS: `TestSourceGainNeedsOnlyMappingRows`. |
+| Measure Dictionary matches the registry | PASS: `TestDictionaryIsCurrent`. |
+| Changed params → a second board; both readable | PASS. Test: `TestChangedParamsMakeASecondReadableBoard`. Live: `layer3.decay_rate` 0.03 → 0.04 wrote board #2 with older players moved, and board #1 still reads back. |
+
+Live gate on Claude-OS (R12), production build `v0.5.0-126-g7f46782` with a fresh snapshot of the
+live database. A first ScoreLeague wrote board #1 (828 players, 3 excluded with reasons). A second
+reported "No change" and wrote nothing. Evidence:
+`~/fleet/runs/warroom-dataflow-2026-10-03/live-gate-stage1-2026-10-03/`.
+
+The gate caught two defects, both fixed:
+- **RAS drifted between runs** (`7f46782`). The RAS cohort was summed in map order, so RAS, the
+  breakout it modulates and the adjusted score differed in their last bits on every pass. The
+  first gate attempt's second ScoreLeague therefore wrote a new board. The cohort is now summed
+  in id order, and `TestScoreRASIsDeterministic` requires bit-identical results.
+- **An unknown argument opened the window** (`a01498e`). `thewarroom -version` opened the
+  production app on the Beelink against the real database. Unknown arguments now exit 2, and
+  `-version` exists.
+
 ### Stage 2 — League truth (MFL refresh)
 
 1. **Refresh** rosters, contracts and ledger, players, standings and injuries from MFL, landing in
