@@ -166,3 +166,19 @@ Bee's IPC count was checked independently: 24 exported `*App` methods = 24 bindi
 Mapping is about half done. The findings so far are verified, but Sector 3 (tests actually run)
 and all of Astra's research are unproven. No plan exists yet. Expect several more hours of agent
 time, then the discussion.
+
+## 12. UPDATE after first persist (~10:58)
+
+- **Astra S1 PASSED** (`REPORT-1-source-currency.md`; 23 sources: 14 current, 3 stale-URL, 6
+  could-not-establish). Key facts:
+  - nflverse `player_stats` was **deprecated 2025-08-01** in favour of `stats_player`, so the code's
+    `nflproduction` and `kicking` URLs 404 and the replacement has a new schema.
+    `stats_player_week_2026.csv` is updated nightly.
+  - Madden m24 is stale; m26/m27 probes return HTTP 500 and there is no verified current API.
+  - CFBD needs a key (free 1,000 calls/month).
+  - FTN charting starts in 2022.
+  - Claude settled by curl: combine has the 2026 class (319 rows); advstats_def has 2026 rows
+    (609, in progress) but the code reads only 2025. Sent to Astra as FEEDBACK-1.
+- Task list: **T366** added under PARKED (TheWarRoom revived 10-03 for planning).
+- Repo commit of this doc: `879a50f` on `session/m1b-bash` (not pushed). This §12 update lives in
+  the run-dir and CT105 copies; it gets folded into the repo copy at the next commit.
