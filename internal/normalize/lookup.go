@@ -18,16 +18,9 @@ import (
 
 // lookupEntry is one player's resolved facts; raw MFL codes do not survive into it.
 type lookupEntry struct {
-	name         string
-	position     domain.Position
-	isAggregate  bool // "Def", "TMWR", …
-	team         string
-	isRookie     bool
-	birthdate    int64 // epoch seconds
-	hasBirthdate bool  // commissioner-created players lack one
-	draftYear    int
-	hasDraftYear bool   // false for undrafted ("0")
-	college      string // raw; the SchoolTier source
+	PlayerFacts
+	team        string
+	isAggregate bool // "Def", "TMWR", …
 }
 
 // Lookup is the players database keyed by canonical player id.
@@ -63,12 +56,14 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 		}
 
 		entry := lookupEntry{
-			name:        rp.Name,
-			position:    pos,
-			isAggregate: isAgg,
+			PlayerFacts: PlayerFacts{
+				Name:     rp.Name,
+				Position: pos,
+				IsRookie: rp.Status == "R",
+				College:  strings.TrimSpace(rp.College),
+			},
 			team:        rp.Team,
-			isRookie:    rp.Status == "R",
-			college:     strings.TrimSpace(rp.College),
+			isAggregate: isAgg,
 		}
 		// The fetcher validated the birthdate; absent stays absent and the consumer decides.
 		if bd := strings.TrimSpace(rp.Birthdate); bd != "" {
@@ -76,7 +71,7 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 			if perr != nil {
 				return Lookup{}, fmt.Errorf("normalize: players id %q birthdate %q: %w", rp.ID, rp.Birthdate, perr)
 			}
-			entry.birthdate, entry.hasBirthdate = v, true
+			entry.Birthdate, entry.HasBirthdate = v, true
 		}
 		// MFL sends "0" for undrafted, so only a positive year counts. Placeholder years like 1970
 		// are the consumer's to judge.
@@ -86,7 +81,7 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 				return Lookup{}, fmt.Errorf("normalize: players id %q draft year %q: %w", rp.ID, rp.DraftYear, perr)
 			}
 			if v > 0 {
-				entry.draftYear, entry.hasDraftYear = v, true
+				entry.DraftYear, entry.HasDraftYear = v, true
 			}
 		}
 		byID[id.String()] = entry
@@ -101,10 +96,10 @@ type PlayerFacts struct {
 	Name         string
 	Position     domain.Position
 	IsRookie     bool
-	Birthdate    int64 // epoch seconds
-	HasBirthdate bool
-	DraftYear    int // the §6 experience source
-	HasDraftYear bool
+	Birthdate    int64  // epoch seconds
+	HasBirthdate bool   // commissioner-created players lack one
+	DraftYear    int    // the §6 experience source
+	HasDraftYear bool   // false for undrafted ("0")
 	College      string // raw; the SchoolTier source
 }
 
@@ -119,16 +114,7 @@ func (l Lookup) Facts(id string) (PlayerFacts, bool) {
 	if !ok || e.isAggregate {
 		return PlayerFacts{}, false
 	}
-	return PlayerFacts{
-		Name:         e.name,
-		Position:     e.position,
-		IsRookie:     e.isRookie,
-		Birthdate:    e.birthdate,
-		HasBirthdate: e.hasBirthdate,
-		DraftYear:    e.draftYear,
-		HasDraftYear: e.hasDraftYear,
-		College:      e.college,
-	}, true
+	return e.PlayerFacts, true
 }
 
 // classifyPosition maps a raw MFL code onto the engine set. An aggregate returns true so the

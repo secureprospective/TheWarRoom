@@ -42,15 +42,15 @@ func Player(raw rosters.RawRoster, lookup Lookup) (domain.PlayerRecord, error) {
 
 	return domain.PlayerRecord{
 		MFLID:          id,
-		Name:           entry.name,
-		Position:       entry.position,
+		Name:           entry.Name,
+		Position:       entry.Position,
 		NFLTeam:        entry.team,
 		Salary:         salary,
 		ContractYear:   year,
 		ContractStatus: normalizeContractStatus(raw.ContractStatus),
 		ContractInfo:   raw.ContractInfo,
 		RosterStatus:   status,
-		IsRookie:       entry.isRookie,
+		IsRookie:       entry.IsRookie,
 		FranchiseID:    raw.FranchiseID,
 	}, nil
 }

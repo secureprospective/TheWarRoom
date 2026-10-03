@@ -58,11 +58,11 @@ func TestNewLookup_ReservedRangeFlags(t *testing.T) {
 	}
 	for _, id := range []string{"500", "600"} {
 		e, ok := lk.entry(mustID(t, id))
-		if !ok || e.position != domain.PosFlag {
+		if !ok || e.Position != domain.PosFlag {
 			t.Fatalf("id %s should be admitted and flagged for review, got %+v ok=%v", id, e, ok)
 		}
 	}
-	if e, ok := lk.entry(mustID(t, "13593")); !ok || e.position != domain.PosWR {
+	if e, ok := lk.entry(mustID(t, "13593")); !ok || e.Position != domain.PosWR {
 		t.Fatalf("build did not continue past the flagged records: %+v ok=%v", e, ok)
 	}
 }
@@ -97,7 +97,7 @@ func TestNewLookup_CanonicalizesAndDerivesRookie(t *testing.T) {
 		t.Fatal("canonical id lookup missed: 99 should match 0099")
 	}
 	rookie, ok := lk.entry(mustID(t, "14999"))
-	if !ok || !rookie.isRookie {
+	if !ok || !rookie.IsRookie {
 		t.Fatalf("rookie flag not derived from status==R: %+v ok=%v", rookie, ok)
 	}
 }
