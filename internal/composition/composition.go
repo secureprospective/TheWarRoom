@@ -62,7 +62,10 @@ func (a *Assembler) Calibration(pos domain.Position) (engine.Calibration, error)
 	if tiers.ColdCeiling < 0 || tiers.HotFloor < 0 || tiers.ColdCeiling > tiers.HotFloor {
 		return engine.Calibration{}, fmt.Errorf("composition: invalid cap tiers (cold=%v hot=%v; need 0 ≤ cold ≤ hot)", tiers.ColdCeiling, tiers.HotFloor)
 	}
-	cushionRAS, cushionDecline := cushionGuard(pos)
+	cushionRAS, cushionDecline, err := a.cushionGuard(pos)
+	if err != nil {
+		return engine.Calibration{}, err
+	}
 	return engine.Calibration{
 		SalaryFloor:          DefaultSalaryFloor,
 		RASFallback:          DefaultRASFallback,
