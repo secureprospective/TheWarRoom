@@ -28,17 +28,6 @@ func (a *App) proxyLabel() string {
 	return fmt.Sprintf("BasePoints: MFL %d YTD fantasy points (proxy) — L2 pending", a.season-1)
 }
 
-// m1Ready reports whether the stores came up.
-func (a *App) m1Ready() error {
-	if a.startupErr != nil {
-		return a.startupErr
-	}
-	if a.rulebook == nil || a.league == nil || a.history == nil || a.params == nil {
-		return fmt.Errorf("stores not initialized")
-	}
-	return nil
-}
-
 // loadBasePoints fetches the proxy season's YTD totals into history. A failed fetch is recorded
 // against the source and returned as a warning: the board still scores from what history holds,
 // and source health decides whether the measure counts as lost.
@@ -69,7 +58,7 @@ type ScoreLeagueResult struct {
 // ScoreLeague scores all 32 rosters as a board run in history. A pass that matches the latest
 // board exactly writes nothing and reports unchanged.
 func (a *App) ScoreLeague() ScoreLeagueResult {
-	if err := a.m1Ready(); err != nil {
+	if err := a.ready(); err != nil {
 		return ScoreLeagueResult{Error: err.Error(), Label: a.proxyLabel()}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, m1Timeout)
@@ -197,7 +186,7 @@ type RankingsResult struct {
 // GetRankings reads the latest board run and joins display fields. It never scores: empty Rows
 // means ScoreLeague hasn't run this season.
 func (a *App) GetRankings() RankingsResult {
-	if err := a.m1Ready(); err != nil {
+	if err := a.ready(); err != nil {
 		return RankingsResult{Error: err.Error(), Label: a.proxyLabel()}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, m1Timeout)

@@ -30,11 +30,8 @@ type CalendarEventsResult struct {
 // GetCalendarEvents reads every event's current state. After a failed reload it reports stale
 // rather than showing an out-of-date schedule as current.
 func (a *App) GetCalendarEvents() CalendarEventsResult {
-	if a.startupErr != nil {
-		return CalendarEventsResult{Detail: a.startupErr.Error()}
-	}
-	if a.whatif == nil {
-		return CalendarEventsResult{Detail: "state store not initialized"}
+	if err := a.ready(); err != nil {
+		return CalendarEventsResult{Detail: err.Error()}
 	}
 	if err := a.whatif.Err(); err != nil {
 		return CalendarEventsResult{Detail: "state is stale after a failed reload: " + err.Error()}

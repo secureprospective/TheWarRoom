@@ -35,7 +35,7 @@ type LeagueScheduleResult struct {
 
 // GetLeagueSchedule is the read behind the calendar's schedule pane: display-only.
 func (a *App) GetLeagueSchedule() LeagueScheduleResult {
-	if err := a.m1Ready(); err != nil {
+	if err := a.ready(); err != nil {
 		return LeagueScheduleResult{Detail: err.Error()}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)

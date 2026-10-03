@@ -27,11 +27,11 @@ type AppInfo struct {
 	StartupError string `json:"startupError,omitempty"`
 }
 
-// AppInfo returns the build stamp and startup status.
+// AppInfo returns the build stamp and startup status once startup has finished.
 func (a *App) AppInfo() AppInfo {
 	info := AppInfo{Version: version, Commit: commit, BuildDate: buildDate}
-	if a.startupErr != nil {
-		info.StartupError = a.startupErr.Error()
+	if err := a.ready(); err != nil {
+		info.StartupError = err.Error()
 	}
 	return info
 }

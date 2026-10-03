@@ -71,7 +71,7 @@ func (a *App) GetPowerRankings(weight float64, aggMode string) PowerRankingsResu
 			Freshness: Freshness{State: FreshFail, Note: err.Error()},
 		}
 	}
-	if err := a.m1Ready(); err != nil {
+	if err := a.ready(); err != nil {
 		return fail(err)
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)

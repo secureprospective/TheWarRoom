@@ -53,7 +53,7 @@ func (a *App) seasonGuess() int {
 // RefreshLeague pulls the league from MFL into the mirror (MFL wins, R2). The what-if league is
 // left as it is.
 func (a *App) RefreshLeague() RefreshResult {
-	if err := a.m1Ready(); err != nil {
+	if err := a.ready(); err != nil {
 		return RefreshResult{Error: err.Error()}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
@@ -126,9 +126,14 @@ func (a *App) fetchLeague(ctx context.Context, season int) (state.MirrorSnapshot
 }
 
 // refreshInBackground runs the launch refresh off the startup path, so an MFL outage never
-// delays or blocks opening the app. The result goes to the log.
+// delays or blocks opening the app. It waits for startup without holding up the caller, Wails'
+// message loop, and skips the refresh when startup failed or already refreshed. The result goes
+// to the log.
 func (a *App) refreshInBackground(parent context.Context) {
 	go func() {
+		if a.ready() != nil || !a.launchRefreshDue {
+			return
+		}
 		ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 		defer cancel()
 		res, err := a.refreshLeague(ctx, a.rulebook, a.league)
