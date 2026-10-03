@@ -1,16 +1,9 @@
 package params
 
-// defaultParams returns the v1.0 shipped calibration defaults (the Option-C scope):
-// the Layer-5 cap-tier percentages (AD-21, the present engine consumer) PLUS the few
-// global scalars that already have stated defaults in the engine spec (Layer-3 decay,
-// Cushion Guard). Per-position calibration TABLES ship WITH the engine layer that
-// consumes them, never before — so this set is deliberately small, and seeding two
-// distinct param groups proves the store shape is general, not cap-tier-specific.
-//
-// Returned from a function (not a package var) to satisfy gochecknoglobals; it is the
-// single source of seed truth (M17). Ranges are wide on purpose (GLM-5.2 review):
-// they bound out-of-range admin error without pre-judging the post-live calibrated
-// value, which is revisited at M9a (OQ-006). IsCalibrated stays false until then.
+// defaultParams is the single source of the shipped defaults. Per-position tables ship with
+// the engine layer that reads them. Ranges are deliberately wide: they catch admin typos
+// without pre-judging the calibrated value, and IsCalibrated stays false until a calibration
+// pass sets one.
 func defaultParams() []ParamDef {
 	return []ParamDef{
 		{
