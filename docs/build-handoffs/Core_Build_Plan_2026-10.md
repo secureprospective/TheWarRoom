@@ -289,6 +289,23 @@ The gate caught two defects, both fixed:
    - Archive the two test-shaped databases, logged per the move convention. Neither is a faithful
      mirror.
 
+**Scope (Christopher, 2026-10-03).** Transactions, what-if plans and the refresh plumbing are
+placeholders until the core (Stages 3–8) makes them relevant. Stage 2 cleans up their
+architecture so that MFL truth has one home and one read path. It builds no new features.
+
+**Design (Claude, R4, 2026-10-03).**
+
+| # | Decision | Rejected, and why |
+|---|---|---|
+| L1 | **One league mirror.** A new `internal/store/league` in `thewarroom.db` holds what MFL says: the season, franchises, rosters with contracts as MFL states them, salary adjustments and the players list. It implements `state.Reader`, so the board, Power, the inspector and scouting read MFL truth through the interface they already use. Cap follows MFL: salaries (taxi and IR at the league's percentages) plus salary adjustments. | Rewriting the state store's tables on refresh: their append-only ledger triggers exist for app-made moves, and MFL wins makes them wrong for truth. |
+| L2 | **Refresh replaces the mirror whole,** in one transaction, from fetches that all go through the archive. If the content matches what is held, nothing is written and the refresh reports "unchanged". The rulebook refresh promotes the new version (MFL wins), which brings in the franchise names. Refresh runs at launch and from a button. The players list is pulled at most once a day. | Field-by-field merging: there is nothing local to preserve, because truth is MFL's. |
+| L3 | **The season comes from MFL.** It is the newest year in the league export's `history` for this league. `ingestion.SeasonYear` is deleted. The phase is derived from MFL's week settings. | A configured year: it went stale, and the app ended up with two sources for the season. |
+| L4 | **What-if keeps the existing machinery, isolated, at placeholder depth.** The state store and coordinator move to their own file, `whatif.db`, seeded from the mirror by the seed path they already have. Transact and Trade read it. One "Reset to MFL" reseeds it. A refresh leaves it alone, and it shows the MFL time it was built from. Nothing else is built. | Named plans (deferred). A scenario column across the coordinator's tables: invasive, for a placeholder. |
+| L5 | **A fresh live database.** After the Claude-OS gate, the two test-shaped databases are archived (logged per the move convention) and Christopher's first launch builds the league from MFL. `history.db` is kept. | |
+
+Injuries move to Stage 4 as a measure (R10) rather than into the mirror: they are facts about a
+player and a week, which is what history holds.
+
 **Gate:**
 - Rosters and cap for all 32 teams match MFL. The app's comparison is spot-checked by Christopher
   on several franchises.
