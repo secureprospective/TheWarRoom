@@ -37,22 +37,23 @@ func TestLive_PlayerScoresFetch(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Second)
 	defer cancel()
 
-	records, err := Fetch(ctx, c, ingestion.SeasonYear, ingestion.LeagueID, "2025")
+	batch, err := Fetch(ctx, c, ingestion.SeasonYear, ingestion.LeagueID, 2025)
 	if err != nil {
 		t.Fatalf("Fetch against live MFL: %v", err)
 	}
-	if len(records) < 500 {
-		t.Fatalf("got %d records, want a populated completed-season export (recon saw 1650)", len(records))
+	if len(batch.Facts) < 500 || len(batch.BodySHA256) != 64 {
+		t.Fatalf("got %d facts (sha %q), want a populated completed-season export (recon saw 1650)",
+			len(batch.Facts), batch.BodySHA256)
 	}
 
 	var top float64
-	for _, r := range records {
-		if r.Week != "YTD" {
-			t.Fatalf("record %s has week %q, want the requested YTD aggregate", r.ID, r.Week)
+	for _, r := range batch.Facts {
+		if r.Season != 2025 || r.Week != 0 || r.Field != Field {
+			t.Fatalf("fact %+v, want season 2025, week 0, field %s", r, Field)
 		}
-		v, perr := strconv.ParseFloat(r.Score, 64)
+		v, perr := strconv.ParseFloat(r.Raw, 64)
 		if perr != nil {
-			t.Fatalf("record %s has non-numeric score %q despite Validate", r.ID, r.Score)
+			t.Fatalf("record %s has non-numeric score %q despite Validate", r.ID, r.Raw)
 		}
 		if v > top {
 			top = v
@@ -61,5 +62,5 @@ func TestLive_PlayerScoresFetch(t *testing.T) {
 	if top < 100 || top > 1500 {
 		t.Fatalf("top YTD score %v outside plausible fantasy band [100,1500]", top)
 	}
-	t.Logf("live playerScores: %d records, top YTD %v", len(records), top)
+	t.Logf("live playerScores: %d facts, top YTD %v", len(batch.Facts), top)
 }

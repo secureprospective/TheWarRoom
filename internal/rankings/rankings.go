@@ -1,30 +1,41 @@
 // Package rankings scores the league (M1). For every rostered player it assembles engine
 // inputs through composition, runs the pipeline with the position's rubric, and writes the
-// batch through output.Writer stamped with the rulebook's active config version. It reads
-// several stores but writes only through that one Writer.
+// result as one scoring run in history. A run reads params from one frozen snapshot and facts
+// from the history features, so it records exactly what it scored with.
 //
-// BasePoints is a labeled placeholder: a completed season's fantasy points in the league's own
-// scoring, passed in as a map until a real L2 base exists.
+// BasePoints is a labeled placeholder: the last completed season's fantasy points in the
+// league's own scoring, read from the outcome.fantasy_points measure until a real L2 base exists.
 //
 // Data policy:
 //   - no players-DB record, an aggregate, or a FLAG position: excluded, with a reason
 //   - no birthdate: excluded, because a faked age would silently corrupt L3 decay
-//   - no season score (mostly rookies): scored with BasePoints 0 and counted in the report
+//   - no base points (mostly rookies): scored with BasePoints 0 and counted in the report
 package rankings
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/composition"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
-	"github.com/secureprospective/TheWarRoom/internal/output"
 	"github.com/secureprospective/TheWarRoom/internal/scouting"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
+
+// BaseMeasure is where the board's base points come from.
+const BaseMeasure = "outcome.fantasy_points"
+
+// BoardMeasures are the measures the M1 model reads from history.
+func BoardMeasures() []string { return []string{BaseMeasure} }
 
 // Directory resolves a rostered mfl id to its players-DB facts. normalize.Lookup
 // satisfies it.
@@ -32,42 +43,49 @@ type Directory interface {
 	Facts(mflID string) (normalize.PlayerFacts, bool)
 }
 
-// ConfigSource supplies the active rulebook version the batch is stamped with.
-type ConfigSource interface {
-	ActiveVersion(ctx context.Context) (int, error)
+// History is what a scoring pass needs from the history store.
+type History interface {
+	Features(ctx context.Context, q history.FeatureQuery) ([]history.Feature, error)
+	WriteRun(ctx context.Context, nr history.NewRun) (history.Run, bool, error)
 }
 
 // Registry maps a position to its Layer-4 rubric. An unregistered position falls back to
 // identity L4.
 type Registry map[domain.Position]engine.Layer4
 
-// Runner runs one scoring pass. It holds read surfaces plus output.Writer and cannot change
-// league state.
+// Runner runs scoring passes. It reads league state and writes only scoring runs.
 type Runner struct {
-	state state.Reader
-	dir   Directory
-	scout ScoutingDirectory
-	base  map[string]float64 // mflID → season fantasy points (L2 placeholder)
-	cfg   ConfigSource
-	out   output.Writer
-	asm   *composition.Assembler
-	reg   Registry
+	state  state.Reader
+	dir    Directory
+	scout  ScoutingDirectory
+	caps   composition.CapReader
+	hist   History
+	reg    Registry
+	engine string
 }
 
-// New wires a Runner. Every dependency is required. An empty MapScoutingDirectory is legal
-// (no scouting this pass); a nil one is a wiring error.
-func New(st state.Reader, dir Directory, scout ScoutingDirectory, base map[string]float64, cfg ConfigSource,
-	out output.Writer, asm *composition.Assembler, reg Registry) (*Runner, error) {
-	if st == nil || dir == nil || scout == nil || cfg == nil || out == nil || asm == nil || reg == nil {
-		// A nil Registry would score every position as identity L4 and freeze the wrong board, so
-		// it is refused; an empty Registry{} is a deliberate choice and allowed.
-		return nil, fmt.Errorf("rankings: nil dependency (state=%t dir=%t scout=%t cfg=%t out=%t asm=%t reg=%t)",
-			st != nil, dir != nil, scout != nil, cfg != nil, out != nil, asm != nil, reg != nil)
+// New wires a Runner. engine is the build label recorded on every run. An empty
+// MapScoutingDirectory is legal (no scouting this pass); a nil one is a wiring error.
+func New(st state.Reader, dir Directory, scout ScoutingDirectory, caps composition.CapReader,
+	hist History, reg Registry, engine string) (*Runner, error) {
+	if st == nil || dir == nil || scout == nil || caps == nil || hist == nil || reg == nil || engine == "" {
+		// A nil Registry would score every position as identity L4; an empty Registry{} is a
+		// deliberate choice and allowed.
+		return nil, fmt.Errorf("rankings: missing dependency (state=%t dir=%t scout=%t caps=%t history=%t reg=%t engine=%t)",
+			st != nil, dir != nil, scout != nil, caps != nil, hist != nil, reg != nil, engine != "")
 	}
-	if base == nil {
-		return nil, fmt.Errorf("rankings: nil BasePoints map — the L2 placeholder source is required (an empty league of zeros must be deliberate, not a wiring accident)")
-	}
-	return &Runner{state: st, dir: dir, scout: scout, base: base, cfg: cfg, out: out, asm: asm, reg: reg}, nil
+	return &Runner{state: st, dir: dir, scout: scout, caps: caps, hist: hist, reg: reg, engine: engine}, nil
+}
+
+// RunSpec is one pass. AsOf bounds the facts read; ages are taken at the start of AsOf's UTC
+// day, so passes on the same day with the same facts score the same board. Measures are what
+// the model reads: BoardMeasures for the board, fewer for a rebalance proposal.
+type RunSpec struct {
+	Kind     history.RunKind
+	Season   int
+	AsOf     time.Time
+	Params   params.Set
+	Measures []string
 }
 
 // Exclusion is a rostered player the pass could not score, with the reason. The UI shows
@@ -81,50 +99,47 @@ type Exclusion struct {
 	Reason        string `json:"reason"`
 }
 
-// Report is what one pass scored, under which config, and what it skipped or excluded.
+// Report is what one pass scored and which run holds it.
 type Report struct {
-	Season          int         `json:"season"`
-	ConfigVersion   int         `json:"configVersion"`
-	Scored          int         `json:"scored"`          // scored this pass; 0 when skipped
-	SkippedExisting bool        `json:"skippedExisting"` // already scored; nothing written
-	Existing        int         `json:"existing"`
-	ZeroBase        int         `json:"zeroBase"`     // no season score, scored at 0
-	NegativeBase    int         `json:"negativeBase"` // a negative total floored to 0
+	Season int   `json:"season"`
+	RunID  int64 `json:"runID"`
+	// Unchanged means the pass matched the latest run exactly, so nothing was written.
+	Unchanged    bool `json:"unchanged"`
+	Scored       int  `json:"scored"`
+	ZeroBase     int  `json:"zeroBase"`     // no base points, scored at 0
+	NegativeBase int  `json:"negativeBase"` // a negative total floored to 0
+	// MissingMeasures are measures the model reads that no active source feeds: the board is
+	// running on a reduced set.
+	MissingMeasures []string    `json:"missingMeasures"`
 	Excluded        []Exclusion `json:"excluded"`
 }
 
-// Run scores every rostered player for season and persists the batch. asOf anchors ages.
-// If this (season, config) is already scored, it reports the existing batch and writes
-// nothing.
-func (r *Runner) Run(ctx context.Context, season int, asOf time.Time) (Report, error) {
-	ver, err := r.cfg.ActiveVersion(ctx)
-	if err != nil {
-		return Report{}, fmt.Errorf("rankings: read active config version: %w", err)
-	}
-	if ver == 0 {
-		return Report{}, fmt.Errorf("rankings: no active scoring config (version 0) — initialize the rulebook before scoring")
-	}
-	rep := Report{Season: season, ConfigVersion: ver}
+// playerInput is everything the engine read for one player; the run's inputs hash covers it.
+type playerInput struct {
+	MFLID string
+	In    engine.PlayerInput
+	Sc    engine.ScoutingInput
+	Cal   engine.Calibration
+}
 
-	existing, err := r.out.Scores(ctx, season, ver)
+// Run scores every rostered player and writes the run.
+func (r *Runner) Run(ctx context.Context, spec RunSpec) (Report, error) {
+	base, err := r.basePoints(ctx, spec)
 	if err != nil {
-		return Report{}, fmt.Errorf("rankings: check existing scores: %w", err)
+		return Report{}, err
 	}
-	if len(existing) > 0 {
-		// Scored stays 0: nothing was scored this pass.
-		rep.SkippedExisting = true
-		rep.Existing = len(existing)
-		return rep, nil
-	}
-
-	var recs []output.ScoreRecord
+	asm := composition.New(spec.Params, r.caps)
+	ageDate := spec.AsOf.UTC().Truncate(24 * time.Hour)
+	rep := Report{Season: spec.Season}
+	var scores []history.Score
+	var inputs []playerInput
 	for _, fid := range r.state.Franchises() {
 		roster, ok := r.state.Roster(fid)
 		if !ok {
 			return Report{}, fmt.Errorf("rankings: franchise %q listed but has no roster (store drift)", fid)
 		}
 		for _, p := range roster {
-			rec, excl, origin := r.scorePlayer(fid, p, asOf)
+			sc, in, excl, origin := r.scorePlayer(asm, base, fid, p, ageDate)
 			if excl != nil {
 				rep.Excluded = append(rep.Excluded, *excl)
 				continue
@@ -136,18 +151,57 @@ func (r *Runner) Run(ctx context.Context, season int, asOf time.Time) (Report, e
 				rep.NegativeBase++
 			case baseReal:
 			}
-			recs = append(recs, rec)
+			scores = append(scores, sc)
+			inputs = append(inputs, in)
 		}
 	}
-	if len(recs) == 0 {
-		return Report{}, fmt.Errorf("rankings: zero scorable players across %d franchises — refusing to persist an empty league", len(r.state.Franchises()))
+	if len(scores) == 0 {
+		return Report{}, fmt.Errorf("rankings: zero scorable players across %d franchises — refusing to write an empty board", len(r.state.Franchises()))
 	}
-
-	if err := r.out.Write(ctx, season, ver, recs); err != nil {
-		return Report{}, fmt.Errorf("rankings: persist %d scores (season %d, config %d): %w", len(recs), season, ver, err)
+	hash, err := inputsHash(inputs, rep.Excluded)
+	if err != nil {
+		return Report{}, err
 	}
-	rep.Scored = len(recs)
+	run, written, err := r.hist.WriteRun(ctx, history.NewRun{
+		Kind: spec.Kind, Season: spec.Season, AsOf: spec.AsOf, Engine: r.engine, InputsHash: hash, Scores: scores,
+		Params: history.ParamSet{Params: spec.Params.Values(), Measures: spec.Measures},
+	})
+	if err != nil {
+		return Report{}, fmt.Errorf("rankings: write %d scores (season %d): %w", len(scores), spec.Season, err)
+	}
+	rep.RunID, rep.Unchanged, rep.Scored, rep.MissingMeasures = run.ID, !written, len(scores), run.MissingMeasures
 	return rep, nil
+}
+
+// basePoints reads the last completed season's fantasy points when the model reads them.
+func (r *Runner) basePoints(ctx context.Context, spec RunSpec) (map[string]float64, error) {
+	base := map[string]float64{}
+	if !slices.Contains(spec.Measures, BaseMeasure) {
+		return base, nil
+	}
+	feats, err := r.hist.Features(ctx, history.FeatureQuery{
+		AsOf: spec.AsOf, Season: spec.Season - 1, Measures: []string{BaseMeasure}})
+	if err != nil {
+		return nil, fmt.Errorf("rankings: read base points: %w", err)
+	}
+	for _, f := range feats {
+		base[f.PlayerID] = f.Value
+	}
+	return base, nil
+}
+
+// inputsHash is the sha256 of every player's engine input, in roster order, plus who was
+// excluded and why.
+func inputsHash(inputs []playerInput, excluded []Exclusion) (string, error) {
+	enc, err := json.Marshal(struct {
+		Inputs   []playerInput
+		Excluded []Exclusion
+	}{inputs, excluded})
+	if err != nil {
+		return "", fmt.Errorf("rankings: encode inputs: %w", err)
+	}
+	sum := sha256.Sum256(enc)
+	return hex.EncodeToString(sum[:]), nil
 }
 
 // baseOrigin records where BasePoints came from, so the report can tell an expected rookie
@@ -155,34 +209,34 @@ func (r *Runner) Run(ctx context.Context, season int, asOf time.Time) (Report, e
 type baseOrigin int
 
 const (
-	baseReal     baseOrigin = iota // a real YTD total fed through
-	baseAbsent                     // no YTD record → 0
-	baseNegative                   // negative YTD total → floored to 0
+	baseReal     baseOrigin = iota // a real season total fed through
+	baseAbsent                     // no base points → 0
+	baseNegative                   // negative season total → floored to 0
 )
 
-// scorePlayer returns either a ScoreRecord or a user-facing Exclusion for one player, plus
-// where its BasePoints came from.
-func (r *Runner) scorePlayer(fid string, p state.PlayerState, asOf time.Time) (output.ScoreRecord, *Exclusion, baseOrigin) {
+// scorePlayer returns either a score and the inputs it came from, or a user-facing Exclusion,
+// plus where its BasePoints came from.
+func (r *Runner) scorePlayer(asm *composition.Assembler, base map[string]float64, fid string,
+	p state.PlayerState, ageDate time.Time) (history.Score, playerInput, *Exclusion, baseOrigin) {
+	exclude := func(name, reason string) (history.Score, playerInput, *Exclusion, baseOrigin) {
+		return history.Score{}, playerInput{}, &Exclusion{MFLID: p.MFLID, Name: name, FranchiseID: fid, Reason: reason}, baseReal
+	}
 	facts, ok := r.dir.Facts(p.MFLID)
 	if !ok {
-		return output.ScoreRecord{}, &Exclusion{MFLID: p.MFLID, FranchiseID: fid,
-			Reason: "not in the players database (aggregate or unknown id)"}, baseReal
+		return exclude("", "not in the players database (aggregate or unknown id)")
 	}
 	if facts.Position == domain.PosFlag {
-		return output.ScoreRecord{}, &Exclusion{MFLID: p.MFLID, Name: facts.Name, FranchiseID: fid,
-			Reason: "unclassified position (FLAG) — resolve before scoring"}, baseReal
+		return exclude(facts.Name, "unclassified position (FLAG) — resolve before scoring")
 	}
 	if !facts.HasBirthdate {
-		return output.ScoreRecord{}, &Exclusion{MFLID: p.MFLID, Name: facts.Name, FranchiseID: fid,
-			Reason: "missing birthdate — age is a required engine input; a faked age would corrupt L3 decay"}, baseReal
+		return exclude(facts.Name, "missing birthdate — age is a required engine input; a faked age would corrupt L3 decay")
 	}
-	age := yearsBetween(time.Unix(facts.Birthdate, 0).UTC(), asOf)
+	age := yearsBetween(time.Unix(facts.Birthdate, 0).UTC(), ageDate)
 	if age <= 0 {
-		return output.ScoreRecord{}, &Exclusion{MFLID: p.MFLID, Name: facts.Name, FranchiseID: fid,
-			Reason: fmt.Sprintf("implausible age %.1f from birthdate — players-DB data error", age)}, baseReal
+		return exclude(facts.Name, fmt.Sprintf("implausible age %.1f from birthdate — players-DB data error", age))
 	}
 
-	basePts, hasBase := r.base[p.MFLID]
+	basePts, hasBase := base[p.MFLID]
 	origin := baseReal
 	if !hasBase {
 		origin = baseAbsent
@@ -208,17 +262,15 @@ func (r *Runner) scorePlayer(fid string, p state.PlayerState, asOf time.Time) (o
 	}
 	spec.Position = composition.ResolveRubricPosition(spec) // no snap share wired → passthrough today
 
-	in, sc, cal, err := r.asm.Assemble(spec)
+	in, sc, cal, err := asm.Assemble(spec)
 	if err != nil {
-		return output.ScoreRecord{}, &Exclusion{MFLID: p.MFLID, Name: facts.Name, FranchiseID: fid,
-			Reason: fmt.Sprintf("assemble: %v", err)}, baseReal
+		return exclude(facts.Name, fmt.Sprintf("assemble: %v", err))
 	}
 	res, err := engine.NewPipeline(r.reg[spec.Position]).Score(in, sc, cal)
 	if err != nil {
-		return output.ScoreRecord{}, &Exclusion{MFLID: p.MFLID, Name: facts.Name, FranchiseID: fid,
-			Reason: fmt.Sprintf("score: %v", err)}, baseReal
+		return exclude(facts.Name, fmt.Sprintf("score: %v", err))
 	}
-	return output.ScoreRecord{MFLID: p.MFLID, Result: res}, nil, origin
+	return history.Score{MFLID: p.MFLID, Result: res}, playerInput{MFLID: p.MFLID, In: in, Sc: sc, Cal: cal}, nil, origin
 }
 
 // applyScouting copies each signal the Profile carries into the spec, gated per field. An

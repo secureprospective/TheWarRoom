@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/m2service"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 // m2Timeout bounds GetPowerRankings: one MFL standings fetch plus a read of the M1 board.
@@ -76,13 +77,15 @@ func (a *App) GetPowerRankings(weight float64, aggMode string) PowerRankingsResu
 	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
 	defer cancel()
 
-	ver, err := a.rulebook.ActiveVersion(ctx)
+	var scores []history.Score
+	run, ok, err := a.latestBoard(ctx)
 	if err != nil {
 		return fail(err)
 	}
-	scores, err := a.output.Reader().Scores(ctx, a.season, ver)
-	if err != nil {
-		return fail(err)
+	if ok {
+		if scores, err = a.history.RunScores(ctx, run.ID); err != nil {
+			return fail(err)
+		}
 	}
 
 	standings, fresh, err := a.standingsOrCache(ctx)

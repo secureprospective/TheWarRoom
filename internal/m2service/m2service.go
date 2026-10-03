@@ -13,8 +13,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
-	"github.com/secureprospective/TheWarRoom/internal/output"
 	"github.com/secureprospective/TheWarRoom/internal/powerrankings"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -77,7 +77,7 @@ type Board struct {
 // display columns.
 func (s *Service) BuildBoard(
 	standings []leaguestandings.RawStanding,
-	scores []output.SeasonScore,
+	scores []history.Score,
 	weight float64,
 	aggMode string,
 ) (Board, error) {
@@ -132,7 +132,7 @@ func (s *Service) starterCount() int {
 // standings define the franchise set; a franchise with no scored players contributes 0.
 func (s *Service) buildBlendInputs(
 	standings []leaguestandings.RawStanding,
-	scores []output.SeasonScore,
+	scores []history.Score,
 	mode string,
 	starterN int,
 ) ([]powerrankings.Input, map[string]parsedStanding, error) {

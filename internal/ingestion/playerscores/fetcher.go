@@ -1,5 +1,6 @@
-// Package playerscores fetches season fantasy-point totals from MFL. Its one consumer is the
-// M1 BasePoints placeholder, which must be labeled as a proxy wherever it shows.
+// Package playerscores fetches season fantasy-point totals from MFL as a batch for the history
+// store (measure outcome.fantasy_points). Their one consumer is the M1 BasePoints placeholder,
+// which must be labeled as a proxy wherever it shows.
 //
 // The score season is separate from the league year: the league lives at /2026/, but M1 needs
 // the last completed season, so it asks for YEAR=2025 through the 2026 host. W=YTD returns the
@@ -8,12 +9,16 @@ package playerscores
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 )
 
@@ -57,23 +62,46 @@ type scoreBlock struct {
 	Week  string `json:"week"`
 }
 
-// Fetch returns scoreYear's totals through the year-league host. It checks MFL's error
-// envelope before decoding, because an outage read as "no scores" would zero every player's
-// BasePoints.
-func Fetch(ctx context.Context, c *mfl.Client, year, leagueID, scoreYear string) ([]RawScore, error) {
-	if strings.TrimSpace(scoreYear) == "" {
-		return nil, fmt.Errorf("playerscores: score year is required")
+// Source and Field name this export in sources.csv and source_fields.csv.
+const (
+	Source = "mfl"
+	Field  = "playerScores.score"
+)
+
+// Fetch returns scoreYear's totals through the year-league host, as a batch linked to the body
+// it came from. It checks MFL's error envelope before decoding, because an outage read as "no
+// scores" would zero every player's BasePoints.
+func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string, scoreYear int) (measures.Batch, error) {
+	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
+		return measures.Batch{}, fmt.Errorf("playerscores: discover host: %w", err)
 	}
-	env, err := ingestion.FetchLeagueExport[scoresEnvelope](ctx, c, "playerScores", year, leagueID,
-		map[string]string{"W": "YTD", "YEAR": scoreYear})
+	body, err := ingestion.LeagueExport(ctx, c, "playerScores", year, leagueID,
+		map[string]string{"W": "YTD", "YEAR": strconv.Itoa(scoreYear)})
 	if err != nil {
-		return nil, fmt.Errorf("playerscores: %w", err)
+		return measures.Batch{}, fmt.Errorf("playerscores: %w", err)
 	}
-	out, err := flatten(ctx, env)
+	var env scoresEnvelope
+	if err := json.Unmarshal(body, &env); err != nil {
+		return measures.Batch{}, fmt.Errorf("playerscores: decode: %w", err)
+	}
+	scores, err := flatten(ctx, env)
 	if err != nil {
-		return nil, err
+		return measures.Batch{}, err
 	}
-	return guardNonEmpty(out)
+	if scores, err = guardNonEmpty(scores); err != nil {
+		return measures.Batch{}, err
+	}
+	sum := sha256.Sum256(body)
+	return Batch(scores, scoreYear, hex.EncodeToString(sum[:])), nil
+}
+
+// Batch turns validated season totals into facts for the history store.
+func Batch(scores []RawScore, season int, bodySHA256 string) measures.Batch {
+	b := measures.Batch{Source: Source, BodySHA256: bodySHA256, Facts: make([]measures.Fact, len(scores))}
+	for i, r := range scores {
+		b.Facts[i] = measures.Fact{IDType: measures.IDTypeMFL, ID: r.ID, Season: season, Field: Field, Raw: r.Score}
+	}
+	return b
 }
 
 // guardNonEmpty runs after the aggregate filter: a payload of only aggregates would pass an

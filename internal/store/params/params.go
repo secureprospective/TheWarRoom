@@ -11,6 +11,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -65,20 +66,52 @@ func (s *Store) effectiveLocked(key, position string) (float64, bool) {
 	return 0, false
 }
 
-// value returns the effective value for a parameter under a single read lock.
-func (s *Store) value(key, position string) (float64, bool) {
+// Snapshot freezes every effective value, overrides applied. A scoring run reads params only
+// through one Snapshot, so the values it used are exactly the values it records.
+func (s *Store) Snapshot() Set {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.effectiveLocked(key, position)
+	values := make(map[string]float64, len(s.defs))
+	for k, d := range s.defs {
+		v, _ := s.effectiveLocked(d.Key, d.Position)
+		values[k] = v
+	}
+	return Set{values: values}
 }
 
-// GetCapTiers returns the cap-tier boundaries, override applied. Both are read under one lock
-// so the pair always comes from one snapshot.
-func (s *Store) GetCapTiers() (CapTiers, error) {
-	s.mu.RLock()
-	cold, coldOK := s.effectiveLocked(KeyCapTierColdCeiling, global)
-	hot, hotOK := s.effectiveLocked(KeyCapTierHotFloor, global)
-	s.mu.RUnlock()
+// Set is a frozen copy of the effective parameters. The zero Set holds nothing.
+type Set struct {
+	values map[string]float64 // keyed defKey(key, position)
+}
+
+// SetOf builds a Set from Values-style keys. It is how a stored or proposed param set is scored.
+func SetOf(values map[string]float64) Set {
+	out := make(map[string]float64, len(values))
+	for k, v := range values {
+		key, pos, _ := strings.Cut(k, "@")
+		out[defKey(key, pos)] = v
+	}
+	return Set{values: out}
+}
+
+// Values returns the set keyed "key" for a league-wide parameter and "key@POS" for a
+// per-position one: the form a scoring run stores.
+func (p Set) Values() map[string]float64 {
+	out := make(map[string]float64, len(p.values))
+	for k, v := range p.values {
+		key, pos, _ := strings.Cut(k, "\x00")
+		if pos != global {
+			key += "@" + pos
+		}
+		out[key] = v
+	}
+	return out
+}
+
+// GetCapTiers returns the cap-tier boundaries.
+func (p Set) GetCapTiers() (CapTiers, error) {
+	cold, coldOK := p.values[defKey(KeyCapTierColdCeiling, global)]
+	hot, hotOK := p.values[defKey(KeyCapTierHotFloor, global)]
 	if !coldOK {
 		return CapTiers{}, fmt.Errorf("params: missing %s", KeyCapTierColdCeiling)
 	}
@@ -88,10 +121,9 @@ func (s *Store) GetCapTiers() (CapTiers, error) {
 	return CapTiers{ColdCeiling: cold, HotFloor: hot}, nil
 }
 
-// GetGlobal returns a league-wide parameter, override applied. An unknown key is an error,
-// never a silent 0.
-func (s *Store) GetGlobal(key string) (float64, error) {
-	v, ok := s.value(key, global)
+// GetGlobal returns a league-wide parameter. An unknown key is an error, never a silent 0.
+func (p Set) GetGlobal(key string) (float64, error) {
+	v, ok := p.values[defKey(key, global)]
 	if !ok {
 		return 0, fmt.Errorf("params: unknown global parameter %q", key)
 	}

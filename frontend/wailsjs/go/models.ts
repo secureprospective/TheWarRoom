@@ -604,6 +604,20 @@ export namespace main {
 	}
 	
 	
+	export class MissingMeasure {
+	    name: string;
+	    meaning: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MissingMeasure(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.meaning = source["meaning"];
+	    }
+	}
 	export class MoveDTO {
 	    mflID: string;
 	    toFranchiseID: string;
@@ -895,7 +909,9 @@ export namespace main {
 	    warning: string;
 	    label: string;
 	    season: number;
-	    configVersion: number;
+	    runID: number;
+	    asOf: string;
+	    missingMeasures: MissingMeasure[];
 	    freshness: Freshness;
 	    rows: RankRow[];
 	
@@ -910,7 +926,9 @@ export namespace main {
 	        this.warning = source["warning"];
 	        this.label = source["label"];
 	        this.season = source["season"];
-	        this.configVersion = source["configVersion"];
+	        this.runID = source["runID"];
+	        this.asOf = source["asOf"];
+	        this.missingMeasures = this.convertValues(source["missingMeasures"], MissingMeasure);
 	        this.freshness = this.convertValues(source["freshness"], Freshness);
 	        this.rows = this.convertValues(source["rows"], RankRow);
 	    }
@@ -1014,6 +1032,7 @@ export namespace main {
 	export class ScoreLeagueResult {
 	    ok: boolean;
 	    error: string;
+	    warning: string;
 	    label: string;
 	    report: rankings.Report;
 	
@@ -1025,6 +1044,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ok = source["ok"];
 	        this.error = source["error"];
+	        this.warning = source["warning"];
 	        this.label = source["label"];
 	        this.report = this.convertValues(source["report"], rankings.Report);
 	    }
@@ -1277,12 +1297,12 @@ export namespace rankings {
 	}
 	export class Report {
 	    season: number;
-	    configVersion: number;
+	    runID: number;
+	    unchanged: boolean;
 	    scored: number;
-	    skippedExisting: boolean;
-	    existing: number;
 	    zeroBase: number;
 	    negativeBase: number;
+	    missingMeasures: string[];
 	    excluded: Exclusion[];
 	
 	    static createFrom(source: any = {}) {
@@ -1292,12 +1312,12 @@ export namespace rankings {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.season = source["season"];
-	        this.configVersion = source["configVersion"];
+	        this.runID = source["runID"];
+	        this.unchanged = source["unchanged"];
 	        this.scored = source["scored"];
-	        this.skippedExisting = source["skippedExisting"];
-	        this.existing = source["existing"];
 	        this.zeroBase = source["zeroBase"];
 	        this.negativeBase = source["negativeBase"];
+	        this.missingMeasures = source["missingMeasures"];
 	        this.excluded = this.convertValues(source["excluded"], Exclusion);
 	    }
 	

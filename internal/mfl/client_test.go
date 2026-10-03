@@ -56,16 +56,15 @@ func (t *redirectTransport) builtHosts() []string {
 // schedule and a non-throttling limiter, so tests are deterministic and quick.
 func newTestClient(t *testing.T, srv *httptest.Server) (*Client, *redirectTransport) {
 	t.Helper()
-	c, err := New("api", 1000)
-	if err != nil {
-		t.Fatalf("New: unexpected error: %v", err)
-	}
 	target, err := url.Parse(srv.URL)
 	if err != nil {
 		t.Fatalf("parse test server URL: %v", err)
 	}
 	rt := &redirectTransport{target: target, inner: http.DefaultTransport}
-	c.http = &http.Client{Transport: rt, Timeout: 5 * time.Second}
+	c, err := New("api", 1000, WithTransport(rt))
+	if err != nil {
+		t.Fatalf("New: unexpected error: %v", err)
+	}
 	c.backoffs = []time.Duration{time.Millisecond, time.Millisecond, time.Millisecond}
 	return c, rt
 }

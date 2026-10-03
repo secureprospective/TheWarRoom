@@ -5,9 +5,10 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
-	"github.com/secureprospective/TheWarRoom/internal/output"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -68,10 +69,10 @@ func TestBuildBoard_AggregatesBlendsAndJoins(t *testing.T) {
 		{FranchiseID: "0001", H2HW: "8", H2HL: "5", AllPlayW: "80", AllPlayL: "40", PF: "1500.5"},
 		{FranchiseID: "0002", H2HW: "6", H2HL: "7", AllPlayW: "60", AllPlayL: "60", PF: "1400.25"},
 	}
-	scores := []output.SeasonScore{
-		{MFLID: "1001", AdjustedScore: 100},
-		{MFLID: "1002", AdjustedScore: 50},
-		{MFLID: "1003", AdjustedScore: 200},
+	scores := []history.Score{
+		score("1001", 100),
+		score("1002", 50),
+		score("1003", 200),
 	}
 
 	board, err := svc.BuildBoard(standings, scores, 0.5, "sum")
@@ -133,7 +134,7 @@ func TestBuildBoard_FranchiseWithNoScoresContributesZero(t *testing.T) {
 		{FranchiseID: "0001"},
 		{FranchiseID: "0002"}, // no players scored for this franchise
 	}
-	scores := []output.SeasonScore{{MFLID: "1001", AdjustedScore: 100}}
+	scores := []history.Score{score("1001", 100)}
 
 	board, err := svc.BuildBoard(standings, scores, 0.5, AggSum)
 	if err != nil {
@@ -197,7 +198,7 @@ func TestBuildBoard_TopNDegradesToSumWithoutStarterCount(t *testing.T) {
 		t.Fatalf("New: %v", err)
 	}
 	standings := []leaguestandings.RawStanding{{FranchiseID: "0001"}}
-	scores := []output.SeasonScore{{MFLID: "1001", AdjustedScore: 42}}
+	scores := []history.Score{score("1001", 42)}
 
 	board, err := svc.BuildBoard(standings, scores, 0.5, AggTopN)
 	if err != nil {
@@ -275,4 +276,8 @@ func TestClampWeight(t *testing.T) {
 			t.Errorf("clampWeight(%v) = %v, want %v", c.in, got, c.want)
 		}
 	}
+}
+
+func score(mflID string, adjusted float64) history.Score {
+	return history.Score{MFLID: mflID, Result: engine.Result{AdjustedScore: adjusted}}
 }

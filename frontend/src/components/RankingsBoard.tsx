@@ -11,9 +11,9 @@ import {
 import { useBoardKeys, useScrollCursorIntoView } from './board/keys';
 import { useInspectorStore } from '../store/inspector';
 
-// RankingsBoard is the M1 module view: the REAL 32-team ranked board read back
-// from the B6 output store. Three client-side lenses over the same persisted
-// rows (the backend never re-sorts; B6's order IS the canonical ranking, carried
+// RankingsBoard is the M1 module view: the REAL 32-team ranked board, read back
+// from the latest board run in history. Three client-side lenses over the same
+// persisted rows (the backend never re-sorts; the run's order IS the canonical ranking, carried
 // by each row's `rank` — client sorting only reorders the display):
 //   - global ranked list, with a position filter
 //   - per-team drill-down (AD-20): pick a franchise, see its players ranked
@@ -40,7 +40,7 @@ import { useInspectorStore } from '../store/inspector';
 const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DT', 'DE', 'LB', 'CB', 'S'] as const;
 
 // Sortable numeric facets (Command Ledger B1: assets.sort col=<...>). The rank
-// column is not sortable — it is the canonical B6 order, always ascending.
+// column is not sortable — it is the run's canonical order, always ascending.
 type SortKey = 'base' | 'adjusted' | 'salary' | 'capEff';
 
 // Grid templates (Session-B §2·3). Narrative/Tactical carry the locked facet map plus the
@@ -143,7 +143,10 @@ export function RankingsBoard() {
         </button>
         {rankings && (
           <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text-tertiary)' }}>
-            season {rankings.season} · rulebook v{rankings.configVersion} · {rows.length} scored
+            season {rankings.season} ·{' '}
+            {rankings.runID > 0
+              ? `board #${rankings.runID} · scored ${new Date(rankings.asOf).toLocaleString()} · ${rows.length} players`
+              : 'no board yet'}
           </span>
         )}
       </div>
@@ -156,14 +159,23 @@ export function RankingsBoard() {
       {rankings?.warning && (
         <div className="twr-banner twr-banner--warn">{rankings.warning}</div>
       )}
+      {/* Reduced set (R11): a lost source never stops the board, but the board must say what it
+          scored without. */}
+      {rankings && rankings.missingMeasures?.length > 0 && (
+        <div className="twr-banner twr-banner--warn">
+          Reduced set: this board scored without{' '}
+          {rankings.missingMeasures.map((m) => m.meaning || m.name).join('; ')} — no active source
+          feeds {rankings.missingMeasures.length === 1 ? 'it' : 'them'}.
+        </div>
+      )}
 
       {/* M1's board is local SQLite, so this is normally silent (local data reads live).
           It is wired anyway so every board answers the freshness question the same way —
           a module that simply omits the signal is indistinguishable from one that is fine. */}
       <FreshnessBar freshness={rankings?.freshness} board="Rankings" />
       {/* No PhaseBar here, deliberately: M2's standings are FINAL once the season ends, but
-          an M1 board is scoring output that can legitimately be re-run under a new rulebook
-          config at any time. Labelling it "final" would be false. */}
+          an M1 board is scoring output that can legitimately be re-scored under new settings
+          at any time. Labelling it "final" would be false. */}
 
       {/* A failed score must NEVER be silent — ScoreReportPanel renders nothing on !ok, which left an
           empty board with no reason (the score's network fetch can fail, or it can score zero). Surface
@@ -305,8 +317,9 @@ export function RankingsBoard() {
   );
 }
 
-// ScoreReportPanel renders the last scoring pass's outcome: skip-if-present,
-// the zero-base count, and EVERY exclusion with its reason — the policy is that
+// ScoreReportPanel renders the last scoring pass's outcome: the run it wrote (or
+// that nothing changed), the zero-base count, any source that failed, and EVERY
+// exclusion with its reason — the policy is that
 // an unscored player is visible, never silently missing from the board.
 function ScoreReportPanel({ report }: { report: main.ScoreLeagueResult }) {
   const rep = report.report;
@@ -314,12 +327,15 @@ function ScoreReportPanel({ report }: { report: main.ScoreLeagueResult }) {
   return (
     <div className="twr-panel">
       <p style={{ margin: 0 }}>
-        {rep.skippedExisting
-          ? `Already scored under rulebook v${rep.configVersion} — ${rep.existing} persisted rows served as-is (append-only; bump the rulebook to re-score).`
-          : `Scored ${rep.scored} players under rulebook v${rep.configVersion} (${rep.zeroBase} with no ${rep.season - 1} YTD record` +
+        {rep.unchanged
+          ? `No change: settings, inputs and scores match board #${rep.runID}, so nothing new was written.`
+          : `Scored ${rep.scored} players as board #${rep.runID} (${rep.zeroBase} with no ${rep.season - 1} YTD record` +
             (rep.negativeBase > 0 ? `; ${rep.negativeBase} negative totals floored to 0 — check the proxy data` : '') +
             ').'}
       </p>
+      {report.warning && (
+        <p style={{ margin: '4px 0 0', color: 'var(--amber-base)' }}>{report.warning}</p>
+      )}
       {rep.excluded && rep.excluded.length > 0 && (
         <details style={{ marginTop: 4 }}>
           <summary style={{ cursor: 'pointer', color: 'var(--amber-base)' }}>

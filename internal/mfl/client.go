@@ -30,13 +30,22 @@ type Client struct {
 // nothing, and NaN slips past rps <= 0 and makes Wait block forever.
 var ErrNonPositiveRate = errors.New("mfl: requests-per-second must be a positive, real number")
 
+// Option configures a Client at construction.
+type Option func(*Client)
+
+// WithTransport sends every request through rt: the app's archive recorder, or a test double
+// serving canned MFL responses.
+func WithTransport(rt http.RoundTripper) Option {
+	return func(c *Client) { c.http.Transport = rt }
+}
+
 // New creates a Client at rps requests per second. An empty host means the canonical api
 // host until DiscoverHost sets the league's.
-func New(host string, rps float64) (*Client, error) {
+func New(host string, rps float64, opts ...Option) (*Client, error) {
 	if rps <= 0 || math.IsNaN(rps) {
 		return nil, fmt.Errorf("%w: got %g", ErrNonPositiveRate, rps)
 	}
-	return &Client{
+	c := &Client{
 		http:    &http.Client{Timeout: 15 * time.Second},
 		limiter: rate.NewLimiter(rate.Limit(rps), 1),
 		host:    host,
@@ -45,7 +54,11 @@ func New(host string, rps float64) (*Client, error) {
 			1 * time.Second, 2 * time.Second, 4 * time.Second, 8 * time.Second,
 			16 * time.Second, 32 * time.Second, 60 * time.Second,
 		},
-	}, nil
+	}
+	for _, o := range opts {
+		o(c)
+	}
+	return c, nil
 }
 
 // Do is the transport primitive: wait on the rate limit, execute, back off on 429. It and

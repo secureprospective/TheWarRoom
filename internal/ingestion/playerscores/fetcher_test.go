@@ -115,3 +115,14 @@ func TestFlatten_WrongWeekEchoFailsLoud(t *testing.T) {
 		t.Fatal("flatten should reject a non-YTD week echo, got nil")
 	}
 }
+
+func TestBatchMapsScoresToSeasonFacts(t *testing.T) {
+	b := Batch([]RawScore{{ID: "0042", Score: "12.5", Week: "YTD"}}, 2025, "abc")
+	if b.Source != "mfl" || b.BodySHA256 != "abc" || len(b.Facts) != 1 {
+		t.Fatalf("batch = %+v", b)
+	}
+	f := b.Facts[0]
+	if f.IDType != "mfl" || f.ID != "0042" || f.Season != 2025 || f.Week != 0 || f.Field != Field || f.Raw != "12.5" {
+		t.Fatalf("fact = %+v", f)
+	}
+}

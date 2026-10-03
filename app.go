@@ -10,15 +10,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
+	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
-	"github.com/secureprospective/TheWarRoom/internal/output"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -30,13 +32,15 @@ import (
 type App struct {
 	//nolint:containedctx // Wails IPC methods get no per-call context; this is the app-lifetime one, and each method derives a bounded context from it
 	ctx         context.Context
-	pools       *db.Pools
+	pools       *db.Pools // thewarroom.db: the MFL mirror and app settings
+	histPools   *db.Pools // history.db: everything that cannot be rebuilt
 	params      *params.Store
 	rulebook    *rulebook.Store
 	state       *state.Store
-	output      *output.Store
+	history     *history.Store
 	coordinator *transactions.Coordinator // the only holder of the state Writer
 	mflClient   *mfl.Client               // shared, so rate limit and host discovery are process-wide
+	fetches     *archive.Transport        // every outbound HTTP request goes through it
 	season      int
 	startupErr  error    // startup failure; shown in the shell through AppInfo
 	lockFile    *os.File // single-instance lock, held until shutdown
@@ -113,21 +117,11 @@ func (a *App) startup(ctx context.Context) {
 		log.Printf("the war room: WARNING disk logging unavailable: %v", lerr)
 	}
 
-	path := filepath.Join(dir, dbFileName(isDevBuild()))
-	// One running copy per database: two processes writing one ledger is the hazard.
-	lock, err := acquireInstanceLock(path)
+	path, hist, err := a.openDatabases(ctx, dir)
 	if err != nil {
 		a.startupErr = fmt.Errorf("startup: %w", err)
 		return
 	}
-	a.lockFile = lock
-
-	pools, err := db.Open(ctx, path)
-	if err != nil {
-		a.startupErr = fmt.Errorf("startup: open database: %w", err)
-		return
-	}
-	a.pools = pools
 
 	season, err := strconv.Atoi(ingestion.SeasonYear)
 	if err != nil {
@@ -135,7 +129,7 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 	a.season = season
-	client, err := mfl.New("api", 2)
+	client, err := mfl.New("api", 2, mfl.WithTransport(a.fetches))
 	if err != nil {
 		a.startupErr = fmt.Errorf("startup: mfl client: %w", err)
 		return
@@ -144,11 +138,36 @@ func (a *App) startup(ctx context.Context) {
 
 	log.Printf("the war room: starting %s season %d, db %s", buildLabel(), season, path)
 	began := time.Now()
-	if err := a.initStoreFloor(ctx); err != nil {
+	if err := a.initStoreFloor(ctx, hist); err != nil {
 		a.startupErr = err
 		return
 	}
 	log.Printf("the war room: ready in %s", time.Since(began).Round(time.Millisecond))
+}
+
+// openDatabases takes the instance lock and opens both databases. Every fetch after this goes
+// through the history archive. It returns the league database's path for the startup log.
+func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.Store, error) {
+	path := filepath.Join(dir, dbFileName("thewarroom", isDevBuild()))
+	// One running copy per database: two processes writing one ledger is the hazard.
+	lock, err := acquireInstanceLock(path)
+	if err != nil {
+		return "", nil, err
+	}
+	a.lockFile = lock
+	if a.pools, err = db.Open(ctx, path); err != nil {
+		return "", nil, fmt.Errorf("open database: %w", err)
+	}
+	reg, err := measures.Embedded()
+	if err != nil {
+		return "", nil, err //nolint:wrapcheck // the registry's errors name the CSV line
+	}
+	if a.histPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("history", isDevBuild()))); err != nil {
+		return "", nil, fmt.Errorf("open history database: %w", err)
+	}
+	hist := history.New(a.histPools, reg)
+	a.fetches = &archive.Transport{Sink: hist}
+	return path, hist, nil
 }
 
 // startupBudget bounds store-floor init. A fresh DB seeds from MFL on this thread, so an
@@ -156,22 +175,22 @@ func (a *App) startup(ctx context.Context) {
 const startupBudget = 2 * time.Minute
 
 // initStoreFloor brings up the stores and the transaction coordinator, logging each step's
-// time so a slow or failed launch shows where it stopped. Stores seed from MFL only on a fresh
-// DB. Fields are assigned only once every step succeeds: IPC methods treat a nil store as
-// "not initialized".
-func (a *App) initStoreFloor(parent context.Context) error {
+// time so a slow or failed launch shows where it stopped. History comes first, because every
+// fetch after it is archived there. Stores seed from MFL only on a fresh DB. Fields are assigned
+// only once every step succeeds: IPC methods treat a nil store as "not initialized".
+func (a *App) initStoreFloor(parent context.Context, hist *history.Store) error {
 	ctx, cancel := context.WithTimeout(parent, startupBudget)
 	defer cancel()
 
 	pstore := params.New(a.pools)
 	rb := rulebook.New(a.pools)
 	st := state.New(a.pools, ingestion.LeagueID, a.season, rb)
-	out := output.New(a.pools)
 	var coord *transactions.Coordinator
 	steps := []struct {
 		name string
 		run  func(context.Context) error
 	}{
+		{"history", hist.Initialize},
 		{"params", pstore.Initialize},
 		{"rulebook", func(c context.Context) error {
 			return rb.Initialize(c, league.APISource{Client: a.mflClient, Year: ingestion.SeasonYear, LeagueID: ingestion.LeagueID})
@@ -184,7 +203,6 @@ func (a *App) initStoreFloor(parent context.Context) error {
 				func(c context.Context) (transactions.Directory, error) { return a.directory(c) })
 			return err //nolint:wrapcheck // wrapped below with the step name
 		}},
-		{"output", out.Initialize},
 	}
 	for _, s := range steps {
 		began := time.Now()
@@ -193,14 +211,16 @@ func (a *App) initStoreFloor(parent context.Context) error {
 		}
 		log.Printf("the war room: %s ready in %s", s.name, time.Since(began).Round(time.Millisecond))
 	}
-	a.params, a.rulebook, a.state, a.coordinator, a.output = pstore, rb, st, coord, out
+	a.params, a.rulebook, a.state, a.coordinator, a.history = pstore, rb, st, coord, hist
 	return nil
 }
 
 // shutdown releases the database and the instance lock.
 func (a *App) shutdown(_ context.Context) {
-	if a.pools != nil {
-		_ = a.pools.Close()
+	for _, p := range []*db.Pools{a.pools, a.histPools} {
+		if p != nil {
+			_ = p.Close()
+		}
 	}
 	releaseInstanceLock(a.lockFile)
 }
@@ -221,11 +241,11 @@ func configDir() (string, error) {
 // isDevBuild reports an un-stamped build (plain go build or wails dev).
 func isDevBuild() bool { return version == "dev" }
 
-// dbFileName gives dev builds their own database, so development can never migrate or
-// corrupt the real league ledger.
-func dbFileName(devBuild bool) string {
+// dbFileName gives dev builds their own databases, so development can never migrate or
+// corrupt the real league ledger or its history.
+func dbFileName(base string, devBuild bool) string {
 	if devBuild {
-		return "thewarroom-dev.db"
+		return base + "-dev.db"
 	}
-	return "thewarroom.db"
+	return base + ".db"
 }

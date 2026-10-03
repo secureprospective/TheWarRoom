@@ -36,7 +36,7 @@ type PlayerScoreDTO struct {
 	IsVeteran     bool    `json:"isVeteran"`
 }
 
-// PlayerScoreResult: Found=false means no score row for this id under the current config,
+// PlayerScoreResult: Found=false means no score row for this id on the latest board,
 // which is not an error. Warning reports a names outage; Label is the base-points honesty
 // string every score surface shows.
 type PlayerScoreResult struct {
@@ -48,7 +48,7 @@ type PlayerScoreResult struct {
 	Player  PlayerScoreDTO `json:"player"`
 }
 
-// GetPlayerScore returns one player's stored breakdown for the active scoring config. A names
+// GetPlayerScore returns one player's stored breakdown on the latest board. A names
 // outage warns but still returns the numbers.
 func (a *App) GetPlayerScore(mflID string) PlayerScoreResult {
 	if err := a.m1Ready(); err != nil {
@@ -57,11 +57,14 @@ func (a *App) GetPlayerScore(mflID string) PlayerScoreResult {
 	ctx, cancel := context.WithTimeout(a.ctx, m1Timeout)
 	defer cancel()
 
-	ver, err := a.rulebook.ActiveVersion(ctx)
+	run, ok, err := a.latestBoard(ctx)
 	if err != nil {
 		return PlayerScoreResult{Error: err.Error(), Label: a.proxyLabel()}
 	}
-	s, found, err := a.output.Reader().Score(ctx, a.season, ver, mflID)
+	if !ok {
+		return PlayerScoreResult{OK: true, Found: false, Label: a.proxyLabel()}
+	}
+	s, found, err := a.history.RunScore(ctx, run.ID, mflID)
 	if err != nil {
 		return PlayerScoreResult{Error: err.Error(), Label: a.proxyLabel()}
 	}

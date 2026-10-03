@@ -9,7 +9,7 @@
 // It is a COMPOSITION leaf (Layer 2-adjacent): it imports Layer-1 fetchers
 // (ras, crosswalk) + the scouting/domain/playerid types and PRODUCES a typed
 // domain value, but it does NOT import the engine, any store, the transaction
-// coordinator, the output store, normalize's write side, or database/sql. The
+// coordinator, normalize's write side, or database/sql. The
 // PositionLookup port (defined here) is what keeps the players-DB read out of
 // this package — the app wires it over an existing normalize.Lookup so the
 // assembler is fake-testable with no live DB. The RAS math itself is total and

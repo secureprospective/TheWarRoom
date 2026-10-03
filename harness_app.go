@@ -36,7 +36,7 @@ func (a *App) assembler() (*composition.Assembler, error) {
 	if a.params == nil || a.rulebook == nil {
 		return nil, fmt.Errorf("stores not initialized (params=%t rulebook=%t)", a.params != nil, a.rulebook != nil)
 	}
-	return composition.New(a.params, a.rulebook), nil
+	return composition.New(a.params.Snapshot(), a.rulebook), nil
 }
 
 // RookiesResult is the rookie sandbox payload: ranked rows plus the active Layer-4 mode, so the

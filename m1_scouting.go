@@ -45,7 +45,7 @@ type scoutProfiles = map[playerid.PlayerID]scouting.Profile
 // fetch are different conditions.
 func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (rankings.MapScoutingDirectory, error) {
 	rosterMFLIDs := collectRosterMFLIDs(a.state.Reader())
-	client := &http.Client{Timeout: rasFetchTimeout}
+	client := &http.Client{Timeout: rasFetchTimeout, Transport: a.fetches}
 	adapter := scoutLookupAdapter{lk: lk}
 
 	// One crosswalk fetch, shared by every signal.

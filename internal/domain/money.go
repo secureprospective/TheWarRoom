@@ -7,7 +7,7 @@ import (
 )
 
 // Money is exact US cents. All league money is Money, never float64 (OQ-014), because cap
-// feeds the output store's exact-equality tiebreak. Float appears only by explicit conversion
+// feeds the board's exact-equality tiebreak. Float appears only by explicit conversion
 // at two edges: the L5 cap ratio and display/IPC.
 type Money int64
 
