@@ -1,5 +1,8 @@
 # RESUME — TheWarRoom engineering audit + cleanup/core plan (2026-10-03)
 
+> **CLOSED 2026-10-03 ~12:00.** Both runs ended at GPT usage limits (Bee after S3, Astra after S3); Claude wrote both Sector 4s. Triage and the discussion are done; rulings R1–R9 and the plan are in `Core_Build_Plan_2026-10.md` + `Core_Build_Reasoning_2026-10.md` (commit e7db81b). Next session starts at the plan's Stage 0. This resume is history now.
+
+
 Session driver: Claude (Opus 5.5) on the Beelink. Compact-safe written ~11:20 local.
 Companion (keep reading after this): `~/fleet/runs/warroom-dataflow-2026-10-03/CLAUDE-DIGEST.md`
 — purpose, timeline, locked decisions, the headline finding, in more detail.
