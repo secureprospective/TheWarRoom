@@ -1,7 +1,7 @@
 # System Map
 
 What exists in TheWarRoom and where new code belongs. Update it in the same commit as any new
-package, IPC method or external service. Current as of 2026-10-03 (Stage 1 of
+package, IPC method or external service. Current as of 2026-10-03 (Stage 2 of
 `docs/build-handoffs/Core_Build_Plan_2026-10.md`).
 
 ## Layers and packages
@@ -20,7 +20,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Store | `internal/db` | SQLite pools: one write connection, many read-only ones, one WAL file. |
 | Store | `internal/store/rulebook` | League rules from MFL as immutable versions with one active pointer, plus commissioner overrides. |
 | Store | `internal/store/params` | Engine calibration: shipped defaults plus admin overrides. |
-| Store | `internal/store/state` | Rosters, contracts, the contract-year ledger, dead cap, cap relief, phases, feed, calendar. Append-only ledgers; the transaction coordinator holds the only `Writer`. |
+| Store | `internal/store/state` | Two things behind one `Reader`. **`Mirror`**: the league as MFL states it (season, rosters with contracts, salary adjustments), replaced whole by a refresh; every score surface reads it. **`Store`**: the what-if league in `whatif.db`, seeded from the mirror: rosters, contracts, the contract-year ledger, dead cap, cap relief, phases, feed, calendar. Append-only ledgers; the transaction coordinator holds the only `Writer`. |
 | Store | `internal/store/history` | `history.db`: everything the app cannot rebuild. The fetch archive (`raw_archive`, `fetch_log`), facts per measure appended on change (`observations`, read as of a date through `Features`), source health, and scoring runs with the param set, engine and inputs they used. Append-only, enforced by triggers. |
 | Engine | `internal/engine` | The scoring pipeline as pure functions (L1, L3, L4 dispatch, L5, L6). |
 | Engine | `internal/engine/l4/{offense,defense,kicker,curve}` | The ten position rubrics and the shared S-curve. |
@@ -41,11 +41,12 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 - `database/sql` is confined to `db` and `store`.
 - `transactions/*` handler packages are imported only by `transactions`.
 
-## IPC surface (21 methods on `App`)
+## IPC surface (22 methods on `App`)
 
 | File | Methods |
 |---|---|
 | `version.go` | `AppInfo` (version, commit, startup error for the banner) |
+| `refresh_app.go` | `RefreshLeague` (pull the league from MFL into the mirror) |
 | `m1_app.go`, `m1_player_score_app.go` | `ScoreLeague`, `GetRankings`, `GetPlayerScore` |
 | `m2_app.go` | `GetPowerRankings` |
 | `leagueschedule_app.go` | `GetLeagueSchedule` |
@@ -63,8 +64,15 @@ Every method that takes frontend input validates it before acting. Bindings in
 - **Databases,** in `~/.config/TheWarRoom/`, split by lifecycle:
   - `thewarroom.db`: the MFL mirror and app settings. Rebuildable from MFL.
   - `history.db`: the fetch archive, observations and scoring runs. Not rebuildable; back it up.
-  - A dev build (no version stamp) uses `thewarroom-dev.db` and `history-dev.db`, so development
-    never touches the real league. One instance at a time (`.lock` file).
+  - `whatif.db`: the what-if league the transaction screens work on (R2). Deleting it reseeds it
+    from the mirror at the next launch.
+  - A dev build (no version stamp) uses `thewarroom-dev.db`, `history-dev.db` and
+    `whatif-dev.db`, so development never touches the real league. One instance at a time
+    (`.lock` file).
+- **Season:** read from MFL (`league.Discover`: the newest year in the league's history), held in
+  the mirror. Nothing in the code names a year.
+- **Refresh:** after the window opens, and from "Refresh from MFL" in the rail. An empty mirror is
+  filled during startup.
 - **Migrations:** `internal/store/state/migrations.go`, forward-only and versioned; a
   `VACUUM INTO` backup is taken before any pending migration runs.
 - **Logs:** one file per launch in `~/.config/TheWarRoom/logs/`, also on stderr. Startup logs
@@ -90,7 +98,8 @@ These work and are tested, but the core plan rewrites or deletes them. Do not ex
 - `internal/scouting/assembly`, `m1_scouting.go` and the CSV/CFBD fetchers (`agetrajectory`,
   `collegedefense`, `collegeshare`, `madden`, `pfrcoverage`, `ras`, `schooltier`,
   `veteranfilm`): replaced by one table-driven loader into the measure store (Stage 4).
-- `standings_cache` and `league_schedule_cache`: become reads of `raw_archive` (Stage 4).
+- `standings_cache` and `league_schedule_cache`: become reads of `raw_archive` (Stage 4). Until
+  then they sit in `whatif.db` with the state store that owns them.
 - `internal/harness` and its two dev tabs: deleted when the Stage 7 case set lands.
 
 ## What does not exist, on purpose

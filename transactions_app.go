@@ -132,12 +132,12 @@ func (a *App) GetCurrentPhase() PhaseResult {
 	if a.startupErr != nil {
 		return PhaseResult{Detail: a.startupErr.Error()}
 	}
-	if a.state == nil {
+	if a.whatif == nil {
 		return PhaseResult{Detail: "state store not initialized"}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
 	defer cancel()
-	ph, err := a.state.CurrentPhase(ctx)
+	ph, err := a.whatif.CurrentPhase(ctx)
 	if err != nil {
 		return PhaseResult{Detail: err.Error()}
 	}

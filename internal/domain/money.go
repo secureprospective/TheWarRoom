@@ -17,6 +17,17 @@ const centsPerMillion = 100_000_000
 // is rejected, not truncated.
 const maxMoneyFracDigits = 8
 
+// ParseSignedMoneyMillions is ParseMoneyMillions with an optional leading minus, for amounts
+// that can be credits, such as MFL salary adjustments.
+func ParseSignedMoneyMillions(raw string) (Money, error) {
+	s := strings.TrimSpace(raw)
+	if rest, neg := strings.CutPrefix(s, "-"); neg {
+		m, err := ParseMoneyMillions(rest)
+		return -m, err
+	}
+	return ParseMoneyMillions(s)
+}
+
 // ParseMoneyMillions converts an MFL amount in millions ("7", "1.30", "0.1155") to exact cents
 // with string math, no float. Empty is $0; non-numeric, negative or sub-cent is an error.
 func ParseMoneyMillions(raw string) (Money, error) {

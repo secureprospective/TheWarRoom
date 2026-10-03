@@ -1,5 +1,41 @@
+import { useState } from 'react';
 import { MODULES, type ModuleId } from './types';
 import { useAppInfoStore } from '../../store/appInfo';
+import { RefreshLeague } from '../../../wailsjs/go/main/App';
+
+// MflRefresh pulls the league from MFL (MFL wins, R2). The app also refreshes at every launch;
+// this is for the times in between. Boards re-read on their next load.
+function MflRefresh() {
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  const run = async () => {
+    setBusy(true);
+    try {
+      const r = await RefreshLeague();
+      if (!r.ok) setNote(`failed: ${r.error}`);
+      else if (!r.changed && !r.rulesChanged) setNote(`up to date · ${r.season}`);
+      else setNote(`updated · ${r.season} · ${r.players} players`);
+    } catch (e) {
+      setNote(`failed: ${String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <button type="button" className="twr-btn" onClick={() => void run()} disabled={busy}
+        style={{ alignSelf: 'flex-start', fontSize: '10px', padding: '2px 8px' }}>
+        {busy ? 'Refreshing…' : 'Refresh from MFL'}
+      </button>
+      {note && (
+        <span title={note} style={{ fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-tertiary)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {note}
+        </span>
+      )}
+    </div>
+  );
+}
 
 interface NavRailProps {
   active: ModuleId;
@@ -96,6 +132,7 @@ export function NavRail({ active, onSelect }: NavRailProps) {
         >
           LEGACY
         </div>
+        <MflRefresh />
         {/* Phase-3 cross-league injection seam */}
       </div>
 

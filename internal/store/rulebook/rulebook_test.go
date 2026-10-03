@@ -343,3 +343,28 @@ func hasDelta(cs ChangeSet, field string, kind ChangeKind, old, newVal string) b
 	}
 	return false
 }
+
+func TestSync_PromotesOnlyWhenMFLChanged(t *testing.T) {
+	s := newStore(t, &fakeSource{cfg: baseConfig()})
+	ctx := context.Background()
+	same := baseConfig()
+	same.Source = "mfl:other"
+	if changed, err := s.Sync(ctx, same); err != nil || changed {
+		t.Fatalf("Sync(identical) = %t, %v; want false, nil", changed, err)
+	}
+	named := baseConfig()
+	named.Franchises = []league.Franchise{{ID: "0001", Name: "Buffalo Bills"}}
+	if changed, err := s.Sync(ctx, named); err != nil || !changed {
+		t.Fatalf("Sync(changed) = %t, %v; want true, nil", changed, err)
+	}
+	if got := s.FranchiseNames()["0001"]; got != "Buffalo Bills" {
+		t.Errorf("active franchise name = %q after Sync, want Buffalo Bills", got)
+	}
+	vers, err := s.Versions(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changed, err := s.Sync(ctx, named); err != nil || changed || len(vers) != 2 {
+		t.Errorf("repeat Sync = %t, %v with %d versions; want false, nil, 2", changed, err, len(vers))
+	}
+}

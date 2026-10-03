@@ -25,7 +25,7 @@ type RawRoster struct {
 	ContractYear   string // final contract year ("2026")
 	ContractStatus string // dirty ("UFA ", "YFA", "EXT (2024)")
 	ContractInfo   string // free text, display only
-	Status         string // "ROSTER", "TAXI_SQUAD" or "IR"
+	Status         string // "ROSTER", "TAXI_SQUAD" or "INJURED_RESERVE"
 }
 
 // Validate rejects an invalid player id or a present salary that does not parse.

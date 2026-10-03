@@ -101,6 +101,38 @@ func (s *Store) Reload(ctx context.Context) (ChangeSet, error) {
 	}, nil
 }
 
+// Sync makes cfg the active config when it differs from the active one (MFL wins) and reports
+// whether it did. Identical config writes nothing, so a repeated refresh adds no versions.
+// Provenance (Source) is not compared.
+func (s *Store) Sync(ctx context.Context, cfg league.RawConfig) (bool, error) {
+	s.mu.RLock()
+	active := s.active
+	s.mu.RUnlock()
+	same, err := sameConfig(active, cfg)
+	if err != nil || same {
+		return false, err
+	}
+	ver, err := s.insertVersion(ctx, cfg)
+	if err != nil {
+		return false, err
+	}
+	return true, s.Promote(ctx, ver)
+}
+
+// sameConfig compares two configs field by field, ignoring provenance.
+func sameConfig(a, b league.RawConfig) (bool, error) {
+	a.Source, b.Source = "", ""
+	ja, err := json.Marshal(a)
+	if err != nil {
+		return false, fmt.Errorf("rulebook: encode config: %w", err)
+	}
+	jb, err := json.Marshal(b)
+	if err != nil {
+		return false, fmt.Errorf("rulebook: encode config: %w", err)
+	}
+	return string(ja) == string(jb), nil
+}
+
 // Promote makes ver the active version. It is both the apply step and the rollback path.
 func (s *Store) Promote(ctx context.Context, ver int) error {
 	s.wmu.Lock()

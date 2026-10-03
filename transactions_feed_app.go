@@ -54,23 +54,23 @@ func (a *App) GetFeed() FeedResult {
 	if a.startupErr != nil {
 		return FeedResult{Detail: a.startupErr.Error()}
 	}
-	if a.state == nil {
+	if a.whatif == nil {
 		return FeedResult{Detail: "state store not initialized"}
 	}
-	if err := a.state.Err(); err != nil {
+	if err := a.whatif.Err(); err != nil {
 		return FeedResult{Detail: "state is stale after a failed reload: " + err.Error()}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
 	defer cancel()
 
-	events, err := a.state.Feed(ctx, 0) // 0 = the store's default limit
+	events, err := a.whatif.Feed(ctx, 0) // 0 = the store's default limit
 	if err != nil {
 		return FeedResult{Detail: err.Error()}
 	}
 
 	// Stamp each event with its latest correction. A read failure leaves the feed uncorrected,
 	// with a warning.
-	corr, corrErr := a.state.Corrections(ctx)
+	corr, corrErr := a.whatif.Corrections(ctx)
 	latest := latestCorrectionByTxID(corr)
 
 	dir, dirWarning := a.resolveDirectory(ctx)

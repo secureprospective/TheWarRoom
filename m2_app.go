@@ -93,7 +93,7 @@ func (a *App) GetPowerRankings(weight float64, aggMode string) PowerRankingsResu
 		return fail(fmt.Errorf("power rankings: %w", err))
 	}
 
-	svc, err := m2service.New(a.state.Reader(), a.rulebook)
+	svc, err := m2service.New(a.league.Reader(), a.rulebook)
 	if err != nil {
 		return fail(err)
 	}
@@ -128,7 +128,7 @@ func (a *App) GetPowerRankings(weight float64, aggMode string) PowerRankingsResu
 func (a *App) currentPhaseLabel() string {
 	ctx, cancel := context.WithTimeout(a.fallbackParent(), cacheReadTimeout)
 	defer cancel()
-	ph, err := a.state.CurrentPhase(ctx)
+	ph, err := a.whatif.CurrentPhase(ctx)
 	if err != nil {
 		return ""
 	}

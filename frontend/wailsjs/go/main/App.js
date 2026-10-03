@@ -66,6 +66,10 @@ export function PreviewTransaction(arg1) {
   return window['go']['main']['App']['PreviewTransaction'](arg1);
 }
 
+export function RefreshLeague() {
+  return window['go']['main']['App']['RefreshLeague']();
+}
+
 export function RunValidationSuite() {
   return window['go']['main']['App']['RunValidationSuite']();
 }

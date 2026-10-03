@@ -98,3 +98,14 @@ func TestRoundToNearest10k(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSignedMoneyMillions(t *testing.T) {
+	for raw, want := range map[string]Money{"-0.203": -203_000_00, "1.5": 150_000_000, "-2": -200_000_000} {
+		if got, err := ParseSignedMoneyMillions(raw); err != nil || got != want {
+			t.Errorf("ParseSignedMoneyMillions(%q) = %d, %v; want %d", raw, got, err, want)
+		}
+	}
+	if _, err := ParseSignedMoneyMillions("--1"); err == nil {
+		t.Error("double minus parsed")
+	}
+}
