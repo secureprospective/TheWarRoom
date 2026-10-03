@@ -5,10 +5,12 @@
 package league
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -171,7 +173,9 @@ func mapLimits(in []posLimit) []PositionLimit {
 	return out
 }
 
-// mapRules converts scoring blocks, unwrapping each {"$t":...} leaf.
+// mapRules converts scoring blocks, unwrapping each {"$t":...} leaf. MFL returns the blocks in
+// a different order on every request (seen 2026-10-03), and the order means nothing since blocks
+// stack, so both levels are sorted: the same rules always read as the same config.
 func mapRules(re rulesEnvelope) []PositionRuleSet {
 	out := make([]PositionRuleSet, 0, len(re.Rules.PositionRules))
 	for _, b := range re.Rules.PositionRules {
@@ -183,7 +187,15 @@ func mapRules(re rulesEnvelope) []PositionRuleSet {
 				Range:  r.Range.T,
 			})
 		}
+		slices.SortFunc(rules, compareRule)
 		out = append(out, PositionRuleSet{Positions: b.Positions, Rules: rules})
 	}
+	slices.SortFunc(out, func(a, b PositionRuleSet) int {
+		return cmp.Or(cmp.Compare(a.Positions, b.Positions), slices.CompareFunc(a.Rules, b.Rules, compareRule))
+	})
 	return out
+}
+
+func compareRule(a, b ScoringRule) int {
+	return cmp.Or(cmp.Compare(a.Event, b.Event), cmp.Compare(a.Range, b.Range), cmp.Compare(a.Points, b.Points))
 }
