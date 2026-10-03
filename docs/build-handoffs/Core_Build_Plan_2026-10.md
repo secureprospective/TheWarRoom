@@ -416,6 +416,7 @@ the Admin Console.
 
 ## Open items that need Christopher
 
-- Confirm the stale-branch deletion list (Stage 0.1).
 - The fresh live pull is gated (`TWR_LIVE_*`) and runs on his machine (Stage 2.3).
 - Spot-check the MFL comparison (Stage 2 gate).
+- The README's "How It Gets Built" section is rewritten after the last stage (deferred by
+  Christopher 2026-10-03). It still credits the retired GLM/Gemini/DeepSeek/Ornith council.
