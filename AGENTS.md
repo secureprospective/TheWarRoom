@@ -12,20 +12,21 @@
 ## Build doctrine — load before writing or reviewing code
 
 - **`docs/agent-codex.md`** — the 17 motifs, slop catalog, and canon→motif map. Cite motifs by ID (`§M3`) in review notes.
-- **`CLAUDE.md` → Hard Constraints** — the never-route-around rules (string player IDs, zero scoring leak, NGS anchors, SL-019 exclusions). Locked decisions are not reopened silently; flag conflicts to Christopher.
-- **`Fable_TheWarRoom_code_plan.md`** — copy the matching Go skeleton (Section 4) and read the per-session brief (Section 6) before writing. Never invent structure. Every domain number lives in Section 5 — read it, never recall.
+- **`CLAUDE.md` → Hard Constraints** — the never-route-around rules. Locked decisions are not reopened silently; flag conflicts to Christopher.
+- **`docs/build-handoffs/Core_Build_Plan_2026-10.md`** — the current build plan and its rulings (R1–R11).
 
 ## Code footprint
 
-- Target file size under 250 lines. Hard cap 400 (`make filelen` enforces). Pre-split from the wireframe; do not write-then-hack-apart.
-- No copy-paste. Check `SYSTEM_MAP.md` for existing utilities first.
+- Split files by responsibility, never by size. `make filelen` reports files over 600 lines; say why in the commit. Function limits (`funlen`, `gocyclo`) still gate.
+- Comments say what the code can't, in the fewest lines. No review history, decision IDs or session notes in code; those belong in commits and docs. `make bloat` fails if comment share, provenance, tiny files or duplication rise.
+- No copy-paste. A second near-copy is the signal to turn it into data. Check `SYSTEM_MAP.md` for existing utilities first.
 - Add a dependency only when the alternative is >~15 lines of native code.
 - No commented-out code. Delete; `git` remembers.
 
 ## Security mandates
 
-- All external input (MFL API responses, CSV ingest, IPC payloads) validated through an explicit hand-written schema (`internal/schema`) before business logic. No ad-hoc parsing, no `interface{}`/`any` escapes (`ifaceguard` enforces).
-- Parameterized SQL only. No string concatenation into queries (`gosec` enforces). Raw `database/sql` is confined to `internal/db` and `internal/store` (`depguard` enforces).
+- All external input (MFL API responses, CSV ingest, IPC payloads) decoded into a `Raw*` type and checked by its hand-written `Validate()` before business logic. No ad-hoc parsing, no `interface{}`/`any` escapes (`ifaceguard` enforces).
+- Parameterized SQL only. No string concatenation into queries (`gosec` enforces). Raw `database/sql` is confined to `internal/db`, `internal/store` and `internal/output` (`depguard` enforces).
 - No hardcoded secrets, tokens, or hosts. The MFL host is discovered at runtime, never hardcoded.
 - Errors wrapped with context (`%w`), never silently dropped (`errcheck` + `wrapcheck`).
 
@@ -34,7 +35,7 @@
 The three-layer law is enforced by `depguard`, not goodwill:
 - Layer 1 (`internal/mfl`, `internal/ingestion`) never imports up into the engine, stores, transactions, or API.
 - `internal/engine` is pure — imports no store, no DB, no I/O. All state arrives as parameters.
-- Stores never import each other. Only the B7 coordinator holds a `StateWriter`.
+- Stores never import each other. Only the transaction coordinator holds the state `Writer`.
 
 If a locked decision creates a constraint that feels wrong, **flag it to Christopher** — do not work around it.
 
@@ -45,7 +46,7 @@ If a locked decision creates a constraint that feels wrong, **flag it to Christo
 
 ## Stack-specific commands
 
-- **Lint:** `make lint` (ifaceguard + filelen + golangci-lint)
+- **Lint:** `make lint` (ifaceguard + filelen report + bloat ratchet + golangci-lint)
 - **Format:** `make fmt`
 - **Test:** `make test` (`go test -race ./...`)
 - **Type check (frontend):** `cd frontend && pnpm tsc --noEmit`
@@ -67,6 +68,6 @@ If a locked decision creates a constraint that feels wrong, **flag it to Christo
 ## Where to look
 
 - `SYSTEM_MAP.md` — what exists and where it goes. Check before writing.
-- `docs/build-handoffs/Build_Tracker.md` — the 38-session sequence; current progress.
+- `docs/build-handoffs/Core_Build_Plan_2026-10.md` — stages, gates and current progress.
 - `docs/` — engine spec, rubrics, data layer, UI, backend architecture.
 - `.pre-commit-config.yaml` + `.golangci.yml` — the gates that run on your commit.

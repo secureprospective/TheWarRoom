@@ -99,9 +99,17 @@ exit code. Work happens on a session branch; never on main.
    - files under 40 lines of code
    - near-duplicate files
 
-   **Targets:**
-   - Comment share 30% → 15% or less, with no package over 20%.
+   **Targets**, over the code that survives Stage 0:
+   - Comment share 30% → 15% or less, with no package over 20%. Exception, by name: `scouting`,
+     a types-only package whose comments are its data's documentation.
    - Provenance in code comments → 0.
+
+   **Measured at the end of Stage 0:** surviving code 14.4%, no package over 20% apart from
+   `scouting` (29%), provenance 0. The packages Stages 4, 5 and 7 rewrite or delete
+   (`engine/l4`, `scouting/assembly`, `harness`, and the nflverse/CFBD fetchers) sit at 34.7% and
+   hold all 8 remaining provenance lines. They were not polished, because the code is going away.
+   The ratchet holds them flat, and the gates of Stages 4, 5 and 7 inherit the same targets for
+   whatever replaces them.
 
 **Gate:**
 - One branch line, pushed.
@@ -252,7 +260,8 @@ hand-parse one CSV into their own struct.
    - CFBD college stats (key held).
    - StatRankings routes last: name/team join, gap-filler only.
 
-**Gate:** each signal has a coverage table and a freshness check. 2021–2025 history loaded.
+**Gate:** each signal has a coverage table and a freshness check. 2021–2025 history loaded. The
+loader meets the Stage 0 comment and provenance targets.
 
 ### Stage 5 — Rubric as data (pure refactor first)
 
@@ -267,6 +276,7 @@ hand-parse one CSV into their own struct.
 
 **Gate:**
 - The golden board is identical.
+- The new rubric code meets the Stage 0 comment and provenance targets.
 - The Madden-removal diff is reported.
 - Line counts before and after.
 

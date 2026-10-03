@@ -1,20 +1,13 @@
 # HANDOFF
 
-- **Baton:** Pi — 2026-08-19
+- **Baton:** Claude — 2026-10-03
 
 ## Where it stands
 
-Pi environment just stood up on the Beelink. No code work has been done yet;
-this is a fresh session with the working tree clean.
+Stage 0 of `docs/build-handoffs/Core_Build_Plan_2026-10.md` (one timeline) is nearly done on
+branch `session/m1b-bash`. Current state and next actions: the newest
+`docs/build-handoffs/RESUME-*.md`.
 
 ## Next move
 
-Await Christopher.
-
-## Blocked on
-
-Christopher — awaiting direction before any work begins.
-
-## Tried and rejected
-
-Nothing yet.
+Claude continues the plan. Bee reviews finished stages when GPT budget allows (ruling R4).
