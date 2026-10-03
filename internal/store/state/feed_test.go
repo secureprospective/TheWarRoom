@@ -399,9 +399,7 @@ func TestFeed_ProvenancePerKind(t *testing.T) {
 		{"SIGN", "SIGN", "free-agency signing §6", "free-agent-signing"},
 		{"DEAD_CAP §8 waiver", "DEAD_CAP", "waiver-cut §8", "waiver"},
 		{"RELEASE §8 waiver", "RELEASE", "waiver-cut §8", "waiver"},
-		// Case-insensitive §8 detection: the SQL feed classifies via LIKE (ASCII
-		// case-insensitive); deriveProvenance must match the same row the SQL matched, so an
-		// uppercase waiver marker still resolves to "waiver" provenance.
+		// The §8 marker matches case-insensitively, as classification does.
 		{"RELEASE §8 waiver uppercase", "RELEASE", "WAIVER-CUT §8", "waiver"},
 		{"DEAD_CAP §12 buyout (not acquisition)", "DEAD_CAP", "buyout §12", ""},
 		{"RELEASE natural expiry (not acquisition)", "RELEASE", "", ""},
@@ -422,10 +420,7 @@ func TestFeed_ProvenancePerKind(t *testing.T) {
 }
 
 // TestClassifyContractChangeKind covers the source+reason → Kind table for contract_year_changes
-// rows. SQL mirrors this exactly; this test pins the contract so a divergence between the SQL
-// CASE and the Go classifier surfaces here. Matching is case-INSENSITIVE (the SQL CASE uses
-// LIKE, which is ASCII case-insensitive; the Go classifier folds the reason through ToLower) —
-// the uppercase-variant cases below pin that parity so the two surfaces cannot drift.
+// rows, including case-insensitive reason matching.
 func TestClassifyContractChangeKind(t *testing.T) {
 	for _, tc := range []struct {
 		source, reason, want string
@@ -437,8 +432,6 @@ func TestClassifyContractChangeKind(t *testing.T) {
 		{"op", "waiver-cut §8", "WAIVER_VOID"},
 		{"op", "future unmapped op", "CONTRACT_CHANGE"},
 		{"", "", "CONTRACT_CHANGE"},
-		// Case-insensitivity parity with SQL LIKE — a handler that ever wrote an uppercase
-		// variant must classify identically on both sides.
 		{"op", "§11 RESTRUCTURE: moved $20", "RESTRUCTURE"},
 		{"op", "§9 FRANCHISE TAG: set to $6M", "TAG"},
 		{"op", "WAIVER-CUT §8", "WAIVER_VOID"},
