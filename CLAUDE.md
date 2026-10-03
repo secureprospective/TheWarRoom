@@ -12,7 +12,7 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 ## Where the work stands
 
 - **Plan:** `docs/build-handoffs/Core_Build_Plan_2026-10.md`: stages 0–8, each with a gate, and
-  the binding rulings R1–R11. The reasoning behind it: `Core_Build_Reasoning_2026-10.md`.
+  the binding rulings R1–R12. The reasoning behind it: `Core_Build_Reasoning_2026-10.md`.
 - **Latest state:** the newest `docs/build-handoffs/RESUME-*.md`.
 - **What exists:** `SYSTEM_MAP.md`.
 
@@ -38,9 +38,15 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   product intent, priorities and anything outward-facing.
 - **Bee reviews** finished stages when GPT budget allows. Briefs go in a run directory under
   `~/fleet/runs/`; Bee writes drafts there and never runs git or opens a GUI.
-- **Christopher runs live gates** on his desktop: the real app against the real league. Do not
-  launch the app on his live desktop yourself.
-- Merge to main only after Christopher confirms the live result.
+- **Claude runs live gates on Claude-OS (R12):** the production build (`make build`) against a
+  snapshot of the live database, taken with SQLite's backup API, never a plain file copy.
+  - Claude-OS is the libvirt VM `Claude-OS` under `qemu:///session` on this box. Start it with
+    `virsh -c qemu:///session start Claude-OS` and shut it down afterwards if it was off.
+  - Reach it with `ssh claudeos`. Drive it with xdotool and scrot on `DISPLAY=:0`, and launch
+    the app with `setsid -f` so the ssh session returns.
+  - Screenshots and logs go to the run directory.
+  - Never launch the app on Christopher's live desktop.
+- Merge to main only on Christopher's go-ahead, after a passing live gate.
 
 ## Hard Constraints (never route around)
 

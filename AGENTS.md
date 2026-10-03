@@ -13,7 +13,7 @@
 
 - **`docs/agent-codex.md`** — the 17 motifs, slop catalog, and canon→motif map. Cite motifs by ID (`§M3`) in review notes.
 - **`CLAUDE.md` → Hard Constraints** — the never-route-around rules. Locked decisions are not reopened silently; flag conflicts to Christopher.
-- **`docs/build-handoffs/Core_Build_Plan_2026-10.md`** — the current build plan and its rulings (R1–R11).
+- **`docs/build-handoffs/Core_Build_Plan_2026-10.md`** — the current build plan and its rulings (R1–R12).
 
 ## Code footprint
 
