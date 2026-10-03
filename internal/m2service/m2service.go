@@ -1,14 +1,6 @@
-// Package m2service is the M2 "power rankings board" orchestrator — the mirror of
-// internal/rankings' relationship to m1_app.go (Session 43, SLIM_MAP §6.1). It is
-// composition-class code: the ONE layer allowed to hold a state.Reader and a
-// rulebook read surface for M2, so m2_app.go can stay a thin adapter (validate →
-// fetch IO → route → format), same shape as ScoreLeague delegating to
-// rankings.Runner. internal/powerrankings stays the pure blend-math leaf beneath
-// this package, untouched (no I/O, no store — its own doc comment's contract).
-//
-// This is a MECHANICAL extraction (Session 43): every function here is a verbatim
-// move from m2_app.go, byte-identical math and byte-identical output. No blend
-// formula, no franchise-name fallback, no parse tolerance changed.
+// Package m2service builds the M2 power-rankings board: it aggregates each franchise's M1
+// scores from runtime state, blends them with the MFL standings through powerrankings, and
+// joins the display columns. It holds read surfaces only, so m2_app.go stays a thin adapter.
 package m2service
 
 import (
@@ -25,29 +17,26 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
-// Aggregation modes for BuildBoard's mode param.
+// Aggregation modes for BuildBoard.
 const (
 	AggSum  = "sum"  // Σ AdjustedScore over the whole roster — rewards dynasty depth
 	AggTopN = "topn" // Σ of the top-N by AdjustedScore — isolates startable talent
 )
 
-// FranchiseSource supplies the local (no-network) rulebook reads BuildBoard needs:
-// display names and the starter count used to resolve top-N. *rulebook.Store
-// satisfies it structurally.
+// FranchiseSource supplies the offline rulebook reads BuildBoard needs: franchise names and
+// the starter count.
 type FranchiseSource interface {
 	FranchiseNames() map[string]string
 	ActiveConfig() league.RawConfig
 }
 
-// Service owns the M2 composition: aggregate + blend + join. It holds READ
-// surfaces only — like rankings.Runner, it cannot mutate league state.
+// Service builds the M2 board from read surfaces only.
 type Service struct {
 	state state.Reader
 	rb    FranchiseSource
 }
 
-// New wires a Service. Both dependencies are required — a nil here is a
-// programmer error surfaced at construction, mirroring rankings.New.
+// New wires a Service. Both dependencies are required.
 func New(st state.Reader, rb FranchiseSource) (*Service, error) {
 	if st == nil || rb == nil {
 		return nil, fmt.Errorf("m2service: nil dependency (state=%t rulebook=%t)", st != nil, rb != nil)
@@ -55,9 +44,7 @@ func New(st state.Reader, rb FranchiseSource) (*Service, error) {
 	return &Service{state: st, rb: rb}, nil
 }
 
-// Row is one franchise's fully joined M2 board row: the blended score plus the
-// MFL report passthrough columns and the display name. m2_app.go copies this
-// field-for-field into the Wails-bound PowerRow DTO (the adapter's FORMAT step).
+// Row is one franchise's board row: the blended score, MFL's report columns and the name.
 type Row struct {
 	Rank        int
 	FranchiseID string
@@ -75,9 +62,8 @@ type Row struct {
 	PF, PA, PP, Pwr, AltPwr      float64
 }
 
-// Board is the BuildBoard result: the joined rows plus the echoed mode/starterN/
-// weight so the IPC layer's echo fields (which the UI slider trusts) never
-// disagree with what was actually applied.
+// Board is the rows plus the mode, starter count and weight actually applied, which the UI
+// echoes back to its controls.
 type Board struct {
 	Rows     []Row
 	Mode     string
@@ -85,11 +71,9 @@ type Board struct {
 	Weight   float64
 }
 
-// BuildBoard runs the full M2 composition: resolves the aggregation mode,
-// resolves the starter count for top-N (degrading to sum if unreadable),
-// aggregates each franchise's scouting AdjustedScore from the M1 board via the
-// injected state.Reader, blends against the MFL standings, and joins the
-// display columns. Byte-identical to the pre-extraction m2_app.go pipeline.
+// BuildBoard aggregates each franchise's M1 AdjustedScores by mode (top-N falls back to sum
+// when the starter count is unreadable), blends them against the MFL standings and joins the
+// display columns.
 func (s *Service) BuildBoard(
 	standings []leaguestandings.RawStanding,
 	scores []output.SeasonScore,
@@ -125,11 +109,8 @@ func (s *Service) BuildBoard(
 	}, nil
 }
 
-// ResolveAggMode normalizes the caller's aggregation mode, defaulting to sum for an
-// empty or unrecognized value so a bad param never errors the view. Exported so the
-// app-layer adapter can echo the SAME resolved value on its early-fail paths (before
-// BuildBoard ever runs) that it echoes on success — GLM 5.2 review lead 1 (Session
-// 43): the pre-fix fail closure echoed the raw, unresolved caller argument.
+// ResolveAggMode defaults an empty or unknown mode to sum. It is exported so the adapter echoes
+// the same resolved mode on its early-error paths.
 func ResolveAggMode(m string) string {
 	if m == AggTopN {
 		return AggTopN
@@ -137,8 +118,7 @@ func ResolveAggMode(m string) string {
 	return AggSum
 }
 
-// starterCount reads the league's total starter count from the active rulebook
-// config; 0 if unset/unparseable (caller degrades top-N to sum).
+// starterCount reads the league's starter count; 0 when unset or unparseable.
 func (s *Service) starterCount() int {
 	n, err := strconv.Atoi(strings.TrimSpace(s.rb.ActiveConfig().Starters.Count))
 	if err != nil || n < 0 {
@@ -147,24 +127,16 @@ func (s *Service) starterCount() int {
 	return n
 }
 
-// buildBlendInputs aggregates scouting Adjusted Score per franchise (by mode) and
-// parses each standings row once, returning the blend inputs keyed off the STANDINGS
-// set (the canonical franchises) plus the parsed rows for later display join. A
-// franchise absent from the board (not scored / empty roster) contributes 0
-// scouting, which standardizes correctly against the field.
+// buildBlendInputs aggregates scores per franchise and parses each standings row once. The
+// standings define the franchise set; a franchise with no scored players contributes 0.
 func (s *Service) buildBlendInputs(
 	standings []leaguestandings.RawStanding,
 	scores []output.SeasonScore,
 	mode string,
 	starterN int,
 ) ([]powerrankings.Input, map[string]parsedStanding, error) {
-	// A player's owning franchise comes from runtime state (the M1 board carries no
-	// franchise column); an unrostered player contributes to no team, as intended.
-	// FRESHNESS: this reads LIVE runtime state, which may have moved since the M1
-	// board was scored (a player traded/dropped in between accrues to their CURRENT
-	// franchise, not the one they were scored under). The blend is correct for the
-	// current-roster snapshot — which is the intended "who is strong now" reading.
-	// Collect per-franchise score lists so top-N can select the best N.
+	// Ownership comes from live runtime state, so a player traded since the M1 run counts for
+	// the current team: the board reads "who is strong now".
 	scoresByFranchise := make(map[string][]float64, len(standings))
 	for _, sc := range scores {
 		if p, ok := s.state.Player(sc.MFLID); ok {
@@ -189,10 +161,8 @@ func (s *Service) buildBlendInputs(
 	return inputs, parsed, nil
 }
 
-// aggregateScouting reduces a franchise's per-player AdjustedScores to one number:
-// the full sum (AggSum, rewards dynasty depth) or the sum of the top-N by score
-// (AggTopN, isolates startable talent). Top-N sorts a COPY so the caller's slice is
-// untouched; N ≥ len means the whole roster.
+// aggregateScouting reduces a franchise's scores to the full sum (depth) or the sum of the
+// top N (startable talent). It sorts a copy.
 func aggregateScouting(scores []float64, mode string, starterN int) float64 {
 	if mode == AggTopN && starterN > 0 && starterN < len(scores) {
 		cp := make([]float64, len(scores))
@@ -207,9 +177,7 @@ func aggregateScouting(scores []float64, mode string, starterN int) float64 {
 	return sum
 }
 
-// buildRows joins the blended scores with the MFL display columns and local
-// franchise names. Team names come from the LOCAL rulebook (no network) — unlike M1
-// player names, there is no offline-degrade path to worry about here.
+// buildRows joins the blended scores with MFL's display columns and the rulebook's names.
 func (s *Service) buildRows(blended []powerrankings.Row, parsed map[string]parsedStanding) []Row {
 	names := s.rb.FranchiseNames()
 	rows := make([]Row, 0, len(blended))
@@ -232,8 +200,7 @@ func (s *Service) buildRows(blended []powerrankings.Row, parsed map[string]parse
 	return rows
 }
 
-// parsedStanding holds a RawStanding's numeric fields after one parse pass, so the
-// blend input and the display row never re-parse the same strings.
+// parsedStanding is a RawStanding's numbers, parsed once.
 type parsedStanding struct {
 	h2hW, h2hL, h2hT             int
 	allPlayW, allPlayL, allPlayT int
@@ -241,9 +208,8 @@ type parsedStanding struct {
 	allPlayWinPct                float64
 }
 
-// parseStanding converts a shape-validated RawStanding into numbers. Every field
-// already passed RawStanding.Validate (parseable or empty), so an empty string maps
-// to 0 and a parse error here would be a genuine invariant break — surfaced LOUD.
+// parseStanding converts a RawStanding that already passed Validate, so empty means 0 and a
+// parse error is a real invariant break.
 func parseStanding(s leaguestandings.RawStanding) (parsedStanding, error) {
 	var ps parsedStanding
 	var err error
@@ -280,10 +246,7 @@ func parseStanding(s leaguestandings.RawStanding) (parsedStanding, error) {
 	if ps.altPwr, err = atofOrZero(s.AltPwr); err != nil {
 		return ps, wrapParse(s.FranchiseID, "altpwr", err)
 	}
-	// All-play win% over ACTUAL games played (not a hardcoded 527) so a mid-season
-	// or short-schedule pull is still correct; zero games → 0, never NaN. Ties count
-	// as half a win — the conventional (W + 0.5T)/G rate, so a tie is neither a full
-	// win nor a full loss.
+	// All-play win% over games actually played, ties as half a win; zero games gives 0.
 	if games := ps.allPlayW + ps.allPlayL + ps.allPlayT; games > 0 {
 		ps.allPlayWinPct = (float64(ps.allPlayW) + 0.5*float64(ps.allPlayT)) / float64(games)
 	}
@@ -294,16 +257,13 @@ func wrapParse(fid, field string, err error) error {
 	return fmt.Errorf("power rankings: franchise %s field %s: %w", fid, field, err)
 }
 
-// atoiOrZero parses an MFL integer field; an empty field is a legitimate 0. It
-// applies the same currency/thousands sanitization as the fetcher's shape check so
-// the two never disagree on what parses.
+// atoiOrZero parses an MFL integer field with the fetcher's sanitization; empty is 0.
 func atoiOrZero(s string) (int, error) {
 	s = leaguestandings.SanitizeNumeric(s)
 	if s == "" {
 		return 0, nil
 	}
-	// Some MFL integer-ish fields arrive with a trailing ".0" — tolerate by
-	// parsing as float then truncating, so "421" and "421.0" both work.
+	// Some MFL integer fields arrive as "421.0".
 	f, err := strconv.ParseFloat(s, 64)
 	if err != nil {
 		return 0, fmt.Errorf("parse int field %q: %w", s, err)
@@ -324,8 +284,7 @@ func atofOrZero(s string) (float64, error) {
 	return f, nil
 }
 
-// clampWeight mirrors Blend's clamp (incl. the non-finite fallback) so the echoed
-// Weight matches the weight actually applied.
+// clampWeight mirrors Blend's clamp so the echoed weight is the one applied.
 func clampWeight(w float64) float64 {
 	if math.IsNaN(w) || math.IsInf(w, 0) {
 		w = powerrankings.DefaultScoutingWeight
@@ -333,8 +292,7 @@ func clampWeight(w float64) float64 {
 	return math.Max(0, math.Min(1, w))
 }
 
-// franchiseDisplayName resolves a franchise id to its league name, falling back to
-// a labeled id so an unmapped franchise reads plainly rather than as a blank cell.
+// franchiseDisplayName returns the league name, or a labeled id when unmapped.
 func franchiseDisplayName(names map[string]string, fid string) string {
 	if n, ok := names[fid]; ok && n != "" {
 		return n
