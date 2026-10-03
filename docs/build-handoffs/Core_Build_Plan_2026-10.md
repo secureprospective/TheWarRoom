@@ -166,14 +166,41 @@ Each signal follows the same path: fetcher → archive → typed table → cover
 ### Stage 6 — Fit the parameters from 2021–2025
 
 A reproducible fitting tool in the repo. Its outputs are stored as params with provenance.
+The full career-and-age design and its evidence are in the reasoning file, §4a.
 
-1. **k** per position and statistic: `k = σ²/τ²` from split-half and season-pair reliability
-   (research E0).
-2. **Recency weights** by temporal holdout, against the Marcel 1/0.8/0.6 baseline (E8).
-3. **Age curves** per position, with survivorship correction by regression and imputation
-   (E10a). Not a flat 3%.
-4. **The prior mapping:** draft capital (+ combine, + college) → expected within-position
-   percentile (E9).
+1. **The prior mapping first:** draft capital, combine and college in **one joint regression**
+   → expected within-position percentile (E9a–E9e).
+   - Today's engine multiplies film × RAS × breakout as if they were independent. Joint fitting
+     stops correlated signals counting twice (E9e).
+   - Record the prior's R² per position.
+2. **k against the prior, not the league mean.**
+   - `k = σ²/τ²_resid`, where `τ²_resid = τ²·(1 − R²_prior)`. Here τ² is the true-talent spread
+     around the prior, not around the league average (E0.3).
+   - A better prior means a larger k, so the prior keeps its weight longer.
+   - Fitting k against the league mean would under-weight scouting.
+3. **Two k's, one per number** (E0.2):
+   - **On-field-now** k comes from within-season split-half reliability: how sure we are about
+     him *this season*.
+   - **Dynasty** k comes from season-pair stability, which carries role, team and age change:
+     how sure we are about him *next year and after*.
+   - k is per production component (opportunity vs efficiency; E3, E5), not one per position.
+4. **The shape of Z is tested, not assumed:** `e/(e+k)` against `1 − exp(−e/a)`, by holdout
+   (E6).
+5. **Recency weights** by temporal holdout, against the Marcel 1/0.8/0.6 baseline (E8).
+   - Use the effective-count form when discounting (E7).
+   - Fit **after** age-adjusting each past season (item 6), so recency measures loss of
+     information, not age decline. Fitting it on raw seasons would count age twice.
+6. **The talent arc per position**, rising and falling, not a flat 3% past a peak (E10b–E10e).
+   - Fitted by the delta method with survivorship imputation (E10a, Schuckers/Lopez/Macdonald).
+   - Experience (NFL season count) is fitted separately from age, for the year-1-to-year-2 jump
+     (E8b).
+   - Athleticism × age is tested as a fitted interaction, replacing the DT-only literal cushion
+     (E9b, E10a).
+7. **The survival arc per position:** the probability a player is still on an NFL field
+   1–5 years out, by age, draft capital and injury history.
+   - Fitted from nflverse roster and snap history.
+   - Dynasty value needs it: release, retirement and injury are part of asset value (E10a).
+   - Never condition on future career length (E10f).
 
 **Gate:** a fit report with holdout scores for every parameter. Parameters loaded and shown in
 the Admin Console.
@@ -185,12 +212,29 @@ the Admin Console.
    - Fantasy points are one production input, not the base.
    - IDP uses snaps plus box-score rates per snap. No free source has pressures, routes or
      coverage snaps.
-2. **Dynasty:** the same blend, carried across a horizon by the age curve, with a heavier prior
-   weight. Cap and contract are applied after and stay separable.
+2. **Dynasty:**
+   ```
+   Σ over years t = 1..H of: discount_t × P(on field at t) × talent(age + t, experience + t)
+   ```
+   - The talent starting point is the dynasty blend, which uses the dynasty k, so the prior
+     weighs more.
+   - Talent is carried along the position's talent arc. Survival is the survival arc.
+   - Cap and contract are applied after and stay separable.
+3. **Age enters once.** Today age is counted twice: the L3 decay and an age-trajectory
+   sub-signal inside 9 of the 10 L4 rubrics. In the new design age appears only in the arcs.
+   The prior's inputs are pre-NFL facts.
 
 **Gate:**
 - Rookies are non-zero.
 - Injured veterans keep discounted evidence.
+- **Case set:**
+  - A rookie by draft round.
+  - A year-2 jump.
+  - A peak veteran.
+  - An age-31 RB and an age-31 QB, so the arcs visibly differ.
+  - An injured starter.
+  - A high-athleticism late-career lineman.
+  - A backup with a small, efficient sample, who must be shrunk.
 - A holdout check: 2025 predicted from data through 2024 beats today's board.
 - Spearman correlation vs today's board reported.
 

@@ -82,3 +82,13 @@ with a heavier prior weight. Contract and cap stay separate (Bee 4-A).
   IDP signals above are box-score proxies.
 - Unfinished in Astra's run: the CB/slot numbers in E4 charts were not extracted; E2's full
   baseline years were not stated.
+
+## Addendum (2026-10-03, after Christopher asked for a full accounting)
+
+The career-and-age design supersedes the "k" and "Age" columns above:
+- k is fitted against the prior, not the league mean, with one k per number and per component.
+- Recency is fitted after age adjustment.
+- The talent and survival arcs are separate.
+- Age enters once.
+
+See `docs/build-handoffs/Core_Build_Reasoning_2026-10.md` §4a and plan Stage 6.

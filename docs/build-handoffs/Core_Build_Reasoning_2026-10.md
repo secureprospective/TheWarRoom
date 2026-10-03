@@ -112,6 +112,78 @@ production were all multiplied together.
 Every number above is cited with its quote in the research run's `REPORT-3-evidence.md`, copied
 to the evidence folder.
 
+## 4a. The career and age arcs: how the research folds into the blend
+
+Christopher asked whether every finding had been carried into how the blend moves along a
+career and an age curve. On first pass it had not. This section is the complete accounting.
+
+### The model in one picture
+
+```
+prior          = f(draft capital, combine, college)            pre-NFL facts only, fitted jointly
+production_s   = per-component rates for past season s, age-adjusted to today along the talent arc
+e              = effective count of exposure across seasons     (Σw)²/Σw², recency-weighted
+on_field_now   = Z_now · production + (1 − Z_now) · prior       Z_now from within-season reliability
+dynasty_start  = Z_dyn · production + (1 − Z_dyn) · prior       Z_dyn from season-pair stability
+dynasty        = Σ_t discount_t · P(on field at t) · talent_arc(age+t, exp+t | dynasty_start)
+```
+
+### Two design errors this pass caught
+
+1. **k measured against the league mean would under-weight scouting.**
+   - Split-half reliability measures signal against the population mean. The blend shrinks
+     toward a *player-specific* prior.
+   - The right k uses the talent spread left after the prior: `τ²_resid = τ²(1 − R²_prior)`.
+   - With draft capital's player-level R² of about 0.2–0.3 (E9a), k is about 1.25–1.4× larger
+     than the naive value. That figure is illustrative: E9a's R² is for career value, not
+     per-snap production, and Stage 6.1 measures the real R² per position. So the prior holds weight longer for well-scouted players.
+   - This is also the answer to the question the research could not settle: "how many seasons
+     does scouting keep adding information?" (E9f). The blend answers it per player, from the
+     fitted k and how many snaps he has. It is not a calendar rule.
+2. **Recency and age would have counted decline twice.**
+   - Discounting old seasons *and* applying an age curve both push older players down.
+   - Fix: age-adjust each past season to today along the talent arc first. Then recency
+     measures only lost information (role, team and scheme change; E0.2, E7).
+
+### One defect in today's code this pass found
+
+**Age is counted twice today.** L3 applies `(1 − 0.03)^(age − peak)`, and 9 of the 10 L4 rubrics
+also carry an age-trajectory sub-signal inside breakout (for example `wr.go`, weight 0.15). The
+new design has age in one place only: the arcs.
+
+### Every Astra finding and where it lands
+
+| Finding | What it says | Where it lands |
+|---|---|---|
+| E0 | `k = σ²/τ²`; an inclusion cutoff is not k; YoY ≠ split-half; reliability vs the mean ≠ weight vs a prior; same target, same scale; injured weeks add no trials | Plan Stage 6.2 (k against the prior), 6.3 (two k's), percentile scale, injury rule in Stage 7 |
+| E1 | QB passer-rating "stabilizes" at 50–110 attempts, but the method conflates α and R² | Not used for k; QB k fitted (Stage 6.2) |
+| E2 | Pressure rate repeats (0.72) more than sack rate (0.51); 250 snaps is a filter | IDP: no free pressures, so QB hits are the nearest proxy; sacks get a larger k |
+| E3 | Earning targets repeats (R² 0.41); efficiency after the target barely does (0.08) | k per component: opportunity vs efficiency (Stage 6.3) |
+| E4 | Player-level coverage EPA is about 0 year to year | CB/S production heavily shrunk; large k expected |
+| E5 | Tackle totals, split-half: LB 0.64–0.73, DB 0.46–0.57, DL 0.51–0.57; totals mix exposure and rate | Separate snap share (role) from per-snap rate; k per component |
+| E6 | Kicker shrinkage beats raw; `1 − exp(−n/a)` is a competing form; distance context first | The shape of Z is tested (Stage 6.4); K by distance band |
+| E7 | Shrinkage beats the naive current average; the population choice matters; effective count `(Σw)²/Σw²` | Pool within position or role; effective-count evidence (Stage 6.5) |
+| E8a–c | Marcel 5/4/3 baseline; Year 2 outweighs Year 1 for young players; blog weights are a lead only | Recency fitted after age adjustment (6.5); experience term for the year-1→2 jump (6.6) |
+| E9a | Draft capital: player-level R² about 0.2–0.3; it also predicts games and starts, i.e. opportunity | Core of the prior (6.1); also an input to the survival arc (6.7) |
+| E9b | Combine weak overall; RB 10-yard split about 9%; WR vertical 3.7%; athleticism shifts aging | Small prior add-ons via the joint fit; athleticism × age tested in the talent arc (6.6) |
+| E9c | TE college receptions and YPR add information beyond draft order | College production in the joint prior |
+| E9d | WR breakout age: defined, not validated | Tested as a WR prior feature in the joint fit; kept only if the holdout supports it |
+| E9e | No Madden evidence; consensus boards overlap with draft capital | Madden out (R8); one joint prior stops double-counting |
+| E9f | Scouting's useful lifetime: could not establish | Answered structurally by k against the prior (above) |
+| E10a | Survivorship bias; WAR-share curves include exits; linemen decline later | Talent arc with imputation (6.6); **exits become the survival arc (6.7)**: for dynasty, attrition is signal, not bias |
+| E10b | QB ANY/A peaks about 27, with accelerating decline (−0.04, −0.14, −0.24) | Talent arc is curved, not a flat 3%; a sanity check for the fit |
+| E10c | RB volume peaks at 26, then steady decline, understated by survivorship | Sanity check; the survival arc carries the RB cliff |
+| E10d | WR best seasons at ages 25–29 (selected sample) | Sanity check |
+| E10e | TE about 27, sensitive to elite survivors | Sanity check |
+| E10f | Kicker curves that condition on career length can't forecast | Survival arc never conditions on the future (6.7) |
+| E10g | No numeric IDP age curves | IDP arcs fitted from our own data only; flagged as such in the UI |
+| Sector 2, G2/G5 | Injury designation ≠ games missed; data sources change in 2022 and 2023 | Survival arc uses observed snaps, not designations; fits mark source changes |
+
+Three things remain unestablished even after fitting, and must stay labelled in the app:
+- No IDP opportunity denominators (Sector 2, G3).
+- The prior's weight for our *own* scouting history needs the clock: years of stored priors.
+- No free source validates film grades.
+
 ## 5. Architecture doctrine from this session
 
 - **Start the clock first.** A raw fetch archive (content-addressed, append-only) comes before
