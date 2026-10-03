@@ -31,7 +31,9 @@
 package assembly
 
 import (
+	"maps"
 	"math"
+	"slices"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/ras"
@@ -90,7 +92,9 @@ func scoreRAS(rawByGSIS map[string]ras.RawCombine, posByGSIS map[string]domain.P
 // every player who has it present — never NaN/Inf.
 func computeMoments(rawByGSIS map[string]ras.RawCombine, posByGSIS map[string]domain.Position) map[domain.Position]map[int]moments {
 	cohort := make(map[domain.Position]map[int]*stat, len(posByGSIS))
-	for gsis, rc := range rawByGSIS {
+	// Sum in id order: a float sum in map order differs in its last bits from run to run.
+	for _, gsis := range slices.Sorted(maps.Keys(rawByGSIS)) {
+		rc := rawByGSIS[gsis]
 		pos, ok := posByGSIS[gsis]
 		if !ok {
 			continue // no resolved position → cannot cohort; ordinary miss
