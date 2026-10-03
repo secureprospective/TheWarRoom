@@ -102,7 +102,7 @@ func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
 	}
 
 	// Bounded context: an IPC method must never block the frontend indefinitely if the
-	// data layer stalls (the Ping/M1 pattern). A tag additionally fetches the players-DB
+	// data layer stalls (the M1 pattern). A tag additionally fetches the players-DB
 	// Lookup, so it gets a longer budget.
 	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
 	defer cancel()

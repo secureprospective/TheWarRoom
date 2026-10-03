@@ -44,7 +44,7 @@ type App struct {
 	coordinator *transactions.Coordinator // B7a sole runtime mutator; holds the ONLY state.Writer
 	mflClient   *mfl.Client               // shared transport; rate limit + host cache live here
 	season      int                       // ingestion.SeasonYear parsed once at startup
-	startupErr  error                     // captured at startup; surfaced via Ping (Wails OnStartup cannot fail).
+	startupErr  error                     // startup failure; shown in the shell through AppInfo
 	lockFile    *os.File                  // single-instance advisory lock; held for process lifetime, released at shutdown.
 
 	// players-DB directory, fetched at most once per process (MFL caps the
@@ -103,27 +103,10 @@ func NewApp() *App {
 	return &App{}
 }
 
-// PingResult is the IPC ping-pong payload: a typed, JSON-serializable round
-// trip that proves the Go<->JS bridge works AND that the data layer came up.
-// No interface{}/any fields — the boundary stays fully typed (ifaceguard).
-type PingResult struct {
-	OK          bool   `json:"ok"`
-	Message     string `json:"message"`
-	JournalMode string `json:"journalMode"`
-	Detail      string `json:"detail"`
-}
-
-// startup is the Wails OnStartup hook. It saves the context and opens the
-// SQLite pools. OnStartup has no error return, so a failure is captured in
-// startupErr and reported through Ping rather than silently swallowed.
+// startup is the Wails OnStartup hook. OnStartup cannot return an error, so a failure is
+// kept in startupErr, logged, and shown by the shell's banner through AppInfo.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-
-	// Wails OnStartup cannot return an error, so a failure here is captured in
-	// startupErr and surfaced through Ping. But nothing in the shell pings on load,
-	// so a broken startup shows only as a downstream "store not initialized" from a
-	// panel — masking the real cause. Log it to stderr too so a terminal launch
-	// prints the underlying error directly (Ship-4 diagnostic).
 	defer func() {
 		if a.startupErr != nil {
 			log.Printf("the war room: startup failed: %v", a.startupErr)
@@ -235,36 +218,6 @@ func (a *App) shutdown(_ context.Context) {
 		_ = a.pools.Close()
 	}
 	releaseInstanceLock(a.lockFile)
-}
-
-// Ping is the IPC ping-pong method bound to the frontend. It round-trips a
-// typed result and reports data-layer health — the B0 functional-verification
-// target.
-func (a *App) Ping() PingResult {
-	if a.startupErr != nil {
-		return PingResult{OK: false, Message: "pong", Detail: a.startupErr.Error()}
-	}
-	if a.pools == nil {
-		return PingResult{OK: false, Message: "pong", Detail: "database not initialized"}
-	}
-	// Derive a bounded context from the app-lifetime ctx: an IPC method must never
-	// block the frontend indefinitely if the data layer stalls. Every IPC method
-	// inherits this pattern (Gemini Round-2 finding #1).
-	ctx, cancel := context.WithTimeout(a.ctx, 3*time.Second)
-	defer cancel()
-	if err := a.pools.Health(ctx); err != nil {
-		return PingResult{OK: false, Message: "pong", Detail: err.Error()}
-	}
-	mode, err := a.pools.JournalMode(ctx)
-	if err != nil {
-		return PingResult{OK: false, Message: "pong", Detail: err.Error()}
-	}
-	return PingResult{
-		OK:          true,
-		Message:     "pong",
-		JournalMode: mode,
-		Detail:      "Go<->JS bridge live; SQLite read/write pools healthy.",
-	}
 }
 
 // configDir returns the app's on-disk data directory (e.g. ~/.config/TheWarRoom),

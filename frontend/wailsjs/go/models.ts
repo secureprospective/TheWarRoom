@@ -174,6 +174,7 @@ export namespace main {
 	    version: string;
 	    commit: string;
 	    buildDate: string;
+	    startupError?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new AppInfo(source);
@@ -184,6 +185,7 @@ export namespace main {
 	        this.version = source["version"];
 	        this.commit = source["commit"];
 	        this.buildDate = source["buildDate"];
+	        this.startupError = source["startupError"];
 	    }
 	}
 	export class CalendarEventDTO {
@@ -663,24 +665,6 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ok = source["ok"];
 	        this.phase = source["phase"];
-	        this.detail = source["detail"];
-	    }
-	}
-	export class PingResult {
-	    ok: boolean;
-	    message: string;
-	    journalMode: string;
-	    detail: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new PingResult(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.ok = source["ok"];
-	        this.message = source["message"];
-	        this.journalMode = source["journalMode"];
 	        this.detail = source["detail"];
 	    }
 	}

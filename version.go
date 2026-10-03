@@ -18,16 +18,20 @@ var (
 	buildDate = ""
 )
 
-// AppInfo is the typed build-stamp payload bound to the frontend. No
-// interface{}/any fields — the IPC boundary stays fully typed (ifaceguard).
+// AppInfo is what the shell reads once on load: the build stamp, and the startup failure if
+// there was one (empty when startup succeeded).
 type AppInfo struct {
-	Version   string `json:"version"`
-	Commit    string `json:"commit"`
-	BuildDate string `json:"buildDate"`
+	Version      string `json:"version"`
+	Commit       string `json:"commit"`
+	BuildDate    string `json:"buildDate"`
+	StartupError string `json:"startupError,omitempty"`
 }
 
-// AppInfo returns the link-time build stamp. Pure and side-effect-free: it
-// reports the values injected at build, so a dev build reports "dev".
+// AppInfo returns the build stamp and startup status.
 func (a *App) AppInfo() AppInfo {
-	return AppInfo{Version: version, Commit: commit, BuildDate: buildDate}
+	info := AppInfo{Version: version, Commit: commit, BuildDate: buildDate}
+	if a.startupErr != nil {
+		info.StartupError = a.startupErr.Error()
+	}
+	return info
 }

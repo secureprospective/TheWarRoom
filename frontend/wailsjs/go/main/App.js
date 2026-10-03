@@ -62,10 +62,6 @@ export function GetRoster(arg1) {
   return window['go']['main']['App']['GetRoster'](arg1);
 }
 
-export function Ping() {
-  return window['go']['main']['App']['Ping']();
-}
-
 export function PreviewTransaction(arg1) {
   return window['go']['main']['App']['PreviewTransaction'](arg1);
 }
