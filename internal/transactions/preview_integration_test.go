@@ -61,11 +61,10 @@ func TestIntegration_PreviewLeavesStateUnchanged(t *testing.T) {
 	}
 }
 
-// TestIntegration_PreviewTagLeavesStateUnchanged is the planted proof for the §9 dry-run verb
-// (PreviewTag, design D5): it resolves the same top-5 price as ExecuteTag through the shared
-// resolveTag path, runs the REAL handler, yet persists nothing. It previews a valid tag of 0022,
-// asserts he is NOT flagged tagged and the franchise cap is byte-identical, then ExecuteTags the
-// SAME player and asserts it NOW tags + moves the cap — so the only difference is the rollback.
+// TestIntegration_PreviewTagLeavesStateUnchanged: a tag preview resolves the same top-5 price as
+// the commit (both go through Tag.resolve) and runs the real handler, yet 0022 stays untagged and
+// the franchise cap is unchanged. Executing the same request then tags him and moves the cap, so
+// the rollback is the only difference.
 func TestIntegration_PreviewTagLeavesStateUnchanged(t *testing.T) {
 	s, c, dir := tagStore(t)
 	ctx := context.Background()
@@ -75,7 +74,7 @@ func TestIntegration_PreviewTagLeavesStateUnchanged(t *testing.T) {
 		t.Fatalf("precondition: franchise 0002 has no cap")
 	}
 
-	rec, err := c.PreviewTag(ctx, "0022", dir)
+	rec, err := c.WithDirectory(dir).Preview(ctx, transactions.Tag{MFLID: "0022"})
 	if err != nil {
 		t.Fatalf("preview of a valid tag errored: %v", err)
 	}
@@ -92,7 +91,7 @@ func TestIntegration_PreviewTagLeavesStateUnchanged(t *testing.T) {
 	}
 
 	// Planted mutation: the same tag COMMITTED must actually flag + move the cap.
-	if _, err := c.ExecuteTag(ctx, "0022", dir); err != nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Tag{MFLID: "0022"}); err != nil {
 		t.Fatalf("execute of the previewed tag errored: %v", err)
 	}
 	if p, _ := s.Reader().Player("0022"); !p.IsTagged {
@@ -100,11 +99,9 @@ func TestIntegration_PreviewTagLeavesStateUnchanged(t *testing.T) {
 	}
 }
 
-// TestIntegration_PreviewExtensionLeavesStateUnchanged is the planted proof for the §10 dry-run verb
-// (PreviewExtension, design D5): it resolves the same position floor as ExecuteExtension through the
-// shared resolveExtension path, runs the REAL handler, yet persists nothing. It previews a valid +2
-// extension of 0001, asserts the contract term is unchanged (still 2028) and no future cells were
-// appended, then ExecuteExtensions the SAME request and asserts the term NOW lengthens to 2030.
+// TestIntegration_PreviewExtensionLeavesStateUnchanged: a +2 extension preview of 0001 resolves
+// the same floor as the commit (both go through Extension.resolve), yet the term stays 2028 and no
+// cells are appended. Executing the same request then lengthens the term to 2030.
 func TestIntegration_PreviewExtensionLeavesStateUnchanged(t *testing.T) {
 	s, c, dir := extStore(t)
 	ctx := context.Background()
@@ -113,7 +110,7 @@ func TestIntegration_PreviewExtensionLeavesStateUnchanged(t *testing.T) {
 		t.Fatalf("precondition: 0001 expiration = %d, want 2028", p.ExpirationYear)
 	}
 
-	rec, err := c.PreviewExtension(ctx, "0001", 2, dir)
+	rec, err := c.WithDirectory(dir).Preview(ctx, transactions.Extension{MFLID: "0001", AddedYears: 2})
 	if err != nil {
 		t.Fatalf("preview of a valid extension errored: %v", err)
 	}
@@ -136,7 +133,7 @@ func TestIntegration_PreviewExtensionLeavesStateUnchanged(t *testing.T) {
 	}
 
 	// Planted mutation: the same extension COMMITTED must actually lengthen the term.
-	if _, err := c.ExecuteExtension(ctx, "0001", 2, dir); err != nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0001", AddedYears: 2}); err != nil {
 		t.Fatalf("execute of the previewed extension errored: %v", err)
 	}
 	if p, _ := s.Player("0001"); p.ExpirationYear != 2030 {

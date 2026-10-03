@@ -65,7 +65,7 @@ func buyStore(t *testing.T) (*statepkg.Store, *transactions.Coordinator) {
 	if err := s.Initialize(context.Background(), buySeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
-	c, err := transactions.New(s.Writer(), nil)
+	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
 	if err != nil {
 		t.Fatalf("New coordinator: %v", err)
 	}
@@ -209,7 +209,7 @@ func TestIntegration_BuyoutUnequalCellsUsesMean(t *testing.T) {
 	if err := s.Initialize(context.Background(), unequalSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
-	c, err := transactions.New(s.Writer(), nil)
+	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
 	if err != nil {
 		t.Fatalf("New coordinator: %v", err)
 	}
@@ -218,8 +218,8 @@ func TestIntegration_BuyoutUnequalCellsUsesMean(t *testing.T) {
 
 	// Extend +1 year: 2029 lands at $12M (150%×$8M beats the $10M WR floor), making the remaining
 	// cells unequal.
-	if _, err := c.ExecuteExtension(ctx, "0071", 1, dir); err != nil {
-		t.Fatalf("ExecuteExtension: %v", err)
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0071", AddedYears: 1}); err != nil {
+		t.Fatalf("extension: %v", err)
 	}
 	cells, _ := s.LedgerCells(ctx, "0071")
 	if cells[2029] != 12*mil {

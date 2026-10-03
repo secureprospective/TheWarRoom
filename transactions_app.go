@@ -73,79 +73,51 @@ type CapDeltaDTO struct {
 
 // ExecuteTransaction runs a request through the coordinator and commits it.
 func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
+	return a.runTransaction(req, false)
+}
+
+// PreviewTransaction dry-runs a request exactly as ExecuteTransaction would, then rolls back: the
+// confirm screen learns whether it would commit, or why not, and its cap impact. Nothing is
+// stored, and the preview is never fed back as input.
+func (a *App) PreviewTransaction(req TransactionRequest) TransactionResult {
+	return a.runTransaction(req, true)
+}
+
+// runTransaction builds the request and commits or previews it. Tag, extension and signing make
+// the coordinator fetch the players directory on first use, hence the 30s budget. Prices and
+// floors are resolved server-side; only ids and counts cross the wire.
+func (a *App) runTransaction(req TransactionRequest, preview bool) TransactionResult {
 	if a.startupErr != nil {
 		return TransactionResult{Detail: a.startupErr.Error()}
 	}
 	if a.coordinator == nil {
 		return TransactionResult{Detail: "transaction coordinator not initialized"}
 	}
-
-	// A tag also fetches the players directory, hence the longer budget.
-	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
-	defer cancel()
-
-	// TAG (§9): the price is the top-5 average at the player's position, which needs the players
-	// directory. Only the id crosses the wire.
-	if req.Kind == string(transactions.KindTag) {
-		dir, derr := a.directory(ctx)
-		if derr != nil {
-			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §9 tag price: " + derr.Error()}
-		}
-		rec, terr := a.coordinator.ExecuteTag(ctx, req.MFLID, dir)
-		if terr != nil {
-			return TransactionResult{Kind: req.Kind, Detail: terr.Error()}
-		}
-		return TransactionResult{OK: true, Kind: string(rec.Kind), PlayersAffected: rec.PlayersAffected, At: rec.At.Format(time.RFC3339)}
-	}
-
-	// EXTENSION (§10): the price is resolved in the transaction, but the position floor needs the
-	// players directory.
-	if req.Kind == string(transactions.KindExtension) {
-		dir, derr := a.directory(ctx)
-		if derr != nil {
-			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §10 position floor: " + derr.Error()}
-		}
-		rec, terr := a.coordinator.ExecuteExtension(ctx, req.MFLID, req.AddedYears, dir)
-		if terr != nil {
-			return TransactionResult{Kind: req.Kind, Detail: terr.Error()}
-		}
-		return TransactionResult{OK: true, Kind: string(rec.Kind), PlayersAffected: rec.PlayersAffected, At: rec.At.Format(time.RFC3339)}
-	}
-
 	txn, err := buildRequest(req)
 	if err != nil {
 		return TransactionResult{Detail: err.Error()}
 	}
+	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
+	defer cancel()
 
-	// SIGN (§6): the min-salary floor depends on the player's draft year, from the players
-	// directory.
-	if sign, ok := txn.(transactions.Sign); ok {
-		return a.executeSign(ctx, req.Kind, sign)
+	run := a.coordinator.Execute
+	if preview {
+		run = a.coordinator.Preview
 	}
-
-	rec, err := a.coordinator.Execute(ctx, txn)
+	rec, err := run(ctx, txn)
 	if err != nil {
 		return TransactionResult{Kind: req.Kind, Detail: err.Error()}
 	}
-	return TransactionResult{
+	res := TransactionResult{
 		OK:              true,
 		Kind:            string(rec.Kind),
 		PlayersAffected: rec.PlayersAffected,
 		At:              rec.At.Format(time.RFC3339),
 	}
-}
-
-// executeSign resolves the players directory for the min-salary floor and runs the signing.
-func (a *App) executeSign(ctx context.Context, kind string, sign transactions.Sign) TransactionResult {
-	dir, derr := a.directory(ctx)
-	if derr != nil {
-		return TransactionResult{Kind: kind, Detail: "resolve players DB for the §6 min-salary floor: " + derr.Error()}
+	if preview {
+		res.CapDeltas = a.capDeltaDTOs(rec.CapDeltas)
 	}
-	rec, terr := a.coordinator.ExecuteSign(ctx, sign, dir)
-	if terr != nil {
-		return TransactionResult{Kind: kind, Detail: terr.Error()}
-	}
-	return TransactionResult{OK: true, Kind: string(rec.Kind), PlayersAffected: rec.PlayersAffected, At: rec.At.Format(time.RFC3339)}
+	return res
 }
 
 // PhaseResult is the league year's current season phase.
@@ -212,15 +184,18 @@ func buildRequest(req TransactionRequest) (transactions.Request, error) {
 	case string(transactions.KindCancelEvent):
 		return transactions.CancelEvent{Event: calendarEvent(req)}, nil
 	default:
-		// Kinds whose parsing can fail live in buildMoneyRequest.
-		return buildMoneyRequest(req)
+		return buildContractRequest(req)
 	}
 }
 
-// buildMoneyRequest maps the kinds whose construction can fail: cap relief, restructure and
-// signing (money parsing) and the trade deadline (time parsing).
-func buildMoneyRequest(req TransactionRequest) (transactions.Request, error) {
+// buildContractRequest maps the contract kinds and those whose parsing can fail: tag, extension,
+// restructure and signing, cap relief (money parsing) and the trade deadline (time parsing).
+func buildContractRequest(req TransactionRequest) (transactions.Request, error) {
 	switch req.Kind {
+	case string(transactions.KindTag):
+		return transactions.Tag{MFLID: req.MFLID}, nil
+	case string(transactions.KindExtension):
+		return transactions.Extension{MFLID: req.MFLID, AddedYears: req.AddedYears}, nil
 	case string(transactions.KindSetTradeDeadline):
 		// An empty deadline is the zero time, which clears it.
 		var deadline time.Time

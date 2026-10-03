@@ -2,6 +2,8 @@ package transactions_test
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -45,10 +47,10 @@ func TestIntegration_SignEnforcesVeteranFloor(t *testing.T) {
 	waiveIntoPool(t, c, "0011")
 	dir := draftDir{"0011": 2020} // season 2026 − 2020 = 6 years → $530k floor
 
-	if _, err := c.ExecuteSign(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(500_000), Years: 2}, dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(500_000), Years: 2}); err == nil {
 		t.Fatal("signed a 6-year veteran at $500k (below the $530k §6 floor), want rejection")
 	}
-	if _, err := c.ExecuteSign(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(530_000), Years: 2}, dir); err != nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(530_000), Years: 2}); err != nil {
 		t.Fatalf("sign a 6-year veteran at the $530k floor: %v", err)
 	}
 	if _, ok := s.Reader().Player("0011"); !ok {
@@ -68,11 +70,11 @@ func TestIntegration_SignSentinelDraftYearGetsRookieFloor(t *testing.T) {
 	dir := draftDir{"0011": 1970} // MFL undrafted/unknown epoch sentinel
 
 	// Below the rookie floor → still rejected (the floor IS enforced, just at the rookie level).
-	if _, err := c.ExecuteSign(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(300_000), Years: 1}, dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(300_000), Years: 1}); err == nil {
 		t.Fatal("signed at $300k (below the $330k rookie floor), want rejection")
 	}
 	// Above the rookie floor but BELOW the spurious 56-year $630k floor → must be accepted.
-	if _, err := c.ExecuteSign(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(400_000), Years: 1}, dir); err != nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(400_000), Years: 1}); err != nil {
 		t.Fatalf("sign at $400k with a 1970 sentinel draft year: %v — the sentinel must yield the rookie floor, not $630k", err)
 	}
 }
@@ -86,10 +88,10 @@ func TestIntegration_SignNoDraftDataGetsRookieFloor(t *testing.T) {
 	waiveIntoPool(t, c, "0011")
 	dir := draftDir{"0011": 0} // present record, undrafted sentinel → HasDraftYear=false
 
-	if _, err := c.ExecuteSign(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(300_000), Years: 1}, dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(300_000), Years: 1}); err == nil {
 		t.Fatal("signed at $300k with no draft data (below the $330k rookie floor), want rejection")
 	}
-	if _, err := c.ExecuteSign(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(330_000), Years: 1}, dir); err != nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(330_000), Years: 1}); err != nil {
 		t.Fatalf("sign at the $330k rookie floor with no draft data: %v", err)
 	}
 }
@@ -102,10 +104,10 @@ func TestIntegration_SignRookieDraftClassFloor(t *testing.T) {
 	waiveIntoPool(t, c, "0011")
 	dir := draftDir{"0011": 2026} // drafted this season → 0 years experience → $330k floor
 
-	if _, err := c.ExecuteSign(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(320_000), Years: 1}, dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(320_000), Years: 1}); err == nil {
 		t.Fatal("signed a rookie at $320k (below the $330k floor), want rejection")
 	}
-	if _, err := c.ExecuteSign(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(330_000), Years: 1}, dir); err != nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(330_000), Years: 1}); err != nil {
 		t.Fatalf("sign a rookie at the $330k floor: %v", err)
 	}
 }
@@ -122,10 +124,10 @@ func TestIntegration_SignPlausibilityWindowBoundary(t *testing.T) {
 	_, c := signStore(t)
 	waiveIntoPool(t, c, "0011")
 	atBound := draftDir{"0011": 1996}
-	if _, err := c.ExecuteSign(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(600_000), Years: 1}, atBound); err == nil {
+	if _, err := c.WithDirectory(atBound).Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(600_000), Years: 1}); err == nil {
 		t.Fatal("signed a 1996 draftee (30 yrs → $630k floor) at $600k, want rejection — the window's lower bound must still honor experience")
 	}
-	if _, err := c.ExecuteSign(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(630_000), Years: 1}, atBound); err != nil {
+	if _, err := c.WithDirectory(atBound).Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(630_000), Years: 1}); err != nil {
 		t.Fatalf("sign a 1996 draftee at the $630k floor: %v", err)
 	}
 
@@ -133,19 +135,46 @@ func TestIntegration_SignPlausibilityWindowBoundary(t *testing.T) {
 	_, c2 := signStore(t)
 	waiveIntoPool(t, c2, "0011")
 	pastBound := draftDir{"0011": 1995}
-	if _, err := c2.ExecuteSign(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(300_000), Years: 1}, pastBound); err == nil {
+	if _, err := c2.WithDirectory(pastBound).Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(300_000), Years: 1}); err == nil {
 		t.Fatal("signed at $300k with a 1995 (implausible, 31-yr) draft year, want rejection at the rookie floor")
 	}
-	if _, err := c2.ExecuteSign(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(330_000), Years: 1}, pastBound); err != nil {
+	if _, err := c2.WithDirectory(pastBound).Execute(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(330_000), Years: 1}); err != nil {
 		t.Fatalf("sign at the $330k rookie floor with an implausible draft year: %v", err)
 	}
 }
 
-// TestIntegration_ExecuteSignNilDirectoryFails proves ExecuteSign fails loud without the players-DB
-// join it needs to resolve the §6 experience input.
-func TestIntegration_ExecuteSignNilDirectoryFails(t *testing.T) {
+// TestIntegration_SignWithoutDirectoryFails: a signing needs the players directory for the §6
+// experience input, so a missing one is a wiring error, not a silent rookie floor.
+func TestIntegration_SignWithoutDirectoryFails(t *testing.T) {
 	_, c := signStore(t)
-	if _, err := c.ExecuteSign(context.Background(), transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(500_000), Years: 1}, nil); err == nil {
-		t.Fatal("ExecuteSign with a nil directory succeeded, want a wiring error")
+	_, err := c.WithDirectory(nil).Execute(context.Background(), transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(500_000), Years: 1})
+	if err == nil || !strings.Contains(err.Error(), "players directory") {
+		t.Fatalf("err = %v, want a players-directory wiring error", err)
+	}
+}
+
+// TestIntegration_DirectoryFetchedOnlyWhenNeeded: the directory costs an MFL fetch, so only a
+// request that resolves facts may ask for it, and its failure is the request's error.
+func TestIntegration_DirectoryFetchedOnlyWhenNeeded(t *testing.T) {
+	s, _ := signStore(t)
+	ctx := context.Background()
+	calls := 0
+	down := errors.New("mfl down")
+	c, err := transactions.New(s.Writer(), nil, func(context.Context) (transactions.Directory, error) {
+		calls++
+		return nil, down
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := c.Execute(ctx, transactions.SetSigningWindow{Open: false, Note: "close"}); err != nil {
+		t.Fatalf("close window: %v", err)
+	}
+	if calls != 0 {
+		t.Fatalf("a request needing no facts fetched the directory %d time(s)", calls)
+	}
+	_, err = c.Preview(ctx, transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(500_000), Years: 1})
+	if calls != 1 || !errors.Is(err, down) {
+		t.Fatalf("calls = %d, err = %v; want one fetch and its error returned", calls, err)
 	}
 }

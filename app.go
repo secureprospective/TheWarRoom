@@ -180,7 +180,8 @@ func (a *App) initStoreFloor(parent context.Context) error {
 		// The coordinator is the only holder of the state Writer.
 		{"transaction coordinator", func(context.Context) error {
 			var err error
-			coord, err = transactions.New(st.Writer(), &rosterPolicyAdapter{rb: rb, app: a})
+			coord, err = transactions.New(st.Writer(), &rosterPolicyAdapter{rb: rb, app: a},
+				func(c context.Context) (transactions.Directory, error) { return a.directory(c) })
 			return err //nolint:wrapcheck // wrapped below with the step name
 		}},
 		{"output", out.Initialize},

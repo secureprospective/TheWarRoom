@@ -9,10 +9,17 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
+
+// emptyDirectory is a players directory with no records: a tag or extension fails to resolve
+// and a signing gets the rookie floor. Tests that need facts use WithDirectory.
+func emptyDirectory(context.Context) (transactions.Directory, error) {
+	return normalize.Lookup{}, nil
+}
 
 // seedSource yields a fixed two-franchise league for the integration wiring test.
 type seedSource struct{ t *testing.T }
@@ -65,7 +72,7 @@ func realStoreWithPools(t *testing.T) (*state.Store, *db.Pools) {
 // franchises and the derived cap reflects it.
 func TestIntegration_TradePersists(t *testing.T) {
 	s, pools := realStoreWithPools(t)
-	c, err := transactions.New(s.Writer(), nil)
+	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -114,7 +121,7 @@ func TestIntegration_TradePersists(t *testing.T) {
 // only), the player is gone, and a second read confirms it all persisted.
 func TestIntegration_WaiverCutConservesCap(t *testing.T) {
 	s := realStore(t)
-	c, err := transactions.New(s.Writer(), nil)
+	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -153,7 +160,7 @@ func TestIntegration_WaiverCutConservesCap(t *testing.T) {
 // atomicity guarantee, proven through the real Coordinator + store together.
 func TestIntegration_BadLegRollsBackWholeTrade(t *testing.T) {
 	s := realStore(t)
-	c, err := transactions.New(s.Writer(), nil)
+	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -180,7 +187,7 @@ func TestIntegration_BadLegRollsBackWholeTrade(t *testing.T) {
 // KindTrade is rejected with the same shape as the existing KindSign/SigningWindowClosed gate.
 func TestIntegration_TradeDeadlineBlocksTrade(t *testing.T) {
 	s := realStore(t)
-	c, err := transactions.New(s.Writer(), nil)
+	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}

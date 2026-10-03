@@ -190,69 +190,6 @@ func (a *App) GetLegalOps() LegalOpsResult {
 	return LegalOpsResult{OK: true, Phase: string(ph), Kinds: out}
 }
 
-// PreviewTransaction dry-runs a request exactly as ExecuteTransaction would, then rolls back:
-// the confirm screen learns whether it would commit, or the reason it would not. Nothing is
-// stored, and the preview result is never fed back as input.
-func (a *App) PreviewTransaction(req TransactionRequest) TransactionResult {
-	if a.startupErr != nil {
-		return TransactionResult{Detail: a.startupErr.Error()}
-	}
-	if a.coordinator == nil {
-		return TransactionResult{Detail: "transaction coordinator not initialized"}
-	}
-	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
-	defer cancel()
-
-	// TAG and EXTENSION resolve their price or floor server-side from the players directory, so
-	// they preview through their own verbs. Only ids and counts cross the wire, never money.
-	switch req.Kind {
-	case string(transactions.KindTag):
-		dir, derr := a.directory(ctx)
-		if derr != nil {
-			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §9 tag price: " + derr.Error()}
-		}
-		rec, terr := a.coordinator.PreviewTag(ctx, req.MFLID, dir)
-		return a.receiptResult(req.Kind, rec, terr)
-	case string(transactions.KindExtension):
-		dir, derr := a.directory(ctx)
-		if derr != nil {
-			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §10 position floor: " + derr.Error()}
-		}
-		rec, terr := a.coordinator.PreviewExtension(ctx, req.MFLID, req.AddedYears, dir)
-		return a.receiptResult(req.Kind, rec, terr)
-	}
-
-	txn, err := buildRequest(req)
-	if err != nil {
-		return TransactionResult{Detail: err.Error()}
-	}
-	if sign, ok := txn.(transactions.Sign); ok {
-		dir, derr := a.directory(ctx)
-		if derr != nil {
-			return TransactionResult{Kind: req.Kind, Detail: "resolve players DB for the §6 min-salary floor: " + derr.Error()}
-		}
-		rec, terr := a.coordinator.PreviewSign(ctx, sign, dir)
-		return a.receiptResult(req.Kind, rec, terr)
-	}
-	rec, terr := a.coordinator.Preview(ctx, txn)
-	return a.receiptResult(req.Kind, rec, terr)
-}
-
-// receiptResult maps a coordinator outcome onto TransactionResult: a rejection carries the
-// reason; a success carries the receipt and the previewed cap impact.
-func (a *App) receiptResult(kind string, rec transactions.Receipt, err error) TransactionResult {
-	if err != nil {
-		return TransactionResult{Kind: kind, Detail: err.Error()}
-	}
-	return TransactionResult{
-		OK:              true,
-		Kind:            string(rec.Kind),
-		PlayersAffected: rec.PlayersAffected,
-		At:              rec.At.Format(time.RFC3339),
-		CapDeltas:       a.capDeltaDTOs(rec.CapDeltas),
-	}
-}
-
 // capDeltaDTOs formats the signed cap deltas with franchise names. Never nil.
 func (a *App) capDeltaDTOs(deltas []transactions.CapDelta) []CapDeltaDTO {
 	names := map[string]string{}
