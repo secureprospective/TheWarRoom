@@ -11,12 +11,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
-// Player normalizes one raw rosters row into a typed domain.PlayerRecord, joining
-// it against the players Lookup for name/position/team/rookie. It is the single
-// place a roster row becomes a typed record: id is re-derived through playerid.New
-// (RISK-003 site #2), salary string→float, contractStatus dirty→enum, contractYear
-// string→int. A row referencing an unknown or aggregate player fails loud rather
-// than producing a half-typed record.
+// Player turns one raw roster row into a domain.PlayerRecord, joined against the players
+// Lookup. The id is re-derived through playerid.New. A row naming an unknown or aggregate
+// player fails rather than producing a half-typed record.
 func Player(raw rosters.RawRoster, lookup Lookup) (domain.PlayerRecord, error) {
 	id, err := playerid.New(raw.PlayerID)
 	if err != nil {
@@ -58,10 +55,8 @@ func Player(raw rosters.RawRoster, lookup Lookup) (domain.PlayerRecord, error) {
 	}, nil
 }
 
-// Rosters normalizes a full rosters feed into per-franchise domain.Roster records,
-// grouped by franchise id and returned in deterministic franchise order. One bad
-// row fails the whole batch (fail-loud, B2 #3): a partially-normalized league is
-// worse than a surfaced error.
+// Rosters normalizes a whole rosters feed into per-franchise records in franchise order.
+// One bad row fails the batch: a partly normalized league is worse than an error.
 func Rosters(raws []rosters.RawRoster, lookup Lookup) ([]domain.Roster, error) {
 	byFranchise := make(map[string][]domain.PlayerRecord)
 	order := make([]string, 0)
@@ -81,9 +76,8 @@ func Rosters(raws []rosters.RawRoster, lookup Lookup) ([]domain.Roster, error) {
 	out := make([]domain.Roster, 0, len(order))
 	for _, fid := range order {
 		recs := byFranchise[fid]
-		// Deterministic intra-roster order: MFL array order is unstable across
-		// requests, which would create false diffs in downstream WAL writes
-		// (B3 review). Sort by canonical id — any stable total order suffices.
+		// MFL's array order varies between requests; sorting by id keeps downstream writes from
+		// showing false diffs.
 		sort.Slice(recs, func(i, j int) bool {
 			return recs[i].MFLID.String() < recs[j].MFLID.String()
 		})
@@ -92,9 +86,8 @@ func Rosters(raws []rosters.RawRoster, lookup Lookup) ([]domain.Roster, error) {
 	return out, nil
 }
 
-// parseSalary converts the raw salary string (millions) straight to exact cents via
-// domain.Money — no float64 intermediate (OQ-014). An empty salary is a legitimate $0
-// (e.g. an unsigned slot), not an error; a non-numeric value is schema drift and fails loud.
+// parseSalary converts salary in millions straight to cents, with no float in between
+// (OQ-014). Empty is a real $0; non-numeric is schema drift.
 func parseSalary(raw string, id playerid.PlayerID) (domain.Money, error) {
 	m, err := domain.ParseMoneyMillions(raw)
 	if err != nil {
@@ -103,8 +96,7 @@ func parseSalary(raw string, id playerid.PlayerID) (domain.Money, error) {
 	return m, nil
 }
 
-// parseContractYear converts the raw contract-year string to an int. Empty is 0
-// (no contract year on record); a non-numeric value fails loud.
+// parseContractYear parses the contract year; empty is 0.
 func parseContractYear(raw string, id playerid.PlayerID) (int, error) {
 	s := strings.TrimSpace(raw)
 	if s == "" {
@@ -117,14 +109,10 @@ func parseContractYear(raw string, id playerid.PlayerID) (int, error) {
 	return y, nil
 }
 
-// normalizeContractStatus cleans MFL's dirty contractStatus onto the domain enum.
-// Rule (docs/data-layer/MFL_API_Reference.md): trim, then "YFA" is a confirmed typo
-// for UFA, then a prefix match onto UFA/RFA/FT1/FT2 absorbs every parenthetical and
-// combined variant ("FT1 (2026)", "FT1+ EXT2 (2024)"); anything else (e.g. a lone
-// "EXT2") becomes CStatusFlag for admin review. YFA is matched by PREFIX too (B3
-// review), so a suffixed "YFA (2024)" — if MFL ever emits one — still maps to UFA.
-// The full table is locked in the normalize tests so every known live value's
-// mapping is visible.
+// normalizeContractStatus maps MFL's dirty contractStatus onto the enum
+// (docs/data-layer/MFL_API_Reference.md): trim, treat "YFA" as a typo for UFA, then
+// prefix-match UFA/RFA/FT1/FT2 so variants like "FT1+ EXT2 (2024)" map. Anything else (a lone
+// "EXT2") becomes CStatusFlag for review. The tests pin every known live value.
 func normalizeContractStatus(raw string) domain.ContractStatus {
 	s := strings.TrimSpace(raw)
 	switch {
@@ -143,8 +131,7 @@ func normalizeContractStatus(raw string) domain.ContractStatus {
 	}
 }
 
-// normalizeRosterStatus maps MFL's roster status to the domain enum. MFL sends
-// "ROSTER", "TAXI_SQUAD", or "IR"; anything else fails loud rather than defaulting.
+// normalizeRosterStatus maps "ROSTER", "TAXI_SQUAD" and "IR"; anything else fails.
 func normalizeRosterStatus(raw string, id playerid.PlayerID) (domain.RosterStatus, error) {
 	switch strings.TrimSpace(raw) {
 	case "ROSTER":

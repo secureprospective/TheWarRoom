@@ -1,13 +1,8 @@
-// Package normalize is the B3 Raw* → typed-domain boundary (WF 1C): it joins the
-// rosters feed with the players database and produces domain.Roster / PlayerRecord.
-// It is a PURE transformation — no I/O, no fetching, no scoring. It is Layer 1
-// (depguard layer1-no-upward-import covers it): it imports ingestion + playerid +
-// domain only, never store/engine/db.
+// Package normalize turns raw MFL feeds into typed domain records by joining the rosters feed
+// with the players database. It does no I/O and imports only ingestion, playerid and domain.
 //
-// This file holds the cross-reference Lookup: the players database indexed by
-// canonical player id, with each player's position classified ONCE at build time
-// (so a roster join is a map read, not a re-classification per row). Building the
-// Lookup is also where the reserved-range policy runs (B2 review item #1).
+// Lookup indexes the players database by canonical id and classifies each position once, so a
+// roster join is a map read.
 package normalize
 
 import (
@@ -21,24 +16,21 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
-// lookupEntry is one player's resolved facts from the players database: position
-// already mapped to the engine set, rookie flag already derived. The raw MFL codes
-// do not survive into here.
+// lookupEntry is one player's resolved facts; raw MFL codes do not survive into it.
 type lookupEntry struct {
 	name         string
 	position     domain.Position
-	isAggregate  bool // a team/positional aggregate ("Def", "TMWR", …) — never rostered
+	isAggregate  bool // "Def", "TMWR", …
 	team         string
 	isRookie     bool
-	birthdate    int64  // epoch seconds, valid only when hasBirthdate
-	hasBirthdate bool   // MFL DETAILS=1 birthdate present (commissioner-created players lack it)
-	draftYear    int    // MFL DETAILS=1 draft year, valid only when hasDraftYear
-	hasDraftYear bool   // a REAL draft year is present (the "0" undrafted sentinel is dropped here)
-	college      string // MFL DETAILS=1 college name, raw (empty when absent); the SchoolTier source
+	birthdate    int64 // epoch seconds
+	hasBirthdate bool  // commissioner-created players lack one
+	draftYear    int
+	hasDraftYear bool   // false for undrafted ("0")
+	college      string // raw; the SchoolTier source
 }
 
-// Lookup is the players database keyed by canonical player id (playerid form), the
-// read side of the B3 cross-reference join.
+// Lookup is the players database keyed by canonical player id.
 type Lookup struct {
 	byID map[string]lookupEntry
 }
@@ -49,14 +41,9 @@ func (l Lookup) entry(id playerid.PlayerID) (lookupEntry, bool) {
 	return e, ok
 }
 
-// NewLookup builds the cross-reference index from the raw players feed. It
-// canonicalizes every id through playerid.New (RISK-003) and classifies each
-// position once. It also applies the reserved-range policy (B2 review item #1):
-// MFL's id range [151,782] is RESERVED for team aggregates, so a record there that
-// we did NOT recognize as a known aggregate is an anomaly — either a real player the
-// rosters ID-filter is wrongly dropping, or an unrecognized aggregate code. Such a
-// record is FLAGGED for admin review and the build continues (Christopher, B3): one
-// odd id must not halt the whole league's normalization.
+// NewLookup builds the index from the raw players feed, canonicalizing ids and classifying
+// positions. MFL reserves ids 151–782 for team aggregates; an unrecognized record in that
+// range is flagged for review and the build continues, so one odd id cannot halt the league.
 func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 	posMap := newPositionMap()
 	aggSet := newAggregateSet()
@@ -69,13 +56,8 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 		}
 		pos, isAgg := classifyPosition(rp.Position, posMap, aggSet)
 
-		// Reserved-range policy (Christopher, B3): [151,782] is reserved for team
-		// aggregates, so a NON-aggregate record there is an anomaly. FLAG it for
-		// admin review and CONTINUE rather than halt the whole league's
-		// normalization — one odd id must not block the pipeline. NOTE: the rosters
-		// fetcher independently drops roster ids in this range, so such a record is
-		// not currently reachable through a roster join; this flag is the
-		// players-DB-side signal that the reserved-range assumption slipped.
+		// The rosters fetcher already drops ids in the reserved range, so this flag is the
+		// players-side signal that the reserved-range assumption slipped.
 		if !isAgg && ingestion.IsTeamAggregateID(rp.ID) {
 			pos = domain.PosFlag
 		}
@@ -88,9 +70,7 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 			isRookie:    rp.Status == "R",
 			college:     strings.TrimSpace(rp.College),
 		}
-		// Birthdate (DETAILS=1) is typed HERE — the Raw→domain boundary. The fetcher
-		// already validated a present value parses; absent stays absent (the M1
-		// consumer owns the missing-birthdate policy, this join just carries the fact).
+		// The fetcher validated the birthdate; absent stays absent and the consumer decides.
 		if bd := strings.TrimSpace(rp.Birthdate); bd != "" {
 			v, perr := strconv.ParseInt(bd, 10, 64)
 			if perr != nil {
@@ -98,9 +78,8 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 			}
 			entry.birthdate, entry.hasBirthdate = v, true
 		}
-		// Draft year (DETAILS=1) is typed HERE. MFL sends "0" for the undrafted/unknown — a
-		// non-year — so only a positive value is a candidate draft year; its season-relative
-		// plausibility (MFL's "1970" epoch placeholder, future years) is the §6 consumer's policy.
+		// MFL sends "0" for undrafted, so only a positive year counts. Placeholder years like 1970
+		// are the consumer's to judge.
 		if dy := strings.TrimSpace(rp.DraftYear); dy != "" {
 			v, perr := strconv.Atoi(dy)
 			if perr != nil {
@@ -115,25 +94,22 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 	return Lookup{byID: byID}, nil
 }
 
-// PlayerFacts is the per-player DISPLAY/derivation fact set the M1 orchestrator
-// reads for each rostered id: identity fields from the players DB plus the raw
-// birthdate for age derivation. It is deliberately NOT domain.PlayerRecord — no
-// roster/contract fields, because runtime contract state is B3c's job and must
-// never be duplicated out of a static players-feed join.
+// PlayerFacts is the players-DB fact set the M1 runner reads per rostered id. It carries no
+// contract fields: contract state lives in the state store and must not be copied from a
+// static feed.
 type PlayerFacts struct {
 	Name         string
 	Position     domain.Position
 	IsRookie     bool
-	Birthdate    int64 // epoch seconds, valid only when HasBirthdate
+	Birthdate    int64 // epoch seconds
 	HasBirthdate bool
-	DraftYear    int    // MFL draft year, valid only when HasDraftYear; the §6 experience source
-	HasDraftYear bool   // a real (positive) draft year is present — undrafted/created players lack it
-	College      string // MFL college name, raw (empty when MFL has none); the SchoolTier join source
+	DraftYear    int // the §6 experience source
+	HasDraftYear bool
+	College      string // raw; the SchoolTier source
 }
 
-// Facts resolves one canonical player id to its players-DB facts. ok is false when
-// the id is unknown OR resolves to a team aggregate — an aggregate is never a
-// scorable player, so a caller treats both identically ("not in the players DB").
+// Facts resolves a canonical id. ok is false for an unknown id or a team aggregate, which
+// callers treat the same.
 func (l Lookup) Facts(id string) (PlayerFacts, bool) {
 	pid, err := playerid.New(id)
 	if err != nil {
@@ -155,11 +131,8 @@ func (l Lookup) Facts(id string) (PlayerFacts, bool) {
 	}, true
 }
 
-// classifyPosition maps a raw MFL position code onto the engine set. Aggregate
-// codes return (_, true) so the join can reject a roster that references one;
-// "PK"→K and "EDGE"→DE are the two real remaps (OQ-004: MFL labels edge rushers
-// DE); "XX" and any unknown code become PosFlag for admin review. The maps are
-// passed in (built once by NewLookup) so this stays allocation-free per call.
+// classifyPosition maps a raw MFL code onto the engine set. An aggregate returns true so the
+// join can reject it; "XX" and unknown codes become PosFlag.
 func classifyPosition(raw string, posMap map[string]domain.Position, aggSet map[string]struct{}) (domain.Position, bool) {
 	code := strings.TrimSpace(raw)
 	if _, ok := aggSet[code]; ok {
@@ -171,22 +144,15 @@ func classifyPosition(raw string, posMap map[string]domain.Position, aggSet map[
 	return domain.PosFlag, false
 }
 
-// PositionFromMFL maps a raw MFL position code onto the engine set using the SAME table NewLookup
-// builds (the single source of truth — OQ-004's PK→K and EDGE→DE remaps live here, never copied).
-// It is the public edge for callers that need the MFL→engine translation WITHOUT a full Lookup:
-// the rulebook's rosterLimits (Session 2 enforcement) carry raw MFL codes, and the roster-policy
-// adapter translates each entry to its engine position through this one function. An aggregate or
-// unknown code returns PosFlag (the "needs review" sentinel), so a caller that treats PosFlag as
-// "skip the per-position check" is correct by construction. Returns false ONLY for an aggregate
-// code (defensive — no real roster limit targets an aggregate). The map is built per call (11
-// entries); PositionFromMFL runs a handful of times per roster-affecting op, not per player.
+// PositionFromMFL maps a raw MFL code using the same table as NewLookup, for callers without
+// a Lookup (roster-limit enforcement). Aggregates and unknown codes return PosFlag; ok is false
+// only for an aggregate.
 func PositionFromMFL(raw string) (domain.Position, bool) {
 	return classifyPosition(raw, newPositionMap(), newAggregateSet())
 }
 
-// newPositionMap is the raw-MFL-code → engine-position table. Real codes pass
-// through; PK→K and EDGE→DE are the remaps; XX is intentionally absent so it falls
-// through to PosFlag in classifyPosition.
+// newPositionMap is the MFL code -> engine position table. XX is absent on purpose so it
+// becomes PosFlag.
 func newPositionMap() map[string]domain.Position {
 	return map[string]domain.Position{
 		"QB":   domain.PosQB,
@@ -203,9 +169,8 @@ func newPositionMap() map[string]domain.Position {
 	}
 }
 
-// newAggregateSet is the set of MFL team/positional aggregate codes that are never
-// real players and must be filtered (they reach normalize only via the players DB,
-// never via a roster, since rosters drops the aggregate ID range upstream).
+// newAggregateSet is the set of MFL team and positional aggregate codes, which are never
+// players.
 func newAggregateSet() map[string]struct{} {
 	return map[string]struct{}{
 		"PN":    {},
