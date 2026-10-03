@@ -56,10 +56,10 @@ func TestDTFilmCompression(t *testing.T) {
 	}
 }
 
-// TestDTCushionGuardBreakoutTrajectory is the breakout-internal half of SL-021: past peak
-// (age > 30) a DT with raw RAS ≥ 8.00 has its Age-Trajectory sub-signal cushioned, so its
-// breakout component is HIGHER than an otherwise-identical sub-threshold DT. (The L3 half of
-// the cushion is proven in the engine package + harness case 3F.)
+// TestDTCushionGuardBreakoutTrajectory is the breakout half of SL-021: past peak (age > 30) a
+// DT with raw RAS at or above the guard's threshold has its Age-Trajectory sub-signal
+// cushioned, so its breakout is HIGHER than an otherwise-identical sub-threshold DT. The guard
+// arrives on the input; with the zero guard the RAS split must not matter.
 func TestDTCushionGuardBreakoutTrajectory(t *testing.T) {
 	dt := NewDT()
 	base := engine.ScoutingInput{
@@ -67,16 +67,19 @@ func TestDTCushionGuardBreakoutTrajectory(t *testing.T) {
 		SchoolTierNorm: 0.70, HasSchoolTier: true,
 		CollegeShare: 0.15, HasCollegeShare: true,
 	}
-	hi := dt.Apply(engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosDT, Age: 32, RAS: 9.0, HasRAS: true}, Scouting: base})
-	lo := dt.Apply(engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosDT, Age: 32, RAS: 7.0, HasRAS: true}, Scouting: base})
-	if !(hi.BreakoutEffective > lo.BreakoutEffective) {
-		t.Fatalf("cushioned breakout %v should exceed un-cushioned %v at age 32", hi.BreakoutEffective, lo.BreakoutEffective)
+	guard := engine.CushionGuard{RASThreshold: 8.0, DeclineFactor: 0.90}
+	breakout := func(age, ras float64, g engine.CushionGuard) float64 {
+		in := engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosDT, Age: age, RAS: ras, HasRAS: true}, Scouting: base, Cushion: g}
+		return dt.Apply(in).BreakoutEffective
 	}
-	// Below peak the cushion is inert: same RAS split, age 26, must give equal breakout.
-	hiYoung := dt.Apply(engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosDT, Age: 26, RAS: 9.0, HasRAS: true}, Scouting: base})
-	loYoung := dt.Apply(engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosDT, Age: 26, RAS: 7.0, HasRAS: true}, Scouting: base})
-	if !approx(hiYoung.BreakoutEffective, loYoung.BreakoutEffective) {
-		t.Fatalf("below peak the cushion must be inert: %v vs %v", hiYoung.BreakoutEffective, loYoung.BreakoutEffective)
+	if hi, lo := breakout(32, 9.0, guard), breakout(32, 7.0, guard); !(hi > lo) {
+		t.Fatalf("cushioned breakout %v should exceed un-cushioned %v at age 32", hi, lo)
+	}
+	if hi, lo := breakout(26, 9.0, guard), breakout(26, 7.0, guard); !approx(hi, lo) {
+		t.Fatalf("below peak the cushion must be inert: %v vs %v", hi, lo)
+	}
+	if hi, lo := breakout(32, 9.0, engine.CushionGuard{}), breakout(32, 7.0, engine.CushionGuard{}); !approx(hi, lo) {
+		t.Fatalf("with the guard off the RAS split must not matter: %v vs %v", hi, lo)
 	}
 }
 

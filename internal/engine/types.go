@@ -22,17 +22,36 @@ type PlayerInput struct {
 // Calibration is the tunable parameter set: globals from the params store and per-position
 // values from composition's defaults.
 type Calibration struct {
-	SalaryFloor float64 // salary is raised to this floor if below it
-	RASFallback float64 // imputed RAS when HasRAS is false (spec fallback 5.00)
-	PeakLimit   float64 // age past which decay applies
-	DecayRate   float64 // annual rate, default 0.03
-	// L3 cushion guard (SL-021, DT only; see ApplyCushionGuard)
-	CushionRASThreshold  float64 // raw RAS at/above which the guard applies; 0 disables
-	CushionDeclineFactor float64 // DT: 0.90 = 10% slower decline
-	LeagueCap            float64 // same units as Salary
-	ColdCeiling          float64 // salary% below this is Cold
-	HotFloor             float64 // salary% above this is Hot
-	ScarcityRank         int     // higher wins
+	SalaryFloor  float64 // salary is raised to this floor if below it
+	RASFallback  float64 // imputed RAS when HasRAS is false (spec fallback 5.00)
+	PeakLimit    float64 // age past which decay applies
+	DecayRate    float64 // annual rate, default 0.03
+	Cushion      CushionGuard
+	LeagueCap    float64 // same units as Salary
+	ColdCeiling  float64 // salary% below this is Cold
+	HotFloor     float64 // salary% above this is Hot
+	ScarcityRank int     // higher wins
+}
+
+// CushionGuard is the SL-021 Late-Career Cushion Guard (DT_Rubric §1/§3). A measured RAS at
+// or above RASThreshold slows a decline: L3 applies it to the age pull, and the DT rubric to
+// its breakout age trajectory. The zero value is off, which is every position but DT.
+type CushionGuard struct {
+	RASThreshold  float64
+	DeclineFactor float64 // 0.90 = 10% slower decline
+}
+
+// Slow scales v's distance below neutral by DeclineFactor. It leaves v unchanged when the
+// guard is off, the RAS is imputed or under the threshold, v is not below neutral, or
+// DeclineFactor is outside [0,1] (where it would amplify the decline instead of slowing it).
+func (g CushionGuard) Slow(v, neutral, ras float64, hasRAS bool) float64 {
+	if g.RASThreshold <= 0 || !hasRAS || ras < g.RASThreshold || v >= neutral {
+		return v
+	}
+	if g.DeclineFactor < 0 || g.DeclineFactor > 1 {
+		return v
+	}
+	return neutral - (neutral-v)*g.DeclineFactor
 }
 
 // ScoutingInput is the raw, position-blind Layer-4 sub-signals (SchoolTierNorm excepted). Each
@@ -63,6 +82,7 @@ type ScoutingInput struct {
 type Layer4Input struct {
 	Player   PlayerInput
 	Scouting ScoutingInput
+	Cushion  CushionGuard // Calibration's, so both halves of the guard read the same params
 }
 
 // Layer4Output is the scouting result. The score reads only Combined, the product of the three

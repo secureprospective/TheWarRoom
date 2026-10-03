@@ -86,58 +86,60 @@ func TestApplyDecayNonFiniteRejected(t *testing.T) {
 	}
 }
 
-// TestApplyCushionGuard covers the SL-021 L3 modulator: it slows decline for a qualifying
-// high-RAS player and is a strict no-op otherwise. Below peak the raw pull is 1.0, so the
-// formula is inert regardless of RAS.
-func TestApplyCushionGuard(t *testing.T) {
+// TestCushionGuardSlow covers SL-021 at both uses: the L3 age pull (neutral 1.0) and the DT
+// breakout age trajectory (neutral 0.5). It slows a qualifying decline and is a strict no-op
+// otherwise.
+func TestCushionGuardSlow(t *testing.T) {
 	raw, err := ApplyDecay(33, 30, 0.03) // three years past peak ⇒ 0.97^3
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	dt := CushionGuard{RASThreshold: 8.0, DeclineFactor: 0.90}
 	cases := []struct {
-		name                         string
-		rawPull, ras                 float64
-		hasRAS                       bool
-		threshold, decline, wantSame float64 // wantSame==1 ⇒ expect raw unchanged
+		name            string
+		g               CushionGuard
+		v, neutral, ras float64
+		hasRAS          bool
+		want            float64
 	}{
-		{"qualifying RAS slows decline", raw, 9.0, true, 8.0, 0.90, 0},
-		{"at threshold qualifies", raw, 8.0, true, 8.0, 0.90, 0},
-		{"just below threshold unchanged", raw, 7.99, true, 8.0, 0.90, 1},
-		{"absent RAS never cushioned", raw, 9.0, false, 8.0, 0.90, 1},
-		{"disabled (threshold 0) unchanged", raw, 9.0, true, 0, 0.90, 1},
-		{"factor<0 misconfig disabled", raw, 9.0, true, 8.0, -0.5, 1}, // GLM m2: would boost above peak
-		{"factor>1 misconfig disabled", raw, 9.0, true, 8.0, 1.5, 1},  // GLM m2: would amplify decline
+		{"L3 qualifying RAS slows decline", dt, raw, 1, 9.0, true, 1 - (1-raw)*0.90},
+		{"L3 at threshold qualifies", dt, raw, 1, 8.0, true, 1 - (1-raw)*0.90},
+		{"L3 just below threshold unchanged", dt, raw, 1, 7.99, true, raw},
+		{"L3 imputed RAS never cushioned", dt, raw, 1, 9.0, false, raw},
+		{"L4 trajectory below neutral slows", dt, 0.20, 0.5, 9.0, true, 0.23},
+		{"L4 trajectory above neutral unchanged", dt, 0.85, 0.5, 9.0, true, 0.85},
+		{"zero guard is off", CushionGuard{}, raw, 1, 9.0, true, raw},
+		{"factor<0 would boost: disabled", CushionGuard{RASThreshold: 8, DeclineFactor: -0.5}, raw, 1, 9.0, true, raw},
+		{"factor>1 would amplify: disabled", CushionGuard{RASThreshold: 8, DeclineFactor: 1.5}, raw, 1, 9.0, true, raw},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := ApplyCushionGuard(c.rawPull, c.ras, c.hasRAS, c.threshold, c.decline)
-			if c.wantSame == 1 {
-				if got != c.rawPull {
-					t.Fatalf("expected no-op, got %v (raw %v)", got, c.rawPull)
-				}
-				return
-			}
-			want := 1.0 - (1.0-c.rawPull)*c.decline
-			if !approxEq(got, want) {
-				t.Fatalf("cushioned = %v, want %v", got, want)
-			}
-			if !(got > c.rawPull) {
-				t.Fatalf("cushion must lift the pull above raw %v, got %v", c.rawPull, got)
+			if got := c.g.Slow(c.v, c.neutral, c.ras, c.hasRAS); !approxEq(got, c.want) {
+				t.Fatalf("Slow = %v, want %v", got, c.want)
 			}
 		})
 	}
 }
 
-// PLANTED FAILURE (M3): the cushion guard MUST change the decay outcome at the threshold —
-// a qualifying high-RAS DT past peak decays slower than an otherwise-identical sub-threshold
-// DT. Would FAIL if ApplyCushionGuard were a no-op (the cushion not wired). This is the
-// engine half of case 3F.
-func TestApplyCushionGuardSeenAtThreshold(t *testing.T) {
-	raw, _ := ApplyDecay(33, 30, 0.03)
-	hi := ApplyCushionGuard(raw, 8.00, true, 8.0, 0.90)
-	lo := ApplyCushionGuard(raw, 7.99, true, 8.0, 0.90)
-	if !(hi > lo) {
-		t.Fatalf("RAS 8.00 (%v) must decay slower than RAS 7.99 (%v)", hi, lo)
+// recordingLayer4 keeps the last input it was given.
+type recordingLayer4 struct{ got Layer4Input }
+
+func (r *recordingLayer4) Apply(in Layer4Input) Layer4Output {
+	r.got = in
+	return identityLayer4{}.Apply(in)
+}
+
+// The DT rubric's half of the cushion must read the same params as L3's, so Score hands
+// Layer 4 the Calibration's guard.
+func TestPipelineHandsLayer4TheCalibrationCushion(t *testing.T) {
+	rec := &recordingLayer4{}
+	c := baseCalibration()
+	c.Cushion = CushionGuard{RASThreshold: 7.5, DeclineFactor: 0.8}
+	if _, err := NewPipeline(rec).Score(basePlayer(), ScoutingInput{}, c); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if rec.got.Cushion != c.Cushion {
+		t.Fatalf("Layer 4 got cushion %+v, want the calibration's %+v", rec.got.Cushion, c.Cushion)
 	}
 }
 

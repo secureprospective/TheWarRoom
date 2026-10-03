@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/scouting"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
@@ -51,21 +52,21 @@ func schoolTierNorm(p domain.Position, t scouting.SchoolTier) (float64, bool) {
 }
 
 // cushionGuard returns the DT late-career cushion (SL-021) from the admin params: the RAS
-// threshold and the decline multiplier (1 − reduction). Other positions get a zero threshold,
-// which disables it.
-func (a *Assembler) cushionGuard(p domain.Position) (threshold, declineFactor float64, err error) {
+// threshold and the decline multiplier (1 − reduction). Other positions get the zero guard,
+// which is off.
+func (a *Assembler) cushionGuard(p domain.Position) (engine.CushionGuard, error) {
 	if p != domain.PosDT {
-		return 0, 0, nil
+		return engine.CushionGuard{}, nil
 	}
-	threshold, err = a.params.GetGlobal(params.KeyCushionGuardRAS)
+	threshold, err := a.params.GetGlobal(params.KeyCushionGuardRAS)
 	if err != nil {
-		return 0, 0, fmt.Errorf("composition: read cushion threshold: %w", err)
+		return engine.CushionGuard{}, fmt.Errorf("composition: read cushion threshold: %w", err)
 	}
 	reduction, err := a.params.GetGlobal(params.KeyCushionGuardReduct)
 	if err != nil {
-		return 0, 0, fmt.Errorf("composition: read cushion reduction: %w", err)
+		return engine.CushionGuard{}, fmt.Errorf("composition: read cushion reduction: %w", err)
 	}
-	return threshold, 1 - reduction, nil
+	return engine.CushionGuard{RASThreshold: threshold, DeclineFactor: 1 - reduction}, nil
 }
 
 // peakLimit is the Layer-3 age past which decay applies (Engine_Specification, "Current Peak

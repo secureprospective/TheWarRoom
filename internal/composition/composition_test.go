@@ -174,15 +174,15 @@ func TestCushionGuardReadsAdminParams(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Calibration(DT): %v", err)
 	}
-	if dt.CushionRASThreshold != 7.5 || dt.CushionDeclineFactor != 0.8 {
-		t.Errorf("DT cushion = (%v, %v), want the edited params (7.5, 0.8)", dt.CushionRASThreshold, dt.CushionDeclineFactor)
+	if want := (engine.CushionGuard{RASThreshold: 7.5, DeclineFactor: 0.8}); dt.Cushion != want {
+		t.Errorf("DT cushion = %+v, want the edited params %+v", dt.Cushion, want)
 	}
 	wr, err := a.Calibration(domain.PosWR)
 	if err != nil {
 		t.Fatalf("Calibration(WR): %v", err)
 	}
-	if wr.CushionRASThreshold != 0 {
-		t.Errorf("WR cushion threshold = %v, want 0 (disabled)", wr.CushionRASThreshold)
+	if wr.Cushion != (engine.CushionGuard{}) {
+		t.Errorf("WR cushion = %+v, want the zero guard (off)", wr.Cushion)
 	}
 }
 

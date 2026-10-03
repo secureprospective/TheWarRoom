@@ -27,8 +27,8 @@ func (pl *Pipeline) Score(p PlayerInput, sc ScoutingInput, c Calibration) (Resul
 	if err != nil {
 		return Result{}, err
 	}
-	agePull = ApplyCushionGuard(agePull, p.RAS, p.HasRAS, c.CushionRASThreshold, c.CushionDeclineFactor)
-	l4 := pl.layer4.Apply(Layer4Input{Player: p, Scouting: sc})
+	agePull = c.Cushion.Slow(agePull, 1.0, p.RAS, p.HasRAS)
+	l4 := pl.layer4.Apply(Layer4Input{Player: p, Scouting: sc, Cushion: c.Cushion})
 
 	scoutingAdjusted := p.BasePoints * agePull * l4.Combined
 
