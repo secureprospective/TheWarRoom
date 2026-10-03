@@ -2,137 +2,54 @@ package scouting
 
 import "github.com/secureprospective/TheWarRoom/internal/playerid"
 
-// Profile is one player's full set of scouting inputs — the unified shape
-// covering all ten positions. It is keyed by MFLID and joined to a
-// domain.PlayerRecord by the engine, which already knows the player's position;
-// the profile deliberately does NOT carry the position (that would duplicate
-// domain and break this package's leaf status).
-//
-// The universal core fields are flat and present at every scored position. The
-// position-conditional groups are pointers: nil means the position does not use
-// that group. This encodes the position boundaries structurally — most importantly
-// the NGS coverage boundary (Coverage is non-nil at CB and S ONLY).
+// Profile is one player's scouting inputs, keyed by MFLID. It carries no position: the
+// engine already knows it, and holding it would break this package's leaf status.
+// Position-specific groups are pointers, nil where the position does not use them; Coverage
+// is non-nil only at CB and S.
 type Profile struct {
-	MFLID playerid.PlayerID // canonical, validated id (RISK-003)
+	MFLID playerid.PlayerID
 
-	// --- Universal core (Film anchors present at every scored position) ---
-	// SOURCE-DRIFT NOTE (Option D, 2026-06-19): PFFGrade and DraftNetwork name sources
-	// ELIMINATED from the automatable rubric (no clean source — source map §2). The
-	// fields are retained pending the Film-component redesign (a separate calibration
-	// pass — Offense_Scouting_Source_Map §5/§6); no fetcher populates them today.
-	PFFGrade      float64 // ELIMINATED source (retained pending Film redesign) — was PFF position grade
-	DraftNetwork  float64 // ELIMINATED source (retained pending Film redesign) — was The Draft Network qualitative
-	MaddenFilm    float64 // Madden sub-attribute composite (Approach D); K's MAJORITY Layer-4 signal (DECISION-011)
-	NFLProduction float64 // accumulating NFL production signal
+	// RAS is excluded at K and forced to 1.000 at QB (SL-020); the raw value is still held.
+	RAS    float64
+	HasRAS bool
 
-	// --- RAS (athletic testing) ---
-	// Excluded at K (SL-020). The engine forces QB's RAS contribution to 1.000
-	// (SL-020 Low-tier); the raw value is still held here.
-	//
-	// HasRAS distinguishes a real assembled RAS from the zero value. RAS is a bare
-	// float with no natural "absent" sentinel (0 could be a legitimate score), so —
-	// unlike SchoolTier, which has SchoolUnset — presence needs its own flag. Once a
-	// Profile can carry more than one signal (S-Phase 1: SchoolTier), "this player is
-	// in the directory" no longer implies "this player has a RAS"; the consumer must
-	// gate the RAS copy on HasRAS, not on directory presence.
-	RAS    float64 // Relative Athletic Score
-	HasRAS bool    // a real RAS was assembled (false → RAS field is the zero value, not a signal)
+	// BreakoutAge is the age in years at the first college season whose within-team share
+	// crossed the breakout threshold; each rubric curves it per position.
+	BreakoutAge    float64
+	HasBreakoutAge bool
+	SchoolTier     SchoolTier
 
-	// --- Breakout (college trajectory) ---
-	// BreakoutAge is the player's raw age in YEARS at the reference date of his first
-	// college season whose within-team production share crossed the breakout threshold
-	// (S-Phase 4, offense v1). Like RAS and CollegeProductionShare it is a bare float
-	// with no natural absent sentinel — a young breakout age (0 headroom = elite) is a
-	// REAL, high-value signal, and 0 is not "absent" — so presence needs its own flag:
-	// gate the copy on HasBreakoutAge, never on directory presence or a zero test. The
-	// engine consumes the RAW age and maps it through each position's §4 curve.
-	BreakoutAge    float64    // raw age in years at first breakout season (see HasBreakoutAge)
-	HasBreakoutAge bool       // a real breakout age was derived (false → BreakoutAge is the zero value, not a signal)
-	SchoolTier     SchoolTier // competition tier
-	// CollegeProductionShare is one player's within-team college production share,
-	// collapsed to a single position-defined value upstream (the assembler picks the
-	// position-appropriate raw share — S-Phase 2). Like RAS it is a bare float with no
-	// natural absent sentinel (0 is a REAL share — the player produced nothing), so
-	// presence needs its own flag: gate the copy on HasCollegeProductionShare, never on
-	// directory presence or a zero test.
+	// CollegeProductionShare is the within-team college share, collapsed to the
+	// position's measure by the assembler.
 	CollegeProductionShare    float64
 	HasCollegeProductionShare bool
-	AgeTrajectory             float64 // age vs. position peak limit
 
-	// --- Position-conditional groups (nil when the position does not use them) ---
 	OffenseFilm *OffenseFilm // QB / RB / WR / TE
 	IDPFilm     *IDPFilm     // DT / DE / LB / CB / S
-	Coverage    *NGSCoverage // CB / S ONLY (hard boundary)
-	TouchShare  *float64     // RB ONLY (snap-count workload share — Option D; was FantasyPros touch share)
+	Coverage    *NGSCoverage // CB / S only (hard constraint)
 
-	// --- Reserved (SL-OQ-035/036; S only; unset in v1.0) ---
 	SafetyRole SafetyRole
 }
 
-// OffenseFilm holds the offense-only qualitative film sources. Present at QB, RB,
-// WR, and TE; nil at every defensive position and K.
-//
-// SOURCE-DRIFT NOTE (Option D, 2026-06-19): both fields name sources ELIMINATED from
-// the automatable rubric (no clean source — source map §2). The new offense film signal
-// is FTN-charting (primary) + Madden (fallback); these fields are retained pending the
-// Film-component redesign (a separate calibration pass, source map §5/§6) and are not
-// populated by any fetcher today.
+// OffenseFilm is the offense film signal, present at QB, RB, WR and TE.
 type OffenseFilm struct {
-	RSPQualitative float64 // ELIMINATED source (retained pending Film redesign) — was Matt Waldman RSP
-	SharpFootball  float64 // ELIMINATED source (retained pending Film redesign) — was Sharp Football Analysis
-
-	// Composite is the LIVE offense film signal (FILM Thread C, C-4 step 3): a [0,1]
-	// value, higher = better, that already carries BOTH K3 seats blended by the assembly
-	// leaf — the Madden offense sub-attribute backbone (equal-weight mean of the position's
-	// curated attrs, /99) PLUS a bounded FTN delta-overlay (percentile-ranked charting
-	// quality, 15%-discounted, clamped to ±0.10) applied only where the FTN charting floor
-	// is met. Below the floor Composite is the pure Madden backbone. It is the primary term
-	// of the offense film composite the engine consumes; the reserved K2 NFLProduction seat
-	// is applied upstream in rankings.applyScouting. A non-nil OffenseFilm carries a real
-	// Composite (a QB/RB/WR/TE whose Madden record resolved); a player whose Madden record
-	// did not resolve has a nil OffenseFilm and neutralizes film via Data-Parity.
+	// Composite is in [0,1], higher is better: the mean of the position's curated Madden
+	// attributes (/99), plus an FTN charting overlay (percentile-ranked, 15% discounted,
+	// clamped to ±0.10) where the charting sample is large enough. A player without a
+	// Madden record has a nil OffenseFilm.
 	Composite float64
 }
 
-// IDPFilm holds the IDP-only film sources. Present at DT, DE, LB, CB, and S; nil at
-// every offensive position and K.
-//
-// SOURCE-DRIFT NOTE (IDP Option-D parallel, 2026-06-26): all three fields name sources
-// ELIMINATED from the automatable rubric. Recon found no clean Go-reachable feed for any
-// IDP film source — The IDP Show, The IDP Guru, and Dynasty Nerds are subjective
-// content/paywalled brands, not data feeds (and the rubric film component's other two
-// sources, PFF and The Draft Network, were already eliminated on offense). The IDP film
-// signal is redesigned around Madden defense sub-attributes (already fetched in the
-// madden RawMaddenRating.Attributes map — tackle/manCoverage/zoneCoverage/hitPower/…) +
-// NFLProduction + pfrcoverage. These fields are retained pending the Film-component
-// redesign (a separate calibration pass — weights UNSET) and are populated by no fetcher.
-// See docs/data-layer/Defense_Scouting_Source_Map.md.
+// IDPFilm is the IDP film signal, present at DT, DE, LB, CB and S.
 type IDPFilm struct {
-	IDPShow      float64 // ELIMINATED source (retained pending Film redesign) — was The IDP Show
-	IDPGuru      float64 // ELIMINATED source (retained pending Film redesign) — was The IDP Guru
-	DynastyNerds float64 // ELIMINATED source (retained pending Film redesign) — was Dynasty Nerds
-
-	// MaddenComposite is the LIVE IDP film signal (FILM Thread C, C-4 step 2): a [0,1]
-	// equal-weight mean of the position's curated Madden defense sub-attributes (K1;
-	// man+zone coverage averaged into one term), higher = better. It is the primary
-	// term of the IDP film composite the engine consumes; the upstream blend (Madden
-	// share of the film budget + the CB/S coverage anchor) is applied in
-	// rankings.applyScouting. A non-nil IDPFilm carries a real MaddenComposite (a DT/DE/
-	// LB/CB/S whose Madden record resolved); a player whose Madden record did not resolve
-	// simply has a nil IDPFilm and neutralizes film via Data-Parity.
+	// MaddenComposite is in [0,1]: the mean of the position's curated Madden defense
+	// attributes, man and zone coverage averaged into one. A player without a Madden record
+	// has a nil IDPFilm.
 	MaddenComposite float64
 }
 
-// NGSCoverage holds the defender COVERAGE anchor — the analytical anchor. RESERVED FOR
-// CB AND S ONLY: this group is nil at every other position. (Hard constraint: the
-// coverage anchor applies at CB/S exclusively; it must not bleed to any other position.)
-//
-// SOURCE-DRIFT NOTE (rebind, 2026-06-26): named NGSCoverage after NFL Next Gen Stats, but
-// recon found nflverse publishes NO defender NGS file (its nextgen_stats release is
-// offense-only). Christopher's call: rebind the anchor onto PFR advanced-defense coverage
-// (the pfrcoverage fetcher — targets, completion % / yards allowed, passer rating
-// allowed). It is coverage-allowed quality, not tracking separation; the field name is
-// retained, the source substitution is documented in the Defense source map.
+// NGSCoverage is the CB/S coverage anchor. The name predates the source: nflverse has no
+// defender NGS file, so it is PFR advanced-defense coverage allowed (pfrcoverage).
 type NGSCoverage struct {
-	CoverageMetrics float64 // coverage anchor — PFR coverage-allowed (pfrcoverage), engine-normalized
+	CoverageMetrics float64
 }
