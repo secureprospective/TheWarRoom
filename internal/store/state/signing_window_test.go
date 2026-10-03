@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
@@ -113,5 +114,30 @@ func TestSigningWindow_PersistsAcrossPhaseTransition(t *testing.T) {
 	}
 	if !readWindowClosed(t, s) {
 		t.Fatal("a phase transition reset the signing window, want it to persist closed")
+	}
+}
+
+// TestDirectivesAreIndependent: the window and the trade deadline share season_phases.meta, so
+// setting one must not move the other.
+func TestDirectivesAreIndependent(t *testing.T) {
+	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
+	if err := setWindow(t, s, false, "close"); err != nil {
+		t.Fatalf("close window: %v", err)
+	}
+	past := time.Now().Add(-time.Hour)
+	if err := s.WriteTx(context.Background(), func(w TxWriter) error {
+		return w.AppendTradeDeadline(context.Background(), past, "deadline")
+	}); err != nil {
+		t.Fatalf("set deadline: %v", err)
+	}
+	if !readWindowClosed(t, s) {
+		t.Fatal("setting the trade deadline reopened the signing window")
+	}
+	if err := setWindow(t, s, true, "reopen"); err != nil {
+		t.Fatalf("reopen window: %v", err)
+	}
+	passed, err := s.tradeDeadlinePassed(context.Background())
+	if err != nil || !passed {
+		t.Fatalf("toggling the window moved the deadline: passed=%v err=%v", passed, err)
 	}
 }
