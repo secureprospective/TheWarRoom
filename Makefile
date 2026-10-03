@@ -2,7 +2,7 @@
 # Go overlay (templates/go/Makefile.snippet). `make lint` runs ifaceguard, filelen,
 # bloat and golangci-lint; all must pass to clear. Never bypass with --no-verify.
 
-.PHONY: lint fmt vet test test-coverage build dev mutation-test ifaceguard filelen bloat release sync-product-version verify setup
+.PHONY: measure-dictionary lint fmt vet test test-coverage build dev mutation-test ifaceguard filelen bloat release sync-product-version verify setup
 
 # ── Build stamp (D-V2) ────────────────────────────────────────────────────────
 # The release tag (vX.Y.Z) is the single source of truth. `git describe` yields
@@ -40,6 +40,11 @@ filelen:
 # near-duplicate code (scripts/bloat.sh). It fails if any measure rises above .bloat-baseline.
 bloat:
 	scripts/bloat.sh
+
+# measure-dictionary renders docs/data-layer/Measure_Dictionary.md from the registry CSVs in
+# internal/measures. A test fails while the checked-in copy is stale.
+measure-dictionary:
+	go test ./internal/measures -run TestDictionaryIsCurrent -update
 
 # lint runs ifaceguard, filelen, bloat AND golangci-lint — all must pass to clear.
 lint: ifaceguard filelen bloat

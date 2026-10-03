@@ -26,7 +26,7 @@
 ## Security mandates
 
 - All external input (MFL API responses, CSV ingest, IPC payloads) decoded into a `Raw*` type and checked by its hand-written `Validate()` before business logic. No ad-hoc parsing, no `interface{}`/`any` escapes (`ifaceguard` enforces).
-- Parameterized SQL only. No string concatenation into queries (`gosec` enforces). Raw `database/sql` is confined to `internal/db`, `internal/store` and `internal/output` (`depguard` enforces).
+- Parameterized SQL only. No string concatenation into queries (`gosec` enforces). Raw `database/sql` is confined to `internal/db` and `internal/store` (`depguard` enforces).
 - No hardcoded secrets, tokens, or hosts. The MFL host is discovered at runtime, never hardcoded.
 - Errors wrapped with context (`%w`), never silently dropped (`errcheck` + `wrapcheck`).
 

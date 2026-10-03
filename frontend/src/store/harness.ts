@@ -79,8 +79,8 @@ export const useHarnessStore = create<HarnessState>((set, get) => ({
     await get().loadAll();
   },
 
-  // loadRankings reads the persisted M1 board back from B6. Read-only — empty rows
-  // means ScoreLeague has not run for the active config yet.
+  // loadRankings reads the latest board run back from history. Read-only — empty
+  // rows means ScoreLeague has not run this season yet.
   loadRankings: async () => {
     set({ error: '' });
     try {
@@ -115,9 +115,9 @@ export const useHarnessStore = create<HarnessState>((set, get) => ({
     }
   },
 
-  // scoreLeague runs the M1 orchestrator (fetch the labeled YTD proxy, score all 32
-  // rosters, persist to B6 stamped with the active config), then re-reads the board.
-  // The report (exclusions with reasons, zero-base count, skip-if-present) is kept
+  // scoreLeague runs the M1 orchestrator (load the labeled YTD proxy into history,
+  // score all 32 rosters, write a board run), then re-reads the board. The report
+  // (the run, exclusions with reasons, zero-base count, unchanged) is kept
   // for display — an invisible exclusion is a silent lie.
   scoreLeague: async () => {
     set({ scoring: true, error: '' });

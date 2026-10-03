@@ -1,7 +1,7 @@
 # System Map
 
 What exists in TheWarRoom and where new code belongs. Update it in the same commit as any new
-package, IPC method or external service. Current as of 2026-10-03 (Stage 0 of
+package, IPC method or external service. Current as of 2026-10-03 (Stage 1 of
 `docs/build-handoffs/Core_Build_Plan_2026-10.md`).
 
 ## Layers and packages
@@ -12,18 +12,20 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 |---|---|---|
 | App | repo root (`package main`) | Wails entrypoint (`main.go`), the `App` composition root (`app.go`) and the IPC adapters (`*_app.go`). Adapters validate, route and format; no business logic, no SQL. |
 | Transport | `internal/mfl` | MFL HTTP client: rate limit, host discovery, 429 backoff. No domain types. |
+| Transport | `internal/archive` | The HTTP transport every outbound request goes through: it records each response body (sha256, gzip) and each attempt to a `Sink`. Leaf. |
 | Layer 1 | `internal/ingestion` | Fetchers returning raw `Raw*` records. Shared helpers in the root package (`LeagueExport`, `FetchLeagueExport`, the CSV and CFBD plumbing); one subpackage per source. |
 | Layer 1 | `internal/normalize` | Raw records → domain types: the players lookup and roster join. |
 | Leaf | `internal/domain`, `internal/playerid`, `internal/numeric`, `internal/scouting` | Value types. `playerid.New` is the only way to build a `PlayerID`. `scouting` holds the Layer 4 input types. |
+| Leaf | `internal/measures` | The measure registry: `measures.csv`, `sources.csv` and `source_fields.csv`, embedded and validated. Generates `docs/data-layer/Measure_Dictionary.md` (`make measure-dictionary`). Adding a source is a CSV row, not code. |
 | Store | `internal/db` | SQLite pools: one write connection, many read-only ones, one WAL file. |
 | Store | `internal/store/rulebook` | League rules from MFL as immutable versions with one active pointer, plus commissioner overrides. |
 | Store | `internal/store/params` | Engine calibration: shipped defaults plus admin overrides. |
 | Store | `internal/store/state` | Rosters, contracts, the contract-year ledger, dead cap, cap relief, phases, feed, calendar. Append-only ledgers; the transaction coordinator holds the only `Writer`. |
-| Store | `internal/output` | Engine scores, frozen per (season, scoring config). Append-only, enforced by triggers. |
+| Store | `internal/store/history` | `history.db`: everything the app cannot rebuild. The fetch archive (`raw_archive`, `fetch_log`), facts per measure appended on change (`observations`, read as of a date through `Features`), source health, and scoring runs with the param set, engine and inputs they used. Append-only, enforced by triggers. |
 | Engine | `internal/engine` | The scoring pipeline as pure functions (L1, L3, L4 dispatch, L5, L6). |
 | Engine | `internal/engine/l4/{offense,defense,kicker,curve}` | The ten position rubrics and the shared S-curve. |
 | Composition | `internal/composition` | Engine inputs from the stores plus per-player facts. |
-| Composition | `internal/rankings` | M1: scores every rostered player and writes the batch to `output`. |
+| Composition | `internal/rankings` | M1: scores every rostered player from a params snapshot and history features, and writes one scoring run. |
 | Composition | `internal/m2service`, `internal/powerrankings` | M2: franchise aggregation and the z-score blend with MFL standings. |
 | Composition | `internal/scouting/assembly` | Builds scouting profiles from the Layer 1 feeds. |
 | Mutation | `internal/transactions` | The `Coordinator`: every league-state change runs here, in one transaction. Handler subpackages (`acquisitions`, `contracts`, `deadcap`, `freeagency`) are reachable only through it. |
@@ -31,11 +33,12 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Tooling | `tools/ifaceguard` | Vet tool: no `interface{}`/`any` in exported signatures. |
 
 **(depguard)**
-- `mfl`, `ingestion` and `normalize` never import `engine`, `store`, `transactions`, `output` or
+- `mfl`, `ingestion` and `normalize` never import `engine`, `store`, `transactions` or
   `database/sql`.
 - `engine` imports no store, transport, ingestion, normalize, `database/sql`, `net` or `os`.
-- The four stores (`rulebook`, `state`, `params`, `output`) never import each other.
-- `database/sql` is confined to `db`, `store` and `output`.
+- The four stores (`rulebook`, `state`, `params`, `history`) never import each other.
+- `measures` imports nothing of the app's but `domain`; `archive` imports nothing of the app's.
+- `database/sql` is confined to `db` and `store`.
 - `transactions/*` handler packages are imported only by `transactions`.
 
 ## IPC surface (21 methods on `App`)
@@ -57,9 +60,11 @@ Every method that takes frontend input validates it before acting. Bindings in
 
 ## Data and logs
 
-- **Database:** `~/.config/TheWarRoom/thewarroom.db`. A dev build (no version stamp) uses
-  `thewarroom-dev.db`, so development never touches the real league. One instance at a time
-  (`.lock` file).
+- **Databases,** in `~/.config/TheWarRoom/`, split by lifecycle:
+  - `thewarroom.db`: the MFL mirror and app settings. Rebuildable from MFL.
+  - `history.db`: the fetch archive, observations and scoring runs. Not rebuildable; back it up.
+  - A dev build (no version stamp) uses `thewarroom-dev.db` and `history-dev.db`, so development
+    never touches the real league. One instance at a time (`.lock` file).
 - **Migrations:** `internal/store/state/migrations.go`, forward-only and versioned; a
   `VACUUM INTO` backup is taken before any pending migration runs.
 - **Logs:** one file per launch in `~/.config/TheWarRoom/logs/`, also on stderr. Startup logs
@@ -69,6 +74,8 @@ Every method that takes frontend input validates it before acting. Bindings in
 
 ## External services
 
+- Every outbound request goes through `internal/archive`, so every body received is kept in
+  `history.db`. A URL with no row in `sources.csv` is logged as `unregistered`.
 - **MFL API** (league 14432), outbound only, through `internal/mfl`. The league host is
   discovered at runtime. The players endpoint is limited to once a day.
 - **nflverse and DynastyProcess** (static CSVs on GitHub), **CFBD** (bearer token in

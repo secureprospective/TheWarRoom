@@ -36,14 +36,14 @@ func openPools(t *testing.T, path string) *db.Pools {
 func TestInitializeSeedsDefaults(t *testing.T) {
 	s, _ := openStore(t)
 
-	tiers, err := s.GetCapTiers()
+	tiers, err := s.Snapshot().GetCapTiers()
 	if err != nil {
 		t.Fatalf("GetCapTiers: %v", err)
 	}
 	if tiers.ColdCeiling != 1.2 || tiers.HotFloor != 4.8 {
 		t.Fatalf("cap tiers = %+v, want {1.2 4.8}", tiers)
 	}
-	decay, err := s.GetGlobal(KeyLayer3DecayRate)
+	decay, err := s.Snapshot().GetGlobal(KeyLayer3DecayRate)
 	if err != nil {
 		t.Fatalf("GetGlobal decay: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestSetOverrideAppliesAndIsRangeAware(t *testing.T) {
 	if err := s.SetOverride(ctx, KeyCapTierColdCeiling, "", 2.0, "tuned up"); err != nil {
 		t.Fatalf("SetOverride: %v", err)
 	}
-	tiers, err := s.GetCapTiers()
+	tiers, err := s.Snapshot().GetCapTiers()
 	if err != nil {
 		t.Fatalf("GetCapTiers: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestOverrideOutOfRangeRejected(t *testing.T) {
 	if err := s.SetOverride(ctx, KeyLayer3DecayRate, "", 1.5, "bad"); err == nil {
 		t.Fatal("out-of-range override accepted, want rejection")
 	}
-	decay, err := s.GetGlobal(KeyLayer3DecayRate)
+	decay, err := s.Snapshot().GetGlobal(KeyLayer3DecayRate)
 	if err != nil {
 		t.Fatalf("GetGlobal: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestOverrideNonFiniteRejected(t *testing.T) {
 			t.Fatalf("non-finite override %v accepted, want rejection", v)
 		}
 	}
-	tiers, err := s.GetCapTiers()
+	tiers, err := s.Snapshot().GetCapTiers()
 	if err != nil {
 		t.Fatalf("GetCapTiers: %v", err)
 	}
@@ -173,7 +173,7 @@ func TestInitializeDoesNotReseed(t *testing.T) {
 	if err := s2.Initialize(ctx); err != nil {
 		t.Fatalf("second Initialize: %v", err)
 	}
-	ras, err := s2.GetGlobal(KeyCushionGuardRAS)
+	ras, err := s2.Snapshot().GetGlobal(KeyCushionGuardRAS)
 	if err != nil {
 		t.Fatalf("GetGlobal: %v", err)
 	}
@@ -204,10 +204,10 @@ func TestInitializeAddsDefaultsMissingFromAnExistingDB(t *testing.T) {
 	if err := s2.Initialize(ctx); err != nil {
 		t.Fatalf("Initialize on existing DB: %v", err)
 	}
-	if _, err := s2.GetGlobal(KeyCushionGuardReduct); err != nil {
+	if _, err := s2.Snapshot().GetGlobal(KeyCushionGuardReduct); err != nil {
 		t.Fatalf("parameter missing from the existing DB was not added: %v", err)
 	}
-	decay, err := s2.GetGlobal(KeyLayer3DecayRate)
+	decay, err := s2.Snapshot().GetGlobal(KeyLayer3DecayRate)
 	if err != nil {
 		t.Fatalf("GetGlobal decay: %v", err)
 	}
@@ -227,8 +227,8 @@ func TestConcurrentReadsAndOverride(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < 50; j++ {
-				_, _ = s.GetCapTiers()
-				_, _ = s.GetGlobal(KeyCushionGuardReduct)
+				_, _ = s.Snapshot().GetCapTiers()
+				_, _ = s.Snapshot().GetGlobal(KeyCushionGuardReduct)
 			}
 		}()
 	}
@@ -240,4 +240,28 @@ func TestConcurrentReadsAndOverride(t *testing.T) {
 		}
 	}()
 	wg.Wait()
+}
+
+func TestSnapshotIsFrozenAndRoundTrips(t *testing.T) {
+	s, _ := openStore(t)
+	before := s.Snapshot()
+	if err := s.SetOverride(context.Background(), KeyLayer3DecayRate, "", 0.07, ""); err != nil {
+		t.Fatal(err)
+	}
+	if v, _ := before.GetGlobal(KeyLayer3DecayRate); v != 0.03 {
+		t.Errorf("snapshot changed after an override: decay = %g, want 0.03", v)
+	}
+	after := s.Snapshot()
+	values := after.Values()
+	if values[KeyLayer3DecayRate] != 0.07 || len(values) != len(defaultParams()) {
+		t.Errorf("Values = %v", values)
+	}
+	again := SetOf(values)
+	if v, err := again.GetGlobal(KeyLayer3DecayRate); err != nil || v != 0.07 {
+		t.Errorf("SetOf(Values()) decay = %g, %v", v, err)
+	}
+	perPos := SetOf(map[string]float64{"rubric.film_cap@DT": 0.4}).Values()
+	if perPos["rubric.film_cap@DT"] != 0.4 {
+		t.Errorf("per-position key did not round-trip: %v", perPos)
+	}
 }
