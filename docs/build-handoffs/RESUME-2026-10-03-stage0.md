@@ -1,4 +1,4 @@
-# RESUME — TheWarRoom Stage 0, nearly done (2026-10-03, second checkpoint)
+# RESUME — TheWarRoom Stage 0, gate checked (2026-10-03, third checkpoint)
 
 ## 1. What we are doing
 - **Goal:** Stage 0 ("one timeline") of `docs/build-handoffs/Core_Build_Plan_2026-10.md`, then
@@ -15,14 +15,15 @@
 | 0.1 delete stale branches | WAITING on Christopher (§4) |
 | 0.2 docs | DONE (`289d202`): CLAUDE.md v3, SYSTEM_MAP, AGENTS.md, GEMINI.md deleted, Commissioner plan (reconstructed, DEFERRED), Scouting_Schema 1.1, HANDOFF.md baton. README NOT touched (public copy, Christopher's call) |
 | 0.3 launch log, 2-min startup timeout, `-probe`, startup banner | DONE; banner not yet seen in the GUI (live gate) |
-| 0.4 dead code, DT cushion params | DONE |
+| 0.4 dead code, DT cushion params | DONE. The gate check found the cushion's L4 half still on literals; fixed (`336c435`) |
 | 0.5 standards upstream | PR #33 in christopher-coding-standards, open for Christopher |
-| 0.5 comment cleanup | DONE: surviving code 14.4%, no package over 20% except `scouting` (types-only, named exemption), provenance 0 outside rewrite-bound packages |
+| 0.5 comment cleanup | DONE: surviving code 14.3%, no package over 20% except `scouting` (types-only, named exemption), provenance 0 outside rewrite-bound packages. The gate check found `domain` 20.6% and `playerid` 20.3%; trimmed (`876a7b3`) |
+| **Stage 0 gate check** | DONE (`ee959e9`), recorded in the plan under Stage 0: every gate PASS; closes on Christopher's three items (§4) |
 | 0.5 refactors | DONE (list in §3) |
 | 0.5 table-driven tests | DONE for surviving code (transactions setup helper, rankings film table). Rubric/harness suites go table-driven in Stage 5 with the rubric rewrite |
 
-**Bloat baseline:** comment_pct 20, provenance 8 (all in engine/l4, scouting/assembly, harness,
-ingestion/madden), tiny_files 28, dupl 42. Run `bash scripts/bloat.sh` before pushing:
+**Bloat baseline:** comment_pct 20, provenance 7 (all in scouting/assembly, harness,
+ingestion/madden), tiny_files 28, dupl 38. Run `bash scripts/bloat.sh` before pushing:
 removing code raises the comment share, so a refactor can trip it (it did once; fixed by
 trimming `m1_scouting.go`).
 
@@ -48,13 +49,20 @@ trimming `m1_scouting.go`).
     first time Christopher runs a production build of this branch.
   - test setup: `seededCoordinator`/`pid` shared by nine transaction test files; film blend
     tests are one table.
+- Gate check (third checkpoint): `engine.CushionGuard` on Calibration, handed to Layer 4, so both
+  cushion halves read the params (DT output bit-identical at defaults over 14,514 inputs; planted
+  regressions caught); startup log line no longer prints `()` on a dev build; Fable's June docs
+  moved to `archive/2026-06-pre-build/` (ledgers: MOVED.md, MANIFEST, CT105 context addendum,
+  uncommitted there because CT105 has its own work in flight); stray `=` file deleted;
+  Build_Tracker/North_Star/Vision/.golangci.yml pointers fixed.
 - Plan amended: harness retires at Stage 7; caches → raw_archive at Stage 4; measured Stage 0
   bloat result; Stage 4/5 gates inherit the comment targets.
 
 ## 4. Next actions, in order
 1. Confirm the push landed (`git status`, `git log origin/session/m1b-bash -1`).
-2. **Stage 0 gate check** against the plan's gate list; write the result into the plan.
-3. **Ask Christopher (numbered steps, one message):**
+2. **If Christopher has answered §3's asks,** act on them: delete the branches (tag first), and
+   record the live-gate result in the plan; on PASS, Stage 0 is closed. If not, start Stage 1.
+3. **Asked of Christopher 2026-10-03 (numbered steps, one message):**
    - Confirm stale-branch deletion (tag `archive/<name>` first). Every branch except
      m1b-bash and main is merged or superseded.
    - Merge christopher-coding-standards PR #33.
