@@ -288,7 +288,7 @@ func makeMoves(n int) []PlayerMove {
 
 func newCoord(t *testing.T, w state.Writer) *Coordinator {
 	t.Helper()
-	c, err := New(w, nil)
+	c, err := New(w, nil, nil)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -300,8 +300,8 @@ func newCoord(t *testing.T, w state.Writer) *Coordinator {
 // TestNew_NilWriterFails is the fail-loud construction gate: the sole mutator must be
 // wired with a real writer, never a nil that would no-op every transaction.
 func TestNew_NilWriterFails(t *testing.T) {
-	if _, err := New(nil, nil); err == nil {
-		t.Fatal("New(nil, nil) succeeded — a nil writer must fail at construction")
+	if _, err := New(nil, nil, nil); err == nil {
+		t.Fatal("New(nil, nil, nil) succeeded — a nil writer must fail at construction")
 	}
 }
 

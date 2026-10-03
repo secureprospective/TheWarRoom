@@ -25,8 +25,9 @@ type Sign struct {
 	FranchiseID string
 	Salary      domain.Money
 	Years       int
-	// draftYear is resolved by Coordinator.ExecuteSign from the players directory; it sets
-	// experience for the §6 floor. A Sign built without it gets the rookie floor.
+	// draftYear is resolved by the coordinator from the players directory and sets experience
+	// for the §6 floor. A player with no real draft year (commissioner-created, or missing
+	// data) gets the rookie floor, per Christopher's ruling.
 	draftYear    int
 	hasDraftYear bool
 }
@@ -56,6 +57,13 @@ func (s Sign) enforceRosterLimits(ctx context.Context, r state.Reader, p RosterP
 }
 
 // A signing needs a player, a franchise, a positive salary and 1-4 years.
+func (s Sign) resolve(_ *Coordinator, dir Directory) (Request, error) {
+	if facts, ok := dir.Facts(s.MFLID); ok && facts.HasDraftYear {
+		s.draftYear, s.hasDraftYear = facts.DraftYear, true
+	}
+	return s, nil
+}
+
 func (s Sign) validate() error {
 	if strings.TrimSpace(s.MFLID) == "" {
 		return fmt.Errorf("transactions: sign has an empty player id")

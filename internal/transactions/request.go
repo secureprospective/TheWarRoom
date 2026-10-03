@@ -167,8 +167,9 @@ func (r Restructure) apply(ctx context.Context, w state.TxWriter) (applyResult, 
 	return applyResult{PlayersAffected: 1}, nil
 }
 
-// Tag applies a §9 franchise tag. The price is resolved by Coordinator.ExecuteTag into an
-// unexported field, so callers send only the id; an unresolved (zero) price is rejected.
+// Tag applies a §9 franchise tag. Callers send only the id: the coordinator resolves the price
+// (top-5 average at the position, floored at 120% of last year's salary) into an unexported
+// field from authoritative state.
 type Tag struct {
 	MFLID string
 	price domain.Money
@@ -184,6 +185,19 @@ func (t Tag) validate() error {
 	return nil
 }
 
+func (t Tag) resolve(c *Coordinator, dir Directory) (Request, error) {
+	ps, ok := c.writer.Player(t.MFLID)
+	if !ok {
+		return nil, fmt.Errorf("transactions: tag %q: player not on any roster", t.MFLID)
+	}
+	facts, ok := dir.Facts(t.MFLID)
+	if !ok {
+		return nil, fmt.Errorf("transactions: tag %q: no players-DB record — cannot resolve position for the §9 top-5 average", t.MFLID)
+	}
+	t.price = tagFloorPrice(tagPrice(c.writer, dir, facts.Position), ps.Salary)
+	return t, nil
+}
+
 func (t Tag) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
 	if err := contracts.Tag(ctx, w, t.MFLID, t.price); err != nil {
 		return applyResult{}, fmt.Errorf("tag: %w", err)
@@ -193,8 +207,8 @@ func (t Tag) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {
 }
 
 // Extension adds AddedYears (1-3) PAID years at 150% of the top remaining year, raised to the
-// position floor (§10). The floor is resolved by Coordinator.ExecuteExtension into an unexported
-// field. The §10 limits (a year remaining, at most 6 total, no prior extension, one per franchise
+// position floor (§10). The coordinator resolves the floor from the player's position into an
+// unexported field; the price itself is computed in the transaction from the player's cells. The §10 limits (a year remaining, at most 6 total, no prior extension, one per franchise
 // per season) are enforced in the handler.
 type Extension struct {
 	MFLID      string
@@ -213,6 +227,22 @@ func (e Extension) validate() error {
 		return fmt.Errorf("transactions: extension adds %d years, must be 1..3 (§10)", e.AddedYears)
 	}
 	return nil
+}
+
+func (e Extension) resolve(c *Coordinator, dir Directory) (Request, error) {
+	if _, ok := c.writer.Player(e.MFLID); !ok {
+		return nil, fmt.Errorf("transactions: extension %q: player not on any roster", e.MFLID)
+	}
+	facts, ok := dir.Facts(e.MFLID)
+	if !ok {
+		return nil, fmt.Errorf("transactions: extension %q: no players-DB record — cannot resolve position for the §10 floor", e.MFLID)
+	}
+	floor, ok := PositionFloor(facts.Position)
+	if !ok {
+		return nil, fmt.Errorf("transactions: extension %q: position %q has no §10 floor", e.MFLID, facts.Position)
+	}
+	e.floor = floor
+	return e, nil
 }
 
 func (e Extension) apply(ctx context.Context, w state.TxWriter) (applyResult, error) {

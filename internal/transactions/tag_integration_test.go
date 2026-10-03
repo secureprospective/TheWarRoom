@@ -58,7 +58,7 @@ func tagStore(t *testing.T) (*statepkg.Store, *transactions.Coordinator, tagDir)
 	if err := s.Initialize(context.Background(), tagSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
-	c, err := transactions.New(s.Writer(), nil)
+	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
 	if err != nil {
 		t.Fatalf("New coordinator: %v", err)
 	}
@@ -77,8 +77,8 @@ func TestIntegration_TagSetsCapToTopFiveAverage(t *testing.T) {
 		t.Fatalf("pre-tag cap = %s, want $12M", before)
 	}
 
-	if _, err := c.ExecuteTag(ctx, "0022", dir); err != nil {
-		t.Fatalf("ExecuteTag: %v", err)
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Tag{MFLID: "0022"}); err != nil {
+		t.Fatalf("tag: %v", err)
 	}
 
 	p, _ := s.Player("0022")
@@ -98,8 +98,8 @@ func TestIntegration_TagSetsCapToTopFiveAverage(t *testing.T) {
 func TestIntegration_TagFloorLifts(t *testing.T) {
 	s, c, dir := tagStore(t)
 
-	if _, err := c.ExecuteTag(context.Background(), "0010", dir); err != nil {
-		t.Fatalf("ExecuteTag: %v", err)
+	if _, err := c.WithDirectory(dir).Execute(context.Background(), transactions.Tag{MFLID: "0010"}); err != nil {
+		t.Fatalf("tag: %v", err)
 	}
 	if p, _ := s.Player("0010"); p.CapSalary != 12*mil { // 120% × $10M beats the $6M avg
 		t.Fatalf("tagged salary = %s, want $12M (120%% floor lifts above the average)", p.CapSalary)
@@ -115,22 +115,22 @@ func TestIntegration_TagRejectsAndRollsBack(t *testing.T) {
 	s, c, dir := tagStore(t)
 	ctx := context.Background()
 
-	if _, err := c.ExecuteTag(ctx, "0022", dir); err != nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Tag{MFLID: "0022"}); err != nil {
 		t.Fatalf("first tag failed: %v", err)
 	}
 	// Second tag, same franchise (0021 also on 0002), same season → rejected.
-	if _, err := c.ExecuteTag(ctx, "0021", dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Tag{MFLID: "0021"}); err == nil {
 		t.Fatal("a second tag for the same franchise in one season was accepted")
 	}
 	if p, _ := s.Player("0021"); p.IsTagged {
 		t.Fatal("the rejected second tag still flagged 0021")
 	}
 	// One per contract: re-tagging the already-tagged 0022 → rejected.
-	if _, err := c.ExecuteTag(ctx, "0022", dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Tag{MFLID: "0022"}); err == nil {
 		t.Fatal("a second tag of the same contract was accepted")
 	}
 	// An unknown player id → rejected before any tx.
-	if _, err := c.ExecuteTag(ctx, "9999", dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Tag{MFLID: "9999"}); err == nil {
 		t.Fatal("tagging an unrostered player was accepted")
 	}
 }
@@ -151,7 +151,7 @@ func TestIntegration_TagResetsRestructureFlag(t *testing.T) {
 		t.Fatal("0010 not flagged restructured after restructure")
 	}
 	// Tag is a different op_kind, so it is NOT blocked by the restructure per-season counter.
-	if _, err := c.ExecuteTag(ctx, "0010", dir); err != nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Tag{MFLID: "0010"}); err != nil {
 		t.Fatalf("tag of a restructured player was rejected: %v", err)
 	}
 	p, _ := s.Player("0010")
@@ -169,7 +169,7 @@ func TestIntegration_RestructureRejectsTaggedPlayer(t *testing.T) {
 	s, c, dir := tagStore(t)
 	ctx := context.Background()
 
-	if _, err := c.ExecuteTag(ctx, "0010", dir); err != nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Tag{MFLID: "0010"}); err != nil {
 		t.Fatalf("tag 0010: %v", err)
 	}
 	before, _ := s.CapUsed("0001")
@@ -189,8 +189,8 @@ func TestIntegration_TagSetsCurrentCell(t *testing.T) {
 	s, c, dir := tagStore(t)
 	ctx := context.Background()
 
-	if _, err := c.ExecuteTag(ctx, "0022", dir); err != nil {
-		t.Fatalf("ExecuteTag: %v", err)
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Tag{MFLID: "0022"}); err != nil {
+		t.Fatalf("tag: %v", err)
 	}
 
 	cells, err := s.LedgerCells(ctx, "0022")
@@ -215,8 +215,8 @@ func TestIntegration_TagThenCutVoidsCells(t *testing.T) {
 	s, c, dir := tagStore(t)
 	ctx := context.Background()
 
-	if _, err := c.ExecuteTag(ctx, "0022", dir); err != nil {
-		t.Fatalf("ExecuteTag: %v", err)
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Tag{MFLID: "0022"}); err != nil {
+		t.Fatalf("tag: %v", err)
 	}
 	// Sanity: the tag set the season cell to the $6M price before the cut.
 	if pre, err := s.LedgerCells(ctx, "0022"); err != nil || pre[2026] != 6*mil {
@@ -279,15 +279,15 @@ func TestIntegration_TagOffGridPriceSnapsInCap(t *testing.T) {
 	if err := s.Initialize(context.Background(), offGridSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
-	c, err := transactions.New(s.Writer(), nil)
+	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
 	if err != nil {
 		t.Fatalf("New coordinator: %v", err)
 	}
 	dir := tagDir{"0010": domain.PosWR, "0011": domain.PosWR, "0020": domain.PosWR, "0021": domain.PosWR, "0022": domain.PosWR}
 	ctx := context.Background()
 
-	if _, err := c.ExecuteTag(ctx, "0022", dir); err != nil {
-		t.Fatalf("ExecuteTag: %v", err)
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Tag{MFLID: "0022"}); err != nil {
+		t.Fatalf("tag: %v", err)
 	}
 
 	// The resolved price is genuinely OFF the $10k grid — otherwise this test proves nothing.

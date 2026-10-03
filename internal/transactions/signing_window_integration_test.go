@@ -30,7 +30,7 @@ func TestIntegration_UFAWindowGatesSigning(t *testing.T) {
 
 	// A signing that clears every OTHER gate is now blocked purely by the closed window.
 	sign := transactions.Sign{MFLID: "0011", FranchiseID: "0002", Salary: signUSD(700_000), Years: 2}
-	_, err := c.ExecuteSign(ctx, sign, dir)
+	_, err := c.WithDirectory(dir).Execute(ctx, sign)
 	if err == nil {
 		t.Fatal("signing succeeded with the window CLOSED, want a rejection")
 	}
@@ -45,7 +45,7 @@ func TestIntegration_UFAWindowGatesSigning(t *testing.T) {
 	if _, err := c.Execute(ctx, transactions.SetSigningWindow{Open: true, Note: "free agency opens"}); err != nil {
 		t.Fatalf("reopen signing window: %v", err)
 	}
-	if _, err := c.ExecuteSign(ctx, sign, dir); err != nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, sign); err != nil {
 		t.Fatalf("signing rejected with the window REOPENED: %v", err)
 	}
 	if contains(poolOf(t, s), "0011") {

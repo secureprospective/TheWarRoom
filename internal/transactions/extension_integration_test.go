@@ -52,7 +52,7 @@ func extStore(t *testing.T) (*statepkg.Store, *transactions.Coordinator, tagDir)
 	if err := s.Initialize(context.Background(), extSeed{t}); err != nil {
 		t.Fatalf("Initialize: %v", err)
 	}
-	c, err := transactions.New(s.Writer(), nil)
+	c, err := transactions.New(s.Writer(), nil, emptyDirectory)
 	if err != nil {
 		t.Fatalf("New coordinator: %v", err)
 	}
@@ -72,8 +72,8 @@ func TestIntegration_ExtendAppendsYearsAtFlooredPrice(t *testing.T) {
 	ctx := context.Background()
 
 	before, _ := s.CapUsed("0001")
-	if _, err := c.ExecuteExtension(ctx, "0001", 2, dir); err != nil {
-		t.Fatalf("ExecuteExtension: %v", err)
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0001", AddedYears: 2}); err != nil {
+		t.Fatalf("extension: %v", err)
 	}
 
 	cells, err := s.LedgerCells(ctx, "0001")
@@ -109,8 +109,8 @@ func TestIntegration_ExtendPricesAt150AboveFloor(t *testing.T) {
 	s, c, dir := extStore(t)
 	ctx := context.Background()
 
-	if _, err := c.ExecuteExtension(ctx, "0003", 1, dir); err != nil {
-		t.Fatalf("ExecuteExtension: %v", err)
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0003", AddedYears: 1}); err != nil {
+		t.Fatalf("extension: %v", err)
 	}
 	cells, _ := s.LedgerCells(ctx, "0003")
 	if cells[2029] != 12*mil { // 150%×$8M = $12M > $10M floor
@@ -130,8 +130,8 @@ func TestIntegration_ExtendResetsRestructureFlag(t *testing.T) {
 	if p, _ := s.Player("0001"); !p.IsRestructured {
 		t.Fatal("0001 not flagged restructured before extension")
 	}
-	if _, err := c.ExecuteExtension(ctx, "0001", 1, dir); err != nil {
-		t.Fatalf("ExecuteExtension: %v", err)
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0001", AddedYears: 1}); err != nil {
+		t.Fatalf("extension: %v", err)
 	}
 	if p, _ := s.Player("0001"); p.IsRestructured {
 		t.Fatal("extension did NOT reset is_restructured — the §10 restructure unlock is missing")
@@ -146,33 +146,33 @@ func TestIntegration_ExtendRejectsAndRollsBack(t *testing.T) {
 	ctx := context.Background()
 
 	// A final-year player has no year remaining (UFAs ineligible).
-	if _, err := c.ExecuteExtension(ctx, "0002", 1, dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0002", AddedYears: 1}); err == nil {
 		t.Fatal("extending a final-year (UFA-ineligible) player was accepted")
 	}
 	// An unknown player is rejected before any tx.
-	if _, err := c.ExecuteExtension(ctx, "9999", 1, dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "9999", AddedYears: 1}); err == nil {
 		t.Fatal("extending an unrostered player was accepted")
 	}
 	// Out-of-range added years (validate gate).
-	if _, err := c.ExecuteExtension(ctx, "0001", 4, dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0001", AddedYears: 4}); err == nil {
 		t.Fatal("a 4-year extension was accepted (max 3)")
 	}
-	if _, err := c.ExecuteExtension(ctx, "0001", 0, dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0001", AddedYears: 0}); err == nil {
 		t.Fatal("a 0-year extension was accepted")
 	}
 	// The ≤6-total ceiling: 0004 already has 6 paid years.
-	if _, err := c.ExecuteExtension(ctx, "0004", 1, dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0004", AddedYears: 1}); err == nil {
 		t.Fatal("extending past 6 total contract years was accepted")
 	}
 	// A position with no §10 floor is rejected in the Coordinator.
-	if _, err := c.ExecuteExtension(ctx, "0005", 1, dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0005", AddedYears: 1}); err == nil {
 		t.Fatal("extending a FLAG-position player (no floor) was accepted")
 	}
 	// A franchise-tagged player is out of scope in v1 (120%-of-tag pricing deferred).
-	if _, err := c.ExecuteTag(ctx, "0003", dir); err != nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Tag{MFLID: "0003"}); err != nil {
 		t.Fatalf("tag setup failed: %v", err)
 	}
-	if _, err := c.ExecuteExtension(ctx, "0003", 1, dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0003", AddedYears: 1}); err == nil {
 		t.Fatal("extending a franchise-tagged player was accepted (out of scope in v1)")
 	}
 
@@ -192,11 +192,11 @@ func TestIntegration_ExtendLimits(t *testing.T) {
 	s, c, dir := extStore(t)
 	ctx := context.Background()
 
-	if _, err := c.ExecuteExtension(ctx, "0001", 1, dir); err != nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0001", AddedYears: 1}); err != nil {
 		t.Fatalf("first extension: %v", err)
 	}
 	// Second extension, same franchise (0003 also on 0001), same season → rejected.
-	if _, err := c.ExecuteExtension(ctx, "0003", 1, dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0003", AddedYears: 1}); err == nil {
 		t.Fatal("a second extension for the same franchise in one season was accepted")
 	}
 	// The rejected second extension left 0003 untouched.
@@ -205,7 +205,7 @@ func TestIntegration_ExtendLimits(t *testing.T) {
 	}
 	// Re-extending the already-extended 0001 is rejected (no second extension off a prior one),
 	// independent of the per-season counter.
-	if _, err := c.ExecuteExtension(ctx, "0001", 1, dir); err == nil {
+	if _, err := c.WithDirectory(dir).Execute(ctx, transactions.Extension{MFLID: "0001", AddedYears: 1}); err == nil {
 		t.Fatal("a second extension off a prior extension was accepted")
 	}
 }

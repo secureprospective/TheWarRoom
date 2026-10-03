@@ -113,7 +113,7 @@ func TestTrade_RejectsOverPositionLimit_NetDelta(t *testing.T) {
 		map[string]domain.Position{"q1": domain.PosQB, "q2": domain.PosQB, "qOut": domain.PosQB, "qIn1": domain.PosQB, "qIn2": domain.PosQB},
 	)
 
-	c, err := New(w, policy)
+	c, err := New(w, policy, nil)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -159,7 +159,7 @@ func TestTrade_AllowsWithinPositionLimit_NetDelta(t *testing.T) {
 		map[domain.Position]int{domain.PosQB: 3},
 		map[string]domain.Position{"q1": domain.PosQB, "q2": domain.PosQB, "qOut": domain.PosQB, "qIn1": domain.PosQB},
 	)
-	c, err := New(w, policy)
+	c, err := New(w, policy, nil)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -192,7 +192,7 @@ func TestRosterStatusChange_RejectsOverTaxiCap(t *testing.T) {
 		},
 	)
 	policy := newSeededPolicy(0, 1 /* taxi cap */, 0, nil, nil)
-	c, err := New(w, policy)
+	c, err := New(w, policy, nil)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
