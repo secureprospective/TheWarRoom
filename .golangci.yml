@@ -1,10 +1,5 @@
-# Go overlay — golangci-lint v2 configuration.
-# Part of christopher-coding-standards, Phase 2. Mirrors the TS overlay's biome.json role.
-#
-# ASSUMPTION TO CONFIRM AT B0: the depguard rules below assume the module path
-# `github.com/secureprospective/TheWarRoom` and the internal/ tree from
-# Fable_TheWarRoom_code_plan.md Section 3.1. If go.mod declares a different
-# module path, find/replace it across the `deny` entries below before B0 closes.
+# golangci-lint v2 configuration, from the christopher-coding-standards Go overlay. The
+# depguard rules are the import boundaries SYSTEM_MAP.md describes.
 
 version: "2"
 

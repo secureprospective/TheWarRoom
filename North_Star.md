@@ -1,6 +1,6 @@
 # TheWarRoom — North Star
 Version: 1.2 — June 2026
-Status: Strategic reference — authoritative on purpose, scope, and how the pieces connect. CLAUDE.md is the session entry point; `docs/build-handoffs/Build_Tracker.md` is the build-session source of truth. The technical specifications are authoritative on implementation detail.
+Status: Strategic reference — authoritative on purpose, scope, and how the pieces connect. CLAUDE.md is the session entry point; `docs/build-handoffs/Core_Build_Plan_2026-10.md` is the build plan. The technical specifications are authoritative on implementation detail.
 
 Changelog: Version 1.2 corrects source count and updates Phase 3 for self-hosted model. Version 1.1 nuanced Principle 1 and added Principle 2 on year-over-year configurability.
 
