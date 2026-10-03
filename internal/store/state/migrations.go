@@ -10,28 +10,19 @@ import (
 	"time"
 )
 
-// stateOwner is this package's migration namespace in schema_migrations. The three schema
-// owners are disjoint (D-V6) — state is the only one with migrations, so it owns exactly
-// its own rows and never reads or writes another owner's. Adding a fourth store package
-// later costs one new owner string and zero coupling here.
+// stateOwner is this package's namespace in schema_migrations; each store owns only its own rows.
 const stateOwner = "state"
 
-// maxKnownStateVersion is the highest migration version THIS binary understands — DERIVED
-// from the registry itself (the last, highest version) so it can never drift out of sync
-// with stateMigrations. If a DB carries a state row newer than this, the binary is older
-// than the data that touched it and refuses to open (checkNoDowngrade) — the two machines
-// (CT105 + Beelink gate clone) will drift, and a forward-only ledger has no down-migration
-// to recover with.
+// maxKnownStateVersion is the newest migration this binary knows, taken from the registry. A DB
+// stamped newer than this was touched by a newer binary, and opening it is refused: there are no
+// down-migrations.
 func maxKnownStateVersion() int {
 	migs := stateMigrations()
-	return migs[len(migs)-1].version // registry is ascending; last is the max
+	return migs[len(migs)-1].version
 }
 
-// schemaMigrationsDDL is the per-(owner, version) marker table (D-V6). No central
-// coordinator, no PRAGMA user_version. Each owner creates it idempotently, reads its own
-// rows, runs its own pending migrations. method distinguishes a migration we actually RAN
-// ('migrated') from one we found already in its target state on a pre-marker DB and merely
-// stamped ('reconciled').
+// schema_migrations holds one marker per (owner, version). method is 'migrated' for a step that
+// ran, or 'reconciled' for one found already in place on an older DB and only stamped.
 const schemaMigrationsDDL = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
 	owner       TEXT    NOT NULL,
@@ -41,21 +32,16 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 	PRIMARY KEY (owner, version)
 );`
 
-// migration is one forward-only schema step. apply performs it (idempotent — a no-op if the
-// DB is already in the target state, so it is safe to invoke in the reconcile path too).
-// isAlreadyApplied is a DATA predicate: it inspects the DB's actual state to decide whether
-// this migration's effect is already present, so a pre-marker DB can be stamped without
-// re-running work that would otherwise be destructive or wasteful.
+// migration is one forward-only step. apply is idempotent. isAlreadyApplied inspects the data, so
+// an older DB can be stamped without re-running destructive work.
 type migration struct {
 	version          int
 	apply            func(*Store, context.Context) error
 	isAlreadyApplied func(*Store, context.Context) (bool, error)
 }
 
-// stateMigrations is the ordered, forward-only migration registry. Versions are dense and
-// ascending; NEVER renumber or reuse a version — the marker rows are permanent. Append only.
-// v1/v2 wrap the two pre-existing migrations (money-cents, drop-legacy-columns), whose bodies
-// are unchanged in schema.go; the registry adds marker tracking + a pre-migration backup.
+// stateMigrations is the forward-only registry. Versions are dense and ascending; never renumber or
+// reuse one. Append only.
 func stateMigrations() []migration {
 	return []migration{
 		{version: 1, apply: (*Store).migrateMoneyCents, isAlreadyApplied: (*Store).moneyCentsApplied},
@@ -63,11 +49,9 @@ func stateMigrations() []migration {
 	}
 }
 
-// runMigrations brings the state schema forward: create the marker table, refuse a
-// downgrade, then for every not-yet-stamped version decide reconcile-vs-run from a data
-// predicate, take ONE VACUUM INTO backup if any real work is pending, apply in order, and
-// stamp each. Forward-only — the backup is the rollback (D-V6). Called from initSchema
-// AFTER the base + per-feature DDL, so every table the predicates inspect already exists.
+// runMigrations refuses a downgrade, then for each unstamped version either stamps it (already in
+// place) or runs it, taking one VACUUM INTO backup first if any real work is pending. The backup is
+// the rollback. It runs after all DDL, so every table the checks read exists.
 func (s *Store) runMigrations(ctx context.Context) error {
 	if _, err := s.pools.Write().ExecContext(ctx, schemaMigrationsDDL); err != nil {
 		return fmt.Errorf("state: create schema_migrations: %w", err)
@@ -95,7 +79,7 @@ func (s *Store) runMigrations(ctx context.Context) error {
 			return aerr
 		}
 		if !already {
-			needBackup = true // this version will do real, irreversible work
+			needBackup = true
 		}
 		todo = append(todo, step{m: m, already: already})
 	}
@@ -108,9 +92,7 @@ func (s *Store) runMigrations(ctx context.Context) error {
 		}
 	}
 	for _, st := range todo {
-		// A version whose effect is already present (data predicate) is stamped WITHOUT
-		// re-invoking apply — 'reconciled' means exactly "found done, did not run". Only a
-		// version that will do real work runs apply, under a backup taken above.
+		// Already in place: stamp without running apply.
 		method := "reconciled"
 		if !st.already {
 			if err := st.m.apply(s, ctx); err != nil {
@@ -125,7 +107,7 @@ func (s *Store) runMigrations(ctx context.Context) error {
 	return nil
 }
 
-// appliedStateVersions returns the set of already-stamped state migration versions.
+// appliedStateVersions returns the stamped versions.
 func (s *Store) appliedStateVersions(ctx context.Context) (map[int]bool, error) {
 	rows, err := s.pools.Read().QueryContext(ctx,
 		`SELECT version FROM schema_migrations WHERE owner = ?`, stateOwner)
@@ -147,10 +129,9 @@ func (s *Store) appliedStateVersions(ctx context.Context) (map[int]bool, error) 
 	return applied, nil
 }
 
-// checkNoDowngrade refuses to open a DB whose highest state migration exceeds what this
-// binary knows how to run. Plain-language message: the fix is to update the app, not the DB.
+// checkNoDowngrade refuses a DB stamped newer than this binary; the fix is to update the app.
 func (s *Store) checkNoDowngrade(ctx context.Context) error {
-	var maxV int // MAX over zero rows is NULL → coalesce to 0 (fresh DB)
+	var maxV int // NULL on a fresh DB
 	if err := s.pools.Read().QueryRowContext(ctx,
 		`SELECT COALESCE(MAX(version), 0) FROM schema_migrations WHERE owner = ?`,
 		stateOwner).Scan(&maxV); err != nil {
@@ -165,7 +146,7 @@ func (s *Store) checkNoDowngrade(ctx context.Context) error {
 	return nil
 }
 
-// stampMigration records a version as applied. applied_at defaults to datetime('now').
+// stampMigration records a version as applied.
 func (s *Store) stampMigration(ctx context.Context, version int, method string) error {
 	if _, err := s.pools.Write().ExecContext(ctx,
 		`INSERT INTO schema_migrations (owner, version, method) VALUES (?, ?, ?)`,
@@ -175,11 +156,9 @@ func (s *Store) stampMigration(ctx context.Context, version int, method string) 
 	return nil
 }
 
-// backupBeforeMigration writes a fully self-contained snapshot of the live DB just before a
-// migration runs. It checkpoints the WAL back into the main file, then VACUUM INTO a sibling
-// file — NEVER an OS copy, because WAL state spans .db + .db-wal + .db-shm and a plain copy
-// would capture a torn picture. Keeps the newest 3 snapshots. On an anonymous/in-memory DB
-// (no backing file) there is nothing to snapshot and this is a no-op.
+// backupBeforeMigration checkpoints the WAL and VACUUMs INTO a sibling file. Never an OS copy:
+// WAL state spans three files and a copy can tear. Keeps the newest 3; a no-op for an in-memory
+// DB.
 func (s *Store) backupBeforeMigration(ctx context.Context) error {
 	if _, err := s.pools.Write().ExecContext(ctx, `PRAGMA wal_checkpoint(TRUNCATE)`); err != nil {
 		return fmt.Errorf("state: pre-migration checkpoint: %w", err)
@@ -189,11 +168,10 @@ func (s *Store) backupBeforeMigration(ctx context.Context) error {
 		return err
 	}
 	if path == "" {
-		return nil // anonymous/in-memory DB — nothing to back up
+		return nil // in-memory: nothing to back up
 	}
 	dest := fmt.Sprintf("%s.premigration-%s", path, time.Now().UTC().Format("20060102T150405Z"))
-	// dest is a filesystem path, not caller input; VACUUM INTO takes a string-literal filename
-	// (not a bindable parameter), so it is embedded with standard SQL single-quote escaping.
+	// VACUUM INTO takes a literal, not a parameter; dest is our own path, quote-escaped.
 	lit := "'" + strings.ReplaceAll(dest, "'", "''") + "'"
 	if _, err := s.pools.Write().ExecContext(ctx, "VACUUM INTO "+lit); err != nil {
 		return fmt.Errorf("state: pre-migration backup: %w", err)
@@ -201,9 +179,7 @@ func (s *Store) backupBeforeMigration(ctx context.Context) error {
 	return pruneBackups(path)
 }
 
-// mainDBPath returns the filesystem path backing the main schema, via PRAGMA database_list
-// (the file actually attached to this connection — correct even through a symlink). Empty
-// string for an anonymous or in-memory database.
+// mainDBPath returns the file behind the main schema (PRAGMA database_list), or "" in memory.
 func (s *Store) mainDBPath(ctx context.Context) (string, error) {
 	rows, err := s.pools.Read().QueryContext(ctx, `PRAGMA database_list`)
 	if err != nil {
@@ -226,8 +202,7 @@ func (s *Store) mainDBPath(ctx context.Context) (string, error) {
 	return "", nil
 }
 
-// pruneBackups keeps only the newest 3 pre-migration snapshots for a given DB path. The
-// timestamp suffix is fixed-width UTC (YYYYMMDDThhmmssZ), so lexical order == chronological.
+// pruneBackups keeps the newest 3 snapshots; fixed-width UTC suffixes sort chronologically.
 func pruneBackups(dbPath string) error {
 	matches, err := filepath.Glob(dbPath + ".premigration-*")
 	if err != nil {
@@ -245,11 +220,9 @@ func pruneBackups(dbPath string) error {
 	return nil
 }
 
-// moneyCentsApplied is v1's data predicate. Absent cents column → not applied (run it). Cents
-// present with the legacy REAL column already dropped → applied (migrateMoneyCents is atomic,
-// so a present cents column implies a completed backfill — verified fact #1). Cents present
-// AND legacy column still there → precisely verify every cent round-trips before declaring it
-// applied, so a pre-marker DB is reconciled on real data, not on column presence alone.
+// moneyCentsApplied is v1's check. No cents column: not applied. Cents present and the REAL column
+// gone: applied (the migration is atomic). Both present: verify every cent round-trips before
+// calling it applied.
 func (s *Store) moneyCentsApplied(ctx context.Context) (bool, error) {
 	haveCents, err := s.columnExists(ctx, "contracts", "annual_salary_cents")
 	if err != nil {
@@ -274,8 +247,7 @@ WHERE ABS(annual_salary_cents / 100000000.0 - annual_salary) > 0.000000005`).Sca
 	return bad == 0, nil
 }
 
-// legacyColumnsDropped is v2's data predicate: applied iff none of the dead REAL/adjusted
-// money columns remain (the exact set dropLegacyMoneyColumns removes).
+// legacyColumnsDropped is v2's check: applied once none of the old money columns remain.
 func (s *Store) legacyColumnsDropped(ctx context.Context) (bool, error) {
 	for _, col := range []string{"annual_salary", "adjusted_salary", "adjusted_salary_cents"} {
 		have, err := s.columnExists(ctx, "contracts", col)

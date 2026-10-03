@@ -9,33 +9,23 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
 
-// rowQuerier is the read surface the cell-cap loader needs — satisfied by *sql.DB (the
-// committed read pool used at load) and *sql.Tx (a future in-tx reader).
+// rowQuerier is satisfied by *sql.DB and *sql.Tx.
 type rowQuerier interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
-// CapDiscounts supplies the taxi/IR cap-counting percentages the league config sets
-// via MFL's includeTaxiWithSalary/includeIRWithSalary (or a commissioner override) —
-// the pct of a taxi/IR player's cap-counting salary that counts toward the
-// franchise's cap TOTAL. Queried live (not baked in at construction) so a
-// commissioner override takes effect on the next load, the same way GetSalaryCap
-// is always read fresh. A nil source (tests, callers with no rulebook wired) means
-// "no discount" — every rostered player counts 100%, the historical behavior.
+// CapDiscounts supplies the share of a taxi or IR player's salary that counts toward the cap
+// (MFL's includeTaxiWithSalary and includeIRWithSalary, or an override). Read on every load, so an
+// override takes effect immediately. nil means no discount.
 type CapDiscounts interface {
 	TaxiCapPercent() float64
 	IRCapPercent() float64
 }
 
-// loadCellCap reads every current-season PAID ledger cell joined to its franchise, returning
-// (a) each player's RAW cap-counting cents (PlayerState.CapSalary — the §8/§11 rule base,
-// UNDISCOUNTED — dead cap/buyout/tag math reads the full contract figure) and
-// (b) each franchise's cap usage = the sum of its cells, taxi/IR-discounted per discounts
-// then SNAPPED to $10k (universal rounding). The ledger cell is the money source of truth
-// (KING) as of Ship 3 — the legacy contract salary columns are frozen and unread. Exactly
-// one PAID cell exists per rostered player for the current year (PK league_id, mfl_id,
-// league_year), so a per-cell snap is a per-player snap; a player with no current PAID
-// cell contributes 0 (an expired/UFA year).
+// loadCellCap reads every current-season PAID cell with its franchise and returns each player's
+// full cap salary (undiscounted: dead cap, buyout and tag math need the full figure) and each
+// franchise's cap usage (taxi/IR-discounted, snapped to $10k). A player with no current PAID cell
+// contributes 0.
 func loadCellCap(ctx context.Context, q rowQuerier, leagueID string, season int, discounts CapDiscounts) (perPlayer, perFranchise map[string]domain.Money, err error) {
 	rows, err := q.QueryContext(ctx, `
 SELECT r.franchise_id, cy.mfl_id, r.roster_status, cy.salary_cents
@@ -63,14 +53,13 @@ WHERE cy.league_id = ? AND cy.league_year = ? AND cy.year_status = ?`,
 	return perPlayer, perFranchise, nil
 }
 
-// capContribution applies the roster-status cap discount to one player's raw
-// cap-counting cents: ROSTER always counts 100%; TAXI_SQUAD/IR count at the
-// discounts-supplied pct (a nil source or a nil-safe 100 means no discount).
+// capContribution applies the roster-status discount: active counts in full; taxi and IR count
+// at the configured percentage.
 func capContribution(cents domain.Money, status domain.RosterStatus, discounts CapDiscounts) domain.Money {
 	var pct float64 = 100
 	switch status {
 	case domain.RosterActive:
-		// 100% — no discount for an active-roster player.
+		// full salary counts
 	case domain.RosterTaxi:
 		if discounts != nil {
 			pct = discounts.TaxiCapPercent()
@@ -86,7 +75,7 @@ func capContribution(cents domain.Money, status domain.RosterStatus, discounts C
 	return domain.Money(float64(cents) * pct / 100)
 }
 
-// seedPlayerCount totals the players across all seed rosters (the empty-seed guard).
+// seedPlayerCount totals the seed's players, for the empty-seed guard.
 func seedPlayerCount(rosters []domain.Roster) int {
 	n := 0
 	for _, r := range rosters {
@@ -95,9 +84,7 @@ func seedPlayerCount(rosters []domain.Roster) int {
 	return n
 }
 
-// seedPlayer inserts one normalized player as a rosters row + a contracts row. Only
-// normalize-provided fields are seeded; adjustment/years-remaining/tag flags stay
-// zero until B7 mutates them.
+// seedPlayer inserts one player's roster and contract rows.
 func seedPlayer(ctx context.Context, tx *sql.Tx, leagueID string, season int, now, franchiseID string, p domain.PlayerRecord) error {
 	mflID := p.MFLID.String()
 	key := fmt.Sprintf("%s:%d:%s", leagueID, season, mflID)
@@ -107,9 +94,7 @@ func seedPlayer(ctx context.Context, tx *sql.Tx, leagueID string, season int, no
 		"r:"+key, leagueID, mflID, franchiseID, string(p.RosterStatus), season, now); err != nil {
 		return fmt.Errorf("state: seed roster %q: %w", mflID, err)
 	}
-	// Money is seeded into the exact-cents base column; the cap-counting figure lives in the
-	// ledger cells (seedLedgerPlayer), never in a contracts money column. The legacy REAL
-	// columns and adjusted_salary_cents were dropped in Ship 4.
+	// Only the base salary goes in contracts; the cap figure lives in the ledger cells.
 	if _, err := tx.ExecContext(ctx,
 		`INSERT INTO contracts (id, league_id, mfl_id, franchise_id, annual_salary_cents,
 		   contract_years, expiration_year, contract_status,
@@ -122,8 +107,7 @@ func seedPlayer(ctx context.Context, tx *sql.Tx, leagueID string, season int, no
 	return nil
 }
 
-// scanState reads the rosters⋈contracts result set into the franchise map and the
-// player→franchise index, computing each franchise's derived cap usage.
+// scanState reads the joined result set into franchise state and the player index.
 func scanState(rows *sql.Rows) (map[string]*FranchiseState, map[string]string, error) {
 	fr := map[string]*FranchiseState{}
 	idx := map[string]string{}
@@ -141,8 +125,7 @@ func scanState(rows *sql.Rows) (map[string]*FranchiseState, map[string]string, e
 			f = &FranchiseState{FranchiseID: p.FranchiseID}
 			fr[p.FranchiseID] = f
 		}
-		// CapSalary and CapUsed are set from the ledger cells AFTER the scan (load()); the
-		// legacy salary columns are frozen. Salary here is only the BASE (annual) figure.
+		// CapSalary and CapUsed come from the ledger cells after the scan (see load).
 		f.Players = append(f.Players, p)
 		idx[p.MFLID] = p.FranchiseID
 	}
@@ -152,7 +135,7 @@ func scanState(rows *sql.Rows) (map[string]*FranchiseState, map[string]string, e
 	return fr, idx, nil
 }
 
-// cloneFranchise deep-copies a franchise state so a reader never aliases store memory.
+// cloneFranchise deep-copies, so a reader never aliases store memory.
 func cloneFranchise(fs *FranchiseState) FranchiseState {
 	return FranchiseState{
 		FranchiseID: fs.FranchiseID,
@@ -161,8 +144,7 @@ func cloneFranchise(fs *FranchiseState) FranchiseState {
 	}
 }
 
-// clonePlayers copies a player slice. PlayerState holds no reference fields, so a
-// value copy of each element is a full deep copy.
+// clonePlayers copies a slice; PlayerState has no reference fields, so this is a deep copy.
 func clonePlayers(in []PlayerState) []PlayerState {
 	if in == nil {
 		return nil
@@ -172,7 +154,6 @@ func clonePlayers(in []PlayerState) []PlayerState {
 	return out
 }
 
-// sortedKeys returns the franchise map keys in deterministic order.
 func sortedKeys(m map[string]*FranchiseState) []string {
 	out := make([]string, 0, len(m))
 	for k := range m {
@@ -182,27 +163,24 @@ func sortedKeys(m map[string]*FranchiseState) []string {
 	return out
 }
 
-// validRosterStatus accepts only the normalized roster statuses.
 func validRosterStatus(s domain.RosterStatus) bool {
 	return s == domain.RosterActive || s == domain.RosterTaxi || s == domain.RosterIR
 }
 
-// validContractStatus accepts the four real contract statuses (not the review FLAG).
+// validContractStatus accepts the four real statuses, not the review flag.
 func validContractStatus(s domain.ContractStatus) bool {
 	switch s {
 	case domain.CStatusUFA, domain.CStatusRFA, domain.CStatusFT1, domain.CStatusFT2:
 		return true
 	case domain.CStatusFlag:
-		return false // the review sentinel is never a valid mutation target
+		return false
 	default:
 		return false
 	}
 }
 
-// requireOneRow asserts a mutation touched exactly its one target row. A 0-row
-// update means memory and the DB disagree about the player (drift, an out-of-band
-// edit, a wrong-league write) — fail loud rather than silently no-op, the same
-// guarantee the empty-seed guard gives the seed path.
+// requireOneRow fails unless a mutation touched exactly one row: zero rows means memory and the
+// DB disagree.
 func requireOneRow(res sql.Result, mflID string) error {
 	n, err := res.RowsAffected()
 	if err != nil {
