@@ -12,13 +12,9 @@ export function GetCurrentPhase():Promise<main.PhaseResult>;
 
 export function GetFeed():Promise<main.FeedResult>;
 
-export function GetFranchiseState(arg1:string):Promise<main.FranchiseStateResult>;
-
 export function GetFranchises():Promise<main.FranchisesResult>;
 
 export function GetFreeAgentPool():Promise<main.FreeAgentPoolResult>;
-
-export function GetFreeAgents():Promise<main.FreeAgentsResult>;
 
 export function GetLeagueSchedule():Promise<main.LeagueScheduleResult>;
 

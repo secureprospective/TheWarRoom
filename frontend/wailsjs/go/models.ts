@@ -352,62 +352,6 @@ export namespace main {
 		    return a;
 		}
 	}
-	export class FranchisePlayerDTO {
-	    mflID: string;
-	    rosterStatus: string;
-	    salary: number;
-	    capSalary: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new FranchisePlayerDTO(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.mflID = source["mflID"];
-	        this.rosterStatus = source["rosterStatus"];
-	        this.salary = source["salary"];
-	        this.capSalary = source["capSalary"];
-	    }
-	}
-	export class FranchiseStateResult {
-	    ok: boolean;
-	    franchiseID: string;
-	    capUsed: number;
-	    players: FranchisePlayerDTO[];
-	    detail: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new FranchiseStateResult(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.ok = source["ok"];
-	        this.franchiseID = source["franchiseID"];
-	        this.capUsed = source["capUsed"];
-	        this.players = this.convertValues(source["players"], FranchisePlayerDTO);
-	        this.detail = source["detail"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
 	export class M4Franchise {
 	    franchiseID: string;
 	    name: string;
@@ -515,22 +459,6 @@ export namespace main {
 		    }
 		    return a;
 		}
-	}
-	export class FreeAgentsResult {
-	    ok: boolean;
-	    mflIDs: string[];
-	    detail: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new FreeAgentsResult(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.ok = source["ok"];
-	        this.mflIDs = source["mflIDs"];
-	        this.detail = source["detail"];
-	    }
 	}
 	export class Freshness {
 	    state: string;
