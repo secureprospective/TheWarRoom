@@ -1,6 +1,6 @@
 # Legacy NFL — Approved Source Library
-**Version:** 1.1 — June 2026
-**Status:** Locked. All sources approved by Christopher Campbell. Madden added in document audit pass (v1.1).
+**Version:** 1.2 — 2026-10-03
+**Status:** Locked. All sources approved by Christopher Campbell. Madden added in document audit pass (v1.1). Tier 6 structured pipelines approved 2026-10-03 (v1.2); Madden removed from the core scouting prior the same day.
 
 ---
 
@@ -63,6 +63,7 @@ Each source is documented with its URL, what it provides, how frequently it upda
 **What it provides:** Annual player attribute ratings on a 0–99 scale across all positions. Positional sub-attributes (Speed, Awareness, Throw Power, Catching, etc.) are the regulation inputs for Approach D Madden regulation in the scouting layer.
 **Update frequency:** Annual (August EA release) + mid-season roster and attribute updates.
 **Primary use:** Subjective expert claim regulation (Approach D). Madden sub-attributes serve as a computational check on subjective scouting claims from RSP, TDN, Sharp, Dynasty Nerds, and IDP Show. Analytical signals (PFF, NGS, IDP Guru) are self-regulating and do NOT pass through Madden regulation. Kicker data archived for potential future use (CAL-032) but does not affect Layer 4 output.
+**Status 2026-10-03:** Removed from the core scouting prior by Christopher's ruling. The feed the code uses is pinned to the 2023 edition (m24); the m26/m27 endpoints returned HTTP 500; and no study found shows Madden ratings predicting later production (core research run, Sector 3, E9e). Stays approved; revisit only if a current feed and evidence both appear.
 
 ---
 
@@ -184,6 +185,43 @@ Each source is documented with its URL, what it provides, how frequently it upda
 **What it provides:** Rich Hribar's dynasty and rookie analysis. Post-draft rookie rankings. Free articles published through draft season and into the year.
 **Update frequency:** Draft season. In-season dynasty analysis.
 **Primary use:** Rookie dynasty rankings. Breakout age and prospect profile context for scouting layer.
+
+---
+
+## TIER 6 — Structured Data Pipelines (approved 2026-10-03)
+
+Approved by Christopher on 2026-10-03, after the core-research run verified each one live
+(`~/fleet/runs/warroom-core-research-2026-10-03`, Sectors 1–2). These are the machine-readable
+feeds the player measurable is built on. Upstream owners' terms apply; none is a blanket licence.
+
+### nflverse (nflverse-data releases, nflreadr)
+**URL:** github.com/nflverse/nflverse-data/releases
+**Free access:** Yes. No key.
+**What it provides:**
+- Player stats (`stats_player`, which replaced `player_stats` on 2025-08-01), offense and defense.
+- Play-by-play, and snap counts including defense (2012+).
+- Injury reports (2009+), draft picks (1980+), combine, and PFR advanced stats.
+- FTN charting (2022+, CC-BY-SA 4.0, credit "FTN Data via nflverse").
+**Update frequency:** Nightly or several times a day in season; maintainer schedules are not service-level guarantees.
+**Primary use:** All production signals, evidence (snaps), injuries, draft capital, history from 2021.
+
+### DynastyProcess player ID crosswalk
+**URL:** github.com/dynastyprocess/data
+**Free access:** Yes. No key.
+**What it provides:** MFL id ↔ GSIS, PFR, ESPN and other player IDs.
+**Primary use:** The join every non-MFL signal passes through.
+
+### CollegeFootballData (CFBD)
+**URL:** collegefootballdata.com
+**Free access:** Free tier, 1,000 calls a month; needs a key (already held).
+**What it provides:** College player and team stats.
+**Primary use:** College production for the rookie prior.
+
+### StatRankings routes
+**URL:** statrankings.com/nfl/advanced/players/usage/routes-run
+**Free access:** The full-season view is free; custom ranges are paid (Plus) and excluded.
+**What it provides:** Routes run per receiver, updated 24–36 hours after games. No API; uses the site's own player IDs.
+**Primary use:** Partial route data for receivers. Lowest priority; a gap-filler only.
 
 ---
 
