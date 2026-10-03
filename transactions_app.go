@@ -177,57 +177,6 @@ func (a *App) executeSign(ctx context.Context, kind string, sign transactions.Si
 	return TransactionResult{OK: true, Kind: string(rec.Kind), PlayersAffected: rec.PlayersAffected, At: rec.At.Format(time.RFC3339)}
 }
 
-// FranchisePlayerDTO is one player's live state as the dev surface renders it.
-type FranchisePlayerDTO struct {
-	MFLID        string  `json:"mflID"`
-	RosterStatus string  `json:"rosterStatus"`
-	Salary       float64 `json:"salary"`    // base (annual) salary
-	CapSalary    float64 `json:"capSalary"` // cap-counting figure, derived from the ledger cell
-}
-
-// FranchiseStateResult is a read of one franchise's runtime state: its cap usage and
-// roster. It backs the "load → transact → reload" flow that IS the B7a functional gate.
-type FranchiseStateResult struct {
-	OK          bool                 `json:"ok"`
-	FranchiseID string               `json:"franchiseID"`
-	CapUsed     float64              `json:"capUsed"`
-	Players     []FranchisePlayerDTO `json:"players"`
-	Detail      string               `json:"detail"`
-}
-
-// GetFranchiseState reads one franchise's current roster + derived cap through the
-// read-only surface (never the writer), so the dev form can confirm a transaction's
-// effect with a fresh read after it commits.
-func (a *App) GetFranchiseState(franchiseID string) FranchiseStateResult {
-	if a.startupErr != nil {
-		return FranchiseStateResult{Detail: a.startupErr.Error()}
-	}
-	if a.state == nil {
-		return FranchiseStateResult{Detail: "state store not initialized"}
-	}
-	// If a prior transaction committed but its reload failed, in-memory reads are stale —
-	// surface that instead of confidently showing a pre-transaction roster (GLM-B7a).
-	if err := a.state.Err(); err != nil {
-		return FranchiseStateResult{FranchiseID: franchiseID, Detail: "state is stale after a failed reload: " + err.Error()}
-	}
-	fs, ok := a.state.Reader().FranchiseState(franchiseID)
-	if !ok {
-		return FranchiseStateResult{FranchiseID: franchiseID, Detail: "no such franchise (or it holds no players)"}
-	}
-	players := make([]FranchisePlayerDTO, len(fs.Players))
-	for i, p := range fs.Players {
-		players[i] = FranchisePlayerDTO{
-			MFLID:        p.MFLID,
-			RosterStatus: string(p.RosterStatus),
-			// Money → float millions at the display edge; cents-on-the-wire + React
-			// formatting is a B7c follow-up (no money math happens frontend-side).
-			Salary:    p.Salary.Millions(),
-			CapSalary: p.CapSalary.Millions(),
-		}
-	}
-	return FranchiseStateResult{OK: true, FranchiseID: franchiseID, CapUsed: fs.CapUsed.Millions(), Players: players}
-}
-
 // PhaseResult is a read of the league-year's current season phase (D3), for the dev surface
 // that drives the §12 gate (advance the phase → run a buyout).
 type PhaseResult struct {
@@ -252,32 +201,6 @@ func (a *App) GetCurrentPhase() PhaseResult {
 		return PhaseResult{Detail: err.Error()}
 	}
 	return PhaseResult{OK: true, Phase: string(ph)}
-}
-
-// FreeAgentsResult is a read of the free-agent pool — the mfl ids of players whose latest status
-// is FREE_AGENT and who are on no roster (the signable set). Backs the dev SIGN control.
-type FreeAgentsResult struct {
-	OK     bool     `json:"ok"`
-	MFLIDs []string `json:"mflIDs"`
-	Detail string   `json:"detail"`
-}
-
-// GetFreeAgents reads the free-agency pool off the concrete store (a read-only query, never the
-// writer). Backs the dev control that lists signable free agents and drives a SIGN.
-func (a *App) GetFreeAgents() FreeAgentsResult {
-	if a.startupErr != nil {
-		return FreeAgentsResult{Detail: a.startupErr.Error()}
-	}
-	if a.state == nil {
-		return FreeAgentsResult{Detail: "state store not initialized"}
-	}
-	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
-	defer cancel()
-	ids, err := a.state.FreeAgents(ctx)
-	if err != nil {
-		return FreeAgentsResult{Detail: err.Error()}
-	}
-	return FreeAgentsResult{OK: true, MFLIDs: ids}
 }
 
 // buildRequest maps the wire DTO onto a sealed transactions.Request. An unknown Kind is
