@@ -258,6 +258,9 @@ hand-parse one CSV into their own struct.
 2. **Golden test:** with today's settings, the new code reproduces today's board exactly.
 3. Only then remove Madden (R8), as a separate, reported change.
 4. Collapse the twin scouting files in `internal/scouting/assembly`, measuring before cutting.
+5. The 13 validation cases in `internal/harness` (3A–3M, run with every real rubric
+   registered) are the regression net for step 1 alongside the golden board. They stay until
+   Stage 7.
 
 **Gate:**
 - The golden board is identical.
@@ -343,6 +346,9 @@ the Admin Console.
   - A high-athleticism late-career lineman.
   - A backup with a small, efficient sample, who must be shrunk.
 - A holdout check: 2025 predicted from data through 2024 beats today's board.
+- **Retire the harness** once the case set replaces it: delete `internal/harness`, its two
+  dev tabs (Rookie Sandbox, Architectural Tests) and their bindings. The sandbox scores
+  synthetic "QB Alpha" fixtures, which has no place in the GM's app.
 - Spearman correlation vs today's board reported.
 
 ### Stage 8 — M2 on the new numbers
