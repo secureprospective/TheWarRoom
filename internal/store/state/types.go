@@ -63,34 +63,43 @@ type Writer interface {
 // TxWriter runs ops against one shared SQLite transaction without committing; the enclosing
 // WriteTx commits once at the end, so any failing step rolls back the whole transaction.
 type TxWriter interface {
-	MovePlayer(ctx context.Context, mflID, toFranchiseID string) error
-	SetRosterStatus(ctx context.Context, mflID string, status domain.RosterStatus) error
-	ApplyContract(ctx context.Context, mflID string, c ContractChange) error
-	// ReleasePlayer removes a player from his franchise and records where he went. The status is
-	// mandatory (FREE_AGENT, RETIRED or DECEASED) so a removed player is never unfindable. Dead cap
-	// is recorded separately via AddDeadCap. Terminal: a free agent returns only through SIGN.
-	ReleasePlayer(ctx context.Context, mflID string, status domain.PlayerStatus, reason string) error
-
-	// Player returns the committed (pre-transaction) state, not this transaction's own writes.
-	Player(mflID string) (PlayerState, bool)
-
+	RosterWriter
 	CapLedgerWriter
+	AuditWriter
 	LedgerWriter
 	SeasonScope
+	PhaseDirectives
 	StatusWriter
 	CalendarWriter
 }
 
+// RosterWriter moves players between franchises, roster slots and contracts.
+type RosterWriter interface {
+	MovePlayer(ctx context.Context, mflID, toFranchiseID string) error
+	SetRosterStatus(ctx context.Context, mflID string, status domain.RosterStatus) error
+	ApplyContract(ctx context.Context, mflID string, c ContractChange) error
+	// ReleasePlayer removes a player from a franchise and records where the player went. The
+	// status is mandatory (FREE_AGENT, RETIRED or DECEASED) so a removed player is never
+	// unfindable. Dead cap is recorded separately via AddDeadCap. Terminal: a free agent returns
+	// only through SIGN.
+	ReleasePlayer(ctx context.Context, mflID string, status domain.PlayerStatus, reason string) error
+	// Player returns the committed (pre-transaction) state, not this transaction's own writes.
+	Player(mflID string) (PlayerState, bool)
+}
+
 // CapLedgerWriter appends the two cap-ledger rows: dead cap (a debit) and cap relief (a credit).
 // They are separate ledgers so dead cap stays non-negative; CapUsed sums the debits and subtracts
-// the credits. LogTradeNote and AppendCorrection sit here only because TxWriter is at the
-// interfacebloat limit.
+// the credits.
 type CapLedgerWriter interface {
 	// AddDeadCap appends one dead-cap charge against an absolute league year. Non-positive amounts
 	// and duplicates are rejected.
 	AddDeadCap(ctx context.Context, e DeadCapEntry) error
 	// AddCapRelief appends one commissioner cap-relief credit (§13) against an absolute league year.
 	AddCapRelief(ctx context.Context, e CapReliefEntry) error
+}
+
+// AuditWriter appends the audit trail: trade notes and corrections. Both are append-only.
+type AuditWriter interface {
 	// LogTradeNote appends the audit row for an executed trade. picksNote is unvalidated free text
 	// (no pick-ownership ledger yet); rationale is already validated non-empty.
 	LogTradeNote(ctx context.Context, picksNote, rationale string, involvedFranchises []string) error
@@ -147,6 +156,11 @@ type SeasonScope interface {
 	// contract snapshot. It is the only primitive that moves the season, and only forward by one.
 	// Ledgers and counters are untouched; is_restructured persists (§11 lifetime guard).
 	RolloverSeason(ctx context.Context, note string) error
+}
+
+// PhaseDirectives are commissioner settings that keep the phase: the §6 signing window and the
+// §14 trade deadline.
+type PhaseDirectives interface {
 	// SigningWindowClosed reports whether the commissioner has closed the §6 signing window. Open by
 	// default. The directive persists across phase changes until the commissioner reopens it.
 	SigningWindowClosed(ctx context.Context) (bool, error)
