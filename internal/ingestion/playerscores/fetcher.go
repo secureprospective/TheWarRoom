@@ -1,17 +1,9 @@
-// Package playerscores is the Layer 1 fetcher for the MFL playerScores endpoint.
-// It clones the reviewed rosters template (build Request → c.Do → schema-validate
-// the SHAPE → return raw) and exists for ONE consumer: the M1 BasePoints
-// placeholder (Christopher's 2026-06-28 decision, option (b)) — league-scoring
-// fantasy points fed to the engine as `PlayerInput.BasePoints` until the real L2
-// base-scoring block ships. Everywhere a score derived from this data is shown it
-// must be labeled as the proxy ("MFL YTD fantasy points — L2 pending"); the
-// fetcher itself transforms nothing (score stays a raw string, parsed at the
-// orchestrator boundary).
+// Package playerscores fetches season fantasy-point totals from MFL. Its one consumer is the
+// M1 BasePoints placeholder, which must be labeled as a proxy wherever it shows.
 //
-// The score season is an explicit argument SEPARATE from the league year: the
-// league lives at /2026/ but 2026 has no completed weeks, so M1 pulls the last
-// COMPLETED season's YTD totals (YEAR=2025) through the 2026 league host. W=YTD
-// asks MFL for the season aggregate, so one call covers every player.
+// The score season is separate from the league year: the league lives at /2026/, but M1 needs
+// the last completed season, so it asks for YEAR=2025 through the 2026 host. W=YTD returns the
+// season total for every player in one call.
 package playerscores
 
 import (
@@ -27,27 +19,19 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 )
 
-// errEmptyScores guards a glitch/empty payload. A completed NFL season's YTD
-// export is never legitimately empty; returning an empty slice would silently
-// zero every player's BasePoints downstream (the whole board would render as a
-// meaningless flat ranking) instead of failing loud.
+// errEmptyScores: a completed season is never empty, and empty would flatten the whole board
+// to zero.
 var errEmptyScores = errors.New("playerscores: response contained zero scores")
 
-// RawScore is one player's YTD fantasy-point total exactly as MFL returns it.
-// Score stays a raw string (MFL encodes numbers as strings; a fetcher transforms
-// nothing — the orchestrator parses at its boundary). Week is retained so a
-// consumer can assert it got the aggregate it asked for ("YTD"), not a single week.
+// RawScore is one player's season total as MFL sends it. Week echoes the requested window.
 type RawScore struct {
-	ID    string // MFL player ID, string, may carry leading zeros
-	Score string // YTD fantasy points in the league's own scoring, raw ("476.75")
-	Week  string // echo of the requested window; "YTD" for the season aggregate
+	ID    string
+	Score string // league scoring, raw ("476.75")
+	Week  string // "YTD" for the season total
 }
 
-// Validate checks the raw record's SHAPE before anything downstream runs: the
-// player ID must pass the ingestion boundary (RISK-003 site #1) and a present
-// score must be parseable (it is kept as a string regardless). An empty score is
-// rejected — MFL omits unscored players from the export rather than sending
-// blanks, so a blank here is a malformed record, not a legitimate zero.
+// Validate requires a valid player id and a parseable score. MFL omits unscored players, so
+// an empty score is malformed, not zero.
 func (s RawScore) Validate() error {
 	if _, err := ingestion.ValidatePlayerID(s.ID); err != nil {
 		return fmt.Errorf("playerscores: %w", err)
@@ -62,10 +46,7 @@ func (s RawScore) Validate() error {
 	return nil
 }
 
-// scoresEnvelope mirrors the MFL playerScores JSON. Unknown fields are tolerated
-// (external API, the internal/schema unknown-field policy); correctness comes from
-// Validate asserting the fields we depend on. playerScore[] uses MFLList so the
-// single-element collapse cannot crash the decode.
+// scoresEnvelope mirrors the MFL playerScores JSON; unknown fields are tolerated.
 type scoresEnvelope struct {
 	PlayerScores struct {
 		PlayerScore ingestion.MFLList[scoreBlock] `json:"playerScore"`
@@ -78,14 +59,9 @@ type scoreBlock struct {
 	Week  string `json:"week"`
 }
 
-// Fetch retrieves the YTD fantasy-point totals for scoreYear through the league's
-// host and returns shape-validated RawScore records. year is the league/path year
-// (canonical ingestion.SeasonYear), scoreYear the season whose completed totals
-// are wanted — they differ on purpose (see the package comment). It discovers the
-// league host FIRST (the ingestion layer owns "discover before any league-specific
-// call") and checks the MFL HTTP-200 error envelope BEFORE decoding: this is a
-// money-path-adjacent feed (it becomes every player's BasePoints), so an outage
-// payload must fail loud, never read as "no scores".
+// Fetch returns scoreYear's totals through the year-league host. It checks MFL's error
+// envelope before decoding, because an outage read as "no scores" would zero every player's
+// BasePoints.
 func Fetch(ctx context.Context, c *mfl.Client, year, leagueID, scoreYear string) ([]RawScore, error) {
 	if strings.TrimSpace(scoreYear) == "" {
 		return nil, fmt.Errorf("playerscores: score year is required")
@@ -125,10 +101,8 @@ func Fetch(ctx context.Context, c *mfl.Client, year, leagueID, scoreYear string)
 	return guardNonEmpty(out)
 }
 
-// guardNonEmpty is the empty-payload gate, run AFTER the aggregate filter (GLM
-// M1 review): a payload of nothing-but-aggregates would pass a pre-filter length
-// check and still hand the caller zero player scores — exactly the silent
-// zero-BasePoints board errEmptyScores exists to prevent.
+// guardNonEmpty runs after the aggregate filter: a payload of only aggregates would pass an
+// earlier length check and still leave zero player scores.
 func guardNonEmpty(out []RawScore) ([]RawScore, error) {
 	if len(out) == 0 {
 		return nil, errEmptyScores
@@ -136,12 +110,8 @@ func guardNonEmpty(out []RawScore) ([]RawScore, error) {
 	return out, nil
 }
 
-// flatten walks the decoded envelope into RawScore records, dropping team-
-// aggregate IDs (Coach/Def/ST/Off blocks score points in this league, but they are
-// not players and must not enter the player ranking) and validating every
-// surviving record's shape. A malformed real record fails LOUD rather than being
-// silently dropped — only the known aggregate block is filtered. It honors ctx
-// cancellation so a shutdown mid-parse returns promptly.
+// flatten drops team aggregates (Coach, Def, ST and Off score points here but are not
+// players) and validates the rest; a malformed real record fails the fetch.
 func flatten(ctx context.Context, env scoresEnvelope) ([]RawScore, error) {
 	out := make([]RawScore, 0, len(env.PlayerScores.PlayerScore))
 	for _, sb := range env.PlayerScores.PlayerScore {
@@ -157,9 +127,7 @@ func flatten(ctx context.Context, env scoresEnvelope) ([]RawScore, error) {
 		if err := rs.Validate(); err != nil {
 			return nil, err
 		}
-		// The fetcher is the only party that knows it asked for the YTD aggregate
-		// (GLM M1 review): a single-week echo here would be ~17× off as a season
-		// total and every consumer would silently rank on it. Assert the window.
+		// A single-week echo would be about 17× short as a season total. Assert the window.
 		if rs.Week != "YTD" {
 			return nil, fmt.Errorf("playerscores: record %s echoes week %q, want the requested YTD aggregate", rs.ID, rs.Week)
 		}
