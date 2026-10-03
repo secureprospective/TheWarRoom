@@ -1,104 +1,96 @@
 # System Map
 
-What exists in TheWarRoom and where new code belongs, so agents do not reinvent
-utilities or violate the layer boundaries. **The tree below is locked at B0**
-(AD-03, `internal/`-rooted layout from `Fable_TheWarRoom_code_plan.md` §3.1).
-After B0 the tree is law — a new package means updating this file.
+What exists in TheWarRoom and where new code belongs. Update it in the same commit as any new
+package, IPC method or external service. Current as of 2026-10-03 (Stage 0 of
+`docs/build-handoffs/Core_Build_Plan_2026-10.md`).
 
-> Hand-maintained. Update when a package, utility, or external service is added.
-> Status tags: `[built]` exists now · `[planned: Bn]` lands in that build session.
+## Layers and packages
 
----
+Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conventions.
 
-## Directory invariants
+| Layer | Package | Job |
+|---|---|---|
+| App | repo root (`package main`) | Wails entrypoint (`main.go`), the `App` composition root (`app.go`) and the IPC adapters (`*_app.go`). Adapters validate, route and format; no business logic, no SQL. |
+| Transport | `internal/mfl` | MFL HTTP client: rate limit, host discovery, 429 backoff. No domain types. |
+| Layer 1 | `internal/ingestion` | Fetchers returning raw `Raw*` records. Shared helpers in the root package (`LeagueExport`, `FetchLeagueExport`, the CSV and CFBD plumbing); one subpackage per source. |
+| Layer 1 | `internal/normalize` | Raw records → domain types: the players lookup and roster join. |
+| Leaf | `internal/domain`, `internal/playerid`, `internal/numeric`, `internal/scouting` | Value types. `playerid.New` is the only way to build a `PlayerID`. `scouting` holds the Layer 4 input types. |
+| Store | `internal/db` | SQLite pools: one write connection, many read-only ones, one WAL file. |
+| Store | `internal/store/rulebook` | League rules from MFL as immutable versions with one active pointer, plus commissioner overrides. |
+| Store | `internal/store/params` | Engine calibration: shipped defaults plus admin overrides. |
+| Store | `internal/store/state` | Rosters, contracts, the contract-year ledger, dead cap, cap relief, phases, feed, calendar. Append-only ledgers; the transaction coordinator holds the only `Writer`. |
+| Store | `internal/output` | Engine scores, frozen per (season, scoring config). Append-only, enforced by triggers. |
+| Engine | `internal/engine` | The scoring pipeline as pure functions (L1, L3, L4 dispatch, L5, L6). |
+| Engine | `internal/engine/l4/{offense,defense,kicker,curve}` | The ten position rubrics and the shared S-curve. |
+| Composition | `internal/composition` | Engine inputs from the stores plus per-player facts. |
+| Composition | `internal/rankings` | M1: scores every rostered player and writes the batch to `output`. |
+| Composition | `internal/m2service`, `internal/powerrankings` | M2: franchise aggregation and the z-score blend with MFL standings. |
+| Composition | `internal/scouting/assembly` | Builds scouting profiles from the Layer 1 feeds. |
+| Mutation | `internal/transactions` | The `Coordinator`: every league-state change runs here, in one transaction. Handler subpackages (`acquisitions`, `contracts`, `deadcap`, `freeagency`) are reachable only through it. |
+| Dev | `internal/harness` | The 13 architectural cases and the rookie sandbox; retired in Stage 7. |
+| Tooling | `tools/ifaceguard` | Vet tool: no `interface{}`/`any` in exported signatures. |
 
-Repo root holds the Wails entrypoints and the toolchain config; all backend
-logic lives under `internal/`. The import rules below mirror the `depguard`
-rules in `.golangci.yml` — they are build errors, not conventions.
+**(depguard)**
+- `mfl`, `ingestion` and `normalize` never import `engine`, `store`, `transactions`, `output` or
+  `database/sql`.
+- `engine` imports no store, transport, ingestion, normalize, `database/sql`, `net` or `os`.
+- The four stores (`rulebook`, `state`, `params`, `output`) never import each other.
+- `database/sql` is confined to `db`, `store` and `output`.
+- `transactions/*` handler packages are imported only by `transactions`.
 
-- `main.go` — Wails bootstrap only (`wails.Run`, embed assets, lifecycle hooks). `[built]`
-- `app.go` — the `App` composition root. IPC-bound methods are thin adapters: validate → route → format. **No business logic, no direct SQL here.** `[built]`
-- `frontend/` — React + Tailwind + Zustand (Vite, pnpm). `[built]`
-  - `frontend/src/store/` — Zustand slices. The IPC call lives in the store, never the component. Slices never import each other.
-  - `frontend/wailsjs/` — **generated** Go↔JS bindings. Never hand-edit; regenerate with `wails generate module`.
-- `internal/playerid/` — `PlayerID` newtype (struct-wrap, AD-06). Single source of truth for MFL IDs. Imports nothing internal. `[built]`
-- `internal/schema/` — hand-written boundary validation for external input (MFL JSON, CSV, IPC). `Decode*` + `Validate()`. No reflection/struct-tags. `[built]`
-- `internal/db/` — SQLite access. **One of only two packages allowed to import `database/sql` / the sqlite driver** (with `internal/store`). Split read/write pools. `[built]`
-- `internal/mfl/` — Layer 1 HTTP transport only. One `Do()` + `DiscoverHost()`. No domain types. Never imports up (engine/store/transactions/api). `[built — friction-test client; formalized at B1]`
-- `internal/ingestion/` — Layer 1 fetchers → `Raw*` records. Schema-validate, transform nothing. Never imports up. `[planned: B2/B2b]`
-- `internal/normalize/` — `Raw*` → domain types. Pure transformation. `[planned: B3]`
-- `internal/domain/` — leaf shared types (`PlayerRecord`, `EngineRecord`) + `constants.go` (all Section 5 numbers). Imports nothing internal. `[planned: B3]`
-- `internal/scouting/` — `[built]` (types only — see "Deferred / unwired scaffolding" below).
-  - `assembly/` — S-Phase 0 RAS composition leaf: fetches combine + crosswalk, computes the
-    per-position RAS-equivalent (provisional v1 method, see `docs/build-handoffs/scouting/`),
-    and produces `map[playerid.PlayerID]scouting.Profile` with only RAS populated. A
-    composition-class leaf — imports ingestion (`ras`, `crosswalk`), scouting, domain, playerid,
-    numeric; never the engine, stores, transactions, output, normalize's write side, or
-    database/sql. `[built — S-Phase 0]`
-- `internal/store/` — three sibling stores; **none imports another** (depguard). `[planned: B3b/B3c/B4]`
-  - `rulebook/` (B3b) · `state/` (B3c — `StateReader`/`StateWriter` split; only B7 gets the writer) · `params/` (B4)
-- `internal/engine/` — pure-function scoring pipeline. **Imports no store, no DB, no I/O** — all state arrives as parameters (depguard `engine-is-pure`). `[planned: B5a]`
-  - `l4/{offense,defense,kicker}/` — position rubrics (B5b-*); `mathx/` — the shared S-curve.
-- `internal/output/` — B6 per-season output store; append-only (no Update/Delete API + SQLite trigger). `[planned: B6]`
-- `internal/transactions/` — B7. Root package = the sole-writer `Coordinator`. Handler subpackages (`acquisitions`/`contracts`/`deadcap`) are reachable only via `Coordinator.Execute` (depguard). `[planned: B7a–d]`
-- `tools/ifaceguard/` — custom go/analysis vettool (separate Go module). Flags `interface{}`/`any` in exported signatures. `[built]`
-- `docs/` — architecture, rubrics, build handoffs. `docs/agent-codex.md` = build doctrine.
+## IPC surface (21 methods on `App`)
 
-## Existing utilities (reuse, do not duplicate)
+| File | Methods |
+|---|---|
+| `version.go` | `AppInfo` (version, commit, startup error for the banner) |
+| `m1_app.go`, `m1_player_score_app.go` | `ScoreLeague`, `GetRankings`, `GetPlayerScore` |
+| `m2_app.go` | `GetPowerRankings` |
+| `leagueschedule_app.go` | `GetLeagueSchedule` |
+| `m4_app.go` | `GetFranchises`, `GetRoster`, `GetFreeAgentPool`, `GetLegalOps` |
+| `transactions_app.go` | `ExecuteTransaction`, `PreviewTransaction`, `GetCurrentPhase` |
+| `transactions_feed_app.go`, `transactions_calendar_app.go` | `GetFeed`, `GetCalendarEvents` |
+| `rulebook_app.go` | `GetLeagueSetting`, `SetLeagueSettingOverride` |
+| `harness_app.go` | `GetParams`, `SetParam`, `ScoreRookies`, `RunValidationSuite` |
 
-- `playerid.New(raw string) (PlayerID, error)` — validates + zero-pads MFL IDs to 4 digits. The **only** way to build a `PlayerID`. Also `String()`, `IsZero()`, JSON marshal/unmarshal through `New`.
-- `db.Open(ctx, path) (*Pools, error)` — opens + verifies WAL; returns the split pools. `Pools.Read()`, `Pools.Write()`, `Pools.Health(ctx)`, `Pools.JournalMode(ctx)`, `Pools.Close()`.
-- `schema.DecodePlayerRecord(r io.Reader)` + `RawPlayerRecord.Validate()` — the boundary-validation pattern to copy for every external input shape.
-- `internal/mfl` — the HTTP transport client (`Do`, `DiscoverHost`). Use it; do not write a second HTTP client.
-- `app.PingResult` / `App.Ping()` — the IPC health round-trip (B0 reference for a bound method).
+Every method that takes frontend input validates it before acting. Bindings in
+`frontend/wailsjs/` are generated (`wails generate module`); never hand-edit them.
+
+## Data and logs
+
+- **Database:** `~/.config/TheWarRoom/thewarroom.db`. A dev build (no version stamp) uses
+  `thewarroom-dev.db`, so development never touches the real league. One instance at a time
+  (`.lock` file).
+- **Migrations:** `internal/store/state/migrations.go`, forward-only and versioned; a
+  `VACUUM INTO` backup is taken before any pending migration runs.
+- **Logs:** one file per launch in `~/.config/TheWarRoom/logs/`, also on stderr. Startup logs
+  each step and its time; a failed startup shows a banner in the app.
+- **Headless check:** `thewarroom -probe` runs the full startup without a window and exits
+  non-zero on failure.
 
 ## External services
 
-- **MyFantasyLeague (MFL) API** — outbound HTTP only, via `internal/mfl`. League ID `14432`; host discovered at runtime (never hardcode `www47`). Always append `JSON=1`. Respect cache discipline (companion plan §5.7); back off on 429.
-- **SQLite (WAL)** — local file at `~/.config/TheWarRoom/thewarroom.db`, via `internal/db`. Single writer, many readers.
+- **MFL API** (league 14432), outbound only, through `internal/mfl`. The league host is
+  discovered at runtime. The players endpoint is limited to once a day.
+- **nflverse and DynastyProcess** (static CSVs on GitHub), **CFBD** (bearer token in
+  `CFBD_API_KEY`), **EA Madden** ratings. See `docs/sources/Approved_Sources.md`.
 
-## Configuration sources
+## Scheduled for replacement
 
-- **Database path** — `app.databasePath()` (user config dir). Not env-driven.
-- **Engine calibration params** — shipped defaults in `internal/store/params` (B4), tunable via the M9a admin UI. Never hardcode calibration numbers in engine code.
-- **League rules** — `internal/store/rulebook` (B3b), MFL-sourced + delta overrides.
+These work and are tested, but the core plan rewrites or deletes them. Do not extend them.
 
-## Deferred / unwired scaffolding (built ahead of wiring — NOT dead code)
+- `internal/engine/l4/*`: becomes one routine plus a per-position settings table (Stage 5).
+- `internal/scouting/assembly`, `m1_scouting.go` and the CSV/CFBD fetchers (`agetrajectory`,
+  `collegedefense`, `collegeshare`, `madden`, `pfrcoverage`, `ras`, `schooltier`,
+  `veteranfilm`): replaced by one table-driven loader into the measure store (Stage 4).
+- `standings_cache` and `league_schedule_cache`: become reads of `raw_archive` (Stage 4).
+- `internal/harness` and its two dev tabs: deleted when the Stage 7 case set lands.
 
-Some code ships in `main` ahead of the phase that switches it on. It is designed,
-unit-tested scaffolding with a documented wiring trigger — retained by ruling
-(2026-07-20) rather than carved out. Flagged here so a reviewer does not read it as rot.
+## What does not exist, on purpose
 
-- **Scouting sub-system (~2000 lines).** `internal/scouting` (`Profile`, `OffenseFilm`,
-  `IDPFilm`, `NGSCoverage`, `SafetyRole`) + the ~11 scouting fetchers under
-  `internal/ingestion` (`agetrajectory`, `collegeshare`, `collegedefense`, `crosswalk`,
-  `kicking`, `madden`, `nflproduction`, `pfrcoverage`, `ras`, `touchshare`,
-  `veteranfilm`). The types + `Fetch()` exist and are tested. **RAS is the first wired
-  signal** (S-Phase 0, 2026-07-20): `internal/scouting/assembly` fetches combine + crosswalk,
-  computes the per-position RAS-equivalent (provisional v1 z-score method), and threads it
-  through `rankings.Runner` via the new `ScoutingDirectory` port → `composition.PlayerSpec`
-  → the engine's RAS-active rubrics (WR/RB/TE/DT/DE/CB/S lift or pull on a real measured
-  value; QB/K stay SL-020-forced). **The other ~10 signals are NOT switched on** — film,
-  breakout, coverage, college production, etc. remain Data-Parity ABSENT, neutralized by
-  the rubrics. **Wiring trigger:** the rest of the scouting data-integration sprint (Option
-  D hybrid, handoff `45-Scouting-Data-Integration`). **Why retained:** the source maps
-  (`docs/data-layer/{Offense,Defense}_Scouting_Source_Map.md`) + the per-type SOURCE-DRIFT
-  notes in `internal/scouting/types.go` capture eliminated-source research that would be
-  expensive to rediscover. See the `internal/scouting` package doc.
-- **`NewCFBDClient`** (`internal/ingestion/cfbd.go`) — extracted ahead of the CFBD
-  orchestration; wire or drop when that fetcher path lands.
-
-## What does not exist (intentionally)
-
-- **No ORM.** Raw parameterized `database/sql`, confined to `internal/db` + `internal/store`.
-- **No DI framework.** Constructor injection; dependencies passed explicitly from `app.go`.
-- **No package-level mutable state / globals** (`gochecknoglobals`). Only sanctioned globals: sentinel errors and the `go:embed` assets var.
-- **No `mattn/go-sqlite3`.** `modernc.org/sqlite` (pure Go, CGo-free) — DSN uses `_pragma=` params.
-- **No `interface{}`/`any` at exported boundaries** (`ifaceguard`). Use concrete types; `//ifaceguard:allow` only for a deliberate generic boundary.
-- **No logger framework.** Standard library.
-
-## Public-facing surfaces (for security review)
-
-- **IPC** — exported methods on `App` (`app.go`), called from the frontend via generated bindings. Every method that accepts frontend input must validate before acting. Currently: `App.Ping()`.
-- **Outbound HTTP** — `internal/mfl` to the MFL API. No inbound HTTP server.
-- **Local filesystem** — the SQLite file under the user config dir.
+- No ORM: parameterized `database/sql` only, inside the data layer.
+- No DI framework: constructor injection from `app.go`.
+- No package-level mutable state (`gochecknoglobals`).
+- No cgo SQLite: `modernc.org/sqlite`.
+- No `interface{}`/`any` in exported signatures (`ifaceguard`).
+- No logging framework: the standard library.
+- No inbound HTTP server.

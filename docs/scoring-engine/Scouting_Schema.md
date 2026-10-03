@@ -1,6 +1,21 @@
 # Legacy NFL — Scouting Schema (B2b-Schema)
-Version: 1.0 — June 2026
+Version: 1.1 — 2026-10-03
 Status: **LOCKED** (AD-16 human-review gate passed 2026-06-19). Resolves the unified scouting field set for all 10 positions. Implemented at `internal/scouting`.
+
+> **Revision 1.1 (2026-10-03, Stage 0 of `docs/build-handoffs/Core_Build_Plan_2026-10.md`).**
+> Eleven `Profile` fields were deleted because nothing wrote or read them:
+> - `PFFGrade`, `DraftNetwork`, `OffenseFilm.RSPQualitative`/`SharpFootball` and
+>   `IDPFilm.IDPShow`/`IDPGuru`/`DynastyNerds`: their sources were eliminated as unautomatable
+>   in June (Option D). The film groups now carry `Composite` and `MaddenComposite`.
+> - `MaddenFilm`, `NFLProduction`: the K-film fetchers behind them were deleted (their URLs
+>   return 404), and R8 takes Madden out of the core prior. The kicker rubric's own inputs are
+>   unchanged.
+> - `AgeTrajectory`: the rubrics read the player's age directly; Stage 7 removes the age
+>   double count.
+> - `TouchShare`: Stage 4 lands snap share in the measure store, not on `Profile`.
+>
+> Stages 4–7 replace this shape with the measure dictionary (R10). The sections below are the
+> June design record.
 
 ## What this is
 
@@ -16,8 +31,8 @@ This is a **Layer-1 data shape** — a leaf, like `internal/domain`. It does not
 
 Keyed by `MFLID`; the engine joins it to a `domain.PlayerRecord` (which already carries position), so the profile deliberately does **not** duplicate position — that would break the leaf boundary.
 
-- **Universal core** (flat, present at every scored position): `PFFGrade`, `DraftNetwork`, `MaddenFilm`, `NFLProduction`, `RAS`, `BreakoutAge`, `SchoolTier`, `CollegeProductionShare`, `AgeTrajectory`.
-- **Position-conditional groups** (pointers; nil when the position does not use them): `OffenseFilm` (QB/RB/WR/TE), `IDPFilm` (DT/DE/LB/CB/S), `Coverage` (**CB/S only**), `TouchShare` (RB only).
+- **Universal core** (flat, present at every scored position): `RAS`, `BreakoutAge`, `SchoolTier`, `CollegeProductionShare` (as of 1.1; see the revision note).
+- **Position-conditional groups** (pointers; nil when the position does not use them): `OffenseFilm` (QB/RB/WR/TE), `IDPFilm` (DT/DE/LB/CB/S), `Coverage` (**CB/S only**).
 - **Reserved**: `SafetyRole` (S only; unset in v1.0).
 
 The pointer groups encode the position boundaries **structurally** — most importantly the NGS coverage boundary: `Coverage` is non-nil at CB and S exclusively.
