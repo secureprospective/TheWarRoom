@@ -8,77 +8,52 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/scouting"
 )
 
-// PlayerSpec is one player's harness-supplied input: the fields a fixture or the manual
-// entry form provides. It is the SOURCE the assembler maps into engine.PlayerInput. It
-// deliberately holds only per-player facts; per-position calibration (peak limit,
-// scarcity) and globals (decay, cap tiers, league cap) come from the stores/defaults at
-// assemble time, never from the spec, so a fixture cannot silently override calibration.
-//
-// MFLID is a STRING and stays one end to end (Module 3 test 3L): leading zeros are
-// significant ("0001" is not 1). The assembler never converts it to a number.
+// PlayerSpec is one player's facts. Calibration never comes from the spec, so a fixture cannot
+// override it. MFLID stays a string end to end: "0001" is not 1.
 type PlayerSpec struct {
 	MFLID      string
 	Name       string
 	Position   domain.Position
-	BasePoints float64 // L2 output, supplied (L2 is a separate block)
+	BasePoints float64 // L2 output
 	Age        float64
 	RAS        float64
 	HasRAS     bool // false → L1 imputes DefaultRASFallback
 	Salary     float64
 	IsVeteran  bool
 
-	// --- Layer-4 scouting sub-signals (raw, position-blind) ---
-	// These feed the per-position L4 rubric (B5b). Positions without a registered rubric
-	// run identity L4 and ignore them; the boundary still validates them so a poisoned
-	// value never rides into a rubric that DOES use them.
-	FilmComposite float64 // upstream film composite in [0,1] (valid only when HasFilm)
-	HasFilm       bool    // false → the rubric forces a neutral film component (Data-Parity Rule)
+	// Layer-4 scouting sub-signals, raw and position-blind. Each Has* flag separates absent
+	// (neutral in the rubric) from a real zero. They are validated even where a rubric ignores them.
+	FilmComposite float64 // [0,1]
+	HasFilm       bool
 
-	// K film sub-signals (DECISION-011, B5b-K): the kicker rubric is the one position whose
-	// film is built from these two normalized [0,1] components at a PINNED 0.60/0.40 split in
-	// the engine, rather than a pre-blended FilmComposite. Non-K positions leave them zero/absent.
-	MaddenFilm       float64 // normalized [0,1] Madden kick rating composite (valid only when HasMaddenFilm)
-	HasMaddenFilm    bool    // false → the K rubric treats the Madden component as neutral
-	NFLProduction    float64 // normalized [0,1] NFL on-field kicking production (valid only when HasNFLProduction)
-	HasNFLProduction bool    // false → the K rubric treats the NFL-production component as neutral
+	// K film: the kicker rubric blends these two at a fixed 0.60/0.40 instead of reading
+	// FilmComposite. Other positions leave them unset.
+	MaddenFilm       float64 // [0,1] Madden kick-rating composite
+	HasMaddenFilm    bool
+	NFLProduction    float64 // [0,1] NFL kicking production
+	HasNFLProduction bool
 
-	// Breakout sub-signals. The Has* flags distinguish ABSENT from a real zero (a zero
-	// breakout age or college share would otherwise be read as an extreme, not neutral).
-	// School-tier presence is inferred from the enum (SchoolUnset == absent), so it needs
-	// no separate flag.
-	BreakoutAge     float64             // breakout age in years; the rubric maps it to [0,1]
-	HasBreakoutAge  bool                // false → breakout age is treated as neutral
-	SchoolTier      scouting.SchoolTier // college-competition tier; mapped to a [0,1] norm at assemble
-	CollegeShare    float64             // college production/usage share in [0,1]
-	HasCollegeShare bool                // false → college share is treated as neutral (0 is a real share)
+	// Breakout sub-signals. SchoolUnset means absent, so school tier needs no flag.
+	BreakoutAge     float64 // years
+	HasBreakoutAge  bool
+	SchoolTier      scouting.SchoolTier
+	CollegeShare    float64 // [0,1]
+	HasCollegeShare bool
 
-	// EDGE classification routing (OQ-004 / SL-OQ-030, Module-3 test 3J). The TRUE position
-	// for a pass-rush/off-ball defender is its CONSENSUS ROLE, not its MFL tag: a pass-rush-
-	// primary defender is scored as a DE regardless of tag (DE/EDGE/3-4 OLB), an off-ball LB
-	// as an LB. PassRushSnapShare in [0,1] is that signal — manual entry in the harness,
-	// NGS-sourced in production. Absent → the MFL position passes through unchanged.
+	// PassRushSnapShare routes an EDGE defender by role, not MFL tag (OQ-004): pass-rush primary
+	// scores as DE, off-ball as LB. Absent leaves the MFL position unchanged.
 	PassRushSnapShare    float64
 	HasPassRushSnapShare bool
 }
 
-// edgePassRushThreshold is the majority share (≥50% of snaps rushing the passer) at which a
-// defender is "pass-rush primary" and routes to the DE rubric (Module-3 test 3J boundary:
-// 75%→DE, 25%→LB). The comparison is >= (spec: "≥ 0.50 routes to DE"), so an exact coin-flip
-// (0.50) is pass-rush primary → DE. The exact cutoff is a documented boundary default pending
-// SL-OQ-030 calibration.
+// edgePassRushThreshold: a share at or above it is pass-rush primary and routes to DE, so an
+// exact 0.50 goes to DE. Pending SL-OQ-030 calibration.
 const edgePassRushThreshold = 0.50
 
-// ResolveRubricPosition applies the OQ-004 / SL-OQ-030 EDGE classification rule: among the
-// pass-rush/off-ball ambiguous pair (DE — MFL also tags edge rushers DE per OQ-004 — and LB),
-// a pass-rush-PRIMARY defender (PassRushSnapShare ≥ threshold) is scored as a DE and an off-ball
-// defender as an LB, regardless of MFL tag. Every other position, and any defender without a
-// pass-rush share, passes through unchanged (the MFL tag stands). This is the position-RESOLUTION
-// step: it runs BEFORE Assemble so the resolved role drives BOTH the rubric AND the calibration
-// (peak limit, cushion) — the role IS the position. It lives at the boundary, not in any pure
-// rubric (the engine never sees the MFL tag or the snap share).
+// ResolveRubricPosition re-routes a DE or LB by PassRushSnapShare; every other position, and
+// any defender without a share, keeps its MFL tag. It runs before Assemble so the resolved
+// role drives both the rubric and the calibration.
 func ResolveRubricPosition(s PlayerSpec) domain.Position {
-	// Only the pass-rush/off-ball ambiguous pair (DE/LB) is re-routed by role; every other
-	// position, and any defender without a pass-rush share, keeps its MFL tag.
 	if !s.HasPassRushSnapShare || (s.Position != domain.PosDE && s.Position != domain.PosLB) {
 		return s.Position
 	}
@@ -88,8 +63,8 @@ func ResolveRubricPosition(s PlayerSpec) domain.Position {
 	return domain.PosLB
 }
 
-// knownPositions is the engine's scorable set (domain.PosFlag is excluded — an
-// unclassified player must be resolved by an admin before it can be scored).
+// validPosition reports whether the engine can score p. PosFlag is excluded: an unclassified
+// player needs an admin to resolve it first.
 func validPosition(p domain.Position) bool {
 	switch p {
 	case domain.PosQB, domain.PosRB, domain.PosWR, domain.PosTE, domain.PosK,
@@ -102,9 +77,8 @@ func validPosition(p domain.Position) bool {
 	}
 }
 
-// Validate fails loud on a spec that cannot be scored. The boundary rejects bad input
-// here so the pure engine never receives a poisoned value (the same fail-loud contract
-// the engine enforces on its own numeric inputs).
+// Validate rejects a spec that cannot be scored, so the engine never receives a poisoned
+// value.
 func (s PlayerSpec) Validate() error {
 	if s.MFLID == "" {
 		return fmt.Errorf("composition: player spec missing MFL id")
@@ -130,10 +104,8 @@ func (s PlayerSpec) Validate() error {
 	return s.validateScouting()
 }
 
-// validateScouting fail-louds on a poisoned L4 sub-signal (non-finite, or out of its
-// documented range) so the pure rubric never normalizes garbage. It deliberately does NOT
-// require the signals to be present: an absent signal (zero / SchoolUnset) is allowed and
-// handled by the rubric's Data-Parity Rule — only an actively-corrupt value is rejected.
+// validateScouting rejects a corrupt sub-signal (non-finite or out of range). An absent one
+// is fine: the rubric's Data-Parity Rule neutralizes it.
 func (s PlayerSpec) validateScouting() error {
 	if !numeric.Finite(s.BreakoutAge, s.CollegeShare) {
 		return fmt.Errorf("composition: player %q has a non-finite scouting field (breakoutAge=%v collegeShare=%v)", s.MFLID, s.BreakoutAge, s.CollegeShare)
@@ -144,8 +116,6 @@ func (s PlayerSpec) validateScouting() error {
 	if s.CollegeShare < 0 || s.CollegeShare > 1 {
 		return fmt.Errorf("composition: player %q college share %v out of [0,1]", s.MFLID, s.CollegeShare)
 	}
-	// Each present-gated [0,1] sub-signal: rejected only when actively corrupt (non-finite or
-	// out of range); absent (Has* false) is allowed and neutralized by the rubric's Data-Parity.
 	for _, c := range []struct {
 		name    string
 		present bool
@@ -166,9 +136,7 @@ func (s PlayerSpec) validateScouting() error {
 	return nil
 }
 
-// checkUnitRange fail-louds when a PRESENT sub-signal is non-finite or outside [0,1]. An
-// absent signal is allowed (the rubric's Data-Parity Rule neutralizes it). Shared so each
-// present-gated scouting field validates identically (M17) and validateScouting stays simple.
+// checkUnitRange rejects a present sub-signal that is non-finite or outside [0,1].
 func (s PlayerSpec) checkUnitRange(name string, present bool, v float64) error {
 	if present && (!numeric.Finite(v) || v < 0 || v > 1) {
 		return fmt.Errorf("composition: player %q has a present %s %v out of [0,1]", s.MFLID, name, v)
