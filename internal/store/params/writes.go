@@ -9,11 +9,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/numeric"
 )
 
-// SetOverride upserts an admin override for (key, position) and refreshes the
-// in-memory layer. The value is range-checked against the parameter's shipped bounds
-// BEFORE the write (the M3 planted-failure gate), so an out-of-range value or an
-// unknown parameter never reaches the DB. Admin-only write path — NEVER routed
-// through B7 (AD-05).
+// SetOverride range-checks and upserts an admin override, then reloads memory. An unknown
+// parameter or an out-of-range value never reaches the database.
 func (s *Store) SetOverride(ctx context.Context, key, position string, value float64, note string) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
@@ -33,9 +30,8 @@ func (s *Store) SetOverride(ctx context.Context, key, position string, value flo
 	return s.load(ctx)
 }
 
-// validateOverride enforces that the target parameter exists and the new value is
-// within its shipped [Min,Max] bounds. A value outside the range is REJECTED, never
-// silently clamped or stored — the data-integrity gate.
+// validateOverride rejects an unknown parameter or a value outside its [Min,Max]; it never
+// clamps.
 func (s *Store) validateOverride(key, position string, value float64) error {
 	s.mu.RLock()
 	def, ok := s.defs[defKey(key, position)]
@@ -43,9 +39,7 @@ func (s *Store) validateOverride(key, position string, value float64) error {
 	if !ok {
 		return fmt.Errorf("params: override targets unknown parameter %q (position %q)", key, position)
 	}
-	// Reject non-finite first: a NaN passes BOTH range comparisons (unordered) and
-	// would round-trip silently into engine calibration. ±Inf would fail the range
-	// check below, but we reject all non-finite values explicitly and uniformly.
+	// NaN passes both range comparisons, so non-finite values are rejected first.
 	if math.IsNaN(value) || math.IsInf(value, 0) {
 		return fmt.Errorf("params: override %q = %v is not a finite number", key, value)
 	}
@@ -55,9 +49,7 @@ func (s *Store) validateOverride(key, position string, value float64) error {
 	return nil
 }
 
-// initSchema creates the store's two tables if absent: param_defaults (the immutable
-// shipped set, seeded once) and param_overrides (the admin write surface). Both are
-// keyed by (param_key, position) so a future per-position parameter is just more rows.
+// initSchema creates param_defaults and param_overrides, both keyed by (param_key, position).
 func (s *Store) initSchema(ctx context.Context) error {
 	const ddl = `
 CREATE TABLE IF NOT EXISTS param_defaults (
@@ -119,8 +111,7 @@ func (s *Store) seedDefaults(ctx context.Context) error {
 	return nil
 }
 
-// load reads both tables into memory under the write lock, so concurrent readers see
-// a consistent defaults+overrides snapshot.
+// load reads both tables into memory under the write lock.
 func (s *Store) load(ctx context.Context) error {
 	defs, err := s.loadDefaults(ctx)
 	if err != nil {

@@ -1,23 +1,10 @@
-// Package params is the B4 Admin Parameter Store: the third Layer-2 store and the
-// last piece of the Layer-2 config floor. It holds the engine's CALIBRATION
-// parameters (cap-tier percentages and other tunables) SQLite-backed, served to the
-// scoring engine and tuned by the admin calibration surface (M9a).
+// Package params stores the engine's calibration parameters (cap-tier percentages and other
+// tunables) as shipped defaults plus an admin override layer applied at read time. Storage is a
+// generic (key, position) table with a [Min,Max] range per row, so adding a parameter is a data
+// row, not code. The public surface is typed (GetCapTiers, GetGlobal).
 //
-// It is a CONFIG store like the rulebook (B3b) — versioned-stability is replaced by
-// the simpler shipped-defaults model: there is NO external fetch source. Initialize
-// seeds built-in Go DEFAULTS once on a fresh DB and loads what exists on restart
-// (stability, like B3b/B3c). An admin OVERRIDE layer is layered over a default at
-// read time; the override write path is admin-only and is NEVER routed through B7
-// (AD-05).
-//
-// Shape (GLM-5.2 review): storage is a GENERIC (key, position) typed key/value table
-// with a per-row [Min,Max] range; the public surface is TYPED (GetCapTiers, GetGlobal).
-// Adding a parameter is a data row, not new code — so per-position tables fold in with
-// their engine layer without reshaping the store.
-//
-// It is PURE DATA ACCESS: it stores and serves calibration values and runs NO engine
-// logic. AD-21: it holds cap-tier PERCENTAGES (calibration); the cap AMOUNT is the
-// rulebook store's (config) — never duplicated here.
+// It holds percentages and rates only; the cap amount belongs to the rulebook. Writes are
+// admin-only and never go through the transaction coordinator.
 package params
 
 import (
@@ -29,10 +16,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 )
 
-// Store is the admin parameter store. Construct with New; seed with Initialize. It is
-// safe for concurrent reads via mu (the reader/snapshot lock); admin mutations
-// serialize under wmu (the outer write lock), so each DB write and its in-memory
-// reload are one atomic step — the two-lock idiom proven in B3b/B3c.
+// Store is the parameter store. Construct with New, seed with Initialize. Reads take mu; admin
+// writes take wmu first, so each DB write and its in-memory reload are one step.
 type Store struct {
 	pools *db.Pools
 
@@ -53,11 +38,8 @@ func New(pools *db.Pools) *Store {
 	}
 }
 
-// Initialize ensures the schema, seeds the shipped defaults ONCE on a fresh database,
-// and loads defaults + overrides into memory. On an existing database it loads what is
-// there WITHOUT reseeding — an operator's calibration is never overwritten by a newer
-// shipped default on restart (the B3b/B3c stability tradeoff; adding params in a later
-// version is a migration, not a silent reseed).
+// Initialize ensures the schema, seeds the shipped defaults on a fresh database, and loads
+// defaults and overrides into memory.
 func (s *Store) Initialize(ctx context.Context) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
@@ -76,9 +58,8 @@ func (s *Store) Initialize(ctx context.Context) error {
 	return s.load(ctx)
 }
 
-// effectiveLocked returns the effective value for a parameter — the admin override if
-// present, otherwise the shipped default — assuming the caller already holds mu (read
-// or write). ok is false for an unknown (key, position).
+// effectiveLocked returns the override if set, else the default. The caller holds mu. ok is
+// false for an unknown (key, position).
 func (s *Store) effectiveLocked(key, position string) (float64, bool) {
 	k := defKey(key, position)
 	if o, ok := s.overrides[k]; ok {
@@ -97,9 +78,8 @@ func (s *Store) value(key, position string) (float64, bool) {
 	return s.effectiveLocked(key, position)
 }
 
-// GetCapTiers returns the Layer-5 cap-scaling boundaries (AD-21), override-aware. Both
-// boundaries are read under ONE lock hold so a concurrent load() swap can never return
-// a Cold/Hot pair straddling two snapshots (the boundaries move as a pair).
+// GetCapTiers returns the cap-tier boundaries, override applied. Both are read under one lock
+// so the pair always comes from one snapshot.
 func (s *Store) GetCapTiers() (CapTiers, error) {
 	s.mu.RLock()
 	cold, coldOK := s.effectiveLocked(KeyCapTierColdCeiling, global)
@@ -114,9 +94,8 @@ func (s *Store) GetCapTiers() (CapTiers, error) {
 	return CapTiers{ColdCeiling: cold, HotFloor: hot}, nil
 }
 
-// GetGlobal returns a global (non-per-position) scalar parameter, override-aware. It
-// is the generic typed accessor the engine uses for single-value calibration params
-// (the engine passes a Key* constant). An unknown key is an error, never a silent 0.
+// GetGlobal returns a league-wide parameter, override applied. An unknown key is an error,
+// never a silent 0.
 func (s *Store) GetGlobal(key string) (float64, error) {
 	v, ok := s.value(key, global)
 	if !ok {
@@ -125,9 +104,8 @@ func (s *Store) GetGlobal(key string) (float64, error) {
 	return v, nil
 }
 
-// Definitions returns a copy of every shipped parameter def (with its IsCalibrated
-// flag), sorted for determinism. It backs the M9a admin calibration surface and the
-// engine's "how much input is still on placeholder defaults" report.
+// Definitions returns every shipped parameter, sorted, for the admin console and the
+// "still on placeholder defaults" report.
 func (s *Store) Definitions() []ParamDef {
 	s.mu.RLock()
 	out := make([]ParamDef, 0, len(s.defs))

@@ -18,8 +18,7 @@ func atof(s, field string) (float64, error) {
 	return f, nil
 }
 
-// scanDef reads one param_defaults row into a typed ParamDef, parsing its float
-// fields from their TEXT storage.
+// scanDef reads one param_defaults row.
 func scanDef(rows *sql.Rows) (ParamDef, error) {
 	var (
 		d                   ParamDef
