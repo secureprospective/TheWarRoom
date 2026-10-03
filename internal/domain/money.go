@@ -6,27 +6,20 @@ import (
 	"strings"
 )
 
-// Money is an exact monetary amount in integer CENTS of US dollars. All league money
-// — salary, adjusted salary, derived cap usage, dead cap — is Money, never float64 and
-// never a JS number for math (OQ-014: exactness-by-construction, since cap flows into
-// the output store's exact-equality tiebreak). Float appears ONLY at two edges, and only
-// by explicit conversion: the engine's dimensionless L5 cap-ratio (Millions) and
-// display/IPC payloads (Millions/String). Money never round-trips through float.
+// Money is exact US cents. All league money is Money, never float64 (OQ-014), because cap
+// feeds the output store's exact-equality tiebreak. Float appears only by explicit conversion
+// at two edges: the L5 cap ratio and display/IPC.
 type Money int64
 
-// centsPerMillion converts a value denominated in millions of dollars to cents:
-// $1M = 1,000,000 dollars × 100 cents.
+// centsPerMillion: $1M in cents.
 const centsPerMillion = 100_000_000
 
-// maxMoneyFracDigits is the most fractional digits (in millions) representable as exact
-// cents: the 8th decimal of a million is $0.01 = 1 cent. A 9th would be sub-cent and
-// cannot be an exact integer of cents, so it is rejected rather than silently truncated.
+// maxMoneyFracDigits: the 8th decimal of a million is one cent; a 9th would be sub-cent and
+// is rejected, not truncated.
 const maxMoneyFracDigits = 8
 
-// ParseMoneyMillions converts an MFL money string denominated in MILLIONS of dollars
-// ("7", "1.30", "0.1155") into exact cents using integer string-math — no float64 ever
-// touches the value. An empty string is a legitimate $0 (e.g. an unsigned slot). A
-// non-numeric, negative, or sub-cent-precision value is schema drift and fails loud.
+// ParseMoneyMillions converts an MFL amount in millions ("7", "1.30", "0.1155") to exact cents
+// with string math, no float. Empty is $0; non-numeric, negative or sub-cent is an error.
 func ParseMoneyMillions(raw string) (Money, error) {
 	s := strings.TrimSpace(raw)
 	if s == "" {
@@ -53,8 +46,7 @@ func ParseMoneyMillions(raw string) (Money, error) {
 	if err != nil {
 		return 0, fmt.Errorf("domain: money %q integer part: %w", raw, err)
 	}
-	// Right-pad the fraction to 8 digits so it reads directly as cents: the k-th
-	// fractional digit of a million is worth 10^(8-k) cents.
+	// Right-pad to 8 digits so the fraction reads directly as cents.
 	frac8 := fracPart + strings.Repeat("0", maxMoneyFracDigits-len(fracPart))
 	fracCents, err := atoiOrZero(frac8)
 	if err != nil {
@@ -63,18 +55,12 @@ func ParseMoneyMillions(raw string) (Money, error) {
 	return Money(millions*centsPerMillion + fracCents), nil
 }
 
-// centsPer10k is $10,000 expressed in cents: 10,000 dollars × 100 cents = 1,000,000 cents.
-// It is the league's universal money granularity — every salary, owner-directed move, and
-// derived charge snaps to a multiple of it (rulebook §1, Christopher 2026-07-04: one flat
-// rule, applied everywhere, never individualized per op).
+// centsPer10k is $10,000 in cents, the league's money granularity (§1): every salary, move
+// and charge snaps to it.
 const centsPer10k = 1_000_000
 
-// RoundToNearest10k snaps a Money amount to the nearest $10,000, half-up (a value exactly
-// halfway rounds AWAY from zero). This is the SINGLE rounding implementation the whole
-// league shares — every op (tag, extension, restructure, dead cap, retirement, buyout,
-// seed) applies it AFTER its exact-cents math, never before and never reversed. Keeping it
-// here (one function, DRY / Agent Codex) is what stops each op re-deriving the rule and
-// drifting. Flat math: no per-op scope, no salaries-vs-charges split.
+// RoundToNearest10k snaps to the nearest $10,000, halves away from zero. It is the one
+// rounding rule every op shares, applied after its exact-cents math.
 func RoundToNearest10k(m Money) Money {
 	c := int64(m)
 	half := int64(centsPer10k / 2)
@@ -84,16 +70,13 @@ func RoundToNearest10k(m Money) Money {
 	return Money((c + half) / centsPer10k * centsPer10k)
 }
 
-// Millions returns the amount as a float64 number of millions of dollars. It is for the
-// engine's dimensionless cap-ratio (L5) and for display/IPC edges ONLY — never for money
-// math or storage, both of which stay in integer cents.
+// Millions returns the amount in millions as a float, for the L5 cap ratio and display only.
 func (m Money) Millions() float64 { return float64(m) / centsPerMillion }
 
-// Cents returns the raw integer cents — the storage and IPC-safe transport form
-// (league totals are ~1e12 cents, well under both int64 and 2^53).
+// Cents returns the integer cents, the storage and IPC form (totals are far below 2^53).
 func (m Money) Cents() int64 { return int64(m) }
 
-// String renders the amount as "$X,XXX,XXX.XX" for logs and human-facing display.
+// String renders "$X,XXX,XXX.XX".
 func (m Money) String() string {
 	neg := m < 0
 	c := m.Cents()
@@ -111,8 +94,7 @@ func (m Money) String() string {
 	return b.String()
 }
 
-// allDigits reports whether s is empty or all ASCII digits (empty is a valid absent
-// integer/fraction part, handled as zero by the caller).
+// allDigits reports whether s is empty or all ASCII digits.
 func allDigits(s string) bool {
 	for i := 0; i < len(s); i++ {
 		if s[i] < '0' || s[i] > '9' {
