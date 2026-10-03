@@ -1,15 +1,10 @@
-// Package numeric holds tiny, dependency-free numeric helpers shared across layers.
-// It imports only the standard library math package, so every layer — including the
-// pure engine (which depguard forbids from importing anything but domain) — can use it
-// without breaching the three-layer law.
+// Package numeric holds small helpers with no internal imports, so every layer, including
+// the pure engine, can use them.
 package numeric
 
 import "math"
 
-// Finite reports whether every value is a real, non-NaN, non-Inf number. The engine's
-// layers multiply straight into the final score, so a single non-finite input would
-// round-trip silently into rankings; the fail-loud gates use this to reject such input
-// at the boundary rather than emit a poisoned score (the bug class B4's review caught).
+// Finite reports whether every value is neither NaN nor ±Inf.
 func Finite(vs ...float64) bool {
 	for _, v := range vs {
 		if math.IsNaN(v) || math.IsInf(v, 0) {
