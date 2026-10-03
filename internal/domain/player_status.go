@@ -10,9 +10,8 @@ const (
 	// PlayerFreeAgent is signable. A buyout also lands here; its "no re-bid until next
 	// offseason" lockout is derived from the dead_cap row, not stored.
 	PlayerFreeAgent PlayerStatus = "FREE_AGENT"
-	// PlayerRetired is retired (§13) and not signable.
-	PlayerRetired PlayerStatus = "RETIRED"
-	// PlayerDeceased is deceased (§13 Gaines-Adams Rule) and not signable.
+	// PlayerRetired and PlayerDeceased (§13, the Gaines-Adams Rule) are not signable.
+	PlayerRetired  PlayerStatus = "RETIRED"
 	PlayerDeceased PlayerStatus = "DECEASED"
 )
 

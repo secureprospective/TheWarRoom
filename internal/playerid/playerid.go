@@ -1,10 +1,8 @@
 // Package playerid is the single source of MFL player ids. Ids are strings, and ids under 1000
 // carry leading zeros ("0099", never "99"); an id built any other way silently fails to match.
-//
-// PlayerID wraps an unexported field, so outside this package the only way to get one is New,
-// which validates and normalizes. JSON decoding goes through New too. There is deliberately no
-// sql.Scanner/driver.Valuer, which would pull database/sql into a domain type: stores write
-// id.String() into TEXT columns and read back through New.
+// New is the only constructor. There is deliberately no sql.Scanner/driver.Valuer, which would
+// pull database/sql into a domain type: stores write id.String() into TEXT columns and read
+// back through New.
 package playerid
 
 import (

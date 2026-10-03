@@ -11,7 +11,6 @@ import (
 // at two edges: the L5 cap ratio and display/IPC.
 type Money int64
 
-// centsPerMillion: $1M in cents.
 const centsPerMillion = 100_000_000
 
 // maxMoneyFracDigits: the 8th decimal of a million is one cent; a 9th would be sub-cent and
