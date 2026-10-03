@@ -1,15 +1,7 @@
-// Package league is the Layer 1 fetcher for the MFL league rulebook. It assembles
-// the league's configuration from the TWO MFL exports that carry it — `league`
-// (settings, roster limits, starters, salary-cap amount) and `rules` (the
-// position-additive scoring config) — and returns one RAW RawConfig. It transforms
-// nothing: every value stays the verbatim MFL string (B3b's store and the engine
-// interpret them). It discovers the league host FIRST (league-specific calls route
-// to the league's home server), then issues the two calls through the shared mfl
-// transport client, inheriting rate-limiting, 429 backoff, and host routing.
-//
-// NOTE (corrects the B3b handoff premise): MFL does NOT return scoring config in
-// the `league` export. Scoring lives in the separate `rules` export. Verified live
-// 2026-06-26 against league 14432. Hence two calls, not one.
+// Package league fetches the league's rulebook from two MFL exports, `league` (settings,
+// roster limits, starters, cap amount) and `rules` (scoring; MFL does not put scoring in
+// `league`, verified 2026-06-26), and returns it as raw strings. It discovers the league host
+// first, since league calls route to the league's own server.
 package league
 
 import (
@@ -23,20 +15,16 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 )
 
-// errEmptyScoring guards the glitch/error shape where the rules export decodes to
-// zero scoring rules. A live MFL league always returns a populated rule set, so an
-// empty one is a fetch failure (an error payload, maintenance, wrong league), not a
-// valid "no scoring" state — surfacing it stops a blank rulebook from being stored.
+// errEmptyScoring: a live league always has scoring rules, so zero means a failed fetch, and
+// storing it would blank the rulebook.
 var errEmptyScoring = errors.New("league: rules export contained zero scoring rules")
 
-// Source supplies a RawConfig. The store depends on this (not on Fetch directly) so
-// it is unit-testable with a canned config; APISource is the production adapter.
+// Source supplies a RawConfig; the rulebook depends on it so tests can use a canned config.
 type Source interface {
 	Fetch(ctx context.Context) (RawConfig, error)
 }
 
-// APISource is the production Source: it pulls the live config from MFL for a fixed
-// season+league through the transport client.
+// APISource is the live Source for one season and league.
 type APISource struct {
 	Client   *mfl.Client
 	Year     string
@@ -48,11 +36,8 @@ func (s APISource) Fetch(ctx context.Context) (RawConfig, error) {
 	return Fetch(ctx, s.Client, s.Year, s.LeagueID)
 }
 
-// Fetch retrieves the league rulebook for the given season+league from MFL: it
-// discovers the host, pulls the `league` and `rules` exports, guards MFL's HTTP-200
-// error envelope on each, and assembles a shape-validated RawConfig. year and
-// leagueID are explicit arguments (not globals) so the fetcher is testable and
-// multi-season-ready; ingestion.SeasonYear/LeagueID are the canonical values.
+// Fetch discovers the host, pulls both exports, checks each for MFL's error envelope and
+// returns a shape-validated RawConfig.
 func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) (RawConfig, error) {
 	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
 		return RawConfig{}, fmt.Errorf("league: discover host: %w", err)
@@ -75,8 +60,8 @@ func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) (RawConfig
 	return cfg, nil
 }
 
-// call issues one league-specific MFL export and returns its raw body, failing loud
-// on a transport error, a non-200 status, or MFL's 200-with-error envelope.
+// call fetches one league export, failing on transport error, non-200, or MFL's error
+// envelope.
 func call(ctx context.Context, c *mfl.Client, endpoint, year, leagueID string) ([]byte, error) {
 	resp, err := c.Do(ctx, mfl.Request{
 		Type:   endpoint,
@@ -95,9 +80,8 @@ func call(ctx context.Context, c *mfl.Client, endpoint, year, leagueID string) (
 	return resp.Body, nil
 }
 
-// assemble decodes both exports into one RawConfig and validates the load-bearing
-// fields are present. It does not convert types — only rejects a config that cannot
-// be valid (no scoring rules, no cap amount when the league uses salaries).
+// assemble decodes both exports and rejects a config that cannot be valid: no scoring rules,
+// or no cap amount in a salary league.
 func assemble(leagueBody, rulesBody []byte) (RawConfig, error) {
 	var le leagueEnvelope
 	if err := json.Unmarshal(leagueBody, &le); err != nil {
@@ -148,9 +132,7 @@ func mapLeague(le leagueEnvelope) RawConfig {
 	return cfg
 }
 
-// mapFranchises copies the decoded franchise directory into the public slice. An
-// entry with an empty id is dropped (unusable as a key); the name is kept verbatim
-// (a blank name is tolerated — the UI falls back to the id).
+// mapFranchises drops entries with an empty id; a blank name is kept and the UI shows the id.
 func mapFranchises(in []franchiseEntry) []Franchise {
 	out := make([]Franchise, 0, len(in))
 	for _, f := range in {
@@ -171,8 +153,7 @@ func mapLimits(in []posLimit) []PositionLimit {
 	return out
 }
 
-// mapRules converts decoded position rule blocks into the public scoring slice,
-// unwrapping each leaf's MFL {"$t":...} value to its raw string.
+// mapRules converts scoring blocks, unwrapping each {"$t":...} leaf.
 func mapRules(re rulesEnvelope) []PositionRuleSet {
 	out := make([]PositionRuleSet, 0, len(re.Rules.PositionRules))
 	for _, b := range re.Rules.PositionRules {
