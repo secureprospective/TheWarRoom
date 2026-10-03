@@ -33,15 +33,15 @@ func (a *App) GetCalendarEvents() CalendarEventsResult {
 	if a.startupErr != nil {
 		return CalendarEventsResult{Detail: a.startupErr.Error()}
 	}
-	if a.state == nil {
+	if a.whatif == nil {
 		return CalendarEventsResult{Detail: "state store not initialized"}
 	}
-	if err := a.state.Err(); err != nil {
+	if err := a.whatif.Err(); err != nil {
 		return CalendarEventsResult{Detail: "state is stale after a failed reload: " + err.Error()}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
 	defer cancel()
-	evs, err := a.state.CalendarEvents(ctx)
+	evs, err := a.whatif.CalendarEvents(ctx)
 	if err != nil {
 		return CalendarEventsResult{Detail: err.Error()}
 	}

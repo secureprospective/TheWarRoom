@@ -23,6 +23,8 @@ type Client struct {
 	limiter  *rate.Limiter
 	mu       sync.RWMutex
 	host     string          // discovered league host (e.g. www47), cached
+	hostFor  string          // the year/league the host was discovered for
+	hostAt   time.Time       // when; a discovery older than hostTTL is redone
 	backoffs []time.Duration // 429 backoff schedule
 }
 
@@ -104,9 +106,20 @@ func (c *Client) Do(ctx context.Context, req Request) (Response, error) {
 	}, nil
 }
 
-// DiscoverHost looks up and caches the league's host server. On failure the host is
-// unchanged.
+// hostTTL is how long a discovered host is trusted. MFL can move a league between servers, so a
+// discovery is redone after it; within it, a refresh's several fetches share one discovery.
+const hostTTL = 15 * time.Minute
+
+// DiscoverHost looks up and caches the league's host server for a year and league, for hostTTL.
+// On failure the host is unchanged.
 func (c *Client) DiscoverHost(ctx context.Context, year string, leagueID string) error {
+	key := year + "/" + leagueID
+	c.mu.RLock()
+	known := c.hostFor == key && time.Since(c.hostAt) < hostTTL
+	c.mu.RUnlock()
+	if known {
+		return nil
+	}
 	req := Request{
 		Type: "league",
 		Year: year,
@@ -136,7 +149,7 @@ func (c *Client) DiscoverHost(ctx context.Context, year string, leagueID string)
 	}
 
 	c.mu.Lock()
-	c.host = sub
+	c.host, c.hostFor, c.hostAt = sub, key, time.Now()
 	c.mu.Unlock()
 	return nil
 }

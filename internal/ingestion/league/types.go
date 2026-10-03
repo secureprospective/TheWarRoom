@@ -25,6 +25,9 @@ type RawConfig struct {
 	Starters                    Starters        // starter requirements
 	ScoringRules                []PositionRuleSet
 	Franchises                  []Franchise // the league's franchise directory (id -> display name)
+	// CurrentSeason is the newest year MFL's league history lists under this league's id. It is
+	// the app's one source for the season.
+	CurrentSeason int
 }
 
 // Franchise is a directory entry: the MFL id ("0001"–"0032") and the display name, which may
@@ -66,6 +69,7 @@ type ScoringRule struct {
 // covers the fields used.
 type leagueEnvelope struct {
 	League struct {
+		ID                          string `json:"id"`
 		SalaryCapAmount             string `json:"salaryCapAmount"`
 		RosterSize                  string `json:"rosterSize"`
 		TaxiSquad                   string `json:"taxiSquad"`
@@ -91,7 +95,17 @@ type leagueEnvelope struct {
 		Franchises struct {
 			Franchise ingestion.MFLList[franchiseEntry] `json:"franchise"`
 		} `json:"franchises"`
+		History struct {
+			League ingestion.MFLList[historyEntry] `json:"league"`
+		} `json:"history"`
 	} `json:"league"`
+}
+
+// historyEntry is one season of the league's history: its year and home page URL, which ends
+// in that season's league id.
+type historyEntry struct {
+	Year string `json:"year"`
+	URL  string `json:"url"`
 }
 
 type posLimit struct {

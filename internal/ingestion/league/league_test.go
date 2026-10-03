@@ -108,3 +108,17 @@ func TestAssemble_SalaryLeagueMissingCapFailsLoud(t *testing.T) {
 		t.Fatal("want error for salary league missing cap amount")
 	}
 }
+
+func TestAssemble_CurrentSeasonIsNewestYearUnderThisLeaguesID(t *testing.T) {
+	body := `{"league":{"id":"14432","salaryCapAmount":"125","usesSalaries":"1","history":{"league":[
+		{"year":"2026","url":"https://www47.myfantasyleague.com/2026/home/14432"},
+		{"year":"2031","url":"https://www48.myfantasyleague.com/2031/home/51719"},
+		{"year":"2025","url":"https://www47.myfantasyleague.com/2025/home/14432"}]}}}`
+	cfg, err := assemble([]byte(body), []byte(rulesBody))
+	if err != nil {
+		t.Fatalf("assemble: %v", err)
+	}
+	if cfg.CurrentSeason != 2026 {
+		t.Errorf("current season = %d, want 2026 (2031 belongs to another league id)", cfg.CurrentSeason)
+	}
+}

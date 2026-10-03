@@ -3,6 +3,7 @@ package league
 import (
 	"context"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -35,7 +36,7 @@ func TestLive_LeagueFetch(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
 
-	cfg, err := Fetch(ctx, c, ingestion.SeasonYear, ingestion.LeagueID)
+	cfg, err := Fetch(ctx, c, liveSeason(ctx, t, c), ingestion.LeagueID)
 	if err != nil {
 		t.Fatalf("Fetch against live MFL: %v", err)
 	}
@@ -62,4 +63,14 @@ func TestLive_LeagueFetch(t *testing.T) {
 	}
 	t.Logf("live rulebook: cap=%s, rosterSize=%s, %d scoring blocks",
 		cfg.SalaryCapAmount, cfg.RosterSize, len(cfg.ScoringRules))
+}
+
+// liveSeason reads the league's current season from MFL, as the app does.
+func liveSeason(ctx context.Context, t *testing.T, c *mfl.Client) string {
+	t.Helper()
+	cfg, err := Discover(ctx, c, ingestion.LeagueID, time.Now().Year())
+	if err != nil {
+		t.Fatalf("discover season: %v", err)
+	}
+	return strconv.Itoa(cfg.CurrentSeason)
 }

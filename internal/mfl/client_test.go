@@ -356,3 +356,33 @@ func TestDo_ConcurrentUseIsRaceFree(t *testing.T) {
 		t.Errorf("concurrent call failed: %v", err)
 	}
 }
+
+func TestDiscoverHost_OncePerYearAndLeagueWithinTTL(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"league":{"baseURL":"https://www99.myfantasyleague.com/2026/home/14432"}}`))
+	}))
+	defer srv.Close()
+	c, rt := newTestClient(t, srv)
+	ctx := context.Background()
+	for range 3 {
+		if err := c.DiscoverHost(ctx, "2026", "14432"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := len(rt.builtHosts()); n != 1 {
+		t.Fatalf("3 discoveries of one league made %d requests, want 1", n)
+	}
+	if err := c.DiscoverHost(ctx, "2027", "14432"); err != nil {
+		t.Fatal(err)
+	}
+	c.mu.Lock()
+	c.hostAt = c.hostAt.Add(-hostTTL)
+	c.mu.Unlock()
+	if err := c.DiscoverHost(ctx, "2027", "14432"); err != nil {
+		t.Fatal(err)
+	}
+	if n := len(rt.builtHosts()); n != 3 {
+		t.Errorf("a new year and an expired discovery made %d requests in all, want 3", n)
+	}
+}

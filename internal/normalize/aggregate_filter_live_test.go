@@ -3,10 +3,12 @@ package normalize
 import (
 	"context"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 )
@@ -40,7 +42,7 @@ func TestLive_AggregateFilterAirtight(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Second)
 	defer cancel()
 
-	rawPlayers, err := players.Fetch(ctx, c, ingestion.SeasonYear, ingestion.LeagueID)
+	rawPlayers, err := players.Fetch(ctx, c, liveSeason(ctx, t, c), ingestion.LeagueID)
 	if err != nil {
 		t.Fatalf("players.Fetch: %v", err)
 	}
@@ -75,4 +77,14 @@ func TestLive_AggregateFilterAirtight(t *testing.T) {
 	for _, rp := range a.aggOutOfRange {
 		t.Logf("NOTE: aggregate %s (%q) sits OUTSIDE [151,782] — id-range filter alone would not drop it (join backstop covers it)", rp.ID, rp.Position)
 	}
+}
+
+// liveSeason reads the league's current season from MFL, as the app does.
+func liveSeason(ctx context.Context, t *testing.T, c *mfl.Client) string {
+	t.Helper()
+	cfg, err := league.Discover(ctx, c, ingestion.LeagueID, time.Now().Year())
+	if err != nil {
+		t.Fatalf("discover season: %v", err)
+	}
+	return strconv.Itoa(cfg.CurrentSeason)
 }

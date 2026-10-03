@@ -36,9 +36,7 @@ type Store struct {
 
 	wmu sync.Mutex // serializes every mutation, end to end
 
-	mu         sync.RWMutex
-	franchises map[string]*FranchiseState
-	byPlayer   map[string]string
+	leagueView       // the loaded league; poisoned shares its mu
 	poisoned   error // set when a post-commit reload fails
 
 	// reload refreshes memory after a commit. It is a field only so a test can inject a reload
@@ -54,8 +52,7 @@ func New(pools *db.Pools, leagueID string, season int, discounts CapDiscounts) *
 		leagueID:   leagueID,
 		season:     season,
 		discounts:  discounts,
-		franchises: map[string]*FranchiseState{},
-		byPlayer:   map[string]string{},
+		leagueView: newLeagueView(),
 	}
 	s.reload = s.load
 	return s
@@ -120,63 +117,6 @@ func (s *Store) Initialize(ctx context.Context, src Source) error {
 		return err
 	}
 	return s.load(ctx)
-}
-
-// FranchiseState returns a deep copy of one franchise's state.
-func (s *Store) FranchiseState(franchiseID string) (FranchiseState, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	fs, ok := s.franchises[franchiseID]
-	if !ok {
-		return FranchiseState{}, false
-	}
-	return cloneFranchise(fs), true
-}
-
-// Roster returns a deep copy of one franchise's players.
-func (s *Store) Roster(franchiseID string) ([]PlayerState, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	fs, ok := s.franchises[franchiseID]
-	if !ok {
-		return nil, false
-	}
-	return clonePlayers(fs.Players), true
-}
-
-// CapUsed returns one franchise's derived cap usage.
-func (s *Store) CapUsed(franchiseID string) (domain.Money, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	fs, ok := s.franchises[franchiseID]
-	if !ok {
-		return 0, false
-	}
-	return fs.CapUsed, true
-}
-
-// Player returns a copy of one player's state; ok is false if unrostered.
-func (s *Store) Player(mflID string) (PlayerState, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	fid, ok := s.byPlayer[mflID]
-	if !ok {
-		return PlayerState{}, false
-	}
-	for _, p := range s.franchises[fid].Players {
-		if p.MFLID == mflID {
-			return p, true
-		}
-	}
-	return PlayerState{}, false
-}
-
-// Franchises lists the franchise ids in state, sorted. A franchise exists here only while it holds
-// a player or carries dead cap; this store does not assert there are always 32.
-func (s *Store) Franchises() []string {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return sortedKeys(s.franchises)
 }
 
 // hasState reports whether roster rows exist for this league and season.

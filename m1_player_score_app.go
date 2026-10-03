@@ -99,7 +99,7 @@ func (a *App) GetPlayerScore(mflID string) PlayerScoreResult {
 	} else {
 		dto.Name = fmt.Sprintf("(unknown id %s)", s.MFLID)
 	}
-	if p, ok := a.state.Reader().Player(s.MFLID); ok {
+	if p, ok := a.league.Reader().Player(s.MFLID); ok {
 		dto.FranchiseID = p.FranchiseID
 		dto.FranchiseName = domain.FranchiseLabel(a.rulebook.FranchiseNames(), p.FranchiseID)
 		dto.Salary = p.CapSalary.Millions()

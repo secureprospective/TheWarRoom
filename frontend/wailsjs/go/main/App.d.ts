@@ -34,6 +34,8 @@ export function GetRoster(arg1:string):Promise<main.RosterResult>;
 
 export function PreviewTransaction(arg1:main.TransactionRequest):Promise<main.TransactionResult>;
 
+export function RefreshLeague():Promise<main.RefreshResult>;
+
 export function RunValidationSuite():Promise<main.ValidationResult>;
 
 export function ScoreLeague():Promise<main.ScoreLeagueResult>;

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/agetrajectory"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegedefense"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegeshare"
@@ -44,7 +43,7 @@ type scoutProfiles = map[playerid.PlayerID]scouting.Profile
 // is neutral on them, but with a key a failed fetch is an error. A missing key and a broken
 // fetch are different conditions.
 func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (rankings.MapScoutingDirectory, error) {
-	rosterMFLIDs := collectRosterMFLIDs(a.state.Reader())
+	rosterMFLIDs := collectRosterMFLIDs(a.league.Reader())
 	client := &http.Client{Timeout: rasFetchTimeout, Transport: a.fetches}
 	adapter := scoutLookupAdapter{lk: lk}
 
@@ -62,15 +61,15 @@ func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (
 	if err := mergeIDPFilm(ctx, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
 		return rankings.MapScoutingDirectory{}, err
 	}
-	if err := mergeCoverage(ctx, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
+	if err := mergeCoverage(ctx, a.season, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
 		return rankings.MapScoutingDirectory{}, err
 	}
-	if err := mergeOffenseFilm(ctx, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
+	if err := mergeOffenseFilm(ctx, a.season, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
 		return rankings.MapScoutingDirectory{}, err
 	}
 
 	if key := strings.TrimSpace(os.Getenv(cfbdEnvVar)); key != "" {
-		if err := mergeCFBDScouting(ctx, client, key, cw, rosterMFLIDs, adapter, profiles); err != nil {
+		if err := mergeCFBDScouting(ctx, a.season, client, key, cw, rosterMFLIDs, adapter, profiles); err != nil {
 			return rankings.MapScoutingDirectory{}, err
 		}
 	}
@@ -79,12 +78,8 @@ func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (
 }
 
 // mergeCFBDScouting merges the CFBD signals in order; any fetch failure is an error.
-func mergeCFBDScouting(ctx context.Context, client *http.Client, key string, cw crosswalk.Map,
+func mergeCFBDScouting(ctx context.Context, year int, client *http.Client, key string, cw crosswalk.Map,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	year, err := strconv.Atoi(ingestion.SeasonYear)
-	if err != nil {
-		return fmt.Errorf("app: season year %q not numeric: %w", ingestion.SeasonYear, err)
-	}
 	// Birthdates feed both breakout scans; fetch them once.
 	ages, err := agetrajectory.Fetch(ctx, client, agetrajectory.SourceURL)
 	if err != nil {
@@ -108,12 +103,8 @@ func mergeCFBDScouting(ctx context.Context, client *http.Client, key string, cw 
 // mergeCoverage adds the CB/S coverage anchor ([0,1], higher is better) from the prior
 // completed season's PFR advanced defense; the current league year has no charting yet. The film
 // blend is applied in rankings.applyScouting.
-func mergeCoverage(ctx context.Context, client *http.Client, cw crosswalk.Map,
+func mergeCoverage(ctx context.Context, year int, client *http.Client, cw crosswalk.Map,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	year, err := strconv.Atoi(ingestion.SeasonYear)
-	if err != nil {
-		return fmt.Errorf("app: season year %q not numeric: %w", ingestion.SeasonYear, err)
-	}
 	coverageSeason := strconv.Itoa(year - 1)
 	cov, err := assembly.BuildCoverage(ctx, client, pfrcoverage.SourceURL, cw, coverageSeason, rosterMFLIDs, adapter)
 	if err != nil {
@@ -147,12 +138,8 @@ func mergeIDPFilm(ctx context.Context, client *http.Client, cw crosswalk.Map,
 
 // mergeOffenseFilm adds the QB/RB/WR/TE film composite (Madden backbone plus the bounded FTN
 // overlay), charted from the prior completed season.
-func mergeOffenseFilm(ctx context.Context, client *http.Client, cw crosswalk.Map,
+func mergeOffenseFilm(ctx context.Context, year int, client *http.Client, cw crosswalk.Map,
 	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	year, err := strconv.Atoi(ingestion.SeasonYear)
-	if err != nil {
-		return fmt.Errorf("app: season year %q not numeric: %w", ingestion.SeasonYear, err)
-	}
 	ftnSources := veteranfilm.SeasonSources(year - 1)
 	film, err := assembly.BuildOffenseFilm(ctx, client, madden.RatingsURL, ftnSources,
 		veteranfilm.DefaultReceiverFloor, veteranfilm.DefaultPasserFloor,

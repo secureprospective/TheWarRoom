@@ -951,6 +951,28 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class RefreshResult {
+	    ok: boolean;
+	    error: string;
+	    season: number;
+	    rulesChanged: boolean;
+	    changed: boolean;
+	    players: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RefreshResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.error = source["error"];
+	        this.season = source["season"];
+	        this.rulesChanged = source["rulesChanged"];
+	        this.changed = source["changed"];
+	        this.players = source["players"];
+	    }
+	}
 	export class RookiesResult {
 	    ok: boolean;
 	    error: string;

@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
@@ -106,9 +108,46 @@ func mapLeague(le leagueEnvelope) RawConfig {
 			IDPStarters: l.Starters.IDPStarters,
 			Positions:   mapLimits(l.Starters.Position),
 		},
-		Franchises: mapFranchises(l.Franchises.Franchise),
+		Franchises:    mapFranchises(l.Franchises.Franchise),
+		CurrentSeason: currentSeason(l.ID, l.History.League),
 	}
 	return cfg
+}
+
+// currentSeason is the newest history year whose URL ends in leagueID: the league's id changed
+// in its early seasons, and those years belong to other ids.
+func currentSeason(leagueID string, history []historyEntry) int {
+	newest := 0
+	for _, h := range history {
+		y, err := strconv.Atoi(h.Year)
+		if err == nil && leagueID != "" && strings.HasSuffix(h.URL, "/"+leagueID) && y > newest {
+			newest = y
+		}
+	}
+	return newest
+}
+
+// Discover fetches the league's config for its current season. guess is where to start, usually
+// the last season held or the calendar year. Before MFL rolls the league into a new calendar
+// year, the guess has no league yet and the year before is tried. A config whose history names a
+// different season is fetched again for that season.
+func Discover(ctx context.Context, c *mfl.Client, leagueID string, guess int) (RawConfig, error) {
+	year := guess
+	cfg, err := Fetch(ctx, c, strconv.Itoa(year), leagueID)
+	if err != nil {
+		year = guess - 1
+		var prevErr error
+		if cfg, prevErr = Fetch(ctx, c, strconv.Itoa(year), leagueID); prevErr != nil {
+			return RawConfig{}, fmt.Errorf("league: discover season from %d: %w", guess, errors.Join(err, prevErr))
+		}
+	}
+	if cfg.CurrentSeason == 0 {
+		return RawConfig{}, fmt.Errorf("league: %s history lists no season for league %s", cfg.Source, leagueID)
+	}
+	if cfg.CurrentSeason != year {
+		return Fetch(ctx, c, strconv.Itoa(cfg.CurrentSeason), leagueID)
+	}
+	return cfg, nil
 }
 
 // mapFranchises drops entries with an empty id; a blank name is kept and the UI shows the id.

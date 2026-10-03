@@ -96,6 +96,9 @@ func TestNormalizeRosterStatus(t *testing.T) {
 	if s, err := normalizeRosterStatus("TAXI_SQUAD", id); err != nil || s != domain.RosterTaxi {
 		t.Fatalf("TAXI_SQUAD → (%q,%v)", s, err)
 	}
+	if s, err := normalizeRosterStatus("INJURED_RESERVE", id); err != nil || s != domain.RosterIR {
+		t.Errorf("INJURED_RESERVE = %q, %v; want IR", s, err)
+	}
 	if s, err := normalizeRosterStatus("IR", id); err != nil || s != domain.RosterIR {
 		t.Fatalf("IR → (%q,%v)", s, err)
 	}

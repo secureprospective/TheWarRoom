@@ -12,11 +12,8 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
-	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
@@ -34,32 +31,37 @@ type App struct {
 	ctx         context.Context
 	pools       *db.Pools // thewarroom.db: the MFL mirror and app settings
 	histPools   *db.Pools // history.db: everything that cannot be rebuilt
+	whatifPools *db.Pools // whatif.db: moves made in the app, apart from MFL truth (R2)
 	params      *params.Store
 	rulebook    *rulebook.Store
-	state       *state.Store
+	league      *state.Mirror // the league as MFL states it; every score surface reads it
+	whatif      *state.Store  // the what-if league the transaction screens work on
 	history     *history.Store
-	coordinator *transactions.Coordinator // the only holder of the state Writer
+	coordinator *transactions.Coordinator // the only holder of the what-if Writer
 	mflClient   *mfl.Client               // shared, so rate limit and host discovery are process-wide
 	fetches     *archive.Transport        // every outbound HTTP request goes through it
-	season      int
-	startupErr  error    // startup failure; shown in the shell through AppInfo
-	lockFile    *os.File // single-instance lock, held until shutdown
+	season      int                       // from the mirror at startup; a rollover is picked up at the next launch
+	startupErr  error                     // startup failure; shown in the shell through AppInfo
+	lockFile    *os.File                  // single-instance lock, held until shutdown
 
 	// The players directory is fetched at most once per process (MFL allows the endpoint once a
 	// day). Wails runs IPC calls concurrently, hence the mutex.
 	lookupMu  sync.Mutex
 	lookup    normalize.Lookup
 	hasLookup bool
+
+	refreshMu        sync.Mutex // one MFL refresh at a time
+	launchRefreshDue bool       // startup did not refresh, so domReady does
 }
 
-// directory returns the cached players Lookup, fetching it on first use.
+// directory returns the cached players Lookup for the season held, fetching it on first use.
 func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 	a.lookupMu.Lock()
 	defer a.lookupMu.Unlock()
 	if a.hasLookup {
 		return a.lookup, nil
 	}
-	raws, err := players.Fetch(ctx, a.mflClient, ingestion.SeasonYear, ingestion.LeagueID)
+	raws, err := players.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID)
 	if err != nil {
 		return normalize.Lookup{}, fmt.Errorf("app: fetch players db: %w", err)
 	}
@@ -69,26 +71,6 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 	}
 	a.lookup, a.hasLookup = lk, true
 	return lk, nil
-}
-
-// rosterSeedSource seeds league state from MFL rosters; state.Initialize calls it only on a
-// fresh DB.
-type rosterSeedSource struct{ app *App }
-
-func (s rosterSeedSource) Rosters(ctx context.Context) ([]domain.Roster, error) {
-	lk, err := s.app.directory(ctx)
-	if err != nil {
-		return nil, err
-	}
-	raws, err := rosters.Fetch(ctx, s.app.mflClient, ingestion.SeasonYear, ingestion.LeagueID)
-	if err != nil {
-		return nil, fmt.Errorf("app: fetch rosters seed: %w", err)
-	}
-	seed, err := normalize.Rosters(raws, lk)
-	if err != nil {
-		return nil, fmt.Errorf("app: normalize roster seed: %w", err)
-	}
-	return seed, nil
 }
 
 // NewApp is cheap; resources are acquired in startup.
@@ -123,12 +105,6 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 
-	season, err := strconv.Atoi(ingestion.SeasonYear)
-	if err != nil {
-		a.startupErr = fmt.Errorf("startup: parse season %q: %w", ingestion.SeasonYear, err)
-		return
-	}
-	a.season = season
 	client, err := mfl.New("api", 2, mfl.WithTransport(a.fetches))
 	if err != nil {
 		a.startupErr = fmt.Errorf("startup: mfl client: %w", err)
@@ -136,16 +112,26 @@ func (a *App) startup(ctx context.Context) {
 	}
 	a.mflClient = client
 
-	log.Printf("the war room: starting %s season %d, db %s", buildLabel(), season, path)
+	log.Printf("the war room: starting %s, db %s", buildLabel(), path)
 	began := time.Now()
-	if err := a.initStoreFloor(ctx, hist); err != nil {
+	refreshed, err := a.initStoreFloor(ctx, hist)
+	if err != nil {
 		a.startupErr = err
 		return
 	}
-	log.Printf("the war room: ready in %s", time.Since(began).Round(time.Millisecond))
+	log.Printf("the war room: season %d ready in %s", a.season, time.Since(began).Round(time.Millisecond))
+	a.launchRefreshDue = !refreshed
 }
 
-// openDatabases takes the instance lock and opens both databases. Every fetch after this goes
+// domReady is the Wails OnDomReady hook: the window is up, so the launch refresh runs now, off
+// the startup path. A windowless -probe never reaches it.
+func (a *App) domReady(ctx context.Context) {
+	if a.startupErr == nil && a.launchRefreshDue {
+		a.refreshInBackground(ctx)
+	}
+}
+
+// openDatabases takes the instance lock and opens the three databases. Every fetch after this goes
 // through the history archive. It returns the league database's path for the startup log.
 func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.Store, error) {
 	path := filepath.Join(dir, dbFileName("thewarroom", isDevBuild()))
@@ -165,26 +151,32 @@ func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.S
 	if a.histPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("history", isDevBuild()))); err != nil {
 		return "", nil, fmt.Errorf("open history database: %w", err)
 	}
+	if a.whatifPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("whatif", isDevBuild()))); err != nil {
+		return "", nil, fmt.Errorf("open what-if database: %w", err)
+	}
 	hist := history.New(a.histPools, reg)
 	a.fetches = &archive.Transport{Sink: hist}
 	return path, hist, nil
 }
 
-// startupBudget bounds store-floor init. A fresh DB seeds from MFL on this thread, so an
+// startupBudget bounds store-floor init. An empty mirror is filled from MFL on this thread, so an
 // unreachable MFL would otherwise hang the window black forever.
 const startupBudget = 2 * time.Minute
 
 // initStoreFloor brings up the stores and the transaction coordinator, logging each step's
 // time so a slow or failed launch shows where it stopped. History comes first, because every
-// fetch after it is archived there. Stores seed from MFL only on a fresh DB. Fields are assigned
-// only once every step succeeds: IPC methods treat a nil store as "not initialized".
-func (a *App) initStoreFloor(parent context.Context, hist *history.Store) error {
+// fetch after it is archived there. An empty mirror is refreshed from MFL here, and refreshed
+// reports that; otherwise the launch refresh runs in the background. The what-if league seeds
+// from the mirror on a fresh what-if database. Fields are assigned only once every step
+// succeeds: IPC methods treat a nil store as "not initialized".
+func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refreshed bool, err error) {
 	ctx, cancel := context.WithTimeout(parent, startupBudget)
 	defer cancel()
 
 	pstore := params.New(a.pools)
 	rb := rulebook.New(a.pools)
-	st := state.New(a.pools, ingestion.LeagueID, a.season, rb)
+	mirror := state.NewMirror(a.pools, rb)
+	var whatif *state.Store
 	var coord *transactions.Coordinator
 	steps := []struct {
 		name string
@@ -192,14 +184,25 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) error 
 	}{
 		{"history", hist.Initialize},
 		{"params", pstore.Initialize},
-		{"rulebook", func(c context.Context) error {
-			return rb.Initialize(c, league.APISource{Client: a.mflClient, Year: ingestion.SeasonYear, LeagueID: ingestion.LeagueID})
+		{"rulebook", func(c context.Context) error { return rb.Initialize(c, discoverSource{app: a}) }},
+		{"league mirror", mirror.Initialize},
+		{"first MFL refresh", func(c context.Context) error {
+			if mirror.Season() != 0 {
+				return nil
+			}
+			refreshed = true
+			_, err := a.refreshLeague(c, rb, mirror)
+			return err
 		}},
-		{"league state", func(c context.Context) error { return st.Initialize(c, rosterSeedSource{app: a}) }},
-		// The coordinator is the only holder of the state Writer.
+		{"what-if league", func(c context.Context) error {
+			a.season = mirror.Season()
+			whatif = state.New(a.whatifPools, ingestion.LeagueID, a.season, rb)
+			return whatif.Initialize(c, mirror)
+		}},
+		// The coordinator is the only holder of the what-if Writer.
 		{"transaction coordinator", func(context.Context) error {
 			var err error
-			coord, err = transactions.New(st.Writer(), &rosterPolicyAdapter{rb: rb, app: a},
+			coord, err = transactions.New(whatif.Writer(), &rosterPolicyAdapter{rb: rb, app: a},
 				func(c context.Context) (transactions.Directory, error) { return a.directory(c) })
 			return err //nolint:wrapcheck // wrapped below with the step name
 		}},
@@ -207,17 +210,17 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) error 
 	for _, s := range steps {
 		began := time.Now()
 		if err := s.run(ctx); err != nil {
-			return fmt.Errorf("startup: initialize %s: %w", s.name, err)
+			return false, fmt.Errorf("startup: initialize %s: %w", s.name, err)
 		}
 		log.Printf("the war room: %s ready in %s", s.name, time.Since(began).Round(time.Millisecond))
 	}
-	a.params, a.rulebook, a.state, a.coordinator, a.history = pstore, rb, st, coord, hist
-	return nil
+	a.params, a.rulebook, a.league, a.whatif, a.coordinator, a.history = pstore, rb, mirror, whatif, coord, hist
+	return refreshed, nil
 }
 
 // shutdown releases the database and the instance lock.
 func (a *App) shutdown(_ context.Context) {
-	for _, p := range []*db.Pools{a.pools, a.histPools} {
+	for _, p := range []*db.Pools{a.pools, a.histPools, a.whatifPools} {
 		if p != nil {
 			_ = p.Close()
 		}

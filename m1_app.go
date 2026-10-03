@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -32,7 +33,7 @@ func (a *App) m1Ready() error {
 	if a.startupErr != nil {
 		return a.startupErr
 	}
-	if a.rulebook == nil || a.state == nil || a.history == nil || a.params == nil {
+	if a.rulebook == nil || a.league == nil || a.history == nil || a.params == nil {
 		return fmt.Errorf("stores not initialized")
 	}
 	return nil
@@ -42,7 +43,7 @@ func (a *App) m1Ready() error {
 // against the source and returned as a warning: the board still scores from what history holds,
 // and source health decides whether the measure counts as lost.
 func (a *App) loadBasePoints(ctx context.Context) (warning string, err error) {
-	batch, ferr := playerscores.Fetch(ctx, a.mflClient, ingestion.SeasonYear, ingestion.LeagueID, a.season-1)
+	batch, ferr := playerscores.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID, a.season-1)
 	if ferr == nil {
 		if _, ierr := a.history.Ingest(ctx, batch); ierr != nil {
 			return "", fmt.Errorf("app: store YTD proxy scores: %w", ierr)
@@ -91,7 +92,7 @@ func (a *App) ScoreLeague() ScoreLeagueResult {
 	if err != nil {
 		return fail(err)
 	}
-	runner, err := rankings.New(a.state.Reader(), lk, scout, a.rulebook, a.history,
+	runner, err := rankings.New(a.league.Reader(), lk, scout, a.rulebook, a.history,
 		rankings.Registry(a.rubrics()), buildLabel())
 	if err != nil {
 		return fail(err)
@@ -260,7 +261,7 @@ func (a *App) rankRows(scores []history.Score, lk normalize.Lookup, prior map[st
 		} else {
 			row.Name = "(unknown id " + s.MFLID + ")"
 		}
-		if p, ok := a.state.Reader().Player(s.MFLID); ok {
+		if p, ok := a.league.Reader().Player(s.MFLID); ok {
 			row.FranchiseID, row.FranchiseName = p.FranchiseID, domain.FranchiseLabel(names, p.FranchiseID)
 			row.Salary = p.CapSalary.Millions()
 			if row.Salary > 0 {

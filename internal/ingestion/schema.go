@@ -17,11 +17,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
-// The league this app serves. The host is never hardcoded: mfl.Client.DiscoverHost finds it.
-const (
-	LeagueID   = "14432"
-	SeasonYear = "2026"
-)
+// LeagueID is the league this app serves. The host is never hardcoded (mfl.Client.DiscoverHost
+// finds it), and neither is the season (league.Discover reads it from MFL).
+const LeagueID = "14432"
 
 // ValidatePlayerID rejects a malformed MFL id at the boundary. Fetchers keep the raw string;
 // normalize re-derives the PlayerID.

@@ -41,13 +41,13 @@ func (a *App) GetRoster(franchiseID string) RosterResult {
 	if a.startupErr != nil {
 		return RosterResult{Detail: a.startupErr.Error()}
 	}
-	if a.state == nil {
+	if a.whatif == nil {
 		return RosterResult{Detail: "state store not initialized"}
 	}
-	if err := a.state.Err(); err != nil {
+	if err := a.whatif.Err(); err != nil {
 		return RosterResult{FranchiseID: franchiseID, Detail: "state is stale after a failed reload: " + err.Error()}
 	}
-	fs, ok := a.state.Reader().FranchiseState(franchiseID)
+	fs, ok := a.whatif.Reader().FranchiseState(franchiseID)
 	if !ok {
 		return RosterResult{FranchiseID: franchiseID, Detail: "no such franchise (or it holds no players)"}
 	}
@@ -87,15 +87,15 @@ func (a *App) GetFreeAgentPool() FreeAgentPoolResult {
 	if a.startupErr != nil {
 		return FreeAgentPoolResult{Detail: a.startupErr.Error()}
 	}
-	if a.state == nil {
+	if a.whatif == nil {
 		return FreeAgentPoolResult{Detail: "state store not initialized"}
 	}
-	if err := a.state.Err(); err != nil {
+	if err := a.whatif.Err(); err != nil {
 		return FreeAgentPoolResult{Detail: "state is stale after a failed reload: " + err.Error()}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
 	defer cancel()
-	ids, err := a.state.FreeAgents(ctx)
+	ids, err := a.whatif.FreeAgents(ctx)
 	if err != nil {
 		return FreeAgentPoolResult{Detail: err.Error()}
 	}
@@ -134,17 +134,17 @@ func (a *App) GetFranchises() FranchisesResult {
 	if a.startupErr != nil {
 		return FranchisesResult{Detail: a.startupErr.Error()}
 	}
-	if a.state == nil {
+	if a.whatif == nil {
 		return FranchisesResult{Detail: "state store not initialized"}
 	}
-	if err := a.state.Err(); err != nil {
+	if err := a.whatif.Err(); err != nil {
 		return FranchisesResult{Detail: "state is stale after a failed reload: " + err.Error()}
 	}
 	names := map[string]string{}
 	if a.rulebook != nil {
 		names = a.rulebook.FranchiseNames()
 	}
-	r := a.state.Reader()
+	r := a.whatif.Reader()
 	ids := r.Franchises()
 	sort.Strings(ids) // ids are zero-padded, so lexical order is numeric
 	out := make([]M4Franchise, 0, len(ids))
@@ -173,12 +173,12 @@ func (a *App) GetLegalOps() LegalOpsResult {
 	if a.startupErr != nil {
 		return LegalOpsResult{Detail: a.startupErr.Error()}
 	}
-	if a.state == nil {
+	if a.whatif == nil {
 		return LegalOpsResult{Detail: "state store not initialized"}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
 	defer cancel()
-	ph, err := a.state.CurrentPhase(ctx)
+	ph, err := a.whatif.CurrentPhase(ctx)
 	if err != nil {
 		return LegalOpsResult{Detail: err.Error()}
 	}

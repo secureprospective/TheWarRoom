@@ -3,10 +3,12 @@ package players
 import (
 	"context"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 )
 
@@ -31,7 +33,7 @@ func TestLive_PlayersFetch(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Second)
 	defer cancel()
 
-	all, err := Fetch(ctx, c, ingestion.SeasonYear, ingestion.LeagueID)
+	all, err := Fetch(ctx, c, liveSeason(ctx, t, c), ingestion.LeagueID)
 	if err != nil {
 		t.Fatalf("Fetch against live MFL: %v", err)
 	}
@@ -60,4 +62,14 @@ func TestLive_PlayersFetch(t *testing.T) {
 		t.Errorf("only %d of %d records carry a birthdate; DETAILS=1 appears broken", withBirthdate, len(all))
 	}
 	t.Logf("fetched %d player records (%d with birthdate)", len(all), withBirthdate)
+}
+
+// liveSeason reads the league's current season from MFL, as the app does.
+func liveSeason(ctx context.Context, t *testing.T, c *mfl.Client) string {
+	t.Helper()
+	cfg, err := league.Discover(ctx, c, ingestion.LeagueID, time.Now().Year())
+	if err != nil {
+		t.Fatalf("discover season: %v", err)
+	}
+	return strconv.Itoa(cfg.CurrentSeason)
 }

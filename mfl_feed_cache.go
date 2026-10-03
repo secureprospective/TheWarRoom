@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -83,10 +84,10 @@ func (a *App) standingsOrCache(ctx context.Context) ([]leaguestandings.RawStandi
 	return liveOrCache(ctx, a.fallbackParent(), feedCache[leaguestandings.RawStanding]{
 		name: "standings",
 		fetch: func(ctx context.Context) ([]leaguestandings.RawStanding, error) {
-			return leaguestandings.Fetch(ctx, a.mflClient, ingestion.SeasonYear, ingestion.LeagueID)
+			return leaguestandings.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID)
 		},
-		put:      a.state.PutStandings,
-		cached:   a.state.CachedStandings,
+		put:      a.whatif.PutStandings,
+		cached:   a.whatif.CachedStandings,
 		noCached: state.ErrNoCachedStandings,
 	})
 }
@@ -95,10 +96,10 @@ func (a *App) leagueScheduleOrCache(ctx context.Context) ([]leagueschedule.RawSc
 	return liveOrCache(ctx, a.fallbackParent(), feedCache[leagueschedule.RawScheduleWeek]{
 		name: "schedule",
 		fetch: func(ctx context.Context) ([]leagueschedule.RawScheduleWeek, error) {
-			return leagueschedule.Fetch(ctx, a.mflClient, ingestion.SeasonYear, ingestion.LeagueID)
+			return leagueschedule.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID)
 		},
-		put:      a.state.PutLeagueSchedule,
-		cached:   a.state.CachedLeagueSchedule,
+		put:      a.whatif.PutLeagueSchedule,
+		cached:   a.whatif.CachedLeagueSchedule,
 		noCached: state.ErrNoCachedLeagueSchedule,
 	})
 }

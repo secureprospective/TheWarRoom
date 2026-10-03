@@ -35,7 +35,7 @@ func TestLive_NormalizePipeline(t *testing.T) {
 
 	// 1. Players DB → Lookup. NewLookup runs the reserved-range invariant against
 	//    every live record; if any real player sits in [151,782] it fails here.
-	rawPlayers, err := players.Fetch(ctx, c, ingestion.SeasonYear, ingestion.LeagueID)
+	rawPlayers, err := players.Fetch(ctx, c, liveSeason(ctx, t, c), ingestion.LeagueID)
 	if err != nil {
 		t.Fatalf("players.Fetch: %v", err)
 	}
@@ -46,7 +46,7 @@ func TestLive_NormalizePipeline(t *testing.T) {
 	t.Logf("players DB: %d records, lookup built clean", len(rawPlayers))
 
 	// 2. Rosters → normalize to typed domain records.
-	rawRosters, err := rosters.Fetch(ctx, c, ingestion.SeasonYear, ingestion.LeagueID)
+	rawRosters, err := rosters.Fetch(ctx, c, liveSeason(ctx, t, c), ingestion.LeagueID)
 	if err != nil {
 		t.Fatalf("rosters.Fetch: %v", err)
 	}
