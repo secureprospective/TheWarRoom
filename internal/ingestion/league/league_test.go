@@ -2,6 +2,7 @@ package league
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -75,16 +76,16 @@ func TestAssemble_UnwrapsAndCollapsesScoring(t *testing.T) {
 		t.Fatalf("rule sets = %d, want 2", len(cfg.ScoringRules))
 	}
 
-	// First block: two rules, $t unwrapped (incl. a flat "3" with no "*").
+	// First block: two rules, sorted by event, $t unwrapped (incl. a flat "3" with no "*").
 	first := cfg.ScoringRules[0]
 	if first.Positions != "CB|S" || len(first.Rules) != 2 {
 		t.Fatalf("first block = %+v", first)
 	}
-	if first.Rules[0].Event != "TK" || first.Rules[0].Points != "*0.5" || first.Rules[0].Range != "0-99" {
-		t.Errorf("TK rule = %+v, want TK/*0.5/0-99", first.Rules[0])
+	if first.Rules[0].Points != "3" {
+		t.Errorf("FG points = %q, want raw 3", first.Rules[0].Points)
 	}
-	if first.Rules[1].Points != "3" {
-		t.Errorf("FG points = %q, want raw 3", first.Rules[1].Points)
+	if first.Rules[1].Event != "TK" || first.Rules[1].Points != "*0.5" || first.Rules[1].Range != "0-99" {
+		t.Errorf("TK rule = %+v, want TK/*0.5/0-99", first.Rules[1])
 	}
 
 	// Second block: rule collapsed from a single object to one entry.
@@ -120,5 +121,27 @@ func TestAssemble_CurrentSeasonIsNewestYearUnderThisLeaguesID(t *testing.T) {
 	}
 	if cfg.CurrentSeason != 2026 {
 		t.Errorf("current season = %d, want 2026 (2031 belongs to another league id)", cfg.CurrentSeason)
+	}
+}
+
+// MFL shuffles the positionRules blocks between requests; the config must not change with it,
+// or every refresh would write a new rulebook version.
+func TestAssemble_ScoringIsTheSameInAnyOrder(t *testing.T) {
+	shuffled := `{"rules":{"positionRules":[
+	{"positions":"QB|WR|TE|DT|RB","rule":
+		{"event":{"$t":"#P"},"points":{"$t":"*0"},"range":{"$t":"0-0"}}},
+	{"positions":"CB|S","rule":[
+		{"event":{"$t":"FG"},"points":{"$t":"3"},"range":{"$t":"0-39"}},
+		{"event":{"$t":"TK"},"points":{"$t":"*0.5"},"range":{"$t":"0-99"}}]}]}}`
+	a, err := assemble([]byte(leagueBody), []byte(rulesBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := assemble([]byte(leagueBody), []byte(shuffled))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(a.ScoringRules, b.ScoringRules) {
+		t.Errorf("same rules in another order assembled differently:\n%+v\n%+v", a.ScoringRules, b.ScoringRules)
 	}
 }
