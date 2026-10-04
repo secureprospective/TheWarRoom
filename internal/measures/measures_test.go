@@ -12,7 +12,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/agetrajectory"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegeshare"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/madden"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/pfrcoverage"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playerscores"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/ras"
@@ -201,7 +200,7 @@ func TestEveryFetchedURLHasASource(t *testing.T) {
 		crosswalk.SourceURL:         "dynastyprocess",
 		collegeshare.SeasonStatsURL: "cfbd",
 		schooltier.TeamsURL:         "cfbd",
-		madden.RatingsURL:           "madden",
+		"https://ratings-api.ea.com/v2/entities/m24-ratings": "madden",
 	}
 	for raw, want := range cases {
 		u, err := url.Parse(raw)

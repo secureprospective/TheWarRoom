@@ -298,45 +298,19 @@ func applyScouting(spec *composition.PlayerSpec, profile scouting.Profile) {
 		spec.BreakoutAge = profile.BreakoutAge
 		spec.HasBreakoutAge = true
 	}
-	// IDP film composite (DT/DE/LB/CB/S), built here because the engine takes one [0,1]
-	// FilmComposite. Seats: the Madden defense composite, the PFR coverage anchor (CB/S only) and
-	// NFLProduction (reserved, not wired). An absent seat contributes the neutral midpoint:
-	//   - DT/DE/LB: 0.95·Madden + 0.05·neutral
-	//   - CB/S:     0.20·coverage + 0.75·Madden + 0.05·neutral
-	// A player with neither signal leaves HasFilm false.
-	hasCoverage := profile.Coverage != nil
-	hasMadden := profile.IDPFilm != nil
-	if hasCoverage || hasMadden {
-		coverageWeight := 0.0
-		coverageTerm := 0.0
-		if hasCoverage {
-			coverageWeight = coverageFilmWeight // 0.20, CB/S only
-			coverageTerm = coverageWeight * profile.Coverage.CoverageMetrics
-		}
-		maddenWeight := 1 - coverageWeight - nflProductionFilmWeight
-		maddenTerm := maddenWeight * filmNeutralMidpoint // neutral when no Madden record
-		if hasMadden {
-			maddenTerm = maddenWeight * profile.IDPFilm.MaddenComposite
-		}
-		spec.FilmComposite = coverageTerm + maddenTerm +
-			nflProductionFilmWeight*filmNeutralMidpoint
-		spec.HasFilm = true
-	} else if profile.OffenseFilm != nil {
-		// Offense film (QB/RB/WR/TE): the assembler already blended Profile.OffenseFilm, so only the
-		// NFLProduction seat is reserved here: 0.95·Composite + 0.05·neutral. Offense and IDP film are
-		// exclusive by position; the else-if keeps one from overwriting the other.
-		spec.FilmComposite = (1-nflProductionFilmWeight)*profile.OffenseFilm.Composite +
-			nflProductionFilmWeight*filmNeutralMidpoint
+	// Film is the coverage anchor, CB and S only: 0.20 of the film budget, the rest at the
+	// neutral midpoint. No other position has a film source.
+	if profile.Coverage != nil {
+		spec.FilmComposite = coverageFilmWeight*profile.Coverage.CoverageMetrics +
+			(1-coverageFilmWeight)*filmNeutralMidpoint
 		spec.HasFilm = true
 	}
 }
 
-// Film weights (locked decisions K4 and K2). NFLProduction's seat holds the neutral midpoint
-// until it is wired; the film S-curve inflects at 0.50.
+// The coverage anchor's share of the film budget; the film S-curve inflects at 0.50.
 const (
-	coverageFilmWeight      = 0.20
-	nflProductionFilmWeight = 0.05
-	filmNeutralMidpoint     = 0.50
+	coverageFilmWeight  = 0.20
+	filmNeutralMidpoint = 0.50
 )
 
 // yearsBetween returns fractional years. Rounding would step every player's L3 decay in

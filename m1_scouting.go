@@ -14,11 +14,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegedefense"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegeshare"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/madden"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/pfrcoverage"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/ras"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/schooltier"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/veteranfilm"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/rankings"
@@ -38,8 +36,7 @@ const cfbdEnvVar = "CFBD_API_KEY"
 type scoutProfiles = map[playerid.PlayerID]scouting.Profile
 
 // buildScoutingDirectory runs every scouting signal against the board's cached players lookup and
-// the crosswalk ScoreLeague fetched, and returns the merged profiles. RAS, film and coverage always
-// run. The CFBD signals (school tier, college share, breakout age) need a key: without one they are
+// the crosswalk ScoreLeague fetched, and returns the merged profiles. RAS and coverage always run. The CFBD signals (school tier, college share, breakout age) need a key: without one they are
 // skipped and every player is neutral on them, but with a key a failed fetch is an error. A missing
 // key and a broken fetch are different conditions.
 func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup, cw crosswalk.Map) (rankings.MapScoutingDirectory, error) {
@@ -52,13 +49,7 @@ func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup, c
 		return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build RAS scouting directory: %w", err)
 	}
 
-	if err := mergeIDPFilm(ctx, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
-		return rankings.MapScoutingDirectory{}, err
-	}
 	if err := mergeCoverage(ctx, a.season, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
-		return rankings.MapScoutingDirectory{}, err
-	}
-	if err := mergeOffenseFilm(ctx, a.season, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
 		return rankings.MapScoutingDirectory{}, err
 	}
 
@@ -108,43 +99,6 @@ func mergeCoverage(ctx context.Context, year int, client *http.Client, cw crossw
 		p := profiles[pid]
 		p.MFLID = pid
 		p.Coverage = assembly.CoverageGroup(norm)
-		profiles[pid] = p
-	}
-	return nil
-}
-
-// mergeIDPFilm adds the Madden defense composite for DT/DE/LB/CB/S. The film blend is applied
-// in rankings.applyScouting.
-func mergeIDPFilm(ctx context.Context, client *http.Client, cw crosswalk.Map,
-	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	film, err := assembly.BuildIDPFilm(ctx, client, madden.RatingsURL, cw, rosterMFLIDs, adapter)
-	if err != nil {
-		return fmt.Errorf("app: build IDP film scouting directory: %w", err)
-	}
-	for pid, norm := range film {
-		p := profiles[pid]
-		p.MFLID = pid
-		p.IDPFilm = assembly.IDPFilmGroup(norm)
-		profiles[pid] = p
-	}
-	return nil
-}
-
-// mergeOffenseFilm adds the QB/RB/WR/TE film composite (Madden backbone plus the bounded FTN
-// overlay), charted from the prior completed season.
-func mergeOffenseFilm(ctx context.Context, year int, client *http.Client, cw crosswalk.Map,
-	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	ftnSources := veteranfilm.SeasonSources(year - 1)
-	film, err := assembly.BuildOffenseFilm(ctx, client, madden.RatingsURL, ftnSources,
-		veteranfilm.DefaultReceiverFloor, veteranfilm.DefaultPasserFloor,
-		cw, rosterMFLIDs, adapter)
-	if err != nil {
-		return fmt.Errorf("app: build offense film scouting directory: %w", err)
-	}
-	for pid, composite := range film {
-		p := profiles[pid]
-		p.MFLID = pid
-		p.OffenseFilm = assembly.OffenseFilmGroup(composite)
 		profiles[pid] = p
 	}
 	return nil

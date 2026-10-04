@@ -44,8 +44,8 @@ func golden() map[domain.Position]string {
 
 // grid returns deterministic inputs that cover each sub-signal present and absent, values inside
 // and outside every curve, and the non-finite values the rubric must treat as unknown. Only DT
-// carries a cushion, as composition hands it out. K's film arrives as the 0.60/0.40 blend of its
-// two kicking components, which composition builds.
+// carries a cushion, as composition hands it out. K's film draws are the 0.60/0.40 blend of the
+// two kicking components the old K rubric read, so the hash taken from it still applies.
 func grid(pos domain.Position) []engine.Layer4Input {
 	h := fnv.New64a()
 	_, _ = h.Write([]byte(pos))

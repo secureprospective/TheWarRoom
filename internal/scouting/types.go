@@ -22,23 +22,9 @@ type Profile struct {
 	CollegeProductionShare    float64
 	HasCollegeProductionShare bool
 
-	OffenseFilm *OffenseFilm // QB / RB / WR / TE
-	IDPFilm     *IDPFilm     // DT / DE / LB / CB / S
-	Coverage    *NGSCoverage // CB / S only (hard constraint)
+	Coverage *NGSCoverage // CB / S only (hard constraint)
 
 	SafetyRole SafetyRole
-}
-
-// OffenseFilm is the offense film signal, present at QB, RB, WR and TE.
-type OffenseFilm struct {
-	// Composite is in [0,1], higher is better; assembly.BuildOffenseFilm defines it.
-	Composite float64
-}
-
-// IDPFilm is the IDP film signal, present at DT, DE, LB, CB and S.
-type IDPFilm struct {
-	// MaddenComposite is in [0,1], higher is better; assembly.BuildIDPFilm defines it.
-	MaddenComposite float64
 }
 
 // NGSCoverage is the CB/S coverage anchor. The name predates the source: nflverse has no

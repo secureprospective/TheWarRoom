@@ -100,17 +100,14 @@ func (a *Assembler) Assemble(s PlayerSpec) (engine.PlayerInput, engine.ScoutingI
 // scouting maps the spec's raw L4 sub-signals into ScoutingInput. Only school tier is
 // normalized here; the position curves belong to the rubric. Absent film is zeroed, as RAS is.
 func (a *Assembler) scouting(s PlayerSpec) engine.ScoutingInput {
-	film, hasFilm := s.FilmComposite, s.HasFilm
-	if s.Position == domain.PosK {
-		film, hasFilm = kickerFilm(s)
-	}
-	if !hasFilm {
+	film := s.FilmComposite
+	if !s.HasFilm {
 		film = 0
 	}
 	tierNorm, _ := schoolTierNorm(s.Position, s.SchoolTier)
 	return engine.ScoutingInput{
 		FilmComposite: film,
-		HasFilm:       hasFilm,
+		HasFilm:       s.HasFilm,
 
 		BreakoutAge:     s.BreakoutAge,
 		HasBreakoutAge:  s.HasBreakoutAge,
@@ -119,23 +116,6 @@ func (a *Assembler) scouting(s PlayerSpec) engine.ScoutingInput {
 		CollegeShare:    s.CollegeShare,
 		HasCollegeShare: s.HasCollegeShare,
 	}
-}
-
-// kickerFilm is a kicker's film composite: 0.60 Madden kick rating and 0.40 NFL kicking
-// production, an absent one neutral. It is present when either is.
-func kickerFilm(s PlayerSpec) (float64, bool) {
-	if !s.HasMaddenFilm && !s.HasNFLProduction {
-		return 0, false
-	}
-	return 0.60*neutralIfAbsent(s.HasMaddenFilm, s.MaddenFilm) +
-		0.40*neutralIfAbsent(s.HasNFLProduction, s.NFLProduction), true
-}
-
-func neutralIfAbsent(has bool, v float64) float64 {
-	if !has {
-		return l4.NeutralNorm
-	}
-	return v
 }
 
 // Rubrics returns each position's Layer-4 rubric: the shipped settings with every adjustable

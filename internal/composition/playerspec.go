@@ -26,13 +26,6 @@ type PlayerSpec struct {
 	FilmComposite float64 // [0,1]
 	HasFilm       bool
 
-	// K film: composition blends these two into a kicker's FilmComposite. Other positions leave
-	// them unset.
-	MaddenFilm       float64 // [0,1] Madden kick-rating composite
-	HasMaddenFilm    bool
-	NFLProduction    float64 // [0,1] NFL kicking production
-	HasNFLProduction bool
-
 	// Breakout sub-signals. SchoolUnset means absent, so school tier needs no flag.
 	BreakoutAge     float64 // years
 	HasBreakoutAge  bool
@@ -122,8 +115,6 @@ func (s PlayerSpec) validateScouting() error {
 		v       float64
 	}{
 		{"film composite", s.HasFilm, s.FilmComposite},
-		{"Madden film", s.HasMaddenFilm, s.MaddenFilm},
-		{"NFL production", s.HasNFLProduction, s.NFLProduction},
 		{"pass-rush snap share", s.HasPassRushSnapShare, s.PassRushSnapShare},
 	} {
 		if err := s.checkUnitRange(c.name, c.present, c.v); err != nil {

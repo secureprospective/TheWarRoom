@@ -92,15 +92,16 @@ Every method that takes frontend input validates it before acting. Bindings in
 - **MFL API** (league 14432), outbound only, through `internal/mfl`. The league host is
   discovered at runtime. The players endpoint is limited to once a day.
 - **nflverse and DynastyProcess** (static CSVs on GitHub), **CFBD** (bearer token in
-  `CFBD_API_KEY`), **EA Madden** ratings. See `docs/sources/Approved_Sources.md`.
+  `CFBD_API_KEY`). EA Madden was removed from the prior (R8); its `sources.csv` row is retired so
+  its archived fetches stay labelled. See `docs/sources/Approved_Sources.md`.
 
 ## Scheduled for replacement
 
 These work and are tested, but the core plan rewrites or deletes them. Do not extend them.
 
 - `internal/scouting/assembly`, `m1_scouting.go` and the CSV/CFBD fetchers (`agetrajectory`,
-  `collegedefense`, `collegeshare`, `madden`, `pfrcoverage`, `ras`, `schooltier`,
-  `veteranfilm`): today's board still reads them. Their data now also flows into the measure
+  `collegedefense`, `collegeshare`, `pfrcoverage`, `ras`, `schooltier`): today's board still
+  reads them. Their data now also flows into the measure
   store through `feeds` and `college`; they go when their consumer, today's engine, does.
 - `internal/harness` and its two dev tabs: deleted when the Stage 7 case set lands.
 

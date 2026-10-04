@@ -20,10 +20,6 @@ import (
 // surrenders a low passer rating is covering well). A player NOT in the returned map has no
 // coverage signal (clean miss — the film composite stays Data-Parity neutral for him).
 //
-// This is the FILM calibration pass's first wired weight (Thread C, C-4 step 1). The C-1
-// live evidence made it a signal worth wiring: PFR passer-rating-allowed is INDEPENDENT of
-// Madden coverage grades at CB/S (|r|<0.30), so it is a GENUINE additive signal, not a
-// Madden restatement — it earns a real (0.20) film-budget weight rather than a token one.
 // The 0.20 blend itself lives UPSTREAM (rankings.applyScouting builds the film composite);
 // this leaf owns only the raw→normalized inversion, so the engine keeps consuming a single
 // [0,1] FilmComposite and this package imports no engine/store.

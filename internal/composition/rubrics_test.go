@@ -81,35 +81,6 @@ type missingParams struct {
 
 func (m missingParams) GetPosition(string, string) (float64, error) { return 0, m.err }
 
-// A kicker's film is composition's 0.60/0.40 blend of its two components.
-func TestKickerFilmBlend(t *testing.T) {
-	blend := func(m, n float64) float64 { return 0.60*m + 0.40*n } // at run time, as composition rounds
-	for _, c := range []struct {
-		madden, production *float64
-		want               float64
-		has                bool
-	}{
-		{ptr(0.9), ptr(0.8), blend(0.9, 0.8), true},
-		{ptr(0.9), nil, blend(0.9, 0.5), true},
-		{nil, nil, 0, false},
-	} {
-		s := PlayerSpec{Position: domain.PosK}
-		if c.madden != nil {
-			s.MaddenFilm, s.HasMaddenFilm = *c.madden, true
-		}
-		if c.production != nil {
-			s.NFLProduction, s.HasNFLProduction = *c.production, true
-		}
-		p, cp := goodStores()
-		sc := New(p, cp).scouting(s)
-		if sc.HasFilm != c.has || sc.FilmComposite != c.want {
-			t.Errorf("film = %v/%v, want %v/%v", sc.FilmComposite, sc.HasFilm, c.want, c.has)
-		}
-	}
-}
-
-func ptr(v float64) *float64 { return &v }
-
 func TestDefaultSetHoldsEveryRubricSetting(t *testing.T) {
 	set := params.DefaultSet()
 	for pos, s := range l4.Defaults() {

@@ -3,6 +3,7 @@ package crosswalk
 import (
 	"fmt"
 	"maps"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -125,6 +126,8 @@ func sameName(mfl, dp string) bool {
 	}
 	return nameKey(mfl) == nameKey(dp)
 }
+
+var nonAlpha = regexp.MustCompile(`[^a-z]`)
 
 func nameKey(s string) string {
 	var b strings.Builder

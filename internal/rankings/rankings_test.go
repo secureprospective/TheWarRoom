@@ -394,18 +394,11 @@ func TestYearsBetween(t *testing.T) {
 
 // --- S-Phase 0 scouting directory -------------------------------------------
 
-// TestApplyScouting_FilmComposite pins the film blend for every seat combination:
-//   - CB/S coverage only:   0.20·coverage + 0.80·neutral
-//   - IDP Madden only:      0.95·Madden + 0.05·neutral (the NFLProduction seat)
-//   - CB/S both:            0.20·coverage + 0.75·Madden + 0.05·neutral
-//   - offense:              0.95·Composite + 0.05·neutral
-//
-// A neutral (0.50) input leaves the composite neutral.
+// TestApplyScouting_FilmComposite pins the film blend: 0.20·coverage + 0.80·neutral. A neutral
+// (0.50) input leaves the composite neutral.
 func TestApplyScouting_FilmComposite(t *testing.T) {
 	id, _ := playerid.New("1001")
 	cov := func(v float64) *scouting.NGSCoverage { return &scouting.NGSCoverage{CoverageMetrics: v} }
-	idp := func(v float64) *scouting.IDPFilm { return &scouting.IDPFilm{MaddenComposite: v} }
-	off := func(v float64) *scouting.OffenseFilm { return &scouting.OffenseFilm{Composite: v} }
 	cases := []struct {
 		name    string
 		profile scouting.Profile
@@ -414,13 +407,6 @@ func TestApplyScouting_FilmComposite(t *testing.T) {
 		{"coverage neutral", scouting.Profile{Coverage: cov(0.50)}, 0.50},
 		{"coverage elite +0.10", scouting.Profile{Coverage: cov(1.00)}, 0.60},
 		{"coverage poor -0.10", scouting.Profile{Coverage: cov(0.00)}, 0.40},
-		{"IDP Madden neutral", scouting.Profile{IDPFilm: idp(0.50)}, 0.50},
-		{"IDP Madden elite", scouting.Profile{IDPFilm: idp(1.00)}, 0.95*1.00 + 0.05*0.50},
-		{"IDP Madden poor", scouting.Profile{IDPFilm: idp(0.00)}, 0.95*0.00 + 0.05*0.50},
-		{"CB/S coverage and Madden", scouting.Profile{Coverage: cov(0.90), IDPFilm: idp(0.80)}, 0.20*0.90 + 0.75*0.80 + 0.05*0.50},
-		{"offense neutral", scouting.Profile{OffenseFilm: off(0.50)}, 0.50},
-		{"offense elite", scouting.Profile{OffenseFilm: off(1.00)}, 0.95*1.00 + 0.05*0.50},
-		{"offense poor", scouting.Profile{OffenseFilm: off(0.00)}, 0.95*0.00 + 0.05*0.50},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -434,9 +420,8 @@ func TestApplyScouting_FilmComposite(t *testing.T) {
 	}
 }
 
-// TestApplyScouting_NoFilmSignalsLeavesFilmAbsent: without either a Coverage group or an
-// IDPFilm group, HasFilm stays false and the rubric neutralizes film via Data-Parity
-// (every offense position, and any IDP player whose Madden record did not resolve).
+// TestApplyScouting_NoFilmSignalsLeavesFilmAbsent: without a Coverage group HasFilm stays false
+// and the rubric reads film as neutral.
 func TestApplyScouting_NoFilmSignalsLeavesFilmAbsent(t *testing.T) {
 	id, _ := playerid.New("1001")
 	var spec composition.PlayerSpec

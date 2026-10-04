@@ -31,7 +31,7 @@ func eval3C(reg RubricRegistry) (CaseState, string) {
 			return StateFail, fmt.Sprintf("QB RAS %.2f → RASEffective %.4f, want exactly 1.0000", ras, out.RASEffective)
 		}
 	}
-	// Empty input: K's film is Data-Parity neutral (no Madden/NFLProduction), so all three
+	// Empty input: K's film is neutral, so all three
 	// components are 1.000 and Combined is exactly 1.000.
 	kout := reg[domain.PosK].Apply(engine.Layer4Input{Player: engine.PlayerInput{Position: domain.PosK}})
 	if kout.Combined != 1.0 {

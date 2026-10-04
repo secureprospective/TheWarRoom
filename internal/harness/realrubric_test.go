@@ -469,11 +469,8 @@ func TestRealQBRankingDifferentiates(t *testing.T) {
 	}
 }
 
-// TestRealKRankingDifferentiates proves the B5b-K rubric separates two kickers through Module 1
-// purely by the active film component (DECISION-011): RAS + breakout are forced to exactly 1.000,
-// so Combined == film. K Alpha (strong Madden 0.90 / NFLProduction 0.80) out-scores K Bravo (weak
-// 0.30 / 0.25) on the Layer-4 Combined; both keep RAS + breakout at exactly 1.000 (SL-020 partial /
-// no breakout framework). Base/age/salary are identical in the fixtures, so the gap is the film alone.
+// TestRealKRankingDifferentiates: two kickers identical but for film (0.80 vs 0.25) separate on
+// the Layer-4 Combined, which is film alone because K reads no RAS and has no breakout.
 func TestRealKRankingDifferentiates(t *testing.T) {
 	rows := RankRookies(testAssembler(), SampleRookies(), realRegistry())
 	byID := map[string]RookieRow{}
@@ -485,7 +482,7 @@ func TestRealKRankingDifferentiates(t *testing.T) {
 		t.Fatalf("K rows errored: alpha=%q bravo=%q", alpha.Err, bravo.Err)
 	}
 	if !(alpha.Result.Layer4Output.Combined > bravo.Result.Layer4Output.Combined) {
-		t.Fatalf("K Alpha L4 %v should exceed Bravo %v (active Madden film)",
+		t.Fatalf("K Alpha L4 %v should exceed Bravo %v (film)",
 			alpha.Result.Layer4Output.Combined, bravo.Result.Layer4Output.Combined)
 	}
 	// Combined is film alone: RAS + breakout forced to exactly 1.000 for both kickers.

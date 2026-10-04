@@ -7,9 +7,8 @@
 //     gsis is corruption and fails the fetch.
 //   - espn -> gsis, for CFBD player ids (CFBD playerId is the espn id).
 //   - pfr -> gsis, for snap counts, combine and PFR advanced defense.
-//   - (name, birthdate) -> gsis, for Madden, which carries no id.
 //
-// The last three read optional columns, so a source dropping one cannot break the MFL map,
+// The last two read optional columns, so a source dropping one cannot break the MFL map,
 // and they drop any key that resolves to two different gsis (live: 4 of ~7900 espn ids, 3 of
 // ~7800 pfr ids). A clean miss beats a mis-attributed player.
 package crosswalk
@@ -19,9 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
-	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -37,7 +34,6 @@ const (
 	colESPN  = "espn_id"
 	colPFR   = "pfr_id"
 	colName  = "name"
-	colBirth = "birthdate"
 )
 
 // errEmpty: the source lists tens of thousands of players, and an empty map would make every
@@ -47,11 +43,10 @@ var errEmpty = errors.New("crosswalk: source resolved zero MFL->gsis entries")
 // Map is the resolved crosswalk. Its maps are unexported, so a Map only comes from Fetch and
 // is read through the accessors.
 type Map struct {
-	byMFL       map[playerid.PlayerID]string
-	byESPN      map[string]string
-	byPFR       map[string]string
-	byNameBirth map[string]string // (normName|isoBirth) -> gsis, for the Madden resolver
-	entries     map[string]Entry  // canonical MFL id -> every row naming it, gsis or not
+	byMFL   map[playerid.PlayerID]string
+	byESPN  map[string]string
+	byPFR   map[string]string
+	entries map[string]Entry // canonical MFL id -> every row naming it, gsis or not
 }
 
 // Lookup returns the gsis id for an MFL id. A miss is ordinary (commissioner-created players
@@ -85,20 +80,6 @@ func (m Map) PFRMap() map[string]string {
 // LenPFR is the number of pfr -> gsis entries.
 func (m Map) LenPFR() int { return len(m.byPFR) }
 
-// MaddenResolver returns a closure mapping a raw name and birthdate to a gsis id, the key
-// ingestion/madden needs. If the source lacked those columns it always misses, and madden
-// fails on zero resolved records.
-func (m Map) MaddenResolver() func(fullName, birthdate string) (string, bool) {
-	index := m.byNameBirth
-	return func(fullName, birthdate string) (string, bool) {
-		g, ok := index[nameBirthKey(fullName, birthdate)]
-		return g, ok
-	}
-}
-
-// LenMaddenResolver is the number of (name, birthdate) -> gsis entries.
-func (m Map) LenMaddenResolver() int { return len(m.byNameBirth) }
-
 // Fetch reads the crosswalk CSV and builds the Map. A row missing either id is skipped; a
 // malformed MFL id fails.
 func Fetch(ctx context.Context, client *http.Client, url string) (Map, error) {
@@ -117,10 +98,9 @@ func Fetch(ctx context.Context, client *http.Client, url string) (Map, error) {
 	}
 	mflIdx, gsisIdx := cols[colMFLID], cols[colGSIS]
 	idCols := idColumns(records[0])
-	espnIdx := optionalColumn(records[0], colESPN)   // -1 if the source omits espn_id
-	pfrIdx := optionalColumn(records[0], colPFR)     // -1 if the source omits pfr_id
-	nameIdx := optionalColumn(records[0], colName)   // -1 if the source omits name
-	birthIdx := optionalColumn(records[0], colBirth) // -1 if the source omits birthdate
+	espnIdx := optionalColumn(records[0], colESPN) // -1 if the source omits espn_id
+	pfrIdx := optionalColumn(records[0], colPFR)   // -1 if the source omits pfr_id
+	nameIdx := optionalColumn(records[0], colName) // -1 if the source omits name
 
 	byMFL := make(map[playerid.PlayerID]string)
 	b := newBridges()
@@ -137,39 +117,33 @@ func Fetch(ctx context.Context, client *http.Client, url string) (Map, error) {
 		if err := addMFL(byMFL, strings.TrimSpace(rec[mflIdx]), gsis); err != nil {
 			return Map{}, err
 		}
-		b.add(rec, gsis, espnIdx, pfrIdx, nameIdx, birthIdx)
+		b.add(rec, gsis, espnIdx, pfrIdx)
 	}
 
 	if len(byMFL) == 0 {
 		return Map{}, errEmpty
 	}
-	return Map{byMFL: byMFL, byESPN: b.espn, byPFR: b.pfr, byNameBirth: b.nameBirth, entries: entries}, nil
+	return Map{byMFL: byMFL, byESPN: b.espn, byPFR: b.pfr, entries: entries}, nil
 }
 
 // bridges are the optional indexes onto gsis, with the keys dropped for resolving to two gsis.
 type bridges struct {
-	espn, pfr, nameBirth                  map[string]string
-	poisonedESPN, poisonedPFR, poisonedNB map[string]bool
+	espn, pfr                 map[string]string
+	poisonedESPN, poisonedPFR map[string]bool
 }
 
 func newBridges() *bridges {
-	return &bridges{espn: map[string]string{}, pfr: map[string]string{}, nameBirth: map[string]string{},
-		poisonedESPN: map[string]bool{}, poisonedPFR: map[string]bool{}, poisonedNB: map[string]bool{}}
+	return &bridges{espn: map[string]string{}, pfr: map[string]string{},
+		poisonedESPN: map[string]bool{}, poisonedPFR: map[string]bool{}}
 }
 
 // add indexes one row's optional ids onto gsis; a column index of -1 means the source omits it.
-func (b *bridges) add(rec []string, gsis string, espnIdx, pfrIdx, nameIdx, birthIdx int) {
+func (b *bridges) add(rec []string, gsis string, espnIdx, pfrIdx int) {
 	if espnIdx >= 0 {
 		addBridge(b.espn, b.poisonedESPN, strings.TrimSpace(rec[espnIdx]), gsis)
 	}
 	if pfrIdx >= 0 {
 		addBridge(b.pfr, b.poisonedPFR, strings.TrimSpace(rec[pfrIdx]), gsis)
-	}
-	if nameIdx >= 0 && birthIdx >= 0 {
-		name, birth := normName(rec[nameIdx]), isoBirth(rec[birthIdx])
-		if name != "" && birth != "" {
-			addBridge(b.nameBirth, b.poisonedNB, name+"|"+birth, gsis)
-		}
 	}
 }
 
@@ -181,28 +155,6 @@ func optionalColumn(header []string, name string) int {
 		}
 	}
 	return -1
-}
-
-// nameBirthKey builds the resolver key with the same normalization as the index. An empty part
-// can never match.
-func nameBirthKey(fullName, birthdate string) string {
-	return normName(fullName) + "|" + isoBirth(birthdate)
-}
-
-var nonAlpha = regexp.MustCompile(`[^a-z]`)
-
-// normName lowercases and strips non-letters, so "T.J. Watt" matches "TJ Watt".
-func normName(s string) string { return nonAlpha.ReplaceAllString(strings.ToLower(s), "") }
-
-// isoBirth normalizes M/D/YYYY (EA) and YYYY-MM-DD to YYYY-MM-DD; unparseable gives "", a
-// guaranteed miss.
-func isoBirth(b string) string {
-	for _, layout := range []string{"2006-01-02", "1/2/2006"} {
-		if d, err := time.Parse(layout, strings.TrimSpace(b)); err == nil {
-			return d.Format("2006-01-02")
-		}
-	}
-	return ""
 }
 
 // addMFL adds an MFL -> gsis entry. A missing id is skipped; a malformed one, or one MFL id
