@@ -20,6 +20,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/model/fit"
+	"github.com/secureprospective/TheWarRoom/internal/modelrun"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
@@ -88,21 +89,14 @@ func read(ctx context.Context, path string, first, holdout int) ([]model.Obs, ma
 	if err := h.Initialize(ctx); err != nil {
 		return nil, nil, fmt.Errorf("fit: open history: %w", err)
 	}
-	var obs []model.Obs
+	obs, err := modelrun.Observations(ctx, h, first-8, holdout, time.Now(), model.Measures())
+	if err != nil {
+		return nil, nil, fmt.Errorf("fit: %w", err)
+	}
 	lastWeek := map[int]int{}
-	for season := range holdout + 1 {
-		if season != 0 && season < first-8 {
-			continue
-		}
-		feats, err := h.Features(ctx, history.FeatureQuery{AsOf: time.Now(), Season: season, Measures: model.Measures()})
-		if err != nil {
-			return nil, nil, fmt.Errorf("fit: read season %d: %w", season, err)
-		}
-		for _, f := range feats {
-			obs = append(obs, model.Obs{Player: f.PlayerID, Season: f.Season, Week: f.Week, Measure: f.Measure, Value: f.Value, Text: f.Text})
-			if f.Measure == "outcome.weekly_fantasy_points" {
-				lastWeek[f.Season] = max(lastWeek[f.Season], f.Week)
-			}
+	for _, o := range obs {
+		if o.Week > 0 && o.Measure == "outcome.weekly_fantasy_points" {
+			lastWeek[o.Season] = max(lastWeek[o.Season], o.Week)
 		}
 	}
 	return obs, lastWeek, nil

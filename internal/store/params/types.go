@@ -22,6 +22,10 @@ const (
 	KeyCushionGuardRAS = "cushion_guard.ras_threshold"
 	// KeyCushionGuardReduct: how much Cushion Guard slows the DT decline.
 	KeyCushionGuardReduct = "cushion_guard.reduction"
+	// KeyDynastySeasons: how many seasons the dynasty measurable counts, this one first.
+	KeyDynastySeasons = "dynasty.seasons"
+	// KeyDynastyDiscount: each later season's weight in the dynasty measurable.
+	KeyDynastyDiscount = "dynasty.discount"
 )
 
 // ParamDef is one parameter: its identity (Key, Position), type, shipped default and the

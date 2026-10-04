@@ -38,9 +38,14 @@ const (
 	collegePrefx = "prior.college_"
 )
 
-// Measures lists everything the model reads, for the caller's query.
-func Measures() []string {
-	out := []string{mPosition, mBirth, mRookie, mDraftPick, mWeekPoints, mOffSnaps, mDefSnaps, mTeamsSnaps}
+// Measures lists everything the fit reads, for the caller's query: league points by week.
+func Measures() []string { return append(facts(), mWeekPoints) }
+
+// RuntimeMeasures lists everything the app reads: league points as MFL's season totals.
+func RuntimeMeasures() []string { return append(facts(), mSeasonPts) }
+
+func facts() []string {
+	out := []string{mPosition, mBirth, mRookie, mDraftPick, mOffSnaps, mDefSnaps, mTeamsSnaps}
 	for _, c := range Combine() {
 		out = append(out, "prior."+c)
 	}
@@ -49,10 +54,6 @@ func Measures() []string {
 	}
 	return out
 }
-
-// RuntimeMeasures adds MFL's season totals to Measures: the app reads league points per
-// season, the fit reads them per week.
-func RuntimeMeasures() []string { return append(Measures(), mSeasonPts) }
 
 // Combine is the athletic testing the prior reads.
 func Combine() []string {
