@@ -43,7 +43,8 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 - **Claude runs live gates on Claude-OS (R12):** the production build (`make build`) against a
   snapshot of the live database, taken with SQLite's backup API, never a plain file copy.
   - Claude-OS is the libvirt VM `Claude-OS` under `qemu:///session` on this box. Start it with
-    `virsh -c qemu:///session start Claude-OS` and shut it down afterwards if it was off.
+    `virsh -c qemu:///session start Claude-OS` if it is off, and leave it running afterwards:
+    it is light and in nobody's way (Christopher, 2026-10-03).
   - Reach it with `ssh claudeos`. Drive it with xdotool and scrot on `DISPLAY=:0`, and launch
     the app with `setsid -f` so the ssh session returns.
   - Screenshots and logs go to the run directory.
