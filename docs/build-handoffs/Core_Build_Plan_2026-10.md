@@ -316,7 +316,7 @@ player and a week, which is what history holds.
 
 | Gate item | Result |
 |---|---|
-| Rosters and cap for all 32 teams match MFL | PASS for rosters: the mirror holds MFL's 1,450 rostered players, and its cap equals salaries plus salary adjustments computed independently from MFL's raw responses for all 32 teams (`cap-check.txt`). Transact shows the same cap (Denver $123.9M). **Open:** whether MFL counts the 148 adjustments stamped 2023–2025 in this season's cap. That waits on Christopher's spot-check against MFL's own cap screen. |
+| Rosters and cap for all 32 teams match MFL | PASS for rosters: the mirror holds MFL's 1,450 rostered players, and its cap equals salaries plus salary adjustments computed independently from MFL's raw responses for all 32 teams (`cap-check.txt`). Transact shows the same cap (Denver $123.9M). Christopher's spot-check: MFL's cap screen shows Denver at $123.91, the app's figure. MFL counts every adjustment its export lists, including the 148 stamped 2023–2025. |
 | Every screen shows the 32 MFL franchise names | PASS: the board, Power, Transact and Trade. |
 | Re-running the refresh changes nothing | PASS: two button presses after the launch refresh both read "up to date · 2026". `league_mirror` holds one row, written once, and `rulebook_versions` holds one version. |
 
