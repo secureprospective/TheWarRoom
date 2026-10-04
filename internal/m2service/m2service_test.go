@@ -5,10 +5,8 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
-	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -69,7 +67,7 @@ func TestBuildBoard_AggregatesBlendsAndJoins(t *testing.T) {
 		{FranchiseID: "0001", H2HW: "8", H2HL: "5", AllPlayW: "80", AllPlayL: "40", PF: "1500.5"},
 		{FranchiseID: "0002", H2HW: "6", H2HL: "7", AllPlayW: "60", AllPlayL: "60", PF: "1400.25"},
 	}
-	scores := []history.Score{
+	scores := []PlayerValue{
 		score("1001", 100),
 		score("1002", 50),
 		score("1003", 200),
@@ -89,11 +87,11 @@ func TestBuildBoard_AggregatesBlendsAndJoins(t *testing.T) {
 	for _, r := range board.Rows {
 		byFID[r.FranchiseID] = r
 	}
-	if got := byFID["0001"].ScoutingScore; got != 150 {
-		t.Errorf("0001 ScoutingScore (sum of 100+50) = %v, want 150", got)
+	if got := byFID["0001"].RosterValue; got != 150 {
+		t.Errorf("0001 RosterValue (sum of 100+50) = %v, want 150", got)
 	}
-	if got := byFID["0002"].ScoutingScore; got != 200 {
-		t.Errorf("0002 ScoutingScore = %v, want 200", got)
+	if got := byFID["0002"].RosterValue; got != 200 {
+		t.Errorf("0002 RosterValue = %v, want 200", got)
 	}
 	if byFID["0001"].Name != "Alpha" || byFID["0002"].Name != "Bravo" {
 		t.Errorf("names not joined: 0001=%q 0002=%q", byFID["0001"].Name, byFID["0002"].Name)
@@ -105,10 +103,10 @@ func TestBuildBoard_AggregatesBlendsAndJoins(t *testing.T) {
 	// review lead A2 (Session 43): a set-membership check alone would pass even if sort
 	// order inverted or both rows landed on the same rank. With only 2 franchises and
 	// weight=0.5, 0001's stronger all-play record (0.667 vs 0.500 win%, a full z-score
-	// apart on a 2-point distribution) outweighs 0002's higher raw scouting sum — this
+	// apart on a 2-point distribution) outweighs 0002's higher raw roster sum — this
 	// is powerrankings.Blend's existing z-score math, not something this test asserts
 	// independently; the exact expected ranks were confirmed by running the case, not
-	// derived from scouting-score intuition alone.
+	// derived from roster-value intuition alone.
 	if byFID["0001"].Rank != 1 {
 		t.Errorf("0001 Rank = %d, want 1 (all-play component dominates at these inputs)", byFID["0001"].Rank)
 	}
@@ -119,7 +117,7 @@ func TestBuildBoard_AggregatesBlendsAndJoins(t *testing.T) {
 
 // TestBuildBoard_FranchiseWithNoScoresContributesZero covers a franchise present in
 // standings but with no scored players (GLM 5.2 review lead A4, Session 43): an
-// expansion/empty-roster franchise must still get a row, with 0 scouting rather than
+// expansion/empty-roster franchise must still get a row, with 0 roster value rather than
 // being dropped or erroring.
 func TestBuildBoard_FranchiseWithNoScoresContributesZero(t *testing.T) {
 	rd := fakeReader{players: map[string]state.PlayerState{
@@ -134,7 +132,7 @@ func TestBuildBoard_FranchiseWithNoScoresContributesZero(t *testing.T) {
 		{FranchiseID: "0001"},
 		{FranchiseID: "0002"}, // no players scored for this franchise
 	}
-	scores := []history.Score{score("1001", 100)}
+	scores := []PlayerValue{score("1001", 100)}
 
 	board, err := svc.BuildBoard(standings, scores, 0.5, AggSum)
 	if err != nil {
@@ -147,8 +145,8 @@ func TestBuildBoard_FranchiseWithNoScoresContributesZero(t *testing.T) {
 	for _, r := range board.Rows {
 		byFID[r.FranchiseID] = r
 	}
-	if got := byFID["0002"].ScoutingScore; got != 0 {
-		t.Errorf("0002 (no scores) ScoutingScore = %v, want 0", got)
+	if got := byFID["0002"].RosterValue; got != 0 {
+		t.Errorf("0002 (no scores) RosterValue = %v, want 0", got)
 	}
 }
 
@@ -198,7 +196,7 @@ func TestBuildBoard_TopNDegradesToSumWithoutStarterCount(t *testing.T) {
 		t.Fatalf("New: %v", err)
 	}
 	standings := []leaguestandings.RawStanding{{FranchiseID: "0001"}}
-	scores := []history.Score{score("1001", 42)}
+	scores := []PlayerValue{score("1001", 42)}
 
 	board, err := svc.BuildBoard(standings, scores, 0.5, AggTopN)
 	if err != nil {
@@ -212,22 +210,22 @@ func TestBuildBoard_TopNDegradesToSumWithoutStarterCount(t *testing.T) {
 	}
 }
 
-func TestAggregateScouting(t *testing.T) {
+func TestAggregate(t *testing.T) {
 	scores := []float64{10, 30, 20}
-	if got := aggregateScouting(scores, AggSum, 0); got != 60 {
+	if got := aggregate(scores, AggSum, 0); got != 60 {
 		t.Errorf("sum = %v, want 60", got)
 	}
-	if got := aggregateScouting(scores, AggTopN, 2); got != 50 { // top 2: 30+20
+	if got := aggregate(scores, AggTopN, 2); got != 50 { // top 2: 30+20
 		t.Errorf("top-2 = %v, want 50", got)
 	}
-	if got := aggregateScouting(scores, AggTopN, 10); got != 60 { // N >= len -> whole roster
+	if got := aggregate(scores, AggTopN, 10); got != 60 { // N >= len -> whole roster
 		t.Errorf("top-N(N>=len) = %v, want 60", got)
 	}
 	// Caller's slice must be untouched by the top-N sort-on-copy.
 	if scores[0] != 10 || scores[1] != 30 || scores[2] != 20 {
-		t.Errorf("aggregateScouting mutated caller slice: %v", scores)
+		t.Errorf("aggregate mutated caller slice: %v", scores)
 	}
-	if got := aggregateScouting(nil, AggSum, 0); got != 0 {
+	if got := aggregate(nil, AggSum, 0); got != 0 {
 		t.Errorf("sum(empty) = %v, want 0", got)
 	}
 }
@@ -268,7 +266,7 @@ func TestClampWeight(t *testing.T) {
 		{0.5, 0.5},
 		{-1, 0},
 		{2, 1},
-		{math.NaN(), 0.60}, // DefaultScoutingWeight
+		{math.NaN(), 0.60}, // DefaultRosterWeight
 		{math.Inf(1), 0.60},
 	}
 	for _, c := range cases {
@@ -278,6 +276,6 @@ func TestClampWeight(t *testing.T) {
 	}
 }
 
-func score(mflID string, adjusted float64) history.Score {
-	return history.Score{MFLID: mflID, Result: engine.Result{AdjustedScore: adjusted}}
+func score(mflID string, value float64) PlayerValue {
+	return PlayerValue{MFLID: mflID, Value: value}
 }

@@ -1,6 +1,7 @@
-// Package m2service builds the M2 power-rankings board: it aggregates each franchise's M1
-// scores from runtime state, blends them with the MFL standings through powerrankings, and
-// joins the display columns. It holds read surfaces only, so m2_app.go stays a thin adapter.
+// Package m2service builds the M2 power-rankings board: it sums each franchise's player values
+// (a measurable from the latest model run) by current ownership, blends that with the MFL
+// standings through powerrankings, and joins the display columns. It holds read surfaces only,
+// so m2_app.go stays a thin adapter.
 package m2service
 
 import (
@@ -14,14 +15,13 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
 	"github.com/secureprospective/TheWarRoom/internal/powerrankings"
-	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
 // Aggregation modes for BuildBoard.
 const (
-	AggSum  = "sum"  // Σ AdjustedScore over the whole roster — rewards dynasty depth
-	AggTopN = "topn" // Σ of the top-N by AdjustedScore — isolates startable talent
+	AggSum  = "sum"  // Σ value over the whole roster — rewards depth
+	AggTopN = "topn" // Σ of the top N by value — isolates startable talent
 )
 
 // FranchiseSource supplies the offline rulebook reads BuildBoard needs: franchise names and
@@ -52,10 +52,10 @@ type Row struct {
 	Name        string
 
 	PowerScore float64
-	ScoutingZ  float64
+	RosterZ    float64
 	MFLPerfZ   float64
 
-	ScoutingScore float64
+	RosterValue   float64
 	AllPlayWinPct float64
 
 	H2HW, H2HL, H2HT             int
@@ -72,12 +72,18 @@ type Board struct {
 	Weight   float64
 }
 
-// BuildBoard aggregates each franchise's M1 AdjustedScores by mode (top-N falls back to sum
-// when the starter count is unreadable), blends them against the MFL standings and joins the
-// display columns.
+// PlayerValue is one player's value in the view being ranked, in league points per game.
+type PlayerValue struct {
+	MFLID string
+	Value float64
+}
+
+// BuildBoard aggregates each franchise's player values by mode (top-N falls back to sum when the
+// starter count is unreadable), blends them against the MFL standings and joins the display
+// columns.
 func (s *Service) BuildBoard(
 	standings []leaguestandings.RawStanding,
-	scores []history.Score,
+	values []PlayerValue,
 	weight float64,
 	aggMode string,
 ) (Board, error) {
@@ -88,7 +94,7 @@ func (s *Service) BuildBoard(
 		mode = AggSum
 	}
 
-	inputs, parsed, err := s.buildBlendInputs(standings, scores, mode, starterN)
+	inputs, parsed, err := s.buildBlendInputs(standings, values, mode, starterN)
 	if err != nil {
 		return Board{}, err
 	}
@@ -128,20 +134,20 @@ func (s *Service) starterCount() int {
 	return n
 }
 
-// buildBlendInputs aggregates scores per franchise and parses each standings row once. The
-// standings define the franchise set; a franchise with no scored players contributes 0.
+// buildBlendInputs aggregates values per franchise and parses each standings row once. The
+// standings define the franchise set; a franchise with no valued players contributes 0.
 func (s *Service) buildBlendInputs(
 	standings []leaguestandings.RawStanding,
-	scores []history.Score,
+	values []PlayerValue,
 	mode string,
 	starterN int,
 ) ([]powerrankings.Input, map[string]parsedStanding, error) {
-	// Ownership comes from live runtime state, so a player traded since the M1 run counts for
+	// Ownership comes from live runtime state, so a player traded since the model run counts for
 	// the current team: the board reads "who is strong now".
-	scoresByFranchise := make(map[string][]float64, len(standings))
-	for _, sc := range scores {
-		if p, ok := s.state.Player(sc.MFLID); ok {
-			scoresByFranchise[p.FranchiseID] = append(scoresByFranchise[p.FranchiseID], sc.AdjustedScore)
+	byFranchise := make(map[string][]float64, len(standings))
+	for _, v := range values {
+		if p, ok := s.state.Player(v.MFLID); ok {
+			byFranchise[p.FranchiseID] = append(byFranchise[p.FranchiseID], v.Value)
 		}
 	}
 
@@ -155,16 +161,16 @@ func (s *Service) buildBlendInputs(
 		parsed[st.FranchiseID] = ps
 		inputs = append(inputs, powerrankings.Input{
 			FranchiseID:   st.FranchiseID,
-			ScoutingScore: aggregateScouting(scoresByFranchise[st.FranchiseID], mode, starterN),
+			RosterValue:   aggregate(byFranchise[st.FranchiseID], mode, starterN),
 			AllPlayWinPct: ps.allPlayWinPct,
 		})
 	}
 	return inputs, parsed, nil
 }
 
-// aggregateScouting reduces a franchise's scores to the full sum (depth) or the sum of the
-// top N (startable talent). It sorts a copy.
-func aggregateScouting(scores []float64, mode string, starterN int) float64 {
+// aggregate reduces a franchise's values to the full sum (depth) or the sum of the top N
+// (startable talent). It sorts a copy.
+func aggregate(scores []float64, mode string, starterN int) float64 {
 	if mode == AggTopN && starterN > 0 && starterN < len(scores) {
 		cp := make([]float64, len(scores))
 		copy(cp, scores)
@@ -189,9 +195,9 @@ func (s *Service) buildRows(blended []powerrankings.Row, parsed map[string]parse
 			FranchiseID:   b.FranchiseID,
 			Name:          domain.FranchiseLabel(names, b.FranchiseID),
 			PowerScore:    b.PowerScore,
-			ScoutingZ:     b.ScoutingZ,
+			RosterZ:       b.RosterZ,
 			MFLPerfZ:      b.MFLPerfZ,
-			ScoutingScore: b.ScoutingScore,
+			RosterValue:   b.RosterValue,
 			AllPlayWinPct: b.AllPlayWinPct,
 			H2HW:          ps.h2hW, H2HL: ps.h2hL, H2HT: ps.h2hT,
 			AllPlayW: ps.allPlayW, AllPlayL: ps.allPlayL, AllPlayT: ps.allPlayT,
@@ -288,7 +294,7 @@ func atofOrZero(s string) (float64, error) {
 // clampWeight mirrors Blend's clamp so the echoed weight is the one applied.
 func clampWeight(w float64) float64 {
 	if math.IsNaN(w) || math.IsInf(w, 0) {
-		w = powerrankings.DefaultScoutingWeight
+		w = powerrankings.DefaultRosterWeight
 	}
 	return math.Max(0, math.Min(1, w))
 }

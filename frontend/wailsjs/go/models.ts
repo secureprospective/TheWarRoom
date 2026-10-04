@@ -789,10 +789,12 @@ export namespace main {
 	    rank: number;
 	    franchiseID: string;
 	    name: string;
+	    rankDelta: number;
+	    deltaOK: boolean;
 	    powerScore: number;
-	    scoutingZ: number;
+	    rosterZ: number;
 	    mflPerfZ: number;
-	    scoutingScore: number;
+	    rosterValue: number;
 	    allPlayWinPct: number;
 	    h2hW: number;
 	    h2hL: number;
@@ -815,10 +817,12 @@ export namespace main {
 	        this.rank = source["rank"];
 	        this.franchiseID = source["franchiseID"];
 	        this.name = source["name"];
+	        this.rankDelta = source["rankDelta"];
+	        this.deltaOK = source["deltaOK"];
 	        this.powerScore = source["powerScore"];
-	        this.scoutingZ = source["scoutingZ"];
+	        this.rosterZ = source["rosterZ"];
 	        this.mflPerfZ = source["mflPerfZ"];
-	        this.scoutingScore = source["scoutingScore"];
+	        this.rosterValue = source["rosterValue"];
 	        this.allPlayWinPct = source["allPlayWinPct"];
 	        this.h2hW = source["h2hW"];
 	        this.h2hL = source["h2hL"];
@@ -838,11 +842,15 @@ export namespace main {
 	    error: string;
 	    label: string;
 	    season: number;
+	    view: string;
 	    weight: number;
+	    modelRunID: number;
+	    previousRunID: number;
 	    aggMode: string;
 	    starterN: number;
 	    freshness: Freshness;
-	    phase: string;
+	    weeksScored: number;
+	    seasonWeeks: number;
 	    rows: PowerRow[];
 	
 	    static createFrom(source: any = {}) {
@@ -855,11 +863,15 @@ export namespace main {
 	        this.error = source["error"];
 	        this.label = source["label"];
 	        this.season = source["season"];
+	        this.view = source["view"];
 	        this.weight = source["weight"];
+	        this.modelRunID = source["modelRunID"];
+	        this.previousRunID = source["previousRunID"];
 	        this.aggMode = source["aggMode"];
 	        this.starterN = source["starterN"];
 	        this.freshness = this.convertValues(source["freshness"], Freshness);
-	        this.phase = source["phase"];
+	        this.weeksScored = source["weeksScored"];
+	        this.seasonWeeks = source["seasonWeeks"];
 	        this.rows = this.convertValues(source["rows"], PowerRow);
 	    }
 	

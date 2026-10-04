@@ -51,11 +51,3 @@ export function ageLabel(iso: string, now: number = Date.now()): string {
   if (hours < 24) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
 }
-
-// Season phases that mean "this season's competitive data is final". An offseason board is
-// NOT stale — its numbers are perfectly fresh, they simply describe a season that has
-// ended. Conflating the two would label a correct board as degraded for months at a time,
-// which trains the user to ignore the staleness signal entirely.
-export function isFinalPhase(phase: string | undefined): boolean {
-  return phase === 'OFFSEASON';
-}

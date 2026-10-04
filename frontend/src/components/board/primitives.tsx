@@ -6,13 +6,13 @@
 // states currently wired into the boards.
 //
 // B-5 completed the set: the two remaining §8 states now have their backend signals and
-// land here as FreshnessBar (cache-only) and PhaseBar (offseason), and §1 delta-in-weight
+// land here as FreshnessBar (cache-only) and PhaseBar (MFL's season state), and §1 delta-in-weight
 // lands as DeltaRank. The two bars are deliberately SEPARATE components — see PhaseBar.
 // Source: docs/ui/wireframes/session-b/session-b-wireframe.html §1 + §2·3 + §8.
 
-import { Freshness, ageLabel, freshnessState, isFinalPhase } from './freshness';
+import { Freshness, ageLabel, freshnessState } from "./freshness";
 
-export type SortDir = 'asc' | 'desc';
+export type SortDir = "asc" | "desc";
 
 // SortHeader — a sort button for a sub-header cell. Active column shows ▼/▲
 // bright; every other sortable column shows a near-invisible ¦ (wireframe §1
@@ -33,16 +33,16 @@ export function SortHeader<K extends string>({
   onSort: (key: K) => void;
 }) {
   const active = sortKey === activeKey;
-  const glyph = active ? (dir === 'desc' ? '▼' : '▲') : '¦';
+  const glyph = active ? (dir === "desc" ? "▼" : "▲") : "¦";
   return (
     <button
       type="button"
       className="twr-sortbtn"
       onClick={() => onSort(sortKey)}
-      aria-label={`Sort by ${label} ${active ? (dir === 'desc' ? 'descending' : 'ascending') : ''}`.trim()}
+      aria-label={`Sort by ${label} ${active ? (dir === "desc" ? "descending" : "ascending") : ""}`.trim()}
     >
       {label}
-      <span className={active ? 'twr-sort' : 'twr-isort'} aria-hidden>
+      <span className={active ? "twr-sort" : "twr-isort"} aria-hidden>
         {glyph}
       </span>
     </button>
@@ -69,10 +69,10 @@ export function DeltaRank({ delta, ok }: { delta: number; ok: boolean }) {
   const up = delta > 0;
   return (
     <span
-      className={`twr-delta ${up ? 'twr-delta--up' : 'twr-delta--down'}`}
-      title={`${up ? 'Up' : 'Down'} ${Math.abs(delta)} since the previous scoring run`}
+      className={`twr-delta ${up ? "twr-delta--up" : "twr-delta--down"}`}
+      title={`${up ? "Up" : "Down"} ${Math.abs(delta)} since the previous scoring run`}
     >
-      {up ? '+' : '−'}
+      {up ? "+" : "−"}
       {Math.abs(delta)}
     </span>
   );
@@ -118,49 +118,70 @@ export function FreshnessBar({
   board?: string;
 }) {
   const state = freshnessState(freshness);
-  if (state === 'live') return null;
+  if (state === "live") return null;
 
-  const stale = state === 'stale';
+  const stale = state === "stale";
   const detail = stale
-    ? `last updated ${ageLabel(freshness?.fetchedAt ?? '')}`
-    : 'no data available';
-  const label = stale ? 'CACHED' : 'UNAVAILABLE';
+    ? `last updated ${ageLabel(freshness?.fetchedAt ?? "")}`
+    : "no data available";
+  const label = stale ? "CACHED" : "UNAVAILABLE";
   return (
     <div
       className={`twr-fresh twr-fresh--${state}`}
       role="status"
-      aria-label={`${board ? `${board}: ` : ''}${label} — ${detail}`}
+      aria-label={`${board ? `${board}: ` : ""}${label} — ${detail}`}
     >
       <span className="twr-fresh__label">{label}</span>
       <span className="twr-fresh__note">
         {detail}
-        {freshness?.note ? ` — ${freshness.note}` : ''}
+        {freshness?.note ? ` — ${freshness.note}` : ""}
       </span>
     </div>
   );
 }
 
-// PhaseBar — the §8 OFFSEASON state (B-5). Deliberately a SEPARATE component from
-// FreshnessBar and a separate visual treatment: an offseason board is final, not degraded.
-// It reads as a neutral statement of fact, not a warning, because nothing is wrong.
-export function PhaseBar({ phase }: { phase: string | undefined }) {
-  if (!isFinalPhase(phase)) return null;
-  return (
-    <div className="twr-fresh twr-fresh--final" role="status">
-      <span className="twr-fresh__label">FINAL</span>
-      <span className="twr-fresh__note">season complete — standings will not change again</span>
-    </div>
-  );
+// PhaseBar states where MFL's season stands, read from its own standings: FINAL once every week
+// is scored, NOT STARTED before the first. It is separate from FreshnessBar and neutral, because
+// a final or empty season is a fact, not a fault.
+export function PhaseBar({
+  weeks,
+  seasonWeeks,
+}: {
+  weeks: number;
+  seasonWeeks: number;
+}) {
+  if (seasonWeeks > 0 && weeks >= seasonWeeks) {
+    return (
+      <div className="twr-fresh twr-fresh--final" role="status">
+        <span className="twr-fresh__label">FINAL</span>
+        <span className="twr-fresh__note">
+          season complete — standings will not change again
+        </span>
+      </div>
+    );
+  }
+  if (weeks === 0) {
+    return (
+      <div className="twr-fresh twr-fresh--final" role="status">
+        <span className="twr-fresh__label">NOT STARTED</span>
+        <span className="twr-fresh__note">
+          MFL has scored no week this season — all-play is 0-0, so it does not
+          move the blend
+        </span>
+      </div>
+    );
+  }
+  return null;
 }
 
 // SkeletonState — a fetch in flight shows data-shaped pulses, never a spinner.
 export function SkeletonState() {
   return (
-    <div className="twr-state" style={{ alignItems: 'stretch', gap: 8 }}>
+    <div className="twr-state" style={{ alignItems: "stretch", gap: 8 }}>
       <div className="twr-skel is-hero" />
-      <div className="twr-skel" style={{ width: '88%' }} />
-      <div className="twr-skel" style={{ width: '70%' }} />
-      <div className="twr-skel" style={{ width: '45%' }} />
+      <div className="twr-skel" style={{ width: "88%" }} />
+      <div className="twr-skel" style={{ width: "70%" }} />
+      <div className="twr-skel" style={{ width: "45%" }} />
     </div>
   );
 }

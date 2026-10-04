@@ -2,7 +2,7 @@
 //
 // Each component is z-scored before weighting, so w sets each component's real share of the
 // spread; min-max would let one super-team or tanked roster compress the field and distort
-// the split. Scouting uses median and MAD so dynasty outliers cannot move the scale; all-play
+// the split. Roster value uses median and MAD so one stacked roster cannot move the scale; all-play
 // win% is bounded and uses mean and std. The weighted blend is min-max'd to [0,1] for display.
 package powerrankings
 
@@ -12,13 +12,13 @@ import (
 	"sort"
 )
 
-// DefaultScoutingWeight is the slider's starting point: 60 scouting, 40 all-play results.
-const DefaultScoutingWeight = 0.60
+// DefaultRosterWeight is the slider's starting point: 60 roster value, 40 all-play results.
+const DefaultRosterWeight = 0.60
 
 // Input is one franchise's raw, already-aggregated inputs; Blend standardizes them.
 type Input struct {
 	FranchiseID   string
-	ScoutingScore float64
+	RosterValue   float64
 	AllPlayWinPct float64 // [0,1]
 }
 
@@ -28,19 +28,19 @@ type Row struct {
 	Rank          int
 	FranchiseID   string
 	PowerScore    float64 // [0,1]
-	ScoutingZ     float64
+	RosterZ       float64
 	MFLPerfZ      float64
-	ScoutingScore float64
+	RosterValue   float64
 	AllPlayWinPct float64
 }
 
-// Blend returns rows sorted by w·scoutingZ + (1−w)·perfZ, descending, FranchiseID breaking
+// Blend returns rows sorted by w·rosterZ + (1−w)·perfZ, descending, FranchiseID breaking
 // ties. w is clamped to [0,1], never rejected. A zero-variance component contributes 0 to
 // everyone. Empty input returns an empty, non-nil slice.
 func Blend(inputs []Input, w float64) ([]Row, error) {
 	// A non-finite weight would make every score NaN; use the default.
 	if math.IsNaN(w) || math.IsInf(w, 0) {
-		w = DefaultScoutingWeight
+		w = DefaultRosterWeight
 	}
 	w = math.Max(0, math.Min(1, w))
 
@@ -50,8 +50,8 @@ func Blend(inputs []Input, w float64) ([]Row, error) {
 	}
 
 	for _, in := range inputs {
-		if math.IsNaN(in.ScoutingScore) || math.IsInf(in.ScoutingScore, 0) {
-			return nil, fmt.Errorf("powerrankings: franchise %s has non-finite scouting score", in.FranchiseID)
+		if math.IsNaN(in.RosterValue) || math.IsInf(in.RosterValue, 0) {
+			return nil, fmt.Errorf("powerrankings: franchise %s has a non-finite roster value", in.FranchiseID)
 		}
 		if math.IsNaN(in.AllPlayWinPct) || math.IsInf(in.AllPlayWinPct, 0) || in.AllPlayWinPct < 0 || in.AllPlayWinPct > 1 {
 			return nil, fmt.Errorf("powerrankings: franchise %s all-play win%% %v out of [0,1]", in.FranchiseID, in.AllPlayWinPct)
@@ -60,13 +60,13 @@ func Blend(inputs []Input, w float64) ([]Row, error) {
 
 	// Median and MAD·1.4826 both estimate σ for normal data, so the w:(1−w) ratio holds across
 	// the robust and classic components.
-	scoutCenter, scoutScale := medianMAD(inputs, func(in Input) float64 { return in.ScoutingScore })
+	rosterCenter, rosterScale := medianMAD(inputs, func(in Input) float64 { return in.RosterValue })
 	perfMean, perfStd := meanStd(inputs, func(in Input) float64 { return in.AllPlayWinPct })
 
 	blends := make([]float64, len(inputs))
 	blendLo, blendHi := math.Inf(1), math.Inf(-1)
 	for i, in := range inputs {
-		sz := zscore(in.ScoutingScore, scoutCenter, scoutScale)
+		sz := zscore(in.RosterValue, rosterCenter, rosterScale)
 		pz := zscore(in.AllPlayWinPct, perfMean, perfStd)
 		b := w*sz + (1-w)*pz
 		blends[i] = b
@@ -74,9 +74,9 @@ func Blend(inputs []Input, w float64) ([]Row, error) {
 		blendHi = math.Max(blendHi, b)
 		rows = append(rows, Row{
 			FranchiseID:   in.FranchiseID,
-			ScoutingZ:     sz,
+			RosterZ:       sz,
 			MFLPerfZ:      pz,
-			ScoutingScore: in.ScoutingScore,
+			RosterValue:   in.RosterValue,
 			AllPlayWinPct: in.AllPlayWinPct,
 		})
 	}
