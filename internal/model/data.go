@@ -4,7 +4,9 @@
 package model
 
 import (
+	"maps"
 	"math"
+	"slices"
 	"strings"
 	"time"
 
@@ -96,14 +98,15 @@ type Season struct {
 // Games is the number of weeks played.
 func (s Season) Games() int { return len(s.Points) }
 
-// PPG is points per game played, or NaN with no games.
+// PPG is points per game played, or NaN with no games. Weeks are summed in order, so the same
+// season gives the same bits every time.
 func (s Season) PPG() float64 {
 	if len(s.Points) == 0 {
 		return math.NaN()
 	}
 	total := 0.0
-	for _, p := range s.Points {
-		total += p
+	for _, w := range slices.Sorted(maps.Keys(s.Points)) {
+		total += s.Points[w]
 	}
 	return total / float64(len(s.Points))
 }

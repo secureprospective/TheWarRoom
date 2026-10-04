@@ -8,7 +8,7 @@ The scale is a within-position percentile of league fantasy points per game play
 
 | Pos | Seasons | k vs mean (games) | Prior R² true | k vs prior | Split-half n | RMSE odd→even raw | shrunk | mean (pts/game) |
 |---|---|---|---|---|---|---|---|---|
-| QB | 393 | 1.5 | 0.38 | 2.4 | 55 | 5.66 | 5.47 | 8.01 |
+| QB | 393 | 1.5 | 0.37 | 2.3 | 55 | 5.66 | 5.47 | 8.01 |
 | RB | 843 | 0.9 | 0.37 | 1.4 | 132 | 3.86 | 3.85 | 7.33 |
 | WR | 1236 | 1.2 | 0.39 | 2.0 | 211 | 3.39 | 3.37 | 5.88 |
 | TE | 701 | 1.3 | 0.57 | 2.9 | 126 | 2.70 | 2.53 | 4.37 |
@@ -23,7 +23,7 @@ The scale is a within-position percentile of league fantasy points per game play
 
 | Pos | Train n | R² train | Holdout n | R² holdout |
 |---|---|---|---|---|
-| QB | 70 | 0.58 | 17 | 0.32 |
+| QB | 70 | 0.58 | 17 | 0.31 |
 | RB | 270 | 0.53 | 62 | 0.34 |
 | WR | 385 | 0.41 | 99 | 0.35 |
 | TE | 219 | 0.42 | 52 | 0.51 |
@@ -38,10 +38,10 @@ The scale is a within-position percentile of league fantasy points per game play
 
 | Pos | Pairs train/holdout | k (games) | Shape kept | RMSE e/(e+k) | RMSE 1−exp(−e/k) | last season alone | prior alone |
 |---|---|---|---|---|---|---|---|
-| QB | 141/48 | 4.4 | e/(e+k) | 0.218 | 0.220 | 0.241 | 0.302 |
+| QB | 141/48 | 4.4 | e/(e+k) | 0.217 | 0.218 | 0.241 | 0.300 |
 | RB | 331/105 | 8.9 | 1−exp(−e/k) | 0.154 | 0.154 | 0.181 | 0.216 |
 | WR | 487/167 | 4.4 | e/(e+k) | 0.165 | 0.166 | 0.193 | 0.232 |
-| TE | 295/107 | 4.4 | e/(e+k) | 0.171 | 0.171 | 0.197 | 0.230 |
+| TE | 295/107 | 4.4 | e/(e+k) | 0.170 | 0.171 | 0.197 | 0.229 |
 | K | 93/33 | 148.6 | 1−exp(−e/k) | 0.304 | 0.304 | 0.403 | 0.308 |
 | DT | 350/120 | 8.0 | e/(e+k) | 0.247 | 0.247 | 0.280 | 0.303 |
 | DE | 312/95 | 8.9 | e/(e+k) | 0.243 | 0.243 | 0.265 | 0.307 |
@@ -53,7 +53,7 @@ The scale is a within-position percentile of league fantasy points per game play
 
 | Pos | Train/holdout | RMSE fitted | RMSE Marcel 1/0.8/0.6 | Kept | Stored weights (latest, −1, −2) |
 |---|---|---|---|---|---|
-| QB | 143/49 | 0.202 | 0.202 | Marcel | 1 / 0.8 / 0.6 |
+| QB | 143/49 | 0.201 | 0.201 | Marcel | 1 / 0.8 / 0.6 |
 | RB | 337/109 | 0.159 | 0.167 | fitted | 1 / 0.1 / 0.1 |
 | WR | 500/177 | 0.160 | 0.164 | fitted | 1 / 0.3 / 0.3 |
 | TE | 301/109 | 0.173 | 0.177 | fitted | 1 / 0.3 / 0.0 |
@@ -68,10 +68,10 @@ The scale is a within-position percentile of league fantasy points per game play
 
 | Pos | Exits | RMSE with arc | without | Kept | Stored step at 23 | at 27 | at 31 | Second-year jump |
 |---|---|---|---|---|---|---|---|---|
-| QB | 73 | 0.218 | 0.217 | none | +0.000 | +0.000 | +0.000 | +0.000 |
+| QB | 73 | 0.217 | 0.216 | none | +0.000 | +0.000 | +0.000 | +0.000 |
 | RB | 180 | 0.154 | 0.160 | arc | -0.039 | -0.040 | -0.045 | +0.088 |
 | WR | 259 | 0.165 | 0.170 | arc | -0.004 | -0.039 | -0.081 | +0.036 |
-| TE | 125 | 0.171 | 0.176 | arc | +0.021 | -0.036 | -0.092 | +0.002 |
+| TE | 125 | 0.170 | 0.176 | arc | +0.021 | -0.036 | -0.092 | +0.002 |
 | K | 38 | 0.304 | 0.305 | arc | +0.053 | +0.056 | +0.029 | +0.010 |
 | DT | 147 | 0.247 | 0.250 | arc | +0.037 | +0.022 | -0.013 | +0.058 |
 | DE | 136 | 0.243 | 0.243 | arc | +0.069 | +0.045 | +0.024 | +0.007 |

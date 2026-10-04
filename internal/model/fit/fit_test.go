@@ -1,9 +1,11 @@
 package fit
 
 import (
+	"fmt"
 	"math"
 	"math/rand/v2"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/model"
@@ -76,5 +78,31 @@ func TestKNowRecoversNoiseOverSpread(t *testing.T) {
 	}
 	if !(rep.SplitShrunk < rep.SplitRaw) {
 		t.Errorf("shrunk %v should beat raw %v", rep.SplitShrunk, rep.SplitRaw)
+	}
+}
+
+// The fit is reproducible: the same data gives the same params on every run, whatever order Go
+// walks its maps in.
+func TestRunIsDeterministic(t *testing.T) {
+	r := rand.New(rand.NewPCG(7, 8)) //nolint:gosec // a fixed test sample
+	d := model.Data{Players: map[string]*model.Player{}, Seasons: map[string]map[int]*model.Season{}}
+	for i := range 400 {
+		id := fmt.Sprintf("p%03d", i)
+		d.Players[id] = &model.Player{ID: id, Position: domain.PosWR, Rookie: 2019 + i%5, DraftPick: float64(1 + i%250),
+			Birth: time.Date(1996+i%6, 3, 1, 0, 0, 0, 0, time.UTC), Combine: map[string]float64{"forty": 4.3 + r.Float64()/2}}
+		d.Seasons[id] = map[int]*model.Season{}
+		for year := 2021; year <= 2025; year++ {
+			s := &model.Season{Player: id, Year: year, Points: map[int]float64{}}
+			for w := 1; w <= 1+r.IntN(17); w++ {
+				s.Points[w] = 0.1 * float64(r.IntN(300))
+			}
+			d.Seasons[id][year] = s
+		}
+	}
+	first := fmt.Sprintf("%+v", Run(d, 2021, 2025))
+	for range 5 {
+		if got := fmt.Sprintf("%+v", Run(d, 2021, 2025)); got != first {
+			t.Fatal("two runs on the same data differ")
+		}
 	}
 }
