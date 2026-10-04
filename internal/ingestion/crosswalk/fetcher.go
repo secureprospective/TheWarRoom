@@ -51,6 +51,7 @@ type Map struct {
 	byESPN      map[string]string
 	byPFR       map[string]string
 	byNameBirth map[string]string // (normName|isoBirth) -> gsis, for the Madden resolver
+	entries     map[string]Entry  // canonical MFL id -> every row naming it, gsis or not
 }
 
 // Lookup returns the gsis id for an MFL id. A miss is ordinary (commissioner-created players
@@ -115,19 +116,19 @@ func Fetch(ctx context.Context, client *http.Client, url string) (Map, error) {
 		return Map{}, fmt.Errorf("crosswalk: %w", err)
 	}
 	mflIdx, gsisIdx := cols[colMFLID], cols[colGSIS]
+	idCols := idColumns(records[0])
 	espnIdx := optionalColumn(records[0], colESPN)   // -1 if the source omits espn_id
 	pfrIdx := optionalColumn(records[0], colPFR)     // -1 if the source omits pfr_id
 	nameIdx := optionalColumn(records[0], colName)   // -1 if the source omits name
 	birthIdx := optionalColumn(records[0], colBirth) // -1 if the source omits birthdate
 
 	byMFL := make(map[playerid.PlayerID]string)
-	byESPN := make(map[string]string)
-	byPFR := make(map[string]string)
-	byNameBirth := make(map[string]string)
-	poisonedESPN := make(map[string]bool)      // espn ids dropped for resolving to 2+ gsis
-	poisonedPFR := make(map[string]bool)       // pfr ids dropped for resolving to 2+ gsis
-	poisonedNameBirth := make(map[string]bool) // name|birth keys dropped for resolving to 2+ gsis
+	b := newBridges()
+	entries := make(map[string]Entry)
 	for _, rec := range records[1:] {
+		if err := addEntry(entries, rec, mflIdx, nameIdx, idCols); err != nil {
+			return Map{}, err
+		}
 		gsis := strings.TrimSpace(rec[gsisIdx])
 		if ingestion.IsMissing(gsis) {
 			continue
@@ -136,24 +137,40 @@ func Fetch(ctx context.Context, client *http.Client, url string) (Map, error) {
 		if err := addMFL(byMFL, strings.TrimSpace(rec[mflIdx]), gsis); err != nil {
 			return Map{}, err
 		}
-		if espnIdx >= 0 {
-			addBridge(byESPN, poisonedESPN, strings.TrimSpace(rec[espnIdx]), gsis)
-		}
-		if pfrIdx >= 0 {
-			addBridge(byPFR, poisonedPFR, strings.TrimSpace(rec[pfrIdx]), gsis)
-		}
-		if nameIdx >= 0 && birthIdx >= 0 {
-			name, birth := normName(rec[nameIdx]), isoBirth(rec[birthIdx])
-			if name != "" && birth != "" {
-				addBridge(byNameBirth, poisonedNameBirth, name+"|"+birth, gsis)
-			}
-		}
+		b.add(rec, gsis, espnIdx, pfrIdx, nameIdx, birthIdx)
 	}
 
 	if len(byMFL) == 0 {
 		return Map{}, errEmpty
 	}
-	return Map{byMFL: byMFL, byESPN: byESPN, byPFR: byPFR, byNameBirth: byNameBirth}, nil
+	return Map{byMFL: byMFL, byESPN: b.espn, byPFR: b.pfr, byNameBirth: b.nameBirth, entries: entries}, nil
+}
+
+// bridges are the optional indexes onto gsis, with the keys dropped for resolving to two gsis.
+type bridges struct {
+	espn, pfr, nameBirth                  map[string]string
+	poisonedESPN, poisonedPFR, poisonedNB map[string]bool
+}
+
+func newBridges() *bridges {
+	return &bridges{espn: map[string]string{}, pfr: map[string]string{}, nameBirth: map[string]string{},
+		poisonedESPN: map[string]bool{}, poisonedPFR: map[string]bool{}, poisonedNB: map[string]bool{}}
+}
+
+// add indexes one row's optional ids onto gsis; a column index of -1 means the source omits it.
+func (b *bridges) add(rec []string, gsis string, espnIdx, pfrIdx, nameIdx, birthIdx int) {
+	if espnIdx >= 0 {
+		addBridge(b.espn, b.poisonedESPN, strings.TrimSpace(rec[espnIdx]), gsis)
+	}
+	if pfrIdx >= 0 {
+		addBridge(b.pfr, b.poisonedPFR, strings.TrimSpace(rec[pfrIdx]), gsis)
+	}
+	if nameIdx >= 0 && birthIdx >= 0 {
+		name, birth := normName(rec[nameIdx]), isoBirth(rec[birthIdx])
+		if name != "" && birth != "" {
+			addBridge(b.nameBirth, b.poisonedNB, name+"|"+birth, gsis)
+		}
+	}
 }
 
 // optionalColumn returns name's index in header, or -1.

@@ -266,6 +266,90 @@ export namespace main {
 	        this.reason = source["reason"];
 	    }
 	}
+	export class CrosswalkMiss {
+	    mflId: string;
+	    name: string;
+	    position: string;
+	    franchise: string;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CrosswalkMiss(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.mflId = source["mflId"];
+	        this.name = source["name"];
+	        this.position = source["position"];
+	        this.franchise = source["franchise"];
+	        this.reason = source["reason"];
+	    }
+	}
+	export class CrosswalkRate {
+	    position: string;
+	    rostered: number;
+	    rosteredMatched: number;
+	    freeAgents: number;
+	    freeAgentsMatched: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new CrosswalkRate(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.position = source["position"];
+	        this.rostered = source["rostered"];
+	        this.rosteredMatched = source["rosteredMatched"];
+	        this.freeAgents = source["freeAgents"];
+	        this.freeAgentsMatched = source["freeAgentsMatched"];
+	    }
+	}
+	export class CrosswalkReport {
+	    ok: boolean;
+	    error: string;
+	    loadedAt: string;
+	    links: number;
+	    promoted: number;
+	    rates: CrosswalkRate[];
+	    total: CrosswalkRate;
+	    unmatched: CrosswalkMiss[];
+	
+	    static createFrom(source: any = {}) {
+	        return new CrosswalkReport(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.error = source["error"];
+	        this.loadedAt = source["loadedAt"];
+	        this.links = source["links"];
+	        this.promoted = source["promoted"];
+	        this.rates = this.convertValues(source["rates"], CrosswalkRate);
+	        this.total = this.convertValues(source["total"], CrosswalkRate);
+	        this.unmatched = this.convertValues(source["unmatched"], CrosswalkMiss);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class FeedEventDTO {
 	    stableKey: string;
 	    source: string;

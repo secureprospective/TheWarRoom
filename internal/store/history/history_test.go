@@ -276,9 +276,12 @@ func TestUnmatchedFactsWaitThenResolveWithTheirAsOf(t *testing.T) {
 	}
 
 	c.now = t0().Add(72 * time.Hour)
-	n, err := s.LinkPlayerIDs(ctx, []PlayerIDLink{{IDType: "gsis", IDValue: "00-0036355", PlayerID: "15241"}})
+	n, err := s.LinkPlayerIDs(ctx, "alpha", []PlayerIDLink{{IDType: "gsis", IDValue: "00-0036355", PlayerID: "15241"}})
 	if err != nil || n != 2 {
 		t.Fatalf("LinkPlayerIDs = %d, %v; want 2 promoted", n, err)
+	}
+	if linked, err := s.LinkedPlayers(ctx, "gsis"); err != nil || !linked["15241"] || len(linked) != 1 {
+		t.Errorf("LinkedPlayers(gsis) = %v, %v", linked, err)
 	}
 	got := features(t, s, t0())
 	if len(got) != 1 || got[0].PlayerID != "15241" || got[0].Value != 55 || !got[0].AsOf.Equal(t0()) {

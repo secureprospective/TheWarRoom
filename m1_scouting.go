@@ -37,21 +37,15 @@ const cfbdEnvVar = "CFBD_API_KEY"
 // scoutProfiles is the in-progress per-player Profile map the assemblers merge into.
 type scoutProfiles = map[playerid.PlayerID]scouting.Profile
 
-// buildScoutingDirectory runs every scouting signal against the board's cached players lookup
-// and returns the merged profiles. RAS, film and coverage always run. The CFBD signals (school
-// tier, college share, breakout age) need a key: without one they are skipped and every player
-// is neutral on them, but with a key a failed fetch is an error. A missing key and a broken
-// fetch are different conditions.
-func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup) (rankings.MapScoutingDirectory, error) {
+// buildScoutingDirectory runs every scouting signal against the board's cached players lookup and
+// the crosswalk ScoreLeague fetched, and returns the merged profiles. RAS, film and coverage always
+// run. The CFBD signals (school tier, college share, breakout age) need a key: without one they are
+// skipped and every player is neutral on them, but with a key a failed fetch is an error. A missing
+// key and a broken fetch are different conditions.
+func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup, cw crosswalk.Map) (rankings.MapScoutingDirectory, error) {
 	rosterMFLIDs := collectRosterMFLIDs(a.league.Reader())
 	client := &http.Client{Timeout: rasFetchTimeout, Transport: a.fetches}
 	adapter := scoutLookupAdapter{lk: lk}
-
-	// One crosswalk fetch, shared by every signal.
-	cw, err := crosswalk.Fetch(ctx, client, crosswalk.SourceURL)
-	if err != nil {
-		return rankings.MapScoutingDirectory{}, fmt.Errorf("app: fetch scouting crosswalk: %w", err)
-	}
 
 	profiles, err := assembly.BuildRAS(ctx, client, ras.SourceURL, cw, rosterMFLIDs, adapter)
 	if err != nil {

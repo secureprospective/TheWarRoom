@@ -79,6 +79,12 @@ func TestNewLookup_AggregateInRangeOK(t *testing.T) {
 	if e, ok := lk.entry(mustID(t, "500")); !ok || !e.isAggregate {
 		t.Fatalf("aggregate not recorded as aggregate: %+v ok=%v", e, ok)
 	}
+	if ids := lk.IDs(); len(ids) != 0 {
+		t.Errorf("IDs listed an aggregate: %v", ids)
+	}
+	if name, ok := lk.Name("0500"); !ok || name != "Chiefs D" {
+		t.Errorf("Name(0500) = %q, %t; an aggregate's name must still read", name, ok)
+	}
 }
 
 // TestNewLookup_CanonicalizesAndDerivesRookie confirms id canonicalization (the

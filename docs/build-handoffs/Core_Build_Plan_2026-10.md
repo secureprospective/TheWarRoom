@@ -347,6 +347,17 @@ Seen and left for later (outside Stage 2):
 2. Measure the match rate per position for rostered players and for the free-agent pool.
 3. Surface the unmatched players in the admin console.
 
+**Design (Claude, R4, 2026-10-03).** Measured first against the live league: DynastyProcess
+(12,518 rows) and MFL's player list (2,715) for the 1,450 rostered players.
+
+| # | Decision | Rejected, and why |
+|---|---|---|
+| C1 | **Every id DynastyProcess carries is linked.** Each `<x>_id` column (gsis, espn, pfr, sleeper, pff and the rest) becomes id type `<x>` in `player_ids`, pointing at the MFL id. A future source keyed on any of them resolves with no code change, as Stage 1's lifecycle promises. | Linking only gsis, espn and pfr: each new source would then need a code change. |
+| C2 | **A clean miss beats a mis-attributed player.** Two guards. (a) An id DynastyProcess ties to two MFL ids links to neither: 10 gsis ids today, all retired players with the same name merged. (b) No link when MFL lists the id under a different name. MFL reuses low ids for team units and commissioner-created players: `0360` is the Steelers unit on MFL and Ronde Barber in DynastyProcess, and `0816` is Stephen Gosnell on MFL and Dre' Bly there. There are 69 such ids, and without the guard their espn and pfr facts would land on the wrong player. Names compare lowercased, letters only, suffixes dropped, MFL's "Last, First" reordered; no real player disagrees. An id MFL doesn't list (a retired player) links on DynastyProcess's word, which keeps history for the Stage 6 fit. | Picking one of two duplicates by heuristic. Trusting DynastyProcess's MFL ids without a check. |
+| C3 | **Loads run with ScoreLeague and from a button.** ScoreLeague already fetches DynastyProcess and MFL's player list, so it links at no extra cost. Control → Crosswalk has a "Load from DynastyProcess" button. Each load is a `loads` row for the `dynastyprocess` source, so source health covers it. Links upsert; a link DynastyProcess later drops stays until a source column is needed. | Loading at launch: it would spend MFL's once-a-day player-list call before anyone asks. |
+| C4 | **Matched means linked to a gsis id,** the key nflverse (the production source) uses. Rates are per position for the league's ten (QB, RB, WR, TE, PK, DT, DE, LB, CB, S), rostered and free agents (MFL's list minus the rosters). Team units, coaches and punters are left out. Every unmatched rostered player is listed with one reason: not in DynastyProcess, no NFL id yet, DynastyProcess has this MFL id as another player, or the NFL id is shared with another MFL id. The report is held in memory and shown in Control; a summary line goes to the log. | Storing the report: it is recomputed from data that is stored. |
+| C5 | **Position and birthdate stay MFL's.** The report uses MFL's position, the league's own. Directory columns from DynastyProcess wait for the stage that reads them. This amends S7. | Copying DynastyProcess's position and birthdate now: nothing reads them yet. |
+
 **Gate:**
 - Match rate published per position.
 - Every unmatched rostered player listed with a reason.
