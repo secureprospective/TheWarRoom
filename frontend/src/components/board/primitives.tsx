@@ -165,8 +165,7 @@ export function PhaseBar({
       <div className="twr-fresh twr-fresh--final" role="status">
         <span className="twr-fresh__label">NOT STARTED</span>
         <span className="twr-fresh__note">
-          MFL has scored no week this season — all-play is 0-0, so it does not
-          move the blend
+          MFL has scored no week this season — results do not move the blend yet
         </span>
       </div>
     );

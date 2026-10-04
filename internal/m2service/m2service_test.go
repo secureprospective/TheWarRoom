@@ -115,6 +115,46 @@ func TestBuildBoard_AggregatesBlendsAndJoins(t *testing.T) {
 	}
 }
 
+// The blend reads all-play when MFL reports it, otherwise points for as a share of the league's
+// best, and nothing before any result; each row carries the result read.
+func TestBuildBoard_ResultsFallBackFromAllPlayToPointsFor(t *testing.T) {
+	svc, err := New(fakeReader{}, fakeRulebook{})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	cases := []struct {
+		name      string
+		standings []leaguestandings.RawStanding
+		perf      string
+		results   map[string]float64
+	}{
+		{"all-play", []leaguestandings.RawStanding{
+			{FranchiseID: "0001", AllPlayW: "3", AllPlayL: "1", PF: "400"},
+			{FranchiseID: "0002", AllPlayW: "1", AllPlayL: "3", PF: "500"},
+		}, PerfAllPlay, map[string]float64{"0001": 0.75, "0002": 0.25}},
+		{"points for", []leaguestandings.RawStanding{
+			{FranchiseID: "0001", H2HW: "1", PF: "400"},
+			{FranchiseID: "0002", H2HL: "1", PF: "500"},
+		}, PerfPointsFor, map[string]float64{"0001": 0.8, "0002": 1}},
+		{"none", []leaguestandings.RawStanding{{FranchiseID: "0001"}, {FranchiseID: "0002"}},
+			PerfNone, map[string]float64{"0001": 0, "0002": 0}},
+	}
+	for _, c := range cases {
+		board, err := svc.BuildBoard(c.standings, nil, 0.6, AggSum)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if board.Performance != c.perf {
+			t.Errorf("%s: Performance = %q, want %q", c.name, board.Performance, c.perf)
+		}
+		for _, r := range board.Rows {
+			if math.Abs(r.Results-c.results[r.FranchiseID]) > 1e-12 {
+				t.Errorf("%s: %s Results = %v, want %v", c.name, r.FranchiseID, r.Results, c.results[r.FranchiseID])
+			}
+		}
+	}
+}
+
 // TestBuildBoard_FranchiseWithNoScoresContributesZero covers a franchise present in
 // standings but with no scored players (GLM 5.2 review lead A4, Session 43): an
 // expansion/empty-roster franchise must still get a row, with 0 roster value rather than

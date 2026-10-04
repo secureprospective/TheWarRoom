@@ -78,7 +78,7 @@ func TestBlendWeightClamp(t *testing.T) {
 }
 
 func TestBlendDegenerateComponent(t *testing.T) {
-	// All-play disabled → every AllPlayWinPct == 0 → zero variance → that component's
+	// No results yet → every Performance == 0 → zero variance → that component's
 	// z-score is 0 for all (neutral). Roster value still differentiates.
 	in := []Input{
 		{FranchiseID: "0001", RosterValue: 0, Performance: 0},

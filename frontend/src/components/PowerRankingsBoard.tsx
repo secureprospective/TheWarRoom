@@ -16,7 +16,8 @@ const DEFAULT_ROSTER_WEIGHT = 0.6;
 
 // PowerRankingsBoard is the M2 module view: the 32 franchises ranked in one of two views.
 // This season sums each roster's on-field-now (league points per game) and blends its z-score
-// with MFL's all-play record at a free 0–100% weight (default 60/40). The franchise sums each
+// with the season's results at a free 0–100% weight (default 60/40): MFL's all-play record when
+// the league reports it, otherwise points for as a share of the league's best. The franchise sums each
 // roster's dynasty value and ranks on the roster alone. Values come from the latest model run;
 // Δ is each team's move since the board built from the previous one. The roster aggregates as
 // the full sum or the top-N starters. MFL's report columns come with the same standings call.
@@ -25,7 +26,7 @@ type SortKey =
   | "rank"
   | "rosterValue"
   | "rosterZ"
-  | "allPlayWinPct"
+  | "results"
   | "pf"
   | "pa"
   | "pp"
@@ -36,6 +37,31 @@ type SortKey =
 const COLS =
   "34px 40px minmax(150px, 1fr) 88px 70px 66px 74px 66px 66px 58px 58px 58px 66px 60px";
 const COLS_MTX = "24px 36px minmax(120px, 1fr) 76px 62px 70px";
+
+// RESULTS names the result the season blend read, keyed by m2service's Perf* values.
+const RESULTS: Record<
+  string,
+  { banner: string; short: string; column: string; tip: string }
+> = {
+  "all-play": {
+    banner: "all-play record",
+    short: "all-play",
+    column: "AllPlay%",
+    tip: "All-play win %: the season blend's results side",
+  },
+  "points for": {
+    banner: "points for (MFL reports no all-play for this league)",
+    short: "points for",
+    column: "PF%",
+    tip: "Points for as a share of the league's best: the season blend's results side",
+  },
+  none: {
+    banner: "results (none yet)",
+    short: "results",
+    column: "Results",
+    tip: "No week scored yet, so results do not move the blend",
+  },
+};
 
 export function PowerRankingsBoard() {
   const powerRankings = useAppStore((s) => s.powerRankings);
@@ -114,6 +140,8 @@ export function PowerRankingsBoard() {
     }
   };
   const dir = asc ? "asc" : "desc";
+  const results = RESULTS[powerRankings?.performance ?? "none"] ?? RESULTS.none;
+  const allPlay = powerRankings?.performance === "all-play";
 
   return (
     <div
@@ -157,7 +185,7 @@ export function PowerRankingsBoard() {
         . Roster value is z-scored with median and MAD, so one stacked roster
         cannot move the scale;{" "}
         {powerView === "season"
-          ? `this season blends it with MFL's ${powerRankings?.performance === "points for" ? "points for (MFL reports no all-play for this league)" : powerRankings?.performance === "none" ? "results (none yet)" : "all-play record"}, then scales 0–1.`
+          ? `this season blends it with MFL's ${results.banner}, then scales 0–1.`
           : "the franchise ranks on the roster alone, scaled 0–1."}{" "}
         Roster z of 0 = a typical team.
       </div>
@@ -238,7 +266,7 @@ export function PowerRankingsBoard() {
               color: "var(--text-tertiary)",
             }}
           >
-            roster {(slider * 100).toFixed(0)}% / all-play{" "}
+            roster {(slider * 100).toFixed(0)}% / {results.short}{" "}
             {((1 - slider) * 100).toFixed(0)}%
           </span>
           <input
@@ -341,10 +369,10 @@ export function PowerRankingsBoard() {
                 onSort={onSort}
               />
             </span>
-            <span className="twr-r">
+            <span className="twr-r" title={results.tip}>
               <SortHeader
-                label="AllPlay%"
-                sortKey="allPlayWinPct"
+                label={results.column}
+                sortKey="results"
                 activeKey={sortKey}
                 dir={dir}
                 onSort={onSort}
@@ -411,15 +439,16 @@ export function PowerRankingsBoard() {
               </span>
               <span className="twr-c-num twr-r">{r.rosterZ.toFixed(2)}</span>
               <span className="twr-c-num twr-r">
-                {(r.allPlayWinPct * 100).toFixed(1)}%
+                {(r.results * 100).toFixed(1)}%
               </span>
               <span className="twr-c-num twr-r twr-hide-mtx">
                 {r.h2hW}-{r.h2hL}
                 {r.h2hT > 0 ? `-${r.h2hT}` : ""}
               </span>
               <span className="twr-c-num twr-r twr-hide-mtx">
-                {r.allPlayW}-{r.allPlayL}
-                {r.allPlayT > 0 ? `-${r.allPlayT}` : ""}
+                {allPlay
+                  ? `${r.allPlayW}-${r.allPlayL}${r.allPlayT > 0 ? `-${r.allPlayT}` : ""}`
+                  : "—"}
               </span>
               <span className="twr-c-num twr-r twr-hide-mtx">
                 {r.pf.toFixed(1)}
@@ -454,8 +483,8 @@ function getSortVal(r: main.PowerRow, key: SortKey): number {
       return r.rosterValue;
     case "rosterZ":
       return r.rosterZ;
-    case "allPlayWinPct":
-      return r.allPlayWinPct;
+    case "results":
+      return r.results;
     case "pf":
       return r.pf;
     case "pa":

@@ -795,7 +795,7 @@ export namespace main {
 	    rosterZ: number;
 	    mflPerfZ: number;
 	    rosterValue: number;
-	    allPlayWinPct: number;
+	    results: number;
 	    h2hW: number;
 	    h2hL: number;
 	    h2hT: number;
@@ -823,7 +823,7 @@ export namespace main {
 	        this.rosterZ = source["rosterZ"];
 	        this.mflPerfZ = source["mflPerfZ"];
 	        this.rosterValue = source["rosterValue"];
-	        this.allPlayWinPct = source["allPlayWinPct"];
+	        this.results = source["results"];
 	        this.h2hW = source["h2hW"];
 	        this.h2hL = source["h2hL"];
 	        this.h2hT = source["h2hT"];

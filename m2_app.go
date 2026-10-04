@@ -27,8 +27,8 @@ type PowerRow struct {
 	RosterZ    float64 `json:"rosterZ"`    // 0 = league average
 	MFLPerfZ   float64 `json:"mflPerfZ"`
 
-	RosterValue   float64 `json:"rosterValue"`
-	AllPlayWinPct float64 `json:"allPlayWinPct"`
+	RosterValue float64 `json:"rosterValue"`
+	Results     float64 `json:"results"` // what the blend read, in [0,1]; Performance names it
 
 	// MFL report columns, from leagueStandings.
 	H2HW     int     `json:"h2hW"`
@@ -193,7 +193,7 @@ func powerRows(rows []m2service.Row, was map[string]int) []PowerRow {
 		row := PowerRow{
 			Rank: r.Rank, FranchiseID: r.FranchiseID, Name: r.Name,
 			PowerScore: r.PowerScore, RosterZ: r.RosterZ, MFLPerfZ: r.MFLPerfZ,
-			RosterValue: r.RosterValue, AllPlayWinPct: r.AllPlayWinPct,
+			RosterValue: r.RosterValue, Results: r.Results,
 			H2HW: r.H2HW, H2HL: r.H2HL, H2HT: r.H2HT,
 			AllPlayW: r.AllPlayW, AllPlayL: r.AllPlayL, AllPlayT: r.AllPlayT,
 			PF: r.PF, PA: r.PA, PP: r.PP, Pwr: r.Pwr, AltPwr: r.AltPwr,

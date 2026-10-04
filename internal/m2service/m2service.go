@@ -55,8 +55,8 @@ type Row struct {
 	RosterZ    float64
 	MFLPerfZ   float64
 
-	RosterValue   float64
-	AllPlayWinPct float64
+	RosterValue float64
+	Results     float64 // the result the blend read, in [0,1]: all-play win% or points for ÷ the league's best
 
 	H2HW, H2HL, H2HT             int
 	AllPlayW, AllPlayL, AllPlayT int
@@ -218,15 +218,15 @@ func (s *Service) buildRows(blended []powerrankings.Row, parsed map[string]parse
 	for _, b := range blended {
 		ps := parsed[b.FranchiseID]
 		rows = append(rows, Row{
-			Rank:          b.Rank,
-			FranchiseID:   b.FranchiseID,
-			Name:          domain.FranchiseLabel(names, b.FranchiseID),
-			PowerScore:    b.PowerScore,
-			RosterZ:       b.RosterZ,
-			MFLPerfZ:      b.MFLPerfZ,
-			RosterValue:   b.RosterValue,
-			AllPlayWinPct: ps.allPlayWinPct,
-			H2HW:          ps.h2hW, H2HL: ps.h2hL, H2HT: ps.h2hT,
+			Rank:        b.Rank,
+			FranchiseID: b.FranchiseID,
+			Name:        domain.FranchiseLabel(names, b.FranchiseID),
+			PowerScore:  b.PowerScore,
+			RosterZ:     b.RosterZ,
+			MFLPerfZ:    b.MFLPerfZ,
+			RosterValue: b.RosterValue,
+			Results:     b.Performance,
+			H2HW:        ps.h2hW, H2HL: ps.h2hL, H2HT: ps.h2hT,
 			AllPlayW: ps.allPlayW, AllPlayL: ps.allPlayL, AllPlayT: ps.allPlayT,
 			PF: ps.pf, PA: ps.pa, PP: ps.pp, Pwr: ps.pwr, AltPwr: ps.altPwr,
 		})
