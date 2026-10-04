@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
@@ -167,6 +168,13 @@ func ParamsFrom(pos domain.Position, get func(key string) (float64, error)) (Par
 }
 
 func arcTerms() []string { return []string{"level", "age", "age_squared", "second_year"} }
+
+// ReadsContract reports whether the survival arc gives the contract any weight: the terms exist
+// at defensive positions, and the fit zeroes them where they did not beat the arc without them.
+func (p Params) ReadsContract() bool {
+	base := len(SurvivalTerms(domain.PosQB))
+	return len(p.Survival) > base && slices.ContainsFunc(p.Survival[base:], func(w float64) bool { return w != 0 })
+}
 
 // SurvivalTerms names a position's survival terms. Defensive positions add the contract they are
 // on; at offense it did not help (worse log loss at QB and WR on the 2024–2025 holdouts).

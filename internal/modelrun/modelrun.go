@@ -223,7 +223,7 @@ func (ps pass) value(dir Directory, mflID string) (history.ModelScore, playerInp
 		return history.ModelScore{}, playerInput{}, fmt.Sprintf("no %s regulars in %d to read points from", facts.Position, ps.season-1)
 	}
 	v := m.Value(&pl, in.Past, in.Current, ps.horizon, scale)
-	return history.ModelScore{MFLID: mflID, Position: string(facts.Position), Value: v, Inputs: inputNames(&pl, in)}, in, ""
+	return history.ModelScore{MFLID: mflID, Position: string(facts.Position), Value: v, Inputs: inputNames(m, &pl, in)}, in, ""
 }
 
 // identitySlack is how many seasons history's first NFL season may sit from the year MFL has the
@@ -285,8 +285,8 @@ func (ps pass) scale(pos domain.Position, year int) model.Scale {
 const minRegulars = 20
 
 // inputNames lists the inputs that fed a player's value: each known prior input, his age, the
-// contract he is on where the survival arc reads one, and each season of league points.
-func inputNames(pl *model.Player, in playerInput) []string {
+// contract he is on where m's survival arc weighs one, and each season of league points.
+func inputNames(m model.Params, pl *model.Player, in playerInput) []string {
 	out := []string{}
 	x, known := pl.PriorInputs()
 	for i, name := range model.PriorFeatures(pl.Position) {
@@ -297,7 +297,7 @@ func inputNames(pl *model.Player, in playerInput) []string {
 	if !pl.Birth.IsZero() {
 		out = append(out, "age")
 	}
-	if len(model.SurvivalTerms(pl.Position)) > len(model.SurvivalTerms(domain.PosQB)) && pl.TenureAt(in.Current.Year).Known {
+	if m.ReadsContract() && pl.TenureAt(in.Current.Year).Known {
 		out = append(out, "contract")
 	}
 	for _, s := range append(in.Past, in.Current) {

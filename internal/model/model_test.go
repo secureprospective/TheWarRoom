@@ -226,6 +226,10 @@ func TestSurvivalReadsTheContractOnlyOnDefense(t *testing.T) {
 		t.Errorf("WR survival reads %d inputs, want 6: offense has no contract terms", len(got))
 	}
 	paid := Params{Position: domain.PosLB, Survival: []float64{0, 0, 0, 0, 0, 0, 1, 0, 0, 0}}
+	if !paid.ReadsContract() || (Params{Position: domain.PosS, Survival: make([]float64, 10)}).ReadsContract() ||
+		(Params{Position: domain.PosWR, Survival: []float64{1, 1, 1, 1, 1, 1}}).ReadsContract() {
+		t.Error("ReadsContract must be true only with a non-zero contract weight")
+	}
 	if paid.Survives(27, 0, 17, 0.5, signed) <= paid.Survives(27, 0, 17, 0.5, Tenure{}) {
 		t.Error("a positive cap-share weight must raise the chance for a paid player")
 	}

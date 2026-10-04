@@ -3,6 +3,7 @@ package modelrun
 import (
 	"context"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -157,6 +158,21 @@ func TestAtLeaguePositionsUsesTheLeaguesPosition(t *testing.T) {
 	for id, pos := range want {
 		if got := d.Players[id].Position; got != pos {
 			t.Errorf("%s at %q, want %q", id, got, pos)
+		}
+	}
+}
+
+func TestInputsNameTheContractOnlyWhereItWeighs(t *testing.T) {
+	set := params.DefaultSet()
+	for pos, want := range map[domain.Position]bool{domain.PosLB: true, domain.PosS: false, domain.PosWR: false} {
+		m, err := model.ParamsFrom(pos, func(key string) (float64, error) { return set.GetPosition(key, string(pos)) })
+		if err != nil {
+			t.Fatal(err)
+		}
+		pl := &model.Player{Position: pos, Contracts: map[int]map[string]float64{2025: {"cap_pct": 0.05, "years": 3}}}
+		got := slices.Contains(inputNames(m, pl, playerInput{Current: model.Past{Year: 2026}}), "contract")
+		if got != want {
+			t.Errorf("%s lists the contract: %v, want %v (shipped fit: kept at LB, dropped at S, none at offense)", pos, got, want)
 		}
 	}
 }
