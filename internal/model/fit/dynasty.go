@@ -12,8 +12,9 @@ import (
 // the blend leaves keeps regression to the mean out of it. Survivors are weighted by the inverse
 // of their chance of playing on, so the arc is not fitted to the players who aged well; leaving
 // the league is the survival arc's, not counted again here. Both shapes of Z are fitted on
-// training pairs; the one that predicts the holdout season better is kept. trainSurv and
-// fullSurv are the survival fits on the same seasons.
+// training pairs; the one that predicts the holdout season better is kept, and the arc is kept
+// only if it beats the same blend refitted without one. trainSurv and fullSurv are the survival
+// fits on the same seasons.
 func fitDynasty(sm samples, holdout int, prior model.Params, trainSurv, fullSurv [6]float64,
 	rep *Report) (train, full model.Params) {
 	var trainRows, testRows, allRows []pair
@@ -41,27 +42,32 @@ func fitDynasty(sm samples, holdout int, prior model.Params, trainSurv, fullSurv
 	}
 	trainPrior, fullPrior := prior, prior
 	trainPrior.Survival, fullPrior.Survival = trainSurv, fullSurv
-	credibility, exponential := bestK(trainPrior, false, trainRows), bestK(trainPrior, true, trainRows)
+	credibility, exponential := bestK(trainPrior, false, true, trainRows), bestK(trainPrior, true, true, trainRows)
 	rep.DynCredibility, rep.DynExponential = pairError(credibility, testRows), pairError(exponential, testRows)
 	train = credibility
 	if rep.DynExponential < rep.DynCredibility {
 		train = exponential
 	}
-	flat := train
-	flat.Arc = [4]float64{}
+	flat := bestK(trainPrior, train.Exponential, false, trainRows)
 	rep.Arc.RMSEArc, rep.Arc.RMSEFlat = pairError(train, testRows), pairError(flat, testRows)
+	rep.Arc.Kept = rep.Arc.RMSEArc < rep.Arc.RMSEFlat
+	if !rep.Arc.Kept {
+		train = flat
+	}
 	rep.DynLastSeason, rep.DynPrior = baselines(prior, testRows)
-	return train, bestK(fullPrior, train.Exponential, allRows)
+	return train, bestK(fullPrior, train.Exponential, rep.Arc.Kept, allRows)
 }
 
-// bestK searches k on a grid; for each k the arc is the least-squares fit of what the blend
-// leaves, and k is scored on the observed pairs.
-func bestK(m model.Params, exponential bool, rows []pair) model.Params {
+// bestK searches k on a grid; for each k the arc, when there is one, is the least-squares fit of
+// what the blend leaves, and k is scored on the observed pairs.
+func bestK(m model.Params, exponential, arc bool, rows []pair) model.Params {
 	m.Exponential = exponential
 	best, bestErr := m, math.Inf(1)
 	for _, k := range grid(0.3, 300, 60) {
 		m.KDynasty = k
-		m.Arc = fitArcGiven(m, rows)
+		if arc {
+			m.Arc = fitArcGiven(m, rows)
+		}
 		if e := pairError(m, rows); e < bestErr {
 			best, bestErr = m, e
 		}
@@ -111,7 +117,8 @@ const maxSurvivalWeight = 5.0
 
 type arcScore struct {
 	Exits             int     // players who played no game the next season
-	RMSEArc, RMSEFlat float64 // holdout: the dynasty prediction with the arc vs without it
+	RMSEArc, RMSEFlat float64 // holdout: the dynasty prediction with the arc vs refitted without one
+	Kept              bool
 }
 
 func arcRow(age float64, exp int) []float64 {

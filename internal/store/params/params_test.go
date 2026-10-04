@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -52,15 +53,16 @@ func TestInitializeSeedsDefaults(t *testing.T) {
 	}
 }
 
-func TestDefinitionsShipUncalibrated(t *testing.T) {
+// Only the fit tool's values ship calibrated; hand-set defaults (OQ-006 and the rubrics) do not.
+func TestDefinitionsShipCalibratedOnlyWhenFitted(t *testing.T) {
 	s, _ := openStore(t)
 	defs := s.Definitions()
 	if len(defs) != len(defaultParams()) {
 		t.Fatalf("got %d defs, want %d", len(defs), len(defaultParams()))
 	}
 	for _, d := range defs {
-		if d.IsCalibrated {
-			t.Errorf("param %q shipped IsCalibrated=true, want false (OQ-006 not yet tuned)", d.Key)
+		if fitted := strings.HasPrefix(d.Key, "model."); d.IsCalibrated != fitted {
+			t.Errorf("param %q@%s shipped IsCalibrated=%v, want %v", d.Key, d.Position, d.IsCalibrated, fitted)
 		}
 	}
 	// Definitions is sorted by (key, position) for determinism.

@@ -67,7 +67,7 @@ func fitPosition(sm samples, holdout int) Result {
 	r.Params.Survival = fullSurv
 	trainModel, fullModel := fitDynasty(sm, holdout, trainPrior, trainSurv, fullSurv, &r.Report)
 	r.Params.KDynasty, r.Params.Exponential, r.Params.Arc = fullModel.KDynasty, fullModel.Exponential, fullModel.Arc
-	r.Params.Recency = fitRecency(sm, holdout, trainModel, &r.Report.Recency)
+	r.Params.Recency = fitRecency(sm, holdout, trainModel, fullModel, &r.Report.Recency)
 	return r
 }
 

@@ -10,10 +10,12 @@ type survivalScore struct {
 	Train, Test               int
 	LogLossFit, LogLossBase   float64 // holdout: the fitted model vs the training base rate
 	BaseRate, HoldoutObserved float64
+	Kept                      bool // the fitted model beat the base rate; otherwise the base rate is stored
 }
 
 // fitSurvival is a logistic regression of playing at all next season on age, draft capital,
-// games played and percentile. It conditions only on what is known at the season's end.
+// games played and percentile. It conditions only on what is known at the season's end. When
+// it does not beat the base rate on the holdout, both fits fall back to the base rate.
 func fitSurvival(sm samples, holdout int, score *survivalScore) (trainFit, fullFit [6]float64) {
 	var xTrain, xAll, xTest [][]float64
 	var yTrain, yAll, yTest []float64
@@ -45,10 +47,20 @@ func fitSurvival(sm samples, holdout int, score *survivalScore) (trainFit, fullF
 	score.BaseRate, score.HoldoutObserved = avg(yTrain), avg(yTest)
 	score.LogLossFit = logLoss(xTest, yTest, func(x []float64) float64 { return sigmoid(dot(x, train)) })
 	score.LogLossBase = logLoss(xTest, yTest, func([]float64) float64 { return score.BaseRate })
+	score.Kept = score.LogLossFit < score.LogLossBase
+	if !score.Kept {
+		return baseRate(score.BaseRate), baseRate(avg(yAll))
+	}
 	if full, err := logistic(xAll, yAll, 1); err == nil {
 		copy(fullFit[:], full)
 	}
 	return trainFit, fullFit
+}
+
+// baseRate is the survival fit that gives every player the same chance p.
+func baseRate(p float64) [6]float64 {
+	p = min(max(p, 1e-3), 1-1e-3)
+	return [6]float64{math.Log(p / (1 - p))}
 }
 
 func survivalRow(s season) []float64 {
