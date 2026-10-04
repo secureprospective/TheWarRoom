@@ -2,6 +2,10 @@ measure,grain,unit,positions,meaning
 availability.game_status,week,text,all,"The team's final injury designation for the game: Out, Doubtful or Questionable."
 availability.practice_status,week,text,all,The player's last practice participation before the game.
 context.birth_date,player,text,all,"Date of birth, as YYYY-MM-DD."
+context.contract_cap_pct,season,fraction,all,"The average yearly value of the contract the player signed that season, as a share of that season's salary cap (OverTheCap)."
+context.contract_guaranteed,season,millions,all,"The guaranteed money of the contract the player signed that season, in millions of dollars (OverTheCap)."
+context.contract_value,season,millions,all,"The total value of the contract the player signed that season, in millions of dollars (OverTheCap)."
+context.contract_years,season,seasons,all,"The length in seasons of the contract the player signed that season (OverTheCap)."
 context.nfl_position,player,text,all,"The player's position as nflverse lists it, finer than the league's (OLB, NT, FS)."
 context.rookie_season,player,season,all,The first NFL season the player was on a roster.
 context.team,week,text,all,The NFL team the player played the game for.

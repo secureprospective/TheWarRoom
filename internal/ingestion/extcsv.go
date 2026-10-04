@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// Shared plumbing for external static CSVs (nflverse, DynastyProcess). Columns bind by name,
+// Shared plumbing for external static files (nflverse, DynastyProcess). CSV columns bind by name,
 // bodies are byte-capped, and failures are loud.
 
 // NACell is how R-generated CSVs write a missing value.
@@ -191,4 +191,29 @@ func FloatCell(rec []string, idx int, label string) (float64, error) {
 		return 0, fmt.Errorf("ingestion: column %q value %q: %w", label, v, err)
 	}
 	return f, nil
+}
+
+// Get fetches url and returns its body, failing on a status other than 200 and on a body over
+// maxBytes rather than reading a truncated file.
+func Get(ctx context.Context, client *http.Client, url string, maxBytes int64) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("ingestion: request %s: %w", url, err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("ingestion: fetch %s: %w", url, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("ingestion: %s answered %d", url, resp.StatusCode)
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("ingestion: read %s: %w", url, err)
+	}
+	if int64(len(body)) > maxBytes {
+		return nil, fmt.Errorf("ingestion: %s is over %d bytes", url, maxBytes)
+	}
+	return body, nil
 }

@@ -15,7 +15,7 @@ import (
 // training pairs; the one that predicts the holdout season better is kept, and the arc is kept
 // only if it beats the same blend refitted without one. trainSurv and fullSurv are the survival
 // fits on the same seasons.
-func fitDynasty(sm samples, holdout int, prior model.Params, trainSurv, fullSurv [6]float64,
+func fitDynasty(sm samples, holdout int, prior model.Params, trainSurv, fullSurv []float64,
 	rep *Report) (train, full model.Params) {
 	var trainRows, testRows, allRows []pair
 	for _, p := range sm.pairs(holdout) {
@@ -83,7 +83,7 @@ func fitArcGiven(m model.Params, rows []pair) [4]float64 {
 		s := p.from
 		z := m.Z(s.games, m.KDynasty)
 		blend := z*s.pct + (1-z)*m.Prior(s.player)
-		stay := m.Survives(s.age, s.player.DraftPick, s.games, s.pct)
+		stay := m.Survives(s.age, s.player.DraftPick, s.games, s.pct, s.player.TenureAt(s.year))
 		x[i], y[i], w[i] = arcRow(s.age, s.exp), p.next.pct-blend, min(1/max(stay, 1e-3), maxSurvivalWeight)
 	}
 	return solveArc(x, y, w)

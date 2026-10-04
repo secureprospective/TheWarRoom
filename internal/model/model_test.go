@@ -2,6 +2,7 @@ package model
 
 import (
 	"math"
+	"slices"
 	"testing"
 	"time"
 
@@ -115,7 +116,7 @@ func TestParamsRoundTripThroughValues(t *testing.T) {
 	n := len(PriorFeatures(domain.PosDT))
 	p := Params{Position: domain.PosDT, Intercept: 0.4, Weight: make([]float64, n), Missing: make([]float64, n), KNow: 3, KDynasty: 9,
 		Exponential: true, Recency: [2]float64{0.5, 0.2}, Arc: [4]float64{0.01, -0.02, -0.001, 0.05},
-		Survival: [6]float64{1, -0.1, -0.01, -0.3, 2, 1}}
+		Survival: []float64{1, -0.1, -0.01, -0.3, 2, 1, 0.5, 0.2, 0.3, -0.4}}
 	p.Weight[0], p.Missing[n-1] = -0.1, 0.02
 	values := p.Values()
 	back, err := ParamsFrom(domain.PosDT, func(k string) (float64, error) { return values[k], nil })
@@ -123,7 +124,7 @@ func TestParamsRoundTripThroughValues(t *testing.T) {
 		t.Fatal(err)
 	}
 	if back.Intercept != p.Intercept || back.Weight[0] != -0.1 || back.Missing[n-1] != 0.02 || !back.Exponential ||
-		back.Arc != p.Arc || back.Survival != p.Survival || back.Recency != p.Recency || back.KDynasty != 9 {
+		back.Arc != p.Arc || !slices.Equal(back.Survival, p.Survival) || back.Recency != p.Recency || back.KDynasty != 9 {
 		t.Errorf("round trip = %+v", back)
 	}
 }
@@ -146,7 +147,7 @@ func testParams() Params {
 	n := len(PriorFeatures(domain.PosWR))
 	return Params{Position: domain.PosWR, Intercept: 0.4, Weight: make([]float64, n), Missing: make([]float64, n), KNow: 3, KDynasty: 8,
 		Recency: [2]float64{0.5, 0.25}, Arc: [4]float64{-0.02, -0.01, 0, 0.05},
-		Survival: [6]float64{2, -0.1, -0.01, 0, 1, 1}}
+		Survival: []float64{2, -0.1, -0.01, 0, 1, 1}}
 }
 
 func TestProjectOneSeasonIsTheSeasonPairPrediction(t *testing.T) {
@@ -189,5 +190,43 @@ func TestScalePPGInvertsPct(t *testing.T) {
 	}
 	if !math.IsNaN((Scale{}).PPG(0.5)) {
 		t.Error("an empty scale has no points")
+	}
+}
+
+func TestTenureIsTheLatestContractSignedBySeason(t *testing.T) {
+	p := &Player{Contracts: map[int]map[string]float64{
+		2021: {"cap_pct": 0.01, "years": 4, "value": 4, "guaranteed": 1},
+		2024: {"cap_pct": 0.08, "years": 3, "value": 60, "guaranteed": 30},
+		2026: {"years": 1, "value": 1},
+	}}
+	if got := p.TenureAt(2023); !got.Known || got.CapPct != 0.01 || got.YearsLeft != 1 || got.Guaranteed != 0.25 {
+		t.Errorf("2023 = %+v, want the 2021 deal with a season left after 2023", got)
+	}
+	if got := p.TenureAt(2025); got.CapPct != 0.08 || got.YearsLeft != 1 || got.Guaranteed != 0.5 {
+		t.Errorf("2025 = %+v, want the 2024 deal; the 2026 one must not leak back", got)
+	}
+	if got := p.TenureAt(2026); got.Known {
+		t.Errorf("2026 = %+v, want unknown: the deal in force has no cap share", got)
+	}
+	if got := p.TenureAt(2020); got.Known {
+		t.Errorf("2020 = %+v, want unknown: nothing signed yet", got)
+	}
+}
+
+func TestSurvivalReadsTheContractOnlyOnDefense(t *testing.T) {
+	signed := Tenure{Known: true, CapPct: 0.05, YearsLeft: 9, Guaranteed: 0.4}
+	de := Params{Position: domain.PosDE}
+	if got := de.SurvivalRow(27, 0, 17, 0.5, signed)[6:]; !slices.Equal(got, []float64{0.5, 1, 0.4, 0}) {
+		t.Errorf("DE contract inputs = %v, want cap ×10, years left capped at 5 ÷5, guaranteed, known", got)
+	}
+	if got := de.SurvivalRow(27, 0, 17, 0.5, Tenure{})[6:]; !slices.Equal(got, []float64{0, 0, 0, 1}) {
+		t.Errorf("DE without a contract = %v, want only the unknown flag", got)
+	}
+	if got := (Params{Position: domain.PosWR}).SurvivalRow(27, 0, 17, 0.5, signed); len(got) != 6 {
+		t.Errorf("WR survival reads %d inputs, want 6: offense has no contract terms", len(got))
+	}
+	paid := Params{Position: domain.PosLB, Survival: []float64{0, 0, 0, 0, 0, 0, 1, 0, 0, 0}}
+	if paid.Survives(27, 0, 17, 0.5, signed) <= paid.Survives(27, 0, 17, 0.5, Tenure{}) {
+		t.Error("a positive cap-share weight must raise the chance for a paid player")
 	}
 }

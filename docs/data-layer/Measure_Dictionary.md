@@ -136,6 +136,10 @@ Every number in `history.db` is stored as player · season · week · measure. W
 | Measure | Grain | Unit | Positions | Meaning | Sources |
 |---|---|---|---|---|---|
 | `context.birth_date` | player | text | all | Date of birth, as YYYY-MM-DD. | `nflverse` players.birth_date |
+| `context.contract_cap_pct` | season | fraction | all | The average yearly value of the contract the player signed that season, as a share of that season's salary cap (OverTheCap). | `nflverse` contracts.apy_cap_pct |
+| `context.contract_guaranteed` | season | millions | all | The guaranteed money of the contract the player signed that season, in millions of dollars (OverTheCap). | `nflverse` contracts.guaranteed |
+| `context.contract_value` | season | millions | all | The total value of the contract the player signed that season, in millions of dollars (OverTheCap). | `nflverse` contracts.value |
+| `context.contract_years` | season | seasons | all | The length in seasons of the contract the player signed that season (OverTheCap). | `nflverse` contracts.years |
 | `context.nfl_position` | player | text | all | The player's position as nflverse lists it, finer than the league's (OLB, NT, FS). | `nflverse` players.position |
 | `context.rookie_season` | player | season | all | The first NFL season the player was on a roster. | `nflverse` players.rookie_season |
 | `context.team` | week | text | all | The NFL team the player played the game for. | `nflverse` snap_counts.team |

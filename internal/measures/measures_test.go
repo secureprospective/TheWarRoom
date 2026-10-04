@@ -10,6 +10,7 @@ import (
 	"testing/fstest"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/college"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/pfrcoverage"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playerscores"
@@ -195,6 +196,7 @@ func TestEveryFetchedURLHasASource(t *testing.T) {
 		"https://www47.myfantasyleague.com/2026/export?TYPE=rosters": "mfl",
 		ras.SourceURL:          "nflverse",
 		pfrcoverage.SourceURL:  "nflverse",
+		contracts.SourceURL:    "nflverse",
 		crosswalk.SourceURL:    "dynastyprocess",
 		college.SeasonStatsURL: "cfbd",
 		schooltier.TeamsURL:    "cfbd",

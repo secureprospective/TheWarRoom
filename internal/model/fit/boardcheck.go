@@ -57,7 +57,8 @@ func CheckBoard(d model.Data, results []Result, holdout int, today Today) []Boar
 			}
 			if last != nil && last.Games() > 0 {
 				lastPct := scales[r.Position][holdout-1].Pct(last.PPG())
-				plays := r.Train.Survives(pl.AgeAt(holdout-1), pl.DraftPick, float64(last.Games()), lastPct)
+				plays := r.Train.Survives(pl.AgeAt(holdout-1), pl.DraftPick, float64(last.Games()), lastPct,
+					pl.TenureAt(holdout-1))
 				value = append(value, [2]float64{proj * plays, total(next)})
 				valueToday = append(valueToday, [2]float64{now, total(next)})
 			}

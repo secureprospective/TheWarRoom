@@ -171,32 +171,52 @@
   {
    "key": "model.survival.age",
    "position": "CB",
-   "value": -0.2254090302416602
+   "value": -0.22115225737244557
   },
   {
    "key": "model.survival.age_squared",
    "position": "CB",
-   "value": -0.0042856119543080076
+   "value": -0.008915676661443878
+  },
+  {
+   "key": "model.survival.contract_cap",
+   "position": "CB",
+   "value": 0.989932477734921
+  },
+  {
+   "key": "model.survival.contract_guaranteed",
+   "position": "CB",
+   "value": 1.2811987431304832
+  },
+  {
+   "key": "model.survival.contract_unknown",
+   "position": "CB",
+   "value": 0
+  },
+  {
+   "key": "model.survival.contract_years_left",
+   "position": "CB",
+   "value": 0.3790115422469379
   },
   {
    "key": "model.survival.draft",
    "position": "CB",
-   "value": -0.0635386027668275
+   "value": 0.19185960032242258
   },
   {
    "key": "model.survival.games",
    "position": "CB",
-   "value": 2.271130839796619
+   "value": 2.1011913661827784
   },
   {
    "key": "model.survival.level",
    "position": "CB",
-   "value": -0.6469295105870521
+   "value": -2.020491546161467
   },
   {
    "key": "model.survival.percentile",
    "position": "CB",
-   "value": 2.0181823063612723
+   "value": 1.5630649290657352
   },
   {
    "key": "model.z_exponential",
@@ -391,32 +411,52 @@
   {
    "key": "model.survival.age",
    "position": "DE",
-   "value": -0.1609519867831144
+   "value": -0.15923860742847304
   },
   {
    "key": "model.survival.age_squared",
    "position": "DE",
-   "value": -0.007579289462918625
+   "value": -0.010004098675097587
+  },
+  {
+   "key": "model.survival.contract_cap",
+   "position": "DE",
+   "value": 1.2108466546160412
+  },
+  {
+   "key": "model.survival.contract_guaranteed",
+   "position": "DE",
+   "value": 1.2077420828202088
+  },
+  {
+   "key": "model.survival.contract_unknown",
+   "position": "DE",
+   "value": 0
+  },
+  {
+   "key": "model.survival.contract_years_left",
+   "position": "DE",
+   "value": 0.47259770138092466
   },
   {
    "key": "model.survival.draft",
    "position": "DE",
-   "value": -0.43025666561150266
+   "value": -0.1602929867049941
   },
   {
    "key": "model.survival.games",
    "position": "DE",
-   "value": 2.203272193908823
+   "value": 2.046312654426562
   },
   {
    "key": "model.survival.level",
    "position": "DE",
-   "value": 1.3010453297246638
+   "value": -0.24170282746875973
   },
   {
    "key": "model.survival.percentile",
    "position": "DE",
-   "value": 2.016262537031084
+   "value": 1.5199734238068738
   },
   {
    "key": "model.z_exponential",
@@ -426,22 +466,22 @@
   {
    "key": "model.arc.age",
    "position": "DT",
-   "value": -0.005656765091726323
+   "value": -0.006028980426103111
   },
   {
    "key": "model.arc.age_squared",
    "position": "DT",
-   "value": 0.0006748090606996592
+   "value": 0.0007611078503849763
   },
   {
    "key": "model.arc.level",
    "position": "DT",
-   "value": 0.02508312512655591
+   "value": 0.023081503015928737
   },
   {
    "key": "model.arc.second_year",
    "position": "DT",
-   "value": 0.02626700875485669
+   "value": 0.026189908501119876
   },
   {
    "key": "model.debut.draft",
@@ -641,32 +681,52 @@
   {
    "key": "model.survival.age",
    "position": "DT",
-   "value": -0.12856273611978286
+   "value": -0.07177660054365506
   },
   {
    "key": "model.survival.age_squared",
    "position": "DT",
-   "value": -0.0071780677340562565
+   "value": -0.013821583458776073
+  },
+  {
+   "key": "model.survival.contract_cap",
+   "position": "DT",
+   "value": 0.13515103970424658
+  },
+  {
+   "key": "model.survival.contract_guaranteed",
+   "position": "DT",
+   "value": 0.6916797511343797
+  },
+  {
+   "key": "model.survival.contract_unknown",
+   "position": "DT",
+   "value": -0.545772848471875
+  },
+  {
+   "key": "model.survival.contract_years_left",
+   "position": "DT",
+   "value": 1.337758711974156
   },
   {
    "key": "model.survival.draft",
    "position": "DT",
-   "value": -0.22901305905408245
+   "value": -0.09391694161823348
   },
   {
    "key": "model.survival.games",
    "position": "DT",
-   "value": 2.720546316008072
+   "value": 2.5462652730255124
   },
   {
    "key": "model.survival.level",
    "position": "DT",
-   "value": 0.5469897081701433
+   "value": -0.285463812806978
   },
   {
    "key": "model.survival.percentile",
    "position": "DT",
-   "value": 1.4841724163591443
+   "value": 1.326536237298582
   },
   {
    "key": "model.z_exponential",
@@ -876,22 +936,22 @@
   {
    "key": "model.arc.age",
    "position": "LB",
-   "value": -0.005275231562252969
+   "value": -0.005489347050247526
   },
   {
    "key": "model.arc.age_squared",
    "position": "LB",
-   "value": 0.0007469210584407907
+   "value": 0.0006342624945097631
   },
   {
    "key": "model.arc.level",
    "position": "LB",
-   "value": -0.008362075663538622
+   "value": -0.00835330344632543
   },
   {
    "key": "model.arc.second_year",
    "position": "LB",
-   "value": 0.0396511950751214
+   "value": 0.041311885040950375
   },
   {
    "key": "model.debut.draft",
@@ -1041,32 +1101,52 @@
   {
    "key": "model.survival.age",
    "position": "LB",
-   "value": -0.2650747563286151
+   "value": -0.276750625271158
   },
   {
    "key": "model.survival.age_squared",
    "position": "LB",
-   "value": 0.010548835001664354
+   "value": 0.007753804164474344
+  },
+  {
+   "key": "model.survival.contract_cap",
+   "position": "LB",
+   "value": 0.8588412732061096
+  },
+  {
+   "key": "model.survival.contract_guaranteed",
+   "position": "LB",
+   "value": 1.3412104906833475
+  },
+  {
+   "key": "model.survival.contract_unknown",
+   "position": "LB",
+   "value": -1.242996507552836
+  },
+  {
+   "key": "model.survival.contract_years_left",
+   "position": "LB",
+   "value": 0.5705183097951873
   },
   {
    "key": "model.survival.draft",
    "position": "LB",
-   "value": -0.14342587821892458
+   "value": 0.01961170605293016
   },
   {
    "key": "model.survival.games",
    "position": "LB",
-   "value": 2.6834047063742954
+   "value": 2.5027475756970343
   },
   {
    "key": "model.survival.level",
    "position": "LB",
-   "value": -0.7685299078008233
+   "value": -1.653530036506104
   },
   {
    "key": "model.survival.percentile",
    "position": "LB",
-   "value": 2.0001005812927546
+   "value": 1.4598096496271222
   },
   {
    "key": "model.z_exponential",
@@ -1276,22 +1356,22 @@
   {
    "key": "model.arc.age",
    "position": "RB",
-   "value": -0.0004827781596522973
+   "value": -0.0004827781596522964
   },
   {
    "key": "model.arc.age_squared",
    "position": "RB",
-   "value": -0.00033742677512531413
+   "value": -0.0003374267751253153
   },
   {
    "key": "model.arc.level",
    "position": "RB",
-   "value": -0.03746506399511789
+   "value": -0.03746506399511788
   },
   {
    "key": "model.arc.second_year",
    "position": "RB",
-   "value": 0.09112923958431536
+   "value": 0.09112923958431539
   },
   {
    "key": "model.debut.draft",
@@ -1647,6 +1727,26 @@
    "key": "model.survival.age_squared",
    "position": "S",
    "value": -0.012914618769368268
+  },
+  {
+   "key": "model.survival.contract_cap",
+   "position": "S",
+   "value": 0
+  },
+  {
+   "key": "model.survival.contract_guaranteed",
+   "position": "S",
+   "value": 0
+  },
+  {
+   "key": "model.survival.contract_unknown",
+   "position": "S",
+   "value": 0
+  },
+  {
+   "key": "model.survival.contract_years_left",
+   "position": "S",
+   "value": 0
   },
   {
    "key": "model.survival.draft",

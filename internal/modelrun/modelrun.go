@@ -284,8 +284,8 @@ func (ps pass) scale(pos domain.Position, year int) model.Scale {
 // minRegulars is the fewest regulars a season's scale is drawn from.
 const minRegulars = 20
 
-// inputNames lists the inputs that fed a player's value: each known prior input and each
-// season of league points.
+// inputNames lists the inputs that fed a player's value: each known prior input, his age, the
+// contract he is on where the survival arc reads one, and each season of league points.
 func inputNames(pl *model.Player, in playerInput) []string {
 	out := []string{}
 	x, known := pl.PriorInputs()
@@ -296,6 +296,9 @@ func inputNames(pl *model.Player, in playerInput) []string {
 	}
 	if !pl.Birth.IsZero() {
 		out = append(out, "age")
+	}
+	if len(model.SurvivalTerms(pl.Position)) > len(model.SurvivalTerms(domain.PosQB)) && pl.TenureAt(in.Current.Year).Known {
+		out = append(out, "contract")
 	}
 	for _, s := range append(in.Past, in.Current) {
 		if s.Games > 0 {

@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"math"
 	"strings"
+
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/model"
 )
 
 // Markdown renders the fit report: what was fitted, on what, and how each fit scored on the
@@ -54,13 +57,7 @@ func Markdown(results []Result, checks []BoardCheck, first, holdout int, source 
 		w("| %s | %d | %s | %s | %s | %+.3f | %+.3f | %+.3f | %+.3f |\n", r.Position, a.Exits, f3(a.RMSEArc), f3(a.RMSEFlat),
 			kept(a.Kept, "arc", "none"), r.Params.ArcStep(23, 3), r.Params.ArcStep(27, 3), r.Params.ArcStep(31, 3), r.Params.Arc[3])
 	}
-	w("\n## Survival arc (plays next season)\n\n")
-	w("| Pos | Train/holdout | Base rate | Holdout rate | Log loss fitted | Log loss base rate | Kept | Stored P(plays) at 24 / 30 / 34, round-1 regular |\n|---|---|---|---|---|---|---|---|\n")
-	for _, r := range results {
-		s := r.Report.Survival
-		w("| %s | %d/%d | %s | %s | %s | %s | %s | %s / %s / %s |\n", r.Position, s.Train, s.Test, f2(s.BaseRate), f2(s.HoldoutObserved),
-			f3(s.LogLossFit), f3(s.LogLossBase), kept(s.Kept, "model", "base rate"), f2(r.Params.Survives(24, 16, 15, 0.6)), f2(r.Params.Survives(30, 16, 15, 0.6)), f2(r.Params.Survives(34, 16, 15, 0.6)))
-	}
+	survivalSection(w, results)
 	debutSection(w, results)
 	boardSection(w, checks, holdout)
 	limitsSection(w)
@@ -78,6 +75,27 @@ func limitsSection(w func(string, ...any)) {
 		"- Kickers: a season barely predicts the next and the prior explains nothing, so the model shrinks toward a " +
 		"prior that is noise and ranks kickers worse than last season's total does (see Against today's board).\n" +
 		"- The prior's weight for the app's own scouting history needs years of stored priors.\n")
+}
+
+// survivalSection is the survival arc's holdout scores and stored chances.
+func survivalSection(w func(string, ...any), results []Result) {
+	w("\n## Survival arc (plays next season)\n\n")
+	w("At DT, DE, LB, CB and S the regression also reads the NFL contract the player is on (OTC via nflverse: cap share, " +
+		"years left, guaranteed share); it is kept only when it beats the same regression without it. The stored chances " +
+		"below are for a player with no contract on file, which at those positions is mostly an unsigned or fringe player: " +
+		"every 2025 defensive regular had one.\n\n")
+	w("| Pos | Train/holdout | Base rate | Holdout rate | Log loss fitted | without contract | Contract | Log loss base rate | Kept | Stored P(plays) at 24 / 30 / 34, round-1 regular |\n|---|---|---|---|---|---|---|---|---|---|\n")
+	for _, r := range results {
+		s := r.Report.Survival
+		without, contract := "—", "—"
+		if len(model.SurvivalTerms(r.Position)) > len(model.SurvivalTerms(domain.PosQB)) {
+			without, contract = f3(s.LogLossNoContract), kept(s.Contract, "kept", "dropped")
+		}
+		plays := func(age float64) string { return f2(r.Params.Survives(age, 16, 15, 0.6, model.Tenure{})) }
+		w("| %s | %d/%d | %s | %s | %s | %s | %s | %s | %s | %s / %s / %s |\n", r.Position, s.Train, s.Test, f2(s.BaseRate),
+			f2(s.HoldoutObserved), f3(s.LogLossFit), without, contract, f3(s.LogLossBase), kept(s.Kept, "model", "base rate"),
+			plays(24), plays(30), plays(34))
+	}
 }
 
 // debutSection reports the chance a rookie becomes a regular in his first season.

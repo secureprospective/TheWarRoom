@@ -154,7 +154,7 @@ func (p Params) survives(pl *Player, u int, games, pct float64) float64 {
 	if math.IsNaN(age) {
 		age = ArcCenter
 	}
-	return p.Survives(age, pl.DraftPick, games, pct)
+	return p.Survives(age, pl.DraftPick, games, pct, pl.TenureAt(u))
 }
 
 func unit(v float64) float64 { return min(max(v, 0), 1) }

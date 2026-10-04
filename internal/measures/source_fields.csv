@@ -41,6 +41,10 @@ nflverse,combine.forty,prior.forty,1
 nflverse,combine.shuttle,prior.shuttle,1
 nflverse,combine.vertical,prior.vertical,1
 nflverse,combine.wt,prior.weight,1
+nflverse,contracts.apy_cap_pct,context.contract_cap_pct,1
+nflverse,contracts.guaranteed,context.contract_guaranteed,1
+nflverse,contracts.value,context.contract_value,1
+nflverse,contracts.years,context.contract_years,1
 nflverse,draft_picks.pick,prior.draft_pick,1
 nflverse,draft_picks.round,prior.draft_round,1
 nflverse,draft_picks.season,prior.draft_year,1

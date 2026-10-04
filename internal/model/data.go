@@ -36,6 +36,7 @@ const (
 	mDefSnaps    = "exposure.defense_snaps"
 	mTeamsSnaps  = "exposure.special_teams_snaps"
 	collegePrefx = "prior.college_"
+	contractPrfx = "context.contract_"
 )
 
 // Measures lists everything the fit reads, for the caller's query: league points by week.
@@ -61,8 +62,14 @@ func facts() []string {
 	for _, c := range collegeMeasures() {
 		out = append(out, collegePrefx+c)
 	}
+	for _, c := range contractMeasures() {
+		out = append(out, contractPrfx+c)
+	}
 	return out
 }
+
+// contractMeasures are the terms of a contract, filed under the season it was signed.
+func contractMeasures() []string { return []string{"cap_pct", "years", "value", "guaranteed"} }
 
 // Combine is the athletic testing the prior reads.
 func Combine() []string {
@@ -86,6 +93,7 @@ type Player struct {
 	DraftPick float64         // overall pick; 0 when undrafted or unknown
 	Combine   map[string]float64
 	College   map[int]map[string]float64 // college season → measure (without the prior.college_ prefix)
+	Contracts map[int]map[string]float64 // season signed → term (without the context.contract_ prefix)
 }
 
 // AgeAt is the player's age on September 1 of season, or NaN when the birth date is unknown.
@@ -145,7 +153,8 @@ func Build(obs []Obs, lastWeek map[int]int) Data {
 	player := func(id string) *Player {
 		p, ok := d.Players[id]
 		if !ok {
-			p = &Player{ID: id, Combine: map[string]float64{}, College: map[int]map[string]float64{}}
+			p = &Player{ID: id, Combine: map[string]float64{}, College: map[int]map[string]float64{},
+				Contracts: map[int]map[string]float64{}}
 			d.Players[id] = p
 		}
 		return p
@@ -155,11 +164,9 @@ func Build(obs []Obs, lastWeek map[int]int) Data {
 		case o.Season == 0:
 			player(o.Player).set(o)
 		case strings.HasPrefix(o.Measure, collegePrefx):
-			c := player(o.Player).College
-			if c[o.Season] == nil {
-				c[o.Season] = map[string]float64{}
-			}
-			c[o.Season][strings.TrimPrefix(o.Measure, collegePrefx)] = o.Value
+			bySeason(player(o.Player).College, o, collegePrefx)
+		case strings.HasPrefix(o.Measure, contractPrfx):
+			bySeason(player(o.Player).Contracts, o, contractPrfx)
 		case o.Week == 0 && o.Measure == mSeasonPts:
 			s := d.season(o.Player, o.Season)
 			s.Total, s.HasTotal = o.Value, true
@@ -168,6 +175,14 @@ func Build(obs []Obs, lastWeek map[int]int) Data {
 		}
 	}
 	return d
+}
+
+// bySeason files a season's value under its measure, without the family prefix.
+func bySeason(m map[int]map[string]float64, o Obs, prefix string) {
+	if m[o.Season] == nil {
+		m[o.Season] = map[string]float64{}
+	}
+	m[o.Season][strings.TrimPrefix(o.Measure, prefix)] = o.Value
 }
 
 func (p *Player) set(o Obs) {
@@ -247,4 +262,36 @@ func FitPosition(nfl string) domain.Position {
 func Positions() []domain.Position {
 	return []domain.Position{domain.PosQB, domain.PosRB, domain.PosWR, domain.PosTE, domain.PosK,
 		domain.PosDT, domain.PosDE, domain.PosLB, domain.PosCB, domain.PosS}
+}
+
+// Tenure is the NFL contract a player is on in a season: the latest one he signed by then. NFL
+// teams pay the players they mean to keep, so it tells the survival arc what draft slot and age
+// cannot (scouting research, 2026-10-04: better log loss at every defensive position on the 2024
+// and 2025 holdouts but one, S in 2025, even).
+type Tenure struct {
+	Known      bool    // a contract with a cap share was signed by the season
+	CapPct     float64 // its average yearly value as a share of the cap the year it was signed
+	YearsLeft  float64 // its seasons after this one; negative once it has run out
+	Guaranteed float64 // its guaranteed share of the total value; 0 when the value is unknown
+}
+
+// TenureAt is the player's tenure in season. Only contracts signed in or before season count, so
+// a signing after it cannot leak into it.
+func (p *Player) TenureAt(season int) Tenure {
+	signed := math.MinInt
+	for yr := range p.Contracts {
+		if yr <= season && yr > signed {
+			signed = yr
+		}
+	}
+	c := p.Contracts[signed]
+	capPct, ok := c["cap_pct"]
+	if c == nil || !ok {
+		return Tenure{}
+	}
+	t := Tenure{Known: true, CapPct: capPct, YearsLeft: float64(signed) + c["years"] - 1 - float64(season)}
+	if v := c["value"]; v > 0 {
+		t.Guaranteed = c["guaranteed"] / v
+	}
+	return t
 }

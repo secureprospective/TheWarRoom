@@ -38,9 +38,9 @@ type Result struct {
 // week-grain number of zero is not emitted: the batch's scope says the file is the whole report
 // for its season, so the store reads an absent week count as zero.
 func Read(ctx context.Context, client *http.Client, reg *measures.Registry, f measures.Feed, season int) (Result, error) {
-	body, err := get(ctx, client, f.URLFor(season))
+	body, err := ingestion.Get(ctx, client, f.URLFor(season), maxBytes)
 	if err != nil {
-		return Result{}, err
+		return Result{}, fmt.Errorf("feeds: %w", err)
 	}
 	sum := sha256.Sum256(body)
 	res, err := parse(reg, f, body)
@@ -52,29 +52,6 @@ func Read(ctx context.Context, client *http.Client, reg *measures.Registry, f me
 		res.Batch.Scope = &measures.Scope{Seasons: []int{season}, Measures: res.numeric}
 	}
 	return res, nil
-}
-
-func get(ctx context.Context, client *http.Client, url string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("feeds: request %s: %w", url, err)
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("feeds: fetch %s: %w", url, err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("feeds: %s answered %d", url, resp.StatusCode)
-	}
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxBytes+1))
-	if err != nil {
-		return nil, fmt.Errorf("feeds: read %s: %w", url, err)
-	}
-	if len(body) > maxBytes {
-		return nil, fmt.Errorf("feeds: %s is over %d bytes", url, maxBytes)
-	}
-	return body, nil
 }
 
 // column is one mapped field and where it sits in the file.

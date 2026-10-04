@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/college"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/feeds"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -90,6 +91,7 @@ func (a *App) loadSignals(ctx context.Context) SignalsReport {
 		}
 	}
 	rep.Loads = append(rep.Loads, a.loadCollege(ctx, client, reg)...)
+	rep.Loads = append(rep.Loads, a.loadContracts(ctx, client))
 	rep.FinishedAt = time.Now().Format(time.RFC3339)
 	var added, failed int
 	for _, l := range rep.Loads {
@@ -166,6 +168,30 @@ func (a *App) loadFeedFile(ctx context.Context, client *http.Client, reg *measur
 	}
 	out.Rows, out.Missing = res.Rows, res.Missing
 	return a.ingest(ctx, out, res.Batch)
+}
+
+// contractsFeed names the contracts file in the Signals console.
+const contractsFeed = "contracts"
+
+// loadContracts loads NFL contracts when the file is due. It is read as a closed file, every 30
+// days: nflverse rebuilds the 11 MB file daily and every body fetched is archived, so a daily read
+// would add gigabytes a year for terms that change a few times a season.
+func (a *App) loadContracts(ctx context.Context, client *http.Client) SignalLoad {
+	l := SignalLoad{Feed: contractsFeed}
+	if due, err := a.due(ctx, contracts.SourceURL, false); err != nil || !due {
+		l.Status = loadCurrent
+		return withError(l, err)
+	}
+	known, err := a.history.KnownIDs(ctx, contracts.IDType)
+	if err != nil {
+		l.Status = loadFailed
+		return withError(l, err)
+	}
+	b, err := contracts.Fetch(ctx, client, contracts.SourceURL, func(id string) bool { return known[id] })
+	if err != nil {
+		return a.failedLoad(ctx, l, contracts.Source, err)
+	}
+	return a.ingest(ctx, l, b)
 }
 
 // loadCollege loads each due college season. Without a CFBD key the college signal is skipped,
@@ -318,8 +344,13 @@ type SignalsView struct {
 	LastLoad SignalsReport `json:"lastLoad"`
 }
 
-// allCollegeSeasons marks coverage measured across every college season.
-const allCollegeSeasons = -1
+// allSeasons marks coverage measured across every season: college seasons, all behind a player,
+// and contract signings, the latest of which is the one in force.
+const allSeasons = -1
+
+// contractsFirstSeason is the first signing season the Signals console counts: the oldest
+// contract a rostered veteran could still be playing on.
+const contractsFirstSeason = 2014
 
 // GetSignals reports source health, freshness and coverage from what history holds.
 func (a *App) GetSignals() SignalsView {
@@ -377,6 +408,18 @@ func (a *App) signalsView(ctx context.Context) (SignalsView, error) {
 		return SignalsView{}, err
 	}
 	view.Feeds = append(view.Feeds, fv)
+	var contractFields []string
+	for _, sf := range reg.Fields {
+		if strings.HasPrefix(sf.Field, "contracts.") {
+			contractFields = append(contractFields, sf.Measure)
+		}
+	}
+	fv, err = a.feedView(ctx, contractsFeed, contracts.Source, contracts.SourceURL,
+		seasonRange(contractsFirstSeason, a.season), contractFields, positions, closedFileWindow+24*time.Hour)
+	if err != nil {
+		return SignalsView{}, err
+	}
+	view.Feeds = append(view.Feeds, fv)
 	return view, nil
 }
 
@@ -394,7 +437,7 @@ func sourceView(h history.SourceHealth, name string) SourceView {
 }
 
 // feedView measures one signal. Coverage is taken in the latest season with data, or across
-// every season for college, where a player's seasons are all behind him.
+// every season for college, where a player's seasons are all behind him, and for contracts.
 func (a *App) feedView(ctx context.Context, name, source, currentURL string, seasons []int, fields []string,
 	positions map[string]string, maxAge time.Duration) (FeedView, error) {
 	fv := FeedView{Feed: name, Source: source}
@@ -420,8 +463,8 @@ func (a *App) feedView(ctx context.Context, name, source, currentURL string, sea
 			latest, fv.CoverageSeason = players, season
 		}
 	}
-	if source == college.Source {
-		latest, fv.CoverageSeason = union, allCollegeSeasons
+	if name == college.Source || name == contractsFeed {
+		latest, fv.CoverageSeason = union, allSeasons
 	}
 	fv.Coverage = coverage(positions, latest)
 	return fv, nil

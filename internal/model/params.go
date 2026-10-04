@@ -26,9 +26,9 @@ type Params struct {
 	// Arc[0] + Arc[1]·(a−27) + Arc[2]·(a−27)² + Arc[3]·[x = 1].
 	Arc [4]float64
 
-	// Survival: the log-odds of playing next season are Survival · (1, a−27, (a−27)², draft,
-	// games/17, percentile), where draft is the log of the overall pick, 260 when undrafted.
-	Survival [6]float64
+	// Survival: the log-odds of playing next season are Survival · SurvivalRow, the terms
+	// SurvivalTerms names for the position.
+	Survival []float64
 
 	// Debut: the log-odds that a rookie becomes a regular are Debut · (1, draft).
 	Debut [2]float64
@@ -73,11 +73,30 @@ func (p Params) ArcStep(age float64, experience int) float64 {
 }
 
 // Survives is the probability of playing next season.
-func (p Params) Survives(age, draftPick, games, pct float64) float64 {
-	a := age - ArcCenter
-	z := p.Survival[0] + p.Survival[1]*a + p.Survival[2]*a*a + p.Survival[3]*math.Log(draftCapital(draftPick)) +
-		p.Survival[4]*games/17 + p.Survival[5]*pct
+func (p Params) Survives(age, draftPick, games, pct float64, t Tenure) float64 {
+	z := 0.0
+	for i, x := range p.SurvivalRow(age, draftPick, games, pct, t) {
+		if i < len(p.Survival) {
+			z += p.Survival[i] * x
+		}
+	}
 	return 1 / (1 + math.Exp(-z))
+}
+
+// SurvivalRow is the survival arc's inputs in SurvivalTerms order: 1, a−27, (a−27)², the log of
+// the overall pick (260 when undrafted), games/17 and the percentile; at a defensive position
+// also the tenure's cap share (×10), its years left (−1 to 5, ÷5), its guaranteed share, and 1
+// when no contract is known (the other three then 0).
+func (p Params) SurvivalRow(age, draftPick, games, pct float64, t Tenure) []float64 {
+	a := age - ArcCenter
+	row := []float64{1, a, a * a, math.Log(draftCapital(draftPick)), games / 17, pct}
+	if len(SurvivalTerms(p.Position)) == len(row) {
+		return row
+	}
+	if !t.Known {
+		return append(row, 0, 0, 0, 1)
+	}
+	return append(row, t.CapPct*10, min(max(t.YearsLeft, -1), 5)/5, t.Guaranteed, 0)
 }
 
 // Debuts is the probability a rookie with this overall pick (0 when undrafted) becomes a
@@ -108,7 +127,7 @@ func (p Params) Values() map[string]float64 {
 	for i, term := range arcTerms() {
 		out["model.arc."+term] = p.Arc[i]
 	}
-	for i, term := range survivalTerms() {
+	for i, term := range SurvivalTerms(p.Position) {
 		out["model.survival."+term] = p.Survival[i]
 	}
 	out["model.debut.level"], out["model.debut.draft"] = p.Debut[0], p.Debut[1]
@@ -118,7 +137,8 @@ func (p Params) Values() map[string]float64 {
 // ParamsFrom reads a position's params back through get.
 func ParamsFrom(pos domain.Position, get func(key string) (float64, error)) (Params, error) {
 	n := len(PriorFeatures(pos))
-	p := Params{Position: pos, Weight: make([]float64, n), Missing: make([]float64, n)}
+	p := Params{Position: pos, Weight: make([]float64, n), Missing: make([]float64, n),
+		Survival: make([]float64, len(SurvivalTerms(pos)))}
 	var z float64
 	targets := map[string]*float64{
 		"model.prior.intercept": &p.Intercept, "model.k_now": &p.KNow, "model.k_dynasty": &p.KDynasty,
@@ -131,7 +151,7 @@ func ParamsFrom(pos domain.Position, get func(key string) (float64, error)) (Par
 	for i, term := range arcTerms() {
 		targets["model.arc."+term] = &p.Arc[i]
 	}
-	for i, term := range survivalTerms() {
+	for i, term := range SurvivalTerms(pos) {
 		targets["model.survival."+term] = &p.Survival[i]
 	}
 	targets["model.debut.level"], targets["model.debut.draft"] = &p.Debut[0], &p.Debut[1]
@@ -148,8 +168,16 @@ func ParamsFrom(pos domain.Position, get func(key string) (float64, error)) (Par
 
 func arcTerms() []string { return []string{"level", "age", "age_squared", "second_year"} }
 
-func survivalTerms() []string {
-	return []string{"level", "age", "age_squared", "draft", "games", "percentile"}
+// SurvivalTerms names a position's survival terms. Defensive positions add the contract they are
+// on; at offense it did not help (worse log loss at QB and WR on the 2024–2025 holdouts).
+func SurvivalTerms(pos domain.Position) []string {
+	base := []string{"level", "age", "age_squared", "draft", "games", "percentile"}
+	switch pos {
+	case domain.PosDT, domain.PosDE, domain.PosLB, domain.PosCB, domain.PosS:
+		return append(base, "contract_cap", "contract_years_left", "contract_guaranteed", "contract_unknown")
+	case domain.PosQB, domain.PosRB, domain.PosWR, domain.PosTE, domain.PosK, domain.PosFlag:
+	}
+	return base
 }
 
 func boolValue(b bool) float64 {
