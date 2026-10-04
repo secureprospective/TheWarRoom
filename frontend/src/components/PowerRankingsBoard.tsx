@@ -300,8 +300,6 @@ export function PowerRankingsBoard() {
           >
             roster {(slider * 100).toFixed(0)}% / {results.short}{" "}
             {((1 - slider) * 100).toFixed(0)}%
-            {powerAuto &&
-              ` · auto: 4 ÷ (4 + ${powerRankings?.weeksScored ?? 0} weeks played)`}
           </span>
           <input
             type="range"
@@ -337,6 +335,18 @@ export function PowerRankingsBoard() {
           >
             Auto
           </button>
+          {/* After the controls, so the slider does not move when Auto turns off. */}
+          <span
+            style={{
+              fontFamily: "var(--mono)",
+              fontSize: 11,
+              color: "var(--text-tertiary)",
+            }}
+          >
+            {powerAuto
+              ? `4 ÷ (4 + ${powerRankings?.weeksScored ?? 0} weeks played)`
+              : "set by the slider"}
+          </span>
         </div>
       )}
 
@@ -534,15 +544,13 @@ export function PowerRankingsBoard() {
                   : "—"}
               </span>
               <span className="twr-c-num twr-r twr-hide-mtx">
-                {r.hasLuck
-                  ? `${r.luck > 0 ? "+" : ""}${r.luck.toFixed(1)}`
-                  : "—"}
+                {r.hasLuck ? signed(r.luck) : "—"}
               </span>
               <span
                 className="twr-c-num twr-r twr-hide-mtx"
                 title={r.hasCap ? `dead cap $${r.deadCap.toFixed(2)}M` : ""}
               >
-                {r.hasCap ? `$${r.capRoom.toFixed(1)}M` : "—"}
+                {r.hasCap ? millions(r.capRoom) : "—"}
               </span>
               <span className="twr-c-num twr-r twr-hide-mtx">
                 {r.h2hW}-{r.h2hL}
@@ -574,6 +582,19 @@ export function PowerRankingsBoard() {
       )}
     </div>
   );
+}
+
+// signed shows one decimal with its sign, and a value that rounds to zero as plain 0.0.
+function signed(v: number): string {
+  const r = Math.round(v * 10) / 10;
+  if (r === 0) return "0.0";
+  return `${r > 0 ? "+" : "−"}${Math.abs(r).toFixed(1)}`;
+}
+
+// millions shows $M to one decimal, a shortfall with a leading minus, never "$-0.0M".
+function millions(v: number): string {
+  const r = Math.round(v * 10) / 10;
+  return `${r < 0 ? "−" : ""}$${Math.abs(r).toFixed(1)}M`;
 }
 
 // getSortVal maps a row + key to a comparable number. Rank ascends (1 = best); every
