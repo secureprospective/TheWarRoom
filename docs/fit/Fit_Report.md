@@ -94,10 +94,28 @@ The scale is a within-position percentile of league fantasy points per game play
 | CB | 615/207 | 0.77 | 0.79 | 0.431 | 0.512 | model | 0.96 / 0.84 / 0.67 |
 | S | 415/148 | 0.83 | 0.84 | 0.311 | 0.433 | model | 0.98 / 0.90 / 0.70 |
 
+## Against today's board (2025 predicted from seasons before it)
+
+Spearman rank correlation with what happened in 2025. Today's board is last season's total league points times the engine's age pull. **Talent:** the season's regulars, against points per game. **Value:** everyone who played the season before, against the season's total points; the model's level is weighted by its chance he plays. **Rookies:** today's board gives every rookie 0, so it has no ranking of them.
+
+| Pos | Talent n | model | today | Value n | model | today | Rookie regulars | model |
+|---|---|---|---|---|---|---|---|---|
+| QB | 58 | 0.73 | 0.65 | 74 | 0.70 | 0.72 | 8 | 0.76 |
+| RB | 134 | 0.76 | 0.53 | 157 | 0.69 | 0.71 | 23 | 0.46 |
+| WR | 214 | 0.79 | 0.67 | 245 | 0.75 | 0.75 | 36 | 0.56 |
+| TE | 128 | 0.80 | 0.56 | 139 | 0.79 | 0.79 | 16 | 0.86 |
+| K | 40 | 0.03 | 0.25 | 43 | 0.07 | 0.46 | 4 | -0.40 |
+| DT | 153 | 0.60 | 0.48 | 174 | 0.64 | 0.58 | 28 | 0.41 |
+| DE | 117 | 0.60 | 0.55 | 147 | 0.69 | 0.67 | 15 | 0.54 |
+| LB | 268 | 0.78 | 0.65 | 315 | 0.70 | 0.69 | 45 | 0.72 |
+| CB | 182 | 0.67 | 0.58 | 207 | 0.64 | 0.62 | 28 | 0.49 |
+| S | 140 | 0.72 | 0.61 | 148 | 0.67 | 0.68 | 20 | 0.69 |
+
 ## Limits
 
 - No free source has IDP opportunity denominators (pass-rush snaps, routes, coverage snaps); IDP production is points per game.
 - IDP arcs come from these five seasons only; no published IDP curve exists to check them against.
 - The holdout is one season. Kept/fallback choices decided by less than 0.002 are within its noise; the rule still takes the lower number, and the simpler piece on a tie.
 - nflverse's generic "DB" players are left out of the fit; their position is ambiguous between CB and S.
+- Kickers: a season barely predicts the next and the prior explains nothing, so the model shrinks toward a prior that is noise and ranks kickers worse than last season's total does (see Against today's board).
 - The prior's weight for the app's own scouting history needs years of stored priors.

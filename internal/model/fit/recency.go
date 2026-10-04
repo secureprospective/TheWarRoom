@@ -17,7 +17,7 @@ type recencyScore struct {
 // effective count (Σw·g)² / Σw²·g. Weights for the two older seasons are fitted on a grid with
 // the training model and compared with Marcel's on the holdout season; when they win they are
 // refitted on every season with the full model, and otherwise Marcel's are stored.
-func fitRecency(sm samples, holdout int, train, full model.Params, score *recencyScore) [2]float64 {
+func fitRecency(sm samples, holdout int, train, full model.Params, score *recencyScore) (trainW, fullW [2]float64) {
 	var trainH, testH []history
 	for _, s := range sm.seasons {
 		if s.games < model.RegularGames {
@@ -39,9 +39,9 @@ func fitRecency(sm samples, holdout int, train, full model.Params, score *recenc
 	score.RMSEMarc = historyError(train, marcel, testH)
 	score.Kept = score.RMSEFitted < score.RMSEMarc
 	if !score.Kept {
-		return marcel
+		return marcel, marcel
 	}
-	return bestRecency(full, append(trainH, testH...))
+	return best, bestRecency(full, append(trainH, testH...))
 }
 
 // marcel is Marcel's weights for the two older seasons, the latest weighing 1.

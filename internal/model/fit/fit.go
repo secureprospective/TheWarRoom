@@ -14,6 +14,7 @@ import (
 type Result struct {
 	Position domain.Position
 	Params   model.Params
+	Train    model.Params // the params fitted before the holdout season, which score it
 	Report   Report
 }
 
@@ -67,7 +68,8 @@ func fitPosition(sm samples, holdout int) Result {
 	r.Params.Survival = fullSurv
 	trainModel, fullModel := fitDynasty(sm, holdout, trainPrior, trainSurv, fullSurv, &r.Report)
 	r.Params.KDynasty, r.Params.Exponential, r.Params.Arc = fullModel.KDynasty, fullModel.Exponential, fullModel.Arc
-	r.Params.Recency = fitRecency(sm, holdout, trainModel, fullModel, &r.Report.Recency)
+	r.Train = trainModel
+	r.Train.Recency, r.Params.Recency = fitRecency(sm, holdout, trainModel, fullModel, &r.Report.Recency)
 	return r
 }
 

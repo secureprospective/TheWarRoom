@@ -106,3 +106,12 @@ func TestRunIsDeterministic(t *testing.T) {
 		}
 	}
 }
+
+func TestSpearmanRanksWithTies(t *testing.T) {
+	if got := spearman([][2]float64{{1, 10}, {2, 20}, {3, 30}, {4, 25}}); math.Abs(got-0.8) > 1e-12 {
+		t.Errorf("spearman = %v, want 0.8", got)
+	}
+	if got := spearman([][2]float64{{1, 5}, {1, 6}, {1, 7}}); !math.IsNaN(got) {
+		t.Errorf("a column with no spread has no correlation, got %v", got)
+	}
+}

@@ -61,7 +61,7 @@ func (a *Assembler) Calibration(pos domain.Position) (engine.Calibration, error)
 	return engine.Calibration{
 		SalaryFloor:  DefaultSalaryFloor,
 		RASFallback:  DefaultRASFallback,
-		PeakLimit:    peakLimit(pos),
+		PeakLimit:    PeakLimit(pos),
 		DecayRate:    decay,
 		Cushion:      cushion,
 		LeagueCap:    leagueCap,

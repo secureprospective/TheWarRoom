@@ -16,7 +16,9 @@ import (
 	"slices"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/composition"
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/model/fit"
@@ -45,7 +47,8 @@ func run(ctx context.Context, path string, first, holdout int, out, report strin
 	if err != nil {
 		return err
 	}
-	results := fit.Run(model.Build(obs, lastWeek), first, holdout)
+	d := model.Build(obs, lastWeek)
+	results := fit.Run(d, first, holdout)
 	file := params.FittedFile{Fitted: time.Now().UTC().Format("2006-01-02"), First: first, Holdout: holdout}
 	for _, r := range results {
 		for key, v := range r.Params.Values() {
@@ -65,7 +68,19 @@ func run(ctx context.Context, path string, first, holdout int, out, report strin
 	if err := os.WriteFile(out, append(enc, '\n'), 0o600); err != nil {
 		return fmt.Errorf("fit: write params: %w", err)
 	}
-	md := fit.Markdown(results, first, holdout, fmt.Sprintf("a history database holding %d values", len(obs)))
+	decay, err := params.DefaultSet().GetGlobal(params.KeyLayer3DecayRate)
+	if err != nil {
+		return fmt.Errorf("fit: %w", err)
+	}
+	today := func(pl *model.Player, lastTotal, age float64) float64 {
+		pull, err := engine.ApplyDecay(age, composition.PeakLimit(pl.Position), decay)
+		if err != nil {
+			return 0
+		}
+		return lastTotal * pull
+	}
+	checks := fit.CheckBoard(d, results, holdout, today)
+	md := fit.Markdown(results, checks, first, holdout, fmt.Sprintf("a history database holding %d values", len(obs)))
 	if err := os.WriteFile(report, []byte(md), 0o600); err != nil {
 		return fmt.Errorf("fit: write report: %w", err)
 	}

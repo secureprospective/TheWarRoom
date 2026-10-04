@@ -69,10 +69,10 @@ func (a *Assembler) cushionGuard(p domain.Position) (engine.CushionGuard, error)
 	return engine.CushionGuard{RASThreshold: threshold, DeclineFactor: 1 - reduction}, nil
 }
 
-// peakLimit is the Layer-3 age past which decay applies (Engine_Specification, "Current Peak
+// PeakLimit is the Layer-3 age past which decay applies (Engine_Specification, "Current Peak
 // Limit Defaults"). These are meant to be admin-tunable (SL-017) but are not in the params
 // store yet. An unknown position gets the latest peak, so it is never penalized early.
-func peakLimit(p domain.Position) float64 {
+func PeakLimit(p domain.Position) float64 {
 	switch p {
 	case domain.PosQB:
 		return 32

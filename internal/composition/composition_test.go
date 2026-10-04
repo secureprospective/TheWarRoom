@@ -197,8 +197,8 @@ func TestPeakLimitByPosition(t *testing.T) {
 		domain.PosS: 28, domain.PosK: 30,
 	}
 	for pos, w := range want {
-		if got := peakLimit(pos); got != w {
-			t.Errorf("peakLimit(%s) = %v, want %v", pos, got, w)
+		if got := PeakLimit(pos); got != w {
+			t.Errorf("PeakLimit(%s) = %v, want %v", pos, got, w)
 		}
 	}
 }
