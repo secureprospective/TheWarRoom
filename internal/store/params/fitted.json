@@ -26,12 +26,12 @@
   {
    "key": "model.debut.draft",
    "position": "CB",
-   "value": -1.2840053221603829
+   "value": -1.3226876998770576
   },
   {
    "key": "model.debut.level",
    "position": "CB",
-   "value": 7.624164525140062
+   "value": 7.854526976444527
   },
   {
    "key": "model.k_dynasty",
@@ -41,122 +41,122 @@
   {
    "key": "model.k_now",
    "position": "CB",
-   "value": 3.0503915173403273
+   "value": 2.955644259694442
   },
   {
    "key": "model.prior.bench.missing",
    "position": "CB",
-   "value": -0.0006447429481765861
+   "value": 0.03968537819320006
   },
   {
    "key": "model.prior.bench.weight",
    "position": "CB",
-   "value": -0.0004117076448629612
+   "value": 0.0008971326372046467
   },
   {
    "key": "model.prior.broad_jump.missing",
    "position": "CB",
-   "value": -0.8676972980655323
+   "value": -0.9963455864820292
   },
   {
    "key": "model.prior.broad_jump.weight",
    "position": "CB",
-   "value": -0.007342686034565126
+   "value": -0.008455660798103766
   },
   {
    "key": "model.prior.college.missing",
    "position": "CB",
-   "value": 0.02837716496604692
+   "value": 0.01240117747889566
   },
   {
    "key": "model.prior.college.weight",
    "position": "CB",
-   "value": 0.11158859897364733
+   "value": 0.11418575384591483
   },
   {
    "key": "model.prior.draft.missing",
    "position": "CB",
-   "value": -0.7102749388388786
+   "value": -0.7362283672288407
   },
   {
    "key": "model.prior.draft.weight",
    "position": "CB",
-   "value": -0.12815171724565935
+   "value": -0.1301520800340293
   },
   {
    "key": "model.prior.entry_age.missing",
    "position": "CB",
-   "value": 0.09889824891982882
+   "value": 0.26601333990201664
   },
   {
    "key": "model.prior.entry_age.weight",
    "position": "CB",
-   "value": 0.004312778204702204
+   "value": 0.011590181351693178
   },
   {
    "key": "model.prior.forty.missing",
    "position": "CB",
-   "value": 1.796898648184969
+   "value": 1.509715742868527
   },
   {
    "key": "model.prior.forty.weight",
    "position": "CB",
-   "value": 0.4109118296898861
+   "value": 0.3397834451652318
   },
   {
    "key": "model.prior.height.missing",
    "position": "CB",
-   "value": -1.2515543645896907
+   "value": -1.1737688776562007
   },
   {
    "key": "model.prior.height.weight",
    "position": "CB",
-   "value": -0.017374472958493894
+   "value": -0.01630857089949132
   },
   {
    "key": "model.prior.intercept",
    "position": "CB",
-   "value": 1.4891568064124154
+   "value": 1.1549360630607888
   },
   {
    "key": "model.prior.shuttle.missing",
    "position": "CB",
-   "value": 1.0878993003254462
+   "value": 1.416076986726846
   },
   {
    "key": "model.prior.shuttle.weight",
    "position": "CB",
-   "value": 0.2497518761242177
+   "value": 0.3231620069042303
   },
   {
    "key": "model.prior.three_cone.missing",
    "position": "CB",
-   "value": -2.5619115480926933
+   "value": -2.540888404308017
   },
   {
    "key": "model.prior.three_cone.weight",
    "position": "CB",
-   "value": -0.358072548982382
+   "value": -0.3490639979083395
   },
   {
    "key": "model.prior.vertical.missing",
    "position": "CB",
-   "value": 0.6292492908841215
+   "value": 0.7751844261763967
   },
   {
    "key": "model.prior.vertical.weight",
    "position": "CB",
-   "value": 0.01733150638185717
+   "value": 0.021375120628684297
   },
   {
    "key": "model.prior.weight.missing",
    "position": "CB",
-   "value": 0.6124170327403564
+   "value": 0.5958949506202847
   },
   {
    "key": "model.prior.weight.weight",
    "position": "CB",
-   "value": 0.003511023037468963
+   "value": 0.0036232795014257005
   },
   {
    "key": "model.recency.1",
@@ -171,32 +171,32 @@
   {
    "key": "model.survival.age",
    "position": "CB",
-   "value": -0.2388984776002106
+   "value": -0.2254090302416602
   },
   {
    "key": "model.survival.age_squared",
    "position": "CB",
-   "value": -0.0005920785113105952
+   "value": -0.0042856119543080076
   },
   {
    "key": "model.survival.draft",
    "position": "CB",
-   "value": -0.09789008942350563
+   "value": -0.0635386027668275
   },
   {
    "key": "model.survival.games",
    "position": "CB",
-   "value": 2.2201238773648777
+   "value": 2.271130839796619
   },
   {
    "key": "model.survival.level",
    "position": "CB",
-   "value": -0.5516198950358002
+   "value": -0.6469295105870521
   },
   {
    "key": "model.survival.percentile",
    "position": "CB",
-   "value": 2.1086214280955895
+   "value": 2.0181823063612723
   },
   {
    "key": "model.z_exponential",
@@ -206,402 +206,472 @@
   {
    "key": "model.arc.age",
    "position": "DE",
-   "value": -0.005527981979421328
+   "value": 0
   },
   {
    "key": "model.arc.age_squared",
    "position": "DE",
-   "value": 0.00010024199887082429
+   "value": 0
   },
   {
    "key": "model.arc.level",
    "position": "DE",
-   "value": 0.04483925959669812
+   "value": 0
   },
   {
    "key": "model.arc.second_year",
    "position": "DE",
-   "value": 0.007493929284590181
+   "value": 0
   },
   {
    "key": "model.debut.draft",
    "position": "DE",
-   "value": -1.2088262268061494
+   "value": -1.3520294192897226
   },
   {
    "key": "model.debut.level",
    "position": "DE",
-   "value": 6.612595822772174
+   "value": 7.67719650295834
   },
   {
    "key": "model.k_dynasty",
    "position": "DE",
-   "value": 8.947413858650673
-  },
-  {
-   "key": "model.k_now",
-   "position": "DE",
-   "value": 3.711787176992997
-  },
-  {
-   "key": "model.prior.bench.missing",
-   "position": "DE",
-   "value": 0.3897794626442077
-  },
-  {
-   "key": "model.prior.bench.weight",
-   "position": "DE",
-   "value": 0.014385114534172317
-  },
-  {
-   "key": "model.prior.broad_jump.missing",
-   "position": "DE",
-   "value": -0.8304451657354908
-  },
-  {
-   "key": "model.prior.broad_jump.weight",
-   "position": "DE",
-   "value": -0.006495895790289676
-  },
-  {
-   "key": "model.prior.college.missing",
-   "position": "DE",
-   "value": -0.06249412584486766
-  },
-  {
-   "key": "model.prior.college.weight",
-   "position": "DE",
-   "value": -0.05067249732385755
-  },
-  {
-   "key": "model.prior.draft.missing",
-   "position": "DE",
-   "value": -0.6617283254073697
-  },
-  {
-   "key": "model.prior.draft.weight",
-   "position": "DE",
-   "value": -0.11456988584582109
-  },
-  {
-   "key": "model.prior.entry_age.missing",
-   "position": "DE",
-   "value": -0.06462441565116941
-  },
-  {
-   "key": "model.prior.entry_age.weight",
-   "position": "DE",
-   "value": -0.002798712286172566
-  },
-  {
-   "key": "model.prior.forty.missing",
-   "position": "DE",
-   "value": -0.8870065553520993
-  },
-  {
-   "key": "model.prior.forty.weight",
-   "position": "DE",
-   "value": -0.18964637008306912
-  },
-  {
-   "key": "model.prior.height.missing",
-   "position": "DE",
-   "value": -0.09606196627130291
-  },
-  {
-   "key": "model.prior.height.weight",
-   "position": "DE",
-   "value": -0.0012621513475051997
-  },
-  {
-   "key": "model.prior.intercept",
-   "position": "DE",
-   "value": 1.8950501701605946
-  },
-  {
-   "key": "model.prior.shuttle.missing",
-   "position": "DE",
-   "value": -0.38925453663755494
-  },
-  {
-   "key": "model.prior.shuttle.weight",
-   "position": "DE",
-   "value": -0.08633748677101631
-  },
-  {
-   "key": "model.prior.three_cone.missing",
-   "position": "DE",
-   "value": 0.49949271340634127
-  },
-  {
-   "key": "model.prior.three_cone.weight",
-   "position": "DE",
-   "value": 0.06484864888197342
-  },
-  {
-   "key": "model.prior.vertical.missing",
-   "position": "DE",
-   "value": 0.41523345038996473
-  },
-  {
-   "key": "model.prior.vertical.weight",
-   "position": "DE",
-   "value": 0.012140205762342265
-  },
-  {
-   "key": "model.prior.weight.missing",
-   "position": "DE",
-   "value": -0.0008848834866212896
-  },
-  {
-   "key": "model.prior.weight.weight",
-   "position": "DE",
-   "value": 0.000033838688195037094
-  },
-  {
-   "key": "model.recency.1",
-   "position": "DE",
-   "value": 0.2
-  },
-  {
-   "key": "model.recency.2",
-   "position": "DE",
-   "value": 0
-  },
-  {
-   "key": "model.survival.age",
-   "position": "DE",
-   "value": -0.14024592611738335
-  },
-  {
-   "key": "model.survival.age_squared",
-   "position": "DE",
-   "value": -0.005100175768005208
-  },
-  {
-   "key": "model.survival.draft",
-   "position": "DE",
-   "value": -0.3865861098072495
-  },
-  {
-   "key": "model.survival.games",
-   "position": "DE",
-   "value": 2.247277485942533
-  },
-  {
-   "key": "model.survival.level",
-   "position": "DE",
-   "value": 1.0685682646617674
-  },
-  {
-   "key": "model.survival.percentile",
-   "position": "DE",
-   "value": 1.8693429415250444
-  },
-  {
-   "key": "model.z_exponential",
-   "position": "DE",
-   "value": 0
-  },
-  {
-   "key": "model.arc.age",
-   "position": "DT",
-   "value": -0.006306885617079127
-  },
-  {
-   "key": "model.arc.age_squared",
-   "position": "DT",
-   "value": -0.0006003699011560066
-  },
-  {
-   "key": "model.arc.level",
-   "position": "DT",
-   "value": 0.021774398937496577
-  },
-  {
-   "key": "model.arc.second_year",
-   "position": "DT",
-   "value": 0.05758311141352393
-  },
-  {
-   "key": "model.debut.draft",
-   "position": "DT",
-   "value": -1.6937342228733532
-  },
-  {
-   "key": "model.debut.level",
-   "position": "DT",
-   "value": 9.36553585263911
-  },
-  {
-   "key": "model.k_dynasty",
-   "position": "DT",
    "value": 7.958845393295686
   },
   {
    "key": "model.k_now",
-   "position": "DT",
-   "value": 3.0412943686046687
+   "position": "DE",
+   "value": 5.62703104996932
   },
   {
    "key": "model.prior.bench.missing",
-   "position": "DT",
-   "value": -0.11891305986210968
+   "position": "DE",
+   "value": 0.3526357753553492
   },
   {
    "key": "model.prior.bench.weight",
-   "position": "DT",
-   "value": -0.0020877869890603045
+   "position": "DE",
+   "value": 0.013668277143109952
   },
   {
    "key": "model.prior.broad_jump.missing",
-   "position": "DT",
-   "value": -0.870436339955721
+   "position": "DE",
+   "value": -0.43019647061631294
   },
   {
    "key": "model.prior.broad_jump.weight",
-   "position": "DT",
-   "value": -0.00854781057129149
+   "position": "DE",
+   "value": -0.0031671119912795986
   },
   {
    "key": "model.prior.college.missing",
-   "position": "DT",
-   "value": 0.05859254624524178
+   "position": "DE",
+   "value": -0.17040623328429658
   },
   {
    "key": "model.prior.college.weight",
-   "position": "DT",
-   "value": 0.8306325394194082
+   "position": "DE",
+   "value": -0.24396829820550742
+  },
+  {
+   "key": "model.prior.college_best.missing",
+   "position": "DE",
+   "value": 0.20993817800137315
+  },
+  {
+   "key": "model.prior.college_best.weight",
+   "position": "DE",
+   "value": 0.6657366889715752
+  },
+  {
+   "key": "model.prior.college_seasons.missing",
+   "position": "DE",
+   "value": -0.20626791442080025
+  },
+  {
+   "key": "model.prior.college_seasons.weight",
+   "position": "DE",
+   "value": -0.07625455829301211
   },
   {
    "key": "model.prior.draft.missing",
-   "position": "DT",
-   "value": -0.7632869335572136
+   "position": "DE",
+   "value": -0.6145630583099659
   },
   {
    "key": "model.prior.draft.weight",
-   "position": "DT",
-   "value": -0.15405041363060815
+   "position": "DE",
+   "value": -0.09451237573231579
   },
   {
    "key": "model.prior.entry_age.missing",
-   "position": "DT",
-   "value": 0.09753404334216605
+   "position": "DE",
+   "value": 0.26199970622358815
   },
   {
    "key": "model.prior.entry_age.weight",
-   "position": "DT",
-   "value": 0.004218199807673134
+   "position": "DE",
+   "value": 0.01140921333650619
   },
   {
    "key": "model.prior.forty.missing",
-   "position": "DT",
-   "value": 0.21004213527273152
+   "position": "DE",
+   "value": -0.8546675649821556
   },
   {
    "key": "model.prior.forty.weight",
-   "position": "DT",
-   "value": 0.05041085516539212
+   "position": "DE",
+   "value": -0.18356465598291036
   },
   {
    "key": "model.prior.height.missing",
-   "position": "DT",
-   "value": 0.638724258309862
+   "position": "DE",
+   "value": 0.24158171405582005
   },
   {
    "key": "model.prior.height.weight",
-   "position": "DT",
-   "value": 0.008477568843703136
+   "position": "DE",
+   "value": 0.003191711269288318
   },
   {
    "key": "model.prior.intercept",
-   "position": "DT",
-   "value": 2.174575547373232
+   "position": "DE",
+   "value": 2.724323864815589
   },
   {
    "key": "model.prior.shuttle.missing",
-   "position": "DT",
-   "value": 0.05823828057783509
+   "position": "DE",
+   "value": -0.8458156702432563
   },
   {
    "key": "model.prior.shuttle.weight",
-   "position": "DT",
-   "value": 0.0013506647874090628
+   "position": "DE",
+   "value": -0.219778702452384
   },
   {
    "key": "model.prior.three_cone.missing",
-   "position": "DT",
-   "value": -1.5675961911955614
+   "position": "DE",
+   "value": -0.4011366549962766
   },
   {
    "key": "model.prior.three_cone.weight",
-   "position": "DT",
-   "value": -0.200057670185654
+   "position": "DE",
+   "value": -0.038055779259859264
   },
   {
    "key": "model.prior.vertical.missing",
-   "position": "DT",
-   "value": 0.25443118026515926
+   "position": "DE",
+   "value": 0.04147391338226132
   },
   {
    "key": "model.prior.vertical.weight",
-   "position": "DT",
-   "value": 0.008454808839447018
+   "position": "DE",
+   "value": 0.0017131340377416037
   },
   {
    "key": "model.prior.weight.missing",
-   "position": "DT",
-   "value": 0.19271081082115943
+   "position": "DE",
+   "value": -0.09255346494770104
   },
   {
    "key": "model.prior.weight.weight",
-   "position": "DT",
-   "value": 0.00046860298594998424
+   "position": "DE",
+   "value": -0.000315732370565344
   },
   {
    "key": "model.recency.1",
-   "position": "DT",
+   "position": "DE",
    "value": 0.8
   },
   {
    "key": "model.recency.2",
-   "position": "DT",
+   "position": "DE",
    "value": 0.6
   },
   {
    "key": "model.survival.age",
+   "position": "DE",
+   "value": -0.1609519867831144
+  },
+  {
+   "key": "model.survival.age_squared",
+   "position": "DE",
+   "value": -0.007579289462918625
+  },
+  {
+   "key": "model.survival.draft",
+   "position": "DE",
+   "value": -0.43025666561150266
+  },
+  {
+   "key": "model.survival.games",
+   "position": "DE",
+   "value": 2.203272193908823
+  },
+  {
+   "key": "model.survival.level",
+   "position": "DE",
+   "value": 1.3010453297246638
+  },
+  {
+   "key": "model.survival.percentile",
+   "position": "DE",
+   "value": 2.016262537031084
+  },
+  {
+   "key": "model.z_exponential",
+   "position": "DE",
+   "value": 0
+  },
+  {
+   "key": "model.arc.age",
    "position": "DT",
-   "value": -0.12930061310482183
+   "value": -0.005656765091726323
+  },
+  {
+   "key": "model.arc.age_squared",
+   "position": "DT",
+   "value": 0.0006748090606996592
+  },
+  {
+   "key": "model.arc.level",
+   "position": "DT",
+   "value": 0.02508312512655591
+  },
+  {
+   "key": "model.arc.second_year",
+   "position": "DT",
+   "value": 0.02626700875485669
+  },
+  {
+   "key": "model.debut.draft",
+   "position": "DT",
+   "value": -1.6526707603320798
+  },
+  {
+   "key": "model.debut.level",
+   "position": "DT",
+   "value": 9.11903231599495
+  },
+  {
+   "key": "model.k_dynasty",
+   "position": "DT",
+   "value": 14.29181403120402
+  },
+  {
+   "key": "model.k_now",
+   "position": "DT",
+   "value": 2.8133247115692708
+  },
+  {
+   "key": "model.prior.bench.missing",
+   "position": "DT",
+   "value": -0.09233748103446981
+  },
+  {
+   "key": "model.prior.bench.weight",
+   "position": "DT",
+   "value": -0.0017695832470760575
+  },
+  {
+   "key": "model.prior.broad_jump.missing",
+   "position": "DT",
+   "value": -1.08019787294293
+  },
+  {
+   "key": "model.prior.broad_jump.weight",
+   "position": "DT",
+   "value": -0.010210402029877115
+  },
+  {
+   "key": "model.prior.college_interceptions.missing",
+   "position": "DT",
+   "value": -0.03224882992921475
+  },
+  {
+   "key": "model.prior.college_interceptions.weight",
+   "position": "DT",
+   "value": 1.1465717040126024
+  },
+  {
+   "key": "model.prior.college_passes_defended.missing",
+   "position": "DT",
+   "value": -0.00094843421273293
+  },
+  {
+   "key": "model.prior.college_passes_defended.weight",
+   "position": "DT",
+   "value": 0.45147188283962353
+  },
+  {
+   "key": "model.prior.college_qb_hurries.missing",
+   "position": "DT",
+   "value": 0.0532874568079303
+  },
+  {
+   "key": "model.prior.college_qb_hurries.weight",
+   "position": "DT",
+   "value": 0.5842185870521055
+  },
+  {
+   "key": "model.prior.college_sacks.missing",
+   "position": "DT",
+   "value": 0.023778490086322344
+  },
+  {
+   "key": "model.prior.college_sacks.weight",
+   "position": "DT",
+   "value": 0.24416078212216474
+  },
+  {
+   "key": "model.prior.college_tackles_for_loss.missing",
+   "position": "DT",
+   "value": -0.0007264455527763256
+  },
+  {
+   "key": "model.prior.college_tackles_for_loss.weight",
+   "position": "DT",
+   "value": -0.09621076603238801
+  },
+  {
+   "key": "model.prior.college_total_tackles.missing",
+   "position": "DT",
+   "value": -0.10569626993033868
+  },
+  {
+   "key": "model.prior.college_total_tackles.weight",
+   "position": "DT",
+   "value": -2.5549300876425862
+  },
+  {
+   "key": "model.prior.draft.missing",
+   "position": "DT",
+   "value": -0.8356401315328491
+  },
+  {
+   "key": "model.prior.draft.weight",
+   "position": "DT",
+   "value": -0.15863226516540385
+  },
+  {
+   "key": "model.prior.entry_age.missing",
+   "position": "DT",
+   "value": 0.1821390363853203
+  },
+  {
+   "key": "model.prior.entry_age.weight",
+   "position": "DT",
+   "value": 0.007860913023954188
+  },
+  {
+   "key": "model.prior.forty.missing",
+   "position": "DT",
+   "value": 0.1264302619255746
+  },
+  {
+   "key": "model.prior.forty.weight",
+   "position": "DT",
+   "value": 0.03246078524285795
+  },
+  {
+   "key": "model.prior.height.missing",
+   "position": "DT",
+   "value": -1.067992094453807
+  },
+  {
+   "key": "model.prior.height.weight",
+   "position": "DT",
+   "value": -0.014150648176703511
+  },
+  {
+   "key": "model.prior.intercept",
+   "position": "DT",
+   "value": 3.8393127746793363
+  },
+  {
+   "key": "model.prior.shuttle.missing",
+   "position": "DT",
+   "value": -0.27816561414618934
+  },
+  {
+   "key": "model.prior.shuttle.weight",
+   "position": "DT",
+   "value": -0.05961647885518267
+  },
+  {
+   "key": "model.prior.three_cone.missing",
+   "position": "DT",
+   "value": -1.2897540174896616
+  },
+  {
+   "key": "model.prior.three_cone.weight",
+   "position": "DT",
+   "value": -0.16775713059546832
+  },
+  {
+   "key": "model.prior.vertical.missing",
+   "position": "DT",
+   "value": 0.38511144142137715
+  },
+  {
+   "key": "model.prior.vertical.weight",
+   "position": "DT",
+   "value": 0.012877135695039767
+  },
+  {
+   "key": "model.prior.weight.missing",
+   "position": "DT",
+   "value": 0.46540567712748937
+  },
+  {
+   "key": "model.prior.weight.weight",
+   "position": "DT",
+   "value": 0.0013099438614075315
+  },
+  {
+   "key": "model.recency.1",
+   "position": "DT",
+   "value": 0.1
+  },
+  {
+   "key": "model.recency.2",
+   "position": "DT",
+   "value": 0.1
+  },
+  {
+   "key": "model.survival.age",
+   "position": "DT",
+   "value": -0.12856273611978286
   },
   {
    "key": "model.survival.age_squared",
    "position": "DT",
-   "value": -0.009656072440231714
+   "value": -0.0071780677340562565
   },
   {
    "key": "model.survival.draft",
    "position": "DT",
-   "value": -0.22487063558644108
+   "value": -0.22901305905408245
   },
   {
    "key": "model.survival.games",
    "position": "DT",
-   "value": 2.6460811297215634
+   "value": 2.720546316008072
   },
   {
    "key": "model.survival.level",
    "position": "DT",
-   "value": 0.4131864037280701
+   "value": 0.5469897081701433
   },
   {
    "key": "model.survival.percentile",
    "position": "DT",
-   "value": 1.400527090675616
+   "value": 1.4841724163591443
   },
   {
    "key": "model.z_exponential",
    "position": "DT",
-   "value": 0
+   "value": 1
   },
   {
    "key": "model.arc.age",
@@ -806,32 +876,32 @@
   {
    "key": "model.arc.age",
    "position": "LB",
-   "value": -0.006595782948530916
+   "value": -0.005275231562252969
   },
   {
    "key": "model.arc.age_squared",
    "position": "LB",
-   "value": 0.0005646413904591858
+   "value": 0.0007469210584407907
   },
   {
    "key": "model.arc.level",
    "position": "LB",
-   "value": -0.004158037905068573
+   "value": -0.008362075663538622
   },
   {
    "key": "model.arc.second_year",
    "position": "LB",
-   "value": 0.01764340439876845
+   "value": 0.0396511950751214
   },
   {
    "key": "model.debut.draft",
    "position": "LB",
-   "value": -1.834861489656937
+   "value": -1.8721928578225533
   },
   {
    "key": "model.debut.level",
    "position": "LB",
-   "value": 10.611201990624382
+   "value": 10.764140161857258
   },
   {
    "key": "model.k_dynasty",
@@ -841,122 +911,122 @@
   {
    "key": "model.k_now",
    "position": "LB",
-   "value": 2.057806687451523
+   "value": 1.5117989852785048
   },
   {
    "key": "model.prior.bench.missing",
    "position": "LB",
-   "value": -0.16807787257354698
+   "value": -0.25687763417625725
   },
   {
    "key": "model.prior.bench.weight",
    "position": "LB",
-   "value": -0.007861861685752407
+   "value": -0.011337480214700072
   },
   {
    "key": "model.prior.broad_jump.missing",
    "position": "LB",
-   "value": -0.49010208279208584
+   "value": -0.5834068265816522
   },
   {
    "key": "model.prior.broad_jump.weight",
    "position": "LB",
-   "value": -0.004204544483559709
+   "value": -0.004844309302346734
   },
   {
    "key": "model.prior.college.missing",
    "position": "LB",
-   "value": 0.09370896416846757
+   "value": 0.07607804139684815
   },
   {
    "key": "model.prior.college.weight",
    "position": "LB",
-   "value": 0.4110484079388645
+   "value": 0.43573106523793037
   },
   {
    "key": "model.prior.draft.missing",
    "position": "LB",
-   "value": -0.7510537700362239
+   "value": -0.9982355513721161
   },
   {
    "key": "model.prior.draft.weight",
    "position": "LB",
-   "value": -0.1323109790680902
+   "value": -0.18586602601325466
   },
   {
    "key": "model.prior.entry_age.missing",
    "position": "LB",
-   "value": -0.287904689159819
+   "value": -0.5802026999116547
   },
   {
    "key": "model.prior.entry_age.weight",
    "position": "LB",
-   "value": -0.01244692470234955
+   "value": -0.025008449505771982
   },
   {
    "key": "model.prior.forty.missing",
    "position": "LB",
-   "value": -1.14662011027248
+   "value": -0.7067718397757579
   },
   {
    "key": "model.prior.forty.weight",
    "position": "LB",
-   "value": -0.24672540944504165
+   "value": -0.15698362447536723
   },
   {
    "key": "model.prior.height.missing",
    "position": "LB",
-   "value": -0.3990815013487363
+   "value": -0.9034656772386584
   },
   {
    "key": "model.prior.height.weight",
    "position": "LB",
-   "value": -0.005379091365173241
+   "value": -0.012232661274343764
   },
   {
    "key": "model.prior.intercept",
    "position": "LB",
-   "value": 3.744807029339855
+   "value": 4.621104735923104
   },
   {
    "key": "model.prior.shuttle.missing",
    "position": "LB",
-   "value": -0.09020088920714765
+   "value": 0.14342049661647555
   },
   {
    "key": "model.prior.shuttle.weight",
    "position": "LB",
-   "value": -0.02293568742591708
+   "value": 0.040855226015170075
   },
   {
    "key": "model.prior.three_cone.missing",
    "position": "LB",
-   "value": -0.6894188638590484
+   "value": -0.9594690645973258
   },
   {
    "key": "model.prior.three_cone.weight",
    "position": "LB",
-   "value": -0.08899672582872058
+   "value": -0.13805663150722447
   },
   {
    "key": "model.prior.vertical.missing",
    "position": "LB",
-   "value": 0.09580693435613456
+   "value": 0.057401014371855005
   },
   {
    "key": "model.prior.vertical.weight",
    "position": "LB",
-   "value": 0.003779737907989793
+   "value": 0.0027382217417335234
   },
   {
    "key": "model.prior.weight.missing",
    "position": "LB",
-   "value": 0.40416801314473794
+   "value": 0.4356086915058953
   },
   {
    "key": "model.prior.weight.weight",
    "position": "LB",
-   "value": 0.0018234782775807387
+   "value": 0.001936033809676851
   },
   {
    "key": "model.recency.1",
@@ -971,32 +1041,32 @@
   {
    "key": "model.survival.age",
    "position": "LB",
-   "value": -0.26328097247366117
+   "value": -0.2650747563286151
   },
   {
    "key": "model.survival.age_squared",
    "position": "LB",
-   "value": 0.01087798332404641
+   "value": 0.010548835001664354
   },
   {
    "key": "model.survival.draft",
    "position": "LB",
-   "value": -0.2354368153366342
+   "value": -0.14342587821892458
   },
   {
    "key": "model.survival.games",
    "position": "LB",
-   "value": 2.729881486743193
+   "value": 2.6834047063742954
   },
   {
    "key": "model.survival.level",
    "position": "LB",
-   "value": -0.22249932527000274
+   "value": -0.7685299078008233
   },
   {
    "key": "model.survival.percentile",
    "position": "LB",
-   "value": 2.1863576865757874
+   "value": 2.0001005812927546
   },
   {
    "key": "model.z_exponential",
@@ -1206,32 +1276,32 @@
   {
    "key": "model.arc.age",
    "position": "RB",
-   "value": -0.0007624785853760214
+   "value": -0.0004827781596522973
   },
   {
    "key": "model.arc.age_squared",
    "position": "RB",
-   "value": -0.0001376891599542105
+   "value": -0.00033742677512531413
   },
   {
    "key": "model.arc.level",
    "position": "RB",
-   "value": -0.040039648401239115
+   "value": -0.03746506399511789
   },
   {
    "key": "model.arc.second_year",
    "position": "RB",
-   "value": 0.08776873993215817
+   "value": 0.09112923958431536
   },
   {
    "key": "model.debut.draft",
    "position": "RB",
-   "value": -2.3087701487904555
+   "value": -2.3206787385413365
   },
   {
    "key": "model.debut.level",
    "position": "RB",
-   "value": 12.620450141630652
+   "value": 12.668644169902615
   },
   {
    "key": "model.k_dynasty",
@@ -1241,122 +1311,122 @@
   {
    "key": "model.k_now",
    "position": "RB",
-   "value": 1.4208247637443934
+   "value": 1.538142832228046
   },
   {
    "key": "model.prior.bench.missing",
    "position": "RB",
-   "value": -0.018962897315173623
+   "value": -0.02334292770434241
   },
   {
    "key": "model.prior.bench.weight",
    "position": "RB",
-   "value": -0.0007118421129489045
+   "value": -0.0008848624590354955
   },
   {
    "key": "model.prior.broad_jump.missing",
    "position": "RB",
-   "value": -1.3229344627440918
+   "value": -1.3742765456756108
   },
   {
    "key": "model.prior.broad_jump.weight",
    "position": "RB",
-   "value": -0.01058542800636852
+   "value": -0.010996767436818898
   },
   {
    "key": "model.prior.college.missing",
    "position": "RB",
-   "value": 0.10912376855513128
+   "value": 0.0988259961429063
   },
   {
    "key": "model.prior.college.weight",
    "position": "RB",
-   "value": 0.38890966970816004
+   "value": 0.346055234172717
   },
   {
    "key": "model.prior.draft.missing",
    "position": "RB",
-   "value": -0.9211897447012956
+   "value": -0.9491646562830762
   },
   {
    "key": "model.prior.draft.weight",
    "position": "RB",
-   "value": -0.16564762449381687
+   "value": -0.17076189604904307
   },
   {
    "key": "model.prior.entry_age.missing",
    "position": "RB",
-   "value": -0.24695847313717623
+   "value": -0.09442952143779657
   },
   {
    "key": "model.prior.entry_age.weight",
    "position": "RB",
-   "value": -0.01080449445578122
+   "value": -0.004135250274075429
   },
   {
    "key": "model.prior.forty.missing",
    "position": "RB",
-   "value": -2.022696587949441
+   "value": -2.2261817521399543
   },
   {
    "key": "model.prior.forty.weight",
    "position": "RB",
-   "value": -0.42823627802723324
+   "value": -0.4733302086783208
   },
   {
    "key": "model.prior.height.missing",
    "position": "RB",
-   "value": -2.4269601551551316
+   "value": -2.2765705011615065
   },
   {
    "key": "model.prior.height.weight",
    "position": "RB",
-   "value": -0.03432085749931864
+   "value": -0.032190159261153345
   },
   {
    "key": "model.prior.intercept",
    "position": "RB",
-   "value": 6.1596280194421995
+   "value": 6.125298846597992
   },
   {
    "key": "model.prior.shuttle.missing",
    "position": "RB",
-   "value": -2.5450555954640115
+   "value": -2.4410314429337667
   },
   {
    "key": "model.prior.shuttle.weight",
    "position": "RB",
-   "value": -0.6055006065097486
+   "value": -0.5823450257006001
   },
   {
    "key": "model.prior.three_cone.missing",
    "position": "RB",
-   "value": 2.701050856556483
+   "value": 2.6876105280169167
   },
   {
    "key": "model.prior.three_cone.weight",
    "position": "RB",
-   "value": 0.37903811467331777
+   "value": 0.37764331732941103
   },
   {
    "key": "model.prior.vertical.missing",
    "position": "RB",
-   "value": 0.19655605119700922
+   "value": 0.17241808563611644
   },
   {
    "key": "model.prior.vertical.weight",
    "position": "RB",
-   "value": 0.007022994997518834
+   "value": 0.006390700322259391
   },
   {
    "key": "model.prior.weight.missing",
    "position": "RB",
-   "value": 0.7309825724009837
+   "value": 0.6819055619032026
   },
   {
    "key": "model.prior.weight.weight",
    "position": "RB",
-   "value": 0.0030103357351393065
+   "value": 0.002812484366700188
   },
   {
    "key": "model.recency.1",
@@ -1371,32 +1441,32 @@
   {
    "key": "model.survival.age",
    "position": "RB",
-   "value": -0.19455773790466277
+   "value": -0.19329463507768171
   },
   {
    "key": "model.survival.age_squared",
    "position": "RB",
-   "value": -0.009515732135385412
+   "value": -0.008397279246468277
   },
   {
    "key": "model.survival.draft",
    "position": "RB",
-   "value": -0.14255836183929263
+   "value": -0.11778344599517564
   },
   {
    "key": "model.survival.games",
    "position": "RB",
-   "value": 2.9440115373102733
+   "value": 2.930400484263473
   },
   {
    "key": "model.survival.level",
    "position": "RB",
-   "value": -0.7370585010203994
+   "value": -0.9060029102289139
   },
   {
    "key": "model.survival.percentile",
    "position": "RB",
-   "value": 1.7424028386840535
+   "value": 1.827943744547619
   },
   {
    "key": "model.z_exponential",
@@ -1406,157 +1476,157 @@
   {
    "key": "model.arc.age",
    "position": "S",
-   "value": -0.01369411434199086
+   "value": -0.01408695500686457
   },
   {
    "key": "model.arc.age_squared",
    "position": "S",
-   "value": 0.0020042069257871506
+   "value": 0.0015617267928088056
   },
   {
    "key": "model.arc.level",
    "position": "S",
-   "value": -0.015983998778620615
+   "value": -0.011172791348910558
   },
   {
    "key": "model.arc.second_year",
    "position": "S",
-   "value": -0.005274088266424808
+   "value": -0.009614570226235502
   },
   {
    "key": "model.debut.draft",
    "position": "S",
-   "value": -1.4778567565203358
+   "value": -1.5270347446403223
   },
   {
    "key": "model.debut.level",
    "position": "S",
-   "value": 8.608272880650304
+   "value": 8.936030697378216
   },
   {
    "key": "model.k_dynasty",
    "position": "S",
-   "value": 14.29181403120402
+   "value": 16.067000753120695
   },
   {
    "key": "model.k_now",
    "position": "S",
-   "value": 2.579256237065065
+   "value": 2.72948734390354
   },
   {
    "key": "model.prior.bench.missing",
    "position": "S",
-   "value": -0.0569186455267248
+   "value": -0.0947773288964056
   },
   {
    "key": "model.prior.bench.weight",
    "position": "S",
-   "value": -0.0026784987118477883
+   "value": -0.004291033738442879
   },
   {
    "key": "model.prior.broad_jump.missing",
    "position": "S",
-   "value": -0.06941653275317983
+   "value": -0.3525745333759106
   },
   {
    "key": "model.prior.broad_jump.weight",
    "position": "S",
-   "value": -0.001007990908136435
+   "value": -0.0031483734762882223
   },
   {
    "key": "model.prior.college.missing",
    "position": "S",
-   "value": 0.14939266877422508
+   "value": 0.11749942479446715
   },
   {
    "key": "model.prior.college.weight",
    "position": "S",
-   "value": 0.7057242158268705
+   "value": 0.617346921013065
   },
   {
    "key": "model.prior.draft.missing",
    "position": "S",
-   "value": -1.0163073138822791
+   "value": -1.1707653856501619
   },
   {
    "key": "model.prior.draft.weight",
    "position": "S",
-   "value": -0.20281780540044972
+   "value": -0.22706163934949175
   },
   {
    "key": "model.prior.entry_age.missing",
    "position": "S",
-   "value": -0.5377769461065396
+   "value": -0.656786738550317
   },
   {
    "key": "model.prior.entry_age.weight",
    "position": "S",
-   "value": -0.02341187712468899
+   "value": -0.028558632910710136
   },
   {
    "key": "model.prior.forty.missing",
    "position": "S",
-   "value": 2.040609397543457
+   "value": 2.037465187349235
   },
   {
    "key": "model.prior.forty.weight",
    "position": "S",
-   "value": 0.4482605906039846
+   "value": 0.4517601268946988
   },
   {
    "key": "model.prior.height.missing",
    "position": "S",
-   "value": -0.5831004867359972
+   "value": -0.6669790783287459
   },
   {
    "key": "model.prior.height.weight",
    "position": "S",
-   "value": -0.0080707902631029
+   "value": -0.009229947460006863
   },
   {
    "key": "model.prior.intercept",
    "position": "S",
-   "value": 2.7419986805565766
+   "value": 3.150608050788979
   },
   {
    "key": "model.prior.shuttle.missing",
    "position": "S",
-   "value": -2.329819282999277
+   "value": -2.151715564515232
   },
   {
    "key": "model.prior.shuttle.weight",
    "position": "S",
-   "value": -0.5448144355891305
+   "value": -0.5059002509438617
   },
   {
    "key": "model.prior.three_cone.missing",
    "position": "S",
-   "value": -0.8065848673814942
+   "value": -0.7396051080867129
   },
   {
    "key": "model.prior.three_cone.weight",
    "position": "S",
-   "value": -0.11912812588512453
+   "value": -0.10967400706266846
   },
   {
    "key": "model.prior.vertical.missing",
    "position": "S",
-   "value": 0.3546631204404542
+   "value": 0.49565646745802805
   },
   {
    "key": "model.prior.vertical.weight",
    "position": "S",
-   "value": 0.00951450216944606
+   "value": 0.01314852679889129
   },
   {
    "key": "model.prior.weight.missing",
    "position": "S",
-   "value": 0.5281607237908096
+   "value": 0.4149357641645139
   },
   {
    "key": "model.prior.weight.weight",
    "position": "S",
-   "value": 0.0030403338630190443
+   "value": 0.002320728680859797
   },
   {
    "key": "model.recency.1",
@@ -1571,32 +1641,32 @@
   {
    "key": "model.survival.age",
    "position": "S",
-   "value": -0.26106510552905876
+   "value": -0.24972950609325176
   },
   {
    "key": "model.survival.age_squared",
    "position": "S",
-   "value": -0.008463581393445586
+   "value": -0.012914618769368268
   },
   {
    "key": "model.survival.draft",
    "position": "S",
-   "value": -0.14126966522947776
+   "value": -0.04435631010546123
   },
   {
    "key": "model.survival.games",
    "position": "S",
-   "value": 2.4606612368682965
+   "value": 2.597923732167625
   },
   {
    "key": "model.survival.level",
    "position": "S",
-   "value": -0.13611189671607873
+   "value": -0.5085005524267003
   },
   {
    "key": "model.survival.percentile",
    "position": "S",
-   "value": 2.448444004952539
+   "value": 2.3425756187169733
   },
   {
    "key": "model.z_exponential",
@@ -1606,32 +1676,32 @@
   {
    "key": "model.arc.age",
    "position": "TE",
-   "value": -0.0141544555075155
+   "value": -0.014128974250208743
   },
   {
    "key": "model.arc.age_squared",
    "position": "TE",
-   "value": 0.0000601937641023908
+   "value": 0.00008860937039457439
   },
   {
    "key": "model.arc.level",
    "position": "TE",
-   "value": -0.03611998404901976
+   "value": -0.03740027653404789
   },
   {
    "key": "model.arc.second_year",
    "position": "TE",
-   "value": 0.0024495506116463586
+   "value": 0.002792761393477531
   },
   {
    "key": "model.debut.draft",
    "position": "TE",
-   "value": -2.2716408849247083
+   "value": -2.3479681343316363
   },
   {
    "key": "model.debut.level",
    "position": "TE",
-   "value": 12.496946884131066
+   "value": 12.951706373852266
   },
   {
    "key": "model.k_dynasty",
@@ -1641,122 +1711,122 @@
   {
    "key": "model.k_now",
    "position": "TE",
-   "value": 2.9405239042742353
+   "value": 2.9857893087982688
   },
   {
    "key": "model.prior.bench.missing",
    "position": "TE",
-   "value": -0.15120614042990582
+   "value": -0.18431293609790472
   },
   {
    "key": "model.prior.bench.weight",
    "position": "TE",
-   "value": -0.008383834848873417
+   "value": -0.00946855453251411
   },
   {
    "key": "model.prior.broad_jump.missing",
    "position": "TE",
-   "value": 0.22673479890177353
+   "value": 0.3803406040777196
   },
   {
    "key": "model.prior.broad_jump.weight",
    "position": "TE",
-   "value": 0.0004819371037698081
+   "value": 0.0018732497155041438
   },
   {
    "key": "model.prior.college.missing",
    "position": "TE",
-   "value": 0.11012996494808286
+   "value": 0.11747186003544934
   },
   {
    "key": "model.prior.college.weight",
    "position": "TE",
-   "value": 0.4711094724641689
+   "value": 0.5105017016786135
   },
   {
    "key": "model.prior.draft.missing",
    "position": "TE",
-   "value": -0.8138850954815819
+   "value": -0.7971732311189821
   },
   {
    "key": "model.prior.draft.weight",
    "position": "TE",
-   "value": -0.1401313031752851
+   "value": -0.1365119853276426
   },
   {
    "key": "model.prior.entry_age.missing",
    "position": "TE",
-   "value": -0.7757370090907139
+   "value": -0.7388325405688799
   },
   {
    "key": "model.prior.entry_age.weight",
    "position": "TE",
-   "value": -0.03341189712664119
+   "value": -0.031818035524673195
   },
   {
    "key": "model.prior.forty.missing",
    "position": "TE",
-   "value": -0.9640079881961482
+   "value": -1.080238558942672
   },
   {
    "key": "model.prior.forty.weight",
    "position": "TE",
-   "value": -0.21108318962333056
+   "value": -0.2362810045878023
   },
   {
    "key": "model.prior.height.missing",
    "position": "TE",
-   "value": -0.011090171866107962
+   "value": 0.20629372289640072
   },
   {
    "key": "model.prior.height.weight",
    "position": "TE",
-   "value": -0.00014481240125832406
+   "value": 0.0026953546271409837
   },
   {
    "key": "model.prior.intercept",
    "position": "TE",
-   "value": 2.6342885585852525
+   "value": 2.3006033485152857
   },
   {
    "key": "model.prior.shuttle.missing",
    "position": "TE",
-   "value": 0.912614688748768
+   "value": 0.917305874443026
   },
   {
    "key": "model.prior.shuttle.weight",
    "position": "TE",
-   "value": 0.21143704977085917
+   "value": 0.21204106090827207
   },
   {
    "key": "model.prior.three_cone.missing",
    "position": "TE",
-   "value": -0.810661275238367
+   "value": -0.5903188022577505
   },
   {
    "key": "model.prior.three_cone.weight",
    "position": "TE",
-   "value": -0.11240330658645775
+   "value": -0.08247936784053848
   },
   {
    "key": "model.prior.vertical.missing",
    "position": "TE",
-   "value": -0.17974363401466692
+   "value": -0.15193332126911885
   },
   {
    "key": "model.prior.vertical.weight",
    "position": "TE",
-   "value": -0.0013870694904360595
+   "value": -0.000730623287209502
   },
   {
    "key": "model.prior.weight.missing",
    "position": "TE",
-   "value": 0.19848116402369687
+   "value": -0.0038524375948462627
   },
   {
    "key": "model.prior.weight.weight",
    "position": "TE",
-   "value": 0.0010566967586780752
+   "value": 0.00023627999035643148
   },
   {
    "key": "model.recency.1",
@@ -1771,32 +1841,32 @@
   {
    "key": "model.survival.age",
    "position": "TE",
-   "value": -0.3074845129951963
+   "value": -0.2960020531822304
   },
   {
    "key": "model.survival.age_squared",
    "position": "TE",
-   "value": 0.01763260302846943
+   "value": 0.02056645686799593
   },
   {
    "key": "model.survival.draft",
    "position": "TE",
-   "value": -0.252189093097591
+   "value": -0.18967622091286354
   },
   {
    "key": "model.survival.games",
    "position": "TE",
-   "value": 2.0031215473131034
+   "value": 1.8707721447763686
   },
   {
    "key": "model.survival.level",
    "position": "TE",
-   "value": 0.36205910646930617
+   "value": 0.08229723521909497
   },
   {
    "key": "model.survival.percentile",
    "position": "TE",
-   "value": 2.1532007900361845
+   "value": 2.234258935472809
   },
   {
    "key": "model.z_exponential",
@@ -1806,157 +1876,157 @@
   {
    "key": "model.arc.age",
    "position": "WR",
-   "value": -0.009600631588621749
+   "value": -0.00968880627560265
   },
   {
    "key": "model.arc.age_squared",
    "position": "WR",
-   "value": -0.00021838204345998383
+   "value": -0.00016161596313515363
   },
   {
    "key": "model.arc.level",
    "position": "WR",
-   "value": -0.03881833343696965
+   "value": -0.03888912245937347
   },
   {
    "key": "model.arc.second_year",
    "position": "WR",
-   "value": 0.0359929633933187
+   "value": 0.03623048929758538
   },
   {
    "key": "model.debut.draft",
    "position": "WR",
-   "value": -3.4096404073033977
+   "value": -3.3470577703295032
   },
   {
    "key": "model.debut.level",
    "position": "WR",
-   "value": 18.235496901441557
+   "value": 17.881692434294227
   },
   {
    "key": "model.k_dynasty",
    "position": "WR",
-   "value": 4.432132957795533
+   "value": 3.9424420878352686
   },
   {
    "key": "model.k_now",
    "position": "WR",
-   "value": 2.0438877949453724
+   "value": 2.050598522767343
   },
   {
    "key": "model.prior.bench.missing",
    "position": "WR",
-   "value": -0.032982517691241116
+   "value": -0.038783985965807184
   },
   {
    "key": "model.prior.bench.weight",
    "position": "WR",
-   "value": -0.0016139165257020112
+   "value": -0.002245988127992041
   },
   {
    "key": "model.prior.broad_jump.missing",
    "position": "WR",
-   "value": -0.7508893607885994
+   "value": -0.7737589770760984
   },
   {
    "key": "model.prior.broad_jump.weight",
    "position": "WR",
-   "value": -0.005683577263165237
+   "value": -0.005872814573613905
   },
   {
    "key": "model.prior.college.missing",
    "position": "WR",
-   "value": -0.08865586951880271
+   "value": -0.08680059338850071
   },
   {
    "key": "model.prior.college.weight",
    "position": "WR",
-   "value": -0.19073735791243254
+   "value": -0.18576987320552207
   },
   {
    "key": "model.prior.draft.missing",
    "position": "WR",
-   "value": -0.7502074056442856
+   "value": -0.7463038210093051
   },
   {
    "key": "model.prior.draft.weight",
    "position": "WR",
-   "value": -0.13092468447666947
+   "value": -0.13055191878840458
   },
   {
    "key": "model.prior.entry_age.missing",
    "position": "WR",
-   "value": -0.8992618812173592
+   "value": -0.9394847578772685
   },
   {
    "key": "model.prior.entry_age.weight",
    "position": "WR",
-   "value": -0.03930626366803094
+   "value": -0.041045074083805165
   },
   {
    "key": "model.prior.forty.missing",
    "position": "WR",
-   "value": 1.3625574751709166
+   "value": 1.413810999667098
   },
   {
    "key": "model.prior.forty.weight",
    "position": "WR",
-   "value": 0.304412250967556
+   "value": 0.315425812274388
   },
   {
    "key": "model.prior.height.missing",
    "position": "WR",
-   "value": -0.184541289822976
+   "value": -0.18250816756736324
   },
   {
    "key": "model.prior.height.weight",
    "position": "WR",
-   "value": -0.0025499752840471746
+   "value": -0.0025213723002723647
   },
   {
    "key": "model.prior.intercept",
    "position": "WR",
-   "value": 1.8197549804132038
+   "value": 1.7653843847252926
   },
   {
    "key": "model.prior.shuttle.missing",
    "position": "WR",
-   "value": -0.26215990424666996
+   "value": -0.2429030998936551
   },
   {
    "key": "model.prior.shuttle.weight",
    "position": "WR",
-   "value": -0.06338786040774504
+   "value": -0.0577264089226267
   },
   {
    "key": "model.prior.three_cone.missing",
    "position": "WR",
-   "value": -0.6803810241648052
+   "value": -0.6370919389382755
   },
   {
    "key": "model.prior.three_cone.weight",
    "position": "WR",
-   "value": -0.10358876447529816
+   "value": -0.09713137973317831
   },
   {
    "key": "model.prior.vertical.missing",
    "position": "WR",
-   "value": 0.716629221900982
+   "value": 0.7684543439092565
   },
   {
    "key": "model.prior.vertical.weight",
    "position": "WR",
-   "value": 0.018996783465924493
+   "value": 0.02035778662452319
   },
   {
    "key": "model.prior.weight.missing",
    "position": "WR",
-   "value": 0.03908517898948978
+   "value": -0.00727609221695923
   },
   {
    "key": "model.prior.weight.weight",
    "position": "WR",
-   "value": 0.00038248744896836735
+   "value": 0.00014213043887671136
   },
   {
    "key": "model.recency.1",
@@ -1971,32 +2041,32 @@
   {
    "key": "model.survival.age",
    "position": "WR",
-   "value": -0.15736549325024357
+   "value": -0.15705499157604008
   },
   {
    "key": "model.survival.age_squared",
    "position": "WR",
-   "value": -0.004055732765118397
+   "value": -0.00467905076292452
   },
   {
    "key": "model.survival.draft",
    "position": "WR",
-   "value": 0.05791297882333901
+   "value": 0.045795495618877864
   },
   {
    "key": "model.survival.games",
    "position": "WR",
-   "value": 2.1253952053574614
+   "value": 2.1262828283827986
   },
   {
    "key": "model.survival.level",
    "position": "WR",
-   "value": -1.557523908769124
+   "value": -1.4708114692494716
   },
   {
    "key": "model.survival.percentile",
    "position": "WR",
-   "value": 2.918647907110244
+   "value": 2.8709688661540143
   },
   {
    "key": "model.z_exponential",

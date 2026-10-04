@@ -47,7 +47,7 @@ func TestPriorInputsReadDraftAgeCombineAndCollege(t *testing.T) {
 	p := &Player{Position: domain.PosWR, DraftPick: 20, Rookie: 2022, Combine: map[string]float64{"forty": 4.4},
 		College: map[int]map[string]float64{2021: {"receiving_yards": 900, "team_receiving_yards": 3000}}}
 	x, known := p.PriorInputs()
-	names := PriorFeatures()
+	names := PriorFeatures(domain.PosWR)
 	got := map[string]float64{}
 	for i, n := range names {
 		if known[i] {
@@ -62,14 +62,63 @@ func TestPriorInputsReadDraftAgeCombineAndCollege(t *testing.T) {
 	}
 }
 
+func TestPriorInputsAtDTReadEachDefensiveShare(t *testing.T) {
+	p := &Player{Position: domain.PosDT, Rookie: 2024, College: map[int]map[string]float64{
+		2022: {"sacks": 9, "team_sacks": 30},
+		2023: {"sacks": 6, "team_sacks": 24, "tackles_for_loss": 10, "team_tackles_for_loss": 80,
+			"qb_hurries": 12, "team_qb_hurries": 48, "total_tackles": 40},
+	}}
+	got := inputs(p)
+	want := map[string]float64{"college_sacks": 0.25, "college_tackles_for_loss": 0.125, "college_qb_hurries": 0.25}
+	for name, v := range want {
+		if math.Abs(got[name]-v) > 1e-12 {
+			t.Errorf("%s = %v, want %v (the last college season)", name, got[name], v)
+		}
+	}
+	if _, ok := got["college_total_tackles"]; ok {
+		t.Error("a share without the team's total must be unknown")
+	}
+	if _, ok := got["college"]; ok {
+		t.Error("DT reads each share, not the single college number")
+	}
+}
+
+func TestPriorInputsAtDEAddTheBestSeason(t *testing.T) {
+	p := &Player{Position: domain.PosDE, Rookie: 2025, College: map[int]map[string]float64{
+		2022: {"sacks": 12, "team_sacks": 30, "tackles_for_loss": 10, "team_tackles_for_loss": 100},
+		2023: {"sacks": 3, "team_sacks": 30, "tackles_for_loss": 20, "team_tackles_for_loss": 100},
+		2024: {"sacks": 6, "team_sacks": 30, "tackles_for_loss": 10, "team_tackles_for_loss": 100},
+		2025: {"sacks": 30, "team_sacks": 30}, // an NFL-year row is not college
+	}}
+	got := inputs(p)
+	if math.Abs(got["college"]-0.15) > 1e-12 {
+		t.Errorf("college = %v, want 0.15 (the last season, 2024)", got["college"])
+	}
+	if math.Abs(got["college_best"]-0.3) > 1e-12 || got["college_seasons"] != 3 {
+		t.Errorf("best %v over %v seasons, want 0.3 (best sacks 0.4, best TFL 0.2) over 3", got["college_best"], got["college_seasons"])
+	}
+}
+
+// inputs is the player's known prior inputs by name.
+func inputs(p *Player) map[string]float64 {
+	x, known := p.PriorInputs()
+	out := map[string]float64{}
+	for i, name := range PriorFeatures(p.Position) {
+		if known[i] {
+			out[name] = x[i]
+		}
+	}
+	return out
+}
+
 func TestParamsRoundTripThroughValues(t *testing.T) {
-	n := len(PriorFeatures())
-	p := Params{Intercept: 0.4, Weight: make([]float64, n), Missing: make([]float64, n), KNow: 3, KDynasty: 9,
+	n := len(PriorFeatures(domain.PosDT))
+	p := Params{Position: domain.PosDT, Intercept: 0.4, Weight: make([]float64, n), Missing: make([]float64, n), KNow: 3, KDynasty: 9,
 		Exponential: true, Recency: [2]float64{0.5, 0.2}, Arc: [4]float64{0.01, -0.02, -0.001, 0.05},
 		Survival: [6]float64{1, -0.1, -0.01, -0.3, 2, 1}}
 	p.Weight[0], p.Missing[n-1] = -0.1, 0.02
 	values := p.Values()
-	back, err := ParamsFrom(func(k string) (float64, error) { return values[k], nil })
+	back, err := ParamsFrom(domain.PosDT, func(k string) (float64, error) { return values[k], nil })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,8 +143,8 @@ func TestZShapes(t *testing.T) {
 }
 
 func testParams() Params {
-	n := len(PriorFeatures())
-	return Params{Intercept: 0.4, Weight: make([]float64, n), Missing: make([]float64, n), KNow: 3, KDynasty: 8,
+	n := len(PriorFeatures(domain.PosWR))
+	return Params{Position: domain.PosWR, Intercept: 0.4, Weight: make([]float64, n), Missing: make([]float64, n), KNow: 3, KDynasty: 8,
 		Recency: [2]float64{0.5, 0.25}, Arc: [4]float64{-0.02, -0.01, 0, 0.05},
 		Survival: [6]float64{2, -0.1, -0.01, 0, 1, 1}}
 }

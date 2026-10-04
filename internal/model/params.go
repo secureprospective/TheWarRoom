@@ -3,6 +3,8 @@ package model
 import (
 	"fmt"
 	"math"
+
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
 
 // ArcCenter is the age the talent arc's terms are centred on.
@@ -10,6 +12,8 @@ const ArcCenter = 27.0
 
 // Params are one position's fitted model.
 type Params struct {
+	Position domain.Position // names the prior's inputs (PriorFeatures)
+
 	// Prior: Intercept + Σ (known ? Weight·x : Missing), on the percentile scale.
 	Intercept       float64
 	Weight, Missing []float64
@@ -97,7 +101,7 @@ func (p Params) Values() map[string]float64 {
 		"model.z_exponential": boolValue(p.Exponential),
 		"model.recency.1":     p.Recency[0], "model.recency.2": p.Recency[1],
 	}
-	for i, f := range PriorFeatures() {
+	for i, f := range PriorFeatures(p.Position) {
 		out["model.prior."+f+".weight"] = p.Weight[i]
 		out["model.prior."+f+".missing"] = p.Missing[i]
 	}
@@ -112,15 +116,15 @@ func (p Params) Values() map[string]float64 {
 }
 
 // ParamsFrom reads a position's params back through get.
-func ParamsFrom(get func(key string) (float64, error)) (Params, error) {
-	n := len(PriorFeatures())
-	p := Params{Weight: make([]float64, n), Missing: make([]float64, n)}
+func ParamsFrom(pos domain.Position, get func(key string) (float64, error)) (Params, error) {
+	n := len(PriorFeatures(pos))
+	p := Params{Position: pos, Weight: make([]float64, n), Missing: make([]float64, n)}
 	var z float64
 	targets := map[string]*float64{
 		"model.prior.intercept": &p.Intercept, "model.k_now": &p.KNow, "model.k_dynasty": &p.KDynasty,
 		"model.z_exponential": &z, "model.recency.1": &p.Recency[0], "model.recency.2": &p.Recency[1],
 	}
-	for i, f := range PriorFeatures() {
+	for i, f := range PriorFeatures(pos) {
 		targets["model.prior."+f+".weight"] = &p.Weight[i]
 		targets["model.prior."+f+".missing"] = &p.Missing[i]
 	}

@@ -70,11 +70,11 @@ func Markdown(results []Result, checks []BoardCheck, first, holdout int, source 
 // limitsSection lists what the fit cannot see.
 func limitsSection(w func(string, ...any)) {
 	w("\n## Limits\n\n" +
-		"- No free source has IDP opportunity denominators (pass-rush snaps, routes, coverage snaps); IDP production is points per game.\n" +
+		"- IDP production is points per game. Opportunity shares from nflverse's participation data (2016–2025: pass-play and run-play snap shares, pressures per pass snap) and PFR's pass-rush and missed-tackle counts were tested on the 2023–2025 holdouts and did not predict the next season beyond this one's points (scouting research, 2026-10-04).\n" +
 		"- IDP arcs come from these five seasons only; no published IDP curve exists to check them against.\n" +
 		"- The holdout is one season. Kept/fallback choices decided by less than 0.002 are within its noise; the rule " +
 		"still takes the lower number, and the simpler piece on a tie.\n" +
-		"- nflverse's generic \"DB\" players are left out of the fit; their position is ambiguous between CB and S.\n" +
+		"- Players are fitted at the position MFL lists them at; a player MFL does not list keeps nflverse's, and nflverse's generic \"DB\" among them is left out, its position ambiguous between CB and S.\n" +
 		"- Kickers: a season barely predicts the next and the prior explains nothing, so the model shrinks toward a " +
 		"prior that is noise and ranks kickers worse than last season's total does (see Against today's board).\n" +
 		"- The prior's weight for the app's own scouting history needs years of stored priors.\n")

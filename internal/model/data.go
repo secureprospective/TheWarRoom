@@ -73,7 +73,8 @@ func collegeMeasures() []string {
 	return []string{"receiving_yards", "team_receiving_yards", "rushing_yards", "team_rushing_yards",
 		"pass_attempts", "passing_yards", "fg_attempts", "fg_made",
 		"total_tackles", "team_total_tackles", "sacks", "team_sacks", "tackles_for_loss",
-		"team_tackles_for_loss", "passes_defended", "team_passes_defended", "interceptions", "team_interceptions"}
+		"team_tackles_for_loss", "passes_defended", "team_passes_defended", "interceptions", "team_interceptions",
+		"qb_hurries", "team_qb_hurries"}
 }
 
 // Player is one player's facts that do not change by season.

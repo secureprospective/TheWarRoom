@@ -56,7 +56,7 @@ func Run(d model.Data, first, holdout int) []Result {
 }
 
 func fitPosition(sm samples, holdout int) Result {
-	r := Result{Position: sm.pos}
+	r := Result{Position: sm.pos, Params: model.Params{Position: sm.pos}}
 	r.Report.Seasons = len(sm.seasons)
 	k := fitKNow(sm, holdout, &r.Report)
 	trainPrior, prior := fitPrior(sm, holdout, &r.Report)

@@ -3,6 +3,8 @@ package fit
 import (
 	"math"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+
 	"github.com/secureprospective/TheWarRoom/internal/model"
 )
 
@@ -27,24 +29,24 @@ func fitPrior(sm samples, holdout int, rep *Report) (train, full model.Params) {
 	}
 	rep.PriorN, rep.PriorTestN = len(trainRows), len(testRows)
 	if len(trainRows) < 20 {
-		return emptyPrior(), emptyPrior()
+		return emptyPrior(sm.pos), emptyPrior(sm.pos)
 	}
-	lambda := chooseLambda(trainRows)
-	train = regressPrior(trainRows, lambda)
+	lambda := chooseLambda(sm.pos, trainRows)
+	train = regressPrior(sm.pos, trainRows, lambda)
 	rep.PriorR2 = r2(train, trainRows)
 	rep.PriorR2Test = r2(train, testRows)
-	return train, regressPrior(allRows, lambda)
+	return train, regressPrior(sm.pos, allRows, lambda)
 }
 
-func emptyPrior() model.Params {
-	n := len(model.PriorFeatures())
-	return model.Params{Intercept: 0.5, Weight: make([]float64, n), Missing: make([]float64, n)}
+func emptyPrior(pos domain.Position) model.Params {
+	n := len(model.PriorFeatures(pos))
+	return model.Params{Position: pos, Intercept: 0.5, Weight: make([]float64, n), Missing: make([]float64, n)}
 }
 
 // regressPrior fits on standardized inputs with a missing indicator per input, then folds the
 // standardization into raw-unit weights so the stored prior needs no means.
-func regressPrior(rows []season, lambda float64) model.Params {
-	n := len(model.PriorFeatures())
+func regressPrior(pos domain.Position, rows []season, lambda float64) model.Params {
+	n := len(model.PriorFeatures(pos))
 	mu, sd := standardize(rows, n)
 	x := make([][]float64, len(rows))
 	y := make([]float64, len(rows))
@@ -54,9 +56,9 @@ func regressPrior(rows []season, lambda float64) model.Params {
 	}
 	beta, err := ridge(x, y, w, lambda)
 	if err != nil {
-		return emptyPrior()
+		return emptyPrior(pos)
 	}
-	p := emptyPrior()
+	p := emptyPrior(pos)
 	p.Intercept = beta[0]
 	for j := range n {
 		if sd[j] == 0 {
@@ -110,7 +112,7 @@ func priorRow(p *model.Player, mu, sd []float64) []float64 {
 }
 
 // chooseLambda picks the ridge penalty with the lowest error over three folds of the training rows.
-func chooseLambda(rows []season) float64 {
+func chooseLambda(pos domain.Position, rows []season) float64 {
 	best, bestErr := 10.0, math.Inf(1)
 	for _, lambda := range []float64{0.3, 1, 3, 10, 30, 100} {
 		var sse float64
@@ -123,7 +125,7 @@ func chooseLambda(rows []season) float64 {
 					fitRows = append(fitRows, s)
 				}
 			}
-			p := regressPrior(fitRows, lambda)
+			p := regressPrior(pos, fitRows, lambda)
 			for _, s := range valRows {
 				d := p.Prior(s.player) - s.pct
 				sse += s.games * d * d

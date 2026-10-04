@@ -163,7 +163,7 @@ type pass struct {
 func newPass(d model.Data, spec Spec) (pass, error) {
 	p := pass{data: d, scales: d.Scales(), params: map[domain.Position]model.Params{}, season: spec.Season}
 	for _, pos := range model.Positions() {
-		m, err := model.ParamsFrom(func(key string) (float64, error) {
+		m, err := model.ParamsFrom(pos, func(key string) (float64, error) {
 			return spec.Params.GetPosition(key, string(pos))
 		})
 		if err != nil {
@@ -289,7 +289,7 @@ const minRegulars = 20
 func inputNames(pl *model.Player, in playerInput) []string {
 	out := []string{}
 	x, known := pl.PriorInputs()
-	for i, name := range model.PriorFeatures() {
+	for i, name := range model.PriorFeatures(pl.Position) {
 		if known[i] && i < len(x) {
 			out = append(out, name)
 		}
