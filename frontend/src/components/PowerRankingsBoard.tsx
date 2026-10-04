@@ -34,8 +34,8 @@ type SortKey =
 
 // Tactical carries the full MFL report; Matrix collapses to the blend essentials.
 const COLS =
-  "34px 40px 1fr 88px 70px 66px 74px 66px 66px 58px 58px 58px 66px 60px";
-const COLS_MTX = "24px 36px 1fr 76px 62px 70px";
+  "34px 40px minmax(150px, 1fr) 88px 70px 66px 74px 66px 66px 58px 58px 58px 66px 60px";
+const COLS_MTX = "24px 36px minmax(120px, 1fr) 76px 62px 70px";
 
 export function PowerRankingsBoard() {
   const powerRankings = useAppStore((s) => s.powerRankings);
@@ -157,7 +157,7 @@ export function PowerRankingsBoard() {
         . Roster value is z-scored with median and MAD, so one stacked roster
         cannot move the scale;{" "}
         {powerView === "season"
-          ? "this season blends it with MFL's all-play record, then scales 0–1."
+          ? `this season blends it with MFL's ${powerRankings?.performance === "points for" ? "points for (MFL reports no all-play for this league)" : powerRankings?.performance === "none" ? "results (none yet)" : "all-play record"}, then scales 0–1.`
           : "the franchise ranks on the roster alone, scaled 0–1."}{" "}
         Roster z of 0 = a typical team.
       </div>

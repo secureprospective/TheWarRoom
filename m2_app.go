@@ -46,9 +46,8 @@ type PowerRow struct {
 
 // PowerRankingsResult echoes the view, weight, aggregation mode and N actually applied, so the
 // controls and the rows never disagree. Zero rows means the league has no model run yet.
-// WeeksScored is how many weeks the MFL standings hold, read from the all-play records, and
-// SeasonWeeks the league's last scoring week: the standings are final when the two meet, and
-// all-play is 0-0 everywhere before the first week. Phase is separate from
+// WeeksScored is how many weeks the MFL standings hold, read from the head-to-head records, and
+// SeasonWeeks the league's last regular-season week: the standings are final when they meet. Phase is separate from
 // Freshness: an offseason board is fresh data about a finished season. An empty Phase means the
 // phase read failed, which affects the label only.
 type PowerRankingsResult struct {
@@ -64,6 +63,7 @@ type PowerRankingsResult struct {
 	AggMode       string     `json:"aggMode"`
 	StarterN      int        `json:"starterN"`
 	Freshness     Freshness  `json:"freshness"`
+	Performance   string     `json:"performance"` // which result the blend read: all-play, points for, none
 	WeeksScored   int        `json:"weeksScored"`
 	SeasonWeeks   int        `json:"seasonWeeks"`
 	Rows          []PowerRow `json:"rows"`
@@ -127,8 +127,15 @@ func (a *App) GetPowerRankings(weight float64, aggMode, view string) PowerRankin
 	if len(boards) == 0 {
 		return res
 	}
-	res.Label = fmt.Sprintf("Roster value: model run #%d, league points per game (%s)", runs[0].ID, viewMeasure(view))
+	fillBoard(&res, runs, boards)
+	return res
+}
+
+// fillBoard puts the latest board in res, each rank's move against the previous one.
+func fillBoard(res *PowerRankingsResult, runs []history.Run, boards []m2service.Board) {
+	res.Label = fmt.Sprintf("Roster value: model run #%d, league points per game (%s)", runs[0].ID, viewMeasure(res.View))
 	res.ModelRunID, res.Weight, res.AggMode, res.StarterN = runs[0].ID, boards[0].Weight, boards[0].Mode, boards[0].StarterN
+	res.Performance = boards[0].Performance
 	was := map[string]int{}
 	if len(boards) > 1 {
 		res.PreviousRunID = runs[1].ID
@@ -138,7 +145,6 @@ func (a *App) GetPowerRankings(weight float64, aggMode, view string) PowerRankin
 	}
 	res.Rows = powerRows(boards[0].Rows, was)
 	res.WeeksScored = weeksScored(boards[0].Rows)
-	return res
 }
 
 func viewMeasure(view string) string {
@@ -200,22 +206,21 @@ func powerRows(rows []m2service.Row, was map[string]int) []PowerRow {
 	return out
 }
 
-// seasonWeeks is the league's last scoring week, 0 when unreadable.
+// seasonWeeks is the league's last regular-season week, 0 when unreadable.
 func (a *App) seasonWeeks() int {
-	end, _ := a.rulebook.GetSetting("endWeek")
-	n, err := strconv.Atoi(end)
+	last, _ := a.rulebook.GetSetting("lastRegularSeasonWeek")
+	n, err := strconv.Atoi(last)
 	if err != nil {
 		return 0
 	}
 	return n
 }
 
-// weeksScored is the most weeks any franchise's all-play record covers: each week is a game
-// against every other franchise.
+// weeksScored is the most head-to-head games any franchise has played: one a week.
 func weeksScored(rows []m2service.Row) int {
 	most := 0
 	for _, r := range rows {
-		most = max(most, (r.AllPlayW+r.AllPlayL+r.AllPlayT)/max(len(rows)-1, 1))
+		most = max(most, r.H2HW+r.H2HL+r.H2HT)
 	}
 	return most
 }

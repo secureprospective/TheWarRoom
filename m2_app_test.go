@@ -6,10 +6,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/m2service"
 )
 
-// Each all-play week is a game against every other franchise, so three franchises two weeks in
-// have four all-play games each.
-func TestWeeksScoredReadsAllPlayGames(t *testing.T) {
-	rows := []m2service.Row{{AllPlayW: 3, AllPlayL: 1}, {AllPlayW: 2, AllPlayL: 2}, {AllPlayW: 1, AllPlayL: 3}}
+// A franchise plays one head-to-head game a week.
+func TestWeeksScoredReadsHeadToHeadGames(t *testing.T) {
+	rows := []m2service.Row{{H2HW: 2}, {H2HW: 1, H2HL: 1}, {H2HL: 2}}
 	if got := weeksScored(rows); got != 2 {
 		t.Errorf("weeks = %d, want 2", got)
 	}

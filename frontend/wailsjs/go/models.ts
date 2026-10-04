@@ -849,6 +849,7 @@ export namespace main {
 	    aggMode: string;
 	    starterN: number;
 	    freshness: Freshness;
+	    performance: string;
 	    weeksScored: number;
 	    seasonWeeks: number;
 	    rows: PowerRow[];
@@ -870,6 +871,7 @@ export namespace main {
 	        this.aggMode = source["aggMode"];
 	        this.starterN = source["starterN"];
 	        this.freshness = this.convertValues(source["freshness"], Freshness);
+	        this.performance = source["performance"];
 	        this.weeksScored = source["weeksScored"];
 	        this.seasonWeeks = source["seasonWeeks"];
 	        this.rows = this.convertValues(source["rows"], PowerRow);

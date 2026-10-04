@@ -64,13 +64,22 @@ type Row struct {
 }
 
 // Board is the rows plus the mode, starter count and weight actually applied, which the UI
-// echoes back to its controls.
+// echoes back to its controls, and which result the blend's performance side read.
 type Board struct {
-	Rows     []Row
-	Mode     string
-	StarterN int
-	Weight   float64
+	Rows        []Row
+	Mode        string
+	StarterN    int
+	Weight      float64
+	Performance string // PerfAllPlay, PerfPointsFor, or PerfNone before any result
 }
+
+// The results the blend's performance side reads: all-play win% when MFL reports it, otherwise
+// points for, which is as free of schedule luck; this league's standings carry no all-play.
+const (
+	PerfAllPlay   = "all-play"
+	PerfPointsFor = "points for"
+	PerfNone      = "none"
+)
 
 // PlayerValue is one player's value in the view being ranked, in league points per game.
 type PlayerValue struct {
@@ -94,7 +103,7 @@ func (s *Service) BuildBoard(
 		mode = AggSum
 	}
 
-	inputs, parsed, err := s.buildBlendInputs(standings, values, mode, starterN)
+	inputs, parsed, perf, err := s.buildBlendInputs(standings, values, mode, starterN)
 	if err != nil {
 		return Board{}, err
 	}
@@ -109,10 +118,11 @@ func (s *Service) BuildBoard(
 		n = starterN
 	}
 	return Board{
-		Rows:     s.buildRows(blended, parsed),
-		Mode:     mode,
-		StarterN: n,
-		Weight:   clampWeight(weight),
+		Rows:        s.buildRows(blended, parsed),
+		Mode:        mode,
+		StarterN:    n,
+		Weight:      clampWeight(weight),
+		Performance: perf,
 	}, nil
 }
 
@@ -141,7 +151,7 @@ func (s *Service) buildBlendInputs(
 	values []PlayerValue,
 	mode string,
 	starterN int,
-) ([]powerrankings.Input, map[string]parsedStanding, error) {
+) ([]powerrankings.Input, map[string]parsedStanding, string, error) {
 	// Ownership comes from live runtime state, so a player traded since the model run counts for
 	// the current team: the board reads "who is strong now".
 	byFranchise := make(map[string][]float64, len(standings))
@@ -152,20 +162,37 @@ func (s *Service) buildBlendInputs(
 	}
 
 	parsed := make(map[string]parsedStanding, len(standings))
-	inputs := make([]powerrankings.Input, 0, len(standings))
+	var allPlayGames, maxPF float64
 	for _, st := range standings {
 		ps, err := parseStanding(st)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, "", err
 		}
 		parsed[st.FranchiseID] = ps
-		inputs = append(inputs, powerrankings.Input{
-			FranchiseID:   st.FranchiseID,
-			RosterValue:   aggregate(byFranchise[st.FranchiseID], mode, starterN),
-			AllPlayWinPct: ps.allPlayWinPct,
-		})
+		allPlayGames += float64(ps.allPlayW + ps.allPlayL + ps.allPlayT)
+		maxPF = math.Max(maxPF, ps.pf)
 	}
-	return inputs, parsed, nil
+	perf := PerfNone
+	switch {
+	case allPlayGames > 0:
+		perf = PerfAllPlay
+	case maxPF > 0:
+		perf = PerfPointsFor
+	}
+	inputs := make([]powerrankings.Input, 0, len(standings))
+	for _, st := range standings {
+		ps := parsed[st.FranchiseID]
+		in := powerrankings.Input{FranchiseID: st.FranchiseID,
+			RosterValue: aggregate(byFranchise[st.FranchiseID], mode, starterN)}
+		switch perf {
+		case PerfAllPlay:
+			in.Performance = ps.allPlayWinPct
+		case PerfPointsFor:
+			in.Performance = ps.pf / maxPF
+		}
+		inputs = append(inputs, in)
+	}
+	return inputs, parsed, perf, nil
 }
 
 // aggregate reduces a franchise's values to the full sum (depth) or the sum of the top N
@@ -198,7 +225,7 @@ func (s *Service) buildRows(blended []powerrankings.Row, parsed map[string]parse
 			RosterZ:       b.RosterZ,
 			MFLPerfZ:      b.MFLPerfZ,
 			RosterValue:   b.RosterValue,
-			AllPlayWinPct: b.AllPlayWinPct,
+			AllPlayWinPct: ps.allPlayWinPct,
 			H2HW:          ps.h2hW, H2HL: ps.h2hL, H2HT: ps.h2hT,
 			AllPlayW: ps.allPlayW, AllPlayL: ps.allPlayL, AllPlayT: ps.allPlayT,
 			PF: ps.pf, PA: ps.pa, PP: ps.pp, Pwr: ps.pwr, AltPwr: ps.altPwr,

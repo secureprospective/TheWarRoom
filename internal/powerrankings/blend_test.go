@@ -23,8 +23,8 @@ func TestBlendZScoreAndOrder(t *testing.T) {
 	// franchises each z-score is ±1, so at w=0.60 A's blend (0.6·1 + 0.4·−1 = 0.2)
 	// beats B's (−0.2), and the display min-max maps A→1.0, B→0.0.
 	in := []Input{
-		{FranchiseID: "0002", RosterValue: 100, AllPlayWinPct: 0.0}, // A: roster high, perf low
-		{FranchiseID: "0001", RosterValue: 0, AllPlayWinPct: 1.0},   // B: roster low, perf high
+		{FranchiseID: "0002", RosterValue: 100, Performance: 0.0}, // A: roster high, perf low
+		{FranchiseID: "0001", RosterValue: 0, Performance: 1.0},   // B: roster low, perf high
 	}
 
 	rows, err := Blend(in, DefaultRosterWeight)
@@ -56,8 +56,8 @@ func TestBlendZScoreAndOrder(t *testing.T) {
 
 func TestBlendWeightClamp(t *testing.T) {
 	in := []Input{
-		{FranchiseID: "0001", RosterValue: 10, AllPlayWinPct: 0.2},
-		{FranchiseID: "0002", RosterValue: 20, AllPlayWinPct: 0.8},
+		{FranchiseID: "0001", RosterValue: 10, Performance: 0.2},
+		{FranchiseID: "0002", RosterValue: 20, Performance: 0.8},
 	}
 	// w=1.5 clamps to 1.0 → pure roster value → 0002 (higher roster) leads at display 1.0.
 	rows, err := Blend(in, 1.5)
@@ -81,8 +81,8 @@ func TestBlendDegenerateComponent(t *testing.T) {
 	// All-play disabled → every AllPlayWinPct == 0 → zero variance → that component's
 	// z-score is 0 for all (neutral). Roster value still differentiates.
 	in := []Input{
-		{FranchiseID: "0001", RosterValue: 0, AllPlayWinPct: 0},
-		{FranchiseID: "0002", RosterValue: 100, AllPlayWinPct: 0},
+		{FranchiseID: "0001", RosterValue: 0, Performance: 0},
+		{FranchiseID: "0002", RosterValue: 100, Performance: 0},
 	}
 	rows, err := Blend(in, 0.60)
 	if err != nil {
@@ -103,9 +103,9 @@ func TestBlendTieBreakDeterministic(t *testing.T) {
 	// Identical inputs → zero variance both components → all z 0 → all blends equal →
 	// display degenerate 0.5 → FranchiseID ascending decides.
 	in := []Input{
-		{FranchiseID: "0003", RosterValue: 5, AllPlayWinPct: 0.5},
-		{FranchiseID: "0001", RosterValue: 5, AllPlayWinPct: 0.5},
-		{FranchiseID: "0002", RosterValue: 5, AllPlayWinPct: 0.5},
+		{FranchiseID: "0003", RosterValue: 5, Performance: 0.5},
+		{FranchiseID: "0001", RosterValue: 5, Performance: 0.5},
+		{FranchiseID: "0002", RosterValue: 5, Performance: 0.5},
 	}
 	rows, err := Blend(in, 0.60)
 	if err != nil {
@@ -124,11 +124,11 @@ func TestBlendTieBreakDeterministic(t *testing.T) {
 
 func TestBlendRejectsNonFinite(t *testing.T) {
 	cases := []Input{
-		{FranchiseID: "0001", RosterValue: math.NaN(), AllPlayWinPct: 0.5},
-		{FranchiseID: "0001", RosterValue: math.Inf(1), AllPlayWinPct: 0.5},
-		{FranchiseID: "0001", RosterValue: 1, AllPlayWinPct: 1.5},
-		{FranchiseID: "0001", RosterValue: 1, AllPlayWinPct: -0.1},
-		{FranchiseID: "0001", RosterValue: 1, AllPlayWinPct: math.NaN()},
+		{FranchiseID: "0001", RosterValue: math.NaN(), Performance: 0.5},
+		{FranchiseID: "0001", RosterValue: math.Inf(1), Performance: 0.5},
+		{FranchiseID: "0001", RosterValue: 1, Performance: 1.5},
+		{FranchiseID: "0001", RosterValue: 1, Performance: -0.1},
+		{FranchiseID: "0001", RosterValue: 1, Performance: math.NaN()},
 	}
 	for i, c := range cases {
 		if _, err := Blend([]Input{c}, 0.60); err == nil {
@@ -139,8 +139,8 @@ func TestBlendRejectsNonFinite(t *testing.T) {
 
 func TestBlendNonFiniteWeightFallsBack(t *testing.T) {
 	in := []Input{
-		{FranchiseID: "0001", RosterValue: 10, AllPlayWinPct: 0.2},
-		{FranchiseID: "0002", RosterValue: 20, AllPlayWinPct: 0.8},
+		{FranchiseID: "0001", RosterValue: 10, Performance: 0.2},
+		{FranchiseID: "0002", RosterValue: 20, Performance: 0.8},
 	}
 	for _, w := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
 		rows, err := Blend(in, w)

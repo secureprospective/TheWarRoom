@@ -2,8 +2,8 @@
 //
 // Each component is z-scored before weighting, so w sets each component's real share of the
 // spread; min-max would let one super-team or tanked roster compress the field and distort
-// the split. Roster value uses median and MAD so one stacked roster cannot move the scale; all-play
-// win% is bounded and uses mean and std. The weighted blend is min-max'd to [0,1] for display.
+// the split. Roster value uses median and MAD so one stacked roster cannot move the scale; the
+// performance share is bounded and uses mean and std. The weighted blend is min-max'd to [0,1] for display.
 package powerrankings
 
 import (
@@ -12,26 +12,26 @@ import (
 	"sort"
 )
 
-// DefaultRosterWeight is the slider's starting point: 60 roster value, 40 all-play results.
+// DefaultRosterWeight is the slider's starting point: 60 roster value, 40 results.
 const DefaultRosterWeight = 0.60
 
 // Input is one franchise's raw, already-aggregated inputs; Blend standardizes them.
 type Input struct {
-	FranchiseID   string
-	RosterValue   float64
-	AllPlayWinPct float64 // [0,1]
+	FranchiseID string
+	RosterValue float64
+	Performance float64 // the franchise's results this season, in [0,1]
 }
 
 // Row is one ranked franchise: the display PowerScore plus the two z components (0 = league
 // center, +1 = one std above).
 type Row struct {
-	Rank          int
-	FranchiseID   string
-	PowerScore    float64 // [0,1]
-	RosterZ       float64
-	MFLPerfZ      float64
-	RosterValue   float64
-	AllPlayWinPct float64
+	Rank        int
+	FranchiseID string
+	PowerScore  float64 // [0,1]
+	RosterZ     float64
+	MFLPerfZ    float64
+	RosterValue float64
+	Performance float64
 }
 
 // Blend returns rows sorted by w·rosterZ + (1−w)·perfZ, descending, FranchiseID breaking
@@ -53,31 +53,31 @@ func Blend(inputs []Input, w float64) ([]Row, error) {
 		if math.IsNaN(in.RosterValue) || math.IsInf(in.RosterValue, 0) {
 			return nil, fmt.Errorf("powerrankings: franchise %s has a non-finite roster value", in.FranchiseID)
 		}
-		if math.IsNaN(in.AllPlayWinPct) || math.IsInf(in.AllPlayWinPct, 0) || in.AllPlayWinPct < 0 || in.AllPlayWinPct > 1 {
-			return nil, fmt.Errorf("powerrankings: franchise %s all-play win%% %v out of [0,1]", in.FranchiseID, in.AllPlayWinPct)
+		if math.IsNaN(in.Performance) || math.IsInf(in.Performance, 0) || in.Performance < 0 || in.Performance > 1 {
+			return nil, fmt.Errorf("powerrankings: franchise %s performance %v out of [0,1]", in.FranchiseID, in.Performance)
 		}
 	}
 
 	// Median and MAD·1.4826 both estimate σ for normal data, so the w:(1−w) ratio holds across
 	// the robust and classic components.
 	rosterCenter, rosterScale := medianMAD(inputs, func(in Input) float64 { return in.RosterValue })
-	perfMean, perfStd := meanStd(inputs, func(in Input) float64 { return in.AllPlayWinPct })
+	perfMean, perfStd := meanStd(inputs, func(in Input) float64 { return in.Performance })
 
 	blends := make([]float64, len(inputs))
 	blendLo, blendHi := math.Inf(1), math.Inf(-1)
 	for i, in := range inputs {
 		sz := zscore(in.RosterValue, rosterCenter, rosterScale)
-		pz := zscore(in.AllPlayWinPct, perfMean, perfStd)
+		pz := zscore(in.Performance, perfMean, perfStd)
 		b := w*sz + (1-w)*pz
 		blends[i] = b
 		blendLo = math.Min(blendLo, b)
 		blendHi = math.Max(blendHi, b)
 		rows = append(rows, Row{
-			FranchiseID:   in.FranchiseID,
-			RosterZ:       sz,
-			MFLPerfZ:      pz,
-			RosterValue:   in.RosterValue,
-			AllPlayWinPct: in.AllPlayWinPct,
+			FranchiseID: in.FranchiseID,
+			RosterZ:     sz,
+			MFLPerfZ:    pz,
+			RosterValue: in.RosterValue,
+			Performance: in.Performance,
 		})
 	}
 
