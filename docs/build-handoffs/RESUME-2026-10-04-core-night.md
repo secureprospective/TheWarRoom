@@ -1,21 +1,11 @@
 # RESUME — TheWarRoom core stages 4–8, overnight run (2026-10-04)
 
 ## 0. Next actions, in order
-1. **Finish the weekly-score load.** It stopped on MFL 429s at **2025 week 13** (2021–2024 and
-   2025 weeks 1–12 are in the scratch db; nothing is running). After a few minutes' cooldown:
-   `cp ~/scratch/twr-stage4/scratch_scores_test.go internal/ingestion/playerscores/ &&
-   FROM_SEASON=2025 FROM_WEEK=13 SCRATCH_DIR=$HOME/scratch/twr-stage4/db go test -tags scratch
-   -run TestScratchScores -v -timeout 60m ./internal/ingestion/playerscores/ >
-   ~/scratch/twr-stage4/scores-load3.log 2>&1; rm internal/ingestion/playerscores/scratch_scores_test.go`
-   (run it in the background; never commit the scratch file; rate is 0.2 rps with backoff).
-2. **Run the real fit:** `go run ./cmd/fit -db ~/scratch/twr-stage4/db/history.db` (writes
-   `internal/store/params/fitted.json` and `docs/fit/Fit_Report.md`; ~15 s). Read the report
-   critically; commit both. Then `make lint`, `make test`.
-3. Stage 6 gate: fit report with holdout scores (done by the tool) + params shown in the Admin
-   Console (live check on Claude-OS: Control → Admin lists `model.*@POS` rows, calibrated).
-   Record the gate in the plan (Stage 6 design table + gate check, same format as Stage 5).
-4. Stage 7 (design in §5b below), then Stage 8, then stop at the README; one PR, no merge;
-   morning list.
+1. **Stage 7** (design in §5b below; plan Stage 7 + R6-1, which keeps the points-per-game
+   scale). Stage 6 is DONE (gate record in the plan; fit is reproducible; `fitted.json` at
+   e8ef223 holds 380 calibrated `model.*@POS` values).
+2. Then Stage 8, then stop at the README; one PR, no merge; morning list (§4).
+3. Update this file (three paths) and T373 at each stage.
 
 ## 1. What we are doing
 - Christopher's goal (2026-10-03 night): work through Stages 4–8 without him. Do not merge to
@@ -24,20 +14,22 @@
 - **Branch:** `session/core-stages-4-8` (cut from `session/week9-checkpoint`, which holds the
   Claude-OS CLAUDE.md change). One PR at the end; per-stage gate records in the plan.
 - **Go:** `export PATH=/usr/local/go/bin:$HOME/go/bin:$PATH GOMEMLIMIT=1500MiB`
-- **Gates:** `make lint`, `make verify`. Bloat baseline now comment 18, provenance 7, tiny 27, dupl 34.
+- **Gates:** `make lint`, `make verify`. Bloat baseline now comment 15, provenance 3, tiny 24, dupl 11.
 
 ## 2. Status
 | Stage | State |
 |---|---|
 | 4 Signals | DONE, live gate PASS (v0.5.0-140). Commits a365ba3, 7e916e7, pushed. Gate record in the plan. |
 | 5 Rubric as data | DONE, gate PASS. 1159105 (routine), 17efc6c (Madden out), 6719a69 (assembly twins, CFBD season fix). Gate record in the plan. |
-| 6 Fit | IN PROGRESS. 835f3df: internal/model, internal/model/fit, cmd/fit, weekly scores measure, params upsert. Real fit not yet run (waits on the weekly load). |
+| 6 Fit | DONE, gate PASS. 835f3df (model, fit, cmd/fit), 58f71c5 (holdout rule + real fit), 0548566 (Admin filter), e8ef223 (reproducible), fb87530 (gate record; model under depguard purity). Athleticism × age tested and rejected (R6-9). |
 | 7 Measurables | — |
 | 8 M2 | — |
 
 ## 3. Environment
 - Claude-OS: `ssh claudeos` (localhost:2222 via passt). Leave it running. The app under test is
   `~/twr-gate/thewarroom`; launch: `cd ~/twr-gate && . ./cfbd.env && DISPLAY=:0 setsid -f ./thewarroom`.
+  Stage 6 gate binary: `~/twr-gate/thewarroom-s6` (v0.5.0-151 + e8ef223 fit). Unmaximized window:
+  CONTROL (172,533), Engine Admin tab (513,130), Admin filter box (497,190).
   Window maximized: nav HOME (60,243) ASSETS (60,302) PULSE (60,360) CONTROL (60,534); Control
   tabs at y=123: Crosswalk (513), Signals (603). Sudo works in the VM.
 - passt segfaults under some traffic. Recovery without reboot: stop the app through the guest agent
