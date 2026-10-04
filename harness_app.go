@@ -75,6 +75,7 @@ type ParamView struct {
 	Min         float64 `json:"min"`
 	Max         float64 `json:"max"`
 	Value       float64 `json:"value"`
+	Calibrated  bool    `json:"calibrated"` // the default came from the fit tool, not a hand setting
 }
 
 // ParamsResult is the admin panel payload.
@@ -98,7 +99,7 @@ func (a *App) GetParams() ParamsResult {
 			return ParamsResult{OK: false, Error: err.Error()}
 		}
 		out[i] = ParamView{Key: d.Key, Position: d.Position, Description: d.Description,
-			Default: d.Default, Min: d.Min, Max: d.Max, Value: v}
+			Default: d.Default, Min: d.Min, Max: d.Max, Value: v, Calibrated: d.IsCalibrated}
 	}
 	return ParamsResult{OK: true, Params: out}
 }

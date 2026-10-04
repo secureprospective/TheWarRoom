@@ -798,6 +798,7 @@ export namespace main {
 	    min: number;
 	    max: number;
 	    value: number;
+	    calibrated: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new ParamView(source);
@@ -812,6 +813,7 @@ export namespace main {
 	        this.min = source["min"];
 	        this.max = source["max"];
 	        this.value = source["value"];
+	        this.calibrated = source["calibrated"];
 	    }
 	}
 	export class ParamsResult {
