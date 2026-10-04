@@ -159,3 +159,24 @@ func TestBuildCoverage_GuardsNilDeps(t *testing.T) {
 		t.Fatal("want error on nil PositionLookup, got nil")
 	}
 }
+
+// crosswalkFixture serves csv as the crosswalk and fetches it.
+func crosswalkFixture(t *testing.T, csv string) crosswalk.Map {
+	t.Helper()
+	srv := crosswalkServer(t, csv)
+	cw, err := crosswalk.Fetch(context.Background(), srv.Client(), srv.URL)
+	if err != nil {
+		t.Fatalf("crosswalk fixture fetch: %v", err)
+	}
+	return cw
+}
+
+// crosswalkServer serves csv as the crosswalk file.
+func crosswalkServer(t *testing.T, csv string) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(csv))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}

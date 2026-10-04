@@ -31,7 +31,8 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Composition | `internal/composition` | Engine inputs from the stores plus per-player facts. |
 | Composition | `internal/rankings` | M1: scores every rostered player from a params snapshot and history features, and writes one scoring run. |
 | Composition | `internal/m2service`, `internal/powerrankings` | M2: franchise aggregation and the z-score blend with MFL standings. |
-| Composition | `internal/scouting/assembly` | Builds scouting profiles from the Layer 1 feeds. |
+| Composition | `internal/scouting/assembly` | Builds today's board's scouting profiles: RAS, coverage and school tier from their feeds, college share and breakout age from history. |
+| Composition | `internal/modelrun` | The measurables: values every rostered player with `internal/model` and the run's params, and writes a model run beside the board. |
 | Mutation | `internal/transactions` | The `Coordinator`: every league-state change runs here, in one transaction. Handler subpackages (`acquisitions`, `contracts`, `deadcap`, `freeagency`) are reachable only through it. |
 | Tooling | `cmd/fit` | Reads a history database, runs `model/fit`, and writes `internal/store/params/fitted.json` (shipped as calibrated defaults) and `docs/fit/Fit_Report.md`. |
 | Dev | `internal/harness` | The 13 architectural cases and the rookie sandbox; retired in Stage 7. |
@@ -102,10 +103,10 @@ Every method that takes frontend input validates it before acting. Bindings in
 
 These work and are tested, but the core plan rewrites or deletes them. Do not extend them.
 
-- `internal/scouting/assembly`, `m1_scouting.go` and the CSV/CFBD fetchers (`agetrajectory`,
-  `collegedefense`, `collegeshare`, `pfrcoverage`, `ras`, `schooltier`): today's board still
-  reads them. Their data now also flows into the measure
-  store through `feeds` and `college`; they go when their consumer, today's engine, does.
+- `internal/scouting/assembly`, `m1_scouting.go` and the CSV/CFBD fetchers (`pfrcoverage`, `ras`,
+  `schooltier`): today's board still reads them. The college share and breakout age already read
+  the college seasons `college` stores in history, not CFBD live. They go when their consumer,
+  today's engine, does.
 - `internal/harness` and its two dev tabs: deleted when the Stage 7 case set lands.
 
 ## What does not exist, on purpose

@@ -3,12 +3,9 @@ package ingestion
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -63,85 +60,10 @@ func GetCFBD(ctx context.Context, client *http.Client, url, apiKey string, maxBy
 	return body, nil
 }
 
-// CFBD /stats/player/season returns one row per stat. collegeshare and collegedefense share
-// this row shape, fetch and parsing; each owns its categories and output records.
-
-// CFBDStatRow is the part of a long-format stats row the college fetchers read. Stat is a
-// string ("10", "1.5") parsed by CFBDInt or CFBDFloat.
-type CFBDStatRow struct {
-	PlayerID string `json:"playerId"`
-	Player   string `json:"player"`
-	Team     string `json:"team"`
-	StatType string `json:"statType"`
-	Stat     string `json:"stat"`
-}
-
-// FetchCFBDCategory fetches one stats category for all FBS players in a season.
-func FetchCFBDCategory(ctx context.Context, client *http.Client, baseURL, apiKey string, year int, category string) ([]CFBDStatRow, error) {
-	url := baseURL + "?year=" + strconv.Itoa(year) + "&category=" + category
-	body, err := GetCFBD(ctx, client, url, apiKey, DefaultMaxCFBDBytes)
-	if err != nil {
-		return nil, fmt.Errorf("cfbd: %w", err)
-	}
-	var rows []CFBDStatRow
-	if err := json.Unmarshal(body, &rows); err != nil {
-		return nil, fmt.Errorf("cfbd: decode %s: %w", category, err)
-	}
-	return rows, nil
-}
-
-// CFBDInt parses a counting stat: missing is 0, unparseable is an error.
-func CFBDInt(r CFBDStatRow) (int, error) {
-	v := strings.TrimSpace(r.Stat)
-	if IsMissing(v) {
-		return 0, nil
-	}
-	n, err := strconv.Atoi(v)
-	if err != nil {
-		return 0, fmt.Errorf("cfbd: %s %q for player %q: %w", r.StatType, v, r.PlayerID, err)
-	}
-	return n, nil
-}
-
-// CFBDFloat is CFBDInt for fractional stats (yards, half sacks).
-func CFBDFloat(r CFBDStatRow) (float64, error) {
-	v := strings.TrimSpace(r.Stat)
-	if IsMissing(v) {
-		return 0, nil
-	}
-	f, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return 0, fmt.Errorf("cfbd: %s %q for player %q: %w", r.StatType, v, r.PlayerID, err)
-	}
-	return f, nil
-}
-
 // Share returns num/denom, or 0 when denom is 0: the player's within-team market share.
 func Share(num, denom float64) float64 {
 	if denom == 0 {
 		return 0
 	}
 	return num / denom
-}
-
-// EmitDropAmbiguous maps each player to a gsis id and builds the output. When two players
-// resolve to one gsis, that gsis is dropped entirely: a clean miss beats a mis-attributed line.
-// An unresolved espn id is skipped.
-func EmitDropAmbiguous[P, T any](players map[string]*P, espnOf func(*P) string,
-	resolve func(string) (string, bool), build func(*P, string) T) map[string]T {
-	out := map[string]T{}
-	poisoned := map[string]bool{}
-	for _, p := range players {
-		gsis, ok := resolve(espnOf(p))
-		if !ok || poisoned[gsis] {
-			continue
-		}
-		if _, dup := out[gsis]; dup {
-			delete(out, gsis)
-			poisoned[gsis] = true
-			continue
-		}
-		out[gsis] = build(p, gsis)
-	}
-	return out
 }

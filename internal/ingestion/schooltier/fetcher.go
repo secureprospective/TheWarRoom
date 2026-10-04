@@ -20,9 +20,8 @@
 //
 // CFBD IS AN AUTHED JSON API, NOT A STATIC CSV — it does NOT use extcsv.go. It needs a
 // bearer token and (from CT105) HTTP/1.1. The shared CFBD client + bearer-authed,
-// byte-capped GET now live in ingestion/cfbd.go (extracted at the 2nd CFBD caller,
-// collegeshare — Codex M17); this fetcher keeps only its own lenient decode into the
-// team shape.
+// byte-capped GET live in ingestion/cfbd.go; this fetcher keeps only its own lenient decode
+// into the team shape.
 //
 // ZERO-LEAK (hard constraint): a competition tier carries no fantasy points, projected
 // volume, or MFL scoring — a leak is structurally unrepresentable here.

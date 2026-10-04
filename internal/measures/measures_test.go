@@ -9,8 +9,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/agetrajectory"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegeshare"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/college"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/pfrcoverage"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playerscores"
@@ -194,12 +193,11 @@ func TestEveryFetchedURLHasASource(t *testing.T) {
 	cases := map[string]string{
 		"https://api.myfantasyleague.com/2026/export?TYPE=league":    "mfl",
 		"https://www47.myfantasyleague.com/2026/export?TYPE=rosters": "mfl",
-		ras.SourceURL:               "nflverse",
-		pfrcoverage.SourceURL:       "nflverse",
-		agetrajectory.SourceURL:     "nflverse",
-		crosswalk.SourceURL:         "dynastyprocess",
-		collegeshare.SeasonStatsURL: "cfbd",
-		schooltier.TeamsURL:         "cfbd",
+		ras.SourceURL:          "nflverse",
+		pfrcoverage.SourceURL:  "nflverse",
+		crosswalk.SourceURL:    "dynastyprocess",
+		college.SeasonStatsURL: "cfbd",
+		schooltier.TeamsURL:    "cfbd",
 		"https://ratings-api.ea.com/v2/entities/m24-ratings": "madden",
 	}
 	for raw, want := range cases {

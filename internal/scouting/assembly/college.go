@@ -1,27 +1,20 @@
 package assembly
 
 import (
-	"context"
-	"fmt"
 	"math"
-	"net/http"
-	"slices"
-	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/agetrajectory"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegedefense"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegeshare"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
-// The college signals come from two CFBD feeds of within-team production shares, offense and
-// defense. Each gives two signals: the college production share for one season, and the breakout
-// age, the player's age at the first scanned season a share crossed the breakout line. The feeds
-// differ only in their row type and in how a position's share is read, so one routine serves
-// both. A fetch failure is an error; a player with no gsis, row, birthdate or position-defined
-// share is an ordinary miss and is left out, so the rubric reads him as neutral.
+// The college signals are read from the college seasons history holds for each player (the
+// prior.college_* measures the Signals load stores). Each player gets two: the college
+// production share for one season, and the breakout age, his age at the first scanned season a
+// share crossed the breakout line. Offense reads yardage shares, IDP the mean of each position's
+// defensive shares. A player with no season, birth date or position-defined share is an ordinary
+// miss and is left out, so the rubric reads him as neutral.
 
 // The breakout lines: offense on yardage share, IDP on the lower averaged component share.
 const (
@@ -29,148 +22,54 @@ const (
 	BreakoutThresholdIDP = 0.12
 )
 
-// collegeFeed is one CFBD production feed.
-type collegeFeed[T any] struct {
-	name      string
-	fetch     func(ctx context.Context, client *http.Client, url, key string, year int, resolve func(string) (string, bool)) (map[string]T, error)
-	share     func(T, domain.Position) (float64, bool) // the college production share
-	breakout  func(T, domain.Position) (float64, bool) // the share the breakout line reads
-	threshold float64
+// CollegeSignals are the college scouting signals for rostered players.
+type CollegeSignals struct {
+	Share    map[playerid.PlayerID]float64 // production share in the last completed college season
+	Breakout map[playerid.PlayerID]float64 // age at the first scanned season over the breakout line
 }
 
-func offenseFeed() collegeFeed[collegeshare.RawCollegeShare] {
-	return collegeFeed[collegeshare.RawCollegeShare]{
-		name: "college share",
-		fetch: func(ctx context.Context, c *http.Client, url, key string, year int, resolve func(string) (string, bool)) (map[string]collegeshare.RawCollegeShare, error) {
-			return collegeshare.Fetch(ctx, c, url, key, year, resolve)
-		},
-		share:     collapseCollegeShare,
-		breakout:  offenseBreakoutShare,
-		threshold: BreakoutThreshold,
-	}
-}
-
-func defenseFeed() collegeFeed[collegedefense.RawCollegeDefense] {
-	return collegeFeed[collegedefense.RawCollegeDefense]{
-		name: "college defense",
-		fetch: func(ctx context.Context, c *http.Client, url, key string, year int, resolve func(string) (string, bool)) (map[string]collegedefense.RawCollegeDefense, error) {
-			return collegedefense.Fetch(ctx, c, url, key, year, resolve)
-		},
-		share:     collapseCollegeDefense,
-		breakout:  collapseCollegeDefense,
-		threshold: BreakoutThresholdIDP,
-	}
-}
-
-// BuildCollegeShare returns each rostered WR, TE and RB's offense production share for year.
-func BuildCollegeShare(ctx context.Context, client *http.Client, statsURL, apiKey string, cw crosswalk.Map,
-	year int, rosterMFLIDs []string, pos PositionLookup) (map[playerid.PlayerID]float64, error) {
-	return buildShare(ctx, client, statsURL, apiKey, cw, year, rosterMFLIDs, pos, offenseFeed())
-}
-
-// BuildCollegeDefense returns each rostered defender's production share for year.
-func BuildCollegeDefense(ctx context.Context, client *http.Client, statsURL, apiKey string, cw crosswalk.Map,
-	year int, rosterMFLIDs []string, pos PositionLookup) (map[playerid.PlayerID]float64, error) {
-	return buildShare(ctx, client, statsURL, apiKey, cw, year, rosterMFLIDs, pos, defenseFeed())
-}
-
-// BuildBreakoutAge returns each rostered WR, TE and RB's breakout age over seasons.
-func BuildBreakoutAge(ctx context.Context, client *http.Client, statsURL, apiKey string, cw crosswalk.Map,
-	ages map[string]agetrajectory.RawAge, seasons []int, rosterMFLIDs []string, pos PositionLookup) (map[playerid.PlayerID]float64, error) {
-	return buildBreakout(ctx, client, statsURL, apiKey, cw, ages, seasons, rosterMFLIDs, pos, offenseFeed())
-}
-
-// BuildBreakoutAgeIDP returns each rostered defender's breakout age over seasons.
-func BuildBreakoutAgeIDP(ctx context.Context, client *http.Client, statsURL, apiKey string, cw crosswalk.Map,
-	ages map[string]agetrajectory.RawAge, seasons []int, rosterMFLIDs []string, pos PositionLookup) (map[playerid.PlayerID]float64, error) {
-	return buildBreakout(ctx, client, statsURL, apiKey, cw, ages, seasons, rosterMFLIDs, pos, defenseFeed())
-}
-
-func buildShare[T any](ctx context.Context, client *http.Client, url, key string, cw crosswalk.Map, year int,
-	rosterMFLIDs []string, pos PositionLookup, feed collegeFeed[T]) (map[playerid.PlayerID]float64, error) {
-	if client == nil || pos == nil {
-		return nil, fmt.Errorf("assembly: %s needs a client and a position lookup", feed.name)
-	}
-	rows, err := feed.fetch(ctx, client, url, key, year, cw.GSISForESPN)
-	if err != nil {
-		return nil, fmt.Errorf("assembly: fetch %s: %w", feed.name, err)
-	}
-	return rosterValues(cw, rosterMFLIDs, pos, func(gsis string, p domain.Position) (float64, bool) {
-		row, ok := rows[gsis]
-		if !ok {
-			return 0, false
-		}
-		return feed.share(row, p)
-	}), nil
-}
-
-func buildBreakout[T any](ctx context.Context, client *http.Client, url, key string, cw crosswalk.Map,
-	ages map[string]agetrajectory.RawAge, seasons []int, rosterMFLIDs []string, pos PositionLookup,
-	feed collegeFeed[T]) (map[playerid.PlayerID]float64, error) {
-	if client == nil || pos == nil || len(seasons) == 0 {
-		return nil, fmt.Errorf("assembly: %s breakout needs a client, a position lookup and a season", feed.name)
-	}
-	scan := slices.Sorted(slices.Values(seasons))
-	bySeason := make(map[int]map[string]T, len(scan))
-	for _, yr := range scan {
-		rows, err := feed.fetch(ctx, client, url, key, yr, cw.GSISForESPN)
-		if err != nil {
-			return nil, fmt.Errorf("assembly: fetch %s season %d: %w", feed.name, yr, err)
-		}
-		bySeason[yr] = rows
-	}
-	return rosterValues(cw, rosterMFLIDs, pos, func(gsis string, p domain.Position) (float64, bool) {
-		age, ok := ages[gsis]
-		if !ok {
-			return 0, false
-		}
-		share := func(row T) (float64, bool) { return feed.breakout(row, p) }
-		return earliestBreakout(scan, bySeason, gsis, age.BirthDate, share, feed.threshold)
-	}), nil
-}
-
-// rosterValues maps each rostered player with a gsis and a position through value.
-func rosterValues(cw crosswalk.Map, rosterMFLIDs []string, pos PositionLookup,
-	value func(gsis string, p domain.Position) (float64, bool)) map[playerid.PlayerID]float64 {
-	out := make(map[playerid.PlayerID]float64, len(rosterMFLIDs))
+// BuildCollege reads each rostered player's share for season year and his breakout age over
+// seasons from players, history's facts keyed by MFL id.
+func BuildCollege(players map[string]*model.Player, year int, seasons []int, rosterMFLIDs []string,
+	pos PositionLookup) CollegeSignals {
+	out := CollegeSignals{Share: map[playerid.PlayerID]float64{}, Breakout: map[playerid.PlayerID]float64{}}
 	for _, mfl := range rosterMFLIDs {
 		pid, err := playerid.New(mfl)
 		if err != nil {
 			continue
 		}
-		gsis, ok := cw.Lookup(pid)
-		if !ok {
-			continue
-		}
 		p, ok := pos.Position(mfl)
-		if !ok {
+		pl := players[mfl]
+		if !ok || pl == nil {
 			continue
 		}
-		if v, ok := value(gsis, p); ok {
-			out[pid] = v
+		if s, ok := collegeShare(pl.College[year], p); ok {
+			out.Share[pid] = s
+		}
+		if age, ok := breakoutAge(pl, seasons, p); ok {
+			out.Breakout[pid] = age
 		}
 	}
 	return out
 }
 
-// earliestBreakout is the player's age on September 1 of the first season, in ascending order,
-// whose share reaches threshold. A position the feed has no share for never breaks out.
-func earliestBreakout[T any](seasons []int, bySeason map[int]map[string]T, gsis string, birth time.Time,
-	share func(T) (float64, bool), threshold float64) (float64, bool) {
+// breakoutAge is the player's age on September 1 of the first season, in ascending order, whose
+// breakout share reaches the position's line.
+func breakoutAge(pl *model.Player, seasons []int, pos domain.Position) (float64, bool) {
+	threshold := BreakoutThreshold
+	if isIDP(pos) {
+		threshold = BreakoutThresholdIDP
+	}
 	for _, yr := range seasons {
-		row, ok := bySeason[yr][gsis]
+		s, ok := breakoutShare(pl.College[yr], pos)
 		if !ok {
 			continue
-		}
-		s, ok := share(row)
-		if !ok {
-			return 0, false
 		}
 		if s < threshold {
 			continue
 		}
-		age := time.Date(yr, time.September, 1, 0, 0, 0, 0, time.UTC).Sub(birth).Hours() / 24 / 365.25
-		if math.IsNaN(age) || math.IsInf(age, 0) || age < 0 {
+		age := pl.AgeAt(yr)
+		if math.IsNaN(age) || age < 0 {
 			return 0, false
 		}
 		return age, true
@@ -178,62 +77,62 @@ func earliestBreakout[T any](seasons []int, bySeason map[int]map[string]T, gsis 
 	return 0, false
 }
 
-// collapseCollegeShare is the offense production share: receiving yards at WR and TE, and
-// 0.70 rushing + 0.30 receiving yards at RB. Other positions have none in this feed.
-func collapseCollegeShare(rc collegeshare.RawCollegeShare, pos domain.Position) (float64, bool) {
-	var share float64
+func isIDP(pos domain.Position) bool {
 	switch pos {
-	case domain.PosWR, domain.PosTE:
-		share = rc.ReceivingYardShare
-	case domain.PosRB:
-		share = 0.70*rc.RushingYardShare + 0.30*rc.ReceivingYardShare
-	case domain.PosQB, domain.PosK, domain.PosDE, domain.PosDT,
-		domain.PosLB, domain.PosCB, domain.PosS, domain.PosFlag:
-		return 0, false
+	case domain.PosDT, domain.PosDE, domain.PosLB, domain.PosCB, domain.PosS:
+		return true
+	case domain.PosQB, domain.PosRB, domain.PosWR, domain.PosTE, domain.PosK, domain.PosFlag:
 	}
-	if math.IsNaN(share) || math.IsInf(share, 0) {
-		return 0, false
-	}
-	return share, true
+	return false
 }
 
-// offenseBreakoutShare is the share the offense breakout line reads: receiving yards at WR and
-// TE, rushing yards at RB.
-func offenseBreakoutShare(rc collegeshare.RawCollegeShare, pos domain.Position) (float64, bool) {
+// share is a player's part of his team's total for a college measure.
+func share(c map[string]float64, measure string) float64 {
+	return ingestion.Share(c[measure], c["team_"+measure])
+}
+
+// collegeShare is the production share: receiving yards at WR and TE, 0.70 rushing + 0.30
+// receiving yards at RB, and at IDP the mean of the position's components: CB passes defended
+// and interceptions; S interceptions and tackles; LB tackles, sacks and tackles for loss; DT and
+// DE tackles for loss and sacks. ok is false with no season or no share for the position.
+func collegeShare(c map[string]float64, pos domain.Position) (float64, bool) {
+	if c == nil {
+		return 0, false
+	}
 	switch pos {
 	case domain.PosWR, domain.PosTE:
-		return rc.ReceivingYardShare, true
+		return share(c, "receiving_yards"), true
 	case domain.PosRB:
-		return rc.RushingYardShare, true
-	case domain.PosQB, domain.PosK, domain.PosCB, domain.PosS,
-		domain.PosLB, domain.PosDT, domain.PosDE, domain.PosFlag:
-		return 0, false
+		return 0.70*share(c, "rushing_yards") + 0.30*share(c, "receiving_yards"), true
+	case domain.PosCB:
+		return mean(share(c, "passes_defended"), share(c, "interceptions")), true
+	case domain.PosS:
+		return mean(share(c, "interceptions"), share(c, "total_tackles")), true
+	case domain.PosLB:
+		return mean(share(c, "total_tackles"), share(c, "sacks"), share(c, "tackles_for_loss")), true
+	case domain.PosDT, domain.PosDE:
+		return mean(share(c, "tackles_for_loss"), share(c, "sacks")), true
+	case domain.PosQB, domain.PosK, domain.PosFlag:
 	}
 	return 0, false
 }
 
-// collapseCollegeDefense is the defensive production share, the mean of each position's
-// components: CB passes defended and interceptions; S interceptions and tackles; LB tackles,
-// sacks and tackles for loss; DT and DE tackles for loss and sacks.
-func collapseCollegeDefense(rc collegedefense.RawCollegeDefense, pos domain.Position) (float64, bool) {
-	var share float64
+// breakoutShare is the share the breakout line reads: receiving yards at WR and TE, rushing
+// yards at RB, and the production share at IDP.
+func breakoutShare(c map[string]float64, pos domain.Position) (float64, bool) {
+	if c == nil {
+		return 0, false
+	}
 	switch pos {
-	case domain.PosCB:
-		share = mean(rc.PassDefShare, rc.InterceptionShare)
-	case domain.PosS:
-		share = mean(rc.InterceptionShare, rc.TackleShare)
-	case domain.PosLB:
-		share = mean(rc.TackleShare, rc.SackShare, rc.TFLShare)
-	case domain.PosDT, domain.PosDE:
-		share = mean(rc.TFLShare, rc.SackShare)
-	case domain.PosQB, domain.PosRB, domain.PosWR, domain.PosTE,
-		domain.PosK, domain.PosFlag:
-		return 0, false
+	case domain.PosWR, domain.PosTE:
+		return share(c, "receiving_yards"), true
+	case domain.PosRB:
+		return share(c, "rushing_yards"), true
+	case domain.PosDT, domain.PosDE, domain.PosLB, domain.PosCB, domain.PosS:
+		return collegeShare(c, pos)
+	case domain.PosQB, domain.PosK, domain.PosFlag:
 	}
-	if math.IsNaN(share) || math.IsInf(share, 0) {
-		return 0, false
-	}
-	return share, true
+	return 0, false
 }
 
 func mean(vals ...float64) float64 {

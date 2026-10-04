@@ -10,13 +10,12 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/agetrajectory"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegedefense"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/collegeshare"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/pfrcoverage"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/ras"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/schooltier"
+	"github.com/secureprospective/TheWarRoom/internal/model"
+	"github.com/secureprospective/TheWarRoom/internal/modelrun"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/rankings"
@@ -36,9 +35,11 @@ const cfbdEnvVar = "CFBD_API_KEY"
 type scoutProfiles = map[playerid.PlayerID]scouting.Profile
 
 // buildScoutingDirectory runs every scouting signal against the board's cached players lookup and
-// the crosswalk ScoreLeague fetched, and returns the merged profiles. RAS and coverage always run. The CFBD signals (school tier, college share, breakout age) need a key: without one they are
-// skipped and every player is neutral on them, but with a key a failed fetch is an error. A missing
-// key and a broken fetch are different conditions.
+// the crosswalk ScoreLeague fetched, and returns the merged profiles. RAS, coverage and the
+// college signals always run; the college ones read what the Signals load stored in history.
+// School tier needs a CFBD key: without one it is skipped and every player is neutral on it, but
+// with a key a failed fetch is an error. A missing key and a broken fetch are different
+// conditions.
 func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup, cw crosswalk.Map) (rankings.MapScoutingDirectory, error) {
 	rosterMFLIDs := collectRosterMFLIDs(a.league.Reader())
 	client := &http.Client{Timeout: rasFetchTimeout, Transport: a.fetches}
@@ -48,44 +49,45 @@ func (a *App) buildScoutingDirectory(ctx context.Context, lk normalize.Lookup, c
 	if err != nil {
 		return rankings.MapScoutingDirectory{}, fmt.Errorf("app: build RAS scouting directory: %w", err)
 	}
-
 	if err := mergeCoverage(ctx, a.season, client, cw, rosterMFLIDs, adapter, profiles); err != nil {
 		return rankings.MapScoutingDirectory{}, err
 	}
-
+	if err := a.mergeCollege(ctx, rosterMFLIDs, adapter, profiles); err != nil {
+		return rankings.MapScoutingDirectory{}, err
+	}
 	if key := strings.TrimSpace(os.Getenv(cfbdEnvVar)); key != "" {
-		if err := mergeCFBDScouting(ctx, a.season, client, key, cw, rosterMFLIDs, adapter, profiles); err != nil {
+		if err := mergeSchoolTier(ctx, client, key, a.season, rosterMFLIDs, adapter, profiles); err != nil {
 			return rankings.MapScoutingDirectory{}, err
 		}
 	}
-
 	return rankings.NewMapScoutingDirectory(profiles), nil
 }
 
-// mergeCFBDScouting merges the CFBD signals in order; any fetch failure is an error.
-func mergeCFBDScouting(ctx context.Context, year int, client *http.Client, key string, cw crosswalk.Map,
-	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	// Birthdates feed both breakout scans; fetch them once.
-	ages, err := agetrajectory.Fetch(ctx, client, agetrajectory.SourceURL)
+// mergeCollege adds each rostered player's college production share and breakout age from the
+// college seasons history holds, read through the last completed college season: the current
+// one's players are not in the NFL yet. Offense and defense fill disjoint positions.
+func (a *App) mergeCollege(ctx context.Context, rosterMFLIDs []string, adapter scoutLookupAdapter,
+	profiles scoutProfiles) error {
+	college := a.season - 1
+	seasons := breakoutSeasons(college)
+	obs, err := modelrun.Observations(ctx, a.history, seasons[0], college, time.Now(), model.CollegeMeasures())
 	if err != nil {
-		return fmt.Errorf("app: fetch scouting birthdates: %w", err)
+		return fmt.Errorf("app: read college seasons: %w", err)
 	}
-	if err := mergeSchoolTier(ctx, client, key, year, rosterMFLIDs, adapter, profiles); err != nil {
-		return err
+	sig := assembly.BuildCollege(model.Build(obs, nil).Players, college, seasons, rosterMFLIDs, adapter)
+	for pid, share := range sig.Share {
+		p := profiles[pid]
+		p.MFLID = pid
+		p.CollegeProductionShare, p.HasCollegeProductionShare = share, true
+		profiles[pid] = p
 	}
-	// College production is read through the last completed college season: the current one's
-	// players are not in the NFL yet, so its feed resolves no one.
-	college := year - 1
-	if err := mergeCollegeShare(ctx, client, key, cw, college, rosterMFLIDs, adapter, profiles); err != nil {
-		return err
+	for pid, age := range sig.Breakout {
+		p := profiles[pid]
+		p.MFLID = pid
+		p.BreakoutAge, p.HasBreakoutAge = age, true
+		profiles[pid] = p
 	}
-	if err := mergeCollegeDefense(ctx, client, key, cw, college, rosterMFLIDs, adapter, profiles); err != nil {
-		return err
-	}
-	if err := mergeBreakoutAge(ctx, client, key, cw, ages, college, rosterMFLIDs, adapter, profiles); err != nil {
-		return err
-	}
-	return mergeBreakoutAgeIDP(ctx, client, key, cw, ages, college, rosterMFLIDs, adapter, profiles)
+	return nil
 }
 
 // mergeCoverage adds the CB/S coverage anchor ([0,1], higher is better) from the prior
@@ -123,84 +125,8 @@ func mergeSchoolTier(ctx context.Context, client *http.Client, key string, year 
 	return nil
 }
 
-// mergeCollegeShare adds the offense college production share.
-func mergeCollegeShare(ctx context.Context, client *http.Client, key string, cw crosswalk.Map, year int,
-	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	shares, err := assembly.BuildCollegeShare(ctx, client, collegeshare.SeasonStatsURL, key, cw, year, rosterMFLIDs, adapter)
-	if err != nil {
-		return fmt.Errorf("app: build college-share scouting directory: %w", err)
-	}
-	for pid, share := range shares {
-		p := profiles[pid]
-		p.MFLID = pid
-		p.CollegeProductionShare = share
-		p.HasCollegeProductionShare = true
-		profiles[pid] = p
-	}
-	return nil
-}
-
-// mergeCollegeDefense adds the defense share into the same slot. Offense and defense fill
-// disjoint positions, so neither overwrites the other.
-func mergeCollegeDefense(ctx context.Context, client *http.Client, key string, cw crosswalk.Map, year int,
-	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	defShares, err := assembly.BuildCollegeDefense(ctx, client, collegedefense.SeasonStatsURL, key, cw, year, rosterMFLIDs, adapter)
-	if err != nil {
-		return fmt.Errorf("app: build college-defense scouting directory: %w", err)
-	}
-	for pid, share := range defShares {
-		p := profiles[pid]
-		p.MFLID = pid
-		p.CollegeProductionShare = share
-		p.HasCollegeProductionShare = true
-		profiles[pid] = p
-	}
-	return nil
-}
-
-// mergeBreakoutAge scans the last breakoutSeasonsBack offense seasons for each rostered WR/TE/RB's
-// earliest dominator crossing and derives the breakout age from the birthdate.
-func mergeBreakoutAge(ctx context.Context, client *http.Client, key string, cw crosswalk.Map,
-	ages map[string]agetrajectory.RawAge, year int,
-	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	breakouts, err := assembly.BuildBreakoutAge(ctx, client, collegeshare.SeasonStatsURL, key,
-		cw, ages, breakoutSeasons(year), rosterMFLIDs, adapter)
-	if err != nil {
-		return fmt.Errorf("app: build breakout-age scouting directory: %w", err)
-	}
-	for pid, age := range breakouts {
-		p := profiles[pid]
-		p.MFLID = pid
-		p.BreakoutAge = age
-		p.HasBreakoutAge = true
-		profiles[pid] = p
-	}
-	return nil
-}
-
-// mergeBreakoutAgeIDP is mergeBreakoutAge for CB/S/LB/DT/DE, against the lower IDP dominator
-// line, into the same slot.
-func mergeBreakoutAgeIDP(ctx context.Context, client *http.Client, key string, cw crosswalk.Map,
-	ages map[string]agetrajectory.RawAge, year int,
-	rosterMFLIDs []string, adapter scoutLookupAdapter, profiles scoutProfiles) error {
-	breakouts, err := assembly.BuildBreakoutAgeIDP(ctx, client, collegedefense.SeasonStatsURL, key,
-		cw, ages, breakoutSeasons(year), rosterMFLIDs, adapter)
-	if err != nil {
-		return fmt.Errorf("app: build IDP breakout-age scouting directory: %w", err)
-	}
-	for pid, age := range breakouts {
-		p := profiles[pid]
-		p.MFLID = pid
-		p.BreakoutAge = age
-		p.HasBreakoutAge = true
-		profiles[pid] = p
-	}
-	return nil
-}
-
 // breakoutSeasonsBack is the college window the breakout scan covers: enough for rookies and
-// recent draftees. Older veterans fall outside it and are neutral. Each season costs one CFBD
-// fetch pair.
+// recent draftees. Older veterans fall outside it and are neutral.
 const breakoutSeasonsBack = 6
 
 // breakoutSeasons returns the ascending window ending at year.

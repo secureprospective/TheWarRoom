@@ -44,6 +44,15 @@ func Measures() []string { return append(facts(), mWeekPoints) }
 // RuntimeMeasures lists everything the app reads: league points as MFL's season totals.
 func RuntimeMeasures() []string { return append(facts(), mSeasonPts) }
 
+// CollegeMeasures are the birth date and college seasons, for a caller that needs only those.
+func CollegeMeasures() []string {
+	out := []string{mBirth}
+	for _, c := range collegeMeasures() {
+		out = append(out, collegePrefx+c)
+	}
+	return out
+}
+
 func facts() []string {
 	out := []string{mPosition, mBirth, mRookie, mDraftPick, mOffSnaps, mDefSnaps, mTeamsSnaps}
 	for _, c := range Combine() {
