@@ -701,6 +701,20 @@ lists them. On their dynasty lists the model matches or beats the experts at DT,
 moved from 0.59 vs 0.68 to 0.67 vs 0.69 (value Spearman). Among the top-tier players of their
 redraft lists the experts still lead at DE, LB and CB.
 
+**Gate check, 2026-10-04.** Branch `session/scouting-robustness`, live on Claude-OS at
+`v0.5.0-190-g7c8ecfe`, then `v0.5.0-191-g5d013c5`, against a backup-API snapshot of
+Christopher's real databases taken 17:08 (his model run #2 at `eb4cbb4`). Evidence:
+`~/fleet/runs/warroom-scouting-research-2026-10-04/live-gate-r9/`.
+
+| Gate item | Result |
+|---|---|
+| A new mapping reaches stored seasons without a CFBD call (R9-3) | PASS. The launch's signals load re-read CFBD 2016–2025 from the archive, adding only the team hurries (946–1,417 a season, the same counts as the fit database); `fetch_log` shows no CFBD request. The next launch added 0 values. |
+| Contracts load (R9-4, R9-5) | PASS. One fetch (302, then 200), 82,432 values, 0 unresolved; the Signals console lists the contracts file as fresh with 729–1,598 players a signing season (05). 98–100% of rostered defenders have a contract read; offense none. |
+| A model run on the new code | PASS. Score League wrote model run #3: 1,450 valued, 85 on the prior alone, the same 1 set aside and 7 excluded as run #2 (02). Edge rushers nflverse calls LB, valued now as the DEs MFL scores them as, rise: Watt dynasty 11.1 → 15.6 PPG, Van Ginkel 9.5 → 14.3, Burns 8.1 → 12.1, Hendrickson 6.3 → 9.7. |
+| Both M2 views on the new run | PASS (07, 08). Against run #2, the franchise view moves 5 of 32 teams 2+ places (at most 3: Jets 24 → 21, Saints 12 → 15, Ravens 20 → 22); this season's roster side moves 3. `franchise-moves.txt`. |
+| Found and fixed in the gate | S listed "contract" among its inputs though the fit had dropped S's contract terms (5d013c5). Run #4 on the fix: every value identical to run #3, only the 153 safeties' input lists changed. |
+| Known effect to watch | Elite DEs with a hot start fall on Now (Anderson 20.7 → 15.4 PPG with 27.9 over 3 games; Hutchinson 21.3 → 17.6, closer to his 17.0 and 18.4): with the regrouped DEs the recency fit tied Marcel's 1/0.8/0.6 and the simpler one is kept, and DE's better prior raises k_now 3.7 → 5.6 games. Both follow the fit's existing rules on the holdout. |
+
 ## Open items that need Christopher
 
 - ~~The dynasty horizon~~ decided 2026-10-04: 3 seasons at 0.75 (win-now), now the shipped
