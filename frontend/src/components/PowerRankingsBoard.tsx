@@ -531,7 +531,7 @@ export function PowerRankingsBoard() {
               <span className="twr-c-num twr-r">
                 {r.rosterValue.toFixed(1)}
               </span>
-              <span className="twr-c-num twr-r">{r.rosterZ.toFixed(2)}</span>
+              <span className="twr-c-num twr-r">{fixed(r.rosterZ, 2)}</span>
               <span className="twr-c-num twr-r">
                 {(r.results * 100).toFixed(1)}%
               </span>
@@ -582,6 +582,12 @@ export function PowerRankingsBoard() {
       )}
     </div>
   );
+}
+
+// fixed is toFixed without the "-0.00" a tiny negative prints.
+function fixed(v: number, digits: number): string {
+  const s = v.toFixed(digits);
+  return Number(s) === 0 ? (0).toFixed(digits) : s;
 }
 
 // signed shows one decimal with its sign, and a value that rounds to zero as plain 0.0.
