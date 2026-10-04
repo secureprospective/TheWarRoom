@@ -354,6 +354,21 @@ function ScoreReportPanel({ report }: { report: main.ScoreLeagueResult }) {
               ').'}
         </p>
       )}
+      {report.model?.mislinked && report.model.mislinked.length > 0 && (
+        <details style={{ marginTop: 4 }}>
+          <summary style={{ cursor: 'pointer', color: 'var(--amber-base)' }}>
+            {report.model.mislinked.length} history record{report.model.mislinked.length > 1 ? 's' : ''} set
+            aside as another player's (valued on MFL's facts)
+          </summary>
+          <ul style={{ margin: '4px 0 0', paddingLeft: 18, color: 'var(--text-secondary)' }}>
+            {report.model.mislinked.map((e) => (
+              <li key={e.mflID}>
+                {e.name || e.mflID}: {e.reason}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       {report.warning && (
         <p style={{ margin: '4px 0 0', color: 'var(--amber-base)' }}>{report.warning}</p>
       )}

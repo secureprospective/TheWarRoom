@@ -1387,6 +1387,7 @@ export namespace modelrun {
 	    scored: number;
 	    rookies: number;
 	    excluded: Exclusion[];
+	    mislinked: Exclusion[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Report(source);
@@ -1399,6 +1400,7 @@ export namespace modelrun {
 	        this.scored = source["scored"];
 	        this.rookies = source["rookies"];
 	        this.excluded = this.convertValues(source["excluded"], Exclusion);
+	        this.mislinked = this.convertValues(source["mislinked"], Exclusion);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

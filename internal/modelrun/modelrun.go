@@ -74,6 +74,9 @@ type Report struct {
 	Scored    int         `json:"scored"`
 	Rookies   int         `json:"rookies"` // valued on the prior alone: no NFL season yet
 	Excluded  []Exclusion `json:"excluded"`
+	// Mislinked are players whose history record was another player's; they are valued on MFL's
+	// facts and their college seasons.
+	Mislinked []Exclusion `json:"mislinked"`
 }
 
 // Exclusion is a rostered player the pass could not value, with the reason.
@@ -118,6 +121,11 @@ func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
 			}
 			if len(in.Past) == 0 && in.Current.Games == 0 {
 				rep.Rookies++
+			}
+			if in.Mislinked {
+				facts, _ := r.dir.Facts(p.MFLID)
+				rep.Mislinked = append(rep.Mislinked, Exclusion{MFLID: p.MFLID, Name: facts.Name,
+					Reason: "history's record is another player's: its first NFL season is far from MFL's draft year"})
 			}
 			scores, inputs = append(scores, sc), append(inputs, in)
 		}
@@ -174,11 +182,12 @@ func newPass(d model.Data, spec Spec) (pass, error) {
 
 // playerInput is everything the model read for one player; the run's inputs hash covers it.
 type playerInput struct {
-	MFLID    string
-	Position domain.Position
-	Player   model.Player
-	Past     []model.Past
-	Current  model.Past
+	MFLID     string
+	Position  domain.Position
+	Player    model.Player
+	Past      []model.Past
+	Current   model.Past
+	Mislinked bool
 }
 
 // value scores one rostered player, or returns why it could not.
@@ -191,8 +200,9 @@ func (ps pass) value(dir Directory, mflID string) (history.ModelScore, playerInp
 	if !ok {
 		return history.ModelScore{}, playerInput{}, fmt.Sprintf("no model for position %q", facts.Position)
 	}
-	pl := ps.player(mflID, facts)
-	in := playerInput{MFLID: mflID, Position: facts.Position, Player: pl, Current: model.Past{Year: ps.season}}
+	pl, mislinked := ps.player(mflID, facts)
+	in := playerInput{MFLID: mflID, Position: facts.Position, Player: pl, Current: model.Past{Year: ps.season},
+		Mislinked: mislinked}
 	for y := ps.season - 3; y <= ps.season; y++ {
 		s := ps.data.Seasons[mflID][y]
 		if s == nil || s.Games() == 0 {
@@ -213,19 +223,33 @@ func (ps pass) value(dir Directory, mflID string) (history.ModelScore, playerInp
 	return history.ModelScore{MFLID: mflID, Position: string(facts.Position), Value: v, Inputs: inputNames(&pl, in)}, in, ""
 }
 
+// identitySlack is how many seasons history's first NFL season may sit from the year MFL has the
+// player entering the league. On the 2026 roster 1,439 of 1,440 sit within one; the one outside
+// sat 48 away.
+const identitySlack = 2
+
 // player is the history's facts for mflID, with the position he is rostered at; the players
-// database fills a birth date history lacks.
-func (ps pass) player(mflID string, facts normalize.PlayerFacts) model.Player {
-	pl := model.Player{ID: mflID}
+// database fills a birth date history lacks. A history record whose first NFL season is far from
+// MFL's draft year is another player's: the crosswalk tied him to the wrong ids (DynastyProcess
+// gave a 2026 rookie DT the ids of a 1978 receiver). MFL wins: that record's birth date, rookie
+// season, draft slot and measurements are set aside, his college seasons kept, and mislinked
+// reports it.
+func (ps pass) player(mflID string, facts normalize.PlayerFacts) (pl model.Player, mislinked bool) {
+	pl = model.Player{ID: mflID}
 	if h := ps.data.Players[mflID]; h != nil {
 		pl = *h
+		if facts.HasDraftYear && h.Rookie != 0 && abs(h.Rookie-facts.DraftYear) > identitySlack {
+			pl, mislinked = model.Player{ID: mflID, College: h.College}, true
+		}
 	}
 	pl.Position = facts.Position
 	if pl.Birth.IsZero() && facts.HasBirthdate {
 		pl.Birth = time.Unix(facts.Birthdate, 0).UTC()
 	}
-	return pl
+	return pl, mislinked
 }
+
+func abs(n int) int { return max(n, -n) }
 
 // scale is the position's scale for a season; a season with too few regulars yet (the first
 // weeks of the current one) borrows the season before.

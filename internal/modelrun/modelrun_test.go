@@ -104,3 +104,32 @@ func TestRunValuesTheRosterAndRecordsInputs(t *testing.T) {
 		t.Errorf("rookie = %+v", rookie)
 	}
 }
+
+// A history record whose first NFL season is far from MFL's draft year belongs to another player:
+// the rookie is valued on MFL's birth date, not the old record's, and the run names him.
+func TestRunSetsAsideAnotherPlayersRecord(t *testing.T) {
+	h, st, dir := league()
+	add := func(measure string, v float64, text string) {
+		h.feats[0] = append(h.feats[0], history.Feature{PlayerID: "0300", Measure: measure, Value: v, Text: text})
+	}
+	add("context.birth_date", 0, "1953-01-09")
+	add("context.rookie_season", 1978, "")
+	rookie := dir["0300"]
+	rookie.DraftYear, rookie.HasDraftYear = 2026, true
+	dir["0300"] = rookie
+	r, err := New(st, dir, h, "v-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rep, err := r.Run(context.Background(), Spec{Season: 2026, AsOf: time.Now(), Params: params.DefaultSet(), LastWeek: 17})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rep.Mislinked) != 1 || rep.Mislinked[0].MFLID != "0300" {
+		t.Fatalf("mislinked = %+v, want the rookie", rep.Mislinked)
+	}
+	got := h.written[0].Scores[1]
+	if got.MFLID != "0300" || got.Now <= 0 || got.Dynasty <= 0 {
+		t.Errorf("the rookie must be valued on MFL's facts, not a 73-year-old's: %+v", got)
+	}
+}
