@@ -161,7 +161,7 @@ func (r *Runner) Run(ctx context.Context, spec RunSpec) (Report, error) {
 	}
 	run, written, err := r.hist.WriteRun(ctx, history.NewRun{
 		Kind: spec.Kind, Season: spec.Season, AsOf: spec.AsOf, Engine: r.engine, InputsHash: hash, Scores: scores,
-		Params: history.ParamSet{Params: spec.Params.Values(), Measures: spec.Measures},
+		Params: history.ParamSet{Params: spec.Params.Board(), Measures: spec.Measures},
 	})
 	if err != nil {
 		return Report{}, fmt.Errorf("rankings: write %d scores (season %d): %w", len(scores), spec.Season, err)

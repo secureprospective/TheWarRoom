@@ -267,3 +267,24 @@ func TestSnapshotIsFrozenAndRoundTrips(t *testing.T) {
 		t.Errorf("per-position key did not round-trip: %v", perPos)
 	}
 }
+
+func TestBoardAndModelSplitTheSet(t *testing.T) {
+	all := DefaultSet().Values()
+	board, model := DefaultSet().Board(), DefaultSet().Model()
+	if len(board)+len(model) != len(all) {
+		t.Fatalf("board %d + model %d != %d values", len(board), len(model), len(all))
+	}
+	for k := range model {
+		if _, ok := board[k]; ok {
+			t.Errorf("%s is in both parts", k)
+		}
+	}
+	for _, k := range []string{KeyDynastyDiscount, KeyDynastySeasons, "model.k_dynasty@WR"} {
+		if _, ok := model[k]; !ok {
+			t.Errorf("model part lacks %s", k)
+		}
+	}
+	if _, ok := board[KeyLayer3DecayRate]; !ok {
+		t.Errorf("board part lacks %s", KeyLayer3DecayRate)
+	}
+}

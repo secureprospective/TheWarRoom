@@ -89,7 +89,7 @@ func TestRunValuesTheRosterAndRecordsInputs(t *testing.T) {
 	}
 	run := h.written[0]
 	for k := range run.Params.Params {
-		if k[:6] != "model." && k[:8] != "dynasty." {
+		if !params.IsModel(k) {
 			t.Errorf("model run records board param %q", k)
 		}
 	}

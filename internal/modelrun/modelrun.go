@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -132,25 +131,13 @@ func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
 	}
 	run, written, err := r.hist.WriteModelRun(ctx, history.NewModelRun{
 		Season: spec.Season, AsOf: spec.AsOf, Engine: r.engine, InputsHash: hash, Scores: scores,
-		Params: history.ParamSet{Params: ModelParams(spec.Params), Measures: model.RuntimeMeasures()},
+		Params: history.ParamSet{Params: spec.Params.Model(), Measures: model.RuntimeMeasures()},
 	})
 	if err != nil {
 		return Report{}, fmt.Errorf("modelrun: write %d scores (season %d): %w", len(scores), spec.Season, err)
 	}
 	rep.RunID, rep.Unchanged, rep.Scored = run.ID, !written, len(scores)
 	return rep, nil
-}
-
-// ModelParams is the part of a param set the model reads: the fitted model values and the
-// dynasty horizon. A run records only these, so editing a board setting makes no new model run.
-func ModelParams(set params.Set) map[string]float64 {
-	out := map[string]float64{}
-	for k, v := range set.Values() {
-		if strings.HasPrefix(k, "model.") || strings.HasPrefix(k, "dynasty.") {
-			out[k] = v
-		}
-	}
-	return out
 }
 
 // pass is what every player in one run is valued with.

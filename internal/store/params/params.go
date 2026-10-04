@@ -10,6 +10,7 @@ package params
 import (
 	"context"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 	"sync"
@@ -105,6 +106,27 @@ func (p Set) Values() map[string]float64 {
 		}
 		out[key] = v
 	}
+	return out
+}
+
+// The board and the measurables model read disjoint parts of a set: the model its fitted values
+// and the dynasty horizon, the board everything else. A run records only its own part, so editing
+// one side's setting never makes a new run of the other.
+
+// IsModel reports whether key, in either form Values uses, belongs to the model.
+func IsModel(key string) bool {
+	return strings.HasPrefix(key, "model.") || strings.HasPrefix(key, "dynasty.")
+}
+
+// Board is Values without the model's part.
+func (p Set) Board() map[string]float64 { return p.part(false) }
+
+// Model is Values limited to the model's part.
+func (p Set) Model() map[string]float64 { return p.part(true) }
+
+func (p Set) part(model bool) map[string]float64 {
+	out := p.Values()
+	maps.DeleteFunc(out, func(k string, _ float64) bool { return IsModel(k) != model })
 	return out
 }
 

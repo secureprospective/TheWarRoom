@@ -248,6 +248,25 @@ func TestChangedParamsMakeASecondReadableBoard(t *testing.T) {
 	}
 }
 
+// A model setting is not the board's, so changing one leaves the board unchanged, and M1's Δ
+// keeps comparing against the last board that differs.
+func TestModelParamLeavesTheBoardUnchanged(t *testing.T) {
+	st, dir := healthyFixture()
+	h, _ := newHistory(t)
+	loadBase(t, h, map[string]string{"1001": "400.5", "2001": "250"})
+	r := newRunner(t, st, dir, MapScoutingDirectory{}, h)
+	first, err := r.Run(context.Background(), boardSpec(testParams(0.03)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	values := testParams(0.03).Values()
+	values[params.KeyDynastyDiscount] = 0.6
+	again, err := r.Run(context.Background(), boardSpec(params.SetOf(values)))
+	if err != nil || !again.Unchanged || again.RunID != first.RunID {
+		t.Fatalf("a dynasty setting change = %+v, %v; want unchanged run %d", again, err, first.RunID)
+	}
+}
+
 // TestSourceLossDrill is the Stage 1 gate: MFL is lost, the board still runs on the facts it
 // has and says it is running on a reduced set, and a rebalance proposal sits beside the board
 // without changing it.
