@@ -420,6 +420,40 @@ hand-parse one CSV into their own struct.
 **Gate:** each signal has a coverage table and a freshness check. 2021–2025 history loaded. The
 loader meets the Stage 0 comment and provenance targets.
 
+**Stage 4 design (Claude, 2026-10-04):**
+
+| # | Decision | Why |
+|---|---|---|
+| S1 | `feeds.csv` joins the registry: one row per file (URL with `{season}`, id column and type, period columns, row filter). `internal/ingestion/feeds` reads any of them; a field named `<feed>.<column>` reads that column. | A new signal from a file is CSV rows, never a package. |
+| S2 | A `player` grain (season 0, week 0) for facts that belong to no period: birth date, draft slot, combine. | The prior's inputs are one fact per player; forcing them into a season would make every read guess which season. |
+| S3 | Week-level zeros are not written. A whole-file load carries a scope, so a week value the file no longer reports is corrected to zero. | Most box-score cells are zero; storing them would multiply the table about fivefold. The scope keeps a correction to zero honest. |
+| S4 | `Ingest` reads the directory and the latest held values once per load, not once per fact. | 1.03 million facts from 2021–2026 load in about four minutes, at 210 MB peak memory. |
+| S5 | CFBD stays bespoke (bearer key, one long-format call per season), mapped through `source_fields` like any feed. Team totals are summed from the same response for the share denominators. Only players the directory knows are kept. | Most FBS players never reach the NFL; keeping them would leave millions of rows waiting forever. A player who joins the directory later is picked up at the season's next monthly load. |
+| S6 | A file is due when it has never loaded, when it is the current season or a single file and is over 20 hours old, or when it is a closed season over 30 days old. A reload of unchanged data writes nothing. | Closed seasons change only by correction. |
+| S7 | `standings_cache` and `league_schedule_cache` are dropped (state migration v4). A failed MFL fetch falls back to the newest archived body of the same export, season and league that still parses. | The archive already holds every body; a body that proved bad is passed over. |
+| S8 | **The old fetchers stay until their consumer goes.** `agetrajectory`, `collegeshare`, `collegedefense`, `schooltier`, `ras`, `pfrcoverage`, `veteranfilm` and `madden` still feed today's board. | Stage 5's golden test must reproduce today's board exactly, which needs today's inputs. Rewiring an engine that Stage 7 retires would be wasted work. They are deleted with today's engine. |
+| S9 | **StatRankings routes are deferred.** The routes page serves 5 rows in its HTML and renders the rest in the browser, so a plain fetch cannot read it. It is current-season only and joins on name. | The plan ranks it lowest, as a gap-filler. Reading it would need a headless browser. |
+
+**Gate check, 2026-10-04** (branch `session/core-stages-4-8`, build `v0.5.0-140-ga365ba3`, live on
+Claude-OS against a backup-API snapshot of Christopher's databases; evidence in
+`~/fleet/runs/warroom-dataflow-2026-10-03/live-gate-stage4-2026-10-04/`):
+
+| Gate item | Result |
+|---|---|
+| Each signal has a coverage table | PASS. Control → Signals: players with data by season (with ids waiting for a match), and rostered coverage by position. 2026 so far: weekly stats 54–83%, snaps 57–88% (the rest have not played), player facts 98–100%, draft 40–92% (undrafted kickers pull K down), combine 53–90%, college 67–93%. |
+| Each signal has a freshness check | PASS. Each signal's current file shows fresh or stale against its source's window, with the load time. Source health lists every source. |
+| 2021–2025 history loaded | PASS. One launch loaded 35 files in 3 min 42 s: 1,029,669 values. Weekly stats reach 1,613–1,755 players a season, snaps 1,695–1,833. About 1% of weekly ids wait for a directory match. |
+| Values right | PASS. Spot-checked against known 2024 leaders: Burrow 4,918 passing yards, Hendrickson 17.5 sacks. |
+| A reload writes nothing | PASS. A second Load signals: 35 files, 0 new values. |
+| Archive fallback replaces the caches | PASS. Migration v4 ran with its backup. With MFL blocked in the VM, Pulse showed "CACHED · live fetch failed" from the archived body. |
+| Loader meets the Stage 0 comment and provenance targets | PASS. `feeds` 8%, `college` 13%, registry `feeds.go` 8%, `signals_app.go` 8%; provenance 0. Ratchet lowered: comment 19 → 18, dupl 38 → 34. |
+| Defect found | The Sources table showed nflverse's error from the first launch after later loads succeeded. Fixed: an error shows only while it is newer than the last good load (`sourceView`, tested). |
+
+Incident: on the first launch, Claude-OS's network process (`passt`) segfaulted twice within
+three seconds as the downloads began. The kernel log has the same crash address both times, so
+it is a bug in passt. A single 8.5 MB download and the full relaunch ran clean afterwards. The
+network card was hot-plugged back (live only) without a reboot, so the desktop session survived.
+
 ### Stage 5 — Rubric as data (pure refactor first)
 
 1. Replace the 10 parallel rubric structs (`internal/engine/l4/*`, 1,540 lines, 44% comments)

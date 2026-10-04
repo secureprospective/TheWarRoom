@@ -14,6 +14,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/college"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/feeds"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 // signalsTimeout bounds one signals load. The first load on a new history backfills every
@@ -315,14 +316,8 @@ func (a *App) signalsView(ctx context.Context) (SignalsView, error) {
 		maxAge[s.ID] = s.MaxAge
 	}
 	for _, h := range health {
-		v := SourceView{Source: h.Source, State: string(h.State), LastError: h.LastError}
-		if src, ok := reg.Source(h.Source); ok {
-			v.Name = src.Name
-		}
-		if !h.LastSuccess.IsZero() {
-			v.LastSuccess = h.LastSuccess.Format(time.RFC3339)
-		}
-		view.Sources = append(view.Sources, v)
+		src, _ := reg.Source(h.Source)
+		view.Sources = append(view.Sources, sourceView(h, src.Name))
 	}
 	positions := a.rosteredPositions(ctx)
 	for _, f := range reg.Feeds {
@@ -349,6 +344,19 @@ func (a *App) signalsView(ctx context.Context) (SignalsView, error) {
 	}
 	view.Feeds = append(view.Feeds, fv)
 	return view, nil
+}
+
+// sourceView shows a source's error only while it is newer than its last good load: an error a
+// later load put right is history, not news.
+func sourceView(h history.SourceHealth, name string) SourceView {
+	v := SourceView{Source: h.Source, Name: name, State: string(h.State)}
+	if h.LastFailure.After(h.LastSuccess) {
+		v.LastError = h.LastError
+	}
+	if !h.LastSuccess.IsZero() {
+		v.LastSuccess = h.LastSuccess.Format(time.RFC3339)
+	}
+	return v
 }
 
 // feedView measures one signal. Coverage is taken in the latest season with data, or across

@@ -3,7 +3,8 @@ import { useSignalsStore } from '../store/signals';
 import { main } from '../../wailsjs/go/models';
 
 // SignalsPanel shows every data source's health, each signal's freshness and reach by season,
-// and how many rostered players at each position it has data for. Stage 4's gate reads it.
+// and how many rostered players at each position it has data for. An error shows while it is
+// newer than the source's last good load.
 const cell = { padding: '4px 10px', fontFamily: 'var(--mono)', fontSize: 12 } as const;
 const head = { margin: 0, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text-secondary)' } as const;
 const positions = ['QB', 'RB', 'WR', 'TE', 'K', 'DT', 'DE', 'LB', 'CB', 'S'];
