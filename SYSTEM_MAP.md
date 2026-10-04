@@ -15,7 +15,8 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Transport | `internal/archive` | The HTTP transport every outbound request goes through: it records each response body (sha256, gzip) and each attempt to a `Sink`. Leaf. |
 | Layer 1 | `internal/ingestion` | Fetchers returning raw `Raw*` records. Shared helpers in the root package (`LeagueExport`, `FetchLeagueExport`, the CSV and CFBD plumbing); one subpackage per source. |
 | Layer 1 | `internal/ingestion/feeds` | The table-driven loader: reads any file in `feeds.csv` and maps its columns through `source_fields.csv` into a batch for the measure store. A new signal from such a file is registry rows, not code. |
-| Layer 1 | `internal/ingestion/college` | CFBD season stats as a batch for the measure store: one call per college season, each team's totals summed for the share denominators. |
+| Layer 1 | `internal/ingestion/college` | CFBD season stats as a batch for the measure store: one call per college season, each team's totals summed for the share denominators. `Map` reads an archived body, so a season is re-read when the registry maps a measure it lacks. |
+| Layer 1 | `internal/ingestion/contracts` | NFL contracts (OverTheCap via nflverse, Parquet) as a batch: each player's contract terms under the season signed. Read every 30 days. |
 | Layer 1 | `internal/normalize` | Raw records → domain types: the players lookup and roster join. |
 | Leaf | `internal/domain`, `internal/playerid`, `internal/numeric`, `internal/scouting` | Value types. `playerid.New` is the only way to build a `PlayerID`. `scouting` holds the Layer 4 input types. |
 | Leaf | `internal/measures` | The measure registry: `measures.csv`, `sources.csv`, `source_fields.csv` and `feeds.csv`, embedded and validated. Generates `docs/data-layer/Measure_Dictionary.md` (`make measure-dictionary`). Adding a source is a CSV row, not code. |
@@ -32,7 +33,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Composition | `internal/rankings` | M1: scores every rostered player from a params snapshot and history features, and writes one scoring run. |
 | Composition | `internal/m2service`, `internal/powerrankings` | M2: sums each roster's model values (on-field-now or dynasty, league points per game) and z-blends them with the season's results: all-play when MFL reports it, otherwise points for. |
 | Composition | `internal/scouting/assembly` | Builds today's board's scouting profiles: RAS, coverage and school tier from their feeds, college share and breakout age from history. |
-| Composition | `internal/modelrun` | The measurables: values every rostered player with `internal/model` and the run's params, and writes a model run beside the board. |
+| Composition | `internal/modelrun` | The measurables: values every rostered player with `internal/model` and the run's params, and writes a model run beside the board. `AtLeaguePositions` puts every player MFL lists at MFL's position before the scales are built; `cmd/fit` does the same from MFL's players export. |
 | Mutation | `internal/transactions` | The `Coordinator`: every league-state change runs here, in one transaction. Handler subpackages (`acquisitions`, `contracts`, `deadcap`, `freeagency`) are reachable only through it. |
 | Tooling | `cmd/fit` | Reads a history database, runs `model/fit`, and writes `internal/store/params/fitted.json` (shipped as calibrated defaults) and `docs/fit/Fit_Report.md`. |
 | Tooling | `tools/ifaceguard` | Vet tool: no `interface{}`/`any` in exported signatures. |

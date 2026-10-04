@@ -676,6 +676,31 @@ Evidence is in `~/fleet/runs/warroom-dataflow-2026-10-03/live-gate-stage8-2026-1
 | Found and fixed in the gate | The slider label, the results column and the all-play record still said all-play: they now name the result the blend read, and the record shows a dash (ce690b5, with the points-for test that was missing). Right-aligned numbers touched the next cell ("0Minnesota Vikings"). On an unmaximized window M1's player names fell to two letters, and the Transact roster showed no names at all. The board grid now has a column gap, and name columns a 150 px floor (5eb0e1b). |
 | Known limits | The Transact roster's middle pane is narrower than its table, so status and salary scroll. That is periphery layout, left as is. |
 
+### After the core — scouting robustness, defense first (2026-10-04)
+
+Christopher's ask: make sure the scouting profile and its weights are as robust as we think, with a
+special focus on defense, and look for durable outside sources (GitHub, academic) to build on. His
+rulings: test in the order below; FantasyPros' rankings are a benchmark only, never an input; a
+source is approved for testing and joins `Approved_Sources.md` only if it passes. Research, method
+and every result: `~/fleet/runs/warroom-scouting-research-2026-10-04/RESEARCH.md` (scratch
+harnesses beside it). The rule for adopting anything: it beats what we have on every holdout season
+2023–2025, each trained on the seasons before it; a 2025-only win is not enough.
+
+| # | Decision | Why |
+|---|---|---|
+| R9-1 | **Fit and value at the league's position.** `modelrun.AtLeaguePositions` moves every history player MFL lists to MFL's position, at runtime before the scales are built and in `cmd/fit`, which now takes MFL's players export (`-players`). | nflverse listed 85 of the league's DEs as LB (8 more as OLB), 41 DTs as DE, and left 46 CBs and Ss out as a generic DB. The league scores by its own position (a DE's tackle is 2.5, an LB's 1.5). Refit by MFL position: DE dynasty RMSE 0.243 → 0.217, DE prior R² 0.20 → 0.40, S 0.31 → 0.37. |
+| R9-2 | **DT reads each college defensive share on its own** (sacks, tackles for loss, tackles, passes defended, interceptions, quarterback hurries, last college season). **DE adds his best college season** (mean of best sack and TFL shares) and how many he played. LB, CB and S keep the single share. | Prior R² 2023/2024/2025: DT 0.186/0.242/−0.078 vs 0.155/0.212/−0.112; DE 0.327/0.360/0.400 vs 0.316/0.334/0.308. LB, CB and S won some seasons and lost others. |
+| R9-3 | **The college team's quarterback hurries are stored** (`prior.college_team_qb_hurries`), and a stored CFBD season is re-read from its archived body when it lacks a measure the registry now maps. | The DT hurries share needs the denominator. A closed season otherwise reloads every 30 days; the re-read costs no CFBD call. |
+| R9-4 | **The survival arc reads the NFL contract a defender is on** (OverTheCap via nflverse, Parquet): cap share, years left and guaranteed share of the latest contract signed by the season, plus an unknown flag. Kept per position only when it beats the regression without it on the holdout: kept at DT, DE, LB, CB; dropped at S. None at offense. | Teams pay the players they keep. Research test: better log loss in 9 of 10 defensive holdout-seasons; offense worse at QB and WR. Every 2025 defensive regular has a contract on file. |
+| R9-5 | **Contracts load every 30 days**, as a closed file. | The file is 11 MB, rebuilt daily, and every body is archived: daily would add gigabytes a year. A new signing can take up to a month to count. |
+| R9-6 | **Tested and not adopted:** PFR pressures/hurries/missed tackles, participation opportunity shares (2016–2025), stat-crew tackle adjustment, CFBD recruiting ratings, SackSEER's explosion index. | None beat the current model on every holdout season (the explosion index tested on top of R9-2's inputs: DE 0.336/0.406/0.384 vs 0.327/0.360/0.400; it lost a season at every position). Pressures do predict next season's sacks better than sacks (r 0.59 vs 0.55), but the fantasy percentile already carries it. Crew factors move only 0.25 year to year. |
+
+**Benchmark (R9, Q2: benchmark only).** FantasyPros' preseason 2025 consensus (DynastyProcess
+archive, 2025-08-08) against the model trained before 2025, same players, positions as the league
+lists them. On their dynasty lists the model matches or beats the experts at DT, LB, CB and S; DE
+moved from 0.59 vs 0.68 to 0.67 vs 0.69 (value Spearman). Among the top-tier players of their
+redraft lists the experts still lead at DE, LB and CB.
+
 ## Open items that need Christopher
 
 - ~~The dynasty horizon~~ decided 2026-10-04: 3 seasons at 0.75 (win-now), now the shipped

@@ -1,6 +1,6 @@
 # Legacy NFL — Approved Source Library
-**Version:** 1.2 — 2026-10-03
-**Status:** Locked. All sources approved by Christopher Campbell. Madden added in document audit pass (v1.1). Tier 6 structured pipelines approved 2026-10-03 (v1.2); Madden removed from the core scouting prior the same day.
+**Version:** 1.3 — 2026-10-04
+**Status:** Locked. All sources approved by Christopher Campbell. Madden added in document audit pass (v1.1). Tier 6 structured pipelines approved 2026-10-03 (v1.2); Madden removed from the core scouting prior the same day. nflverse contracts approved 2026-10-04 after the scouting research (v1.3); the sources tested and not adopted are listed before the off-the-table ones.
 
 ---
 
@@ -205,6 +205,15 @@ feeds the player measurable is built on. Upstream owners' terms apply; none is a
 **Update frequency:** Nightly or several times a day in season; maintainer schedules are not service-level guarantees.
 **Primary use:** All production signals, evidence (snaps), injuries, draft capital, history from 2021.
 
+### nflverse contracts (OverTheCap)
+**URL:** github.com/nflverse/nflverse-data/releases/download/contracts/historical_contracts.parquet
+**Free access:** Yes. No key. Parquet only (the CSV beside it stopped in 2022).
+**What it provides:** Every NFL contract: signing season, length, total and guaranteed value, and
+its yearly value as a share of the cap.
+**Update frequency:** nflverse rebuilds it daily; the app reads it every 30 days (11 MB, archived).
+**Primary use:** The survival arc at DT, DE, LB and CB (Core Build Plan R9-4). Approved 2026-10-04
+after it passed the scouting research holdouts.
+
 ### DynastyProcess player ID crosswalk
 **URL:** github.com/dynastyprocess/data
 **Free access:** Yes. No key.
@@ -224,6 +233,19 @@ feeds the player measurable is built on. Upstream owners' terms apply; none is a
 **Primary use:** Partial route data for receivers. Lowest priority; a gap-filler only.
 
 ---
+
+## TESTED, NOT ADOPTED (2026-10-04)
+
+Free and durable, and tested against the 2023–2025 holdouts in the scouting research
+(`~/fleet/runs/warroom-scouting-research-2026-10-04/RESEARCH.md`, Core Build Plan R9-6); none beat
+the current model on every season. They may be retested when the history is longer.
+
+- **nflverse participation** (per-play defenders on the field, 2016–2025, FTN 2023+, CC-BY-SA 4.0).
+- **PFR advanced defense via nflverse** (pressures, hurries, blitzes, missed tackles, 2018+). The
+  coverage columns are already used by the board's film score at CB and S.
+- **CFBD recruiting ratings** (247 composite).
+- **FantasyPros consensus rankings via DynastyProcess**: a benchmark only, by Christopher's ruling;
+  never an input, as rankings carry production.
 
 ## NOT APPROVED / OFF THE TABLE
 
