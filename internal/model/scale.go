@@ -38,6 +38,24 @@ func (s Scale) Pct(x float64) float64 {
 	return min(max(p, half), 1-half)
 }
 
+// PPG is the points per game at percentile pct: the inverse of Pct, interpolated between the
+// regulars. An empty scale gives NaN.
+func (s Scale) PPG(pct float64) float64 {
+	n := len(s.sorted)
+	if n == 0 {
+		return math.NaN()
+	}
+	x := min(max(pct*float64(n)-0.5, 0), float64(n-1))
+	i := int(x)
+	if i == n-1 {
+		return s.sorted[i]
+	}
+	return s.sorted[i] + (x-float64(i))*(s.sorted[i+1]-s.sorted[i])
+}
+
+// Len is the number of regulars the scale was drawn from.
+func (s Scale) Len() int { return len(s.sorted) }
+
 // Scales returns each position's scale for each season.
 func (d Data) Scales() map[domain.Position]map[int]Scale {
 	ppg := map[domain.Position]map[int][]float64{}

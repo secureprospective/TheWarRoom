@@ -31,6 +31,7 @@ const (
 	mRookie      = "context.rookie_season"
 	mDraftPick   = "prior.draft_pick"
 	mWeekPoints  = "outcome.weekly_fantasy_points"
+	mSeasonPts   = "outcome.fantasy_points"
 	mOffSnaps    = "exposure.offense_snaps"
 	mDefSnaps    = "exposure.defense_snaps"
 	mTeamsSnaps  = "exposure.special_teams_snaps"
@@ -48,6 +49,10 @@ func Measures() []string {
 	}
 	return out
 }
+
+// RuntimeMeasures adds MFL's season totals to Measures: the app reads league points per
+// season, the fit reads them per week.
+func RuntimeMeasures() []string { return append(Measures(), mSeasonPts) }
 
 // Combine is the athletic testing the prior reads.
 func Combine() []string {
@@ -93,6 +98,9 @@ type Season struct {
 	Player string
 	Year   int
 	Points map[int]float64 // league fantasy points by week played; 0 when he played and scored none
+	// Total is MFL's season total when it is held (HasTotal); it then replaces the weekly sum.
+	Total    float64
+	HasTotal bool
 }
 
 // Games is the number of weeks played.
@@ -104,9 +112,11 @@ func (s Season) PPG() float64 {
 	if len(s.Points) == 0 {
 		return math.NaN()
 	}
-	total := 0.0
-	for _, w := range slices.Sorted(maps.Keys(s.Points)) {
-		total += s.Points[w]
+	total := s.Total
+	if !s.HasTotal {
+		for _, w := range slices.Sorted(maps.Keys(s.Points)) {
+			total += s.Points[w]
+		}
 	}
 	return total / float64(len(s.Points))
 }
@@ -139,6 +149,9 @@ func Build(obs []Obs, lastWeek map[int]int) Data {
 				c[o.Season] = map[string]float64{}
 			}
 			c[o.Season][strings.TrimPrefix(o.Measure, collegePrefx)] = o.Value
+		case o.Week == 0 && o.Measure == mSeasonPts:
+			s := d.season(o.Player, o.Season)
+			s.Total, s.HasTotal = o.Value, true
 		case o.Week >= 1 && o.Week <= lastWeek[o.Season]:
 			d.week(o)
 		}
@@ -171,19 +184,24 @@ func (d Data) week(o Obs) {
 	default:
 		return
 	}
-	if d.Seasons[o.Player] == nil {
-		d.Seasons[o.Player] = map[int]*Season{}
-	}
-	s := d.Seasons[o.Player][o.Season]
-	if s == nil {
-		s = &Season{Player: o.Player, Year: o.Season, Points: map[int]float64{}}
-		d.Seasons[o.Player][o.Season] = s
-	}
+	s := d.season(o.Player, o.Season)
 	if o.Measure == mWeekPoints {
 		s.Points[o.Week] += o.Value
 	} else if _, ok := s.Points[o.Week]; !ok && o.Value > 0 {
 		s.Points[o.Week] = 0
 	}
+}
+
+func (d Data) season(id string, year int) *Season {
+	if d.Seasons[id] == nil {
+		d.Seasons[id] = map[int]*Season{}
+	}
+	s := d.Seasons[id][year]
+	if s == nil {
+		s = &Season{Player: id, Year: year, Points: map[int]float64{}}
+		d.Seasons[id][year] = s
+	}
+	return s
 }
 
 // FitPosition maps an nflverse position to the position the model scores it at. Generic "DB",

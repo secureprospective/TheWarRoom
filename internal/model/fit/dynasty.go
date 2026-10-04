@@ -91,8 +91,8 @@ func fitArcGiven(m model.Params, rows []pair) [4]float64 {
 
 // nextPct predicts a player's next-season percentile from one season.
 func nextPct(m model.Params, s season) float64 {
-	z := m.Z(s.games, m.KDynasty)
-	return z*s.pct + (1-z)*m.Prior(s.player) + m.ArcStep(s.age, s.exp)
+	pct, _ := m.Project(s.player, []model.Past{{Year: s.year, Games: s.games, Pct: s.pct}}, s.year+1)
+	return pct
 }
 
 func pairError(m model.Params, pairs []pair) float64 {

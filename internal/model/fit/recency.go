@@ -80,28 +80,17 @@ func (sm samples) history(target season) history {
 	return h
 }
 
-// predict is the blended percentile for the target season from the player's past seasons.
+// predict is the projected percentile for the target season from the player's past seasons.
 func (h history) predict(m model.Params, weights [2]float64) float64 {
-	w := []float64{1, weights[0], weights[1]}
-	var sw, swx, sw2 float64
-	for i, s := range h.past {
-		if s.games == 0 || !finite(s.age) {
-			continue
+	m.Recency = weights
+	past := make([]model.Past, 0, len(h.past))
+	for _, s := range h.past {
+		if s.games > 0 && finite(s.age) {
+			past = append(past, model.Past{Year: s.year, Games: s.games, Pct: s.pct})
 		}
-		moved := s.pct
-		for y := s.year; y < h.target.year; y++ {
-			moved += m.ArcStep(s.age+float64(y-s.year), s.exp+y-s.year)
-		}
-		sw += w[i] * s.games
-		swx += w[i] * s.games * moved
-		sw2 += w[i] * w[i] * s.games
 	}
-	prior := m.Prior(h.target.player)
-	if sw == 0 {
-		return prior
-	}
-	z := m.Z(sw*sw/sw2, m.KDynasty)
-	return z*swx/sw + (1-z)*prior
+	pct, _ := m.Project(h.target.player, past, h.target.year)
+	return pct
 }
 
 func historyError(m model.Params, weights [2]float64, hs []history) float64 {

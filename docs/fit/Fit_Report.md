@@ -54,15 +54,15 @@ The scale is a within-position percentile of league fantasy points per game play
 | Pos | Train/holdout | RMSE fitted | RMSE Marcel 1/0.8/0.6 | Kept | Stored weights (latest, −1, −2) |
 |---|---|---|---|---|---|
 | QB | 143/49 | 0.201 | 0.201 | Marcel | 1 / 0.8 / 0.6 |
-| RB | 337/109 | 0.159 | 0.167 | fitted | 1 / 0.1 / 0.1 |
+| RB | 337/109 | 0.158 | 0.167 | fitted | 1 / 0.1 / 0.1 |
 | WR | 500/177 | 0.160 | 0.164 | fitted | 1 / 0.3 / 0.3 |
-| TE | 301/109 | 0.173 | 0.177 | fitted | 1 / 0.3 / 0.0 |
-| K | 96/34 | 0.300 | 0.299 | Marcel | 1 / 0.8 / 0.6 |
-| DT | 367/123 | 0.238 | 0.238 | Marcel | 1 / 0.8 / 0.6 |
-| DE | 321/100 | 0.239 | 0.250 | fitted | 1 / 0.3 / 0.0 |
+| TE | 301/109 | 0.174 | 0.178 | fitted | 1 / 0.3 / 0.0 |
+| K | 96/34 | 0.302 | 0.301 | Marcel | 1 / 0.8 / 0.6 |
+| DT | 367/123 | 0.237 | 0.236 | Marcel | 1 / 0.8 / 0.6 |
+| DE | 321/100 | 0.241 | 0.251 | fitted | 1 / 0.2 / 0.0 |
 | LB | 671/222 | 0.178 | 0.183 | fitted | 1 / 0.2 / 0.0 |
 | CB | 428/152 | 0.212 | 0.221 | fitted | 1 / 0.2 / 0.1 |
-| S | 317/117 | 0.206 | 0.211 | fitted | 1 / 0.2 / 0.2 |
+| S | 317/117 | 0.207 | 0.211 | fitted | 1 / 0.2 / 0.2 |
 
 ## Talent arc (fitted with the dynasty k on what the blend leaves; survivors weighted by 1/P(survive))
 

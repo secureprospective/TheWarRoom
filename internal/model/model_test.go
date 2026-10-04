@@ -3,6 +3,7 @@ package model
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
@@ -89,5 +90,55 @@ func TestZShapes(t *testing.T) {
 	}
 	if p.Z(0, 10) != 0 {
 		t.Error("no evidence must give production no weight")
+	}
+}
+
+func testParams() Params {
+	n := len(PriorFeatures())
+	return Params{Intercept: 0.4, Weight: make([]float64, n), Missing: make([]float64, n), KNow: 3, KDynasty: 8,
+		Recency: [2]float64{0.5, 0.25}, Arc: [4]float64{-0.02, -0.01, 0, 0.05},
+		Survival: [6]float64{2, -0.1, -0.01, 0, 1, 1}}
+}
+
+func TestProjectOneSeasonIsTheSeasonPairPrediction(t *testing.T) {
+	p := testParams()
+	pl := &Player{Position: domain.PosWR, Birth: time.Date(1998, 9, 1, 0, 0, 0, 0, time.UTC), Rookie: 2021}
+	got, e := p.Project(pl, []Past{{Year: 2024, Games: 12, Pct: 0.8}}, 2025)
+	z := 12.0 / 20
+	want := z*0.8 + (1-z)*0.4 + p.ArcStep(pl.AgeAt(2024), 4)
+	if math.Abs(got-want) > 1e-12 || e != 12 {
+		t.Errorf("Project = %v (e %v), want %v (e 12)", got, e, want)
+	}
+}
+
+func TestRookieIsHisPriorAndNeverZero(t *testing.T) {
+	p := testParams()
+	pl := &Player{Position: domain.PosRB, Birth: time.Date(2004, 1, 1, 0, 0, 0, 0, time.UTC), Rookie: 2026}
+	v := p.Value(pl, nil, Past{Year: 2026}, Horizon{Seasons: 5, Discount: 0.85}, NewScale([]float64{5, 10, 15, 20}))
+	if v.Now != 0.4 || v.Dynasty <= 0 || v.NowPPG <= 0 || v.ZPast != 0 || v.ZNow != 0 {
+		t.Errorf("rookie value = %+v", v)
+	}
+}
+
+func TestThisSeasonsGamesMoveNowByKNow(t *testing.T) {
+	p := testParams()
+	pl := &Player{Position: domain.PosWR, Birth: time.Date(1998, 9, 1, 0, 0, 0, 0, time.UTC), Rookie: 2021}
+	past := []Past{{Year: 2025, Games: 16, Pct: 0.5}}
+	before := p.Value(pl, past, Past{Year: 2026}, Horizon{Seasons: 1, Discount: 1}, Scale{})
+	after := p.Value(pl, past, Past{Year: 2026, Games: 3, Pct: 0.9}, Horizon{Seasons: 1, Discount: 1}, Scale{})
+	if want := 0.5*0.9 + 0.5*before.Now; math.Abs(after.Now-want) > 1e-12 || after.ZNow != 0.5 {
+		t.Errorf("now = %v (Z %v), want %v (Z 0.5)", after.Now, after.ZNow, want)
+	}
+}
+
+func TestScalePPGInvertsPct(t *testing.T) {
+	s := NewScale([]float64{2, 4, 6, 8, 10})
+	for _, x := range []float64{2, 5, 8, 10} {
+		if got := s.PPG(s.Pct(x)); math.Abs(got-x) > 1e-9 {
+			t.Errorf("PPG(Pct(%v)) = %v", x, got)
+		}
+	}
+	if !math.IsNaN((Scale{}).PPG(0.5)) {
+		t.Error("an empty scale has no points")
 	}
 }
