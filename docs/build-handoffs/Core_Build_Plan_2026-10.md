@@ -715,14 +715,31 @@ Christopher's real databases taken 17:08 (his model run #2 at `eb4cbb4`). Eviden
 | Found and fixed in the gate | S listed "contract" among its inputs though the fit had dropped S's contract terms (5d013c5). Run #4 on the fix: every value identical to run #3, only the 153 safeties' input lists changed. |
 | Known effect to watch | Elite DEs with a hot start fall on Now (Anderson 20.7 → 15.4 PPG with 27.9 over 3 games; Hutchinson 21.3 → 17.6, closer to his 17.0 and 18.4): with the regrouped DEs the recency fit tied Marcel's 1/0.8/0.6 and the simpler one is kept, and DE's better prior raises k_now 3.7 → 5.6 games. Both follow the fit's existing rules on the holdout. |
 
+### After the core — what the power rankings weigh (2026-10-04)
+
+Christopher's ask: outline the power-ranking metrics before building, as one complete table. Each
+candidate was backtested on Legacy NFL's own 2021–2025 seasons from MFL's weekly results, then the
+chosen ones re-run on the model's own Now and Dyn as of each past week. The table, the evidence and
+the numbers: `docs/modules/M2_Power_Ranking_Factors.md`; scripts and results:
+`~/fleet/runs/warroom-power-rankings-2026-10-04/`. His calls: 1A, 2B, 3B, 4B (below).
+
+| # | Decision | Why |
+|---|---|---|
+| R10-1 | **All-play is read from MFL's `all_play_wlt`** ("89-4-0"). A malformed record fails the fetch. | MFL never sent the `all_play_w/l/t` fields the reader expected (33 of 33 archived standings carry only `all_play_wlt` and `all_play_pct`), so all-play always read 0-0 and the board silently used points for (R8-4). All-play is the best results signal from week 4 on. |
+| R10-2 | **This season counts the roster as the best lineup the league's starter rules allow** (`powerrankings.Lineup`, MFL's per-position bounds and the 12 defensive starters), by default. Top-N and the whole roster stay on the toggle (Christopher, 2B). | On the model's Now it predicts the rest of the season best every week (0.64 / 0.69 / 0.71 after 1 / 3 / 6 weeks, whole roster 0.57 / 0.63 / 0.63, the old default). A fourth QB adds nothing on Sunday. The solver matches MFL's own optimal points on 410 of 416 team-weeks. |
+| R10-3 | **The franchise view counts the whole roster** by default. | On the model's Dyn the whole roster predicts the next season and the next two better than the lineup (0.29 / 0.12 vs 0.27 / 0.10): a dynasty bench grows into starters. This reverses the first table's #14, which rested on the stand-in. |
+| R10-4 | **This season's roster weight follows the weeks played: 4 ÷ (4 + weeks)** (Auto, the default); moving the slider sets it until Auto is pressed again (Christopher, 1A). | The fixed 60/40 was right only around week 3. The best share falls 82% → 35% from week 1 to week 6; m between 3 and 6 fit best. |
+| R10-5 | **The franchise view counts an older roster against it**: score = z(roster) − 0.5 · z(age), age the value-weighted age of the players counted; an unknown age counts as average (Christopher, 4B). | Dyn already ages players, yet at team level an older roster still did worse than its Dyn said: 0.29 → 0.32 next season, 0.12 → 0.15 over two; fitted weight 0.42 and 0.55. |
+| R10-6 | **Context columns, never in the score:** cap room (dead cap in its tooltip), schedule luck (head-to-head wins above the all-play rate) and a projected regular-season record (Christopher, 3B). The record: wins so far plus each remaining game's Φ((a − b) ÷ 50), a team's expected score being the auto weight on its lineup's Now plus the rest on its points per game. | None of the three added to what the roster and results predict, but each answers a GM's question. σ = 50 fitted on 4,480 games (Brier 0.165); remaining wins miss by 1.2 on average. A missing schedule, cap or directory blanks its column and never stops the board (R11). |
+| R10-7 | **Not adopted:** depth (best bench players) as an input, start/sit efficiency, recent form, remaining schedule as strength, draft picks, expiring contracts. | Each added nothing on held-out seasons, or scored worse; schedule strength belongs only in the projected record. |
+
 ## Open items that need Christopher
 
 - ~~The dynasty horizon~~ decided 2026-10-04: 3 seasons at 0.75 (win-now), now the shipped
   default. The case set passes on it.
 - ~~CFBD key on the Beelink~~ set 2026-10-04: `~/.config/cfbd/api_key` (mode 600), exported from
   `~/.profile` (menu launches, after the next login) and `~/.bashrc` (terminals).
-- **All-play:** Christopher is turning it on in MFL. The blend switches to it on its own (R8-4)
-  and it moves only This season; the franchise view ranks on the roster alone (R8-2).
+- ~~All-play~~ on in MFL; the reader now reads it (R10-1). It moves only This season.
 
 - The fresh live pull is gated (`TWR_LIVE_*`) and runs on his machine (Stage 2.3).
 - Spot-check the MFL comparison (Stage 2 gate).
