@@ -471,6 +471,29 @@ network card was hot-plugged back (live only) without a reboot, so the desktop s
 - The Madden-removal diff is reported.
 - Line counts before and after.
 
+**Stage 5 design (Claude, 2026-10-04):**
+
+| # | Decision | Why |
+|---|---|---|
+| R5-1 | One routine, `l4.Rubric`, and one table, `l4.Defaults`: film, RAS and breakout as capped S-curves, four breakout weights, three curves and the athletic lift per position. A component with cap 0 is off (QB and K read no RAS; K has no breakout). | The ten rubrics differed only in constants. |
+| R5-2 | Each adjustable number is a param per position (`l4.film.cap@WR`, …), seeded from the table where the shipped value is not zero. The curves stay in the table. | R7 needs the caps and weights editable. A zero is a mechanic that is off at that position; turning one on is a rubric change. Curves as params would be dozens of breakpoint rows nobody can edit by hand. |
+| R5-3 | A run builds its rubrics from its own params snapshot (`composition.Rubrics`). Breakout weights an edit leaves off 1 are rescaled. | A run records exactly the settings it scored with, and a proposed param set scores with its own. |
+| R5-4 | The cushion is applied to the age trajectory at every position, and composition hands it only to DT. | One rule for both halves of the guard; it is the same switch L3 already used. |
+| R5-5 | The kicker's 0.60/0.40 film blend moved into composition, then went with Madden. | The rubric reads one film composite at every position. |
+| R5-6 | The twin files in `scouting/assembly` became one generic routine; `m1_scouting.go`'s merge functions were left as they are. | Both go when today's engine does (Stage 7); the assembly pair was cut because the plan names it. |
+
+**Gate check, 2026-10-04** (branch `session/core-stages-4-8`, live on Claude-OS against the
+Stage 4 gate databases; evidence in `~/fleet/runs/warroom-dataflow-2026-10-03/live-gate-stage5-2026-10-04/`):
+
+| Gate item | Result |
+|---|---|
+| The golden board is identical | PASS, twice. **Unit:** the sha256 of every output bit over 20,000 generated inputs per position, taken from the ten old rubrics before deletion, matches the new routine at all ten positions (`l4/golden_test.go`). **Live:** Score League with the old build (`v0.5.0-140`), the new one (`v0.5.0-144-g1159105`) and the old again: all three runs have scores hash `6268eb7e…` over 1,443 players. The two old runs' inputs hashes match, so the data did not move. |
+| Validation cases | PASS: the 13 harness cases run against the new registry with zero FAIL. |
+| Comment and provenance targets | PASS. `l4` 12.6% comments, no decision labels. Ratchet: comment 18 → 15, provenance 7 → 3, dupl 34 → 11, tiny files 27 → 24. |
+| Line counts | `l4`: 1,522 → 356 production lines, 1,932 → 288 test lines. Madden removal: 30 files, −2,415 lines. Assembly twins: 643 → 245 lines. |
+| Madden removal diff (`v0.5.0-145-g17efc6c` against run 3) | 648 of 1,443 scores changed, every one down: Madden's film composite sat above the S-curve's midpoint for every rostered player, so it was a flat lift of up to 5%, not a separator. Mean change by position −1.2% (DT) to −3.1% (QB); largest −5.85% (a CB). CB and S keep the coverage-only film (225 players). Kickers unchanged. Top 100: 97 stay. Largest rank move 32, mean 5.9. Table in `madden-removal-diff.txt`. |
+| Defect found | With a CFBD key, Score League failed: it read the current college season, whose players are not in the NFL, so the feed resolved no one. Fixed: college production is read through the last completed season. A second problem remains on that old path: fetching six seasons live from CFBD timed out at 90 s in the VM. Stage 7 replaces it by reading the college data Signals already stores, so it was not patched. Christopher's Beelink has no CFBD key, so his board never took this path. |
+
 ### Stage 6 — Fit the parameters from 2021–2025
 
 A reproducible fitting tool in the repo. Its outputs are stored as params with provenance.
