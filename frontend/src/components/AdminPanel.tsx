@@ -4,10 +4,12 @@ import { useAppStore } from '../store/app';
 // AdminPanel lists every calibration parameter, league-wide first and then each position's
 // scouting settings and fitted model values, with the value in effect. The filter matches the
 // setting, the position or the source. Apply writes an override; the store checks the range,
-// and the next Score League run uses it.
+// and the next Score League run uses it. An override pins the value against later shipped
+// defaults, even when it equals today's, so overridden rows show amber and offer Reset.
 export function AdminPanel() {
   const params = useAppStore((s) => s.params);
   const setParam = useAppStore((s) => s.setParam);
+  const resetParam = useAppStore((s) => s.resetParam);
   const error = useAppStore((s) => s.error);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState('');
@@ -49,13 +51,17 @@ export function AdminPanel() {
         <tbody>
           {rows.map((p) => {
             const id = `${p.key}@${p.position}`;
-            const edited = p.value !== p.default;
             return (
               <tr key={id} title={p.description}>
                 <td style={cell}>{p.position || 'league'}</td>
                 <td style={cell}>{p.key}</td>
                 <td style={{ ...cell, color: 'var(--text-tertiary)' }}>{source(p.calibrated)}</td>
-                <td style={{ ...cell, color: edited ? 'var(--amber-loud)' : 'var(--text-primary)' }}>{show(p.value)}</td>
+                <td
+                  style={{ ...cell, color: p.overridden ? 'var(--amber-loud)' : 'var(--text-primary)' }}
+                  title={p.overridden ? 'Set in Admin: it stays until Reset, whatever the shipped default' : undefined}
+                >
+                  {show(p.value)}
+                </td>
                 <td style={{ ...cell, color: 'var(--text-tertiary)' }}>{show(p.default)}</td>
                 <td style={{ ...cell, color: 'var(--text-tertiary)' }}>
                   [{p.min}, {p.max}]
@@ -80,6 +86,19 @@ export function AdminPanel() {
                   >
                     Apply
                   </button>
+                  {p.overridden && (
+                    <>
+                      {' '}
+                      <button
+                        type="button"
+                        className="twr-btn"
+                        title="Clear the Admin value and follow the shipped default"
+                        onClick={() => void resetParam(p.key, p.position)}
+                      >
+                        Reset
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
             );

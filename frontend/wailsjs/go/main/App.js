@@ -86,6 +86,10 @@ export function RefreshLeague() {
   return window['go']['main']['App']['RefreshLeague']();
 }
 
+export function ResetParam(arg1, arg2) {
+  return window['go']['main']['App']['ResetParam'](arg1, arg2);
+}
+
 export function ScoreLeague() {
   return window['go']['main']['App']['ScoreLeague']();
 }

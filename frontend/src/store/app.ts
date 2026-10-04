@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   GetParams,
   SetParam,
+  ResetParam,
   ScoreLeague,
   GetRankings,
   GetPowerRankings,
@@ -29,6 +30,7 @@ interface AppState {
   error: string;
   loadParams: () => Promise<void>;
   setParam: (key: string, position: string, value: number) => Promise<void>;
+  resetParam: (key: string, position: string) => Promise<void>;
   loadRankings: () => Promise<void>;
   loadPowerRankings: (
     weight: number,
@@ -68,6 +70,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   setParam: async (key, position, value) => {
     set({ error: "" });
     const res = await SetParam(key, position, value);
+    if (!res.ok) {
+      set({ error: res.error });
+      return;
+    }
+    await get().loadParams();
+  },
+
+  // resetParam clears an admin override, so the parameter follows its shipped default again.
+  resetParam: async (key, position) => {
+    set({ error: "" });
+    const res = await ResetParam(key, position);
     if (!res.ok) {
       set({ error: res.error });
       return;

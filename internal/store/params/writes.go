@@ -30,6 +30,24 @@ func (s *Store) SetOverride(ctx context.Context, key, position string, value flo
 	return s.load(ctx)
 }
 
+// ClearOverride removes an admin override, so the parameter follows its shipped default again,
+// a later release's included. Clearing a parameter with no override is a no-op.
+func (s *Store) ClearOverride(ctx context.Context, key, position string) error {
+	s.wmu.Lock()
+	defer s.wmu.Unlock()
+	s.mu.RLock()
+	_, ok := s.defs[defKey(key, position)]
+	s.mu.RUnlock()
+	if !ok {
+		return fmt.Errorf("params: reset targets unknown parameter %q (position %q)", key, position)
+	}
+	if _, err := s.pools.Write().ExecContext(ctx,
+		`DELETE FROM param_overrides WHERE param_key = ? AND position = ?`, key, position); err != nil {
+		return fmt.Errorf("params: clear override %q: %w", key, err)
+	}
+	return s.load(ctx)
+}
+
 // validateOverride rejects an unknown parameter or a value outside its [Min,Max]; it never
 // clamps.
 func (s *Store) validateOverride(key, position string, value float64) error {

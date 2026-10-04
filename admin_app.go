@@ -18,6 +18,7 @@ type ParamView struct {
 	Max         float64 `json:"max"`
 	Value       float64 `json:"value"`
 	Calibrated  bool    `json:"calibrated"` // the default came from the fit tool, not a hand setting
+	Overridden  bool    `json:"overridden"` // set in Admin: pinned against later shipped defaults
 }
 
 // ParamsResult is the admin panel payload.
@@ -41,7 +42,8 @@ func (a *App) GetParams() ParamsResult {
 			return ParamsResult{OK: false, Error: err.Error()}
 		}
 		out[i] = ParamView{Key: d.Key, Position: d.Position, Description: d.Description,
-			Default: d.Default, Min: d.Min, Max: d.Max, Value: v, Calibrated: d.IsCalibrated}
+			Default: d.Default, Min: d.Min, Max: d.Max, Value: v, Calibrated: d.IsCalibrated,
+			Overridden: a.params.Overridden(d.Key, d.Position)}
 	}
 	return ParamsResult{OK: true, Params: out}
 }
@@ -61,6 +63,19 @@ func (a *App) SetParam(key, position string, value float64) SetParamResult {
 	ctx, cancel := context.WithTimeout(a.ctx, 3*time.Second)
 	defer cancel()
 	if err := a.params.SetOverride(ctx, key, position, value, "admin console"); err != nil {
+		return SetParamResult{OK: false, Error: err.Error()}
+	}
+	return SetParamResult{OK: true}
+}
+
+// ResetParam clears a parameter's admin override, so it follows its shipped default again.
+func (a *App) ResetParam(key, position string) SetParamResult {
+	if err := a.ready(); err != nil {
+		return SetParamResult{OK: false, Error: err.Error()}
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, 3*time.Second)
+	defer cancel()
+	if err := a.params.ClearOverride(ctx, key, position); err != nil {
 		return SetParamResult{OK: false, Error: err.Error()}
 	}
 	return SetParamResult{OK: true}

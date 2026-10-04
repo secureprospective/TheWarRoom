@@ -67,6 +67,15 @@ func (s *Store) effectiveLocked(key, position string) (float64, bool) {
 	return 0, false
 }
 
+// Overridden reports whether an admin override is in effect for (key, position), even one equal
+// to the default: an override pins the value against later shipped defaults.
+func (s *Store) Overridden(key, position string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	_, ok := s.overrides[defKey(key, position)]
+	return ok
+}
+
 // Snapshot freezes every effective value, overrides applied. A scoring run reads params only
 // through one Snapshot, so the values it used are exactly the values it records.
 func (s *Store) Snapshot() Set {

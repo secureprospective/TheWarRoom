@@ -44,6 +44,8 @@ export function PreviewTransaction(arg1:main.TransactionRequest):Promise<main.Tr
 
 export function RefreshLeague():Promise<main.RefreshResult>;
 
+export function ResetParam(arg1:string,arg2:string):Promise<main.SetParamResult>;
+
 export function ScoreLeague():Promise<main.ScoreLeagueResult>;
 
 export function SetLeagueSettingOverride(arg1:string,arg2:string,arg3:string):Promise<main.SetLeagueSettingResult>;

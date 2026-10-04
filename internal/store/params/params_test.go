@@ -288,3 +288,31 @@ func TestBoardAndModelSplitTheSet(t *testing.T) {
 		t.Errorf("board part lacks %s", KeyLayer3DecayRate)
 	}
 }
+
+// An override pins its value even when it equals the default; clearing it lets the parameter
+// follow the shipped default again.
+func TestClearOverrideFollowsTheDefaultAgain(t *testing.T) {
+	s, _ := openStore(t)
+	ctx := context.Background()
+	if err := s.SetOverride(ctx, KeyDynastyDiscount, "", 0.75, "same as shipped"); err != nil {
+		t.Fatal(err)
+	}
+	if !s.Overridden(KeyDynastyDiscount, "") {
+		t.Fatal("an override equal to the default must still read as overridden")
+	}
+	if err := s.ClearOverride(ctx, KeyDynastyDiscount, ""); err != nil {
+		t.Fatal(err)
+	}
+	if s.Overridden(KeyDynastyDiscount, "") {
+		t.Fatal("still overridden after ClearOverride")
+	}
+	if v, _ := s.Snapshot().GetGlobal(KeyDynastyDiscount); v != 0.75 {
+		t.Errorf("discount = %g, want the shipped 0.75", v)
+	}
+	if err := s.ClearOverride(ctx, KeyDynastyDiscount, ""); err != nil {
+		t.Errorf("clearing twice: %v", err)
+	}
+	if err := s.ClearOverride(ctx, "nope.not_a_param", ""); err == nil {
+		t.Error("clearing an unknown parameter must fail")
+	}
+}

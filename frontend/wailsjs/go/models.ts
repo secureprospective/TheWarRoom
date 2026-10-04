@@ -629,6 +629,7 @@ export namespace main {
 	    max: number;
 	    value: number;
 	    calibrated: boolean;
+	    overridden: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new ParamView(source);
@@ -644,6 +645,7 @@ export namespace main {
 	        this.max = source["max"];
 	        this.value = source["value"];
 	        this.calibrated = source["calibrated"];
+	        this.overridden = source["overridden"];
 	    }
 	}
 	export class ParamsResult {
