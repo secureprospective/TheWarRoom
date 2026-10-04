@@ -7,6 +7,7 @@ package normalize
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -115,6 +116,29 @@ func (l Lookup) Facts(id string) (PlayerFacts, bool) {
 		return PlayerFacts{}, false
 	}
 	return e.PlayerFacts, true
+}
+
+// Name returns MFL's name for any id it lists, team aggregates included: the crosswalk checks a
+// reused id against it.
+func (l Lookup) Name(id string) (string, bool) {
+	pid, err := playerid.New(id)
+	if err != nil {
+		return "", false
+	}
+	e, ok := l.entry(pid)
+	return e.Name, ok
+}
+
+// IDs returns every player's canonical id, team aggregates excluded, sorted.
+func (l Lookup) IDs() []string {
+	out := make([]string, 0, len(l.byID))
+	for id, e := range l.byID {
+		if !e.isAggregate {
+			out = append(out, id)
+		}
+	}
+	slices.Sort(out)
+	return out
 }
 
 // classifyPosition maps a raw MFL code onto the engine set. An aggregate returns true so the

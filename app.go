@@ -53,6 +53,9 @@ type App struct {
 
 	refreshMu        sync.Mutex // one MFL refresh at a time
 	launchRefreshDue bool       // startup did not refresh, so domReady does
+
+	crosswalkMu sync.Mutex
+	crosswalk   CrosswalkReport // the latest crosswalk load's report, held since launch
 }
 
 // directory returns the cached players Lookup for the season held, fetching it on first use.

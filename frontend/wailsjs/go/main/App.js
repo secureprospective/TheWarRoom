@@ -14,6 +14,10 @@ export function GetCalendarEvents() {
   return window['go']['main']['App']['GetCalendarEvents']();
 }
 
+export function GetCrosswalkReport() {
+  return window['go']['main']['App']['GetCrosswalkReport']();
+}
+
 export function GetCurrentPhase() {
   return window['go']['main']['App']['GetCurrentPhase']();
 }
@@ -60,6 +64,10 @@ export function GetRankings() {
 
 export function GetRoster(arg1) {
   return window['go']['main']['App']['GetRoster'](arg1);
+}
+
+export function LoadCrosswalk() {
+  return window['go']['main']['App']['LoadCrosswalk']();
 }
 
 export function PreviewTransaction(arg1) {

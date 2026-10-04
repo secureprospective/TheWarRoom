@@ -10,6 +10,7 @@ import { TransactionWorkspace } from './components/transactions/TransactionWorks
 import { TradeBuilder } from './components/transactions/TradeBuilder';
 import { LeagueControls } from './components/transactions/LeagueControls';
 import { AdminPanel } from './components/AdminPanel';
+import { CrosswalkPanel } from './components/CrosswalkPanel';
 import { RookieTable } from './components/RookieTable';
 import { ValidationBoard } from './components/ValidationBoard';
 import { CalendarBoard } from './components/calendar/CalendarBoard';
@@ -127,13 +128,14 @@ function ModuleView({ module }: { module: ModuleId }) {
   }
 }
 
-type ControlTab = 'league' | 'admin' | 'sandbox' | 'tests';
+type ControlTab = 'league' | 'admin' | 'crosswalk' | 'sandbox' | 'tests';
 
 function ControlModule() {
   const [tab, setTab] = useState<ControlTab>('league');
   const tabs: { id: ControlTab; label: string }[] = [
     { id: 'league', label: 'League Controls' },
     { id: 'admin', label: 'Engine Admin' },
+    { id: 'crosswalk', label: 'Crosswalk' },
     { id: 'sandbox', label: 'Rookie Sandbox (dev)' },
     { id: 'tests', label: 'Architectural Tests (dev)' },
   ];
@@ -159,6 +161,8 @@ function ControlModule() {
         <LeagueControls />
       ) : tab === 'admin' ? (
         <AdminPanel />
+      ) : tab === 'crosswalk' ? (
+        <CrosswalkPanel />
       ) : tab === 'sandbox' ? (
         <RookieTable />
       ) : (

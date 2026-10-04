@@ -8,6 +8,8 @@ export function ExecuteTransaction(arg1:main.TransactionRequest):Promise<main.Tr
 
 export function GetCalendarEvents():Promise<main.CalendarEventsResult>;
 
+export function GetCrosswalkReport():Promise<main.CrosswalkReport>;
+
 export function GetCurrentPhase():Promise<main.PhaseResult>;
 
 export function GetFeed():Promise<main.FeedResult>;
@@ -31,6 +33,8 @@ export function GetPowerRankings(arg1:number,arg2:string):Promise<main.PowerRank
 export function GetRankings():Promise<main.RankingsResult>;
 
 export function GetRoster(arg1:string):Promise<main.RosterResult>;
+
+export function LoadCrosswalk():Promise<main.CrosswalkReport>;
 
 export function PreviewTransaction(arg1:main.TransactionRequest):Promise<main.TransactionResult>;
 

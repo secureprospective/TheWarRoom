@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -75,9 +76,18 @@ func (a *App) ScoreLeague() ScoreLeagueResult {
 	if err != nil {
 		return fail(err)
 	}
+	// One crosswalk fetch serves the player directory and every scouting signal. A directory
+	// write failure is logged, not fatal: the board does not read the directory yet.
+	cw, err := a.fetchCrosswalk(ctx)
+	if err != nil {
+		return fail(err)
+	}
+	if _, err := a.linkCrosswalk(ctx, cw, lk); err != nil {
+		log.Printf("the war room: %v", err)
+	}
 	// A scouting fetch failure fails the run, so a signal-less league is visible. The exception
 	// is an unconfigured CFBD key (in buildScoutingDirectory).
-	scout, err := a.buildScoutingDirectory(ctx, lk)
+	scout, err := a.buildScoutingDirectory(ctx, lk, cw)
 	if err != nil {
 		return fail(err)
 	}

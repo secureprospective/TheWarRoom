@@ -246,9 +246,13 @@ type PlayerIDLink struct {
 	IDType, IDValue, PlayerID string
 }
 
-// LinkPlayerIDs adds or corrects source-id mappings, then promotes every waiting observation
-// that now resolves, keeping its as_of. It returns how many were promoted.
-func (s *Store) LinkPlayerIDs(ctx context.Context, links []PlayerIDLink) (int, error) {
+// LinkPlayerIDs adds or corrects source-id mappings from one source's load, then promotes every
+// waiting observation that now resolves, keeping its as_of. The load is recorded against source,
+// so source health covers the directory too. It returns how many observations were promoted.
+func (s *Store) LinkPlayerIDs(ctx context.Context, source string, links []PlayerIDLink) (int, error) {
+	if _, ok := s.source(source); !ok {
+		return 0, fmt.Errorf("history: links from unregistered source %q", source)
+	}
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	tx, err := s.pools.Write().BeginTx(ctx, nil)
@@ -256,6 +260,13 @@ func (s *Store) LinkPlayerIDs(ctx context.Context, links []PlayerIDLink) (int, e
 		return 0, fmt.Errorf("history: link player ids: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
+	stmt, err := tx.PrepareContext(ctx, `
+INSERT INTO player_ids (id_type, id_value, player_id) VALUES (?, ?, ?)
+ON CONFLICT (id_type, id_value) DO UPDATE SET player_id = excluded.player_id`)
+	if err != nil {
+		return 0, fmt.Errorf("history: link player ids: %w", err)
+	}
+	defer func() { _ = stmt.Close() }()
 	for _, l := range links {
 		id, err := playerid.New(l.PlayerID)
 		if err != nil {
@@ -264,10 +275,7 @@ func (s *Store) LinkPlayerIDs(ctx context.Context, links []PlayerIDLink) (int, e
 		if l.IDType == "" || l.IDType == measures.IDTypeMFL || l.IDValue == "" {
 			return 0, fmt.Errorf("history: cannot link id type %q value %q", l.IDType, l.IDValue)
 		}
-		if _, err := tx.ExecContext(ctx, `
-INSERT INTO player_ids (id_type, id_value, player_id) VALUES (?, ?, ?)
-ON CONFLICT (id_type, id_value) DO UPDATE SET player_id = excluded.player_id`,
-			l.IDType, l.IDValue, id.String()); err != nil {
+		if _, err := stmt.ExecContext(ctx, l.IDType, l.IDValue, id.String()); err != nil {
 			return 0, fmt.Errorf("history: link %s %s: %w", l.IDType, l.IDValue, err)
 		}
 	}
@@ -287,8 +295,34 @@ DELETE FROM unresolved_observations WHERE EXISTS (SELECT 1 FROM player_ids p
 WHERE p.id_type = unresolved_observations.id_type AND p.id_value = unresolved_observations.id_value)`); err != nil {
 		return 0, fmt.Errorf("history: clear resolved observations: %w", err)
 	}
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO loads (source, loaded_at, facts, added, unresolved) VALUES (?, ?, ?, ?, 0)`,
+		source, formatTime(s.now()), len(links), promoted); err != nil {
+		return 0, fmt.Errorf("history: record load %s: %w", source, err)
+	}
 	if err := tx.Commit(); err != nil {
 		return 0, fmt.Errorf("history: link player ids commit: %w", err)
 	}
 	return int(promoted), nil
+}
+
+// LinkedPlayers returns the MFL ids that an id of idType resolves to.
+func (s *Store) LinkedPlayers(ctx context.Context, idType string) (map[string]bool, error) {
+	rows, err := s.pools.Read().QueryContext(ctx, `SELECT DISTINCT player_id FROM player_ids WHERE id_type = ?`, idType)
+	if err != nil {
+		return nil, fmt.Errorf("history: linked players: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	out := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("history: linked players scan: %w", err)
+		}
+		out[id] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("history: linked players: %w", err)
+	}
+	return out, nil
 }
