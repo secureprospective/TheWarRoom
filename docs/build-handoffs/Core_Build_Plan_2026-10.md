@@ -362,6 +362,25 @@ Seen and left for later (outside Stage 2):
 - Match rate published per position.
 - Every unmatched rostered player listed with a reason.
 
+**Stage 3 gate, 2026-10-03.** Built on `session/stage3-crosswalk`.
+
+| Gate item | Result |
+|---|---|
+| Match rate published per position | PASS. Control → Crosswalk shows the ten positions, rostered and free agents. Rostered 1,444 of 1,450 (99.6%): QB 90/91, RB 149/149, WR 228/229, TE 105/105, K 45/45, DT 143/144, DE 165/165, LB 192/192, CB 174/174, S 153/156. Free agents 744 of 796 (93.5%). |
+| Every unmatched rostered player listed with a reason | PASS. All six: `0816` Gosnell (DynastyProcess has this MFL id as another player, Dre' Bly); `0820` Roberts, `0835` Childress, `0843` Thompson, `0844` Wood (not in DynastyProcess: commissioner-created); `17471` Pavia (no NFL id yet). |
+
+Live gate on Claude-OS (R12), production build `v0.5.0-137-ga091c60`, on the Stage 2 gate's
+databases (the state Christopher's machine is in).
+- The load wrote 124,906 links across 19 id types for 11,475 players, in about 4 s. The guards
+  held: nothing links to `0816` or to the Steelers unit `0360`, and the shared gsis `00-0031636`
+  links to no one. A second load (from ScoreLeague) gave the same counts.
+- Both loads are `loads` rows for `dynastyprocess`. ScoreLeague still scores (board #2, identical
+  values; the new engine build is why a board was written).
+- The numbers match a dry run of the same code on the live data, and the Python analysis that
+  shaped C1–C4.
+
+Evidence: `~/fleet/runs/warroom-dataflow-2026-10-03/live-gate-stage3-2026-10-03/`.
+
 ### Week-9 checkpoint (R3)
 
 Stages 0–3, then today's engine recomputed through `scoring_runs` on fresh data. M1 and M2 show
