@@ -73,3 +73,20 @@ func TestMirrorCapFollowsMFLAndRefreshIsIdempotent(t *testing.T) {
 		t.Errorf("Rosters = %+v, %v", rosters, err)
 	}
 }
+
+// A what-if league seeded from the mirror starts with MFL's cap: salaries and salary adjustments,
+// so the Transact screens and the boards agree on every franchise.
+func TestWhatIfSeededFromMirrorHasTheMirrorsCap(t *testing.T) {
+	ctx := context.Background()
+	m := openMirror(t, filepath.Join(t.TempDir(), "league.db"))
+	if _, err := m.Replace(ctx, mirrorSnap()); err != nil {
+		t.Fatal(err)
+	}
+	whatif := newStoreWithDiscounts(t, m, fakeDiscounts{taxiPct: 50, irPct: 0})
+	for _, fid := range m.Reader().Franchises() {
+		want, _ := m.Reader().CapUsed(fid)
+		if got, ok := whatif.Reader().CapUsed(fid); !ok || got != want {
+			t.Errorf("CapUsed(%s): what-if %d (%t), mirror %d", fid, got, ok, want)
+		}
+	}
+}

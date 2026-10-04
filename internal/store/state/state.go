@@ -136,7 +136,8 @@ func (s *Store) rosterCount(ctx context.Context) (int, error) {
 	return n, nil
 }
 
-// seed writes the normalized rosters, contracts and ledger cells in one transaction.
+// seed writes the normalized rosters, contracts, ledger cells and MFL's salary adjustments in one
+// transaction.
 func (s *Store) seed(ctx context.Context, rosters []domain.Roster) error {
 	now := time.Now().UTC().Format(time.RFC3339)
 	tx, err := s.pools.Write().BeginTx(ctx, nil)
@@ -154,6 +155,9 @@ func (s *Store) seed(ctx context.Context, rosters []domain.Roster) error {
 				return err
 			}
 		}
+	}
+	if err := s.seedAdjustments(ctx, tx, s.src); err != nil {
+		return err
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("state: seed commit: %w", err)
@@ -219,6 +223,9 @@ ORDER BY r.franchise_id, r.mfl_id`, s.leagueID, s.season)
 	}
 
 	if err := s.applyDeadCap(ctx, fr); err != nil {
+		return err
+	}
+	if err := s.applyMFLAdjustments(ctx, fr); err != nil {
 		return err
 	}
 	if err := s.applyCapRelief(ctx, fr); err != nil {
