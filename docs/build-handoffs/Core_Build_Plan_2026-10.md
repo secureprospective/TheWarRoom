@@ -297,7 +297,7 @@ architecture so that MFL truth has one home and one read path. It builds no new 
 
 | # | Decision | Rejected, and why |
 |---|---|---|
-| L1 | **One league mirror.** A new `internal/store/league` in `thewarroom.db` holds what MFL says: the season, franchises, rosters with contracts as MFL states them, salary adjustments and the players list. It implements `state.Reader`, so the board, Power, the inspector and scouting read MFL truth through the interface they already use. Cap follows MFL: salaries (taxi and IR at the league's percentages) plus salary adjustments. | Rewriting the state store's tables on refresh: their append-only ledger triggers exist for app-made moves, and MFL wins makes them wrong for truth. |
+| L1 | **One league mirror.** `state.Mirror`, one row in `thewarroom.db`, holds what MFL says: the season, rosters with contracts as MFL states them, and salary adjustments (franchise names live in the rulebook). It implements `state.Reader`, so the board, Power, the inspector and scouting read MFL truth through the interface they already use. Cap follows MFL: salaries (taxi and IR at the league's percentages) plus salary adjustments. | Rewriting the state store's tables on refresh: their append-only ledger triggers exist for app-made moves, and MFL wins makes them wrong for truth. |
 | L2 | **Refresh replaces the mirror whole,** in one write, from fetches that all go through the archive. If the content matches what is held, nothing is written and the refresh reports "up to date". `rulebook.Sync` stores and promotes MFL's config only when it differs (MFL wins), which brings in the franchise names. Refresh runs after the window opens (an empty mirror is filled during startup instead) and from a "Refresh from MFL" button. It needs no players list, so MFL's once-a-day limit never blocks it. Host discovery is cached for 15 minutes, so a refresh's fetches share one. | Field-by-field merging: there is nothing local to preserve, because truth is MFL's. |
 | L3 | **The season comes from MFL.** It is the newest year in the league export's `history` under this league's id (`league.Discover`). `ingestion.SeasonYear` is deleted. The season is read from the mirror at startup, so a rollover takes effect at the next launch. Deriving the phase from MFL's weeks waits for the core to need it; the what-if league keeps its own phase log. | A configured year: it went stale, and the app ended up with two sources for the season. |
 | L4 | **What-if keeps the existing machinery, isolated, at placeholder depth.** The state store and coordinator move to their own file, `whatif.db`, seeded from the mirror by the seed path they already have. Transact and Trade read it, and a refresh leaves it alone. The Reset button and the "built on MFL as of" label wait until what-if becomes relevant; until then, a fresh `whatif.db` reseeds from the mirror. | Named plans (deferred). A scenario column across the coordinator's tables: invasive, for a placeholder. |
@@ -311,6 +311,35 @@ player and a week, which is what history holds.
   on several franchises.
 - Every screen shows the 32 franchise names from MFL.
 - Re-running the refresh changes nothing.
+
+**Stage 2 gate, 2026-10-03.** Built on `session/stage2-league-truth`.
+
+| Gate item | Result |
+|---|---|
+| Rosters and cap for all 32 teams match MFL | PASS for rosters: the mirror holds MFL's 1,450 rostered players, and its cap equals salaries plus salary adjustments computed independently from MFL's raw responses for all 32 teams (`cap-check.txt`). Transact shows the same cap (Denver $123.9M). **Open:** whether MFL counts the 148 adjustments stamped 2023–2025 in this season's cap. That waits on Christopher's spot-check against MFL's own cap screen. |
+| Every screen shows the 32 MFL franchise names | PASS: the board, Power, Transact and Trade. |
+| Re-running the refresh changes nothing | PASS: two button presses after the launch refresh both read "up to date · 2026". `league_mirror` holds one row, written once, and `rulebook_versions` holds one version. |
+
+Live gate on Claude-OS (R12), production build `v0.5.0-134-g6fe30b9` from an empty config folder,
+as Christopher's fresh launch will run. Startup with the first MFL refresh took 4.0 s. Evidence:
+`~/fleet/runs/warroom-dataflow-2026-10-03/live-gate-stage2-2026-10-03/` (earlier attempts in
+`attempt1`–`attempt3`).
+
+The gate caught three defects, all fixed:
+- **The first screen asked for data before startup finished** (`9fb127e`). On Linux, Wails runs
+  startup alongside the page load, so the board opened on "stores not initialized" and season 0.
+  Every IPC method now waits on one `ready` gate, which replaces a dozen copied nil checks.
+- **Every refresh wrote a new rulebook version** (`9218921`). MFL returns the scoring-rule blocks
+  in a different order on each request, so the comparison never matched and the rail said
+  "updated". The blocks are now sorted where they are read.
+- **The same team showed two caps** (`6fe30b9`). The what-if league was seeded from rosters
+  only, so Transact left out MFL's salary adjustments. It now seeds them too, and
+  `TestWhatIfSeededFromMirrorHasTheMirrorsCap` requires the two caps to match.
+
+Seen and left for later (outside Stage 2):
+- Power shows "FINAL, season complete" in October. It reads the what-if league's own phase log;
+  deriving the phase from MFL is deferred under L3.
+- Power's all-play columns read 0-0, and Transact's roster rows show no player names.
 
 ### Stage 3 — Crosswalk
 
