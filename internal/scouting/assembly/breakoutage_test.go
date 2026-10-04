@@ -227,17 +227,17 @@ func TestBreakoutShare_Rules(t *testing.T) {
 
 	rec := []domain.Position{domain.PosWR, domain.PosTE}
 	for _, p := range rec {
-		sel, ok := breakoutShare(p)
-		if !ok || sel(rc) != 0.42 {
+		got, ok := offenseBreakoutShare(rc, p)
+		if !ok || got != 0.42 {
 			t.Errorf("%s: want receiving-yard share 0.42, ok=true; got ok=%v", p, ok)
 		}
 	}
-	if sel, ok := breakoutShare(domain.PosRB); !ok || sel(rc) != 0.11 {
+	if got, ok := offenseBreakoutShare(rc, domain.PosRB); !ok || got != 0.11 {
 		t.Errorf("RB: want rushing-yard share 0.11, ok=true; got ok=%v", ok)
 	}
 	for _, p := range []domain.Position{domain.PosQB, domain.PosK, domain.PosCB,
 		domain.PosS, domain.PosLB, domain.PosDT, domain.PosDE, domain.PosFlag} {
-		if _, ok := breakoutShare(p); ok {
+		if _, ok := offenseBreakoutShare(rc, p); ok {
 			t.Errorf("%s: want no offense breakout source (ok=false), got ok=true", p)
 		}
 	}
@@ -255,6 +255,11 @@ func TestEarliestBreakoutAge_Logic(t *testing.T) {
 	}
 	seasons := []int{2019, 2020, 2021}
 	born := time.Date(2000, time.September, 1, 0, 0, 0, 0, time.UTC)
+	receivingShare := func(rc collegeshare.RawCollegeShare) (float64, bool) { return rc.ReceivingYardShare, true }
+	earliestBreakoutAge := func(seasons []int, by map[int]map[string]collegeshare.RawCollegeShare, gsis string, birth time.Time,
+		share func(collegeshare.RawCollegeShare) (float64, bool)) (float64, bool) {
+		return earliestBreakout(seasons, by, gsis, birth, share, BreakoutThreshold)
+	}
 
 	age, ok := earliestBreakoutAge(seasons, byseason, "G-9", born, receivingShare)
 	if !ok || !baApprox(age, 20.0) {

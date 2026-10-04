@@ -73,16 +73,19 @@ func mergeCFBDScouting(ctx context.Context, year int, client *http.Client, key s
 	if err := mergeSchoolTier(ctx, client, key, year, rosterMFLIDs, adapter, profiles); err != nil {
 		return err
 	}
-	if err := mergeCollegeShare(ctx, client, key, cw, year, rosterMFLIDs, adapter, profiles); err != nil {
+	// College production is read through the last completed college season: the current one's
+	// players are not in the NFL yet, so its feed resolves no one.
+	college := year - 1
+	if err := mergeCollegeShare(ctx, client, key, cw, college, rosterMFLIDs, adapter, profiles); err != nil {
 		return err
 	}
-	if err := mergeCollegeDefense(ctx, client, key, cw, year, rosterMFLIDs, adapter, profiles); err != nil {
+	if err := mergeCollegeDefense(ctx, client, key, cw, college, rosterMFLIDs, adapter, profiles); err != nil {
 		return err
 	}
-	if err := mergeBreakoutAge(ctx, client, key, cw, ages, year, rosterMFLIDs, adapter, profiles); err != nil {
+	if err := mergeBreakoutAge(ctx, client, key, cw, ages, college, rosterMFLIDs, adapter, profiles); err != nil {
 		return err
 	}
-	return mergeBreakoutAgeIDP(ctx, client, key, cw, ages, year, rosterMFLIDs, adapter, profiles)
+	return mergeBreakoutAgeIDP(ctx, client, key, cw, ages, college, rosterMFLIDs, adapter, profiles)
 }
 
 // mergeCoverage adds the CB/S coverage anchor ([0,1], higher is better) from the prior
