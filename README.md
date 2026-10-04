@@ -409,11 +409,12 @@ Layer on a decade-plus of archived league history — real bidding wars, real sn
 
 ## 🤝 How It Gets Built
 
-One human holds the vision and the veto; an AI builds, and every claim has to survive real output. **Christopher Campbell** sets the direction and makes every product call. **Claude** *(Anthropic)* writes the code and makes the engineering calls, each one explained so Christopher can veto it. Nothing is called done on an exit code: every stage closes on a live gate, with the evidence on file.
+One human holds the vision and the veto; an AI builds, and every claim has to survive real output. **Christopher Campbell** sets the direction and makes every product call. **Claude** *(Anthropic)* writes the code and makes the engineering calls, each one explained so Christopher can veto it. **ChatGPT** *(OpenAI)* is the second opinion, reviewing finished stages cold. Nothing is called done on an exit code: every stage closes on a live gate, with the evidence on file.
 
 <div align="center">
 
 [![Claude](https://img.shields.io/badge/Claude-The%20Builder%20·%20Engineering%20Authority-D97757?style=for-the-badge&logo=anthropic&logoColor=white)](https://anthropic.com)
+[![ChatGPT](https://img.shields.io/badge/ChatGPT-The%20Second%20Opinion-10A37F?style=for-the-badge&logo=openai&logoColor=white)](https://chatgpt.com)
 
 </div>
 
@@ -422,7 +423,7 @@ The first phases ran with a full **council** of AIs, each in the seat it was bes
 <div align="center">
 
 [![GLM](https://img.shields.io/badge/GLM%205.2-The%20Blind%20Reviewer-6E3AF2?style=for-the-badge)](https://z.ai)
-[![Gemini](https://img.shields.io/badge/Gemini-The%20Second%20Opinion-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)](https://gemini.google.com)
+[![Gemini](https://img.shields.io/badge/Gemini-The%20Fresh%20Eyes-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)](https://gemini.google.com)
 [![DeepSeek](https://img.shields.io/badge/DeepSeek-The%20Reasoner-4D6BFE?style=for-the-badge&logo=deepseek&logoColor=white)](https://deepseek.com)
 [![Ornith](https://img.shields.io/badge/Ornith-The%20Local%20Apprentice-10B981?style=for-the-badge&logo=ollama&logoColor=white)](#)
 
@@ -431,7 +432,7 @@ The first phases ran with a full **council** of AIs, each in the seat it was bes
 | Seat | Model | What it did |
 |:--:|:--|:--|
 | 🔍 | **GLM 5.2** *(Z.ai)* | The **blind code reviewer** — read every build cold and hunted the bug the tests couldn't see. Its leads are still cited in the test suite. |
-| 🎯 | **Gemini** *(Google)* | The second opinion, pulled in when a problem needed fresh eyes. |
+| 🎯 | **Gemini** *(Google)* | The fresh eyes, pulled in when a problem needed another look. |
 | 🧩 | **DeepSeek** | The reasoner, brought in for the hardest one-off architectural calls. |
 | 🦅 | **Ornith** *(local)* | Ran on hardware **in the room**, shadowing reviews and taking the work that stays home. |
 
@@ -467,7 +468,7 @@ Set `CFBD_API_KEY` to a free [CollegeFootballData key](https://collegefootballda
 
 <div align="center">
 
-*Built by Christopher Campbell with Claude (Anthropic) — on a foundation reviewed, challenged, and sharpened by GLM, Gemini, DeepSeek, and Ornith.*
+*Built by Christopher Campbell with Claude (Anthropic), second opinion by ChatGPT (OpenAI) — on a foundation reviewed, challenged, and sharpened by GLM, Gemini, DeepSeek, and Ornith.*
 
 **Today, MFL gives you the league and TheWarRoom helps you win it.**
 
