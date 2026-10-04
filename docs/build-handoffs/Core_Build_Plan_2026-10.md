@@ -650,7 +650,35 @@ Evidence is in `~/fleet/runs/warroom-dataflow-2026-10-03/live-gate-stage6-2026-1
 - A param edit → a new run → a changed board, with the old board still readable.
 - Both views shown.
 
+**Stage 8 design (Claude, 2026-10-04).** Code is in `m2_app.go` (`GetPowerRankings`),
+`internal/m2service` (the board) and `PowerRankingsBoard.tsx`.
+
+| # | Decision | Why |
+|---|---|---|
+| R8-1 | **Two views** (item 1). **This season** sums each roster's on-field-now and blends its z-score with the season's results at the free weight (default 60/40). **The franchise** sums each roster's dynasty value. Both read the season's latest model run in league points per game; the roster aggregates as the full sum or the top-N starters, as before. | Points per game add up across positions into what a lineup scores. Percentiles are within a position and do not. |
+| R8-2 | **The franchise ranks on the roster alone** (weight fixed at 1, no slider). | This season's record says nothing about the roster three seasons out. |
+| R8-3 | **Recompute reads the model run, not `scoring_runs`** (item 2 changed by R7-7). Δ is each team's rank move against the board built from the previous model run, with the same standings and today's ownership, so it isolates what the model changed. | The model run is the stored, append-only unit; the old one stays readable and is what Δ is computed from. |
+| R8-4 | **The results side reads what MFL reports:** all-play win% when the standings carry it, otherwise points for ÷ the league's best, and nothing before the first week. This league's standings carry no all-play. The board names the result it read in its banner, the slider and the column. | Points for is as free of schedule luck as all-play. A 0-0 all-play gave every team the same results score and quietly made the blend roster-only. |
+| R8-5 | **The season's phase comes from MFL's standings:** the weeks scored are counted from the head-to-head records against `lastRegularSeasonWeek`, giving FINAL or NOT STARTED. | The old FINAL read all-play, which this league never reports, so the board said FINAL mid-season. |
+| R8-6 | **A run records only the params it reads** (found in the gate). `params.Set` splits into `Board()` and `Model()`, the model's part being `model.*` and `dynasty.*`; the board run records one and the model run the other. | The board run recorded all 509 params, so a dynasty edit wrote a board identical to the last one and M1's Δ compared against it. |
+
+**Gate check, 2026-10-04.** Branch `session/core-stages-4-8`, live on Claude-OS at
+`v0.5.0-172-g5eb0e1b`, then `v0.5.0-173-geb005c6` for R8-6, against the gate databases.
+Evidence is in `~/fleet/runs/warroom-dataflow-2026-10-03/live-gate-stage8-2026-10-04/`.
+
+| Gate item | Result |
+|---|---|
+| Both views shown | PASS (screenshots 01, 02). This season on model run #3: the banner and the slider name points for. The franchise ranks in order of roster value (412.5, 356.8, 351.3 …), and Δ against model run #2 shows moves. |
+| A param edit → a new run → a changed board | PASS. `dynasty.discount` 0.85 → 0.6 in Engine Admin (03), then Score League wrote model run #4 (04). Now is unchanged and Dyn moved as a nearer horizon should: young RBs up (Robinson 19.7 → 21.8), a rising young QB down (Maye 20.3 → 19.8). The franchise view on run #4 shows Δ against run #3 (05): Lions 6th → 4th (+2), Giants 9th → 13th (−4). |
+| The old board stays readable | PASS. `model_scores` holds model runs 1–4 at 1,450 rows each, behind the append-only triggers. Restoring 0.85 wrote run #5 on run #3's param set, with a scores hash identical to run #3's (a43ed59b): the same params give the same values. |
+| R8-6, live | PASS on `eb005c6`: through a dynasty edit and its restore, M1 reported "No change … match board #11, so nothing new was written" while model runs #7 and #8 were written (12, 14). Before the fix, the same edit had written board #10, identical to #9. |
+| Found and fixed in the gate | The slider label, the results column and the all-play record still said all-play: they now name the result the blend read, and the record shows a dash (ce690b5, with the points-for test that was missing). Right-aligned numbers touched the next cell ("0Minnesota Vikings"). On an unmaximized window M1's player names fell to two letters, and the Transact roster showed no names at all. The board grid now has a column gap, and name columns a 150 px floor (5eb0e1b). |
+| Known limits | The Transact roster's middle pane is narrower than its table, so status and salary scroll. That is periphery layout, left as is. |
+
 ## Open items that need Christopher
+
+- **The dynasty horizon** (`dynasty.seasons` 5, `dynasty.discount` 0.85, in Control → Engine
+  Admin) is a product call: how much later seasons count in the franchise view and Dyn.
 
 - The fresh live pull is gated (`TWR_LIVE_*`) and runs on his machine (Stage 2.3).
 - Spot-check the MFL comparison (Stage 2 gate).
