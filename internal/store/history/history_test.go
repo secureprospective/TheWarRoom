@@ -606,3 +606,26 @@ func TestModelRunsAreKeptBesideTheBoard(t *testing.T) {
 		t.Error("a NaN must never freeze into the append-only table")
 	}
 }
+
+func TestMeasuresHeldListsASourcesMeasuresBySeason(t *testing.T) {
+	s, _, _ := newStore(t)
+	ctx := context.Background()
+	if _, err := s.Ingest(ctx, solo("alpha", "Solo", "13604", "41")); err != nil {
+		t.Fatal(err)
+	}
+	held, err := s.MeasuresHeld(ctx, "alpha", 2025)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(held) != 1 || !held["outcome.tackles_solo"] {
+		t.Errorf("held in 2025 = %v, want outcome.tackles_solo", held)
+	}
+	for _, q := range []struct {
+		source string
+		season int
+	}{{"alpha", 2024}, {"beta", 2025}} {
+		if held, err := s.MeasuresHeld(ctx, q.source, q.season); err != nil || len(held) != 0 {
+			t.Errorf("%s %d: held %v, err %v; want none", q.source, q.season, held, err)
+		}
+	}
+}

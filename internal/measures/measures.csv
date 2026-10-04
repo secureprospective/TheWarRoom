@@ -88,6 +88,7 @@ prior.college_team_carries,season,count,QB RB WR TE,"The player's college team's
 prior.college_team_interceptions,season,count,DE DT LB CB S,"The player's college team's interceptions that season, summed over its players: the denominator of his share."
 prior.college_team_passes_defended,season,count,DE DT LB CB S,"The player's college team's passes defended that season, summed over its players: the denominator of his share."
 prior.college_team_passing_yards,season,yards,QB,"The player's college team's passing yards that season, summed over its players: the denominator of his share."
+prior.college_team_qb_hurries,season,count,DE DT LB CB S,"The player's college team's quarterback hurries that season, summed over its players: the denominator of his share."
 prior.college_team_receiving_yards,season,yards,RB WR TE,"The player's college team's receiving yards that season, summed over its players: the denominator of his share."
 prior.college_team_receptions,season,count,RB WR TE,"The player's college team's receptions that season, summed over its players: the denominator of his share."
 prior.college_team_rushing_yards,season,yards,QB RB WR TE,"The player's college team's rushing yards that season, summed over its players: the denominator of his share."

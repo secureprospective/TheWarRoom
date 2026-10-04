@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/college"
+	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -34,5 +36,20 @@ func TestScoringYear(t *testing.T) {
 		if got := scoringYear(y, 2026); got != want {
 			t.Errorf("scoringYear(%d) = %d, want %d", y, got, want)
 		}
+	}
+}
+
+func TestMapsNewMeasureSpotsAMappingTheSeasonLacks(t *testing.T) {
+	reg, err := measures.Embedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := measures.Batch{Source: college.Source, Facts: []measures.Fact{
+		{Field: "player_season.defensive.SACKS"}, {Field: "team_season.defensive.QB HUR"}, {Field: "unmapped"}}}
+	if !mapsNewMeasure(reg, b, map[string]bool{"prior.college_sacks": true}) {
+		t.Error("the team's hurries are new, but no new measure was seen")
+	}
+	if mapsNewMeasure(reg, b, map[string]bool{"prior.college_sacks": true, "prior.college_team_qb_hurries": true}) {
+		t.Error("every mapped measure is held, but a new one was seen")
 	}
 }

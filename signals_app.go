@@ -185,6 +185,9 @@ func (a *App) loadCollege(ctx context.Context, client *http.Client, reg *measure
 		url := college.SeasonStatsURL + "?year=" + strconv.Itoa(season)
 		if due, err := a.due(ctx, url, season >= a.season); err != nil || !due {
 			l.Status = loadCurrent
+			if err == nil {
+				l = a.remapCollege(ctx, reg, l, url, known)
+			}
 			out = append(out, withError(l, err))
 			continue
 		}
@@ -196,6 +199,37 @@ func (a *App) loadCollege(ctx context.Context, client *http.Client, reg *measure
 		out = append(out, a.ingest(ctx, l, b))
 	}
 	return out
+}
+
+// remapCollege re-reads a season that is not due from its archived body when that body now maps a
+// measure the season holds no value of: a mapping added after the season was loaded (the college
+// team's quarterback hurries, 2026-10) reaches every stored season without spending a CFBD call.
+func (a *App) remapCollege(ctx context.Context, reg *measures.Registry, l SignalLoad, url string,
+	known map[string]bool) SignalLoad {
+	held, err := a.history.MeasuresHeld(ctx, college.Source, l.Season)
+	if err != nil {
+		return withError(l, err)
+	}
+	var b measures.Batch
+	var mapErr error
+	_, err = a.history.ArchivedBodies(ctx, url, func(_ string, body []byte, _ time.Time) bool {
+		b, mapErr = college.Map(reg, l.Season, body, func(id string) bool { return known[id] })
+		return true
+	})
+	if err = errors.Join(err, mapErr); err != nil || !mapsNewMeasure(reg, b, held) {
+		return withError(l, err)
+	}
+	return a.ingest(ctx, l, b)
+}
+
+// mapsNewMeasure reports whether b carries a value of a measure held does not list.
+func mapsNewMeasure(reg *measures.Registry, b measures.Batch, held map[string]bool) bool {
+	for _, f := range b.Facts {
+		if sf, ok := reg.Field(b.Source, f.Field); ok && !held[sf.Measure] {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *App) ingest(ctx context.Context, l SignalLoad, b measures.Batch) SignalLoad {

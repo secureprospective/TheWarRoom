@@ -413,6 +413,11 @@ func (s *Store) LinkedPlayers(ctx context.Context, idType string) (map[string]bo
 	return s.distinct(ctx, `SELECT DISTINCT player_id FROM player_ids WHERE id_type = ?`, idType)
 }
 
+// MeasuresHeld returns every measure source holds a value of in season.
+func (s *Store) MeasuresHeld(ctx context.Context, source string, season int) (map[string]bool, error) {
+	return s.distinct(ctx, `SELECT DISTINCT measure FROM observations WHERE source = ? AND season = ?`, source, season)
+}
+
 // KnownIDs returns every id of idType the directory can resolve.
 func (s *Store) KnownIDs(ctx context.Context, idType string) (map[string]bool, error) {
 	return s.distinct(ctx, `SELECT id_value FROM player_ids WHERE id_type = ?`, idType)

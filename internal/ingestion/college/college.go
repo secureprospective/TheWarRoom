@@ -57,6 +57,12 @@ func Fetch(ctx context.Context, client *http.Client, baseURL string, reg *measur
 	if err != nil {
 		return measures.Batch{}, fmt.Errorf("college: %w", err)
 	}
+	return Map(reg, season, body, keep)
+}
+
+// Map reads one season's body as CFBD sent it, such as an archived copy, into the batch Fetch
+// returns.
+func Map(reg *measures.Registry, season int, body []byte, keep func(espnID string) bool) (measures.Batch, error) {
 	var rows []row
 	if err := json.Unmarshal(body, &rows); err != nil {
 		return measures.Batch{}, fmt.Errorf("college: decode %d: %w", season, err)
@@ -69,8 +75,6 @@ func Fetch(ctx context.Context, client *http.Client, baseURL string, reg *measur
 	return measures.Batch{Source: Source, BodySHA256: hex.EncodeToString(sum[:]), Facts: facts}, nil
 }
 
-// mapRows sums every team's stats, then emits each kept player's mapped stats, team and
-// conference, and his team's mapped totals. A player listed under two teams keeps the later.
 func mapRows(reg *measures.Registry, season int, rows []row, keep func(string) bool) ([]measures.Fact, error) {
 	mapped := func(field string) bool { _, ok := reg.Field(Source, field); return ok }
 	totals := map[string]map[string]float64{} // team → team field → sum

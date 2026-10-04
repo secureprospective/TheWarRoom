@@ -22,6 +22,7 @@ cfbd,player_season.rushing.TD,prior.college_rushing_tds,1
 cfbd,player_season.rushing.YDS,prior.college_rushing_yards,1
 cfbd,player_season.team,prior.college_team,1
 cfbd,team_season.defensive.PD,prior.college_team_passes_defended,1
+cfbd,team_season.defensive.QB HUR,prior.college_team_qb_hurries,1
 cfbd,team_season.defensive.SACKS,prior.college_team_sacks,1
 cfbd,team_season.defensive.TFL,prior.college_team_tackles_for_loss,1
 cfbd,team_season.defensive.TOT,prior.college_team_total_tackles,1
