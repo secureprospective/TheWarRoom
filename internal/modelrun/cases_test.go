@@ -60,6 +60,10 @@ func TestCaseRookiesByDraftRoundAreValuedAndOrdered(t *testing.T) {
 	if !(first.Now > third.Now && third.Now > undrafted.Now) {
 		t.Errorf("rookies by draft slot: %v, %v, %v", first.Now, third.Now, undrafted.Now)
 	}
+	if first.Dynasty/first.Now <= undrafted.Dynasty/undrafted.Now {
+		t.Errorf("a first-rounder is likelier to take the field than an undrafted rookie: %v vs %v",
+			first.Dynasty/first.Now, undrafted.Dynasty/undrafted.Now)
+	}
 }
 
 func TestCaseYearTwoJump(t *testing.T) {

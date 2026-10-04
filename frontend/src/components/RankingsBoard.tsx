@@ -261,7 +261,7 @@ export function RankingsBoard() {
             <span className="twr-r">
               <SortHeader label="Adj" sortKey="adjusted" activeKey={sortKey} dir={sortDir} onSort={onSort} />
             </span>
-            <span className="twr-r twr-hide-mtx" title="On-field-now: expected league points per game this season">
+            <span className="twr-r twr-hide-mtx" title="On-field-now: expected league points per game he plays this season">
               <SortHeader label="Now" sortKey="now" activeKey={sortKey} dir={sortDir} onSort={onSort} />
             </span>
             <span className="twr-r twr-hide-mtx" title="Dynasty: expected league points per game over the coming seasons, discounted, counting a season off the field as 0">

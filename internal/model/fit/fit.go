@@ -38,6 +38,7 @@ type Report struct {
 	DynPrior              float64 // the prior alone
 	Recency               recencyScore
 	Survival              survivalScore
+	Debut                 survivalScore
 }
 
 // Run fits every position on seasons first..holdout.
@@ -66,9 +67,12 @@ func fitPosition(sm samples, holdout int) Result {
 
 	trainSurv, fullSurv := fitSurvival(sm, holdout, &r.Report.Survival)
 	r.Params.Survival = fullSurv
+	trainDebut, fullDebut := fitDebut(sm, holdout, &r.Report.Debut)
+	r.Params.Debut = fullDebut
 	trainModel, fullModel := fitDynasty(sm, holdout, trainPrior, trainSurv, fullSurv, &r.Report)
 	r.Params.KDynasty, r.Params.Exponential, r.Params.Arc = fullModel.KDynasty, fullModel.Exponential, fullModel.Arc
 	r.Train = trainModel
+	r.Train.Debut = trainDebut
 	r.Train.Recency, r.Params.Recency = fitRecency(sm, holdout, trainModel, fullModel, &r.Report.Recency)
 	return r
 }

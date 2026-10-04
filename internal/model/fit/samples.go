@@ -1,6 +1,7 @@
 package fit
 
 import (
+	"maps"
 	"math"
 	"slices"
 
@@ -30,10 +31,11 @@ type samples struct {
 	pos     domain.Position
 	seasons []season
 	byYear  map[string]map[int]season
+	rookies []*model.Player // players at pos whose first season is first..last, played or not
 }
 
 func collect(d model.Data, scales map[domain.Position]map[int]model.Scale, pos domain.Position, first, last int) samples {
-	out := samples{pos: pos, byYear: map[string]map[int]season{}}
+	out := samples{pos: pos, byYear: map[string]map[int]season{}, rookies: rookies(d, pos, first, last)}
 	for id, years := range d.Seasons {
 		p := d.Players[id]
 		if p == nil || p.Position != pos {
@@ -62,6 +64,17 @@ func collect(d model.Data, scales map[domain.Position]map[int]model.Scale, pos d
 		}
 		return a.year - b.year
 	})
+	return out
+}
+
+// rookies are the players at pos whose first season is first..last, in id order.
+func rookies(d model.Data, pos domain.Position, first, last int) []*model.Player {
+	var out []*model.Player
+	for _, id := range slices.Sorted(maps.Keys(d.Players)) {
+		if p := d.Players[id]; p.Position == pos && p.Rookie >= first && p.Rookie <= last {
+			out = append(out, p)
+		}
+	}
 	return out
 }
 

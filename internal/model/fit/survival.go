@@ -83,3 +83,57 @@ func logLoss(x [][]float64, y []float64, p func([]float64) float64) float64 {
 	}
 	return sum / float64(len(y))
 }
+
+// fitDebut is a logistic regression of a rookie becoming a regular (4+ games) in his first season
+// on his draft slot. Like survival, it falls back to the base rate when it does not beat it on
+// the holdout season's rookies.
+func fitDebut(sm samples, holdout int, score *survivalScore) (trainFit, fullFit [2]float64) {
+	var xTrain, xAll, xTest [][]float64
+	var yTrain, yAll, yTest []float64
+	for _, pl := range sm.rookies {
+		row := []float64{1, math.Log(debutPick(pl.DraftPick))}
+		y := 0.0
+		if s, ok := sm.byYear[pl.ID][pl.Rookie]; ok && s.games >= model.RegularGames {
+			y = 1
+		}
+		xAll, yAll = append(xAll, row), append(yAll, y)
+		if pl.Rookie < holdout {
+			xTrain, yTrain = append(xTrain, row), append(yTrain, y)
+		} else {
+			xTest, yTest = append(xTest, row), append(yTest, y)
+		}
+	}
+	score.Train, score.Test = len(yTrain), len(yTest)
+	if len(yTrain) < 30 {
+		return trainFit, fullFit
+	}
+	score.BaseRate, score.HoldoutObserved = avg(yTrain), avg(yTest)
+	train, err := logistic(xTrain, yTrain, 1)
+	if err != nil {
+		return logOdds(score.BaseRate), logOdds(avg(yAll))
+	}
+	score.LogLossFit = logLoss(xTest, yTest, func(x []float64) float64 { return sigmoid(dot(x, train)) })
+	score.LogLossBase = logLoss(xTest, yTest, func([]float64) float64 { return score.BaseRate })
+	score.Kept = score.LogLossFit < score.LogLossBase
+	if !score.Kept {
+		return logOdds(score.BaseRate), logOdds(avg(yAll))
+	}
+	copy(trainFit[:], train)
+	if full, err := logistic(xAll, yAll, 1); err == nil {
+		copy(fullFit[:], full)
+	}
+	return trainFit, fullFit
+}
+
+func debutPick(pick float64) float64 {
+	if pick < 1 {
+		return 260
+	}
+	return pick
+}
+
+// logOdds is the debut fit that gives every rookie the same chance p.
+func logOdds(p float64) [2]float64 {
+	p = min(max(p, 1e-3), 1-1e-3)
+	return [2]float64{math.Log(p / (1 - p))}
+}

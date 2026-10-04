@@ -25,6 +25,9 @@ type Params struct {
 	// Survival: the log-odds of playing next season are Survival · (1, a−27, (a−27)², draft,
 	// games/17, percentile), where draft is the log of the overall pick, 260 when undrafted.
 	Survival [6]float64
+
+	// Debut: the log-odds that a rookie becomes a regular are Debut · (1, draft).
+	Debut [2]float64
 }
 
 // Prior is the player's expected percentile from pre-NFL facts, kept inside [0.01, 0.99].
@@ -68,12 +71,23 @@ func (p Params) ArcStep(age float64, experience int) float64 {
 // Survives is the probability of playing next season.
 func (p Params) Survives(age, draftPick, games, pct float64) float64 {
 	a := age - ArcCenter
-	if draftPick < 1 {
-		draftPick = 260
-	}
-	z := p.Survival[0] + p.Survival[1]*a + p.Survival[2]*a*a + p.Survival[3]*math.Log(draftPick) +
+	z := p.Survival[0] + p.Survival[1]*a + p.Survival[2]*a*a + p.Survival[3]*math.Log(draftCapital(draftPick)) +
 		p.Survival[4]*games/17 + p.Survival[5]*pct
 	return 1 / (1 + math.Exp(-z))
+}
+
+// Debuts is the probability a rookie with this overall pick (0 when undrafted) becomes a
+// regular in his first season.
+func (p Params) Debuts(draftPick float64) float64 {
+	return 1 / (1 + math.Exp(-(p.Debut[0] + p.Debut[1]*math.Log(draftCapital(draftPick)))))
+}
+
+// draftCapital is the overall pick the draft terms read: 260, past the last pick, when undrafted.
+func draftCapital(pick float64) float64 {
+	if pick < 1 {
+		return 260
+	}
+	return pick
 }
 
 // Values flattens the params into named values for storage, keyed as Keys names them.
@@ -93,6 +107,7 @@ func (p Params) Values() map[string]float64 {
 	for i, term := range survivalTerms() {
 		out["model.survival."+term] = p.Survival[i]
 	}
+	out["model.debut.level"], out["model.debut.draft"] = p.Debut[0], p.Debut[1]
 	return out
 }
 
@@ -115,6 +130,7 @@ func ParamsFrom(get func(key string) (float64, error)) (Params, error) {
 	for i, term := range survivalTerms() {
 		targets["model.survival."+term] = &p.Survival[i]
 	}
+	targets["model.debut.level"], targets["model.debut.draft"] = &p.Debut[0], &p.Debut[1]
 	for key, dst := range targets {
 		v, err := get(key)
 		if err != nil {

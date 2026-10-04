@@ -24,6 +24,16 @@
    "value": 0
   },
   {
+   "key": "model.debut.draft",
+   "position": "CB",
+   "value": -1.2840053221603829
+  },
+  {
+   "key": "model.debut.level",
+   "position": "CB",
+   "value": 7.624164525140062
+  },
+  {
    "key": "model.k_dynasty",
    "position": "CB",
    "value": 7.079500400346583
@@ -212,6 +222,16 @@
    "key": "model.arc.second_year",
    "position": "DE",
    "value": 0.007493929284590181
+  },
+  {
+   "key": "model.debut.draft",
+   "position": "DE",
+   "value": -1.2088262268061494
+  },
+  {
+   "key": "model.debut.level",
+   "position": "DE",
+   "value": 6.612595822772174
   },
   {
    "key": "model.k_dynasty",
@@ -404,6 +424,16 @@
    "value": 0.05758311141352393
   },
   {
+   "key": "model.debut.draft",
+   "position": "DT",
+   "value": -1.6937342228733532
+  },
+  {
+   "key": "model.debut.level",
+   "position": "DT",
+   "value": 9.36553585263911
+  },
+  {
    "key": "model.k_dynasty",
    "position": "DT",
    "value": 7.958845393295686
@@ -592,6 +622,16 @@
    "key": "model.arc.second_year",
    "position": "K",
    "value": 0.010147992032817967
+  },
+  {
+   "key": "model.debut.draft",
+   "position": "K",
+   "value": -1.441150417197331
+  },
+  {
+   "key": "model.debut.level",
+   "position": "K",
+   "value": 7.95490781497559
   },
   {
    "key": "model.k_dynasty",
@@ -784,6 +824,16 @@
    "value": 0.01764340439876845
   },
   {
+   "key": "model.debut.draft",
+   "position": "LB",
+   "value": -1.834861489656937
+  },
+  {
+   "key": "model.debut.level",
+   "position": "LB",
+   "value": 10.611201990624382
+  },
+  {
    "key": "model.k_dynasty",
    "position": "LB",
    "value": 10.05877244774867
@@ -972,6 +1022,16 @@
    "key": "model.arc.second_year",
    "position": "QB",
    "value": 0
+  },
+  {
+   "key": "model.debut.draft",
+   "position": "QB",
+   "value": -1.1143829978581323
+  },
+  {
+   "key": "model.debut.level",
+   "position": "QB",
+   "value": 4.713388985324247
   },
   {
    "key": "model.k_dynasty",
@@ -1164,6 +1224,16 @@
    "value": 0.08776873993215817
   },
   {
+   "key": "model.debut.draft",
+   "position": "RB",
+   "value": -2.3087701487904555
+  },
+  {
+   "key": "model.debut.level",
+   "position": "RB",
+   "value": 12.620450141630652
+  },
+  {
    "key": "model.k_dynasty",
    "position": "RB",
    "value": 8.947413858650673
@@ -1352,6 +1422,16 @@
    "key": "model.arc.second_year",
    "position": "S",
    "value": -0.005274088266424808
+  },
+  {
+   "key": "model.debut.draft",
+   "position": "S",
+   "value": -1.4778567565203358
+  },
+  {
+   "key": "model.debut.level",
+   "position": "S",
+   "value": 8.608272880650304
   },
   {
    "key": "model.k_dynasty",
@@ -1544,6 +1624,16 @@
    "value": 0.0024495506116463586
   },
   {
+   "key": "model.debut.draft",
+   "position": "TE",
+   "value": -2.2716408849247083
+  },
+  {
+   "key": "model.debut.level",
+   "position": "TE",
+   "value": 12.496946884131066
+  },
+  {
    "key": "model.k_dynasty",
    "position": "TE",
    "value": 4.432132957795533
@@ -1732,6 +1822,16 @@
    "key": "model.arc.second_year",
    "position": "WR",
    "value": 0.0359929633933187
+  },
+  {
+   "key": "model.debut.draft",
+   "position": "WR",
+   "value": -3.4096404073033977
+  },
+  {
+   "key": "model.debut.level",
+   "position": "WR",
+   "value": 18.235496901441557
   },
   {
    "key": "model.k_dynasty",

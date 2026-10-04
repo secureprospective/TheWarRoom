@@ -56,6 +56,8 @@ func fittedKind(key string) (lo, hi float64, meaning string) {
 		return -1000, 1000, "Prior term: " + strings.TrimPrefix(key, "model.prior.")
 	case strings.HasPrefix(key, "model.arc."):
 		return -10, 10, "Talent arc term: " + strings.TrimPrefix(key, "model.arc.")
+	case strings.HasPrefix(key, "model.debut."):
+		return -100, 100, "Debut log-odds term (a rookie becomes a regular): " + strings.TrimPrefix(key, "model.debut.")
 	case strings.HasPrefix(key, "model.survival."):
 		return -100, 100, "Survival log-odds term: " + strings.TrimPrefix(key, "model.survival.")
 	}

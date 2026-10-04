@@ -71,7 +71,7 @@ type Horizon struct {
 // Value is a player's two measurables for a season, on the percentile scale and in league
 // points per game, with what produced them.
 type Value struct {
-	Now, NowPPG         float64 // expected level this season
+	Now, NowPPG         float64 // expected level this season, per game he plays
 	Dynasty, DynastyPPG float64 // discounted expected level over the horizon; a season off the field counts 0
 	Prior               float64
 	PastGames           float64 // effective games from earlier seasons
@@ -124,8 +124,9 @@ func (p Params) Value(pl *Player, past []Past, current Past, h Horizon, scale Sc
 	return v
 }
 
-// onFieldNow is the chance he plays this season: 1 once he has, or before his first NFL season;
-// otherwise each season from his last one is survived in turn, a season he missed at 0 games.
+// onFieldNow is the chance he plays this season: 1 once he has; before his first NFL game, the
+// chance a rookie at his draft slot becomes a regular; otherwise each season from his last one
+// is survived in turn, a season he missed at 0 games.
 func (p Params) onFieldNow(pl *Player, past []Past, current Past, proj float64) float64 {
 	last := Past{Year: math.MinInt}
 	for _, s := range past {
@@ -133,8 +134,11 @@ func (p Params) onFieldNow(pl *Player, past []Past, current Past, proj float64) 
 			last = s
 		}
 	}
-	if current.Games > 0 || last.Year == math.MinInt {
+	if current.Games > 0 {
 		return 1
+	}
+	if last.Year == math.MinInt {
+		return p.Debuts(pl.DraftPick)
 	}
 	on := p.survives(pl, last.Year, last.Games, last.Pct)
 	for u := last.Year + 1; u < current.Year; u++ {
