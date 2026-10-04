@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"time"
 
@@ -100,7 +101,9 @@ func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
 	for y := spec.Season - lookback; y <= spec.Season; y++ {
 		lastWeek[y] = spec.LastWeek
 	}
-	pass, err := newPass(model.Build(obs, lastWeek), spec)
+	d := model.Build(obs, lastWeek)
+	AtLeaguePositions(d, r.dir)
+	pass, err := newPass(d, spec)
 	if err != nil {
 		return Report{}, err
 	}
@@ -250,6 +253,24 @@ func (ps pass) player(mflID string, facts normalize.PlayerFacts) (pl model.Playe
 }
 
 func abs(n int) int { return max(n, -n) }
+
+// AtLeaguePositions moves each history player the league's players database lists at a position
+// the model scores to that position, and returns how many moved. The league scores by its own
+// position (a DE's tackle is worth 2.5, an LB's 1.5), so nflverse's label would put an edge
+// rusher it lists as LB in the linebackers' scale and the linebackers' fit. A player the league
+// does not list keeps nflverse's position.
+func AtLeaguePositions(d model.Data, dir Directory) int {
+	moved := 0
+	for id, pl := range d.Players {
+		facts, ok := dir.Facts(id)
+		if !ok || facts.Position == pl.Position || !slices.Contains(model.Positions(), facts.Position) {
+			continue
+		}
+		pl.Position = facts.Position
+		moved++
+	}
+	return moved
+}
 
 // scale is the position's scale for a season; a season with too few regulars yet (the first
 // weeks of the current one) borrows the season before.

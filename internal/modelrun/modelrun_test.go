@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
@@ -131,5 +132,31 @@ func TestRunSetsAsideAnotherPlayersRecord(t *testing.T) {
 	got := h.written[0].Scores[1]
 	if got.MFLID != "0300" || got.Now <= 0 || got.Dynasty <= 0 {
 		t.Errorf("the rookie must be valued on MFL's facts, not a 73-year-old's: %+v", got)
+	}
+}
+
+func TestAtLeaguePositionsUsesTheLeaguesPosition(t *testing.T) {
+	d := model.Data{Players: map[string]*model.Player{
+		"edge":    {ID: "edge", Position: domain.PosLB}, // nflverse LB, the league's DE
+		"unknown": {ID: "unknown", Position: domain.PosDE},
+		"flagged": {ID: "flagged", Position: domain.PosCB}, // the league's code is not one the model scores
+		"db":      {ID: "db"},                              // nflverse's generic DB, which the model leaves out
+		"same":    {ID: "same", Position: domain.PosDT},
+	}}
+	dir := fakeDir{
+		"edge":    {Position: domain.PosDE},
+		"flagged": {Position: domain.PosFlag},
+		"db":      {Position: domain.PosS},
+		"same":    {Position: domain.PosDT},
+	}
+	if moved := AtLeaguePositions(d, dir); moved != 2 {
+		t.Fatalf("moved %d players, want 2", moved)
+	}
+	want := map[string]domain.Position{"edge": domain.PosDE, "unknown": domain.PosDE, "flagged": domain.PosCB,
+		"db": domain.PosS, "same": domain.PosDT}
+	for id, pos := range want {
+		if got := d.Players[id].Position; got != pos {
+			t.Errorf("%s at %q, want %q", id, got, pos)
+		}
 	}
 }

@@ -6,6 +6,7 @@ package players
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -81,6 +82,20 @@ func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) ([]RawPlay
 	if err != nil {
 		return nil, fmt.Errorf("players: %w", err)
 	}
+	return records(ctx, env)
+}
+
+// Parse reads a players export body as MFL sent it, such as an archived copy, with the checks
+// Fetch applies.
+func Parse(ctx context.Context, body []byte) ([]RawPlayer, error) {
+	var env playersEnvelope
+	if err := json.Unmarshal(body, &env); err != nil {
+		return nil, fmt.Errorf("players: decode: %w", err)
+	}
+	return records(ctx, env)
+}
+
+func records(ctx context.Context, env playersEnvelope) ([]RawPlayer, error) {
 	if len(env.Players.Player) == 0 {
 		return nil, errEmptyPlayers
 	}

@@ -3,6 +3,7 @@ package players
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 )
 
@@ -108,5 +109,23 @@ func TestDecode_SingleElementCollapse(t *testing.T) {
 	}
 	if len(got) != 1 || got[0].ID != "0531" {
 		t.Fatalf("single-element collapse not handled: %+v", got)
+	}
+}
+
+func TestParseReadsAnArchivedBody(t *testing.T) {
+	got, err := Parse(context.Background(), []byte(`{"players":{"player":[`+
+		`{"id":"15350","name":"Hutchinson, Aidan","position":"DE","team":"DET"},`+
+		`{"id":"0531","name":"Mahomes, Patrick","position":"QB","team":"KCC"}]}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || got[0].ID != "15350" || got[0].Position != "DE" {
+		t.Fatalf("Parse = %+v", got)
+	}
+	if _, err := Parse(context.Background(), []byte(`{"players":{"player":[]}}`)); !errors.Is(err, errEmptyPlayers) {
+		t.Fatalf("empty body: err = %v, want errEmptyPlayers", err)
+	}
+	if _, err := Parse(context.Background(), []byte(`{"players":{"player":[{"id":"15350","position":""}]}}`)); err == nil {
+		t.Fatal("a record without a position parsed")
 	}
 }
