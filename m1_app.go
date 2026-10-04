@@ -33,7 +33,7 @@ func (a *App) proxyLabel() string {
 
 // loadSeasonPoints keeps history holding MFL's season totals for every league season: each
 // earlier season once, the last one again (so late stat corrections land), and the current one
-// every pass, which is empty before its first game. A failed fetch is recorded against the
+// every pass, which is empty before its first game. scoringYear says whose rules apply. A failed fetch is recorded against the
 // source and returned as a warning: scoring runs from what history holds, and source health
 // decides whether the measure counts as lost.
 func (a *App) loadSeasonPoints(ctx context.Context) (warning string, err error) {
@@ -48,7 +48,7 @@ func (a *App) loadSeasonPoints(ctx context.Context) (warning string, err error) 
 				continue
 			}
 		}
-		batch, ferr := playerscores.Fetch(ctx, a.mflClient, strconv.Itoa(y), ingestion.LeagueID, y)
+		batch, ferr := playerscores.Fetch(ctx, a.mflClient, strconv.Itoa(scoringYear(y, a.season)), ingestion.LeagueID, y)
 		switch {
 		case ferr == nil:
 			if _, ierr := a.history.Ingest(ctx, batch); ierr != nil {
@@ -66,6 +66,18 @@ func (a *App) loadSeasonPoints(ctx context.Context) (warning string, err error) 
 		return "MFL fantasy points not refreshed (" + strings.Join(warnings, "; ") + "): scored from the last points held", nil
 	}
 	return "", nil
+}
+
+// scoringYear is the league year whose scoring rules MFL applies to season y's totals. The
+// current league serves the last season under today's rules, which is what the board's base
+// points have always been; older seasons are served only by their own league year, under their
+// own rules. The model's percentiles are within a season, so a season-wide rule change barely
+// moves them, and its points per game come from last season, under today's rules.
+func scoringYear(y, current int) int {
+	if y >= current-1 {
+		return current
+	}
+	return y
 }
 
 // seasonPointsHeld reports whether history already holds MFL's totals for season.
