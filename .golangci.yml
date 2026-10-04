@@ -113,6 +113,7 @@ linters:
           list-mode: lax
           files:
             - "**/internal/engine/**"
+            - "**/internal/model/**"
           deny:
             - pkg: github.com/secureprospective/TheWarRoom/internal/mfl
               desc: "engine cannot import the transport client"

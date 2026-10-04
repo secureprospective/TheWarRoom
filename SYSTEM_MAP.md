@@ -1,7 +1,7 @@
 # System Map
 
 What exists in TheWarRoom and where new code belongs. Update it in the same commit as any new
-package, IPC method or external service. Current as of 2026-10-04 (Stage 4 of
+package, IPC method or external service. Current as of 2026-10-04 (Stage 6 of
 `docs/build-handoffs/Core_Build_Plan_2026-10.md`).
 
 ## Layers and packages
@@ -21,23 +21,26 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Leaf | `internal/measures` | The measure registry: `measures.csv`, `sources.csv`, `source_fields.csv` and `feeds.csv`, embedded and validated. Generates `docs/data-layer/Measure_Dictionary.md` (`make measure-dictionary`). Adding a source is a CSV row, not code. |
 | Store | `internal/db` | SQLite pools: one write connection, many read-only ones, one WAL file. |
 | Store | `internal/store/rulebook` | League rules from MFL as immutable versions with one active pointer, plus commissioner overrides. |
-| Store | `internal/store/params` | Engine calibration: shipped defaults plus admin overrides, league-wide or per position. The Layer 4 settings are seeded from `l4.Defaults`. |
+| Store | `internal/store/params` | Engine calibration: shipped defaults plus admin overrides, league-wide or per position. The Layer 4 settings are seeded from `l4.Defaults`; the model's fitted values from the embedded `fitted.json`, marked calibrated. Shipped defaults are upserted at start-up; overrides are never touched. |
 | Store | `internal/store/state` | Two things behind one `Reader`. **`Mirror`**: the league as MFL states it (season, rosters with contracts, salary adjustments), replaced whole by a refresh; every score surface reads it. **`Store`**: the what-if league in `whatif.db`, seeded from the mirror (rosters and MFL salary adjustments, so its cap starts equal): rosters, contracts, the contract-year ledger, dead cap, cap relief, phases, feed, calendar. Append-only ledgers; the transaction coordinator holds the only `Writer`. |
 | Store | `internal/store/history` | `history.db`: everything the app cannot rebuild. The fetch archive (`raw_archive`, `fetch_log`), facts per measure appended on change (`observations`, read as of a date through `Features`), source health, and scoring runs with the param set, engine and inputs they used. Append-only, enforced by triggers. |
 | Engine | `internal/engine` | The scoring pipeline as pure functions (L1, L3, L4 dispatch, L5, L6). |
+| Engine | `internal/model` | The measurable's model: a player's league-points percentile blended with a prior from pre-NFL facts, the talent and survival arcs, and `Params`, the fitted values per position (`model.*@POS`). Pure. |
+| Engine | `internal/model/fit` | Fits `model.Params` from stored seasons, scoring every choice on a holdout season. Pure; `cmd/fit` runs it. |
 | Engine | `internal/engine/l4` | Layer 4: one rubric routine driven by a per-position settings table. The adjustable numbers in the table are params (`l4.film.cap@WR` and so on); composition reads them back for each run. |
 | Composition | `internal/composition` | Engine inputs from the stores plus per-player facts. |
 | Composition | `internal/rankings` | M1: scores every rostered player from a params snapshot and history features, and writes one scoring run. |
 | Composition | `internal/m2service`, `internal/powerrankings` | M2: franchise aggregation and the z-score blend with MFL standings. |
 | Composition | `internal/scouting/assembly` | Builds scouting profiles from the Layer 1 feeds. |
 | Mutation | `internal/transactions` | The `Coordinator`: every league-state change runs here, in one transaction. Handler subpackages (`acquisitions`, `contracts`, `deadcap`, `freeagency`) are reachable only through it. |
+| Tooling | `cmd/fit` | Reads a history database, runs `model/fit`, and writes `internal/store/params/fitted.json` (shipped as calibrated defaults) and `docs/fit/Fit_Report.md`. |
 | Dev | `internal/harness` | The 13 architectural cases and the rookie sandbox; retired in Stage 7. |
 | Tooling | `tools/ifaceguard` | Vet tool: no `interface{}`/`any` in exported signatures. |
 
 **(depguard)**
 - `mfl`, `ingestion` and `normalize` never import `engine`, `store`, `transactions` or
   `database/sql`.
-- `engine` imports no store, transport, ingestion, normalize, `database/sql`, `net` or `os`.
+- `engine` and `model` import no store, transport, ingestion, normalize, `database/sql`, `net` or `os`.
 - The four stores (`rulebook`, `state`, `params`, `history`) never import each other.
 - `measures` imports nothing of the app's but `domain`; `archive` imports nothing of the app's.
 - `database/sql` is confined to `db` and `store`.
