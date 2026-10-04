@@ -1,25 +1,14 @@
 # RESUME — TheWarRoom core stages 4–8, overnight run (2026-10-04)
 
-## 0. Next actions, in order
-Stage 8 is BUILT, not yet gated. Commits 21719e4 (M2 two views on the model run, Δ against the
-previous model run, roster-value naming) and 372c856 (results side reads points for when MFL
-reports no all-play, which this league never does; weeks from head-to-head vs
-lastRegularSeasonWeek; team column min 150 px). Nothing running; Claude-OS is up with the app
-`~/twr-gate/thewarroom-s8` (built from 21719e4: rebuild and recopy for 372c856).
-1. **Stage 8 live gate on Claude-OS** (copy with `scp -l 40000`; two unlimited copies reset
-   the passt link): rebuild, recopy as thewarroom-s8, launch, PULSE (172,360 unmaximized).
-   Screenshot both views (View chips "This season" / "The franchise"), with team names showing
-   and the label naming "points for".
-2. **Param edit → new run → changed board:** Control (172,533) → Engine Admin (513,130) →
-   filter (497,190) "dynasty.discount" → set 0.6 → Apply; Assets (172,302) → Score League
-   (395,126) → model run #4; PULSE → The franchise: Δ against model run #3 shows moves; old run
-   stays readable (Δ is computed from it; `model_scores` run 3 in the VM history.db). Then set
-   dynasty.discount back to 0.85 and Score League again.
-3. Record the Stage 8 design (R8-1 views, R8-2 franchise = roster alone, R8-3 Δ vs previous
-   model run, R8-4 points-for fallback, R8-5 phase from MFL standings) and gate in the plan.
-4. Stop at the README; open one PR (session/core-stages-4-8 → main) with `gh pr create`, do
-   not merge; morning list (§4) as numbered steps plus a decision matrix.
-5. Update this file (three paths) and T373.
+## 0. State: ALL STAGES DONE — stopped at the README, waiting on Christopher
+Stages 4–8 are built, live-gated on Claude-OS and recorded in the plan. **PR #7**
+(https://github.com/secureprospective/TheWarRoom/pull/7, `session/core-stages-4-8` → main) is
+open and mergeable; NOT merged. Claude-OS is running the app at `v0.5.0-173-geb005c6`
+(`~/twr-gate/thewarroom-s8`, sha256 fa57a0ac…), the gate DB at dynasty.discount 0.85, board #11,
+model run #8. Nothing else running. Next actions are Christopher's (§4); Claude's, after his go:
+1. When Christopher has tested: merge PR #7 only on his explicit go-ahead.
+2. Rewrite the README's "How It Gets Built" section with him (it still credits the retired
+   GLM/Gemini/DeepSeek/Ornith council).
 
 ## 1. What we are doing
 - Christopher's goal (2026-10-03 night): work through Stages 4–8 without him. Do not merge to
@@ -28,7 +17,7 @@ lastRegularSeasonWeek; team column min 150 px). Nothing running; Claude-OS is up
 - **Branch:** `session/core-stages-4-8` (cut from `session/week9-checkpoint`, which holds the
   Claude-OS CLAUDE.md change). One PR at the end; per-stage gate records in the plan.
 - **Go:** `export PATH=/usr/local/go/bin:$HOME/go/bin:$PATH GOMEMLIMIT=1500MiB`
-- **Gates:** `make lint`, `make verify`. Bloat baseline now comment 15, provenance 3, tiny 24, dupl 11.
+- **Gates:** `make lint`, `make verify`. Bloat baseline now comment 13, provenance 0, tiny 22, dupl 0.
 
 ## 2. Status
 | Stage | State |
@@ -37,7 +26,7 @@ lastRegularSeasonWeek; team column min 150 px). Nothing running; Claude-OS is up
 | 5 Rubric as data | DONE, gate PASS. 1159105 (routine), 17efc6c (Madden out), 6719a69 (assembly twins, CFBD season fix). Gate record in the plan. |
 | 6 Fit | DONE, gate PASS. 835f3df (model, fit, cmd/fit), 58f71c5 (holdout rule + real fit), 0548566 (Admin filter), e8ef223 (reproducible), fb87530 (gate record; model under depguard purity). Athleticism × age tested and rejected (R6-9). |
 | 7 Measurables | DONE, gate PASS (holdout: talent 9/10, value even, rookies model-only; kickers fail, recorded). 8cbe2b7…7fe4ab1. |
-| 8 M2 | — |
+| 8 M2 | DONE, gate PASS (v0.5.0-172/173). 21719e4, 372c856, ce690b5 (results named by what the blend read), 5eb0e1b (column gap, name floors), eb005c6 (runs record only their own params), 4daf45f (gate record R8-1…R8-6). |
 
 ## 3. Environment
 - Claude-OS: `ssh claudeos` (localhost:2222 via passt). Leave it running. The app under test is
@@ -54,12 +43,14 @@ lastRegularSeasonWeek; team column min 150 px). Nothing running; Claude-OS is up
 - Scratch: `~/scratch/twr-stage4/` (real-data backfill test `scratch_backfill_test.go`, tag
   `scratch`, plus a full 2021–2026 history db at `db/history.db` for fitting work).
 
-## 4. Morning items for Christopher (collect here)
-- Set the dynasty horizon in Control → Engine Admin: `dynasty.seasons` (5) and
-  `dynasty.discount` (0.85). They are his product calls (how much later seasons count).
-- CFBD key: Score League no longer fetches college stats live (R7-9); with a key only school
-  tier calls CFBD. Safe to set now.
-- M2 "FINAL" mid-season and all-play 0-0: FIXED in 372c856 (phase from MFL standings; MFL reports no all-play for this league, so the blend reads points for). Christopher may want to enable all-play in the MFL league settings.
+## 4. Morning items for Christopher (in PR #7 too)
+1. Test on Claude-OS (app already running there): M1 Assets (Now / Dyn columns), M2 Pulse
+   (This season / The franchise), Control → Engine Admin (filter "dynasty").
+2. Decide the dynasty horizon: `dynasty.seasons` (5) and `dynasty.discount` (0.85).
+3. Set the CFBD key on the Beelink (safe now: only school tier calls CFBD, R7-9).
+4. Optional: turn on all-play in the MFL league settings (the blend reads points for until then).
+5. Merge go-ahead for PR #7, then the README rewrite together.
+- Periphery note: the Transact roster pane is narrower than its table (status and salary scroll).
 
 ## 5b. Stage 6/7 working notes
 - Scale: within-position percentile of league fantasy points per game played, among the
