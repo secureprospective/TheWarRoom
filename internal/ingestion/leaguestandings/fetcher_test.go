@@ -47,8 +47,8 @@ func TestRawStanding_Validate(t *testing.T) {
 func TestFlatten_MapsFields(t *testing.T) {
 	env := standingsEnvelope{}
 	env.LeagueStandings.Franchise = []franchiseStanding{
-		{ID: "0001", H2HW: "10", H2HL: "3", AllPlayW: "421", PF: "1850.5", Pwr: "48.2", AltPwr: "87.0", Salary: "250"},
-		{ID: "0002", H2HW: "12", H2HL: "1", AllPlayW: "438", PF: "1990.1", Pwr: "51.0", AltPwr: "86.0", Salary: "260"},
+		{ID: "0001", H2HW: "10", H2HL: "3", AllPlay: "421-106-0", PF: "1850.5", Pwr: "48.2", AltPwr: "87.0", Salary: "250"},
+		{ID: "0002", H2HW: "12", H2HL: "1", AllPlay: "438-89-0", PF: "1990.1", Pwr: "51.0", AltPwr: "86.0", Salary: "260"},
 	}
 
 	got, err := flatten(env)
@@ -78,7 +78,7 @@ func TestFlatten_MalformedFailsLoud(t *testing.T) {
 // export with exactly one franchise arrives as a BARE OBJECT, not a one-element
 // array. MFLList must still decode it as a single-element slice.
 func TestDecode_SingleElementCollapse(t *testing.T) {
-	const body = `{"leagueStandings":{"franchise":{"id":"0001","h2hw":"10","pf":"1850.5","all_play_w":"421"}}}`
+	const body = `{"leagueStandings":{"franchise":{"id":"0001","h2hw":"10","pf":"1850.5","all_play_wlt":"421-106-0"}}}`
 	var env standingsEnvelope
 	if err := json.Unmarshal([]byte(body), &env); err != nil {
 		t.Fatalf("decode single-franchise standings: %v", err)
@@ -87,7 +87,24 @@ func TestDecode_SingleElementCollapse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("flatten: %v", err)
 	}
-	if len(got) != 1 || got[0].FranchiseID != "0001" || got[0].AllPlayW != "421" {
+	if len(got) != 1 || got[0].FranchiseID != "0001" || got[0].AllPlayW != "421" || got[0].AllPlayL != "106" {
 		t.Fatalf("single-element collapse not handled: %+v", got)
+	}
+}
+
+// TestParseReadsMFLsAllPlayRecord uses a franchise row as MFL sent it (2026-10-04): all-play is
+// one "W-L-T" field, and a malformed one fails the fetch rather than reading 0-0.
+func TestParseReadsMFLsAllPlayRecord(t *testing.T) {
+	const body = `{"leagueStandings":{"franchise":[{"id":"0032","h2hwlt":"3-0-0","h2hw":"3","h2hl":"0",` +
+		`"h2ht":"0","pf":"848.05","all_play_wlt":"89-4-0","all_play_pct":".957","salary":"$117.41"}]}}`
+	got, err := Parse([]byte(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r := got[0]; r.AllPlayW != "89" || r.AllPlayL != "4" || r.AllPlayT != "0" {
+		t.Fatalf("all-play read as %s-%s-%s, want 89-4-0", r.AllPlayW, r.AllPlayL, r.AllPlayT)
+	}
+	if _, err := Parse([]byte(`{"leagueStandings":{"franchise":[{"id":"0001","all_play_wlt":"89-4"}]}}`)); err == nil {
+		t.Fatal("a W-L record without ties must fail")
 	}
 }

@@ -169,6 +169,17 @@ func (m *Mirror) Season() int {
 	return m.snap.Season
 }
 
+// DeadCap is each franchise's net salary adjustments: the dead cap MFL charges, less any credits.
+func (m *Mirror) DeadCap() map[string]domain.Money {
+	m.wmu.Lock()
+	defer m.wmu.Unlock()
+	out := map[string]domain.Money{}
+	for _, a := range m.snap.Adjustments {
+		out[a.FranchiseID] += a.Amount
+	}
+	return out
+}
+
 // Rosters returns the mirror as per-franchise records, so it can seed a what-if Store.
 func (m *Mirror) Rosters(_ context.Context) ([]domain.Roster, error) {
 	m.wmu.Lock()

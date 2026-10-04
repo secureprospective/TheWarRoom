@@ -52,6 +52,9 @@ func TestMirrorCapFollowsMFLAndRefreshIsIdempotent(t *testing.T) {
 			t.Errorf("CapUsed(%s) = %d, %t; want %d", fid, got, ok, want)
 		}
 	}
+	if dc := m.DeadCap(); len(dc) != 2 || dc["0002"] != 2*capUnit || dc["0003"] != -1*capUnit {
+		t.Errorf("DeadCap = %v, want 0002 charged 2 and 0003 credited 1", dc)
+	}
 	if p, ok := r.Player("0042"); !ok || p.FranchiseID != "0002" || p.CapSalary != 6*capUnit {
 		t.Errorf("Player(0042) = %+v, %t", p, ok)
 	}

@@ -6,7 +6,7 @@ import (
 )
 
 func TestBlendEmpty(t *testing.T) {
-	rows, err := Blend(nil, DefaultRosterWeight)
+	rows, err := Blend(nil, Weights{Roster: DefaultRosterWeight})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -27,7 +27,7 @@ func TestBlendZScoreAndOrder(t *testing.T) {
 		{FranchiseID: "0001", RosterValue: 0, Performance: 1.0},   // B: roster low, perf high
 	}
 
-	rows, err := Blend(in, DefaultRosterWeight)
+	rows, err := Blend(in, Weights{Roster: DefaultRosterWeight})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -60,7 +60,7 @@ func TestBlendWeightClamp(t *testing.T) {
 		{FranchiseID: "0002", RosterValue: 20, Performance: 0.8},
 	}
 	// w=1.5 clamps to 1.0 → pure roster value → 0002 (higher roster) leads at display 1.0.
-	rows, err := Blend(in, 1.5)
+	rows, err := Blend(in, Weights{Roster: 1.5})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -68,7 +68,7 @@ func TestBlendWeightClamp(t *testing.T) {
 		t.Fatalf("w>1 should clamp to pure roster value; got %s @ %v", rows[0].FranchiseID, rows[0].PowerScore)
 	}
 	// w=-1 clamps to 0 → pure all-play (0002 also higher there).
-	rows, err = Blend(in, -1)
+	rows, err = Blend(in, Weights{Roster: -1})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestBlendDegenerateComponent(t *testing.T) {
 		{FranchiseID: "0001", RosterValue: 0, Performance: 0},
 		{FranchiseID: "0002", RosterValue: 100, Performance: 0},
 	}
-	rows, err := Blend(in, 0.60)
+	rows, err := Blend(in, Weights{Roster: 0.60})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -107,7 +107,7 @@ func TestBlendTieBreakDeterministic(t *testing.T) {
 		{FranchiseID: "0001", RosterValue: 5, Performance: 0.5},
 		{FranchiseID: "0002", RosterValue: 5, Performance: 0.5},
 	}
-	rows, err := Blend(in, 0.60)
+	rows, err := Blend(in, Weights{Roster: 0.60})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestBlendRejectsNonFinite(t *testing.T) {
 		{FranchiseID: "0001", RosterValue: 1, Performance: math.NaN()},
 	}
 	for i, c := range cases {
-		if _, err := Blend([]Input{c}, 0.60); err == nil {
+		if _, err := Blend([]Input{c}, Weights{Roster: 0.60}); err == nil {
 			t.Fatalf("case %d: want error for non-finite/out-of-range input, got nil", i)
 		}
 	}
@@ -143,7 +143,7 @@ func TestBlendNonFiniteWeightFallsBack(t *testing.T) {
 		{FranchiseID: "0002", RosterValue: 20, Performance: 0.8},
 	}
 	for _, w := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
-		rows, err := Blend(in, w)
+		rows, err := Blend(in, Weights{Roster: w})
 		if err != nil {
 			t.Fatalf("w=%v: unexpected error: %v", w, err)
 		}
@@ -190,5 +190,41 @@ func TestMedianEvenOdd(t *testing.T) {
 	}
 	if got := median([]float64{4, 1, 3, 2}); got != 2.5 {
 		t.Fatalf("even median = %v, want 2.5", got)
+	}
+}
+
+func TestBlendAgeCountsAgainstAnOlderRoster(t *testing.T) {
+	in := []Input{
+		{FranchiseID: "0001", RosterValue: 50, Age: 29},
+		{FranchiseID: "0002", RosterValue: 50, Age: 25},
+		{FranchiseID: "0003", RosterValue: 50, Age: math.NaN()},
+	}
+	rows, err := Blend(in, Weights{Roster: 1, Age: FranchiseAgeWeight})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rows[0].FranchiseID != "0002" || rows[2].FranchiseID != "0001" {
+		t.Fatalf("want the young roster first and the old one last, got %s %s %s",
+			rows[0].FranchiseID, rows[1].FranchiseID, rows[2].FranchiseID)
+	}
+	if rows[1].AgeZ != 0 {
+		t.Fatalf("an unknown age must count as the league's average, got z %v", rows[1].AgeZ)
+	}
+	flat, err := Blend(in, Weights{Roster: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if flat[0].PowerScore != flat[2].PowerScore {
+		t.Fatal("with no age weight, equal rosters must score the same")
+	}
+}
+
+func TestClampWeight(t *testing.T) {
+	for _, c := range []struct{ in, want float64 }{
+		{0.5, 0.5}, {-1, 0}, {2, 1}, {math.NaN(), DefaultRosterWeight}, {math.Inf(1), DefaultRosterWeight},
+	} {
+		if got := ClampWeight(c.in); got != c.want {
+			t.Errorf("ClampWeight(%v) = %v, want %v", c.in, got, c.want)
+		}
 	}
 }

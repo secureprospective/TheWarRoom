@@ -10,17 +10,16 @@ import {
   DeltaRank,
 } from "./board/primitives";
 
-// DEFAULT_ROSTER_WEIGHT mirrors Go's powerrankings.DefaultRosterWeight (0.60).
-// Kept in sync by hand — the Go const is the source of truth; if it moves, move this.
-const DEFAULT_ROSTER_WEIGHT = 0.6;
-
 // PowerRankingsBoard is the M2 module view: the 32 franchises ranked in one of two views.
-// This season sums each roster's on-field-now (league points per game) and blends its z-score
-// with the season's results at a free 0–100% weight (default 60/40): MFL's all-play record when
-// the league reports it, otherwise points for as a share of the league's best. The franchise sums each
-// roster's dynasty value and ranks on the roster alone. Values come from the latest model run;
-// Δ is each team's move since the board built from the previous one. The roster aggregates as
-// the full sum or the top-N starters. MFL's report columns come with the same standings call.
+// This season counts each roster's on-field-now (league points per game) and blends its z-score
+// with the season's results: MFL's all-play record when the league reports it, otherwise points
+// for as a share of the league's best. The roster's weight follows the weeks played (Auto: 4 ÷
+// (4 + weeks)) until the slider sets it. The franchise counts each roster's dynasty value, with an
+// older roster counting against it. The roster counts as the lineup the league's rules allow
+// (this season's default), the top N by value, or the whole roster (the franchise's default).
+// Values come from the latest model run; Δ is each team's move since the board built from the
+// previous one. Age, Proj, Luck and Cap room are context: they never enter the score. MFL's
+// report columns come with the same standings call.
 
 type SortKey =
   | "rank"
@@ -31,11 +30,34 @@ type SortKey =
   | "pa"
   | "pp"
   | "pwr"
-  | "altPwr";
+  | "altPwr"
+  | "age"
+  | "proj"
+  | "luck"
+  | "capRoom";
 
-// Tactical carries the full MFL report; Matrix collapses to the blend essentials.
+// Tactical carries the context and the full MFL report; Matrix collapses to the blend essentials.
 const COLS =
-  "34px 40px minmax(150px, 1fr) 88px 70px 66px 74px 66px 66px 58px 58px 58px 66px 60px";
+  "34px 40px minmax(150px, 1fr) 88px 70px 66px 74px 52px 76px 56px 72px 66px 66px 58px 58px 58px 66px 60px";
+
+// AGG labels the three roster counts, keyed by m2service's Agg* values.
+const AGG: { mode: string; label: (n: number) => string; tip: string }[] = [
+  {
+    mode: "lineup",
+    label: () => "Lineup",
+    tip: "The best lineup the league's starter rules allow",
+  },
+  {
+    mode: "topn",
+    label: (n) => `Top ${n || "N"} by value`,
+    tip: "The most valuable players, whatever their positions",
+  },
+  {
+    mode: "sum",
+    label: () => "Whole roster",
+    tip: "Every rostered player, bench included",
+  },
+];
 const COLS_MTX = "24px 36px minmax(120px, 1fr) 76px 62px 70px";
 
 // RESULTS names the result the season blend read, keyed by m2service's Perf* values.
@@ -66,7 +88,9 @@ const RESULTS: Record<
 export function PowerRankingsBoard() {
   const powerRankings = useAppStore((s) => s.powerRankings);
   const powerWeight = useAppStore((s) => s.powerWeight);
+  const powerAuto = useAppStore((s) => s.powerAuto);
   const powerAgg = useAppStore((s) => s.powerAgg);
+  const powerAggChoice = useAppStore((s) => s.powerAggChoice);
   const powerView = useAppStore((s) => s.powerView);
   const powerLoading = useAppStore((s) => s.powerLoading);
   const error = useAppStore((s) => s.error);
@@ -86,7 +110,12 @@ export function PowerRankingsBoard() {
   const lastApplied = useRef(powerWeight);
 
   useEffect(() => {
-    void loadPowerRankings(powerWeight, powerAgg, powerView);
+    void loadPowerRankings(
+      powerWeight,
+      powerAuto,
+      powerAggChoice[powerView] ?? "",
+      powerView,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadPowerRankings]);
 
@@ -107,26 +136,31 @@ export function PowerRankingsBoard() {
       .sort((a, b) => (getSortVal(a, sortKey) - getSortVal(b, sortKey)) * dir);
   }, [rows, sortKey, asc]);
 
-  // applyWeight commits the current slider on release. It skips a redundant fetch
-  // when the value hasn't changed (a no-op click on the track), and clears the
-  // interacting flag so the echo-sync can resume.
+  // applyWeight commits the current slider on release, which turns Auto off. It
+  // skips a redundant fetch when the value hasn't changed (a no-op click on the
+  // track), and clears the interacting flag so the echo-sync can resume.
   const applyWeight = () => {
     interacting.current = false;
     if (slider === lastApplied.current) return;
     lastApplied.current = slider;
-    void loadPowerRankings(slider, powerAgg, powerView);
+    void loadPowerRankings(slider, false, powerAgg, powerView);
   };
 
-  // setAgg re-fetches at the CURRENTLY-APPLIED weight with the new aggregation.
+  // setAgg re-fetches at the CURRENTLY-APPLIED weight with the new roster count.
   const setAgg = (mode: string) => {
     if (mode === powerAgg) return;
-    void loadPowerRankings(lastApplied.current, mode, powerView);
+    void loadPowerRankings(lastApplied.current, powerAuto, mode, powerView);
   };
 
-  // setView switches between this season and the franchise at the season slider's weight.
+  // setView switches between this season and the franchise, each with its own roster count.
   const setView = (view: string) => {
     if (view === powerView) return;
-    void loadPowerRankings(lastApplied.current, powerAgg, view);
+    void loadPowerRankings(
+      lastApplied.current,
+      powerAuto,
+      powerAggChoice[view] ?? "",
+      view,
+    );
   };
 
   const onSort = (key: SortKey) => {
@@ -136,7 +170,7 @@ export function PowerRankingsBoard() {
       setSortKey(key);
       // Rank and PA are "lower is better" → ascending; every other metric is
       // "higher is better" → descending.
-      setAsc(key === "rank" || key === "pa");
+      setAsc(key === "rank" || key === "pa" || key === "age");
     }
   };
   const dir = asc ? "asc" : "desc";
@@ -187,7 +221,7 @@ export function PowerRankingsBoard() {
         cannot move the scale;{" "}
         {powerView === "season"
           ? `this season blends it with MFL's ${results.banner}, then scales 0–1.`
-          : "the franchise ranks on the roster alone, scaled 0–1."}{" "}
+          : "the franchise ranks on the roster's dynasty value, an older roster counting against it at half the roster's weight, then scales 0–1."}{" "}
         Roster z of 0 = a typical team.
       </div>
 
@@ -228,25 +262,22 @@ export function PowerRankingsBoard() {
         >
           Roster
         </span>
-        <button
-          type="button"
-          className={`twr-chip${powerAgg === "sum" ? " is-on" : ""}`}
-          aria-pressed={powerAgg === "sum"}
-          onClick={() => setAgg("sum")}
-        >
-          Roster sum
-        </button>
-        <button
-          type="button"
-          className={`twr-chip${powerAgg === "topn" ? " is-on" : ""}`}
-          aria-pressed={powerAgg === "topn"}
-          onClick={() => setAgg("topn")}
-        >
-          Top-{powerRankings?.starterN || "N"} starters
-        </button>
+        {AGG.map((a) => (
+          <button
+            key={a.mode}
+            type="button"
+            title={a.tip}
+            className={`twr-chip${powerAgg === a.mode ? " is-on" : ""}`}
+            aria-pressed={powerAgg === a.mode}
+            onClick={() => setAgg(a.mode)}
+          >
+            {a.label(powerRankings?.starterN ?? 0)}
+          </button>
+        ))}
       </div>
 
-      {/* Weight control: free 0–100% roster-value weight, fires on release. This season only. */}
+      {/* Weight control: Auto follows the weeks played; the slider (fires on release) overrides
+          it. This season only. */}
       {powerView === "season" && (
         <div
           className="twr-panel"
@@ -269,6 +300,8 @@ export function PowerRankingsBoard() {
           >
             roster {(slider * 100).toFixed(0)}% / {results.short}{" "}
             {((1 - slider) * 100).toFixed(0)}%
+            {powerAuto &&
+              ` · auto: 4 ÷ (4 + ${powerRankings?.weeksScored ?? 0} weeks played)`}
           </span>
           <input
             type="range"
@@ -288,19 +321,21 @@ export function PowerRankingsBoard() {
           />
           <button
             type="button"
-            className="twr-chip"
+            className={`twr-chip${powerAuto ? " is-on" : ""}`}
+            aria-pressed={powerAuto}
+            title="The roster's weight shrinks as weeks are played: 80% after week 1, 50% after week 4"
             onClick={() => {
+              if (powerAuto) return;
               interacting.current = false;
-              setSlider(DEFAULT_ROSTER_WEIGHT);
-              lastApplied.current = DEFAULT_ROSTER_WEIGHT;
               void loadPowerRankings(
-                DEFAULT_ROSTER_WEIGHT,
+                lastApplied.current,
+                true,
                 powerAgg,
                 powerView,
               );
             }}
           >
-            Reset 60/40
+            Auto
           </button>
         </div>
       )}
@@ -379,6 +414,54 @@ export function PowerRankingsBoard() {
                 onSort={onSort}
               />
             </span>
+            <span
+              className="twr-r twr-hide-mtx"
+              title="The counted players' age, weighted by value: context only, except in the franchise view"
+            >
+              <SortHeader
+                label="Age"
+                sortKey="age"
+                activeKey={sortKey}
+                dir={dir}
+                onSort={onSort}
+              />
+            </span>
+            <span
+              className="twr-r twr-hide-mtx"
+              title="Projected regular-season record: wins so far plus each remaining game's win chance. Context only"
+            >
+              <SortHeader
+                label="Proj"
+                sortKey="proj"
+                activeKey={sortKey}
+                dir={dir}
+                onSort={onSort}
+              />
+            </span>
+            <span
+              className="twr-r twr-hide-mtx"
+              title="Head-to-head wins above what the all-play rate would have earned: schedule luck. Context only"
+            >
+              <SortHeader
+                label="Luck"
+                sortKey="luck"
+                activeKey={sortKey}
+                dir={dir}
+                onSort={onSort}
+              />
+            </span>
+            <span
+              className="twr-r twr-hide-mtx"
+              title="Cap room: the cap less what MFL charges, dead cap included. Context only"
+            >
+              <SortHeader
+                label="Cap room"
+                sortKey="capRoom"
+                activeKey={sortKey}
+                dir={dir}
+                onSort={onSort}
+              />
+            </span>
             <span className="twr-r twr-hide-mtx">Record</span>
             <span className="twr-r twr-hide-mtx">AllPlay</span>
             <span className="twr-r twr-hide-mtx">
@@ -443,6 +526,25 @@ export function PowerRankingsBoard() {
                 {(r.results * 100).toFixed(1)}%
               </span>
               <span className="twr-c-num twr-r twr-hide-mtx">
+                {r.age > 0 ? r.age.toFixed(1) : "—"}
+              </span>
+              <span className="twr-c-num twr-r twr-hide-mtx">
+                {r.hasProj
+                  ? `${r.projW.toFixed(1)}-${r.projL.toFixed(1)}`
+                  : "—"}
+              </span>
+              <span className="twr-c-num twr-r twr-hide-mtx">
+                {r.hasLuck
+                  ? `${r.luck > 0 ? "+" : ""}${r.luck.toFixed(1)}`
+                  : "—"}
+              </span>
+              <span
+                className="twr-c-num twr-r twr-hide-mtx"
+                title={r.hasCap ? `dead cap $${r.deadCap.toFixed(2)}M` : ""}
+              >
+                {r.hasCap ? `$${r.capRoom.toFixed(1)}M` : "—"}
+              </span>
+              <span className="twr-c-num twr-r twr-hide-mtx">
                 {r.h2hW}-{r.h2hL}
                 {r.h2hT > 0 ? `-${r.h2hT}` : ""}
               </span>
@@ -496,6 +598,14 @@ function getSortVal(r: main.PowerRow, key: SortKey): number {
       return r.pwr;
     case "altPwr":
       return r.altPwr;
+    case "age":
+      return r.age > 0 ? r.age : Number.MAX_VALUE;
+    case "proj":
+      return r.hasProj ? r.projW : -1;
+    case "luck":
+      return r.hasLuck ? r.luck : -Number.MAX_VALUE;
+    case "capRoom":
+      return r.hasCap ? r.capRoom : -Number.MAX_VALUE;
     default:
       return r.rank;
   }

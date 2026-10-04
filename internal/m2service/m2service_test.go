@@ -7,6 +7,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
+	"github.com/secureprospective/TheWarRoom/internal/powerrankings"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -15,6 +16,7 @@ import (
 // internal/transactions/pricing_test.go's fakeReader).
 type fakeReader struct {
 	players map[string]state.PlayerState // mflID -> state
+	capUsed map[string]domain.Money      // franchise -> cap charged
 }
 
 func (f fakeReader) Franchises() []string                      { return nil }
@@ -22,7 +24,10 @@ func (f fakeReader) Roster(string) ([]state.PlayerState, bool) { return nil, fal
 func (f fakeReader) FranchiseState(string) (state.FranchiseState, bool) {
 	return state.FranchiseState{}, false
 }
-func (f fakeReader) CapUsed(string) (domain.Money, bool) { return 0, false }
+func (f fakeReader) CapUsed(fid string) (domain.Money, bool) {
+	m, ok := f.capUsed[fid]
+	return m, ok
+}
 func (f fakeReader) Player(mflID string) (state.PlayerState, bool) {
 	p, ok := f.players[mflID]
 	return p, ok
@@ -32,12 +37,18 @@ func (f fakeReader) Player(mflID string) (state.PlayerState, bool) {
 type fakeRulebook struct {
 	names        map[string]string
 	starterCount string
+	starters     *league.Starters // the full rules; nil gives only the count
+	cap          string
 }
 
 func (f fakeRulebook) FranchiseNames() map[string]string { return f.names }
 func (f fakeRulebook) ActiveConfig() league.RawConfig {
+	if f.starters != nil {
+		return league.RawConfig{Starters: *f.starters}
+	}
 	return league.RawConfig{Starters: league.Starters{Count: f.starterCount}}
 }
+func (f fakeRulebook) GetSalaryCap() string { return f.cap }
 
 func TestNew_NilDependency(t *testing.T) {
 	if _, err := New(nil, fakeRulebook{}); err == nil {
@@ -73,7 +84,7 @@ func TestBuildBoard_AggregatesBlendsAndJoins(t *testing.T) {
 		score("1003", 200),
 	}
 
-	board, err := svc.BuildBoard(standings, scores, 0.5, "sum")
+	board, err := svc.BuildBoard(standings, scores, powerrankings.Weights{Roster: 0.5}, "sum")
 	if err != nil {
 		t.Fatalf("BuildBoard: %v", err)
 	}
@@ -140,7 +151,7 @@ func TestBuildBoard_ResultsFallBackFromAllPlayToPointsFor(t *testing.T) {
 			PerfNone, map[string]float64{"0001": 0, "0002": 0}},
 	}
 	for _, c := range cases {
-		board, err := svc.BuildBoard(c.standings, nil, 0.6, AggSum)
+		board, err := svc.BuildBoard(c.standings, nil, powerrankings.Weights{Roster: 0.6}, AggSum)
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -174,7 +185,7 @@ func TestBuildBoard_FranchiseWithNoScoresContributesZero(t *testing.T) {
 	}
 	scores := []PlayerValue{score("1001", 100)}
 
-	board, err := svc.BuildBoard(standings, scores, 0.5, AggSum)
+	board, err := svc.BuildBoard(standings, scores, powerrankings.Weights{Roster: 0.5}, AggSum)
 	if err != nil {
 		t.Fatalf("BuildBoard: %v", err)
 	}
@@ -197,7 +208,7 @@ func TestBuildBoard_EmptyInputsAreNoOps(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	board, err := svc.BuildBoard(nil, nil, 0.5, AggSum)
+	board, err := svc.BuildBoard(nil, nil, powerrankings.Weights{Roster: 0.5}, AggSum)
 	if err != nil {
 		t.Fatalf("BuildBoard(empty): %v", err)
 	}
@@ -217,7 +228,7 @@ func TestBuildBoard_UnmappedFranchiseFallsBackToLabeledID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	board, err := svc.BuildBoard([]leaguestandings.RawStanding{{FranchiseID: "0099"}}, nil, 0.5, AggSum)
+	board, err := svc.BuildBoard([]leaguestandings.RawStanding{{FranchiseID: "0099"}}, nil, powerrankings.Weights{Roster: 0.5}, AggSum)
 	if err != nil {
 		t.Fatalf("BuildBoard: %v", err)
 	}
@@ -238,7 +249,7 @@ func TestBuildBoard_TopNDegradesToSumWithoutStarterCount(t *testing.T) {
 	standings := []leaguestandings.RawStanding{{FranchiseID: "0001"}}
 	scores := []PlayerValue{score("1001", 42)}
 
-	board, err := svc.BuildBoard(standings, scores, 0.5, AggTopN)
+	board, err := svc.BuildBoard(standings, scores, powerrankings.Weights{Roster: 0.5}, AggTopN)
 	if err != nil {
 		t.Fatalf("BuildBoard: %v", err)
 	}
@@ -250,23 +261,57 @@ func TestBuildBoard_TopNDegradesToSumWithoutStarterCount(t *testing.T) {
 	}
 }
 
-func TestAggregate(t *testing.T) {
-	scores := []float64{10, 30, 20}
-	if got := aggregate(scores, AggSum, 0); got != 60 {
-		t.Errorf("sum = %v, want 60", got)
+func TestCountByMode(t *testing.T) {
+	vals := []PlayerValue{
+		{Position: "QB", Value: 10, Age: 30}, {Position: "QB", Value: 30, Age: 24}, {Position: "WR", Value: 20, Age: math.NaN()},
 	}
-	if got := aggregate(scores, AggTopN, 2); got != 50 { // top 2: 30+20
-		t.Errorf("top-2 = %v, want 50", got)
+	rules := powerrankings.LineupRules{Total: 2, Defense: 0, Slots: []powerrankings.Slot{
+		{Position: "QB", Min: 1, Max: 1}, {Position: "WR", Min: 1, Max: 2}}}
+	for _, c := range []struct {
+		mode       string
+		value, age float64
+	}{
+		{AggSum, 60, (10*30 + 30*24) / 40.0},
+		{AggTopN, 50, 24},   // top 2 by value: QB 30 and WR 20, whose age is unknown
+		{AggLineup, 50, 24}, // one QB may start: QB 30 and WR 20
+	} {
+		value, age := counter{mode: c.mode, rules: rules}.count(vals)
+		if value != c.value || math.Abs(age-c.age) > 1e-9 {
+			t.Errorf("%s: %v at age %v, want %v at %v", c.mode, value, age, c.value, c.age)
+		}
 	}
-	if got := aggregate(scores, AggTopN, 10); got != 60 { // N >= len -> whole roster
-		t.Errorf("top-N(N>=len) = %v, want 60", got)
+	rules.Total = 3
+	rules.Slots[1].Max = 1
+	if value, _ := (counter{mode: AggLineup, rules: rules}).count(vals); value != 50 {
+		t.Errorf("a second QB must not start in the open slot: lineup %v, want 50", value)
 	}
-	// Caller's slice must be untouched by the top-N sort-on-copy.
-	if scores[0] != 10 || scores[1] != 30 || scores[2] != 20 {
-		t.Errorf("aggregate mutated caller slice: %v", scores)
+	if vals[0].Value != 10 || vals[1].Value != 30 {
+		t.Errorf("count reordered the caller's slice: %v", vals)
 	}
-	if got := aggregate(nil, AggSum, 0); got != 0 {
-		t.Errorf("sum(empty) = %v, want 0", got)
+	if _, age := (counter{mode: AggSum}).count(nil); !math.IsNaN(age) {
+		t.Errorf("an empty roster's age = %v, want NaN", age)
+	}
+}
+
+func TestLineupRulesReadMFLsStarters(t *testing.T) {
+	st := league.Starters{Count: "21", IDPStarters: "12", Positions: []league.PositionLimit{
+		{Name: "QB", Limit: "1"}, {Name: "RB", Limit: "1-3"}, {Name: "DT", Limit: "2-4"}}}
+	r, ok := LineupRules(st)
+	if !ok || r.Total != 21 || r.Defense != 12 || len(r.Slots) != 3 {
+		t.Fatalf("rules %+v ok %v", r, ok)
+	}
+	if r.Slots[0] != (powerrankings.Slot{Position: "QB", Min: 1, Max: 1}) ||
+		r.Slots[1] != (powerrankings.Slot{Position: "RB", Min: 1, Max: 3}) {
+		t.Fatalf("bounds misread: %+v", r.Slots)
+	}
+	for _, bad := range []string{"", "x", "3-1", "1-"} {
+		st.Positions[0].Limit = bad
+		if _, ok := LineupRules(st); ok {
+			t.Errorf("limit %q should not read", bad)
+		}
+	}
+	if ResolveAggMode("nope", AggLineup) != AggLineup || ResolveAggMode(AggTopN, AggSum) != AggTopN {
+		t.Error("ResolveAggMode")
 	}
 }
 
@@ -298,24 +343,6 @@ func TestParseStanding_ZeroGamesNeverNaN(t *testing.T) {
 	}
 }
 
-func TestClampWeight(t *testing.T) {
-	cases := []struct {
-		in   float64
-		want float64
-	}{
-		{0.5, 0.5},
-		{-1, 0},
-		{2, 1},
-		{math.NaN(), 0.60}, // DefaultRosterWeight
-		{math.Inf(1), 0.60},
-	}
-	for _, c := range cases {
-		if got := clampWeight(c.in); got != c.want {
-			t.Errorf("clampWeight(%v) = %v, want %v", c.in, got, c.want)
-		}
-	}
-}
-
 func score(mflID string, value float64) PlayerValue {
-	return PlayerValue{MFLID: mflID, Value: value}
+	return PlayerValue{MFLID: mflID, Value: value, Age: math.NaN()}
 }

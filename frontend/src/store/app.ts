@@ -20,8 +20,10 @@ interface AppState {
   params: main.ParamsResult | null;
   rankings: main.RankingsResult | null;
   powerRankings: main.PowerRankingsResult | null;
-  powerWeight: number; // roster-value weight in the 60/40 blend (default 0.60)
-  powerAgg: string; // roster aggregation: 'sum' | 'topn'
+  powerWeight: number; // this season's roster-value weight, as last applied
+  powerAuto: boolean; // the weight follows the weeks played until the slider moves
+  powerAgg: string; // the roster count applied: 'lineup' | 'topn' | 'sum'
+  powerAggChoice: Record<string, string>; // per view; '' = the view's default
   powerView: string; // 'season' (on-field-now, blended) | 'franchise' (dynasty, roster alone)
   powerLoading: boolean;
   scoreReport: main.ScoreLeagueResult | null;
@@ -34,6 +36,7 @@ interface AppState {
   loadRankings: () => Promise<void>;
   loadPowerRankings: (
     weight: number,
+    auto: boolean,
     aggMode: string,
     view: string,
   ) => Promise<void>;
@@ -45,7 +48,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   rankings: null,
   powerRankings: null,
   powerWeight: 0.6,
-  powerAgg: "sum",
+  powerAuto: true,
+  powerAgg: "lineup",
+  powerAggChoice: { season: "", franchise: "" },
   powerView: "season",
   powerLoading: false,
   scoreReport: null,
@@ -100,20 +105,27 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  // loadPowerRankings pulls the M2 board for a view and roster-value weight. It
-  // fetches live MFL standings server-side, so it is the one board with a real
-  // network dependency — powerLoading gates the UI while it runs. The backend echoes
-  // the CLAMPED weight it actually applied; we sync powerWeight to it so the slider
-  // never drifts from the rows.
-  loadPowerRankings: async (weight, aggMode, view) => {
+  // loadPowerRankings pulls the M2 board for a view and roster-value weight, or
+  // with auto the weight the weeks played give. aggMode '' asks for the view's
+  // default count. It fetches live MFL standings server-side, so it is the one
+  // board with a real network dependency — powerLoading gates the UI while it
+  // runs. The backend echoes the weight and count it applied; we sync to them so
+  // the controls never drift from the rows.
+  loadPowerRankings: async (weight, auto, aggMode, view) => {
     const seq = ++powerReqSeq;
-    set({ powerLoading: true, powerView: view, error: "" });
+    set({
+      powerLoading: true,
+      powerView: view,
+      powerAuto: auto,
+      powerAggChoice: { ...get().powerAggChoice, [view]: aggMode },
+      error: "",
+    });
     try {
-      const powerRankings = await GetPowerRankings(weight, aggMode, view);
+      const powerRankings = await GetPowerRankings(weight, auto, aggMode, view);
       if (seq !== powerReqSeq) return; // a newer request superseded this one — drop it
       set({
         powerRankings,
-        // The franchise view is the roster alone (weight 1); keep the season slider's weight.
+        // The franchise view has no slider; keep the season slider's weight.
         powerWeight:
           powerRankings.ok && powerRankings.view === "season"
             ? powerRankings.weight

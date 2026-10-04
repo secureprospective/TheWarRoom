@@ -7,6 +7,7 @@ package m2service
 import (
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,15 +21,17 @@ import (
 
 // Aggregation modes for BuildBoard.
 const (
-	AggSum  = "sum"  // Σ value over the whole roster — rewards depth
-	AggTopN = "topn" // Σ of the top N by value — isolates startable talent
+	AggSum    = "sum"    // Σ value over the whole roster — rewards depth
+	AggTopN   = "topn"   // Σ of the top N by value, whatever their positions
+	AggLineup = "lineup" // Σ of the best lineup the league's starter rules allow
 )
 
-// FranchiseSource supplies the offline rulebook reads BuildBoard needs: franchise names and
-// the starter count.
+// FranchiseSource supplies the offline rulebook reads the board needs: franchise names, the
+// starter rules and the salary cap.
 type FranchiseSource interface {
 	FranchiseNames() map[string]string
 	ActiveConfig() league.RawConfig
+	GetSalaryCap() string
 }
 
 // Service builds the M2 board from read surfaces only.
@@ -54,8 +57,10 @@ type Row struct {
 	PowerScore float64
 	RosterZ    float64
 	MFLPerfZ   float64
+	AgeZ       float64
 
 	RosterValue float64
+	Age         float64 // the counted players' value-weighted age; NaN when none is known
 	Results     float64 // the result the blend read, in [0,1]: all-play win% or points for ÷ the league's best
 
 	H2HW, H2HL, H2HT             int
@@ -63,13 +68,14 @@ type Row struct {
 	PF, PA, PP, Pwr, AltPwr      float64
 }
 
-// Board is the rows plus the mode, starter count and weight actually applied, which the UI
+// Board is the rows plus the mode, starter count and weights actually applied, which the UI
 // echoes back to its controls, and which result the blend's performance side read.
 type Board struct {
 	Rows        []Row
 	Mode        string
 	StarterN    int
 	Weight      float64
+	AgeWeight   float64
 	Performance string // PerfAllPlay, PerfPointsFor, or PerfNone before any result
 }
 
@@ -81,67 +87,118 @@ const (
 	PerfNone      = "none"
 )
 
-// PlayerValue is one player's value in the view being ranked, in league points per game.
+// PlayerValue is one player's value in the view being ranked, in league points per game, with
+// the position he was valued at and his age (NaN when unknown).
 type PlayerValue struct {
-	MFLID string
-	Value float64
+	MFLID    string
+	Position string
+	Value    float64
+	Age      float64
 }
 
-// BuildBoard aggregates each franchise's player values by mode (top-N falls back to sum when the
-// starter count is unreadable), blends them against the MFL standings and joins the display
-// columns.
+// BuildBoard counts each franchise's player values by mode (top-N and the lineup fall back to
+// sum when the starter rules are unreadable), blends them against the MFL standings at the
+// weights and joins the display columns.
 func (s *Service) BuildBoard(
 	standings []leaguestandings.RawStanding,
 	values []PlayerValue,
-	weight float64,
+	wt powerrankings.Weights,
 	aggMode string,
 ) (Board, error) {
-	mode := ResolveAggMode(aggMode)
+	c := s.counter(ResolveAggMode(aggMode, AggLineup))
 
-	starterN := s.starterCount()
-	if mode == AggTopN && starterN <= 0 {
-		mode = AggSum
-	}
-
-	inputs, parsed, perf, err := s.buildBlendInputs(standings, values, mode, starterN)
+	inputs, parsed, perf, err := s.buildBlendInputs(standings, values, c)
 	if err != nil {
 		return Board{}, err
 	}
 
-	blended, err := powerrankings.Blend(inputs, weight)
+	blended, err := powerrankings.Blend(inputs, wt)
 	if err != nil {
 		return Board{}, fmt.Errorf("m2service: blend: %w", err)
 	}
 
 	n := 0
-	if mode == AggTopN {
-		n = starterN
+	if c.mode != AggSum {
+		n = c.rules.Total
 	}
 	return Board{
 		Rows:        s.buildRows(blended, parsed),
-		Mode:        mode,
+		Mode:        c.mode,
 		StarterN:    n,
-		Weight:      clampWeight(weight),
+		Weight:      powerrankings.ClampWeight(wt.Roster),
+		AgeWeight:   wt.Age,
 		Performance: perf,
 	}, nil
 }
 
-// ResolveAggMode defaults an empty or unknown mode to sum. It is exported so the adapter echoes
-// the same resolved mode on its early-error paths.
-func ResolveAggMode(m string) string {
-	if m == AggTopN {
-		return AggTopN
+// ResolveAggMode returns m when it is a known mode, otherwise fallback. It is exported so the
+// adapter echoes the same resolved mode on its early-error paths.
+func ResolveAggMode(m, fallback string) string {
+	switch m {
+	case AggSum, AggTopN, AggLineup:
+		return m
 	}
-	return AggSum
+	return fallback
 }
 
-// starterCount reads the league's starter count; 0 when unset or unparseable.
-func (s *Service) starterCount() int {
-	n, err := strconv.Atoi(strings.TrimSpace(s.rb.ActiveConfig().Starters.Count))
-	if err != nil || n < 0 {
-		return 0
+// counter counts a franchise's players in one mode under the league's starter rules.
+type counter struct {
+	mode  string
+	rules powerrankings.LineupRules
+}
+
+// counter resolves mode against the league's starter rules: top-N needs the starter count and
+// the lineup every position's bounds; either falls back to sum without them.
+func (s *Service) counter(mode string) counter {
+	rules, ok := LineupRules(s.rb.ActiveConfig().Starters)
+	switch {
+	case mode == AggTopN && rules.Total > 0:
+	case mode == AggLineup && ok:
+	default:
+		mode = AggSum
 	}
-	return n
+	return counter{mode: mode, rules: rules}
+}
+
+// LineupRules reads the league's starter rules; ok is false when any bound is unreadable, and
+// Total is 0 when the starter count is.
+func LineupRules(st league.Starters) (powerrankings.LineupRules, bool) {
+	var r powerrankings.LineupRules
+	total, err := strconv.Atoi(strings.TrimSpace(st.Count))
+	if err != nil || total <= 0 {
+		return r, false
+	}
+	r.Total = total
+	def, err := strconv.Atoi(strings.TrimSpace(st.IDPStarters))
+	if err != nil || def < 0 || def > total || len(st.Positions) == 0 {
+		return r, false
+	}
+	r.Defense = def
+	for _, p := range st.Positions {
+		lo, hi, ok := bounds(p.Limit)
+		if !ok {
+			return r, false
+		}
+		r.Slots = append(r.Slots, powerrankings.Slot{Position: p.Name, Min: lo, Max: hi})
+	}
+	return r, true
+}
+
+// bounds parses MFL's "1-3" or "1".
+func bounds(limit string) (lo, hi int, ok bool) {
+	a, b, ranged := strings.Cut(strings.TrimSpace(limit), "-")
+	lo, err := strconv.Atoi(a)
+	if err != nil || lo < 0 {
+		return 0, 0, false
+	}
+	if !ranged {
+		return lo, lo, true
+	}
+	hi, err = strconv.Atoi(b)
+	if err != nil || hi < lo {
+		return 0, 0, false
+	}
+	return lo, hi, true
 }
 
 // buildBlendInputs aggregates values per franchise and parses each standings row once. The
@@ -149,17 +206,9 @@ func (s *Service) starterCount() int {
 func (s *Service) buildBlendInputs(
 	standings []leaguestandings.RawStanding,
 	values []PlayerValue,
-	mode string,
-	starterN int,
+	c counter,
 ) ([]powerrankings.Input, map[string]parsedStanding, string, error) {
-	// Ownership comes from live runtime state, so a player traded since the model run counts for
-	// the current team: the board reads "who is strong now".
-	byFranchise := make(map[string][]float64, len(standings))
-	for _, v := range values {
-		if p, ok := s.state.Player(v.MFLID); ok {
-			byFranchise[p.FranchiseID] = append(byFranchise[p.FranchiseID], v.Value)
-		}
-	}
+	byFranchise := s.byFranchise(values)
 
 	parsed := make(map[string]parsedStanding, len(standings))
 	var allPlayGames, maxPF float64
@@ -182,8 +231,8 @@ func (s *Service) buildBlendInputs(
 	inputs := make([]powerrankings.Input, 0, len(standings))
 	for _, st := range standings {
 		ps := parsed[st.FranchiseID]
-		in := powerrankings.Input{FranchiseID: st.FranchiseID,
-			RosterValue: aggregate(byFranchise[st.FranchiseID], mode, starterN)}
+		value, age := c.count(byFranchise[st.FranchiseID])
+		in := powerrankings.Input{FranchiseID: st.FranchiseID, RosterValue: value, Age: age}
 		switch perf {
 		case PerfAllPlay:
 			in.Performance = ps.allPlayWinPct
@@ -195,20 +244,51 @@ func (s *Service) buildBlendInputs(
 	return inputs, parsed, perf, nil
 }
 
-// aggregate reduces a franchise's values to the full sum (depth) or the sum of the top N
-// (startable talent). It sorts a copy.
-func aggregate(scores []float64, mode string, starterN int) float64 {
-	if mode == AggTopN && starterN > 0 && starterN < len(scores) {
-		cp := make([]float64, len(scores))
-		copy(cp, scores)
-		sort.Sort(sort.Reverse(sort.Float64Slice(cp)))
-		scores = cp[:starterN]
+// byFranchise groups values by current owner. Ownership comes from live runtime state, so a
+// player traded since the model run counts for the current team: the board reads "who is strong
+// now".
+func (s *Service) byFranchise(values []PlayerValue) map[string][]PlayerValue {
+	out := map[string][]PlayerValue{}
+	for _, v := range values {
+		if p, ok := s.state.Player(v.MFLID); ok {
+			out[p.FranchiseID] = append(out[p.FranchiseID], v)
+		}
 	}
-	var sum float64
-	for _, sc := range scores {
-		sum += sc
+	return out
+}
+
+// count is a franchise's value in the counter's mode, and the value-weighted age of the players
+// it counted (NaN when none of them has a known age and positive value). It sorts a copy.
+func (c counter) count(vals []PlayerValue) (value, age float64) {
+	counted := vals
+	switch c.mode {
+	case AggTopN:
+		cp := slices.Clone(vals)
+		sort.SliceStable(cp, func(i, j int) bool { return cp[i].Value > cp[j].Value })
+		counted = cp[:min(c.rules.Total, len(cp))]
+	case AggLineup:
+		cands := make([]powerrankings.Candidate, len(vals))
+		for i, v := range vals {
+			cands[i] = powerrankings.Candidate{Position: v.Position, Value: v.Value}
+		}
+		_, idx := powerrankings.Lineup(cands, c.rules)
+		counted = make([]PlayerValue, len(idx))
+		for i, j := range idx {
+			counted[i] = vals[j]
+		}
 	}
-	return sum
+	var weight, aged float64
+	for _, v := range counted {
+		value += v.Value
+		if !math.IsNaN(v.Age) && v.Value > 0 {
+			weight += v.Value
+			aged += v.Value * v.Age
+		}
+	}
+	if weight == 0 {
+		return value, math.NaN()
+	}
+	return value, aged / weight
 }
 
 // buildRows joins the blended scores with MFL's display columns and the rulebook's names.
@@ -224,7 +304,9 @@ func (s *Service) buildRows(blended []powerrankings.Row, parsed map[string]parse
 			PowerScore:  b.PowerScore,
 			RosterZ:     b.RosterZ,
 			MFLPerfZ:    b.MFLPerfZ,
+			AgeZ:        b.AgeZ,
 			RosterValue: b.RosterValue,
+			Age:         b.Age,
 			Results:     b.Performance,
 			H2HW:        ps.h2hW, H2HL: ps.h2hL, H2HT: ps.h2hT,
 			AllPlayW: ps.allPlayW, AllPlayL: ps.allPlayL, AllPlayT: ps.allPlayT,
@@ -316,12 +398,4 @@ func atofOrZero(s string) (float64, error) {
 		return 0, fmt.Errorf("parse float field %q: %w", s, err)
 	}
 	return f, nil
-}
-
-// clampWeight mirrors Blend's clamp so the echoed weight is the one applied.
-func clampWeight(w float64) float64 {
-	if math.IsNaN(w) || math.IsInf(w, 0) {
-		w = powerrankings.DefaultRosterWeight
-	}
-	return math.Max(0, math.Min(1, w))
 }

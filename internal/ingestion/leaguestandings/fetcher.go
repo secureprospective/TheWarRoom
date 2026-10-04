@@ -18,7 +18,7 @@ import (
 var errEmptyStandings = errors.New("leaguestandings: response contained zero franchises")
 
 // RawStanding is one franchise's standings row, numbers as raw strings. Fields a league does
-// not use (all-play) arrive empty.
+// not use (all-play) arrive empty. MFL sends all-play as one "W-L-T" field; Parse splits it.
 type RawStanding struct {
 	FranchiseID string // "0001"–"0032"
 	H2HW        string // head-to-head wins
@@ -83,21 +83,19 @@ type standingsEnvelope struct {
 }
 
 type franchiseStanding struct {
-	ID       string `json:"id"`
-	H2HW     string `json:"h2hw"`
-	H2HL     string `json:"h2hl"`
-	H2HT     string `json:"h2ht"`
-	AllPlayW string `json:"all_play_w"`
-	AllPlayL string `json:"all_play_l"`
-	AllPlayT string `json:"all_play_t"`
-	PF       string `json:"pf"`
-	PA       string `json:"pa"`
-	AvgPF    string `json:"avgpf"`
-	AvgPA    string `json:"avgpa"`
-	PP       string `json:"pp"`
-	Pwr      string `json:"pwr"`
-	AltPwr   string `json:"altpwr"`
-	Salary   string `json:"salary"`
+	ID      string `json:"id"`
+	H2HW    string `json:"h2hw"`
+	H2HL    string `json:"h2hl"`
+	H2HT    string `json:"h2ht"`
+	AllPlay string `json:"all_play_wlt"` // "89-4-0"; blank when the league has all-play off
+	PF      string `json:"pf"`
+	PA      string `json:"pa"`
+	AvgPF   string `json:"avgpf"`
+	AvgPA   string `json:"avgpa"`
+	PP      string `json:"pp"`
+	Pwr     string `json:"pwr"`
+	AltPwr  string `json:"altpwr"`
+	Salary  string `json:"salary"`
 }
 
 // Export is the MFL export this package reads.
@@ -131,14 +129,18 @@ func Parse(body []byte) ([]RawStanding, error) {
 func flatten(env standingsEnvelope) ([]RawStanding, error) {
 	out := make([]RawStanding, 0, len(env.LeagueStandings.Franchise))
 	for _, f := range env.LeagueStandings.Franchise {
+		w, l, t, err := splitWLT(f.AllPlay)
+		if err != nil {
+			return nil, fmt.Errorf("leaguestandings: franchise %s: %w", f.ID, err)
+		}
 		rs := RawStanding{
 			FranchiseID: f.ID,
 			H2HW:        f.H2HW,
 			H2HL:        f.H2HL,
 			H2HT:        f.H2HT,
-			AllPlayW:    f.AllPlayW,
-			AllPlayL:    f.AllPlayL,
-			AllPlayT:    f.AllPlayT,
+			AllPlayW:    w,
+			AllPlayL:    l,
+			AllPlayT:    t,
 			PF:          f.PF,
 			PA:          f.PA,
 			AvgPF:       f.AvgPF,
@@ -154,4 +156,17 @@ func flatten(env standingsEnvelope) ([]RawStanding, error) {
 		out = append(out, rs)
 	}
 	return out, nil
+}
+
+// splitWLT splits MFL's "W-L-T" record into its three counts; blank stays blank.
+func splitWLT(s string) (w, l, t string, err error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return "", "", "", nil
+	}
+	parts := strings.Split(s, "-")
+	if len(parts) != 3 {
+		return "", "", "", fmt.Errorf("all-play record %q is not W-L-T", s)
+	}
+	return parts[0], parts[1], parts[2], nil
 }
