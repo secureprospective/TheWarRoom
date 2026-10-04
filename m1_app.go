@@ -91,8 +91,7 @@ func (a *App) ScoreLeague() ScoreLeagueResult {
 	if err != nil {
 		return fail(err)
 	}
-	runner, err := rankings.New(a.league.Reader(), lk, scout, a.rulebook, a.history,
-		rankings.Registry(a.rubrics()), buildLabel())
+	runner, err := rankings.New(a.league.Reader(), lk, scout, a.rulebook, a.history, buildLabel())
 	if err != nil {
 		return fail(err)
 	}

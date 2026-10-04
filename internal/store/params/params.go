@@ -130,6 +130,25 @@ func (p Set) GetGlobal(key string) (float64, error) {
 	return v, nil
 }
 
+// GetPosition returns a parameter at a position, "" for a league-wide one. An unknown key or
+// position is an error.
+func (p Set) GetPosition(key, position string) (float64, error) {
+	v, ok := p.values[defKey(key, position)]
+	if !ok {
+		return 0, fmt.Errorf("params: unknown parameter %q at %q", key, position)
+	}
+	return v, nil
+}
+
+// DefaultSet is the shipped defaults with no overrides, as a fresh database holds them.
+func DefaultSet() Set {
+	values := map[string]float64{}
+	for _, d := range defaultParams() {
+		values[defKey(d.Key, d.Position)] = d.Default
+	}
+	return Set{values: values}
+}
+
 // Definitions returns every shipped parameter, sorted, for the admin console and the
 // "still on placeholder defaults" report.
 func (s *Store) Definitions() []ParamDef {

@@ -61,13 +61,6 @@ type ScoutingInput struct {
 	FilmComposite float64 // [0,1], blended upstream
 	HasFilm       bool
 
-	// K film arrives as two components that the kicker rubric blends 0.60/0.40 (DECISION-011).
-	// Other positions ignore them.
-	MaddenFilm       float64 // [0,1] Madden kick power/accuracy
-	HasMaddenFilm    bool
-	NFLProduction    float64 // [0,1] NFL kicking production
-	HasNFLProduction bool
-
 	BreakoutAge    float64 // years
 	HasBreakoutAge bool
 
@@ -95,7 +88,7 @@ type Layer4Output struct {
 	Combined          float64
 }
 
-// Layer4 is the per-position scouting dispatch; each position's rubric implements it.
+// Layer4 is the scouting multiplier for one position.
 type Layer4 interface {
 	Apply(in Layer4Input) Layer4Output
 }

@@ -49,10 +49,6 @@ type History interface {
 	WriteRun(ctx context.Context, nr history.NewRun) (history.Run, bool, error)
 }
 
-// Registry maps a position to its Layer-4 rubric. An unregistered position falls back to
-// identity L4.
-type Registry map[domain.Position]engine.Layer4
-
 // Runner runs scoring passes. It reads league state and writes only scoring runs.
 type Runner struct {
 	state  state.Reader
@@ -60,21 +56,18 @@ type Runner struct {
 	scout  ScoutingDirectory
 	caps   composition.CapReader
 	hist   History
-	reg    Registry
 	engine string
 }
 
 // New wires a Runner. engine is the build label recorded on every run. An empty
 // MapScoutingDirectory is legal (no scouting this pass); a nil one is a wiring error.
 func New(st state.Reader, dir Directory, scout ScoutingDirectory, caps composition.CapReader,
-	hist History, reg Registry, engine string) (*Runner, error) {
-	if st == nil || dir == nil || scout == nil || caps == nil || hist == nil || reg == nil || engine == "" {
-		// A nil Registry would score every position as identity L4; an empty Registry{} is a
-		// deliberate choice and allowed.
-		return nil, fmt.Errorf("rankings: missing dependency (state=%t dir=%t scout=%t caps=%t history=%t reg=%t engine=%t)",
-			st != nil, dir != nil, scout != nil, caps != nil, hist != nil, reg != nil, engine != "")
+	hist History, engine string) (*Runner, error) {
+	if st == nil || dir == nil || scout == nil || caps == nil || hist == nil || engine == "" {
+		return nil, fmt.Errorf("rankings: missing dependency (state=%t dir=%t scout=%t caps=%t history=%t engine=%t)",
+			st != nil, dir != nil, scout != nil, caps != nil, hist != nil, engine != "")
 	}
-	return &Runner{state: st, dir: dir, scout: scout, caps: caps, hist: hist, reg: reg, engine: engine}, nil
+	return &Runner{state: st, dir: dir, scout: scout, caps: caps, hist: hist, engine: engine}, nil
 }
 
 // RunSpec is one pass. AsOf bounds the facts read; ages are taken at the start of AsOf's UTC
@@ -129,7 +122,11 @@ func (r *Runner) Run(ctx context.Context, spec RunSpec) (Report, error) {
 		return Report{}, err
 	}
 	asm := composition.New(spec.Params, r.caps)
-	ageDate := spec.AsOf.UTC().Truncate(24 * time.Hour)
+	rubrics, err := asm.Rubrics()
+	if err != nil {
+		return Report{}, fmt.Errorf("rankings: %w", err)
+	}
+	ps := pass{asm: asm, rubrics: rubrics, base: base, ageDate: spec.AsOf.UTC().Truncate(24 * time.Hour)}
 	rep := Report{Season: spec.Season}
 	var scores []history.Score
 	var inputs []playerInput
@@ -139,7 +136,7 @@ func (r *Runner) Run(ctx context.Context, spec RunSpec) (Report, error) {
 			return Report{}, fmt.Errorf("rankings: franchise %q listed but has no roster (store drift)", fid)
 		}
 		for _, p := range roster {
-			sc, in, excl, origin := r.scorePlayer(asm, base, fid, p, ageDate)
+			sc, in, excl, origin := r.scorePlayer(ps, fid, p)
 			if excl != nil {
 				rep.Excluded = append(rep.Excluded, *excl)
 				continue
@@ -214,10 +211,18 @@ const (
 	baseNegative                   // negative season total → floored to 0
 )
 
+// pass is what every player in one run is scored with: the run's params, as an assembler and as
+// rubrics, its base points and the day ages are taken at.
+type pass struct {
+	asm     *composition.Assembler
+	rubrics map[domain.Position]engine.Layer4
+	base    map[string]float64
+	ageDate time.Time
+}
+
 // scorePlayer returns either a score and the inputs it came from, or a user-facing Exclusion,
 // plus where its BasePoints came from.
-func (r *Runner) scorePlayer(asm *composition.Assembler, base map[string]float64, fid string,
-	p state.PlayerState, ageDate time.Time) (history.Score, playerInput, *Exclusion, baseOrigin) {
+func (r *Runner) scorePlayer(ps pass, fid string, p state.PlayerState) (history.Score, playerInput, *Exclusion, baseOrigin) {
 	exclude := func(name, reason string) (history.Score, playerInput, *Exclusion, baseOrigin) {
 		return history.Score{}, playerInput{}, &Exclusion{MFLID: p.MFLID, Name: name, FranchiseID: fid, Reason: reason}, baseReal
 	}
@@ -231,12 +236,12 @@ func (r *Runner) scorePlayer(asm *composition.Assembler, base map[string]float64
 	if !facts.HasBirthdate {
 		return exclude(facts.Name, "missing birthdate — age is a required engine input; a faked age would corrupt L3 decay")
 	}
-	age := yearsBetween(time.Unix(facts.Birthdate, 0).UTC(), ageDate)
+	age := yearsBetween(time.Unix(facts.Birthdate, 0).UTC(), ps.ageDate)
 	if age <= 0 {
 		return exclude(facts.Name, fmt.Sprintf("implausible age %.1f from birthdate — players-DB data error", age))
 	}
 
-	basePts, hasBase := base[p.MFLID]
+	basePts, hasBase := ps.base[p.MFLID]
 	origin := baseReal
 	if !hasBase {
 		origin = baseAbsent
@@ -262,11 +267,11 @@ func (r *Runner) scorePlayer(asm *composition.Assembler, base map[string]float64
 	}
 	spec.Position = composition.ResolveRubricPosition(spec) // no snap share wired → passthrough today
 
-	in, sc, cal, err := asm.Assemble(spec)
+	in, sc, cal, err := ps.asm.Assemble(spec)
 	if err != nil {
 		return exclude(facts.Name, fmt.Sprintf("assemble: %v", err))
 	}
-	res, err := engine.NewPipeline(r.reg[spec.Position]).Score(in, sc, cal)
+	res, err := engine.NewPipeline(ps.rubrics[spec.Position]).Score(in, sc, cal)
 	if err != nil {
 		return exclude(facts.Name, fmt.Sprintf("score: %v", err))
 	}

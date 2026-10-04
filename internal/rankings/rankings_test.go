@@ -114,10 +114,9 @@ func loadBase(t *testing.T, h *history.Store, points map[string]string) {
 }
 
 func testParams(decay float64) params.Set {
-	return params.SetOf(map[string]float64{
-		params.KeyCapTierColdCeiling: 1.2, params.KeyCapTierHotFloor: 4.8, params.KeyLayer3DecayRate: decay,
-		params.KeyCushionGuardRAS: 8, params.KeyCushionGuardReduct: 0.1,
-	})
+	values := params.DefaultSet().Values()
+	values[params.KeyLayer3DecayRate] = decay
+	return params.SetOf(values)
 }
 
 func boardSpec(p params.Set) RunSpec {
@@ -126,7 +125,7 @@ func boardSpec(p params.Set) RunSpec {
 
 func newRunner(t *testing.T, st fakeState, dir fakeDir, scout ScoutingDirectory, h *history.Store) *Runner {
 	t.Helper()
-	r, err := New(st, dir, scout, fakeCap{}, h, Registry{}, "v-test")
+	r, err := New(st, dir, scout, fakeCap{}, h, "v-test")
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -170,12 +169,10 @@ func TestNewRefusesMissingDependencies(t *testing.T) {
 	st, dir := healthyFixture()
 	h, _ := newHistory(t)
 	cases := map[string]func() (*Runner, error){
-		"state":    func() (*Runner, error) { return New(nil, dir, MapScoutingDirectory{}, fakeCap{}, h, Registry{}, "v") },
-		"scouting": func() (*Runner, error) { return New(st, dir, nil, fakeCap{}, h, Registry{}, "v") },
-		"history":  func() (*Runner, error) { return New(st, dir, MapScoutingDirectory{}, fakeCap{}, nil, Registry{}, "v") },
-		// A nil registry would score every position as identity L4.
-		"registry": func() (*Runner, error) { return New(st, dir, MapScoutingDirectory{}, fakeCap{}, h, nil, "v") },
-		"engine":   func() (*Runner, error) { return New(st, dir, MapScoutingDirectory{}, fakeCap{}, h, Registry{}, "") },
+		"state":    func() (*Runner, error) { return New(nil, dir, MapScoutingDirectory{}, fakeCap{}, h, "v") },
+		"scouting": func() (*Runner, error) { return New(st, dir, nil, fakeCap{}, h, "v") },
+		"history":  func() (*Runner, error) { return New(st, dir, MapScoutingDirectory{}, fakeCap{}, nil, "v") },
+		"engine":   func() (*Runner, error) { return New(st, dir, MapScoutingDirectory{}, fakeCap{}, h, "") },
 	}
 	for name, build := range cases {
 		if _, err := build(); err == nil {

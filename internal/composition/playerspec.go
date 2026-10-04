@@ -26,8 +26,8 @@ type PlayerSpec struct {
 	FilmComposite float64 // [0,1]
 	HasFilm       bool
 
-	// K film: the kicker rubric blends these two at a fixed 0.60/0.40 instead of reading
-	// FilmComposite. Other positions leave them unset.
+	// K film: composition blends these two into a kicker's FilmComposite. Other positions leave
+	// them unset.
 	MaddenFilm       float64 // [0,1] Madden kick-rating composite
 	HasMaddenFilm    bool
 	NFLProduction    float64 // [0,1] NFL kicking production

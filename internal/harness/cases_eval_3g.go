@@ -5,7 +5,7 @@ import (
 	"math"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/engine/l4/defense"
+	"github.com/secureprospective/TheWarRoom/internal/engine/l4"
 )
 
 // sl021Blender is the case-3G introspection hook both DL rubrics satisfy: the SL-021 EMA blend
@@ -38,9 +38,9 @@ func eval3G(reg RubricRegistry) (CaseState, string) {
 			de.SL021Alpha(1), de.SL021Alpha(5))
 	}
 	const prev, obs = 0.60, 0.90
-	dtY1 := defense.SL021Blend(prev, obs, dt.SL021Alpha(1))
-	dtY2 := defense.SL021Blend(prev, obs, dt.SL021Alpha(2))
-	deControl := defense.SL021Blend(prev, obs, de.SL021Alpha(1))
+	dtY1 := l4.PassRushBlend(prev, obs, dt.SL021Alpha(1))
+	dtY2 := l4.PassRushBlend(prev, obs, dt.SL021Alpha(2))
+	deControl := l4.PassRushBlend(prev, obs, de.SL021Alpha(1))
 	// Spec FAIL guard: the DE control must NOT produce the DT-dynamic Year-1 value (0.75).
 	if math.Abs(deControl-0.75) < 1e-9 {
 		return StateFail, "DE control produced 0.75 — SL-021 dynamic α wrongly applied to DE"

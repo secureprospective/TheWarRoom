@@ -52,4 +52,4 @@ export function ScoreRookies():Promise<main.RookiesResult>;
 
 export function SetLeagueSettingOverride(arg1:string,arg2:string,arg3:string):Promise<main.SetLeagueSettingResult>;
 
-export function SetParam(arg1:string,arg2:number):Promise<main.SetParamResult>;
+export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetParamResult>;

@@ -790,10 +790,34 @@ export namespace main {
 	        this.toFranchiseID = source["toFranchiseID"];
 	    }
 	}
+	export class ParamView {
+	    key: string;
+	    position: string;
+	    description: string;
+	    default: number;
+	    min: number;
+	    max: number;
+	    value: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ParamView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.key = source["key"];
+	        this.position = source["position"];
+	        this.description = source["description"];
+	        this.default = source["default"];
+	        this.min = source["min"];
+	        this.max = source["max"];
+	        this.value = source["value"];
+	    }
+	}
 	export class ParamsResult {
 	    ok: boolean;
 	    error: string;
-	    params: params.ParamDef[];
+	    params: ParamView[];
 	
 	    static createFrom(source: any = {}) {
 	        return new ParamsResult(source);
@@ -803,7 +827,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ok = source["ok"];
 	        this.error = source["error"];
-	        this.params = this.convertValues(source["params"], params.ParamDef);
+	        this.params = this.convertValues(source["params"], ParamView);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -1516,6 +1540,7 @@ export namespace main {
 	}
 	export class ValidationResult {
 	    ok: boolean;
+	    error: string;
 	    cases: harness.CaseResult[];
 	    summary: harness.Summary;
 	
@@ -1526,6 +1551,7 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ok = source["ok"];
+	        this.error = source["error"];
 	        this.cases = this.convertValues(source["cases"], harness.CaseResult);
 	        this.summary = this.convertValues(source["summary"], harness.Summary);
 	    }
@@ -1547,37 +1573,6 @@ export namespace main {
 		    }
 		    return a;
 		}
-	}
-
-}
-
-export namespace params {
-	
-	export class ParamDef {
-	    Key: string;
-	    Position: string;
-	    Type: string;
-	    Default: number;
-	    Min: number;
-	    Max: number;
-	    IsCalibrated: boolean;
-	    Description: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ParamDef(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Key = source["Key"];
-	        this.Position = source["Position"];
-	        this.Type = source["Type"];
-	        this.Default = source["Default"];
-	        this.Min = source["Min"];
-	        this.Max = source["Max"];
-	        this.IsCalibrated = source["IsCalibrated"];
-	        this.Description = source["Description"];
-	    }
 	}
 
 }

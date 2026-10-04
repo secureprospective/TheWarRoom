@@ -13,6 +13,7 @@ import "github.com/secureprospective/TheWarRoom/internal/store/params"
 type ParamReader interface {
 	GetCapTiers() (params.CapTiers, error)
 	GetGlobal(key string) (float64, error)
+	GetPosition(key, position string) (float64, error)
 }
 
 // CapReader is what composition needs from the rulebook: the cap amount, which MFL encodes as a

@@ -43,7 +43,7 @@ func eval3C(reg RubricRegistry) (CaseState, string) {
 	// (the placeholder identity rubric could not exercise it).
 	kfilm := reg[domain.PosK].Apply(engine.Layer4Input{
 		Player:   engine.PlayerInput{Position: domain.PosK},
-		Scouting: engine.ScoutingInput{MaddenFilm: 0.90, HasMaddenFilm: true, NFLProduction: 0.80, HasNFLProduction: true},
+		Scouting: engine.ScoutingInput{FilmComposite: 0.86, HasFilm: true},
 	})
 	if kfilm.RASEffective != 1.0 {
 		return StateFail, fmt.Sprintf("K RASEffective %.4f with film populated, want exactly 1.0000", kfilm.RASEffective)

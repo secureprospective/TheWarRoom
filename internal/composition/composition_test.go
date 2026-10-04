@@ -31,6 +31,10 @@ func (f fakeParams) GetGlobal(key string) (float64, error) {
 	return f.decay, nil
 }
 
+func (fakeParams) GetPosition(key, position string) (float64, error) {
+	return params.DefaultSet().GetPosition(key, position)
+}
+
 type fakeCap struct{ cap string }
 
 func (f fakeCap) GetSalaryCap() string { return f.cap }

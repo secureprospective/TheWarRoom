@@ -2,11 +2,13 @@ package composition
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine"
+	"github.com/secureprospective/TheWarRoom/internal/engine/l4"
 	"github.com/secureprospective/TheWarRoom/internal/numeric"
 	"github.com/secureprospective/TheWarRoom/internal/scouting"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
@@ -98,28 +100,17 @@ func (a *Assembler) Assemble(s PlayerSpec) (engine.PlayerInput, engine.ScoutingI
 // scouting maps the spec's raw L4 sub-signals into ScoutingInput. Only school tier is
 // normalized here; the position curves belong to the rubric. Absent film is zeroed, as RAS is.
 func (a *Assembler) scouting(s PlayerSpec) engine.ScoutingInput {
-	film := s.FilmComposite
-	if !s.HasFilm {
+	film, hasFilm := s.FilmComposite, s.HasFilm
+	if s.Position == domain.PosK {
+		film, hasFilm = kickerFilm(s)
+	}
+	if !hasFilm {
 		film = 0
-	}
-	// Absent K film components are zeroed too.
-	madden := s.MaddenFilm
-	if !s.HasMaddenFilm {
-		madden = 0
-	}
-	nflProd := s.NFLProduction
-	if !s.HasNFLProduction {
-		nflProd = 0
 	}
 	tierNorm, _ := schoolTierNorm(s.Position, s.SchoolTier)
 	return engine.ScoutingInput{
 		FilmComposite: film,
-		HasFilm:       s.HasFilm,
-
-		MaddenFilm:       madden,
-		HasMaddenFilm:    s.HasMaddenFilm,
-		NFLProduction:    nflProd,
-		HasNFLProduction: s.HasNFLProduction,
+		HasFilm:       hasFilm,
 
 		BreakoutAge:     s.BreakoutAge,
 		HasBreakoutAge:  s.HasBreakoutAge,
@@ -128,6 +119,52 @@ func (a *Assembler) scouting(s PlayerSpec) engine.ScoutingInput {
 		CollegeShare:    s.CollegeShare,
 		HasCollegeShare: s.HasCollegeShare,
 	}
+}
+
+// kickerFilm is a kicker's film composite: 0.60 Madden kick rating and 0.40 NFL kicking
+// production, an absent one neutral. It is present when either is.
+func kickerFilm(s PlayerSpec) (float64, bool) {
+	if !s.HasMaddenFilm && !s.HasNFLProduction {
+		return 0, false
+	}
+	return 0.60*neutralIfAbsent(s.HasMaddenFilm, s.MaddenFilm) +
+		0.40*neutralIfAbsent(s.HasNFLProduction, s.NFLProduction), true
+}
+
+func neutralIfAbsent(has bool, v float64) float64 {
+	if !has {
+		return l4.NeutralNorm
+	}
+	return v
+}
+
+// Rubrics returns each position's Layer-4 rubric: the shipped settings with every adjustable
+// number read from params. Breakout weights an edit has left off 1 are rescaled to sum to 1,
+// so a neutral profile stays neutral.
+func (a *Assembler) Rubrics() (map[domain.Position]engine.Layer4, error) {
+	table := l4.Defaults()
+	for pos, s := range table {
+		for _, k := range l4.Knobs() {
+			if !k.AppliesTo(s) {
+				continue
+			}
+			v, err := a.params.GetPosition(k.Key, string(pos))
+			if err != nil {
+				return nil, fmt.Errorf("composition: read rubric setting: %w", err)
+			}
+			if !numeric.Finite(v) {
+				return nil, fmt.Errorf("composition: rubric setting %s at %s is not finite", k.Key, pos)
+			}
+			*k.Field(&s) = v
+		}
+		w := &s.Weights
+		if sum := w.BreakoutAge + w.SchoolTier + w.CollegeShare + w.AgeTrajectory; sum > 0 && math.Abs(sum-1) > 1e-9 {
+			w.BreakoutAge, w.SchoolTier, w.CollegeShare, w.AgeTrajectory =
+				w.BreakoutAge/sum, w.SchoolTier/sum, w.CollegeShare/sum, w.AgeTrajectory/sum
+		}
+		table[pos] = s
+	}
+	return l4.Rubrics(table), nil
 }
 
 // leagueCap parses the rulebook's string cap amount, failing on empty or non-numeric.

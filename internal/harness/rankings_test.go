@@ -14,6 +14,9 @@ func (stubParams) GetCapTiers() (params.CapTiers, error) {
 	return params.CapTiers{ColdCeiling: 1.2, HotFloor: 4.8}, nil
 }
 func (stubParams) GetGlobal(string) (float64, error) { return 0.03, nil }
+func (stubParams) GetPosition(key, position string) (float64, error) {
+	return params.DefaultSet().GetPosition(key, position)
+}
 
 type stubCap struct{}
 

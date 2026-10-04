@@ -3,30 +3,16 @@ package harness
 import (
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/engine/l4"
+
 	"github.com/secureprospective/TheWarRoom/internal/composition"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/engine/l4/defense"
-	"github.com/secureprospective/TheWarRoom/internal/engine/l4/kicker"
-	"github.com/secureprospective/TheWarRoom/internal/engine/l4/offense"
 	"github.com/secureprospective/TheWarRoom/internal/scouting"
 )
 
-// realRegistry mirrors harness_app.rubrics(): all 10 real B5b rubrics (K is the last, the
-// Madden-driven kicker). Keeping it here lets the harness tests prove the close-gate claim
-// against the SAME registry the app wires, without a package-main test.
+// realRegistry is the app's registry: every position's rubric at its shipped settings.
 func realRegistry() RubricRegistry {
-	return RubricRegistry{
-		domain.PosQB: offense.NewQB(),
-		domain.PosRB: offense.NewRB(),
-		domain.PosWR: offense.NewWR(),
-		domain.PosTE: offense.NewTE(),
-		domain.PosDT: defense.NewDT(),
-		domain.PosDE: defense.NewDE(),
-		domain.PosLB: defense.NewLB(),
-		domain.PosCB: defense.NewCB(),
-		domain.PosS:  defense.NewS(),
-		domain.PosK:  kicker.NewK(),
-	}
+	return l4.Rubrics(l4.Defaults())
 }
 
 // TestRealQBRegistryFlips3C is the B5b-QB close gate: with the real QB rubric and the K

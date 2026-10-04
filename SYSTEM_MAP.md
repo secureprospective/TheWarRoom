@@ -21,11 +21,11 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Leaf | `internal/measures` | The measure registry: `measures.csv`, `sources.csv`, `source_fields.csv` and `feeds.csv`, embedded and validated. Generates `docs/data-layer/Measure_Dictionary.md` (`make measure-dictionary`). Adding a source is a CSV row, not code. |
 | Store | `internal/db` | SQLite pools: one write connection, many read-only ones, one WAL file. |
 | Store | `internal/store/rulebook` | League rules from MFL as immutable versions with one active pointer, plus commissioner overrides. |
-| Store | `internal/store/params` | Engine calibration: shipped defaults plus admin overrides. |
+| Store | `internal/store/params` | Engine calibration: shipped defaults plus admin overrides, league-wide or per position. The Layer 4 settings are seeded from `l4.Defaults`. |
 | Store | `internal/store/state` | Two things behind one `Reader`. **`Mirror`**: the league as MFL states it (season, rosters with contracts, salary adjustments), replaced whole by a refresh; every score surface reads it. **`Store`**: the what-if league in `whatif.db`, seeded from the mirror (rosters and MFL salary adjustments, so its cap starts equal): rosters, contracts, the contract-year ledger, dead cap, cap relief, phases, feed, calendar. Append-only ledgers; the transaction coordinator holds the only `Writer`. |
 | Store | `internal/store/history` | `history.db`: everything the app cannot rebuild. The fetch archive (`raw_archive`, `fetch_log`), facts per measure appended on change (`observations`, read as of a date through `Features`), source health, and scoring runs with the param set, engine and inputs they used. Append-only, enforced by triggers. |
 | Engine | `internal/engine` | The scoring pipeline as pure functions (L1, L3, L4 dispatch, L5, L6). |
-| Engine | `internal/engine/l4/{offense,defense,kicker,curve}` | The ten position rubrics and the shared S-curve. |
+| Engine | `internal/engine/l4` | Layer 4: one rubric routine driven by a per-position settings table. The adjustable numbers in the table are params (`l4.film.cap@WR` and so on); composition reads them back for each run. |
 | Composition | `internal/composition` | Engine inputs from the stores plus per-player facts. |
 | Composition | `internal/rankings` | M1: scores every rostered player from a params snapshot and history features, and writes one scoring run. |
 | Composition | `internal/m2service`, `internal/powerrankings` | M2: franchise aggregation and the z-score blend with MFL standings. |
@@ -98,7 +98,6 @@ Every method that takes frontend input validates it before acting. Bindings in
 
 These work and are tested, but the core plan rewrites or deletes them. Do not extend them.
 
-- `internal/engine/l4/*`: becomes one routine plus a per-position settings table (Stage 5).
 - `internal/scouting/assembly`, `m1_scouting.go` and the CSV/CFBD fetchers (`agetrajectory`,
   `collegedefense`, `collegeshare`, `madden`, `pfrcoverage`, `ras`, `schooltier`,
   `veteranfilm`): today's board still reads them. Their data now also flows into the measure

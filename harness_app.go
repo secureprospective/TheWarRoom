@@ -2,31 +2,20 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/composition"
-	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/engine/l4/defense"
-	"github.com/secureprospective/TheWarRoom/internal/engine/l4/kicker"
-	"github.com/secureprospective/TheWarRoom/internal/engine/l4/offense"
 	"github.com/secureprospective/TheWarRoom/internal/harness"
-	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
-// rubrics is the Layer-4 registry: one real rubric per position.
-func (a *App) rubrics() harness.RubricRegistry {
-	return harness.RubricRegistry{
-		domain.PosQB: offense.NewQB(),
-		domain.PosRB: offense.NewRB(),
-		domain.PosWR: offense.NewWR(),
-		domain.PosTE: offense.NewTE(),
-		domain.PosDT: defense.NewDT(),
-		domain.PosDE: defense.NewDE(),
-		domain.PosLB: defense.NewLB(),
-		domain.PosCB: defense.NewCB(),
-		domain.PosS:  defense.NewS(),
-		domain.PosK:  kicker.NewK(),
+// rubrics is the Layer-4 registry built from the current params, as a board run builds it.
+func (a *App) rubrics() (harness.RubricRegistry, error) {
+	reg, err := a.assembler().Rubrics()
+	if err != nil {
+		return nil, fmt.Errorf("app: build rubrics: %w", err)
 	}
+	return reg, nil
 }
 
 // assembler builds the composition boundary over the params store and the league's real cap,
@@ -49,7 +38,11 @@ func (a *App) ScoreRookies() RookiesResult {
 	if err := a.ready(); err != nil {
 		return RookiesResult{OK: false, Error: err.Error()}
 	}
-	rows := harness.RankRookies(a.assembler(), harness.SampleRookies(), a.rubrics())
+	reg, err := a.rubrics()
+	if err != nil {
+		return RookiesResult{OK: false, Error: err.Error()}
+	}
+	rows := harness.RankRookies(a.assembler(), harness.SampleRookies(), reg)
 	return RookiesResult{OK: true, L4Mode: "identity / scouting baseline", Rows: rows}
 }
 
@@ -57,30 +50,57 @@ func (a *App) ScoreRookies() RookiesResult {
 // case passed: read failures from Summary.Fail, so PENDING is never mistaken for FAIL.
 type ValidationResult struct {
 	OK      bool                 `json:"ok"`
+	Error   string               `json:"error"`
 	Cases   []harness.CaseResult `json:"cases"`
 	Summary harness.Summary      `json:"summary"`
 }
 
 // RunValidationSuite evaluates the architectural cases against the current rubric registry.
 func (a *App) RunValidationSuite() ValidationResult {
-	cases := harness.RunValidationSuite(a.rubrics())
+	reg, err := a.rubrics()
+	if err != nil {
+		return ValidationResult{OK: false, Error: err.Error()}
+	}
+	cases := harness.RunValidationSuite(reg)
 	return ValidationResult{OK: true, Cases: cases, Summary: harness.Summarize(cases)}
 }
 
-// ParamsResult is the admin panel payload: each calibration parameter with its default, range
-// and effective value.
-type ParamsResult struct {
-	OK     bool              `json:"ok"`
-	Error  string            `json:"error"`
-	Params []params.ParamDef `json:"params"`
+// ParamView is one calibration parameter as the admin panel shows it: its definition and the
+// value in effect. Position is empty for a league-wide parameter.
+type ParamView struct {
+	Key         string  `json:"key"`
+	Position    string  `json:"position"`
+	Description string  `json:"description"`
+	Default     float64 `json:"default"`
+	Min         float64 `json:"min"`
+	Max         float64 `json:"max"`
+	Value       float64 `json:"value"`
 }
 
-// GetParams returns the calibration parameters for the admin panel.
+// ParamsResult is the admin panel payload.
+type ParamsResult struct {
+	OK     bool        `json:"ok"`
+	Error  string      `json:"error"`
+	Params []ParamView `json:"params"`
+}
+
+// GetParams returns every calibration parameter with the value in effect.
 func (a *App) GetParams() ParamsResult {
 	if err := a.ready(); err != nil {
 		return ParamsResult{OK: false, Error: err.Error()}
 	}
-	return ParamsResult{OK: true, Params: a.params.Definitions()}
+	values := a.params.Snapshot()
+	defs := a.params.Definitions()
+	out := make([]ParamView, len(defs))
+	for i, d := range defs {
+		v, err := values.GetPosition(d.Key, d.Position)
+		if err != nil {
+			return ParamsResult{OK: false, Error: err.Error()}
+		}
+		out[i] = ParamView{Key: d.Key, Position: d.Position, Description: d.Description,
+			Default: d.Default, Min: d.Min, Max: d.Max, Value: v}
+	}
+	return ParamsResult{OK: true, Params: out}
 }
 
 // SetParamResult is the admin-write payload.
@@ -89,15 +109,15 @@ type SetParamResult struct {
 	Error string `json:"error"`
 }
 
-// SetParam applies an admin override to a global calibration value. The params store
-// validates the range.
-func (a *App) SetParam(key string, value float64) SetParamResult {
+// SetParam applies an admin override to a parameter; position is empty for a league-wide one.
+// The params store validates the range.
+func (a *App) SetParam(key, position string, value float64) SetParamResult {
 	if err := a.ready(); err != nil {
 		return SetParamResult{OK: false, Error: err.Error()}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, 3*time.Second)
 	defer cancel()
-	if err := a.params.SetOverride(ctx, key, "", value, "harness admin panel"); err != nil {
+	if err := a.params.SetOverride(ctx, key, position, value, "admin console"); err != nil {
 		return SetParamResult{OK: false, Error: err.Error()}
 	}
 	return SetParamResult{OK: true}

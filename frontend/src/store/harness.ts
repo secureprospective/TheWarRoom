@@ -31,7 +31,7 @@ interface HarnessState {
   loading: boolean;
   error: string;
   loadAll: () => Promise<void>;
-  setParam: (key: string, value: number) => Promise<void>;
+  setParam: (key: string, position: string, value: number) => Promise<void>;
   loadRankings: () => Promise<void>;
   loadPowerRankings: (weight: number, aggMode: string) => Promise<void>;
   scoreLeague: () => Promise<void>;
@@ -69,9 +69,9 @@ export const useHarnessStore = create<HarnessState>((set, get) => ({
 
   // setParam writes a live admin override then re-pulls so the operator sees the score
   // move — the sandbox's whole point (functional gate).
-  setParam: async (key, value) => {
+  setParam: async (key, position, value) => {
     set({ error: '' });
-    const res = await SetParam(key, value);
+    const res = await SetParam(key, position, value);
     if (!res.ok) {
       set({ error: res.error });
       return;
