@@ -156,7 +156,8 @@ export function PowerRankingsBoard() {
               color: "var(--text-tertiary)",
             }}
           >
-            season {powerRankings.season} · {rows.length} franchises
+            season {powerRankings.season}
+            {rows.length > 0 && ` · ${rows.length} franchises`}
             {powerLoading && " · refreshing…"}
           </span>
         )}
@@ -173,7 +174,7 @@ export function PowerRankingsBoard() {
         board="Power Rankings"
       />
       <PhaseBar
-        weeks={powerRankings?.weeksScored ?? -1}
+        weeks={powerRankings?.ok ? powerRankings.weeksScored : -1}
         seasonWeeks={powerRankings?.seasonWeeks ?? 0}
       />
 

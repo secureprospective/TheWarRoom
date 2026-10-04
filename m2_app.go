@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
 	"github.com/secureprospective/TheWarRoom/internal/m2service"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -123,7 +125,7 @@ func (a *App) GetPowerRankings(weight float64, aggMode, view string) PowerRankin
 		}
 	}
 	res := PowerRankingsResult{OK: true, Season: a.season, View: view, Weight: weight, AggMode: mode,
-		Freshness: fresh, SeasonWeeks: a.seasonWeeks(), Rows: []PowerRow{}}
+		Freshness: fresh, SeasonWeeks: a.seasonWeeks(), WeeksScored: weeksScored(standings), Rows: []PowerRow{}}
 	if len(boards) == 0 {
 		return res
 	}
@@ -144,7 +146,6 @@ func fillBoard(res *PowerRankingsResult, runs []history.Run, boards []m2service.
 		}
 	}
 	res.Rows = powerRows(boards[0].Rows, was)
-	res.WeeksScored = weeksScored(boards[0].Rows)
 }
 
 func viewMeasure(view string) string {
@@ -216,11 +217,18 @@ func (a *App) seasonWeeks() int {
 	return n
 }
 
-// weeksScored is the most head-to-head games any franchise has played: one a week.
-func weeksScored(rows []m2service.Row) int {
+// weeksScored is how many weeks MFL's standings hold: a franchise plays one head-to-head game a
+// week. It reads the standings themselves, so the phase shows before the first model run. A blank
+// or unreadable count reads as 0; it affects the label only.
+func weeksScored(standings []leaguestandings.RawStanding) int {
 	most := 0
-	for _, r := range rows {
-		most = max(most, r.H2HW+r.H2HL+r.H2HT)
+	for _, st := range standings {
+		games := 0
+		for _, n := range []string{st.H2HW, st.H2HL, st.H2HT} {
+			v, _ := strconv.Atoi(strings.TrimSpace(n))
+			games += v
+		}
+		most = max(most, games)
 	}
 	return most
 }

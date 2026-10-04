@@ -3,16 +3,17 @@ package main
 import (
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
 	"github.com/secureprospective/TheWarRoom/internal/m2service"
 )
 
 // A franchise plays one head-to-head game a week.
 func TestWeeksScoredReadsHeadToHeadGames(t *testing.T) {
-	rows := []m2service.Row{{H2HW: 2}, {H2HW: 1, H2HL: 1}, {H2HL: 2}}
-	if got := weeksScored(rows); got != 2 {
+	standings := []leaguestandings.RawStanding{{H2HW: "2"}, {H2HW: "1", H2HL: "1"}, {H2HL: "2", H2HT: " "}}
+	if got := weeksScored(standings); got != 2 {
 		t.Errorf("weeks = %d, want 2", got)
 	}
-	if got := weeksScored([]m2service.Row{{}, {}}); got != 0 {
+	if got := weeksScored([]leaguestandings.RawStanding{{}, {H2HW: "0"}}); got != 0 {
 		t.Errorf("an unplayed season has %d weeks, want 0", got)
 	}
 }
