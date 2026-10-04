@@ -733,6 +733,20 @@ the numbers: `docs/modules/M2_Power_Ranking_Factors.md`; scripts and results:
 | R10-6 | **Context columns, never in the score:** cap room (dead cap in its tooltip), schedule luck (head-to-head wins above the all-play rate) and a projected regular-season record (Christopher, 3B). The record: wins so far plus each remaining game's Φ((a − b) ÷ 50), a team's expected score being the auto weight on its lineup's Now plus the rest on its points per game. | None of the three added to what the roster and results predict, but each answers a GM's question. σ = 50 fitted on 4,480 games (Brier 0.165); remaining wins miss by 1.2 on average. A missing schedule, cap or directory blanks its column and never stops the board (R11). |
 | R10-7 | **Not adopted:** depth (best bench players) as an input, start/sit efficiency, recent form, remaining schedule as strength, draft picks, expiring contracts. | Each added nothing on held-out seasons, or scored worse; schedule strength belongs only in the projected record. |
 
+**Gate check, 2026-10-04.** Branch `session/power-ranking-factors`, live on Claude-OS at
+`v0.5.0-196-g3a18922`, then `v0.5.0-198-g69b3fcb` after the fixes below, against a backup-API
+snapshot of Christopher's real databases taken 18:49 (model runs #1–#2; 3 weeks of 2026 played).
+Evidence: `~/fleet/runs/warroom-power-rankings-2026-10-04/live-gate/`.
+
+| Gate item | Result |
+|---|---|
+| All-play is read (R10-1) | PASS (02). The banner reads "blends it with MFL's all-play record"; AllPlay shows 87-6 for the Vikings, 89-4 for the Commanders. |
+| Lineup by default, the toggle works (R10-2) | PASS (02, 06). Top 21 by value lifts the Packers from 10th to 4th: value they cannot start. |
+| Auto weight, slider override, Auto again (R10-4) | PASS (02, 09, 05). Auto: roster 57% = 4 ÷ (4 + 3); the slider set 12% and "set by the slider"; Auto restored 57% and the same order. |
+| Franchise: whole roster and age (R10-3, R10-5) | PASS (03, 15). Known effect: the Dolphins rank 9th with the league's weakest dynasty roster but by far its youngest (value-weighted 23.3; the rest 25–29). The backtest's youngest rosters (down to 23.8) beat their Dyn the next season by 26–101 points a week, and capping the age term scored worse on every held-out season (`results5.txt`). |
+| Context columns (R10-6) | PASS (07, 13). Commanders' cap room $7.6M matches MFL's salary $117.41 under $125; Vikings 2-1 at 93.5% all-play gives luck −0.8; every projected record sums to 13 games and the league's projected wins to 208.1 (32 × 13 ÷ 2 = 208, one-decimal rounding). |
+| Found and fixed in the gate | A value that rounded to zero printed "$-0.0M", "-0.0" and roster z "-0.00"; the auto note before the slider made it jump left when the slider took over (7765862, 69b3fcb). |
+
 ## Open items that need Christopher
 
 - ~~The dynasty horizon~~ decided 2026-10-04: 3 seasons at 0.75 (win-now), now the shipped
