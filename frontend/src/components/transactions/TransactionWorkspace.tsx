@@ -19,8 +19,8 @@ import { money, initials, Empty } from './format';
 const FA = '__FA__'; // sentinel rail selection = the free-agent pool
 
 // Board templates: a roster shows the cap columns, the FA pool is a lean two-column scan.
-const ROSTER_COLS = '1fr 46px 70px 80px 80px';
-const FA_COLS = '1fr 60px';
+const ROSTER_COLS = 'minmax(150px, 1fr) 46px 70px 80px 80px';
+const FA_COLS = 'minmax(150px, 1fr) 60px';
 
 export function TransactionWorkspace() {
   const franchises = useTransactionsStore((s) => s.franchises);

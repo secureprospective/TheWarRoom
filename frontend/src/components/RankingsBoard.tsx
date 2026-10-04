@@ -54,7 +54,7 @@ type SortKey = 'base' | 'adjusted' | 'now' | 'dynasty' | 'salary' | 'capEff';
 //   COLS_CAPEFF 11: the above + Adj/$M (cap-efficiency lens only)
 //   COLS_MTX     6: # · Δ · Player · Pos · Adj · Sal   (Franchise, Base, Now and Dyn are .twr-hide-mtx)
 // Now and Dyn are the model run's measurables in league points per game.
-const COLS = '34px 44px 1fr 42px 148px 66px 92px 58px 58px 80px';
+const COLS = '34px 44px minmax(150px, 1fr) 42px 148px 66px 92px 58px 58px 80px';
 const COLS_CAPEFF = `${COLS} 72px`;
 const COLS_MTX = '24px 40px 1fr 36px 72px 72px';
 

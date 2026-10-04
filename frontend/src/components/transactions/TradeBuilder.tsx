@@ -26,7 +26,7 @@ type TradeLeg = {
 };
 
 // Browsed-roster board template (Player·Pos·Cap·Add).
-const ROSTER_COLS = '1fr 46px 84px 74px';
+const ROSTER_COLS = 'minmax(150px, 1fr) 46px 84px 74px';
 
 export function TradeBuilder() {
   const franchises = useTransactionsStore((s) => s.franchises);
