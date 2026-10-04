@@ -1,6 +1,6 @@
 // Package measures is the registry behind the measure dictionary: what each measure means,
-// which sources exist, and which source field feeds which measure. The registry is three
-// checked-in CSV files embedded in the binary. The history store loads them into tables, and
+// which sources exist, which source field feeds which measure, and which files the table-driven
+// loader reads. The registry is four checked-in CSV files embedded in the binary. The history store loads them into tables, and
 // docs/data-layer/Measure_Dictionary.md is rendered from them. A source's own vocabulary
 // appears only in source_fields.csv.
 package measures
@@ -21,7 +21,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
 
-//go:embed measures.csv sources.csv source_fields.csv
+//go:embed measures.csv sources.csv source_fields.csv feeds.csv
 var embedded embed.FS
 
 // Family groups measures by what they describe.
@@ -41,13 +41,19 @@ func Families() []Family {
 	return []Family{FamilyExposure, FamilyOpportunity, FamilyOutcome, FamilyPrior, FamilyAvailability, FamilyContext}
 }
 
-// Grain is the period a measure is recorded at. Season-grain values sit at week 0.
+// Grain is the period a measure is recorded at. Season-grain values sit at week 0. Player-grain
+// values are facts that belong to no period (a birth date, a draft slot) and sit at season 0,
+// week 0.
 type Grain string
 
 const (
+	GrainPlayer Grain = "player"
 	GrainSeason Grain = "season"
 	GrainWeek   Grain = "week"
 )
+
+// minSeason is the earliest season a period-grain value may carry.
+const minSeason = 1900
 
 // UnitText marks a measure whose value is a label (an injury status), not a number.
 const UnitText = "text"
@@ -65,12 +71,19 @@ type Measure struct {
 // IsText reports whether values are labels rather than numbers.
 func (m Measure) IsText() bool { return m.Unit == UnitText }
 
-// ValidWeek reports whether week fits the grain: 0 for season, 1 or more for week.
-func (m Measure) ValidWeek(week int) bool {
-	if m.Grain == GrainSeason {
-		return week == 0
+// ValidPeriod reports whether a season and week fit the grain: 0 and 0 for player, a season
+// and week 0 for season, a season and week 1 or more for week.
+func (m Measure) ValidPeriod(season, week int) bool {
+	switch m.Grain {
+	case GrainPlayer:
+		return season == 0 && week == 0
+	case GrainSeason:
+		return season >= minSeason && week == 0
+	case GrainWeek:
+		return season >= minSeason && week >= 1
+	default:
+		return false
 	}
-	return week >= 1
 }
 
 // SourceStatus is the declared state of a source. Lost is observed from loads, never declared.
@@ -93,6 +106,12 @@ type Source struct {
 	PathPrefix string
 }
 
+// MatchesURL is Matches for a URL written as text.
+func (s Source) MatchesURL(raw string) bool {
+	u, err := url.Parse(strings.ReplaceAll(raw, SeasonToken, "0"))
+	return err == nil && s.Matches(u)
+}
+
 // Matches reports whether a fetched URL belongs to this source.
 func (s Source) Matches(u *url.URL) bool {
 	h := strings.ToLower(u.Hostname())
@@ -111,14 +130,25 @@ type SourceField struct {
 	Priority int
 }
 
-// Registry is the validated content of the three files.
+// Registry is the validated content of the four files.
 type Registry struct {
 	Measures []Measure
 	Sources  []Source
 	Fields   []SourceField
+	Feeds    []Feed
 
 	measures map[string]Measure
 	fields   map[[2]string]SourceField // (source, field)
+}
+
+// Source returns the source with id.
+func (r *Registry) Source(id string) (Source, bool) {
+	for _, s := range r.Sources {
+		if s.ID == id {
+			return s, true
+		}
+	}
+	return Source{}, false
 }
 
 // Measure returns the named measure.
@@ -158,8 +188,8 @@ func (r *Registry) FieldsFeeding(measure string) []SourceField {
 // Embedded loads the registry shipped in the binary.
 func Embedded() (*Registry, error) { return Load(embedded) }
 
-// Load reads and validates measures.csv, sources.csv and source_fields.csv from fsys. Every
-// problem is reported, not only the first.
+// Load reads and validates measures.csv, sources.csv, source_fields.csv and feeds.csv from fsys.
+// Every problem is reported, not only the first.
 func Load(fsys fs.FS) (*Registry, error) {
 	r := &Registry{measures: map[string]Measure{}, fields: map[[2]string]SourceField{}}
 	var errs []error
@@ -167,6 +197,9 @@ func Load(fsys fs.FS) (*Registry, error) {
 	errs = append(errs, r.loadSources(fsys)...)
 	if len(errs) == 0 {
 		errs = append(errs, r.loadFields(fsys)...)
+	}
+	if len(errs) == 0 {
+		errs = append(errs, r.loadFeeds(fsys)...)
 	}
 	if err := errors.Join(errs...); err != nil {
 		return nil, fmt.Errorf("measures: invalid registry: %w", err)
@@ -196,8 +229,8 @@ func (r *Registry) loadMeasures(fsys fs.FS) []error {
 			continue
 		case !slices.Contains(Families(), Family(match[1])):
 			errs = append(errs, fmt.Errorf("%s: %q has unknown family %q", at, m.Name, match[1]))
-		case m.Grain != GrainSeason && m.Grain != GrainWeek:
-			errs = append(errs, fmt.Errorf("%s: %q has grain %q, want season or week", at, m.Name, m.Grain))
+		case !slices.Contains([]Grain{GrainPlayer, GrainSeason, GrainWeek}, m.Grain):
+			errs = append(errs, fmt.Errorf("%s: %q has grain %q, want player, season or week", at, m.Name, m.Grain))
 		case !identifier.MatchString(m.Unit):
 			errs = append(errs, fmt.Errorf("%s: %q has unit %q, want one lower-case word", at, m.Name, m.Unit))
 		case m.Meaning == "":
@@ -353,4 +386,12 @@ type Batch struct {
 	Source     string
 	BodySHA256 string
 	Facts      []Fact
+	Scope      *Scope
+}
+
+// Scope, on a batch, says the batch is its source's whole report for these week-grain measures
+// in these seasons. A week value held from an earlier load and missing from this one is now zero.
+type Scope struct {
+	Seasons  []int
+	Measures []string
 }

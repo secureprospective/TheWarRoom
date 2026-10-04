@@ -11,6 +11,7 @@ import { TradeBuilder } from './components/transactions/TradeBuilder';
 import { LeagueControls } from './components/transactions/LeagueControls';
 import { AdminPanel } from './components/AdminPanel';
 import { CrosswalkPanel } from './components/CrosswalkPanel';
+import { SignalsPanel } from './components/SignalsPanel';
 import { RookieTable } from './components/RookieTable';
 import { ValidationBoard } from './components/ValidationBoard';
 import { CalendarBoard } from './components/calendar/CalendarBoard';
@@ -128,7 +129,7 @@ function ModuleView({ module }: { module: ModuleId }) {
   }
 }
 
-type ControlTab = 'league' | 'admin' | 'crosswalk' | 'sandbox' | 'tests';
+type ControlTab = 'league' | 'admin' | 'crosswalk' | 'signals' | 'sandbox' | 'tests';
 
 function ControlModule() {
   const [tab, setTab] = useState<ControlTab>('league');
@@ -136,6 +137,7 @@ function ControlModule() {
     { id: 'league', label: 'League Controls' },
     { id: 'admin', label: 'Engine Admin' },
     { id: 'crosswalk', label: 'Crosswalk' },
+    { id: 'signals', label: 'Signals' },
     { id: 'sandbox', label: 'Rookie Sandbox (dev)' },
     { id: 'tests', label: 'Architectural Tests (dev)' },
   ];
@@ -163,6 +165,8 @@ function ControlModule() {
         <AdminPanel />
       ) : tab === 'crosswalk' ? (
         <CrosswalkPanel />
+      ) : tab === 'signals' ? (
+        <SignalsPanel />
       ) : tab === 'sandbox' ? (
         <RookieTable />
       ) : (

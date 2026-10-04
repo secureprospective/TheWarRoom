@@ -2,6 +2,7 @@ package measures
 
 import (
 	"fmt"
+	"path"
 	"strings"
 )
 
@@ -16,8 +17,11 @@ func (r *Registry) Dictionary() string {
 	b.WriteString("Generated from `internal/measures/*.csv` by `make measure-dictionary`. ")
 	b.WriteString("Do not edit it by hand: change the CSV files and regenerate.\n\n")
 	b.WriteString("Every number in `history.db` is stored as player · season · week · measure. ")
-	b.WriteString("Week 0 holds season-level values. A measure is named for what it means, never for ")
-	b.WriteString("the source it came from. When several sources feed a measure, the first listed wins.\n")
+	b.WriteString("Week 0 holds season-level values; season 0 holds player-level facts that belong to no ")
+	b.WriteString("period. A week-level number is stored only when it is not zero, so a week the player ")
+	b.WriteString("was on the field with no row for a count means zero. A measure is named for what it ")
+	b.WriteString("means, never for the source it came from. When several sources feed a measure, the ")
+	b.WriteString("first listed wins.\n")
 
 	for _, fam := range Families() {
 		var rows []string
@@ -35,6 +39,19 @@ func (r *Registry) Dictionary() string {
 		b.WriteString("| Measure | Grain | Unit | Positions | Meaning | Sources |\n")
 		b.WriteString("|---|---|---|---|---|---|\n")
 		b.WriteString(strings.Join(rows, "\n") + "\n")
+	}
+
+	b.WriteString("\n## Feeds\n\n")
+	b.WriteString("Files the table-driven loader reads. A field named `<feed>.<column>` reads that column.\n\n")
+	b.WriteString("| Feed | Source | File | Seasons | Player id | Rows kept |\n")
+	b.WriteString("|---|---|---|---|---|---|\n")
+	for _, f := range r.Feeds {
+		seasons := "one file"
+		if f.FirstSeason != 0 {
+			seasons = fmt.Sprintf("%d on", f.FirstSeason)
+		}
+		fmt.Fprintf(&b, "| `%s` | `%s` | `%s` | %s | `%s` (%s) | %s |\n",
+			f.Name, f.Source, path.Base(f.URL), seasons, f.IDColumn, f.IDType, filterLabel(f.Filter))
 	}
 
 	b.WriteString("\n## Sources\n\n")
@@ -75,3 +92,19 @@ func positionsLabel(m Measure) string {
 
 // cell escapes a table cell's pipe characters.
 func cell(s string) string { return strings.ReplaceAll(s, "|", `\|`) }
+
+// filterLabel renders a feed's filter for the dictionary.
+func filterLabel(conds []Condition) string {
+	if len(conds) == 0 {
+		return "all"
+	}
+	parts := make([]string, len(conds))
+	for i, c := range conds {
+		op := " is "
+		if c.Exclude {
+			op = " is not "
+		}
+		parts[i] = "`" + c.Column + "`" + op + strings.Join(c.Values, ", ")
+	}
+	return strings.Join(parts, "; ")
+}

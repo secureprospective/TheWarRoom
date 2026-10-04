@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -16,7 +17,6 @@ import (
 // execer is what the write helpers need from a transaction.
 type execer interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
-	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 }
 
 // LoadReport says what one load wrote. A reload of unchanged data adds nothing.
@@ -40,7 +40,8 @@ type fact struct {
 // Ingest writes one batch. Every fact must map through source_fields and parse for its measure,
 // or nothing is written and the failure is recorded as a failed load. A value equal to the latest
 // one held for its key is skipped, so loading the same data twice changes nothing; a different
-// value appends a correction with a later as_of.
+// value appends a correction with a later as_of. A week-grain zero is written only as a
+// correction: an unwritten week count reads as zero.
 func (s *Store) Ingest(ctx context.Context, b measures.Batch) (LoadReport, error) {
 	facts, err := s.mapBatch(b)
 	if err != nil {
@@ -55,32 +56,21 @@ func (s *Store) Ingest(ctx context.Context, b measures.Batch) (LoadReport, error
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	rep := LoadReport{Facts: len(facts)}
-	var changed []fact
-	for _, f := range facts {
-		if f.playerID == "" {
-			id, ok, err := lookupPlayer(ctx, tx, f.idType, f.idValue)
-			if err != nil {
-				return LoadReport{}, err
-			}
-			if ok {
-				f.playerID = id
-			}
-		}
-		same, err := sameAsLatest(ctx, tx, b.Source, f)
-		if err != nil {
-			return LoadReport{}, err
-		}
-		if same {
-			continue
-		}
-		if f.playerID == "" {
-			rep.Unresolved++
-		} else {
-			rep.Added++
-		}
-		changed = append(changed, f)
+	ids, err := directory(ctx, tx, facts)
+	if err != nil {
+		return LoadReport{}, err
 	}
+	held, err := latestHeld(ctx, tx, b.Source, seasonsOf(facts, b.Scope))
+	if err != nil {
+		return LoadReport{}, err
+	}
+	for i := range facts {
+		if facts[i].playerID == "" {
+			facts[i].playerID = ids[[2]string{facts[i].idType, facts[i].idValue}]
+		}
+	}
+	facts = append(facts, zeroedByScope(facts, held, b.Scope)...)
+	rep, changed := changes(facts, held)
 
 	asOf := formatTime(s.now())
 	res, err := tx.ExecContext(ctx, `
@@ -92,10 +82,8 @@ INSERT INTO loads (source, sha256, loaded_at, facts, added, unresolved) VALUES (
 	if rep.LoadID, err = res.LastInsertId(); err != nil {
 		return LoadReport{}, fmt.Errorf("history: load id: %w", err)
 	}
-	for _, f := range changed {
-		if err := insertFact(ctx, tx, b.Source, asOf, rep.LoadID, f); err != nil {
-			return LoadReport{}, err
-		}
+	if err := insertFacts(ctx, tx, b.Source, asOf, rep.LoadID, changed); err != nil {
+		return LoadReport{}, err
 	}
 	if err := tx.Commit(); err != nil {
 		return LoadReport{}, fmt.Errorf("history: ingest commit: %w", err)
@@ -149,10 +137,9 @@ func (s *Store) mapFact(source string, in measures.Fact) (fact, error) {
 	switch {
 	case in.IDType == "" || in.ID == "":
 		return fact{}, fmt.Errorf("history: %s %s fact has no player id", source, in.Field)
-	case in.Season < 1900:
-		return fact{}, fmt.Errorf("history: %s %s for %s has season %d", source, in.Field, in.ID, in.Season)
-	case !m.ValidWeek(in.Week):
-		return fact{}, fmt.Errorf("history: %s is %s-grain; %s reports week %d", m.Name, m.Grain, in.ID, in.Week)
+	case !m.ValidPeriod(in.Season, in.Week):
+		return fact{}, fmt.Errorf("history: %s is %s-grain; %s reports season %d week %d",
+			m.Name, m.Grain, in.ID, in.Season, in.Week)
 	}
 	if in.IDType == measures.IDTypeMFL {
 		id, err := playerid.New(in.ID)
@@ -184,59 +171,174 @@ func period(f fact) string {
 	return fmt.Sprintf("season %d week %d", f.season, f.week)
 }
 
-// lookupPlayer resolves a source id through player_ids.
-func lookupPlayer(ctx context.Context, tx execer, idType, idValue string) (string, bool, error) {
-	var id string
-	err := tx.QueryRowContext(ctx, `SELECT player_id FROM player_ids WHERE id_type = ? AND id_value = ?`,
-		idType, idValue).Scan(&id)
-	if errors.Is(err, sql.ErrNoRows) {
-		return "", false, nil
+// key identifies the value a fact would replace: resolved facts by player, waiting ones by the
+// source's id.
+func (f fact) key() string {
+	who := f.playerID
+	if who == "" {
+		who = f.idType + "\x00" + f.idValue
 	}
-	if err != nil {
-		return "", false, fmt.Errorf("history: resolve %s %s: %w", idType, idValue, err)
-	}
-	return id, true, nil
+	return strings.Join([]string{who, strconv.Itoa(f.season), strconv.Itoa(f.week), f.measure}, "\x00")
 }
 
-// sameAsLatest reports whether the latest value held for f's key equals f's value.
-func sameAsLatest(ctx context.Context, tx execer, source string, f fact) (bool, error) {
-	var row *sql.Row
-	if f.playerID != "" {
-		row = tx.QueryRowContext(ctx, `
-SELECT value, text FROM observations
-WHERE player_id = ? AND season = ? AND week = ? AND measure = ? AND source = ?
-ORDER BY as_of DESC LIMIT 1`, f.playerID, f.season, f.week, f.measure, source)
-	} else {
-		row = tx.QueryRowContext(ctx, `
-SELECT value, text FROM unresolved_observations
-WHERE source = ? AND id_type = ? AND id_value = ? AND season = ? AND week = ? AND measure = ?
-ORDER BY as_of DESC LIMIT 1`, source, f.idType, f.idValue, f.season, f.week, f.measure)
+// directory reads the player_ids rows for every id type in facts.
+func directory(ctx context.Context, tx *sql.Tx, facts []fact) (map[[2]string]string, error) {
+	types := map[string]bool{}
+	for _, f := range facts {
+		if f.playerID == "" {
+			types[f.idType] = true
+		}
 	}
-	var v sql.NullFloat64
-	var t sql.NullString
-	err := row.Scan(&v, &t)
-	if errors.Is(err, sql.ErrNoRows) {
-		return false, nil
+	out := map[[2]string]string{}
+	for t := range types {
+		if err := readIDs(ctx, tx, t, out); err != nil {
+			return nil, err
+		}
 	}
-	if err != nil {
-		return false, fmt.Errorf("history: latest %s for %s: %w", f.measure, f.idValue, err)
-	}
-	return v == f.value && t == f.text, nil
+	return out, nil
 }
 
-func insertFact(ctx context.Context, tx execer, source, asOf string, loadID int64, f fact) error {
-	var err error
-	if f.playerID != "" {
-		_, err = tx.ExecContext(ctx, `
+func readIDs(ctx context.Context, tx *sql.Tx, idType string, out map[[2]string]string) error {
+	rows, err := tx.QueryContext(ctx, `SELECT id_value, player_id FROM player_ids WHERE id_type = ?`, idType)
+	if err != nil {
+		return fmt.Errorf("history: read %s ids: %w", idType, err)
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var v, id string
+		if err := rows.Scan(&v, &id); err != nil {
+			return fmt.Errorf("history: scan %s id: %w", idType, err)
+		}
+		out[[2]string{idType, v}] = id
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("history: read %s ids: %w", idType, err)
+	}
+	return nil
+}
+
+// changes picks the facts that differ from what is held. A week-grain zero with nothing held is
+// left out: an unwritten week count reads as zero.
+func changes(facts []fact, held map[string]fact) (LoadReport, []fact) {
+	rep := LoadReport{Facts: len(facts)}
+	var changed []fact
+	for _, f := range facts {
+		prev, ok := held[f.key()]
+		if ok && prev.value == f.value && prev.text == f.text {
+			continue
+		}
+		if !ok && f.week > 0 && f.value.Valid && f.value.Float64 == 0 {
+			continue
+		}
+		if f.playerID == "" {
+			rep.Unresolved++
+		} else {
+			rep.Added++
+		}
+		changed = append(changed, f)
+	}
+	return rep, changed
+}
+
+// seasonsOf lists the seasons a batch touches: its facts' and its scope's.
+func seasonsOf(facts []fact, scope *measures.Scope) map[int]bool {
+	seasons := map[int]bool{}
+	for _, f := range facts {
+		seasons[f.season] = true
+	}
+	if scope != nil {
+		for _, season := range scope.Seasons {
+			seasons[season] = true
+		}
+	}
+	return seasons
+}
+
+// zeroedByScope returns a zero for every non-zero week value held in scope that the batch no
+// longer reports.
+func zeroedByScope(facts []fact, held map[string]fact, scope *measures.Scope) []fact {
+	if scope == nil {
+		return nil
+	}
+	reported := make(map[string]bool, len(facts))
+	for _, f := range facts {
+		reported[f.key()] = true
+	}
+	var out []fact
+	for k, h := range held {
+		if reported[k] || h.week == 0 || !h.value.Valid || h.value.Float64 == 0 ||
+			!slices.Contains(scope.Seasons, h.season) || !slices.Contains(scope.Measures, h.measure) {
+			continue
+		}
+		h.value.Float64 = 0
+		out = append(out, h)
+	}
+	slices.SortFunc(out, func(a, b fact) int { return strings.Compare(a.key(), b.key()) })
+	return out
+}
+
+// latestHeld reads the latest value source holds for every key in seasons, both resolved and
+// waiting, keyed as fact.key.
+func latestHeld(ctx context.Context, tx *sql.Tx, source string, seasons map[int]bool) (map[string]fact, error) {
+	out := map[string]fact{}
+	for season := range seasons {
+		if err := readHeld(ctx, tx, source, season, out); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+func readHeld(ctx context.Context, tx *sql.Tx, source string, season int, out map[string]fact) error {
+	rows, err := tx.QueryContext(ctx, `
+SELECT player_id, '', '', week, measure, value, text FROM (
+	SELECT *, ROW_NUMBER() OVER (PARTITION BY player_id, week, measure ORDER BY as_of DESC) AS newest
+	FROM observations WHERE source = ?1 AND season = ?2) WHERE newest = 1
+UNION ALL
+SELECT '', id_type, id_value, week, measure, value, text FROM (
+	SELECT *, ROW_NUMBER() OVER (PARTITION BY id_type, id_value, week, measure ORDER BY as_of DESC) AS newest
+	FROM unresolved_observations WHERE source = ?1 AND season = ?2) WHERE newest = 1`, source, season)
+	if err != nil {
+		return fmt.Errorf("history: latest %s values for %d: %w", source, season, err)
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		f := fact{season: season}
+		if err := rows.Scan(&f.playerID, &f.idType, &f.idValue, &f.week, &f.measure, &f.value, &f.text); err != nil {
+			return fmt.Errorf("history: scan latest %s value: %w", source, err)
+		}
+		out[f.key()] = f
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("history: latest %s values for %d: %w", source, season, err)
+	}
+	return nil
+}
+
+func insertFacts(ctx context.Context, tx *sql.Tx, source, asOf string, loadID int64, facts []fact) error {
+	resolved, err := tx.PrepareContext(ctx, `
 INSERT INTO observations (player_id, season, week, measure, source, as_of, value, text, load_id)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, f.playerID, f.season, f.week, f.measure, source, asOf, f.value, f.text, loadID)
-	} else {
-		_, err = tx.ExecContext(ctx, `
-INSERT INTO unresolved_observations (source, id_type, id_value, season, week, measure, as_of, value, text, load_id)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, source, f.idType, f.idValue, f.season, f.week, f.measure, asOf, f.value, f.text, loadID)
-	}
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
-		return fmt.Errorf("history: write %s for %s: %w", f.measure, f.idValue, err)
+		return fmt.Errorf("history: prepare observation insert: %w", err)
+	}
+	defer func() { _ = resolved.Close() }()
+	waiting, err := tx.PrepareContext(ctx, `
+INSERT INTO unresolved_observations (source, id_type, id_value, season, week, measure, as_of, value, text, load_id)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		return fmt.Errorf("history: prepare unresolved insert: %w", err)
+	}
+	defer func() { _ = waiting.Close() }()
+	for _, f := range facts {
+		if f.playerID != "" {
+			_, err = resolved.ExecContext(ctx, f.playerID, f.season, f.week, f.measure, source, asOf, f.value, f.text, loadID)
+		} else {
+			_, err = waiting.ExecContext(ctx, source, f.idType, f.idValue, f.season, f.week, f.measure, asOf, f.value, f.text, loadID)
+		}
+		if err != nil {
+			return fmt.Errorf("history: write %s for %s: %w", f.measure, f.idValue, err)
+		}
 	}
 	return nil
 }
@@ -306,23 +408,33 @@ INSERT INTO loads (source, loaded_at, facts, added, unresolved) VALUES (?, ?, ?,
 	return int(promoted), nil
 }
 
-// LinkedPlayers returns the MFL ids that an id of idType resolves to.
+// LinkedPlayers returns every player with an id of idType in the directory.
 func (s *Store) LinkedPlayers(ctx context.Context, idType string) (map[string]bool, error) {
-	rows, err := s.pools.Read().QueryContext(ctx, `SELECT DISTINCT player_id FROM player_ids WHERE id_type = ?`, idType)
+	return s.distinct(ctx, `SELECT DISTINCT player_id FROM player_ids WHERE id_type = ?`, idType)
+}
+
+// KnownIDs returns every id of idType the directory can resolve.
+func (s *Store) KnownIDs(ctx context.Context, idType string) (map[string]bool, error) {
+	return s.distinct(ctx, `SELECT id_value FROM player_ids WHERE id_type = ?`, idType)
+}
+
+// distinct runs a one-column query and returns its values as a set.
+func (s *Store) distinct(ctx context.Context, query string, args ...any) (map[string]bool, error) {
+	rows, err := s.pools.Read().QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("history: linked players: %w", err)
+		return nil, fmt.Errorf("history: directory read: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 	out := map[string]bool{}
 	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			return nil, fmt.Errorf("history: linked players scan: %w", err)
+		var v string
+		if err := rows.Scan(&v); err != nil {
+			return nil, fmt.Errorf("history: directory scan: %w", err)
 		}
-		out[id] = true
+		out[v] = true
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("history: linked players: %w", err)
+		return nil, fmt.Errorf("history: directory read: %w", err)
 	}
 	return out, nil
 }

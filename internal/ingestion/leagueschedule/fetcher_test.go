@@ -1,7 +1,6 @@
 package leagueschedule
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 )
@@ -64,7 +63,7 @@ func TestFlatten_RealShape(t *testing.T) {
 	if err := json.Unmarshal([]byte(body), &env); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	got, err := flatten(context.Background(), env)
+	got, err := flatten(env)
 	if err != nil {
 		t.Fatalf("flatten: %v", err)
 	}
@@ -95,7 +94,7 @@ func TestFlatten_SingleWeekSingleMatchupCollapse(t *testing.T) {
 	if err := json.Unmarshal([]byte(body), &env); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	got, err := flatten(context.Background(), env)
+	got, err := flatten(env)
 	if err != nil {
 		t.Fatalf("flatten: %v", err)
 	}
@@ -113,7 +112,7 @@ func TestFlatten_WrongFranchiseCount(t *testing.T) {
 	if err := json.Unmarshal([]byte(body), &env); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if _, err := flatten(context.Background(), env); err == nil {
+	if _, err := flatten(env); err == nil {
 		t.Fatal("expected an error for a matchup with 1 franchise, got nil")
 	}
 }

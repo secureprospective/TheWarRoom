@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -28,14 +29,7 @@ type SourceHealth struct {
 	LastError   string
 }
 
-func (s *Store) source(id string) (measures.Source, bool) {
-	for _, src := range s.reg.Sources {
-		if src.ID == id {
-			return src, true
-		}
-	}
-	return measures.Source{}, false
-}
+func (s *Store) source(id string) (measures.Source, bool) { return s.reg.Source(id) }
 
 // SourceHealth judges every registered source at the store clock's now. A source is lost when
 // its latest load failed and it has no successful load within its max age, or none at all. A
@@ -107,4 +101,57 @@ func missingFrom(need []string, flowing map[string]bool) []string {
 	}
 	sort.Strings(missing)
 	return missing
+}
+
+// LastLoadOf returns when a body fetched from url last loaded without error. ok is false when it
+// never has.
+func (s *Store) LastLoadOf(ctx context.Context, url string) (at time.Time, ok bool, err error) {
+	var last sql.NullString
+	if err := s.pools.Read().QueryRowContext(ctx, `
+SELECT MAX(loaded_at) FROM loads WHERE error = '' AND sha256 <> ''
+	AND sha256 IN (SELECT sha256 FROM fetch_log WHERE url = ? AND sha256 IS NOT NULL)`, url).Scan(&last); err != nil {
+		return time.Time{}, false, fmt.Errorf("history: last load of %s: %w", url, err)
+	}
+	if !last.Valid {
+		return time.Time{}, false, nil
+	}
+	at, err = parseTime(last.String)
+	return at, err == nil, err
+}
+
+// PlayersWithData returns every player holding a value from source for any of the measures in
+// season (0 for player-grain facts), and how many source ids still wait for a match.
+func (s *Store) PlayersWithData(ctx context.Context, source string, season int, measures []string) (map[string]bool, int, error) {
+	if len(measures) == 0 {
+		return map[string]bool{}, 0, nil
+	}
+	in := "(?" + strings.Repeat(", ?", len(measures)-1) + ")"
+	args := []any{source, season}
+	for _, m := range measures {
+		args = append(args, m)
+	}
+	rows, err := s.pools.Read().QueryContext(ctx, `
+SELECT DISTINCT player_id FROM observations WHERE source = ? AND season = ? AND measure IN `+in, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("history: players with %s data: %w", source, err)
+	}
+	defer func() { _ = rows.Close() }()
+	out := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, 0, fmt.Errorf("history: scan player: %w", err)
+		}
+		out[id] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("history: players with %s data: %w", source, err)
+	}
+	var waiting int
+	if err := s.pools.Read().QueryRowContext(ctx, `
+SELECT COUNT(DISTINCT id_type || ':' || id_value) FROM unresolved_observations
+WHERE source = ? AND season = ? AND measure IN `+in, args...).Scan(&waiting); err != nil {
+		return nil, 0, fmt.Errorf("history: waiting %s ids: %w", source, err)
+	}
+	return out, waiting, nil
 }

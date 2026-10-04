@@ -41,7 +41,7 @@ func (a *App) GetLeagueSchedule() LeagueScheduleResult {
 	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
 	defer cancel()
 
-	weeks, fresh, err := a.leagueScheduleOrCache(ctx)
+	weeks, fresh, err := a.leagueScheduleOrArchive(ctx)
 	if err != nil {
 		return LeagueScheduleResult{Detail: fmt.Sprintf("league schedule: %v", err)}
 	}

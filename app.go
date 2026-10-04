@@ -56,6 +56,10 @@ type App struct {
 
 	crosswalkMu sync.Mutex
 	crosswalk   CrosswalkReport // the latest crosswalk load's report, held since launch
+
+	loadingSignals sync.Mutex    // one signals load at a time
+	signalsMu      sync.Mutex    // guards signals
+	signals        SignalsReport // the latest signals load, held since launch
 }
 
 // directory returns the cached players Lookup for the season held, fetching it on first use.
@@ -135,10 +139,11 @@ func (a *App) startup(ctx context.Context) {
 	a.launchRefreshDue = !refreshed
 }
 
-// domReady is the Wails OnDomReady hook: the window is up, so the launch refresh runs now, off
-// the startup path. A windowless -probe never reaches it.
+// domReady is the Wails OnDomReady hook: the window is up, so the launch refresh and the signals
+// load run now, off the startup path. A windowless -probe never reaches it.
 func (a *App) domReady(ctx context.Context) {
 	a.refreshInBackground(ctx)
+	a.signalsInBackground(ctx)
 }
 
 // openDatabases takes the instance lock and opens the three databases. Every fetch after this goes

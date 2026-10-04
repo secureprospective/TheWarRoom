@@ -1,7 +1,6 @@
 package leaguestandings
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 )
@@ -52,7 +51,7 @@ func TestFlatten_MapsFields(t *testing.T) {
 		{ID: "0002", H2HW: "12", H2HL: "1", AllPlayW: "438", PF: "1990.1", Pwr: "51.0", AltPwr: "86.0", Salary: "260"},
 	}
 
-	got, err := flatten(context.Background(), env)
+	got, err := flatten(env)
 	if err != nil {
 		t.Fatalf("flatten: %v", err)
 	}
@@ -70,7 +69,7 @@ func TestFlatten_MapsFields(t *testing.T) {
 func TestFlatten_MalformedFailsLoud(t *testing.T) {
 	env := standingsEnvelope{}
 	env.LeagueStandings.Franchise = []franchiseStanding{{ID: "0001", PF: "not-a-number"}}
-	if _, err := flatten(context.Background(), env); err == nil {
+	if _, err := flatten(env); err == nil {
 		t.Fatal("flatten should error on a non-numeric pf, got nil")
 	}
 }
@@ -84,7 +83,7 @@ func TestDecode_SingleElementCollapse(t *testing.T) {
 	if err := json.Unmarshal([]byte(body), &env); err != nil {
 		t.Fatalf("decode single-franchise standings: %v", err)
 	}
-	got, err := flatten(context.Background(), env)
+	got, err := flatten(env)
 	if err != nil {
 		t.Fatalf("flatten: %v", err)
 	}

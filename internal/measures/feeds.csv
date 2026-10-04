@@ -1,0 +1,7 @@
+feed,source,url,first_season,id_column,id_type,season_column,week_column,filter
+stats_player_week,nflverse,https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_{season}.csv,2021,player_id,gsis,season,week,season_type=REG
+snap_counts,nflverse,https://github.com/nflverse/nflverse-data/releases/download/snap_counts/snap_counts_{season}.csv,2021,pfr_player_id,pfr,season,week,game_type=REG&position!=C|G|T|OT|OG|OL|LS|P
+injuries,nflverse,https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_{season}.csv,2021,gsis_id,gsis,season,week,game_type=REG
+players,nflverse,https://github.com/nflverse/nflverse-data/releases/download/players/players.csv,,gsis_id,gsis,,,
+draft_picks,nflverse,https://github.com/nflverse/nflverse-data/releases/download/draft_picks/draft_picks.csv,,pfr_player_id,pfr,,,
+combine,nflverse,https://github.com/nflverse/nflverse-data/releases/download/combine/combine.csv,,pfr_id,pfr,,,

@@ -5,6 +5,7 @@ package leagueschedule
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -90,28 +91,37 @@ type franchiseBlock struct {
 	Score  string `json:"score"`
 }
 
-// Fetch discovers the league host and returns every week of the season, validated.
+// Export is the MFL export this package reads.
+const Export = "schedule"
+
+// Fetch discovers the league host, then returns the export, validated.
 func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) ([]RawScheduleWeek, error) {
-	env, err := ingestion.FetchLeagueExport[scheduleEnvelope](ctx, c, "schedule", year, leagueID, nil)
+	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
+		return nil, fmt.Errorf("leagueschedule: discover host: %w", err)
+	}
+	body, err := ingestion.LeagueExport(ctx, c, Export, year, leagueID, nil)
 	if err != nil {
 		return nil, fmt.Errorf("leagueschedule: %w", err)
+	}
+	return Parse(body)
+}
+
+// Parse decodes and validates an export body, live or archived.
+func Parse(body []byte) ([]RawScheduleWeek, error) {
+	var env scheduleEnvelope
+	if err := json.Unmarshal(body, &env); err != nil {
+		return nil, fmt.Errorf("leagueschedule: decode: %w", err)
 	}
 	if len(env.Schedule.WeeklySchedule) == 0 {
 		return nil, errEmptySchedule
 	}
-	return flatten(ctx, env)
+	return flatten(env)
 }
 
 // flatten validates each week; a malformed one fails the fetch.
-func flatten(ctx context.Context, env scheduleEnvelope) ([]RawScheduleWeek, error) {
+func flatten(env scheduleEnvelope) ([]RawScheduleWeek, error) {
 	out := make([]RawScheduleWeek, 0, len(env.Schedule.WeeklySchedule))
 	for _, wb := range env.Schedule.WeeklySchedule {
-		select {
-		case <-ctx.Done():
-			return nil, fmt.Errorf("leagueschedule: flatten cancelled: %w", ctx.Err())
-		default:
-		}
-
 		matchups := make([]RawMatchup, 0, len(wb.Matchup))
 		for _, mb := range wb.Matchup {
 			if len(mb.Franchise) != 2 {

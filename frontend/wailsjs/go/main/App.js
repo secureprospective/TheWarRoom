@@ -66,8 +66,16 @@ export function GetRoster(arg1) {
   return window['go']['main']['App']['GetRoster'](arg1);
 }
 
+export function GetSignals() {
+  return window['go']['main']['App']['GetSignals']();
+}
+
 export function LoadCrosswalk() {
   return window['go']['main']['App']['LoadCrosswalk']();
+}
+
+export function LoadSignals() {
+  return window['go']['main']['App']['LoadSignals']();
 }
 
 export function PreviewTransaction(arg1) {

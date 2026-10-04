@@ -1,7 +1,7 @@
 # System Map
 
 What exists in TheWarRoom and where new code belongs. Update it in the same commit as any new
-package, IPC method or external service. Current as of 2026-10-03 (Stage 2 of
+package, IPC method or external service. Current as of 2026-10-04 (Stage 4 of
 `docs/build-handoffs/Core_Build_Plan_2026-10.md`).
 
 ## Layers and packages
@@ -14,9 +14,11 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Transport | `internal/mfl` | MFL HTTP client: rate limit, host discovery, 429 backoff. No domain types. |
 | Transport | `internal/archive` | The HTTP transport every outbound request goes through: it records each response body (sha256, gzip) and each attempt to a `Sink`. Leaf. |
 | Layer 1 | `internal/ingestion` | Fetchers returning raw `Raw*` records. Shared helpers in the root package (`LeagueExport`, `FetchLeagueExport`, the CSV and CFBD plumbing); one subpackage per source. |
+| Layer 1 | `internal/ingestion/feeds` | The table-driven loader: reads any file in `feeds.csv` and maps its columns through `source_fields.csv` into a batch for the measure store. A new signal from such a file is registry rows, not code. |
+| Layer 1 | `internal/ingestion/college` | CFBD season stats as a batch for the measure store: one call per college season, each team's totals summed for the share denominators. |
 | Layer 1 | `internal/normalize` | Raw records → domain types: the players lookup and roster join. |
 | Leaf | `internal/domain`, `internal/playerid`, `internal/numeric`, `internal/scouting` | Value types. `playerid.New` is the only way to build a `PlayerID`. `scouting` holds the Layer 4 input types. |
-| Leaf | `internal/measures` | The measure registry: `measures.csv`, `sources.csv` and `source_fields.csv`, embedded and validated. Generates `docs/data-layer/Measure_Dictionary.md` (`make measure-dictionary`). Adding a source is a CSV row, not code. |
+| Leaf | `internal/measures` | The measure registry: `measures.csv`, `sources.csv`, `source_fields.csv` and `feeds.csv`, embedded and validated. Generates `docs/data-layer/Measure_Dictionary.md` (`make measure-dictionary`). Adding a source is a CSV row, not code. |
 | Store | `internal/db` | SQLite pools: one write connection, many read-only ones, one WAL file. |
 | Store | `internal/store/rulebook` | League rules from MFL as immutable versions with one active pointer, plus commissioner overrides. |
 | Store | `internal/store/params` | Engine calibration: shipped defaults plus admin overrides. |
@@ -41,12 +43,14 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 - `database/sql` is confined to `db` and `store`.
 - `transactions/*` handler packages are imported only by `transactions`.
 
-## IPC surface (22 methods on `App`)
+## IPC surface (26 methods on `App`)
 
 | File | Methods |
 |---|---|
 | `version.go` | `AppInfo` (version, commit, startup error for the banner) |
 | `refresh_app.go` | `RefreshLeague` (pull the league from MFL into the mirror) |
+| `crosswalk_app.go` | `LoadCrosswalk`, `GetCrosswalkReport` (the player directory and its match rates) |
+| `signals_app.go` | `LoadSignals`, `GetSignals` (load every due signal file; source health, freshness and coverage) |
 | `m1_app.go`, `m1_player_score_app.go` | `ScoreLeague`, `GetRankings`, `GetPlayerScore` |
 | `m2_app.go` | `GetPowerRankings` |
 | `leagueschedule_app.go` | `GetLeagueSchedule` |
@@ -97,9 +101,8 @@ These work and are tested, but the core plan rewrites or deletes them. Do not ex
 - `internal/engine/l4/*`: becomes one routine plus a per-position settings table (Stage 5).
 - `internal/scouting/assembly`, `m1_scouting.go` and the CSV/CFBD fetchers (`agetrajectory`,
   `collegedefense`, `collegeshare`, `madden`, `pfrcoverage`, `ras`, `schooltier`,
-  `veteranfilm`): replaced by one table-driven loader into the measure store (Stage 4).
-- `standings_cache` and `league_schedule_cache`: become reads of `raw_archive` (Stage 4). Until
-  then they sit in `whatif.db` with the state store that owns them.
+  `veteranfilm`): today's board still reads them. Their data now also flows into the measure
+  store through `feeds` and `college`; they go when their consumer, today's engine, does.
 - `internal/harness` and its two dev tabs: deleted when the Stage 7 case set lands.
 
 ## What does not exist, on purpose

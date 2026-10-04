@@ -1,2 +1,105 @@
 measure,grain,unit,positions,meaning
+availability.game_status,week,text,all,"The team's final injury designation for the game: Out, Doubtful or Questionable."
+availability.practice_status,week,text,all,The player's last practice participation before the game.
+context.birth_date,player,text,all,"Date of birth, as YYYY-MM-DD."
+context.nfl_position,player,text,all,"The player's position as nflverse lists it, finer than the league's (OLB, NT, FS)."
+context.rookie_season,player,season,all,The first NFL season the player was on a roster.
+context.team,week,text,all,The NFL team the player played the game for.
+exposure.defense_snap_share,week,fraction,DE DT LB CB S,Share of the team's defensive snaps the player was on the field for.
+exposure.defense_snaps,week,snaps,DE DT LB CB S,Defensive snaps played in the game.
+exposure.offense_snap_share,week,fraction,QB RB WR TE,Share of the team's offensive snaps the player was on the field for.
+exposure.offense_snaps,week,snaps,QB RB WR TE,Offensive snaps played in the game.
+exposure.special_teams_snaps,week,snaps,all,Special-teams snaps played in the game.
+opportunity.air_yards,week,yards,RB WR TE,"Air yards on every pass thrown to the player, caught or not."
+opportunity.carries,week,count,QB RB WR TE,Designed runs and scrambles.
+opportunity.fg_attempts,week,count,K,Field goals attempted.
+opportunity.pass_attempts,week,count,QB,"Passes thrown, not counting sacks."
+opportunity.passing_air_yards,week,yards,QB,"Air yards on every pass thrown, complete or not."
+opportunity.pat_attempts,week,count,K,Extra points attempted.
+opportunity.targets,week,count,RB WR TE,Passes thrown to the player.
+outcome.assisted_tackles,week,count,DE DT LB CB S,Tackles shared with a teammate.
+outcome.completions,week,count,QB,Passes completed.
+outcome.defensive_tds,week,count,DE DT LB CB S,Touchdowns scored on defense.
 outcome.fantasy_points,season,points,all,"Fantasy points for the season under this league's scoring, as MFL computes them."
+outcome.fg_made_0_19,week,count,K,Field goals made from 0–19 yards.
+outcome.fg_made_20_29,week,count,K,Field goals made from 20–29 yards.
+outcome.fg_made_30_39,week,count,K,Field goals made from 30–39 yards.
+outcome.fg_made_40_49,week,count,K,Field goals made from 40–49 yards.
+outcome.fg_made_50_59,week,count,K,Field goals made from 50–59 yards.
+outcome.fg_made_60_plus,week,count,K,Field goals made from 60 or more yards.
+outcome.fg_missed_0_19,week,count,K,Field goals missed from 0–19 yards.
+outcome.fg_missed_20_29,week,count,K,Field goals missed from 20–29 yards.
+outcome.fg_missed_30_39,week,count,K,Field goals missed from 30–39 yards.
+outcome.fg_missed_40_49,week,count,K,Field goals missed from 40–49 yards.
+outcome.fg_missed_50_59,week,count,K,Field goals missed from 50–59 yards.
+outcome.fg_missed_60_plus,week,count,K,Field goals missed from 60 or more yards.
+outcome.forced_fumbles,week,count,DE DT LB CB S,Fumbles forced.
+outcome.fumble_recoveries,week,count,DE DT LB CB S,Opponent fumbles recovered.
+outcome.fumbles_lost,week,count,QB RB WR TE,"Fumbles lost to the defense, on any play."
+outcome.interceptions,week,count,DE DT LB CB S,Passes intercepted.
+outcome.interceptions_thrown,week,count,QB,Passes intercepted.
+outcome.passes_defended,week,count,DE DT LB CB S,Passes broken up or intercepted.
+outcome.passing_epa,week,epa,QB,"Expected points added on the player's dropbacks, by the nflverse model."
+outcome.passing_first_downs,week,count,QB,First downs gained by the player's passes.
+outcome.passing_tds,week,count,QB,Touchdown passes.
+outcome.passing_yards,week,yards,QB,Passing yards.
+outcome.pat_made,week,count,K,Extra points made.
+outcome.qb_hits,week,count,DE DT LB CB S,Hits on the quarterback as or after he threw.
+outcome.receiving_epa,week,epa,RB WR TE,"Expected points added on targets, by the nflverse model."
+outcome.receiving_first_downs,week,count,RB WR TE,First downs gained on catches.
+outcome.receiving_tds,week,count,RB WR TE,Receiving touchdowns.
+outcome.receiving_yards,week,yards,RB WR TE,Receiving yards.
+outcome.receptions,week,count,RB WR TE,Passes caught.
+outcome.rushing_epa,week,epa,QB RB WR TE,"Expected points added on carries, by the nflverse model."
+outcome.rushing_first_downs,week,count,QB RB WR TE,First downs gained on carries.
+outcome.rushing_tds,week,count,QB RB WR TE,Rushing touchdowns.
+outcome.rushing_yards,week,yards,QB RB WR TE,Rushing yards.
+outcome.sacks,week,count,DE DT LB CB S,"Sacks, with a shared sack counted as a half."
+outcome.sacks_taken,week,count,QB,Times sacked.
+outcome.safeties,week,count,DE DT LB CB S,Safeties.
+outcome.solo_tackles,week,count,DE DT LB CB S,Tackles made alone.
+outcome.tackles_for_loss,week,count,DE DT LB CB S,Tackles behind the line of scrimmage.
+outcome.yards_after_catch,week,yards,RB WR TE,Receiving yards gained after the catch.
+prior.bench,player,count,all,225-pound bench press repetitions at the combine.
+prior.broad_jump,player,inches,all,Broad jump at the combine.
+prior.college_carries,season,count,QB RB WR TE,Carries in the college season.
+prior.college_completions,season,count,QB,Passes completed in the college season.
+prior.college_conference,season,text,all,The college conference of the player's team that season.
+prior.college_fg_attempts,season,count,K,Field goals attempted in the college season.
+prior.college_fg_made,season,count,K,Field goals made in the college season.
+prior.college_interceptions,season,count,DE DT LB CB S,Interceptions in the college season.
+prior.college_interceptions_thrown,season,count,QB,Passes intercepted in the college season.
+prior.college_pass_attempts,season,count,QB,Passes thrown in the college season.
+prior.college_passes_defended,season,count,DE DT LB CB S,Passes defended in the college season.
+prior.college_passing_tds,season,count,QB,Touchdown passes in the college season.
+prior.college_passing_yards,season,yards,QB,Passing yards in the college season.
+prior.college_qb_hurries,season,count,DE DT LB CB S,Quarterback hurries in the college season.
+prior.college_receiving_tds,season,count,RB WR TE,Receiving touchdowns in the college season.
+prior.college_receiving_yards,season,yards,RB WR TE,Receiving yards in the college season.
+prior.college_receptions,season,count,RB WR TE,Passes caught in the college season.
+prior.college_rushing_tds,season,count,QB RB WR TE,Rushing touchdowns in the college season.
+prior.college_rushing_yards,season,yards,QB RB WR TE,Rushing yards in the college season.
+prior.college_sacks,season,count,DE DT LB CB S,Sacks in the college season.
+prior.college_solo_tackles,season,count,DE DT LB CB S,Solo tackles in the college season.
+prior.college_tackles_for_loss,season,count,DE DT LB CB S,Tackles for loss in the college season.
+prior.college_team,season,text,all,The college the player played for that season.
+prior.college_team_carries,season,count,QB RB WR TE,"The player's college team's carries that season, summed over its players: the denominator of his share."
+prior.college_team_interceptions,season,count,DE DT LB CB S,"The player's college team's interceptions that season, summed over its players: the denominator of his share."
+prior.college_team_passes_defended,season,count,DE DT LB CB S,"The player's college team's passes defended that season, summed over its players: the denominator of his share."
+prior.college_team_passing_yards,season,yards,QB,"The player's college team's passing yards that season, summed over its players: the denominator of his share."
+prior.college_team_receiving_yards,season,yards,RB WR TE,"The player's college team's receiving yards that season, summed over its players: the denominator of his share."
+prior.college_team_receptions,season,count,RB WR TE,"The player's college team's receptions that season, summed over its players: the denominator of his share."
+prior.college_team_rushing_yards,season,yards,QB RB WR TE,"The player's college team's rushing yards that season, summed over its players: the denominator of his share."
+prior.college_team_sacks,season,count,DE DT LB CB S,"The player's college team's sacks that season, summed over its players: the denominator of his share."
+prior.college_team_tackles_for_loss,season,count,DE DT LB CB S,"The player's college team's tackles for loss that season, summed over its players: the denominator of his share."
+prior.college_team_total_tackles,season,count,DE DT LB CB S,"The player's college team's total tackles that season, summed over its players: the denominator of his share."
+prior.college_total_tackles,season,count,DE DT LB CB S,Total tackles in the college season.
+prior.draft_pick,player,pick,all,The overall pick the player was drafted with.
+prior.draft_round,player,round,all,The round the player was drafted in.
+prior.draft_year,player,season,all,The year the player was drafted.
+prior.forty,player,seconds,all,40-yard dash at the combine.
+prior.height,player,inches,all,Height.
+prior.shuttle,player,seconds,all,20-yard shuttle at the combine.
+prior.three_cone,player,seconds,all,Three-cone drill at the combine.
+prior.vertical,player,inches,all,Vertical jump at the combine.
+prior.weight,player,pounds,all,Weight measured at the combine.

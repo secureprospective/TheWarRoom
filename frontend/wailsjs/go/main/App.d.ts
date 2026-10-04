@@ -34,7 +34,11 @@ export function GetRankings():Promise<main.RankingsResult>;
 
 export function GetRoster(arg1:string):Promise<main.RosterResult>;
 
+export function GetSignals():Promise<main.SignalsView>;
+
 export function LoadCrosswalk():Promise<main.CrosswalkReport>;
+
+export function LoadSignals():Promise<main.SignalsReport>;
 
 export function PreviewTransaction(arg1:main.TransactionRequest):Promise<main.TransactionResult>;
 

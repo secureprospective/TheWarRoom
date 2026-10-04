@@ -2,24 +2,22 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
-	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
-// cacheReadTimeout bounds the local cache reads and writes; they are single-row SQLite calls.
-const cacheReadTimeout = 5 * time.Second
+// fallbackTimeout bounds a fallback read of the fetch archive.
+const fallbackTimeout = 10 * time.Second
 
-// fallbackParent is the context for cache reads and writes: the app-lifetime one, never the
-// per-call one. A fetch usually fails by timing out, which kills the per-call context, and a
-// fallback derived from it would fail too.
+// fallbackParent is the context for fallback reads: the app-lifetime one, never the per-call
+// one. A fetch usually fails by timing out, which kills the per-call context, and a fallback
+// derived from it would fail too.
 func (a *App) fallbackParent() context.Context {
 	if a.ctx == nil {
 		return context.Background()
@@ -27,79 +25,76 @@ func (a *App) fallbackParent() context.Context {
 	return a.ctx
 }
 
-// feedCache is an MFL feed served live, or from its last good copy when the fetch fails.
-type feedCache[T any] struct {
-	name     string // for messages: "standings", "schedule"
-	fetch    func(context.Context) ([]T, error)
-	put      func(context.Context, string, time.Time) error
-	cached   func(context.Context) (string, time.Time, error)
-	noCached error // the store's "nothing cached yet" sentinel
+// archivedFeed is an MFL export served live, or from its newest good body in the fetch archive
+// when the fetch fails. Every live fetch is archived by the transport, so nothing is cached here.
+type archivedFeed[T any] struct {
+	export string
+	fetch  func(context.Context) ([]T, error)
+	parse  func([]byte) ([]T, error)
+	// bodies offers archived bodies whose URL contains part, newest first, until accept takes one.
+	bodies func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error)
 }
 
-// liveOrCache fetches the feed and caches the result, or falls back to the last good copy. The
-// cache is written only after a fetch that validated, so a bad payload never evicts a good one.
-// A failed cache write is noted, not returned: live data in hand is still served. Only a failed
-// fetch with nothing usable cached is an error.
-func liveOrCache[T any](ctx, fallback context.Context, f feedCache[T]) ([]T, Freshness, error) {
+// liveOrArchive fetches the feed, or falls back to the newest archived body of the same export,
+// season and league that still parses. A body that proved bad is passed over, so a glitch MFL
+// served once never becomes the fallback. Only a failed fetch with no usable body is an error.
+func liveOrArchive[T any](ctx, fallback context.Context, season int, f archivedFeed[T]) ([]T, Freshness, error) {
 	rows, ferr := f.fetch(ctx)
 	if ferr == nil {
-		now := time.Now()
-		fresh := liveFreshness(now)
-		payload, err := json.Marshal(rows)
-		if err != nil {
-			fresh.Note = fmt.Sprintf("%s not cached (encode failed): %v", f.name, err)
-			return rows, fresh, nil
-		}
-		wctx, cancel := context.WithTimeout(fallback, cacheReadTimeout)
-		defer cancel()
-		if err := f.put(wctx, string(payload), now); err != nil {
-			fresh.Note = fmt.Sprintf("%s not cached: %v", f.name, err)
-		}
-		return rows, fresh, nil
+		return rows, liveFreshness(time.Now()), nil
 	}
-
-	rctx, cancel := context.WithTimeout(fallback, cacheReadTimeout)
+	rctx, cancel := context.WithTimeout(fallback, fallbackTimeout)
 	defer cancel()
-	payload, at, err := f.cached(rctx)
-	if errors.Is(err, f.noCached) {
-		return nil, Freshness{}, fmt.Errorf("%s fetch failed with no cached fallback: %w", f.name, ferr)
+	var at time.Time
+	found, err := f.bodies(rctx, "TYPE="+f.export, func(src string, body []byte, fetched time.Time) bool {
+		if !sameExport(src, f.export, season) {
+			return false
+		}
+		parsed, perr := f.parse(body)
+		if perr != nil {
+			return false
+		}
+		rows, at = parsed, fetched
+		return true
+	})
+	switch {
+	case err != nil:
+		return nil, Freshness{}, fmt.Errorf("%s fetch failed (%w) and the archive is unreadable: %v", f.export, ferr, err)
+	case !found:
+		return nil, Freshness{}, fmt.Errorf("%s fetch failed with no archived copy to fall back on: %w", f.export, ferr)
 	}
-	if err != nil {
-		// The fetch failure is the actionable cause; the cache fault is appended because the
-		// user would otherwise never see it.
-		return nil, Freshness{}, fmt.Errorf("%s fetch failed (%w) and the local cache is unreadable: %v", f.name, ferr, err)
-	}
-	var cached []T
-	if err := json.Unmarshal([]byte(payload), &cached); err != nil {
-		return nil, Freshness{}, fmt.Errorf("%s fetch failed (%v) and the cached copy could not be decoded: %w", f.name, ferr, err)
-	}
-	if len(cached) == 0 {
-		// The store refuses empty payloads, so an empty cached copy is corruption.
-		return nil, Freshness{}, fmt.Errorf("%s fetch failed (%v) and the cached copy was empty", f.name, ferr)
-	}
-	return cached, staleFreshness(at, ferr), nil
+	return rows, staleFreshness(at, ferr), nil
 }
 
-func (a *App) standingsOrCache(ctx context.Context) ([]leaguestandings.RawStanding, Freshness, error) {
-	return liveOrCache(ctx, a.fallbackParent(), feedCache[leaguestandings.RawStanding]{
-		name: "standings",
+// sameExport reports whether an archived URL is this league's export for season.
+func sameExport(raw, export string, season int) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	q := u.Query()
+	return q.Get("TYPE") == export && q.Get("L") == ingestion.LeagueID &&
+		u.Path == "/"+strconv.Itoa(season)+"/export"
+}
+
+func (a *App) standingsOrArchive(ctx context.Context) ([]leaguestandings.RawStanding, Freshness, error) {
+	return liveOrArchive(ctx, a.fallbackParent(), a.season, archivedFeed[leaguestandings.RawStanding]{
+		export: leaguestandings.Export,
 		fetch: func(ctx context.Context) ([]leaguestandings.RawStanding, error) {
 			return leaguestandings.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID)
 		},
-		put:      a.whatif.PutStandings,
-		cached:   a.whatif.CachedStandings,
-		noCached: state.ErrNoCachedStandings,
+		parse:  leaguestandings.Parse,
+		bodies: a.history.ArchivedBodies,
 	})
 }
 
-func (a *App) leagueScheduleOrCache(ctx context.Context) ([]leagueschedule.RawScheduleWeek, Freshness, error) {
-	return liveOrCache(ctx, a.fallbackParent(), feedCache[leagueschedule.RawScheduleWeek]{
-		name: "schedule",
+func (a *App) leagueScheduleOrArchive(ctx context.Context) ([]leagueschedule.RawScheduleWeek, Freshness, error) {
+	return liveOrArchive(ctx, a.fallbackParent(), a.season, archivedFeed[leagueschedule.RawScheduleWeek]{
+		export: leagueschedule.Export,
 		fetch: func(ctx context.Context) ([]leagueschedule.RawScheduleWeek, error) {
 			return leagueschedule.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID)
 		},
-		put:      a.whatif.PutLeagueSchedule,
-		cached:   a.whatif.CachedLeagueSchedule,
-		noCached: state.ErrNoCachedLeagueSchedule,
+		parse:  leagueschedule.Parse,
+		bodies: a.history.ArchivedBodies,
 	})
 }

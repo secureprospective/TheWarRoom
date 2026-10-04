@@ -8,86 +8,57 @@ import (
 	"time"
 )
 
-var errNoneCached = errors.New("nothing cached")
-
-// fakeFeed is an in-memory feedCache: fetchErr fails the fetch, putErr the cache write.
-type fakeFeed struct {
-	live     []string
-	fetchErr error
-	putErr   error
-	payload  string
-	at       time.Time
+// archiveOf serves bodies newest first, as history.ArchivedBodies does.
+type archived struct {
+	url, body string
+	at        time.Time
 }
 
-func (f *fakeFeed) cache() feedCache[string] {
-	return feedCache[string]{
-		name: "standings",
-		fetch: func(context.Context) ([]string, error) {
-			return f.live, f.fetchErr
-		},
-		put: func(_ context.Context, p string, at time.Time) error {
-			if f.putErr != nil {
-				return f.putErr
+func archiveOf(bodies ...archived) func(context.Context, string, func(string, []byte, time.Time) bool) (bool, error) {
+	return func(_ context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
+		for _, b := range bodies {
+			if strings.Contains(b.url, part) && accept(b.url, []byte(b.body), b.at) {
+				return true, nil
 			}
-			f.payload, f.at = p, at
-			return nil
-		},
-		cached: func(context.Context) (string, time.Time, error) {
-			if f.payload == "" {
-				return "", time.Time{}, errNoneCached
-			}
-			return f.payload, f.at, nil
-		},
-		noCached: errNoneCached,
+		}
+		return false, nil
 	}
 }
 
-func TestLiveOrCache(t *testing.T) {
+func TestLiveOrArchive(t *testing.T) {
 	ctx := context.Background()
 	down := errors.New("mfl down")
+	parse := func(b []byte) ([]string, error) {
+		if string(b) == "bad" {
+			return nil, errors.New("glitch")
+		}
+		return strings.Split(string(b), ","), nil
+	}
+	const here = "https://www47.myfantasyleague.com/2026/export?JSON=1&L=14432&TYPE=leagueStandings"
+	feed := func(fetchErr error, bodies ...archived) archivedFeed[string] {
+		return archivedFeed[string]{
+			export: "leagueStandings",
+			fetch:  func(context.Context) ([]string, error) { return []string{"live"}, fetchErr },
+			parse:  parse,
+			bodies: archiveOf(bodies...),
+		}
+	}
+	old := time.Unix(1_700_000_000, 0)
 
-	t.Run("live fetch is served and cached", func(t *testing.T) {
-		f := &fakeFeed{live: []string{"a", "b"}}
-		rows, fresh, err := liveOrCache(ctx, ctx, f.cache())
-		if err != nil || len(rows) != 2 || fresh.State != FreshLive {
-			t.Fatalf("got %v %+v %v, want 2 live rows", rows, fresh, err)
-		}
-		if f.payload != `["a","b"]` {
-			t.Fatalf("cached %q, want the live rows", f.payload)
-		}
-	})
-
-	t.Run("failed fetch serves the cached copy as stale", func(t *testing.T) {
-		f := &fakeFeed{payload: `["old"]`, at: time.Unix(1_700_000_000, 0), fetchErr: down}
-		rows, fresh, err := liveOrCache(ctx, ctx, f.cache())
-		if err != nil || len(rows) != 1 || rows[0] != "old" || fresh.State != FreshStale {
-			t.Fatalf("got %v %+v %v, want the stale cached row", rows, fresh, err)
-		}
-		if !strings.Contains(fresh.Note, "mfl down") {
-			t.Fatalf("stale note %q does not name the fetch failure", fresh.Note)
-		}
-	})
-
-	t.Run("failed fetch with nothing cached is an error naming the fetch", func(t *testing.T) {
-		f := &fakeFeed{fetchErr: down}
-		if _, _, err := liveOrCache(ctx, ctx, f.cache()); !errors.Is(err, down) ||
-			!strings.Contains(err.Error(), "no cached fallback") {
-			t.Fatalf("err = %v, want the fetch error with no fallback", err)
-		}
-	})
-
-	t.Run("an empty cached copy is an error, not an empty board", func(t *testing.T) {
-		f := &fakeFeed{payload: `[]`, fetchErr: down}
-		if _, _, err := liveOrCache(ctx, ctx, f.cache()); err == nil {
-			t.Fatal("empty cached copy was served")
-		}
-	})
-
-	t.Run("a failed cache write still serves live data, with a note", func(t *testing.T) {
-		f := &fakeFeed{live: []string{"a"}, putErr: errors.New("disk full")}
-		rows, fresh, err := liveOrCache(ctx, ctx, f.cache())
-		if err != nil || len(rows) != 1 || !strings.Contains(fresh.Note, "disk full") {
-			t.Fatalf("got %v %+v %v, want live rows and a note", rows, fresh, err)
-		}
-	})
+	rows, fresh, err := liveOrArchive(ctx, ctx, 2026, feed(nil))
+	if err != nil || rows[0] != "live" || fresh.State != FreshLive {
+		t.Fatalf("live: %v %+v %v", rows, fresh, err)
+	}
+	rows, fresh, err = liveOrArchive(ctx, ctx, 2026, feed(down,
+		archived{here, "bad", old.Add(time.Hour)},
+		archived{strings.Replace(here, "/2026/", "/2025/", 1), "last,season", old.Add(time.Minute)},
+		archived{strings.Replace(here, "14432", "99999", 1), "other,league", old.Add(time.Minute)},
+		archived{here, "a,b", old}))
+	if err != nil || strings.Join(rows, ",") != "a,b" || fresh.State != FreshStale || !strings.Contains(fresh.Note, "mfl down") {
+		t.Fatalf("fallback skipping a bad body, another season and another league: %v %+v %v", rows, fresh, err)
+	}
+	if _, _, err := liveOrArchive(ctx, ctx, 2026, feed(down, archived{here, "bad", old})); !errors.Is(err, down) ||
+		!strings.Contains(err.Error(), "no archived copy") {
+		t.Fatalf("nothing usable archived: %v", err)
+	}
 }

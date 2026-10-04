@@ -1,7 +1,11 @@
 package history
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -25,13 +29,17 @@ import (
 const (
 	fixtureMeasures = "measure,grain,unit,positions,meaning\n" +
 		"outcome.tackles_solo,season,count,DE DT LB CB S,Solo tackles.\n" +
-		"availability.game_status,week,text,all,Game-day injury designation.\n"
+		"availability.game_status,week,text,all,Game-day injury designation.\n" +
+		"outcome.sacks,week,count,DE DT LB CB S,Sacks.\n" +
+		"prior.forty,player,seconds,all,40-yard dash.\n"
 	fixtureSources = "source,name,status,max_age_days,host,path_prefix\n" +
 		"alpha,Alpha stats,active,7,127.0.0.1,\n" +
 		"beta,Beta stats,active,7,beta.example.com,\n"
 	fixtureFields = "source,field,measure,priority\n" +
 		"alpha,Solo,outcome.tackles_solo,1\n" +
-		"alpha,Status,availability.game_status,1\n"
+		"alpha,Status,availability.game_status,1\n" +
+		"alpha,Sacks,outcome.sacks,1\n" +
+		"alpha,Forty,prior.forty,1\n"
 	betaField = "beta,soloTackles,outcome.tackles_solo,2\n"
 )
 
@@ -43,6 +51,7 @@ func registry(t *testing.T, extraFields string) *measures.Registry {
 		"measures.csv":      {Data: []byte(fixtureMeasures)},
 		"sources.csv":       {Data: []byte(fixtureSources)},
 		"source_fields.csv": {Data: []byte(fixtureFields + extraFields)},
+		"feeds.csv":         {Data: []byte("feed,source,url,first_season,id_column,id_type,season_column,week_column,filter\n")},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -209,6 +218,53 @@ func TestCorrectionAppendsAndAsOfReadsTheOldValue(t *testing.T) {
 	}
 	if n := count(t, s, "observations"); n != 2 {
 		t.Errorf("observations = %d, want 2: a correction appends", n)
+	}
+}
+
+func TestWeekZerosAreWrittenOnlyAsCorrections(t *testing.T) {
+	s, c, _ := newStore(t)
+	ctx := context.Background()
+	week := func(raw string) measures.Batch {
+		return measures.Batch{Source: "alpha", Facts: []measures.Fact{
+			{IDType: measures.IDTypeMFL, ID: "13604", Season: 2025, Week: 3, Field: "Sacks", Raw: raw},
+			{IDType: measures.IDTypeMFL, ID: "13604", Field: "Forty", Raw: "4.52"}}}
+	}
+	if _, err := s.Ingest(ctx, week("0")); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, s, "observations"); n != 1 {
+		t.Fatalf("a first zero and a forty wrote %d rows, want only the forty", n)
+	}
+	for _, raw := range []string{"1.5", "0", "0"} {
+		c.now = c.now.Add(time.Hour)
+		if _, err := s.Ingest(ctx, week(raw)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := count(t, s, "observations"); n != 3 {
+		t.Fatalf("1.5 then a corrected zero then the same zero wrote %d rows in all, want 3", n)
+	}
+	got, err := s.Features(ctx, FeatureQuery{AsOf: c.now, Season: 0, Measures: []string{"prior.forty"}})
+	if err != nil || len(got) != 1 || got[0].Value != 4.52 || got[0].Week != 0 {
+		t.Fatalf("player-grain forty = %+v, %v", got, err)
+	}
+	c.now = c.now.Add(time.Hour)
+	if _, err := s.Ingest(ctx, week("2")); err != nil {
+		t.Fatal(err)
+	}
+	c.now = c.now.Add(time.Hour)
+	whole := measures.Batch{Source: "alpha", Scope: &measures.Scope{Seasons: []int{2025}, Measures: []string{"outcome.sacks"}}}
+	if rep, err := s.Ingest(ctx, whole); err != nil || rep.Added != 1 {
+		t.Fatalf("a whole-season batch without the sack = %+v, %v; want one zero written", rep, err)
+	}
+	got, err = s.Features(ctx, FeatureQuery{AsOf: c.now, Season: 2025, Measures: []string{"outcome.sacks"}})
+	if err != nil || len(got) != 1 || got[0].Value != 0 {
+		t.Fatalf("sacks after a whole-season batch dropped them = %+v, %v", got, err)
+	}
+	bad := measures.Batch{Source: "alpha", Facts: []measures.Fact{
+		{IDType: measures.IDTypeMFL, ID: "13604", Season: 2025, Field: "Forty", Raw: "4.5"}}}
+	if _, err := s.Ingest(ctx, bad); err == nil || !strings.Contains(err.Error(), "player-grain") {
+		t.Fatalf("a forty with a season = %v, want a grain error", err)
 	}
 }
 
@@ -472,4 +528,34 @@ func TestWriteRunRejectsBadScores(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestArchivedBodiesOfferNewestFirstUntilOneIsTaken(t *testing.T) {
+	s, _, _ := newStore(t)
+	ctx := context.Background()
+	for i, body := range []string{"first", "second", "third"} {
+		if err := s.Record(ctx, archiveFetch("https://api.myfantasyleague.com/2026/export?TYPE=leagueStandings", body,
+			t0().Add(time.Duration(i)*time.Hour))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var offered []string
+	found, err := s.ArchivedBodies(ctx, "TYPE=leagueStandings", func(_ string, body []byte, _ time.Time) bool {
+		offered = append(offered, string(body))
+		return string(body) == "second"
+	})
+	if err != nil || !found || strings.Join(offered, ",") != "third,second" {
+		t.Fatalf("offered %v, found %v, err %v", offered, found, err)
+	}
+}
+
+// archiveFetch is a complete fetch of body from url, as the archive transport records it.
+func archiveFetch(url, body string, at time.Time) archive.Fetch {
+	var buf bytes.Buffer
+	zw := gzip.NewWriter(&buf)
+	_, _ = zw.Write([]byte(body))
+	_ = zw.Close()
+	sum := sha256.Sum256([]byte(body))
+	return archive.Fetch{URL: url, Status: http.StatusOK, SHA256: hex.EncodeToString(sum[:]),
+		Size: int64(len(body)), Gzip: buf.Bytes(), FetchedAt: at}
 }

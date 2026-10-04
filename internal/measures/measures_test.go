@@ -27,6 +27,7 @@ const (
 	measuresHeader = "measure,grain,unit,positions,meaning\n"
 	sourcesHeader  = "source,name,status,max_age_days,host,path_prefix\n"
 	fieldsHeader   = "source,field,measure,priority\n"
+	feedsHeader    = "feed,source,url,first_season,id_column,id_type,season_column,week_column,filter\n"
 )
 
 // registryFS builds a registry from CSV bodies (header rows added).
@@ -35,6 +36,7 @@ func registryFS(ms, srcs, fields string) fstest.MapFS {
 		"measures.csv":      {Data: []byte(measuresHeader + ms)},
 		"sources.csv":       {Data: []byte(sourcesHeader + srcs)},
 		"source_fields.csv": {Data: []byte(fieldsHeader + fields)},
+		"feeds.csv":         {Data: []byte(feedsHeader)},
 	}
 }
 
@@ -89,6 +91,79 @@ func TestLoadRejects(t *testing.T) {
 				t.Fatalf("Load error = %v, want it to mention %q", err, c.want)
 			}
 		})
+	}
+}
+
+func TestFeeds(t *testing.T) {
+	const (
+		weekMeasure   = "outcome.sacks,week,count,DE DT LB CB S,Sacks.\n"
+		playerMeasure = "prior.forty,player,seconds,all,40 time.\n"
+		source        = "nflverse,nflverse,active,14,github.com,/nflverse/\n"
+		fields        = "nflverse,stats.def_sacks,outcome.sacks,1\nnflverse,combine.forty,prior.forty,1\n"
+		statsFeed     = "stats,nflverse,https://github.com/nflverse/s_{season}.csv,2021,player_id,gsis,season,week,season_type=REG&position!=OL|LS\n"
+		combineFeed   = "combine,nflverse,https://github.com/nflverse/combine.csv,,pfr_id,pfr,,,\n"
+	)
+	load := func(feeds string) (*measures.Registry, error) {
+		fsys := registryFS(weekMeasure+playerMeasure, source, fields)
+		fsys["feeds.csv"] = &fstest.MapFile{Data: []byte(feedsHeader + feeds)}
+		return measures.Load(fsys)
+	}
+	reg, err := load(statsFeed + combineFeed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stats, _ := reg.Feed("stats")
+	if stats.Grain() != measures.GrainWeek || stats.URLFor(2024) != "https://github.com/nflverse/s_2024.csv" {
+		t.Errorf("stats feed = %+v", stats)
+	}
+	row := map[string]string{"season_type": "REG", "position": "DE"}
+	if !stats.Keep(func(c string) string { return row[c] }) {
+		t.Error("a REG DE row was dropped")
+	}
+	for col, v := range map[string]string{"season_type": "POST", "position": "OL"} {
+		r := map[string]string{"season_type": "REG", "position": "DE", col: v}
+		if stats.Keep(func(c string) string { return r[c] }) {
+			t.Errorf("a row with %s=%s was kept", col, v)
+		}
+	}
+	if got := reg.Columns(stats); strings.Join(got, ",") != "def_sacks,player_id,position,season,season_type,week" {
+		t.Errorf("Columns = %v", got)
+	}
+	combine, _ := reg.Feed("combine")
+	if combine.Grain() != measures.GrainPlayer || len(reg.FeedFields(combine)) != 1 {
+		t.Errorf("combine feed = %+v", combine)
+	}
+
+	for name, c := range map[string]struct{ feeds, want string }{
+		"season token without first season": {strings.Replace(statsFeed, ",2021,", ",,", 1) + combineFeed, "first_season"},
+		"URL outside its source":            {statsFeed + strings.Replace(combineFeed, "github.com/nflverse", "example.com", 1), "not under source"},
+		"MFL id type":                       {statsFeed + strings.Replace(combineFeed, ",pfr,", ",mfl,", 1), "non-MFL id type"},
+		"week without season":               {strings.Replace(statsFeed, ",season,week,", ",,week,", 1) + combineFeed, "no season column"},
+		"grain mismatch":                    {statsFeed + strings.Replace(combineFeed, ",pfr,,,", ",pfr,season,,", 1), "season-grain feed"},
+		"feed without fields":               {statsFeed + combineFeed + strings.Replace(combineFeed, "combine,", "orphan,", 1), "no source_fields rows"},
+		"bad filter":                        {strings.Replace(statsFeed, "season_type=REG", "season_type", 1) + combineFeed, "not column=values"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if _, err := load(c.feeds); err == nil || !strings.Contains(err.Error(), c.want) {
+				t.Fatalf("Load error = %v, want it to mention %q", err, c.want)
+			}
+		})
+	}
+}
+
+func TestValidPeriod(t *testing.T) {
+	for _, c := range []struct {
+		grain        measures.Grain
+		season, week int
+		want         bool
+	}{
+		{measures.GrainPlayer, 0, 0, true}, {measures.GrainPlayer, 2024, 0, false},
+		{measures.GrainSeason, 2024, 0, true}, {measures.GrainSeason, 2024, 3, false}, {measures.GrainSeason, 0, 0, false},
+		{measures.GrainWeek, 2024, 3, true}, {measures.GrainWeek, 2024, 0, false}, {measures.GrainWeek, 0, 3, false},
+	} {
+		if got := (measures.Measure{Grain: c.grain}).ValidPeriod(c.season, c.week); got != c.want {
+			t.Errorf("%s ValidPeriod(%d, %d) = %v", c.grain, c.season, c.week, got)
+		}
 	}
 }
 

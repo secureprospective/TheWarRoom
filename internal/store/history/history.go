@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS observations (
 	PRIMARY KEY (player_id, season, week, measure, source, as_of)
 );
 CREATE INDEX IF NOT EXISTS observations_by_measure ON observations (measure, season, week);
+CREATE INDEX IF NOT EXISTS observations_by_source ON observations (source, season);
 CREATE TABLE IF NOT EXISTS unresolved_observations (
 	source   TEXT NOT NULL,
 	id_type  TEXT NOT NULL,
@@ -112,6 +113,7 @@ CREATE TABLE IF NOT EXISTS unresolved_observations (
 	CHECK ((value IS NULL) <> (text IS NULL)),
 	PRIMARY KEY (source, id_type, id_value, season, week, measure, as_of)
 );
+CREATE INDEX IF NOT EXISTS unresolved_by_source ON unresolved_observations (source, season);
 CREATE TABLE IF NOT EXISTS player_ids (
 	id_type   TEXT NOT NULL,
 	id_value  TEXT NOT NULL,

@@ -32,12 +32,6 @@ func (s *Store) initSchema(ctx context.Context) error {
 	if err := s.initCalendarSchema(ctx); err != nil {
 		return err
 	}
-	if err := s.initStandingsCacheSchema(ctx); err != nil {
-		return err
-	}
-	if err := s.initLeagueScheduleCacheSchema(ctx); err != nil {
-		return err
-	}
 	if err := s.initTradeNotesSchema(ctx); err != nil {
 		return err
 	}
@@ -192,6 +186,31 @@ func (s *Store) dropContractYearsColumn(ctx context.Context) error {
 func (s *Store) contractYearsColumnDropped(ctx context.Context) (bool, error) {
 	have, err := s.columnExists(ctx, "contracts", "contract_years")
 	return !have, err
+}
+
+// cacheTables are the MFL feed caches the fetch archive replaced: a failed fetch now falls back
+// to the newest good body in history.db.
+func cacheTables() []string { return []string{"standings_cache", "league_schedule_cache"} }
+
+// dropFeedCaches is v4: the cache tables go.
+func (s *Store) dropFeedCaches(ctx context.Context) error {
+	for _, t := range cacheTables() {
+		if _, err := s.pools.Write().ExecContext(ctx, "DROP TABLE IF EXISTS "+t); err != nil {
+			return fmt.Errorf("state: drop %s: %w", t, err)
+		}
+	}
+	return nil
+}
+
+// feedCachesDropped reports whether v4 is already in place (always, on a fresh DB).
+func (s *Store) feedCachesDropped(ctx context.Context) (bool, error) {
+	var n int
+	err := s.pools.Read().QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN (?, ?)`, cacheTables()[0], cacheTables()[1]).Scan(&n)
+	if err != nil {
+		return false, fmt.Errorf("state: look for feed caches: %w", err)
+	}
+	return n == 0, nil
 }
 
 // columnExists reports whether a table has a column.

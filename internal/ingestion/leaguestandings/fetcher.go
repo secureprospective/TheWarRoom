@@ -3,6 +3,7 @@ package leaguestandings
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -99,27 +100,37 @@ type franchiseStanding struct {
 	Salary   string `json:"salary"`
 }
 
-// Fetch discovers the league host, then returns every franchise's standings, validated.
+// Export is the MFL export this package reads.
+const Export = "leagueStandings"
+
+// Fetch discovers the league host, then returns the export, validated.
 func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) ([]RawStanding, error) {
-	env, err := ingestion.FetchLeagueExport[standingsEnvelope](ctx, c, "leagueStandings", year, leagueID, nil)
+	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
+		return nil, fmt.Errorf("leaguestandings: discover host: %w", err)
+	}
+	body, err := ingestion.LeagueExport(ctx, c, Export, year, leagueID, nil)
 	if err != nil {
 		return nil, fmt.Errorf("leaguestandings: %w", err)
+	}
+	return Parse(body)
+}
+
+// Parse decodes and validates an export body, live or archived.
+func Parse(body []byte) ([]RawStanding, error) {
+	var env standingsEnvelope
+	if err := json.Unmarshal(body, &env); err != nil {
+		return nil, fmt.Errorf("leaguestandings: decode: %w", err)
 	}
 	if len(env.LeagueStandings.Franchise) == 0 {
 		return nil, errEmptyStandings
 	}
-	return flatten(ctx, env)
+	return flatten(env)
 }
 
-// flatten validates every record; a malformed one fails the fetch. It honors ctx.
-func flatten(ctx context.Context, env standingsEnvelope) ([]RawStanding, error) {
+// flatten validates every record; a malformed one fails the fetch.
+func flatten(env standingsEnvelope) ([]RawStanding, error) {
 	out := make([]RawStanding, 0, len(env.LeagueStandings.Franchise))
 	for _, f := range env.LeagueStandings.Franchise {
-		select {
-		case <-ctx.Done():
-			return nil, fmt.Errorf("leaguestandings: flatten cancelled: %w", ctx.Err())
-		default:
-		}
 		rs := RawStanding{
 			FranchiseID: f.ID,
 			H2HW:        f.H2HW,

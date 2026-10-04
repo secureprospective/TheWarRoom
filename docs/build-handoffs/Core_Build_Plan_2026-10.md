@@ -23,7 +23,7 @@ and feeds the next.
 |---|---|
 | R1 | The first user is Christopher as a GM. |
 | R2 | **MFL wins.** A refresh overwrites the app's league and ledger state. Moves made in the app are what-if plans until made on MFL. |
-| R3 | **Before the Week 9 trade deadline:** fresh MFL data, the clock started, and the current engine recomputed on today's data with its limits labelled. The full blend lands after the deadline. |
+| R3 | ~~Before the Week 9 trade deadline: fresh MFL data, the clock started, and the current engine recomputed on today's data with its limits labelled.~~ **Dropped (Christopher, 2026-10-03):** the app is not used for in-season work until 2027-01-01, so no deadline build is needed. |
 | R4 | Claude builds; Bee reviews finished stages when GPT budget allows. |
 | R5 | The measurable is **two numbers per player, kept separate**: on-field-now and dynasty value. |
 | R6 | Its shape is the **credibility blend**: `measurable = Z·production + (1−Z)·prior`, `Z = e/(e+k)`, on a within-position percentile scale. Parameters are stored, so a fitted model can replace them later without a rewrite. |
@@ -381,11 +381,10 @@ databases (the state Christopher's machine is in).
 
 Evidence: `~/fleet/runs/warroom-dataflow-2026-10-03/live-gate-stage3-2026-10-03/`.
 
-### Week-9 checkpoint (R3)
+### Week-9 checkpoint (R3): dropped
 
-Stages 0–3, then today's engine recomputed through `scoring_runs` on fresh data. M1 and M2 show
-their known limits: points-based, scouting capped, rookies at zero. **Deliver before the league's
-Week 9 trade deadline.**
+Christopher, 2026-10-03: "the app wont be used for inseason work till Jan 1st 2027, if things are
+connected right. skip it." Stages 4–8 follow Stage 3 directly.
 
 ### Stage 4 — Signals into the store, one at a time
 

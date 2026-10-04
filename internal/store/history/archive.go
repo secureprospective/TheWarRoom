@@ -1,11 +1,15 @@
 package history
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 )
@@ -69,6 +73,55 @@ func (s *Store) Body(ctx context.Context, sha256 string) ([]byte, error) {
 	body, err := archive.Gunzip(gz)
 	if err != nil {
 		return nil, fmt.Errorf("history: body %s: %w", sha256, err)
+	}
+	return body, nil
+}
+
+// ArchivedBodies offers the bodies of successful fetches whose URL contains part, newest first,
+// to accept, until accept takes one. found is false when none was taken. Fallbacks read their
+// feed's last good copy this way, so a body that later proved bad is passed over.
+func (s *Store) ArchivedBodies(ctx context.Context, part string,
+	accept func(fetchedURL string, body []byte, fetchedAt time.Time) bool) (found bool, err error) {
+	rows, err := s.pools.Read().QueryContext(ctx, `
+SELECT f.url, f.fetched_at, r.body FROM fetch_log f JOIN raw_archive r ON r.sha256 = f.sha256
+WHERE f.status = 200 AND instr(f.url, ?) > 0 ORDER BY f.fetched_at DESC, f.fetch_id DESC`, part)
+	if err != nil {
+		return false, fmt.Errorf("history: archived bodies: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var src, at string
+		var gz []byte
+		if err := rows.Scan(&src, &at, &gz); err != nil {
+			return false, fmt.Errorf("history: scan archived body: %w", err)
+		}
+		when, err := parseTime(at)
+		if err != nil {
+			return false, err
+		}
+		body, err := gunzip(gz)
+		if err != nil {
+			return false, fmt.Errorf("history: archived body of %s: %w", src, err)
+		}
+		if accept(src, body, when) {
+			return true, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false, fmt.Errorf("history: archived bodies: %w", err)
+	}
+	return false, nil
+}
+
+func gunzip(gz []byte) ([]byte, error) {
+	r, err := gzip.NewReader(bytes.NewReader(gz))
+	if err != nil {
+		return nil, fmt.Errorf("gunzip: %w", err)
+	}
+	defer func() { _ = r.Close() }()
+	body, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("gunzip: %w", err)
 	}
 	return body, nil
 }

@@ -88,7 +88,7 @@ func (a *App) GetPowerRankings(weight float64, aggMode string) PowerRankingsResu
 		}
 	}
 
-	standings, fresh, err := a.standingsOrCache(ctx)
+	standings, fresh, err := a.standingsOrArchive(ctx)
 	if err != nil {
 		return fail(fmt.Errorf("power rankings: %w", err))
 	}
@@ -126,7 +126,7 @@ func (a *App) GetPowerRankings(weight float64, aggMode string) PowerRankingsResu
 // its own context because the caller's is usually dead after a failed fetch, which is exactly
 // when the "final" label matters.
 func (a *App) currentPhaseLabel() string {
-	ctx, cancel := context.WithTimeout(a.fallbackParent(), cacheReadTimeout)
+	ctx, cancel := context.WithTimeout(a.fallbackParent(), fallbackTimeout)
 	defer cancel()
 	ph, err := a.whatif.CurrentPhase(ctx)
 	if err != nil {
