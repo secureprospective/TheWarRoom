@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playerscores"
+	"github.com/secureprospective/TheWarRoom/internal/modelrun"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/rankings"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -29,34 +31,66 @@ func (a *App) proxyLabel() string {
 	return fmt.Sprintf("BasePoints: MFL %d YTD fantasy points (proxy) — L2 pending", a.season-1)
 }
 
-// loadBasePoints fetches the proxy season's YTD totals into history. A failed fetch is recorded
-// against the source and returned as a warning: the board still scores from what history holds,
-// and source health decides whether the measure counts as lost.
-func (a *App) loadBasePoints(ctx context.Context) (warning string, err error) {
-	batch, ferr := playerscores.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID, a.season-1)
-	if ferr == nil {
-		if _, ierr := a.history.Ingest(ctx, batch); ierr != nil {
-			return "", fmt.Errorf("app: store YTD proxy scores: %w", ierr)
+// loadSeasonPoints keeps history holding MFL's season totals for every league season: each
+// earlier season once, the last one again (so late stat corrections land), and the current one
+// every pass, which is empty before its first game. A failed fetch is recorded against the
+// source and returned as a warning: scoring runs from what history holds, and source health
+// decides whether the measure counts as lost.
+func (a *App) loadSeasonPoints(ctx context.Context) (warning string, err error) {
+	var warnings []string
+	for y := ingestion.LeagueFirstSeason; y <= a.season; y++ {
+		if y < a.season-1 {
+			held, err := a.seasonPointsHeld(ctx, y)
+			if err != nil {
+				return "", err
+			}
+			if held {
+				continue
+			}
 		}
-		return "", nil
+		batch, ferr := playerscores.Fetch(ctx, a.mflClient, strconv.Itoa(y), ingestion.LeagueID, y)
+		switch {
+		case ferr == nil:
+			if _, ierr := a.history.Ingest(ctx, batch); ierr != nil {
+				return "", fmt.Errorf("app: store %d season points: %w", y, ierr)
+			}
+		case y == a.season && errors.Is(ferr, playerscores.ErrEmptyScores):
+		default:
+			if lerr := a.history.LoadFailed(ctx, playerscores.Source, ferr); lerr != nil {
+				return "", errors.Join(ferr, lerr)
+			}
+			warnings = append(warnings, fmt.Sprintf("%d: %v", y, ferr))
+		}
 	}
-	if lerr := a.history.LoadFailed(ctx, playerscores.Source, ferr); lerr != nil {
-		return "", errors.Join(ferr, lerr)
+	if len(warnings) > 0 {
+		return "MFL fantasy points not refreshed (" + strings.Join(warnings, "; ") + "): scored from the last points held", nil
 	}
-	return "MFL fantasy points not refreshed (" + ferr.Error() + "): scored from the last points held", nil
+	return "", nil
 }
 
-// ScoreLeagueResult is the scoring report (run, scored, zero-base, exclusions with reasons)
-// plus the proxy label. Warning reports a source that failed this pass.
+// seasonPointsHeld reports whether history already holds MFL's totals for season.
+func (a *App) seasonPointsHeld(ctx context.Context, season int) (bool, error) {
+	feats, err := a.history.Features(ctx, history.FeatureQuery{AsOf: time.Now(), Season: season,
+		Measures: []string{rankings.BaseMeasure}})
+	if err != nil {
+		return false, fmt.Errorf("app: read %d season points: %w", season, err)
+	}
+	return len(feats) > 0, nil
+}
+
+// ScoreLeagueResult is the board's scoring report (run, scored, zero-base, exclusions with
+// reasons) and the model run's, plus the proxy label. Warning reports a source that failed this
+// pass.
 type ScoreLeagueResult struct {
 	OK      bool            `json:"ok"`
 	Error   string          `json:"error"`
 	Warning string          `json:"warning"`
 	Label   string          `json:"label"`
 	Report  rankings.Report `json:"report"`
+	Model   modelrun.Report `json:"model"`
 }
 
-// ScoreLeague scores all 32 rosters as a board run in history. A pass that matches the latest
+// ScoreLeague scores all 32 rosters as a board run and a model run in history. A pass that matches the latest
 // board exactly writes nothing and reports unchanged.
 func (a *App) ScoreLeague() ScoreLeagueResult {
 	if err := a.ready(); err != nil {
@@ -72,7 +106,7 @@ func (a *App) ScoreLeague() ScoreLeagueResult {
 	if err != nil {
 		return fail(err)
 	}
-	warning, err := a.loadBasePoints(ctx)
+	warning, err := a.loadSeasonPoints(ctx)
 	if err != nil {
 		return fail(err)
 	}
@@ -95,10 +129,15 @@ func (a *App) ScoreLeague() ScoreLeagueResult {
 	if err != nil {
 		return fail(err)
 	}
+	set := a.params.Snapshot() // the board and the model score with the same params
 	rep, err := runner.Run(ctx, rankings.RunSpec{
 		Kind: history.RunBoard, Season: a.season, AsOf: time.Now(),
-		Params: a.params.Snapshot(), Measures: rankings.BoardMeasures(),
+		Params: set, Measures: rankings.BoardMeasures(),
 	})
+	if err != nil {
+		return fail(err)
+	}
+	modelRep, err := a.runModel(ctx, lk, set)
 	if err != nil {
 		return fail(err)
 	}
@@ -106,7 +145,7 @@ func (a *App) ScoreLeague() ScoreLeagueResult {
 	for i := range rep.Excluded {
 		rep.Excluded[i].FranchiseName = domain.FranchiseLabel(names, rep.Excluded[i].FranchiseID)
 	}
-	return ScoreLeagueResult{OK: true, Warning: warning, Label: a.proxyLabel(), Report: rep}
+	return ScoreLeagueResult{OK: true, Warning: warning, Label: a.proxyLabel(), Report: rep, Model: modelRep}
 }
 
 // latestBoard returns the season's board run. ok is false before the first ScoreLeague.
@@ -167,6 +206,12 @@ type RankRow struct {
 	// when there is no previous board: "unknown" is not "held position".
 	RankDelta int  `json:"rankDelta"`
 	DeltaOK   bool `json:"deltaOK"`
+
+	// The two measurables from the season's latest model run, in league points per game;
+	// ModelOK is false when that run did not value the player.
+	NowPPG     float64 `json:"nowPPG"`
+	DynastyPPG float64 `json:"dynastyPPG"`
+	ModelOK    bool    `json:"modelOK"`
 }
 
 // MissingMeasure is a measure the board's model reads that no active source fed when it ran.
@@ -190,6 +235,8 @@ type RankingsResult struct {
 	// in Warning, not as staleness.
 	Freshness Freshness `json:"freshness"`
 	Rows      []RankRow `json:"rows"`
+	// ModelRunID is the model run the measurables come from; 0 when there is none.
+	ModelRunID int64 `json:"modelRunID"`
 }
 
 // GetRankings reads the latest board run and joins display fields. It never scores: empty Rows
@@ -229,11 +276,15 @@ func (a *App) GetRankings() RankingsResult {
 	}
 
 	rows := a.rankRows(scores, lk, prior)
+	modelRun, err := a.joinModel(ctx, rows)
+	if err != nil {
+		warning = strings.TrimPrefix(warning+"; "+err.Error(), "; ")
+	}
 	return RankingsResult{
 		OK: true, Warning: warning, Label: a.proxyLabel(),
 		Season: a.season, RunID: run.ID, AsOf: run.AsOf.Format(time.RFC3339),
 		MissingMeasures: a.describeMeasures(run.MissingMeasures),
-		Freshness:       localFreshness(), Rows: rows,
+		Freshness:       localFreshness(), Rows: rows, ModelRunID: modelRun,
 	}
 }
 

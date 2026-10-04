@@ -22,9 +22,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 )
 
-// errEmptyScores: a completed season is never empty, and empty would flatten the whole board
-// to zero.
-var errEmptyScores = errors.New("playerscores: response contained zero scores")
+// ErrEmptyScores: a completed season is never empty, and empty would flatten the whole board
+// to zero. A season not yet started is empty, which its caller expects.
+var ErrEmptyScores = errors.New("playerscores: response contained zero scores")
 
 // RawScore is one player's season total as MFL sends it. Week echoes the requested window.
 type RawScore struct {
@@ -130,7 +130,7 @@ func Batch(scores []RawScore, season int, bodySHA256 string) measures.Batch {
 // earlier length check and still leave zero player scores.
 func guardNonEmpty(out []RawScore) ([]RawScore, error) {
 	if len(out) == 0 {
-		return nil, errEmptyScores
+		return nil, ErrEmptyScores
 	}
 	return out, nil
 }

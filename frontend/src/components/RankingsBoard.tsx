@@ -41,7 +41,7 @@ const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K', 'DT', 'DE', 'LB', 'CB', 'S'] as 
 
 // Sortable numeric facets (Command Ledger B1: assets.sort col=<...>). The rank
 // column is not sortable — it is the run's canonical order, always ascending.
-type SortKey = 'base' | 'adjusted' | 'salary' | 'capEff';
+type SortKey = 'base' | 'adjusted' | 'now' | 'dynasty' | 'salary' | 'capEff';
 
 // Grid templates (Session-B §2·3). Narrative/Tactical carry the locked facet map plus the
 // Adj/$M track ONLY while the cap-efficiency lens is on; Matrix collapses to the pure scan,
@@ -50,10 +50,11 @@ type SortKey = 'base' | 'adjusted' | 'salary' | 'capEff';
 // TRACK COUNTS MUST BALANCE — tsc and the linter CANNOT see a violation here, so count by
 // hand on every change. B-5 added the §1 Δ track next to #; it is carried in ALL densities
 // because movement is the point of a scan, not a detail to drop from one.
-//   COLS         8: # · Δ · Player · Pos · Franchise · Base · Adj · Sal
-//   COLS_CAPEFF  9: the above + Adj/$M (cap-efficiency lens only)
-//   COLS_MTX     6: # · Δ · Player · Pos · Adj · Sal   (Franchise + Base are .twr-hide-mtx)
-const COLS = '34px 44px 1fr 42px 148px 66px 92px 80px';
+//   COLS        10: # · Δ · Player · Pos · Franchise · Base · Adj · Now · Dyn · Sal
+//   COLS_CAPEFF 11: the above + Adj/$M (cap-efficiency lens only)
+//   COLS_MTX     6: # · Δ · Player · Pos · Adj · Sal   (Franchise, Base, Now and Dyn are .twr-hide-mtx)
+// Now and Dyn are the model run's measurables in league points per game.
+const COLS = '34px 44px 1fr 42px 148px 66px 92px 58px 58px 80px';
 const COLS_CAPEFF = `${COLS} 72px`;
 const COLS_MTX = '24px 40px 1fr 36px 72px 72px';
 
@@ -105,10 +106,13 @@ export function RankingsBoard() {
     if (capEffOnly) v = v.filter((r) => r.capEffOK);
     // Rows without a defined Adj/$M are always parked LAST (in either direction),
     // never faked as a value — partition them out before sorting the rest.
-    const hasVal = (r: main.RankRow): boolean => sortKey !== 'capEff' || r.capEffOK;
+    const hasVal = (r: main.RankRow): boolean =>
+      sortKey === 'capEff' ? r.capEffOK : sortKey === 'now' || sortKey === 'dynasty' ? r.modelOK : true;
     const pick = (r: main.RankRow): number => {
       switch (sortKey) {
         case 'base': return r.basePoints;
+        case 'now': return r.nowPPG;
+        case 'dynasty': return r.dynastyPPG;
         case 'salary': return r.salary;
         case 'capEff': return r.capEff;
         default: return r.adjustedScore;
@@ -257,6 +261,12 @@ export function RankingsBoard() {
             <span className="twr-r">
               <SortHeader label="Adj" sortKey="adjusted" activeKey={sortKey} dir={sortDir} onSort={onSort} />
             </span>
+            <span className="twr-r twr-hide-mtx" title="On-field-now: expected league points per game this season">
+              <SortHeader label="Now" sortKey="now" activeKey={sortKey} dir={sortDir} onSort={onSort} />
+            </span>
+            <span className="twr-r twr-hide-mtx" title="Dynasty: expected league points per game over the coming seasons, discounted, counting a season off the field as 0">
+              <SortHeader label="Dyn" sortKey="dynasty" activeKey={sortKey} dir={sortDir} onSort={onSort} />
+            </span>
             <span className="twr-r">
               <SortHeader label="Salary" sortKey="salary" activeKey={sortKey} dir={sortDir} onSort={onSort} />
             </span>
@@ -300,6 +310,8 @@ export function RankingsBoard() {
               <span className="twr-c-fr twr-hide-mtx">{r.franchiseName || '—'}</span>
               <span className="twr-c-num twr-r twr-hide-mtx">{r.basePoints.toFixed(2)}</span>
               <span className="twr-c-adj twr-r">{r.adjustedScore.toFixed(2)}</span>
+              <span className="twr-c-num twr-r twr-hide-mtx">{r.modelOK ? r.nowPPG.toFixed(1) : '—'}</span>
+              <span className="twr-c-num twr-r twr-hide-mtx">{r.modelOK ? r.dynastyPPG.toFixed(1) : '—'}</span>
               <span className="twr-c-num twr-r">${r.salary.toFixed(2)}</span>
               {capEffOnly && (
                 // The '—' arm is unreachable while the column is lens-bound (the lens filters to
@@ -333,6 +345,15 @@ function ScoreReportPanel({ report }: { report: main.ScoreLeagueResult }) {
             (rep.negativeBase > 0 ? `; ${rep.negativeBase} negative totals floored to 0 — check the proxy data` : '') +
             ').'}
       </p>
+      {report.model && report.model.runID > 0 && (
+        <p style={{ margin: '4px 0 0' }}>
+          {report.model.unchanged
+            ? `Measurables unchanged: model run #${report.model.runID}.`
+            : `Valued ${report.model.scored} players as model run #${report.model.runID} (${report.model.rookies} on their prior alone` +
+              (report.model.excluded?.length ? `; ${report.model.excluded.length} excluded` : '') +
+              ').'}
+        </p>
+      )}
       {report.warning && (
         <p style={{ margin: '4px 0 0', color: 'var(--amber-base)' }}>{report.warning}</p>
       )}

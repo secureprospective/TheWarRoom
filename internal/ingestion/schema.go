@@ -21,6 +21,9 @@ import (
 // finds it), and neither is the season (league.Discover reads it from MFL).
 const LeagueID = "14432"
 
+// LeagueFirstSeason is the league's first season on MFL: its scoring history starts here.
+const LeagueFirstSeason = 2021
+
 // ValidatePlayerID rejects a malformed MFL id at the boundary. Fetchers keep the raw string;
 // normalize re-derives the PlayerID.
 func ValidatePlayerID(raw string) (playerid.PlayerID, error) {
