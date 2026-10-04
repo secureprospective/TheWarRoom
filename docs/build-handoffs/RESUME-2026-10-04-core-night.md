@@ -1,5 +1,12 @@
 # RESUME — TheWarRoom core stages 4–8, overnight run (2026-10-04)
 
+## 0. Next actions, in order
+1. Read §5, then build the single rubric routine + settings; golden test against today's board.
+2. Madden removal (separate commit, reported diff); assembly twin-file collapse.
+3. Stage 5 live gate on Claude-OS (relaunch rules in §3); record in the plan; update this file.
+4. Stages 6, 7, 8 per the plan; scratch history db for fitting at `~/scratch/twr-stage4/db/history.db`.
+5. Stop at the README. Open one PR (do not merge); leave Christopher a numbered morning list.
+
 ## 1. What we are doing
 - Christopher's goal (2026-10-03 night): work through Stages 4–8 without him. Do not merge to
   main. Stop at the README rewrite. He tests in the morning and merges.
@@ -12,8 +19,8 @@
 ## 2. Status
 | Stage | State |
 |---|---|
-| 4 Signals | DONE, live gate PASS (v0.5.0-140). Commits a365ba3, 7e916e7. |
-| 5 Rubric as data | next |
+| 4 Signals | DONE, live gate PASS (v0.5.0-140). Commits a365ba3, 7e916e7, pushed. Gate record in the plan. |
+| 5 Rubric as data | IN PROGRESS: analysis done, no code yet (see §5) |
 | 6 Fit | — |
 | 7 Measurables | — |
 | 8 M2 | — |
@@ -34,3 +41,27 @@
 ## 4. Morning items for Christopher (collect here)
 - Put `CFBD_API_KEY` where his launcher sees it, or the college signal stays skipped on the Beelink.
 - M2 shows "FINAL season complete" mid-season, and all-play 0-0: pre-existing; look at in Stage 8.
+
+## 5. Stage 5 working notes (nothing written yet)
+The 10 rubrics in `internal/engine/l4/{offense,defense,kicker}` are one routine with constants:
+- film = Scurve(composite, infl, steep, cap) when HasFilm, else 1.0 (FilmRaw = NeutralNorm 0.5).
+  K instead blends MaddenFilm 0.60 + NFLProduction 0.40 (each `curve.Present`), when either is present.
+- RAS: off at QB and K (1.0). Else when HasRAS: 1 + weight*(Scurve(RAS/10, infl, steep, cap)-1).
+- breakout: off at K (1.0). Else composite = wBA*breakoutAge + wST*schoolTier + wCS*collegeShare
+  + wAT*ageTraj, through Scurve(infl 0.5, steep, cap 0.05).
+  - SL-019 (strength >0 at TE 0.35, DE 0.35, CB 0.30, S 0.30) lifts breakoutAge (only when present)
+    and ageTraj: `curve.SL019(v, RAS/10, strength, HasRAS)`.
+  - DT: ageTraj = in.Cushion.Slow(ageTraj, NeutralNorm, RAS, HasRAS); no SL-019. The cushion is
+    zero (off) for every other position via composition.
+- Hooks the harness reads: `SL021Alpha(nflYear)` on DT (≤1 → 0.50 else 0.10) and DE (0.15 always);
+  `HasNGSAnchor()` true on CB and S only. `defense.SL021Blend` lives in sl021.go.
+- Constants differ by position: film (steep 12/cap .05, but DT/LB 10/.03, K 10/.03), RAS
+  (RB 8/.04 w .6, TE 11/.08 w1, WR 10/.08 w1, DE 10/.08, DT 10/.08, LB 11/.04 w .6, CB 11/.08,
+  S 10/.08), breakout steep 11 (CB 10), weights and three curves per position.
+- Plan: one routine (`internal/engine/l4` single package) + per-position settings table stored as
+  params (R7) — params store is `internal/store/params` (defaults.go ParamDef{Key, Position, Min,
+  Max, Default}; Snapshot() Set; Set.GetGlobal). Curves need a representation in params
+  (breakpoints as indexed keys) or stay as data in the settings table with scalars in params.
+- Golden test first: board identical. Then Madden removal (R8) as a separate, reported change.
+  Then collapse twin files in `internal/scouting/assembly` (measure before cutting).
+- Users: harness_app.go imports l4/defense, kicker, offense; internal/harness/cases_eval_3g.go.
