@@ -1,4 +1,8 @@
 # Legacy NFL — Layer 4 Temporary Testing Application
+
+> **Retired 2026-10-04 (Core Build Plan R7-10).** The harness this specifies was deleted in
+> Stage 7; the case set in `internal/modelrun/cases_test.go` replaces its cases. Kept as history.
+
 **Version:** 1.0 — June 2026
 **Purpose:** Lightweight testing harness for validating Layer 4 scouting engine outputs before building the full application. Claude Code builds this. Christopher operates it. The goal is to verify that the engine produces rankings and component outputs that align with real-world consensus, identify any calibration problems early, and confirm all architectural decisions (SL-005, SL-019, SL-020, SL-021, Cushion Guard, EMA, Lockett Pattern) are executing correctly in code before the full build begins.
 **Scope:** This is NOT the production application. It is a testing sandbox. Prioritize correctness of output and debuggability over UI polish. Every component output must be visible and inspectable. Admin parameters must be adjustable live.
