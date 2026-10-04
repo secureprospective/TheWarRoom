@@ -1,15 +1,25 @@
 # RESUME — TheWarRoom core stages 4–8, overnight run (2026-10-04)
 
 ## 0. Next actions, in order
-Stage 7 is DONE (design R7-1…R7-10 and gate record in the plan; live on Claude-OS at
-v0.5.0-166-g7fe4ab1, binary `~/twr-gate/thewarroom-s7`, board #8 + model run #3).
-1. **Stage 8 — M2 on the new numbers** (plan Stage 8): the two views, "this season"
-   (on-field-now) and "the franchise" (dynasty), reading the latest model run; recompute via
-   runs. Gate: a param edit makes a new run and a changed board, the old board stays readable,
-   and both views are shown. Look at the pre-existing M2 "FINAL" / all-play 0-0 issue (§4).
-2. Stop at the README; open one PR (session/core-stages-4-8 → main), do not merge; morning
-   list (§4).
-3. Update this file (three paths) and T373.
+Stage 8 is BUILT, not yet gated. Commits 21719e4 (M2 two views on the model run, Δ against the
+previous model run, roster-value naming) and 372c856 (results side reads points for when MFL
+reports no all-play, which this league never does; weeks from head-to-head vs
+lastRegularSeasonWeek; team column min 150 px). Nothing running; Claude-OS is up with the app
+`~/twr-gate/thewarroom-s8` (built from 21719e4: rebuild and recopy for 372c856).
+1. **Stage 8 live gate on Claude-OS** (copy with `scp -l 40000`; two unlimited copies reset
+   the passt link): rebuild, recopy as thewarroom-s8, launch, PULSE (172,360 unmaximized).
+   Screenshot both views (View chips "This season" / "The franchise"), with team names showing
+   and the label naming "points for".
+2. **Param edit → new run → changed board:** Control (172,533) → Engine Admin (513,130) →
+   filter (497,190) "dynasty.discount" → set 0.6 → Apply; Assets (172,302) → Score League
+   (395,126) → model run #4; PULSE → The franchise: Δ against model run #3 shows moves; old run
+   stays readable (Δ is computed from it; `model_scores` run 3 in the VM history.db). Then set
+   dynasty.discount back to 0.85 and Score League again.
+3. Record the Stage 8 design (R8-1 views, R8-2 franchise = roster alone, R8-3 Δ vs previous
+   model run, R8-4 points-for fallback, R8-5 phase from MFL standings) and gate in the plan.
+4. Stop at the README; open one PR (session/core-stages-4-8 → main) with `gh pr create`, do
+   not merge; morning list (§4) as numbered steps plus a decision matrix.
+5. Update this file (three paths) and T373.
 
 ## 1. What we are doing
 - Christopher's goal (2026-10-03 night): work through Stages 4–8 without him. Do not merge to
@@ -49,7 +59,7 @@ v0.5.0-166-g7fe4ab1, binary `~/twr-gate/thewarroom-s7`, board #8 + model run #3)
   `dynasty.discount` (0.85). They are his product calls (how much later seasons count).
 - CFBD key: Score League no longer fetches college stats live (R7-9); with a key only school
   tier calls CFBD. Safe to set now.
-- M2 shows "FINAL season complete" mid-season, and all-play 0-0: pre-existing; look at in Stage 8.
+- M2 "FINAL" mid-season and all-play 0-0: FIXED in 372c856 (phase from MFL standings; MFL reports no all-play for this league, so the blend reads points for). Christopher may want to enable all-play in the MFL league settings.
 
 ## 5b. Stage 6/7 working notes
 - Scale: within-position percentile of league fantasy points per game played, among the
