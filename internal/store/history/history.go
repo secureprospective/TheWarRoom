@@ -55,7 +55,8 @@ func (s *Store) Registry() *measures.Registry { return s.reg }
 
 // appendOnly lists the tables whose rows never change once written.
 func appendOnly() []string {
-	return []string{"raw_archive", "fetch_log", "loads", "observations", "param_sets", "scoring_runs", "run_scores"}
+	return []string{"raw_archive", "fetch_log", "loads", "observations", "param_sets", "scoring_runs", "run_scores",
+		"model_runs", "model_scores"}
 }
 
 const historyDDL = `
@@ -155,6 +156,35 @@ CREATE TABLE IF NOT EXISTS run_scores (
 	tb_is_veteran      INTEGER NOT NULL,
 	tb_ras             REAL NOT NULL,
 	tb_scarcity_rank   INTEGER NOT NULL,
+	PRIMARY KEY (run_id, mfl_id)
+);
+CREATE TABLE IF NOT EXISTS model_runs (
+	run_id           INTEGER PRIMARY KEY,
+	kind             TEXT NOT NULL CHECK (kind = 'model'),
+	season           INTEGER NOT NULL,
+	as_of            TEXT NOT NULL,
+	param_set_id     TEXT NOT NULL REFERENCES param_sets(param_set_id),
+	engine           TEXT NOT NULL,
+	inputs_hash      TEXT NOT NULL,
+	scores_hash      TEXT NOT NULL,
+	missing_measures TEXT NOT NULL,
+	created_at       TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS model_scores (
+	run_id       INTEGER NOT NULL REFERENCES model_runs(run_id),
+	mfl_id       TEXT NOT NULL,
+	position     TEXT NOT NULL,
+	now          REAL NOT NULL,
+	now_ppg      REAL NOT NULL,
+	dynasty      REAL NOT NULL,
+	dynasty_ppg  REAL NOT NULL,
+	prior        REAL NOT NULL,
+	past_games   REAL NOT NULL,
+	season_games REAL NOT NULL,
+	z_past       REAL NOT NULL,
+	z_now        REAL NOT NULL,
+	on_field     REAL NOT NULL,
+	inputs       TEXT NOT NULL,
 	PRIMARY KEY (run_id, mfl_id)
 );`
 

@@ -18,6 +18,8 @@ import (
 	"testing/fstest"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/model"
+
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/engine"
@@ -558,4 +560,49 @@ func archiveFetch(url, body string, at time.Time) archive.Fetch {
 	sum := sha256.Sum256([]byte(body))
 	return archive.Fetch{URL: url, Status: http.StatusOK, SHA256: hex.EncodeToString(sum[:]),
 		Size: int64(len(body)), Gzip: buf.Bytes(), FetchedAt: at}
+}
+
+func modelRun(knob float64) NewModelRun {
+	score := func(id string, dyn float64) ModelScore {
+		return ModelScore{MFLID: id, Position: "WR", Inputs: []string{"draft", "season.2025"},
+			Value: model.Value{Now: 0.6, NowPPG: 12, Dynasty: dyn, DynastyPPG: dyn * 20, Prior: 0.4, PastGames: 15, OnField: 0.9}}
+	}
+	return NewModelRun{Season: 2026, AsOf: t0(), InputsHash: "in-1", Engine: "v-test",
+		Params: ParamSet{Params: map[string]float64{"model.k_now@WR": knob}, Measures: []string{"outcome.fantasy_points"}},
+		Scores: []ModelScore{score("13604", 0.5), score("0042", 0.7)}}
+}
+
+// A model run is kept apart from the boards, deduplicated like them, and every one stays readable.
+func TestModelRunsAreKeptBesideTheBoard(t *testing.T) {
+	s, _, _ := newStore(t)
+	ctx := context.Background()
+	if _, _, err := s.WriteRun(ctx, board(0.03, "in-1")); err != nil {
+		t.Fatal(err)
+	}
+	first, written, err := s.WriteModelRun(ctx, modelRun(2))
+	if err != nil || !written || first.Kind != RunModel {
+		t.Fatalf("first model run: %+v %v %v", first, written, err)
+	}
+	if again, written, err := s.WriteModelRun(ctx, modelRun(2)); err != nil || written || again.ID != first.ID {
+		t.Fatalf("the same model run was written twice: %+v %v %v", again, written, err)
+	}
+	second, written, err := s.WriteModelRun(ctx, modelRun(3))
+	if err != nil || !written || second.ParamSetID == first.ParamSetID {
+		t.Fatalf("an edited param must make a new run: %+v %v %v", second, written, err)
+	}
+	if latest, ok, err := s.LatestRun(ctx, 2026, RunModel); err != nil || !ok || latest.ID != second.ID {
+		t.Fatalf("latest model run = %+v %v %v", latest, ok, err)
+	}
+	if b, ok, err := s.LatestRun(ctx, 2026, RunBoard); err != nil || !ok || b.Kind != RunBoard {
+		t.Fatalf("the board must be untouched: %+v %v %v", b, ok, err)
+	}
+	old, err := s.ModelScores(ctx, first.ID)
+	if err != nil || len(old) != 2 || old[0].MFLID != "0042" || old[0].DynastyPPG != 14 || old[0].Inputs[1] != "season.2025" {
+		t.Errorf("first run's scores = %+v, %v", old, err)
+	}
+	bad := modelRun(4)
+	bad.Scores[0].NowPPG = math.NaN()
+	if _, _, err := s.WriteModelRun(ctx, bad); err == nil {
+		t.Error("a NaN must never freeze into the append-only table")
+	}
 }

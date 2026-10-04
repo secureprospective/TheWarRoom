@@ -24,7 +24,16 @@ type RunKind string
 const (
 	RunBoard     RunKind = "board"
 	RunRebalance RunKind = "rebalance"
+	RunModel     RunKind = "model" // the measurables (internal/model); kept in model_runs
 )
+
+// runTable is the table a kind's runs are kept in.
+func runTable(kind RunKind) string {
+	if kind == RunModel {
+		return "model_runs"
+	}
+	return "scoring_runs"
+}
 
 // ParamSet is the parameters a run scored with, and the measures its model reads.
 type ParamSet struct {
@@ -107,6 +116,20 @@ func (s *Store) WriteRun(ctx context.Context, nr NewRun) (run Run, written bool,
 	if err != nil {
 		return Run{}, false, err
 	}
+	return s.writeRun(ctx, p, func(tx *sql.Tx, runID int64) error {
+		for _, sc := range nr.Scores {
+			if _, err := tx.ExecContext(ctx, insertScoreSQL, scoreArgs(runID, sc)...); err != nil {
+				return fmt.Errorf("history: write score %s in run %d: %w", sc.MFLID, runID, err)
+			}
+		}
+		return nil
+	})
+}
+
+// writeRun stores p unless the latest run of its kind and season already holds it; scores writes
+// its score rows inside the run's transaction.
+func (s *Store) writeRun(ctx context.Context, p pendingRun, scores func(tx *sql.Tx, runID int64) error) (Run, bool, error) {
+	nr := p.NewRun
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	if prev, ok, err := s.LatestRun(ctx, nr.Season, nr.Kind); err != nil {
@@ -114,11 +137,11 @@ func (s *Store) WriteRun(ctx context.Context, nr NewRun) (run Run, written bool,
 	} else if ok && p.sameAs(prev) {
 		return prev, false, nil
 	}
-	runID, err := s.insertRun(ctx, p)
+	runID, err := s.insertRun(ctx, p, scores)
 	if err != nil {
 		return Run{}, false, err
 	}
-	stored, _, err := s.run(ctx, `WHERE run_id = ?`, runID)
+	stored, _, err := s.run(ctx, runTable(nr.Kind), `WHERE run_id = ?`, runID)
 	return stored, true, err
 }
 
@@ -132,11 +155,18 @@ func (s *Store) prepareRun(ctx context.Context, nr NewRun) (pendingRun, error) {
 	case nr.InputsHash == "" || nr.Engine == "":
 		return pendingRun{}, fmt.Errorf("history: run for season %d needs its inputs hash and engine", nr.Season)
 	}
-	p := pendingRun{NewRun: nr}
-	var err error
-	if p.scoresHash, err = validScores(nr.Scores); err != nil {
+	hash, err := validScores(nr.Scores)
+	if err != nil {
 		return pendingRun{}, err
 	}
+	return s.pending(ctx, nr, hash)
+}
+
+// pending reduces a checked run to what identifies it: its param set and the measures it reads
+// that are not flowing.
+func (s *Store) pending(ctx context.Context, nr NewRun, scoresHash string) (pendingRun, error) {
+	p := pendingRun{NewRun: nr, scoresHash: scoresHash}
+	var err error
 	if p.paramSetID, p.params, p.measures, err = nr.Params.canonical(); err != nil {
 		return pendingRun{}, err
 	}
@@ -153,7 +183,7 @@ func (s *Store) prepareRun(ctx context.Context, nr NewRun) (pendingRun, error) {
 }
 
 // insertRun writes the param set, the run and its scores in one transaction. The caller holds wmu.
-func (s *Store) insertRun(ctx context.Context, p pendingRun) (int64, error) {
+func (s *Store) insertRun(ctx context.Context, p pendingRun, scores func(tx *sql.Tx, runID int64) error) (int64, error) {
 	now := formatTime(s.now())
 	missingJSON, err := json.Marshal(p.missing)
 	if err != nil {
@@ -169,9 +199,11 @@ INSERT OR IGNORE INTO param_sets (param_set_id, measures, params, created_at) VA
 		p.paramSetID, string(p.measures), string(p.params), now); err != nil {
 		return 0, fmt.Errorf("history: write param set: %w", err)
 	}
-	res, err := tx.ExecContext(ctx, `
-INSERT INTO scoring_runs (kind, season, as_of, param_set_id, engine, inputs_hash, scores_hash,
-	missing_measures, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	insert := insertBoardRunSQL
+	if p.Kind == RunModel {
+		insert = insertModelRunSQL
+	}
+	res, err := tx.ExecContext(ctx, insert,
 		string(p.Kind), p.Season, formatTime(p.AsOf), p.paramSetID, p.Engine, p.InputsHash, p.scoresHash,
 		string(missingJSON), now)
 	if err != nil {
@@ -181,16 +213,22 @@ INSERT INTO scoring_runs (kind, season, as_of, param_set_id, engine, inputs_hash
 	if err != nil {
 		return 0, fmt.Errorf("history: run id: %w", err)
 	}
-	for _, sc := range p.Scores {
-		if _, err := tx.ExecContext(ctx, insertScoreSQL, scoreArgs(runID, sc)...); err != nil {
-			return 0, fmt.Errorf("history: write score %s in run %d: %w", sc.MFLID, runID, err)
-		}
+	if err := scores(tx, runID); err != nil {
+		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
 		return 0, fmt.Errorf("history: write run commit: %w", err)
 	}
 	return runID, nil
 }
+
+const runInsert = ` (kind, season, as_of, param_set_id, engine, inputs_hash, scores_hash,
+	missing_measures, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
+const (
+	insertBoardRunSQL = `INSERT INTO scoring_runs` + runInsert
+	insertModelRunSQL = `INSERT INTO model_runs` + runInsert
+)
 
 // validScores rejects a malformed or repeated id, an unknown cap tier and any non-finite field,
 // so a NaN never freezes into an append-only row. It returns the sha256 of the scores in id
@@ -246,19 +284,19 @@ func scoreArgs(runID int64, sc Score) []any {
 
 // LatestRun returns the newest run of a kind for a season. ok is false when there is none.
 func (s *Store) LatestRun(ctx context.Context, season int, kind RunKind) (Run, bool, error) {
-	return s.run(ctx, `WHERE season = ? AND kind = ? ORDER BY run_id DESC LIMIT 1`, season, string(kind))
+	return s.run(ctx, runTable(kind), `WHERE season = ? AND kind = ? ORDER BY run_id DESC LIMIT 1`, season, string(kind))
 }
 
 // PreviousRun returns the newest run of the same kind and season before r. ok is false when r
 // is the first.
 func (s *Store) PreviousRun(ctx context.Context, r Run) (Run, bool, error) {
-	return s.run(ctx, `WHERE season = ? AND kind = ? AND run_id < ? ORDER BY run_id DESC LIMIT 1`,
+	return s.run(ctx, runTable(r.Kind), `WHERE season = ? AND kind = ? AND run_id < ? ORDER BY run_id DESC LIMIT 1`,
 		r.Season, string(r.Kind), r.ID)
 }
 
-// Runs returns every run for a season, newest first.
+// Runs returns every board and rebalance run for a season, newest first.
 func (s *Store) Runs(ctx context.Context, season int) ([]Run, error) {
-	rows, err := s.pools.Read().QueryContext(ctx, runSelect+`WHERE season = ? ORDER BY run_id DESC`, season)
+	rows, err := s.pools.Read().QueryContext(ctx, runSelect("scoring_runs")+`WHERE season = ? ORDER BY run_id DESC`, season)
 	if err != nil {
 		return nil, fmt.Errorf("history: runs: %w", err)
 	}
@@ -277,11 +315,13 @@ func (s *Store) Runs(ctx context.Context, season int) ([]Run, error) {
 	return out, nil
 }
 
-const runSelect = `SELECT run_id, kind, season, as_of, param_set_id, engine, inputs_hash, scores_hash,
-	missing_measures, created_at FROM scoring_runs `
+func runSelect(table string) string {
+	return `SELECT run_id, kind, season, as_of, param_set_id, engine, inputs_hash, scores_hash,
+	missing_measures, created_at FROM ` + table + ` `
+}
 
-func (s *Store) run(ctx context.Context, where string, args ...any) (Run, bool, error) {
-	r, err := scanRun(s.pools.Read().QueryRowContext(ctx, runSelect+where, args...))
+func (s *Store) run(ctx context.Context, table, where string, args ...any) (Run, bool, error) {
+	r, err := scanRun(s.pools.Read().QueryRowContext(ctx, runSelect(table)+where, args...))
 	if errors.Is(err, sql.ErrNoRows) {
 		return Run{}, false, nil
 	}
