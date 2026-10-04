@@ -1,25 +1,15 @@
 # RESUME — TheWarRoom core stages 4–8, overnight run (2026-10-04)
 
 ## 0. Next actions, in order
-Stage 7 is IN PROGRESS. Built and pushed: 8cbe2b7 (model.Project/Value, refit), e177292
-(model_runs/model_scores in history), 0d5ea26 (internal/modelrun + case set + dynasty params),
-d6f4528 (Score League loads 2021..season totals and writes a model run; board shows Now/Dyn).
-1. **Live gate on Claude-OS:** build, copy as `~/twr-gate/thewarroom-s7`, launch, Score League
-   (it fetches 2021–2024 totals once). Check model_runs/model_scores in the VM history.db,
-   screenshot the Now/Dyn columns, then Spearman of now_ppg/dynasty_ppg against the board's
-   adjusted_score (overall and by position).
-2. **Holdout check vs today's board:** 2025 predicted from data through 2024 (train params)
-   against today's rule (2024 points × L3 age pull), within-position Spearman against the 2025
-   PPG percentile. Add it to cmd/fit's report.
-3. **Retire the harness:** delete internal/harness, the Rookie Sandbox and Architectural Tests
-   tabs and their bindings. First move GetParams/SetParam/ParamView out of harness_app.go into
-   admin_app.go, and the params state out of store/harness.ts.
-4. Record the Stage 7 design and gate in the plan. Known limitation for it: the prior and the
-   survival arc were fitted on players who took the field, so a rookie is assumed to play his
-   first season (this flatters undrafted rookies). Fix the plan's R6 "Gap" line too: the arc's
-   level term is dilution from new talent, not something stacked on the discount.
-5. Stage 8, then stop at the README; one PR, no merge. Morning list (§4) adds: set
-   `dynasty.seasons` (5) and `dynasty.discount` (0.85) in Admin; these are his product calls.
+Stage 7 is DONE (design R7-1…R7-10 and gate record in the plan; live on Claude-OS at
+v0.5.0-166-g7fe4ab1, binary `~/twr-gate/thewarroom-s7`, board #8 + model run #3).
+1. **Stage 8 — M2 on the new numbers** (plan Stage 8): the two views, "this season"
+   (on-field-now) and "the franchise" (dynasty), reading the latest model run; recompute via
+   runs. Gate: a param edit makes a new run and a changed board, the old board stays readable,
+   and both views are shown. Look at the pre-existing M2 "FINAL" / all-play 0-0 issue (§4).
+2. Stop at the README; open one PR (session/core-stages-4-8 → main), do not merge; morning
+   list (§4).
+3. Update this file (three paths) and T373.
 
 ## 1. What we are doing
 - Christopher's goal (2026-10-03 night): work through Stages 4–8 without him. Do not merge to
@@ -36,7 +26,7 @@ d6f4528 (Score League loads 2021..season totals and writes a model run; board sh
 | 4 Signals | DONE, live gate PASS (v0.5.0-140). Commits a365ba3, 7e916e7, pushed. Gate record in the plan. |
 | 5 Rubric as data | DONE, gate PASS. 1159105 (routine), 17efc6c (Madden out), 6719a69 (assembly twins, CFBD season fix). Gate record in the plan. |
 | 6 Fit | DONE, gate PASS. 835f3df (model, fit, cmd/fit), 58f71c5 (holdout rule + real fit), 0548566 (Admin filter), e8ef223 (reproducible), fb87530 (gate record; model under depguard purity). Athleticism × age tested and rejected (R6-9). |
-| 7 Measurables | IN PROGRESS: model, storage, modelrun, app wiring built (d6f4528); live gate, holdout, harness retirement left. |
+| 7 Measurables | DONE, gate PASS (holdout: talent 9/10, value even, rookies model-only; kickers fail, recorded). 8cbe2b7…7fe4ab1. |
 | 8 M2 | — |
 
 ## 3. Environment
@@ -55,8 +45,10 @@ d6f4528 (Score League loads 2021..season totals and writes a model run; board sh
   `scratch`, plus a full 2021–2026 history db at `db/history.db` for fitting work).
 
 ## 4. Morning items for Christopher (collect here)
-- Put `CFBD_API_KEY` where his launcher sees it, or the college signal stays skipped on the Beelink.
-  Only after Stage 7 lands: today's Score League college path times out with a key.
+- Set the dynasty horizon in Control → Engine Admin: `dynasty.seasons` (5) and
+  `dynasty.discount` (0.85). They are his product calls (how much later seasons count).
+- CFBD key: Score League no longer fetches college stats live (R7-9); with a key only school
+  tier calls CFBD. Safe to set now.
 - M2 shows "FINAL season complete" mid-season, and all-play 0-0: pre-existing; look at in Stage 8.
 
 ## 5b. Stage 6/7 working notes

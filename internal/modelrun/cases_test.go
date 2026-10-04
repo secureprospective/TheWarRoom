@@ -45,8 +45,8 @@ func value(t *testing.T, pl *model.Player, past []model.Past) model.Value {
 	ps, h := shipped(t)
 	scale := model.NewScale([]float64{2, 4, 6, 8, 10, 12, 14, 16, 18, 20})
 	v := ps[pl.Position].Value(pl, past, model.Past{Year: season}, h, scale)
-	t.Logf("%s age %.0f: now %.3f (%.1f ppg) dynasty %.3f prior %.3f Zpast %.2f plays next %.2f", pl.Position,
-		pl.AgeAt(season), v.Now, v.NowPPG, v.Dynasty, v.Prior, v.ZPast, v.OnField)
+	t.Logf("%s age %.0f: now %.3f (%.1f ppg) dynasty %.3f prior %.3f evidence %.1f games Zpast %.2f plays next %.2f",
+		pl.Position, pl.AgeAt(season), v.Now, v.NowPPG, v.Dynasty, v.Prior, v.PastGames, v.ZPast, v.OnField)
 	return v
 }
 
