@@ -32,11 +32,6 @@ type Settings struct {
 	Weights   Weights
 	Curves    Curves
 	Lift      float64 // athleticLift strength on breakout age and age trajectory
-
-	// Read by the validation harness only, never by the board: whether the position's film carries
-	// the coverage anchor, and its pass-rush blend rate in NFL year 1 and after.
-	CoverageAnchor bool
-	PassRushAlpha  [2]float64
 }
 
 // Rubric applies one position's Settings. It implements engine.Layer4.
@@ -87,20 +82,4 @@ func (r Rubric) breakout(in engine.Layer4Input) float64 {
 		w.SchoolTier*given(sc.HasSchoolTier, sc.SchoolTierNorm) +
 		w.CollegeShare*curved(sc.HasCollegeShare, s.Curves.CollegeShare, sc.CollegeShare) +
 		w.AgeTrajectory*traj
-}
-
-// HasNGSAnchor reports whether the position's film carries the coverage anchor (harness only).
-func (r Rubric) HasNGSAnchor() bool { return r.s.CoverageAnchor }
-
-// SL021Alpha is the pass-rush blend rate in NFL year nflYear, 1-based (harness only).
-func (r Rubric) SL021Alpha(nflYear int) float64 {
-	if nflYear <= 1 {
-		return r.s.PassRushAlpha[0]
-	}
-	return r.s.PassRushAlpha[1]
-}
-
-// PassRushBlend folds this season's pass-rush grade into the running one at rate alpha.
-func PassRushBlend(previous, observation, alpha float64) float64 {
-	return (1-alpha)*previous + alpha*observation
 }

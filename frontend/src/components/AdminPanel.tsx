@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { useHarnessStore } from '../store/harness';
+import { useAppStore } from '../store/app';
 
 // AdminPanel lists every calibration parameter, league-wide first and then each position's
 // scouting settings and fitted model values, with the value in effect. The filter matches the
 // setting, the position or the source. Apply writes an override; the store checks the range,
 // and the next Score League run uses it.
 export function AdminPanel() {
-  const params = useHarnessStore((s) => s.params);
-  const setParam = useHarnessStore((s) => s.setParam);
-  const error = useHarnessStore((s) => s.error);
+  const params = useAppStore((s) => s.params);
+  const setParam = useAppStore((s) => s.setParam);
+  const error = useAppStore((s) => s.error);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState('');
 

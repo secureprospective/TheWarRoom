@@ -11,7 +11,7 @@ import { main } from '../../wailsjs/go/models';
 // Transactions store — Session 44 (SLIM_MAP §6.2). Owns the M4 READ-MODEL that the
 // four transaction surfaces (TransactionWorkspace, TradeBuilder, LeagueControls,
 // ConfirmModal is action-only) all pull from: franchises, phase, legalOps,
-// rosters/FA pool. Per WF5 (harness.ts) the IPC call lives here, never in a
+// rosters/FA pool. As in store/app.ts, the IPC call lives here, never in a
 // component. ACTIONS (PreviewTransaction/ExecuteTransaction) and ephemeral per-op
 // UI state (cart, form inputs, modal/stageGen) stay LOCAL to each component —
 // Christopher explicitly rejected a "full store migration" (handoff 44).

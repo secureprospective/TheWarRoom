@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useHarnessStore } from '../store/harness';
+import { useAppStore } from '../store/app';
 import { main } from '../../wailsjs/go/models';
 import {
   SortHeader,
@@ -42,12 +42,12 @@ const COLS = '34px 1fr 88px 66px 74px 66px 66px 58px 58px 58px 66px 60px';
 const COLS_MTX = '24px 1fr 76px 62px 70px';
 
 export function PowerRankingsBoard() {
-  const powerRankings = useHarnessStore((s) => s.powerRankings);
-  const powerWeight = useHarnessStore((s) => s.powerWeight);
-  const powerAgg = useHarnessStore((s) => s.powerAgg);
-  const powerLoading = useHarnessStore((s) => s.powerLoading);
-  const error = useHarnessStore((s) => s.error);
-  const loadPowerRankings = useHarnessStore((s) => s.loadPowerRankings);
+  const powerRankings = useAppStore((s) => s.powerRankings);
+  const powerWeight = useAppStore((s) => s.powerWeight);
+  const powerAgg = useAppStore((s) => s.powerAgg);
+  const powerLoading = useAppStore((s) => s.powerLoading);
+  const error = useAppStore((s) => s.error);
+  const loadPowerRankings = useAppStore((s) => s.loadPowerRankings);
 
   // Local slider value for instant display; the network fetch fires only on release
   // (onPointerUp/onKeyUp), never on every drag tick.

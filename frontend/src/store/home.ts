@@ -10,7 +10,7 @@ import { main } from '../../wailsjs/go/models';
 // failure as FATAL (m2_app.go:79), which would put a hard-failure network path on the calmest
 // screen in the product. A standings card waits for a cached/soft-fail read.
 //
-// The M1 pulse card reads the harness store's already-persisted rankings rather than refetching;
+// The M1 pulse card reads the app store's already-persisted rankings rather than refetching;
 // its only network touch is the cached display-name directory, which degrades rather than fails
 // (m1_app.go GetRankings) — so Home still cannot be blanked by an MFL outage.
 

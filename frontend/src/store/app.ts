@@ -1,7 +1,5 @@
 import { create } from 'zustand';
 import {
-  ScoreRookies,
-  RunValidationSuite,
   GetParams,
   SetParam,
   ScoreLeague,
@@ -15,11 +13,9 @@ import { main } from '../../wailsjs/go/models';
 // cannot overwrite a newer one's rows. Only the latest request commits.
 let powerReqSeq = 0;
 
-// Harness store. Per WF5 every IPC call lives here, never in a component: components read
-// a slice and dispatch an action. This is the testing sandbox's single backend gateway.
-interface HarnessState {
-  rookies: main.RookiesResult | null;
-  validation: main.ValidationResult | null;
+// The app store. Every IPC call lives here, never in a component: components read a slice and
+// dispatch an action. It is the frontend's single backend gateway.
+interface AppState {
   params: main.ParamsResult | null;
   rankings: main.RankingsResult | null;
   powerRankings: main.PowerRankingsResult | null;
@@ -30,16 +26,14 @@ interface HarnessState {
   scoring: boolean;
   loading: boolean;
   error: string;
-  loadAll: () => Promise<void>;
+  loadParams: () => Promise<void>;
   setParam: (key: string, position: string, value: number) => Promise<void>;
   loadRankings: () => Promise<void>;
   loadPowerRankings: (weight: number, aggMode: string) => Promise<void>;
   scoreLeague: () => Promise<void>;
 }
 
-export const useHarnessStore = create<HarnessState>((set, get) => ({
-  rookies: null,
-  validation: null,
+export const useAppStore = create<AppState>((set, get) => ({
   params: null,
   rankings: null,
   powerRankings: null,
@@ -51,24 +45,20 @@ export const useHarnessStore = create<HarnessState>((set, get) => ({
   loading: false,
   error: '',
 
-  // loadAll pulls every module's data in parallel. Called on mount and after a param
-  // change so the rankings board reflects the new calibration.
-  loadAll: async () => {
+  // loadParams reads every calibration parameter with the value in effect. Called on mount and
+  // after a param change.
+  loadParams: async () => {
     set({ loading: true, error: '' });
     try {
-      const [rookies, validation, params] = await Promise.all([
-        ScoreRookies(),
-        RunValidationSuite(),
-        GetParams(),
-      ]);
-      set({ rookies, validation, params, loading: false });
+      const params = await GetParams();
+      set({ params, loading: false });
     } catch (e) {
       set({ loading: false, error: String(e) });
     }
   },
 
-  // setParam writes a live admin override then re-pulls so the operator sees the score
-  // move — the sandbox's whole point (functional gate).
+  // setParam writes an admin override, then re-reads the params so the console shows the value
+  // in effect. The next Score League scores with it.
   setParam: async (key, position, value) => {
     set({ error: '' });
     const res = await SetParam(key, position, value);
@@ -76,7 +66,7 @@ export const useHarnessStore = create<HarnessState>((set, get) => ({
       set({ error: res.error });
       return;
     }
-    await get().loadAll();
+    await get().loadParams();
   },
 
   // loadRankings reads the latest board run back from history. Read-only — empty

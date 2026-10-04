@@ -44,11 +44,7 @@ export function PreviewTransaction(arg1:main.TransactionRequest):Promise<main.Tr
 
 export function RefreshLeague():Promise<main.RefreshResult>;
 
-export function RunValidationSuite():Promise<main.ValidationResult>;
-
 export function ScoreLeague():Promise<main.ScoreLeagueResult>;
-
-export function ScoreRookies():Promise<main.RookiesResult>;
 
 export function SetLeagueSettingOverride(arg1:string,arg2:string,arg3:string):Promise<main.SetLeagueSettingResult>;
 

@@ -82,7 +82,7 @@ type Layer4Input struct {
 // capped components (Backend_Architecture:256).
 type Layer4Output struct {
 	FilmEffective     float64
-	FilmRaw           float64 // pre-effective film input, for harness case 3D; never UI
+	FilmRaw           float64 // pre-effective film input; never UI
 	RASEffective      float64
 	BreakoutEffective float64
 	Combined          float64

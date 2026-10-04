@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useHomeStore } from '../../store/home';
-import { useHarnessStore } from '../../store/harness';
+import { useAppStore } from '../../store/app';
 import { EngraveState } from '../board/primitives';
 import { SeasonalCard } from './SeasonalCard';
 import { selectSeasonal } from './seasonal';
@@ -34,7 +34,7 @@ export function HomeBoard() {
   // from here would put a network touch on the landing, against the B-4b ruling that Home is
   // local-only. M1 is the default module and loads it on mount; if the operator lands on Home
   // first with nothing scored yet, the pulse engraves instead. (GLM review lead H1.)
-  const rankings = useHarnessStore((s) => s.rankings);
+  const rankings = useAppStore((s) => s.rankings);
 
   // `now` is captured once per mount and ticked each minute — the countdown must not be recomputed
   // on every render (it would make selectSeasonal's output depend on render timing) and must not

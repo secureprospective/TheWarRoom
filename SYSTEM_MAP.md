@@ -1,7 +1,7 @@
 # System Map
 
 What exists in TheWarRoom and where new code belongs. Update it in the same commit as any new
-package, IPC method or external service. Current as of 2026-10-04 (Stage 6 of
+package, IPC method or external service. Current as of 2026-10-04 (Stage 7 of
 `docs/build-handoffs/Core_Build_Plan_2026-10.md`).
 
 ## Layers and packages
@@ -35,7 +35,6 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Composition | `internal/modelrun` | The measurables: values every rostered player with `internal/model` and the run's params, and writes a model run beside the board. |
 | Mutation | `internal/transactions` | The `Coordinator`: every league-state change runs here, in one transaction. Handler subpackages (`acquisitions`, `contracts`, `deadcap`, `freeagency`) are reachable only through it. |
 | Tooling | `cmd/fit` | Reads a history database, runs `model/fit`, and writes `internal/store/params/fitted.json` (shipped as calibrated defaults) and `docs/fit/Fit_Report.md`. |
-| Dev | `internal/harness` | The 13 architectural cases and the rookie sandbox; retired in Stage 7. |
 | Tooling | `tools/ifaceguard` | Vet tool: no `interface{}`/`any` in exported signatures. |
 
 **(depguard)**
@@ -47,7 +46,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 - `database/sql` is confined to `db` and `store`.
 - `transactions/*` handler packages are imported only by `transactions`.
 
-## IPC surface (26 methods on `App`)
+## IPC surface (24 methods on `App`)
 
 | File | Methods |
 |---|---|
@@ -55,14 +54,14 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | `refresh_app.go` | `RefreshLeague` (pull the league from MFL into the mirror) |
 | `crosswalk_app.go` | `LoadCrosswalk`, `GetCrosswalkReport` (the player directory and its match rates) |
 | `signals_app.go` | `LoadSignals`, `GetSignals` (load every due signal file; source health, freshness and coverage) |
-| `m1_app.go`, `m1_player_score_app.go` | `ScoreLeague`, `GetRankings`, `GetPlayerScore` |
+| `m1_app.go`, `model_app.go`, `m1_player_score_app.go` | `ScoreLeague` (board run and model run), `GetRankings` (with the measurables), `GetPlayerScore` |
 | `m2_app.go` | `GetPowerRankings` |
 | `leagueschedule_app.go` | `GetLeagueSchedule` |
 | `m4_app.go` | `GetFranchises`, `GetRoster`, `GetFreeAgentPool`, `GetLegalOps` |
 | `transactions_app.go` | `ExecuteTransaction`, `PreviewTransaction`, `GetCurrentPhase` |
 | `transactions_feed_app.go`, `transactions_calendar_app.go` | `GetFeed`, `GetCalendarEvents` |
 | `rulebook_app.go` | `GetLeagueSetting`, `SetLeagueSettingOverride` |
-| `harness_app.go` | `GetParams`, `SetParam`, `ScoreRookies`, `RunValidationSuite` |
+| `admin_app.go` | `GetParams`, `SetParam` (the Engine Admin console) |
 
 Every method that takes frontend input validates it before acting. Bindings in
 `frontend/wailsjs/` are generated (`wails generate module`); never hand-edit them.
@@ -107,7 +106,6 @@ These work and are tested, but the core plan rewrites or deletes them. Do not ex
   `schooltier`): today's board still reads them. The college share and breakout age already read
   the college seasons `college` stores in history, not CFBD live. They go when their consumer,
   today's engine, does.
-- `internal/harness` and its two dev tabs: deleted when the Stage 7 case set lands.
 
 ## What does not exist, on purpose
 

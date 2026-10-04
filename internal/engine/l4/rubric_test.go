@@ -138,23 +138,6 @@ func TestCushionSlowsDecline(t *testing.T) {
 	}
 }
 
-// The harness hooks: the coverage anchor at CB and S only, and the pass-rush rates at DT and DE.
-func TestHarnessHooks(t *testing.T) {
-	for pos, s := range Defaults() {
-		want := pos == domain.PosCB || pos == domain.PosS
-		if New(s).HasNGSAnchor() != want {
-			t.Errorf("%s coverage anchor = %v, want %v", pos, !want, want)
-		}
-	}
-	dt, de := New(Defaults()[domain.PosDT]), New(Defaults()[domain.PosDE])
-	if dt.SL021Alpha(1) != 0.50 || dt.SL021Alpha(2) != 0.10 || de.SL021Alpha(1) != 0.15 || de.SL021Alpha(5) != 0.15 {
-		t.Errorf("pass-rush rates: DT %v/%v, DE %v/%v", dt.SL021Alpha(1), dt.SL021Alpha(2), de.SL021Alpha(1), de.SL021Alpha(5))
-	}
-	if got := PassRushBlend(0.60, 0.90, 0.50); !near(got, 0.75) {
-		t.Errorf("blend = %v, want 0.75", got)
-	}
-}
-
 // A knob is a setting only where the shipped value is on, and every shipped value is in range.
 func TestKnobsCoverTheOnMechanics(t *testing.T) {
 	offAtQB := []string{"l4.ras.steepness", "l4.ras.cap", "l4.ras.weight", "l4.breakout.athletic_lift"}

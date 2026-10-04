@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useHarnessStore } from './store/harness';
+import { useAppStore } from './store/app';
 import { useAppInfoStore } from './store/appInfo';
 import { AppShell } from './components/shell/AppShell';
 import { useDensity } from './components/shell/useDensity';
@@ -12,8 +12,6 @@ import { LeagueControls } from './components/transactions/LeagueControls';
 import { AdminPanel } from './components/AdminPanel';
 import { CrosswalkPanel } from './components/CrosswalkPanel';
 import { SignalsPanel } from './components/SignalsPanel';
-import { RookieTable } from './components/RookieTable';
-import { ValidationBoard } from './components/ValidationBoard';
 import { CalendarBoard } from './components/calendar/CalendarBoard';
 import { FeedBoard } from './components/feed/FeedBoard';
 import { InspectorContent } from './components/inspector/InspectorContent';
@@ -21,11 +19,8 @@ import { HomeBoard } from './components/home/HomeBoard';
 import { useInspectorStore } from './store/inspector';
 import { isTypingTarget } from './components/board/keys';
 
-// B-1 shell: the confirmed 4-column instrument console (Session A grid + Session C
-// tokens) replaces the flat testing-harness tab bar. The shipped modules are
-// re-homed into the workspace AS-IS this session — restyle to the Session-B
-// component language is B-2. Modules self-fetch through the single Zustand
-// gateway (store/harness.ts, WF5), so they mount here with no prop wiring.
+// The shell: a 4-column instrument console. Modules self-fetch through the single Zustand
+// gateway (store/app.ts), so they mount here with no prop wiring.
 
 const MODULE_TITLES: Record<ModuleId, string> = {
   home: 'HOME',
@@ -37,7 +32,7 @@ const MODULE_TITLES: Record<ModuleId, string> = {
 };
 
 function App() {
-  const loadAll = useHarnessStore((s) => s.loadAll);
+  const loadParams = useAppStore((s) => s.loadParams);
   const loadAppInfo = useAppInfoStore((s) => s.load);
   const { density, setDensity } = useDensity();
   const [module, setModule] = useState<ModuleId>('assets');
@@ -50,9 +45,9 @@ function App() {
   const openNonce = useInspectorStore((s) => s.openNonce);
 
   useEffect(() => {
-    void loadAll();
+    void loadParams();
     void loadAppInfo();
-  }, [loadAll, loadAppInfo]);
+  }, [loadParams, loadAppInfo]);
 
   // Every player select (an M1 row click → the inspector store bumps openNonce) auto-opens the
   // inspector — including re-clicking the SAME row after a close (keying on selectedMflID alone would
@@ -108,9 +103,7 @@ function App() {
   );
 }
 
-// Maps the 6 locked nav modules onto the surfaces that exist today. Restyle is
-// B-2; wiring is B-1. Sandbox (rookie) + architectural tests live under CONTROL
-// as dev-only surfaces — they are harness tools, not league-facing modules.
+// Maps the 6 nav modules onto the surfaces that exist today.
 function ModuleView({ module }: { module: ModuleId }) {
   switch (module) {
     case 'assets':
@@ -129,7 +122,7 @@ function ModuleView({ module }: { module: ModuleId }) {
   }
 }
 
-type ControlTab = 'league' | 'admin' | 'crosswalk' | 'signals' | 'sandbox' | 'tests';
+type ControlTab = 'league' | 'admin' | 'crosswalk' | 'signals';
 
 function ControlModule() {
   const [tab, setTab] = useState<ControlTab>('league');
@@ -138,8 +131,6 @@ function ControlModule() {
     { id: 'admin', label: 'Engine Admin' },
     { id: 'crosswalk', label: 'Crosswalk' },
     { id: 'signals', label: 'Signals' },
-    { id: 'sandbox', label: 'Rookie Sandbox (dev)' },
-    { id: 'tests', label: 'Architectural Tests (dev)' },
   ];
   return (
     <div className="p-4">
@@ -165,12 +156,8 @@ function ControlModule() {
         <AdminPanel />
       ) : tab === 'crosswalk' ? (
         <CrosswalkPanel />
-      ) : tab === 'signals' ? (
-        <SignalsPanel />
-      ) : tab === 'sandbox' ? (
-        <RookieTable />
       ) : (
-        <ValidationBoard />
+        <SignalsPanel />
       )}
     </div>
   );

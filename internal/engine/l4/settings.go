@@ -74,7 +74,6 @@ func defense() map[domain.Position]Settings {
 				CollegeShare:  []Breakpoint{{0.08, 0.15}, {0.15, 0.55}, {0.22, 1.00}},
 				AgeTrajectory: peakArc(30),
 			},
-			PassRushAlpha: [2]float64{0.50, 0.10},
 		},
 		domain.PosDE: {
 			Film: standardFilm, RAS: Component{Steepness: 10, Cap: 0.08}, RASWeight: 1, Breakout: breakoutCurve, Lift: 0.35,
@@ -84,7 +83,6 @@ func defense() map[domain.Position]Settings {
 				CollegeShare:  []Breakpoint{{0.12, 0.15}, {0.20, 0.55}, {0.28, 1.00}},
 				AgeTrajectory: peakArc(30),
 			},
-			PassRushAlpha: [2]float64{0.15, 0.15},
 		},
 		domain.PosLB: {
 			Film: compressedFilm, RAS: Component{Steepness: 11, Cap: 0.04}, RASWeight: 0.60, Breakout: breakoutCurve,
@@ -97,7 +95,7 @@ func defense() map[domain.Position]Settings {
 		},
 		domain.PosCB: {
 			Film: standardFilm, RAS: Component{Steepness: 11, Cap: 0.08}, RASWeight: 1,
-			Breakout: Component{Steepness: 10, Cap: 0.05}, Lift: 0.30, CoverageAnchor: true,
+			Breakout: Component{Steepness: 10, Cap: 0.05}, Lift: 0.30,
 			Weights: Weights{BreakoutAge: 0.20, SchoolTier: 0.25, CollegeShare: 0.40, AgeTrajectory: 0.15},
 			Curves: Curves{
 				BreakoutAge:   defensiveBackBreakout(),
@@ -107,7 +105,7 @@ func defense() map[domain.Position]Settings {
 		},
 		domain.PosS: {
 			Film: standardFilm, RAS: Component{Steepness: 10, Cap: 0.08}, RASWeight: 1, Breakout: breakoutCurve,
-			Lift: 0.30, CoverageAnchor: true,
+			Lift:    0.30,
 			Weights: Weights{BreakoutAge: 0.20, SchoolTier: 0.25, CollegeShare: 0.40, AgeTrajectory: 0.15},
 			Curves: Curves{
 				BreakoutAge:   defensiveBackBreakout(),

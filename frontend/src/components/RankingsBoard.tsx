@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useHarnessStore } from '../store/harness';
+import { useAppStore } from '../store/app';
 import { main } from '../../wailsjs/go/models';
 import {
   SortHeader,
@@ -59,12 +59,12 @@ const COLS_CAPEFF = `${COLS} 72px`;
 const COLS_MTX = '24px 40px 1fr 36px 72px 72px';
 
 export function RankingsBoard() {
-  const rankings = useHarnessStore((s) => s.rankings);
-  const scoreReport = useHarnessStore((s) => s.scoreReport);
-  const scoring = useHarnessStore((s) => s.scoring);
-  const storeError = useHarnessStore((s) => s.error);
-  const loadRankings = useHarnessStore((s) => s.loadRankings);
-  const scoreLeague = useHarnessStore((s) => s.scoreLeague);
+  const rankings = useAppStore((s) => s.rankings);
+  const scoreReport = useAppStore((s) => s.scoreReport);
+  const scoring = useAppStore((s) => s.scoring);
+  const storeError = useAppStore((s) => s.error);
+  const loadRankings = useAppStore((s) => s.loadRankings);
+  const scoreLeague = useAppStore((s) => s.scoreLeague);
   const select = useInspectorStore((s) => s.select);
   const selectedMflID = useInspectorStore((s) => s.selectedMflID);
 

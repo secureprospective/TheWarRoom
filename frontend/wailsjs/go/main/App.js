@@ -86,16 +86,8 @@ export function RefreshLeague() {
   return window['go']['main']['App']['RefreshLeague']();
 }
 
-export function RunValidationSuite() {
-  return window['go']['main']['App']['RunValidationSuite']();
-}
-
 export function ScoreLeague() {
   return window['go']['main']['App']['ScoreLeague']();
-}
-
-export function ScoreRookies() {
-  return window['go']['main']['App']['ScoreRookies']();
 }
 
 export function SetLeagueSettingOverride(arg1, arg2, arg3) {
