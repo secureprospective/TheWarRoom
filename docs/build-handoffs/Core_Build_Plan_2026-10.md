@@ -617,7 +617,7 @@ Evidence is in `~/fleet/runs/warroom-dataflow-2026-10-03/live-gate-stage6-2026-1
 |---|---|---|
 | R7-1 | **On-field-now is built on league points per game (R6-1), not on usage rates** (item 1). This season's games blend by k_now with the projection from earlier seasons. Evidence is games played, so an injured week adds nothing. | It is the scale everything was fitted and checked on. A usage model has no free IDP denominators and would be a second, unfitted scale. |
 | R7-2 | **One projection, `model.Project`, for the fit and the app.** The last three seasons are each moved along the arc to the season before the target, weighted by recency and games, and blended with the prior by the dynasty k on the effective count. One more arc step reaches the target. With one season it is exactly the season-pair prediction the dynasty k and the arc were fitted on. The recency fit was rerun through it (DE 0.3 → 0.2). | The fits had applied the arc in two slightly different places. The app must score with the form that was fitted. |
-| R7-3 | **Dynasty** = Σ over seasons t = 0…H−1 of dᵗ × P(on the field) × level, ÷ Σ dᵗ. This season's level is on-field-now; next season's is the projection with this season included, then the arc carries it. P chains the survival arc, with a projected season counted as full. **H = 5 and d = 0.85 are hand-set params (`dynasty.seasons`, `dynasty.discount`) for Christopher.** It is reported both as a percentile and in league points per game, read through last season's scale at the position. | Item 2. Cap and contract stay outside it (separable). The discount is time preference, which is a product call. Points per game make positions comparable on the board. |
+| R7-3 | **Dynasty** = Σ over seasons t = 0…H−1 of dᵗ × P(on the field) × level, ÷ Σ dᵗ. This season's level is on-field-now; next season's is the projection with this season included, then the arc carries it. P chains the survival arc, with a projected season counted as full. **H and d are hand-set params (`dynasty.seasons`, `dynasty.discount`) for Christopher: shipped at 5 and 0.85, set by him on 2026-10-04 to 3 and 0.75 (win-now).** It is reported both as a percentile and in league points per game, read through last season's scale at the position. | Item 2. Cap and contract stay outside it (separable). The discount is time preference, which is a product call. Points per game make positions comparable on the board. |
 | R7-4 | **A rookie's chance of taking the field is fitted (`model.debut.*`):** a logistic of becoming a regular in his first season, on draft slot, per position. It beats the base rate on 2025's rookies at all 10 positions. The prior is the rookie's level, so no arc step applies before his first season. | Prior and survival were fitted on players who played, so at first every rookie was assumed to play. That put a #1-pick QB who had not taken a snap third on the dynasty board. |
 | R7-5 | **Missing measures are normal** (item 3). The prior scores a missing input by its fitted missing term. A player with no birth date gets no arc step and an age-27 survival. Each score lists the inputs that fed it. | A player is valued on what exists. |
 | R7-6 | **Age enters once, in the arcs** (item 4). Today's board keeps its L3 decay until it is retired; the model reads no age except through the arcs and the prior's entry age. | Item 4. |
@@ -677,8 +677,12 @@ Evidence is in `~/fleet/runs/warroom-dataflow-2026-10-03/live-gate-stage8-2026-1
 
 ## Open items that need Christopher
 
-- **The dynasty horizon** (`dynasty.seasons` 5, `dynasty.discount` 0.85, in Control → Engine
-  Admin) is a product call: how much later seasons count in the franchise view and Dyn.
+- ~~The dynasty horizon~~ decided 2026-10-04: 3 seasons at 0.75 (win-now), now the shipped
+  default. The case set passes on it.
+- ~~CFBD key on the Beelink~~ set 2026-10-04: `~/.config/cfbd/api_key` (mode 600), exported from
+  `~/.profile` (menu launches, after the next login) and `~/.bashrc` (terminals).
+- **All-play:** Christopher is turning it on in MFL. The blend switches to it on its own (R8-4)
+  and it moves only This season; the franchise view ranks on the roster alone (R8-2).
 
 - The fresh live pull is gated (`TWR_LIVE_*`) and runs on his machine (Stage 2.3).
 - Spot-check the MFL comparison (Stage 2 gate).

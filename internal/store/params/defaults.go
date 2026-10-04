@@ -35,12 +35,12 @@ func defaultParams() []ParamDef {
 		},
 		{
 			Key: KeyDynastySeasons, Position: global, Type: TypeFloat,
-			Default: 5, Min: 1, Max: 10,
+			Default: 3, Min: 1, Max: 10,
 			Description: "Dynasty: seasons counted, this one first (whole seasons)",
 		},
 		{
 			Key: KeyDynastyDiscount, Position: global, Type: TypeFloat,
-			Default: 0.85, Min: 0, Max: 1,
+			Default: 0.75, Min: 0, Max: 1,
 			Description: "Dynasty: weight of each later season against the one before",
 		},
 	}, append(rubricParams(), fittedParams()...)...)
