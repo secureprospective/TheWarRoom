@@ -1,0 +1,106 @@
+package fit
+
+import (
+	"math"
+
+	"github.com/secureprospective/TheWarRoom/internal/model"
+)
+
+// fitDynasty fits the dynasty k and the talent arc together from season pairs. A player's next
+// percentile is predicted as Z·(this season) + (1−Z)·(his prior), plus one step along the arc.
+// Shrinking toward his own prior makes k a measure against the prior; fitting the arc on what
+// the blend leaves keeps regression to the mean out of it. Survivors are weighted by the inverse
+// of their chance of playing on, so the arc is not fitted to the players who aged well; leaving
+// the league is the survival arc's, not counted again here. Both shapes of Z are fitted on
+// training pairs; the one that predicts the holdout season better is kept. trainSurv and
+// fullSurv are the survival fits on the same seasons.
+func fitDynasty(sm samples, holdout int, prior model.Params, trainSurv, fullSurv [6]float64,
+	rep *Report) (train, full model.Params) {
+	var trainRows, testRows, allRows []pair
+	for _, p := range sm.pairs(holdout) {
+		if !finite(p.from.age) || p.from.games < 1 {
+			continue
+		}
+		if p.next == nil {
+			rep.Arc.Exits++
+			continue
+		}
+		if p.next.games < model.RegularGames {
+			continue
+		}
+		allRows = append(allRows, p)
+		if p.from.year+1 < holdout {
+			trainRows = append(trainRows, p)
+		} else {
+			testRows = append(testRows, p)
+		}
+	}
+	rep.PairsTrain, rep.PairsTest = len(trainRows), len(testRows)
+	if rep.PairsTrain < 20 {
+		return prior, prior
+	}
+	trainPrior, fullPrior := prior, prior
+	trainPrior.Survival, fullPrior.Survival = trainSurv, fullSurv
+	credibility, exponential := bestK(trainPrior, false, trainRows), bestK(trainPrior, true, trainRows)
+	rep.DynCredibility, rep.DynExponential = pairError(credibility, testRows), pairError(exponential, testRows)
+	train = credibility
+	if rep.DynExponential < rep.DynCredibility {
+		train = exponential
+	}
+	flat := train
+	flat.Arc = [4]float64{}
+	rep.Arc.RMSEArc, rep.Arc.RMSEFlat = pairError(train, testRows), pairError(flat, testRows)
+	rep.DynLastSeason, rep.DynPrior = baselines(prior, testRows)
+	return train, bestK(fullPrior, train.Exponential, allRows)
+}
+
+// bestK searches k on a grid; for each k the arc is the least-squares fit of what the blend
+// leaves, and k is scored on the observed pairs.
+func bestK(m model.Params, exponential bool, rows []pair) model.Params {
+	m.Exponential = exponential
+	best, bestErr := m, math.Inf(1)
+	for _, k := range grid(0.3, 300, 60) {
+		m.KDynasty = k
+		m.Arc = fitArcGiven(m, rows)
+		if e := pairError(m, rows); e < bestErr {
+			best, bestErr = m, e
+		}
+	}
+	return best
+}
+
+func fitArcGiven(m model.Params, rows []pair) [4]float64 {
+	x := make([][]float64, len(rows))
+	y := make([]float64, len(rows))
+	w := make([]float64, len(rows))
+	for i, p := range rows {
+		s := p.from
+		z := m.Z(s.games, m.KDynasty)
+		blend := z*s.pct + (1-z)*m.Prior(s.player)
+		stay := m.Survives(s.age, s.player.DraftPick, s.games, s.pct)
+		x[i], y[i], w[i] = arcRow(s.age, s.exp), p.next.pct-blend, min(1/max(stay, 1e-3), maxSurvivalWeight)
+	}
+	return solveArc(x, y, w)
+}
+
+// nextPct predicts a player's next-season percentile from one season.
+func nextPct(m model.Params, s season) float64 {
+	z := m.Z(s.games, m.KDynasty)
+	return z*s.pct + (1-z)*m.Prior(s.player) + m.ArcStep(s.age, s.exp)
+}
+
+func pairError(m model.Params, pairs []pair) float64 {
+	pred, target := make([]float64, len(pairs)), make([]float64, len(pairs))
+	for i, p := range pairs {
+		pred[i], target[i] = nextPct(m, p.from), p.next.pct
+	}
+	return rmse(pred, target)
+}
+
+func baselines(m model.Params, pairs []pair) (last, prior float64) {
+	l, pr, target := make([]float64, len(pairs)), make([]float64, len(pairs)), make([]float64, len(pairs))
+	for i, p := range pairs {
+		l[i], pr[i], target[i] = p.from.pct, m.Prior(p.from.player), p.next.pct
+	}
+	return rmse(l, target), rmse(pr, target)
+}

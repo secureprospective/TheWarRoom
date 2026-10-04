@@ -186,8 +186,8 @@ func TestInitializeDoesNotReseed(t *testing.T) {
 }
 
 // TestInitializeAddsDefaultsMissingFromAnExistingDB is a database from an older release:
-// seeded, but missing a parameter added since. Restarting must add it and leave the
-// existing rows alone.
+// seeded, but missing a parameter added since and holding an old default. Restarting adds the
+// one and replaces the other with the shipped value.
 func TestInitializeAddsDefaultsMissingFromAnExistingDB(t *testing.T) {
 	ctx := context.Background()
 	_, pools := openStore(t)
@@ -211,8 +211,8 @@ func TestInitializeAddsDefaultsMissingFromAnExistingDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetGlobal decay: %v", err)
 	}
-	if decay != 0.05 {
-		t.Fatalf("existing row rewritten: decay = %g, want the stored 0.05", decay)
+	if decay != 0.03 {
+		t.Fatalf("a stale stored default survived: decay = %g, want the shipped 0.03", decay)
 	}
 }
 

@@ -44,7 +44,7 @@ func TestFlatten_FiltersAggregatesAndMapsFields(t *testing.T) {
 		{ID: "0099", Score: "0.00", Week: "YTD"},
 	}
 
-	got, err := flatten(context.Background(), env)
+	got, err := flatten(context.Background(), env, "YTD")
 	if err != nil {
 		t.Fatalf("flatten: %v", err)
 	}
@@ -65,7 +65,7 @@ func TestFlatten_FiltersAggregatesAndMapsFields(t *testing.T) {
 func TestFlatten_MalformedRecordFailsLoud(t *testing.T) {
 	env := scoresEnvelope{}
 	env.PlayerScores.PlayerScore = []scoreBlock{{ID: "13130", Score: "n/a", Week: "YTD"}}
-	if _, err := flatten(context.Background(), env); err == nil {
+	if _, err := flatten(context.Background(), env, "YTD"); err == nil {
 		t.Fatal("flatten should error on a non-numeric score, got nil")
 	}
 }
@@ -79,7 +79,7 @@ func TestDecode_SingleElementCollapse(t *testing.T) {
 	if err := json.Unmarshal([]byte(body), &env); err != nil {
 		t.Fatalf("decode single-score payload: %v", err)
 	}
-	got, err := flatten(context.Background(), env)
+	got, err := flatten(context.Background(), env, "YTD")
 	if err != nil {
 		t.Fatalf("flatten: %v", err)
 	}
@@ -97,7 +97,7 @@ func TestGuardNonEmpty_AllAggregatePayloadFailsLoud(t *testing.T) {
 		{ID: "0200", Score: "155.00", Week: "YTD"},
 		{ID: "0531", Score: "88.00", Week: "YTD"},
 	}
-	out, err := flatten(context.Background(), env)
+	out, err := flatten(context.Background(), env, "YTD")
 	if err != nil || len(out) != 0 {
 		t.Fatalf("flatten precondition: want (0, nil), got (%d, %v)", len(out), err)
 	}
@@ -111,7 +111,7 @@ func TestGuardNonEmpty_AllAggregatePayloadFailsLoud(t *testing.T) {
 func TestFlatten_WrongWeekEchoFailsLoud(t *testing.T) {
 	env := scoresEnvelope{}
 	env.PlayerScores.PlayerScore = []scoreBlock{{ID: "13130", Score: "28.75", Week: "3"}}
-	if _, err := flatten(context.Background(), env); err == nil {
+	if _, err := flatten(context.Background(), env, "YTD"); err == nil {
 		t.Fatal("flatten should reject a non-YTD week echo, got nil")
 	}
 }

@@ -44,7 +44,8 @@ type CapTiers struct {
 	HotFloor    float64 // Hot when salary% > HotFloor; Neutral in between
 }
 
-// Override is an admin value layered over a shipped default; the default row never changes.
+// Override is an admin value layered over a shipped default; a release may replace the default,
+// never the override.
 // Clearing an override is not implemented yet.
 type Override struct {
 	Key       string

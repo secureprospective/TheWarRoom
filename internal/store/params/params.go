@@ -39,8 +39,8 @@ func New(pools *db.Pools) *Store {
 	}
 }
 
-// Initialize ensures the schema, adds any shipped default the database lacks, and loads
-// defaults and overrides into memory. Existing rows are never rewritten.
+// Initialize ensures the schema, writes the shipped defaults, and loads defaults and overrides
+// into memory. Overrides are never touched.
 func (s *Store) Initialize(ctx context.Context) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()

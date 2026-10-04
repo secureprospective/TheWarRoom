@@ -32,6 +32,7 @@ cfbd,team_season.receiving.YDS,prior.college_team_receiving_yards,1
 cfbd,team_season.rushing.CAR,prior.college_team_carries,1
 cfbd,team_season.rushing.YDS,prior.college_team_rushing_yards,1
 mfl,playerScores.score,outcome.fantasy_points,1
+mfl,playerScores.week,outcome.weekly_fantasy_points,1
 nflverse,combine.bench,prior.bench,1
 nflverse,combine.broad_jump,prior.broad_jump,1
 nflverse,combine.cone,prior.three_cone,1

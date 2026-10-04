@@ -64,38 +64,60 @@ type scoreBlock struct {
 
 // Source and Field name this export in sources.csv and source_fields.csv.
 const (
-	Source = "mfl"
-	Field  = "playerScores.score"
+	Source    = "mfl"
+	Field     = "playerScores.score"
+	WeekField = "playerScores.week"
 )
 
 // Fetch returns scoreYear's totals through the year-league host, as a batch linked to the body
 // it came from. It checks MFL's error envelope before decoding, because an outage read as "no
 // scores" would zero every player's BasePoints.
 func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string, scoreYear int) (measures.Batch, error) {
-	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
-		return measures.Batch{}, fmt.Errorf("playerscores: discover host: %w", err)
-	}
-	body, err := ingestion.LeagueExport(ctx, c, "playerScores", year, leagueID,
-		map[string]string{"W": "YTD", "YEAR": strconv.Itoa(scoreYear)})
+	scores, sum, err := fetch(ctx, c, year, leagueID, map[string]string{"W": "YTD", "YEAR": strconv.Itoa(scoreYear)}, "YTD")
 	if err != nil {
-		return measures.Batch{}, fmt.Errorf("playerscores: %w", err)
+		return measures.Batch{}, err
+	}
+	return Batch(scores, scoreYear, sum), nil
+}
+
+// FetchWeek returns one week's scores for season, read from that season's league host.
+func FetchWeek(ctx context.Context, c *mfl.Client, leagueID string, season, week int) (measures.Batch, error) {
+	w := strconv.Itoa(week)
+	scores, sum, err := fetch(ctx, c, strconv.Itoa(season), leagueID, map[string]string{"W": w}, w)
+	if err != nil {
+		return measures.Batch{}, err
+	}
+	b := measures.Batch{Source: Source, BodySHA256: sum, Facts: make([]measures.Fact, len(scores))}
+	for i, r := range scores {
+		b.Facts[i] = measures.Fact{IDType: measures.IDTypeMFL, ID: r.ID, Season: season, Week: week, Field: WeekField, Raw: r.Score}
+	}
+	return b, nil
+}
+
+func fetch(ctx context.Context, c *mfl.Client, year, leagueID string, params map[string]string, want string) ([]RawScore, string, error) {
+	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
+		return nil, "", fmt.Errorf("playerscores: discover host: %w", err)
+	}
+	body, err := ingestion.LeagueExport(ctx, c, "playerScores", year, leagueID, params)
+	if err != nil {
+		return nil, "", fmt.Errorf("playerscores: %w", err)
 	}
 	var env scoresEnvelope
 	if err := json.Unmarshal(body, &env); err != nil {
-		return measures.Batch{}, fmt.Errorf("playerscores: decode: %w", err)
+		return nil, "", fmt.Errorf("playerscores: decode: %w", err)
 	}
-	scores, err := flatten(ctx, env)
+	scores, err := flatten(ctx, env, want)
 	if err != nil {
-		return measures.Batch{}, err
+		return nil, "", err
 	}
 	if scores, err = guardNonEmpty(scores); err != nil {
-		return measures.Batch{}, err
+		return nil, "", err
 	}
 	sum := sha256.Sum256(body)
-	return Batch(scores, scoreYear, hex.EncodeToString(sum[:])), nil
+	return scores, hex.EncodeToString(sum[:]), nil
 }
 
-// Batch turns validated season totals into facts for the history store.
+// Batch maps season totals to facts. A record without a score was rejected by Validate.
 func Batch(scores []RawScore, season int, bodySHA256 string) measures.Batch {
 	b := measures.Batch{Source: Source, BodySHA256: bodySHA256, Facts: make([]measures.Fact, len(scores))}
 	for i, r := range scores {
@@ -115,7 +137,7 @@ func guardNonEmpty(out []RawScore) ([]RawScore, error) {
 
 // flatten drops team aggregates (Coach, Def, ST and Off score points here but are not
 // players) and validates the rest; a malformed real record fails the fetch.
-func flatten(ctx context.Context, env scoresEnvelope) ([]RawScore, error) {
+func flatten(ctx context.Context, env scoresEnvelope, want string) ([]RawScore, error) {
 	out := make([]RawScore, 0, len(env.PlayerScores.PlayerScore))
 	for _, sb := range env.PlayerScores.PlayerScore {
 		select {
@@ -131,8 +153,8 @@ func flatten(ctx context.Context, env scoresEnvelope) ([]RawScore, error) {
 			return nil, err
 		}
 		// A single-week echo would be about 17× short as a season total. Assert the window.
-		if rs.Week != "YTD" {
-			return nil, fmt.Errorf("playerscores: record %s echoes week %q, want the requested YTD aggregate", rs.ID, rs.Week)
+		if rs.Week != want {
+			return nil, fmt.Errorf("playerscores: record %s echoes week %q, want %q", rs.ID, rs.Week, want)
 		}
 		out = append(out, rs)
 	}

@@ -21,6 +21,7 @@ outcome.assisted_tackles,week,count,DE DT LB CB S,Tackles shared with a teammate
 outcome.completions,week,count,QB,Passes completed.
 outcome.defensive_tds,week,count,DE DT LB CB S,Touchdowns scored on defense.
 outcome.fantasy_points,season,points,all,"Fantasy points for the season under this league's scoring, as MFL computes them."
+outcome.weekly_fantasy_points,week,points,all,"Fantasy points for the week under this league's scoring, as MFL computes them."
 outcome.fg_made_0_19,week,count,K,Field goals made from 0–19 yards.
 outcome.fg_made_20_29,week,count,K,Field goals made from 20–29 yards.
 outcome.fg_made_30_39,week,count,K,Field goals made from 30–39 yards.

@@ -72,6 +72,7 @@ Every number in `history.db` is stored as player · season · week · measure. W
 | `outcome.safeties` | week | count | DE DT LB CB S | Safeties. | `nflverse` stats_player_week.def_safeties |
 | `outcome.solo_tackles` | week | count | DE DT LB CB S | Tackles made alone. | `nflverse` stats_player_week.def_tackles_solo |
 | `outcome.tackles_for_loss` | week | count | DE DT LB CB S | Tackles behind the line of scrimmage. | `nflverse` stats_player_week.def_tackles_for_loss |
+| `outcome.weekly_fantasy_points` | week | points | all | Fantasy points for the week under this league's scoring, as MFL computes them. | `mfl` playerScores.week |
 | `outcome.yards_after_catch` | week | yards | RB WR TE | Receiving yards gained after the catch. | `nflverse` stats_player_week.receiving_yards_after_catch |
 
 ## prior

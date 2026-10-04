@@ -33,7 +33,7 @@ func defaultParams() []ParamDef {
 			Default: 0.10, Min: 0, Max: 1,
 			Description: "Cushion Guard: reduction strength",
 		},
-	}, rubricParams()...)
+	}, append(rubricParams(), fittedParams()...)...)
 }
 
 // rubricParams is one row per adjustable Layer-4 number at each position where it is on.

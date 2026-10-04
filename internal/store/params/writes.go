@@ -77,9 +77,10 @@ CREATE TABLE IF NOT EXISTS param_overrides (
 	return nil
 }
 
-// seedDefaults inserts every shipped default the table lacks, in one transaction. A
-// parameter added in a later release therefore reaches an existing database; a row already
-// present is left as it is.
+// seedDefaults writes every shipped default in one transaction. A parameter added or refitted
+// in a later release therefore reaches an existing database; admin overrides are a separate
+// table and are left alone. Scoring runs record the values they used, so replacing a default
+// rewrites no history.
 func (s *Store) seedDefaults(ctx context.Context) error {
 	tx, err := s.pools.Write().BeginTx(ctx, nil)
 	if err != nil {
@@ -88,9 +89,12 @@ func (s *Store) seedDefaults(ctx context.Context) error {
 	defer func() { _ = tx.Rollback() }()
 	for _, d := range defaultParams() {
 		if _, err := tx.ExecContext(ctx,
-			`INSERT OR IGNORE INTO param_defaults
+			`INSERT INTO param_defaults
 			   (param_key, position, value_type, default_val, min_val, max_val, is_calibrated, description)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+			 ON CONFLICT(param_key, position) DO UPDATE SET value_type = excluded.value_type,
+			   default_val = excluded.default_val, min_val = excluded.min_val, max_val = excluded.max_val,
+			   is_calibrated = excluded.is_calibrated, description = excluded.description`,
 			d.Key, d.Position, string(d.Type),
 			ftoa(d.Default), ftoa(d.Min), ftoa(d.Max),
 			numeric.BoolToInt(d.IsCalibrated), d.Description); err != nil {
