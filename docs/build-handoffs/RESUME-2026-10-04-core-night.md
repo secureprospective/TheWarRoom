@@ -1,11 +1,21 @@
 # RESUME — TheWarRoom core stages 4–8, overnight run (2026-10-04)
 
 ## 0. Next actions, in order
-1. Stage 6: the fit tool (read the plan's Stage 6 and reasoning §4a first). Data: the scratch
-   history db `~/scratch/twr-stage4/db/history.db` (2021–2026, 1.03 M values).
-2. Stage 7: the two measurables, the case set, the holdout, retire the harness.
-3. Stage 8: M2 on the new numbers.
-4. Stop at the README. Open one PR (do not merge); leave Christopher a numbered morning list.
+1. **Finish the weekly-score load.** It stopped on MFL 429s at **2025 week 13** (2021–2024 and
+   2025 weeks 1–12 are in the scratch db; nothing is running). After a few minutes' cooldown:
+   `cp ~/scratch/twr-stage4/scratch_scores_test.go internal/ingestion/playerscores/ &&
+   FROM_SEASON=2025 FROM_WEEK=13 SCRATCH_DIR=$HOME/scratch/twr-stage4/db go test -tags scratch
+   -run TestScratchScores -v -timeout 60m ./internal/ingestion/playerscores/ >
+   ~/scratch/twr-stage4/scores-load3.log 2>&1; rm internal/ingestion/playerscores/scratch_scores_test.go`
+   (run it in the background; never commit the scratch file; rate is 0.2 rps with backoff).
+2. **Run the real fit:** `go run ./cmd/fit -db ~/scratch/twr-stage4/db/history.db` (writes
+   `internal/store/params/fitted.json` and `docs/fit/Fit_Report.md`; ~15 s). Read the report
+   critically; commit both. Then `make lint`, `make test`.
+3. Stage 6 gate: fit report with holdout scores (done by the tool) + params shown in the Admin
+   Console (live check on Claude-OS: Control → Admin lists `model.*@POS` rows, calibrated).
+   Record the gate in the plan (Stage 6 design table + gate check, same format as Stage 5).
+4. Stage 7 (design in §5b below), then Stage 8, then stop at the README; one PR, no merge;
+   morning list.
 
 ## 1. What we are doing
 - Christopher's goal (2026-10-03 night): work through Stages 4–8 without him. Do not merge to
@@ -21,7 +31,7 @@
 |---|---|
 | 4 Signals | DONE, live gate PASS (v0.5.0-140). Commits a365ba3, 7e916e7, pushed. Gate record in the plan. |
 | 5 Rubric as data | DONE, gate PASS. 1159105 (routine), 17efc6c (Madden out), 6719a69 (assembly twins, CFBD season fix). Gate record in the plan. |
-| 6 Fit | — |
+| 6 Fit | IN PROGRESS. 835f3df: internal/model, internal/model/fit, cmd/fit, weekly scores measure, params upsert. Real fit not yet run (waits on the weekly load). |
 | 7 Measurables | — |
 | 8 M2 | — |
 
@@ -42,6 +52,38 @@
 - Put `CFBD_API_KEY` where his launcher sees it, or the college signal stays skipped on the Beelink.
   Only after Stage 7 lands: today's Score League college path times out with a key.
 - M2 shows "FINAL season complete" mid-season, and all-play 0-0: pre-existing; look at in Stage 8.
+
+## 5b. Stage 6/7 working notes
+- Scale: within-position percentile of league fantasy points per game played, among the
+  season's regulars (4+ games). Games = weeks with any snap or a league score, weeks ≤ the
+  league's last week (17 every year 2021–2025; MFL echoes week 17 for W=18).
+- MFL history: league 14432 exists 2021+ on www47. Season path must be the season itself
+  (`/2021/export?TYPE=playerScores&W=YTD`); `/2026/...&YEAR=2021` returns nothing. Weekly W=n
+  works. MFL 429s after ~70 calls at 0.5 rps; 0.2 rps with backoff gets through slowly.
+- Scratch db `~/scratch/twr-stage4/db/history.db` now has MFL YTD 2021–2025 and weekly
+  2021–2025 (2025 completing). `fitdebug.db` there is a partial backup used to debug (delete it
+  after the real fit; 300 MB).
+- Fit design decisions (record in the plan's Stage 6 design table): k_now by one-way ANOVA on
+  weekly points, then ÷(1−R²_true) to measure against the prior (R²_true = prior R² ÷ mean
+  reliability; conservative min(train, holdout) when holdout n<30); dynasty k and arc fitted
+  jointly on what the blend leaves (first try, arc on raw deltas with exits imputed at the 10th
+  percentile, double-counted regression to the mean and attrition — rejected); survivors
+  weighted 1/P(survive) capped at 5; Z shape chosen by holdout; recency grid vs Marcel; generic
+  nflverse "DB" excluded from the fit.
+- Debug run (holdout 2024, partial data): blend beats last-season-alone and prior-alone at 9/10
+  positions; prior R² holdout 0.21–0.43 (K ≈ 0); survival beats base rate everywhere; arc helps
+  6/10; recency fitted vs Marcel mixed. Report honestly.
+- **Stage 7 plan:** runtime production = MFL YTD points / games (no weekly needed at runtime);
+  the app must load YTD 2021..season (closed seasons once, current each Score League — extend
+  `loadBasePoints`, path year = the season). On-field-now = Z(e_eff, k_now)·est + (1−Z)·prior,
+  est = recency-weighted, arc-adjusted seasons S, S−1, S−2; dynasty start uses k_dynasty;
+  dynasty = Σ_{t=1..5} d^t·P(on field)·talent along the arc (discount d a non-fitted global
+  param, e.g. 0.85). Rostered players use their MFL position for params. Store as a new run kind
+  with its own append-only table (on_field_now, dynasty, prior, production, z's, input flags).
+  Case set + holdout (2025 from ≤2024 vs today's board: 2024 points × age pull) + Spearman vs
+  today's board; then retire the harness (internal/harness, Rookie Sandbox and Architectural
+  Tests tabs, bindings). Stage 8: M2 (internal/m2service, powerrankings) reads the measurables
+  run; two views; param edit → new run → changed board, old board readable.
 
 ## 5. Stage 5 facts worth keeping
 - `l4.Rubric` + `l4.Defaults`; knobs are params `l4.<component>.<name>@POS`; `composition.Rubrics`
