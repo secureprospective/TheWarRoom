@@ -23,6 +23,9 @@ func (s *Store) initSchema(ctx context.Context) error {
 	if err := s.initCapReliefSchema(ctx); err != nil {
 		return err
 	}
+	if err := s.initMFLAdjustmentsSchema(ctx); err != nil {
+		return err
+	}
 	if err := s.initPlayerStatusSchema(ctx); err != nil {
 		return err
 	}
