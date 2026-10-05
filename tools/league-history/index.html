@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101722">
+  <meta name="description" content="Explore fourteen seasons of Legacy NFL: trades, draft picks, teams and players.">
+  <title>Legacy NFL · League history</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to history</a>
+<header class="masthead">
+  <a class="identity" href="#calendar"><img src="./icon.svg" width="36" height="36" alt=""><span>Legacy NFL <small>League history</small></span></a>
+  <nav aria-label="History views">
+    <a href="#calendar">Calendar</a><a href="#league">League</a><a href="#teams">Teams</a><a href="#players">Players</a><a href="#archive">Archive</a>
+  </nav>
+  <button id="install" hidden>Install app</button>
+</header>
+<div class="connection"><span id="connection">Loading local archive…</span><span id="asof"></span></div>
+<main id="main" tabindex="-1">
+  <div id="loading" role="status"><h1>Opening league history</h1><p>Loading the local index. No request is made to MFL.</p></div>
+  <div id="failure" hidden role="alert"><h1>The archive could not be opened</h1><p id="failure-message"></p><button id="retry">Try again</button></div>
+  <div id="workspace" hidden>
+    <section class="page-heading"><h1 id="title">Fourteen years. Twelve months.</h1><p id="intro">Find when the league moves its draft capital. Select a month to see the trades behind it.</p></section>
+    <section class="entity-filters" aria-label="Team and player filters">
+      <label>Franchise<select id="team"><option value="">All franchises</option></select></label>
+      <label class="player-search">Player <span id="player-hint">Search by name or MFL ID</span><input id="player" type="search" list="player-options" placeholder="e.g. Josh Allen" autocomplete="off" aria-describedby="player-hint"><datalist id="player-options"></datalist></label>
+      <button id="clear-player" hidden>Clear player</button>
+      <button id="reset">Reset filters</button>
+    </section>
+    <p id="entity-status" class="muted" aria-live="polite"></p>
+    <div id="view"></div>
+  </div>
+</main>
+<footer>Read-only MFL archive. No league changes, no live refresh. <a href="#archive">Coverage &amp; methodology</a></footer>
+<noscript>This interactive archive requires JavaScript. The original JSON files remain unchanged.</noscript>
+</body>
+</html>
