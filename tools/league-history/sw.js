@@ -1,7 +1,7 @@
 const PREFIX = `legacy-nfl-history:${self.registration.scope}:`;
-const SHELL = `${PREFIX}shell-v1`;
-const ARCHIVE = `${PREFIX}archive-v1`;
-const ASSETS = ['./','./index.html','./style.css','./app.js','./model.mjs','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
+const SHELL = `${PREFIX}shell-v2`;
+const ARCHIVE = `${PREFIX}archive-v2`;
+const ASSETS = ['./','./index.html','./style.css','./app.js','./model.mjs','./behavior.mjs','./behavior_views.mjs','./history_views.mjs','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
 const urls = new Set([...ASSETS,'./data/archive.json','./data/revision.json'].map(path => new URL(path,self.registration.scope).href));
 
 self.addEventListener('install',event => {
@@ -24,6 +24,10 @@ self.addEventListener('fetch',event => {
     try {
       const response = await fetch(event.request);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (event.request.url.endsWith('/data/archive.json')) {
+        const data = await response.clone().json();
+        if (data.schema !== 2 || data.behavior?.version !== 1 || !Array.isArray(data.events)) throw new Error('Invalid archive response; keeping the previous offline copy');
+      }
       await cache.put(event.request,response.clone());
       return response;
     } catch (error) {
@@ -56,7 +60,7 @@ self.addEventListener('message',event => {
         const response = await fetch(archiveURL,{cache:'no-store'});
         if (!response.ok) throw new Error(`Archive returned HTTP ${response.status}`);
         const data = await response.clone().json();
-        if (data.schema !== 1 || !Array.isArray(data.events)) throw new Error('Archive format is invalid');
+        if (data.schema !== 2 || data.behavior?.version !== 1 || !Array.isArray(data.events)) throw new Error('Archive format is invalid');
         await cache.put(archiveURL,response);
         await cache.put(revisionURL,revision);
       }

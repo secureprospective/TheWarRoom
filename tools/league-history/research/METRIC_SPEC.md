@@ -1,7 +1,36 @@
 # Proposed behavioral measure contracts
 
-Research specification, not implemented functionality. Gate sequence and literature
-triage: `BEHAVIOR_RESEARCH.md` / `SOURCES.md`.
+Research contracts, with implementation status below. The contract text remains the
+roadmap, not a claim that all 32 measures ship. Gate sequence and literature triage:
+`BEHAVIOR_RESEARCH.md` / `SOURCES.md`.
+
+## Archive-supported implementation — 2026-10-05
+
+| Contracts | Shipped scope / deliberate qualification |
+|---|---|
+| B01 | Completed participation with conservative/all/ambiguous policies and source receipts |
+| B02–B05 | Per-30 selected calendar dates, matched peer medians, calendar/phase slices; not permitted-day rates, proposed peer-mean lift, phase-share or rolling-burst statistics |
+| B06–B09 | Subject-relative pick received/sent/net units, R1 filters, contextual receiving share before asset facets; unknown encoding stays unavailable |
+| B10–B11 | Archive-backed draft-cycle/horizon and source-season listed positions; not verified decision-time attributes or opportunity-adjusted preference |
+| B12–B15 | Encoded package shapes/size, partner breadth/top share/HHI and inspectable matrix; incomplete encoding blocks complete-package comparisons |
+| B16–B17 | HHI reciprocal not a separate output; recorded drafts inspectable, dated draft-selection mix not asserted |
+| B18–B20 | Observed starts in three matured league-week windows and next recorded exits; missing weeks, exit, archive end and tenure transitions censor; not eligibility-adjusted use or continuous custody |
+| B21–B22 | Seven-day recording windows under last NFL kickoff +24h/capture-date proxies, and complete prior regular record with at least four games for bands; no true decision clock or all-play/points percentile |
+| B23 | Legal archived-constraint, score-reconciled hindsight gap; unresolved residuals excluded; missing optimum cannot erase an independent reported result |
+| B24–B25 | Optimal-set overlap is an additional descriptive benchmark, not the proposed feasible score ratio or starter-persistence statistic; those are not implemented |
+| B26–B32 | No fitted draft-run/stability/network-null model, age/value curve, underperformance effect or causal/winner label. Annual trajectories, half-period splits and whole-season associations are descriptive only |
+
+GM identity is an optional explicit validated tenure prerequisite, **not B01's metric
+number**. Current data has no tenure map. Offer acceptance/response/initiation and
+cap-sensitive questions are additional blocked questions, not invented B30–B32
+contracts. The app's readiness labels use this numbering.
+
+All views share a context but units retain their own scopes: trade shares precede
+asset facets; full-package inventory ignores matching-leg truncation; weekly cohorts
+ignore trade facets; acquisition-date filters may have later follow-up. Recorded
+trade entry is not verified negotiation time. Hash/definition/context/source-path
+exports support reproduction; they do not make uncertain inputs certain.
+
 
 ## Common analytical frame
 

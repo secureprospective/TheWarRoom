@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Serve only PWA assets and the generated public index, never the raw archive."""
+"""Serve only PWA assets and the generated private index, never the raw archive."""
 import argparse
+import ipaddress
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -9,20 +10,36 @@ from urllib.parse import unquote, urlsplit
 
 class HistoryHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
-        if self.allowed():
+        if not self.host_allowed():
+            self.send_error(403)
+        elif self.allowed():
             super().do_GET()
         else:
             self.send_error(404)
 
     def do_HEAD(self):
-        if self.allowed():
+        if not self.host_allowed():
+            self.send_error(403)
+        elif self.allowed():
             super().do_HEAD()
         else:
             self.send_error(404)
 
+    def host_allowed(self):
+        # Loopback binding alone does not prevent browser DNS-rebinding reads.
+        try:
+            host = urlsplit('//'+self.headers.get('Host', '')).hostname
+            host = host.lower().rstrip('.') if host else ''
+            bind = self.server.server_address[0]
+            if host in {'localhost', '127.0.0.1', bind, self.server.server_name.lower().rstrip('.')}:
+                return True
+            return bind == '0.0.0.0' and ipaddress.ip_address(host).is_private
+        except ValueError:
+            return False
+
     def allowed(self):
         path = unquote(urlsplit(self.path).path)
-        return path in {'/', '/index.html', '/style.css', '/app.js', '/model.mjs', '/sw.js',
+        return path in {'/', '/index.html', '/style.css', '/app.js', '/model.mjs', '/behavior.mjs', '/behavior_views.mjs', '/history_views.mjs', '/sw.js',
                         '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png',
                         '/data/archive.json', '/data/revision.json'}
 

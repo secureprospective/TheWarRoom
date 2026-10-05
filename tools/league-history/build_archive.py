@@ -7,6 +7,9 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import tempfile
+
+from behavior_archive import enrich_archive
 
 
 def rows(value):
@@ -109,7 +112,7 @@ def transaction(raw, year, provenance):
                 raise ValueError(f"{provenance}: invalid movement player IDs")
             movements[key] = ids
             players.update(ids)
-    if kind == "FREE_AGENT":
+    if kind in ("FREE_AGENT", "LOAD_ROSTERS"):
         added, _, dropped = raw.get("transaction", "").partition("|")
         for key, value in (("added", added), ("dropped", dropped)):
             ids = [item for item in value.split(",") if item]
@@ -123,7 +126,9 @@ def transaction(raw, year, provenance):
     comment_pick = kind == "TRADE" and bool(re.search(r"\bpicks?\b|\b20\d\d\s+(?:[1-9](?:st|nd|rd|th)|round)", note, re.I))
     return {"season": year, "date": date_of(raw.get("timestamp")), "type": kind,
             "teams": teams, "players": sorted(players), "sides": sides, "movements": movements,
-            "picks": len(picks), "pickNote": comment_pick, "sources": [provenance]}
+            "picks": len(picks), "pickNote": comment_pick, "sources": [provenance],
+            "commissioner": raw.get("by_commish") == "1",
+            "considerationNote": bool(re.search(r"\$|salary|cash|cap\\s+space", note, re.I))}
 
 
 def champion(root, year):
@@ -182,6 +187,8 @@ def compile_archive(root):
             if key in events:
                 events[key]["sources"].extend(event["sources"])
                 events[key]["pickNote"] |= event["pickNote"]
+                events[key]["considerationNote"] |= event["considerationNote"]
+                events[key]["commissioner"] |= event["commissioner"]
             else:
                 events[key] = dict(event, id=key)
         draft_path = base / "draftResults.json"
@@ -238,11 +245,27 @@ def compile_archive(root):
     for observations in scores.values():
         for observation in observations:
             observation["source"]["file"] = file_ids[observation["source"]["file"]]
-    return {"schema": 1, "years": years, "archiveAt": archive_at, "files": files, "teams": list(teams.values()),
+    result = {"schema": 2, "years": years, "archiveAt": archive_at, "files": files, "teams": list(teams.values()),
             "players": players, "seasons": seasons, "events": event_list, "snapshots": snapshots, "scores": scores,
             "counts": dict(collections.Counter(row["health"] for row in files)),
             "notes": {"undated": sum(event["date"] is None for event in event_list),
                       "commentOnlyPickTrades": sum(event["type"] == "TRADE" and event["pickNote"] and not event["picks"] for event in event_list)}}
+    return enrich_archive(root, result)
+
+
+def atomic_write(path, content):
+    """Readers see the previous complete index or the next one, never a partial JSON."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
+                                         prefix=path.name + ".", suffix=".tmp", delete=False) as handle:
+            temporary = Path(handle.name)
+            handle.write(content)
+        temporary.replace(path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def main():
@@ -253,9 +276,9 @@ def main():
     data = compile_archive(args.archive)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     content = json.dumps(data, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
-    args.output.write_text(content)
+    atomic_write(args.output, content)
     revision = hashlib.sha256(content.encode()).hexdigest()[:12]
-    args.output.with_name("revision.json").write_text(json.dumps({"revision": revision}))
+    atomic_write(args.output.with_name("revision.json"), json.dumps({"revision": revision}))
     print(f"Built {len(data['events']):,} events, {len(data['players']):,} players, {len(data['files']):,} files; {len(content.encode()) / 1e6:.1f} MB; revision {revision}")
 
 

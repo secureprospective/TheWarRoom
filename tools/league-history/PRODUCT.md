@@ -1,4 +1,4 @@
-# Legacy NFL History
+# Legacy NFL Behavior Explorer
 
 <!-- impeccable:product-schema 1 -->
 
@@ -6,25 +6,28 @@
 web
 
 ## Stack
-Confirmed: independent HTML/CSS/JavaScript PWA, Python standard-library archive compiler. No dependencies at runtime. Existing WarRoom application and databases remain untouched.
+Independent HTML/CSS/JavaScript PWA and Python standard-library archive compiler. No runtime dependencies, external fonts or live MFL calls. Existing WarRoom application, databases and raw archive remain untouched.
 
 ## Users
-Christopher explores his 32-team dynasty league's history and wants to keep extending this tool.
+Christopher explores the observed choices of managers/GMs in his 32-team dynasty league and wants an extensible evidence-first tool.
 
 ## Product Purpose
-Make fourteen archived MFL seasons understandable through a clickable twelve-month calendar, pick-trade heatmaps, league summaries, team histories and player histories.
+Compare observed franchise choices under shared calendar, entity, asset and context filters; inspect peer baselines, directed receipts, counterpart relationships, trajectories and guarded hindsight/usage observations. Preserve the fourteen-year January–December calendar as the principal work surface. No personality dashboard, causal winner score or NFL-player behavioral model.
 
 ## Operating Context
-Read-only local archive in `league-archive/raw/`; latest-per-file manifest in `league-archive/manifest.jsonl`. PWA requires localhost or HTTPS. Deployment beyond this machine is undecided.
+Read-only archive at `league-archive/raw/`, latest-per-file manifest at `league-archive/manifest.jsonl`. Local PWA server on loopback port 8765. Installation requires localhost or private HTTPS. Remote hosting and reboot autostart are not configured.
 
 ## Capabilities and Constraints
-Calendar filters must connect to underlying events. Completed trades differ from proposals. Actual transaction date differs from MFL archive season. Snapshots are not complete ownership intervals. 2026 is partial. No credentials, owner contact details, message boards or raw archive served. Generated league data stays out of git.
+Seven linked views: Calendar, Compare, Franchise, Weekly, League, Players and Evidence. Default unflagged two-sided completed-trade policy; raw/ambiguous sensitivity modes. Contextual shares precede asset facets; counts, date rates and shares remain distinct. Optional explicit owner-tenure map; otherwise every subject is a franchise slot. Proposals/manual adjustments never become completed-trade denominators. Unknown data is not zero. Hindsight lineup gaps and observed starts are not ex-ante skill or eligibility-adjusted acquisition quality. 2026 is partial.
 
 ## Evidence on Hand
-1,705 JSON files, 2013–2026: 1,559 usable, 97 expected errors, 49 empty. Existing WarRoom UI supplies the navy, restrained data-interface visual identity; this tool does not redesign it.
+1,705 files across 2013–2026: 1,559 usable, 97 expected errors, 49 empty. 2,634 completed trade records; 1,725 structured-pick deals; 3,780 encoded transfers. Source-season encoding absent in 2013–2016. 4,215 of 5,590 scored team-weeks pass score/constraint reconciliation. Source capture timezone and true result-finalization clocks are not archived. No verified owner map currently supplied.
 
 ## Product Principles
-- Every result traces back to an archive file and record.
-- Unknown and unavailable are not zero.
-- Keep transactions, draft selections and roster snapshots distinct.
-- Interpret league IDs as strings, preserving leading zeros.
+- Every result states its scope, unit, eligibility, denominator and interpretation limit.
+- Preserve subject-relative received/sent directions and source coordinates.
+- Separate observations, proxies, missingness and modeled inference.
+- Never infer owner continuity from franchise aliases or snapshots.
+- Do not backfill current values or final standings as decision-time beliefs.
+- No credentials, owner contacts, messages or raw archive exposed; generated private data stays out of git.
+- Keep WarRoom's cold-navy, flat, scan-oriented data-interface identity.

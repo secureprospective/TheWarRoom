@@ -1,7 +1,10 @@
 # From archive browser to behavioral analysis
 
-Research/triage only — 2026-10-05. No PWA implementation, generated index, database,
-service or visual design was changed. Christopher clarified that the subjects are
+Research/triage completed 2026-10-05; implementation subsequently approved by
+Christopher. The archive-supported behavior explorer is now implemented; see
+`METRIC_SPEC.md` implementation status and `../README.md` for exact scope. Research
+itself was read-only; subsequent implementation leaves WarRoom, databases and raw
+archive untouched. Christopher clarified that the subjects are
 league managers/GMs. Source references S1–S14 are in `SOURCES.md`; proposed metric
 contracts are in `METRIC_SPEC.md`.
 
@@ -241,6 +244,8 @@ The ranking engine's current values must not be backfilled as historical market 
   Imported rules/events are used when available; gaps remain gaps.
 - Dated NFL age/experience and value sources before age/value-sensitive metrics.
 
-The recommended next implementation is Gate 0, then the coordinated behavior explorer.
-This document is research triage and a build proposal, not approval to rewrite the UI
-or a claim that these analyses are already implemented.
+The approved archive-supported implementation delivers Gate 0 eligibility/identity
+plumbing, the Gate 1 coordinated explorer, and explicitly qualified Gate 2 observations.
+Annual splits and associations are descriptive, not Gate 3 fitted stability or Gate 4
+valuation/causality. The original research rationale remains above; the implementation
+status in `METRIC_SPEC.md` distinguishes shipped subsets from the remaining roadmap.
