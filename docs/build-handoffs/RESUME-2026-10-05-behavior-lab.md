@@ -1,4 +1,4 @@
-# RESUME — Legacy NFL Lab (2026-10-06, rounds 5-6: the MFL facts database, then the league view)
+# RESUME — Legacy NFL Lab (2026-10-06, rounds 5-9b: facts database, league view, market filters, draft timing, how the teams trade, offers)
 
 ## 1. What we are doing
 - **Round 5 brief (Christopher):** the Lab's data was "getting less and less accurate"; build a
@@ -16,6 +16,12 @@
   ineffeciencies need to be market and calendar wide ... I need to SEE the legue, not through the
   lens of my team, I already have that". Done under the Impeccable skill (PRODUCT.md, decision
   page, finish review).
+
+- **Round 7 brief (Christopher, 2026-10-06):** the buy/sell lists are "the best part ... where I
+  want more control on filtering the time of year, and the assets in question. Blend [the
+  calendar] into the filtering methods". Built: a filter band above the lists (league year in
+  eight stretches with trades a season; asset chips; players together or by age). Lists, pick
+  clock and contenders reprice; the 1st-for-players rates table is retired.
 
 ## 2. Agents + harnesses
 Claude, plus Impeccable's shipped subagents for round 6: `impeccable-finish-reviewer` (two rounds,
@@ -36,6 +42,9 @@ models cached in `data/models/`.
 | `node --test tests/engine.test.mjs` (9); `node tests/screens.mjs`; `node tests/interact.mjs` (7 steps) | all pass on the round-6 build |
 | Impeccable detector (`impeccable detect --json`) | one finding (11.5px text), fixed |
 | Impeccable finish review | round 1 fix (8 items), round 2 fix (5 items); all applied, third batch not re-scored |
+| Round 7: `node --test tests/engine.test.mjs` (10), `tests/interact.mjs` (8 steps incl. filters), `tests/screens.mjs`, compiler 22 | all pass |
+| Round 7 detector | advisory only (sizes/colours now recorded in DESIGN.md) |
+| Round 7 finish review (Impeccable reviewer) | not run |
 | Christopher's review of `data/review.md` | pending |
 
 ## 4. Artifacts
@@ -94,31 +103,97 @@ models cached in `data/models/`.
 - He does not know the causes of the review items (4 records, 2019 penalties): they stay listed as
   "cause unknown".
 
+- Round 7 (2026-10-06): the market filters by stretch of the year and asset; picking an asset must
+  open that asset's own market (why, when, against what), not hide rows ("filter the data field").
+- Round 8: draft timing and player value are the core focus; percent of slot, not ±wins.
+- Round 9: the trade log is team behaviour (tiers by rank that day, postures), still league-wide.
+- Round 9b: offers chart built on the Cardinals' offers ("Build it on your offers"), the one
+  sanctioned exception to the no-team-lens rule, labelled as his offers.
+- 2026-10-06 close: next session is planning only (MFL menu tree, then a TheWarRoom build plan).
+
 ## 8. Ledger state
 Nothing from rounds 4-6 is committed except RESUME documents. Commit only on his go-ahead:
 `git add tools/league-history docs/league-history docs/build-handoffs` (`.venv/` and `data/` are
 ignored). Never `--no-verify`; no merge to main.
 
 ## 9. Next actions
-Round 6 (2026-10-06), the league view, is built: no team lens anywhere. The market screen is a buy
-list and a sell list against the going rate, then a calendar band. Christopher chose the layout on
-the Impeccable decision page. Two finish-review rounds were scored "fix"; the third fix batch
-(window marks must beat both other windows, no big-number pick clock, no split year spans,
-12px seasons label) was applied and visually checked but not re-scored by the reviewer.
-Product record: `tools/league-history/PRODUCT.md`; contract: `.impeccable/surfaces/app-index-html.md`.
-1. Report round 6 to Christopher (he has not seen the finished screen yet) and get his read.
-2. His call: commit rounds 4-6 (`git add tools/league-history docs/league-history docs/build-handoffs`).
-3. Open: the draft screen keeps its structure; its third summary still uses the old price unit
-   (per expected win against a next-draft 1st). Bring it onto the going-rate unit if he wants
-   the draft screen simplified the same way.
-4. Optional, his call: the ~70 trade-note readings on `data/review.md`.
+**Christopher, 2026-10-06, closing the build day:** "Good work, this is fine for now: when we come back
+from compaction we will examine the MFL menu tree and we will want to apply all of these features to
+TheWarRoom, but not doing a build today. It will be a planning session for the build."
+
+**NEXT SESSION = PLANNING ONLY. Write no app code, change no TheWarRoom build.**
+1. Examine the MFL menu tree for league 14432: every page and report MFL offers (menus, report
+   pages, options), so the plan maps each Lab feature to what MFL already shows and what it lacks.
+   Use what is already cached first (`tools/league-history/data/mfl-pages/`, the store's
+   `factexam.py` page list, `docs/data-layer/MFL_API_Specification.md`); fetch more pages only
+   read-only, via headless Brave or on Claude-OS (no Claude-in-Chrome). MFL players endpoint: at
+   most one call a day.
+2. Plan applying the Lab's features to TheWarRoom (Go engine, Wails v2, React + Tailwind +
+   Zustand, SQLite; see `CLAUDE.md`, `SYSTEM_MAP.md`, `docs/build-handoffs/Core_Build_Plan_2026-10.md`
+   and its rulings R1-R12): the market (buy/sell lists, going rate, time-of-year and asset filters,
+   per-asset panels), draft timing (percent of slot, stretches, NFL round, age, plays-like-pick,
+   draft-or-buy), how the teams trade (tiers, postures, trends, team table, team panel), offers
+   against acceptance; and the facts database (`store/`) as the data source. Decide where each
+   lives (engine vs frontend), what ports from JS (`app/js/engine.js`, `draftlab.js`, `teams.js`),
+   and the gates. Claude makes the architecture calls and explains them; Christopher decides
+   product and priority. Write the plan as a document in `docs/build-handoffs/`.
+3. Still open, his call: commit rounds 4-9b on `session/league-history-pwa`
+   (`git add tools/league-history docs/league-history docs/build-handoffs`). Nothing from rounds
+   4-9b is committed except RESUME documents.
+4. Optional: finish review (Impeccable reviewer) for rounds 7-9b, never run; `data/review.md`.
+
+### Build history of this session (rounds 7-9b, all 2026-10-06, all tested, Christopher approved each)
+**Round 7 (filters) is built and tested; Christopher has not seen it.** Code: `engine.js`
+(`leagueMarket` takes `phases` and `byAge`; `inScope`, `MIN_TRADES` 80/60, `tradesByPhase`,
+`pickClock`, `paid` on rows; `tradesByMonth`/`calendarRates` removed), `model.js` `PHASES`,
+`views/market.js` (filter band, `yearPicker`, `assetPicker`), `style.css` (`.flt`, `.yr-*`,
+`.chip`), `sw.js` `lab-v5`. Captures: `~/fleet/runs/mfl-store-2026-10-05/filters/`.
+Filter findings worth knowing: in season only LB (cheap) and RB (dear, fading) clear; next-draft
+1sts drop to "too uncertain" there because few in-season-traded 1sts have played out (paid 312%).
+Offseason adds QB as dear (143%, not in both halves). Winter alone (41 trades) is too few to price.
+**Round 7b (same day):** Christopher: "its the same charts without new data ... when is the cheapest,
+why, against what, players and other pick ... the filter should filter the data field". Built:
+`engine.js` `fitPrices` returns `cov`; `assetOf`, `stretchPrices`, `assetProfile` (why/when/against/
+back/buyers); `tradesByPhase` takes `assets`. `market.js` `profile()` panels above the league lists;
+chosen rows outlined (`.focus`). `sw.js` `lab-v6`. Tests: engine 11, interact 8 steps (asset panel,
+stretch drill-down), screens ok. Captures `filters/p-*.png`. Measured: next-draft 1sts cheapest during
+the rookie draft (102%) and dearest rookie draft to kickoff (346%), both beyond chance; linebackers
+cheap for both reasons (paid 55%, delivered 155%).
+**Round 8 (same day): draft timing rebuilt.** Christopher: "much better" on 7b; then "take the same
+kind of granular look and filtering on draft timing ... A timing on the draft and player value is
+where the core focus should be." New `app/js/draftlab.js` (SEGMENTS, NFL_ROUNDS, AGE_BANDS,
+draftScope, vsSlot, bySeason, slotCurve, playsLike, hitRate, positionDraft, draftMap); `views/draft.js`
+rewritten (filter band, two maps, position panels; old grid/lean/pins removed; `priceList` no longer
+used by a screen). `sw.js` `lab-v7` + draftlab in SHELL. Tests: engine 12, interact 8 steps (draft step
+rewritten), screens ok, compiler OK; detector advisory only. Captures `filters/d-*.png`.
+**Round 9 (same day): how the teams trade.** Christopher: "Good work" on round 8, then the trade log
+should go "far deeper into behavioral data from the teams ... like trading stocks ... granular on teams,
+and trends with contenders, in the hunt, and rebuilding." New `app/js/teams.js` (TIERS, POSTURES,
+tradeSides cached on data, sidesInScope, behaviour, tierTrends, tierPairs, teamRows, teamProfile);
+`views/tradelog.js` rewritten (title "How the teams trade"). `sw.js` `lab-v9` + teams.js in SHELL.
+Tests: engine 13, interact 8 steps (trade-log step rewritten), screens ok, compiler OK, detector
+advisory only. Captures `filters/t-*.png`. His own franchise appears as one row among 32 with no
+highlight, per the league-only rule.
+**Round 9b (same day): offers against acceptance.** Every offer in the archive involves 0025 (MFL shows
+only a team's own offers); Christopher chose "Build it on your offers". `compile/build_lab.py`
+`offer_outcomes` writes `offers` to lab.json (470; endings matched; 30 unknown); lab.json rebuilt and
+verified: no other key changed. `model.js` decodes `offers`; `tradelog.js` `offersChart` (8 stretches,
+stacked endings, acceptance rate, Sent/Received/Every offer). `sw.js` `lab-v10`. Tests: engine 14,
+compiler OK, interact 8 steps (offers checks added), screens ok. Captures `filters/o-*.png`.
+Christopher reviewed each round live: 7 ("much better" after 7b), 8 ("Good work"), 9 and 9b ("Good
+work, this is fine for now"). Round 6's open item (the draft screen's old price unit) is gone: round 8
+replaced that screen.
 
 ## 10. Environment
-- The Lab server on 8765 (PID 1254811) serves the round-6 build at http://127.0.0.1:8765/.
+- The Lab server on 8765 (PID 1254811) serves the round-9b build at http://127.0.0.1:8765/.
 - `.venv/bin/python` for anything that loads sqlite-vec or the models.
 
 ## 11. Honest status
 The facts layer is proven against MFL two ways (its own totals and its web pages). Meaning search
-is chosen by the exam (bge-base, hybrid). The Lab reads only the facts database. Round 6 is built and
-tested; Christopher has not yet judged whether it is easier to read, which is the real test. The
-trade-note readings are Claude's and unconfirmed.
+is chosen by the exam (bge-base, hybrid). The Lab reads only the facts database. Rounds 7-9b are built,
+tested (engine 14, compiler 22, interact 8 steps, screens) and seen by Christopher, who called it fine
+for now. Not done: the Impeccable finish review for rounds 7-9b; the design record covers rounds 7-8
+in prose, round 9's colours (posture #86bbf1/#b6a1e6/#3b4d63, tier ramp #c9d6e6/#6f86a3/#3b4d63,
+offer endings) are not yet in DESIGN.md. The trade-note readings are Claude's and unconfirmed. Offers
+exist only for the Cardinals (MFL limit), so the offers chart is one team's window, labelled so.
+Nothing about TheWarRoom has been planned yet: that is the next session.
