@@ -43,9 +43,9 @@
  └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-![M2 power rankings, the franchise view](docs/ui/showcase/app-m2-franchise.png)
+![The target Home screen: the seasonal card, the alert tray and the inspector](docs/ui/showcase/target-1-home.png)
 
-<sub>📸 **The live app — M2 Power Rankings, "The franchise" view:** every roster's summed dynasty value, ranked, with each team's move since the previous model run. Real league, real numbers.</sub>
+<sub>🎯 **The target, Home: "what needs me, and how long do I have?"** The league-year track and its nearest clocks, an alert tray sorted by urgency and then by stakes, and the counterparty open in the inspector. This is rough draft r0 of the console TheWarRoom is being built toward, approved 2026-10-06. Rosters and contracts are the real league (MFL, week 5 2026); points, values and clocks are illustrative. [The whole target ↓](#-the-command-console--the-road-to-alpha)</sub>
 
 ---
 
@@ -136,9 +136,9 @@ The model's **400 values** are fitted on the league's own scoring history, 2021�
 
 Every setting the engine reads — **509 of them**, fitted values and scouting weights included — sits in the **Engine Admin** console, marked fitted or hand-set, and editable. Change one, score the league, and a new run lands beside the old one. **Every earlier run stays readable, forever.**
 
-![Engine Admin, the fitted WR values](docs/ui/showcase/app-admin-fitted.png)
+![The target Franchise HQ: the roster with both numbers beside every contract](docs/ui/showcase/target-2-hq.png)
 
-<sub>📸 **Engine Admin, filtered to "WR fitted":** the receiver's career arc, debut chance, k values and prior weights — every one a dial.</sub>
+<sub>🎯 **The target, Franchise HQ › Lineup and roster:** both numbers on every row, next to what the player costs and for how long. Select a player and he opens in the inspector with *his* moves in a tray. A read table never holds a commit button. Values are illustrative until the engine is wired to this screen.</sub>
 
 ---
 
@@ -176,15 +176,18 @@ A mathematically flexible framework that crunches *this league's* exact scoring 
 
 **And when a signal doesn't earn its place, it goes.** Madden ratings used to feed the film score. Measured against the board, Madden's film score sat above the midpoint for *every* rostered player — a flat lift of up to 5% that separated no one. So it was cut, with the diff reported. The refactor that made the rubrics editable proved itself bit-identical first: **20,000 generated inputs per position, same hash before and after.**
 
-![M1 asset rankings with Now and Dyn](docs/ui/showcase/app-m1-assets.png)
-
-<sub>📸 **M1 Asset Rankings:** the adjusted score, Now and Dyn on every rostered player, with each player's move since the last run.</sub>
-
 ### 📊 Power Rankings (M2) — *two views of the league*
 - **🔥 This season** — each roster's summed **Now**, z-blended with the season's results at a weight you slide. It reads MFL's all-play record when the league reports one, and points for when it doesn't.
 - **🏛️ The franchise** — each roster's summed **Dyn**, and nothing else. Who's built to win for years, not just this month.
 
 Every board shows each team's **Δ** since the previous model run. Turn a dial in Admin and watch the league reorder.
+
+### 📈 The Market — *where the league misprices, league-wide*
+Your own roster is one screen. **The War Room is the whole league:** what every position and age band actually trades for, across every completed trade in league history, with no tint for your own team. A cell turns green or red only when its gap from the going rate holds up beyond chance; a cell with too few trades says so instead of guessing. Every chart ends in a **"so what"** line that names a move, and every surface carries **"How this is counted"** in plain words. The calendar matters too: the league trades in two waves, and picks cost the most in October.
+
+![The target War Room: going rate by position and age, the trade calendar and the pick clock](docs/ui/showcase/target-4-war.png)
+
+<sub>🎯 **The target, War Room › Market:** going rate by position and age, when the league trades, the pick clock, and a segment open in the inspector with its counting rule. Figures are illustrative.</sub>
 
 ### 📒 The Per-Year Salary Ledger — *exact to the cent*
 Every contract is a row of **per-year cells**. Every change is an append-only, dated, immutable audit entry — the database itself rejects an edit to history. The cap is *derived* from the cells (`CapUsed = Σ paid cells + Σ dead cap − Σ cap relief`, floored at 0), never stored as a competing number. **Money is `int64` cents on a flat $10k grid** — no floating-point drift, exact by construction.
@@ -208,7 +211,20 @@ A **single transaction coordinator** is the only thing in the entire system allo
 
 **🔁 The trade builder** — its own surface, because a trade is the only move that spans *multiple* franchises. Browse any team's roster, add players to a cart, set each one's destination, and stage a single **atomic multi-leg swap** — the same quote-before-commit gate confirms the whole trade lands together or rolls back whole.
 
+**📨 Every move is an envelope.** In the target console, a move is not a button press. It is an envelope that moves through named steps: **drafted → checked → handed off → landed**. The app runs the pre-flight checks (roster size, cap, IR and taxi rules, the deadline), then hands you to the exact MFL page. It calls the move *landed* only when the change shows up in MFL's own data. **"Ready" means we checked it; only the record can say it happened.** Irreversible moves are a hold-to-fire gesture, never a click. When TheWarRoom takes over the writes, only the hand-off step changes.
+
+![The target Trade Floor: an incoming offer as a move envelope](docs/ui/showcase/target-3-trade.png)
+
+<sub>🎯 **The target, Trade Floor › Trade desk:** Seattle's offer with its envelope rail, the checks before you go to MFL, the league's comparable trades, and the hold-to-accept gate. Real rosters and salaries; values and comparables are illustrative.</sub>
+
 **🎖️ Commissioner controls** — the league-calendar and off-common-path powers live on their own surface: advance the season phase, roll the season over (§14), open or close the free-agency signing window (§6), and — under a red, irreversible divider — retirement, death, and cap-relief appeals (§13). Every one runs through the same dry-run-then-confirm gate.
+
+### 🏟️ Game Day — *the matchup, live*
+Sunday gets its own surface. The real NFL games run along the top; pick one to follow and the inspector shows its field, its last play, and which feed it came from (ESPN first, with Yahoo and Fox standing by behind one adapter). The centre spine is **fantasy-first**: it streams every play that moves *your* matchup, from any game, followed or not. Players light up blue while they're on the field. **Fantasy points come only from the league's own live scoring**, never from a news feed. Legacy NFL plays the **Classic** list view. A formation **Default** view, with your offense lined up across from their defense, is on the horizon for every league.
+
+![The target League Pulse: the Classic matchup, live games and the scoring-play spine](docs/ui/showcase/target-5-pulse.png)
+
+<sub>🎯 **The target, League Pulse › Now:** Arizona against Seattle in the Classic view, every starter's live line, and the scoring plays down the middle. Real rosters; game states and points are illustrative.</sub>
 
 ### ⚡ Go-Powered, Local-First Performance
 Zero cloud latency. Absolute privacy. Near-instant processing from a clean, compiled backend. Turn a dial in the admin console, press **Score League**, and a fresh board and model run land in under a minute — the old ones still on the record for comparison. Native desktop app; your league never leaves your machine.
@@ -251,30 +267,32 @@ TheWarRoom is built like an onion: **one layer at a time, each one solid before 
 
 <div align="center">
 
-[![Design Bar](https://img.shields.io/badge/DESIGN_BAR-ANDURIL,_NOT_SAAS-0d1117?style=for-the-badge&labelColor=1b1e23)](docs/ui/Wireframe_Session_Plan.md)
-[![Speed Law](https://img.shields.io/badge/SPEED_LAW-%3C100ms_OR_IT_DOESN'T_SHIP-0d1117?style=for-the-badge&labelColor=1b1e23)](docs/ui/Wireframe_Session_Plan.md)
-[![Command Layer](https://img.shields.io/badge/DEEP_TRUTH-EVERY_BUTTON_IS_A_COMMAND-0d1117?style=for-the-badge&labelColor=1b1e23)](docs/ui/Wireframe_Session_Plan.md)
+[![Design Bar](https://img.shields.io/badge/DESIGN_BAR-ANDURIL,_NOT_SAAS-0d1117?style=for-the-badge&labelColor=1b1e23)](docs/ui/Target_UI_Spec_2026-10.md)
+[![Speed Law](https://img.shields.io/badge/SPEED_LAW-%3C100ms_OR_IT_DOESN'T_SHIP-0d1117?style=for-the-badge&labelColor=1b1e23)](docs/ui/UI_Direction_Document.md)
+[![Command Layer](https://img.shields.io/badge/DEEP_TRUTH-EVERY_BUTTON_IS_A_COMMAND-0d1117?style=for-the-badge&labelColor=1b1e23)](docs/ui/Target_UI_Spec_2026-10.md)
+[![Target](https://img.shields.io/badge/TARGET_r0-263_ENDPOINTS_·_ZERO_IN_A_MORE_MENU-0d1117?style=for-the-badge&labelColor=1b1e23)](docs/ui/endpoint-registry.csv)
 
 </div>
 
 The next front is the one you can *see*: turning the operator workspace into a true **command console**. The bar is Anduril, not SaaS — dark, precise, data-dense without a pixel of waste. Confident hierarchy. Controls that look like they actuate real hardware, because here they *do*: every button is wired to an engine that moves real cap dollars atomically. The UI should communicate capability before you click anything.
 
-### The design language — locked, and shipping
+### 🎯 The target — what *done* looks like
 
-Five design sessions, each one fired as **divergent AI provocations**, triaged against locked architecture, judged on vision, confirmed. Together they are the visual doctrine the app is built against — a cold naval-CIC instrument console where **color is data, structure is silence, and nothing moves that isn't feedback.** The screenshots above are that shell, live.
+The console is designed **before** the infrastructure under it, so the build always knows what it's building toward. In October 2026 every endpoint that matters was counted: every MFL page and action, every analysis panel, and every screen the app already has. That's **263 of them**. Two AI research passes (GPT and GLM, each answering the same rigorous brief on its own) were reconciled into one target, and Christopher approved it on 2026-10-06. Today's app screens are a **test harness**; each one retires the day its target replacement goes live.
 
-> **These are the confirmed design-session artifacts** (greyscale grid → typographic system → color/atmosphere → command layer) — the *spec*, hand-rendered.
+The rule underneath it: **nobody likes endless menus, but a missing action is worse.** So every endpoint gets exactly one home, a second route to it, a command verb, and a baseline. Nothing hides in a "More" menu.
 
-<table>
-<tr>
-<td width="50%"><img src="docs/ui/showcase/design-a-grid.png" alt="Session A — grid & spatial system"><br><sub><b>A · Grid & Spatial System.</b> The fixed four-column instrument shell — nav rail, workspace, 320px contextual inspector as a transform overlay, and the right-edge quick-dash strip. "The table is the instrument; everything else is bezel."</sub></td>
-<td width="50%"><img src="docs/ui/showcase/design-b-components.png" alt="Session B — component hierarchy & typography"><br><sub><b>B · Component Hierarchy & Typography.</b> Inter for text, JetBrains Mono for data. Delta-in-weight. Hold-to-fire commit gate. Four row states. The 7-column asset facet map. Zero icon chrome — the type *is* the interface.</sub></td>
-</tr>
-<tr>
-<td width="50%"><img src="docs/ui/showcase/design-c-atmosphere.png" alt="Session C — color, dark mode & atmosphere"><br><sub><b>C · Color, Dark Mode & Atmosphere.</b> Cold-CIC navy. Score→hue banding on the value column only. The restraint doctrine — "color is Data and State; structure is achromatic." Four live signals firing at once and each still reads instantly.</sub></td>
-<td width="50%"><img src="docs/ui/showcase/design-d-command-layer.png" alt="Session D — communication, calendar & command layer"><br><sub><b>D · Command & Calendar Layer.</b> One time-ordered event substrate — feed, chat, deadlines, trade cards, alerts — in a single row grammar. Terminal-log comms. A fully buildable, append-only-honest league calendar.</sub></td>
-</tr>
-</table>
+**The visual system: four jobs, four channels.** Colour says what something *is* (five locked meanings). The frame says how much is at stake, from ambient up to irreversible. The countdown says how soon. A monochrome glyph says what kind of thing it is. No channel does two jobs, so a card's gravity reads before a single word does.
+
+![The visual system: colour, frame, countdown and glyph, and the four colour slots every card shares](docs/ui/showcase/target-0-system.png)
+
+**Six places, at most three workspaces each.** Home, War Room, Franchise HQ, Trade Floor, League Pulse and Control Room. The inspector, the command bar, comms, the calendar and the status strip are always present. The screens above show Home, Franchise HQ, the War Room market, the Trade Floor and Game Day; this is the map of everything else.
+
+![The map of everything: six nodes, their workspaces, the always-present surfaces and the endpoint census](docs/ui/showcase/target-6-map.png)
+
+📐 The spec: **[`docs/ui/Target_UI_Spec_2026-10.md`](docs/ui/Target_UI_Spec_2026-10.md)** · every endpoint, its home and its verb: **[`docs/ui/endpoint-registry.csv`](docs/ui/endpoint-registry.csv)** · the interactive board (open it locally): **[`docs/ui/target-draft/`](docs/ui/target-draft/TheWarRoom_Target_Draft_2026-10.html)**
+
+The visual doctrine underneath it all came from five earlier design sessions, A to E ([`docs/ui/UI_Direction_Document.md`](docs/ui/UI_Direction_Document.md)): a cold naval-CIC instrument console where **colour is data, structure is silence, and nothing moves that isn't feedback.**
 
 ### What the console is hiding under the hood
 
@@ -285,12 +303,16 @@ Five design sessions, each one fired as **divergent AI provocations**, triaged a
 
 ### The ladder to Alpha
 
+The console gets built like the engine was: **like an onion.** Each ring cuts through every layer, from screen to data contract to source. Each ring deepens the paths people use most, and ends with a live review that revises the target itself. A screen that isn't wired yet says *"not wired yet"*; it never shows made-up data.
+
+![The roadmap to done: rings 0 to 4 with what each builds and the gate it must pass](docs/ui/showcase/target-7-road.png)
+
 ```
    DESIGN ✅ A grid → B components → C atmosphere → D command layer → E mobile  [ALL CONFIRMED]
-   SHELL  ✅ B-1 shell & tokens ── the console is LIVE ── you're looking at it above
+   TARGET ✅ r0 approved 2026-10-06 · 263 endpoints placed · the screens drawn
    CORE   ✅ Layer 1 rebuilt: fitted model · Now + Dyn · power rankings on them
-          ▶  B-2 module migration → B-3 CALENDAR (full function)
-          → B-4 home & inspector → B-5 alpha hardening
+          ▶  RING 0 walking skeleton → RING 1 the frequent loops
+          → RING 2 the decision layer → RING 3 breadth and depth
           ─────────────────────────────────────────────────────────────
    🚨 ALPHA GATE — versioned, stamped builds. A full season run in anger.
       One operator, one console, one league — proven before it's shared.
@@ -298,7 +320,7 @@ Five design sessions, each one fired as **divergent AI provocations**, triaged a
 
 *Alpha is deliberately a seat for one.* The tool gets run hard against a real season by the person who knows exactly what it should say — because a front office that hasn't survived its own commissioner has no business in anyone else's hands. The doors open when the product has earned them, not when the roadmap says so.
 
-Full battle plan: [`docs/ui/Wireframe_Session_Plan.md`](docs/ui/Wireframe_Session_Plan.md) · worked example: [`Session 0`](docs/ui/wireframes/session-0-test/Session-0-Example.md).
+The roadmap to done: [`docs/build-handoffs/UI_Target_Roadmap_2026-10.md`](docs/build-handoffs/UI_Target_Roadmap_2026-10.md) · the design sessions behind it: [`docs/ui/Wireframe_Session_Plan.md`](docs/ui/Wireframe_Session_Plan.md).
 
 ---
 
@@ -310,7 +332,7 @@ A multi-block system design where the boundaries aren't conventions — they're 
    ┌──────────────────────────────────────────────────────────────────────────┐
    │                          THE DESKTOP INTERFACE                            │
    │              Wails v2  ·  React + Tailwind + Zustand                      │
-   │   Asset Rankings · Power Rankings · Operator · Trade builder · Admin      │
+   │   Home · War Room · Franchise HQ · Trade Floor · League Pulse · Control   │
    └───────────────────────────────┬──────────────────────────────────────────┘
                                     │  IPC (typed, one-way: UI reads / requests)
    ┌───────────────────────────────▼──────────────────────────────────────────┐

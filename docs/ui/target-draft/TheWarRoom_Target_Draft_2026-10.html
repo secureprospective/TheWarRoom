@@ -29,6 +29,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .board-tabs button[aria-selected=true]{color:var(--tx);border-color:var(--tx)}
 .board-tabs button:hover{color:var(--tx)}
 .screen{display:none;padding:28px 32px 56px}
+html.shot .board-head{display:none}
+html.shot .screen{padding:28px 32px 28px}
 .screen.on{display:block}
 .screen>h2{font-size:15px;font-weight:700;margin-bottom:4px}
 .screen>.lede{color:var(--tx2);max-width:110ch;margin-bottom:18px}
@@ -804,6 +806,7 @@ document.querySelectorAll('.frame').forEach(f=>{
   <aside class="insp"><div class="insp-head">Inspector<span class="x"><span>expand ⇤</span></span></div><div class="insp-body">${insp}</div></aside>
   <aside class="comms"><span class="bub n">3</span><span class="bub">C</span><span class="vt">Comms · league feed</span></aside>`;
 });
+if(location.search.includes('shot'))document.documentElement.classList.add('shot');
 const tabs=[...document.querySelectorAll('.board-tabs button')];
 function show(id){
   if(!document.getElementById('scr-'+id)) id='system';
