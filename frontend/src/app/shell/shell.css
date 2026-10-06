@@ -1,5 +1,5 @@
 .twr-app .act { appearance: none; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; text-align: left; }
-.twr-app.target-frame { position: relative; width: 100%; height: 100vh; display: grid; grid-template-columns: 192px 1fr 320px 48px; background: var(--surface-0); border: 1px solid var(--surface-line); overflow: hidden; }
+.twr-app.target-frame { position: relative; width: 100%; height: 100vh; display: grid; grid-template-columns: 192px minmax(0, 1fr) 320px 48px; background: var(--surface-0); border: 1px solid var(--surface-line); overflow: hidden; }
 .twr-app .rail { background: var(--surface-1); border-right: 1px solid var(--surface-line); display: flex; flex-direction: column; }
 .twr-app .league { padding: 14px 14px 12px; border-bottom: 1px solid var(--surface-line); }
 .twr-app .league .crest { display: flex; gap: 10px; align-items: center; }
@@ -23,7 +23,6 @@
 .twr-app .strip { margin-left: auto; display: flex; align-items: center; gap: 16px; padding: 0 14px; font: 11px var(--surface-mono); color: var(--surface-tx3); white-space: nowrap; min-width: 0; }
 .twr-app .dens { display: flex; border: 1px solid var(--surface-line); }
 .twr-app .dens .act-density { font-style: normal; padding: 2px 7px; font: 600 10.5px var(--surface-sans); color: var(--surface-tx3); }
-.twr-app .dens .act-density.on { background: var(--surface-4); color: var(--surface-tx1); }
 .twr-app .wbody { flex: 1; overflow: auto; padding: 16px; display: grid; gap: 14px; align-content: start; }
 .twr-app .insp { background: var(--surface-1); border-left: 1px solid var(--surface-line); display: flex; flex-direction: column; overflow: hidden; }
 .twr-app .insp-head { height: 44px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-bottom: 1px solid var(--surface-line); font: 600 11px var(--surface-sans); color: var(--surface-tx3); letter-spacing: .06em; text-transform: uppercase; }
@@ -35,13 +34,12 @@
 .twr-app .comms { background: var(--surface-1); border-left: 1px solid var(--surface-line); display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 14px; grid-column: 4; grid-row: 1; }
 .twr-app .comms .vt { writing-mode: vertical-rl; transform: rotate(180deg); font: 600 10px var(--surface-sans); letter-spacing: .14em; color: var(--surface-tx3); text-transform: uppercase; margin-top: 6px; }
 .twr-app .act:hover { color: var(--surface-tx1); background: var(--surface-3); }
-.twr-app .strip .channel-chip { overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 230px; font: 11px var(--surface-mono); }
+.twr-app .strip .channel-chip { flex: none; font: 11px var(--surface-mono); }
 .twr-app .strip > span:not(.channel-chip) { flex: none; }
 .twr-app .shell-unwired, .twr-app .snapshot-summary { padding: 14px; border: 1px solid var(--surface-line); background: var(--surface-2); }
 .twr-app h4 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
 .twr-app p { margin: 0 0 8px; }
 .twr-app .rail-tools { display: flex; justify-content: space-between; padding: 12px 14px; font-size: 11px; color: var(--surface-tx3); }
-.twr-app[data-inspector="expanded"] .insp { position: absolute; top: 0; bottom: 0; right: 48px; width: 480px; z-index: 10; grid-column: auto; grid-row: auto; }
 .twr-app .insp, .twr-app .inspector-closed { grid-column: 3; grid-row: 1; }
 .twr-app .inspector-closed { padding: 14px; border-left: 1px solid var(--surface-line); font-size: 11px; color: var(--surface-tx3); }
 .twr-app .comms .act-icon { width: 28px; height: 28px; border: 1px solid var(--surface-line-hi); display: grid; place-items: center; font: 600 11px var(--surface-mono); color: var(--surface-tx2); }
@@ -57,13 +55,8 @@
 .twr-app .roster-cards > .act { display: block; width: 100%; padding: 0; min-width: 0; }
 .twr-app .roster-cards > .act.on .twr-card { background: var(--surface-3); border-color: var(--surface-line-hi); outline: 1px solid var(--surface-line-hi); outline-offset: -1px; }
 .twr-app .roster-cards > .act:hover .twr-card { border-color: var(--surface-line-hi); }
-.twr-app .hq-roster[data-density="matrix"] .roster-cards { gap: 0; overflow-x: auto; }
-.twr-app .hq-roster[data-density="matrix"] .roster-cards > .act { min-width: 820px; }
-.twr-app .hq-roster[data-density="matrix"] .twr-card { border-bottom: 0; }
-.twr-app .hq-roster[data-density="matrix"] .act:last-child .twr-card { border-bottom: 1px solid var(--surface-line); }
-.twr-app .hq-roster[data-density="matrix"] .player-identity { flex: 0 0 270px; }
-.twr-app .hq-roster[data-density="matrix"] .player-contract { margin-left: auto; }
-.twr-app .franchise-picker { display: grid; gap: 4px; }
+.twr-app .franchise-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px; }
+.twr-app .franchise-picker h4 { grid-column: 1 / -1; }
 .twr-app .franchise-picker .act, .twr-app .app-settings .act { padding: 7px 9px; border: 1px solid var(--surface-line); }
 .twr-app .franchise-picker .act:hover, .twr-app .app-settings .act:hover { background: var(--surface-3); }
 .twr-app .app-settings { display: grid; gap: 8px; }
@@ -86,3 +79,83 @@
 .twr-app .ws-head h3, .twr-app .wtabs, .twr-app .dens { flex: none; }
 .twr-app .strip { flex: 1 1 0; justify-content: flex-end; overflow: hidden; }
 .twr-app .strip > span:not(.channel-chip):not(.dens) { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+.twr-app[data-density="narrative"] .act-density[data-d="narrative"],
+.twr-app[data-density="tactical"] .act-density[data-d="tactical"],
+.twr-app[data-density="matrix"] .act-density[data-d="matrix"] {
+  background: var(--surface-4); color: var(--surface-tx1);
+}
+.twr-app .insp {
+  position: absolute; right: 48px; top: 0; bottom: 0; width: 320px; z-index: 10;
+  grid-column: auto; grid-row: auto;
+  transition: width 120ms ease-out, transform 120ms ease-out, opacity 120ms ease-out, visibility 120ms;
+}
+.twr-app[data-inspector="expanded"] .insp { width: 480px; }
+.twr-app[data-inspector="closed"] .insp {
+  transform: translateX(100%); opacity: 0; visibility: hidden;
+}
+.twr-app .shell-overlay {
+  transform: translateX(16px); opacity: 0; visibility: hidden;
+  transition: transform 120ms ease-out, opacity 120ms ease-out, visibility 120ms;
+}
+.twr-app .shell-overlay[data-open="true"] {
+  transform: translateX(0); opacity: 1; visibility: visible;
+}
+.twr-app .insp .player-identity {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 8px;
+}
+.twr-app .insp .player-identity .card-title { white-space: normal; overflow-wrap: anywhere; }
+.twr-app .insp .player-context { grid-column: 2; }
+.twr-app .insp .card-header { display: block; }
+.twr-app .insp .card-provenance { display: block; margin: 8px 0 0; }
+.twr-app .two-numbers small { white-space: nowrap; }
+.twr-app .insp .two-numbers > div { padding: 6px; }
+.twr-app .two-numbers > div { min-width: 0; }
+.twr-app .command-bar input { text-transform: none; }
+.twr-app[data-density="tactical"] .roster-cards {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+.twr-app .player-matrix { display: none; }
+.twr-app[data-density="matrix"] .roster-cards { display: none; }
+:is(.twr-app[data-density="matrix"], .twr-app [data-density="matrix"]) .player-matrix:not(.insp .player-matrix) {
+  display: grid; grid-template-columns: 28px minmax(90px, 1fr) 32px 26px 80px 80px 88px 30px 58px;
+  gap: 4px; padding: 6px 4px; border-bottom: 1px solid var(--surface-line);
+  font: 10px var(--surface-mono); align-items: center;
+}
+.twr-app .player-matrix span {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.twr-app .hq-roster h5 .channel-chip { margin-left: 10px; }
+.twr-app .ws-head { flex-wrap: wrap; height: auto; min-height: 44px; }
+.twr-app .ws-head h3, .twr-app .wtabs { min-height: 44px; }
+.twr-app .strip { flex-basis: 260px; min-height: 32px; gap: 10px; }
+.twr-app #command-results .act > span { min-width: 0; overflow-wrap: anywhere; }
+
+:is(.twr-app[data-density="matrix"], .twr-app [data-density="matrix"]) .player-matrix:not(.insp .player-matrix) + .twr-card { display: none; }
+
+.twr-app .matrix-roster { display: none; width: 100%; border-collapse: collapse; table-layout: fixed; }
+.twr-app[data-density="matrix"] .matrix-roster { display: table; }
+.twr-app .matrix-roster th, .twr-app .matrix-roster td {
+  padding: 6px 4px; border-bottom: 1px solid var(--surface-line); text-align: left;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 10px var(--surface-mono);
+}
+.twr-app .matrix-roster th small { display: block; color: var(--surface-tx3); font-size: 9px; }
+.twr-app .matrix-roster tr[data-selected="true"] { background: var(--surface-3); }
+.twr-app .matrix-roster .act { width: 100%; overflow: hidden; text-overflow: ellipsis; padding: 0; }
+.twr-app .matrix-roster tr:hover { background: var(--surface-3); }
+
+.twr-app .command-bar {
+  transform: translateY(-8px); opacity: 0; visibility: hidden;
+  transition: transform 120ms ease-out, opacity 120ms ease-out, visibility 120ms;
+}
+/* Visible at once on open (visibility does not ease in): the input is focused in the same frame,
+   and a still-hidden input refuses focus, which sends the first keystrokes to global shortcuts. */
+.twr-app .command-bar[data-open="true"] {
+  transform: translateY(0); opacity: 1; visibility: visible;
+  transition: transform 120ms ease-out, opacity 120ms ease-out, visibility 0s;
+}
+.twr-app .two-numbers b { white-space: nowrap; }
+.twr-app .roster-cards .two-numbers > div { flex-wrap: wrap; gap: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  .twr-app .insp, .twr-app .shell-overlay, .twr-app .command-bar { transition: none; }
+}

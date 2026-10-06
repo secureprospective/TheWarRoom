@@ -9,6 +9,7 @@ import { Glyph, TIERS, POSTURES, PRIVATE_MARKERS } from '../look/Glyph';
 import { Countdown } from '../look/Slots';
 import { specimenPlayers } from './selection';
 import '../look/look.css';
+import '../shell/shell.css';
 import './specimen.css';
 
 export default function Specimen() {
@@ -58,12 +59,11 @@ export default function Specimen() {
       </section>
       <section>
         <h2>Gravity · neutral consequence</h2>
-        <div className="specimen-frames">
+        <div className="specimen-frames" data-density="tactical">
           {GRAVITIES.map((gravity) => (
             <Card
               key={gravity}
               gravity={gravity}
-              density="tactical"
               header={<h3 className="card-title">{gravity}</h3>}
             >
               Neutral frame
@@ -100,7 +100,7 @@ export default function Specimen() {
         <section>
           <h2>Real rostered players · as of 2026-10-06 UTC</h2>
           {DENSITIES.map((density) => (
-            <section key={density}>
+            <section key={density} data-density={density}>
               <h3>{density}</h3>
               <div className={`specimen-players specimen-${density}`}>
                 {specimenPlayers(snapshot).map(({ franchiseId, playerId, reason }) => (
@@ -113,7 +113,6 @@ export default function Specimen() {
                       franchiseId={franchiseId}
                       playerId={playerId}
                       asOf={new Date('2026-10-06T00:00:00Z')}
-                      density={density}
                     />
                   </div>
                 ))}

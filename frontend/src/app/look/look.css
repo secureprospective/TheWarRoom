@@ -85,32 +85,20 @@
 .twr-app .not-wired { color: var(--surface-tx3); font: 11.5px var(--surface-mono); }
 .twr-app .two-numbers b { display: block; font: 600 11.5px var(--surface-mono); color: var(--surface-tx3); }
 /* Narrative: the two numbers lead at twice the size; colour and chips do the rest. */
-.twr-app .twr-card[data-density="narrative"] { padding: 16px 18px; }
-.twr-app .twr-card[data-density="narrative"] .card-title { font-size: 17px; }
-.twr-app .twr-card[data-density="narrative"] .two-numbers > div { padding: 12px 14px; min-height: 84px; }
-.twr-app .twr-card[data-density="narrative"] .two-numbers b { font-size: 20px; margin-top: 8px; }
-.twr-app .twr-card[data-density="narrative"] .player-contract { font-size: 13px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) { padding: 16px 18px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .card-title { font-size: 17px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .two-numbers > div { padding: 12px 14px; min-height: 84px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .two-numbers b { font-size: 20px; margin-top: 8px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-contract { font-size: 13px; }
 /* Tactical: the default anatomy, one line per zone. */
-.twr-app .twr-card[data-density="tactical"] .card-body { gap: 8px; margin-top: 8px; }
-.twr-app .twr-card[data-density="tactical"] .two-numbers > div { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 10px; }
-.twr-app .twr-card[data-density="tactical"] .two-numbers small { display: inline; }
-.twr-app .twr-card[data-density="tactical"] .player-unwired-rows,
-.twr-app .twr-card[data-density="matrix"] .player-unwired-rows { display: none; }
-/* Matrix: one monospace row, every zone a column. */
-.twr-app .twr-card[data-density="matrix"] { padding: 6px 10px; font: 12px var(--surface-mono); display: flex; align-items: center; gap: 14px; }
-.twr-app .twr-card[data-density="matrix"] .card-header,
-.twr-app .twr-card[data-density="matrix"] .card-body { display: contents; }
-.twr-app .twr-card[data-density="matrix"] .card-title { font-family: var(--surface-mono); }
-.twr-app .twr-card[data-density="matrix"] .card-title { font-size: 12px; white-space: nowrap; }
-.twr-app .twr-card[data-density="matrix"] .two-numbers { display: flex; gap: 14px; }
-.twr-app .twr-card[data-density="matrix"] .two-numbers > div { border: 0; padding: 0; display: flex; gap: 6px; align-items: baseline; }
-.twr-app .twr-card[data-density="matrix"] .two-numbers small { display: inline; font-size: 10.5px; }
-.twr-app .twr-card[data-density="matrix"] .card-status { flex-wrap: nowrap; }
-.twr-app .twr-card[data-density="matrix"] .card-provenance { order: 99; }
-.twr-app .twr-card[data-density="matrix"] * { animation: none; transition: none; }
+:is(.twr-app[data-density="tactical"], .twr-app [data-density="tactical"]) .twr-card:not(.insp .twr-card) .card-body { gap: 8px; margin-top: 8px; }
+:is(.twr-app[data-density="tactical"], .twr-app [data-density="tactical"]) .twr-card:not(.insp .twr-card) .two-numbers > div { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 10px; }
+:is(.twr-app[data-density="tactical"], .twr-app [data-density="tactical"]) .twr-card:not(.insp .twr-card) .two-numbers small { display: inline; }
+:is(.twr-app[data-density="tactical"], .twr-app [data-density="tactical"]) .twr-card:not(.insp .twr-card) .player-unwired-rows,
+:is(.twr-app[data-density="matrix"], .twr-app [data-density="matrix"]) .twr-card:not(.insp .twr-card) .player-unwired-rows { display: none; }
 /* Narrative has room: the name wraps instead of truncating, with team and age beneath it. */
-.twr-app .twr-card[data-density="narrative"] .card-header { align-items: flex-start; }
-.twr-app .twr-card[data-density="narrative"] .player-identity { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; row-gap: 4px; }
-.twr-app .twr-card[data-density="narrative"] .player-identity .card-title { white-space: normal; }
-.twr-app .twr-card[data-density="narrative"] .player-identity .player-context { grid-column: 2; }
-.twr-app .twr-card[data-density="narrative"] .player-identity .classification-label { align-self: start; margin-top: 2px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .card-header { align-items: flex-start; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; row-gap: 4px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity .card-title { white-space: normal; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity .player-context { grid-column: 2; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity .classification-label { align-self: start; margin-top: 2px; }

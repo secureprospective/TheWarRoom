@@ -2,7 +2,9 @@ import { it, expect } from 'vitest';
 import fixture from '../data/fixtures/snapshot.json';
 import { parseSnapshot } from '../data/parse';
 import { createCommands } from './registry';
-import { rankResults, runResult, searchCandidates, type SearchResult } from './search';
+import {
+  rankResults, runResult, searchCandidates, indexResult, type SearchResult, type IndexedResult,
+} from './search';
 
 const snapshot = parseSnapshot(fixture);
 
@@ -10,8 +12,8 @@ function candidate(
   label: string,
   kind: SearchResult['kind'] = 'command',
   aliases: string[] = [],
-): SearchResult {
-  return { label, kind, aliases, invocation: { verb: 'inspector.close', args: {} } };
+): IndexedResult {
+  return indexResult({ label, kind, aliases, invocation: { verb: 'inspector.close', args: {} } });
 }
 
 it('ranks prefix before word-start before substring; ties by kind then label', () => {
@@ -55,7 +57,7 @@ it('maps places, named presets, density and rostered players to registered verbs
     verb: 'preset.apply',
     args: { preset: 'gameday' },
   });
-  expect(results.find((r) => r.label === 'Density: matrix')?.invocation).toEqual({
+  expect(results.find((r) => r.label === 'Density: matrix · M')?.invocation).toEqual({
     verb: 'density.set',
     args: { density: 'matrix' },
   });

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import type { Snapshot } from '../data/contract';
 import { PlayerCard } from '../cards/PlayerCard';
 import { formatMoney } from '../cards/format';
@@ -6,10 +7,20 @@ import { SignalChip } from '../look/Slots';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { franchiseRoster } from './roster';
+import { assertShortList } from './shortList';
+import { MatrixRoster } from './MatrixRoster';
 
 export function FranchiseHQ({ snapshot }: { snapshot: Snapshot }) {
   const s = commands.use();
-  if (!s.franchiseId)
+  const roster = useMemo(
+    () => s.franchiseId ? franchiseRoster(snapshot, s.franchiseId) : undefined,
+    [snapshot, s.franchiseId],
+  );
+  if (import.meta.env.DEV) {
+    assertShortList(snapshot.franchises.value.length);
+    if (roster) assertShortList(roster.groups.reduce((n, g) => n + g.players.length, 0));
+  }
+  if (!roster)
     return (
       <section className="franchise-picker">
         <h4>Choose my franchise</h4>
@@ -20,9 +31,8 @@ export function FranchiseHQ({ snapshot }: { snapshot: Snapshot }) {
         ))}
       </section>
     );
-  const roster = franchiseRoster(snapshot, s.franchiseId);
   return (
-    <section className="hq-roster" data-density={s.density}>
+    <section className="hq-roster">
       <h4>Roster</h4>
       <p className="not-wired">lineup · ring 1</p>
       <div className="roster-cap">
@@ -39,27 +49,28 @@ export function FranchiseHQ({ snapshot }: { snapshot: Snapshot }) {
       {roster.groups.map((group) => (
         <section key={group.label}>
           <h5>
-            {group.label} · {group.players.length}
+            {group.label} · {group.players.length} <SignalChip {...roster.provenance} />
           </h5>
+          <MatrixRoster cards={group.cards} franchiseId={s.franchiseId!} selected={s.subject} />
           <div className="roster-cards" aria-label={`${group.label} roster`}>
-            {group.players.map((player) => (
+            {group.cards.map(({ model, provenance }) => (
               <Act
-                key={player.id}
+                key={model.id}
                 verb="inspector.open"
                 args={{
-                  subject: { kind: 'player', id: player.id, franchiseId: s.franchiseId! },
+                  subject: { kind: 'player', id: model.id, franchiseId: s.franchiseId! },
                 }}
                 active={
-                  s.subject?.id === player.id && s.subject.franchiseId === s.franchiseId
+                  s.subject?.id === model.id && s.subject.franchiseId === s.franchiseId
                 }
-                label={`Inspect ${snapshot.players.value.find((p) => p.id === player.id)?.name ?? player.id}`}
+                label={`Inspect ${model.name}`}
               >
                 <PlayerCard
                   snapshot={snapshot}
                   franchiseId={s.franchiseId!}
-                  playerId={player.id}
-                  asOf={new Date()}
-                  density={s.density}
+                  playerId={model.id}
+                  asOf={roster.asOf}
+                  provenance={provenance}
                 />
               </Act>
             ))}

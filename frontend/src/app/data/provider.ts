@@ -1,4 +1,3 @@
-import fixture from './fixtures/snapshot.json';
 import type { Provenance, Snapshot } from './contract';
 import { parseSnapshot } from './parse';
 import { TargetSnapshot } from '../../../wailsjs/go/main/App';
@@ -14,7 +13,8 @@ function hasWails(): boolean {
 
 export class FixtureProvider implements Provider {
   async snapshot(): Promise<Snapshot> {
-    return parseSnapshot(fixture);
+    const fixture = await import('./fixtures/snapshot.json');
+    return parseSnapshot(fixture.default);
   }
 }
 

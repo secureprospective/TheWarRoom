@@ -18,7 +18,6 @@ export function PlayerInspector({
         franchiseId={subject.franchiseId}
         playerId={subject.id}
         asOf={new Date()}
-        density="tactical"
       />
       <section className="zone interrogate">
         <h5>Interrogate</h5>

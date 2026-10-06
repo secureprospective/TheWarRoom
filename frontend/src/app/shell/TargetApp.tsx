@@ -2,7 +2,7 @@ import { CommandBar } from '../commands/CommandBar';
 import { FranchiseHQ } from './FranchiseHQ';
 import { PlayerInspector } from './PlayerInspector';
 import { AppSettings } from './AppSettings';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { Snapshot } from '../data/contract';
 import { selectProvider } from '../data/provider';
 import { commands } from '../commands/registry';
@@ -14,9 +14,16 @@ import { NavIcon } from './NavIcon';
 import { snapshotSummary } from './snapshotSummary';
 import '../look/look.css';
 import './shell.css';
+import { connectDensity } from './density';
 
 export function TargetApp() {
   const s = commands.use();
+  const root = useRef<HTMLDivElement>(null);
+  const workspaceBody = useRef<HTMLDivElement>(null);
+  useEffect(() => connectDensity(commands, root.current!), []);
+  useEffect(() => {
+    if (workspaceBody.current) workspaceBody.current.scrollTop = 0;
+  }, [s.scrollRevision]);
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [error, setError] = useState<string>();
   useEffect(() => {
@@ -50,7 +57,7 @@ export function TargetApp() {
   return (
     <div
       className="twr-app target-frame"
-      data-density={s.density}
+      ref={root}
       data-inspector={s.inspector}
     >
       <aside className="rail">
@@ -134,7 +141,7 @@ export function TargetApp() {
                   verb="density.set"
                   args={{ density }}
                   variant="density"
-                  active={s.density === density}
+                  densityKey={density}
                   label={`${density} density`}
                 >
                   {['N', 'T', 'M'][index]}
@@ -143,7 +150,7 @@ export function TargetApp() {
             </span>
           </div>
         </header>
-        <div className="wbody">
+        <div className="wbody" ref={workspaceBody}>
           {s.notice && (
             <p role="status" className="not-wired">
               {s.notice}
@@ -181,37 +188,36 @@ export function TargetApp() {
           {error && <p role="alert">{error}</p>}
         </div>
       </section>
-      {s.inspector !== 'closed' ? (
-        <aside className="insp" aria-label="Inspector">
-          <div className="insp-head">
-            Inspector
-            <span className="x">
-              <Act
-                verb={
-                  s.inspector === 'expanded' ? 'inspector.collapse' : 'inspector.expand'
-                }
-                args={{}}
-                variant="text"
-                expanded={s.inspector === 'expanded'}
-              >
-                {s.inspector === 'expanded' ? 'collapse ⇥' : 'expand ⇤'}
-              </Act>
-              <Act verb="inspector.close" args={{}} variant="icon">
-                Close
-              </Act>
-            </span>
-          </div>
-          <div className="insp-body">
-            {snapshot && s.subject ? (
-              <PlayerInspector snapshot={snapshot} subject={s.subject} />
-            ) : (
-              <p className="not-wired">
-                Every player, franchise, pick, offer and segment opens here.
-              </p>
-            )}
-          </div>
-        </aside>
-      ) : (
+      <aside className="insp" aria-label="Inspector" aria-hidden={s.inspector === 'closed'}>
+        <div className="insp-head">
+          Inspector
+          <span className="x">
+            <Act
+              verb={
+                s.inspector === 'expanded' ? 'inspector.collapse' : 'inspector.expand'
+              }
+              args={{}}
+              variant="text"
+              expanded={s.inspector === 'expanded'}
+            >
+              {s.inspector === 'expanded' ? 'collapse ⇥' : 'expand ⇤'}
+            </Act>
+            <Act verb="inspector.close" args={{}} variant="icon">
+              Close
+            </Act>
+          </span>
+        </div>
+        <div className="insp-body">
+          {snapshot && s.subject ? (
+            <PlayerInspector snapshot={snapshot} subject={s.subject} />
+          ) : (
+            <p className="not-wired">
+              Every player, franchise, pick, offer and segment opens here.
+            </p>
+          )}
+        </div>
+      </aside>
+      {s.inspector === 'closed' && (
         <aside className="inspector-closed">
           <Act verb="inspector.toggle" args={{}}>
             Open inspector
@@ -230,33 +236,37 @@ export function TargetApp() {
         </Act>
         <span className="vt">Comms · league feed</span>
       </aside>
-      {s.commandbar && snapshot && <CommandBar snapshot={snapshot} />}
-      {s.comms && (
-        <aside id="target-comms" className="shell-overlay comms-panel" aria-label="Comms">
-          <header>
-            Comms
-            <Act verb="comms.toggle" args={{}}>
-              Close
-            </Act>
-          </header>
-          <p className="not-wired">Not wired · Ring 3</p>
-        </aside>
-      )}
-      {s.summoned === 'calendar' && (
-        <aside
-          id="target-calendar"
-          className="shell-overlay calendar-panel"
-          aria-label="Calendar"
-        >
-          <header>
-            Calendar
-            <Act verb="calendar.summon" args={{}}>
-              Close
-            </Act>
-          </header>
-          <p className="not-wired">Not wired · P5</p>
-        </aside>
-      )}
+      {snapshot && <CommandBar snapshot={snapshot} />}
+      <aside
+        id="target-comms"
+        data-open={s.comms}
+        aria-hidden={!s.comms}
+        className="shell-overlay comms-panel"
+        aria-label="Comms"
+      >
+        <header>
+          Comms
+          <Act verb="comms.toggle" args={{}}>
+            Close
+          </Act>
+        </header>
+        <p className="not-wired">Not wired · Ring 3</p>
+      </aside>
+      <aside
+        id="target-calendar"
+        data-open={s.summoned === 'calendar'}
+        aria-hidden={s.summoned !== 'calendar'}
+        className="shell-overlay calendar-panel"
+        aria-label="Calendar"
+      >
+        <header>
+          Calendar
+          <Act verb="calendar.summon" args={{}}>
+            Close
+          </Act>
+        </header>
+        <p className="not-wired">Not wired · P5</p>
+      </aside>
     </div>
   );
 }

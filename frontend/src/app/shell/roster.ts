@@ -1,4 +1,5 @@
 import type { Snapshot, RosterPlayer } from '../data/contract';
+import { playerCardModel, provenanceSlot, inheritedProvenance } from '../cards/playerModel';
 
 export function franchiseRoster(snapshot: Snapshot, franchiseId: string) {
   const franchise = snapshot.franchises.value.find((f) => f.id === franchiseId);
@@ -22,8 +23,20 @@ export function franchiseRoster(snapshot: Snapshot, franchiseId: string) {
           (names.get(a.id) ?? a.id).localeCompare(names.get(b.id) ?? b.id),
       ),
   }));
+  const asOf = new Date();
+  const provenance = provenanceSlot([
+    ['Players', snapshot.players.provenance], ['Contracts', snapshot.rosters.provenance],
+  ]);
   return {
-    groups,
+    provenance,
+    asOf,
+    groups: groups.map((group) => ({
+      ...group,
+      cards: group.players.map((player) => {
+        const model = playerCardModel(snapshot, franchiseId, player.id, asOf);
+        return { model, provenance: inheritedProvenance(model.provenance, provenance) };
+      }),
+    })),
     capUsed: franchise.capUsed,
     capRoom: franchise.capRoom,
     salaryCap: snapshot.league.value.salaryCap,
