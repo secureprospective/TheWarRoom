@@ -61,13 +61,9 @@ models cached in `data/models/`.
   lens), `style.css` (`--faint` #7f90a6, market styles), `sw.js` cache `lab-v4`, tests updated.
 
 ## 5. In flight
-- **Impeccable documenter** (started about 10:10 on 2026-10-06): writes
-  `tools/league-history/DESIGN.md` and `.impeccable/design.json`, nothing else. Alive if
-  `/tmp/claude-1000/-home-chris/35b807e1-9d84-4024-b8c1-c4ae4b4ca27e/tasks/aed2177a26bcc61ca.output`
-  is still changing (mtime). When done: check that both files exist and carry tokens; that closes
-  the Impeccable FINISH line. If it died: rerun the documenter with the same packet (project root,
-  artifact app/, the surface brief, PRODUCT.md, reference/document.md, write boundary = those two
-  files).
+- Nothing. The Impeccable documenter finished at 09:11 on 2026-10-06: `tools/league-history/DESIGN.md`
+  (18,849 bytes) and `.impeccable/design.json` (26,403 bytes), so the Impeccable FINISH line is
+  discharged. Unused CSS it flagged (`--raised-2`, `.badge`, `.pin-caution`) was removed.
 - Earlier work is finished: the model queue (bge-base kept as `card_vec`, database vacuumed to 222 MB);
   the Lab compiler reads only `data/mfl.db`. Baselines and screenshots: `~/fleet/runs/mfl-store-2026-10-05/`.
 - Claude-OS is running (left on by standing rule).
@@ -110,7 +106,6 @@ the Impeccable decision page. Two finish-review rounds were scored "fix"; the th
 (window marks must beat both other windows, no big-number pick clock, no split year spans,
 12px seasons label) was applied and visually checked but not re-scored by the reviewer.
 Product record: `tools/league-history/PRODUCT.md`; contract: `.impeccable/surfaces/app-index-html.md`.
-0. Check the documenter (section 5); confirm DESIGN.md and `.impeccable/design.json` exist.
 1. Report round 6 to Christopher (he has not seen the finished screen yet) and get his read.
 2. His call: commit rounds 4-6 (`git add tools/league-history docs/league-history docs/build-handoffs`).
 3. Open: the draft screen keeps its structure; its third summary still uses the old price unit
