@@ -5,7 +5,7 @@ import {
   GetLeagueSchedule,
   PreviewTransaction,
 } from '../../../wailsjs/go/main/App';
-import { main } from '../../../wailsjs/go/models';
+import { domain, main } from '../../../wailsjs/go/models';
 import { ConfirmModal, type Pending } from '../transactions/ConfirmModal';
 import { FreshnessBar } from '../board/primitives';
 
@@ -606,7 +606,7 @@ function ScheduleForm({
 // degradation on an MFL outage (mirrors M1/M2's convention, not a new visual language).
 function MatchupsPane() {
   const [weeks, setWeeks] = useState<main.ScheduleWeekDTO[]>([]);
-  const [freshness, setFreshness] = useState<main.Freshness | undefined>(undefined);
+  const [freshness, setFreshness] = useState<domain.Freshness | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState('');
 

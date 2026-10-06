@@ -26,7 +26,7 @@ func Player(raw rosters.RawRoster, lookup Lookup) (domain.PlayerRecord, error) {
 	if entry.isAggregate {
 		return domain.PlayerRecord{}, fmt.Errorf("normalize: roster %s/%s references a team-aggregate player — should have been filtered at ingestion", raw.FranchiseID, rec.MFLID)
 	}
-	rec.Name, rec.Position, rec.NFLTeam, rec.IsRookie = entry.Name, entry.Position, entry.team, entry.IsRookie
+	rec.Name, rec.Position, rec.NFLTeam, rec.IsRookie = entry.Name, entry.Position, entry.Team, entry.IsRookie
 	return rec, nil
 }
 

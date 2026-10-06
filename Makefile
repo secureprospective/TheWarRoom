@@ -86,7 +86,7 @@ setup:
 # so anything reaching a push has already cleared it.
 verify: lint
 	go test -race ./...
-	cd frontend && pnpm run build
+	cd frontend && pnpm test && pnpm run build
 
 # Desktop shell. Wails embeds the built frontend; before the frontend is wired
 # substitute `go build ./...`. The build stamp is injected here (see LDFLAGS).

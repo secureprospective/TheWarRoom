@@ -1,3 +1,24 @@
+export namespace domain {
+	
+	export class Freshness {
+	    state: string;
+	    fetchedAt: string;
+	    note: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Freshness(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.state = source["state"];
+	        this.fetchedAt = source["fetchedAt"];
+	        this.note = source["note"];
+	    }
+	}
+
+}
+
 export namespace main {
 	
 	export class AppInfo {
@@ -450,22 +471,6 @@ export namespace main {
 		    return a;
 		}
 	}
-	export class Freshness {
-	    state: string;
-	    fetchedAt: string;
-	    note: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new Freshness(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.state = source["state"];
-	        this.fetchedAt = source["fetchedAt"];
-	        this.note = source["note"];
-	    }
-	}
 	export class ScheduleMatchupDTO {
 	    homeFranchiseID: string;
 	    homeFranchiseName: string;
@@ -523,7 +528,7 @@ export namespace main {
 	export class LeagueScheduleResult {
 	    ok: boolean;
 	    weeks: ScheduleWeekDTO[];
-	    freshness: Freshness;
+	    freshness: domain.Freshness;
 	    detail: string;
 	
 	    static createFrom(source: any = {}) {
@@ -534,7 +539,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ok = source["ok"];
 	        this.weeks = this.convertValues(source["weeks"], ScheduleWeekDTO);
-	        this.freshness = this.convertValues(source["freshness"], Freshness);
+	        this.freshness = this.convertValues(source["freshness"], domain.Freshness);
 	        this.detail = source["detail"];
 	    }
 	
@@ -872,7 +877,7 @@ export namespace main {
 	    previousRunID: number;
 	    aggMode: string;
 	    starterN: number;
-	    freshness: Freshness;
+	    freshness: domain.Freshness;
 	    performance: string;
 	    weeksScored: number;
 	    seasonWeeks: number;
@@ -896,7 +901,7 @@ export namespace main {
 	        this.previousRunID = source["previousRunID"];
 	        this.aggMode = source["aggMode"];
 	        this.starterN = source["starterN"];
-	        this.freshness = this.convertValues(source["freshness"], Freshness);
+	        this.freshness = this.convertValues(source["freshness"], domain.Freshness);
 	        this.performance = source["performance"];
 	        this.weeksScored = source["weeksScored"];
 	        this.seasonWeeks = source["seasonWeeks"];
@@ -973,7 +978,7 @@ export namespace main {
 	    runID: number;
 	    asOf: string;
 	    missingMeasures: MissingMeasure[];
-	    freshness: Freshness;
+	    freshness: domain.Freshness;
 	    rows: RankRow[];
 	    modelRunID: number;
 	
@@ -991,7 +996,7 @@ export namespace main {
 	        this.runID = source["runID"];
 	        this.asOf = source["asOf"];
 	        this.missingMeasures = this.convertValues(source["missingMeasures"], MissingMeasure);
-	        this.freshness = this.convertValues(source["freshness"], Freshness);
+	        this.freshness = this.convertValues(source["freshness"], domain.Freshness);
 	        this.rows = this.convertValues(source["rows"], RankRow);
 	        this.modelRunID = source["modelRunID"];
 	    }
@@ -1514,6 +1519,362 @@ export namespace rankings {
 		    return a;
 		}
 	}
+
+}
+
+export namespace snapshot {
+	
+	export class Franchise {
+	    id: string;
+	    name?: string;
+	    capUsed?: number;
+	    capRoom?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Franchise(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.capUsed = source["capUsed"];
+	        this.capRoom = source["capRoom"];
+	    }
+	}
+	export class League {
+	    season: number;
+	    franchiseCount: number;
+	    salaryCap?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new League(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.franchiseCount = source["franchiseCount"];
+	        this.salaryCap = source["salaryCap"];
+	    }
+	}
+	export class Player {
+	    // Go type: playerid
+	    id: any;
+	    name?: string;
+	    position?: string;
+	    team?: string;
+	    birthdate?: number;
+	    isRookie?: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Player(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = this.convertValues(source["id"], null);
+	        this.name = source["name"];
+	        this.position = source["position"];
+	        this.team = source["team"];
+	        this.birthdate = source["birthdate"];
+	        this.isRookie = source["isRookie"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Provenance {
+	    source: string;
+	    freshness: domain.Freshness;
+	    kind: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Provenance(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.source = source["source"];
+	        this.freshness = this.convertValues(source["freshness"], domain.Freshness);
+	        this.kind = source["kind"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class RosterPlayer {
+	    // Go type: playerid
+	    id: any;
+	    salary: number;
+	    yearsRemaining?: number;
+	    contractStatus: string;
+	    rosterStatus: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RosterPlayer(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = this.convertValues(source["id"], null);
+	        this.salary = source["salary"];
+	        this.yearsRemaining = source["yearsRemaining"];
+	        this.contractStatus = source["contractStatus"];
+	        this.rosterStatus = source["rosterStatus"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Roster {
+	    franchiseId: string;
+	    players: RosterPlayer[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Roster(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchiseId = source["franchiseId"];
+	        this.players = this.convertValues(source["players"], RosterPlayer);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class Sourced___github_com_secureprospective_TheWarRoom_internal_snapshot_Player_ {
+	    value: Player[];
+	    provenance: Provenance;
+	
+	    static createFrom(source: any = {}) {
+	        return new Sourced___github_com_secureprospective_TheWarRoom_internal_snapshot_Player_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = this.convertValues(source["value"], Player);
+	        this.provenance = this.convertValues(source["provenance"], Provenance);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Sourced___github_com_secureprospective_TheWarRoom_internal_snapshot_Roster_ {
+	    value: Roster[];
+	    provenance: Provenance;
+	
+	    static createFrom(source: any = {}) {
+	        return new Sourced___github_com_secureprospective_TheWarRoom_internal_snapshot_Roster_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = this.convertValues(source["value"], Roster);
+	        this.provenance = this.convertValues(source["provenance"], Provenance);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Sourced___github_com_secureprospective_TheWarRoom_internal_snapshot_Franchise_ {
+	    value: Franchise[];
+	    provenance: Provenance;
+	
+	    static createFrom(source: any = {}) {
+	        return new Sourced___github_com_secureprospective_TheWarRoom_internal_snapshot_Franchise_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = this.convertValues(source["value"], Franchise);
+	        this.provenance = this.convertValues(source["provenance"], Provenance);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Sourced_github_com_secureprospective_TheWarRoom_internal_snapshot_League_ {
+	    value: League;
+	    provenance: Provenance;
+	
+	    static createFrom(source: any = {}) {
+	        return new Sourced_github_com_secureprospective_TheWarRoom_internal_snapshot_League_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = this.convertValues(source["value"], League);
+	        this.provenance = this.convertValues(source["provenance"], Provenance);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Snapshot {
+	    league: Sourced_github_com_secureprospective_TheWarRoom_internal_snapshot_League_;
+	    // Go type: Sourced___github_com_secureprospective_TheWarRoom_internal_snapshot_Franchise_
+	    franchises: any;
+	    // Go type: Sourced___github_com_secureprospective_TheWarRoom_internal_snapshot_Roster_
+	    rosters: any;
+	    // Go type: Sourced___github_com_secureprospective_TheWarRoom_internal_snapshot_Player_
+	    players: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new Snapshot(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = this.convertValues(source["league"], Sourced_github_com_secureprospective_TheWarRoom_internal_snapshot_League_);
+	        this.franchises = this.convertValues(source["franchises"], null);
+	        this.rosters = this.convertValues(source["rosters"], null);
+	        this.players = this.convertValues(source["players"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
+	
 
 }
 
