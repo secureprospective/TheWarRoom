@@ -840,6 +840,9 @@ A complete record of every decision made in the UI architecture session. These a
 | League switcher | In nav rail header. Dropdown. Shows all connected leagues. "Connect league" at bottom. |
 | Connection wizard | Handles both public and private MFL leagues. Attempt public lookup first, auth prompt if needed. |
 | Scoring engine language | Go only. Engine_Specification.md math implemented in Go within core/engine/. |
+| Two-click rule, Phase 1 meaning (2026-10-06) | At most two in-app clicks to a ready, checked move with the MFL page opened. The ≤600ms hold is a gesture, not a click, and typing a command costs 0 clicks. MFL's own form steps are counted separately. In Phase 2 the same count means the move is truly done. See `Target_UI_Spec_2026-10.md` §1. |
+| Inspector width (2026-10-06) | Rests at ~320px. `inspector.expand` widens it to ~480px as an overlay, with the workspace still visible and no page change. |
+| Position badges (2026-10-06) | Supersedes §7.3's position colours. Position, tier and posture are monochrome glyphs, and colour keeps only its five meanings. |
 
 ---
 
@@ -849,4 +852,5 @@ A complete record of every decision made in the UI architecture session. These a
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.1 | 2026-10-06 | Three rulings added to §21 (two-click meaning, inspector expand, neutral position badges). The target and roadmap are `Target_UI_Spec_2026-10.md` and `../build-handoffs/UI_Target_Roadmap_2026-10.md`. |
 | 1.0 | June 2026 | Initial release. Full UI architecture session output. Stack, shell, navigation, theming, modular workspace, landing, communication layer, notes, trade-from-chat, role architecture, ICP alignment, performance requirements, phase boundaries, and locked decisions registry. |

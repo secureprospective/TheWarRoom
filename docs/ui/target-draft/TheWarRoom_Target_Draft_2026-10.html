@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TheWarRoom: target UI, rough draft r0 (2026-10-06)</title>
+<style>
+:root{
+  --s0:hsl(220 14% 4%);--s1:hsl(220 13% 6%);--s2:hsl(220 12% 8%);--s3:hsl(220 11% 10%);--s4:hsl(220 10% 13%);
+  --line:hsl(220 9% 17%);--line-hi:hsl(220 8% 26%);
+  --tx:hsl(220 12% 92%);--tx2:hsl(220 8% 68%);--tx3:hsl(220 8% 57%);
+  --green:hsl(146 52% 50%);--blue:hsl(208 78% 62%);--amber:hsl(38 92% 56%);--red:hsl(2 74% 60%);--grey:hsl(220 6% 56%);
+  --sans:"Inter",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+::selection{background:hsl(208 78% 62% / .35);color:var(--tx)}
+html{background:#050608;color:var(--tx);font:13px/1.45 var(--sans);font-feature-settings:"tnum" 1,"cv11" 1}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:var(--line-hi)}
+*{scrollbar-color:var(--line-hi) transparent;scrollbar-width:thin}
+.mono{font-family:var(--mono)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:1px solid var(--blue);outline-offset:2px}
+
+/* ---------- board chrome (the document, not the app) ---------- */
+.board-head{background:hsl(220 14% 3% / .96);border-bottom:1px solid var(--line);padding:14px 32px 0}
+.board-head h1{font-size:17px;font-weight:700;letter-spacing:.01em}
+.board-head p{color:var(--tx2);font-size:12px;margin-top:2px}
+.board-tabs{display:flex;gap:2px;margin-top:12px}
+.board-tabs button{padding:8px 14px;font-size:12px;font-weight:600;color:var(--tx3);border-bottom:2px solid transparent}
+.board-tabs button[aria-selected=true]{color:var(--tx);border-color:var(--tx)}
+.board-tabs button:hover{color:var(--tx)}
+.screen{display:none;padding:28px 32px 56px}
+.screen.on{display:block}
+.screen>h2{font-size:15px;font-weight:700;margin-bottom:4px}
+.screen>.lede{color:var(--tx2);max-width:110ch;margin-bottom:18px}
+.notes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 28px;margin-top:22px;max-width:1600px}
+.notes div{font-size:12.5px;color:var(--tx2)}
+.notes b{color:var(--tx);font-weight:600}
+.k{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--tx);color:var(--s0);font:700 10px var(--sans);margin-right:6px;vertical-align:1px}
+.mk{position:absolute;z-index:5}
+.foot{color:var(--tx3);font-size:11.5px;margin-top:18px}
+
+/* ---------- the app shell: four locked columns ---------- */
+.frame{position:relative;width:1600px;height:940px;display:grid;grid-template-columns:192px 1fr 320px 48px;background:var(--s0);border:1px solid var(--line);overflow:hidden}
+.rail{background:var(--s1);border-right:1px solid var(--line);display:flex;flex-direction:column}
+.league{padding:14px 14px 12px;border-bottom:1px solid var(--line)}
+.league .crest{display:flex;gap:10px;align-items:center}
+.league .crest i{width:28px;height:28px;border:1px solid var(--line-hi);display:grid;place-items:center;font:700 10px var(--mono);color:var(--tx2);font-style:normal}
+.league b{display:block;font-size:13px}
+.league small{color:var(--tx3);font-size:11px}
+.cmd{margin:10px 12px;padding:7px 9px;border:1px solid var(--line);background:var(--s0);color:var(--tx3);font:11.5px var(--mono);display:flex;justify-content:space-between}
+.cmd kbd{font:inherit;border:1px solid var(--line-hi);padding:0 5px;color:var(--tx2)}
+.nav{padding:6px 0;flex:1}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 16px;color:var(--tx2);font-weight:500;text-decoration:none;border-left:2px solid transparent}
+.nav a svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.nav a.on{color:var(--tx);background:var(--s3);border-left-color:var(--tx)}
+.nav a .ct{margin-left:auto;font:600 10.5px var(--mono);color:var(--amber)}
+.nav a .ct.r{color:var(--red)}
+.rail .me{border-top:1px solid var(--line);padding:12px 14px;font-size:11.5px;color:var(--tx3)}
+.rail .me b{color:var(--tx);font-weight:600;display:block;font-size:12.5px}
+
+.ws{display:flex;flex-direction:column;min-width:0}
+.ws-head{height:44px;flex:none;display:flex;align-items:stretch;border-bottom:1px solid var(--line);background:var(--s1)}
+.ws-head h3{font-size:13px;font-weight:700;padding:0 16px;display:flex;align-items:center;border-right:1px solid var(--line);white-space:nowrap}
+.wtabs{display:flex}
+.wtabs span{display:flex;align-items:center;padding:0 14px;color:var(--tx3);font-weight:600;font-size:12px;border-bottom:2px solid transparent}
+.wtabs span.on{color:var(--tx);border-color:var(--tx)}
+.strip{margin-left:auto;display:flex;align-items:center;gap:16px;padding:0 14px;font:11px var(--mono);color:var(--tx3);white-space:nowrap}
+.strip .live{color:var(--blue)}
+.strip .run{color:var(--amber)}
+.dens{display:flex;border:1px solid var(--line)}
+.dens i{font-style:normal;padding:2px 7px;font:600 10.5px var(--sans);color:var(--tx3)}
+.dens i.on{background:var(--s4);color:var(--tx)}
+.wbody{flex:1;overflow:hidden;padding:16px;display:grid;gap:14px;align-content:start}
+
+.insp{background:var(--s1);border-left:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+.insp-head{height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid var(--line);font:600 11px var(--sans);color:var(--tx3);letter-spacing:.06em;text-transform:uppercase}
+.insp-head .x{display:flex;gap:10px;text-transform:none;letter-spacing:0;font:11px var(--mono)}
+.insp-body{padding:14px;display:grid;gap:14px;align-content:start;overflow:hidden}
+.zone{border-top:1px solid var(--line);padding-top:12px}
+.zone>h5{font:600 10.5px var(--sans);color:var(--tx3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between}
+.zone>h5 em{font-style:normal;letter-spacing:0;text-transform:none;font:10.5px var(--mono)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-size:12px}
+.kv dt{color:var(--tx3)}.kv dd{font-family:var(--mono);text-align:right}
+
+.comms{background:var(--s1);border-left:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:14px}
+.comms .bub{width:28px;height:28px;border:1px solid var(--line-hi);display:grid;place-items:center;font:600 11px var(--mono);color:var(--tx2)}
+.comms .bub.n{border-color:var(--blue);color:var(--blue)}
+.comms .vt{writing-mode:vertical-rl;transform:rotate(180deg);font:600 10px var(--sans);letter-spacing:.14em;color:var(--tx3);text-transform:uppercase;margin-top:6px}
+
+/* ---------- the four channels ---------- */
+/* colour = meaning (five, locked) */
+.st{display:inline-flex;align-items:center;gap:6px;font:600 11px var(--sans);white-space:nowrap}
+.st::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.c-green{color:var(--green)}.c-blue{color:var(--blue)}.c-amber{color:var(--amber)}.c-red{color:var(--red)}.c-grey{color:var(--grey)}
+/* chrome = consequence G0..G3 (neutral, never coloured) */
+.card{background:var(--s2);border:1px solid var(--line);padding:12px 14px;position:relative}
+.g1{border-color:var(--line-hi)}
+.g2{border:2px solid hsl(220 8% 38%);background:var(--s3)}
+.g3{border:3px solid hsl(220 10% 72%);background:var(--s3);box-shadow:0 10px 28px -12px #000,inset 0 1px 0 hsl(220 10% 22%)}
+.g3 .ttl,.g2 .ttl{font-weight:700}
+/* countdown = urgency U0..U3 */
+.cd{font:600 11.5px var(--mono);white-space:nowrap}
+.u0{color:var(--tx3)}.u1{color:var(--tx2)}.u2{color:var(--amber)}.u3{color:var(--red)}
+/* glyph = classification (monochrome) */
+.pos{display:inline-grid;place-items:center;min-width:26px;height:17px;padding:0 4px;border:1px solid var(--line-hi);font:600 10px var(--mono);color:var(--tx2);letter-spacing:.02em}
+.gl{display:inline-flex;align-items:center;gap:5px;font:600 10.5px var(--sans);color:var(--tx2);border:1px solid var(--line-hi);padding:1px 7px 1px 5px;white-space:nowrap}
+.gl svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.6}
+.prov{font:10.5px var(--mono);color:var(--tx3)}
+
+.ttl{font-size:13px;font-weight:600}
+.sub{color:var(--tx2);font-size:12px}
+.row{display:flex;align-items:center;gap:10px}
+.sp{margin-left:auto}
+.btn{flex:none;display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid var(--line-hi);background:var(--s4);font:600 11.5px var(--sans);color:var(--tx);white-space:nowrap}
+.btn.q{background:transparent;color:var(--tx2)}
+.btn.hold{border:2px solid var(--tx);background:var(--tx);color:var(--s0);padding:7px 14px;position:relative;overflow:hidden}
+.btn.hold::after{content:"";position:absolute;left:0;bottom:0;height:3px;width:38%;background:var(--s0);opacity:.35}
+.btn:hover{border-color:var(--tx2)}
+.lbl{font:600 10.5px var(--sans);color:var(--tx3);letter-spacing:.07em;text-transform:uppercase}
+
+table.t{width:100%;border-collapse:collapse;font-size:12.5px}
+.t th{font:600 10.5px var(--sans);color:var(--tx3);letter-spacing:.06em;text-transform:uppercase;text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.t td{padding:6px 8px;border-bottom:1px solid hsl(220 9% 12%);white-space:nowrap}
+.t .n{text-align:right;font-family:var(--mono)}
+.t tr.sel td{background:var(--s4)}
+.t tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--tx)}
+.t tr.grp td{font:600 10.5px var(--sans);color:var(--tx3);letter-spacing:.07em;text-transform:uppercase;padding-top:12px;border-bottom:1px solid var(--line)}
+.t .big{font-weight:700;color:var(--tx)}
+.dim{color:var(--tx3)}
+
+/* two locked numbers */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two>div{border:1px solid var(--line);padding:10px}
+.two b{display:block;font:700 24px var(--mono);letter-spacing:-.02em}
+.two small{display:block;color:var(--tx3);font-size:11px}
+
+/* league-year track */
+.year{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-top:14px}
+.year div{height:30px;border-top:3px solid var(--line-hi);padding-top:5px;font-size:10.5px;color:var(--tx3);font-weight:600}
+.year div.past{border-color:hsl(220 8% 34%)}
+.year div.now{border-color:var(--tx);color:var(--tx)}
+.clocks{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.clocks>div{border:1px solid var(--line);padding:10px 12px;background:var(--s1)}
+.clocks .cd{font-size:20px;display:block;margin-top:4px;letter-spacing:-.01em}
+
+/* alert tray */
+.tray{display:grid;gap:8px}
+.al{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
+
+/* envelope rail */
+.env{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:12px 0 4px}
+.env div{border-top:3px solid var(--line);padding-top:6px;font-size:11px;color:var(--tx3);font-weight:600}
+.env div small{display:block;font:10.5px var(--mono);font-weight:400}
+.env .done{border-color:hsl(220 8% 40%);color:var(--tx2)}
+.env .cur{border-color:var(--tx);color:var(--tx)}
+.checks{display:grid;gap:4px;font-size:12px}
+.checks span::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:8px;vertical-align:1px;background:currentColor}
+
+/* market matrix */
+.mx{display:grid;grid-template-columns:52px repeat(4,1fr);gap:3px}
+.mx>div{background:var(--s2);border:1px solid var(--line);padding:7px 8px;font:12px var(--mono);min-height:44px}
+.mx>div small{display:block;font:10px var(--sans);color:var(--tx3)}
+.mx .h{background:none;border:0;font:600 10.5px var(--sans);color:var(--tx3);min-height:0;padding:2px 8px}
+.mx .lo{border-color:var(--green)}.mx .lo b{color:var(--green)}
+.mx .hi{border-color:var(--red)}.mx .hi b{color:var(--red)}
+.mx b{font-weight:600}
+
+/* gameday */
+.games{display:flex;gap:6px;overflow:hidden}
+.gm{border:1px solid var(--line);background:var(--s2);padding:6px 10px;min-width:150px;font:11.5px var(--mono)}
+.gm.f{border-color:var(--blue)}
+.gm small{display:block;font:10px var(--sans);color:var(--tx3)}
+.mu{display:grid;grid-template-columns:1fr 300px 1fr;gap:12px}
+.on-field{color:var(--blue)}
+.spine{border:1px solid var(--line);background:var(--s1);padding:10px;display:grid;gap:8px;align-content:start}
+.ev{border-left:1px solid var(--line-hi);padding-left:10px;font-size:12px}
+.ev .cd{font-size:10.5px}
+.ev b{font-weight:600}
+</style>
+</head>
+<body>
+
+<header class="board-head">
+  <h1>TheWarRoom: target UI, rough draft r0</h1>
+  <p>2026-10-06 · Design phase, nothing built · Merged from the Sol and GLM research passes and Christopher's rulings · Shell, colours and type follow the locked UI Direction Document</p>
+  <nav class="board-tabs" role="tablist">
+    <button data-s="system">0 · The visual system</button>
+    <button data-s="home">1 · Home</button>
+    <button data-s="hq">2 · Franchise HQ</button>
+    <button data-s="trade">3 · Trade Floor</button>
+    <button data-s="war">4 · War Room</button>
+    <button data-s="pulse">5 · League Pulse</button>
+    <button data-s="map">6 · Map of everything</button>
+    <button data-s="road">7 · Roadmap to done</button>
+  </nav>
+</header>
+
+<!-- ===================================================== 0 SYSTEM -->
+<section class="screen" id="scr-system">
+  <h2>The visual system: four jobs, four channels</h2>
+  <p class="lede">Each channel has one job. Colour says what something <i>is</i>, the frame says how much is at stake, the countdown says how soon, and a monochrome glyph says what kind of thing it is. No channel does two jobs, so you can read a card's importance without reading a word.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:1600px">
+    <div class="card"><div class="lbl" style="margin-bottom:10px">Colour = meaning. Five, locked; no theme can change them</div>
+      <div style="display:grid;gap:9px">
+        <div class="row"><span class="st c-green" style="width:150px">Green</span><span class="sub">Elite, positive, landed, cheaper than the league beyond chance</span></div>
+        <div class="row"><span class="st c-blue" style="width:150px">Blue</span><span class="sub">Information, live now, on the field, selected source</span></div>
+        <div class="row"><span class="st c-amber" style="width:150px">Amber</span><span class="sub">Watch: a clock is running, a check needs you</span></div>
+        <div class="row"><span class="st c-red" style="width:150px">Red</span><span class="sub">Danger, injury, blocked, under one hour, dearer than the league beyond chance</span></div>
+        <div class="row"><span class="st c-grey" style="width:150px">Grey</span><span class="sub">History, closed, stale, not wired yet</span></div>
+      </div>
+      <p class="foot" style="margin-top:12px">Colour never carries position, tier, gravity or team. It always comes with a word or an icon, so it still reads for a colour-blind owner.</p>
+    </div>
+
+    <div class="card"><div class="lbl" style="margin-bottom:10px">Frame = consequence. Neutral, never coloured</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <div class="card"><div class="lbl">G0 ambient</div><div class="ttl" style="margin-top:6px">League news</div><div class="sub">1px, flat</div></div>
+        <div class="card g1"><div class="lbl">G1 watch</div><div class="ttl" style="margin-top:6px">IR return</div><div class="sub">1px, brighter</div></div>
+        <div class="card g2"><div class="lbl">G2 stakes</div><div class="ttl" style="margin-top:6px">Lineup gap</div><div class="sub">2px, raised</div></div>
+        <div class="card g3"><div class="lbl">G3 irreversible</div><div class="ttl" style="margin-top:6px">Accept trade</div><div class="sub">3px, elevated</div></div>
+      </div>
+      <p class="foot" style="margin-top:12px">G3 controls are always a hold, never a click: about 600ms, and letting go early cancels.</p>
+    </div>
+
+    <div class="card"><div class="lbl" style="margin-bottom:10px">Countdown = urgency</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+        <div><div class="lbl">U0 none</div><div class="cd u0" style="font-size:16px;margin-top:4px">no clock</div></div>
+        <div><div class="lbl">U1 dated</div><div class="cd u1" style="font-size:16px;margin-top:4px">33d · Wk 11</div></div>
+        <div><div class="lbl">U2 running</div><div class="cd u2" style="font-size:16px;margin-top:4px">2d 05h</div></div>
+        <div><div class="lbl">U3 under 1h</div><div class="cd u3" style="font-size:16px;margin-top:4px">0h 47m</div></div>
+      </div>
+      <p class="foot" style="margin-top:12px">Time moves things; it never changes their frame. At 7 days out an item rises in its list. At 48 hours it is pinned to Home.</p>
+    </div>
+
+    <div class="card"><div class="lbl" style="margin-bottom:10px">Glyph = classification. Monochrome</div>
+      <div class="row" style="flex-wrap:wrap;gap:8px">
+        <span class="pos">QB</span><span class="pos">RB</span><span class="pos">WR</span><span class="pos">TE</span><span class="pos">DE</span><span class="pos">DT</span><span class="pos">LB</span><span class="pos">CB</span><span class="pos">S</span>
+        <span style="width:12px"></span>
+        <span class="gl"><svg viewBox="0 0 12 12"><path d="M2 10 6 2l4 8z"/></svg>Contender</span>
+        <span class="gl"><svg viewBox="0 0 12 12"><path d="M2 6h8"/><path d="M6 2v8"/></svg>In the hunt</span>
+        <span class="gl"><svg viewBox="0 0 12 12"><path d="M2 2 6 10l4-8z"/></svg>Rebuilding</span>
+        <span class="gl"><svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="4"/></svg>Bought for now</span>
+        <span class="gl"><svg viewBox="0 0 12 12"><path d="M6 2v8M3 7l3 3 3-3"/></svg>Built for later</span>
+        <span class="gl"><svg viewBox="0 0 12 12"><path d="M2 4h8M2 8h8"/></svg>Like for like</span>
+        <span class="gl"><svg viewBox="0 0 12 12"><path d="M1 6s2-4 5-4 5 4 5 4-2 4-5 4-5-4-5-4z"/><circle cx="6" cy="6" r="1.4"/></svg>Watching</span>
+        <span class="gl"><svg viewBox="0 0 12 12"><path d="M3 2h6v8L6 8l-3 2z"/></svg>Trade bait</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="max-width:1600px;margin-top:16px">
+    <div class="lbl" style="margin-bottom:12px">Every card has the same four colour slots, in the same places</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+      <div class="card g2">
+        <div class="row"><span class="pos">TE</span><span class="ttl">Brock Bowers</span><span class="st c-blue sp">On field</span></div>
+        <div class="sub" style="margin-top:2px">Arizona Cardinals · $2.40M thru 2028 · UFA</div>
+        <div class="row" style="margin-top:10px"><span class="mono" style="font-size:20px;font-weight:700">14.2</span><span class="sub">pts / game</span><span class="sp mono" style="font-size:20px;font-weight:700">91</span><span class="sub">value</span></div>
+        <div class="row" style="margin-top:10px"><span class="st c-green">Cheaper than TE going rate</span></div>
+        <div class="row" style="margin-top:8px"><span class="cd u1">Thru 2028</span><span class="prov sp">MFL · 12 min ago</span></div>
+      </div>
+      <div class="sub" style="grid-column:span 3;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-content:center">
+        <div><span class="k">1</span><b style="color:var(--tx)">Status</b>, top right: what state the thing is in now (on field, injured, pending, landed).</div>
+        <div><span class="k">2</span><b style="color:var(--tx)">Verdict</b>: shown only when the difference is beyond chance. No verdict is a normal, honest state.</div>
+        <div><span class="k">3</span><b style="color:var(--tx)">Countdown + provenance</b>, bottom: how long you have, and where the number came from and how fresh it is.</div>
+        <div><span class="k">4</span><b style="color:var(--tx)">Seven card families</b> share this anatomy: player, franchise, draft pick, trade/offer, deadline/clock, market segment, report.</div>
+        <div><span class="k">5</span><b style="color:var(--tx)">Three densities</b>: Narrative (sentences), Tactical (default), Matrix (32-team sweep). The card keeps its slots at every density.</div>
+        <div><span class="k">6</span><b style="color:var(--tx)">No photo needed.</b> Headshots are optional and personal-use only; every card works without one.</div>
+      </div>
+    </div>
+  </div>
+  <p class="foot">Values on this board (points, value scores, clocks, market figures) are illustrative. Rosters, salaries and contract years are real: Legacy NFL, MFL week 5, 2026.</p>
+</section>
+
+<!-- ===================================================== 1 HOME -->
+<section class="screen" id="scr-home">
+  <h2>Home: “what needs me, and how long do I have?”</h2>
+  <p class="lede">The seasonal card owns the page and changes with the league year. The alert tray sorts by urgency, then consequence. Clicking anything fills the inspector on the right and never leaves the page.</p>
+  <div class="frame" data-node="home" data-title="Home" data-tabs="Today" data-strip="season">
+    <template class="main">
+      <div style="display:grid;grid-template-columns:1fr 430px;gap:14px">
+        <div style="display:grid;gap:14px;align-content:start">
+          <div class="card g1" style="padding:18px 20px">
+            <div class="row"><span class="lbl">League year 2026</span><span class="prov sp">MFL calendar · 4 min ago</span></div>
+            <div class="row" style="margin-top:6px;align-items:baseline"><span style="font-size:28px;font-weight:700;letter-spacing:-.02em">Week 6, in season</span><span class="sub" style="margin-left:14px">Arizona Cardinals · 3–2 · 2nd NFC West</span></div>
+            <div class="year">
+              <div class="past">Re-sign &amp; tags</div><div class="past">Rookie draft</div><div class="past">FA auction</div><div class="past">Cutdown</div><div class="now">In season</div><div>Trade deadline</div><div>Playoffs</div><div>Offseason</div>
+            </div>
+            <div class="clocks">
+              <div><div class="lbl">Seattle offer expires</div><span class="cd u3">0h 47m</span><div class="sub">Accept, reject or let it lapse</div></div>
+              <div><div class="lbl">Lineup locks</div><span class="cd u2">2d 05h</span><div class="sub">Thu 8:15 PM ET · 1 slot empty</div></div>
+              <div><div class="lbl">Trade deadline</div><span class="cd u1">33d</span><div class="sub">Week 11 · after it, offers close</div></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="card">
+              <div class="row"><span class="ttl">League since Sunday</span><span class="prov sp">MFL transactions</span></div>
+              <table class="t" style="margin-top:8px">
+                <tr><td><span class="st c-grey">Trade</span></td><td>Chiefs ↔ Lions</td><td class="dim">3 players, 1 pick</td></tr>
+                <tr><td><span class="st c-grey">Trade</span></td><td>Bears ↔ Packers</td><td class="dim">2 picks</td></tr>
+                <tr><td><span class="st c-grey">Adds</span></td><td>11 free-agent adds</td><td class="dim">7 are IDP</td></tr>
+                <tr><td><span class="st c-grey">IR</span></td><td>6 moves to IR</td><td class="dim">2 in NFC West</td></tr>
+              </table>
+            </div>
+            <div class="card">
+              <div class="row"><span class="ttl">Market this week</span><span class="prov sp">League-wide · 9 seasons</span></div>
+              <div style="display:grid;gap:8px;margin-top:10px;font-size:12.5px">
+                <div class="row" style="align-items:flex-start"><span class="pos">LB</span><div>Prime LBs are selling under the going rate<div class="st c-green" style="margin-top:2px">Beyond chance</div></div></div>
+                <div class="row" style="align-items:flex-start"><span class="pos">WR</span><div>Young WRs at the usual price<div class="st c-grey" style="margin-top:2px">No signal</div></div></div>
+                <div class="row" style="align-items:flex-start"><span class="pos">PK</span><div>2027 1sts trade 18% dear in Oct<div class="st c-red" style="margin-top:2px">Beyond chance</div></div></div>
+              </div>
+              <div class="prov" style="margin-top:10px">Opens War Room › Market</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="card">
+              <div class="row"><span class="ttl">This week</span><span class="cd u2 sp">kickoff 2d 05h</span></div>
+              <div class="row" style="margin-top:10px;align-items:baseline"><span class="sub">Arizona</span><span class="mono" style="font-size:22px;font-weight:700;margin-left:8px">142.6</span><span class="sub sp">Seattle</span><span class="mono" style="font-size:22px;font-weight:700;margin-left:8px">148.9</span></div>
+              <div class="sub" style="margin-top:6px">Projected. Seattle leads at QB; you lead across the defense if the LB slot is filled.</div>
+              <div class="prov" style="margin-top:8px">Opens League Pulse › Now</div>
+            </div>
+            <div class="card">
+              <div class="row"><span class="ttl">Your money</span><span class="prov sp">MFL rosters · week 5</span></div>
+              <div class="kv" style="margin-top:10px"><dt>Active roster, 38</dt><dd>$108.17M</dd><dt>Injured reserve, 4</dt><dd>$6.95M</dd><dt>Taxi squad, 6</dt><dd>$2.47M</dd><dt>Ending after 2026, 12</dt><dd>$12.92M</dd></div>
+              <div class="prov" style="margin-top:8px">Opens Franchise HQ › Contracts and cap</div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="padding:14px">
+          <div class="row" style="margin-bottom:10px"><span class="ttl">Needs you</span><span class="sub sp">5 · sorted by urgency, then stakes</span></div>
+          <div class="tray">
+            <div class="card g3 al" style="outline:1px solid var(--blue);outline-offset:2px">
+              <div><span class="ttl">Seattle sent you an offer</span><div class="sub">Baker + Tyson for Jordyn Brooks</div></div>
+              <span class="cd u3">0h 47m</span>
+              <div class="row" style="grid-column:span 2;margin-top:6px"><span class="st c-amber">Ready to review</span><button class="btn sp">Open offer</button></div>
+            </div>
+            <div class="card g2 al">
+              <div><span class="ttl">LB starter slot is empty</span><div class="sub">Leo Chenal moved to IR</div></div>
+              <span class="cd u2">2d 05h</span>
+              <div class="row" style="grid-column:span 2;margin-top:6px"><span class="st c-red">Lineup invalid</span><button class="btn sp">Set lineup</button></div>
+            </div>
+            <div class="card g1 al">
+              <div><span class="ttl">Jer'Zhan Newton can come off IR</span><div class="sub">Roster is full: 38 of 38 active</div></div>
+              <span class="cd u1">by Wk 7</span>
+              <div class="row" style="grid-column:span 2;margin-top:6px"><span class="st c-amber">Needs a roster spot</span><button class="btn q sp">Plan a move</button></div>
+            </div>
+            <div class="card g1 al">
+              <div><span class="ttl">12 contracts end after 2026</span><div class="sub">$12.92M · Devin White is the largest</div></div>
+              <span class="cd u1">Feb</span>
+              <div class="row" style="grid-column:span 2;margin-top:6px"><span class="st c-grey">Re-sign window not open</span><button class="btn q sp">See contracts</button></div>
+            </div>
+            <div class="card al">
+              <div><span class="sub">No free-agent claims pending</span></div><span class="cd u0">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template class="insp">
+      <div class="row"><span class="ttl" style="font-size:16px">Seattle Seahawks</span><span class="gl sp"><svg viewBox="0 0 12 12"><path d="M2 10 6 2l4 8z"/></svg>Contender</span></div>
+      <div class="sub" style="margin-top:-8px">NFC West · 4–1 · 1st</div>
+      <div class="zone"><h5>Open offer <em class="u3 cd">0h 47m</em></h5>
+        <div class="kv"><dt>You get</dt><dd>Baker LB · Tyson WR</dd><dt>You give</dt><dd>J. Brooks LB</dd><dt>Your salary</dt><dd>−$5.40M</dd></div>
+      </div>
+      <div class="zone"><h5>How Seattle trades <em>9 seasons</em></h5>
+        <div class="kv"><dt>Trades made</dt><dd>41</dd><dt>With you</dt><dd>3</dd><dt>Buys</dt><dd>vets for now</dd><dt>Pays vs going rate</dt><dd>+6%</dd></div>
+        <div class="prov" style="margin-top:6px">No verdict: within chance</div>
+      </div>
+      <div class="zone"><h5>Their roster pressure</h5>
+        <div class="kv"><dt>QB Jalen Hurts</dt><dd>$29.00M · ends 2026</dd><dt>Contracts ending 2026</dt><dd>9</dd></div>
+      </div>
+      <div class="zone"><h5>Do</h5>
+        <div class="row" style="flex-wrap:wrap;gap:6px"><button class="btn">Open offer</button><button class="btn q">Their roster</button><button class="btn q">Trade history</button></div>
+        <div class="prov" style="margin-top:8px">franchise.inspect id=0028 league=14432</div>
+      </div>
+    </template>
+  </div>
+  <div class="notes">
+    <div><span class="k">1</span><b>The seasonal card owns Home.</b> The league-year track shows where we are among the eight stretches; the three nearest clocks sit under it. In the offseason the same card shows windows instead of weeks.</div>
+    <div><span class="k">2</span><b>The tray sorts by urgency, then stakes.</b> The offer outranks the lineup gap because it expires in 47 minutes, and its 3px frame says that accepting cannot be undone.</div>
+    <div><span class="k">3</span><b>Every item has one action.</b> “Set lineup” and “Open offer” land you one click from a ready move, inside the two-click rule.</div>
+    <div><span class="k">4</span><b>The inspector is the only entity page.</b> It replaces MFL's franchise hub (25 kinds of links) with zones. Nothing navigates away.</div>
+    <div><span class="k">5</span><b>The digests are league-wide.</b> “Market this week” points at the whole league, not at Arizona, and only colours a line when the gap is beyond chance.</div>
+    <div><span class="k">6</span><b>Every control is a command.</b> The grey line under each inspector names the verb, so the future chat engine can drive the same screen.</div>
+  </div>
+</section>
+
+<!-- ===================================================== 2 HQ -->
+<section class="screen" id="scr-hq">
+  <h2>Franchise HQ › Lineup and roster: “is my team set, and what does it cost me?”</h2>
+  <p class="lede">The roster as a sortable board at Tactical density. Every row carries the two locked numbers, on-field now and dynasty value, next to the contract. Select a row and the player opens in the inspector, with that player's actions in a tray at the bottom.</p>
+  <div class="frame" data-node="hq" data-title="Franchise HQ" data-tabs="Lineup and roster|Contracts and cap|My moves" data-strip="season">
+    <template class="main">
+      <div class="row" style="gap:8px">
+        <span class="btn">All 48</span><span class="btn q">Offense</span><span class="btn q">Defense</span><span class="btn q">IR 4</span><span class="btn q">Taxi 6</span>
+        <span class="sp sub mono" style="font-size:11.5px">Active $108.17M · IR $6.95M · Taxi $2.47M</span>
+      </div>
+      <div class="card" style="padding:0">
+      <table class="t">
+        <thead><tr><th style="width:52px">Pos</th><th>Player</th><th>Status</th><th>Wk 6</th><th class="n">Pts / g</th><th class="n">Value</th><th class="n">Salary</th><th class="n">Thru</th><th>Type</th></tr></thead>
+        <tbody>
+        <tr class="grp"><td colspan="9">Offense · starters</td></tr>
+        <tr><td><span class="pos">QB</span></td><td>C.J. Stroud</td><td class="dim">Active</td><td>Start</td><td class="n">19.8</td><td class="n big">84</td><td class="n">$4.00M</td><td class="n">2030</td><td class="dim">UFA</td></tr>
+        <tr><td><span class="pos">WR</span></td><td>Khalil Shakir</td><td class="dim">Active</td><td>Start</td><td class="n">13.1</td><td class="n big">68</td><td class="n">$9.43M</td><td class="n">2028</td><td class="dim">UFA</td></tr>
+        <tr><td><span class="pos">WR</span></td><td>Chris Olave</td><td class="dim">Active</td><td>Start</td><td class="n">14.6</td><td class="n big">79</td><td class="n">$3.00M</td><td class="n">2029</td><td class="dim">UFA</td></tr>
+        <tr class="sel"><td><span class="pos">TE</span></td><td>Brock Bowers</td><td class="dim">Active</td><td>Start</td><td class="n">14.2</td><td class="n big">91</td><td class="n">$2.40M</td><td class="n">2028</td><td class="dim">UFA</td></tr>
+        <tr><td><span class="pos">TE</span></td><td>Isaiah Likely</td><td class="dim">Active</td><td>Start</td><td class="n">9.4</td><td class="n big">61</td><td class="n">$7.25M</td><td class="n">2028</td><td class="dim">UFA</td></tr>
+        <tr class="grp"><td colspan="9">Defense · starters</td></tr>
+        <tr><td><span class="pos">LB</span></td><td>Jordyn Brooks</td><td class="dim">Active</td><td>Start</td><td class="n">16.3</td><td class="n big">77</td><td class="n">$13.50M</td><td class="n">2029</td><td class="dim">UFA</td></tr>
+        <tr><td><span class="pos">LB</span></td><td>Foyesade Oluokun</td><td class="dim">Active</td><td>Start</td><td class="n">15.1</td><td class="n big">63</td><td class="n">$11.00M</td><td class="n">2028</td><td class="dim">UFA</td></tr>
+        <tr><td><span class="pos">LB</span></td><td><span class="dim">Empty slot</span></td><td><span class="st c-red">Lineup invalid</span></td><td>—</td><td class="n dim">—</td><td class="n dim">—</td><td class="n dim">—</td><td class="n dim">—</td><td></td></tr>
+        <tr><td><span class="pos">S</span></td><td>Jalen Pitre</td><td class="dim">Active</td><td>Start</td><td class="n">11.7</td><td class="n big">58</td><td class="n">$5.00M</td><td class="n">2028</td><td class="dim">UFA</td></tr>
+        <tr><td><span class="pos">CB</span></td><td>DaRon Bland</td><td class="dim">Active</td><td>Start</td><td class="n">9.9</td><td class="n big">55</td><td class="n">$3.62M</td><td class="n">2028</td><td class="dim">UFA</td></tr><tr class="grp"><td colspan="9">Bench · 21</td></tr><tr><td><span class="pos">WR</span></td><td>Keon Coleman</td><td class="dim">Active</td><td class="dim">Bench</td><td class="n">8.1</td><td class="n big">59</td><td class="n">$2.40M</td><td class="n">2028</td><td class="dim">UFA</td></tr><tr><td><span class="pos">WR</span></td><td>Dontayvion Wicks</td><td class="dim">Active</td><td class="dim">Bench</td><td class="n">7.6</td><td class="n big">47</td><td class="n">$4.00M</td><td class="n">2029</td><td class="dim">UFA</td></tr><tr><td><span class="pos">RB</span></td><td>Chris Brooks</td><td class="dim">Active</td><td class="dim">Bench</td><td class="n">6.9</td><td class="n big">41</td><td class="n">$1.45M</td><td class="n">2029</td><td class="dim">UFA</td></tr><tr><td><span class="pos">LB</span></td><td>Devin White</td><td class="dim">Active</td><td class="dim">Bench</td><td class="n">8.4</td><td class="n big">39</td><td class="n">$5.00M</td><td class="n">2026</td><td class="dim">UFA</td></tr><tr><td><span class="pos">DT</span></td><td>Christian Barmore</td><td class="dim">Active</td><td class="dim">Bench</td><td class="n">7.2</td><td class="n big">50</td><td class="n">$3.63M</td><td class="n">2027</td><td class="dim">UFA</td></tr>
+        <tr class="grp"><td colspan="9">Injured reserve · 4</td></tr>
+        <tr><td><span class="pos">LB</span></td><td>Leo Chenal</td><td><span class="st c-red">IR</span></td><td>—</td><td class="n">10.2</td><td class="n big">49</td><td class="n">$3.62M</td><td class="n">2028</td><td class="dim">UFA</td></tr>
+        <tr><td><span class="pos">WR</span></td><td>Ricky Pearsall</td><td><span class="st c-red">IR</span></td><td>—</td><td class="n">8.8</td><td class="n big">57</td><td class="n">$2.00M</td><td class="n">2028</td><td class="dim">UFA</td></tr>
+        <tr><td><span class="pos">DT</span></td><td>Jer'Zhan Newton</td><td><span class="st c-amber">Can return</span></td><td>—</td><td class="n">6.1</td><td class="n big">52</td><td class="n">$0.83M</td><td class="n">2026</td><td class="dim">RFA</td></tr>
+        <tr class="grp"><td colspan="9">Taxi squad · 6</td></tr>
+        <tr><td><span class="pos">CB</span></td><td>Tacario Davis</td><td class="dim">Taxi</td><td>—</td><td class="n dim">—</td><td class="n big">44</td><td class="n">$0.60M</td><td class="n">2028</td><td class="dim">RFA</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="prov">Showing 20 of 48 · Rosters and contracts: MFL week 5 · Pts / g and Value: illustrative until the engine is wired</div>
+    </template>
+    <template class="insp">
+      <div class="row"><span class="pos">TE</span><span class="ttl" style="font-size:16px">Brock Bowers</span><span class="st c-blue sp">Active</span></div>
+      <div class="sub" style="margin-top:-8px">Age 23 · 3rd NFL season · Arizona Cardinals</div>
+      <div class="two"><div><small>On field now</small><b>14.2</b><small>pts / game · TE4</small></div><div><small>Dynasty value</small><b>91</b><small>TE1 in league</small></div></div>
+      <div class="zone"><h5>Contract <em>MFL · 12 min ago</em></h5>
+        <div class="kv"><dt>Salary</dt><dd>$2.40M</dd><dt>Runs through</dt><dd>2028</dd><dt>At expiry</dt><dd>UFA</dd><dt>TE going rate</dt><dd>$7.10M</dd></div>
+        <div class="row" style="margin-top:8px"><span class="st c-green">Cheaper than the going rate</span></div>
+      </div>
+      <div class="zone"><h5>In the league</h5>
+        <div class="kv"><dt>Asked about this season</dt><dd>4 offers</dd><dt>Similar TEs traded</dt><dd>7 · median 1st + </dd></div>
+      </div>
+      <div class="zone"><h5>Do</h5>
+        <div class="row" style="flex-wrap:wrap;gap:6px"><button class="btn">Move to bench</button><button class="btn">Shop him</button><button class="btn q">What if I cut</button><button class="btn q">Watch</button></div>
+        <div class="prov" style="margin-top:8px">lineup.bench player=… · trade.shop player=…</div>
+      </div>
+    </template>
+  </div>
+  <div class="notes">
+    <div><span class="k">1</span><b>The two locked numbers sit side by side:</b> on-field now and dynasty value, then salary, so cost is always next to worth.</div>
+    <div><span class="k">2</span><b>Problems show in the row:</b> the empty LB slot is red with a word; Newton is amber because a clock and a choice are attached.</div>
+    <div><span class="k">3</span><b>Read tables never hold a commit button.</b> Actions live in the inspector's tray, so you can't trigger a move by mis-clicking a row.</div>
+    <div><span class="k">4</span><b>Contracts and cap</b> is the next tab: what-if, dead cap, and the window acts (option, tender, re-sign, buyout, cut) as they open.</div>
+    <div><span class="k">5</span><b>My moves</b> holds every prepared move as an envelope (see Trade Floor), plus your app-local watch list and scratchpad.</div>
+    <div><span class="k">6</span><b>Density switch</b> in the header: Matrix shrinks this to 22px rows for a 48-man sweep; Narrative turns each row into a sentence.</div>
+  </div>
+</section>
+
+<!-- ===================================================== 3 TRADE -->
+<section class="screen" id="scr-trade">
+  <h2>Trade Floor › Trade desk: “is this offer good, and is it safe to say yes?”</h2>
+  <p class="lede">An offer is a move envelope. The app checks it, hands you to the exact MFL page, then watches MFL's own data until the trade actually lands. “Ready” means we checked it. Only MFL's data can say it happened.</p>
+  <div class="frame" data-node="trade" data-title="Trade Floor" data-tabs="Trade desk|Counterparties|Draft room" data-strip="season">
+    <template class="main">
+      <div style="display:grid;grid-template-columns:300px 1fr;gap:14px">
+        <div class="card" style="padding:0">
+          <div class="row" style="padding:10px 12px;border-bottom:1px solid var(--line)"><span class="btn">Incoming 1</span><span class="btn q">Sent 2</span><span class="btn q">History</span></div>
+          <div style="padding:10px 12px;border-bottom:1px solid var(--line);background:var(--s4);box-shadow:inset 2px 0 0 var(--tx)"><div class="row"><span class="ttl">Seattle Seahawks</span><span class="cd u3 sp">0h 47m</span></div><div class="sub">Baker + Tyson for J. Brooks</div></div>
+          <div style="padding:10px 12px;border-bottom:1px solid var(--line)"><div class="row"><span class="ttl dim">To Detroit Lions</span><span class="cd u2 sp">1d 14h</span></div><div class="sub">Sent · waiting on them</div></div>
+          <div style="padding:10px 12px;border-bottom:1px solid var(--line)"><div class="row"><span class="ttl dim">To Chicago Bears</span><span class="cd u1 sp">4d</span></div><div class="sub">Sent · waiting on them</div></div>
+          <div style="padding:12px;border-bottom:1px solid var(--line)"><button class="btn" style="width:100%;justify-content:center">New offer</button></div>
+          <div style="padding:12px"><div class="lbl" style="margin-bottom:8px">Trade bait around the league</div>
+            <div style="display:grid;gap:7px;font-size:12px">
+              <div class="row"><span class="pos">LB</span><span>Matt Milano</span><span class="dim sp">Seahawks</span></div>
+              <div class="row"><span class="pos">TE</span><span>Mark Andrews</span><span class="dim sp">Seahawks</span></div>
+              <div class="row"><span class="pos">DE</span><span>Michael Danna</span><span class="dim sp">Seahawks</span></div>
+              <div class="prov">Trade bait list · illustrative · opens War Room</div>
+            </div></div>
+        </div>
+        <div><div class="card g3" style="padding:16px 18px">
+          <div class="row"><span class="ttl" style="font-size:16px">Seattle Seahawks offer</span><span class="st c-amber" style="margin-left:12px">Ready to review</span><span class="cd u3 sp" style="font-size:14px">expires 0h 47m</span></div>
+          <div class="env">
+            <div class="done">Received<small>Tue 10:12 AM</small></div>
+            <div class="cur">Checked: ready<small>4 of 4 checks</small></div>
+            <div>Handed off to MFL<small>you accept there</small></div>
+            <div>DOT review<small>league step</small></div>
+            <div>Landed<small>seen in MFL data</small></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+            <div class="card"><div class="lbl">You get</div>
+              <table class="t" style="margin-top:4px"><tr><td><span class="pos">LB</span></td><td>Jerome Baker</td><td class="n">$5.10M</td><td class="n dim">2028</td></tr><tr><td><span class="pos">WR</span></td><td>Jordyn Tyson</td><td class="n">$3.00M</td><td class="n dim">2030</td></tr></table>
+              <div class="row" style="margin-top:8px"><span class="sub">Value</span><span class="mono sp big">58 + 66</span></div>
+            </div>
+            <div class="card"><div class="lbl">You give</div>
+              <table class="t" style="margin-top:4px"><tr><td><span class="pos">LB</span></td><td>Jordyn Brooks</td><td class="n">$13.50M</td><td class="n dim">2029</td></tr></table>
+              <div class="row" style="margin-top:8px"><span class="sub">Value</span><span class="mono sp big">77</span></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+            <div><div class="lbl" style="margin-bottom:6px">Checks before you go to MFL</div>
+              <div class="checks"><span class="c-green">Roster stays at 38 active</span><span class="c-green">Salary drops $5.40M this year</span><span class="c-green">No IR or taxi rule broken</span><span class="c-green">Before the trade deadline</span></div>
+            </div>
+            <div><div class="lbl" style="margin-bottom:6px">Against the league</div>
+              <div class="sub">Prime LBs like Brooks have sold for a median of two mid starters plus a pick (n = 23).</div>
+              <div class="row" style="margin-top:6px"><span class="st c-grey">Within chance: no verdict</span></div>
+              <div class="prov" style="margin-top:4px">How this is counted ›</div>
+            </div>
+          </div>
+          <div class="row" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
+            <button class="btn hold">Hold to accept on MFL</button><button class="btn">Reject on MFL</button><button class="btn q">Counter</button>
+            <span class="sub sp" style="max-width:360px;text-align:right">Holding opens MFL's accept page. TheWarRoom then watches MFL's trade data and marks this Landed only when the trade appears there.</span>
+          </div>
+          <div class="card" style="margin-top:14px">
+            <div class="row"><span class="ttl">Comparable trades</span><span class="sub" style="margin-left:10px">prime LBs sold, last two seasons</span><span class="prov sp">MFL transactions · values illustrative</span></div>
+            <table class="t" style="margin-top:6px">
+              <tr><th>When</th><th>Seller → buyer</th><th>LB sold</th><th>Came back</th><th class="n">Salary</th></tr>
+              <tr><td class="dim">Sep 2026</td><td>Rams → Packers</td><td>LB, age 28</td><td>2 starters + 2027 3rd</td><td class="n">$9.80M</td></tr>
+              <tr><td class="dim">Jul 2026</td><td>Bengals → Chiefs</td><td>LB, age 27</td><td>WR, age 23 + 2027 2nd</td><td class="n">$7.25M</td></tr>
+              <tr><td class="dim">Oct 2025</td><td>Saints → Eagles</td><td>LB, age 29</td><td>2 starters</td><td class="n">$11.00M</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template class="insp">
+      <div class="row"><span class="pos">LB</span><span class="ttl" style="font-size:16px">Jerome Baker</span><span class="st c-blue sp">Active</span></div>
+      <div class="sub" style="margin-top:-8px">Seattle Seahawks · would join Arizona</div>
+      <div class="two"><div><small>On field now</small><b>12.4</b><small>pts / game · LB22</small></div><div><small>Dynasty value</small><b>58</b><small>LB31</small></div></div>
+      <div class="zone"><h5>Contract</h5><div class="kv"><dt>Salary</dt><dd>$5.10M</dd><dt>Runs through</dt><dd>2028</dd><dt>LB going rate</dt><dd>$6.30M</dd></div></div>
+      <div class="zone"><h5>Fills your gap?</h5><div class="sub">Yes: starts at LB this week, which clears the invalid lineup on Home.</div></div>
+      <div class="zone"><h5>Do</h5><div class="row" style="gap:6px"><button class="btn q">Compare with Brooks</button><button class="btn q">Watch</button></div></div>
+    </template>
+  </div>
+  <div class="notes">
+    <div><span class="k">1</span><b>The envelope rail is the same for every move.</b> Received or Draft → Checked → Handed off → (league step) → Landed, or Failed, or Stale if nothing shows up in MFL's data.</div>
+    <div><span class="k">2</span><b>Accepting is a hold, not a click,</b> because the 3px frame marks it as irreversible. Reject is a plain click because you can always ask again.</div>
+    <div><span class="k">3</span><b>Phase 1 is honest about MFL:</b> the app prepares and checks, and you finish on MFL. In Phase 2 the hold does the write and nothing else on this screen changes.</div>
+    <div><span class="k">4</span><b>“Against the league” stays neutral here.</b> The gap is within chance, so it says so in grey instead of inventing a verdict.</div>
+    <div><span class="k">5</span><b>DOT review</b> is the league's step after accept. Where MFL shows it is still open question 3; the rail reserves its place.</div>
+    <div><span class="k">6</span><b>Counterparties</b> (the next tab) is each franchise's trading habits, league-wide. <b>Draft room</b> holds pick timing.</div>
+  </div>
+</section>
+
+<!-- ===================================================== 4 WAR ROOM -->
+<section class="screen" id="scr-war">
+  <h2>War Room › Market: “where is the league mispricing players right now?”</h2>
+  <p class="lede">The Lab, rebuilt as a workspace. League-wide, with no Arizona tint. A cell turns green or red only when its gap from the going rate is beyond chance, and every surface has “How this is counted”.</p>
+  <div class="frame" data-node="war" data-title="War Room" data-tabs="Market|Valuations and pool|Research" data-strip="season">
+    <template class="main">
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:14px">
+        <div class="card">
+          <div class="row"><span class="ttl">Going rate by position and age</span><span class="sub" style="margin-left:10px">median salary in trades, 2018–2026, against the league average for that position</span><span class="prov sp">n = 1,214 trades</span></div>
+          <div class="mx" style="margin-top:12px">
+            <div class="h"></div><div class="h">Age ≤23</div><div class="h">24–26</div><div class="h">27–29</div><div class="h">30+</div>
+            <div class="h">QB</div><div><b>$6.2M</b><small>n 41 · usual</small></div><div><b>$11.8M</b><small>n 63 · usual</small></div><div><b>$14.0M</b><small>n 58 · usual</small></div><div class="hi"><b>$12.9M</b><small>n 37 · 22% dear</small></div>
+            <div class="h">RB</div><div><b>$2.1M</b><small>n 88 · usual</small></div><div><b>$4.4M</b><small>n 102 · usual</small></div><div class="lo"><b>$2.6M</b><small>n 71 · 31% cheap</small></div><div><b>$1.2M</b><small>n 29 · usual</small></div>
+            <div class="h">WR</div><div><b>$2.7M</b><small>n 96 · usual</small></div><div><b>$6.9M</b><small>n 131 · usual</small></div><div><b>$7.4M</b><small>n 84 · usual</small></div><div><b>$4.0M</b><small>n 33 · usual</small></div>
+            <div class="h">TE</div><div><b>$2.2M</b><small>n 30 · usual</small></div><div><b>$5.6M</b><small>n 44 · usual</small></div><div><b>$7.1M</b><small>n 39 · usual</small></div><div><b>$3.9M</b><small>n 18 · too few</small></div>
+            <div class="h">DL</div><div><b>$1.4M</b><small>n 52 · usual</small></div><div><b>$3.3M</b><small>n 77 · usual</small></div><div><b>$3.8M</b><small>n 69 · usual</small></div><div><b>$2.5M</b><small>n 34 · usual</small></div>
+            <div class="h">LB</div><div><b>$1.6M</b><small>n 47 · usual</small></div><div><b>$4.1M</b><small>n 70 · usual</small></div><div class="lo"><b>$4.6M</b><small>n 23 · 27% cheap</small></div><div><b>$3.1M</b><small>n 26 · usual</small></div>
+            <div class="h">DB</div><div><b>$1.1M</b><small>n 61 · usual</small></div><div><b>$2.6M</b><small>n 90 · usual</small></div><div><b>$2.9M</b><small>n 58 · usual</small></div><div><b>$1.7M</b><small>n 22 · usual</small></div>
+          </div>
+          <div class="row" style="margin-top:10px;gap:16px"><span class="st c-green">Cheaper than usual, beyond chance</span><span class="st c-red">Dearer than usual, beyond chance</span><span class="sub">Plain cells: no signal</span><span class="prov sp">How this is counted ›</span></div>
+        </div>
+        <div class="card" style="grid-column:1">
+          <div class="row"><span class="ttl">When the league trades</span><span class="sub" style="margin-left:10px">share of all trades by month, 2018–2026 · deadline in Week 11</span><span class="prov sp">How this is counted ›</span></div>
+          <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:6px;height:104px;align-items:end;margin-top:12px"><div style="display:grid;gap:4px;justify-items:center"><div style="width:100%;height:8px;background:var(--line-hi);align-self:end"></div><span class="prov">Feb</span></div><div style="display:grid;gap:4px;justify-items:center"><div style="width:100%;height:19px;background:var(--line-hi);align-self:end"></div><span class="prov">Mar</span></div><div style="display:grid;gap:4px;justify-items:center"><div style="width:100%;height:29px;background:var(--line-hi);align-self:end"></div><span class="prov">Apr</span></div><div style="display:grid;gap:4px;justify-items:center"><div style="width:100%;height:46px;background:var(--line-hi);align-self:end"></div><span class="prov">May</span></div><div style="display:grid;gap:4px;justify-items:center"><div style="width:100%;height:17px;background:var(--line-hi);align-self:end"></div><span class="prov">Jun</span></div><div style="display:grid;gap:4px;justify-items:center"><div style="width:100%;height:23px;background:var(--line-hi);align-self:end"></div><span class="prov">Jul</span></div><div style="display:grid;gap:4px;justify-items:center"><div style="width:100%;height:57px;background:var(--line-hi);align-self:end"></div><span class="prov">Aug</span></div><div style="display:grid;gap:4px;justify-items:center"><div style="width:100%;height:40px;background:var(--line-hi);align-self:end"></div><span class="prov">Sep</span></div><div style="display:grid;gap:4px;justify-items:center"><div style="width:100%;height:65px;background:var(--tx2);align-self:end"></div><span class="prov">Oct</span></div><div style="display:grid;gap:4px;justify-items:center"><div style="width:100%;height:80px;background:var(--tx2);align-self:end"></div><span class="prov">Nov</span></div><div style="display:grid;gap:4px;justify-items:center"><div style="width:100%;height:11px;background:var(--line-hi);align-self:end"></div><span class="prov">Dec</span></div><div style="display:grid;gap:4px;justify-items:center"><div style="width:100%;height:6px;background:var(--line-hi);align-self:end"></div><span class="prov">Jan</span></div></div>
+          <div class="sub" style="margin-top:10px">Two windows carry the market: the rookie-draft run-up (May) and the deadline run (Oct–Nov, 36% of all trades). Sellers get the most bidders in November; buyers get the best prices in June and December.</div>
+        </div>
+        <div style="display:grid;gap:14px;align-content:start;grid-column:2;grid-row:1 / span 2">
+          <div class="card g1">
+            <div class="ttl">So what</div>
+            <div style="display:grid;gap:8px;margin-top:8px;font-size:12.5px">
+              <div><span class="pos">LB</span> Buy prime LBs (27–29): they sell 27% under the LB rate. 23 trades, so the signal is real but thin.</div>
+              <div><span class="pos">RB</span> Prime RBs sell cheap too. That is usually the age cliff, not a bargain.</div>
+              <div><span class="pos">QB</span> Sell QBs at 30+: buyers still pay 22% over.</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="row"><span class="ttl">Pick clock</span><span class="prov sp">rookie picks</span></div>
+            <table class="t" style="margin-top:6px">
+              <tr><th>Month</th><th class="n">1st</th><th class="n">2nd</th><th></th></tr>
+              <tr><td>Aug</td><td class="n">$5.9M</td><td class="n">$2.2M</td><td class="dim">usual</td></tr>
+              <tr class="sel"><td>Oct (now)</td><td class="n">$7.0M</td><td class="n">$2.3M</td><td><span class="st c-red">dear</span></td></tr>
+              <tr><td>Feb</td><td class="n">$5.4M</td><td class="n">$1.9M</td><td class="dim">usual</td></tr>
+              <tr><td>May</td><td class="n">$6.1M</td><td class="n">$2.0M</td><td class="dim">usual</td></tr>
+            </table>
+            <div class="sub" style="margin-top:8px">Firsts cost most in October. If you're selling a 1st, now is the month.</div>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template class="insp">
+      <div class="lbl">Segment</div>
+      <div class="row"><span class="pos">LB</span><span class="ttl" style="font-size:16px">Prime linebackers, 27–29</span></div>
+      <div class="two"><div><small>Going rate</small><b>$4.6M</b><small>median, n 23</small></div><div><small>vs all LBs</small><b class="c-green">−27%</b><small>beyond chance</small></div></div>
+      <div class="zone"><h5>How this is counted</h5><div class="sub">Every completed trade since 2018 with an LB aged 27–29 on either side. Price is the player's salary share of the package. “Beyond chance” means the gap holds up when the trades are reshuffled at random 1,000 times.</div></div>
+      <div class="zone"><h5>Owned now <em>league-wide</em></h5><div class="kv"><dt>Rostered</dt><dd>31</dd><dt>On rebuilding teams</dt><dd>9</dd><dt>Listed as trade bait</dt><dd>4</dd></div></div>
+      <div class="zone"><h5>Do</h5><div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn">Show the 9 on rebuilders</button><button class="btn q">Watch segment</button></div></div>
+    </template>
+  </div>
+  <div class="notes">
+    <div><span class="k">1</span><b>League-wide by design.</b> Your own team isn't tinted anywhere in the market. You see it in Franchise HQ; here you see the league.</div>
+    <div><span class="k">2</span><b>Decisions, not pictures.</b> Every chart ends in a “so what” line that names a move. The weak signals are labelled weak.</div>
+    <div><span class="k">3</span><b>“Too few” is a state.</b> Under 20 trades, a cell says so instead of guessing.</div>
+    <div><span class="k">4</span><b>The segment opens in the inspector,</b> with its counting rule in plain words and a door to the actual players you could go and buy.</div>
+    <div><span class="k">5</span><b>Valuations and pool</b> holds the asset board and the free-agent pool with bid tracking; your bid and claim plans live in Franchise HQ.</div>
+    <div><span class="k">6</span><b>Built in ring 2.</b> The Lab's JavaScript is ported to the Go engine and must match the Lab's own tests before this screen goes live.</div>
+  </div>
+</section>
+
+<!-- ===================================================== 5 PULSE -->
+<section class="screen" id="scr-pulse">
+  <h2>League Pulse › Now: “how is my week going, live?”</h2>
+  <p class="lede">The Classic matchup view: the Legacy NFL view, because its long starting lineup doesn't fit a formation. Real NFL games run along the top; the centre spine streams the plays that score fantasy points in this matchup. The Default formation view waits for Christopher's briefing.</p>
+  <div class="frame" data-node="pulse" data-title="League Pulse" data-tabs="Now|Race|Pools and archive" data-strip="live">
+    <template class="main">
+      <div class="games">
+        <div class="gm f"><small>Following · Q3 7:42</small>SEA 17 · ARI 10</div>
+        <div class="gm"><small>Q2 0:31</small>BUF 14 · NYJ 3</div>
+        <div class="gm"><small>Q3 12:05</small>DET 21 · GB 20</div>
+        <div class="gm"><small>Q2 4:18</small>PHI 7 · DAL 7</div>
+        <div class="gm"><small>Final</small>KC 27 · LV 13</div>
+        <div class="gm"><small>4:25 PM</small>SF · LAR</div>
+        <div class="gm"><small>8:20 PM</small>BAL · CIN</div>
+      </div>
+      <div class="mu">
+        <div class="card" style="padding:0">
+          <div class="row" style="padding:10px 12px;border-bottom:1px solid var(--line)"><span class="ttl">Arizona Cardinals</span><span class="mono sp" style="font-size:22px;font-weight:700">87.4</span></div>
+          <table class="t">
+            <tr><td><span class="pos">QB</span></td><td>C.J. Stroud</td><td><span class="st c-grey">Final</span></td><td class="n big">21.3</td></tr>
+            <tr><td><span class="pos">WR</span></td><td>Chris Olave</td><td><span class="st c-blue">On field</span></td><td class="n big">11.7</td></tr>
+            <tr><td><span class="pos">WR</span></td><td>Khalil Shakir</td><td class="dim">Q2 0:31</td><td class="n big">6.2</td></tr>
+            <tr><td><span class="pos">TE</span></td><td>Brock Bowers</td><td class="dim">4:25 PM</td><td class="n dim">0.0</td></tr>
+            <tr><td><span class="pos">TE</span></td><td>Isaiah Likely</td><td class="dim">8:20 PM</td><td class="n dim">0.0</td></tr>
+            <tr><td><span class="pos">LB</span></td><td>Jordyn Brooks</td><td><span class="st c-blue">On field</span></td><td class="n big">14.5</td></tr>
+            <tr><td><span class="pos">LB</span></td><td>Foyesade Oluokun</td><td class="dim">Q3 12:05</td><td class="n big">9.0</td></tr>
+            <tr><td><span class="pos">S</span></td><td>Jalen Pitre</td><td class="dim">Q3 12:05</td><td class="n big">7.5</td></tr>
+            <tr><td><span class="pos">CB</span></td><td>DaRon Bland</td><td class="dim">Q2 4:18</td><td class="n big">4.0</td></tr>
+          <tr><td><span class="pos">DE</span></td><td>Lukas Van Ness</td><td class="dim">Q2 4:18</td><td class="n big">3.5</td></tr><tr><td><span class="pos">DE</span></td><td>Nick Herbig</td><td class="dim">Q2 0:31</td><td class="n big">6.0</td></tr><tr><td><span class="pos">DT</span></td><td>Christian Barmore</td><td class="dim">Q3 12:05</td><td class="n big">2.5</td></tr><tr><td><span class="pos">DT</span></td><td>Keeanu Benton</td><td class="dim">4:25 PM</td><td class="n dim">0.0</td></tr><tr><td><span class="pos">CB</span></td><td>Tyrique Stevenson</td><td class="dim">Q3 12:05</td><td class="n big">5.5</td></tr><tr><td><span class="pos">CB</span></td><td>Daxton Hill</td><td class="dim">8:20 PM</td><td class="n dim">0.0</td></tr><tr><td><span class="pos">S</span></td><td>Ronnie Hickman</td><td class="dim">Q2 4:18</td><td class="n big">4.5</td></tr><tr><td><span class="pos">RB</span></td><td>Chris Brooks</td><td class="dim">Q3 7:42</td><td class="n big">3.2</td></tr><tr><td><span class="pos">RB</span></td><td>Samaje Perine</td><td class="dim">8:20 PM</td><td class="n dim">0.0</td></tr><tr><td><span class="pos">WR</span></td><td>Dontayvion Wicks</td><td class="dim">Q3 12:05</td><td class="n big">4.4</td></tr></table>
+          <div class="prov" style="padding:8px 12px">+ 3 more starters · Matrix density shows all 22</div>
+        </div>
+        <div class="spine">
+          <div class="row"><span class="lbl">Scoring plays, this matchup</span><span class="st c-blue sp">Live</span></div>
+          <div class="ev"><div class="row"><span class="cd u1">Q3 7:42 · SEA</span><span class="mono sp c-blue">+4.5 ARZ</span></div><b>Jordyn Brooks</b> solo tackle for loss on Kenneth Walker, 3 yds</div>
+          <div class="ev"><div class="row"><span class="cd u1">Q3 9:10 · SEA</span><span class="mono sp">+5.8 SEA</span></div><b>Jalen Hurts</b> 18-yd pass to Kendrick Bourne</div>
+          <div class="ev"><div class="row"><span class="cd u1">Q3 11:51 · ARI</span><span class="mono sp c-blue">+3.1 ARZ</span></div><b>Chris Olave</b> 11-yd catch, 1st down</div>
+          <div class="ev"><div class="row"><span class="cd u1">Q2 0:31 · BUF</span><span class="mono sp c-blue">+2.4 ARZ</span></div><b>Khalil Shakir</b> 9-yd catch</div>
+          <div class="ev"><div class="row"><span class="cd u1">Q2 2:02 · SEA</span><span class="mono sp">+7.0 SEA</span></div><b>Mark Andrews</b> 4-yd TD catch</div>
+          <div class="ev"><div class="row"><span class="cd u1">Q2 4:18 · PHI</span><span class="mono sp c-blue">+3.5 ARZ</span></div><b>Lukas Van Ness</b> sack on Dak Prescott, 7 yds</div>
+          <div class="ev"><div class="row"><span class="cd u1">Q2 6:40 · SEA</span><span class="mono sp">+6.5 SEA</span></div><b>Trevon Diggs</b> pass breakup and interception return, 14 yds</div>
+          <div class="ev"><div class="row"><span class="cd u1">Q1 3:12 · DET</span><span class="mono sp c-blue">+5.5 ARZ</span></div><b>Tyrique Stevenson</b> forced fumble</div>
+          <div class="ev"><div class="row"><span class="cd u1">Q1 9:55 · HOU</span><span class="mono sp c-blue">+21.3 ARZ</span></div><b>C.J. Stroud</b> final line: 284 yds, 2 TD (game final)</div>
+          <div class="prov">Plays: ESPN feed (personal use) · Points: MFL live scoring</div>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="row" style="padding:10px 12px;border-bottom:1px solid var(--line)"><span class="ttl">Seattle Seahawks</span><span class="mono sp" style="font-size:22px;font-weight:700">92.1</span></div>
+          <table class="t">
+            <tr><td><span class="pos">QB</span></td><td>Jalen Hurts</td><td><span class="st c-blue">On field</span></td><td class="n big">18.9</td></tr>
+            <tr><td><span class="pos">TE</span></td><td>Mark Andrews</td><td class="dim">Q3 7:42</td><td class="n big">13.4</td></tr>
+            <tr><td><span class="pos">WR</span></td><td>Kendrick Bourne</td><td class="dim">Q3 7:42</td><td class="n big">8.8</td></tr>
+            <tr><td><span class="pos">WR</span></td><td>Jordyn Tyson</td><td class="dim">Q3 12:05</td><td class="n big">5.1</td></tr>
+            <tr><td><span class="pos">RB</span></td><td>Khalil Herbert</td><td><span class="st c-red">Out</span></td><td class="n dim">0.0</td></tr>
+            <tr><td><span class="pos">LB</span></td><td>Matt Milano</td><td class="dim">Q2 0:31</td><td class="n big">8.0</td></tr>
+            <tr><td><span class="pos">LB</span></td><td>Jerome Baker</td><td class="dim">8:20 PM</td><td class="n dim">0.0</td></tr>
+            <tr><td><span class="pos">S</span></td><td>Jabrill Peppers</td><td><span class="st c-grey">Final</span></td><td class="n big">10.5</td></tr>
+            <tr><td><span class="pos">DE</span></td><td>Alex Highsmith</td><td class="dim">4:25 PM</td><td class="n dim">0.0</td></tr>
+          <tr><td><span class="pos">DT</span></td><td>Osa Odighizuwa</td><td class="dim">Q2 4:18</td><td class="n big">4.0</td></tr><tr><td><span class="pos">DT</span></td><td>Jalen Carter</td><td class="dim">Q3 12:05</td><td class="n big">5.5</td></tr><tr><td><span class="pos">DE</span></td><td>Michael Danna</td><td class="dim">Q2 0:31</td><td class="n big">3.0</td></tr><tr><td><span class="pos">LB</span></td><td>Elandon Roberts</td><td class="dim">8:20 PM</td><td class="n dim">0.0</td></tr><tr><td><span class="pos">CB</span></td><td>Trevon Diggs</td><td class="dim">Q3 7:42</td><td class="n big">6.5</td></tr><tr><td><span class="pos">S</span></td><td>Ronnie Harrison</td><td class="dim">Q2 4:18</td><td class="n big">2.0</td></tr><tr><td><span class="pos">RB</span></td><td>MarShawn Lloyd</td><td class="dim">Q3 7:42</td><td class="n big">7.2</td></tr><tr><td><span class="pos">RB</span></td><td>Jonah Coleman</td><td class="dim">4:25 PM</td><td class="n dim">0.0</td></tr><tr><td><span class="pos">WR</span></td><td>Makai Lemon</td><td class="dim">Q3 12:05</td><td class="n big">3.9</td></tr><tr><td><span class="pos">TE</span></td><td>Robert Tonyan</td><td class="dim">8:20 PM</td><td class="n dim">0.0</td></tr></table>
+          <div class="prov" style="padding:8px 12px">+ 3 more starters · Matrix density shows all 22</div>
+        </div>
+      </div>
+    </template>
+    <template class="insp">
+      <div class="lbl">Following</div>
+      <div class="row"><span class="ttl" style="font-size:16px">SEA 17 · ARI 10</span><span class="st c-blue sp">Q3 7:42</span></div>
+      <div class="card" style="padding:10px;margin-top:2px">
+        <div class="lbl">Field</div>
+        <div style="position:relative;height:56px;margin-top:6px;border:1px solid var(--line-hi);background:repeating-linear-gradient(90deg,transparent 0 27px,var(--line) 27px 28px)">
+          <div style="position:absolute;left:58%;top:0;bottom:0;width:2px;background:var(--blue)"></div>
+          <div style="position:absolute;left:64%;top:0;bottom:0;width:2px;background:var(--amber)"></div>
+        </div>
+        <div class="row" style="margin-top:6px"><span class="sub">2nd &amp; 13 · SEA 42</span><span class="prov sp">SEA ball</span></div>
+      </div>
+      <div class="zone"><h5>Last play</h5><div class="sub">K. Walker rush for −3, tackled by Jordyn Brooks (ARZ, +4.5).</div></div>
+      <div class="zone"><h5>Your players in this game</h5><div class="kv"><dt>Jordyn Brooks</dt><dd>14.5</dd><dt>Chris Olave (ARI)</dt><dd>11.7</dd></div></div>
+      <div class="zone"><h5>Source <em>auto failover</em></h5><div class="kv"><dt>ESPN</dt><dd class="c-blue">live · 6s</dd><dt>Yahoo</dt><dd>standby</dd><dt>Fox</dt><dd>standby</dd></div></div>
+    </template>
+  </div>
+  <div class="notes">
+    <div><span class="k">1</span><b>Blue means on the field right now,</b> the way MFL lights players up. Grey means the game is final; the kickoff time means not started.</div>
+    <div><span class="k">2</span><b>The spine is fantasy-first.</b> It shows plays that move <i>this</i> matchup, from any game, whether or not you are following that game.</div>
+    <div><span class="k">3</span><b>The games bar</b> picks the followed game; the inspector shows its field, last play and source. If ESPN drops, Yahoo then Fox take over behind one adapter.</div>
+    <div><span class="k">4</span><b>Points come only from MFL's live scoring.</b> The NFL feeds give play text and game state, never fantasy points.</div>
+    <div><span class="k">5</span><b>Default view (later):</b> the formation laid across the line, your offense against their defense, players lighting up and stats growing beneath them. All leagues get both views; Legacy uses Classic.</div>
+    <div><span class="k">6</span><b>Race</b> is standings, playoff odds and the all-play table. <b>Pools and archive</b> hold every MFL read report in one drawer.</div>
+  </div>
+</section>
+
+<!-- ===================================================== 6 MAP -->
+<section class="screen" id="scr-map">
+  <h2>Map of everything: 263 endpoints, six places, nothing in a “More” menu</h2>
+  <p class="lede">Every MFL page and action, every Lab panel and every current app screen was counted and given one home. Each node has at most three workspaces. A new feature must name its job, its home, its command and its baseline before it gets a place.</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:1600px">
+    <div class="card g1"><div class="ttl" style="font-size:15px">Home</div><div class="sub">What needs me and how long do I have</div>
+      <table class="t" style="margin-top:8px"><tr><td>Seasonal card</td><td class="dim">phase, windows, nearest clocks</td></tr><tr><td>Alert tray</td><td class="dim">lineup, IR, offers, claims, contracts</td></tr><tr><td>Digests</td><td class="dim">league since last visit, market this week</td></tr></table></div>
+    <div class="card g1"><div class="ttl" style="font-size:15px">War Room</div><div class="sub">Where is the league mispricing</div>
+      <table class="t" style="margin-top:8px"><tr><td>Market</td><td class="dim">going rate, buy/sell, pick clock</td></tr><tr><td>Valuations and pool</td><td class="dim">asset board, free agents, bid tracker</td></tr><tr><td>Research</td><td class="dim">player and position deep dives</td></tr></table></div>
+    <div class="card g1"><div class="ttl" style="font-size:15px">Franchise HQ</div><div class="sub">My team, my money, my moves</div>
+      <table class="t" style="margin-top:8px"><tr><td>Lineup and roster</td><td class="dim">set lineup, IR, taxi</td></tr><tr><td>Contracts and cap</td><td class="dim">what-if, dead cap, window acts</td></tr><tr><td>My moves</td><td class="dim">envelopes, watch list, scratchpad, draft list</td></tr></table></div>
+    <div class="card g1"><div class="ttl" style="font-size:15px">Trade Floor</div><div class="sub">Who to deal with, and is it safe</div>
+      <table class="t" style="margin-top:8px"><tr><td>Trade desk</td><td class="dim">offers, accept/reject/revoke, builder, DOT state</td></tr><tr><td>Counterparties</td><td class="dim">each franchise's trading habits</td></tr><tr><td>Draft room</td><td class="dim">pick timing, draft or buy, live draft</td></tr></table></div>
+    <div class="card g1"><div class="ttl" style="font-size:15px">League Pulse</div><div class="sub">What is happening in the league</div>
+      <table class="t" style="margin-top:8px"><tr><td>Now</td><td class="dim">matchup (Classic / Default), live games</td></tr><tr><td>Race</td><td class="dim">standings, playoff picture, all-play</td></tr><tr><td>Pools and archive</td><td class="dim">report drawer for every MFL read report</td></tr></table></div>
+    <div class="card g1"><div class="ttl" style="font-size:15px">Control Room</div><div class="sub">How the app and its data behave</div>
+      <table class="t" style="margin-top:8px"><tr><td>App</td><td class="dim">density, presets, layout</td></tr><tr><td>Data and sources</td><td class="dim">freshness, feeds, engine settings (Admin)</td></tr><tr><td>League</td><td class="dim">rules, by-laws, commissioner (by role)</td></tr></table></div>
+  </div>
+  <div class="card" style="max-width:1600px;margin-top:14px">
+    <div class="row"><span class="ttl">Always present, outside the six</span></div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:8px" class="sub">
+      <div><b style="color:var(--tx)">Inspector</b><br>Every player, franchise, pick, offer and segment opens here. 320px, widens to ~480px on demand.</div>
+      <div><b style="color:var(--tx)">Command bar</b><br>Type any verb: <span class="mono">trade.propose to=DET</span>. Typing costs zero clicks.</div>
+      <div><b style="color:var(--tx)">Comms</b><br>League feed, chat, message board, articles, polls, MFL hand-offs. 48px strip, opens to 280px.</div>
+      <div><b style="color:var(--tx)">Calendar</b><br>Summoned over any screen: every window and deadline in the league year.</div>
+      <div><b style="color:var(--tx)">Status strip</b><br>In every workspace header: data freshness, the running window clock, the gameday ticker.</div>
+    </div>
+  </div>
+  <div class="card" style="max-width:1600px;margin-top:14px">
+    <div class="row"><span class="ttl">Census</span><span class="prov sp">docs/ui/endpoint-registry.csv</span></div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:10px">
+      <div><div class="mono" style="font-size:22px;font-weight:700">263</div><div class="sub">registry rows</div></div>
+      <div><div class="mono" style="font-size:22px;font-weight:700">19</div><div class="sub">ring 0</div></div>
+      <div><div class="mono" style="font-size:22px;font-weight:700">26</div><div class="sub">ring 1</div></div>
+      <div><div class="mono" style="font-size:22px;font-weight:700">64</div><div class="sub">ring 2</div></div>
+      <div><div class="mono" style="font-size:22px;font-weight:700">92</div><div class="sub">ring 3</div></div>
+      <div><div class="mono" style="font-size:22px;font-weight:700">28</div><div class="sub">ride with their target</div></div>
+      <div><div class="mono" style="font-size:22px;font-weight:700">33</div><div class="sub">retired, with a reason</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== 7 ROADMAP -->
+<section class="screen" id="scr-road">
+  <h2>Roadmap to done: built like an onion</h2>
+  <p class="lede">Every ring goes through every layer, screen to data contract to data source, and makes the most-used paths deeper first. Each ring ends with a live review on Claude-OS that rewrites this target. Rows that aren't wired yet say “not wired yet”; they never show made-up data. Today's screens are the test harness and are deleted one by one as their replacements go live.</p>
+  <div style="display:grid;grid-template-columns:520px 1fr;gap:24px;max-width:1600px;align-items:start">
+    <svg viewBox="0 0 520 520" width="520" height="520" role="img" aria-label="Five concentric rings, ring 0 at the centre">
+      <g fill="none" font-family="Inter,system-ui,sans-serif" font-size="12" font-weight="600">
+        <circle cx="260" cy="260" r="250" fill="hsl(220 12% 7%)" stroke="hsl(220 8% 26%)" stroke-dasharray="4 5"/>
+        <circle cx="260" cy="260" r="200" fill="hsl(220 12% 9%)" stroke="hsl(220 8% 30%)"/>
+        <circle cx="260" cy="260" r="150" fill="hsl(220 11% 11%)" stroke="hsl(220 8% 38%)"/>
+        <circle cx="260" cy="260" r="100" fill="hsl(220 10% 13%)" stroke="hsl(220 8% 52%)" stroke-width="2"/>
+        <circle cx="260" cy="260" r="52" fill="hsl(220 12% 92%)"/>
+        <text x="260" y="256" text-anchor="middle" fill="hsl(220 14% 6%)" font-size="13" font-weight="700">Ring 0</text>
+        <text x="260" y="272" text-anchor="middle" fill="hsl(220 14% 6%)" font-size="10.5" font-weight="500">skeleton</text>
+        <text x="260" y="182" text-anchor="middle" fill="hsl(220 12% 92%)">Ring 1 · frequent loops</text>
+        <text x="260" y="130" text-anchor="middle" fill="hsl(220 10% 80%)">Ring 2 · decision layer</text>
+        <text x="260" y="80" text-anchor="middle" fill="hsl(220 8% 66%)">Ring 3 · breadth and depth</text>
+        <text x="260" y="32" text-anchor="middle" fill="hsl(220 7% 52%)">Ring 4 · horizon (schemas now, built later)</text>
+      </g>
+    </svg>
+    <div style="display:grid;gap:10px">
+      <div class="card g3"><div class="row"><span class="ttl" style="font-size:14px">Ring 0: the walking skeleton</span><span class="sub sp">core systems, thin</span></div>
+        <div class="sub" style="margin-top:4px">Tokens and glyphs · the card base and player card at three densities · the four-column shell, six nodes, inspector and expand · <b style="color:var(--tx)">command registry</b> (a test fails on any control without a verb) · <b style="color:var(--tx)">endpoint registry</b> (every row reachable two ways) · data contracts with fixture → live providers cut from real league data · the league-year clock · the move envelope on fixtures.</div>
+        <div class="row" style="margin-top:6px"><span class="lbl">Gate</span><span class="sub">Route and verb tests pass · one envelope runs end to end · you review it live on Claude-OS</span></div></div>
+      <div class="card g2"><div class="row"><span class="ttl" style="font-size:14px">Ring 1: the frequent loops, end to end</span><span class="sub sp">screens 1, 2, 3 and 5 on this board</span></div>
+        <div class="sub" style="margin-top:4px">Home tray and seasonal card · lineup and roster · player and franchise inspector · Classic matchup on MFL live scoring · trade desk with accept / reject / revoke and the builder · first live acts: set lineup, propose / accept / reject / revoke trade, IR, taxi.</div>
+        <div class="row" style="margin-top:6px"><span class="lbl">Gate</span><span class="sub">Walkthroughs inside the two-click rule · an envelope reaches Landed on real MFL data · spec revision 1</span></div></div>
+      <div class="card g1"><div class="row"><span class="ttl" style="font-size:14px">Ring 2: the decision layer</span><span class="sub sp">screen 4 on this board</span></div>
+        <div class="sub" style="margin-top:4px">The Lab ported to the Go engine: market, pick clock, counterparties, draft timing · contracts and cap with what-if and dead cap · window acts · free-agent pool and bid tracking.</div>
+        <div class="row" style="margin-top:6px"><span class="lbl">Gate</span><span class="sub">Numbers match the Lab's tests · “How this is counted” on every analytic surface · spec revision 2</span></div></div>
+      <div class="card"><div class="row"><span class="ttl" style="font-size:14px">Ring 3: breadth and depth</span></div>
+        <div class="sub" style="margin-top:4px">Race, pools, archive and the report drawer · comms · Control Room · live game view with ESPN / Yahoo / Fox failover · headshots · the remaining acts once their MFL pages are mapped.</div>
+        <div class="row" style="margin-top:6px"><span class="lbl">Gate</span><span class="sub">Every registry row is live or explicitly deferred · spec revision 3</span></div></div>
+      <div class="card" style="border-style:dashed"><div class="row"><span class="ttl" style="font-size:14px">Ring 4: the horizon</span></div>
+        <div class="sub" style="margin-top:4px">Phase 2 writes (only the hand-off step changes) · 15–25 league portfolio (<span class="mono">league=</span> is on every verb from ring 0) · chat engine on the command registry · commissioner role · league branding · Default formation matchup · startup-draft engine.</div></div>
+    </div>
+  </div>
+  <div class="notes" style="grid-template-columns:repeat(3,1fr)">
+    <div><b>Running beside every ring: gap closure.</b> Capture MFL's owner forms for the eight unmapped acts (add/drop, propose, survivor pick, option, re-sign, buyout, tender, UFA bid) with no submits; pull the league rules; answer the five questions only you can (waivers, DOT, window times, taxi/IR eligibility, Victory Points).</div>
+    <div><b>Running beside every ring: the engine track.</b> The Core Build Plan stages carry on underneath. The registry decides which piece of infrastructure is needed next, so nothing is built that no screen asks for.</div>
+    <div><b>Done means:</b> every one of the 263 rows is placed, reachable two ways, live, with a baseline and a verb · every act has been seen to land on MFL · the harness is gone · Phase 2 items are deferred with their schemas decided.</div>
+  </div>
+</section>
+
+<script>
+const ICON={
+  home:'<path d="M2 7.5 8 2.5l6 5V14H2z"/><path d="M6.5 14v-4h3v4"/>',
+  war:'<circle cx="8" cy="8" r="5.5"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/>',
+  hq:'<path d="M8 1.5 13.5 3.5v4c0 3.5-2.5 6-5.5 7-3-1-5.5-3.5-5.5-7v-4z"/>',
+  trade:'<path d="M2 5h11l-3-3M14 11H3l3 3"/>',
+  pulse:'<path d="M1 8h3l2-5 3 10 2-5h4"/>',
+  ctrl:'<path d="M3 2v12M8 2v12M13 2v12"/><path d="M1.5 5h3M6.5 10h3M11.5 6h3"/>'};
+const NAV=[['home','Home','<span class="ct r">1</span>'],['war','War Room',''],['hq','Franchise HQ','<span class="ct">2</span>'],['trade','Trade Floor','<span class="ct r">1</span>'],['pulse','League Pulse',''],['ctrl','Control Room','']];
+const STRIP={
+  season:'<span>MFL · 4 min ago</span><span class="run">Lineup locks 2d 05h</span><span>Wk 6</span>',
+  live:'<span class="live">Live · 6s</span><span>ARZ 87.4 – SEA 92.1</span><span>Wk 6</span>'};
+document.querySelectorAll('.frame').forEach(f=>{
+  const main=f.querySelector('template.main').innerHTML, insp=f.querySelector('template.insp').innerHTML;
+  const tabs=f.dataset.tabs.split('|').map((t,i)=>`<span class="${i?'':'on'}">${t}</span>`).join('');
+  f.innerHTML=`
+  <aside class="rail">
+    <div class="league"><div class="crest"><i>LN</i><div><b>Legacy NFL</b><small>32 teams · dynasty IDP</small></div></div></div>
+    <div class="cmd"><span>Type a command</span><kbd>/</kbd></div>
+    <nav class="nav">${NAV.map(([k,l,c])=>`<a class="${k===f.dataset.node?'on':''}"><svg viewBox="0 0 16 16">${ICON[k]}</svg>${l}${c}</a>`).join('')}</nav>
+    <div class="me"><b>Arizona Cardinals</b>Christopher · GM</div>
+  </aside>
+  <section class="ws">
+    <header class="ws-head"><h3>${f.dataset.title}</h3><div class="wtabs">${tabs}</div>
+      <div class="strip">${STRIP[f.dataset.strip]}<span class="dens"><i>N</i><i class="on">T</i><i>M</i></span></div></header>
+    <div class="wbody">${main}</div>
+  </section>
+  <aside class="insp"><div class="insp-head">Inspector<span class="x"><span>expand ⇤</span></span></div><div class="insp-body">${insp}</div></aside>
+  <aside class="comms"><span class="bub n">3</span><span class="bub">C</span><span class="vt">Comms · league feed</span></aside>`;
+});
+const tabs=[...document.querySelectorAll('.board-tabs button')];
+function show(id){
+  if(!document.getElementById('scr-'+id)) id='system';
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id==='scr-'+id));
+  tabs.forEach(b=>b.setAttribute('aria-selected',b.dataset.s===id));
+  history.replaceState(null,'','#'+id);
+}
+tabs.forEach(b=>b.onclick=()=>show(b.dataset.s));
+show(location.hash.slice(1)||'system');
+</script>
+</body>
+</html>

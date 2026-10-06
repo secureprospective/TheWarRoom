@@ -4,7 +4,8 @@
 - **Planning only.** We are designing TheWarRoom's target UI/UX well before the infrastructure
   under it. The target is the definition of done. Today's app screens are a **testing harness**
   that retires as the target screens go live.
-- **Where:** repo `~/work/TheWarRoom`, branch `session/league-history-pwa`. Never work on main.
+- **Where:** repo `~/work/TheWarRoom`, branch `session/ui-target` (cut from main 2026-10-06). Never work on main.
+- **Kept separate (Christopher, 2026-10-06):** the Legacy NFL Lab (`session/league-history-pwa`) is his own league research tool. It is not part of TheWarRoom and its work is never mixed into this branch; ideas may flow from it, code and commits do not.
 - **Christopher's build rule: "think like an onion".** Start with the most frequent places people
   operate from. Build the core systems a little at a time, piecemeal, until the core is solid,
   then layer. Expect to revise the target as we learn.
@@ -25,7 +26,8 @@
 |---|---|
 | MFL menu tree digested and shown to Christopher | done |
 | Research brief written; both answers back and digested | done |
-| Roadmap, target spec, registry; UI Direction §21 amended | written, **not committed** |
+| Roadmap, target spec, registry; UI Direction §21 amended | committed on `session/ui-target` |
+| Visual rough draft: `docs/ui/target-draft/TheWarRoom_Target_Draft_2026-10.html` (8 tabs) | committed; **approved by Christopher "with joy"** |
 | Sol ↔ GLM row reconciliation | open: a rough name-match left 187 Sol rows unmatched, mostly aliases. Assigned to ring 0 |
 
 ## 4. Artifacts (written 2026-10-06, uncommitted)
@@ -87,23 +89,21 @@ None. This was a planning session.
    - "We will talk about this later."
 
 ## 8. Ledger state
-- Nothing from today is committed except this RESUME.
-- Lab rounds 4–9b are still uncommitted, waiting on his go-ahead:
-  `git add tools/league-history docs/league-history docs/build-handoffs docs/ui`.
+- Branch `session/ui-target` (from main) holds this RESUME and the whole planning set, including the
+  design board. Not pushed, not merged.
+- The Lab (`session/league-history-pwa`) is separate. Its rounds 4–9b are parked uncommitted on
+  that branch, Christopher's call. Never stage Lab files on this branch.
 
 ## 9. Next actions
-1. Ask Christopher to review the roadmap, spec and registry (section 4), and which commits to
-   make.
-2. On his go: commit the planning documents, and the Lab rounds if he wants them.
-3. Then **ring 0**:
+1. **Ring 0**, when the token budget allows:
    - Reconcile Sol's 442 rows into the registry.
-   - Start gap closure: the mflmap owner-form capture with no submits, league rules from
-     allRules.json/O=09/By-Laws, and questions for him (waiver mechanics, DOT, windows,
-     taxi/IR, Victory Points).
+   - Start gap closure: the mflmap owner-form capture with no submits; league rules from
+     allRules.json, O=09 and By-Laws; ask Christopher about waiver mechanics, DOT, windows, taxi/IR
+     and Victory Points.
    - Begin the walking skeleton: tokens, card base, command registry, endpoint registry with the
-     route test, the fixture → live provider pattern, the league-year clock, and the envelope on
-     fixtures.
-4. Still queued and his call: remove NFL contract data (`RESUME-2026-10-04-after-power-rankings.md`).
+     route test, the fixture → live provider pattern, the league-year clock, the envelope on
+     fixtures. Use the design board as the visual reference.
+2. Still queued, his call: remove NFL contract data (`RESUME-2026-10-04-after-power-rankings.md`).
 
 ## 10. Environment
 - The Lab server runs on 127.0.0.1:8765 (PID 1254811).
