@@ -1,144 +1,147 @@
-# RESUME — Legacy NFL Behavior Lab (2026-10-05, after rounds 2 and 3)
+# RESUME — Legacy NFL Lab (2026-10-05, after round 4: the method rebuild)
 
 ## 1. What we are doing
-An interactive app (the "Behavior Lab") so Christopher can study long-term GM habits in Legacy
-NFL (32 teams, IDP, salary cap, MFL league 14432), as input for building a better TheWarRoom.
-It is **not** part of TheWarRoom. Repo `~/work/TheWarRoom` on the Beelink, branch
-`session/league-history-pwa`, folder `tools/league-history/`. Live at http://localhost:8765/
-(Beelink only).
+- **What it is:** an app that rebuilds 14 seasons of Legacy NFL history (MFL league 14432) as a
+  dated ledger and values every trade and pick in one currency: wins above replacement.
+- **What it is for:** surfacing where the market misprices assets, and when to take each
+  position in the draft.
+- **Where it lives:**
+  - It is **not** part of TheWarRoom.
+  - Repo `~/work/TheWarRoom` on the Beelink, branch `session/league-history-pwa`, folder
+    `tools/league-history/`.
+  - Live at http://localhost:8765/ (Beelink only).
+- **Christopher's franchise:** Arizona Cardinals (`0025`). The app highlights it by default; the
+  choice can be changed and is stored in localStorage.
 
-Rounds so far, all on his direction:
-- **Round 1:** the first build. He judged it directionally right but overwhelming.
-- **Round 2:**
-  - The Calendar (renamed "League year") became the core, with a **league clock** shared with
-    Market.
-  - Cycles was turned into **team stages** (contending / rising / fading / rebuilding), with a
-    switch to standings-only grouping.
-  - New: price on the clock, and "when teams change direction".
-  - Overview, Standings replay, Ask a question and four weak charts were cut.
-- **Round 3 ("more emphasis on the rookie draft … who and why, benchmarking against the field,
-  easy to understand, permit filtering"):** Rookie draft was rebuilt and moved into the main menu.
+### Round history
+- **Rounds 1–3:** calendar, clock and stages.
+- **Round 4 (this one):** Christopher said rounds 1–3 "look cool" but were broken or not
+  actionable. He asked for a rigorous research pass on reconstructing the dataset and surfacing
+  the outliers that matter, and for the whole app to be built on it.
+  - The research is in `docs/league-history/League_Lab_Method_Research_2026-10-05.md`.
+    Section 5 holds the findings.
+  - His answers:
+    - Main job: market inefficiencies, long-range outliers, and draft timing by position.
+    - Yes to a "my team" view (Cardinals).
+    - The clock only flavours the data; it is not its own chart.
+    - Build the foundation first, then two screens, then review.
 
-**Status: round 3 delivered and reported. Waiting for his reaction. Nothing committed except this
-file.**
+**Status: foundation plus Market prices and Draft timing are built and verified. Waiting for his
+review. Nothing committed for round 4.**
 
 ## 2. Agents + harnesses
-Claude only, no subagents, no dispatches running.
+Claude only, no subagents.
 
-## 3. Gates / status (all run after the last change)
+## 3. Gates (all run after the last change)
+
 | Check | Result |
 |---|---|
-| `python3 -m unittest compile/test_build_lab.py` | 14 pass (new: year-earlier rank, dead money counted once) |
-| `node --test tests/engine.test.mjs` | 16 pass (new: stages, leans/turns, purchases, draft judging/benchmark) |
-| `node tests/screens.mjs http://127.0.0.1:8765/ <dir>` | 8 screens ok |
-| `node tests/interact.mjs http://127.0.0.1:8765/ <dir>` | 11 interactions pass (clock drag + pinning, turns, price, draft) |
+| `python3 -m unittest compile/test_build_lab.py` | 21 pass (about 75 s) |
+| `node --test tests/engine.test.mjs` | 8 pass |
+| `node tests/screens.mjs http://127.0.0.1:8765/ <dir>` | 4 screens ok |
+| `node tests/interact.mjs http://127.0.0.1:8765/ <dir>` | 10 interactions pass |
 | Christopher acceptance | **pending** |
 
 ## 4. Artifacts
-- **App:** `tools/league-history/app/`
-  - Main menu: League year (`views/calendar.js`), Market, Rookie draft, Cycles, Trade log.
-  - Reference group: Cap & contracts, Franchises, About.
-  - New module `js/clock.js`: the clock axis, the pinned strip, `clockSteps` and `clockCells`;
-    `GUTTER = 92`.
-  - Removed: `views/overview.js`, `views/standings.js`, `views/explore.js`, and `flow()` in
-    charts.
-- **Data** (private, gitignored): `data/lab.json`, 5,064,312 bytes, sha256 prefix
-  `24be32e62a1fa4f6`; `lab.json.gz`, 683,543 bytes.
-- **Backup** of the round-1 build: `~/fleet/runs/league-lab-2026-10-05/snapshot-before-refocus/`.
-- **Screenshots:** `~/fleet/runs/league-lab-2026-10-05/shots/` (round 1), `shots-v2/` (round 2),
-  `shots-v3/` (round 3).
-- **Docs:** `tools/league-history/README.md` (updated with the "what is where" rows and lessons),
-  research and plan docs in `docs/league-history/`.
-- **Session transcript:** `~/.claude/projects/-home-chris/35b807e1-9d84-4024-b8c1-c4ae4b4ca27e.jsonl`.
+
+**Compiler**
+- `compile/value.py` (new): Wins, Forecast, Picks (local-linear), Valuer, `fit_prices`/`market`,
+  backtest, `analyse`.
+- `compile/ledger.py` (new): the reconciliation proof.
+- `compile/build_lab.py`:
+  - Prunes the moves, teamWeeks and playerSeasons outputs.
+  - Adds the `delivered` table; `x*` columns on legs; `aNet`/`aRealNet`/`window`/`season` on
+    trades; `wins`/`slotWins`/`group` on draft rows; `allPlay`/`luck` on team seasons; and
+    `market`, `checks2`, `ledger`.
+  - Schema is `league-lab-2`.
+
+**App**
+- `js/engine.js` (new): the JS port of the price model, shrinkage (DerSimonian–Laird), funnel
+  limits, draft judging and position effects.
+- `js/model.js` and `js/ui.js` rewritten; `js/main.js` simplified to a top bar with seasons and
+  your team.
+- Views: `market.js`, `draft.js`, `tradelog.js`, `method.js`.
+- Removed: `clock.js`, `charts.js`, `lens.js`, `stats.js`, the calendar/cycles/contracts/
+  franchises/about views, and vendor D3.
+- Service worker version `lab-v3`.
+
+**Data, backup and screenshots**
+- Data: `data/lab.json`, 2,713,661 bytes, sha256 prefix `ab68d850fa046955` (gitignored). The build
+  takes about 41 s; the backtest is most of it.
+- Exploration scripts from round 4: `~/fleet/runs/league-lab-2026-10-05/method/`.
+- Session transcript: `~/.claude/projects/-home-chris/35b807e1-9d84-4024-b8c1-c4ae4b4ca27e.jsonl`.
+- Feedback memory saved: `analysis-tools-must-yield-decisions-not-pictures`.
+- Backup of the round 2–3 build: `~/fleet/runs/league-lab-2026-10-05/snapshot-before-method/`.
+- Screenshots: `~/fleet/runs/league-lab-2026-10-05/shots-v4/`.
 
 ## 5. Current bug
 None open.
 
-**Open question for Christopher:** are dead-money charges that are re-listed in later seasons'
-files real per-season cap charges (rule: 35% of salary per year left)? The Lab assumes yes for
-cap room. Events are counted once either way.
-
 ## 6. Settled facts — do not retest
-- MFL `DP_r_p` current-year pick codes are zero-based (837/837). Arizona March 2024 = 0 received,
-  1 sent.
-- Picks are recorded in trades from 2017; contracts from 2019.
-  - 361 one-sided records, excluded by default.
-  - Washington's volume is real.
-- Draft order ≠ reverse standings; a future pick is tied to a player only when its slot is
-  proven.
-- **Salary adjustment files re-list earlier cuts.**
-  - 2015–18: every cut since 2015. From 2019: about 3 years back.
-  - The compiler now dedupes events by (fid, ts, description, amount). An event's amount is the
-    sum over the seasons that list it. `lab.dead` (cap room) is unchanged.
-  - About 1,700 duplicate events removed (moves 26,232 → 24,532).
-- **MFL player `----` in draft results** = a skipped or forfeited pick. 3 are dropped
-  (draft 1,692 → 1,689).
-- **Stages vs rank, in season, 2017+:**
-  - Middle-ranked teams look neutral by rank alone (net per side +0.04).
-  - Split by direction: rising teams buy (−0.145 net per side, 52% buy) and fading teams sell
-    (+0.19, 49% sell).
-- **Selling turn:** "first sell trade" was useless, because 122 of 145 in-season sellers had
-  already sold in the offseason. The turn is therefore defined by **lean**: net pick value in the
-  offseason (open→kickoff) against in season (kickoff→deadline). Results:
-  - 24% of bought-or-held teams turned seller (43/182); half had turned by 27 days before the
-    deadline.
-  - 31% of sold-or-held teams turned buyer.
-- **Price of a proven player (pick value per player):**
-  - The median is stuck at 0.66 (a 2nd), so the chart uses the mean.
-  - Older players get cheaper towards the deadline: 28+ goes 0.77 → 0.52; fading buyers pay
-    0.55 at the deadline.
-- **Draft benchmark ("same spot" = ±6 overall, every judged class):**
-  - The league-wide gap is about 0.
-  - NFL rounds 1–2 beat their spot by about +10 points; NFL rounds 6, 7 and undrafted fall short
-    by about −13.
-  - Over careers so far, 53% of starter seasons are spent on the drafting team (75% within the
-    first 3 years).
-- Last finished season = 2025 (`data.lastFinished`, from weeksDone ≥ regularWeeks).
-- Playwright treats `stroke=transparent` lines as invisible: use `state: 'attached'`.
-- Full-page screenshots draw sticky elements mid-page. That is a capture artifact, not a bug.
+**Currency and forecast**
+- All-play correlation of started wins above replacement: 0.966.
+- The in-season prior is worth 6 weeks of new evidence (tested 2–12).
+- The straight-line forecast overrates older players. It is calibrated per position group, age
+  band and horizon on out-of-fold predictions.
+
+**Pick values**
+- A kernel average underrates the top slots; local-linear smoothing fixes it. Early-1st band
+  mean against slot is now 0.00.
+
+**Market**
+- Discount 0.75 fits best. Contracts are about 0.007 wins per $1M. Extra asset −0.08 wins.
+- An additive premium model was degenerate (premiums scaled with value). Use the multiplicative
+  price per expected win against the `pick1:next` anchor.
+- "next" means the next rookie draft from the trade date, not `asset.year == season`.
+
+**Backtest (point in time)**
+- Trade-level edges don't materialise: the favoured side came out ahead 52% of the time; slope
+  about 0.10.
+- Classes do: linebackers deliver about 1.55× forecast; young QBs, WRs and RBs 0.46–0.71×; 1sts
+  0.79×.
+
+**Ledger**
+- 100% of week-to-week changes explained from 2018. Pre-2018 MFL weekly rosters are near-static.
+
+**Draft**
+- Within-band position effects are within chance.
+- Pooled across rounds: defensive linemen about 70% and tight ends about 80% of slot; kickers
+  beat their slot.
+
+**Cardinals**
+- Outside the funnel at −0.08 expected wins per trade over 140 trades; hindsight +0.06 over 45.
 
 ## 7. Decisions (Christopher)
-- Franchise slots only; Beelink only; Bee's explorer replaced; no jargon.
-- **Round 2 choices: 1a 2a+b 3b 4a.**
-  - 1a: cuts as proposed.
-  - 2a with b: stages are the default grouping, switchable to rank.
-  - 3b: two screens sharing a pinned clock.
-  - 4a: shared clock + price on the clock + selling turn first.
-- He wants thoughts before code on direction changes. He said "lets talk before changing
-  anything" at the first compact; round 3 was an explicit build request.
+- Franchise slots only (the archive has no owner names). Beelink only. No jargon.
+- Round 4 answers are in section 1.
+- He wants thoughts before code on direction changes. Round 4 was an explicit build request.
+- **Next round candidates** (his call):
+  - a "my team" dossier screen;
+  - per-team counterparty dossiers;
+  - who is likely to sell now (current state from all-play, roster age, picks, cap, trade bait);
+  - proposal and rejection history;
+  - start/sit skill from MFL's optimal lineups.
 
 ## 8. Ledger state
-- Branch HEAD: this RESUME commit. **The whole Lab is uncommitted:**
-  - new files untracked;
-  - Bee's files staged as deletions;
-  - `serve.py` modified.
-- Commit only on his go-ahead:
-  `git add tools/league-history docs/league-history docs/build-handoffs` (never `--no-verify`).
-  Never merge to main without his go.
+- HEAD has the earlier RESUME commits. **The whole Lab is uncommitted.**
+- Commit only on his go-ahead: `git add tools/league-history docs/league-history docs/build-handoffs`.
+  Never `--no-verify`; no merge to main without his go.
 
-## 9. Next actions, in order
-1. When he says "we are back":
-   - read this file;
-   - check the server: `ss -ltnp | grep 8765`. If it is down:
-     `cd ~/work/TheWarRoom/tools/league-history && setsid -f python3 serve.py`.
-2. Wait for or ask for his reaction to round 3 (the Rookie draft screen). Apply corrections he
-   asks for, then rerun the four checks and re-screenshot into a new `shots-vN/`.
-3. Leftovers he may pick, from earlier rounds:
-   - the pick-value flow as a continuous band;
-   - the weekly count of buyers against sellers;
-   - one team's 14-year arc to replace the Cycles grid;
-   - answering the dead-money question.
-4. On his go-ahead: commit the Lab to the branch.
+## 9. Next actions
+1. Get his reaction to round 4 in his browser.
+2. Apply corrections, rerun the four checks, and screenshot into `shots-v5/`.
+3. Build the next round he picks from the candidates in section 7.
 
-## 10. Environment notes
-- Server: PID 1254811, `python3 serve.py --port 8765`, cwd `tools/league-history`, setsid. It
-  serves files from disk, so rebuilt data and JS show on reload.
-  - The service worker cache is `lab-v2` (network-first).
-  - No autostart after a reboot.
-- Rebuild the data with `python3 compile/build_lab.py` (about 4 s).
-- Headless checks use `/usr/bin/brave-browser` and pnpm's cached playwright-core.
+## 10. Environment
+- **Server:** PID 1254811, `python3 serve.py --port 8765` in `tools/league-history`, started
+  with setsid. It serves from disk. No autostart after a reboot.
+- **Headless checks:** `/usr/bin/brave-browser` plus pnpm's cached `playwright-core`.
 
 ## 11. Honest status
-Built and verified headless. **Not yet seen by Christopher in his own browser since round 2.**
-Team draft report cards rest on 15–70 picks each, so differences of a few points are noise. Turns
-rest on about 43 team seasons per direction. Findings are descriptive, not causal.
+Built and verified headless; **not yet seen by Christopher.**
+
+- **What is solid:** the class-level findings hold in both halves of the history.
+- **Trade-level numbers:** shown with an explicit warning that single trades are a weak guide.
+- **Draft cells:** small, and shrunk accordingly.
+- **IDP cheapness:** may partly reflect risk aversion to volatile positions. The data says it
+  paid off anyway (delivered above forecast).
