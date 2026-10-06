@@ -11,6 +11,7 @@ type ActProps<K extends CommandId> = {
   expanded?: boolean;
   controls?: string;
   disabled?: boolean;
+  densityKey?: string;
 };
 export function Act<K extends CommandId>({
   verb,
@@ -22,12 +23,14 @@ export function Act<K extends CommandId>({
   expanded,
   controls,
   disabled,
+  densityKey,
 }: ActProps<K>) {
   return (
     <button
       type="button"
       disabled={disabled}
       className={`act act-${variant}${active ? ' on' : ''}`}
+      data-d={densityKey}
       aria-label={label ?? commands.registry[verb].label}
       aria-pressed={active}
       aria-expanded={expanded}

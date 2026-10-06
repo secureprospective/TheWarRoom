@@ -8,7 +8,6 @@ export type Density = (typeof DENSITIES)[number];
 export type VerdictSlot = LabelledSignal & { beyondChance: true };
 export type CardProps = {
   gravity: Gravity;
-  density: Density;
   header: ReactNode;
   primaryZone?: ReactNode;
   children?: ReactNode;
@@ -21,7 +20,6 @@ export type CardProps = {
 
 export function Card({
   gravity,
-  density,
   header,
   primaryZone,
   children,
@@ -32,7 +30,7 @@ export function Card({
   provenance,
 }: CardProps) {
   return (
-    <article className={`twr-card ${gravityClasses[gravity]}`} data-density={density}>
+    <article className={`twr-card ${gravityClasses[gravity]}`}>
       <header className="card-header">
         {header}
         {provenance && (

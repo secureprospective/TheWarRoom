@@ -1,7 +1,15 @@
-import type { Snapshot } from '../data/contract';
+import type { Snapshot, Position } from '../data/contract';
 import { nodes, nodeKeys } from '../shell/nodes';
 import { presetIds, presets, presetAllowed } from '../shell/presets';
 import type { createCommands, CommandId, CommandArgs } from './registry';
+
+// The bar's own plumbing is never a search result: offering "Close command bar" inside the open
+// command bar is noise, and Escape already does it.
+const UNSEARCHABLE: ReadonlySet<CommandId> = new Set<CommandId>([
+  'commandbar.open',
+  'commandbar.close',
+  'overlays.close',
+]);
 
 type Invocation = {
   [K in CommandId]: { verb: K; args: CommandArgs<K> };
@@ -11,18 +19,26 @@ export type SearchResult = {
   label: string;
   aliases: readonly string[];
   kind: 'command' | 'place' | 'player';
+  position?: Position;
   invocation: Invocation;
 };
 
+export type IndexedResult = SearchResult & { texts: readonly string[]; words: readonly string[] };
+
+export function indexResult(result: SearchResult): IndexedResult {
+  const texts = [result.label, ...result.aliases].map((text) => text.toLowerCase());
+  return { ...result, texts, words: texts.flatMap((text) => text.split(/\s+/)) };
+}
+
 type Executor = ReturnType<typeof createCommands>;
 
-export function searchCandidates(executor: Executor, snapshot: Snapshot): SearchResult[] {
+export function searchCandidates(executor: Executor, snapshot: Snapshot): IndexedResult[] {
   const results: SearchResult[] = [];
   for (const id of Object.keys(executor.registry) as CommandId[]) {
     const command = executor.registry[id];
-    if (command.args.length || !command.roles.includes('gm')) continue;
+    if (command.args.length || !command.roles.includes('gm') || UNSEARCHABLE.has(id)) continue;
     results.push({
-      label: command.label,
+      label: command.label + (command.keys?.length ? ` · ${command.keys.map((k) => k.key).join(', ')}` : ''),
       aliases: command.aliases,
       kind: 'command',
       invocation: { verb: id, args: {} } as Invocation,
@@ -38,7 +54,7 @@ export function searchCandidates(executor: Executor, snapshot: Snapshot): Search
   }
   for (const density of ['narrative', 'tactical', 'matrix'] as const) {
     results.push({
-      label: `Density: ${density}`,
+      label: `Density: ${density} · ${['N', 'T', 'M'][['narrative', 'tactical', 'matrix'].indexOf(density)]}`,
       aliases: [density],
       kind: 'command',
       invocation: { verb: 'density.set', args: { density } },
@@ -57,14 +73,20 @@ export function searchCandidates(executor: Executor, snapshot: Snapshot): Search
       });
     }
   }
+  const owners = new Map(snapshot.franchises.value.map((franchise) => [franchise.id, franchise.name]));
   const players = new Map(snapshot.players.value.map((player) => [player.id, player]));
   for (const roster of snapshot.rosters.value) {
     for (const player of roster.players) {
-      const name = players.get(player.id)?.name ?? player.id;
+      const identity = players.get(player.id);
+      const name = identity?.name ?? player.id;
+      const owner = owners.get(roster.franchiseId);
+      const context = [name, identity?.position, identity?.team, owner ?? roster.franchiseId]
+        .filter(Boolean).join(' · ');
       results.push({
-        label: name,
+        label: context,
         aliases: [],
         kind: 'player',
+        position: identity?.position,
         invocation: {
           verb: 'inspector.open',
           args: {
@@ -74,28 +96,21 @@ export function searchCandidates(executor: Executor, snapshot: Snapshot): Search
       });
     }
   }
-  return results;
-}
-
-function match(text: string, query: string): number {
-  const value = text.toLowerCase();
-  if (value.startsWith(query)) return 0;
-  if (value.split(/\s+/).some((word) => word.startsWith(query))) return 1;
-  return value.includes(query) ? 2 : 3;
+  return results.map(indexResult);
 }
 
 export function rankResults(
   query: string,
-  candidates: readonly SearchResult[],
+  candidates: readonly IndexedResult[],
 ): SearchResult[] {
   const normalized = query.trim().toLowerCase();
   const order = { command: 0, place: 1, player: 2 };
   return candidates
     .map((result) => ({
       result,
-      score: Math.min(
-        ...[result.label, ...result.aliases].map((text) => match(text, normalized)),
-      ),
+      score: result.texts.some((text) => text.startsWith(normalized)) ? 0 :
+        result.words.some((word) => word.startsWith(normalized)) ? 1 :
+        result.texts.some((text) => text.includes(normalized)) ? 2 : 3,
     }))
     .filter((entry) => entry.score < 3)
     .sort(

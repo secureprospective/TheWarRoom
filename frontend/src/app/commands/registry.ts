@@ -61,7 +61,12 @@ export function createCommands(
           throw new Error('franchise.set: unknown franchise');
         }
         persistFranchise(args.franchiseId, storage());
-        state.write({ franchiseId: args.franchiseId });
+        state.write({
+          franchiseId: args.franchiseId,
+          scrollRevision: state.read().scrollRevision + Number(
+            state.read().franchiseId !== args.franchiseId,
+          ),
+        });
       },
     }),
     'preset.apply': command({
@@ -134,6 +139,9 @@ export function createCommands(
       args: ['density'],
       aliases: ['density'],
       keys: [
+        { key: 'N', args: { density: 'narrative' as Density } },
+        { key: 'T', args: { density: 'tactical' as Density } },
+        { key: 'M', args: { density: 'matrix' as Density } },
         { key: '1', args: { density: 'narrative' as Density } },
         { key: '2', args: { density: 'tactical' as Density } },
         { key: '3', args: { density: 'matrix' as Density } },

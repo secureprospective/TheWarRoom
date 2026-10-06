@@ -100,3 +100,11 @@ export function playerCardModel(
     ]),
   };
 }
+
+export function inheritedProvenance(
+  own: LabelledSignal,
+  container: LabelledSignal,
+): 'own' | 'inherited' {
+  return own.signal === container.signal && own.label === container.label &&
+    own.detail === container.detail ? 'inherited' : 'own';
+}

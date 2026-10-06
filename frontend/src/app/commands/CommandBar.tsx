@@ -1,23 +1,36 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Snapshot } from '../data/contract';
 import { commands } from './registry';
 import { Act } from './Act';
 import { searchCandidates, rankResults, runResult } from './search';
+import { Glyph } from '../look/Glyph';
+import { assertShortList } from '../shell/shortList';
 
 export function CommandBar({ snapshot }: { snapshot: Snapshot }) {
+  const open = commands.use().commandbar;
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
   const input = useRef<HTMLInputElement>(null);
-  const results = rankResults(query, searchCandidates(commands, snapshot));
+  const candidates = useMemo(() => searchCandidates(commands, snapshot), [snapshot]);
+  const results = rankResults(query, candidates);
+  if (import.meta.env.DEV) assertShortList(results.length, 8);
   useEffect(() => {
+    if (!open) {
+      setQuery('');
+      setIndex(0);
+      // A closed bar is only visually hidden (so it can transition); it must not keep focus, or
+      // the next keystrokes land in an invisible input and every shortcut goes dead.
+      if (document.activeElement === input.current) input.current?.blur();
+      return;
+    }
     const previous = document.activeElement;
     input.current?.focus();
     return () => {
       if (previous instanceof HTMLElement && previous.isConnected) previous.focus();
     };
-  }, []);
+  }, [open]);
   return (
-    <section className="command-bar" aria-label="Command bar">
+    <section className="command-bar" data-open={open} aria-hidden={!open} aria-label="Command bar">
       <input
         ref={input}
         aria-label="Search commands, places and players"
@@ -53,7 +66,7 @@ export function CommandBar({ snapshot }: { snapshot: Snapshot }) {
             active={position === index}
             label={result.label}
           >
-            <span>{result.label}</span>
+            <span>{result.position && <Glyph name={result.position} />} {result.label}</span>
             <small>{result.kind}</small>
           </Act>
         ))}

@@ -1,5 +1,6 @@
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
+import { shallow } from 'zustand/shallow';
 import type { Density } from '../cards/Card';
 import { nodes, nodeKeys, type Node, type Route, type WorkspaceMemory } from './nodes';
 export type PlayerSubject = { kind: 'player'; id: string; franchiseId: string };
@@ -16,6 +17,7 @@ export type ShellState = {
   comms: boolean;
   harness: boolean;
   notice: string | null;
+  scrollRevision: number;
 };
 export function initialShellState(): ShellState {
   return {
@@ -32,18 +34,26 @@ export function initialShellState(): ShellState {
     comms: false,
     harness: false,
     notice: null,
+    scrollRevision: 0,
   };
 }
+export function renderState({ density: _density, ...rest }: ShellState): Omit<ShellState, 'density'> {
+  return rest;
+}
+
 export function createShellState() {
   const store = createStore<ShellState>(() => initialShellState());
   return {
     read: store.getState,
-    use: () => useStore(store),
+    use: () => useStore(store, renderState, shallow),
     subscribe: store.subscribe,
     // The write capability is handed only to the command registry, never to views.
     write: (patch: Partial<ShellState>) => store.setState(patch),
     navigate: (route: Route) =>
       store.setState((s) => ({
+        scrollRevision: s.scrollRevision + Number(
+          s.node !== route.node || s.workspace[s.node] !== route.workspace,
+        ),
         node: route.node,
         workspace: { ...s.workspace, [route.node]: route.workspace },
       })),
