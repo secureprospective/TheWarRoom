@@ -1,147 +1,104 @@
-# RESUME — Legacy NFL Lab (2026-10-05, after round 4: the method rebuild)
+# RESUME — Legacy NFL Lab (2026-10-05, round 5: the MFL facts database)
 
 ## 1. What we are doing
-- **What it is:** an app that rebuilds 14 seasons of Legacy NFL history (MFL league 14432) as a
-  dated ledger and values every trade and pick in one currency: wins above replacement.
-- **What it is for:** surfacing where the market misprices assets, and when to take each
-  position in the draft.
-- **Where it lives:**
-  - It is **not** part of TheWarRoom.
-  - Repo `~/work/TheWarRoom` on the Beelink, branch `session/league-history-pwa`, folder
-    `tools/league-history/`.
-  - Live at http://localhost:8765/ (Beelink only).
-- **Christopher's franchise:** Arizona Cardinals (`0025`). The app highlights it by default; the
-  choice can be changed and is stored in localStorage.
-
-### Round history
-- **Rounds 1–3:** calendar, clock and stages.
-- **Round 4 (this one):** Christopher said rounds 1–3 "look cool" but were broken or not
-  actionable. He asked for a rigorous research pass on reconstructing the dataset and surfacing
-  the outliers that matter, and for the whole app to be built on it.
-  - The research is in `docs/league-history/League_Lab_Method_Research_2026-10-05.md`.
-    Section 5 holds the findings.
-  - His answers:
-    - Main job: market inefficiencies, long-range outliers, and draft timing by position.
-    - Yes to a "my team" view (Cardinals).
-    - The clock only flavours the data; it is not its own chart.
-    - Build the foundation first, then two screens, then review.
-
-**Status: foundation plus Market prices and Draft timing are built and verified. Waiting for his
-review. Nothing committed for round 4.**
+- **Round 5 brief (Christopher):** the Lab's data was "getting less and less accurate"; build a
+  vector database of the MFL data, MFL only; research the best shape for accuracy first.
+- **Research verdict** (`docs/league-history/MFL_Store_Research_2026-10-05.md`): vectors alone are
+  weak on numbers. Build a checked facts database with meaning search on top. Christopher
+  approved this shape, an MFL player-detail pull plus "everything else we should have", a review
+  list for unreadable trade notes, and freezing the Lab's screens until they are rebuilt on the
+  store.
+- **Where:** repo `~/work/TheWarRoom`, branch `session/league-history-pwa`,
+  `tools/league-history/store/`; database `tools/league-history/data/mfl.db` (private, gitignored).
+  Christopher's franchise: Arizona Cardinals `0025`.
 
 ## 2. Agents + harnesses
-Claude only, no subagents.
+Claude only. Private Python environment `tools/league-history/.venv` (sqlite-vec 0.1.9, fastembed);
+models cached in `data/models/`.
 
-## 3. Gates (all run after the last change)
+## 3. Gates
 
 | Check | Result |
 |---|---|
-| `python3 -m unittest compile/test_build_lab.py` | 21 pass (about 75 s) |
-| `node --test tests/engine.test.mjs` | 8 pass |
-| `node tests/screens.mjs http://127.0.0.1:8765/ <dir>` | 4 screens ok |
-| `node tests/interact.mjs http://127.0.0.1:8765/ <dir>` | 10 interactions pass |
-| Christopher acceptance | **pending** |
+| `python3 store/build.py` (facts, 9 checks, note readings, cards) | all checks pass; ~20 s |
+| `python3 -m unittest store/test_store.py` | 18 pass (~100 s) |
+| `python3 store/factexam.py` (answers against MFL's web pages) | 2,291 / 2,295; the 4 are review items |
+| `python3 store/exam.py --tables` (word search) | right card in top 10 for 130 / 135; first for 97 |
+| Meaning search and model choice | **in progress**: see section 5 |
+| Christopher's review of `data/review.md` | pending |
 
 ## 4. Artifacts
+- `store/schema.sql`, `load.py` (facts, MFL only; dates US Eastern; season names), `views.sql`
+  (regular season, all-play, team_season, trade_asset, offer, roster_move), `checks.py` (9 checks,
+  `data/review.md`), `notes.py` + `note_readings.csv` (all 260 trade notes read: 423 clear,
+  17 inferred, 22 ambiguous, 7 unreadable; replay check against drafts), `cards.py` (28,123 cards
+  plus FTS5), `index.py` (embeddings into vec0 tables), `ask.py` (hybrid find plus read-only sql),
+  `exam.py` (search exam), `factexam.py` (MFL page answer key, pages cached in `data/mfl-pages/`),
+  `build.py`, `test_store.py`.
+- Archive: `league-archive/raw/<year>/players_DETAILS1.json` for every season, plus
+  `raw/allRules.json` (pulled 2026-10-05; `archive.py` now fetches allRules in `players` mode).
+- Trade-note dump: `~/fleet/runs/mfl-store-2026-10-05/trade_notes_raw.txt`.
+- README "facts database" section and history; research doc section 8 (findings).
+- Memory: `league-numbers-come-from-checked-mfl-facts`.
 
-**Compiler**
-- `compile/value.py` (new): Wins, Forecast, Picks (local-linear), Valuer, `fit_prices`/`market`,
-  backtest, `analyse`.
-- `compile/ledger.py` (new): the reconciliation proof.
-- `compile/build_lab.py`:
-  - Prunes the moves, teamWeeks and playerSeasons outputs.
-  - Adds the `delivered` table; `x*` columns on legs; `aNet`/`aRealNet`/`window`/`season` on
-    trades; `wins`/`slotWins`/`group` on draft rows; `allPlay`/`luck` on team seasons; and
-    `market`, `checks2`, `ledger`.
-  - Schema is `league-lab-2`.
+## 5. In flight
+- `data/index_all.sh` (PIDs 1528599/1528601 at compaction), started with setsid at 21:32, log `data/index_all.log`: embeds the cards with
+  bge-base-en-v1.5 (table vec_bge_base), bge-small-en-v1.5 (vec_bge_small) and
+  nomic-embed-text-v1.5-Q (vec_nomic), in turn; about 20 minutes each. Alive if
+  `pgrep -f index_all.sh`. **When done:** run `.venv/bin/python store/exam.py`, pick the model with
+  the best hybrid score, set `MODEL` and the `card_vec` table in `store/index.py` to it (or rename
+  the table), and drop the others.
+- **Never rebuild while it runs**: `load.retire` refuses anyway. Any card change means re-indexing.
 
-**App**
-- `js/engine.js` (new): the JS port of the price model, shrinkage (DerSimonian–Laird), funnel
-  limits, draft judging and position effects.
-- `js/model.js` and `js/ui.js` rewritten; `js/main.js` simplified to a top bar with seasons and
-  your team.
-- Views: `market.js`, `draft.js`, `tradelog.js`, `method.js`.
-- Removed: `clock.js`, `charts.js`, `lens.js`, `stats.js`, the calendar/cycles/contracts/
-  franchises/about views, and vendor D3.
-- Service worker version `lab-v3`.
-
-**Data, backup and screenshots**
-- Data: `data/lab.json`, 2,713,661 bytes, sha256 prefix `ab68d850fa046955` (gitignored). The build
-  takes about 41 s; the backtest is most of it.
-- Exploration scripts from round 4: `~/fleet/runs/league-lab-2026-10-05/method/`.
-- Session transcript: `~/.claude/projects/-home-chris/35b807e1-9d84-4024-b8c1-c4ae4b4ca27e.jsonl`.
-- Feedback memory saved: `analysis-tools-must-yield-decisions-not-pictures`.
-- Backup of the round 2–3 build: `~/fleet/runs/league-lab-2026-10-05/snapshot-before-method/`.
-- Screenshots: `~/fleet/runs/league-lab-2026-10-05/shots-v4/`.
-
-## 5. Current bug
-None open.
-
-## 6. Settled facts — do not retest
-**Currency and forecast**
-- All-play correlation of started wins above replacement: 0.966.
-- The in-season prior is worth 6 weeks of new evidence (tested 2–12).
-- The straight-line forecast overrates older players. It is calibrated per position group, age
-  band and horizon on out-of-fold predictions.
-
-**Pick values**
-- A kernel average underrates the top slots; local-linear smoothing fixes it. Early-1st band
-  mean against slot is now 0.00.
-
-**Market**
-- Discount 0.75 fits best. Contracts are about 0.007 wins per $1M. Extra asset −0.08 wins.
-- An additive premium model was degenerate (premiums scaled with value). Use the multiplicative
-  price per expected win against the `pick1:next` anchor.
-- "next" means the next rookie draft from the trade date, not `asset.year == season`.
-
-**Backtest (point in time)**
-- Trade-level edges don't materialise: the favoured side came out ahead 52% of the time; slope
-  about 0.10.
-- Classes do: linebackers deliver about 1.55× forecast; young QBs, WRs and RBs 0.46–0.71×; 1sts
-  0.79×.
-
-**Ledger**
-- 100% of week-to-week changes explained from 2018. Pre-2018 MFL weekly rosters are near-static.
-
-**Draft**
-- Within-band position effects are within chance.
-- Pooled across rounds: defensive linemen about 70% and tight ends about 80% of slot; kickers
-  beat their slot.
-
-**Cardinals**
-- Outside the funnel at −0.08 expected wins per trade over 140 trades; hindsight +0.06 over 45.
+## 6. Settled — do not retest
+- Points for = every week MFL scored (448/448). Win-loss = regular-season games, except 2013,
+  which counted playoffs. Regular season = weeks where every team had an opponent. All-play = every
+  week all teams scored (160/160). Home bonus +3.0 (2014-15 regular season, playoffs).
+- MFL dates are US Eastern. The pre-2017 pick history in MFL's draft notes only covers trades made
+  inside MFL. Offers in the archive are the Cardinals' only.
+- Replacing the database beside a stale -wal corrupted it once: `retire()` now prevents it.
+- MFL's transactions web page is empty without a login.
 
 ## 7. Decisions (Christopher)
-- Franchise slots only (the archive has no owner names). Beelink only. No jargon.
-- Round 4 answers are in section 1.
-- He wants thoughts before code on direction changes. Round 4 was an explicit build request.
-- **Next round candidates** (his call):
-  - a "my team" dossier screen;
-  - per-team counterparty dossiers;
-  - who is likely to sell now (current state from all-play, roster age, picks, cap, trade bait);
-  - proposal and rejection history;
-  - start/sit skill from MFL's optimal lineups.
+- Shape: facts first, vectors on top. MFL data only. Review list for unreadable notes. The Lab's
+  screens are frozen until rebuilt on the store.
+- **Pending from him:** the `MFL_USER_ID` cookie in `league-archive/.secrets/mfl_cookies.txt`, so
+  2013-15 assets, calendar, message board and polls can be pulled (12 requests; then delete the
+  file). He asked "how do you want the credentials"; the steps were given.
 
 ## 8. Ledger state
-- HEAD has the earlier RESUME commits. **The whole Lab is uncommitted.**
-- Commit only on his go-ahead: `git add tools/league-history docs/league-history docs/build-handoffs`.
-  Never `--no-verify`; no merge to main without his go.
+Nothing from rounds 4-5 is committed except RESUME documents. Commit only on his go-ahead:
+`git add tools/league-history docs/league-history docs/build-handoffs` (`.venv/` and `data/` are
+ignored). Never `--no-verify`; no merge to main.
 
 ## 9. Next actions
-1. Get his reaction to round 4 in his browser.
-2. Apply corrections, rerun the four checks, and screenshot into `shots-v5/`.
-3. Build the next round he picks from the candidates in section 7.
+0. **First thing on "we are back" (Christopher asked for it): tell him what he must do to get the
+   rest of the data.** It is one thing: the MFL login cookie, for the 12 exports from 2013-2015
+   (league IDs 51719, 47710, 21225) that MFL serves only to a logged-in owner: assets (pick
+   ownership), calendar, message board and polls. Steps to hand him:
+   1. In Brave, logged into MyFantasyLeague, open the league page.
+   2. Press F12, then Application, then Cookies, then the myfantasyleague.com entry; copy the
+      value of `MFL_USER_ID`. Do not paste it into chat.
+   3. In a Beelink terminal (replace PASTE_HERE):
+      `d=~/work/TheWarRoom/league-archive/.secrets; mkdir -p $d && chmod 700 $d`
+      `printf '.myfantasyleague.com\tTRUE\t/\tTRUE\t0\tMFL_USER_ID\t%s\n' 'PASTE_HERE' > $d/mfl_cookies.txt && chmod 600 $d/mfl_cookies.txt`
+   4. Tell Claude "cookie's in".
+   Then Claude: move the 12 saved error files aside (archive.py skips any file that is valid
+   JSON, and the error bodies are valid JSON), run `python3 archive.py 2013 2014 2015`, load the
+   results, and delete the cookie file. Everything else MFL offers is already archived or is not
+   kept for past seasons (checked against MFL's full export list). Also optionally: his own
+   memory of the review items (the 2019 penalties, the four extra results).
+1. Finish the model comparison (section 5) and fix the choice in `store/index.py`.
+2. Report to Christopher: the shape, the checks, the review-list highlights (the 4 records, the
+   2019 weeks 6-8 point penalties for the Texans and Seahawks, the 49 picks, ~70 note readings).
+3. When the cookie lands, pull the 12 logged-in exports, add them to the store, delete the cookie.
+4. Then rebuild the Lab's screens on the store (his call on order).
 
 ## 10. Environment
-- **Server:** PID 1254811, `python3 serve.py --port 8765` in `tools/league-history`, started
-  with setsid. It serves from disk. No autostart after a reboot.
-- **Headless checks:** `/usr/bin/brave-browser` plus pnpm's cached `playwright-core`.
+- The Lab server on 8765 (PID 1254811) still serves the frozen screens.
+- `.venv/bin/python` for anything that loads sqlite-vec or the models.
 
 ## 11. Honest status
-Built and verified headless; **not yet seen by Christopher.**
-
-- **What is solid:** the class-level findings hold in both halves of the history.
-- **Trade-level numbers:** shown with an explicit warning that single trades are a weak guide.
-- **Draft cells:** small, and shrunk accordingly.
-- **IDP cheapness:** may partly reflect risk aversion to volatile positions. The data says it
-  paid off anyway (delivered above forecast).
+The facts layer is proven against MFL two ways (its own totals and its web pages). Meaning search
+is built but the model is not yet chosen by the exam. The trade-note readings are Claude's and
+unconfirmed.
