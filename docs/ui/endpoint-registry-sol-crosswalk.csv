@@ -1,0 +1,443 @@
+sol_id,sol_name,registry_id,match,evidence
+A001,Live Scoring,M-001,same,S8 ajax_ls live scoring
+A002,Standings,M-002,same,S8 standings page
+A003,Weekly Results,M-003,same,same O=22 report/function; GLM M-003
+A004,Last 3 Weeks,M-004,same,same O=258 report/function; GLM M-004
+A005,Weekly matchup,M-005,same,S8 Weekly Results child weekly page
+A006,Scoring detail (403),M-006,retired,S8 detailed returns owner HTTP 403
+A007,Weekly Summary,M-007,same,same O=31 report/function; GLM M-007
+A008,Power Rank,M-008,same,same O=101 report/function; GLM M-008
+A009,Fantasy Schedule,M-011,same,same O=15 report/function; GLM M-011
+A010,Schedule by Franchise,M-012,same,same O=16 report/function; GLM M-012
+A011,Compact Schedule,M-013,same,same O=54 report/function; GLM M-013
+A012,Playoff Brackets,M-014,same,same O=79 report/function; GLM M-014
+A013,NFL Schedule,M-015,same,same NFL Schedule match function
+A014,NFL Box Score,M-016,same,S8 NFL Box Score is pro_matchup
+A015,Weather,M-017,retired,same Weather ↗ match function; GLM retired
+A016,Fantasy Previews,M-018,same,same O=207 report/function; GLM M-018
+A017,All-Time Series (preview link),M-019,same,same O=171 report/function; GLM M-019
+A018,Injury report (preview link),M-020,same,S8 previews injury child is injury
+A019,Fantasy Recaps,M-021,same,same O=177 report/function; GLM M-021
+A020,Recap Top by position,M-022,same,S8 recap position child is top
+A021,Franchise Records (recap link),M-023,same,same O=156 report/function; GLM M-023
+A022,Starting Lineups,M-009,same,same O=06 report/function; GLM M-009
+A023,Lineup Details,M-010,same,same O=210 report/function; GLM M-010
+A024,Add/Drops,M-024,same,S8 add_drop form
+A025,Cannot Cut List,M-025,same,same O=199 report/function; GLM M-025
+A026,Waiver Coach,M-026,retired,same Waiver Coach ↗ fa function; GLM retired
+A027,Submit Lineup (menu redirect),M-027,same,same O=02 report/function; GLM M-027
+A028,Rosters,M-030,same,same O=07 report/function; GLM M-030
+A029,Salary Adjustments,M-031,same,same O=142 report/function; GLM M-031
+A030,Transactions,M-032,same,same O=03 report/function; GLM M-032
+A031,Injured Reserve,M-028,same,same O=18 report/function; GLM M-028
+A032,Taxi Squad,M-029,same,same O=98 report/function; GLM M-029
+A033,Drop Players,M-036,same,same O=257 report/function; GLM M-036
+A034,Trades,M-033,same,same O=05 report/function; GLM M-033
+A035,Revoke offer,M-034,same,"S8 trade_response ACTION=revoke, not listing"
+A036,Compare Players,M-035,retired,same Compare Players ↗ offers function; GLM retired
+A037,Top Performers / Player Stats,M-037,same,same O=08 report/function; GLM M-037
+A038,My Top Performers,M-038,same,S8 O=08 SEARCHTYPE=ADVANCED franchise scope
+A039,Top Free Agents,M-039,same,S8 O=08 CATEGORY=freeagent
+A040,Top Passers,M-040,same,S8 O=08 DISPLAY=Passers
+A041,Top Rushers,M-041,same,S8 O=08 DISPLAY=Rushers
+A042,Top Receivers,M-042,same,S8 O=08 DISPLAY=Receivers
+A043,Top Kickers,M-043,same,"O=08 kicker filter, GLM M-043"
+A044,Top Defenders,M-044,same,"O=08 IDP defender filter, not team defense"
+A045,Top Defenses,M-045,same,"O=08 team-defense filter, not IDP"
+A046,Projected Stats,M-046,same,same O=236 report/function; GLM M-046
+A047,Player Ranks,M-047,same,same R=RANKS report/function; GLM M-047
+A048,Fantasy Depth Charts,M-048,same,same Fantasy Depth Charts news function
+A049,Depth Chart Grid,M-049,same,S8 depth_chart TYPE=grid
+A050,NFL Team Stats,M-050,same,S8 nfl_team_stats page
+A051,NFL Team Injuries,M-051,same,"S8 depth-chart injury link, GLM team scope"
+A052,Top Adds/Drops/Starters hub,M-052,same,same O=117 report/function; GLM M-052
+A053,Top Adds,M-052,merged,O=117 added view covered by M-052 family
+A054,Top Drops,M-052,merged,O=117 dropped view covered by M-052 family
+A055,Top Starters,M-052,merged,O=117 started view covered by M-052 family
+A056,Points Allowed by Position,M-053,same,same O=81 report/function; GLM M-053
+A057,Points Allowed per NFL team,M-054,same,same O=243 report/function; GLM M-054
+A058,Complete Free Agent Listing,M-056,same,same R=FULLFA report/function; GLM M-056
+A059,NFL Injury Report,M-057,same,same NFL Injury Report news function
+A060,Player News,M-058,same,same Player News news function
+A061,Player News article,M-059,same,S8 view_news_article page
+A062,My Player News,M-060,same,same My Player News news function
+A063,Get Projection Sources (paid),M-061,retired,same Get Projection Sources ↗ news function; GLM retired
+A064,Player Search,M-062,same,same Player Search news function
+A065,Who Should I Start?,M-055,same,same O=205 report/function; GLM M-055
+A066,Draft Results,M-063,same,same O=17 report/function; GLM M-063
+A067,Draft Results Grid,M-064,same,S8 O=17 CMD=GRID distinct view
+A068,Steals and Busts,M-065,same,S8 O=17 CMD=SB distinct view
+A069,Draft Recap,M-066,same,S8 O=17 CMD=RECAP distinct view
+A070,ADP Report,M-067,same,same R=ADP report/function; GLM M-067
+A071,Future Draft Picks,M-068,same,same O=100 report/function; GLM M-068
+A072,AAV Report,M-069,same,same R=AAV report/function; GLM M-069
+A073,All Reports hub,M-070,retired,"all_reports index retired, children placed individually"
+A074,Scoring Bar Chart,M-071,same,same O=20 report/function; GLM M-071
+A075,Fantasy Box Score,M-072,same,"S8 fantasy_box_score, not NFL pro_matchup"
+A076,Scoring History,M-073,same,same O=118 report/function; GLM M-073
+A077,Tiebreakers,M-074,same,same O=119 report/function; GLM M-074
+A078,Victory Points,M-075,same,same O=153 report/function; GLM M-075
+A079,Starter Points by Position,M-076,same,same O=23 report/function; GLM M-076
+A080,Starter Points by Player,M-077,same,same O=37 report/function; GLM M-077
+A081,Cannot Cut/Add,M-025,same,same O=199 report/function; GLM M-025
+A082,Salaries & Contracts,M-078,same,same R=SALARIES report/function; GLM M-078
+A083,Salary Adjustments (reports),M-031,same,same O=142 report/function; GLM M-031
+A084,Player Additions & Position Changes,M-079,same,same R=NEWPLAY report/function; GLM M-079
+A085,League History,M-080,same,same O=112 report/function; GLM M-080
+A086,Awards,M-081,same,same O=202 report/function; GLM M-081
+A087,Franchise Records,M-023,same,same O=156 report/function; GLM M-023
+A088,Player Records,M-082,same,same O=157 report/function; GLM M-082
+A089,Matchup Records,M-083,same,same O=158 report/function; GLM M-083
+A090,All-Time Series,M-019,same,same O=171 report/function; GLM M-019
+A091,Season Records,M-084,same,same O=204 report/function; GLM M-084
+A092,Career Records,M-085,same,same O=208 report/function; GLM M-085
+A093,Record Streaks,M-086,same,same O=232 report/function; GLM M-086
+A094,NFL Box Scores (reports),M-016,same,S8 All Reports NFL Box Scores is pro_matchup
+A095,NFL Team Stats (reports),M-050,same,S8 All Reports nfl_team_stats page
+A096,NFL Draft,M-087,same,same O=215 report/function; GLM M-087
+A097,Official Stat Changes,M-088,same,S8 site_news CATEGORY=Official Statistics Changes
+A098,Strange Plays,M-089,same,S8 site_news CATEGORY=Strange Plays
+A099,Projected Playoff Seedings,M-090,same,S8 home MODULE=MESSAGE11 projected seedings
+A100,League Settings (reports),M-091,same,same O=26 report/function; GLM M-091
+A101,Widgets,M-092,retired,"S8 generate_embed, retired MFL customization"
+A102,Email Log,M-093,same,S8 reports R=EMAILLOG
+A103,Edit My Links,M-094,retired,S8 edit_my_links retired personalization
+A104,Commissioner News,M-095,same,S8 site_news Commissioner News guarded
+A105,League Calendar,M-096,same,same O=123 report/function; GLM M-096
+A106,League Rules,M-097,same,same O=09 report/function; GLM M-097
+A107,League Settings (rules link),M-091,same,same O=26 report/function; GLM M-091
+A108,Accounting hub,M-197,new,"S8 accounting_report base, Summary GRID is separate view"
+A109,Accounting Summary,M-098,same,S8 accounting_report TYPE=GRID Summary
+A110,LeagueSafe,M-099,retired,same LeagueSafe ↗ utility function; GLM retired
+A111,Franchise Information hub,M-146,merged,O=01 hub function folds into M-146 inspector
+A112,Franchise Schedule,M-012,same,S8 O=01 Schedule child goes to O=16
+A113,Franchise Series Records,M-019,same,S8 O=01 Series Records child goes to O=171
+A114,Franchise Top Performers,M-038,same,S8 O=01 Top Performers child goes to O=08 ADVANCED
+A115,Franchise Scoring History,M-073,same,S8 O=01 Scoring History child goes to O=118
+A116,Franchise Box Score,M-072,same,S8 O=01 Box Score child is fantasy_box_score
+A117,Trophy Case,M-081,same,"S8 Trophy Case child is O=202 Awards, M-104 duplicates it"
+A118,Franchise Career Record,M-085,same,"S8 Career Record child is O=208, M-105 duplicates it"
+A119,Franchise Roster,M-030,same,S8 O=01 Roster child goes to O=07
+A120,Roster with Stats,M-101,same,same O=138 report/function; GLM M-101
+A121,Franchise Transactions,M-032,same,S8 O=01 Transactions child goes to O=03
+A122,Franchise IR,M-028,same,same O=18 report/function; GLM M-028
+A123,Franchise Taxi,M-029,same,same O=98 report/function; GLM M-029
+A124,Draft Pick (hub),M-102,same,same O=52 report/function; GLM M-102
+A125,My Draft List (hub),M-103,same,same O=129 report/function; GLM M-103
+A126,Draft Preferences,M-108,same,S8 csetup C=DRAFTPREF guarded hand-off
+A127,Franchise Lineup,M-027,same,S8 O=01 Submit My Lineup child is lineup
+A128,Franchise Trades,M-033,same,same O=05 report/function; GLM M-033
+A129,Franchise Add/Drop,M-024,same,S8 O=01 Add/Drop child is add_drop
+A130,Franchise News,M-058,same,"S8 O=01 News child is news_articles, MYNEWS not evidenced"
+A131,Franchise Contact,M-106,retired,"S8 csetup C=FCONTACT, personal data excluded"
+A132,Franchise Mobile,M-107,retired,"S8 csetup C=FMOBILE, personal data excluded"
+A133,Franchise Location,M-109,retired,same O=238 report/function; GLM M-109; GLM retired
+A134,Franchise Summary,M-110,same,same R=FSUMMARY report/function; GLM M-110
+A135,NFL Pool Results,M-111,same,same O=122 report/function; GLM M-111
+A136,NFL Pool Picks,M-112,same,same O=121 report/function; GLM M-112
+A137,Survivor Pool,M-113,same,same O=120 report/function; GLM M-113
+A138,Survivor selection,M-198,new,submit-survivor Act absent from Read/Decide M-113
+A139,League Champions,M-114,same,same O=194 report/function; GLM M-114
+A140,Champions Awards link,M-081,same,same O=202 report/function; GLM M-081
+A141,Champions Franchise Records link,M-023,same,same O=156 report/function; GLM M-023
+A142,Champions Player Records link,M-082,same,same O=157 report/function; GLM M-082
+A143,Champions Matchup Records link,M-083,same,same O=158 report/function; GLM M-083
+A144,Champions All-Time Series link,M-019,same,same O=171 report/function; GLM M-019
+A145,Champions Season Records link,M-084,same,same O=204 report/function; GLM M-084
+A146,Champions Career Records link,M-085,same,same O=208 report/function; GLM M-085
+A147,Champions Record Streaks link,M-086,same,same O=232 report/function; GLM M-086
+A148,Franchise Setup,M-115,retired,"S8 csetup C=FRANCHISE, GLM retires profile setup"
+A149,Unlink account (Setup),M-115,retired,S8 csetup C=FUNLINK explicitly covered by retired M-115
+A150,Contact settings (Setup),M-106,retired,"S8 csetup C=FCONTACT, retired personal-contact function"
+A151,Mobile settings (Setup),M-107,retired,"S8 csetup C=FMOBILE, retired personal-mobile function"
+A152,My Links,M-119,retired,"S8 My Links is edit_my_links, retired duplicate M-119"
+A153,Trade Bait,M-116,same,same O=133 report/function; GLM M-116
+A154,Propose trade,M-199,new,"trade.propose Act, C-06.2 only prepares, O=133 links O=05"
+A155,My Watch List,M-117,same,same O=178 report/function; GLM M-117
+A156,My Scratchpad,M-118,same,same O=234 report/function; GLM M-118
+A157,Message Board,M-120,same,same Message Board social function
+A158,Chat,M-121,same,same Chat social function
+A159,Articles,M-122,same,same Articles social function
+A160,Polls,M-123,same,same Polls social function
+A161,Trash-Talk Videos,M-124,same,same Trash-Talk Videos social function
+A162,Email Commissioner,M-125,same,same Email Commissioner social function
+A163,Email League,M-126,same,same Email League social function
+A164,Text League,M-127,same,same Text League social function
+A165,Forums,M-128,retired,same Forums ↗ social function; GLM retired
+A166,Twitter,M-129,retired,same Twitter ↗ social function; GLM retired
+A167,Refer,M-130,retired,same Refer social function; GLM retired
+A168,MFL Dashboard,M-131,retired,same MFL Dashboard utility function; GLM retired
+A169,Premium,M-132,retired,same Premium utility function; GLM retired
+A170,All My Leagues,M-134,retired,same All My Leagues utility function; GLM retired
+A171,New League,M-135,retired,same New League utility function; GLM retired
+A172,Find a League,M-136,retired,same Find a League utility function; GLM retired
+A173,League Home 2019,M-133,retired,same League Home 2019–2025 utility function; GLM retired
+A174,League Home 2020,M-133,retired,same League Home 2019–2025 utility function; GLM retired
+A175,League Home 2021,M-133,retired,same League Home 2019–2025 utility function; GLM retired
+A176,League Home 2022,M-133,retired,same League Home 2019–2025 utility function; GLM retired
+A177,League Home 2023,M-133,retired,same League Home 2019–2025 utility function; GLM retired
+A178,League Home 2024,M-133,retired,same League Home 2019–2025 utility function; GLM retired
+A179,League Home 2025,M-133,retired,same League Home 2019–2025 utility function; GLM retired
+A180,Cache tools,M-137,same,same Cache Tools utility function
+A181,Help Center,M-138,retired,same Help Center utility function; GLM retired
+A182,Help on Page,M-139,retired,same Help on Page utility function; GLM retired
+A183,Tickets,M-140,retired,same Tickets utility function; GLM retired
+A184,What’s New,M-141,same,same What's New utility function
+A185,Printer Page,M-142,retired,same Printer Page utility function; GLM retired
+A186,Developer API,M-143,retired,same Developer API utility function; GLM retired
+A187,Logout,M-144,retired,same Logout utility function; GLM retired
+A188,Player page hub,M-145,merged,player hub folds into M-145 inspector zones
+A189,Shared franchise page hub,M-146,merged,O=01 shared hub folds into M-146 inspector zones
+A190,Header Submit Lineup,M-027,same,"S8 header lineup direct, O=02 menu redirects there"
+A191,Header Add/Drop,M-024,same,S8 header add_drop same as menu
+A192,Header Trades,M-033,same,same O=05 report/function; GLM M-033
+A193,Header Rosters,M-030,same,same O=07 report/function; GLM M-030
+A194,Header Scoreboard,M-001,same,"S8 header Scoreboard is ajax_ls, not standings"
+A195,Header Stats,M-037,same,same O=08 report/function; GLM M-037
+A196,Header History,M-182,same,same O=247 ◆ report/function; GLM M-182
+A197,Header Draft,M-063,same,"S8 header Draft is O=17 results, not live draft room"
+A198,Home news ticker,M-180,merged,M-180 news ticker merged into shell status bar
+A199,Home MFL scoreboard strip,M-181,merged,M-181 scoreboard strip covers fantasy module
+A200,Home NFL scoreboard strip,M-181,merged,M-181 scoreboard strip covers NFL module
+A201,Scoreboard previous week,M-181,merged,previous-week W selector within M-181 scoreboard strip
+A202,Scoreboard next week,M-181,merged,next-week W selector within M-181 scoreboard strip
+A203,Home tab HOME,M-147,merged,M-147 named home tab folded into app node
+A204,Home tab MY TEAM,M-152,merged,M-152 named home tab folded into app node
+A205,Home tab REPORTS,M-159,merged,M-159 named home tab folded into app node
+A206,Home tab PLAYERS,M-162,merged,M-162 named home tab folded into app node
+A207,Home tab LATEST NEWS,M-165,merged,M-165 named home tab folded into app node
+A208,Home tab PLAYOFFS,M-168,merged,M-168 named home tab folded into app node
+A209,Home tab POOLS,M-171,merged,M-171 named home tab folded into app node
+A210,Home tab WAR ROOM,M-175,merged,M-175 named home tab folded into app node
+A211,Home Standings (8 divisions),M-002,same,GLM ledger HOME Standings same report
+A212,Home Power Rankings,M-008,same,GLM ledger HOME Power Rankings same report
+A213,Home Bar Chart,M-071,same,GLM ledger HOME Bar Chart same report
+A214,Home H2H Results,M-150,merged,M-150 H2H module covers this occurrence
+A215,Home My Schedule,M-151,merged,M-151 scoped schedule module covers this occurrence
+A216,Home Champions,M-114,same,GLM ledger HOME Champions same O=194
+A217,Home IR Report,M-057,same,GLM ledger HOME IR Report same injury report
+A218,Home Possible IR Violations,M-149,same,M-149 possible IR violations alert
+A219,Home Lineup Alert,M-148,same,M-148 lineup alert
+A220,Home Active Roster,M-030,same,"active-roster module same rosters data, mine scope"
+A221,Home Salary Adjustments,M-031,same,M-031 salary adjustments with franchise scope
+A222,Home IR Roster,M-028,same,IR-roster module same O=18 roster function
+A223,Home Taxi Roster,M-029,same,taxi-roster module same O=98 roster function
+A224,Home Owner Activity,M-158,merged,M-158 Owner Activity folds into league feed
+A225,Home Pending Trades,M-153,same,M-153 pendingTrades HOME module
+A226,Home Trade Bait,M-116,same,same O=133 report/function; GLM M-116
+A227,Home Bye Weeks,M-154,same,M-154 nflByeWeeks scoped to roster
+A228,Home Waiver Claims,M-156,same,M-156 pendingWaivers HOME module
+A229,Home Waiver Order,M-157,same,M-157 waiver order HOME module
+A230,Home Watch List,M-117,same,same O=178 report/function; GLM M-117
+A231,Home My Leagues,M-155,retired,"M-155 retires account module, portfolio switcher survives"
+A232,Home Power Rank,M-008,same,same O=101 report/function; GLM M-008
+A233,Home Summary,M-007,same,same O=31 report/function; GLM M-007
+A234,Home Fantasy Schedule,M-011,same,same O=15 report/function; GLM M-011
+A235,Home Results,M-003,same,same O=22 report/function; GLM M-003
+A236,Home Overview,M-160,merged,M-160 Overview folds into weekly summary
+A237,Home All Play,M-161,same,M-161 All Play distinct result comparison
+A238,Home Transactions,M-032,same,same O=03 report/function; GLM M-032
+A239,Home NFL Schedule,M-015,same,GLM ledger HOME NFL schedule
+A240,Home Top Performers MVP,M-163,merged,M-163 covers performer MVP position split
+A241,Home Top Performers QB,M-163,merged,M-163 covers performer QB position split
+A242,Home Top Performers RB,M-163,merged,M-163 covers performer RB position split
+A243,Home Top Performers WR,M-163,merged,M-163 covers performer WR position split
+A244,Home Top Performers TE,M-163,merged,M-163 covers performer TE position split
+A245,Home Top Performers PK,M-163,merged,M-163 covers performer PK position split
+A246,Home Top Performers DT,M-163,merged,M-163 covers performer DT position split
+A247,Home Top Performers DE,M-163,merged,M-163 covers performer DE position split
+A248,Home Top Performers LB,M-163,merged,M-163 covers performer LB position split
+A249,Home Top Performers CB,M-163,merged,M-163 covers performer CB position split
+A250,Home Top Performers S,M-163,merged,M-163 covers performer S position split
+A251,Home Top Free Agents MVP,M-163,merged,M-163 covers free-agent MVP position split
+A252,Home Top Free Agents QB,M-163,merged,M-163 covers free-agent QB position split
+A253,Home Top Free Agents RB,M-163,merged,M-163 covers free-agent RB position split
+A254,Home Top Free Agents WR,M-163,merged,M-163 covers free-agent WR position split
+A255,Home Top Free Agents TE,M-163,merged,M-163 covers free-agent TE position split
+A256,Home Top Free Agents PK,M-163,merged,M-163 covers free-agent PK position split
+A257,Home Top Free Agents DT,M-163,merged,M-163 covers free-agent DT position split
+A258,Home Top Free Agents DE,M-163,merged,M-163 covers free-agent DE position split
+A259,Home Top Free Agents LB,M-163,merged,M-163 covers free-agent LB position split
+A260,Home Top Free Agents CB,M-163,merged,M-163 covers free-agent CB position split
+A261,Home Top Free Agents S,M-163,merged,M-163 covers free-agent S position split
+A262,Home Top Adds,M-164,merged,M-164 covers Top Adds transaction list
+A263,Home Top Drops,M-164,merged,M-164 covers Top Drops transaction list
+A264,Home Top Started,M-164,merged,M-164 covers Top Started transaction list
+A265,Home Top Owned,M-164,merged,M-164 covers Top Owned transaction list
+A266,Home Steals,M-065,same,GLM ledger Steals home list shares M-065 analysis
+A267,Home Busts,M-065,same,GLM ledger Busts home list shares M-065 analysis
+A268,Home 5 Newest,M-166,merged,M-166 covers 5 Newest news digest
+A269,Home My 5 Newest,M-166,merged,M-166 covers My 5 Newest news digest
+A270,Home Hot Player News,M-166,merged,M-166 covers Hot Player News news digest
+A271,Home Featured News,M-166,merged,M-166 covers Featured News news digest
+A272,Game of the Week Recap,M-167,merged,M-167 game-of-week recap/preview module
+A273,Game of the Week Preview,M-167,merged,M-167 game-of-week recap/preview module
+A274,AFC Conference Winner,M-169,merged,M-169 covers conference/division/wildcard playoff projections
+A275,AFC Division Winners,M-169,merged,M-169 covers conference/division/wildcard playoff projections
+A276,AFC Wildcards,M-169,merged,M-169 covers conference/division/wildcard playoff projections
+A277,AFC On the Bubble,M-170,same,"M-170 On the Bubble, AFC scope"
+A278,NFC Conference Winner,M-169,merged,M-169 covers conference/division/wildcard playoff projections
+A279,NFC Division Winners,M-169,merged,M-169 covers conference/division/wildcard playoff projections
+A280,NFC Wildcards,M-169,merged,M-169 covers conference/division/wildcard playoff projections
+A281,NFC On the Bubble,M-170,same,"M-170 On the Bubble, NFC scope"
+A282,Home Playoff Bracket 1 (name unstated),unresolved,unsure,need unnamed bracket 1 target/module to confirm O=79 versus distinct view
+A283,Home Playoff Bracket 2 (name unstated),unresolved,unsure,need unnamed bracket 2 target/module to confirm O=79 versus distinct view
+A284,Home Playoff Bracket 3 (name unstated),unresolved,unsure,need unnamed bracket 3 target/module to confirm O=79 versus distinct view
+A285,Fantasy Pick’em results,M-200,new,"fantasy Pick-em results, not NFL O=122 or submit O=179"
+A286,Fantasy Pick’em submit,M-172,same,same O=179 ◆ report/function; GLM M-172
+A287,Home Survivor detail,M-201,new,"S8 reports R=SURVIVOR detail, O=120 is overview"
+A288,Home NFL Pick’em,M-173,same,"M-173 NFL Pick-em module, not fantasy Pick-em"
+A289,Top Survivor Picks,M-174,same,M-174 top survivor picks crowd report
+A290,Draft Status,M-176,same,M-176 draftStatus module
+A291,My Picks,M-177,merged,M-177 scoped My Picks folds into draft status
+A292,Recent Picks,M-178,merged,M-178 Recent Picks folds into draft status
+A293,Home ADP,M-067,same,same R=ADP report/function; GLM M-067
+A294,Home Draft List,M-103,same,same O=129 ◆ report/function; GLM M-103
+A295,Draft Average Time,M-179,same,M-179 draft average-time metric
+A296,Home Draft Pick,M-102,same,same O=52 ◆ report/function; GLM M-102
+A297,Footer Submit Lineup,M-027,same,same O=02 report/function; GLM M-027
+A298,Footer Add/Drop,M-024,same,S8 footer add_drop same as menu
+A299,Footer Trades,M-033,same,same O=05 report/function; GLM M-033
+A300,Footer Setup broken,M-184,retired,S8 O=50 invalid owner Setup link retired
+A301,Footer Accounting,M-197,new,"S8 footer Accounting base page, not Summary GRID view"
+A302,Footer Transactions,M-032,same,same O=03 report/function; GLM M-032
+A303,Footer Rosters,M-030,same,same O=07 report/function; GLM M-030
+A304,Footer By-Laws custom module,M-185,same,"S8 By-Laws MODULE=MESSAGE2, not O=09 rules"
+A305,Footer Sortable Stats,M-186,merged,"S8 Sortable Stats is O=08, M-186 merged alias"
+A306,Footer Free Agents,M-056,same,same R=FULLFA report/function; GLM M-056
+A307,Footer Box Scores,M-188,merged,M-188 Box Scores folds into fantasy_box_score
+A308,Footer Depth Charts,M-189,merged,M-189 Depth Charts folds into depth_chart
+A309,Footer Draft,M-102,same,"S8 footer Draft is O=52 entry, not header O=17"
+A310,Footer Scoreboard,M-001,same,S8 footer Scoreboard is ajax_ls live scoring
+A311,Footer Draft Results,M-063,same,same O=17 report/function; GLM M-063
+A312,Footer Power Rank,M-008,same,same O=101 report/function; GLM M-008
+A313,Detailed Results,M-190,merged,same O=180 ◆ report/function; GLM M-190
+A314,Links,M-191,retired,same O=68 ◆ report/function; GLM M-191; GLM retired
+B001,Going rate,L-01,same,Lab 1: same What should a win cost? job
+B002,Buy list — paid,L-02,same,Lab 1: same Who does the league underpay? job
+B003,Buy list — delivered,L-04,same,Lab 1: same What actually returned value? job
+B004,Sell list — paid,L-03,same,Lab 1: same Who does it overpay? job
+B005,Sell list — delivered,L-05,same,Lab 1: same What under-delivered? job
+B006,Market year stretch filter,L-06,merged,L-06 covers eight stretches and spring/summer/season filters
+B007,Trades per season by stretch,L-35,new,trade-count metric absent from L-06 time filter
+B008,Spring grouping,L-06,merged,L-06 covers eight stretches and spring/summer/season filters
+B009,Summer grouping,L-06,merged,L-06 covers eight stretches and spring/summer/season filters
+B010,Season grouping,L-06,merged,L-06 covers eight stretches and spring/summer/season filters
+B011,Market asset position chips,L-07,merged,L-07 covers position/next-round/later-pick chips
+B012,Next-draft picks by round chips,L-07,merged,L-07 covers position/next-round/later-pick chips
+B013,Later-pick chips,L-07,merged,L-07 covers position/next-round/later-pick chips
+B014,Players together,L-08,merged,L-08 covers together/split-by-age modes
+B015,Players split by age,L-08,merged,L-08 covers together/split-by-age modes
+B016,Asset profile — cheap/dear why,L-09,same,Lab 1: same Why is it mispriced? job
+B017,Asset profile — cheapest/dearest timing,L-10,same,Lab 1: same When do I strike? job
+B018,Asset profile — every-other-asset comparison,L-11,same,Lab 1: same Versus what else? job
+B019,Asset profile — returns in trades,L-12,same,Lab 1: same What did its trades return? job
+B020,Asset profile — who buys it,L-13,same,Lab 1: same Who do I call? job
+B021,Pick clock,L-14,same,Lab 1: same What's a future 1st worth now? job
+B022,LB finding: 39% / paid 55% / delivered 155%,L-09,merged,LB worked finding covered by L-09 cheap/dear reasons
+B023,Next-draft 1st finding: 294% / draft 102% / summer 346%,L-14,merged,next-draft-first finding covered by L-14 pick clock
+B024,Market How this is counted,L-33,merged,L-33 shared How-this-is-counted on every analytics surface
+B025,Market stretch — winter,L-06,merged,L-06 covers eight stretches and spring/summer/season filters
+B026,Market stretch — opening,L-06,merged,L-06 covers eight stretches and spring/summer/season filters
+B027,Market stretch — between,L-06,merged,L-06 covers eight stretches and spring/summer/season filters
+B028,Market stretch — rookie draft,L-06,merged,L-06 covers eight stretches and spring/summer/season filters
+B029,Market stretch — summer,L-06,merged,L-06 covers eight stretches and spring/summer/season filters
+B030,Market stretch — early season,L-06,merged,L-06 covers eight stretches and spring/summer/season filters
+B031,Market stretch — midseason,L-06,merged,L-06 covers eight stretches and spring/summer/season filters
+B032,Market stretch — deadline run-in,L-06,merged,L-06 covers eight stretches and spring/summer/season filters
+B033,Draft timing overview,L-15,merged,"draft overview covered by L-15 slot-return family, L-16..22 details"
+B034,Draft stretch 1.01–1.10,L-15,merged,L-15 covers seven draft-slot stretches
+B035,Draft stretch 1.11–1.32,L-15,merged,L-15 covers seven draft-slot stretches
+B036,Draft stretch 2.01–2.16,L-15,merged,L-15 covers seven draft-slot stretches
+B037,Draft stretch 2.17–2.32,L-15,merged,L-15 covers seven draft-slot stretches
+B038,Draft stretch round 3,L-15,merged,L-15 covers seven draft-slot stretches
+B039,Draft stretch round 4,L-15,merged,L-15 covers seven draft-slot stretches
+B040,Draft stretch round 5+,L-15,merged,L-15 covers seven draft-slot stretches
+B041,NFL draft round slice,L-17,same,Lab 2: same Does NFL round matter? job
+B042,Draft age-band slice,L-18,same,Lab 2: same Does age matter? job
+B043,Per pick — plays like pick #N,L-19,same,Lab 2: same What does this pick behave like? job
+B044,Per pick — hit rate vs stretch baseline,L-20,same,Lab 2: same Odds it hits? job
+B045,Per pick — kept by year 2,L-21,same,Lab 2: same Will he stick? job
+B046,Draft it or buy it,L-22,same,Lab 2: same Draft the position or trade for it? job
+B047,"DL finding: 48%, 65%, 76%, year 4 100%",L-16,merged,DL year-four finding covered by L-16 season-after-draft returns
+B048,DB finding: 65% vs 50% starter baseline,L-20,merged,DB finding covered by L-20 hit rate vs baseline
+B049,LB age ≥23 finding: 62%,L-18,merged,LB age-23 finding covered by L-18 age-band slice
+B050,Draft How this is counted,L-33,merged,L-33 shared How-this-is-counted on every analytics surface
+B051,Season after draft — 1,L-16,merged,L-16 covers seasons 1..5 after draft
+B052,Season after draft — 2,L-16,merged,L-16 covers seasons 1..5 after draft
+B053,Season after draft — 3,L-16,merged,L-16 covers seasons 1..5 after draft
+B054,Season after draft — 4,L-16,merged,L-16 covers seasons 1..5 after draft
+B055,Season after draft — 5,L-16,merged,L-16 covers seasons 1..5 after draft
+B056,Trade behaviour overview,L-26,merged,"team overview covered by L-26 league table, L-23..29 details"
+B057,Contender tier card (1–10),L-23,merged,L-23 covers contender/hunt/rebuild tier cards
+B058,In-the-hunt tier card (11–22),L-23,merged,L-23 covers contender/hunt/rebuild tier cards
+B059,Rebuilding tier card (23–32),L-23,merged,L-23 covers contender/hunt/rebuild tier cards
+B060,Contender earlier/later trend,L-24,merged,L-24 covers each tier earlier/later trend
+B061,In-the-hunt earlier/later trend,L-24,merged,L-24 covers each tier earlier/later trend
+B062,Rebuilding earlier/later trend,L-24,merged,L-24 covers each tier earlier/later trend
+B063,Tier-against-tier matrix,L-25,same,Lab 3: same Who trades with whom? job
+B064,Sortable 32-team table,L-26,same,Lab 3: same The whole league's trading job
+B065,Team season cells / against-standing marks,L-27,same,Lab 3: same Did they trade against their own interest? job
+B066,Team sent asset flows,L-28,merged,L-28 covers sent and received asset flows
+B067,Team received asset flows,L-28,merged,L-28 covers sent and received asset flows
+B068,Team trade partners,L-29,same,Lab 3: same Who deals with whom? job
+B069,Posture — bought for now,L-36,new,posture filter absent from L-23 tiers and L-27 season marks
+B070,Posture — built for later,L-36,new,"same posture selector, built-for-later option"
+B071,Posture — like for like,L-36,new,"same posture selector, like-for-like option"
+B072,Contender finding: 22% → 27%,L-24,merged,contender 22-to-27 finding covered by L-24 tier trend
+B073,Teams How this is counted,L-33,merged,L-33 shared How-this-is-counted on every analytics surface
+B074,Offers against acceptance overview,L-30,same,offer acceptance overview same L-30 endings by stretch
+B075,Sent offers,L-31,merged,L-31 covers sent/received/every-visible offer scope
+B076,Received offers,L-31,merged,L-31 covers sent/received/every-visible offer scope
+B077,Every visible offer,L-31,merged,L-31 covers sent/received/every-visible offer scope
+B078,Proposal endings,L-30,same,proposal endings same L-30 outcome distribution
+B079,Offers How this is counted,L-33,merged,L-33 shared How-this-is-counted on every analytics surface
+B080,Offer stretch — winter,L-30,merged,L-30 covers offer outcomes across eight stretches
+B081,Offer stretch — opening,L-30,merged,L-30 covers offer outcomes across eight stretches
+B082,Offer stretch — between,L-30,merged,L-30 covers offer outcomes across eight stretches
+B083,Offer stretch — rookie draft,L-30,merged,L-30 covers offer outcomes across eight stretches
+B084,Offer stretch — summer,L-30,merged,L-30 covers offer outcomes across eight stretches
+B085,Offer stretch — early season,L-30,merged,L-30 covers offer outcomes across eight stretches
+B086,Offer stretch — midseason,L-30,merged,L-30 covers offer outcomes across eight stretches
+B087,Offer stretch — deadline run-in,L-30,merged,L-30 covers offer outcomes across eight stretches
+C001,Asset board,C-01,same,same C-01 asset board with on-field and dynasty values
+C002,Player on-field-now (league PPG),C-01,merged,C-01 explicitly covers on-field-now league PPG
+C003,Player dynasty value (percentile),C-01,merged,C-01 explicitly covers dynasty percentile
+C004,Power rankings — this season,C-02,merged,C-02 explicitly covers this-season ranking
+C005,Power rankings — the franchise,C-02,merged,C-02 explicitly covers franchise ranking
+C006,Home landing,C-03,merged,C-03 Home owned by seasonal card per spec section 4
+C007,Seasonal card,C-03,same,same C-03 seasonal phase router
+C008,Calendar board,C-04,same,same C-04 due-date calendar board
+C009,League feed,C-05,same,same C-05 transactions/league comms feed
+C010,Transactions workspace,C-06.1,merged,C-06.1 what-if store owns transaction preparation workspace
+C011,What-if store,C-06.1,same,same C-06.1 what-if store
+C012,Acquisition plan,C-06.4,same,C-06.4 acquisition-plan cost handler
+C013,Contract plan,C-06.5,same,C-06.5 contract-years planning handler
+C014,Dead-cap plan,C-06.6,same,C-06.6 cut dead-cap planning handler
+C015,Free-agency plan,C-06.7,same,C-06.7 window free-agency planning handler
+C016,Hold-to-fire confirm,C-06.3,same,C-06.3 same hold-to-fire commit gesture
+C017,Trade builder,C-06.2,same,C-06.2 same two-sided trade preparation
+C018,Source health and freshness,C-07,same,C-07 same source health/freshness surface
+C019,Player crosswalk,C-08,same,C-08 same player identity crosswalk
+C020,Engine parameters Admin console,C-09,same,C-09 same role-gated engine parameters
+S001,Exercise contract option,M-192,same,"M-192 same option-election Act, form target TBD"
+S002,Re-sign player,M-195,same,"M-195 same re-sign-bid Act, form target TBD"
+S003,Buy out player,M-196,same,"M-196 same buyout Act, mechanics target TBD"
+S004,Submit RFA tender,M-193,same,"M-193 same RFA-tender Act, form target TBD"
+S005,Place UFA bid,M-194,same,"M-194 same UFA-bid Act, exact page TBD"
+A315,Submit Lineup IR link,M-028,same,same O=18 report/function; GLM M-028
+A316,Submit Lineup Taxi link,M-029,same,same O=98 report/function; GLM M-029
+B088,Market position — QB,L-07,merged,L-07 covers position/next-round/later-pick chips
+B089,Market position — RB,L-07,merged,L-07 covers position/next-round/later-pick chips
+B090,Market position — WR,L-07,merged,L-07 covers position/next-round/later-pick chips
+B091,Market position — TE,L-07,merged,L-07 covers position/next-round/later-pick chips
+B092,Market position — K,L-07,merged,L-07 covers position/next-round/later-pick chips
+B093,Market position — DT,L-07,merged,L-07 covers position/next-round/later-pick chips
+B094,Market position — DE,L-07,merged,L-07 covers position/next-round/later-pick chips
+B095,Market position — LB,L-07,merged,L-07 covers position/next-round/later-pick chips
+B096,Market position — CB,L-07,merged,L-07 covers position/next-round/later-pick chips
+B097,Market position — S,L-07,merged,L-07 covers position/next-round/later-pick chips
+B098,Asset profile panel,L-09,merged,"asset panel covered by L-09 reasons, L-10..13 other zones"
+B099,Per-pick timing panel,L-19,merged,"per-pick panel covered by L-19 plays-like, L-20..21 other zones"
+B100,Team trading panel,L-27,merged,"team panel covered by L-27 season cells, L-28..29 other zones"
+C021,Source freshness detail,C-07,merged,C-07 explicitly covers source freshness detail

@@ -1,264 +1,271 @@
-id,source,name,kind,gm_question,when,gravity,clock,data,placement,verb,disposition,ring,status
-M-001,MFL,Live Scoring,Read,How are my games going right now?,"ES/MS/DR, gamedays",G2 — active lineup calls lock at kickoff,live,liveScoring,Home,endpoint.open id=M-001,kept,1,spec
-M-002,MFL,Standings,Read,Where do I sit in the race?,"ES/MS/DR, weekly",G1 — misreads cost matchup calls,weekly,"weeklyResults, league",Home,endpoint.open id=M-002,kept,1,spec
-M-003,MFL,Weekly Results O=22,Read,What happened each week?,season,G0,none,weeklyResults,League Pulse › Now,endpoint.open id=M-003,kept,1,spec
-M-004,MFL,Last 3 Weeks O=258,Read,What's my recent form?,season,G0,none,weeklyResults,League Pulse › Now,endpoint.open id=M-004,kept,3,spec
-M-005,MFL,Weekly Matchup view,Read,How did the head-to-head go?,season,G0,none,weeklyResults,League Pulse › Now,endpoint.open id=M-005,kept,1,spec
-M-006,MFL,Scoring Detail (owner 403),Retire,—,—,—,—,—,,,"retired — dead link wired into ~1,400 places (defect D2)",—,spec
-M-007,MFL,Weekly Summary O=31,Read,The week at a glance?,"season, weekly",G1 — informs next-week calls,weekly,weeklyResults,League Pulse › Now,endpoint.open id=M-007,kept,1,spec
-M-008,MFL,Power Rank O=101,Decide,Who is actually strong?,"season, weekly",G1 — trade-posture input,weekly,facts (merges with C-02),Home,endpoint.open id=M-008,kept,3,spec
-M-009,MFL,Starting Lineups O=06,Read,What is everyone starting?,"season, weekly",G1 — matchup intel,weekly,rosters,League Pulse › Race,endpoint.open id=M-009,kept,3,spec
-M-010,MFL,Lineup Details O=210,Read,Slots: optimal vs actual?,"season, weekly",G1,weekly,"rosters, playerScores",League Pulse › Race,endpoint.open id=M-010,kept,3,spec
-M-011,MFL,Fantasy Schedule O=15,Read,"Who plays whom, when?",ALL,G1 — bye/rival planning,fixed,schedule,League Pulse › Race,endpoint.open id=M-011,kept,3,spec
-M-012,MFL,Schedule by Franchise O=16,Read,One team's slate,ALL,G0,fixed,schedule,League Pulse › Race,endpoint.open id=M-012,kept,3,spec
-M-013,MFL,Schedule Compact O=54,Read,Dense schedule grid,ALL,G0 — MFL's own density precedent,fixed,schedule,League Pulse › Race,endpoint.open id=M-013,kept,3,spec
-M-014,MFL,Playoff Brackets O=79,Read,What's the path?,DR+,G1,weekly,"schedule, weeklyResults",League Pulse › Race,endpoint.open id=M-014,kept,3,spec
-M-015,MFL,NFL Schedule,Read,"NFL byes, kickoffs",season,G1 — lineup/deadline planning,weekly,"nflSchedule, nflByeWeeks",League Pulse › Now,endpoint.open id=M-015,kept,3,spec
-M-016,MFL,NFL Box Score,Read,What happened in that NFL game?,season,G0,post-game,playerScores,League Pulse › Now,endpoint.open id=M-016,kept,3,spec
-M-017,MFL,Weather ↗,Retire,—,—,—,—,—,,,"retired — external site, not league data (optional sourced context later; Open Question 12)",—,spec
-M-018,MFL,Fantasy Previews O=207,Read,What's the matchup outlook?,"season, weekly",G1 — lineup calls,weekly,"facts, projectedScores",League Pulse › Now,endpoint.open id=M-018,kept,3,spec
-M-019,MFL,All-Time Series O=171,Read,History with this opponent?,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-019,kept,3,spec
-M-020,MFL,Game Injury Report (previews child),Decide,Who's hurt for this game?,"season, weekly",G2 — lineup legality/strength,gameday,players (injuries),War Room › Research,endpoint.open id=M-020,kept,3,spec
-M-021,MFL,Fantasy Recaps O=177,Read,What did the league see?,"season, weekly",G0,post-game,weeklyResults,League Pulse › Now,endpoint.open id=M-021,kept,3,spec
-M-022,MFL,Recap Top by Position,Read,Week's best by slot,season,G0,post-game,weeklyResults,League Pulse › Now,endpoint.open id=M-022,kept,3,spec
-M-023,MFL,Franchise Records O=156,Read,This franchise's marks,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-023,kept,3,spec
-M-024,MFL,Add/Drop form,Act,Get this player onto my roster,ALL; peak OFA/waivers,G3 — irreversible add; clocks; cap $ and a roster spot,window/live,"rosters, players, pendingWaivers",Franchise HQ › Acquire,waiver.claim,kept,3,spec
-M-025,MFL,Can't Cut List O=199,Read,Am I allowed to cut him?,ALL,G2 — guardrail for cut/buyout,none,"league (rules), players",Franchise HQ › Contracts & cap,endpoint.open id=M-025,kept,2,spec
-M-026,MFL,Waiver Coach ↗,Retire,—,—,—,—,—,,,retired — external tool; engine + Lab baselines replace it,—,spec
-M-027,MFL,Submit Lineup O=02,Act,Make my lineup legal and best,"season, weekly",G3 near kickoff — score loss; two URLs today (defect D1),weekly,"rosters, projectedScores",Franchise HQ › Lineup,lineup.set,kept,1,spec
-M-028,MFL,IR placement O=18,Act,Stash the injured player legally,season,G2 — roster spot + eligibility rules,weekly,"rosters, players (injuries)",Franchise HQ › Roster,roster.ir · roster.taxi,kept,1,spec
-M-029,MFL,Taxi placement O=98,Act,Develop a prospect without cap cost,ALL; peak post-draft,G2 — roster spot rules,none,"rosters, league (rules)",Franchise HQ › Roster,roster.ir · roster.taxi,kept,1,spec
-M-030,MFL,Rosters O=07,Read,Who's on whose roster?,ALL,G1 — league intel,sync,rosters,Franchise HQ › Roster,endpoint.open id=M-030,kept,1,spec
-M-031,MFL,Salary Adjustments O=142,"Read (+commish Act, gated)",What are the adjusted cap hits?,ALL,G1 — cap truth for every Act,sync,"league, rosters",Franchise HQ › Contracts & cap,endpoint.open id=M-031,kept,2,spec
-M-032,MFL,Transactions O=03,Read,What moves happened league-wide?,"ALL, near-live",G1 — intel; landing-verification source,near-live,transactions,Home,endpoint.open id=M-032,kept,1,spec
-M-033,MFL,Trades O=05,Act/Read,"Build, send, judge, accept trades",ALL; peak DR,G3 — irreversible once executed,window,"pendingTrades, transactions",Trade Floor › Trade desk,trade.propose · trade.accept · trade.reject · trade.add · trade.send,kept,1,spec
-M-034,MFL,Revoke offer ⛔,Act,Pull my pending offer back,ALL,G2 — reversible while pending; social cost,while pending,pendingTrades,Trade Floor › Trade desk,trade.revoke,kept,1,spec
-M-035,MFL,Compare Players ↗,Retire,—,—,—,—,—,,,retired — external tool; inspector compare + engine replace it,—,spec
-M-036,MFL,Drop Players O=257,Act,"Free the spot, eat the dead cap",ALL; peak CUT,G3 — irreversible + dead cap,none,"rosters, league",Franchise HQ › Contracts & cap,roster.drop · roster.buyout,kept,2,spec
-M-037,MFL,Player Stats O=08,Read,"Who's producing, at what level?",ALL,G1 — valuation input,none,playerScores,War Room › Research,endpoint.open id=M-037,kept,3,spec
-M-038,MFL,My Top Performers,Read,Who's carrying my team?,season,G0,weekly,playerScores (scoped),War Room › Research,endpoint.open id=M-038,kept,3,spec
-M-039,MFL,Top Free Agents,Decide,Best available players?,ALL; peak OFA/UFA,G2 — acquisition value,window,players (FA),War Room › Valuations & pool,endpoint.open id=M-039,kept,2,spec
-M-040,MFL,Top Passers,Read,QB leaders,season,G0,weekly,playerScores,War Room › Research,endpoint.open id=M-040,kept,3,spec
-M-041,MFL,Top Rushers,Read,RB leaders,season,G0,weekly,playerScores,War Room › Research,endpoint.open id=M-041,kept,3,spec
-M-042,MFL,Top Receivers,Read,WR/TE leaders,season,G0,weekly,playerScores,War Room › Research,endpoint.open id=M-042,kept,3,spec
-M-043,MFL,Top Kickers,Read,K leaders,season,G0,weekly,playerScores,War Room › Research,endpoint.open id=M-043,kept,3,spec
-M-044,MFL,Top Defenders (IDP),Read,DT/DE/LB/CB/S leaders,season,G1,weekly,playerScores,War Room › Research,endpoint.open id=M-044,kept,3,spec
-M-045,MFL,Top Defenses (team),Read,Team DST leaders,season,G0,weekly,playerScores,War Room › Research,endpoint.open id=M-045,kept,3,spec
-M-046,MFL,Projected Stats O=236,Decide,What output should I expect?,season,G2 — lineup/claim calls,weekly,projectedScores,War Room › Valuations & pool,endpoint.open id=M-046,kept,2,spec
-M-047,MFL,Player Ranks R=RANKS,Decide,Where does consensus rank him?,ALL,G1,sync,"players, engine",War Room › Valuations & pool,endpoint.open id=M-047,kept,2,spec
-M-048,MFL,Fantasy Depth Charts,Read,What's his NFL role?,ALL,G1 — role risk,weekly,players,War Room › Research,endpoint.open id=M-048,kept,3,spec
-M-049,MFL,Depth Chart Grid,Read,Roles across the league,ALL,G0,weekly,players,War Room › Research,endpoint.open id=M-049,kept,3,spec
-M-050,MFL,NFL Team Stats,Read,Team context,season,G0,weekly,"playerScores, nflSchedule",War Room › Research,endpoint.open id=M-050,kept,3,spec
-M-051,MFL,NFL Team Injuries,Read,Team injury context,season,G1,daily,players (injuries),War Room › Research,endpoint.open id=M-051,kept,3,spec
-M-052,MFL,Top Adds/Drops/Starters O=117,Decide,What is the league doing?,season,G1 — market behaviour,weekly,transactions,War Room › Research,endpoint.open id=M-052,kept,3,spec
-M-053,MFL,Points Allowed by Position O=81,Decide,Streaming matchup edge?,season,G1,weekly,playerScores,War Room › Research,endpoint.open id=M-053,kept,3,spec
-M-054,MFL,Points Allowed per NFL team O=243,Read,Matchup detail,season,G0,weekly,playerScores,War Room › Research,endpoint.open id=M-054,kept,3,spec
-M-055,MFL,Who Should I Start? O=205,Decide,Best lineup call for this slot,"season, weekly",G2 — lineup output,weekly,"projectedScores, engine",War Room › Research,endpoint.open id=M-055,kept,3,spec
-M-056,MFL,Complete FA Listing R=FULLFA,Read,The whole available pool,ALL,G1,sync,players (FA),War Room › Valuations & pool,endpoint.open id=M-056,kept,2,spec
-M-057,MFL,NFL Injury Report,Read,League-wide injury state,season,G1→G2 gameday,daily,players (injuries),War Room › Research,endpoint.open id=M-057,kept,3,spec
-M-058,MFL,Player News,Read/Social,What's new on him?,ALL,G1,near-live,players (news),Home,endpoint.open id=M-058,kept,3,spec
-M-059,MFL,News Article Page,Read,The full story,ALL,G0,none,players (news),War Room › Research,endpoint.open id=M-059,kept,3,spec
-M-060,MFL,My Player News,Read,News on my roster,season,G1,near-live,"players (news, scoped)",War Room › Research,endpoint.open id=M-060,kept,3,spec
-M-061,MFL,Get Projection Sources ↗,Retire,—,—,—,—,—,,,retired — paid external vendor,—,spec
-M-062,MFL,Player Search,Read,Find the player,ALL,G1 — enabler for everything,none,players,War Room › Research,endpoint.open id=M-062,kept — canonical surface becomes the command bar (`search.find`),3,spec
-M-063,MFL,Draft Results O=17,Read,How did past drafts go?,RD/offseason,G0,none,"draftResults, draftPickHistory",Trade Floor,endpoint.open id=M-063,kept,2,spec
-M-064,MFL,Draft Results Grid,Read,Board view of a draft,RD/offseason,G0 — MFL's one card precedent (D7),none,draftResults,Trade Floor,endpoint.open id=M-064,kept,2,spec
-M-065,MFL,Steals and Busts,Decide,Did the league price picks right?,RD/SM,G1,none,facts,Trade Floor,endpoint.open id=M-065,kept,2,spec
-M-066,MFL,Draft Recap,Read,Story of the draft,RD,G0,none,draftResults,Trade Floor,endpoint.open id=M-066,kept,2,spec
-M-067,MFL,ADP Report R=ADP,Decide,What's the slot market?,RD,G1→G2 on the clock,draft,adp,War Room › Valuations & pool,endpoint.open id=M-067,kept,2,spec
-M-068,MFL,Future Draft Picks O=100,Read,Who owns which future pick?,ALL,G2 — trade-capital truth,sync,"draftResults, transactions",Trade Floor,endpoint.open id=M-068,kept,2,spec
-M-069,MFL,AAV Report R=AAV,Decide,What do free agents cost?,UFA/OFA,G2 — bid sizing,window,facts (AAV),War Room › Valuations & pool,endpoint.open id=M-069,kept,2,spec
-M-070,MFL,All Reports hub page,Retire,—,—,—,—,—,,,"retired — 31-door index, defect D1; all children placed individually",—,spec
-M-071,MFL,Bar Chart O=20,Read,Scoring trend,season,G0,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-071,kept,3,spec
-M-072,MFL,Fantasy Box Score,Read,Quarter-by-quarter detail,season,G1,post-game,"weeklyResults, liveScoring",League Pulse › Now,endpoint.open id=M-072,kept,1,spec
-M-073,MFL,Scoring History O=118,Read,Points over time,ALL,G0,none,weeklyResults,League Pulse › Archive,endpoint.open id=M-073,kept,3,spec
-M-074,MFL,Tiebreakers O=119,Read,Who wins ties?,DR+,G2 — seeding,weekly,"league, weeklyResults",League Pulse › Race,endpoint.open id=M-074,kept,3,spec
-M-075,MFL,Victory Points O=153,Read,VP standings (if used),season,G1,weekly,league,League Pulse › Race,endpoint.open id=M-075,kept — confirm league uses VP (Open Question 9),3,spec
-M-076,MFL,Starter Pts by Position O=23,Decide,Where do I leak points?,season,G1,weekly,playerScores,League Pulse › Race,endpoint.open id=M-076,kept,3,spec
-M-077,MFL,Starter Pts by Player O=37,Read,Points by starter,season,G0,weekly,playerScores,League Pulse › Race,endpoint.open id=M-077,kept,3,spec
-M-078,MFL,Salaries & Contracts R=SALARIES,Read,Every contract in the league,ALL,G2 — cap decisions,sync,"league, rosters",Franchise HQ › Contracts & cap,endpoint.open id=M-078,kept,2,spec
-M-079,MFL,Player Additions & Position Changes R=NEWPLAY,Read,How did rosters form?,ALL,G0,none,transactions,League Pulse › Archive,endpoint.open id=M-079,kept,3,spec
-M-080,MFL,League History O=112,Read,Past seasons,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-080,kept,3,spec
-M-081,MFL,Awards O=202,Read,Hardware list,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-081,kept,3,spec
-M-082,MFL,Player Records O=157,Read,Player marks,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-082,kept,3,spec
-M-083,MFL,Matchup Records O=158,Read,Head-to-head marks,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-083,kept,3,spec
-M-084,MFL,Season Records O=204,Read,Single-season bests,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-084,kept,3,spec
-M-085,MFL,Career Records O=208,Read,Career bests,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-085,kept,3,spec
-M-086,MFL,Record Streaks O=232,Read,Streaks,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-086,kept,3,spec
-M-087,MFL,NFL Draft O=215,Read,Who entered the NFL from where?,RD,G1,none,players,Trade Floor,endpoint.open id=M-087,kept,2,spec
-M-088,MFL,Official Stat Changes,Read,Did a score change post-game?,season,G2 — can flip a win,post-game,playerScores,League Pulse › Now,endpoint.open id=M-088,kept,3,spec
-M-089,MFL,Strange Plays,Read,League lore,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-089,kept,3,spec
-M-090,MFL,Projected Playoff Seedings,Decide,If the season ended today?,DR+,G1,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-090,kept,3,spec
-M-091,MFL,League Settings O=26,Read,The rules as configured,ALL,G2 — legality of every Act,sync,"league, rules",Control Room,endpoint.open id=M-091,kept,3,spec
-M-092,MFL,Widgets,Retire,—,—,—,—,—,,,"retired — MFL-site home customization, out of scope",—,spec
-M-093,MFL,Email Log,Read (gated),What did the league mail out?,"ALL, rare",G0 for GM; commish audit,none,league,Control Room,endpoint.open id=M-093,kept (gated),3,spec
-M-094,MFL,Edit My Links,Retire,—,—,—,—,—,,,"retired — MFL-site personalization; app watch list, scratchpad and presets replace",—,spec
-M-095,MFL,Commissioner News ⛔,Social (gated write),League notices,ALL,G1 — windows and rulings surface here,none,league,Control Room,endpoint.open id=M-095,kept (gated),3,spec
-M-096,MFL,League Calendar O=123,Read/Plan,What's due and when?,ALL,G2→G3 — the league's deadlines live here,window,"league, local",Home,endpoint.open id=M-096,kept (merges with C-04),3,spec
-M-097,MFL,League Rules O=09 → League Settings,Read,The bylaws as written,ALL,G2 — legality,sync,"league, rules",Control Room,endpoint.open id=M-097,kept,3,spec
-M-098,MFL,Accounting Summary,Read,League money,"ALL, rare",G0,none,league,Control Room,endpoint.open id=M-098,kept,3,spec
-M-099,MFL,LeagueSafe ↗,Retire,—,—,—,—,—,,,retired — external payments site,—,spec
-M-100,MFL,Franchise Information hub O=01,Retire,—,—,—,—,—,,,retired as a page — 25 onward doors (defect D1); function merges into the inspector (M-146),—,spec
-M-101,MFL,Roster w/Stats O=138,Read,Roster and output in one view,ALL,G1,sync,"rosters, playerScores",Franchise HQ › Roster,endpoint.open id=M-101,kept,1,spec
-M-102,MFL,Draft Pick O=52,Read,Who was this pick?,RD,G0,none,draftPickHistory,Trade Floor,endpoint.open id=M-102,kept,2,spec
-M-103,MFL,My Draft List O=129,Plan,My board for the draft,RD,G2 — draft prep,RD,local (MFL-hosted today),Trade Floor,endpoint.open id=M-103,kept,2,spec
-M-104,MFL,Trophy Case,Read,Franchise silverware,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-104,kept,3,spec
-M-105,MFL,Career Record,Read,Franchise W/L record,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-105,kept,3,spec
-M-106,MFL,Contact ⛔,Retire,—,—,—,—,—,,,"retired — members' personal contact data, excluded per §8",—,spec
-M-107,MFL,Mobile ⛔,Retire,—,—,—,—,—,,,"retired — MFL-site profile function, out of scope",—,spec
-M-108,MFL,Draft Preferences ⛔,Configure,My MFL draft automation prefs,RD,G1 — draft-day mechanics,RD,league (draft prefs),Control Room,draft.prefs · mfl.open,kept (gated hand-off),3,spec
-M-109,MFL,Location O=238,Retire,—,—,—,—,—,,,"retired — members' street addresses, excluded per §8",—,spec
-M-110,MFL,Franchise Summary R=FSUMMARY,Read,"One franchise, whole picture",ALL,G0/G1,sync,"rosters, weeklyResults, facts",League Pulse › Archive,endpoint.open id=M-110,kept,3,spec
-M-111,MFL,NFL Pool Results O=122,Read,Pool outcomes,"season, weekly",G0,weekly,league (pools),League Pulse › Pools,endpoint.open id=M-111,kept,3,spec
-M-112,MFL,Pool Picks O=121,Read,Who picked what,"season, weekly",G1,weekly,league (pools),League Pulse › Pools,endpoint.open id=M-112,kept,3,spec
-M-113,MFL,Survivor Pool O=120,Read/Decide,Survivor state and picks,"season, weekly",G2 — elimination risk,weekly,league (pools),League Pulse › Pools,endpoint.open id=M-113,kept,3,spec
-M-114,MFL,League Champions O=194,Read,Past champions,"ALL, rare",G0,none,facts,Home,endpoint.open id=M-114,kept,1,spec
-M-115,MFL,Franchise Setup ⛔,Retire,—,—,—,—,—,,,retired — MFL-site profile personalization (unlink/contact/mobile); personal data; Control Room keeps a generic MFL-account utility link,—,spec
-M-116,MFL,Trade Bait O=133,Act/Social,Advertise an asset,ALL; peak DR,G2 — market signalling,none,"tradeBait, local",Franchise HQ › My moves,bait.set,kept,3,spec
-M-117,MFL,My Watch List O=178,Plan,Track my targets,ALL,G1,none,local (MFL-hosted today),Franchise HQ › My moves,endpoint.open id=M-117,kept,3,spec
-M-118,MFL,My Scratchpad O=234,Plan,My working notes,ALL,G1,none,local (MFL-hosted today),Franchise HQ › My moves,endpoint.open id=M-118,kept,3,spec
-M-119,MFL,My Links,Retire,—,—,—,—,—,,,retired — MFL-site personalization; app presets and watch list replace,—,spec
-M-120,MFL,Message Board,Social,League talk and rulings,ALL,G1,none,league (board),Comms panel,social.post · poll.vote · comms.draft,kept → comms channel,3,spec
-M-121,MFL,Chat,Social,Live league chat,"ALL, gamedays",G1,live,league (chat),Comms panel,social.post · poll.vote · comms.draft,kept → comms channel,3,spec
-M-122,MFL,Articles,Social/Read,League articles,"ALL, rare",G0,none,league (articles),Comms panel,endpoint.open id=M-122,kept → comms channel,3,spec
-M-123,MFL,Polls,Social (+Act to vote),What does the league want?,"ALL, rare",G1,none,league (polls),Comms panel,social.post · poll.vote · comms.draft,kept → comms channel (vote = hand-off),3,spec
-M-124,MFL,Trash-Talk Videos,Social,Rivalry theatre,season,G0,none,league (media),Comms panel,endpoint.open id=M-124,kept → comms channel,3,spec
-M-125,MFL,Email Commissioner,Social,Raise something privately,ALL,G1,none,external client,Comms panel,social.post · poll.vote · comms.draft,kept → comms hand-off; the app itself never sends,3,spec
-M-126,MFL,Email League,Social,Address the whole league,"ALL, rare",G1,none,external client,Comms panel,endpoint.open id=M-126,kept → comms hand-off; the app itself never sends,3,spec
-M-127,MFL,Text League,Social,Address the whole league,"ALL, rare",G1,none,external SMS client,Comms panel,endpoint.open id=M-127,kept → comms hand-off,3,spec
-M-128,MFL,Forums ↗,Retire,—,—,—,—,—,,,retired — external site,—,spec
-M-129,MFL,Twitter ↗,Retire,—,—,—,—,—,,,retired — external site,—,spec
-M-130,MFL,Refer,Retire,—,—,—,—,—,,,retired — MFL marketing,—,spec
-M-131,MFL,MFL Dashboard,Retire,—,—,—,—,—,,,"retired — MFL-site account hub, out of scope",—,spec
-M-132,MFL,Premium,Retire,—,—,—,—,—,,,retired — MFL upsell,—,spec
-M-133,MFL,League Home 2019–2025,Retire,—,—,—,—,—,,,"retired — MFL archive hosting; app Archive reads this league's history via the API, MFL keeps the files",—,spec
-M-134,MFL,All My Leagues,Retire,—,—,—,—,—,,,retired as MFL page; the concept survives as the portfolio league switcher (Step 8),—,spec
-M-135,MFL,New League,Retire,—,—,—,—,—,,,"retired — league creation, out of scope",—,spec
-M-136,MFL,Find a League,Retire,—,—,—,—,—,,,retired — out of scope,—,spec
-M-137,MFL,Cache Tools,Configure,MFL is showing stale data,"ALL, rare",G1,none,MFL site,Control Room › MFL utilities,endpoint.open id=M-137,kept → Control Room › MFL utilities (link),3,spec
-M-138,MFL,Help Center,Retire,—,—,—,—,—,,,retired — MFL product help; console has its own help surface,—,spec
-M-139,MFL,Help on Page,Retire,—,—,—,—,—,,,retired — MFL-page help,—,spec
-M-140,MFL,Tickets,Retire,—,—,—,—,—,,,retired — MFL support process,—,spec
-M-141,MFL,What's New,Configure,Did MFL change page behaviour?,"ALL, rare",G1 — Phase 1 hand-off depends on MFL page behaviour,none,MFL site,Control Room › MFL utilities,endpoint.open id=M-141,kept → MFL utilities (monitored link),3,spec
-M-142,MFL,Printer Page,Retire,—,—,—,—,—,,,retired — Matrix tier and export replace it,—,spec
-M-143,MFL,Developer API,Retire,—,—,—,—,—,,,retired as a GM surface — it is the app's ingestion layer; docs linked in Control Room › Sources for maintainers,—,spec
-M-144,MFL,Logout,Retire,—,—,—,—,—,,,retired — MFL session control; the app manages its own session in Control Room › Sources and never logs the GM out of MFL implicitly,—,spec
-M-145,MFL,Player page hub (11 onward link kinds),Read,Everything about this player,ALL,G2 — the entity behind most decisions,none,"playerProfile, playerScores, league, facts",Inspector,endpoint.open id=M-145,"merged → inspector, player view; the 11 kinds become inspector zones (Open Question 1)",with target,spec
-M-146,MFL,Franchise page hub O=01 (25 onward kinds),Read,Everything about this franchise,ALL,G1,none,"rosters, weeklyResults, transactions, facts",Inspector,endpoint.open id=M-146,"merged → inspector, franchise view; children censed above/below",with target,spec
-M-147,MFL,HOME tab (shell),Read,Landing view,ALL,G0,none,composite,,endpoint.open id=M-147,merged → app Home,with target,spec
-M-148,MFL,Lineup Alert,Decide/Act,Is my lineup broken?,"season, gameday",G3 on gameday — a miss is a zero in a slot,gameday,"rosters, projectedScores",Home,endpoint.open id=M-148,kept,1,spec
-M-149,MFL,Possible IR Violations,Decide,Am I breaking IR rules?,season,G2 — compliance,none,"rosters, league (rules)",Home,endpoint.open id=M-149,kept,1,spec
-M-150,MFL,H2H Results (HOME module),Read,Head-to-head history,"ALL, rare",G0,none,weeklyResults,,endpoint.open id=M-150,merged → M-003/M-005,with target,spec
-M-151,MFL,My Schedule (HOME module),Read,My slate,season,G0,fixed,schedule,,endpoint.open id=M-151,merged → M-011 (scoped),with target,spec
-M-152,MFL,MY TEAM tab (shell),Read,My franchise view,ALL,G0,none,composite,,endpoint.open id=M-152,merged → Franchise HQ,with target,spec
-M-153,MFL,Pending Trades,Read/Decide,What's on my desk?,ALL; peak DR,G3 while pending — accept/reject decisions expire,while pending,pendingTrades,Home,endpoint.open id=M-153,kept,1,spec
-M-154,MFL,Bye Weeks,Decide,Who's dark this week?,season,G2 — lineup legality,weekly,"nflByeWeeks, rosters",Franchise HQ › Lineup,endpoint.open id=M-154,kept,1,spec
-M-155,MFL,My Leagues (module),Retire,—,—,—,—,—,,,retired — MFL account feature; replaced by the portfolio switcher concept (Step 8),—,spec
-M-156,MFL,Waiver Claims,Read/Act,What am I owed from waivers?,ALL in season,G2 — claims resolve on a clock,window,pendingWaivers,Home,endpoint.open id=M-156,kept,1,spec
-M-157,MFL,Waiver Order,Decide,Where am I in line?,season,G2 — claim strategy,weekly,league,Home,endpoint.open id=M-157,kept,1,spec
-M-158,MFL,Owner Activity,Read,What are owners doing?,ALL,G0,near-live,transactions,,endpoint.open id=M-158,merged → C-05 league feed,with target,spec
-M-159,MFL,REPORTS tab (shell),Read,Report shortcuts,ALL,G0,none,composite,,endpoint.open id=M-159,merged,with target,spec
-M-160,MFL,Overview (REPORTS module),Read,Week overview,season,G0,weekly,weeklyResults,,endpoint.open id=M-160,merged → M-007,with target,spec
-M-161,MFL,All Play,Read/Decide,My record vs every team,season,G1,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-161,kept,3,spec
-M-162,MFL,PLAYERS tab (shell),Read,Player shortcuts,ALL,G0,none,composite,,endpoint.open id=M-162,merged,with target,spec
-M-163,MFL,Top lists by position ◆ (11 splits × 2 lists),Read/Decide,Best at each position,ALL,G1,weekly,"playerScores, players",,endpoint.open id=M-163,merged → M-037/M-039 with position filter,with target,spec
-M-164,MFL,Top Adds/Drops/Started/Owned ◆,Decide,Market pulse,season,G1,weekly,transactions,,endpoint.open id=M-164,merged → M-052 family,with target,spec
-M-165,MFL,LATEST NEWS tab (shell),Read,News view,ALL,G0,near-live,composite,,endpoint.open id=M-165,merged,with target,spec
-M-166,MFL,News digests (5 Newest · My 5 · Hot · Featured),Read,What moved today,ALL,G1,near-live,players (news),,endpoint.open id=M-166,merged → M-058 + C-05,with target,spec
-M-167,MFL,Game of the Week recap/preview,Read,Featured game,season,G0,weekly,weeklyResults,,endpoint.open id=M-167,merged → M-021/M-018,with target,spec
-M-168,MFL,PLAYOFFS tab (shell),Read,Playoff view,DR+,G0,weekly,composite,,endpoint.open id=M-168,merged,with target,spec
-M-169,MFL,Playoff projections (Conf/Div/Wildcard winners),Decide,Who makes it?,DR+,G1,weekly,weeklyResults,,endpoint.open id=M-169,merged → M-090,with target,spec
-M-170,MFL,On the Bubble,Decide,Am I in or out?,DR+,G2 — seeding decisions,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-170,kept,3,spec
-M-171,MFL,POOLS tab (shell),Read,Pool view,season,G0,weekly,composite,,endpoint.open id=M-171,merged,with target,spec
-M-172,MFL,Fantasy Pick'em submit O=179,Act,Make my picks,"season, weekly",G2 — weekly deadline,weekly,league (pools),League Pulse › Pools,pools.picks,kept,3,spec
-M-173,MFL,NFL Pick'em,Act,Make my NFL picks,"season, weekly",G2 — weekly deadline,weekly,league (pools),League Pulse › Pools,pools.picks,kept,3,spec
-M-174,MFL,Top Survivor Picks,Decide,What's the crowd doing?,"season, weekly",G1,weekly,league (pools),League Pulse › Pools,endpoint.open id=M-174,kept,3,spec
-M-175,MFL,WAR ROOM tab (shell),Read,Draft home,RD,G0,draft,composite,,endpoint.open id=M-175,merged → draft room (M-183),with target,spec
-M-176,MFL,Draft Status,Read,Where is the draft?,RD,G2 — pick order/clock awareness,draft,draftStatus,Trade Floor,endpoint.open id=M-176,kept,2,spec
-M-177,MFL,My Picks (draft module),Read,My slots,RD,G1,draft,draftStatus,,endpoint.open id=M-177,merged → M-176 (scoped),with target,spec
-M-178,MFL,Recent Picks,Read,What just happened,RD,G1,draft,draftStatus,,endpoint.open id=M-178,merged → M-176,with target,spec
-M-179,MFL,Draft Avg Time,Read,Pace of the draft,RD,G1,draft,draftStatus,Trade Floor,endpoint.open id=M-179,kept,2,spec
-M-180,MFL,News ticker,Read,Ambient league news,ALL,G0,near-live,players (news),Status bar,endpoint.open id=M-180,merged → shell status bar,with target,spec
-M-181,MFL,Scoreboard strip,Read,Ambient scores,season,G0,live,"liveScoring, nflSchedule",Status bar,endpoint.open id=M-181,merged → gameday strip (status bar),with target,spec
-M-182,MFL,History O=247 ◆,Read,League history hub,"ALL, rare",G0,none,facts,Home,endpoint.open id=M-182,kept — defect D4: no menu reaches it; placed in Archive + command + entity routes,3,spec
-M-183,MFL,Draft (live draft room),Act/Read,Run the draft; make my pick,RD,G3 on the clock — a missed slot burns the pick,draft,"draftStatus, draftResults",Trade Floor,draft.select,kept — canonical draft console,2,spec
-M-184,MFL,Setup ✗,Retire,—,—,—,—,—,,,"retired — broken link (""Option is Missing or Invalid""), defect D3",—,spec
-M-185,MFL,By-Laws (custom module) ◆,Read,The league's own rulebook,ALL,"G2 — windows, eligibility, buyout mechanics",none,league (custom module),Control Room,endpoint.open id=M-185,kept,3,spec
-M-186,MFL,Sortable Stats,Read,Stat table,ALL,G1,none,playerScores,,endpoint.open id=M-186,merged → M-037,with target,spec
-M-187,MFL,Free Agents,Read,FA list,ALL,G1,sync,players (FA),,endpoint.open id=M-187,merged → M-039,with target,spec
-M-188,MFL,Box Scores,Read,Box scores,season,G0,post-game,weeklyResults,,endpoint.open id=M-188,merged → M-072,with target,spec
-M-189,MFL,Depth Charts,Read,Depth charts,ALL,G1,weekly,players,,endpoint.open id=M-189,merged → M-048,with target,spec
-M-190,MFL,Detailed Results O=180 ◆,Read,Result detail,season,G0,post-game,weeklyResults,,endpoint.open id=M-190,merged → M-003 detail view,with target,spec
-M-191,MFL,Links O=68 ◆,Retire,—,—,—,—,—,,,retired — MFL-site link page; app presets replace,—,spec
-M-192,MFL,Contract option election,Act,Exercise or decline his option?,OPT (Mar 1–Apr 30),G3 — wrong call costs the player or the cap hit,window,"rosters, league (rules)",Franchise HQ › Contracts & cap,contract.option · rfa.tender,kept — hand-off target TBD,2,spec
-M-193,MFL,RFA tender,Act,"Tender him, at what level?",TEN (May 1–3),G3 — missed tender = lost rights,window,"rosters, league (rules)",Franchise HQ › Contracts & cap,contract.option · rfa.tender,kept — hand-off target TBD,2,spec
-M-194,MFL,UFA bid,Act,Sign this free agent at what price?,UFA (May 3–10),G3 — bids bind cap; outbid clocks run live,window/live,"players (FA), league (rules), facts (AAV)",Franchise HQ › Contracts & cap,fa.bid,kept — blind-bid module per MFL docs (cited); exact page TBD,2,spec
-M-195,MFL,Re-sign bid,Act,Keep my expiring player at what price?,RSG (May 10–15),G3 — miss = the player walks,window,"rosters, league (rules)",Franchise HQ › Contracts & cap,fa.resign,kept — target TBD,2,spec
-M-196,MFL,Buyout,Act,Buy him out and eat the dead cap?,CUT (Aug 25–Sep 1),G3 — irreversible cap charge,window,"rosters, league (rules)",Franchise HQ › Contracts & cap,roster.drop · roster.buyout,kept — mechanics per By-Laws (M-185); target TBD,2,spec
-L-01,Lab,Going rate (median cost per delivered win),Decide,What should a win cost?,ALL,G2 — prices every trade and bid,none,facts,War Room › Market,endpoint.open id=L-01,kept — War Room › Market,2,spec
-L-02,Lab,Buy list (paid),Decide,Who does the league underpay?,ALL; peak DR,G2,none,facts,War Room › Market,endpoint.open id=L-02,kept — Market,2,spec
-L-03,Lab,Sell list (paid),Decide,Who does it overpay?,ALL; peak DR,G2,none,facts,War Room › Market,endpoint.open id=L-03,kept — Market,2,spec
-L-04,Lab,Buy list (delivered),Decide,What actually returned value?,ALL,G1,none,facts,War Room › Market,endpoint.open id=L-04,kept — Market,2,spec
-L-05,Lab,Sell list (delivered),Decide,What under-delivered?,ALL,G1,none,facts,War Room › Market,endpoint.open id=L-05,kept — Market,2,spec
-L-06,Lab,Filter band: 8 stretches → spring/summer/season,Configure,When in the year?,ALL,G1,none,facts,War Room › Market,endpoint.open id=L-06,kept — Market filter (persists per rule 3),2,spec
-L-07,Lab,Asset chips: positions · next-draft picks by round · later picks,Configure,Which asset class?,ALL,G1,none,facts,War Room › Market,endpoint.open id=L-07,kept — Market filter,2,spec
-L-08,Lab,Players together or split by age,Configure,Split by age?,ALL,G1,none,facts,War Room › Market,endpoint.open id=L-08,kept — Market filter,2,spec
-L-09,Lab,Asset profile: why cheap or dear,Decide,Why is it mispriced?,ALL,G2,none,facts,War Room › Market,endpoint.open id=L-09,kept — inspector zone + Market,2,spec
-L-10,Lab,Asset profile: cheapest/dearest weeks (beyond-chance marks only),Decide,When do I strike?,ALL,G2,none,facts,War Room › Market,endpoint.open id=L-10,kept — inspector zone + Market,2,spec
-L-11,Lab,Asset profile: against every other asset,Decide,Versus what else?,ALL,G1,none,facts,War Room › Market,endpoint.open id=L-11,kept — inspector zone + Market,2,spec
-L-12,Lab,Asset profile: what came back in its trades,Read,What did its trades return?,ALL,G0/G1,none,facts,War Room › Market,endpoint.open id=L-12,kept — inspector zone + Market,2,spec
-L-13,Lab,Asset profile: who buys it,Decide,Who do I call?,ALL; peak DR,G2,none,facts,War Room › Market,endpoint.open id=L-13,kept — inspector zone + Market,2,spec
-L-14,Lab,Pick clock (next-draft 1st ≈ 45–47% of its draft-year price),Decide,What's a future 1st worth now?,ALL; peak BTW/RD,G2,none,facts,War Room › Market,endpoint.open id=L-14,kept — Market + draft pick card,2,spec
-L-15,Lab,Return as % of slot — 7 draft stretches (1.01–1.10 … 5+),Decide,What does this slot normally return?,RD,G2 — the pick call,draft,facts,War Room › Market,endpoint.open id=L-15,kept — Market (pick assets); embedded in draft room,2,spec
-L-16,Lab,Return by season after draft (1–5),Decide,When does a pick pay?,RD/SM,G1,none,facts,War Room › Market,endpoint.open id=L-16,kept — Market; embedded in draft room,2,spec
-L-17,Lab,Return by NFL draft round,Decide,Does NFL round matter?,RD,G1,none,facts,War Room › Market,endpoint.open id=L-17,kept — Market; embedded in draft room,2,spec
-L-18,Lab,Return by age band,Decide,Does age matter?,RD,G1,none,facts,War Room › Market,endpoint.open id=L-18,kept — Market; embedded in draft room,2,spec
-L-19,Lab,"""Plays like pick #N"" per pick",Decide,What does this pick behave like?,RD,G2,draft,facts,War Room › Market,endpoint.open id=L-19,kept — draft pick card; embedded in draft room,2,spec
-L-20,Lab,Hit rate against the stretch's baseline,Decide,Odds it hits?,RD,G2,draft,facts,War Room › Market,endpoint.open id=L-20,kept — draft pick card,2,spec
-L-21,Lab,Kept by year 2,Decide,Will he stick?,RD,G1,none,facts,War Room › Market,endpoint.open id=L-21,kept — draft pick card; embedded in draft room,2,spec
-L-22,Lab,Draft it or buy it (per position),Decide,Draft the position or trade for it?,RD/DR,G2,none,facts,War Room › Market,endpoint.open id=L-22,kept — Market; surfaced in Trade Floor,2,spec
-L-23,Lab,Tier cards: contender 1–10 · hunt 11–22 · rebuild 23–32,Read/Decide,Who's in which tier today?,ALL; peak DR,G1,weekly,facts,Trade Floor › Counterparties,endpoint.open id=L-23,kept — Trade Floor › Counterparties,2,spec
-L-24,Lab,"Each tier's trend, earlier vs later seasons",Decide,Are tiers behaving differently?,ALL,G1,none,facts,Trade Floor › Counterparties,endpoint.open id=L-24,kept — Counterparties,2,spec
-L-25,Lab,Tier-against-tier matrix,Decide,Who trades with whom?,ALL; peak DR,G2,none,facts,Trade Floor › Counterparties,endpoint.open id=L-25,kept — Counterparties,2,spec
-L-26,Lab,Sortable 32-team trade table,Read,The whole league's trading,ALL,G1,none,facts,Trade Floor › Counterparties,endpoint.open id=L-26,kept — Counterparties,2,spec
-L-27,Lab,Team panel: season cells marked when the team traded against its standing,Read,Did they trade against their own interest?,ALL,G1,none,facts,Trade Floor › Counterparties,endpoint.open id=L-27,kept — Counterparties,2,spec
-L-28,Lab,Team panel: asset flows sent and taken,Read,What did they ship/take?,ALL,G1,none,facts,Trade Floor › Counterparties,endpoint.open id=L-28,kept — Counterparties,2,spec
-L-29,Lab,Team panel: trade partners,Decide,Who deals with whom?,ALL; peak DR,G2,none,facts,Trade Floor › Counterparties,endpoint.open id=L-29,kept — Counterparties,2,spec
-L-30,Lab,Offers and their endings across the 8 stretches,Decide,How do offers end?,ALL,G2,none,facts,Trade Floor › Offers,endpoint.open id=L-30,kept — Trade Floor › Offers,2,spec
-L-31,Lab,Sent / received / every visible offer split,Configure/Read,My sent vs received vs all,ALL,G1,none,facts,Trade Floor › Offers,endpoint.open id=L-31,kept — Offers filter,2,spec
-L-32,Lab,Scope disclosure: MFL exposes only the GM's own offers,Read,Whose offers am I seeing?,ALL,G1 — honesty gate,none,facts,Trade Floor › Offers,endpoint.open id=L-32,"kept — Offers header, always visible",2,spec
-L-33,Lab,"""How this is counted"" note",Read,Provenance of every number,ALL,G0,none,facts,War Room › Market,endpoint.open id=L-33,kept — component on every analytics surface,2,spec
-L-34,Lab,Checked-facts database (the standard itself),infrastructure,—,ALL,G0,sync,facts,Control Room › Data & sources,endpoint.open id=L-34,kept — Control Room › Sources provenance,2,spec
-C-01,app,Asset board (on-field-now + dynasty value; league PPG + percentile),Decide,"What's every rostered player worth, now vs dynasty?",ALL,G2 — valuation backbone,sync,"rosters, playerScores, engine",War Room › Valuations & pool,endpoint.open id=C-01,kept — War Room (league-wide); mine-scoped view in Franchise HQ,1,spec
-C-02,app,"Power rankings — ""this season"" and ""the franchise"" views",Decide/Read,How strong am I really?,season,G1,weekly,facts,Home,endpoint.open id=C-02,kept — League Pulse › Race (merges M-008),1,spec
-C-03,app,Home seasonal card,Read,What phase of the year is it?,ALL,G2 — routes every deadline,window,"league, local",Home,endpoint.open id=C-03,kept — Home (owns the node),0,spec
-C-04,app,Calendar board,Read/Plan,What's due and when?,ALL,G3 — the deadline surface,window/live,"league, local",Calendar (summoned),endpoint.open id=C-04,kept — summoned calendar (merges M-096),0,spec
-C-05,app,League feed,Read/Social,What just happened?,ALL,G1,near-live,"transactions, league",Home,endpoint.open id=C-05,kept — comms channel; Home digest,1,spec
-C-06.1,app,What-if store (transactions workspace),Plan,What if I did this?,ALL,G2,none,local,Franchise HQ › Contracts & cap,endpoint.open id=C-06.1,kept — Franchise HQ; every Act passes through it,0,spec
-C-06.2,app,Trade builder,Plan/Act-prep,Assemble both sides of a deal,ALL; peak DR,G3 in DR,none,"local, pendingTrades",Trade Floor › Trade desk,endpoint.open id=C-06.2,kept — Trade Floor,1,spec
-C-06.3,app,Hold-to-fire confirm,control,Am I sure?,on commit,G2/G3 gate,600ms,local,Franchise HQ › Contracts & cap,endpoint.open id=C-06.3,kept — the commit gesture for every priced/destructive verb (rule 6),0,spec
-C-06.4,app,Acquisitions handler,Plan,What does the add cost me?,ALL,G2,window,"local, league",Franchise HQ › Contracts & cap,endpoint.open id=C-06.4,kept — HQ,2,spec
-C-06.5,app,Contracts handler,Plan,What do his contract years cost?,ALL,G2,window,"local, league",Franchise HQ › Contracts & cap,endpoint.open id=C-06.5,kept — HQ,2,spec
-C-06.6,app,Dead cap handler,Plan,What's the cap hit if I cut him?,ALL; peak CUT,G2,window,"local, league",Franchise HQ › Contracts & cap,endpoint.open id=C-06.6,kept — HQ,2,spec
-C-06.7,app,Free agency handler,Plan,What's my cap plan for the windows?,OP/UFA/RSG/OFA,G3 in windows,window/live,"local, league",Franchise HQ › Contracts & cap,endpoint.open id=C-06.7,kept — HQ,2,spec
-C-07,app,Source health and freshness,Read,Can I trust these numbers?,ALL,G1,sync,local,Control Room › Data & sources,endpoint.open id=C-07,kept — status bar badge + Control Room,0,spec
-C-08,app,Player crosswalk,Read (infra),Are these the same player?,ALL,G0,sync,local,Control Room › Data & sources,endpoint.open id=C-08,kept — inspector provenance zone; never a user-facing surface,3,spec
-C-09,app,Admin console: engine parameters,Configure (gated),Tune the engine,ALL,G1,none,engine,Control Room › Data & sources (Admin role),endpoint.open id=C-09,"kept — Control Room, role-gated",3,spec
-S-01,shell,Nav rail (6 nodes),Read,,ALL,G0,,,Shell globals,view.goto node=,kept,0,spec
-S-02,shell,"Inspector (fills on any entity click, no page change)",Read,,ALL,G0–G3 (hosts what it fills with),,,Shell globals,inspector.pin entity=` · `inspector.close,kept,0,spec
-S-03,shell,Comms panel (48px collapsed / ~280px open),Social,,ALL,G1,,,Shell globals,comms.toggle channel=,kept,0,spec
-S-04,shell,Calendar summon/collapse from any screen,Read,,ALL,G3 (hosts deadlines),,,Shell globals,calendar.toggle,kept,0,spec
-S-05,shell,Workspace presets: Default · Draft Mode · Gameday · Trade Season · Admin,Configure,,ALL,G1,,,Control Room › App,preset.set name=,kept,0,spec
-S-06,shell,Density tier: Narrative · Tactical · Matrix (one CSS attribute),Configure,,ALL,G0,,,Control Room › App,density.set tier=,kept,0,spec
-S-07,shell,Command bar,Read,,ALL,G0,,,Command bar,commandbar.open,kept,0,spec
-S-08,shell,Global search,Read,,ALL,G1,,,Command bar,search.find q=,kept,0,spec
-S-09,shell,Data refresh,Configure,,ALL,G1,,,Control Room › Data & sources,refresh.run scope=,kept,0,spec
-S-10,shell,Filter state persistence across sub-sections,Configure,,ALL,G1,,,Shell globals,view.filter scope=,kept,0,spec
-S-11,shell,Watch list / scratchpad store (app-local),Plan,,ALL,G1,,,Franchise HQ › My moves,watch.add entity=` · `note.add entity=,kept,0,spec
-S-12,shell,Status bar (source health · gameday strip · clock),Read,,ALL,G1,,,Status bar,read-only,kept,0,spec
-S-13,shell,Seasonal-card phase links,Read,,ALL,G2,,,Home,phase.goto phase=,kept,0,spec
-S-14,shell,League switcher (dormant; portfolio-ready),Configure,,ALL,G0,,,Control Room › App,league.switch id=,kept,0,spec
-X-01,new 2026-10-06,"Live game view: field graphic, last play, box score, followed-game bar",Read,"What is happening in this NFL game, and what does it mean for my matchup?",ES/MS/DR gamedays,G1,live,"ESPN site/summary (primary), Yahoo editorial scoreboard (failover), Fox bifrost (third); MFL liveScoring",League Pulse › Now (Gameday preset),game.follow id=,kept,3,spec
-X-02,new 2026-10-06,Fantasy play spine: headshot + play when a player in this matchup does something,Read,"Which of our players just scored, and how?",ES/MS/DR gamedays,G1,live,play feeds matched via crosswalk espn_id; headshots ESPN/Sleeper (personal use),League Pulse › Now,endpoint.open id=X-02,kept,3,spec
-X-03,new 2026-10-06,"Matchup view: Classic (list) / Default (formation, across the line)",Read,"How is my matchup going, player by player?",ES/MS/DR,G1,live,"MFL liveScoring, rosters; Sleeper live stat lines",League Pulse › Now,matchup.view mode=<classic|default>,kept (Default awaits Christopher briefing),1 (Classic) / 4 (Default),spec
-X-04,new 2026-10-06,Trade accept / reject / DOT review states,Act,"Do I take this offer, and where is it in review?",ALL; peak DR,G3,while pending,"pendingTrades, transactions; DOT source unknown (open question)",Trade Floor › Trade desk,trade.accept · trade.reject,kept,1,spec
+id,source,name,kind,gm_question,when,gravity,clock,data,placement,verb,disposition,ring,status,sol_ids
+M-001,MFL,Live Scoring,Read,How are my games going right now?,"ES/MS/DR, gamedays",G2 — active lineup calls lock at kickoff,live,liveScoring,Home,endpoint.open id=M-001,kept,1,spec,A001 A194 A310
+M-002,MFL,Standings,Read,Where do I sit in the race?,"ES/MS/DR, weekly",G1 — misreads cost matchup calls,weekly,"weeklyResults, league",Home,endpoint.open id=M-002,kept,1,spec,A002 A211
+M-003,MFL,Weekly Results O=22,Read,What happened each week?,season,G0,none,weeklyResults,League Pulse › Now,endpoint.open id=M-003,kept,1,spec,A003 A235
+M-004,MFL,Last 3 Weeks O=258,Read,What's my recent form?,season,G0,none,weeklyResults,League Pulse › Now,endpoint.open id=M-004,kept,3,spec,A004
+M-005,MFL,Weekly Matchup view,Read,How did the head-to-head go?,season,G0,none,weeklyResults,League Pulse › Now,endpoint.open id=M-005,kept,1,spec,A005
+M-006,MFL,Scoring Detail (owner 403),Retire,—,—,—,—,—,,,"retired — dead link wired into ~1,400 places (defect D2)",—,spec,
+M-007,MFL,Weekly Summary O=31,Read,The week at a glance?,"season, weekly",G1 — informs next-week calls,weekly,weeklyResults,League Pulse › Now,endpoint.open id=M-007,kept,1,spec,A007 A233
+M-008,MFL,Power Rank O=101,Decide,Who is actually strong?,"season, weekly",G1 — trade-posture input,weekly,facts (merges with C-02),Home,endpoint.open id=M-008,kept,3,spec,A008 A212 A232 A312
+M-009,MFL,Starting Lineups O=06,Read,What is everyone starting?,"season, weekly",G1 — matchup intel,weekly,rosters,League Pulse › Race,endpoint.open id=M-009,kept,3,spec,A022
+M-010,MFL,Lineup Details O=210,Read,Slots: optimal vs actual?,"season, weekly",G1,weekly,"rosters, playerScores",League Pulse › Race,endpoint.open id=M-010,kept,3,spec,A023
+M-011,MFL,Fantasy Schedule O=15,Read,"Who plays whom, when?",ALL,G1 — bye/rival planning,fixed,schedule,League Pulse › Race,endpoint.open id=M-011,kept,3,spec,A009 A234
+M-012,MFL,Schedule by Franchise O=16,Read,One team's slate,ALL,G0,fixed,schedule,League Pulse › Race,endpoint.open id=M-012,kept,3,spec,A010 A112
+M-013,MFL,Schedule Compact O=54,Read,Dense schedule grid,ALL,G0 — MFL's own density precedent,fixed,schedule,League Pulse › Race,endpoint.open id=M-013,kept,3,spec,A011
+M-014,MFL,Playoff Brackets O=79,Read,What's the path?,DR+,G1,weekly,"schedule, weeklyResults",League Pulse › Race,endpoint.open id=M-014,kept,3,spec,A012
+M-015,MFL,NFL Schedule,Read,"NFL byes, kickoffs",season,G1 — lineup/deadline planning,weekly,"nflSchedule, nflByeWeeks",League Pulse › Now,endpoint.open id=M-015,kept,3,spec,A013 A239
+M-016,MFL,NFL Box Score,Read,What happened in that NFL game?,season,G0,post-game,playerScores,League Pulse › Now,endpoint.open id=M-016,kept,3,spec,A014 A094
+M-017,MFL,Weather ↗,Retire,—,—,—,—,—,,,"retired — external site, not league data (optional sourced context later; Open Question 12)",—,spec,
+M-018,MFL,Fantasy Previews O=207,Read,What's the matchup outlook?,"season, weekly",G1 — lineup calls,weekly,"facts, projectedScores",League Pulse › Now,endpoint.open id=M-018,kept,3,spec,A016
+M-019,MFL,All-Time Series O=171,Read,History with this opponent?,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-019,kept,3,spec,A017 A090 A113 A144
+M-020,MFL,Game Injury Report (previews child),Decide,Who's hurt for this game?,"season, weekly",G2 — lineup legality/strength,gameday,players (injuries),War Room › Research,endpoint.open id=M-020,kept,3,spec,A018
+M-021,MFL,Fantasy Recaps O=177,Read,What did the league see?,"season, weekly",G0,post-game,weeklyResults,League Pulse › Now,endpoint.open id=M-021,kept,3,spec,A019
+M-022,MFL,Recap Top by Position,Read,Week's best by slot,season,G0,post-game,weeklyResults,League Pulse › Now,endpoint.open id=M-022,kept,3,spec,A020
+M-023,MFL,Franchise Records O=156,Read,This franchise's marks,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-023,kept,3,spec,A021 A087 A141
+M-024,MFL,Add/Drop form,Act,Get this player onto my roster,ALL; peak OFA/waivers,G3 — irreversible add; clocks; cap $ and a roster spot,window/live,"rosters, players, pendingWaivers",Franchise HQ › Acquire,waiver.claim,kept,3,spec,A024 A129 A191 A298
+M-025,MFL,Can't Cut List O=199,Read,Am I allowed to cut him?,ALL,G2 — guardrail for cut/buyout,none,"league (rules), players",Franchise HQ › Contracts & cap,endpoint.open id=M-025,kept,2,spec,A025 A081
+M-026,MFL,Waiver Coach ↗,Retire,—,—,—,—,—,,,retired — external tool; engine + Lab baselines replace it,—,spec,
+M-027,MFL,Submit Lineup O=02,Act,Make my lineup legal and best,"season, weekly",G3 near kickoff — score loss; two URLs today (defect D1),weekly,"rosters, projectedScores",Franchise HQ › Lineup,lineup.set,kept,1,spec,A027 A127 A190 A297
+M-028,MFL,IR placement O=18,Act,Stash the injured player legally,season,G2 — roster spot + eligibility rules,weekly,"rosters, players (injuries)",Franchise HQ › Roster,roster.ir · roster.taxi,kept,1,spec,A031 A122 A222 A315
+M-029,MFL,Taxi placement O=98,Act,Develop a prospect without cap cost,ALL; peak post-draft,G2 — roster spot rules,none,"rosters, league (rules)",Franchise HQ › Roster,roster.ir · roster.taxi,kept,1,spec,A032 A123 A223 A316
+M-030,MFL,Rosters O=07,Read,Who's on whose roster?,ALL,G1 — league intel,sync,rosters,Franchise HQ › Roster,endpoint.open id=M-030,kept,1,spec,A028 A119 A193 A220 A303
+M-031,MFL,Salary Adjustments O=142,"Read (+commish Act, gated)",What are the adjusted cap hits?,ALL,G1 — cap truth for every Act,sync,"league, rosters",Franchise HQ › Contracts & cap,endpoint.open id=M-031,kept,2,spec,A029 A083 A221
+M-032,MFL,Transactions O=03,Read,What moves happened league-wide?,"ALL, near-live",G1 — intel; landing-verification source,near-live,transactions,Home,endpoint.open id=M-032,kept,1,spec,A030 A121 A238 A302
+M-033,MFL,Trades O=05,Act/Read,"Build, send, judge, accept trades",ALL; peak DR,G3 — irreversible once executed,window,"pendingTrades, transactions",Trade Floor › Trade desk,trade.propose · trade.accept · trade.reject · trade.add · trade.send,kept,1,spec,A034 A128 A192 A299
+M-034,MFL,Revoke offer ⛔,Act,Pull my pending offer back,ALL,G2 — reversible while pending; social cost,while pending,pendingTrades,Trade Floor › Trade desk,trade.revoke,kept,1,spec,A035
+M-035,MFL,Compare Players ↗,Retire,—,—,—,—,—,,,retired — external tool; inspector compare + engine replace it,—,spec,
+M-036,MFL,Drop Players O=257,Act,"Free the spot, eat the dead cap",ALL; peak CUT,G3 — irreversible + dead cap,none,"rosters, league",Franchise HQ › Contracts & cap,roster.drop · roster.buyout,kept,2,spec,A033
+M-037,MFL,Player Stats O=08,Read,"Who's producing, at what level?",ALL,G1 — valuation input,none,playerScores,War Room › Research,endpoint.open id=M-037,kept,3,spec,A037 A195
+M-038,MFL,My Top Performers,Read,Who's carrying my team?,season,G0,weekly,playerScores (scoped),War Room › Research,endpoint.open id=M-038,kept,3,spec,A038 A114
+M-039,MFL,Top Free Agents,Decide,Best available players?,ALL; peak OFA/UFA,G2 — acquisition value,window,players (FA),War Room › Valuations & pool,endpoint.open id=M-039,kept,2,spec,A039
+M-040,MFL,Top Passers,Read,QB leaders,season,G0,weekly,playerScores,War Room › Research,endpoint.open id=M-040,kept,3,spec,A040
+M-041,MFL,Top Rushers,Read,RB leaders,season,G0,weekly,playerScores,War Room › Research,endpoint.open id=M-041,kept,3,spec,A041
+M-042,MFL,Top Receivers,Read,WR/TE leaders,season,G0,weekly,playerScores,War Room › Research,endpoint.open id=M-042,kept,3,spec,A042
+M-043,MFL,Top Kickers,Read,K leaders,season,G0,weekly,playerScores,War Room › Research,endpoint.open id=M-043,kept,3,spec,A043
+M-044,MFL,Top Defenders (IDP),Read,DT/DE/LB/CB/S leaders,season,G1,weekly,playerScores,War Room › Research,endpoint.open id=M-044,kept,3,spec,A044
+M-045,MFL,Top Defenses (team),Read,Team DST leaders,season,G0,weekly,playerScores,War Room › Research,endpoint.open id=M-045,kept,3,spec,A045
+M-046,MFL,Projected Stats O=236,Decide,What output should I expect?,season,G2 — lineup/claim calls,weekly,projectedScores,War Room › Valuations & pool,endpoint.open id=M-046,kept,2,spec,A046
+M-047,MFL,Player Ranks R=RANKS,Decide,Where does consensus rank him?,ALL,G1,sync,"players, engine",War Room › Valuations & pool,endpoint.open id=M-047,kept,2,spec,A047
+M-048,MFL,Fantasy Depth Charts,Read,What's his NFL role?,ALL,G1 — role risk,weekly,players,War Room › Research,endpoint.open id=M-048,kept,3,spec,A048
+M-049,MFL,Depth Chart Grid,Read,Roles across the league,ALL,G0,weekly,players,War Room › Research,endpoint.open id=M-049,kept,3,spec,A049
+M-050,MFL,NFL Team Stats,Read,Team context,season,G0,weekly,"playerScores, nflSchedule",War Room › Research,endpoint.open id=M-050,kept,3,spec,A050 A095
+M-051,MFL,NFL Team Injuries,Read,Team injury context,season,G1,daily,players (injuries),War Room › Research,endpoint.open id=M-051,kept,3,spec,A051
+M-052,MFL,Top Adds/Drops/Starters O=117,Decide,What is the league doing?,season,G1 — market behaviour,weekly,transactions,War Room › Research,endpoint.open id=M-052,kept,3,spec,A052 A053 A054 A055
+M-053,MFL,Points Allowed by Position O=81,Decide,Streaming matchup edge?,season,G1,weekly,playerScores,War Room › Research,endpoint.open id=M-053,kept,3,spec,A056
+M-054,MFL,Points Allowed per NFL team O=243,Read,Matchup detail,season,G0,weekly,playerScores,War Room › Research,endpoint.open id=M-054,kept,3,spec,A057
+M-055,MFL,Who Should I Start? O=205,Decide,Best lineup call for this slot,"season, weekly",G2 — lineup output,weekly,"projectedScores, engine",War Room › Research,endpoint.open id=M-055,kept,3,spec,A065
+M-056,MFL,Complete FA Listing R=FULLFA,Read,The whole available pool,ALL,G1,sync,players (FA),War Room › Valuations & pool,endpoint.open id=M-056,kept,2,spec,A058 A306
+M-057,MFL,NFL Injury Report,Read,League-wide injury state,season,G1→G2 gameday,daily,players (injuries),War Room › Research,endpoint.open id=M-057,kept,3,spec,A059 A217
+M-058,MFL,Player News,Read/Social,What's new on him?,ALL,G1,near-live,players (news),Home,endpoint.open id=M-058,kept,3,spec,A060 A130
+M-059,MFL,News Article Page,Read,The full story,ALL,G0,none,players (news),War Room › Research,endpoint.open id=M-059,kept,3,spec,A061
+M-060,MFL,My Player News,Read,News on my roster,season,G1,near-live,"players (news, scoped)",War Room › Research,endpoint.open id=M-060,kept,3,spec,A062
+M-061,MFL,Get Projection Sources ↗,Retire,—,—,—,—,—,,,retired — paid external vendor,—,spec,
+M-062,MFL,Player Search,Read,Find the player,ALL,G1 — enabler for everything,none,players,War Room › Research,endpoint.open id=M-062,kept — canonical surface becomes the command bar (`search.find`),3,spec,A064
+M-063,MFL,Draft Results O=17,Read,How did past drafts go?,RD/offseason,G0,none,"draftResults, draftPickHistory",Trade Floor,endpoint.open id=M-063,kept,2,spec,A066 A197 A311
+M-064,MFL,Draft Results Grid,Read,Board view of a draft,RD/offseason,G0 — MFL's one card precedent (D7),none,draftResults,Trade Floor,endpoint.open id=M-064,kept,2,spec,A067
+M-065,MFL,Steals and Busts,Decide,Did the league price picks right?,RD/SM,G1,none,facts,Trade Floor,endpoint.open id=M-065,kept,2,spec,A068 A266 A267
+M-066,MFL,Draft Recap,Read,Story of the draft,RD,G0,none,draftResults,Trade Floor,endpoint.open id=M-066,kept,2,spec,A069
+M-067,MFL,ADP Report R=ADP,Decide,What's the slot market?,RD,G1→G2 on the clock,draft,adp,War Room › Valuations & pool,endpoint.open id=M-067,kept,2,spec,A070 A293
+M-068,MFL,Future Draft Picks O=100,Read,Who owns which future pick?,ALL,G2 — trade-capital truth,sync,"draftResults, transactions",Trade Floor,endpoint.open id=M-068,kept,2,spec,A071
+M-069,MFL,AAV Report R=AAV,Decide,What do free agents cost?,UFA/OFA,G2 — bid sizing,window,facts (AAV),War Room › Valuations & pool,endpoint.open id=M-069,kept,2,spec,A072
+M-070,MFL,All Reports hub page,Retire,—,—,—,—,—,,,"retired — 31-door index, defect D1; all children placed individually",—,spec,
+M-071,MFL,Bar Chart O=20,Read,Scoring trend,season,G0,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-071,kept,3,spec,A074 A213
+M-072,MFL,Fantasy Box Score,Read,Quarter-by-quarter detail,season,G1,post-game,"weeklyResults, liveScoring",League Pulse › Now,endpoint.open id=M-072,kept,1,spec,A075 A116
+M-073,MFL,Scoring History O=118,Read,Points over time,ALL,G0,none,weeklyResults,League Pulse › Archive,endpoint.open id=M-073,kept,3,spec,A076 A115
+M-074,MFL,Tiebreakers O=119,Read,Who wins ties?,DR+,G2 — seeding,weekly,"league, weeklyResults",League Pulse › Race,endpoint.open id=M-074,kept,3,spec,A077
+M-075,MFL,Victory Points O=153,Read,VP standings (if used),season,G1,weekly,league,League Pulse › Race,endpoint.open id=M-075,kept — confirm league uses VP (Open Question 9),3,spec,A078
+M-076,MFL,Starter Pts by Position O=23,Decide,Where do I leak points?,season,G1,weekly,playerScores,League Pulse › Race,endpoint.open id=M-076,kept,3,spec,A079
+M-077,MFL,Starter Pts by Player O=37,Read,Points by starter,season,G0,weekly,playerScores,League Pulse › Race,endpoint.open id=M-077,kept,3,spec,A080
+M-078,MFL,Salaries & Contracts R=SALARIES,Read,Every contract in the league,ALL,G2 — cap decisions,sync,"league, rosters",Franchise HQ › Contracts & cap,endpoint.open id=M-078,kept,2,spec,A082
+M-079,MFL,Player Additions & Position Changes R=NEWPLAY,Read,How did rosters form?,ALL,G0,none,transactions,League Pulse › Archive,endpoint.open id=M-079,kept,3,spec,A084
+M-080,MFL,League History O=112,Read,Past seasons,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-080,kept,3,spec,A085
+M-081,MFL,Awards O=202,Read,Hardware list,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-081,kept,3,spec,A086 A117 A140
+M-082,MFL,Player Records O=157,Read,Player marks,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-082,kept,3,spec,A088 A142
+M-083,MFL,Matchup Records O=158,Read,Head-to-head marks,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-083,kept,3,spec,A089 A143
+M-084,MFL,Season Records O=204,Read,Single-season bests,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-084,kept,3,spec,A091 A145
+M-085,MFL,Career Records O=208,Read,Career bests,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-085,kept,3,spec,A092 A118 A146
+M-086,MFL,Record Streaks O=232,Read,Streaks,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-086,kept,3,spec,A093 A147
+M-087,MFL,NFL Draft O=215,Read,Who entered the NFL from where?,RD,G1,none,players,Trade Floor,endpoint.open id=M-087,kept,2,spec,A096
+M-088,MFL,Official Stat Changes,Read,Did a score change post-game?,season,G2 — can flip a win,post-game,playerScores,League Pulse › Now,endpoint.open id=M-088,kept,3,spec,A097
+M-089,MFL,Strange Plays,Read,League lore,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-089,kept,3,spec,A098
+M-090,MFL,Projected Playoff Seedings,Decide,If the season ended today?,DR+,G1,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-090,kept,3,spec,A099
+M-091,MFL,League Settings O=26,Read,The rules as configured,ALL,G2 — legality of every Act,sync,"league, rules",Control Room,endpoint.open id=M-091,kept,3,spec,A100 A107
+M-092,MFL,Widgets,Retire,—,—,—,—,—,,,"retired — MFL-site home customization, out of scope",—,spec,
+M-093,MFL,Email Log,Read (gated),What did the league mail out?,"ALL, rare",G0 for GM; commish audit,none,league,Control Room,endpoint.open id=M-093,kept (gated),3,spec,A102
+M-094,MFL,Edit My Links,Retire,—,—,—,—,—,,,"retired — MFL-site personalization; app watch list, scratchpad and presets replace",—,spec,
+M-095,MFL,Commissioner News ⛔,Social (gated write),League notices,ALL,G1 — windows and rulings surface here,none,league,Control Room,endpoint.open id=M-095,kept (gated),3,spec,A104
+M-096,MFL,League Calendar O=123,Read/Plan,What's due and when?,ALL,G2→G3 — the league's deadlines live here,window,"league, local",Home,endpoint.open id=M-096,kept (merges with C-04),3,spec,A105
+M-097,MFL,League Rules O=09 → League Settings,Read,The bylaws as written,ALL,G2 — legality,sync,"league, rules",Control Room,endpoint.open id=M-097,kept,3,spec,A106
+M-098,MFL,Accounting Summary,Read,League money,"ALL, rare",G0,none,league,Control Room,endpoint.open id=M-098,kept,3,spec,A109
+M-099,MFL,LeagueSafe ↗,Retire,—,—,—,—,—,,,retired — external payments site,—,spec,
+M-100,MFL,Franchise Information hub O=01,Retire,—,—,—,—,—,,,retired as a page — 25 onward doors (defect D1); function merges into the inspector (M-146),—,spec,
+M-101,MFL,Roster w/Stats O=138,Read,Roster and output in one view,ALL,G1,sync,"rosters, playerScores",Franchise HQ › Roster,endpoint.open id=M-101,kept,1,spec,A120
+M-102,MFL,Draft Pick O=52,Read,Who was this pick?,RD,G0,none,draftPickHistory,Trade Floor,endpoint.open id=M-102,kept,2,spec,A124 A296 A309
+M-103,MFL,My Draft List O=129,Plan,My board for the draft,RD,G2 — draft prep,RD,local (MFL-hosted today),Trade Floor,endpoint.open id=M-103,kept,2,spec,A125 A294
+M-104,MFL,Trophy Case,Read,Franchise silverware,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-104,kept,3,spec,
+M-105,MFL,Career Record,Read,Franchise W/L record,"ALL, rare",G0,none,facts,League Pulse › Archive,endpoint.open id=M-105,kept,3,spec,
+M-106,MFL,Contact ⛔,Retire,—,—,—,—,—,,,"retired — members' personal contact data, excluded per §8",—,spec,
+M-107,MFL,Mobile ⛔,Retire,—,—,—,—,—,,,"retired — MFL-site profile function, out of scope",—,spec,
+M-108,MFL,Draft Preferences ⛔,Configure,My MFL draft automation prefs,RD,G1 — draft-day mechanics,RD,league (draft prefs),Control Room,draft.prefs · mfl.open,kept (gated hand-off),3,spec,A126
+M-109,MFL,Location O=238,Retire,—,—,—,—,—,,,"retired — members' street addresses, excluded per §8",—,spec,
+M-110,MFL,Franchise Summary R=FSUMMARY,Read,"One franchise, whole picture",ALL,G0/G1,sync,"rosters, weeklyResults, facts",League Pulse › Archive,endpoint.open id=M-110,kept,3,spec,A134
+M-111,MFL,NFL Pool Results O=122,Read,Pool outcomes,"season, weekly",G0,weekly,league (pools),League Pulse › Pools,endpoint.open id=M-111,kept,3,spec,A135
+M-112,MFL,Pool Picks O=121,Read,Who picked what,"season, weekly",G1,weekly,league (pools),League Pulse › Pools,endpoint.open id=M-112,kept,3,spec,A136
+M-113,MFL,Survivor Pool O=120,Read/Decide,Survivor state and picks,"season, weekly",G2 — elimination risk,weekly,league (pools),League Pulse › Pools,endpoint.open id=M-113,kept,3,spec,A137
+M-114,MFL,League Champions O=194,Read,Past champions,"ALL, rare",G0,none,facts,Home,endpoint.open id=M-114,kept,1,spec,A139 A216
+M-115,MFL,Franchise Setup ⛔,Retire,—,—,—,—,—,,,retired — MFL-site profile personalization (unlink/contact/mobile); personal data; Control Room keeps a generic MFL-account utility link,—,spec,
+M-116,MFL,Trade Bait O=133,Act/Social,Advertise an asset,ALL; peak DR,G2 — market signalling,none,"tradeBait, local",Franchise HQ › My moves,bait.set,kept,3,spec,A153 A226
+M-117,MFL,My Watch List O=178,Plan,Track my targets,ALL,G1,none,local (MFL-hosted today),Franchise HQ › My moves,endpoint.open id=M-117,kept,3,spec,A155 A230
+M-118,MFL,My Scratchpad O=234,Plan,My working notes,ALL,G1,none,local (MFL-hosted today),Franchise HQ › My moves,endpoint.open id=M-118,kept,3,spec,A156
+M-119,MFL,My Links,Retire,—,—,—,—,—,,,retired — MFL-site personalization; app presets and watch list replace,—,spec,
+M-120,MFL,Message Board,Social,League talk and rulings,ALL,G1,none,league (board),Comms panel,social.post · poll.vote · comms.draft,kept → comms channel,3,spec,A157
+M-121,MFL,Chat,Social,Live league chat,"ALL, gamedays",G1,live,league (chat),Comms panel,social.post · poll.vote · comms.draft,kept → comms channel,3,spec,A158
+M-122,MFL,Articles,Social/Read,League articles,"ALL, rare",G0,none,league (articles),Comms panel,endpoint.open id=M-122,kept → comms channel,3,spec,A159
+M-123,MFL,Polls,Social (+Act to vote),What does the league want?,"ALL, rare",G1,none,league (polls),Comms panel,social.post · poll.vote · comms.draft,kept → comms channel (vote = hand-off),3,spec,A160
+M-124,MFL,Trash-Talk Videos,Social,Rivalry theatre,season,G0,none,league (media),Comms panel,endpoint.open id=M-124,kept → comms channel,3,spec,A161
+M-125,MFL,Email Commissioner,Social,Raise something privately,ALL,G1,none,external client,Comms panel,social.post · poll.vote · comms.draft,kept → comms hand-off; the app itself never sends,3,spec,A162
+M-126,MFL,Email League,Social,Address the whole league,"ALL, rare",G1,none,external client,Comms panel,endpoint.open id=M-126,kept → comms hand-off; the app itself never sends,3,spec,A163
+M-127,MFL,Text League,Social,Address the whole league,"ALL, rare",G1,none,external SMS client,Comms panel,endpoint.open id=M-127,kept → comms hand-off,3,spec,A164
+M-128,MFL,Forums ↗,Retire,—,—,—,—,—,,,retired — external site,—,spec,
+M-129,MFL,Twitter ↗,Retire,—,—,—,—,—,,,retired — external site,—,spec,
+M-130,MFL,Refer,Retire,—,—,—,—,—,,,retired — MFL marketing,—,spec,
+M-131,MFL,MFL Dashboard,Retire,—,—,—,—,—,,,"retired — MFL-site account hub, out of scope",—,spec,
+M-132,MFL,Premium,Retire,—,—,—,—,—,,,retired — MFL upsell,—,spec,
+M-133,MFL,League Home 2019–2025,Retire,—,—,—,—,—,,,"retired — MFL archive hosting; app Archive reads this league's history via the API, MFL keeps the files",—,spec,
+M-134,MFL,All My Leagues,Retire,—,—,—,—,—,,,retired as MFL page; the concept survives as the portfolio league switcher (Step 8),—,spec,
+M-135,MFL,New League,Retire,—,—,—,—,—,,,"retired — league creation, out of scope",—,spec,
+M-136,MFL,Find a League,Retire,—,—,—,—,—,,,retired — out of scope,—,spec,
+M-137,MFL,Cache Tools,Configure,MFL is showing stale data,"ALL, rare",G1,none,MFL site,Control Room › MFL utilities,endpoint.open id=M-137,kept → Control Room › MFL utilities (link),3,spec,A180
+M-138,MFL,Help Center,Retire,—,—,—,—,—,,,retired — MFL product help; console has its own help surface,—,spec,
+M-139,MFL,Help on Page,Retire,—,—,—,—,—,,,retired — MFL-page help,—,spec,
+M-140,MFL,Tickets,Retire,—,—,—,—,—,,,retired — MFL support process,—,spec,
+M-141,MFL,What's New,Configure,Did MFL change page behaviour?,"ALL, rare",G1 — Phase 1 hand-off depends on MFL page behaviour,none,MFL site,Control Room › MFL utilities,endpoint.open id=M-141,kept → MFL utilities (monitored link),3,spec,A184
+M-142,MFL,Printer Page,Retire,—,—,—,—,—,,,retired — Matrix tier and export replace it,—,spec,
+M-143,MFL,Developer API,Retire,—,—,—,—,—,,,retired as a GM surface — it is the app's ingestion layer; docs linked in Control Room › Sources for maintainers,—,spec,
+M-144,MFL,Logout,Retire,—,—,—,—,—,,,retired — MFL session control; the app manages its own session in Control Room › Sources and never logs the GM out of MFL implicitly,—,spec,
+M-145,MFL,Player page hub (11 onward link kinds),Read,Everything about this player,ALL,G2 — the entity behind most decisions,none,"playerProfile, playerScores, league, facts",Inspector,endpoint.open id=M-145,"merged → inspector, player view; the 11 kinds become inspector zones (Open Question 1)",with target,spec,A188
+M-146,MFL,Franchise page hub O=01 (25 onward kinds),Read,Everything about this franchise,ALL,G1,none,"rosters, weeklyResults, transactions, facts",Inspector,endpoint.open id=M-146,"merged → inspector, franchise view; children censed above/below",with target,spec,A111 A189
+M-147,MFL,HOME tab (shell),Read,Landing view,ALL,G0,none,composite,,endpoint.open id=M-147,merged → app Home,with target,spec,A203
+M-148,MFL,Lineup Alert,Decide/Act,Is my lineup broken?,"season, gameday",G3 on gameday — a miss is a zero in a slot,gameday,"rosters, projectedScores",Home,endpoint.open id=M-148,kept,1,spec,A219
+M-149,MFL,Possible IR Violations,Decide,Am I breaking IR rules?,season,G2 — compliance,none,"rosters, league (rules)",Home,endpoint.open id=M-149,kept,1,spec,A218
+M-150,MFL,H2H Results (HOME module),Read,Head-to-head history,"ALL, rare",G0,none,weeklyResults,,endpoint.open id=M-150,merged → M-003/M-005,with target,spec,A214
+M-151,MFL,My Schedule (HOME module),Read,My slate,season,G0,fixed,schedule,,endpoint.open id=M-151,merged → M-011 (scoped),with target,spec,A215
+M-152,MFL,MY TEAM tab (shell),Read,My franchise view,ALL,G0,none,composite,,endpoint.open id=M-152,merged → Franchise HQ,with target,spec,A204
+M-153,MFL,Pending Trades,Read/Decide,What's on my desk?,ALL; peak DR,G3 while pending — accept/reject decisions expire,while pending,pendingTrades,Home,endpoint.open id=M-153,kept,1,spec,A225
+M-154,MFL,Bye Weeks,Decide,Who's dark this week?,season,G2 — lineup legality,weekly,"nflByeWeeks, rosters",Franchise HQ › Lineup,endpoint.open id=M-154,kept,1,spec,A227
+M-155,MFL,My Leagues (module),Retire,—,—,—,—,—,,,retired — MFL account feature; replaced by the portfolio switcher concept (Step 8),—,spec,
+M-156,MFL,Waiver Claims,Read/Act,What am I owed from waivers?,ALL in season,G2 — claims resolve on a clock,window,pendingWaivers,Home,endpoint.open id=M-156,kept,1,spec,A228
+M-157,MFL,Waiver Order,Decide,Where am I in line?,season,G2 — claim strategy,weekly,league,Home,endpoint.open id=M-157,kept,1,spec,A229
+M-158,MFL,Owner Activity,Read,What are owners doing?,ALL,G0,near-live,transactions,,endpoint.open id=M-158,merged → C-05 league feed,with target,spec,A224
+M-159,MFL,REPORTS tab (shell),Read,Report shortcuts,ALL,G0,none,composite,,endpoint.open id=M-159,merged,with target,spec,A205
+M-160,MFL,Overview (REPORTS module),Read,Week overview,season,G0,weekly,weeklyResults,,endpoint.open id=M-160,merged → M-007,with target,spec,A236
+M-161,MFL,All Play,Read/Decide,My record vs every team,season,G1,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-161,kept,3,spec,A237
+M-162,MFL,PLAYERS tab (shell),Read,Player shortcuts,ALL,G0,none,composite,,endpoint.open id=M-162,merged,with target,spec,A206
+M-163,MFL,Top lists by position ◆ (11 splits × 2 lists),Read/Decide,Best at each position,ALL,G1,weekly,"playerScores, players",,endpoint.open id=M-163,merged → M-037/M-039 with position filter,with target,spec,A240 A241 A242 A243 A244 A245 A246 A247 A248 A249 A250 A251 A252 A253 A254 A255 A256 A257 A258 A259 A260 A261
+M-164,MFL,Top Adds/Drops/Started/Owned ◆,Decide,Market pulse,season,G1,weekly,transactions,,endpoint.open id=M-164,merged → M-052 family,with target,spec,A262 A263 A264 A265
+M-165,MFL,LATEST NEWS tab (shell),Read,News view,ALL,G0,near-live,composite,,endpoint.open id=M-165,merged,with target,spec,A207
+M-166,MFL,News digests (5 Newest · My 5 · Hot · Featured),Read,What moved today,ALL,G1,near-live,players (news),,endpoint.open id=M-166,merged → M-058 + C-05,with target,spec,A268 A269 A270 A271
+M-167,MFL,Game of the Week recap/preview,Read,Featured game,season,G0,weekly,weeklyResults,,endpoint.open id=M-167,merged → M-021/M-018,with target,spec,A272 A273
+M-168,MFL,PLAYOFFS tab (shell),Read,Playoff view,DR+,G0,weekly,composite,,endpoint.open id=M-168,merged,with target,spec,A208
+M-169,MFL,Playoff projections (Conf/Div/Wildcard winners),Decide,Who makes it?,DR+,G1,weekly,weeklyResults,,endpoint.open id=M-169,merged → M-090,with target,spec,A274 A275 A276 A278 A279 A280
+M-170,MFL,On the Bubble,Decide,Am I in or out?,DR+,G2 — seeding decisions,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-170,kept,3,spec,A277 A281
+M-171,MFL,POOLS tab (shell),Read,Pool view,season,G0,weekly,composite,,endpoint.open id=M-171,merged,with target,spec,A209
+M-172,MFL,Fantasy Pick'em submit O=179,Act,Make my picks,"season, weekly",G2 — weekly deadline,weekly,league (pools),League Pulse › Pools,pools.picks,kept,3,spec,A286
+M-173,MFL,NFL Pick'em,Act,Make my NFL picks,"season, weekly",G2 — weekly deadline,weekly,league (pools),League Pulse › Pools,pools.picks,kept,3,spec,A288
+M-174,MFL,Top Survivor Picks,Decide,What's the crowd doing?,"season, weekly",G1,weekly,league (pools),League Pulse › Pools,endpoint.open id=M-174,kept,3,spec,A289
+M-175,MFL,WAR ROOM tab (shell),Read,Draft home,RD,G0,draft,composite,,endpoint.open id=M-175,merged → draft room (M-183),with target,spec,A210
+M-176,MFL,Draft Status,Read,Where is the draft?,RD,G2 — pick order/clock awareness,draft,draftStatus,Trade Floor,endpoint.open id=M-176,kept,2,spec,A290
+M-177,MFL,My Picks (draft module),Read,My slots,RD,G1,draft,draftStatus,,endpoint.open id=M-177,merged → M-176 (scoped),with target,spec,A291
+M-178,MFL,Recent Picks,Read,What just happened,RD,G1,draft,draftStatus,,endpoint.open id=M-178,merged → M-176,with target,spec,A292
+M-179,MFL,Draft Avg Time,Read,Pace of the draft,RD,G1,draft,draftStatus,Trade Floor,endpoint.open id=M-179,kept,2,spec,A295
+M-180,MFL,News ticker,Read,Ambient league news,ALL,G0,near-live,players (news),Status bar,endpoint.open id=M-180,merged → shell status bar,with target,spec,A198
+M-181,MFL,Scoreboard strip,Read,Ambient scores,season,G0,live,"liveScoring, nflSchedule",Status bar,endpoint.open id=M-181,merged → gameday strip (status bar),with target,spec,A199 A200 A201 A202
+M-182,MFL,History O=247 ◆,Read,League history hub,"ALL, rare",G0,none,facts,Home,endpoint.open id=M-182,kept — defect D4: no menu reaches it; placed in Archive + command + entity routes,3,spec,A196
+M-183,MFL,Draft (live draft room),Act/Read,Run the draft; make my pick,RD,G3 on the clock — a missed slot burns the pick,draft,"draftStatus, draftResults",Trade Floor,draft.select,kept — canonical draft console,2,spec,
+M-184,MFL,Setup ✗,Retire,—,—,—,—,—,,,"retired — broken link (""Option is Missing or Invalid""), defect D3",—,spec,
+M-185,MFL,By-Laws (custom module) ◆,Read,The league's own rulebook,ALL,"G2 — windows, eligibility, buyout mechanics",none,league (custom module),Control Room,endpoint.open id=M-185,kept,3,spec,A304
+M-186,MFL,Sortable Stats,Read,Stat table,ALL,G1,none,playerScores,,endpoint.open id=M-186,merged → M-037,with target,spec,A305
+M-187,MFL,Free Agents,Read,FA list,ALL,G1,sync,players (FA),,endpoint.open id=M-187,merged → M-039,with target,spec,
+M-188,MFL,Box Scores,Read,Box scores,season,G0,post-game,weeklyResults,,endpoint.open id=M-188,merged → M-072,with target,spec,A307
+M-189,MFL,Depth Charts,Read,Depth charts,ALL,G1,weekly,players,,endpoint.open id=M-189,merged → M-048,with target,spec,A308
+M-190,MFL,Detailed Results O=180 ◆,Read,Result detail,season,G0,post-game,weeklyResults,,endpoint.open id=M-190,merged → M-003 detail view,with target,spec,A313
+M-191,MFL,Links O=68 ◆,Retire,—,—,—,—,—,,,retired — MFL-site link page; app presets replace,—,spec,
+M-192,MFL,Contract option election,Act,Exercise or decline his option?,OPT (Mar 1–Apr 30),G3 — wrong call costs the player or the cap hit,window,"rosters, league (rules)",Franchise HQ › Contracts & cap,contract.option · rfa.tender,kept — hand-off target TBD,2,spec,S001
+M-193,MFL,RFA tender,Act,"Tender him, at what level?",TEN (May 1–3),G3 — missed tender = lost rights,window,"rosters, league (rules)",Franchise HQ › Contracts & cap,contract.option · rfa.tender,kept — hand-off target TBD,2,spec,S004
+M-194,MFL,UFA bid,Act,Sign this free agent at what price?,UFA (May 3–10),G3 — bids bind cap; outbid clocks run live,window/live,"players (FA), league (rules), facts (AAV)",Franchise HQ › Contracts & cap,fa.bid,kept — blind-bid module per MFL docs (cited); exact page TBD,2,spec,S005
+M-195,MFL,Re-sign bid,Act,Keep my expiring player at what price?,RSG (May 10–15),G3 — miss = the player walks,window,"rosters, league (rules)",Franchise HQ › Contracts & cap,fa.resign,kept — target TBD,2,spec,S002
+M-196,MFL,Buyout,Act,Buy him out and eat the dead cap?,CUT (Aug 25–Sep 1),G3 — irreversible cap charge,window,"rosters, league (rules)",Franchise HQ › Contracts & cap,roster.drop · roster.buyout,kept — mechanics per By-Laws (M-185); target TBD,2,spec,S003
+L-01,Lab,Going rate (median cost per delivered win),Decide,What should a win cost?,ALL,G2 — prices every trade and bid,none,facts,War Room › Market,endpoint.open id=L-01,kept — War Room › Market,2,spec,B001
+L-02,Lab,Buy list (paid),Decide,Who does the league underpay?,ALL; peak DR,G2,none,facts,War Room › Market,endpoint.open id=L-02,kept — Market,2,spec,B002
+L-03,Lab,Sell list (paid),Decide,Who does it overpay?,ALL; peak DR,G2,none,facts,War Room › Market,endpoint.open id=L-03,kept — Market,2,spec,B004
+L-04,Lab,Buy list (delivered),Decide,What actually returned value?,ALL,G1,none,facts,War Room › Market,endpoint.open id=L-04,kept — Market,2,spec,B003
+L-05,Lab,Sell list (delivered),Decide,What under-delivered?,ALL,G1,none,facts,War Room › Market,endpoint.open id=L-05,kept — Market,2,spec,B005
+L-06,Lab,Filter band: 8 stretches → spring/summer/season,Configure,When in the year?,ALL,G1,none,facts,War Room › Market,endpoint.open id=L-06,kept — Market filter (persists per rule 3),2,spec,B006 B008 B009 B010 B025 B026 B027 B028 B029 B030 B031 B032
+L-07,Lab,Asset chips: positions · next-draft picks by round · later picks,Configure,Which asset class?,ALL,G1,none,facts,War Room › Market,endpoint.open id=L-07,kept — Market filter,2,spec,B011 B012 B013 B088 B089 B090 B091 B092 B093 B094 B095 B096 B097
+L-08,Lab,Players together or split by age,Configure,Split by age?,ALL,G1,none,facts,War Room › Market,endpoint.open id=L-08,kept — Market filter,2,spec,B014 B015
+L-09,Lab,Asset profile: why cheap or dear,Decide,Why is it mispriced?,ALL,G2,none,facts,War Room › Market,endpoint.open id=L-09,kept — inspector zone + Market,2,spec,B016 B022 B098
+L-10,Lab,Asset profile: cheapest/dearest weeks (beyond-chance marks only),Decide,When do I strike?,ALL,G2,none,facts,War Room › Market,endpoint.open id=L-10,kept — inspector zone + Market,2,spec,B017
+L-11,Lab,Asset profile: against every other asset,Decide,Versus what else?,ALL,G1,none,facts,War Room › Market,endpoint.open id=L-11,kept — inspector zone + Market,2,spec,B018
+L-12,Lab,Asset profile: what came back in its trades,Read,What did its trades return?,ALL,G0/G1,none,facts,War Room › Market,endpoint.open id=L-12,kept — inspector zone + Market,2,spec,B019
+L-13,Lab,Asset profile: who buys it,Decide,Who do I call?,ALL; peak DR,G2,none,facts,War Room › Market,endpoint.open id=L-13,kept — inspector zone + Market,2,spec,B020
+L-14,Lab,Pick clock (next-draft 1st ≈ 45–47% of its draft-year price),Decide,What's a future 1st worth now?,ALL; peak BTW/RD,G2,none,facts,War Room › Market,endpoint.open id=L-14,kept — Market + draft pick card,2,spec,B021 B023
+L-15,Lab,Return as % of slot — 7 draft stretches (1.01–1.10 … 5+),Decide,What does this slot normally return?,RD,G2 — the pick call,draft,facts,War Room › Market,endpoint.open id=L-15,kept — Market (pick assets); embedded in draft room,2,spec,B033 B034 B035 B036 B037 B038 B039 B040
+L-16,Lab,Return by season after draft (1–5),Decide,When does a pick pay?,RD/SM,G1,none,facts,War Room › Market,endpoint.open id=L-16,kept — Market; embedded in draft room,2,spec,B047 B051 B052 B053 B054 B055
+L-17,Lab,Return by NFL draft round,Decide,Does NFL round matter?,RD,G1,none,facts,War Room › Market,endpoint.open id=L-17,kept — Market; embedded in draft room,2,spec,B041
+L-18,Lab,Return by age band,Decide,Does age matter?,RD,G1,none,facts,War Room › Market,endpoint.open id=L-18,kept — Market; embedded in draft room,2,spec,B042 B049
+L-19,Lab,"""Plays like pick #N"" per pick",Decide,What does this pick behave like?,RD,G2,draft,facts,War Room › Market,endpoint.open id=L-19,kept — draft pick card; embedded in draft room,2,spec,B043 B099
+L-20,Lab,Hit rate against the stretch's baseline,Decide,Odds it hits?,RD,G2,draft,facts,War Room › Market,endpoint.open id=L-20,kept — draft pick card,2,spec,B044 B048
+L-21,Lab,Kept by year 2,Decide,Will he stick?,RD,G1,none,facts,War Room › Market,endpoint.open id=L-21,kept — draft pick card; embedded in draft room,2,spec,B045
+L-22,Lab,Draft it or buy it (per position),Decide,Draft the position or trade for it?,RD/DR,G2,none,facts,War Room › Market,endpoint.open id=L-22,kept — Market; surfaced in Trade Floor,2,spec,B046
+L-23,Lab,Tier cards: contender 1–10 · hunt 11–22 · rebuild 23–32,Read/Decide,Who's in which tier today?,ALL; peak DR,G1,weekly,facts,Trade Floor › Counterparties,endpoint.open id=L-23,kept — Trade Floor › Counterparties,2,spec,B057 B058 B059
+L-24,Lab,"Each tier's trend, earlier vs later seasons",Decide,Are tiers behaving differently?,ALL,G1,none,facts,Trade Floor › Counterparties,endpoint.open id=L-24,kept — Counterparties,2,spec,B060 B061 B062 B072
+L-25,Lab,Tier-against-tier matrix,Decide,Who trades with whom?,ALL; peak DR,G2,none,facts,Trade Floor › Counterparties,endpoint.open id=L-25,kept — Counterparties,2,spec,B063
+L-26,Lab,Sortable 32-team trade table,Read,The whole league's trading,ALL,G1,none,facts,Trade Floor › Counterparties,endpoint.open id=L-26,kept — Counterparties,2,spec,B056 B064
+L-27,Lab,Team panel: season cells marked when the team traded against its standing,Read,Did they trade against their own interest?,ALL,G1,none,facts,Trade Floor › Counterparties,endpoint.open id=L-27,kept — Counterparties,2,spec,B065 B100
+L-28,Lab,Team panel: asset flows sent and taken,Read,What did they ship/take?,ALL,G1,none,facts,Trade Floor › Counterparties,endpoint.open id=L-28,kept — Counterparties,2,spec,B066 B067
+L-29,Lab,Team panel: trade partners,Decide,Who deals with whom?,ALL; peak DR,G2,none,facts,Trade Floor › Counterparties,endpoint.open id=L-29,kept — Counterparties,2,spec,B068
+L-30,Lab,Offers and their endings across the 8 stretches,Decide,How do offers end?,ALL,G2,none,facts,Trade Floor › Offers,endpoint.open id=L-30,kept — Trade Floor › Offers,2,spec,B074 B078 B080 B081 B082 B083 B084 B085 B086 B087
+L-31,Lab,Sent / received / every visible offer split,Configure/Read,My sent vs received vs all,ALL,G1,none,facts,Trade Floor › Offers,endpoint.open id=L-31,kept — Offers filter,2,spec,B075 B076 B077
+L-32,Lab,Scope disclosure: MFL exposes only the GM's own offers,Read,Whose offers am I seeing?,ALL,G1 — honesty gate,none,facts,Trade Floor › Offers,endpoint.open id=L-32,"kept — Offers header, always visible",2,spec,
+L-33,Lab,"""How this is counted"" note",Read,Provenance of every number,ALL,G0,none,facts,War Room › Market,endpoint.open id=L-33,kept — component on every analytics surface,2,spec,B024 B050 B073 B079
+L-34,Lab,Checked-facts database (the standard itself),infrastructure,—,ALL,G0,sync,facts,Control Room › Data & sources,endpoint.open id=L-34,kept — Control Room › Sources provenance,2,spec,
+C-01,app,Asset board (on-field-now + dynasty value; league PPG + percentile),Decide,"What's every rostered player worth, now vs dynasty?",ALL,G2 — valuation backbone,sync,"rosters, playerScores, engine",War Room › Valuations & pool,endpoint.open id=C-01,kept — War Room (league-wide); mine-scoped view in Franchise HQ,1,spec,C001 C002 C003
+C-02,app,"Power rankings — ""this season"" and ""the franchise"" views",Decide/Read,How strong am I really?,season,G1,weekly,facts,Home,endpoint.open id=C-02,kept — League Pulse › Race (merges M-008),1,spec,C004 C005
+C-03,app,Home seasonal card,Read,What phase of the year is it?,ALL,G2 — routes every deadline,window,"league, local",Home,endpoint.open id=C-03,kept — Home (owns the node),0,spec,C006 C007
+C-04,app,Calendar board,Read/Plan,What's due and when?,ALL,G3 — the deadline surface,window/live,"league, local",Calendar (summoned),endpoint.open id=C-04,kept — summoned calendar (merges M-096),0,spec,C008
+C-05,app,League feed,Read/Social,What just happened?,ALL,G1,near-live,"transactions, league",Home,endpoint.open id=C-05,kept — comms channel; Home digest,1,spec,C009
+C-06.1,app,What-if store (transactions workspace),Plan,What if I did this?,ALL,G2,none,local,Franchise HQ › Contracts & cap,endpoint.open id=C-06.1,kept — Franchise HQ; every Act passes through it,0,spec,C010 C011
+C-06.2,app,Trade builder,Plan/Act-prep,Assemble both sides of a deal,ALL; peak DR,G3 in DR,none,"local, pendingTrades",Trade Floor › Trade desk,endpoint.open id=C-06.2,kept — Trade Floor,1,spec,C017
+C-06.3,app,Hold-to-fire confirm,control,Am I sure?,on commit,G2/G3 gate,600ms,local,Franchise HQ › Contracts & cap,endpoint.open id=C-06.3,kept — the commit gesture for every priced/destructive verb (rule 6),0,spec,C016
+C-06.4,app,Acquisitions handler,Plan,What does the add cost me?,ALL,G2,window,"local, league",Franchise HQ › Contracts & cap,endpoint.open id=C-06.4,kept — HQ,2,spec,C012
+C-06.5,app,Contracts handler,Plan,What do his contract years cost?,ALL,G2,window,"local, league",Franchise HQ › Contracts & cap,endpoint.open id=C-06.5,kept — HQ,2,spec,C013
+C-06.6,app,Dead cap handler,Plan,What's the cap hit if I cut him?,ALL; peak CUT,G2,window,"local, league",Franchise HQ › Contracts & cap,endpoint.open id=C-06.6,kept — HQ,2,spec,C014
+C-06.7,app,Free agency handler,Plan,What's my cap plan for the windows?,OP/UFA/RSG/OFA,G3 in windows,window/live,"local, league",Franchise HQ › Contracts & cap,endpoint.open id=C-06.7,kept — HQ,2,spec,C015
+C-07,app,Source health and freshness,Read,Can I trust these numbers?,ALL,G1,sync,local,Control Room › Data & sources,endpoint.open id=C-07,kept — status bar badge + Control Room,0,spec,C018 C021
+C-08,app,Player crosswalk,Read (infra),Are these the same player?,ALL,G0,sync,local,Control Room › Data & sources,endpoint.open id=C-08,kept — inspector provenance zone; never a user-facing surface,3,spec,C019
+C-09,app,Admin console: engine parameters,Configure (gated),Tune the engine,ALL,G1,none,engine,Control Room › Data & sources (Admin role),endpoint.open id=C-09,"kept — Control Room, role-gated",3,spec,C020
+S-01,shell,Nav rail (6 nodes),Read,,ALL,G0,,,Shell globals,view.goto node=,kept,0,spec,
+S-02,shell,"Inspector (fills on any entity click, no page change)",Read,,ALL,G0–G3 (hosts what it fills with),,,Shell globals,inspector.pin entity=` · `inspector.close,kept,0,spec,
+S-03,shell,Comms panel (48px collapsed / ~280px open),Social,,ALL,G1,,,Shell globals,comms.toggle channel=,kept,0,spec,
+S-04,shell,Calendar summon/collapse from any screen,Read,,ALL,G3 (hosts deadlines),,,Shell globals,calendar.toggle,kept,0,spec,
+S-05,shell,Workspace presets: Default · Draft Mode · Gameday · Trade Season · Admin,Configure,,ALL,G1,,,Control Room › App,preset.set name=,kept,0,spec,
+S-06,shell,Density tier: Narrative · Tactical · Matrix (one CSS attribute),Configure,,ALL,G0,,,Control Room › App,density.set tier=,kept,0,spec,
+S-07,shell,Command bar,Read,,ALL,G0,,,Command bar,commandbar.open,kept,0,spec,
+S-08,shell,Global search,Read,,ALL,G1,,,Command bar,search.find q=,kept,0,spec,
+S-09,shell,Data refresh,Configure,,ALL,G1,,,Control Room › Data & sources,refresh.run scope=,kept,0,spec,
+S-10,shell,Filter state persistence across sub-sections,Configure,,ALL,G1,,,Shell globals,view.filter scope=,kept,0,spec,
+S-11,shell,Watch list / scratchpad store (app-local),Plan,,ALL,G1,,,Franchise HQ › My moves,watch.add entity=` · `note.add entity=,kept,0,spec,
+S-12,shell,Status bar (source health · gameday strip · clock),Read,,ALL,G1,,,Status bar,read-only,kept,0,spec,
+S-13,shell,Seasonal-card phase links,Read,,ALL,G2,,,Home,phase.goto phase=,kept,0,spec,
+S-14,shell,League switcher (dormant; portfolio-ready),Configure,,ALL,G0,,,Control Room › App,league.switch id=,kept,0,spec,
+X-01,new 2026-10-06,"Live game view: field graphic, last play, box score, followed-game bar",Read,"What is happening in this NFL game, and what does it mean for my matchup?",ES/MS/DR gamedays,G1,live,"ESPN site/summary (primary), Yahoo editorial scoreboard (failover), Fox bifrost (third); MFL liveScoring",League Pulse › Now (Gameday preset),game.follow id=,kept,3,spec,
+X-02,new 2026-10-06,Fantasy play spine: headshot + play when a player in this matchup does something,Read,"Which of our players just scored, and how?",ES/MS/DR gamedays,G1,live,play feeds matched via crosswalk espn_id; headshots ESPN/Sleeper (personal use),League Pulse › Now,endpoint.open id=X-02,kept,3,spec,
+X-03,new 2026-10-06,"Matchup view: Classic (list) / Default (formation, across the line)",Read,"How is my matchup going, player by player?",ES/MS/DR,G1,live,"MFL liveScoring, rosters; Sleeper live stat lines",League Pulse › Now,matchup.view mode=<classic|default>,kept (Default awaits Christopher briefing),1 (Classic) / 4 (Default),spec,
+X-04,new 2026-10-06,Trade accept / reject / DOT review states,Act,"Do I take this offer, and where is it in review?",ALL; peak DR,G3,while pending,"pendingTrades, transactions; DOT source unknown (open question)",Trade Floor › Trade desk,trade.accept · trade.reject,kept,1,spec,
+M-197,MFL accounting_report (S8),Accounting base report (not Summary GRID),Read,How do I reach or diagnose Accounting hub?,"ALL, accounting review",G1 — league balance misread,none,league accounting; export coverage unverified,Control Room › League (role-gated),endpoint.open id=M-197,kept — MFL hand-off; distinct from Summary GRID,3,spec,A108 A301
+M-198,MFL O=120 guarded flow; exact form unverified,Survivor selection,Act,Which unused eligible team do I submit?,"ES/MS/DR, weekly",G2 — elimination risk from missed or ineligible pick,weekly pool lock; timezone/rules unverified,"pool rules, entrants, used teams, picks, results, schedule; export coverage unverified",League Pulse › Pools / Archive,endpoint.open id=M-198,kept — draft only until MFL form verified,3,spec,A138
+M-199,MFL O=133 onward to O=05; submit form unverified,Propose trade,Act,Which players and picks do I offer and request?,ALL; peak DR,G3 — binding asset commitment after acceptance,offer expiry/window if configured; rules unverified,"rosters, pendingTrades, transactions, draft-pick ownership, local intent",Trade Floor › Trade desk and offers,endpoint.open id=M-199,kept — draft only until MFL form verified,1,spec,A154
+M-200,MFL home module; code unstated,Fantasy Pick’em results,Read,What do I need from Fantasy Pick’em results before my pool locks?,"ES/MS/DR, weekly",G1 — pool standings interpretation,weekly,"fantasy pool entrants, picks, results; export coverage unverified",League Pulse › Pools / Archive,endpoint.open id=M-200,kept,3,spec,A285
+M-201,MFL reports R=SURVIVOR (S8),Survivor detailed results,Read,What do I need from Home Survivor detail before my pool locks?,"ES/MS/DR, weekly",G1 — survivor history interpretation,weekly,"survivor entrants, used teams, picks, results; export coverage unverified",League Pulse › Pools / Archive,endpoint.open id=M-201,kept,3,spec,A287
+L-35,Lab 1,Trades per season by stretch,Read,What does Trades per season by stretch say is cheap or dear against its baseline?,"ALL, research or deal",G1 — sample volume changes confidence in market evidence,none,"facts; trade counts, season/stretch, samples, league baseline",War Room › Market,endpoint.open id=L-35,kept,2,spec,B007
+L-36,Lab 3,Posture selector: bought for now / built for later / like for like,Configure,What does Posture — bought for now reveal about league-wide trading behaviour?,"ALL, per negotiation",G1 — trading posture misread,none,"facts; two trade sides, day-of standing, posture, asset flows, league baseline",Trade Floor › Counterparties,endpoint.open id=L-36,kept,2,spec,B069 B070 B071
