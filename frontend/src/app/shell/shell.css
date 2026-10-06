@@ -1,0 +1,52 @@
+.twr-app .act { appearance: none; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; text-align: left; }
+.twr-app.target-frame { position: relative; width: 100%; height: 100vh; display: grid; grid-template-columns: 192px 1fr 320px 48px; background: var(--surface-0); border: 1px solid var(--surface-line); overflow: hidden; }
+.twr-app .rail { background: var(--surface-1); border-right: 1px solid var(--surface-line); display: flex; flex-direction: column; }
+.twr-app .league { padding: 14px 14px 12px; border-bottom: 1px solid var(--surface-line); }
+.twr-app .league .crest { display: flex; gap: 10px; align-items: center; }
+.twr-app .league .crest i { width: 28px; height: 28px; border: 1px solid var(--surface-line-hi); display: grid; place-items: center; font: 700 10px var(--surface-mono); color: var(--surface-tx2); font-style: normal; }
+.twr-app .league b { display: block; font-size: 13px; }
+.twr-app .league small { color: var(--surface-tx3); font-size: 11px; }
+.twr-app .act-command { margin: 10px 12px; padding: 7px 9px; border: 1px solid var(--surface-line); background: var(--surface-0); color: var(--surface-tx3); font: 11.5px var(--surface-mono); display: flex; justify-content: space-between; }
+.twr-app .act-command kbd { font: inherit; border: 1px solid var(--surface-line-hi); padding: 0 5px; color: var(--surface-tx2); }
+.twr-app .nav { padding: 6px 0; flex: 1; }
+.twr-app .nav .act-rail { display: flex; align-items: center; gap: 10px; padding: 9px 16px; color: var(--surface-tx2); font-weight: 500; text-decoration: none; border-left: 2px solid transparent; width: 100%; }
+.twr-app .nav .act-rail svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.twr-app .nav .act-rail.on { color: var(--surface-tx1); background: var(--surface-3); border-left-color: var(--surface-tx1); }
+.twr-app .rail .me { border-top: 1px solid var(--surface-line); padding: 12px 14px; font-size: 11.5px; color: var(--surface-tx3); }
+.twr-app .rail .me b { color: var(--surface-tx1); font-weight: 600; display: block; font-size: 12.5px; }
+.twr-app .ws { display: flex; flex-direction: column; min-width: 0; }
+.twr-app .ws-head { height: 44px; flex: none; display: flex; align-items: stretch; border-bottom: 1px solid var(--surface-line); background: var(--surface-1); }
+.twr-app .ws-head h3 { font-size: 13px; font-weight: 700; padding: 0 16px; display: flex; align-items: center; border-right: 1px solid var(--surface-line); white-space: nowrap; margin: 0; }
+.twr-app .wtabs { display: flex; }
+.twr-app .wtabs .act-tab { display: flex; align-items: center; padding: 0 14px; color: var(--surface-tx3); font-weight: 600; font-size: 12px; border-bottom: 2px solid transparent; white-space: nowrap; }
+.twr-app .wtabs .act-tab.on { color: var(--surface-tx1); border-color: var(--surface-tx1); }
+.twr-app .strip { margin-left: auto; display: flex; align-items: center; gap: 16px; padding: 0 14px; font: 11px var(--surface-mono); color: var(--surface-tx3); white-space: nowrap; min-width: 0; }
+.twr-app .dens { display: flex; border: 1px solid var(--surface-line); }
+.twr-app .dens .act-density { font-style: normal; padding: 2px 7px; font: 600 10.5px var(--surface-sans); color: var(--surface-tx3); }
+.twr-app .dens .act-density.on { background: var(--surface-4); color: var(--surface-tx1); }
+.twr-app .wbody { flex: 1; overflow: auto; padding: 16px; display: grid; gap: 14px; align-content: start; }
+.twr-app .insp { background: var(--surface-1); border-left: 1px solid var(--surface-line); display: flex; flex-direction: column; overflow: hidden; }
+.twr-app .insp-head { height: 44px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-bottom: 1px solid var(--surface-line); font: 600 11px var(--surface-sans); color: var(--surface-tx3); letter-spacing: .06em; text-transform: uppercase; }
+.twr-app .insp-head .x { display: flex; gap: 10px; text-transform: none; letter-spacing: 0; font: 11px var(--surface-mono); }
+.twr-app .insp-body { padding: 14px; display: grid; gap: 14px; align-content: start; overflow: hidden; }
+.twr-app .kv { display: grid; grid-template-columns: 1fr auto; gap: 5px 10px; font-size: 12px; margin: 0 0 12px; }
+.twr-app .kv dt { color: var(--surface-tx3); }
+.twr-app .kv dd { font-family: var(--surface-mono); text-align: right; margin: 0; }
+.twr-app .comms { background: var(--surface-1); border-left: 1px solid var(--surface-line); display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 14px; grid-column: 4; grid-row: 1; }
+.twr-app .comms .vt { writing-mode: vertical-rl; transform: rotate(180deg); font: 600 10px var(--surface-sans); letter-spacing: .14em; color: var(--surface-tx3); text-transform: uppercase; margin-top: 6px; }
+.twr-app .act:hover { color: var(--surface-tx1); background: var(--surface-3); }
+.twr-app .strip .channel-chip { overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 230px; font: 11px var(--surface-mono); }
+.twr-app .strip > span:not(.channel-chip) { flex: none; }
+.twr-app .shell-unwired, .twr-app .snapshot-summary { padding: 14px; border: 1px solid var(--surface-line); background: var(--surface-2); }
+.twr-app h4 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
+.twr-app p { margin: 0 0 8px; }
+.twr-app .rail-tools { display: flex; justify-content: space-between; padding: 12px 14px; font-size: 11px; color: var(--surface-tx3); }
+.twr-app[data-inspector="expanded"] .insp { position: absolute; top: 0; bottom: 0; right: 48px; width: 480px; z-index: 10; grid-column: auto; grid-row: auto; }
+.twr-app .insp, .twr-app .inspector-closed { grid-column: 3; grid-row: 1; }
+.twr-app .inspector-closed { padding: 14px; border-left: 1px solid var(--surface-line); font-size: 11px; color: var(--surface-tx3); }
+.twr-app .comms .act-icon { width: 28px; height: 28px; border: 1px solid var(--surface-line-hi); display: grid; place-items: center; font: 600 11px var(--surface-mono); color: var(--surface-tx2); }
+.twr-app .shell-overlay { position: absolute; top: 44px; bottom: 0; padding: 14px; background: var(--surface-1); border-left: 1px solid var(--surface-line); z-index: 20; }
+.twr-app .shell-overlay header { display: flex; justify-content: space-between; border-bottom: 1px solid var(--surface-line); padding-bottom: 12px; margin-bottom: 14px; font: 600 11px var(--surface-sans); }
+.twr-app .comms-panel { right: 48px; width: 280px; }
+.twr-app .calendar-panel { right: 368px; width: 480px; }
+.twr-app.harness-return { position: fixed; bottom: 12px; left: 12px; z-index: 100; border: 1px solid var(--surface-line-hi); padding: 7px 9px; }
