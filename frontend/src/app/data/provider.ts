@@ -3,7 +3,9 @@ import type { Provenance, Snapshot } from './contract';
 import { parseSnapshot } from './parse';
 import { TargetSnapshot } from '../../../wailsjs/go/main/App';
 
-export interface Provider { snapshot(): Promise<Snapshot> }
+export interface Provider {
+  snapshot(): Promise<Snapshot>;
+}
 
 // Wails injects window.go before the page script runs; a plain browser (dev, screenshots) has none.
 function hasWails(): boolean {
@@ -18,8 +20,13 @@ export class FixtureProvider implements Provider {
 
 function failedSnapshot(cause: unknown): Snapshot {
   const provenance = (): Provenance => ({
-    source: 'mfl-mirror', kind: 'live',
-    freshness: { state: 'fail', fetchedAt: '', note: `TargetSnapshot failed: ${String(cause)}` },
+    source: 'mfl-mirror',
+    kind: 'live',
+    freshness: {
+      state: 'fail',
+      fetchedAt: '',
+      note: `TargetSnapshot failed: ${String(cause)}`,
+    },
   });
   return {
     league: { value: { season: 0, franchiseCount: 0 }, provenance: provenance() },

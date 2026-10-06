@@ -11,26 +11,43 @@ describe('Shell routes and data', () => {
     const spec = readFileSync('../docs/ui/Target_UI_Spec_2026-10.md', 'utf8');
     expect(nodeKeys).toEqual(['home', 'war', 'hq', 'trade', 'pulse', 'control']);
     for (const n of nodeKeys) {
-      const row = spec.split('\n').find(line => line.startsWith(`| ${nodes[n].label} |`))!;
+      const row = spec
+        .split('\n')
+        .find((line) => line.startsWith(`| ${nodes[n].label} |`))!;
       expect(row).toBeDefined();
       const names = row.split('|')[2].trim().replace(' (owns the node)', '').split(' · ');
       // Tab labels are sentence case; the spec's table writes some workspaces in running text.
-      expect(nodes[n].workspaces.map(w => w.label.toLowerCase())).toEqual(names.map(name => name.toLowerCase()));
+      expect(nodes[n].workspaces.map((w) => w.label.toLowerCase())).toEqual(
+        names.map((name) => name.toLowerCase()),
+      );
       expect(nodes[n].workspaces.length).toBeLessThanOrEqual(3);
     }
   });
   it('round-trips every workspace and falls back safely', () => {
-    for (const n of nodeKeys) for (const w of nodes[n].workspaces) {
-      const route = routeFor(n, w.slug)!;
-      expect(parseRoute(formatRoute(route))).toEqual(route);
-    }
-    for (const hash of ['', '#/unknown/foo', '#/home/market', '#/home', '#/home/seasonal-card/extra', '#/%ZZ/%AA', '#/constructor/foo']) {
+    for (const n of nodeKeys)
+      for (const w of nodes[n].workspaces) {
+        const route = routeFor(n, w.slug)!;
+        expect(parseRoute(formatRoute(route))).toEqual(route);
+      }
+    for (const hash of [
+      '',
+      '#/unknown/foo',
+      '#/home/market',
+      '#/home',
+      '#/home/seasonal-card/extra',
+      '#/%ZZ/%AA',
+      '#/constructor/foo',
+    ]) {
       expect(parseRoute(hash)).toEqual(homeRoute);
     }
   });
   it('shows weakest source and date and never zeroes failed data', async () => {
     const snapshot = await new FixtureProvider().snapshot();
-    snapshot.players.provenance.freshness = { state: 'fail', fetchedAt: '2026-10-05T00:00:00Z', note: 'failed directory' };
+    snapshot.players.provenance.freshness = {
+      state: 'fail',
+      fetchedAt: '2026-10-05T00:00:00Z',
+      note: 'failed directory',
+    };
     const summary = snapshotSummary(snapshot);
     expect(summary.provenance.label).toBe('fixture · 10-05');
     expect(summary.provenance.detail).toContain('players · fixture · fail');
@@ -78,21 +95,33 @@ describe('Shell transitions through dispatch only', () => {
     c.dispatch('target.open', {});
     expect(c.read().harness).toBe(false);
     c.dispatch('commandbar.open', {});
-    expect(c.read().notice).toContain('command bar arrives in 3b');
+    expect(c.read().commandbar).toBe(true);
     c.dispatch('calendar.summon', {});
     c.dispatch('comms.toggle', {});
     c.dispatch('overlays.close', {});
-    expect(c.read()).toMatchObject({ inspector: 'closed', summoned: null, comms: false, notice: null });
+    expect(c.read()).toMatchObject({
+      inspector: 'closed',
+      summoned: null,
+      comms: false,
+      notice: null,
+    });
   });
   it('uses the registry keyboard bindings', () => {
     const c = createCommands();
-    for (const [key, density] of [['1', 'narrative'], ['2', 'tactical'], ['3', 'matrix']]) {
+    for (const [key, density] of [
+      ['1', 'narrative'],
+      ['2', 'tactical'],
+      ['3', 'matrix'],
+    ]) {
       expect(c.key(key)).toBe(true);
       expect(c.read().density).toBe(density);
     }
-    c.key('i'); expect(c.read().inspector).toBe('closed');
-    c.key('I'); expect(c.read().inspector).toBe('rest');
-    c.key('Escape'); expect(c.read().inspector).toBe('closed');
+    c.key('i');
+    expect(c.read().inspector).toBe('closed');
+    c.key('I');
+    expect(c.read().inspector).toBe('rest');
+    c.key('Escape');
+    expect(c.read().inspector).toBe('closed');
     expect(c.key('x')).toBe(false);
   });
 });

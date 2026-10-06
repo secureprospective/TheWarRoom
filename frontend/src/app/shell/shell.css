@@ -50,3 +50,39 @@
 .twr-app .comms-panel { right: 48px; width: 280px; }
 .twr-app .calendar-panel { right: 368px; width: 480px; }
 .twr-app.harness-return { position: fixed; bottom: 12px; left: 12px; z-index: 100; border: 1px solid var(--surface-line-hi); padding: 7px 9px; }
+
+.twr-app .roster-cap { display: flex; flex-wrap: wrap; gap: 14px; font: 12px var(--surface-mono); margin-bottom: 18px; }
+.twr-app .hq-roster h5 { margin: 18px 0 8px; font-size: 12px; color: var(--surface-tx2); }
+.twr-app .roster-cards { display: grid; gap: 10px; }
+.twr-app .roster-cards > .act { display: block; width: 100%; padding: 0; min-width: 0; }
+.twr-app .roster-cards > .act.on .twr-card { background: var(--surface-3); border-color: var(--surface-line-hi); outline: 1px solid var(--surface-line-hi); outline-offset: -1px; }
+.twr-app .roster-cards > .act:hover .twr-card { border-color: var(--surface-line-hi); }
+.twr-app .hq-roster[data-density="matrix"] .roster-cards { gap: 0; overflow-x: auto; }
+.twr-app .hq-roster[data-density="matrix"] .roster-cards > .act { min-width: 820px; }
+.twr-app .hq-roster[data-density="matrix"] .twr-card { border-bottom: 0; }
+.twr-app .hq-roster[data-density="matrix"] .act:last-child .twr-card { border-bottom: 1px solid var(--surface-line); }
+.twr-app .hq-roster[data-density="matrix"] .player-identity { flex: 0 0 270px; }
+.twr-app .hq-roster[data-density="matrix"] .player-contract { margin-left: auto; }
+.twr-app .franchise-picker { display: grid; gap: 4px; }
+.twr-app .franchise-picker .act, .twr-app .app-settings .act { padding: 7px 9px; border: 1px solid var(--surface-line); }
+.twr-app .franchise-picker .act:hover, .twr-app .app-settings .act:hover { background: var(--surface-3); }
+.twr-app .app-settings { display: grid; gap: 8px; }
+.twr-app .insp-body { overflow-y: auto; }
+.twr-app .provenance-detail { white-space: pre-wrap; overflow-wrap: anywhere; font: 11px var(--surface-mono); color: var(--surface-tx2); margin-bottom: 14px; }
+.twr-app .interrogate .kv { margin-bottom: 14px; }
+.twr-app .command-bar { position: absolute; top: 54px; left: 208px; right: 384px; z-index: 30; padding: 9px; background: var(--surface-1); border: 1px solid var(--surface-line-hi); }
+.twr-app .command-bar input { width: 100%; box-sizing: border-box; border: 1px solid var(--surface-line); border-radius: 0; background: var(--surface-0); color: var(--surface-tx1); caret-color: var(--surface-tx1); padding: 9px; font: 12px var(--surface-mono); }
+.twr-app .command-bar input::placeholder { color: var(--surface-tx2); }
+.twr-app #command-results .act { display: flex; justify-content: space-between; gap: 12px; width: 100%; padding: 9px; border-bottom: 1px solid var(--surface-line); }
+.twr-app #command-results .act.on, .twr-app #command-results .act:hover { background: var(--surface-3); }
+.twr-app #command-results small { color: var(--surface-tx3); }
+.twr-app .act:focus-visible, .twr-app .command-bar input:focus-visible { outline: 1px solid var(--surface-tx1); outline-offset: 2px; }
+.twr-app .act:disabled { cursor: not-allowed; color: var(--surface-tx3); }
+.twr-app .app-settings .act:disabled:hover { background: transparent; }
+/* The shell is exactly one viewport tall; the workspace body and inspector are the scrollers. */
+.twr-app.target-frame { grid-template-rows: minmax(0, 1fr); }
+.twr-app .ws, .twr-app .insp { min-height: 0; }
+/* Narrow screens: title, tabs and density never shrink; the status strip gives way first. */
+.twr-app .ws-head h3, .twr-app .wtabs, .twr-app .dens { flex: none; }
+.twr-app .strip { flex: 1 1 0; justify-content: flex-end; overflow: hidden; }
+.twr-app .strip > span:not(.channel-chip):not(.dens) { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
