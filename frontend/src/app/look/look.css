@@ -1,0 +1,116 @@
+@tailwind components;
+
+.twr-app {
+  --signal-green: hsl(146 52% 50%);
+  --signal-blue: hsl(208 78% 62%);
+  --signal-amber: hsl(38 92% 56%);
+  --signal-red: hsl(2 74% 60%);
+  --signal-grey: hsl(220 6% 56%);
+  --signal-green-text: var(--signal-green);
+  --signal-blue-text: var(--signal-blue);
+  --signal-amber-text: var(--signal-amber);
+  --signal-red-text: var(--signal-red);
+  --signal-grey-text: var(--signal-grey);
+  --signal-green-edge: var(--signal-green);
+  --signal-blue-edge: var(--signal-blue);
+  --signal-amber-edge: var(--signal-amber);
+  --signal-red-edge: var(--signal-red);
+  --signal-grey-edge: var(--signal-grey);
+  --surface-0: hsl(220 14% 4%);
+  --surface-1: hsl(220 13% 6%);
+  --surface-2: hsl(220 12% 8%);
+  --surface-3: hsl(220 11% 10%);
+  --surface-4: hsl(220 10% 13%);
+  --surface-line: hsl(220 9% 17%);
+  --surface-line-hi: hsl(220 8% 26%);
+  --surface-stakes-edge: hsl(220 8% 38%);
+  --surface-irreversible-edge: hsl(220 10% 72%);
+  --surface-elevation-edge: hsl(220 10% 22%);
+  --surface-shadow: #000;
+  --surface-tx1: hsl(220 12% 92%);
+  --surface-tx2: hsl(220 8% 68%);
+  --surface-tx3: hsl(220 8% 57%);
+  --surface-sans: "Inter", system-ui, sans-serif;
+  --surface-mono: "JetBrains Mono", ui-monospace, monospace;
+  --brand-wordmark: var(--surface-tx1);
+  --brand-crest: var(--surface-tx2);
+  background: var(--surface-0);
+  color: var(--surface-tx1);
+  font: 13px/1.45 var(--surface-sans);
+  font-feature-settings: "tnum" 1, "cv11" 1;
+  text-align: left;
+}
+.twr-app *, .twr-app *::before, .twr-app *::after { box-sizing: border-box; }
+.twr-app ::selection { background: hsl(208 78% 62% / .35); color: var(--surface-tx1); }
+.twr-app :focus-visible { outline: 1px solid var(--signal-blue); outline-offset: 2px; }
+.twr-app * { scrollbar-color: var(--surface-line-hi) transparent; scrollbar-width: thin; }
+
+@layer components {
+  .twr-app .signal-green { color: var(--signal-green-text); }
+  .twr-app .signal-blue { color: var(--signal-blue-text); }
+  .twr-app .signal-amber { color: var(--signal-amber-text); }
+  .twr-app .signal-red { color: var(--signal-red-text); }
+  .twr-app .signal-grey { color: var(--signal-grey-text); }
+  .twr-app .channel-chip { display: inline-flex; align-items: center; gap: 6px; font: 600 11px var(--surface-sans); white-space: nowrap; }
+  .twr-app .channel-chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+  .twr-app .channel-countdown { font: 600 11.5px var(--surface-mono); white-space: nowrap; }
+  .twr-app .urgency-u0 { color: var(--surface-tx3); }
+  .twr-app .urgency-u1 { color: var(--surface-tx2); }
+  .twr-app .urgency-u2 { color: var(--signal-amber-text); }
+  .twr-app .urgency-u3 { color: var(--signal-red-text); }
+  .twr-app .twr-card { background: var(--surface-2); border: 1px solid var(--surface-line); padding: 12px 14px; position: relative; min-width: 0; }
+  .twr-app .gravity-g0 { border-color: var(--surface-line); }
+  .twr-app .gravity-g1 { border-color: var(--surface-line-hi); }
+  .twr-app .gravity-g2 { border: 2px solid var(--surface-stakes-edge); background: var(--surface-3); }
+  .twr-app .gravity-g3 { border: 3px solid var(--surface-irreversible-edge); background: var(--surface-3); box-shadow: 0 10px 28px -12px var(--surface-shadow), inset 0 1px 0 var(--surface-elevation-edge); }
+  .twr-app .gravity-g2 .card-title, .twr-app .gravity-g3 .card-title { font-weight: 700; }
+}
+.twr-app .classification-glyph { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 1.6; flex: none; }
+.twr-app .classification-label { display: inline-flex; align-items: center; gap: 5px; font: 600 10.5px var(--surface-sans); color: var(--surface-tx2); border: 1px solid var(--surface-line-hi); padding: 1px 7px 1px 5px; white-space: nowrap; }
+.twr-app .card-title { font-size: 13px; font-weight: 600; }
+.twr-app .card-header { display: flex; align-items: center; gap: 10px; }
+.twr-app .card-body { display: grid; gap: 10px; margin-top: 10px; }
+.twr-app .card-status { display: flex; gap: 10px; flex-wrap: wrap; }
+.twr-app .card-provenance { margin-left: auto; flex: none; }
+.twr-app .card-provenance .channel-chip { font: 10.5px var(--surface-mono); cursor: help; }
+.twr-app .card-action-tray:not(:empty) { border-top: 1px solid var(--surface-line); padding-top: 12px; margin-top: 10px; }
+.twr-app .player-identity { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.twr-app .player-identity .card-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.twr-app .player-identity .player-context { flex: none; white-space: nowrap; }
+.twr-app .player-context, .twr-app .player-contract { color: var(--surface-tx2); font-size: 12px; }
+.twr-app .player-context, .twr-app .player-contract-data { font-family: var(--surface-mono); }
+.twr-app .two-numbers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.twr-app .two-numbers > div { border: 1px dashed var(--surface-line); padding: 10px; }
+.twr-app .two-numbers small { display: block; color: var(--surface-tx3); font-size: 11px; }
+.twr-app .not-wired { color: var(--surface-tx3); font: 11.5px var(--surface-mono); }
+.twr-app .two-numbers b { display: block; font: 600 11.5px var(--surface-mono); color: var(--surface-tx3); }
+/* Narrative: the two numbers lead at twice the size; colour and chips do the rest. */
+.twr-app .twr-card[data-density="narrative"] { padding: 16px 18px; }
+.twr-app .twr-card[data-density="narrative"] .card-title { font-size: 17px; }
+.twr-app .twr-card[data-density="narrative"] .two-numbers > div { padding: 12px 14px; min-height: 84px; }
+.twr-app .twr-card[data-density="narrative"] .two-numbers b { font-size: 20px; margin-top: 8px; }
+.twr-app .twr-card[data-density="narrative"] .player-contract { font-size: 13px; }
+/* Tactical: the default anatomy, one line per zone. */
+.twr-app .twr-card[data-density="tactical"] .card-body { gap: 8px; margin-top: 8px; }
+.twr-app .twr-card[data-density="tactical"] .two-numbers > div { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 10px; }
+.twr-app .twr-card[data-density="tactical"] .two-numbers small { display: inline; }
+.twr-app .twr-card[data-density="tactical"] .player-unwired-rows,
+.twr-app .twr-card[data-density="matrix"] .player-unwired-rows { display: none; }
+/* Matrix: one monospace row, every zone a column. */
+.twr-app .twr-card[data-density="matrix"] { padding: 6px 10px; font: 12px var(--surface-mono); display: flex; align-items: center; gap: 14px; }
+.twr-app .twr-card[data-density="matrix"] .card-header,
+.twr-app .twr-card[data-density="matrix"] .card-body { display: contents; }
+.twr-app .twr-card[data-density="matrix"] .card-title { font-family: var(--surface-mono); }
+.twr-app .twr-card[data-density="matrix"] .card-title { font-size: 12px; white-space: nowrap; }
+.twr-app .twr-card[data-density="matrix"] .two-numbers { display: flex; gap: 14px; }
+.twr-app .twr-card[data-density="matrix"] .two-numbers > div { border: 0; padding: 0; display: flex; gap: 6px; align-items: baseline; }
+.twr-app .twr-card[data-density="matrix"] .two-numbers small { display: inline; font-size: 10.5px; }
+.twr-app .twr-card[data-density="matrix"] .card-status { flex-wrap: nowrap; }
+.twr-app .twr-card[data-density="matrix"] .card-provenance { order: 99; }
+.twr-app .twr-card[data-density="matrix"] * { animation: none; transition: none; }
+/* Narrative has room: the name wraps instead of truncating, with team and age beneath it. */
+.twr-app .twr-card[data-density="narrative"] .card-header { align-items: flex-start; }
+.twr-app .twr-card[data-density="narrative"] .player-identity { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; row-gap: 4px; }
+.twr-app .twr-card[data-density="narrative"] .player-identity .card-title { white-space: normal; }
+.twr-app .twr-card[data-density="narrative"] .player-identity .player-context { grid-column: 2; }
+.twr-app .twr-card[data-density="narrative"] .player-identity .classification-label { align-self: start; margin-top: 2px; }

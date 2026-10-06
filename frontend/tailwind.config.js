@@ -10,12 +10,20 @@ export default {
     extend: {
       colors: {
         surface: {
+          ...Object.fromEntries([0, 1, 2, 3, 4].map(n => [n, `var(--surface-${n})`])),
+          ...Object.fromEntries(['line', 'line-hi', 'tx1', 'tx2', 'tx3'].map(n => [n, `var(--surface-${n})`])),
           canvas: 'var(--surface-canvas)',
           sunken: 'var(--surface-sunken)',
           tile: 'var(--surface-tile)',
           raised: 'var(--surface-raised)',
           overlay: 'var(--surface-overlay)',
         },
+        signal: Object.fromEntries(['green', 'blue', 'amber', 'red', 'grey'].map(name => [name, {
+          DEFAULT: `var(--signal-${name})`,
+          text: `var(--signal-${name}-text)`,
+          edge: `var(--signal-${name}-edge)`,
+        }])),
+        brand: { wordmark: 'var(--brand-wordmark)', crest: 'var(--brand-crest)' },
         text: {
           primary: 'var(--text-primary)',
           secondary: 'var(--text-secondary)',
@@ -47,6 +55,8 @@ export default {
         'bevel-lo': 'var(--bevel-lo)',
       },
       fontFamily: {
+        'app-sans': 'var(--surface-sans)',
+        'app-mono': 'var(--surface-mono)',
         sans: 'var(--sans)',
         mono: 'var(--mono)',
       },

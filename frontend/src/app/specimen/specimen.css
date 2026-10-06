@@ -1,0 +1,11 @@
+.twr-app.specimen { padding: 28px 32px 56px; min-height: 100vh; }
+.twr-app.specimen h1 { font-size: 17px; font-weight: 700; }
+.twr-app.specimen h2 { font-size: 15px; font-weight: 700; margin: 22px 0 10px; }
+.twr-app.specimen section > h3 { font-weight: 600; margin: 18px 0 8px; }
+.twr-app .specimen-line { display: flex; gap: 14px; flex-wrap: wrap; }
+.twr-app .specimen-swatches { display: flex; gap: 16px; flex-wrap: wrap; }
+.twr-app .specimen-swatch { display: block; width: 64px; height: 30px; border: 1px solid var(--surface-line-hi); margin-bottom: 5px; }
+.twr-app .specimen-frames { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.twr-app .specimen-players { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.twr-app .specimen-matrix { grid-template-columns: 1fr; }
+.twr-app .specimen-reason { color: var(--surface-tx3); font: 11.5px var(--surface-mono); margin-bottom: 4px; }
