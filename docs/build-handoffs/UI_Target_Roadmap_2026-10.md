@@ -1,6 +1,6 @@
 # TheWarRoom: the UI target and the roadmap to done (October 2026)
 
-**Status:** this is a plan; nothing has been built from it.
+**Status:** approved plan (r0, 2026-10-06); nothing has been built from it yet.
 - Written: 2026-10-06, by Claude with Christopher.
 - Target: `docs/ui/Target_UI_Spec_2026-10.md`.
 - Registry: `docs/ui/endpoint-registry.csv`.

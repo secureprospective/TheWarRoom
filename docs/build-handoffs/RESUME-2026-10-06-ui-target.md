@@ -26,11 +26,12 @@
 |---|---|
 | MFL menu tree digested and shown to Christopher | done |
 | Research brief written; both answers back and digested | done |
-| Roadmap, target spec, registry; UI Direction §21 amended | committed on `session/ui-target` |
-| Visual rough draft: `docs/ui/target-draft/TheWarRoom_Target_Draft_2026-10.html` (8 tabs) | committed; **approved by Christopher "with joy"** |
+| Roadmap, target spec, registry; UI Direction §21 amended | merged to main (7a7af98) |
+| Visual rough draft: `docs/ui/target-draft/TheWarRoom_Target_Draft_2026-10.html` (8 tabs) | merged to main; **approved by Christopher "with joy"** |
+| GitHub README rewritten around the 8 target slides (`docs/ui/showcase/target-*.png`); old screenshots retired | live on main 7a7af98 |
 | Sol ↔ GLM row reconciliation | open: a rough name-match left 187 Sol rows unmatched, mostly aliases. Assigned to ring 0 |
 
-## 4. Artifacts (written 2026-10-06, uncommitted)
+## 4. Artifacts (written 2026-10-06, on main)
 - `docs/build-handoffs/UI_Target_Roadmap_2026-10.md` (175 lines)
   - The onion rings 0–4 with their gates; gap closure; harness retirement; definition of done.
   - Brainstorm record: Gameday Default/Classic views; the startup-draft hybrid.
@@ -90,7 +91,10 @@ None. This was a planning session.
 
 ## 8. Ledger state
 - Branch `session/ui-target` (from main) holds this RESUME and the whole planning set, including the
-  design board. Not pushed, not merged.
+  design board, plus the README rewrite. Pushed and fast-forwarded into main 7a7af98 on
+  Christopher's go (2026-10-06), on top of GitHub main's power-rankings commits. Full verify gate passed.
+- A fresh worktree needs `cd frontend && pnpm install && pnpm build` before a push: the pre-push
+  lint embeds `frontend/dist`.
 - The Lab (`session/league-history-pwa`) is separate. Its rounds 4–9b are parked uncommitted on
   that branch, Christopher's call. Never stage Lab files on this branch.
 
