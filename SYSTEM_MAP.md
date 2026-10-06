@@ -34,6 +34,8 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Composition | `internal/m2service`, `internal/powerrankings` | M2: counts each roster's model values (on-field-now or dynasty, league points per game) as the best legal lineup, the top N or the whole roster, and z-blends them: this season with the results (all-play when MFL reports it, otherwise points for) at 4 ÷ (4 + weeks played) or the slider's weight; the franchise with the roster's age. `m2service.Outlooks` adds the context columns (cap room, schedule luck, projected record), never in the score. |
 | Composition | `internal/scouting/assembly` | Builds today's board's scouting profiles: RAS, coverage and school tier from their feeds, college share and breakout age from history. |
 | Composition | `internal/modelrun` | The measurables: values every rostered player with `internal/model` and the run's params, and writes a model run beside the board. `AtLeaguePositions` puts every player MFL lists at MFL's position before the scales are built; `cmd/fit` does the same from MFL's players export. |
+| Composition | `internal/snapshot` | Pure, deterministic target UI snapshot builder over a read-only source; shared freshness is `domain.Freshness`. |
+| Tooling | `cmd/fixtures` | Copies league and history snapshots to disposable databases, initializes the app stores offline and exports the shared snapshot. |
 | Mutation | `internal/transactions` | The `Coordinator`: every league-state change runs here, in one transaction. Handler subpackages (`acquisitions`, `contracts`, `deadcap`, `freeagency`) are reachable only through it. |
 | Tooling | `cmd/fit` | Reads a history database, runs `model/fit`, and writes `internal/store/params/fitted.json` (shipped as calibrated defaults) and `docs/fit/Fit_Report.md`. |
 | Tooling | `tools/ifaceguard` | Vet tool: no `interface{}`/`any` in exported signatures. |
@@ -47,10 +49,11 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 - `database/sql` is confined to `db` and `store`.
 - `transactions/*` handler packages are imported only by `transactions`.
 
-## IPC surface (24 methods on `App`)
+## IPC surface (25 methods on `App`)
 
 | File | Methods |
 |---|---|
+| `target_app.go` | `TargetSnapshot` (initialized mirror and rulebook, cached live directory with archive fallback; shared fixture/live contract) |
 | `version.go` | `AppInfo` (version, commit, startup error for the banner) |
 | `refresh_app.go` | `RefreshLeague` (pull the league from MFL into the mirror) |
 | `crosswalk_app.go` | `LoadCrosswalk`, `GetCrosswalkReport` (the player directory and its match rates) |
@@ -117,3 +120,6 @@ These work and are tested, but the core plan rewrites or deletes them. Do not ex
 - No `interface{}`/`any` in exported signatures (`ifaceguard`).
 - No logging framework: the standard library.
 - No inbound HTTP server.
+
+The target UI data contract and fixture/live providers live in `frontend/src/app/data/`;
+`components/` remains the current harness. `snapshot.NewSource` composes the initialized mirror and rulebook; the directory carries its own fetch provenance. Money in the snapshot is exact cents; absent held fields are omitted.

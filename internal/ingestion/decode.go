@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
@@ -95,4 +97,14 @@ func FetchLeagueExport[Env any](ctx context.Context, c *mfl.Client, export, year
 		return env, fmt.Errorf("decode %s: %w", export, err)
 	}
 	return env, nil
+}
+
+func SameExport(raw, export string, season int) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	q := u.Query()
+	return q.Get("TYPE") == export && q.Get("L") == LeagueID &&
+		u.Path == "/"+strconv.Itoa(season)+"/export"
 }

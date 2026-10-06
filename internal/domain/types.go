@@ -38,3 +38,17 @@ func FranchiseLabel(names map[string]string, id string) string {
 	}
 	return "Franchise " + id
 }
+
+// Freshness is shared by stored snapshots and network-backed IPC results.
+type Freshness struct {
+	State     string `json:"state"`
+	FetchedAt string `json:"fetchedAt"`
+	Note      string `json:"note"`
+}
+
+// These strings cross IPC and must match frontend/src/components/board/freshness.ts.
+const (
+	FreshLive  = "live"
+	FreshStale = "stale"
+	FreshFail  = "fail"
+)

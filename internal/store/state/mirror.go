@@ -27,8 +27,9 @@ type Mirror struct {
 	discounts CapDiscounts
 	wmu       sync.Mutex
 	leagueView
-	snap MirrorSnapshot
-	hash string
+	snap        MirrorSnapshot
+	hash        string
+	refreshedAt string
 }
 
 // MirrorSnapshot is one refresh's view of the league.
@@ -78,8 +79,8 @@ func (m *Mirror) Initialize(ctx context.Context) error {
 	if _, err := m.pools.Write().ExecContext(ctx, mirrorDDL); err != nil {
 		return fmt.Errorf("state: mirror schema: %w", err)
 	}
-	var raw string
-	err := m.pools.Read().QueryRowContext(ctx, `SELECT snapshot FROM league_mirror WHERE id = 1`).Scan(&raw)
+	var raw, at string
+	err := m.pools.Read().QueryRowContext(ctx, `SELECT snapshot, refreshed_at FROM league_mirror WHERE id = 1`).Scan(&raw, &at)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil
 	}
@@ -93,6 +94,9 @@ func (m *Mirror) Initialize(ctx context.Context) error {
 	m.wmu.Lock()
 	defer m.wmu.Unlock()
 	_, err = m.install(snap)
+	if err == nil {
+		m.refreshedAt = at
+	}
 	return err
 }
 
@@ -109,13 +113,15 @@ func (m *Mirror) Replace(ctx context.Context, snap MirrorSnapshot) (bool, error)
 	if err != nil || m.hash == prev {
 		return false, err
 	}
+	at := time.Now().UTC().Format(time.RFC3339)
 	if _, err := m.pools.Write().ExecContext(ctx, `
 INSERT INTO league_mirror (id, season, sha256, snapshot, refreshed_at) VALUES (1, ?, ?, ?, ?)
 ON CONFLICT (id) DO UPDATE SET season = excluded.season, sha256 = excluded.sha256,
 	snapshot = excluded.snapshot, refreshed_at = excluded.refreshed_at`,
-		snap.Season, m.hash, string(enc), time.Now().UTC().Format(time.RFC3339)); err != nil {
+		snap.Season, m.hash, string(enc), at); err != nil {
 		return false, fmt.Errorf("state: mirror write: %w", err)
 	}
+	m.refreshedAt = at
 	return true, nil
 }
 
@@ -200,4 +206,10 @@ func (m *Mirror) Rosters(_ context.Context) ([]domain.Roster, error) {
 		out = append(out, domain.Roster{FranchiseID: fid, Players: byFr[fid]})
 	}
 	return out, nil
+}
+
+func (m *Mirror) AsOf() string {
+	m.wmu.Lock()
+	defer m.wmu.Unlock()
+	return m.refreshedAt
 }

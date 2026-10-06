@@ -50,6 +50,7 @@ type App struct {
 	lookupMu  sync.Mutex
 	lookup    normalize.Lookup
 	hasLookup bool
+	lookupAt  time.Time
 
 	refreshMu        sync.Mutex // one MFL refresh at a time
 	launchRefreshDue bool       // startup did not refresh, so domReady does
@@ -77,7 +78,7 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 	if err != nil {
 		return normalize.Lookup{}, fmt.Errorf("app: build players lookup: %w", err)
 	}
-	a.lookup, a.hasLookup = lk, true
+	a.lookup, a.hasLookup, a.lookupAt = lk, true, time.Now().UTC()
 	return lk, nil
 }
 

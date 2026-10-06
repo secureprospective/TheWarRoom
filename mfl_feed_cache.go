@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strconv"
 	"time"
 
@@ -68,13 +67,7 @@ func liveOrArchive[T any](ctx, fallback context.Context, season int, f archivedF
 
 // sameExport reports whether an archived URL is this league's export for season.
 func sameExport(raw, export string, season int) bool {
-	u, err := url.Parse(raw)
-	if err != nil {
-		return false
-	}
-	q := u.Query()
-	return q.Get("TYPE") == export && q.Get("L") == ingestion.LeagueID &&
-		u.Path == "/"+strconv.Itoa(season)+"/export"
+	return ingestion.SameExport(raw, export, season)
 }
 
 func (a *App) standingsOrArchive(ctx context.Context) ([]leaguestandings.RawStanding, Freshness, error) {

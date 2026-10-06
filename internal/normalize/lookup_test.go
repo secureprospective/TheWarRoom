@@ -163,3 +163,18 @@ func TestNewLookup_MalformedDraftYearFailsLoud(t *testing.T) {
 		t.Fatal("NewLookup should error on a non-numeric draft year, got nil")
 	}
 }
+
+func TestLookupCarriesNFLTeam(t *testing.T) {
+	for _, team := range []string{"BUF", "FA", ""} {
+		t.Run(team, func(t *testing.T) {
+			lk, err := NewLookup([]players.RawPlayer{{ID: "0531", Name: "Name", Position: "QB", Team: team}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			f, ok := lk.Facts("0531")
+			if !ok || f.Team != team {
+				t.Fatalf("Facts = %+v, %t; want team %q", f, ok, team)
+			}
+		})
+	}
+}

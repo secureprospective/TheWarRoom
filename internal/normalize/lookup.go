@@ -20,7 +20,6 @@ import (
 // lookupEntry is one player's resolved facts; raw MFL codes do not survive into it.
 type lookupEntry struct {
 	PlayerFacts
-	team        string
 	isAggregate bool // "Def", "TMWR", …
 }
 
@@ -59,11 +58,11 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 		entry := lookupEntry{
 			PlayerFacts: PlayerFacts{
 				Name:     rp.Name,
+				Team:     rp.Team,
 				Position: pos,
 				IsRookie: rp.Status == "R",
 				College:  strings.TrimSpace(rp.College),
 			},
-			team:        rp.Team,
 			isAggregate: isAgg,
 		}
 		// The fetcher validated the birthdate; absent stays absent and the consumer decides.
@@ -95,6 +94,7 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 // static feed.
 type PlayerFacts struct {
 	Name         string
+	Team         string
 	Position     domain.Position
 	IsRookie     bool
 	Birthdate    int64  // epoch seconds

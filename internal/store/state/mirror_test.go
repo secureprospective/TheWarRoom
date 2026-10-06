@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -91,5 +92,30 @@ func TestWhatIfSeededFromMirrorHasTheMirrorsCap(t *testing.T) {
 		if got, ok := whatif.Reader().CapUsed(fid); !ok || got != want {
 			t.Errorf("CapUsed(%s): what-if %d (%t), mirror %d", fid, got, ok, want)
 		}
+	}
+}
+
+func TestMirrorAsOfSurvivesRestart(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "league.db")
+	m := openMirror(t, path)
+	if m.AsOf() != "" {
+		t.Fatal("empty mirror has a fetch time")
+	}
+	if _, err := m.Replace(context.Background(), mirrorSnap()); err != nil {
+		t.Fatal(err)
+	}
+	at := m.AsOf()
+	if _, err := time.Parse(time.RFC3339, at); err != nil {
+		t.Fatalf("AsOf %q: %v", at, err)
+	}
+	if _, err := m.Replace(context.Background(), mirrorSnap()); err != nil {
+		t.Fatal(err)
+	}
+	if m.AsOf() != at {
+		t.Fatal("unchanged mirror changed stored as-of")
+	}
+	reopened := openMirror(t, path)
+	if reopened.AsOf() != at {
+		t.Fatalf("reopened AsOf = %q; want %q", reopened.AsOf(), at)
 	}
 }
