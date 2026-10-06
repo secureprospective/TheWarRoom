@@ -123,3 +123,8 @@ These work and are tested, but the core plan rewrites or deletes them. Do not ex
 
 The target UI data contract and fixture/live providers live in `frontend/src/app/data/`;
 `components/` remains the current harness. `snapshot.NewSource` composes the initialized mirror and rulebook; the directory carries its own fetch provenance. Money in the snapshot is exact cents; absent held fields are omitted.
+
+The target shell lives in `frontend/src/app/shell/`; its six-node table and hash routes are data.
+`frontend/src/app/commands/` owns the immutable verb registry, sole dispatch path, keyboard
+bindings and in-memory recent-command log. `Act` is the only clickable primitive in the target
+UI. `frontend/src/TargetMount.tsx` switches between the target shell and the unchanged harness.
