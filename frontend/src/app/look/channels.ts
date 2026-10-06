@@ -8,12 +8,21 @@ export type Signal = (typeof SIGNALS)[number];
 export type LabelledSignal = { signal: Signal; label: string; detail?: string };
 export type CountdownSlot = { urgency: Urgency; label: string };
 export const gravityClasses: Record<Gravity, string> = {
-  G0: 'gravity-g0', G1: 'gravity-g1', G2: 'gravity-g2', G3: 'gravity-g3',
+  G0: 'gravity-g0',
+  G1: 'gravity-g1',
+  G2: 'gravity-g2',
+  G3: 'gravity-g3',
 };
 export const urgencyClasses: Record<Urgency, string> = {
-  U0: 'urgency-u0', U1: 'urgency-u1', U2: 'urgency-u2', U3: 'urgency-u3',
+  U0: 'urgency-u0',
+  U1: 'urgency-u1',
+  U2: 'urgency-u2',
+  U3: 'urgency-u3',
 };
 export const signalClasses: Record<Signal, string> = {
-  green: 'signal-green', blue: 'signal-blue', amber: 'signal-amber',
-  red: 'signal-red', grey: 'signal-grey',
+  green: 'signal-green',
+  blue: 'signal-blue',
+  amber: 'signal-amber',
+  red: 'signal-red',
+  grey: 'signal-grey',
 };

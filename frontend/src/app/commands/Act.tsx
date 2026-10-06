@@ -2,12 +2,40 @@ import type { ReactNode } from 'react';
 import { commands, dispatch, type CommandId, type CommandArgs } from './registry';
 type Variant = 'rail' | 'tab' | 'density' | 'icon' | 'text' | 'command';
 type ActProps<K extends CommandId> = {
-  verb: K; args: CommandArgs<K>; variant?: Variant; children?: ReactNode;
-  active?: boolean; label?: string; expanded?: boolean; controls?: string;
+  verb: K;
+  args: CommandArgs<K>;
+  variant?: Variant;
+  children?: ReactNode;
+  active?: boolean;
+  label?: string;
+  expanded?: boolean;
+  controls?: string;
+  disabled?: boolean;
 };
-export function Act<K extends CommandId>({ verb, args, variant = 'text', children, active, label, expanded, controls }: ActProps<K>) {
-  return <button type="button" className={`act act-${variant}${active ? ' on' : ''}`}
-    aria-label={label ?? commands.registry[verb].label} aria-pressed={active}
-    aria-expanded={expanded} aria-controls={controls} title={label ?? commands.registry[verb].label}
-    onClick={() => dispatch(verb, args)}>{children ?? commands.registry[verb].label}</button>;
+export function Act<K extends CommandId>({
+  verb,
+  args,
+  variant = 'text',
+  children,
+  active,
+  label,
+  expanded,
+  controls,
+  disabled,
+}: ActProps<K>) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      className={`act act-${variant}${active ? ' on' : ''}`}
+      aria-label={label ?? commands.registry[verb].label}
+      aria-pressed={active}
+      aria-expanded={expanded}
+      aria-controls={controls}
+      title={label ?? commands.registry[verb].label}
+      onClick={() => dispatch(verb, args)}
+    >
+      {children ?? commands.registry[verb].label}
+    </button>
+  );
 }

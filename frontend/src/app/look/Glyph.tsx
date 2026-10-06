@@ -3,7 +3,11 @@ import type { Position } from '../data/contract';
 export const TIERS = ['contender', 'hunt', 'rebuild'] as const;
 export const POSTURES = ['now', 'later', 'like-for-like'] as const;
 export const PRIVATE_MARKERS = ['watch', 'bait'] as const;
-export type GlyphName = Position | (typeof TIERS)[number] | (typeof POSTURES)[number] | (typeof PRIVATE_MARKERS)[number];
+export type GlyphName =
+  | Position
+  | (typeof TIERS)[number]
+  | (typeof POSTURES)[number]
+  | (typeof PRIVATE_MARKERS)[number];
 
 export const glyphPaths: Record<GlyphName, string> = {
   QB: 'M2 8 6 3l4 1 4 4-4 4-4 1Z M5 8h6 M8 5v6',
@@ -28,7 +32,15 @@ export const glyphPaths: Record<GlyphName, string> = {
 };
 
 export function Glyph({ name }: { name: GlyphName }) {
-  return <svg className="classification-glyph" viewBox="0 0 16 16" role="img" aria-label={name}>
-    <title>{name}</title><path d={glyphPaths[name]} />
-  </svg>;
+  return (
+    <svg
+      className="classification-glyph"
+      viewBox="0 0 16 16"
+      role="img"
+      aria-label={name}
+    >
+      <title>{name}</title>
+      <path d={glyphPaths[name]} />
+    </svg>
+  );
 }

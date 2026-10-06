@@ -9,7 +9,7 @@ describe('Command registry', () => {
   it('has unique IDs, immutable metadata and consistent gravity/undo', () => {
     const { registry } = createCommands();
     const entries = Object.values(registry);
-    expect(new Set(entries.map(c => c.id)).size).toBe(entries.length);
+    expect(new Set(entries.map((c) => c.id)).size).toBe(entries.length);
     expect(Object.isFrozen(registry)).toBe(true);
     for (const [id, command] of Object.entries(registry)) {
       expect(command.id).toBe(id);
@@ -30,7 +30,12 @@ describe('Command registry', () => {
     c.dispatch('density.set', args);
     args.density = 'narrative';
     expect(c.history()[0]).toEqual({ id: 'density.set', args: { density: 'matrix' } });
-    expect(() => c.dispatch('nav.open', { node: 'home', workspace: 'market' } as unknown as CommandArgs<'nav.open'>)).toThrow('invalid workspace');
+    expect(() =>
+      c.dispatch('nav.open', {
+        node: 'home',
+        workspace: 'market',
+      } as unknown as CommandArgs<'nav.open'>),
+    ).toThrow('invalid workspace');
     expect(c.history()).toHaveLength(1);
     for (let i = 0; i < 40; i++) c.dispatch('inspector.close', {});
     expect(c.history()).toHaveLength(32);
