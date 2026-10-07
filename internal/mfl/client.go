@@ -14,18 +14,25 @@ import (
 	"sync"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 	"golang.org/x/time/rate"
 )
 
 // Client is the MFL HTTP transport client.
 type Client struct {
-	http     *http.Client
-	limiter  *rate.Limiter
-	mu       sync.RWMutex
-	host     string          // discovered league host (e.g. www47), cached
-	hostFor  string          // the year/league the host was discovered for
-	hostAt   time.Time       // when; a discovery older than hostTTL is redone
-	backoffs []time.Duration // 429 backoff schedule
+	http    *http.Client
+	limiter *rate.Limiter
+	*hostState
+	keySource func(context.Context) (mflkey.Key, error)
+	keyedHTTP *http.Client
+	backoffs  []time.Duration
+}
+
+type hostState struct {
+	mu      sync.RWMutex
+	host    string    // discovered league host (e.g. www47), cached
+	hostFor string    // the year/league the host was discovered for
+	hostAt  time.Time // when; a discovery older than hostTTL is redone
 }
 
 // ErrNonPositiveRate rejects a rate that is not positive and finite. rate.Limit(0) allows
@@ -48,9 +55,9 @@ func New(host string, rps float64, opts ...Option) (*Client, error) {
 		return nil, fmt.Errorf("%w: got %g", ErrNonPositiveRate, rps)
 	}
 	c := &Client{
-		http:    &http.Client{Timeout: 15 * time.Second},
-		limiter: rate.NewLimiter(rate.Limit(rps), 1),
-		host:    host,
+		http:      &http.Client{Timeout: 15 * time.Second},
+		limiter:   rate.NewLimiter(rate.Limit(rps), 1),
+		hostState: &hostState{host: host},
 		// 1s doubling to 60s, then return the error.
 		backoffs: []time.Duration{
 			1 * time.Second, 2 * time.Second, 4 * time.Second, 8 * time.Second,
@@ -60,12 +67,20 @@ func New(host string, rps float64, opts ...Option) (*Client, error) {
 	for _, o := range opts {
 		o(c)
 	}
+	c.keyedHTTP = &http.Client{
+		Transport:     c.http.Transport,
+		Timeout:       c.http.Timeout,
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}
 	return c, nil
 }
 
 // Do is the transport primitive: wait on the rate limit, execute, back off on 429. It and
 // DiscoverHost are the only exported request methods.
 func (c *Client) Do(ctx context.Context, req Request) (Response, error) {
+	if req.Keyed {
+		return c.doKeyed(ctx, req)
+	}
 	c.mu.RLock()
 	host := c.host
 	c.mu.RUnlock()
@@ -87,7 +102,7 @@ func (c *Client) Do(ctx context.Context, req Request) (Response, error) {
 		return Response{}, fmt.Errorf("failed to create http request: %w", err)
 	}
 
-	resp, err := c.executeWithRetry(ctx, httpReq)
+	resp, err := c.executeWithRetry(ctx, httpReq, c.http)
 	if err != nil {
 		return Response{}, fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -177,7 +192,8 @@ func (c *Client) buildURL(host, year, endpoint string, params map[string]string)
 	for k, v := range params {
 		// TYPE and JSON belong to the transport; a caller key matching either in any case is
 		// dropped so it cannot add a second value.
-		if strings.EqualFold(k, "TYPE") || strings.EqualFold(k, "JSON") {
+		if strings.EqualFold(k, "TYPE") || strings.EqualFold(k, "JSON") ||
+			strings.EqualFold(k, "APIKEY") {
 			continue
 		}
 		q.Set(k, v)
@@ -189,7 +205,9 @@ func (c *Client) buildURL(host, year, endpoint string, params map[string]string)
 }
 
 // executeWithRetry runs the request, backing off on HTTP 429.
-func (c *Client) executeWithRetry(ctx context.Context, httpReq *http.Request) (*http.Response, error) {
+func (c *Client) executeWithRetry(
+	ctx context.Context, httpReq *http.Request, client *http.Client,
+) (*http.Response, error) {
 	backoffs := c.backoffs
 
 	attempts := 0
@@ -207,7 +225,7 @@ func (c *Client) executeWithRetry(ctx context.Context, httpReq *http.Request) (*
 			reqToRun = httpReq.Clone(ctx)
 		}
 
-		resp, err := c.http.Do(reqToRun)
+		resp, err := client.Do(reqToRun)
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute HTTP request: %w", err)
 		}

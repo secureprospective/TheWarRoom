@@ -4,6 +4,7 @@ package mfl
 
 // Request represents a transport-level MFL API request.
 type Request struct {
+	Keyed  bool              // APIKEY is supplied privately by the client, never by Params.
 	Type   string            // The endpoint TYPE (e.g. "league", "rosters", "players")
 	Year   string            // The season year (e.g. "2026")
 	Params map[string]string // Additional query parameters (e.g. L, W)
