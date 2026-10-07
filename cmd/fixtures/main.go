@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
+	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -34,12 +35,13 @@ func run(ctx context.Context, args []string) (err error) {
 	flags := flag.NewFlagSet("fixtures", flag.ContinueOnError)
 	path := flags.String("db", "", "league snapshot database")
 	historyPath := flags.String("history", "", "history snapshot database")
+	whatifPath := flags.String("whatif", "", "what-if snapshot database (phase log, calendar)")
 	out := flags.String("out", "", "fixture output directory")
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("fixtures: arguments: %w", err)
 	}
-	if *path == "" || *historyPath == "" || *out == "" || flags.NArg() != 0 {
-		return fmt.Errorf("fixtures: -db, -history and -out required; no positional arguments")
+	if *path == "" || *historyPath == "" || *whatifPath == "" || *out == "" || flags.NArg() != 0 {
+		return fmt.Errorf("fixtures: -db, -history, -whatif and -out required; no positional arguments")
 	}
 	temp, err := os.MkdirTemp("", "warroom-fixtures-")
 	if err != nil {
@@ -56,11 +58,22 @@ func run(ctx context.Context, args []string) (err error) {
 		return err
 	}
 	defer func() { err = errors.Join(err, hp.Close()) }()
-	snap, err := build(ctx, pools, hp)
+	wp, err := copyPools(ctx, *whatifPath, temp)
 	if err != nil {
 		return err
 	}
-	return writeSnapshot(*out, snap)
+	defer func() { err = errors.Join(err, wp.Close()) }()
+	snap, clock, err := build(ctx, pools, hp, wp)
+	if err != nil {
+		return err
+	}
+	if err := writeSnapshot(*out, snap); err != nil {
+		return err
+	}
+	if err := writeEnvelopeDemo(*out, snap); err != nil {
+		return err
+	}
+	return writeClock(*out, clock)
 }
 
 func copyPools(ctx context.Context, src, temp string) (*db.Pools, error) {
@@ -89,34 +102,60 @@ func (offline) Fetch(context.Context) (league.RawConfig, error) {
 	return league.RawConfig{}, fmt.Errorf("fixtures run offline")
 }
 
-func build(ctx context.Context, pools, hp *db.Pools) (snapshot.Snapshot, error) {
+type clockReading = snapshot.Sourced[leagueclock.Reading]
+
+// build runs the app's own stores over the snapshot copies and the same builders as the bindings.
+func build(ctx context.Context, pools, hp, wp *db.Pools) (snapshot.Snapshot, clockReading, error) {
 	rb := rulebook.New(pools)
 	if err := rb.Initialize(ctx, offline{}); err != nil {
-		return snapshot.Snapshot{}, fmt.Errorf("fixtures: rulebook: %w", err)
+		return snapshot.Snapshot{}, clockReading{}, fmt.Errorf("fixtures: rulebook: %w", err)
 	}
 	mirror := state.NewMirror(pools, rb)
 	if err := mirror.Initialize(ctx); err != nil {
-		return snapshot.Snapshot{}, fmt.Errorf("fixtures: mirror: %w", err)
+		return snapshot.Snapshot{}, clockReading{}, fmt.Errorf("fixtures: mirror: %w", err)
 	}
 	reg, err := measures.Embedded()
 	if err != nil {
-		return snapshot.Snapshot{}, fmt.Errorf("fixtures: registry: %w", err)
+		return snapshot.Snapshot{}, clockReading{}, fmt.Errorf("fixtures: registry: %w", err)
 	}
 	hs := history.New(hp, reg)
 	if err := hs.Initialize(ctx); err != nil {
-		return snapshot.Snapshot{}, fmt.Errorf("fixtures: history: %w", err)
+		return snapshot.Snapshot{}, clockReading{}, fmt.Errorf("fixtures: history: %w", err)
 	}
 	dir, err := archivedDirectory(ctx, hs, mirror.Season())
 	if err != nil {
-		return snapshot.Snapshot{}, err
+		return snapshot.Snapshot{}, clockReading{}, err
 	}
 	snap, err := snapshot.Build(ctx, snapshot.NewSource(mirror, rb), dir)
 	if err != nil {
-		return snapshot.Snapshot{}, fmt.Errorf("fixtures: build: %w", err)
+		return snapshot.Snapshot{}, clockReading{}, fmt.Errorf("fixtures: build: %w", err)
 	}
 	snap.League.Provenance.Kind, snap.Franchises.Provenance.Kind = "fixture", "fixture"
 	snap.Rosters.Provenance.Kind, snap.Players.Provenance.Kind = "fixture", "fixture"
-	return snap, nil
+	clock, err := buildClock(ctx, wp, rb, mirror, snap)
+	return snap, clock, err
+}
+
+// buildClock reads the clock at the roster snapshot's instant, so the fixture is reproducible.
+func buildClock(ctx context.Context, wp *db.Pools, rb *rulebook.Store, mirror *state.Mirror,
+	snap snapshot.Snapshot) (clockReading, error) {
+	whatif := state.New(wp, ingestion.LeagueID, mirror.Season(), rb)
+	if err := whatif.Initialize(ctx, mirror); err != nil {
+		return clockReading{}, fmt.Errorf("fixtures: what-if league: %w", err)
+	}
+	at, err := time.Parse(time.RFC3339, snap.Rosters.Provenance.Freshness.FetchedAt)
+	if err != nil {
+		return clockReading{}, fmt.Errorf("fixtures: clock time: %w", err)
+	}
+	fresh := snap.Rosters.Provenance.Freshness
+	fresh.Note = "phase log and commissioner calendar from a what-if snapshot; league windows not yet captured"
+	clock, err := snapshot.BuildClock(ctx, at, mirror.Season(), whatif, snapshot.Provenance{
+		Source: "phase-log+commissioner-calendar", Kind: "fixture", Freshness: fresh,
+	})
+	if err != nil {
+		return clockReading{}, fmt.Errorf("fixtures: clock: %w", err)
+	}
+	return clock, nil
 }
 
 func archivedDirectory(ctx context.Context, hs *history.Store, season int) (snapshot.Directory, error) {

@@ -53,4 +53,6 @@ export function SetLeagueSettingOverride(arg1:string,arg2:string,arg3:string):Pr
 
 export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetParamResult>;
 
+export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
+
 export function TargetSnapshot():Promise<snapshot.Snapshot>;

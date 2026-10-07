@@ -1,0 +1,53 @@
+{
+  "value": {
+    "season": 2026,
+    "phase": "OFFSEASON",
+    "deadlines": [],
+    "windows": [
+      {
+        "kind": "contract_options",
+        "status": "unknown",
+        "reason": "league rules not yet captured — gap closure"
+      },
+      {
+        "kind": "rfa_tender",
+        "status": "unknown",
+        "reason": "league rules not yet captured — gap closure"
+      },
+      {
+        "kind": "ufa_bidding",
+        "status": "unknown",
+        "reason": "league rules not yet captured — gap closure"
+      },
+      {
+        "kind": "re_sign",
+        "status": "unknown",
+        "reason": "league rules not yet captured — gap closure"
+      },
+      {
+        "kind": "cut_day",
+        "status": "unknown",
+        "reason": "league rules not yet captured — gap closure"
+      },
+      {
+        "kind": "trade_deadline",
+        "status": "unknown",
+        "reason": "league rules not yet captured — gap closure"
+      },
+      {
+        "kind": "draft",
+        "status": "unknown",
+        "reason": "league rules not yet captured — gap closure"
+      }
+    ]
+  },
+  "provenance": {
+    "source": "phase-log+commissioner-calendar",
+    "freshness": {
+      "state": "live",
+      "fetchedAt": "2026-10-05T18:43:52Z",
+      "note": "phase log and commissioner calendar from a what-if snapshot; league windows not yet captured"
+    },
+    "kind": "fixture"
+  }
+}

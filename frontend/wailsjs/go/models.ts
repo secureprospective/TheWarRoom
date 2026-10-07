@@ -19,6 +19,104 @@ export namespace domain {
 
 }
 
+export namespace leagueclock {
+	
+	export class Deadline {
+	    id: string;
+	    label: string;
+	    // Go type: time
+	    at?: any;
+	    urgency: string;
+	    pinned: boolean;
+	    promoted: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Deadline(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.label = source["label"];
+	        this.at = this.convertValues(source["at"], null);
+	        this.urgency = source["urgency"];
+	        this.pinned = source["pinned"];
+	        this.promoted = source["promoted"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Window {
+	    kind: string;
+	    status: string;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Window(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	        this.status = source["status"];
+	        this.reason = source["reason"];
+	    }
+	}
+	export class Reading {
+	    season: number;
+	    phase: string;
+	    deadlines: Deadline[];
+	    windows: Window[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Reading(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.phase = source["phase"];
+	        this.deadlines = this.convertValues(source["deadlines"], Deadline);
+	        this.windows = this.convertValues(source["windows"], Window);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace main {
 	
 	export class AppInfo {
@@ -1875,6 +1973,38 @@ export namespace snapshot {
 	
 	
 	
+	export class Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_ {
+	    value: leagueclock.Reading;
+	    provenance: Provenance;
+	
+	    static createFrom(source: any = {}) {
+	        return new Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = this.convertValues(source["value"], leagueclock.Reading);
+	        this.provenance = this.convertValues(source["provenance"], Provenance);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 
 }
 

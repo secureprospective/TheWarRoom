@@ -102,6 +102,10 @@ export function SetParam(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetParam'](arg1, arg2, arg3);
 }
 
+export function TargetClock() {
+  return window['go']['main']['App']['TargetClock']();
+}
+
 export function TargetSnapshot() {
   return window['go']['main']['App']['TargetSnapshot']();
 }
