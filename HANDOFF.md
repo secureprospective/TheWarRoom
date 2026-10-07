@@ -5,7 +5,7 @@
 ## Where it stands
 
 Ring 0 of the UI target is done: P1–P5b built on `session/ring-0`, live gate passed on Claude-OS
-2026-10-07, merged to main. Resume: `docs/build-handoffs/RESUME-2026-10-06-ring0.md` (§0).
+2026-10-07, merged to main (PR #14). Ring 1 resume: `docs/build-handoffs/RESUME-2026-10-07-ring1.md`.
 
 ## Next move
 
