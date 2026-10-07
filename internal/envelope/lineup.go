@@ -13,6 +13,12 @@ import (
 )
 
 func validateExpected(s Spec) error {
+	if s.Intent == "trade.accept" {
+		return validateTradeExpected(s)
+	}
+	if s.Expected.Trade != nil {
+		return fmt.Errorf("envelope: trade change requires trade.accept")
+	}
 	if s.Intent == "lineup.set" {
 		return validateLineupExpected(s)
 	}

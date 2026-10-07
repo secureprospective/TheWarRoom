@@ -179,3 +179,7 @@ HQ › Roster: `LineupRoster.tsx` shows starters, bench and Go legality; `lineup
 
 HQ lineup editing: `LineupEditor.tsx` checks starter toggles through Go and shows saved Start/Bench plans.
 Hand-off Act: `move.handoff` opens a Ready plan; `target:moves` reloads receipts and the held HQ lineup.
+
+`trades_app.go`: `TargetTrades(franchiseID string) (TradeReading, error)` reads held offers locally.
+`trades_app.go`: `TargetDraftTradeAccept(franchiseID, tradeID string) (envelope.Receipt, error)` saves an accept plan.
+`internal/envelope`: `trade.accept` watches post-hand-off TRADE asset sets; disappearance waits in DOTReview.

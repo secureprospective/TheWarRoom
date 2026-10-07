@@ -115,3 +115,28 @@ func money(s string) (int64, error) {
 	}
 	return cents, nil
 }
+
+// AssetToken returns the canonical MFL spelling; DP coordinates are zero-based and padded.
+func AssetToken(a Asset) string {
+	switch {
+	case a.Player != nil:
+		return a.Player.String()
+	case a.CurrentPick != nil:
+		return fmt.Sprintf("DP_%02d_%02d", a.CurrentPick.Round-1, a.CurrentPick.Pick-1)
+	case a.FuturePick != nil:
+		p := a.FuturePick
+		return fmt.Sprintf("FP_%s_%d_%d", p.Franchise, p.Year, p.Round)
+	case a.BlindBidCents != nil:
+		return fmt.Sprintf("BB_%d.%02d", *a.BlindBidCents/100, *a.BlindBidCents%100)
+	default:
+		return ""
+	}
+}
+
+func AssetTokens(assets []Asset) []string {
+	tokens := make([]string, 0, len(assets))
+	for _, asset := range assets {
+		tokens = append(tokens, AssetToken(asset))
+	}
+	return tokens
+}

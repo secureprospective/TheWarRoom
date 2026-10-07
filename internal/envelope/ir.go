@@ -67,6 +67,7 @@ const (
 // Observation is the league as MFL reported it after a hand-off, one feed per field, each with
 // its own fetch time.
 type Observation struct {
+	HandedOffAt   time.Time
 	LeagueID      string
 	Rosters       snapshot.Sourced[[]snapshot.Roster]
 	Transactions  snapshot.Sourced[[]leaguefeed.Transaction]
@@ -148,9 +149,13 @@ func (e Envelope) Observe(at time.Time, obs Observation, predicate Predicate) (E
 	if err != nil {
 		return Envelope{}, err
 	}
+	obs.HandedOffAt = e.handedAt()
 	verdict := predicate.Evaluate(cloneSpec(e.spec), obs)
-	if !slices.Contains([]Event{Match, Partial, NoChange, Contradiction}, verdict.Event) {
+	if !slices.Contains([]Event{Match, Partial, NoChange, Contradiction, AwaitDOT}, verdict.Event) {
 		return Envelope{}, fmt.Errorf("envelope: invalid predicate event %q", verdict.Event)
+	}
+	if verdict.Event == AwaitDOT && e.state == DOTReview {
+		verdict.Event = NoChange
 	}
 	// Unchanged again after a supplied deadline invalidates the plan; it is not a rejection by MFL.
 	if verdict.Event == NoChange && e.state == NotYetDone && e.spec.Deadline != nil &&

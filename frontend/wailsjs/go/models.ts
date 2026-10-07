@@ -76,7 +76,28 @@ export namespace envelope {
 	        this.baseline = source["baseline"];
 	    }
 	}
+	export class ExpectedTrade {
+	    tradeId: string;
+	    offering: string;
+	    accepting: string;
+	    offeringGives: string[];
+	    acceptingGives: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ExpectedTrade(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.tradeId = source["tradeId"];
+	        this.offering = source["offering"];
+	        this.accepting = source["accepting"];
+	        this.offeringGives = source["offeringGives"];
+	        this.acceptingGives = source["acceptingGives"];
+	    }
+	}
 	export class ExpectedChange {
+	    trade?: ExpectedTrade;
 	    lineup?: ExpectedLineup;
 	    player?: string;
 	    rosterStatus?: string;
@@ -87,6 +108,7 @@ export namespace envelope {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.trade = this.convertValues(source["trade"], ExpectedTrade);
 	        this.lineup = this.convertValues(source["lineup"], ExpectedLineup);
 	        this.player = source["player"];
 	        this.rosterStatus = source["rosterStatus"];
@@ -110,6 +132,7 @@ export namespace envelope {
 		    return a;
 		}
 	}
+	
 	
 	export class Target {
 	    kind: string;
@@ -2047,6 +2070,99 @@ export namespace main {
 		}
 	}
 	
+	export class TradeAsset {
+	    token: string;
+	    name: string;
+	    position?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new TradeAsset(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.token = source["token"];
+	        this.name = source["name"];
+	        this.position = source["position"];
+	    }
+	}
+	export class TradeOffer {
+	    tradeId: string;
+	    direction: string;
+	    otherId: string;
+	    otherName: string;
+	    give: TradeAsset[];
+	    get: TradeAsset[];
+	    // Go type: time
+	    expires: any;
+	    comments: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new TradeOffer(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.tradeId = source["tradeId"];
+	        this.direction = source["direction"];
+	        this.otherId = source["otherId"];
+	        this.otherName = source["otherName"];
+	        this.give = this.convertValues(source["give"], TradeAsset);
+	        this.get = this.convertValues(source["get"], TradeAsset);
+	        this.expires = this.convertValues(source["expires"], null);
+	        this.comments = source["comments"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class TradeReading {
+	    offers: TradeOffer[];
+	    provenance: snapshot.Provenance;
+	
+	    static createFrom(source: any = {}) {
+	        return new TradeReading(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.offers = this.convertValues(source["offers"], TradeOffer);
+	        this.provenance = this.convertValues(source["provenance"], snapshot.Provenance);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class TransactionRequest {
 	    kind: string;
 	    moves: MoveDTO[];

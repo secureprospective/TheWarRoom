@@ -134,6 +134,10 @@ export function TargetDraftLineup(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftLineup'](arg1, arg2);
 }
 
+export function TargetDraftTradeAccept(arg1, arg2) {
+  return window['go']['main']['App']['TargetDraftTradeAccept'](arg1, arg2);
+}
+
 export function TargetHandOff(arg1) {
   return window['go']['main']['App']['TargetHandOff'](arg1);
 }
@@ -152,4 +156,8 @@ export function TargetSeason() {
 
 export function TargetSnapshot() {
   return window['go']['main']['App']['TargetSnapshot']();
+}
+
+export function TargetTrades(arg1) {
+  return window['go']['main']['App']['TargetTrades'](arg1);
 }

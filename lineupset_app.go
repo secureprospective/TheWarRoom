@@ -162,28 +162,46 @@ func (a *App) TargetDraftLineup(franchiseID string, starters []string) (envelope
 }
 
 func (a *App) supersedeLineups(ctx context.Context, next envelope.Envelope, now time.Time) error {
+	return a.supersedeMoves(ctx, next, now)
+}
+
+func competingMove(left, right envelope.Spec) bool {
+	if left.Intent != right.Intent {
+		return false
+	}
+	switch left.Intent {
+	case "lineup.set":
+		return left.Expected.Lineup.Week == right.Expected.Lineup.Week
+	case "trade.accept":
+		return left.Expected.Trade.TradeID == right.Expected.Trade.TradeID
+	default:
+		return false
+	}
+}
+
+func (a *App) supersedeMoves(ctx context.Context, next envelope.Envelope, now time.Time) error {
 	spec := next.Receipt().Spec
 	receipts, err := a.moves.List(ctx, spec.LeagueID, spec.FranchiseID)
 	if err != nil {
-		return fmt.Errorf("supersede lineup: list: %w", err)
+		return fmt.Errorf("supersede move: list: %w", err)
 	}
 	// Only a plan that can still be handed off or land competes; drafts and blocked plans are inert.
-	live := []envelope.State{envelope.Ready, envelope.HandedOff, envelope.NotYetDone, envelope.NotVerified}
+	live := []envelope.State{envelope.Ready, envelope.HandedOff, envelope.NotYetDone, envelope.NotVerified,
+		envelope.DOTReview}
 	for _, r := range receipts {
-		if r.Spec.Intent != "lineup.set" || r.Spec.Expected.Lineup.Week != spec.Expected.Lineup.Week ||
-			!slices.Contains(live, r.State) {
+		if !competingMove(r.Spec, spec) || !slices.Contains(live, r.State) {
 			continue
 		}
 		old, err := a.moves.Get(ctx, r.CorrelationID)
 		if err != nil {
-			return fmt.Errorf("supersede lineup: load: %w", err)
+			return fmt.Errorf("supersede move: load: %w", err)
 		}
 		stale, err := old.Invalidate(now, "superseded by "+next.ID())
 		if err != nil {
-			return fmt.Errorf("supersede lineup: invalidate: %w", err)
+			return fmt.Errorf("supersede move: invalidate: %w", err)
 		}
 		if err := a.moves.Save(ctx, stale); err != nil {
-			return fmt.Errorf("supersede lineup: save: %w", err)
+			return fmt.Errorf("supersede move: save: %w", err)
 		}
 	}
 	return nil
