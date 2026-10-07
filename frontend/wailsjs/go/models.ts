@@ -252,6 +252,7 @@ export namespace leagueclock {
 	export class Reading {
 	    season: number;
 	    phase: string;
+	    week?: number;
 	    deadlines: Deadline[];
 	    windows: Window[];
 	
@@ -263,6 +264,7 @@ export namespace leagueclock {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.season = source["season"];
 	        this.phase = source["phase"];
+	        this.week = source["week"];
 	        this.deadlines = this.convertValues(source["deadlines"], Deadline);
 	        this.windows = this.convertValues(source["windows"], Window);
 	    }
