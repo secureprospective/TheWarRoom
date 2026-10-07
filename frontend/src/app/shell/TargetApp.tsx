@@ -21,6 +21,7 @@ import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
 
+const HomePulseMount = lazy(() => import('./HomePulseMount'));
 const TradeDesk = lazy(() => import('./TradeDesk'));
 const loadInspector = () => import('./PlayerInspector');
 const PlayerInspector = lazy(() => loadInspector().then((m) => ({ default: m.PlayerInspector })));
@@ -170,7 +171,12 @@ export function TargetApp() {
               {s.notice}
             </p>
           )}
-          {s.node === 'hq' &&
+          {((s.node === 'home' && ['seasonal-card', 'alert-tray'].includes(workspace.slug)) ||
+            (s.node === 'pulse' && workspace.slug === 'now')) ? (
+            <Suspense fallback={<p role="status">Opening workspace…</p>}>
+              <HomePulseMount snapshot={snapshot} reading={clock} />
+            </Suspense>
+          ) : s.node === 'hq' &&
           workspace.slug === 'lineup-and-roster' &&
           snapshot ? (
             <FranchiseHQMount snapshot={snapshot} />

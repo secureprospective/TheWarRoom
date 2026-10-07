@@ -1,6 +1,6 @@
 import type {
   LineupCheck, LineupReading, ClockReading, EnvelopeDemo, MFLKeyStatus,
-  Provenance, Receipt, Snapshot, Sourced, TradeReading,
+  AlertReading, PulseReading, Provenance, Receipt, Snapshot, Sourced, TradeReading,
 } from './contract';
 import {
   DeleteMFLKey, MFLKeyStatus as ReadMFLKey, SetMFLKey,
@@ -8,6 +8,8 @@ import {
 } from '../../../wailsjs/go/main/App';
 
 interface ReadingProvider {
+  pulseNow(): Promise<PulseReading>;
+  alerts(franchiseId: string): Promise<AlertReading>;
   trades(franchiseId: string): Promise<TradeReading>;
   draftTradeAccept(franchiseId: string, tradeId: string): Promise<Receipt>;
   checkLineup(franchiseId: string, starters: string[]): Promise<LineupCheck>;
@@ -44,15 +46,17 @@ function hasWails(): boolean {
 function lineupBindings() {
   return import('./lineupProvider');
 }
-async function desktopLineup(): Promise<never> {
-  throw new Error('Lineup changes need the desktop app');
-}
-async function desktopTrades(): Promise<never> {
-  throw new Error('Trades need the desktop app');
-}
+// The fixture build reads only: every live reading and Act rejects with what needs the desktop app.
+const desktop = (what: string) => async (): Promise<never> => {
+  throw new Error(`${what} the desktop app`);
+};
+const desktopLineup = desktop('Lineup changes need');
+const desktopTrades = desktop('Trades need');
 export class FixtureProvider implements ReadingProvider, DemoProvider {
   readonly kind = 'fixture';
   readonly reason = 'Drafting needs the desktop app';
+  pulseNow: ReadingProvider['pulseNow'] = desktop('League Pulse needs');
+  alerts: ReadingProvider['alerts'] = desktop('Alerts need');
   trades: ReadingProvider['trades'] = desktopTrades;
   draftTradeAccept: ReadingProvider['draftTradeAccept'] = desktopTrades;
   checkLineup: ReadingProvider['checkLineup'] = desktopLineup;
@@ -154,6 +158,12 @@ function onTargetChange(event: string, listener: () => void): () => void {
 
 export class LiveProvider implements ReadingProvider, DraftingProvider {
   readonly kind = 'live';
+  async pulseNow(): Promise<PulseReading> {
+    return (await import('./pulseProvider')).pulseNow();
+  }
+  async alerts(franchiseId: string): Promise<AlertReading> {
+    return (await import('./pulseProvider')).alerts(franchiseId);
+  }
   async trades(franchiseId: string): Promise<TradeReading> {
     return (await import('./tradeProvider')).trades(franchiseId);
   }

@@ -57,6 +57,8 @@ export function createCommands(
   const state = createShellState();
   const lineups = createLineups(provider);
   const trades = createReadings<TradeReading>(provider, (id) => provider.trades(id));
+  const alerts = createReadings(provider, (id) => provider.alerts(id));
+  const pulse = createReadings(provider, () => provider.pulseNow());
   const moves = createMovesState();
   const mflKey = createMFLKeyState();
   const prefetchMoves = createMovesPrefetch();
@@ -163,6 +165,12 @@ export function createCommands(
     });
   }
   const registry = Object.freeze({
+    'pulse.toggle': command({
+      ...ambient, id: 'pulse.toggle', label: 'Toggle starters', aliases: [], args: ['matchup', 'expanded'],
+      run: ({ matchup, expanded }: { matchup: string; expanded: boolean }) => state.write({
+        pulseExpanded: { ...state.read().pulseExpanded, [matchup]: !expanded },
+      }),
+    }),
     'trade.accept.plan': command({
       ...ambient, id: 'trade.accept.plan', label: 'Plan accept', aliases: [], roles: ['gm'],
       gravity: 'G2', undo: 'reversible', args: ['tradeId'],
@@ -256,6 +264,7 @@ export function createCommands(
         void prefetchHQ().catch((cause) => console.error('HQ prefetch failed:', cause));
         lineups.refresh(args.franchiseId);
         trades.refresh(args.franchiseId);
+        alerts.refresh(args.franchiseId);
         persistFranchise(args.franchiseId, storage());
         state.write({
           franchiseId: args.franchiseId,
@@ -468,6 +477,9 @@ export function createCommands(
     useLineupEdit: state.useLineupEdit,
     lineups,
     trades,
+    alerts,
+    pulse,
+    usePulse: state.usePulse,
     mflField,
     mflReason,
     loadMFLKey: () => requestMFL(() => provider.mflKey(), 'Checking the keyring…'),
@@ -486,6 +498,7 @@ export function createCommands(
         void prefetchHQ().catch((cause) => console.error('HQ prefetch failed:', cause));
         lineups.refresh(franchiseId);
         trades.refresh(franchiseId);
+        alerts.refresh(franchiseId);
       }
       state.write({ franchiseId });
     },

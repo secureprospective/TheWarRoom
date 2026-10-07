@@ -190,3 +190,7 @@ Accept plan: `commands/tradeAccept.ts` drafts `trade.accept`; `shell/TradePlan.t
 `pulse_app.go`: `TargetPulseNow() (PulseReading, error)` reads held matchups and ordered starter scores.
 `alerts_app.go`: `TargetAlerts(franchiseID string) (AlertReading, error)` reads lineup and incoming-offer alerts.
 `internal/leaguefeed`, `internal/ingestion/livescoring`: matchups, playing counts and per-player live scores.
+
+Home seasonal card: `shell/SeasonalCard.tsx` lazily renders the held clock and shared deadline ticker.
+Home alert tray: `shell/AlertTray.tsx` lazily reads ordered franchise alerts and routes to their workspaces.
+League Pulse Now: `shell/PulseNow.tsx` lazily reads matchups and toggles side-by-side starter scores.

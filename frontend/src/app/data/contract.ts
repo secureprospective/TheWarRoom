@@ -152,3 +152,35 @@ export type TradeOffer = {
   comments: string;
 };
 export type TradeReading = { offers: TradeOffer[]; provenance: Provenance };
+
+export type PulsePlayer = {
+  id: string;
+  name: string;
+  position: string;
+  team: string;
+  score: number;
+  secondsRemaining: number;
+};
+export type PulseSide = {
+  franchiseId: string;
+  name: string;
+  score: number;
+  secondsRemaining: number;
+  playing: number;
+  yetToPlay: number;
+  starters: PulsePlayer[];
+};
+export type PulseMatchup = { home: PulseSide; away: PulseSide };
+export type PulseReading = { week: number; matchups: PulseMatchup[]; provenance: Provenance };
+export type Alert = {
+  kind: string;
+  urgency: (typeof URGENCIES)[number];
+  title: string;
+  detail: string;
+  node: string;
+  workspace: string;
+  at: string;
+  provenance: Provenance;
+};
+export type Unavailable = { kind: string; note: string };
+export type AlertReading = { alerts: Alert[]; unavailable: Unavailable[] };
