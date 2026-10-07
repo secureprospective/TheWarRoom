@@ -99,9 +99,9 @@ func lineupTestSnapshot(t *testing.T, a *App) []string {
 	}
 
 	ids := []string{
-		"16150", "13133", "15754", "16195", "15761", "16617", "15798", "16641", "16846",
-		"16694", "16264", "16230", "16303", "16734", "13813", "14892", "15836", "16267",
-		"16460", "13322", "15850",
+		"16150", "13133", "16617", "15754", "15761", "16195", "16641", "15798", "16846",
+		"16264", "16694", "16734", "16303", "16230", "14892", "13813", "15836", "16267",
+		"13322", "16460", "15850",
 	}
 
 	snap.Rosters.Value = []snapshot.Roster{roster}
@@ -147,6 +147,15 @@ func TestTargetLineupHeldReading(t *testing.T) {
 	got := []string{}
 	for _, p := range r.Starters {
 		got = append(got, p.ID)
+	}
+	// MFL reorders starters between fetches; the reading must not.
+	for i, saved := range a.seasonLineups.value.Franchises {
+		if saved.Franchise == "0025" {
+			slices.Reverse(a.seasonLineups.value.Franchises[i].Starters)
+		}
+	}
+	if again := mustLineup(t, a); !reflect.DeepEqual(again.Starters, r.Starters) {
+		t.Fatalf("starter order follows MFL feed order: %+v", again.Starters)
 	}
 	if !reflect.DeepEqual(got, ids) || r.Week != 5 || r.StarterCount != 21 || !r.Check.Full || !r.Check.Legal {
 		t.Fatalf("%+v", r)

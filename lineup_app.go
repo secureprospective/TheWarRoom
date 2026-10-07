@@ -114,11 +114,9 @@ func (r *LineupReading) populate(snap snapshot.Snapshot, season SeasonReading, r
 			}
 		}
 	}
-	// Stable: MFL's own order within a position.
-	slices.SortStableFunc(r.Starters, func(a, b LineupPlayer) int {
-		return cmp.Compare(rules.Order(a.Position), rules.Order(b.Position))
-	})
-	slices.SortFunc(r.Bench, func(a, b LineupPlayer) int {
+	// MFL lists starters in a different order on every fetch, so its order is never used: the
+	// same lineup must lay out the same way each time.
+	byPosition := func(a, b LineupPlayer) int {
 		if order := cmp.Compare(rules.Order(a.Position), rules.Order(b.Position)); order != 0 {
 			return order
 		}
@@ -126,7 +124,9 @@ func (r *LineupReading) populate(snap snapshot.Snapshot, season SeasonReading, r
 			return name
 		}
 		return cmp.Compare(a.ID, b.ID)
-	})
+	}
+	slices.SortFunc(r.Starters, byPosition)
+	slices.SortFunc(r.Bench, byPosition)
 }
 
 func joinNote(notes ...string) string {
