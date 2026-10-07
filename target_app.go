@@ -123,7 +123,9 @@ func (a *App) TargetDraftIR(franchiseID, playerID string) (envelope.Receipt, err
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft: %w", err)
 	}
-	if err := a.targetMoveLog.Append(e); err != nil {
+	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	defer cancel()
+	if err := a.moves.Save(ctx, e); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft: log: %w", err)
 	}
 	return e.Receipt(), nil
@@ -133,8 +135,11 @@ func (a *App) TargetMoves(franchiseID string) ([]envelope.Receipt, error) {
 	if err := a.ready(); err != nil {
 		return nil, fmt.Errorf("target moves: startup: %w", err)
 	}
-	return a.targetMoveLog.List(envelope.Filter{
-		LeagueID:    ingestion.LeagueID,
-		FranchiseID: franchiseID,
-	}), nil
+	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	defer cancel()
+	receipts, err := a.moves.List(ctx, ingestion.LeagueID, franchiseID)
+	if err != nil {
+		return nil, fmt.Errorf("target moves: list: %w", err)
+	}
+	return receipts, nil
 }

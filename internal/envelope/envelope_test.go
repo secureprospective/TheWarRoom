@@ -39,7 +39,7 @@ func testEnvelope(t *testing.T) (Envelope, time.Time, snapshot.Snapshot) {
 // observeAt stamps the snapshot's roster fetch time, which is the observation time.
 func observeAt(snap snapshot.Snapshot, at time.Time) Observation {
 	snap.Rosters.Provenance.Freshness.FetchedAt = at.Format(time.RFC3339)
-	return Observation{LeagueID: "1", Snapshot: snap}
+	return Observation{LeagueID: "1", Rosters: snap.Rosters}
 }
 
 // Written out by hand, independently of the table, so the test is not a copy of the code.
@@ -189,6 +189,12 @@ func TestIRObservations(t *testing.T) {
 				obs.LeagueID = "2"
 			}
 			got, err := e.Observe(at.Add(time.Minute), obs, IRPredicate{})
+			if tc.unavailable {
+				if !errors.Is(err, ErrStaleObservation) || e.State() != HandedOff {
+					t.Fatalf("failed source changed state: %+v %v", got, err)
+				}
+				return
+			}
 			if err != nil || got.State() != tc.want {
 				t.Fatalf("%+v %v", got, err)
 			}
