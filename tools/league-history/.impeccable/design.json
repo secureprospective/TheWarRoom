@@ -1,0 +1,475 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-06T00:00:00Z",
+  "title": "Design System: Legacy NFL Lab",
+  "extensions": {
+    "colorMeta": {
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Night Canvas",
+        "canonical": "oklch(17.6% 0.018 260)",
+        "tonalRamp": [
+          "#070b13",
+          "#1f242d",
+          "#3a404a",
+          "#585e68",
+          "#777e89",
+          "#989faa",
+          "#bdc5d0",
+          "#e7effb"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Panel Navy",
+        "canonical": "oklch(20.3% 0.025 259)",
+        "tonalRamp": [
+          "#060b15",
+          "#1d2430",
+          "#38404d",
+          "#555e6c",
+          "#757e8c",
+          "#959fae",
+          "#bbc5d4",
+          "#e5efff"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised Slate",
+        "canonical": "oklch(26.6% 0.032 256)",
+        "tonalRamp": [
+          "#030b18",
+          "#1a2534",
+          "#354151",
+          "#525f70",
+          "#717e91",
+          "#92a0b3",
+          "#b7c5d9",
+          "#e1f0ff"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Steel Line",
+        "canonical": "oklch(35.5% 0.039 255)",
+        "tonalRamp": [
+          "#020b1b",
+          "#172536",
+          "#324154",
+          "#4f5f73",
+          "#6e7f94",
+          "#8fa0b7",
+          "#b4c6dd",
+          "#ddf0ff"
+        ]
+      },
+      "grid": {
+        "role": "neutral",
+        "displayName": "Grid Line",
+        "canonical": "oklch(28.5% 0.032 254)",
+        "tonalRamp": [
+          "#030b18",
+          "#192533",
+          "#344151",
+          "#515f70",
+          "#707f91",
+          "#91a0b3",
+          "#b6c6d9",
+          "#e0f0ff"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Frost Text",
+        "canonical": "oklch(94.2% 0.014 248)",
+        "tonalRamp": [
+          "#070c11",
+          "#1f252b",
+          "#3a4147",
+          "#585e65",
+          "#777e85",
+          "#989fa7",
+          "#bdc5cd",
+          "#e8f0f8"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Mist",
+        "canonical": "oklch(76.4% 0.031 253)",
+        "tonalRamp": [
+          "#030c18",
+          "#192533",
+          "#344150",
+          "#525f6f",
+          "#717f90",
+          "#91a0b2",
+          "#b7c6d8",
+          "#e0f0ff"
+        ]
+      },
+      "faint": {
+        "role": "neutral",
+        "displayName": "Faint Slate",
+        "canonical": "oklch(64.7% 0.038 255)",
+        "tonalRamp": [
+          "#020b1b",
+          "#172536",
+          "#324154",
+          "#4f5f73",
+          "#6e7f94",
+          "#8fa0b7",
+          "#b4c6dd",
+          "#def0ff"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Ice Blue",
+        "canonical": "oklch(77.5% 0.096 250)",
+        "tonalRamp": [
+          "#000b1f",
+          "#00244f",
+          "#0a4270",
+          "#2e6191",
+          "#4e81b4",
+          "#6fa3d8",
+          "#94c9ff",
+          "#bdf4ff"
+        ]
+      },
+      "green": {
+        "role": "secondary",
+        "displayName": "Sea Glass Green",
+        "canonical": "oklch(79.9% 0.094 166)",
+        "tonalRamp": [
+          "#001107",
+          "#003119",
+          "#004f34",
+          "#106e52",
+          "#3c8f71",
+          "#5fb191",
+          "#86d8b7",
+          "#b0ffe1"
+        ]
+      },
+      "rose": {
+        "role": "secondary",
+        "displayName": "Dusk Rose",
+        "canonical": "oklch(79.8% 0.079 2)",
+        "tonalRamp": [
+          "#1b020a",
+          "#410f21",
+          "#612c3d",
+          "#824a5a",
+          "#a5697a",
+          "#c98a9b",
+          "#f1afc0",
+          "#ffd9ea"
+        ]
+      },
+      "amber": {
+        "role": "tertiary",
+        "displayName": "Going-Rate Amber",
+        "canonical": "oklch(84.7% 0.090 78)",
+        "tonalRamp": [
+          "#160700",
+          "#3b1b00",
+          "#593800",
+          "#795616",
+          "#9a763a",
+          "#bd985c",
+          "#e4bd81",
+          "#ffe8aa"
+        ]
+      },
+      "green-tint": {
+        "role": "neutral",
+        "displayName": "Green Tint",
+        "canonical": "oklch(25.9% 0.034 163)",
+        "tonalRamp": [
+          "#000f07",
+          "#13291f",
+          "#2f463b",
+          "#4c6458",
+          "#6b8477",
+          "#8ca598",
+          "#b1cbbe",
+          "#dbf6e8"
+        ]
+      },
+      "rose-tint": {
+        "role": "neutral",
+        "displayName": "Rose Tint",
+        "canonical": "oklch(23.6% 0.032 352)",
+        "tonalRamp": [
+          "#15060d",
+          "#301e26",
+          "#4d3942",
+          "#6c5660",
+          "#8d767f",
+          "#af97a1",
+          "#d5bcc6",
+          "#ffe6f1"
+        ]
+      },
+      "accent-ink": {
+        "role": "neutral",
+        "displayName": "Night Ink",
+        "canonical": "oklch(17.6% 0.018 260)",
+        "tonalRamp": [
+          "#070b13",
+          "#1f242d",
+          "#3a404a",
+          "#585e68",
+          "#777e89",
+          "#989faa",
+          "#bdc5d0",
+          "#e7effb"
+        ]
+      },
+      "selected-fill": {
+        "role": "neutral",
+        "displayName": "Selected Navy",
+        "canonical": "#1d3550",
+        "tonalRamp": [
+          "#030b18",
+          "#1a2534",
+          "#354151",
+          "#525f70",
+          "#717e91",
+          "#92a0b3",
+          "#b7c5d9",
+          "#e1f0ff"
+        ]
+      },
+      "bar-fill": {
+        "role": "neutral",
+        "displayName": "Histogram Navy",
+        "canonical": "#34506e",
+        "tonalRamp": [
+          "#020b1b",
+          "#172536",
+          "#324154",
+          "#4f5f73",
+          "#6e7f94",
+          "#8fa0b7",
+          "#b4c6dd",
+          "#ddf0ff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Screen title, one per screen."
+      },
+      "finding": {
+        "displayName": "Finding",
+        "purpose": "The plain-sentence headline finding; 19px under 900px."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section 19px, list 17px, panel 16px, cell 15px headings."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Cost figure on a market line, signal-colored by side."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Ledes and say sentences."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Tables and trade-card assets."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Hints, strip cells, meta lines, scale ticks; uppercase only for top-bar field labels."
+      }
+    },
+    "shadows": [
+      {
+        "name": "drawer-cast",
+        "value": "-16px 0 40px rgba(0, 0, 0, 0.45)",
+        "purpose": "Only on the records drawer, the one layer that covers the page."
+      },
+      {
+        "name": "selected-underline",
+        "value": "inset 0 -2px 0 var(--accent)",
+        "purpose": "State mark on the selected segmented option; not elevation."
+      }
+    ],
+    "motion": [
+      {
+        "name": "reduced-motion",
+        "value": "transition: none",
+        "purpose": "All transitions disabled under prefers-reduced-motion; the system otherwise relies on instant hover fills."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "stack-split",
+        "value": "1100px"
+      },
+      {
+        "name": "stack-market",
+        "value": "900px"
+      },
+      {
+        "name": "rail-to-bar",
+        "value": "760px"
+      }
+    ],
+    "scales": [
+      {
+        "name": "cost-bar",
+        "value": "log, 0.2x to 5x the going rate; ticks 25%, 50%, going rate, 200%, 400%",
+        "purpose": "One shared scale per list, labelled once at the list head."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Quiet outlined control for Close, Download and Show more.",
+      "html": "<button class=\"ds-ghost\">Download</button>",
+      "css": ":host{--canvas:#0c1119;--surface:#101722;--raised:#1b2635;--line:#2e3d50;--grid:#1f2b3a;--text:#e5edf5;--muted:#a5b4c6;--faint:#7f90a6;--accent:#86bbf1;--green:#7fd1b0;--amber:#edc689;--rose:#e9a8b9;--radius:4px} .ds-ghost{font:15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;font-variant-numeric:tabular-nums;color:var(--text);border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:6px 11px;cursor:pointer;font-size:13px} .ds-ghost:hover{background:var(--raised)} .ds-ghost:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Link Button",
+      "kind": "button",
+      "refersTo": "button-link",
+      "description": "Text action inside pins and notes.",
+      "html": "<button class=\"ds-link\">See the picks</button>",
+      "css": ":host{--canvas:#0c1119;--surface:#101722;--raised:#1b2635;--line:#2e3d50;--grid:#1f2b3a;--text:#e5edf5;--muted:#a5b4c6;--faint:#7f90a6;--accent:#86bbf1;--green:#7fd1b0;--amber:#edc689;--rose:#e9a8b9;--radius:4px} .ds-link{font:15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;font-variant-numeric:tabular-nums;color:var(--text);background:none;border:0;color:var(--accent);cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px;font-size:13px} .ds-link:hover{color:#cce2ff} .ds-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "chip",
+      "refersTo": "segmented-option",
+      "description": "One-of-few choice; selected option gets the inset accent underline.",
+      "html": "<div class=\"ds-seg\" role=\"group\"><button>First 2 seasons</button><button class=\"on\">First 3 seasons</button><button>First 4 seasons</button></div>",
+      "css": ":host{--canvas:#0c1119;--surface:#101722;--raised:#1b2635;--line:#2e3d50;--grid:#1f2b3a;--text:#e5edf5;--muted:#a5b4c6;--faint:#7f90a6;--accent:#86bbf1;--green:#7fd1b0;--amber:#edc689;--rose:#e9a8b9;--radius:4px} .ds-seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden} .ds-seg button{font:15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;font-variant-numeric:tabular-nums;color:var(--text);background:var(--canvas);border:0;border-right:1px solid var(--line);padding:4px 10px;font-size:12.5px;cursor:pointer} .ds-seg button:last-child{border-right:0} .ds-seg button:hover{background:var(--raised)} .ds-seg button.on{background:#1d3550;box-shadow:inset 0 -2px 0 var(--accent)} .ds-seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}"
+    },
+    {
+      "name": "Top-bar Field",
+      "kind": "input",
+      "refersTo": "select",
+      "description": "Season range selects in the sticky top bar; the only uppercase label in the system.",
+      "html": "<label class=\"ds-field\"><span>Seasons</span><select><option>2017</option></select> to <select><option>2026</option></select></label>",
+      "css": ":host{--canvas:#0c1119;--surface:#101722;--raised:#1b2635;--line:#2e3d50;--grid:#1f2b3a;--text:#e5edf5;--muted:#a5b4c6;--faint:#7f90a6;--accent:#86bbf1;--green:#7fd1b0;--amber:#edc689;--rose:#e9a8b9;--radius:4px} .ds-field{font:15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;font-variant-numeric:tabular-nums;color:var(--text);display:inline-flex;gap:8px;align-items:center;font-size:13px} .ds-field>span{font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em} .ds-field select{font:inherit;color:inherit;background:var(--canvas);border:1px solid var(--line);border-radius:var(--radius);padding:5px 8px} .ds-field select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Screen nav: label over a one-line hint, accent left edge when active.",
+      "html": "<nav class=\"ds-nav\"><a class=\"on\" href=\"#\"><b>The market</b><i>What the league sells too cheap, and pays too much for</i></a><a href=\"#\"><b>Draft timing</b><i>When each position is worth taking</i></a></nav>",
+      "css": ":host{--canvas:#0c1119;--surface:#101722;--raised:#1b2635;--line:#2e3d50;--grid:#1f2b3a;--text:#e5edf5;--muted:#a5b4c6;--faint:#7f90a6;--accent:#86bbf1;--green:#7fd1b0;--amber:#edc689;--rose:#e9a8b9;--radius:4px} .ds-nav{font:15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;font-variant-numeric:tabular-nums;color:var(--text);display:flex;flex-direction:column;gap:1px;width:212px;background:var(--surface);padding:10px} .ds-nav a{display:block;padding:7px 10px;border-radius:var(--radius);text-decoration:none;color:var(--text);border-left:2px solid transparent} .ds-nav a:hover{background:var(--raised)} .ds-nav a.on{background:var(--raised);border-left-color:var(--accent)} .ds-nav b{display:block;font-size:14px;font-weight:560} .ds-nav i{display:block;font-style:normal;font-size:12.5px;color:var(--faint);line-height:1.3} .ds-nav a.on i{color:var(--muted)} .ds-nav a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Flat container: tonal step plus 1px line, title, muted note.",
+      "html": "<section class=\"ds-panel\"><h2>Draft it, or buy it?</h2><p>Each position across every round: what its picks returned against their slots.</p></section>",
+      "css": ":host{--canvas:#0c1119;--surface:#101722;--raised:#1b2635;--line:#2e3d50;--grid:#1f2b3a;--text:#e5edf5;--muted:#a5b4c6;--faint:#7f90a6;--accent:#86bbf1;--green:#7fd1b0;--amber:#edc689;--rose:#e9a8b9;--radius:4px} .ds-panel{font:15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;font-variant-numeric:tabular-nums;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px 12px} .ds-panel h2{margin:0;font-size:16px;font-weight:650;letter-spacing:-.01em} .ds-panel p{margin:3px 0 0;color:var(--muted);font-size:13px;max-width:760px}"
+    },
+    {
+      "name": "Market Line",
+      "kind": "custom",
+      "refersTo": "market-line",
+      "description": "One asset kind: name and cost figure, shared-scale log cost bar, three-cell time-of-year strip, evidence and records link.",
+      "html": "<button class=\"ds-mk cheap\"><span class=\"n\">Linebackers</span><span class=\"c\">39%<small> of the going rate</small></span><svg class=\"bar\" viewBox=\"0 0 420 24\"><line class=\"axis\" x1=\"22\" x2=\"398\" y1=\"12\" y2=\"12\"/><line class=\"tick\" x1=\"80\" x2=\"80\" y1=\"9\" y2=\"15\"/><line class=\"tick\" x1=\"150\" x2=\"150\" y1=\"9\" y2=\"15\"/><line class=\"going\" x1=\"210\" x2=\"210\" y1=\"2\" y2=\"22\"/><line class=\"tick\" x1=\"270\" x2=\"270\" y1=\"9\" y2=\"15\"/><line class=\"tick\" x1=\"340\" x2=\"340\" y1=\"9\" y2=\"15\"/><line class=\"range\" x1=\"105\" x2=\"150\" y1=\"12\" y2=\"12\"/><circle class=\"dot\" cx=\"128\" cy=\"12\" r=\"5\"/></svg><span class=\"strip\"><span class=\"cell\"><span>Offseason</span><b>55%</b></span><span class=\"cell\"><span>Draft to kickoff</span><b>52%</b></span><span class=\"cell\"><span>In season</span><b>75%</b></span></span><span class=\"meta\"><span class=\"holds\">Clear in both halves: 48% in 2022–26, 39% in 2017–21</span><span class=\"see\">See the 711 trades</span></span></button>",
+      "css": ":host{--canvas:#0c1119;--surface:#101722;--raised:#1b2635;--line:#2e3d50;--grid:#1f2b3a;--text:#e5edf5;--muted:#a5b4c6;--faint:#7f90a6;--accent:#86bbf1;--green:#7fd1b0;--amber:#edc689;--rose:#e9a8b9;--radius:4px} .ds-mk{font:15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;font-variant-numeric:tabular-nums;color:var(--text);display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:\"n c\" \"bar bar\" \"strip strip\" \"meta meta\";gap:4px 12px;width:440px;text-align:left;background:var(--surface);border:0;border-top:1px solid var(--grid);padding:12px 8px;cursor:pointer} .ds-mk:hover{background:var(--raised)} .ds-mk:focus-visible{outline:2px solid var(--accent);outline-offset:-2px} .ds-mk .n{grid-area:n;font-size:16px;font-weight:600} .ds-mk .c{grid-area:c;font-size:22px;font-weight:650;letter-spacing:-.01em} .ds-mk.cheap .c{color:var(--green)} .ds-mk.dear .c{color:var(--rose)} .ds-mk small{font-size:12.5px;font-weight:400;color:var(--muted)} .ds-mk .bar{grid-area:bar;width:100%;max-width:460px;display:block} .bar .axis{stroke:var(--grid);stroke-width:2} .bar .tick{stroke:var(--line)} .bar .going{stroke:var(--amber);stroke-dasharray:3 2} .bar .range{stroke:var(--green);stroke-width:4;stroke-linecap:round} .bar .dot{fill:var(--text)} .ds-mk .strip{grid-area:strip;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px} .ds-mk .cell{display:flex;flex-direction:column;padding:4px 8px;border:1px solid var(--grid);border-radius:3px;font-size:12.5px;color:var(--muted)} .ds-mk .cell b{font-weight:400;color:var(--text);font-size:14px} .ds-mk .cell.marked{border-color:var(--green);background:#13291f} .ds-mk .meta{grid-area:meta;display:flex;justify-content:space-between;gap:14px;font-size:12.5px;color:var(--muted)} .ds-mk .holds{color:var(--text)} .ds-mk .see{color:var(--accent);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}"
+    },
+    {
+      "name": "Time-of-year Strip (marked, dear)",
+      "kind": "custom",
+      "refersTo": "strip-cell-marked-dear",
+      "description": "Three windows; only a window that beats both others beyond chance is marked.",
+      "html": "<span class=\"ds-strip\"><span class=\"c\"><span>Offseason</span><b>164%</b></span><span class=\"c\"><span>Draft to kickoff</span><b>176%</b></span><span class=\"c m\"><span>In season</span><b>312%</b></span></span>",
+      "css": ":host{--canvas:#0c1119;--surface:#101722;--raised:#1b2635;--line:#2e3d50;--grid:#1f2b3a;--text:#e5edf5;--muted:#a5b4c6;--faint:#7f90a6;--accent:#86bbf1;--green:#7fd1b0;--amber:#edc689;--rose:#e9a8b9;--radius:4px} .ds-strip{font:15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;font-variant-numeric:tabular-nums;color:var(--text);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-width:460px} .ds-strip .c{display:flex;flex-direction:column;gap:1px;padding:4px 8px;border:1px solid var(--grid);border-radius:3px;font-size:12.5px;color:var(--muted)} .ds-strip b{font-weight:400;color:var(--text);font-size:14px} .ds-strip .m{border-color:var(--rose);background:#2a1820}"
+    },
+    {
+      "name": "Records Drawer",
+      "kind": "custom",
+      "refersTo": "drawer",
+      "description": "Right-hand sheet with the records behind a number; the only shadowed layer.",
+      "html": "<aside class=\"ds-drawer\"><div class=\"hd\"><div><h2>Linebackers</h2><p>711 trades</p></div><button>Close</button></div><div class=\"bd\"><div class=\"trade\"><p class=\"when\"><b>Oct 12, 2024</b> in season</p><ul><li class=\"hit\"><b>Linebacker A</b><span>0.84 expected</span></li><li><b>2025 3rd</b><span>pick</span></li></ul></div></div></aside>",
+      "css": ":host{--canvas:#0c1119;--surface:#101722;--raised:#1b2635;--line:#2e3d50;--grid:#1f2b3a;--text:#e5edf5;--muted:#a5b4c6;--faint:#7f90a6;--accent:#86bbf1;--green:#7fd1b0;--amber:#edc689;--rose:#e9a8b9;--radius:4px} .ds-drawer{font:15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;font-variant-numeric:tabular-nums;color:var(--text);width:420px;background:var(--surface);border-left:1px solid var(--line);box-shadow:-16px 0 40px rgba(0,0,0,.45)} .ds-drawer .hd{display:flex;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)} .ds-drawer h2{margin:0;font-size:17px;font-weight:650} .ds-drawer .hd p{margin:0;color:var(--muted);font-size:12.5px} .ds-drawer button{font:inherit;color:inherit;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:6px 11px;font-size:13px;cursor:pointer} .ds-drawer button:hover{background:var(--raised)} .ds-drawer button:focus-visible{outline:2px solid var(--accent);outline-offset:2px} .ds-drawer .bd{padding:12px 18px 20px} .ds-drawer .trade{border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--canvas)} .ds-drawer .when{margin:0 0 8px;font-size:12.5px;color:var(--muted)} .ds-drawer .when b{color:var(--text)} .ds-drawer ul{list-style:none;padding:0;margin:0;display:grid;gap:5px} .ds-drawer li{display:flex;flex-direction:column;font-size:13px;border-left:2px solid var(--line);padding-left:8px} .ds-drawer li.hit{border-left-color:var(--amber)} .ds-drawer li b{font-weight:560} .ds-drawer li span{color:var(--muted);font-size:12px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The League Ledger at Night",
+    "overview": "**Creative North Star: \"The League Ledger at Night\"**\n\nThe Lab is a desk instrument for one GM reading the whole league's market. Everything sits on a cold navy field: flat panels, 1px lines, tabular numerals, and three signal colors that each mean one thing. The interface stays quiet so the findings can be loud. A screen opens on a plain sentence stating the finding. The number and its likely range come after, and the records behind any number are one click away in a side drawer.\n\nDensity is high but ordered. Lists and tables carry the work, and the only charts are small SVG instruments: a log-scale cost bar, an effect bar, the league-year picker's bars. They are drawn from the same lines and dots as the rest of the interface. Nothing is decorative. Where a measure does not clear chance it gets no signal color and is set back in muted or faint text, or named as \"within chance\".\n\nThe Lab is league-wide. No team, including Christopher's own, gets a color, a marker or a highlight.",
+    "keyCharacteristics": [
+      "Dark navy field, with tonal steps for depth (canvas, surface, raised) instead of shadows.",
+      "Green means the league sells it cheap, rose means the league overpays, amber is the going-rate reference. Nothing else uses these colors.",
+      "One system-ui stack with tabular numerals everywhere.",
+      "1px line borders, small radii (3, 4, 6px), no gradients.",
+      "Findings come first as sentences. Numbers, ranges and records follow.",
+      "Every number can be opened to its records in the drawer."
+    ],
+    "rules": [
+      {
+        "name": "The Three Signals Rule",
+        "body": "Green, rose and amber carry meaning and nothing else. Green is cheap, rose is dear, amber is the going rate or a caveat on evidence. Do not use them for decoration, branding, categories or team identity.",
+        "section": "colors"
+      },
+      {
+        "name": "The Clears-Chance Rule",
+        "body": "Signal color appears only on a finding that clears chance. A strip cell is marked only when that time of year beats both others beyond chance. An asset kind joins a list only when its whole likely range sits on one side of the going rate. Anything weaker stays muted or faint and is described in words (\"within chance\", \"Too few played out to judge\").",
+        "section": "colors"
+      },
+      {
+        "name": "The League-Wide Rule",
+        "body": "The Lab shows the league, not a team. No franchise gets a color, a badge, a pinned row or a \"your team\" emphasis. The trade log may offer a plain team filter for lookups, but a filtered result is styled the same as an unfiltered one.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Numerals Rule",
+        "body": "Every numeral is tabular. The root sets `font-variant-numeric: tabular-nums`, and numeric columns align right.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence-Before-Number Rule",
+        "body": "A finding is set as a sentence in text color at body size or larger. Its figure, range and evidence follow in smaller muted type.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Lines Rule",
+        "body": "Surfaces are flat. Separate them with a tonal step and a 1px line. The only element that casts a shadow is a layer that covers the page.",
+        "section": "elevation"
+      },
+      {
+        "name": "The One Scale Per List Rule",
+        "body": "All cost bars in a list share one scale. Its tick labels are printed once at the head of the list (faint, with \"going rate\" in amber), never repeated on each line, so bars compare directly by eye.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "**Do** lead every screen and panel with the finding as a sentence, then give the figure, the range and the records link.",
+      "**Do** keep green for what the league sells cheap, rose for what it overpays for, and amber for the going rate and for one-half-only evidence.",
+      "**Do** color a finding only when it clears chance. Leave everything else muted or faint and say \"within chance\" or \"too few to judge\" in words.",
+      "**Do** draw every cost bar in a list on the one shared log scale, labelled once at the head, with the dashed amber going-rate mark at 100%.",
+      "**Do** make every number open its records in the drawer.",
+      "**Do** separate surfaces with tonal steps (canvas, surface, raised) and 1px Steel Line or Grid Line borders.",
+      "**Do** keep numerals tabular and right-align numeric columns.",
+      "**Do** keep text at 4.5:1 or better on canvas, surface and raised. Faint Slate is the floor."
+    ],
+    "donts": [
+      "**Don't** highlight, color, badge or pin any team, including Christopher's. The Lab is league-wide.",
+      "**Don't** show a pattern that fails to clear chance as a finding, with a signal color or a marked strip cell.",
+      "**Don't** use green, rose or amber as decoration or category colors.",
+      "**Don't** give each cost bar its own scale or its own tick labels.",
+      "**Don't** add shadows to panels, cards or controls. Only the covering drawer casts one.",
+      "**Don't** put uppercase tracked labels above headings. The uppercase style labels top-bar form fields only."
+    ]
+  }
+}

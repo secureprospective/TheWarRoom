@@ -1,0 +1,470 @@
+txn_id,from_fid,to_fid,kind,pick_year,pick_round,pick_slot,pick_orig,cap_m,cap_seasons,player,clarity,reading
+2421,0023,0014,pick,2014,1,12,,,,,clear,Packers send 2014 pick 1.12
+2421,0014,0023,pick,2014,2,22,,,,,clear,Bengals send 2014 pick 2.22
+2406,0003,0030,cap,,,,,1.0,2014 2015,,clear,Jets send $1M of cap space in each of 2014 and 2015
+2356,0030,0027,cap,,,,,0.75,2016,,clear,Giants send $750k of cap space in 2016
+2310,0014,0019,pick,2014,1,21,,,,,clear,Bengals send 2014 pick 1.21
+2310,0014,0019,pick,2014,2,25,,,,,clear,Bengals send 2014 pick 2.25
+2310,0014,0019,pick,2014,2,30,,,,,clear,Bengals send 2014 pick 2.30
+2310,0019,0014,cap,,,,,2.5,,,ambiguous,Saints send $2.5M of cap space; the season is not stated
+2311,0014,0019,pick,2014,3,1,,,,,clear,Bengals send 2014 pick 3.01
+2311,0014,0019,pick,2014,4,1,,,,,clear,Bengals send 2014 pick 4.01
+2312,0014,0030,pick,2014,2,1,,,,,clear,Bengals send 2014 pick 2.01
+2315,0003,0010,pick,2014,1,11,,,,,clear,Jets send 2014 pick 1.11
+2315,0010,0003,pick,2015,1,,0010,,,,clear,Colts send their 2015 1st
+2315,0010,0003,pick,2015,2,,0010,,,,clear,Colts send their 2015 2nd
+2241,0022,0016,pick,2015,2,,,,,,clear,Lions send a 2015 2nd (whose is not stated)
+2241,0022,0016,pick,2015,3,,,,,,clear,Lions send a 2015 3rd (whose is not stated)
+2098,0010,0023,pick,2015,1,,0021,,,,clear,Colts send the Bears' 2015 1st
+2098,0010,0023,pick,2015,2,,0001,,,,clear,Colts send the Bills' 2015 2nd
+2098,0010,0023,pick,2015,2,,0030,,,,clear,Colts send the Giants' 2015 2nd
+2087,0022,0005,pick,2015,3,,0025,,,,ambiguous,"""lions 2015 3rd (cards)"": the Lions-held Cardinals 3rd; the note does not say which way it went"
+2087,0022,0005,pick,,5,,,,,,ambiguous,"""and 5th round picks"": year, owner and direction not stated"
+2058,0009,0016,pick,2014,2,28,,,,,clear,Texans send 2014 pick 2.28
+2058,0009,0016,pick,2014,4,28,,,,,clear,Texans send 2014 pick 4.28
+2058,0009,0016,pick,2014,5,13,,,,,clear,Texans send 2014 pick 5.13
+2043,0030,0016,cap,,,,,3.0,2015,,clear,Giants send $3M of cap space in 2015
+2042,0029,0016,pick,2014,4,7,,,,,clear,Cowboys send 2014 pick 4.07
+2042,0029,0016,pick,2014,5,7,,,,,clear,Cowboys send 2014 pick 5.07
+2042,0029,0016,pick,2015,3,,,,,,clear,Cowboys send a 2015 3rd
+2042,0029,0016,pick,2015,4,,,,,,clear,Cowboys send a 2015 4th
+2042,0029,0016,pick,2015,5,,,,,,clear,Cowboys send a 2015 5th
+2034,0010,0029,pick,2014,4,29,,,,,ambiguous,"""Also receiving 4th 29"": probably the Cowboys receive 2014 pick 4.29 from the Colts; the note does not name who receives"
+2034,0010,0029,pick,2015,1,,0008,,,,ambiguous,Broncos' 2015 1st; direction not named (probably Colts to Cowboys)
+2034,0010,0029,pick,2015,4,,0010,,,,ambiguous,Colts' 2015 4th; direction not named (probably Colts to Cowboys)
+2034,0010,0029,pick,2015,4,,0008,,,,ambiguous,Broncos' 2015 4th; direction not named (probably Colts to Cowboys)
+2034,0010,0029,pick,2015,5,,0010,,,,ambiguous,Colts' 2015 5th; direction not named (probably Colts to Cowboys)
+1928,0030,0008,pick,2016,1,,,,,,ambiguous,"""I will also be sending my 2016 1st and 3rd"": the writer is probably the Giants (the side that entered the trade)"
+1928,0030,0008,pick,2016,3,,,,,,ambiguous,the writer's 2016 3rd (probably the Giants')
+1928,0008,0030,player,,,,,,,"Marquess Wilson (WR, Bears)",clear,Broncos also send Marquess Wilson; not in MFL's record of the trade
+1921,0022,0014,cap,,,,,0.5,,,clear,Lions send $500k of cap space; the season is not stated
+1881,0008,0030,cap,,,,,4.0,2015,,clear,"Broncos send $4M of cap space ""next year"" (2015)"
+1848,0008,0029,pick,2016,3,,0030,,,,clear,Broncos send the Giants' 2016 3rd
+1848,0008,0029,pick,2016,4,,0030,,,,clear,Broncos send the Giants' 2016 4th
+1848,0008,0029,pick,2016,4,,0008,,,,clear,Broncos send their 2016 4th
+1848,0008,0029,pick,2016,5,,0030,,,,clear,Broncos send the Giants' 2016 5th
+1832,,,unreadable,,,,,,,,unreadable,"""With picks..."": no picks named"
+1793,0022,0008,cap,,,,,1.0,,,clear,Lions send $1M of cap space; the season is not stated
+1649,0014,0025,pick,2015,1,,,,,,clear,Bengals send a 2015 1st
+1552,0030,0008,cap,,,,,4.5,,,clear,Giants send $4.5M of cap space; the season is not stated
+1549,0006,0008,pick,2015,1,,0006,,,,clear,Chiefs send their 2015 1st
+1549,0006,0008,pick,2015,2,,0006,,,,clear,Chiefs send their 2015 2nd
+1549,0008,0006,pick,2016,1,,0008,,,,clear,Broncos send their 2016 1st
+1544,0003,0022,pick,2015,1,,0030,,,,inferred,"""for giants 1st and jets 3rd"": the Jets send the Giants' 1st; 2015 from the Lions later holding the Giants' 2015 1st (trade 3711)"
+1544,0003,0022,pick,2015,3,,0003,,,,inferred,the Jets send their own 3rd; year read as 2015 like the 1st
+1545,0010,0005,pick,2016,1,,0010,,,,clear,Colts send their 2016 1st
+1528,0027,0010,pick,2016,1,,0027,,,,clear,Rams send their 2016 1st
+1528,0027,0010,pick,2016,2,,0008,,,,clear,Rams send the Broncos' 2016 2nd
+1528,0027,0010,pick,2016,5,,0027,,,,clear,Rams send their 2016 5th
+1489,0008,0032,pick,2015,1,,0006,,,,clear,"""Broncos also add 2015 1st KC"": Broncos send the Chiefs' 2015 1st (received in trade 1549)"
+3728,0010,0032,pick,2016,1,,0027,,,,clear,Colts send the Rams' 2016 1st
+3728,0010,0032,pick,2016,2,,0027,,,,clear,Colts send the Rams' 2016 2nd
+3728,0010,0032,pick,2016,2,,0010,,,,clear,Colts send their 2016 2nd
+3725,0015,0009,pick,2015,1,23,0015,,,,clear,Browns send 2015 pick 1.23
+3725,0015,0009,pick,2015,4,23,0015,,,,clear,Browns send 2015 pick 4.23
+3725,0009,0015,pick,2015,2,31,0009,,,,clear,Texans send 2015 pick 2.31
+3714,0032,0006,cap,,,,,0.5,2015 2016,,clear,"Redskins send $500k of cap space in each of the ""next 2 seasons"" (2015 and 2016)"
+3715,0009,0022,pick,2015,1,,0009,,,,inferred,Texans send their 1st; 2015 from the Lions sending the Texans' 2015 1st three days later (trade 3711)
+3715,0022,0009,pick,,3,,0022,,,,ambiguous,Lions send their 3rd; the year is not stated
+3711,0022,0010,pick,2015,1,32,0030,,,,clear,Lions send the Giants' 2015 1st (pick 32 overall)
+3711,0022,0010,pick,2015,1,31,0009,,,,clear,Lions send the Texans' 2015 1st (pick 31 overall)
+3711,0022,0010,pick,2016,2,,0022,,,,clear,Lions send their 2016 2nd
+3711,0022,0010,pick,2016,3,,0022,,,,clear,Lions send their 2016 3rd
+3710,0030,0008,cap,,,,,2.5,2016,,clear,Giants send $2.5M of cap space in 2016
+3662,0015,0019,pick,2015,1,11,0015,,,,clear,Browns send 2015 pick 1.11
+3662,0015,0019,pick,2015,2,31,,,,,clear,Browns send 2015 pick 2.31 (received from the Texans in trade 3725)
+3662,0019,0015,pick,2015,4,3,0019,,,,clear,"Saints send 2015 pick 4.03 (""403"")"
+3661,0032,0029,pick,2015,1,28,,,,,inferred,"""Picks 1.28 2.04 included"": the Cowboys sent both to the Bills five days later (trade 3621), so they came from the Redskins here"
+3661,0032,0029,pick,2015,2,4,,,,,inferred,as above
+3660,0032,0015,pick,2015,5,4,0032,,,,clear,Redskins send their 2015 pick 5.04
+3659,0019,0014,pick,2015,1,4,,,,,clear,Saints send 2015 pick 1.04
+3659,0019,0014,pick,2015,1,11,,,,,clear,Saints send 2015 pick 1.11 (received from the Browns the same day)
+3659,0019,0014,pick,2016,2,,,,,,clear,Saints send a 2016 2nd
+3629,0018,0010,pick,2015,4,10,,,,,clear,Panthers send 2015 pick 4.10
+3629,0010,0018,pick,2016,3,,0022,,,,clear,Colts send the Lions' 2016 3rd
+3627,0028,0001,pick,2015,1,2,,,,,inferred,"""Plus 2015 Pick 1.2"": the Bills held 1.02 ten days later (trade 3562), so it went Seahawks to Bills"
+3621,0029,0001,pick,2015,1,28,,,,,clear,Cowboys send 2015 pick 1.28
+3621,0029,0001,pick,2015,2,1,,,,,clear,Cowboys send 2015 pick 2.01
+3621,0029,0001,pick,2015,2,4,,,,,clear,Cowboys send 2015 pick 2.04
+3621,0029,0001,pick,2015,2,6,,,,,clear,Cowboys send 2015 pick 2.06
+3620,0030,0022,pick,2015,1,6,,,,,clear,Giants send 2015 pick 1.06
+3619,0007,0016,pick,2015,1,31,,,,,clear,Raiders send 2015 pick 1.31
+3619,0007,0016,pick,2015,1,32,,,,,clear,Raiders send 2015 pick 1.32
+3619,0007,0016,pick,2015,2,20,,,,,clear,Raiders send 2015 pick 2.20
+3613,0001,0018,pick,2015,2,6,,,,,inferred,"""2.6 2015 Bills 3rd 2016"": the Bills send 2015 pick 2.06 (they held it from trade 3621)"
+3613,0001,0018,pick,2016,3,,0001,,,,inferred,the Bills send their 2016 3rd
+3612,0001,0032,pick,2015,1,28,,,,,clear,Bills send 2015 pick 1.28
+3612,0001,0032,pick,2015,5,22,,,,,clear,Bills send 2015 pick 5.22
+3611,0032,0022,pick,2015,1,3,,,,,clear,Redskins send 2015 pick 1.03
+3611,0022,0032,pick,2015,1,6,,,,,clear,Lions send 2015 pick 1.06
+3611,0022,0032,pick,2016,4,,,,,,clear,Lions send a 2016 4th (first of two)
+3611,0022,0032,pick,2016,4,,,,,,clear,Lions send a 2016 4th (second of two)
+3610,0007,0032,pick,2016,4,,,,,,clear,Raiders send a 2016 4th
+3596,0018,0032,pick,2015,5,10,,,,,clear,Panthers send 2015 pick 5.10
+3595,0018,0019,cap,,,,,2.5,2015,,inferred,$2.5M of cap space to the Saints for 2015 (sender read as the Panthers)
+3595,0019,0018,pick,2016,1,,0019,,,,clear,Saints send their 2016 1st
+3595,0018,0019,pick,2016,2,,0018,,,,clear,Panthers send their 2016 2nd
+3595,0018,0019,pick,2016,3,,0022,,,,clear,Panthers send the Lions' 2016 3rd
+3587,0001,0007,pick,2016,1,,,,,,clear,Bills send a 2016 1st
+3587,0001,0007,pick,2016,4,,,,,,clear,Bills send a 2016 4th
+3587,0001,0007,pick,2015,2,21,,,,,clear,Bills send 2015 pick 2.21
+3587,0001,0007,pick,2015,2,23,,,,,clear,Bills send 2015 pick 2.23
+3587,0001,0007,pick,2015,5,31,,,,,clear,Bills send 2015 pick 5.31
+3587,0001,0007,pick,2015,5,32,,,,,clear,Bills send 2015 pick 5.32
+3576,0011,0032,pick,2015,1,19,,,,,clear,Jaguars send 2015 pick 1.19
+3576,0011,0032,pick,2015,3,19,,,,,clear,Jaguars send 2015 pick 3.19
+3575,0011,0032,pick,2015,5,19,,,,,clear,Jaguars send 2015 pick 5.19
+3563,0014,0004,pick,2016,2,,0019,,,,clear,Bengals send the Saints' 2016 2nd
+3563,0004,0014,cap,,,,,2.0,2015,,clear,Dolphins send $2M of cap space for 2015
+3562,0001,0030,pick,2015,1,2,,,,,clear,Bills send 2015 pick 1.02
+3558,0016,0004,pick,2015,2,28,,,,,clear,Steelers send 2015 pick 2.28
+3558,0004,0016,pick,2015,4,28,,,,,clear,Dolphins send 2015 pick 4.28
+3557,0030,0005,pick,2015,1,2,,,,,clear,Giants send 2015 pick 1.02
+3557,0030,0005,pick,2015,3,11,,,,,clear,Giants send 2015 pick 3.11
+3478,0008,0016,pick,2016,2,,0030,,,,clear,Broncos send the Giants' 2016 2nd
+3478,0008,0016,pick,2015,5,25,,,,,clear,Broncos send 2015 pick 5.25
+3419,0003,0016,pick,2015,2,30,,,,,clear,Jets send 2015 pick 2.30
+3418,0007,0016,pick,2015,3,9,,,,,clear,Raiders send 2015 pick 3.09
+3395,0001,0016,pick,2016,2,,0001,,,,clear,Bills send their 2016 2nd
+3395,0016,0001,cap,,,,,1.0,2016,,clear,Steelers send $1M of cap space in 2016
+3394,0014,0030,pick,2015,1,11,,,,,clear,Bengals send 2015 pick 1.11
+3394,0014,0030,pick,2015,4,27,,,,,clear,Bengals send 2015 pick 4.27
+3394,0014,0030,pick,2016,1,,,,,,clear,Bengals send a 2016 1st
+3394,0014,0030,pick,2016,4,,,,,,clear,Bengals send a 2016 4th
+3388,0030,0009,pick,2015,4,27,,,,,clear,Giants send 2015 pick 4.27
+3388,0009,0030,pick,2016,2,,,,,,clear,Texans send a 2016 2nd
+3388,0009,0030,pick,2016,3,,,,,,clear,Texans send a 2016 3rd
+3370,0012,0018,pick,2015,3,27,,,,,clear,Titans send 2015 pick 3.27
+3364,0030,0008,player,,,,,,,"Linval Joseph (DT)",clear,Giants also send Linval Joseph; not in MFL's record of the trade
+3363,0016,0032,pick,2015,4,28,,,,,clear,Steelers send 2015 pick 4.28
+3363,0016,0032,pick,2015,5,25,,,,,clear,Steelers send 2015 pick 5.25
+3345,0008,0007,pick,2015,1,19,,,,,clear,Broncos send 2015 pick 1.19
+3345,0007,0008,pick,2016,1,,0007,,,,clear,Raiders send their 2016 1st
+3344,0010,0007,pick,2016,4,,0010,,,,clear,Colts send their 2016 4th
+3344,0010,0007,pick,2016,5,,0010,,,,clear,Colts send their 2016 5th
+3344,0010,0007,pick,2016,5,,0027,,,,clear,Colts send the Rams' 2016 5th
+3342,0032,0022,pick,2015,1,23,,,,,clear,Redskins send 2015 pick 1.23
+3342,0032,0022,pick,2015,1,28,,,,,clear,Redskins send 2015 pick 1.28
+3341,,,unreadable,,,,,,,,unreadable,"""lots of picks swapped as well, check thread"": the picks are only on the old message board"
+3339,0032,0022,pick,2015,5,10,,,,,clear,Redskins send 2015 pick 5.10
+3337,0032,0030,unreadable,,,,,,,,unreadable,"""and picks going to NY"": which picks is not stated"
+3325,0025,0030,pick,2015,2,6,,,,,clear,Cardinals send 2015 pick 2.06
+3325,0025,0030,pick,2015,2,10,,,,,clear,Cardinals send 2015 pick 2.10
+3325,0030,0025,pick,2015,1,20,,,,,clear,Giants send 2015 pick 1.20
+3325,0030,0025,pick,2015,2,31,,,,,clear,Giants send 2015 pick 2.31
+3324,0007,0008,pick,2015,1,19,,,,,clear,Raiders send 2015 pick 1.19 (back to the Broncos; see trade 3345)
+3324,0008,0007,pick,2016,1,,0007,,,,clear,Broncos send the Raiders' 2016 1st (back to the Raiders)
+3323,0029,0008,cap,,,,,5.0,,,clear,Cowboys send $5M of cap space; the season is not stated
+3323,0008,0029,pick,2015,1,19,,,,,clear,Broncos send 2015 pick 1.19
+3322,0026,0030,pick,2016,4,,,,,,clear,49ers send a 2016 4th
+3314,0003,0004,pick,2015,2,17,,,,,clear,Jets send 2015 pick 2.17
+3313,0023,0018,pick,2015,2,7,,,,,clear,Packers send 2015 pick 2.07
+3312,0022,0007,pick,,5,,,,,,ambiguous,"""5th round pick also going to oakland"": year and owner not stated"
+3311,0030,0016,unreadable,,,,,,,,unreadable,"""Picks going to PITT"": which picks is not stated"
+3310,0030,0017,unreadable,,,,,,,,unreadable,"""Picks to atl"": which picks is not stated"
+3293,0032,0007,pick,2016,4,,0020,,,,clear,Redskins send the Buccaneers' 2016 4th
+3293,0032,0007,pick,2016,4,,0007,,,,clear,Redskins send the Raiders' 2016 4th
+3293,0032,0007,pick,2016,5,,0032,,,,clear,Redskins send their 2016 5th
+3287,0008,0018,pick,2015,1,32,,,,,inferred,"""Broncos 1.32"": the Panthers sent 1.32 to the Bills the same day (trade 3286), so it went Broncos to Panthers"
+3287,0018,0008,pick,2016,5,,0018,,,,inferred,"""Panther 2016 5th"": read as the Panthers sending their 2016 5th"
+3286,0018,0001,pick,2015,1,32,,,,,clear,Panthers send 2015 pick 1.32
+3286,0018,0001,pick,2016,3,,0001,,,,clear,Panthers send the Bills' 2016 3rd
+3280,0023,0032,pick,2015,2,32,,,,,clear,Packers send 2015 pick 2.32
+3278,0009,0032,pick,2015,3,31,,,,,clear,Texans send 2015 pick 3.31
+3278,0009,0032,pick,2015,4,27,,,,,clear,Texans send 2015 pick 4.27
+3278,0009,0032,pick,2015,4,31,,,,,clear,Texans send 2015 pick 4.31
+3270,0018,0012,pick,2015,3,6,,,,,clear,Panthers send 2015 pick 3.06
+3270,0018,0012,pick,2015,3,10,,,,,clear,Panthers send 2015 pick 3.10
+3270,0018,0012,pick,2015,5,,0013,,,,clear,Panthers send the Ravens' 2015 5th
+3270,0012,0018,cap,,,,,3.5,2015,,clear,Titans send $3.5M of cap space for 2015
+3270,0018,0012,player,,,,,,,"Khiry Robinson (RB)",ambiguous,"""Pending trade with Khiry Robinson"": unclear whether Robinson moved in this trade"
+3268,0017,0030,pick,2015,3,24,,,,,clear,Falcons send 2015 pick 3.24
+3266,0017,0016,pick,2015,1,24,,,,,clear,Falcons send 2015 pick 1.24
+3266,0016,0017,pick,2015,1,21,,,,,clear,Steelers send 2015 pick 1.21
+3266,0016,0017,pick,2015,5,1,,,,,clear,Steelers send 2015 pick 5.01
+3240,0032,0011,unreadable,,,,,,,,unreadable,"""Jags also get picks see deal"": which picks is not stated"
+3238,0007,0016,pick,2015,2,21,,,,,clear,Raiders send 2015 pick 2.21
+3238,0007,0016,pick,2015,2,23,,,,,clear,Raiders send 2015 pick 2.23
+3238,0007,0016,pick,2016,2,,0022,,,,clear,Raiders send the Lions' 2016 2nd
+3238,0007,0016,pick,2016,2,,0010,,,,clear,Raiders send the Colts' 2016 2nd
+3237,0032,0019,pick,2015,4,27,,,,,clear,Redskins send 2015 pick 4.27
+3236,0019,0024,player,,,,,,,"Jeremy Kerley (WR, Jets)",clear,"Saints send Jeremy Kerley, ""not on MFL roster"""
+3236,0024,0019,pick,2015,3,3,,,,,clear,Vikings send 2015 pick 3.03
+3231,0008,0032,pick,2015,3,19,,,,,clear,Broncos send 2015 pick 3.19 back to the Redskins
+3227,0018,0025,pick,2016,1,,0019,,,,clear,Panthers send the Saints' 2016 1st
+3227,0025,0018,pick,2016,1,,0025,,,,clear,Cardinals send their 2016 1st
+3227,0025,0018,cap,,,,,1.5,2016,,clear,Cardinals send $1.5M of cap space for 2016
+3221,0026,0016,pick,2015,2,29,,,,,clear,49ers send 2015 pick 2.29
+3218,0017,0024,pick,2015,3,24,,,,,clear,"Falcons send 2015 pick 3.24 (note: trade 3268 already sent 3.24 to the Giants)"
+3218,0017,0024,pick,2015,5,24,,,,,clear,Falcons send 2015 pick 5.24
+3216,,,none,,,,,,,,clear,"""this is my player"": no extra assets"
+3206,0007,0016,pick,2015,3,20,,,,,clear,Raiders send 2015 pick 3.20
+3206,0007,0016,pick,2015,3,22,,,,,clear,Raiders send 2015 pick 3.22
+3205,0025,0020,pick,2015,4,2,,,,,clear,"Cardinals (""I give"") send 2015 pick 4.02"
+3205,0020,0025,pick,2015,3,7,,,,,clear,"Buccaneers send 2015 pick 3.07 (""OTC"": on the clock)"
+3203,0012,0032,pick,2015,5,12,,,,,clear,Titans send 2015 pick 5.12
+3204,,,none,,,,,,,,clear,"""This is the actual trade"": no extra assets"
+3148,0006,0016,pick,2015,3,26,,,,,clear,Chiefs send 2015 pick 3.26
+3148,0006,0016,pick,2016,3,,0006,,,,clear,Chiefs send their 2016 3rd
+3148,0016,0006,cap,,,,,1.0,2015,,clear,Steelers send $1M of cap space for 2015
+3147,0025,0007,pick,2016,4,,,,,,clear,"Cardinals (""I give"") send a 2016 4th"
+3147,0007,0025,pick,2015,5,14,,,,,clear,Raiders send 2015 pick 5.14
+3147,0007,0025,pick,2015,5,18,,,,,clear,Raiders send 2015 pick 5.18
+2975,0032,0003,pick,2017,3,,,,,,clear,Redskins send a 2017 3rd
+2958,0022,0025,pick,2017,2,,0022,,,,ambiguous,"""includes detroits 2017 2nd"": direction not stated (probably Lions to Cardinals; the Cardinals sent a 2017 2nd on in trade 2947)"
+2947,0025,0009,pick,2017,2,,,,,,clear,Cardinals send a 2017 2nd
+2947,0009,0025,pick,2016,4,,,,,,clear,Texans send a 2016 4th
+2892,0032,0020,pick,2017,2,,0032,,,,clear,Redskins send their 2017 2nd
+2892,0020,0032,pick,2016,5,,0020,,,,clear,Buccaneers send their 2016 5th
+2855,0026,0002,pick,2016,2,,,,,,clear,49ers send a 2016 2nd for Victor Cruz
+2855,0026,0002,pick,2017,2,,,,,,clear,49ers send a 2017 2nd for Victor Cruz
+2844,0032,0030,pick,2017,1,,,,,,clear,Redskins send a 2017 1st
+2844,0032,0030,pick,2016,2,,,,,,clear,Redskins send a 2016 2nd
+2844,0030,0032,pick,2017,4,,,,,,clear,Giants send a 2017 4th
+2825,0019,0027,pick,2016,3,,0001,,,,clear,Saints send the Bills' 2016 3rd
+2825,0019,0027,pick,2016,4,,0026,,,,clear,Saints send the 49ers' 2016 4th
+2819,0022,0007,pick,2017,1,,0022,,,,ambiguous,"""includes lions 2017 1st round pick"": direction not stated (probably Lions to Raiders)"
+2801,0026,0022,pick,2016,3,,0008,,,,clear,49ers send the Broncos' 2016 3rd
+2795,0030,0003,pick,2016,3,,,,,,clear,Giants send a 2016 3rd
+2794,0032,0001,pick,2017,4,,0032,,,,clear,Redskins send their 2017 4th
+2794,0032,0001,pick,2017,4,,0027,,,,clear,Redskins send the Rams' 2017 4th
+2768,0027,0019,pick,2017,1,,0027,,,,clear,Rams send their 2017 1st
+2754,0019,0012,pick,2016,4,,0014,,,,clear,Saints send the Bengals' 2016 4th
+2754,0019,0012,pick,2017,1,,0027,,,,clear,Saints send the Rams' 2017 1st
+2754,0019,0012,pick,2017,3,,0019,,,,clear,Saints send their 2017 3rd
+2753,0019,0026,pick,2016,3,,0022,,,,clear,Saints send the Lions' 2016 3rd
+2753,0019,0026,pick,2016,4,,0019,,,,clear,Saints send their 2016 4th
+2753,0019,0026,pick,2017,2,,0019,,,,clear,Saints send their 2017 2nd
+2753,0019,0026,pick,2017,4,,0019,,,,clear,Saints send their 2017 4th
+2739,0018,0012,pick,2017,3,,0018,,,,inferred,"""2017 3rd round pick (Carolina)"": read as the Panthers sending their own"
+2730,0032,0011,pick,2017,1,,,,,,clear,Redskins send a 2017 1st
+2730,0032,0011,pick,2017,3,,,,,,clear,Redskins send a 2017 3rd
+2730,0032,0011,pick,2017,5,,,,,,clear,Redskins send a 2017 5th
+2603,0021,0014,pick,2016,3,,,,,,clear,"""Bears add 2016 3rd"": Bears send a 2016 3rd"
+2588,0020,0005,pick,2016,2,21,0013,,,,clear,Buccaneers send the Ravens' 2016 2nd (pick 2.21)
+2588,0020,0005,pick,2016,3,22,0025,,,,clear,Buccaneers send the Cardinals' 2016 3rd (pick 3.22)
+2583,0012,0018,cap,,,,,4.0,2016,,clear,Titans send $4M of cap relief in 2016
+2583,0018,0012,pick,2016,1,23,,,,,clear,Panthers send 2016 pick 1.23
+2583,0018,0012,pick,2017,2,,,,,,clear,Panthers send a 2017 2nd
+2576,0021,0026,pick,2017,3,,0021,,,,clear,Bears send their 2017 3rd
+2560,0022,0009,pick,2016,3,,0008,,,,inferred,"""lions 3rd round pick(broncos)"": the Lions send the Broncos' 3rd they held; 2016 from trade 2801"
+4897,0032,0020,pick,2016,3,7,,,,,clear,Redskins send 2016 pick 3.07
+4878,0027,0032,pick,2016,5,4,,,,,clear,Rams send 2016 pick 5.04
+4863,0011,0032,pick,2016,4,18,,,,,clear,Jaguars send 2016 pick 4.18
+4863,0011,0032,pick,2016,5,18,,,,,clear,Jaguars send 2016 pick 5.18
+4862,0016,0008,pick,2016,4,26,,,,,clear,Steelers send 2016 pick 4.26
+4860,0009,0032,pick,2016,3,15,,,,,clear,Texans send 2016 pick 3.15
+4731,0003,0032,pick,2016,3,12,,,,,clear,Jets send 2016 pick 3.12
+4687,0022,0029,cap,,,,,5.0,,,clear,Lions send $5M of cap space; the season is not stated
+4686,0012,0016,pick,2016,2,3,0012,,,,clear,Titans send their 2016 pick 2.03
+4686,0016,0012,pick,2016,2,17,0022,,,,clear,Steelers send the Lions' 2016 pick 2.17
+4667,0032,0014,pick,2016,3,12,,,,,clear,Redskins send 2016 pick 3.12
+4667,0032,0014,pick,2016,4,18,,,,,clear,Redskins send 2016 pick 4.18
+4667,0032,0014,pick,2016,5,18,,,,,clear,Redskins send 2016 pick 5.18
+4657,0012,0014,pick,2016,1,23,,,,,clear,Titans send 2016 pick 1.23
+4657,0012,0014,pick,2016,2,10,,,,,clear,Titans send 2016 pick 2.10
+4657,0012,0014,pick,2016,2,32,,,,,clear,Titans send 2016 pick 2.32
+4641,0012,0003,pick,2016,2,17,,,,,clear,Titans send 2016 pick 2.17
+4642,0005,0014,pick,2016,1,25,,,,,clear,Chargers send 2016 pick 1.25
+4642,0005,0014,pick,2016,2,26,,,,,clear,Chargers send 2016 pick 2.26
+4626,0021,0032,cap,,,,,3.0,2016,,clear,Bears send $3M of cap space in 2016
+4626,0021,0032,pick,2016,4,19,,,,,clear,Bears send 2016 pick 4.19
+4618,0032,0006,pick,2016,5,4,,,,,clear,Redskins send 2016 pick 5.04
+4617,0005,0016,pick,2016,1,13,0010,,,,clear,Chargers send the Colts' 2016 pick 1.13
+4617,0016,0005,pick,2016,1,32,0027,,,,clear,Steelers send the Rams' 2016 pick 1.32
+4617,0016,0005,pick,2016,2,28,0030,,,,clear,Steelers send the Giants' 2016 pick 2.28
+4607,0006,0016,pick,2016,1,8,0006,,,,clear,Chiefs send their 2016 pick 1.08
+4607,0006,0016,pick,2016,1,15,0008,,,,clear,Chiefs send the Broncos' 2016 pick 1.15
+4607,0016,0006,pick,2016,2,6,0001,,,,clear,Steelers send the Bills' 2016 pick 2.06
+4607,0016,0006,pick,2016,2,9,0016,,,,clear,Steelers send their 2016 pick 2.09
+4605,0026,0016,pick,2016,5,5,0026,,,,clear,49ers send their 2016 pick 5.05
+4605,0026,0016,pick,2017,4,,0026,,,,clear,49ers send their 2017 4th
+4576,0030,0032,pick,2016,1,27,,,,,clear,Giants send 2016 pick 1.27
+4576,0030,0032,pick,2016,4,7,,,,,clear,Giants send 2016 pick 4.07
+4576,0030,0032,pick,2017,3,,,,,,clear,Giants send a 2017 3rd
+4545,0032,0003,pick,2018,3,,0032,,,,clear,Redskins send their 2018 3rd
+4543,0006,0016,pick,2016,2,6,0001,,,,clear,Chiefs send the Bills' 2016 pick 2.06
+4543,0006,0016,pick,2016,2,8,0006,,,,clear,Chiefs send their 2016 pick 2.08
+4543,0006,0016,pick,2016,4,8,0006,,,,clear,Chiefs send their 2016 pick 4.08
+4543,0016,0006,pick,2016,3,9,0016,,,,clear,Steelers send their 2016 pick 3.09
+4542,0029,0016,pick,2016,2,13,0010,,,,clear,Cowboys send the Colts' 2016 pick 2.13
+4542,0029,0016,pick,2016,3,28,0030,,,,clear,Cowboys send the Giants' 2016 pick 3.28
+4542,0016,0029,pick,2016,3,8,0006,,,,clear,Steelers send the Chiefs' 2016 pick 3.08
+4519,0003,0010,pick,2016,4,12,,,,,clear,Jets send 2016 pick 4.12
+4519,0003,0010,pick,2017,2,,,,,,clear,Jets send a 2017 2nd
+4519,0010,0003,cap,,,,,3.0,2016,,clear,Colts send $3M of cap space in 2016
+4519,0010,0003,cap,,,,,2.0,2017,,clear,Colts send $2M of cap space in 2017
+4516,0012,0032,pick,2016,3,3,,,,,clear,Titans send 2016 pick 3.03
+4516,0012,0032,pick,2016,4,27,,,,,clear,Titans send 2016 pick 4.27
+4516,0012,0032,pick,2016,5,3,,,,,clear,Titans send 2016 pick 5.03
+4517,0032,0010,pick,2016,3,3,,,,,clear,Redskins send 2016 pick 3.03
+4517,0032,0010,pick,2016,4,10,,,,,clear,Redskins send 2016 pick 4.10
+4517,0032,0010,pick,2016,4,20,,,,,clear,Redskins send 2016 pick 4.20
+4517,0032,0010,pick,2016,4,27,,,,,clear,Redskins send 2016 pick 4.27
+4517,0032,0010,pick,2017,3,,,,,,clear,Redskins send a 2017 3rd
+4482,0025,0021,pick,2017,2,,,,,,clear,"Cardinals (""i give"") send a 2017 2nd"
+4482,0025,0021,pick,2017,3,,,,,,clear,Cardinals send a 2017 3rd
+4482,0025,0021,pick,2018,2,,,,,,clear,Cardinals send a 2018 2nd
+4481,0010,0021,pick,2017,1,,0010,,,,ambiguous,"""Includes 2017 Colts 1st and 2nd and 2017 Lions 3rd"": direction not stated"
+4481,0010,0021,pick,2017,2,,0010,,,,ambiguous,as above
+4481,0010,0021,pick,2017,3,,0022,,,,ambiguous,as above
+4474,0016,0021,pick,2016,3,28,0030,,,,clear,Steelers send the Giants' 2016 pick 3.28
+4474,0016,0021,pick,2017,4,,0026,,,,clear,Steelers send the 49ers' 2017 4th
+4472,0007,0016,pick,2016,3,26,0032,,,,clear,Raiders send the Redskins' 2016 pick 3.26
+4472,0007,0016,pick,2016,4,4,0020,,,,clear,Raiders send the Buccaneers' 2016 pick 4.04
+4472,0007,0016,pick,2016,4,6,0001,,,,clear,Raiders send the Bills' 2016 pick 4.06
+4472,0016,0007,pick,2017,3,,0016,,,,clear,Steelers send their 2017 3rd
+4446,0014,0021,pick,2016,4,18,,,,,clear,Bengals send 2016 pick 4.18
+4446,0014,0021,pick,2017,3,,0009,,,,clear,Bengals send the Texans' 2017 3rd
+4436,0025,0014,pick,2017,5,,,,,,inferred,"""2017 5th"": read as the Cardinals sending it (the Bengals sent Matt Schaub)"
+4422,0016,0032,pick,2016,4,8,,,,,clear,Steelers send 2016 pick 4.08
+4422,0032,0016,pick,2018,2,,0032,,,,clear,Redskins send their 2018 2nd
+4416,0025,0007,pick,2018,5,,,,,,inferred,"""2018 5th"": read as the Cardinals sending it (the Raiders sent Robert McClain)"
+4384,0024,0007,pick,2017,2,,,,,,clear,Vikings send a 2017 2nd
+4384,0007,0024,pick,2017,3,,0010,,,,clear,Raiders send the Colts' 2017 3rd
+4377,0010,0016,pick,2016,4,27,,,,,clear,Colts send 2016 pick 4.27
+4377,0010,0016,pick,2017,2,,,,,,clear,Colts send a 2017 2nd
+4377,0010,0016,pick,2017,4,,,,,,clear,Colts send a 2017 4th (first of two)
+4377,0010,0016,pick,2017,4,,,,,,clear,Colts send a 2017 4th (second of two)
+4375,0030,0006,player,,,,,,,"Vontae Davis (CB)",clear,"""Vonte davis needs to go to KC"": Giants also send Vontae Davis; not in MFL's record of the trade"
+4346,0003,0007,pick,2017,3,,0032,,,,clear,Jets send the Redskins' 2017 3rd
+4345,0016,0028,pick,2016,5,17,0022,,,,clear,Steelers send the Lions' 2016 pick 5.17
+4345,0016,0028,pick,2017,4,,0016,,,,clear,Steelers send their 2017 4th
+4340,0016,0008,pick,2016,5,9,0016,,,,clear,Steelers send their 2016 pick 5.09
+4340,0016,0008,pick,2017,4,,0022,,,,clear,Steelers send the Lions' 2017 4th
+4322,0022,0030,pick,2018,1,,,,,,clear,Lions send a 2018 1st
+4322,0022,0030,pick,2018,3,,,,,,clear,Lions send a 2018 3rd
+4312,0025,0016,pick,2017,4,,,,,,clear,"Cardinals (""i give"") send a 2017 4th"
+4312,0025,0016,pick,2018,3,,,,,,clear,Cardinals send a 2018 3rd
+4312,0025,0016,pick,2018,4,,,,,,clear,Cardinals send a 2018 4th
+4312,0016,0025,cap,,,,,5.0,2016,,clear,"Steelers send $5M of ""cap coverage in 2016 only"""
+4303,0016,0008,pick,2017,4,,0010,,,,clear,Steelers send the Colts' 2017 4th
+4300,0025,0014,pick,2017,1,,,,,,clear,"""Arizona adds 2017 1st and 2018 1st"": Cardinals send a 2017 1st"
+4300,0025,0014,pick,2018,1,,,,,,clear,Cardinals send a 2018 1st
+4238,0024,0010,pick,2016,3,30,,,,,clear,Vikings send 2016 pick 3.30
+4238,0024,0010,pick,2016,4,30,,,,,clear,Vikings send 2016 pick 4.30
+4238,0024,0010,pick,2017,4,,0024,,,,clear,Vikings send their 2017 4th
+4238,0024,0010,pick,2017,5,,0024,,,,clear,Vikings send their 2017 5th
+4083,0025,0016,pick,2018,1,,0022,,,,inferred,"""Pittsburgh Steelers receive: 2018 1st (Lions)"": from the Cardinals"
+4082,0032,0025,pick,2017,4,,0014,,,,clear,"Redskins send the Bengals' 2017 4th (trade 4069 three days later lists the same two picks with the owners swapped)"
+4082,0032,0025,pick,2017,5,,0022,,,,clear,Redskins send the Lions' 2017 5th (see trade 4069)
+4069,0032,0025,pick,2017,4,,0022,,,,clear,"Redskins send the Lions' 2017 4th (same picks as trade 4082, owners swapped)"
+4069,0032,0025,pick,2017,5,,0014,,,,clear,Redskins send the Bengals' 2017 5th (see trade 4082)
+4051,0010,0011,pick,2018,1,,0010,,,,clear,Colts send their 2018 1st
+4026,0003,0022,pick,2018,3,,0003,,,,clear,Jets send their 2018 3rd
+4024,0001,0022,cap,,,,,4.0,,,clear,"""and 4mill to lions"": Bills send $4M of cap space; the season is not stated"
+4003,0001,0010,pick,2017,2,,0025,,,,clear,Bills send the Cardinals' 2017 2nd
+4003,0001,0010,pick,2017,3,,0004,,,,clear,Bills send the Dolphins' 2017 3rd
+4003,0001,0010,pick,2017,4,,0019,,,,clear,Bills send the Saints' 2017 4th
+4003,0001,0010,pick,2017,5,,0030,,,,clear,Bills send the Giants' 2017 5th
+3996,0022,0023,pick,2018,3,,0003,,,,clear,Lions send the Jets' 2018 3rd
+3977,,,none,,,,,,,,clear,"Salary details and a conditional cut (Sean Renfree); no extra assets"
+3976,0003,0032,cap,,,,,2.0,2016,,clear,Jets send $2M of cap space in 2016
+3964,0030,0026,pick,,4,,,,,,ambiguous,"""4th to 49ers"": the year is not stated"
+3959,0008,0003,pick,2017,2,,,,,,clear,Broncos send a 2017 2nd
+3952,0032,0022,pick,2018,1,,0032,,,,clear,Redskins send their 2018 1st
+3822,0003,0007,pick,2018,5,,0022,,,,clear,Jets send the Lions' 2018 5th
+3814,0014,0016,pick,2017,1,32,0025,,,,clear,Bengals send the Cardinals' 2017 pick 1.32
+3814,0014,0016,pick,2018,1,,0014,,,,clear,Bengals send their 2018 1st
+3814,0014,0016,pick,2018,3,,0014,,,,clear,Bengals send their 2018 3rd
+3810,0014,0030,pick,2018,1,,0025,,,,clear,Bengals send the Cardinals' 2018 1st
+3797,0014,0020,pick,2017,4,14,,,,,clear,Bengals send 2017 pick 4.14 for Matt Barkley
+3797,0014,0020,pick,2017,4,17,,,,,clear,Bengals send 2017 pick 4.17 for Matt Barkley
+3794,0019,0003,pick,2018,3,,0019,,,,clear,Saints send their 2018 3rd
+3793,0030,0008,pick,2017,4,,,,,,clear,Giants send a 2017 4th
+3793,0030,0008,pick,2018,1,,,,,,clear,Giants send a 2018 1st
+3793,0030,0008,pick,2018,2,,,,,,clear,Giants send a 2018 2nd
+3790,,,none,,,,,,,,clear,Salary details and the Cardinals' reasoning; no extra assets
+3789,0030,0025,pick,2018,1,,,,,,ambiguous,"""NYG gives 2018 1st -- Texans 2017 5.22 2017 5.19"": a 2018 1st; ""Texans"" may name its owner or the next pick's"
+3789,0030,0025,pick,2017,5,22,,,,,clear,Giants send 2017 pick 5.22
+3789,0030,0025,pick,2017,5,19,,,,,clear,Giants send 2017 pick 5.19
+3782,0030,0022,pick,2017,4,,0030,,,,inferred,"""and giants 2017 4th"": read as the Giants sending their own"
+3771,0012,0032,pick,2017,5,6,,,,,clear,Titans send pick 5.06 (2017 draft)
+3757,0014,0032,pick,2018,2,,0022,,,,clear,Bengals send the Lions' 2018 2nd
+3755,,,unreadable,,,,,,,,unreadable,"""picks as per Proboards"": the picks are only on the old message board"
+3748,0025,0022,player,,,,,,,"Matt Ryan (QB)",clear,"Cardinals (""i give"") send Matt Ryan; not in MFL's record of the trade"
+3748,0022,0025,pick,2017,4,4,,,,,clear,Lions send 2017 pick 4.04
+3745,0032,0026,player,,,,,,,"Cecil Shorts (WR)",clear,Redskins also send Cecil Shorts; not in MFL's record of the trade
+3745,0026,0032,pick,2017,3,30,,,,,clear,49ers send 2017 pick 3.30
+3745,0026,0032,pick,2017,5,2,,,,,clear,49ers send 2017 pick 5.02
+3743,0032,0010,pick,2017,2,11,,,,,clear,Redskins send 2017 pick 2.11
+3743,0032,0010,pick,2017,4,11,,,,,clear,Redskins send 2017 pick 4.11
+3743,0032,0010,pick,2017,5,6,,,,,clear,Redskins send 2017 pick 5.06 (received from the Titans in trade 3771)
+3744,0032,0003,pick,2017,5,1,,,,,clear,Redskins send 2017 pick 5.01
+3737,0029,0010,pick,2017,1,19,,,,,clear,Cowboys send 2017 pick 1.19
+3737,0029,0010,pick,2018,1,,0029,,,,clear,Cowboys send their 2018 1st
+3737,0029,0010,pick,2018,3,,0029,,,,clear,Cowboys send their 2018 3rd
+3737,0029,0010,pick,2018,4,,0029,,,,clear,Cowboys send their 2018 4th
+3737,0029,0010,pick,2018,5,,0029,,,,clear,Cowboys send their 2018 5th
+6368,0012,0008,pick,2018,2,,,,,,clear,"""Titans send 18' 2nd for Anthony Barr"": not in MFL's record of the trade"
+5933,,,none,,,,,,,,clear,"Picks 1.25, 4.25 and 5.16 match MFL's record; a conditional 2019 2nd or 3rd from the Cardinals if Vincent Jackson retired (condition, not a transfer)"
+5914,0007,0026,player,,,,,,,George John,clear,"""George John is also sent to 49ers. Not on my MFL roster."""
+5902,0007,0021,cap,,,,,6.0,2017,,clear,"Raiders send $6,000,000 of cap space for 2017 (the picks match MFL's record)"
+5901,0008,0003,cap,,,,,4.0,2017,,clear,Broncos send $4M of cap space in 2017
+5700,0014,0025,cap,,,,,1.0,,,clear,"""1m in cap to Arizona"": the season is not stated"
+5510,,,cap,,,,,3.27,,,ambiguous,"""Cover 2016 only - 3.27"": $3.27M of cap cover; the season reads 2016 though the trade was in September 2017, and the direction is not stated"
+5415,0019,0005,pick,2018,3,,0009,,,,clear,Saints send the Texans' 2018 3rd; not in MFL's record of the trade
+5415,0019,0005,pick,2018,4,,0019,,,,clear,Saints send their 2018 4th; not in MFL's record
+5415,0019,0005,pick,2019,1,,0019,,,,clear,Saints send their 2019 1st; not in MFL's record
+5415,0019,0005,pick,2019,2,,0019,,,,clear,Saints send their 2019 2nd; not in MFL's record
+5415,0019,0005,cap,,,,,2.0,2017,,clear,Saints send $2M of cap space in 2017
+5349,0001,0019,cap,,,,,3.0,2017,,clear,Bills send $3M of cap space in 2017
+5322,0014,0032,pick,2019,2,,0014,,,,clear,Bengals send their 2019 2nd; not in MFL's record of the trade
+5322,0014,0032,pick,2019,4,,0014,,,,clear,Bengals send their 2019 4th; not in MFL's record
+6778,0004,0007,player,,,,,,,Ryan Tannehill (QB),ambiguous,"""Ryan Tannehill to Oakland just need NYG trade to pass"": depends on another trade"
+8684,0032,0029,player,,,,,,,Calvin Pryor (S),clear,"Redskins also send Calvin Pryor, ""Not on MFL"""
+4299,0022,0032,pick,2017,5,,0022,,,,clear,Lions send their 2017 5th
+4299,0022,0032,pick,2018,2,,0022,,,,clear,Lions send their 2018 2nd
+4299,0022,0032,pick,2018,4,,0022,,,,clear,Lions send their 2018 4th
+4299,0022,0032,pick,2018,5,,0022,,,,clear,Lions send their 2018 5th
+5314,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+7438,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+8135,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+7921,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+10743,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+10382,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+10335,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+10071,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+12396,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+12394,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+12315,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+12255,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+11846,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+11603,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+11554,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+14271,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+14269,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+14249,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+14154,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+13805,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+13804,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+13775,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+13018,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+12982,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+15838,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+15403,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+15310,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+17322,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+17318,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+17316,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+17181,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+16978,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+16945,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+16944,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+16791,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+16766,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+16736,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+16735,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+16682,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+16666,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+16396,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+16353,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+16332,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+18072,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+17946,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+17912,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+17806,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+17794,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+17778,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+17776,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record
+17541,,,none,,,,,,,,clear,The offer's message; every asset it names is in MFL's record

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#101722">
+<title>Legacy NFL Lab</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="js/main.js"></script>
+</head>
+<body class="loading">
+<a class="skip" href="#view">Skip to the screen</a>
+<aside class="rail">
+  <div class="brand">
+    <img src="icon.svg" alt="" width="28" height="28">
+    <div><strong>Legacy NFL</strong><span>Lab</span></div>
+  </div>
+  <nav id="nav" aria-label="Screens"></nav>
+  <div class="rail-foot">
+    <span id="through"></span>
+    <span id="offline">Checking offline copy…</span>
+  </div>
+</aside>
+<div class="work">
+  <div class="top-shell" id="levers"></div>
+  <main id="view" tabindex="-1">
+    <p id="status" class="status">Loading the league’s history…</p>
+  </main>
+</div>
+<aside id="drawer" class="drawer" hidden aria-label="Records behind a number"></aside>
+</body>
+</html>
