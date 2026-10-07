@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
@@ -35,6 +36,10 @@ type App struct {
 	keyMu         sync.Mutex
 	keyStore      *mflkey.Store
 	keyVerifiedAt string
+	keyGeneration uint64
+	//nolint:containedctx // Key-change refreshes run under it; shutdown cancels it.
+	workCtx    context.Context
+	workCancel context.CancelFunc
 	//nolint:containedctx // Wails supplies an app-lifetime context; bindings derive bounded contexts.
 	ctx         context.Context
 	pools       *db.Pools // thewarroom.db: the MFL mirror and app settings
@@ -75,6 +80,14 @@ type App struct {
 	weekWorkers      sync.WaitGroup
 	weekStart        sync.Once // domReady fires again on a webview reload; one worker only
 
+	seasonMu            sync.Mutex
+	seasonTransactions  heldSeasonFeed[[]leaguefeed.Transaction]
+	seasonLineups       heldSeasonFeed[leaguefeed.Lineups]
+	seasonPendingTrades heldSeasonFeed[[]leaguefeed.PendingTrade]
+	lineupsWeek         int
+	seasonChanged       func(context.Context)
+	seasonPause         func(context.Context, time.Duration) error
+
 	refreshMu        sync.Mutex // one MFL refresh at a time
 	launchRefreshDue bool       // startup did not refresh, so domReady does
 
@@ -111,6 +124,7 @@ func NewApp() *App {
 		started:       make(chan struct{}),
 		targetMoveLog: envelope.NewMemoryLog(),
 		clockChanged:  func(ctx context.Context) { runtime.EventsEmit(ctx, "target:clock") },
+		seasonChanged: func(ctx context.Context) { runtime.EventsEmit(ctx, "target:season") },
 	}
 }
 
@@ -126,6 +140,7 @@ func (a *App) ready() error {
 func (a *App) startup(ctx context.Context) {
 	defer close(a.started)
 	a.ctx = ctx
+	a.workCtx, a.workCancel = context.WithCancel(ctx)
 	defer func() {
 		if a.startupErr != nil {
 			log.Printf("the war room: startup failed: %v", a.startupErr)
@@ -272,6 +287,9 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 func (a *App) shutdown(_ context.Context) {
 	if a.weekCancel != nil {
 		a.weekCancel()
+	}
+	if a.workCancel != nil {
+		a.workCancel()
 	}
 	a.weekWorkers.Wait()
 	for _, p := range []*db.Pools{a.pools, a.histPools, a.whatifPools} {

@@ -126,6 +126,10 @@ export function TargetMoves(arg1) {
   return window['go']['main']['App']['TargetMoves'](arg1);
 }
 
+export function TargetSeason() {
+  return window['go']['main']['App']['TargetSeason']();
+}
+
 export function TargetSnapshot() {
   return window['go']['main']['App']['TargetSnapshot']();
 }

@@ -24,6 +24,9 @@ func (a *App) refreshWeeksInBackground(parent context.Context) {
 		ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 		a.refreshWeek(ctx)
 		cancel()
+		ctx, cancel = context.WithTimeout(parent, refreshTimeout)
+		a.refreshSeason(ctx)
+		cancel()
 		select {
 		case <-parent.Done():
 			return
