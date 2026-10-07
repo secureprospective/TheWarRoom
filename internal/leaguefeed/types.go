@@ -57,7 +57,22 @@ type Transaction struct {
 	Unparsed  bool          `json:"unparsed"`
 }
 
+type PlayerScore struct {
+	ID               playerid.PlayerID `json:"id" ts_type:"string"`
+	Score            float64           `json:"score"`
+	SecondsRemaining int               `json:"secondsRemaining"`
+}
+
+// Matchup keeps feed order as Home/Away when neither or both franchises claim home.
+type Matchup struct {
+	Home string `json:"home"`
+	Away string `json:"away"`
+}
+
 type Lineup struct {
+	Playing          int                 `json:"playing"`
+	YetToPlay        int                 `json:"yetToPlay"`
+	Players          []PlayerScore       `json:"players"`
 	Franchise        string              `json:"franchise"`
 	Starters         []playerid.PlayerID `json:"starters" ts_type:"string[]"`
 	NonStarters      []playerid.PlayerID `json:"nonStarters" ts_type:"string[]"`
@@ -66,8 +81,9 @@ type Lineup struct {
 }
 
 type Lineups struct {
-	Week       int      `json:"week"`
-	Franchises []Lineup `json:"franchises"`
+	Matchups   []Matchup `json:"matchups"`
+	Week       int       `json:"week"`
+	Franchises []Lineup  `json:"franchises"`
 }
 
 // PendingTrade is from the offering team's side: Gives is what Offering gives up.

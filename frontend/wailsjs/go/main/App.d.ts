@@ -61,6 +61,8 @@ export function SetMFLKey(arg1:string):Promise<main.MFLKeyStatus>;
 
 export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetParamResult>;
 
+export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
+
 export function TargetCheckLineup(arg1:string,arg2:Array<string>):Promise<lineup.Result>;
 
 export function TargetCheckMoves():Promise<void>;
@@ -78,6 +80,8 @@ export function TargetHandOff(arg1:string):Promise<envelope.Receipt>;
 export function TargetLineup(arg1:string):Promise<main.LineupReading>;
 
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
+
+export function TargetPulseNow():Promise<main.PulseReading>;
 
 export function TargetSeason():Promise<main.SeasonReading>;
 

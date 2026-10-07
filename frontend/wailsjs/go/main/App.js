@@ -114,6 +114,10 @@ export function SetParam(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetParam'](arg1, arg2, arg3);
 }
 
+export function TargetAlerts(arg1) {
+  return window['go']['main']['App']['TargetAlerts'](arg1);
+}
+
 export function TargetCheckLineup(arg1, arg2) {
   return window['go']['main']['App']['TargetCheckLineup'](arg1, arg2);
 }
@@ -148,6 +152,10 @@ export function TargetLineup(arg1) {
 
 export function TargetMoves(arg1) {
   return window['go']['main']['App']['TargetMoves'](arg1);
+}
+
+export function TargetPulseNow() {
+  return window['go']['main']['App']['TargetPulseNow']();
 }
 
 export function TargetSeason() {
