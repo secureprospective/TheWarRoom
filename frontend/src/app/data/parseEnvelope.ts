@@ -24,9 +24,28 @@ function target(value: unknown, path: string): EnvelopeSpec['target'] {
   return { kind, url };
 }
 function expectedChange(
-  value: unknown, path: string, intent: string, players: string[],
+  value: unknown, path: string, intent: string, players: string[], franchiseId: string,
 ): EnvelopeSpec['expected'] {
-  const r = object(value, path, ['player', 'rosterStatus', 'lineup']);
+  const r = object(value, path, ['player', 'rosterStatus', 'lineup', 'trade']);
+  if (intent === 'trade.accept') {
+    for (const key of ['player', 'rosterStatus', 'lineup']) {
+      if (r[key] !== undefined) throw new Error(`${path}.${key}: forbidden for trade.accept`);
+    }
+    const p = `${path}.trade`;
+    const t = object(r.trade, p, ['tradeId', 'offering', 'accepting', 'offeringGives', 'acceptingGives']);
+    const offering = id(t.offering, `${p}.offering`);
+    const accepting = id(t.accepting, `${p}.accepting`);
+    if (offering === accepting) throw new Error(`${p}.offering: must differ from accepting`);
+    if (accepting !== franchiseId) throw new Error(`${p}.accepting: must equal franchiseId`);
+    const offeringGives = array(t.offeringGives, `${p}.offeringGives`, requiredText);
+    const acceptingGives = array(t.acceptingGives, `${p}.acceptingGives`, requiredText);
+    if (!offeringGives.length) throw new Error(`${p}.offeringGives: expected nonempty array`);
+    if (!acceptingGives.length) throw new Error(`${p}.acceptingGives: expected nonempty array`);
+    return { trade: {
+      tradeId: requiredText(t.tradeId, `${p}.tradeId`), offering, accepting, offeringGives, acceptingGives,
+    } };
+  }
+  if (r.trade !== undefined) throw new Error(`${path}.trade: not a trade intent`);
   if (intent !== 'lineup.set') {
     if (r.lineup !== undefined) throw new Error(`${path}.lineup: not a lineup intent`);
     const player = id(r.player, `${path}.player`, true);
@@ -59,10 +78,11 @@ function envelopeSpec(value: unknown, path: string): EnvelopeSpec {
   const subject = object(r.subject, `${path}.subject`, ['players', 'picks']);
   const players = array(subject.players, `${path}.subject.players`, (v, p) => id(v, p, true));
   const intent = requiredText(r.intent, `${path}.intent`);
-  const expected = expectedChange(r.expected, `${path}.expected`, intent, players);
+  const franchiseId = id(r.franchiseId, `${path}.franchiseId`);
+  const expected = expectedChange(r.expected, `${path}.expected`, intent, players, franchiseId);
   return {
     intent, leagueId: id(r.leagueId, `${path}.leagueId`),
-    franchiseId: id(r.franchiseId, `${path}.franchiseId`),
+    franchiseId,
     subject: { players, picks: array(subject.picks, `${path}.subject.picks`, requiredText) },
     expected,
     gravity: choice(r.gravity, `${path}.gravity`, GRAVITIES),

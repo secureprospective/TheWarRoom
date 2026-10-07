@@ -183,3 +183,6 @@ Hand-off Act: `move.handoff` opens a Ready plan; `target:moves` reloads receipts
 `trades_app.go`: `TargetTrades(franchiseID string) (TradeReading, error)` reads held offers locally.
 `trades_app.go`: `TargetDraftTradeAccept(franchiseID, tradeID string) (envelope.Receipt, error)` saves an accept plan.
 `internal/envelope`: `trade.accept` watches post-hand-off TRADE asset sets; disappearance waits in DOTReview.
+
+Trade desk: `shell/TradeDesk.tsx` groups held offers; lazy `data/tradeProvider.ts` parses Go readings.
+Accept plan: `commands/tradeAccept.ts` drafts `trade.accept`; `shell/TradePlan.tsx` tracks desk hand-off.
