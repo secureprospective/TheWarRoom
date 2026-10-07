@@ -12,6 +12,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -88,7 +89,18 @@ type App struct {
 	seasonChanged       func(context.Context)
 	seasonPause         func(context.Context, time.Duration) error
 
+	movesMu      sync.Mutex
+	movesWake    chan struct{}
+	movesChanged func(context.Context)
+	openURL      func(context.Context, string)
+	movesNow     func() time.Time
+	movesTimer   func(time.Duration) (<-chan time.Time, func())
+	movesRefresh func(context.Context, envelope.Source) error
+	movesLog     func(string)
+	movesUnknown map[string]bool
+
 	refreshMu        sync.Mutex // one MFL refresh at a time
+	rostersCheckedAt time.Time  // last successful roster refresh; refreshMu guards it
 	launchRefreshDue bool       // startup did not refresh, so domReady does
 
 	crosswalkMu sync.Mutex
@@ -122,6 +134,13 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 func NewApp() *App {
 	return &App{
 		started:       make(chan struct{}),
+		movesWake:     make(chan struct{}, 1),
+		movesChanged:  func(ctx context.Context) { runtime.EventsEmit(ctx, "target:moves") },
+		openURL:       runtime.BrowserOpenURL,
+		movesNow:      time.Now,
+		movesTimer:    newMovesTimer,
+		movesLog:      func(line string) { log.Print(line) },
+		movesUnknown:  make(map[string]bool),
 		clockChanged:  func(ctx context.Context) { runtime.EventsEmit(ctx, "target:clock") },
 		seasonChanged: func(ctx context.Context) { runtime.EventsEmit(ctx, "target:season") },
 	}

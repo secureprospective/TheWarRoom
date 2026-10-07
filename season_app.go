@@ -100,6 +100,7 @@ func seasonPause(ctx context.Context, duration time.Duration) error {
 }
 
 func (a *App) refreshSeason(ctx context.Context) {
+	defer a.wakeMoves()
 	a.refreshMu.Lock()
 	defer a.refreshMu.Unlock()
 	if ctx.Err() != nil {
