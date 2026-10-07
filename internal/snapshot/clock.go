@@ -17,9 +17,9 @@ type ClockSource interface {
 	CalendarEvents(context.Context) ([]state.CalendarEvent, error)
 }
 
-// BuildClock reads the source and grades its deadlines at the supplied instant.
+// BuildClock reads the local source and supplied lineup lock, grading deadlines at the supplied instant.
 func BuildClock(ctx context.Context, at time.Time, season int, src ClockSource,
-	p Provenance) (Sourced[leagueclock.Reading], error) {
+	lineup *leagueclock.LineupLock, p Provenance) (Sourced[leagueclock.Reading], error) {
 	phase, err := src.CurrentPhase(ctx)
 	if err != nil {
 		return Sourced[leagueclock.Reading]{}, fmt.Errorf("snapshot: clock phase: %w", err)
@@ -31,7 +31,10 @@ func BuildClock(ctx context.Context, at time.Time, season int, src ClockSource,
 	if err != nil {
 		return Sourced[leagueclock.Reading]{}, fmt.Errorf("snapshot: clock calendar: %w", err)
 	}
-	in := leagueclock.Inputs{Season: season, Phase: phase, Events: make([]leagueclock.Event, 0, len(events))}
+	in := leagueclock.Inputs{
+		Season: season, Phase: phase, Lineup: lineup,
+		Events: make([]leagueclock.Event, 0, len(events)),
+	}
 	for _, e := range events {
 		ev, err := clockEvent(e)
 		if err != nil {

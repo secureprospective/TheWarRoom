@@ -1,6 +1,6 @@
 // Package leagueclock reads only supplied league facts; missing windows remain unknown.
 //
-// The NFL schedule adapter supplies the lineup week and its first kickoff alongside the phase and calendar.
+// The NFL schedule adapter supplies the lineup week and next lock alongside the phase and calendar.
 package leagueclock
 
 import (
@@ -57,7 +57,7 @@ type Event struct {
 	At               time.Time
 }
 
-// LineupLock is the lineup week's first kickoff: the moment the first starters lock.
+// LineupLock is the supplied kickoff at which the next starters lock.
 type LineupLock struct {
 	Week int
 	At   time.Time

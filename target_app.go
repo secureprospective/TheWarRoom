@@ -86,10 +86,9 @@ func (a *App) TargetClock() (snapshot.Sourced[leagueclock.Reading], error) {
 	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
 	defer cancel()
 	now := time.Now()
-	fresh := liveFreshness(now)
-	fresh.Note = "league windows not yet captured"
-	clock, err := snapshot.BuildClock(ctx, now.UTC(), a.league.Season(), a.whatif, snapshot.Provenance{
-		Source: "phase-log+commissioner-calendar", Kind: "live", Freshness: fresh,
+	lineup, fresh := a.weekClock(now)
+	clock, err := snapshot.BuildClock(ctx, now.UTC(), a.league.Season(), a.whatif, lineup, snapshot.Provenance{
+		Source: "phase-log+commissioner-calendar+nflSchedule", Kind: "live", Freshness: fresh,
 	})
 	if err != nil {
 		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: %w", err)
