@@ -3,6 +3,8 @@
   line-height: 1.75rem;
   white-space: nowrap;
   overflow-x: auto;
+  /* Its width must not come from its text: a long Go verdict widened the whole workspace. */
+  contain: inline-size;
 }
 
 .lineup-actions {
