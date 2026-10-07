@@ -1,5 +1,6 @@
 import type {
-  LineupReading, ClockReading, EnvelopeDemo, MFLKeyStatus, Provenance, Receipt, Snapshot, Sourced,
+  LineupCheck, LineupReading, ClockReading, EnvelopeDemo, MFLKeyStatus,
+  Provenance, Receipt, Snapshot, Sourced,
 } from './contract';
 import {
   DeleteMFLKey, MFLKeyStatus as ReadMFLKey, SetMFLKey,
@@ -7,6 +8,10 @@ import {
 } from '../../../wailsjs/go/main/App';
 
 interface ReadingProvider {
+  checkLineup(franchiseId: string, starters: string[]): Promise<LineupCheck>;
+  draftLineup(franchiseId: string, starters: string[]): Promise<Receipt>;
+  handOff(correlationId: string): Promise<Receipt>;
+  onMovesChange(listener: () => void): () => void;
   mflKey(): Promise<MFLKeyStatus>;
   connectMFL(key: string): Promise<MFLKeyStatus>;
   forgetMFL(): Promise<MFLKeyStatus>;
@@ -34,9 +39,21 @@ function hasWails(): boolean {
   return typeof window !== 'undefined' && (window as { go?: unknown }).go !== undefined;
 }
 
+function lineupBindings() {
+  return import('./lineupProvider');
+}
+async function desktopLineup(): Promise<never> {
+  throw new Error('Lineup changes need the desktop app');
+}
 export class FixtureProvider implements ReadingProvider, DemoProvider {
   readonly kind = 'fixture';
   readonly reason = 'Drafting needs the desktop app';
+  checkLineup: ReadingProvider['checkLineup'] = desktopLineup;
+  draftLineup: ReadingProvider['draftLineup'] = desktopLineup;
+  handOff: ReadingProvider['handOff'] = desktopLineup;
+  onMovesChange(_listener: () => void): () => void {
+    return () => {};
+  }
   async mflKey(): Promise<MFLKeyStatus> {
     return { state: 'absent', league: '', season: 0, detail: 'Connecting MFL needs the desktop app' };
   }
@@ -130,6 +147,18 @@ function onTargetChange(event: string, listener: () => void): () => void {
 
 export class LiveProvider implements ReadingProvider, DraftingProvider {
   readonly kind = 'live';
+  async checkLineup(franchiseId: string, starters: string[]): Promise<LineupCheck> {
+    return (await lineupBindings()).checkLineup(franchiseId, starters);
+  }
+  async draftLineup(franchiseId: string, starters: string[]): Promise<Receipt> {
+    return (await lineupBindings()).draftLineup(franchiseId, starters);
+  }
+  async handOff(correlationId: string): Promise<Receipt> {
+    return (await lineupBindings()).handOff(correlationId);
+  }
+  onMovesChange(listener: () => void): () => void {
+    return onTargetChange('target:moves', listener);
+  }
   async mflKey(): Promise<MFLKeyStatus> {
     const [{ parseMFLKeyStatus }, status] = await Promise.all([import('./parse'), ReadMFLKey()]);
     return parseMFLKeyStatus(status);
@@ -149,11 +178,7 @@ export class LiveProvider implements ReadingProvider, DraftingProvider {
     return onTargetChange('target:season', listener);
   }
   async lineup(franchiseId: string): Promise<LineupReading> {
-    const [{ parseLineup }, reading] = await Promise.all([
-      import('./parseLineup'),
-      import('../../../wailsjs/go/main/App').then(({ TargetLineup }) => TargetLineup(franchiseId)),
-    ]);
-    return parseLineup(reading);
+    return (await lineupBindings()).lineup(franchiseId);
   }
   async draftIR(franchiseId: string, playerId: string): Promise<Receipt> {
     const [{ parseReceipt }, receipt] = await Promise.all([

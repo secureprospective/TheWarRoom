@@ -145,7 +145,31 @@ export function createCommands(
     }
     void requestMFL(() => provider.connectMFL(mflField.take()), 'Checking the key with MFL…');
   }
+  function lineupAction(action: import('./lineupEdit').LineupAction) {
+    return import('./lineupEdit').then(({ runLineupAction }) =>
+      runLineupAction(action, state, moves, lineups, provider, snapshot)).catch((cause) =>
+      state.write({ notice: `Lineup: ${String(cause)}` }));
+  }
+  function editCommand<A>(
+    kind: import('./lineupEdit').LineupAction['kind'], label: string, args: readonly (keyof A)[],
+  ) {
+    const remote = kind === 'draft' || kind === 'handoff';
+    return command({
+      ...ambient, id: kind === 'handoff' ? 'move.handoff' : `lineup.${kind}`, label, aliases: [], args,
+      gravity: remote ? 'G1' : 'G0',
+      undo: remote ? 'reversible' : 'instant',
+      run: (values: A) => lineupAction({ kind, ...values } as import('./lineupEdit').LineupAction),
+    });
+  }
   const registry = Object.freeze({
+    'lineup.edit': editCommand<{ franchiseId: string }>('edit', 'Edit lineup', ['franchiseId']),
+    'lineup.toggle': editCommand<{ playerId: string }>('toggle', 'Toggle starter', ['playerId']),
+    'lineup.reset': editCommand<Record<string, never>>('reset', 'Reset', []),
+    'lineup.cancel': editCommand<Record<string, never>>('cancel', 'Cancel', []),
+    'lineup.draft': editCommand<Record<string, never>>('draft', 'Check and save plan', []),
+    'move.handoff': editCommand<{ correlationId: string }>(
+      'handoff', 'Open MFL lineup page', ['correlationId'],
+    ),
     'mflkey.connect': command({
       ...ambient, id: 'mflkey.connect', label: 'Connect MFL', aliases: ['mfl', 'api key'],
       gravity: 'G1', undo: 'reversible',
@@ -424,6 +448,9 @@ export function createCommands(
   }
   return {
     registry,
+    checkLineup: provider.checkLineup.bind(provider),
+    onMovesChange: lineups.onMovesChange,
+    useLineupEdit: state.useLineupEdit,
     lineups,
     mflField,
     mflReason,

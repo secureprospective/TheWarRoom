@@ -15,7 +15,9 @@ export const stateLabels: Record<EnvelopeState, string> = {
   bid_pending: 'Bid pending',
   waiver_pending: 'Waiver pending',
 };
-export const intentLabels: Record<string, string> = { 'roster.ir': 'IR placement' };
+export const intentLabels: Record<string, string> = {
+  'roster.ir': 'IR placement', 'lineup.set': 'Lineup change',
+};
 export const stateSignals: Record<EnvelopeState, Signal> = {
   draft: 'grey',
   ready: 'blue',

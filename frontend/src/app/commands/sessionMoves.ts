@@ -16,8 +16,12 @@ export async function loadSessionMoves(
     if (provider.kind === 'fixture') state.write({ demo: await provider.demo() });
     else {
       const loaded = await provider.moves(franchiseId);
-      const merged = new Map(loaded.map((receipt) => [receipt.correlationId, receipt]));
-      for (const receipt of state.read().moves) merged.set(receipt.correlationId, receipt);
+      const merged = new Map(state.read().moves.map((receipt) => [receipt.correlationId, receipt]));
+      for (const receipt of loaded) {
+        const held = merged.get(receipt.correlationId);
+        // Audits only grow: a load that started before a hand-off must not roll it back.
+        if (!held || receipt.audit.length >= held.audit.length) merged.set(receipt.correlationId, receipt);
+      }
       state.write({ moves: orderReceipts([...merged.values()]) });
     }
   } catch (cause) {

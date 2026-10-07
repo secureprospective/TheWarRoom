@@ -18,7 +18,7 @@ function problem(value: unknown, path: string): LineupProblem {
     message: text(r.message, `${path}.message`),
   };
 }
-function check(value: unknown, path: string): LineupCheck {
+export function parseLineupCheck(value: unknown, path: string): LineupCheck {
   const r = object(value, path, ['full', 'legal', 'problems']);
   return {
     full: boolean(r.full, `${path}.full`),
@@ -37,7 +37,7 @@ export function parseLineup(value: unknown): LineupReading {
     starterCount: integer(r.starterCount, `${p}.starterCount`),
     starters: array(r.starters, `${p}.starters`, player),
     bench: array(r.bench, `${p}.bench`, player),
-    check: check(r.check, `${p}.check`),
+    check: parseLineupCheck(r.check, `${p}.check`),
     provenance: provenance(r.provenance, `${p}.provenance`),
     rulesSource: provenance(r.rulesSource, `${p}.rulesSource`),
   };
