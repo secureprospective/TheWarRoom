@@ -128,7 +128,7 @@
 .twr-app .hq-roster h5 .channel-chip { margin-left: 10px; }
 .twr-app .ws-head { flex-wrap: wrap; height: auto; min-height: 44px; }
 .twr-app .ws-head h3, .twr-app .wtabs { min-height: 44px; }
-.twr-app .strip { flex-basis: 260px; min-height: 32px; gap: 10px; }
+.twr-app .strip { flex-basis: auto; min-height: 32px; gap: 10px; } /* wraps whole, never clips when a row is free */
 .twr-app #command-results .act > span { min-width: 0; overflow-wrap: anywhere; }
 
 :is(.twr-app[data-density="matrix"], .twr-app [data-density="matrix"]) .player-matrix:not(.insp .player-matrix) + .twr-card { display: none; }
