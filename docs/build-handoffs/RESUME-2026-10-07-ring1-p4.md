@@ -4,6 +4,21 @@
 > "we are back", then check §1b (in flight) and start at §9 item 1.
 > Supersedes `RESUME-2026-10-07-ring1-p3.md` (kept for history; its §6 refutations still hold).
 
+
+## 0. UPDATE 15:20 CDT (supersedes §1b, §3 p4b row, §9 items 1-4)
+- p4b committed 6e6938b (+ style 4ecf06e, overflow fix 4484033); Claude-OS runs 4484033
+  (sha256 10152cc7…; kept thewarroom.4ecf06e, thewarroom.da0c0112). make verify green, entry 323,923.
+- Live lineup.set run by Christopher 15:07-15:09: hand-off, supersede, watcher all worked. Final
+  envelope lineup-f5265944… = **Not verified** (MFL's saved lineup reverted to his original:
+  Stroud QB, Perine RB; plan wanted Mills + Heidenreich). Correct verdict. Christopher: "its
+  working, keep moving". A live **Landed** has NOT been observed yet: say so at the gate (phase 7).
+- Read-only helpers on Claude-OS ~/warroom-ring1: plan_state.sh, watch_plan.sh, plan_diff.py.
+- **In flight: Sol p5a** (Go: TargetTrades, trade.accept envelope/predicate/draft, desk O=05
+  target). Brief ~/fleet/briefs/warroom-ring1-p5a-trade-accept.md (scratchpad copy). Run dir
+  …/p5a/ (sentinel, REPORT.md, sessions/). Next: review → fix → verify → commit → wails generate
+  → 5b frontend (Trade Floor › Trade desk: offers list, Plan accept, Open MFL trade desk, rail).
+- Christopher says tokens are thin: keep turns short.
+
 ## 1. What we are doing
 - Ring 1 of the UI target (roadmap `docs/build-handoffs/UI_Target_Roadmap_2026-10.md` › Ring 1):
   frequent loops end to end with the first live Act. Phases: **0 ✔ · 1 live season data ✔ ·
