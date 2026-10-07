@@ -135,9 +135,13 @@ UI. `frontend/src/TargetMount.tsx` switches between the target shell and the unc
 pure two-route gate. `endpoint.open` navigates and highlights; merged rows target kept ids or places.
 The harness is lazy-loaded only on `harness.open`; it is not in the target entry chunk.
 
-`internal/leagueclock` is a pure reading over the held phase log and commissioner calendar:
+`internal/ingestion/nflschedule` fetches and validates MFL's league-independent NFL schedule,
+then converts it into dated `internal/leagueweek` facts at a supplied instant.
+`internal/leagueweek` derives the lineup week, per-team kickoff locks and bounded season phase;
+after the season ends it requires explicit rollover approval.
+`internal/leagueclock` reads the held phase, commissioner calendar and optional lineup week/first lock:
 deadlines soonest first with U0–U3 and the pin/promote ordering rule; league windows stay explicitly
-unknown. MFL's schedule has no dates, so there is no current week until a dated source exists.
+unknown.
 `internal/envelope` owns immutable move states (one transition map), checks, observation predicates
 and an in-memory audit log, including unmapped IR drafts; neither core does I/O.
 `snapshot.BuildClock` is the one clock builder: `TargetClock` (in `target_app.go`) passes the what-if store, and
