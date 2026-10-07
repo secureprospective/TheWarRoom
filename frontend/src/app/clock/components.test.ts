@@ -161,6 +161,7 @@ describe('honest clock surfaces', () => {
     }
     const mounted = createRoot(element);
     await act(async () => { mounted.render(createElement(Harness)); });
+    await act(async () => { await import('../../../wailsjs/runtime/runtime'); });
     expect(snapshot).toHaveBeenCalledTimes(1);
     // The mount read, then one catch-up read once the live event subscription is in place.
     expect(clock).toHaveBeenCalledTimes(2);
