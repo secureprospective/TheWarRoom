@@ -1,0 +1,390 @@
+{
+  "week": "5",
+  "id": "0025",
+  "player": [
+    {
+      "contractYear": "2028",
+      "status": "ROSTER",
+      "contractInfo": "",
+      "contractStatus": "UFA",
+      "salary": "9.43",
+      "id": "15761"
+    },
+    {
+      "contractYear": "2028",
+      "status": "ROSTER",
+      "id": "15798",
+      "contractInfo": "",
+      "contractStatus": "UFA",
+      "salary": "7.25"
+    },
+    {
+      "salary": "3.63",
+      "contractStatus": "UFA",
+      "id": "16230",
+      "contractInfo": "",
+      "status": "ROSTER",
+      "contractYear": "2029"
+    },
+    {
+      "contractStatus": "UFA",
+      "salary": "2.17",
+      "status": "ROSTER",
+      "contractYear": "2029",
+      "contractInfo": "",
+      "id": "16264"
+    },
+    {
+      "status": "ROSTER",
+      "contractYear": "2029",
+      "contractInfo": "",
+      "contractStatus": "UFA",
+      "salary": "3.63",
+      "id": "16267"
+    },
+    {
+      "contractStatus": "RFA",
+      "salary": "0.33",
+      "contractYear": "2026",
+      "status": "ROSTER",
+      "id": "16846",
+      "contractInfo": ""
+    },
+    {
+      "contractStatus": "UFA",
+      "salary": "2.40",
+      "contractYear": "2028",
+      "status": "ROSTER",
+      "contractInfo": "",
+      "id": "16617"
+    },
+    {
+      "contractStatus": "UFA",
+      "salary": "2.40",
+      "contractYear": "2028",
+      "status": "ROSTER",
+      "contractInfo": "",
+      "id": "16641"
+    },
+    {
+      "id": "16460",
+      "salary": "3.63",
+      "contractStatus": "UFA",
+      "contractInfo": "",
+      "contractYear": "2029",
+      "status": "ROSTER"
+    },
+    {
+      "contractInfo": "",
+      "id": "16439",
+      "contractYear": "2029",
+      "status": "ROSTER",
+      "salary": "1.45",
+      "contractStatus": "UFA"
+    },
+    {
+      "contractYear": "2029",
+      "status": "ROSTER",
+      "id": "16303",
+      "contractInfo": "",
+      "contractStatus": "UFA",
+      "salary": "3.63"
+    },
+    {
+      "contractStatus": "UFA",
+      "salary": "0.87",
+      "contractYear": "2029",
+      "status": "ROSTER",
+      "id": "16428",
+      "contractInfo": ""
+    },
+    {
+      "status": "ROSTER",
+      "contractYear": "2028",
+      "contractInfo": "",
+      "contractStatus": "UFA",
+      "salary": "3.62",
+      "id": "15904"
+    },
+    {
+      "contractStatus": "UFA",
+      "salary": "1.45",
+      "contractYear": "2029",
+      "status": "ROSTER",
+      "contractInfo": "",
+      "id": "16387"
+    },
+    {
+      "contractStatus": "UFA",
+      "salary": "3.63",
+      "contractYear": "2027",
+      "status": "ROSTER",
+      "id": "15357",
+      "contractInfo": ""
+    },
+    {
+      "contractStatus": "UFA",
+      "salary": "0.95",
+      "status": "ROSTER",
+      "contractYear": "2026",
+      "id": "13322",
+      "contractInfo": ""
+    },
+    {
+      "contractStatus": "UFA",
+      "salary": "4",
+      "status": "ROSTER",
+      "contractYear": "2030",
+      "contractInfo": "RESTRUCTURE (2025) 4/4/4/15/15/12/ufaEXT1 (2025) 25-27/$3 & 28-30/$15",
+      "id": "16150"
+    },
+    {
+      "id": "15754",
+      "contractStatus": "UFA",
+      "salary": "3",
+      "status": "ROSTER",
+      "contractYear": "2029",
+      "contractInfo": "EXT 1 (2026) 3/10/10/10"
+    },
+    {
+      "contractYear": "2028",
+      "status": "ROSTER",
+      "contractInfo": "",
+      "id": "15836",
+      "contractStatus": "UFA",
+      "salary": "3"
+    },
+    {
+      "contractStatus": "UFA",
+      "salary": "11",
+      "contractYear": "2028",
+      "status": "ROSTER",
+      "contractInfo": "",
+      "id": "13813"
+    },
+    {
+      "salary": "0.58",
+      "contractStatus": "UFA",
+      "id": "15252",
+      "contractInfo": "",
+      "status": "ROSTER",
+      "contractYear": "2028"
+    },
+    {
+      "contractInfo": "",
+      "status": "ROSTER",
+      "contractYear": "2026",
+      "salary": "0.50",
+      "contractStatus": "RFA",
+      "id": "16793"
+    },
+    {
+      "salary": "0.50",
+      "contractStatus": "RFA",
+      "contractInfo": "",
+      "contractYear": "2026",
+      "status": "ROSTER",
+      "id": "16880"
+    },
+    {
+      "id": "15941",
+      "contractStatus": "UFA",
+      "salary": "0.53",
+      "contractYear": "2026",
+      "status": "ROSTER",
+      "contractInfo": ""
+    },
+    {
+      "contractStatus": "UFA",
+      "salary": "0.53",
+      "status": "ROSTER",
+      "contractYear": "2026",
+      "contractInfo": "",
+      "id": "14315"
+    },
+    {
+      "salary": "5",
+      "contractStatus": "UFA",
+      "id": "14168",
+      "contractInfo": "EXT 2023 - 23/$3.00 & 24-26/$5.00",
+      "status": "ROSTER",
+      "contractYear": "2026"
+    },
+    {
+      "contractYear": "2026",
+      "status": "ROSTER",
+      "id": "16923",
+      "contractInfo": "",
+      "contractStatus": "RFA",
+      "salary": "0.33"
+    },
+    {
+      "salary": "0.33",
+      "contractStatus": "RFA",
+      "contractInfo": "",
+      "id": "17041",
+      "contractYear": "2027",
+      "status": "ROSTER"
+    },
+    {
+      "contractStatus": "RFA",
+      "salary": "0.67",
+      "contractYear": "2026",
+      "status": "ROSTER",
+      "id": "16734",
+      "contractInfo": ""
+    },
+    {
+      "contractStatus": "UFA",
+      "salary": "0.67",
+      "contractYear": "2029",
+      "status": "ROSTER",
+      "id": "16255",
+      "contractInfo": ""
+    },
+    {
+      "contractYear": "2029",
+      "status": "ROSTER",
+      "contractInfo": "",
+      "contractStatus": "UFA",
+      "salary": "4",
+      "id": "16195"
+    },
+    {
+      "id": "15850",
+      "contractInfo": "",
+      "status": "ROSTER",
+      "contractYear": "2028",
+      "salary": "5",
+      "contractStatus": "UFA"
+    },
+    {
+      "contractYear": "2029",
+      "status": "ROSTER",
+      "contractInfo": "",
+      "contractStatus": "UFA",
+      "salary": "13.50",
+      "id": "14892"
+    },
+    {
+      "salary": "1.25",
+      "contractStatus": "RFA",
+      "contractInfo": "",
+      "id": "16694",
+      "status": "ROSTER",
+      "contractYear": "2026"
+    },
+    {
+      "contractYear": "2028",
+      "status": "ROSTER",
+      "contractInfo": "",
+      "contractStatus": "RFA",
+      "salary": "0.83",
+      "id": "17685"
+    },
+    {
+      "status": "ROSTER",
+      "contractYear": "2027",
+      "id": "17150",
+      "contractInfo": "",
+      "contractStatus": "RFA",
+      "salary": "0.60"
+    },
+    {
+      "status": "ROSTER",
+      "contractYear": "2027",
+      "contractInfo": "",
+      "contractStatus": "RFA",
+      "salary": "0.38",
+      "id": "17274"
+    },
+    {
+      "contractStatus": "UFA",
+      "salary": "1.50",
+      "status": "ROSTER",
+      "contractYear": "2026",
+      "contractInfo": "",
+      "id": "13133"
+    },
+    {
+      "salary": "2",
+      "contractStatus": "UFA",
+      "contractInfo": "",
+      "contractYear": "2028",
+      "status": "INJURED_RESERVE",
+      "id": "16622"
+    },
+    {
+      "salary": "0.83",
+      "contractStatus": "RFA",
+      "contractInfo": "",
+      "id": "16692",
+      "status": "INJURED_RESERVE",
+      "contractYear": "2026"
+    },
+    {
+      "id": "17211",
+      "contractInfo": "",
+      "contractYear": "2027",
+      "status": "INJURED_RESERVE",
+      "salary": "0.50",
+      "contractStatus": "RFA"
+    },
+    {
+      "id": "15831",
+      "contractInfo": "",
+      "contractYear": "2028",
+      "status": "INJURED_RESERVE",
+      "salary": "3.62",
+      "contractStatus": "UFA"
+    },
+    {
+      "salary": "0.33",
+      "contractStatus": "RFA",
+      "contractInfo": "",
+      "id": "17492",
+      "status": "TAXI_SQUAD",
+      "contractYear": "2028"
+    },
+    {
+      "contractStatus": "RFA",
+      "salary": "0.33",
+      "status": "TAXI_SQUAD",
+      "contractYear": "2028",
+      "contractInfo": "",
+      "id": "17483"
+    },
+    {
+      "contractInfo": "",
+      "id": "17602",
+      "status": "TAXI_SQUAD",
+      "contractYear": "2028",
+      "salary": "0.50",
+      "contractStatus": "RFA"
+    },
+    {
+      "contractInfo": "",
+      "id": "17598",
+      "status": "TAXI_SQUAD",
+      "contractYear": "2028",
+      "salary": "0.60",
+      "contractStatus": "RFA"
+    },
+    {
+      "contractInfo": "",
+      "contractYear": "2027",
+      "status": "TAXI_SQUAD",
+      "salary": "0.38",
+      "contractStatus": "RFA",
+      "id": "17353"
+    },
+    {
+      "id": "17672",
+      "contractYear": "2028",
+      "status": "TAXI_SQUAD",
+      "contractInfo": "",
+      "contractStatus": "RFA",
+      "salary": "0.33"
+    }
+  ]
+}

@@ -68,6 +68,8 @@ export function TargetDraftIR(arg1:string,arg2:string):Promise<envelope.Receipt>
 
 export function TargetHandOff(arg1:string):Promise<envelope.Receipt>;
 
+export function TargetLineup(arg1:string):Promise<main.LineupReading>;
+
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 
 export function TargetSeason():Promise<main.SeasonReading>;
