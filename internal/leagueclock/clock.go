@@ -1,13 +1,12 @@
 // Package leagueclock reads only supplied league facts; missing windows remain unknown.
 //
-// Held facts today are the season, the phase log and the commissioner calendar. MFL's league
-// schedule carries week numbers but no dates, so it cannot date a deadline or name the current
-// week; both arrive with a dated source (ring 1), never by inference.
+// The NFL schedule adapter supplies the lineup week and its first kickoff alongside the phase and calendar.
 package leagueclock
 
 import (
 	"cmp"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -58,10 +57,17 @@ type Event struct {
 	At               time.Time
 }
 
+// LineupLock is the lineup week's first kickoff: the moment the first starters lock.
+type LineupLock struct {
+	Week int
+	At   time.Time
+}
+
 type Inputs struct {
 	Season int
 	Phase  domain.Phase
 	Events []Event
+	Lineup *LineupLock
 }
 
 type Deadline struct {
@@ -76,6 +82,7 @@ type Deadline struct {
 type Reading struct {
 	Season    int          `json:"season"`
 	Phase     domain.Phase `json:"phase"`
+	Week      *int         `json:"week,omitempty"`
 	Deadlines []Deadline   `json:"deadlines"`
 	Windows   []Window     `json:"windows"`
 }
@@ -87,6 +94,15 @@ func Clock(at time.Time, in Inputs) Reading {
 		if e.Status == "PLANNED" {
 			out.Deadlines = append(out.Deadlines, deadline(at, e))
 		}
+	}
+	if in.Lineup != nil {
+		week := in.Lineup.Week
+		out.Week = &week
+		out.Deadlines = append(out.Deadlines, deadline(at, Event{
+			ID:   "lineup-w" + strconv.Itoa(week),
+			Kind: "LINEUP_LOCK",
+			At:   in.Lineup.At,
+		}))
 	}
 	slices.SortFunc(out.Deadlines, func(a, b Deadline) int {
 		switch {
