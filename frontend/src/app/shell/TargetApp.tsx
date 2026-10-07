@@ -1,3 +1,5 @@
+import { EndpointIndex } from '../registry/EndpointIndex';
+import type { Placement } from '../registry';
 import { CommandBar } from '../commands/CommandBar';
 import { FranchiseHQ } from './FranchiseHQ';
 import { PlayerInspector } from './PlayerInspector';
@@ -54,6 +56,7 @@ export function TargetApp() {
   const workspaces: readonly { slug: string; label: string; ring: string }[] =
     node.workspaces;
   const workspace = workspaces.find((w) => w.slug === s.workspace[s.node])!;
+  const placement = `${node.label} › ${workspace.label.replace(' (role-gated)', '')}` as Placement;
   return (
     <div
       className="twr-app target-frame"
@@ -102,6 +105,8 @@ export function TargetApp() {
           >
             Calendar
           </Act>
+          <Act verb="surface.open" args={{ place: 'Report drawer' }}>Reports</Act>
+          <Act verb="surface.open" args={{ place: 'Status strip' }}>Status</Act>
           <Act verb="harness.open" args={{}}>
             Harness
           </Act>
@@ -157,7 +162,7 @@ export function TargetApp() {
             </p>
           )}
           {s.node === 'hq' &&
-          (!s.franchiseId || workspace.slug === 'lineup-and-roster') &&
+          workspace.slug === 'lineup-and-roster' &&
           snapshot ? (
             <FranchiseHQ snapshot={snapshot} />
           ) : s.node === 'control' && workspace.slug === 'app' ? (
@@ -185,6 +190,7 @@ export function TargetApp() {
               <SignalChip {...summary.provenance} />
             </section>
           )}
+          <EndpointIndex placement={placement} />
           {error && <p role="alert">{error}</p>}
         </div>
       </section>
@@ -215,6 +221,7 @@ export function TargetApp() {
               Every player, franchise, pick, offer and segment opens here.
             </p>
           )}
+          <EndpointIndex placement="Inspector" />
         </div>
       </aside>
       {s.inspector === 'closed' && (
@@ -236,7 +243,7 @@ export function TargetApp() {
         </Act>
         <span className="vt">Comms · league feed</span>
       </aside>
-      {snapshot && <CommandBar snapshot={snapshot} />}
+      <CommandBar snapshot={snapshot} />
       <aside
         id="target-comms"
         data-open={s.comms}
@@ -250,7 +257,7 @@ export function TargetApp() {
             Close
           </Act>
         </header>
-        <p className="not-wired">Not wired · Ring 3</p>
+        <EndpointIndex placement="Comms" />
       </aside>
       <aside
         id="target-calendar"
@@ -265,8 +272,17 @@ export function TargetApp() {
             Close
           </Act>
         </header>
-        <p className="not-wired">Not wired · P5</p>
+        <EndpointIndex placement="Calendar" />
       </aside>
+      {(s.endpointSurface === 'Report drawer' || s.endpointSurface === 'Status strip') && (
+        <aside className="shell-overlay registry-panel" aria-label={s.endpointSurface}>
+          <header>
+            {s.endpointSurface}
+            <Act verb="surface.close" args={{}}>Close</Act>
+          </header>
+          <EndpointIndex placement={s.endpointSurface} />
+        </aside>
+      )}
     </div>
   );
 }

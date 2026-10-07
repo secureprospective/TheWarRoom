@@ -1,3 +1,4 @@
+import { endpoints } from '../registry';
 import type { Snapshot, Position } from '../data/contract';
 import { nodes, nodeKeys } from '../shell/nodes';
 import { presetIds, presets, presetAllowed } from '../shell/presets';
@@ -9,6 +10,7 @@ const UNSEARCHABLE: ReadonlySet<CommandId> = new Set<CommandId>([
   'commandbar.open',
   'commandbar.close',
   'overlays.close',
+  'surface.close',
 ]);
 
 type Invocation = {
@@ -18,7 +20,7 @@ type Invocation = {
 export type SearchResult = {
   label: string;
   aliases: readonly string[];
-  kind: 'command' | 'place' | 'player';
+  kind: 'command' | 'place' | 'endpoint' | 'player';
   position?: Position;
   invocation: Invocation;
 };
@@ -32,7 +34,7 @@ export function indexResult(result: SearchResult): IndexedResult {
 
 type Executor = ReturnType<typeof createCommands>;
 
-export function searchCandidates(executor: Executor, snapshot: Snapshot): IndexedResult[] {
+export function searchCandidates(executor: Executor, snapshot?: Snapshot): IndexedResult[] {
   const results: SearchResult[] = [];
   for (const id of Object.keys(executor.registry) as CommandId[]) {
     const command = executor.registry[id];
@@ -73,9 +75,18 @@ export function searchCandidates(executor: Executor, snapshot: Snapshot): Indexe
       });
     }
   }
-  const owners = new Map(snapshot.franchises.value.map((franchise) => [franchise.id, franchise.name]));
-  const players = new Map(snapshot.players.value.map((player) => [player.id, player]));
-  for (const roster of snapshot.rosters.value) {
+  for (const row of endpoints.filter((e) => e.disposition === 'kept')) {
+    results.push({
+      label: `${row.id} · ${row.name} · ${row.placement}`,
+      aliases: [row.name, row.id],
+      kind: 'endpoint',
+      invocation: { verb: 'endpoint.open', args: { id: row.id } },
+    });
+  }
+  const owners = new Map((snapshot?.franchises.value ?? [])
+    .map((franchise) => [franchise.id, franchise.name]));
+  const players = new Map((snapshot?.players.value ?? []).map((player) => [player.id, player]));
+  for (const roster of snapshot?.rosters.value ?? []) {
     for (const player of roster.players) {
       const identity = players.get(player.id);
       const name = identity?.name ?? player.id;
@@ -104,7 +115,7 @@ export function rankResults(
   candidates: readonly IndexedResult[],
 ): SearchResult[] {
   const normalized = query.trim().toLowerCase();
-  const order = { command: 0, place: 1, player: 2 };
+  const order = { command: 0, place: 1, endpoint: 2, player: 3 };
   return candidates
     .map((result) => ({
       result,
