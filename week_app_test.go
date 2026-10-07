@@ -28,6 +28,9 @@ type weekTransport struct {
 }
 
 func (w *weekTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.URL.Query().Get("TYPE") != "nflSchedule" {
+		return nil, errors.New("season feeds not provided by schedule fixture")
+	}
 	w.requests = append(w.requests, req.URL.Query().Get("W"))
 	if w.err != nil {
 		return nil, w.err
@@ -116,6 +119,7 @@ func weekTestApp(t *testing.T, end string, bodies ...string) (*App, *weekTranspo
 		t.Fatal(err)
 	}
 	a.clockChanged = func(context.Context) {}
+	a.seasonChanged = func(context.Context) {}
 	return a, transport, recorder
 }
 

@@ -66,4 +66,6 @@ export function TargetDraftIR(arg1:string,arg2:string):Promise<envelope.Receipt>
 
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 
+export function TargetSeason():Promise<main.SeasonReading>;
+
 export function TargetSnapshot():Promise<snapshot.Snapshot>;

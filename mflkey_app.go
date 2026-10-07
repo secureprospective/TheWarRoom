@@ -81,6 +81,8 @@ func (a *App) SetMFLKey(key string) (status MFLKeyStatus, err error) {
 		return a.keyStatus("unavailable", err.Error()), nil
 	}
 	a.keyVerifiedAt = time.Now().UTC().Format(time.RFC3339)
+	a.keyGeneration++
+	a.refreshPendingTradesInBackground()
 	return a.keyStatus("connected", verified.Detail), nil
 }
 
@@ -94,5 +96,10 @@ func (a *App) DeleteMFLKey() (MFLKeyStatus, error) {
 		return a.keyStatus("unavailable", err.Error()), nil
 	}
 	a.keyVerifiedAt = ""
+	a.keyGeneration++
+	a.seasonMu.Lock()
+	a.clearPendingTrades()
+	a.seasonMu.Unlock()
+	a.refreshPendingTradesInBackground()
 	return a.keyStatus("absent", ""), nil
 }

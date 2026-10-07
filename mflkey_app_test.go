@@ -126,6 +126,7 @@ func TestMFLKeyLeakGate(t *testing.T) {
 			app := NewApp()
 			app.ctx, app.season, app.mflClient = ctx, 2026, client
 			app.keyStore = store
+			app.seasonChanged = func(context.Context) {}
 			close(app.started)
 			want := map[string]string{
 				"success": "connected", "retry": "connected", "echo": "connected",
@@ -133,6 +134,7 @@ func TestMFLKeyLeakGate(t *testing.T) {
 			}[scenario]
 			good := want == "connected"
 			status, setErr := app.SetMFLKey(sentinel)
+			app.weekWorkers.Wait()
 			if setErr != nil || status.State != want {
 				t.Fatalf("verification: state %q, want %q, err %v", status.State, want, setErr)
 			}
@@ -179,6 +181,7 @@ func TestMFLKeyLeakGate(t *testing.T) {
 				}
 			}
 			deleted, err := app.DeleteMFLKey()
+			app.weekWorkers.Wait()
 			if err != nil || deleted.State != "absent" {
 				t.Fatalf("delete: %v %v", deleted, err)
 			}
@@ -214,9 +217,70 @@ func TestMFLKeyLeakGate(t *testing.T) {
 			if followed != 0 {
 				t.Fatal("redirect followed")
 			}
-			if scenario == "retry" && attempts != 2 {
+			if scenario == "retry" && attempts != 3 {
 				t.Fatalf("attempts: %d", attempts)
 			}
 		})
+	}
+}
+
+type seasonKeyFailure struct {
+	key      string
+	attempts int
+}
+
+func (s *seasonKeyFailure) RoundTrip(r *http.Request) (*http.Response, error) {
+	if r.URL.Query().Get("TYPE") == "league" {
+		return seasonResponse(`{"league":{"baseURL":"https://www47.myfantasyleague.com"}}`), nil
+	}
+	s.attempts++
+	response := seasonResponse(`{"error":{"$t":"rejected ` + s.key + `"}}`)
+	if s.attempts > 1 {
+		response.StatusCode = http.StatusInternalServerError
+	}
+	return response, nil
+}
+
+func TestMFLKeySeasonLeakGate(t *testing.T) {
+	keyring.MockInit()
+	sentinel := "SENTINEL-season-error-and-500"
+	store := mflkey.New(ingestion.LeagueID, "2026")
+	if err := store.Set(context.Background(), mflkey.Key(sentinel)); err != nil {
+		t.Fatal(err)
+	}
+	transport := &seasonKeyFailure{key: sentinel}
+	client, err := mfl.New("api", 10000, mfl.WithTransport(transport), mfl.WithKeySource(store.Get))
+	if err != nil {
+		t.Fatal(err)
+	}
+	app := NewApp()
+	app.ctx, app.season, app.mflClient, app.keyStore = context.Background(), 2026, client, store
+	app.seasonChanged = func(context.Context) {}
+	close(app.started)
+	var logs bytes.Buffer
+	previous := log.Writer()
+	log.SetOutput(&logs)
+	defer log.SetOutput(previous)
+	for range 2 {
+		app.refreshPendingTradesInBackground()
+		app.weekWorkers.Wait()
+		reading, err := app.TargetSeason()
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := json.Marshal(reading)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if hasKey(string(body), sentinel) || hasKey(logs.String(), sentinel) {
+			t.Fatal("season credential leak")
+		}
+		if reading.PendingTrades.Provenance.Freshness.State != FreshFail ||
+			reading.PendingTrades.Provenance.Freshness.Note == "" {
+			t.Fatal("failure not reported")
+		}
+	}
+	if transport.attempts != 2 {
+		t.Fatalf("requests %d, want error envelope then 500", transport.attempts)
 	}
 }

@@ -21,8 +21,9 @@ type FuturePick struct {
 }
 
 // ParseAssets populates exactly one variant; money is exact cents, not floating point.
+// ts_type: PlayerID marshals as its string form; without it Wails emits an undefined TS type.
 type Asset struct {
-	Player        *playerid.PlayerID `json:"player,omitempty"`
+	Player        *playerid.PlayerID `json:"player,omitempty" ts_type:"string"`
 	CurrentPick   *CurrentPick       `json:"currentPick,omitempty"`
 	FuturePick    *FuturePick        `json:"futurePick,omitempty"`
 	BlindBidCents *int64             `json:"blindBidCents,omitempty"`
@@ -58,8 +59,8 @@ type Transaction struct {
 
 type Lineup struct {
 	Franchise        string              `json:"franchise"`
-	Starters         []playerid.PlayerID `json:"starters"`
-	NonStarters      []playerid.PlayerID `json:"nonStarters"`
+	Starters         []playerid.PlayerID `json:"starters" ts_type:"string[]"`
+	NonStarters      []playerid.PlayerID `json:"nonStarters" ts_type:"string[]"`
 	Score            float64             `json:"score"`
 	SecondsRemaining int                 `json:"secondsRemaining"`
 }

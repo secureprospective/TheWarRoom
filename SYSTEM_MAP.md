@@ -55,6 +55,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 
 | File | Methods |
 |---|---|
+| `season_app.go` | Held season feeds; `TargetSeason` reads without network; `target:season` signals refreshes and key changes. |
 | `target_app.go` | `TargetSnapshot` (initialized mirror and rulebook, cached live directory with archive fallback; shared fixture/live contract; keeps the last good build); `TargetClock` (phase log and commissioner calendar from the what-if store; no network); `TargetDraftIR`, `TargetMoves` (draft `roster.ir` against the kept build into the in-memory move log; no network) |
 | `mflkey_app.go` | `MFLKeyStatus`, `SetMFLKey`, `DeleteMFLKey` (keyring presence and verified replacement) |
 | `version.go` | `AppInfo` (version, commit, startup error for the banner) |
