@@ -167,3 +167,6 @@ alone writes it and runs connect/forget. The provider lazily imports generated W
 `internal/leaguefeed` holds typed season transactions, assets, lineups and pending trades; pure leaf.
 `internal/ingestion/transactions` validates and converts the unkeyed MFL season transaction feed.
 `internal/ingestion/livescoring` validates and converts MFL saved weekly lineups and live totals.
+
+`internal/lineup` parses MFL starter bounds and checks full/partial saved lineups without I/O.
+`lineup_app.go`: `TargetLineup` reads held starters, active-roster bench and rulebook legality; no network.

@@ -130,6 +130,10 @@ export function TargetHandOff(arg1) {
   return window['go']['main']['App']['TargetHandOff'](arg1);
 }
 
+export function TargetLineup(arg1) {
+  return window['go']['main']['App']['TargetLineup'](arg1);
+}
+
 export function TargetMoves(arg1) {
   return window['go']['main']['App']['TargetMoves'](arg1);
 }
