@@ -1,5 +1,15 @@
 # RESUME: TheWarRoom ring 0 build, head-brain session (2026-10-06, ~20:05 CDT)
 
+> **Session closed 10-07 by ClaudeBox (CT105).** Tom hit its weekly limit at ~20:00 CDT 10-06, just
+> after committing P5a (bbab9f9); the limit resets Oct 11, 4 am CT. Nothing was lost.
+> - Stopped: the vite dev server (:5199), the `ssh -R 5199` tunnel and the twr-prof Chromium on
+>   Claude-OS. Restart them per §2. Bee was idle.
+> - Christopher's go (10-07): push `session/ring-0` to GitHub. Merge waits for P5b and the ring 0
+>   live gate, as planned.
+> - Backups on CT105 `/root/backups/TheWarRoom-2026-10-07/`: ring-0 and Lab branch bundles, the
+>   Lab's uncommitted files (tgz) and tracked diff. The Lab work is still awaiting his commit go.
+> - Next: §9 item 1, the P5b brief.
+
 ## 1. What we are doing
 - **Building ring 0 (the walking skeleton) of the approved UI target.** Christopher (10-06): "This
   will be a headbrain session... start with ring zero now. The coder will be GPT-6.1 Sol on Bee.
@@ -54,7 +64,7 @@
 | P3b command bar, presets, my-franchise, Franchise HQ roster, inspector player view, 110-char gate | done | 046c9d0 |
 | P3c performance (§18): density without re-render, fixture out of the bundle, bundle budget, CSS motion; polish | done | ae13374 |
 | P4 endpoint registry normalized + generated + endpoint indexes + **≥2-routes gate test** + lazy harness | done | 4cb2541 |
-| P5a Go league clock + move envelope + fixtures (reviewed and reworked by Claude, see §4) | done | this commit |
+| P5a Go league clock + move envelope + fixtures (reviewed and reworked by Claude, see §4) | done | bbab9f9 |
 | **P5b UI: clock in the status strip / calendar panel, envelope rail in Franchise HQ › My moves** | **next: write the brief** | — |
 | Ring 0 gate: Christopher's live review on Claude-OS (`make build`, backup-API snapshot) | after P5b | — |
 

@@ -1,13 +1,13 @@
 # HANDOFF
 
-- **Baton:** Claude — 2026-10-03
+- **Baton:** Claude — 2026-10-07 (Tom's session closed at its weekly limit)
 
 ## Where it stands
 
-Stage 0 of `docs/build-handoffs/Core_Build_Plan_2026-10.md` (one timeline) is nearly done on
-branch `session/m1b-bash`. Current state and next actions: the newest
-`docs/build-handoffs/RESUME-*.md`.
+Ring 0 of the UI target on branch `session/ring-0`: phases P1–P5a committed. Current state and
+next actions: `docs/build-handoffs/RESUME-2026-10-06-ring0.md`.
 
 ## Next move
 
-Claude continues the plan. Bee reviews finished stages when GPT budget allows (ruling R4).
+Write the P5b brief (clock in the status strip, calendar panel, envelope rail in My moves), then
+the ring 0 live gate on Claude-OS. Merge only on Christopher's go after that gate.
