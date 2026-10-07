@@ -1,21 +1,47 @@
-import type { ClockReading, Provenance, Snapshot, Sourced } from './contract';
-import { parseClock, parseSnapshot } from './parse';
-import { TargetClock, TargetSnapshot } from '../../../wailsjs/go/main/App';
+import type {
+  ClockReading, EnvelopeDemo, Provenance, Receipt, Snapshot, Sourced,
+} from './contract';
+import {
+  TargetClock, TargetDraftIR, TargetMoves, TargetSnapshot,
+} from '../../../wailsjs/go/main/App';
 
-export interface Provider {
+interface ReadingProvider {
   snapshot(): Promise<Snapshot>;
   clock(): Promise<Sourced<ClockReading>>;
 }
+
+export interface DraftingProvider {
+  kind: 'live';
+  draftIR(franchiseId: string, playerId: string): Promise<Receipt>;
+  moves(franchiseId: string): Promise<Receipt[]>;
+}
+export interface DemoProvider {
+  kind: 'fixture';
+  reason: string;
+  demo(): Promise<EnvelopeDemo>;
+}
+export type Provider = ReadingProvider & (DraftingProvider | DemoProvider);
 
 // Wails injects window.go before the page script runs; a plain browser (dev, screenshots) has none.
 function hasWails(): boolean {
   return typeof window !== 'undefined' && (window as { go?: unknown }).go !== undefined;
 }
 
-export class FixtureProvider implements Provider {
+export class FixtureProvider implements ReadingProvider, DemoProvider {
+  readonly kind = 'fixture';
+  readonly reason = 'Drafting needs the desktop app';
+  async demo(): Promise<EnvelopeDemo> {
+    const [{ parseEnvelopeDemo }, fixture] = await Promise.all([
+      import('./parseEnvelope'), import('./fixtures/envelope-demo.json'),
+    ]);
+    return parseEnvelopeDemo(fixture.default);
+  }
+
   async clock(): Promise<Sourced<ClockReading>> {
     try {
-      const fixture = await import('./fixtures/clock.json');
+      const [{ parseClock }, fixture] = await Promise.all([
+        import('./parse'), import('./fixtures/clock.json'),
+      ]);
       return parseClock(fixture.default);
     } catch (cause) {
       return failedClock(cause, 'fixture');
@@ -23,7 +49,9 @@ export class FixtureProvider implements Provider {
   }
 
   async snapshot(): Promise<Snapshot> {
-    const fixture = await import('./fixtures/snapshot.json');
+    const [{ parseSnapshot }, fixture] = await Promise.all([
+      import('./parse'), import('./fixtures/snapshot.json'),
+    ]);
     return parseSnapshot(fixture.default);
   }
 }
@@ -58,11 +86,29 @@ function failedClock(cause: unknown, kind: Provenance['kind']): Sourced<ClockRea
   };
 }
 
-export class LiveProvider implements Provider {
+export class LiveProvider implements ReadingProvider, DraftingProvider {
+  readonly kind = 'live';
+  async draftIR(franchiseId: string, playerId: string): Promise<Receipt> {
+    const [{ parseReceipt }, receipt] = await Promise.all([
+      import('./parseEnvelope'), TargetDraftIR(franchiseId, playerId),
+    ]);
+    return parseReceipt(receipt);
+  }
+  async moves(franchiseId: string): Promise<Receipt[]> {
+    const [{ parseReceipt }, receipts] = await Promise.all([
+      import('./parseEnvelope'), TargetMoves(franchiseId),
+    ]);
+    if (!Array.isArray(receipts)) throw new Error('TargetMoves: expected array');
+    return receipts.map(parseReceipt);
+  }
+
   async clock(): Promise<Sourced<ClockReading>> {
     try {
       if (!hasWails()) throw new Error('Wails runtime absent');
-      return parseClock(await TargetClock());
+      const [{ parseClock }, payload] = await Promise.all([
+        import('./parse'), TargetClock(),
+      ]);
+      return parseClock(payload);
     } catch (cause) {
       return failedClock(cause, 'live');
     }
@@ -71,7 +117,10 @@ export class LiveProvider implements Provider {
   async snapshot(): Promise<Snapshot> {
     try {
       if (!hasWails()) throw new Error('Wails runtime absent');
-      return parseSnapshot(await TargetSnapshot());
+      const [{ parseSnapshot }, payload] = await Promise.all([
+        import('./parse'), TargetSnapshot(),
+      ]);
+      return parseSnapshot(payload);
     } catch (cause) {
       return failedSnapshot(cause);
     }

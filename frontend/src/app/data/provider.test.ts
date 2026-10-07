@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import fixture from './fixtures/snapshot.json';
 import clockFixture from './fixtures/clock.json';
+import { parseEnvelopeDemo } from './parse';
+import { readFileSync } from 'node:fs';
 import { FixtureProvider, LiveProvider, selectProvider } from './provider';
 
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
@@ -93,4 +95,56 @@ describe('clock provider boundary', () => {
       expect(reading.value.windows).toEqual([]);
     },
   );
+});
+
+describe('moves provider boundary', () => {
+  it('calls and parses both generated bindings, preserving string player ids', async () => {
+    const receipt = parseEnvelopeDemo(JSON.parse(readFileSync(
+      'src/app/data/fixtures/envelope-demo.json', 'utf8',
+    ))).receipt;
+    const draft = vi.fn().mockResolvedValue(receipt);
+    const moves = vi.fn().mockResolvedValue([receipt]);
+    vi.stubGlobal('window', { go: { main: { App: { TargetDraftIR: draft, TargetMoves: moves } } } });
+    const provider = new LiveProvider();
+    expect(await provider.draftIR('0001', '11675')).toEqual(receipt);
+    expect(await provider.moves('0001')).toEqual([receipt]);
+    expect(draft).toHaveBeenCalledWith('0001', '11675');
+    expect(moves).toHaveBeenCalledWith('0001');
+  });
+  it('propagates rejected calls and malformed receipts, never an empty list', async () => {
+    const draft = vi.fn().mockRejectedValue(new Error('draft binding down'));
+    const moves = vi.fn().mockRejectedValue(new Error('moves binding down'));
+    vi.stubGlobal('window', { go: { main: { App: { TargetDraftIR: draft, TargetMoves: moves } } } });
+    const provider = new LiveProvider();
+    await expect(provider.draftIR('0001', '11675')).rejects.toThrow('draft binding down');
+    await expect(provider.moves('0001')).rejects.toThrow('moves binding down');
+    moves.mockResolvedValue([{}]);
+    await expect(provider.moves('0001')).rejects.toThrow('receipt');
+    moves.mockResolvedValue(null);
+    await expect(provider.moves('0001')).rejects.toThrow('TargetMoves: expected array');
+  });
+});
+
+describe('parallel parser and binding startup', () => {
+  it('starts every live binding synchronously, before the parser import can settle', async () => {
+    const receipt = parseEnvelopeDemo(JSON.parse(readFileSync(
+      'src/app/data/fixtures/envelope-demo.json', 'utf8',
+    ))).receipt;
+    const snapshot = vi.fn().mockResolvedValue(fixture);
+    const clock = vi.fn().mockResolvedValue(clockFixture);
+    const draft = vi.fn().mockResolvedValue(receipt);
+    const moves = vi.fn().mockResolvedValue([receipt]);
+    vi.stubGlobal('window', { go: { main: { App: {
+      TargetSnapshot: snapshot, TargetClock: clock, TargetDraftIR: draft, TargetMoves: moves,
+    } } } });
+    const provider = new LiveProvider();
+    const pending = [
+      provider.snapshot(), provider.clock(), provider.draftIR('0001', '11675'),
+      provider.moves('0001'),
+    ];
+    for (const binding of [snapshot, clock, draft, moves]) {
+      expect(binding).toHaveBeenCalledTimes(1);
+    }
+    await Promise.all(pending);
+  });
 });

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
@@ -21,6 +21,9 @@ function check(entry, budget = 325_000, source = readFileSync(entry, 'utf8')) {
   if (source.includes(envelope.receipt.correlationId)) {
     throw new Error('Envelope fixture in entry');
   }
+  if (source.includes('Move stages') || source.includes('landing simulated from a real roster snapshot')) {
+    throw new Error('MyMoves or rail implementation in entry');
+  }
   return size;
 }
 
@@ -31,6 +34,14 @@ for (const entry of entries) {
     assert.throws(() => check(entry, 1000), /exceeds 1000/);
     assert.throws(() => check(entry, 325_000, names.slice(0, 12).join('|')), /Fixture player run/);
     assert.throws(() => check(entry, 325_000, envelope.receipt.correlationId), /Envelope fixture in entry/);
-    console.log('bundle-budget: rejected 1 KB budget, snapshot leak and envelope leak');
+    assert.throws(() => check(entry, 325_000, 'Move stages'), /rail implementation in entry/);
+    console.log('bundle-budget: rejected 1 KB budget, snapshot, envelope and rail leaks');
   }
 }
+
+const moveChunk = readdirSync(resolve(dist, 'assets')).find((name) => /^MyMoves\..*\.js$/.test(name));
+if (!moveChunk) throw new Error('No lazy MyMoves chunk');
+const moveSource = readFileSync(resolve(dist, 'assets', moveChunk), 'utf8');
+assert.ok(moveSource.includes('Move stages'), 'Rail must live in the MyMoves chunk');
+assert.ok(moveSource.includes('landing simulated from a real roster snapshot'), 'MyMoves caption missing');
+console.log(`bundle-budget: lazy MyMoves + rail verified in ${moveChunk}`);

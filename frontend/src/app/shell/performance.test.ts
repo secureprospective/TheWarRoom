@@ -74,14 +74,14 @@ describe('Performance is law (§18, §M3)', () => {
     expect(writes).toHaveLength(4);
   });
   it('requires a dynamic fixture boundary and rejects a static import', () => {
-    const valid = (source: string) => source.includes("await import('./fixtures/snapshot.json')") &&
+    const valid = (source: string) => source.includes("import('./fixtures/snapshot.json')") &&
       !/import\s+\w+\s+from\s+['"].*snapshot\.json/.test(source);
     expect(valid(read('data/provider.ts'))).toBe(true);
     expect(valid("import fixture from './fixtures/snapshot.json';")).toBe(false);
   });
   it('keeps clock fixtures dynamic and timer ownership outside React views', () => {
     const provider = read('data/provider.ts');
-    const dynamic = (source: string) => source.includes("await import('./fixtures/clock.json')") &&
+    const dynamic = (source: string) => source.includes("import('./fixtures/clock.json')") &&
       !/import\s+\w+\s+from\s+['"].*clock\.json/.test(source);
     expect(dynamic(provider)).toBe(true);
     expect(dynamic("import clock from './fixtures/clock.json';")).toBe(false);
@@ -89,6 +89,23 @@ describe('Performance is law (§18, §M3)', () => {
       expect(read(file)).not.toMatch(/setInterval|setTimeout|Date\.now|useState/);
       expect(read(file)).toContain('memo(');
     }
+  });
+  it('keeps MyMoves, rail, labels and the demo behind dynamic boundaries', () => {
+    const provider = read('data/provider.ts');
+    const mount = read('shell/MovesMount.tsx');
+    const valid = (source: string) => source.includes("import('./fixtures/envelope-demo.json')") &&
+      !/import\s+\w+\s+from\s+['"].*envelope-demo\.json/.test(source);
+    expect(valid(provider)).toBe(true);
+    expect(valid("import demo from './fixtures/envelope-demo.json';")).toBe(false);
+    expect(mount).toContain("import('./MyMoves')");
+    expect(mount).toContain('lazy(loadMyMoves)');
+    expect(mount).toContain("import('./PlayerAct')");
+    expect(mount).toContain('lazy(loadPlayerAct)');
+    expect(mount).not.toContain('ReceiptStatus');
+    expect(read('shell/PlayerAct.tsx')).toContain("import ReceiptStatus from './ReceiptStatus'");
+    expect(read('shell/TargetApp.tsx')).not.toMatch(/import .*EnvelopeRail|import .*MyMoves/);
+    expect(read('shell/PlayerInspector.tsx')).not.toContain('moveLabels');
+    expect(read('shell/PlayerAct.tsx')).not.toContain('moveLabels');
   });
   it('keeps the harness behind a lazy boundary and rejects a static import', () => {
     const source = readFileSync(resolve('src/TargetMount.tsx'), 'utf8');

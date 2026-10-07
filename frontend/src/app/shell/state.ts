@@ -42,7 +42,9 @@ export function initialShellState(): ShellState {
     scrollRevision: 0,
   };
 }
-export function renderState({ density: _density, ...rest }: ShellState): Omit<ShellState, 'density'> {
+export function renderState(
+  { density: _density, ...rest }: ShellState,
+): Omit<ShellState, 'density'> {
   return rest;
 }
 
