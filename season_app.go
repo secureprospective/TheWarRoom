@@ -75,6 +75,11 @@ func (a *App) TargetSeason() (SeasonReading, error) {
 	trades := append([]leaguefeed.PendingTrade{}, a.seasonPendingTrades.value...)
 	lineups := a.seasonLineups.value
 	lineups.Franchises = append([]leaguefeed.Lineup{}, lineups.Franchises...)
+	lineups.Matchups = append([]leaguefeed.Matchup{}, lineups.Matchups...)
+	for i := range lineups.Franchises {
+		row := &lineups.Franchises[i]
+		row.Players = append([]leaguefeed.PlayerScore{}, row.Players...)
+	}
 	return SeasonReading{
 		Transactions: snapshot.Sourced[[]leaguefeed.Transaction]{
 			Value: txs, Provenance: a.seasonTransactions.provenance("transactions", "transactions"),

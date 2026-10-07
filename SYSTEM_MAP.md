@@ -186,3 +186,7 @@ Hand-off Act: `move.handoff` opens a Ready plan; `target:moves` reloads receipts
 
 Trade desk: `shell/TradeDesk.tsx` groups held offers; lazy `data/tradeProvider.ts` parses Go readings.
 Accept plan: `commands/tradeAccept.ts` drafts `trade.accept`; `shell/TradePlan.tsx` tracks desk hand-off.
+
+`pulse_app.go`: `TargetPulseNow() (PulseReading, error)` reads held matchups and ordered starter scores.
+`alerts_app.go`: `TargetAlerts(franchiseID string) (AlertReading, error)` reads lineup and incoming-offer alerts.
+`internal/leaguefeed`, `internal/ingestion/livescoring`: matchups, playing counts and per-player live scores.

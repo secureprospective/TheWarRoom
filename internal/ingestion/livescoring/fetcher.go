@@ -17,11 +17,16 @@ import (
 const Export = "liveScoring"
 
 type RawPlayer struct {
-	ID     string `json:"id"`
-	Status string `json:"status"`
+	ID               string `json:"id"`
+	Score            string `json:"score"`
+	SecondsRemaining string `json:"gameSecondsRemaining"`
+	Status           string `json:"status"`
 }
 
 type RawFranchise struct {
+	IsHome           string `json:"isHome"`
+	Playing          string `json:"playersCurrentlyPlaying"`
+	YetToPlay        string `json:"playersYetToPlay"`
 	ID               string `json:"id"`
 	Score            string `json:"score"`
 	SecondsRemaining string `json:"gameSecondsRemaining"`
@@ -112,8 +117,15 @@ func ToLineups(raw RawLineups) (leaguefeed.Lineups, error) {
 	if err != nil {
 		return leaguefeed.Lineups{}, fmt.Errorf("livescoring: convert week: %w", err)
 	}
-	rows := leaguefeed.Lineups{Week: week, Franchises: make([]leaguefeed.Lineup, 0)}
+	rows := leaguefeed.Lineups{
+		Week: week, Franchises: []leaguefeed.Lineup{}, Matchups: []leaguefeed.Matchup{},
+	}
 	for _, m := range raw.Matchups {
+		home, away := m.Franchises[0], m.Franchises[1]
+		if home.IsHome != "1" && away.IsHome == "1" {
+			home, away = away, home
+		}
+		rows.Matchups = append(rows.Matchups, leaguefeed.Matchup{Home: home.ID, Away: away.ID})
 		for _, f := range m.Franchises {
 			row, err := convert(f)
 			if err != nil {
@@ -129,22 +141,25 @@ func convert(r RawFranchise) (leaguefeed.Lineup, error) {
 	if err := ingestion.FeedFranchise(r.ID); err != nil {
 		return leaguefeed.Lineup{}, fmt.Errorf("franchise: %w", err)
 	}
-	score, err := strconv.ParseFloat(r.Score, 64)
+	score, err := feedScore(r.Score)
 	if err != nil {
-		return leaguefeed.Lineup{}, fmt.Errorf("score: %w", err)
+		return leaguefeed.Lineup{}, err
 	}
-	if math.IsNaN(score) || math.IsInf(score, 0) {
-		return leaguefeed.Lineup{}, fmt.Errorf("non-finite score %q", r.Score)
-	}
-	seconds, err := strconv.Atoi(r.SecondsRemaining)
+	seconds, err := feedCount("gameSecondsRemaining", r.SecondsRemaining)
 	if err != nil {
-		return leaguefeed.Lineup{}, fmt.Errorf("seconds remaining: %w", err)
+		return leaguefeed.Lineup{}, err
 	}
-	if seconds < 0 {
-		return leaguefeed.Lineup{}, fmt.Errorf("negative seconds remaining")
+	playing, err := optional(feedCount, "playersCurrentlyPlaying", r.Playing)
+	if err != nil {
+		return leaguefeed.Lineup{}, err
+	}
+	yet, err := optional(feedCount, "playersYetToPlay", r.YetToPlay)
+	if err != nil {
+		return leaguefeed.Lineup{}, err
 	}
 	row := leaguefeed.Lineup{
 		Franchise: r.ID, Score: score, SecondsRemaining: seconds,
+		Playing: playing, YetToPlay: yet, Players: []leaguefeed.PlayerScore{},
 		Starters: make([]playerid.PlayerID, 0), NonStarters: make([]playerid.PlayerID, 0),
 	}
 	if err := assignPlayers(&row, r.Players.Player); err != nil {
@@ -163,6 +178,15 @@ func assignPlayers(row *leaguefeed.Lineup, players []RawPlayer) error {
 		if seen[id] {
 			return fmt.Errorf("duplicate player %q", p.ID)
 		}
+		score, err := optional(func(_, raw string) (float64, error) { return feedScore(raw) }, "score", p.Score)
+		if err != nil {
+			return fmt.Errorf("player %d: %w", i, err)
+		}
+		seconds, err := optional(feedCount, "gameSecondsRemaining", p.SecondsRemaining)
+		if err != nil {
+			return fmt.Errorf("player %d: %w", i, err)
+		}
+		row.Players = append(row.Players, leaguefeed.PlayerScore{ID: id, Score: score, SecondsRemaining: seconds})
 		seen[id] = true
 		switch p.Status {
 		case "starter":
@@ -174,4 +198,35 @@ func assignPlayers(row *leaguefeed.Lineup, players []RawPlayer) error {
 		}
 	}
 	return nil
+}
+
+func feedScore(raw string) (float64, error) {
+	value, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return 0, fmt.Errorf("score: %w", err)
+	}
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		return 0, fmt.Errorf("non-finite score %q", raw)
+	}
+	return value, nil
+}
+
+// optional parses a field the lineup predicate never needed: absent reads as zero, so a feed
+// without it still lands lineups; present but malformed is still an error.
+func optional[T int | float64](parse func(field, raw string) (T, error), field, raw string) (T, error) {
+	if raw == "" {
+		return 0, nil
+	}
+	return parse(field, raw)
+}
+
+func feedCount(field, raw string) (int, error) {
+	value, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", field, err)
+	}
+	if value < 0 {
+		return 0, fmt.Errorf("negative %s", field)
+	}
+	return value, nil
 }

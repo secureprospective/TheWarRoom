@@ -420,7 +420,26 @@ export namespace leaguefeed {
 	}
 	
 	
+	export class PlayerScore {
+	    id: string;
+	    score: number;
+	    secondsRemaining: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PlayerScore(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.score = source["score"];
+	        this.secondsRemaining = source["secondsRemaining"];
+	    }
+	}
 	export class Lineup {
+	    playing: number;
+	    yetToPlay: number;
+	    players: PlayerScore[];
 	    franchise: string;
 	    starters: string[];
 	    nonStarters: string[];
@@ -433,14 +452,50 @@ export namespace leaguefeed {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.playing = source["playing"];
+	        this.yetToPlay = source["yetToPlay"];
+	        this.players = this.convertValues(source["players"], PlayerScore);
 	        this.franchise = source["franchise"];
 	        this.starters = source["starters"];
 	        this.nonStarters = source["nonStarters"];
 	        this.score = source["score"];
 	        this.secondsRemaining = source["secondsRemaining"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Matchup {
+	    home: string;
+	    away: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Matchup(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.home = source["home"];
+	        this.away = source["away"];
+	    }
 	}
 	export class Lineups {
+	    matchups: Matchup[];
 	    week: number;
 	    franchises: Lineup[];
 	
@@ -450,6 +505,7 @@ export namespace leaguefeed {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.matchups = this.convertValues(source["matchups"], Matchup);
 	        this.week = source["week"];
 	        this.franchises = this.convertValues(source["franchises"], Lineup);
 	    }
@@ -472,6 +528,7 @@ export namespace leaguefeed {
 		    return a;
 		}
 	}
+	
 	export class PendingTrade {
 	    id: string;
 	    offering: string;
@@ -520,6 +577,7 @@ export namespace leaguefeed {
 		    return a;
 		}
 	}
+	
 	export class RosterChange {
 	    in: Asset[];
 	    out: Asset[];
@@ -698,6 +756,97 @@ export namespace lineup {
 
 export namespace main {
 	
+	export class Alert {
+	    kind: string;
+	    urgency: string;
+	    title: string;
+	    detail: string;
+	    node: string;
+	    workspace: string;
+	    // Go type: time
+	    at: any;
+	    provenance: snapshot.Provenance;
+	
+	    static createFrom(source: any = {}) {
+	        return new Alert(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	        this.urgency = source["urgency"];
+	        this.title = source["title"];
+	        this.detail = source["detail"];
+	        this.node = source["node"];
+	        this.workspace = source["workspace"];
+	        this.at = this.convertValues(source["at"], null);
+	        this.provenance = this.convertValues(source["provenance"], snapshot.Provenance);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Unavailable {
+	    kind: string;
+	    note: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Unavailable(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	        this.note = source["note"];
+	    }
+	}
+	export class AlertReading {
+	    alerts: Alert[];
+	    unavailable: Unavailable[];
+	
+	    static createFrom(source: any = {}) {
+	        return new AlertReading(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.alerts = this.convertValues(source["alerts"], Alert);
+	        this.unavailable = this.convertValues(source["unavailable"], Unavailable);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class AppInfo {
 	    version: string;
 	    commit: string;
@@ -1661,6 +1810,138 @@ export namespace main {
 	        this.weeksScored = source["weeksScored"];
 	        this.seasonWeeks = source["seasonWeeks"];
 	        this.rows = this.convertValues(source["rows"], PowerRow);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class PulsePlayer {
+	    id: string;
+	    name: string;
+	    position: string;
+	    team: string;
+	    score: number;
+	    secondsRemaining: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PulsePlayer(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.position = source["position"];
+	        this.team = source["team"];
+	        this.score = source["score"];
+	        this.secondsRemaining = source["secondsRemaining"];
+	    }
+	}
+	export class PulseSide {
+	    franchiseId: string;
+	    name: string;
+	    score: number;
+	    secondsRemaining: number;
+	    playing: number;
+	    yetToPlay: number;
+	    starters: PulsePlayer[];
+	
+	    static createFrom(source: any = {}) {
+	        return new PulseSide(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchiseId = source["franchiseId"];
+	        this.name = source["name"];
+	        this.score = source["score"];
+	        this.secondsRemaining = source["secondsRemaining"];
+	        this.playing = source["playing"];
+	        this.yetToPlay = source["yetToPlay"];
+	        this.starters = this.convertValues(source["starters"], PulsePlayer);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class PulseMatchup {
+	    home: PulseSide;
+	    away: PulseSide;
+	
+	    static createFrom(source: any = {}) {
+	        return new PulseMatchup(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.home = this.convertValues(source["home"], PulseSide);
+	        this.away = this.convertValues(source["away"], PulseSide);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class PulseReading {
+	    week: number;
+	    matchups: PulseMatchup[];
+	    provenance: snapshot.Provenance;
+	
+	    static createFrom(source: any = {}) {
+	        return new PulseReading(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.week = source["week"];
+	        this.matchups = this.convertValues(source["matchups"], PulseMatchup);
+	        this.provenance = this.convertValues(source["provenance"], snapshot.Provenance);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
