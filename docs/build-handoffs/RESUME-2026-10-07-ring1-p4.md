@@ -5,7 +5,7 @@
 > Supersedes `RESUME-2026-10-07-ring1-p3.md` (kept for history; its §6 refutations still hold).
 
 
-## 0. UPDATE 15:20 CDT (supersedes §1b, §3 p4b row, §9 items 1-4)
+## 0. UPDATE 15:57 CDT (compact-safe) (supersedes §1b, §3 p4b row, §9 items 1-4)
 - p4b committed 6e6938b (+ style 4ecf06e, overflow fix 4484033); Claude-OS runs 4484033
   (sha256 10152cc7…; kept thewarroom.4ecf06e, thewarroom.da0c0112). make verify green, entry 323,923.
 - Live lineup.set run by Christopher 15:07-15:09: hand-off, supersede, watcher all worked. Final
@@ -21,6 +21,14 @@
   ruled (brief warroom-ring1-p5a2-trade-accept.md): Observe accepts AwaitDOT via the table, a
   repeat in DOTReview = NoChange; Observation.HandedOffAt filled by Observe; failed-refresh
   feed = unavailable. **In flight: Sol p5a2** (run dir …/p5a2/).
+- p5a committed 9b4420d (TargetTrades, TargetDraftTradeAccept, trade.accept, AwaitDOT via Observe,
+  HandedOffAt; review fix: picks pass, MFL owns pick ownership). wails regenerated in that commit.
+  Open: a DOT-review plan never goes stale if the offer was declined (no deadline after accept).
+- **In flight: Sol p5b** (Trade Floor › Trade desk screen). Brief warroom-ring1-p5b-trade-desk.md;
+  run dir …/p5b/. Started 15:50:42 CDT, 3 h timeout (timeout pid 692167). Alive = mtime of
+  p5b/sessions/2026-10-07T20-50-42-340Z_ring1-p5b-20261007T205042Z.jsonl (15:55 at write).
+  Done = p5b/sentinel + REPORT.md. Notification will NOT survive compaction: poll the sentinel.
+  If killed: read the transcript, re-dispatch as p5b2 (new session id). Then: review, verify, commit, deploy to Claude-OS, screenshot, phase 6.
 - Christopher says tokens are thin: keep turns short.
 
 ## 1. What we are doing
