@@ -285,3 +285,17 @@ func extractSubdomain(baseURL string) (string, error) {
 	}
 	return host, nil
 }
+
+// LeagueHost reads the cached host without discovering it or making a request.
+func (c *Client) LeagueHost() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	host := c.host
+	if host == "" || host == "api" {
+		return ""
+	}
+	if !strings.Contains(host, ".") {
+		host += ".myfantasyleague.com"
+	}
+	return host
+}

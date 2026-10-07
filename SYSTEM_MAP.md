@@ -172,3 +172,7 @@ alone writes it and runs connect/forget. The provider lazily imports generated W
 `lineup_app.go`: `TargetLineup` reads held starters, active-roster bench and rulebook legality; no network.
 
 HQ › Roster: `LineupRoster.tsx` shows starters, bench and Go legality; `lineups.ts` caches and refreshes.
+
+`lineupset_app.go`: `TargetCheckLineup(franchiseID string, starters []string) (lineup.Result, error)` checks locally.
+`lineupset_app.go`: `TargetDraftLineup(franchiseID string, starters []string) (envelope.Receipt, error)` saves a plan.
+`internal/envelope`: `lineup.set` checks active starters and saved baseline; watches explicit-week MFL lineups.
