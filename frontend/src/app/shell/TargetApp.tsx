@@ -1,3 +1,4 @@
+import { MovesMount } from './MovesMount';
 import { ClockStrip } from '../clock/ClockStrip';
 import { CalendarPanel } from '../clock/CalendarPanel';
 import { useLeagueClock } from '../clock/useLeagueClock';
@@ -169,6 +170,8 @@ export function TargetApp() {
           workspace.slug === 'lineup-and-roster' &&
           snapshot ? (
             <FranchiseHQ snapshot={snapshot} />
+          ) : s.node === 'hq' && workspace.slug === 'my-moves' && snapshot ? (
+            <MovesMount snapshot={snapshot} />
           ) : s.node === 'control' && workspace.slug === 'app' ? (
             <AppSettings />
           ) : (

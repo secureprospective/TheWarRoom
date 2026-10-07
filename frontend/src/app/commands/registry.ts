@@ -1,3 +1,6 @@
+import { createMovesState } from './moves';
+import { createMovesPrefetch } from '../shell/MovesMount';
+import { selectProvider, type Provider } from '../data/provider';
 import {
   resolve, placementRoute, isSurface, type EndpointId, type Placement, type Surface,
 } from '../registry';
@@ -43,9 +46,12 @@ function command<A>(definition: Command<A>): Readonly<Command<A>> {
 }
 export function createCommands(
   storage: () => SettingsStorage | undefined = browserStorage,
+  provider: Provider = selectProvider(),
 ) {
   let snapshot: Snapshot | undefined;
   const state = createShellState();
+  const moves = createMovesState();
+  const prefetchMoves = createMovesPrefetch();
   const ambient = {
     roles: ['gm', 'commish', 'admin'] as const,
     gravity: 'G0' as const,
@@ -63,7 +69,52 @@ export function createCommands(
       state.write({ endpointSurface: place });
     } else throw new Error(`endpoint.open: unreachable place ${place}`);
   }
+  const subjectKey = (subject: PlayerSubject) => `${subject.franchiseId}:${subject.id}`;
+  function draftReason(subject: PlayerSubject): string | undefined {
+    if (provider.kind === 'fixture') return provider.reason;
+    if (subject.franchiseId !== state.read().franchiseId) return 'Only players on my franchise';
+    if (moves.read().drafting[subjectKey(subject)]) return 'Drafting…';
+    return undefined;
+  }
+  async function draftIR(subject: PlayerSubject) {
+    if (draftReason(subject) || provider.kind !== 'live') return;
+    const key = subjectKey(subject);
+    moves.write({
+      drafting: { ...moves.read().drafting, [key]: true },
+      draftErrors: { ...moves.read().draftErrors, [key]: '' },
+    });
+    try {
+      const { finishDraft } = await import('./sessionMoves');
+      await finishDraft(moves, provider, subject, key);
+    } catch (cause) {
+      moves.write({
+        drafting: { ...moves.read().drafting, [key]: false },
+        draftErrors: { ...moves.read().draftErrors, [key]: String(cause) },
+      });
+    }
+  }
+  async function loadMoves(franchiseId: string) {
+    try {
+      const { loadSessionMoves } = await import('./sessionMoves');
+      await loadSessionMoves(moves, provider, franchiseId);
+    } catch (cause) {
+      moves.write({
+        movesErrors: { ...moves.read().movesErrors, [franchiseId]: String(cause) },
+        movesLoading: { ...moves.read().movesLoading, [franchiseId]: false },
+      });
+    }
+  }
   const registry = Object.freeze({
+    'roster.ir': command({
+      id: 'roster.ir',
+      label: 'Draft IR placement',
+      aliases: [],
+      roles: ['gm'],
+      gravity: 'G2',
+      undo: 'reversible',
+      args: ['subject'],
+      run: (args: { subject: PlayerSubject }) => { void draftIR(args.subject); },
+    }),
     'surface.open': command({
       ...ambient,
       id: 'surface.open',
@@ -316,8 +367,14 @@ export function createCommands(
   }
   return {
     registry,
+    providerKind: provider.kind,
+    draftReason,
+    loadMoves,
+    readMoves: moves.read,
+    useMoves: moves.use,
     loadSnapshot: (value: Snapshot) => {
       snapshot = value;
+      prefetchMoves();
       state.write({ franchiseId: loadFranchise(value, storage()) });
     },
     dispatch,

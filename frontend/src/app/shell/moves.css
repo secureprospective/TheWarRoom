@@ -1,0 +1,23 @@
+.twr-app .my-moves > .twr-card { margin-block: 16px; }
+.twr-app .move-classification { margin-inline-start: 16px; color: var(--surface-tx2); }
+.twr-app .envelope-rail {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+}
+.twr-app .envelope-rail li {
+  /* Stages share the width: a scrolled rail would hide the current stage. */
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 10px;
+  overflow-wrap: anywhere;
+  border-top: 1px solid var(--surface-line-hi);
+}
+.twr-app .envelope-rail li[aria-current="step"] {
+  border-top: 2px solid currentColor;
+  background: var(--surface-2);
+}
+.twr-app .envelope-rail li[data-reached="false"] { color: var(--surface-tx3); }
+.twr-app .envelope-rail time { display: block; color: var(--surface-tx2); margin-top: 8px; }
+.twr-app .envelope-rail p { max-width: 28ch; margin-top: 8px; }

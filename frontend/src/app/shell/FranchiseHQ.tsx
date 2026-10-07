@@ -1,3 +1,4 @@
+import { FranchisePicker } from './FranchisePicker';
 import { useMemo } from 'react';
 import type { Snapshot } from '../data/contract';
 import { PlayerCard } from '../cards/PlayerCard';
@@ -20,17 +21,7 @@ export function FranchiseHQ({ snapshot }: { snapshot: Snapshot }) {
     assertShortList(snapshot.franchises.value.length);
     if (roster) assertShortList(roster.groups.reduce((n, g) => n + g.players.length, 0));
   }
-  if (!roster)
-    return (
-      <section className="franchise-picker">
-        <h4>Choose my franchise</h4>
-        {snapshot.franchises.value.map((f) => (
-          <Act key={f.id} verb="franchise.set" args={{ franchiseId: f.id }}>
-            {f.name ?? f.id}
-          </Act>
-        ))}
-      </section>
-    );
+  if (!roster) return <FranchisePicker snapshot={snapshot} />;
   return (
     <section className="hq-roster">
       <h4>Roster</h4>

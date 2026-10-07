@@ -1,3 +1,4 @@
+import { PlayerActMount } from './MovesMount';
 import type { Snapshot } from '../data/contract';
 import { PlayerCard } from '../cards/PlayerCard';
 import { playerCardModel } from '../cards/playerModel';
@@ -19,6 +20,7 @@ export function PlayerInspector({
         playerId={subject.id}
         asOf={new Date()}
       />
+      <PlayerActMount subject={subject} />
       <section className="zone interrogate">
         <h5>Interrogate</h5>
         <div className="provenance-detail">{model.provenance.detail}</div>
