@@ -78,3 +78,46 @@ func TestSinkFailureFailsTheRead(t *testing.T) {
 		t.Fatalf("read error = %v, want the archive failure", err)
 	}
 }
+
+func TestAPIKEYURLAndEchoRedaction(t *testing.T) {
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet,
+		"https://example.test/export?APIKEY=private-test-value&L=league", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := originURL(req)
+	if strings.Contains(got, "private-test-value") || !strings.Contains(got, "APIKEY=REDACTED") {
+		t.Fatalf("URL not redacted: %s", got)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, "prefix private-test-value suffix")
+	}))
+	defer srv.Close()
+	sink := &memSink{}
+	client := &http.Client{Transport: &Transport{Sink: sink}}
+	resp, err := client.Get(srv.URL + "?APIKEY=private-test-value")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// One-byte reads prove that matching works across body read boundaries.
+	buffer := make([]byte, 1)
+	for {
+		_, readErr := resp.Body.Read(buffer)
+		if errors.Is(readErr, io.EOF) {
+			break
+		}
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+	}
+	if err := resp.Body.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if len(sink.got) != 1 {
+		t.Fatal("missing fetch")
+	}
+	f := sink.got[0]
+	if f.Err == "" || len(f.Gzip) != 0 || f.SHA256 != "" || f.Size != 0 {
+		t.Fatal("echoed credential body archived")
+	}
+}

@@ -868,6 +868,26 @@ export namespace main {
 	}
 	
 	
+	export class MFLKeyStatus {
+	    state: string;
+	    league: string;
+	    season: number;
+	    verifiedAt?: string;
+	    detail?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MFLKeyStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.state = source["state"];
+	        this.league = source["league"];
+	        this.season = source["season"];
+	        this.verifiedAt = source["verifiedAt"];
+	        this.detail = source["detail"];
+	    }
+	}
 	export class MissingMeasure {
 	    name: string;
 	    meaning: string;

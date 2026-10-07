@@ -11,6 +11,8 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Layer | Package | Job |
 |---|---|---|
 | App | repo root (`package main`) | Wails entrypoint (`main.go`), the `App` composition root (`app.go`) and the IPC adapters (`*_app.go`). Adapters validate, route and format; no business logic, no SQL. |
+| Credentials | `internal/mflkey` | OS keyring store; redacted credential type, bounded operations. |
+| Layer 1 | `internal/ingestion/pendingtrades` | Candidate-key verification; no franchise inference. |
 | Transport | `internal/mfl` | MFL HTTP client: rate limit, host discovery, 429 backoff. No domain types. |
 | Transport | `internal/archive` | The HTTP transport every outbound request goes through: it records each response body (sha256, gzip) and each attempt to a `Sink`. Leaf. |
 | Layer 1 | `internal/ingestion` | Fetchers returning raw `Raw*` records. Shared helpers in the root package (`LeagueExport`, `FetchLeagueExport`, the CSV and CFBD plumbing); one subpackage per source. |
@@ -49,11 +51,12 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 - `database/sql` is confined to `db` and `store`.
 - `transactions/*` handler packages are imported only by `transactions`.
 
-## IPC surface (28 methods on `App`)
+## IPC surface (31 methods on `App`)
 
 | File | Methods |
 |---|---|
 | `target_app.go` | `TargetSnapshot` (initialized mirror and rulebook, cached live directory with archive fallback; shared fixture/live contract; keeps the last good build); `TargetClock` (phase log and commissioner calendar from the what-if store; no network); `TargetDraftIR`, `TargetMoves` (draft `roster.ir` against the kept build into the in-memory move log; no network) |
+| `mflkey_app.go` | `MFLKeyStatus`, `SetMFLKey`, `DeleteMFLKey` (keyring presence and verified replacement) |
 | `version.go` | `AppInfo` (version, commit, startup error for the banner) |
 | `refresh_app.go` | `RefreshLeague` (pull the league from MFL into the mirror) |
 | `crosswalk_app.go` | `LoadCrosswalk`, `GetCrosswalkReport` (the player directory and its match rates) |

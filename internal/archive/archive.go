@@ -16,6 +16,7 @@ import (
 	"hash"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -54,7 +55,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	ctx := context.WithoutCancel(req.Context())
 	resp, err := base.RoundTrip(req)
 	if err != nil {
-		f.Err = err.Error()
+		f.Err = redactSecret(err.Error(), req.URL.Query().Get("APIKEY"))
 		if rerr := t.Sink.Record(ctx, f); rerr != nil {
 			return nil, errors.Join(err, rerr)
 		}
@@ -63,6 +64,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	f.Status = resp.StatusCode
 	gz, _ := gzip.NewWriterLevel(nil, gzip.BestSpeed) // only an invalid level errors
 	rec := &recorder{body: resp.Body, sink: t.Sink, ctx: ctx, fetch: f, hash: sha256.New(), gz: gz}
+	rec.secret = req.URL.Query().Get("APIKEY")
 	gz.Reset(&rec.buf)
 	resp.Body = rec
 	return resp, nil
@@ -71,20 +73,34 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 // recorder tees a response body into a hash and a gzip buffer, and records once: at the end
 // of the body, or at Close if the caller stopped early.
 type recorder struct {
-	body  io.ReadCloser
-	sink  Sink
-	ctx   context.Context //nolint:containedctx // the record outlives the request's own context
-	fetch Fetch
-	hash  hash.Hash
-	buf   bytes.Buffer
-	gz    *gzip.Writer
-	size  int64
-	done  bool
+	body   io.ReadCloser
+	sink   Sink
+	ctx    context.Context //nolint:containedctx // the record outlives the request's own context
+	fetch  Fetch
+	hash   hash.Hash
+	buf    bytes.Buffer
+	gz     *gzip.Writer
+	size   int64
+	done   bool
+	secret string
+	tail   []byte
+	leaked bool
 }
 
 func (r *recorder) Read(p []byte) (int, error) {
 	n, err := r.body.Read(p)
 	if n > 0 && !r.done {
+		if r.secret != "" && !r.leaked {
+			r.tail = append(r.tail, p[:n]...)
+			joined := r.tail
+			escaped := url.QueryEscape(r.secret) // never shorter than the key itself
+			r.leaked = bytes.Contains(joined, []byte(r.secret)) || bytes.Contains(joined, []byte(escaped))
+			keep := len(escaped) - 1
+			if len(joined) > keep {
+				joined = joined[len(joined)-keep:]
+			}
+			r.tail = append([]byte(nil), joined...)
+		}
 		r.size += int64(n)
 		r.hash.Write(p[:n])
 		if _, gerr := r.gz.Write(p[:n]); gerr != nil {
@@ -111,12 +127,15 @@ func (r *recorder) Close() error {
 func (r *recorder) finish(complete bool) error {
 	r.done = true
 	f := r.fetch
-	if complete {
+	switch {
+	case r.leaked:
+		f.Err = "body omitted: credential echoed in response"
+	case complete:
 		if err := r.gz.Close(); err != nil {
 			return fmt.Errorf("archive: compress %s: %w", f.URL, err)
 		}
 		f.SHA256, f.Size, f.Gzip = hex.EncodeToString(r.hash.Sum(nil)), r.size, r.buf.Bytes()
-	} else {
+	default:
 		f.Err = "body not read to the end"
 	}
 	if err := r.sink.Record(r.ctx, f); err != nil {
@@ -157,4 +176,12 @@ func Gunzip(body []byte) ([]byte, error) {
 		return nil, fmt.Errorf("archive: read body: %w", err)
 	}
 	return out, nil
+}
+
+func redactSecret(message, secret string) string {
+	if secret == "" {
+		return message
+	}
+	message = strings.ReplaceAll(message, secret, "[redacted]")
+	return strings.ReplaceAll(message, url.QueryEscape(secret), "[redacted]")
 }

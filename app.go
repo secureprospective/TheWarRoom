@@ -18,6 +18,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
+	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -31,7 +32,10 @@ import (
 // App is the Wails root and the backend's composition root: it wires the stores and routes
 // IPC calls. Business logic lives in the engine, store and transaction packages, never here.
 type App struct {
-	//nolint:containedctx // Wails IPC methods get no per-call context; this is the app-lifetime one, and each method derives a bounded context from it
+	keyMu         sync.Mutex
+	keyStore      *mflkey.Store
+	keyVerifiedAt string
+	//nolint:containedctx // Wails supplies an app-lifetime context; bindings derive bounded contexts.
 	ctx         context.Context
 	pools       *db.Pools // thewarroom.db: the MFL mirror and app settings
 	histPools   *db.Pools // history.db: everything that cannot be rebuilt
@@ -44,7 +48,7 @@ type App struct {
 	coordinator *transactions.Coordinator // the only holder of the what-if Writer
 	mflClient   *mfl.Client               // shared, so rate limit and host discovery are process-wide
 	fetches     *archive.Transport        // every outbound HTTP request goes through it
-	season      int                       // from the mirror at startup; a rollover is picked up at the next launch
+	season      int                       // mirror season at startup; rollover is picked up next launch
 	startupErr  error                     // startup failure; shown in the shell through AppInfo
 	started     chan struct{}             // closed when startup returns; read the fields above through ready
 	lockFile    *os.File                  // single-instance lock, held until shutdown
@@ -145,7 +149,13 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 
-	client, err := mfl.New("api", 2, mfl.WithTransport(a.fetches))
+	client, err := mfl.New("api", 2, mfl.WithTransport(a.fetches),
+		mfl.WithKeySource(func(ctx context.Context) (mflkey.Key, error) {
+			if a.keyStore == nil {
+				return "", mflkey.ErrUnavailable
+			}
+			return a.keyStore.Get(ctx)
+		}))
 	if err != nil {
 		a.startupErr = fmt.Errorf("startup: mfl client: %w", err)
 		return
@@ -160,6 +170,7 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 	log.Printf("the war room: season %d ready in %s", a.season, time.Since(began).Round(time.Millisecond))
+	a.keyStore = mflkey.New(ingestion.LeagueID, strconv.Itoa(a.season))
 	a.launchRefreshDue = !refreshed
 }
 

@@ -6,6 +6,8 @@ import {envelope} from '../models';
 
 export function AppInfo():Promise<main.AppInfo>;
 
+export function DeleteMFLKey():Promise<main.MFLKeyStatus>;
+
 export function ExecuteTransaction(arg1:main.TransactionRequest):Promise<main.TransactionResult>;
 
 export function GetCalendarEvents():Promise<main.CalendarEventsResult>;
@@ -42,6 +44,8 @@ export function LoadCrosswalk():Promise<main.CrosswalkReport>;
 
 export function LoadSignals():Promise<main.SignalsReport>;
 
+export function MFLKeyStatus():Promise<main.MFLKeyStatus>;
+
 export function PreviewTransaction(arg1:main.TransactionRequest):Promise<main.TransactionResult>;
 
 export function RefreshLeague():Promise<main.RefreshResult>;
@@ -51,6 +55,8 @@ export function ResetParam(arg1:string,arg2:string):Promise<main.SetParamResult>
 export function ScoreLeague():Promise<main.ScoreLeagueResult>;
 
 export function SetLeagueSettingOverride(arg1:string,arg2:string,arg3:string):Promise<main.SetLeagueSettingResult>;
+
+export function SetMFLKey(arg1:string):Promise<main.MFLKeyStatus>;
 
 export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetParamResult>;
 

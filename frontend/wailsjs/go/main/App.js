@@ -6,6 +6,10 @@ export function AppInfo() {
   return window['go']['main']['App']['AppInfo']();
 }
 
+export function DeleteMFLKey() {
+  return window['go']['main']['App']['DeleteMFLKey']();
+}
+
 export function ExecuteTransaction(arg1) {
   return window['go']['main']['App']['ExecuteTransaction'](arg1);
 }
@@ -78,6 +82,10 @@ export function LoadSignals() {
   return window['go']['main']['App']['LoadSignals']();
 }
 
+export function MFLKeyStatus() {
+  return window['go']['main']['App']['MFLKeyStatus']();
+}
+
 export function PreviewTransaction(arg1) {
   return window['go']['main']['App']['PreviewTransaction'](arg1);
 }
@@ -96,6 +104,10 @@ export function ScoreLeague() {
 
 export function SetLeagueSettingOverride(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetLeagueSettingOverride'](arg1, arg2, arg3);
+}
+
+export function SetMFLKey(arg1) {
+  return window['go']['main']['App']['SetMFLKey'](arg1);
 }
 
 export function SetParam(arg1, arg2, arg3) {
