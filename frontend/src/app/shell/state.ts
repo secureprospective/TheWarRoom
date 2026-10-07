@@ -1,3 +1,4 @@
+import type { EndpointId, Surface } from '../registry';
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import { shallow } from 'zustand/shallow';
@@ -17,6 +18,8 @@ export type ShellState = {
   comms: boolean;
   harness: boolean;
   notice: string | null;
+  endpointIds: readonly EndpointId[];
+  endpointSurface: Surface | null;
   scrollRevision: number;
 };
 export function initialShellState(): ShellState {
@@ -34,6 +37,8 @@ export function initialShellState(): ShellState {
     comms: false,
     harness: false,
     notice: null,
+    endpointIds: [],
+    endpointSurface: null,
     scrollRevision: 0,
   };
 }

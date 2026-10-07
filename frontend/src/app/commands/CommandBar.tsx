@@ -1,3 +1,4 @@
+import { EndpointIndex } from '../registry/EndpointIndex';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Snapshot } from '../data/contract';
 import { commands } from './registry';
@@ -6,7 +7,7 @@ import { searchCandidates, rankResults, runResult } from './search';
 import { Glyph } from '../look/Glyph';
 import { assertShortList } from '../shell/shortList';
 
-export function CommandBar({ snapshot }: { snapshot: Snapshot }) {
+export function CommandBar({ snapshot }: { snapshot?: Snapshot }) {
   const open = commands.use().commandbar;
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
@@ -33,9 +34,9 @@ export function CommandBar({ snapshot }: { snapshot: Snapshot }) {
     <section className="command-bar" data-open={open} aria-hidden={!open} aria-label="Command bar">
       <input
         ref={input}
-        aria-label="Search commands, places and players"
+        aria-label="Search commands, places, endpoints and players"
         aria-controls="command-results"
-        placeholder="Type a command, place or player…"
+        placeholder="Type a command, place, endpoint or player…"
         value={query}
         onChange={(event) => {
           setQuery(event.target.value);
@@ -71,7 +72,7 @@ export function CommandBar({ snapshot }: { snapshot: Snapshot }) {
           </Act>
         ))}
         {!results.length && (
-          <p role="status">No matching commands, places or rostered players.</p>
+          <p role="status">No matching commands, places, endpoints or rostered players.</p>
         )}
       </div>
       {(!query.trim() || 'preset: admin'.includes(query.trim().toLowerCase())) && (
@@ -79,6 +80,8 @@ export function CommandBar({ snapshot }: { snapshot: Snapshot }) {
           Preset: Admin · unavailable: commissioner or admin role required
         </p>
       )}
+      {/* The bar's own map rows only on an empty query; typed results are the point. */}
+      {!query.trim() && <EndpointIndex placement="Command bar" />}
       <Act verb="commandbar.close" args={{}}>
         Close · Escape
       </Act>

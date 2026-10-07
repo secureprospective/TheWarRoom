@@ -128,3 +128,9 @@ The target shell lives in `frontend/src/app/shell/`; its six-node table and hash
 `frontend/src/app/commands/` owns the immutable verb registry, sole dispatch path, keyboard
 bindings and in-memory recent-command log. `Act` is the only clickable primitive in the target
 UI. `frontend/src/TargetMount.tsx` switches between the target shell and the unchanged harness.
+
+`docs/ui/registry/normalize.py` normalizes and validates `docs/ui/endpoint-registry.csv`.
+`frontend/scripts/gen-endpoints.mjs` generates its frozen TypeScript endpoint map;
+`frontend/src/app/registry/` owns resolution, indexed placements, compact not-wired rows and the
+pure two-route gate. `endpoint.open` navigates and highlights; merged rows target kept ids or places.
+The harness is lazy-loaded only on `harness.open`; it is not in the target entry chunk.

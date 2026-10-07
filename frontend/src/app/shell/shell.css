@@ -39,7 +39,7 @@
 .twr-app .shell-unwired, .twr-app .snapshot-summary { padding: 14px; border: 1px solid var(--surface-line); background: var(--surface-2); }
 .twr-app h4 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
 .twr-app p { margin: 0 0 8px; }
-.twr-app .rail-tools { display: flex; justify-content: space-between; padding: 12px 14px; font-size: 11px; color: var(--surface-tx3); }
+.twr-app .rail-tools { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 12px 14px; font-size: 11px; color: var(--surface-tx3); }
 .twr-app .insp, .twr-app .inspector-closed { grid-column: 3; grid-row: 1; }
 .twr-app .inspector-closed { padding: 14px; border-left: 1px solid var(--surface-line); font-size: 11px; color: var(--surface-tx3); }
 .twr-app .comms .act-icon { width: 28px; height: 28px; border: 1px solid var(--surface-line-hi); display: grid; place-items: center; font: 600 11px var(--surface-mono); color: var(--surface-tx2); }

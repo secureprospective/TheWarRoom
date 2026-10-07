@@ -1,0 +1,21 @@
+.twr-app .endpoint-index { margin-top: 16px; min-width: 0; }
+.twr-app .endpoint-index h4 { margin-bottom: 8px; }
+.twr-app .endpoint-index ul { list-style: none; margin: 0; padding: 0; }
+.twr-app .endpoint-index li {
+  margin-bottom: 6px; padding: 8px 10px; border-style: solid;
+  overflow-wrap: anywhere;
+}
+.twr-app .endpoint-heading { display: flex; justify-content: space-between; gap: 12px; }
+.twr-app .endpoint-heading span { white-space: nowrap; font-size: 11px; }
+.twr-app .endpoint-index p { margin: 4px 0; }
+.twr-app .endpoint-index small { color: var(--surface-tx3); }
+.twr-app .endpoint-index [data-selected="true"] { outline: 2px solid currentColor; outline-offset: 2px; }
+.twr-app .endpoint-targets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+@media (max-width: 900px) {
+  .twr-app .endpoint-heading { flex-direction: column; gap: 4px; }
+}
+
+.twr-app .endpoint-index li.gravity-g0, .twr-app .endpoint-index li.gravity-g1 { border-width: 1px; }
+.twr-app .registry-panel { right: 368px; width: 480px; overflow-y: auto; }
+.twr-app .shell-overlay { overflow-y: auto; }
+.twr-app .command-bar { max-height: calc(100vh - 70px); overflow-y: auto; }

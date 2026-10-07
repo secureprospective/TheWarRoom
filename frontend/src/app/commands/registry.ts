@@ -1,3 +1,6 @@
+import {
+  resolve, placementRoute, isSurface, type EndpointId, type Placement, type Surface,
+} from '../registry';
 import type { Snapshot } from '../data/contract';
 import type { PlayerSubject } from '../shell/state';
 import {
@@ -49,7 +52,53 @@ export function createCommands(
     undo: 'instant' as const,
     args: [] as const,
   };
+  function openPlace(place: Placement) {
+    const route = placementRoute(place);
+    if (route) state.navigate(route);
+    else if (isSurface(place)) {
+      if (place === 'Inspector') state.write({ inspector: 'rest' });
+      if (place === 'Comms') state.write({ comms: true });
+      if (place === 'Calendar') state.write({ summoned: 'calendar' });
+      if (place === 'Command bar') state.write({ commandbar: true });
+      state.write({ endpointSurface: place });
+    } else throw new Error(`endpoint.open: unreachable place ${place}`);
+  }
   const registry = Object.freeze({
+    'surface.open': command({
+      ...ambient,
+      id: 'surface.open',
+      label: 'Open shell surface',
+      aliases: ['surface'],
+      args: ['place'],
+      run: (args: { place: Surface }) => openPlace(args.place),
+    }),
+    'surface.close': command({
+      ...ambient,
+      id: 'surface.close',
+      label: 'Close endpoint surface',
+      aliases: [],
+      run: (_args: Record<string, never>) => state.write({ endpointSurface: null }),
+    }),
+    'endpoint.open': command({
+      ...ambient,
+      id: 'endpoint.open',
+      label: 'Open endpoint',
+      aliases: ['endpoint'],
+      args: ['id'],
+      run: (args: { id: EndpointId }) => {
+        const target = resolve(args.id);
+        if (target.kind === 'retired') throw new Error(`endpoint.open: retired ${args.id}`);
+        const ids = target.kind === 'merged' && 'into' in target ? target.into : [args.id];
+        state.write({ endpointIds: ids, endpointSurface: null });
+        if (target.kind === 'view') openPlace(target.placement);
+        else if ('place' in target) openPlace(target.place);
+        else for (const id of target.into) {
+          const view = resolve(id);
+          if (view.kind !== 'view') throw new Error(`endpoint.open: target ${id} is not kept`);
+          openPlace(view.placement);
+        }
+      },
+    }),
     'franchise.set': command({
       ...ambient,
       id: 'franchise.set',
@@ -200,6 +249,7 @@ export function createCommands(
           summoned: null,
           comms: false,
           notice: null,
+          endpointSurface: null,
           commandbar: false,
         }),
     }),
@@ -238,7 +288,8 @@ export function createCommands(
     if (!selected.roles.includes('gm')) throw new Error(`${id}: GM permission denied`);
     const fromBar = state.read().commandbar;
     selected.run(args);
-    if (fromBar && id !== 'commandbar.open') {
+    if (fromBar && id !== 'commandbar.open' &&
+      !(id === 'endpoint.open' && state.read().endpointSurface === 'Command bar')) {
       if (
         id === 'inspector.open' &&
         state.read().subject?.franchiseId === state.read().franchiseId

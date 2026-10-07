@@ -79,6 +79,14 @@ describe('Performance is law (§18, §M3)', () => {
     expect(valid(read('data/provider.ts'))).toBe(true);
     expect(valid("import fixture from './fixtures/snapshot.json';")).toBe(false);
   });
+  it('keeps the harness behind a lazy boundary and rejects a static import', () => {
+    const source = readFileSync(resolve('src/TargetMount.tsx'), 'utf8');
+    const valid = (text: string) => text.includes("lazy(() => import('./App'))") &&
+      text.includes('Opening harness…') && !/import App from/.test(text);
+    expect(valid(source)).toBe(true);
+    expect(valid(source.replace("lazy(() => import('./App'))", 'App'))).toBe(false);
+    expect(valid(source + "\nimport App from './App';")).toBe(false);
+  });
   it('requires bounded dev lists and rejects a long list', () => {
     expect(() => assertShortList(80)).not.toThrow();
     expect(() => assertShortList(81)).toThrow('virtualization required');
