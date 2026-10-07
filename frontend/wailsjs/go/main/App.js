@@ -106,6 +106,14 @@ export function TargetClock() {
   return window['go']['main']['App']['TargetClock']();
 }
 
+export function TargetDraftIR(arg1, arg2) {
+  return window['go']['main']['App']['TargetDraftIR'](arg1, arg2);
+}
+
+export function TargetMoves(arg1) {
+  return window['go']['main']['App']['TargetMoves'](arg1);
+}
+
 export function TargetSnapshot() {
   return window['go']['main']['App']['TargetSnapshot']();
 }

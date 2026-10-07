@@ -9,13 +9,16 @@ import (
 	"errors"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -70,7 +73,14 @@ func targetTestApp(t *testing.T) *App {
 	if err := hs.Initialize(ctx); err != nil {
 		t.Fatal(err)
 	}
-	return &App{ctx: ctx, season: 2026, league: mirror, rulebook: rb, history: hs}
+	a := NewApp()
+	a.ctx = ctx
+	a.season = 2026
+	a.league = mirror
+	a.rulebook = rb
+	a.history = hs
+	close(a.started)
+	return a
 }
 
 func TestTargetDirectoryReusesLiveCacheAndOriginalTime(t *testing.T) {
@@ -134,5 +144,116 @@ func TestTargetDirectoryFallsBackAfterCancelledLiveFetch(t *testing.T) {
 		if a.hasLookup {
 			t.Fatal("archive was promoted into the live cache")
 		}
+	}
+}
+
+func targetOfflineClient(t *testing.T, a *App) *directoryDown {
+	t.Helper()
+	down := &directoryDown{}
+	client, err := mfl.New("", 100, mfl.WithTransport(down))
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.mflClient = client
+	return down
+}
+
+func TestTargetDraftIRAndMoves(t *testing.T) {
+	a := targetTestApp(t)
+	if _, err := a.TargetDraftIR("0001", "0042"); err == nil ||
+		err.Error() != "target draft: no snapshot loaded" {
+		t.Fatalf("before snapshot: %v", err)
+	}
+	moves, err := a.TargetMoves("0001")
+	if err != nil || moves == nil || len(moves) != 0 {
+		t.Fatalf("empty moves: %+v, %v", moves, err)
+	}
+	down := targetOfflineClient(t, a)
+	if _, err := a.TargetSnapshot(); err != nil {
+		t.Fatal(err)
+	}
+	calls := down.calls
+	r, err := a.TargetDraftIR("0001", "0042")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.State != envelope.Blocked || !regexp.MustCompile(`^ir-[0-9a-f]{32}$`).MatchString(r.CorrelationID) {
+		t.Fatalf("receipt: %+v", r)
+	}
+	if r.Spec.Expected.Player.String() != "0042" || r.Spec.LeagueID != ingestion.LeagueID {
+		t.Fatalf("scope: %+v", r.Spec)
+	}
+	for _, fid := range []string{"0001", "0002"} {
+		moves, err := a.TargetMoves(fid)
+		if err != nil || moves == nil {
+			t.Fatalf("moves: %+v, %v", moves, err)
+		}
+		want := 0
+		if fid == "0001" {
+			want = 1
+		}
+		if len(moves) != want || (want == 1 && moves[0].CorrelationID != r.CorrelationID) {
+			t.Fatalf("moves for %s: %+v", fid, moves)
+		}
+	}
+	for _, bad := range []string{"abc", ""} {
+		if _, err := a.TargetDraftIR("0001", bad); err == nil {
+			t.Fatalf("accepted player %q", bad)
+		}
+	}
+	moves, err = a.TargetMoves("0001")
+	if err != nil || len(moves) != 1 || down.calls != calls {
+		t.Fatalf("invalid input changed log or network calls: %+v, %v", moves, err)
+	}
+}
+
+func TestTargetDraftIRConcurrent(t *testing.T) {
+	a := targetTestApp(t)
+	down := targetOfflineClient(t, a)
+	if _, err := a.TargetSnapshot(); err != nil {
+		t.Fatal(err)
+	}
+	calls := down.calls
+	var wg sync.WaitGroup
+	for range 8 {
+		wg.Go(func() {
+			if _, err := a.TargetDraftIR("0001", "0042"); err != nil {
+				t.Error(err)
+			}
+		})
+	}
+	wg.Wait()
+	moves, err := a.TargetMoves("0001")
+	if err != nil || len(moves) != 8 {
+		t.Fatalf("moves: %+v, %v", moves, err)
+	}
+	ids := map[string]bool{}
+	for _, r := range moves {
+		if ids[r.CorrelationID] || r.State != envelope.Blocked {
+			t.Fatalf("duplicate ID or wrong state: %+v", r)
+		}
+		ids[r.CorrelationID] = true
+	}
+	if down.calls != calls {
+		t.Fatal("drafts fetched the directory")
+	}
+}
+
+func TestTargetSnapshotFailureKeepsCache(t *testing.T) {
+	a := targetTestApp(t)
+	targetOfflineClient(t, a)
+	if _, err := a.TargetSnapshot(); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	a.ctx = ctx
+	if _, err := a.TargetSnapshot(); err == nil {
+		t.Fatal("cancelled build succeeded")
+	}
+	r, err := a.TargetDraftIR("0001", "0042")
+	if err != nil || r.State != envelope.Blocked ||
+		r.Audit[0].Note != "not verified (league rules not captured); MFL target not verified" {
+		t.Fatalf("cached draft: %+v, %v", r, err)
 	}
 }
