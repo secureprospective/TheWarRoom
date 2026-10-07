@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
@@ -121,6 +122,14 @@ func TestTargetLineupHeldReading(t *testing.T) {
 	}
 	if r.Provenance.Freshness.State != FreshFail {
 		t.Fatal(r.Provenance)
+	}
+	if r.RulesSource.Freshness.State != FreshStale {
+		t.Fatalf("rules before any sync: %+v", r.RulesSource)
+	}
+	synced := time.Date(2026, 10, 7, 18, 21, 22, 0, time.UTC)
+	a.rulesCheckedAt.Store(synced.Unix())
+	if got := mustLineup(t, a).RulesSource.Freshness; got != liveFreshness(synced) {
+		t.Fatalf("rules after a sync: %+v", got)
 	}
 	if len(transport.requests) != 0 {
 		t.Fatal("binding requested network")
@@ -240,4 +249,13 @@ func TestTargetLineupNotReady(t *testing.T) {
 	if _, err := a.TargetLineup("0025"); err == nil {
 		t.Fatal("unready app accepted")
 	}
+}
+
+func mustLineup(t *testing.T, a *App) LineupReading {
+	t.Helper()
+	r, err := a.TargetLineup("0025")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return r
 }

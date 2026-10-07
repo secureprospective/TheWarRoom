@@ -497,7 +497,8 @@ func TestWatcherIRRefreshThroughRealAdapters(t *testing.T) {
 	if err := a.checkMoves(a.ctx); err != nil {
 		t.Fatal(err)
 	}
-	if storedMove(t, a).State() != envelope.Landed || events != 1 || a.rostersCheckedAt.IsZero() ||
+	if storedMove(t, a).State() != envelope.Landed || events != 1 ||
+		a.rostersCheckedAt.IsZero() || a.rulesCheckedAt.Load() == 0 ||
 		!reflect.DeepEqual(transport.requests, []string{"league", "rules", "rosters", "salaryAdjustments"}) {
 		t.Fatalf("state %s events %d requests %v", storedMove(t, a).State(), events, transport.requests)
 	}

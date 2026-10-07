@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/lineup"
@@ -55,10 +56,7 @@ func (a *App) TargetLineup(franchiseID string) (LineupReading, error) {
 	r := LineupReading{
 		Franchise: franchiseID, Week: season.Lineups.Value.Week, StarterCount: rules.StarterCount,
 		Starters: []LineupPlayer{}, Bench: []LineupPlayer{}, Provenance: season.Lineups.Provenance,
-		RulesSource: snapshot.Provenance{
-			Kind: "live", Source: cfg.Source,
-			Freshness: Freshness{State: FreshStale, Note: "active rulebook; fetch time unknown"},
-		},
+		RulesSource: snapshot.Provenance{Kind: "live", Source: cfg.Source, Freshness: a.rulesFreshness()},
 	}
 	r.populate(snap, season, rules)
 	r.judge(rules, rulesErr)
@@ -134,4 +132,14 @@ func (r *LineupReading) populate(snap snapshot.Snapshot, season SeasonReading, r
 func joinNote(notes ...string) string {
 	kept := slices.DeleteFunc(notes, func(n string) bool { return n == "" })
 	return strings.Join(kept, "; ")
+}
+
+// rulesFreshness is live from the last successful rules sync; before one, the stored rulebook
+// is the last good copy and says so.
+func (a *App) rulesFreshness() Freshness {
+	checked := a.rulesCheckedAt.Load()
+	if checked == 0 {
+		return Freshness{State: FreshStale, Note: "stored league settings; not yet checked with MFL this run"}
+	}
+	return liveFreshness(time.Unix(checked, 0))
 }
