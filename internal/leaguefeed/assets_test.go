@@ -54,3 +54,24 @@ func TestParseAssets(t *testing.T) {
 		})
 	}
 }
+
+func TestAssetTokenRoundTrip(t *testing.T) {
+	assets, err := ParseAssets("99,DP_4_9,FP_0001_2027_1,BB_10.50")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"0099", "DP_04_09", "FP_0001_2027_1", "BB_10.50"}
+	got := AssetTokens(assets)
+	if !reflect.DeepEqual(got, want) {
+		t.Fatal(got)
+	}
+	for i, token := range got {
+		parsed, err := ParseAssets(token)
+		if err != nil || !reflect.DeepEqual(parsed[0], assets[i]) {
+			t.Fatal("round trip", token, err)
+		}
+	}
+	if AssetToken(Asset{}) != "" || AssetTokens(nil) == nil {
+		t.Fatal("empty asset contract")
+	}
+}

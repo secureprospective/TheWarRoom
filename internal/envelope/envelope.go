@@ -96,8 +96,9 @@ type ExpectedLineup struct {
 }
 
 // ExpectedChange is what the landing predicate looks for: a roster status change (roster.ir)
-// or a lineup (lineup.set). Trade and bid shapes arrive with their intents.
+// or a lineup (lineup.set), or both sides of a trade (trade.accept).
 type ExpectedChange struct {
+	Trade        *ExpectedTrade      `json:"trade,omitempty"`
 	Lineup       *ExpectedLineup     `json:"lineup,omitempty"`
 	Player       playerid.PlayerID   `json:"player,omitempty,omitzero" ts_type:"string"`
 	RosterStatus domain.RosterStatus `json:"rosterStatus,omitempty"`
@@ -201,6 +202,12 @@ func validateTarget(target Target) error {
 func cloneSpec(s Spec) Spec {
 	s.Subject.Players = append([]playerid.PlayerID{}, s.Subject.Players...)
 	s.Subject.Picks = append([]string{}, s.Subject.Picks...)
+	if s.Expected.Trade != nil {
+		t := *s.Expected.Trade
+		t.OfferingGives = append([]string{}, t.OfferingGives...)
+		t.AcceptingGives = append([]string{}, t.AcceptingGives...)
+		s.Expected.Trade = &t
+	}
 	if s.Expected.Lineup != nil {
 		l := *s.Expected.Lineup
 		// Never nil: the receipt contract is a JSON array, even for an unknown baseline.

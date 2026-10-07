@@ -17,6 +17,10 @@
   target). Brief ~/fleet/briefs/warroom-ring1-p5a-trade-accept.md (scratchpad copy). Run dir
   …/p5a/ (sentinel, REPORT.md, sessions/). Next: review → fix → verify → commit → wails generate
   → 5b frontend (Trade Floor › Trade desk: offers list, Plan accept, Open MFL trade desk, rail).
+- p5a run 1 stopped (no code): Observe rejects AwaitDOT; predicates lack hand-off time. Claude
+  ruled (brief warroom-ring1-p5a2-trade-accept.md): Observe accepts AwaitDOT via the table, a
+  repeat in DOTReview = NoChange; Observation.HandedOffAt filled by Observe; failed-refresh
+  feed = unavailable. **In flight: Sol p5a2** (run dir …/p5a2/).
 - Christopher says tokens are thin: keep turns short.
 
 ## 1. What we are doing
