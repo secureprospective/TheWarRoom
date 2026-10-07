@@ -12,15 +12,17 @@ import (
 )
 
 // LineupReading is one franchise's saved MFL lineup for the held week, the rest of its active
-// roster as the bench, and whether the league's own starter rules accept it.
+// roster as the bench, and whether the league's own starter rules accept it. StarterCount is a
+// full lineup's size under those rules (0 when they are unreadable).
 type LineupReading struct {
-	Franchise   string              `json:"franchise"`
-	Week        int                 `json:"week"`
-	Starters    []LineupPlayer      `json:"starters"`
-	Bench       []LineupPlayer      `json:"bench"`
-	Check       lineup.Result       `json:"check"`
-	Provenance  snapshot.Provenance `json:"provenance"`
-	RulesSource snapshot.Provenance `json:"rulesSource"`
+	Franchise    string              `json:"franchise"`
+	Week         int                 `json:"week"`
+	StarterCount int                 `json:"starterCount"`
+	Starters     []LineupPlayer      `json:"starters"`
+	Bench        []LineupPlayer      `json:"bench"`
+	Check        lineup.Result       `json:"check"`
+	Provenance   snapshot.Provenance `json:"provenance"`
+	RulesSource  snapshot.Provenance `json:"rulesSource"`
 }
 
 // LineupPlayer is a player in the lineup; Position is empty when the directory lacks him.
@@ -51,7 +53,7 @@ func (a *App) TargetLineup(franchiseID string) (LineupReading, error) {
 	cfg := a.rulebook.ActiveConfig()
 	rules, rulesErr := lineup.ParseRules(cfg.Starters)
 	r := LineupReading{
-		Franchise: franchiseID, Week: season.Lineups.Value.Week,
+		Franchise: franchiseID, Week: season.Lineups.Value.Week, StarterCount: rules.StarterCount,
 		Starters: []LineupPlayer{}, Bench: []LineupPlayer{}, Provenance: season.Lineups.Provenance,
 		RulesSource: snapshot.Provenance{
 			Kind: "live", Source: cfg.Source,

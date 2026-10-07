@@ -139,7 +139,7 @@ func TestTargetLineupHeldReading(t *testing.T) {
 	for _, p := range r.Starters {
 		got = append(got, p.ID)
 	}
-	if !reflect.DeepEqual(got, ids) || r.Week != 5 || !r.Check.Full || !r.Check.Legal {
+	if !reflect.DeepEqual(got, ids) || r.Week != 5 || r.StarterCount != 21 || !r.Check.Full || !r.Check.Legal {
 		t.Fatalf("%+v", r)
 	}
 	want := []string{
@@ -178,7 +178,8 @@ func TestTargetLineupBadRulesAndAbsentFeed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r.Check.Legal || len(r.Check.Problems) != 1 || r.RulesSource.Freshness.State != FreshFail {
+	if r.Check.Legal || len(r.Check.Problems) != 1 || r.StarterCount != 0 ||
+		r.RulesSource.Freshness.State != FreshFail {
 		t.Fatalf("bad rules: %+v", r)
 	}
 	a.week.Number = 5

@@ -1,3 +1,5 @@
+import { prefetchHQ } from '../shell/FranchiseHQMount';
+import { createLineups } from '../shell/lineups';
 import { createMovesState } from './moves';
 import { createMFLKeyState } from './mflKey';
 import { createMFLKeyField } from '../shell/mflKeyField';
@@ -53,6 +55,7 @@ export function createCommands(
 ) {
   let snapshot: Snapshot | undefined;
   const state = createShellState();
+  const lineups = createLineups(provider);
   const moves = createMovesState();
   const mflKey = createMFLKeyState();
   const prefetchMoves = createMovesPrefetch();
@@ -212,6 +215,8 @@ export function createCommands(
         if (!snapshot || !validFranchise(snapshot, args.franchiseId)) {
           throw new Error('franchise.set: unknown franchise');
         }
+        void prefetchHQ().catch((cause) => console.error('HQ prefetch failed:', cause));
+        lineups.refresh(args.franchiseId);
         persistFranchise(args.franchiseId, storage());
         state.write({
           franchiseId: args.franchiseId,
@@ -249,7 +254,7 @@ export function createCommands(
               r.franchiseId === subject.franchiseId &&
               r.players.some((p) => p.id === subject.id),
           )
-        ) {
+          && !lineups.peek(subject.franchiseId).reading?.starters.some((p) => p.id === subject.id)) {
           throw new Error('inspector.open: unknown roster player');
         }
         state.write({ subject: { ...subject }, inspector: 'rest' });
@@ -419,6 +424,7 @@ export function createCommands(
   }
   return {
     registry,
+    lineups,
     mflField,
     mflReason,
     loadMFLKey: () => requestMFL(() => provider.mflKey(), 'Checking the keyring…'),
@@ -432,7 +438,12 @@ export function createCommands(
     loadSnapshot: (value: Snapshot) => {
       snapshot = value;
       prefetchMoves();
-      state.write({ franchiseId: loadFranchise(value, storage()) });
+      const franchiseId = loadFranchise(value, storage());
+      if (franchiseId) {
+        void prefetchHQ().catch((cause) => console.error('HQ prefetch failed:', cause));
+        lineups.refresh(franchiseId);
+      }
+      state.write({ franchiseId });
     },
     dispatch,
     key,

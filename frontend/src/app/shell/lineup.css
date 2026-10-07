@@ -1,0 +1,6 @@
+.lineup-reading {
+  height: 1.75rem;
+  line-height: 1.75rem;
+  white-space: nowrap;
+  overflow-x: auto;
+}

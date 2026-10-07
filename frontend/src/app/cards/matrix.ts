@@ -15,6 +15,7 @@ export const matrixColumns = [
 export function matrixCells(model: PlayerCardModel): string[] {
   return [
     model.position ?? '—', model.name, model.team ?? '—', String(model.age ?? '—'),
-    '—', '—', model.salary, model.years?.split(' ')[0] ?? '—', model.contractStatus,
+    '—', '—', model.salary, model.years?.split(' ')[0] ?? '—',
+    [model.contractStatus, model.rosterNote].filter(Boolean).join(' · '),
   ];
 }

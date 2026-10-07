@@ -117,3 +117,17 @@ export type MFLKeyStatus = {
   verifiedAt?: string;
   detail?: string;
 };
+
+export type LineupPlayer = { id: string; position?: Position };
+export type LineupProblem = { subject: string; kind: 'short' | 'over' | 'unknown'; message: string };
+export type LineupCheck = { full: boolean; legal: boolean; problems: LineupProblem[] };
+export type LineupReading = {
+  franchise: string;
+  week: number;
+  starterCount: number;
+  starters: LineupPlayer[];
+  bench: LineupPlayer[];
+  check: LineupCheck;
+  provenance: Provenance;
+  rulesSource: Provenance;
+};
