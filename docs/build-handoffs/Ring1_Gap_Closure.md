@@ -30,6 +30,12 @@ official NFL feeds.
 7. Victory Points: the 2026 league export has no Victory Points setting (`standingsSort` is
 `PCT,H2H,DIVPCT,CONFPCT,ALL_PLAY_PCT,PTS,PWR`), so they are not used.
 
+8. Trade flow (confirmed later the same day): owners agree on ProBoards; one proposes on MFL
+and the other accepts there; the DOT votes (three approvals); the commissioner approves on MFL
+and the trade executes. The trade desk hands off propose, accept, reject and revoke to MFL's
+trade page (O=05); DOT review is the stage between accepted and Landed; Landed is the public
+`transactions` TRADE row.
+
 [seen: brief:p0a
   Christopher's rulings (verbatim words; wrapped to 100 columns)]
 
