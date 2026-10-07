@@ -7,11 +7,21 @@ export function useLeagueClock(root: RefObject<HTMLElement>): Sourced<ClockReadi
   const [reading, setReading] = useState<Sourced<ClockReading>>();
   useEffect(() => {
     let active = true;
-    selectProvider().clock().then((value) => {
-      if (active) setReading(value);
-    });
+    let request = 0;
+    const provider = selectProvider();
+    const read = () => {
+      const current = ++request;
+      void provider.clock().then((value) => {
+        if (active && current === request) setReading(value);
+      }).catch(() => {
+        // A rejected refresh leaves the last reading intact; the next event retries.
+      });
+    };
+    const unsubscribe = provider.onClockChange(read);
+    read();
     return () => {
       active = false;
+      unsubscribe();
     };
   }, []);
   useEffect(() => {

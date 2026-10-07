@@ -67,3 +67,16 @@ describe('clock and envelope boundaries', () => {
     expect(() => parseEnvelopeDemo(copy)).toThrowError(message);
   });
 });
+
+
+describe('clock week boundary', () => {
+  it('keeps an absent week absent', () => {
+    expect(parseClock(clock).value).not.toHaveProperty('week');
+  });
+  it.each([1, 5, 18])('accepts week %s', (week) => {
+    expect(parseClock({ ...clock, value: { ...clock.value, week } }).value.week).toBe(week);
+  });
+  it.each([0, 19, '5', 4.5, null])('rejects week %s', (week) => {
+    expect(() => parseClock({ ...clock, value: { ...clock.value, week } })).toThrow('clock.value.week:');
+  });
+});

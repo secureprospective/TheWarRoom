@@ -73,6 +73,7 @@ export type Deadline = {
 };
 export type ClockReading = {
   season: number;
+  week?: number;
   phase: (typeof PHASES)[number];
   deadlines: Deadline[];
   windows: { kind: (typeof WINDOW_KINDS)[number]; status: 'unknown'; reason: string }[];
