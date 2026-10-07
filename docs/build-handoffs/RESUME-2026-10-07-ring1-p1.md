@@ -25,9 +25,8 @@
   (transcript mtime advancing) or `cat …/p1c/sentinel` (exists when done).
   Output: `…/p1c/REPORT.md`; transcript `…/p1c/sessions/*.jsonl` is the recovery channel.
   The Claude background-task notification will NOT survive compaction: poll the sentinel.
-- **Uncommitted in the worktree:** Sol's 1c edits (frontend clock/data files) AND Claude's
-  ruling-8 edit to `docs/build-handoffs/Ring1_Gap_Closure.md` (§0 item 8, trade flow).
-  Commit the doc with the 1c review, or on its own.
+- **Uncommitted in the worktree:** only Sol's 1c edits (frontend clock/data files). The
+  ruling-8 doc edit and this resume are committed (14f3fc2).
 - Ring 0 gate app still runs on Claude-OS (`pgrep -x thewarroom`): Christopher's window, leave it.
 
 ## 2. Agents and harnesses
@@ -51,7 +50,7 @@
 ## 3. Status
 | Item | State |
 |---|---|
-| p0a gap closure doc | committed df94d4e (+ ruling 8 uncommitted) |
+| p0a gap closure doc | committed df94d4e; ruling 8 in 14f3fc2 |
 | p1a nflschedule / leagueweek / clock lineup lock | committed f5822cd |
 | p1b week refresh worker, derived phase, TargetClock | committed 5687c7c |
 | wailsjs models (`Reading.week?`) | committed 96e2da1 |
@@ -103,15 +102,16 @@ TargetClock never touches the network; a missing/failed schedule degrades to `st
 `fail`.
 
 ## 8. Ledger state
-- Committed on `session/ring-1` (not pushed): 38be4e3, df94d4e, f5822cd, 5687c7c, 96e2da1.
-- Uncommitted: Sol's p1c work (in progress) and the ruling-8 doc edit.
+- Committed on `session/ring-1` (not pushed): 38be4e3, df94d4e, f5822cd, 5687c7c, 96e2da1,
+  14f3fc2 (this resume + ruling 8).
+- Uncommitted: Sol's p1c work (in progress).
 - Task list on Hermes: no new items this window (T406 ring 1 already open).
 
 ## 9. Next actions
 1. **Check p1c** (sentinel). Review REPORT + diff (strip copy at 1280 px, no re-render between
    readings, latest-wins hook, stale chip, note in panel, no churn), render on Claude-OS
    (`shot.sh '#/hq/my-moves' out.png 1280 800` against a vite dev server, see ring 0 resume §2),
-   `make verify`, commit together with the ruling-8 doc edit.
+   `make verify`, commit.
 2. **Add the dependency:** in the worktree, `go get github.com/zalando/go-keyring@v0.2.8`
    (bumps godbus to v5.2.2), confirm `make verify` green, commit; then dispatch
    `p1d ~/fleet/briefs/warroom-ring1-p1d-mfl-key.md`. Review the leak gate line by line;
