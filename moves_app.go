@@ -83,7 +83,10 @@ func (a *App) logMove(e envelope.Envelope) {
 }
 
 func movePredicate(intent string) envelope.Predicate {
-	registry := map[string]envelope.Predicate{"roster.ir": envelope.IRPredicate{}}
+	registry := map[string]envelope.Predicate{
+		"roster.ir":  envelope.IRPredicate{},
+		"lineup.set": envelope.LineupPredicate{},
+	}
 	return registry[intent]
 }
 
@@ -179,11 +182,23 @@ func (a *App) refreshMoveSources(ctx context.Context, sources map[envelope.Sourc
 	if pause == nil {
 		pause = seasonPause
 	}
+	entries, err := a.moves.Awaiting(ctx)
+	if err != nil {
+		return fmt.Errorf("watch moves: latest hand-off: %w", err)
+	}
+	var latest time.Time
+	for _, e := range entries {
+		for _, entry := range e.Receipt().Audit {
+			if entry.Event == envelope.HandOff && entry.At.After(latest) {
+				latest = entry.At
+			}
+		}
+	}
 	first := true
 	for _, source := range []envelope.Source{
 		envelope.Rosters, envelope.Transactions, envelope.Lineups, envelope.PendingTrades,
 	} {
-		if !sources[source] {
+		if !sources[source] || a.recentMoveSource(source, latest) {
 			continue
 		}
 		if !first {
@@ -246,4 +261,27 @@ func (a *App) moveObservation(ctx context.Context) (envelope.Observation, error)
 		LeagueID: ingestion.LeagueID, Rosters: rosters,
 		Transactions: season.Transactions, Lineups: season.Lineups, PendingTrades: season.PendingTrades,
 	}, nil
+}
+
+// recentMoveSource: a season feed fetched successfully within the last minute and after the
+// latest hand-off is already the evidence a pass needs (the hourly season refresh wakes the watcher).
+func (a *App) recentMoveSource(source envelope.Source, handed time.Time) bool {
+	a.seasonMu.Lock()
+	defer a.seasonMu.Unlock()
+	var at time.Time
+	var failure string
+	switch source {
+	case envelope.Transactions:
+		at, failure = a.seasonTransactions.fetchedAt, a.seasonTransactions.refreshError
+	case envelope.Lineups:
+		at, failure = a.seasonLineups.fetchedAt, a.seasonLineups.refreshError
+	case envelope.PendingTrades:
+		at, failure = a.seasonPendingTrades.fetchedAt, a.seasonPendingTrades.refreshError
+	case envelope.Rosters: // not a season feed
+		return false
+	default:
+		return false
+	}
+	now := a.movesNow()
+	return failure == "" && at.After(handed) && !at.After(now) && now.Sub(at) < time.Minute
 }

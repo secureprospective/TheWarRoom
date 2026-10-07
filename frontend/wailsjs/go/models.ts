@@ -60,9 +60,26 @@ export namespace envelope {
 		    return a;
 		}
 	}
+	export class ExpectedLineup {
+	    week: number;
+	    starters: string[];
+	    baseline: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ExpectedLineup(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.week = source["week"];
+	        this.starters = source["starters"];
+	        this.baseline = source["baseline"];
+	    }
+	}
 	export class ExpectedChange {
-	    player: string;
-	    rosterStatus: string;
+	    lineup?: ExpectedLineup;
+	    player?: string;
+	    rosterStatus?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ExpectedChange(source);
@@ -70,10 +87,30 @@ export namespace envelope {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.lineup = this.convertValues(source["lineup"], ExpectedLineup);
 	        this.player = source["player"];
 	        this.rosterStatus = source["rosterStatus"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
+	
 	export class Target {
 	    kind: string;
 	    url?: string;

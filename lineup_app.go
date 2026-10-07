@@ -67,9 +67,7 @@ func (a *App) TargetLineup(franchiseID string) (LineupReading, error) {
 func (r *LineupReading) judge(rules lineup.Rules, rulesErr error) {
 	if rulesErr != nil {
 		note := "The league's lineup rules could not be read: " + rulesErr.Error()
-		r.Check = lineup.Result{Problems: []lineup.Problem{
-			{Subject: "Rules", Kind: lineup.KindUnknown, Message: note},
-		}}
+		r.Check = unreadableLineupRules(rulesErr)
 		r.RulesSource.Freshness = Freshness{State: FreshFail, Note: note}
 		return
 	}
@@ -142,4 +140,11 @@ func (a *App) rulesFreshness() Freshness {
 		return Freshness{State: FreshStale, Note: "stored league settings; not yet checked with MFL this run"}
 	}
 	return liveFreshness(time.Unix(checked, 0))
+}
+
+func unreadableLineupRules(err error) lineup.Result {
+	return lineup.Result{Problems: []lineup.Problem{{
+		Subject: "Rules", Kind: lineup.KindUnknown,
+		Message: "The league's lineup rules could not be read: " + err.Error(),
+	}}}
 }

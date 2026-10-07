@@ -87,11 +87,20 @@ type Subject struct {
 	Picks   []string            `json:"picks"`
 }
 
-// ExpectedChange is what the landing predicate looks for. Ring 0 knows one shape, a roster
-// status change; trade and bid shapes arrive with their intents.
+// ExpectedLineup is a lineup.set plan: the week's drafted starters, and MFL's saved starters
+// when it was drafted (a landing must differ from that baseline to prove a new submission).
+type ExpectedLineup struct {
+	Week     int                 `json:"week"`
+	Starters []playerid.PlayerID `json:"starters" ts_type:"string[]"`
+	Baseline []playerid.PlayerID `json:"baseline" ts_type:"string[]"`
+}
+
+// ExpectedChange is what the landing predicate looks for: a roster status change (roster.ir)
+// or a lineup (lineup.set). Trade and bid shapes arrive with their intents.
 type ExpectedChange struct {
-	Player       playerid.PlayerID   `json:"player" ts_type:"string"`
-	RosterStatus domain.RosterStatus `json:"rosterStatus"`
+	Lineup       *ExpectedLineup     `json:"lineup,omitempty"`
+	Player       playerid.PlayerID   `json:"player,omitempty,omitzero" ts_type:"string"`
+	RosterStatus domain.RosterStatus `json:"rosterStatus,omitempty"`
 }
 
 type Spec struct {
@@ -160,9 +169,8 @@ func validateSpec(s Spec) error {
 	if s.Intent == "" || s.LeagueID == "" || s.FranchiseID == "" {
 		return fmt.Errorf("envelope: intent and scope required")
 	}
-	if s.Expected.Player.String() == "" || s.Expected.RosterStatus == "" ||
-		!slices.Contains(s.Subject.Players, s.Expected.Player) {
-		return fmt.Errorf("envelope: expected change must name a subject player and status")
+	if err := validateExpected(s); err != nil {
+		return err
 	}
 	if !slices.Contains([]Gravity{G0, G1, G2, G3}, s.Gravity) ||
 		!slices.Contains([]UndoClass{Instant, Reversible, Irreversible}, s.Undo) {
@@ -193,6 +201,12 @@ func validateTarget(target Target) error {
 func cloneSpec(s Spec) Spec {
 	s.Subject.Players = append([]playerid.PlayerID{}, s.Subject.Players...)
 	s.Subject.Picks = append([]string{}, s.Subject.Picks...)
+	if s.Expected.Lineup != nil {
+		l := *s.Expected.Lineup
+		l.Starters = slices.Clone(l.Starters)
+		l.Baseline = slices.Clone(l.Baseline)
+		s.Expected.Lineup = &l
+	}
 	if s.Deadline != nil {
 		d := s.Deadline.UTC()
 		s.Deadline = &d
