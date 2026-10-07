@@ -1,9 +1,15 @@
+import { lazy, Suspense } from 'react';
 import { Act } from '../commands/Act';
 import { presets, presetIds, presetAllowed } from './presets';
+
+const MFLConnection = lazy(() => import('./MFLConnection'));
 
 export function AppSettings() {
   return (
     <section className="app-settings">
+      <Suspense fallback={<section className="mfl-connection">Checking the keyring…</section>}>
+        <MFLConnection />
+      </Suspense>
       <h4>View presets</h4>
       {presetIds.map((preset) => (
         <div key={preset}>

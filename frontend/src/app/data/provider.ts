@@ -1,11 +1,15 @@
 import type {
-  ClockReading, EnvelopeDemo, Provenance, Receipt, Snapshot, Sourced,
+  ClockReading, EnvelopeDemo, MFLKeyStatus, Provenance, Receipt, Snapshot, Sourced,
 } from './contract';
 import {
+  DeleteMFLKey, MFLKeyStatus as ReadMFLKey, SetMFLKey,
   TargetClock, TargetDraftIR, TargetMoves, TargetSnapshot,
 } from '../../../wailsjs/go/main/App';
 
 interface ReadingProvider {
+  mflKey(): Promise<MFLKeyStatus>;
+  connectMFL(key: string): Promise<MFLKeyStatus>;
+  forgetMFL(): Promise<MFLKeyStatus>;
   snapshot(): Promise<Snapshot>;
   clock(): Promise<Sourced<ClockReading>>;
   onClockChange(listener: () => void): () => void;
@@ -31,6 +35,15 @@ function hasWails(): boolean {
 export class FixtureProvider implements ReadingProvider, DemoProvider {
   readonly kind = 'fixture';
   readonly reason = 'Drafting needs the desktop app';
+  async mflKey(): Promise<MFLKeyStatus> {
+    return { state: 'absent', league: '', season: 0, detail: 'Connecting MFL needs the desktop app' };
+  }
+  async connectMFL(_key: string): Promise<MFLKeyStatus> {
+    throw new Error('Connecting MFL needs the desktop app');
+  }
+  async forgetMFL(): Promise<MFLKeyStatus> {
+    throw new Error('Connecting MFL needs the desktop app');
+  }
   onClockChange(_listener: () => void): () => void {
     return () => {};
   }
@@ -92,6 +105,18 @@ function failedClock(cause: unknown, kind: Provenance['kind']): Sourced<ClockRea
 
 export class LiveProvider implements ReadingProvider, DraftingProvider {
   readonly kind = 'live';
+  async mflKey(): Promise<MFLKeyStatus> {
+    const [{ parseMFLKeyStatus }, status] = await Promise.all([import('./parse'), ReadMFLKey()]);
+    return parseMFLKeyStatus(status);
+  }
+  async connectMFL(key: string): Promise<MFLKeyStatus> {
+    const [{ parseMFLKeyStatus }, status] = await Promise.all([import('./parse'), SetMFLKey(key)]);
+    return parseMFLKeyStatus(status);
+  }
+  async forgetMFL(): Promise<MFLKeyStatus> {
+    const [{ parseMFLKeyStatus }, status] = await Promise.all([import('./parse'), DeleteMFLKey()]);
+    return parseMFLKeyStatus(status);
+  }
   onClockChange(listener: () => void): () => void {
     let active = true;
     let unsubscribe: (() => void) | undefined;
@@ -125,7 +150,7 @@ export class LiveProvider implements ReadingProvider, DraftingProvider {
   async clock(): Promise<Sourced<ClockReading>> {
     try {
       if (!hasWails()) throw new Error('Wails runtime absent');
-      const [{ parseClock }, payload] = await Promise.all([
+        const [{ parseClock }, payload] = await Promise.all([
         import('./parse'), TargetClock(),
       ]);
       return parseClock(payload);
@@ -137,7 +162,7 @@ export class LiveProvider implements ReadingProvider, DraftingProvider {
   async snapshot(): Promise<Snapshot> {
     try {
       if (!hasWails()) throw new Error('Wails runtime absent');
-      const [{ parseSnapshot }, payload] = await Promise.all([
+        const [{ parseSnapshot }, payload] = await Promise.all([
         import('./parse'), TargetSnapshot(),
       ]);
       return parseSnapshot(payload);

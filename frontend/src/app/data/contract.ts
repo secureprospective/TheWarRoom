@@ -108,3 +108,12 @@ export type Receipt = {
   correlationId: string; spec: EnvelopeSpec; state: EnvelopeState; audit: AuditEntry[];
 };
 export type EnvelopeDemo = { kind: 'fixture'; receipt: Receipt };
+
+export const MFL_KEY_STATES = ['absent', 'connected', 'rejected', 'unreachable', 'unavailable'] as const;
+export type MFLKeyStatus = {
+  state: (typeof MFL_KEY_STATES)[number];
+  league: string;
+  season: number;
+  verifiedAt?: string;
+  detail?: string;
+};

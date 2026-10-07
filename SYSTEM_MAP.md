@@ -152,3 +152,9 @@ and an in-memory audit log, including unmapped IR drafts; neither core does I/O.
 
 `frontend/src/app/clock/` renders the league clock; one DOM ticker owns countdowns and urgency,
 independently of React. Clock and snapshot providers load in parallel, never falling back live to fixtures.
+
+`frontend/src/app/shell/MFLConnection.tsx` is the lazy Control Room › App keyring surface.
+`mflKeyField.ts` owns only the mounted uncontrolled input ref; no command arg or state holds a key.
+`frontend/src/app/commands/mflKey.ts` holds status independently of shell renders; the registry
+alone writes it and runs connect/forget. The provider lazily imports generated Wails bindings;
+`parseMFLKeyStatus` validates their five-state JSON before any status reaches the surface.

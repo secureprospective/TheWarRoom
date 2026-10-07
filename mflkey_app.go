@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -46,7 +47,15 @@ func (a *App) MFLKeyStatus() (MFLKeyStatus, error) {
 	return a.keyStatus("connected", ""), nil
 }
 
-func (a *App) SetMFLKey(key string) (MFLKeyStatus, error) {
+func (a *App) SetMFLKey(key string) (status MFLKeyStatus, err error) {
+	// Wails recovers a binding panic and logs the raw IPC message, key included, at ERROR level
+	// (on in production). Recover here first, and log only the panic's type.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("SetMFLKey: recovered panic (%T)", r)
+			status, err = a.keyStatus("unavailable", "internal error while connecting; check the status"), nil
+		}
+	}()
 	candidate := mflkey.Key(strings.TrimSpace(key))
 	if err := a.ready(); err != nil {
 		return MFLKeyStatus{}, err
