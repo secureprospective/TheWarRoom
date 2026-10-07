@@ -12,9 +12,21 @@
   min-height: 2.5rem;
 }
 .lineup-plan {
-  height: 14rem;
-  overflow: auto;
   margin-block: 0.5rem;
+}
+/* The lineup verbs are the owner's first real Act: they must read as buttons. */
+.twr-app .lineup-actions .act,
+.twr-app .lineup-plan .act {
+  padding: 5px 10px;
+  border: 1px solid var(--surface-line-hi);
+  color: var(--surface-tx1);
+  font-weight: 600;
+}
+.twr-app .lineup-actions .act:disabled,
+.twr-app .lineup-plan .act:disabled {
+  border-color: var(--surface-line);
+  color: var(--surface-tx3);
+  cursor: default;
 }
 .lineup-affordance {
   display: block;
