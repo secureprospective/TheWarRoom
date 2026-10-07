@@ -7,6 +7,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
+	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -63,4 +64,26 @@ func (a *App) targetDirectory(ctx context.Context) snapshot.Directory {
 		p.Source = "mfl-players-archive"
 	}
 	return snapshot.Directory{Lookup: rows[0], Provenance: p}
+}
+
+// TargetClock reads the phase log and commissioner calendar from the local store; no network.
+func (a *App) TargetClock() (snapshot.Sourced[leagueclock.Reading], error) {
+	if err := a.ready(); err != nil {
+		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: startup: %w", err)
+	}
+	if err := a.whatif.Err(); err != nil {
+		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: state: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	defer cancel()
+	now := time.Now()
+	fresh := liveFreshness(now)
+	fresh.Note = "league windows not yet captured"
+	clock, err := snapshot.BuildClock(ctx, now.UTC(), a.league.Season(), a.whatif, snapshot.Provenance{
+		Source: "phase-log+commissioner-calendar", Kind: "live", Freshness: fresh,
+	})
+	if err != nil {
+		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: %w", err)
+	}
+	return clock, nil
 }

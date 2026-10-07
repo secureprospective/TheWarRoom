@@ -1,0 +1,58 @@
+{
+  "kind": "fixture",
+  "receipt": {
+    "correlationId": "fixture-roster-ir-001",
+    "spec": {
+      "intent": "roster.ir",
+      "leagueId": "14432",
+      "franchiseId": "0001",
+      "subject": {
+        "players": [
+          "11675"
+        ],
+        "picks": []
+      },
+      "expected": {
+        "player": "11675",
+        "rosterStatus": "IR"
+      },
+      "gravity": "G2",
+      "undo": "reversible",
+      "target": {
+        "kind": "mapped",
+        "url": "https://fixture.invalid/options?O=18"
+      }
+    },
+    "state": "landed",
+    "audit": [
+      {
+        "at": "2026-10-05T18:41:52Z",
+        "from": "draft",
+        "event": "checks_pass",
+        "to": "ready",
+        "note": "not verified (league rules not captured)"
+      },
+      {
+        "at": "2026-10-05T18:42:52Z",
+        "from": "ready",
+        "event": "hand_off",
+        "to": "handed_off",
+        "note": "MFL opened; acceptance not verified"
+      },
+      {
+        "at": "2026-10-05T18:43:52Z",
+        "from": "handed_off",
+        "event": "no_change",
+        "to": "not_yet_done",
+        "note": "No matching MFL change observed"
+      },
+      {
+        "at": "2026-10-05T18:44:52Z",
+        "from": "not_yet_done",
+        "event": "match",
+        "to": "landed",
+        "note": "observed player on IR on the same franchise"
+      }
+    ]
+  }
+}

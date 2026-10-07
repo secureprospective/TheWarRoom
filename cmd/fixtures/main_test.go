@@ -105,10 +105,12 @@ func seedArchive(t *testing.T, path string) {
 func TestRunUsesStoresAndLeavesSnapshotsUntouched(t *testing.T) {
 	dir := t.TempDir()
 	leaguePath, historyPath := filepath.Join(dir, "league.db"), filepath.Join(dir, "history.db")
+	whatifPath := filepath.Join(dir, "whatif.db")
 	seedLeague(t, leaguePath)
 	seedArchive(t, historyPath)
+	emptyDB(t, whatifPath)
 	before := map[string][]byte{}
-	for _, path := range []string{leaguePath, historyPath} {
+	for _, path := range []string{leaguePath, historyPath, whatifPath} {
 		body, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatal(err)
@@ -116,7 +118,7 @@ func TestRunUsesStoresAndLeavesSnapshotsUntouched(t *testing.T) {
 		before[path] = body
 	}
 	out := filepath.Join(dir, "out")
-	args := []string{"-db", leaguePath, "-history", historyPath, "-out", out}
+	args := []string{"-db", leaguePath, "-history", historyPath, "-whatif", whatifPath, "-out", out}
 	if err := run(context.Background(), args); err != nil {
 		t.Fatal(err)
 	}
@@ -142,6 +144,7 @@ func TestRunUsesStoresAndLeavesSnapshotsUntouched(t *testing.T) {
 	if snap.Players.Provenance.Freshness.FetchedAt != "2026-10-05T02:00:00Z" {
 		t.Fatal(snap.Players.Provenance)
 	}
+	assertFixtureClock(t, filepath.Join(out, "clock.json"))
 	if err := run(context.Background(), args); err != nil {
 		t.Fatal(err)
 	}
@@ -166,6 +169,16 @@ func TestRunUsesStoresAndLeavesSnapshotsUntouched(t *testing.T) {
 func TestRunOfflineWithoutActiveRulebook(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "empty.db")
+	emptyDB(t, path)
+	err := run(context.Background(),
+		[]string{"-db", path, "-history", path, "-whatif", path, "-out", filepath.Join(dir, "out")})
+	if err == nil || !strings.Contains(err.Error(), "fixtures run offline") {
+		t.Fatalf("offline gate = %v", err)
+	}
+}
+
+func emptyDB(t *testing.T, path string) {
+	t.Helper()
 	pools, err := db.Open(context.Background(), path)
 	if err != nil {
 		t.Fatal(err)
@@ -173,8 +186,21 @@ func TestRunOfflineWithoutActiveRulebook(t *testing.T) {
 	if err := pools.Close(); err != nil {
 		t.Fatal(err)
 	}
-	err = run(context.Background(), []string{"-db", path, "-history", path, "-out", filepath.Join(dir, "out")})
-	if err == nil || !strings.Contains(err.Error(), "fixtures run offline") {
-		t.Fatalf("offline gate = %v", err)
+}
+
+// An empty what-if store seeds its genesis phase from the mirror, as the app does at startup.
+func assertFixtureClock(t *testing.T, path string) {
+	t.Helper()
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var clock clockReading
+	if err := json.Unmarshal(body, &clock); err != nil {
+		t.Fatal(err)
+	}
+	if clock.Provenance.Kind != "fixture" || clock.Value.Phase != domain.PhaseOffseason ||
+		len(clock.Value.Deadlines) != 0 || len(clock.Value.Windows) != 7 {
+		t.Fatal(clock)
 	}
 }

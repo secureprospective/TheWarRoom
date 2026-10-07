@@ -9,6 +9,7 @@ const html = readFileSync(resolve(dist, 'index.html'), 'utf8');
 const entries = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+\.js)"/g)]
   .map((match) => resolve(dist, match[1].replace(/^\//, '')));
 const fixture = JSON.parse(readFileSync(resolve(frontend, 'src/app/data/fixtures/snapshot.json')));
+const envelope = JSON.parse(readFileSync(resolve(frontend, 'src/app/data/fixtures/envelope-demo.json')));
 const names = fixture.players.value.map((player) => player.name).filter(Boolean);
 
 function check(entry, budget = 325_000, source = readFileSync(entry, 'utf8')) {
@@ -16,6 +17,9 @@ function check(entry, budget = 325_000, source = readFileSync(entry, 'utf8')) {
   if (size > budget) throw new Error(`Entry ${size} bytes exceeds ${budget} byte budget`);
   if (names.slice(0, 12).every((name) => source.includes(name))) {
     throw new Error('Fixture player run in entry');
+  }
+  if (source.includes(envelope.receipt.correlationId)) {
+    throw new Error('Envelope fixture in entry');
   }
   return size;
 }
@@ -26,6 +30,7 @@ for (const entry of entries) {
   if (process.argv.includes('--self-test')) {
     assert.throws(() => check(entry, 1000), /exceeds 1000/);
     assert.throws(() => check(entry, 325_000, names.slice(0, 12).join('|')), /Fixture player run/);
-    console.log('bundle-budget: rejected 1 KB budget and deliberate fixture leak');
+    assert.throws(() => check(entry, 325_000, envelope.receipt.correlationId), /Envelope fixture in entry/);
+    console.log('bundle-budget: rejected 1 KB budget, snapshot leak and envelope leak');
   }
 }
