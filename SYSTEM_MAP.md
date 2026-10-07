@@ -12,7 +12,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 |---|---|---|
 | App | repo root (`package main`) | Wails entrypoint (`main.go`), the `App` composition root (`app.go`) and the IPC adapters (`*_app.go`). Adapters validate, route and format; no business logic, no SQL. |
 | Credentials | `internal/mflkey` | OS keyring store; redacted credential type, bounded operations. |
-| Layer 1 | `internal/ingestion/pendingtrades` | Candidate-key verification; no franchise inference. |
+| Layer 1 | `internal/ingestion/pendingtrades` | Keyed pending-trade feed and candidate-key verification; no franchise inference. |
 | Transport | `internal/mfl` | MFL HTTP client: rate limit, host discovery, 429 backoff. No domain types. |
 | Transport | `internal/archive` | The HTTP transport every outbound request goes through: it records each response body (sha256, gzip) and each attempt to a `Sink`. Leaf. |
 | Layer 1 | `internal/ingestion` | Fetchers returning raw `Raw*` records. Shared helpers in the root package (`LeagueExport`, `FetchLeagueExport`, the CSV and CFBD plumbing); one subpackage per source. |
@@ -158,3 +158,7 @@ independently of React. Clock and snapshot providers load in parallel, never fal
 `frontend/src/app/commands/mflKey.ts` holds status independently of shell renders; the registry
 alone writes it and runs connect/forget. The provider lazily imports generated Wails bindings;
 `parseMFLKeyStatus` validates their five-state JSON before any status reaches the surface.
+
+`internal/leaguefeed` holds typed season transactions, assets, lineups and pending trades; pure leaf.
+`internal/ingestion/transactions` validates and converts the unkeyed MFL season transaction feed.
+`internal/ingestion/livescoring` validates and converts MFL saved weekly lineups and live totals.

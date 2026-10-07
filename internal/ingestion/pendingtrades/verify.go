@@ -42,25 +42,37 @@ func (r RawEnvelope) Validate() error {
 
 // Verify makes one keyed export; discovery is an unkeyed lookup only if not already cached.
 func Verify(ctx context.Context, c *mfl.Client, year, leagueID string) (Verified, error) {
+	if _, err := fetchEnvelope(ctx, c, year, leagueID); err != nil {
+		return Verified{}, err
+	}
+	return Verified{Detail: "Export accepted; authenticated franchise not proved by this body"}, nil
+}
+
+func fetchEnvelope(ctx context.Context, c *mfl.Client, year, leagueID string) (RawEnvelope, error) {
 	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
-		return Verified{}, fmt.Errorf("pendingTrades: discover host: %w", err)
+		return RawEnvelope{}, fmt.Errorf("pendingTrades: discover host: %w", err)
 	}
 	resp, err := c.Do(ctx, mfl.Request{
 		Type: "pendingTrades", Year: year, Params: map[string]string{"L": leagueID}, Keyed: true,
 	})
 	if err != nil {
-		return Verified{}, fmt.Errorf("pendingTrades: verify: %w", err)
+		return RawEnvelope{}, fmt.Errorf("pendingTrades: verify: %w", err)
 	}
+	return decodeEnvelope(resp.Body, resp.StatusCode)
+}
+
+func decodeEnvelope(body []byte, status int) (RawEnvelope, error) {
 	var raw RawEnvelope
-	decodeErr := json.Unmarshal(resp.Body, &raw)
-	if resp.StatusCode != http.StatusOK && raw.Error == nil {
-		return Verified{}, fmt.Errorf("%w: HTTP status %d", ErrRejected, resp.StatusCode)
+	decodeErr := json.Unmarshal(body, &raw)
+	if status != http.StatusOK && raw.Error == nil {
+		return RawEnvelope{}, fmt.Errorf("%w: HTTP status %d", ErrRejected, status)
 	}
 	if decodeErr != nil {
-		return Verified{}, fmt.Errorf("pendingTrades: decode response: %w", decodeErr)
+		return RawEnvelope{}, fmt.Errorf("pendingTrades: decode response: %w", decodeErr)
 	}
+	// Validate rejects an MFL error envelope as ErrRejected, the verdict Verify needs.
 	if err := raw.Validate(); err != nil {
-		return Verified{}, err
+		return RawEnvelope{}, err
 	}
-	return Verified{Detail: "Export accepted; authenticated franchise not proved by this body"}, nil
+	return raw, nil
 }
