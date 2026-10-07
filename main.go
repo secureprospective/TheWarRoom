@@ -26,13 +26,17 @@ func main() {
 	app := NewApp()
 
 	err := wails.Run(&options.App{
-		Title:  "The War Room",
-		Width:  1024,
-		Height: 768,
+		Title: "The War Room",
+		// Opens maximised; 1280x800 is the restore size and the size every render gate uses.
+		// The shell needs it: rail, inspector and comms leave the workspace 718px at 1280.
+		Width:            1280,
+		Height:           800,
+		WindowStartState: options.Maximised,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
+		// --surface-0 (hsl(220 14% 4%)), opaque, so the window never flashes another colour.
+		BackgroundColour: &options.RGBA{R: 9, G: 10, B: 12, A: 255},
 		OnStartup:        app.startup,
 		OnDomReady:       app.domReady,
 		OnShutdown:       app.shutdown,
