@@ -102,7 +102,8 @@ describe('Trade desk', () => {
   it('says when there are no offers, and hides offers when the feed failed', async () => {
     const empty = await setup(tradeReading([]));
     expect(empty.text()).toContain('No pending offers');
-    expect(empty.text()).toContain(heldLineup().provenance.source);
+    expect(empty.text()).not.toContain('Offered to you');
+    expect(empty.text()).not.toContain('Your offers');
     const fresh = heldLineup().provenance;
     const failed = await setup(tradeReading([tradeOffer()], {
       ...fresh, freshness: { ...fresh.freshness, state: 'fail', note: 'MFL timed out' },

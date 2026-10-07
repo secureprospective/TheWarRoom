@@ -30,7 +30,9 @@
   white-space: pre-wrap;
 }
 .trade-provenance {
-  color: var(--surface-tx2);
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
 }
 @media (max-width: 700px) {
   .trade-assets {
