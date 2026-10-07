@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
+	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
@@ -24,6 +25,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App is the Wails root and the backend's composition root: it wires the stores and routes
@@ -60,6 +62,15 @@ type App struct {
 	hasTargetSnapshot bool
 	targetMoveLog     *envelope.MemoryLog // in memory until ring 1 persists the audit log
 
+	weekMu           sync.Mutex
+	week             leagueweek.Week
+	weekFetchedAt    time.Time
+	weekRefreshError string
+	clockChanged     func(context.Context)
+	weekCancel       context.CancelFunc
+	weekWorkers      sync.WaitGroup
+	weekStart        sync.Once // domReady fires again on a webview reload; one worker only
+
 	refreshMu        sync.Mutex // one MFL refresh at a time
 	launchRefreshDue bool       // startup did not refresh, so domReady does
 
@@ -92,7 +103,11 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 
 // NewApp is cheap; resources are acquired in startup.
 func NewApp() *App {
-	return &App{started: make(chan struct{}), targetMoveLog: envelope.NewMemoryLog()}
+	return &App{
+		started:       make(chan struct{}),
+		targetMoveLog: envelope.NewMemoryLog(),
+		clockChanged:  func(ctx context.Context) { runtime.EventsEmit(ctx, "target:clock") },
+	}
 }
 
 // ready waits for startup to finish and returns its failure, if any. On Linux, Wails runs startup
@@ -244,6 +259,10 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 
 // shutdown releases the database and the instance lock.
 func (a *App) shutdown(_ context.Context) {
+	if a.weekCancel != nil {
+		a.weekCancel()
+	}
+	a.weekWorkers.Wait()
 	for _, p := range []*db.Pools{a.pools, a.histPools, a.whatifPools} {
 		if p != nil {
 			_ = p.Close()

@@ -130,18 +130,30 @@ func (a *App) fetchLeague(ctx context.Context, season int) (state.MirrorSnapshot
 // message loop, and skips the refresh when startup failed or already refreshed. The result goes
 // to the log.
 func (a *App) refreshInBackground(parent context.Context) {
-	go func() {
-		if a.ready() != nil || !a.launchRefreshDue {
-			return
-		}
-		ctx, cancel := context.WithTimeout(parent, refreshTimeout)
-		defer cancel()
-		res, err := a.refreshLeague(ctx, a.rulebook, a.league)
-		if err != nil {
-			log.Printf("the war room: launch refresh failed (the league held is kept): %v", err)
-			return
-		}
-		log.Printf("the war room: launch refresh: season %d, %d players, league changed %t, rules changed %t",
-			res.Season, res.Players, res.Changed, res.RulesChanged)
-	}()
+	a.weekStart.Do(func() {
+		parent, a.weekCancel = context.WithCancel(parent)
+		a.weekWorkers.Add(1)
+		go func() {
+			defer a.weekWorkers.Done()
+			if a.ready() != nil {
+				return
+			}
+			if a.launchRefreshDue {
+				a.launchRefresh(parent)
+			}
+			a.refreshWeeksInBackground(parent)
+		}()
+	})
+}
+
+func (a *App) launchRefresh(parent context.Context) {
+	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
+	defer cancel()
+	res, err := a.refreshLeague(ctx, a.rulebook, a.league)
+	if err != nil {
+		log.Printf("the war room: launch refresh failed (the league held is kept): %v", err)
+		return
+	}
+	log.Printf("the war room: launch refresh: season %d, %d players, league changed %t, rules changed %t",
+		res.Season, res.Players, res.Changed, res.RulesChanged)
 }

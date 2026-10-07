@@ -74,6 +74,17 @@ func FirstLock(w Week) time.Time {
 	return first
 }
 
+// NextLock reports the next kickoff strictly after at, independent of game ordering.
+func NextLock(at time.Time, w Week) (time.Time, bool) {
+	var next time.Time
+	for _, g := range w.Games {
+		if g.Kickoff.After(at) && (next.IsZero() || g.Kickoff.Before(next)) {
+			next = g.Kickoff
+		}
+	}
+	return next, !next.IsZero()
+}
+
 // LastLock requires a validated, nonempty week.
 func LastLock(w Week) time.Time {
 	last := w.Games[0].Kickoff

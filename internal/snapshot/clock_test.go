@@ -28,7 +28,7 @@ func TestClockBuilderPreservesHeldFacts(t *testing.T) {
 		EventID: "x", Kind: "cut", ScheduledAt: "2026-10-06T08:00:00-04:00", Status: state.CalStatusPlanned,
 	}}}
 	p := Provenance{Source: "test", Kind: "fixture"}
-	got, err := BuildClock(context.Background(), at, 2026, src, p)
+	got, err := BuildClock(context.Background(), at, 2026, src, nil, p)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestClockBuilderRejectsBadHeldData(t *testing.T) {
 		"no identity": {phase: domain.PhaseOffseason, events: []state.CalendarEvent{
 			{Kind: "cut", ScheduledAt: ok, Status: state.CalStatusPlanned}}},
 	} {
-		if _, err := BuildClock(context.Background(), time.Now(), 2026, src, Provenance{}); err == nil {
+		if _, err := BuildClock(context.Background(), time.Now(), 2026, src, nil, Provenance{}); err == nil {
 			t.Fatal("accepted", name)
 		}
 	}
