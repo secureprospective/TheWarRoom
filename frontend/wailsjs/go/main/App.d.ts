@@ -60,9 +60,13 @@ export function SetMFLKey(arg1:string):Promise<main.MFLKeyStatus>;
 
 export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetParamResult>;
 
+export function TargetCheckMoves():Promise<void>;
+
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
 
 export function TargetDraftIR(arg1:string,arg2:string):Promise<envelope.Receipt>;
+
+export function TargetHandOff(arg1:string):Promise<envelope.Receipt>;
 
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 

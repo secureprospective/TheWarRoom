@@ -114,12 +114,20 @@ export function SetParam(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetParam'](arg1, arg2, arg3);
 }
 
+export function TargetCheckMoves() {
+  return window['go']['main']['App']['TargetCheckMoves']();
+}
+
 export function TargetClock() {
   return window['go']['main']['App']['TargetClock']();
 }
 
 export function TargetDraftIR(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftIR'](arg1, arg2);
+}
+
+export function TargetHandOff(arg1) {
+  return window['go']['main']['App']['TargetHandOff'](arg1);
 }
 
 export function TargetMoves(arg1) {

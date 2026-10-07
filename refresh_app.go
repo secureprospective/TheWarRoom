@@ -67,9 +67,18 @@ func (a *App) RefreshLeague() RefreshResult {
 
 // refreshLeague syncs the rules, then replaces the mirror with MFL's rosters and salary
 // adjustments for the current season. Every fetch is archived by the transport.
-func (a *App) refreshLeague(ctx context.Context, rb *rulebook.Store, mirror *state.Mirror) (RefreshResult, error) {
+func (a *App) refreshLeague(
+	ctx context.Context, rb *rulebook.Store, mirror *state.Mirror,
+) (RefreshResult, error) {
 	a.refreshMu.Lock()
 	defer a.refreshMu.Unlock()
+	return a.refreshLeagueLocked(ctx, rb, mirror)
+}
+
+// The caller holds refreshMu, including when the watcher refreshes several feeds.
+func (a *App) refreshLeagueLocked(
+	ctx context.Context, rb *rulebook.Store, mirror *state.Mirror,
+) (RefreshResult, error) {
 	cfg, err := league.Discover(ctx, a.mflClient, ingestion.LeagueID, a.seasonGuess())
 	if err != nil {
 		return RefreshResult{}, fmt.Errorf("refresh: %w", err)
@@ -86,6 +95,7 @@ func (a *App) refreshLeague(ctx context.Context, rb *rulebook.Store, mirror *sta
 	if err != nil {
 		return RefreshResult{}, fmt.Errorf("refresh: %w", err)
 	}
+	a.rostersCheckedAt = time.Now().UTC()
 	return RefreshResult{OK: true, Season: snap.Season, RulesChanged: rulesChanged, Changed: changed,
 		Players: len(snap.Players)}, nil
 }
@@ -132,6 +142,13 @@ func (a *App) fetchLeague(ctx context.Context, season int) (state.MirrorSnapshot
 func (a *App) refreshInBackground(parent context.Context) {
 	a.weekStart.Do(func() {
 		parent, a.weekCancel = context.WithCancel(parent)
+		a.weekWorkers.Add(1)
+		go func() {
+			defer a.weekWorkers.Done()
+			if a.ready() == nil {
+				a.watchMoves(parent)
+			}
+		}()
 		a.weekWorkers.Add(1)
 		go func() {
 			defer a.weekWorkers.Done()
