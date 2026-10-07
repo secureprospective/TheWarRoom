@@ -13,7 +13,9 @@ baseline=.bloat-baseline
 provenance_re='(GLM|DeepSeek|Gemini|Ornith|agy)|[Rr]eview (m|lead |finding |round )?[0-9#]|Round-[0-9]|Ship-[0-9]|Friction #[0-9]'
 
 mapfile -t files < <(find . -name '*.go' ! -name '*_test.go' \
-  -not -path './vendor/*' -not -path './tools/*' -not -path '*/node_modules/*' -not -path './frontend/*' | sort)
+  -not -path './vendor/*' -not -path './tools/*' -not -path '*/node_modules/*' -not -path './frontend/*' \
+  -not -path './.worktrees/*' | sort)
+# .worktrees/ holds other branches checked out as session worktrees; Go's own tools skip dot directories too.
 
 read -r total comments provenance tiny < <(awk -v re="$provenance_re" '
   FNR == 1 { if (NR > 1 && code < 40) tiny++; code = 0 }
