@@ -12,7 +12,6 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -23,6 +22,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/moves"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -49,6 +49,7 @@ type App struct {
 	rulebook    *rulebook.Store
 	league      *state.Mirror // the league as MFL states it; every score surface reads it
 	whatif      *state.Store  // the what-if league the transaction screens work on
+	moves       *moves.Store
 	history     *history.Store
 	coordinator *transactions.Coordinator // the only holder of the what-if Writer
 	mflClient   *mfl.Client               // shared, so rate limit and host discovery are process-wide
@@ -69,7 +70,6 @@ type App struct {
 	targetSnapshotMu  sync.Mutex
 	targetSnapshot    snapshot.Snapshot
 	hasTargetSnapshot bool
-	targetMoveLog     *envelope.MemoryLog // in memory until ring 1 persists the audit log
 
 	weekMu           sync.Mutex
 	week             leagueweek.Week
@@ -122,7 +122,6 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 func NewApp() *App {
 	return &App{
 		started:       make(chan struct{}),
-		targetMoveLog: envelope.NewMemoryLog(),
 		clockChanged:  func(ctx context.Context) { runtime.EventsEmit(ctx, "target:clock") },
 		seasonChanged: func(ctx context.Context) { runtime.EventsEmit(ctx, "target:season") },
 	}
@@ -238,6 +237,7 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 	ctx, cancel := context.WithTimeout(parent, startupBudget)
 	defer cancel()
 
+	moveStore := moves.New(a.pools)
 	pstore := params.New(a.pools)
 	rb := rulebook.New(a.pools)
 	mirror := state.NewMirror(a.pools, rb)
@@ -249,6 +249,7 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 	}{
 		{"history", hist.Initialize},
 		{"params", pstore.Initialize},
+		{"moves", moveStore.Initialize},
 		{"rulebook", func(c context.Context) error { return rb.Initialize(c, discoverSource{app: a}) }},
 		{"league mirror", mirror.Initialize},
 		{"first MFL refresh", func(c context.Context) error {
@@ -280,6 +281,7 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 		log.Printf("the war room: %s ready in %s", s.name, time.Since(began).Round(time.Millisecond))
 	}
 	a.params, a.rulebook, a.league, a.whatif, a.coordinator, a.history = pstore, rb, mirror, whatif, coord, hist
+	a.moves = moveStore
 	return refreshed, nil
 }
 

@@ -39,7 +39,9 @@ func demo(snap snapshot.Snapshot) (envelopeDemo, error) {
 		Intent: "roster.ir", LeagueID: ingestion.LeagueID, FranchiseID: fid,
 		Subject:  envelope.Subject{Players: []playerid.PlayerID{pid}},
 		Expected: envelope.ExpectedChange{Player: pid, RosterStatus: domain.RosterIR},
-		Gravity:  envelope.G2, Undo: envelope.Reversible, Target: envelope.Target{Kind: envelope.Mapped, URL: demoURL},
+		Gravity:  envelope.G2,
+		Undo:     envelope.Reversible,
+		Target:   envelope.Target{Kind: envelope.Mapped, URL: demoURL},
 	}, func() string { return "fixture-roster-ir-001" })
 	if err != nil {
 		return envelopeDemo{}, fmt.Errorf("fixtures: draft: %w", err)
@@ -50,12 +52,12 @@ func demo(snap snapshot.Snapshot) (envelopeDemo, error) {
 	if e, err = e.HandOff(at.Add(-time.Minute)); err != nil {
 		return envelopeDemo{}, fmt.Errorf("fixtures: handoff: %w", err)
 	}
-	before := envelope.Observation{LeagueID: ingestion.LeagueID, Snapshot: snap}
+	before := envelope.Observation{LeagueID: ingestion.LeagueID, Rosters: snap.Rosters}
 	if e, err = e.Observe(at, before, envelope.IRPredicate{}); err != nil {
 		return envelopeDemo{}, fmt.Errorf("fixtures: before: %w", err)
 	}
 	after := envelope.Observation{LeagueID: ingestion.LeagueID,
-		Snapshot: irSnapshot(snap, fid, pid, at.Add(time.Minute))}
+		Rosters: irSnapshot(snap, fid, pid, at.Add(time.Minute)).Rosters}
 	if e, err = e.Observe(at.Add(time.Minute), after, envelope.IRPredicate{}); err != nil {
 		return envelopeDemo{}, fmt.Errorf("fixtures: after: %w", err)
 	}

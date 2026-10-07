@@ -1,7 +1,7 @@
 // Package envelope keeps plans separate from MFL truth: an envelope is a planned move whose state
 // changes only through the transition table, and "Ready" means the app checked it, never that MFL
-// accepted it. The core performs no I/O. Persistence is an append-only SQLite table with the
-// Receipt fields, delivered with the first live Act in ring 1; ring 0 keeps an in-memory log.
+// accepted it. The core performs no I/O. internal/store/moves owns the append-only SQLite
+// envelope and audit tables.
 package envelope
 
 import (
@@ -121,7 +121,7 @@ type Receipt struct {
 	Audit         []AuditEntry `json:"audit"`
 }
 
-// Envelope has no exported fields: New is the only way in, and every change is a transition.
+// Envelope has no exported fields; construction and restoration validate every transition.
 type Envelope struct {
 	id      string
 	spec    Spec
@@ -279,4 +279,31 @@ func (e Envelope) Await(at time.Time, event Event) (Envelope, error) {
 		return Envelope{}, ErrIllegalTransition{From: e.state, Event: event}
 	}
 	return e.move(at, event, "submission observed; awaiting resolution")
+}
+
+func (e Envelope) ID() string { return e.id }
+
+func (e Envelope) Created() time.Time { return e.created }
+
+// Restore rebuilds a stored envelope by replaying its audit through the transition table; a
+// history the table cannot produce is an error naming the entry, never repaired.
+func Restore(id string, created time.Time, spec Spec, audit []AuditEntry) (Envelope, error) {
+	e, err := New(created, spec, func() string { return id })
+	if err != nil {
+		return Envelope{}, fmt.Errorf("envelope: restore construction: %w", err)
+	}
+	for i, entry := range audit {
+		if entry.From != e.state {
+			return Envelope{}, fmt.Errorf("envelope: restore entry %d: from %s, want %s", i, entry.From, e.state)
+		}
+		next, err := e.move(entry.At, entry.Event, entry.Note)
+		if err != nil {
+			return Envelope{}, fmt.Errorf("envelope: restore entry %d: %w", i, err)
+		}
+		if next.state != entry.To {
+			return Envelope{}, fmt.Errorf("envelope: restore entry %d: to %s, want %s", i, entry.To, next.state)
+		}
+		e = next
+	}
+	return e, nil
 }

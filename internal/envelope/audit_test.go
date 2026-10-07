@@ -6,10 +6,6 @@ import (
 )
 
 type Filter struct{ LeagueID, FranchiseID, CorrelationID string }
-type AuditLog interface {
-	Append(Envelope) error
-	List(Filter) []Receipt
-}
 type MemoryLog struct {
 	mu       sync.Mutex
 	receipts []Receipt

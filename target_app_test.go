@@ -9,6 +9,7 @@ import (
 	"errors"
 	"net/http"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -25,6 +26,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/moves"
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
@@ -38,8 +40,13 @@ func (d *directoryDown) RoundTrip(*http.Request) (*http.Response, error) {
 
 func targetTestApp(t *testing.T) *App {
 	t.Helper()
+	return targetTestAppAt(t, filepath.Join(t.TempDir(), "league.db"))
+}
+
+func targetTestAppAt(t *testing.T, path string) *App {
+	t.Helper()
 	ctx := context.Background()
-	p, err := db.Open(ctx, filepath.Join(t.TempDir(), "league.db"))
+	p, err := db.Open(ctx, path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +60,10 @@ func targetTestApp(t *testing.T) *App {
 	if err := mirror.Initialize(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := mirror.Replace(ctx, state.MirrorSnapshot{Season: 2026, Players: []state.MirrorPlayer{{MFLID: "0042", FranchiseID: "0001"}}}); err != nil {
+	if _, err := mirror.Replace(ctx, state.MirrorSnapshot{
+		Season:  2026,
+		Players: []state.MirrorPlayer{{MFLID: "0042", FranchiseID: "0001"}},
+	}); err != nil {
 		t.Fatal(err)
 	}
 	hp, err := db.Open(ctx, filepath.Join(t.TempDir(), "history.db"))
@@ -73,7 +83,13 @@ func targetTestApp(t *testing.T) *App {
 	if err := hs.Initialize(ctx); err != nil {
 		t.Fatal(err)
 	}
+	moveStore := moves.New(p)
+	if err := moveStore.Initialize(ctx); err != nil {
+		t.Fatal(err)
+	}
 	a := NewApp()
+	a.pools = p
+	a.moves = moveStore
 	a.ctx = ctx
 	a.season = 2026
 	a.league = mirror
@@ -85,7 +101,9 @@ func targetTestApp(t *testing.T) *App {
 
 func TestTargetDirectoryReusesLiveCacheAndOriginalTime(t *testing.T) {
 	a := targetTestApp(t)
-	lk, err := normalize.NewLookup([]players.RawPlayer{{ID: "0042", Name: "Cached", Position: "QB", Team: "BUF"}})
+	lk, err := normalize.NewLookup([]players.RawPlayer{
+		{ID: "0042", Name: "Cached", Position: "QB", Team: "BUF"},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +112,8 @@ func TestTargetDirectoryReusesLiveCacheAndOriginalTime(t *testing.T) {
 	for range 2 {
 		dir := a.targetDirectory(context.Background())
 		f, ok := dir.Lookup.Facts("0042")
-		if !ok || f.Name != "Cached" || dir.Provenance.Freshness.FetchedAt != "2026-10-05T12:00:00Z" || dir.Provenance.Freshness.State != domain.FreshLive {
+		if !ok || f.Name != "Cached" || dir.Provenance.Freshness.FetchedAt != "2026-10-05T12:00:00Z" ||
+			dir.Provenance.Freshness.State != domain.FreshLive {
 			t.Fatalf("directory: %+v, %+v", dir.Provenance, f)
 		}
 	}
@@ -112,7 +131,14 @@ func recordTargetPlayers(t *testing.T, hs *history.Store) {
 		t.Fatal(err)
 	}
 	sum := sha256.Sum256(body)
-	err := hs.Record(context.Background(), archive.Fetch{URL: "/2026/export?TYPE=players&L=" + ingestion.LeagueID, Status: 200, SHA256: hex.EncodeToString(sum[:]), Size: int64(len(body)), Gzip: gz.Bytes(), FetchedAt: time.Date(2026, 10, 5, 10, 0, 0, 0, time.UTC)})
+	err := hs.Record(context.Background(), archive.Fetch{
+		URL:       "/2026/export?TYPE=players&L=" + ingestion.LeagueID,
+		Status:    200,
+		SHA256:    hex.EncodeToString(sum[:]),
+		Size:      int64(len(body)),
+		Gzip:      gz.Bytes(),
+		FetchedAt: time.Date(2026, 10, 5, 10, 0, 0, 0, time.UTC),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,10 +161,12 @@ func TestTargetDirectoryFallsBackAfterCancelledLiveFetch(t *testing.T) {
 		dir := a.targetDirectory(ctx)
 		if archived {
 			f, ok := dir.Lookup.Facts("0042")
-			if !ok || f.Name != "Archived" || dir.Provenance.Freshness.FetchedAt != "2026-10-05T10:00:00Z" || dir.Provenance.Source != "mfl-players-archive" || dir.Provenance.Freshness.State != domain.FreshStale {
+			if !ok || f.Name != "Archived" || dir.Provenance.Freshness.FetchedAt != "2026-10-05T10:00:00Z" ||
+				dir.Provenance.Source != "mfl-players-archive" || dir.Provenance.Freshness.State != domain.FreshStale {
 				t.Fatalf("fallback: %+v, %+v", dir.Provenance, f)
 			}
-		} else if dir.Provenance.Freshness.State != domain.FreshFail || !strings.Contains(dir.Provenance.Freshness.Note, "no archived copy") {
+		} else if dir.Provenance.Freshness.State != domain.FreshFail ||
+			!strings.Contains(dir.Provenance.Freshness.Note, "no archived copy") {
 			t.Fatal(dir.Provenance)
 		}
 		if a.hasLookup {
@@ -251,9 +279,32 @@ func TestTargetSnapshotFailureKeepsCache(t *testing.T) {
 	if _, err := a.TargetSnapshot(); err == nil {
 		t.Fatal("cancelled build succeeded")
 	}
+	// The cancelled context only simulated a failed build; the app itself is still running.
+	a.ctx = context.Background()
 	r, err := a.TargetDraftIR("0001", "0042")
 	if err != nil || r.State != envelope.Blocked ||
 		r.Audit[0].Note != "not verified (league rules not captured); MFL target not verified" {
 		t.Fatalf("cached draft: %+v, %v", r, err)
+	}
+}
+
+func TestTargetMovesSurviveRestart(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "league.db")
+	first := targetTestAppAt(t, path)
+	targetOfflineClient(t, first)
+	if _, err := first.TargetSnapshot(); err != nil {
+		t.Fatal(err)
+	}
+	drafted, err := first.TargetDraftIR("0001", "0042")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := first.pools.Close(); err != nil {
+		t.Fatal(err)
+	}
+	second := targetTestAppAt(t, path)
+	listed, err := second.TargetMoves("0001")
+	if err != nil || !reflect.DeepEqual(listed, []envelope.Receipt{drafted}) {
+		t.Fatalf("restart: %+v, %v", listed, err)
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
@@ -26,7 +27,7 @@ func (IRCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
 	if snap.Rosters.Provenance.Freshness.State == domain.FreshFail {
 		return CheckResult{Blocked: true, Note: "roster unavailable"}
 	}
-	status, found := rosterStatus(s, snap)
+	status, found := rosterStatus(s, snap.Rosters.Value)
 	if !found {
 		return CheckResult{Blocked: true, Note: "player is not on this franchise's roster"}
 	}
@@ -53,27 +54,60 @@ func (e Envelope) Check(at time.Time, snap snapshot.Snapshot, check Check) (Enve
 	return e.move(at, event, result.Note)
 }
 
-// Observation is a later snapshot of the league; its roster fetch time is when it was observed.
+// Source names an MFL feed a predicate reads; Observe checks only the declared ones' freshness.
+type Source string
+
+const (
+	Rosters       Source = "rosters"
+	Transactions  Source = "transactions"
+	Lineups       Source = "lineups"
+	PendingTrades Source = "pendingTrades"
+)
+
+// Observation is the league as MFL reported it after a hand-off, one feed per field, each with
+// its own fetch time.
 type Observation struct {
-	LeagueID string
-	Snapshot snapshot.Snapshot
+	LeagueID      string
+	Rosters       snapshot.Sourced[[]snapshot.Roster]
+	Transactions  snapshot.Sourced[[]leaguefeed.Transaction]
+	Lineups       snapshot.Sourced[leaguefeed.Lineups]
+	PendingTrades snapshot.Sourced[[]leaguefeed.PendingTrade]
 }
+
+func (o Observation) freshness(source Source) (domain.Freshness, bool) {
+	switch source {
+	case Rosters:
+		return o.Rosters.Provenance.Freshness, true
+	case Transactions:
+		return o.Transactions.Provenance.Freshness, true
+	case Lineups:
+		return o.Lineups.Provenance.Freshness, true
+	case PendingTrades:
+		return o.PendingTrades.Provenance.Freshness, true
+	default:
+		return domain.Freshness{}, false
+	}
+}
+
 type Verdict struct {
 	Event Event
 	Note  string
 }
 type Predicate interface {
 	Evaluate(Spec, Observation) Verdict
+	Sources() []Source
 }
 type IRPredicate struct{}
 
+func (IRPredicate) Sources() []Source { return []Source{Rosters} }
+
 func (IRPredicate) Evaluate(s Spec, obs Observation) Verdict {
 	if s.Intent != "roster.ir" || obs.LeagueID != s.LeagueID ||
-		obs.Snapshot.Rosters.Provenance.Freshness.State == domain.FreshFail {
+		obs.Rosters.Provenance.Freshness.State == domain.FreshFail {
 		return Verdict{Event: Partial, Note: "Not verified: authoritative scoped roster unavailable"}
 	}
 	present := false
-	for _, r := range obs.Snapshot.Rosters.Value {
+	for _, r := range obs.Rosters.Value {
 		if r.FranchiseID == s.FranchiseID {
 			present = true
 		}
@@ -81,7 +115,7 @@ func (IRPredicate) Evaluate(s Spec, obs Observation) Verdict {
 	if !present {
 		return Verdict{Event: Partial, Note: "Not verified: franchise roster missing"}
 	}
-	status, found := rosterStatus(s, obs.Snapshot)
+	status, found := rosterStatus(s, obs.Rosters.Value)
 	if !found {
 		return Verdict{Event: Contradiction, Note: "player gone from franchise"}
 	}
@@ -93,8 +127,8 @@ func (IRPredicate) Evaluate(s Spec, obs Observation) Verdict {
 	}
 	return Verdict{Event: NoChange, Note: "No matching MFL change observed"}
 }
-func rosterStatus(s Spec, snap snapshot.Snapshot) (domain.RosterStatus, bool) {
-	for _, r := range snap.Rosters.Value {
+func rosterStatus(s Spec, rosters []snapshot.Roster) (domain.RosterStatus, bool) {
+	for _, r := range rosters {
 		if r.FranchiseID != s.FranchiseID {
 			continue
 		}
@@ -110,9 +144,9 @@ func (e Envelope) Observe(at time.Time, obs Observation, predicate Predicate) (E
 	if predicate == nil {
 		return Envelope{}, fmt.Errorf("envelope: predicate required")
 	}
-	observed, err := time.Parse(time.RFC3339, obs.Snapshot.Rosters.Provenance.Freshness.FetchedAt)
-	if err != nil || observed.After(at) || !observed.After(e.handedAt()) {
-		return Envelope{}, ErrStaleObservation
+	observed, err := e.observedAt(at, obs, predicate.Sources())
+	if err != nil {
+		return Envelope{}, err
 	}
 	verdict := predicate.Evaluate(cloneSpec(e.spec), obs)
 	if !slices.Contains([]Event{Match, Partial, NoChange, Contradiction}, verdict.Event) {
@@ -133,4 +167,23 @@ func (e Envelope) handedAt() time.Time {
 		}
 	}
 	return at
+}
+
+func (e Envelope) observedAt(at time.Time, obs Observation, sources []Source) (time.Time, error) {
+	if len(sources) == 0 {
+		return time.Time{}, ErrStaleObservation
+	}
+	var oldest time.Time
+	for _, source := range sources {
+		fresh, known := obs.freshness(source)
+		fetched, err := time.Parse(time.RFC3339, fresh.FetchedAt)
+		if !known || fresh.State == domain.FreshFail || err != nil ||
+			fetched.After(at) || !fetched.After(e.handedAt()) {
+			return time.Time{}, ErrStaleObservation
+		}
+		if oldest.IsZero() || fetched.Before(oldest) {
+			oldest = fetched
+		}
+	}
+	return oldest, nil
 }
