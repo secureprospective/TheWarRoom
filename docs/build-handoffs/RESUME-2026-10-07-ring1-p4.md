@@ -5,6 +5,23 @@
 > Supersedes `RESUME-2026-10-07-ring1-p3.md` (kept for history; its §6 refutations still hold).
 
 
+## 0b. SESSION CLOSE 16:45 CDT 2026-10-07 (supersedes every "in flight" note above)
+- Nothing in flight. Weekly budget ~5%: session closed by Christopher after 6b.
+- Commits on session/ring-1 (NOT pushed): 2a42fed + 21265b8 (5b trade desk), 1092e83 (6a Go:
+  liveScoring matchups/scores, TargetPulseNow, TargetAlerts), f23fb60 (6b Home seasonal card +
+  alert tray, League Pulse Now). make verify green, 324 frontend tests.
+- Claude-OS runs f23fb60 (sha256 6ecbe8e6…); kept thewarroom.21265b8, .4484033, .da0c0112.
+  Screenshots checked: Trade desk (no pending offers), Seasonal card, Alert tray, Pulse Now.
+- **Entry chunk 324,923 / 325,000: 77 bytes left.** Before any new eager code, move something
+  lazy (candidates: pulse.toggle/expansion state, trade/alerts readings setup in registry).
+- Phases left: **7 gate only**: an envelope reaching Landed live (never observed: lineup run
+  ended Not verified, no trade yet), walkthrough click budget, spec revision 1, Christopher's go
+  before push/merge.
+- Open: DOT-review plan never goes stale after a declined offer (no deadline after accept); IR
+  alerts need MFL `injuries` ingested (policy known, §8); Christopher has not yet used 5b/6b live.
+- Toolchain over ssh: export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH
+  GOMEMLIMIT=1500MiB GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false".
+
 ## 0. UPDATE 15:57 CDT (compact-safe) (supersedes §1b, §3 p4b row, §9 items 1-4)
 - p4b committed 6e6938b (+ style 4ecf06e, overflow fix 4484033); Claude-OS runs 4484033
   (sha256 10152cc7…; kept thewarroom.4ecf06e, thewarroom.da0c0112). make verify green, entry 323,923.
@@ -158,3 +175,8 @@ None open. Watch: entry chunk headroom 2,193 bytes; 4b's commands must lazy-load
 - Every lineup.set path is proven by offline tests only; **no lineup has been handed off or landed
   live**. The first live run is Christopher's own swap after 4b deploys.
 - Phase 4b quality unknown until reviewed. Ring 1 remaining after 4: 5, 6, 7.
+
+- p5b committed 2a42fed + 21265b8 (empty state, chip); Claude-OS runs 21265b8 (sha 6140d2ac…; kept thewarroom.2a42fed, .4484033, .da0c0112). Entry 323,504.
+- In flight: Sol p6a (Go: liveScoring matchups, TargetPulseNow, TargetAlerts). Brief ~/fleet/briefs/warroom-ring1-p6a-pulse-alerts.md; run dir …/p6a/. Done = p6a/sentinel. Then 6b frontend (Home seasonal card + alert tray, League Pulse Now).
+- p6a stopped (brief contradiction: untouched tests). Ruled in p6a2 brief: update livescoring expected literals; IR Unavailable (no injuries feed; §8 policy known); no waivers (league has none). In flight: Sol p6a2, run dir …/p6a2/.
+- p6a committed 1092e83 (liveScoring matchups/scores, TargetPulseNow, TargetAlerts; fixes: optional new fields, plural, null side). Christopher: finish 6b this session, then close (weekly budget ~5%). In flight: Sol p6b, run dir …/p6b/, brief warroom-ring1-p6b-home-pulse.md.
