@@ -3,6 +3,8 @@ import type { Snapshot, TradeOffer, TradeReading } from '../data/contract';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
 import { Card } from '../cards/Card';
+import { SignalChip } from '../look/Slots';
+import { provenanceSlot } from '../cards/playerModel';
 import { FranchisePicker } from './FranchisePicker';
 import { useReading } from './lineups';
 import { TradePlan } from './TradePlan';
@@ -67,15 +69,14 @@ function PendingOffers({ reading, reason, franchiseId }: {
 }) {
   if (reason) return <p role="alert">Pending trades unavailable · {reason}</p>;
   if (!reading) return <p role="status">Reading pending trades…</p>;
-  const freshness = reading.provenance.freshness;
   return <>
-    {!reading.offers.length && <p>No pending offers</p>}
-    <p className="trade-provenance">
-      {reading.provenance.source} · {freshness.state}{freshness.note && ` · ${freshness.note}`}
-    </p>
+    <div className="trade-provenance">
+      {!reading.offers.length && <p>No pending offers</p>}
+      <SignalChip {...provenanceSlot([['Pending trades', reading.provenance]])} />
+    </div>
     {(['to_you', 'by_you'] as const).map((direction) => {
       const offers = reading.offers.filter((offer) => offer.direction === direction);
-      return <section key={direction} className="trade-group">
+      return offers.length > 0 && <section key={direction} className="trade-group">
         <h4>{direction === 'to_you' ? 'Offered to you' : 'Your offers'} · {offers.length}</h4>
         {offers.map((offer) => <OfferCard key={offer.tradeId} offer={offer} franchiseId={franchiseId} />)}
       </section>;
