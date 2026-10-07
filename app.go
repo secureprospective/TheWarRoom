@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
@@ -99,9 +100,10 @@ type App struct {
 	movesLog     func(string)
 	movesUnknown map[string]bool
 
-	refreshMu        sync.Mutex // one MFL refresh at a time
-	rostersCheckedAt time.Time  // last successful roster refresh; refreshMu guards it
-	launchRefreshDue bool       // startup did not refresh, so domReady does
+	refreshMu        sync.Mutex   // one MFL refresh at a time
+	rostersCheckedAt time.Time    // last successful roster refresh; refreshMu guards it
+	rulesCheckedAt   atomic.Int64 // unix seconds of the last rules sync, 0 if none; read lock-free
+	launchRefreshDue bool         // startup did not refresh, so domReady does
 
 	crosswalkMu sync.Mutex
 	crosswalk   CrosswalkReport // the latest crosswalk load's report, held since launch

@@ -87,6 +87,7 @@ func (a *App) refreshLeagueLocked(
 	if err != nil {
 		return RefreshResult{}, fmt.Errorf("refresh: rules: %w", err)
 	}
+	a.rulesCheckedAt.Store(time.Now().Unix())
 	snap, err := a.fetchLeague(ctx, cfg.CurrentSeason)
 	if err != nil {
 		return RefreshResult{}, err
