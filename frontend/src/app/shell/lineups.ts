@@ -35,6 +35,7 @@ export function createLineups(provider: Provider) {
       return () => { listeners.delete(listener); };
     },
     onSeasonChange: provider.onSeasonChange.bind(provider),
+    onMovesChange: provider.onMovesChange.bind(provider),
   };
 }
 export function useLineup(store: ReturnType<typeof createLineups>, id: string, snapshot: Snapshot) {
@@ -42,8 +43,9 @@ export function useLineup(store: ReturnType<typeof createLineups>, id: string, s
   useEffect(() => {
     const read = () => store.refresh(id);
     const stop = store.onSeasonChange(read);
+    const stopMoves = store.onMovesChange(read);
     read();
-    return stop;
+    return () => { stop(); stopMoves(); };
   }, [store, id, snapshot]);
   return state;
 }

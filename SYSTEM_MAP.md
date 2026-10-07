@@ -176,3 +176,6 @@ HQ › Roster: `LineupRoster.tsx` shows starters, bench and Go legality; `lineup
 `lineupset_app.go`: `TargetCheckLineup(franchiseID string, starters []string) (lineup.Result, error)` checks locally.
 `lineupset_app.go`: `TargetDraftLineup(franchiseID string, starters []string) (envelope.Receipt, error)` saves a plan.
 `internal/envelope`: `lineup.set` checks active starters and saved baseline; watches explicit-week MFL lineups.
+
+HQ lineup editing: `LineupEditor.tsx` checks starter toggles through Go and shows saved Start/Bench plans.
+Hand-off Act: `move.handoff` opens a Ready plan; `target:moves` reloads receipts and the held HQ lineup.

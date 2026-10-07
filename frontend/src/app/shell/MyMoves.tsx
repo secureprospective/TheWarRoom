@@ -12,7 +12,9 @@ export default function MyMoves({ snapshot, executor = commands }: {
   const fixture = executor.providerKind === 'fixture';
   const franchiseId = s.franchiseId ?? '';
   useEffect(() => {
-    if (fixture || franchiseId) void executor.loadMoves(franchiseId);
+    const read = () => { if (fixture || franchiseId) void executor.loadMoves(franchiseId); };
+    read();
+    return executor.onMovesChange(read);
   }, [executor, fixture, franchiseId]);
   const moves = executor.useMoves((state) => state.moves);
   const loading = executor.useMoves((state) => state.movesLoading[franchiseId]);

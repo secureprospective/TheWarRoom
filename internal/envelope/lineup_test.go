@@ -191,8 +191,11 @@ func TestLineupChecksAndDraft(t *testing.T) {
 				t.Fatalf("draft: %+v %v", e.Receipt(), err)
 			}
 			r := e.Receipt()
-			if name == "unknown baseline" && len(r.Spec.Expected.Lineup.Baseline) != 0 {
-				t.Fatal("unknown baseline retained")
+			if name == "unknown baseline" {
+				body, err := json.Marshal(r)
+				if err != nil || !strings.Contains(string(body), `"baseline":[]`) {
+					t.Fatalf("unknown baseline must serialize as []: %s %v", body, err)
+				}
 			}
 			if name == "partial" && !strings.Contains(r.Audit[0].Note, "needs at least") {
 				t.Fatal("partial omitted short problems")

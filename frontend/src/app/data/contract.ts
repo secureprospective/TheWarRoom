@@ -98,7 +98,11 @@ export type EnvelopeSpec = {
   leagueId: string;
   franchiseId: string;
   subject: { players: string[]; picks: string[] };
-  expected: { player: string; rosterStatus: (typeof ROSTER_STATUSES)[number] };
+  expected: {
+    player?: string;
+    rosterStatus?: (typeof ROSTER_STATUSES)[number];
+    lineup?: { week: number; starters: string[]; baseline: string[] };
+  };
   gravity: (typeof GRAVITIES)[number];
   undo: (typeof UNDO_CLASSES)[number];
   target: { kind: 'mapped'; url: string } | { kind: 'unmapped' };

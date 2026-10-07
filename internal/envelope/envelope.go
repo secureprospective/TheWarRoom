@@ -203,8 +203,9 @@ func cloneSpec(s Spec) Spec {
 	s.Subject.Picks = append([]string{}, s.Subject.Picks...)
 	if s.Expected.Lineup != nil {
 		l := *s.Expected.Lineup
-		l.Starters = slices.Clone(l.Starters)
-		l.Baseline = slices.Clone(l.Baseline)
+		// Never nil: the receipt contract is a JSON array, even for an unknown baseline.
+		l.Starters = append([]playerid.PlayerID{}, l.Starters...)
+		l.Baseline = append([]playerid.PlayerID{}, l.Baseline...)
 		s.Expected.Lineup = &l
 	}
 	if s.Deadline != nil {

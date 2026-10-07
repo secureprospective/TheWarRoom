@@ -6,7 +6,10 @@ import type { Density } from '../cards/Card';
 import { nodes, nodeKeys, type Node, type Route, type WorkspaceMemory } from './nodes';
 export type PlayerSubject = { kind: 'player'; id: string; franchiseId: string };
 
+export type LineupDraft = { franchiseId: string; week: number; starters: string[] };
 export type ShellState = {
+  lineupDraft: LineupDraft | null;
+  lineupReceiptId: string | null;
   node: Node;
   workspace: WorkspaceMemory;
   density: Density;
@@ -24,6 +27,8 @@ export type ShellState = {
 };
 export function initialShellState(): ShellState {
   return {
+    lineupDraft: null,
+    lineupReceiptId: null,
     node: 'home',
     workspace: Object.fromEntries(
       nodeKeys.map((n) => [n, nodes[n].workspaces[0].slug]),
@@ -43,8 +48,8 @@ export function initialShellState(): ShellState {
   };
 }
 export function renderState(
-  { density: _density, ...rest }: ShellState,
-): Omit<ShellState, 'density'> {
+  { density: _density, lineupDraft: _draft, lineupReceiptId: _receipt, ...rest }: ShellState,
+): Omit<ShellState, 'density' | 'lineupDraft' | 'lineupReceiptId'> {
   return rest;
 }
 
@@ -54,6 +59,9 @@ export function createShellState() {
     read: store.getState,
     use: () => useStore(store, renderState, shallow),
     subscribe: store.subscribe,
+    useLineupEdit: () => useStore(store, (s) => ({
+      draft: s.lineupDraft, receiptId: s.lineupReceiptId,
+    }), shallow),
     // The write capability is handed only to the command registry, never to views.
     write: (patch: Partial<ShellState>) => store.setState(patch),
     navigate: (route: Route) =>

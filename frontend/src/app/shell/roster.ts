@@ -77,15 +77,19 @@ export function lineupGroups(
 
 export function lineupText(reading?: LineupReading, error?: string): string {
   if (!reading) return error ? `Lineup unavailable · ${error}` : 'Reading lineup…';
-  const { check, starters, week } = reading;
+  if (reading.rulesSource.freshness.state === 'fail') return lineupVerdict(reading);
+  if (!reading.starters.length) return `No saved lineup · ${reading.provenance.freshness.note}`;
+  return `Week ${reading.week} lineup · ${lineupVerdict(reading)}`;
+}
+
+export function lineupVerdict(reading: LineupReading): string {
+  const { check, starters } = reading;
   const count = `${starters.length} of ${reading.starterCount} starters`;
   if (reading.rulesSource.freshness.state === 'fail') {
     return check.problems.map((p) => p.message).join(' · ');
   }
-  if (!starters.length) return `No saved lineup · ${reading.provenance.freshness.note}`;
-  const prefix = `Week ${week} lineup`;
-  if (!check.legal) return `${prefix} · not legal · ${check.problems.map((p) => p.message).join(' · ')}`;
-  if (check.full) return `${prefix} · legal · ${count}`;
-  return [`${prefix} · legal, partial · ${count}`,
+  if (!check.legal) return `not legal · ${check.problems.map((p) => p.message).join(' · ')}`;
+  if (check.full) return `legal · ${count}`;
+  return [`legal, partial · ${count}`,
     ...check.problems.filter((p) => p.kind === 'short').map((p) => p.message)].join(' · ');
 }
