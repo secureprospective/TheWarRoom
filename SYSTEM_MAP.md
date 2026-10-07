@@ -142,3 +142,6 @@ unknown. MFL's schedule has no dates, so there is no current week until a dated 
 and an in-memory audit log, including unmapped IR drafts; neither core does I/O.
 `snapshot.BuildClock` is the one clock builder: `TargetClock` (in `target_app.go`) passes the what-if store, and
 `cmd/fixtures -whatif` passes a backup of it. Move fixtures stay outside the entry chunk.
+
+`frontend/src/app/clock/` renders the league clock; one DOM ticker owns countdowns and urgency,
+independently of React. Clock and snapshot providers load in parallel, never falling back live to fixtures.

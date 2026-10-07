@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import fixture from './fixtures/snapshot.json';
+import clockFixture from './fixtures/clock.json';
 import { FixtureProvider, LiveProvider, selectProvider } from './provider';
 
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
@@ -47,6 +48,49 @@ describe('provider selection', () => {
       expect(parsed.franchises.value).toEqual([]);
       expect(parsed.league.value).toEqual({ season: 0, franchiseCount: 0 });
       expect(call).toHaveBeenCalledTimes(1);
+    },
+  );
+});
+
+
+describe('clock provider boundary', () => {
+  it('loads and parses the real clock fixture dynamically', async () => {
+    const clock = await new FixtureProvider().clock();
+    expect(clock.provenance.kind).toBe('fixture');
+    expect(clock.value.phase).toBe('OFFSEASON');
+    expect(clock.value.deadlines).toEqual([]);
+    expect(clock.value.windows).toHaveLength(7);
+  });
+  it('calls TargetClock and parses live provenance without waiting for snapshot', async () => {
+    const payload = {
+      ...clockFixture, provenance: { ...clockFixture.provenance, kind: 'live' },
+    };
+    const clock = vi.fn().mockResolvedValue(payload);
+    const snapshot = vi.fn().mockImplementation(() => new Promise(() => undefined));
+    vi.stubGlobal('window', { go: { main: { App: { TargetClock: clock, TargetSnapshot: snapshot } } } });
+    const provider = selectProvider();
+    void provider.snapshot();
+    expect((await provider.clock()).provenance.kind).toBe('live');
+    expect(clock).toHaveBeenCalledTimes(1);
+    expect(snapshot).toHaveBeenCalledTimes(1);
+  });
+  it.each(['outage', 'corrupt payload', 'runtime absent'])(
+    'shows a fail reading, never fixtures, on %s', async (cause) => {
+      const call = cause === 'outage'
+        ? vi.fn().mockRejectedValue(new Error('clock offline'))
+        : vi.fn().mockResolvedValue({ value: { phase: 'SPRING' } });
+      vi.stubGlobal('window', cause === 'runtime absent' ? {} : {
+        go: { main: { App: { TargetClock: call } } },
+      });
+      const reading = await new LiveProvider().clock();
+      expect(reading.provenance.kind).toBe('live');
+      expect(reading.provenance.freshness.state).toBe('fail');
+      expect(reading.provenance.freshness.note).toContain('TargetClock failed:');
+      const error = cause === 'outage' ? 'clock offline'
+        : cause === 'runtime absent' ? 'Wails runtime absent' : 'clock.';
+      expect(reading.provenance.freshness.note).toContain(error);
+      expect(reading.value.deadlines).toEqual([]);
+      expect(reading.value.windows).toEqual([]);
     },
   );
 });

@@ -1,3 +1,6 @@
+import { ClockStrip } from '../clock/ClockStrip';
+import { CalendarPanel } from '../clock/CalendarPanel';
+import { useLeagueClock } from '../clock/useLeagueClock';
 import { EndpointIndex } from '../registry/EndpointIndex';
 import type { Placement } from '../registry';
 import { CommandBar } from '../commands/CommandBar';
@@ -21,6 +24,7 @@ import { connectDensity } from './density';
 export function TargetApp() {
   const s = commands.use();
   const root = useRef<HTMLDivElement>(null);
+  const clock = useLeagueClock(root);
   const workspaceBody = useRef<HTMLDivElement>(null);
   useEffect(() => connectDensity(commands, root.current!), []);
   useEffect(() => {
@@ -138,7 +142,7 @@ export function TargetApp() {
             ) : (
               <span>{error ?? 'Snapshot loading…'}</span>
             )}
-            <span>league clock · not wired</span>
+            <ClockStrip reading={clock} />
             <span className="dens" aria-label="Density">
               {DENSITIES.map((density, index) => (
                 <Act
@@ -272,6 +276,7 @@ export function TargetApp() {
             Close
           </Act>
         </header>
+        <CalendarPanel reading={clock} />
         <EndpointIndex placement="Calendar" />
       </aside>
       {(s.endpointSurface === 'Report drawer' || s.endpointSurface === 'Status strip') && (
