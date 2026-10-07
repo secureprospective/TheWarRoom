@@ -1,4 +1,4 @@
-# RESUME: TheWarRoom ring 1, mid phase 1 (2026-10-07, ~09:30 CDT)
+# RESUME: TheWarRoom ring 1, mid phase 1 (2026-10-07, updated ~10:35 CDT)
 
 > Written by `/compact-safe` on ClaudeBox (CT105). The session continues: Christopher says
 > "we are back", then check §1b (in flight) and start at §9 item 1.
@@ -6,7 +6,7 @@
 ## 1. What we are doing
 - Ring 1 of the UI target (roadmap `docs/build-handoffs/UI_Target_Roadmap_2026-10.md` › Ring 1):
   the frequent loops end to end with the first live Acts. Plan approved 10-07, phases:
-  **0 gaps ✔ · 1 live season data (1a ✔ 1b ✔ 1c running, 1d briefed, 1e next) · 2 hand-off +
+  **0 gaps ✔ · 1 live season data (1a–1e ✔, 1f running, 1g next) · 2 hand-off +
   landing watcher · 3 HQ lineup/roster + IR/taxi · 4 lineup.set · 5 trade desk · 6 Home + League
   Pulse Now · 7 gate.**
 - Working model (Christopher): Claude is head brain; **Sol (gpt-6.1-sol) on Bee at medium** does
@@ -19,15 +19,19 @@
   `origin/main`.
 
 ### 1b. In flight
-- **Sol phase 1c** (frontend: week + lineup lock in strip and calendar, `target:clock` event).
-  Started 09:21 CDT, timeout 3 h. Alive check:
-  `ssh chris@192.168.1.191 'ls -la ~/fleet/runs/warroom-ring1-2026-10-07/p1c/sessions/'`
-  (transcript mtime advancing) or `cat …/p1c/sentinel` (exists when done).
-  Output: `…/p1c/REPORT.md`; transcript `…/p1c/sessions/*.jsonl` is the recovery channel.
-  The Claude background-task notification will NOT survive compaction: poll the sentinel.
-- **Uncommitted in the worktree:** only Sol's 1c edits (frontend clock/data files). The
-  ruling-8 doc edit and this resume are committed (14f3fc2).
-- Ring 0 gate app still runs on Claude-OS (`pgrep -x thewarroom`): Christopher's window, leave it.
+- **Sol phase 1f** (Go, pure: `internal/leaguefeed` + ingestion `transactions`, `livescoring`,
+  `pendingtrades.Fetch`; brief `~/fleet/briefs/warroom-ring1-p1f-season-feeds.md`). Started
+  10:32 CDT, timeout 3 h. Alive: transcript mtime in `…/p1f/sessions/`; done: `…/p1f/sentinel`.
+  Output `…/p1f/REPORT.md`. Background notification does NOT survive compaction: poll.
+  pi pid 315765 (timeout wrapper, 10800 s); transcript
+  `…/p1f/sessions/2026-10-07T15-32-58-855Z_ring1-p1f-20261007T153258Z.jsonl` (recovery channel).
+  Expect Sol to create `.phase-tmp/` or run-dir caches again: delete after review, never commit.
+- **Uncommitted in the worktree:** only Sol's 1f work.
+- **Claude-OS runs the ring 1 build** (`~/warroom-ring1/thewarroom`, sha256 da0c0112…, built at
+  ee9f4cf; launch `bash ~/warroom-ring1/launch.sh`; log `~/warroom-ring1/run.log`). Ring 0 binary
+  kept at `~/warroom-ring0/`. Data backup before ring 1: `~/.config/TheWarRoom.pre-ring1-20261007`.
+  **Christopher's MFL key is connected** (keyring "Login", verified 10:23:40 CDT); live strip
+  shows `Regular season · Wk 5 · Lineup lock`; the app recorded OFFSEASON → REGULAR_SEASON.
 
 ## 2. Agents and harnesses
 - Dispatch: `ssh chris@192.168.1.191 '~/fleet/runs/warroom-ring1-2026-10-07/dispatch.sh <phase>
@@ -54,9 +58,15 @@
 | p1a nflschedule / leagueweek / clock lineup lock | committed f5822cd |
 | p1b week refresh worker, derived phase, TargetClock | committed 5687c7c |
 | wailsjs models (`Reading.week?`) | committed 96e2da1 |
-| p1c frontend week + lock | **Sol running** |
-| p1d MFL key (Go) | brief ready; **add go-keyring dep first** (§9) |
-| `make verify` at 96e2da1 | green; entry chunk 318,816 / 325,000 |
+| p1c frontend week + lock | committed 9ad8322 (+ test fix 07f8328) |
+| go-keyring v0.2.8 | committed b0751c1 |
+| p1d MFL key (Go: keyring store, keyed requests, bindings, leak gate) | committed 892be7b |
+| p1e connect MFL UI (Control Room › App) | committed 8395160 |
+| strip wraps instead of clipping | committed 099ca61 |
+| window maximised 1280x800, surface background | committed ee9f4cf |
+| **live key test on Claude-OS** | **passed**: Connected; fetch_log has 0 unredacted APIKEY; log clean |
+| p1f season feeds (Go parsers) | **Sol running** |
+| `make verify` at ee9f4cf | green; entry chunk 322,536 / 325,000 (2,464 headroom) |
 
 ## 4. Artifacts
 - Run dir `~/fleet/runs/warroom-ring1-2026-10-07/`: `PLAN.md` (log + rulings), `data/`
@@ -68,7 +78,13 @@
   4297d2d6, rules ec783af5, injuries 341ac653, nflByeWeeks 4ddb0e2e.
 
 ## 5. Current bug
-None open.
+None open. Watch: entry chunk headroom is 2,464 bytes; new eager code must be justified.
+Real pendingTrades body: `~/fleet/runs/…/data/mfl-auth/pendingTrades-2026-10-07.json` (sha256
+daa78e9d…), **league-private, never in the repo**. Shape: one trade = object (array when
+several), `will_give_up`/`will_receive` from the OFFERING team's side, trailing commas,
+epoch-second strings; it does not prove the key's franchise. Pick tokens (MFL docs):
+`DP_r_p` current year, round/pick one less than actual; `FP_fid_year_round` actual round;
+`BB_x` blind-bid dollars.
 
 ## 6. Refuted / settled: do not retest
 - **"nflSchedule goes to the league host":** refuted. `mfl.Client.Do` sends any request without
@@ -103,27 +119,25 @@ TargetClock never touches the network; a missing/failed schedule degrades to `st
 
 ## 8. Ledger state
 - Committed on `session/ring-1` (not pushed): 38be4e3, df94d4e, f5822cd, 5687c7c, 96e2da1,
-  14f3fc2 (this resume + ruling 8).
-- Uncommitted: Sol's p1c work (in progress).
+  14f3fc2, bae1b29, 9ad8322, b0751c1, 07f8328, 892be7b, 8395160, 099ca61, ee9f4cf.
+- Uncommitted: Sol's p1f work (in progress).
 - Task list on Hermes: no new items this window (T406 ring 1 already open).
 
 ## 9. Next actions
-1. **Check p1c** (sentinel). Review REPORT + diff (strip copy at 1280 px, no re-render between
-   readings, latest-wins hook, stale chip, note in panel, no churn), render on Claude-OS
-   (`shot.sh '#/hq/my-moves' out.png 1280 800` against a vite dev server, see ring 0 resume §2),
-   `make verify`, commit.
-2. **Add the dependency:** in the worktree, `go get github.com/zalando/go-keyring@v0.2.8`
-   (bumps godbus to v5.2.2), confirm `make verify` green, commit; then dispatch
-   `p1d ~/fleet/briefs/warroom-ring1-p1d-mfl-key.md`. Review the leak gate line by line;
-   `go mod tidy` at review; `wails generate module` after (new bindings).
-3. **Brief p1e** (frontend): Settings surface for the key (registered command, password field,
-   one-way `SetMFLKey`, status only), then Christopher enters his key (Help → Developer's API on
-   MFL) on the live app; capture a real `pendingTrades` / `calendar` body to close Gap Closure
-   §7.3–7.6, 7.13.
-4. **Phase 1 rest:** liveScoring + transactions + pendingTrades into the snapshot (Sourced).
-5. Then phases 2–7 per §1. Live gate on Claude-OS; push/merge only on Christopher's go.
+1. **Check p1f** (sentinel), review every line (asset parsing against MFL docs, unknown
+   transaction kinds kept, no private data in testdata), `make verify`, commit.
+2. **Brief p1g** (Go wiring, the week pattern): background cache of transactions, liveScoring
+   (lineup week) and pendingTrades (keyed, only when a key is stored); binding `TargetSeason()`
+   returning Sourced sections, no network; Wails event `target:season`; stale/fail honest notes;
+   refresh hourly with the week worker under `refreshMu`, spaced ≥1 s.
+3. Frontend contract for the season feeds when the first consumer lands (phase 3 HQ lineup,
+   phase 5 trade desk shows the real pending offer, phase 6 League Pulse feed).
+4. Then phases 2–7 per §1. Push/merge only on Christopher's go.
 
 ## 10. Environment
+- Compact-safe 10:35: reaped 2.6 GB of Go/lint caches from p1a/p1b/p1c/p1e run dirs (reports,
+  transcripts, logs, shots kept). Filing gate PASS.
+
 - Toolchain: `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH
   GOMEMLIMIT=1500MiB GOMAXPROCS=8`; `nice -n 10 make verify VERSION=dev COMMIT=ring1`.
 - MFL curl needs `-A "TheWarRoom/dev"`; league host `www47`; space requests ≥1–2 s.
@@ -135,5 +149,6 @@ TargetClock never touches the network; a missing/failed schedule degrades to `st
 - The week, lineup lock and derived phase are tested with real MFL files but **never run in the
   live app**: Wails event delivery, the hourly ticker and the first real AdvancePhase on the
   what-if store are unproven until the next live run.
-- No MFL auth exists yet; every trade surface depends on p1d/p1e and Christopher's key.
+- MFL auth works live (one real keyed pendingTrades export, clean archive). The trade desk
+  itself is phase 5.
 - No ring 1 Act has landed; the gate envelope (lineup.set) is phase 4.
