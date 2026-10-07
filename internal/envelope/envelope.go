@@ -81,15 +81,16 @@ type Target struct {
 	URL  string     `json:"url,omitempty"`
 }
 
+// ts_type: PlayerID marshals as its string form; without it Wails emits an undefined TS type.
 type Subject struct {
-	Players []playerid.PlayerID `json:"players"`
+	Players []playerid.PlayerID `json:"players" ts_type:"string[]"`
 	Picks   []string            `json:"picks"`
 }
 
 // ExpectedChange is what the landing predicate looks for. Ring 0 knows one shape, a roster
 // status change; trade and bid shapes arrive with their intents.
 type ExpectedChange struct {
-	Player       playerid.PlayerID   `json:"player"`
+	Player       playerid.PlayerID   `json:"player" ts_type:"string"`
 	RosterStatus domain.RosterStatus `json:"rosterStatus"`
 }
 

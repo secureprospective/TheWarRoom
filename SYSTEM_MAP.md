@@ -49,11 +49,11 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 - `database/sql` is confined to `db` and `store`.
 - `transactions/*` handler packages are imported only by `transactions`.
 
-## IPC surface (26 methods on `App`)
+## IPC surface (28 methods on `App`)
 
 | File | Methods |
 |---|---|
-| `target_app.go` | `TargetSnapshot` (initialized mirror and rulebook, cached live directory with archive fallback; shared fixture/live contract); `TargetClock` (phase log and commissioner calendar from the what-if store; no network) |
+| `target_app.go` | `TargetSnapshot` (initialized mirror and rulebook, cached live directory with archive fallback; shared fixture/live contract; keeps the last good build); `TargetClock` (phase log and commissioner calendar from the what-if store; no network); `TargetDraftIR`, `TargetMoves` (draft `roster.ir` against the kept build into the in-memory move log; no network) |
 | `version.go` | `AppInfo` (version, commit, startup error for the banner) |
 | `refresh_app.go` | `RefreshLeague` (pull the league from MFL into the mirror) |
 | `crosswalk_app.go` | `LoadCrosswalk`, `GetCrosswalkReport` (the player directory and its match rates) |
@@ -139,6 +139,6 @@ The harness is lazy-loaded only on `harness.open`; it is not in the target entry
 deadlines soonest first with U0–U3 and the pin/promote ordering rule; league windows stay explicitly
 unknown. MFL's schedule has no dates, so there is no current week until a dated source exists.
 `internal/envelope` owns immutable move states (one transition map), checks, observation predicates
-and an in-memory audit log; neither core fetches, persists or reads the clock.
+and an in-memory audit log, including unmapped IR drafts; neither core does I/O.
 `snapshot.BuildClock` is the one clock builder: `TargetClock` (in `target_app.go`) passes the what-if store, and
 `cmd/fixtures -whatif` passes a backup of it. Move fixtures stay outside the entry chunk.

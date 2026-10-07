@@ -2,13 +2,18 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
@@ -25,6 +30,10 @@ func (a *App) TargetSnapshot() (snapshot.Snapshot, error) {
 	if err != nil {
 		return snapshot.Snapshot{}, fmt.Errorf("target snapshot: build: %w", err)
 	}
+	a.targetSnapshotMu.Lock()
+	a.targetSnapshot = snap
+	a.hasTargetSnapshot = true
+	a.targetSnapshotMu.Unlock()
 	return snap, nil
 }
 
@@ -86,4 +95,47 @@ func (a *App) TargetClock() (snapshot.Sourced[leagueclock.Reading], error) {
 		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: %w", err)
 	}
 	return clock, nil
+}
+
+func (a *App) TargetDraftIR(franchiseID, playerID string) (envelope.Receipt, error) {
+	if err := a.ready(); err != nil {
+		return envelope.Receipt{}, fmt.Errorf("target draft: startup: %w", err)
+	}
+	pid, err := playerid.New(playerID)
+	if err != nil {
+		return envelope.Receipt{}, fmt.Errorf("target draft: player: %w", err)
+	}
+	a.targetSnapshotMu.Lock()
+	snap, loaded := a.targetSnapshot, a.hasTargetSnapshot
+	a.targetSnapshotMu.Unlock()
+	if !loaded {
+		return envelope.Receipt{}, fmt.Errorf("target draft: no snapshot loaded")
+	}
+	var random [16]byte
+	if _, err := rand.Read(random[:]); err != nil {
+		return envelope.Receipt{}, fmt.Errorf("target draft: correlation ID: %w", err)
+	}
+	id := "ir-" + hex.EncodeToString(random[:])
+	e, err := envelope.DraftIR(time.Now().UTC(), envelope.IRRequest{
+		LeagueID:    ingestion.LeagueID,
+		FranchiseID: franchiseID,
+		Player:      pid,
+	}, snap, func() string { return id })
+	if err != nil {
+		return envelope.Receipt{}, fmt.Errorf("target draft: %w", err)
+	}
+	if err := a.targetMoveLog.Append(e); err != nil {
+		return envelope.Receipt{}, fmt.Errorf("target draft: log: %w", err)
+	}
+	return e.Receipt(), nil
+}
+
+func (a *App) TargetMoves(franchiseID string) ([]envelope.Receipt, error) {
+	if err := a.ready(); err != nil {
+		return nil, fmt.Errorf("target moves: startup: %w", err)
+	}
+	return a.targetMoveLog.List(envelope.Filter{
+		LeagueID:    ingestion.LeagueID,
+		FranchiseID: franchiseID,
+	}), nil
 }

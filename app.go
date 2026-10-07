@@ -12,11 +12,13 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
@@ -52,6 +54,12 @@ type App struct {
 	hasLookup bool
 	lookupAt  time.Time
 
+	// Drafts check against the last good TargetSnapshot build, so a draft never refetches.
+	targetSnapshotMu  sync.Mutex
+	targetSnapshot    snapshot.Snapshot
+	hasTargetSnapshot bool
+	targetMoveLog     *envelope.MemoryLog // in memory until ring 1 persists the audit log
+
 	refreshMu        sync.Mutex // one MFL refresh at a time
 	launchRefreshDue bool       // startup did not refresh, so domReady does
 
@@ -84,7 +92,7 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 
 // NewApp is cheap; resources are acquired in startup.
 func NewApp() *App {
-	return &App{started: make(chan struct{})}
+	return &App{started: make(chan struct{}), targetMoveLog: envelope.NewMemoryLog()}
 }
 
 // ready waits for startup to finish and returns its failure, if any. On Linux, Wails runs startup
