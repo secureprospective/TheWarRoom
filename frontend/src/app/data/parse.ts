@@ -1,4 +1,5 @@
 import {
+  MFL_KEY_STATES,
   PHASES,
   URGENCIES,
   WINDOW_KINDS,
@@ -9,6 +10,7 @@ import {
   ROSTER_STATUSES,
 } from './contract';
 import type {
+  MFLKeyStatus,
   ClockReading,
   Deadline,
   Franchise,
@@ -192,4 +194,21 @@ function clockReading(value: unknown, path: string): ClockReading {
 }
 export function parseClock(value: unknown): Sourced<ClockReading> {
   return sourced(value, 'clock', clockReading);
+}
+
+export function parseMFLKeyStatus(value: unknown): MFLKeyStatus {
+  const path = 'mflKey';
+  const row = object(value, path, ['state', 'league', 'season', 'verifiedAt', 'detail']);
+  let verifiedAt: string | undefined;
+  if (row.verifiedAt !== undefined) {
+    verifiedAt = timestamp(row.verifiedAt, `${path}.verifiedAt`);
+    if (!verifiedAt) throw new Error(`${path}.verifiedAt: expected RFC3339 timestamp`);
+  }
+  return {
+    state: choice(row.state, `${path}.state`, MFL_KEY_STATES),
+    league: text(row.league, `${path}.league`),
+    season: integer(row.season, `${path}.season`),
+    ...(verifiedAt === undefined ? {} : { verifiedAt }),
+    ...(row.detail === undefined ? {} : { detail: text(row.detail, `${path}.detail`) }),
+  };
 }

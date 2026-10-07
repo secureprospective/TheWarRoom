@@ -1,10 +1,12 @@
 import { createMovesState } from './moves';
+import { createMFLKeyState } from './mflKey';
+import { createMFLKeyField } from '../shell/mflKeyField';
 import { createMovesPrefetch } from '../shell/MovesMount';
 import { selectProvider, type Provider } from '../data/provider';
 import {
   resolve, placementRoute, isSurface, type EndpointId, type Placement, type Surface,
 } from '../registry';
-import type { Snapshot } from '../data/contract';
+import type { MFLKeyStatus, Snapshot } from '../data/contract';
 import type { PlayerSubject } from '../shell/state';
 import {
   browserStorage,
@@ -47,10 +49,12 @@ function command<A>(definition: Command<A>): Readonly<Command<A>> {
 export function createCommands(
   storage: () => SettingsStorage | undefined = browserStorage,
   provider: Provider = selectProvider(),
+  mflField = createMFLKeyField(),
 ) {
   let snapshot: Snapshot | undefined;
   const state = createShellState();
   const moves = createMovesState();
+  const mflKey = createMFLKeyState();
   const prefetchMoves = createMovesPrefetch();
   const ambient = {
     roles: ['gm', 'commish', 'admin'] as const,
@@ -104,7 +108,55 @@ export function createCommands(
       });
     }
   }
+  function mflReason(forget = false): string | undefined {
+    if (provider.kind === 'fixture') return 'Connecting MFL needs the desktop app';
+    if (mflKey.read().pending) return 'Checking MFL…';
+    if (forget) return mflKey.read().state === 'connected' ? undefined : 'Not connected';
+    return mflField.empty() ? 'Paste your API key in Control Room › App' : undefined;
+  }
+  async function requestMFL(operation: () => Promise<MFLKeyStatus>, activity: string) {
+    if (mflKey.read().pending) return;
+    const before = mflKey.read();
+    mflKey.write({ ...before, pending: true, activity, error: undefined });
+    try {
+      const status = await operation();
+      if (before.state === 'connected' && ['rejected', 'unreachable'].includes(status.state)) {
+        status.detail = `${status.detail ?? ''} · Previously stored key is unchanged`;
+      }
+      mflKey.write({ ...status, pending: false });
+    } catch (cause) {
+      mflKey.write({
+        ...before, pending: false,
+        error: cause instanceof Error ? cause.message : String(cause),
+      });
+    } finally {
+      mflField.take();
+    }
+  }
+  function connectMFL() {
+    if (provider.kind !== 'live' || mflKey.read().pending) return;
+    if (mflField.empty()) {
+      state.navigate({ node: 'control', workspace: 'app' });
+      setTimeout(mflField.focus, 0);
+      return;
+    }
+    void requestMFL(() => provider.connectMFL(mflField.take()), 'Checking the key with MFL…');
+  }
   const registry = Object.freeze({
+    'mflkey.connect': command({
+      ...ambient, id: 'mflkey.connect', label: 'Connect MFL', aliases: ['mfl', 'api key'],
+      gravity: 'G1', undo: 'reversible',
+      run: (_args: Record<string, never>) => connectMFL(),
+    }),
+    'mflkey.forget': command({
+      ...ambient, id: 'mflkey.forget', label: 'Forget MFL key', aliases: [],
+      gravity: 'G1', undo: 'reversible',
+      run: (_args: Record<string, never>) => {
+        if (!mflReason(true)) {
+          void requestMFL(() => provider.forgetMFL(), 'Removing the key from the keyring…');
+        }
+      },
+    }),
     'roster.ir': command({
       id: 'roster.ir',
       label: 'Draft IR placement',
@@ -367,6 +419,11 @@ export function createCommands(
   }
   return {
     registry,
+    mflField,
+    mflReason,
+    loadMFLKey: () => requestMFL(() => provider.mflKey(), 'Checking the keyring…'),
+    readMFLKey: mflKey.read,
+    useMFLKey: mflKey.use,
     providerKind: provider.kind,
     draftReason,
     loadMoves,

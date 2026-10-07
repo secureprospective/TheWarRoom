@@ -31,6 +31,17 @@ func (s *keySink) Record(_ context.Context, f archive.Fetch) error {
 
 func hasKey(text, key string) bool { return strings.Contains(text, key) }
 
+// An app that started with no client or store dereferences nil: the binding must recover, or
+// Wails would log the raw IPC message carrying the key.
+func TestSetMFLKeyPanicNeverReachesWails(t *testing.T) {
+	app := NewApp()
+	close(app.started)
+	status, err := app.SetMFLKey("panic-probe-" + strings.Repeat("x", 16))
+	if err != nil || status.State != "unavailable" {
+		t.Fatalf("state %q, err %v", status.State, err)
+	}
+}
+
 func TestMFLKeyLeakGate(t *testing.T) {
 	random := make([]byte, 12)
 	if _, err := rand.Read(random); err != nil {

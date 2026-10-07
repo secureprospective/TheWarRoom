@@ -10,6 +10,7 @@ import {
 import { join, resolve, relative } from 'node:path';
 
 const keyHandlerAllowlist = {
+  'shell/MFLConnection.tsx': 'Password field Enter dispatches Connect without copying the key.',
   'commands/CommandBar.tsx':
     'Search input needs arrows, Enter and Escape; execution remains dispatch.',
 } as const;
@@ -37,8 +38,8 @@ function scan(root: string): string[] {
   return violations;
 }
 describe('Controls are verbs (§M2/§M3)', () => {
-  it('has exactly the reviewed keyboard exception', () => {
-    expect(Object.keys(keyHandlerAllowlist)).toEqual(['commands/CommandBar.tsx']);
+  it('has exactly the reviewed keyboard exceptions', () => {
+    expect(Object.keys(keyHandlerAllowlist)).toEqual(['shell/MFLConnection.tsx', 'commands/CommandBar.tsx']);
     expect(keyHandlerAllowlist['commands/CommandBar.tsx']).toContain('dispatch');
   });
   it('rejects raw controls throughout app except Act and specimen', () => {
