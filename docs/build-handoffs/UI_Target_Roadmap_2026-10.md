@@ -1,6 +1,7 @@
 # TheWarRoom: the UI target and the roadmap to done (October 2026)
 
-**Status:** approved plan (r0, 2026-10-06); nothing has been built from it yet.
+**Status:** approved plan (r0, 2026-10-06). **Ring 0 done 2026-10-07:** built on
+`session/ring-0` (P1–P5b) and passed Christopher's live review on Claude-OS. Next: ring 1.
 - Written: 2026-10-06, by Claude with Christopher.
 - Target: `docs/ui/Target_UI_Spec_2026-10.md`.
 - Registry: `docs/ui/endpoint-registry.csv`.
@@ -70,6 +71,10 @@ each row's provider switches from fixture to live.
 - the route test and the verb test pass;
 - one envelope runs end to end on fixtures;
 - Christopher reviews it live on Claude-OS.
+
+**Gate passed 2026-10-07** (binary f22be20 against backup-API copies of the live DBs): route and
+verb tests green, the `roster.ir` envelope runs end to end on fixtures, and live drafts return
+`blocked` receipts because the MFL IR page (M-028) is not yet verified. Christopher: "pass".
 
 ## Ring 1: the frequent loops, end to end
 

@@ -10,6 +10,15 @@
 >   Lab's uncommitted files (tgz) and tracked diff. The Lab work is still awaiting his commit go.
 > - Next: §9 item 1, the P5b brief.
 
+## 0. Ring 0 is done (2026-10-07)
+- P5b-1 `34399fc` (Go draft verb), P5b-2 `1e5638a` (clock UI), P5b-3 `f22be20` (IR Act zone,
+  My moves rails). Sol 6.1 medium on Bee coded each chunk; Claude reviewed, reworked, committed.
+- Live gate on Claude-OS passed ("pass", Christopher, 2026-10-07): binary `f22be20` against
+  backup-API copies of the live DBs; old Claude-OS data kept as
+  `~/.config/TheWarRoom.pre-ring0-gate-20261007`.
+- Entry chunk 318,816 / 325,000 bytes. Next: ring 1 planning and gap closure (HANDOFF.md).
+- Everything below is the ring 0 build record.
+
 ## 1. What we are doing
 - **Building ring 0 (the walking skeleton) of the approved UI target.** Christopher (10-06): "This
   will be a headbrain session... start with ring zero now. The coder will be GPT-6.1 Sol on Bee.
