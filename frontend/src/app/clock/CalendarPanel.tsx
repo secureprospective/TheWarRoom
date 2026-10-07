@@ -9,13 +9,19 @@ export const CalendarPanel = memo(function CalendarPanel(
 ) {
   if (!reading) return <p>Clock loading…</p>;
   if (reading.provenance.freshness.state === 'fail') {
-    return <p><ClockSignal provenance={reading.provenance} /> Clock unavailable</p>;
+    return (
+      <p>
+        <ClockSignal provenance={reading.provenance} /> Clock unavailable{' · '}
+        {reading.provenance.freshness.note}
+      </p>
+    );
   }
-  const { deadlines, windows, phase } = reading.value;
+  const { deadlines, windows, phase, week } = reading.value;
   assertShortList(deadlines.length);
   return (
     <section className="league-calendar" aria-label="League clock">
       <h4>{phaseLabels[phase]}</h4>
+      {week === undefined ? null : <p>NFL week {week}</p>}
       {deadlines.length ? (
         <ul>
           {deadlines.map((deadline) => (
@@ -37,7 +43,10 @@ export const CalendarPanel = memo(function CalendarPanel(
           </li>
         ))}
       </ul>
-      <ClockSignal provenance={reading.provenance} />
+      <p>
+        <ClockSignal provenance={reading.provenance} />{' '}
+        {reading.provenance.freshness.note}
+      </p>
     </section>
   );
 });

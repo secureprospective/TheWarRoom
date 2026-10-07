@@ -148,3 +148,40 @@ describe('parallel parser and binding startup', () => {
     await Promise.all(pending);
   });
 });
+
+
+describe('clock change signal', () => {
+  it('fixtures never subscribe to Wails', () => {
+    const subscribe = vi.fn();
+    const listener = vi.fn();
+    vi.stubGlobal('window', { runtime: { EventsOnMultiple: subscribe } });
+    const unsubscribe = new FixtureProvider().onClockChange(listener);
+    unsubscribe();
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(listener).not.toHaveBeenCalled();
+  });
+  it('live forwards the event and releases the runtime subscription', async () => {
+    const unsubscribe = vi.fn();
+    const subscribe = vi.fn((_name: string, _callback: () => void, _limit: number) => unsubscribe);
+    const listener = vi.fn();
+    vi.stubGlobal('window', { runtime: { EventsOnMultiple: subscribe } });
+    const stop = new LiveProvider().onClockChange(listener);
+    await import('../../../wailsjs/runtime/runtime');
+    expect(subscribe).toHaveBeenCalledTimes(1);
+    expect(subscribe).toHaveBeenCalledWith('target:clock', listener, -1);
+    expect(listener).toHaveBeenCalledTimes(1);
+    const callback = subscribe.mock.calls[0][1] as () => void;
+    callback();
+    expect(listener).toHaveBeenCalledTimes(2);
+    stop();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+  it('unmounting before the runtime import resolves does not leak a subscription', async () => {
+    const subscribe = vi.fn();
+    vi.stubGlobal('window', { runtime: { EventsOnMultiple: subscribe } });
+    const stop = new LiveProvider().onClockChange(vi.fn());
+    stop();
+    await import('../../../wailsjs/runtime/runtime');
+    expect(subscribe).not.toHaveBeenCalled();
+  });
+});

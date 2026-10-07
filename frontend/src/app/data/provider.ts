@@ -8,6 +8,7 @@ import {
 interface ReadingProvider {
   snapshot(): Promise<Snapshot>;
   clock(): Promise<Sourced<ClockReading>>;
+  onClockChange(listener: () => void): () => void;
 }
 
 export interface DraftingProvider {
@@ -30,6 +31,9 @@ function hasWails(): boolean {
 export class FixtureProvider implements ReadingProvider, DemoProvider {
   readonly kind = 'fixture';
   readonly reason = 'Drafting needs the desktop app';
+  onClockChange(_listener: () => void): () => void {
+    return () => {};
+  }
   async demo(): Promise<EnvelopeDemo> {
     const [{ parseEnvelopeDemo }, fixture] = await Promise.all([
       import('./parseEnvelope'), import('./fixtures/envelope-demo.json'),
@@ -88,6 +92,22 @@ function failedClock(cause: unknown, kind: Provenance['kind']): Sourced<ClockRea
 
 export class LiveProvider implements ReadingProvider, DraftingProvider {
   readonly kind = 'live';
+  onClockChange(listener: () => void): () => void {
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
+    void import('../../../wailsjs/runtime/runtime').then(({ EventsOn }) => {
+      if (!active) return;
+      unsubscribe = EventsOn('target:clock', listener);
+      // An event emitted while the runtime chunk loaded was missed; catch up once.
+      listener();
+    }).catch(() => {
+      // No runtime chunk means no change events; the mount read still shows the clock.
+    });
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }
   async draftIR(franchiseId: string, playerId: string): Promise<Receipt> {
     const [{ parseReceipt }, receipt] = await Promise.all([
       import('./parseEnvelope'), TargetDraftIR(franchiseId, playerId),

@@ -25,6 +25,7 @@ describe('Go urgency boundaries', () => {
     expect(countdown(at(remaining), now)).toBe(label);
   });
   it('labels real calendar kinds without changing human labels or guessing dates', () => {
+    expect(deadlineLabel('LINEUP_LOCK')).toBe('Lineup lock');
     expect(deadlineLabel('TRADE_DEADLINE')).toBe('Trade deadline');
     expect(deadlineLabel('Commissioner meeting')).toBe('Commissioner meeting');
     expect(localDate(undefined)).toBe('Date unknown');

@@ -29,7 +29,13 @@ describe('honest clock surfaces', () => {
   it('shows the real offseason, empty calendar and seven unknown windows without dates', () => {
     const strip = renderToStaticMarkup(createElement(ClockStrip, { reading }));
     const panel = renderToStaticMarkup(createElement(CalendarPanel, { reading }));
-    expect(strip).toContain('Offseason · no deadlines');
+    expect(strip).toBe([
+      '<button type="button" class="act act-text"',
+      ' aria-label="Offseason · no deadlines on the commissioner calendar"',
+      ' aria-controls="target-calendar"',
+      ' title="Offseason · no deadlines on the commissioner calendar">',
+      'Offseason · no deadlines</button>',
+    ].join(''));
     expect(strip).toContain('title="Offseason · no deadlines on the commissioner calendar"');
     expect(strip).toContain('target-calendar');
     expect(panel).toContain('No deadlines on the commissioner calendar.');
@@ -39,6 +45,52 @@ describe('honest clock surfaces', () => {
     for (const html of [strip, panel]) {
       expect(html).not.toMatch(/\d{4}-\d{2}-\d{2}|<time|data-deadline|data-countdown/);
     }
+  });
+  it('shows the NFL week, lineup deadline and plain schedule note', () => {
+    const current = parseClock({
+      ...fixture,
+      value: {
+        ...fixture.value,
+        phase: 'REGULAR_SEASON',
+        week: 5,
+        deadlines: [{
+          id: 'lineup-w5',
+          label: 'LINEUP_LOCK',
+          at: '2026-10-08T00:00:00Z',
+          urgency: 'U2',
+          pinned: true,
+          promoted: true,
+        }],
+      },
+    });
+    const strip = renderToStaticMarkup(createElement(ClockStrip, { reading: current }));
+    const panel = renderToStaticMarkup(createElement(CalendarPanel, { reading: current }));
+    expect(strip).toContain('Regular season · Wk 5 · ');
+    expect(strip).toContain('Lineup lock · ');
+    expect(panel).toContain('NFL week 5');
+    expect(panel).toContain('<li data-deadline="lineup-w5"><b>Lineup lock</b>');
+    expect(panel).toContain(`</span> ${current.provenance.freshness.note}</p>`);
+    const stale = {
+      ...current,
+      provenance: {
+        ...current.provenance,
+        kind: 'live' as const,
+        freshness: {
+          ...current.provenance.freshness,
+          state: 'stale' as const,
+          note: 'NFL schedule refresh failed: offline; showing week 5 fetched yesterday',
+        },
+      },
+    };
+    const staleStrip = renderToStaticMarkup(createElement(ClockStrip, { reading: stale }));
+    expect(staleStrip).toContain('stale');
+    expect(staleStrip).toContain('Regular season · Wk 5 · ');
+    expect(staleStrip).toContain('Lineup lock · ');
+    expect(staleStrip.indexOf('stale')).toBeLessThan(staleStrip.indexOf('Regular season'));
+    expect(staleStrip).not.toContain('Clock unavailable');
+    const stalePanel = renderToStaticMarkup(createElement(CalendarPanel, { reading: stale }));
+    expect(stalePanel).toContain(`</span> ${stale.provenance.freshness.note}</p>`);
+    expect(stalePanel).toContain('NFL week 5');
   });
   it('shows loading and failed readings, not a guessed phase or fixture fallback', () => {
     const failed = {
@@ -95,6 +147,7 @@ describe('honest clock surfaces', () => {
     vi.stubGlobal('document', document);
     vi.stubGlobal('window', {
       document, HTMLIFrameElement: class {},
+      runtime: { EventsOnMultiple: vi.fn(() => () => {}) },
       go: { main: { App: { TargetSnapshot: snapshot, TargetClock: clock } } },
     });
     function Harness() {
@@ -109,7 +162,8 @@ describe('honest clock surfaces', () => {
     const mounted = createRoot(element);
     await act(async () => { mounted.render(createElement(Harness)); });
     expect(snapshot).toHaveBeenCalledTimes(1);
-    expect(clock).toHaveBeenCalledTimes(1);
+    // The mount read, then one catch-up read once the live event subscription is in place.
+    expect(clock).toHaveBeenCalledTimes(2);
     expect(root.textContent).toContain('Offseason · no deadlines');
     expect(root.textContent.match(/ · unknown · gap closure/g)).toHaveLength(7);
     expect(document.listeners.size).toBe(1);

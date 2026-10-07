@@ -169,7 +169,9 @@ function deadline(value: unknown, path: string): Deadline {
   };
 }
 function clockReading(value: unknown, path: string): ClockReading {
-  const r = object(value, path, ['season', 'phase', 'deadlines', 'windows']);
+  const r = object(value, path, ['season', 'phase', 'week', 'deadlines', 'windows']);
+  const week = r.week === undefined ? undefined : integer(r.week, `${path}.week`, 1);
+  if (week !== undefined && week > 18) throw new Error(`${path}.week: expected integer 1–18`);
   const windows = array(r.windows, `${path}.windows`, (v, p) => {
     const w = object(v, p, ['kind', 'status', 'reason']);
     return {
@@ -184,6 +186,7 @@ function clockReading(value: unknown, path: string): ClockReading {
   }
   return {
     season: integer(r.season, `${path}.season`), phase: choice(r.phase, `${path}.phase`, PHASES),
+    ...(week === undefined ? {} : { week }),
     deadlines: array(r.deadlines, `${path}.deadlines`, deadline), windows,
   };
 }
