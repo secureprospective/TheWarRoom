@@ -6,9 +6,8 @@ import { EndpointIndex } from '../registry/EndpointIndex';
 import type { Placement } from '../registry';
 import { CommandBar } from '../commands/CommandBar';
 import { FranchiseHQMount } from './FranchiseHQMount';
-import { PlayerInspector } from './PlayerInspector';
 import { AppSettings } from './AppSettings';
-import { useEffect, useState, useRef } from 'react';
+import { lazy, Suspense, useEffect, useState, useRef } from 'react';
 import type { Snapshot } from '../data/contract';
 import { selectProvider } from '../data/provider';
 import { commands } from '../commands/registry';
@@ -21,6 +20,10 @@ import { snapshotSummary } from './snapshotSummary';
 import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
+
+const TradeDesk = lazy(() => import('./TradeDesk'));
+const loadInspector = () => import('./PlayerInspector');
+const PlayerInspector = lazy(() => loadInspector().then((m) => ({ default: m.PlayerInspector })));
 
 export function TargetApp() {
   const s = commands.use();
@@ -41,6 +44,7 @@ export function TargetApp() {
         (value) => {
           if (active) {
             setSnapshot(value);
+            void loadInspector().catch((cause) => console.error('Inspector prefetch failed:', cause));
             try {
               commands.loadSnapshot(value);
             } catch (cause) {
@@ -172,6 +176,10 @@ export function TargetApp() {
             <FranchiseHQMount snapshot={snapshot} />
           ) : s.node === 'hq' && workspace.slug === 'my-moves' && snapshot ? (
             <MovesMount snapshot={snapshot} />
+          ) : s.node === 'trade' && workspace.slug === 'trade-desk-and-offers' && snapshot ? (
+            <Suspense fallback={<p role="status">Opening Trade desk…</p>}>
+              <TradeDesk snapshot={snapshot} />
+            </Suspense>
           ) : s.node === 'control' && workspace.slug === 'app' ? (
             <AppSettings />
           ) : (
@@ -222,7 +230,9 @@ export function TargetApp() {
         </div>
         <div className="insp-body">
           {snapshot && s.subject ? (
-            <PlayerInspector snapshot={snapshot} subject={s.subject} />
+            <Suspense fallback={null}>
+              <PlayerInspector snapshot={snapshot} subject={s.subject} />
+            </Suspense>
           ) : (
             <p className="not-wired">
               Every player, franchise, pick, offer and segment opens here.

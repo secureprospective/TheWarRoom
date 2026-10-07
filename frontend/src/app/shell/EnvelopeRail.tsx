@@ -6,6 +6,7 @@ import { intentLabels, stateLabels, stateSignals } from './moveLabels';
 import './moves.css';
 import { Act } from '../commands/Act';
 import { lineupChanges } from './LineupPlan';
+import { tradeRailLabels } from './tradeLabels';
 
 const time = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
 const mainPath: EnvelopeState[] = ['draft', 'ready', 'handed_off', 'not_yet_done', 'landed'];
@@ -28,6 +29,10 @@ export function railStages(receipt: Receipt): EnvelopeState[] {
 export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot: Snapshot }) {
   const player = snapshot.players.value.find((p) => p.id === receipt.spec.expected.player);
   const lineup = receipt.spec.expected.lineup;
+  const trade = tradeRailLabels(receipt, snapshot);
+  const header = trade?.header || (lineup ? `Week ${lineup.week} lineup` :
+    player?.name ?? receipt.spec.expected.player);
+  const handoffLabel = trade ? 'Open MFL trade desk' : 'Open MFL page';
   const summary = lineupChanges(receipt, snapshot).map((change) =>
     `${change.verb === 'Start' ? '+' : '−'}${change.name.split(',')[0]}`).join(' ');
   const trail = new Map(receipt.audit.map((entry) => [entry.to, entry]));
@@ -36,8 +41,8 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
       gravity={receipt.spec.gravity}
       header={
         <div>
-          <h4>{lineup ? `Week ${lineup.week} lineup` : player?.name ?? receipt.spec.expected.player}</h4>
-          {lineup && <p>{summary}</p>}
+          <h4>{header}</h4>
+          {(trade || lineup) && <p>{trade?.summary || summary}</p>}
           <span>{intentLabels[receipt.spec.intent] ?? receipt.spec.intent}</span>
           <span className="move-classification">{receipt.spec.gravity} · {receipt.spec.undo}</span>
         </div>
@@ -67,7 +72,7 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
       {receipt.state === 'ready' && <p>Ready is not MFL-accepted</p>}
       {receipt.state === 'ready' && <Act
         verb="move.handoff" args={{ correlationId: receipt.correlationId }}
-        label={lineup ? 'Open MFL lineup page' : 'Open MFL page'}
+        label={lineup ? 'Open MFL lineup page' : handoffLabel}
       />}
     </Card>
   );

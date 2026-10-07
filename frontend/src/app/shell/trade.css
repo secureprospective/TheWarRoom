@@ -1,0 +1,39 @@
+.trade-desk {
+  max-width: 70rem;
+}
+.trade-group {
+  margin-block: 1.5rem;
+}
+.trade-group > h4 {
+  margin-block-end: 0.5rem;
+}
+.trade-group .twr-card {
+  margin-block-end: 0.75rem;
+}
+.trade-assets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.trade-assets h6 {
+  font: inherit;
+  font-weight: 600;
+}
+.trade-assets ul {
+  padding-inline-start: 1.25rem;
+}
+.trade-desk p,
+.trade-assets li {
+  overflow-wrap: anywhere;
+}
+.trade-comments {
+  white-space: pre-wrap;
+}
+.trade-provenance {
+  color: var(--surface-tx2);
+}
+@media (max-width: 700px) {
+  .trade-assets {
+    grid-template-columns: 1fr;
+  }
+}

@@ -16,7 +16,7 @@ export const stateLabels: Record<EnvelopeState, string> = {
   waiver_pending: 'Waiver pending',
 };
 export const intentLabels: Record<string, string> = {
-  'roster.ir': 'IR placement', 'lineup.set': 'Lineup change',
+  'roster.ir': 'IR placement', 'lineup.set': 'Lineup change', 'trade.accept': 'Trade accept',
 };
 export const stateSignals: Record<EnvelopeState, Signal> = {
   draft: 'grey',

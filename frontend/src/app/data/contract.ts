@@ -101,6 +101,10 @@ export type EnvelopeSpec = {
   expected: {
     player?: string;
     rosterStatus?: (typeof ROSTER_STATUSES)[number];
+    trade?: {
+      tradeId: string; offering: string; accepting: string;
+      offeringGives: string[]; acceptingGives: string[];
+    };
     lineup?: { week: number; starters: string[]; baseline: string[] };
   };
   gravity: (typeof GRAVITIES)[number];
@@ -135,3 +139,16 @@ export type LineupReading = {
   provenance: Provenance;
   rulesSource: Provenance;
 };
+
+export type TradeAsset = { token: string; name: string; position?: Position };
+export type TradeOffer = {
+  tradeId: string;
+  direction: 'to_you' | 'by_you';
+  otherId: string;
+  otherName: string;
+  give: TradeAsset[];
+  get: TradeAsset[];
+  expires: string;
+  comments: string;
+};
+export type TradeReading = { offers: TradeOffer[]; provenance: Provenance };

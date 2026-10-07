@@ -1,5 +1,5 @@
 import { prefetchHQ } from '../shell/FranchiseHQMount';
-import { createLineups } from '../shell/lineups';
+import { createLineups, createReadings } from '../shell/lineups';
 import { createMovesState } from './moves';
 import { createMFLKeyState } from './mflKey';
 import { createMFLKeyField } from '../shell/mflKeyField';
@@ -8,7 +8,7 @@ import { selectProvider, type Provider } from '../data/provider';
 import {
   resolve, placementRoute, isSurface, type EndpointId, type Placement, type Surface,
 } from '../registry';
-import type { MFLKeyStatus, Snapshot } from '../data/contract';
+import type { MFLKeyStatus, Snapshot, TradeReading } from '../data/contract';
 import type { PlayerSubject } from '../shell/state';
 import {
   browserStorage,
@@ -56,6 +56,7 @@ export function createCommands(
   let snapshot: Snapshot | undefined;
   const state = createShellState();
   const lineups = createLineups(provider);
+  const trades = createReadings<TradeReading>(provider, (id) => provider.trades(id));
   const moves = createMovesState();
   const mflKey = createMFLKeyState();
   const prefetchMoves = createMovesPrefetch();
@@ -162,13 +163,26 @@ export function createCommands(
     });
   }
   const registry = Object.freeze({
+    'trade.accept.plan': command({
+      ...ambient, id: 'trade.accept.plan', label: 'Plan accept', aliases: [], roles: ['gm'],
+      gravity: 'G2', undo: 'reversible', args: ['tradeId'],
+      run: ({ tradeId }: { tradeId: string }) => {
+        const franchiseId = state.read().franchiseId;
+        if (franchiseId) void import('./tradeAccept').then(
+          ({ planTradeAccept }) => planTradeAccept(moves, provider, franchiseId, tradeId),
+          (cause) => moves.write({ draftErrors: {
+            ...moves.read().draftErrors, [`trade:${franchiseId}:${tradeId}`]: String(cause),
+          } }),
+        );
+      },
+    }),
     'lineup.edit': editCommand<{ franchiseId: string }>('edit', 'Edit lineup', ['franchiseId']),
     'lineup.toggle': editCommand<{ playerId: string }>('toggle', 'Toggle starter', ['playerId']),
     'lineup.reset': editCommand<Record<string, never>>('reset', 'Reset', []),
     'lineup.cancel': editCommand<Record<string, never>>('cancel', 'Cancel', []),
     'lineup.draft': editCommand<Record<string, never>>('draft', 'Check and save plan', []),
     'move.handoff': editCommand<{ correlationId: string }>(
-      'handoff', 'Open MFL lineup page', ['correlationId'],
+      'handoff', 'Open MFL page', ['correlationId'],
     ),
     'mflkey.connect': command({
       ...ambient, id: 'mflkey.connect', label: 'Connect MFL', aliases: ['mfl', 'api key'],
@@ -241,6 +255,7 @@ export function createCommands(
         }
         void prefetchHQ().catch((cause) => console.error('HQ prefetch failed:', cause));
         lineups.refresh(args.franchiseId);
+        trades.refresh(args.franchiseId);
         persistFranchise(args.franchiseId, storage());
         state.write({
           franchiseId: args.franchiseId,
@@ -452,6 +467,7 @@ export function createCommands(
     onMovesChange: lineups.onMovesChange,
     useLineupEdit: state.useLineupEdit,
     lineups,
+    trades,
     mflField,
     mflReason,
     loadMFLKey: () => requestMFL(() => provider.mflKey(), 'Checking the keyring…'),
@@ -469,6 +485,7 @@ export function createCommands(
       if (franchiseId) {
         void prefetchHQ().catch((cause) => console.error('HQ prefetch failed:', cause));
         lineups.refresh(franchiseId);
+        trades.refresh(franchiseId);
       }
       state.write({ franchiseId });
     },

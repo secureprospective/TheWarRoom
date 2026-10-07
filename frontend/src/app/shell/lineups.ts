@@ -2,13 +2,14 @@ import { useEffect, useSyncExternalStore } from 'react';
 import type { LineupReading, Snapshot } from '../data/contract';
 import type { Provider } from '../data/provider';
 
-export type LineupState = { reading?: LineupReading; error?: string };
-export function createLineups(provider: Provider) {
-  const entries = new Map<string, LineupState>();
+export type ReadingState<T> = { reading?: T; error?: string };
+export type LineupState = ReadingState<LineupReading>;
+export function createReadings<T>(provider: Provider, read: (id: string) => Promise<T>) {
+  const entries = new Map<string, ReadingState<T>>();
   const requests = new Map<string, number>();
   const listeners = new Set<() => void>();
-  const pending: LineupState = {};
-  function publish(id: string, value: LineupState) {
+  const pending: ReadingState<T> = {};
+  function publish(id: string, value: ReadingState<T>) {
     if (JSON.stringify(entries.get(id)) === JSON.stringify(value)) return;
     entries.set(id, value);
     for (const listener of listeners) listener();
@@ -16,7 +17,7 @@ export function createLineups(provider: Provider) {
   function refresh(id: string) {
     const request = (requests.get(id) ?? 0) + 1;
     requests.set(id, request);
-    return provider.lineup(id).then((reading) => {
+    return read(id).then((reading) => {
       if (requests.get(id) === request) publish(id, { reading });
     }).catch((cause) => {
       if (requests.get(id) === request) {
@@ -38,7 +39,12 @@ export function createLineups(provider: Provider) {
     onMovesChange: provider.onMovesChange.bind(provider),
   };
 }
-export function useLineup(store: ReturnType<typeof createLineups>, id: string, snapshot: Snapshot) {
+export function createLineups(provider: Provider) {
+  return createReadings(provider, (id) => provider.lineup(id));
+}
+export function useReading<T>(
+  store: ReturnType<typeof createReadings<T>>, id: string, snapshot: Snapshot,
+) {
   const state = useSyncExternalStore(store.subscribe, () => store.peek(id));
   useEffect(() => {
     const read = () => store.refresh(id);
@@ -49,3 +55,5 @@ export function useLineup(store: ReturnType<typeof createLineups>, id: string, s
   }, [store, id, snapshot]);
   return state;
 }
+
+export const useLineup = useReading<LineupReading>;

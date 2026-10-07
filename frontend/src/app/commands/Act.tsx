@@ -38,7 +38,7 @@ export function Act<K extends CommandId>({
       title={label ?? commands.registry[verb].label}
       onClick={() => dispatch(verb, args)}
     >
-      {children ?? commands.registry[verb].label}
+      {children ?? label ?? commands.registry[verb].label}
     </button>
   );
 }

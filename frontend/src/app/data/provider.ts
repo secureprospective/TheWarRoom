@@ -1,6 +1,6 @@
 import type {
   LineupCheck, LineupReading, ClockReading, EnvelopeDemo, MFLKeyStatus,
-  Provenance, Receipt, Snapshot, Sourced,
+  Provenance, Receipt, Snapshot, Sourced, TradeReading,
 } from './contract';
 import {
   DeleteMFLKey, MFLKeyStatus as ReadMFLKey, SetMFLKey,
@@ -8,6 +8,8 @@ import {
 } from '../../../wailsjs/go/main/App';
 
 interface ReadingProvider {
+  trades(franchiseId: string): Promise<TradeReading>;
+  draftTradeAccept(franchiseId: string, tradeId: string): Promise<Receipt>;
   checkLineup(franchiseId: string, starters: string[]): Promise<LineupCheck>;
   draftLineup(franchiseId: string, starters: string[]): Promise<Receipt>;
   handOff(correlationId: string): Promise<Receipt>;
@@ -45,9 +47,14 @@ function lineupBindings() {
 async function desktopLineup(): Promise<never> {
   throw new Error('Lineup changes need the desktop app');
 }
+async function desktopTrades(): Promise<never> {
+  throw new Error('Trades need the desktop app');
+}
 export class FixtureProvider implements ReadingProvider, DemoProvider {
   readonly kind = 'fixture';
   readonly reason = 'Drafting needs the desktop app';
+  trades: ReadingProvider['trades'] = desktopTrades;
+  draftTradeAccept: ReadingProvider['draftTradeAccept'] = desktopTrades;
   checkLineup: ReadingProvider['checkLineup'] = desktopLineup;
   draftLineup: ReadingProvider['draftLineup'] = desktopLineup;
   handOff: ReadingProvider['handOff'] = desktopLineup;
@@ -147,6 +154,12 @@ function onTargetChange(event: string, listener: () => void): () => void {
 
 export class LiveProvider implements ReadingProvider, DraftingProvider {
   readonly kind = 'live';
+  async trades(franchiseId: string): Promise<TradeReading> {
+    return (await import('./tradeProvider')).trades(franchiseId);
+  }
+  async draftTradeAccept(franchiseId: string, tradeId: string): Promise<Receipt> {
+    return (await import('./tradeProvider')).draftTradeAccept(franchiseId, tradeId);
+  }
   async checkLineup(franchiseId: string, starters: string[]): Promise<LineupCheck> {
     return (await lineupBindings()).checkLineup(franchiseId, starters);
   }
