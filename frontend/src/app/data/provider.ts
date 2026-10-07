@@ -1,5 +1,5 @@
 import type {
-  ClockReading, EnvelopeDemo, MFLKeyStatus, Provenance, Receipt, Snapshot, Sourced,
+  LineupReading, ClockReading, EnvelopeDemo, MFLKeyStatus, Provenance, Receipt, Snapshot, Sourced,
 } from './contract';
 import {
   DeleteMFLKey, MFLKeyStatus as ReadMFLKey, SetMFLKey,
@@ -13,6 +13,8 @@ interface ReadingProvider {
   snapshot(): Promise<Snapshot>;
   clock(): Promise<Sourced<ClockReading>>;
   onClockChange(listener: () => void): () => void;
+  onSeasonChange(listener: () => void): () => void;
+  lineup(franchiseId: string): Promise<LineupReading>;
 }
 
 export interface DraftingProvider {
@@ -46,6 +48,12 @@ export class FixtureProvider implements ReadingProvider, DemoProvider {
   }
   onClockChange(_listener: () => void): () => void {
     return () => {};
+  }
+  onSeasonChange(_listener: () => void): () => void {
+    return () => {};
+  }
+  async lineup(_franchiseId: string): Promise<LineupReading> {
+    throw new Error('Lineups need the desktop app');
   }
   async demo(): Promise<EnvelopeDemo> {
     const [{ parseEnvelopeDemo }, fixture] = await Promise.all([
@@ -103,6 +111,23 @@ function failedClock(cause: unknown, kind: Provenance['kind']): Sourced<ClockRea
   };
 }
 
+function onTargetChange(event: string, listener: () => void): () => void {
+  let active = true;
+  let unsubscribe: (() => void) | undefined;
+  void import('../../../wailsjs/runtime/runtime').then(({ EventsOn }) => {
+    if (!active) return;
+    unsubscribe = EventsOn(event, listener);
+    // An event emitted while the runtime chunk loaded was missed; catch up once.
+    listener();
+  }).catch(() => {
+    // No runtime chunk means no change events; the initial read still reports availability.
+  });
+  return () => {
+    active = false;
+    unsubscribe?.();
+  };
+}
+
 export class LiveProvider implements ReadingProvider, DraftingProvider {
   readonly kind = 'live';
   async mflKey(): Promise<MFLKeyStatus> {
@@ -118,20 +143,17 @@ export class LiveProvider implements ReadingProvider, DraftingProvider {
     return parseMFLKeyStatus(status);
   }
   onClockChange(listener: () => void): () => void {
-    let active = true;
-    let unsubscribe: (() => void) | undefined;
-    void import('../../../wailsjs/runtime/runtime').then(({ EventsOn }) => {
-      if (!active) return;
-      unsubscribe = EventsOn('target:clock', listener);
-      // An event emitted while the runtime chunk loaded was missed; catch up once.
-      listener();
-    }).catch(() => {
-      // No runtime chunk means no change events; the mount read still shows the clock.
-    });
-    return () => {
-      active = false;
-      unsubscribe?.();
-    };
+    return onTargetChange('target:clock', listener);
+  }
+  onSeasonChange(listener: () => void): () => void {
+    return onTargetChange('target:season', listener);
+  }
+  async lineup(franchiseId: string): Promise<LineupReading> {
+    const [{ parseLineup }, reading] = await Promise.all([
+      import('./parseLineup'),
+      import('../../../wailsjs/go/main/App').then(({ TargetLineup }) => TargetLineup(franchiseId)),
+    ]);
+    return parseLineup(reading);
   }
   async draftIR(franchiseId: string, playerId: string): Promise<Receipt> {
     const [{ parseReceipt }, receipt] = await Promise.all([

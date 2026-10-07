@@ -170,3 +170,5 @@ alone writes it and runs connect/forget. The provider lazily imports generated W
 
 `internal/lineup` parses MFL starter bounds and checks full/partial saved lineups without I/O.
 `lineup_app.go`: `TargetLineup` reads held starters, active-roster bench and rulebook legality; no network.
+
+HQ › Roster: `LineupRoster.tsx` shows starters, bench and Go legality; `lineups.ts` caches and refreshes.

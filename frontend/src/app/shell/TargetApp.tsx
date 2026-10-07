@@ -5,7 +5,7 @@ import { useLeagueClock } from '../clock/useLeagueClock';
 import { EndpointIndex } from '../registry/EndpointIndex';
 import type { Placement } from '../registry';
 import { CommandBar } from '../commands/CommandBar';
-import { FranchiseHQ } from './FranchiseHQ';
+import { FranchiseHQMount } from './FranchiseHQMount';
 import { PlayerInspector } from './PlayerInspector';
 import { AppSettings } from './AppSettings';
 import { useEffect, useState, useRef } from 'react';
@@ -169,7 +169,7 @@ export function TargetApp() {
           {s.node === 'hq' &&
           workspace.slug === 'lineup-and-roster' &&
           snapshot ? (
-            <FranchiseHQ snapshot={snapshot} />
+            <FranchiseHQMount snapshot={snapshot} />
           ) : s.node === 'hq' && workspace.slug === 'my-moves' && snapshot ? (
             <MovesMount snapshot={snapshot} />
           ) : s.node === 'control' && workspace.slug === 'app' ? (

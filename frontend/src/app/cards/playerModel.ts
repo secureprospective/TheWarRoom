@@ -51,6 +51,7 @@ export type PlayerCardModel = {
   numbers: readonly { label: string; state: 'not wired' }[];
   status: LabelledSignal[];
   contractStatus: string;
+  rosterNote?: string;
   salary: string;
   years?: string;
   unwiredRows: string;
@@ -62,35 +63,36 @@ export function playerCardModel(
   franchiseId: string,
   playerId: string,
   asOf: Date,
+  allowUnrostered = false,
 ): PlayerCardModel {
   const player = snapshot.players.value.find((candidate) => candidate.id === playerId);
   const contract = snapshot.rosters.value
     .find((roster) => roster.franchiseId === franchiseId)
     ?.players.find((candidate) => candidate.id === playerId);
-  if (!player || !contract)
+  if ((!player || !contract) && !allowUnrostered)
     throw new Error(
       `Player card ${franchiseId}/${playerId}: missing player or roster contract`,
     );
   const status: LabelledSignal[] = [];
-  if (contract.rosterStatus === 'IR') status.push({ signal: 'red', label: 'IR' });
-  if (contract.rosterStatus === 'TAXI_SQUAD')
+  if (contract?.rosterStatus === 'IR') status.push({ signal: 'red', label: 'IR' });
+  if (contract?.rosterStatus === 'TAXI_SQUAD')
     status.push({ signal: 'blue', label: 'Taxi' });
-  if (player.isRookie) status.push({ signal: 'blue', label: 'Rookie' });
+  if (player?.isRookie) status.push({ signal: 'blue', label: 'Rookie' });
   return {
-    id: player.id,
-    name: player.name ?? player.id,
-    position: player.position,
-    team: player.team,
-    age: ageAt(player.birthdate, asOf),
+    id: playerId,
+    name: player?.name ?? playerId,
+    position: player?.position,
+    team: player?.team,
+    age: ageAt(player?.birthdate, asOf),
     numbers: [
       { label: 'On-field-now', state: 'not wired' },
       { label: 'Dynasty value', state: 'not wired' },
     ],
     status,
-    contractStatus: contract.contractStatus,
-    salary: formatMoney(contract.salary),
+    contractStatus: contract?.contractStatus ?? 'Unavailable',
+    salary: contract ? formatMoney(contract.salary) : 'Unavailable',
     years:
-      contract.yearsRemaining === undefined
+      contract?.yearsRemaining === undefined
         ? undefined
         : `${contract.yearsRemaining} ${contract.yearsRemaining === 1 ? 'year' : 'years'}`,
     unwiredRows: 'Form and market · not wired',

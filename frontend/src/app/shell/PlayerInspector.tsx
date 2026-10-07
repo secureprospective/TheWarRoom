@@ -11,7 +11,7 @@ export function PlayerInspector({
   snapshot: Snapshot;
   subject: PlayerSubject;
 }) {
-  const model = playerCardModel(snapshot, subject.franchiseId, subject.id, new Date());
+  const model = playerCardModel(snapshot, subject.franchiseId, subject.id, new Date(), true);
   return (
     <>
       <PlayerCard
@@ -19,6 +19,7 @@ export function PlayerInspector({
         franchiseId={subject.franchiseId}
         playerId={subject.id}
         asOf={new Date()}
+        model={model}
       />
       <PlayerActMount subject={subject} />
       <section className="zone interrogate">

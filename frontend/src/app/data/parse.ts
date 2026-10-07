@@ -28,7 +28,7 @@ import {
 } from './parseValues';
 export { parseReceipt, parseEnvelopeDemo } from './parseEnvelope';
 
-function provenance(value: unknown, path: string): Provenance {
+export function provenance(value: unknown, path: string): Provenance {
   const row = object(value, path, ['source', 'freshness', 'kind']);
   const fresh = object(row.freshness, `${path}.freshness`, [
     'state',
@@ -153,7 +153,7 @@ export function parseSnapshot(value: unknown): Snapshot {
   };
 }
 
-function boolean(value: unknown, path: string): boolean {
+export function boolean(value: unknown, path: string): boolean {
   if (typeof value !== 'boolean') throw new Error(`${path}: expected boolean`);
   return value;
 }

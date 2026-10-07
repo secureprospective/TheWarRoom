@@ -73,6 +73,8 @@ async function mountClock(clock: () => Promise<Sourced<ClockReading>>) {
     snapshot: vi.fn(),
     clock,
     onClockChange,
+    onSeasonChange: () => () => {},
+    lineup: vi.fn(),
   });
   let renders = 0;
   function StripProbe({ reading }: { reading?: Sourced<ClockReading> }) {

@@ -4,7 +4,7 @@ import { Glyph } from '../look/Glyph';
 import { SignalChip } from '../look/Slots';
 import { Card } from './Card';
 import { matrixColumns, matrixCells } from './matrix';
-import { playerCardModel } from './playerModel';
+import { playerCardModel, type PlayerCardModel } from './playerModel';
 
 export type PlayerCardProps = {
   snapshot: Snapshot;
@@ -13,6 +13,7 @@ export type PlayerCardProps = {
   asOf: Date;
   provenance?: 'own' | 'inherited';
   gravity?: Gravity;
+  model?: PlayerCardModel;
 };
 
 export function PlayerCard({
@@ -22,8 +23,9 @@ export function PlayerCard({
   asOf,
   provenance = 'own',
   gravity = 'G0',
+  model: suppliedModel,
 }: PlayerCardProps) {
-  const model = playerCardModel(snapshot, franchiseId, playerId, asOf);
+  const model = suppliedModel ?? playerCardModel(snapshot, franchiseId, playerId, asOf);
   return (
     <>
       <div className="player-matrix">

@@ -1229,6 +1229,7 @@ export namespace main {
 	export class LineupReading {
 	    franchise: string;
 	    week: number;
+	    starterCount: number;
 	    starters: LineupPlayer[];
 	    bench: LineupPlayer[];
 	    check: lineup.Result;
@@ -1243,6 +1244,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.franchise = source["franchise"];
 	        this.week = source["week"];
+	        this.starterCount = source["starterCount"];
 	        this.starters = this.convertValues(source["starters"], LineupPlayer);
 	        this.bench = this.convertValues(source["bench"], LineupPlayer);
 	        this.check = this.convertValues(source["check"], lineup.Result);
