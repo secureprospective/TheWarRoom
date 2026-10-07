@@ -79,6 +79,17 @@ describe('Performance is law (§18, §M3)', () => {
     expect(valid(read('data/provider.ts'))).toBe(true);
     expect(valid("import fixture from './fixtures/snapshot.json';")).toBe(false);
   });
+  it('keeps clock fixtures dynamic and timer ownership outside React views', () => {
+    const provider = read('data/provider.ts');
+    const dynamic = (source: string) => source.includes("await import('./fixtures/clock.json')") &&
+      !/import\s+\w+\s+from\s+['"].*clock\.json/.test(source);
+    expect(dynamic(provider)).toBe(true);
+    expect(dynamic("import clock from './fixtures/clock.json';")).toBe(false);
+    for (const file of ['clock/ClockStrip.tsx', 'clock/CalendarPanel.tsx']) {
+      expect(read(file)).not.toMatch(/setInterval|setTimeout|Date\.now|useState/);
+      expect(read(file)).toContain('memo(');
+    }
+  });
   it('keeps the harness behind a lazy boundary and rejects a static import', () => {
     const source = readFileSync(resolve('src/TargetMount.tsx'), 'utf8');
     const valid = (text: string) => text.includes("lazy(() => import('./App'))") &&

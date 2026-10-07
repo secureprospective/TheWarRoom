@@ -1,9 +1,10 @@
-import type { Provenance, Snapshot } from './contract';
-import { parseSnapshot } from './parse';
-import { TargetSnapshot } from '../../../wailsjs/go/main/App';
+import type { ClockReading, Provenance, Snapshot, Sourced } from './contract';
+import { parseClock, parseSnapshot } from './parse';
+import { TargetClock, TargetSnapshot } from '../../../wailsjs/go/main/App';
 
 export interface Provider {
   snapshot(): Promise<Snapshot>;
+  clock(): Promise<Sourced<ClockReading>>;
 }
 
 // Wails injects window.go before the page script runs; a plain browser (dev, screenshots) has none.
@@ -12,6 +13,15 @@ function hasWails(): boolean {
 }
 
 export class FixtureProvider implements Provider {
+  async clock(): Promise<Sourced<ClockReading>> {
+    try {
+      const fixture = await import('./fixtures/clock.json');
+      return parseClock(fixture.default);
+    } catch (cause) {
+      return failedClock(cause, 'fixture');
+    }
+  }
+
   async snapshot(): Promise<Snapshot> {
     const fixture = await import('./fixtures/snapshot.json');
     return parseSnapshot(fixture.default);
@@ -36,7 +46,28 @@ function failedSnapshot(cause: unknown): Snapshot {
   };
 }
 
+function failedClock(cause: unknown, kind: Provenance['kind']): Sourced<ClockReading> {
+  const operation = kind === 'live' ? 'TargetClock' : 'Clock fixture';
+  return {
+    value: { season: 0, phase: 'OFFSEASON', deadlines: [], windows: [] },
+    provenance: {
+      source: 'phase-log+commissioner-calendar',
+      kind,
+      freshness: { state: 'fail', fetchedAt: '', note: `${operation} failed: ${String(cause)}` },
+    },
+  };
+}
+
 export class LiveProvider implements Provider {
+  async clock(): Promise<Sourced<ClockReading>> {
+    try {
+      if (!hasWails()) throw new Error('Wails runtime absent');
+      return parseClock(await TargetClock());
+    } catch (cause) {
+      return failedClock(cause, 'live');
+    }
+  }
+
   async snapshot(): Promise<Snapshot> {
     try {
       if (!hasWails()) throw new Error('Wails runtime absent');

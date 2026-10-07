@@ -1,0 +1,7 @@
+.twr-app [data-urgency="U0"] { color: var(--surface-tx3); }
+.twr-app [data-urgency="U1"] { color: var(--surface-tx2); }
+.twr-app [data-urgency="U2"] { color: var(--signal-amber-text); }
+.twr-app [data-urgency="U3"] { color: var(--signal-red-text); }
+.twr-app .strip > .act { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.twr-app .league-calendar ul { list-style: none; padding: 0; }
+.twr-app .league-calendar li { margin: 8px 0; }
