@@ -178,6 +178,32 @@ func tradeOwnership(s Spec, snap snapshot.Snapshot, assets []leaguefeed.Asset) [
 	return blocks
 }
 
+// tradeReviewWindow follows MFL league.defaultTradeExpirationDays = 7 for this league
+// (docs/build-handoffs/Ring1_Gap_Closure.md); disappearance alone cannot prove execution.
+const tradeReviewWindow = 7 * 24 * time.Hour
+
+func (e Envelope) tradeReviewVerdict(observed time.Time, verdict Verdict) Verdict {
+	if e.spec.Intent != "trade.accept" || e.state != DOTReview || verdict.Event != AwaitDOT ||
+		!e.tradeReviewExpired(observed) {
+		return verdict
+	}
+	return Verdict{Event: Partial,
+		Note: "Not verified: no executed trade 7 days after acceptance " +
+			"(declined, vetoed or still in review on MFL)"}
+}
+
+// tradeReviewExpired reports whether the window from the first entry into DOTReview has passed.
+// The first entry anchors it, so a stale read that bounces through Not verified cannot extend it;
+// an envelope never in DOTReview has no window, so a stale-read Not verified can still enter it.
+func (e Envelope) tradeReviewExpired(observed time.Time) bool {
+	for _, entry := range e.audit {
+		if entry.To == DOTReview {
+			return observed.After(entry.At.Add(tradeReviewWindow))
+		}
+	}
+	return false
+}
+
 type TradePredicate struct{}
 
 func (TradePredicate) Sources() []Source { return []Source{Transactions, PendingTrades} }

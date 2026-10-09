@@ -123,6 +123,23 @@ describe('Performance is law (§18, §M3)', () => {
     expect(source).toContain('import.meta.env.DEV');
     expect(source.match(/assertShortList\(/g)).toHaveLength(2);
   });
+  it('loads command search independently without suspending the workspace', () => {
+    const independent = (source: string) =>
+      source.includes("lazy(() => import('../commands/CommandBar')") &&
+      !/import\s+\{\s*CommandBar\s*\}\s+from/.test(source) &&
+      /<Suspense fallback=\{null\}>\s*<CommandBar snapshot=\{snapshot\} \/>\s*<\/Suspense>/.test(source);
+    const source = read('shell/TargetApp.tsx');
+    expect(independent(source)).toBe(true);
+    expect(independent(source.replace("import('../commands/CommandBar')", 'eagerBar'))).toBe(false);
+    expect(independent(source.replace('fallback={null}>\n        <CommandBar',
+      'fallback={<p>Loading search</p>}>\n        <CommandBar'))).toBe(false);
+    expect(independent(source + "\nimport { CommandBar } from '../commands/CommandBar';")).toBe(false);
+    expect(source).toContain("lazy(() => import('./AppSettings')");
+    expect(source).not.toMatch(/import\s+\{\s*AppSettings\s*\}\s+from/);
+    expect(source).toContain('<FranchiseHQMount snapshot={snapshot} />');
+    expect(source).toContain('<HomePulseMount snapshot={snapshot} reading={clock} />');
+    expect(source).toContain('<TradeDesk snapshot={snapshot} />');
+  });
   it('requires snapshot-keyed roster and search memoization and rejects missing memos', () => {
     const roster = (source: string) => /useMemo\([\s\S]*?franchiseRoster[\s\S]*?\[snapshot, s.franchiseId\]/
       .test(source);

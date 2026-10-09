@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { renderToPipeableStream, renderToStaticMarkup } from 'react-dom/server';
+import { PassThrough } from 'node:stream';
 import { createElement } from 'react';
 import { FixtureProvider } from '../data/provider';
 import { createCommands, commands } from '../commands/registry';
@@ -11,6 +12,20 @@ import type { Endpoint, EndpointId, Placement } from './index';
 import { assertEndpointRoutes } from './routes';
 import { EndpointIndex } from './EndpointIndex';
 import { nodes, nodeKeys } from '../shell/nodes';
+
+function renderSettledApp(): Promise<string> {
+  return new Promise((accept, reject) => {
+    const output = new PassThrough();
+    let html = '';
+    output.on('data', (chunk: Buffer) => { html += chunk.toString(); });
+    output.on('end', () => accept(html));
+    output.on('error', reject);
+    const stream = renderToPipeableStream(createElement(TargetApp), {
+      onAllReady: () => stream.pipe(output),
+      onError: reject,
+    });
+  });
+}
 
 const snapshot = await new FixtureProvider().snapshot();
 const executor = createCommands(() => undefined);
@@ -59,7 +74,7 @@ describe('Endpoint map', () => {
         ? ['nav', 'command'] : row.disposition === 'merged' ? ['merged-into'] : []);
     }
   });
-  it('renders every reachable workspace and surface index without a snapshot', () => {
+  it('renders every reachable workspace and surface index without a snapshot', async () => {
     // SSR otherwise reads Zustand's initial server snapshot, not dispatched navigation.
     const projection = vi.spyOn(commands, 'use').mockImplementation(() => renderState(commands.read()));
     try {
@@ -76,7 +91,7 @@ describe('Endpoint map', () => {
       }
       for (const place of surfacePlaces) {
         commands.dispatch('surface.open', { place });
-        const html = renderToStaticMarkup(createElement(TargetApp));
+        const html = await renderSettledApp();
         expect(html).toContain(`${place} endpoint index`);
       }
       expect(() => assertEndpointRoutes(endpoints, searchCandidates(executor))).not.toThrow();
