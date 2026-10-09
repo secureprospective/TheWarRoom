@@ -138,6 +138,10 @@ export function TargetDraftLineup(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftLineup'](arg1, arg2);
 }
 
+export function TargetDraftTaxi(arg1, arg2) {
+  return window['go']['main']['App']['TargetDraftTaxi'](arg1, arg2);
+}
+
 export function TargetDraftTradeAccept(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftTradeAccept'](arg1, arg2);
 }
