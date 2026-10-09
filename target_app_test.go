@@ -283,7 +283,8 @@ func TestTargetSnapshotFailureKeepsCache(t *testing.T) {
 	a.ctx = context.Background()
 	r, err := a.TargetDraftIR("0001", "0042")
 	if err != nil || r.State != envelope.Blocked ||
-		r.Audit[0].Note != "not verified (league rules not captured); MFL target not verified" {
+		r.Audit[0].Note != "not verified (league rules not captured); "+
+			"MFL host not yet known; MFL target not verified" {
 		t.Fatalf("cached draft: %+v, %v", r, err)
 	}
 }

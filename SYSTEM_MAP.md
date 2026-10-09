@@ -194,3 +194,7 @@ Accept plan: `commands/tradeAccept.ts` drafts `trade.accept`; `shell/TradePlan.t
 Home seasonal card: `shell/SeasonalCard.tsx` lazily renders the held clock and shared deadline ticker.
 Home alert tray: `shell/AlertTray.tsx` lazily reads ordered franchise alerts and routes to their workspaces.
 League Pulse Now: `shell/PulseNow.tsx` lazily reads matchups and toggles side-by-side starter scores.
+
+`target_app.go`: `TargetDraftTaxi(franchiseID, playerID string) (envelope.Receipt, error)` saves a taxi plan.
+`internal/envelope`: `roster.taxi` derives direction from held status and watches post-hand-off rosters.
+IR and taxi open MFL owner pages without submitting; unavailable held taxi rules are labelled unchecked.

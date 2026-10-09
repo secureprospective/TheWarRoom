@@ -85,6 +85,7 @@ func (a *App) logMove(e envelope.Envelope) {
 func movePredicate(intent string) envelope.Predicate {
 	registry := map[string]envelope.Predicate{
 		"roster.ir":    envelope.IRPredicate{},
+		"roster.taxi":  envelope.TaxiPredicate{},
 		"lineup.set":   envelope.LineupPredicate{},
 		"trade.accept": envelope.TradePredicate{},
 	}
