@@ -154,6 +154,11 @@ func (e Envelope) Observe(at time.Time, obs Observation, predicate Predicate) (E
 	if !slices.Contains([]Event{Match, Partial, NoChange, Contradiction, AwaitDOT}, verdict.Event) {
 		return Envelope{}, fmt.Errorf("envelope: invalid predicate event %q", verdict.Event)
 	}
+	if verdict.Event == AwaitDOT && e.spec.Intent == "trade.accept" && e.state == NotVerified &&
+		e.tradeReviewExpired(observed) {
+		return e, nil
+	}
+	verdict = e.tradeReviewVerdict(observed, verdict)
 	if verdict.Event == AwaitDOT && e.state == DOTReview {
 		verdict.Event = NoChange
 	}

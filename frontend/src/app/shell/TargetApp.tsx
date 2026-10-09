@@ -4,9 +4,7 @@ import { CalendarPanel } from '../clock/CalendarPanel';
 import { useLeagueClock } from '../clock/useLeagueClock';
 import { EndpointIndex } from '../registry/EndpointIndex';
 import type { Placement } from '../registry';
-import { CommandBar } from '../commands/CommandBar';
 import { FranchiseHQMount } from './FranchiseHQMount';
-import { AppSettings } from './AppSettings';
 import { lazy, Suspense, useEffect, useState, useRef } from 'react';
 import type { Snapshot } from '../data/contract';
 import { selectProvider } from '../data/provider';
@@ -21,6 +19,8 @@ import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
 
+const AppSettings = lazy(() => import('./AppSettings').then((m) => ({ default: m.AppSettings })));
+const CommandBar = lazy(() => import('../commands/CommandBar').then((m) => ({ default: m.CommandBar })));
 const HomePulseMount = lazy(() => import('./HomePulseMount'));
 const TradeDesk = lazy(() => import('./TradeDesk'));
 const loadInspector = () => import('./PlayerInspector');
@@ -187,7 +187,9 @@ export function TargetApp() {
               <TradeDesk snapshot={snapshot} />
             </Suspense>
           ) : s.node === 'control' && workspace.slug === 'app' ? (
-            <AppSettings />
+            <Suspense fallback={null}>
+              <AppSettings />
+            </Suspense>
           ) : (
             <section className="shell-unwired">
               <h4>{workspace.label}</h4>
@@ -266,7 +268,9 @@ export function TargetApp() {
         </Act>
         <span className="vt">Comms · league feed</span>
       </aside>
-      <CommandBar snapshot={snapshot} />
+      <Suspense fallback={null}>
+        <CommandBar snapshot={snapshot} />
+      </Suspense>
       <aside
         id="target-comms"
         data-open={s.comms}
