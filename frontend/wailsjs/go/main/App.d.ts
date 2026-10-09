@@ -73,6 +73,8 @@ export function TargetDraftIR(arg1:string,arg2:string):Promise<envelope.Receipt>
 
 export function TargetDraftLineup(arg1:string,arg2:Array<string>):Promise<envelope.Receipt>;
 
+export function TargetDraftTaxi(arg1:string,arg2:string):Promise<envelope.Receipt>;
+
 export function TargetDraftTradeAccept(arg1:string,arg2:string):Promise<envelope.Receipt>;
 
 export function TargetHandOff(arg1:string):Promise<envelope.Receipt>;
