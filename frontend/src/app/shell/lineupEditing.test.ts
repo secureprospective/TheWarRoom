@@ -102,7 +102,7 @@ describe('HQ lineup editing', () => {
     let resolve!: (check: LineupCheck) => void;
     t.check.mockReturnValueOnce(new Promise((done) => { resolve = done; }));
     await t.dispatch('lineup.toggle', { playerId: '16195' });
-    expect(t.element.textContent).toContain('1 change from saved');
+    expect(t.element.textContent).toContain('1 player changed from saved');
     expect(t.element.textContent).toContain('Changed from saved');
     expect(t.element.textContent).not.toContain('Reading lineup…');
     expect(t.rosterRender.mock.calls.length).toBeGreaterThan(renders);
@@ -110,12 +110,16 @@ describe('HQ lineup editing', () => {
     t.check.mockResolvedValueOnce({ legal: false, full: false,
       problems: [{ subject: 'WR', kind: 'over', message: 'Go: WR limit exceeded' }] });
     await t.dispatch('lineup.toggle', { playerId: '16428' });
-    expect(t.element.textContent).toContain('Draft · not legal · Go: WR limit exceeded · 2 changes');
+    expect(t.element.textContent).toContain(
+      'Draft · not legal · Go: WR limit exceeded · 2 players changed from saved',
+    );
     await act(async () => { resolve({ legal: true, full: true, problems: [] }); });
     expect(t.element.textContent).toContain('Go: WR limit exceeded');
     expect(t.check).toHaveBeenCalledTimes(3);
     await t.dispatch('lineup.reset', {});
-    expect(t.element.textContent).toContain('Draft · legal · 21 of 21 starters · 0 changes from saved');
+    expect(t.element.textContent).toContain(
+      'Draft · legal · 21 of 21 starters · 0 players changed from saved',
+    );
     await t.dispatch('lineup.toggle', { playerId: '16195' });
     expect(t.element.textContent).toContain(
       'Draft · legal, partial · 20 of 21 starters · Go: needs another WR',
@@ -165,7 +169,7 @@ describe('HQ lineup editing', () => {
     vi.spyOn(t.provider, 'handOff').mockResolvedValue(handed);
     await t.dispatch('move.handoff', { correlationId: ready.correlationId });
     expect(t.element.textContent).toContain("Opened MFL's week 5 lineup page.");
-    expect(t.element.textContent).toContain('press Submit Lineup');
+    expect(t.element.textContent).toContain('press Submit Partial Lineup at the bottom');
     expect(t.element.textContent).toContain('Handed off · Opened MFL lineup page');
     const landed = { ...handed, state: 'landed' as const, audit: [...handed.audit, {
       at: '2026-10-07T14:02:00Z', from: 'handed_off' as const, event: 'match' as const,

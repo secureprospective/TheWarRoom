@@ -17,14 +17,15 @@ const terminal = new Set<EnvelopeState>(['blocked', 'failed', 'stale', 'not_veri
 export function railStages(receipt: Receipt): EnvelopeState[] {
   const path = [...mainPath];
   for (const entry of receipt.audit) {
-    if (pending.has(entry.to) && !path.includes(entry.to)) {
+    if ((pending.has(entry.to) || entry.to === 'not_verified') && !path.includes(entry.to)) {
       path.splice(path.indexOf(entry.from) + 1, 0, entry.to);
     }
   }
   if (!terminal.has(receipt.state)) return path;
   const reached = new Set(['draft', ...receipt.audit.map((entry) => entry.to)]);
   const last = path.reduce((index, stage, next) => reached.has(stage) ? next : index, 0);
-  return [...path.slice(0, last + 1), receipt.state];
+  const visited = path.slice(0, last + 1);
+  return visited.at(-1) === receipt.state ? visited : [...visited, receipt.state];
 }
 
 export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot: Snapshot }) {
@@ -38,10 +39,11 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
   const lineupSummary = lineupChanges(receipt, snapshot).map((change) =>
     `${change.verb === 'Start' ? '+' : '−'}${change.name.split(',')[0]}`).join(' ');
   let summary = trade?.summary || lineupSummary;
-  if (receipt.spec.intent === 'roster.ir') summary = `IR ${header}`;
+  const shortName = player?.name?.split(',')[0];
+  if (receipt.spec.intent === 'roster.ir') summary = shortName ? `IR ${shortName}` : '';
   if (receipt.spec.intent === 'roster.taxi') {
     const direction = receipt.spec.expected.rosterStatus === 'TAXI_SQUAD' ? '+' : '−';
-    summary = `${direction}Taxi ${header}`;
+    summary = shortName ? `${direction}Taxi ${shortName}` : '';
   }
   const trail = new Map(receipt.audit.map((entry) => [entry.to, entry]));
   return (
@@ -72,7 +74,8 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
                 label={stateLabels[stage]}
               />
               {entry && <time dateTime={entry.at}>{time.format(new Date(entry.at))}</time>}
-              {entry && <p>{entry.note}</p>}
+              {entry && <p>{/^superseded by \S+$/.test(entry.note)
+                ? 'Replaced by a newer plan' : entry.note}</p>}
             </li>
           );
         })}

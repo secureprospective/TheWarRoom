@@ -5,6 +5,8 @@ import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import fixture from '../data/fixtures/snapshot.json';
 import { parseEnvelopeDemo, parseSnapshot } from '../data/parse';
+import type { AuditEntry } from '../data/contract';
+import { lineupReceipt } from '../data/lineupReceiptTestData';
 import { FixtureProvider, LiveProvider } from '../data/provider';
 import { createCommands } from '../commands/registry';
 import { EnvelopeRail, railStages } from './EnvelopeRail';
@@ -63,6 +65,58 @@ describe('move rail', () => {
         .format(new Date(entry.at)));
     }
   });
+  it('replaces supersession IDs with owner-facing text', () => {
+    const ready = lineupReceipt();
+    const correlationId = 'lineup-0123456789abcdef0123456789abcdef';
+    const stale = {
+      ...ready, state: 'stale' as const, audit: [...ready.audit, {
+        at: '2026-10-07T14:01:00Z', from: 'ready' as const, event: 'invalidate' as const,
+        to: 'stale' as const, note: `superseded by ${correlationId}`,
+      }],
+    };
+    const html = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt: stale }));
+    expect(html).toContain('<p>Replaced by a newer plan</p>');
+    expect(html).not.toContain(correlationId);
+    expect(html).not.toContain('superseded by');
+  });
+  it.each(['not_verified', 'landed'] as const)(
+    'keeps Not verified in audit order with its time and note when currently %s', (state) => {
+      const ready = lineupReceipt();
+      const audit: AuditEntry[] = [ready.audit[0], {
+        at: '2026-10-07T14:01:00Z', from: 'ready' as const, event: 'hand_off' as const,
+        to: 'handed_off' as const, note: 'Opened MFL',
+      }, {
+        at: '2026-10-07T14:02:00Z', from: 'handed_off' as const, event: 'partial' as const,
+        to: 'not_verified' as const, note: 'Saved lineup not verified',
+      }];
+      if (state === 'landed') audit.push({
+        at: '2026-10-07T14:03:00Z', from: 'not_verified', event: 'match',
+        to: 'landed', note: 'MFL saved the drafted starters',
+      });
+      const plan = { ...ready, state, audit };
+      const stages = ['draft', 'ready', 'handed_off', 'not_verified'];
+      if (state === 'landed') stages.push('not_yet_done', 'landed');
+      expect(railStages(plan)).toEqual(stages);
+      const html = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt: plan }));
+      expect(html.match(/>Not verified</g)).toHaveLength(1);
+      expect(html.indexOf('>Not verified<')).toBeGreaterThan(html.indexOf('>Handed off<'));
+      expect(html).toContain('<p>Saved lineup not verified</p>');
+      expect(html).toContain('dateTime="2026-10-07T14:02:00Z"');
+      expect(html).toContain(new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' })
+        .format(new Date('2026-10-07T14:02:00Z')));
+    },
+  );
+  it.each(['roster.ir', 'roster.taxi'])(
+    'omits the %s summary when the player is unavailable', (intent) => {
+      const unknown = { ...receipt, spec: {
+        ...receipt.spec, intent, expected: { player: 'missing', rosterStatus: 'TAXI_SQUAD' as const },
+      } };
+      const html = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt: unknown }));
+      expect(html).toContain('<h4>Player unavailable</h4>');
+      expect(html).not.toContain('<p>IR Player unavailable</p>');
+      expect(html).not.toContain('<p>+Taxi Player unavailable</p>');
+    },
+  );
   it('ends at blocked with the exact Go note and no later stages', () => {
     const blocked = {
       ...receipt,
@@ -248,8 +302,10 @@ describe('Inspector IR and taxi Acts', () => {
     expect(inspector(executor)).toContain(`>${label}</button>`);
     const rail = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt: ready }));
     expect(rail).toContain(`>${label}</button>`);
-    const name = snapshot.players.value.find((p) => p.id === subject.id)!.name;
-    expect(rail).toContain(`<p>${prefix}${name}</p>`);
+    const name = snapshot.players.value.find((p) => p.id === subject.id)!.name!;
+    expect(rail).toContain(`<h4>${name}</h4>`);
+    expect(rail).toContain(`<p>${prefix}${name.split(',')[0]}</p>`);
+    expect(rail).not.toContain(`<p>${prefix}${name}</p>`);
     expect(rail).not.toContain('roster.taxi');
   });
   it.each(['roster.ir', 'roster.taxi'])('shows the %s block note, never a hand-off', async (intent) => {

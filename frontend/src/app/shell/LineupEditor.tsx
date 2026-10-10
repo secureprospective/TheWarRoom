@@ -59,7 +59,7 @@ export default function LineupEditor({ snapshot, roster, franchiseId, selected, 
       <p className="lineup-reading" role="status">
         {draft && edited
           ? `Draft · ${lineupVerdict(edited)}` +
-            ` · ${changes.length} ${changes.length === 1 ? 'change' : 'changes'} from saved`
+            ` · ${changes.length} ${changes.length === 1 ? 'player' : 'players'} changed from saved`
           : lineupText(reading, error)}{' '}
         {reading && <>
           <SignalChip {...provenanceSlot([['Lineup', reading.provenance]])} />{' '}

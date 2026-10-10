@@ -44,7 +44,8 @@ export function LineupPlan({ receiptId, franchiseId, snapshot }: {
             disabled={Boolean(pending)} label={pending ? 'Opening MFL…' : 'Open MFL lineup page'} />
         </>}
         {handed && <p>
-          Opened MFL's week {lineup.week} lineup page. Make these same changes there and press Submit Lineup.
+          Opened MFL's week {lineup.week} lineup page. Make these same changes there and press
+          {' '}Submit Partial Lineup at the bottom.
           {' '}TheWarRoom will show Landed when MFL has them.
         </p>}
         {receipt.state !== 'ready' && <p>{stateLabels[receipt.state]} · {note}</p>}
