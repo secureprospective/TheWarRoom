@@ -85,6 +85,12 @@ export function TeamReading({
                   </div>
                 ))}
               </section>
+              <section>
+                <h5>Trade averages</h5>
+                <p>{v.words.picks}: {number(v.behaviour.picks.mean)} a trade</p>
+                <p>{v.words.age}: {number(v.behaviour.age.mean, 1)} years a trade</p>
+                <p>{v.words.partners}: {v.partnersText}</p>
+              </section>
               <section data-endpoint="L-28">
                 <h5>Assets sent and taken</h5>
                 <p>{v.kindSay}</p>
@@ -105,6 +111,11 @@ export function TeamReading({
               </section>
               <section data-endpoint="L-29">
                 <h5>Trade partners</h5>
+                {v.partners[0] && (
+                  <p>{v.words.partner}: <TeamLink snapshot={snapshot}
+                    fid={v.partners[0].fid} name={v.partners[0].name} />{' '}
+                    {v.partners[0].tradesText}</p>
+                )}
                 {v.partners.map((p) => (
                   <div className="market-row" key={p.fid}>
                     <TeamLink snapshot={snapshot} fid={p.fid} name={p.name} />

@@ -119,35 +119,46 @@ export function TeamTable({
 }) {
   const { sort } = counterState.use();
   const columns: readonly [SortKey, string][] = [
-    ['name', 'Team'],
-    ['n', 'Trade sides'],
-    ['perSeason', 'Per season'],
-    ['now', 'For now'],
-    ['later', 'For later'],
-    ['day', 'On the day'],
-    ['since', 'Since'],
-    ['picks', 'Picks in − out'],
-    ['age', 'Age in − out'],
-    ['partners', 'Partners'],
+    ['name', words.team],
+    ['n', words.sides],
+    ['perSeason', words.perSeason],
+    ['now', words.now],
+    ['later', words.later],
+    ['day', words.day],
+    ['since', words.since],
+    ['picks', words.picks],
+    ['age', words.age],
+    ['partners', words.partners],
   ];
   return (
-    <section data-endpoint="L-26">
+    <section data-endpoint="L-26" className="counter-team-box">
       <h5>How each team trades</h5>
       <p>
-        Sort on archive values. On the day and since are totals; ranges underneath are per trade,
-        with zero marked. Since needs 2+ played seasons.
+        Sort on archive values. On the day and since are totals; ranges in parentheses are per trade.
+        Since needs 2+ played seasons.
       </p>
+      <div className="market-controls counter-sort" role="group" aria-label="Sort by">
+        <span>Sort by</span>
+        {columns.map(([key, label]) => (
+          <Act key={key} verb="market" args={{ field: 'counterpart-sort', value: key }}
+            active={sort.key === key} label={`Sort by ${label}`}>
+            {label}{sort.key === key ? (sort.descending ? ' ↓' : ' ↑') : ''}
+          </Act>
+        ))}
+      </div>
       <div
         className="counter-scroll counter-team-scroll"
         tabIndex={0}
-        aria-label="Scrollable teams table"
+        aria-label="Teams table"
       >
-        <table className="counter-table">
+        <table className="counter-table counter-team-table">
           <thead className="counter-sticky-header">
             <tr>
               {columns.map(([key, label]) => (
                 <th
                   key={key}
+                  data-column={key}
+                  className="counter-nowrap"
                   scope="col"
                   aria-sort={
                     sort.key === key ? (sort.descending ? 'descending' : 'ascending') : 'none'
@@ -162,7 +173,7 @@ export function TeamTable({
                   </Act>
                 </th>
               ))}
-              <th scope="col">Most frequent partner</th>
+              <th scope="col" data-column="partner" className="counter-nowrap">{words.partner}</th>
             </tr>
           </thead>
           <tbody>
@@ -172,30 +183,28 @@ export function TeamTable({
                   <TeamLink snapshot={snapshot} fid={r.fid} name={r.name} />
                   <small className="counter-standing">{r.standingTitle}</small>
                 </th>
-                <td>{r.nText}</td>
-                <td>{number(r.perSeason, 1)}</td>
-                <td>
+                <td className="counter-nowrap" data-column="n">{r.nText}</td>
+                <td className="counter-nowrap" data-column="perSeason">{number(r.perSeason, 1)}</td>
+                <td className="counter-nowrap" data-column="now">
                   <Share words={words} share={r.forNow} label="Bought for now" />
                 </td>
-                <td>
+                <td className="counter-nowrap" data-column="later">
                   <Share words={words} share={r.forLater} label="Built for later" />
                 </td>
-                <td>
-                  <span>{number(r.day.total)} expected wins total</span>
-                  <EdgeBar edge={r.day} label={words.day} />
+                <td className="counter-total" data-column="day" data-tone={r.day.tone}>
+                  {r.dayText}
                 </td>
-                <td>
-                  <span>{number(r.since.total)} wins total</span>
-                  <EdgeBar edge={r.since} label={words.since} />
+                <td className="counter-total" data-column="since" data-tone={r.since.tone}>
+                  {r.sinceText}
                 </td>
-                <td>
-                  <EdgeBar edge={r.picks} label="Picks in minus out" />
+                <td className="counter-nowrap" data-column="picks">
+                  {number(r.picks.mean)}
                 </td>
-                <td>
-                  <EdgeBar edge={r.age} label="Age in minus out" />
+                <td className="counter-nowrap" data-column="age">
+                  {number(r.age.mean, 1)}
                 </td>
-                <td>{r.partnersText}</td>
-                <td>
+                <td className="counter-nowrap" data-column="partners">{r.partnersText}</td>
+                <td data-column="partner">
                   {r.partner ? (
                     <>
                       <TeamLink snapshot={snapshot} fid={r.partner.fid} name={r.partnerName} />{' '}
@@ -287,7 +296,7 @@ export function CounterReading({
                           {t.rows.map((r) => (
                             <tr key={r.season}>
                               <th scope="row">{r.season}</th>
-                              <td>{r.nText}</td>
+                              <td className="counter-nowrap" data-column="n">{r.nText}</td>
                               <td>
                                 {r.showShares ? (
                                   <Share words={v.words} share={r.now} label="Bought for now" />
@@ -321,17 +330,15 @@ export function CounterReading({
                     <thead>
                       <tr>
                         <th scope="col">Trading as</th>
-                        {tiers.map(([id, label]) => (
-                          <th key={id} scope="col">
-                            With {v.cards.find((c) => c.id === id)?.label ?? label}
-                          </th>
+                        {v.picks.map((pick) => (
+                          <th key={pick.id} scope="col">{pick.with}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {tiers.map(([id, label], index) => (
-                        <tr key={id}>
-                          <th scope="row">{label}</th>
+                      {v.picks.map((pick, index) => (
+                        <tr key={pick.id}>
+                          <th scope="row">{pick.tradingAs}</th>
                           {v.pairs.slice(index * 3, index * 3 + 3).map((p) => (
                             <td key={p.other} title={p.title}>
                               <p>{p.trades}</p>

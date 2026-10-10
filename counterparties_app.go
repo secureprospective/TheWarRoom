@@ -60,10 +60,12 @@ func counterScope(raw RawCounterpartiesScope) lab.TeamScope {
 }
 
 type TierPick struct {
-	ID    string  `json:"id"`
-	Label string  `json:"label"`
-	Hint  string  `json:"hint"`
-	Count float64 `json:"count"`
+	With      string  `json:"with"`
+	TradingAs string  `json:"tradingAs"`
+	ID        string  `json:"id"`
+	Label     string  `json:"label"`
+	Hint      string  `json:"hint"`
+	Count     float64 `json:"count"`
 }
 type TeamOption struct {
 	Fid  string `json:"fid"`
@@ -110,6 +112,8 @@ func counterShare(s lab.TeamShare) CounterShare {
 }
 
 type CounterRow struct {
+	DayText       string             `json:"dayText"`
+	SinceText     string             `json:"sinceText"`
 	NText         string             `json:"nText"`
 	PartnersText  string             `json:"partnersText"`
 	Fid           string             `json:"fid"`
@@ -169,15 +173,24 @@ func counterTrends(trends lab.TeamTrends) CounterTrends {
 }
 
 type CounterWords struct {
-	Day    string `json:"day"`
-	Since  string `json:"since"`
-	Legend string `json:"legend"`
-	Up     string `json:"up"`
-	Down   string `json:"down"`
+	Team      string `json:"team"`
+	Sides     string `json:"sides"`
+	PerSeason string `json:"perSeason"`
+	Now       string `json:"now"`
+	Later     string `json:"later"`
+	Picks     string `json:"picks"`
+	Age       string `json:"age"`
+	Partners  string `json:"partners"`
+	Partner   string `json:"partner"`
+	Day       string `json:"day"`
+	Since     string `json:"since"`
+	Legend    string `json:"legend"`
+	Up        string `json:"up"`
+	Down      string `json:"down"`
 }
 
 func counterWords() CounterWords {
-	return CounterWords{Day: "On the day", Since: "Since", Legend: "Shares: ↑ (green) is above the league’s share beyond chance; ↓ (red) is below it beyond chance. Unmarked shares are within chance. Red ranges are losses beyond chance; green ranges are gains beyond chance.", Up: "↑", Down: "↓"}
+	return CounterWords{Team: "Team", Sides: "Sides", PerSeason: "Per season", Now: "For now", Later: "For later", Picks: "Picks in − out", Age: "Age in − out", Partners: "Partners", Partner: "Most frequent partner", Day: "On the day", Since: "Since", Legend: "Shares: ↑ (green) is above the league’s share beyond chance; ↓ (red) is below it beyond chance. Unmarked shares are within chance. Red ranges are losses beyond chance; green ranges are gains beyond chance.", Up: "↑", Down: "↓"}
 }
 
 type Counterparties struct {
@@ -261,7 +274,7 @@ func tierPicks(tierless []lab.TeamSide, seasons int) []TierPick {
 				n++
 			}
 		}
-		out = append(out, TierPick{ID: t, Label: tierLabel(t), Hint: tierHint(t), Count: float64(n) / float64(seasons)})
+		out = append(out, TierPick{ID: t, Label: tierLabel(t), With: "With " + tierTeams(t), TradingAs: tierLabel(t), Hint: tierHint(t), Count: float64(n) / float64(seasons)})
 	}
 	return out
 }
@@ -276,6 +289,9 @@ func teamOptions(d *lab.Data) []TeamOption {
 func tierLabel(tier string) string {
 	return map[string]string{"contender": "Contenders", "hunt": "In the hunt", "rebuild": "Rebuilding"}[tier]
 }
+func tierTeams(tier string) string {
+	return map[string]string{"contender": "contenders", "hunt": "teams in the hunt", "rebuild": "rebuilding teams"}[tier]
+}
 func tierHint(tier string) string {
 	return map[string]string{"contender": "Ranked 1 to 10 on the day of the trade", "hunt": "Ranked 11 to 22 on the day of the trade", "rebuild": "Ranked 23 to 32 on the day of the trade"}[tier]
 }
@@ -287,7 +303,7 @@ func postureLabel(id string) string {
 }
 func wins(v float64, dp int) string {
 	if math.Round(v*math.Pow10(dp)) == 0 {
-		v = 0
+		return fmt.Sprintf("%.*f", dp, 0.0)
 	}
 	return fmt.Sprintf("%+.*f", dp, v)
 }
@@ -408,7 +424,7 @@ func pairViews(sides []lab.TeamSide) []PairView {
 	out := []PairView{}
 	for _, row := range lab.TierPairs(sides) {
 		for _, c := range row.Cells {
-			out = append(out, PairView{Other: c.Other, N: c.N, Now: c.Now, Real: c.Real, Trades: countLabel(c.N, "trade"), Title: fmt.Sprintf("%s trading with %s: %s on the day; %s since.", tierLabel(row.Tier), strings.ToLower(tierLabel(c.Other)), edgeWords(c.Now, "expected wins a trade"), edgeWords(c.Real, "wins a trade"))})
+			out = append(out, PairView{Other: c.Other, N: c.N, Now: c.Now, Real: c.Real, Trades: countLabel(c.N, "trade"), Title: fmt.Sprintf("%s trading with %s: %s on the day; %s since.", tierLabel(row.Tier), tierTeams(c.Other), edgeWords(c.Now, "expected wins a trade"), edgeWords(c.Real, "wins a trade"))})
 		}
 	}
 	return out
@@ -422,6 +438,7 @@ func counterRows(d *lab.Data, sides, league []lab.TeamSide) []CounterRow {
 			parts = append(parts, fmt.Sprintf("%s %s", tierLabel(t), percent(row.Tiers[t])))
 		}
 		r.StandingTitle = strings.Join(parts, ", ")
+		r.DayText, r.SinceText = counterTotalWords(row.Now), counterTotalWords(row.Real)
 		if row.Partner != nil {
 			r.PartnerName = franchiseName(d, row.Partner.Fid)
 			r.PartnerTrades = countLabel(row.Partner.N, "trade")
@@ -429,6 +446,16 @@ func counterRows(d *lab.Data, sides, league []lab.TeamSide) []CounterRow {
 		out = append(out, r)
 	}
 	return out
+}
+func counterTotalWords(e lab.TeamEdge) string {
+	if e.Total == nil || e.Mean == nil {
+		return "—"
+	}
+	line := fmt.Sprintf("%s total · %s a trade", wins(*e.Total, 2), wins(*e.Mean, 2))
+	if e.Lo == nil || e.Hi == nil {
+		return line + " (too few for a range)"
+	}
+	return fmt.Sprintf("%s (%s to %s)", line, wins(*e.Lo, 2), wins(*e.Hi, 2))
 }
 func franchiseName(d *lab.Data, fid string) string {
 	if f, ok := d.Franchises[fid]; ok {

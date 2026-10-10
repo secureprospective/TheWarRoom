@@ -58,28 +58,29 @@ type AsTierView struct {
 	Text  string       `json:"text"`
 }
 type TeamCounterpart struct {
-	Words       CounterWords      `json:"words"`
-	CountText   string            `json:"countText"`
-	Fid         string            `json:"fid"`
-	Name        string            `json:"name"`
-	AsOf        string            `json:"asOf"`
-	FlowScale   float64           `json:"flowScale"`
-	Sides       int               `json:"sides"`
-	Empty       bool              `json:"empty"`
-	Note        string            `json:"note"`
-	Seasons     []SeasonCellView  `json:"seasons"`
-	SeasonSay   string            `json:"seasonSay"`
-	Posture     []PostureCell     `json:"posture"`
-	Kinds       []KindFlowView    `json:"kinds"`
-	KindSay     string            `json:"kindSay"`
-	Partners    []PartnerView     `json:"partners"`
-	PartnersSay string            `json:"partnersSay"`
-	Behaviour   lab.TeamBehaviour `json:"behaviour"`
-	AsTier      []AsTierView      `json:"asTier"`
-	Day         lab.TeamEdge      `json:"day"`
-	Since       lab.TeamEdge      `json:"since"`
-	DayTxt      string            `json:"dayText"`
-	SinceTxt    string            `json:"sinceText"`
+	PartnersText string            `json:"partnersText"`
+	Words        CounterWords      `json:"words"`
+	CountText    string            `json:"countText"`
+	Fid          string            `json:"fid"`
+	Name         string            `json:"name"`
+	AsOf         string            `json:"asOf"`
+	FlowScale    float64           `json:"flowScale"`
+	Sides        int               `json:"sides"`
+	Empty        bool              `json:"empty"`
+	Note         string            `json:"note"`
+	Seasons      []SeasonCellView  `json:"seasons"`
+	SeasonSay    string            `json:"seasonSay"`
+	Posture      []PostureCell     `json:"posture"`
+	Kinds        []KindFlowView    `json:"kinds"`
+	KindSay      string            `json:"kindSay"`
+	Partners     []PartnerView     `json:"partners"`
+	PartnersSay  string            `json:"partnersSay"`
+	Behaviour    lab.TeamBehaviour `json:"behaviour"`
+	AsTier       []AsTierView      `json:"asTier"`
+	Day          lab.TeamEdge      `json:"day"`
+	Since        lab.TeamEdge      `json:"since"`
+	DayTxt       string            `json:"dayText"`
+	SinceTxt     string            `json:"sinceText"`
 }
 
 func (a *App) TargetCounterpartTeam(raw RawCounterpartTeam) Reading[TeamCounterpart] {
@@ -100,21 +101,22 @@ func (a *App) TargetCounterpartTeam(raw RawCounterpartTeam) Reading[TeamCounterp
 	profile := lab.TeamProfile(d, sides, league, raw.Fid)
 	b := profile.Behaviour
 	value := TeamCounterpart{
-		FlowScale: counterFlowScale(profile),
-		Fid:       raw.Fid,
-		Name:      franchiseName(d, raw.Fid),
-		AsOf:      "Standings as of the archive cutoff " + strings.Split(d.ArchiveThrough, "T")[0] + ", not today's live standings.",
-		Sides:     len(profile.Sides),
-		Seasons:   seasonCells(profile),
-		SeasonSay: seasonSay(b),
-		Posture:   postureCells(b),
-		Kinds:     kindFlows(profile),
-		KindSay:   "Bars are forecast wins sent and taken in for each kind of asset; the figures count the assets.",
-		Partners:  partnerViews(d, profile),
-		Behaviour: b,
-		AsTier:    asTierViews(profile),
-		Day:       b.Now,
-		Since:     b.Real,
+		PartnersText: countNumber(len(profile.Partners)),
+		FlowScale:    counterFlowScale(profile),
+		Fid:          raw.Fid,
+		Name:         franchiseName(d, raw.Fid),
+		AsOf:         "Standings as of the archive cutoff " + strings.Split(d.ArchiveThrough, "T")[0] + ", not today's live standings.",
+		Sides:        len(profile.Sides),
+		Seasons:      seasonCells(profile),
+		SeasonSay:    seasonSay(b),
+		Posture:      postureCells(b),
+		Kinds:        kindFlows(profile),
+		KindSay:      "Bars are forecast wins sent and taken in for each kind of asset; the figures count the assets.",
+		Partners:     partnerViews(d, profile),
+		Behaviour:    b,
+		AsTier:       asTierViews(profile),
+		Day:          b.Now,
+		Since:        b.Real,
 	}
 	value.Words, value.CountText = counterWords(), countNumber(len(profile.Sides))
 	if b.Now.Total != nil {

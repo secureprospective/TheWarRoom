@@ -45,7 +45,14 @@ export type TierShift = {
   to: [number, number];
   clear: boolean;
 } | null;
-export type TierPick = { id: string; label: string; hint: string; count: number };
+export type TierPick = {
+  with: string;
+  tradingAs: string;
+  id: string;
+  label: string;
+  hint: string;
+  count: number;
+};
 export type TeamOption = { fid: string; name: string };
 export type PostureCell = {
   id: string;
@@ -89,6 +96,8 @@ export type PairView = {
   title: string;
 };
 export type CounterRow = {
+  dayText: string;
+  sinceText: string;
   nText: string;
   partnersText: string;
   fid: string;
@@ -108,7 +117,22 @@ export type CounterRow = {
   standingTitle: string;
   partnerTrades: string;
 };
-export type CounterWords = { day: string; since: string; legend: string; up: string; down: string };
+export type CounterWords = {
+  team: string;
+  sides: string;
+  perSeason: string;
+  now: string;
+  later: string;
+  picks: string;
+  age: string;
+  partners: string;
+  partner: string;
+  day: string;
+  since: string;
+  legend: string;
+  up: string;
+  down: string;
+};
 export type Counterparties = {
   words: CounterWords;
   countText: string;
@@ -183,6 +207,7 @@ export type TeamCounterpart = {
   kindSay: string;
   partners: PartnerView[];
   partnersSay: string;
+  partnersText: string;
   behaviour: {
     n: number;
     perSeason: number;

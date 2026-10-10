@@ -6,7 +6,7 @@ import snapshot from '../data/fixtures/snapshot.json';
 import { parseSnapshot } from '../data/parse';
 import { createCommands } from '../commands/registry';
 import { FixtureProvider } from '../data/provider';
-import { CounterReading, CounterControls, sortedRows, panelEndpoint } from './Counterparties';
+import { CounterReading, CounterControls, TeamTable, sortedRows, panelEndpoint } from './Counterparties';
 import { TeamReading } from './TeamPanel';
 import { EdgeBar, teamIdentity } from './Displays';
 import { createCounterState, filtered } from './state';
@@ -291,7 +291,7 @@ it('contains wide tables and reflows tiers by column rather than viewport', () =
 });
 it('wraps all workspace and panel prose including the headline and archive metadata', () => {
   const css = readFileSync('src/app/counterparties/counterparties.css', 'utf8');
-  expect(css).toMatch(/overflow-wrap: anywhere;\s*white-space: normal;/);
+  expect(css).toMatch(/overflow-wrap: normal;\s*word-break: normal;\s*white-space: normal;/);
   expect(css).toContain('max-width: min(100%, 72ch)');
   expect(css).toContain('grid-template-columns: minmax(0, 1fr) minmax(0, 2fr)');
   expect(html(CounterReading, parseCounterparties(surfaceWire))).toContain('25.3%');
@@ -316,12 +316,12 @@ it('shows three short standing trend tables with shares and no repeated standing
   const css = readFileSync('src/app/counterparties/counterparties.css', 'utf8');
   expect(css).toMatch(/\.counter-trend-table\s*\{\s*table-layout: fixed;/);
 });
-it('each matrix and team range carries its own Go-authored visible label, even when absent', () => {
+it('each matrix range carries its own Go-authored visible label, even when absent', () => {
   const r = parseCounterparties(surfaceWire);
   r.value!.words.day = 'Day label from Go';
   r.value!.words.since = 'Since label from Go';
   const text = html(CounterReading, r);
-  for (const id of ['L-25', 'L-26']) {
+  for (const id of ['L-25']) {
     const section = text.slice(text.indexOf(`data-endpoint="${id}"`));
     expect(section).toContain('Day label from Go:');
     expect(section).toContain('Since label from Go:');
@@ -356,7 +356,7 @@ it('renders Go-formatted large counts and never a rounded negative zero', () => 
   r.value!.rows[0].day.mean = -0.0001;
   const text = html(CounterReading, r);
   expect(text).toContain('3,810 trade sides');
-  expect(text).toContain('<td>3,810</td>');
+  expect(text).toContain('<td class="counter-nowrap" data-column="n">3,810</td>');
   expect(text).toContain('Bought for now: 1,000 of 3,810');
   expect(text).toContain('3,810 / 40');
   expect(text).not.toContain('-0.00');
@@ -374,4 +374,73 @@ it('themes accessible panel meters and keeps Go tier casing consistent', () => {
   expect(css).toContain('meter::-webkit-meter-optimum-value');
   expect(css).toContain('meter::-moz-meter-bar');
   expect(css).toContain('background: var(--surface-tx2)');
+});
+
+it('team totals are a single Go-authored text node with no range bars', () => {
+  const v = parseCounterparties(surfaceWire).value!;
+  v.rows[0].dayText = 'Day total and range from Go';
+  v.rows[0].sinceText = 'Since total and range from Go';
+  const text = renderToStaticMarkup(
+    createElement(TeamTable, { rows: v.rows, words: v.words, snapshot: league }),
+  );
+  const cells = [...text.matchAll(/<td class="counter-total"[^>]*>([^<]*)<\/td>/g)];
+  expect(cells).toHaveLength(v.rows.length * 2);
+  expect(text).toContain('>Day total and range from Go</td>');
+  expect(text).toContain('>Since total and range from Go</td>');
+  expect(text).not.toContain('<svg');
+  expect(text).not.toContain('counter-edge');
+  expect(text).toContain('counter-standing');
+  const css = readFileSync('src/app/counterparties/counterparties.css', 'utf8');
+  expect(css).toMatch(/\.counter-team-table\s*\{[^}]*table-layout: auto;/);
+});
+it('matrix headers use the phrases sent by Go', () => {
+  const r = parseCounterparties(surfaceWire);
+  for (const pick of r.value!.picks) expect(html(CounterReading, r)).toContain(pick.with);
+  r.value!.picks[1].with = 'Custom with phrase from Go';
+  expect(html(CounterReading, r)).toContain('Custom with phrase from Go');
+  expect(html(CounterReading, r)).not.toContain('With In the hunt');
+});
+
+it('uses the table container to expose exactly six narrow and eleven wide columns', () => {
+  const v = parseCounterparties(surfaceWire).value!;
+  const text = renderToStaticMarkup(createElement(TeamTable, { rows: v.rows, words: v.words }));
+  const css = readFileSync('src/app/counterparties/counterparties.css', 'utf8');
+  expect(css).toMatch(/container-type: inline-size;\s*container-name: counter-teams;/);
+  const query = css.slice(css.indexOf('@container counter-teams (width < 900px)'));
+  expect(query).toMatch(/\[data-column='partner'\]\)\s*\{\s*display: none;/);
+  const hidden = [...query.matchAll(/\[data-column='([^']+)'\]/g)].map((m) => m[1]);
+  expect(hidden).toEqual(['perSeason', 'picks', 'age', 'partners', 'partner']);
+  const headers = [...text.slice(text.indexOf('<thead'), text.indexOf('</thead>'))
+    .matchAll(/<th\b[^>]*data-column="([^"]+)"/g)].map((m) => m[1]);
+  expect(headers).toHaveLength(11);
+  expect(headers.filter((key) => !hidden.includes(key)))
+    .toEqual(['name', 'n', 'now', 'later', 'day', 'since']);
+  expect(css.slice(0, css.indexOf('@container'))).not.toMatch(/data-column=/);
+  const controls = text.slice(text.indexOf('aria-label="Sort by"'), text.indexOf('counter-scroll'));
+  expect(controls.match(/<button/g)).toHaveLength(10);
+  for (const key of headers.filter((k) => k !== 'partner')) {
+    const wordKey = key === 'name' ? 'team' : key === 'n' ? 'sides' : key;
+    const label = v.words[wordKey as keyof typeof v.words];
+    expect(controls).toContain(`aria-label="Sort by ${label}"`);
+  }
+  expect(css).not.toMatch(/break-all|anywhere/);
+  for (const cell of [...text.matchAll(/<td\b([^>]*)>/g)]) {
+    // Totals are short Go sentences: they wrap between words, never inside a number.
+    if (cell[1].includes('counter-total')) expect(cell[1]).not.toContain('counter-nowrap');
+    else if (!cell[1].includes('data-column="partner"')) expect(cell[1]).toContain('counter-nowrap');
+  }
+  expect(css).toMatch(/\.counterparties \.counter-nowrap button\s*\{\s*white-space: nowrap;/);
+});
+it('keeps the five narrow omissions available in the team panel from supplied fields', () => {
+  const r = parseTeamPanel(teamWire);
+  r.value!.words.picks = 'Go pick heading';
+  r.value!.words.age = 'Go age heading';
+  r.value!.partnersText = '31';
+  const text = html(TeamReading, r);
+  expect(text).toContain(`${r.value!.behaviour.perSeason.toFixed(1)} a season`);
+  expect(text).toContain(`Go pick heading: ${r.value!.behaviour.picks.mean!.toFixed(2)}`);
+  expect(text).toContain(`Go age heading: ${r.value!.behaviour.age.mean!.toFixed(1)}`);
+  expect(text).toContain('Partners: 31');
+  expect(text).toContain('Most frequent partner:');
+  expect(text).toContain(r.value!.partners[0].tradesText);
 });

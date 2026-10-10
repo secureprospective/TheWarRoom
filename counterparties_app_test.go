@@ -268,14 +268,14 @@ func TestCounterRoundedZero(t *testing.T) {
 		dp   int
 		want string
 	}{
-		{-0.0001, 2, "+0.00"}, {-0.0049, 2, "+0.00"}, {-0.0051, 2, "-0.01"}, {-0.04, 1, "+0.0"}, {0, 2, "+0.00"},
+		{-0.0001, 2, "0.00"}, {-0.0049, 2, "0.00"}, {-0.0051, 2, "-0.01"}, {-0.04, 1, "0.0"}, {0, 2, "0.00"}, {0.0049, 2, "0.00"}, {0.0051, 2, "+0.01"},
 	} {
 		if got := wins(c.v, c.dp); got != c.want {
 			t.Errorf("wins(%v,%d)=%s, want %s", c.v, c.dp, got, c.want)
 		}
 	}
 	e := lab.TeamEdge{Mean: ptrFloat(-0.0001), Lo: ptrFloat(-0.1), Hi: ptrFloat(0.1), Tone: "even"}
-	if strings.Contains(edgeWords(e, "wins"), "-0.00") {
+	if got := edgeWords(e, "wins"); got != "0.00 wins, within chance of zero" {
 		t.Fatal("negative zero in prose")
 	}
 }
@@ -307,6 +307,47 @@ func TestCounterVisibleWording(t *testing.T) {
 	for _, tier := range panel.AsTier {
 		if !strings.Contains(tier.Label, tierLabel(tier.Tier)) {
 			t.Fatal(tier.Label)
+		}
+	}
+}
+
+func TestCounterMatrixPhrases(t *testing.T) {
+	picks := tierPicks(nil, 1)
+	for i, want := range []string{"With contenders", "With teams in the hunt", "With rebuilding teams"} {
+		if picks[i].With != want || picks[i].TradingAs != tierLabel(picks[i].ID) {
+			t.Fatalf("matrix phrase: %+v, want %q", picks[i], want)
+		}
+	}
+}
+func TestCounterTableTotals(t *testing.T) {
+	e := lab.TeamEdge{Total: ptrFloat(4.59), Mean: ptrFloat(0.05), Lo: ptrFloat(-0.02), Hi: ptrFloat(0.12)}
+	if got := counterTotalWords(e); got != "+4.59 total · +0.05 a trade (-0.02 to +0.12)" {
+		t.Fatal(got)
+	}
+	if counterTotalWords(lab.TeamEdge{}) != "—" {
+		t.Fatal("absent total fabricated")
+	}
+	for _, row := range (&App{}).TargetCounterparties(RawCounterpartiesScope{From: 2017, To: 2026}).Value.Rows {
+		if row.DayText != counterTotalWords(row.Day) || row.SinceText != counterTotalWords(row.Since) {
+			t.Fatal("row total text missing")
+		}
+	}
+}
+
+func TestCounterNarrowHeadingsAndPanelPartners(t *testing.T) {
+	words := counterWords()
+	if words.Sides != "Sides" || words.Now != "For now" || words.Later != "For later" || words.Day != "On the day" || words.Since != "Since" {
+		t.Fatalf("unexpected compact headings: %+v", words)
+	}
+	a := &App{}
+	surface := a.TargetCounterparties(RawCounterpartiesScope{From: 2017, To: 2026})
+	for _, row := range surface.Value.Rows {
+		panel := a.TargetCounterpartTeam(RawCounterpartTeam{Scope: RawCounterpartiesScope{From: 2017, To: 2026}, Fid: row.Fid})
+		if panel.Value.PartnersText != row.PartnersText || panel.Value.Behaviour.PerSeason != row.PerSeason {
+			t.Fatalf("panel omitted row values for %s", row.Fid)
+		}
+		if row.Partner != nil && (len(panel.Value.Partners) == 0 || panel.Value.Partners[0].Fid != row.Partner.Fid) {
+			t.Fatalf("panel most frequent partner differs for %s", row.Fid)
 		}
 	}
 }

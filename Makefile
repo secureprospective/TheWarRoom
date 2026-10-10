@@ -85,6 +85,8 @@ setup:
 # gitleaks is NOT repeated here — it already runs at pre-commit stage on every commit,
 # so anything reaching a push has already cleared it.
 verify: lint
+	$(MAKE) bindings
+	cd frontend && pnpm tsc --noEmit
 	go test -race ./...
 	cd frontend && pnpm test && pnpm run build && node scripts/bundle-budget.mjs
 

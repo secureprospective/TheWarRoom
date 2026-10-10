@@ -60,8 +60,20 @@ function share(value: unknown, path: string): TeamShare {
   return out;
 }
 function words(value: unknown, path: string) {
-  const w = object(value, path, ['day', 'since', 'legend', 'up', 'down']);
+  const w = object(value, path, [
+    'team', 'sides', 'perSeason', 'now', 'later', 'picks', 'age', 'partners',
+    'partner', 'day', 'since', 'legend', 'up', 'down',
+  ]);
   return {
+    team: text(w.team, path),
+    sides: text(w.sides, path),
+    perSeason: text(w.perSeason, path),
+    now: text(w.now, path),
+    later: text(w.later, path),
+    picks: text(w.picks, path),
+    age: text(w.age, path),
+    partners: text(w.partners, path),
+    partner: text(w.partner, path),
     day: text(w.day, path),
     since: text(w.since, path),
     legend: text(w.legend, path),
@@ -137,8 +149,10 @@ export function parseCounterparties(value: unknown): CounterpartiesReading {
       headline: text(body.headline, path),
       note: text(body.note, path),
       picks: array(body.picks, path, (pick) => {
-        const p = object(pick, `${path}.picks`, ['id', 'label', 'hint', 'count']);
+        const p = object(pick, `${path}.picks`, ['id', 'label', 'hint', 'count', 'with', 'tradingAs']);
         return {
+          with: text(p.with, path),
+          tradingAs: text(p.tradingAs, path),
           id: text(p.id, path),
           label: text(p.label, path),
           hint: text(p.hint, path),
@@ -221,9 +235,13 @@ export function parseCounterparties(value: unknown): CounterpartiesReading {
           'partnersText',
           'standingTitle',
           'partnerTrades',
+          'dayText',
+          'sinceText',
         ]);
         const tiers = object(x.tiers, `${path}.tiers`, ['contender', 'hunt', 'rebuild']);
         return {
+          dayText: text(x.dayText, path),
+          sinceText: text(x.sinceText, path),
           fid: text(x.fid, path),
           name: text(x.name, path),
           n: integer(x.n, path),
@@ -344,6 +362,7 @@ export function parseTeamPanel(value: unknown): TeamPanelReading {
       'kindSay',
       'partners',
       'partnersSay',
+      'partnersText',
       'behaviour',
       'asTier',
       'day',
@@ -480,6 +499,7 @@ export function parseTeamPanel(value: unknown): TeamPanelReading {
         };
       }),
       partnersSay: text(body.partnersSay, path),
+      partnersText: text(body.partnersText, path),
       behaviour: {
         n: integer(behaviour.n, path),
         perSeason: finite(behaviour.perSeason, path),

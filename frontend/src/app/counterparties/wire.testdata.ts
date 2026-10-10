@@ -2,6 +2,9 @@
 export const surfaceWire = {
   "value": {
     "words": {
+      "team": "Team", "sides": "Sides", "perSeason": "Per season",
+      "now": "For now", "later": "For later", "picks": "Picks in − out",
+      "age": "Age in − out", "partners": "Partners", "partner": "Most frequent partner",
       "day": "On the day",
       "since": "Since",
       "legend": "Shares: ↑ (green) is above the league’s share beyond chance; ↓ " +
@@ -26,18 +29,24 @@ export const surfaceWire = {
     "picks": [
       {
         "id": "contender",
+        "with": "With contenders",
+        "tradingAs": "Contenders",
         "label": "Contenders",
         "hint": "Ranked 1 to 10 on the day of the trade",
         "count": 157.7
       },
       {
         "id": "hunt",
+        "with": "With teams in the hunt",
+        "tradingAs": "In the hunt",
         "label": "In the hunt",
         "hint": "Ranked 11 to 22 on the day of the trade",
         "count": 108.4
       },
       {
         "id": "rebuild",
+        "with": "With rebuilding teams",
+        "tradingAs": "Rebuilding",
         "label": "Rebuilding",
         "hint": "Ranked 23 to 32 on the day of the trade",
         "count": 114.9
@@ -297,7 +306,7 @@ export const surfaceWire = {
         "rows": [
           {
             "label": "On the day",
-            "text": "+0.00 expected wins a trade, within chance of zero",
+            "text": "0.00 expected wins a trade, within chance of zero",
             "tone": "even",
             "range": {
               "n": 1084,
@@ -736,8 +745,8 @@ export const surfaceWire = {
           "tone": "even"
         },
         "trades": "520 trades",
-        "title": "Contenders trading with contenders: +0.00 expected wins a trade," +
-                   " within chance of zero on the day; +0.00 wins a trade, within " +
+        "title": "Contenders trading with contenders: 0.00 expected wins a trade," +
+                   " within chance of zero on the day; 0.00 wins a trade, within " +
                    "chance of zero since."
       },
       {
@@ -760,7 +769,7 @@ export const surfaceWire = {
           "tone": "even"
         },
         "trades": "510 trades",
-        "title": "Contenders trading with in the hunt: -0.01 expected wins a " +
+        "title": "Contenders trading with teams in the hunt: -0.01 expected wins a " +
                    "trade, within chance of zero on the day; +0.11 wins a trade, " +
                    "within chance of zero since."
       },
@@ -784,7 +793,7 @@ export const surfaceWire = {
           "tone": "even"
         },
         "trades": "547 trades",
-        "title": "Contenders trading with rebuilding: -0.02 expected wins a trade," +
+        "title": "Contenders trading with rebuilding teams: -0.02 expected wins a trade," +
                    " within chance of zero on the day; -0.02 wins a trade, within " +
                    "chance of zero since."
       },
@@ -832,8 +841,8 @@ export const surfaceWire = {
           "tone": "even"
         },
         "trades": "304 trades",
-        "title": "In the hunt trading with in the hunt: +0.00 expected wins a " +
-                   "trade, within chance of zero on the day; +0.00 wins a trade, " +
+        "title": "In the hunt trading with teams in the hunt: 0.00 expected wins a " +
+                   "trade, within chance of zero on the day; 0.00 wins a trade, " +
                    "within chance of zero since."
       },
       {
@@ -856,7 +865,7 @@ export const surfaceWire = {
           "tone": "even"
         },
         "trades": "270 trades",
-        "title": "In the hunt trading with rebuilding: -0.02 expected wins a " +
+        "title": "In the hunt trading with rebuilding teams: -0.02 expected wins a " +
                    "trade, within chance of zero on the day; -0.10 wins a trade, " +
                    "within chance of zero since."
       },
@@ -904,7 +913,7 @@ export const surfaceWire = {
           "tone": "even"
         },
         "trades": "270 trades",
-        "title": "Rebuilding trading with in the hunt: +0.02 expected wins a " +
+        "title": "Rebuilding trading with teams in the hunt: +0.02 expected wins a " +
                    "trade, within chance of zero on the day; +0.10 wins a trade, " +
                    "within chance of zero since."
       },
@@ -928,8 +937,8 @@ export const surfaceWire = {
           "tone": "even"
         },
         "trades": "332 trades",
-        "title": "Rebuilding trading with rebuilding: +0.00 expected wins a trade," +
-                   " within chance of zero on the day; +0.00 wins a trade, within " +
+        "title": "Rebuilding trading with rebuilding teams: 0.00 expected wins a trade," +
+                   " within chance of zero on the day; 0.00 wins a trade, within " +
                    "chance of zero since."
       }
     ],
@@ -937,6 +946,8 @@ export const surfaceWire = {
       {
         "nText": "526",
         "partnersText": "29",
+        "dayText": "-6.54 total · -0.01 a trade (-0.05 to +0.02)",
+        "sinceText": "-3.34 total · -0.02 a trade (-0.12 to +0.09)",
         "fid": "0032",
         "name": "Washington Commanders",
         "n": 526,
@@ -1010,6 +1021,8 @@ export const surfaceWire = {
       {
         "nText": "140",
         "partnersText": "30",
+        "dayText": "-11.07 total · -0.08 a trade (-0.14 to -0.02)",
+        "sinceText": "+2.75 total · +0.06 a trade (-0.12 to +0.24)",
         "fid": "0025",
         "name": "Arizona Cardinals",
         "n": 140,
@@ -1122,6 +1135,9 @@ export const surfaceWire = {
 export const teamWire = {
   "value": {
     "words": {
+      "team": "Team", "sides": "Sides", "perSeason": "Per season",
+      "now": "For now", "later": "For later", "picks": "Picks in − out",
+      "age": "Age in − out", "partners": "Partners", "partner": "Most frequent partner",
       "day": "On the day",
       "since": "Since",
       "legend": "Shares: ↑ (green) is above the league’s share beyond chance; ↓ " +
@@ -1519,6 +1535,7 @@ export const teamWire = {
       }
     ],
     "partnersSay": "And 14 more partners in view.",
+    "partnersText": "26",
     "behaviour": {
       "n": 166,
       "perSeason": 18.444444444444443,
@@ -1742,6 +1759,9 @@ export const teamWire = {
 export const thinWire = {
   "value": {
     "words": {
+      "team": "Team", "sides": "Sides", "perSeason": "Per season",
+      "now": "For now", "later": "For later", "picks": "Picks in − out",
+      "age": "Age in − out", "partners": "Partners", "partner": "Most frequent partner",
       "day": "On the day",
       "since": "Since",
       "legend": "Shares: ↑ (green) is above the league’s share beyond chance; ↓ " +
@@ -1763,18 +1783,24 @@ export const thinWire = {
     "picks": [
       {
         "id": "contender",
+        "with": "With contenders",
+        "tradingAs": "Contenders",
         "label": "Contenders",
         "hint": "Ranked 1 to 10 on the day of the trade",
         "count": 0
       },
       {
         "id": "hunt",
+        "with": "With teams in the hunt",
+        "tradingAs": "In the hunt",
         "label": "In the hunt",
         "hint": "Ranked 11 to 22 on the day of the trade",
         "count": 1
       },
       {
         "id": "rebuild",
+        "with": "With rebuilding teams",
+        "tradingAs": "Rebuilding",
         "label": "Rebuilding",
         "hint": "Ranked 23 to 32 on the day of the trade",
         "count": 1
@@ -1960,6 +1986,9 @@ export const thinWire = {
 export const emptyWire = {
   "value": {
     "words": {
+      "team": "Team", "sides": "Sides", "perSeason": "Per season",
+      "now": "For now", "later": "For later", "picks": "Picks in − out",
+      "age": "Age in − out", "partners": "Partners", "partner": "Most frequent partner",
       "day": "On the day",
       "since": "Since",
       "legend": "Shares: ↑ (green) is above the league’s share beyond chance; ↓ " +
@@ -2031,6 +2060,7 @@ export const emptyWire = {
                  " the figures count the assets.",
     "partners": [],
     "partnersSay": "No partners in view.",
+    "partnersText": "0",
     "behaviour": {
       "n": 0,
       "perSeason": 0,

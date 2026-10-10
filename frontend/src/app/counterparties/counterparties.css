@@ -128,7 +128,8 @@
   min-width: 0;
 }
 .counterparties :is(p, h4, h5, span, small, b, label, dt, dd) {
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
   white-space: normal;
 }
 .counterparties p {
@@ -184,4 +185,52 @@
 }
 .counterparties meter::-moz-meter-bar {
   background: var(--surface-tx2);
+}
+
+.counter-team-box {
+  container-type: inline-size;
+  container-name: counter-teams;
+}
+.counter-team-table {
+  table-layout: auto;
+  font-size: 12px;
+}
+.counter-team-table :is(th, td) {
+  padding: 8px;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.counter-team-table th:first-child {
+  min-width: 165px;
+  max-width: 240px;
+}
+.counterparties .counter-nowrap,
+.counterparties .counter-nowrap span,
+.counterparties .counter-nowrap button {
+  white-space: nowrap;
+}
+.counter-sort {
+  display: none;
+}
+@container counter-teams (width < 900px) {
+  .counter-team-table :is(
+    [data-column='perSeason'], [data-column='picks'], [data-column='age'],
+    [data-column='partners'], [data-column='partner']) {
+    display: none;
+  }
+  .counter-sort {
+    display: flex;
+  }
+}
+
+/* On the day and Since are short sentences: they wrap between words at the narrow width. */
+.counterparties td.counter-total {
+  min-width: 9.5em;
+}
+
+/* Count and share columns shrink to their content; the spare width goes to the totals. */
+.counterparties td.counter-nowrap,
+.counterparties th.counter-nowrap {
+  width: 1%;
+  min-width: 0;
 }

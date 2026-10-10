@@ -2239,6 +2239,8 @@ export namespace main {
 		}
 	}
 	export class CounterRow {
+	    dayText: string;
+	    sinceText: string;
 	    nText: string;
 	    partnersText: string;
 	    fid: string;
@@ -2271,6 +2273,8 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.dayText = source["dayText"];
+	        this.sinceText = source["sinceText"];
 	        this.nText = source["nText"];
 	        this.partnersText = source["partnersText"];
 	        this.fid = source["fid"];
@@ -2658,6 +2662,8 @@ export namespace main {
 	    }
 	}
 	export class TierPick {
+	    with: string;
+	    tradingAs: string;
 	    id: string;
 	    label: string;
 	    hint: string;
@@ -2669,6 +2675,8 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.with = source["with"];
+	        this.tradingAs = source["tradingAs"];
 	        this.id = source["id"];
 	        this.label = source["label"];
 	        this.hint = source["hint"];
@@ -2676,6 +2684,15 @@ export namespace main {
 	    }
 	}
 	export class CounterWords {
+	    team: string;
+	    sides: string;
+	    perSeason: string;
+	    now: string;
+	    later: string;
+	    picks: string;
+	    age: string;
+	    partners: string;
+	    partner: string;
 	    day: string;
 	    since: string;
 	    legend: string;
@@ -2688,6 +2705,15 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.team = source["team"];
+	        this.sides = source["sides"];
+	        this.perSeason = source["perSeason"];
+	        this.now = source["now"];
+	        this.later = source["later"];
+	        this.picks = source["picks"];
+	        this.age = source["age"];
+	        this.partners = source["partners"];
+	        this.partner = source["partner"];
 	        this.day = source["day"];
 	        this.since = source["since"];
 	        this.legend = source["legend"];
@@ -3131,6 +3157,7 @@ export namespace main {
 	    }
 	}
 	export class TeamCounterpart {
+	    partnersText: string;
 	    // Go type: CounterWords
 	    words: any;
 	    countText: string;
@@ -3164,6 +3191,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.partnersText = source["partnersText"];
 	        this.words = this.convertValues(source["words"], null);
 	        this.countText = source["countText"];
 	        this.fid = source["fid"];
