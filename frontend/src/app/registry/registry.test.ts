@@ -96,7 +96,7 @@ describe('Endpoint map', () => {
       'M-028',
       'M-029',
       'X-04',
-      ...Array.from({ length: 22 }, (_, i) => `L-${String(i + 1).padStart(2, '0')}`),
+      ...Array.from({ length: 29 }, (_, i) => `L-${String(i + 1).padStart(2, '0')}`),
       'L-33',
       'L-35',
     ];

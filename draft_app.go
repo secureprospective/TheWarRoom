@@ -61,7 +61,7 @@ func (a *App) TargetDraftLab(raw RawDraftScope) Reading[MarketSurface] {
 			count++
 		}
 	}
-	value := MarketSurface{Summary: fmt.Sprintf("%d picks with %d finished seasons; %s profile. 100%% is the same slots in other classes.", count, raw.Seasons, marketName(raw.Group)), Sections: []MarketSection{}}
+	value := MarketSurface{Summary: fmt.Sprintf("%s with %s finished; %s profile. 100%% is the same slots in other classes.", countLabel(count, "pick"), countLabel(raw.Seasons, "season"), marketName(raw.Group)), Sections: []MarketSection{}}
 	reason := ""
 	if count < 40 {
 		reason = "Fewer than 40 judged picks; widen the seasons, stretches or NFL rounds, or judge on fewer seasons"
@@ -102,7 +102,7 @@ func draftCellLine(c lab.DraftCell) MarketLine {
 	line := MarketLine{Label: label, Count: c.N, Detail: "Too few picks or less than 0.5 slot wins; not a zero"}
 	if c.Ratio != nil {
 		line.Range = marketRange(&lab.Interval{Value: *c.Ratio, Lo: *c.Lo, Hi: *c.Hi})
-		line.Detail = "Against the same slots · " + c.Tone
+		line.Detail = slotTone(c.Tone)
 	}
 	if c.Best {
 		line.Detail += " · best beyond chance"
@@ -157,7 +157,7 @@ func draftLikeSection(p lab.DraftPosition) MarketSection {
 func draftHitsSection(p lab.DraftPosition) MarketSection {
 	line := MarketLine{Label: marketName(p.Group), Count: p.N, Detail: "Fewer than 8 judged picks; no hit-rate estimate"}
 	if h := p.Hits; h != nil {
-		line.Detail = percent(h.Rate) + " became starters or better, against " + percent(h.Baseline) + " for the same stretches · " + h.Tone
+		line.Detail = percent(h.Rate) + " became starters or better, against " + percent(h.Baseline) + " for the same stretches · " + chanceTone(h.Tone)
 	}
 	return MarketSection{ID: "L-20", Title: "Hit rate against the stretch baseline", Note: "Best season was top or starter; the baseline matches each pick's draft stretch.", Rows: []MarketLine{line}}
 }
@@ -191,4 +191,18 @@ func draftBuySection(d *lab.Data, s lab.DraftScopeFilter, p lab.DraftPosition) M
 		section.Note += " Too few valued trades or played-out deliveries to price these routes."
 	}
 	return section
+}
+
+func countLabel(n int, noun string) string {
+	suffix := "s"
+	if n == 1 {
+		suffix = ""
+	}
+	return fmt.Sprintf("%d %s%s", n, noun, suffix)
+}
+func slotTone(tone string) string {
+	return map[string]string{"down": "below its slot beyond chance", "even": "within chance of its slot", "up": "above its slot beyond chance"}[tone]
+}
+func chanceTone(tone string) string {
+	return map[string]string{"down": "below baseline beyond chance", "even": "within chance of baseline", "up": "above baseline beyond chance"}[tone]
 }

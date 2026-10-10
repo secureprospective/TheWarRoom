@@ -1,5 +1,10 @@
+import type { ReactNode } from 'react';
 import { Act } from '../commands/Act';
-import type { MarketRange, SurfaceReading } from './contract';
+import type { MarketRange, ReadingShell, SurfaceReading } from './contract';
+
+export function countNoun(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`;
+}
 
 export function RangeBar({ range }: { range: MarketRange }) {
   const x = (v: number) =>
@@ -13,14 +18,14 @@ export function RangeBar({ range }: { range: MarketRange }) {
     </svg>
   );
 }
-export function HowCounted({ reading }: { reading: SurfaceReading }) {
+export function HowCounted({ reading }: { reading: ReadingShell }) {
   return (
     <details className="market-how" data-endpoint="L-33">
       <summary>How this is counted</summary>
-      <p>This is the league’s trade and draft history through the archive cutoff, not today’s live market.</p>
       <p>
-        {reading.howCounted || 'No archive reading is available; no numbers have been supplied.'}
+        This is the league’s trade and draft history through the archive cutoff, not today’s live market.
       </p>
+      <p>{reading.howCounted || 'No archive reading is available; no numbers have been supplied.'}</p>
       <dl className="kv">
         <dt>Count / threshold</dt>
         <dd>
@@ -42,14 +47,14 @@ export function HowCounted({ reading }: { reading: SurfaceReading }) {
     </details>
   );
 }
-export function ReadingView({
+export function ArchiveReading({
   reading,
   title,
-  inspect = false,
+  children,
 }: {
-  reading?: SurfaceReading;
+  reading?: ReadingShell;
   title: string;
-  inspect?: boolean;
+  children?: ReactNode;
 }) {
   if (!reading)
     return (
@@ -68,10 +73,26 @@ export function ReadingView({
             : reading.status === 'not_wired'
               ? 'Not wired'
               : 'Failed'}{' '}
-          · {reading.absenceReason} · {reading.count} records / {reading.threshold} required
+          · {reading.absenceReason} · {countNoun(reading.count, 'record')} / {reading.threshold} required
         </p>
       )}
-      {(reading.status === 'ok' || reading.status === 'thin') && reading.value && (
+      {(reading.status === 'ok' || reading.status === 'thin') && children}
+      <HowCounted reading={reading} />
+    </section>
+  );
+}
+export function ReadingView({
+  reading,
+  title,
+  inspect = false,
+}: {
+  reading?: SurfaceReading;
+  title: string;
+  inspect?: boolean;
+}) {
+  return (
+    <ArchiveReading reading={reading} title={title}>
+      {reading?.value && (
         <>
           <p className="market-finding">{reading.value.summary}</p>
           <div className="market-sections">
@@ -105,7 +126,7 @@ export function ReadingView({
                     )}
                     <small>
                       {row.detail}
-                      {row.count > 0 ? ` · ${row.count} records` : ''}
+                      {row.count > 0 ? ` · ${countNoun(row.count, 'record')}` : ''}
                     </small>
                   </div>
                 ))}
@@ -114,7 +135,6 @@ export function ReadingView({
           </div>
         </>
       )}
-      <HowCounted reading={reading} />
-    </section>
+    </ArchiveReading>
   );
 }

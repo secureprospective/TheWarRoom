@@ -95,7 +95,11 @@ verify: lint
 # 4.0 host: `make build WAILS_TAGS=`  (Beta distro-matrix concern, docketed).
 WAILS_TAGS ?= webkit2_41
 build:
-	wails build -tags "$(WAILS_TAGS)" -ldflags "$(LDFLAGS)"
+	wails build -tags "$(WAILS_TAGS)" -ldflags "$(LDFLAGS)"; status=$$?; chmod 0644 frontend/wailsjs/runtime/*; exit $$status
+
+.PHONY: bindings
+bindings:
+	wails generate module; status=$$?; chmod 0644 frontend/wailsjs/runtime/*; exit $$status
 
 # dev is intentionally UNstamped — the "dev" var defaults make a `wails dev`
 # binary read as a dev build in the UI, which is the point.

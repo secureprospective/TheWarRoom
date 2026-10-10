@@ -85,7 +85,7 @@ func profileSections(p *lab.Profile, deliveryCount int) []MarketSection {
 	why.Rows = append(why.Rows, delivered)
 	when := MarketSection{ID: "L-10", Title: "Cheapest / dearest stretches", Note: "Only beyond-chance extremes are marked. All stretches of the chosen seasons are compared.", Rows: []MarketLine{}}
 	for _, w := range p.When {
-		line := MarketLine{Label: marketPhaseName(w.Phase), Count: w.N, Detail: fmt.Sprintf("%d valued trades in this stretch; too few or too uncertain to price", w.Trades)}
+		line := MarketLine{Label: marketPhaseName(w.Phase), Count: w.N, Detail: fmt.Sprintf("%s in this stretch; too few or too uncertain to price", countLabel(w.Trades, "valued trade"))}
 		if w.Paid != nil {
 			line.Range = marketRange(&lab.Interval{Value: w.Paid.Value, Lo: w.Paid.Lo, Hi: w.Paid.Hi})
 			line.Detail = "Against the typical asset in this stretch; no beyond-chance extreme"
@@ -108,7 +108,7 @@ func profileSections(p *lab.Profile, deliveryCount int) []MarketSection {
 		}
 		against.Rows = append(against.Rows, MarketLine{Key: x.Kind, Label: marketName(x.Kind), Count: x.N, Range: marketRange(&lab.Interval{Value: x.Ratio, Lo: x.Lo, Hi: x.Hi}), Detail: x.Side + " · " + basis})
 	}
-	back := MarketSection{ID: "L-12", Title: "What came back", Note: fmt.Sprintf("Opposite-side forecast wins across %d trades moving this asset. These are not realised returns.", p.Moved), Rows: []MarketLine{}}
+	back := MarketSection{ID: "L-12", Title: "What came back", Note: fmt.Sprintf("Opposite-side forecast wins across %s moving this asset. These are not realised returns.", countLabel(p.Moved, "trade")), Rows: []MarketLine{}}
 	for _, x := range p.Back {
 		back.Rows = append(back.Rows, MarketLine{Key: x.Kind, Label: marketName(x.Kind), Detail: fmt.Sprintf("%s of returned forecast wins · %.3f wins", percent(x.Share), x.Wins)})
 	}
