@@ -1,6 +1,7 @@
 import type { PlayerSubject } from './state';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
+import './lineup.css';
 import ReceiptStatus from './ReceiptStatus';
 import { rosterHandoffLabel } from './ReceiptStatus';
 
@@ -22,7 +23,7 @@ export default function PlayerAct({ subject, executor = commands }: {
   const handoffError = executor.useMoves((s) => s.draftErrors[handoffKey]);
   const taxiLabel = status === 'TAXI_SQUAD' ? 'Draft promotion from taxi' : 'Draft move to taxi squad';
   return (
-    <section className="zone">
+    <section className="zone player-act">
       <h5>Act</h5>
       {status !== 'TAXI_SQUAD' && <Act
         verb="roster.ir"

@@ -16,10 +16,14 @@
 .lineup-plan {
   margin-block: 0.5rem;
 }
+/* Inspector Acts sit in a wrapping row of buttons. */
+.twr-app .player-act { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.twr-app .player-act > :not(.act) { flex-basis: 100%; }
 /* The lineup verbs are the owner's first real Act: they must read as buttons. */
 .twr-app .plan-actions .act,
 .twr-app .lineup-actions .act,
-.twr-app .lineup-plan .act {
+.twr-app .lineup-plan .act,
+.twr-app .player-act .act {
   padding: 5px 10px;
   border: 1px solid var(--surface-line-hi);
   color: var(--surface-tx1);
@@ -27,7 +31,8 @@
 }
 .twr-app .plan-actions .act:disabled,
 .twr-app .lineup-actions .act:disabled,
-.twr-app .lineup-plan .act:disabled {
+.twr-app .lineup-plan .act:disabled,
+.twr-app .player-act .act:disabled {
   border-color: var(--surface-line);
   color: var(--surface-tx3);
   cursor: default;
