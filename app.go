@@ -16,6 +16,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
+	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -47,6 +48,8 @@ type App struct {
 	pools       *db.Pools // thewarroom.db: the MFL mirror and app settings
 	histPools   *db.Pools // history.db: everything that cannot be rebuilt
 	whatifPools *db.Pools // whatif.db: moves made in the app, apart from MFL truth (R2)
+	// labData decodes the frozen Lab facts once per App; callers share the immutable result.
+	labData     func() (*lab.Data, error)
 	params      *params.Store
 	rulebook    *rulebook.Store
 	league      *state.Mirror // the league as MFL states it; every score surface reads it
@@ -140,6 +143,7 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 func NewApp() *App {
 	return &App{
 		started:       make(chan struct{}),
+		labData:       sync.OnceValues(lab.Load),
 		movesWake:     make(chan struct{}, 1),
 		movesChanged:  func(ctx context.Context) { runtime.EventsEmit(ctx, "target:moves") },
 		openURL:       runtime.BrowserOpenURL,

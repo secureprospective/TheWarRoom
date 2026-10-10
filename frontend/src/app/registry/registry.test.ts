@@ -7,7 +7,14 @@ import { createCommands, commands } from '../commands/registry';
 import { renderState } from '../shell/state';
 import { TargetApp } from '../shell/TargetApp';
 import { searchCandidates, rankResults, runResult, indexResult } from '../commands/search';
-import { endpoints, endpointById, endpointsAt, resolve, placementRoute, surfacePlaces } from './index';
+import {
+  endpoints,
+  endpointById,
+  endpointsAt,
+  resolve,
+  placementRoute,
+  surfacePlaces,
+} from './index';
 import type { Endpoint, EndpointId, Placement } from './index';
 import { assertEndpointRoutes } from './routes';
 import { EndpointIndex } from './EndpointIndex';
@@ -17,7 +24,9 @@ function renderSettledApp(): Promise<string> {
   return new Promise((accept, reject) => {
     const output = new PassThrough();
     let html = '';
-    output.on('data', (chunk: Buffer) => { html += chunk.toString(); });
+    output.on('data', (chunk: Buffer) => {
+      html += chunk.toString();
+    });
     output.on('end', () => accept(html));
     output.on('error', reject);
     const stream = renderToPipeableStream(createElement(TargetApp), {
@@ -43,17 +52,26 @@ describe('Endpoint map', () => {
     }
     expect(resolve('M-150')).toEqual({ kind: 'merged', into: ['M-003', 'M-005'] });
     expect(resolve('M-145')).toEqual({ kind: 'merged', place: 'Inspector' });
-    expect(resolve('M-006')).toEqual({ kind: 'retired', note: endpointById('M-006').disposition_note });
+    expect(resolve('M-006')).toEqual({
+      kind: 'retired',
+      note: endpointById('M-006').disposition_note,
+    });
     expect(() => endpointById('bad' as EndpointId)).toThrow('Unknown endpoint');
   });
   it('indexes kept endpoints in ring, gravity, id order, always below the short-list guard', () => {
-    const placements = new Set(endpoints.filter((r) => r.placement).map((r) => r.placement as Placement));
+    const placements = new Set(
+      endpoints.filter((r) => r.placement).map((r) => r.placement as Placement),
+    );
     for (const place of placements) {
       const rows = endpointsAt(place);
       expect(rows.length).toBeLessThanOrEqual(80);
       expect(rows.every((r) => r.disposition === 'kept' && r.placement === place)).toBe(true);
-      expect([...rows]).toEqual([...rows].sort((a, b) =>
-        a.ring - b.ring || b.gravity.localeCompare(a.gravity) || a.id.localeCompare(b.id)));
+      expect([...rows]).toEqual(
+        [...rows].sort(
+          (a, b) =>
+            a.ring - b.ring || b.gravity.localeCompare(a.gravity) || a.id.localeCompare(b.id),
+        ),
+      );
       const html = renderToStaticMarkup(createElement(EndpointIndex, { placement: place }));
       for (const row of rows) {
         expect(html).toContain(row.id);
@@ -74,7 +92,14 @@ describe('Endpoint map', () => {
     }
   });
   it('distinguishes live-Landed Acts from built Acts and keeps every other row spec', () => {
-    const built = ['M-028', 'M-029', 'X-04'];
+    const built = [
+      'M-028',
+      'M-029',
+      'X-04',
+      ...Array.from({ length: 22 }, (_, i) => `L-${String(i + 1).padStart(2, '0')}`),
+      'L-33',
+      'L-35',
+    ];
     for (const row of endpoints) {
       let status = 'spec';
       if (row.id === 'M-027') status = 'landed';
@@ -91,9 +116,11 @@ describe('Endpoint map', () => {
     ];
     for (const [id, label] of checks) {
       const row = endpointById(id);
-      const html = renderToStaticMarkup(createElement(EndpointIndex, {
-        placement: row.placement as Placement,
-      }));
+      const html = renderToStaticMarkup(
+        createElement(EndpointIndex, {
+          placement: row.placement as Placement,
+        }),
+      );
       const item = html.split('<li').find((part) => part.includes(`<b>${id} ·`));
       expect(item).toContain(`<small>${label} · ring ${row.ring}</small>`);
       if (row.status !== 'spec') expect(item).not.toContain('not wired');
@@ -102,18 +129,25 @@ describe('Endpoint map', () => {
   it('gives every kept row two real routes; merged rows reach kept targets or a reachable place', () => {
     const routes = assertEndpointRoutes(endpoints, candidates);
     for (const row of endpoints) {
-      expect([...routes.get(row.id)!]).toEqual(row.disposition === 'kept'
-        ? ['nav', 'command'] : row.disposition === 'merged' ? ['merged-into'] : []);
+      expect([...routes.get(row.id)!]).toEqual(
+        row.disposition === 'kept'
+          ? ['nav', 'command']
+          : row.disposition === 'merged'
+            ? ['merged-into']
+            : [],
+      );
     }
   });
   it('renders every reachable workspace and surface index without a snapshot', async () => {
     // SSR otherwise reads Zustand's initial server snapshot, not dispatched navigation.
-    const projection = vi.spyOn(commands, 'use').mockImplementation(() => renderState(commands.read()));
+    const projection = vi
+      .spyOn(commands, 'use')
+      .mockImplementation(() => renderState(commands.read()));
     try {
       for (const node of nodeKeys) {
         for (const w of nodes[node].workspaces) {
           commands.dispatch('nav.open', { node, workspace: w.slug } as Parameters<
-            typeof commands.registry['nav.open']['run']
+            (typeof commands.registry)['nav.open']['run']
           >[0]);
           const place = `${nodes[node].label} › ${w.label.replace(' (role-gated)', '')}`;
           const html = renderToStaticMarkup(createElement(TargetApp));
@@ -129,21 +163,31 @@ describe('Endpoint map', () => {
       expect(() => assertEndpointRoutes(endpoints, searchCandidates(executor))).not.toThrow();
       commands.dispatch('overlays.close', {});
       commands.dispatch('nav.open', { node: 'home', workspace: 'seasonal-card' });
-    } finally { projection.mockRestore(); }
+    } finally {
+      projection.mockRestore();
+    }
   });
   it('kills an unplaced kept row, unreachable merge and a retired target', () => {
-    const mutate = (id: EndpointId, patch: Partial<Endpoint>) => endpoints.map((r) =>
-      r.id === id ? { ...r, ...patch } as Endpoint : r);
-    expect(() => assertEndpointRoutes(mutate('M-001', { placement: '' }), candidates))
-      .toThrow('M-001: fewer than two routes');
-    expect(() => assertEndpointRoutes(mutate('M-150', { merged_into: ['M-006'] }), candidates))
-      .toThrow('merge target not kept and reachable');
-    const retired = indexResult({ label: endpointById('M-006').name, kind: 'endpoint', aliases: [],
-      invocation: { verb: 'endpoint.open', args: { id: 'M-006' } } });
-    expect(() => assertEndpointRoutes(endpoints, [...candidates, retired]))
-      .toThrow('M-006: retired row reachable');
-    expect(() => assertEndpointRoutes(mutate('M-145', { merged_place: '' }), candidates))
-      .toThrow('merge target not kept and reachable');
+    const mutate = (id: EndpointId, patch: Partial<Endpoint>) =>
+      endpoints.map((r) => (r.id === id ? ({ ...r, ...patch } as Endpoint) : r));
+    expect(() => assertEndpointRoutes(mutate('M-001', { placement: '' }), candidates)).toThrow(
+      'M-001: fewer than two routes',
+    );
+    expect(() =>
+      assertEndpointRoutes(mutate('M-150', { merged_into: ['M-006'] }), candidates),
+    ).toThrow('merge target not kept and reachable');
+    const retired = indexResult({
+      label: endpointById('M-006').name,
+      kind: 'endpoint',
+      aliases: [],
+      invocation: { verb: 'endpoint.open', args: { id: 'M-006' } },
+    });
+    expect(() => assertEndpointRoutes(endpoints, [...candidates, retired])).toThrow(
+      'M-006: retired row reachable',
+    );
+    expect(() => assertEndpointRoutes(mutate('M-145', { merged_place: '' }), candidates)).toThrow(
+      'merge target not kept and reachable',
+    );
   });
 });
 
@@ -152,8 +196,9 @@ describe('Endpoint verbs and search', () => {
     const offered = candidates.filter((r) => r.kind === 'endpoint');
     expect(offered).toHaveLength(209);
     for (const row of endpoints) {
-      const match = rankResults(row.name, candidates).find((r) =>
-        r.invocation.verb === 'endpoint.open' && r.invocation.args.id === row.id);
+      const match = rankResults(row.name, candidates).find(
+        (r) => r.invocation.verb === 'endpoint.open' && r.invocation.args.id === row.id,
+      );
       expect(Boolean(match)).toBe(row.disposition === 'kept');
     }
     const result = rankResults('M-033', candidates)[0];
@@ -164,14 +209,29 @@ describe('Endpoint verbs and search', () => {
   });
   it('ranks endpoints after equally matching places and before players', () => {
     const result = rankResults('same', [
-      indexResult({ label: 'same player', aliases: [], kind: 'player',
-        invocation: { verb: 'inspector.open', args: {
-          subject: { kind: 'player', id: '1', franchiseId: '1' },
-        } } }),
-      indexResult({ label: 'same endpoint', aliases: [], kind: 'endpoint',
-        invocation: { verb: 'endpoint.open', args: { id: 'M-001' } } }),
-      indexResult({ label: 'same place', aliases: [], kind: 'place',
-        invocation: { verb: 'nav.open', args: { node: 'home' } } }),
+      indexResult({
+        label: 'same player',
+        aliases: [],
+        kind: 'player',
+        invocation: {
+          verb: 'inspector.open',
+          args: {
+            subject: { kind: 'player', id: '1', franchiseId: '1' },
+          },
+        },
+      }),
+      indexResult({
+        label: 'same endpoint',
+        aliases: [],
+        kind: 'endpoint',
+        invocation: { verb: 'endpoint.open', args: { id: 'M-001' } },
+      }),
+      indexResult({
+        label: 'same place',
+        aliases: [],
+        kind: 'place',
+        invocation: { verb: 'nav.open', args: { node: 'home' } },
+      }),
     ]);
     expect(result.map((r) => r.kind)).toEqual(['place', 'endpoint', 'player']);
   });
@@ -207,7 +267,8 @@ describe('Endpoint verbs and search', () => {
     for (const row of endpoints.filter((r) => r.disposition === 'merged')) {
       c.dispatch('endpoint.open', { id: row.id });
       expect(c.read().endpointIds).toEqual(row.merged_into.length ? row.merged_into : [row.id]);
-      const place = row.merged_place || endpointById(row.merged_into[row.merged_into.length - 1]).placement;
+      const place =
+        row.merged_place || endpointById(row.merged_into[row.merged_into.length - 1]).placement;
       const route = placementRoute(place);
       if (route) expect(c.read().node).toBe(route.node);
       else expect(c.read().endpointSurface).toBe(place);

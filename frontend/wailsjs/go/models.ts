@@ -2110,6 +2110,314 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class RawDraftScope {
+	    from: number;
+	    to: number;
+	    seasons: number;
+	    segments: string[];
+	    nfl: string[];
+	    group: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawDraftScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.from = source["from"];
+	        this.to = source["to"];
+	        this.seasons = source["seasons"];
+	        this.segments = source["segments"];
+	        this.nfl = source["nfl"];
+	        this.group = source["group"];
+	    }
+	}
+	export class RawMarketScope {
+	    from: number;
+	    to: number;
+	    phases: string[];
+	    assets: string[];
+	    byAge: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawMarketScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.from = source["from"];
+	        this.to = source["to"];
+	        this.phases = source["phases"];
+	        this.assets = source["assets"];
+	        this.byAge = source["byAge"];
+	    }
+	}
+	export class RawMarketAsset {
+	    scope: RawMarketScope;
+	    kind: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawMarketAsset(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.scope = this.convertValues(source["scope"], RawMarketScope);
+	        this.kind = source["kind"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class Reading_github_com_secureprospective_TheWarRoom_internal_lab_Market_ {
+	    // Go type: lab
+	    value: any;
+	    provenance: snapshot.Provenance;
+	    status: string;
+	    absenceReason?: string;
+	    count: number;
+	    threshold: number;
+	    baseline: string;
+	    cutoff: string;
+	    method: string;
+	    inputSHA: string;
+	    buildStamp: string;
+	    howCounted: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Reading_github_com_secureprospective_TheWarRoom_internal_lab_Market_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = this.convertValues(source["value"], null);
+	        this.provenance = this.convertValues(source["provenance"], snapshot.Provenance);
+	        this.status = source["status"];
+	        this.absenceReason = source["absenceReason"];
+	        this.count = source["count"];
+	        this.threshold = source["threshold"];
+	        this.baseline = source["baseline"];
+	        this.cutoff = source["cutoff"];
+	        this.method = source["method"];
+	        this.inputSHA = source["inputSHA"];
+	        this.buildStamp = source["buildStamp"];
+	        this.howCounted = source["howCounted"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class MarketRange {
+	    value: number;
+	    lo: number;
+	    hi: number;
+	    text: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MarketRange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = source["value"];
+	        this.lo = source["lo"];
+	        this.hi = source["hi"];
+	        this.text = source["text"];
+	    }
+	}
+	export class MarketLine {
+	    key: string;
+	    label: string;
+	    detail: string;
+	    count: number;
+	    // Go type: MarketRange
+	    range?: any;
+	    mark: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MarketLine(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.key = source["key"];
+	        this.label = source["label"];
+	        this.detail = source["detail"];
+	        this.count = source["count"];
+	        this.range = this.convertValues(source["range"], null);
+	        this.mark = source["mark"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class MarketSection {
+	    id: string;
+	    title: string;
+	    note: string;
+	    rows: MarketLine[];
+	
+	    static createFrom(source: any = {}) {
+	        return new MarketSection(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.title = source["title"];
+	        this.note = source["note"];
+	        this.rows = this.convertValues(source["rows"], MarketLine);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class MarketSurface {
+	    summary: string;
+	    sections: MarketSection[];
+	
+	    static createFrom(source: any = {}) {
+	        return new MarketSurface(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.summary = source["summary"];
+	        this.sections = this.convertValues(source["sections"], MarketSection);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Reading_main_MarketSurface_ {
+	    // Go type: MarketSurface
+	    value: any;
+	    provenance: snapshot.Provenance;
+	    status: string;
+	    absenceReason?: string;
+	    count: number;
+	    threshold: number;
+	    baseline: string;
+	    cutoff: string;
+	    method: string;
+	    inputSHA: string;
+	    buildStamp: string;
+	    howCounted: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Reading_main_MarketSurface_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = this.convertValues(source["value"], null);
+	        this.provenance = this.convertValues(source["provenance"], snapshot.Provenance);
+	        this.status = source["status"];
+	        this.absenceReason = source["absenceReason"];
+	        this.count = source["count"];
+	        this.threshold = source["threshold"];
+	        this.baseline = source["baseline"];
+	        this.cutoff = source["cutoff"];
+	        this.method = source["method"];
+	        this.inputSHA = source["inputSHA"];
+	        this.buildStamp = source["buildStamp"];
+	        this.howCounted = source["howCounted"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class RefreshResult {
 	    ok: boolean;
 	    error: string;

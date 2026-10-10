@@ -29,6 +29,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Store | `internal/store/moves` | Append-only envelope specs and replayable audit entries in `thewarroom.db`; restart-safe move receipts and awaiting evidence queries. |
 | Store | `internal/store/state` | Two things behind one `Reader`. **`Mirror`**: the league as MFL states it (season, rosters with contracts, salary adjustments), replaced whole by a refresh; every score surface reads it. **`Store`**: the what-if league in `whatif.db`, seeded from the mirror (rosters and MFL salary adjustments, so its cap starts equal): rosters, contracts, the contract-year ledger, dead cap, cap relief, phases, feed, calendar. Append-only ledgers; the transaction coordinator holds the only `Writer`. |
 | Store | `internal/store/history` | `history.db`: everything the app cannot rebuild. The fetch archive (`raw_archive`, `fetch_log`), facts per measure appended on change (`observations`, read as of a date through `Features`), source health, and scoring runs with the param set, engine and inputs they used. Append-only, enforced by triggers. |
+| Analytics | `internal/lab` | Frozen fingerprint-checked compiled Lab facts, typed columnar decoder, pure Market fitting, delivery, price lists, calendar and asset profiles. Offline JS goldens in `tools/labparity` pin the reference engine and data hashes; Node is never required at runtime or by verify. |
 | Engine | `internal/engine` | The scoring pipeline as pure functions (L1, L3, L4 dispatch, L5, L6). |
 | Engine | `internal/engine/eligibility` | MFL's IR and taxi rules as pure verdicts: per player and direction, eligible / ineligible (reason) / unknown (reason), from held feeds only (injuries status, players draft year, roster status, league capacities). The captured 2026-10-10 owner pages are its committed test oracle (`testdata/answer-key.csv`). |
 | Engine | `internal/model` | The measurable's model: a player's league-points percentile blended with a prior from pre-NFL facts, the talent and survival arcs, and `Params`, the fitted values per position (`model.*@POS`). Pure. |
@@ -58,6 +59,8 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 
 | File | Methods |
 |---|---|
+| `market_surfaces_app.go`, `market_profile_app.go` | `TargetMarketLists`, `TargetPickClock`, `TargetMarketStretches`, `TargetAssetProfile`: validated historical scopes and asset kinds; typed Go-computed display sections in `Reading[MarketSurface]`, fitted ranges and archive disclosure, no spread grade. |
+| `lab_app.go` | `TargetMarket` validates season/phase input and returns a typed historical Market payload in the generic `Reading` shell extending `snapshot.Sourced`; dated provenance, count/threshold and Go-authored counting disclosure, no spread grade. |
 | `moves_app.go` | `TargetHandOff(correlationID string) (envelope.Receipt, error)` saves before browser hand-off; `TargetCheckMoves() error` wakes landing checks; `target:moves` signals a hand-off or changed move. |
 | `moves_watcher.go` | Cancellable landing watcher; shared 60-second wake/fast-mode rate limit and persisted restart recovery. |
 | `season_app.go` | Held season feeds (transactions, lineups, pendingTrades, injuries); `TargetSeason` reads without network; `target:season` signals refreshes and key changes. Ready roster plans whose held eligibility turned ineligible return to Draft after a refresh (`revalidateReadyRosterMoves`, in `moves_app.go`). |
@@ -201,3 +204,19 @@ League Pulse Now: `shell/PulseNow.tsx` lazily reads matchups and toggles side-by
 `internal/envelope`: `roster.taxi` derives direction from held status and watches post-hand-off rosters.
 IR and taxi open MFL owner pages without submitting; unavailable held taxi rules are labelled unchecked.
 Inspector: `shell/PlayerAct.tsx` drafts IR/taxi by held roster status and hands off inline.
+
+`frontend/src/app/market/` owns lazy historical Market screens and asset Inspector content.
+`provider.ts` validates the Reading shell and typed sections; `state.ts` re-queries Go on filters,
+retains prior readings until replacements arrive, and rejects stale responses. `ReadingView.tsx`
+shares range geometry and the counting disclosure. The `market` command owns filters/inspection;
+`endpoint.open` and War Room › Market are the two entry routes. `data/parse.ts` exposes the shared
+freshness decoder used by both live and archive provenance. Player Inspector code is unchanged.
+
+`internal/lab/draft.go` and `draft_position.go` compute slot-relative draft returns, season cells,
+monotone value curves, plays-like picks, stretch-matched starter rates, known year-2 retention
+and same-season draft-or-buy comparisons. `draft_app.go` validates `RawDraftScope` at IPC and
+returns `Reading[MarketSurface]` from `TargetDraftLab`; no live ownership or player forecast.
+`frontend/src/app/market/Draft.tsx` is a second lazy chunk reached from Market's Draft lab door
+or L-15–L-22. `draftState.ts` retains prior scopes during reads and rejects stale replies; pick
+assets reuse the Inspector for historical round cohorts. Draft goldens additionally stamp
+`draftlab.js`; Node remains offline reference tooling only.
