@@ -1,6 +1,6 @@
 # TheWarRoom target UI: specification, revision 1 (2026-10-10)
 
-Revision 0 is in git history. This draft awaits Claude review and Christopher's approval.
+Revision 0 is in git history. Christopher answered the §8 ring 1 questions on 2026-10-10.
 
 **What this is:** the merged target from two independent research passes:
 - **Sol:** `~/fleet/briefs/warroom-endpoint-ia-bee-2026-10-06.md`
@@ -183,8 +183,8 @@ Answered items retain their answers and dates. Remaining questions are owed befo
 5. **IR/taxi rules:** source answered, 2026-10-07. MFL settings govern for now. The settings page
    says IR classification and taxi experience under three years (`Ring1_Gap_Closure.md` §8).
    Eligibility is not held in the app. On 2026-10-10 MFL showed Perine Not-Eligible for IR and
-   "Cannot be demoted" to taxi while the app offered those moves. When should held eligibility
-   gate these Acts, and what evidence should it use?
+   "Cannot be demoted" to taxi while the app offered those moves. **Answered 2026-10-10:**
+   held eligibility gates these Acts in ring 2. The evidence it uses is still open.
 6. **Victory Points:** answered, 2026-10-07. Not used; the 2026 league export has no such setting.
 7. The 14 unnamed hub link kinds.
 8. Whether MFL's exports cover pools and contract fields.
@@ -192,11 +192,13 @@ Answered items retain their answers and dates. Remaining questions are owed befo
 10. Minimum desktop width.
 11. A data-scope ruling before multiple leagues are supported.
 12. **Browser hand-off:** each hand-off opens a new tab. The OS browser decides; there is no clean
-    fix recorded. What should the app tell owners to prevent saving in an older tab?
-13. **Click-budget gap:** should the ring 1 working budgets remain a temporary exception, or must
-    paths meet ruling 1 before approval? Nav IR/taxi is 4 and lineup is 6, versus ruling 1's 2;
-    nav My moves is 2 versus its working budget of 1. Accept has not been walked.
-14. **Lineup rework:** Christopher said on 2026-10-10 it comes later. When should it happen?
+    fix recorded. **Answered 2026-10-10:** no app change. Whoever tests closes the MFL tabs
+    they opened when the work is done.
+13. **Click-budget gap:** nav IR/taxi is 4 and lineup is 6, versus ruling 1's 2; nav My moves is
+    2 versus its working budget of 1. Accept has not been walked. **Answered 2026-10-10:** the
+    ring 1 working budgets stand as an exception. Ruling 1 is unchanged.
+14. **Lineup rework:** **answered 2026-10-10:** it is part of the eventual move away from MFL,
+    when TheWarRoom becomes its own stand-alone app. Not scheduled for ring 2.
 
 ## 9. Ring 1 review
 
@@ -215,8 +217,8 @@ Answered items retain their answers and dates. Remaining questions are owed befo
 - Registry status `spec` labelled built Acts "not wired". Built and live-Landed now differ explicitly.
 
 **What changes for ring 2**
-- Keep ruling 1 unchanged. Ask Christopher about its measured gaps and lineup-rework timing
-  before claiming closure.
+- Keep ruling 1 unchanged. Ring 1's working budgets are an approved exception (§8 Q13).
+- Gate IR/taxi on held eligibility (§8 Q5). The lineup rework waits for the stand-alone app (§8 Q14).
 - Keep trade.accept and IR/taxi marked built, not Landed live, until their live evidence exists.
 - Carry the missing trade forms and revoke safety constraint to ring 3.
 - Ring 2 remains the decision layer: Lab, contracts/cap, free-agent pool and bid tracking.
