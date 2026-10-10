@@ -48,7 +48,7 @@ export function PlayerCard({
                 {model.position}
               </span>
             )}
-            <h3 className="card-title" title={model.name}>
+            <h3 className="card-title">
               {model.name}
             </h3>
             <span className="player-context">
