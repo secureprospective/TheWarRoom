@@ -1,5 +1,51 @@
 # RESUME: TheWarRoom ring 2, the decision layer (started 2026-10-10)
 
+## ⏩ RESUME HERE (compact-safe 2026-10-10 14:50 CDT)
+Goal (Christopher /goal): finish ring 2; Claude is head brain, Sol builds (GLM 5.3 is the backup
+builder), the panel answers durable questions, Claude tests on Claude-OS. Excellence is the standard.
+
+**In flight (both started by `dispatch*.sh`; check = transcript mtime, done = `sentinel` exists):**
+| Run | Builder | Worktree / branch | Started | Brief |
+|---|---|---|---|---|
+| p2a2 eligibility fixes | GLM 5.3 high (nvidia) | `.worktrees/ring-0` / session/ring-2 (p2a+p2a2 UNCOMMITTED there) | 14:27 | `~/fleet/briefs/warroom-ring2-p2a2-fixes.md` |
+| p2c Market screens | Sol medium | `.worktrees/ring-2-lab` / session/ring-2-lab | 14:28 | `~/fleet/briefs/warroom-ring2-p2c-market-screens.md` |
+Run dirs: `/home/chris/fleet/runs/warroom-ring2-2026-10-10/<run>/` (REPORT.md, stdout.log,
+sessions/*.jsonl = recovery channel if killed). Check both:
+`ssh -n -i /root/.ssh/beelink chris@192.168.1.191 'for p in p2a2 p2c; do P=/home/chris/fleet/runs/warroom-ring2-2026-10-10/$p; stat -c "%y" $P/sessions/*.jsonl; cat $P/sentinel 2>/dev/null; done'`
+(CT105 background waiters b51uvnwhk/bj2aew29j die with the context; re-poll by hand. Use full
+/home/chris paths: `~` expands on CT105.)
+
+**Next actions, in order:**
+1. When p2a2 lands: read its REPORT; rerun `go test` on touched packages; `make build
+   VERSION=ring2-p2a2`; deploy to Claude-OS (`scp build/bin/thewarroom claudeos:warroom-ring1/thewarroom.new`
+   then `ssh claudeos "cd ~/warroom-ring1 && bash deploy.sh <label-of-old>"`, via Bee); wait ~2 min
+   for the launch refresh (injuries is fetched LAST in it); open Perine (command bar → "Perine").
+   Pass = IR Act disabled "not on NFL injured reserve" with a time, taxi disabled "drafted 2017";
+   then an NFL-IR player shows IR eligible; an on-IR player (Pearsall) shows activation eligible.
+   Also check run.log names any feed fallback. Then commit p2a+p2a2 on session/ring-2 (message via
+   scp'd file; export the Go PATH first: the pre-commit hook runs go).
+2. When p2c lands: review (D4 no grade on wire/screen; How this is counted everywhere; React no
+   math; bundle entry ≤ 321,449; lazy Market chunk), run tests + `make verify`, commit on
+   session/ring-2-lab, then merge ring-2-lab into ring-2 (resolve provider/registry conflicts),
+   build, deploy, click Market on Claude-OS (both routes, filters, an asset profile in Inspector).
+3. Next builds: Sol → p2d Draft (draftlab.js: timing, plays-like-pick, hit rate, draft-or-buy),
+   then p2e Counterparties (teams.js), p2f Offers. GLM → p2g Contracts and cap in HQ (cents,
+   registry M-025/031/036/078, M-192–196, C-06.x), then p2h cut/buyout what-if + PW5 dead-cap fix
+   (follow PW1–PW6 below). Then p2i pool/bids (PW3), p2j–k option/tender/re-sign (capture the MFL
+   owner pages on Claude-OS first, no submits; mflsrc.sh pattern), p2l audit + spec revision 2.
+4. Compiler runs s1–s5 (D1 "own data later") need a facts-schema panel first.
+5. Close MFL tabs opened on Claude-OS after any capture (memory rule).
+
+**Refuted / do not retest:** Kimi at high thinking stalls (22 min, no output) → run it at
+THINK=medium; on run 2 even medium returned empty: treat Kimi as optional. Nemotron's quotes often
+don't resolve (0/24 on run 2): leads only. Injuries via the league host (www47) always fails;
+api.myfantasyleague.com works. The brief's "124 rows" was wrong: 86.
+
+**Claude-OS helpers** (scratchpad `/tmp/claude-0/-root/1574dec6-a966-4a0b-b2d9-4a4d7cb7fa4c/scratchpad/`):
+shot.sh <name>, cs.sh x y <name>, click.sh, mflsrc.sh <O> (capture an MFL options page source and
+close its tabs). Screens land in `w/`. The command bar is at (95,153); first result row ~ (400,193).
+
+
 ## What we are doing
 Ring 2 of `UI_Target_Roadmap_2026-10.md`: the Lab's analytics ported to Go (War Room › Market,
 Trade Floor › Draft, Counterparties, Offers), Franchise HQ › Contracts and cap (what-if, dead cap,
@@ -111,7 +157,37 @@ Claude spot-checked its `gauss` quote, real).
   a confidence score, banned (CLAUDE.md:86). GLM: a plain grading of the shown range, allowed.
   Claude's recommendation: show the range itself, keep the tier internal.
 
-- Still owed: facts schema (before compiler runs s1–s5); what-if and plan lifecycle (before p2h).
+### Run 2 (10-10 14:37): what-if vs plans, bid/claim framework (D3), Landed for contract Acts.
+GLM `~/fleet/runs/panel-panel-ring2-plans-whatif-20261010T193726Z-2548439/mechanic.out` (13/13 quotes
+ok); Nemotron same dir `devil.out` (0/24 quotes resolvable: leads only; agrees on the core); Kimi
+(medium) returned nothing (rejected, thin). Sol's seat skipped (building p2c).
+
+**Claude's triage (adopted, follows D3 and the locked rules):**
+- PW1 The what-if stays a separate simulation in `whatif.db`; plans (envelopes) are drafted FROM it,
+  never a new envelope kind; it never writes the mirror. Baseline marker = the mirror's own stamps
+  (max `contract_years.last_updated`, newest `dead_cap_ledger` row, rosters revision) recorded at
+  start; when live is newer, a banner says "MFL changed since this started — Reset"; nothing moves
+  until Reset (Q5 default). No content hashing.
+- PW2 A Ready plan is invalidated through the existing Invalidate → Stale → Rebase path
+  (`internal/envelope/envelope.go` ~244) on: a newer contract change for its player, a new dead-cap
+  row for the franchise, its window closing, or the player leaving the roster.
+- PW3 Bids and claims are envelopes using the states already reserved (BidPending, WaiverPending,
+  `envelope.go` ~247, ~299) plus one side table `bid_facts` keyed by the envelope's correlation id
+  (kind, player, amount in cents, years, bid points, RFA tender, deadline, evidence URL/note). The
+  rulebook limits (30 active bids, increments, snipe rule) are check-time code, not schema. Outbid
+  = terminal "awarded off-app", not an error. Nothing structured is stored about other franchises.
+  The stand-alone auction later adds franchise and auction ids to the same table.
+- PW4 Landed: cut and buyout by the player leaving the roster in the rosters export; option,
+  tender, re-sign by contract cells (a new Contracts observation source for the watcher). A dead
+  cap that differs from the plan is an Invalidate ("$X planned vs $Y now"), not a failure.
+- PW5 Dead-cap defect fix: charge per cell, summing 35% (50% restructured) of each paid year's
+  own cell for the years AFTER the cut season, one half-up rounding, one $10k snap at the end; 0
+  if claimed or in the final year. (GLM wrote "years ≥ season"; Claude corrected it: the locked
+  rule charges nothing on a final-year cut, so the cut year's own cell is not counted.)
+- PW6 Seeded future years are flat-filled (an inference); the what-if says so in its
+  "How this is counted" note until the app holds real cells.
+
+- Still owed: facts schema (before compiler runs s1–s5).
 
 ## Next actions
 1. (done: panel run 1 triaged above)
@@ -123,6 +199,25 @@ Claude spot-checked its `gauss` quote, real).
    available with "Not checked; MFL will decide"; ineligible disables it with the reason.
    Dispatch when Sol resets (about 12:20 CDT).
 4. (done: D4)
+
+## Progress log (newest last)
+- 11:48 p2a (eligibility) dispatched to GLM 5.3 high (Sol out; Christopher: "use GLM as backup").
+  `dispatch.sh` now takes PROVIDER/MODEL/THINK; `dispatch-wt.sh` also takes WT (a second worktree).
+- 12:22 p2b (Lab Market engine) to Sol in worktree `.worktrees/ring-2-lab`, branch
+  `session/ring-2-lab` (off session/ring-2) so two builders never share files.
+- 14:17 p2b2 review fixes (goldens gzipped 6.5 MB→600 KB; decode once; app build stamp; stable
+  display-order ties allowed under 1e-12). Claude moved the cache onto the App (no package
+  global), fixed a wrapcheck, verified (own mutant Ridge 0.25→0.26 fails parity; regeneration
+  byte-identical; make verify 0) and committed **fafe73a** on session/ring-2-lab.
+- 14:23 p2a done: rule 86/86 vs MFL (the brief's "124" was Claude's miscount). Live gate on
+  Claude-OS 14:25: taxi correct for Perine; **IR stale**: injuries is fetched from the league host
+  (www47), which MFL refuses ("must go to api.myfantasyleague.com"); the app silently fell back to
+  the 10-05 archive. Also: fixture +19,682 lines and not reproducible by cmd/fixtures.
+- 14:27 p2a2 fixes to GLM; 14:28 p2c (Market screens) to Sol in ring-2-lab.
+- 14:37 panel run 2 (what-if vs plans; bid/claim framework D3; Landed for contract Acts):
+  GLM + Nemotron `~/fleet/runs/panel-panel-ring2-plans-whatif-20261010T193726Z-2548439/`,
+  Kimi (medium) `...-20261010T193729Z-2548650/`. Sol's seat skipped (busy building).
+- Waiters: always use full /home/chris paths in ssh tests; `~` expands on CT105 (bug found 10-10).
 
 ## Notes
 - Sol's usage limit: the p0 run hit it at 10:49 CDT; Christopher said it resets in about 1h30.
