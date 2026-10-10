@@ -118,6 +118,10 @@ export function TargetAlerts(arg1) {
   return window['go']['main']['App']['TargetAlerts'](arg1);
 }
 
+export function TargetAssetProfile(arg1) {
+  return window['go']['main']['App']['TargetAssetProfile'](arg1);
+}
+
 export function TargetCheckLineup(arg1, arg2) {
   return window['go']['main']['App']['TargetCheckLineup'](arg1, arg2);
 }
@@ -154,8 +158,24 @@ export function TargetLineup(arg1) {
   return window['go']['main']['App']['TargetLineup'](arg1);
 }
 
+export function TargetMarket(arg1) {
+  return window['go']['main']['App']['TargetMarket'](arg1);
+}
+
+export function TargetMarketLists(arg1) {
+  return window['go']['main']['App']['TargetMarketLists'](arg1);
+}
+
+export function TargetMarketStretches(arg1) {
+  return window['go']['main']['App']['TargetMarketStretches'](arg1);
+}
+
 export function TargetMoves(arg1) {
   return window['go']['main']['App']['TargetMoves'](arg1);
+}
+
+export function TargetPickClock(arg1) {
+  return window['go']['main']['App']['TargetPickClock'](arg1);
 }
 
 export function TargetPulseNow() {

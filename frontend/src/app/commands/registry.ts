@@ -1,3 +1,4 @@
+import { loadMarket } from '../market/load';
 import { prefetchHQ } from '../shell/FranchiseHQMount';
 import { createLineups, createReadings } from '../shell/lineups';
 import { createMovesState } from './moves';
@@ -6,7 +7,12 @@ import { createMFLKeyField } from '../shell/mflKeyField';
 import { createMovesPrefetch } from '../shell/MovesMount';
 import { selectProvider, type Provider } from '../data/provider';
 import {
-  resolve, placementRoute, isSurface, type EndpointId, type Placement, type Surface,
+  resolve,
+  placementRoute,
+  isSurface,
+  type EndpointId,
+  type Placement,
+  type Surface,
 } from '../registry';
 import type { MFLKeyStatus, Snapshot, TradeReading } from '../data/contract';
 import type { PlayerSubject } from '../shell/state';
@@ -105,8 +111,16 @@ export function createCommands(
   }
   function rosterCommand(intent: 'roster.ir' | 'roster.taxi', label: string) {
     return command({
-      id: intent, label, aliases: [], roles: ['gm'], gravity: 'G2', undo: 'reversible', args: ['subject'],
-      run: ({ subject }: { subject: PlayerSubject }) => { void draftRoster(subject, intent); },
+      id: intent,
+      label,
+      aliases: [],
+      roles: ['gm'],
+      gravity: 'G2',
+      undo: 'reversible',
+      args: ['subject'],
+      run: ({ subject }: { subject: PlayerSubject }) => {
+        void draftRoster(subject, intent);
+      },
     });
   }
   async function loadMoves(franchiseId: string) {
@@ -138,7 +152,8 @@ export function createCommands(
       mflKey.write({ ...status, pending: false });
     } catch (cause) {
       mflKey.write({
-        ...before, pending: false,
+        ...before,
+        pending: false,
         error: cause instanceof Error ? cause.message : String(cause),
       });
     } finally {
@@ -155,39 +170,79 @@ export function createCommands(
     void requestMFL(() => provider.connectMFL(mflField.take()), 'Checking the key with MFL…');
   }
   function lineupAction(action: import('./lineupEdit').LineupAction) {
-    return import('./lineupEdit').then(({ runLineupAction }) =>
-      runLineupAction(action, state, moves, lineups, provider, snapshot)).catch((cause) =>
-      state.write({ notice: `Lineup: ${String(cause)}` }));
+    return import('./lineupEdit')
+      .then(({ runLineupAction }) =>
+        runLineupAction(action, state, moves, lineups, provider, snapshot),
+      )
+      .catch((cause) => state.write({ notice: `Lineup: ${String(cause)}` }));
   }
   function editCommand<A>(
-    kind: import('./lineupEdit').LineupAction['kind'], label: string, args: readonly (keyof A)[],
+    kind: import('./lineupEdit').LineupAction['kind'],
+    label: string,
+    args: readonly (keyof A)[],
   ) {
     const remote = kind === 'draft' || kind === 'handoff';
     return command({
-      ...ambient, id: kind === 'handoff' ? 'move.handoff' : `lineup.${kind}`, label, aliases: [], args,
+      ...ambient,
+      id: kind === 'handoff' ? 'move.handoff' : `lineup.${kind}`,
+      label,
+      aliases: [],
+      args,
       gravity: remote ? 'G1' : 'G0',
       undo: remote ? 'reversible' : 'instant',
       run: (values: A) => lineupAction({ kind, ...values } as import('./lineupEdit').LineupAction),
     });
   }
   const registry = Object.freeze({
+    market: command({
+      ...ambient,
+      id: 'market',
+      label: 'Market',
+      aliases: [],
+      args: ['field', 'value'],
+      run: (change: import('../market/contract').MarketFilter) => {
+        if (change.field === 'inspect' || change.field === 'asset')
+          state.write({ asset: change.value, inspector: 'rest' });
+        if (change.field !== 'inspect')
+          void loadMarket().then(
+            (m) => m.set(change),
+            (cause) => state.write({ notice: String(cause) }),
+          );
+      },
+    }),
     'pulse.toggle': command({
-      ...ambient, id: 'pulse.toggle', label: 'Toggle starters', aliases: [], args: ['matchup', 'expanded'],
-      run: ({ matchup, expanded }: { matchup: string; expanded: boolean }) => state.write({
-        pulseExpanded: { ...state.read().pulseExpanded, [matchup]: !expanded },
-      }),
+      ...ambient,
+      id: 'pulse.toggle',
+      label: 'Toggle starters',
+      aliases: [],
+      args: ['matchup', 'expanded'],
+      run: ({ matchup, expanded }: { matchup: string; expanded: boolean }) =>
+        state.write({
+          pulseExpanded: { ...state.read().pulseExpanded, [matchup]: !expanded },
+        }),
     }),
     'trade.accept.plan': command({
-      ...ambient, id: 'trade.accept.plan', label: 'Plan accept', aliases: [], roles: ['gm'],
-      gravity: 'G2', undo: 'reversible', args: ['tradeId'],
+      ...ambient,
+      id: 'trade.accept.plan',
+      label: 'Plan accept',
+      aliases: [],
+      roles: ['gm'],
+      gravity: 'G2',
+      undo: 'reversible',
+      args: ['tradeId'],
       run: ({ tradeId }: { tradeId: string }) => {
         const franchiseId = state.read().franchiseId;
-        if (franchiseId) void import('./tradeAccept').then(
-          ({ planTradeAccept }) => planTradeAccept(moves, provider, franchiseId, tradeId),
-          (cause) => moves.write({ draftErrors: {
-            ...moves.read().draftErrors, [`trade:${franchiseId}:${tradeId}`]: String(cause),
-          } }),
-        );
+        if (franchiseId)
+          void import('./tradeAccept').then(
+            ({ planTradeAccept }) => planTradeAccept(moves, provider, franchiseId, tradeId),
+            (cause) =>
+              moves.write({
+                draftErrors: {
+                  ...moves.read().draftErrors,
+                  [`trade:${franchiseId}:${tradeId}`]: String(cause),
+                },
+              }),
+          );
       },
     }),
     'lineup.edit': editCommand<{ franchiseId: string }>('edit', 'Edit lineup', ['franchiseId']),
@@ -195,17 +250,25 @@ export function createCommands(
     'lineup.reset': editCommand<Record<string, never>>('reset', 'Reset', []),
     'lineup.cancel': editCommand<Record<string, never>>('cancel', 'Cancel', []),
     'lineup.draft': editCommand<Record<string, never>>('draft', 'Check and save plan', []),
-    'move.handoff': editCommand<{ correlationId: string }>(
-      'handoff', 'Open MFL page', ['correlationId'],
-    ),
+    'move.handoff': editCommand<{ correlationId: string }>('handoff', 'Open MFL page', [
+      'correlationId',
+    ]),
     'mflkey.connect': command({
-      ...ambient, id: 'mflkey.connect', label: 'Connect MFL', aliases: ['mfl', 'api key'],
-      gravity: 'G1', undo: 'reversible',
+      ...ambient,
+      id: 'mflkey.connect',
+      label: 'Connect MFL',
+      aliases: ['mfl', 'api key'],
+      gravity: 'G1',
+      undo: 'reversible',
       run: (_args: Record<string, never>) => connectMFL(),
     }),
     'mflkey.forget': command({
-      ...ambient, id: 'mflkey.forget', label: 'Forget MFL key', aliases: [],
-      gravity: 'G1', undo: 'reversible',
+      ...ambient,
+      id: 'mflkey.forget',
+      label: 'Forget MFL key',
+      aliases: [],
+      gravity: 'G1',
+      undo: 'reversible',
       run: (_args: Record<string, never>) => {
         if (!mflReason(true)) {
           void requestMFL(() => provider.forgetMFL(), 'Removing the key from the keyring…');
@@ -242,11 +305,12 @@ export function createCommands(
         state.write({ endpointIds: ids, endpointSurface: null });
         if (target.kind === 'view') openPlace(target.placement);
         else if ('place' in target) openPlace(target.place);
-        else for (const id of target.into) {
-          const view = resolve(id);
-          if (view.kind !== 'view') throw new Error(`endpoint.open: target ${id} is not kept`);
-          openPlace(view.placement);
-        }
+        else
+          for (const id of target.into) {
+            const view = resolve(id);
+            if (view.kind !== 'view') throw new Error(`endpoint.open: target ${id} is not kept`);
+            openPlace(view.placement);
+          }
       },
     }),
     'franchise.set': command({
@@ -266,9 +330,8 @@ export function createCommands(
         persistFranchise(args.franchiseId, storage());
         state.write({
           franchiseId: args.franchiseId,
-          scrollRevision: state.read().scrollRevision + Number(
-            state.read().franchiseId !== args.franchiseId,
-          ),
+          scrollRevision:
+            state.read().scrollRevision + Number(state.read().franchiseId !== args.franchiseId),
         });
       },
     }),
@@ -279,8 +342,7 @@ export function createCommands(
       aliases: ['view'],
       args: ['preset'],
       run: (args: { preset: PresetId }) => {
-        if (!presetAllowed(args.preset))
-          throw new Error('preset.apply: GM permission denied');
+        if (!presetAllowed(args.preset)) throw new Error('preset.apply: GM permission denied');
         const p = presets[args.preset];
         state.navigate(p.route);
         state.write({ density: p.density, inspector: p.inspector, comms: p.comms });
@@ -297,13 +359,13 @@ export function createCommands(
         if (
           !snapshot?.rosters.value.some(
             (r) =>
-              r.franchiseId === subject.franchiseId &&
-              r.players.some((p) => p.id === subject.id),
-          )
-          && !lineups.peek(subject.franchiseId).reading?.starters.some((p) => p.id === subject.id)) {
+              r.franchiseId === subject.franchiseId && r.players.some((p) => p.id === subject.id),
+          ) &&
+          !lineups.peek(subject.franchiseId).reading?.starters.some((p) => p.id === subject.id)
+        ) {
           throw new Error('inspector.open: unknown roster player');
         }
-        state.write({ subject: { ...subject }, inspector: 'rest' });
+        state.write({ subject: { ...subject }, asset: null, inspector: 'rest' });
       },
     }),
     'inspector.collapse': command({
@@ -327,10 +389,7 @@ export function createCommands(
       args: ['node', 'workspace'],
       aliases: ['goto', 'navigate'],
       run: (args: Route | { node: Node; workspace?: undefined }) => {
-        const route = routeFor(
-          args.node,
-          args.workspace ?? state.read().workspace[args.node],
-        );
+        const route = routeFor(args.node, args.workspace ?? state.read().workspace[args.node]);
         if (!route) throw new Error(`nav.open: invalid workspace for ${args.node}`);
         state.navigate(route);
       },
@@ -442,8 +501,11 @@ export function createCommands(
     if (!selected.roles.includes('gm')) throw new Error(`${id}: GM permission denied`);
     const fromBar = state.read().commandbar;
     selected.run(args);
-    if (fromBar && id !== 'commandbar.open' &&
-      !(id === 'endpoint.open' && state.read().endpointSurface === 'Command bar')) {
+    if (
+      fromBar &&
+      id !== 'commandbar.open' &&
+      !(id === 'endpoint.open' && state.read().endpointSurface === 'Command bar')
+    ) {
       if (
         id === 'inspector.open' &&
         state.read().subject?.franchiseId === state.read().franchiseId
@@ -458,9 +520,7 @@ export function createCommands(
   function key(key: string): boolean {
     for (const id of Object.keys(registry) as Id[]) {
       const selected: Command<Args<Id>> = registry[id] as Command<Args<Id>>;
-      const binding = selected.keys?.find(
-        (k) => k.key.toLowerCase() === key.toLowerCase(),
-      );
+      const binding = selected.keys?.find((k) => k.key.toLowerCase() === key.toLowerCase());
       if (binding) {
         dispatch(id, binding.args);
         return true;
@@ -485,15 +545,17 @@ export function createCommands(
     useMFLKey: mflKey.use,
     providerKind: provider.kind,
     draftReason,
-    rosterStatus: (subject: PlayerSubject) => snapshot?.rosters.value
-      .find((r) => r.franchiseId === subject.franchiseId)?.players.find((p) => p.id === subject.id)
-      ?.rosterStatus,
+    rosterStatus: (subject: PlayerSubject) =>
+      snapshot?.rosters.value
+        .find((r) => r.franchiseId === subject.franchiseId)
+        ?.players.find((p) => p.id === subject.id)?.rosterStatus,
     loadMoves,
     readMoves: moves.read,
     useMoves: moves.use,
     loadSnapshot: (value: Snapshot) => {
       snapshot = value;
       prefetchMoves();
+      void loadMarket().then((m) => m.warm(), console.error);
       const franchiseId = loadFranchise(value, storage());
       if (franchiseId) {
         void prefetchHQ().catch((cause) => console.error('HQ prefetch failed:', cause));
@@ -513,7 +575,5 @@ export function createCommands(
 }
 export const commands = createCommands();
 export type CommandId = keyof typeof commands.registry;
-export type CommandArgs<K extends CommandId> = Parameters<
-  (typeof commands.registry)[K]['run']
->[0];
+export type CommandArgs<K extends CommandId> = Parameters<(typeof commands.registry)[K]['run']>[0];
 export const dispatch = commands.dispatch;

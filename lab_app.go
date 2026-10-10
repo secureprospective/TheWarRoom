@@ -36,6 +36,7 @@ type RawMarketScope struct {
 	From   int      `json:"from"`
 	To     int      `json:"to"`
 	Phases []string `json:"phases"`
+	Assets []string `json:"assets"`
 	ByAge  bool     `json:"byAge"`
 }
 
@@ -43,13 +44,20 @@ func (r RawMarketScope) Validate() error {
 	if r.From < 1900 || r.To > 2200 || r.From > r.To {
 		return fmt.Errorf("market scope: invalid season range")
 	}
-	allowed := []string{"winter", "opening", "between", "rookieDraft", "summer", "early", "midseason", "deadline"}
+	allowed := marketPhases()
 	seen := make(map[string]bool)
 	for _, p := range r.Phases {
 		if !slices.Contains(allowed, p) || seen[p] {
 			return fmt.Errorf("market scope: invalid or duplicate phase %q", p)
 		}
 		seen[p] = true
+	}
+	seen = make(map[string]bool)
+	for _, asset := range r.Assets {
+		if !slices.Contains(marketAssets(), asset) || seen[asset] {
+			return fmt.Errorf("market scope: invalid or duplicate asset %q", asset)
+		}
+		seen[asset] = true
 	}
 	return nil
 }

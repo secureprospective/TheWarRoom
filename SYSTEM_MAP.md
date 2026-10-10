@@ -57,6 +57,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 
 | File | Methods |
 |---|---|
+| `market_surfaces_app.go`, `market_profile_app.go` | `TargetMarketLists`, `TargetPickClock`, `TargetMarketStretches`, `TargetAssetProfile`: validated historical scopes and asset kinds; typed Go-computed display sections in `Reading[MarketSurface]`, fitted ranges and archive disclosure, no spread grade. |
 | `lab_app.go` | `TargetMarket` validates season/phase input and returns a typed historical Market payload in the generic `Reading` shell extending `snapshot.Sourced`; dated provenance, count/threshold and Go-authored counting disclosure, no spread grade. |
 | `moves_app.go` | `TargetHandOff(correlationID string) (envelope.Receipt, error)` saves before browser hand-off; `TargetCheckMoves() error` wakes landing checks; `target:moves` signals a hand-off or changed move. |
 | `moves_watcher.go` | Cancellable landing watcher; shared 60-second wake/fast-mode rate limit and persisted restart recovery. |
@@ -201,3 +202,10 @@ League Pulse Now: `shell/PulseNow.tsx` lazily reads matchups and toggles side-by
 `internal/envelope`: `roster.taxi` derives direction from held status and watches post-hand-off rosters.
 IR and taxi open MFL owner pages without submitting; unavailable held taxi rules are labelled unchecked.
 Inspector: `shell/PlayerAct.tsx` drafts IR/taxi by held roster status and hands off inline.
+
+`frontend/src/app/market/` owns lazy historical Market screens and asset Inspector content.
+`provider.ts` validates the Reading shell and typed sections; `state.ts` re-queries Go on filters,
+retains prior readings until replacements arrive, and rejects stale responses. `ReadingView.tsx`
+shares range geometry and the counting disclosure. The `market` command owns filters/inspection;
+`endpoint.open` and War Room › Market are the two entry routes. `data/parse.ts` exposes the shared
+freshness decoder used by both live and archive provenance. Player Inspector code is unchanged.

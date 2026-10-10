@@ -63,6 +63,8 @@ export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetPa
 
 export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
 
+export function TargetAssetProfile(arg1:main.RawMarketAsset):Promise<main.Reading_main_MarketSurface_>;
+
 export function TargetCheckLineup(arg1:string,arg2:Array<string>):Promise<lineup.Result>;
 
 export function TargetCheckMoves():Promise<void>;
@@ -81,7 +83,15 @@ export function TargetHandOff(arg1:string):Promise<envelope.Receipt>;
 
 export function TargetLineup(arg1:string):Promise<main.LineupReading>;
 
+export function TargetMarket(arg1:main.RawMarketScope):Promise<main.Reading_github_com_secureprospective_TheWarRoom_internal_lab_Market_>;
+
+export function TargetMarketLists(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
+
+export function TargetMarketStretches(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
+
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
+
+export function TargetPickClock(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
 
 export function TargetPulseNow():Promise<main.PulseReading>;
 

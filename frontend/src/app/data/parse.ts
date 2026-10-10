@@ -28,21 +28,20 @@ import {
 } from './parseValues';
 export { parseReceipt, parseEnvelopeDemo } from './parseEnvelope';
 
+export function freshness(value: unknown, path: string): Provenance['freshness'] {
+  const fresh = object(value, path, ['state', 'fetchedAt', 'note']);
+  return {
+    state: choice(fresh.state, `${path}.state`, FRESHNESS_STATES),
+    fetchedAt: timestamp(fresh.fetchedAt, `${path}.fetchedAt`),
+    note: text(fresh.note, `${path}.note`),
+  };
+}
 export function provenance(value: unknown, path: string): Provenance {
   const row = object(value, path, ['source', 'freshness', 'kind']);
-  const fresh = object(row.freshness, `${path}.freshness`, [
-    'state',
-    'fetchedAt',
-    'note',
-  ]);
   return {
     source: text(row.source, `${path}.source`),
     kind: choice(row.kind, `${path}.kind`, PROVENANCE_KINDS),
-    freshness: {
-      state: choice(fresh.state, `${path}.freshness.state`, FRESHNESS_STATES),
-      fetchedAt: timestamp(fresh.fetchedAt, `${path}.freshness.fetchedAt`),
-      note: text(fresh.note, `${path}.freshness.note`),
-    },
+    freshness: freshness(row.freshness, `${path}.freshness`),
   };
 }
 
