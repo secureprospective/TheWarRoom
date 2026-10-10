@@ -6,15 +6,26 @@ import type { TeamPanelReading } from './contract';
 import { counterState } from './state';
 import { EdgeBar, TeamLink, number, percent, teamIdentity } from './Displays';
 
-export function TeamReading({ reading, snapshot }: { reading?: TeamPanelReading; snapshot?: Snapshot }) {
+export function TeamReading({
+  reading,
+  snapshot,
+}: {
+  reading?: TeamPanelReading;
+  snapshot?: Snapshot;
+}) {
   const v = reading?.value;
 
   const identity = v && teamIdentity(snapshot, v.fid, v.name);
   return (
-    <ArchiveReading reading={reading} title={identity?.name ?? 'Team trade history'}>
+    <ArchiveReading
+      reading={reading}
+      countText={v?.countText}
+      title={identity?.name ?? 'Team trade history'}
+    >
       {v && (
         <>
           <p>{v.asOf}</p>
+          <p className="counter-legend">{v.words.legend}</p>
           {!identity?.matched && (
             <p>Archive identity · not matched to current league; no identity guessed.</p>
           )}
@@ -24,8 +35,8 @@ export function TeamReading({ reading, snapshot }: { reading?: TeamPanelReading;
             <>
               <p>{v.dayText}</p>
               <p>{v.sinceText}</p>
-              <EdgeBar edge={v.day} label="Average expected wins on the day" />
-              <EdgeBar edge={v.since} label="Average wins since" />
+              <EdgeBar edge={v.day} label={v.words.day} />
+              <EdgeBar edge={v.since} label={v.words.since} />
               <section data-endpoint="L-27">
                 <h5>Seasons and standing</h5>
                 <p>{v.seasonSay}</p>
@@ -41,17 +52,19 @@ export function TeamReading({ reading, snapshot }: { reading?: TeamPanelReading;
                       <p>{c.mostlyText}</p>
                       <div className="counter-bars" aria-label={c.title}>
                         <label>
-                          For now <meter min="0" max={Math.max(c.n, 1)} value={c.now} /> {c.now}
+                          For now <meter min="0" max={Math.max(c.n, 1)} value={c.now} /> {c.nowText}
                         </label>
                         <label>
-                          For later <meter min="0" max={Math.max(c.n, 1)} value={c.later} /> {c.later}
+                          For later <meter min="0" max={Math.max(c.n, 1)} value={c.later} />{' '}
+                          {c.laterText}
                         </label>
                         <label>
-                          Like for like <meter min="0" max={Math.max(c.n, 1)} value={c.swap} /> {c.swap}
+                          Like for like <meter min="0" max={Math.max(c.n, 1)} value={c.swap} />{' '}
+                          {c.swapText}
                         </label>
                       </div>
                       <p>Net on the day {number(c.net)}</p>
-                      {c.flagged && <p>Against its standing · {c.against} trade sides</p>}
+                      {c.flagged && <p>Against its standing · {c.againstText} trade sides</p>}
                     </section>
                   ))}
                 </div>
@@ -60,7 +73,8 @@ export function TeamReading({ reading, snapshot }: { reading?: TeamPanelReading;
                 <h5>What its trades did</h5>
                 {v.posture.map((p) => (
                   <p key={p.id} title={p.title}>
-                    {p.label}: {percent(p.p)}
+                    {p.label}: {percent(p.p)}{' '}
+                    {p.tone === 'down' ? v.words.down : p.tone === 'up' ? v.words.up : ''}
                   </p>
                 ))}
                 {v.asTier.map((t) => (

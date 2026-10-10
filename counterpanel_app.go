@@ -16,18 +16,22 @@ type RawCounterpartTeam struct {
 }
 
 type SeasonCellView struct {
-	Season     int      `json:"season"`
-	N          int      `json:"n"`
-	Now        int      `json:"now"`
-	Later      int      `json:"later"`
-	Swap       int      `json:"swap"`
-	Against    int      `json:"against"`
-	Flagged    bool     `json:"flagged"`
-	MostlyText string   `json:"mostlyText"`
-	Net        *float64 `json:"net"`
-	Finish     *int     `json:"finish"`
-	Label      string   `json:"label"`
-	Title      string   `json:"title"`
+	NowText     string   `json:"nowText"`
+	LaterText   string   `json:"laterText"`
+	SwapText    string   `json:"swapText"`
+	AgainstText string   `json:"againstText"`
+	Season      int      `json:"season"`
+	N           int      `json:"n"`
+	Now         int      `json:"now"`
+	Later       int      `json:"later"`
+	Swap        int      `json:"swap"`
+	Against     int      `json:"against"`
+	Flagged     bool     `json:"flagged"`
+	MostlyText  string   `json:"mostlyText"`
+	Net         *float64 `json:"net"`
+	Finish      *int     `json:"finish"`
+	Label       string   `json:"label"`
+	Title       string   `json:"title"`
 }
 type KindFlowView struct {
 	Kind string  `json:"kind"`
@@ -54,6 +58,8 @@ type AsTierView struct {
 	Text  string       `json:"text"`
 }
 type TeamCounterpart struct {
+	Words       CounterWords      `json:"words"`
+	CountText   string            `json:"countText"`
 	Fid         string            `json:"fid"`
 	Name        string            `json:"name"`
 	AsOf        string            `json:"asOf"`
@@ -94,6 +100,7 @@ func (a *App) TargetCounterpartTeam(raw RawCounterpartTeam) Reading[TeamCounterp
 	profile := lab.TeamProfile(d, sides, league, raw.Fid)
 	b := profile.Behaviour
 	value := TeamCounterpart{
+		FlowScale: counterFlowScale(profile),
 		Fid:       raw.Fid,
 		Name:      franchiseName(d, raw.Fid),
 		AsOf:      "Standings as of the archive cutoff " + strings.Split(d.ArchiveThrough, "T")[0] + ", not today's live standings.",
@@ -109,10 +116,7 @@ func (a *App) TargetCounterpartTeam(raw RawCounterpartTeam) Reading[TeamCounterp
 		Day:       b.Now,
 		Since:     b.Real,
 	}
-	value.FlowScale = 0.01
-	for _, kind := range profile.Kinds {
-		value.FlowScale = max(value.FlowScale, kind.InW, kind.OutW)
-	}
+	value.Words, value.CountText = counterWords(), countNumber(len(profile.Sides))
 	if b.Now.Total != nil {
 		value.DayTxt = fmt.Sprintf("%s expected wins on the day, all trades", wins(*b.Now.Total, 2))
 	} else {
@@ -145,7 +149,7 @@ func failedTeamCounterpart(err error) Reading[TeamCounterpart] {
 func seasonCells(p lab.TeamDetail) []SeasonCellView {
 	out := []SeasonCellView{}
 	for _, c := range p.BySeason {
-		cell := SeasonCellView{Season: c.Season, N: c.N, Now: c.Now, Later: c.Later, Swap: c.Swap, Against: c.Against, Flagged: c.Flagged(), Net: c.Net, Finish: c.Finish, MostlyText: ""}
+		cell := SeasonCellView{NowText: countNumber(c.Now), LaterText: countNumber(c.Later), SwapText: countNumber(c.Swap), AgainstText: countNumber(c.Against), Season: c.Season, N: c.N, Now: c.Now, Later: c.Later, Swap: c.Swap, Against: c.Against, Flagged: c.Flagged(), Net: c.Net, Finish: c.Finish, MostlyText: ""}
 		if c.Mostly != nil {
 			cell.MostlyText = tierOne(*c.Mostly)
 		}
@@ -154,12 +158,12 @@ func seasonCells(p lab.TeamDetail) []SeasonCellView {
 		} else {
 			cell.Label = fmt.Sprintf("%d", c.Season)
 		}
-		cell.Title = fmt.Sprintf("%d: %s; %d for now, %d for later, %d like for like", c.Season, countLabel(c.N, "trade side"), c.Now, c.Later, c.Swap)
+		cell.Title = fmt.Sprintf("%d: %s; %s for now, %s for later, %s like for like", c.Season, countLabel(c.N, "trade side"), countNumber(c.Now), countNumber(c.Later), countNumber(c.Swap))
 		if c.Finish != nil {
 			cell.Title += fmt.Sprintf("; finished %d", *c.Finish)
 		}
 		if c.Flagged() {
-			cell.Title += fmt.Sprintf(". %d went against its standing that day.", c.Against)
+			cell.Title += fmt.Sprintf(". %s went against its standing that day.", countNumber(c.Against))
 		}
 		out = append(out, cell)
 	}
@@ -178,7 +182,7 @@ func postureCells(b lab.TeamBehaviour) []PostureCell {
 func kindFlows(p lab.TeamDetail) []KindFlowView {
 	out := []KindFlowView{}
 	for _, k := range p.Kinds {
-		out = append(out, KindFlowView{Kind: k.Kind, Name: marketName(k.Kind), InN: k.InN, OutN: k.OutN, InW: k.InW, OutW: k.OutW, Text: fmt.Sprintf("%d out · %d in", k.OutN, k.InN)})
+		out = append(out, KindFlowView{Kind: k.Kind, Name: marketName(k.Kind), InN: k.InN, OutN: k.OutN, InW: k.InW, OutW: k.OutW, Text: fmt.Sprintf("%s out · %s in", countNumber(k.OutN), countNumber(k.InN))})
 	}
 	return out
 }
@@ -203,7 +207,15 @@ func partnerViews(d *lab.Data, p lab.TeamDetail) []PartnerView {
 func asTierViews(p lab.TeamDetail) []AsTierView {
 	out := []AsTierView{}
 	for _, t := range p.AsTier {
-		out = append(out, AsTierView{Tier: t.Tier, N: t.N, Edge: t.TeamEdge, Label: fmt.Sprintf("As %s (%d)", tierOne(t.Tier), t.N), Text: edgeWords(t.TeamEdge, "expected wins a trade")})
+		out = append(out, AsTierView{Tier: t.Tier, N: t.N, Edge: t.TeamEdge, Label: fmt.Sprintf("As %s (%s)", tierOne(t.Tier), countNumber(t.N)), Text: edgeWords(t.TeamEdge, "expected wins a trade")})
 	}
 	return out
+}
+
+func counterFlowScale(p lab.TeamDetail) float64 {
+	scale := 0.01
+	for _, kind := range p.Kinds {
+		scale = max(scale, kind.InW, kind.OutW)
+	}
+	return scale
 }

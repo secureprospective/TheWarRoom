@@ -3,7 +3,7 @@ import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
 import type { Snapshot } from '../data/contract';
 import { ArchiveReading } from '../market/ReadingView';
-import type { CounterpartiesReading, CounterRow } from './contract';
+import type { CounterpartiesReading, CounterRow, CounterWords } from './contract';
 import { counterState, tiers, windows, postures, type SortKey } from './state';
 import { EdgeBar, Share, TeamLink, number, percent } from './Displays';
 import '../market/market.css';
@@ -108,7 +108,15 @@ export function sortedRows(rows: CounterRow[], key: SortKey, descending: boolean
     return descending ? -order : order;
   });
 }
-export function TeamTable({ rows, snapshot }: { rows: CounterRow[]; snapshot?: Snapshot }) {
+export function TeamTable({
+  rows,
+  snapshot,
+  words,
+}: {
+  rows: CounterRow[];
+  snapshot?: Snapshot;
+  words: CounterWords;
+}) {
   const { sort } = counterState.use();
   const columns: readonly [SortKey, string][] = [
     ['name', 'Team'],
@@ -126,18 +134,24 @@ export function TeamTable({ rows, snapshot }: { rows: CounterRow[]; snapshot?: S
     <section data-endpoint="L-26">
       <h5>How each team trades</h5>
       <p>
-        Sort on archive values. On the day and since are totals; ranges underneath are per trade, with
-        zero marked. Since needs 2+ played seasons.
+        Sort on archive values. On the day and since are totals; ranges underneath are per trade,
+        with zero marked. Since needs 2+ played seasons.
       </p>
-      <div className="counter-scroll" tabIndex={0} aria-label="Scrollable teams table">
+      <div
+        className="counter-scroll counter-team-scroll"
+        tabIndex={0}
+        aria-label="Scrollable teams table"
+      >
         <table className="counter-table">
-          <thead>
+          <thead className="counter-sticky-header">
             <tr>
               {columns.map(([key, label]) => (
                 <th
                   key={key}
                   scope="col"
-                  aria-sort={sort.key === key ? (sort.descending ? 'descending' : 'ascending') : 'none'}
+                  aria-sort={
+                    sort.key === key ? (sort.descending ? 'descending' : 'ascending') : 'none'
+                  }
                 >
                   <Act
                     verb="market"
@@ -158,21 +172,21 @@ export function TeamTable({ rows, snapshot }: { rows: CounterRow[]; snapshot?: S
                   <TeamLink snapshot={snapshot} fid={r.fid} name={r.name} />
                   <small className="counter-standing">{r.standingTitle}</small>
                 </th>
-                <td>{r.n}</td>
+                <td>{r.nText}</td>
                 <td>{number(r.perSeason, 1)}</td>
                 <td>
-                  <Share share={r.forNow} label="Bought for now" />
+                  <Share words={words} share={r.forNow} label="Bought for now" />
                 </td>
                 <td>
-                  <Share share={r.forLater} label="Built for later" />
+                  <Share words={words} share={r.forLater} label="Built for later" />
                 </td>
                 <td>
                   <span>{number(r.day.total)} expected wins total</span>
-                  <EdgeBar edge={r.day} label="On the day, expected wins a trade" />
+                  <EdgeBar edge={r.day} label={words.day} />
                 </td>
                 <td>
                   <span>{number(r.since.total)} wins total</span>
-                  <EdgeBar edge={r.since} label="Since, wins a trade" />
+                  <EdgeBar edge={r.since} label={words.since} />
                 </td>
                 <td>
                   <EdgeBar edge={r.picks} label="Picks in minus out" />
@@ -180,7 +194,7 @@ export function TeamTable({ rows, snapshot }: { rows: CounterRow[]; snapshot?: S
                 <td>
                   <EdgeBar edge={r.age} label="Age in minus out" />
                 </td>
-                <td>{r.partnersCount}</td>
+                <td>{r.partnersText}</td>
                 <td>
                   {r.partner ? (
                     <>
@@ -208,12 +222,13 @@ export function CounterReading({
 }) {
   const v = reading?.value;
   return (
-    <ArchiveReading reading={reading} title="Counterparties">
+    <ArchiveReading reading={reading} countText={v?.countText} title="Counterparties">
       {v && (
         <>
           <p>{v.asOf}</p>
           <p>{v.summary}</p>
           <p>{v.note}</p>
+          <p className="counter-legend">{v.words.legend}</p>
           {reading?.status === 'ok' && (
             <>
               <p className="market-finding">{v.headline}</p>
@@ -231,7 +246,8 @@ export function CounterReading({
                           <p>{c.perSeasonText}</p>
                           {c.posture.map((p) => (
                             <p key={p.id} title={p.title} data-tone={p.tone}>
-                              {p.label}: {percent(p.p)}
+                              {p.label}: {percent(p.p)}{' '}
+                              {p.tone === 'down' ? v.words.down : p.tone === 'up' ? v.words.up : ''}
                             </p>
                           ))}
                           {c.rows.map((r) => (
@@ -253,54 +269,61 @@ export function CounterReading({
                 {v.trendSay.map((s) => (
                   <p key={s}>{s}</p>
                 ))}
-                <div className="counter-scroll">
-                  <table className="counter-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Standing</th>
-                        <th scope="col">Season</th>
-                        <th scope="col">Trade sides</th>
-                        <th scope="col">Bought for now</th>
-                        <th scope="col">Built for later</th>
-                        <th scope="col">On the day</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {v.trends.tiers.flatMap((t) =>
-                        t.rows.map((r) => (
-                          <tr key={`${t.tier}:${r.season}`}>
-                            <th scope="row">{tiers.find(([id]) => id === t.tier)?.[1]}</th>
-                            <td>{r.season}</td>
-                            <td>{r.n}</td>
-                            <td>
-                              {r.showShares ? <Share share={r.now} label="Bought for now" /> : 'Too few'}
-                            </td>
-                            <td>
-                              {r.showShares ? (
-                                <Share share={r.later} label="Built for later" />
-                              ) : (
-                                'Too few'
-                              )}
-                            </td>
-                            <td>{number(r.net)}</td>
+                <div className="counter-trends">
+                  {v.trends.tiers.map((t) => (
+                    <section key={t.tier}>
+                      <h5>{v.cards.find((c) => c.id === t.tier)?.label}</h5>
+                      <table className="counter-table counter-trend-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Season</th>
+                            <th scope="col">Trade sides</th>
+                            <th scope="col">Bought for now</th>
+                            <th scope="col">Built for later</th>
+                            <th scope="col">{v.words.day}</th>
                           </tr>
-                        )),
-                      )}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody>
+                          {t.rows.map((r) => (
+                            <tr key={r.season}>
+                              <th scope="row">{r.season}</th>
+                              <td>{r.nText}</td>
+                              <td>
+                                {r.showShares ? (
+                                  <Share words={v.words} share={r.now} label="Bought for now" />
+                                ) : (
+                                  'Too few'
+                                )}
+                              </td>
+                              <td>
+                                {r.showShares ? (
+                                  <Share words={v.words} share={r.later} label="Built for later" />
+                                ) : (
+                                  'Too few'
+                                )}
+                              </td>
+                              <td>{number(r.net)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </section>
+                  ))}
                 </div>
               </section>
               <section data-endpoint="L-25">
                 <h5>Standing against standing</h5>
-                <p>Read each row's gains against the column's tier. Each trade supplies two sides.</p>
+                <p>
+                  Read each row's gains against the column's tier. Each trade supplies two sides.
+                </p>
                 <div className="counter-scroll">
-                  <table className="counter-table">
+                  <table className="counter-table counter-matrix">
                     <thead>
                       <tr>
                         <th scope="col">Trading as</th>
                         {tiers.map(([id, label]) => (
                           <th key={id} scope="col">
-                            With {label.toLowerCase()}
+                            With {v.cards.find((c) => c.id === id)?.label ?? label}
                           </th>
                         ))}
                       </tr>
@@ -312,8 +335,8 @@ export function CounterReading({
                           {v.pairs.slice(index * 3, index * 3 + 3).map((p) => (
                             <td key={p.other} title={p.title}>
                               <p>{p.trades}</p>
-                              <EdgeBar edge={p.now} label="On the day" />
-                              <EdgeBar edge={p.real} label="Since" />
+                              <EdgeBar edge={p.now} label={v.words.day} />
+                              <EdgeBar edge={p.real} label={v.words.since} />
                             </td>
                           ))}
                         </tr>
@@ -322,7 +345,7 @@ export function CounterReading({
                   </table>
                 </div>
               </section>
-              <TeamTable rows={v.rows} snapshot={snapshot} />
+              <TeamTable rows={v.rows} snapshot={snapshot} words={v.words} />
             </>
           )}
         </>

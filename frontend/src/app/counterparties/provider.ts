@@ -30,7 +30,8 @@ function years(value: unknown, path: string): [number, number] {
   if (xs.length !== 2) throw new Error(`${path}: expected two years`);
   return [xs[0], xs[1]];
 }
-const numberOrNull = (value: unknown, path: string) => (value === null ? null : finite(value, path));
+const numberOrNull = (value: unknown, path: string) =>
+  value === null ? null : finite(value, path);
 
 function edge(value: unknown, path: string): TeamEdge {
   const r = object(value, path, ['n', 'mean', 'lo', 'hi', 'tone', 'total']);
@@ -45,17 +46,28 @@ function edge(value: unknown, path: string): TeamEdge {
   return out;
 }
 function share(value: unknown, path: string): TeamShare {
-  const r = object(value, path, ['k', 'n', 'p', 'lo', 'hi', 'base', 'tone']);
+  const r = object(value, path, ['k', 'n', 'p', 'lo', 'hi', 'base', 'tone', 'countText']);
   const out: TeamShare = {
     k: integer(r.k, path),
     n: integer(r.n, path),
     p: numberOrNull(r.p, path),
   };
+  if (r.countText !== undefined) out.countText = text(r.countText, path);
   if (r.lo !== undefined) out.lo = finite(r.lo, `${path}.lo`);
   if (r.hi !== undefined) out.hi = finite(r.hi, `${path}.hi`);
   if (r.base != null) out.base = finite(r.base, `${path}.base`);
   if (r.tone !== undefined) out.tone = toneOf(r.tone, `${path}.tone`);
   return out;
+}
+function words(value: unknown, path: string) {
+  const w = object(value, path, ['day', 'since', 'legend', 'up', 'down']);
+  return {
+    day: text(w.day, path),
+    since: text(w.since, path),
+    legend: text(w.legend, path),
+    up: text(w.up, path),
+    down: text(w.down, path),
+  };
 }
 function shell(r: Record<string, unknown>, path: string) {
   const status = choice(r.status, path, ['ok', 'thin', 'failed', 'not_wired']);
@@ -103,6 +115,8 @@ export function parseCounterparties(value: unknown): CounterpartiesReading {
   if (parsed.status === 'ok' || parsed.status === 'thin') {
     parsed.provenance = provenance(r.provenance, path);
     const body = object(r.value, path, [
+      'words',
+      'countText',
       'summary',
       'asOf',
       'headline',
@@ -116,6 +130,8 @@ export function parseCounterparties(value: unknown): CounterpartiesReading {
       'rows',
     ]);
     parsed.value = {
+      words: words(body.words, path),
+      countText: text(body.countText, path),
       summary: text(body.summary, path),
       asOf: text(body.asOf, path),
       headline: text(body.headline, path),
@@ -201,6 +217,8 @@ export function parseCounterparties(value: unknown): CounterpartiesReading {
           'partner',
           'partnerName',
           'partnersCount',
+          'nText',
+          'partnersText',
           'standingTitle',
           'partnerTrades',
         ]);
@@ -230,6 +248,8 @@ export function parseCounterparties(value: unknown): CounterpartiesReading {
                 })(),
           partnerName: text(x.partnerName, path),
           partnersCount: integer(x.partnersCount, path),
+          nText: text(x.nText, path),
+          partnersText: text(x.partnersText, path),
           standingTitle: text(x.standingTitle, path),
           partnerTrades: text(x.partnerTrades, path),
         };
@@ -264,8 +284,17 @@ function parseTrends(value: unknown, path: string) {
       return {
         tier: text(x.tier, path),
         rows: array(x.rows, path, (row) => {
-          const r = object(row, `${path}.rows`, ['season', 'n', 'now', 'later', 'net', 'showShares']);
+          const r = object(row, `${path}.rows`, [
+            'season',
+            'n',
+            'nText',
+            'now',
+            'later',
+            'net',
+            'showShares',
+          ]);
           return {
+            nText: text(r.nText, path),
             showShares: flag(r.showShares, path),
             season: integer(r.season, path),
             n: integer(r.n, path),
@@ -299,6 +328,8 @@ export function parseTeamPanel(value: unknown): TeamPanelReading {
   if (parsed.status === 'ok' || parsed.status === 'thin') {
     parsed.provenance = provenance(r.provenance, path);
     const body = object(r.value, path, [
+      'words',
+      'countText',
       'flowScale',
       'fid',
       'name',
@@ -343,9 +374,16 @@ export function parseTeamPanel(value: unknown): TeamPanelReading {
         season: share(p.season, path),
       };
     };
-    const partners = object(behaviour.partners, `${path}.partners`, ['contender', 'hunt', 'rebuild']);
-    for (const id of ['contender', 'hunt', 'rebuild']) share(partners[id], `${path}.partners.${id}`);
+    const partners = object(behaviour.partners, `${path}.partners`, [
+      'contender',
+      'hunt',
+      'rebuild',
+    ]);
+    for (const id of ['contender', 'hunt', 'rebuild'])
+      share(partners[id], `${path}.partners.${id}`);
     const value: TeamCounterpart = {
+      words: words(body.words, path),
+      countText: text(body.countText, path),
       flowScale: finite(body.flowScale, path),
       fid: text(body.fid, path),
       name: text(body.name, path),
@@ -362,6 +400,10 @@ export function parseTeamPanel(value: unknown): TeamPanelReading {
           'swap',
           'against',
           'flagged',
+          'nowText',
+          'laterText',
+          'swapText',
+          'againstText',
           'mostlyText',
           'net',
           'finish',
@@ -376,6 +418,10 @@ export function parseTeamPanel(value: unknown): TeamPanelReading {
           swap: integer(c.swap, path),
           against: integer(c.against, path),
           flagged: flag(c.flagged, path),
+          nowText: text(c.nowText, path),
+          laterText: text(c.laterText, path),
+          swapText: text(c.swapText, path),
+          againstText: text(c.againstText, path),
           mostlyText: text(c.mostlyText, path),
           net: numberOrNull(c.net, path),
           finish: c.finish == null ? null : integer(c.finish, path),
@@ -395,7 +441,15 @@ export function parseTeamPanel(value: unknown): TeamPanelReading {
         };
       }),
       kinds: array(body.kinds, path, (kind) => {
-        const k = object(kind, `${path}.kinds`, ['kind', 'name', 'inN', 'outN', 'inW', 'outW', 'text']);
+        const k = object(kind, `${path}.kinds`, [
+          'kind',
+          'name',
+          'inN',
+          'outN',
+          'inW',
+          'outW',
+          'text',
+        ]);
         return {
           kind: text(k.kind, path),
           name: text(k.name, path),

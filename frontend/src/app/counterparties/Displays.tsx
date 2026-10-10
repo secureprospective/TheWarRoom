@@ -1,15 +1,23 @@
 import type { Snapshot } from '../data/contract';
 import { Act } from '../commands/Act';
-import type { TeamEdge, TeamShare } from './contract';
+import type { CounterWords, TeamEdge, TeamShare } from './contract';
 
 export const number = (v: number | null | undefined, digits = 2) =>
-  v == null ? '—' : v.toFixed(digits);
+  v == null ? '—' : (Number(v.toFixed(digits)) === 0 ? 0 : v).toFixed(digits);
 export const percent = (v: number | null) => (v == null ? '—' : `${(v * 100).toFixed(0)}%`);
 export function teamIdentity(snapshot: Snapshot | undefined, fid: string, fallback: string) {
   const identity = snapshot?.franchises.value.find((f) => f.id === fid);
   return { name: identity?.name ?? fallback, matched: !!identity };
 }
-export function TeamLink({ snapshot, fid, name }: { snapshot?: Snapshot; fid: string; name: string }) {
+export function TeamLink({
+  snapshot,
+  fid,
+  name,
+}: {
+  snapshot?: Snapshot;
+  fid: string;
+  name: string;
+}) {
   const identity = teamIdentity(snapshot, fid, name);
   return (
     <span className="counter-team">
@@ -25,15 +33,20 @@ export function TeamLink({ snapshot, fid, name }: { snapshot?: Snapshot; fid: st
   );
 }
 export function EdgeBar({ edge, label }: { edge: TeamEdge; label: string }) {
-  if (edge.mean == null) return <span>—</span>;
-  if (edge.lo == null || edge.hi == null) return <span>{number(edge.mean)} · too few for a range</span>;
+  if (edge.mean == null) return <span>{label}: —</span>;
+  if (edge.lo == null || edge.hi == null)
+    return (
+      <span>
+        {label}: {number(edge.mean)} · too few for a range
+      </span>
+    );
   const span = Math.max(Math.abs(edge.lo), Math.abs(edge.hi), 0.01);
   const x = (v: number) => 150 + (v / span) * 135;
   const description = `${label}: ${number(edge.mean)}, likely ${number(edge.lo)} to ${number(edge.hi)}`;
   return (
     <div className="counter-edge" data-tone={edge.tone}>
       <span>
-        {number(edge.mean)} · likely {number(edge.lo)} to {number(edge.hi)}
+        {label}: {number(edge.mean)} · likely {number(edge.lo)} to {number(edge.hi)}
       </span>
       <svg
         className="market-range"
@@ -49,6 +62,18 @@ export function EdgeBar({ edge, label }: { edge: TeamEdge; label: string }) {
     </div>
   );
 }
-export function Share({ share, label }: { share: TeamShare; label: string }) {
-  return <span data-tone={share.tone} title={`${label}: ${share.k} of ${share.n}`}>{percent(share.p)}</span>;
+export function Share({
+  share,
+  label,
+  words,
+}: {
+  share: TeamShare;
+  label: string;
+  words: CounterWords;
+}) {
+  return (
+    <span data-tone={share.tone} title={`${label}: ${share.countText ?? '—'}`}>
+      {percent(share.p)} {share.tone === 'down' ? words.down : share.tone === 'up' ? words.up : ''}
+    </span>
+  );
 }

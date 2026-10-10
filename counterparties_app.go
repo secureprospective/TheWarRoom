@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 
@@ -99,14 +100,25 @@ type PairView struct {
 	Trades string       `json:"trades"`
 	Title  string       `json:"title"`
 }
+type CounterShare struct {
+	lab.TeamShare
+	CountText string `json:"countText"`
+}
+
+func counterShare(s lab.TeamShare) CounterShare {
+	return CounterShare{TeamShare: s, CountText: fmt.Sprintf("%s of %s", countNumber(s.K), countNumber(s.N))}
+}
+
 type CounterRow struct {
+	NText         string             `json:"nText"`
+	PartnersText  string             `json:"partnersText"`
 	Fid           string             `json:"fid"`
 	Name          string             `json:"name"`
 	N             int                `json:"n"`
 	PerSeason     float64            `json:"perSeason"`
 	Tiers         map[string]float64 `json:"tiers"`
-	ForNow        lab.TeamShare      `json:"forNow"`
-	ForLater      lab.TeamShare      `json:"forLater"`
+	ForNow        CounterShare       `json:"forNow"`
+	ForLater      CounterShare       `json:"forLater"`
 	Day           lab.TeamEdge       `json:"day"`
 	Since         lab.TeamEdge       `json:"since"`
 	Picks         lab.TeamEdge       `json:"picks"`
@@ -117,9 +129,17 @@ type CounterRow struct {
 	StandingTitle string             `json:"standingTitle"`
 	PartnerTrades string             `json:"partnerTrades"`
 }
+
+// CounterTrendRow lists the season row's fields rather than embedding lab.TierTrendRow: the
+// embedded Now/Later would be shadowed here, and Wails would emit both into models.ts.
 type CounterTrendRow struct {
-	lab.TierTrendRow
-	ShowShares bool `json:"showShares"`
+	Season     int          `json:"season"`
+	N          int          `json:"n"`
+	Net        *float64     `json:"net"`
+	Now        CounterShare `json:"now"`
+	Later      CounterShare `json:"later"`
+	ShowShares bool         `json:"showShares"`
+	NText      string       `json:"nText"`
 }
 type CounterShift lab.TierShift
 type CounterShifts struct {
@@ -141,25 +161,39 @@ func counterTrends(trends lab.TeamTrends) CounterTrends {
 	for _, tier := range trends.Tiers {
 		view := CounterTrend{Tier: tier.Tier, Rows: []CounterTrendRow{}, Shift: CounterShifts{Now: (*CounterShift)(tier.Shift["now"]), Later: (*CounterShift)(tier.Shift["later"])}}
 		for _, row := range tier.Rows {
-			view.Rows = append(view.Rows, CounterTrendRow{TierTrendRow: row, ShowShares: row.N >= 10})
+			view.Rows = append(view.Rows, CounterTrendRow{Season: row.Season, N: row.N, Net: row.Net, Now: counterShare(row.Now), Later: counterShare(row.Later), ShowShares: row.N >= 10, NText: countNumber(row.N)})
 		}
 		out.Tiers = append(out.Tiers, view)
 	}
 	return out
 }
 
+type CounterWords struct {
+	Day    string `json:"day"`
+	Since  string `json:"since"`
+	Legend string `json:"legend"`
+	Up     string `json:"up"`
+	Down   string `json:"down"`
+}
+
+func counterWords() CounterWords {
+	return CounterWords{Day: "On the day", Since: "Since", Legend: "Shares: ↑ (green) is above the league’s share beyond chance; ↓ (red) is below it beyond chance. Unmarked shares are within chance. Red ranges are losses beyond chance; green ranges are gains beyond chance.", Up: "↑", Down: "↓"}
+}
+
 type Counterparties struct {
-	Summary  string        `json:"summary"`
-	AsOf     string        `json:"asOf"`
-	Headline string        `json:"headline"`
-	Note     string        `json:"note"`
-	Picks    []TierPick    `json:"picks"`
-	Teams    []TeamOption  `json:"teams"`
-	Cards    []TierCard    `json:"cards"`
-	TrendSay []string      `json:"trendSay"`
-	Trends   CounterTrends `json:"trends"`
-	Pairs    []PairView    `json:"pairs"`
-	Rows     []CounterRow  `json:"rows"`
+	Words     CounterWords  `json:"words"`
+	CountText string        `json:"countText"`
+	Summary   string        `json:"summary"`
+	AsOf      string        `json:"asOf"`
+	Headline  string        `json:"headline"`
+	Note      string        `json:"note"`
+	Picks     []TierPick    `json:"picks"`
+	Teams     []TeamOption  `json:"teams"`
+	Cards     []TierCard    `json:"cards"`
+	TrendSay  []string      `json:"trendSay"`
+	Trends    CounterTrends `json:"trends"`
+	Pairs     []PairView    `json:"pairs"`
+	Rows      []CounterRow  `json:"rows"`
 }
 
 func (a *App) TargetCounterparties(raw RawCounterpartiesScope) Reading[Counterparties] {
@@ -188,6 +222,7 @@ func counterpartiesReading(d *lab.Data, s lab.TeamScope) Reading[Counterparties]
 	sides := lab.SidesInScope(d, s)
 	seasons := max(1, len(lab.SideYears(league)))
 	value := Counterparties{
+		Words: counterWords(), CountText: countNumber(len(sides)),
 		Summary: fmt.Sprintf("%s of valued trades, %d–%d. On the day is expected wins gained at the league's own prices; since is wins actually delivered, for trades with two or more seasons played.", countLabel(len(sides), "trade side"), s.From, s.To),
 		AsOf:    "Standings as of the archive cutoff " + strings.Split(d.ArchiveThrough, "T")[0] + ", not today's live standings.",
 		Note:    "Each trade has two sides, one per team. A team's tier is its rank that day: live once three games are final, else last season's finish, as the archive recorded it.",
@@ -245,12 +280,15 @@ func tierHint(tier string) string {
 	return map[string]string{"contender": "Ranked 1 to 10 on the day of the trade", "hunt": "Ranked 11 to 22 on the day of the trade", "rebuild": "Ranked 23 to 32 on the day of the trade"}[tier]
 }
 func tierOne(tier string) string {
-	return map[string]string{"contender": "contender", "hunt": "in the hunt", "rebuild": "rebuilding"}[tier]
+	return tierLabel(tier)
 }
 func postureLabel(id string) string {
 	return map[string]string{"now": "Bought for now", "later": "Built for later", "swap": "Like for like"}[id]
 }
 func wins(v float64, dp int) string {
+	if math.Round(v*math.Pow10(dp)) == 0 {
+		v = 0
+	}
 	return fmt.Sprintf("%+.*f", dp, v)
 }
 func edgeWords(e lab.TeamEdge, unit string) string {
@@ -378,7 +416,7 @@ func pairViews(sides []lab.TeamSide) []PairView {
 func counterRows(d *lab.Data, sides, league []lab.TeamSide) []CounterRow {
 	out := []CounterRow{}
 	for _, row := range lab.TeamRows(sides, league) {
-		r := CounterRow{Fid: row.Fid, Name: franchiseName(d, row.Fid), N: row.N, PerSeason: row.PerSeason, Tiers: row.Tiers, ForNow: row.Posture["now"], ForLater: row.Posture["later"], Day: row.Now, Since: row.Real, Picks: row.Picks, Age: row.Age, Partner: row.Partner, PartnersCount: row.PartnersCount}
+		r := CounterRow{NText: countNumber(row.N), PartnersText: countNumber(row.PartnersCount), Fid: row.Fid, Name: franchiseName(d, row.Fid), N: row.N, PerSeason: row.PerSeason, Tiers: row.Tiers, ForNow: counterShare(row.Posture["now"]), ForLater: counterShare(row.Posture["later"]), Day: row.Now, Since: row.Real, Picks: row.Picks, Age: row.Age, Partner: row.Partner, PartnersCount: row.PartnersCount}
 		parts := []string{}
 		for _, t := range lab.TeamTiers() {
 			parts = append(parts, fmt.Sprintf("%s %s", tierLabel(t), percent(row.Tiers[t])))

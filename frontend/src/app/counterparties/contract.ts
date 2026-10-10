@@ -29,6 +29,7 @@ export type TeamEdge = {
   tone: string;
 };
 export type TeamShare = {
+  countText?: string;
   k: number;
   n: number;
   p: number | null;
@@ -65,6 +66,7 @@ export type TierCard = {
   rows: CardRow[];
 };
 export type TrendRow = {
+  nText: string;
   showShares: boolean;
   season: number;
   n: number;
@@ -87,6 +89,8 @@ export type PairView = {
   title: string;
 };
 export type CounterRow = {
+  nText: string;
+  partnersText: string;
   fid: string;
   name: string;
   n: number;
@@ -104,7 +108,10 @@ export type CounterRow = {
   standingTitle: string;
   partnerTrades: string;
 };
+export type CounterWords = { day: string; since: string; legend: string; up: string; down: string };
 export type Counterparties = {
+  words: CounterWords;
+  countText: string;
   summary: string;
   asOf: string;
   headline: string;
@@ -118,6 +125,10 @@ export type Counterparties = {
   rows: CounterRow[];
 };
 export type SeasonCellView = {
+  nowText: string;
+  laterText: string;
+  swapText: string;
+  againstText: string;
   season: number;
   n: number;
   now: number;
@@ -156,6 +167,8 @@ export type AsTierView = {
   text: string;
 };
 export type TeamCounterpart = {
+  words: CounterWords;
+  countText: string;
   flowScale: number;
   fid: string;
   name: string;

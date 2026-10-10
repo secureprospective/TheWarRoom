@@ -2239,14 +2239,16 @@ export namespace main {
 		}
 	}
 	export class CounterRow {
+	    nText: string;
+	    partnersText: string;
 	    fid: string;
 	    name: string;
 	    n: number;
 	    perSeason: number;
 	    tiers: Record<string, number>;
-	    // Go type: lab
+	    // Go type: CounterShare
 	    forNow: any;
-	    // Go type: lab
+	    // Go type: CounterShare
 	    forLater: any;
 	    // Go type: lab
 	    day: any;
@@ -2269,6 +2271,8 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.nText = source["nText"];
+	        this.partnersText = source["partnersText"];
 	        this.fid = source["fid"];
 	        this.name = source["name"];
 	        this.n = source["n"];
@@ -2401,15 +2405,42 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class CounterShare {
+	    k: number;
+	    n: number;
+	    p?: number;
+	    lo?: number;
+	    hi?: number;
+	    base?: number;
+	    tone?: string;
+	    countText: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CounterShare(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.k = source["k"];
+	        this.n = source["n"];
+	        this.p = source["p"];
+	        this.lo = source["lo"];
+	        this.hi = source["hi"];
+	        this.base = source["base"];
+	        this.tone = source["tone"];
+	        this.countText = source["countText"];
+	    }
+	}
 	export class CounterTrendRow {
 	    season: number;
 	    n: number;
-	    // Go type: lab
-	    now: any;
-	    // Go type: lab
-	    later: any;
 	    net?: number;
+	    // Go type: CounterShare
+	    now: any;
+	    // Go type: CounterShare
+	    later: any;
 	    showShares: boolean;
+	    nText: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new CounterTrendRow(source);
@@ -2419,10 +2450,11 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.season = source["season"];
 	        this.n = source["n"];
+	        this.net = source["net"];
 	        this.now = this.convertValues(source["now"], null);
 	        this.later = this.convertValues(source["later"], null);
-	        this.net = source["net"];
 	        this.showShares = source["showShares"];
+	        this.nText = source["nText"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -2643,7 +2675,30 @@ export namespace main {
 	        this.count = source["count"];
 	    }
 	}
+	export class CounterWords {
+	    day: string;
+	    since: string;
+	    legend: string;
+	    up: string;
+	    down: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CounterWords(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.day = source["day"];
+	        this.since = source["since"];
+	        this.legend = source["legend"];
+	        this.up = source["up"];
+	        this.down = source["down"];
+	    }
+	}
 	export class Counterparties {
+	    // Go type: CounterWords
+	    words: any;
+	    countText: string;
 	    summary: string;
 	    asOf: string;
 	    headline: string;
@@ -2663,6 +2718,8 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.words = this.convertValues(source["words"], null);
+	        this.countText = source["countText"];
 	        this.summary = source["summary"];
 	        this.asOf = source["asOf"];
 	        this.headline = source["headline"];
@@ -3032,6 +3089,10 @@ export namespace main {
 	    }
 	}
 	export class SeasonCellView {
+	    nowText: string;
+	    laterText: string;
+	    swapText: string;
+	    againstText: string;
 	    season: number;
 	    n: number;
 	    now: number;
@@ -3051,6 +3112,10 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.nowText = source["nowText"];
+	        this.laterText = source["laterText"];
+	        this.swapText = source["swapText"];
+	        this.againstText = source["againstText"];
 	        this.season = source["season"];
 	        this.n = source["n"];
 	        this.now = source["now"];
@@ -3066,6 +3131,9 @@ export namespace main {
 	    }
 	}
 	export class TeamCounterpart {
+	    // Go type: CounterWords
+	    words: any;
+	    countText: string;
 	    fid: string;
 	    name: string;
 	    asOf: string;
@@ -3096,6 +3164,8 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.words = this.convertValues(source["words"], null);
+	        this.countText = source["countText"];
 	        this.fid = source["fid"];
 	        this.name = source["name"];
 	        this.asOf = source["asOf"];

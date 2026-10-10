@@ -18,18 +18,21 @@ export function RangeBar({ range }: { range: MarketRange }) {
     </svg>
   );
 }
-export function HowCounted({ reading }: { reading: ReadingShell }) {
+export function HowCounted({ reading, countText }: { reading: ReadingShell; countText?: string }) {
   return (
     <details className="market-how" data-endpoint="L-33">
       <summary>How this is counted</summary>
       <p>
-        This is the league’s trade and draft history through the archive cutoff, not today’s live market.
+        This is the league’s trade and draft history through the archive cutoff, not today’s live
+        market.
       </p>
-      <p>{reading.howCounted || 'No archive reading is available; no numbers have been supplied.'}</p>
+      <p>
+        {reading.howCounted || 'No archive reading is available; no numbers have been supplied.'}
+      </p>
       <dl className="kv">
         <dt>Count / threshold</dt>
         <dd>
-          {reading.count} / {reading.threshold}
+          {countText ?? reading.count} / {reading.threshold}
         </dd>
         <dt>Baseline</dt>
         <dd>{reading.baseline || 'Unavailable'}</dd>
@@ -51,10 +54,12 @@ export function ArchiveReading({
   reading,
   title,
   children,
+  countText,
 }: {
   reading?: ReadingShell;
   title: string;
   children?: ReactNode;
+  countText?: string;
 }) {
   if (!reading)
     return (
@@ -73,11 +78,15 @@ export function ArchiveReading({
             : reading.status === 'not_wired'
               ? 'Not wired'
               : 'Failed'}{' '}
-          · {reading.absenceReason} · {countNoun(reading.count, 'record')} / {reading.threshold} required
+          · {reading.absenceReason} ·{' '}
+          {countText
+            ? `${countText} record${reading.count === 1 ? '' : 's'}`
+            : countNoun(reading.count, 'record')}{' '}
+          / {reading.threshold} required
         </p>
       )}
       {(reading.status === 'ok' || reading.status === 'thin') && children}
-      <HowCounted reading={reading} />
+      <HowCounted reading={reading} countText={countText} />
     </section>
   );
 }

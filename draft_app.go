@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"slices"
+	"strconv"
 
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -198,7 +199,18 @@ func countLabel(n int, noun string) string {
 	if n == 1 {
 		suffix = ""
 	}
-	return fmt.Sprintf("%d %s%s", n, noun, suffix)
+	return fmt.Sprintf("%s %s%s", countNumber(n), noun, suffix)
+}
+func countNumber(n int) string {
+	text := strconv.Itoa(n)
+	start := 0
+	if n < 0 {
+		start = 1
+	}
+	for i := len(text) - 3; i > start; i -= 3 {
+		text = text[:i] + "," + text[i:]
+	}
+	return text
 }
 func slotTone(tone string) string {
 	return map[string]string{"down": "below its slot beyond chance", "even": "within chance of its slot", "up": "above its slot beyond chance"}[tone]

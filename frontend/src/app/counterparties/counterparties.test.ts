@@ -13,7 +13,14 @@ import { createCounterState, filtered } from './state';
 import { parseCounterparties, parseTeamPanel, counterpartProvider } from './provider';
 import { surfaceWire, teamWire, thinWire, emptyWire } from './wire.testdata';
 import type { CounterpartiesReading, CounterScope } from './contract';
-const scope: CounterScope = { from: 2017, to: 2026, tiers: [], windows: [], postures: [], team: '' };
+const scope: CounterScope = {
+  from: 2017,
+  to: 2026,
+  tiers: [],
+  windows: [],
+  postures: [],
+  team: '',
+};
 const league = parseSnapshot(snapshot);
 const html = (component: typeof CounterReading | typeof TeamReading, reading: unknown) =>
   renderToStaticMarkup(
@@ -70,11 +77,14 @@ it('rejects malformed IPC data rather than rendering inventions', () => {
       },
     }),
   ).toThrow(/two years/);
-  expect(() => parseTeamPanel({ ...teamWire, value: { ...teamWire.value, empty: 'false' } })).toThrow();
+  expect(() =>
+    parseTeamPanel({ ...teamWire, value: { ...teamWire.value, empty: 'false' } }),
+  ).toThrow();
 });
 it('renders L-23–L-26 with archive disclosure and range bars', () => {
   const text = html(CounterReading, parseCounterparties(surfaceWire));
-  for (const id of ['L-23', 'L-24', 'L-25', 'L-26']) expect(text).toContain(`data-endpoint="${id}"`);
+  for (const id of ['L-23', 'L-24', 'L-25', 'L-26'])
+    expect(text).toContain(`data-endpoint="${id}"`);
   expect(text).toContain('2026-10-06');
   expect(text).toContain('not today&#x27;s live standings');
   expect(text).toContain('How this is counted');
@@ -130,7 +140,9 @@ it('awaits desktop calls before parsing and reports invalid or rejected response
     expect((await counterpartProvider.surface(scope)).status).toBe('ok');
     expect((await counterpartProvider.team(scope, '0001')).status).toBe('ok');
     surface.mockRejectedValueOnce(new Error('fingerprint mismatch'));
-    expect((await counterpartProvider.surface(scope)).absenceReason).toContain('fingerprint mismatch');
+    expect((await counterpartProvider.surface(scope)).absenceReason).toContain(
+      'fingerprint mismatch',
+    );
     team.mockResolvedValueOnce({ ...teamWire, inputSHA: '' });
     expect((await counterpartProvider.team(scope, '0001')).status).toBe('failed');
   } finally {
@@ -165,8 +177,10 @@ it('filters validate Go scope and preserve prior readings while pending', async 
   expect(state.peek().scope).toEqual(scope);
   expect(() => filtered(scope, { field: 'counterpart-tier', value: 'guess' })).toThrow();
   expect(
-    filtered({ ...scope, tiers: ['contender', 'hunt'] }, { field: 'counterpart-tier', value: 'rebuild' })
-      .tiers,
+    filtered(
+      { ...scope, tiers: ['contender', 'hunt'] },
+      { field: 'counterpart-tier', value: 'rebuild' },
+    ).tiers,
   ).toEqual([]);
   const text = renderToStaticMarkup(createElement(CounterControls));
   expect(text).toContain('aria-label="Filter Contenders"');
@@ -214,8 +228,14 @@ it('sorts only supplied fields with stable ties and nulls last in either directi
 });
 it('resolves franchise ids and inspects teams independently of players', () => {
   const identity = league.franchises.value[0];
-  expect(teamIdentity(league, identity.id, 'old name')).toEqual({ name: identity.name, matched: true });
-  expect(teamIdentity(league, '9999', 'Archive team')).toEqual({ name: 'Archive team', matched: false });
+  expect(teamIdentity(league, identity.id, 'old name')).toEqual({
+    name: identity.name,
+    matched: true,
+  });
+  expect(teamIdentity(league, '9999', 'Archive team')).toEqual({
+    name: 'Archive team',
+    matched: false,
+  });
   const c = createCommands(() => undefined, new FixtureProvider());
   c.loadSnapshot(league);
   c.dispatch('market', { field: 'inspect', value: `team:${identity.id}` });
@@ -230,7 +250,10 @@ it('resolves franchise ids and inspects teams independently of players', () => {
 it('range rendering uses all supplied tones without showing enum text or inventing absent ranges', () => {
   for (const tone of ['up', 'down', 'even']) {
     const text = renderToStaticMarkup(
-      createElement(EdgeBar, { edge: { n: 3, mean: 0.1, lo: -0.2, hi: 0.4, tone }, label: 'Reading' }),
+      createElement(EdgeBar, {
+        edge: { n: 3, mean: 0.1, lo: -0.2, hi: 0.4, tone },
+        label: 'Reading',
+      }),
     );
     expect(text).toContain(`data-tone="${tone}"`);
     expect(text).not.toMatch(new RegExp(`>${tone}<`));
@@ -253,4 +276,102 @@ it('range rendering uses all supplied tones without showing enum text or inventi
 it('team endpoint doors distinguish panel requests without inventing a franchise', () => {
   for (const id of ['L-27', 'L-28', 'L-29']) expect(panelEndpoint([id])).toBe(true);
   expect(panelEndpoint(['L-23', 'L-24', 'L-25', 'L-26'])).toBe(false);
+});
+
+it('contains wide tables and reflows tiers by column rather than viewport', () => {
+  const css = readFileSync('src/app/counterparties/counterparties.css', 'utf8');
+  const text = html(CounterReading, parseCounterparties(surfaceWire));
+  expect(text).toContain('class="counter-tiers"');
+  expect(text).toContain('class="counter-scroll counter-team-scroll"');
+  expect(text).toContain('class="counter-table counter-matrix"');
+  expect(css).toContain('repeat(auto-fit, minmax(min(100%, 280px), 1fr))');
+  expect(css).not.toContain('@media');
+  expect(css).toMatch(/\.counter-scroll\s*\{[^}]*overflow: auto;[^}]*max-width: 100%;/);
+  expect(css).toMatch(/\.counter-table th:first-child\s*\{[^}]*position: sticky;[^}]*left: 0;/);
+});
+it('wraps all workspace and panel prose including the headline and archive metadata', () => {
+  const css = readFileSync('src/app/counterparties/counterparties.css', 'utf8');
+  expect(css).toMatch(/overflow-wrap: anywhere;\s*white-space: normal;/);
+  expect(css).toContain('max-width: min(100%, 72ch)');
+  expect(css).toContain('grid-template-columns: minmax(0, 1fr) minmax(0, 2fr)');
+  expect(html(CounterReading, parseCounterparties(surfaceWire))).toContain('25.3%');
+});
+it('shows three short standing trend tables with shares and no repeated standing column', () => {
+  const text = html(CounterReading, parseCounterparties(surfaceWire));
+  const trend = text.slice(
+    text.indexOf('data-endpoint="L-24"'),
+    text.indexOf('data-endpoint="L-25"'),
+  );
+  expect(trend).toContain('class="counter-trends"');
+  expect(trend.match(/counter-trend-table/g)).toHaveLength(3);
+  expect(trend).not.toContain('<th scope="col">Standing</th>');
+  for (const label of [
+    'Contenders',
+    'In the hunt',
+    'Rebuilding',
+    'Bought for now',
+    'Built for later',
+  ])
+    expect(trend).toContain(label);
+  const css = readFileSync('src/app/counterparties/counterparties.css', 'utf8');
+  expect(css).toMatch(/\.counter-trend-table\s*\{\s*table-layout: fixed;/);
+});
+it('each matrix and team range carries its own Go-authored visible label, even when absent', () => {
+  const r = parseCounterparties(surfaceWire);
+  r.value!.words.day = 'Day label from Go';
+  r.value!.words.since = 'Since label from Go';
+  const text = html(CounterReading, r);
+  for (const id of ['L-25', 'L-26']) {
+    const section = text.slice(text.indexOf(`data-endpoint="${id}"`));
+    expect(section).toContain('Day label from Go:');
+    expect(section).toContain('Since label from Go:');
+  }
+  expect(
+    renderToStaticMarkup(
+      createElement(EdgeBar, {
+        edge: { n: 0, mean: null, lo: null, hi: null, tone: 'even' },
+        label: 'Since label from Go',
+      }),
+    ),
+  ).toContain('Since label from Go: —');
+});
+it('keeps team headings sticky in a bounded scroll box and explains red with a non-colour mark', () => {
+  const r = parseCounterparties(surfaceWire);
+  r.value!.rows[0].forNow.tone = 'down';
+  r.value!.rows[0].forNow.p = 0.28;
+  const text = html(CounterReading, r);
+  expect(text).toContain('counter-sticky-header');
+  expect(text).toContain('28% ↓');
+  expect(text).toContain(r.value!.words.legend);
+  expect(html(TeamReading, parseTeamPanel(teamWire))).toContain('↓ (red)');
+  const css = readFileSync('src/app/counterparties/counterparties.css', 'utf8');
+  expect(css).toMatch(/\.counter-team-scroll\s*\{\s*max-height: 480px;/);
+  expect(css).toMatch(/\.counter-sticky-header th\s*\{[^}]*position: sticky;[^}]*top: 0;/);
+});
+it('renders Go-formatted large counts and never a rounded negative zero', () => {
+  const r = parseCounterparties(surfaceWire);
+  r.value!.rows[0].nText = '3,810';
+  r.value!.rows[0].forNow.countText = '1,000 of 3,810';
+  r.value!.rows[0].n = 3810;
+  r.value!.rows[0].day.mean = -0.0001;
+  const text = html(CounterReading, r);
+  expect(text).toContain('3,810 trade sides');
+  expect(text).toContain('<td>3,810</td>');
+  expect(text).toContain('Bought for now: 1,000 of 3,810');
+  expect(text).toContain('3,810 / 40');
+  expect(text).not.toContain('-0.00');
+  expect(html(TeamReading, parseTeamPanel(teamWire))).not.toContain('-0.00');
+});
+it('themes accessible panel meters and keeps Go tier casing consistent', () => {
+  const text = html(TeamReading, parseTeamPanel(teamWire));
+  expect(text).toContain('<meter min="0"');
+  expect(text).toContain('>In the hunt</p>');
+  expect(text).toContain('>Rebuilding</p>');
+  expect(text).toContain('As Contenders');
+  expect(text).not.toContain('>contender</p>');
+  const css = readFileSync('src/app/counterparties/counterparties.css', 'utf8');
+  expect(css).toContain('meter::-webkit-meter-bar');
+  expect(css).toContain('meter::-webkit-meter-optimum-value');
+  expect(css).toContain('meter::-moz-meter-bar');
+  expect(css).toContain('background: var(--surface-tx2)');
 });

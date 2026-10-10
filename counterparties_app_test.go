@@ -226,3 +226,87 @@ func TestCounterpartyDisplayThresholds(t *testing.T) {
 		t.Fatal("all asset-flow bars must share the same Go-supplied scale")
 	}
 }
+
+func TestCounterCountFormatting(t *testing.T) {
+	for _, c := range []struct {
+		n    int
+		want string
+	}{
+		{0, "0"}, {999, "999"}, {1000, "1,000"}, {3810, "3,810"}, {1000000, "1,000,000"}, {-3810, "-3,810"},
+	} {
+		if got := countNumber(c.n); got != c.want {
+			t.Errorf("countNumber(%d)=%s, want %s", c.n, got, c.want)
+		}
+	}
+	if got := counterShare(lab.TeamShare{K: 1000, N: 3810}).CountText; got != "1,000 of 3,810" {
+		t.Fatal(got)
+	}
+	if got := countLabel(3810, "trade side"); got != "3,810 trade sides" {
+		t.Fatal(got)
+	}
+	a := &App{}
+	r := a.TargetCounterparties(RawCounterpartiesScope{From: 2017, To: 2026})
+	if !strings.Contains(r.Value.Summary, "3,810 trade sides") || r.Value.CountText != "3,810" {
+		t.Fatal("unformatted archive count")
+	}
+	for _, row := range r.Value.Rows {
+		if row.NText != countNumber(row.N) || row.PartnersText != countNumber(row.PartnersCount) {
+			t.Fatal("unformatted team counts")
+		}
+	}
+	for _, tier := range r.Value.Trends.Tiers {
+		for _, row := range tier.Rows {
+			if row.NText != countNumber(row.N) {
+				t.Fatal("unformatted trend count")
+			}
+		}
+	}
+}
+func TestCounterRoundedZero(t *testing.T) {
+	for _, c := range []struct {
+		v    float64
+		dp   int
+		want string
+	}{
+		{-0.0001, 2, "+0.00"}, {-0.0049, 2, "+0.00"}, {-0.0051, 2, "-0.01"}, {-0.04, 1, "+0.0"}, {0, 2, "+0.00"},
+	} {
+		if got := wins(c.v, c.dp); got != c.want {
+			t.Errorf("wins(%v,%d)=%s, want %s", c.v, c.dp, got, c.want)
+		}
+	}
+	e := lab.TeamEdge{Mean: ptrFloat(-0.0001), Lo: ptrFloat(-0.1), Hi: ptrFloat(0.1), Tone: "even"}
+	if strings.Contains(edgeWords(e, "wins"), "-0.00") {
+		t.Fatal("negative zero in prose")
+	}
+}
+func TestCounterVisibleWording(t *testing.T) {
+	w := counterWords()
+	if w.Day != "On the day" || w.Since != "Since" || w.Up != "↑" || w.Down != "↓" {
+		t.Fatal("bar labels or non-colour marks missing")
+	}
+	for _, word := range []string{"red", "below", "beyond chance", "Unmarked", "losses", "gains"} {
+		if !strings.Contains(w.Legend, word) {
+			t.Errorf("legend missing %s", word)
+		}
+	}
+	for _, tier := range lab.TeamTiers() {
+		if tierOne(tier) != tierLabel(tier) {
+			t.Fatal("tier case drift")
+		}
+	}
+	a := &App{}
+	panel := a.TargetCounterpartTeam(RawCounterpartTeam{Scope: RawCounterpartiesScope{From: 2017, To: 2026}, Fid: "0001"}).Value
+	if panel.Words != w {
+		t.Fatal("panel wording drift")
+	}
+	for _, cell := range panel.Seasons {
+		if cell.MostlyText != "" && cell.MostlyText != "Contenders" && cell.MostlyText != "In the hunt" && cell.MostlyText != "Rebuilding" {
+			t.Fatal(cell.MostlyText)
+		}
+	}
+	for _, tier := range panel.AsTier {
+		if !strings.Contains(tier.Label, tierLabel(tier.Tier)) {
+			t.Fatal(tier.Label)
+		}
+	}
+}

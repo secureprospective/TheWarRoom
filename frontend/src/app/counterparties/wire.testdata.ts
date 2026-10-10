@@ -1,17 +1,28 @@
 // Trimmed Go IPC specimens; test-only, never a browser fallback.
 export const surfaceWire = {
   "value": {
-    "summary": "3810 trade sides of valued trades, 2017–2026. On the day is " +
-      "expected wins gained at the league's own prices; since is wins " +
-      "actually delivered, for trades with two or more seasons played.",
+    "words": {
+      "day": "On the day",
+      "since": "Since",
+      "legend": "Shares: ↑ (green) is above the league’s share beyond chance; ↓ " +
+                  "(red) is below it beyond chance. Unmarked shares are within " +
+                  "chance. Red ranges are losses beyond chance; green ranges are " +
+                  "gains beyond chance.",
+      "up": "↑",
+      "down": "↓"
+    },
+    "countText": "3,810",
+    "summary": "3,810 trade sides of valued trades, 2017–2026. On the day is " +
+                 "expected wins gained at the league's own prices; since is wins " +
+                 "actually delivered, for trades with two or more seasons played.",
     "asOf": "Standings as of the archive cutoff 2026-10-06, not today's live standings.",
     "headline": "Contenders buy for now in 24.9% of their trades and rebuilding " +
-      "teams build for later in 25.3%; most trades on both sides are " +
-      "like for like. No tier wins its trades on the day beyond chance: " +
-      "the edge is in the teams, not the standings.",
+                  "teams build for later in 25.3%; most trades on both sides are " +
+                  "like for like. No tier wins its trades on the day beyond chance:" +
+                  " the edge is in the teams, not the standings.",
     "note": "Each trade has two sides, one per team. A team's tier is its " +
-      "rank that day: live once three games are final, else last " +
-      "season's finish, as the archive recorded it.",
+              "rank that day: live once three games are final, else last " +
+              "season's finish, as the archive recorded it.",
     "picks": [
       {
         "id": "contender",
@@ -40,6 +51,126 @@ export const surfaceWire = {
       {
         "fid": "0017",
         "name": "Atlanta Falcons"
+      },
+      {
+        "fid": "0013",
+        "name": "Baltimore Ravens"
+      },
+      {
+        "fid": "0001",
+        "name": "Buffalo Bills"
+      },
+      {
+        "fid": "0018",
+        "name": "Carolina Panthers"
+      },
+      {
+        "fid": "0021",
+        "name": "Chicago Bears"
+      },
+      {
+        "fid": "0014",
+        "name": "Cincinnati Bengals"
+      },
+      {
+        "fid": "0015",
+        "name": "Cleveland Browns"
+      },
+      {
+        "fid": "0029",
+        "name": "Dallas Cowboys"
+      },
+      {
+        "fid": "0008",
+        "name": "Denver Broncos"
+      },
+      {
+        "fid": "0022",
+        "name": "Detroit Lions"
+      },
+      {
+        "fid": "0023",
+        "name": "Green Bay Packers"
+      },
+      {
+        "fid": "0009",
+        "name": "Houston Texans"
+      },
+      {
+        "fid": "0010",
+        "name": "Indianapolis Colts"
+      },
+      {
+        "fid": "0011",
+        "name": "Jacksonville Jaguars"
+      },
+      {
+        "fid": "0006",
+        "name": "Kansas City Chiefs"
+      },
+      {
+        "fid": "0007",
+        "name": "Las Vegas Raiders"
+      },
+      {
+        "fid": "0005",
+        "name": "Los Angeles Chargers"
+      },
+      {
+        "fid": "0027",
+        "name": "Los Angeles Rams"
+      },
+      {
+        "fid": "0004",
+        "name": "Miami Dolphins"
+      },
+      {
+        "fid": "0024",
+        "name": "Minnesota Vikings"
+      },
+      {
+        "fid": "0002",
+        "name": "New England Patriots"
+      },
+      {
+        "fid": "0019",
+        "name": "New Orleans Saints"
+      },
+      {
+        "fid": "0030",
+        "name": "New York Giants"
+      },
+      {
+        "fid": "0003",
+        "name": "New York Jets"
+      },
+      {
+        "fid": "0031",
+        "name": "Philadelphia Eagles"
+      },
+      {
+        "fid": "0016",
+        "name": "Pittsburgh Steelers"
+      },
+      {
+        "fid": "0026",
+        "name": "San Francisco 49ers"
+      },
+      {
+        "fid": "0028",
+        "name": "Seattle Seahawks"
+      },
+      {
+        "fid": "0020",
+        "name": "Tampa Bay Buccaneers"
+      },
+      {
+        "fid": "0012",
+        "name": "Tennessee Titans"
+      },
+      {
+        "fid": "0032",
+        "name": "Washington Commanders"
       }
     ],
     "cards": [
@@ -63,8 +194,7 @@ export const surfaceWire = {
             "label": "Built for later",
             "p": 0.21623335447051364,
             "tone": "down",
-            "title": "Built for later in 21.6% of these trades, below the league's " +
-              "share beyond chance"
+            "title": "Built for later in 21.6% of these trades, below the league's share beyond chance"
           },
           {
             "id": "swap",
@@ -154,22 +284,20 @@ export const surfaceWire = {
             "label": "Built for later",
             "p": 0.2730627306273063,
             "tone": "up",
-            "title": "Built for later in 27.3% of these trades, above the league's " +
-              "share beyond chance"
+            "title": "Built for later in 27.3% of these trades, above the league's share beyond chance"
           },
           {
             "id": "swap",
             "label": "Like for like",
             "p": 0.4797047970479705,
             "tone": "down",
-            "title": "Like for like in 48.0% of these trades, below the league's share " +
-              "beyond chance"
+            "title": "Like for like in 48.0% of these trades, below the league's share beyond chance"
           }
         ],
         "rows": [
           {
             "label": "On the day",
-            "text": "-0.00 expected wins a trade, within chance of zero",
+            "text": "+0.00 expected wins a trade, within chance of zero",
             "tone": "even",
             "range": {
               "n": 1084,
@@ -246,8 +374,7 @@ export const surfaceWire = {
             "label": "Built for later",
             "p": 0.25326370757180156,
             "tone": "even",
-            "title": "Built for later in 25.3% of these trades, within chance of the " +
-              "league's share"
+            "title": "Built for later in 25.3% of these trades, within chance of the league's share"
           },
           {
             "id": "swap",
@@ -319,10 +446,8 @@ export const surfaceWire = {
       }
     ],
     "trendSay": [
-      "Contenders bought for now in 21.9% of their trades in 2017–21 " +
-        "and 27.0% in 2022–26.",
-      "Contenders built for later in 18.4% of their trades in 2017–21 " +
-        "and 23.8% in 2022–26.",
+      "Contenders bought for now in 21.9% of their trades in 2017–21 and 27.0% in 2022–26.",
+      "Contenders built for later in 18.4% of their trades in 2017–21 and 23.8% in 2022–26.",
       "Every other habit held within chance between the two halves."
     ],
     "trends": {
@@ -345,14 +470,15 @@ export const surfaceWire = {
             {
               "season": 2017,
               "n": 82,
-      "showShares": true,
+              "net": 0.01224390243902438,
               "now": {
                 "k": 20,
                 "n": 82,
                 "p": 0.24390243902439024,
                 "lo": 0.15095313647579134,
                 "hi": 0.33685174157298914,
-                "tone": "even"
+                "tone": "even",
+                "countText": "20 of 82"
               },
               "later": {
                 "k": 15,
@@ -360,21 +486,24 @@ export const surfaceWire = {
                 "p": 0.18292682926829268,
                 "lo": 0.09924747433332365,
                 "hi": 0.2666061842032617,
-                "tone": "even"
+                "tone": "even",
+                "countText": "15 of 82"
               },
-              "net": 0.01224390243902438
+              "showShares": true,
+              "nText": "82"
             },
             {
               "season": 2026,
               "n": 91,
-      "showShares": true,
+              "net": -0.002879120879120877,
               "now": {
                 "k": 28,
                 "n": 91,
                 "p": 0.3076923076923077,
                 "lo": 0.2128628486165403,
                 "hi": 0.4025217667680751,
-                "tone": "even"
+                "tone": "even",
+                "countText": "28 of 91"
               },
               "later": {
                 "k": 24,
@@ -382,15 +511,17 @@ export const surfaceWire = {
                 "p": 0.26373626373626374,
                 "lo": 0.17319699028869684,
                 "hi": 0.35427553718383065,
-                "tone": "even"
+                "tone": "even",
+                "countText": "24 of 91"
               },
-              "net": -0.002879120879120877
+              "showShares": true,
+              "nText": "91"
             }
           ],
           "shift": {
-            "later": {
-              "early": 0.184375,
-              "late": 0.23799359658484526,
+            "now": {
+              "early": 0.21875,
+              "late": 0.2700106723585913,
               "from": [
                 2017,
                 2021
@@ -401,9 +532,9 @@ export const surfaceWire = {
               ],
               "clear": true
             },
-            "now": {
-              "early": 0.21875,
-              "late": 0.2700106723585913,
+            "later": {
+              "early": 0.184375,
+              "late": 0.23799359658484526,
               "from": [
                 2017,
                 2021
@@ -422,14 +553,15 @@ export const surfaceWire = {
             {
               "season": 2017,
               "n": 66,
-      "showShares": true,
+              "net": -0.015545454545454532,
               "now": {
                 "k": 14,
                 "n": 66,
                 "p": 0.21212121212121213,
                 "lo": 0.11349193326983396,
                 "hi": 0.3107504909725903,
-                "tone": "even"
+                "tone": "even",
+                "countText": "14 of 66"
               },
               "later": {
                 "k": 13,
@@ -437,21 +569,24 @@ export const surfaceWire = {
                 "p": 0.19696969696969696,
                 "lo": 0.1010186365015963,
                 "hi": 0.2929207574377976,
-                "tone": "even"
+                "tone": "even",
+                "countText": "13 of 66"
               },
-              "net": -0.015545454545454532
+              "showShares": true,
+              "nText": "66"
             },
             {
               "season": 2026,
               "n": 53,
-      "showShares": true,
+              "net": -0.02032075471698113,
               "now": {
                 "k": 14,
                 "n": 53,
                 "p": 0.2641509433962264,
                 "lo": 0.14545425886013663,
                 "hi": 0.3828476279323162,
-                "tone": "even"
+                "tone": "even",
+                "countText": "14 of 53"
               },
               "later": {
                 "k": 20,
@@ -459,15 +594,17 @@ export const surfaceWire = {
                 "p": 0.37735849056603776,
                 "lo": 0.24685737183121778,
                 "hi": 0.5078596093008577,
-                "tone": "even"
+                "tone": "even",
+                "countText": "20 of 53"
               },
-              "net": -0.02032075471698113
+              "showShares": true,
+              "nText": "53"
             }
           ],
           "shift": {
-            "later": {
-              "early": 0.24731182795698925,
-              "late": 0.2924071082390953,
+            "now": {
+              "early": 0.23010752688172043,
+              "late": 0.26009693053311794,
               "from": [
                 2017,
                 2021
@@ -478,9 +615,9 @@ export const surfaceWire = {
               ],
               "clear": false
             },
-            "now": {
-              "early": 0.23010752688172043,
-              "late": 0.26009693053311794,
+            "later": {
+              "early": 0.24731182795698925,
+              "late": 0.2924071082390953,
               "from": [
                 2017,
                 2021
@@ -499,14 +636,15 @@ export const surfaceWire = {
             {
               "season": 2017,
               "n": 72,
-      "showShares": true,
+              "net": 0.0003055555555555481,
               "now": {
                 "k": 13,
                 "n": 72,
                 "p": 0.18055555555555555,
                 "lo": 0.09170605135641288,
                 "hi": 0.2694050597546982,
-                "tone": "even"
+                "tone": "even",
+                "countText": "13 of 72"
               },
               "later": {
                 "k": 19,
@@ -514,21 +652,24 @@ export const surfaceWire = {
                 "p": 0.2638888888888889,
                 "lo": 0.1620831964867105,
                 "hi": 0.3656945812910673,
-                "tone": "even"
+                "tone": "even",
+                "countText": "19 of 72"
               },
-              "net": 0.0003055555555555481
+              "showShares": true,
+              "nText": "72"
             },
             {
               "season": 2026,
               "n": 70,
-      "showShares": true,
+              "net": 0.019128571428571432,
               "now": {
                 "k": 22,
                 "n": 70,
                 "p": 0.3142857142857143,
                 "lo": 0.20553278329072916,
                 "hi": 0.4230386452806994,
-                "tone": "even"
+                "tone": "even",
+                "countText": "22 of 70"
               },
               "later": {
                 "k": 20,
@@ -536,15 +677,17 @@ export const surfaceWire = {
                 "p": 0.2857142857142857,
                 "lo": 0.17988423327170208,
                 "hi": 0.3915443381568693,
-                "tone": "even"
+                "tone": "even",
+                "countText": "20 of 70"
               },
-              "net": 0.019128571428571432
+              "showShares": true,
+              "nText": "70"
             }
           ],
           "shift": {
-            "later": {
-              "early": 0.2346723044397463,
-              "late": 0.26627218934911245,
+            "now": {
+              "early": 0.20507399577167018,
+              "late": 0.2514792899408284,
               "from": [
                 2017,
                 2021
@@ -555,9 +698,9 @@ export const surfaceWire = {
               ],
               "clear": false
             },
-            "now": {
-              "early": 0.20507399577167018,
-              "late": 0.2514792899408284,
+            "later": {
+              "early": 0.2346723044397463,
+              "late": 0.26627218934911245,
               "from": [
                 2017,
                 2021
@@ -593,9 +736,9 @@ export const surfaceWire = {
           "tone": "even"
         },
         "trades": "520 trades",
-        "title": "Contenders trading with contenders: +0.00 expected wins a trade, " +
-          "within chance of zero on the day; +0.00 wins a trade, within " +
-          "chance of zero since."
+        "title": "Contenders trading with contenders: +0.00 expected wins a trade," +
+                   " within chance of zero on the day; +0.00 wins a trade, within " +
+                   "chance of zero since."
       },
       {
         "other": "hunt",
@@ -618,8 +761,8 @@ export const surfaceWire = {
         },
         "trades": "510 trades",
         "title": "Contenders trading with in the hunt: -0.01 expected wins a " +
-          "trade, within chance of zero on the day; +0.11 wins a trade, " +
-          "within chance of zero since."
+                   "trade, within chance of zero on the day; +0.11 wins a trade, " +
+                   "within chance of zero since."
       },
       {
         "other": "rebuild",
@@ -641,9 +784,9 @@ export const surfaceWire = {
           "tone": "even"
         },
         "trades": "547 trades",
-        "title": "Contenders trading with rebuilding: -0.02 expected wins a trade, " +
-          "within chance of zero on the day; -0.02 wins a trade, within " +
-          "chance of zero since."
+        "title": "Contenders trading with rebuilding: -0.02 expected wins a trade," +
+                   " within chance of zero on the day; -0.02 wins a trade, within " +
+                   "chance of zero since."
       },
       {
         "other": "contender",
@@ -666,8 +809,8 @@ export const surfaceWire = {
         },
         "trades": "510 trades",
         "title": "In the hunt trading with contenders: +0.01 expected wins a " +
-          "trade, within chance of zero on the day; -0.11 wins a trade, " +
-          "within chance of zero since."
+                   "trade, within chance of zero on the day; -0.11 wins a trade, " +
+                   "within chance of zero since."
       },
       {
         "other": "hunt",
@@ -690,8 +833,8 @@ export const surfaceWire = {
         },
         "trades": "304 trades",
         "title": "In the hunt trading with in the hunt: +0.00 expected wins a " +
-          "trade, within chance of zero on the day; +0.00 wins a trade, " +
-          "within chance of zero since."
+                   "trade, within chance of zero on the day; +0.00 wins a trade, " +
+                   "within chance of zero since."
       },
       {
         "other": "rebuild",
@@ -714,8 +857,8 @@ export const surfaceWire = {
         },
         "trades": "270 trades",
         "title": "In the hunt trading with rebuilding: -0.02 expected wins a " +
-          "trade, within chance of zero on the day; -0.10 wins a trade, " +
-          "within chance of zero since."
+                   "trade, within chance of zero on the day; -0.10 wins a trade, " +
+                   "within chance of zero since."
       },
       {
         "other": "contender",
@@ -737,9 +880,9 @@ export const surfaceWire = {
           "tone": "even"
         },
         "trades": "547 trades",
-        "title": "Rebuilding trading with contenders: +0.02 expected wins a trade, " +
-          "within chance of zero on the day; +0.02 wins a trade, within " +
-          "chance of zero since."
+        "title": "Rebuilding trading with contenders: +0.02 expected wins a trade," +
+                   " within chance of zero on the day; +0.02 wins a trade, within " +
+                   "chance of zero since."
       },
       {
         "other": "hunt",
@@ -762,8 +905,8 @@ export const surfaceWire = {
         },
         "trades": "270 trades",
         "title": "Rebuilding trading with in the hunt: +0.02 expected wins a " +
-          "trade, within chance of zero on the day; +0.10 wins a trade, " +
-          "within chance of zero since."
+                   "trade, within chance of zero on the day; +0.10 wins a trade, " +
+                   "within chance of zero since."
       },
       {
         "other": "rebuild",
@@ -785,13 +928,15 @@ export const surfaceWire = {
           "tone": "even"
         },
         "trades": "332 trades",
-        "title": "Rebuilding trading with rebuilding: +0.00 expected wins a trade, " +
-          "within chance of zero on the day; +0.00 wins a trade, within " +
-          "chance of zero since."
+        "title": "Rebuilding trading with rebuilding: +0.00 expected wins a trade," +
+                   " within chance of zero on the day; +0.00 wins a trade, within " +
+                   "chance of zero since."
       }
     ],
     "rows": [
       {
+        "nText": "526",
+        "partnersText": "29",
         "fid": "0032",
         "name": "Washington Commanders",
         "n": 526,
@@ -808,7 +953,8 @@ export const surfaceWire = {
           "lo": 0.20847935514603883,
           "hi": 0.2820149414319079,
           "base": 0.24356955380577427,
-          "tone": "even"
+          "tone": "even",
+          "countText": "129 of 526"
         },
         "forLater": {
           "k": 112,
@@ -817,7 +963,8 @@ export const surfaceWire = {
           "lo": 0.17794237330444235,
           "hi": 0.24791314000354242,
           "base": 0.24356955380577427,
-          "tone": "even"
+          "tone": "even",
+          "countText": "112 of 526"
         },
         "day": {
           "n": 526,
@@ -861,6 +1008,8 @@ export const surfaceWire = {
         "partnerTrades": "93 trades"
       },
       {
+        "nText": "140",
+        "partnersText": "30",
         "fid": "0025",
         "name": "Arizona Cardinals",
         "n": 140,
@@ -877,7 +1026,8 @@ export const surfaceWire = {
           "lo": 0.15901282018971927,
           "hi": 0.2981300369531379,
           "base": 0.24356955380577427,
-          "tone": "even"
+          "tone": "even",
+          "countText": "32 of 140"
         },
         "forLater": {
           "k": 39,
@@ -886,7 +1036,8 @@ export const surfaceWire = {
           "lo": 0.20431107575783092,
           "hi": 0.35283178138502624,
           "base": 0.24356955380577427,
-          "tone": "even"
+          "tone": "even",
+          "countText": "39 of 140"
         },
         "day": {
           "n": 140,
@@ -932,9 +1083,7 @@ export const surfaceWire = {
     ]
   },
   "provenance": {
-    "source": "Lab compiled facts " +
-      "sha256:6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3" +
-      "748830",
+    "source": "Lab compiled facts sha256:6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
     "freshness": {
       "state": "stale",
       "fetchedAt": "2026-10-06T15:57:20+00:00",
@@ -947,40 +1096,55 @@ export const surfaceWire = {
   "count": 3810,
   "threshold": 40,
   "baseline": "The league's own posture and window shares in the same seasons; " +
-    "a share is coloured only where it clears chance",
+                "a share is coloured only where it clears chance",
   "cutoff": "2026-10-06T01:42:57+00:00",
   "method": "both sides of every valued trade, cut by standing, window and " +
-    "posture; 1.96 standard-error ranges",
+              "posture; 1.96 standard-error ranges",
   "inputSHA": "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
   "buildStamp": "dev ",
   "howCounted": "A team's tier is its rank on the day of the trade: its live " +
-    "standing once three games were final, otherwise the previous " +
-    "season's finish, exactly as the frozen archive recorded it. " +
-    "Contenders are ranked 1 to 10, teams in the hunt 11 to 22, " +
-    "rebuilding teams 23 to 32; the standings run through the archive " +
-    "cutoff 2026-10-06, never today's live table. What a trade did is " +
-    "read from each side's flow: bought for now when it took in more " +
-    "player value than it sent and sent more pick value than it took, " +
-    "built for later the reverse, like for like otherwise. Value is " +
-    "forecast wins on the day; a flow under 0.05 forecast wins counts " +
-    "as even. On the day is the expected wins a side gained at the " +
-    "league's own prices; since is the wins its assets actually " +
-    "delivered against the other side's, for trades with two or more " +
-    "played seasons. Every range is the 95% likely range of the " +
-    "average per trade; a range touching zero is within chance, not a " +
-    "finding."
+                  "standing once three games were final, otherwise the previous " +
+                  "season's finish, exactly as the frozen archive recorded it. " +
+                  "Contenders are ranked 1 to 10, teams in the hunt 11 to 22, " +
+                  "rebuilding teams 23 to 32; the standings run through the archive" +
+                  " cutoff 2026-10-06, never today's live table. What a trade did " +
+                  "is read from each side's flow: bought for now when it took in " +
+                  "more player value than it sent and sent more pick value than it " +
+                  "took, built for later the reverse, like for like otherwise. " +
+                  "Value is forecast wins on the day; a flow under 0.05 forecast " +
+                  "wins counts as even. On the day is the expected wins a side " +
+                  "gained at the league's own prices; since is the wins its assets " +
+                  "actually delivered against the other side's, for trades with two" +
+                  " or more played seasons. Every range is the 95% likely range of " +
+                  "the average per trade; a range touching zero is within chance, " +
+                  "not a finding."
 };
 export const teamWire = {
   "value": {
-    "flowScale": 23.68099999999999,
+    "words": {
+      "day": "On the day",
+      "since": "Since",
+      "legend": "Shares: ↑ (green) is above the league’s share beyond chance; ↓ " +
+                  "(red) is below it beyond chance. Unmarked shares are within " +
+                  "chance. Red ranges are losses beyond chance; green ranges are " +
+                  "gains beyond chance.",
+      "up": "↑",
+      "down": "↓"
+    },
+    "countText": "166",
     "fid": "0001",
     "name": "Buffalo Bills",
     "asOf": "Standings as of the archive cutoff 2026-10-06, not today's live standings.",
+    "flowScale": 23.68099999999999,
     "sides": 166,
     "empty": false,
     "note": "",
     "seasons": [
       {
+        "nowText": "0",
+        "laterText": "2",
+        "swapText": "0",
+        "againstText": "0",
         "season": 2017,
         "n": 2,
         "now": 0,
@@ -988,13 +1152,17 @@ export const teamWire = {
         "swap": 0,
         "against": 0,
         "flagged": false,
-        "mostlyText": "in the hunt",
+        "mostlyText": "In the hunt",
         "net": -0.21000000000000002,
         "finish": 27,
         "label": "2017 · finished 27",
         "title": "2017: 2 trade sides; 0 for now, 2 for later, 0 like for like; finished 27"
       },
       {
+        "nowText": "19",
+        "laterText": "10",
+        "swapText": "27",
+        "againstText": "18",
         "season": 2023,
         "n": 56,
         "now": 19,
@@ -1002,18 +1170,19 @@ export const teamWire = {
         "swap": 27,
         "against": 18,
         "flagged": true,
-        "mostlyText": "rebuilding",
+        "mostlyText": "Rebuilding",
         "net": 0.06999999999999978,
         "finish": 3,
         "label": "2023 · finished 3",
         "title": "2023: 56 trade sides; 19 for now, 10 for later, 27 like for " +
-          "like; finished 3. 18 went against its standing that day."
+                   "like; finished 3. 18 went against its standing that day."
       }
     ],
     "seasonSay": "166 trade sides, 18.4 a season. Bars: bought for now, built for " +
-      "later, like for like. An outlined season is one where at least a " +
-      "third of its trades went against the team's standing that day: " +
-      "buying for now while rebuilding, or building while contending.",
+                   "later, like for like. An outlined season is one where at least " +
+                   "two trades and at least 30% of its trades went against the " +
+                   "team's standing that day: buying for now while rebuilding, or " +
+                   "building while contending.",
     "posture": [
       {
         "id": "now",
@@ -1055,10 +1224,118 @@ export const teamWire = {
         "inW": 1.739,
         "outW": 0.276,
         "text": "1 out · 6 in"
+      },
+      {
+        "kind": "DB",
+        "name": "Defensive backs",
+        "inN": 44,
+        "outN": 42,
+        "inW": 9.175999999999998,
+        "outW": 7.961999999999999,
+        "text": "42 out · 44 in"
+      },
+      {
+        "kind": "LB",
+        "name": "Linebackers",
+        "inN": 36,
+        "outN": 32,
+        "inW": 16.561999999999998,
+        "outW": 15.505,
+        "text": "32 out · 36 in"
+      },
+      {
+        "kind": "pick1:later",
+        "name": "Later-draft 1sts",
+        "inN": 11,
+        "outN": 11,
+        "inW": 7.628,
+        "outW": 6.789999999999999,
+        "text": "11 out · 11 in"
+      },
+      {
+        "kind": "DL",
+        "name": "Defensive linemen",
+        "inN": 41,
+        "outN": 39,
+        "inW": 9.425,
+        "outW": 9.037999999999997,
+        "text": "39 out · 41 in"
+      },
+      {
+        "kind": "pick2:later",
+        "name": "Later-draft 2nds",
+        "inN": 17,
+        "outN": 17,
+        "inW": 3.6060000000000008,
+        "outW": 3.4290000000000007,
+        "text": "17 out · 17 in"
+      },
+      {
+        "kind": "pick3:later",
+        "name": "Later-draft 3rds and later",
+        "inN": 44,
+        "outN": 48,
+        "inW": 3.0449999999999995,
+        "outW": 2.981999999999999,
+        "text": "48 out · 44 in"
+      },
+      {
+        "kind": "QB",
+        "name": "Quarterbacks",
+        "inN": 13,
+        "outN": 11,
+        "inW": 7.09,
+        "outW": 7.605000000000001,
+        "text": "11 out · 13 in"
+      },
+      {
+        "kind": "RB",
+        "name": "Running backs",
+        "inN": 24,
+        "outN": 32,
+        "inW": 15.572,
+        "outW": 16.356,
+        "text": "32 out · 24 in"
+      },
+      {
+        "kind": "pick3:next",
+        "name": "Next-draft 3rds and later",
+        "inN": 50,
+        "outN": 53,
+        "inW": 5.354,
+        "outW": 6.399000000000002,
+        "text": "53 out · 50 in"
+      },
+      {
+        "kind": "TE",
+        "name": "Tight ends",
+        "inN": 12,
+        "outN": 12,
+        "inW": 2.842,
+        "outW": 3.9530000000000003,
+        "text": "12 out · 12 in"
+      },
+      {
+        "kind": "pick2:next",
+        "name": "Next-draft 2nds",
+        "inN": 22,
+        "outN": 25,
+        "inW": 8.234000000000002,
+        "outW": 9.479,
+        "text": "25 out · 22 in"
+      },
+      {
+        "kind": "pick1:next",
+        "name": "Next-draft 1sts",
+        "inN": 21,
+        "outN": 22,
+        "inW": 21.617000000000004,
+        "outW": 23.040999999999993,
+        "text": "22 out · 21 in"
       }
     ],
-    "kindSay": "Bars are forecast wins sent and taken in for each kind of asset; " +
-      "the figures count the assets.",
+    "kindSay": "Bars are forecast wins sent and taken in for each kind of asset;" +
+                 " the figures count the assets.",
     "partners": [
       {
         "fid": "0030",
@@ -1089,6 +1366,156 @@ export const teamWire = {
         },
         "tradesText": "18 trades",
         "netText": "+0.90 on the day"
+      },
+      {
+        "fid": "0014",
+        "name": "Cincinnati Bengals",
+        "n": 11,
+        "net": {
+          "n": 11,
+          "mean": 0.09899999999999999,
+          "lo": -0.0795969614726766,
+          "hi": 0.2775969614726766,
+          "total": 1.089,
+          "tone": "even"
+        },
+        "tradesText": "11 trades",
+        "netText": "+1.09 on the day"
+      },
+      {
+        "fid": "0007",
+        "name": "Las Vegas Raiders",
+        "n": 11,
+        "net": {
+          "n": 11,
+          "mean": -0.16336363636363635,
+          "lo": -0.4565855287780234,
+          "hi": 0.12985825605075071,
+          "total": -1.797,
+          "tone": "even"
+        },
+        "tradesText": "11 trades",
+        "netText": "-1.80 on the day"
+      },
+      {
+        "fid": "0017",
+        "name": "Atlanta Falcons",
+        "n": 10,
+        "net": {
+          "n": 10,
+          "mean": 0.043900000000000015,
+          "lo": -0.30031707892032966,
+          "hi": 0.38811707892032965,
+          "total": 0.43900000000000017,
+          "tone": "even"
+        },
+        "tradesText": "10 trades",
+        "netText": "+0.44 on the day"
+      },
+      {
+        "fid": "0016",
+        "name": "Pittsburgh Steelers",
+        "n": 9,
+        "net": {
+          "n": 9,
+          "mean": 0.3448888888888889,
+          "lo": -0.1624412133833939,
+          "hi": 0.8522189911611717,
+          "total": 3.104,
+          "tone": "even"
+        },
+        "tradesText": "9 trades",
+        "netText": "+3.10 on the day"
+      },
+      {
+        "fid": "0025",
+        "name": "Arizona Cardinals",
+        "n": 9,
+        "net": {
+          "n": 9,
+          "mean": -0.006222222222222228,
+          "lo": -0.12661552149025448,
+          "hi": 0.11417107704581003,
+          "total": -0.05600000000000005,
+          "tone": "even"
+        },
+        "tradesText": "9 trades",
+        "netText": "-0.06 on the day"
+      },
+      {
+        "fid": "0008",
+        "name": "Denver Broncos",
+        "n": 8,
+        "net": {
+          "n": 8,
+          "mean": -0.06375,
+          "lo": -0.23058772744796063,
+          "hi": 0.10308772744796063,
+          "total": -0.51,
+          "tone": "even"
+        },
+        "tradesText": "8 trades",
+        "netText": "-0.51 on the day"
+      },
+      {
+        "fid": "0009",
+        "name": "Houston Texans",
+        "n": 8,
+        "net": {
+          "n": 8,
+          "mean": -0.16587499999999997,
+          "lo": -0.4061818930035091,
+          "hi": 0.07443189300350916,
+          "total": -1.3269999999999997,
+          "tone": "even"
+        },
+        "tradesText": "8 trades",
+        "netText": "-1.33 on the day"
+      },
+      {
+        "fid": "0020",
+        "name": "Tampa Bay Buccaneers",
+        "n": 7,
+        "net": {
+          "n": 7,
+          "mean": 0.003999999999999991,
+          "lo": -0.12116991757873243,
+          "hi": 0.12916991757873242,
+          "total": 0.02799999999999994,
+          "tone": "even"
+        },
+        "tradesText": "7 trades",
+        "netText": "+0.03 on the day"
+      },
+      {
+        "fid": "0003",
+        "name": "New York Jets",
+        "n": 6,
+        "net": {
+          "n": 6,
+          "mean": 0.08366666666666668,
+          "lo": -0.13041083846744234,
+          "hi": 0.29774417180077567,
+          "total": 0.5020000000000001,
+          "tone": "even"
+        },
+        "tradesText": "6 trades",
+        "netText": "+0.50 on the day"
+      },
+      {
+        "fid": "0021",
+        "name": "Chicago Bears",
+        "n": 6,
+        "net": {
+          "n": 6,
+          "mean": -0.15333333333333332,
+          "lo": -0.4922594692653056,
+          "hi": 0.18559280259863897,
+          "total": -0.9199999999999999,
+          "tone": "even"
+        },
+        "tradesText": "6 trades",
+        "netText": "-0.92 on the day"
       }
     ],
     "partnersSay": "And 14 more partners in view.",
@@ -1224,7 +1651,7 @@ export const teamWire = {
           "total": -1.2699999999999998,
           "tone": "even"
         },
-        "label": "As contender (84)",
+        "label": "As Contenders (84)",
         "text": "-0.02 expected wins a trade, within chance of zero"
       },
       {
@@ -1238,7 +1665,7 @@ export const teamWire = {
           "total": 0.506,
           "tone": "even"
         },
-        "label": "As in the hunt (10)",
+        "label": "As In the hunt (10)",
         "text": "+0.05 expected wins a trade, within chance of zero"
       },
       {
@@ -1252,7 +1679,7 @@ export const teamWire = {
           "total": 1.39,
           "tone": "even"
         },
-        "label": "As rebuilding (72)",
+        "label": "As Rebuilding (72)",
         "text": "+0.02 expected wins a trade, within chance of zero"
       }
     ],
@@ -1276,9 +1703,7 @@ export const teamWire = {
     "sinceText": "+2.94 wins since, over 55 trades with 2+ seasons played"
   },
   "provenance": {
-    "source": "Lab compiled facts " +
-      "sha256:6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3" +
-      "748830",
+    "source": "Lab compiled facts sha256:6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
     "freshness": {
       "state": "stale",
       "fetchedAt": "2026-10-06T15:57:20+00:00",
@@ -1291,57 +1716,68 @@ export const teamWire = {
   "count": 166,
   "threshold": 1,
   "baseline": "The league's own posture and window shares in the same seasons; " +
-    "a share is coloured only where it clears chance",
+                "a share is coloured only where it clears chance",
   "cutoff": "2026-10-06T01:42:57+00:00",
-  "method": "this team's sides of the valued trades against the league in the " +
-    "same seasons; 1.96 standard-error ranges",
+  "method": "this team's sides of the valued trades against the league in the" +
+              " same seasons; 1.96 standard-error ranges",
   "inputSHA": "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
   "buildStamp": "dev ",
   "howCounted": "A team's tier is its rank on the day of the trade: its live " +
-    "standing once three games were final, otherwise the previous " +
-    "season's finish, exactly as the frozen archive recorded it. " +
-    "Contenders are ranked 1 to 10, teams in the hunt 11 to 22, " +
-    "rebuilding teams 23 to 32; the standings run through the archive " +
-    "cutoff 2026-10-06, never today's live table. What a trade did is " +
-    "read from each side's flow: bought for now when it took in more " +
-    "player value than it sent and sent more pick value than it took, " +
-    "built for later the reverse, like for like otherwise. Value is " +
-    "forecast wins on the day; a flow under 0.05 forecast wins counts " +
-    "as even. On the day is the expected wins a side gained at the " +
-    "league's own prices; since is the wins its assets actually " +
-    "delivered against the other side's, for trades with two or more " +
-    "played seasons. Every range is the 95% likely range of the " +
-    "average per trade; a range touching zero is within chance, not a " +
-    "finding."
+                  "standing once three games were final, otherwise the previous " +
+                  "season's finish, exactly as the frozen archive recorded it. " +
+                  "Contenders are ranked 1 to 10, teams in the hunt 11 to 22, " +
+                  "rebuilding teams 23 to 32; the standings run through the archive" +
+                  " cutoff 2026-10-06, never today's live table. What a trade did " +
+                  "is read from each side's flow: bought for now when it took in " +
+                  "more player value than it sent and sent more pick value than it " +
+                  "took, built for later the reverse, like for like otherwise. " +
+                  "Value is forecast wins on the day; a flow under 0.05 forecast " +
+                  "wins counts as even. On the day is the expected wins a side " +
+                  "gained at the league's own prices; since is the wins its assets " +
+                  "actually delivered against the other side's, for trades with two" +
+                  " or more played seasons. Every range is the 95% likely range of " +
+                  "the average per trade; a range touching zero is within chance, " +
+                  "not a finding."
 };
 export const thinWire = {
   "value": {
-    "summary": "6 trade sides of valued trades, 2017–2017. On the day is " +
-      "expected wins gained at the league's own prices; since is wins " +
-      "actually delivered, for trades with two or more seasons played.",
+    "words": {
+      "day": "On the day",
+      "since": "Since",
+      "legend": "Shares: ↑ (green) is above the league’s share beyond chance; ↓ " +
+                  "(red) is below it beyond chance. Unmarked shares are within " +
+                  "chance. Red ranges are losses beyond chance; green ranges are " +
+                  "gains beyond chance.",
+      "up": "↑",
+      "down": "↓"
+    },
+    "countText": "1",
+    "summary": "1 trade side of valued trades, 2017–2017. On the day is expected" +
+                 " wins gained at the league's own prices; since is wins actually " +
+                 "delivered, for trades with two or more seasons played.",
     "asOf": "Standings as of the archive cutoff 2026-10-06, not today's live standings.",
     "headline": "",
     "note": "Each trade has two sides, one per team. A team's tier is its " +
-      "rank that day: live once three games are final, else last " +
-      "season's finish, as the archive recorded it.",
+              "rank that day: live once three games are final, else last " +
+              "season's finish, as the archive recorded it.",
     "picks": [
       {
         "id": "contender",
         "label": "Contenders",
         "hint": "Ranked 1 to 10 on the day of the trade",
-        "count": 9
+        "count": 0
       },
       {
         "id": "hunt",
         "label": "In the hunt",
         "hint": "Ranked 11 to 22 on the day of the trade",
-        "count": 6
+        "count": 1
       },
       {
         "id": "rebuild",
         "label": "Rebuilding",
         "hint": "Ranked 23 to 32 on the day of the trade",
-        "count": 7
+        "count": 1
       }
     ],
     "teams": [
@@ -1484,9 +1920,7 @@ export const thinWire = {
     "rows": null
   },
   "provenance": {
-    "source": "Lab compiled facts " +
-      "sha256:6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3" +
-      "748830",
+    "source": "Lab compiled facts sha256:6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
     "freshness": {
       "state": "stale",
       "fetchedAt": "2026-10-06T15:57:20+00:00",
@@ -1496,45 +1930,60 @@ export const thinWire = {
   },
   "status": "thin",
   "absenceReason": "Fewer than 40 trade sides in view; widen the standing, time of " +
-    "year or what the trades did",
-  "count": 6,
+                     "year or what the trades did",
+  "count": 1,
   "threshold": 40,
   "baseline": "The league's own posture and window shares in the same seasons; " +
-    "a share is coloured only where it clears chance",
+                "a share is coloured only where it clears chance",
   "cutoff": "2026-10-06T01:42:57+00:00",
   "method": "both sides of every valued trade, cut by standing, window and " +
-    "posture; 1.96 standard-error ranges",
+              "posture; 1.96 standard-error ranges",
   "inputSHA": "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
   "buildStamp": "dev ",
   "howCounted": "A team's tier is its rank on the day of the trade: its live " +
-    "standing once three games were final, otherwise the previous " +
-    "season's finish, exactly as the frozen archive recorded it. " +
-    "Contenders are ranked 1 to 10, teams in the hunt 11 to 22, " +
-    "rebuilding teams 23 to 32; the standings run through the archive " +
-    "cutoff 2026-10-06, never today's live table. What a trade did is " +
-    "read from each side's flow: bought for now when it took in more " +
-    "player value than it sent and sent more pick value than it took, " +
-    "built for later the reverse, like for like otherwise. Value is " +
-    "forecast wins on the day; a flow under 0.05 forecast wins counts " +
-    "as even. On the day is the expected wins a side gained at the " +
-    "league's own prices; since is the wins its assets actually " +
-    "delivered against the other side's, for trades with two or more " +
-    "played seasons. Every range is the 95% likely range of the " +
-    "average per trade; a range touching zero is within chance, not a " +
-    "finding."
+                  "standing once three games were final, otherwise the previous " +
+                  "season's finish, exactly as the frozen archive recorded it. " +
+                  "Contenders are ranked 1 to 10, teams in the hunt 11 to 22, " +
+                  "rebuilding teams 23 to 32; the standings run through the archive" +
+                  " cutoff 2026-10-06, never today's live table. What a trade did " +
+                  "is read from each side's flow: bought for now when it took in " +
+                  "more player value than it sent and sent more pick value than it " +
+                  "took, built for later the reverse, like for like otherwise. " +
+                  "Value is forecast wins on the day; a flow under 0.05 forecast " +
+                  "wins counts as even. On the day is the expected wins a side " +
+                  "gained at the league's own prices; since is the wins its assets " +
+                  "actually delivered against the other side's, for trades with two" +
+                  " or more played seasons. Every range is the 95% likely range of " +
+                  "the average per trade; a range touching zero is within chance, " +
+                  "not a finding."
 };
 export const emptyWire = {
   "value": {
-    "flowScale": 0.01,
-    "fid": "0001",
-    "name": "Buffalo Bills",
+    "words": {
+      "day": "On the day",
+      "since": "Since",
+      "legend": "Shares: ↑ (green) is above the league’s share beyond chance; ↓ " +
+                  "(red) is below it beyond chance. Unmarked shares are within " +
+                  "chance. Red ranges are losses beyond chance; green ranges are " +
+                  "gains beyond chance.",
+      "up": "↑",
+      "down": "↓"
+    },
+    "countText": "0",
+    "fid": "0002",
+    "name": "New England Patriots",
     "asOf": "Standings as of the archive cutoff 2026-10-06, not today's live standings.",
+    "flowScale": 0.01,
     "sides": 0,
     "empty": true,
     "note": "This team shows no valued trades in view. Widen the seasons, " +
-      "time of year or what the trades did.",
+              "time of year or what the trades did.",
     "seasons": [
       {
+        "nowText": "0",
+        "laterText": "0",
+        "swapText": "0",
+        "againstText": "0",
         "season": 2017,
         "n": 0,
         "now": 0,
@@ -1544,15 +1993,16 @@ export const emptyWire = {
         "flagged": false,
         "mostlyText": "",
         "net": null,
-        "finish": 27,
-        "label": "2017 · finished 27",
-        "title": "2017: 0 trade sides; 0 for now, 0 for later, 0 like for like; finished 27"
+        "finish": 12,
+        "label": "2017 · finished 12",
+        "title": "2017: 0 trade sides; 0 for now, 0 for later, 0 like for like; finished 12"
       }
     ],
     "seasonSay": "0 trade sides, 0.0 a season. Bars: bought for now, built for " +
-      "later, like for like. An outlined season is one where at least a " +
-      "third of its trades went against the team's standing that day: " +
-      "buying for now while rebuilding, or building while contending.",
+                   "later, like for like. An outlined season is one where at least " +
+                   "two trades and at least 30% of its trades went against the " +
+                   "team's standing that day: buying for now while rebuilding, or " +
+                   "building while contending.",
     "posture": [
       {
         "id": "now",
@@ -1577,8 +2027,8 @@ export const emptyWire = {
       }
     ],
     "kinds": [],
-    "kindSay": "Bars are forecast wins sent and taken in for each kind of asset; " +
-      "the figures count the assets.",
+    "kindSay": "Bars are forecast wins sent and taken in for each kind of asset;" +
+                 " the figures count the assets.",
     "partners": [],
     "partnersSay": "No partners in view.",
     "behaviour": {
@@ -1675,7 +2125,7 @@ export const emptyWire = {
           "hi": null,
           "tone": "even"
         },
-        "label": "As contender (0)",
+        "label": "As Contenders (0)",
         "text": "—"
       },
       {
@@ -1688,7 +2138,7 @@ export const emptyWire = {
           "hi": null,
           "tone": "even"
         },
-        "label": "As in the hunt (0)",
+        "label": "As In the hunt (0)",
         "text": "—"
       },
       {
@@ -1701,7 +2151,7 @@ export const emptyWire = {
           "hi": null,
           "tone": "even"
         },
-        "label": "As rebuilding (0)",
+        "label": "As Rebuilding (0)",
         "text": "—"
       }
     ],
@@ -1723,9 +2173,7 @@ export const emptyWire = {
     "sinceText": ""
   },
   "provenance": {
-    "source": "Lab compiled facts " +
-      "sha256:6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3" +
-      "748830",
+    "source": "Lab compiled facts sha256:6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
     "freshness": {
       "state": "stale",
       "fetchedAt": "2026-10-06T15:57:20+00:00",
@@ -1738,26 +2186,26 @@ export const emptyWire = {
   "count": 0,
   "threshold": 1,
   "baseline": "The league's own posture and window shares in the same seasons; " +
-    "a share is coloured only where it clears chance",
+                "a share is coloured only where it clears chance",
   "cutoff": "2026-10-06T01:42:57+00:00",
-  "method": "this team's sides of the valued trades against the league in the " +
-    "same seasons; 1.96 standard-error ranges",
+  "method": "this team's sides of the valued trades against the league in the" +
+              " same seasons; 1.96 standard-error ranges",
   "inputSHA": "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
   "buildStamp": "dev ",
   "howCounted": "A team's tier is its rank on the day of the trade: its live " +
-    "standing once three games were final, otherwise the previous " +
-    "season's finish, exactly as the frozen archive recorded it. " +
-    "Contenders are ranked 1 to 10, teams in the hunt 11 to 22, " +
-    "rebuilding teams 23 to 32; the standings run through the archive " +
-    "cutoff 2026-10-06, never today's live table. What a trade did is " +
-    "read from each side's flow: bought for now when it took in more " +
-    "player value than it sent and sent more pick value than it took, " +
-    "built for later the reverse, like for like otherwise. Value is " +
-    "forecast wins on the day; a flow under 0.05 forecast wins counts " +
-    "as even. On the day is the expected wins a side gained at the " +
-    "league's own prices; since is the wins its assets actually " +
-    "delivered against the other side's, for trades with two or more " +
-    "played seasons. Every range is the 95% likely range of the " +
-    "average per trade; a range touching zero is within chance, not a " +
-    "finding."
+                  "standing once three games were final, otherwise the previous " +
+                  "season's finish, exactly as the frozen archive recorded it. " +
+                  "Contenders are ranked 1 to 10, teams in the hunt 11 to 22, " +
+                  "rebuilding teams 23 to 32; the standings run through the archive" +
+                  " cutoff 2026-10-06, never today's live table. What a trade did " +
+                  "is read from each side's flow: bought for now when it took in " +
+                  "more player value than it sent and sent more pick value than it " +
+                  "took, built for later the reverse, like for like otherwise. " +
+                  "Value is forecast wins on the day; a flow under 0.05 forecast " +
+                  "wins counts as even. On the day is the expected wins a side " +
+                  "gained at the league's own prices; since is the wins its assets " +
+                  "actually delivered against the other side's, for trades with two" +
+                  " or more played seasons. Every range is the 95% likely range of " +
+                  "the average per trade; a range touching zero is within chance, " +
+                  "not a finding."
 };
