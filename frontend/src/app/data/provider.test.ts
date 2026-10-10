@@ -17,14 +17,18 @@ describe('provider selection', () => {
     const provider = selectProvider();
     expect(provider).toBeInstanceOf(FixtureProvider);
     const parsed = await provider.snapshot();
-    for (const section of Object.values(parsed))
-      expect(section.provenance.kind).toBe('fixture');
+    for (const key of ['league', 'franchises', 'rosters', 'players'] as const)
+      expect(parsed[key].provenance.kind).toBe('fixture');
+    for (const feed of Object.values(parsed.eligibility.feeds))
+      expect(feed.kind).toBe('fixture');
   });
 
   it('chooses live when window.go exists and calls the binding', async () => {
     const payload = JSON.parse(JSON.stringify(fixture));
-    for (const section of Object.values(payload) as { provenance: { kind: string } }[])
-      section.provenance.kind = 'live';
+    for (const key of ['league', 'franchises', 'rosters', 'players'] as const)
+      payload[key].provenance.kind = 'live';
+    for (const feed of Object.values(payload.eligibility.feeds) as { kind: string }[])
+      feed.kind = 'live';
     const call = vi.fn().mockResolvedValue(payload);
     vi.stubGlobal('window', { go: { main: { App: { TargetSnapshot: call } } } });
     const provider = selectProvider();
@@ -42,10 +46,15 @@ describe('provider selection', () => {
           : vi.fn().mockResolvedValue({ players: [] });
       vi.stubGlobal('window', { go: { main: { App: { TargetSnapshot: call } } } });
       const parsed = await selectProvider().snapshot();
-      for (const section of Object.values(parsed)) {
-        expect(section.provenance.kind).toBe('live');
-        expect(section.provenance.freshness.state).toBe('fail');
+      for (const key of ['league', 'franchises', 'rosters', 'players'] as const) {
+        expect(parsed[key].provenance.kind).toBe('live');
+        expect(parsed[key].provenance.freshness.state).toBe('fail');
       }
+      for (const feed of Object.values(parsed.eligibility.feeds)) {
+        expect(feed.kind).toBe('live');
+        expect(feed.freshness.state).toBe('fail');
+      }
+      expect(Object.keys(parsed.eligibility.players)).toEqual([]);
       expect(parsed.players.value).toEqual([]);
       expect(parsed.franchises.value).toEqual([]);
       expect(parsed.league.value).toEqual({ season: 0, franchiseCount: 0 });

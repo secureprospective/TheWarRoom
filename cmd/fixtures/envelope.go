@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
@@ -64,15 +65,36 @@ func demo(snap snapshot.Snapshot) (envelopeDemo, error) {
 	return envelopeDemo{Kind: "fixture", Receipt: e.Receipt()}, nil
 }
 
+// demoPlayer picks the player whose IR plan the held rules allow: the demo walks draft →
+// ready → handed off → landed, and a Ready plan now requires an eligible (or not-checked)
+// IR verdict. A not-checked player is the fallback, so a fixture built from stale feeds
+// still demonstrates the lifecycle MFL, not the app, decides.
 func demoPlayer(snap snapshot.Snapshot) (string, playerid.PlayerID, error) {
+	fallbackID, fallbackPid, haveFallback := "", playerid.PlayerID{}, false
 	for _, r := range snap.Rosters.Value {
 		for _, p := range r.Players {
-			if p.RosterStatus != domain.RosterIR {
+			if p.RosterStatus == domain.RosterIR {
+				continue
+			}
+			verdicts, ok := snap.Eligibility.Players[p.ID.String()]
+			if !ok {
+				continue
+			}
+			switch verdicts.IR.Verdict {
+			case eligibility.Eligible:
 				return r.FranchiseID, p.ID, nil
+			case eligibility.Unknown:
+				if !haveFallback {
+					fallbackID, fallbackPid, haveFallback = r.FranchiseID, p.ID, true
+				}
+			case eligibility.Ineligible:
 			}
 		}
 	}
-	return "", playerid.PlayerID{}, fmt.Errorf("fixtures: no rostered non-IR player")
+	if haveFallback {
+		return fallbackID, fallbackPid, nil
+	}
+	return "", playerid.PlayerID{}, fmt.Errorf("fixtures: no rostered player the IR rules allow or leave unchecked")
 }
 
 func irSnapshot(snap snapshot.Snapshot, fid string, pid playerid.PlayerID, at time.Time) snapshot.Snapshot {

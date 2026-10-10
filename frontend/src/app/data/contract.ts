@@ -24,6 +24,9 @@ export const POSITIONS = [
 ] as const;
 export const CONTRACT_STATUSES = ['UFA', 'RFA', 'FT1', 'FT2', 'FLAG'] as const;
 export const ROSTER_STATUSES = ['ROSTER', 'IR', 'TAXI_SQUAD'] as const;
+export const ELIGIBILITY_VERDICTS = ['eligible', 'ineligible', 'unknown'] as const;
+export const ELIGIBILITY_DIRECTIONS = ['to_ir', 'off_ir', 'to_taxi', 'off_taxi'] as const;
+export const ELIGIBILITY_SOURCES = ['injuries', 'players', 'rosters'] as const;
 
 export type Position = (typeof POSITIONS)[number];
 export type Freshness = { state: FreshnessState; fetchedAt: string; note: string };
@@ -51,11 +54,23 @@ export type Player = {
   birthdate?: number;
   isRookie?: boolean;
 };
+export type EligibilityDecision = {
+  direction: (typeof ELIGIBILITY_DIRECTIONS)[number];
+  verdict: (typeof ELIGIBILITY_VERDICTS)[number];
+  reason?: string;
+  source: (typeof ELIGIBILITY_SOURCES)[number];
+};
+export type PlayerEligibility = { ir: EligibilityDecision; taxi: EligibilityDecision };
+export type Eligibility = {
+  players: Record<string, PlayerEligibility>;
+  feeds: Record<(typeof ELIGIBILITY_SOURCES)[number], Provenance>;
+};
 export type Snapshot = {
   league: Sourced<League>;
   franchises: Sourced<Franchise[]>;
   rosters: Sourced<Roster[]>;
   players: Sourced<Player[]>;
+  eligibility: Eligibility;
 };
 
 export const PHASES = ['OFFSEASON', 'REGULAR_SEASON', 'PLAYOFFS'] as const;

@@ -1,9 +1,10 @@
 import type { Snapshot, Provenance } from '../data/contract';
 import { provenanceSlot } from '../cards/playerModel';
 export function snapshotSummary(snapshot: Snapshot) {
-  const sections: [string, Provenance][] = Object.entries(snapshot).map(
-    ([name, section]) => [name, section.provenance],
-  );
+  // Eligibility is not a sourced section: it carries its own per-feed provenances, which the
+  // eligibility lines read directly, so the summary judges the four data sections only.
+  const sections: [string, Provenance][] = (['league', 'franchises', 'rosters', 'players'] as const)
+    .map((name) => [name, snapshot[name].provenance]);
   // The same one-dot provenance as every card: the weakest section, its detail on hover.
   const slot = provenanceSlot(sections);
   return {

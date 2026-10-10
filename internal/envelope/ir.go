@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
@@ -34,7 +36,38 @@ func (IRCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
 	if status == domain.RosterIR {
 		return CheckResult{Blocked: true, Note: "player already on IR"}
 	}
-	return CheckResult{Note: "not verified (league rules not captured)"}
+	decision, found := heldDecision(snap, s.Expected.Player, func(v eligibility.PlayerVerdicts) eligibility.Decision {
+		return v.IR
+	})
+	return checkResult(decision, found)
+}
+
+// heldDecision reads the snapshot's held MFL rules for one player's move slot. An absent
+// verdict is reported, never treated as a pass or a block on its own.
+func heldDecision(
+	snap snapshot.Snapshot, player playerid.PlayerID,
+	slot func(eligibility.PlayerVerdicts) eligibility.Decision,
+) (eligibility.Decision, bool) {
+	verdicts, ok := snap.Eligibility.Players[player.String()]
+	if !ok {
+		return eligibility.Decision{}, false
+	}
+	return slot(verdicts), true
+}
+
+// checkResult turns a slot's verdict into the check outcome: ineligible blocks with its
+// reason; unknown and absent stay available, with MFL named as the decider.
+func checkResult(decision eligibility.Decision, found bool) CheckResult {
+	switch {
+	case !found:
+		return CheckResult{Note: eligibility.NotChecked("eligibility not held")}
+	case decision.Verdict == eligibility.Ineligible:
+		return CheckResult{Blocked: true, Note: decision.Reason}
+	case decision.Verdict == eligibility.Unknown:
+		return CheckResult{Note: eligibility.NotChecked(decision.Reason)}
+	default:
+		return CheckResult{Note: "eligibility checked (MFL " + decision.Source + ")"}
+	}
 }
 func (e Envelope) Check(at time.Time, snap snapshot.Snapshot, check Check) (Envelope, error) {
 	if check == nil {

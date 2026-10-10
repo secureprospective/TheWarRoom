@@ -485,6 +485,8 @@ export function createCommands(
     useMFLKey: mflKey.use,
     providerKind: provider.kind,
     draftReason,
+    eligibility: (subject: PlayerSubject) => snapshot?.eligibility.players[subject.id],
+    eligibilityFeeds: () => snapshot?.eligibility.feeds,
     rosterStatus: (subject: PlayerSubject) => snapshot?.rosters.value
       .find((r) => r.franchiseId === subject.franchiseId)?.players.find((p) => p.id === subject.id)
       ?.rosterStatus,

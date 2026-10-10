@@ -4,6 +4,9 @@ import {
   URGENCIES,
   WINDOW_KINDS,
   CONTRACT_STATUSES,
+  ELIGIBILITY_DIRECTIONS,
+  ELIGIBILITY_SOURCES,
+  ELIGIBILITY_VERDICTS,
   FRESHNESS_STATES,
   POSITIONS,
   PROVENANCE_KINDS,
@@ -13,9 +16,12 @@ import type {
   MFLKeyStatus,
   ClockReading,
   Deadline,
+  Eligibility,
+  EligibilityDecision,
   Franchise,
   League,
   Player,
+  PlayerEligibility,
   Provenance,
   Roster,
   RosterPlayer,
@@ -141,8 +147,51 @@ function player(value: unknown, path: string): Player {
   };
 }
 
+function eligibilityDecision(value: unknown, path: string): EligibilityDecision {
+  const row = object(value, path, ['direction', 'verdict', 'reason', 'source']);
+  const verdict = choice(row.verdict, `${path}.verdict`, ELIGIBILITY_VERDICTS);
+  const reason = row.reason === undefined ? undefined : requiredText(row.reason, `${path}.reason`);
+  if ((reason === undefined) !== (verdict === 'eligible')) {
+    throw new Error(`${path}.reason: required exactly when the verdict is not eligible`);
+  }
+  return {
+    direction: choice(row.direction, `${path}.direction`, ELIGIBILITY_DIRECTIONS),
+    verdict,
+    ...(reason === undefined ? {} : { reason }),
+    source: choice(row.source, `${path}.source`, ELIGIBILITY_SOURCES),
+  };
+}
+
+function playerEligibility(value: unknown, path: string): PlayerEligibility {
+  const row = object(value, path, ['ir', 'taxi']);
+  return {
+    ir: eligibilityDecision(row.ir, `${path}.ir`),
+    taxi: eligibilityDecision(row.taxi, `${path}.taxi`),
+  };
+}
+
+function eligibility(value: unknown, path: string): Eligibility {
+  const row = object(value, path, ['players', 'feeds']);
+  if (row.players === null || typeof row.players !== 'object' || Array.isArray(row.players)) {
+    throw new Error(`${path}.players: expected an object keyed by player id`);
+  }
+  const players: Record<string, PlayerEligibility> = {};
+  for (const [key, entry] of Object.entries(row.players)) {
+    players[id(key, `${path}.players`, true)] = playerEligibility(entry, `${path}.players.${key}`);
+  }
+  const feedsRow = object(row.feeds, `${path}.feeds`, [...ELIGIBILITY_SOURCES]);
+  const feeds: Record<(typeof ELIGIBILITY_SOURCES)[number], Provenance> = {
+    injuries: provenance(feedsRow.injuries, `${path}.feeds.injuries`),
+    players: provenance(feedsRow.players, `${path}.feeds.players`),
+    rosters: provenance(feedsRow.rosters, `${path}.feeds.rosters`),
+  };
+  return { players, feeds };
+}
+
 export function parseSnapshot(value: unknown): Snapshot {
-  const row = object(value, 'snapshot', ['league', 'franchises', 'rosters', 'players']);
+  const row = object(value, 'snapshot', [
+    'league', 'franchises', 'rosters', 'players', 'eligibility',
+  ]);
   return {
     league: sourced(row.league, 'snapshot.league', league),
     franchises: sourced(row.franchises, 'snapshot.franchises', (v, p) =>
@@ -150,6 +199,7 @@ export function parseSnapshot(value: unknown): Snapshot {
     ),
     rosters: sourced(row.rosters, 'snapshot.rosters', (v, p) => array(v, p, roster)),
     players: sourced(row.players, 'snapshot.players', (v, p) => array(v, p, player)),
+    eligibility: eligibility(row.eligibility, 'snapshot.eligibility'),
   };
 }
 

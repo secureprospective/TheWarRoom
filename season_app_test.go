@@ -134,8 +134,10 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 	if len(r.Transactions.Value) != 770 || len(r.Lineups.Value.Franchises) != 32 || r.Lineups.Value.Week != 5 {
 		t.Fatal("wrong real feed counts or week")
 	}
-	if !reflect.DeepEqual(transport.requests, []string{"transactions", "liveScoring", "pendingTrades"}) ||
-		!reflect.DeepEqual(*pauses, []time.Duration{time.Second, time.Second}) || *events != 1 {
+	if !reflect.DeepEqual(transport.requests,
+		[]string{"transactions", "liveScoring", "pendingTrades", "injuries"}) ||
+		!reflect.DeepEqual(*pauses, []time.Duration{time.Second, time.Second, time.Second}) ||
+		*events != 1 {
 		t.Fatalf("requests %v pauses %v events %d", transport.requests, *pauses, *events)
 	}
 	for i := 1; i < len(transport.starts); i++ {
@@ -150,13 +152,23 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 	transport.bodies["liveScoring"] = seasonFixture(t, "livescoring", "liveScoring.json")
 	a.refreshSeason(a.ctx)
 	r = seasonReading(t, a)
-	if transport.weeks[4] != "" || r.Lineups.Value.Week != 4 ||
+	if transport.weeks[5] != "" || r.Lineups.Value.Week != 4 ||
 		r.Lineups.Provenance.Source != "liveScoring default week" {
 		t.Fatal("default week not respected")
 	}
 }
 
 func recordSeasonArchive(t *testing.T, a *App, export, week, body string, at time.Time) {
+	recordSeasonArchiveForm(t, a, export, week, body, at, false)
+}
+
+// recordSeasonBareArchive records a copy of a league-less export, fetched without L the way
+// the api-host request is archived.
+func recordSeasonBareArchive(t *testing.T, a *App, export, body string, at time.Time) {
+	recordSeasonArchiveForm(t, a, export, "", body, at, true)
+}
+
+func recordSeasonArchiveForm(t *testing.T, a *App, export, week, body string, at time.Time, leagueless bool) {
 	t.Helper()
 	var compressed bytes.Buffer
 	writer := gzip.NewWriter(&compressed)
@@ -167,7 +179,10 @@ func recordSeasonArchive(t *testing.T, a *App, export, week, body string, at tim
 		t.Fatal(err)
 	}
 	sum := sha256.Sum256([]byte(body))
-	src := "/2026/export?TYPE=" + export + "&L=" + ingestion.LeagueID
+	src := "/2026/export?TYPE=" + export
+	if !leagueless {
+		src += "&L=" + ingestion.LeagueID
+	}
 	if week != "" {
 		src += "&W=" + week
 	}
@@ -212,6 +227,69 @@ func strconvBool(b bool) string {
 		return "archived"
 	}
 	return "missing"
+}
+
+// TestSeasonInjuriesFallbackHoldsTheStaleCopyTime covers the 10-10 live failure end to end:
+// the live injuries fetch is league-less (api host, no L), so its archived copy carries no L;
+// when the fetch fails that copy serves as the stale feed, its own time is what the
+// eligibility lines show, and the degradation writes exactly one run.log line. With no copy
+// at all the feed holds nothing — no time exists to show — and the failure still logs.
+func TestSeasonInjuriesFallbackHoldsTheStaleCopyTime(t *testing.T) {
+	const feed = `{"injuries":{"injury":[{"id":"10249","status":"IR","details":"Knee - PCL"}]}}`
+	at := time.Date(2026, 10, 5, 19, 59, 41, 0, time.UTC)
+
+	t.Run("live league-less fetch holds", func(t *testing.T) {
+		a, transport, _, _ := seasonTestApp(t)
+		transport.bodies["injuries"] = feed
+		var logged []string
+		a.fallbackLog = func(line string) { logged = append(logged, line) }
+		a.refreshInjuries(a.ctx)
+		p := a.heldInjuries().Provenance.Freshness
+		if p.State != FreshLive || p.FetchedAt == "" || len(a.heldInjuries().Status) != 1 {
+			t.Fatalf("live injuries: %+v", p)
+		}
+		if len(logged) != 0 {
+			t.Fatalf("live fetch logged %v", logged)
+		}
+	})
+
+	t.Run("failed fetch serves the league-less archived copy and its time", func(t *testing.T) {
+		a, transport, _, _ := seasonTestApp(t)
+		transport.failure = "injuries"
+		recordSeasonBareArchive(t, a, "injuries", feed, at)
+		var logged []string
+		a.fallbackLog = func(line string) { logged = append(logged, line) }
+		a.refreshInjuries(a.ctx)
+		inj := a.heldInjuries()
+		p := inj.Provenance.Freshness
+		if p.State != FreshStale || p.FetchedAt != at.Format(time.RFC3339) ||
+			len(inj.Status) != 1 || inj.Status["10249"] != "IR" {
+			t.Fatalf("stale injuries: %+v %v", p, inj.Status)
+		}
+		if len(logged) != 1 || !strings.Contains(logged[0], "injuries") ||
+			!strings.Contains(logged[0], "serving the archived copy fetched "+at.Format(time.RFC3339)) ||
+			!strings.Contains(logged[0], "synthetic offline") {
+			t.Fatalf("fallback log = %v, want one line naming the feed and the error", logged)
+		}
+	})
+
+	t.Run("failed fetch with no copy holds nothing and logs", func(t *testing.T) {
+		a, transport, _, _ := seasonTestApp(t)
+		transport.failure = "injuries"
+		var logged []string
+		a.fallbackLog = func(line string) { logged = append(logged, line) }
+		a.refreshInjuries(a.ctx)
+		p := a.heldInjuries().Provenance.Freshness
+		// Claude-OS's 10-25 CDT run: never-held reads "not checked" with no as-of time,
+		// because no copy exists; the run.log line names the feed and the error.
+		if p.State != FreshFail || p.FetchedAt != "" || !strings.Contains(p.Note, "no archived copy") {
+			t.Fatalf("empty injuries: %+v", p)
+		}
+		if len(logged) != 1 || !strings.Contains(logged[0], "injuries") ||
+			!strings.Contains(logged[0], "no archived copy") {
+			t.Fatalf("empty-fallback log = %v, want one line naming the feed and the error", logged)
+		}
+	})
 }
 
 func TestSeasonLineupArchiveWeekIsolation(t *testing.T) {
@@ -361,7 +439,7 @@ func TestSeasonWorkerUsesRefreshedWeek(t *testing.T) {
 	a.refreshInBackground(ctx)
 	a.weekWorkers.Wait()
 	if !reflect.DeepEqual(transport.requests, []string{
-		"nflSchedule", "transactions", "liveScoring", "pendingTrades",
+		"nflSchedule", "transactions", "liveScoring", "pendingTrades", "injuries",
 	}) || transport.weeks[2] != "5" {
 		t.Fatalf("order %v weeks %v", transport.requests, transport.weeks)
 	}

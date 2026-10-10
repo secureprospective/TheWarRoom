@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -118,8 +119,8 @@ func TestIRChecksAndUnmapped(t *testing.T) {
 		want              State
 		note              string
 	}{
-		{"ready but eligibility unknown", domain.RosterActive, false, false, Ready,
-			"not verified (league rules not captured)"},
+		{"ready but eligibility not held", domain.RosterActive, false, false, Ready,
+			"Not checked: eligibility not held; MFL will decide"},
 		{"already IR", domain.RosterIR, false, false, Blocked, "player already on IR"},
 		{"not owned", domain.RosterActive, true, false, Blocked, "player is not on this franchise's roster"},
 		{"unmapped keeps the check's note", domain.RosterIR, false, true, Blocked,
@@ -240,7 +241,7 @@ func TestDeadlineStaleAndValueIsolation(t *testing.T) {
 	if _, err := e.HandOff(at.Add(time.Hour)); err == nil {
 		t.Fatal("stale handed off")
 	}
-	rebased, err := e.Rebase(at.Add(time.Hour))
+	rebased, err := e.Rebase(at.Add(time.Hour), "explicit revalidation required")
 	if err != nil || rebased.State() != Draft {
 		t.Fatal(rebased, err)
 	}
@@ -329,5 +330,133 @@ func TestPendingStagesFollowHandOff(t *testing.T) {
 	e.state, e.spec.Intent = Landed, "trade.propose"
 	if _, err := e.Await(at, AwaitDOT); err == nil {
 		t.Fatal("landed is terminal")
+	}
+}
+
+func mustTestID(t *testing.T) playerid.PlayerID {
+	t.Helper()
+	id, err := playerid.New("0531")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
+// eligibilitySnapshot installs held verdicts for one player, the shape TargetSnapshot builds.
+func eligibilitySnapshot(snap snapshot.Snapshot, id playerid.PlayerID, v eligibility.PlayerVerdicts) snapshot.Snapshot {
+	snap.Eligibility = snapshot.Eligibility{
+		Players: map[string]eligibility.PlayerVerdicts{id.String(): v},
+		Feeds: map[string]snapshot.Provenance{
+			eligibility.SourceRosters:  {Freshness: domain.Freshness{State: domain.FreshLive}},
+			eligibility.SourceInjuries: {Freshness: domain.Freshness{State: domain.FreshLive}},
+			eligibility.SourcePlayers:  {Freshness: domain.Freshness{State: domain.FreshLive}},
+		},
+	}
+	return snap
+}
+
+func TestIRCheckConsultsHeldEligibility(t *testing.T) {
+	id := mustTestID(t)
+	for _, tc := range []struct {
+		name    string
+		verdict eligibility.Verdict
+		reason  string
+		want    State
+		note    string
+	}{
+		{"eligible passes with the feed named", eligibility.Eligible, "", Ready,
+			"eligibility checked (MFL injuries)"},
+		{"ineligible blocks with the reason", eligibility.Ineligible, "not on NFL injured reserve", Blocked,
+			"not on NFL injured reserve"},
+		{"capacity blocks", eligibility.Ineligible, "IR full (12/12)", Blocked, "IR full (12/12)"},
+		{"unknown stays available for MFL to decide", eligibility.Unknown, "stale", Ready,
+			"Not checked: stale; MFL will decide"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e, at, snap := testEnvelope(t)
+			snap = eligibilitySnapshot(snap, id, eligibility.PlayerVerdicts{
+				IR: eligibility.Decision{Direction: eligibility.ToIR, Verdict: tc.verdict,
+					Reason: tc.reason, Source: eligibility.SourceInjuries},
+			})
+			got, err := e.Check(at, snap, IRCheck{})
+			if err != nil || got.State() != tc.want || got.Receipt().Audit[0].Note != tc.note {
+				t.Fatalf("%+v %v", got.Receipt(), err)
+			}
+		})
+	}
+}
+
+func TestTaxiCheckConsultsHeldEligibility(t *testing.T) {
+	id := mustTestID(t)
+	for _, tc := range []struct {
+		name    string
+		status  domain.RosterStatus
+		verdict eligibility.Verdict
+		reason  string
+		source  string
+		want    State
+		note    string
+	}{
+		{"demote blocked by experience", domain.RosterActive, eligibility.Ineligible,
+			"3 or more years of NFL experience (drafted 2017)", eligibility.SourcePlayers, Blocked,
+			"3 or more years of NFL experience (drafted 2017)"},
+		{"demote blocked by capacity", domain.RosterActive, eligibility.Ineligible, "taxi full (8/8)",
+			eligibility.SourceRosters, Blocked, "taxi full (8/8)"},
+		{"demote eligible", domain.RosterActive, eligibility.Eligible, "", eligibility.SourcePlayers,
+			Ready, "eligibility checked (MFL players)"},
+		{"promote eligible", domain.RosterTaxi, eligibility.Eligible, "", eligibility.SourceRosters,
+			Ready, "eligibility checked (MFL rosters)"},
+		{"promote not checked", domain.RosterTaxi, eligibility.Unknown, "no draft year held",
+			eligibility.SourcePlayers, Ready, "Not checked: no draft year held; MFL will decide"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e, at, snap := testEnvelope(t)
+			e.spec.Intent = "roster.taxi"
+			e.spec.Expected.RosterStatus = domain.RosterTaxi
+			if tc.status == domain.RosterTaxi {
+				e.spec.Expected.RosterStatus = domain.RosterActive
+			}
+			snap.Rosters.Value[0].Players[0].RosterStatus = tc.status
+			snap = eligibilitySnapshot(snap, id, eligibility.PlayerVerdicts{
+				Taxi: eligibility.Decision{Direction: eligibility.ToTaxi, Verdict: tc.verdict,
+					Reason: tc.reason, Source: tc.source},
+			})
+			got, err := e.Check(at, snap, TaxiCheck{})
+			if err != nil || got.State() != tc.want || got.Receipt().Audit[0].Note != tc.note {
+				t.Fatalf("%+v %v", got.Receipt(), err)
+			}
+		})
+	}
+}
+
+func TestReadyPlanReturnsToDraftWhenIneligible(t *testing.T) {
+	id := mustTestID(t)
+	e, at, snap := testEnvelope(t)
+	snap = eligibilitySnapshot(snap, id, eligibility.PlayerVerdicts{
+		IR: eligibility.Decision{Direction: eligibility.ToIR, Verdict: eligibility.Eligible,
+			Source: eligibility.SourceInjuries},
+	})
+	ready, err := e.Check(at, snap, IRCheck{})
+	if err != nil || ready.State() != Ready {
+		t.Fatalf("ready: %+v %v", ready.Receipt(), err)
+	}
+	// The eligibility turns against the plan; only the envelope's own route reaches Draft.
+	reason := "player no longer eligible: not on NFL injured reserve"
+	invalidated, err := ready.Invalidate(at.Add(time.Minute), reason)
+	if err != nil || invalidated.State() != Stale {
+		t.Fatalf("invalidate: %+v %v", invalidated.Receipt(), err)
+	}
+	drafted, err := invalidated.Rebase(at.Add(time.Minute), reason)
+	if err != nil || drafted.State() != Draft {
+		t.Fatalf("rebase: %+v %v", drafted.Receipt(), err)
+	}
+	audit := drafted.Receipt().Audit
+	if audit[len(audit)-1].Note != reason || audit[len(audit)-2].Note != reason ||
+		audit[len(audit)-1].From != Stale || audit[len(audit)-2].From != Ready {
+		t.Fatalf("audit must carry the reason on both legs: %+v", audit)
+	}
+	// A Ready plan may not jump to Draft directly.
+	if _, err := ready.move(at.Add(time.Minute), Rebase, reason); err == nil {
+		t.Fatal("ready skipped Invalidate")
 	}
 }

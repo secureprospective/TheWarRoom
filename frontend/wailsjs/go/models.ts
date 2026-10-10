@@ -19,6 +19,61 @@ export namespace domain {
 
 }
 
+export namespace eligibility {
+	
+	export class Decision {
+	    direction: string;
+	    verdict: string;
+	    reason?: string;
+	    source: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Decision(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.direction = source["direction"];
+	        this.verdict = source["verdict"];
+	        this.reason = source["reason"];
+	        this.source = source["source"];
+	    }
+	}
+	export class PlayerVerdicts {
+	    ir: Decision;
+	    taxi: Decision;
+	
+	    static createFrom(source: any = {}) {
+	        return new PlayerVerdicts(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ir = this.convertValues(source["ir"], Decision);
+	        this.taxi = this.convertValues(source["taxi"], Decision);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace envelope {
 	
 	export class AuditEntry {
@@ -2689,6 +2744,72 @@ export namespace rankings {
 
 export namespace snapshot {
 	
+	export class Provenance {
+	    source: string;
+	    freshness: domain.Freshness;
+	    kind: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Provenance(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.source = source["source"];
+	        this.freshness = this.convertValues(source["freshness"], domain.Freshness);
+	        this.kind = source["kind"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Eligibility {
+	    players: Record<string, eligibility.PlayerVerdicts>;
+	    feeds: Record<string, Provenance>;
+	
+	    static createFrom(source: any = {}) {
+	        return new Eligibility(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.players = this.convertValues(source["players"], eligibility.PlayerVerdicts, true);
+	        this.feeds = this.convertValues(source["feeds"], Provenance, true);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Franchise {
 	    id: string;
 	    name?: string;
@@ -2764,40 +2885,7 @@ export namespace snapshot {
 		    return a;
 		}
 	}
-	export class Provenance {
-	    source: string;
-	    freshness: domain.Freshness;
-	    kind: string;
 	
-	    static createFrom(source: any = {}) {
-	        return new Provenance(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.source = source["source"];
-	        this.freshness = this.convertValues(source["freshness"], domain.Freshness);
-	        this.kind = source["kind"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
 	export class RosterPlayer {
 	    // Go type: playerid
 	    id: any;
@@ -3006,6 +3094,7 @@ export namespace snapshot {
 	    rosters: any;
 	    // Go type: Sourced___github_com_secureprospective_TheWarRoom_internal_snapshot_Player_
 	    players: any;
+	    eligibility: Eligibility;
 	
 	    static createFrom(source: any = {}) {
 	        return new Snapshot(source);
@@ -3017,6 +3106,7 @@ export namespace snapshot {
 	        this.franchises = this.convertValues(source["franchises"], null);
 	        this.rosters = this.convertValues(source["rosters"], null);
 	        this.players = this.convertValues(source["players"], null);
+	        this.eligibility = this.convertValues(source["eligibility"], Eligibility);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

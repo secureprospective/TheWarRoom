@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -242,7 +243,7 @@ func (a *App) refreshMoveSource(ctx context.Context, source envelope.Source) err
 }
 
 func (a *App) moveObservation(ctx context.Context) (envelope.Observation, error) {
-	snap, err := snapshot.Build(ctx, snapshot.NewSource(a.league, a.rulebook), snapshot.Directory{})
+	snap, err := snapshot.Build(ctx, snapshot.NewSource(a.league, a.rulebook), snapshot.Directory{}, snapshot.Injuries{})
 	if err != nil {
 		return envelope.Observation{}, fmt.Errorf("watch moves: roster snapshot: %w", err)
 	}
@@ -286,4 +287,99 @@ func (a *App) recentMoveSource(source envelope.Source, handed time.Time) bool {
 	}
 	now := a.movesNow()
 	return failure == "" && at.After(handed) && !at.After(now) && now.Sub(at) < time.Minute
+}
+
+// revalidateReadyRosterMoves returns Ready IR and taxi plans whose player's held eligibility
+// turned ineligible to Draft, through the envelope's own route (Ready may reach Draft only via
+// Invalidate to Stale, then Rebase). Unknown eligibility never yanks a plan: MFL decides, as
+// it does at hand-off. The caller holds refreshMu.
+func (a *App) revalidateReadyRosterMoves(ctx context.Context) {
+	if err := a.ready(); err != nil {
+		return
+	}
+	receipts, err := a.moves.List(ctx, ingestion.LeagueID, "")
+	if err != nil {
+		a.movesLog(fmt.Sprintf("revalidate moves: list: %v", err))
+		return
+	}
+	candidates := []string{}
+	for _, r := range receipts {
+		if r.State == envelope.Ready &&
+			(r.Spec.Intent == "roster.ir" || r.Spec.Intent == "roster.taxi") {
+			candidates = append(candidates, r.CorrelationID)
+		}
+	}
+	if len(candidates) == 0 {
+		return
+	}
+	dir := a.targetDirectory(ctx)
+	snap, err := snapshot.Build(ctx, snapshot.NewSource(a.league, a.rulebook), dir, a.heldInjuries())
+	if err != nil {
+		a.movesLog(fmt.Sprintf("revalidate moves: build: %v", err))
+		return
+	}
+	a.movesMu.Lock()
+	defer a.movesMu.Unlock()
+	changed := false
+	for _, id := range candidates {
+		decision, found := a.planDecision(ctx, snap, id)
+		if a.returnPlanToDraft(ctx, id, decision, found) {
+			changed = true
+		}
+	}
+	if changed {
+		a.movesChanged(ctx)
+	}
+}
+
+// planDecision reads the held verdict for one plan's move slot: the IR plan watches the IR
+// slot, the taxi plan the taxi slot. The caller holds refreshMu.
+func (a *App) planDecision(ctx context.Context, snap snapshot.Snapshot, id string) (eligibility.Decision, bool) {
+	e, err := a.moves.Get(ctx, id)
+	if err != nil || e.State() != envelope.Ready {
+		return eligibility.Decision{}, false
+	}
+	spec := e.Receipt().Spec
+	verdicts, ok := snap.Eligibility.Players[spec.Expected.Player.String()]
+	if !ok {
+		return eligibility.Decision{}, false
+	}
+	if spec.Intent == "roster.taxi" {
+		return verdicts.Taxi, true
+	}
+	return verdicts.IR, true
+}
+
+// returnPlanToDraft walks one Ready plan through the envelope's only route back to Draft
+// (Invalidate, then Rebase), both entries carrying the reason. The caller holds movesMu.
+func (a *App) returnPlanToDraft(ctx context.Context, id string, decision eligibility.Decision, found bool) bool {
+	if !found || decision.Verdict != eligibility.Ineligible {
+		return false
+	}
+	e, err := a.moves.Get(ctx, id)
+	if err != nil {
+		a.movesLog(fmt.Sprintf("revalidate moves: load %s: %v", id, err))
+		return false
+	}
+	if e.State() != envelope.Ready {
+		return false
+	}
+	now := a.movesNow()
+	reason := "player no longer eligible: " + decision.Reason
+	invalidated, err := e.Invalidate(now, reason)
+	if err != nil {
+		a.movesLog(fmt.Sprintf("revalidate moves: invalidate %s: %v", id, err))
+		return false
+	}
+	drafted, err := invalidated.Rebase(now, reason)
+	if err != nil {
+		a.movesLog(fmt.Sprintf("revalidate moves: rebase %s: %v", id, err))
+		return false
+	}
+	if err := a.moves.Save(ctx, drafted); err != nil {
+		a.movesLog(fmt.Sprintf("revalidate moves: save %s: %v", id, err))
+		return false
+	}
+	a.logMove(drafted)
+	return true
 }

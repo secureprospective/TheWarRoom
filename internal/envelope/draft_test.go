@@ -21,7 +21,7 @@ func TestDraftIR(t *testing.T) {
 			status:    domain.RosterActive,
 			franchise: "0001",
 			league:    "1",
-			note:      "not verified (league rules not captured); MFL target not verified",
+			note:      "Not checked: eligibility not held; MFL will decide; MFL target not verified",
 		},
 		{
 			name:      "already IR",

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/injuries"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livescoring"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/pendingtrades"
 	feedtransactions "github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
@@ -125,6 +126,59 @@ func (a *App) refreshSeason(ctx context.Context) {
 		return
 	}
 	a.refreshPendingTrades(ctx)
+	if err := pause(ctx, time.Second); err != nil {
+		return
+	}
+	a.refreshInjuries(ctx)
+	a.revalidateReadyRosterMoves(ctx)
+}
+
+// refreshInjuries pulls MFL's NFL injury designations for the IR rules, live with the archive
+// as fallback, and holds the last good copy like the other season feeds.
+func (a *App) refreshInjuries(ctx context.Context) {
+	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season,
+		archivedFeed[injuries.RawInjury]{
+			export: injuries.Export,
+			// The injuries export is league-less: fetched without L from the api host, so its
+			// archived copies match with or without the league id.
+			leagueless: true,
+			fetch: func(ctx context.Context) ([]injuries.RawInjury, error) {
+				raw, ferr := injuries.Fetch(ctx, a.mflClient, strconv.Itoa(a.season))
+				if ferr != nil {
+					return nil, fmt.Errorf("injuries refresh: %w", ferr)
+				}
+				return raw, nil
+			},
+			parse: func(body []byte) ([]injuries.RawInjury, error) {
+				raw, perr := injuries.Parse(ctx, body)
+				if perr != nil {
+					return nil, fmt.Errorf("injuries refresh: %w", perr)
+				}
+				return raw, nil
+			},
+			bodies: a.history.ArchivedBodies,
+		}, a.fallbackLog)
+	var value []leaguefeed.Injury
+	if err == nil {
+		value, err = injuries.ToInjuries(rows)
+	}
+	a.seasonMu.Lock()
+	defer a.seasonMu.Unlock()
+	holdSeasonFeed(&a.seasonInjuries, value, fresh, err)
+}
+
+// heldInjuries returns the held injuries feed as the snapshot's eligibility input.
+func (a *App) heldInjuries() snapshot.Injuries {
+	a.seasonMu.Lock()
+	defer a.seasonMu.Unlock()
+	statuses := make(map[string]string, len(a.seasonInjuries.value))
+	for _, row := range a.seasonInjuries.value {
+		statuses[row.ID.String()] = row.Status
+	}
+	return snapshot.Injuries{
+		Status:     statuses,
+		Provenance: a.seasonInjuries.provenance("injuries", "injuries"),
+	}
 }
 
 func (a *App) refreshSeasonTransactions(ctx context.Context) {
@@ -146,7 +200,7 @@ func (a *App) refreshSeasonTransactions(ctx context.Context) {
 				return []feedtransactions.RawTransactions{raw}, nil
 			},
 			bodies: a.history.ArchivedBodies,
-		})
+		}, a.fallbackLog)
 	var value []leaguefeed.Transaction
 	if err == nil {
 		value, err = feedtransactions.ToTransactions(rows[0])
@@ -191,7 +245,7 @@ func (a *App) refreshSeasonLineups(ctx context.Context) {
 				return accept(src, body, at)
 			})
 		},
-	})
+	}, a.fallbackLog)
 	var value leaguefeed.Lineups
 	if err == nil {
 		value, err = livescoring.ToLineups(rows[0])

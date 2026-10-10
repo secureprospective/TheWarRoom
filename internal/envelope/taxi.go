@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -31,7 +32,10 @@ func (TaxiCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
 	if taxiDestination(status) != s.Expected.RosterStatus {
 		return CheckResult{Blocked: true, Note: "active or taxi roster status required"}
 	}
-	return CheckResult{Note: "taxi capacity, eligibility and lock rules not held; MFL checks them"}
+	decision, found := heldDecision(snap, s.Expected.Player, func(v eligibility.PlayerVerdicts) eligibility.Decision {
+		return v.Taxi
+	})
+	return checkResult(decision, found)
 }
 
 func taxiDestination(status domain.RosterStatus) domain.RosterStatus {

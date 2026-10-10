@@ -17,8 +17,8 @@ func TestDraftTaxiDirectionsAndBlocks(t *testing.T) {
 		state  State
 		note   string
 	}{
-		{"demote", domain.RosterActive, domain.RosterTaxi, Ready, "MFL checks them"},
-		{"promote", domain.RosterTaxi, domain.RosterActive, Ready, "MFL checks them"},
+		{"demote", domain.RosterActive, domain.RosterTaxi, Ready, "Not checked: eligibility not held; MFL will decide"},
+		{"promote", domain.RosterTaxi, domain.RosterActive, Ready, "Not checked: eligibility not held; MFL will decide"},
 		{"IR", domain.RosterIR, domain.RosterTaxi, Blocked, "player on IR"},
 		{"unknown status", "", domain.RosterTaxi, Blocked, "active or taxi roster status required"},
 	} {

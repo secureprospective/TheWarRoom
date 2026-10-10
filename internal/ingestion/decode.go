@@ -100,11 +100,26 @@ func FetchLeagueExport[Env any](ctx context.Context, c *mfl.Client, export, year
 }
 
 func SameExport(raw, export string, season int) bool {
+	return sameExport(raw, export, season, false)
+}
+
+// SameLeaguelessExport matches an archived copy of one of MFL's league-less exports, fetched
+// without L (the request the client sends to the api host). A copy carrying the league's own
+// id also matches: MFL serves the same NFL-wide feed to every league, and older archives may
+// hold either form.
+func SameLeaguelessExport(raw, export string, season int) bool {
+	return sameExport(raw, export, season, true)
+}
+
+func sameExport(raw, export string, season int, leagueless bool) bool {
 	u, err := url.Parse(raw)
 	if err != nil {
 		return false
 	}
 	q := u.Query()
-	return q.Get("TYPE") == export && q.Get("L") == LeagueID &&
-		u.Path == "/"+strconv.Itoa(season)+"/export"
+	if q.Get("TYPE") != export || u.Path != "/"+strconv.Itoa(season)+"/export" {
+		return false
+	}
+	l := q.Get("L")
+	return l == LeagueID || (leagueless && l == "")
 }

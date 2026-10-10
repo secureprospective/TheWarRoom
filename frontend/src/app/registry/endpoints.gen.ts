@@ -955,7 +955,8 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     when: "season",
     gravity: "G2",
     clock: "weekly",
-    data: "rosters, players (injuries)",
+    data: "rosters, injuries (MFL), players (draft year); eligibility held ring 2, not la" +
+      "nded live",
     placement: "Franchise HQ › Lineup and roster",
     verb: "roster.ir · roster.taxi",
     disposition: "kept",
@@ -978,7 +979,8 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     when: "ALL; peak post-draft",
     gravity: "G2",
     clock: "none",
-    data: "rosters, league (rules)",
+    data: "rosters, league (rules), players (draft year); eligibility held ring 2, not la" +
+      "nded live",
     placement: "Franchise HQ › Lineup and roster",
     verb: "roster.ir · roster.taxi",
     disposition: "kept",
@@ -988,9 +990,9 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     disposition_note: "kept",
     merged_into: Object.freeze([] as const),
     merged_place: "",
-    gravity_reason: "roster spot rules",
+    gravity_reason: "roster spot + experience rules",
     ring_note: "1",
-    gravity_note: "G2 — roster spot rules",
+    gravity_note: "G2 — roster spot + experience rules",
   } as const),
   Object.freeze({
     id: "M-030",

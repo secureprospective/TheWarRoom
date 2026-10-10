@@ -86,6 +86,16 @@ type Lineups struct {
 	Franchises []Lineup  `json:"franchises"`
 }
 
+// Injury is one player's NFL injury designation as MFL reports it. Status is MFL's open
+// vocabulary (IR, IR-R, IR-PUP, IR-NFI, Out, Questionable, Suspended, Holdout, RETIRED);
+// the eligibility rules classify it, so an unknown new status stays data, never an error.
+type Injury struct {
+	ID        playerid.PlayerID `json:"id" ts_type:"string"`
+	Status    string            `json:"status"`
+	Details   string            `json:"details,omitempty"`
+	ExpReturn string            `json:"expReturn,omitempty"`
+}
+
 // PendingTrade is from the offering team's side: Gives is what Offering gives up.
 type PendingTrade struct {
 	ID          string    `json:"id"`

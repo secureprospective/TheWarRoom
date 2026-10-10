@@ -289,8 +289,10 @@ func (e Envelope) Invalidate(at time.Time, note string) (Envelope, error) {
 	return e.move(at, Invalidate, note)
 }
 
-func (e Envelope) Rebase(at time.Time) (Envelope, error) {
-	return e.move(at, Rebase, "explicit revalidation required")
+// Rebase returns a stale or failed plan to Draft. The note says what the revalidation found,
+// because it is the entry a Draft plan's status line shows.
+func (e Envelope) Rebase(at time.Time, note string) (Envelope, error) {
+	return e.move(at, Rebase, note)
 }
 
 // Await records that MFL accepted the submission and it now waits on a resolution only the

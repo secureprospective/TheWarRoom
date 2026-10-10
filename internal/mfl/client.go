@@ -90,6 +90,9 @@ func (c *Client) Do(ctx context.Context, req Request) (Response, error) {
 		// League lookups always use the api host, so a stale cached host cannot block rediscovery.
 		host = "api"
 	case req.Params == nil || req.Params["L"] == "":
+		// A request with no L is one of MFL's league-less exports (injuries, nflSchedule, …);
+		// only the api host serves those — a league host answers with MFL's HTTP-200 error
+		// envelope (the 10-10 live gate: www47 refused the league-scoped injuries request).
 		host = "api"
 	case host == "":
 		host = "api"

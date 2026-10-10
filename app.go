@@ -86,6 +86,7 @@ type App struct {
 	seasonTransactions  heldSeasonFeed[[]leaguefeed.Transaction]
 	seasonLineups       heldSeasonFeed[leaguefeed.Lineups]
 	seasonPendingTrades heldSeasonFeed[[]leaguefeed.PendingTrade]
+	seasonInjuries      heldSeasonFeed[[]leaguefeed.Injury]
 	lineupsWeek         int
 	seasonChanged       func(context.Context)
 	seasonPause         func(context.Context, time.Duration) error
@@ -98,6 +99,9 @@ type App struct {
 	movesTimer   func(time.Duration) (<-chan time.Time, func())
 	movesRefresh func(context.Context, envelope.Source) error
 	movesLog     func(string)
+	// fallbackLog writes the one run.log line each live-feed fallback emits; a test swaps it
+	// to capture the line. log.Print in production, like movesLog.
+	fallbackLog  func(string)
 	movesUnknown map[string]bool
 
 	refreshMu        sync.Mutex   // one MFL refresh at a time
@@ -142,6 +146,7 @@ func NewApp() *App {
 		movesNow:      time.Now,
 		movesTimer:    newMovesTimer,
 		movesLog:      func(line string) { log.Print(line) },
+		fallbackLog:   func(line string) { log.Print(line) },
 		movesUnknown:  make(map[string]bool),
 		clockChanged:  func(ctx context.Context) { runtime.EventsEmit(ctx, "target:clock") },
 		seasonChanged: func(ctx context.Context) { runtime.EventsEmit(ctx, "target:season") },
