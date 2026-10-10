@@ -57,7 +57,7 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   `~/fleet/bin/panel-dispatch.sh <brief>`. Four seats from four labs, no Claude (Sol, Kimi, GLM,
   Nemotron); quotes are checked against their files; `ROUNDS=2` adds cross-examination. Its
   output is a recommendation to Christopher, not a decision.
-- **Christopher follows progress** in the savvy-progress `/agents` panel, where each pi session
+- **Christopher follows progress** in the savvy-progress `/fleet` panel, where each pi session
   (Sol's phases, each panel seat) shows as its own card.
 - **Claude runs live gates on Claude-OS (R12):** the production build (`make build`) against a
   snapshot of the live database, taken with SQLite's backup API, never a plain file copy.
