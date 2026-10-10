@@ -1,4 +1,6 @@
-# TheWarRoom target UI: specification, revision 0 (2026-10-06)
+# TheWarRoom target UI: specification, revision 1 (2026-10-10)
+
+Revision 0 is in git history. This draft awaits Claude review and Christopher's approval.
 
 **What this is:** the merged target from two independent research passes:
 - **Sol:** `~/fleet/briefs/warroom-endpoint-ia-bee-2026-10-06.md`
@@ -28,6 +30,33 @@
    - Gameday matchup in two views, Default (formation) and Classic (list);
    - headshots, personal use only;
    - startup-draft format.
+
+## 1a. Ring 1 findings against the rulings
+
+Measured on Claude-OS, 2026-10-10, from Home. Command-bar typing costs 0 clicks.
+MFL form steps are separate. Ruling 1 is unchanged: at most two in-app clicks, with MFL opened.
+
+| Path | In-app clicks | Against ruling 1 |
+|---|---:|---|
+| Pulse Now | 1 | Within two; read path, not a ready move |
+| My moves via nav | 2 | Within two; receipt list, not an MFL hand-off |
+| My moves from Inspector | 1 | Within two; receipt list, not an MFL hand-off |
+| My moves via command bar | 0 | Within two; receipt list, not an MFL hand-off |
+| IR/taxi via nav | 4 | Does not meet ruling 1 |
+| IR/taxi via command bar | 2 | Meets ruling 1 |
+| One-swap lineup | 6 | Does not meet ruling 1 |
+| Trade accept | Not walked | No pending offer; compliance not proved |
+
+IR/taxi nav is HQ → player → Draft → Open MFL.
+The command path is type → Enter → Draft → Open MFL;
+Enter selects the player but is not a click. Lineup is HQ → Edit lineup → bench → start →
+Check and save plan → Open MFL.
+
+Ring 1 working budgets, approved 2026-10-09: Pulse 1, My moves 1, accept 3, IR 3,
+lineup swap 5 (+2 per extra swap). Pulse and Inspector/command My moves meet those budgets.
+Nav My moves, nav IR and lineup exceed them by one click. Command IR is within budget.
+Accept is unmeasured. These budgets do not replace ruling 1; the gap needs Christopher's answer (§8).
+Christopher said on 2026-10-10 that the lineup UI will be reworked later. No replacement is designed here.
 
 ## 2. What both passes agree on (the skeleton)
 
@@ -93,7 +122,8 @@ report.
 
 ## 6. Acts and the envelope (Sol §6 for rigour; GLM §6 for the verb table)
 
-- **States:** Draft → Blocked / Ready → Handed off → Not yet done → Landed / Failed / Stale.
+- **States:** Draft → Blocked / Ready → Handed off → Not yet done / Not verified →
+  Landed / Failed / Stale.
 - **"Ready" means the app checked it, not that MFL accepted it.**
 - **Landed** requires an observed MFL change that matches the row's full predicate. A partial
   observation reads "Not verified".
@@ -101,6 +131,26 @@ report.
 - **Unmapped MFL targets** stay drafts, with "MFL target not verified": add/drop form, propose
   form, survivor pick, option, re-sign, buyout, tender, UFA bid. They are closed in the roadmap's
   gap-closure work.
+
+### Ring 1 Acts built and proved
+
+- **lineup.set:** built and Landed live on 2026-10-09. The +Kiner −Perine plan Landed at 21:44:23Z.
+  The revert Landed at 21:47:25Z. MFL was restored to the original lineup.
+  Landing compares the full saved starter set for the explicit week against a changed baseline.
+  MFL saves only on the bottom **Submit Partial Lineup** button. Ticks alone save nothing.
+- **trade.accept:** built, not yet Landed live. The hand-off opens the safe trade desk (O=05).
+  Offer disappearance is ambiguous; it does not prove acceptance or execution.
+  The DOT window is seven days from first entry into DOT review, using MFL
+  `defaultTradeExpirationDays=7`. After the window, unchanged evidence stays Not verified;
+  inside it, stale-read Not verified can re-enter review. A later matching execution can still land.
+- **roster.ir / roster.taxi:** built, not yet Landed live. MFL pages O=18 / O=98 were verified
+  on 2026-10-10. Taxi has both directions; direction comes from held roster status.
+  Eligibility is not held. Ready does not mean MFL will allow the move.
+- **Deferred to ring 3:** trade.propose / trade.reject / trade.revoke. Their MFL forms were never
+  captured; revoke is an irreversible GET. Never use that action link as an automatic hand-off.
+
+Evidence: `docs/build-handoffs/RESUME-2026-10-09-ring1-p7.md` §§4–7 and the ring 1 run `PLAN.md`.
+IR/taxi implementation is recorded in phase reports p7c1b and p7c2; 10-10 page checks are review findings.
 
 ## 7. New concepts recorded this session
 
@@ -118,15 +168,61 @@ report.
 
 ## 8. Open questions
 
-Taken from both passes. These are owed before the ring where they matter.
-1. MFL owner-form targets for the unmapped Acts.
-2. Waiver mechanics.
-3. Where DOT review shows.
-4. Window time zones and edges, and how the windows map to the eight stretches.
-5. Taxi and IR eligibility rules.
-6. Whether Victory Points are used.
+Answered items retain their answers and dates. Remaining questions are owed before their ring.
+
+1. **MFL owner-form targets:** partly answered, 2026-10-09. lineup.set and trade.accept are built;
+   propose/reject/revoke are deferred to ring 3. IR/taxi pages were verified 2026-10-10, not Landed.
+   Other unmapped targets remain open. Which missing forms and outcome captures should ring 3 obtain?
+2. **Waivers:** direction answered, 2026-10-07. They run on ProBoards, not MFL; TheWarRoom builds
+   its own waiver code. Exact mechanics remain open: what native claim/order flow is required?
+3. **DOT review:** answered for ring 1, 2026-10-07. Trades only; three DOT approvals, then MFL
+   commissioner approval. Review shows in the trade plan and My moves rail. Landed needs the
+   public TRADE row, not disappearance. The seven-day review window was approved 2026-10-09.
+4. **Window time zones:** answered, 2026-10-07. Display in the computer's local time zone.
+   Window edges and their mapping to the eight stretches remain open.
+5. **IR/taxi rules:** source answered, 2026-10-07. MFL settings govern for now. The settings page
+   says IR classification and taxi experience under three years (`Ring1_Gap_Closure.md` §8).
+   Eligibility is not held in the app. On 2026-10-10 MFL showed Perine Not-Eligible for IR and
+   "Cannot be demoted" to taxi while the app offered those moves. When should held eligibility
+   gate these Acts, and what evidence should it use?
+6. **Victory Points:** answered, 2026-10-07. Not used; the 2026 league export has no such setting.
 7. The 14 unnamed hub link kinds.
 8. Whether MFL's exports cover pools and contract fields.
 9. Refresh cadence during live clocks.
 10. Minimum desktop width.
 11. A data-scope ruling before multiple leagues are supported.
+12. **Browser hand-off:** each hand-off opens a new tab. The OS browser decides; there is no clean
+    fix recorded. What should the app tell owners to prevent saving in an older tab?
+13. **Click-budget gap:** should the ring 1 working budgets remain a temporary exception, or must
+    paths meet ruling 1 before approval? Nav IR/taxi is 4 and lineup is 6, versus ruling 1's 2;
+    nav My moves is 2 versus its working budget of 1. Accept has not been walked.
+14. **Lineup rework:** Christopher said on 2026-10-10 it comes later. When should it happen?
+
+## 9. Ring 1 review
+
+**What worked**
+- The lineup envelope Landed twice live on 2026-10-09: the change and its revert.
+- Persistent receipts and the watcher retain Not verified plans and can land later matching evidence.
+- Home seasonal/alert surfaces, HQ lineup/roster, Classic Pulse Now and the trade desk were built.
+- Inspector IR/taxi drafts open the correct MFL pages. Neither intent has Landed live.
+
+**What revision 0 got wrong**
+- The two-click target was not met by nav IR/taxi or the one-swap lineup path. Working budgets differ too.
+- The state line omitted Not verified. A failed verification is not proof the watcher stopped.
+- The roadmap's seven first Acts were too broad for captured evidence. Propose/reject/revoke moved to ring 3.
+- Ready checks did not establish IR/taxi eligibility. MFL refused the offered Perine moves.
+- "Submit Lineup" was not MFL's button label. Only bottom "Submit Partial Lineup" saves.
+- Registry status `spec` labelled built Acts "not wired". Built and live-Landed now differ explicitly.
+
+**What changes for ring 2**
+- Keep ruling 1 unchanged. Ask Christopher about its measured gaps and lineup-rework timing
+  before claiming closure.
+- Keep trade.accept and IR/taxi marked built, not Landed live, until their live evidence exists.
+- Carry the missing trade forms and revoke safety constraint to ring 3.
+- Ring 2 remains the decision layer: Lab, contracts/cap, free-agent pool and bid tracking.
+  Its gate still requires Lab test parity, "How this is counted" and spec revision 2.
+- Ring 1 is not approved by this draft. Christopher's go is still required.
+
+Evidence: `Ring1_Gap_Closure.md` §§1, 8; `RESUME-2026-10-09-ring1-p7.md` §§4–7;
+the ring 1 run `PLAN.md` and phase reports p2a, p2b, p3b, p4b, p5b, p6b, p7b, p7c2, p7e;
+`UI_Target_Roadmap_2026-10.md` Rings 1–2. The 10-10 walkthrough/page findings are recorded in §1a and §8.

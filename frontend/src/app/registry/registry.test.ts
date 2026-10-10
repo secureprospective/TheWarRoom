@@ -57,7 +57,13 @@ describe('Endpoint map', () => {
       const html = renderToStaticMarkup(createElement(EndpointIndex, { placement: place }));
       for (const row of rows) {
         expect(html).toContain(row.id);
-        expect(html).toContain(`not wired · ring ${row.ring}`);
+        const item = html.split('<li').find((part) => part.includes(`<b>${row.id} ·`));
+        const labels: Record<string, string> = {
+          landed: 'landed live',
+          built: 'built, not yet landed live',
+          spec: 'not wired',
+        };
+        expect(item).toContain(`${labels[row.status]} · ring ${row.ring}`);
       }
     }
     for (const node of nodeKeys) {
@@ -65,6 +71,32 @@ describe('Endpoint map', () => {
         const place = `${nodes[node].label} › ${w.label.replace(' (role-gated)', '')}`;
         expect(placementRoute(place)).toEqual({ node, workspace: w.slug });
       }
+    }
+  });
+  it('distinguishes live-Landed Acts from built Acts and keeps every other row spec', () => {
+    const built = ['M-028', 'M-029', 'X-04'];
+    for (const row of endpoints) {
+      let status = 'spec';
+      if (row.id === 'M-027') status = 'landed';
+      if (built.includes(row.id)) status = 'built';
+      expect(row.status).toBe(status);
+    }
+    const checks: [EndpointId, string][] = [
+      ['M-027', 'landed live'],
+      ['M-028', 'built, not yet landed live'],
+      ['M-029', 'built, not yet landed live'],
+      ['M-033', 'not wired'],
+      ['X-04', 'built, not yet landed live'],
+      ['M-034', 'not wired'],
+    ];
+    for (const [id, label] of checks) {
+      const row = endpointById(id);
+      const html = renderToStaticMarkup(createElement(EndpointIndex, {
+        placement: row.placement as Placement,
+      }));
+      const item = html.split('<li').find((part) => part.includes(`<b>${id} ·`));
+      expect(item).toContain(`<small>${label} · ring ${row.ring}</small>`);
+      if (row.status !== 'spec') expect(item).not.toContain('not wired');
     }
   });
   it('gives every kept row two real routes; merged rows reach kept targets or a reachable place', () => {
