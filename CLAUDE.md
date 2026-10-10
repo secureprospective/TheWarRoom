@@ -1,5 +1,5 @@
 # TheWarRoom — Project CLAUDE.md
-**Version:** 3.0 — 2026-10-03
+**Version:** 3.1 — 2026-10-10
 **Project path:** `~/work/TheWarRoom` on the Beelink (the only clone that builds and runs the app)
 **Pillars:** Business, Technical
 
@@ -15,6 +15,11 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   the binding rulings R1–R12. The reasoning behind it: `Core_Build_Reasoning_2026-10.md`.
 - **Latest state:** the newest `docs/build-handoffs/RESUME-*.md`.
 - **What exists:** `SYSTEM_MAP.md`.
+- **UI target track:** built in rings (`docs/build-handoffs/UI_Target_Roadmap_2026-10.md`), each
+  ending with a spec revision (`docs/ui/Target_UI_Spec_2026-10.md`, revision 1 on 2026-10-10).
+  Every endpoint is a row in `docs/ui/endpoint-registry.csv`; `frontend/scripts/gen-endpoints.mjs`
+  generates `registry/endpoints.gen.ts` from it (never hand-edit the generated file).
+  Ring 1 merged 2026-10-10 (PR #15). Ring 2, the decision layer, is next, with IR/taxi eligibility.
 
 ## Session start
 
@@ -24,7 +29,8 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
    is not on the default PATH).
 4. Gates: `make lint` (ifaceguard, filelen report, bloat ratchet, golangci-lint), `make test`
    (`go test -race ./...`), `make verify` (both plus the frontend build; the pre-push hook runs
-   it). `make setup` once per clone wires the hooks.
+   it). `make setup` once per clone wires the hooks. Pushing needs Go on PATH too, because the
+   pre-push hook runs `make verify`.
 5. Live tests are opt-in: `TWR_LIVE_MFL=1`, `TWR_LIVE_NFLVERSE=1`, `TWR_LIVE_CFBD=1`,
    `TWR_LIVE_EA=1`. MFL's players endpoint allows one call a day; leave its live test alone
    unless that call is the point.
@@ -35,11 +41,24 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 
 ## Workflow (R4)
 
-- **Claude builds** and is the engineering authority: architecture, storage shape, refactors
-  and standards are Claude's calls, explained so Christopher can veto. Christopher decides
-  product intent, priorities and anything outward-facing.
-- **Bee reviews** finished stages when GPT budget allows. Briefs go in a run directory under
-  `~/fleet/runs/`; Bee writes drafts there and never runs git or opens a GUI.
+- **Claude is the head brain** and the engineering authority: architecture, storage shape,
+  refactors and standards are Claude's calls, explained so Christopher can veto. Christopher
+  decides product intent, priorities and anything outward-facing. Claude plans, writes briefs,
+  reviews every line Sol writes, fixes what is wrong, proves each fix with a test that fails
+  without it, runs `make verify`, commits, and runs the live gates. Claude protects its context.
+- **Sol writes the code:** `gpt-6.1-sol` through pi on Bee, at **medium** thinking. Do not raise
+  it (Christopher, 2026-10-09: "it's been doing well on medium").
+  - Briefs are files in `~/fleet/briefs/`. Write them in the scratchpad and `scp` them over,
+    then check the size: `ssh -n` with a heredoc writes an empty file.
+  - Dispatch: `dispatch.sh <phase> <brief>` in the ring's run directory under `~/fleet/runs/`,
+    then poll `<phase>/sentinel`. Sol's report is `<phase>/REPORT.md`.
+  - Sol never runs git or opens a GUI.
+- **The expert panel** gates decisions that set a standard or are hard to undo:
+  `~/fleet/bin/panel-dispatch.sh <brief>`. Four seats from four labs, no Claude (Sol, Kimi, GLM,
+  Nemotron); quotes are checked against their files; `ROUNDS=2` adds cross-examination. Its
+  output is a recommendation to Christopher, not a decision.
+- **Christopher follows progress** in the savvy-progress `/agents` panel, where each pi session
+  (Sol's phases, each panel seat) shows as its own card.
 - **Claude runs live gates on Claude-OS (R12):** the production build (`make build`) against a
   snapshot of the live database, taken with SQLite's backup API, never a plain file copy.
   - Claude-OS is the libvirt VM `Claude-OS` under `qemu:///session` on this box. Start it with
@@ -47,9 +66,15 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
     it is light and in nobody's way (Christopher, 2026-10-03).
   - Reach it with `ssh claudeos`. Drive it with xdotool and scrot on `DISPLAY=:0`, and launch
     the app with `setsid -f` so the ssh session returns.
+  - If Bee reboots, the VM comes back at the login screen: Christopher logs into the desktop
+    before the app can start (otherwise GTK fails to init).
+  - Deploy: `scp` the build to `~/warroom-ring1/thewarroom.new`, then
+    `~/warroom-ring1/deploy.sh <old-sha>`, which keeps the previous binary.
+  - Close the MFL tabs you opened when the work is done (spec revision 1, §8 Q12).
   - Screenshots and logs go to the run directory.
   - Never launch the app on Christopher's live desktop.
-- Merge to main only on Christopher's go-ahead, after a passing live gate.
+- Merge to main only on Christopher's go-ahead, after a passing live gate. `main` requires
+  linear history: merge PRs with rebase (`~/.local/bin/gh pr merge <n> --rebase`).
 
 ## Hard Constraints (never route around)
 
@@ -86,6 +111,9 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 | MFL API and scoring | `docs/data-layer/MFL_API_Specification.md`, `MFL_Scoring_Rules_Decode.md` |
 | Approved data sources | `docs/sources/Approved_Sources.md` |
 | UI direction | `docs/ui/UI_Direction_Document.md` |
+| UI build order (rings) | `docs/build-handoffs/UI_Target_Roadmap_2026-10.md` |
+| UI target spec and its rulings | `docs/ui/Target_UI_Spec_2026-10.md` |
+| Every endpoint and its status | `docs/ui/endpoint-registry.csv` |
 | Open questions and decisions | `docs/roadmap/Roadmap_and_Open_Questions.md` |
 | The 2026-10 engineering audit | `docs/reviews/engineering-audit-2026-10/` |
 | Deferred: the Commissioner Suite | `docs/build-handoffs/Commissioner_Suite_Plan_DEFERRED.md` |
