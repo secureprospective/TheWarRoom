@@ -88,6 +88,13 @@ it('carries player ownership and NFL context, place hierarchy and command bindin
   expect(murray?.words).toContain('kyler');
 });
 
+it('gives the card name no tooltip, so none lingers over the next card after a click', () => {
+  const html = renderToStaticMarkup(createElement(PlayerCard, {
+    snapshot, franchiseId: roster.franchiseId, playerId: roster.players[0].id, asOf: new Date(),
+  }));
+  expect(html).toContain('class="card-title">');
+});
+
 it('renders a card dot only for its own provenance', () => {
   const props = {
     snapshot, franchiseId: roster.franchiseId, playerId: roster.players[0].id, asOf: new Date(),
