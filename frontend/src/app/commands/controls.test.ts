@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { Act } from './Act';
 import {
   readdirSync,
   readFileSync,
@@ -103,5 +106,45 @@ describe('Readable app source (§M2/§M3)', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('Act tooltips', () => {
+  it('omits a redundant title on plain visible text, including nested text', () => {
+    for (const children of [undefined, 'Edit lineup', createElement('span', null, 'Edit lineup')]) {
+      const html = renderToStaticMarkup(createElement(Act, {
+        verb: 'lineup.edit', args: { franchiseId: '0025' }, label: 'Edit lineup', children,
+      }));
+      expect(html).toContain('Edit lineup</');
+      expect(html).toContain('aria-label="Edit lineup"');
+      expect(html).not.toContain('title=');
+    }
+  });
+  it('gives a self-describing card no title, so none lingers over the next card', () => {
+    const Card = () => createElement('div', null, 'Perine, Samaje · RB · CIN');
+    const html = renderToStaticMarkup(createElement(Act, {
+      verb: 'lineup.edit', args: { franchiseId: '0025' }, label: 'Bench Perine, Samaje',
+      children: createElement(Card),
+    }));
+    expect(html).toContain('Perine, Samaje · RB · CIN');
+    expect(html).toContain('aria-label="Bench Perine, Samaje"');
+    expect(html).not.toContain('title=');
+  });
+  it('keeps a disabled reason when the visible text does not explain it', () => {
+    const html = renderToStaticMarkup(createElement(Act, {
+      verb: 'lineup.draft', args: {}, disabled: true,
+      label: 'No changes from saved lineup', children: 'Check and save plan',
+    }));
+    expect(html).toContain('>Check and save plan</button>');
+    expect(html).toContain('title="No changes from saved lineup"');
+    expect(html).toContain('aria-label="No changes from saved lineup"');
+  });
+  it.each(['icon', 'rail'] as const)('keeps the title on a textless %s Act', (variant) => {
+    const html = renderToStaticMarkup(createElement(Act, {
+      verb: 'lineup.edit', args: { franchiseId: '0025' }, variant,
+      label: 'Edit lineup', children: createElement('svg', { 'aria-hidden': true }),
+    }));
+    expect(html).toContain('title="Edit lineup"');
+    expect(html).toContain('aria-label="Edit lineup"');
   });
 });
