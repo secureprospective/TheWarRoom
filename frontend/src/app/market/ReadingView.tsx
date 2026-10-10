@@ -17,7 +17,7 @@ export function HowCounted({ reading }: { reading: SurfaceReading }) {
   return (
     <details className="market-how" data-endpoint="L-33">
       <summary>How this is counted</summary>
-      <p>This is the league’s trade history through the archive cutoff, not today’s live market.</p>
+      <p>This is the league’s trade and draft history through the archive cutoff, not today’s live market.</p>
       <p>
         {reading.howCounted || 'No archive reading is available; no numbers have been supplied.'}
       </p>

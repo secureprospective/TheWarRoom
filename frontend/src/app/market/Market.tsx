@@ -1,13 +1,28 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
+import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
 import { assets, assetLabels, phases } from './contract';
 import { marketState, prefetchMarket } from './state';
 import { ReadingView } from './ReadingView';
 import './market.css';
 
+const Draft = lazy(() => import('./Draft'));
 export default function Market({ kind }: { kind?: string }) {
   if (kind) return <MarketInspector kind={kind} />;
-  return <MarketScreen />;
+  return <MarketWorkspace />;
+}
+function MarketWorkspace() {
+  const s = commands.use();
+  const draft = s.endpointIds.some(id => /^L-(1[5-9]|2[0-2])$/.test(id));
+  return <>
+    <div className="market-controls" aria-label="Market views">
+      <Act verb="endpoint.open" args={{id:'L-01'}} label="Trade Market" active={!draft}>Trade Market</Act>
+      <Act verb="endpoint.open" args={{id:'L-15'}} label="Draft lab" active={draft}>Draft lab</Act>
+    </div>
+    {draft ? (
+      <Suspense fallback={<p role="status">Opening Draft lab…</p>}><Draft /></Suspense>
+    ) : <MarketScreen />}
+  </>;
 }
 function MarketScreen() {
   const s = marketState.use();
@@ -33,7 +48,7 @@ function MarketScreen() {
               args={{ field: 'window', value: id }}
               label={`Choose ${id}`}
             >
-              {{ spring: 'Offseason', summer: 'Draft to kickoff', season: 'In season' }[id]}
+              {{ spring: 'Offseason', summer: 'Rookie draft through kickoff', season: 'In season' }[id]}
             </Act>
           ))}
         </div>
@@ -86,13 +101,13 @@ function MarketScreen() {
             </Act>
           ))}
         </div>
-        <Act
+        {canRetry(s.lists, s.clock, s.stretches) && <Act
           verb="market"
           args={{ field: 'retry', value: '' }}
           label="Retry Market archive reading"
         >
           Retry reading
-        </Act>
+        </Act>}
         {s.pending && s.lists && (
           <p role="status">
             Updating filters; the figures below still show the previous scope until Go replies.
@@ -114,9 +129,21 @@ export function MarketInspector({ kind }: { kind: string }) {
   return (
     <div className="market">
       <ReadingView reading={s.profiles[kind]} title={`Asset profile · ${kind}`} inspect />
+      {kind.startsWith('pick') && (
+        <Suspense fallback={<p role="status">Opening draft pick history…</p>}>
+          <Draft kind={kind} />
+        </Suspense>
+      )}
     </div>
   );
 }
 
 export { prefetchMarket as warm } from './state';
-export const set = marketState.change;
+export const set = (change: import('./contract').MarketFilter) => {
+  if (change.field.startsWith('draft-')) return import('./Draft').then(m => m.set(change));
+  return marketState.change(change);
+};
+
+export function canRetry(...readings: (import("./contract").SurfaceReading | undefined)[]) {
+  return readings.some(r => r?.status === "failed");
+}

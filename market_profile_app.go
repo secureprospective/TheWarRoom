@@ -71,6 +71,10 @@ func profileDeliveryCount(d *lab.Data, s lab.Scope, kind string) int {
 }
 func profileSections(p *lab.Profile, deliveryCount int) []MarketSection {
 	why := MarketSection{ID: "L-09", Title: "Why cheap or dear", Note: "Paid forecast wins and delivered wins are kept separate.", Rows: []MarketLine{{Label: "Paid", Count: p.N, Range: marketRange(p.Paid), Detail: "Relative to the typical asset's forecast-win price"}}}
+	if p.Kind == lab.Anchor {
+		why.Rows[0].Range = nil
+		why.Rows[0].Detail = "Every other price is measured against this one; it cannot be cheap or dear"
+	}
 	delivered := MarketLine{Label: "Delivered", Count: deliveryCount, Detail: "Fewer than 8 played-out records or less than 0.5 forecast wins; no delivery estimate"}
 	if p.Delivered != nil {
 		d := p.Delivered

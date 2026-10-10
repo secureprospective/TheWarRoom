@@ -209,3 +209,12 @@ retains prior readings until replacements arrive, and rejects stale responses. `
 shares range geometry and the counting disclosure. The `market` command owns filters/inspection;
 `endpoint.open` and War Room › Market are the two entry routes. `data/parse.ts` exposes the shared
 freshness decoder used by both live and archive provenance. Player Inspector code is unchanged.
+
+`internal/lab/draft.go` and `draft_position.go` compute slot-relative draft returns, season cells,
+monotone value curves, plays-like picks, stretch-matched starter rates, known year-2 retention
+and same-season draft-or-buy comparisons. `draft_app.go` validates `RawDraftScope` at IPC and
+returns `Reading[MarketSurface]` from `TargetDraftLab`; no live ownership or player forecast.
+`frontend/src/app/market/Draft.tsx` is a second lazy chunk reached from Market's Draft lab door
+or L-15–L-22. `draftState.ts` retains prior scopes during reads and rejects stale replies; pick
+assets reuse the Inspector for historical round cohorts. Draft goldens additionally stamp
+`draftlab.js`; Node remains offline reference tooling only.

@@ -9,6 +9,8 @@ const lab = resolve(process.argv[2] || '');
 if (!process.argv[2]) throw new Error('usage: node tools/labparity/gen-goldens.mjs LAB');
 const enginePath = join(lab, 'app/js/engine.js');
 const E = await import(pathToFileURL(enginePath));
+const draftPath = join(lab, 'app/js/draftlab.js');
+const D = await import(pathToFileURL(draftPath));
 const {decode, PHASES} = await import(pathToFileURL(join(lab, 'app/js/model.js')));
 const bytes = gunzipSync(readFileSync('internal/lab/testdata/lab.json.gz'));
 const sha = b => createHash('sha256').update(b).digest('hex');
@@ -94,5 +96,59 @@ for(const [name,scope] of scopes) {
 }
 // Threshold fixture guarantees a value/null cell even if real scopes lack n=7.
 writeGolden('boundaries',JSON.stringify({header,records:Array.from({length:7},()=>({expected:1,delivered:1})),deliveredRatio:E.deliveredRatio(Array.from({length:7},()=>({expected:1,delivered:1})))},null,2)+'\n');
+const draftPick = p => ({id:p.id, segment:p.segment, nfl:p.nfl, judged:p.judged, got:p.got, expected:p.expected});
+const cell = c => Object.fromEntries(Object.entries(c).filter(([k,v])=>k!=='picks' && v!==undefined && (v!==null || k==='ratio') && (v!==false || !['best','worst'].includes(k))));
+const position = p => ({...p, all:p.all.map(draftPick), where:p.where.map(cell), when:p.when.map(cell), nfl:p.nfl.map(cell), age:p.age.map(cell)});
+const draftScopes = [
+ ['measured',{from:2017,to:2026,seasons:3}], ['two',{from:2017,to:2026,seasons:2}],
+ ['four',{from:2017,to:2026,seasons:4}], ['early',{from:2013,to:2016,seasons:3}],
+ ['recent',{from:2024,to:2026,seasons:3}], ['round3',{from:2017,to:2026,seasons:3,segments:['r3']}],
+ ['nfl1',{from:2017,to:2026,seasons:3,nfl:['n1']}], ['empty',{from:2100,to:2101,seasons:3}],
+];
+const groups=['QB','RB','WR','TE','PK','DL','LB','DB'];
+const draftFixtures=draftScopes.map(([name,scope])=>{
+ const picks=D.draftScope(data,scope), curve=D.slotCurve(picks);
+ const positions=Object.fromEntries(groups.map(g=>[g,position(D.positionDraft(picks,g))]));
+ const map=D.draftMap(picks,groups.map(id=>({id}))).map(r=>({...r,when:r.when.map(cell),where:r.where.map(c=>({segment:c.segment,n:c.n,reading:c.ratio==null?null:Object.fromEntries(Object.entries(c).filter(([k])=>!['segment'].includes(k)))}))}));
+ const ageMarket=E.leagueMarket(data,{from:Math.max(2017,scope.from),to:scope.to,byAge:true});
+ const buys=Object.fromEntries(groups.map(g=>{
+  const rows=[`${g}:young`,`${g}:prime`,`${g}:older`,'pick1:next','pick2:next','pick3:next'].map(k=>ageMarket.rows?.find(r=>r.kind===k)).filter(r=>r?.cost);
+  const ages=rows.filter(r=>r.kind.startsWith(g+':')).sort((a,b)=>a.cost.value-b.cost.value);
+  const rounds=new Map();for(const p of picks.filter(p=>p.group===g && p.judged)){const k=`pick${Math.min(3,p.round)}:next`;rounds.set(k,(rounds.get(k)||0)+1);}
+  const usual=[...rounds].sort((a,b)=>b[1]-a[1])[0]?.[0];
+  const via=rows.find(r=>r.kind===usual)||rows.find(r=>r.kind.startsWith('pick'));
+  return [g,{rows:rows.map(row),cheapest:ages[0]?.kind??null,via:via?.kind??null}];
+ }));
+ const values={draftScope:picks.map(draftPick),vsSlot:D.vsSlot(picks),bySeason:D.bySeason(picks).map(cell),slotCurve:curve,playsLike:[null,0,1,10].map(v=>D.playsLike(curve,v)),hitRate:D.hitRate(picks,picks),positionDraft:positions,draftMap:map,draftBuy:buys};
+ for(const [g,p] of Object.entries(positions)) {
+  const mine=picks.filter(x=>x.group===g && x.judged);
+  if(p.hits) {
+   const base=new Map(D.SEGMENTS.map(seg=>{const xs=picks.filter(x=>x.judged && x.segment===seg.id);return [seg.id,xs.length?xs.filter(x=>['top','starter'].includes(x.best)).length/xs.length:null]}));
+   const expected=mine.reduce((t,x)=>t+base.get(x.segment),0),v=mine.reduce((t,x)=>{const b=base.get(x.segment);return t+b*(1-b)},0),hits=mine.filter(x=>['top','starter'].includes(x.best)).length;
+   margin(Math.abs(hits-expected),1.96*Math.sqrt(v),`draft:${name}:${g}:hit-tone`,v===0 && hits===expected);
+  }
+  for(const c of [...p.where,...p.nfl,...p.age])if(c.like && c.ratio!=null){
+   const target=curve[c.at]*c.ratio;
+   for(const o of [c.like-1,c.like])if(o>0 && curve[o]!=null)margin(target,curve[o],`draft:${name}:${g}:playsLike:${c.at}/${o}`,c.ratio===1);
+  }
+  for(const [axis,cs] of Object.entries({where:p.where,when:p.when,nfl:p.nfl,age:p.age})) {
+   for(const [i,c] of cs.entries()) {
+    const cohort=axis==='where'?mine.filter(x=>x.segment===c.segment):axis==='nfl'?mine.filter(x=>x.nfl===c.nfl):axis==='age'?mine.filter(x=>x.age!=null && (c.age==='a21'?x.age<22:c.age==='a22'?x.age>=22 && x.age<23:x.age>=23)):picks.filter(x=>x.group===g && x.wins[c.season-1]!=null && x.slotWins[c.season-1]!=null);
+    const expected=cohort.reduce((sum,x)=>sum+(axis==='when'?x.slotWins[c.season-1]:x.expected),0);
+    margin(expected,0.5,`draft:${name}:${g}:${axis}:${i}:slot-total`);
+   }
+   for(const [i,c] of cs.entries())if(c.ratio!=null){
+    margin(c.lo,1,`draft:${name}:${g}:${axis}:${i}:lo>1`);margin(c.hi,1,`draft:${name}:${g}:${axis}:${i}:hi<1`);
+   }
+   const known=cs.filter(c=>c.ratio!=null);
+   for(let i=0;i<known.length;i++)for(let j=i+1;j<known.length;j++) {
+    const a=known[i],b=known[j];margin(Math.abs(a.ratio-b.ratio),Math.hypot((a.hi-a.lo)/3.92,(b.hi-b.lo)/3.92)*1.96,`draft:${name}:${g}:${axis}:${i}/${j}:extreme`);
+   }
+  }
+ }
+ return {name,scope,values};
+});
+const boundaryPicks=D.draftScope(data,{from:2017,to:2017,seasons:3}).filter(p=>p.judged).slice(0,7);
+writeGolden('draft',JSON.stringify({header:{...header,draftSHA:sha(readFileSync(draftPath))},fixtures:draftFixtures,boundary:{picks:boundaryPicks.map(draftPick),hitRate:D.hitRate(boundaryPicks,boundaryPicks)}},null,2)+'\n');
 console.log(JSON.stringify({ties,knifeEdges:margins,minimum},null,2));
 if(margins.length)throw new Error('non-identity decision margins below 1e-6; see named rows above');

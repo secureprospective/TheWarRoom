@@ -2055,6 +2055,28 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class RawDraftScope {
+	    from: number;
+	    to: number;
+	    seasons: number;
+	    segments: string[];
+	    nfl: string[];
+	    group: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawDraftScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.from = source["from"];
+	        this.to = source["to"];
+	        this.seasons = source["seasons"];
+	        this.segments = source["segments"];
+	        this.nfl = source["nfl"];
+	        this.group = source["group"];
+	    }
+	}
 	export class RawMarketScope {
 	    from: number;
 	    to: number;

@@ -201,3 +201,28 @@ func TestMarketRangeWire(t *testing.T) {
 		t.Fatal("null range fabricated")
 	}
 }
+
+func TestMarketAnchorClassification(t *testing.T) {
+	a := NewApp()
+	raw := RawMarketScope{From: 2017, To: 2026}
+	lists := a.TargetMarketLists(raw)
+	for _, section := range lists.Value.Sections[:2] {
+		for _, row := range section.Rows {
+			if row.Key == lab.Anchor {
+				t.Fatal("anchor classified as paid cheap/dear")
+			}
+		}
+	}
+	found := false
+	for _, row := range lists.Value.Sections[3].Rows {
+		found = found || row.Key == lab.Anchor
+	}
+	if !found {
+		t.Fatal("Lab retains anchor in delivered sell list")
+	}
+	p := a.TargetAssetProfile(RawMarketAsset{Scope: raw, Kind: lab.Anchor})
+	paid := p.Value.Sections[0].Rows[0]
+	if paid.Range != nil || !strings.Contains(paid.Detail, "Every other price is measured against this one") {
+		t.Fatal("anchor profile must explain fixed price without bar")
+	}
+}

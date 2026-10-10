@@ -12,7 +12,7 @@ const fixture = JSON.parse(readFileSync(resolve(frontend, 'src/app/data/fixtures
 const envelope = JSON.parse(readFileSync(resolve(frontend, 'src/app/data/fixtures/envelope-demo.json')));
 const names = fixture.players.value.map((player) => player.name).filter(Boolean);
 
-function check(entry, budget = 325_000, source = readFileSync(entry, 'utf8')) {
+function check(entry, budget = 321_449, source = readFileSync(entry, 'utf8')) {
   const size = Buffer.byteLength(source);
   if (size > budget) throw new Error(`Entry ${size} bytes exceeds ${budget} byte budget`);
   if (names.slice(0, 12).every((name) => source.includes(name))) {
@@ -29,12 +29,12 @@ function check(entry, budget = 325_000, source = readFileSync(entry, 'utf8')) {
 
 if (!entries.length) throw new Error('No entry script in dist/index.html');
 for (const entry of entries) {
-  console.log(`bundle-budget: ${entry}: ${check(entry)} bytes (limit 325000)`);
+  console.log(`bundle-budget: ${entry}: ${check(entry)} bytes (limit 321449)`);
   if (process.argv.includes('--self-test')) {
     assert.throws(() => check(entry, 1000), /exceeds 1000/);
-    assert.throws(() => check(entry, 325_000, names.slice(0, 12).join('|')), /Fixture player run/);
-    assert.throws(() => check(entry, 325_000, envelope.receipt.correlationId), /Envelope fixture in entry/);
-    assert.throws(() => check(entry, 325_000, 'Move stages'), /rail implementation in entry/);
+    assert.throws(() => check(entry, 321_449, names.slice(0, 12).join('|')), /Fixture player run/);
+    assert.throws(() => check(entry, 321_449, envelope.receipt.correlationId), /Envelope fixture in entry/);
+    assert.throws(() => check(entry, 321_449, 'Move stages'), /rail implementation in entry/);
     console.log('bundle-budget: rejected 1 KB budget, snapshot, envelope and rail leaks');
   }
 }

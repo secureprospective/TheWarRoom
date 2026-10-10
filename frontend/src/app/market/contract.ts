@@ -65,7 +65,9 @@ export const assets = [
   'pick3:later',
 ];
 export type MarketFilter = {
-  field: 'phase' | 'asset' | 'age' | 'window' | 'reset' | 'retry' | 'inspect';
+  field: 'phase' | 'asset' | 'age' | 'window' | 'reset' | 'retry' | 'inspect'
+    | 'draft-segment' | 'draft-nfl' | 'draft-position' | 'draft-seasons'
+    | 'draft-from' | 'draft-reset' | 'draft-retry';
   value: string;
 };
 

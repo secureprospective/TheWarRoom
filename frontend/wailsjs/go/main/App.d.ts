@@ -73,6 +73,8 @@ export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospect
 
 export function TargetDraftIR(arg1:string,arg2:string):Promise<envelope.Receipt>;
 
+export function TargetDraftLab(arg1:main.RawDraftScope):Promise<main.Reading_main_MarketSurface_>;
+
 export function TargetDraftLineup(arg1:string,arg2:Array<string>):Promise<envelope.Receipt>;
 
 export function TargetDraftTaxi(arg1:string,arg2:string):Promise<envelope.Receipt>;

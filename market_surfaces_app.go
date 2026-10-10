@@ -101,7 +101,7 @@ func marketSections() []MarketSection {
 }
 func appendMarketRow(sections []MarketSection, r lab.MarketRow) {
 	line := MarketLine{Key: r.Kind, Label: marketName(r.Kind), Count: r.N, Detail: "Asset legs in valued trades"}
-	if r.Paid != nil {
+	if r.Kind != lab.Anchor && r.Paid != nil {
 		paid := line
 		paid.Range = marketRange(r.Paid)
 		if r.Paid.Hi < 1 {

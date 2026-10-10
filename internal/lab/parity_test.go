@@ -184,7 +184,7 @@ func keys(m map[string]any) []string {
 	return out
 }
 func exactNumber(path string) bool {
-	for _, name := range []string{".n", ".trades", ".from", ".to", ".mid", ".records", ".id", ".moved", ".realN", ".total"} {
+	for _, name := range []string{".n", ".trades", ".from", ".to", ".mid", ".records", ".id", ".moved", ".realN", ".total", ".at", ".like", ".overall", ".season"} {
 		if strings.HasSuffix(path, name) {
 			return true
 		}
@@ -209,12 +209,12 @@ func TestParity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(paths) != 11 {
-		t.Fatalf("expected 11 fixture files; got %d", len(paths))
+	if len(paths) != 12 {
+		t.Fatalf("expected 12 fixture files; got %d", len(paths))
 	}
 	maxima := make(map[string]float64)
 	for _, path := range paths {
-		if strings.HasSuffix(path, "boundaries.json.gz") {
+		if strings.HasSuffix(path, "boundaries.json.gz") || strings.HasSuffix(path, "draft.json.gz") {
 			continue
 		}
 		g := readGolden(t, path)

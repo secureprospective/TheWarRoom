@@ -138,6 +138,10 @@ export function TargetDraftIR(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftIR'](arg1, arg2);
 }
 
+export function TargetDraftLab(arg1) {
+  return window['go']['main']['App']['TargetDraftLab'](arg1);
+}
+
 export function TargetDraftLineup(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftLineup'](arg1, arg2);
 }

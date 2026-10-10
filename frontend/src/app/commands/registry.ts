@@ -68,7 +68,9 @@ export function createCommands(
   const moves = createMovesState();
   const mflKey = createMFLKeyState();
   const prefetchMoves = createMovesPrefetch();
+  const hqFailure = (cause: unknown) => console.error('HQ prefetch failed:', cause);
   const ambient = {
+    aliases: [] as const,
     roles: ['gm', 'commish', 'admin'] as const,
     gravity: 'G0' as const,
     undo: 'instant' as const,
@@ -186,7 +188,6 @@ export function createCommands(
       ...ambient,
       id: kind === 'handoff' ? 'move.handoff' : `lineup.${kind}`,
       label,
-      aliases: [],
       args,
       gravity: remote ? 'G1' : 'G0',
       undo: remote ? 'reversible' : 'instant',
@@ -198,7 +199,6 @@ export function createCommands(
       ...ambient,
       id: 'market',
       label: 'Market',
-      aliases: [],
       args: ['field', 'value'],
       run: (change: import('../market/contract').MarketFilter) => {
         if (change.field === 'inspect' || change.field === 'asset')
@@ -214,7 +214,6 @@ export function createCommands(
       ...ambient,
       id: 'pulse.toggle',
       label: 'Toggle starters',
-      aliases: [],
       args: ['matchup', 'expanded'],
       run: ({ matchup, expanded }: { matchup: string; expanded: boolean }) =>
         state.write({
@@ -225,7 +224,6 @@ export function createCommands(
       ...ambient,
       id: 'trade.accept.plan',
       label: 'Plan accept',
-      aliases: [],
       roles: ['gm'],
       gravity: 'G2',
       undo: 'reversible',
@@ -266,7 +264,6 @@ export function createCommands(
       ...ambient,
       id: 'mflkey.forget',
       label: 'Forget MFL key',
-      aliases: [],
       gravity: 'G1',
       undo: 'reversible',
       run: (_args: Record<string, never>) => {
@@ -289,7 +286,6 @@ export function createCommands(
       ...ambient,
       id: 'surface.close',
       label: 'Close endpoint surface',
-      aliases: [],
       run: (_args: Record<string, never>) => state.write({ endpointSurface: null }),
     }),
     'endpoint.open': command({
@@ -323,7 +319,7 @@ export function createCommands(
         if (!snapshot || !validFranchise(snapshot, args.franchiseId)) {
           throw new Error('franchise.set: unknown franchise');
         }
-        void prefetchHQ().catch((cause) => console.error('HQ prefetch failed:', cause));
+        void prefetchHQ().catch(hqFailure);
         lineups.refresh(args.franchiseId);
         trades.refresh(args.franchiseId);
         alerts.refresh(args.franchiseId);
@@ -379,7 +375,6 @@ export function createCommands(
       ...ambient,
       id: 'commandbar.close',
       label: 'Close command bar',
-      aliases: [],
       run: (_args: Record<string, never>) => state.write({ commandbar: false }),
     }),
     'nav.open': command({
@@ -558,7 +553,7 @@ export function createCommands(
       void loadMarket().then((m) => m.warm(), console.error);
       const franchiseId = loadFranchise(value, storage());
       if (franchiseId) {
-        void prefetchHQ().catch((cause) => console.error('HQ prefetch failed:', cause));
+        void prefetchHQ().catch(hqFailure);
         lineups.refresh(franchiseId);
         trades.refresh(franchiseId);
         alerts.refresh(franchiseId);
