@@ -134,6 +134,14 @@ export function TargetClock() {
   return window['go']['main']['App']['TargetClock']();
 }
 
+export function TargetCounterpartTeam(arg1) {
+  return window['go']['main']['App']['TargetCounterpartTeam'](arg1);
+}
+
+export function TargetCounterparties(arg1) {
+  return window['go']['main']['App']['TargetCounterparties'](arg1);
+}
+
 export function TargetDraftIR(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftIR'](arg1, arg2);
 }

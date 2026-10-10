@@ -316,6 +316,6 @@ it('all eight Draft endpoints route through War Room Market and have menu and co
     expect(c.read()).toMatchObject({ asset: 'pick1:next', inspector: 'rest' });
     const source = readFileSync('src/app/market/Market.tsx', 'utf8');
     expect(source).toContain("import('./Draft')");
-    expect(source).toContain("args={{id:'L-15'}}");
+    expect(source).toMatch(/args=\{\{\s*id:\s*['"]L-15['"]\s*\}\}/);
     expect(source).toContain('<Draft kind={kind}');
 });

@@ -216,7 +216,7 @@ func (a *App) TargetMarketStretches(raw RawMarketScope) Reading[MarketSurface] {
 	section := MarketSection{ID: "L-35", Title: "Trades per season by stretch", Note: "Completed two-sided trades, not only valued trades; completed seasons only. Asset chips narrow these counts; stretch selection leaves the calendar context visible.", Rows: []MarketLine{}}
 	for _, phase := range marketPhases() {
 		p := totals.Phases[phase]
-		section.Rows = append(section.Rows, MarketLine{Key: phase, Label: marketPhaseName(phase), Count: p.N, Detail: fmt.Sprintf("%.1f trades per season across %d completed seasons", p.PerSeason, totals.Seasons)})
+		section.Rows = append(section.Rows, MarketLine{Key: phase, Label: marketPhaseName(phase), Count: p.N, Detail: fmt.Sprintf("%.1f trades per season across %s", p.PerSeason, countLabel(totals.Seasons, "completed season"))})
 	}
 	reason := ""
 	if totals.Total == 0 {

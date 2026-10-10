@@ -209,12 +209,12 @@ func TestParity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(paths) != 12 {
-		t.Fatalf("expected 12 fixture files; got %d", len(paths))
+	if len(paths) != 13 {
+		t.Fatalf("expected 13 fixture files; got %d", len(paths))
 	}
 	maxima := make(map[string]float64)
 	for _, path := range paths {
-		if strings.HasSuffix(path, "boundaries.json.gz") || strings.HasSuffix(path, "draft.json.gz") {
+		if strings.HasSuffix(path, "boundaries.json.gz") || strings.HasSuffix(path, "draft.json.gz") || strings.HasSuffix(path, "teams.json.gz") {
 			continue
 		}
 		g := readGolden(t, path)

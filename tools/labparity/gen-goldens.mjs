@@ -150,5 +150,66 @@ const draftFixtures=draftScopes.map(([name,scope])=>{
 });
 const boundaryPicks=D.draftScope(data,{from:2017,to:2017,seasons:3}).filter(p=>p.judged).slice(0,7);
 writeGolden('draft',JSON.stringify({header:{...header,draftSHA:sha(readFileSync(draftPath))},fixtures:draftFixtures,boundary:{picks:boundaryPicks.map(draftPick),hitRate:D.hitRate(boundaryPicks,boundaryPicks)}},null,2)+'\n');
+const teamsPath=join(lab,'app/js/teams.js');
+const T=await import(pathToFileURL(teamsPath));
+// Full side objects appear once (tradeSides); everywhere else a side is the compact
+// "tradeID:fid" reference, so the golden stays a fraction of the raw facts.
+const side=s=>({tradeID:s.t.id,fid:s.fid,other:s.other,season:s.season,window:s.window,
+ phase:s.phase,tier:s.tier||'',otherTier:s.otherTier||'',rank:s.rank,now:s.now,real:s.real,
+ players:s.players,picks:s.picks,picksIn:s.picksIn,picksOut:s.picksOut,
+ ageIn:s.ageIn,ageOut:s.ageOut,got:s.got.map(l=>({class:l.xClass,value:l.xValue,age:l.age})),
+ gave:s.gave.map(l=>({class:l.xClass,value:l.xValue,age:l.age})),posture:s.posture});
+const ref=s=>`${s.t.id}:${s.fid}`;
+const teamClean=value=>JSON.parse(JSON.stringify(value,(k,v)=>{
+ if(k==='sides')return v.map(ref);
+ if(k==='base' && v===null)return undefined;
+ return v;
+}));
+function teamMargins(value,path) {
+ if(!value || typeof value!=='object')return;
+ if(value.tone && value.lo!=null) {
+  const base=value.p!=null ? (value.base??null) : 0;
+  if(base!=null) {
+   const identity=value.mean===0 && value.lo===0 && value.hi===0;
+   margin(value.lo,base,path+'.lo',identity);margin(value.hi,base,path+'.hi',identity);
+  }
+ }
+ for(const [k,v] of Object.entries(value))teamMargins(v,path+'.'+k);
+}
+const teamScopes=[
+ ['all',{from:2013,to:2026}],['measured',{from:2017,to:2026},true],
+ ['recent',{from:2024,to:2026}],['early',{from:2013,to:2016}],
+ ['rebuild-season',{from:2017,to:2026,tiers:['rebuild'],windows:['season']}],
+ ['later',{from:2017,to:2026,postures:['later']}],
+ ['one-team',{from:2017,to:2026,team:'0001'}],
+ ['empty',{from:2100,to:2101}],
+];
+const franchiseIds=()=>[...data.franchises.keys()];
+// The measured scope profiles every franchise; other scopes a fixed few plus the
+// busiest, so scope filtering is proven without re-serialising every profile.
+const profileIds=(sides,all)=>{
+ const ids=franchiseIds();
+ if(all)return ids;
+ const count=id=>sides.filter(s=>s.fid===id).length;
+ const busiest=ids.reduce((best,id)=>count(id)>count(best)?id:best,ids[0]);
+ return [...new Set([...ids.slice(0,4),busiest])];
+};
+const teamFixtures=teamScopes.map(([name,scope,all])=>{
+ const league=T.sidesInScope(data,{from:scope.from,to:scope.to}),sides=T.sidesInScope(data,scope);
+ const profiles=Object.fromEntries(profileIds(sides,all).map(id=>[id,T.teamProfile(data,sides,league,id)]));
+ const trends=T.tierTrends(sides);
+ for(const tier of trends.tiers)for(const [id,shift] of Object.entries(tier.shift))if(shift){
+  const mine=sides.filter(s=>s.tier===tier.tier),a=mine.filter(s=>s.season<=shift.from[1]),b=mine.filter(s=>s.season>shift.from[1]);
+  margin(Math.abs(shift.late-shift.early),1.96*Math.sqrt(shift.early*(1-shift.early)/a.length+shift.late*(1-shift.late)/b.length),`teams:${name}:${tier.tier}:${id}:shift`,shift.early===shift.late && [0,1].includes(shift.early));
+ }
+ const values=teamClean({sidesInScope:sides.map(ref),behaviour:T.behaviour(sides),againstLeague:T.behaviour(sides,league),tierTrends:trends,tierPairs:T.tierPairs(sides),teamRows:T.teamRows(sides,league),teamProfile:profiles});
+ teamMargins(values,'teams:'+name);
+ return {name,scope,values};
+});
+const teamSides=T.tradeSides(data);
+for(const s of teamSides){margin(s.players,0.05,`teams:${s.t.id}:${s.fid}:players>EDGE`);margin(s.players,-0.05,`teams:${s.t.id}:${s.fid}:players<-EDGE`);margin(s.picks,0.05,`teams:${s.t.id}:${s.fid}:picks>EDGE`);margin(s.picks,-0.05,`teams:${s.t.id}:${s.fid}:picks<-EDGE`);}
+// Rank 0 stands for the reference's null rank (unclassed); the boundaries are pinned at 10/22/23.
+const tierOf=[null,1,10,11,22,23,32].map(r=>r==null?'':T.tierOf(r));
+writeGolden('teams',JSON.stringify({header:{...header,teamsSHA:sha(readFileSync(teamsPath))},tradeSides:teamSides.map(side),tierOf,fixtures:teamFixtures},null,2)+'\n');
 console.log(JSON.stringify({ties,knifeEdges:margins,minimum},null,2));
 if(margins.length)throw new Error('non-identity decision margins below 1e-6; see named rows above');

@@ -31,6 +31,8 @@ export type Reading<T> = {
   provenance?: Omit<Provenance, 'kind'> & { kind: 'archive' };
   value?: T;
 };
+// The shell every archive reading carries, whatever its payload; HowCounted shows only this.
+export type ReadingShell = Omit<Reading<unknown>, 'value'>;
 export type SurfaceReading = Reading<MarketSurface>;
 export type MarketProvider = {
   lists(scope: MarketScope): Promise<SurfaceReading>;
@@ -65,9 +67,22 @@ export const assets = [
   'pick3:later',
 ];
 export type MarketFilter = {
-  field: 'phase' | 'asset' | 'age' | 'window' | 'reset' | 'retry' | 'inspect'
-    | 'draft-segment' | 'draft-nfl' | 'draft-position' | 'draft-seasons'
-    | 'draft-from' | 'draft-reset' | 'draft-retry';
+  field:
+    | 'phase'
+    | 'asset'
+    | 'age'
+    | 'window'
+    | 'reset'
+    | 'retry'
+    | 'inspect'
+    | 'draft-segment'
+    | 'draft-nfl'
+    | 'draft-position'
+    | 'draft-seasons'
+    | 'draft-from'
+    | 'draft-reset'
+    | 'draft-retry'
+    | import('../counterparties/contract').CounterFilter['field'];
   value: string;
 };
 

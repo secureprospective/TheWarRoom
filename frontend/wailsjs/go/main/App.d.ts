@@ -71,6 +71,10 @@ export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
 
+export function TargetCounterpartTeam(arg1:main.RawCounterpartTeam):Promise<main.Reading_main_TeamCounterpart_>;
+
+export function TargetCounterparties(arg1:main.RawCounterpartiesScope):Promise<main.Reading_main_Counterparties_>;
+
 export function TargetDraftIR(arg1:string,arg2:string):Promise<envelope.Receipt>;
 
 export function TargetDraftLab(arg1:main.RawDraftScope):Promise<main.Reading_main_MarketSurface_>;

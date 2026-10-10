@@ -1,9 +1,9 @@
 import { loadMarket } from '../market/load';
 import { MovesMount } from './MovesMount';
 import { ClockStrip } from '../clock/ClockStrip';
-import { CalendarPanel } from '../clock/CalendarPanel';
-import { useLeagueClock } from '../clock/useLeagueClock';
 import { EndpointIndex } from '../registry/EndpointIndex';
+import { useLeagueClock } from '../clock/useLeagueClock';
+
 import type { Placement } from '../registry';
 import { FranchiseHQMount } from './FranchiseHQMount';
 import { lazy, Suspense, useEffect, useState, useRef } from 'react';
@@ -20,6 +20,9 @@ import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
 
+const CalendarPanel = lazy(() =>
+  import('../clock/CalendarPanel').then((m) => ({ default: m.CalendarPanel })),
+);
 const AppSettings = lazy(() => import('./AppSettings').then((m) => ({ default: m.AppSettings })));
 const CommandBar = lazy(() => import('../commands/CommandBar').then((m) => ({ default: m.CommandBar })));
 const HomePulseMount = lazy(() => import('./HomePulseMount'));
@@ -47,9 +50,7 @@ export function TargetApp() {
         (value) => {
           if (active) {
             setSnapshot(value);
-            void loadInspector().catch((cause) =>
-              console.error('Inspector prefetch failed:', cause),
-            );
+            void loadInspector().catch((cause) => console.error('Inspector prefetch failed:', cause));
             try {
               commands.loadSnapshot(value);
             } catch (cause) {
@@ -93,13 +94,7 @@ export function TargetApp() {
         </Act>
         <nav className="nav" aria-label="Workspaces">
           {nodeKeys.map((key) => (
-            <Act
-              key={key}
-              verb="nav.open"
-              args={{ node: key }}
-              variant="rail"
-              active={s.node === key}
-            >
+            <Act key={key} verb="nav.open" args={{ node: key }} variant="rail" active={s.node === key}>
               <NavIcon node={key} />
               {nodes[key].label}
             </Act>
@@ -187,9 +182,9 @@ export function TargetApp() {
             <Suspense fallback={<p role="status">Opening Trade desk…</p>}>
               <TradeDesk snapshot={snapshot} />
             </Suspense>
-          ) : workspace.slug === 'market' ? (
+          ) : ['market', 'counterparties'].includes(workspace.slug) ? (
             <Suspense fallback={null}>
-              <Market />
+              <Market snapshot={snapshot} />
             </Suspense>
           ) : s.node === 'control' && workspace.slug === 'app' ? (
             <Suspense fallback={null}>
@@ -242,16 +237,14 @@ export function TargetApp() {
         <div className="insp-body">
           {s.asset ? (
             <Suspense fallback={null}>
-              <Market kind={s.asset} />
+              <Market kind={s.asset} snapshot={snapshot} />
             </Suspense>
           ) : snapshot && s.subject ? (
             <Suspense fallback={null}>
               <PlayerInspector snapshot={snapshot} subject={s.subject} />
             </Suspense>
           ) : (
-            <p className="not-wired">
-              Every player, franchise, pick, offer and segment opens here.
-            </p>
+            <p className="not-wired">Every player, franchise, pick, offer and segment opens here.</p>
           )}
           <EndpointIndex placement="Inspector" />
         </div>
@@ -264,13 +257,7 @@ export function TargetApp() {
         </aside>
       )}
       <aside className="comms">
-        <Act
-          verb="comms.toggle"
-          args={{}}
-          variant="icon"
-          expanded={s.comms}
-          controls="target-comms"
-        >
+        <Act verb="comms.toggle" args={{}} variant="icon" expanded={s.comms} controls="target-comms">
           C
         </Act>
         <span className="vt">Comms · league feed</span>
@@ -306,7 +293,9 @@ export function TargetApp() {
             Close
           </Act>
         </header>
-        <CalendarPanel reading={clock} />
+        <Suspense fallback={null}>
+          <CalendarPanel reading={clock} />
+        </Suspense>
         <EndpointIndex placement="Calendar" />
       </aside>
       {(s.endpointSurface === 'Report drawer' || s.endpointSurface === 'Status strip') && (
