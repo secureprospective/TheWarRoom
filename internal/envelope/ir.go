@@ -23,8 +23,22 @@ type Check interface {
 type IRCheck struct{}
 
 func (IRCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
-	if s.Intent != "roster.ir" {
-		return CheckResult{Blocked: true, Note: "IR check does not cover this intent"}
+	return checkRosterMove(s, snap, rosterMoveRule{
+		intent: "roster.ir", label: "IR", squad: domain.RosterIR,
+		exclusionNote: "player on the taxi squad cannot move to or from IR",
+	})
+}
+
+type rosterMoveRule struct {
+	intent        string
+	label         string
+	squad         domain.RosterStatus
+	exclusionNote string
+}
+
+func checkRosterMove(s Spec, snap snapshot.Snapshot, rule rosterMoveRule) CheckResult {
+	if s.Intent != rule.intent {
+		return CheckResult{Blocked: true, Note: rule.label + " check does not cover this intent"}
 	}
 	if snap.Rosters.Provenance.Freshness.State == domain.FreshFail {
 		return CheckResult{Blocked: true, Note: "roster unavailable"}
@@ -33,13 +47,30 @@ func (IRCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
 	if !found {
 		return CheckResult{Blocked: true, Note: "player is not on this franchise's roster"}
 	}
-	if status == domain.RosterIR {
-		return CheckResult{Blocked: true, Note: "player already on IR"}
+	if status != rule.squad && (status == domain.RosterIR || status == domain.RosterTaxi) {
+		return CheckResult{Blocked: true, Note: rule.exclusionNote}
 	}
+	if rosterDestination(status, rule.squad) != s.Expected.RosterStatus {
+		return CheckResult{Blocked: true, Note: "active or " + rule.label + " roster status required"}
+	}
+	// Held slots already select activation/promotion on IR/taxi; placement rules never gate leaving.
 	decision, found := heldDecision(snap, s.Expected.Player, func(v eligibility.PlayerVerdicts) eligibility.Decision {
-		return v.IR
+		if rule.squad == domain.RosterIR {
+			return v.IR
+		}
+		return v.Taxi
 	})
 	return checkResult(decision, found)
+}
+
+func rosterDestination(status, squad domain.RosterStatus) domain.RosterStatus {
+	if status == domain.RosterActive {
+		return squad
+	}
+	if status == squad {
+		return domain.RosterActive
+	}
+	return ""
 }
 
 // heldDecision reads the snapshot's held MFL rules for one player's move slot. An absent
@@ -154,12 +185,18 @@ func (IRPredicate) Evaluate(s Spec, obs Observation) Verdict {
 		return Verdict{Event: Contradiction, Note: "player gone from franchise"}
 	}
 	if status == s.Expected.RosterStatus {
+		if status == domain.RosterActive {
+			return Verdict{Event: Match, Note: "observed activation from IR on the same franchise"}
+		}
 		return Verdict{Event: Match, Note: "observed player on IR on the same franchise"}
 	}
-	if status == "" {
-		return Verdict{Event: Partial, Note: "Not verified: roster status missing"}
+	if rosterDestination(status, domain.RosterIR) == s.Expected.RosterStatus {
+		return Verdict{Event: NoChange, Note: "No matching MFL change observed"}
 	}
-	return Verdict{Event: NoChange, Note: "No matching MFL change observed"}
+	if status == domain.RosterTaxi {
+		return Verdict{Event: Contradiction, Note: "player moved to the taxi squad instead of requested IR status"}
+	}
+	return Verdict{Event: Partial, Note: "Not verified: roster status missing or unknown"}
 }
 func rosterStatus(s Spec, rosters []snapshot.Roster) (domain.RosterStatus, bool) {
 	for _, r := range rosters {

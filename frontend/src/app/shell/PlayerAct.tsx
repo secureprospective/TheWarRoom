@@ -24,6 +24,7 @@ export default function PlayerAct({ subject, executor = commands }: {
   const handoffKey = `handoff:${receipt?.correlationId}`;
   const opening = executor.useMoves((s) => s.drafting[handoffKey]);
   const handoffError = executor.useMoves((s) => s.draftErrors[handoffKey]);
+  const irLabel = status === 'IR' ? 'Draft activation from IR' : 'Draft IR placement';
   const taxiLabel = status === 'TAXI_SQUAD' ? 'Draft promotion from taxi' : 'Draft move to taxi squad';
   return (
     <section className="zone player-act">
@@ -32,9 +33,9 @@ export default function PlayerAct({ subject, executor = commands }: {
         verb="roster.ir"
         args={{ subject }}
         disabled={Boolean(reason) || eligibility?.ir.verdict === 'ineligible'}
-        label={ineligibleLabel('Draft IR placement', eligibility?.ir)}
+        label={ineligibleLabel(irLabel, eligibility?.ir) ?? irLabel}
       >
-        {pending ? 'Drafting…' : 'Draft IR placement'}
+        {pending ? 'Drafting…' : irLabel}
       </Act>}
       {(status === 'ROSTER' || status === 'TAXI_SQUAD') && <Act
         verb="roster.taxi"
@@ -58,7 +59,8 @@ export default function PlayerAct({ subject, executor = commands }: {
         verb="move.handoff"
         args={{ correlationId: receipt.correlationId }}
         disabled={Boolean(opening)}
-        label={opening ? 'Opening MFL…' : rosterHandoffLabel(receipt.spec.intent)}
+        label={opening ? 'Opening MFL…'
+          : rosterHandoffLabel(receipt.spec.intent, receipt.spec.expected.rosterStatus)}
       />}
       <Act verb="nav.open" args={{ node: 'hq', workspace: 'my-moves' }}>
         My moves

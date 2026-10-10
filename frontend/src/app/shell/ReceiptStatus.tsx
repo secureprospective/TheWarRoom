@@ -11,8 +11,9 @@ export default function ReceiptStatus({ receipt }: { receipt: Receipt }) {
   );
 }
 
-export function rosterHandoffLabel(intent: string): string | undefined {
-  if (intent === 'roster.ir') return 'Open MFL IR page';
+export function rosterHandoffLabel(intent: string, status?: string): string | undefined {
+  if (intent === 'roster.ir') return status === 'ROSTER'
+    ? 'Open MFL IR page for activation' : 'Open MFL IR page';
   if (intent === 'roster.taxi') return 'Open MFL taxi page';
   return undefined;
 }

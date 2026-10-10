@@ -34,13 +34,16 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
   const trade = tradeRailLabels(receipt, snapshot);
   const header = trade?.header || (lineup ? `Week ${lineup.week} lineup` :
     player?.name ?? 'Player unavailable');
-  const handoffLabel = rosterHandoffLabel(receipt.spec.intent) ||
+  const handoffLabel = rosterHandoffLabel(receipt.spec.intent, receipt.spec.expected.rosterStatus) ||
     (trade ? 'Open MFL trade desk' : 'Open MFL page');
   const lineupSummary = lineupChanges(receipt, snapshot).map((change) =>
     `${change.verb === 'Start' ? '+' : '−'}${change.name.split(',')[0]}`).join(' ');
   let summary = trade?.summary || lineupSummary;
   const shortName = player?.name?.split(',')[0];
-  if (receipt.spec.intent === 'roster.ir') summary = shortName ? `IR ${shortName}` : '';
+  if (receipt.spec.intent === 'roster.ir') {
+    const direction = receipt.spec.expected.rosterStatus === 'ROSTER' ? 'Activate' : 'IR';
+    summary = shortName ? `${direction} ${shortName}` : '';
+  }
   if (receipt.spec.intent === 'roster.taxi') {
     const direction = receipt.spec.expected.rosterStatus === 'TAXI_SQUAD' ? '+' : '−';
     summary = shortName ? `${direction}Taxi ${shortName}` : '';
@@ -53,7 +56,8 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
         <div>
           <h4>{header}</h4>
           {summary && <p>{summary}</p>}
-          <span>{intentLabels[receipt.spec.intent] ?? receipt.spec.intent}</span>
+          <span>{receipt.spec.intent === 'roster.ir' && receipt.spec.expected.rosterStatus === 'ROSTER'
+            ? 'IR activation' : intentLabels[receipt.spec.intent] ?? receipt.spec.intent}</span>
           <span className="move-classification">{receipt.spec.gravity} · {receipt.spec.undo}</span>
         </div>
       }

@@ -272,7 +272,7 @@ export function createCommands(
         }
       },
     }),
-    'roster.ir': rosterCommand('roster.ir', 'Draft IR placement'),
+    'roster.ir': rosterCommand('roster.ir', 'Draft IR move'),
     'roster.taxi': rosterCommand('roster.taxi', 'Draft move to taxi squad'),
     'surface.open': command({
       ...ambient,

@@ -62,7 +62,7 @@ func targetTestAppAt(t *testing.T, path string) *App {
 	}
 	if _, err := mirror.Replace(ctx, state.MirrorSnapshot{
 		Season:  2026,
-		Players: []state.MirrorPlayer{{MFLID: "0042", FranchiseID: "0001"}},
+		Players: []state.MirrorPlayer{{MFLID: "0042", FranchiseID: "0001", RosterStatus: domain.RosterActive}},
 	}); err != nil {
 		t.Fatal(err)
 	}

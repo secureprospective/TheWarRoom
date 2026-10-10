@@ -121,10 +121,14 @@ func TestIRChecksAndUnmapped(t *testing.T) {
 	}{
 		{"ready but eligibility not held", domain.RosterActive, false, false, Ready,
 			"Not checked: eligibility not held; MFL will decide"},
-		{"already IR", domain.RosterIR, false, false, Blocked, "player already on IR"},
+		{"placement refused for an on-IR player", domain.RosterIR, false, false, Blocked,
+			"active or IR roster status required"},
+		{"taxi squad", domain.RosterTaxi, false, false, Blocked,
+			"player on the taxi squad cannot move to or from IR"},
+		{"unknown status", "", false, false, Blocked, "active or IR roster status required"},
 		{"not owned", domain.RosterActive, true, false, Blocked, "player is not on this franchise's roster"},
 		{"unmapped keeps the check's note", domain.RosterIR, false, true, Blocked,
-			"player already on IR; MFL target not verified"},
+			"active or IR roster status required; MFL target not verified"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			e, at, snap := testEnvelope(t)
@@ -359,24 +363,37 @@ func TestIRCheckConsultsHeldEligibility(t *testing.T) {
 	id := mustTestID(t)
 	for _, tc := range []struct {
 		name    string
+		status  domain.RosterStatus
 		verdict eligibility.Verdict
 		reason  string
+		source  string
 		want    State
 		note    string
 	}{
-		{"eligible passes with the feed named", eligibility.Eligible, "", Ready,
-			"eligibility checked (MFL injuries)"},
-		{"ineligible blocks with the reason", eligibility.Ineligible, "not on NFL injured reserve", Blocked,
-			"not on NFL injured reserve"},
-		{"capacity blocks", eligibility.Ineligible, "IR full (12/12)", Blocked, "IR full (12/12)"},
-		{"unknown stays available for MFL to decide", eligibility.Unknown, "stale", Ready,
-			"Not checked: stale; MFL will decide"},
+		{"eligible passes with the feed named", domain.RosterActive, eligibility.Eligible, "",
+			eligibility.SourceInjuries, Ready, "eligibility checked (MFL injuries)"},
+		{"ineligible blocks with the reason", domain.RosterActive, eligibility.Ineligible,
+			"not on NFL injured reserve", eligibility.SourceInjuries, Blocked, "not on NFL injured reserve"},
+		{"capacity blocks", domain.RosterActive, eligibility.Ineligible, "IR full (12/12)",
+			eligibility.SourceRosters, Blocked, "IR full (12/12)"},
+		{"unknown stays available for MFL to decide", domain.RosterActive, eligibility.Unknown, "stale",
+			eligibility.SourceInjuries, Ready, "Not checked: stale; MFL will decide"},
+		{"activate eligible", domain.RosterIR, eligibility.Eligible, "",
+			eligibility.SourceRosters, Ready, "eligibility checked (MFL rosters)"},
+		{"activate not checked", domain.RosterIR, eligibility.Unknown, "no roster held",
+			eligibility.SourceRosters, Ready, "Not checked: no roster held; MFL will decide"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			e, at, snap := testEnvelope(t)
+			direction := eligibility.ToIR
+			if tc.status == domain.RosterIR {
+				e.spec.Expected.RosterStatus = domain.RosterActive
+				direction = eligibility.OffIR
+			}
+			snap.Rosters.Value[0].Players[0].RosterStatus = tc.status
 			snap = eligibilitySnapshot(snap, id, eligibility.PlayerVerdicts{
-				IR: eligibility.Decision{Direction: eligibility.ToIR, Verdict: tc.verdict,
-					Reason: tc.reason, Source: eligibility.SourceInjuries},
+				IR: eligibility.Decision{Direction: direction, Verdict: tc.verdict,
+					Reason: tc.reason, Source: tc.source},
 			})
 			got, err := e.Check(at, snap, IRCheck{})
 			if err != nil || got.State() != tc.want || got.Receipt().Audit[0].Note != tc.note {

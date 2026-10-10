@@ -32,7 +32,7 @@ async function settled(c: ReturnType<typeof createCommands>) {
 }
 
 describe.each([
-  ['roster.ir', 'draftIR', 'Draft IR placement'],
+  ['roster.ir', 'draftIR', 'Draft IR move'],
   ['roster.taxi', 'draftTaxi', 'Draft move to taxi squad'],
 ] as const)('%s', (intent, method, label) => {
   const draftedReceipt = {

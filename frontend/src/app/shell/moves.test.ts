@@ -302,6 +302,22 @@ describe('Inspector IR and taxi Acts', () => {
     expect(html).toContain(`>${label}</button>`);
     expect(html.includes('>Draft IR placement</button>')).toBe(irAllowed);
   });
+  it.each([
+    ['eligible', undefined, false],
+    ['ineligible', 'activation unavailable', true],
+    ['unknown', 'roster not held', false],
+  ] as const)('labels an on-IR %s Act and follows its verdict', (verdict, reason, disabled) => {
+    const { executor } = held('IR', {
+      ir: decision({ direction: 'off_ir', source: 'rosters', verdict, reason }),
+      taxi: decision({ direction: 'to_taxi', verdict: 'ineligible', reason: 'on injured reserve' }),
+    });
+    const html = inspector(executor);
+    const button = html.match(/<button[^>]*>Draft activation from IR<\/button>/)![0];
+    expect(button.includes('disabled')).toBe(disabled);
+    expect(button).toContain(`aria-label="Draft activation from IR${disabled ? ': ' + reason : ''}"`);
+    expect(html).not.toContain('Draft IR placement');
+    if (verdict === 'eligible') expect(html).toContain('IR: eligible to activate (MFL rosters, ');
+  });
   it('does not offer taxi for an IR player', () => {
     const html = inspector(held('IR').executor);
     expect(html).not.toContain('Draft move to taxi squad');
@@ -309,6 +325,7 @@ describe('Inspector IR and taxi Acts', () => {
   });
   it.each([
     ['roster.ir', 'IR', 'Open MFL IR page', 'IR '],
+    ['roster.ir', 'ROSTER', 'Open MFL IR page for activation', 'Activate '],
     ['roster.taxi', 'TAXI_SQUAD', 'Open MFL taxi page', '+Taxi '],
     ['roster.taxi', 'ROSTER', 'Open MFL taxi page', '−Taxi '],
   ] as const)('shows %s %s hand-off and summary as visible text', async (intent, status, label, prefix) => {
@@ -327,6 +344,13 @@ describe('Inspector IR and taxi Acts', () => {
     expect(rail).toContain(`<p>${prefix}${name.split(',')[0]}</p>`);
     expect(rail).not.toContain(`<p>${prefix}${name}</p>`);
     expect(rail).not.toContain('roster.taxi');
+    if (intent === 'roster.ir' && status === 'ROSTER') {
+      expect(rail).toContain('IR activation');
+      expect(rail).not.toContain('IR placement');
+      const movesHtml = render(executor);
+      expect(movesHtml).toContain('IR activation');
+      expect(movesHtml).not.toContain('IR placement');
+    }
   });
   const decision = (overrides: Partial<EligibilityDecision>): EligibilityDecision => ({
     direction: 'to_ir', verdict: 'eligible', source: 'injuries', ...overrides,

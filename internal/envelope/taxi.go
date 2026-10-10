@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -16,39 +15,10 @@ type TaxiRequest IRRequest
 type TaxiCheck struct{}
 
 func (TaxiCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
-	if s.Intent != "roster.taxi" {
-		return CheckResult{Blocked: true, Note: "taxi check does not cover this intent"}
-	}
-	if snap.Rosters.Provenance.Freshness.State == domain.FreshFail {
-		return CheckResult{Blocked: true, Note: "roster unavailable"}
-	}
-	status, found := rosterStatus(s, snap.Rosters.Value)
-	if !found {
-		return CheckResult{Blocked: true, Note: "player is not on this franchise's roster"}
-	}
-	if status == domain.RosterIR {
-		return CheckResult{Blocked: true, Note: "player on IR cannot move to or from taxi"}
-	}
-	if taxiDestination(status) != s.Expected.RosterStatus {
-		return CheckResult{Blocked: true, Note: "active or taxi roster status required"}
-	}
-	decision, found := heldDecision(snap, s.Expected.Player, func(v eligibility.PlayerVerdicts) eligibility.Decision {
-		return v.Taxi
+	return checkRosterMove(s, snap, rosterMoveRule{
+		intent: "roster.taxi", label: "taxi", squad: domain.RosterTaxi,
+		exclusionNote: "player on IR cannot move to or from taxi",
 	})
-	return checkResult(decision, found)
-}
-
-func taxiDestination(status domain.RosterStatus) domain.RosterStatus {
-	switch status {
-	case domain.RosterActive:
-		return domain.RosterTaxi
-	case domain.RosterTaxi:
-		return domain.RosterActive
-	case domain.RosterIR:
-		return ""
-	default:
-		return ""
-	}
 }
 
 func DraftTaxi(
@@ -99,7 +69,7 @@ func (TaxiPredicate) Evaluate(s Spec, obs Observation) Verdict {
 	if status == s.Expected.RosterStatus {
 		return Verdict{Event: Match, Note: "observed requested taxi roster status on the same franchise"}
 	}
-	if taxiDestination(status) == s.Expected.RosterStatus {
+	if rosterDestination(status, domain.RosterTaxi) == s.Expected.RosterStatus {
 		return Verdict{Event: NoChange, Note: "No matching MFL change observed"}
 	}
 	if status == domain.RosterIR {

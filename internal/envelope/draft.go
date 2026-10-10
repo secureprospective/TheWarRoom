@@ -38,6 +38,10 @@ func DraftIR(at time.Time, req IRRequest, snap snapshot.Snapshot, generate func(
 		Undo:    Reversible,
 		Target:  req.Target,
 	}
+	status, found := rosterStatus(spec, snap.Rosters.Value)
+	if found && status == domain.RosterIR {
+		spec.Expected.RosterStatus = domain.RosterActive
+	}
 	e, err := New(at, spec, generate)
 	if err != nil {
 		return Envelope{}, fmt.Errorf("draft IR: %w", err)
