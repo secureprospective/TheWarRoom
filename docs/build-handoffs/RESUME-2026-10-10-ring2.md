@@ -64,16 +64,63 @@ If Christopher wants TheWarRoom to own its data (Q1 b), five compiler runs (s1�
 5. What-if: keep the numbers you started from until you press Reset, even if MFL data refreshes.
    Recommendation: yes.
 
+## Decisions (Christopher, 2026-10-10)
+- **D1 The Lab:** TheWarRoom rewrites the Lab's math in Go now, reading a frozen, fingerprinted copy
+  of the Lab's compiled data; before the stand-alone app it gets its own pipeline from the MFL
+  archive (compiler runs s1–s5). No Lab code is merged; the Lab is only the reference the tests check.
+- **D2 Taxi age:** check MFL's rule, under 3 years of experience. The rulebook's "3 or fewer" is a
+  rulebook mismatch for Christopher to fix there.
+- **D3 Bids:** "We just need the framework, eventually ProBoards and MFL will be eliminated." Build
+  the bid and claim framework as TheWarRoom's own system, designed to become the authority in the
+  stand-alone app; for now it holds plans and honest status, nothing invented about other teams.
+- Defaults taken (Q4, Q5, his to overturn): Claude captures the option/tender/re-sign MFL pages on
+  Claude-OS, no submits; a what-if keeps its starting numbers until Reset.
+
 ## Expert panel
-- Run 1 (10-10, seats visionary/mechanic/devil; Sol's seat skipped, out of tokens):
-  `~/fleet/runs/panel-panel-ring2-parity-contract-latest/`. Decisions: (1) parity method, JS goldens
-  vs Go; (2) the analytic reading's wire shape. Result: pending.
-- Still owed: facts schema (after Q1); what-if and plan lifecycle (after Q5).
+### Run 1 (10-10): parity method and the wire shape. Seats: Kimi (visionary, rerun at medium after a
+22-min stall), GLM (mechanic), Nemotron (devil); Sol's seat skipped (out of tokens).
+Runs: `~/fleet/runs/panel-panel-ring2-parity-contract-20261010T155210Z-304800/` (GLM, Nemotron) and
+`...-20261010T161439Z-556587/` (Kimi). Quotes: GLM 16/17 ok, Kimi 5/5, Nemotron unparsed (format;
+Claude spot-checked its `gauss` quote, real).
+
+**Claude's triage (recommendation; durable, so Christopher may overrule):**
+- P1 Parity: adopt JS golden fixtures (all three agree). Generated offline by a pinned Node command
+  from the frozen `lab.json`; goldens stamped with BOTH the lab.json hash and the engine.js hash
+  (GLM F3, Kimi F4); Node is never a runtime dependency.
+- P2 Port the JS algorithms faithfully: same Gauss elimination with partial pivoting, same
+  summation order. Rejected: Nemotron's gonum QR (would diverge from the reference by design).
+- P3 Tolerance: exact for IDs, counts, enums, nulls, membership, cents; floats within
+  1e-9 + 1e-9×|want| (GLM; enum margins measured: nearest non-identity 1.6e-3). Record the max
+  observed error per function; Kimi's bit-exact target is the aim, not the gate. Rejected:
+  Nemotron's looser 1e-7/1e-6 tiers.
+- P4 The generator fails on any non-identity decision margin under 1e-6 and names the row (GLM F2).
+- P5 Required mutants: a threshold flip (8→7 delivered records; 80→81 trades) must turn a golden
+  cell value↔null (GLM F5); a seeded Go bug (one ridge term dropped) must fail parity (Kimi F3).
+- P6 The Lab's "measured 2026-10-06" comments become coded assertions in TheWarRoom's own parity
+  tests (Nemotron F5), never edits to the Lab (D1).
+- P7 Goldens also carry the compiler's prices so Go re-checks the compiler↔JS anchor (GLM F4,
+  Nemotron F2) at the JS suite's own 0.01.
+- W1 Wire shape: one generic shell extending the existing `Sourced[T]`/Provenance seam, with a
+  typed payload per surface (GLM F6; Kimi and Nemotron converge on shell + typed body). Shell
+  carries status (ok / thin sample / failed / not wired), absence reason, count and the threshold
+  it was judged against, baseline, cutoff (`archiveThrough`), method, provenance (input hash,
+  build stamp), and "How this is counted" text written in Go. React does no math.
+- Open for Christopher (Q6): the Lab's spread tiers (solid / rough / thin). Nemotron and Kimi:
+  a confidence score, banned (CLAUDE.md:86). GLM: a plain grading of the shown range, allowed.
+  Claude's recommendation: show the range itself, keep the tier internal.
+
+- Still owed: facts schema (before compiler runs s1–s5); what-if and plan lifecycle (before p2h).
 
 ## Next actions
-1. Read panel run 1; triage against each other; record the recommendation here.
-2. Put Q1–Q5 to Christopher; record answers as D-numbers.
-3. When Sol resets (about 12:20 CDT 10-10): brief p2a (eligibility).
+1. (done: panel run 1 triaged above)
+2. (done: D1–D3)
+3. p2a (eligibility) brief written: `~/fleet/briefs/warroom-ring2-p2a-eligibility.md`. Answer key
+   captured by Claude on Claude-OS 11:27 CDT: `~/fleet/runs/warroom-ring2-2026-10-10/mfl-O18.html`
+   (IR page, 55 rows, 38 "Can not be deactivated") and `mfl-O98.html` (taxi, 69 rows, 28 "Cannot be
+   demoted"); owner-only pages, never in git. Defaults taken: unknown eligibility leaves the Act
+   available with "Not checked; MFL will decide"; ineligible disables it with the reason.
+   Dispatch when Sol resets (about 12:20 CDT).
+4. Ask Christopher Q6 (spread tiers).
 
 ## Notes
 - Sol's usage limit: the p0 run hit it at 10:49 CDT; Christopher said it resets in about 1h30.
