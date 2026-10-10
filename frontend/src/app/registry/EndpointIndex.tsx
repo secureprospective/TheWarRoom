@@ -6,6 +6,14 @@ import { gravityClasses } from '../look/channels';
 import { assertShortList } from '../shell/shortList';
 import './registry.css';
 
+function statusLabel(status: string): string {
+  switch (status) {
+    case 'landed': return 'landed live';
+    case 'built': return 'built, not yet landed live';
+    default: return 'not wired';
+  }
+}
+
 export function EndpointIndex({ placement }: { placement: Placement }) {
   const s = commands.use();
   const root = useRef<HTMLElement>(null);
@@ -31,7 +39,7 @@ export function EndpointIndex({ placement }: { placement: Placement }) {
       )}
       {merged.map((e) => (
         <p key={e.id} data-selected="true" tabIndex={-1}>
-          {e.id} · {e.name} → {placement} · not wired · ring {e.ring}
+          {e.id} · {e.name} → {placement} · {statusLabel(e.status)} · ring {e.ring}
         </p>
       ))}
       <ul>
@@ -47,7 +55,7 @@ export function EndpointIndex({ placement }: { placement: Placement }) {
               <span>{row.kind} · {row.gravity} · ring {row.ring}</span>
             </div>
             {row.gm_question && row.gm_question !== '—' && <p>{row.gm_question}</p>}
-            <small>not wired · ring {row.ring}</small>
+            <small>{statusLabel(row.status)} · ring {row.ring}</small>
           </li>
         ))}
       </ul>
