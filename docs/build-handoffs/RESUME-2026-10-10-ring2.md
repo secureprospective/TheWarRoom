@@ -73,6 +73,8 @@ If Christopher wants TheWarRoom to own its data (Q1 b), five compiler runs (s1â€
 - **D3 Bids:** "We just need the framework, eventually ProBoards and MFL will be eliminated." Build
   the bid and claim framework as TheWarRoom's own system, designed to become the authority in the
   stand-alone app; for now it holds plans and honest status, nothing invented about other teams.
+- **D4 Spread tiers:** show the range bar itself; the solid / rough / thin grade stays internal,
+  never on screen (Christopher, 2026-10-10).
 - Defaults taken (Q4, Q5, his to overturn): Claude captures the option/tender/re-sign MFL pages on
   Claude-OS, no submits; a what-if keeps its starting numbers until Reset.
 
@@ -120,7 +122,7 @@ Claude spot-checked its `gauss` quote, real).
    demoted"); owner-only pages, never in git. Defaults taken: unknown eligibility leaves the Act
    available with "Not checked; MFL will decide"; ineligible disables it with the reason.
    Dispatch when Sol resets (about 12:20 CDT).
-4. Ask Christopher Q6 (spread tiers).
+4. (done: D4)
 
 ## Notes
 - Sol's usage limit: the p0 run hit it at 10:49 CDT; Christopher said it resets in about 1h30.
