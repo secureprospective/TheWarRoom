@@ -10,3 +10,9 @@ export default function ReceiptStatus({ receipt }: { receipt: Receipt }) {
     </div>
   );
 }
+
+export function rosterHandoffLabel(intent: string): string | undefined {
+  if (intent === 'roster.ir') return 'Open MFL IR page';
+  if (intent === 'roster.taxi') return 'Open MFL taxi page';
+  return undefined;
+}

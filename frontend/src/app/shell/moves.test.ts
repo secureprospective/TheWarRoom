@@ -201,3 +201,97 @@ describe('My moves and inspector', () => {
     expect(html).toContain('<p>Only players on my franchise</p>');
   });
 });
+
+describe('Inspector IR and taxi Acts', () => {
+  function inspector(executor: ReturnType<typeof createCommands>) {
+    return renderToStaticMarkup(createElement(PlayerAct, {
+      subject, executor: serverExecutor(executor),
+    }));
+  }
+  function held(status: 'ROSTER' | 'IR' | 'TAXI_SQUAD') {
+    const value = structuredClone(snapshot);
+    const player = value.rosters.value.find((r) => r.franchiseId === subject.franchiseId)!
+      .players.find((p) => p.id === subject.id)!;
+    player.rosterStatus = status;
+    const provider = new LiveProvider();
+    const executor = createCommands(() => undefined, provider);
+    executor.loadSnapshot(value);
+    executor.dispatch('franchise.set', { franchiseId: subject.franchiseId });
+    return { executor, provider };
+  }
+  it.each([
+    ['ROSTER', 'Draft move to taxi squad', true],
+    ['TAXI_SQUAD', 'Draft promotion from taxi', false],
+  ] as const)('names the direction from held %s', (status, label, irAllowed) => {
+    const { executor } = held(status);
+    const html = inspector(executor);
+    expect(html).toContain(`>${label}</button>`);
+    expect(html.includes('>Draft IR placement</button>')).toBe(irAllowed);
+  });
+  it('does not offer taxi for an IR player', () => {
+    const html = inspector(held('IR').executor);
+    expect(html).not.toContain('Draft move to taxi squad');
+    expect(html).not.toContain('Draft promotion from taxi');
+  });
+  it.each([
+    ['roster.ir', 'IR', 'Open MFL IR page', 'IR '],
+    ['roster.taxi', 'TAXI_SQUAD', 'Open MFL taxi page', '+Taxi '],
+    ['roster.taxi', 'ROSTER', 'Open MFL taxi page', '−Taxi '],
+  ] as const)('shows %s %s hand-off and summary as visible text', async (intent, status, label, prefix) => {
+    const { executor, provider } = held('ROSTER');
+    const ready = {
+      ...receipt, state: 'ready' as const, audit: receipt.audit.slice(0, 1),
+      spec: { ...receipt.spec, intent, expected: { player: subject.id, rosterStatus: status } },
+    };
+    vi.spyOn(provider, 'moves').mockResolvedValue([ready]);
+    await executor.loadMoves(subject.franchiseId);
+    expect(inspector(executor)).toContain(`>${label}</button>`);
+    const rail = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt: ready }));
+    expect(rail).toContain(`>${label}</button>`);
+    const name = snapshot.players.value.find((p) => p.id === subject.id)!.name;
+    expect(rail).toContain(`<p>${prefix}${name}</p>`);
+    expect(rail).not.toContain('roster.taxi');
+  });
+  it.each(['roster.ir', 'roster.taxi'])('shows the %s block note, never a hand-off', async (intent) => {
+    const { executor, provider } = held('ROSTER');
+    const blocked = {
+      ...receipt, state: 'blocked' as const, spec: { ...receipt.spec, intent },
+      audit: [{ ...receipt.audit[0], to: 'blocked' as const, note: 'MFL eligibility not held' }],
+    };
+    vi.spyOn(provider, 'moves').mockResolvedValue([blocked]);
+    await executor.loadMoves(subject.franchiseId);
+    const html = inspector(executor);
+    expect(html).toContain('MFL eligibility not held');
+    expect(html).not.toContain('Open MFL');
+    const rail = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt: blocked }));
+    expect(rail).not.toContain('Open MFL');
+  });
+  it('shows opening and a hand-off failure inline, and excludes unrelated lineup receipts', async () => {
+    const { executor, provider } = held('ROSTER');
+    const ready = { ...receipt, state: 'ready' as const, audit: receipt.audit.slice(0, 1) };
+    const unrelated = { ...ready, correlationId: 'lineup', spec: { ...ready.spec, intent: 'lineup.set' } };
+    vi.spyOn(provider, 'moves').mockResolvedValue([unrelated, ready]);
+    let reject!: (cause: Error) => void;
+    const handoff = vi.spyOn(provider, 'handOff').mockImplementation(() =>
+      new Promise<typeof receipt>((_done, fail) => {
+        reject = fail;
+      }));
+    await executor.loadMoves(subject.franchiseId);
+    expect(inspector(executor)).toContain('>Open MFL IR page</button>');
+    executor.dispatch('move.handoff', { correlationId: ready.correlationId });
+    for (let attempt = 0; attempt < 100 && !handoff.mock.calls.length; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    expect(handoff).toHaveBeenCalledWith(ready.correlationId);
+    expect(inspector(executor)).toContain('>Opening MFL…</button>');
+    expect(inspector(executor)).toMatch(/disabled=""[^>]*>Opening MFL…/);
+    reject(new Error('MFL page could not open'));
+    for (let attempt = 0; attempt < 100 && executor.readMoves().drafting[
+      `handoff:${ready.correlationId}`
+    ]; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    expect(inspector(executor)).toContain('<p role="alert">Error: MFL page could not open</p>');
+    expect(inspector(executor)).not.toContain('Opening MFL…');
+  });
+});

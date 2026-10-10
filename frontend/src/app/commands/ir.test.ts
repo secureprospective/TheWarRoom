@@ -31,62 +31,70 @@ async function settled(c: ReturnType<typeof createCommands>) {
   await waitFor(() => expect(c.readMoves().drafting['0001:11675']).toBe(false));
 }
 
-describe('roster.ir', () => {
+describe.each([
+  ['roster.ir', 'draftIR', 'Draft IR placement'],
+  ['roster.taxi', 'draftTaxi', 'Draft move to taxi squad'],
+] as const)('%s', (intent, method, label) => {
+  const draftedReceipt = {
+    ...receipt, spec: { ...receipt.spec, intent, expected: {
+      ...receipt.spec.expected, rosterStatus: intent === 'roster.ir' ? 'IR' as const : 'TAXI_SQUAD' as const,
+    } },
+  };
   it('stores the receipt, clears pending and refuses a second fire', async () => {
     const provider = new LiveProvider();
-    let resolve!: (value: typeof receipt) => void;
-    const draft = vi.spyOn(provider, 'draftIR').mockImplementation(() =>
-      new Promise<typeof receipt>((done) => {
+    let resolve!: (value: typeof draftedReceipt) => void;
+    const draft = vi.spyOn(provider, method).mockImplementation(() =>
+      new Promise<typeof draftedReceipt>((done) => {
         resolve = done;
       }));
     const c = setup(provider);
-    expect(c.registry['roster.ir']).toMatchObject({
-      label: 'Draft IR placement', gravity: 'G2', undo: 'reversible',
+    expect(c.registry[intent]).toMatchObject({
+      label, gravity: 'G2', undo: 'reversible',
       roles: ['gm'], args: ['subject'],
     });
     const shellNotifications = vi.fn();
     c.subscribe(shellNotifications);
-    c.dispatch('roster.ir', { subject });
+    c.dispatch(intent, { subject });
     expect(c.readMoves().drafting['0001:11675']).toBe(true);
     expect(c.draftReason(subject)).toBe('Drafting…');
-    c.dispatch('roster.ir', { subject });
+    c.dispatch(intent, { subject });
     await waitFor(() => expect(draft).toHaveBeenCalledTimes(1));
-    resolve(receipt);
+    resolve(draftedReceipt);
     await settled(c);
-    expect(c.readMoves().moves).toEqual([receipt]);
+    expect(c.readMoves().moves).toEqual([draftedReceipt]);
     expect(c.readMoves().draftErrors['0001:11675']).toBe('');
     expect(shellNotifications).not.toHaveBeenCalled();
   });
   it('stores rejection text for this subject without a receipt', async () => {
     const provider = new LiveProvider();
-    vi.spyOn(provider, 'draftIR').mockRejectedValue(new Error('desktop disconnected'));
+    vi.spyOn(provider, method).mockRejectedValue(new Error('desktop disconnected'));
     const c = setup(provider);
-    c.dispatch('roster.ir', { subject });
+    c.dispatch(intent, { subject });
     await settled(c);
     expect(c.readMoves().draftErrors['0001:11675']).toContain('desktop disconnected');
     expect(c.readMoves().moves).toEqual([]);
   });
   it('denies another franchise before any call', () => {
     const provider = new LiveProvider();
-    const draft = vi.spyOn(provider, 'draftIR');
+    const draft = vi.spyOn(provider, method);
     const c = setup(provider);
     const other = { ...subject, franchiseId: '0002' };
     expect(c.draftReason(other)).toBe('Only players on my franchise');
-    c.dispatch('roster.ir', { subject: other });
+    c.dispatch(intent, { subject: other });
     expect(draft).not.toHaveBeenCalled();
     expect(c.readMoves().drafting).toEqual({});
   });
   it('leaves roster membership checks to Go and displays its receipt', async () => {
     const provider = new LiveProvider();
     const blocked = {
-      ...receipt, state: 'blocked' as const,
-      audit: [{ ...receipt.audit[0], to: 'blocked' as const, note: 'Player is not on roster' }],
+      ...draftedReceipt, state: 'blocked' as const,
+      audit: [{ ...draftedReceipt.audit[0], to: 'blocked' as const, note: 'Player is not on roster' }],
     };
-    const draft = vi.spyOn(provider, 'draftIR').mockResolvedValue(blocked);
+    const draft = vi.spyOn(provider, method).mockResolvedValue(blocked);
     const c = setup(provider);
     const other = { ...subject, id: '99999' };
     expect(c.draftReason(other)).toBeUndefined();
-    c.dispatch('roster.ir', { subject: other });
+    c.dispatch(intent, { subject: other });
     await waitFor(() => expect(c.readMoves().drafting['0001:99999']).toBe(false));
     expect(draft).toHaveBeenCalledWith('0001', '99999');
     expect(c.readMoves().moves).toEqual([blocked]);
@@ -95,25 +103,25 @@ describe('roster.ir', () => {
     const c = createCommands(() => undefined, new FixtureProvider());
     c.loadSnapshot(snapshot);
     expect(c.draftReason(subject)).toBe('Drafting needs the desktop app');
-    c.dispatch('roster.ir', { subject });
+    c.dispatch(intent, { subject });
     expect(c.readMoves().drafting).toEqual({});
     expect(c.readMoves().moves).toEqual([]);
   });
   it('merges drafts made during a session load without duplicates', async () => {
     const provider = new LiveProvider();
-    let resolve!: (value: typeof receipt[]) => void;
-    vi.spyOn(provider, 'moves').mockImplementation(() => new Promise<typeof receipt[]>((done) => {
+    let resolve!: (value: typeof draftedReceipt[]) => void;
+    vi.spyOn(provider, 'moves').mockImplementation(() => new Promise<typeof draftedReceipt[]>((done) => {
       resolve = done;
     }));
-    vi.spyOn(provider, 'draftIR').mockResolvedValue(receipt);
+    vi.spyOn(provider, method).mockResolvedValue(draftedReceipt);
     const c = setup(provider);
     const loading = c.loadMoves('0001');
     await waitFor(() => expect(resolve).toBeTypeOf('function'));
-    c.dispatch('roster.ir', { subject });
+    c.dispatch(intent, { subject });
     await settled(c);
-    resolve([receipt]);
+    resolve([draftedReceipt]);
     await loading;
-    expect(c.readMoves().moves).toEqual([receipt]);
+    expect(c.readMoves().moves).toEqual([draftedReceipt]);
     expect(c.readMoves().movesLoading['0001']).toBe(false);
   });
   it('keeps load errors visible rather than pretending the list is empty', async () => {

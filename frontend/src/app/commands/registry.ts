@@ -86,7 +86,7 @@ export function createCommands(
     if (moves.read().drafting[subjectKey(subject)]) return 'Drafting…';
     return undefined;
   }
-  async function draftIR(subject: PlayerSubject) {
+  async function draftRoster(subject: PlayerSubject, intent: 'roster.ir' | 'roster.taxi') {
     if (draftReason(subject) || provider.kind !== 'live') return;
     const key = subjectKey(subject);
     moves.write({
@@ -95,13 +95,19 @@ export function createCommands(
     });
     try {
       const { finishDraft } = await import('./sessionMoves');
-      await finishDraft(moves, provider, subject, key);
+      await finishDraft(moves, provider, subject, key, intent);
     } catch (cause) {
       moves.write({
         drafting: { ...moves.read().drafting, [key]: false },
         draftErrors: { ...moves.read().draftErrors, [key]: String(cause) },
       });
     }
+  }
+  function rosterCommand(intent: 'roster.ir' | 'roster.taxi', label: string) {
+    return command({
+      id: intent, label, aliases: [], roles: ['gm'], gravity: 'G2', undo: 'reversible', args: ['subject'],
+      run: ({ subject }: { subject: PlayerSubject }) => { void draftRoster(subject, intent); },
+    });
   }
   async function loadMoves(franchiseId: string) {
     try {
@@ -206,16 +212,8 @@ export function createCommands(
         }
       },
     }),
-    'roster.ir': command({
-      id: 'roster.ir',
-      label: 'Draft IR placement',
-      aliases: [],
-      roles: ['gm'],
-      gravity: 'G2',
-      undo: 'reversible',
-      args: ['subject'],
-      run: (args: { subject: PlayerSubject }) => { void draftIR(args.subject); },
-    }),
+    'roster.ir': rosterCommand('roster.ir', 'Draft IR placement'),
+    'roster.taxi': rosterCommand('roster.taxi', 'Draft move to taxi squad'),
     'surface.open': command({
       ...ambient,
       id: 'surface.open',
@@ -487,6 +485,9 @@ export function createCommands(
     useMFLKey: mflKey.use,
     providerKind: provider.kind,
     draftReason,
+    rosterStatus: (subject: PlayerSubject) => snapshot?.rosters.value
+      .find((r) => r.franchiseId === subject.franchiseId)?.players.find((p) => p.id === subject.id)
+      ?.rosterStatus,
     loadMoves,
     readMoves: moves.read,
     useMoves: moves.use,
