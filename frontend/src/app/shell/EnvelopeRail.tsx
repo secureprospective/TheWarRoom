@@ -7,6 +7,7 @@ import './moves.css';
 import { Act } from '../commands/Act';
 import { lineupChanges } from './LineupPlan';
 import { tradeRailLabels } from './tradeLabels';
+import { rosterHandoffLabel } from './ReceiptStatus';
 
 const time = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
 const mainPath: EnvelopeState[] = ['draft', 'ready', 'handed_off', 'not_yet_done', 'landed'];
@@ -31,10 +32,17 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
   const lineup = receipt.spec.expected.lineup;
   const trade = tradeRailLabels(receipt, snapshot);
   const header = trade?.header || (lineup ? `Week ${lineup.week} lineup` :
-    player?.name ?? receipt.spec.expected.player);
-  const handoffLabel = trade ? 'Open MFL trade desk' : 'Open MFL page';
-  const summary = lineupChanges(receipt, snapshot).map((change) =>
+    player?.name ?? 'Player unavailable');
+  const handoffLabel = rosterHandoffLabel(receipt.spec.intent) ||
+    (trade ? 'Open MFL trade desk' : 'Open MFL page');
+  const lineupSummary = lineupChanges(receipt, snapshot).map((change) =>
     `${change.verb === 'Start' ? '+' : '−'}${change.name.split(',')[0]}`).join(' ');
+  let summary = trade?.summary || lineupSummary;
+  if (receipt.spec.intent === 'roster.ir') summary = `IR ${header}`;
+  if (receipt.spec.intent === 'roster.taxi') {
+    const direction = receipt.spec.expected.rosterStatus === 'TAXI_SQUAD' ? '+' : '−';
+    summary = `${direction}Taxi ${header}`;
+  }
   const trail = new Map(receipt.audit.map((entry) => [entry.to, entry]));
   return (
     <Card
@@ -42,7 +50,7 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
       header={
         <div>
           <h4>{header}</h4>
-          {(trade || lineup) && <p>{trade?.summary || summary}</p>}
+          {summary && <p>{summary}</p>}
           <span>{intentLabels[receipt.spec.intent] ?? receipt.spec.intent}</span>
           <span className="move-classification">{receipt.spec.gravity} · {receipt.spec.undo}</span>
         </div>

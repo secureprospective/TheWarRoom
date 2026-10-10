@@ -36,9 +36,11 @@ export async function finishDraft(
   provider: DraftingProvider,
   subject: PlayerSubject,
   key: string,
+  intent: 'roster.ir' | 'roster.taxi',
 ) {
   try {
-    const receipt = await provider.draftIR(subject.franchiseId, subject.id);
+    const draft = intent === 'roster.ir' ? provider.draftIR : provider.draftTaxi;
+    const receipt = await draft.call(provider, subject.franchiseId, subject.id);
     state.write({ moves: orderReceipts([receipt, ...state.read().moves]) });
   } catch (cause) {
     state.write({ draftErrors: { ...state.read().draftErrors, [key]: String(cause) } });

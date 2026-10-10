@@ -4,7 +4,7 @@ import type {
 } from './contract';
 import {
   DeleteMFLKey, MFLKeyStatus as ReadMFLKey, SetMFLKey,
-  TargetClock, TargetDraftIR, TargetMoves, TargetSnapshot,
+  TargetClock, TargetDraftIR, TargetDraftTaxi, TargetMoves, TargetSnapshot,
 } from '../../../wailsjs/go/main/App';
 
 interface ReadingProvider {
@@ -29,6 +29,7 @@ interface ReadingProvider {
 export interface DraftingProvider {
   kind: 'live';
   draftIR(franchiseId: string, playerId: string): Promise<Receipt>;
+  draftTaxi(franchiseId: string, playerId: string): Promise<Receipt>;
   moves(franchiseId: string): Promise<Receipt[]>;
 }
 export interface DemoProvider {
@@ -206,6 +207,12 @@ export class LiveProvider implements ReadingProvider, DraftingProvider {
   async draftIR(franchiseId: string, playerId: string): Promise<Receipt> {
     const [{ parseReceipt }, receipt] = await Promise.all([
       import('./parseEnvelope'), TargetDraftIR(franchiseId, playerId),
+    ]);
+    return parseReceipt(receipt);
+  }
+  async draftTaxi(franchiseId: string, playerId: string): Promise<Receipt> {
+    const [{ parseReceipt }, receipt] = await Promise.all([
+      import('./parseEnvelope'), TargetDraftTaxi(franchiseId, playerId),
     ]);
     return parseReceipt(receipt);
   }

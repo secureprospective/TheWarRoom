@@ -198,3 +198,4 @@ League Pulse Now: `shell/PulseNow.tsx` lazily reads matchups and toggles side-by
 `target_app.go`: `TargetDraftTaxi(franchiseID, playerID string) (envelope.Receipt, error)` saves a taxi plan.
 `internal/envelope`: `roster.taxi` derives direction from held status and watches post-hand-off rosters.
 IR and taxi open MFL owner pages without submitting; unavailable held taxi rules are labelled unchecked.
+Inspector: `shell/PlayerAct.tsx` drafts IR/taxi by held roster status and hands off inline.
