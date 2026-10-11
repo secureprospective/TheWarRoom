@@ -27,7 +27,8 @@ export function Act<K extends CommandId>({
 }: ActProps<K>) {
   const accessibleLabel = label ?? commands.registry[verb].label;
   const content = children ?? accessibleLabel;
-  const title = (disabled && variant !== 'command') || variant === 'icon' || variant === 'rail'
+  const title = (disabled && variant !== 'command' && variant !== 'rail') ||
+    (variant === 'icon' && typeof children !== 'string')
     ? accessibleLabel : undefined;
   return (
     <button

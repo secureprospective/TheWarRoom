@@ -59,7 +59,7 @@ func (a *App) loadSeasonPoints(ctx context.Context) (warning string, err error) 
 			if lerr := a.history.LoadFailed(ctx, playerscores.Source, ferr); lerr != nil {
 				return "", errors.Join(ferr, lerr)
 			}
-			warnings = append(warnings, fmt.Sprintf("%d: %v", y, ferr))
+			warnings = append(warnings, strings.TrimRight(fmt.Sprintf("%d: %v", y, ferr), ".; "))
 		}
 	}
 	if len(warnings) > 0 {

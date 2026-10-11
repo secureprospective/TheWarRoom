@@ -7,7 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/engine/contractacts"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 func TestContractPendingCanBeWithdrawn(t *testing.T) {
@@ -146,5 +148,23 @@ func TestRemovalWordsAgreeAcrossKinds(t *testing.T) {
 	removed, err := b.TargetBidWithdraw(p.Receipt.CorrelationID)
 	if err != nil || removed.Status != want {
 		t.Fatal(removed.Status, err)
+	}
+}
+
+func TestTenderPostUsesLeagueRoundAtEveryLevel(t *testing.T) {
+	for i, level := range contractacts.TenderLevels() {
+		facts := envelope.ContractFacts{Intent: "rfa.tender", Level: i + 1, Season: 2026,
+			Terms: contractacts.Flat(2027, 1, level.Price, "")}
+		got := contractActView(envelope.Receipt{}, facts).Post
+		want := level.Round + "-round RFA tender for 2027: " + snapshot.ContractAmountOf(level.Price).Text
+		if !strings.Contains(got, want) || strings.Contains(got, "Tender level") {
+			t.Fatal(got, want)
+		}
+	}
+}
+
+func TestJoinedNotesDoNotDoublePunctuate(t *testing.T) {
+	if got := joinNote("First.", "Second."); got != "First; Second" {
+		t.Fatal(got)
 	}
 }

@@ -154,7 +154,7 @@ describe('Contract Acts', () => {
       .toBeLessThan(source.indexOf('title="My franchise cap"'));
     const form = readFileSync(new URL('./ContractActs.tsx', import.meta.url), 'utf8');
     const actions = readFileSync(new URL('./contractActs.ts', import.meta.url), 'utf8');
-    expect(form).toContain('className="contract-primary"');
+    expect(form).toContain('className="bid-actions"');
     expect(actions).toContain("reading.value?.find(p => !before.value?.some(old => old.id === p.id))");
     const css = readFileSync(new URL('./contracts.css', import.meta.url), 'utf8');
     expect(css).toContain('.release-plans > h4 { margin-top: 12px; margin-bottom: 6px; }');
@@ -255,4 +255,31 @@ it('shows Go restructuring words verbatim instead of inventing a price label', (
   const text = renderToStaticMarkup(createElement(ContractMovePreview, { plan: p }));
   expect(text).toContain(p.price);
   expect(text).not.toContain('Price:');
+});
+
+it('K: all plan action buttons share the bid text-action class', () => {
+  const cut: ReleasePlan = { id: 'cut', label: 'Cut Example', player: 'Example', charge: '$0',
+    post: 'Drop Example', channel: 'MFL', confirmation: 'Confirm', cut: true,
+    receipt: { state: 'ready', spec: { intent: 'roster.cut' }, audit: [] },
+    canHandOff: true, canRebase: true, rebaseLabel: 'Reprice', withdrawLabel: 'Remove plan' };
+  for (const element of [createElement(ContractActCard, { plan: { ...plan(), canHandOff: true,
+    canPost: true, canRebase: true }, mine: '0001' }),
+    createElement(ReleaseCard, { plan: cut, mine: '0001' }),
+    createElement(ReleaseCard, { plan: { ...cut, cut: false }, mine: '0001' })]) {
+    const text = renderToStaticMarkup(element);
+    const buttons = text.match(/<button[^>]*>/g) ?? [];
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const button of buttons) expect(button).toContain('class="act act-text"');
+  }
+  const source = readFileSync('src/app/contracts/ContractActs.tsx', 'utf8');
+  expect(source).toMatch(/className="bid-actions"><Act[^>]*variant="text"/);
+});
+it('B: Contract move Close shares Inspector Close class in its heading row', () => {
+  const source = readFileSync('src/app/contracts/ContractActs.tsx', 'utf8');
+  const heading = source.slice(source.indexOf('<header className="contract-move-head">'),
+    source.indexOf('</header>') + 9);
+  expect(heading).toContain('<h4>Contract move</h4>');
+  expect(heading).toContain('variant="icon" label="Close contract move">Close</Act>');
+  const css = readFileSync('src/app/contracts/contracts.css', 'utf8');
+  expect(css).toContain('justify-content: space-between; gap: 12px;');
 });

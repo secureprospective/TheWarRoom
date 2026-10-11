@@ -164,7 +164,7 @@ export function createPoolState(supplied: Partial<Deps> = {}) {
         ? await deps.provider.revise(form.planId, franchiseId, form)
         : await deps.provider.draft(franchiseId, form);
       set({ form: undefined, preview: undefined });
-      show(saved.id);
+      set({ openPlan: saved.id });
       return `${saved.player}: ${saved.state}. ${saved.status}`;
     });
   }

@@ -69,7 +69,7 @@ describe('Fix 1: open plans sit above the table', () => {
     for (const piece of ['Smith, John (WR, DAL)', '3 years at $5,000,000 a year', '7.000 points', 'Ready'])
       expect(smith).toContain(piece);
     expect(lines.join('')).not.toContain('Withdrawn');
-    expect(text.indexOf('Finished bid plans')).toBeGreaterThan(text.indexOf('</table>'));
+    expect(text).not.toContain('Finished bid plans');
   });
   it('opens the chosen card above the table, once', () => {
     const closed = screen();
@@ -87,7 +87,7 @@ describe('Fix 1: open plans sit above the table', () => {
     const text = html(createElement(OpenPlans, { board: none, openId: '', focus, busy: '' }));
     expect(text).toContain('No open bid plans.');
   });
-  it('keeps the saved plan open and asks for it to be scrolled into view, each time', async () => {
+  it('G: saves inline without a reveal jump; explicit card opens still reveal', async () => {
     const { provider } = fakeProvider();
     const state = createPoolState({ provider, franchise: () => '0001', delay: 0 });
     await state.open();
@@ -95,13 +95,13 @@ describe('Fix 1: open plans sit above the table', () => {
     await state.change({ field: 'pool-save', value: '' });
     expect(state.peek().form).toBeUndefined();
     expect(state.peek().openPlan).toBe(plan('ready').id);
-    expect(state.peek().focus).toEqual({ id: plan('ready').id, seq: 1 });
+    expect(state.peek().focus).toEqual({ id: '', seq: 0 });
     await state.change({ field: 'pool-open', value: plan('blocked').id });
-    expect(state.peek()).toMatchObject({ openPlan: plan('blocked').id, focus: { seq: 2 } });
+    expect(state.peek()).toMatchObject({ openPlan: plan('blocked').id, focus: { seq: 1 } });
     await state.change({ field: 'pool-toggle', value: plan('blocked').id });
     expect(state.peek().openPlan).toBe('');
     await state.change({ field: 'pool-toggle', value: plan('blocked').id });
-    expect(state.peek()).toMatchObject({ openPlan: plan('blocked').id, focus: { seq: 3 } });
+    expect(state.peek()).toMatchObject({ openPlan: plan('blocked').id, focus: { seq: 2 } });
   });
 });
 
@@ -368,5 +368,45 @@ it('Inspector card link and plan-a-bid both navigate to the pool work column', (
 
 it('pool form insertion uses the same row anchor as Contracts', () => {
   const source = readFileSync('src/app/pool/Pool.tsx', 'utf8');
-  expect(source).toContain("useWorkAnchor(root, '.pool-table tbody tr')");
+  expect(source).toContain("useWorkAnchor(root, '.pool-table tbody tr:not(.pool-form-row), .bid-plan')");
+});
+
+it('G: the same bid form is full-width directly after its clicked row, never above the table', () => {
+  const reading = pool();
+  const row = reading.value.rows[1];
+  const text = html(createElement(PoolScreen, { franchiseId: '0001', state: {
+    ...poolState.peek(), reading, form: { ...form, playerId: row.id, playerName: row.name },
+  } }));
+  expect(text.match(/aria-label="Bid plan form"/g)).toHaveLength(1);
+  expect(text).toMatch(/<\/tr><tr class="pool-form-row"><td colSpan="5"><section class="bid-form"/);
+  expect(text.indexOf('Bid plan form')).toBeGreaterThan(text.indexOf(row.name));
+  expect(text.indexOf('Bid plan form')).toBeLessThan(text.indexOf('</tbody>'));
+});
+it('I: terminal chosen plans stay out of the pool, including the finished list', () => {
+  const chosen = plan('withdrawn');
+  const reading = { ...board(), value: { ...board().value, plans: [chosen] } };
+  const text = html(createElement(PoolScreen, { franchiseId: '0001', state: {
+    ...poolState.peek(), reading: pool(), board: reading, openPlan: chosen.id,
+  } }));
+  expect(text).toContain('No open bid plans.');
+  expect(text).not.toContain(`aria-label="Bid plan ${chosen.player}`);
+  expect(text).not.toContain('Finished bid plans');
+});
+it('H: free-agent Inspector uses its normal 14px block rhythm', () => {
+  const css = readFileSync('src/app/pool/pool.css', 'utf8');
+  expect(css).toContain('.twr-app .pool-inspector { display: grid; gap: 14px; }');
+});
+
+it('G: saved Change figures keeps the same form beside its card, not in the distant pool table', () => {
+  const chosen = plan('ready');
+  const text = html(createElement(PoolScreen, { franchiseId: '0001', state: {
+    ...poolState.peek(), reading: pool(), board: board(), openPlan: chosen.id,
+    form: { ...form, planId: chosen.id, playerId: chosen.playerId },
+  } }));
+  expect(text.match(/aria-label="Bid plan form"/g)).toHaveLength(1);
+  const card = text.indexOf(`aria-label="Bid plan ${chosen.player}`);
+  expect(text.indexOf('Bid plan form')).toBeGreaterThan(card);
+  expect(text.indexOf('Bid plan form')).toBeLessThan(text.indexOf('<table'));
+  expect(readFileSync('src/app/pool/pool.css', 'utf8'))
+    .toContain('.pool-table tr:not(.pool-form-row) td:nth-child(1) .act');
 });

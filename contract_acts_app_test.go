@@ -128,8 +128,8 @@ func TestContractPostOnlyNamesOwnTerms(t *testing.T) {
 		{"contract.extend", "Adds 1 year: 2029 at $16,500,000"},
 		{"contract.restructure", "Moves $16,500,000 from 2026 to 2028"},
 		{"contract.tag", "Franchise tag for 2029 at $16,500,000"},
-		{"rfa.tender", "Tender level 1 for 2029: $16,500,000"},
-		{"fa.resign", "Re-sign for 1 years from 2029 at $16,500,000 a year"},
+		{"rfa.tender", "5th-round RFA tender for 2029: $16,500,000"},
+		{"fa.resign", "Re-sign for 1 year from 2029 at $16,500,000 a year"},
 	} {
 		t.Run(tc.intent, func(t *testing.T) {
 			f := envelope.ContractFacts{Intent: tc.intent, Season: 2027, Years: 1, Level: 1, Source: 2026, Destination: 2028,

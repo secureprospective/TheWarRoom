@@ -127,7 +127,7 @@ func Note(results []Result) string {
 	var reasons []string
 	for _, r := range results {
 		if r.Verdict == Fail || r.Verdict == Unknown {
-			reasons = append(reasons, r.Reason)
+			reasons = append(reasons, strings.TrimRight(r.Reason, ".; "))
 		}
 	}
 	if len(reasons) == 0 {

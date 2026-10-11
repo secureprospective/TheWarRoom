@@ -92,7 +92,7 @@ export function AdminPanel() {
                       <button
                         type="button"
                         className="twr-btn"
-                        title="Clear the Admin value and follow the shipped default"
+                        aria-label="Clear the Admin value and follow the shipped default"
                         onClick={() => void resetParam(p.key, p.position)}
                       >
                         Reset

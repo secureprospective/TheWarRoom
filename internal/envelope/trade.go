@@ -3,7 +3,6 @@ package envelope
 import (
 	"fmt"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -145,7 +144,7 @@ func (c TradeCheck) checkOffer(s Spec, snap snapshot.Snapshot, offer leaguefeed.
 	}
 	blocks = append(blocks, tradeOwnership(s, snap, offer.Gets)...)
 	if len(blocks) > 0 {
-		return CheckResult{Blocked: true, Note: strings.Join(blocks, "; ")}
+		return CheckResult{Blocked: true, Note: reasonNote(blocks)}
 	}
 	note := "offer " + offer.ID + " from " + c.OfferingName
 	if slices.ContainsFunc(offer.Gets, func(a leaguefeed.Asset) bool { return a.Player == nil }) {

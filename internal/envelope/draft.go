@@ -63,7 +63,17 @@ func (c rosterDraftCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
 	result := c.check.Evaluate(s, snap)
 	if len(c.blocks) > 0 {
 		result.Blocked = true
-		result.Note = strings.TrimPrefix(result.Note+"; "+strings.Join(c.blocks, "; "), "; ")
+		result.Note = reasonNote(append([]string{result.Note}, c.blocks...))
 	}
 	return result
+}
+
+func reasonNote(reasons []string) string {
+	parts := make([]string, 0, len(reasons))
+	for _, reason := range reasons {
+		if text := strings.TrimRight(reason, ".; "); text != "" {
+			parts = append(parts, text)
+		}
+	}
+	return strings.Join(parts, ". ")
 }

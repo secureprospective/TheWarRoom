@@ -1,11 +1,11 @@
 import { scrollWorkIntoView, useWorkAnchor } from '../shell/workScroll';
-import { useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { localDate } from '../clock/labels';
 import type { Snapshot } from '../data/contract';
 import { FranchisePicker } from '../shell/FranchisePicker';
-import { BidBoardView, BidPlanCard, signals, usePoolData } from './BidPlans';
+import { BidPlanCard, signals, usePoolData } from './BidPlans';
 import { BidForm } from './BidForm';
 import { SignalChip } from '../look/Slots';
 import {
@@ -43,25 +43,30 @@ function useBringIntoView(wanted: boolean, seq: number) {
   return ref;
 }
 
-function OpenCard({ plan, focus, busy }: { plan: Plan; focus: PoolState['focus']; busy: string }) {
+function OpenCard({ plan, focus, busy, state }: {
+  plan: Plan; focus: PoolState['focus']; busy: string; state?: PoolState;
+}) {
   const ref = useBringIntoView(focus.id === plan.id, focus.seq);
   return (
     <div ref={ref} className="bid-open-card">
       <BidPlanCard plan={plan} busy={busy} />
+      {state?.form?.planId === plan.id &&
+        <BidForm form={state.form} preview={state.preview} busy={busy} />}
     </div>
   );
 }
 
 // The owner's open plans sit above the 800-row table: one line each, and a click opens the card.
-export function OpenPlans({ board, openId, focus, busy }: {
+export function OpenPlans({ board, openId, focus, busy, state }: {
   board?: BoardReading;
   openId: string;
   focus: PoolState['focus'];
   busy: string;
+  state?: PoolState;
 }) {
   const all = board?.value.plans ?? [];
   const open = all.filter((p) => planOpen(p.stateCode));
-  const chosen = all.find((p) => p.id === openId);
+  const chosen = open.find((p) => p.id === openId);
   return (
     <section className="bid-open" aria-label="Your open bid plans" data-endpoint="M-194">
       <h4>Your open bid plans</h4>
@@ -85,12 +90,12 @@ export function OpenPlans({ board, openId, focus, busy }: {
           </li>
         ))}
       </ul>
-      {chosen && <OpenCard plan={chosen} focus={focus} busy={busy} />}
+      {chosen && <OpenCard plan={chosen} focus={focus} busy={busy} state={state} />}
     </section>
   );
 }
 
-function PoolTable({ rows }: { rows: PoolRow[] }) {
+function PoolTable({ rows, state }: { rows: PoolRow[]; state?: PoolState }) {
   return (
     <table className="pool-table" aria-label="Free agents">
       <thead>
@@ -106,7 +111,7 @@ function PoolTable({ rows }: { rows: PoolRow[] }) {
       </thead>
       <tbody>
         {rows.map((row) => (
-          <tr key={row.id}>
+          <Fragment key={row.id}><tr>
             <td>
               <PlayerCell row={row} />
             </td>
@@ -134,6 +139,10 @@ function PoolTable({ rows }: { rows: PoolRow[] }) {
               )}
             </td>
           </tr>
+          {state?.form && !state.form.planId && state.form.playerId === row.id &&
+            <tr className="pool-form-row"><td colSpan={5}>
+            <BidForm form={state.form} preview={state.preview} busy={state.busy} />
+          </td></tr>}</Fragment>
         ))}
       </tbody>
     </table>
@@ -152,7 +161,9 @@ export function PoolHowCounted({ reading }: { reading: PoolReading }) {
   );
 }
 
-export function PoolFrame({ reading, refreshing }: { reading?: PoolReading; refreshing: boolean }) {
+export function PoolFrame({ reading, refreshing, state }: {
+  reading?: PoolReading; refreshing: boolean; state?: PoolState;
+}) {
   const failed = reading?.status === 'failed';
   return (
     <section className="pool-reading" aria-label="Free agents from MFL" data-endpoint="M-056">
@@ -174,7 +185,7 @@ export function PoolFrame({ reading, refreshing }: { reading?: PoolReading; refr
           {reading.value.rows.length === 0 ? (
             <p>No free agent matches this position.</p>
           ) : (
-            <PoolTable rows={reading.value.rows} />
+            <PoolTable rows={reading.value.rows} state={state} />
           )}
         </>
       )}
@@ -252,7 +263,7 @@ export function PoolScreen({ state, snapshot, franchiseId }: {
   franchiseId: string;
 }) {
   const root = useRef<HTMLElement>(null);
-  useWorkAnchor(root, '.pool-table tbody tr');
+  useWorkAnchor(root, '.pool-table tbody tr:not(.pool-form-row), .bid-plan');
   return (
     <section ref={root} className="pool" aria-label="Free-agent pool">
       <header>
@@ -265,16 +276,13 @@ export function PoolScreen({ state, snapshot, franchiseId }: {
       {!franchiseId && snapshot && <FranchisePicker snapshot={snapshot} />}
       {state.error && <p role="alert">{state.error}</p>}
       {state.notice && <p role="status">{state.notice}</p>}
-      {state.form && <BidForm form={state.form} preview={state.preview} busy={state.busy} />}
-      <OpenPlans board={state.board} openId={state.openPlan} focus={state.focus} busy={state.busy} />
+      {state.form && !state.form.planId &&
+        !state.reading?.value.rows.some(row => row.id === state.form?.playerId) &&
+        <BidForm form={state.form} preview={state.preview} busy={state.busy} />}
+      <OpenPlans board={state.board} openId={state.openPlan} focus={state.focus}
+        busy={state.busy} state={state} />
       <Controls reading={state.reading} state={state} />
-      <PoolFrame reading={state.reading} refreshing={state.refreshing} />
-      <BidBoardView
-        board={state.board}
-        busy={state.busy}
-        title="Finished bid plans"
-        show={(p) => !planOpen(p.stateCode) && p.id !== state.openPlan}
-      />
+      <PoolFrame reading={state.reading} refreshing={state.refreshing} state={state} />
     </section>
   );
 }

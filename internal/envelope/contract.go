@@ -67,13 +67,12 @@ func (c ContractCheck) Evaluate(s Spec, _ snapshot.Snapshot) CheckResult {
 	if !IsContract(s.Intent) {
 		return CheckResult{Blocked: true, Note: "Contract check: unsupported intent"}
 	}
-	blocked := false
 	for _, reason := range c.Reasons {
 		if reason != "" && !strings.HasPrefix(reason, "Not checked:") && !strings.HasPrefix(reason, "Using ") {
-			blocked = true
+			return CheckResult{Blocked: true, Note: strings.TrimRight(reason, ".; ") + "."}
 		}
 	}
-	return CheckResult{Blocked: blocked, Note: strings.Join(c.Reasons, "; ")}
+	return CheckResult{Note: reasonNote(c.Reasons)}
 }
 
 func DraftContract(at time.Time, spec Spec, facts ContractFacts, generate func() string) (Envelope, error) {

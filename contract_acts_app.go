@@ -342,6 +342,10 @@ func contractSubject(f envelope.ContractFacts) string {
 }
 func contractPostTerms(f envelope.ContractFacts) string {
 	price := snapshot.ContractAmountOf(f.Terms.Price).Text
+	unit := "years"
+	if f.Years == 1 {
+		unit = "year"
+	}
 	switch f.Intent {
 	case "contract.extend":
 		last := f.Season
@@ -354,19 +358,19 @@ func contractPostTerms(f envelope.ContractFacts) string {
 				parts = append(parts, fmt.Sprintf("%d at %s", c.Season, snapshot.ContractAmountOf(c.Salary).Text))
 			}
 		}
-		unit := "years"
-		if f.Years == 1 {
-			unit = "year"
-		}
 		return fmt.Sprintf("Adds %d %s: %s", f.Years, unit, strings.Join(parts, "; "))
 	case "contract.restructure":
 		return fmt.Sprintf("Moves %s from %d to %d", price, f.Source, f.Destination)
 	case "contract.tag":
 		return fmt.Sprintf("Franchise tag for %d at %s", contractStart(f), price)
 	case "rfa.tender":
-		return fmt.Sprintf("Tender level %d for %d: %s", f.Level, contractStart(f), price)
+		levels := contractacts.TenderLevels()
+		if f.Level < 1 || f.Level > len(levels) {
+			return "RFA tender: level not selected"
+		}
+		return fmt.Sprintf("%s-round RFA tender for %d: %s", levels[f.Level-1].Round, contractStart(f), price)
 	case "fa.resign":
-		return fmt.Sprintf("Re-sign for %d years from %d at %s a year", f.Years, contractStart(f), price)
+		return fmt.Sprintf("Re-sign for %d %s from %d at %s a year", f.Years, unit, contractStart(f), price)
 	default:
 		return ""
 	}

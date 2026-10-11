@@ -78,14 +78,14 @@ describe('Release plans', () => {
     };
     expect(await render()).toContain('Open MFL drop page');
     const buttons = () => dom.root.querySelectorAll('[type]');
-    expect(buttons()[0].getAttribute('class')).toBe('act act-command');
+    expect(buttons()[0].getAttribute('class')).toBe('act act-text');
     expect(buttons()[0].getAttribute('type')).toBe('button');
     expect(await render()).not.toContain('Confirm and open MFL');
     await act(async () => { confirmRelease(`${p.id}:${p.charge}:${at}`); });
     expect(await render()).toContain(p.confirmation);
     expect(await render()).toContain('Confirm and open MFL');
-    expect(buttons()[0].getAttribute('class')).toBe('act act-command');
-    expect(buttons()[1].getAttribute('class')).toBe('act act-command');
+    expect(buttons()[0].getAttribute('class')).toBe('act act-text');
+    expect(buttons()[1].getAttribute('class')).toBe('act act-text');
     expect(buttons()[1].textContent).toBe('Cancel');
     expect(dom.root.querySelector('[data-primary]')).not.toBeNull();
     expect(dom.root.querySelector('[aria-label]')).not.toBeNull();
@@ -104,7 +104,7 @@ describe('Release plans', () => {
     p.receipt.audit[0].note = "Offseason only: can't be done until the offseason.";
     const render = () => renderToStaticMarkup(createElement(ReleaseCard, { plan: p, mine: '0001' }));
     expect(render()).toContain('Remove plan');
-    expect(render()).toContain('act act-command');
+    expect(render()).toContain('act act-text');
     expect(render()).toContain("Offseason only: can&#x27;t be done until the offseason.");
     expect(render()).not.toContain('Reprice');
     for (const state of ['handed_off', 'not_yet_done'] as const) {
@@ -166,8 +166,8 @@ describe('Release plans', () => {
       ' { height: 30px; margin: 4px 0; align-items: center; }');
     expect(css).toContain('.whatif-plan-line > p { margin: 0; line-height: 18px; }');
     expect(css).toContain('.release-confirm { display: contents; }');
-    expect(css).toContain('.release-confirm[data-primary="handoff"] .act-command:first-of-type' +
-      ' { background: var(--surface-tx1); color: var(--surface-0); }');
+    expect(readFileSync('src/app/pool/pool.css', 'utf8'))
+      .toContain('.twr-app .bid-actions .act { color: var(--surface-tx1); font: inherit; margin: 0; }');
   });
 });
 

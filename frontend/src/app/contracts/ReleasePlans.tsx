@@ -19,24 +19,24 @@ export function ReleaseCard({ plan, mine }: { plan: ReleasePlan; mine: string })
     <RailStrip receipt={plan.receipt} />
     {!finished && <><p>{plan.channel}</p>{post}</>}
     <div className="bid-actions">{plan.canHandOff && (plan.cut && !confirm ?
-      <Act verb="contracts.set" variant="command" label={`Open MFL drop page for ${plan.player}`}
+      <Act verb="contracts.set" variant="text" label={`Open MFL drop page for ${plan.player}`}
         args={{ field: 'release-confirm', value: token }}>Open MFL drop page…</Act> :
       <div className="release-confirm" data-primary="handoff">
         {plan.cut && <p role="alert">{plan.confirmation}</p>}
-        <Act verb="contracts.set" variant="command"
+        <Act verb="contracts.set" variant="text"
           label={plan.cut ? `Confirm release of ${plan.player}` : `Copy buyout request for ${plan.player}`}
           args={{ field: 'release', value: {
             mine, action: 'handoff', id: plan.id, confirmed: plan.cut && confirm,
           } }}>
           {plan.cut ? 'Confirm and open MFL' : 'Copy request and hand off'}
         </Act>
-        {plan.cut && <Act verb="contracts.set" variant="command" label="Cancel"
+        {plan.cut && <Act verb="contracts.set" variant="text" label="Cancel"
           args={{ field: 'release-confirm', value: '' }}>Cancel</Act>}
       </div>)}
-    {plan.canRebase && <Act verb="contracts.set" variant="command" label={plan.rebaseLabel}
+    {plan.canRebase && <Act verb="contracts.set" variant="text" label={plan.rebaseLabel}
       args={{ field: 'release', value: { mine, action: 'rebase', id: plan.id } }}>
       {plan.rebaseLabel}</Act>}
-    {plan.withdrawLabel && <Act verb="contracts.set" variant="command" label={plan.withdrawLabel}
+    {plan.withdrawLabel && <Act verb="contracts.set" variant="text" label={plan.withdrawLabel}
       args={{ field: 'release', value: { mine, action: 'withdraw', id: plan.id } }}>
       {plan.withdrawLabel}</Act>}
     </div><details className="bid-details"><summary>History</summary>{finished && post}

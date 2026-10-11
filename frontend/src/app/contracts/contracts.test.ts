@@ -499,7 +499,7 @@ it('retains the what-if during replay and restores the clicked row position befo
     provider: provider(), whatIf: simulation }));
   const outer = nodes(test.root, 'DIV').find(node => node.getAttribute('class') === 'contracts')!;
   const row = { isConnected: true, getBoundingClientRect: vi.fn().mockReturnValue({ top: 400 }) };
-  const scroll = { scrollTop: 100 };
+  const scroll = { scrollTop: 100, clientHeight: 600, getBoundingClientRect: () => ({ top: 60 }) };
   const anchor = { row, top: 400, scroll };
   simulation.query = vi.fn(() => new Promise(yes => { resolve = yes; }));
   await act(async () => { changed(); });
@@ -537,7 +537,7 @@ it('offers the same Go Acts in my player Inspector, never another franchise', as
 
 it('both table routes use the shared work anchor rather than row-menu-only capture', () => {
   const code = readFileSync('src/app/contracts/Contracts.tsx', 'utf8');
-  expect(code).toContain("useWorkAnchor(root, '.contract-table tbody tr')");
+  expect(code).toContain("useWorkAnchor(root, '.contract-table tbody tr, .bid-plan')");
 });
 
 it('keeps an opened row on one line with the full sentence as its label', async () => {
@@ -572,7 +572,7 @@ it('names the contract under the heading and holds Kept until the terms differ',
   const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
   await act(async () => {});
   const heading = nodes(test.root, 'H4')[0];
-  const subject = nodes(heading.parentNode!, 'P').find(node =>
+  const subject = nodes(heading.parentNode!.parentNode!, 'P').find(node =>
     node.getAttribute('class') === 'contract-move-subject')!;
   expect(subject.textContent).toBe('Oluokun, Foyesade · LB · $11,000,000 a year through 2028 · UFA');
   const keep = () => nodes(test.root, 'BUTTON').find(b => /Keep|Kept/.test(b.textContent))!;

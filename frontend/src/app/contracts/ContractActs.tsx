@@ -33,7 +33,7 @@ export function ContractActCard({ plan, mine, revealing = false }: {
   const finished = ['withdrawn', 'landed', 'failed'].includes(plan.receipt?.state ?? '');
   const post = <pre className="bid-post" aria-label="Contract ProBoards post">{plan.post}</pre>;
   const action = (kind: ContractActRequest['action'], label: string) =>
-    <Act verb="contracts.set" variant="command" label={label}
+    <Act verb="contracts.set" variant="text" label={label}
     args={{ field: 'contract-act', value: { mine, id: plan.id, action: kind } }}>{label}</Act>;
   return <article ref={card} tabIndex={-1} className="bid-plan contract-act-card" aria-label={plan.label}>
     <h5>{plan.label}</h5>
@@ -162,9 +162,9 @@ function ContractMoveForm({ mine, player }: { mine: string; player: string }) {
     return () => { active = false; };
   }, [request, mine, player, options]);
   return <section className="contract-reading contract-move" aria-label="Contract move">
-    <h4>Contract move</h4>
+    <header className="contract-move-head"><h4>Contract move</h4>
     <Act verb="contracts.set" args={{ field: 'contract-close', value: '' }}
-      label="Close contract move">Close</Act>
+      variant="icon" label="Close contract move">Close</Act></header>
     <p className="contract-move-subject">{options[0]?.subject ?? plan?.subject}</p>
     <fieldset disabled={saving} className="contract-act-form">
       <ContractActChoices request={request} options={options} onChange={setRequest} />
@@ -182,7 +182,7 @@ function ContractMoveForm({ mine, player }: { mine: string; player: string }) {
       {error && <p role="alert">{error}</p>}
       {!error && options.length === 0 && <p>No eligible Acts found.</p>}
       {plan && <><ContractMovePreview plan={plan} />
-        <div className="contract-primary"><Act verb="contracts.set" variant="command"
+        <div className="bid-actions"><Act verb="contracts.set" variant="text"
           disabled={keep !== 'Keep plan'} label={keep}
           args={{ field: 'contract-keep', value: { ...request, mine, player } }}>{keep}</Act></div>
         {keepError && <p role="alert">{keepError}</p>}</>}

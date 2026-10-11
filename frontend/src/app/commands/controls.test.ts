@@ -139,7 +139,7 @@ describe('Act tooltips', () => {
     expect(html).toContain('title="No changes from saved lineup"');
     expect(html).toContain('aria-label="No changes from saved lineup"');
   });
-  it.each(['icon', 'rail'] as const)('keeps the title on a textless %s Act', (variant) => {
+  it.each(['icon'] as const)('keeps the title on a textless %s Act', (variant) => {
     const html = renderToStaticMarkup(createElement(Act, {
       verb: 'lineup.edit', args: { franchiseId: '0025' }, variant,
       label: 'Edit lineup', children: createElement('svg', { 'aria-hidden': true }),
@@ -158,4 +158,18 @@ it('replacement command buttons never carry native titles, even shortened or dis
     expect(html).toContain('aria-label="Make this a plan: Cut Banks, Deonte"');
     expect(html).not.toContain('title=');
   }
+});
+
+it.each(['war', 'hq', 'trade'] as const)('F: rail %s keeps its name without a native tooltip', node => {
+  const html = renderToStaticMarkup(createElement(Act, {
+    verb: 'nav.open', args: { node }, variant: 'rail', children: node,
+  }));
+  expect(html).toContain('aria-label="Open workspace"');
+  expect(html).not.toContain('title=');
+});
+
+it('F: the replacing Admin Reset control has an accessible name, not a tooltip', () => {
+  const source = readFileSync('src/components/AdminPanel.tsx', 'utf8');
+  expect(source).not.toContain('title="Clear the Admin value');
+  expect(source).toContain('aria-label="Clear the Admin value');
 });

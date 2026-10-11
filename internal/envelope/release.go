@@ -2,7 +2,6 @@ package envelope
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -60,7 +59,7 @@ func (c ReleaseCheck) Evaluate(s Spec, _ snapshot.Snapshot) CheckResult {
 		}
 	}
 	if len(reasons) > 0 {
-		return CheckResult{Blocked: true, Note: strings.Join(reasons, "; ") + "; planned dead cap this season: " + c.ChargeText}
+		return CheckResult{Blocked: true, Note: reasonNote(append(reasons, "planned dead cap this season: "+c.ChargeText))}
 	}
 	return CheckResult{Note: "Roster checked; planned dead cap this season: " + c.ChargeText}
 }

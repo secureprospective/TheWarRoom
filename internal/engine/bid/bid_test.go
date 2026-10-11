@@ -312,3 +312,10 @@ func TestPlayoffsKeepSalaryTiersAndRequirePlayoffTeam(t *testing.T) {
 		})
 	}
 }
+
+func TestNoteDoesNotJoinFullStopsToSemicolons(t *testing.T) {
+	got := Note([]Result{{Verdict: Fail, Reason: "First."}, {Verdict: Unknown, Reason: "Second."}})
+	if strings.Contains(got, ".;") {
+		t.Fatal(got)
+	}
+}

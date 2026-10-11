@@ -226,7 +226,7 @@ export default function Contracts({
     s.franchiseId ?? '', () => simulation.query(s.franchiseId ?? ''), simulation, true,
   );
   const root = useRef<HTMLDivElement>(null);
-  useWorkAnchor(root, '.contract-table tbody tr');
+  useWorkAnchor(root, '.contract-table tbody tr, .bid-plan');
   const filters = useContractsFilters();
   const scope = { ...filters, mine: s.franchiseId ?? '' };
   const key = JSON.stringify(scope);

@@ -11,7 +11,7 @@
 .twr-app .pool-table th:nth-child(2) { width: 8%; }
 .twr-app .pool-table th:nth-child(3) { width: 24%; }
 .twr-app .pool-table th:nth-child(4) { width: 15%; }
-.twr-app .pool-table td:nth-child(1) .act { padding: 0; border: 0; background: transparent; font-weight: 600; text-align: left; }
+.twr-app .pool-table tr:not(.pool-form-row) td:nth-child(1) .act { padding: 0; border: 0; background: transparent; font-weight: 600; text-align: left; }
 .twr-app .pool-table td:nth-child(5) { text-align: right; }
 .twr-app .pool-money { white-space: nowrap; font-family: var(--surface-mono); font-variant-numeric: tabular-nums; }
 .twr-app .pool-pos, .twr-app .pool-plan { display: block; color: var(--surface-tx2); font-size: 11px; }
@@ -49,3 +49,9 @@
 .twr-app .bid-closes .act { border: 1px solid var(--surface-line-hi); background: var(--surface-1); padding: 4px 8px; justify-self: start; }
 .twr-app .bid-plan .envelope-rail { margin: 8px 0; }
 .twr-app .bid-plan .envelope-rail li { padding: 6px; font-size: 11px; }
+
+.twr-app .pool-inspector { display: grid; gap: 14px; }
+.twr-app .pool-inspector > :is(p, h5, .kv) { margin: 0; }
+.twr-app .bid-actions .act { color: var(--surface-tx1); font: inherit; margin: 0; }
+.twr-app .bid-actions .act:disabled { opacity: .55; cursor: not-allowed; }
+.twr-app .bid-actions .act:focus-visible { outline: 1px solid var(--surface-tx1); outline-offset: 2px; }

@@ -82,19 +82,12 @@
 .twr-app .contract-whatif-acts .act { font-family: inherit; }
 .twr-app .contract-reading[aria-label="What-if"] > p { margin: 0; }
 .twr-app .release-plans { min-width: 0; font-size: 12px; }
-.twr-app .release-plan { padding: 12px 0; border-top: 1px solid var(--surface-line); }
 .twr-app .release-post { white-space: pre-wrap; font: inherit; overflow-wrap: normal; margin: 8px 0; }
 .twr-app .release-confirm { display: contents; }
 .twr-app .release-confirm p { flex-basis: 100%; }
-.twr-app .release-plan .envelope-rail { flex-wrap: wrap; }
-.twr-app .release-plan .envelope-rail li { min-width: 110px; overflow-wrap: normal; word-break: normal; }
-.twr-app .release-plan .act { font-family: inherit; }
 
 .twr-app .whatif-moves .whatif-plan-line { height: 30px; margin: 4px 0; align-items: center; }
 .twr-app .whatif-plan-line > p { margin: 0; line-height: 18px; }
-.twr-app .release-plan .act-command { display: inline-flex; margin: 0; padding: 5px 8px; color: var(--surface-tx1); border-color: var(--surface-line-hi); }
-.twr-app .release-plan .act-command:hover:not(:disabled) { background: var(--surface-3); }
-.twr-app .release-confirm[data-primary="handoff"] .act-command:first-of-type { background: var(--surface-tx1); color: var(--surface-0); }
 
 .twr-app .contract-act-form { display: grid; gap: 8px; min-width: 0; }
 .twr-app .contract-act-form label { display: grid; gap: 4px; }
@@ -102,8 +95,6 @@
 .twr-app .contract-act-form ul { padding-left: 16px; white-space: normal; }
 .twr-app .contract-act-form table { font-size: 10px; }
 
-.twr-app .contract-move .contract-primary .act-command { background: var(--surface-tx1); color: var(--surface-0); cursor: pointer; }
-.twr-app .contract-move .contract-primary .act-command:hover:not(:disabled) { background: var(--surface-tx2); }
 .twr-app .release-plans > h4 { margin-top: 12px; margin-bottom: 6px; }
 
 .twr-app .contract-act-form { border: 0; padding: 0; margin: 0; }
@@ -118,3 +109,5 @@
 
 .twr-app .contract-act-form input, .twr-app .contract-act-form select { background: var(--surface-0); color: var(--surface-tx1); border: 1px solid var(--surface-line-hi); border-radius: 4px; padding: 6px 8px; font: inherit; }
 .twr-app .contract-act-form input:focus-visible, .twr-app .contract-act-form select:focus-visible { outline: 2px solid var(--surface-tx1); outline-offset: 2px; }
+
+.twr-app .contract-move-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }

@@ -97,7 +97,7 @@ func (a *App) lineupAlert(r *AlertReading, saved LineupReading, now time.Time) {
 	lock, _ := leagueweek.NextLock(now, week)
 	problems := make([]string, 0, len(saved.Check.Problems))
 	for _, problem := range saved.Check.Problems {
-		problems = append(problems, problem.Message)
+		problems = append(problems, strings.TrimRight(problem.Message, ".; "))
 	}
 	r.Alerts = append(r.Alerts, Alert{
 		Kind: "lineup", Urgency: alertUrgency(now, lock), Title: "Check your lineup",
