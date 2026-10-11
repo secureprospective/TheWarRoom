@@ -2,7 +2,7 @@ import type { Receipt, Snapshot } from '../data/contract';
 import { Card } from '../cards/Card';
 import { signalClasses } from '../look/channels';
 import { SignalChip } from '../look/Slots';
-import { intentLabels, stateLabels, stateSignals, type RailState } from './moveLabels';
+import { intentLabels, stateLabel, stateSignals, type RailState } from './moveLabels';
 import './moves.css';
 import { Act } from '../commands/Act';
 import { lineupChanges } from './LineupPlan';
@@ -55,8 +55,7 @@ export function RailStrip({ receipt }: { receipt: RailReceipt }) {
           >
             <SignalChip
               signal={reached ? stateSignals[stage] : 'grey'}
-              label={stage === 'bid_pending' && receipt.spec.intent !== 'bid.submit'
-                ? 'Pending' : stateLabels[stage]}
+              label={stateLabel(stage, receipt.spec.intent)}
             />
             {entry && <time dateTime={entry.at}>{time.format(new Date(entry.at))}</time>}
             {entry && <p>{/^superseded by \S+$/.test(entry.note)

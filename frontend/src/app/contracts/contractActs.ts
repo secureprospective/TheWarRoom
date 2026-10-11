@@ -16,7 +16,8 @@ export type ContractActRequest = {
       move?: string;
 };
 export type ContractActPlan = {
-  id: string; intent: string; player: string; subject: string; label: string; price: string; post: string;
+  id: string; intent: string; act: string; levels: { value: number; label: string }[]; years: number[];
+  player: string; subject: string; label: string; price: string; post: string;
   how: string;
   teamFigures: { label: string; before: string; after: string; change: string }[];
   reasons: string[]; figures: { season: number; before: string; after: string; change: string }[];
@@ -28,11 +29,15 @@ function flag(value: unknown): boolean {
 }
 export function parseContractActs(value: unknown): Reading<ContractActPlan[]> {
   return parseReading(value, (v, p) => array(v, p, (v, p) => {
-    const r = object(v, p, ['id', 'intent', 'teamFigures', 'player', 'subject', 'label', 'price',
-      'post', 'how', 'reasons', 'figures',
-      'receipt', 'canHandOff', 'canPost', 'canWithdraw', 'canRebase']);
+    const r = object(v, p, ['id', 'intent', 'act', 'levels', 'years', 'teamFigures', 'player', 'subject',
+      'label', 'price', 'post', 'how', 'reasons', 'figures', 'receipt',
+      'canHandOff', 'canPost', 'canWithdraw', 'canRebase']);
     const id = text(r.id, p);
-    return { id, intent: text(r.intent, p), teamFigures: array(r.teamFigures ?? [], p, (v, p) => {
+    return { id, intent: text(r.intent, p), act: text(r.act, p),
+      levels: array(r.levels, p, (v, p) => {
+        const l = object(v, p, ['value', 'label']);
+        return { value: integer(l.value, p), label: text(l.label, p) };
+      }), years: array(r.years, p, integer), teamFigures: array(r.teamFigures ?? [], p, (v, p) => {
         const f = object(v, p, ['label', 'before', 'after', 'change']);
         return { label: text(f.label, p), before: text(f.before, p), after: text(f.after, p),
           change: text(f.change, p) };

@@ -9,7 +9,9 @@ import type { AuditEntry, EligibilityDecision, PlayerEligibility } from '../data
 import { lineupReceipt } from '../data/lineupReceiptTestData';
 import { FixtureProvider, LiveProvider } from '../data/provider';
 import { createCommands } from '../commands/registry';
-import { EnvelopeRail, railStages } from './EnvelopeRail';
+import { EnvelopeRail, RailStrip, railStages } from './EnvelopeRail';
+import ReceiptStatus from './ReceiptStatus';
+import { stateLabel } from './moveLabels';
 import PlayerAct from './PlayerAct';
 import MyMoves from './MyMoves';
 import { renderState } from './state';
@@ -489,5 +491,21 @@ describe('Inspector IR and taxi Acts', () => {
     }
     expect(inspector(executor)).toContain('<p role="alert">Error: MFL page could not open</p>');
     expect(inspector(executor)).not.toContain('Opening MFL…');
+  });
+});
+
+describe('posted plans awaiting verification', () => {
+  it.each([['fa.resign', 'Pending'], ['contract.extend', 'Pending'], ['roster.buyout', 'Pending'],
+    ['bid.submit', 'Bid pending']])('labels %s as %s on the strip and the status chip', (intent, want) => {
+    expect(stateLabel('bid_pending', intent)).toBe(want);
+    const audit = [{ at: receipt.audit[0].at, from: 'handed_off' as const, to: 'bid_pending' as const,
+      note: 'You posted it' }];
+    const strip = renderToStaticMarkup(createElement(RailStrip,
+      { receipt: { state: 'bid_pending', spec: { intent }, audit } }));
+    expect(strip).toContain(`>${want}<`);
+    const chip = renderToStaticMarkup(createElement(ReceiptStatus, { receipt: { ...receipt,
+      state: 'bid_pending', spec: { ...receipt.spec, intent } } }));
+    expect(chip).toContain(`>${want}<`);
+    if (want === 'Pending') expect(strip + chip).not.toContain('Bid pending');
   });
 });

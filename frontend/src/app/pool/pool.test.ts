@@ -303,6 +303,17 @@ describe('My moves and the Inspector', () => {
     expect(none).toContain('No open bid plan on this player.');
     expect(none).toContain('Plan a bid');
   });
+  it('counts the Inspector\'s minimum salary with the pool table\'s own Go-written words', () => {
+    const reading = { ...pool(), howCounted: 'Minimum salary as Go counts it, from the fixture' };
+    const row = reading.value.rows[2];
+    const inspector = html(createElement(PoolInspectorView, { row, plans: [], busy: '', reading }));
+    const table = html(createElement(PoolFrame, { reading, refreshing: false }));
+    const how = (markup: string) =>
+      /<details><summary>How this is counted<\/summary>.*?<\/details>/.exec(markup)?.[0];
+    expect(how(inspector)).toContain('Minimum salary as Go counts it, from the fixture');
+    expect(how(inspector)).toBe(how(table));
+    expect(inspector.indexOf('How this is counted')).toBeGreaterThan(inspector.indexOf('$530,000'));
+  });
 });
 
 describe('Reachability', () => {

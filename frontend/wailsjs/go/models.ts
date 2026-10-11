@@ -2845,9 +2845,26 @@ export namespace main {
 	        this.change = source["change"];
 	    }
 	}
+	export class ContractActChoice {
+	    value: number;
+	    label: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ContractActChoice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = source["value"];
+	        this.label = source["label"];
+	    }
+	}
 	export class ContractActView {
 	    id: string;
 	    intent: string;
+	    act: string;
+	    levels: ContractActChoice[];
+	    years: number[];
 	    teamFigures: WhatIfFigure[];
 	    player: string;
 	    subject: string;
@@ -2871,6 +2888,9 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
 	        this.intent = source["intent"];
+	        this.act = source["act"];
+	        this.levels = this.convertValues(source["levels"], ContractActChoice);
+	        this.years = source["years"];
 	        this.teamFigures = this.convertValues(source["teamFigures"], WhatIfFigure);
 	        this.player = source["player"];
 	        this.subject = source["subject"];

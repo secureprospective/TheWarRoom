@@ -178,3 +178,19 @@ func TestEligibleContractBoundaries(t *testing.T) {
 		}
 	}
 }
+
+func TestNextSeasonStartsAfterTheHeldContract(t *testing.T) {
+	for _, tc := range []struct {
+		cells        []Cell
+		season, want int
+	}{
+		{[]Cell{{2026, 33_000_000}}, 2026, 2027},
+		{[]Cell{{2026, Million}, {2027, Million}, {2028, Million}}, 2026, 2029},
+		{[]Cell{{2026, Million}}, 2027, 2028},
+		{nil, 2026, 2027},
+	} {
+		if got := NextSeason(tc.cells, tc.season); got != tc.want {
+			t.Fatalf("%+v %d: got %d want %d", tc.cells, tc.season, got, tc.want)
+		}
+	}
+}

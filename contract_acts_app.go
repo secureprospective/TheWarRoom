@@ -55,7 +55,7 @@ func (r RawContractAct) validateTerms() error {
 	if _, err := playerid.New(r.Player); err != nil {
 		return fmt.Errorf("contract Act player: %w", err)
 	}
-	if !envelope.IsContract(r.Intent) || r.Level < 1 || r.Level > 6 || r.Years < 1 || r.Years > 4 {
+	if !envelope.IsContract(r.Intent) || r.Level < 1 || r.Level > len(contractacts.TenderLevels()) || r.Years < 1 || r.Years > contractacts.MaxResignYears {
 		return fmt.Errorf("contract Act: known intent, tender level 1–6 and term 1–4 required")
 	}
 	if r.Move != "" {
@@ -73,9 +73,16 @@ type ContractActFigure struct {
 	After  string `json:"after"`
 	Change string `json:"change"`
 }
+type ContractActChoice struct {
+	Value int    `json:"value"`
+	Label string `json:"label"`
+}
 type ContractActView struct {
 	ID          string              `json:"id"`
 	Intent      string              `json:"intent"`
+	Act         string              `json:"act"`
+	Levels      []ContractActChoice `json:"levels"`
+	Years       []int               `json:"years"`
 	TeamFigures []WhatIfFigure      `json:"teamFigures"`
 	Player      string              `json:"player"`
 	Subject     string              `json:"subject"`
@@ -145,6 +152,21 @@ func contractActsReading(v []ContractActView, err error) Reading[[]ContractActVi
 func contractIntentLabel(intent string) string {
 	labels := map[string]string{"rfa.tender": "Tender him (RFA)", "fa.resign": "Re-sign him", "contract.tag": "Franchise tag", "contract.extend": "Extend him", "contract.restructure": "Restructure"}
 	return labels[intent]
+}
+
+// contractActChoices is what an Act's form offers: tender levels priced from the rule table, and term lengths.
+func contractActChoices(intent string) ([]ContractActChoice, []int) {
+	levels, years := []ContractActChoice{}, []int{}
+	if intent == "rfa.tender" || intent == "fa.resign" {
+		for i, l := range contractacts.TenderLevels() {
+			levels = append(levels, ContractActChoice{i + 1, fmt.Sprintf("%s · $%.2fM", l.Round, l.Price.Millions())})
+		}
+	}
+	most := map[string]int{"fa.resign": contractacts.MaxResignYears, "contract.extend": contractacts.MaxExtendYears}[intent]
+	for y := 1; y <= most; y++ {
+		years = append(years, y)
+	}
+	return levels, years
 }
 func mirrorContractEvidence(m state.MirrorSnapshot, mine, player string) envelope.ContractEvidence {
 	p, found := releasePlayer(m, mine, player)
@@ -250,7 +272,7 @@ func contractActTerms(f envelope.ContractFacts, position string, rows []snapshot
 			years = f.Years
 			how = "§7 baseline re-sign with no competing offer: tender × (100% + 15% for each year after the first), 1–4 flat years; exact cents then $10,000 snap. Prior-season BASE uses the expiring contract’s held salary."
 		}
-		return contractacts.Flat(f.Season, years, price, how), err
+		return contractacts.Flat(contractacts.NextSeason(f.Baseline, f.Season), years, price, how), err
 	case "contract.tag":
 		pool := []domain.Money{}
 		for _, row := range rows {
@@ -266,7 +288,7 @@ func contractActTerms(f envelope.ContractFacts, position string, rows []snapshot
 			consecutive = 2
 		}
 		price, err := contractacts.Tag(pool, salary, first, consecutive)
-		return contractacts.Flat(f.Season, 1, price, "§9: average of the top five eligible BASE salaries at the position; if below prior salary use 120% of prior BASE, not max(average,120%). Second consecutive tag = 120% of first. Playoff signings excluded. Preview lacks history/exclusions and does not assert eligibility."), err
+		return contractacts.Flat(contractacts.NextSeason(f.Baseline, f.Season), 1, price, "§9: average of the top five eligible BASE salaries at the position; if below prior salary use 120% of prior BASE, not max(average,120%). Second consecutive tag = 120% of first. Playoff signings excluded. Preview lacks history/exclusions and does not assert eligibility."), err
 	case "contract.extend":
 		terms, err := contractacts.Extend(f.Baseline, f.Season, f.Years, position, contractTagPrice(f, salary), false)
 		if err != nil {
@@ -299,7 +321,8 @@ func contractActView(r envelope.Receipt, f envelope.ContractFacts) ContractActVi
 	post += contractPostTerms(f) + "\n"
 	post += strings.Join(f.Reasons, "\n") + "\n"
 	post += "Please process this request. Nothing has been posted or changed by the app."
-	return ContractActView{ID: r.CorrelationID, Intent: f.Intent, TeamFigures: contractTeamView(f.TeamFigures), Player: f.Name, Subject: contractSubject(f), Label: label, Price: price, Post: post, How: f.Terms.How, Reasons: f.Reasons, Figures: figures, Receipt: r, CanHandOff: r.State == envelope.Ready, CanPost: r.State == envelope.HandedOff, CanWithdraw: slices.Contains([]envelope.State{envelope.Blocked, envelope.Ready, envelope.HandedOff, envelope.NotYetDone, envelope.Stale}, r.State), CanRebase: r.State == envelope.Stale}
+	levels, years := contractActChoices(f.Intent)
+	return ContractActView{ID: r.CorrelationID, Intent: f.Intent, Act: contractIntentLabel(f.Intent), Levels: levels, Years: years, TeamFigures: contractTeamView(f.TeamFigures), Player: f.Name, Subject: contractSubject(f), Label: label, Price: price, Post: post, How: f.Terms.How, Reasons: f.Reasons, Figures: figures, Receipt: r, CanHandOff: r.State == envelope.Ready, CanPost: r.State == envelope.HandedOff, CanWithdraw: slices.Contains([]envelope.State{envelope.Blocked, envelope.Ready, envelope.HandedOff, envelope.NotYetDone, envelope.Stale}, r.State), CanRebase: r.State == envelope.Stale}
 }
 
 // contractSubject names whose contract an Act changes, from the held contract before the Act.
@@ -339,21 +362,31 @@ func contractPostTerms(f envelope.ContractFacts) string {
 	case "contract.restructure":
 		return fmt.Sprintf("Moves %s from %d to %d", price, f.Source, f.Destination)
 	case "contract.tag":
-		return fmt.Sprintf("Franchise tag for %d at %s", f.Season, price)
+		return fmt.Sprintf("Franchise tag for %d at %s", contractStart(f), price)
 	case "rfa.tender":
-		return fmt.Sprintf("Tender level %d: %s", f.Level, price)
+		return fmt.Sprintf("Tender level %d for %d: %s", f.Level, contractStart(f), price)
 	case "fa.resign":
-		return fmt.Sprintf("Re-sign for %d years at %s a year", f.Years, price)
+		return fmt.Sprintf("Re-sign for %d years from %d at %s a year", f.Years, contractStart(f), price)
 	default:
 		return ""
 	}
 }
 
+// contractStart is the first season of the new or changed contract cells.
+func contractStart(f envelope.ContractFacts) int {
+	if len(f.Terms.Cells) == 0 {
+		return f.Season
+	}
+	return f.Terms.Cells[0].Season
+}
+
+// contractActFigures shows each season of the player's contract; held cells the Act does not touch carry over.
 func contractActFigures(f envelope.ContractFacts) []ContractActFigure {
 	years := map[int]bool{}
 	before, after := map[int]domain.Money{}, map[int]domain.Money{}
 	for _, c := range f.Baseline {
 		before[c.Season] = c.Salary
+		after[c.Season] = c.Salary
 		years[c.Season] = true
 	}
 	for _, c := range f.Terms.Cells {

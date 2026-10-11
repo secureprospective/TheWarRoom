@@ -157,10 +157,11 @@ prepares the post; it never posts. Each plan moves through these states:
   A rule the app cannot check (for example, another owner's competing offer) is a "Not checked"
   note, not a block (`internal/envelope/contract.go:66`).
 - **Handed off.** "Copy request and hand off" (contract Acts) or "Copy ProBoards post" (bids) puts the
-  post text on the clipboard (`frontend/src/app/contracts/ContractActs.tsx:50`,
+  post text on the clipboard (`frontend/src/app/contracts/ContractActs.tsx:46`,
   `bids_plans_app.go:154`).
 - **Pending.** For bids and contract Acts, the owner presses "I posted it" and the plan waits for
-  MFL's own data. The rail label reads "Bid pending" for both (`frontend/src/app/shell/moveLabels.ts:18`).
+  MFL's own data. The label reads "Bid pending" for a bid and "Pending" for a contract Act
+  (`frontend/src/app/shell/moveLabels.ts:25`).
   Cut and buyout plans have no such step: after the hand-off they read "Not yet done" until the
   rosters export shows the player gone.
 - **Landed, Not verified, Stale or Withdrawn.** Landed needs MFL's data to show the result: the player
@@ -246,6 +247,8 @@ Answered items retain their answers and dates. Remaining questions are owed befo
     contract Acts has not been checked against what the commissioner expects. Christopher to confirm.
 16. **Tender and re-sign dates (ring 2):** open. The registry says May 1–3 (M-193) and May 10–15
     (M-195); the rulebook has no such dates. The Acts say "Offseason only" without dates.
+    A tender, re-sign or tag always starts the new contract at the season after the held contract
+    expires (expires + 1), so only eligibility (`expires == season`) depends on when the app rolls over.
 
 ## 9. Ring 1 review
 
@@ -377,9 +380,9 @@ Christopher's decisions (D) and the panel rulings Claude adopted (PW), in plain 
 - **PW6** Future contract years are filled flat from MFL's salary and expiry. That is an inference,
   and "How this is counted" says so.
 - **Go writes the words.** Rules, figures and the sentences that explain them come from Go; React
-  lays them out (panel ruling W1). One exception remains: the tender level prices and the Act
-  names are typed into React (`frontend/src/app/contracts/ContractActs.tsx:13`, `:136`), while Go
-  holds the same prices (`internal/engine/contractacts/terms.go:29`). Moving them to Go is ring 3 work.
+  lays them out (panel ruling W1). This includes the contract Act form: the Act names, the tender
+  levels with their prices and the term lengths come from Go (`contract_acts_app.go:157`), read from
+  the table that prices the tender (`internal/engine/contractacts/terms.go:40`).
 
 ## 12. Data ownership (from the facts-schema panel) — NOT BUILT
 
@@ -407,9 +410,9 @@ This is the stand-alone app's plan. None of it is in ring 2. The full triage is
 
 **What worked**
 - The Lab numbers on these screens pass the parity tests against the Lab's own JavaScript:
-  market, draft, counterparties and offers, with the planted wrong values caught. One figure the
-  app adds itself has no parity test: the trades-a-season count on the Counterparties standing
-  filter (`counterparties_app.go:268`).
+  market, draft, counterparties and offers, with the planted wrong values caught. The one figure the
+  app adds itself, the trades-a-season count on the Counterparties standing filter
+  (`counterparties_app.go:268`), has its own parity test (`counterparties_app_test.go:357`).
 - Rules live in Go. The money is exact cents end to end, with one rounding and one $10,000 snap.
 - Plans for things MFL cannot do have one honest lifecycle (§6) instead of pretending MFL accepted them.
 

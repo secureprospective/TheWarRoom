@@ -294,14 +294,8 @@ func (a *App) whatIfViewThrough(ctx context.Context, s state.WhatIfSession, stor
 		if removed[p.MFLID] {
 			continue
 		}
-		cells, err := store.LedgerCells(ctx, p.MFLID)
-		if err != nil {
-			return out, fmt.Errorf("what-if future cells: %w", err)
-		}
-		for year, cents := range cells {
-			if year > s.Snapshot.Season {
-				afterFuture[year] += cents + p.Salary - domain.RoundToNearest10k(p.Salary)
-			}
+		if err := whatIfCommitted(ctx, store, p, s.Snapshot.Season, afterFuture); err != nil {
+			return out, err
 		}
 		out.Choices = append(out.Choices, whatIfChoice(p, s.Snapshot.Season))
 	}
@@ -321,6 +315,20 @@ func (a *App) whatIfViewThrough(ctx context.Context, s state.WhatIfSession, stor
 		out.Figures = append(out.Figures, whatIfFigure(fmt.Sprintf("%d gross commitments · inferred", year), beforeFuture[year], afterFuture[year]))
 	}
 	return out, nil
+}
+
+// whatIfCommitted adds a player's ledger cells after this season to into, keeping the held salary's sub-$10,000 cents.
+func whatIfCommitted(ctx context.Context, store *state.Store, p state.MirrorPlayer, season int, into map[int]domain.Money) error {
+	cells, err := store.LedgerCells(ctx, p.MFLID)
+	if err != nil {
+		return fmt.Errorf("what-if future cells: %w", err)
+	}
+	for year, cents := range cells {
+		if year > season {
+			into[year] += cents + p.Salary - domain.RoundToNearest10k(p.Salary)
+		}
+	}
+	return nil
 }
 
 func whatIfChoice(p state.MirrorPlayer, season int) WhatIfChoice {

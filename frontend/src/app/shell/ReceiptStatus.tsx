@@ -1,11 +1,14 @@
 import type { Receipt } from '../data/contract';
 import { SignalChip } from '../look/Slots';
-import { stateLabels, stateSignals } from './moveLabels';
+import { stateLabel, stateSignals } from './moveLabels';
 
 export default function ReceiptStatus({ receipt }: { receipt: Receipt }) {
   return (
     <div role="status">
-      <SignalChip signal={stateSignals[receipt.state]} label={stateLabels[receipt.state]} />
+      <SignalChip
+        signal={stateSignals[receipt.state]}
+        label={stateLabel(receipt.state, receipt.spec.intent)}
+      />
       <p>{receipt.audit.at(-1)?.note}</p>
     </div>
   );

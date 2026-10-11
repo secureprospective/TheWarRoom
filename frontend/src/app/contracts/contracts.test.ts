@@ -586,7 +586,8 @@ it('keeps an opened row on one line with the full sentence as its label', async 
 });
 
 function actPlan(id = ''): ContractActPlan {
-  return { id, intent: 'contract.extend', player: 'Oluokun, Foyesade',
+  return { id, intent: 'contract.extend', act: 'Extend him', levels: [], years: [1, 2, 3],
+    player: 'Oluokun, Foyesade',
     subject: 'Oluokun, Foyesade · LB · $11,000,000 a year through 2028 · UFA',
     label: 'Extend him · Oluokun, Foyesade', price: '$16,500,000', post: 'Adds 1 year', how: '§10',
     teamFigures: [], reasons: [], figures: [], canHandOff: false, canPost: false, canWithdraw: false,

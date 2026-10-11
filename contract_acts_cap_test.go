@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine/contractacts"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -65,7 +67,7 @@ func TestContractActsArizonaHeldMirrorPricesAndReadiness(t *testing.T) {
 	}{
 		{"rfa.tender", "16846", domain.PhaseOffseason, true},
 		{"fa.resign", "16692", domain.PhaseOffseason, true},
-		{"contract.tag", "13322", domain.PhaseRegularSeason, false},
+		{"contract.tag", "13322", domain.PhaseRegularSeason, true},
 		{"contract.extend", "13813", domain.PhaseRegularSeason, true},
 		{"contract.restructure", "13813", domain.PhaseRegularSeason, true},
 	} {
@@ -83,9 +85,6 @@ func TestContractActsArizonaHeldMirrorPricesAndReadiness(t *testing.T) {
 		}
 		if (plan.Receipt.State == envelope.Ready) != tc.ready {
 			t.Fatalf("%s %+v", tc.intent, plan)
-		}
-		if tc.intent == "contract.tag" && !strings.Contains(strings.Join(plan.Reasons, " "), "exceeds the team's salary cap") {
-			t.Fatal(plan)
 		}
 		if tc.ready && (!strings.Contains(plan.Post, "Not checked:") && tc.intent != "rfa.tender") {
 			t.Fatal(plan.Post)
@@ -171,5 +170,95 @@ func TestContractTagPoolUsesLeagueMirrorBASE(t *testing.T) {
 	result := (envelope.ContractCheck{Reasons: f.Reasons}).Evaluate(envelope.Spec{Intent: f.Intent, LeagueID: ingestion.LeagueID}, snapshot.Snapshot{})
 	if !result.Blocked || !strings.Contains(result.Note, "two consecutive") {
 		t.Fatal(result)
+	}
+}
+
+func contractFigure(t *testing.T, rows []WhatIfFigure, label string) WhatIfFigure {
+	t.Helper()
+	for _, row := range rows {
+		if row.Label == label {
+			return row
+		}
+	}
+	t.Fatalf("no %q row in %+v", label, rows)
+	return WhatIfFigure{}
+}
+
+func TestContractNewContractStartsTheSeasonAfterExpiry(t *testing.T) {
+	a := contractMirrorFixture(t)
+	releasePhase(t, a, domain.PhaseOffseason)
+	resign, err := contractacts.Tender(83_000_000, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resign, err = contractacts.Resign(resign, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		intent, player, held string
+		years                int
+		cells                []contractacts.Cell
+	}{
+		{"rfa.tender", "16846", "$330,000", 1, []contractacts.Cell{{Season: 2027, Salary: 60_000_000}}},
+		{"fa.resign", "16692", "$830,000", 2, []contractacts.Cell{{Season: 2027, Salary: resign}, {Season: 2028, Salary: resign}}},
+		{"contract.tag", "13322", "$950,000", 1, []contractacts.Cell{{Season: 2027, Salary: 710_000_000}}},
+	} {
+		t.Run(tc.intent, func(t *testing.T) {
+			r := a.TargetContractActs(RawContractAct{Mine: "0025", Player: tc.player, Action: "preview", Intent: tc.intent, Level: 1, Years: tc.years})
+			if r.Status != ReadingOK {
+				t.Fatal(r)
+			}
+			f, err := a.contractActFacts(a.ctx, RawContractAct{Mine: "0025", Player: tc.player, Intent: tc.intent, Level: 1, Years: tc.years})
+			if err != nil || !reflect.DeepEqual(f.Terms.Cells, tc.cells) {
+				t.Fatalf("cells %+v %v", f.Terms.Cells, err)
+			}
+			view := r.Value[0]
+			if held := view.Figures[0]; held.Season != 2026 || held.Before != tc.held || held.After != tc.held || held.Change != "$0" {
+				t.Fatalf("expiring cell changed %+v", view.Figures)
+			}
+			for _, label := range []string{"Used", "Room"} {
+				if row := contractFigure(t, view.TeamFigures, label); row.Change != "" || row.Before != row.After {
+					t.Fatalf("this season changed %+v", row)
+				}
+			}
+			for _, c := range tc.cells {
+				row := contractFigure(t, view.TeamFigures, fmt.Sprintf("%d gross commitments · inferred", c.Season))
+				if row.Change != "+"+snapshot.ContractAmountOf(c.Salary).Text {
+					t.Fatalf("%d not raised by the new cell %+v", c.Season, row)
+				}
+				if !strings.Contains(view.Post, fmt.Sprintf("%d: %s\n", c.Season, snapshot.ContractAmountOf(c.Salary).Text)) {
+					t.Fatal(view.Post)
+				}
+			}
+			if strings.Contains(view.Post, "2026: $") || !strings.Contains(view.Post, "2027") {
+				t.Fatal(view.Post)
+			}
+		})
+	}
+}
+
+func TestContractOverCapJudgesTheSeasonTheMoneyLandsIn(t *testing.T) {
+	a := contractMirrorFixture(t)
+	releasePhase(t, a, domain.PhaseOffseason)
+	// $110M: this season is already over the cap; 2027 holds $104.67M before any Act.
+	if err := a.rulebook.SetOverride(a.ctx, "cap", "salaryCapAmount", "110", "fixture"); err != nil {
+		t.Fatal(err)
+	}
+	reasons := func(intent, player string) string {
+		f, err := a.contractActFacts(a.ctx, RawContractAct{Mine: "0025", Player: player, Intent: intent, Level: 1, Years: 1})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if room := contractFigure(t, contractTeamView(f.TeamFigures), "Room"); !strings.HasPrefix(room.Before, "-") {
+			t.Fatalf("fixture room %+v", room)
+		}
+		return strings.Join(f.Reasons, "\n")
+	}
+	if got := reasons("rfa.tender", "16846"); strings.Contains(got, "exceeds") || !strings.Contains(got, "Not checked: salary caps after 2026") {
+		t.Fatalf("a 2027 tender was judged on this season's room:\n%s", got)
+	}
+	if got := reasons("contract.tag", "13322"); !strings.Contains(got, "This move exceeds the team's 2027 salary cap.") {
+		t.Fatalf("a 2027 tag over the 2027 commitments passed:\n%s", got)
 	}
 }

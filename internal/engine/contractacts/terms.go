@@ -25,17 +25,33 @@ func percent(base domain.Money, rate int) domain.Money {
 	return domain.RoundToNearest10k((base*domain.Money(rate) + 50) / 100)
 }
 
+// MaxResignYears and MaxExtendYears are the longest re-sign term and the most years one extension adds.
+const (
+	MaxResignYears = 4
+	MaxExtendYears = 3
+)
+
+// TenderLevel is one RFA tender level: the draft compensation it names and its floor price.
+type TenderLevel struct {
+	Round string
+	Price domain.Money
+}
+
+func TenderLevels() []TenderLevel {
+	return []TenderLevel{{"5th", 60 * Million / 100}, {"4th", Million}, {"3rd", 15 * Million / 10}, {"2nd", 25 * Million / 10}, {"1st", 5 * Million}, {"1st + 2nd", 65 * Million / 10}}
+}
+
 func Tender(previous domain.Money, level int) (domain.Money, error) {
-	prices := []domain.Money{60 * Million / 100, Million, 15 * Million / 10, 25 * Million / 10, 5 * Million, 65 * Million / 10}
-	if previous < 0 || level < 1 || level > len(prices) {
-		return 0, fmt.Errorf("tender: previous salary and level 1–6 required")
+	levels := TenderLevels()
+	if previous < 0 || level < 1 || level > len(levels) {
+		return 0, fmt.Errorf("tender: previous salary and level 1–%d required", len(levels))
 	}
-	return max(prices[level-1], percent(previous, 110)), nil
+	return max(levels[level-1].Price, percent(previous, 110)), nil
 }
 
 func Resign(tender domain.Money, years int) (domain.Money, error) {
-	if tender <= 0 || years < 1 || years > 4 {
-		return 0, fmt.Errorf("re-sign: positive tender and 1–4 years required")
+	if tender <= 0 || years < 1 || years > MaxResignYears {
+		return 0, fmt.Errorf("re-sign: positive tender and 1–%d years required", MaxResignYears)
 	}
 	return percent(tender, 100+15*(years-1)), nil
 }
@@ -86,7 +102,7 @@ func PositionFloor(position string) (domain.Money, bool) {
 
 func Extend(cells []Cell, season, added int, position string, tagPrice domain.Money, extended bool) (Terms, error) {
 	floor, ok := PositionFloor(position)
-	if !ok || added < 1 || added > 3 || len(cells)+added > 6 || extended {
+	if !ok || added < 1 || added > MaxExtendYears || len(cells)+added > 6 || extended {
 		return Terms{}, fmt.Errorf("extension: known position, 1–3 added years, at most 6 total years and no prior extension required")
 	}
 	var highest domain.Money
@@ -148,6 +164,15 @@ func Flat(season, years int, price domain.Money, how string) Terms {
 		cells[i] = Cell{season + i, price}
 	}
 	return Terms{Cells: cells, Price: price, How: how, DeadCapPercent: 35}
+}
+
+// NextSeason is the first season after the held contract's last cell, and never this season or earlier.
+func NextSeason(cells []Cell, season int) int {
+	last := season
+	for _, c := range cells {
+		last = max(last, c.Season)
+	}
+	return last + 1
 }
 
 // Eligible offers only acts whose held contract can take them; history is checked separately.

@@ -21,6 +21,10 @@ export const stateLabels: Record<RailState, string> = {
   withdrawn: 'Withdrawn',
 };
 export const railStates = Object.keys(stateLabels) as RailState[];
+// Only a bid waits on a bid; a contract Act or buyout the owner has posted is just Pending.
+export function stateLabel(state: RailState, intent: string): string {
+  return state === 'bid_pending' && intent !== 'bid.submit' ? 'Pending' : stateLabels[state];
+}
 export const intentLabels: Record<string, string> = {
   'roster.ir': 'IR placement', 'roster.taxi': 'Taxi move',
   'lineup.set': 'Lineup change', 'trade.accept': 'Trade accept',

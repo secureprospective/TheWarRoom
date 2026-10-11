@@ -139,6 +139,18 @@ function PoolTable({ rows }: { rows: PoolRow[] }) {
   );
 }
 
+export function PoolHowCounted({ reading }: { reading: PoolReading }) {
+  return (
+    <details>
+      <summary>How this is counted</summary>
+      <p>{reading.howCounted}</p>
+      <p>
+        Method: {reading.method} · Build: {reading.buildStamp}
+      </p>
+    </details>
+  );
+}
+
 export function PoolFrame({ reading, refreshing }: { reading?: PoolReading; refreshing: boolean }) {
   const failed = reading?.status === 'failed';
   return (
@@ -175,13 +187,7 @@ export function PoolFrame({ reading, refreshing }: { reading?: PoolReading; refr
             {reading.provenance.freshness.state === 'stale' &&
               ` · Stale: ${reading.provenance.freshness.note}`}
           </p>
-          <details>
-            <summary>How this is counted</summary>
-            <p>{reading.howCounted}</p>
-            <p>
-              Method: {reading.method} · Build: {reading.buildStamp}
-            </p>
-          </details>
+          <PoolHowCounted reading={reading} />
         </>
       )}
     </section>
@@ -276,7 +282,12 @@ export default function Pool({ snapshot }: { snapshot?: Snapshot }) {
   return <PoolScreen state={state} snapshot={snapshot} franchiseId={franchiseId} />;
 }
 
-export function PoolInspectorView({ row, plans, busy }: { row?: PoolRow; plans: Plan[]; busy: string }) {
+export function PoolInspectorView({ row, plans, busy, reading }: {
+  row?: PoolRow;
+  plans: Plan[];
+  busy: string;
+  reading?: PoolReading;
+}) {
   return (
     <section className="pool-inspector" aria-label="Free agent" data-endpoint="M-056">
       <h5>{row?.name ?? 'Free agent'}</h5>
@@ -295,6 +306,7 @@ export function PoolInspectorView({ row, plans, busy }: { row?: PoolRow; plans: 
           <dd className="pool-money">{row.minimum.text}</dd>
         </dl>
       )}
+      {row && reading && <PoolHowCounted reading={reading} />}
       {plans.length === 0 && <p>No open bid plan on this player.</p>}
       {plans.map((plan) => (
         <BidPlanCard key={plan.id} plan={plan} busy={busy} />
@@ -319,7 +331,7 @@ export function PoolInspector({ id }: { id: string }) {
   const plans = (state.board?.value.plans ?? []).filter(
     (p) => p.playerId === id && planOpen(p.stateCode),
   );
-  return <PoolInspectorView row={row} plans={plans} busy={state.busy} />;
+  return <PoolInspectorView row={row} plans={plans} busy={state.busy} reading={state.reading} />;
 }
 
 export const set = (change: { field: string; value: string }) =>

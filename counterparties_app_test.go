@@ -351,3 +351,31 @@ func TestCounterNarrowHeadingsAndPanelPartners(t *testing.T) {
 		}
 	}
 }
+
+// TestTierPicksParity recounts the per-tier "trades a season" figure from the Lab data:
+// one team's sides per tier, over the seasons in which the league traded at all.
+func TestTierPicksParity(t *testing.T) {
+	d, err := lab.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	scope := RawCounterpartiesScope{From: 2023, To: 2024, Team: "0001"}
+	tiers, seasons := map[string]int{}, map[int]bool{}
+	for _, s := range lab.SidesInScope(d, lab.TeamScope{From: 2023, To: 2024}) {
+		seasons[s.Season] = true
+		if s.Fid == scope.Team {
+			tiers[s.Tier]++
+		}
+	}
+	want := map[string]float64{"contender": 15.5, "hunt": 0, "rebuild": 26}
+	picks := counterpartiesReading(d, counterScope(scope)).Value.Picks
+	if len(picks) != 3 || len(seasons) != 2 {
+		t.Fatalf("scope shape: %d picks over %d seasons", len(picks), len(seasons))
+	}
+	for _, p := range picks {
+		independent := float64(tiers[p.ID]) / float64(len(seasons))
+		if p.Count != independent || p.Count != want[p.ID] {
+			t.Fatalf("%s trades a season = %v, recounted %v, pinned %v", p.ID, p.Count, independent, want[p.ID])
+		}
+	}
+}

@@ -172,3 +172,35 @@ func TestContractRemovalWordsBeforeAndAfterHandOff(t *testing.T) {
 		}
 	}
 }
+func TestContractTenderLandsOnlyInTheSeasonAfterExpiry(t *testing.T) {
+	s, f, at := contractFixture(t)
+	s.Intent, f.Intent, f.Status = "rfa.tender", "rfa.tender", domain.CStatusRFA
+	f.Baseline = []contractacts.Cell{{Season: 2026, Salary: 33_000_000}}
+	f.Terms = contractacts.Flat(contractacts.NextSeason(f.Baseline, f.Season), 1, 60_000_000, "tender")
+	e, err := DraftContract(at, s, f, func() string { return "tender-1" })
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, err = e.HandOffManual(at, "copied")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fresh := snapshot.Provenance{Freshness: domain.Freshness{State: domain.FreshLive, FetchedAt: at.Add(time.Second).Format(time.RFC3339)}}
+	observe := func(cells []contractacts.Cell) Envelope {
+		t.Helper()
+		held := ContractEvidence{Player: f.Player, FranchiseID: s.FranchiseID, Cells: cells, Observed: true, Status: domain.CStatusUFA}
+		obs := Observation{LeagueID: "1", Rosters: snapshot.Sourced[[]snapshot.Roster]{Value: []snapshot.Roster{{FranchiseID: "0001", Players: []snapshot.RosterPlayer{{ID: f.Player}}}}, Provenance: fresh}, Contracts: snapshot.Sourced[[]ContractEvidence]{Value: []ContractEvidence{held}, Provenance: fresh}}
+		next, err := e.Observe(at.Add(time.Second), obs, ContractPredicate{Facts: f})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return next
+	}
+	if landed := observe([]contractacts.Cell{{Season: 2027, Salary: 60_000_000}}); landed.State() != Landed {
+		t.Fatalf("new cell in 2027: %s", landed.State())
+	}
+	wrong := observe([]contractacts.Cell{{Season: 2026, Salary: 60_000_000}})
+	if note := wrong.Receipt().Audit[2].Note; wrong.State() != NotVerified || !strings.Contains(note, "planned 2027 at $600,000.00") || !strings.Contains(note, "MFL now shows 2026 at $600,000.00") {
+		t.Fatalf("new cell in 2026: %s %s", wrong.State(), note)
+	}
+}

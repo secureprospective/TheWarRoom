@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { readFileSync } from 'node:fs';
-import { ContractActCard, ContractActMenu, ContractMovePreview, ContractMoveFeedback,
-  contractActOptions } from './ContractActs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { ContractActCard, ContractActChoices, ContractActMenu, ContractMovePreview, ContractMoveFeedback,
+  switchAct,
+} from './ContractActs';
 import { menuPlacement, placeRowMenu } from './RowMenu';
 import { keepContractMove, keepLabel, openContractMove, revealContractPlan, useContractMove,
   type ContractActPlan, type ContractActRequest } from './contractActs';
@@ -19,7 +20,7 @@ function rect(left: number, top: number, width: number, height: number) {
     get top() { return top; }, get bottom() { return top + height; } }) as DOMRect;
 }
 function plan(): ContractActPlan {
-  return { id: 'contract-1', intent: 'contract.extend',
+  return { id: 'contract-1', intent: 'contract.extend', act: 'Extend him', levels: [], years: [1, 2, 3],
     teamFigures: [{ label: 'Used', before: '$49M', after: '$48M', change: '−$1M' }],
     player: 'Example', subject: 'Example · QB · $10,000,000 a year through 2028',
     label: 'Extension · Example', price: '$15,000,000',
@@ -32,11 +33,29 @@ function plan(): ContractActPlan {
     canHandOff: false, canPost: false, canWithdraw: true, canRebase: false };
 }
 describe('Contract Acts', () => {
-  it('lists the five Acts behind a compact lazy menu, not added table rows', () => {
-    expect(contractActOptions.map(v => v[1])).toEqual(['Tender him (RFA)', 'Re-sign him',
-      'Franchise tag', 'Extend him', 'Restructure']);
-    expect(contractActOptions.map(v => v[0])).toEqual(['rfa.tender', 'fa.resign', 'contract.tag',
-      'contract.extend', 'contract.restructure']);
+  it('lays out the Act names, tender levels and terms Go sends, with none typed in React', () => {
+    const resign = { ...plan(), intent: 'fa.resign', act: 'Re-sign him (from Go)', years: [1, 2, 3, 4],
+      levels: [{ value: 1, label: '5th · $0.61M from Go' }, { value: 2, label: '4th · $1.00M' }] };
+    const request: ContractActRequest = { mine: '0001', player: '0042', action: 'preview',
+      intent: 'fa.resign', level: 1, years: 1 };
+    const choices = renderToStaticMarkup(createElement(ContractActChoices,
+      { request, options: [plan(), resign], onChange: () => {} }));
+    expect(choices).toContain('>Re-sign him (from Go)</option>');
+    expect(choices).toContain('>Extend him</option>');
+    expect(choices).toContain('<option value="1" selected="">5th · $0.61M from Go</option>');
+    expect(choices.match(/<option( selected="")?>\d<\/option>/g)).toHaveLength(4);
+    const extend = renderToStaticMarkup(createElement(ContractActChoices,
+      { request: { ...request, intent: 'contract.extend' }, options: [plan(), resign], onChange: () => {} }));
+    expect(extend).not.toContain('Tender level');
+    expect(extend.match(/<option( selected="")?>\d<\/option>/g)).toHaveLength(3);
+    const extendOption = { ...plan(), intent: 'contract.extend', years: [1, 2, 3], levels: [] };
+    expect(switchAct({ ...request, years: 4 }, 'contract.extend', [extendOption, resign]).years).toBe(3);
+    expect(switchAct({ ...request, years: 2 }, 'contract.extend', [extendOption, resign]).years).toBe(2);
+    expect(switchAct({ ...request, years: 2, level: 6 }, 'fa.resign', [extendOption, resign]).level).toBe(2);
+    for (const file of readdirSync(new URL('.', import.meta.url)).filter(f => /^[^.]+\.tsx?$/.test(f))) {
+      const source = readFileSync(new URL(`./${file}`, import.meta.url), 'utf8');
+      expect(source, file).not.toMatch(/\$\d+\.\d\dM|Tender him|Re-sign him|Franchise tag'/);
+    }
     const html = renderToStaticMarkup(createElement(ContractActMenu, { mine: '0001', player: '0042' }));
     expect(html).toContain('Contract Acts…</button>');
     expect(html).not.toContain('<table');

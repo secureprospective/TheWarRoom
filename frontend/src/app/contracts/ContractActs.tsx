@@ -10,10 +10,6 @@ import {
 } from './contractActs';
 import '../pool/pool.css';
 
-export const contractActOptions = [
-  ['rfa.tender', 'Tender him (RFA)'], ['fa.resign', 'Re-sign him'], ['contract.tag', 'Franchise tag'],
-  ['contract.extend', 'Extend him'], ['contract.restructure', 'Restructure'],
-];
 export function Figures({ plan }: { plan: ContractActPlan }) {
   return <div className="contract-act-figures"><p>My team's cap this season and gross commitments in
     future seasons — future salaries are inferred.</p>
@@ -84,6 +80,36 @@ export function ContractMoveFeedback({ plan }: { plan: ContractActPlan }) {
           args={{ field: 'contract-reveal', value: plan.id }}>See it in My moves</Act>
       </div>;
 }
+// Switching Act keeps the owner's terms where the new Act allows them, else its nearest allowed ones.
+export function switchAct(request: ContractActRequest, intent: string, options: ContractActPlan[]) {
+  const option = options.find(option => option.intent === intent);
+  const pick = (value: number | undefined, allowed: number[] = []) =>
+    allowed.length === 0 || allowed.includes(value ?? 0) ? value : Math.min(Math.max(value ?? 1,
+      allowed[0]), allowed[allowed.length - 1]);
+  return { ...request, intent, source: option?.figures[0]?.season,
+    destination: option?.figures[option.figures.length - 1]?.season,
+    years: pick(request.years, option?.years), level: pick(request.level, option?.levels.map(l => l.value)) };
+}
+// The Act, tender level and term pickers, laid out from the choices Go sends with each Act.
+export function ContractActChoices({ request, options, onChange }: {
+  request: ContractActRequest; options: ContractActPlan[]; onChange: (request: ContractActRequest) => void;
+}) {
+  const chosen = options.find(option => option.intent === request.intent);
+  return <>
+    <label>Act<select value={request.intent}
+      onChange={e => onChange(switchAct(request, e.target.value, options))}>
+      {options.map(option => <option key={option.intent} value={option.intent}>{option.act}</option>)}
+    </select></label>
+    {Boolean(chosen?.levels.length) && <label>Tender level<select value={request.level}
+      onChange={e => onChange({ ...request, level: Number(e.target.value) })}>
+      {chosen?.levels.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+    </select></label>}
+    {Boolean(chosen?.years.length) && <label>Years<select value={request.years}
+      onChange={e => onChange({ ...request, years: Number(e.target.value) })}>
+      {chosen?.years.map(v => <option key={v}>{v}</option>)}
+    </select></label>}
+  </>;
+}
 function ContractMoveForm({ mine, player }: { mine: string; player: string }) {
   const [request, setRequest] = useState<ContractActRequest>({
     mine, player, action: 'preview', intent: 'rfa.tender', level: 1, years: 1,
@@ -121,27 +147,7 @@ function ContractMoveForm({ mine, player }: { mine: string; player: string }) {
     <h4>Contract move</h4>
     <p className="contract-move-subject">{options[0]?.subject ?? plan?.subject}</p>
     <fieldset disabled={saving} className="contract-act-form">
-      <label>Act<select value={request.intent}
-        onChange={e => {
-          const option = options.find(option => option.intent === e.target.value);
-          setRequest({ ...request, intent: e.target.value, source: option?.figures[0]?.season,
-            destination: option?.figures[option.figures.length - 1]?.season });
-        }}>
-        {options.map(option => <option key={option.intent} value={option.intent}>
-          {contractActOptions.find(v => v[0] === option.intent)?.[1]}</option>)}
-      </select></label>
-      {['rfa.tender', 'fa.resign'].includes(request.intent ?? '') &&
-        <label>Tender level<select value={request.level}
-        onChange={e => setRequest({ ...request, level: Number(e.target.value) })}>
-        {['5th · $0.60M', '4th · $1.00M', '3rd · $1.50M', '2nd · $2.50M',
-          '1st · $5.00M', '1st + 2nd · $6.50M'].map((v, i) =>
-          <option key={v} value={i + 1}>{v}</option>)}
-      </select></label>}
-      {['fa.resign', 'contract.extend'].includes(request.intent ?? '') &&
-        <label>Years<select value={request.years}
-        onChange={e => setRequest({ ...request, years: Number(e.target.value) })}>
-        {[1, 2, 3, ...(request.intent === 'fa.resign' ? [4] : [])].map(v => <option key={v}>{v}</option>)}
-      </select></label>}
+      <ContractActChoices request={request} options={options} onChange={setRequest} />
       {request.intent === 'contract.restructure' && <>
         <label>Source season<input type="number" value={request.source || ''}
           onChange={e => setRequest({ ...request, source: Number(e.target.value) })}
