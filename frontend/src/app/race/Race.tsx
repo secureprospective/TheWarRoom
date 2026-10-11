@@ -29,7 +29,7 @@ export function RaceView({ race, selected }: { race: RaceBoard; selected: readon
     </div>;
   return <>
     <div className="draft-reports race-standings">
-      <ReportView report={race.standings} howLabel={race.board.howLabel} />
+      <ReportView report={race.standings} howLabel={race.board.howLabel} heading="h4" />
     </div>
     <ReportsView board={race.board} selected={[shown.id]} refreshVerb="race.reports" controls={controls} />
   </>;

@@ -29,3 +29,5 @@
 /* A wide report (six columns or more) packs its columns so it fits the work area without scrolling sideways. */
 .draft-reports table.report-dense th, .draft-reports table.report-dense td { min-width: 7ch; padding: 10px 8px; }
 .draft-reports tr.report-group th { position: static; background: transparent; padding-top: 18px; font-weight: 600; color: var(--surface-tx3); }
+.race-standings > .draft-report { margin-top: 0; }
+.draft-report[data-endpoint="M-013"] td { white-space: nowrap; }

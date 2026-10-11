@@ -48,9 +48,11 @@ function ReportTable({ report }: { report: Report }) {
     </table>
   </div>;
 }
-export function ReportView({ report, howLabel }: { report: Report; howLabel: string }) {
+// A report that heads its page (the Race standings) takes the page heading level.
+export function ReportView({ report, howLabel, heading: Heading = 'h5' }:
+  { report: Report; howLabel: string; heading?: 'h4' | 'h5' }) {
   return <section className="draft-report" data-endpoint={report.id} aria-label={report.title}>
-    <h5>{report.title}</h5>
+    <Heading>{report.title}</Heading>
     <p>{report.source} · <span className="draft-local-time">{report.asOf}</span></p>
     {report.note && <p role={report.status === 'failed' ? 'alert' : 'status'}>{report.note}</p>}
     {report.summary.length > 0 && <table className="draft-summary"><tbody>{report.summary.map((row, i) =>
