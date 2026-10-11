@@ -57,7 +57,13 @@ func TestMarketReportsFactsAndMissing(t *testing.T) {
 	if adp.Rows[0].Range.Value != 1.85 || adp.Rows[0].Range.Lo != 1 || adp.Rows[0].Range.Hi != 34 || !strings.Contains(adp.Note, "6734 drafts") {
 		t.Fatal(adp.Rows[0])
 	}
+	if got := adp.Rows[0].Range.Text; got != "Pick 1.9 · picks 1–34" {
+		t.Fatalf("ADP text %q", got)
+	}
 	aav := reportByID(t, board, "M-069")
+	if got := aav.Rows[len(aav.Rows)-1].Range.Text; got != "30.1% of auction budget · 3.4%–113.6%" {
+		t.Fatalf("AAV text %q", got)
+	}
 	if aav.Rows[len(aav.Rows)-1].Range.Value != 30.1 || !strings.Contains(aav.How, "not this league's dollars") || !strings.Contains(aav.Note, "111 auctions") {
 		t.Fatal(aav.How)
 	}

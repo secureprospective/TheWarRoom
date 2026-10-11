@@ -181,14 +181,14 @@
             ],
             "cells": [
               "Bijan Robinson",
-              "1.85 pick · 1.00–34.00"
+              "Pick 1.9 · picks 1–34"
             ],
             "range": {
               "max": 34,
               "value": 1.85,
               "lo": 1,
               "hi": 34,
-              "text": "1.85 pick · 1.00–34.00"
+              "text": "Pick 1.9 · picks 1–34"
             }
           },
           {
@@ -202,14 +202,14 @@
             ],
             "cells": [
               "Jahmyr Gibbs",
-              "2.60 pick · 1.00–29.00"
+              "Pick 2.6 · picks 1–29"
             ],
             "range": {
               "max": 29,
               "value": 2.6,
               "lo": 1,
               "hi": 29,
-              "text": "2.60 pick · 1.00–29.00"
+              "text": "Pick 2.6 · picks 1–29"
             }
           },
           {
@@ -223,14 +223,14 @@
             ],
             "cells": [
               "Player name not held",
-              "4.35 pick · 1.00–49.00"
+              "Pick 4.3 · picks 1–49"
             ],
             "range": {
               "max": 49,
               "value": 4.35,
               "lo": 1,
               "hi": 49,
-              "text": "4.35 pick · 1.00–49.00"
+              "text": "Pick 4.3 · picks 1–49"
             }
           }
         ],
@@ -263,14 +263,14 @@
             ],
             "cells": [
               "Player name not held",
-              "28.75 % of auction budget · 3.34–94.80"
+              "28.8% of auction budget · 3.3%–94.8%"
             ],
             "range": {
               "max": 94.8,
               "value": 28.75,
               "lo": 3.34,
               "hi": 94.8,
-              "text": "28.75 % of auction budget · 3.34–94.80"
+              "text": "28.8% of auction budget · 3.3%–94.8%"
             }
           },
           {
@@ -284,14 +284,14 @@
             ],
             "cells": [
               "Jahmyr Gibbs",
-              "29.16 % of auction budget · 2.94–60.43"
+              "29.2% of auction budget · 2.9%–60.4%"
             ],
             "range": {
               "max": 60.43,
               "value": 29.16,
               "lo": 2.94,
               "hi": 60.43,
-              "text": "29.16 % of auction budget · 2.94–60.43"
+              "text": "29.2% of auction budget · 2.9%–60.4%"
             }
           },
           {
@@ -305,14 +305,14 @@
             ],
             "cells": [
               "Bijan Robinson",
-              "30.10 % of auction budget · 3.44–113.64"
+              "30.1% of auction budget · 3.4%–113.6%"
             ],
             "range": {
               "max": 113.64,
               "value": 30.1,
               "lo": 3.44,
               "hi": 113.64,
-              "text": "30.10 % of auction budget · 3.44–113.64"
+              "text": "30.1% of auction budget · 3.4%–113.6%"
             }
           }
         ],
@@ -336,26 +336,26 @@
     },
     {
       "label": "ADP · min–max pick",
-      "text": "1.85 pick · 1.00–34.00",
+      "text": "Pick 1.9 · picks 1–34",
       "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league",
       "range": {
         "max": 34,
         "value": 1.85,
         "lo": 1,
         "hi": 34,
-        "text": "1.85 pick · 1.00–34.00"
+        "text": "Pick 1.9 · picks 1–34"
       }
     },
     {
       "label": "AAV · min–max budget share",
-      "text": "30.10 % of auction budget · 3.44–113.64",
+      "text": "30.1% of auction budget · 3.4%–113.6%",
       "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league",
       "range": {
         "max": 113.64,
         "value": 30.1,
         "lo": 3.44,
         "hi": 113.64,
-        "text": "30.10 % of auction budget · 3.44–113.64"
+        "text": "30.1% of auction budget · 3.4%–113.6%"
       }
     }
   ],

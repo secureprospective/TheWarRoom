@@ -618,26 +618,26 @@
       },
       {
        "label": "ADP · min–max pick",
-       "text": "24.87 pick · 1.00–179.00",
+       "text": "Pick 24.9 · picks 1–179",
        "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL-wide, not this league",
        "range": {
         "max": 179,
         "value": 24.87,
         "lo": 1,
         "hi": 179,
-        "text": "24.87 pick · 1.00–179.00"
+        "text": "Pick 24.9 · picks 1–179"
        }
       },
       {
        "label": "AAV · min–max budget share",
-       "text": "16.06 % of auction budget · 0.84–57.61",
+       "text": "16.1% of auction budget · 0.8%–57.6%",
        "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL-wide, not this league",
        "range": {
         "max": 57.61,
         "value": 16.06,
         "lo": 0.84,
         "hi": 57.61,
-        "text": "16.06 % of auction budget · 0.84–57.61"
+        "text": "16.1% of auction budget · 0.8%–57.6%"
        }
       }
      ],

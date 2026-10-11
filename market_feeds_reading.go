@@ -74,11 +74,11 @@ func marketFact(spec marketReportSpec, feed heldSeasonFeed[[]marketfeeds.Feed], 
 	case marketfeeds.Ranks:
 		fact.Text = fmt.Sprintf("%d · %s", p.Rank, rankChange(*p))
 	default:
-		unit := "pick"
+		// Picks are whole numbers at the ends and one decimal on average; budget shares one decimal.
+		fact.Text = fmt.Sprintf("Pick %.1f · picks %.0f–%.0f", p.Value, p.Low, p.High)
 		if spec.kind == marketfeeds.AAV {
-			unit = "% of auction budget"
+			fact.Text = fmt.Sprintf("%.1f%% of auction budget · %.1f%%–%.1f%%", p.Value, p.Low, p.High)
 		}
-		fact.Text = fmt.Sprintf("%.2f %s · %.2f–%.2f", p.Value, unit, p.Low, p.High)
 		fact.Range = &MarketRange{Interval: lab.Interval{Value: p.Value, Lo: p.Low, Hi: p.High}, Max: math.Max(1, p.High), Text: fact.Text}
 	}
 	return fact
