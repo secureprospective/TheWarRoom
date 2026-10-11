@@ -21,11 +21,17 @@ export function EndpointIndex({ placement }: { placement: Placement }) {
   const rows = endpointsAt(placement);
   assertShortList(rows.length);
   useEffect(() => {
-    const selected = root.current?.querySelector<HTMLElement>('[data-selected="true"]');
-    if (selected) {
-      selected.focus({ preventScroll: true });
-      scrollWorkIntoView(selected, 'nearest');
-    }
+    const index = root.current;
+    if (!index) return;
+    if (revealEndpoint(index, s.endpointIds)) return;
+    // A lazy surface may mount after the index; watch briefly for it, never re-scrolling to the card.
+    const work = index.closest('.wbody');
+    const observer = typeof MutationObserver === 'undefined' ? undefined : new MutationObserver(() => {
+      if (revealEndpoint(index, s.endpointIds, false)) observer?.disconnect();
+    });
+    if (work) observer?.observe(work, { childList: true, subtree: true });
+    const expire = setTimeout(() => observer?.disconnect(), lazySurfaceWait);
+    return () => { clearTimeout(expire); observer?.disconnect(); };
   }, [s.endpointIds, placement]);
   const merged = s.endpointIds.map(endpointById).filter((e) => e.merged_place === placement);
   return (
@@ -63,4 +69,30 @@ export function EndpointIndex({ placement }: { placement: Placement }) {
       {!rows.length && <p className="not-wired">No individual endpoints placed here.</p>}
     </section>
   );
+}
+
+const lazySurfaceWait = 5000;
+
+export function revealEndpoint(index: HTMLElement, ids: readonly string[], fallback = true) {
+  const work = index.closest<HTMLElement>('.wbody');
+  const surface = Array.from(work?.querySelectorAll<HTMLElement>('[data-endpoint]') ?? [])
+    .find(element => ids.includes(element.dataset.endpoint ?? '') && !element.closest('.endpoint-index'));
+  if (surface) {
+    scrollWorkIntoView(surface, 'start');
+    const controls = surface.previousElementSibling as HTMLElement | null;
+    if (controls?.classList.contains('market-controls') && work) {
+      const parent = surface.parentElement;
+      const top = parent?.getBoundingClientRect().top;
+      const gap = surface.getBoundingClientRect().top - (top ?? 0);
+      if (parent && gap > 0 && gap < work.clientHeight / 2) scrollWorkIntoView(parent, 'start');
+    }
+    return true;
+  }
+  if (!fallback) return false;
+  const selected = index.querySelector<HTMLElement>('[data-selected="true"]');
+  if (selected) {
+    selected.focus({ preventScroll: true });
+    scrollWorkIntoView(selected, 'nearest');
+  }
+  return false;
 }

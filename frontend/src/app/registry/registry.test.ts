@@ -304,3 +304,85 @@ it('Draft room mounts the shared lazy Draft lab rather than a placeholder', asyn
   commands.dispatch('nav.open', { node: 'home', workspace: 'seasonal-card' });
   use.mockRestore();
 });
+
+it('reveals rendered endpoints instead of index cards, preserving controls that fit', async () => {
+  const { revealEndpoint } = await import('./EndpointIndex');
+  const work = { scrollTop: 800, clientTop: 0, clientHeight: 600,
+    getBoundingClientRect: () => ({top: 50}), querySelectorAll: () => [indexedSurface, surface] };
+  const card = { focus: vi.fn(), closest: () => work,
+    getBoundingClientRect: () => ({top: 1800, bottom: 1900}) };
+  const index = { closest: () => work, querySelector: () => card };
+  const parent = {closest: () => work,
+    getBoundingClientRect: () => ({top: 1000-work.scrollTop, bottom: 2000-work.scrollTop})};
+  const surface = { dataset: {endpoint: 'M-064'},
+    closest: (s: string) => s === '.endpoint-index' ? null : work,
+    getBoundingClientRect: () => ({top: 1150-work.scrollTop, bottom: 2000-work.scrollTop}),
+    parentElement: parent,
+    previousElementSibling: {classList: {contains: () => true}} };
+  const indexedSurface = {...surface,
+    closest: (s: string) => s === '.endpoint-index' ? index : work};
+  revealEndpoint(index as unknown as HTMLElement, ['M-064']);
+  expect(card.focus).not.toHaveBeenCalled();
+  expect(work.scrollTop).toBe(950);
+  surface.previousElementSibling.classList.contains = () => false;
+  work.scrollTop = 800;
+  revealEndpoint(index as unknown as HTMLElement, ['M-064']);
+  expect(work.scrollTop).toBe(1100);
+  work.scrollTop = 800;
+  revealEndpoint(index as unknown as HTMLElement, ['M-999']);
+  expect(card.focus).toHaveBeenCalledWith({preventScroll: true});
+  expect(work.scrollTop).toBe(2050);
+  card.focus.mockClear();
+  work.scrollTop = 300;
+  expect(revealEndpoint(index as unknown as HTMLElement, ['M-999'], false)).toBe(false);
+  expect(card.focus).not.toHaveBeenCalled();
+  expect(work.scrollTop).toBe(300);
+});
+
+it('reveals a lazily mounted endpoint once and stops watching after it arrives', async () => {
+  const { act } = await import('react');
+  const { createRoot } = await import('react-dom/client');
+  const { clockDom } = await import('../clock/testDom');
+  const dom = clockDom([]);
+  const keys = ['document', 'window', 'IS_REACT_ACT_ENVIRONMENT', 'MutationObserver'];
+  const saved = keys.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const);
+  const surfaces: HTMLElement[] = [];
+  const work = { scrollTop: 800, clientTop: 0, clientHeight: 600,
+    getBoundingClientRect: () => ({top: 50}), querySelectorAll: () => surfaces };
+  const create = dom.document.createElement.bind(dom.document);
+  dom.document.createElement = tag => {
+    const element = create(tag);
+    Object.assign(element, { closest: () => work });
+    return element;
+  };
+  let arrival!: () => void;
+  const stop = vi.fn();
+  Object.defineProperty(globalThis, 'document', {configurable: true, value: dom.document});
+  Object.defineProperty(globalThis, 'window', {configurable: true,
+    value: { document: dom.document, HTMLIFrameElement: class {} }});
+  Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {configurable: true, value: true});
+  Object.defineProperty(globalThis, 'MutationObserver', {configurable: true, value: class {
+    constructor(callback: () => void) { arrival = callback; }
+    observe() {} disconnect() { stop(); }
+  }});
+  const root = createRoot(dom.element);
+  try {
+    await act(async () => { commands.dispatch('endpoint.open', {id: 'M-064'}); });
+    await act(async () => {
+      root.render(createElement(EndpointIndex, {placement: 'Trade Floor › Draft room'}));
+    });
+    expect(arrival).toBeTypeOf('function');
+    surfaces.push({ dataset: {endpoint: 'M-064'}, closest: (s: string) =>
+      s === '.endpoint-index' ? null : work,
+      getBoundingClientRect: () => ({top: 350, bottom: 1000}) } as unknown as HTMLElement);
+    arrival();
+    expect(work.scrollTop).toBe(1100);
+    expect(stop).toHaveBeenCalledTimes(1);
+  } finally {
+    await act(async () => { root.unmount(); });
+    for (const [key, descriptor] of saved) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+      else Reflect.deleteProperty(globalThis, key);
+    }
+  }
+});

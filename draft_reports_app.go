@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -81,7 +82,7 @@ func (a *App) TargetDraftReports() (DraftReportBoard, error) {
 	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
 	defer cancel()
 	values, valueNote := a.draftReportValues(ctx)
-	next := "Next draft: no dated commissioner calendar entry is held."
+	next := "Next draft: no date on the commissioner calendar."
 	if a.whatif != nil {
 		clock, err := a.TargetClock()
 		if err != nil {
@@ -89,7 +90,7 @@ func (a *App) TargetDraftReports() (DraftReportBoard, error) {
 		} else {
 			for _, d := range clock.Value.Deadlines {
 				if d.Label == "DRAFT" && d.At != nil && d.At.After(time.Now()) {
-					next = "Next draft: " + d.At.Local().Format("2006-01-02 15:04:05 MST")
+					next = "Next draft: " + pickTime(draftreports.Pick{At: *d.At}, time.Local)
 					break
 				}
 			}
@@ -109,7 +110,7 @@ func (a *App) draftReportValues(ctx context.Context) (map[string]float64, string
 		return values, "Model values unavailable: " + err.Error()
 	}
 	if !ok {
-		return values, "No model run is held; player values are unavailable."
+		return values, "Player values unavailable; run the app's model first."
 	}
 	scores, err := a.history.ModelScores(ctx, run.ID)
 	if err != nil {
@@ -118,8 +119,23 @@ func (a *App) draftReportValues(ctx context.Context) (map[string]float64, string
 	for _, s := range scores {
 		values[s.MFLID] = s.DynastyPPG
 	}
-	return values, fmt.Sprintf("Value: held model run %d, as of %s; %s; missing measures: %v.", run.ID,
-		run.AsOf.Local().Format("2006-01-02 15:04:05 MST"), run.Engine, run.MissingMeasures)
+	return values, a.draftValueNote(run)
+}
+
+func (a *App) draftValueNote(run history.Run) string {
+	note := "Player values: the app's model, run " + pickTime(draftreports.Pick{At: run.AsOf}, time.Local) + "."
+	missing := []string{}
+	for _, m := range a.describeMeasures(run.MissingMeasures) {
+		if m.Meaning != "" {
+			missing = append(missing, strings.TrimSuffix(m.Meaning, "."))
+		} else {
+			missing = append(missing, "an unknown player measure")
+		}
+	}
+	if len(missing) > 0 {
+		note += " Missing player information: " + strings.Join(missing, "; ") + "."
+	}
+	return note
 }
 
 func (a *App) TargetOpenMFLDraftRoom() error {

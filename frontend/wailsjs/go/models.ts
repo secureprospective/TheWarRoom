@@ -1579,6 +1579,8 @@ export namespace main {
 	    how: string;
 	    columns: string[];
 	    rows: DraftReportRow[];
+	    summary: DraftReportRow[];
+	    seeEveryPick: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new DraftReport(source);
@@ -1595,6 +1597,8 @@ export namespace main {
 	        this.how = source["how"];
 	        this.columns = source["columns"];
 	        this.rows = this.convertValues(source["rows"], DraftReportRow);
+	        this.summary = this.convertValues(source["summary"], DraftReportRow);
+	        this.seeEveryPick = source["seeEveryPick"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

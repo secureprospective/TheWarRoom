@@ -1,5 +1,5 @@
-.draft-reports { margin-bottom: 32px; }
-.draft-report { margin-top: 20px; }
+.draft-reports { margin-bottom: 32px; min-width: 0; max-width: 100%; }
+.draft-report { margin-top: 20px; min-width: 0; max-width: 100%; }
 .draft-table-scroll { overflow: auto; max-width: 100%; max-height: 60vh; }
 .draft-table-scroll:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .draft-reports table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
@@ -9,3 +9,11 @@
 .draft-reports .market-how { margin-top: 16px; }
 .draft-pick-detail { border-bottom: 1px solid var(--surface-line); padding: 12px 0; }
 .draft-pick-detail .kv > div { display: contents; }
+
+.draft-reports .draft-local-time { white-space: nowrap; }
+.draft-cell-line + .draft-cell-line { margin-top: 6px; }
+.draft-report[data-endpoint="M-064"] th:first-child,
+.draft-report[data-endpoint="M-064"] td:first-child { position: sticky; left: 0; background: var(--surface-2); }
+.draft-report[data-endpoint="M-064"] th:first-child { z-index: 1; }
+.draft-reports .draft-summary { width: auto; margin: 4px 0 12px; }
+.draft-reports .draft-summary th { font-weight: 400; color: var(--surface-tx3); padding-right: 24px; text-align: left; }

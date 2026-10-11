@@ -12,6 +12,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 func draftFixturePick(t *testing.T, round, slot int, owner, id string, at int64) draftreports.Pick {
@@ -39,19 +40,19 @@ func testDraftBoard(t *testing.T) DraftReportBoard {
 	return buildDraftReports(heldSeasonFeed[[]draftreports.Pick]{value: picks, fetchedAt: at},
 		heldSeasonFeed[[]draftreports.FuturePick]{value: []draftreports.FuturePick{{Year: 2027, Round: 2, Original: "0001", Owner: "0002"}}, fetchedAt: at},
 		map[string]string{"0531": "Third", "0532": "Second", "0533": "First"}, map[string]string{"0001": "One", "0002": "Two"},
-		map[string]float64{"0531": 50, "0532": 10, "0533": 30}, "Value: fixture model run, as of 2026-10-11", "Next draft: date unknown.", time.UTC)
+		map[string]float64{"0531": 50, "0532": 10, "0533": 30}, "Player values: the app's model, run Oct 11, 2026, 12:00 PM.", "Next draft: date unknown.", time.UTC)
 }
 
 func TestDraftReportsOrderGridAndOwnership(t *testing.T) {
 	b := testDraftBoard(t)
 	rows := reportByID(t, b, "M-063").Rows
-	if !reflect.DeepEqual(rows[0].Cells[:3], []string{"1.01", "Two", "First · 0533"}) || rows[1].Cells[0] != "1.02" || rows[2].Cells[0] != "2.01" {
+	if !reflect.DeepEqual(rows[0].Cells[:3], []string{"1.01", "Two", "First"}) || rows[1].Cells[0] != "1.02" || rows[2].Cells[0] != "2.01" {
 		t.Fatal(rows)
 	}
 	grid := reportByID(t, b, "M-064")
 	if !reflect.DeepEqual(grid.Columns, []string{"Round", "One", "Two"}) ||
-		!reflect.DeepEqual(grid.Rows[0].Cells, []string{"1", "1.02 · Second · 0532", "1.01 · First · 0533"}) ||
-		!reflect.DeepEqual(grid.Rows[1].Cells, []string{"2", "No recorded pick", "2.01 · Third · 0531"}) {
+		!reflect.DeepEqual(grid.Rows[0].Cells, []string{"1", "1.02 · Second", "1.01 · First"}) ||
+		!reflect.DeepEqual(grid.Rows[1].Cells, []string{"2", "No recorded pick", "2.01 · Third"}) {
 		t.Fatal(grid)
 	}
 	future := reportByID(t, b, "M-068")
@@ -59,7 +60,7 @@ func TestDraftReportsOrderGridAndOwnership(t *testing.T) {
 		t.Fatal(future)
 	}
 	detail := reportByID(t, b, "M-102")
-	if detail.Rows[0].Cells[4] != "No trade provenance supplied" || !strings.Contains(detail.Rows[0].Cells[3], "1970-01-01") {
+	if detail.Rows[0].Cells[4] != "MFL lists no trade details" || !strings.Contains(detail.Rows[0].Cells[3], "Jan 1, 1970") {
 		t.Fatal(detail)
 	}
 }
@@ -67,7 +68,7 @@ func TestDraftReportsOrderGridAndOwnership(t *testing.T) {
 func TestDraftAverageTimeKnownTimestamps(t *testing.T) {
 	b := testDraftBoard(t)
 	r := reportByID(t, b, "M-179")
-	if !reflect.DeepEqual(r.Rows[0].Cells, []string{"One", "1", "30s"}) || !reflect.DeepEqual(r.Rows[1].Cells, []string{"Two", "1", "30s"}) {
+	if !reflect.DeepEqual(r.Rows[0].Cells, []string{"One", "1", "under 1 min", "under 1 min", "Mostly pre-queued picks"}) || !reflect.DeepEqual(r.Rows[1].Cells, []string{"Two", "1", "under 1 min", "under 1 min", "Mostly pre-queued picks"}) {
 		t.Fatal(r.Rows)
 	}
 	picks := []draftreports.Pick{draftFixturePick(t, 1, 1, "0001", "0531", 100), draftFixturePick(t, 1, 2, "0001", "0532", 100), draftFixturePick(t, 1, 3, "0001", "0533", 160)}
@@ -90,7 +91,7 @@ func TestDraftValueDistanceAndMissingValues(t *testing.T) {
 	if r.Rows[0].Range == nil || r.Rows[0].Range.Value != 1.5 || r.Rows[1].Range.Value != 0.5 || r.Rows[2].Range != nil {
 		t.Fatal(r.Rows)
 	}
-	if r.Rows[0].Cells[4] != "+10.00 points/game" || r.Rows[1].Cells[4] != "-10.00 points/game" || !strings.Contains(r.How, "median") || !strings.Contains(r.How, "DynastyPPG") {
+	if r.Rows[0].Cells[4] != "+10.00 points/game above the round 1 median" || r.Rows[1].Cells[4] != "10.00 points/game below the round 1 median" || !strings.Contains(r.How, "median") || !strings.Contains(r.How, "dynasty value") {
 		t.Fatal(r)
 	}
 }
@@ -98,14 +99,14 @@ func TestDraftValueDistanceAndMissingValues(t *testing.T) {
 func TestDraftEmptyUnavailableAndStale(t *testing.T) {
 	b := buildDraftReports(heldSeasonFeed[[]draftreports.Pick]{}, heldSeasonFeed[[]draftreports.FuturePick]{}, nil, nil, nil, "No model", "Next unknown", time.UTC)
 	for _, r := range b.Reports {
-		if r.Status != "failed" || !strings.Contains(r.Note, "Export unavailable") || r.How == "" || r.Source == "" {
+		if r.Status != "failed" || !strings.Contains(r.Note, "Draft data unavailable") || r.How == "" || r.Source == "" {
 			t.Fatal(r)
 		}
 	}
 	at := time.Now()
 	b = buildDraftReports(heldSeasonFeed[[]draftreports.Pick]{value: []draftreports.Pick{}, fetchedAt: at}, heldSeasonFeed[[]draftreports.FuturePick]{value: []draftreports.FuturePick{}, fetchedAt: at}, nil, nil, nil, "No model", "Next unknown", time.UTC)
 	for _, r := range b.Reports {
-		if r.Status != "empty" || !strings.Contains(r.Note, "empty export") {
+		if r.Status != "empty" || !strings.Contains(r.Note, "no records") {
 			t.Fatal(r)
 		}
 	}
@@ -184,7 +185,7 @@ func TestDraftArchiveFallbackKeepsOriginalAsOf(t *testing.T) {
 		t.Fatal(err)
 	}
 	results := reportByID(t, board, "M-063")
-	if results.Status != "stale" || len(results.Rows) != 160 || !strings.Contains(results.AsOf, at.Local().Format("2006-01-02 15:04:05 MST")) ||
+	if results.Status != "stale" || len(results.Rows) != 160 || !strings.Contains(results.AsOf, pickTime(draftreports.Pick{At: at}, time.Local)) ||
 		!strings.Contains(results.Note, "last known data") || reportByID(t, board, "M-068").Status != "ok" {
 		t.Fatal(results)
 	}
@@ -195,11 +196,122 @@ func TestDraftExplicitUnmadeStatusAndLocalTime(t *testing.T) {
 	pending := draftreports.Pick{Round: 1, Slot: 2, Franchise: "0002"}
 	feed := heldSeasonFeed[[]draftreports.Pick]{value: []draftreports.Pick{p, pending}, fetchedAt: time.Unix(100, 0)}
 	r := draftStatus(feed.value, nil, feed, "Method", time.UTC)
-	if r.Rows[0].Cells[1] != "1" || !strings.Contains(r.Rows[1].Cells[1], "1.02") || !strings.Contains(r.Rows[2].Cells[1], "1 explicit unmade") {
+	if r.Rows[0].Cells[1] != "1" || !strings.Contains(r.Rows[1].Cells[1], "1.02") || !strings.Contains(r.Rows[2].Cells[1], "1 unmade") {
 		t.Fatal(r)
 	}
 	zone := time.FixedZone("LOCAL", 2*60*60)
-	if got := pickTime(p, zone); got != "1970-01-01 02:01:40 LOCAL" {
+	if got := pickTime(p, zone); got != "Jan 1, 1970, 2:01 AM" {
 		t.Fatal(got)
+	}
+}
+
+func TestDraftCellLinesAndNameFallback(t *testing.T) {
+	picks := []draftreports.Pick{draftFixturePick(t, 1, 1, "0001", "0531", 100), draftFixturePick(t, 1, 2, "0001", "0532", 130)}
+	feed := heldSeasonFeed[[]draftreports.Pick]{value: picks, fetchedAt: time.Unix(100, 0)}
+	b := buildDraftReports(feed, heldSeasonFeed[[]draftreports.FuturePick]{}, map[string]string{"0531": "First"}, nil, nil, "", "", time.UTC)
+	want := "1.01 · First\n1.02 · Player 0532 (name not held)"
+	if got := reportByID(t, b, "M-064").Rows[0].Cells[1]; got != want {
+		t.Fatal(got)
+	}
+	if got := reportByID(t, b, "M-066").Rows[0].Cells[2]; got != want {
+		t.Fatal(got)
+	}
+	if got := reportByID(t, b, "M-063").Rows[0].Cells[2]; got != "First" {
+		t.Fatal(got)
+	}
+}
+
+func TestDraftAllDatesUseAppStyle(t *testing.T) {
+	at := time.Date(2026, 10, 11, 12, 0, 51, 0, time.UTC)
+	zone := time.FixedZone("LOCAL", -5*3600)
+	p := draftFixturePick(t, 1, 1, "0001", "0531", at.Unix())
+	b := buildDraftReports(heldSeasonFeed[[]draftreports.Pick]{value: []draftreports.Pick{p}, fetchedAt: at}, heldSeasonFeed[[]draftreports.FuturePick]{fetchedAt: at}, nil, nil, nil, "", "", zone)
+	for _, r := range b.Reports {
+		if r.AsOf != "As of: Oct 11, 2026, 7:00 AM" {
+			t.Fatal(r.AsOf)
+		}
+	}
+	if got := pickTime(p, zone); got != "Oct 11, 2026, 7:00 AM" {
+		t.Fatal(got)
+	}
+}
+
+func TestDraftValueNotePlainWords(t *testing.T) {
+	a, _, _, _ := seasonTestApp(t)
+	at := time.Date(2026, 10, 5, 13, 44, 0, 0, time.Local)
+	run := history.Run{ID: 3, AsOf: at, Engine: "secret-version"}
+	want := "Player values: the app's model, run Oct 5, 2026, 1:44 PM."
+	if got := a.draftValueNote(run); got != want {
+		t.Fatal(got)
+	}
+	run.MissingMeasures = []string{"context.birth_date"}
+	got := a.draftValueNote(run)
+	if !strings.Contains(got, "Missing player information:") || strings.Contains(got, "context.birth_date") || strings.Contains(got, "secret-version") || !strings.Contains(got, "Date of birth") || got == want {
+		t.Fatal(got)
+	}
+}
+
+func TestDraftReportLanguage(t *testing.T) {
+	b := testDraftBoard(t)
+	for _, r := range b.Reports {
+		for _, bad := range []string{"held", "export", "sentinel", "UTC instants", "consumed", "draftResults", "futureDraftPick", "originalPickFor", "DynastyPPG"} {
+			if strings.Contains(strings.ToLower(r.How+" "+r.Note+" "+r.Title+" "+r.Source), strings.ToLower(bad)) {
+				t.Fatalf("%s contains %s", r.ID, bad)
+			}
+		}
+		if r.Source != "Source: MFL" {
+			t.Fatal(r.Source)
+		}
+	}
+	r := reportByID(t, b, "M-176")
+	if r.Columns[1] != "What MFL shows" || r.Rows[1].Cells[1] != "MFL does not report who is on the clock." || !strings.Contains(r.Note, "All 3 picks MFL lists are made.") {
+		t.Fatal(r)
+	}
+}
+
+func TestDraftDurationAndMedian(t *testing.T) {
+	for _, tc := range []struct {
+		d    time.Duration
+		want string
+	}{{3*time.Hour + 49*time.Minute + 53*time.Second, "3 h 50 min"}, {27*time.Minute + 14*time.Second, "27 min"}, {59 * time.Second, "under 1 min"}, {60 * time.Second, "1 min"}} {
+		if got := draftDuration(tc.d); got != tc.want {
+			t.Fatal(got, tc.want)
+		}
+	}
+	for _, tc := range []struct {
+		ds                []time.Duration
+		avg, median, note string
+	}{
+		{[]time.Duration{0, time.Second, 27 * time.Minute}, "9 min", "under 1 min", "Mostly pre-queued picks"},
+		{[]time.Duration{0, 2 * time.Minute}, "1 min", "1 min", ""},
+		{nil, "No measured interval", "No measured interval", ""},
+	} {
+		avg, median, note := draftPace(tc.ds)
+		if avg != tc.avg || median != tc.median || note != tc.note {
+			t.Fatal(avg, median, note)
+		}
+	}
+	r := reportByID(t, testDraftBoard(t), "M-179")
+	if r.Columns[3] != "Median" || r.Rows[0].Cells[4] != "Mostly pre-queued picks" {
+		t.Fatal(r)
+	}
+}
+
+func TestDraftLiveRecentPicksAndStatus(t *testing.T) {
+	picks := []draftreports.Pick{}
+	for i := 1; i <= 20; i++ {
+		picks = append(picks, draftFixturePick(t, 1, i, "0001", "0531", int64(i)*100))
+	}
+	build := func() DraftReportBoard {
+		return buildDraftReports(heldSeasonFeed[[]draftreports.Pick]{value: picks, fetchedAt: time.Unix(100, 0)}, heldSeasonFeed[[]draftreports.FuturePick]{}, nil, nil, nil, "", "", time.UTC)
+	}
+	b := build()
+	r := reportByID(t, b, "M-183")
+	if len(r.Rows) != 12 || r.Rows[0].Cells[0] != "1.09" || r.Rows[11].Cells[0] != "1.20" || r.SeeEveryPick != "See every pick" || !reflect.DeepEqual(r.Summary, reportByID(t, b, "M-176").Rows) || len(reportByID(t, b, "M-063").Rows) != 20 {
+		t.Fatal(r)
+	}
+	picks = append(picks, draftreports.Pick{Round: 1, Slot: 21, Franchise: "0001"})
+	if r = reportByID(t, build(), "M-183"); len(r.Rows) != 21 {
+		t.Fatal(r)
 	}
 }

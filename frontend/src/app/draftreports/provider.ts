@@ -4,7 +4,8 @@ import type { MarketRange } from '../market/contract';
 export type ReportRow = { cells: string[]; range: MarketRange | null };
 export type Report = {
   id: string; title: string; note: string; status: 'ok' | 'empty' | 'failed' | 'stale';
-  source: string; asOf: string; how: string; columns: string[]; rows: ReportRow[];
+  source: string; asOf: string; how: string; columns: string[];
+  rows: ReportRow[]; summary: ReportRow[]; seeEveryPick: string;
 };
 export type Board = {
   title: string; loading: string; refresh: string; howLabel: string; mflLabel: string;
@@ -22,12 +23,20 @@ function range(v: unknown, p: string): MarketRange | null {
   return result;
 }
 function report(v: unknown, p: string): Report {
-  const r = object(v, p, ['id', 'title', 'note', 'status', 'source', 'asOf', 'how', 'columns', 'rows']);
+  const r = object(v, p, ['id', 'title', 'note', 'status', 'source', 'asOf', 'how', 
+    'columns', 'rows', 'summary', 'seeEveryPick']);
   const columns = array(r.columns, p, text);
   return {
     id: text(r.id, p), title: text(r.title, p), note: text(r.note, p),
     status: choice(r.status, p, ['ok', 'empty', 'failed', 'stale']), source: text(r.source, p),
     asOf: text(r.asOf, p), how: text(r.how, p), columns,
+    seeEveryPick: text(r.seeEveryPick, p),
+    summary: r.summary === null ? [] : array(r.summary, p, (v, p) => {
+      const row = object(v, p, ['cells', 'range']);
+      const cells = array(row.cells, p, text);
+      if (cells.length !== 2 || row.range !== null) throw new Error(`${p}: invalid status line`);
+      return { cells, range: null };
+    }),
     rows: array(r.rows, p, (v, p) => {
       const row = object(v, p, ['cells', 'range']);
       const cells = array(row.cells, p, text);
