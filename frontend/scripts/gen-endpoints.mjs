@@ -51,6 +51,9 @@ const fields = [
   'verb', 'disposition', 'ring', 'status', 'sol_ids', 'disposition_note', 'merged_into',
   'merged_place', 'gravity_reason', 'ring_note', 'gravity_note',
 ];
+// Registry prose the app never reads stays in the CSV and out of the entry bundle.
+const docOnly = ['when', 'data', 'sol_ids', 'gravity_reason', 'ring_note', 'gravity_note'];
+const emitted = fields.filter((key) => !docOnly.includes(key));
 
 export function readEndpoints(source) {
   const [header, ...data] = parseCSV(source);
@@ -108,7 +111,7 @@ export function generateEndpoints(source) {
     'export type Placement =', ...placements.map((place) => `  | ${JSON.stringify(place)}`), ';',
     'const places = [', ...placements.map(place => `  ${JSON.stringify(place)},`), '] as const;',
     'type EndpointFields = {',
-    ...fields.filter((key) => !['disposition', 'placement', 'merged_into', 'merged_place'].includes(key))
+    ...emitted.filter((key) => !['disposition', 'placement', 'merged_into', 'merged_place'].includes(key))
       .map((key) => `  ${key}: ${
       key === 'id' ? 'EndpointId' : key === 'gravity' ? "'G0' | 'G1' | 'G2' | 'G3'" :
       key === 'ring' ? '0 | 1 | 2 | 3 | 4' : key === 'merged_into' ? 'readonly EndpointId[]' :
@@ -126,7 +129,7 @@ export function generateEndpoints(source) {
   ];
   for (const row of rows) {
     lines.push('  Object.freeze({');
-    for (const key of fields) {
+    for (const key of emitted) {
       const value = key === 'merged_into'
         ? `Object.freeze(${JSON.stringify(row[key])} as const)`
         : ['placement', 'merged_place'].includes(key) && row[key]

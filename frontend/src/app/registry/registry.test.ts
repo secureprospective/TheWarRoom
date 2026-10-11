@@ -109,6 +109,7 @@ describe('Endpoint map', () => {
       ...Array.from({ length: 32 }, (_, i) => `L-${String(i + 1).padStart(2, '0')}`),
       'L-33',
       'L-35', 'L-36',
+      'M-030', 'M-148', 'M-153', 'C-03', 'C-04', 'S-03', 'S-06', 'S-07',
     ];
     for (const row of endpoints) {
       let status = 'spec';
