@@ -29,6 +29,9 @@ func (a *App) TargetHandOff(correlationID string) (envelope.Receipt, error) {
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off: load: %w", err)
 	}
+	if envelope.IsRelease(e.Receipt().Spec.Intent) {
+		return envelope.Receipt{}, fmt.Errorf("target hand-off: release needs its confirmation and checks")
+	}
 	next, err := e.HandOff(a.movesNow())
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off: %w", err)
@@ -85,11 +88,13 @@ func (a *App) logMove(e envelope.Envelope) {
 
 func movePredicate(intent string) envelope.Predicate {
 	registry := map[string]envelope.Predicate{
-		"roster.ir":    envelope.IRPredicate{},
-		"roster.taxi":  envelope.TaxiPredicate{},
-		"lineup.set":   envelope.LineupPredicate{},
-		"trade.accept": envelope.TradePredicate{},
-		"bid.submit":   envelope.BidPredicate{},
+		"roster.ir":           envelope.IRPredicate{},
+		envelope.CutIntent:    envelope.ReleasePredicate{},
+		envelope.BuyoutIntent: envelope.ReleasePredicate{},
+		"roster.taxi":         envelope.TaxiPredicate{},
+		"lineup.set":          envelope.LineupPredicate{},
+		"trade.accept":        envelope.TradePredicate{},
+		"bid.submit":          envelope.BidPredicate{},
 	}
 	return registry[intent]
 }
@@ -310,6 +315,7 @@ func (a *App) recentMoveSource(source envelope.Source, handed time.Time) bool {
 // Invalidate to Stale, then Rebase). Unknown eligibility never yanks a plan: MFL decides, as
 // it does at hand-off. The caller holds refreshMu.
 func (a *App) revalidateReadyRosterMoves(ctx context.Context) {
+	a.revalidateReleaseAfterRefresh(ctx)
 	if err := a.ready(); err != nil {
 		return
 	}
@@ -398,4 +404,15 @@ func (a *App) returnPlanToDraft(ctx context.Context, id string, decision eligibi
 	}
 	a.logMove(drafted)
 	return true
+}
+
+func (a *App) revalidateReleaseAfterRefresh(ctx context.Context) {
+	if a.moves != nil && a.whatif != nil {
+		a.movesMu.Lock()
+		err := a.revalidateReleasePlans(ctx)
+		a.movesMu.Unlock()
+		if err != nil {
+			a.movesLog(fmt.Sprintf("release validation: %v", err))
+		}
+	}
 }

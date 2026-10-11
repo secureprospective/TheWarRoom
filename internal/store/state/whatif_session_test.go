@@ -44,3 +44,26 @@ func TestWhatIfMirrorStampsOptionalLedgersAndNanoseconds(t *testing.T) {
 		}
 	}
 }
+
+func TestReleaseStampsAreScopedToPlayerAndFranchise(t *testing.T) {
+	ctx := context.Background()
+	m := openMirror(t, filepath.Join(t.TempDir(), "scoped.db"))
+	if _, err := m.Replace(ctx, mirrorSnap()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.pools.Write().ExecContext(ctx, `
+ CREATE TABLE contract_years (mfl_id TEXT,last_updated TEXT);
+ INSERT INTO contract_years VALUES ('0042','2026-01-01T00:00:00Z'),('0099','2026-12-01T00:00:00Z');
+ CREATE TABLE dead_cap_ledger (franchise_id TEXT,created_at TEXT);
+ INSERT INTO dead_cap_ledger VALUES ('0001','2026-02-01T00:00:00Z'),('0002','2026-12-01T00:00:00Z');`); err != nil {
+		t.Fatal(err)
+	}
+	stamps, err := m.ReleaseStamps(ctx, "0042", "0001")
+	if err != nil || stamps.Contract != "2026-01-01T00:00:00Z" || stamps.DeadCap != "2026-02-01T00:00:00Z" {
+		t.Fatal(stamps, err)
+	}
+	missing, err := m.ReleaseStamps(ctx, "0055", "0003")
+	if err != nil || missing.Contract != "" || missing.DeadCap != "" {
+		t.Fatal(missing, err)
+	}
+}

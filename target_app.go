@@ -198,5 +198,7 @@ func (a *App) TargetMoves(franchiseID string) ([]envelope.Receipt, error) {
 		return nil, fmt.Errorf("target moves: list: %w", err)
 	}
 	// Bid plans carry facts the move rail cannot show; TargetBidPlans lists them.
-	return slices.DeleteFunc(receipts, func(r envelope.Receipt) bool { return r.Spec.Intent == envelope.BidIntent }), nil
+	return slices.DeleteFunc(receipts, func(r envelope.Receipt) bool {
+		return r.Spec.Intent == envelope.BidIntent || envelope.IsRelease(r.Spec.Intent)
+	}), nil
 }

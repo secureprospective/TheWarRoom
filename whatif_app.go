@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -49,6 +51,7 @@ type WhatIfMoveView struct {
 	Label       string                  `json:"label"`
 	Charge      snapshot.ContractAmount `json:"charge"`
 	Explanation string                  `json:"explanation"`
+	Plan        string                  `json:"plan"`
 }
 type WhatIfFigure struct {
 	Label  string `json:"label"`
@@ -270,6 +273,10 @@ func (a *App) whatIfView(ctx context.Context, s state.WhatIfSession, store *stat
 	}
 	moves, removed, charge := whatIfMoves(s)
 	out.Moves = moves
+	if err := a.whatIfPlanLabels(ctx, s.Mine, out.Moves); err != nil {
+		return out, err
+	}
+
 	beforeFuture, afterFuture := map[int]domain.Money{}, map[int]domain.Money{}
 	last := s.Snapshot.Season
 	for _, p := range s.Snapshot.Players {
@@ -349,4 +356,22 @@ func whatIfChange(delta domain.Money) string {
 		return "−" + snapshot.ContractAmountOf(-delta).Text
 	}
 	return "+" + snapshot.ContractAmountOf(delta).Text
+}
+
+func (a *App) whatIfPlanLabels(ctx context.Context, mine string, moves []WhatIfMoveView) error {
+	if a.moves != nil {
+		receipts, err := a.moves.List(ctx, ingestion.LeagueID, mine)
+		if err != nil {
+			return fmt.Errorf("what-if plans: %w", err)
+		}
+		for i, move := range moves {
+			for _, receipt := range receipts {
+				if envelope.IsRelease(receipt.Spec.Intent) && receipt.Spec.Expected.Player.String() == move.Player && envelope.ReleaseOpen(receipt.State) {
+					moves[i].Plan = "Plan: " + releaseStateLabel(receipt.State)
+					break
+				}
+			}
+		}
+	}
+	return nil
 }

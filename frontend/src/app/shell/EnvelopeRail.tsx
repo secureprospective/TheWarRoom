@@ -109,3 +109,4 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
     </Card>
   );
 }
+

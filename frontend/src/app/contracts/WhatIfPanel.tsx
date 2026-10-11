@@ -12,10 +12,10 @@ export function WhatIfActs({ mine, player, value, menu = false }: {
   const choice = value?.choices.find(choice => choice.player === player);
   if (!choice || !value) return null;
   const acts = <div className="contract-whatif-acts">
-    <Act verb="contracts.set" variant="command"
+    <Act verb="contracts.set" variant="text"
       args={{ field: 'whatif', value: { mine, action: 'cut', player } }}
       disabled={value.stale}>{choice.cutLabel}</Act>
-    <Act verb="contracts.set" variant="command"
+    <Act verb="contracts.set" variant="text"
       args={{ field: 'whatif', value: { mine, action: 'buyout', player } }}
       disabled={value.stale || !choice.buyoutAllowed}
       label={choice.buyoutAllowed ? choice.buyoutLabel : choice.reason}>{choice.buyoutLabel}</Act>
@@ -48,6 +48,11 @@ export function WhatIfPanel({ mine, reading, error }: {
                 disabled={value.stale} label={`Undo ${move.label}`}>Undo</Act>
             </div>
             <p>{move.explanation}</p>
+            <div className="whatif-plan-line">
+              {move.plan ? <p>{move.plan}</p> : <Act verb="contracts.set" variant="command"
+              label={`Make this a plan: ${move.label}`}
+              args={{ field: 'release', value: { mine, action: 'draft', move: move.id } }}>
+              Make this a plan</Act>}</div>
           </li>)}
         </ol>
         <table className="whatif-figures" aria-label="Before and after this what-if">

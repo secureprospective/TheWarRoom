@@ -1,9 +1,9 @@
+import { parseRailReceipt } from '../shell/railReceipt';
 import type * as Bindings from '../../../wailsjs/go/main/App';
 import { main } from '../../../wailsjs/go/models';
 import { provenance } from '../data/parse';
 import { selectProvider } from '../data/provider';
 import { array, choice, integer, object, text } from '../data/parseValues';
-import { railStates } from '../shell/moveLabels';
 import type {
   Amount,
   BidFormState,
@@ -71,27 +71,6 @@ const action: Parser<Plan['actions'][number]> = (v, p) => {
     id: text(r.id, p), label: text(r.label, p), disabled: flag(r.disabled, p), reason: text(r.reason, p),
   };
 };
-// The receipt and facts are read for what the screens show; the envelope's own shape is
-// checked by the move rail's parser, and this wire never reaches the rail.
-function receipt(v: unknown, p: string) {
-  const r = object(v, p, ['correlationId', 'spec', 'state', 'audit']);
-  const spec = object(r.spec, p, [
-    'intent', 'leagueId', 'franchiseId', 'subject', 'expected', 'gravity', 'undo', 'target', 'deadline',
-  ]);
-  const state = choice(r.state, p, railStates);
-  const audit = array(r.audit, p, (e, ep) => {
-    const entry = object(e, ep, ['at', 'from', 'event', 'to', 'note']);
-    return {
-      at: text(entry.at, ep), from: choice(entry.from, ep, railStates),
-      to: choice(entry.to, ep, railStates), note: text(entry.note, ep),
-    };
-  });
-  return {
-    id: text(r.correlationId, p), state, franchiseId: text(spec.franchiseId, p),
-    history: audit.map((entry) => ({ at: entry.at, state: entry.to, note: entry.note })),
-    rail: { state, spec: { intent: text(spec.intent, p) }, audit },
-  };
-}
 export function parsePlan(v: unknown, path = 'Bid plan'): Plan {
   const r = object(v, path, [
     'receipt', 'facts', 'player', 'salary', 'points', 'contract', 'beatText', 'form', 'state',
@@ -101,7 +80,7 @@ export function parsePlan(v: unknown, path = 'Bid plan'): Plan {
     'player', 'salary', 'years', 'points', 'snipe', 'beat', 'evidence', 'closes',
   ]);
   const form = object(r.form, path, ['salary', 'beat']);
-  const head = receipt(r.receipt, path);
+  const head = parseRailReceipt(r.receipt, path);
   return {
     id: head.id, stateCode: head.state, franchiseId: head.franchiseId, history: head.history,
     receipt: head.rail,

@@ -132,3 +132,29 @@ func stampNewer(current, baseline string) bool {
 	}
 	return current > baseline
 }
+
+// ReleaseStamps reads only the subject contract and owner's ledger rows. Rosters still use
+// the mirror revision; literal player and adjustment fields distinguish unrelated refreshes.
+func (m *Mirror) ReleaseStamps(ctx context.Context, player, mine string) (MirrorStamps, error) {
+	out := MirrorStamps{Rosters: m.AsOf()}
+	for _, item := range []struct {
+		table, query string
+		value        *string
+		scope        string
+	}{
+		{"contract_years", `SELECT COALESCE(MAX(last_updated),'') FROM contract_years WHERE mfl_id=?`, &out.Contract, player},
+		{"dead_cap_ledger", `SELECT COALESCE(MAX(created_at),'') FROM dead_cap_ledger WHERE franchise_id=?`, &out.DeadCap, mine},
+	} {
+		var n int
+		if err := m.pools.Read().QueryRowContext(ctx, `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?`, item.table).Scan(&n); err != nil {
+			return out, fmt.Errorf("release stamps table: %w", err)
+		}
+		if n == 0 {
+			continue
+		}
+		if err := m.pools.Read().QueryRowContext(ctx, item.query, item.scope).Scan(item.value); err != nil {
+			return out, fmt.Errorf("release stamps %s: %w", item.table, err)
+		}
+	}
+	return out, nil
+}

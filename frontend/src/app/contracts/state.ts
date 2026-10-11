@@ -20,8 +20,23 @@ export const setContractsFilter = filters.set;
 
 export type ContractsAction = ContractsFilter | {
   field: 'whatif'; value: import('./whatif').WhatIfAction;
-};
+} | { field: 'release'; value: import('./releases').ReleaseAction }
+  | { field: 'release-confirm'; value: string }; 
 export async function runContractsAction(action: ContractsAction) {
   if (action.field === 'whatif') await (await import('./whatif')).changeWhatIf(action.value);
-  else setContractsFilter(action);
+  else if (action.field === 'release-confirm') (await import('./releases')).confirmRelease(action.value);
+  else if (action.field === 'release') {
+    const { releaseAction, copyReleaseText } = await import('./releases');
+    if (action.value.action === 'handoff') {
+      const board = await releaseAction({ mine: action.value.mine, action: 'read' });
+      const plan = board.value?.find(plan => plan.id === action.value.id);
+      if (plan && !plan.cut) {
+        if (!await copyReleaseText(plan.post)) {
+          throw new Error('Clipboard unavailable; select the request text.');
+        }
+      }
+    }
+    await releaseAction(action.value);
+    (await import('./whatif')).notifyWhatIf();
+  } else setContractsFilter(action);
 }

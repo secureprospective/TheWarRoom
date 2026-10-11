@@ -53,6 +53,7 @@ func (a *App) refreshWeek(ctx context.Context) {
 	} else if w.Number != 0 {
 		a.deriveWeekPhase(ctx, w, fetched)
 	}
+	a.revalidateReleaseAfterRefresh(ctx)
 	a.clockChanged(ctx)
 }
 

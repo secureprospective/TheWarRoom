@@ -34,7 +34,7 @@ const (
 	// AwardedOffApp is a bid that went to someone else, or whose window closed: the end of the
 	// plan, not a failure.
 	AwardedOffApp State = "awarded_off_app"
-	// Withdrawn is a bid plan the owner dropped, before posting it or after copying the post
+	// Withdrawn is a plan the owner dropped, before completing its off-app action
 	// and not posting: the end of the plan, kept in History.
 	Withdrawn State = "withdrawn"
 )
@@ -255,6 +255,7 @@ func transitions() map[step]State {
 		{Blocked, ChecksPass}: Ready, {Blocked, ChecksBlock}: Blocked,
 		{Ready, HandOff}: HandedOff, {Ready, Invalidate}: Stale,
 		{Stale, Rebase}: Draft, {Failed, Rebase}: Draft,
+		{Landed, Invalidate}: Landed,
 	}
 	pending := map[Event]State{AwaitDOT: DOTReview, AwaitBid: BidPending, AwaitWaiver: WaiverPending}
 	for _, s := range []State{HandedOff, NotYetDone, NotVerified} {
@@ -273,7 +274,7 @@ func transitions() map[step]State {
 	for _, s := range []State{HandedOff, NotYetDone, NotVerified, BidPending} {
 		t[step{s, AwardedElsewhere}] = AwardedOffApp
 	}
-	for _, s := range []State{Ready, HandedOff, NotYetDone} {
+	for _, s := range []State{Blocked, Ready, HandedOff, NotYetDone} {
 		t[step{s, Withdraw}] = Withdrawn
 	}
 	return t
@@ -343,7 +344,7 @@ func (e Envelope) Await(at time.Time, event Event) (Envelope, error) {
 // WithdrawBid ends a bid plan the owner will not post: Ready, or handed off but never posted.
 // A posted bid (Bid pending) is refused: the app cannot take a post down from ProBoards.
 func (e Envelope) WithdrawBid(at time.Time, note string) (Envelope, error) {
-	if e.spec.Intent != BidIntent {
+	if e.spec.Intent != BidIntent || e.state == Blocked {
 		return Envelope{}, ErrIllegalTransition{From: e.state, Event: Withdraw}
 	}
 	return e.move(at, Withdraw, note)

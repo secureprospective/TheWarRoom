@@ -23,7 +23,7 @@ func validateExpected(s Spec) error {
 		return validateLineupExpected(s)
 	}
 
-	if s.Expected.Lineup != nil || s.Expected.Player.String() == "" || s.Expected.RosterStatus == "" ||
+	if s.Expected.Lineup != nil || s.Expected.Player.String() == "" || (s.Expected.RosterStatus == "" && !IsRelease(s.Intent)) ||
 		!slices.Contains(s.Subject.Players, s.Expected.Player) {
 		return fmt.Errorf("envelope: expected change must name a subject player and status")
 	}

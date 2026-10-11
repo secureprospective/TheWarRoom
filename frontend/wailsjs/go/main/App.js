@@ -242,6 +242,10 @@ export function TargetPulseNow() {
   return window['go']['main']['App']['TargetPulseNow']();
 }
 
+export function TargetReleasePlans(arg1) {
+  return window['go']['main']['App']['TargetReleasePlans'](arg1);
+}
+
 export function TargetSeason() {
   return window['go']['main']['App']['TargetSeason']();
 }

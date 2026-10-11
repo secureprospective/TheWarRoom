@@ -9,6 +9,7 @@ import { contractsProvider } from './provider';
 import './contracts.css';
 import { useContractsFilters } from './state';
 import { whatIfProvider, type WhatIf, type WhatIfProvider } from './whatif';
+import ReleasePlans from './ReleasePlans';
 import { WhatIfPanel, WhatIfActs } from './WhatIfPanel';
 
 type Result<T> = { reading?: T; error?: string };
@@ -256,7 +257,8 @@ export default function Contracts({
       if (row && scroll) anchor.current = { row, scroll, top: row.getBoundingClientRect().top };
     }}>
       <WhatIfPanel mine={s.franchiseId} {...whatif} />
-      <p className="whatif-status" role="status">{whatif.reading?.value?.moves.at(-1)?.status}</p>
+      {whatif.reading?.value?.moves.length ? <p className="whatif-status" role="status">
+        {whatif.reading.value.moves.at(-1)?.status}</p> : null}
       <ContractReading title="My franchise cap" reading={readings?.cap} error={error}>
         {cap && (
           <>
@@ -393,9 +395,8 @@ export default function Contracts({
         reading={readings?.cantCut}
         error={error}
       />
-      <p className="not-wired">
-        Cut and buyout charges appear in the What-if panel above; no submission or plan is created.
-      </p>
+      {!supplied && <ReleasePlans mine={s.franchiseId ?? ''} />}
+      <p>What-if models the charge; Make this a plan keeps a checked move. Nothing is submitted.</p>
     </div>
   );
 }

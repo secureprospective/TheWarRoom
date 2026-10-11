@@ -1,3 +1,4 @@
+import { commands } from '../commands/registry';
 import { TargetWhatIf } from '../../../wailsjs/go/main/App';
 import type { main } from '../../../wailsjs/go/models';
 import { array, object, text, choice } from '../data/parseValues';
@@ -11,7 +12,7 @@ export type WhatIfAction = {
 export type WhatIf = {
   stale: boolean; banner: string; empty: string; notice: string;
   moves: { id: string; player: string; tag: string; status: string; label: string; charge: Amount;
-    explanation: string }[];
+    explanation: string; plan?: string }[];
   figures: { label: string; before: string; after: string; change: string }[];
   choices: {
     player: string; cutLabel: string; buyoutLabel: string; buyoutAllowed: boolean; reason: string;
@@ -32,10 +33,11 @@ export function parseWhatIf(value: unknown): Reading<WhatIf> {
     return {
       stale: bool(r.stale, p), banner: text(r.banner, p), empty: text(r.empty, p), notice: text(r.notice, p),
       moves: array(r.moves, p, (v, p) => {
-        const r = object(v, p, ['id', 'player', 'tag', 'status', 'label', 'charge', 'explanation']);
+        const r = object(v, p, ['id', 'player', 'tag', 'status', 'label', 'charge', 'explanation', 'plan']);
         return { id: text(r.id, p), player: text(r.player, p), tag: text(r.tag, p),
           status: text(r.status, p), label: text(r.label, p),
-          charge: parseAmount(r.charge, p), explanation: text(r.explanation, p) };
+          charge: parseAmount(r.charge, p), explanation: text(r.explanation, p),
+          plan: r.plan === undefined ? '' : text(r.plan, p) };
       }),
       figures: array(r.figures, p, (v, p) => {
         const r = object(v, p, ['label', 'before', 'after', 'change']);
@@ -84,10 +86,13 @@ export function whatIfProvider(): WhatIfProvider {
     onChange: (listener) => {
       listeners.add(listener);
       const off = selected.onSeasonChange(listener);
-      return () => { listeners.delete(listener); off(); };
+      const movesOff = commands.onMovesChange(listener);
+      return () => { listeners.delete(listener); off(); movesOff(); };
     },
   };
 }
 export async function changeWhatIf(action: WhatIfAction) {
   return whatIfProvider().change(action);
 }
+
+export function notifyWhatIf() { for (const listener of listeners) listener(); }

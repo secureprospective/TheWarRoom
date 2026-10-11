@@ -125,6 +125,8 @@ export function TargetPoolRefresh(arg1:boolean):Promise<void>;
 
 export function TargetPulseNow():Promise<main.PulseReading>;
 
+export function TargetReleasePlans(arg1:main.RawReleaseRequest):Promise<main.Reading___main_ReleasePlanView_>;
+
 export function TargetSeason():Promise<main.SeasonReading>;
 
 export function TargetSnapshot():Promise<snapshot.Snapshot>;

@@ -198,7 +198,7 @@ describe('Contracts and cap read surfaces', () => {
       'MFL literal credit',
       'not proven itemised dead cap',
       'owner pages are not scraped',
-      'Cut and buyout charges appear in the What-if panel',
+      'What-if models the charge; Make this a plan keeps a checked move',
     ])
       expect(text).toContain(value);
     const endpoints = test.root
