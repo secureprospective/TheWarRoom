@@ -1,3 +1,4 @@
+import { restoreWorkAnchor, type WorkAnchor } from '../shell/workScroll';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createElement, act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -10,7 +11,7 @@ import { commands } from '../commands/registry';
 import Contracts, { ContractReading, ContractPanel } from './Contracts';
 import { ContractActCard, ContractMovePanel } from './ContractActs';
 import { WhatIfActs } from './WhatIfPanel';
-import { termsKey, useContractMove, type ContractActPlan } from './contractActs';
+import { reconcileContractMove, termsKey, useContractMove, type ContractActPlan } from './contractActs';
 import { parseContracts, parsePlayerContract } from './provider';
 import { setContractsFilter } from './state';
 import type { WhatIf, WhatIfProvider } from './whatif';
@@ -497,11 +498,9 @@ it('retains the what-if during replay and restores the clicked row position befo
   const test = await mount(createElement(Contracts, { snapshot: heldSnapshot(),
     provider: provider(), whatIf: simulation }));
   const outer = nodes(test.root, 'DIV').find(node => node.getAttribute('class') === 'contracts')!;
-  const row = { getBoundingClientRect: vi.fn().mockReturnValue({ top: 400 }) };
+  const row = { isConnected: true, getBoundingClientRect: vi.fn().mockReturnValue({ top: 400 }) };
   const scroll = { scrollTop: 100 };
-  const capture = props(outer).onClickCapture as (event: unknown) => void;
-  capture({ target: { closest: (selector: string) => 
-    selector === 'tr' ? row : selector === '.wbody' ? scroll : {} } });
+  const anchor = { row, top: 400, scroll };
   simulation.query = vi.fn(() => new Promise(yes => { resolve = yes; }));
   await act(async () => { changed(); });
   expect(test.element.textContent).toContain('No moves yet.');
@@ -511,6 +510,7 @@ it('retains the what-if during replay and restores the clicked row position befo
       label: 'Cut Example player', charge: { cents: 70000000, text: '$700,000' },
         explanation: 'Go rule' }], choices: [] };
   await act(async () => { resolve({ ...reading(modelled), baseline: '2026-10-11T07:27:22Z' }); });
+  restoreWorkAnchor(anchor as unknown as WorkAnchor);
   expect(scroll.scrollTop).toBe(350);
   expect(test.element.textContent).toContain(modelled.moves[0].status);
   expect(test.element.textContent).toContain('Cut in what-if');
@@ -535,38 +535,9 @@ it('offers the same Go Acts in my player Inspector, never another franchise', as
   expect(test.element.textContent).not.toContain('What if I cut him');
 });
 
-it('lets go of the clicked row once the owner works elsewhere, so Keep never moves the page', async () => {
-  shell();
-  let resized!: () => void;
-  vi.stubGlobal('ResizeObserver', class {
-    constructor(callback: () => void) { resized = callback; }
-    observe() {} disconnect() {}
-  });
-  const simulation: WhatIfProvider = { query: vi.fn().mockResolvedValue(reading({ stale: false,
-    banner: '', notice: '', empty: '', figures: [], moves: [], choices: [] })),
-  change: async () => {}, onChange: () => () => {} };
-  const test = await mount(createElement(Contracts, { snapshot: heldSnapshot(),
-    provider: provider(), whatIf: simulation }));
-  const outer = nodes(test.root, 'DIV').find(node => node.getAttribute('class') === 'contracts')!;
-  const row = { getBoundingClientRect: vi.fn().mockReturnValue({ top: 400 }) };
-  const scroll = { scrollTop: 100 };
-  const menuAct = { closest: (selector: string) =>
-    selector === 'tr' ? row : selector === '.wbody' ? scroll : {} };
-  const elsewhere = { closest: () => null };
-  const { onClickCapture, onFocusCapture } = props(outer) as Record<string, (event: unknown) => void>;
-  onClickCapture({ target: menuAct });
-  row.getBoundingClientRect.mockReturnValue({ top: 650 });
-  resized();
-  expect(scroll.scrollTop).toBe(350);
-  onClickCapture({ target: elsewhere });
-  row.getBoundingClientRect.mockReturnValue({ top: 693 });
-  resized();
-  expect(scroll.scrollTop).toBe(350);
-  onClickCapture({ target: menuAct });
-  onFocusCapture({ target: elsewhere });
-  row.getBoundingClientRect.mockReturnValue({ top: 736 });
-  resized();
-  expect(scroll.scrollTop).toBe(350);
+it('both table routes use the shared work anchor rather than row-menu-only capture', () => {
+  const code = readFileSync('src/app/contracts/Contracts.tsx', 'utf8');
+  expect(code).toContain("useWorkAnchor(root, '.contract-table tbody tr')");
 });
 
 it('keeps an opened row on one line with the full sentence as its label', async () => {
@@ -601,7 +572,8 @@ it('names the contract under the heading and holds Kept until the terms differ',
   const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
   await act(async () => {});
   const heading = nodes(test.root, 'H4')[0];
-  const subject = heading.parentNode!.children[heading.parentNode!.children.indexOf(heading) + 1];
+  const subject = nodes(heading.parentNode!, 'P').find(node =>
+    node.getAttribute('class') === 'contract-move-subject')!;
   expect(subject.textContent).toBe('Oluokun, Foyesade · LB · $11,000,000 a year through 2028 · UFA');
   const keep = () => nodes(test.root, 'BUTTON').find(b => /Keep|Kept/.test(b.textContent))!;
   expect(keep().textContent).toBe('Keep plan');
@@ -628,13 +600,73 @@ it('scrolls the revealed plan card into view in My moves and focuses it, once', 
   const test = await mount(createElement(ContractActCard, { plan: actPlan('contract-1'), mine: '0001',
     revealing: true }));
   const card = nodes(test.root, 'ARTICLE')[0];
-  const scrollIntoView = vi.fn(), focus = vi.fn();
-  Object.assign(card, { scrollIntoView, focus });
+  const focus = vi.fn();
+  const scroll = { scrollTop: 0, clientTop: 0, clientHeight: 700,
+    getBoundingClientRect: () => ({ top: 0 }) };
+  Object.assign(card, { closest: () => scroll, getBoundingClientRect: () => ({ top: 400 }), focus });
   await act(async () => { useContractMove.setState({ reveal: 'contract-other' }); });
-  expect(scrollIntoView).not.toHaveBeenCalled();
+  expect(scroll.scrollTop).toBe(0);
   await act(async () => { useContractMove.setState({ reveal: 'contract-1' }); });
-  expect(scrollIntoView).toHaveBeenCalledWith({ block: 'start' });
+  expect(scroll.scrollTop).toBe(400);
   expect(focus).toHaveBeenCalledWith({ preventScroll: true });
   expect(card.getAttribute('tabindex')).toBe('-1');
   expect(useContractMove.getState().reveal).toBe('');
+});
+
+it.each(['withdrawn', 'landed', 'failed', 'missing'])
+('re-enables Keep and clears feedback for %s', async state => {
+  const wire = actPlan();
+  const go = { main: { App: { TargetContractActs: vi.fn(async () => reading([wire])) } } };
+  useContractMove.setState({ mine: '0001', player: '0042', kept: undefined, keptTerms: '' });
+  const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
+  const kept = { ...actPlan('contract-1'), receipt: {
+    state: 'ready' as const, spec: { intent: 'contract.extend' }, audit: [],
+  } };
+  const request = { mine: '0001', action: 'preview' as const, intent: 'contract.extend',
+    level: 1, years: 1, move: '1', source: 0, destination: 0 };
+  await act(async () => { useContractMove.setState({ kept, keptTerms: termsKey(request) }); });
+  expect(test.element.textContent).toContain('Kept');
+  await act(async () => { reconcileContractMove('0001', state === 'missing' ? [] :
+    [{ ...kept, receipt: { ...kept.receipt, state: state as 'withdrawn' | 'landed' | 'failed' } }]); });
+  const keep = nodes(test.root, 'BUTTON').find(node => node.textContent === 'Keep plan')!;
+  expect(props(keep).disabled).toBe(false);
+  expect(test.element.textContent).not.toContain('Plan:');
+});
+
+it('Close is registered, removes the panel and clears the row opened state', async () => {
+  useContractMove.setState({ mine: '0001', player: '0042' });
+  const wire = actPlan();
+  const go = { main: { App: { TargetContractActs: vi.fn(async () => reading([wire])) } } };
+  const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
+  const close = nodes(test.root, 'BUTTON').find(node => node.textContent === 'Close')!;
+  await act(async () => { (props(close).onClick as () => void)(); });
+  expect(useContractMove.getState().player).toBe('');
+  expect(test.element.textContent).not.toContain('Contract move');
+  const row = renderToStaticMarkup(createElement(WhatIfActs, {
+    mine: '0001', player: '0042', menu: true,
+  }));
+  expect(row).not.toContain('Opened above');
+});
+
+it('re-reads the kept plan on moves change and clears terminal feedback', async () => {
+  let changed!: () => void;
+  vi.spyOn(commands, 'onMovesChange').mockImplementation(listener => {
+    changed = listener; return () => {};
+  });
+  const wire = actPlan();
+  let live: ContractActPlan[] = [];
+  const go = { main: { App: { TargetContractActs: vi.fn(async (raw: { action: string }) =>
+    reading(raw.action === 'read' ? live : [wire])) } } };
+  useContractMove.setState({ mine: '0001', player: '0042', kept: undefined, keptTerms: '' });
+  const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
+  const kept = { ...actPlan('contract-1'), receipt: {
+    state: 'ready' as const, spec: { intent: 'contract.extend' }, audit: [],
+  } };
+  await act(async () => { useContractMove.setState({ kept, keptTerms: 'terms' }); });
+  expect(test.element.textContent).toContain('Plan: Ready');
+  const before = go.main.App.TargetContractActs.mock.calls.length;
+  await act(async () => { changed(); });
+  expect(go.main.App.TargetContractActs.mock.calls.length).toBeGreaterThan(before);
+  expect(test.element.textContent).not.toContain('Plan:');
+  expect(useContractMove.getState().kept).toBeUndefined();
 });

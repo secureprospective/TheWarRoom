@@ -148,3 +148,14 @@ describe('Act tooltips', () => {
     expect(html).toContain('aria-label="Edit lineup"');
   });
 });
+
+it('replacement command buttons never carry native titles, even shortened or disabled', () => {
+  for (const disabled of [true, false]) {
+    const html = renderToStaticMarkup(createElement(Act, {
+      verb: 'contracts.set', args: { field: 'release-confirm', value: 'release-1' }, variant: 'command',
+      label: 'Make this a plan: Cut Banks, Deonte', children: 'Make this a plan', disabled,
+    }));
+    expect(html).toContain('aria-label="Make this a plan: Cut Banks, Deonte"');
+    expect(html).not.toContain('title=');
+  }
+});

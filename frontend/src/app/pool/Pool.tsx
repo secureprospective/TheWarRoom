@@ -1,3 +1,4 @@
+import { scrollWorkIntoView, useWorkAnchor } from '../shell/workScroll';
 import { useEffect, useRef } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
@@ -37,7 +38,7 @@ function useBringIntoView(wanted: boolean, seq: number) {
   useEffect(() => {
     if (!wanted || done.current === seq) return;
     done.current = seq;
-    ref.current?.scrollIntoView?.({ block: 'start' });
+    if (ref.current) scrollWorkIntoView(ref.current);
   }, [wanted, seq]);
   return ref;
 }
@@ -250,8 +251,10 @@ export function PoolScreen({ state, snapshot, franchiseId }: {
   snapshot?: Snapshot;
   franchiseId: string;
 }) {
+  const root = useRef<HTMLElement>(null);
+  useWorkAnchor(root, '.pool-table tbody tr');
   return (
-    <section className="pool" aria-label="Free-agent pool">
+    <section ref={root} className="pool" aria-label="Free-agent pool">
       <header>
         <h4>Free-agent pool</h4>
         <p>
@@ -309,7 +312,12 @@ export function PoolInspectorView({ row, plans, busy, reading }: {
       {row && reading && <PoolHowCounted reading={reading} />}
       {plans.length === 0 && <p>No open bid plan on this player.</p>}
       {plans.map((plan) => (
-        <BidPlanCard key={plan.id} plan={plan} busy={busy} />
+        <article key={plan.id} className="bid-plan" aria-label={`Bid plan ${plan.player}`}>
+          <h5>{plan.player}</h5>
+          <p>{plan.state} · <time dateTime={plan.history.at(-1)?.at}>{plan.history.at(-1)?.at
+            ? localDate(plan.history.at(-1)!.at) : 'Time not recorded'}</time></p>
+          <p>{plan.contract}</p><Act verb="market" args={{ field: 'pool-open', value: plan.id }}
+            label={`Open bid plan: ${plan.player}`}>See bid plan</Act></article>
       ))}
       {row && plans.length === 0 && (
         <Act

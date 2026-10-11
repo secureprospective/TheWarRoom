@@ -112,10 +112,10 @@ func releasePlanView(r envelope.Receipt, f envelope.ReleaseFacts) ReleasePlanVie
 		Channel:      channel, Receipt: r, CanHandOff: r.State == envelope.Ready, CanRebase: r.State == envelope.Stale, RebaseLabel: "Reprice from today's MFL rosters", WithdrawLabel: releaseWithdrawLabel(r.State, cut), Cut: cut}
 }
 func releaseWithdrawLabel(s envelope.State, cut bool) string {
-	if s == envelope.Ready || s == envelope.Blocked {
+	if s == envelope.Draft || s == envelope.Ready || s == envelope.Blocked || s == envelope.Stale {
 		return "Remove plan"
 	}
-	if s == envelope.HandedOff || s == envelope.NotYetDone {
+	if s == envelope.HandedOff || s == envelope.NotYetDone || s == envelope.NotVerified {
 		if cut {
 			return "I didn't drop him"
 		}
@@ -302,8 +302,11 @@ func releaseStateLabel(s envelope.State) string {
 }
 
 func (a *App) withdrawRelease(ctx context.Context, e envelope.Envelope) error {
-	note := "Withdrawn by you before it was handed off."
-	if e.State() == envelope.HandedOff || e.State() == envelope.NotYetDone {
+	note := envelope.RemovePlanNote
+	for _, entry := range e.Receipt().Audit {
+		if entry.To != envelope.HandedOff {
+			continue
+		}
 		note = "You said you did not post it, so the plan is withdrawn."
 		if e.Receipt().Spec.Intent == envelope.CutIntent {
 			note = "You said you did not drop him, so the plan is withdrawn."

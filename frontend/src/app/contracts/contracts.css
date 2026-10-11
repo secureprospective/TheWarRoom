@@ -84,7 +84,7 @@
 .twr-app .release-plans { min-width: 0; font-size: 12px; }
 .twr-app .release-plan { padding: 12px 0; border-top: 1px solid var(--surface-line); }
 .twr-app .release-post { white-space: pre-wrap; font: inherit; overflow-wrap: normal; margin: 8px 0; }
-.twr-app .release-confirm { display: flex; flex-wrap: wrap; gap: 8px; }
+.twr-app .release-confirm { display: contents; }
 .twr-app .release-confirm p { flex-basis: 100%; }
 .twr-app .release-plan .envelope-rail { flex-wrap: wrap; }
 .twr-app .release-plan .envelope-rail li { min-width: 110px; overflow-wrap: normal; word-break: normal; }
@@ -115,3 +115,6 @@
 .twr-app article.bid-plan.contract-act-card { scroll-margin-top: 8px; }
 
 .twr-app .contract-menu-overlay { position: fixed; top: 0; left: 0; width: 0; height: 0; z-index: 20; }
+
+.twr-app .contract-act-form input, .twr-app .contract-act-form select { background: var(--surface-0); color: var(--surface-tx1); border: 1px solid var(--surface-line-hi); border-radius: 4px; padding: 6px 8px; font: inherit; }
+.twr-app .contract-act-form input:focus-visible, .twr-app .contract-act-form select:focus-visible { outline: 2px solid var(--surface-tx1); outline-offset: 2px; }

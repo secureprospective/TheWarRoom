@@ -2,16 +2,17 @@
 .twr-app .move-classification { margin-inline-start: 16px; color: var(--surface-tx2); }
 .twr-app .envelope-rail {
   display: flex;
+  flex-wrap: wrap;
   list-style: none;
   padding: 0;
   margin: 16px 0;
 }
 .twr-app .envelope-rail li {
   /* Stages share the width: a scrolled rail would hide the current stage. */
-  flex: 1 1 0;
+  flex: 1 1 110px;
   min-width: 0;
   padding: 10px;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
   border-top: 1px solid var(--surface-line-hi);
 }
 .twr-app .envelope-rail li[aria-current="step"] {

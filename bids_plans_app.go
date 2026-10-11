@@ -166,18 +166,16 @@ func bidActions(s envelope.State, status string, rules []bid.Result, problem str
 			copyPost.Disabled, copyPost.Reason = true, sentenceEnd(reason)
 		}
 		out := []BidAction{copyPost, {ID: "revise", Label: "Change figures"}}
-		if s == envelope.Ready {
-			out = append(out, BidAction{ID: "withdraw", Label: "Withdraw plan"})
-		}
+		out = append(out, BidAction{ID: "withdraw", Label: "Remove plan"})
 		return out
 	case slices.Contains([]envelope.State{envelope.HandedOff, envelope.NotYetDone, envelope.NotVerified}, s):
 		out := []BidAction{again, {ID: "posted", Label: "I posted it"}}
-		if s != envelope.NotVerified { // a bid never posted can be taken back; a landing in doubt cannot
-			out = append(out, BidAction{ID: "unposted", Label: "I didn't post it"})
-		}
+		out = append(out, BidAction{ID: "unposted", Label: "I didn't post it"})
 		return out
 	case s == envelope.BidPending:
-		return []BidAction{again}
+		return []BidAction{again, {ID: "withdraw", Label: "Bid was not processed"}}
+	case s == envelope.Stale:
+		return []BidAction{{ID: "withdraw", Label: "Remove plan"}}
 	}
 	return []BidAction{}
 }
@@ -339,22 +337,18 @@ func (a *App) TargetBidPosted(id string) (BidPlan, error) {
 	})
 }
 
-// TargetBidWithdraw ends a plan the owner will not post: a Ready one, or one handed off whose
-// post was copied but never posted ("I didn't post it"). It frees its place in the 30 and
-// leaves the plan's facts as they were. A posted bid is not withdrawn here: the app cannot
-// take a post down from ProBoards.
+// TargetBidWithdraw ends the local plan without removing a ProBoards post.
 func (a *App) TargetBidWithdraw(id string) (BidPlan, error) {
 	return a.bidMove(id, "withdraw", func(_ context.Context, e envelope.Envelope, _ envelope.BidFacts) (envelope.Envelope, error) {
 		s := e.State()
-		if s == envelope.Ready {
-			return e.WithdrawBid(a.movesNow(), "Withdrawn by you before it was handed off.")
+		if s == envelope.Draft || s == envelope.Blocked || s == envelope.Ready {
+			return e.WithdrawBid(a.movesNow(), envelope.RemovePlanNote)
 		}
 		if s == envelope.HandedOff || s == envelope.NotYetDone {
 			return e.WithdrawBid(a.movesNow(), "You said you did not post it, so the plan is withdrawn.")
 		}
-		if s == envelope.BidPending {
-			return envelope.Envelope{}, fmt.Errorf("a posted bid cannot be withdrawn here: " +
-				"the app cannot take a post down from ProBoards")
+		if s == envelope.BidPending || s == envelope.NotVerified || s == envelope.Stale {
+			return e.WithdrawBid(a.movesNow(), "Withdrawn: you said this bid was not processed; the app cannot remove a ProBoards post.")
 		}
 		return envelope.Envelope{}, fmt.Errorf("only a plan not yet posted can be withdrawn; this one is %s",
 			strings.ToLower(bidStateWord(e.State())))

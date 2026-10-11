@@ -22,12 +22,17 @@ export type ContractsAction = ContractsFilter | {
   field: 'whatif'; value: import('./whatif').WhatIfAction;
 } | { field: 'release'; value: import('./releases').ReleaseAction }
   | { field: 'release-confirm'; value: string }
+  | { field: 'contract-close'; value: string }
   | { field: 'contract-open'; value: { mine: string; player: string } }
   | { field: 'contract-keep'; value: import('./contractActs').ContractActRequest }
   | { field: 'contract-act'; value: import('./contractActs').ContractActRequest }
   | { field: 'contract-reveal'; value: string };
 export async function runContractsAction(action: ContractsAction) {
-  if (action.field === 'contract-open') {
+  if (action.field === 'contract-close') {
+    (await import('./contractActs')).useContractMove.setState({
+      player: '', kept: undefined, keptTerms: '', error: '',
+    });
+  } else if (action.field === 'contract-open') {
     (await import('./contractActs')).openContractMove(action.value.mine, action.value.player);
   } else if (action.field === 'contract-keep') {
     await (await import('./contractActs')).keepContractMove(action.value);

@@ -1,3 +1,4 @@
+import { scrollWorkIntoView } from '../shell/workScroll';
 import { useEffect, useRef } from 'react';
 import { endpointsAt, endpointById, type Placement } from './index';
 import { commands } from '../commands/registry';
@@ -23,7 +24,7 @@ export function EndpointIndex({ placement }: { placement: Placement }) {
     const selected = root.current?.querySelector<HTMLElement>('[data-selected="true"]');
     if (selected) {
       selected.focus({ preventScroll: true });
-      selected.scrollIntoView({ block: 'nearest' });
+      scrollWorkIntoView(selected, 'nearest');
     }
   }, [s.endpointIds, placement]);
   const merged = s.endpointIds.map(endpointById).filter((e) => e.merged_place === placement);

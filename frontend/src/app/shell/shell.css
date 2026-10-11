@@ -23,7 +23,7 @@
 .twr-app .strip { margin-left: auto; display: flex; align-items: center; gap: 16px; padding: 0 14px; font: 11px var(--surface-mono); color: var(--surface-tx3); white-space: nowrap; min-width: 0; }
 .twr-app .dens { display: flex; border: 1px solid var(--surface-line); }
 .twr-app .dens .act-density { font-style: normal; padding: 2px 7px; font: 600 10.5px var(--surface-sans); color: var(--surface-tx3); }
-.twr-app .wbody { flex: 1; overflow: auto; padding: 16px; display: grid; gap: 14px; align-content: start; }
+.twr-app .wbody { flex: 1; overflow: auto; overflow-anchor: none; padding: 16px; display: grid; gap: 14px; align-content: start; }
 .twr-app .insp { background: var(--surface-1); border-left: 1px solid var(--surface-line); display: flex; flex-direction: column; overflow: hidden; }
 .twr-app .insp-head { height: 44px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-bottom: 1px solid var(--surface-line); font: 600 11px var(--surface-sans); color: var(--surface-tx3); letter-spacing: .06em; text-transform: uppercase; }
 .twr-app .insp-head .x { display: flex; gap: 10px; text-transform: none; letter-spacing: 0; font: 11px var(--surface-mono); }

@@ -303,7 +303,10 @@ receipts is the p2l report in the ring 2 run folder. Nothing in ring 2 posts to 
   stretches, how it compares with other assets, what came back in its trades, and who buys it (L-09–L-13).
 - Draft lab: return as a share of the slot, by season after the draft, by NFL round and by age;
   "plays like pick #N", hit rate, kept by year two, and draft it or buy it (L-15–L-22,
-  `frontend/src/app/market/Draft.tsx`). These live here, not in the Draft room, which is not wired yet.
+  `frontend/src/app/market/Draft.tsx`). Draft lab has its primary home in Trade Floor › Draft room; the Market button is a second route to the same lazy component and commands.
+
+**Trade Floor › Draft room** (L-15–L-22)
+- The same lazy Draft lab as the Market route: timing, plays-like-pick, return and draft-or-buy. MFL draft reports and live drafting remain deferred.
 
 **Trade Floor › Counterparties** (L-23–L-29, L-36)
 - Filters for standing on trade day, time of year and what the trade did (bought for now, built for
@@ -417,7 +420,7 @@ This is the stand-alone app's plan. None of it is in ring 2. The full triage is
 - Plans for things MFL cannot do have one honest lifecycle (§6) instead of pretending MFL accepted them.
 
 **Carried to ring 3**
-- The Draft room workspace (M-063–M-183) and its MFL draft reports.
+- The Draft room’s MFL draft reports (M-063–M-183); its analytic Draft lab is built.
 - The option election (M-192), the acquisitions screen (C-06.4), and the projected stats, ranks, ADP
   and AAV feeds (M-046, M-047, M-067, M-069).
 - Contract cells for future years are inferred, not read from MFL year by year (PW6).
@@ -431,11 +434,11 @@ This is the stand-alone app's plan. None of it is in ring 2. The full triage is
 |---|---|
 | M-046 | No projected-scores feed is held; ring 2 built only the free-agent pool and bid plans here. |
 | M-047 | No player-ranks feed is held; ring 2 built only the free-agent pool and bid plans here. |
-| M-063, M-064, M-065, M-066, M-087, M-102, M-176, M-179, M-183 | The Draft room workspace is not wired (`frontend/src/app/shell/TargetApp.tsx` has no view for it); the Lab's draft numbers (L-15–L-22) are in War Room › Market › Draft lab. |
+| M-063, M-064, M-065, M-066, M-087, M-102, M-176, M-179, M-183 | The MFL draft reports are not wired; the Lab's draft numbers (L-15–L-22) are in Trade Floor › Draft room and reachable from Market. |
 | M-067 | No ADP feed is held; ring 2 built only the free-agent pool and bid plans here. |
-| M-068 | The Draft room workspace is not wired (`frontend/src/app/shell/TargetApp.tsx` has no view for it); the Lab's draft numbers (L-15–L-22) are in War Room › Market › Draft lab; no future-pick ownership feed is held. |
+| M-068 | The MFL draft reports are not wired; the Lab's draft numbers (L-15–L-22) are in Trade Floor › Draft room and reachable from Market; no future-pick ownership feed is held. |
 | M-069 | No AAV feed is held; ring 2 built only the free-agent pool and bid plans here. |
-| M-103 | The Draft room workspace is not wired (`frontend/src/app/shell/TargetApp.tsx` has no view for it); the Lab's draft numbers (L-15–L-22) are in War Room › Market › Draft lab; the app-local draft list is not built. |
+| M-103 | The MFL draft reports are not wired; the Lab's draft numbers (L-15–L-22) are in Trade Floor › Draft room and reachable from Market; the app-local draft list is not built. |
 | M-192 | No option Act is built; contract Acts cover tender, re-sign, tag, extension and restructure (ContractActs.tsx:13). |
 | L-34 | The stand-alone data pipeline (s0–s5, Facts_Schema_Panel_2026-10.md) is not built; Control Room › Data and sources is not wired. |
 | C-06.4 | No acquisitions screen is built (the Go roster handlers in internal/transactions/acquisitions have no Franchise HQ surface); free-agent adds are checked only by the bid plan rules (C-06.7). |

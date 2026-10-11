@@ -109,7 +109,8 @@ it('both routes reach the same lazy Offers surface, independently of the live fr
     const desk = readFileSync('src/app/shell/TradeDesk.tsx', 'utf8');
     expect(desk).not.toContain('OffersHistory');
     const mount = readFileSync('src/app/shell/TargetApp.tsx', 'utf8');
-    expect(mount).toContain("['market', 'counterparties', 'offers-history', 'valuations-and-pool']");
+    expect(mount).toContain("['market', 'counterparties', 'offers-history', " +
+      "'valuations-and-pool', 'draft-room']");
     const market = readFileSync('src/app/market/Market.tsx', 'utf8');
     expect(market).toContain("lazy(() => import('../offers/Offers'))");
     expect(market).toContain("s.workspace[s.node] === 'offers-history'");

@@ -125,7 +125,7 @@ func mustGet(t *testing.T, a *App, id string) envelope.Envelope {
 	return e
 }
 
-func TestBidNotYetDoneCanBeWithdrawnButAPostedBidCannot(t *testing.T) {
+func TestBidNotYetDoneAndPendingCanBeWithdrawn(t *testing.T) {
 	a := bidTestApp(t)
 	past := time.Now().Add(-time.Hour)
 	a.movesNow = func() time.Time { return past }
@@ -160,16 +160,14 @@ func TestBidNotYetDoneCanBeWithdrawnButAPostedBidCannot(t *testing.T) {
 		t.Fatal(err)
 	}
 	pending, err := a.TargetBidPosted(pid)
-	if err != nil || pending.Receipt.State != envelope.BidPending || actionIDs(pending) != "copy" {
+	if err != nil || pending.Receipt.State != envelope.BidPending || actionIDs(pending) != "copy,withdraw" {
 		t.Fatalf("posted = %v %s, %v", pending.Receipt.State, actionIDs(pending), err)
 	}
-	if _, err := a.TargetBidWithdraw(pid); err == nil ||
-		!strings.Contains(err.Error(), "a posted bid cannot be withdrawn here") ||
-		!strings.Contains(err.Error(), "ProBoards") {
-		t.Errorf("withdrawing a posted bid: %v", err)
+	if gone, err := a.TargetBidWithdraw(pid); err != nil || gone.Receipt.State != envelope.Withdrawn || !strings.Contains(gone.Status, "cannot remove a ProBoards post") {
+		t.Fatalf("withdraw pending local bid: %+v %v", gone, err)
 	}
-	if now := mustGet(t, a, pid); now.State() != envelope.BidPending {
-		t.Errorf("the refused withdrawal changed the plan to %v", now.State())
+	if now := mustGet(t, a, pid); now.State() != envelope.Withdrawn {
+		t.Errorf("pending local plan did not end: %v", now.State())
 	}
 }
 

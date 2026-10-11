@@ -113,3 +113,12 @@ export async function keepContractMove(request: ContractActRequest, action = con
   finally { useContractMove.setState({ saving: false }); }
 }
 
+
+export function reconcileContractMove(mine: string, plans: ContractActPlan[]) {
+  const current = useContractMove.getState();
+  if (current.mine !== mine || !current.kept) return;
+  const live = plans.find(plan => plan.id === current.kept?.id);
+  const terminal = !live || ['withdrawn', 'landed', 'failed', 'awarded_off_app']
+    .includes(live.receipt?.state ?? '');
+  useContractMove.setState(terminal ? { kept: undefined, keptTerms: '', error: '' } : { kept: live });
+}

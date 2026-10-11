@@ -22,6 +22,8 @@ export default function Market({ kind, snapshot }: { kind?: string; snapshot?: S
         <Counterparties fid={kind?.slice(5)} snapshot={snapshot} />
       </Suspense>
     );
+  if (!kind && s.workspace[s.node] === 'draft-room')
+    return <Suspense fallback={null}><Draft /></Suspense>;
   if (!kind && s.workspace[s.node] === 'offers-history')
     return <Suspense fallback={null}><OffersHistory /></Suspense>;
   if (!kind && s.workspace[s.node] === 'valuations-and-pool')
@@ -44,7 +46,8 @@ function MarketWorkspace() {
         <Act verb="endpoint.open" args={{ id: 'L-01' }} label="Trade Market" active={!draft}>
           Trade Market
         </Act>
-        <Act verb="endpoint.open" args={{ id: 'L-15' }} label="Draft lab" active={draft}>
+        <Act verb="nav.open" args={{ node: 'trade', workspace: 'draft-room' }}
+          label="Draft lab" active={draft}>
           Draft lab
         </Act>
       </div>

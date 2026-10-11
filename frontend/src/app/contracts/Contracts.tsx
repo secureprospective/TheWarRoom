@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useWorkAnchor } from '../shell/workScroll';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { localDate } from '../clock/labels';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
@@ -224,39 +225,8 @@ export default function Contracts({
   const whatif = useContractRead<Reading<WhatIf>>(
     s.franchiseId ?? '', () => simulation.query(s.franchiseId ?? ''), simulation, true,
   );
-  const anchor = useRef<{ row: HTMLElement; top: number; scroll: HTMLElement }>();
   const root = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const restore = () => {
-      if (!anchor.current) return;
-      const { row, top, scroll } = anchor.current;
-      scroll.scrollTop += row.getBoundingClientRect().top - top;
-    };
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(restore);
-    if (root.current) observer.observe(root.current);
-    const scroll = root.current?.closest('.wbody');
-    const remember = () => {
-      if (anchor.current) anchor.current.top = anchor.current.row.getBoundingClientRect().top;
-    };
-    scroll?.addEventListener('scroll', remember);
-    return () => { observer.disconnect(); scroll?.removeEventListener('scroll', remember); };
-  }, []);
-  useLayoutEffect(() => {
-    if (!whatif.reading || !anchor.current) return;
-    const { row, top, scroll } = anchor.current;
-    scroll.scrollTop += row.getBoundingClientRect().top - top;
-
-  }, [whatif.reading]);
-  // A row menu Act holds its row in place while the panels above it change; working anywhere else
-  // lets go, so the owner's own view never moves under a click.
-  const holdRow = (target: HTMLElement) => {
-    if (!target.closest('.contract-menu')) { anchor.current = undefined; return; }
-    if (!target.closest('.contract-menu button')) return;
-    const row = target.closest('tr') ?? root.current?.querySelector('.contract-menu[open]')?.closest('tr');
-    const scroll = target.closest<HTMLElement>('.wbody') ?? root.current?.closest<HTMLElement>('.wbody');
-    if (row && scroll) anchor.current = { row, scroll, top: row.getBoundingClientRect().top };
-  };
+  useWorkAnchor(root, '.contract-table tbody tr');
   const filters = useContractsFilters();
   const scope = { ...filters, mine: s.franchiseId ?? '' };
   const key = JSON.stringify(scope);
@@ -276,8 +246,7 @@ export default function Contracts({
   const cap = readings?.cap.value;
   const table = readings?.table.value;
   return (
-    <div ref={root} className="contracts" onClickCapture={event => holdRow(event.target as HTMLElement)}
-      onFocusCapture={event => holdRow(event.target as HTMLElement)}>
+    <div ref={root} className="contracts">
       <WhatIfPanel mine={s.franchiseId} {...whatif} />
       <ContractMovePanel mine={s.franchiseId} />
       {whatif.reading?.value?.moves.length ? <p className="whatif-status" role="status">

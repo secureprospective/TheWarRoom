@@ -302,7 +302,7 @@ it('draft pick card keeps plays-like, hit and retention history in the asset Ins
     expect(html).not.toContain('data-endpoint="L-22"');
     expect(html).toContain('How this is counted');
 });
-it('all eight Draft endpoints route through War Room Market and have menu and command doors', () => {
+it('all eight Draft endpoints route through Trade Floor Draft room and have menu and command doors', () => {
     const c = createCommands(() => undefined), rows = endpoints.filter(r => /^L-(1[5-9]|2[0-2])$/.test(r.id));
     const routes = endpointRoutes(rows, searchCandidates(c));
     expect(rows).toHaveLength(8);
@@ -310,12 +310,13 @@ it('all eight Draft endpoints route through War Room Market and have menu and co
         expect(row.status).toBe('built');
         expect(routes.get(row.id)).toEqual(new Set(['nav', 'command']));
         c.dispatch('endpoint.open', { id: row.id });
-        expect(c.read()).toMatchObject({ node: 'war', workspace: { war: 'market' }, endpointIds: [row.id] });
+        expect(c.read()).toMatchObject({ node: 'trade', workspace: { trade: 'draft-room' },
+          endpointIds: [row.id] });
     }
     c.dispatch('market', { field: 'inspect', value: 'pick1:next' });
     expect(c.read()).toMatchObject({ asset: 'pick1:next', inspector: 'rest' });
     const source = readFileSync('src/app/market/Market.tsx', 'utf8');
     expect(source).toContain("import('./Draft')");
-    expect(source).toMatch(/args=\{\{\s*id:\s*['"]L-15['"]\s*\}\}/);
+    expect(source).toContain("workspace: 'draft-room'");
     expect(source).toContain('<Draft kind={kind}');
 });

@@ -98,12 +98,17 @@ func (e Envelope) WithdrawContract(at time.Time) (Envelope, error) {
 	if !IsContract(e.spec.Intent) {
 		return Envelope{}, ErrIllegalTransition{From: e.state, Event: Withdraw}
 	}
-	note := "Removed by you before it was handed off"
+	note := RemovePlanNote
 	for _, entry := range e.audit {
 		if entry.To == HandedOff {
 			note = "Withdrawn: you said you did not post this contract request"
-			break
 		}
+		if entry.To == BidPending {
+			note = "Withdrawn: you said the commissioner did not process this request."
+		}
+	}
+	if e.state == BidPending || e.state == NotVerified {
+		note = "Withdrawn: you said the commissioner did not process this request."
 	}
 	return e.move(at, Withdraw, note)
 }

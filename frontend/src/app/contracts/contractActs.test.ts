@@ -23,7 +23,7 @@ function plan(): ContractActPlan {
   return { id: 'contract-1', intent: 'contract.extend', act: 'Extend him', levels: [], years: [1, 2, 3],
     teamFigures: [{ label: 'Used', before: '$49M', after: '$48M', change: '−$1M' }],
     player: 'Example', subject: 'Example · QB · $10,000,000 a year through 2028',
-    label: 'Extension · Example', price: '$15,000,000',
+    label: 'Extension · Example', price: 'Price: $15,000,000',
     post: 'Extension Example\n2029: $15,000,000\nPlease process this request on ProBoards.',
       how: '§10: Go exact cents then snap.',
     reasons: ['Not checked: prior extension'], figures: [{ season: 2029, before: '$0',
@@ -238,4 +238,21 @@ describe('Contract Acts', () => {
     expect(html.indexOf('Release request text')).toBeGreaterThan(html.indexOf('<summary>History</summary>'));
     expect(html).not.toContain('Planned dead cap this season:');
   });
+});
+
+it('restructure inputs use the app dark surface, readable text and keyboard focus', () => {
+  const css = readFileSync('src/app/contracts/contracts.css', 'utf8');
+  const input = css.slice(css.lastIndexOf('.contract-act-form input,'));
+  expect(input).toContain('background: var(--surface-0)');
+  expect(input).toContain('color: var(--surface-tx1)');
+  expect(input).toContain('border: 1px solid var(--surface-line-hi)');
+  expect(input).toContain('input:focus-visible');
+  expect(input).toContain('outline: 2px solid');
+});
+
+it('shows Go restructuring words verbatim instead of inventing a price label', () => {
+  const p = { ...plan(), price: 'Moves: $1,000,000 from 2026 to 2028' };
+  const text = renderToStaticMarkup(createElement(ContractMovePreview, { plan: p }));
+  expect(text).toContain(p.price);
+  expect(text).not.toContain('Price:');
 });

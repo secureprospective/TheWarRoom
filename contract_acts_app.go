@@ -322,7 +322,7 @@ func contractActView(r envelope.Receipt, f envelope.ContractFacts) ContractActVi
 	post += strings.Join(f.Reasons, "\n") + "\n"
 	post += "Please process this request. Nothing has been posted or changed by the app."
 	levels, years := contractActChoices(f.Intent)
-	return ContractActView{ID: r.CorrelationID, Intent: f.Intent, Act: contractIntentLabel(f.Intent), Levels: levels, Years: years, TeamFigures: contractTeamView(f.TeamFigures), Player: f.Name, Subject: contractSubject(f), Label: label, Price: price, Post: post, How: f.Terms.How, Reasons: f.Reasons, Figures: figures, Receipt: r, CanHandOff: r.State == envelope.Ready, CanPost: r.State == envelope.HandedOff, CanWithdraw: slices.Contains([]envelope.State{envelope.Blocked, envelope.Ready, envelope.HandedOff, envelope.NotYetDone, envelope.Stale}, r.State), CanRebase: r.State == envelope.Stale}
+	return ContractActView{ID: r.CorrelationID, Intent: f.Intent, Act: contractIntentLabel(f.Intent), Levels: levels, Years: years, TeamFigures: contractTeamView(f.TeamFigures), Player: f.Name, Subject: contractSubject(f), Label: label, Price: contractFigureSentence(f, price), Post: post, How: f.Terms.How, Reasons: f.Reasons, Figures: figures, Receipt: r, CanHandOff: r.State == envelope.Ready, CanPost: r.State == envelope.HandedOff, CanWithdraw: slices.Contains([]envelope.State{envelope.Draft, envelope.Blocked, envelope.Ready, envelope.HandedOff, envelope.NotYetDone, envelope.NotVerified, envelope.BidPending, envelope.Stale}, r.State), CanRebase: r.State == envelope.Stale}
 }
 
 // contractSubject names whose contract an Act changes, from the held contract before the Act.
@@ -588,4 +588,11 @@ func contractTeamView(figures []envelope.ContractFigure) []WhatIfFigure {
 		out = append(out, WhatIfFigure(row))
 	}
 	return out
+}
+
+func contractFigureSentence(f envelope.ContractFacts, price string) string {
+	if f.Intent == "contract.restructure" {
+		return fmt.Sprintf("Moves: %s from %d to %d", price, f.Source, f.Destination)
+	}
+	return "Price: " + price
 }

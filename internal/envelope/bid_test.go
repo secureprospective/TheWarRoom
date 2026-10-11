@@ -194,7 +194,7 @@ func TestBidMismatchCanStillLandWhenTheContractMatches(t *testing.T) {
 	}
 }
 
-func TestWithdrawBidEndsAnUnpostedPlanAndRefusesAPostedOne(t *testing.T) {
+func TestWithdrawBidEndsALocalPlanEvenAfterPosting(t *testing.T) {
 	ready := draftedBid(t, passingBid())
 	gone, err := ready.WithdrawBid(bidAt().Add(time.Minute), "not wanted")
 	if err != nil || gone.State() != Withdrawn || gone.Receipt().Audit[1].Event != Withdraw {
@@ -218,8 +218,8 @@ func TestWithdrawBidEndsAnUnpostedPlanAndRefusesAPostedOne(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := posted.WithdrawBid(bidAt().Add(3*time.Minute), "x"); err == nil {
-		t.Error("a posted bid was withdrawn")
+	if gone, err := posted.WithdrawBid(bidAt().Add(3*time.Minute), "not processed"); err != nil || gone.State() != Withdrawn {
+		t.Fatal("pending local bid could not end", err)
 	}
 	ir := Envelope{id: "ir", spec: Spec{Intent: "roster.ir"}, state: Ready, created: bidAt()}
 	if _, err := ir.WithdrawBid(bidAt().Add(time.Minute), "x"); err == nil {

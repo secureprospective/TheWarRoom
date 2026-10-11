@@ -1,3 +1,4 @@
+import { createCommands } from '../commands/registry';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -7,7 +8,7 @@ import { clockDom } from '../clock/testDom';
 import { railStages, type RailReceipt } from '../shell/EnvelopeRail';
 import { BidPlanCard } from './BidPlans';
 import { BidForm } from './BidForm';
-import { OpenPlans, PoolFrame, PoolScreen } from './Pool';
+import { OpenPlans, PoolFrame, PoolScreen, PoolInspectorView } from './Pool';
 import type { BidFormState, Plan } from './contract';
 import { parseBoard, parsePool, parsePreview, type PoolProvider } from './provider';
 import { createPoolState, poolState } from './state';
@@ -121,8 +122,11 @@ describe('Fix 1: the screen scrolls the card into view', () => {
     vi.stubGlobal('document', document);
     vi.stubGlobal('window', { document, HTMLIFrameElement: class {} });
     const scrolled = vi.fn();
-    const proto = Object.getPrototypeOf(element) as { scrollIntoView?: unknown };
-    proto.scrollIntoView = scrolled;
+    const proto = Object.getPrototypeOf(element);
+    const scroll = { scrollTop: 0, clientTop: 0, clientHeight: 700,
+      getBoundingClientRect: () => ({ top: 0 }) };
+    proto.closest = () => scroll;
+    proto.getBoundingClientRect = scrolled.mockReturnValue({ top: 400 });
     const root = createRoot(element);
     const id = plan('ready').id;
     const show = (seq: number) => createElement(OpenPlans, {
@@ -134,7 +138,8 @@ describe('Fix 1: the screen scrolls the card into view', () => {
     expect(scrolled).toHaveBeenCalledTimes(1);
     await act(async () => { root.render(show(2)); });
     expect(scrolled).toHaveBeenCalledTimes(2);
-    delete proto.scrollIntoView;
+    delete proto.closest;
+    delete proto.getBoundingClientRect;
   });
 });
 
@@ -188,7 +193,7 @@ describe('Fix 3: taking back a plan that was never posted', () => {
     await state.open();
     await state.change({ field: 'pool-unposted', value: 'bid-x' });
     expect(calls.some((c) => c === 'withdraw:["bid-x"]')).toBe(true);
-    expect(state.peek().notice).toContain('did not post it');
+    expect(state.peek().notice).toBe('');
   });
   it('draws the withdrawal as the end of the plan, in the strip and in History', () => {
     const gone = plan('withdrawn');
@@ -329,4 +334,39 @@ describe('Fix 8: Go\'s wording reaches the screen', () => {
       for (const entry of plan(code).history) expect(entry.note.endsWith('.')).toBe(true);
     }
   });
+});
+
+it('320px Inspector uses a compact plan with state, time and a card route, never a lifecycle strip', () => {
+  const ready = plan('ready');
+  const text = html(createElement(PoolInspectorView, { plans: [ready], busy: '' }));
+  expect(text).toContain(ready.state);
+  expect(text).toContain('<time');
+  expect(text).toContain(ready.contract);
+  expect(text).toContain('See bid plan');
+  expect(text).not.toContain('Move stages');
+  expect(text).not.toContain('bid-post');
+  const code = readFileSync('src/app/pool/pool.css', 'utf8');
+  expect(code).toContain('word-break: normal');
+});
+
+it('withdraw does not leave a duplicate pool notice', async () => {
+  const { provider } = fakeProvider();
+  const state = createPoolState({ provider, franchise: () => '0001', copy: async () => true });
+  await state.open();
+  await state.change({ field: 'pool-withdraw', value: plan('ready').id });
+  expect(state.peek().notice).toBe('');
+});
+
+it('Inspector card link and plan-a-bid both navigate to the pool work column', () => {
+  for (const field of ['pool-open', 'pool-plan'] as const) {
+    const c = createCommands(() => undefined);
+    c.dispatch('nav.open', { node: 'hq', workspace: 'my-moves' });
+    c.dispatch('market', { field, value: 'bid-1' });
+    expect(c.read()).toMatchObject({ node: 'war', workspace: { war: 'valuations-and-pool' } });
+  }
+});
+
+it('pool form insertion uses the same row anchor as Contracts', () => {
+  const source = readFileSync('src/app/pool/Pool.tsx', 'utf8');
+  expect(source).toContain("useWorkAnchor(root, '.pool-table tbody tr')");
 });

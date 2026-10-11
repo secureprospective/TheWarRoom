@@ -244,7 +244,7 @@ export function createPoolState(supplied: Partial<Deps> = {}) {
         return act(filter.value, async () => (await deps.provider.posted(filter.value)).status);
       case 'pool-withdraw':
       case 'pool-unposted':
-        return act(filter.value, async () => (await deps.provider.withdraw(filter.value)).status);
+        return act(filter.value, async () => { await deps.provider.withdraw(filter.value); return ''; });
       case 'pool-copy':
         return act(filter.value, async () =>
           (await deps.copy(plan(filter.value).post)) ? 'Post copied again.' : 'Copying failed here.');

@@ -46,7 +46,7 @@ func observeAt(snap snapshot.Snapshot, at time.Time) Observation {
 // Written out by hand, independently of the table, so the test is not a copy of the code.
 func wantTransitions() map[State]map[Event]State {
 	m := map[State]map[Event]State{
-		Draft:         {ChecksPass: Ready, ChecksBlock: Blocked},
+		Draft:         {ChecksPass: Ready, ChecksBlock: Blocked, Withdraw: Withdrawn},
 		Blocked:       {ChecksPass: Ready, ChecksBlock: Blocked, Withdraw: Withdrawn, Invalidate: Stale},
 		Ready:         {HandOff: HandedOff, Invalidate: Stale, Withdraw: Withdrawn},
 		Stale:         {Rebase: Draft, Withdraw: Withdrawn},
@@ -64,8 +64,8 @@ func wantTransitions() map[State]map[Event]State {
 	for _, s := range []State{HandedOff, NotYetDone, NotVerified, BidPending} {
 		m[s][AwardedElsewhere] = AwardedOffApp
 	}
-	// A bid never posted can be taken back; once posted (Bid pending) or in doubt it cannot.
-	for _, s := range []State{HandedOff, NotYetDone} {
+	// Withdrawal ends a local plan, not an off-app post.
+	for _, s := range []State{HandedOff, NotYetDone, NotVerified, BidPending} {
 		m[s][Withdraw] = Withdrawn
 	}
 	return m

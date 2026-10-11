@@ -1,3 +1,5 @@
+import { stateLabel } from '../shell/moveLabels';
+import { scrollWorkIntoView } from '../shell/workScroll';
 import { WhatIfFigures } from './WhatIfFigures';
 import { useEffect, useRef, useState } from 'react';
 import { Act } from '../commands/Act';
@@ -5,7 +7,8 @@ import { commands } from '../commands/registry';
 import { RailStrip } from '../shell/EnvelopeRail';
 import { localDate } from '../clock/labels';
 import {
-  contractActAction, keepLabel, onContractActsChange, useContractMove, type ContractActPlan,
+  contractActAction, reconcileContractMove, keepLabel, onContractActsChange, useContractMove,
+  type ContractActPlan,
   type ContractActRequest,
 } from './contractActs';
 import '../pool/pool.css';
@@ -23,7 +26,7 @@ export function ContractActCard({ plan, mine, revealing = false }: {
   const reveal = useContractMove(state => state.reveal);
   useEffect(() => {
     if (!revealing || reveal !== plan.id || !card.current) return;
-    card.current.scrollIntoView({ block: 'start' });
+    scrollWorkIntoView(card.current);
     card.current.focus({ preventScroll: true });
     useContractMove.setState({ reveal: '' });
   }, [revealing, reveal, plan.id]);
@@ -34,7 +37,7 @@ export function ContractActCard({ plan, mine, revealing = false }: {
     args={{ field: 'contract-act', value: { mine, id: plan.id, action: kind } }}>{label}</Act>;
   return <article ref={card} tabIndex={-1} className="bid-plan contract-act-card" aria-label={plan.label}>
     <h5>{plan.label}</h5>
-    {!finished && <p className="bid-line">Price: <span className="contract-money">{plan.price}</span></p>}
+    {!finished && <p className="bid-line"><span>{plan.price}</span></p>}
     {plan.receipt && <RailStrip receipt={{ ...plan.receipt, audit: plan.receipt.audit.map(entry =>
       entry.to === 'ready' ? { ...entry, note: `Ready: ${plan.reasons.filter(reason =>
         reason.startsWith('Not checked:')).length} things not checked` } : entry) }} />}
@@ -45,7 +48,9 @@ export function ContractActCard({ plan, mine, revealing = false }: {
       <div className="bid-actions">
         {plan.canHandOff && action('handoff', 'Copy request and hand off')}
         {plan.canPost && action('posted', 'I posted it')}
-        {plan.canWithdraw && action('withdraw', plan.canPost ? "I didn't post it" : 'Remove plan')}
+        {plan.canWithdraw && action('withdraw', ['bid_pending', 'not_verified']
+          .includes(plan.receipt?.state ?? '')
+          ? 'Commissioner did not process it' : plan.canPost ? "I didn't post it" : 'Remove plan')}
         {plan.canRebase && action('rebase', "Reprice from today's MFL mirror")}
       </div>
       <details className="bid-details"><summary>How this is counted</summary><p>{plan.how}</p></details></>}
@@ -66,14 +71,14 @@ export function ContractMovePanel({ mine }: { mine: string }) {
     ? <ContractMoveForm key={`${mine}:${target.player}`} mine={mine} player={target.player} /> : null;
 }
 export function ContractMovePreview({ plan }: { plan: ContractActPlan }) {
-  return <><p>Price: <span className="contract-money">{plan.price}</span></p>
+  return <><p><span>{plan.price}</span></p>
     <ul>{plan.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>
     <Figures plan={plan} />
     <details><summary>How this is counted</summary><p>{plan.how}</p></details></>;
 }
 export function ContractMoveFeedback({ plan }: { plan: ContractActPlan }) {
   return <div className="whatif-plan-line" role="status">
-        <p>Plan: {plan.receipt?.state === 'ready' ? 'Ready' : 'Blocked'}</p>
+        <p>Plan: {stateLabel(plan.receipt?.state ?? 'draft', plan.intent)}</p>
         {plan.receipt?.state !== 'ready' && <ul>{plan.reasons.map(reason =>
           <li key={reason}>{reason}</li>)}</ul>}
         <Act verb="contracts.set" label="See it in My moves"
@@ -122,6 +127,19 @@ function ContractMoveForm({ mine, player }: { mine: string; player: string }) {
   const { kept, saving, error: keepError } = move;
   const keep = keepLabel(request, move);
   useEffect(() => {
+    let active = true, sequence = 0;
+    const load = () => {
+      const current = ++sequence;
+      void contractActAction({ mine, action: 'read' }).then(reading => {
+        if (active && current === sequence) reconcileContractMove(mine, reading.value ?? []);
+      }, cause => { if (active && current === sequence)
+        setError(cause instanceof Error ? cause.message : String(cause)); });
+    };
+    load();
+    const off = onContractActsChange(load), movesOff = commands.onMovesChange(load);
+    return () => { active = false; off(); movesOff(); };
+  }, [mine]);
+  useEffect(() => {
     let active = true;
     setOptions([]); setPlan(undefined); setError('');
     void contractActAction({ mine, player, action: 'options' }).then(r => {
@@ -145,6 +163,8 @@ function ContractMoveForm({ mine, player }: { mine: string; player: string }) {
   }, [request, mine, player, options]);
   return <section className="contract-reading contract-move" aria-label="Contract move">
     <h4>Contract move</h4>
+    <Act verb="contracts.set" args={{ field: 'contract-close', value: '' }}
+      label="Close contract move">Close</Act>
     <p className="contract-move-subject">{options[0]?.subject ?? plan?.subject}</p>
     <fieldset disabled={saving} className="contract-act-form">
       <ContractActChoices request={request} options={options} onChange={setRequest} />

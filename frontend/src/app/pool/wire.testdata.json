@@ -230,6 +230,12 @@
        "label": "Change figures",
        "disabled": false,
        "reason": ""
+      },
+      {
+       "id": "withdraw",
+       "label": "Remove plan",
+       "disabled": false,
+       "reason": ""
       }
      ]
     },
@@ -387,7 +393,7 @@
       },
       {
        "id": "withdraw",
-       "label": "Withdraw plan",
+       "label": "Remove plan",
        "disabled": false,
        "reason": ""
       }

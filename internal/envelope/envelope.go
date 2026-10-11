@@ -16,6 +16,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
+const RemovePlanNote = "Withdrawn by you before it was handed off."
+
 type State string
 
 const (
@@ -274,7 +276,7 @@ func transitions() map[step]State {
 	for _, s := range []State{HandedOff, NotYetDone, NotVerified, BidPending} {
 		t[step{s, AwardedElsewhere}] = AwardedOffApp
 	}
-	for _, s := range []State{Blocked, Ready, HandedOff, NotYetDone, Stale} {
+	for _, s := range []State{Draft, Blocked, Ready, HandedOff, NotYetDone, NotVerified, BidPending, Stale} {
 		t[step{s, Withdraw}] = Withdrawn
 	}
 	return t
@@ -341,10 +343,9 @@ func (e Envelope) Await(at time.Time, event Event) (Envelope, error) {
 	return e.move(at, event, note)
 }
 
-// WithdrawBid ends a bid plan the owner will not post: Ready, or handed off but never posted.
-// A posted bid (Bid pending) is refused: the app cannot take a post down from ProBoards.
+// WithdrawBid ends the local plan; it cannot take a post down from ProBoards.
 func (e Envelope) WithdrawBid(at time.Time, note string) (Envelope, error) {
-	if e.spec.Intent != BidIntent || e.state == Blocked {
+	if e.spec.Intent != BidIntent {
 		return Envelope{}, ErrIllegalTransition{From: e.state, Event: Withdraw}
 	}
 	return e.move(at, Withdraw, note)
@@ -375,4 +376,19 @@ func Restore(id string, created time.Time, spec Spec, audit []AuditEntry) (Envel
 		e = next
 	}
 	return e, nil
+}
+
+// WithdrawRoster ends only the local IR/taxi plan, never a submitted MFL move.
+func (e Envelope) WithdrawRoster(at time.Time) (Envelope, error) {
+	if e.spec.Intent != "roster.ir" && e.spec.Intent != "roster.taxi" {
+		return Envelope{}, ErrIllegalTransition{From: e.state, Event: Withdraw}
+	}
+	note := RemovePlanNote
+	for _, entry := range e.audit {
+		if entry.To == HandedOff {
+			note = "Withdrawn: you said you did not submit this roster move on MFL."
+			break
+		}
+	}
+	return e.move(at, Withdraw, note)
 }

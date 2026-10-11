@@ -23,7 +23,7 @@ func TestContractActsPreviewDraftStaleRebaseAndMirrorIsolation(t *testing.T) {
 	before, stamp, _ := a.league.ContractsView()
 	raw := RawContractAct{Mine: "0001", Player: "0042", Action: "preview", Intent: "contract.extend", Level: 1, Years: 2}
 	preview := a.TargetContractActs(raw)
-	if preview.Status != ReadingOK || len(preview.Value) != 1 || preview.Value[0].Price != "$15,000,000" || len(preview.Value[0].Figures) != 5 || !strings.HasPrefix(preview.Value[0].Reasons[0], "Not checked:") {
+	if preview.Status != ReadingOK || len(preview.Value) != 1 || preview.Value[0].Price != "Price: $15,000,000" || len(preview.Value[0].Figures) != 5 || !strings.HasPrefix(preview.Value[0].Reasons[0], "Not checked:") {
 		t.Fatalf("preview %+v", preview)
 	}
 	raw.Action = "draft"

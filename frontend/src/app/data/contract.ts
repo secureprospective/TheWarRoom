@@ -95,11 +95,11 @@ export type ClockReading = {
 };
 export const ENVELOPE_STATES = [
   'draft', 'blocked', 'ready', 'handed_off', 'not_yet_done', 'landed', 'not_verified',
-  'failed', 'stale', 'dot_review', 'bid_pending', 'waiver_pending',
+  'failed', 'stale', 'dot_review', 'bid_pending', 'waiver_pending', 'withdrawn',
 ] as const;
 export const ENVELOPE_EVENTS = [
   'checks_pass', 'checks_block', 'hand_off', 'no_change', 'match', 'partial', 'contradiction',
-  'invalidate', 'rebase', 'await_dot', 'await_bid', 'await_waiver',
+  'invalidate', 'rebase', 'await_dot', 'await_bid', 'await_waiver', 'withdraw',
 ] as const;
 export const GRAVITIES = ['G0', 'G1', 'G2', 'G3'] as const;
 export const UNDO_CLASSES = ['instant', 'reversible', 'irreversible'] as const;

@@ -165,8 +165,25 @@ describe('Release plans', () => {
     expect(css).toContain('.whatif-moves .whatif-plan-line' +
       ' { height: 30px; margin: 4px 0; align-items: center; }');
     expect(css).toContain('.whatif-plan-line > p { margin: 0; line-height: 18px; }');
-    expect(css).toContain('.release-confirm { display: flex; flex-wrap: wrap; gap: 8px; }');
+    expect(css).toContain('.release-confirm { display: contents; }');
     expect(css).toContain('.release-confirm[data-primary="handoff"] .act-command:first-of-type' +
       ' { background: var(--surface-tx1); color: var(--surface-0); }');
   });
+});
+
+it('cut and buyout cards reuse bid frames, copy blocks and the same action row', () => {
+  for (const cut of [true, false]) {
+    const html = renderToStaticMarkup(createElement(ReleaseCard, { plan: { ...plan(), cut }, mine: '0001' }));
+    expect(html).toContain('class="bid-plan"');
+    expect(html).toContain('class="bid-post"');
+    const actions = html.slice(html.indexOf('class="bid-actions"'), html.indexOf('<details'));
+    expect(actions).toContain('Remove plan');
+    expect(actions).toContain(cut ? 'Open MFL drop page' : 'Copy request and hand off');
+  }
+});
+
+it('replacement hand-off and make-plan buttons have accessible labels but no native title', () => {
+  const html = renderToStaticMarkup(createElement(ReleaseCard, { plan: plan(), mine: '0001' }));
+  expect(html).toContain('aria-label="Open MFL drop page for Example"');
+  expect(html).not.toContain('title=');
 });

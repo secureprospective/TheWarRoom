@@ -101,6 +101,11 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
       }
     >
       <RailStrip receipt={receipt} />
+      {['roster.ir', 'roster.taxi'].includes(receipt.spec.intent) &&
+        !['landed', 'failed', 'withdrawn'].includes(receipt.state) && <Act verb="move.withdraw"
+          args={{ correlationId: receipt.correlationId }}
+          label={receipt.audit.some(entry => entry.to === 'handed_off')
+            ? "I didn't submit this move" : 'Remove plan'} />}
       {receipt.state === 'ready' && <p>Ready is not MFL-accepted</p>}
       {receipt.state === 'ready' && <Act
         verb="move.handoff" args={{ correlationId: receipt.correlationId }}

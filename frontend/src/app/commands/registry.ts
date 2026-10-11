@@ -186,7 +186,7 @@ export function createCommands(
     const remote = kind === 'draft' || kind === 'handoff';
     return command({
       ...ambient,
-      id: kind === 'handoff' ? 'move.handoff' : `lineup.${kind}`,
+      id: kind === 'withdraw' ? 'move.withdraw' : kind === 'handoff' ? 'move.handoff' : `lineup.${kind}`,
       label,
       args,
       gravity: remote ? 'G1' : 'G0',
@@ -226,6 +226,8 @@ export function createCommands(
       label: 'Market',
       args: ['field', 'value'],
       run: (change: import('../market/contract').MarketFilter) => {
+        if (['pool-plan', 'pool-open'].includes(change.field))
+          state.navigate({ node: 'war', workspace: 'valuations-and-pool' });
         if (change.field === 'inspect' || change.field === 'asset')
           state.write({ asset: change.value, inspector: 'rest' });
         if (change.field !== 'inspect')
@@ -273,6 +275,9 @@ export function createCommands(
     'lineup.reset': editCommand<Record<string, never>>('reset', 'Reset', []),
     'lineup.cancel': editCommand<Record<string, never>>('cancel', 'Cancel', []),
     'lineup.draft': editCommand<Record<string, never>>('draft', 'Check and save plan', []),
+    'move.withdraw': editCommand<{ correlationId: string }>(
+      'withdraw', 'Remove roster plan', ['correlationId'],
+    ),
     'move.handoff': editCommand<{ correlationId: string }>('handoff', 'Open MFL page', [
       'correlationId',
     ]),

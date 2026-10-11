@@ -265,3 +265,7 @@ export function TargetTrades(arg1) {
 export function TargetWhatIf(arg1) {
   return window['go']['main']['App']['TargetWhatIf'](arg1);
 }
+
+export function TargetWithdrawRoster(arg1) {
+  return window['go']['main']['App']['TargetWithdrawRoster'](arg1);
+}

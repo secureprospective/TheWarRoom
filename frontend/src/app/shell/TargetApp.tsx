@@ -206,7 +206,7 @@ export function TargetApp() {
             <Suspense fallback={<p role="status">Opening Trade desk…</p>}>
               <TradeDesk snapshot={snapshot} />
             </Suspense>
-          ) : ['market', 'counterparties', 'offers-history', 'valuations-and-pool'].includes(
+          ) : ['market', 'counterparties', 'offers-history', 'valuations-and-pool', 'draft-room'].includes(
               workspace.slug,
             ) ? (
             <Suspense fallback={null}>

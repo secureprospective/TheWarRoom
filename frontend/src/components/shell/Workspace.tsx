@@ -43,7 +43,7 @@ export function Workspace({ children, title }: WorkspaceProps) {
           </span>
         ) : null}
       </header>
-      <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>{children}</div>
+      <div className="wbody" style={{ flex: 1, overflow: 'auto', position: 'relative' }}>{children}</div>
     </section>
   );
 }

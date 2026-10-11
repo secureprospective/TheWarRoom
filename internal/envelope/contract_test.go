@@ -159,7 +159,7 @@ func TestContractRemovalWordsBeforeAndAfterHandOff(t *testing.T) {
 		e    Envelope
 		want string
 	}{
-		{ready, "Removed by you before it was handed off"},
+		{ready, "Withdrawn by you before it was handed off."},
 		{handed, "Withdrawn: you said you did not post this contract request"},
 	} {
 		removed, err := tc.e.WithdrawContract(at)

@@ -446,3 +446,28 @@ func watchableMove(e envelope.Envelope, listed envelope.State) bool {
 func skipMoveRefresh(source envelope.Source, sources map[envelope.Source]bool) bool {
 	return !sources[source] || (source == envelope.Contracts && sources[envelope.Rosters])
 }
+
+// TargetWithdrawRoster removes an IR/taxi plan without making any MFL change.
+func (a *App) TargetWithdrawRoster(correlationID string) (envelope.Receipt, error) {
+	if err := a.ready(); err != nil {
+		return envelope.Receipt{}, fmt.Errorf("withdraw roster: startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	defer cancel()
+	a.movesMu.Lock()
+	defer a.movesMu.Unlock()
+	e, err := a.moves.Get(ctx, correlationID)
+	if err != nil {
+		return envelope.Receipt{}, fmt.Errorf("withdraw roster: load: %w", err)
+	}
+	next, err := e.WithdrawRoster(a.movesNow())
+	if err != nil {
+		return envelope.Receipt{}, fmt.Errorf("withdraw roster: %w", err)
+	}
+	if err := a.moves.Save(ctx, next); err != nil {
+		return envelope.Receipt{}, fmt.Errorf("withdraw roster: save: %w", err)
+	}
+	a.logMove(next)
+	a.movesChanged(a.ctx)
+	return next.Receipt(), nil
+}
