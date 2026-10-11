@@ -164,7 +164,7 @@
         "status": "ok",
         "source": "Source: MFL-wide · many leagues, not this league",
         "asOf": "As of: Oct 11, 2026, 12:00 PM",
-        "how": "MFL-wide across many leagues, not this league. All draft periods are requested, since the default period can have no picks in season. The bar runs from the lowest to highest pick reported, with the average marked; it is not a confidence interval or a grade.",
+        "how": "MFL-wide across many leagues, not this league. All draft periods are requested, since the default period can have no picks in season. The bar runs from the lowest to highest pick reported, with the average marked; it is not a confidence interval or a grade. Every bar shares one scale, from zero to the latest pick any player went.",
         "columns": [
           "Player",
           "ADP · min–max pick"
@@ -184,7 +184,7 @@
               "Pick 1.9 · picks 1–34"
             ],
             "range": {
-              "max": 34,
+              "max": 49,
               "value": 1.85,
               "lo": 1,
               "hi": 34,
@@ -205,7 +205,7 @@
               "Pick 2.6 · picks 1–29"
             ],
             "range": {
-              "max": 29,
+              "max": 49,
               "value": 2.6,
               "lo": 1,
               "hi": 29,
@@ -246,54 +246,12 @@
         "status": "ok",
         "source": "Source: MFL-wide · many leagues, not this league",
         "asOf": "As of: Oct 11, 2026, 12:00 PM",
-        "how": "MFL-wide across many leagues, not this league. Values are MFL's auction-budget shares, expressed as percent, not this league's dollars. No dollar conversion is made. The bar runs from the smallest to largest share reported, with the average marked; it is not a confidence interval or a grade. Outliers above 100% are shown as supplied, not clipped.",
+        "how": "MFL-wide across many leagues, not this league. Values are MFL's auction-budget shares, expressed as percent, not this league's dollars. No dollar conversion is made. The bar runs from the smallest to largest share reported, with the average marked; it is not a confidence interval or a grade. Every bar shares one scale, from zero to the largest share any player drew. Outliers above 100% are shown as supplied, not clipped.",
         "columns": [
           "Player",
           "AAV · min–max budget share"
         ],
         "rows": [
-          {
-            "sort": [
-              0,
-              28.75
-            ],
-            "titles": [
-              "",
-              "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
-            ],
-            "cells": [
-              "Player name not held",
-              "28.8% of auction budget · 3.3%–94.8%"
-            ],
-            "range": {
-              "max": 94.8,
-              "value": 28.75,
-              "lo": 3.34,
-              "hi": 94.8,
-              "text": "28.8% of auction budget · 3.3%–94.8%"
-            }
-          },
-          {
-            "sort": [
-              2,
-              29.16
-            ],
-            "titles": [
-              "",
-              "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
-            ],
-            "cells": [
-              "Jahmyr Gibbs",
-              "29.2% of auction budget · 2.9%–60.4%"
-            ],
-            "range": {
-              "max": 60.43,
-              "value": 29.16,
-              "lo": 2.94,
-              "hi": 60.43,
-              "text": "29.2% of auction budget · 2.9%–60.4%"
-            }
-          },
           {
             "sort": [
               1,
@@ -313,6 +271,48 @@
               "lo": 3.44,
               "hi": 113.64,
               "text": "30.1% of auction budget · 3.4%–113.6%"
+            }
+          },
+          {
+            "sort": [
+              2,
+              29.16
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+            ],
+            "cells": [
+              "Jahmyr Gibbs",
+              "29.2% of auction budget · 2.9%–60.4%"
+            ],
+            "range": {
+              "max": 113.64,
+              "value": 29.16,
+              "lo": 2.94,
+              "hi": 60.43,
+              "text": "29.2% of auction budget · 2.9%–60.4%"
+            }
+          },
+          {
+            "sort": [
+              0,
+              28.75
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+            ],
+            "cells": [
+              "Player name not held",
+              "28.8% of auction budget · 3.3%–94.8%"
+            ],
+            "range": {
+              "max": 113.64,
+              "value": 28.75,
+              "lo": 3.34,
+              "hi": 94.8,
+              "text": "28.8% of auction budget · 3.3%–94.8%"
             }
           }
         ],
@@ -339,7 +339,7 @@
       "text": "Pick 1.9 · picks 1–34",
       "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league",
       "range": {
-        "max": 34,
+        "max": 49,
         "value": 1.85,
         "lo": 1,
         "hi": 34,

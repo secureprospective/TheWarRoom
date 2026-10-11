@@ -621,7 +621,7 @@
        "text": "Pick 24.9 · picks 1–179",
        "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL-wide, not this league",
        "range": {
-        "max": 179,
+        "max": 848,
         "value": 24.87,
         "lo": 1,
         "hi": 179,
@@ -633,7 +633,7 @@
        "text": "16.1% of auction budget · 0.8%–57.6%",
        "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL-wide, not this league",
        "range": {
-        "max": 57.61,
+        "max": 164.14,
         "value": 16.06,
         "lo": 0.84,
         "hi": 57.61,

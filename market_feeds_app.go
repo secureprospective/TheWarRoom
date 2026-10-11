@@ -9,6 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
+	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
 
 func marketKinds() []string {
@@ -135,16 +136,25 @@ func (a *App) TargetMarketReports() (ReportBoard, error) {
 	a.lookupMu.Lock()
 	lookup := a.lookup
 	a.lookupMu.Unlock()
+	return buildMarketReports(held, marketNames(held, lookup), week, time.Local), nil
+}
+
+// marketNames labels every player the held reports list: name, position and team for a player,
+// and the name alone for a team unit (a defense, a kicking unit) that MFL-wide reports price.
+func marketNames(held map[string]heldSeasonFeed[[]marketfeeds.Feed], lookup normalize.Lookup) map[string]string {
 	names := map[string]string{}
 	for _, feed := range held {
 		if len(feed.value) != 1 {
 			continue
 		}
 		for _, p := range feed.value[0].Players {
-			if f, ok := lookup.Facts(p.ID.String()); ok {
-				names[p.ID.String()] = f.Name + " · " + string(f.Position) + " · " + f.Team
+			id := p.ID.String()
+			if f, ok := lookup.Facts(id); ok {
+				names[id] = f.Name + " · " + string(f.Position) + " · " + f.Team
+			} else if name, ok := lookup.Name(id); ok {
+				names[id] = name + " · team unit"
 			}
 		}
 	}
-	return buildMarketReports(held, names, week, time.Local), nil
+	return names
 }

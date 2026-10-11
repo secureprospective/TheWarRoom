@@ -26,8 +26,8 @@ func marketReportSpecs() []marketReportSpec {
 	return []marketReportSpec{
 		{marketfeeds.Projections, "M-046", "Projected points this week", "Projected points", "MFL's projected fantasy points for this NFL week under this league's scoring, not the app's model. Missing players are not projected as zero."},
 		{marketfeeds.Ranks, "M-047", "MFL player ranks", "MFL rank · weekly change", "MFL's player rank, not the app's model. Up means last week's rank minus this week's rank is positive; down means negative. A last-week rank of zero means MFL supplied no previous rank. New this week is MFL's new-entry flag; no earlier rank is shown."},
-		{marketfeeds.ADP, "M-067", "Average draft position", "ADP · min–max pick", "MFL-wide across many leagues, not this league. All draft periods are requested, since the default period can have no picks in season. The bar runs from the lowest to highest pick reported, with the average marked; it is not a confidence interval or a grade."},
-		{marketfeeds.AAV, "M-069", "Average auction value", "AAV · min–max budget share", "MFL-wide across many leagues, not this league. Values are MFL's auction-budget shares, expressed as percent, not this league's dollars. No dollar conversion is made. The bar runs from the smallest to largest share reported, with the average marked; it is not a confidence interval or a grade. Outliers above 100% are shown as supplied, not clipped."},
+		{marketfeeds.ADP, "M-067", "Average draft position", "ADP · min–max pick", "MFL-wide across many leagues, not this league. All draft periods are requested, since the default period can have no picks in season. The bar runs from the lowest to highest pick reported, with the average marked; it is not a confidence interval or a grade. Every bar shares one scale, from zero to the latest pick any player went."},
+		{marketfeeds.AAV, "M-069", "Average auction value", "AAV · min–max budget share", "MFL-wide across many leagues, not this league. Values are MFL's auction-budget shares, expressed as percent, not this league's dollars. No dollar conversion is made. The bar runs from the smallest to largest share reported, with the average marked; it is not a confidence interval or a grade. Every bar shares one scale, from zero to the largest share any player drew. Outliers above 100% are shown as supplied, not clipped."},
 	}
 }
 
@@ -46,6 +46,22 @@ func rankChange(p marketfeeds.Player) string {
 	}
 }
 func marketFact(spec marketReportSpec, feed heldSeasonFeed[[]marketfeeds.Feed], p *marketfeeds.Player, zone *time.Location) MarketFact {
+	return marketFactOn(spec, feed, p, marketScale(feed), zone)
+}
+
+// marketScale is one axis for a whole report, so every player's bar reads against the same
+// ends: the largest pick or budget share any player reached.
+func marketScale(feed heldSeasonFeed[[]marketfeeds.Feed]) float64 {
+	scale := 1.0
+	if len(feed.value) == 1 {
+		for _, p := range feed.value[0].Players {
+			scale = math.Max(scale, math.Max(p.High, p.Value))
+		}
+	}
+	return scale
+}
+
+func marketFactOn(spec marketReportSpec, feed heldSeasonFeed[[]marketfeeds.Feed], p *marketfeeds.Player, scale float64, zone *time.Location) MarketFact {
 	fact := MarketFact{Label: spec.label, Text: "—", Reason: "MFL does not list this player in this report."}
 	if feed.fetchedAt.IsZero() {
 		fact.Reason = spec.title + " unavailable; refresh from MFL to check."
@@ -79,7 +95,7 @@ func marketFact(spec marketReportSpec, feed heldSeasonFeed[[]marketfeeds.Feed], 
 		if spec.kind == marketfeeds.AAV {
 			fact.Text = fmt.Sprintf("%.1f%% of auction budget · %.1f%%–%.1f%%", p.Value, p.Low, p.High)
 		}
-		fact.Range = &MarketRange{Interval: lab.Interval{Value: p.Value, Lo: p.Low, Hi: p.High}, Max: math.Max(1, p.High), Text: fact.Text}
+		fact.Range = &MarketRange{Interval: lab.Interval{Value: p.Value, Lo: p.Low, Hi: p.High}, Max: scale, Text: fact.Text}
 	}
 	return fact
 }
@@ -101,13 +117,17 @@ func marketFactsAt(held map[string]heldSeasonFeed[[]marketfeeds.Feed], zone *tim
 		}
 	}
 	out := map[string][]MarketFact{}
+	scales := map[string]float64{}
+	for _, spec := range marketReportSpecs() {
+		scales[spec.kind] = marketScale(held[spec.kind])
+	}
 	for id := range ids {
 		for _, spec := range marketReportSpecs() {
 			var player *marketfeeds.Player
 			if p, ok := indexed[spec.kind][id]; ok {
 				player = &p
 			}
-			out[id] = append(out[id], marketFact(spec, held[spec.kind], player, zone))
+			out[id] = append(out[id], marketFactOn(spec, held[spec.kind], player, scales[spec.kind], zone))
 		}
 	}
 	out[""] = []MarketFact{}
@@ -170,7 +190,8 @@ func marketReportRows(spec marketReportSpec, feed heldSeasonFeed[[]marketfeeds.F
 			return cmp.Or(cmp.Compare(a.Rank, b.Rank), strings.Compare(a.ID.String(), b.ID.String()))
 		}
 		order := cmp.Compare(a.Value, b.Value)
-		if spec.kind == marketfeeds.Projections {
+		// Most points and the costliest auction shares lead; draft position leads with pick 1.
+		if spec.kind == marketfeeds.Projections || spec.kind == marketfeeds.AAV {
 			order = -order
 		}
 		return cmp.Or(order, strings.Compare(a.ID.String(), b.ID.String()))
@@ -181,13 +202,14 @@ func marketReportRows(spec marketReportSpec, feed heldSeasonFeed[[]marketfeeds.F
 	for i, p := range alphabetical {
 		nameKeys[p.ID.String()] = float64(i)
 	}
+	scale := marketScale(feed)
 	rows := []ReportRow{}
 	for _, p := range players {
 		name := names[p.ID.String()]
 		if name == "" {
 			name = "Player name not held"
 		}
-		fact := marketFact(spec, feed, &p, zone)
+		fact := marketFactOn(spec, feed, &p, scale, zone)
 		key := p.Value
 		if spec.kind == marketfeeds.Ranks {
 			key = float64(p.Rank)

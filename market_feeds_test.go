@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
 
 func realMarketHeld(t *testing.T) map[string]heldSeasonFeed[[]marketfeeds.Feed] {
@@ -61,13 +63,26 @@ func TestMarketReportsFactsAndMissing(t *testing.T) {
 		t.Fatalf("ADP text %q", got)
 	}
 	aav := reportByID(t, board, "M-069")
-	if got := aav.Rows[len(aav.Rows)-1].Range.Text; got != "30.1% of auction budget · 3.4%–113.6%" {
+	// The costliest share leads.
+	if got := aav.Rows[0].Range.Text; got != "30.1% of auction budget · 3.4%–113.6%" {
 		t.Fatalf("AAV text %q", got)
 	}
-	if aav.Rows[len(aav.Rows)-1].Range.Value != 30.1 || !strings.Contains(aav.How, "not this league's dollars") || !strings.Contains(aav.Note, "111 auctions") {
+	if aav.Rows[0].Range.Value != 30.1 || !strings.Contains(aav.How, "not this league's dollars") || !strings.Contains(aav.Note, "111 auctions") {
 		t.Fatal(aav.How)
 	}
+	// Every bar in a report shares one axis, so bars compare down the column; the pool's facts
+	// read against the same axis as the report.
+	for report, axis := range map[*Report]float64{&adp: 848, &aav: 164.14} {
+		for _, row := range report.Rows {
+			if row.Range.Max != axis {
+				t.Fatalf("%s bar axis %v, want %v", report.ID, row.Range.Max, axis)
+			}
+		}
+	}
 	facts := marketFacts(held)
+	if got := facts["16162"][2].Range.Max; got != 848 {
+		t.Fatalf("pool ADP axis %v", got)
+	}
 	if len(facts["16162"]) != 4 {
 		t.Fatal(facts["16162"])
 	}
@@ -275,5 +290,19 @@ func TestPoolMarketColumnsMissingFeedDoesNotBlock(t *testing.T) {
 	}
 	if marketWeekText(0) != "NFL week not known" {
 		t.Fatal("unknown week printed as zero")
+	}
+}
+
+func TestMarketNamesLabelTeamUnits(t *testing.T) {
+	lookup, err := normalize.NewLookup([]players.RawPlayer{
+		{ID: "16162", Name: "Robinson, Bijan", Position: "RB", Team: "ATL"},
+		{ID: "0513", Name: "Broncos, Denver", Position: "Def", Team: "DEN"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := marketNames(realMarketHeld(t), lookup)
+	if names["16162"] != "Robinson, Bijan · RB · ATL" || names["0513"] != "Broncos, Denver · team unit" {
+		t.Fatal(names["16162"], names["0513"])
 	}
 }
