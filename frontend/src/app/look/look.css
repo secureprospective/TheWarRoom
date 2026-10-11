@@ -40,7 +40,7 @@
   font-feature-settings: "tnum" 1, "cv11" 1;
   text-align: left;
 }
-.twr-app *, .twr-app *::before, .twr-app *::after { box-sizing: border-box; }
+.twr-app, .twr-app *, .twr-app *::before, .twr-app *::after { box-sizing: border-box; }
 .twr-app ::selection { background: hsl(208 78% 62% / .35); color: var(--surface-tx1); }
 .twr-app :focus-visible { outline: 1px solid var(--signal-blue); outline-offset: 2px; }
 .twr-app * { scrollbar-color: var(--surface-line-hi) transparent; scrollbar-width: thin; }
