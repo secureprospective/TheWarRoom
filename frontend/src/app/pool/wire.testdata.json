@@ -1,0 +1,628 @@
+{
+ "board": {
+  "value": {
+   "plans": [
+    {
+     "receipt": {
+      "correlationId": "bid-00000000000000000000000000000001",
+      "spec": {
+       "intent": "bid.submit",
+       "leagueId": "14432",
+       "franchiseId": "0001",
+       "subject": {
+        "players": [
+         "13594"
+        ],
+        "picks": []
+       },
+       "expected": {
+        "player": "13594",
+        "rosterStatus": "ROSTER"
+       },
+       "gravity": "G3",
+       "undo": "irreversible",
+       "target": {
+        "kind": "manual"
+       }
+      },
+      "state": "withdrawn",
+      "audit": [
+       {
+        "at": "2026-10-10T12:00:00Z",
+        "from": "draft",
+        "event": "checks_pass",
+        "to": "ready",
+        "note": "Bid rules checked; the plan is ready to hand off."
+       },
+       {
+        "at": "2026-10-10T12:00:00Z",
+        "from": "ready",
+        "event": "hand_off",
+        "to": "handed_off",
+        "note": "post text copied for ProBoards; nothing was posted for you."
+       },
+       {
+        "at": "2026-10-10T12:00:00Z",
+        "from": "handed_off",
+        "event": "withdraw",
+        "to": "withdrawn",
+        "note": "You said you did not post it, so the plan is withdrawn."
+       }
+      ]
+     },
+     "facts": {
+      "player": "13594",
+      "salary": 100000000,
+      "years": 1,
+      "points": 1000,
+      "snipe": false,
+      "beat": null,
+      "evidence": "",
+      "closes": ""
+     },
+     "player": "Jones, Amy (QB, KCC)",
+     "salary": {
+      "cents": 100000000,
+      "text": "$1,000,000"
+     },
+     "points": "1.000",
+     "contract": "1 year at $1,000,000 a year",
+     "beatText": "No bid to beat entered",
+     "form": {
+      "salary": "1",
+      "beat": ""
+     },
+     "state": "Withdrawn",
+     "status": "You said you did not post it, so the plan is withdrawn.",
+     "rules": [],
+     "ruleSummary": "",
+     "post": "Player: Jones, Amy (QB, KCC)\nContract: 1 year at $1,000,000 a year, flat\nCap hit: $1,000,000 a year\nPoints: 1.000",
+     "actions": []
+    },
+    {
+     "receipt": {
+      "correlationId": "bid-00000000000000000000000000000002",
+      "spec": {
+       "intent": "bid.submit",
+       "leagueId": "14432",
+       "franchiseId": "0001",
+       "subject": {
+        "players": [
+         "13595"
+        ],
+        "picks": []
+       },
+       "expected": {
+        "player": "13595",
+        "rosterStatus": "ROSTER"
+       },
+       "gravity": "G3",
+       "undo": "irreversible",
+       "target": {
+        "kind": "manual"
+       }
+      },
+      "state": "blocked",
+      "audit": [
+       {
+        "at": "2026-10-10T12:00:00Z",
+        "from": "draft",
+        "event": "checks_block",
+        "to": "blocked",
+        "note": "After Week 12 only playoff teams may bid, and this app cannot tell whether yours is one."
+       }
+      ]
+     },
+     "facts": {
+      "player": "13595",
+      "salary": 200000000,
+      "years": 1,
+      "points": 2000,
+      "snipe": false,
+      "beat": null,
+      "evidence": "",
+      "closes": ""
+     },
+     "player": "Adams, Zed (CB, MIA)",
+     "salary": {
+      "cents": 200000000,
+      "text": "$2,000,000"
+     },
+     "points": "2.000",
+     "contract": "1 year at $2,000,000 a year",
+     "beatText": "No bid to beat entered",
+     "form": {
+      "salary": "2",
+      "beat": ""
+     },
+     "state": "Blocked",
+     "status": "After Week 12 only playoff teams may bid, and this app cannot tell whether yours is one.",
+     "rules": [
+      {
+       "rule": "max-years",
+       "label": "Length",
+       "verdict": "pass",
+       "reason": "1-year bid; the longest allowed is 4 years",
+       "mark": "OK"
+      },
+      {
+       "rule": "flat-salary",
+       "label": "Flat salary",
+       "verdict": "pass",
+       "reason": "$2,000,000 a year for its 1 year",
+       "mark": "OK"
+      },
+      {
+       "rule": "ten-k-grid",
+       "label": "$10k grid",
+       "verdict": "pass",
+       "reason": "Salary is on the $10,000 grid",
+       "mark": "OK"
+      },
+      {
+       "rule": "minimum-salary",
+       "label": "Minimum salary",
+       "verdict": "pass",
+       "reason": "At or above the $630,000 minimum (16 years of experience)",
+       "mark": "OK"
+      },
+      {
+       "rule": "one-year-cap",
+       "label": "1-year limit",
+       "verdict": "pass",
+       "reason": "At or under $12,000,000",
+       "mark": "OK"
+      },
+      {
+       "rule": "tier-years",
+       "label": "Years for the salary",
+       "verdict": "pass",
+       "reason": "Up to $12,000,000 needs at least 1 year",
+       "mark": "OK"
+      },
+      {
+       "rule": "increment",
+       "label": "Beats the bid to beat",
+       "verdict": "pass",
+       "reason": "No bid to beat entered, so this is not checked",
+       "mark": "OK"
+      },
+      {
+       "rule": "active-bids",
+       "label": "Active bids",
+       "verdict": "pass",
+       "reason": "2 of 30 active bid plans, counting this one",
+       "mark": "OK"
+      },
+      {
+       "rule": "multi-year-close",
+       "label": "Multi-year window",
+       "verdict": "pass",
+       "reason": "Multi-year bids close at the end of Week 13",
+       "mark": "OK"
+      },
+      {
+       "rule": "late-season",
+       "label": "After Week 12",
+       "verdict": "pass",
+       "reason": "Every team may bid through Week 12",
+       "mark": "OK"
+      },
+      {
+       "rule": "cap-room",
+       "label": "Cap room",
+       "verdict": "info",
+       "reason": "$2,000,000 a year against $105,000,000 of room leaves $103,000,000",
+       "mark": "Note"
+      }
+     ],
+     "ruleSummary": "10 rules pass",
+     "post": "Player: Adams, Zed (CB, MIA)\nContract: 1 year at $2,000,000 a year, flat\nCap hit: $2,000,000 a year\nPoints: 2.000",
+     "actions": [
+      {
+       "id": "hand-off",
+       "label": "Copy ProBoards post",
+       "disabled": true,
+       "reason": "After Week 12 only playoff teams may bid, and this app cannot tell whether yours is one; change the figures to check it again."
+      },
+      {
+       "id": "revise",
+       "label": "Change figures",
+       "disabled": false,
+       "reason": ""
+      }
+     ]
+    },
+    {
+     "receipt": {
+      "correlationId": "bid-00000000000000000000000000000003",
+      "spec": {
+       "intent": "bid.submit",
+       "leagueId": "14432",
+       "franchiseId": "0001",
+       "subject": {
+        "players": [
+         "13593"
+        ],
+        "picks": []
+       },
+       "expected": {
+        "player": "13593",
+        "rosterStatus": "ROSTER"
+       },
+       "gravity": "G3",
+       "undo": "irreversible",
+       "target": {
+        "kind": "manual"
+       }
+      },
+      "state": "ready",
+      "audit": [
+       {
+        "at": "2026-10-10T12:00:00Z",
+        "from": "draft",
+        "event": "checks_pass",
+        "to": "ready",
+        "note": "Bid rules checked; the plan is ready to hand off."
+       }
+      ]
+     },
+     "facts": {
+      "player": "13593",
+      "salary": 500000000,
+      "years": 3,
+      "points": 7000,
+      "snipe": true,
+      "beat": 5500,
+      "evidence": "https://example.invalid/thread",
+      "closes": ""
+     },
+     "player": "Smith, John (WR, DAL)",
+     "salary": {
+      "cents": 500000000,
+      "text": "$5,000,000"
+     },
+     "points": "7.000",
+     "contract": "3 years at $5,000,000 a year",
+     "beatText": "Bid to beat 5.500 · Snipe",
+     "form": {
+      "salary": "5",
+      "beat": "5.500"
+     },
+     "state": "Ready",
+     "status": "Bid rules checked; the plan is ready to hand off.",
+     "rules": [
+      {
+       "rule": "max-years",
+       "label": "Length",
+       "verdict": "pass",
+       "reason": "3-year bid; the longest allowed is 4 years",
+       "mark": "OK"
+      },
+      {
+       "rule": "flat-salary",
+       "label": "Flat salary",
+       "verdict": "pass",
+       "reason": "$5,000,000 a year, the same in each of the 3 years",
+       "mark": "OK"
+      },
+      {
+       "rule": "ten-k-grid",
+       "label": "$10k grid",
+       "verdict": "pass",
+       "reason": "Salary is on the $10,000 grid",
+       "mark": "OK"
+      },
+      {
+       "rule": "minimum-salary",
+       "label": "Minimum salary",
+       "verdict": "pass",
+       "reason": "At or above the $530,000 minimum (4 years of experience)",
+       "mark": "OK"
+      },
+      {
+       "rule": "one-year-cap",
+       "label": "1-year limit",
+       "verdict": "pass",
+       "reason": "Applies to 1-year bids only",
+       "mark": "OK"
+      },
+      {
+       "rule": "tier-years",
+       "label": "Years for the salary",
+       "verdict": "pass",
+       "reason": "Up to $12,000,000 needs at least 1 year",
+       "mark": "OK"
+      },
+      {
+       "rule": "increment",
+       "label": "Beats the bid to beat",
+       "verdict": "pass",
+       "reason": "7.000 beats 5.500 by a full point (Snipe) or more",
+       "mark": "OK"
+      },
+      {
+       "rule": "active-bids",
+       "label": "Active bids",
+       "verdict": "pass",
+       "reason": "1 of 30 active bid plans, counting this one",
+       "mark": "OK"
+      },
+      {
+       "rule": "multi-year-close",
+       "label": "Multi-year window",
+       "verdict": "pass",
+       "reason": "Multi-year bids close at the end of Week 13",
+       "mark": "OK"
+      },
+      {
+       "rule": "late-season",
+       "label": "After Week 12",
+       "verdict": "pass",
+       "reason": "Every team may bid through Week 12",
+       "mark": "OK"
+      },
+      {
+       "rule": "cap-room",
+       "label": "Cap room",
+       "verdict": "info",
+       "reason": "$5,000,000 a year against $105,000,000 of room leaves $100,000,000",
+       "mark": "Note"
+      }
+     ],
+     "ruleSummary": "10 rules pass",
+     "post": "Player: Smith, John (WR, DAL)\nContract: 3 years at $5,000,000 a year, flat\nCap hit: $5,000,000 a year\nPoints: 7.000\nSnipe",
+     "actions": [
+      {
+       "id": "hand-off",
+       "label": "Copy ProBoards post",
+       "disabled": false,
+       "reason": ""
+      },
+      {
+       "id": "revise",
+       "label": "Change figures",
+       "disabled": false,
+       "reason": ""
+      },
+      {
+       "id": "withdraw",
+       "label": "Withdraw plan",
+       "disabled": false,
+       "reason": ""
+      }
+     ]
+    }
+   ],
+   "summary": "2 open of 3 bid plans"
+  },
+  "provenance": {
+   "source": "TheWarRoom bid plans (this computer)",
+   "freshness": {
+    "state": "live",
+    "fetchedAt": "2026-10-10T12:00:00Z",
+    "note": "Local plans; nothing is read from MFL here"
+   },
+   "kind": "live"
+  },
+  "status": "ok",
+  "absenceReason": null,
+  "count": 3,
+  "threshold": 0,
+  "baseline": "Plans saved on this computer",
+  "cutoff": "2026-10-10T12:00:00Z",
+  "method": "Envelope plans plus the bid_facts table; rules read live",
+  "inputSHA": "",
+  "buildStamp": "dev ",
+  "howCounted": "Your own bid plans only. Nothing is stored about other franchises; the bid to beat is points you typed. A plan lands only when MFL's rosters show the player on your roster with the planned contract."
+ },
+ "empty": {
+  "value": {
+   "rows": [],
+   "positions": [],
+   "summary": ""
+  },
+  "provenance": {
+   "source": "MFL freeAgents",
+   "freshness": {
+    "state": "fail",
+    "fetchedAt": "",
+    "note": ""
+   },
+   "kind": "live"
+  },
+  "status": "failed",
+  "absenceReason": "pool scope: unknown sort \"bogus\"",
+  "count": 0,
+  "threshold": 0,
+  "baseline": "Latest MFL free-agent list",
+  "cutoff": "",
+  "method": "MFL freeAgents export; §6 minimum by experience, computed in Go",
+  "inputSHA": "",
+  "buildStamp": "dev ",
+  "howCounted": "Every player MFL lists as a free agent, joined to the held players directory for name, position, NFL team, age and draft year. Experience is this season minus the draft year; a player with no real draft year is shown at the rookie minimum and marked. The minimum is the Official Rulebook §6 table by experience. Free agents the directory does not know (team units) are left out."
+ },
+ "pool": {
+  "value": {
+   "rows": [
+    {
+     "id": "13595",
+     "name": "Adams, Zed",
+     "position": "CB",
+     "team": "MIA",
+     "age": "—",
+     "experience": "16 years",
+     "minimum": {
+      "cents": 63000000,
+      "text": "$630,000"
+     },
+     "plan": "Blocked",
+     "planId": "bid-00000000000000000000000000000002"
+    },
+    {
+     "id": "13594",
+     "name": "Jones, Amy",
+     "position": "QB",
+     "team": "KCC",
+     "age": "—",
+     "experience": "Unknown (rookie minimum)",
+     "minimum": {
+      "cents": 33000000,
+      "text": "$330,000"
+     },
+     "plan": "",
+     "planId": ""
+    },
+    {
+     "id": "13593",
+     "name": "Smith, John",
+     "position": "WR",
+     "team": "DAL",
+     "age": "27",
+     "experience": "4 years",
+     "minimum": {
+      "cents": 53000000,
+      "text": "$530,000"
+     },
+     "plan": "Ready",
+     "planId": "bid-00000000000000000000000000000003"
+    }
+   ],
+   "positions": [
+    "QB",
+    "WR",
+    "CB"
+   ],
+   "summary": "3 free agents"
+  },
+  "provenance": {
+   "source": "MFL freeAgents",
+   "freshness": {
+    "state": "live",
+    "fetchedAt": "2026-10-10T12:00:00Z",
+    "note": ""
+   },
+   "kind": "live"
+  },
+  "status": "ok",
+  "absenceReason": null,
+  "count": 3,
+  "threshold": 0,
+  "baseline": "Latest MFL free-agent list",
+  "cutoff": "2026-10-10T12:00:00Z",
+  "method": "MFL freeAgents export; §6 minimum by experience, computed in Go",
+  "inputSHA": "",
+  "buildStamp": "dev ",
+  "howCounted": "Every player MFL lists as a free agent, joined to the held players directory for name, position, NFL team, age and draft year. Experience is this season minus the draft year; a player with no real draft year is shown at the rookie minimum and marked. The minimum is the Official Rulebook §6 table by experience. Free agents the directory does not know (team units) are left out. Left out of this list: 1 ids the directory does not know."
+ },
+ "preview": {
+  "problem": "",
+  "player": "Smith, John (WR, DAL)",
+  "salary": {
+   "cents": 500000000,
+   "text": "$5,000,000"
+  },
+  "snapped": "Entered $5,004,000; the league snaps salaries to $10,000, so $5,000,000",
+  "points": "7.000",
+  "rules": [
+   {
+    "rule": "max-years",
+    "label": "Length",
+    "verdict": "pass",
+    "reason": "3-year bid; the longest allowed is 4 years",
+    "mark": "OK"
+   },
+   {
+    "rule": "flat-salary",
+    "label": "Flat salary",
+    "verdict": "pass",
+    "reason": "$5,000,000 a year, the same in each of the 3 years",
+    "mark": "OK"
+   },
+   {
+    "rule": "ten-k-grid",
+    "label": "$10k grid",
+    "verdict": "pass",
+    "reason": "Salary is on the $10,000 grid",
+    "mark": "OK"
+   },
+   {
+    "rule": "minimum-salary",
+    "label": "Minimum salary",
+    "verdict": "pass",
+    "reason": "At or above the $530,000 minimum (4 years of experience)",
+    "mark": "OK"
+   },
+   {
+    "rule": "one-year-cap",
+    "label": "1-year limit",
+    "verdict": "pass",
+    "reason": "Applies to 1-year bids only",
+    "mark": "OK"
+   },
+   {
+    "rule": "tier-years",
+    "label": "Years for the salary",
+    "verdict": "pass",
+    "reason": "Up to $12,000,000 needs at least 1 year",
+    "mark": "OK"
+   },
+   {
+    "rule": "increment",
+    "label": "Beats the bid to beat",
+    "verdict": "pass",
+    "reason": "No bid to beat entered, so this is not checked",
+    "mark": "OK"
+   },
+   {
+    "rule": "active-bids",
+    "label": "Active bids",
+    "verdict": "pass",
+    "reason": "2 of 30 active bid plans, counting this one",
+    "mark": "OK"
+   },
+   {
+    "rule": "multi-year-close",
+    "label": "Multi-year window",
+    "verdict": "pass",
+    "reason": "Multi-year bids close at the end of Week 13",
+    "mark": "OK"
+   },
+   {
+    "rule": "late-season",
+    "label": "After Week 12",
+    "verdict": "pass",
+    "reason": "Every team may bid through Week 12",
+    "mark": "OK"
+   },
+   {
+    "rule": "cap-room",
+    "label": "Cap room",
+    "verdict": "info",
+    "reason": "$5,000,000 a year against $105,000,000 of room leaves $100,000,000",
+    "mark": "Note"
+   }
+  ],
+  "blocked": false,
+  "note": "Bid rules checked; the plan is ready to hand off",
+  "post": "Player: Smith, John (WR, DAL)\nContract: 3 years at $5,000,000 a year, flat\nCap hit: $5,000,000 a year\nPoints: 7.000",
+  "ruleSummary": "10 rules pass",
+  "closesNote": "No closing time is set: the app keeps watching the rosters until the player shows up on one."
+ },
+ "problem": {
+  "problem": "Enter the annual salary in millions, such as 5.25",
+  "player": "",
+  "salary": {
+   "cents": 0,
+   "text": ""
+  },
+  "snapped": "",
+  "points": "",
+  "rules": [],
+  "blocked": false,
+  "note": "",
+  "post": "",
+  "ruleSummary": "",
+  "closesNote": ""
+ }
+}

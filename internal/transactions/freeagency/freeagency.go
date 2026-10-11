@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 	"github.com/secureprospective/TheWarRoom/internal/transactions/deadcap"
 )
@@ -20,27 +21,9 @@ const signReason = "free-agency signing §6"
 // dollars converts whole dollars to cents; the §6 table is in whole dollars.
 func dollars(d int64) domain.Money { return domain.Money(d * 100) }
 
-// MinSalaryFloor is the §6 minimum salary by years of NFL experience (season minus draft year).
-// With no real draft year the caller passes 0: the rookie floor, the lenient direction
-// (Christopher's ruling).
-func MinSalaryFloor(experienceYears int) domain.Money {
-	switch {
-	case experienceYears <= 0:
-		return dollars(330_000)
-	case experienceYears == 1:
-		return dollars(380_000)
-	case experienceYears == 2:
-		return dollars(430_000)
-	case experienceYears == 3:
-		return dollars(480_000)
-	case experienceYears <= 6: // 4–6 years
-		return dollars(530_000)
-	case experienceYears <= 9: // 7–9 years
-		return dollars(580_000)
-	default: // 10+ years
-		return dollars(630_000)
-	}
-}
+// MinSalaryFloor is the §6 minimum salary by years of NFL experience (season minus draft year);
+// the table lives in engine/bid, which the free-agent pool and bid plans read too.
+func MinSalaryFloor(experienceYears int) domain.Money { return bid.MinimumSalary(experienceYears) }
 
 // Sign checks the player is a signable free agent, not under a §12 buyout lockout and not below
 // the §6 floor, then lays a flat `years` contract at `salary` and rosters him. The cap ceiling is

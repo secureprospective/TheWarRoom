@@ -82,7 +82,8 @@ export type MarketFilter = {
     | 'draft-from'
     | 'draft-reset'
     | 'draft-retry'
-    | import('../counterparties/contract').CounterFilter['field'];
+    | import('../counterparties/contract').CounterFilter['field']
+    | import('../pool/contract').PoolFilter['field'];
   value: string;
 };
 

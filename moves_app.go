@@ -89,8 +89,21 @@ func movePredicate(intent string) envelope.Predicate {
 		"roster.taxi":  envelope.TaxiPredicate{},
 		"lineup.set":   envelope.LineupPredicate{},
 		"trade.accept": envelope.TradePredicate{},
+		"bid.submit":   envelope.BidPredicate{},
 	}
 	return registry[intent]
+}
+
+// withBidFacts gives a bid plan's predicate the contract it looks for, which lives in bid_facts.
+func (a *App) withBidFacts(ctx context.Context, id string, p envelope.Predicate) (envelope.Predicate, error) {
+	if _, ok := p.(envelope.BidPredicate); !ok {
+		return p, nil
+	}
+	facts, err := a.moves.BidFacts(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("watch moves: bid facts %s: %w", id, err)
+	}
+	return envelope.BidPredicate{Facts: facts}, nil
 }
 
 func (a *App) moveSources(entries []envelope.Envelope) map[envelope.Source]bool {
@@ -146,6 +159,9 @@ func (a *App) checkMoves(ctx context.Context) error {
 		e, err := a.moves.Get(ctx, listed.ID())
 		if err != nil {
 			return fmt.Errorf("watch moves: reload %s: %w", listed.ID(), err)
+		}
+		if predicate, err = a.withBidFacts(ctx, e.ID(), predicate); err != nil {
+			return err
 		}
 		if e.State() != listed.State() {
 			continue

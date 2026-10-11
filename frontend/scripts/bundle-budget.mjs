@@ -46,6 +46,11 @@ for (const entry of entries) {
 const moveChunk = readdirSync(resolve(dist, 'assets')).find((name) => /^MyMoves\..*\.js$/.test(name));
 if (!moveChunk) throw new Error('No lazy MyMoves chunk');
 const moveSource = readFileSync(resolve(dist, 'assets', moveChunk), 'utf8');
-assert.ok(moveSource.includes('Move stages'), 'Rail must live in the MyMoves chunk');
+// The rail is shared with the bid plans, so it may sit in its own lazy chunk beside MyMoves.
+const railSource = readdirSync(resolve(dist, 'assets'))
+  .filter((name) => /^EnvelopeRail\..*\.js$/.test(name))
+  .map((name) => readFileSync(resolve(dist, 'assets', name), 'utf8'))
+  .join(moveSource);
+assert.ok(railSource.includes('Move stages'), 'Rail must live in a lazy chunk, not the entry');
 assert.ok(moveSource.includes('landing simulated from a real roster snapshot'), 'MyMoves caption missing');
 console.log(`bundle-budget: lazy MyMoves + rail verified in ${moveChunk}`);
