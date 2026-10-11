@@ -9,7 +9,7 @@ import { BidPlanCard, signals, usePoolData } from './BidPlans';
 import { BidForm } from './BidForm';
 import { SignalChip } from '../look/Slots';
 import {
-  planOpen, POOL_SORTS, type BoardReading, type Plan, type PoolFilter, type PoolReading, type PoolRow,
+  planOpen, type BoardReading, type Plan, type PoolFilter, type PoolReading, type PoolRow,
 } from './contract';
 import { poolState, type PoolState } from './state';
 import './pool.css';
@@ -112,7 +112,7 @@ function PoolTable({ rows, state }: { rows: PoolRow[]; state?: PoolState }) {
           <th>Age</th>
           <th>Experience</th>
           <th>Minimum</th>
-          {rows[0]?.market?.map(f => <th key={f.label}>{f.label}</th>)}
+          <th>Market</th>
           <th>
             <span className="pool-sr">Bid</span>
           </th>
@@ -127,9 +127,9 @@ function PoolTable({ rows, state }: { rows: PoolRow[]; state?: PoolState }) {
             <td>{row.age}</td>
             <td>{row.experience}</td>
             <td className="pool-money">{row.minimum.text}</td>
-            {row.market?.map(f => <td key={f.label} title={f.reason}>
-              {f.text}{f.range && <RangeBar range={f.range} />}
-            </td>)}
+            <td className={row.marketLines.length === 1 ? 'pool-market pool-market-none' : 'pool-market'}>
+              {row.marketLines.map((line, i) =>
+              <div key={i}>{line}</div>)}</td>
             <td>
               {row.plan && <span className="pool-plan">Bid plan: {row.plan}</span>}
               {row.planId ? (
@@ -152,7 +152,7 @@ function PoolTable({ rows, state }: { rows: PoolRow[]; state?: PoolState }) {
             </td>
           </tr>
           {state?.form && !state.form.planId && state.form.playerId === row.id &&
-            <tr className="pool-form-row"><td colSpan={5 + (row.market?.length ?? 0)}>
+            <tr className="pool-form-row"><td colSpan={6}>
             <BidForm form={state.form} preview={state.preview} busy={state.busy} />
           </td></tr>}</Fragment>
         ))}
@@ -245,7 +245,7 @@ function Controls({ reading, state }: { reading?: PoolReading; state: PoolState 
           value={scope.sort}
           onChange={(e) => dispatch('market', { field: 'pool-sort', value: e.target.value })}
         >
-          {POOL_SORTS.map(([id, label]) => (
+          {reading?.value.sorts.map(({ key: id, label }) => (
             <option key={id} value={id}>
               {label}
             </option>
@@ -278,7 +278,9 @@ export function PoolScreen({ state, snapshot, franchiseId }: {
 }) {
   const root = useRef<HTMLElement>(null);
   useWorkAnchor(root, '.pool-table tbody tr:not(.pool-form-row), .bid-plan');
-  return (
+  // The market reports are navigation, not pool rows: they sit outside the anchored section so the
+  // pool's scroll anchor never undoes endpoint.open revealing the chosen report.
+  return (<>
     <section ref={root} className="pool" aria-label="Free-agent pool">
       <header>
         <h4>Free-agent pool</h4>
@@ -293,13 +295,13 @@ export function PoolScreen({ state, snapshot, franchiseId }: {
       {state.form && !state.form.planId &&
         !state.reading?.value.rows.some(row => row.id === state.form?.playerId) &&
         <BidForm form={state.form} preview={state.preview} busy={state.busy} />}
-      <Suspense fallback={null}><MarketReports /></Suspense>
       <OpenPlans board={state.board} openId={state.openPlan} focus={state.focus}
         busy={state.busy} state={state} />
       <Controls reading={state.reading} state={state} />
       <PoolFrame reading={state.reading} refreshing={state.refreshing} state={state} />
     </section>
-  );
+    <Suspense fallback={null}><MarketReports /></Suspense>
+  </>);
 }
 
 export default function Pool({ snapshot }: { snapshot?: Snapshot }) {

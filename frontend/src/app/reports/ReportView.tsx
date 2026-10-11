@@ -10,7 +10,8 @@ function ReportTable({ report }: { report: Report }) {
   const sortLabel = (i: number) => sort?.column === i && !sort.desc
     ? report.sortDescending : report.sortAscending;
   return <div className="draft-table-scroll" tabIndex={0} role="region" aria-label={report.title}>
-    <table><thead><tr>{report.columns.map((c, i) =>
+    <table className={report.columns.length <= 3 ? 'report-compact' : undefined}>
+      <thead><tr>{report.columns.map((c, i) =>
       <th key={i} scope="col"
         aria-sort={sort?.column === i ? (sort.desc ? 'descending' : 'ascending') : 'none'}>
         {report.rows.every(row => row.sort) && report.sortAscending ?

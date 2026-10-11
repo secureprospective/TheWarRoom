@@ -20,6 +20,7 @@ export type Reading<T> = {
 export type MarketFact = { label: string; text: string; reason: string; range: MarketRange | null };
 export type PoolRow = {
   market?: MarketFact[];
+  marketLines: string[];
   id: string;
   name: string;
   position: string;
@@ -30,8 +31,14 @@ export type PoolRow = {
   plan: string;
   planId: string;
 };
-export type Pool = { rows: PoolRow[]; positions: string[]; summary: string };
-export type PoolScope = { position: string; sort: 'name' | 'position' | 'minimum'; desc: boolean };
+export type Pool = {
+  rows: PoolRow[]; positions: string[]; summary: string; sorts: { key: string; label: string }[];
+};
+export type PoolScope = {
+  position: string;
+  sort: 'name' | 'position' | 'minimum' | 'projected' | 'rank' | 'adp' | 'aav';
+  desc: boolean;
+};
 export type Rule = {
   rule: string;
   label: string;
@@ -122,8 +129,3 @@ export type PoolFilter = {
     | 'pool-closes-clear';
   value: string;
 };
-export const POOL_SORTS = [
-  ['name', 'Player'],
-  ['position', 'Position'],
-  ['minimum', 'Minimum'],
-] as const;

@@ -4290,6 +4290,7 @@ export namespace main {
 		}
 	}
 	export class PoolRow {
+	    marketLines: string[];
 	    market: MarketFact[];
 	    id: string;
 	    name: string;
@@ -4307,6 +4308,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.marketLines = source["marketLines"];
 	        this.market = this.convertValues(source["market"], MarketFact);
 	        this.id = source["id"];
 	        this.name = source["name"];
@@ -4337,7 +4339,22 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class PoolSort {
+	    key: string;
+	    label: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PoolSort(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.key = source["key"];
+	        this.label = source["label"];
+	    }
+	}
 	export class Pool {
+	    sorts: PoolSort[];
 	    rows: PoolRow[];
 	    positions: string[];
 	    summary: string;
@@ -4348,6 +4365,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sorts = this.convertValues(source["sorts"], PoolSort);
 	        this.rows = this.convertValues(source["rows"], PoolRow);
 	        this.positions = source["positions"];
 	        this.summary = source["summary"];

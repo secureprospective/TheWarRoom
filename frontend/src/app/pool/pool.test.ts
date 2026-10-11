@@ -87,7 +87,7 @@ describe('Pool reading states', () => {
     expect(frame(failed, true)).toContain('Asking MFL for the free-agent list…');
     expect(frame(failed, true)).not.toContain('Failed');
     const empty: PoolReading = { ...base, status: 'thin', absenceReason: 'MFL lists no free agents right now',
-      value: { rows: [], positions: [], summary: '0 free agents' } };
+      value: { rows: [], positions: [], sorts: [], summary: '0 free agents' } };
     expect(frame(empty)).toContain('Empty · MFL lists no free agents right now');
     expect(frame(empty)).not.toContain('<table');
     const none: PoolReading = { ...base, value: { ...base.value, rows: [] } };

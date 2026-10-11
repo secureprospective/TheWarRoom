@@ -13,6 +13,7 @@ import (
 )
 
 type MarketFact struct {
+	value  *float64
 	Label  string       `json:"label"`
 	Text   string       `json:"text"`
 	Reason string       `json:"reason"`
@@ -61,6 +62,11 @@ func marketFact(spec marketReportSpec, feed heldSeasonFeed[[]marketfeeds.Feed], 
 		fact.Reason += " · MFL does not list this player."
 		return fact
 	}
+	value := p.Value
+	if spec.kind == marketfeeds.Ranks {
+		value = float64(p.Rank)
+	}
+	fact.value = &value
 	switch spec.kind {
 	case marketfeeds.Projections:
 		fact.Text = fmt.Sprintf("%.2f", p.Value)

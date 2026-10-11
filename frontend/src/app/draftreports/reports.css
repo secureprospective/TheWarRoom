@@ -1,8 +1,9 @@
 .draft-reports { margin-bottom: 32px; min-width: 0; max-width: 100%; }
 .draft-report { margin-top: 20px; min-width: 0; max-width: 100%; }
-.draft-table-scroll { overflow: auto; max-width: 100%; max-height: 60vh; }
+.draft-table-scroll { min-width: 0; overflow: auto; max-width: 100%; max-height: 60vh; }
 .draft-table-scroll:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .draft-reports table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.draft-reports table.report-compact { width: auto; }
 .draft-reports th, .draft-reports td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--surface-line); min-width: 12ch; white-space: pre-line; }
 .draft-reports th { position: sticky; top: 0; background: var(--surface-2); }
 .draft-reports td:first-child { white-space: nowrap; }

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -6,7 +7,7 @@ import { ReportsView } from '../draftreports/Reports';
 import { parseBoard, range } from './contract';
 import { sortedRows, reportSort } from './sortState';
 import { endpointById, placementRoute } from '../registry';
-import { PoolFrame, PoolInspectorView } from '../pool/Pool';
+import { PoolInspectorView } from '../pool/Pool';
 import { parsePool } from '../pool/provider';
 import wire from './wire.testdata.json';
 import poolWire from '../pool/wire.testdata.json';
@@ -75,21 +76,32 @@ describe('Go player market reports', () => {
   });
 });
 
-it('pool columns and the Inspector render the same Go facts, with missing shown as a dash', () => {
+it('the Inspector keeps full Go facts and ranges, with missing shown as a dash', () => {
   const reading = parsePool(poolWire.pool);
   const row = { ...reading.value.rows[0], market: wire.facts };
   reading.value.rows = [row];
-  const table = html(createElement(PoolFrame, { reading, refreshing: false }));
   const inspector = html(createElement(PoolInspectorView, { row, plans: [], busy: '' }));
   for (const fact of wire.facts) {
-    expect(table).toContain(fact.label);
-    expect(table).toContain(fact.text);
     expect(inspector).toContain(fact.text);
-    expect(table).toContain(`title="${fact.reason}"`);
+    expect(inspector).toContain(`title="${fact.reason}"`);
   }
   const missing = { ...row, age: '27', market: wire.missing };
   const empty = html(createElement(PoolInspectorView, { row: missing, plans: [], busy: '' }));
   expect(empty.match(/<dd>—<\/dd>/g)).toHaveLength(4);
   expect(empty).toContain('unavailable; refresh from MFL to check.');
   expect(empty).not.toContain('<dd>0</dd>');
+});
+
+
+it('sizes two/three-column report tables to content, leaving wide reports locally scrollable', () => {
+  const report = board().reports[0];
+  for (const n of [2, 3, 4]) {
+    const r = { ...report, columns: Array.from({ length: n }, (_, i) => `Column ${i}`) };
+    const markup = html(createElement(ReportView, { report: r, howLabel: board().howLabel }));
+    expect(markup.includes('class="report-compact"')).toBe(n <= 3);
+    expect(markup).toContain('class="draft-table-scroll"');
+  }
+  const css = readFileSync('src/app/draftreports/reports.css', 'utf8');
+  expect(css).toContain('.draft-reports table.report-compact { width: auto; }');
+  expect(css).toContain('.draft-table-scroll { min-width: 0; overflow: auto; max-width: 100%;');
 });

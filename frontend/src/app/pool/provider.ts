@@ -31,9 +31,11 @@ const amount: Parser<Amount> = (v, p) => {
 };
 const poolRow: Parser<PoolRow> = (v, p) => {
   const r = object(v, p, [
-    'id', 'name', 'position', 'team', 'age', 'experience', 'minimum', 'plan', 'planId', 'market',
+    'id', 'name', 'position', 'team', 'age', 'experience', 'minimum', 'plan', 'planId',
+    'market', 'marketLines',
   ]);
   return {
+    marketLines: array(r.marketLines, p, text),
     market: array(r.market, p, (v, p) => {
       const fact = object(v, p, ['label', 'text', 'reason', 'range']);
       return { label: text(fact.label, p), text: text(fact.text, p),
@@ -45,8 +47,12 @@ const poolRow: Parser<PoolRow> = (v, p) => {
   };
 };
 const pool: Parser<Pool> = (v, p) => {
-  const r = object(v, p, ['rows', 'positions', 'summary']);
+  const r = object(v, p, ['rows', 'positions', 'summary', 'sorts']);
   return {
+    sorts: array(r.sorts, p, (v, p) => {
+      const s = object(v, p, ['key', 'label']);
+      return { key: text(s.key, p), label: text(s.label, p) };
+    }),
     rows: array(r.rows, p, poolRow), positions: array(r.positions, p, text), summary: text(r.summary, p),
   };
 };

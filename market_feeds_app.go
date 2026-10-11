@@ -142,7 +142,7 @@ func (a *App) TargetMarketReports() (ReportBoard, error) {
 		}
 		for _, p := range feed.value[0].Players {
 			if f, ok := lookup.Facts(p.ID.String()); ok {
-				names[p.ID.String()] = f.Name
+				names[p.ID.String()] = f.Name + " · " + string(f.Position) + " · " + f.Team
 			}
 		}
 	}

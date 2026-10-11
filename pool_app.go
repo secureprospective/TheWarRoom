@@ -23,22 +23,34 @@ import (
 const poolFreshFor = 5 * time.Minute
 
 type PoolRow struct {
-	Market     []MarketFact            `json:"market"`
-	ID         string                  `json:"id"`
-	Name       string                  `json:"name"`
-	Position   string                  `json:"position"`
-	Team       string                  `json:"team"`
-	Age        string                  `json:"age"`
-	Experience string                  `json:"experience"`
-	Minimum    snapshot.ContractAmount `json:"minimum"`
-	Plan       string                  `json:"plan"`   // the owner's open bid plan on him, in words; else empty
-	PlanID     string                  `json:"planId"` // that plan's correlation id; else empty
+	MarketLines []string                `json:"marketLines"`
+	Market      []MarketFact            `json:"market"`
+	ID          string                  `json:"id"`
+	Name        string                  `json:"name"`
+	Position    string                  `json:"position"`
+	Team        string                  `json:"team"`
+	Age         string                  `json:"age"`
+	Experience  string                  `json:"experience"`
+	Minimum     snapshot.ContractAmount `json:"minimum"`
+	Plan        string                  `json:"plan"`   // the owner's open bid plan on him, in words; else empty
+	PlanID      string                  `json:"planId"` // that plan's correlation id; else empty
+}
+
+type PoolSort struct {
+	Key   string `json:"key"`
+	Label string `json:"label"`
+}
+
+func poolSorts() []PoolSort {
+	return []PoolSort{{"name", "Player"}, {"position", "Position"}, {"minimum", "Minimum"},
+		{"projected", "Projected points"}, {"rank", "MFL rank"}, {"adp", "ADP"}, {"aav", "AAV"}}
 }
 
 type Pool struct {
-	Rows      []PoolRow `json:"rows"`
-	Positions []string  `json:"positions"`
-	Summary   string    `json:"summary"`
+	Sorts     []PoolSort `json:"sorts"`
+	Rows      []PoolRow  `json:"rows"`
+	Positions []string   `json:"positions"`
+	Summary   string     `json:"summary"`
 }
 
 // RawPoolScope is the pool's filter and sort. FranchiseID only picks whose bid plans show.
@@ -50,7 +62,7 @@ type RawPoolScope struct {
 }
 
 func (r RawPoolScope) Validate() error {
-	if !slices.Contains([]string{"name", "position", "minimum"}, r.Sort) {
+	if !slices.ContainsFunc(poolSorts(), func(s PoolSort) bool { return s.Key == r.Sort }) {
 		return fmt.Errorf("pool scope: unknown sort %q", r.Sort)
 	}
 	if r.FranchiseID != "" {
@@ -140,7 +152,7 @@ const poolHow = "Every player MFL lists as a free agent, joined to the held play
 // TargetPool reads the held free-agent list: no network. Open the pool with TargetPoolRefresh
 // first; a list never fetched is a failed reading, not an empty one.
 func (a *App) TargetPool(raw RawPoolScope) Reading[Pool] {
-	empty := Pool{Rows: []PoolRow{}, Positions: []string{}}
+	empty := Pool{Rows: []PoolRow{}, Positions: []string{}, Sorts: poolSorts()}
 	if err := raw.Validate(); err != nil {
 		return poolReading(empty, snapshot.Provenance{}, ReadingFailed, err.Error(), poolHow)
 	}
@@ -197,6 +209,7 @@ func (a *App) poolRows(ctx context.Context, ids []playerid.PlayerID, lk normaliz
 		if row.Market == nil {
 			row.Market = facts[""]
 		}
+		row.MarketLines = poolMarketLines(row.Market)
 		all = append(all, row)
 	}
 	sortPool(all, raw)
@@ -205,7 +218,7 @@ func (a *App) poolRows(ctx context.Context, ids []playerid.PlayerID, lk normaliz
 	if raw.Position != "" {
 		summary = fmt.Sprintf("%d free agents at %s of %d on MFL's list", len(all), raw.Position, len(ids)-left)
 	}
-	return Pool{Rows: all, Positions: positions, Summary: summary}, left
+	return Pool{Rows: all, Positions: positions, Summary: summary, Sorts: poolSorts()}, left
 }
 
 func poolRow(id playerid.PlayerID, f normalize.PlayerFacts, season int, now time.Time, plan bidPlanBrief) PoolRow {
@@ -265,6 +278,19 @@ func sortPool(rows []PoolRow, raw RawPoolScope) {
 	}
 	slices.SortFunc(rows, func(x, y PoolRow) int {
 		c := 0
+		if index := slices.Index([]string{"projected", "rank", "adp", "aav"}, raw.Sort); index >= 0 {
+			xv, yv := poolMarketValue(x, index), poolMarketValue(y, index)
+			if xv == nil || yv == nil {
+				if xv != nil {
+					return -1
+				}
+				if yv != nil {
+					return 1
+				}
+			} else {
+				c = cmp.Compare(*xv, *yv)
+			}
+		}
 		switch raw.Sort {
 		case "position":
 			c = cmp.Compare(positionOrder(x.Position), positionOrder(y.Position))
@@ -279,4 +305,39 @@ func sortPool(rows []PoolRow, raw RawPoolScope) {
 		}
 		return c
 	})
+}
+
+func poolMarketValue(row PoolRow, index int) *float64 {
+	if index >= len(row.Market) {
+		return nil
+	}
+	return row.Market[index].value
+}
+
+// poolNoMarket stands in for four dashes when MFL lists no projection, rank, ADP or AAV for a player.
+const poolNoMarket = "No MFL market data"
+
+func poolMarketLines(facts []MarketFact) []string {
+	parts := []string{"Proj —", "Rank —", "ADP —", "AAV —"}
+	held := false
+	for i, fact := range facts {
+		if i >= len(parts) || fact.value == nil {
+			continue
+		}
+		held = true
+		switch i {
+		case 0:
+			parts[i] = fmt.Sprintf("Proj %.1f", *fact.value)
+		case 1:
+			parts[i] = "Rank " + strings.Replace(fact.Text, " · ", ", ", 1)
+		case 2:
+			parts[i] = fmt.Sprintf("ADP %.0f (%.0f–%.0f)", *fact.value, fact.Range.Lo, fact.Range.Hi)
+		case 3:
+			parts[i] = fmt.Sprintf("AAV %.1f%%", *fact.value)
+		}
+	}
+	if !held {
+		return []string{poolNoMarket}
+	}
+	return []string{parts[0] + " · " + parts[1], parts[2] + " · " + parts[3]}
 }

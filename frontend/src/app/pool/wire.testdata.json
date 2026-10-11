@@ -424,6 +424,36 @@
  },
  "empty": {
   "value": {
+   "sorts": [
+    {
+     "key": "name",
+     "label": "Player"
+    },
+    {
+     "key": "position",
+     "label": "Position"
+    },
+    {
+     "key": "minimum",
+     "label": "Minimum"
+    },
+    {
+     "key": "projected",
+     "label": "Projected points"
+    },
+    {
+     "key": "rank",
+     "label": "MFL rank"
+    },
+    {
+     "key": "adp",
+     "label": "ADP"
+    },
+    {
+     "key": "aav",
+     "label": "AAV"
+    }
+   ],
    "rows": [],
    "positions": [],
    "summary": ""
@@ -450,8 +480,42 @@
  },
  "pool": {
   "value": {
+   "sorts": [
+    {
+     "key": "name",
+     "label": "Player"
+    },
+    {
+     "key": "position",
+     "label": "Position"
+    },
+    {
+     "key": "minimum",
+     "label": "Minimum"
+    },
+    {
+     "key": "projected",
+     "label": "Projected points"
+    },
+    {
+     "key": "rank",
+     "label": "MFL rank"
+    },
+    {
+     "key": "adp",
+     "label": "ADP"
+    },
+    {
+     "key": "aav",
+     "label": "AAV"
+    }
+   ],
    "rows": [
     {
+     "marketLines": [
+      "Proj 2.2 · Rank 1296, Up 20",
+      "ADP — · AAV —"
+     ],
      "market": [
       {
        "label": "Projected points",
@@ -492,6 +556,9 @@
      "planId": "bid-00000000000000000000000000000002"
     },
     {
+     "marketLines": [
+      "No MFL market data"
+     ],
      "market": [
       {
        "label": "Projected points",
@@ -532,6 +599,10 @@
      "planId": ""
     },
     {
+     "marketLines": [
+      "Proj 17.9 · Rank 929, Down 538",
+      "ADP 25 (1–179) · AAV 16.1%"
+     ],
      "market": [
       {
        "label": "Projected points",
