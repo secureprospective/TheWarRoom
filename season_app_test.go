@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -44,6 +45,9 @@ func (s *seasonTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	if s.failure == export {
 		return nil, errors.New("synthetic offline")
 	}
+	if id := r.URL.Query().Get("BRACKET_ID"); id != "" {
+		export += "_" + id
+	}
 	return seasonResponse(s.bodies[export]), nil
 }
 
@@ -54,6 +58,20 @@ func seasonResponse(body string) *http.Response {
 func seasonFixture(t *testing.T, feed, name string) string {
 	t.Helper()
 	body, err := os.ReadFile("internal/ingestion/" + feed + "/testdata/" + name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(body)
+}
+
+// seasonGzFixture reads a gzipped fixture, kept compressed because the real export is large.
+func seasonGzFixture(t *testing.T, feed, name string) string {
+	t.Helper()
+	zr, err := gzip.NewReader(strings.NewReader(seasonFixture(t, feed, name)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := io.ReadAll(zr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,6 +95,12 @@ func seasonTestApp(t *testing.T) (*App, *seasonTransport, *[]time.Duration, *int
 			"playerRanks":      seasonFixture(t, "marketfeeds", "playerRanks.json"),
 			"adp":              seasonFixture(t, "marketfeeds", "adp.json"),
 			"aav":              seasonFixture(t, "marketfeeds", "aav.json"),
+			"weeklyResults":    seasonGzFixture(t, "weeklyresults", "weeklyResults-2026.json.gz"),
+			"playoffBrackets":  seasonFixture(t, "playoffs", "playoffBrackets-2026.json"),
+			"playoffBracket_1": seasonFixture(t, "playoffs", "playoffBracket_1-2026.json"),
+			"playoffBracket_4": seasonFixture(t, "playoffs", "playoffBracket_4-2026.json"),
+			"playoffBracket_5": seasonFixture(t, "playoffs", "playoffBracket_5-2026.json"),
+			"leagueStandings":  seasonFixture(t, "leaguestandings", "leagueStandings-2026.json"),
 		},
 	}
 	var err error
@@ -141,8 +165,9 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 		t.Fatal("wrong real feed counts or week")
 	}
 	if !reflect.DeepEqual(transport.requests,
-		[]string{"transactions", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks", "projectedScores", "playerRanks", "adp", "aav"}) ||
-		!reflect.DeepEqual(*pauses, []time.Duration{time.Second, time.Second, time.Second, time.Second, time.Second, time.Second, time.Second, time.Second, time.Second}) ||
+		[]string{"transactions", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks", "projectedScores", "playerRanks", "adp", "aav",
+			"weeklyResults", "playoffBrackets", "playoffBracket", "playoffBracket", "playoffBracket", "leagueStandings"}) ||
+		!reflect.DeepEqual(*pauses, slices.Repeat([]time.Duration{time.Second}, 15)) ||
 		*events != 1 {
 		t.Fatalf("requests %v pauses %v events %d", transport.requests, *pauses, *events)
 	}
@@ -158,7 +183,7 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 	transport.bodies["liveScoring"] = seasonFixture(t, "livescoring", "liveScoring.json")
 	a.refreshSeason(a.ctx)
 	r = seasonReading(t, a)
-	if transport.weeks[7] != "" || r.Lineups.Value.Week != 4 ||
+	if transport.weeks[17] != "" || r.Lineups.Value.Week != 4 ||
 		r.Lineups.Provenance.Source != "liveScoring default week" {
 		t.Fatal("default week not respected")
 	}
@@ -447,6 +472,7 @@ func TestSeasonWorkerUsesRefreshedWeek(t *testing.T) {
 	if !reflect.DeepEqual(transport.requests, []string{
 		"nflSchedule", "transactions", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks",
 		"projectedScores", "playerRanks", "adp", "aav",
+		"weeklyResults", "playoffBrackets", "playoffBracket", "playoffBracket", "playoffBracket", "leagueStandings",
 	}) || transport.weeks[2] != "5" {
 		t.Fatalf("order %v weeks %v", transport.requests, transport.weeks)
 	}

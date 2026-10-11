@@ -331,6 +331,15 @@ export function createCommands(
         void import('../reports/marketState').then(m => m.marketReportState.refresh(true));
       },
     }),
+    'race.reports': command({
+      ...ambient, id: 'race.reports', label: 'League race reports', aliases: [], args: ['action', 'value'],
+      run: (args: { action: 'refresh' | 'week' | 'team'; value: string }) => {
+        if (!['refresh', 'week', 'team'].includes(args.action))
+          throw new Error('League race: invalid action');
+        void import('../race/state').then(m => m.raceState.choose(args.action, args.value))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     'draft.reports': command({
       ...ambient, id: 'draft.reports', label: 'Draft reports', aliases: [], args: ['action'],
       run: (args: { action: 'refresh' | 'mfl' }) => {

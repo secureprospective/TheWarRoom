@@ -20,6 +20,8 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Layer 1 | `internal/ingestion/college` | CFBD season stats as a batch for the measure store: one call per college season, each team's totals summed for the share denominators. `Map` reads an archived body, so a season is re-read when the registry maps a measure it lacks. |
 | Layer 1 | `internal/ingestion/contracts` | NFL contracts (OverTheCap via nflverse, Parquet) as a batch: each player's contract terms under the season signed. Read every 30 days. |
 | Layer 1 | `internal/ingestion/injuries` | MFL's NFL injury designations (the league-less `injuries` export, fetched without L from api.myfantasyleague.com), the IR rule's input. Empty bodies and MFL's HTTP-200 error envelope both fail the fetch: a glitch must read "not checked", never "nobody is injured". |
+| Layer 1 | `internal/ingestion/weeklyresults` | Validated MFL weeklyResults for the whole season (W=YTD): every week's games, scores in exact hundredths, MFL's results and each side's started and benched players; unscored weeks keep their set lineups. |
+| Layer 1 | `internal/ingestion/playoffs` | Validated MFL playoffBrackets and playoffBracket (BRACKET_ID) exports: each bracket's games, seeds, scores and where an unknown side comes from. |
 | Layer 1 | `internal/ingestion/marketfeeds` | Validated MFL week projections and MFL-wide ranks, all-period ADP and auction-budget shares; fixture-only tests. |
 | Layer 1 | `internal/ingestion/freeagents` | MFL's `freeAgents` league export: the players on no roster, the pool bid plans are made from. MFL's HTTP-200 error envelope and a reply with no `freeAgents` section both fail the fetch; an empty pool is a valid answer. |
 | Layer 1 | `internal/normalize` | Raw records → domain types: the players lookup and roster join. |
@@ -34,6 +36,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Analytics | `internal/lab` | Frozen fingerprint-checked compiled Lab facts, typed columnar decoder, pure Market fitting, delivery, price lists, calendar, Draft slot returns, team-side Counterparties profiles and owner-scoped offer endings. Offline JS goldens in `tools/labparity` pin the reference engine and data hashes; Node is never required at runtime or by verify. |
 | Engine | `internal/engine` | The scoring pipeline as pure functions (L1, L3, L4 dispatch, L5, L6). |
 | Engine | `internal/engine/bid` | The free-agent auction's arithmetic and rules (rulebook §6) as pure functions: bid points in exact thousandths, the minimum salary by experience (`freeagency` reads the same table), eleven named rule checks with Go-written reasons, and the ProBoards post text. |
+| Engine | `internal/engine/race` | The league race as pure functions over weekly results: records, all-play, streaks, games back, MFL's standingsSort applied step by step with a trace, playoff seeding (division leaders first), the opening round and the bubble. Proved against the real 2025 and 2026 seasons in `race_test.go`. |
 | Engine | `internal/engine/eligibility` | MFL's IR and taxi rules as pure verdicts: per player and direction, eligible / ineligible (reason) / unknown (reason), from held feeds only (injuries status, players draft year, roster status, league capacities). The captured 2026-10-10 owner pages are its committed test oracle (`testdata/answer-key.csv`). |
 | Engine | `internal/model` | The measurable's model: a player's league-points percentile blended with a prior from pre-NFL facts, the talent and survival arcs, and `Params`, the fitted values per position (`model.*@POS`). Pure. |
 | Engine | `internal/model/fit` | Fits `model.Params` from stored seasons, scoring every choice on a holdout season. Pure; `cmd/fit` runs it. |
@@ -178,7 +181,7 @@ independently of React. Clock and snapshot providers load in parallel, never fal
 alone writes it and runs connect/forget. The provider lazily imports generated Wails bindings;
 `parseMFLKeyStatus` validates their five-state JSON before any status reaches the surface.
 
-`internal/leaguefeed` holds typed season transactions, assets, lineups and pending trades; pure leaf.
+`internal/leaguefeed` holds typed season transactions, assets, lineups, pending trades, weekly results and playoff brackets; pure leaf.
 `internal/ingestion/transactions` validates and converts the unkeyed MFL season transaction feed.
 `internal/ingestion/livescoring` validates and converts MFL saved weekly lineups and live totals.
 
@@ -258,3 +261,5 @@ picks (string PlayerID, epoch instants) and ownership; one adapter family, two e
 network; `draft_reports_reading.go` authors nine report tables, grid, timing and value-distance bars.
 `frontend/src/app/draftreports/` is lazy inside Draft room alongside the unchanged Draft lab;
 `draft.reports` refreshes or opens the discovered MFL room without submitting a pick.
+
+League Pulse › Race: `race_app.go` holds weeklyResults, the playoff brackets, MFL's standings and both M2 boards, refreshed with the hourly season refresh or on open (`TargetRaceRefresh`). `TargetRace(week, team, mine)` reads held data only and validates the choices; `race_reading.go`, `race_playoffs_reading.go` and `race_points_reading.go` write every report (M-002 standings on top, then M-008/C-02, M-090, M-170, M-074, M-014, M-161, M-071, M-076, M-077, M-011–M-013, M-009, M-010) through the shared `Report` shell. The lazy screen is `frontend/src/app/race/Race.tsx`. The league's divisions, conferences and standingsSort arrive with the rulebook (`league.RawConfig`).

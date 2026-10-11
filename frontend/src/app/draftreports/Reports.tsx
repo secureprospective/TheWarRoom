@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import type { EndpointId } from '../registry';
@@ -8,8 +8,10 @@ import { reportState } from './state';
 import type { Board } from './provider';
 import './reports.css';
 
-export function ReportsView({ board, selected, refreshVerb = 'draft.reports' }: {
-  board: Board; selected: readonly string[]; refreshVerb?: 'draft.reports' | 'market.reports';
+export function ReportsView({ board, selected, refreshVerb = 'draft.reports', controls }: {
+  board: Board; selected: readonly string[];
+  refreshVerb?: 'draft.reports' | 'market.reports' | 'race.reports';
+  controls?: ReactNode;
 }) {
   const report = board.reports.find(r => selected.includes(r.id)) ?? board.reports[0];
   return <div className="market draft-reports">
@@ -19,10 +21,15 @@ export function ReportsView({ board, selected, refreshVerb = 'draft.reports' }: 
         label={r.title} active={report.id === r.id}>{r.title}</Act>)}
     </div>
     <div className="market-controls">
-      <Act verb={refreshVerb} args={{ action: 'refresh' }} label={board.refresh}>{board.refresh}</Act>
+      {refreshVerb === 'race.reports'
+        ? <Act verb="race.reports" args={{ action: 'refresh', value: '' }} label={board.refresh}>
+          {board.refresh}
+        </Act>
+        : <Act verb={refreshVerb} args={{ action: 'refresh' }} label={board.refresh}>{board.refresh}</Act>}
       {board.mflLabel && <Act verb="draft.reports" args={{ action: 'mfl' }} disabled={!board.mflUrl}
         label={board.mflLabel}>{board.mflLabel}</Act>}
     </div>
+    {controls}
     <ReportView key={report.id} report={report} howLabel={board.howLabel} />
   </div>;
 }

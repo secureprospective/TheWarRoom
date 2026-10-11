@@ -44,6 +44,21 @@ describe('Go player market reports', () => {
     }
     expect(board().reports.find(r => r.id === 'M-069')!.how).toContain('not this league\'s dollars');
   });
+  it('keeps a group together under one heading and sorts inside it', () => {
+    const rows = [
+      { cells: ['A low', '1'], range: null, sort: [0, 1], group: 'East' },
+      { cells: ['A high', '9'], range: null, sort: [1, 9], group: 'East' },
+      { cells: ['B mid', '5'], range: null, sort: [2, 5], group: 'West' },
+    ];
+    expect(sortedRows(rows, { column: 1, desc: true }).map(r => r.cells[0]))
+      .toEqual(['A high', 'A low', 'B mid']);
+    const report = { id: 'M-002', title: 'Standings', columns: ['Franchise', 'Points'], rows, summary: [],
+      source: 'Source: MFL', asOf: 'As of: Oct 11, 2026, 2:14 PM', note: '', how: 'how', status: 'ok' };
+    const html = renderToStaticMarkup(
+      createElement(ReportView, { report: report as never, howLabel: 'How' }));
+    expect(html.match(/scope="colgroup"/g)).toHaveLength(2);
+    expect(html).toMatch(/colspan="2">East<\/th>/i);
+  });
   it('sorts by Go numeric keys, never parsed display strings, with stable ties', () => {
     const rows = [
       { cells: ['Ten', 'unparseable'], range: null, sort: [0, 10] },

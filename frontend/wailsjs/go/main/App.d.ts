@@ -137,6 +137,10 @@ export function TargetPoolRefresh(arg1:boolean):Promise<void>;
 
 export function TargetPulseNow():Promise<main.PulseReading>;
 
+export function TargetRace(arg1:number,arg2:string,arg3:string):Promise<main.RaceBoard>;
+
+export function TargetRaceRefresh(arg1:boolean):Promise<void>;
+
 export function TargetReleasePlans(arg1:main.RawReleaseRequest):Promise<main.Reading___main_ReleasePlanView_>;
 
 export function TargetSeason():Promise<main.SeasonReading>;

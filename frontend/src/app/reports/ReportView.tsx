@@ -4,13 +4,26 @@ import { reportSort, sortedRows } from './sortState';
 import type { Report } from './contract';
 import '../draftreports/reports.css';
 
+// WeekBars is a row's values as bars on the report's one scale, zero to barMax.
+export function WeekBars({ bars, labels, max }: { bars: number[]; labels: string[]; max: number }) {
+  const width = 300 / Math.max(bars.length, 1);
+  return <svg className="report-bars" viewBox="0 0 300 40" role="img"
+    aria-label={bars.map((b, i) => `${labels[i]}: ${b.toFixed(2)}`).join(', ')}>
+    <line className="axis" x1="0" x2="300" y1="39.5" y2="39.5" />
+    {bars.map((b, i) => <rect key={i} x={i * width + 1} width={Math.max(width - 2, 1)}
+      y={39 - (b / max) * 38} height={(b / max) * 38}>
+      <title>{`${labels[i]}: ${b.toFixed(2)}`}</title>
+    </rect>)}
+  </svg>;
+}
 function ReportTable({ report }: { report: Report }) {
   const sort = reportSort.use()[report.id];
   const rows = sortedRows(report.rows, sort);
   const sortLabel = (i: number) => sort?.column === i && !sort.desc
     ? report.sortDescending : report.sortAscending;
   return <div className="draft-table-scroll" tabIndex={0} role="region" aria-label={report.title}>
-    <table className={report.columns.length <= 3 ? 'report-compact' : undefined}>
+    <table className={report.columns.length <= 3 ? 'report-compact'
+      : report.columns.length >= 6 ? 'report-dense' : undefined}>
       <thead><tr>{report.columns.map((c, i) =>
       <th key={i} scope="col"
         aria-sort={sort?.column === i ? (sort.desc ? 'descending' : 'ascending') : 'none'}>
@@ -20,12 +33,18 @@ function ReportTable({ report }: { report: Report }) {
             {c}
           </Act> : c}
       </th>)}</tr></thead>
-      <tbody>{rows.map((row, i) => <tr key={i}>{row.cells.map((cell, j) =>
+      <tbody>{rows.map((row, i) => [row.group && row.group !== rows[i - 1]?.group &&
+        <tr key={`g${i}`} className="report-group"><th scope="colgroup" colSpan={report.columns.length}>
+          {row.group}</th></tr>,
+      <tr key={i} className={row.mine ? 'report-mine' : undefined}
+        aria-current={row.mine ? 'true' : undefined}>{row.cells.map((cell, j) =>
         <td key={j} title={row.titles?.[j]}
           className={report.columns[j] === 'Local time' ? 'draft-local-time' : undefined}>
           {cell.split('\n').map((line, k) => <div className="draft-cell-line" key={k}>{line}</div>)}
           {j === row.cells.length - 1 && row.range && <RangeBar range={row.range} />}
-        </td>)}</tr>)}</tbody>
+          {j === row.cells.length - 1 && row.bars && report.barMax && report.barLabels &&
+            <WeekBars bars={row.bars} labels={report.barLabels} max={report.barMax} />}
+        </td>)}</tr>])}</tbody>
     </table>
   </div>;
 }

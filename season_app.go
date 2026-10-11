@@ -135,6 +135,10 @@ func (a *App) refreshSeason(ctx context.Context) {
 	}
 	a.refreshDraftReports(ctx)
 	a.refreshMarketFeeds(ctx, false)
+	if err := pause(ctx, time.Second); err != nil {
+		return
+	}
+	a.refreshRace(ctx)
 	a.revalidateReadyRosterMoves(ctx)
 }
 

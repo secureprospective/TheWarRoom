@@ -3,12 +3,16 @@ import type { MarketRange } from '../market/contract';
 import { endpointById } from '../registry';
 import type { EndpointId } from '../registry';
 
-export type ReportRow = { cells: string[]; range: MarketRange | null; sort?: number[]; titles?: string[] };
+export type ReportRow = {
+  cells: string[]; range: MarketRange | null; sort?: number[]; titles?: string[];
+  mine?: boolean; bars?: number[]; group?: string;
+};
 export type Report = {
   id: string; title: string; note: string; status: 'ok' | 'empty' | 'failed' | 'stale';
   source: string; asOf: string; how: string; columns: string[];
   sortAscending?: string; sortDescending?: string;
   rows: ReportRow[]; summary: ReportRow[]; link: { label: string; endpoint: EndpointId } | null;
+  barMax?: number; barLabels?: string[];
 };
 export type Board = {
   title: string; loading: string; refresh: string; howLabel: string; mflLabel: string;
@@ -29,9 +33,13 @@ export function range(v: unknown, p: string): MarketRange | null {
   return result;
 }
 export function report(v: unknown, p: string): Report {
-  const r = object(v, p, ['id', 'title', 'note', 'status', 'source', 'asOf', 'how', 
-    'columns', 'rows', 'summary', 'link', 'sortAscending', 'sortDescending']);
+  const r = object(v, p, ['id', 'title', 'note', 'status', 'source', 'asOf', 'how',
+    'columns', 'rows', 'summary', 'link', 'sortAscending', 'sortDescending', 'barMax', 'barLabels']);
   const columns = array(r.columns, p, text);
+  const barLabels = r.barLabels === undefined ? undefined : array(r.barLabels, p, text);
+  const barMax = r.barMax === undefined ? undefined : r.barMax;
+  if (barMax !== undefined && (typeof barMax !== 'number' || !Number.isFinite(barMax) || barMax <= 0))
+    throw new Error(`${p}: invalid chart scale`);
   return {
     id: text(r.id, p), title: text(r.title, p), note: text(r.note, p),
     status: choice(r.status, p, ['ok', 'empty', 'failed', 'stale']), source: text(r.source, p),
@@ -44,6 +52,7 @@ export function report(v: unknown, p: string): Report {
       endpointById(endpoint as EndpointId);
       return { label: text(l.label, `${p}.link`), endpoint: endpoint as EndpointId };
     })(),
+    ...(barLabels && barMax !== undefined ? { barLabels, barMax } : {}),
     summary: r.summary === null ? [] : array(r.summary, p, (v, p) => {
       const row = object(v, p, ['cells', 'range', 'sort', 'titles']);
       const cells = array(row.cells, p, text);
@@ -51,7 +60,7 @@ export function report(v: unknown, p: string): Report {
       return { cells, range: null };
     }),
     rows: array(r.rows, p, (v, p) => {
-      const row = object(v, p, ['cells', 'range', 'sort', 'titles']);
+      const row = object(v, p, ['cells', 'range', 'sort', 'titles', 'mine', 'bars', 'group']);
       const cells = array(row.cells, p, text);
       if (cells.length !== columns.length) throw new Error(`${p}: column count mismatch`);
       const sort = row.sort === undefined ? undefined : array(row.sort, p, (v, p) => {
@@ -61,7 +70,18 @@ export function report(v: unknown, p: string): Report {
       const titles = row.titles === undefined ? undefined : array(row.titles, p, text);
       if ((sort && sort.length !== columns.length) || (titles && titles.length !== columns.length))
         throw new Error(`${p}: column metadata mismatch`);
-      return { cells, range: range(row.range, p), sort, titles };
+      const bars = row.bars === undefined ? undefined : array(row.bars, p, (v, p) => {
+        if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || barMax === undefined || v > barMax)
+          throw new Error(`${p}: bar outside the chart scale`);
+        return v;
+      });
+      if (bars && bars.length !== barLabels?.length) throw new Error(`${p}: bar count mismatch`);
+      if (row.mine !== undefined && typeof row.mine !== 'boolean') throw new Error(`${p}: invalid mine flag`);
+      if (row.group !== undefined && (typeof row.group !== 'string' || !row.group))
+        throw new Error(`${p}: invalid group`);
+      return { cells, range: range(row.range, p), sort, titles,
+        ...(row.mine ? { mine: true } : {}), ...(bars ? { bars } : {}),
+        ...(row.group ? { group: row.group } : {}) };
     }),
   };
 }

@@ -1,18 +1,18 @@
 id,source,name,kind,gm_question,when,gravity,clock,data,placement,verb,disposition,ring,status,sol_ids,disposition_note,merged_into,merged_place,gravity_reason,ring_note,gravity_note
 M-001,MFL,Live Scoring,Read,How are my games going right now?,"ES/MS/DR, gamedays",G2,live,liveScoring,League Pulse › Now,endpoint.open id=M-001,kept,3,spec,A001 A194 A310,kept,,,active lineup calls lock at kickoff,PulseNow.tsx:43 shows held scores; live polling awaits a refresh cadence.,G2 — active lineup calls lock at kickoff
-M-002,MFL,Standings,Read,Where do I sit in the race?,"ES/MS/DR, weekly",G1,weekly,"weeklyResults, league",League Pulse › Race,endpoint.open id=M-002,kept,3,spec,A002 A211,kept,,,misreads cost matchup calls,Race standings await a standings report surface.,G1 — misreads cost matchup calls
+M-002,MFL,Standings,Read,Where do I sit in the race?,"ES/MS/DR, weekly",G1,weekly,"weeklyResults, league",League Pulse › Race,endpoint.open id=M-002,kept,3,built,A002 A211,kept,,,misreads cost matchup calls,3,G1 — misreads cost matchup calls
 M-003,MFL,Weekly Results O=22,Read,What happened each week?,season,G0,none,weeklyResults,League Pulse › Now,endpoint.open id=M-003,kept,3,spec,A003 A235,kept,,,,Weekly results await the reports adapter and week selector.,G0
 M-004,MFL,Last 3 Weeks O=258,Read,What's my recent form?,season,G0,none,weeklyResults,League Pulse › Now,endpoint.open id=M-004,kept,3,spec,A004,kept,,,,3,G0
 M-005,MFL,Weekly Matchup view,Read,How did the head-to-head go?,season,G0,none,weeklyResults,League Pulse › Now,endpoint.open id=M-005,kept,3,spec,A005,kept,,,,PulseNow.tsx:43 shows current matchups; past-week selection awaits the reports adapter.,G0
 M-006,MFL,Scoring Detail (owner 403),Retire,—,—,G0,—,—,,,retired,4,spec,,"retired — dead link wired into ~1,400 places (defect D2)",,,—,—,—
 M-007,MFL,Weekly Summary O=31,Read,The week at a glance?,"season, weekly",G1,weekly,weeklyResults,League Pulse › Now,endpoint.open id=M-007,kept,3,spec,A007 A233,kept,,,informs next-week calls,Weekly summary awaits the reports adapter.,G1 — informs next-week calls
-M-008,MFL,Power Rank O=101,Decide,Who is actually strong?,"season, weekly",G1,weekly,facts (merges with C-02),League Pulse › Race,endpoint.open id=M-008,kept,3,spec,A008 A212 A232 A312,kept,,,trade-posture input,3,G1 — trade-posture input
-M-009,MFL,Starting Lineups O=06,Read,What is everyone starting?,"season, weekly",G1,weekly,rosters,League Pulse › Race,endpoint.open id=M-009,kept,3,spec,A022,kept,,,matchup intel,3,G1 — matchup intel
-M-010,MFL,Lineup Details O=210,Read,Slots: optimal vs actual?,"season, weekly",G1,weekly,"rosters, playerScores",League Pulse › Race,endpoint.open id=M-010,kept,3,spec,A023,kept,,,,3,G1
-M-011,MFL,Fantasy Schedule O=15,Read,"Who plays whom, when?",ALL,G1,fixed,schedule,League Pulse › Race,endpoint.open id=M-011,kept,3,spec,A009 A234,kept,,,bye/rival planning,3,G1 — bye/rival planning
-M-012,MFL,Schedule by Franchise O=16,Read,One team's slate,ALL,G0,fixed,schedule,League Pulse › Race,endpoint.open id=M-012,kept,3,spec,A010 A112,kept,,,,3,G0
-M-013,MFL,Schedule Compact O=54,Read,Dense schedule grid,ALL,G0,fixed,schedule,League Pulse › Race,endpoint.open id=M-013,kept,3,spec,A011,kept,,,MFL's own density precedent,3,G0 — MFL's own density precedent
-M-014,MFL,Playoff Brackets O=79,Read,What's the path?,DR+,G1,weekly,"schedule, weeklyResults",League Pulse › Race,endpoint.open id=M-014,kept,3,spec,A012,kept,,,,3,G1
+M-008,MFL,Power Rank O=101,Decide,Who is actually strong?,"season, weekly",G1,weekly,facts (merges with C-02),League Pulse › Race,endpoint.open id=M-008,kept,3,built,A008 A212 A232 A312,kept,,,trade-posture input,3,G1 — trade-posture input
+M-009,MFL,Starting Lineups O=06,Read,What is everyone starting?,"season, weekly",G1,weekly,rosters,League Pulse › Race,endpoint.open id=M-009,kept,3,built,A022,kept,,,matchup intel,3,G1 — matchup intel
+M-010,MFL,Lineup Details O=210,Read,Slots: optimal vs actual?,"season, weekly",G1,weekly,"rosters, playerScores",League Pulse › Race,endpoint.open id=M-010,kept,3,built,A023,kept,,,,3,G1
+M-011,MFL,Fantasy Schedule O=15,Read,"Who plays whom, when?",ALL,G1,fixed,schedule,League Pulse › Race,endpoint.open id=M-011,kept,3,built,A009 A234,kept,,,bye/rival planning,3,G1 — bye/rival planning
+M-012,MFL,Schedule by Franchise O=16,Read,One team's slate,ALL,G0,fixed,schedule,League Pulse › Race,endpoint.open id=M-012,kept,3,built,A010 A112,kept,,,,3,G0
+M-013,MFL,Schedule Compact O=54,Read,Dense schedule grid,ALL,G0,fixed,schedule,League Pulse › Race,endpoint.open id=M-013,kept,3,built,A011,kept,,,MFL's own density precedent,3,G0 — MFL's own density precedent
+M-014,MFL,Playoff Brackets O=79,Read,What's the path?,DR+,G1,weekly,"schedule, weeklyResults",League Pulse › Race,endpoint.open id=M-014,kept,3,built,A012,kept,,,,3,G1
 M-015,MFL,NFL Schedule,Read,"NFL byes, kickoffs",season,G1,weekly,"nflSchedule, nflByeWeeks",League Pulse › Now,endpoint.open id=M-015,kept,3,spec,A013 A239,kept,,,lineup/deadline planning,3,G1 — lineup/deadline planning
 M-016,MFL,NFL Box Score,Read,What happened in that NFL game?,season,G0,post-game,playerScores,League Pulse › Now,endpoint.open id=M-016,kept,3,spec,A014 A094,kept,,,,3,G0
 M-017,MFL,Weather ↗,Retire,—,—,G0,—,—,,,retired,4,spec,,"retired — external site, not league data (optional sourced context later; Open Question 12)",,,—,—,—
@@ -69,13 +69,13 @@ M-067,MFL,ADP Report R=ADP,Decide,What's the slot market?,RD,G1,draft,adp,War Ro
 M-068,MFL,Future Draft Picks O=100,Read,Who owns which future pick?,ALL,G2,sync,"draftResults, transactions",Trade Floor › Draft room,endpoint.open id=M-068,kept,3,built,A071,kept,,,trade-capital truth,"Held MFL draft report beside the Draft lab; draftResults or futureDraftPicks with source, local as-of and counting disclosure; picks happen on MFL only.",G2 — trade-capital truth
 M-069,MFL,AAV Report R=AAV,Decide,What do free agents cost?,UFA/OFA,G2,window,facts (AAV),War Room › Valuations and pool,endpoint.open id=M-069,kept,3,built,A072,kept,,,bid sizing,"Held MFL market feed; pool facts and shared sortable report with source, as-of and counting disclosure.",G2 — bid sizing
 M-070,MFL,All Reports hub page,Retire,—,—,G0,—,—,,,retired,4,spec,,"retired — 31-door index, defect D1; all children placed individually",,,—,—,—
-M-071,MFL,Bar Chart O=20,Read,Scoring trend,season,G0,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-071,kept,3,spec,A074 A213,kept,,,,3,G0
+M-071,MFL,Bar Chart O=20,Read,Scoring trend,season,G0,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-071,kept,3,built,A074 A213,kept,,,,3,G0
 M-072,MFL,Fantasy Box Score,Read,Quarter-by-quarter detail,season,G1,post-game,"weeklyResults, liveScoring",League Pulse › Now,endpoint.open id=M-072,kept,3,spec,A075 A116,kept,,,,PulseNow.tsx:30 shows starter totals; quarter detail awaits the box-score feed.,G1
 M-073,MFL,Scoring History O=118,Read,Points over time,ALL,G0,none,weeklyResults,League Pulse › Pools / Archive,endpoint.open id=M-073,kept,3,spec,A076 A115,kept,,,,3,G0
-M-074,MFL,Tiebreakers O=119,Read,Who wins ties?,DR+,G2,weekly,"league, weeklyResults",League Pulse › Race,endpoint.open id=M-074,kept,3,spec,A077,kept,,,seeding,3,G2 — seeding
-M-075,MFL,Victory Points O=153,Read,VP standings (if used),season,G1,weekly,league,League Pulse › Race,endpoint.open id=M-075,kept,3,spec,A078,kept — confirm league uses VP (Open Question 9),,,,3,G1
-M-076,MFL,Starter Pts by Position O=23,Decide,Where do I leak points?,season,G1,weekly,playerScores,League Pulse › Race,endpoint.open id=M-076,kept,3,spec,A079,kept,,,,3,G1
-M-077,MFL,Starter Pts by Player O=37,Read,Points by starter,season,G0,weekly,playerScores,League Pulse › Race,endpoint.open id=M-077,kept,3,spec,A080,kept,,,,3,G0
+M-074,MFL,Tiebreakers O=119,Read,Who wins ties?,DR+,G2,weekly,"league, weeklyResults",League Pulse › Race,endpoint.open id=M-074,kept,3,built,A077,kept,,,seeding,3,G2 — seeding
+M-075,MFL,Victory Points O=153,Read,VP standings (if used),season,G1,weekly,league,,,retired,3,spec,A078,"retired — the league does not use Victory Points (spec §8 Q6, answered 2026-10-07)",,,,3,G1
+M-076,MFL,Starter Pts by Position O=23,Decide,Where do I leak points?,season,G1,weekly,playerScores,League Pulse › Race,endpoint.open id=M-076,kept,3,built,A079,kept,,,,3,G1
+M-077,MFL,Starter Pts by Player O=37,Read,Points by starter,season,G0,weekly,playerScores,League Pulse › Race,endpoint.open id=M-077,kept,3,built,A080,kept,,,,3,G0
 M-078,MFL,Salaries & Contracts R=SALARIES,Read,Every contract in the league,ALL,G2,sync,"league, rosters",Franchise HQ › Contracts and cap,endpoint.open id=M-078,kept,2,built,A082,kept,,,cap decisions,2,G2 — cap decisions
 M-079,MFL,Player Additions & Position Changes R=NEWPLAY,Read,How did rosters form?,ALL,G0,none,transactions,League Pulse › Pools / Archive,endpoint.open id=M-079,kept,3,spec,A084,kept,,,,3,G0
 M-080,MFL,League History O=112,Read,Past seasons,"ALL, rare",G0,none,facts,League Pulse › Pools / Archive,endpoint.open id=M-080,kept,3,spec,A085,kept,,,,3,G0
@@ -88,7 +88,7 @@ M-086,MFL,Record Streaks O=232,Read,Streaks,"ALL, rare",G0,none,facts,League Pul
 M-087,MFL,NFL Draft O=215,Read,Who entered the NFL from where?,RD,G1,none,players,Trade Floor › Draft room,endpoint.open id=M-087,kept,3,spec,A096,kept,,,,NFL Draft O=215 is not held; unrelated to the league draftResults export.,G1
 M-088,MFL,Official Stat Changes,Read,Did a score change post-game?,season,G2,post-game,playerScores,League Pulse › Now,endpoint.open id=M-088,kept,3,spec,A097,kept,,,can flip a win,3,G2 — can flip a win
 M-089,MFL,Strange Plays,Read,League lore,"ALL, rare",G0,none,facts,League Pulse › Pools / Archive,endpoint.open id=M-089,kept,3,spec,A098,kept,,,,3,G0
-M-090,MFL,Projected Playoff Seedings,Decide,If the season ended today?,DR+,G1,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-090,kept,3,spec,A099,kept,,,,3,G1
+M-090,MFL,Projected Playoff Seedings,Decide,If the season ended today?,DR+,G1,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-090,kept,3,built,A099,kept,,,,3,G1
 M-091,MFL,League Settings O=26,Read,The rules as configured,ALL,G2,sync,"league, rules",Control Room › League,endpoint.open id=M-091,kept,3,spec,A100 A107,kept,,,legality of every Act,3,G2 — legality of every Act
 M-092,MFL,Widgets,Retire,—,—,G0,—,—,,,retired,4,spec,,"retired — MFL-site home customization, out of scope",,,—,—,—
 M-093,MFL,Email Log,Read (gated),What did the league mail out?,"ALL, rare",G0,none,league,Control Room › League,endpoint.open id=M-093,kept,3,spec,A102,kept (gated),,,for GM; commish audit,3,G0 for GM; commish audit
@@ -159,7 +159,7 @@ M-157,MFL,Waiver Order,Decide,Where am I in line?,season,G2,weekly,league,Home �
 M-158,MFL,Owner Activity,Read,What are owners doing?,ALL,G0,near-live,transactions,,endpoint.open id=M-158,merged,1,spec,A224,merged → C-05 league feed,C-05,,,with target,G0
 M-159,MFL,REPORTS tab (shell),Read,Report shortcuts,ALL,G0,none,composite,,endpoint.open id=M-159,merged,3,spec,A205,merged,,Report drawer,,with target,G0
 M-160,MFL,Overview (REPORTS module),Read,Week overview,season,G0,weekly,weeklyResults,,endpoint.open id=M-160,merged,1,spec,A236,merged → M-007,M-007,,,with target,G0
-M-161,MFL,All Play,Read/Decide,My record vs every team,season,G1,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-161,kept,3,spec,A237,kept,,,,3,G1
+M-161,MFL,All Play,Read/Decide,My record vs every team,season,G1,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-161,kept,3,built,A237,kept,,,,3,G1
 M-162,MFL,PLAYERS tab (shell),Read,Player shortcuts,ALL,G0,none,composite,,endpoint.open id=M-162,merged,2,spec,A206,merged,,War Room › Valuations and pool,,with target,G0
 M-163,MFL,Top lists by position ◆ (11 splits × 2 lists),Read/Decide,Best at each position,ALL,G1,weekly,"playerScores, players",,endpoint.open id=M-163,merged,2,spec,A240 A241 A242 A243 A244 A245 A246 A247 A248 A249 A250 A251 A252 A253 A254 A255 A256 A257 A258 A259 A260 A261,merged → M-037/M-039 with position filter,M-037 M-039,,,with target,G1
 M-164,MFL,Top Adds/Drops/Started/Owned ◆,Decide,Market pulse,season,G1,weekly,transactions,,endpoint.open id=M-164,merged,3,spec,A262 A263 A264 A265,merged → M-052 family,M-052,,,with target,G1
@@ -168,7 +168,7 @@ M-166,MFL,News digests (5 Newest · My 5 · Hot · Featured),Read,What moved tod
 M-167,MFL,Game of the Week recap/preview,Read,Featured game,season,G0,weekly,weeklyResults,,endpoint.open id=M-167,merged,3,spec,A272 A273,merged → M-021/M-018,M-021 M-018,,,with target,G0
 M-168,MFL,PLAYOFFS tab (shell),Read,Playoff view,DR+,G0,weekly,composite,,endpoint.open id=M-168,merged,3,spec,A208,merged,,League Pulse › Race,,with target,G0
 M-169,MFL,Playoff projections (Conf/Div/Wildcard winners),Decide,Who makes it?,DR+,G1,weekly,weeklyResults,,endpoint.open id=M-169,merged,3,spec,A274 A275 A276 A278 A279 A280,merged → M-090,M-090,,,with target,G1
-M-170,MFL,On the Bubble,Decide,Am I in or out?,DR+,G2,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-170,kept,3,spec,A277 A281,kept,,,seeding decisions,3,G2 — seeding decisions
+M-170,MFL,On the Bubble,Decide,Am I in or out?,DR+,G2,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-170,kept,3,built,A277 A281,kept,,,seeding decisions,3,G2 — seeding decisions
 M-171,MFL,POOLS tab (shell),Read,Pool view,season,G0,weekly,composite,,endpoint.open id=M-171,merged,3,spec,A209,merged,,League Pulse › Pools / Archive,,with target,G0
 M-172,MFL,Fantasy Pick'em submit O=179,Act,Make my picks,"season, weekly",G2,weekly,league (pools),League Pulse › Pools / Archive,pools.picks,kept,3,spec,A286,kept,,,weekly deadline,3,G2 — weekly deadline
 M-173,MFL,NFL Pick'em,Act,Make my NFL picks,"season, weekly",G2,weekly,league (pools),League Pulse › Pools / Archive,pools.picks,kept,3,spec,A288,kept,,,weekly deadline,3,G2 — weekly deadline
@@ -230,7 +230,7 @@ L-32,Lab,Scope disclosure: MFL exposes only the GM's own offers,Read,Whose offer
 L-33,Lab,"""How this is counted"" note",Read,Provenance of every number,ALL,G0,none,facts,War Room › Market,endpoint.open id=L-33,kept,2,built,B024 B050 B073 B079,kept — component on every analytics surface,,,,2,G0
 L-34,Lab,Checked-facts database (the standard itself),infrastructure,—,ALL,G0,sync,facts,Control Room › Data and sources,endpoint.open id=L-34,kept,3,spec,,kept — Control Room › Sources provenance,,,,Checked facts await the stand-alone s0–s5 data pipeline.,G0
 C-01,app,Asset board (on-field-now + dynasty value; league PPG + percentile),Decide,"What's every rostered player worth, now vs dynasty?",ALL,G2,sync,"rosters, playerScores, engine",War Room › Valuations and pool,endpoint.open id=C-01,kept,3,spec,C001 C002 C003,kept — War Room (league-wide); mine-scoped view in Franchise HQ,,,valuation backbone,PlayerInspector.tsx:44 leaves values unwired; the asset board awaits engine-value wiring.,G2 — valuation backbone
-C-02,app,"Power rankings — ""this season"" and ""the franchise"" views",Decide/Read,How strong am I really?,season,G1,weekly,facts,League Pulse › Race,endpoint.open id=C-02,kept,3,spec,C004 C005,kept — League Pulse › Race (merges M-008),,,,Power rankings await the Race surface and engine wiring.,G1
+C-02,app,"Power rankings — ""this season"" and ""the franchise"" views",Decide/Read,How strong am I really?,season,G1,weekly,facts,League Pulse › Race,endpoint.open id=C-02,kept,3,built,C004 C005,kept — League Pulse › Race (merges M-008),,,,3,G1
 C-03,app,Home seasonal card,Read,What phase of the year is it?,ALL,G2,window,"league, local",Home › Seasonal card,endpoint.open id=C-03,kept,0,built,C006 C007,kept — Home (owns the node),,,routes every deadline,0,G2 — routes every deadline
 C-04,app,Calendar board,Read/Plan,What's due and when?,ALL,G3,window/live,"league, local",Calendar,endpoint.open id=C-04,kept,0,built,C008,kept — summoned calendar (merges M-096),,,the deadline surface,0,G3 — the deadline surface
 C-05,app,League feed,Read/Social,What just happened?,ALL,G1,near-live,"transactions, league",Home › Digests,endpoint.open id=C-05,kept,3,spec,C009,kept — comms channel; Home digest,,,,The league feed awaits the Digests surface.,G1

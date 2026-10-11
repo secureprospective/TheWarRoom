@@ -7,6 +7,11 @@ type ReportRow struct {
 	Titles []string     `json:"titles,omitempty"`
 	Cells  []string     `json:"cells"`
 	Range  *MarketRange `json:"range"`
+	// Mine marks the GM's own franchise; Bars are the row's chart values on the report's BarMax.
+	Mine bool      `json:"mine,omitempty"`
+	Bars []float64 `json:"bars,omitempty"`
+	// Group heads a run of rows (a division in the standings); rows of one group stay together.
+	Group string `json:"group,omitempty"`
 }
 
 type Report struct {
@@ -23,6 +28,8 @@ type Report struct {
 	Rows           []ReportRow `json:"rows"`
 	Summary        []ReportRow `json:"summary"`
 	Link           *ReportLink `json:"link"`
+	BarMax         float64     `json:"barMax,omitempty"`
+	BarLabels      []string    `json:"barLabels,omitempty"`
 }
 
 // ReportLink opens another report by its registry id, e.g. the full list behind a summary.

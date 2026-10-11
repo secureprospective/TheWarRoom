@@ -40,6 +40,7 @@ const CommandBar = lazy(() => import('../commands/CommandBar').then((m) => ({ de
 const HomePulseMount = lazy(() => import('./HomePulseMount'));
 const TradeDesk = lazy(() => import('./TradeDesk'));
 const Market = lazy(loadMarket);
+const Race = lazy(() => import('../race/Race'));
 const loadInspector = () => import('./PlayerInspector');
 const PlayerInspector = lazy(() => loadInspector().then((m) => ({ default: m.PlayerInspector })));
 
@@ -211,6 +212,10 @@ export function TargetApp() {
             ) ? (
             <Suspense fallback={null}>
               <Market snapshot={snapshot} />
+            </Suspense>
+          ) : s.node === 'pulse' && workspace.slug === 'race' ? (
+            <Suspense fallback={<p role="status">Opening Race…</p>}>
+              <Race />
             </Suspense>
           ) : s.node === 'control' && workspace.slug === 'app' ? (
             <Suspense fallback={null}>

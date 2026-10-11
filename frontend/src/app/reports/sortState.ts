@@ -6,9 +6,12 @@ type Sort = { column: number; desc: boolean };
 const store = createStore<Record<string, Sort>>(() => ({}));
 export function sortedRows(rows: ReportRow[], sort?: Sort): ReportRow[] {
   if (!sort) return rows;
+  // Rows of one group stay together, in the order the groups first appear; the sort runs inside each.
+  const groups = [...new Set(rows.map(row => row.group))];
   return rows.map((row, index) => ({ row, index })).sort((a, b) => {
+    const group = groups.indexOf(a.row.group) - groups.indexOf(b.row.group);
     const order = (a.row.sort?.[sort.column] ?? 0) - (b.row.sort?.[sort.column] ?? 0);
-    return (sort.desc ? -order : order) || a.index - b.index;
+    return group || (sort.desc ? -order : order) || a.index - b.index;
   }).map(({ row }) => row);
 }
 export const reportSort = {

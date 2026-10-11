@@ -14,6 +14,8 @@ func cloneConfig(c league.RawConfig) league.RawConfig {
 	c.RosterLimits = cloneLimits(c.RosterLimits)
 	c.Starters.Positions = cloneLimits(c.Starters.Positions)
 	c.Franchises = append([]league.Franchise(nil), c.Franchises...)
+	c.Conferences = append([]league.Conference(nil), c.Conferences...)
+	c.Divisions = append([]league.Division(nil), c.Divisions...)
 	return c
 }
 

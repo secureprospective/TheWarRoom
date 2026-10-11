@@ -112,6 +112,8 @@ describe('Endpoint map', () => {
       'L-33',
       'L-35', 'L-36',
       'M-030', 'M-148', 'M-153', 'C-03', 'C-04', 'S-03', 'S-06', 'S-07',
+      'M-002', 'M-008', 'C-02', 'M-009', 'M-010', 'M-011', 'M-012', 'M-013', 'M-014',
+      'M-071', 'M-074', 'M-076', 'M-077', 'M-090', 'M-161', 'M-170',
     ];
     for (const row of endpoints) {
       let status = 'spec';
@@ -207,7 +209,7 @@ describe('Endpoint map', () => {
 describe('Endpoint verbs and search', () => {
   it('offers all kept endpoints by their own name and never offers retired or merged rows', () => {
     const offered = candidates.filter((r) => r.kind === 'endpoint');
-    expect(offered).toHaveLength(209);
+    expect(offered).toHaveLength(208);
     for (const row of endpoints) {
       const match = rankResults(row.name, candidates).find(
         (r) => r.invocation.verb === 'endpoint.open' && r.invocation.args.id === row.id,

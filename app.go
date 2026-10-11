@@ -98,6 +98,7 @@ type App struct {
 	seasonMarket        map[string]heldSeasonFeed[[]marketfeeds.Feed]
 	seasonDraftResults  heldSeasonFeed[[]draftreports.Pick]
 	seasonFuturePicks   heldSeasonFeed[[]draftreports.FuturePick]
+	race                raceHeld
 	lineupsWeek         int
 	seasonChanged       func(context.Context)
 	seasonPause         func(context.Context, time.Duration) error
