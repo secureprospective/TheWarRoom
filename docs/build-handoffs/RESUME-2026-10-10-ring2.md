@@ -1,5 +1,64 @@
 # RESUME: TheWarRoom ring 2, the decision layer (started 2026-10-10)
 
+## ⏩ UPDATE 2026-10-11 03:25 CDT (supersedes everything below; read this first)
+**Christopher 10-11 ~02:20: "no more using sonnet, that ruined our context windows and delayed us."**
+Sol is the only builder. Sonnet built p2i/p2i2 (headless `claude -p`, CLAUDE_RC_REMOTE=1) — don't repeat.
+
+**Committed on session/ring-2 (ring-0 worktree):** `8e5151e` p2h + p2h1 (per-cell dead cap PW5;
+What-if panel in Contracts and cap, one "What if…" menu per row, Change column, local baseline);
+`52142ac` merge of session/ring-2-lab `7aff3f5` (p2i + p2i2: War Room › Valuations and pool, bid
+plans, bid_facts, rule checks, ProBoards post copy, "I didn't post it"). Merge: registry CSV kept
+C-06.6 built + C-06.7 in pool; models.ts regenerated. verify 578/578, entry 321,552/321,818.
+Live-verified on Claude-OS: pool 804–808 FAs, §6 minimums match rulebook, points 1.800 (2y $1.5M),
+clipboard post text exact; what-if cut Banks $700,000, buyout Benton $1,630,000, cut Benton
+$2,280,000, Undo, Reset all correct by hand. Claude's own mutant (restructured rate ignored) killed.
+Not live-tested: the stale "MFL changed" banner (tests only). Claude-OS runs the merged build.
+
+**IN FLIGHT: p2h2 on Sol** (cut/buyout plans from the what-if, PW2 invalidation, PW4 Landed, cut
+confirmation, buyout channel; plus carry-over polish: "Expires / status" header wraps, ~40 px gap under
+the empty What-if sentence, menu Acts in monospace). Brief `~/fleet/briefs/warroom-ring2-p2h2-cut-plans.md`.
+Run dir `~/fleet/runs/warroom-ring2-2026-10-10/p2h2/`, worktree ring-0 (UNSTAGED Sol edits: do not
+commit there until done). Started 02:52; stream hung 03:05; resumed 03:21 with
+`~/fleet/runs/warroom-ring2-2026-10-10/resume-phase.sh p2h2` (kills wrapper then pi, reruns the SAME
+session id; writes sentinel itself). Alive = mtime of `p2h2/sessions/*.jsonl` (idle >900 s = hung →
+run resume-phase.sh again via `ssh -f`). Done = `p2h2/sentinel`. CT105 watcher bjsl6ht0u.
+On done: read REPORT.md, review checks (offseason, 2 buyouts, Landed predicate), plant own mutant,
+deploy, click Make-a-plan → confirmation → hand-off → My moves card; fix pass if needed; commit.
+
+**NEXT ACTIONS, in order**
+1. Finish p2h2 as above; commit on session/ring-2.
+2. Dispatch p2j (brief staged `~/fleet/briefs/warroom-ring2-p2j-contract-acts.md`: RFA tender,
+   re-sign, franchise tag, extension, restructure; ProBoards hand-off D5; Landed by contract cells
+   PW4; "Rule unclear" disables instead of inventing). Live check, polish pass, commit.
+3. Run the panel's engineer seat (Sol) on the facts schema: `cd ~/fleet/briefs && SEATS=engineer
+   ssh -f … ~/fleet/bin/panel-dispatch.sh ~/fleet/briefs/panel-ring2-facts-schema.md`, then fold it into
+   the run-4 triage below and commit.
+4. p2l: full parity + UI audit, spec revision 2 (brief not written yet).
+5. Christopher's click-through, then merge session/ring-2 → main (he confirms first).
+
+**Facts-schema panel run 4 (02:56–03:02, `~/fleet/runs/panel-panel-ring2-facts-schema-20261011T075559Z-2950223/`)**
+Seats Kimi K3 (6/10 quotes ok), GLM 5.3 FLASH standing in (13/13 ok), Nemotron Ultra (0/11 by the
+checker: formatting only, spot-checked). `~/fleet/bin/panel-dispatch.sh` gained `MECHANIC_MODEL`
+(default z-ai/glm-5.3; backup /tmp/panel-dispatch.bak on Bee). GLM 5.3 still 429 at 02:32.
+- D1 split (Kimi a facts.db; GLM-flash c compile; Nemotron against c). **Triage: (c) stands.**
+  Nemotron's evidence refutes it (checks.py:139 proves over in-memory dicts, not SQL). Compiled facts
+  are a pure function of archived bodies: a facts.db can be materialized later at zero migration cost.
+- **New prerequisite s0 (verified):** archive is `TheWarRoom/league-archive/raw` (1,720 files, 110 MB,
+  2013–2026); history.db raw_archive holds only app-fetched bodies. s0 ingests it through `Record`
+  (archive.go:30) as a registered source.
+- D2: all three say both proofs (row diff vs frozen lab.json + goldens on compiled input; frozen pair
+  a permanent fixture). D3: imported rows carry provenance; app-authored events stay in their own
+  append-only stores (PW3); an override names what it supersedes; the compiler merges.
+
+**Open questions for Christopher (none block):** (1) p2i lifts the $12M/$24M year tiers in the
+playoffs along with the 1-year cap (else >$12M bids impossible after Wk 12); (2) ProBoards post
+format Player / Contract / Cap hit / Points (+ Snipe); (3) offers goldens in git; (4) buyout what-if
+in-season labelled "Offseason only".
+
+**Environment lessons:** launch Bee jobs with `ssh -f` (plain ssh + nohup & hangs the call);
+commits in a worktree need `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH` for the
+pre-commit hooks; background Claude subagents die on the confirm-action hook's "defer".
+
 ## ⏩ UPDATE 2026-10-10 20:00 CDT (supersedes the in-flight list below)
 - DONE + live-verified + committed on session/ring-2 (ring-0 worktree): p2g+p2g2 Contracts and cap
   `878b87a`; resume branch merged `0cb6952`; p2f+p2f2 Offers history (lab `2b6cb6e`) merged
