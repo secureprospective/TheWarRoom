@@ -8,6 +8,7 @@ import './market.css';
 
 import type { Snapshot } from '../data/contract';
 const Counterparties = lazy(() => import('../counterparties/Counterparties'));
+const OffersHistory = lazy(() => import('../offers/Offers'));
 const Draft = lazy(() => import('./Draft'));
 export default function Market({ kind, snapshot }: { kind?: string; snapshot?: Snapshot }) {
   const s = commands.use();
@@ -17,6 +18,8 @@ export default function Market({ kind, snapshot }: { kind?: string; snapshot?: S
         <Counterparties fid={kind?.slice(5)} snapshot={snapshot} />
       </Suspense>
     );
+  if (!kind && s.workspace[s.node] === 'offers-history')
+    return <Suspense fallback={null}><OffersHistory /></Suspense>;
   if (kind) return <MarketInspector kind={kind} />;
   return <MarketWorkspace />;
 }

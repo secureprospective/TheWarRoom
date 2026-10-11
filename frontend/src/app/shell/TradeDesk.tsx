@@ -109,8 +109,9 @@ function SavedTradePlans({ franchiseId, snapshot, visibleOffers }: {
 }
 export default function TradeDesk({ snapshot }: { snapshot: Snapshot }) {
   const franchiseId = commands.use().franchiseId;
-  if (!franchiseId) return <FranchisePicker snapshot={snapshot} />;
-  return <section className="trade-desk" aria-label="Trade desk and offers">
-    <FranchiseTrades key={franchiseId} franchiseId={franchiseId} snapshot={snapshot} />
+  return <section className="trade-desk" aria-label="Trade desk">
+    {franchiseId ? (
+      <FranchiseTrades key={franchiseId} franchiseId={franchiseId} snapshot={snapshot} />
+    ) : <FranchisePicker snapshot={snapshot} />}
   </section>;
 }

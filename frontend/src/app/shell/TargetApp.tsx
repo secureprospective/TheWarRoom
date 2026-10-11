@@ -202,11 +202,11 @@ export function TargetApp() {
             </Suspense>
           ) : s.node === 'hq' && workspace.slug === 'my-moves' && snapshot ? (
             <MovesMount snapshot={snapshot} />
-          ) : s.node === 'trade' && workspace.slug === 'trade-desk-and-offers' && snapshot ? (
+          ) : s.node === 'trade' && workspace.slug === 'trade-desk' && snapshot ? (
             <Suspense fallback={<p role="status">Opening Trade desk…</p>}>
               <TradeDesk snapshot={snapshot} />
             </Suspense>
-          ) : ['market', 'counterparties'].includes(workspace.slug) ? (
+          ) : ['market', 'counterparties', 'offers-history'].includes(workspace.slug) ? (
             <Suspense fallback={null}>
               <Market snapshot={snapshot} />
             </Suspense>

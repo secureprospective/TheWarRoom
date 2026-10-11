@@ -211,5 +211,25 @@ for(const s of teamSides){margin(s.players,0.05,`teams:${s.t.id}:${s.fid}:player
 // Rank 0 stands for the reference's null rank (unclassed); the boundaries are pinned at 10/22/23.
 const tierOf=[null,1,10,11,22,23,32].map(r=>r==null?'':T.tierOf(r));
 writeGolden('teams',JSON.stringify({header:{...header,teamsSHA:sha(readFileSync(teamsPath))},tradeSides:teamSides.map(side),tierOf,fixtures:teamFixtures},null,2)+'\n');
+const offerPath=join(lab,'app/js/views/tradelog.js');
+const offerSource=readFileSync(offerPath,'utf8');
+const offerBody=offerSource.slice(offerSource.indexOf('function offerStretches('),offerSource.indexOf('function offersChart('));
+const offerStretches=new Function('PHASES','OUTCOMES',offerBody+';return offerStretches;')(PHASES,['accepted','rejected','withdrawn','expired','unknown'].map(id=>({id})));
+const offerFixtures=[];
+for(const [from,to] of [[2013,2026],[2024,2026],[2013,2016]])
+ for(const direction of ['all','sent','received'])
+  for(const windows of [null,['spring'],['summer'],['season']])
+   for(const team of ['',...franchiseIds()]) {
+    const scope={from,to,direction,windows,team};
+    const v=offerStretches(data,{offerDir:direction,windows,team},from,to);
+    const value={owner:v.owner,dir:v.dir,offers:v.offers.map(o=>({ts:o.ts,year:o.year,season:o.season,phase:o.phase,by:o.by,to:o.to,outcome:o.outcome,decided:o.decided})),stretches:v.stretches.map(s=>({...s,phase:s.phase.id,best:!!s.best,worst:!!s.worst})),seasons:v.seasons,rate:v.rate};
+    const usable=v.stretches.filter(s=>s.known>=10);
+    for(let i=0;i<usable.length;i++)for(let j=i+1;j<usable.length;j++) {
+     const a=usable[i],b=usable[j];
+     margin(Math.abs(a.rate-b.rate),1.96*Math.hypot(a.se,b.se),`offers:${JSON.stringify(scope)}:${a.phase.id}/${b.phase.id}`);
+    }
+    offerFixtures.push({scope,value});
+   }
+writeGolden('offers',JSON.stringify({header:{...header,offersSHA:sha(readFileSync(offerPath))},fixtures:offerFixtures})+'\n');
 console.log(JSON.stringify({ties,knifeEdges:margins,minimum},null,2));
 if(margins.length)throw new Error('non-identity decision margins below 1e-6; see named rows above');

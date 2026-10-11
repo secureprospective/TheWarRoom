@@ -164,3 +164,7 @@
 .twr-app .inspector-closed { padding: 12px 0; display: flex; justify-content: center; background: var(--surface-1); }
 .twr-app .inspector-closed .act { writing-mode: vertical-rl; padding: 8px; align-self: flex-start; }
 .twr-app[data-inspector="closed"] .command-bar { right: 104px; }
+.twr-app select { appearance: none; -webkit-appearance: none; color-scheme: dark; max-width: 100%; border: 1px solid var(--surface-line-hi); border-radius: 0; background-color: var(--surface-2); color: var(--surface-tx1); font: inherit; padding: 7px 30px 7px 9px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%23e8eaed' stroke-width='1.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; }
+.twr-app select option { background: var(--surface-2); color: var(--surface-tx1); }
+.twr-app select:focus-visible { outline: 2px solid var(--signal-blue); outline-offset: 2px; }
+.twr-app select:disabled { opacity: .6; cursor: not-allowed; }

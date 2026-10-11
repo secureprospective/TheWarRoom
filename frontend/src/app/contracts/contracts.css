@@ -15,9 +15,9 @@
 .twr-app .contract-adjustments p { grid-column: 1 / -1; color: var(--surface-tx2); line-height: 1.6; }
 .twr-app .contract-controls { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: end; }
 .twr-app .contract-controls label { display: grid; gap: 3px; min-width: 100px; max-width: 100%; }
-.twr-app .contract-controls select, .twr-app .contract-controls button { color: var(--surface-tx1); background: var(--surface-1); border: 1px solid var(--surface-line-hi); font: inherit; padding: 5px; max-width: 100%; }
+.twr-app .contract-controls button { color: var(--surface-tx1); background: var(--surface-1); border: 1px solid var(--surface-line-hi); font: inherit; padding: 5px; max-width: 100%; }
 .twr-app .contract-controls p { flex-basis: 100%; color: var(--surface-tx2); margin: 0; }
-.twr-app .contract-controls :is(button, select):focus-visible, .twr-app .contracts summary:focus-visible { outline: 1px solid var(--surface-tx1); outline-offset: 2px; }
+.twr-app .contract-controls button:focus-visible, .twr-app .contracts summary:focus-visible { outline: 1px solid var(--surface-tx1); outline-offset: 2px; }
 .twr-app .contract-controls button { cursor: pointer; }
 .twr-app .contract-controls button:hover { background: var(--surface-3); }
 .twr-app .contract-table-container { container-type: inline-size; min-width: 0; }

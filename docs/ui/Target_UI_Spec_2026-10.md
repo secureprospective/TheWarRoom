@@ -93,14 +93,14 @@ Christopher said on 2026-10-10 that the lineup UI will be reworked later. No rep
 **Colour slots.** Each card has exactly four: status, verdict (only beyond chance), countdown and
 provenance. Colour is always paired with a text label or icon.
 
-## 4. Organization (GLM §4.1–4.2; Sol's cap of three workspaces per node)
+## 4. Organization (GLM §4.1–4.2; three workspaces per node except Trade Floor)
 
 | Node | Workspaces | Notes |
 |---|---|---|
 | Home | Seasonal card (owns the node) · alert tray · digests | phase router |
 | War Room | Market · Valuations and pool · Research | Lab market, asset board, free-agent pool, bid tracker |
 | Franchise HQ | Lineup and roster · Contracts and cap · My moves | Act plans, what-if, dead cap, app-local lists |
-| Trade Floor | Trade desk and offers · Counterparties · Draft room | accept, reject, revoke, DOT state; draft timing inside the draft room |
+| Trade Floor | Trade desk · Offers history · Counterparties · Draft room | accept, reject, revoke, DOT state; draft timing inside the draft room |
 | League Pulse | Now · Race · Pools / Archive | live game view and Classic/Default matchup in Now; report drawer for every MFL read report |
 | Control Room | App · Data and sources · League (role-gated) | engine params gated to Admin |
 

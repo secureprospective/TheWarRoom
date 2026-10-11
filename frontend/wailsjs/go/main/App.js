@@ -190,6 +190,10 @@ export function TargetMoves(arg1) {
   return window['go']['main']['App']['TargetMoves'](arg1);
 }
 
+export function TargetOffers(arg1) {
+  return window['go']['main']['App']['TargetOffers'](arg1);
+}
+
 export function TargetPickClock(arg1) {
   return window['go']['main']['App']['TargetPickClock'](arg1);
 }

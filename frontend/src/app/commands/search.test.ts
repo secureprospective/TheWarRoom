@@ -49,7 +49,7 @@ it('maps places, named presets, density and rostered players to registered verbs
   const c = createCommands(() => undefined);
   c.loadSnapshot(snapshot);
   const results = searchCandidates(c, snapshot);
-  expect(results.filter((r) => r.kind === 'place')).toHaveLength(18);
+  expect(results.filter((r) => r.kind === 'place')).toHaveLength(19);
   expect(results.filter((r) => r.kind === 'player')).toHaveLength(
     snapshot.rosters.value.reduce((sum, r) => sum + r.players.length, 0),
   );

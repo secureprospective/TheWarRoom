@@ -58,7 +58,7 @@ function alertReading(): AlertReading {
       { kind: 'lineup', urgency: 'U2', title: 'Check your lineup', detail: 'Go: needs another WR',
         node: 'hq', workspace: 'lineup-and-roster', at: '2026-10-08T23:15:00Z', provenance },
       { kind: 'trades', urgency: 'U1', title: '1 offer to you', detail: 'Review pending trade offers',
-        node: 'trade', workspace: 'trade-desk-and-offers', at: '2026-10-09T18:00:00Z', provenance },
+        node: 'trade', workspace: 'trade-desk', at: '2026-10-09T18:00:00Z', provenance },
     ],
     unavailable: [
       { kind: 'ir', note: 'NFL injury status not yet read (MFL injuries export)' },

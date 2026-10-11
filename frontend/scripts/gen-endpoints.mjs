@@ -38,7 +38,7 @@ const workspaces = {
   Home: ['Seasonal card', 'Alert tray', 'Digests'],
   'War Room': ['Market', 'Valuations and pool', 'Research'],
   'Franchise HQ': ['Lineup and roster', 'Contracts and cap', 'My moves'],
-  'Trade Floor': ['Trade desk and offers', 'Counterparties', 'Draft room'],
+  'Trade Floor': ['Trade desk', 'Offers history', 'Counterparties', 'Draft room'],
   'League Pulse': ['Now', 'Race', 'Pools / Archive'],
   'Control Room': ['App', 'Data and sources', 'League'],
 };

@@ -375,7 +375,7 @@ func (r RawOfferColumns) Validate() error {
 			return fmt.Errorf("%s: column length differs", c.name)
 		}
 	}
-	return nil
+	return validateOfferValues(r)
 }
 func (r RawOfferColumns) rows() []Offer {
 	out := make([]Offer, len(r.Ts))
