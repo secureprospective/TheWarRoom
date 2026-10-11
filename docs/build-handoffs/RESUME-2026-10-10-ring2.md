@@ -1,76 +1,79 @@
 # RESUME: TheWarRoom ring 2, the decision layer (started 2026-10-10)
 
-## ⏩ RESUME HERE (compact-safe 2026-10-10 17:40 CDT)
+## ⏩ RESUME HERE (compact-safe 2026-10-10 19:20 CDT)
 Goal (Christopher /goal): finish ring 2; Claude is head brain, Sol builds (GLM 5.3 the backup),
 the panel answers durable questions, Claude tests on Claude-OS. Excellence is the standard.
 
 **In flight (dispatch-wt.sh; check = transcript mtime; done = `sentinel` exists):**
 | Run | Builder | Worktree / branch | Started | Brief |
 |---|---|---|---|---|
-| p2a3 IR activation | DeepSeek v4.1 Flash, high (nvidia `deepseek-ai/deepseek-v4.1-flash`) | `.worktrees/ring-0` / session/ring-2 | 17:05 | `~/fleet/briefs/warroom-ring2-p2a3-ir-activation.md` |
-| p2e2 finish Counterparties | Sol medium | `.worktrees/ring-2-lab` / session/ring-2-lab | 17:27 | `~/fleet/briefs/warroom-ring2-p2e2-finish.md` |
-Check both: `ssh -n -i /root/.ssh/beelink chris@192.168.1.191 'R=/home/chris/fleet/runs/warroom-ring2-2026-10-10; for p in p2a3 p2e2; do echo $p $(( $(date +%s) - $(stat -c %Y $R/$p/sessions/*.jsonl) ))s; cat $R/$p/sentinel 2>/dev/null; done'`
-Caveat: DeepSeek had changed 0 files after 32 min (still active). If it ends without a report or
-edits, give p2a3 to Sol after p2e2. Stopped/failed earlier runs are kept as dirs:
-`p2e-sol-limit` (Sol limit), `p2e-glm-429` (GLM rate-limited after ~90 min; Go side done),
-`p2a3-glm-moved` (stopped by Claude, no edits), `p2a3-kimi-failed` (stream ended, no edits).
+| p2f Trade Floor › Offers (L-30–L-32) | Sol medium | `.worktrees/ring-2-lab` / session/ring-2-lab | 19:00 | `~/fleet/briefs/warroom-ring2-p2f-offers.md` |
+| p2g HQ › Contracts and cap (M-078, C-06.5, M-031, M-025, cap summary, Inspector-collapse shell fix) | Sol medium | `.worktrees/ring-0` / session/ring-2 | 19:02 | `~/fleet/briefs/warroom-ring2-p2g-contracts.md` |
+Check: `ssh -n -i /root/.ssh/beelink chris@192.168.1.191 'R=/home/chris/fleet/runs/warroom-ring2-2026-10-10; for p in p2f p2g; do echo $p $(( $(date +%s) - $(stat -c %Y $R/$p/sessions/*.jsonl) ))s; cat $R/$p/sentinel 2>/dev/null; done'`
+Both active at 19:16 (17/18 files changed). Kept dirs: `p2g-glm429` (GLM 429 at start, no edits),
+`p2a3` (DeepSeek timed out after 2h17m; its partial work is `p2a3/deepseek-partial.patch`).
 
-**Committed:** session/ring-2 = `91cdb94` merge (eligibility `ce4a329` + lab `fafe73a` p2b,
-`fd7c4b8` p2c Market, `7385fa5` p2d Draft lab + Market fixes). All verified live on Claude-OS.
-Merged entry bundle 321,809 / ceiling 321,818 (eligibility +369 + Market +1,000, stated in
-`frontend/scripts/bundle-budget.mjs`); ring-2-lab still has its own 321,449 ceiling.
-Uncommitted on ring-2-lab: GLM's p2e Go side (internal/lab/teams*.go, team_profiles.go,
-counterparties_app.go, counterpanel_app.go, teams.json.gz 470,171 B; parity max error 0;
-mutants killed) + partial Part A + counterparties/contract.ts, provider.ts. Sol is finishing it.
+**Committed (all verified live on Claude-OS unless said):**
+- session/ring-2 (`.worktrees/ring-0`): `4028695` p2a3 IR activation (Sol p2a3b on DeepSeek's
+  partial) ← `d754680` merge of ring-2-lab ← `1a41757` p2e4–p2e5 ← `603dc23` p2e3 ← `2a42b7a` p2e
+  ← `020ee39` resume ← `91cdb94` merge (eligibility, Market, Draft). make verify 503 frontend tests;
+  entry 321,091 / ceiling 321,818 (not raised).
+- session/ring-2-lab fast-forwarded to `4028695` before p2f.
+- make verify now regenerates Wails bindings and runs `tsc --noEmit` (catches embed-and-shadow
+  duplicates that only `wails build` used to catch). Always ALSO run `make build` before deploy.
 
 **Next actions, in order:**
-1. When p2a3 lands: review (both directions like taxi; no on-IR move ever labelled placement;
-   entry ≤ 321,818), `go test -race` touched pkgs, build, deploy (gzip the binary before scp),
-   open Pearsall: button "Draft activation from IR" enabled; draft it (no MFL submit), hand-off
-   label says activation. Commit on session/ring-2.
-2. When p2e2 lands: review (D4, W1, "How this is counted", no React math, Part A's 4 items:
-   short visible labels, no tone enum on screen, singular/plural, wailsjs runtime mode 0644),
-   plant one mutant of my own in teams.go, `make verify`, build, deploy, click Trade Floor ›
-   Counterparties (tier cards, matrix, table sort, team panel in Inspector). Commit on
-   ring-2-lab, merge into ring-2 (watch the bundle ceiling), redeploy.
-3. Next builds: p2f Offers (L-30–L-32); p2g Contracts and cap (registry M-025/031/036/078,
-   M-192–196, C-06.x); p2h cut/buyout what-if + PW5 dead-cap fix; p2i pool/bids (PW3);
-   p2j–k option/tender/re-sign/extension/restructure/tag with ProBoards hand-off (D5); p2l audit
-   + spec revision 2. Then the facts-schema panel before compiler runs s1–s5 (D1).
-4. Christopher's own click-through before any merge to main.
+1. When p2f lands: review (whose offers the data holds and the L-32 header says so; parity max
+   error; plant one mutant of my own in the offers port; D4/W1/How counted), `make build`, deploy,
+   click Trade Floor › Trade desk and offers › Offers at 1280×800 with the Inspector open (no
+   sideways page scroll, no mid-word breaks, labels). Commit on ring-2-lab.
+2. When p2g lands: review (integer cents end to end, inferred years marked, no computed dead
+   cap, M-031 labelled "MFL adjustments", M-025 honest), mutant of my own, `make build`, deploy,
+   click Franchise HQ › Contracts and cap + a player's contract years in the Inspector + close the
+   Inspector (work column must widen). Commit on session/ring-2.
+3. Merge ring-2-lab into ring-2 (stash nothing needed if ring-0 is clean; watch shared files:
+   registry CSV, endpoints.gen.ts — regenerate with `cd frontend && node scripts/gen-endpoints.mjs`,
+   models.ts, SYSTEM_MAP.md, TargetApp.tsx), make verify + make build, deploy, recheck both.
+4. Next builds: p2h cut/buyout what-if + PW5 dead-cap fix (35% of EACH remaining year's own
+   salary, snapped to $10k; PW1/PW2 what-if design); p2i pool/bids (PW3); p2j–k contract Acts with
+   ProBoards hand-off (D5); p2l audit + spec revision 2; then the facts-schema panel (D1).
+5. Christopher's own click-through before any merge to main.
 
-**Decisions added today (binding):**
-- D6 (17:30): a what-if keeps its baseline until Reset; unknown eligibility leaves the Act
-  available ("Not checked; MFL will decide"). Both were defaults; Christopher confirmed them.
-- D5 (17:35): MFL has NO owner page for option, tender, re-sign, extension, restructure, tag or
-  FA bids (captured menu: only Drop Players O=257, Salary Adjustments O=142 read-only). Those Acts
-  hand off as a ProBoards post the app writes in the rulebook format, then opens ProBoards.
-  Landed = MFL contract cells change; cut/buyout also = the O=142 salary-adjustment row appears
-  ("BUYOUT: name $X (year)", "FREE DROP", "Dropped …").
-- Captures (owner-only, never commit): `~/fleet/runs/warroom-ring2-2026-10-10/mfl-captures/`
-  mfl-home.html 868,704 B, mfl-O257.html 85,355 B, mfl-O142.html 243,688 B. Script:
-  scratchpad `mflurl.sh <name> <url>` (copied to claudeos:~/mflurl.sh), closes its tabs.
+**Decisions (binding):** D5 ProBoards hand-off for option/tender/re-sign/extension/restructure/
+tag/FA bids (MFL has no owner pages for them). D6 what-if keeps its baseline until Reset; unknown
+eligibility leaves the Act available. Captures (owner-only, never commit):
+`~/fleet/runs/warroom-ring2-2026-10-10/mfl-captures/`.
 
-**Builder availability (17:40):** Sol back 17:26 (resets were ~5 h windows; it ran out 15:28).
-GLM on nvidia: 429 since 16:58. OpenRouter, opencode, zen: out of credit (402). Kimi k3: failed
-3× (stall at high, empty panel at medium, stream ended on p2a3): do not use as builder.
-Nemotron: not a builder (quotes unresolvable). DeepSeek v4.1 Flash (nvidia) works.
+**Lessons tonight:** builders cannot see the screen; every layout phase needs Claude's live
+check at 1280×800 with the Inspector open (~700 px work column). Counterparties took 4 rounds:
+fixed-width tier grid, 30-row trend table, 11-column team table (squeezing broke words: never
+`break-all`/`anywhere`; use a narrow/wide container query, nowrap numbers, let prose wrap).
+Goldens cannot reach rules that live in Lab view code (the season flag in tradelog.js:169):
+add edge tests (`internal/lab/team_flag_test.go`).
 
-**Refuted / do not retest:** Kimi as a builder (above). Injuries via the league host (www47)
-always fails; api.myfantasyleague.com without L works (fixed in p2a2). `pkill -f "<pattern>"`
-over ssh matches the ssh command itself and kills the session: kill by PID. CT105's clock is UTC:
-compare times on Bee (`ssh … date +%H%M`). The 124-row answer key was 86.
+**Builder availability (19:20):** Sol working (two parallel runs). GLM nvidia: still 429 at 19:00.
+DeepSeek: timed out on long runs (2h17m, "Request timed out"). Kimi: not a builder. OpenRouter,
+opencode, zen: 402.
 
-**Claude-OS:** Christopher rebooted it 17:17; app relaunched 17:19 (`bash ~/warroom-ring1/launch.sh`;
-a reboot does not start it). passt (VM network on Bee) segfaulted 12:34, 15:56, 15:57; recovery
-without reboot: on Bee, `LIBVIRT_DEFAULT_URI=qemu:///session virsh detach-device Claude-OS
-/tmp/claudeos-if.xml --live` then `attach-device` (the interface XML without its alias line).
-Deploy gzipped: `gzip -1 -c build/bin/thewarroom > /tmp/twr.gz; scp /tmp/twr.gz
-claudeos:warroom-ring1/thewarroom.new.gz; ssh claudeos "cd ~/warroom-ring1 && gunzip -f
-thewarroom.new.gz && chmod +x thewarroom.new && bash deploy.sh <old-label>"`. Current label: ring2-merge1.
-Helpers (scratchpad): shot.sh, cs.sh x y name, mflsrc.sh, mflurl.sh. Command bar (95,153),
-first result (400,193). Close MFL tabs after any capture.
+**Refuted / do not retest:** Kimi as builder; DeepSeek for long builds; injuries via www47 (use
+api.myfantasyleague.com without L); `pkill -f` over ssh (kills own session: use PIDs); CT105 clock
+is UTC (use Bee's date). Remote python/heredoc edits inside ssh '…' quoting break: write the
+script locally, scp it, run it.
 
+**Claude-OS:** black screen + "Power Manager … AccessDenied" popup FIXED 17:45/18:00: xfce4-power-
+manager idled into suspend (14 min) and suspend.target is masked; inactivity-on-ac/battery set
+to 0 (Never, xfpm 4.20 slider 0–60); X blanking off now and at login
+(`~/.config/autostart/no-blank.desktop`: `xset s off s noblank -dpms`). App relaunch after reboot:
+`bash ~/warroom-ring1/launch.sh`. passt recovery (Bee): `LIBVIRT_DEFAULT_URI=qemu:///session virsh
+detach-device Claude-OS /tmp/claudeos-if.xml --live` then `attach-device`. Deploy gzipped:
+`gzip -1 -c build/bin/thewarroom > /tmp/twr.gz; scp … claudeos:warroom-ring1/thewarroom.new.gz;
+ssh claudeos "cd ~/warroom-ring1 && gunzip -f thewarroom.new.gz && chmod +x thewarroom.new && bash
+deploy.sh <old-label>"`. Current label: p2a3b build (deployed 18:58, ring-0 at 4028695).
+Screenshots: scratchpad `shot.sh <name>` (virsh screenshot via Bee). Clicks: `ssh claudeos
+'DISPLAY=:0 xdotool mousemove X Y click 1'`. Command bar (95,153), first result (367,193); Trade
+Floor (80,312) › Counterparties tab (510,86); HQ My moves tab (616,86). Pearsall has a Ready
+activation plan in My moves from the live test (not submitted). Close MFL tabs after any capture.
+Known pre-ring-2 shell defect: a horizontal scrollbar strip at the bottom of every page.
 
 ## What we are doing
 Ring 2 of `UI_Target_Roadmap_2026-10.md`: the Lab's analytics ported to Go (War Room › Market,
