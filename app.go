@@ -23,6 +23,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/moves"
@@ -90,6 +91,7 @@ type App struct {
 	seasonLineups       heldSeasonFeed[leaguefeed.Lineups]
 	seasonPendingTrades heldSeasonFeed[[]leaguefeed.PendingTrade]
 	seasonInjuries      heldSeasonFeed[[]leaguefeed.Injury]
+	seasonFreeAgents    heldSeasonFeed[[]playerid.PlayerID]
 	lineupsWeek         int
 	seasonChanged       func(context.Context)
 	seasonPause         func(context.Context, time.Duration) error

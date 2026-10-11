@@ -10,6 +10,10 @@ import type { Snapshot } from '../data/contract';
 const Counterparties = lazy(() => import('../counterparties/Counterparties'));
 const OffersHistory = lazy(() => import('../offers/Offers'));
 const Draft = lazy(() => import('./Draft'));
+const Pool = lazy(() => import('../pool/Pool'));
+const PoolInspector = lazy(() =>
+  import('../pool/Pool').then((m) => ({ default: m.PoolInspector })),
+);
 export default function Market({ kind, snapshot }: { kind?: string; snapshot?: Snapshot }) {
   const s = commands.use();
   if (kind?.startsWith('team:') || (!kind && s.workspace[s.node] === 'counterparties'))
@@ -20,6 +24,14 @@ export default function Market({ kind, snapshot }: { kind?: string; snapshot?: S
     );
   if (!kind && s.workspace[s.node] === 'offers-history')
     return <Suspense fallback={null}><OffersHistory /></Suspense>;
+  if (!kind && s.workspace[s.node] === 'valuations-and-pool')
+    return (
+      <Suspense fallback={<p role="status">Opening the free-agent pool…</p>}>
+        <Pool snapshot={snapshot} />
+      </Suspense>
+    );
+  if (kind?.startsWith('pool:'))
+    return <Suspense fallback={null}><PoolInspector id={kind.slice(5)} /></Suspense>;
   if (kind) return <MarketInspector kind={kind} />;
   return <MarketWorkspace />;
 }
@@ -168,6 +180,7 @@ export const set = (change: import('./contract').MarketFilter) => {
   if (change.field.startsWith('counterpart-'))
     return import('../counterparties/state').then((m) => m.counterState.change(change));
   if (change.field.startsWith('draft-')) return import('./Draft').then((m) => m.set(change));
+  if (change.field.startsWith('pool-')) return import('../pool/Pool').then((m) => m.set(change));
   return marketState.change(change);
 };
 

@@ -14,6 +14,11 @@ import (
 // Save stores a new envelope or appends the audit entries not yet stored; saving the same state
 // twice is a no-op, and a history that diverges from the stored one is refused.
 func (s *Store) Save(ctx context.Context, e envelope.Envelope) error {
+	return s.save(ctx, e, nil)
+}
+
+// save is Save plus an optional write that joins the same transaction.
+func (s *Store) save(ctx context.Context, e envelope.Envelope, also func(*sql.Tx) error) error {
 	receipt := e.Receipt()
 	if _, err := envelope.Restore(e.ID(), e.Created(), receipt.Spec, receipt.Audit); err != nil {
 		return fmt.Errorf("moves: save %q validate: %w", e.ID(), err)
@@ -40,6 +45,11 @@ func (s *Store) Save(ctx context.Context, e envelope.Envelope) error {
 	}
 	if err := appendAudit(ctx, tx, e.ID(), start, receipt.Audit); err != nil {
 		return err
+	}
+	if also != nil {
+		if err := also(tx); err != nil {
+			return err
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("moves: save %q commit: %w", e.ID(), err)

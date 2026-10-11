@@ -122,6 +122,34 @@ export function TargetAssetProfile(arg1) {
   return window['go']['main']['App']['TargetAssetProfile'](arg1);
 }
 
+export function TargetBidDraft(arg1) {
+  return window['go']['main']['App']['TargetBidDraft'](arg1);
+}
+
+export function TargetBidHandOff(arg1) {
+  return window['go']['main']['App']['TargetBidHandOff'](arg1);
+}
+
+export function TargetBidPlans(arg1) {
+  return window['go']['main']['App']['TargetBidPlans'](arg1);
+}
+
+export function TargetBidPosted(arg1) {
+  return window['go']['main']['App']['TargetBidPosted'](arg1);
+}
+
+export function TargetBidPreview(arg1) {
+  return window['go']['main']['App']['TargetBidPreview'](arg1);
+}
+
+export function TargetBidRevise(arg1, arg2) {
+  return window['go']['main']['App']['TargetBidRevise'](arg1, arg2);
+}
+
+export function TargetBidWithdraw(arg1) {
+  return window['go']['main']['App']['TargetBidWithdraw'](arg1);
+}
+
 export function TargetCheckLineup(arg1, arg2) {
   return window['go']['main']['App']['TargetCheckLineup'](arg1, arg2);
 }
@@ -200,6 +228,14 @@ export function TargetPickClock(arg1) {
 
 export function TargetPlayerContract(arg1) {
   return window['go']['main']['App']['TargetPlayerContract'](arg1);
+}
+
+export function TargetPool(arg1) {
+  return window['go']['main']['App']['TargetPool'](arg1);
+}
+
+export function TargetPoolRefresh(arg1) {
+  return window['go']['main']['App']['TargetPoolRefresh'](arg1);
 }
 
 export function TargetPulseNow() {

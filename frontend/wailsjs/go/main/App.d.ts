@@ -65,6 +65,20 @@ export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
 
 export function TargetAssetProfile(arg1:main.RawMarketAsset):Promise<main.Reading_main_MarketSurface_>;
 
+export function TargetBidDraft(arg1:main.RawBidInput):Promise<main.BidPlan>;
+
+export function TargetBidHandOff(arg1:string):Promise<main.BidPlan>;
+
+export function TargetBidPlans(arg1:string):Promise<main.Reading_main_BidBoard_>;
+
+export function TargetBidPosted(arg1:string):Promise<main.BidPlan>;
+
+export function TargetBidPreview(arg1:main.RawBidInput):Promise<main.BidPreview>;
+
+export function TargetBidRevise(arg1:string,arg2:main.RawBidInput):Promise<main.BidPlan>;
+
+export function TargetBidWithdraw(arg1:string):Promise<main.BidPlan>;
+
 export function TargetCheckLineup(arg1:string,arg2:Array<string>):Promise<lineup.Result>;
 
 export function TargetCheckMoves():Promise<void>;
@@ -104,6 +118,10 @@ export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_
 export function TargetPickClock(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
 
 export function TargetPlayerContract(arg1:string):Promise<main.Reading_github_com_secureprospective_TheWarRoom_internal_snapshot_PlayerContract_>;
+
+export function TargetPool(arg1:main.RawPoolScope):Promise<main.Reading_main_Pool_>;
+
+export function TargetPoolRefresh(arg1:boolean):Promise<void>;
 
 export function TargetPulseNow():Promise<main.PulseReading>;
 

@@ -1,0 +1,142 @@
+import { Act } from '../commands/Act';
+import type { BidFormState, FormField, Preview } from './contract';
+import { Rules } from './BidPlans';
+import { poolState } from './state';
+
+const edit = (field: FormField) => (value: string | number | boolean) => poolState.edit(field, value);
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="bid-field">
+      <span>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+// An empty date-and-time box is drawn by the webview as a date that looks filled in, so the
+// closing time stays a button until the owner asks to set one.
+function ClosingTime({ form, note }: { form: BidFormState; note?: string }) {
+  return (
+    <div className="bid-field bid-closes" role="group" aria-label="Bidding closes">
+      <span>Bidding closes (optional)</span>
+      {!form.closesOpen && (
+        <Act verb="market" args={{ field: 'pool-closes-set', value: '' }} label="Set a closing time">
+          Set a closing time
+        </Act>
+      )}
+      {form.closesOpen && (
+        <div className="bid-closes-set">
+          <input
+            type="date"
+            aria-label="Closing date"
+            value={form.closesDate}
+            onChange={(e) => edit('closesDate')(e.target.value)}
+          />
+          <input
+            type="time"
+            aria-label="Closing time"
+            value={form.closesTime}
+            onChange={(e) => edit('closesTime')(e.target.value)}
+          />
+          <Act verb="market" args={{ field: 'pool-closes-clear', value: '' }} label="Clear the closing time">
+            Clear
+          </Act>
+        </div>
+      )}
+      {note && <small className="bid-note">{note}</small>}
+    </div>
+  );
+}
+
+export function PreviewView({ preview }: { preview?: Preview }) {
+  if (!preview) return <p role="status">Checking the bid rules…</p>;
+  if (preview.problem) return <p role="status" className="bid-problem">{preview.problem}</p>;
+  return (
+    <div className="bid-preview" data-endpoint="C-06.7">
+      <dl className="kv">
+        <dt>Annual salary</dt>
+        <dd className="pool-money">{preview.salary.text}</dd>
+        <dt>Bid points</dt>
+        <dd>{preview.points}</dd>
+      </dl>
+      {preview.snapped && <p>{preview.snapped}.</p>}
+      <Rules rules={preview.rules} summary={preview.ruleSummary} />
+      <p role="status">{preview.blocked ? `Blocked: ${preview.note}` : 'Every rule passes.'}</p>
+    </div>
+  );
+}
+
+export function BidForm({ form, preview, busy }: { form: BidFormState; preview?: Preview; busy: string }) {
+  const save = form.planId ? 'Save changes' : 'Save bid plan';
+  return (
+    <section className="bid-form" aria-label="Bid plan form" data-endpoint="M-194">
+      <h5>
+        {form.planId ? 'Change bid plan' : 'Plan a bid'} · {form.playerName}
+      </h5>
+      <div className="bid-fields">
+        <Field label="Annual salary ($ millions)">
+          <input
+            inputMode="decimal"
+            placeholder="5.25"
+            value={form.salary}
+            onChange={(e) => edit('salary')(e.target.value)}
+          />
+        </Field>
+        <Field label="Years">
+          <select value={form.years} onChange={(e) => edit('years')(Number(e.target.value))}>
+            {[1, 2, 3, 4].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Bid to beat (points, optional)">
+          <input
+            inputMode="decimal"
+            placeholder="6.500"
+            value={form.beat}
+            onChange={(e) => edit('beat')(e.target.value)}
+          />
+        </Field>
+        <ClosingTime form={form} note={preview?.closesNote} />
+        <Field label="Evidence (link or note)">
+          <input value={form.evidence} onChange={(e) => edit('evidence')(e.target.value)} />
+        </Field>
+        <label className="bid-check">
+          <input
+            type="checkbox"
+            checked={form.snipe}
+            onChange={(e) => edit('snipe')(e.target.checked)}
+          />
+          <span>Snipe: this bid lands after the 20-hour mark</span>
+        </label>
+      </div>
+      <p className="bid-note">
+        You tell the app about a snipe and the bid to beat; it cannot see the auction clock or other
+        teams' bids.
+      </p>
+      <PreviewView preview={preview} />
+      {preview && !preview.problem && preview.post && (
+        <pre className="bid-post" aria-label="ProBoards post preview">
+          {preview.post}
+        </pre>
+      )}
+      <div className="bid-actions">
+        <Act
+          verb="market"
+          args={{ field: 'pool-save', value: form.planId }}
+          label={save}
+          disabled={!preview || Boolean(preview.problem) || busy === 'save'}
+        >
+          {save}
+        </Act>
+        <Act verb="market" args={{ field: 'pool-cancel', value: '' }} label="Close the bid form">
+          Cancel
+        </Act>
+      </div>
+    </section>
+  );
+}
+

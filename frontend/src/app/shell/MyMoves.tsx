@@ -1,8 +1,10 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import type { Snapshot } from '../data/contract';
 import { commands } from '../commands/registry';
 import { FranchisePicker } from './FranchisePicker';
 import { EnvelopeRail } from './EnvelopeRail';
+
+const BidPlans = lazy(() => import('../pool/BidPlans'));
 
 export default function MyMoves({ snapshot, executor = commands }: {
   snapshot: Snapshot;
@@ -38,6 +40,7 @@ export default function MyMoves({ snapshot, executor = commands }: {
       )}
       {!fixture && !receipts.length && loading === false &&
         !error && <p>No moves drafted this session</p>}
+      {!fixture && <Suspense fallback={null}><BidPlans /></Suspense>}
     </section>
   );
 }

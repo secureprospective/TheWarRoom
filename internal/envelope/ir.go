@@ -108,7 +108,7 @@ func (e Envelope) Check(at time.Time, snap snapshot.Snapshot, check Check) (Enve
 	if e.spec.Deadline != nil && at.After(*e.spec.Deadline) {
 		result = CheckResult{Blocked: true, Note: "supplied deadline passed"}
 	}
-	if e.spec.Target.Kind != Mapped {
+	if e.spec.Target.Kind == Unmapped {
 		result = CheckResult{Blocked: true, Note: strings.TrimPrefix(result.Note+"; MFL target not verified", "; ")}
 	}
 	event := ChecksPass
@@ -221,7 +221,7 @@ func (e Envelope) Observe(at time.Time, obs Observation, predicate Predicate) (E
 	}
 	obs.HandedOffAt = e.handedAt()
 	verdict := predicate.Evaluate(cloneSpec(e.spec), obs)
-	if !slices.Contains([]Event{Match, Partial, NoChange, Contradiction, AwaitDOT}, verdict.Event) {
+	if !slices.Contains([]Event{Match, Partial, NoChange, Contradiction, AwaitDOT, AwardedElsewhere}, verdict.Event) {
 		return Envelope{}, fmt.Errorf("envelope: invalid predicate event %q", verdict.Event)
 	}
 	if verdict.Event == AwaitDOT && e.spec.Intent == "trade.accept" && e.state == NotVerified &&
