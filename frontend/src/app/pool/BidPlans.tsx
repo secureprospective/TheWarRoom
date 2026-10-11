@@ -137,6 +137,10 @@ export function BidBoardView({ board, busy, limit, show = () => true, title = 'B
           {limit !== undefined && plans.length > limit && (
             <p>{plans.length - limit} older bid plans not shown</p>
           )}
+          <details className="bid-details">
+            <summary>How this is counted</summary>
+            <p>{board.howCounted}</p>
+          </details>
         </>
       )}
     </section>

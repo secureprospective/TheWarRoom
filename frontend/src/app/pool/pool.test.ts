@@ -249,7 +249,8 @@ describe('My moves and the Inspector', () => {
   it('lists bid plans with state, status and history like every other plan', () => {
     const text = html(createElement(BidBoardView, { board: board(), busy: '' }));
     for (const phrase of ['Bid plans', '2 open of 3 bid plans', 'Blocked', 'Ready', 'Bid rules checked',
-      'History', 'Only your own plans are kept; nothing about other franchises', 'data-endpoint="M-194"'])
+      'History', 'Only your own plans are kept; nothing about other franchises', 'data-endpoint="M-194"',
+      'How this is counted', 'the bid to beat is points you typed'])
       expect(text).toContain(phrase);
   });
   it('shows an award to someone else as the end of a plan, not an error', () => {

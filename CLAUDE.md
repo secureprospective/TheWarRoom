@@ -16,7 +16,7 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 - **Latest state:** the newest `docs/build-handoffs/RESUME-*.md`.
 - **What exists:** `SYSTEM_MAP.md`.
 - **UI target track:** built in rings (`docs/build-handoffs/UI_Target_Roadmap_2026-10.md`), each
-  ending with a spec revision (`docs/ui/Target_UI_Spec_2026-10.md`, revision 1 on 2026-10-10).
+  ending with a spec revision (`docs/ui/Target_UI_Spec_2026-10.md`, revision 2 on 2026-10-11).
   Every endpoint is a row in `docs/ui/endpoint-registry.csv`; `frontend/scripts/gen-endpoints.mjs`
   generates `registry/endpoints.gen.ts` from it (never hand-edit the generated file).
   Ring 1 merged 2026-10-10 (PR #15). Ring 2, the decision layer, is next, with IR/taxi eligibility.
