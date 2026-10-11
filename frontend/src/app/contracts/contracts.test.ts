@@ -8,6 +8,9 @@ import { clockDom, TestElement } from '../clock/testDom';
 import { heldSnapshot } from '../data/lineupTestData';
 import { commands } from '../commands/registry';
 import Contracts, { ContractReading, ContractPanel } from './Contracts';
+import { ContractActCard, ContractMovePanel } from './ContractActs';
+import { WhatIfActs } from './WhatIfPanel';
+import { termsKey, useContractMove, type ContractActPlan } from './contractActs';
 import { parseContracts, parsePlayerContract } from './provider';
 import { setContractsFilter } from './state';
 import type { WhatIf, WhatIfProvider } from './whatif';
@@ -134,18 +137,19 @@ function props(node: TestElement): Record<string, unknown> {
   const key = Object.keys(node).find((key) => key.startsWith('__reactProps'))!;
   return (node as unknown as Record<string, Record<string, unknown>>)[key];
 }
-async function mount(view: ReturnType<typeof createElement>) {
+async function mount(view: ReturnType<typeof createElement>, host: Record<string, unknown> = {}) {
   const dom = clockDom([]);
   const create = dom.document.createElement.bind(dom.document);
   dom.document.createElement = (tag) => {
     const node = create(tag);
+    Object.assign(node, { closest: () => null });
     if (tag === 'select')
       Object.defineProperty(node, 'options', { get: () => nodes(node, 'OPTION') });
     return node;
   };
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.stubGlobal('document', dom.document);
-  vi.stubGlobal('window', { document: dom.document, HTMLIFrameElement: class {} });
+  vi.stubGlobal('window', { document: dom.document, HTMLIFrameElement: class {}, ...host });
   const root = createRoot(dom.element);
   mounted.push(root);
   await act(async () => {
@@ -460,7 +464,8 @@ it('keeps twelve one-line my-team rows and counts filtered groups without repeat
     const menu = nodes(row, 'DETAILS')[0];
     expect(nodes(menu, 'SUMMARY')[0].textContent).toBe('What if…');
     expect(menu.getAttribute('open')).toBeNull();
-    expect(nodes(menu, 'BUTTON')).toHaveLength(2);
+    expect(nodes(menu, 'BUTTON')).toHaveLength(3);
+    expect(nodes(menu, 'BUTTON')[2].textContent).toBe('Contract Acts…');
     expect(nodes(menu, 'P')[0].textContent).toBe('Needs two years');
     expect(nodes(row, 'TD')[0].textContent).not.toContain('Needs two years');
   }
@@ -528,4 +533,107 @@ it('offers the same Go Acts in my player Inspector, never another franchise', as
   await act(async () => { test.renderer.render(createElement(ContractPanel, { id: '0042',
     mine: '0002', provider: provider(), whatIf: simulation })); });
   expect(test.element.textContent).not.toContain('What if I cut him');
+});
+
+it('lets go of the clicked row once the owner works elsewhere, so Keep never moves the page', async () => {
+  shell();
+  let resized!: () => void;
+  vi.stubGlobal('ResizeObserver', class {
+    constructor(callback: () => void) { resized = callback; }
+    observe() {} disconnect() {}
+  });
+  const simulation: WhatIfProvider = { query: vi.fn().mockResolvedValue(reading({ stale: false,
+    banner: '', notice: '', empty: '', figures: [], moves: [], choices: [] })),
+  change: async () => {}, onChange: () => () => {} };
+  const test = await mount(createElement(Contracts, { snapshot: heldSnapshot(),
+    provider: provider(), whatIf: simulation }));
+  const outer = nodes(test.root, 'DIV').find(node => node.getAttribute('class') === 'contracts')!;
+  const row = { getBoundingClientRect: vi.fn().mockReturnValue({ top: 400 }) };
+  const scroll = { scrollTop: 100 };
+  const menuAct = { closest: (selector: string) =>
+    selector === 'tr' ? row : selector === '.wbody' ? scroll : {} };
+  const elsewhere = { closest: () => null };
+  const { onClickCapture, onFocusCapture } = props(outer) as Record<string, (event: unknown) => void>;
+  onClickCapture({ target: menuAct });
+  row.getBoundingClientRect.mockReturnValue({ top: 650 });
+  resized();
+  expect(scroll.scrollTop).toBe(350);
+  onClickCapture({ target: elsewhere });
+  row.getBoundingClientRect.mockReturnValue({ top: 693 });
+  resized();
+  expect(scroll.scrollTop).toBe(350);
+  onClickCapture({ target: menuAct });
+  onFocusCapture({ target: elsewhere });
+  row.getBoundingClientRect.mockReturnValue({ top: 736 });
+  resized();
+  expect(scroll.scrollTop).toBe(350);
+});
+
+it('keeps an opened row on one line with the full sentence as its label', async () => {
+  useContractMove.setState({ mine: '0001', player: '0042', label: 'Extend Oluokun, Foyesade' });
+  const sentence = 'Opened: Extend Oluokun, Foyesade; see Contract move at the top';
+  const row = await mount(createElement(WhatIfActs, { mine: '0001', player: '0042', menu: true }));
+  const cell = nodes(row.root, 'P')[0];
+  expect(cell.getAttribute('aria-label')).toBe(sentence);
+  expect(cell.getAttribute('title')).toBe(sentence);
+  expect(cell.textContent).toBe('Opened above ↑');
+  const inspector = await mount(createElement(WhatIfActs, { mine: '0001', player: '0042' }));
+  expect(nodes(inspector.root, 'P')[0].textContent).toBe(sentence);
+  const css = readFileSync('src/app/contracts/contracts.css', 'utf8');
+  expect(css).toContain('.contract-table .contract-opened { white-space: nowrap; overflow: hidden; '
+    + 'text-overflow: ellipsis;');
+  await act(async () => { useContractMove.setState({ mine: '', player: '', label: '' }); });
+});
+
+function actPlan(id = ''): ContractActPlan {
+  return { id, intent: 'contract.extend', player: 'Oluokun, Foyesade',
+    subject: 'Oluokun, Foyesade · LB · $11,000,000 a year through 2028 · UFA',
+    label: 'Extend him · Oluokun, Foyesade', price: '$16,500,000', post: 'Adds 1 year', how: '§10',
+    teamFigures: [], reasons: [], figures: [], canHandOff: false, canPost: false, canWithdraw: false,
+    canRebase: false };
+}
+it('names the contract under the heading and holds Kept until the terms differ', async () => {
+  const wire = actPlan();
+  const go = { main: { App: { TargetContractActs: vi.fn(async () =>
+    ({ ...reading([{ ...wire, receipt: {} }]) })) } } };
+  useContractMove.setState({ mine: '0001', player: '0042', kept: undefined, keptTerms: '', error: '' });
+  const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
+  await act(async () => {});
+  const heading = nodes(test.root, 'H4')[0];
+  const subject = heading.parentNode!.children[heading.parentNode!.children.indexOf(heading) + 1];
+  expect(subject.textContent).toBe('Oluokun, Foyesade · LB · $11,000,000 a year through 2028 · UFA');
+  const keep = () => nodes(test.root, 'BUTTON').find(b => /Keep|Kept/.test(b.textContent))!;
+  expect(keep().textContent).toBe('Keep plan');
+  const request = { mine: '0001', player: '0042', action: 'preview' as const, intent: 'contract.extend',
+    level: 1, years: 1, move: '1', source: 0, destination: 0 };
+  await act(async () => { useContractMove.setState({ kept: { ...actPlan('contract-1'),
+    receipt: { state: 'ready', spec: { intent: 'contract.extend' }, audit: [] } },
+  keptTerms: termsKey(request) }); });
+  expect(keep().textContent).toBe('Kept');
+  expect(props(keep()).disabled).toBe(true);
+  const years = nodes(test.root, 'SELECT')[1];
+  await act(async () => { (props(years).onChange as (e: unknown) => void)({ target: { value: '2' } }); });
+  expect(keep().textContent).toBe('Keep plan');
+  expect(test.element.textContent).toContain('Plan: Ready');
+  await act(async () => { (props(years).onChange as (e: unknown) => void)({ target: { value: '1' } }); });
+  expect(keep().textContent).toBe('Kept');
+  await act(async () => {
+    useContractMove.setState({ mine: '', player: '', kept: undefined, keptTerms: '' });
+  });
+});
+
+it('scrolls the revealed plan card into view in My moves and focuses it, once', async () => {
+  useContractMove.setState({ reveal: '' });
+  const test = await mount(createElement(ContractActCard, { plan: actPlan('contract-1'), mine: '0001',
+    revealing: true }));
+  const card = nodes(test.root, 'ARTICLE')[0];
+  const scrollIntoView = vi.fn(), focus = vi.fn();
+  Object.assign(card, { scrollIntoView, focus });
+  await act(async () => { useContractMove.setState({ reveal: 'contract-other' }); });
+  expect(scrollIntoView).not.toHaveBeenCalled();
+  await act(async () => { useContractMove.setState({ reveal: 'contract-1' }); });
+  expect(scrollIntoView).toHaveBeenCalledWith({ block: 'start' });
+  expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  expect(card.getAttribute('tabindex')).toBe('-1');
+  expect(useContractMove.getState().reveal).toBe('');
 });

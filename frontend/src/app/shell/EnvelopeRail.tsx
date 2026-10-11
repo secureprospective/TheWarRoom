@@ -55,7 +55,8 @@ export function RailStrip({ receipt }: { receipt: RailReceipt }) {
           >
             <SignalChip
               signal={reached ? stateSignals[stage] : 'grey'}
-              label={stateLabels[stage]}
+              label={stage === 'bid_pending' && receipt.spec.intent !== 'bid.submit'
+                ? 'Pending' : stateLabels[stage]}
             />
             {entry && <time dateTime={entry.at}>{time.format(new Date(entry.at))}</time>}
             {entry && <p>{/^superseded by \S+$/.test(entry.note)

@@ -60,10 +60,10 @@
 .twr-app .contract-table td.contract-whatif-column { overflow: visible; }
 .twr-app .contract-menu { position: relative; }
 .twr-app .contract-menu summary { white-space: nowrap; color: var(--surface-tx1); }
-.twr-app .contract-menu .contract-whatif-acts { position: absolute; right: 0; top: 100%; z-index: 5; width: 240px; padding: 10px; background: var(--surface-1); border: 1px solid var(--surface-line-hi); }
+.twr-app .contract-menu .contract-whatif-acts { position: fixed; z-index: 20; overflow-y: auto; box-sizing: border-box; padding: 10px; background: var(--surface-1); border: 1px solid var(--surface-line-hi); }
 .twr-app .contract-whatif-acts { display: grid; gap: 6px; white-space: normal; }
 .twr-app .contract-whatif-acts p { color: var(--surface-tx2); font-size: 11px; line-height: 1.4; margin: 0; }
-.twr-app .contract-table .contract-whatif-acts .act { padding: 5px 8px; white-space: normal; font-weight: 400; }
+.twr-app .contract-menu .contract-whatif-acts .act { padding: 5px 8px; white-space: normal; font-weight: 400; }
 .twr-app .contract-whatif-tag { font-size: 10px; color: var(--surface-tx2); white-space: nowrap; }
 .twr-app .contracts .act-command { margin: 0; padding: 5px 8px; color: var(--surface-tx1); border-color: var(--surface-line-hi); }
 .twr-app .contracts .act-command:hover:not(:disabled) { background: var(--surface-3); }
@@ -95,3 +95,23 @@
 .twr-app .release-plan .act-command { display: inline-flex; margin: 0; padding: 5px 8px; color: var(--surface-tx1); border-color: var(--surface-line-hi); }
 .twr-app .release-plan .act-command:hover:not(:disabled) { background: var(--surface-3); }
 .twr-app .release-confirm[data-primary="handoff"] .act-command:first-of-type { background: var(--surface-tx1); color: var(--surface-0); }
+
+.twr-app .contract-act-form { display: grid; gap: 8px; min-width: 0; }
+.twr-app .contract-act-form label { display: grid; gap: 4px; }
+.twr-app .contract-act-form input, .twr-app .contract-act-form select { width: 100%; box-sizing: border-box; min-width: 0; }
+.twr-app .contract-act-form ul { padding-left: 16px; white-space: normal; }
+.twr-app .contract-act-form table { font-size: 10px; }
+
+.twr-app .contract-move .contract-primary .act-command { background: var(--surface-tx1); color: var(--surface-0); cursor: pointer; }
+.twr-app .contract-move .contract-primary .act-command:hover:not(:disabled) { background: var(--surface-tx2); }
+.twr-app .release-plans > h4 { margin-top: 12px; margin-bottom: 6px; }
+
+.twr-app .contract-act-form { border: 0; padding: 0; margin: 0; }
+.twr-app .contract-table .contract-opened { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; margin: 0; }
+.twr-app .contract-move-subject { margin: 0 0 8px; color: var(--surface-tx2); }
+.twr-app .contract-act-figures { display: grid; gap: 4px; min-width: 0; }
+.twr-app article.bid-plan.contract-act-card { display: grid; gap: 10px; }
+.twr-app article.bid-plan.contract-act-card > * { margin: 0; }
+.twr-app article.bid-plan.contract-act-card { scroll-margin-top: 8px; }
+
+.twr-app .contract-menu-overlay { position: fixed; top: 0; left: 0; width: 0; height: 0; z-index: 20; }

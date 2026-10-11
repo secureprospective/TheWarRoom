@@ -118,7 +118,7 @@ func TestRuleBoundaries(t *testing.T) {
 		{"2 years over $12M", RuleOneYear, func(in *Input) { in.Salary = millions(13) }, Pass},
 		{"1 year over $12M in the playoffs", RuleOneYear, func(in *Input) {
 			in.Years, in.Salary, in.Week = 1, millions(13), 14
-		}, Pass},
+		}, Fail},
 		{"1 year over $12M in week 13", RuleOneYear, func(in *Input) {
 			in.Years, in.Salary, in.Week = 1, millions(13), 13
 		}, Fail},
@@ -127,9 +127,9 @@ func TestRuleBoundaries(t *testing.T) {
 		{"2 years at $24M", RuleTierYears, func(in *Input) { in.Years, in.Salary = 2, millions(24) }, Pass},
 		{"2 years over $24M needs 3", RuleTierYears, func(in *Input) { in.Years, in.Salary = 2, millions(24)+tenK }, Fail},
 		{"3 years over $24M", RuleTierYears, func(in *Input) { in.Years, in.Salary = 3, millions(30) }, Pass},
-		{"tiers lifted in the playoffs", RuleTierYears, func(in *Input) {
+		{"tiers remain in the playoffs", RuleTierYears, func(in *Input) {
 			in.Years, in.Salary, in.Week = 1, millions(30), 14
-		}, Pass},
+		}, Fail},
 		{"no bid to beat", RuleIncrement, func(*Input) {}, Pass},
 		// $5M for 2 years is 6.000 points.
 		{"exactly 0.1 over", RuleIncrement, func(in *Input) { in.Beat = beat("5.900") }, Pass},
@@ -247,7 +247,7 @@ func TestRuleWordsForTheOwner(t *testing.T) {
 		{"top tier", RuleTierYears, "Over $24,000,000 needs at least 3 years", func(in *Input) {
 			in.Years, in.Salary = 3, millions(30)
 		}},
-		{"playoffs", RuleTierYears, "In the playoffs any salary needs at least 1 year", func(in *Input) {
+		{"playoffs", RuleTierYears, "A $30,000,000 bid needs at least 3 years", func(in *Input) {
 			in.Years, in.Salary, in.Week = 1, millions(30), 14
 		}},
 	} {
@@ -277,5 +277,38 @@ func TestSummaryCountsOnlyThePassingRules(t *testing.T) {
 	if Summary(nil) != "No rule passes yet" || Summary([]Result{{Verdict: Pass}}) != "1 rule passes" ||
 		Summary([]Result{{Verdict: Info}, {Verdict: Fail}}) != "No rule passes yet" {
 		t.Error("edge summaries")
+	}
+}
+
+func TestPlayoffsKeepSalaryTiersAndRequirePlayoffTeam(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		standing Standing
+		salary   domain.Money
+		years    int
+		rule     string
+		want     Verdict
+	}{
+		{"playoff team may bid", PlayoffIn, millions(12), 1, RuleLateSeason, Pass},
+		{"non-playoff team may not bid", PlayoffOut, millions(12), 1, RuleLateSeason, Fail},
+		{"playoff one-year ceiling", PlayoffIn, millions(12), 1, RuleOneYear, Pass},
+		{"playoff one-year above ceiling", PlayoffIn, millions(12) + tenK, 1, RuleOneYear, Fail},
+		{"playoff middle-tier boundary", PlayoffIn, millions(24), 2, RuleTierYears, Pass},
+		{"playoff above middle tier", PlayoffIn, millions(24) + tenK, 2, RuleTierYears, Fail},
+		{"playoff three-year tier", PlayoffIn, millions(24) + tenK, 3, RuleTierYears, Pass},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			in := passing()
+			in.Week = 14
+			in.Standing = tc.standing
+			in.Salary = tc.salary
+			in.Years = tc.years
+			if got := verdictOf(t, in, tc.rule); got != tc.want {
+				t.Fatalf("%s: %s want %s", tc.rule, got, tc.want)
+			}
+			if tc.standing == PlayoffOut && !strings.Contains(Note(Check(in)), "only playoff teams may bid") {
+				t.Fatal("non-playoff blocker is not Go-written", Note(Check(in)))
+			}
+		})
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/engine/contractacts"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -137,4 +138,34 @@ func (c *Coordinator) inTx(ctx context.Context, req Request, dryRun bool) (apply
 		err = nil
 	}
 	return res, err
+}
+
+// ProjectContract installs priced cells on an isolated simulation ledger. It does not
+// assert a legal commissioner action; window and history checks belong to the plan.
+func (c *Coordinator) ProjectContract(ctx context.Context, id string, cells []contractacts.Cell) error {
+	if len(cells) == 0 {
+		return fmt.Errorf("contract projection: no priced cells")
+	}
+	err := c.writer.WriteTx(ctx, func(w state.TxWriter) error {
+		p, ok := w.Player(id)
+		if !ok {
+			return fmt.Errorf("contract projection: player missing")
+		}
+		last := cells[len(cells)-1].Season
+		if last > p.ExpirationYear {
+			if err := w.AppendExtensionYears(ctx, id, last-p.ExpirationYear, cells[len(cells)-1].Salary, "Projected contract years"); err != nil {
+				return fmt.Errorf("project years: %w", err)
+			}
+		}
+		for _, cell := range cells {
+			if err := w.SetCell(ctx, id, cell.Season, cell.Salary, "Projected contract price"); err != nil {
+				return fmt.Errorf("project cell: %w", err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("contract projection: %w", err)
+	}
+	return nil
 }

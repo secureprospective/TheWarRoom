@@ -10,6 +10,7 @@ import './contracts.css';
 import { useContractsFilters } from './state';
 import { whatIfProvider, type WhatIf, type WhatIfProvider } from './whatif';
 import ReleasePlans from './ReleasePlans';
+import ContractActs, { ContractMovePanel } from './ContractActs';
 import { WhatIfPanel, WhatIfActs } from './WhatIfPanel';
 
 type Result<T> = { reading?: T; error?: string };
@@ -224,12 +225,38 @@ export default function Contracts({
     s.franchiseId ?? '', () => simulation.query(s.franchiseId ?? ''), simulation, true,
   );
   const anchor = useRef<{ row: HTMLElement; top: number; scroll: HTMLElement }>();
+  const root = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const restore = () => {
+      if (!anchor.current) return;
+      const { row, top, scroll } = anchor.current;
+      scroll.scrollTop += row.getBoundingClientRect().top - top;
+    };
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(restore);
+    if (root.current) observer.observe(root.current);
+    const scroll = root.current?.closest('.wbody');
+    const remember = () => {
+      if (anchor.current) anchor.current.top = anchor.current.row.getBoundingClientRect().top;
+    };
+    scroll?.addEventListener('scroll', remember);
+    return () => { observer.disconnect(); scroll?.removeEventListener('scroll', remember); };
+  }, []);
   useLayoutEffect(() => {
     if (!whatif.reading || !anchor.current) return;
     const { row, top, scroll } = anchor.current;
     scroll.scrollTop += row.getBoundingClientRect().top - top;
-    anchor.current = undefined;
+
   }, [whatif.reading]);
+  // A row menu Act holds its row in place while the panels above it change; working anywhere else
+  // lets go, so the owner's own view never moves under a click.
+  const holdRow = (target: HTMLElement) => {
+    if (!target.closest('.contract-menu')) { anchor.current = undefined; return; }
+    if (!target.closest('.contract-menu button')) return;
+    const row = target.closest('tr') ?? root.current?.querySelector('.contract-menu[open]')?.closest('tr');
+    const scroll = target.closest<HTMLElement>('.wbody') ?? root.current?.closest<HTMLElement>('.wbody');
+    if (row && scroll) anchor.current = { row, scroll, top: row.getBoundingClientRect().top };
+  };
   const filters = useContractsFilters();
   const scope = { ...filters, mine: s.franchiseId ?? '' };
   const key = JSON.stringify(scope);
@@ -249,14 +276,10 @@ export default function Contracts({
   const cap = readings?.cap.value;
   const table = readings?.table.value;
   return (
-    <div className="contracts" onClickCapture={event => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.contract-menu .act')) return;
-      const row = target.closest('tr');
-      const scroll = target.closest<HTMLElement>('.wbody');
-      if (row && scroll) anchor.current = { row, scroll, top: row.getBoundingClientRect().top };
-    }}>
+    <div ref={root} className="contracts" onClickCapture={event => holdRow(event.target as HTMLElement)}
+      onFocusCapture={event => holdRow(event.target as HTMLElement)}>
       <WhatIfPanel mine={s.franchiseId} {...whatif} />
+      <ContractMovePanel mine={s.franchiseId} />
       {whatif.reading?.value?.moves.length ? <p className="whatif-status" role="status">
         {whatif.reading.value.moves.at(-1)?.status}</p> : null}
       <ContractReading title="My franchise cap" reading={readings?.cap} error={error}>
@@ -395,7 +418,8 @@ export default function Contracts({
         reading={readings?.cantCut}
         error={error}
       />
-      {!supplied && <ReleasePlans mine={s.franchiseId ?? ''} />}
+      {!supplied && <><ReleasePlans mine={s.franchiseId ?? ''} />
+        <ContractActs mine={s.franchiseId ?? ''} /></>}
       <p>What-if models the charge; Make this a plan keeps a checked move. Nothing is submitted.</p>
     </div>
   );

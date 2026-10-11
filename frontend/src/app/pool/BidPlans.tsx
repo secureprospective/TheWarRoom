@@ -72,22 +72,23 @@ function ActionButton({ plan, action, busy }: { plan: Plan; action: BidAction; b
 
 export function BidPlanCard({ plan, busy = '' }: { plan: Plan; busy?: string }) {
   const stages = plan.history.filter((entry) => entry.state !== 'draft');
+  const finished = ['withdrawn', 'landed', 'failed', 'awarded_off_app'].includes(plan.stateCode);
   return (
     <article className="bid-plan" data-state={plan.stateCode} aria-label={`Bid plan ${plan.player}`}>
       <header>
         <h5>{plan.player}</h5>
       </header>
-      <p className="bid-line">
+      {!finished && <p className="bid-line">
         {plan.contract} · {plan.points} points · {plan.beatText}
-      </p>
+      </p>}
       <RailStrip receipt={plan.receipt} />
-      {plan.rules.length > 0 && <Rules rules={plan.rules} summary={plan.ruleSummary} />}
+      {!finished && plan.rules.length > 0 && <Rules rules={plan.rules} summary={plan.ruleSummary} />}
       {showsPost.has(plan.stateCode) && (
         <pre className="bid-post" aria-label="ProBoards post">
           {plan.post}
         </pre>
       )}
-      {plan.evidence && <p className="bid-evidence">Evidence: {plan.evidence}</p>}
+      {!finished && plan.evidence && <p className="bid-evidence">Evidence: {plan.evidence}</p>}
       <div className="bid-actions">
         {plan.actions.map((action) => (
           <ActionButton key={action.id} plan={plan} action={action} busy={busy} />
@@ -95,6 +96,7 @@ export function BidPlanCard({ plan, busy = '' }: { plan: Plan; busy?: string }) 
       </div>
       <details className="bid-details">
         <summary>History</summary>
+        {finished && <pre className="bid-post" aria-label="ProBoards post">{plan.post}</pre>}
         <ol className="bid-history">
           {stages.map((entry) => (
             <li key={`${entry.at}${entry.state}`}>

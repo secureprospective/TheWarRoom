@@ -6,6 +6,7 @@ import { EnvelopeRail } from './EnvelopeRail';
 
 const ReleasePlans = lazy(() => import('../contracts/ReleasePlans'));
 const BidPlans = lazy(() => import('../pool/BidPlans'));
+const ContractActs = lazy(() => import('../contracts/ContractActs'));
 
 export default function MyMoves({ snapshot, executor = commands }: {
   snapshot: Snapshot;
@@ -41,7 +42,9 @@ export default function MyMoves({ snapshot, executor = commands }: {
       )}
       {!fixture && !receipts.length && loading === false &&
         !error && <p>No moves drafted this session</p>}
-      {!fixture && <Suspense fallback={null}><BidPlans /><ReleasePlans mine={franchiseId} /></Suspense>}
+      {!fixture && <Suspense fallback={null}>
+        <BidPlans /><ReleasePlans mine={franchiseId} /><ContractActs mine={franchiseId} revealing />
+      </Suspense>}
     </section>
   );
 }

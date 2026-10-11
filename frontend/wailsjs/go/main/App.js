@@ -162,6 +162,10 @@ export function TargetClock() {
   return window['go']['main']['App']['TargetClock']();
 }
 
+export function TargetContractActs(arg1) {
+  return window['go']['main']['App']['TargetContractActs'](arg1);
+}
+
 export function TargetContracts(arg1) {
   return window['go']['main']['App']['TargetContracts'](arg1);
 }

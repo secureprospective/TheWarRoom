@@ -264,6 +264,10 @@ func whatIfRule(kind string, p state.PlayerState, season int) string {
 }
 
 func (a *App) whatIfView(ctx context.Context, s state.WhatIfSession, store *state.Store, stale bool) (WhatIfView, error) {
+	return a.whatIfViewThrough(ctx, s, store, stale, s.Snapshot.Season)
+}
+
+func (a *App) whatIfViewThrough(ctx context.Context, s state.WhatIfSession, store *state.Store, stale bool, horizon int) (WhatIfView, error) {
 	out := WhatIfView{Stale: stale, Moves: []WhatIfMoveView{}, Figures: []WhatIfFigure{}, Choices: []WhatIfChoice{}, Empty: "Model a cut or buyout from your team's contract rows; nothing is sent anywhere."}
 	if stale {
 		out.Banner = "MFL changed since this what-if started"
@@ -278,7 +282,7 @@ func (a *App) whatIfView(ctx context.Context, s state.WhatIfSession, store *stat
 	}
 
 	beforeFuture, afterFuture := map[int]domain.Money{}, map[int]domain.Money{}
-	last := s.Snapshot.Season
+	last := max(s.Snapshot.Season, horizon)
 	for _, p := range s.Snapshot.Players {
 		if p.FranchiseID != s.Mine {
 			continue

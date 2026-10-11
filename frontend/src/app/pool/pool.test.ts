@@ -262,7 +262,16 @@ describe('My moves and the Inspector', () => {
     const text = html(createElement(BidPlanCard, { plan: awarded }));
     expect(text).toContain('Awarded off-app');
     expect(text).not.toContain('role="alert"');
-    expect(text).not.toContain('ProBoards post');
+    expect(text.indexOf('ProBoards post')).toBeGreaterThan(text.indexOf('<summary>History</summary>'));
+    expect(text).not.toContain('class="act');
+  });
+  it.each(['withdrawn', 'landed', 'failed'] as const)('folds %s bid post under History', state => {
+    const ready = plan('ready');
+    const finished = { ...ready, stateCode: state, actions: [],
+      receipt: { ...ready.receipt, state } };
+    const text = html(createElement(BidPlanCard, { plan: finished }));
+    expect(text.indexOf('ProBoards post')).toBeGreaterThan(text.indexOf('<summary>History</summary>'));
+    expect(text).not.toContain('class="bid-line"');
     expect(text).not.toContain('class="act');
   });
   it('shows a failed list as failed and an empty one as empty', () => {

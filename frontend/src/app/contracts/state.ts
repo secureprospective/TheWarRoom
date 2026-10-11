@@ -21,9 +21,22 @@ export const setContractsFilter = filters.set;
 export type ContractsAction = ContractsFilter | {
   field: 'whatif'; value: import('./whatif').WhatIfAction;
 } | { field: 'release'; value: import('./releases').ReleaseAction }
-  | { field: 'release-confirm'; value: string }; 
+  | { field: 'release-confirm'; value: string }
+  | { field: 'contract-open'; value: { mine: string; player: string } }
+  | { field: 'contract-keep'; value: import('./contractActs').ContractActRequest }
+  | { field: 'contract-act'; value: import('./contractActs').ContractActRequest }
+  | { field: 'contract-reveal'; value: string };
 export async function runContractsAction(action: ContractsAction) {
-  if (action.field === 'whatif') await (await import('./whatif')).changeWhatIf(action.value);
+  if (action.field === 'contract-open') {
+    (await import('./contractActs')).openContractMove(action.value.mine, action.value.player);
+  } else if (action.field === 'contract-keep') {
+    await (await import('./contractActs')).keepContractMove(action.value);
+  } else if (action.field === 'contract-act') {
+    await (await import('./contractActs')).runContractAct(action.value);
+  } else if (action.field === 'contract-reveal') {
+    (await import('./contractActs')).revealContractPlan(action.value);
+  }
+  else if (action.field === 'whatif') await (await import('./whatif')).changeWhatIf(action.value);
   else if (action.field === 'release-confirm') (await import('./releases')).confirmRelease(action.value);
   else if (action.field === 'release') {
     const { releaseAction, copyReleaseText } = await import('./releases');

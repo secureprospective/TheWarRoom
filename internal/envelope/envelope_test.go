@@ -47,9 +47,9 @@ func observeAt(snap snapshot.Snapshot, at time.Time) Observation {
 func wantTransitions() map[State]map[Event]State {
 	m := map[State]map[Event]State{
 		Draft:         {ChecksPass: Ready, ChecksBlock: Blocked},
-		Blocked:       {ChecksPass: Ready, ChecksBlock: Blocked, Withdraw: Withdrawn},
+		Blocked:       {ChecksPass: Ready, ChecksBlock: Blocked, Withdraw: Withdrawn, Invalidate: Stale},
 		Ready:         {HandOff: HandedOff, Invalidate: Stale, Withdraw: Withdrawn},
-		Stale:         {Rebase: Draft},
+		Stale:         {Rebase: Draft, Withdraw: Withdrawn},
 		Failed:        {Rebase: Draft},
 		Landed:        {Invalidate: Landed},
 		AwardedOffApp: {},

@@ -123,6 +123,7 @@ type Source string
 
 const (
 	Rosters       Source = "rosters"
+	Contracts     Source = "contracts"
 	Transactions  Source = "transactions"
 	Lineups       Source = "lineups"
 	PendingTrades Source = "pendingTrades"
@@ -133,6 +134,7 @@ const (
 type Observation struct {
 	HandedOffAt   time.Time
 	LeagueID      string
+	Contracts     snapshot.Sourced[[]ContractEvidence]
 	Rosters       snapshot.Sourced[[]snapshot.Roster]
 	Transactions  snapshot.Sourced[[]leaguefeed.Transaction]
 	Lineups       snapshot.Sourced[leaguefeed.Lineups]
@@ -141,6 +143,8 @@ type Observation struct {
 
 func (o Observation) freshness(source Source) (domain.Freshness, bool) {
 	switch source {
+	case Contracts:
+		return o.Contracts.Provenance.Freshness, true
 	case Rosters:
 		return o.Rosters.Provenance.Freshness, true
 	case Transactions:

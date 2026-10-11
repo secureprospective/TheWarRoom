@@ -154,8 +154,6 @@ func Summary(results []Result) string {
 	return fmt.Sprintf("%d rules pass", n)
 }
 
-func playoffs(in Input) bool { return in.Week > multiYearCloseWk }
-
 func verdict(ok bool) Verdict {
 	if ok {
 		return Pass
@@ -210,8 +208,6 @@ func oneYear(in Input) finding {
 	switch {
 	case in.Years != 1:
 		return finding{RuleOneYear, "1-year limit", Pass, "Applies to 1-year bids only"}
-	case playoffs(in):
-		return finding{RuleOneYear, "1-year limit", Pass, "Lifted in the playoffs"}
 	case in.Salary > oneYearCap:
 		return finding{RuleOneYear, "1-year limit", Fail,
 			fmt.Sprintf("A 1-year bid is capped at %s", MoneyText(oneYearCap))}
@@ -222,7 +218,6 @@ func oneYear(in Input) finding {
 func tierYears(in Input) finding {
 	need := 1
 	switch {
-	case playoffs(in):
 	case in.Salary > midTierCap:
 		need = 3
 	case in.Salary > oneYearCap:
@@ -233,17 +228,15 @@ func tierYears(in Input) finding {
 			fmt.Sprintf("A %s bid needs at least %d years", MoneyText(in.Salary), need)}
 	}
 	return finding{RuleTierYears, "Years for the salary", Pass,
-		fmt.Sprintf("%s needs at least %d %s", tierText(in, need), need, plural(need, "year"))}
+		fmt.Sprintf("%s needs at least %d %s", tierText(need), need, plural(need, "year"))}
 }
 
 // tierText names the salary band the length rule puts this bid in.
-func tierText(in Input, need int) string {
-	switch {
-	case playoffs(in):
-		return "In the playoffs any salary"
-	case need == 3:
+func tierText(need int) string {
+	switch need {
+	case 3:
 		return "Over " + MoneyText(midTierCap)
-	case need == 2:
+	case 2:
 		return "Over " + MoneyText(oneYearCap) + " up to " + MoneyText(midTierCap)
 	}
 	return "Up to " + MoneyText(oneYearCap)

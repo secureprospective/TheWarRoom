@@ -85,6 +85,8 @@ export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
 
+export function TargetContractActs(arg1:main.RawContractAct):Promise<main.Reading___main_ContractActView_>;
+
 export function TargetContracts(arg1:snapshot.RawContractScope):Promise<main.ContractsReadings>;
 
 export function TargetCounterpartTeam(arg1:main.RawCounterpartTeam):Promise<main.Reading_main_TeamCounterpart_>;

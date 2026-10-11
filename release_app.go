@@ -101,7 +101,7 @@ func releaseReading(v []ReleasePlanView, err error) Reading[[]ReleasePlanView] {
 }
 func releasePlanView(r envelope.Receipt, f envelope.ReleaseFacts) ReleasePlanView {
 	cut := r.Spec.Intent == envelope.CutIntent
-	verb, channel := "Buy out ", "Buyout channel not stated in §12; confirm with the commissioner before posting."
+	verb, channel := "Buy out ", "Post this to the commissioner on ProBoards."
 	if cut {
 		verb, channel = "Cut ", "Release on MFL; post player, contract and cap hit on ProBoards (§8)."
 	}

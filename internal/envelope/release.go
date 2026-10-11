@@ -86,7 +86,7 @@ func (e Envelope) HandOffRelease(at time.Time, confirmed bool) (Envelope, error)
 		return Envelope{}, fmt.Errorf("release hand-off: confirmation required")
 	}
 	if e.spec.Intent == BuyoutIntent {
-		return e.HandOffManual(at, "Buyout request copied; channel must be confirmed; acceptance not verified")
+		return e.HandOffManual(at, "Buyout request copied for the commissioner on ProBoards; nothing posted; acceptance not verified")
 	}
 	return e.handOff(at, "Confirmed irreversible release; MFL drop page opened; owner submits on MFL")
 }

@@ -253,7 +253,7 @@ func transitions() map[step]State {
 	t := map[step]State{
 		{Draft, ChecksPass}: Ready, {Draft, ChecksBlock}: Blocked,
 		{Blocked, ChecksPass}: Ready, {Blocked, ChecksBlock}: Blocked,
-		{Ready, HandOff}: HandedOff, {Ready, Invalidate}: Stale,
+		{Ready, HandOff}: HandedOff, {Ready, Invalidate}: Stale, {Blocked, Invalidate}: Stale,
 		{Stale, Rebase}: Draft, {Failed, Rebase}: Draft,
 		{Landed, Invalidate}: Landed,
 	}
@@ -274,7 +274,7 @@ func transitions() map[step]State {
 	for _, s := range []State{HandedOff, NotYetDone, NotVerified, BidPending} {
 		t[step{s, AwardedElsewhere}] = AwardedOffApp
 	}
-	for _, s := range []State{Blocked, Ready, HandedOff, NotYetDone} {
+	for _, s := range []State{Blocked, Ready, HandedOff, NotYetDone, Stale} {
 		t[step{s, Withdraw}] = Withdrawn
 	}
 	return t

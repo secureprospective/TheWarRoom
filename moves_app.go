@@ -91,16 +91,24 @@ func movePredicate(intent string) envelope.Predicate {
 		"roster.ir":           envelope.IRPredicate{},
 		envelope.CutIntent:    envelope.ReleasePredicate{},
 		envelope.BuyoutIntent: envelope.ReleasePredicate{},
-		"roster.taxi":         envelope.TaxiPredicate{},
-		"lineup.set":          envelope.LineupPredicate{},
-		"trade.accept":        envelope.TradePredicate{},
-		"bid.submit":          envelope.BidPredicate{},
+		"rfa.tender":          envelope.ContractPredicate{}, "fa.resign": envelope.ContractPredicate{}, "contract.tag": envelope.ContractPredicate{}, "contract.extend": envelope.ContractPredicate{}, "contract.restructure": envelope.ContractPredicate{},
+		"roster.taxi":  envelope.TaxiPredicate{},
+		"lineup.set":   envelope.LineupPredicate{},
+		"trade.accept": envelope.TradePredicate{},
+		"bid.submit":   envelope.BidPredicate{},
 	}
 	return registry[intent]
 }
 
 // withBidFacts gives a bid plan's predicate the contract it looks for, which lives in bid_facts.
 func (a *App) withBidFacts(ctx context.Context, id string, p envelope.Predicate) (envelope.Predicate, error) {
+	if _, ok := p.(envelope.ContractPredicate); ok {
+		facts, err := a.moves.ContractFacts(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("watch moves: contract facts: %w", err)
+		}
+		return envelope.ContractPredicate{Facts: facts}, nil
+	}
 	if _, ok := p.(envelope.BidPredicate); !ok {
 		return p, nil
 	}
@@ -168,7 +176,7 @@ func (a *App) checkMoves(ctx context.Context) error {
 		if predicate, err = a.withBidFacts(ctx, e.ID(), predicate); err != nil {
 			return err
 		}
-		if e.State() != listed.State() {
+		if !watchableMove(e, listed.State()) {
 			continue
 		}
 		next, err := e.Observe(a.movesNow(), obs, predicate)
@@ -220,9 +228,9 @@ func (a *App) refreshMoveSources(ctx context.Context, sources map[envelope.Sourc
 	}
 	first := true
 	for _, source := range []envelope.Source{
-		envelope.Rosters, envelope.Transactions, envelope.Lineups, envelope.PendingTrades,
+		envelope.Rosters, envelope.Contracts, envelope.Transactions, envelope.Lineups, envelope.PendingTrades,
 	} {
-		if !sources[source] || a.recentMoveSource(source, latest) {
+		if skipMoveRefresh(source, sources) || a.recentMoveSource(source, latest) {
 			continue
 		}
 		if !first {
@@ -249,7 +257,7 @@ func (a *App) refreshMoveSource(ctx context.Context, source envelope.Source) err
 		return nil
 	}
 	switch source {
-	case envelope.Rosters:
+	case envelope.Rosters, envelope.Contracts:
 		if _, err := a.refreshLeagueLocked(ctx, a.rulebook, a.league); err != nil {
 			a.movesLog(fmt.Sprintf("watch moves: roster refresh: %v", err))
 		}
@@ -281,8 +289,14 @@ func (a *App) moveObservation(ctx context.Context) (envelope.Observation, error)
 		fresh.State != domain.FreshFail && a.rostersCheckedAt.After(changed) {
 		fresh.FetchedAt = a.rostersCheckedAt.UTC().Format(time.RFC3339)
 	}
+	m, _, _ := a.league.ContractsView()
+	contracts := []envelope.ContractEvidence{}
+	for _, p := range m.Players {
+		contracts = append(contracts, mirrorContractEvidence(m, p.FranchiseID, p.MFLID))
+	}
 	return envelope.Observation{
-		LeagueID: ingestion.LeagueID, Rosters: rosters,
+		Contracts: snapshot.Sourced[[]envelope.ContractEvidence]{Value: contracts, Provenance: rosters.Provenance},
+		LeagueID:  ingestion.LeagueID, Rosters: rosters,
 		Transactions: season.Transactions, Lineups: season.Lineups, PendingTrades: season.PendingTrades,
 	}, nil
 }
@@ -301,7 +315,7 @@ func (a *App) recentMoveSource(source envelope.Source, handed time.Time) bool {
 		at, failure = a.seasonLineups.fetchedAt, a.seasonLineups.refreshError
 	case envelope.PendingTrades:
 		at, failure = a.seasonPendingTrades.fetchedAt, a.seasonPendingTrades.refreshError
-	case envelope.Rosters: // not a season feed
+	case envelope.Rosters, envelope.Contracts: // not a season feed
 		return false
 	default:
 		return false
@@ -316,6 +330,14 @@ func (a *App) recentMoveSource(source envelope.Source, handed time.Time) bool {
 // it does at hand-off. The caller holds refreshMu.
 func (a *App) revalidateReadyRosterMoves(ctx context.Context) {
 	a.revalidateReleaseAfterRefresh(ctx)
+	if a.moves != nil && a.whatif != nil {
+		a.movesMu.Lock()
+		err := a.revalidateContractPlans(ctx)
+		a.movesMu.Unlock()
+		if err != nil {
+			a.movesLog(fmt.Sprintf("contract validation: %v", err))
+		}
+	}
 	if err := a.ready(); err != nil {
 		return
 	}
@@ -415,4 +437,12 @@ func (a *App) revalidateReleaseAfterRefresh(ctx context.Context) {
 			a.movesLog(fmt.Sprintf("release validation: %v", err))
 		}
 	}
+}
+
+func watchableMove(e envelope.Envelope, listed envelope.State) bool {
+	return e.State() == listed && (!envelope.IsContract(e.Receipt().Spec.Intent) || e.State() != envelope.HandedOff)
+}
+
+func skipMoveRefresh(source envelope.Source, sources map[envelope.Source]bool) bool {
+	return !sources[source] || (source == envelope.Contracts && sources[envelope.Rosters])
 }

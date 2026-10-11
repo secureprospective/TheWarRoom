@@ -55,6 +55,7 @@ describe('What-if', () => {
     expect(html(r)).toContain(r.value!.banner);
     expect(html(r)).toContain('disabled');
     expect(html(r)).toContain('Reset');
+    expect(html(r)).not.toContain('Filter or sort contracts');
     r.status = 'failed'; r.absenceReason = 'Ledger unavailable';
     expect(html(r)).toContain('Ledger unavailable');
     expect(html(r)).not.toContain('$999.99');
@@ -117,8 +118,10 @@ it('puts both Acts and a disabled reason in the menu, and Go move tags in the ro
   expect(view()).toContain('<summary>What if…</summary>');
   expect(view()).toContain('disabled');
   expect(view()).toContain('<p>Needs 2–4 paid years</p>');
-  expect(view(false)).not.toContain('<details');
+  expect(view(false)).not.toContain('class="contract-menu"');
+  expect(view(false)).toContain('Contract Acts…');
   expect(view(false)).toContain('What if I buy him out');
+  expect(view()).not.toContain('Filter or sort contracts');
   for (const tag of ['Cut in what-if', 'Bought out in what-if']) {
     value.moves = [{ id: '1', player: '0042', tag, status: 'Go status', label: 'Go move',
       charge: { cents: 0, text: '$0' }, explanation: '' }];

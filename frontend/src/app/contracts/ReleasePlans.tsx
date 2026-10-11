@@ -10,12 +10,13 @@ import './contracts.css';
 export function ReleaseCard({ plan, mine }: { plan: ReleasePlan; mine: string }) {
   const token = `${plan.id}:${plan.charge}:${plan.receipt.audit.at(-1)?.at}`;
   const confirm = useReleaseConfirmation() === token;
+  const finished = ['withdrawn', 'landed', 'failed'].includes(plan.receipt.state);
+  const post = <pre className="release-post" aria-label="Release request text">{plan.post}</pre>;
   return <article className="release-plan" aria-label={plan.label} data-state={plan.receipt.state}>
     <h5>{plan.label}</h5>
-    <p>Planned dead cap this season: <span className="contract-money">{plan.charge}</span></p>
+    {!finished && <p>Planned dead cap this season: <span className="contract-money">{plan.charge}</span></p>}
     <RailStrip receipt={plan.receipt} />
-    <p>{plan.channel}</p>
-    <pre className="release-post" aria-label="Release request text">{plan.post}</pre>
+    {!finished && <><p>{plan.channel}</p>{post}</>}
     {plan.canHandOff && (plan.cut && !confirm ?
       <Act verb="contracts.set" variant="command" label={`Open MFL drop page for ${plan.player}`}
         args={{ field: 'release-confirm', value: token }}>Open MFL drop page…</Act> :
@@ -37,7 +38,7 @@ export function ReleaseCard({ plan, mine }: { plan: ReleasePlan; mine: string })
     {plan.withdrawLabel && <Act verb="contracts.set" variant="command" label={plan.withdrawLabel}
       args={{ field: 'release', value: { mine, action: 'withdraw', id: plan.id } }}>
       {plan.withdrawLabel}</Act>}
-    <details><summary>History</summary><ol>{plan.receipt.audit.map((entry, i) =>
+    <details><summary>History</summary>{finished && post}<ol>{plan.receipt.audit.map((entry, i) =>
       <li key={i}><time dateTime={entry.at}>{localDate(entry.at)}</time> {entry.note}</li>)}</ol></details>
   </article>;
 }
