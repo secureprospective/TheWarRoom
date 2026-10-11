@@ -6,10 +6,15 @@
   `1f5281d` (verify 525/525, entry 321,212/321,818); frame border-box fix `7484f14`.
 - Bottom "scrollbar strip" is NOT the app: it is Claude-OS's autohidden xfce4-panel dock
   (306x49 at 487,751). Not a defect.
-- Sol budget: ~25% at 19:20, resets ~22:25. Background job (this session) dispatches p2h at 22:30:
-  `dispatch-wt.sh p2h ~/fleet/briefs/warroom-ring2-p2h-whatif.md` (WT default ring-0). If this
-  context is lost, check `~/fleet/runs/warroom-ring2-2026-10-10/p2h/started`; if absent after
-  22:31, dispatch it by hand.
+- Sol budget: ~25% at 19:20, resets ~22:25. p2h dispatch is DURABLE ON BEE: pid of
+  `~/fleet/runs/warroom-ring2-2026-10-10/p2h-at-2230.sh` (nohup, started 20:02) sleeps to 22:30,
+  then runs `dispatch-wt.sh p2h ~/fleet/briefs/warroom-ring2-p2h-whatif.md` once (skips if
+  p2h/started exists). Check: `pgrep -af p2h-at-2230` before 22:30; after, `cat p2h/started` and
+  transcript mtime `stat -c %Y p2h/sessions/*.jsonl` (idle > 600 s = stalled). Done = p2h/sentinel.
+  No local watcher survives compaction: start one after resuming. On done: read p2h/REPORT.md,
+  review Part 1 math myself + plant own mutant (snap once vs per cell), make build, deploy,
+  click the what-if on Claude-OS (cut, buyout, Undo, Reset, stale banner), fix pass if needed,
+  commit on session/ring-2, then write + dispatch p2h2 (plans from what-if, PW2/PW4), then p2i.
 - Briefs staged: p2h (dead-cap PW5 fix + what-if in Contracts, no plans), p2i (pool + bid plans,
   PW3). Still to write: p2h2 (cut/buyout plans from the what-if, PW2/PW4 Landed), after p2h lands.
 - Flagged to Christopher: offers goldens contain his raw offer list (same data already in the
