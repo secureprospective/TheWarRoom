@@ -1,5 +1,20 @@
 # RESUME: TheWarRoom ring 2, the decision layer (started 2026-10-10)
 
+## ⏩ UPDATE 2026-10-10 20:00 CDT (supersedes the in-flight list below)
+- DONE + live-verified + committed on session/ring-2 (ring-0 worktree): p2g+p2g2 Contracts and cap
+  `878b87a`; resume branch merged `0cb6952`; p2f+p2f2 Offers history (lab `2b6cb6e`) merged
+  `1f5281d` (verify 525/525, entry 321,212/321,818); frame border-box fix `7484f14`.
+- Bottom "scrollbar strip" is NOT the app: it is Claude-OS's autohidden xfce4-panel dock
+  (306x49 at 487,751). Not a defect.
+- Sol budget: ~25% at 19:20, resets ~22:25. Background job (this session) dispatches p2h at 22:30:
+  `dispatch-wt.sh p2h ~/fleet/briefs/warroom-ring2-p2h-whatif.md` (WT default ring-0). If this
+  context is lost, check `~/fleet/runs/warroom-ring2-2026-10-10/p2h/started`; if absent after
+  22:31, dispatch it by hand.
+- Briefs staged: p2h (dead-cap PW5 fix + what-if in Contracts, no plans), p2i (pool + bid plans,
+  PW3). Still to write: p2h2 (cut/buyout plans from the what-if, PW2/PW4 Landed), after p2h lands.
+- Flagged to Christopher: offers goldens contain his raw offer list (same data already in the
+  committed lab.json.gz); default buyout what-if allowed in-season labelled "Offseason only".
+
 ## ⏩ RESUME HERE (compact-safe 2026-10-10 19:20 CDT)
 Goal (Christopher /goal): finish ring 2; Claude is head brain, Sol builds (GLM 5.3 the backup),
 the panel answers durable questions, Claude tests on Claude-OS. Excellence is the standard.
