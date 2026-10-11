@@ -33,7 +33,7 @@ func TestContractRowsAndYearInference(t *testing.T) {
 }
 
 func TestContractsCentsCapAndAdjustments(t *testing.T) {
-	rows := []ContractRow{{FranchiseID: "0001", Salary: contractAmount(101), Expiration: 2028}, {FranchiseID: "0001", Salary: contractAmount(202), Expiration: 2027}, {FranchiseID: "0002", Salary: contractAmount(999), Expiration: 2028}}
+	rows := []ContractRow{{FranchiseID: "0001", Salary: ContractAmountOf(101), Expiration: 2028}, {FranchiseID: "0001", Salary: ContractAmountOf(202), Expiration: 2027}, {FranchiseID: "0002", Salary: ContractAmountOf(999), Expiration: 2028}}
 	capAmount := domain.Money(1000)
 	got := ContractsCap(rows, "0001", 2026, 1001, &capAmount, map[string]string{"0001": "Mine"})
 	if got.Used.Cents != 1001 || got.Room.Cents != -1 || got.Room.Text != "-$0.01" || len(got.Future) != 2 || got.Future[0].Cost.Cents != 303 || got.Future[1].Cost.Cents != 101 || !got.Future[0].Inferred {
@@ -53,7 +53,7 @@ func TestContractsCentsCapAndAdjustments(t *testing.T) {
 }
 
 func TestContractsSortFilterMineFirst(t *testing.T) {
-	rows := []ContractRow{{ID: "3", FranchiseID: "0002", Name: "A", Position: "QB", Salary: contractAmount(300)}, {ID: "2", FranchiseID: "0001", Name: "Z", Position: "WR", Salary: contractAmount(200)}, {ID: "1", FranchiseID: "0001", Name: "B", Position: "QB", Salary: contractAmount(100)}}
+	rows := []ContractRow{{ID: "3", FranchiseID: "0002", Name: "A", Position: "QB", Salary: ContractAmountOf(300)}, {ID: "2", FranchiseID: "0001", Name: "Z", Position: "WR", Salary: ContractAmountOf(200)}, {ID: "1", FranchiseID: "0001", Name: "B", Position: "QB", Salary: ContractAmountOf(100)}}
 	scope := RawContractScope{Mine: "0001", Sort: "salary", Desc: true}
 	got := ContractsTable(rows, nil, scope)
 	if got.Rows[0].ID != "2" || got.Rows[1].ID != "1" || got.Rows[2].ID != "3" || len(got.Teams) != 2 || len(got.Positions) != 2 {
@@ -89,7 +89,7 @@ func TestContractAmountDisplay(t *testing.T) {
 		{12500000000, "$125,000,000"}, {67000000, "$670,000"}, {0, "$0"},
 		{-67000000, "-$670,000"}, {12345, "$123.45"}, {-1, "-$0.01"}, {101, "$1.01"},
 	} {
-		got := contractAmount(tc.cents)
+		got := ContractAmountOf(tc.cents)
 		if got.Cents != tc.cents || got.Text != tc.text {
 			t.Fatalf("amount %d: %+v", tc.cents, got)
 		}
@@ -100,7 +100,7 @@ func TestContractAmountDisplay(t *testing.T) {
 }
 
 func TestContractYearTagsAndReasons(t *testing.T) {
-	years := ContractYears(ContractRow{Salary: contractAmount(67000000), Expiration: 2029}, 2026)
+	years := ContractYears(ContractRow{Salary: ContractAmountOf(67000000), Expiration: 2029}, 2026)
 	for i, year := range years {
 		tag := "Inferred"
 		if i == 0 {
@@ -110,7 +110,7 @@ func TestContractYearTagsAndReasons(t *testing.T) {
 			t.Fatalf("year tag and reason: %+v", year)
 		}
 	}
-	summary := ContractsCap([]ContractRow{{FranchiseID: "0001", Salary: contractAmount(67000000), Expiration: 2029}}, "0001", 2026, 0, nil, nil)
+	summary := ContractsCap([]ContractRow{{FranchiseID: "0001", Salary: ContractAmountOf(67000000), Expiration: 2029}}, "0001", 2026, 0, nil, nil)
 	for _, year := range summary.Future {
 		if year.Tag != "Inferred" || strings.Contains(year.Reason, year.Tag) || year.Cost.Text != "$670,000" {
 			t.Fatalf("future: %+v", year)

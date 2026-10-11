@@ -10,6 +10,7 @@ import { commands } from '../commands/registry';
 import Contracts, { ContractReading, ContractPanel } from './Contracts';
 import { parseContracts, parsePlayerContract } from './provider';
 import { setContractsFilter } from './state';
+import type { WhatIf, WhatIfProvider } from './whatif';
 import type { Reading, Readings, ContractsProvider, PlayerContract, Scope } from './contract';
 
 function reading<T>(value: T): Reading<T> {
@@ -197,13 +198,13 @@ describe('Contracts and cap read surfaces', () => {
       'MFL literal credit',
       'not proven itemised dead cap',
       'owner pages are not scraped',
-      'Dead cap · not wired',
+      'Cut and buyout charges appear in the What-if panel',
     ])
       expect(text).toContain(value);
     const endpoints = test.root
       .querySelectorAll('[data-endpoint]')
       .map((node) => node.getAttribute('data-endpoint'));
-    expect(endpoints).toEqual(['M-078', 'M-031', 'M-025']);
+    expect(endpoints).toEqual(['C-06.1', 'M-078', 'M-031', 'M-025']);
     expect(text).toContain('MFL players archive');
     expect(text).toContain(localDate('2026-10-05T00:00:00Z'));
     expect(text).not.toContain('2026-10-05T00:00:00Z');
@@ -434,20 +435,34 @@ it('keeps twelve one-line my-team rows and counts filtered groups without repeat
   value.table.value!.rows.push({ ...player.player, id: '0099', franchiseId: '0002', team: 'Other' });
   const p = provider();
   p.contracts = vi.fn().mockResolvedValue(value);
-  const test = await mount(createElement(Contracts, { snapshot: heldSnapshot(), provider: p }));
+  const simulation: WhatIfProvider = {
+    query: vi.fn().mockResolvedValue(reading<WhatIf>({ stale: false, banner: '',
+      empty: 'No moves yet.', notice: '', moves: [], figures: [],
+      choices: value.table.value!.rows.map(row => ({ player: row.id, cutLabel: 'Cut him',
+        buyoutLabel: 'Buy him out', buyoutAllowed: false, reason: 'Needs two years' })) })),
+    change: async () => {}, onChange: () => () => {},
+  };
+  const test = await mount(createElement(Contracts, { snapshot: heldSnapshot(), provider: p,
+    whatIf: simulation }));
   expect(test.element.textContent).toContain('My team · Arizona Cardinals (12)');
   expect(test.element.textContent).toContain('Rest of the league (1)');
   const tables = nodes(test.root, 'TABLE');
   const mine = tables[1];
   const rest = tables[2];
   expect(nodes(mine, 'TH').map((n) => n.textContent))
-    .toEqual(['Player', 'Annual salary', 'Expires / status']);
+    .toEqual(['Player', 'Annual salary', 'Expires / status', 'What-if']);
   const rows = nodes(mine, 'TR').slice(1);
   expect(rows).toHaveLength(12);
   for (const row of rows) {
-    expect(nodes(row, 'TD')).toHaveLength(3);
+    expect(nodes(row, 'TD')).toHaveLength(4);
     expect(row.textContent).not.toContain('Arizona Cardinals');
     expect(nodes(row, 'SMALL')[0].textContent).toBe('QB');
+    const menu = nodes(row, 'DETAILS')[0];
+    expect(nodes(menu, 'SUMMARY')[0].textContent).toBe('What if…');
+    expect(menu.getAttribute('open')).toBeNull();
+    expect(nodes(menu, 'BUTTON')).toHaveLength(2);
+    expect(nodes(menu, 'P')[0].textContent).toBe('Needs two years');
+    expect(nodes(row, 'TD')[0].textContent).not.toContain('Needs two years');
   }
   expect(nodes(rest, 'TH').map((n) => n.textContent)).toContain('Team');
   expect(nodes(rest, 'TD')).toHaveLength(4);
@@ -462,4 +477,55 @@ it('keeps twelve one-line my-team rows and counts filtered groups without repeat
   });
   expect(test.element.textContent).toContain('My team · Arizona Cardinals (0)');
   expect(test.element.textContent).toContain('Rest of the league (1)');
+});
+
+it('retains the what-if during replay and restores the clicked row position before paint', async () => {
+  shell();
+  const value: WhatIf = { stale: false, banner: '', notice: '', empty: 'No moves yet.',
+    figures: [], moves: [],
+    choices: [{ player: '0042', cutLabel: 'Cut him', buyoutLabel: 'Buy him out',
+      buyoutAllowed: false, reason: 'Needs two years' }] };
+  let changed!: () => void;
+  let resolve!: (value: Reading<WhatIf>) => void;
+  const simulation: WhatIfProvider = { query: vi.fn().mockResolvedValue(reading(value)),
+    change: async () => {}, onChange: listener => { changed = listener; return () => {}; } };
+  const test = await mount(createElement(Contracts, { snapshot: heldSnapshot(),
+    provider: provider(), whatIf: simulation }));
+  const outer = nodes(test.root, 'DIV').find(node => node.getAttribute('class') === 'contracts')!;
+  const row = { getBoundingClientRect: vi.fn().mockReturnValue({ top: 400 }) };
+  const scroll = { scrollTop: 100 };
+  const capture = props(outer).onClickCapture as (event: unknown) => void;
+  capture({ target: { closest: (selector: string) => 
+    selector === 'tr' ? row : selector === '.wbody' ? scroll : {} } });
+  simulation.query = vi.fn(() => new Promise(yes => { resolve = yes; }));
+  await act(async () => { changed(); });
+  expect(test.element.textContent).toContain('No moves yet.');
+  row.getBoundingClientRect.mockReturnValue({ top: 650 });
+  const modelled = { ...value, moves: [{ id: '1', player: '0042', tag: 'Cut in what-if',
+    status: 'Modelled: cut Example player, $700,000; see What-if at the top',
+      label: 'Cut Example player', charge: { cents: 70000000, text: '$700,000' },
+        explanation: 'Go rule' }], choices: [] };
+  await act(async () => { resolve({ ...reading(modelled), baseline: '2026-10-11T07:27:22Z' }); });
+  expect(scroll.scrollTop).toBe(350);
+  expect(test.element.textContent).toContain(modelled.moves[0].status);
+  expect(test.element.textContent).toContain('Cut in what-if');
+  const myRow = nodes(test.root, 'TR').find(node => node.textContent.includes('Example player'))!;
+  expect(nodes(myRow, 'DETAILS')).toHaveLength(0);
+});
+
+it('offers the same Go Acts in my player Inspector, never another franchise', async () => {
+  shell();
+  const value: WhatIf = { stale: false, banner: '', notice: '', empty: '', figures: [], moves: [],
+    choices: [{ player: '0042', cutLabel: 'What if I cut him',
+      buyoutLabel: 'What if I buy him out', buyoutAllowed: false, reason: 'Needs two years' }] };
+  const simulation: WhatIfProvider = { query: vi.fn().mockResolvedValue(reading(value)),
+    change: async () => {}, onChange: () => () => {} };
+  const test = await mount(createElement(ContractPanel, { id: '0042', provider: provider(),
+    whatIf: simulation }));
+  expect(test.element.textContent).toContain('What if I cut him');
+  expect(test.element.textContent).toContain('What if I buy him out');
+  expect(test.element.textContent).toContain('Needs two years');
+  await act(async () => { test.renderer.render(createElement(ContractPanel, { id: '0042',
+    mine: '0002', provider: provider(), whatIf: simulation })); });
+  expect(test.element.textContent).not.toContain('What if I cut him');
 });

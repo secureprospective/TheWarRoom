@@ -113,7 +113,7 @@ func (m *Mirror) Replace(ctx context.Context, snap MirrorSnapshot) (bool, error)
 	if err != nil || m.hash == prev {
 		return false, err
 	}
-	at := time.Now().UTC().Format(time.RFC3339)
+	at := time.Now().UTC().Format(time.RFC3339Nano)
 	if _, err := m.pools.Write().ExecContext(ctx, `
 INSERT INTO league_mirror (id, season, sha256, snapshot, refreshed_at) VALUES (1, ?, ?, ?, ?)
 ON CONFLICT (id) DO UPDATE SET season = excluded.season, sha256 = excluded.sha256,

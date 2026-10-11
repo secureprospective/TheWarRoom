@@ -19,20 +19,25 @@ const (
 	restructuredCutPct = 50
 )
 
-// Charge is the §8 penalty: pct% × annual salary × remaining years, with pct 50 if restructured,
-// else 35. Zero if claimed off waivers, with no remaining years, or with no salary. Snapped to $10k,
-// like every cap figure (Christopher, 2026-07-05). Pure.
-func Charge(annualSalary domain.Money, remainingYears int, isRestructured, claimed bool) domain.Money {
-	if claimed || remainingYears <= 0 || annualSalary <= 0 {
+// Charge sums the paid cells after the cut season before rounding once.
+func Charge(cells []state.LedgerCell, season int, isRestructured, claimed bool) domain.Money {
+	if claimed {
+		return 0
+	}
+	var sum domain.Money
+	for _, cell := range cells {
+		if cell.Year > season {
+			sum += cell.Salary
+		}
+	}
+	if sum <= 0 {
 		return 0
 	}
 	pct := int64(baseCutPct)
 	if isRestructured {
 		pct = restructuredCutPct
 	}
-	num := int64(annualSalary) * pct * int64(remainingYears) // cents × whole-percent × years
-	cents := domain.Money((num + 50) / 100)                  // ÷100 for the percent, round half-up
-	return domain.RoundToNearest10k(cents)                   // land on the universal $10k grid
+	return domain.RoundToNearest10k(domain.Money((int64(sum)*pct + 50) / 100))
 }
 
 // Waive cuts a player: computes the §8 charge, releases him and records it, in one transaction.
@@ -42,12 +47,11 @@ func Waive(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapEn
 	if !ok {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: waive %q: player not on any roster", mflID)
 	}
-	remaining := ps.ExpirationYear - w.Season()
-	if remaining < 0 {
-		remaining = 0
+	cells, err := w.PaidCells(ctx, mflID)
+	if err != nil {
+		return state.DeadCapEntry{}, fmt.Errorf("deadcap: waive %q: read cells: %w", mflID, err)
 	}
-	// Charge on the cap salary: after a §11 restructure that is the reduced figure.
-	charge := Charge(ps.CapSalary, remaining, ps.IsRestructured, false)
+	charge := Charge(cells, w.Season(), ps.IsRestructured, false)
 
 	if err := w.ReleasePlayer(ctx, mflID, domain.PlayerFreeAgent, waiverReason); err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: release %q: %w", mflID, err)

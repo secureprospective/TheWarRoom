@@ -98,7 +98,7 @@ func (r RawContractScope) Validate() error {
 	return nil
 }
 
-func contractAmount(m domain.Money) ContractAmount {
+func ContractAmountOf(m domain.Money) ContractAmount {
 	text := m.String()
 	if m%100 == 0 {
 		text = strings.TrimSuffix(text, ".00")
@@ -118,7 +118,7 @@ func ContractRows(m state.MirrorSnapshot, directory Snapshot, names map[string]s
 		if name == "" {
 			name = "Player " + p.MFLID
 		}
-		rows = append(rows, ContractRow{ID: p.MFLID, FranchiseID: p.FranchiseID, Team: contractTeamName(names, p.FranchiseID), Name: name, Position: string(d.Position), Salary: contractAmount(p.Salary), Expiration: p.ContractYear, Status: string(p.ContractStatus), Info: p.ContractInfo})
+		rows = append(rows, ContractRow{ID: p.MFLID, FranchiseID: p.FranchiseID, Team: contractTeamName(names, p.FranchiseID), Name: name, Position: string(d.Position), Salary: ContractAmountOf(p.Salary), Expiration: p.ContractYear, Status: string(p.ContractStatus), Info: p.ContractInfo})
 	}
 	return rows
 }
@@ -203,9 +203,9 @@ func ContractYears(row ContractRow, season int) []ContractYear {
 }
 
 func ContractsCap(rows []ContractRow, mine string, season int, used domain.Money, capAmount *domain.Money, names map[string]string) CapSummary {
-	out := CapSummary{Team: contractTeamName(names, mine), Season: season, Used: contractAmount(used), CapSource: "Active MFL league configuration / commissioner override; configuration as-of time not held", Future: []ContractYear{}}
+	out := CapSummary{Team: contractTeamName(names, mine), Season: season, Used: ContractAmountOf(used), CapSource: "Active MFL league configuration / commissioner override; configuration as-of time not held", Future: []ContractYear{}}
 	if capAmount != nil {
-		capValue, room := contractAmount(*capAmount), contractAmount(*capAmount-used)
+		capValue, room := ContractAmountOf(*capAmount), ContractAmountOf(*capAmount-used)
 		out.Cap, out.Room = &capValue, &room
 	}
 	future := make(map[int]domain.Money)
@@ -220,7 +220,7 @@ func ContractsCap(rows []ContractRow, mine string, season int, used domain.Money
 		}
 	}
 	for year, cents := range future {
-		out.Future = append(out.Future, ContractYear{Season: year, Cost: contractAmount(cents), Inferred: true, Tag: "Inferred", Reason: "Sum of flat-filled annual salaries through expiration; gross commitments, no future roster discounts or adjustments assumed"})
+		out.Future = append(out.Future, ContractYear{Season: year, Cost: ContractAmountOf(cents), Inferred: true, Tag: "Inferred", Reason: "Sum of flat-filled annual salaries through expiration; gross commitments, no future roster discounts or adjustments assumed"})
 	}
 	slices.SortFunc(out.Future, func(a, b ContractYear) int { return cmp.Compare(a.Season, b.Season) })
 	return out
@@ -229,7 +229,7 @@ func ContractsCap(rows []ContractRow, mine string, season int, used domain.Money
 func ContractsAdjustments(adjustments []state.Adjustment, names map[string]string) []SalaryAdjustment {
 	out := make([]SalaryAdjustment, 0, len(adjustments))
 	for _, a := range adjustments {
-		out = append(out, SalaryAdjustment{ID: a.ID, Team: contractTeamName(names, a.FranchiseID), FranchiseID: a.FranchiseID, Amount: contractAmount(a.Amount), Description: a.Description})
+		out = append(out, SalaryAdjustment{ID: a.ID, Team: contractTeamName(names, a.FranchiseID), FranchiseID: a.FranchiseID, Amount: ContractAmountOf(a.Amount), Description: a.Description})
 	}
 	return out
 }

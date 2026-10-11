@@ -46,7 +46,7 @@ func TestBuyoutCharge(t *testing.T) {
 		// 60% × $6,005,000 = $3,603,000 → snaps down to $3,600,000.
 		{"snaps down to $10k", 600_500_000, 2, 360 * m / 100, true},
 	} {
-		got, ok := buyoutCharge(tc.avg, tc.remaining)
+		got, ok := buyoutCharge(tc.avg*domain.Money(tc.remaining), tc.remaining)
 		if got != tc.want || ok != tc.wantOK {
 			t.Errorf("%s: buyoutCharge(%d,%d) = (%d,%v), want (%d,%v)", tc.name, tc.avg, tc.remaining, got, ok, tc.want, tc.wantOK)
 		}
@@ -54,7 +54,7 @@ func TestBuyoutCharge(t *testing.T) {
 }
 
 // TestRemainingAfter pins the "remaining = years strictly after the current season" convention
-// and the half-up average over those cells.
+// and the exact total over those cells.
 func TestRemainingAfter(t *testing.T) {
 	const m = 100_000_000
 	cells := []state.LedgerCell{
@@ -63,11 +63,18 @@ func TestRemainingAfter(t *testing.T) {
 		{Year: 2028, Salary: 8 * m},
 	}
 	n, avg := remainingAfter(cells, 2026)
-	if n != 2 || avg != 7*m { // (6M + 8M)/2 = 7M
-		t.Fatalf("remainingAfter = (%d,%d), want (2,%d)", n, avg, 7*m)
+	if n != 2 || avg != 14*m { // 6M + 8M = 14M
+		t.Fatalf("remainingAfter = (%d,%d), want (2,%d)", n, avg, 14*m)
 	}
 	// No cell after the season → (0,0).
 	if n, avg := remainingAfter([]state.LedgerCell{{Year: 2026, Salary: 5 * m}}, 2026); n != 0 || avg != 0 {
 		t.Fatalf("remainingAfter(no remaining) = (%d,%d), want (0,0)", n, avg)
+	}
+}
+
+func TestBuyoutMeanDoesNotRoundBeforeRate(t *testing.T) {
+	charge, ok := buyoutCharge(1_999_997, 3)
+	if !ok || charge != 0 {
+		t.Fatalf("exact mean charge = %d, want 0; rounded mean incorrectly snaps up", charge)
 	}
 }

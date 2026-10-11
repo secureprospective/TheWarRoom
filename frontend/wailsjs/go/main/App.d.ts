@@ -112,3 +112,5 @@ export function TargetSeason():Promise<main.SeasonReading>;
 export function TargetSnapshot():Promise<snapshot.Snapshot>;
 
 export function TargetTrades(arg1:string):Promise<main.TradeReading>;
+
+export function TargetWhatIf(arg1:main.RawWhatIfRequest):Promise<main.Reading_main_WhatIfView_>;

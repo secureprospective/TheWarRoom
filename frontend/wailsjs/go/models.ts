@@ -2508,6 +2508,24 @@ export namespace main {
 	        this.team = source["team"];
 	    }
 	}
+	export class RawWhatIfRequest {
+	    mine: string;
+	    action: string;
+	    player: string;
+	    move: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawWhatIfRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.mine = source["mine"];
+	        this.action = source["action"];
+	        this.player = source["player"];
+	        this.move = source["move"];
+	    }
+	}
 	
 	export class Reading_github_com_secureprospective_TheWarRoom_internal_lab_Market_ {
 	    // Go type: lab
@@ -3833,6 +3851,182 @@ export namespace main {
 	
 	    static createFrom(source: any = {}) {
 	        return new Reading_main_TeamCounterpart_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = this.convertValues(source["value"], null);
+	        this.provenance = this.convertValues(source["provenance"], snapshot.Provenance);
+	        this.status = source["status"];
+	        this.absenceReason = source["absenceReason"];
+	        this.count = source["count"];
+	        this.threshold = source["threshold"];
+	        this.baseline = source["baseline"];
+	        this.cutoff = source["cutoff"];
+	        this.method = source["method"];
+	        this.inputSHA = source["inputSHA"];
+	        this.buildStamp = source["buildStamp"];
+	        this.howCounted = source["howCounted"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class WhatIfChoice {
+	    player: string;
+	    cutLabel: string;
+	    buyoutLabel: string;
+	    buyoutAllowed: boolean;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new WhatIfChoice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.player = source["player"];
+	        this.cutLabel = source["cutLabel"];
+	        this.buyoutLabel = source["buyoutLabel"];
+	        this.buyoutAllowed = source["buyoutAllowed"];
+	        this.reason = source["reason"];
+	    }
+	}
+	export class WhatIfFigure {
+	    label: string;
+	    before: string;
+	    after: string;
+	    change: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new WhatIfFigure(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.label = source["label"];
+	        this.before = source["before"];
+	        this.after = source["after"];
+	        this.change = source["change"];
+	    }
+	}
+	export class WhatIfMoveView {
+	    id: string;
+	    player: string;
+	    tag: string;
+	    status: string;
+	    label: string;
+	    // Go type: snapshot
+	    charge: any;
+	    explanation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new WhatIfMoveView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.player = source["player"];
+	        this.tag = source["tag"];
+	        this.status = source["status"];
+	        this.label = source["label"];
+	        this.charge = this.convertValues(source["charge"], null);
+	        this.explanation = source["explanation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class WhatIfView {
+	    stale: boolean;
+	    banner: string;
+	    empty: string;
+	    moves: WhatIfMoveView[];
+	    figures: WhatIfFigure[];
+	    choices: WhatIfChoice[];
+	    notice: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new WhatIfView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.stale = source["stale"];
+	        this.banner = source["banner"];
+	        this.empty = source["empty"];
+	        this.moves = this.convertValues(source["moves"], WhatIfMoveView);
+	        this.figures = this.convertValues(source["figures"], WhatIfFigure);
+	        this.choices = this.convertValues(source["choices"], WhatIfChoice);
+	        this.notice = source["notice"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Reading_main_WhatIfView_ {
+	    // Go type: WhatIfView
+	    value: any;
+	    provenance: snapshot.Provenance;
+	    status: string;
+	    absenceReason?: string;
+	    count: number;
+	    threshold: number;
+	    baseline: string;
+	    cutoff: string;
+	    method: string;
+	    inputSHA: string;
+	    buildStamp: string;
+	    howCounted: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Reading_main_WhatIfView_(source);
 	    }
 	
 	    constructor(source: any = {}) {

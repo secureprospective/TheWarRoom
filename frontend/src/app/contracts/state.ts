@@ -17,3 +17,11 @@ export function createContractsFilters() {
 const filters = createContractsFilters();
 export const useContractsFilters = filters.use;
 export const setContractsFilter = filters.set;
+
+export type ContractsAction = ContractsFilter | {
+  field: 'whatif'; value: import('./whatif').WhatIfAction;
+};
+export async function runContractsAction(action: ContractsAction) {
+  if (action.field === 'whatif') await (await import('./whatif')).changeWhatIf(action.value);
+  else setContractsFilter(action);
+}

@@ -32,21 +32,21 @@ func buyoutRatePct(remaining int) (int64, bool) {
 	}
 }
 
-// buyoutCharge is rate × average remaining salary, snapped once to $10k. ok=false outside 2-4
-// years.
-func buyoutCharge(avgRemaining domain.Money, remaining int) (domain.Money, bool) {
+// buyoutCharge applies the rate to the exact mean, rounding only the final charge.
+func buyoutCharge(totalRemaining domain.Money, remaining int) (domain.Money, bool) {
 	pct, ok := buyoutRatePct(remaining)
 	if !ok {
 		return 0, false
 	}
-	if avgRemaining <= 0 {
+	if totalRemaining <= 0 {
 		return 0, true
 	}
-	cents := (int64(avgRemaining)*pct + 50) / 100 // × percent ÷ 100, round half-up
+	divisor := int64(remaining) * 100
+	cents := (int64(totalRemaining)*pct + divisor/2) / divisor
 	return domain.RoundToNearest10k(domain.Money(cents)), true
 }
 
-// remainingAfter returns the PAID years after the current season and their average salary.
+// remainingAfter returns the count and total of paid cells after the current season.
 func remainingAfter(cells []state.LedgerCell, season int) (int, domain.Money) {
 	var sum domain.Money
 	var n int
@@ -59,7 +59,7 @@ func remainingAfter(cells []state.LedgerCell, season int) (int, domain.Money) {
 	if n == 0 {
 		return 0, 0
 	}
-	return n, (sum + domain.Money(n)/2) / domain.Money(n)
+	return n, sum
 }
 
 // Buyout releases the player, charges §12 dead cap to this season, voids his cells and bumps the
@@ -83,8 +83,8 @@ func Buyout(ctx context.Context, w state.TxWriter, mflID string) (state.DeadCapE
 	if err != nil {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: buyout %q: read cells: %w", mflID, err)
 	}
-	remaining, avg := remainingAfter(cells, w.Season())
-	charge, ok := buyoutCharge(avg, remaining)
+	remaining, total := remainingAfter(cells, w.Season())
+	charge, ok := buyoutCharge(total, remaining)
 	if !ok {
 		return state.DeadCapEntry{}, fmt.Errorf("deadcap: buyout %q: %d remaining year(s) is outside §12's 2..4 range — route to the §13 commissioner cap-relief path", mflID, remaining)
 	}

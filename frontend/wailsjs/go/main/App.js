@@ -217,3 +217,7 @@ export function TargetSnapshot() {
 export function TargetTrades(arg1) {
   return window['go']['main']['App']['TargetTrades'](arg1);
 }
+
+export function TargetWhatIf(arg1) {
+  return window['go']['main']['App']['TargetWhatIf'](arg1);
+}

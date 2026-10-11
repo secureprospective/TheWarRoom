@@ -200,9 +200,11 @@ export function createCommands(
       id: 'contracts.set',
       label: 'Filter or sort contracts',
       args: ['field', 'value'],
-      run: (change: import('../contracts/state').ContractsFilter) => {
+      run: (change: import('../contracts/state').ContractsAction) => {
         void import('../contracts/state').then(
-          (m) => m.setContractsFilter(change),
+          (m) => {
+            void m.runContractsAction(change).catch(cause => state.write({ notice: String(cause) }));
+          },
           (cause) => state.write({ notice: String(cause) }),
         );
       },

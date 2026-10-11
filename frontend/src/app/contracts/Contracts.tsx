@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { localDate } from '../clock/labels';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
@@ -8,12 +8,15 @@ import type { Scope, Readings, Reading, PlayerContract, ContractsProvider, Year,
 import { contractsProvider } from './provider';
 import './contracts.css';
 import { useContractsFilters } from './state';
+import { whatIfProvider, type WhatIf, type WhatIfProvider } from './whatif';
+import { WhatIfPanel, WhatIfActs } from './WhatIfPanel';
 
 type Result<T> = { reading?: T; error?: string };
 export function useContractRead<T>(
   key: string,
   read: () => Promise<T>,
-  provider: ContractsProvider,
+  provider: Pick<ContractsProvider, 'onChange'>,
+  retain = false,
 ): Result<T> {
   const [result, setResult] = useState<Result<T> & { key: string }>({ key });
   useEffect(() => {
@@ -21,7 +24,7 @@ export function useContractRead<T>(
     let active = true;
     const refresh = () => {
       const request = ++sequence;
-      setResult({ key });
+      setResult(previous => retain && previous.key === key && previous.reading ? previous : { key });
       void read().then(
         (reading) => {
           if (active && request === sequence) setResult({ key, reading });
@@ -49,12 +52,14 @@ export function ContractReading<T>({
   reading,
   error,
   children,
+  metadata = true,
 }: {
   title: string;
   endpoint?: string;
   reading?: Reading<T>;
   error?: string;
   children?: ReactNode;
+  metadata?: boolean;
 }) {
   return (
     <section className="contract-reading" aria-label={title} data-endpoint={endpoint}>
@@ -77,7 +82,7 @@ export function ContractReading<T>({
       ) : (
         children
       )}
-      {reading && (
+      {reading && metadata && (
         <>
           <p className="contract-source">
             Source: {reading.provenance.source} · As of:{' '}
@@ -120,7 +125,9 @@ function Years({ years }: { years: Year[] }) {
     </>
   );
 }
-function ContractGroup({ title, rows, mine }: { title: string; rows: Row[]; mine: boolean }) {
+function ContractGroup({ title, rows, mine, whatif }: {
+  title: string; rows: Row[]; mine: boolean; whatif?: WhatIf;
+}) {
   return (
     <section className="contract-group" aria-label={`${title} (${rows.length})`}>
       <h5>{title} ({rows.length})</h5>
@@ -129,6 +136,7 @@ function ContractGroup({ title, rows, mine }: { title: string; rows: Row[]; mine
           <tr>
             <th>Player</th><th>Annual salary</th><th>Expires / status</th>
             {!mine && <th>Team</th>}
+            {mine && <th className="contract-whatif-column">What-if</th>}
           </tr>
         </thead>
         <tbody>
@@ -143,12 +151,16 @@ function ContractGroup({ title, rows, mine }: { title: string; rows: Row[]; mine
                   {row.name}
                 </Act>{' '}
                 <small className="contract-position">{row.position || 'Not held'}</small>
+
               </td>
               <td className="contract-money">{row.salary.text}</td>
               <td>
                 {row.expiration || 'Not held'}{row.status ? ` · ${row.status}` : ''}
               </td>
               {!mine && <td className="contract-team" title={row.team}>{row.team}</td>}
+              {mine && <td className="contract-whatif-column">
+                <WhatIfActs mine={row.franchiseId} player={row.id} value={whatif} menu />
+              </td>}
             </tr>
           ))}
         </tbody>
@@ -160,12 +172,20 @@ function ContractGroup({ title, rows, mine }: { title: string; rows: Row[]; mine
 export function ContractPanel({
   id,
   provider: supplied,
+  mine: suppliedMine,
+  whatIf: suppliedWhatIf,
 }: {
   id: string;
+  mine?: string;
+  whatIf?: WhatIfProvider;
   provider?: ContractsProvider;
 }) {
+  const shell = commands.use();
+  const mine = suppliedMine ?? shell.franchiseId ?? '';
   const provider = useMemo(() => supplied ?? contractsProvider(), [supplied]);
   const result = useContractRead<Reading<PlayerContract>>(id, () => provider.player(id), provider);
+  const simulation = useMemo(() => suppliedWhatIf ?? whatIfProvider(), [suppliedWhatIf]);
+  const whatif = useContractRead<Reading<WhatIf>>(mine, () => simulation.query(mine), simulation, true);
   return (
     <div className="contracts">
       <ContractReading title="Contract years" endpoint="C-06.5" {...result}>
@@ -179,10 +199,8 @@ export function ContractPanel({
               <p>MFL contract info: {result.reading.value.player.info}</p>
             )}
             <Years years={result.reading.value.years} />
-            <p className="not-wired">
-              Dead cap · not wired. Per-year cut and buyout calculations are deferred; no charge is
-              shown.
-            </p>
+            {mine === result.reading.value.player.franchiseId &&
+              <WhatIfActs mine={mine} player={id} value={whatif.reading?.value} />}
           </>
         )}
       </ContractReading>
@@ -192,12 +210,25 @@ export function ContractPanel({
 export default function Contracts({
   snapshot,
   provider: supplied,
+  whatIf: suppliedWhatIf,
 }: {
   snapshot: Snapshot;
   provider?: ContractsProvider;
+  whatIf?: WhatIfProvider;
 }) {
   const s = commands.use();
   const provider = useMemo(() => supplied ?? contractsProvider(), [supplied]);
+  const simulation = useMemo(() => suppliedWhatIf ?? whatIfProvider(), [suppliedWhatIf]);
+  const whatif = useContractRead<Reading<WhatIf>>(
+    s.franchiseId ?? '', () => simulation.query(s.franchiseId ?? ''), simulation, true,
+  );
+  const anchor = useRef<{ row: HTMLElement; top: number; scroll: HTMLElement }>();
+  useLayoutEffect(() => {
+    if (!whatif.reading || !anchor.current) return;
+    const { row, top, scroll } = anchor.current;
+    scroll.scrollTop += row.getBoundingClientRect().top - top;
+    anchor.current = undefined;
+  }, [whatif.reading]);
   const filters = useContractsFilters();
   const scope = { ...filters, mine: s.franchiseId ?? '' };
   const key = JSON.stringify(scope);
@@ -217,7 +248,15 @@ export default function Contracts({
   const cap = readings?.cap.value;
   const table = readings?.table.value;
   return (
-    <div className="contracts">
+    <div className="contracts" onClickCapture={event => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.contract-menu .act')) return;
+      const row = target.closest('tr');
+      const scroll = target.closest<HTMLElement>('.wbody');
+      if (row && scroll) anchor.current = { row, scroll, top: row.getBoundingClientRect().top };
+    }}>
+      <WhatIfPanel mine={s.franchiseId} {...whatif} />
+      <p className="whatif-status" role="status">{whatif.reading?.value?.moves.at(-1)?.status}</p>
       <ContractReading title="My franchise cap" reading={readings?.cap} error={error}>
         {cap && (
           <>
@@ -313,7 +352,8 @@ export default function Contracts({
               <ContractGroup
                 title={`My team · ${cap?.team ??
                   options.teams.find((team) => team.id === s.franchiseId)?.name ?? s.franchiseId}`}
-                rows={table.rows.filter((row) => row.franchiseId === s.franchiseId)} mine
+                rows={table.rows.filter((row) => row.franchiseId === s.franchiseId)}
+                mine whatif={whatif.reading?.value}
               />
               <ContractGroup title="Rest of the league"
                 rows={table.rows.filter((row) => row.franchiseId !== s.franchiseId)} mine={false} />
@@ -354,7 +394,7 @@ export default function Contracts({
         error={error}
       />
       <p className="not-wired">
-        Dead cap · not wired. No computed cut or buyout charge in this read-only view.
+        Cut and buyout charges appear in the What-if panel above; no submission or plan is created.
       </p>
     </div>
   );
