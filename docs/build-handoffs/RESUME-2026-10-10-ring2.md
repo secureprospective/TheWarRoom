@@ -11,7 +11,8 @@
   then runs `dispatch-wt.sh p2h ~/fleet/briefs/warroom-ring2-p2h-whatif.md` once (skips if
   p2h/started exists). Check: `pgrep -af p2h-at-2230` before 22:30; after, `cat p2h/started` and
   transcript mtime `stat -c %Y p2h/sessions/*.jsonl` (idle > 600 s = stalled). Done = p2h/sentinel.
-  No local watcher survives compaction: start one after resuming. On done: read p2h/REPORT.md,
+  Local watcher bst19sn93 (CT105 session shell, started 20:25) polls p2h: prints "p2h done",
+  "STALL p2h", or "p2h DID NOT START" (after 22:40); if it is gone after compaction, start one. On done: read p2h/REPORT.md,
   review Part 1 math myself + plant own mutant (snap once vs per cell), make build, deploy,
   click the what-if on Claude-OS (cut, buyout, Undo, Reset, stale banner), fix pass if needed,
   commit on session/ring-2, then write + dispatch p2h2 (plans from what-if, PW2/PW4), then p2i.
@@ -236,7 +237,27 @@ ok); Nemotron same dir `devil.out` (0/24 quotes resolvable: leads only; agrees o
 - PW6 Seeded future years are flat-filled (an inference); the what-if says so in its
   "How this is counted" note until the app holds real cells.
 
-- Still owed: facts schema (before compiler runs s1–s5).
+
+### Run 3 (10-10 20:03): facts schema before compiler runs s1–s5. PROVISIONAL (one valid seat).
+`~/fleet/runs/panel-panel-ring2-facts-schema-20261011T010349Z-1898530/`. GLM 429 (no answer);
+Kimi produced degenerate text (rejected); Sol skipped (budget for p2h). Nemotron devil.out: quote
+checker failed on its format; Claude spot-checked: `internal/lab/decode.go:21` Data struct,
+`history.go:63/77/88` raw_archive/loads/observations, `archive.go:64` Body — real (line numbers
+drifted; Lab schema has 29 tables, not 23).
+**Claude's triage (recommendation; rerun GLM + Sol seats before s1 starts):**
+- FS1 Facts are not a second store: s1–s5 compile `history.db` raw_archive bodies straight into the
+  columnar structs the engines already read (`internal/lab` Data), cached by input hash; the Lab's
+  `checks.py` proofs (facts vs MFL's own figures) become compile-time assertions that fail the build.
+  Rejected: porting the Lab's 29-table `mfl.db` (a derived cache with sync risk; the engines never
+  query it relationally). Wrong if an engine needs keyed random access the slices can't serve.
+- FS2 Proof: for the frozen cutoff (2026-10-06), diff the compiled columns against decoded
+  lab.json row by row (exact ids/counts/enums/cents; floats per P3), then run the existing goldens
+  on the compiled input. When the archive advances, keep the frozen pair as a regression fixture
+  and regenerate goldens with the new SHA in SOURCE.md.
+- FS3 Rejected Nemotron's "bids as observations rows": MFL-derived facts stay rebuildable (history),
+  TheWarRoom-authored events stay in envelopes + side tables (PW3 bid_facts), never mixed; the
+  stand-alone authority later adds its own event tables, not rows in observations.
+- Facts schema: provisional triage above (run 3); rerun with GLM + Sol seats before s1.
 
 ## Next actions
 1. (done: panel run 1 triaged above)
