@@ -1,3 +1,4 @@
+import { range } from '../reports/contract';
 import { parseRailReceipt } from '../shell/railReceipt';
 import type * as Bindings from '../../../wailsjs/go/main/App';
 import { main } from '../../../wailsjs/go/models';
@@ -30,9 +31,14 @@ const amount: Parser<Amount> = (v, p) => {
 };
 const poolRow: Parser<PoolRow> = (v, p) => {
   const r = object(v, p, [
-    'id', 'name', 'position', 'team', 'age', 'experience', 'minimum', 'plan', 'planId',
+    'id', 'name', 'position', 'team', 'age', 'experience', 'minimum', 'plan', 'planId', 'market',
   ]);
   return {
+    market: array(r.market, p, (v, p) => {
+      const fact = object(v, p, ['label', 'text', 'reason', 'range']);
+      return { label: text(fact.label, p), text: text(fact.text, p),
+        reason: text(fact.reason, p), range: range(fact.range, p) };
+    }),
     id: text(r.id, p), name: text(r.name, p), position: text(r.position, p), team: text(r.team, p),
     age: text(r.age, p), experience: text(r.experience, p), minimum: amount(r.minimum, p),
     plan: text(r.plan, p), planId: text(r.planId, p),

@@ -10,6 +10,7 @@ import (
 )
 
 type MarketRange struct {
+	Max float64 `json:"max,omitempty"`
 	lab.Interval
 	Text string `json:"text"`
 }

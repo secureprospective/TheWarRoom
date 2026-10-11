@@ -452,6 +452,32 @@
   "value": {
    "rows": [
     {
+     "market": [
+      {
+       "label": "Projected points",
+       "text": "2.24",
+       "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · NFL week 5 · league scoring",
+       "range": null
+      },
+      {
+       "label": "MFL rank · weekly change",
+       "text": "1296 · Up 20",
+       "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM",
+       "range": null
+      },
+      {
+       "label": "ADP · min–max pick",
+       "text": "—",
+       "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL-wide, not this league · MFL does not list this player.",
+       "range": null
+      },
+      {
+       "label": "AAV · min–max budget share",
+       "text": "—",
+       "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL-wide, not this league · MFL does not list this player.",
+       "range": null
+      }
+     ],
      "id": "13595",
      "name": "Adams, Zed",
      "position": "CB",
@@ -466,6 +492,32 @@
      "planId": "bid-00000000000000000000000000000002"
     },
     {
+     "market": [
+      {
+       "label": "Projected points",
+       "text": "—",
+       "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL does not list this player.",
+       "range": null
+      },
+      {
+       "label": "MFL rank · weekly change",
+       "text": "—",
+       "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL does not list this player.",
+       "range": null
+      },
+      {
+       "label": "ADP · min–max pick",
+       "text": "—",
+       "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL-wide, not this league · MFL does not list this player.",
+       "range": null
+      },
+      {
+       "label": "AAV · min–max budget share",
+       "text": "—",
+       "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL-wide, not this league · MFL does not list this player.",
+       "range": null
+      }
+     ],
      "id": "13594",
      "name": "Jones, Amy",
      "position": "QB",
@@ -480,6 +532,44 @@
      "planId": ""
     },
     {
+     "market": [
+      {
+       "label": "Projected points",
+       "text": "17.89",
+       "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · NFL week 5 · league scoring",
+       "range": null
+      },
+      {
+       "label": "MFL rank · weekly change",
+       "text": "929 · Down 538",
+       "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM",
+       "range": null
+      },
+      {
+       "label": "ADP · min–max pick",
+       "text": "24.87 pick · 1.00–179.00",
+       "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL-wide, not this league",
+       "range": {
+        "max": 179,
+        "value": 24.87,
+        "lo": 1,
+        "hi": 179,
+        "text": "24.87 pick · 1.00–179.00"
+       }
+      },
+      {
+       "label": "AAV · min–max budget share",
+       "text": "16.06 % of auction budget · 0.84–57.61",
+       "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL-wide, not this league",
+       "range": {
+        "max": 57.61,
+        "value": 16.06,
+        "lo": 0.84,
+        "hi": 57.61,
+        "text": "16.06 % of auction budget · 0.84–57.61"
+       }
+      }
+     ],
      "id": "13593",
      "name": "Smith, John",
      "position": "WR",

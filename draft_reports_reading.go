@@ -14,58 +14,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 )
 
-type DraftReportRow struct {
-	Cells []string     `json:"cells"`
-	Range *MarketRange `json:"range"`
-}
-
-type DraftReport struct {
-	ID           string           `json:"id"`
-	Title        string           `json:"title"`
-	Note         string           `json:"note"`
-	Status       string           `json:"status"`
-	Source       string           `json:"source"`
-	AsOf         string           `json:"asOf"`
-	How          string           `json:"how"`
-	Columns      []string         `json:"columns"`
-	Rows         []DraftReportRow `json:"rows"`
-	Summary      []DraftReportRow `json:"summary"`
-	SeeEveryPick string           `json:"seeEveryPick"`
-}
-
-type DraftReportBoard struct {
-	Title    string        `json:"title"`
-	Loading  string        `json:"loading"`
-	Refresh  string        `json:"refresh"`
-	HowLabel string        `json:"howLabel"`
-	MFLLabel string        `json:"mflLabel"`
-	MFLURL   string        `json:"mflUrl"`
-	Reports  []DraftReport `json:"reports"`
-}
-
-func reportShell[T any](id, title, how string, feed heldSeasonFeed[[]T], zone *time.Location, columns ...string) DraftReport {
-	r := DraftReport{ID: id, Title: title, Source: "Source: MFL", How: how,
-		Columns: columns, Rows: []DraftReportRow{}, Status: "ok", AsOf: "As of: not fetched"}
-	switch {
-	case feed.fetchedAt.IsZero():
-		r.Status, r.Note = "failed", "Draft data unavailable; refresh from MFL to fill this report."
-	case len(feed.value) == 0:
-		r.Status, r.Note = "empty", "MFL lists no records for this report."
-	}
-	if !feed.fetchedAt.IsZero() {
-		r.AsOf = "As of: " + pickTime(draftreports.Pick{At: feed.fetchedAt}, zone)
-	}
-	if feed.refreshError != "" {
-		r.Note += " Refresh failed; showing the last known data. Try refreshing from MFL again."
-		if !feed.fetchedAt.IsZero() {
-			r.Status = "stale"
-		}
-	}
-	return r
-}
-
-func draftRow(cells ...string) DraftReportRow { return DraftReportRow{Cells: cells} }
-func pickLabel(p draftreports.Pick) string    { return fmt.Sprintf("%d.%02d", p.Round, p.Slot) }
+func draftRow(cells ...string) ReportRow   { return ReportRow{Cells: cells} }
+func pickLabel(p draftreports.Pick) string { return fmt.Sprintf("%d.%02d", p.Round, p.Slot) }
 func pickPlayer(p draftreports.Pick, names map[string]string) string {
 	if p.Skipped {
 		return "Pick skipped by MFL"
@@ -80,10 +30,7 @@ func pickPlayer(p draftreports.Pick, names map[string]string) string {
 	return "Player " + id + " (name not held)"
 }
 func pickTime(p draftreports.Pick, zone *time.Location) string {
-	if p.At.IsZero() {
-		return "Time not supplied"
-	}
-	return p.At.In(zone).Format("Jan 2, 2006, 3:04 PM")
+	return reportTime(p.At, zone)
 }
 func orderedPicks(picks []draftreports.Pick) []draftreports.Pick {
 	out := slices.Clone(picks)
@@ -94,7 +41,7 @@ func orderedPicks(picks []draftreports.Pick) []draftreports.Pick {
 }
 
 func buildDraftReports(results heldSeasonFeed[[]draftreports.Pick], future heldSeasonFeed[[]draftreports.FuturePick],
-	names, franchises map[string]string, values map[string]float64, valueNote, next string, zone *time.Location) DraftReportBoard {
+	names, franchises map[string]string, values map[string]float64, valueNote, next string, zone *time.Location) ReportBoard {
 	picks := orderedPicks(results.value)
 	how := "Picks are ordered by round, then pick number. Each pick shows the franchise MFL records, including traded picks. " +
 		"Times use this computer's local time zone. Skipped picks count as made. " +
@@ -124,14 +71,14 @@ func buildDraftReports(results heldSeasonFeed[[]draftreports.Pick], future heldS
 		live.Rows = live.Rows[max(0, len(live.Rows)-12):]
 	}
 	live.Summary = slices.Clone(status.Rows)
-	live.SeeEveryPick = "See every pick"
+	live.Link = &ReportLink{Label: "See every pick", Endpoint: "M-063"}
 	live.Columns = slices.Clone(rows.Columns)
-	return DraftReportBoard{Title: "MFL draft reports", Loading: "Reading MFL draft reports…", Refresh: "Refresh draft reports from MFL",
-		HowLabel: "How this is counted", MFLLabel: "Open MFL draft results (picks happen on MFL)", Reports: []DraftReport{rows, grid,
+	return ReportBoard{Title: "MFL draft reports", Loading: "Reading MFL draft reports…", Refresh: "Refresh draft reports from MFL",
+		HowLabel: "How this is counted", MFLLabel: "Open MFL draft results (picks happen on MFL)", Reports: []Report{rows, grid,
 			draftValueReport(picks, names, values, results, how, valueNote, zone), recap, draftFuture(future, franchises, zone), detail, status, pace, live}}
 }
 
-func draftGrid(picks []draftreports.Pick, names, franchises map[string]string, r DraftReport) DraftReport {
+func draftGrid(picks []draftreports.Pick, names, franchises map[string]string, r Report) Report {
 	ids := []string{}
 	rounds := []int{}
 	cells := map[string][]string{}
@@ -182,7 +129,7 @@ func draftElapsed(picks []draftreports.Pick) map[string][]time.Duration {
 	return out
 }
 
-func draftFranchises(picks []draftreports.Pick, names, franchises map[string]string, feed heldSeasonFeed[[]draftreports.Pick], how string, zone *time.Location) (DraftReport, DraftReport) {
+func draftFranchises(picks []draftreports.Pick, names, franchises map[string]string, feed heldSeasonFeed[[]draftreports.Pick], how string, zone *time.Location) (Report, Report) {
 	recap := reportShell("M-066", "Draft recap per franchise", how, feed, zone, "Franchise", "Made picks", "Players")
 	pace := reportShell("M-179", "Average elapsed time per pick", how+
 		" Average and median time since the preceding pick, including overnight pauses. The first pick, missing times and times earlier than the preceding pick do not count. A median under one minute is labelled mostly pre-queued; it can also reflect fast selections. MFL does not report pauses.", feed, zone,
@@ -209,7 +156,7 @@ func draftFranchises(picks []draftreports.Pick, names, franchises map[string]str
 	return recap, pace
 }
 
-func draftStatus(picks []draftreports.Pick, franchises map[string]string, feed heldSeasonFeed[[]draftreports.Pick], how string, zone *time.Location) DraftReport {
+func draftStatus(picks []draftreports.Pick, franchises map[string]string, feed heldSeasonFeed[[]draftreports.Pick], how string, zone *time.Location) Report {
 	r := reportShell("M-176", "Draft status", how+
 		" Made counts player selections and skipped picks. Remaining counts only unmade picks MFL lists. MFL does not say how many rounds are scheduled or who is on the clock.", feed, zone, "State", "What MFL shows")
 	made, unmade := 0, 0
@@ -239,7 +186,7 @@ func draftStatus(picks []draftreports.Pick, franchises map[string]string, feed h
 	return r
 }
 
-func draftFuture(feed heldSeasonFeed[[]draftreports.FuturePick], franchises map[string]string, zone *time.Location) DraftReport {
+func draftFuture(feed heldSeasonFeed[[]draftreports.FuturePick], franchises map[string]string, zone *time.Location) Report {
 	r := reportShell("M-068", "Future draft picks · ownership",
 		"MFL lists each future pick under its current owner and names the original franchise. Ordered by year, round and original franchise. Picks MFL does not list are not added.", feed, zone,
 		"Year", "Round", "Original franchise", "Current owner")
@@ -253,7 +200,7 @@ func draftFuture(feed heldSeasonFeed[[]draftreports.FuturePick], franchises map[
 	return r
 }
 
-func draftValueReport(picks []draftreports.Pick, names map[string]string, values map[string]float64, feed heldSeasonFeed[[]draftreports.Pick], how, valueNote string, zone *time.Location) DraftReport {
+func draftValueReport(picks []draftreports.Pick, names map[string]string, values map[string]float64, feed heldSeasonFeed[[]draftreports.Pick], how, valueNote string, zone *time.Location) Report {
 	r := reportShell("M-065", "Steals and busts · distance from expected",
 		how+" Value is the app's latest dynasty value: discounted expected league points per game across its configured dynasty horizon. Expected is the median current value of drafted players in the same round, not an ADP or draft-day valuation. A bar is the point distance from that baseline (no uncertainty estimate and no letter grade); missing values are not zero. This retrospective comparison is not proof a draft pick was good or bad.",
 		feed, zone, "Pick", "Player", "Current dynasty value", "Expected · same round", "Distance from expected")

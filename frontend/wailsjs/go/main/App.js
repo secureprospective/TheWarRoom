@@ -222,6 +222,14 @@ export function TargetMarketLists(arg1) {
   return window['go']['main']['App']['TargetMarketLists'](arg1);
 }
 
+export function TargetMarketReports() {
+  return window['go']['main']['App']['TargetMarketReports']();
+}
+
+export function TargetMarketReportsRefresh(arg1) {
+  return window['go']['main']['App']['TargetMarketReportsRefresh'](arg1);
+}
+
 export function TargetMarketStretches(arg1) {
   return window['go']['main']['App']['TargetMarketStretches'](arg1);
 }

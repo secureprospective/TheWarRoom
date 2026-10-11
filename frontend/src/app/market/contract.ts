@@ -6,7 +6,7 @@ export type MarketScope = {
   assets: string[] | null;
   byAge: boolean;
 };
-export type MarketRange = { value: number; lo: number; hi: number; text: string };
+export type MarketRange = { max?: number; value: number; lo: number; hi: number; text: string };
 export type MarketLine = {
   key: string;
   label: string;

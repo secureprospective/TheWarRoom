@@ -23,6 +23,7 @@ import (
 const poolFreshFor = 5 * time.Minute
 
 type PoolRow struct {
+	Market     []MarketFact            `json:"market"`
 	ID         string                  `json:"id"`
 	Name       string                  `json:"name"`
 	Position   string                  `json:"position"`
@@ -104,13 +105,14 @@ func (a *App) TargetPoolRefresh(force bool) error {
 	held := a.seasonFreeAgents
 	a.seasonMu.Unlock()
 	if !force && held.refreshError == "" && time.Since(held.fetchedAt) < poolFreshFor {
-		return nil
+		return a.TargetMarketReportsRefresh(false)
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
 	defer cancel()
 	a.refreshMu.Lock()
 	defer a.refreshMu.Unlock()
 	a.refreshFreeAgents(ctx)
+	a.refreshMarketFeeds(ctx, force)
 	return nil
 }
 
@@ -179,6 +181,7 @@ func (a *App) poolRows(ctx context.Context, ids []playerid.PlayerID, lk normaliz
 	plans := a.openBidPlansByPlayer(ctx, raw.FranchiseID)
 	season, now := a.league.Season(), time.Now()
 	all, seen, left := []PoolRow{}, map[string]bool{}, 0
+	facts := marketFacts(a.heldMarket())
 	for _, id := range ids {
 		f, ok := lk.Facts(id.String())
 		if !ok {
@@ -189,7 +192,12 @@ func (a *App) poolRows(ctx context.Context, ids []playerid.PlayerID, lk normaliz
 		if raw.Position != "" && raw.Position != string(f.Position) {
 			continue
 		}
-		all = append(all, poolRow(id, f, season, now, plans[id.String()]))
+		row := poolRow(id, f, season, now, plans[id.String()])
+		row.Market = facts[id.String()]
+		if row.Market == nil {
+			row.Market = facts[""]
+		}
+		all = append(all, row)
 	}
 	sortPool(all, raw)
 	positions := poolPositions(seen)

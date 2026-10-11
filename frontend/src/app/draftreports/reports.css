@@ -17,3 +17,6 @@
 .draft-report[data-endpoint="M-064"] th:first-child { z-index: 1; }
 .draft-reports .draft-summary { width: auto; margin: 4px 0 12px; }
 .draft-reports .draft-summary th { font-weight: 400; color: var(--surface-tx3); padding-right: 24px; text-align: left; }
+
+.draft-report th button { color: inherit; font: inherit; text-align: left; background: transparent; border: 0; padding: 4px 0; cursor: pointer; }
+.draft-report th button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }

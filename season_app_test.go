@@ -73,6 +73,10 @@ func seasonTestApp(t *testing.T) (*App, *seasonTransport, *[]time.Duration, *int
 			"pendingTrades":    `{"pendingTrades":{}}`,
 			"draftResults":     seasonFixture(t, "draftreports", "results-2026.json"),
 			"futureDraftPicks": seasonFixture(t, "draftreports", "future-2026.json"),
+			"projectedScores":  strings.Replace(seasonFixture(t, "marketfeeds", "projectedScores.json"), `"week":"6"`, `"week":"5"`, 1),
+			"playerRanks":      seasonFixture(t, "marketfeeds", "playerRanks.json"),
+			"adp":              seasonFixture(t, "marketfeeds", "adp.json"),
+			"aav":              seasonFixture(t, "marketfeeds", "aav.json"),
 		},
 	}
 	var err error
@@ -137,8 +141,8 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 		t.Fatal("wrong real feed counts or week")
 	}
 	if !reflect.DeepEqual(transport.requests,
-		[]string{"transactions", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks"}) ||
-		!reflect.DeepEqual(*pauses, []time.Duration{time.Second, time.Second, time.Second, time.Second, time.Second}) ||
+		[]string{"transactions", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks", "projectedScores", "playerRanks", "adp", "aav"}) ||
+		!reflect.DeepEqual(*pauses, []time.Duration{time.Second, time.Second, time.Second, time.Second, time.Second, time.Second, time.Second, time.Second, time.Second}) ||
 		*events != 1 {
 		t.Fatalf("requests %v pauses %v events %d", transport.requests, *pauses, *events)
 	}
@@ -442,6 +446,7 @@ func TestSeasonWorkerUsesRefreshedWeek(t *testing.T) {
 	a.weekWorkers.Wait()
 	if !reflect.DeepEqual(transport.requests, []string{
 		"nflSchedule", "transactions", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks",
+		"projectedScores", "playerRanks", "adp", "aav",
 	}) || transport.weeks[2] != "5" {
 		t.Fatalf("order %v weeks %v", transport.requests, transport.weeks)
 	}

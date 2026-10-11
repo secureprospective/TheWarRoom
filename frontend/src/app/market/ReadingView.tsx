@@ -8,11 +8,12 @@ export function countNoun(count: number, noun: string): string {
 
 export function RangeBar({ range }: { range: MarketRange }) {
   const x = (v: number) =>
-    12 + Math.max(0, Math.min(1, Math.log(Math.max(0.1, v) / 0.1) / Math.log(100))) * 276;
+    12 + (range.max ? Math.max(0, Math.min(1, v / range.max)) :
+      Math.max(0, Math.min(1, Math.log(Math.max(0.1, v) / 0.1) / Math.log(100)))) * 276;
   return (
     <svg className="market-range" viewBox="0 0 300 26" role="img" aria-label={range.text}>
       <line className="axis" x1="12" x2="288" y1="13" y2="13" />
-      <line className="reference" x1={x(1)} x2={x(1)} y1="2" y2="24" />
+      {!range.max && <line className="reference" x1={x(1)} x2={x(1)} y1="2" y2="24" />}
       <line className="range" x1={x(range.lo)} x2={x(range.hi)} y1="13" y2="13" />
       <circle cx={x(range.value)} cy="13" r="4" />
     </svg>

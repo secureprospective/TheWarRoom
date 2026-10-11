@@ -23,7 +23,7 @@ func draftFixturePick(t *testing.T, round, slot int, owner, id string, at int64)
 	}
 	return draftreports.Pick{Round: round, Slot: slot, Franchise: owner, Player: &p, At: time.Unix(at, 0).UTC()}
 }
-func reportByID(t *testing.T, board DraftReportBoard, id string) DraftReport {
+func reportByID(t *testing.T, board ReportBoard, id string) Report {
 	t.Helper()
 	for _, r := range board.Reports {
 		if r.ID == id {
@@ -31,9 +31,9 @@ func reportByID(t *testing.T, board DraftReportBoard, id string) DraftReport {
 		}
 	}
 	t.Fatal(id)
-	return DraftReport{}
+	return Report{}
 }
-func testDraftBoard(t *testing.T) DraftReportBoard {
+func testDraftBoard(t *testing.T) ReportBoard {
 	t.Helper()
 	at := time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC)
 	picks := []draftreports.Pick{draftFixturePick(t, 2, 1, "0002", "0531", 160), draftFixturePick(t, 1, 2, "0001", "0532", 130), draftFixturePick(t, 1, 1, "0002", "0533", 100)}
@@ -99,7 +99,7 @@ func TestDraftValueDistanceAndMissingValues(t *testing.T) {
 func TestDraftEmptyUnavailableAndStale(t *testing.T) {
 	b := buildDraftReports(heldSeasonFeed[[]draftreports.Pick]{}, heldSeasonFeed[[]draftreports.FuturePick]{}, nil, nil, nil, "No model", "Next unknown", time.UTC)
 	for _, r := range b.Reports {
-		if r.Status != "failed" || !strings.Contains(r.Note, "Draft data unavailable") || r.How == "" || r.Source == "" {
+		if r.Status != "failed" || !strings.Contains(r.Note, "Report data unavailable") || r.How == "" || r.Source == "" {
 			t.Fatal(r)
 		}
 	}
@@ -302,12 +302,12 @@ func TestDraftLiveRecentPicksAndStatus(t *testing.T) {
 	for i := 1; i <= 20; i++ {
 		picks = append(picks, draftFixturePick(t, 1, i, "0001", "0531", int64(i)*100))
 	}
-	build := func() DraftReportBoard {
+	build := func() ReportBoard {
 		return buildDraftReports(heldSeasonFeed[[]draftreports.Pick]{value: picks, fetchedAt: time.Unix(100, 0)}, heldSeasonFeed[[]draftreports.FuturePick]{}, nil, nil, nil, "", "", time.UTC)
 	}
 	b := build()
 	r := reportByID(t, b, "M-183")
-	if len(r.Rows) != 12 || r.Rows[0].Cells[0] != "1.09" || r.Rows[11].Cells[0] != "1.20" || r.SeeEveryPick != "See every pick" || !reflect.DeepEqual(r.Summary, reportByID(t, b, "M-176").Rows) || len(reportByID(t, b, "M-063").Rows) != 20 {
+	if len(r.Rows) != 12 || r.Rows[0].Cells[0] != "1.09" || r.Rows[11].Cells[0] != "1.20" || r.Link == nil || *r.Link != (ReportLink{Label: "See every pick", Endpoint: "M-063"}) || !reflect.DeepEqual(r.Summary, reportByID(t, b, "M-176").Rows) || len(reportByID(t, b, "M-063").Rows) != 20 {
 		t.Fatal(r)
 	}
 	picks = append(picks, draftreports.Pick{Round: 1, Slot: 21, Franchise: "0001"})

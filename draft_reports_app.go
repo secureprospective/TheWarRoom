@@ -61,9 +61,9 @@ func (a *App) TargetDraftReportsRefresh(force bool) error {
 }
 
 // TargetDraftReports reads held exports and held model scores; it never fetches names or scores.
-func (a *App) TargetDraftReports() (DraftReportBoard, error) {
+func (a *App) TargetDraftReports() (ReportBoard, error) {
 	if err := a.ready(); err != nil {
-		return DraftReportBoard{}, fmt.Errorf("draft reports: startup: %w", err)
+		return ReportBoard{}, fmt.Errorf("draft reports: startup: %w", err)
 	}
 	a.seasonMu.Lock()
 	results, future := a.seasonDraftResults, a.seasonFuturePicks

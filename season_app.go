@@ -134,6 +134,7 @@ func (a *App) refreshSeason(ctx context.Context) {
 		return
 	}
 	a.refreshDraftReports(ctx)
+	a.refreshMarketFeeds(ctx, false)
 	a.revalidateReadyRosterMoves(ctx)
 }
 

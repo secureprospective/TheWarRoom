@@ -50,7 +50,7 @@
         }
       ],
       "summary": null,
-      "seeEveryPick": ""
+      "link": null
     },
     {
       "id": "M-064",
@@ -84,7 +84,7 @@
         }
       ],
       "summary": null,
-      "seeEveryPick": ""
+      "link": null
     },
     {
       "id": "M-065",
@@ -144,7 +144,7 @@
         }
       ],
       "summary": null,
-      "seeEveryPick": ""
+      "link": null
     },
     {
       "id": "M-066",
@@ -178,7 +178,7 @@
         }
       ],
       "summary": null,
-      "seeEveryPick": ""
+      "link": null
     },
     {
       "id": "M-068",
@@ -206,7 +206,7 @@
         }
       ],
       "summary": null,
-      "seeEveryPick": ""
+      "link": null
     },
     {
       "id": "M-102",
@@ -256,7 +256,7 @@
         }
       ],
       "summary": null,
-      "seeEveryPick": ""
+      "link": null
     },
     {
       "id": "M-176",
@@ -294,7 +294,7 @@
         }
       ],
       "summary": null,
-      "seeEveryPick": ""
+      "link": null
     },
     {
       "id": "M-179",
@@ -334,7 +334,7 @@
         }
       ],
       "summary": null,
-      "seeEveryPick": ""
+      "link": null
     },
     {
       "id": "M-183",
@@ -402,7 +402,10 @@
           "range": null
         }
       ],
-      "seeEveryPick": "See every pick"
+      "link": {
+        "label": "See every pick",
+        "endpoint": "M-063"
+      }
     }
   ]
 }

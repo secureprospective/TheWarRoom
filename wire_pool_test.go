@@ -28,6 +28,7 @@ func normalizeWire(raw []byte) []byte {
 		`\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z`: "2026-10-10T12:00:00Z",
 		`"age":"\d+"`:          `"age":"27"`,
 		`"buildStamp":"[^"]*"`: `"buildStamp":"dev test"`,
+		`As of: [A-Za-z]{3} \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M`: "As of: Oct 10, 2026, 12:00 PM",
 	} {
 		raw = regexp.MustCompile(pattern).ReplaceAll(raw, []byte(fixed))
 	}

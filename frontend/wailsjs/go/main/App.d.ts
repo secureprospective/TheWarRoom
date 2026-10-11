@@ -99,7 +99,7 @@ export function TargetDraftLab(arg1:main.RawDraftScope):Promise<main.Reading_mai
 
 export function TargetDraftLineup(arg1:string,arg2:Array<string>):Promise<envelope.Receipt>;
 
-export function TargetDraftReports():Promise<main.DraftReportBoard>;
+export function TargetDraftReports():Promise<main.ReportBoard>;
 
 export function TargetDraftReportsRefresh(arg1:boolean):Promise<void>;
 
@@ -114,6 +114,10 @@ export function TargetLineup(arg1:string):Promise<main.LineupReading>;
 export function TargetMarket(arg1:main.RawMarketScope):Promise<main.Reading_github_com_secureprospective_TheWarRoom_internal_lab_Market_>;
 
 export function TargetMarketLists(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
+
+export function TargetMarketReports():Promise<main.ReportBoard>;
+
+export function TargetMarketReportsRefresh(arg1:boolean):Promise<void>;
 
 export function TargetMarketStretches(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
 

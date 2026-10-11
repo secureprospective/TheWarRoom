@@ -1,3 +1,4 @@
+import type { MarketRange } from '../market/contract';
 import type { Provenance } from '../data/contract';
 import type { RailReceipt } from '../shell/EnvelopeRail';
 
@@ -16,7 +17,9 @@ export type Reading<T> = {
   provenance: Provenance;
   value: T;
 };
+export type MarketFact = { label: string; text: string; reason: string; range: MarketRange | null };
 export type PoolRow = {
+  market?: MarketFact[];
   id: string;
   name: string;
   position: string;

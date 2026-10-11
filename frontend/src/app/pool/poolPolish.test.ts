@@ -236,9 +236,9 @@ describe('Fix 5: unknown age and experience', () => {
   it('leaves the columns room at 700 px', () => {
     const css = readFileSync('src/app/pool/pool.css', 'utf8');
     const width = (n: number) =>
-      Number(new RegExp(`th:nth-child\\(${n}\\) \\{ width: (\\d+)%`).exec(css)?.[1]);
-    expect(width(2) * 7).toBeGreaterThanOrEqual(56);
-    expect(width(3) * 7).toBeGreaterThanOrEqual(150);
+      Number(new RegExp(`th:nth-child\\(${n}\\) \\{ width: (\\d+)px`).exec(css)?.[1]);
+    expect(width(2)).toBeGreaterThanOrEqual(56);
+    expect(width(3)).toBeGreaterThanOrEqual(150);
   });
 });
 
@@ -378,7 +378,7 @@ it('G: the same bid form is full-width directly after its clicked row, never abo
     ...poolState.peek(), reading, form: { ...form, playerId: row.id, playerName: row.name },
   } }));
   expect(text.match(/aria-label="Bid plan form"/g)).toHaveLength(1);
-  expect(text).toMatch(/<\/tr><tr class="pool-form-row"><td colSpan="5"><section class="bid-form"/);
+  expect(text).toMatch(/<\/tr><tr class="pool-form-row"><td colSpan="9"><section class="bid-form"/);
   expect(text.indexOf('Bid plan form')).toBeGreaterThan(text.indexOf(row.name));
   expect(text.indexOf('Bid plan form')).toBeLessThan(text.indexOf('</tbody>'));
 });

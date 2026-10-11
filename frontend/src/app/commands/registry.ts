@@ -318,6 +318,19 @@ export function createCommands(
       label: 'Close endpoint surface',
       run: (_args: Record<string, never>) => state.write({ endpointSurface: null }),
     }),
+    'report.sort': command({
+      ...ambient, id: 'report.sort', label: 'Sort report', aliases: [], args: ['id', 'column'],
+      run: (args: { id: string; column: number }) => {
+        void import('../reports/sortState').then(m => m.reportSort.set(args));
+      },
+    }),
+    'market.reports': command({
+      ...ambient, id: 'market.reports', label: 'Player market reports', aliases: [], args: ['action'],
+      run: (args: { action: 'refresh' }) => {
+        if (args.action !== 'refresh') throw new Error('Player market reports: invalid action');
+        void import('../reports/marketState').then(m => m.marketReportState.refresh(true));
+      },
+    }),
     'draft.reports': command({
       ...ambient, id: 'draft.reports', label: 'Draft reports', aliases: [], args: ['action'],
       run: (args: { action: 'refresh' | 'mfl' }) => {
