@@ -159,3 +159,8 @@
 @media (prefers-reduced-motion: reduce) {
   .twr-app .insp, .twr-app .shell-overlay, .twr-app .command-bar { transition: none; }
 }
+
+.twr-app.target-frame[data-inspector="closed"] { grid-template-columns: 192px minmax(0, 1fr) 40px 48px; }
+.twr-app .inspector-closed { padding: 12px 0; display: flex; justify-content: center; background: var(--surface-1); }
+.twr-app .inspector-closed .act { writing-mode: vertical-rl; padding: 8px; align-self: flex-start; }
+.twr-app[data-inspector="closed"] .command-bar { right: 104px; }

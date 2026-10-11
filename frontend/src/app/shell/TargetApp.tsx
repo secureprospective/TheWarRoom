@@ -1,7 +1,7 @@
 import { loadMarket } from '../market/load';
 import { MovesMount } from './MovesMount';
 import { ClockStrip } from '../clock/ClockStrip';
-import { EndpointIndex } from '../registry/EndpointIndex';
+
 import { useLeagueClock } from '../clock/useLeagueClock';
 
 import type { Placement } from '../registry';
@@ -19,6 +19,18 @@ import { snapshotSummary } from './snapshotSummary';
 import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
+
+const Contracts = lazy(() => import('../contracts/Contracts'));
+const LazyEndpointIndex = lazy(() =>
+  import('../registry/EndpointIndex').then((m) => ({ default: m.EndpointIndex })),
+);
+function EndpointIndex({ placement }: { placement: Placement }) {
+  return (
+    <Suspense fallback={null}>
+      <LazyEndpointIndex placement={placement} />
+    </Suspense>
+  );
+}
 
 const CalendarPanel = lazy(() =>
   import('../clock/CalendarPanel').then((m) => ({ default: m.CalendarPanel })),
@@ -50,7 +62,9 @@ export function TargetApp() {
         (value) => {
           if (active) {
             setSnapshot(value);
-            void loadInspector().catch((cause) => console.error('Inspector prefetch failed:', cause));
+            void loadInspector().catch((cause) =>
+              console.error('Inspector prefetch failed:', cause),
+            );
             try {
               commands.loadSnapshot(value);
             } catch (cause) {
@@ -94,7 +108,13 @@ export function TargetApp() {
         </Act>
         <nav className="nav" aria-label="Workspaces">
           {nodeKeys.map((key) => (
-            <Act key={key} verb="nav.open" args={{ node: key }} variant="rail" active={s.node === key}>
+            <Act
+              key={key}
+              verb="nav.open"
+              args={{ node: key }}
+              variant="rail"
+              active={s.node === key}
+            >
               <NavIcon node={key} />
               {nodes[key].label}
             </Act>
@@ -176,6 +196,10 @@ export function TargetApp() {
             </Suspense>
           ) : s.node === 'hq' && workspace.slug === 'lineup-and-roster' && snapshot ? (
             <FranchiseHQMount snapshot={snapshot} />
+          ) : s.node === 'hq' && workspace.slug === 'contracts-and-cap' && snapshot ? (
+            <Suspense fallback={<p role="status">Opening Contracts and cap…</p>}>
+              <Contracts snapshot={snapshot} />
+            </Suspense>
           ) : s.node === 'hq' && workspace.slug === 'my-moves' && snapshot ? (
             <MovesMount snapshot={snapshot} />
           ) : s.node === 'trade' && workspace.slug === 'trade-desk-and-offers' && snapshot ? (
@@ -244,20 +268,28 @@ export function TargetApp() {
               <PlayerInspector snapshot={snapshot} subject={s.subject} />
             </Suspense>
           ) : (
-            <p className="not-wired">Every player, franchise, pick, offer and segment opens here.</p>
+            <p className="not-wired">
+              Every player, franchise, pick, offer and segment opens here.
+            </p>
           )}
           <EndpointIndex placement="Inspector" />
         </div>
       </aside>
       {s.inspector === 'closed' && (
         <aside className="inspector-closed">
-          <Act verb="inspector.toggle" args={{}}>
-            Open inspector
+          <Act verb="inspector.toggle" args={{}} label="Open inspector">
+            Open
           </Act>
         </aside>
       )}
       <aside className="comms">
-        <Act verb="comms.toggle" args={{}} variant="icon" expanded={s.comms} controls="target-comms">
+        <Act
+          verb="comms.toggle"
+          args={{}}
+          variant="icon"
+          expanded={s.comms}
+          controls="target-comms"
+        >
           C
         </Act>
         <span className="vt">Comms · league feed</span>

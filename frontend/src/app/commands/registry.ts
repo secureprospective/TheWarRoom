@@ -195,6 +195,18 @@ export function createCommands(
     });
   }
   const registry = Object.freeze({
+    'contracts.set': command({
+      ...ambient,
+      id: 'contracts.set',
+      label: 'Filter or sort contracts',
+      args: ['field', 'value'],
+      run: (change: import('../contracts/state').ContractsFilter) => {
+        void import('../contracts/state').then(
+          (m) => m.setContractsFilter(change),
+          (cause) => state.write({ notice: String(cause) }),
+        );
+      },
+    }),
     market: command({
       ...ambient,
       id: 'market',

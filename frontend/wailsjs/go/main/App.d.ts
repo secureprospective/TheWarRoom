@@ -71,6 +71,8 @@ export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
 
+export function TargetContracts(arg1:snapshot.RawContractScope):Promise<main.ContractsReadings>;
+
 export function TargetCounterpartTeam(arg1:main.RawCounterpartTeam):Promise<main.Reading_main_TeamCounterpart_>;
 
 export function TargetCounterparties(arg1:main.RawCounterpartiesScope):Promise<main.Reading_main_Counterparties_>;
@@ -98,6 +100,8 @@ export function TargetMarketStretches(arg1:main.RawMarketScope):Promise<main.Rea
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 
 export function TargetPickClock(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
+
+export function TargetPlayerContract(arg1:string):Promise<main.Reading_github_com_secureprospective_TheWarRoom_internal_snapshot_PlayerContract_>;
 
 export function TargetPulseNow():Promise<main.PulseReading>;
 

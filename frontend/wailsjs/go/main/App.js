@@ -134,6 +134,10 @@ export function TargetClock() {
   return window['go']['main']['App']['TargetClock']();
 }
 
+export function TargetContracts(arg1) {
+  return window['go']['main']['App']['TargetContracts'](arg1);
+}
+
 export function TargetCounterpartTeam(arg1) {
   return window['go']['main']['App']['TargetCounterpartTeam'](arg1);
 }
@@ -188,6 +192,10 @@ export function TargetMoves(arg1) {
 
 export function TargetPickClock(arg1) {
   return window['go']['main']['App']['TargetPickClock'](arg1);
+}
+
+export function TargetPlayerContract(arg1) {
+  return window['go']['main']['App']['TargetPlayerContract'](arg1);
 }
 
 export function TargetPulseNow() {

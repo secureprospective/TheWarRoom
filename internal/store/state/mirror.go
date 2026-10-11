@@ -213,3 +213,18 @@ func (m *Mirror) AsOf() string {
 	defer m.wmu.Unlock()
 	return m.refreshedAt
 }
+
+// ContractsView copies one mirror revision and its cap totals together, never the what-if ledger.
+func (m *Mirror) ContractsView() (MirrorSnapshot, string, map[string]domain.Money) {
+	m.wmu.Lock()
+	defer m.wmu.Unlock()
+	snap := m.snap
+	snap.Players = slices.Clone(snap.Players)
+	snap.Adjustments = slices.Clone(snap.Adjustments)
+	used := make(map[string]domain.Money)
+	for _, id := range m.Franchises() {
+		amount, _ := m.CapUsed(id)
+		used[id] = amount
+	}
+	return snap, m.refreshedAt, used
+}

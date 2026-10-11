@@ -95,6 +95,10 @@ describe('Endpoint map', () => {
     const built = [
       'M-028',
       'M-029',
+      'M-025',
+      'M-031',
+      'M-078',
+      'C-06.5',
       'X-04',
       ...Array.from({ length: 29 }, (_, i) => `L-${String(i + 1).padStart(2, '0')}`),
       'L-33',
@@ -150,7 +154,7 @@ describe('Endpoint map', () => {
             (typeof commands.registry)['nav.open']['run']
           >[0]);
           const place = `${nodes[node].label} › ${w.label.replace(' (role-gated)', '')}`;
-          const html = renderToStaticMarkup(createElement(TargetApp));
+          const html = await renderSettledApp();
           expect(html).toContain(`${place} endpoint index`);
           for (const row of endpointsAt(place as Placement)) expect(html).toContain(row.id);
         }
