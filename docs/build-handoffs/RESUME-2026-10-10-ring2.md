@@ -1,5 +1,20 @@
 # RESUME: TheWarRoom ring 2, the decision layer (started 2026-10-10)
 
+## ⏩ UPDATE 2026-10-11 07:15 CDT — ring 2 BUILT; waiting on Christopher's click-through
+session/ring-2: 8c0fdd6 contract Acts · 535a550 p2l audit + spec rev 2 · 95d7aa4 p2l2 gaps + p2l3 (new
+contract starts at expires+1; found live: Bates tender charged 2026) · then the lab merge + this resume.
+All live-verified on Claude-OS. NEXT: PushNotification sent ~07:15 for the click-through; merge to main
+ONLY after he confirms. Open for him: Q15 ProBoards format, Q16 rollover vs tender/re-sign (May dates).
+
+## ⏩ UPDATE 2026-10-11 06:30 CDT — contract Acts COMMITTED (8c0fdd6 on session/ring-2)
+p2k2 (Sol) + p2k3 (Tom, Opus medium) + Claude polish, live-verified on Claude-OS: row menu anchored
+(root cause: menuPlacement spread a DOMRect → left NaN; proven in a devtools build's console), row stays
+one line, subject line, no jump on Keep, Kept + one-open-plan-per-Act refusal (Claude added a
+different-player test: mutant had survived), reveal shows card header, framed post block, contract
+buttons labelled (were announcing "Filter or sort contracts"). verify/build 0, 611 tests, entry 321,777.
+NEXT: p2l on Tom (dispatched ~06:30, run dir p2l/, liveness p2l/transcript.jsonl), then NEXT ACTIONS 4–5.
+Known, not fixed (ring 0/1 code): Ascending/Descending sort button and shell nav Acts use registry labels.
+
 ## ⏩ COMPACT-SAFE 2026-10-11 05:30 CDT — READ THIS FIRST (supersedes everything below)
 
 **Goal (active /goal):** finish ring 2 (p2h2, p2i done; p2j–k, p2l, facts panel), Claude as head
