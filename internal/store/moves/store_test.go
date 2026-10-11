@@ -74,6 +74,11 @@ func testMove(t *testing.T, id string, created time.Time, events ...envelope.Eve
 			to = envelope.Failed
 		case envelope.Invalidate:
 			to = envelope.Stale
+		case envelope.AwardedElsewhere:
+			to = envelope.AwardedOffApp
+		case envelope.Withdraw:
+			spec.Intent = "bid.submit"
+			to = envelope.Withdrawn
 		case envelope.AwaitDOT:
 			spec.Intent = "trade.propose"
 			to = envelope.DOTReview

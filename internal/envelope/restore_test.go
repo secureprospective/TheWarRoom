@@ -91,7 +91,7 @@ func TestObserveDeclaredSourcesOnly(t *testing.T) {
 	if err != nil || got.State() != Landed {
 		t.Fatalf("undeclared rosters consulted: %+v, %v", got, err)
 	}
-	for _, source := range []Source{Rosters, Transactions, Lineups, PendingTrades} {
+	for _, source := range []Source{Rosters, Contracts, Transactions, Lineups, PendingTrades} {
 		for name, stamp := range map[string]domain.Freshness{
 			"fail":      {State: domain.FreshFail, FetchedAt: fresh.FetchedAt},
 			"old":       {State: domain.FreshLive, FetchedAt: at.Add(-time.Second).Format(time.RFC3339)},
@@ -102,10 +102,13 @@ func TestObserveDeclaredSourcesOnly(t *testing.T) {
 			t.Run(string(source)+"/"+name, func(t *testing.T) {
 				observation := Observation{LeagueID: "1"}
 				observation.Rosters.Provenance.Freshness = fresh
+				observation.Contracts.Provenance.Freshness = fresh
 				observation.Transactions.Provenance.Freshness = fresh
 				observation.Lineups.Provenance.Freshness = fresh
 				observation.PendingTrades.Provenance.Freshness = fresh
 				switch source {
+				case Contracts:
+					observation.Contracts.Provenance.Freshness = stamp
 				case Rosters:
 					observation.Rosters.Provenance.Freshness = stamp
 				case Transactions:
@@ -117,7 +120,7 @@ func TestObserveDeclaredSourcesOnly(t *testing.T) {
 				}
 				before := e.Receipt()
 				_, err := e.Observe(now, observation, feedPredicate{
-					sources: []Source{Rosters, Transactions, Lineups, PendingTrades},
+					sources: []Source{Rosters, Contracts, Transactions, Lineups, PendingTrades},
 				})
 				if !errors.Is(err, ErrStaleObservation) || !reflect.DeepEqual(before, e.Receipt()) {
 					t.Fatalf("declared bad feed: %v", err)

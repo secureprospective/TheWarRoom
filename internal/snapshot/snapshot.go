@@ -25,10 +25,11 @@ type Sourced[T any] struct {
 }
 
 type Snapshot struct {
-	League     Sourced[League]      `json:"league"`
-	Franchises Sourced[[]Franchise] `json:"franchises"`
-	Rosters    Sourced[[]Roster]    `json:"rosters"`
-	Players    Sourced[[]Player]    `json:"players"`
+	League      Sourced[League]      `json:"league"`
+	Franchises  Sourced[[]Franchise] `json:"franchises"`
+	Rosters     Sourced[[]Roster]    `json:"rosters"`
+	Players     Sourced[[]Player]    `json:"players"`
+	Eligibility Eligibility          `json:"eligibility"`
 }
 
 type League struct {
@@ -83,6 +84,7 @@ type Source interface {
 	Roster(string) ([]state.PlayerState, bool)
 	CapUsed(string) (domain.Money, bool)
 	Metadata() (Metadata, error)
+	Slots() Slots
 }
 
 type Mirror interface {
@@ -94,6 +96,7 @@ type Mirror interface {
 type Rules interface {
 	FranchiseNames() map[string]string
 	GetSalaryCap() string
+	GetSetting(key string) (string, bool)
 }
 
 type storeSource struct {
@@ -126,7 +129,7 @@ func provenance(asOf, note string, present bool) Provenance {
 	return Provenance{Source: "mfl-mirror", Freshness: f, Kind: "live"}
 }
 
-func Build(ctx context.Context, src Source, dir Directory) (Snapshot, error) {
+func Build(ctx context.Context, src Source, dir Directory, inj Injuries) (Snapshot, error) {
 	if err := ctx.Err(); err != nil {
 		return Snapshot{}, fmt.Errorf("snapshot: build: %w", err)
 	}
@@ -168,6 +171,7 @@ func Build(ctx context.Context, src Source, dir Directory) (Snapshot, error) {
 		}
 	}
 	finishPlayers(&out, len(seen))
+	out.Eligibility = buildEligibility(meta, out.Rosters, dir, inj, src.Slots())
 	return out, nil
 }
 

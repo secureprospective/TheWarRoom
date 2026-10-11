@@ -5,9 +5,14 @@ import { parseSnapshot } from './parse';
 describe('snapshot boundary', () => {
   it('parses the real fixture with provenance on every section', () => {
     const parsed = parseSnapshot(fixture);
-    for (const section of Object.values(parsed)) {
-      expect(section.provenance.kind).toBe('fixture');
-      expect(section.provenance.source).not.toBe('');
+    for (const key of ['league', 'franchises', 'rosters', 'players'] as const) {
+      expect(parsed[key].provenance.kind).toBe('fixture');
+      expect(parsed[key].provenance.source).not.toBe('');
+    }
+    expect(Object.keys(parsed.eligibility.players).length).toBeGreaterThan(0);
+    for (const feed of Object.values(parsed.eligibility.feeds)) {
+      expect(feed.kind).toBe('fixture');
+      expect(feed.source).not.toBe('');
     }
     expect(parsed.franchises.value.length).toBeGreaterThan(0);
     expect(parsed.players.value.some((p) => p.name && p.team)).toBe(true);

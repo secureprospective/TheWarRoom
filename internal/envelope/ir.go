@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
@@ -21,8 +23,22 @@ type Check interface {
 type IRCheck struct{}
 
 func (IRCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
-	if s.Intent != "roster.ir" {
-		return CheckResult{Blocked: true, Note: "IR check does not cover this intent"}
+	return checkRosterMove(s, snap, rosterMoveRule{
+		intent: "roster.ir", label: "IR", squad: domain.RosterIR,
+		exclusionNote: "player on the taxi squad cannot move to or from IR",
+	})
+}
+
+type rosterMoveRule struct {
+	intent        string
+	label         string
+	squad         domain.RosterStatus
+	exclusionNote string
+}
+
+func checkRosterMove(s Spec, snap snapshot.Snapshot, rule rosterMoveRule) CheckResult {
+	if s.Intent != rule.intent {
+		return CheckResult{Blocked: true, Note: rule.label + " check does not cover this intent"}
 	}
 	if snap.Rosters.Provenance.Freshness.State == domain.FreshFail {
 		return CheckResult{Blocked: true, Note: "roster unavailable"}
@@ -31,10 +47,58 @@ func (IRCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
 	if !found {
 		return CheckResult{Blocked: true, Note: "player is not on this franchise's roster"}
 	}
-	if status == domain.RosterIR {
-		return CheckResult{Blocked: true, Note: "player already on IR"}
+	if status != rule.squad && (status == domain.RosterIR || status == domain.RosterTaxi) {
+		return CheckResult{Blocked: true, Note: rule.exclusionNote}
 	}
-	return CheckResult{Note: "not verified (league rules not captured)"}
+	if rosterDestination(status, rule.squad) != s.Expected.RosterStatus {
+		return CheckResult{Blocked: true, Note: "active or " + rule.label + " roster status required"}
+	}
+	// Held slots already select activation/promotion on IR/taxi; placement rules never gate leaving.
+	decision, found := heldDecision(snap, s.Expected.Player, func(v eligibility.PlayerVerdicts) eligibility.Decision {
+		if rule.squad == domain.RosterIR {
+			return v.IR
+		}
+		return v.Taxi
+	})
+	return checkResult(decision, found)
+}
+
+func rosterDestination(status, squad domain.RosterStatus) domain.RosterStatus {
+	if status == domain.RosterActive {
+		return squad
+	}
+	if status == squad {
+		return domain.RosterActive
+	}
+	return ""
+}
+
+// heldDecision reads the snapshot's held MFL rules for one player's move slot. An absent
+// verdict is reported, never treated as a pass or a block on its own.
+func heldDecision(
+	snap snapshot.Snapshot, player playerid.PlayerID,
+	slot func(eligibility.PlayerVerdicts) eligibility.Decision,
+) (eligibility.Decision, bool) {
+	verdicts, ok := snap.Eligibility.Players[player.String()]
+	if !ok {
+		return eligibility.Decision{}, false
+	}
+	return slot(verdicts), true
+}
+
+// checkResult turns a slot's verdict into the check outcome: ineligible blocks with its
+// reason; unknown and absent stay available, with MFL named as the decider.
+func checkResult(decision eligibility.Decision, found bool) CheckResult {
+	switch {
+	case !found:
+		return CheckResult{Note: eligibility.NotChecked("eligibility not held")}
+	case decision.Verdict == eligibility.Ineligible:
+		return CheckResult{Blocked: true, Note: decision.Reason}
+	case decision.Verdict == eligibility.Unknown:
+		return CheckResult{Note: eligibility.NotChecked(decision.Reason)}
+	default:
+		return CheckResult{Note: "eligibility checked (MFL " + decision.Source + ")"}
+	}
 }
 func (e Envelope) Check(at time.Time, snap snapshot.Snapshot, check Check) (Envelope, error) {
 	if check == nil {
@@ -44,7 +108,7 @@ func (e Envelope) Check(at time.Time, snap snapshot.Snapshot, check Check) (Enve
 	if e.spec.Deadline != nil && at.After(*e.spec.Deadline) {
 		result = CheckResult{Blocked: true, Note: "supplied deadline passed"}
 	}
-	if e.spec.Target.Kind != Mapped {
+	if e.spec.Target.Kind == Unmapped {
 		result = CheckResult{Blocked: true, Note: strings.TrimPrefix(result.Note+"; MFL target not verified", "; ")}
 	}
 	event := ChecksPass
@@ -59,6 +123,7 @@ type Source string
 
 const (
 	Rosters       Source = "rosters"
+	Contracts     Source = "contracts"
 	Transactions  Source = "transactions"
 	Lineups       Source = "lineups"
 	PendingTrades Source = "pendingTrades"
@@ -69,6 +134,7 @@ const (
 type Observation struct {
 	HandedOffAt   time.Time
 	LeagueID      string
+	Contracts     snapshot.Sourced[[]ContractEvidence]
 	Rosters       snapshot.Sourced[[]snapshot.Roster]
 	Transactions  snapshot.Sourced[[]leaguefeed.Transaction]
 	Lineups       snapshot.Sourced[leaguefeed.Lineups]
@@ -77,6 +143,8 @@ type Observation struct {
 
 func (o Observation) freshness(source Source) (domain.Freshness, bool) {
 	switch source {
+	case Contracts:
+		return o.Contracts.Provenance.Freshness, true
 	case Rosters:
 		return o.Rosters.Provenance.Freshness, true
 	case Transactions:
@@ -121,12 +189,18 @@ func (IRPredicate) Evaluate(s Spec, obs Observation) Verdict {
 		return Verdict{Event: Contradiction, Note: "player gone from franchise"}
 	}
 	if status == s.Expected.RosterStatus {
+		if status == domain.RosterActive {
+			return Verdict{Event: Match, Note: "observed activation from IR on the same franchise"}
+		}
 		return Verdict{Event: Match, Note: "observed player on IR on the same franchise"}
 	}
-	if status == "" {
-		return Verdict{Event: Partial, Note: "Not verified: roster status missing"}
+	if rosterDestination(status, domain.RosterIR) == s.Expected.RosterStatus {
+		return Verdict{Event: NoChange, Note: "No matching MFL change observed"}
 	}
-	return Verdict{Event: NoChange, Note: "No matching MFL change observed"}
+	if status == domain.RosterTaxi {
+		return Verdict{Event: Contradiction, Note: "player moved to the taxi squad instead of requested IR status"}
+	}
+	return Verdict{Event: Partial, Note: "Not verified: roster status missing or unknown"}
 }
 func rosterStatus(s Spec, rosters []snapshot.Roster) (domain.RosterStatus, bool) {
 	for _, r := range rosters {
@@ -151,7 +225,7 @@ func (e Envelope) Observe(at time.Time, obs Observation, predicate Predicate) (E
 	}
 	obs.HandedOffAt = e.handedAt()
 	verdict := predicate.Evaluate(cloneSpec(e.spec), obs)
-	if !slices.Contains([]Event{Match, Partial, NoChange, Contradiction, AwaitDOT}, verdict.Event) {
+	if !slices.Contains([]Event{Match, Partial, NoChange, Contradiction, AwaitDOT, AwardedElsewhere}, verdict.Event) {
 		return Envelope{}, fmt.Errorf("envelope: invalid predicate event %q", verdict.Event)
 	}
 	if verdict.Event == AwaitDOT && e.spec.Intent == "trade.accept" && e.state == NotVerified &&

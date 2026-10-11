@@ -1,8 +1,9 @@
+import { loadMarket } from '../market/load';
 import { MovesMount } from './MovesMount';
 import { ClockStrip } from '../clock/ClockStrip';
-import { CalendarPanel } from '../clock/CalendarPanel';
+
 import { useLeagueClock } from '../clock/useLeagueClock';
-import { EndpointIndex } from '../registry/EndpointIndex';
+
 import type { Placement } from '../registry';
 import { FranchiseHQMount } from './FranchiseHQMount';
 import { lazy, Suspense, useEffect, useState, useRef } from 'react';
@@ -19,10 +20,26 @@ import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
 
+const Contracts = lazy(() => import('../contracts/Contracts'));
+const LazyEndpointIndex = lazy(() =>
+  import('../registry/EndpointIndex').then((m) => ({ default: m.EndpointIndex })),
+);
+function EndpointIndex({ placement }: { placement: Placement }) {
+  return (
+    <Suspense fallback={null}>
+      <LazyEndpointIndex placement={placement} />
+    </Suspense>
+  );
+}
+
+const CalendarPanel = lazy(() =>
+  import('../clock/CalendarPanel').then((m) => ({ default: m.CalendarPanel })),
+);
 const AppSettings = lazy(() => import('./AppSettings').then((m) => ({ default: m.AppSettings })));
 const CommandBar = lazy(() => import('../commands/CommandBar').then((m) => ({ default: m.CommandBar })));
 const HomePulseMount = lazy(() => import('./HomePulseMount'));
 const TradeDesk = lazy(() => import('./TradeDesk'));
+const Market = lazy(loadMarket);
 const loadInspector = () => import('./PlayerInspector');
 const PlayerInspector = lazy(() => loadInspector().then((m) => ({ default: m.PlayerInspector })));
 
@@ -45,7 +62,9 @@ export function TargetApp() {
         (value) => {
           if (active) {
             setSnapshot(value);
-            void loadInspector().catch((cause) => console.error('Inspector prefetch failed:', cause));
+            void loadInspector().catch((cause) =>
+              console.error('Inspector prefetch failed:', cause),
+            );
             try {
               commands.loadSnapshot(value);
             } catch (cause) {
@@ -63,16 +82,11 @@ export function TargetApp() {
   }, []);
   const summary = snapshot && snapshotSummary(snapshot);
   const node = nodes[s.node];
-  const workspaces: readonly { slug: string; label: string; ring: string }[] =
-    node.workspaces;
+  const workspaces: readonly { slug: string; label: string; ring: string }[] = node.workspaces;
   const workspace = workspaces.find((w) => w.slug === s.workspace[s.node])!;
   const placement = `${node.label} › ${workspace.label.replace(' (role-gated)', '')}` as Placement;
   return (
-    <div
-      className="twr-app target-frame"
-      ref={root}
-      data-inspector={s.inspector}
-    >
+    <div className="twr-app target-frame" ref={root} data-inspector={s.inspector}>
       <aside className="rail">
         <div className="league">
           <div className="crest">
@@ -115,8 +129,12 @@ export function TargetApp() {
           >
             Calendar
           </Act>
-          <Act verb="surface.open" args={{ place: 'Report drawer' }}>Reports</Act>
-          <Act verb="surface.open" args={{ place: 'Status strip' }}>Status</Act>
+          <Act verb="surface.open" args={{ place: 'Report drawer' }}>
+            Reports
+          </Act>
+          <Act verb="surface.open" args={{ place: 'Status strip' }}>
+            Status
+          </Act>
           <Act verb="harness.open" args={{}}>
             Harness
           </Act>
@@ -171,20 +189,28 @@ export function TargetApp() {
               {s.notice}
             </p>
           )}
-          {((s.node === 'home' && ['seasonal-card', 'alert-tray'].includes(workspace.slug)) ||
-            (s.node === 'pulse' && workspace.slug === 'now')) ? (
+          {(s.node === 'home' && ['seasonal-card', 'alert-tray'].includes(workspace.slug)) ||
+          (s.node === 'pulse' && workspace.slug === 'now') ? (
             <Suspense fallback={<p role="status">Opening workspace…</p>}>
               <HomePulseMount snapshot={snapshot} reading={clock} />
             </Suspense>
-          ) : s.node === 'hq' &&
-          workspace.slug === 'lineup-and-roster' &&
-          snapshot ? (
+          ) : s.node === 'hq' && workspace.slug === 'lineup-and-roster' && snapshot ? (
             <FranchiseHQMount snapshot={snapshot} />
+          ) : s.node === 'hq' && workspace.slug === 'contracts-and-cap' && snapshot ? (
+            <Suspense fallback={<p role="status">Opening Contracts and cap…</p>}>
+              <Contracts snapshot={snapshot} />
+            </Suspense>
           ) : s.node === 'hq' && workspace.slug === 'my-moves' && snapshot ? (
             <MovesMount snapshot={snapshot} />
-          ) : s.node === 'trade' && workspace.slug === 'trade-desk-and-offers' && snapshot ? (
+          ) : s.node === 'trade' && workspace.slug === 'trade-desk' && snapshot ? (
             <Suspense fallback={<p role="status">Opening Trade desk…</p>}>
               <TradeDesk snapshot={snapshot} />
+            </Suspense>
+          ) : ['market', 'counterparties', 'offers-history', 'valuations-and-pool', 'draft-room'].includes(
+              workspace.slug,
+            ) ? (
+            <Suspense fallback={null}>
+              <Market snapshot={snapshot} />
             </Suspense>
           ) : s.node === 'control' && workspace.slug === 'app' ? (
             <Suspense fallback={null}>
@@ -222,9 +248,7 @@ export function TargetApp() {
           Inspector
           <span className="x">
             <Act
-              verb={
-                s.inspector === 'expanded' ? 'inspector.collapse' : 'inspector.expand'
-              }
+              verb={s.inspector === 'expanded' ? 'inspector.collapse' : 'inspector.expand'}
               args={{}}
               variant="text"
               expanded={s.inspector === 'expanded'}
@@ -237,7 +261,11 @@ export function TargetApp() {
           </span>
         </div>
         <div className="insp-body">
-          {snapshot && s.subject ? (
+          {s.asset ? (
+            <Suspense fallback={null}>
+              <Market kind={s.asset} snapshot={snapshot} />
+            </Suspense>
+          ) : snapshot && s.subject ? (
             <Suspense fallback={null}>
               <PlayerInspector snapshot={snapshot} subject={s.subject} />
             </Suspense>
@@ -251,8 +279,8 @@ export function TargetApp() {
       </aside>
       {s.inspector === 'closed' && (
         <aside className="inspector-closed">
-          <Act verb="inspector.toggle" args={{}}>
-            Open inspector
+          <Act verb="inspector.toggle" args={{}} label="Open inspector">
+            Open
           </Act>
         </aside>
       )}
@@ -299,14 +327,18 @@ export function TargetApp() {
             Close
           </Act>
         </header>
-        <CalendarPanel reading={clock} />
+        <Suspense fallback={null}>
+          <CalendarPanel reading={clock} />
+        </Suspense>
         <EndpointIndex placement="Calendar" />
       </aside>
       {(s.endpointSurface === 'Report drawer' || s.endpointSurface === 'Status strip') && (
         <aside className="shell-overlay registry-panel" aria-label={s.endpointSurface}>
           <header>
             {s.endpointSurface}
-            <Act verb="surface.close" args={{}}>Close</Act>
+            <Act verb="surface.close" args={{}}>
+              Close
+            </Act>
           </header>
           <EndpointIndex placement={s.endpointSurface} />
         </aside>

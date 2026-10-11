@@ -38,6 +38,10 @@ func DraftIR(at time.Time, req IRRequest, snap snapshot.Snapshot, generate func(
 		Undo:    Reversible,
 		Target:  req.Target,
 	}
+	status, found := rosterStatus(spec, snap.Rosters.Value)
+	if found && status == domain.RosterIR {
+		spec.Expected.RosterStatus = domain.RosterActive
+	}
 	e, err := New(at, spec, generate)
 	if err != nil {
 		return Envelope{}, fmt.Errorf("draft IR: %w", err)
@@ -59,7 +63,17 @@ func (c rosterDraftCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
 	result := c.check.Evaluate(s, snap)
 	if len(c.blocks) > 0 {
 		result.Blocked = true
-		result.Note = strings.TrimPrefix(result.Note+"; "+strings.Join(c.blocks, "; "), "; ")
+		result.Note = reasonNote(append([]string{result.Note}, c.blocks...))
 	}
 	return result
+}
+
+func reasonNote(reasons []string) string {
+	parts := make([]string, 0, len(reasons))
+	for _, reason := range reasons {
+		if text := strings.TrimRight(reason, ".; "); text != "" {
+			parts = append(parts, text)
+		}
+	}
+	return strings.Join(parts, ". ")
 }

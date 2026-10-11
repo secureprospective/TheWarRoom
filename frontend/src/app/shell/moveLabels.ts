@@ -1,7 +1,10 @@
 import type { EnvelopeState } from '../data/contract';
 import type { Signal } from '../look/channels';
 
-export const stateLabels: Record<EnvelopeState, string> = {
+// Bid plans end in two states the move rail's own receipts never reach.
+export type RailState = EnvelopeState | 'awarded_off_app' | 'withdrawn';
+
+export const stateLabels: Record<RailState, string> = {
   draft: 'Draft',
   ready: 'Ready',
   handed_off: 'Handed off',
@@ -14,12 +17,19 @@ export const stateLabels: Record<EnvelopeState, string> = {
   dot_review: 'DOT review',
   bid_pending: 'Bid pending',
   waiver_pending: 'Waiver pending',
+  awarded_off_app: 'Awarded off-app',
+  withdrawn: 'Withdrawn',
 };
+export const railStates = Object.keys(stateLabels) as RailState[];
+// Only a bid waits on a bid; a contract Act or buyout the owner has posted is just Pending.
+export function stateLabel(state: RailState, intent: string): string {
+  return state === 'bid_pending' && intent !== 'bid.submit' ? 'Pending' : stateLabels[state];
+}
 export const intentLabels: Record<string, string> = {
   'roster.ir': 'IR placement', 'roster.taxi': 'Taxi move',
   'lineup.set': 'Lineup change', 'trade.accept': 'Trade accept',
 };
-export const stateSignals: Record<EnvelopeState, Signal> = {
+export const stateSignals: Record<RailState, Signal> = {
   draft: 'grey',
   ready: 'blue',
   handed_off: 'blue',
@@ -32,4 +42,6 @@ export const stateSignals: Record<EnvelopeState, Signal> = {
   dot_review: 'amber',
   bid_pending: 'amber',
   waiver_pending: 'amber',
+  awarded_off_app: 'grey',
+  withdrawn: 'grey',
 };

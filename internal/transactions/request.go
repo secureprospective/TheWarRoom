@@ -114,9 +114,7 @@ func (r RosterStatusChange) enforceRosterLimits(_ context.Context, rd state.Read
 	return nil
 }
 
-// Waiver cuts one player (§8). The franchise owes 35% of annual salary per remaining year (50% if
-// restructured) against this season's cap. v1 models the unclaimed cut only; claims come with free
-// agency.
+// Waiver cuts one player, charging the remaining paid cells against this season.
 type Waiver struct {
 	MFLID string
 }

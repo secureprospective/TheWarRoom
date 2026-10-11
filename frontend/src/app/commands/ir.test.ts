@@ -32,7 +32,7 @@ async function settled(c: ReturnType<typeof createCommands>) {
 }
 
 describe.each([
-  ['roster.ir', 'draftIR', 'Draft IR placement'],
+  ['roster.ir', 'draftIR', 'Draft IR move'],
   ['roster.taxi', 'draftTaxi', 'Draft move to taxi squad'],
 ] as const)('%s', (intent, method, label) => {
   const draftedReceipt = {
@@ -97,6 +97,32 @@ describe.each([
     c.dispatch(intent, { subject: other });
     await waitFor(() => expect(c.readMoves().drafting['0001:99999']).toBe(false));
     expect(draft).toHaveBeenCalledWith('0001', '99999');
+    expect(c.readMoves().moves).toEqual([blocked]);
+  });
+  it('still sends an ineligible draft to Go, which blocks it with the reason', async () => {
+    const provider = new LiveProvider();
+    const ineligible = structuredClone(snapshot);
+    ineligible.eligibility.players[subject.id] = {
+      ir: {
+        direction: 'to_ir', verdict: 'ineligible',
+        reason: 'not on NFL injured reserve', source: 'injuries',
+      },
+      taxi: {
+        direction: 'to_taxi', verdict: 'ineligible', source: 'players',
+        reason: '3 or more years of NFL experience (drafted 2014)',
+      },
+    };
+    const blocked = {
+      ...draftedReceipt, state: 'blocked' as const,
+      audit: [{ ...draftedReceipt.audit[0], to: 'blocked' as const, note: 'not on NFL injured reserve' }],
+    };
+    const draft = vi.spyOn(provider, 'draftIR').mockResolvedValue(blocked);
+    const c = createCommands(() => undefined, provider);
+    c.loadSnapshot(ineligible);
+    c.dispatch('franchise.set', { franchiseId: subject.franchiseId });
+    c.dispatch('roster.ir', { subject });
+    await settled(c);
+    expect(draft).toHaveBeenCalledWith('0001', '11675');
     expect(c.readMoves().moves).toEqual([blocked]);
   });
   it('declares fixture drafting unavailable and never starts pending', () => {

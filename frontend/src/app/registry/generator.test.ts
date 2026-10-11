@@ -30,3 +30,10 @@ describe('Registry boundary and freshness', () => {
     expect(() => readEndpoints(source.replace('id,source,', 'id,id,'))).toThrow('duplicate columns');
   });
 });
+
+it('pools repeated placement strings without changing the generated registry contract', () => {
+  const generated = generateEndpoints(source);
+  expect(generated).toContain('const places = [');
+  expect(generated).toContain('placement: places[');
+  expect(generated.match(/"Trade Floor › Draft room"/g)).toHaveLength(2);
+});

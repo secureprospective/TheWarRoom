@@ -72,7 +72,13 @@ func (a *App) refreshLeague(
 ) (RefreshResult, error) {
 	a.refreshMu.Lock()
 	defer a.refreshMu.Unlock()
-	return a.refreshLeagueLocked(ctx, rb, mirror)
+	res, err := a.refreshLeagueLocked(ctx, rb, mirror)
+	if err != nil {
+		return res, err
+	}
+	// A mirror refresh changes the eligibility inputs; Ready plans revalidate against them.
+	a.revalidateReadyRosterMoves(ctx)
+	return res, nil
 }
 
 // The caller holds refreshMu, including when the watcher refreshes several feeds.

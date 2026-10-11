@@ -52,7 +52,7 @@ func richStore(t *testing.T) (*state.Store, *transactions.Coordinator) {
 // TestIntegration_RestructureLowersCapFlat proves the §11 happy path end to end: the move
 // lowers the cap by EXACTLY the move amount (flat math — cap is the sum of contracts), the
 // contract is flagged restructured, and a subsequent §8 cut then charges 50% dead cap on
-// the reduced salary (the whole B7b→B7c dead-cap story wired together).
+// the future paid cells.
 func TestIntegration_RestructureLowersCapFlat(t *testing.T) {
 	s, c := richStore(t)
 
@@ -90,13 +90,13 @@ func TestIntegration_RestructureLowersCapFlat(t *testing.T) {
 		t.Fatalf("2027 cell = %s, want $12M (untouched)", cells[2027])
 	}
 
-	// A §8 cut now charges 50% (restructured) × $9M effective × 2 remaining years = $9M.
+	// The remaining cells are $12M and $15M: 50% charges $13.5M, not current salary × years.
 	if _, err := c.Execute(context.Background(), transactions.Waiver{MFLID: "0010"}); err != nil {
 		t.Fatalf("Execute waiver: %v", err)
 	}
-	// 0001 cap: $6M live (0011) + $9M dead (0010) = $15M — the $9M live salary became $9M dead.
-	if got, _ := s.CapUsed("0001"); got != 15*mil {
-		t.Fatalf("post-cut cap = %s, want $15M ($6M live + $9M @ 50%% dead cap)", got)
+	// $6M live plus $13.5M dead cap.
+	if got, _ := s.CapUsed("0001"); got != 195*mil/10 {
+		t.Fatalf("post-cut cap = %s, want $19.5M ($6M live + $13.5M dead cap)", got)
 	}
 }
 

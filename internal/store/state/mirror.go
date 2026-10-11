@@ -113,7 +113,7 @@ func (m *Mirror) Replace(ctx context.Context, snap MirrorSnapshot) (bool, error)
 	if err != nil || m.hash == prev {
 		return false, err
 	}
-	at := time.Now().UTC().Format(time.RFC3339)
+	at := time.Now().UTC().Format(time.RFC3339Nano)
 	if _, err := m.pools.Write().ExecContext(ctx, `
 INSERT INTO league_mirror (id, season, sha256, snapshot, refreshed_at) VALUES (1, ?, ?, ?, ?)
 ON CONFLICT (id) DO UPDATE SET season = excluded.season, sha256 = excluded.sha256,
@@ -212,4 +212,19 @@ func (m *Mirror) AsOf() string {
 	m.wmu.Lock()
 	defer m.wmu.Unlock()
 	return m.refreshedAt
+}
+
+// ContractsView copies one mirror revision and its cap totals together, never the what-if ledger.
+func (m *Mirror) ContractsView() (MirrorSnapshot, string, map[string]domain.Money) {
+	m.wmu.Lock()
+	defer m.wmu.Unlock()
+	snap := m.snap
+	snap.Players = slices.Clone(snap.Players)
+	snap.Adjustments = slices.Clone(snap.Adjustments)
+	used := make(map[string]domain.Money)
+	for _, id := range m.Franchises() {
+		amount, _ := m.CapUsed(id)
+		used[id] = amount
+	}
+	return snap, m.refreshedAt, used
 }

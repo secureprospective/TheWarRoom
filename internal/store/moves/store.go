@@ -51,7 +51,7 @@ BEGIN SELECT RAISE(ABORT, 'move_audit is append-only'); END;
 CREATE TRIGGER IF NOT EXISTS move_audit_no_delete
 BEFORE DELETE ON move_audit
 BEGIN SELECT RAISE(ABORT, 'move_audit is append-only'); END;`
-	if _, err := s.pools.Write().ExecContext(ctx, ddl); err != nil {
+	if _, err := s.pools.Write().ExecContext(ctx, ddl+bidFactsDDL+releaseFactsDDL+contractFactsDDL); err != nil {
 		return fmt.Errorf("moves: initialize: %w", err)
 	}
 	return nil

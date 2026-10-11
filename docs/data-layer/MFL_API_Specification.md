@@ -37,6 +37,7 @@ Developer portal: `https://api.myfantasyleague.com/{year}/api_info`
 | contracts | Player salary and contract data by franchise | Daily / on transaction |
 | players | Full MFL player database — IDs, positions, NFL teams | Once daily |
 | transactions | Waiver claims, trades, free agent signings | On transaction |
+| freeAgents | The players on no roster (league export, `leagueUnit` → `player` ids); the bid-plan pool | On open of the pool, at most every 5 minutes |
 | standings | League standings, records, points | Weekly |
 | playerScores | Player scoring by week | After game completion |
 | liveScoring | Live in-game scoring | Real-time |

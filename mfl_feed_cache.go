@@ -28,8 +28,12 @@ func (a *App) fallbackParent() context.Context {
 // when the fetch fails. Every live fetch is archived by the transport, so nothing is cached here.
 type archivedFeed[T any] struct {
 	export string
-	fetch  func(context.Context) ([]T, error)
-	parse  func([]byte) ([]T, error)
+	// leagueless marks one of MFL's league-less exports, fetched without L from the api host:
+	// its archived copies match with or without the league id, since MFL serves the same
+	// NFL-wide feed to every league.
+	leagueless bool
+	fetch      func(context.Context) ([]T, error)
+	parse      func([]byte) ([]T, error)
 	// bodies offers archived bodies whose URL contains part, newest first, until accept takes one.
 	bodies func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error)
 }
@@ -37,7 +41,11 @@ type archivedFeed[T any] struct {
 // liveOrArchive fetches the feed, or falls back to the newest archived body of the same export,
 // season and league that still parses. A body that proved bad is passed over, so a glitch MFL
 // served once never becomes the fallback. Only a failed fetch with no usable body is an error.
-func liveOrArchive[T any](ctx, fallback context.Context, season int, f archivedFeed[T]) ([]T, Freshness, error) {
+// logLine names the feed and the error once whenever the live fetch fails, so run.log shows why
+// a feed went stale or empty; it is the app's fallbackLog seam, log.Print in production.
+func liveOrArchive[T any](
+	ctx, fallback context.Context, season int, f archivedFeed[T], logLine func(string),
+) ([]T, Freshness, error) {
 	rows, ferr := f.fetch(ctx)
 	if ferr == nil {
 		return rows, liveFreshness(time.Now()), nil
@@ -46,7 +54,7 @@ func liveOrArchive[T any](ctx, fallback context.Context, season int, f archivedF
 	defer cancel()
 	var at time.Time
 	found, err := f.bodies(rctx, "TYPE="+f.export, func(src string, body []byte, fetched time.Time) bool {
-		if !sameExport(src, f.export, season) {
+		if !sameExport(src, f.export, season, f.leagueless) {
 			return false
 		}
 		parsed, perr := f.parse(body)
@@ -58,15 +66,23 @@ func liveOrArchive[T any](ctx, fallback context.Context, season int, f archivedF
 	})
 	switch {
 	case err != nil:
+		logLine(fmt.Sprintf("the war room: %s: live fetch failed and the archive is unreadable: %v", f.export, ferr))
 		return nil, Freshness{}, fmt.Errorf("%s fetch failed (%w) and the archive is unreadable: %v", f.export, ferr, err)
 	case !found:
+		logLine(fmt.Sprintf("the war room: %s: live fetch failed with no archived copy to serve: %v", f.export, ferr))
 		return nil, Freshness{}, fmt.Errorf("%s fetch failed with no archived copy to fall back on: %w", f.export, ferr)
 	}
+	logLine(fmt.Sprintf("the war room: %s: live fetch failed, serving the archived copy fetched %s: %v",
+		f.export, at.UTC().Format(time.RFC3339), ferr))
 	return rows, staleFreshness(at, ferr), nil
 }
 
-// sameExport reports whether an archived URL is this league's export for season.
-func sameExport(raw, export string, season int) bool {
+// sameExport reports whether an archived URL is this league's export for season; a league-less
+// export's copies match with or without the league id.
+func sameExport(raw, export string, season int, leagueless bool) bool {
+	if leagueless {
+		return ingestion.SameLeaguelessExport(raw, export, season)
+	}
 	return ingestion.SameExport(raw, export, season)
 }
 
@@ -78,7 +94,7 @@ func (a *App) standingsOrArchive(ctx context.Context) ([]leaguestandings.RawStan
 		},
 		parse:  leaguestandings.Parse,
 		bodies: a.history.ArchivedBodies,
-	})
+	}, a.fallbackLog)
 }
 
 func (a *App) leagueScheduleOrArchive(ctx context.Context) ([]leagueschedule.RawScheduleWeek, Freshness, error) {
@@ -89,5 +105,5 @@ func (a *App) leagueScheduleOrArchive(ctx context.Context) ([]leagueschedule.Raw
 		},
 		parse:  leagueschedule.Parse,
 		bodies: a.history.ArchivedBodies,
-	})
+	}, a.fallbackLog)
 }

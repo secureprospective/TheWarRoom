@@ -30,7 +30,7 @@
         "from": "draft",
         "event": "checks_pass",
         "to": "ready",
-        "note": "not verified (league rules not captured)"
+        "note": "Not checked: stale; MFL will decide"
       },
       {
         "at": "2026-10-05T18:42:52Z",

@@ -120,6 +120,12 @@ export function useScrollCursorIntoView(cursorID: string | null) {
   useEffect(() => {
     if (!cursorID) return;
     const el = document.querySelector(`[data-row-id="${CSS.escape(cursorID)}"]`);
-    el?.scrollIntoView({ block: 'nearest' });
+    let active = true;
+    if (el instanceof HTMLElement) {
+      void import('../../app/shell/workScroll').then(({ scrollWorkIntoView }) => {
+        if (active) scrollWorkIntoView(el, 'nearest');
+      });
+    }
+    return () => { active = false; };
   }, [cursorID]);
 }

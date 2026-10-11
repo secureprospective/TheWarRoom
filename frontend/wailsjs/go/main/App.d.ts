@@ -63,13 +63,39 @@ export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetPa
 
 export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
 
+export function TargetAssetProfile(arg1:main.RawMarketAsset):Promise<main.Reading_main_MarketSurface_>;
+
+export function TargetBidDraft(arg1:main.RawBidInput):Promise<main.BidPlan>;
+
+export function TargetBidHandOff(arg1:string):Promise<main.BidPlan>;
+
+export function TargetBidPlans(arg1:string):Promise<main.Reading_main_BidBoard_>;
+
+export function TargetBidPosted(arg1:string):Promise<main.BidPlan>;
+
+export function TargetBidPreview(arg1:main.RawBidInput):Promise<main.BidPreview>;
+
+export function TargetBidRevise(arg1:string,arg2:main.RawBidInput):Promise<main.BidPlan>;
+
+export function TargetBidWithdraw(arg1:string):Promise<main.BidPlan>;
+
 export function TargetCheckLineup(arg1:string,arg2:Array<string>):Promise<lineup.Result>;
 
 export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
 
+export function TargetContractActs(arg1:main.RawContractAct):Promise<main.Reading___main_ContractActView_>;
+
+export function TargetContracts(arg1:snapshot.RawContractScope):Promise<main.ContractsReadings>;
+
+export function TargetCounterpartTeam(arg1:main.RawCounterpartTeam):Promise<main.Reading_main_TeamCounterpart_>;
+
+export function TargetCounterparties(arg1:main.RawCounterpartiesScope):Promise<main.Reading_main_Counterparties_>;
+
 export function TargetDraftIR(arg1:string,arg2:string):Promise<envelope.Receipt>;
+
+export function TargetDraftLab(arg1:main.RawDraftScope):Promise<main.Reading_main_MarketSurface_>;
 
 export function TargetDraftLineup(arg1:string,arg2:Array<string>):Promise<envelope.Receipt>;
 
@@ -81,12 +107,34 @@ export function TargetHandOff(arg1:string):Promise<envelope.Receipt>;
 
 export function TargetLineup(arg1:string):Promise<main.LineupReading>;
 
+export function TargetMarket(arg1:main.RawMarketScope):Promise<main.Reading_github_com_secureprospective_TheWarRoom_internal_lab_Market_>;
+
+export function TargetMarketLists(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
+
+export function TargetMarketStretches(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
+
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 
+export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_OffersView_>;
+
+export function TargetPickClock(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
+
+export function TargetPlayerContract(arg1:string):Promise<main.Reading_github_com_secureprospective_TheWarRoom_internal_snapshot_PlayerContract_>;
+
+export function TargetPool(arg1:main.RawPoolScope):Promise<main.Reading_main_Pool_>;
+
+export function TargetPoolRefresh(arg1:boolean):Promise<void>;
+
 export function TargetPulseNow():Promise<main.PulseReading>;
+
+export function TargetReleasePlans(arg1:main.RawReleaseRequest):Promise<main.Reading___main_ReleasePlanView_>;
 
 export function TargetSeason():Promise<main.SeasonReading>;
 
 export function TargetSnapshot():Promise<snapshot.Snapshot>;
 
 export function TargetTrades(arg1:string):Promise<main.TradeReading>;
+
+export function TargetWhatIf(arg1:main.RawWhatIfRequest):Promise<main.Reading_main_WhatIfView_>;
+
+export function TargetWithdrawRoster(arg1:string):Promise<envelope.Receipt>;

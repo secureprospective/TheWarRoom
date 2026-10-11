@@ -23,7 +23,7 @@
 .twr-app .strip { margin-left: auto; display: flex; align-items: center; gap: 16px; padding: 0 14px; font: 11px var(--surface-mono); color: var(--surface-tx3); white-space: nowrap; min-width: 0; }
 .twr-app .dens { display: flex; border: 1px solid var(--surface-line); }
 .twr-app .dens .act-density { font-style: normal; padding: 2px 7px; font: 600 10.5px var(--surface-sans); color: var(--surface-tx3); }
-.twr-app .wbody { flex: 1; overflow: auto; padding: 16px; display: grid; gap: 14px; align-content: start; }
+.twr-app .wbody { flex: 1; overflow: auto; overflow-anchor: none; padding: 16px; display: grid; gap: 14px; align-content: start; }
 .twr-app .insp { background: var(--surface-1); border-left: 1px solid var(--surface-line); display: flex; flex-direction: column; overflow: hidden; }
 .twr-app .insp-head { height: 44px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-bottom: 1px solid var(--surface-line); font: 600 11px var(--surface-sans); color: var(--surface-tx3); letter-spacing: .06em; text-transform: uppercase; }
 .twr-app .insp-head .x { display: flex; gap: 10px; text-transform: none; letter-spacing: 0; font: 11px var(--surface-mono); }
@@ -159,3 +159,12 @@
 @media (prefers-reduced-motion: reduce) {
   .twr-app .insp, .twr-app .shell-overlay, .twr-app .command-bar { transition: none; }
 }
+
+.twr-app.target-frame[data-inspector="closed"] { grid-template-columns: 192px minmax(0, 1fr) 40px 48px; }
+.twr-app .inspector-closed { padding: 12px 0; display: flex; justify-content: center; background: var(--surface-1); }
+.twr-app .inspector-closed .act { writing-mode: vertical-rl; padding: 8px; align-self: flex-start; }
+.twr-app[data-inspector="closed"] .command-bar { right: 104px; }
+.twr-app select { appearance: none; -webkit-appearance: none; color-scheme: dark; max-width: 100%; border: 1px solid var(--surface-line-hi); border-radius: 0; background-color: var(--surface-2); color: var(--surface-tx1); font: inherit; padding: 7px 30px 7px 9px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%23e8eaed' stroke-width='1.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; }
+.twr-app select option { background: var(--surface-2); color: var(--surface-tx1); }
+.twr-app select:focus-visible { outline: 2px solid var(--signal-blue); outline-offset: 2px; }
+.twr-app select:disabled { opacity: .6; cursor: not-allowed; }

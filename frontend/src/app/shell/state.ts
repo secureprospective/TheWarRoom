@@ -16,6 +16,7 @@ export type ShellState = {
   density: Density;
   inspector: 'closed' | 'rest' | 'expanded';
   subject: PlayerSubject | null;
+  asset: string | null;
   franchiseId: string | null;
   commandbar: boolean;
   summoned: 'calendar' | null;
@@ -38,6 +39,7 @@ export function initialShellState(): ShellState {
     density: 'tactical',
     inspector: 'rest',
     subject: null,
+    asset: null,
     franchiseId: null,
     commandbar: false,
     summoned: null,
@@ -49,10 +51,13 @@ export function initialShellState(): ShellState {
     scrollRevision: 0,
   };
 }
-export function renderState(
-  { density: _density, lineupDraft: _draft, lineupReceiptId: _receipt,
-    pulseExpanded: _pulse, ...rest }: ShellState,
-): Omit<ShellState, 'density' | 'lineupDraft' | 'lineupReceiptId' | 'pulseExpanded'> {
+export function renderState({
+  density: _density,
+  lineupDraft: _draft,
+  lineupReceiptId: _receipt,
+  pulseExpanded: _pulse,
+  ...rest
+}: ShellState): Omit<ShellState, 'density' | 'lineupDraft' | 'lineupReceiptId' | 'pulseExpanded'> {
   return rest;
 }
 
@@ -63,16 +68,22 @@ export function createShellState() {
     use: () => useStore(store, renderState, shallow),
     subscribe: store.subscribe,
     usePulse: () => useStore(store, (s) => s.pulseExpanded),
-    useLineupEdit: () => useStore(store, (s) => ({
-      draft: s.lineupDraft, receiptId: s.lineupReceiptId,
-    }), shallow),
+    useLineupEdit: () =>
+      useStore(
+        store,
+        (s) => ({
+          draft: s.lineupDraft,
+          receiptId: s.lineupReceiptId,
+        }),
+        shallow,
+      ),
     // The write capability is handed only to the command registry, never to views.
     write: (patch: Partial<ShellState>) => store.setState(patch),
     navigate: (route: Route) =>
       store.setState((s) => ({
-        scrollRevision: s.scrollRevision + Number(
-          s.node !== route.node || s.workspace[s.node] !== route.workspace,
-        ),
+        scrollRevision:
+          s.scrollRevision +
+          Number(s.node !== route.node || s.workspace[s.node] !== route.workspace),
         node: route.node,
         workspace: { ...s.workspace, [route.node]: route.workspace },
       })),

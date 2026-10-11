@@ -119,3 +119,21 @@ func TestMirrorAsOfSurvivesRestart(t *testing.T) {
 		t.Fatalf("reopened AsOf = %q; want %q", reopened.AsOf(), at)
 	}
 }
+
+func TestContractsViewIsCoherentAndDetached(t *testing.T) {
+	m := openMirror(t, filepath.Join(t.TempDir(), "contracts.db"))
+	if _, err := m.Replace(context.Background(), mirrorSnap()); err != nil {
+		t.Fatal(err)
+	}
+	snap, at, used := m.ContractsView()
+	if at == "" || snap.Season != 2026 || used["0001"] != 12*capUnit {
+		t.Fatalf("view: %+v %s %v", snap, at, used)
+	}
+	snap.Players[0].Salary = 0
+	snap.Adjustments[0].Description = "changed"
+	used["0001"] = 0
+	again, at2, used2 := m.ContractsView()
+	if again.Players[0].Salary == 0 || again.Adjustments[0].Description == "changed" || used2["0001"] != 12*capUnit || at != at2 {
+		t.Fatal("caller mutated mirror")
+	}
+}

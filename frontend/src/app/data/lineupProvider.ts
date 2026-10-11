@@ -2,7 +2,7 @@ import type { LineupCheck, LineupReading, Receipt } from './contract';
 import { parseLineup, parseLineupCheck } from './parseLineup';
 import { parseReceipt } from './parseEnvelope';
 import {
-  TargetLineup, TargetCheckLineup, TargetDraftLineup, TargetHandOff,
+  TargetLineup, TargetCheckLineup, TargetDraftLineup, TargetHandOff, TargetWithdrawRoster,
 } from '../../../wailsjs/go/main/App';
 
 export async function checkLineup(franchiseId: string, starters: string[]): Promise<LineupCheck> {
@@ -17,4 +17,8 @@ export async function handOff(correlationId: string): Promise<Receipt> {
 
 export async function lineup(franchiseId: string): Promise<LineupReading> {
   return parseLineup(await TargetLineup(franchiseId));
+}
+
+export async function withdrawRoster(correlationId: string): Promise<Receipt> {
+  return parseReceipt(await TargetWithdrawRoster(correlationId));
 }

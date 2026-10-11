@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,11 +9,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/injuries"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
@@ -126,12 +130,19 @@ func build(ctx context.Context, pools, hp, wp *db.Pools) (snapshot.Snapshot, clo
 	if err != nil {
 		return snapshot.Snapshot{}, clockReading{}, err
 	}
-	snap, err := snapshot.Build(ctx, snapshot.NewSource(mirror, rb), dir)
+	inj := archivedInjuries(ctx, hs, mirror.Season())
+	snap, err := snapshot.Build(ctx, snapshot.NewSource(mirror, rb), dir, inj)
 	if err != nil {
 		return snapshot.Snapshot{}, clockReading{}, fmt.Errorf("fixtures: build: %w", err)
 	}
 	snap.League.Provenance.Kind, snap.Franchises.Provenance.Kind = "fixture", "fixture"
 	snap.Rosters.Provenance.Kind, snap.Players.Provenance.Kind = "fixture", "fixture"
+	// The eligibility feeds carry the same fixture kind as the sections they mirror; the
+	// builder copied each source's provenance before the stamps above.
+	for source, prov := range snap.Eligibility.Feeds {
+		prov.Kind = "fixture"
+		snap.Eligibility.Feeds[source] = prov
+	}
 	clock, err := buildClock(ctx, wp, rb, mirror, snap)
 	return snap, clock, err
 }
@@ -183,10 +194,61 @@ func archivedDirectory(ctx context.Context, hs *history.Store, season int) (snap
 	return dir, nil
 }
 
+// archivedInjuries reads the newest archived injuries export, like the directory. Absent
+// bodies leave the feed failed, which reads as not-checked eligibility rather than a guess.
+func archivedInjuries(ctx context.Context, hs *history.Store, season int) snapshot.Injuries {
+	inj := snapshot.Injuries{Provenance: snapshot.Provenance{Source: "injuries", Kind: "fixture",
+		Freshness: domain.Freshness{State: domain.FreshFail, Note: "no archived injuries export"}}}
+	_, err := hs.ArchivedBodies(ctx, "TYPE="+injuries.Export, func(src string, body []byte, at time.Time) bool {
+		// The injuries export is league-less: a copy fetched without L matches too.
+		if !ingestion.SameLeaguelessExport(src, injuries.Export, season) {
+			return false
+		}
+		rows, perr := injuries.ParseToInjuries(ctx, body)
+		if perr != nil {
+			return false
+		}
+		statuses := make(map[string]string, len(rows))
+		for _, row := range rows {
+			statuses[row.ID.String()] = row.Status
+		}
+		inj.Status = statuses
+		inj.Provenance.Freshness = domain.Freshness{State: domain.FreshStale,
+			FetchedAt: at.UTC().Format(time.RFC3339), Note: "archived injuries export; no live fetch attempted"}
+		return true
+	})
+	if err != nil {
+		return snapshot.Injuries{Provenance: snapshot.Provenance{Source: "injuries", Kind: "fixture",
+			Freshness: domain.Freshness{State: domain.FreshFail, Note: "archived injuries unreadable"}}}
+	}
+	return inj
+}
+
 func writeSnapshot(out string, snap snapshot.Snapshot) error {
-	data, err := json.MarshalIndent(snap, "", "  ")
+	// The eligibility players are spliced in one per line: 1,450 near-identical verdict pairs
+	// would take fourteen pretty-printed lines each and dominate the file. Everything else
+	// keeps the indented encoding the other fixture files use, so the whole file stays
+	// diffable and cmd/fixtures remains its only producer.
+	players := snap.Eligibility.Players
+	snap.Eligibility.Players = nil
+	head, err := json.MarshalIndent(snap, "", "  ")
 	if err != nil {
 		return fmt.Errorf("fixtures: encode: %w", err)
+	}
+	section, err := eligibilityPlayers(players)
+	if err != nil {
+		return err
+	}
+	// The emptied field is the splice point; it occurs exactly once, or the encode changed
+	// shape and this writer must be revisited, not guessed past.
+	const marker = `    "players": null`
+	if bytes.Count(head, []byte(marker)) != 1 {
+		return fmt.Errorf("fixtures: eligibility players marker found %d times",
+			bytes.Count(head, []byte(marker)))
+	}
+	data := bytes.Replace(head, []byte(marker), section, 1)
+	if !json.Valid(data) {
+		return fmt.Errorf("fixtures: encoded snapshot is not valid JSON")
 	}
 	if err := os.MkdirAll(out, 0o750); err != nil {
 		return fmt.Errorf("fixtures: output directory: %w", err)
@@ -195,4 +257,39 @@ func writeSnapshot(out string, snap snapshot.Snapshot) error {
 		return fmt.Errorf("fixtures: write: %w", err)
 	}
 	return nil
+}
+
+// eligibilityPlayers encodes the eligibility players map with one player per line, sorted by
+// id, so repeated runs produce identical bytes. Each line carries the same object the
+// snapshot contract defines, only without the per-field newlines.
+func eligibilityPlayers(players map[string]eligibility.PlayerVerdicts) ([]byte, error) {
+	ids := make([]string, 0, len(players))
+	for id := range players {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	var buf bytes.Buffer
+	buf.WriteString(`    "players": {`)
+	for i, id := range ids {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+		key, err := json.Marshal(id)
+		if err != nil {
+			return nil, fmt.Errorf("fixtures: encode eligibility id %s: %w", id, err)
+		}
+		row, err := json.Marshal(players[id])
+		if err != nil {
+			return nil, fmt.Errorf("fixtures: encode eligibility player %s: %w", id, err)
+		}
+		buf.WriteString("\n      ")
+		buf.Write(key)
+		buf.WriteString(": ")
+		buf.Write(row)
+	}
+	if len(ids) > 0 {
+		buf.WriteString("\n    ")
+	}
+	buf.WriteString("}")
+	return buf.Bytes(), nil
 }

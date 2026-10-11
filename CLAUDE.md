@@ -16,7 +16,7 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 - **Latest state:** the newest `docs/build-handoffs/RESUME-*.md`.
 - **What exists:** `SYSTEM_MAP.md`.
 - **UI target track:** built in rings (`docs/build-handoffs/UI_Target_Roadmap_2026-10.md`), each
-  ending with a spec revision (`docs/ui/Target_UI_Spec_2026-10.md`, revision 1 on 2026-10-10).
+  ending with a spec revision (`docs/ui/Target_UI_Spec_2026-10.md`, revision 2 on 2026-10-11).
   Every endpoint is a row in `docs/ui/endpoint-registry.csv`; `frontend/scripts/gen-endpoints.mjs`
   generates `registry/endpoints.gen.ts` from it (never hand-edit the generated file).
   Ring 1 merged 2026-10-10 (PR #15). Ring 2, the decision layer, is next, with IR/taxi eligibility.
@@ -57,7 +57,7 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   `~/fleet/bin/panel-dispatch.sh <brief>`. Four seats from four labs, no Claude (Sol, Kimi, GLM,
   Nemotron); quotes are checked against their files; `ROUNDS=2` adds cross-examination. Its
   output is a recommendation to Christopher, not a decision.
-- **Christopher follows progress** in the savvy-progress `/agents` panel, where each pi session
+- **Christopher follows progress** in the savvy-progress `/fleet` panel, where each pi session
   (Sol's phases, each panel seat) shows as its own card.
 - **Claude runs live gates on Claude-OS (R12):** the production build (`make build`) against a
   snapshot of the live database, taken with SQLite's backup API, never a plain file copy.

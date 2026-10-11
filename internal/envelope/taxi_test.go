@@ -17,8 +17,8 @@ func TestDraftTaxiDirectionsAndBlocks(t *testing.T) {
 		state  State
 		note   string
 	}{
-		{"demote", domain.RosterActive, domain.RosterTaxi, Ready, "MFL checks them"},
-		{"promote", domain.RosterTaxi, domain.RosterActive, Ready, "MFL checks them"},
+		{"demote", domain.RosterActive, domain.RosterTaxi, Ready, "Not checked: eligibility not held; MFL will decide"},
+		{"promote", domain.RosterTaxi, domain.RosterActive, Ready, "Not checked: eligibility not held; MFL will decide"},
 		{"IR", domain.RosterIR, domain.RosterTaxi, Blocked, "player on IR"},
 		{"unknown status", "", domain.RosterTaxi, Blocked, "active or taxi roster status required"},
 	} {
@@ -74,47 +74,66 @@ func TestDraftTaxiUnavailable(t *testing.T) {
 	}
 }
 
-func TestTaxiPredicateDirections(t *testing.T) {
-	for _, destination := range []domain.RosterStatus{domain.RosterActive, domain.RosterTaxi} {
-		for _, tc := range []struct {
-			mode string
-			want Event
-		}{
-			{"match", Match}, {"baseline", NoChange}, {"gone", Contradiction},
-			{"IR instead", Contradiction}, {"failed feed", Partial}, {"wrong league", Partial},
-			{"missing franchise", Partial}, {"missing status", Partial},
-		} {
-			t.Run(string(destination)+"/"+tc.mode, func(t *testing.T) {
-				e, at, snap := testEnvelope(t)
-				spec := e.Receipt().Spec
-				spec.Intent = "roster.taxi"
-				spec.Expected.RosterStatus = destination
-				snap.Rosters.Value[0].Players[0].RosterStatus = destination
-				obs := observeAt(snap, at.Add(time.Minute))
-				switch tc.mode {
-				case "baseline":
-					obs.Rosters.Value[0].Players[0].RosterStatus = taxiDestination(destination)
-				case "gone":
-					obs.Rosters.Value[0].Players = nil
-				case "IR instead":
-					obs.Rosters.Value[0].Players[0].RosterStatus = domain.RosterIR
-				case "failed feed":
-					obs.Rosters.Provenance.Freshness.State = domain.FreshFail
-				case "wrong league":
-					obs.LeagueID = "other"
-				case "missing franchise":
-					obs.Rosters.Value = nil
-				case "missing status":
-					obs.Rosters.Value[0].Players[0].RosterStatus = ""
-				}
-				v := (TaxiPredicate{}).Evaluate(spec, obs)
-				if v.Event != tc.want || v.Note == "" {
-					t.Fatalf("verdict: %+v", v)
-				}
-				if !reflect.DeepEqual((TaxiPredicate{}).Sources(), []Source{Rosters}) {
-					t.Fatal("taxi must watch rosters")
-				}
-			})
+func TestRosterPredicateDirections(t *testing.T) {
+	for _, move := range []struct {
+		intent    string
+		squad     domain.RosterStatus
+		other     domain.RosterStatus
+		predicate Predicate
+	}{
+		{"roster.ir", domain.RosterIR, domain.RosterTaxi, IRPredicate{}},
+		{"roster.taxi", domain.RosterTaxi, domain.RosterIR, TaxiPredicate{}},
+	} {
+		for _, destination := range []domain.RosterStatus{domain.RosterActive, move.squad} {
+			for _, tc := range []struct {
+				mode string
+				want Event
+			}{
+				{"match", Match}, {"baseline", NoChange}, {"dropped", Contradiction},
+				{"other squad", Contradiction}, {"failed feed", Partial}, {"wrong league", Partial},
+				{"missing franchise", Partial}, {"missing status", Partial}, {"other franchise", Contradiction},
+			} {
+				t.Run(move.intent+"/"+string(destination)+"/"+tc.mode, func(t *testing.T) {
+					e, at, snap := testEnvelope(t)
+					spec := e.Receipt().Spec
+					spec.Intent = move.intent
+					spec.Expected.RosterStatus = destination
+					snap.Rosters.Value[0].Players[0].RosterStatus = destination
+					obs := observeAt(snap, at.Add(time.Minute))
+					switch tc.mode {
+					case "baseline":
+						baseline := move.squad
+						if destination == move.squad {
+							baseline = domain.RosterActive
+						}
+						obs.Rosters.Value[0].Players[0].RosterStatus = baseline
+					case "dropped":
+						obs.Rosters.Value[0].Players = nil
+					case "other squad":
+						obs.Rosters.Value[0].Players[0].RosterStatus = move.other
+					case "failed feed":
+						obs.Rosters.Provenance.Freshness.State = domain.FreshFail
+					case "wrong league":
+						obs.LeagueID = "other"
+					case "missing franchise":
+						obs.Rosters.Value = nil
+					case "missing status":
+						obs.Rosters.Value[0].Players[0].RosterStatus = ""
+					case "other franchise":
+						moved := obs.Rosters.Value[0]
+						moved.FranchiseID = "0002"
+						obs.Rosters.Value[0].Players = nil
+						obs.Rosters.Value = append(obs.Rosters.Value, moved)
+					}
+					v := move.predicate.Evaluate(spec, obs)
+					if v.Event != tc.want || v.Note == "" {
+						t.Fatalf("verdict: %+v", v)
+					}
+					if !reflect.DeepEqual(move.predicate.Sources(), []Source{Rosters}) {
+						t.Fatal("roster moves must watch rosters")
+					}
+				})
+			}
 		}
 	}
 }

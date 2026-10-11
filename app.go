@@ -16,12 +16,14 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
+	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/moves"
@@ -35,6 +37,7 @@ import (
 // App is the Wails root and the backend's composition root: it wires the stores and routes
 // IPC calls. Business logic lives in the engine, store and transaction packages, never here.
 type App struct {
+	whatifMu      sync.Mutex
 	keyMu         sync.Mutex
 	keyStore      *mflkey.Store
 	keyVerifiedAt string
@@ -47,6 +50,8 @@ type App struct {
 	pools       *db.Pools // thewarroom.db: the MFL mirror and app settings
 	histPools   *db.Pools // history.db: everything that cannot be rebuilt
 	whatifPools *db.Pools // whatif.db: moves made in the app, apart from MFL truth (R2)
+	// labData decodes the frozen Lab facts once per App; callers share the immutable result.
+	labData     func() (*lab.Data, error)
 	params      *params.Store
 	rulebook    *rulebook.Store
 	league      *state.Mirror // the league as MFL states it; every score surface reads it
@@ -86,6 +91,8 @@ type App struct {
 	seasonTransactions  heldSeasonFeed[[]leaguefeed.Transaction]
 	seasonLineups       heldSeasonFeed[leaguefeed.Lineups]
 	seasonPendingTrades heldSeasonFeed[[]leaguefeed.PendingTrade]
+	seasonInjuries      heldSeasonFeed[[]leaguefeed.Injury]
+	seasonFreeAgents    heldSeasonFeed[[]playerid.PlayerID]
 	lineupsWeek         int
 	seasonChanged       func(context.Context)
 	seasonPause         func(context.Context, time.Duration) error
@@ -98,6 +105,9 @@ type App struct {
 	movesTimer   func(time.Duration) (<-chan time.Time, func())
 	movesRefresh func(context.Context, envelope.Source) error
 	movesLog     func(string)
+	// fallbackLog writes the one run.log line each live-feed fallback emits; a test swaps it
+	// to capture the line. log.Print in production, like movesLog.
+	fallbackLog  func(string)
 	movesUnknown map[string]bool
 
 	refreshMu        sync.Mutex   // one MFL refresh at a time
@@ -136,12 +146,14 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 func NewApp() *App {
 	return &App{
 		started:       make(chan struct{}),
+		labData:       sync.OnceValues(lab.Load),
 		movesWake:     make(chan struct{}, 1),
 		movesChanged:  func(ctx context.Context) { runtime.EventsEmit(ctx, "target:moves") },
 		openURL:       runtime.BrowserOpenURL,
 		movesNow:      time.Now,
 		movesTimer:    newMovesTimer,
 		movesLog:      func(line string) { log.Print(line) },
+		fallbackLog:   func(line string) { log.Print(line) },
 		movesUnknown:  make(map[string]bool),
 		clockChanged:  func(ctx context.Context) { runtime.EventsEmit(ctx, "target:clock") },
 		seasonChanged: func(ctx context.Context) { runtime.EventsEmit(ctx, "target:season") },

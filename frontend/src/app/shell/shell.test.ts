@@ -7,7 +7,7 @@ import { snapshotSummary } from './snapshotSummary';
 import { FixtureProvider } from '../data/provider';
 
 describe('Shell routes and data', () => {
-  it('matches all six names and workspace names in spec §4, capped at three', () => {
+  it('matches all six names and workspace names in spec §4, with the Trade Floor history exception', () => {
     const spec = readFileSync('../docs/ui/Target_UI_Spec_2026-10.md', 'utf8');
     expect(nodeKeys).toEqual(['home', 'war', 'hq', 'trade', 'pulse', 'control']);
     for (const n of nodeKeys) {
@@ -20,7 +20,7 @@ describe('Shell routes and data', () => {
       expect(nodes[n].workspaces.map((w) => w.label.toLowerCase())).toEqual(
         names.map((name) => name.toLowerCase()),
       );
-      expect(nodes[n].workspaces.length).toBeLessThanOrEqual(3);
+      expect(nodes[n].workspaces.length).toBeLessThanOrEqual(n === 'trade' ? 4 : 3);
     }
   });
   it('round-trips every workspace and falls back safely', () => {

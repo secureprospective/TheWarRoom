@@ -1,0 +1,113 @@
+.twr-app .contracts { min-width: 0; display: grid; gap: 12px; font-size: 12px; overflow-wrap: normal; word-break: normal; }
+.twr-app .contract-reading { min-width: 0; border-top: 1px solid var(--surface-line); padding-top: 8px; }
+.twr-app .contract-reading h4 { margin-bottom: 6px; }
+.twr-app .contract-reading h5 { margin: 10px 0 4px; font-size: 12px; }
+.twr-app .contract-source, .twr-app .contract-footnote, .twr-app .contract-reading details { color: var(--surface-tx2); font-size: 11px; line-height: 1.4; }
+.twr-app .contract-source, .twr-app .contract-footnote { margin: 4px 0; }
+.twr-app .contract-reading summary { cursor: pointer; }
+.twr-app .contract-money, .twr-app .contracts .kv dd { white-space: nowrap; font-family: var(--surface-mono); font-variant-numeric: tabular-nums; }
+.twr-app .contract-years { width: 100%; border-collapse: collapse; }
+.twr-app .contract-years :is(th, td) { padding: 3px 6px; text-align: left; border-bottom: 1px solid var(--surface-line); }
+.twr-app .contract-years thead, .twr-app .contract-years td:last-child { color: var(--surface-tx2); }
+.twr-app .contract-years .contract-money { text-align: right; }
+.twr-app .contract-adjustments { list-style: none; margin: 0; padding: 0; }
+.twr-app .contract-adjustments li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 8px 0; border-bottom: 1px solid var(--surface-line); }
+.twr-app .contract-adjustments p { grid-column: 1 / -1; color: var(--surface-tx2); line-height: 1.6; }
+.twr-app .contract-controls { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: end; }
+.twr-app .contract-controls label { display: grid; gap: 3px; min-width: 100px; max-width: 100%; }
+.twr-app .contract-controls button { color: var(--surface-tx1); background: var(--surface-1); border: 1px solid var(--surface-line-hi); font: inherit; padding: 5px; max-width: 100%; }
+.twr-app .contract-controls p { flex-basis: 100%; color: var(--surface-tx2); margin: 0; }
+.twr-app .contract-controls button:focus-visible, .twr-app .contracts summary:focus-visible { outline: 1px solid var(--surface-tx1); outline-offset: 2px; }
+.twr-app .contract-controls button { cursor: pointer; }
+.twr-app .contract-controls button:hover { background: var(--surface-3); }
+.twr-app .contract-table-container { container-type: inline-size; min-width: 0; }
+.twr-app .contract-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.twr-app .contract-table :is(td, th) { padding: 4px 6px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--surface-line); word-break: normal; overflow-wrap: normal; line-height: 18px; }
+.twr-app .contract-table th { color: var(--surface-tx2); font-weight: 500; }
+.twr-app .contract-table th:first-child { width: 42%; }
+.twr-app .contract-table th:nth-child(2) { width: 28%; }
+.twr-app .contract-table[data-team-column="true"] th:first-child { width: 32%; }
+.twr-app .contract-table[data-team-column="true"] th:nth-child(2) { width: 24%; }
+.twr-app .contract-table[data-team-column="true"] th:nth-child(3) { width: 20%; }
+.twr-app .contract-table [data-mine="true"] { background: var(--surface-2); }
+.twr-app .contract-table .act { font-weight: 600; padding: 0; }
+.twr-app .contract-position { color: var(--surface-tx2); font-size: 10px; white-space: nowrap; }
+@container (max-width: 760px) {
+  .twr-app .contract-table :is(td, th) { padding: 2px 4px; }
+  .twr-app .contract-table td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .twr-app .contract-table td:first-child .act { max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+  .twr-app .contract-table .contract-money { overflow: visible; text-overflow: clip; font-size: 11px; }
+}
+.twr-app .contracts > .contract-reading[aria-label="My franchise cap"] .kv { grid-template-columns: auto 1fr auto 1fr auto 1fr; margin-bottom: 6px; gap: 4px 8px; }
+.twr-app .contracts > .contract-reading[aria-label="My franchise cap"] .kv dd { text-align: left; }
+.twr-app .insp .contracts > .contract-reading[aria-label="My franchise cap"] .kv { grid-template-columns: 1fr auto; }
+.twr-app .contracts > .contract-reading[aria-label="My franchise cap"] { container: contract-cap / inline-size; }
+@container contract-cap (max-width: 480px) {
+  .twr-app .contracts > .contract-reading[aria-label="My franchise cap"] .kv { grid-template-columns: 1fr auto; }
+  .twr-app .contracts > .contract-reading[aria-label="My franchise cap"] .kv dd { text-align: right; }
+}
+.twr-app .whatif-panel { min-width: 0; container: whatif / inline-size; }
+.twr-app .whatif-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.twr-app .whatif-heading p { color: var(--surface-tx1); }
+.twr-app .whatif-moves { padding-left: 20px; margin: 6px 0 12px; }
+.twr-app .whatif-moves li { padding: 6px 0; border-bottom: 1px solid var(--surface-line); }
+.twr-app .whatif-moves li > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+.twr-app .whatif-moves p { color: var(--surface-tx2); margin: 4px 0; white-space: normal; }
+.twr-app .whatif-figures { width: 100%; border-collapse: collapse; font-size: 11px; }
+.twr-app .whatif-figures :is(th, td) { padding: 4px; border-bottom: 1px solid var(--surface-line); text-align: right; }
+.twr-app .whatif-figures th:first-child { text-align: left; font-weight: 500; }
+.twr-app .contract-whatif-column { width: 120px; white-space: nowrap; }
+.twr-app .contract-table td.contract-whatif-column { overflow: visible; }
+.twr-app .contract-menu { position: relative; }
+.twr-app .contract-menu summary { white-space: nowrap; color: var(--surface-tx1); }
+.twr-app .contract-menu .contract-whatif-acts { position: fixed; z-index: 20; overflow-y: auto; box-sizing: border-box; padding: 10px; background: var(--surface-1); border: 1px solid var(--surface-line-hi); }
+.twr-app .contract-whatif-acts { display: grid; gap: 6px; white-space: normal; }
+.twr-app .contract-whatif-acts p { color: var(--surface-tx2); font-size: 11px; line-height: 1.4; margin: 0; }
+.twr-app .contract-menu .contract-whatif-acts .act { padding: 5px 8px; white-space: normal; font-weight: 400; }
+.twr-app .contract-whatif-tag { font-size: 10px; color: var(--surface-tx2); white-space: nowrap; }
+.twr-app .contracts .act-command { margin: 0; padding: 5px 8px; color: var(--surface-tx1); border-color: var(--surface-line-hi); }
+.twr-app .contracts .act-command:hover:not(:disabled) { background: var(--surface-3); }
+.twr-app .contracts .act-command:disabled { opacity: .55; cursor: not-allowed; }
+.twr-app .contracts .act-command:focus-visible { outline: 1px solid var(--surface-tx1); outline-offset: 2px; }
+.twr-app .whatif-moves .act { margin-left: auto; }
+.twr-app .whatif-status { min-height: 18px; margin: 0; color: var(--surface-tx2); }
+@container whatif (max-width: 480px) {
+  .twr-app .whatif-figures tr { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+  .twr-app .whatif-figures th:first-child { grid-column: 1 / -1; }
+}
+.twr-app .contract-table[data-team-column="false"] th:first-child { width: 34%; }
+.twr-app .contract-table[data-team-column="false"] th:nth-child(2) { width: 23%; }
+.twr-app .contract-table[data-team-column="false"] th:nth-child(3) { width: 25%; white-space: nowrap; }
+.twr-app .contract-table[data-team-column="false"] th:last-child { width: 18%; }
+.twr-app .contract-whatif-acts .act { font-family: inherit; }
+.twr-app .contract-reading[aria-label="What-if"] > p { margin: 0; }
+.twr-app .release-plans { min-width: 0; font-size: 12px; }
+.twr-app .release-post { white-space: pre-wrap; font: inherit; overflow-wrap: normal; margin: 8px 0; }
+.twr-app .release-confirm { display: contents; }
+.twr-app .release-confirm p { flex-basis: 100%; }
+
+.twr-app .whatif-moves .whatif-plan-line { height: 30px; margin: 4px 0; align-items: center; }
+.twr-app .whatif-plan-line > p { margin: 0; line-height: 18px; }
+
+.twr-app .contract-act-form { display: grid; gap: 8px; min-width: 0; }
+.twr-app .contract-act-form label { display: grid; gap: 4px; }
+.twr-app .contract-act-form input, .twr-app .contract-act-form select { width: 100%; box-sizing: border-box; min-width: 0; }
+.twr-app .contract-act-form ul { padding-left: 16px; white-space: normal; }
+.twr-app .contract-act-form table { font-size: 10px; }
+
+.twr-app .release-plans > h4 { margin-top: 12px; margin-bottom: 6px; }
+
+.twr-app .contract-act-form { border: 0; padding: 0; margin: 0; }
+.twr-app .contract-table .contract-opened { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; margin: 0; }
+.twr-app .contract-move-subject { margin: 0 0 8px; color: var(--surface-tx2); }
+.twr-app .contract-act-figures { display: grid; gap: 4px; min-width: 0; }
+.twr-app article.bid-plan.contract-act-card { display: grid; gap: 10px; }
+.twr-app article.bid-plan.contract-act-card > * { margin: 0; }
+.twr-app article.bid-plan.contract-act-card { scroll-margin-top: 8px; }
+
+.twr-app .contract-menu-overlay { position: fixed; top: 0; left: 0; width: 0; height: 0; z-index: 20; }
+
+.twr-app .contract-act-form input, .twr-app .contract-act-form select { background: var(--surface-0); color: var(--surface-tx1); border: 1px solid var(--surface-line-hi); border-radius: 4px; padding: 6px 8px; font: inherit; }
+.twr-app .contract-act-form input:focus-visible, .twr-app .contract-act-form select:focus-visible { outline: 2px solid var(--surface-tx1); outline-offset: 2px; }
+
+.twr-app .contract-move-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }

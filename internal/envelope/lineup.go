@@ -3,7 +3,6 @@ package envelope
 import (
 	"fmt"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -23,7 +22,7 @@ func validateExpected(s Spec) error {
 		return validateLineupExpected(s)
 	}
 
-	if s.Expected.Lineup != nil || s.Expected.Player.String() == "" || s.Expected.RosterStatus == "" ||
+	if s.Expected.Lineup != nil || s.Expected.Player.String() == "" || (s.Expected.RosterStatus == "" && !IsRelease(s.Intent) && !IsContract(s.Intent)) ||
 		!slices.Contains(s.Subject.Players, s.Expected.Player) {
 		return fmt.Errorf("envelope: expected change must name a subject player and status")
 	}
@@ -88,7 +87,7 @@ func (c LineupCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
 		blocks = append(blocks, "MFL's saved lineup is unknown, so a change could not be confirmed")
 	}
 	if len(blocks) > 0 {
-		return CheckResult{Blocked: true, Note: strings.Join(blocks, "; ")}
+		return CheckResult{Blocked: true, Note: reasonNote(blocks)}
 	}
 	if snap.Rosters.Provenance.Freshness.State == domain.FreshFail {
 		return CheckResult{Blocked: true, Note: "roster unavailable"}
@@ -114,7 +113,7 @@ func (c LineupCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
 		notes = append(notes, p.Message)
 	}
 	if !result.Legal {
-		return CheckResult{Blocked: true, Note: strings.Join(notes, "; ")}
+		return CheckResult{Blocked: true, Note: reasonNote(notes)}
 	}
 	if samePlayers(s.Expected.Lineup.Starters, s.Expected.Lineup.Baseline) {
 		return CheckResult{Blocked: true,
@@ -122,7 +121,7 @@ func (c LineupCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
 	}
 	note := "legal"
 	if !result.Full {
-		note = "legal, partial; " + strings.Join(notes, "; ")
+		note = "legal, partial; " + reasonNote(notes)
 	}
 	return CheckResult{Note: note}
 }

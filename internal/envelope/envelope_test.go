@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -44,13 +45,15 @@ func observeAt(snap snapshot.Snapshot, at time.Time) Observation {
 
 // Written out by hand, independently of the table, so the test is not a copy of the code.
 func wantTransitions() map[State]map[Event]State {
-	return map[State]map[Event]State{
-		Draft:         {ChecksPass: Ready, ChecksBlock: Blocked},
-		Blocked:       {ChecksPass: Ready, ChecksBlock: Blocked},
-		Ready:         {HandOff: HandedOff, Invalidate: Stale},
-		Stale:         {Rebase: Draft},
+	m := map[State]map[Event]State{
+		Draft:         {ChecksPass: Ready, ChecksBlock: Blocked, Withdraw: Withdrawn},
+		Blocked:       {ChecksPass: Ready, ChecksBlock: Blocked, Withdraw: Withdrawn, Invalidate: Stale},
+		Ready:         {HandOff: HandedOff, Invalidate: Stale, Withdraw: Withdrawn},
+		Stale:         {Rebase: Draft, Withdraw: Withdrawn},
 		Failed:        {Rebase: Draft},
-		Landed:        {},
+		Landed:        {Invalidate: Landed},
+		AwardedOffApp: {},
+		Withdrawn:     {},
 		HandedOff:     observed(NotYetDone, true),
 		NotYetDone:    observed(NotYetDone, true),
 		NotVerified:   observed(NotYetDone, true),
@@ -58,6 +61,14 @@ func wantTransitions() map[State]map[Event]State {
 		BidPending:    observed(BidPending, false),
 		WaiverPending: observed(WaiverPending, false),
 	}
+	for _, s := range []State{HandedOff, NotYetDone, NotVerified, BidPending} {
+		m[s][AwardedElsewhere] = AwardedOffApp
+	}
+	// Withdrawal ends a local plan, not an off-app post.
+	for _, s := range []State{HandedOff, NotYetDone, NotVerified, BidPending} {
+		m[s][Withdraw] = Withdrawn
+	}
+	return m
 }
 
 func observed(noChange State, canAwait bool) map[Event]State {
@@ -71,7 +82,7 @@ func observed(noChange State, canAwait bool) map[Event]State {
 
 func TestExhaustiveTransitionTable(t *testing.T) {
 	events := []Event{ChecksPass, ChecksBlock, HandOff, NoChange, Match, Partial, Contradiction,
-		Invalidate, Rebase, AwaitDOT, AwaitBid, AwaitWaiver}
+		Invalidate, Rebase, AwaitDOT, AwaitBid, AwaitWaiver, AwardedElsewhere, Withdraw}
 	want := wantTransitions()
 	listed := 0
 	for _, to := range want {
@@ -118,12 +129,16 @@ func TestIRChecksAndUnmapped(t *testing.T) {
 		want              State
 		note              string
 	}{
-		{"ready but eligibility unknown", domain.RosterActive, false, false, Ready,
-			"not verified (league rules not captured)"},
-		{"already IR", domain.RosterIR, false, false, Blocked, "player already on IR"},
+		{"ready but eligibility not held", domain.RosterActive, false, false, Ready,
+			"Not checked: eligibility not held; MFL will decide"},
+		{"placement refused for an on-IR player", domain.RosterIR, false, false, Blocked,
+			"active or IR roster status required"},
+		{"taxi squad", domain.RosterTaxi, false, false, Blocked,
+			"player on the taxi squad cannot move to or from IR"},
+		{"unknown status", "", false, false, Blocked, "active or IR roster status required"},
 		{"not owned", domain.RosterActive, true, false, Blocked, "player is not on this franchise's roster"},
 		{"unmapped keeps the check's note", domain.RosterIR, false, true, Blocked,
-			"player already on IR; MFL target not verified"},
+			"active or IR roster status required; MFL target not verified"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			e, at, snap := testEnvelope(t)
@@ -240,7 +255,7 @@ func TestDeadlineStaleAndValueIsolation(t *testing.T) {
 	if _, err := e.HandOff(at.Add(time.Hour)); err == nil {
 		t.Fatal("stale handed off")
 	}
-	rebased, err := e.Rebase(at.Add(time.Hour))
+	rebased, err := e.Rebase(at.Add(time.Hour), "explicit revalidation required")
 	if err != nil || rebased.State() != Draft {
 		t.Fatal(rebased, err)
 	}
@@ -329,5 +344,146 @@ func TestPendingStagesFollowHandOff(t *testing.T) {
 	e.state, e.spec.Intent = Landed, "trade.propose"
 	if _, err := e.Await(at, AwaitDOT); err == nil {
 		t.Fatal("landed is terminal")
+	}
+}
+
+func mustTestID(t *testing.T) playerid.PlayerID {
+	t.Helper()
+	id, err := playerid.New("0531")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
+// eligibilitySnapshot installs held verdicts for one player, the shape TargetSnapshot builds.
+func eligibilitySnapshot(snap snapshot.Snapshot, id playerid.PlayerID, v eligibility.PlayerVerdicts) snapshot.Snapshot {
+	snap.Eligibility = snapshot.Eligibility{
+		Players: map[string]eligibility.PlayerVerdicts{id.String(): v},
+		Feeds: map[string]snapshot.Provenance{
+			eligibility.SourceRosters:  {Freshness: domain.Freshness{State: domain.FreshLive}},
+			eligibility.SourceInjuries: {Freshness: domain.Freshness{State: domain.FreshLive}},
+			eligibility.SourcePlayers:  {Freshness: domain.Freshness{State: domain.FreshLive}},
+		},
+	}
+	return snap
+}
+
+func TestIRCheckConsultsHeldEligibility(t *testing.T) {
+	id := mustTestID(t)
+	for _, tc := range []struct {
+		name    string
+		status  domain.RosterStatus
+		verdict eligibility.Verdict
+		reason  string
+		source  string
+		want    State
+		note    string
+	}{
+		{"eligible passes with the feed named", domain.RosterActive, eligibility.Eligible, "",
+			eligibility.SourceInjuries, Ready, "eligibility checked (MFL injuries)"},
+		{"ineligible blocks with the reason", domain.RosterActive, eligibility.Ineligible,
+			"not on NFL injured reserve", eligibility.SourceInjuries, Blocked, "not on NFL injured reserve"},
+		{"capacity blocks", domain.RosterActive, eligibility.Ineligible, "IR full (12/12)",
+			eligibility.SourceRosters, Blocked, "IR full (12/12)"},
+		{"unknown stays available for MFL to decide", domain.RosterActive, eligibility.Unknown, "stale",
+			eligibility.SourceInjuries, Ready, "Not checked: stale; MFL will decide"},
+		{"activate eligible", domain.RosterIR, eligibility.Eligible, "",
+			eligibility.SourceRosters, Ready, "eligibility checked (MFL rosters)"},
+		{"activate not checked", domain.RosterIR, eligibility.Unknown, "no roster held",
+			eligibility.SourceRosters, Ready, "Not checked: no roster held; MFL will decide"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e, at, snap := testEnvelope(t)
+			direction := eligibility.ToIR
+			if tc.status == domain.RosterIR {
+				e.spec.Expected.RosterStatus = domain.RosterActive
+				direction = eligibility.OffIR
+			}
+			snap.Rosters.Value[0].Players[0].RosterStatus = tc.status
+			snap = eligibilitySnapshot(snap, id, eligibility.PlayerVerdicts{
+				IR: eligibility.Decision{Direction: direction, Verdict: tc.verdict,
+					Reason: tc.reason, Source: tc.source},
+			})
+			got, err := e.Check(at, snap, IRCheck{})
+			if err != nil || got.State() != tc.want || got.Receipt().Audit[0].Note != tc.note {
+				t.Fatalf("%+v %v", got.Receipt(), err)
+			}
+		})
+	}
+}
+
+func TestTaxiCheckConsultsHeldEligibility(t *testing.T) {
+	id := mustTestID(t)
+	for _, tc := range []struct {
+		name    string
+		status  domain.RosterStatus
+		verdict eligibility.Verdict
+		reason  string
+		source  string
+		want    State
+		note    string
+	}{
+		{"demote blocked by experience", domain.RosterActive, eligibility.Ineligible,
+			"3 or more years of NFL experience (drafted 2017)", eligibility.SourcePlayers, Blocked,
+			"3 or more years of NFL experience (drafted 2017)"},
+		{"demote blocked by capacity", domain.RosterActive, eligibility.Ineligible, "taxi full (8/8)",
+			eligibility.SourceRosters, Blocked, "taxi full (8/8)"},
+		{"demote eligible", domain.RosterActive, eligibility.Eligible, "", eligibility.SourcePlayers,
+			Ready, "eligibility checked (MFL players)"},
+		{"promote eligible", domain.RosterTaxi, eligibility.Eligible, "", eligibility.SourceRosters,
+			Ready, "eligibility checked (MFL rosters)"},
+		{"promote not checked", domain.RosterTaxi, eligibility.Unknown, "no draft year held",
+			eligibility.SourcePlayers, Ready, "Not checked: no draft year held; MFL will decide"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e, at, snap := testEnvelope(t)
+			e.spec.Intent = "roster.taxi"
+			e.spec.Expected.RosterStatus = domain.RosterTaxi
+			if tc.status == domain.RosterTaxi {
+				e.spec.Expected.RosterStatus = domain.RosterActive
+			}
+			snap.Rosters.Value[0].Players[0].RosterStatus = tc.status
+			snap = eligibilitySnapshot(snap, id, eligibility.PlayerVerdicts{
+				Taxi: eligibility.Decision{Direction: eligibility.ToTaxi, Verdict: tc.verdict,
+					Reason: tc.reason, Source: tc.source},
+			})
+			got, err := e.Check(at, snap, TaxiCheck{})
+			if err != nil || got.State() != tc.want || got.Receipt().Audit[0].Note != tc.note {
+				t.Fatalf("%+v %v", got.Receipt(), err)
+			}
+		})
+	}
+}
+
+func TestReadyPlanReturnsToDraftWhenIneligible(t *testing.T) {
+	id := mustTestID(t)
+	e, at, snap := testEnvelope(t)
+	snap = eligibilitySnapshot(snap, id, eligibility.PlayerVerdicts{
+		IR: eligibility.Decision{Direction: eligibility.ToIR, Verdict: eligibility.Eligible,
+			Source: eligibility.SourceInjuries},
+	})
+	ready, err := e.Check(at, snap, IRCheck{})
+	if err != nil || ready.State() != Ready {
+		t.Fatalf("ready: %+v %v", ready.Receipt(), err)
+	}
+	// The eligibility turns against the plan; only the envelope's own route reaches Draft.
+	reason := "player no longer eligible: not on NFL injured reserve"
+	invalidated, err := ready.Invalidate(at.Add(time.Minute), reason)
+	if err != nil || invalidated.State() != Stale {
+		t.Fatalf("invalidate: %+v %v", invalidated.Receipt(), err)
+	}
+	drafted, err := invalidated.Rebase(at.Add(time.Minute), reason)
+	if err != nil || drafted.State() != Draft {
+		t.Fatalf("rebase: %+v %v", drafted.Receipt(), err)
+	}
+	audit := drafted.Receipt().Audit
+	if audit[len(audit)-1].Note != reason || audit[len(audit)-2].Note != reason ||
+		audit[len(audit)-1].From != Stale || audit[len(audit)-2].From != Ready {
+		t.Fatalf("audit must carry the reason on both legs: %+v", audit)
+	}
+	// A Ready plan may not jump to Draft directly.
+	if _, err := ready.move(at.Add(time.Minute), Rebase, reason); err == nil {
+		t.Fatal("ready skipped Invalidate")
 	}
 }

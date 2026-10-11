@@ -16,6 +16,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -51,7 +52,12 @@ func seedLeague(t *testing.T, path string) {
 	if err := mirror.Initialize(ctx); err != nil {
 		t.Fatal(err)
 	}
-	_, err = mirror.Replace(ctx, state.MirrorSnapshot{Season: 2026, Players: []state.MirrorPlayer{{MFLID: "0531", FranchiseID: "0001", Salary: 100000000, ContractYear: 2027, ContractStatus: domain.CStatusUFA, RosterStatus: domain.RosterTaxi}}})
+	// The taxi player carries the cap-discount assertion; the active one gives the envelope
+	// demo a player the IR rules can leave unchecked.
+	_, err = mirror.Replace(ctx, state.MirrorSnapshot{Season: 2026, Players: []state.MirrorPlayer{
+		{MFLID: "0531", FranchiseID: "0001", Salary: 100000000, ContractYear: 2027, ContractStatus: domain.CStatusUFA, RosterStatus: domain.RosterTaxi},
+		{MFLID: "0532", FranchiseID: "0001", Salary: 10000000, ContractYear: 2027, ContractStatus: domain.CStatusUFA, RosterStatus: domain.RosterActive},
+	}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,10 +136,11 @@ func TestRunUsesStoresAndLeavesSnapshotsUntouched(t *testing.T) {
 	if err := json.Unmarshal(data, &snap); err != nil {
 		t.Fatal(err)
 	}
-	if len(snap.Players.Value) != 1 || snap.Players.Value[0].Name != "Newest" || snap.Players.Value[0].ID.String() != "0531" {
+	if len(snap.Players.Value) != 2 || snap.Players.Value[0].Name != "Newest" || snap.Players.Value[0].ID.String() != "0531" {
 		t.Fatal(snap.Players)
 	}
-	if snap.Franchises.Value[0].CapUsed == nil || *snap.Franchises.Value[0].CapUsed != 50000000 {
+	// The taxi player's salary counts half (the rulebook discount), the active one in full.
+	if snap.Franchises.Value[0].CapUsed == nil || *snap.Franchises.Value[0].CapUsed != 60000000 {
 		t.Fatal("did not use rulebook's taxi discount", snap.Franchises)
 	}
 	for _, p := range []snapshot.Provenance{snap.League.Provenance, snap.Franchises.Provenance, snap.Rosters.Provenance, snap.Players.Provenance} {
@@ -143,6 +150,24 @@ func TestRunUsesStoresAndLeavesSnapshotsUntouched(t *testing.T) {
 	}
 	if snap.Players.Provenance.Freshness.FetchedAt != "2026-10-05T02:00:00Z" {
 		t.Fatal(snap.Players.Provenance)
+	}
+	// The eligibility section rides the compact one-line-per-player writer; unmarshalling
+	// through the real snapshot types proves the splice produced contract JSON. The seeded
+	// run is offline — no archived injuries copy, a stale directory, a live mirror — so the
+	// active player is not checked on both slots and the taxi player's cross-status verdicts
+	// come from the live rosters.
+	if len(snap.Eligibility.Players) != 2 {
+		t.Fatalf("eligibility players: %v", snap.Eligibility.Players)
+	}
+	p0532 := snap.Eligibility.Players["0532"]
+	if p0532.IR.Verdict != eligibility.Unknown || p0532.IR.Reason != "stale" ||
+		p0532.Taxi.Verdict != eligibility.Unknown || p0532.Taxi.Reason != "stale" {
+		t.Fatalf("active player eligibility = %+v, want unknown stale on both slots", p0532)
+	}
+	p0531 := snap.Eligibility.Players["0531"]
+	if p0531.IR.Verdict != eligibility.Ineligible || p0531.IR.Reason != "on the taxi squad" ||
+		p0531.Taxi.Direction != eligibility.OffTaxi || p0531.Taxi.Verdict != eligibility.Eligible {
+		t.Fatalf("taxi player eligibility = %+v, want rosters verdicts", p0531)
 	}
 	assertFixtureClock(t, filepath.Join(out, "clock.json"))
 	if err := run(context.Background(), args); err != nil {

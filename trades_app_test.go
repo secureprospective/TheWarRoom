@@ -134,7 +134,7 @@ func TestTradeDraftHandOffWatcher(t *testing.T) {
 						Counterparty: offer.OfferedTo, Gave: offer.Gives, CounterpartyGave: offer.Gets,
 					},
 				}}
-			case envelope.Rosters, envelope.Lineups:
+			case envelope.Rosters, envelope.Contracts, envelope.Lineups:
 				t.Fatalf("unexpected feed %s", source)
 			}
 			return nil

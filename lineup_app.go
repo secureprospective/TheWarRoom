@@ -129,6 +129,9 @@ func (r *LineupReading) populate(snap snapshot.Snapshot, season SeasonReading, r
 
 func joinNote(notes ...string) string {
 	kept := slices.DeleteFunc(notes, func(n string) bool { return n == "" })
+	for i, note := range kept {
+		kept[i] = strings.TrimRight(note, ".; ")
+	}
 	return strings.Join(kept, "; ")
 }
 

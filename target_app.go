@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/url"
+	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -27,7 +28,8 @@ func (a *App) TargetSnapshot() (snapshot.Snapshot, error) {
 	ctx, cancel := context.WithTimeout(a.ctx, rasFetchTimeout)
 	defer cancel()
 	dir := a.targetDirectory(ctx)
-	snap, err := snapshot.Build(a.ctx, snapshot.NewSource(a.league, a.rulebook), dir)
+	inj := a.targetInjuries(ctx)
+	snap, err := snapshot.Build(a.ctx, snapshot.NewSource(a.league, a.rulebook), dir, inj)
 	if err != nil {
 		return snapshot.Snapshot{}, fmt.Errorf("target snapshot: build: %w", err)
 	}
@@ -60,7 +62,7 @@ func (a *App) targetDirectory(ctx context.Context) snapshot.Directory {
 			return []normalize.Lookup{lk}, nil
 		},
 		bodies: a.history.ArchivedBodies,
-	})
+	}, a.fallbackLog)
 	p := snapshot.Provenance{Source: "mfl-players", Kind: "live", Freshness: fresh}
 	if err != nil {
 		p.Freshness = domain.Freshness{State: domain.FreshFail, Note: err.Error()}
@@ -74,6 +76,24 @@ func (a *App) targetDirectory(ctx context.Context) snapshot.Directory {
 		p.Source = "mfl-players-archive"
 	}
 	return snapshot.Directory{Lookup: rows[0], Provenance: p}
+}
+
+// targetInjuries returns the held injuries feed, fetching it on first use like the directory,
+// so a snapshot taken while the season refresh is still running still carries live rules. The
+// caller holds refreshMu; the hold itself is guarded by seasonMu.
+func (a *App) targetInjuries(ctx context.Context) snapshot.Injuries {
+	if !a.injuriesHeld() {
+		inner, cancel := context.WithTimeout(ctx, m2Timeout)
+		a.refreshInjuries(inner)
+		cancel()
+	}
+	return a.heldInjuries()
+}
+
+func (a *App) injuriesHeld() bool {
+	a.seasonMu.Lock()
+	defer a.seasonMu.Unlock()
+	return !a.seasonInjuries.fetchedAt.IsZero()
 }
 
 // TargetClock reads the phase log and commissioner calendar from the local store; no network.
@@ -177,5 +197,8 @@ func (a *App) TargetMoves(franchiseID string) ([]envelope.Receipt, error) {
 	if err != nil {
 		return nil, fmt.Errorf("target moves: list: %w", err)
 	}
-	return receipts, nil
+	// Bid plans carry facts the move rail cannot show; TargetBidPlans lists them.
+	return slices.DeleteFunc(receipts, func(r envelope.Receipt) bool {
+		return r.Spec.Intent == envelope.BidIntent || envelope.IsRelease(r.Spec.Intent) || envelope.IsContract(r.Spec.Intent)
+	}), nil
 }

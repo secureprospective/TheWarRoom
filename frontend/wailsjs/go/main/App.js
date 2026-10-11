@@ -118,6 +118,38 @@ export function TargetAlerts(arg1) {
   return window['go']['main']['App']['TargetAlerts'](arg1);
 }
 
+export function TargetAssetProfile(arg1) {
+  return window['go']['main']['App']['TargetAssetProfile'](arg1);
+}
+
+export function TargetBidDraft(arg1) {
+  return window['go']['main']['App']['TargetBidDraft'](arg1);
+}
+
+export function TargetBidHandOff(arg1) {
+  return window['go']['main']['App']['TargetBidHandOff'](arg1);
+}
+
+export function TargetBidPlans(arg1) {
+  return window['go']['main']['App']['TargetBidPlans'](arg1);
+}
+
+export function TargetBidPosted(arg1) {
+  return window['go']['main']['App']['TargetBidPosted'](arg1);
+}
+
+export function TargetBidPreview(arg1) {
+  return window['go']['main']['App']['TargetBidPreview'](arg1);
+}
+
+export function TargetBidRevise(arg1, arg2) {
+  return window['go']['main']['App']['TargetBidRevise'](arg1, arg2);
+}
+
+export function TargetBidWithdraw(arg1) {
+  return window['go']['main']['App']['TargetBidWithdraw'](arg1);
+}
+
 export function TargetCheckLineup(arg1, arg2) {
   return window['go']['main']['App']['TargetCheckLineup'](arg1, arg2);
 }
@@ -130,8 +162,28 @@ export function TargetClock() {
   return window['go']['main']['App']['TargetClock']();
 }
 
+export function TargetContractActs(arg1) {
+  return window['go']['main']['App']['TargetContractActs'](arg1);
+}
+
+export function TargetContracts(arg1) {
+  return window['go']['main']['App']['TargetContracts'](arg1);
+}
+
+export function TargetCounterpartTeam(arg1) {
+  return window['go']['main']['App']['TargetCounterpartTeam'](arg1);
+}
+
+export function TargetCounterparties(arg1) {
+  return window['go']['main']['App']['TargetCounterparties'](arg1);
+}
+
 export function TargetDraftIR(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftIR'](arg1, arg2);
+}
+
+export function TargetDraftLab(arg1) {
+  return window['go']['main']['App']['TargetDraftLab'](arg1);
 }
 
 export function TargetDraftLineup(arg1, arg2) {
@@ -154,12 +206,48 @@ export function TargetLineup(arg1) {
   return window['go']['main']['App']['TargetLineup'](arg1);
 }
 
+export function TargetMarket(arg1) {
+  return window['go']['main']['App']['TargetMarket'](arg1);
+}
+
+export function TargetMarketLists(arg1) {
+  return window['go']['main']['App']['TargetMarketLists'](arg1);
+}
+
+export function TargetMarketStretches(arg1) {
+  return window['go']['main']['App']['TargetMarketStretches'](arg1);
+}
+
 export function TargetMoves(arg1) {
   return window['go']['main']['App']['TargetMoves'](arg1);
 }
 
+export function TargetOffers(arg1) {
+  return window['go']['main']['App']['TargetOffers'](arg1);
+}
+
+export function TargetPickClock(arg1) {
+  return window['go']['main']['App']['TargetPickClock'](arg1);
+}
+
+export function TargetPlayerContract(arg1) {
+  return window['go']['main']['App']['TargetPlayerContract'](arg1);
+}
+
+export function TargetPool(arg1) {
+  return window['go']['main']['App']['TargetPool'](arg1);
+}
+
+export function TargetPoolRefresh(arg1) {
+  return window['go']['main']['App']['TargetPoolRefresh'](arg1);
+}
+
 export function TargetPulseNow() {
   return window['go']['main']['App']['TargetPulseNow']();
+}
+
+export function TargetReleasePlans(arg1) {
+  return window['go']['main']['App']['TargetReleasePlans'](arg1);
 }
 
 export function TargetSeason() {
@@ -172,4 +260,12 @@ export function TargetSnapshot() {
 
 export function TargetTrades(arg1) {
   return window['go']['main']['App']['TargetTrades'](arg1);
+}
+
+export function TargetWhatIf(arg1) {
+  return window['go']['main']['App']['TargetWhatIf'](arg1);
+}
+
+export function TargetWithdrawRoster(arg1) {
+  return window['go']['main']['App']['TargetWithdrawRoster'](arg1);
 }

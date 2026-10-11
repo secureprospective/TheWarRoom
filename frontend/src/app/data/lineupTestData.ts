@@ -53,5 +53,8 @@ export function heldSnapshot(): Snapshot {
         salary: 0, contractStatus: 'UFA',
       })) }], provenance,
     },
+    eligibility: { players: {}, feeds: {
+      injuries: provenance, players: provenance, rosters: provenance,
+    } },
   };
 }

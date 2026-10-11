@@ -1,13 +1,20 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import type { Snapshot } from '../data/contract';
 import { commands } from '../commands/registry';
 import { FranchisePicker } from './FranchisePicker';
 import { EnvelopeRail } from './EnvelopeRail';
+import { useWorkAnchor } from './workScroll';
+
+const ReleasePlans = lazy(() => import('../contracts/ReleasePlans'));
+const BidPlans = lazy(() => import('../pool/BidPlans'));
+const ContractActs = lazy(() => import('../contracts/ContractActs'));
 
 export default function MyMoves({ snapshot, executor = commands }: {
   snapshot: Snapshot;
   executor?: typeof commands;
 }) {
+  const root = useRef<HTMLElement>(null);
+  useWorkAnchor(root, '.bid-plan');
   const s = executor.use();
   const fixture = executor.providerKind === 'fixture';
   const franchiseId = s.franchiseId ?? '';
@@ -24,7 +31,7 @@ export default function MyMoves({ snapshot, executor = commands }: {
   const visible = receipts.slice(0, 15);
   if (!fixture && !franchiseId) return <FranchisePicker snapshot={snapshot} />;
   return (
-    <section className="my-moves">
+    <section ref={root} className="my-moves">
       <h4>My moves</h4>
       {fixture && <p>Fixture · demo envelope · landing simulated from a real roster snapshot</p>}
       {loading !== false && <p role="status">Moves loading…</p>}
@@ -38,6 +45,9 @@ export default function MyMoves({ snapshot, executor = commands }: {
       )}
       {!fixture && !receipts.length && loading === false &&
         !error && <p>No moves drafted this session</p>}
+      {!fixture && <Suspense fallback={null}>
+        <BidPlans /><ReleasePlans mine={franchiseId} /><ContractActs mine={franchiseId} revealing />
+      </Suspense>}
     </section>
   );
 }

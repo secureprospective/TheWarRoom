@@ -19,16 +19,21 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Layer 1 | `internal/ingestion/feeds` | The table-driven loader: reads any file in `feeds.csv` and maps its columns through `source_fields.csv` into a batch for the measure store. A new signal from such a file is registry rows, not code. |
 | Layer 1 | `internal/ingestion/college` | CFBD season stats as a batch for the measure store: one call per college season, each team's totals summed for the share denominators. `Map` reads an archived body, so a season is re-read when the registry maps a measure it lacks. |
 | Layer 1 | `internal/ingestion/contracts` | NFL contracts (OverTheCap via nflverse, Parquet) as a batch: each player's contract terms under the season signed. Read every 30 days. |
+| Layer 1 | `internal/ingestion/injuries` | MFL's NFL injury designations (the league-less `injuries` export, fetched without L from api.myfantasyleague.com), the IR rule's input. Empty bodies and MFL's HTTP-200 error envelope both fail the fetch: a glitch must read "not checked", never "nobody is injured". |
+| Layer 1 | `internal/ingestion/freeagents` | MFL's `freeAgents` league export: the players on no roster, the pool bid plans are made from. MFL's HTTP-200 error envelope and a reply with no `freeAgents` section both fail the fetch; an empty pool is a valid answer. |
 | Layer 1 | `internal/normalize` | Raw records → domain types: the players lookup and roster join. |
 | Leaf | `internal/domain`, `internal/playerid`, `internal/numeric`, `internal/scouting` | Value types. `playerid.New` is the only way to build a `PlayerID`. `scouting` holds the Layer 4 input types. |
 | Leaf | `internal/measures` | The measure registry: `measures.csv`, `sources.csv`, `source_fields.csv` and `feeds.csv`, embedded and validated. Generates `docs/data-layer/Measure_Dictionary.md` (`make measure-dictionary`). Adding a source is a CSV row, not code. |
 | Store | `internal/db` | SQLite pools: one write connection, many read-only ones, one WAL file. |
 | Store | `internal/store/rulebook` | League rules from MFL as immutable versions with one active pointer, plus commissioner overrides. |
 | Store | `internal/store/params` | Engine calibration: shipped defaults plus admin overrides, league-wide or per position. The Layer 4 settings are seeded from `l4.Defaults`; the model's fitted values from the embedded `fitted.json`, marked calibrated. Shipped defaults are upserted at start-up; overrides are never touched. A set splits into the board's part and the model's (`model.*`, `dynasty.*`); each run records only its own. |
-| Store | `internal/store/moves` | Append-only envelope specs and replayable audit entries in `thewarroom.db`; restart-safe move receipts and awaiting evidence queries. |
+| Store | `internal/store/moves` | Append-only envelope specs and replayable audit entries in `thewarroom.db`; restart-safe move receipts and awaiting evidence queries. `bid_facts` is its one side table, keyed by an envelope's correlation id: the owner's own bid figures, no franchise column, frozen by a trigger once the bid is handed off. |
 | Store | `internal/store/state` | Two things behind one `Reader`. **`Mirror`**: the league as MFL states it (season, rosters with contracts, salary adjustments), replaced whole by a refresh; every score surface reads it. **`Store`**: the what-if league in `whatif.db`, seeded from the mirror (rosters and MFL salary adjustments, so its cap starts equal): rosters, contracts, the contract-year ledger, dead cap, cap relief, phases, feed, calendar. Append-only ledgers; the transaction coordinator holds the only `Writer`. |
 | Store | `internal/store/history` | `history.db`: everything the app cannot rebuild. The fetch archive (`raw_archive`, `fetch_log`), facts per measure appended on change (`observations`, read as of a date through `Features`), source health, and scoring runs with the param set, engine and inputs they used. Append-only, enforced by triggers. |
+| Analytics | `internal/lab` | Frozen fingerprint-checked compiled Lab facts, typed columnar decoder, pure Market fitting, delivery, price lists, calendar, Draft slot returns, team-side Counterparties profiles and owner-scoped offer endings. Offline JS goldens in `tools/labparity` pin the reference engine and data hashes; Node is never required at runtime or by verify. |
 | Engine | `internal/engine` | The scoring pipeline as pure functions (L1, L3, L4 dispatch, L5, L6). |
+| Engine | `internal/engine/bid` | The free-agent auction's arithmetic and rules (rulebook §6) as pure functions: bid points in exact thousandths, the minimum salary by experience (`freeagency` reads the same table), eleven named rule checks with Go-written reasons, and the ProBoards post text. |
+| Engine | `internal/engine/eligibility` | MFL's IR and taxi rules as pure verdicts: per player and direction, eligible / ineligible (reason) / unknown (reason), from held feeds only (injuries status, players draft year, roster status, league capacities). The captured 2026-10-10 owner pages are its committed test oracle (`testdata/answer-key.csv`). |
 | Engine | `internal/model` | The measurable's model: a player's league-points percentile blended with a prior from pre-NFL facts, the talent and survival arcs, and `Params`, the fitted values per position (`model.*@POS`). Pure. |
 | Engine | `internal/model/fit` | Fits `model.Params` from stored seasons, scoring every choice on a holdout season. Pure; `cmd/fit` runs it. |
 | Engine | `internal/engine/l4` | Layer 4: one rubric routine driven by a per-position settings table. The adjustable numbers in the table are params (`l4.film.cap@WR` and so on); composition reads them back for each run. |
@@ -37,7 +42,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Composition | `internal/m2service`, `internal/powerrankings` | M2: counts each roster's model values (on-field-now or dynasty, league points per game) as the best legal lineup, the top N or the whole roster, and z-blends them: this season with the results (all-play when MFL reports it, otherwise points for) at 4 ÷ (4 + weeks played) or the slider's weight; the franchise with the roster's age. `m2service.Outlooks` adds the context columns (cap room, schedule luck, projected record), never in the score. |
 | Composition | `internal/scouting/assembly` | Builds today's board's scouting profiles: RAS, coverage and school tier from their feeds, college share and breakout age from history. |
 | Composition | `internal/modelrun` | The measurables: values every rostered player with `internal/model` and the run's params, and writes a model run beside the board. `AtLeaguePositions` puts every player MFL lists at MFL's position before the scales are built; `cmd/fit` does the same from MFL's players export. |
-| Composition | `internal/snapshot` | Pure, deterministic target UI snapshot builder over a read-only source; shared freshness is `domain.Freshness`. |
+| Composition | `internal/snapshot` | Pure, deterministic target UI snapshot builder over a read-only source; shared freshness is `domain.Freshness`. Its `eligibility` section holds the IR/taxi verdicts for every rostered player plus each input feed's provenance. |
 | Tooling | `cmd/fixtures` | Copies league and history snapshots to disposable databases, initializes the app stores offline and exports the shared snapshot. |
 | Mutation | `internal/transactions` | The `Coordinator`: every league-state change runs here, in one transaction. Handler subpackages (`acquisitions`, `contracts`, `deadcap`, `freeagency`) are reachable only through it. |
 | Tooling | `cmd/fit` | Reads a history database, runs `model/fit`, and writes `internal/store/params/fitted.json` (shipped as calibrated defaults) and `docs/fit/Fit_Report.md`. |
@@ -52,14 +57,21 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 - `database/sql` is confined to `db` and `store`.
 - `transactions/*` handler packages are imported only by `transactions`.
 
-## IPC surface (33 methods on `App`)
+## IPC surface (42 methods on `App`)
 
 | File | Methods |
 |---|---|
-| `moves_app.go` | `TargetHandOff(correlationID string) (envelope.Receipt, error)` saves before browser hand-off; `TargetCheckMoves() error` wakes landing checks; `target:moves` signals a hand-off or changed move. |
+| `market_surfaces_app.go`, `market_profile_app.go` | `TargetMarketLists`, `TargetPickClock`, `TargetMarketStretches`, `TargetAssetProfile`: validated historical scopes and asset kinds; typed Go-computed display sections in `Reading[MarketSurface]`, fitted ranges and archive disclosure, no spread grade. |
+| `counterparties_app.go`, `counterpanel_app.go` | `TargetCounterparties`, `TargetCounterpartTeam`: validated historical standing/window/posture scopes; tier cards, trends, pair matrix, sortable team values and season/asset-flow/partner Inspector readings. Lazy frontend in `frontend/src/app/counterparties`, franchise ids resolved against the shared snapshot. |
+| `lab_app.go` | `TargetMarket` validates season/phase input and returns a typed historical Market payload in the generic `Reading` shell extending `snapshot.Sourced`; dated provenance, count/threshold and Go-authored counting disclosure, no spread grade. |
+| `whatif_app.go` | `TargetWhatIf` validates read/cut/buyout/undo/reset intents; per-franchise persistent baseline and ordered moves in `whatif.db`. Generation-scoped coordinator ledgers replay on mutation, publish after success, keep the mirror read-only, block stale edits until Reset. Lazy Contracts panel shows Go-authored before/after cents and rules. |
+| `contracts_app.go` | `TargetContracts` validates team/position/sort scopes and returns separate typed `Reading` shells for league contracts, my-franchise cap, literal MFL salary adjustments and the honest unavailable can’t-cut export. `TargetPlayerContract` validates player IDs and returns observed current salary / explicitly flat-filled inferred future years. Both read a coherent `Mirror.ContractsView`, never the what-if ledger. Lazy frontend in `frontend/src/app/contracts`; every player Inspector includes contract years. |
+| `pool_app.go` | `TargetPoolRefresh(force bool)` fetches MFL's free-agent list (skipped when fresh); `TargetPool(RawPoolScope)` reads the held list with no network: name, position, team, age, experience and the §6 minimum per row, filtered and sorted in Go, in a `Reading[Pool]` that is failed before the first fetch, empty (thin) when MFL lists nobody, stale when a refresh fails. |
+| `bids_app.go`, `bids_plans_app.go` | Bid plans (intent `bid.submit`): `TargetBidPreview(RawBidInput)` checks typed figures against the rules without saving; `TargetBidDraft`, `TargetBidRevise`, `TargetBidHandOff` (records the copied ProBoards post; refused if the rules no longer pass), `TargetBidPosted` (the owner says it is up), `TargetBidWithdraw` (all nonterminal local plans; never removes a ProBoards post); `TargetBidPlans(franchiseID)` lists the owner's plans with Go's words, live rules and the actions on offer. The landing watcher looks for the player on the owner's roster with the planned contract. `TargetMoves` leaves bid plans out. |
+| `moves_app.go` | `TargetHandOff(correlationID string) (envelope.Receipt, error)` saves before browser hand-off; `TargetWithdrawRoster(correlationID)` ends a local IR/taxi plan without changing MFL; `TargetCheckMoves() error` wakes landing checks; `target:moves` signals a hand-off or changed move. |
 | `moves_watcher.go` | Cancellable landing watcher; shared 60-second wake/fast-mode rate limit and persisted restart recovery. |
-| `season_app.go` | Held season feeds; `TargetSeason` reads without network; `target:season` signals refreshes and key changes. |
-| `target_app.go` | `TargetSnapshot` (initialized mirror and rulebook, cached live directory with archive fallback; shared fixture/live contract; keeps the last good build); `TargetClock` (phase log and commissioner calendar from the what-if store; no network); `TargetDraftIR`, `TargetMoves` (draft `roster.ir` against the kept build into the persistent move store; no network) |
+| `season_app.go` | Held season feeds (transactions, lineups, pendingTrades, injuries); `TargetSeason` reads without network; `target:season` signals refreshes and key changes. Ready roster plans whose held eligibility turned ineligible return to Draft after a refresh (`revalidateReadyRosterMoves`, in `moves_app.go`). |
+| `target_app.go` | `TargetSnapshot` (initialized mirror and rulebook, cached live directory with archive fallback, held injuries feed fetched on first use; shared fixture/live contract; keeps the last good build); `TargetClock` (phase log and commissioner calendar from the what-if store; no network); `TargetDraftIR`, `TargetDraftTaxi`, `TargetMoves` (draft `roster.ir` / `roster.taxi` against the kept build into the persistent move store; no network) |
 | `mflkey_app.go` | `MFLKeyStatus`, `SetMFLKey`, `DeleteMFLKey` (keyring presence and verified replacement) |
 | `version.go` | `AppInfo` (version, commit, startup error for the banner) |
 | `refresh_app.go` | `RefreshLeague` (pull the league from MFL into the mirror) |
@@ -199,3 +211,41 @@ League Pulse Now: `shell/PulseNow.tsx` lazily reads matchups and toggles side-by
 `internal/envelope`: `roster.taxi` derives direction from held status and watches post-hand-off rosters.
 IR and taxi open MFL owner pages without submitting; unavailable held taxi rules are labelled unchecked.
 Inspector: `shell/PlayerAct.tsx` drafts IR/taxi by held roster status and hands off inline.
+
+`frontend/src/app/market/` owns lazy historical Market screens and asset Inspector content.
+`provider.ts` validates the Reading shell and typed sections; `state.ts` re-queries Go on filters,
+retains prior readings until replacements arrive, and rejects stale responses. `ReadingView.tsx`
+shares range geometry and the counting disclosure. The `market` command owns filters/inspection;
+`endpoint.open` and War Room › Market are the two entry routes. `data/parse.ts` exposes the shared
+freshness decoder used by both live and archive provenance. Player Inspector code is unchanged.
+
+`internal/lab/draft.go` and `draft_position.go` compute slot-relative draft returns, season cells,
+monotone value curves, plays-like picks, stretch-matched starter rates, known year-2 retention
+and same-season draft-or-buy comparisons. `draft_app.go` validates `RawDraftScope` at IPC and
+returns `Reading[MarketSurface]` from `TargetDraftLab`; no live ownership or player forecast.
+`frontend/src/app/market/Draft.tsx` is a second lazy chunk reached from Market's Draft lab door
+or L-15–L-22. `draftState.ts` retains prior scopes during reads and rejects stale replies; pick
+assets reuse the Inspector for historical round cohorts. Draft goldens additionally stamp
+`draftlab.js`; Node remains offline reference tooling only.
+
+`offers_app.go`: `TargetOffers` validates season/direction/window/team scope and returns Go-authored owner disclosure, counts, eight stretch outcomes and acceptance comparisons in `Reading[OffersView]`. `internal/lab/offers.go` ports the reference offerStretches with exhaustive offline scope goldens; lazy `frontend/src/app/offers` lives above the pending trade desk, independent of the selected live franchise.
+
+Bid plans (War Room › Valuations and pool): `frontend/src/app/pool/` is one lazy chunk reached from the
+Market component. `state.ts` re-queries `TargetBidPreview` after each form change and keeps the last answer
+on screen until the next lands; the `market` command carries the `pool-*` fields (no new verb). My moves
+and the free-agent Inspector (`pool:<id>` asset) load `BidPlans`/`PoolInspector` from the same chunk, so the
+entry bundle holds none of it. `wire.testdata.json` is generated by `TestPoolWireFixtureMatchesGo`
+(`TWR_WRITE_WIRE=1`) and the frontend parsers are tested against it.
+`internal/envelope`: `bid.submit` plans use a `manual` target (no URL; the owner posts on ProBoards), the
+reserved `bid_pending` state, and the terminal `awarded_off_app` state for a bid that went elsewhere.
+
+Cut/buyout plans: `release_app.go` drafts from persisted what-if moves; `release_rebase.go`
+re-prices through the coordinator on isolated whatif.db generations and invalidates against
+scoped mirror revisions. `internal/envelope/release.go` owns named checks, irreversible cut
+confirmation and roster-export landing. `internal/store/moves/releasefacts.go` joins facts and
+append-only envelope history atomically, enforcing one open release per player. The lazy
+Contracts/My moves release cards share `RailStrip`; no mirror write or MFL submission.
+
+Contract Act plans: `contract_acts_app.go` exposes validated preview/draft/read and manual hand-off, posted, withdraw and rebase commands. `internal/engine/contractacts` owns pure §7/§9–11 price and term previews. `internal/envelope/contract.go` checks missing rules/evidence and declares the Contracts observation source. `internal/store/moves/contractfacts.go` stores priced baselines with envelope history atomically. Annual/expiration exports do not prove inferred future cells. Contract windows reuse coordinator LegalOps; RFA tender/re-sign are offseason only. Unknown history is noted for commissioner checking. Team projections install priced cells through the coordinator on isolated simulation generations and reuse the What-if result builder. Lazy menus and cards live in `frontend/src/app/contracts/ContractActs.tsx`.
+
+`frontend/src/app/shell/workScroll.ts` confines card reveals to `.wbody` and holds table rows through asynchronous panel changes.

@@ -26,7 +26,8 @@ export const nodes = {
   trade: {
     label: 'Trade Floor',
     workspaces: [
-      { slug: 'trade-desk-and-offers', label: 'Trade desk and offers', ring: 'Ring 1' },
+      { slug: 'trade-desk', label: 'Trade desk', ring: 'Ring 1' },
+      { slug: 'offers-history', label: 'Offers history', ring: 'Ring 2' },
       { slug: 'counterparties', label: 'Counterparties', ring: 'Ring 2' },
       { slug: 'draft-room', label: 'Draft room', ring: 'Ring 2' },
     ],

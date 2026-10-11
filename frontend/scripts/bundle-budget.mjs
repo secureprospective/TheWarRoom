@@ -12,7 +12,11 @@ const fixture = JSON.parse(readFileSync(resolve(frontend, 'src/app/data/fixtures
 const envelope = JSON.parse(readFileSync(resolve(frontend, 'src/app/data/fixtures/envelope-demo.json')));
 const names = fixture.players.value.map((player) => player.name).filter(Boolean);
 
-function check(entry, budget = 325_000, source = readFileSync(entry, 'utf8')) {
+// Entry ceiling: ring 1 left 320,449 bytes; ring 2 allowed eligibility (p2a, +369) and Market
+// (p2c, +1,000). 321,818 is their sum, not a loosening: new surfaces must load lazily.
+const BUDGET = 321_818;
+
+function check(entry, budget = BUDGET, source = readFileSync(entry, 'utf8')) {
   const size = Buffer.byteLength(source);
   if (size > budget) throw new Error(`Entry ${size} bytes exceeds ${budget} byte budget`);
   if (names.slice(0, 12).every((name) => source.includes(name))) {
@@ -29,12 +33,12 @@ function check(entry, budget = 325_000, source = readFileSync(entry, 'utf8')) {
 
 if (!entries.length) throw new Error('No entry script in dist/index.html');
 for (const entry of entries) {
-  console.log(`bundle-budget: ${entry}: ${check(entry)} bytes (limit 325000)`);
+  console.log(`bundle-budget: ${entry}: ${check(entry)} bytes (limit ${BUDGET})`);
   if (process.argv.includes('--self-test')) {
     assert.throws(() => check(entry, 1000), /exceeds 1000/);
-    assert.throws(() => check(entry, 325_000, names.slice(0, 12).join('|')), /Fixture player run/);
-    assert.throws(() => check(entry, 325_000, envelope.receipt.correlationId), /Envelope fixture in entry/);
-    assert.throws(() => check(entry, 325_000, 'Move stages'), /rail implementation in entry/);
+    assert.throws(() => check(entry, BUDGET, names.slice(0, 12).join('|')), /Fixture player run/);
+    assert.throws(() => check(entry, BUDGET, envelope.receipt.correlationId), /Envelope fixture in entry/);
+    assert.throws(() => check(entry, BUDGET, 'Move stages'), /rail implementation in entry/);
     console.log('bundle-budget: rejected 1 KB budget, snapshot, envelope and rail leaks');
   }
 }
@@ -42,6 +46,11 @@ for (const entry of entries) {
 const moveChunk = readdirSync(resolve(dist, 'assets')).find((name) => /^MyMoves\..*\.js$/.test(name));
 if (!moveChunk) throw new Error('No lazy MyMoves chunk');
 const moveSource = readFileSync(resolve(dist, 'assets', moveChunk), 'utf8');
-assert.ok(moveSource.includes('Move stages'), 'Rail must live in the MyMoves chunk');
+// The rail is shared with the bid plans, so it may sit in its own lazy chunk beside MyMoves.
+const railSource = readdirSync(resolve(dist, 'assets'))
+  .filter((name) => /^EnvelopeRail\..*\.js$/.test(name))
+  .map((name) => readFileSync(resolve(dist, 'assets', name), 'utf8'))
+  .join(moveSource);
+assert.ok(railSource.includes('Move stages'), 'Rail must live in a lazy chunk, not the entry');
 assert.ok(moveSource.includes('landing simulated from a real roster snapshot'), 'MyMoves caption missing');
 console.log(`bundle-budget: lazy MyMoves + rail verified in ${moveChunk}`);

@@ -1,8 +1,13 @@
+import { lazy, Suspense } from 'react';
 import { PlayerActMount } from './MovesMount';
 import type { Snapshot } from '../data/contract';
 import { PlayerCard } from '../cards/PlayerCard';
 import { playerCardModel } from '../cards/playerModel';
 import type { PlayerSubject } from './state';
+
+const ContractPanel = lazy(() =>
+  import('../contracts/Contracts').then((m) => ({ default: m.ContractPanel })),
+);
 
 export function PlayerInspector({
   snapshot,
@@ -21,6 +26,9 @@ export function PlayerInspector({
         asOf={new Date()}
         model={model}
       />
+      <Suspense fallback={<p role="status">Reading contract years…</p>}>
+        <ContractPanel id={subject.id} />
+      </Suspense>
       <PlayerActMount subject={subject} />
       <section className="zone interrogate">
         <h5>Interrogate</h5>

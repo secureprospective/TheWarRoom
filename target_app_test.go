@@ -62,7 +62,7 @@ func targetTestAppAt(t *testing.T, path string) *App {
 	}
 	if _, err := mirror.Replace(ctx, state.MirrorSnapshot{
 		Season:  2026,
-		Players: []state.MirrorPlayer{{MFLID: "0042", FranchiseID: "0001"}},
+		Players: []state.MirrorPlayer{{MFLID: "0042", FranchiseID: "0001", RosterStatus: domain.RosterActive}},
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -283,7 +283,7 @@ func TestTargetSnapshotFailureKeepsCache(t *testing.T) {
 	a.ctx = context.Background()
 	r, err := a.TargetDraftIR("0001", "0042")
 	if err != nil || r.State != envelope.Blocked ||
-		r.Audit[0].Note != "not verified (league rules not captured); "+
+		r.Audit[0].Note != "Not checked: stale; MFL will decide. "+
 			"MFL host not yet known; MFL target not verified" {
 		t.Fatalf("cached draft: %+v, %v", r, err)
 	}

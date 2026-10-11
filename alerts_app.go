@@ -97,7 +97,7 @@ func (a *App) lineupAlert(r *AlertReading, saved LineupReading, now time.Time) {
 	lock, _ := leagueweek.NextLock(now, week)
 	problems := make([]string, 0, len(saved.Check.Problems))
 	for _, problem := range saved.Check.Problems {
-		problems = append(problems, problem.Message)
+		problems = append(problems, strings.TrimRight(problem.Message, ".; "))
 	}
 	r.Alerts = append(r.Alerts, Alert{
 		Kind: "lineup", Urgency: alertUrgency(now, lock), Title: "Check your lineup",
@@ -127,7 +127,7 @@ func (r *AlertReading) tradeAlert(trades TradeReading, now time.Time) {
 	}
 	r.Alerts = append(r.Alerts, Alert{
 		Kind: "trades", Urgency: alertUrgency(now, soonest), Title: offersTitle(count),
-		Detail: "Review pending trade offers", Node: "trade", Workspace: "trade-desk-and-offers",
+		Detail: "Review pending trade offers", Node: "trade", Workspace: "trade-desk",
 		At: soonest, Provenance: trades.Provenance,
 	})
 }

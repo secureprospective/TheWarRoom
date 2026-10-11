@@ -120,11 +120,17 @@ function failedSnapshot(cause: unknown): Snapshot {
       note: `TargetSnapshot failed: ${String(cause)}`,
     },
   });
+  const feeds = (): Record<'injuries' | 'players' | 'rosters', Provenance> => ({
+    injuries: provenance(),
+    players: provenance(),
+    rosters: provenance(),
+  });
   return {
     league: { value: { season: 0, franchiseCount: 0 }, provenance: provenance() },
     franchises: { value: [], provenance: provenance() },
     rosters: { value: [], provenance: provenance() },
     players: { value: [], provenance: provenance() },
+    eligibility: { players: {}, feeds: feeds() },
   };
 }
 

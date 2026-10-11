@@ -33,10 +33,10 @@ describe('honest clock surfaces', () => {
       '<button type="button" class="act act-text"',
       ' aria-label="Offseason · no deadlines on the commissioner calendar"',
       ' aria-controls="target-calendar"',
-      ' title="Offseason · no deadlines on the commissioner calendar">',
+      '>',
       'Offseason · no deadlines</button>',
     ].join(''));
-    expect(strip).toContain('title="Offseason · no deadlines on the commissioner calendar"');
+    expect(strip).not.toContain('title=');
     expect(strip).toContain('target-calendar');
     expect(panel).toContain('No deadlines on the commissioner calendar.');
     expect(panel.match(/ · unknown · gap closure/g)).toHaveLength(7);

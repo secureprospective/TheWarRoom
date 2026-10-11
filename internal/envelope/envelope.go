@@ -16,6 +16,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
+const RemovePlanNote = "Withdrawn by you before it was handed off."
+
 type State string
 
 const (
@@ -31,6 +33,12 @@ const (
 	DOTReview     State = "dot_review"
 	BidPending    State = "bid_pending"
 	WaiverPending State = "waiver_pending"
+	// AwardedOffApp is a bid that went to someone else, or whose window closed: the end of the
+	// plan, not a failure.
+	AwardedOffApp State = "awarded_off_app"
+	// Withdrawn is a plan the owner dropped, before completing its off-app action
+	// and not posting: the end of the plan, kept in History.
+	Withdrawn State = "withdrawn"
 )
 
 type Event string
@@ -48,6 +56,9 @@ const (
 	AwaitDOT      Event = "await_dot"
 	AwaitBid      Event = "await_bid"
 	AwaitWaiver   Event = "await_waiver"
+
+	AwardedElsewhere Event = "awarded_elsewhere"
+	Withdraw         Event = "withdraw"
 )
 
 type Gravity string
@@ -68,12 +79,14 @@ const (
 )
 
 // TargetKind says whether the MFL page for an intent is known. Unmapped targets never leave
-// draft or blocked (spec §6: "MFL target not verified").
+// draft or blocked (spec §6: "MFL target not verified"). A manual target has no page to open:
+// the owner finishes it by hand elsewhere (a ProBoards post), so it carries no URL.
 type TargetKind string
 
 const (
 	Mapped   TargetKind = "mapped"
 	Unmapped TargetKind = "unmapped"
+	Manual   TargetKind = "manual"
 )
 
 type Target struct {
@@ -186,7 +199,7 @@ func validateSpec(s Spec) error {
 }
 
 func validateTarget(target Target) error {
-	if target.Kind == Unmapped && target.URL == "" {
+	if (target.Kind == Unmapped || target.Kind == Manual) && target.URL == "" {
 		return nil
 	}
 	u, err := url.Parse(target.URL)
@@ -236,13 +249,15 @@ type step struct {
 
 // transitions returns the whole state machine. After hand-off, observation drives the envelope: a
 // matching change lands it, a partial one is Not verified, a contradiction fails it. A trade,
-// bid or waiver claim that MFL has accepted but not yet resolved waits in its named stage.
+// bid or waiver claim that MFL has accepted but not yet resolved waits in its named stage. A bid
+// that went to someone else ends in AwardedOffApp. A bid plan not yet posted ends in Withdrawn.
 func transitions() map[step]State {
 	t := map[step]State{
 		{Draft, ChecksPass}: Ready, {Draft, ChecksBlock}: Blocked,
 		{Blocked, ChecksPass}: Ready, {Blocked, ChecksBlock}: Blocked,
-		{Ready, HandOff}: HandedOff, {Ready, Invalidate}: Stale,
+		{Ready, HandOff}: HandedOff, {Ready, Invalidate}: Stale, {Blocked, Invalidate}: Stale,
 		{Stale, Rebase}: Draft, {Failed, Rebase}: Draft,
+		{Landed, Invalidate}: Landed,
 	}
 	pending := map[Event]State{AwaitDOT: DOTReview, AwaitBid: BidPending, AwaitWaiver: WaiverPending}
 	for _, s := range []State{HandedOff, NotYetDone, NotVerified} {
@@ -258,6 +273,12 @@ func transitions() map[step]State {
 	for _, stage := range pending {
 		t[step{stage, NoChange}] = stage
 	}
+	for _, s := range []State{HandedOff, NotYetDone, NotVerified, BidPending} {
+		t[step{s, AwardedElsewhere}] = AwardedOffApp
+	}
+	for _, s := range []State{Draft, Blocked, Ready, HandedOff, NotYetDone, NotVerified, BidPending, Stale} {
+		t[step{s, Withdraw}] = Withdrawn
+	}
 	return t
 }
 
@@ -268,7 +289,7 @@ func (e Envelope) move(at time.Time, event Event, note string) (Envelope, error)
 		return Envelope{}, illegal
 	}
 	to, ok := transitions()[step{e.state, event}]
-	if !ok || (e.spec.Target.Kind != Mapped && to != Draft && to != Blocked) {
+	if !ok || (e.spec.Target.Kind == Unmapped && to != Draft && to != Blocked) {
 		return Envelope{}, illegal
 	}
 	next := e
@@ -279,18 +300,33 @@ func (e Envelope) move(at time.Time, event Event, note string) (Envelope, error)
 }
 
 func (e Envelope) HandOff(at time.Time) (Envelope, error) {
+	return e.handOff(at, "MFL opened; acceptance not verified")
+}
+
+// HandOffManual records a hand-off the owner completes by hand: the note says where. Only a
+// manual target may use it.
+func (e Envelope) HandOffManual(at time.Time, note string) (Envelope, error) {
+	if e.spec.Target.Kind != Manual {
+		return Envelope{}, ErrIllegalTransition{From: e.state, Event: HandOff}
+	}
+	return e.handOff(at, note)
+}
+
+func (e Envelope) handOff(at time.Time, note string) (Envelope, error) {
 	if e.spec.Deadline != nil && at.After(*e.spec.Deadline) {
 		return Envelope{}, ErrIllegalTransition{From: e.state, Event: HandOff}
 	}
-	return e.move(at, HandOff, "MFL opened; acceptance not verified")
+	return e.move(at, HandOff, note)
 }
 
 func (e Envelope) Invalidate(at time.Time, note string) (Envelope, error) {
 	return e.move(at, Invalidate, note)
 }
 
-func (e Envelope) Rebase(at time.Time) (Envelope, error) {
-	return e.move(at, Rebase, "explicit revalidation required")
+// Rebase returns a stale or failed plan to Draft. The note says what the revalidation found,
+// because it is the entry a Draft plan's status line shows.
+func (e Envelope) Rebase(at time.Time, note string) (Envelope, error) {
+	return e.move(at, Rebase, note)
 }
 
 // Await records that MFL accepted the submission and it now waits on a resolution only the
@@ -300,7 +336,19 @@ func (e Envelope) Await(at time.Time, event Event) (Envelope, error) {
 	if intent, ok := intents[event]; !ok || intent != e.spec.Intent {
 		return Envelope{}, ErrIllegalTransition{From: e.state, Event: event}
 	}
-	return e.move(at, event, "submission observed; awaiting resolution")
+	note := "submission observed; awaiting resolution"
+	if event == AwaitBid {
+		note = "owner reports the bid is posted; awaiting the award"
+	}
+	return e.move(at, event, note)
+}
+
+// WithdrawBid ends the local plan; it cannot take a post down from ProBoards.
+func (e Envelope) WithdrawBid(at time.Time, note string) (Envelope, error) {
+	if e.spec.Intent != BidIntent {
+		return Envelope{}, ErrIllegalTransition{From: e.state, Event: Withdraw}
+	}
+	return e.move(at, Withdraw, note)
 }
 
 func (e Envelope) ID() string { return e.id }
@@ -328,4 +376,19 @@ func Restore(id string, created time.Time, spec Spec, audit []AuditEntry) (Envel
 		e = next
 	}
 	return e, nil
+}
+
+// WithdrawRoster ends only the local IR/taxi plan, never a submitted MFL move.
+func (e Envelope) WithdrawRoster(at time.Time) (Envelope, error) {
+	if e.spec.Intent != "roster.ir" && e.spec.Intent != "roster.taxi" {
+		return Envelope{}, ErrIllegalTransition{From: e.state, Event: Withdraw}
+	}
+	note := RemovePlanNote
+	for _, entry := range e.audit {
+		if entry.To == HandedOff {
+			note = "Withdrawn: you said you did not submit this roster move on MFL."
+			break
+		}
+	}
+	return e.move(at, Withdraw, note)
 }

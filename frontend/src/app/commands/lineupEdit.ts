@@ -9,7 +9,7 @@ export type LineupAction =
   | { kind: 'edit'; franchiseId: string }
   | { kind: 'toggle'; playerId: string }
   | { kind: 'reset' | 'cancel' | 'draft' }
-  | { kind: 'handoff'; correlationId: string };
+  | { kind: 'handoff' | 'withdraw'; correlationId: string };
 
 export function editReason(reading?: LineupReading, error?: string): string | undefined {
   if (error) return error;
@@ -49,6 +49,11 @@ export async function runLineupAction(
     } finally {
       moves.write({ drafting: { ...moves.read().drafting, [key]: false } });
     }
+  }
+  if (action.kind === 'withdraw') {
+    const { withdrawRoster } = await import('../data/lineupProvider');
+    await persistPlan(`withdraw:${action.correlationId}`, () => withdrawRoster(action.correlationId));
+    return;
   }
   if (action.kind === 'handoff') {
     const receipt = moves.read().moves.find((r) => r.correlationId === action.correlationId);
