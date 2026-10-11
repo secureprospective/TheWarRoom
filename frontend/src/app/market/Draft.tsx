@@ -1,8 +1,10 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Act } from '../commands/Act';
 import { ReadingView } from './ReadingView';
 import { draftState, segments, nflRounds } from './draftState';
 import type { MarketFilter, SurfaceReading } from './contract';
+
+const Reports = lazy(() => import('../draftreports/Reports'));
 
 type Option = readonly [string, string, string];
 function Choices({
@@ -123,6 +125,7 @@ export default function Draft({ kind }: { kind?: string }) {
   }, [kind, s.scope]);
   return (
     <div className="market">
+      {!kind && <Suspense fallback={null}><Reports /></Suspense>}
       <h4>{kind ? 'What this round has returned' : 'Draft lab'}</h4>
       <p>
         Frozen draft history, not live prospect grades. 100% is the same slot in other classes. Empty

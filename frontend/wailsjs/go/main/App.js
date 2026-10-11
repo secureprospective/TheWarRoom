@@ -190,6 +190,14 @@ export function TargetDraftLineup(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftLineup'](arg1, arg2);
 }
 
+export function TargetDraftReports() {
+  return window['go']['main']['App']['TargetDraftReports']();
+}
+
+export function TargetDraftReportsRefresh(arg1) {
+  return window['go']['main']['App']['TargetDraftReportsRefresh'](arg1);
+}
+
 export function TargetDraftTaxi(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftTaxi'](arg1, arg2);
 }
@@ -224,6 +232,10 @@ export function TargetMoves(arg1) {
 
 export function TargetOffers(arg1) {
   return window['go']['main']['App']['TargetOffers'](arg1);
+}
+
+export function TargetOpenMFLDraftRoom() {
+  return window['go']['main']['App']['TargetOpenMFLDraftRoom']();
 }
 
 export function TargetPickClock(arg1) {

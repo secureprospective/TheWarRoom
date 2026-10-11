@@ -318,6 +318,13 @@ export function createCommands(
       label: 'Close endpoint surface',
       run: (_args: Record<string, never>) => state.write({ endpointSurface: null }),
     }),
+    'draft.reports': command({
+      ...ambient, id: 'draft.reports', label: 'Draft reports', aliases: [], args: ['action'],
+      run: (args: { action: 'refresh' | 'mfl' }) => {
+        if (!['refresh', 'mfl'].includes(args.action)) throw new Error('Draft reports: invalid action');
+        void import('../draftreports/state').then(m => m.reportState.action(args.action));
+      },
+    }),
     'endpoint.open': command({
       ...ambient,
       id: 'endpoint.open',

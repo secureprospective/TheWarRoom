@@ -68,9 +68,11 @@ func seasonTestApp(t *testing.T) (*App, *seasonTransport, *[]time.Duration, *int
 	transport := &seasonTransport{
 		now: time.Date(2026, 10, 7, 0, 0, 0, 0, time.UTC),
 		bodies: map[string]string{
-			"transactions":  seasonFixture(t, "transactions", "transactions.json"),
-			"liveScoring":   seasonFixture(t, "livescoring", "liveScoring-w5.json"),
-			"pendingTrades": `{"pendingTrades":{}}`,
+			"transactions":     seasonFixture(t, "transactions", "transactions.json"),
+			"liveScoring":      seasonFixture(t, "livescoring", "liveScoring-w5.json"),
+			"pendingTrades":    `{"pendingTrades":{}}`,
+			"draftResults":     seasonFixture(t, "draftreports", "results-2026.json"),
+			"futureDraftPicks": seasonFixture(t, "draftreports", "future-2026.json"),
 		},
 	}
 	var err error
@@ -135,8 +137,8 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 		t.Fatal("wrong real feed counts or week")
 	}
 	if !reflect.DeepEqual(transport.requests,
-		[]string{"transactions", "liveScoring", "pendingTrades", "injuries"}) ||
-		!reflect.DeepEqual(*pauses, []time.Duration{time.Second, time.Second, time.Second}) ||
+		[]string{"transactions", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks"}) ||
+		!reflect.DeepEqual(*pauses, []time.Duration{time.Second, time.Second, time.Second, time.Second, time.Second}) ||
 		*events != 1 {
 		t.Fatalf("requests %v pauses %v events %d", transport.requests, *pauses, *events)
 	}
@@ -152,7 +154,7 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 	transport.bodies["liveScoring"] = seasonFixture(t, "livescoring", "liveScoring.json")
 	a.refreshSeason(a.ctx)
 	r = seasonReading(t, a)
-	if transport.weeks[5] != "" || r.Lineups.Value.Week != 4 ||
+	if transport.weeks[7] != "" || r.Lineups.Value.Week != 4 ||
 		r.Lineups.Provenance.Source != "liveScoring default week" {
 		t.Fatal("default week not respected")
 	}
@@ -439,7 +441,7 @@ func TestSeasonWorkerUsesRefreshedWeek(t *testing.T) {
 	a.refreshInBackground(ctx)
 	a.weekWorkers.Wait()
 	if !reflect.DeepEqual(transport.requests, []string{
-		"nflSchedule", "transactions", "liveScoring", "pendingTrades", "injuries",
+		"nflSchedule", "transactions", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks",
 	}) || transport.weeks[2] != "5" {
 		t.Fatalf("order %v weeks %v", transport.requests, transport.weeks)
 	}

@@ -99,6 +99,10 @@ export function TargetDraftLab(arg1:main.RawDraftScope):Promise<main.Reading_mai
 
 export function TargetDraftLineup(arg1:string,arg2:Array<string>):Promise<envelope.Receipt>;
 
+export function TargetDraftReports():Promise<main.DraftReportBoard>;
+
+export function TargetDraftReportsRefresh(arg1:boolean):Promise<void>;
+
 export function TargetDraftTaxi(arg1:string,arg2:string):Promise<envelope.Receipt>;
 
 export function TargetDraftTradeAccept(arg1:string,arg2:string):Promise<envelope.Receipt>;
@@ -116,6 +120,8 @@ export function TargetMarketStretches(arg1:main.RawMarketScope):Promise<main.Rea
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 
 export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_OffersView_>;
+
+export function TargetOpenMFLDraftRoom():Promise<void>;
 
 export function TargetPickClock(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
 

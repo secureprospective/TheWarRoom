@@ -1519,6 +1519,145 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class MarketRange {
+	    value: number;
+	    lo: number;
+	    hi: number;
+	    text: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MarketRange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = source["value"];
+	        this.lo = source["lo"];
+	        this.hi = source["hi"];
+	        this.text = source["text"];
+	    }
+	}
+	export class DraftReportRow {
+	    cells: string[];
+	    range?: MarketRange;
+	
+	    static createFrom(source: any = {}) {
+	        return new DraftReportRow(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.cells = source["cells"];
+	        this.range = this.convertValues(source["range"], MarketRange);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class DraftReport {
+	    id: string;
+	    title: string;
+	    note: string;
+	    status: string;
+	    source: string;
+	    asOf: string;
+	    how: string;
+	    columns: string[];
+	    rows: DraftReportRow[];
+	
+	    static createFrom(source: any = {}) {
+	        return new DraftReport(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.title = source["title"];
+	        this.note = source["note"];
+	        this.status = source["status"];
+	        this.source = source["source"];
+	        this.asOf = source["asOf"];
+	        this.how = source["how"];
+	        this.columns = source["columns"];
+	        this.rows = this.convertValues(source["rows"], DraftReportRow);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class DraftReportBoard {
+	    title: string;
+	    loading: string;
+	    refresh: string;
+	    howLabel: string;
+	    mflLabel: string;
+	    mflUrl: string;
+	    reports: DraftReport[];
+	
+	    static createFrom(source: any = {}) {
+	        return new DraftReportBoard(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.title = source["title"];
+	        this.loading = source["loading"];
+	        this.refresh = source["refresh"];
+	        this.howLabel = source["howLabel"];
+	        this.mflLabel = source["mflLabel"];
+	        this.mflUrl = source["mflUrl"];
+	        this.reports = this.convertValues(source["reports"], DraftReport);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	export class FeedEventDTO {
 	    stableKey: string;
 	    source: string;
@@ -1993,6 +2132,7 @@ export namespace main {
 	        this.detail = source["detail"];
 	    }
 	}
+	
 	export class MissingMeasure {
 	    name: string;
 	    meaning: string;
@@ -3870,31 +4010,12 @@ export namespace main {
 		    return a;
 		}
 	}
-	export class MarketRange {
-	    value: number;
-	    lo: number;
-	    hi: number;
-	    text: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new MarketRange(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.value = source["value"];
-	        this.lo = source["lo"];
-	        this.hi = source["hi"];
-	        this.text = source["text"];
-	    }
-	}
 	export class MarketLine {
 	    key: string;
 	    label: string;
 	    detail: string;
 	    count: number;
-	    // Go type: MarketRange
-	    range?: any;
+	    range?: MarketRange;
 	    mark: string;
 	
 	    static createFrom(source: any = {}) {
@@ -3907,7 +4028,7 @@ export namespace main {
 	        this.label = source["label"];
 	        this.detail = source["detail"];
 	        this.count = source["count"];
-	        this.range = this.convertValues(source["range"], null);
+	        this.range = this.convertValues(source["range"], MarketRange);
 	        this.mark = source["mark"];
 	    }
 	

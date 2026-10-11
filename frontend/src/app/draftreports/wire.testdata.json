@@ -1,0 +1,362 @@
+{
+  "title": "MFL draft reports",
+  "loading": "Reading held MFL draft reports…",
+  "refresh": "Refresh draft reports from MFL",
+  "howLabel": "How this is counted",
+  "mflLabel": "Open MFL draft results (picks happen on MFL)",
+  "mflUrl": "",
+  "reports": [
+    {
+      "id": "M-063",
+      "title": "Draft results · pick by pick",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL draftResults",
+      "asOf": "As of: 2026-10-11 12:00:00 UTC",
+      "how": "Picks sorted by numeric round, then pick within round, not by franchise or response order. Owners are the franchises recorded for each pick; MFL comments retain its trade chain without inferring an original owner. MFL timestamp strings are Unix seconds (UTC instants), displayed in this computer's local time zone. MFL player 0000 means a skipped pick, not a player or an unmade slot. These are held exports, not a real-time clock; refresh failures retain the last good copy.",
+      "columns": [
+        "Pick",
+        "Franchise",
+        "Player",
+        "Local time"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "1.01",
+            "Two",
+            "First · 0533",
+            "1970-01-01 00:01:40 UTC"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "1.02",
+            "One",
+            "Second · 0532",
+            "1970-01-01 00:02:10 UTC"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "2.01",
+            "Two",
+            "Third · 0531",
+            "1970-01-01 00:02:40 UTC"
+          ],
+          "range": null
+        }
+      ]
+    },
+    {
+      "id": "M-064",
+      "title": "Draft results grid · round × franchise",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL draftResults",
+      "asOf": "As of: 2026-10-11 12:00:00 UTC",
+      "how": "Picks sorted by numeric round, then pick within round, not by franchise or response order. Owners are the franchises recorded for each pick; MFL comments retain its trade chain without inferring an original owner. MFL timestamp strings are Unix seconds (UTC instants), displayed in this computer's local time zone. MFL player 0000 means a skipped pick, not a player or an unmade slot. These are held exports, not a real-time clock; refresh failures retain the last good copy. A cell lists every slot drafted by that franchise in that round; traded picks do not shift other cells.",
+      "columns": [
+        "Round",
+        "One",
+        "Two"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "1",
+            "1.02 · Second · 0532",
+            "1.01 · First · 0533"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "2",
+            "No recorded pick",
+            "2.01 · Third · 0531"
+          ],
+          "range": null
+        }
+      ]
+    },
+    {
+      "id": "M-065",
+      "title": "Steals and busts · distance from expected",
+      "note": " Value: fixture model run, as of 2026-10-11",
+      "status": "ok",
+      "source": "Source: MFL draftResults + held app model (DynastyPPG)",
+      "asOf": "As of: 2026-10-11 12:00:00 UTC",
+      "how": "Picks sorted by numeric round, then pick within round, not by franchise or response order. Owners are the franchises recorded for each pick; MFL comments retain its trade chain without inferring an original owner. MFL timestamp strings are Unix seconds (UTC instants), displayed in this computer's local time zone. MFL player 0000 means a skipped pick, not a player or an unmade slot. These are held exports, not a real-time clock; refresh failures retain the last good copy. Value is the app's latest held DynastyPPG: discounted expected league points per game across its configured dynasty horizon. Expected is the median held value of drafted players in the same round, not an ADP or draft-day valuation. A bar is the point distance from that baseline (no uncertainty estimate and no letter grade); missing values are not zero. This retrospective comparison is not proof a draft pick was good or bad.",
+      "columns": [
+        "Pick",
+        "Player",
+        "Current dynasty value",
+        "Expected · same round",
+        "Distance from expected"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "1.01",
+            "First · 0533",
+            "30.00 points/game",
+            "20.00 points/game · 2 players",
+            "+10.00 points/game"
+          ],
+          "range": {
+            "value": 1.5,
+            "lo": 1.5,
+            "hi": 1.5,
+            "text": "+10.00 points/game · 150% of same-round expected value"
+          }
+        },
+        {
+          "cells": [
+            "1.02",
+            "Second · 0532",
+            "10.00 points/game",
+            "20.00 points/game · 2 players",
+            "-10.00 points/game"
+          ],
+          "range": {
+            "value": 0.5,
+            "lo": 0.5,
+            "hi": 0.5,
+            "text": "-10.00 points/game · 50% of same-round expected value"
+          }
+        },
+        {
+          "cells": [
+            "2.01",
+            "Third · 0531",
+            "Value unavailable",
+            "Expected unavailable",
+            "Not measured"
+          ],
+          "range": null
+        }
+      ]
+    },
+    {
+      "id": "M-066",
+      "title": "Draft recap per franchise",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL draftResults",
+      "asOf": "As of: 2026-10-11 12:00:00 UTC",
+      "how": "Picks sorted by numeric round, then pick within round, not by franchise or response order. Owners are the franchises recorded for each pick; MFL comments retain its trade chain without inferring an original owner. MFL timestamp strings are Unix seconds (UTC instants), displayed in this computer's local time zone. MFL player 0000 means a skipped pick, not a player or an unmade slot. These are held exports, not a real-time clock; refresh failures retain the last good copy.",
+      "columns": [
+        "Franchise",
+        "Made picks",
+        "Players"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "One",
+            "1",
+            "1.02 · Second · 0532"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Two",
+            "2",
+            "1.01 · First · 0533; 2.01 · Third · 0531"
+          ],
+          "range": null
+        }
+      ]
+    },
+    {
+      "id": "M-068",
+      "title": "Future draft picks · ownership",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL futureDraftPicks",
+      "asOf": "As of: 2026-10-11 12:00:00 UTC",
+      "how": "Every futureDraftPick under a franchise belongs to that franchise; originalPickFor identifies whose original pick it was. Sorted by year, numeric round and original franchise. Missing assets are not inferred from the league size.",
+      "columns": [
+        "Year",
+        "Round",
+        "Original franchise",
+        "Current owner"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "2027",
+            "2",
+            "One",
+            "Two"
+          ],
+          "range": null
+        }
+      ]
+    },
+    {
+      "id": "M-102",
+      "title": "Draft pick detail",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL draftResults",
+      "asOf": "As of: 2026-10-11 12:00:00 UTC",
+      "how": "Picks sorted by numeric round, then pick within round, not by franchise or response order. Owners are the franchises recorded for each pick; MFL comments retain its trade chain without inferring an original owner. MFL timestamp strings are Unix seconds (UTC instants), displayed in this computer's local time zone. MFL player 0000 means a skipped pick, not a player or an unmade slot. These are held exports, not a real-time clock; refresh failures retain the last good copy.",
+      "columns": [
+        "Pick",
+        "Franchise",
+        "Player",
+        "Local time",
+        "From whom · MFL comments"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "1.01",
+            "Two",
+            "First · 0533",
+            "1970-01-01 00:01:40 UTC",
+            "No trade provenance supplied"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "1.02",
+            "One",
+            "Second · 0532",
+            "1970-01-01 00:02:10 UTC",
+            "No trade provenance supplied"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "2.01",
+            "Two",
+            "Third · 0531",
+            "1970-01-01 00:02:40 UTC",
+            "No trade provenance supplied"
+          ],
+          "range": null
+        }
+      ]
+    },
+    {
+      "id": "M-176",
+      "title": "Draft status",
+      "note": " Held completed-pick history; no unmade picks are listed. Live completion is not declared by this export.",
+      "status": "ok",
+      "source": "Source: MFL draftResults",
+      "asOf": "As of: 2026-10-11 12:00:00 UTC",
+      "how": "Picks sorted by numeric round, then pick within round, not by franchise or response order. Owners are the franchises recorded for each pick; MFL comments retain its trade chain without inferring an original owner. MFL timestamp strings are Unix seconds (UTC instants), displayed in this computer's local time zone. MFL player 0000 means a skipped pick, not a player or an unmade slot. These are held exports, not a real-time clock; refresh failures retain the last good copy. Made counts exported player selections plus explicit skipped picks. Remaining counts only explicit unmade rows; the export does not declare total rounds or a live on-the-clock state. No missing rows are invented.",
+      "columns": [
+        "State",
+        "Held evidence"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "Made",
+            "3"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "On the clock",
+            "Not supplied by draftResults"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Remaining",
+            "Unknown · total scheduled picks not supplied"
+          ],
+          "range": null
+        }
+      ]
+    },
+    {
+      "id": "M-179",
+      "title": "Average elapsed time per pick",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL draftResults",
+      "asOf": "As of: 2026-10-11 12:00:00 UTC",
+      "how": "Picks sorted by numeric round, then pick within round, not by franchise or response order. Owners are the franchises recorded for each pick; MFL comments retain its trade chain without inferring an original owner. MFL timestamp strings are Unix seconds (UTC instants), displayed in this computer's local time zone. MFL player 0000 means a skipped pick, not a player or an unmade slot. These are held exports, not a real-time clock; refresh failures retain the last good copy. Average wall-clock seconds from the preceding pick in draft order to this franchise's pick, including overnight pauses and zero-second pre-draft picks. First pick, missing timestamps and negative intervals are excluded; no active timer or pause subtraction is available.",
+      "columns": [
+        "Franchise",
+        "Measured intervals",
+        "Average elapsed time"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "One",
+            "1",
+            "30s"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Two",
+            "1",
+            "30s"
+          ],
+          "range": null
+        }
+      ]
+    },
+    {
+      "id": "M-183",
+      "title": "Live draft room · held results",
+      "note": " Held completed-pick history; no unmade picks are listed. Live completion is not declared by this export. Next draft: date unknown. Picks happen on MFL only; this app never makes a pick.",
+      "status": "ok",
+      "source": "Source: MFL draftResults",
+      "asOf": "As of: 2026-10-11 12:00:00 UTC",
+      "how": "Picks sorted by numeric round, then pick within round, not by franchise or response order. Owners are the franchises recorded for each pick; MFL comments retain its trade chain without inferring an original owner. MFL timestamp strings are Unix seconds (UTC instants), displayed in this computer's local time zone. MFL player 0000 means a skipped pick, not a player or an unmade slot. These are held exports, not a real-time clock; refresh failures retain the last good copy. Made counts exported player selections plus explicit skipped picks. Remaining counts only explicit unmade rows; the export does not declare total rounds or a live on-the-clock state. No missing rows are invented.",
+      "columns": [
+        "Pick",
+        "Franchise",
+        "Player",
+        "Local time"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "1.01",
+            "Two",
+            "First · 0533",
+            "1970-01-01 00:01:40 UTC"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "1.02",
+            "One",
+            "Second · 0532",
+            "1970-01-01 00:02:10 UTC"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "2.01",
+            "Two",
+            "Third · 0531",
+            "1970-01-01 00:02:40 UTC"
+          ],
+          "range": null
+        }
+      ]
+    }
+  ]
+}

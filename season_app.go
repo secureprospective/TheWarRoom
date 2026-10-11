@@ -130,6 +130,10 @@ func (a *App) refreshSeason(ctx context.Context) {
 		return
 	}
 	a.refreshInjuries(ctx)
+	if err := pause(ctx, time.Second); err != nil {
+		return
+	}
+	a.refreshDraftReports(ctx)
 	a.revalidateReadyRosterMoves(ctx)
 }
 

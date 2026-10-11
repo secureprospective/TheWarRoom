@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -93,6 +94,8 @@ type App struct {
 	seasonPendingTrades heldSeasonFeed[[]leaguefeed.PendingTrade]
 	seasonInjuries      heldSeasonFeed[[]leaguefeed.Injury]
 	seasonFreeAgents    heldSeasonFeed[[]playerid.PlayerID]
+	seasonDraftResults  heldSeasonFeed[[]draftreports.Pick]
+	seasonFuturePicks   heldSeasonFeed[[]draftreports.FuturePick]
 	lineupsWeek         int
 	seasonChanged       func(context.Context)
 	seasonPause         func(context.Context, time.Duration) error
