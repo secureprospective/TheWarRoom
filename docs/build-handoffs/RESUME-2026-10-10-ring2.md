@@ -1,5 +1,115 @@
 # RESUME: TheWarRoom ring 2, the decision layer (started 2026-10-10)
 
+## ⏩ COMPACT-SAFE 2026-10-11 05:30 CDT — READ THIS FIRST (supersedes everything below)
+
+**Goal (active /goal):** finish ring 2 (p2h2, p2i done; p2j–k, p2l, facts panel), Claude as head
+brain, Sol builds, Claude-OS tests; merge to main only after Christopher's live click-through. RING 3
+is Christopher + Tom's: do not start it. Christopher has a bigger job for Claude after ring 2.
+
+**State:** committed on session/ring-2 (ring-0 worktree): through **abad777** (p2h2+p2h3 cut/buyout
+plans, live-verified). **UNCOMMITTED in ring-0:** p2j + p2k (contract Acts) + p2k2 in flight.
+Facts-schema panel DONE (4 seats; triage in scratchpad `panel-facts-run4-triage.md`, copy on Bee
+`~/fleet/runs/warroom-ring2-2026-10-10/panel-facts-run4-triage.md`). Lab branch has resume commit
+8674ae2 (merge into ring-2 before main).
+
+**In flight:**
+- p2k2 on Sol (pi), started 05:16, run dir `~/fleet/runs/warroom-ring2-2026-10-10/p2k2/`, done =
+  `p2k2/sentinel`; alive = mtime of `p2k2/sessions/*.jsonl` (74 s old at 05:30). Watcher bzm24lydp
+  (dies with compaction; restart the 60 s loop: sentinel → done, >900 s idle → stall). If stalled on
+  Sol's limit: `p2k2/stderr.log`; finish on Tom (below). Recover reasoning: the session jsonl.
+- Sol 5 h window ~20% left at 05:25, resets ~07:35 CDT.
+
+**NEXT ACTIONS, IN ORDER**
+1. When p2k2 lands: read REPORT; plant one mutant of my own; deploy (Bee: gzip → scp claudeos →
+   deploy.sh); click Oluokun row What if… → Contract Acts…: menu anchored to row inside work column,
+   "Contract move" panel at top with cap table before keeping, Keep plan button → Plan: Ready + link;
+   post text "Adds 1 year: 2029 at $16,500,000"; Remove plan wording "Removed by you before it was
+   handed off"; notes once. Remove any test plan after. Fix pass if needed (Tom if Sol is low).
+2. Commit p2j+p2k+p2k2 in ring-0 (export PATH for hooks; commit message via FILE, scp'd — an
+   apostrophe inside ssh '…' broke the last one).
+3. Dispatch p2l on TOM: `ssh -f … 'cd ~/fleet/runs/warroom-ring2-2026-10-10 && nohup setsid
+   ./tom-dispatch-wt.sh p2l ~/fleet/briefs/warroom-ring2-p2l-audit-spec-rev2.md > p2l.launch.log 2>&1
+   < /dev/null &'`. Liveness = mtime of `p2l/transcript.jsonl`. Brief says HEAD holds p2a–p2k (true
+   after step 2).
+4. Review p2l (gate tables, spec rev 2, Facts_Schema_Panel doc); commit; merge session/ring-2-lab
+   (8674ae2 resume) into session/ring-2.
+5. PushNotification Christopher for the click-through: what to test + what passing looks like
+   (pool/bids, what-if, cut/buyout plans, contract Acts, My moves). Merge to main only after he confirms.
+
+**Open for Christopher:** ProBoards post format; registry May dates for tender (May 1–3) / re-sign
+(May 10–15) are not in the rulebook (Acts say "Offseason only" without dates).
+
+**Decisions this stretch:** D7 playoffs keep $12M/$24M tiers, only playoff teams bid (built in p2j);
+D8 offers goldens stay in git until a backend host; D9 buyout what-if in-season labelled; D10 rules
+are league subsets but NO rules-profile work now (commissioner's office later); D11 buyout → the
+commissioner via ProBoards (built). Windows: Christopher's v1 ruling phase_gate.go:12 (all ops every
+phase except BUYOUT/ROLLOVER/SIGN) → tag/extension/restructure any phase; tender/re-sign offseason.
+Unknown history = "Not checked" note, not a block (Claude's ruling).
+
+**Standing rules:** never make a real roster move on MFL (screenshot only, click nothing, close tab);
+never --no-verify; never send to MFL; Tom = Opus medium, never Sonnet; panels non-Claude.
+
+**Refuted / don't redo:** /fleet not showing Sol was the savvy-progress trigger (regex missed
+dispatch-wt.sh; /fleet never polled) — FIXED both machines; Bee helper already scans run dirs.
+Editing a running bash script in place corrupts it: swap via new file (mv).
+
+## ⏩ UPDATE 2026-10-11 05:25 CDT — Sol near its 5 h limit (~20% left; resets ~07:35 CDT)
+- p2k2 stays on Sol (already running). p2l goes to TOM: `~/fleet/runs/warroom-ring2-2026-10-10/
+  tom-dispatch-wt.sh <phase> <brief>` (claude -p, claude-opus-5-5, --effort medium, bypass perms,
+  stream-json transcript at <phase>/transcript.jsonl; liveness = its mtime; same sentinel). Smoke
+  test passed 05:22 (Bash + Write headless; Tom's guardrail hook allows it).
+- If p2k2 stalls on a Sol rate limit: check p2k2/stderr.log, then finish it on Tom with a brief
+  "continue p2k2 from the current tree; read p2k2 brief + what's done".
+
+## ⏩ UPDATE 2026-10-11 05:17 CDT
+- p2k done 05:13 (verify/build 0, 597 FE, 12 mutants + Claude's tag-eligibility mutant killed,
+  entry 321,741). Live 05:14: Oluokun offered Extend/Restructure only; Extend 1y $16.5M Ready with
+  Not-checked notes; card team table 2029 +$16.5M; test plan removed. Defects → p2k2.
+- p2k2 dispatched 05:16 (`~/fleet/briefs/warroom-ring2-p2k2-acts-polish.md`): menu anchored to row
+  (was pinned bottom-right behind Inspector), "Contract move" panel at top with cap table before
+  keeping, Keep plan button + feedback, per-Act post text, withdraw wording, notes once, spacing.
+  Watcher bzm24lydp. p2j+p2k+p2k2 still UNCOMMITTED in ring-0.
+- /fleet fix: savvy-progress register.tsx (PI_LAUNCH matches dispatch-wt.sh; /fleet polls Bee
+  itself) on CT105 and Tom, byte-identical, tests 25/25 and file-tree 24/24 both machines.
+  dispatch-wt.sh also symlinks sessions into ~/.pi/agent/sessions (harmless; helper scans runs).
+
+## ⏩ UPDATE 2026-10-11 04:52 CDT
+- p2h2+p2h3 commit is abad777 (amended message; d2ca6ca was pre-amend).
+- p2j done 04:46 (verify/build 0, 596 FE, 10 mutants, entry 321,741) but every Act Blocked; NOT
+  committed. Live 04:47: RFA tender offered on a 2028 UFA, menu off-screen, "Rule unclear" text.
+- p2k dispatched 04:48 (`~/fleet/briefs/warroom-ring2-p2k-contract-acts-ready.md`): windows from
+  Christopher's v1 ruling in phase_gate.go:12 (tag/ext/restructure every phase; tender/re-sign
+  offseason), only applicable Acts, unknown history = "Not checked" note not a block, team cap
+  before/after via what-if coordinator, menu in viewport, plain labels. Watcher bh8yl7djg.
+- p2l brief staged: `~/fleet/briefs/warroom-ring2-p2l-audit-spec-rev2.md` (triage + resume copied to
+  the run dir for Sol). After p2k: review, live check, commit p2j+p2k, dispatch p2l, then notify
+  Christopher (PushNotification) for the click-through.
+
+## ⏩ UPDATE 2026-10-11 04:25 CDT
+- Facts-schema panel COMPLETE: engineer seat (Sol) 14/14 quotes, verdict (c). Triage folded in
+  `panel-facts-run4-triage.md` (scratchpad; copy into repo docs at p2l): FS1 refined (manifest-keyed
+  cache, stale-on-fail), new FS4 input manifest (archive.go:87 has no cutoff), FS2 gate table, D3 →
+  one append-only league_event table with an MFL-until-cutover authority policy (spec rev 2 only).
+- Tom: overflow / Sol-down builder, Opus medium (memory saved). RING 3 belongs to Christopher + Tom (2026-10-11): do not start any ring 3 work; Christopher has a bigger job for Claude after ring 2.
+
+## ⏩ UPDATE 2026-10-11 04:10 CDT
+- p2h2+p2h3 COMMITTED d2ca6ca on session/ring-2 (live-checked 04:06: buttons, Remove plan, I didn't
+  drop him, no Rebase on Blocked, no ids). Claude-OS test plans withdrawn; what-if Reset.
+- p2j dispatched 04:08 (brief has D7 playoff-bid fix, D11 buyout channel text, withdrawn-card fold);
+  watcher bzxc1jor2. Engineer panel seat (Sol) running: `~/fleet/runs/panel-brief-20261011T090833Z-3776547`
+  (watcher b4jc559vf); fold into panel-facts-run4-triage.
+- Then: p2j review/live/commit → p2k scope (check resume build order) → p2l → notify Christopher.
+
+## ⏩ UPDATE 2026-10-11 03:52 CDT
+- p2h2 done (Sol, sentinel 03:46): verify/build 0, 583 FE tests, entry 321,652, 3 mutants killed +
+  Claude's (buyout term floor) killed. Live on Claude-OS 03:47–03:50: plan Ready, card, confirmation,
+  Cancel, Confirm opened O=257 (tab closed), Not yet done, buyout Blocked. UNCOMMITTED in ring-0.
+- p2h3 (fix pass: buttons, cut withdraw, no Rebase on Blocked, wording, no ids in post, 4 px shift)
+  dispatched 03:50, brief `~/fleet/briefs/warroom-ring2-p2h3-plan-polish.md`; watcher bc47issd8.
+  Next: review, redeploy, click the six fixes, commit p2h2+p2h3 on session/ring-2, then p2j.
+- Live Claude-OS app DB now holds a Banks cut plan (Not yet done) and a Benton buyout plan
+  (Blocked): withdraw both with p2h3's new buttons during its check.
+
 ## ⏩ UPDATE 2026-10-11 03:25 CDT (supersedes everything below; read this first)
 **Christopher 10-11 ~02:20: "no more using sonnet, that ruined our context windows and delayed us."**
 Sol is the only builder. Sonnet built p2i/p2i2 (headless `claude -p`, CLAUDE_RC_REMOTE=1) — don't repeat.
@@ -50,10 +160,10 @@ checker: formatting only, spot-checked). `~/fleet/bin/panel-dispatch.sh` gained 
   a permanent fixture). D3: imported rows carry provenance; app-authored events stay in their own
   append-only stores (PW3); an override names what it supersedes; the compiler merges.
 
-**Open questions for Christopher (none block):** (1) p2i lifts the $12M/$24M year tiers in the
-playoffs along with the 1-year cap (else >$12M bids impossible after Wk 12); (2) ProBoards post
-format Player / Contract / Cap hit / Points (+ Snipe); (3) offers goldens in git; (4) buyout what-if
-in-season labelled "Offseason only".
+**Christopher answered the open questions (2026-10-11 03:40 CDT), now D7–D10 below.** Still open:
+ProBoards post format (he checks later). **Action from D7:** p2i lifted the $12M/$24M tiers in the
+playoffs: wrong. Fix in a small p2i3 (or fold into p2j): tiers stay; in the playoffs only playoff
+teams may bid (a Blocked reason for a non-playoff team). D10: no rules-profile work in ring 2 (stay on plan).
 
 **Environment lessons:** launch Bee jobs with `ssh -f` (plain ssh + nohup & hangs the call);
 commits in a worktree need `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH` for the
@@ -230,6 +340,18 @@ If Christopher wants TheWarRoom to own its data (Q1 b), five compiler runs (s1�
   stand-alone app; for now it holds plans and honest status, nothing invented about other teams.
 - **D4 Spread tiers:** show the range bar itself; the solid / rough / thin grade stays internal,
   never on screen (Christopher, 2026-10-10).
+- **D7 Playoff bids (2026-10-11):** the playoffs do NOT lift the $12M/$24M year tiers; the rule stays
+  and only narrows: in the playoffs only playoff teams have bid access.
+- **D8 Offers goldens:** may stay in git until a formal backend server host holds the data.
+- **D9 Buyout what-if in-season:** allowed for now, labelled "Offseason only".
+- **D10 Rules framing (Christopher, 2026-10-11, narrowed same night):** "these rules are subsets, not
+  hard coding into the ui. The next league could change the rules." Then: don't go down the rabbit
+  hole now. Premise: what happens on ProBoards is what MFL can't do (bidding, the extra rule
+  frameworks that make 32 teams possible). No rules-profile work in ring 2; the commissioner's office
+  mapping (later) will settle how the front end handles rules. Keep W1 (rules live in Go, not React).
+- **D11 Buyout channel (2026-10-11):** a buyout goes to the commissioner via ProBoards; the app is the
+  UI that prepares it (copy text), like bids. **Standing rule:** never make a real roster move on MFL;
+  MFL is reference and links only.
 - Defaults taken (Q4, Q5, his to overturn): Claude captures the option/tender/re-sign MFL pages on
   Claude-OS, no submits; a what-if keeps its starting numbers until Reset.
 
