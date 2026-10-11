@@ -1,4 +1,49 @@
+## STATUS 2026-10-11 CDT — RING 2 CONFIRMED
+Christopher click-through: PASS ("pass. push and merge"). p2m (bf691a5) and p2n (63eeddf) live-verified; merged to main via PR. Ring 3 is Christopher's and Tom's — do not start it. Open asks carried: Research tab scope, M-192 option election, Q15, Q16, what-if button styling.
+
 # RESUME: TheWarRoom ring 2, the decision layer (started 2026-10-10)
+
+## ⏩ COMPACT-SAFE 2026-10-11 07:55 CDT — READ THIS FIRST (supersedes everything below)
+
+**Goal:** finish ring 2; Claude head brain, Sol builds (Tom = Opus-medium fallback), Claude-OS tests; merge to
+main ONLY after Christopher confirms live. Ring 3 is his + Tom's. He asked (07:33) "click through everything":
+Claude did a full click-through 07:35–07:43 and found 13 defects -> p2m on Sol.
+
+**Committed on session/ring-2 (ring-0 worktree):** 8c0fdd6 contract Acts · 535a550 p2l audit/spec rev2 ·
+95d7aa4 p2l2+p2l3 (new contract at expires+1) · 23a67dc lab merge · b16118a resume. Lab branch merged.
+
+**IN FLIGHT: p2m on Sol** (gpt-6.1-sol medium), started 07:44, brief `~/fleet/briefs/warroom-ring2-p2m-clickthrough-fixes.md`
+(copy in scratchpad), run dir `~/fleet/runs/warroom-ring2-2026-10-10/p2m/`, done = `p2m/sentinel`, alive = mtime of
+`p2m/sessions/*.jsonl` (141 s old at 07:52, 560 KB). Watcher b239gvxg1 dies with compaction: restart the 60 s loop
+(sentinel -> done, >900 s idle -> STALL). If Sol stalls on limits: finish on Tom (`tom-dispatch-wt.sh p2m2 <brief>`).
+Recover reasoning from the session jsonl. Do NOT commit in ring-0 while Sol is running (unstaged edits).
+
+**p2m's 13 items:** 1 panel stale "Kept" after plan removed · 2 Inspector-path Contract Acts jumps ~170 px ·
+3 restructure inputs white/unreadable + "Price" label -> "Moves…" · 4 no Close on Contract move panel ·
+5 Pending contract plan can't be withdrawn (canWithdraw omits pending; check all kinds) · 6 cut/buyout cards
+unframed, Remove plan wraps · 7 one removal sentence/button for all kinds · 8 Plan a bid pushes row ~330 px ·
+9 Save bid scrolls whole app shell up ~56 px (scrollIntoView on ancestor) · 10 Inspector bid strip overlaps /
+breaks words at 320 px · 11 stale "Withdrawn…" line on pool page · 12 lingering native tooltips cover next
+controls (Act.tsx title) · 13 Trade Floor › Draft room placeholder -> show the Draft lab there.
+
+**Verified OK live (don't retest unless touched):** row menu anchored/flips up; tender/re-sign 2y ($690k in 2027+2028)/
+tag ($4.05M 2027)/extend/restructure math; hand-off copies clipboard; I posted it -> "Pending"; cut what-if,
+plan, confirm text, Cancel, Remove; pool Inspector min salary + How counted; bid preview/save/withdraw;
+Market bars, Draft lab, Counterparties, Offers render; command bar M-194 routes. Fast-typing drop only at
+robotic 12 ms/key (70 ms fine) — refuted as a defect.
+
+**Test debris on Claude-OS to clean after p2m:** a Restructure Oluokun plan stuck in Pending (needs item 5's
+withdraw). What-if was Reset. Christopher was clicking himself at 07:33 (kept+removed a Bates tender).
+
+**NEXT ACTIONS, IN ORDER**
+1. When p2m lands: read REPORT; plant one mutant of my own; deploy (gzip -> scp claudeos -> deploy.sh p2m); re-click
+   each of the 13 items + withdraw the stuck Pending restructure; fix pass (Sol, or Tom if Sol is down) if needed.
+2. Commit in ring-0 (message via scp'd FILE; export PATH for hooks); update resume, commit it.
+3. Tell Christopher it's ready for his click-through; ask the 2 scope questions below. Merge to main only after he confirms.
+
+**Open for Christopher:** (a) War Room › Research tab: nodes.ts labels it "Ring 2", it's a placeholder, roadmap ring 2
+list doesn't include it — build now or relabel later ring? (b) option election (M-192): roadmap lists it with ring 2
+window Acts, audit deferred it — ring 2 or later? Plus Q15 ProBoards format, Q16 rollover vs tender/re-sign dates.
 
 ## ⏩ UPDATE 2026-10-11 07:15 CDT — ring 2 BUILT; waiting on Christopher's click-through
 session/ring-2: 8c0fdd6 contract Acts · 535a550 p2l audit + spec rev 2 · 95d7aa4 p2l2 gaps + p2l3 (new
