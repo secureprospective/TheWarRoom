@@ -1,5 +1,5 @@
 # TheWarRoom — Project CLAUDE.md
-**Version:** 3.1 — 2026-10-10
+**Version:** 3.2 — 2026-10-11
 **Project path:** `~/work/TheWarRoom` on the Beelink (the only clone that builds and runs the app)
 **Pillars:** Business, Technical
 
@@ -19,14 +19,21 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   ending with a spec revision (`docs/ui/Target_UI_Spec_2026-10.md`, revision 2 on 2026-10-11).
   Every endpoint is a row in `docs/ui/endpoint-registry.csv`; `frontend/scripts/gen-endpoints.mjs`
   generates `registry/endpoints.gen.ts` from it (never hand-edit the generated file).
-  Ring 1 merged 2026-10-10 (PR #15). Ring 2, the decision layer, is next, with IR/taxi eligibility.
+  Ring 1 merged 2026-10-10 (PR #15). Ring 2, the decision layer, merged 2026-10-11 (PR #17,
+  `main` b4b3418): contract Acts, the Lab screens, the free-agent bid pool, held IR/taxi
+  eligibility, exact-cents money. Ring 3, breadth and depth, is next; it belongs to Christopher
+  and Tom, on `session/ring-3`.
 
 ## Session start
 
 1. `git branch --show-current`. Never work on main; branches are `session/<short-description>`.
 2. Read the plan's current stage and the latest RESUME.
-3. Toolchain: `export PATH=/usr/local/go/bin:$HOME/go/bin:$PATH GOMEMLIMIT=1500MiB` (Go 1.26.4
-   is not on the default PATH).
+3. Toolchain (Go 1.26.4 is not on the default PATH; the git hooks need this too):
+   `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOMEMLIMIT=1500MiB
+   GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1`.
+   Always pass `VERSION=dev COMMIT=<ring> BUILD_DATE=<ring>` to make. The commit gates are
+   `timeout 600 nice -n 10 make verify …` and `make build …`, both exit 0.
+   The entry bundle cap is **321,818 B** (ring 2 ended at 317,727): keep new screens lazy.
 4. Gates: `make lint` (ifaceguard, filelen report, bloat ratchet, golangci-lint), `make test`
    (`go test -race ./...`), `make verify` (both plus the frontend build; the pre-push hook runs
    it). `make setup` once per clone wires the hooks. Pushing needs Go on PATH too, because the
@@ -48,10 +55,16 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   without it, runs `make verify`, commits, and runs the live gates. Claude protects its context.
 - **Sol writes the code:** `gpt-6.1-sol` through pi on Bee, at **medium** thinking. Do not raise
   it (Christopher, 2026-10-09: "it's been doing well on medium").
+  - **Tom** (Claude Code on the Beelink, Opus at medium, never Sonnet) is head brain for ring 3
+    and builds only when Sol is down, through `tom-dispatch-wt.sh`.
   - Briefs are files in `~/fleet/briefs/`. Write them in the scratchpad and `scp` them over,
     then check the size: `ssh -n` with a heredoc writes an empty file.
-  - Dispatch: `dispatch.sh <phase> <brief>` in the ring's run directory under `~/fleet/runs/`,
-    then poll `<phase>/sentinel`. Sol's report is `<phase>/REPORT.md`.
+  - Dispatch: `dispatch-wt.sh <phase> <brief>` in the ring's run directory under `~/fleet/runs/`
+    (copy the previous ring's scripts and change `RUN=`). Launch detached; done is
+    `<phase>/sentinel`, liveness is the mtime of `<phase>/sessions/*.jsonl` (Sol) or
+    `transcript.jsonl` (Tom). Sol's report is `<phase>/REPORT.md`. Commit with `git commit -F`.
+  - Every builder report gets one mutant planted by the reviewer and a live click-through on
+    Claude-OS before Christopher is asked to click.
   - Sol never runs git or opens a GUI.
 - **The expert panel** gates decisions that set a standard or are hard to undo:
   `~/fleet/bin/panel-dispatch.sh <brief>`. Four seats from four labs, no Claude (Sol, Kimi, GLM,
@@ -74,11 +87,14 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   - Screenshots and logs go to the run directory.
   - Never launch the app on Christopher's live desktop.
 - Merge to main only on Christopher's go-ahead, after a passing live gate. `main` requires
-  linear history: merge PRs with rebase (`~/.local/bin/gh pr merge <n> --rebase`).
+  linear history and rebase fails on a branch holding a merge commit: **squash-merge**
+  (`~/.local/bin/gh pr merge <n> --squash`).
 
 ## Hard Constraints (never route around)
 
 - **No work on main.** Never `git --no-verify`.
+- **Never submit anything to MFL** and never make a real roster move there. MFL is reference and
+  links only; click nothing on owner pages, and keep owner-only captures out of git.
 - **MFL player IDs are strings.** IDs under 1000 keep their leading zeros. `playerid.New` is
   the only constructor; all SQLite id columns are TEXT.
 - **MFL wins (R2).** A refresh overwrites the app's league and ledger state. Moves made in the
