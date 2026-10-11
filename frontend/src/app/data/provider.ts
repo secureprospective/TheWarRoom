@@ -1,6 +1,6 @@
 import type {
   LineupCheck, LineupReading, ClockReading, EnvelopeDemo, MFLKeyStatus,
-  AlertReading, PulseReading, Provenance, Receipt, Snapshot, Sourced, TradeReading,
+  AlertReading, Provenance, Receipt, Snapshot, Sourced, TradeReading,
 } from './contract';
 import {
   DeleteMFLKey, MFLKeyStatus as ReadMFLKey, SetMFLKey,
@@ -8,7 +8,6 @@ import {
 } from '../../../wailsjs/go/main/App';
 
 interface ReadingProvider {
-  pulseNow(): Promise<PulseReading>;
   alerts(franchiseId: string): Promise<AlertReading>;
   trades(franchiseId: string): Promise<TradeReading>;
   draftTradeAccept(franchiseId: string, tradeId: string): Promise<Receipt>;
@@ -56,7 +55,6 @@ const desktopTrades = desktop('Trades need');
 export class FixtureProvider implements ReadingProvider, DemoProvider {
   readonly kind = 'fixture';
   readonly reason = 'Drafting needs the desktop app';
-  pulseNow: ReadingProvider['pulseNow'] = desktop('League Pulse needs');
   alerts: ReadingProvider['alerts'] = desktop('Alerts need');
   trades: ReadingProvider['trades'] = desktopTrades;
   draftTradeAccept: ReadingProvider['draftTradeAccept'] = desktopTrades;
@@ -165,9 +163,6 @@ function onTargetChange(event: string, listener: () => void): () => void {
 
 export class LiveProvider implements ReadingProvider, DraftingProvider {
   readonly kind = 'live';
-  async pulseNow(): Promise<PulseReading> {
-    return (await import('./pulseProvider')).pulseNow();
-  }
   async alerts(franchiseId: string): Promise<AlertReading> {
     return (await import('./pulseProvider')).alerts(franchiseId);
   }

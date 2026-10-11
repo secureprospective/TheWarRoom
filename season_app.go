@@ -139,6 +139,15 @@ func (a *App) refreshSeason(ctx context.Context) {
 		return
 	}
 	a.refreshRace(ctx)
+	a.refreshScoreFirsts(ctx)
+	// The current NFL week's schedule and the byes are held like the race, so League Pulse › Now
+	// never waits on its own refresh (which can run before the week is known).
+	if week := a.marketWeek(); week >= 1 {
+		if err := pause(ctx, time.Second); err != nil {
+			return
+		}
+		a.refreshNowWeek(ctx, week, false)
+	}
 	a.revalidateReadyRosterMoves(ctx)
 }
 

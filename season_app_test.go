@@ -166,8 +166,9 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 	}
 	if !reflect.DeepEqual(transport.requests,
 		[]string{"transactions", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks", "projectedScores", "playerRanks", "adp", "aav",
-			"weeklyResults", "playoffBrackets", "playoffBracket", "playoffBracket", "playoffBracket", "leagueStandings"}) ||
-		!reflect.DeepEqual(*pauses, slices.Repeat([]time.Duration{time.Second}, 15)) ||
+			"weeklyResults", "playoffBrackets", "playoffBracket", "playoffBracket", "playoffBracket", "leagueStandings",
+			"nflSchedule", "nflByeWeeks"}) ||
+		!reflect.DeepEqual(*pauses, slices.Repeat([]time.Duration{time.Second}, 17)) ||
 		*events != 1 {
 		t.Fatalf("requests %v pauses %v events %d", transport.requests, *pauses, *events)
 	}
@@ -176,14 +177,14 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 			t.Fatal("requests not spaced")
 		}
 	}
-	if transport.weeks[1] != "5" || r.Lineups.Provenance.Source != "liveScoring W=5" {
+	if transport.weeks[1] != "5" || transport.weeks[16] != "5" || r.Lineups.Provenance.Source != "liveScoring W=5" {
 		t.Fatal("requested wrong week")
 	}
 	a.week.Number = 0
 	transport.bodies["liveScoring"] = seasonFixture(t, "livescoring", "liveScoring.json")
 	a.refreshSeason(a.ctx)
 	r = seasonReading(t, a)
-	if transport.weeks[17] != "" || r.Lineups.Value.Week != 4 ||
+	if transport.weeks[19] != "" || r.Lineups.Value.Week != 4 ||
 		r.Lineups.Provenance.Source != "liveScoring default week" {
 		t.Fatal("default week not respected")
 	}
@@ -473,7 +474,8 @@ func TestSeasonWorkerUsesRefreshedWeek(t *testing.T) {
 		"nflSchedule", "transactions", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks",
 		"projectedScores", "playerRanks", "adp", "aav",
 		"weeklyResults", "playoffBrackets", "playoffBracket", "playoffBracket", "playoffBracket", "leagueStandings",
-	}) || transport.weeks[2] != "5" {
+		"nflSchedule", "nflByeWeeks",
+	}) || transport.weeks[2] != "5" || transport.weeks[17] != "5" {
 		t.Fatalf("order %v weeks %v", transport.requests, transport.weeks)
 	}
 }

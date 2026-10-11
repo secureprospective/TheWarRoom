@@ -238,6 +238,14 @@ export function TargetMoves(arg1) {
   return window['go']['main']['App']['TargetMoves'](arg1);
 }
 
+export function TargetNow(arg1, arg2) {
+  return window['go']['main']['App']['TargetNow'](arg1, arg2);
+}
+
+export function TargetNowRefresh(arg1, arg2) {
+  return window['go']['main']['App']['TargetNowRefresh'](arg1, arg2);
+}
+
 export function TargetOffers(arg1) {
   return window['go']['main']['App']['TargetOffers'](arg1);
 }
@@ -260,10 +268,6 @@ export function TargetPool(arg1) {
 
 export function TargetPoolRefresh(arg1) {
   return window['go']['main']['App']['TargetPoolRefresh'](arg1);
-}
-
-export function TargetPulseNow() {
-  return window['go']['main']['App']['TargetPulseNow']();
 }
 
 export function TargetRace(arg1, arg2, arg3) {

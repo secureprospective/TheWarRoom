@@ -22,7 +22,8 @@
 .draft-report th button { color: inherit; font: inherit; text-align: left; background: transparent; border: 0; padding: 4px 0; cursor: pointer; }
 .draft-report th button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 .draft-reports tr.report-mine td { font-weight: 600; }
-.draft-reports tr.report-mine td:first-child::before { content: '▸ '; }
+/* The glyph sits inside the cell's first line, so it never pushes the text onto a line of its own. */
+.draft-reports tr.report-mine td:first-child > .draft-cell-line:first-child::before { content: '▸ '; }
 .report-bars { display: block; width: 300px; max-width: 100%; height: 40px; margin-top: 6px; }
 .report-bars rect { fill: currentColor; opacity: 0.7; }
 .report-bars .axis { stroke: currentColor; opacity: 0.4; }

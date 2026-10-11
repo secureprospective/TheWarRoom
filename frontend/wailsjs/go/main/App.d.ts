@@ -123,6 +123,10 @@ export function TargetMarketStretches(arg1:main.RawMarketScope):Promise<main.Rea
 
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 
+export function TargetNow(arg1:number,arg2:string):Promise<main.NowBoard>;
+
+export function TargetNowRefresh(arg1:number,arg2:boolean):Promise<void>;
+
 export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_OffersView_>;
 
 export function TargetOpenMFLDraftRoom():Promise<void>;
@@ -134,8 +138,6 @@ export function TargetPlayerContract(arg1:string):Promise<main.Reading_github_co
 export function TargetPool(arg1:main.RawPoolScope):Promise<main.Reading_main_Pool_>;
 
 export function TargetPoolRefresh(arg1:boolean):Promise<void>;
-
-export function TargetPulseNow():Promise<main.PulseReading>;
 
 export function TargetRace(arg1:number,arg2:string,arg3:string):Promise<main.RaceBoard>;
 

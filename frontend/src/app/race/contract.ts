@@ -5,7 +5,7 @@ export type Choice = { value: string; label: string };
 export type Race = {
   standings: Report; board: Board; week: number; weeks: Choice[]; team: string; teams: Choice[];
 };
-const choice = (v: unknown, p: string): Choice => {
+export const choice = (v: unknown, p: string): Choice => {
   const c = object(v, p, ['value', 'label']);
   return { value: text(c.value, p), label: text(c.label, p) };
 };

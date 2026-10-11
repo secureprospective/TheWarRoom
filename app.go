@@ -99,6 +99,7 @@ type App struct {
 	seasonDraftResults  heldSeasonFeed[[]draftreports.Pick]
 	seasonFuturePicks   heldSeasonFeed[[]draftreports.FuturePick]
 	race                raceHeld
+	now                 nowHeld
 	lineupsWeek         int
 	seasonChanged       func(context.Context)
 	seasonPause         func(context.Context, time.Duration) error

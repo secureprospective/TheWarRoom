@@ -159,7 +159,7 @@ UI. `frontend/src/TargetMount.tsx` switches between the target shell and the unc
 pure two-route gate. `endpoint.open` navigates and highlights; merged rows target kept ids or places.
 The harness is lazy-loaded only on `harness.open`; it is not in the target entry chunk.
 
-`internal/ingestion/nflschedule` fetches and validates MFL's league-independent NFL schedule,
+`internal/ingestion/nflschedule` fetches and validates MFL's league-independent NFL schedule (with home side and scores) and the season's bye weeks (`byes.go`),
 then converts it into dated `internal/leagueweek` facts at a supplied instant.
 `internal/leagueweek` derives the lineup week, per-team kickoff locks and bounded season phase;
 after the season ends it requires explicit rollover approval.
@@ -204,13 +204,11 @@ Hand-off Act: `move.handoff` opens a Ready plan; `target:moves` reloads receipts
 Trade desk: `shell/TradeDesk.tsx` groups held offers; lazy `data/tradeProvider.ts` parses Go readings.
 Accept plan: `commands/tradeAccept.ts` drafts `trade.accept`; `shell/TradePlan.tsx` tracks desk hand-off.
 
-`pulse_app.go`: `TargetPulseNow() (PulseReading, error)` reads held matchups and ordered starter scores.
 `alerts_app.go`: `TargetAlerts(franchiseID string) (AlertReading, error)` reads lineup and incoming-offer alerts.
 `internal/leaguefeed`, `internal/ingestion/livescoring`: matchups, playing counts and per-player live scores.
 
 Home seasonal card: `shell/SeasonalCard.tsx` lazily renders the held clock and shared deadline ticker.
 Home alert tray: `shell/AlertTray.tsx` lazily reads ordered franchise alerts and routes to their workspaces.
-League Pulse Now: `shell/PulseNow.tsx` lazily reads matchups and toggles side-by-side starter scores.
 
 `target_app.go`: `TargetDraftTaxi(franchiseID, playerID string) (envelope.Receipt, error)` saves a taxi plan.
 `internal/envelope`: `roster.taxi` derives direction from held status and watches post-hand-off rosters.
@@ -263,3 +261,5 @@ network; `draft_reports_reading.go` authors nine report tables, grid, timing and
 `draft.reports` refreshes or opens the discovered MFL room without submitting a pick.
 
 League Pulse › Race: `race_app.go` holds weeklyResults, the playoff brackets, MFL's standings and both M2 boards, refreshed with the hourly season refresh or on open (`TargetRaceRefresh`). `TargetRace(week, team, mine)` reads held data only and validates the choices; `race_reading.go`, `race_playoffs_reading.go` and `race_points_reading.go` write every report (M-002 standings on top, then M-008/C-02, M-090, M-170, M-074, M-014, M-161, M-071, M-076, M-077, M-011–M-013, M-009, M-010) through the shared `Report` shell. The lazy screen is `frontend/src/app/race/Race.tsx`. The league's divisions, conferences and standingsSort arrive with the rulebook (`league.RawConfig`).
+
+League Pulse › Now: `now_app.go` holds each opened week's NFL schedule, the season's bye weeks and, per week, the first held copy of its scores (read from the fetch archive, newer copies only). `TargetNowRefresh(week, force)` refreshes the race's feeds, then that week's NFL schedule and the byes (5-minute freshness, archive fallback scoped by `W`); `TargetNow(week, mine)` reads held data only and validates the week (0: the current NFL week). `now_reading.go` (week choice, held live scores for a week MFL has not scored, X-03 Classic matchup, M-005, M-003, M-004), `now_recap_reading.go` (M-007, M-021, M-022, M-088) and `now_nfl_reading.go` (M-015, M-016, M-072, M-018) write the reports on the race's view. The lazy screen is `frontend/src/app/now/Now.tsx`.

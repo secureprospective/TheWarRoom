@@ -64,7 +64,6 @@ export function createCommands(
   const lineups = createLineups(provider);
   const trades = createReadings<TradeReading>(provider, (id) => provider.trades(id));
   const alerts = createReadings(provider, (id) => provider.alerts(id));
-  const pulse = createReadings(provider, () => provider.pulseNow());
   const moves = createMovesState();
   const mflKey = createMFLKeyState();
   const prefetchMoves = createMovesPrefetch();
@@ -237,16 +236,6 @@ export function createCommands(
           );
       },
     }),
-    'pulse.toggle': command({
-      ...ambient,
-      id: 'pulse.toggle',
-      label: 'Toggle starters',
-      args: ['matchup', 'expanded'],
-      run: ({ matchup, expanded }: { matchup: string; expanded: boolean }) =>
-        state.write({
-          pulseExpanded: { ...state.read().pulseExpanded, [matchup]: !expanded },
-        }),
-    }),
     'trade.accept.plan': command({
       ...ambient,
       id: 'trade.accept.plan',
@@ -337,6 +326,14 @@ export function createCommands(
         if (!['refresh', 'week', 'team'].includes(args.action))
           throw new Error('League race: invalid action');
         void import('../race/state').then(m => m.raceState.choose(args.action, args.value))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
+    'now.reports': command({
+      ...ambient, id: 'now.reports', label: 'This week in the league', aliases: [], args: ['action', 'value'],
+      run: (args: { action: 'refresh' | 'week'; value: string }) => {
+        if (!['refresh', 'week'].includes(args.action)) throw new Error('League Pulse: invalid action');
+        void import('../now/state').then(m => m.nowState.choose(args.action, args.value))
           .catch(cause => state.write({ notice: String(cause) }));
       },
     }),
@@ -590,8 +587,6 @@ export function createCommands(
     lineups,
     trades,
     alerts,
-    pulse,
-    usePulse: state.usePulse,
     mflField,
     mflReason,
     loadMFLKey: () => requestMFL(() => provider.mflKey(), 'Checking the keyring…'),

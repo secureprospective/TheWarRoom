@@ -69,7 +69,6 @@ async function mountClock(clock: () => Promise<Sourced<ClockReading>>) {
     forgetMFL: vi.fn(),
     kind: 'fixture',
     reason: 'test',
-    pulseNow: vi.fn(),
     alerts: vi.fn(),
     trades: vi.fn(),
     draftTradeAccept: vi.fn(),
