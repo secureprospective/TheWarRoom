@@ -8,6 +8,10 @@ export class TestElement {
   parentNode: TestElement | null = null;
   constructor(readonly tagName: string, readonly ownerDocument: TestDocument) {}
   get nodeName() { return this.tagName; }
+  get options(): TestElement[] {
+    return this.children.flatMap(child => child instanceof TestElement
+      ? child.tagName === 'OPTION' ? [child] : child.options : []);
+  }
   get textContent(): string {
     return this.children.map((child) => child.textContent).join('');
   }

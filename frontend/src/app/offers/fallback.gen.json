@@ -1,0 +1,88 @@
+{
+  "words": {
+    "heading": "Offers history",
+    "direction": "Which offers",
+    "seasons": "Seasons",
+    "window": "Time of year",
+    "team": "Counterparty",
+    "retry": "Try again",
+    "pending": "Updating filters; figures still describe the previous scope until Go replies."
+  },
+  "disclosure": "MFL exposes only the GM's own offers. The archive is unavailable; whose offers, the count and the cutoff cannot be verified.",
+  "title": "How do offers end?",
+  "summary": "",
+  "countText": "",
+  "directions": [
+    {
+      "id": "all",
+      "label": "Every visible offer",
+      "from": 0,
+      "to": 0
+    },
+    {
+      "id": "sent",
+      "label": "Sent",
+      "from": 0,
+      "to": 0
+    },
+    {
+      "id": "received",
+      "label": "Received",
+      "from": 0,
+      "to": 0
+    }
+  ],
+  "windows": [
+    {
+      "id": "",
+      "label": "Every stretch",
+      "from": 0,
+      "to": 0
+    },
+    {
+      "id": "spring",
+      "label": "Spring",
+      "from": 0,
+      "to": 0
+    },
+    {
+      "id": "summer",
+      "label": "Summer",
+      "from": 0,
+      "to": 0
+    },
+    {
+      "id": "season",
+      "label": "Season",
+      "from": 0,
+      "to": 0
+    }
+  ],
+  "ranges": [
+    {
+      "id": "all",
+      "label": "2013–2026",
+      "from": 2013,
+      "to": 2026
+    },
+    {
+      "id": "recent",
+      "label": "2024–2026",
+      "from": 2024,
+      "to": 2026
+    },
+    {
+      "id": "early",
+      "label": "2013–2016",
+      "from": 2013,
+      "to": 2016
+    }
+  ],
+  "teams": [
+    {
+      "fid": "",
+      "name": "Every counterparty"
+    }
+  ],
+  "stretches": []
+}

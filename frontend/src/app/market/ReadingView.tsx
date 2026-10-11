@@ -23,8 +23,8 @@ export function HowCounted({ reading, countText }: { reading: ReadingShell; coun
     <details className="market-how" data-endpoint="L-33">
       <summary>How this is counted</summary>
       <p>
-        This is the league’s trade and draft history through the archive cutoff, not today’s live
-        market.
+        This is frozen archive history through the cutoff, not today’s live market.
+        The scope and counting method below define which records are visible.
       </p>
       <p>
         {reading.howCounted || 'No archive reading is available; no numbers have been supplied.'}

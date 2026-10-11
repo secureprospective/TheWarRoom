@@ -96,7 +96,7 @@ describe('Endpoint map', () => {
       'M-028',
       'M-029',
       'X-04',
-      ...Array.from({ length: 29 }, (_, i) => `L-${String(i + 1).padStart(2, '0')}`),
+      ...Array.from({ length: 32 }, (_, i) => `L-${String(i + 1).padStart(2, '0')}`),
       'L-33',
       'L-35',
     ];
@@ -202,7 +202,7 @@ describe('Endpoint verbs and search', () => {
       expect(Boolean(match)).toBe(row.disposition === 'kept');
     }
     const result = rankResults('M-033', candidates)[0];
-    expect(result.label).toContain('M-033 · Trades O=05 · Trade Floor › Trade desk and offers');
+    expect(result.label).toContain('M-033 · Trades O=05 · Trade Floor › Trade desk');
     runResult(executor, result);
     expect(executor.read().node).toBe('trade');
     expect(executor.read().endpointIds).toEqual(['M-033']);

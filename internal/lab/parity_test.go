@@ -184,12 +184,12 @@ func keys(m map[string]any) []string {
 	return out
 }
 func exactNumber(path string) bool {
-	for _, name := range []string{".n", ".trades", ".from", ".to", ".mid", ".records", ".id", ".moved", ".realN", ".total", ".at", ".like", ".overall", ".season"} {
+	for _, name := range []string{".n", ".trades", ".from", ".to", ".mid", ".records", ".id", ".moved", ".realN", ".total", ".at", ".like", ".overall", ".season", ".known", ".ts", ".year", ".decided"} {
 		if strings.HasSuffix(path, name) {
 			return true
 		}
 	}
-	return strings.Contains(path, ".n.") || strings.Contains(path, "inScope[") || strings.Contains(path, ".months[") || strings.Contains(path, ".span[") || strings.Contains(path, ".seasons[") || strings.HasSuffix(path, ".seasons")
+	return strings.Contains(path, ".counts.") || strings.Contains(path, ".n.") || strings.Contains(path, "inScope[") || strings.Contains(path, ".months[") || strings.Contains(path, ".span[") || strings.Contains(path, ".seasons[") || strings.HasSuffix(path, ".seasons")
 }
 func jsonValue(t *testing.T, v any) any {
 	t.Helper()
@@ -209,12 +209,12 @@ func TestParity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(paths) != 13 {
-		t.Fatalf("expected 13 fixture files; got %d", len(paths))
+	if len(paths) != 14 {
+		t.Fatalf("expected 14 fixture files; got %d", len(paths))
 	}
 	maxima := make(map[string]float64)
 	for _, path := range paths {
-		if strings.HasSuffix(path, "boundaries.json.gz") || strings.HasSuffix(path, "draft.json.gz") || strings.HasSuffix(path, "teams.json.gz") {
+		if strings.HasSuffix(path, "boundaries.json.gz") || strings.HasSuffix(path, "draft.json.gz") || strings.HasSuffix(path, "teams.json.gz") || strings.HasSuffix(path, "offers.json.gz") {
 			continue
 		}
 		g := readGolden(t, path)

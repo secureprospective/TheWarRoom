@@ -37,7 +37,7 @@ export const presets = {
   },
   trade: {
     label: 'Trade Season',
-    route: { node: 'trade', workspace: 'trade-desk-and-offers' },
+    route: { node: 'trade', workspace: 'trade-desk' },
     density: 'tactical',
     inspector: 'expanded',
     comms: true,

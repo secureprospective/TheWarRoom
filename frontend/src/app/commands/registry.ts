@@ -195,6 +195,17 @@ export function createCommands(
     });
   }
   const registry = Object.freeze({
+    'offers.filter': command({
+      ...ambient,
+      id: 'offers.filter',
+      label: 'Filter Offers',
+      args: ['field', 'value'],
+      run: (change: import('../offers/state').OfferFilter) => {
+        void import('../offers/state').then(
+          m => m.offerState.change(change),
+        ).catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     market: command({
       ...ambient,
       id: 'market',

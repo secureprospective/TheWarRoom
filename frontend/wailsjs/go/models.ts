@@ -2240,6 +2240,26 @@ export namespace main {
 		}
 	}
 	
+	export class RawOfferScope {
+	    from: number;
+	    to: number;
+	    direction: string;
+	    window: string;
+	    team: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawOfferScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.from = source["from"];
+	        this.to = source["to"];
+	        this.direction = source["direction"];
+	        this.window = source["window"];
+	        this.team = source["team"];
+	    }
+	}
 	export class Reading_github_com_secureprospective_TheWarRoom_internal_lab_Market_ {
 	    // Go type: lab
 	    value: any;
@@ -3029,6 +3049,208 @@ export namespace main {
 	
 	    static createFrom(source: any = {}) {
 	        return new Reading_main_MarketSurface_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = this.convertValues(source["value"], null);
+	        this.provenance = this.convertValues(source["provenance"], snapshot.Provenance);
+	        this.status = source["status"];
+	        this.absenceReason = source["absenceReason"];
+	        this.count = source["count"];
+	        this.threshold = source["threshold"];
+	        this.baseline = source["baseline"];
+	        this.cutoff = source["cutoff"];
+	        this.method = source["method"];
+	        this.inputSHA = source["inputSHA"];
+	        this.buildStamp = source["buildStamp"];
+	        this.howCounted = source["howCounted"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class OfferOutcomeView {
+	    id: string;
+	    label: string;
+	    text: string;
+	    width: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new OfferOutcomeView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.label = source["label"];
+	        this.text = source["text"];
+	        this.width = source["width"];
+	    }
+	}
+	export class OfferStretchView {
+	    id: string;
+	    label: string;
+	    countText: string;
+	    acceptance: string;
+	    finding: string;
+	    outcomes: OfferOutcomeView[];
+	
+	    static createFrom(source: any = {}) {
+	        return new OfferStretchView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.label = source["label"];
+	        this.countText = source["countText"];
+	        this.acceptance = source["acceptance"];
+	        this.finding = source["finding"];
+	        this.outcomes = this.convertValues(source["outcomes"], OfferOutcomeView);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class OfferChoice {
+	    id: string;
+	    label: string;
+	    from: number;
+	    to: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new OfferChoice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.label = source["label"];
+	        this.from = source["from"];
+	        this.to = source["to"];
+	    }
+	}
+	export class OfferWords {
+	    heading: string;
+	    direction: string;
+	    seasons: string;
+	    window: string;
+	    team: string;
+	    retry: string;
+	    pending: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new OfferWords(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.heading = source["heading"];
+	        this.direction = source["direction"];
+	        this.seasons = source["seasons"];
+	        this.window = source["window"];
+	        this.team = source["team"];
+	        this.retry = source["retry"];
+	        this.pending = source["pending"];
+	    }
+	}
+	export class OffersView {
+	    // Go type: OfferWords
+	    words: any;
+	    disclosure: string;
+	    title: string;
+	    summary: string;
+	    countText: string;
+	    directions: OfferChoice[];
+	    windows: OfferChoice[];
+	    ranges: OfferChoice[];
+	    teams: TeamOption[];
+	    stretches: OfferStretchView[];
+	
+	    static createFrom(source: any = {}) {
+	        return new OffersView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.words = this.convertValues(source["words"], null);
+	        this.disclosure = source["disclosure"];
+	        this.title = source["title"];
+	        this.summary = source["summary"];
+	        this.countText = source["countText"];
+	        this.directions = this.convertValues(source["directions"], OfferChoice);
+	        this.windows = this.convertValues(source["windows"], OfferChoice);
+	        this.ranges = this.convertValues(source["ranges"], OfferChoice);
+	        this.teams = this.convertValues(source["teams"], TeamOption);
+	        this.stretches = this.convertValues(source["stretches"], OfferStretchView);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Reading_main_OffersView_ {
+	    // Go type: OffersView
+	    value: any;
+	    provenance: snapshot.Provenance;
+	    status: string;
+	    absenceReason?: string;
+	    count: number;
+	    threshold: number;
+	    baseline: string;
+	    cutoff: string;
+	    method: string;
+	    inputSHA: string;
+	    buildStamp: string;
+	    howCounted: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Reading_main_OffersView_(source);
 	    }
 	
 	    constructor(source: any = {}) {
