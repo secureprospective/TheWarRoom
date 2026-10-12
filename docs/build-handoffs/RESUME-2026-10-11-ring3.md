@@ -1,4 +1,36 @@
-## >>> RESUME HERE (written 08:12 CDT 2026-10-12) <<<
+## >>> RESUME HERE (written 08:40 CDT 2026-10-12, compaction) <<<
+session/ring-3 HEAD 1787c9a (p3g1 COMPLETE: s2 2fdb63c, s3 d4e8a50, s4 83545aa + 943644f). Unpushed.
+IN FLIGHT, Sol (3 lanes, started 07:31 / 08:11; liveness = mtime RUN/<p>/sessions/*.jsonl, done = RUN/<p>/sentinel,
+report RUN/<p>/REPORT.md; recover reasoning from the session jsonl):
+- p3s shell/Home/HQ in worktree ring-3-b (brief RUN/par/p3s.md)
+- p3r Research in worktree ring-3-c (brief RUN/par/p3r.md)
+- p3g2-s1 Lab compiler + proof 1 in NEW worktree ring-3-d, branch session/ring-3-d (brief RUN/par/p3g2-s1.md).
+  p3g2-s2 (proof 2 injection seam, today's Lab, Control Room/source lines) still needs a brief after s1.
+On each sentinel: review REPORT, plant one mutant, verify, commit IN THAT WORKTREE (never with Sol's edits half-done),
+merge into ring-3 (expect registry CSV / registry.test / bindings / SYSTEM_MAP conflicts: union + make bindings +
+gen-endpoints), deploy, look.
+IN FLIGHT, Claude: p3n Control Room, UNCOMMITTED in worktree ring-3 (all compile; Go tests pass):
+- Go done+tested: internal/ingestion/sitenews (What's New, M-141), internal/ingestion/league/allrules.go (MFL
+  scoring-event names), control_room_reading.go + control_room_app.go (TargetLeagueSettings M-091/M-097,
+  TargetSiteNews, TargetBylaws M-185 from embedded docs/league-rules/Official_Rulebook.md, TargetAccounting
+  M-098/M-197 + TargetOpenMFLAccounting -> https://<host>.myfantasyleague.com/<season>/accounting_report?L=14432,
+  evidence claudeos ~/mflmap-runs/bee-mfl-ui-map-2026-10-04/nav.log), app.go field `control controlFeeds`,
+  control_room_test.go. Bindings regenerated (make bindings).
+- Frontend WRITTEN, NOT YET WIRED/TESTED: frontend/src/app/control/{state.ts,LeagueRoom.tsx,WhatsNew.tsx,control.css}.
+  TODO: (a) fix imports: `dispatch` is not in commands/dispatch (find how Comms.tsx gets dispatch); (b) add
+  'control.read' command in commands/registry.ts (actions league|news|search|open-accounting -> controlState.choose);
+  (c) TargetApp.tsx: lazy LeagueRoom for control/league (replace shell-unwired branch), WhatsNew inside AppSettings;
+  (d) S-05: presets set per-node workspaces + an Admin switch (off by default, localStorage like shell/franchise.ts)
+  that hides C-09 engine parameters in Data and sources; (e) S-10: persist market filters per workspace in localStorage
+  + "Reset filters"; (f) vitest tests (bylaw search, parseBylaws, presets round-trip, filter persistence);
+  (g) registry: M-091/M-097/M-185/M-098/M-197/M-141/S-05/S-10 -> built; M-137 (no cache page address in docs or
+  captured pages), M-108, M-093, M-095 -> ring=4 + ring_note; regenerate endpoints.gen.ts; registry.test built list;
+  (h) verify, build, deploy, look at Control Room App + League; commit.
+BACKLOG: live Checked-facts with real results needs Christopher's OK to copy league-archive/raw to Claude-OS (hook
+blocks rsync of the work tree; do not route around it).
+NEXT after p3n: p3l live game; p3h after p3g2; spec rev 3; registry gate; Christopher click-through; squash-merge PR.
+
+## (superseded 08:12 block)
 session/ring-3 HEAD 943644f (all local, unpushed). Since the 07:35 block:
 - 83545aa p3g1-s4 (1/2): nine checks as compile assertions; internal/lab/testdata/check-exceptions.csv pins 635 identities
   (generated from the reference exceptions.json; Go finds exactly the same 635); full archive equals checks.json.
