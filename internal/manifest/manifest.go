@@ -1,0 +1,201 @@
+// Package manifest pins exactly which archived bodies a compile reads. Each entry names one
+// archived MFL response by its body's sha256, so a compile resolves the very bytes it was pinned
+// to, never the newest copy of a URL. A manifest is identified by the sha256 of its entries.
+package manifest
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguearchive"
+)
+
+// Entry is one pinned input. FetchID locates the archive row holding it in this database and is
+// not part of the manifest's identity; it and CapturedAt are empty when the archive holds no
+// body with that sha256.
+type Entry struct {
+	File       string `json:"file"`
+	Export     string `json:"export"`
+	League     string `json:"league"`
+	Season     int    `json:"season"`
+	Week       int    `json:"week"`
+	Scope      string `json:"scope"`
+	CapturedAt string `json:"capturedAt"`
+	SHA256     string `json:"sha256"`
+	MFLError   string `json:"mflError,omitempty"`
+	FetchID    int64  `json:"fetchId"`
+}
+
+// Held reports whether the archive held the pinned body when the manifest was built.
+func (e Entry) Held() bool { return e.FetchID != 0 }
+
+// Manifest is a named, ordered set of pinned inputs.
+type Manifest struct {
+	Name    string
+	Entries []Entry
+	SHA256  string
+}
+
+// Pin is one input a compile must read: a file of the archive and the bytes it held.
+type Pin struct {
+	File   string
+	SHA256 string
+}
+
+// Fetch is one archived response an entry may be pinned to.
+type Fetch struct {
+	ID        int64
+	URL       string
+	SHA256    string
+	Error     string
+	FetchedAt time.Time
+}
+
+// Build pins each input to the archived fetch of the same request with the same bytes, captured
+// no later than cutoff. A pin no fetch matches stays in the manifest, unheld. rootSeason is the
+// season of files kept at the archive root.
+func Build(name string, pins []Pin, fetches []Fetch, rootSeason int, cutoff time.Time) (Manifest, error) {
+	byBody := map[[2]string][]Fetch{}
+	leagues := map[int]string{}
+	for _, f := range fetches {
+		e, league, err := leaguearchive.ParseURL(f.URL)
+		if err != nil {
+			return Manifest{}, fmt.Errorf("manifest %s: %w", name, err)
+		}
+		if league != "" {
+			if previous := leagues[e.Season]; previous != "" && previous != league {
+				return Manifest{}, fmt.Errorf("manifest %s: season %d has conflicting league ids %s and %s", name, e.Season, previous, league)
+			}
+			leagues[e.Season] = league
+		}
+		if !f.FetchedAt.After(cutoff) {
+			k := [2]string{e.Key(), f.SHA256}
+			byBody[k] = append(byBody[k], f)
+		}
+	}
+	m := Manifest{Name: name, Entries: make([]Entry, 0, len(pins))}
+	for _, p := range pins {
+		e, err := leaguearchive.ParsePath(p.File, rootSeason)
+		if err != nil {
+			return Manifest{}, fmt.Errorf("manifest %s: %w", name, err)
+		}
+		entry := Entry{File: p.File, Export: e.Type, Season: e.Season, Week: e.Week(),
+			Scope: string(leaguearchive.ScopeOf(e.Type)), SHA256: p.SHA256}
+		if entry.Scope != string(leaguearchive.ScopeSite) {
+			entry.League = leagues[e.Season]
+		}
+		if held := byBody[[2]string{e.Key(), p.SHA256}]; len(held) > 0 {
+			first := slices.MinFunc(held, func(a, b Fetch) int { return a.FetchedAt.Compare(b.FetchedAt) })
+			entry.FetchID, entry.MFLError = first.ID, first.Error
+			entry.CapturedAt = first.FetchedAt.UTC().Format(time.RFC3339)
+		}
+		m.Entries = append(m.Entries, entry)
+	}
+	slices.SortFunc(m.Entries, func(a, b Entry) int { return strings.Compare(a.File, b.File) })
+	var err error
+	if m.SHA256, err = identity(m.Entries); err != nil {
+		return Manifest{}, fmt.Errorf("manifest %s: %w", name, err)
+	}
+	return m, nil
+}
+
+// identity is the sha256 of the entries without their row locators.
+func identity(entries []Entry) (string, error) {
+	plain := slices.Clone(entries)
+	for i := range plain {
+		plain[i].FetchID = 0
+	}
+	b, err := json.Marshal(plain)
+	if err != nil {
+		return "", fmt.Errorf("encode entries: %w", err)
+	}
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:]), nil
+}
+
+// Encode returns the entries as stored with a published manifest.
+func (m Manifest) Encode() ([]byte, error) {
+	b, err := json.Marshal(m.Entries)
+	if err != nil {
+		return nil, fmt.Errorf("manifest %s: encode: %w", m.Name, err)
+	}
+	return b, nil
+}
+
+// Decode reads a published manifest back and checks its sha256.
+func Decode(name, sha string, entries []byte) (Manifest, error) {
+	m := Manifest{Name: name, SHA256: sha}
+	if err := json.Unmarshal(entries, &m.Entries); err != nil {
+		return Manifest{}, fmt.Errorf("manifest %s: decode: %w", name, err)
+	}
+	got, err := identity(m.Entries)
+	if err != nil {
+		return Manifest{}, fmt.Errorf("manifest %s: %w", name, err)
+	}
+	if got != sha {
+		return Manifest{}, fmt.Errorf("manifest %s: entries hash to %s, not %s", name, got, sha)
+	}
+	return m, nil
+}
+
+// Missing returns the entries the archive held no body for.
+func (m Manifest) Missing() []Entry {
+	var out []Entry
+	for _, e := range m.Entries {
+		if !e.Held() {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+// Bodies returns an archived body by its sha256.
+type Bodies interface {
+	Body(ctx context.Context, sha256 string) ([]byte, error)
+}
+
+// Resolved is one entry and its body. Body is nil for an entry whose body is an MFL error:
+// it is pinned, but never read as data.
+type Resolved struct {
+	Entry Entry
+	Body  []byte
+}
+
+// Resolve reads every entry's pinned body. Every entry whose body is missing or does not match
+// its sha256 is named in the error.
+func (m Manifest) Resolve(ctx context.Context, bodies Bodies) ([]Resolved, error) {
+	out := make([]Resolved, 0, len(m.Entries))
+	var errs []error
+	for _, e := range m.Entries {
+		if !e.Held() {
+			errs = append(errs, fmt.Errorf("manifest %s: %s (sha256 %s): no pinned archive row", m.Name, e.File, e.SHA256))
+			continue
+		}
+		body, err := bodies.Body(ctx, e.SHA256)
+		if err == nil {
+			sum := sha256.Sum256(body)
+			if hex.EncodeToString(sum[:]) != e.SHA256 {
+				err = errors.New("body does not match its sha256")
+			}
+		}
+		if err != nil {
+			errs = append(errs, fmt.Errorf("manifest %s: %s (sha256 %s): %w", m.Name, e.File, e.SHA256, err))
+			continue
+		}
+		if e.MFLError != "" {
+			body = nil
+		}
+		out = append(out, Resolved{Entry: e, Body: body})
+	}
+	if len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+	return out, nil
+}

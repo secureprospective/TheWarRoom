@@ -193,7 +193,24 @@ export function createCommands(
       run: (values: A) => lineupAction({ kind, ...values } as import('./lineupEdit').LineupAction),
     });
   }
+  const dataRun = (action: import('../datasources/state').Action) => {
+    void import('../datasources/state').then(m => m.dataState.run(action))
+      .catch(cause => state.write({ notice: String(cause) }));
+  };
   const registry = Object.freeze({
+    'refresh.run': command({
+      ...ambient, id: 'refresh.run', label: 'Refresh data', gravity: 'G1', args: ['scope'],
+      run: ({ scope }: { scope: string }) => dataRun({ kind: 'refresh', scope }),
+    }),
+    'data.run': command({
+      ...ambient, id: 'data.run', label: 'Data settings', gravity: 'G1', args: ['kind'],
+      run: (action: import('../datasources/state').DataAction) => dataRun(action),
+    }),
+    'data.parameter': command({
+      ...ambient, id: 'data.parameter', label: 'Change engine parameter', gravity: 'G1',
+      roles: ['admin'], args: ['key', 'position', 'value'],
+      run: (action: import('../datasources/state').ParamAction) => dataRun(action),
+    }),
     'contracts.set': command({
       ...ambient,
       id: 'contracts.set',

@@ -39,11 +39,7 @@ export function GetRankings():Promise<main.RankingsResult>;
 
 export function GetRoster(arg1:string):Promise<main.RosterResult>;
 
-export function GetSignals():Promise<main.SignalsView>;
-
 export function LoadCrosswalk():Promise<main.CrosswalkReport>;
-
-export function LoadSignals():Promise<main.SignalsReport>;
 
 export function MFLKeyStatus():Promise<main.MFLKeyStatus>;
 
@@ -54,6 +50,8 @@ export function RefreshLeague():Promise<main.RefreshResult>;
 export function ResetParam(arg1:string,arg2:string):Promise<main.SetParamResult>;
 
 export function ScoreLeague():Promise<main.ScoreLeagueResult>;
+
+export function SetLeagueArchiveDir(arg1:string):Promise<main.DataActResult>;
 
 export function SetLeagueSettingOverride(arg1:string,arg2:string,arg3:string):Promise<main.SetLeagueSettingResult>;
 
@@ -92,6 +90,12 @@ export function TargetContracts(arg1:snapshot.RawContractScope):Promise<main.Con
 export function TargetCounterpartTeam(arg1:main.RawCounterpartTeam):Promise<main.Reading_main_TeamCounterpart_>;
 
 export function TargetCounterparties(arg1:main.RawCounterpartiesScope):Promise<main.Reading_main_Counterparties_>;
+
+export function TargetCrosswalk():Promise<main.Report>;
+
+export function TargetDataRefresh(arg1:string):Promise<main.DataActResult>;
+
+export function TargetDataSources():Promise<main.DataSources>;
 
 export function TargetDraftIR(arg1:string,arg2:string):Promise<envelope.Receipt>;
 

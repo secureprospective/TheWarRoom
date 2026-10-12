@@ -263,3 +263,11 @@ network; `draft_reports_reading.go` authors nine report tables, grid, timing and
 League Pulse › Race: `race_app.go` holds weeklyResults, the playoff brackets, MFL's standings and both M2 boards, refreshed with the hourly season refresh or on open (`TargetRaceRefresh`). `TargetRace(week, team, mine)` reads held data only and validates the choices; `race_reading.go`, `race_playoffs_reading.go` and `race_points_reading.go` write every report (M-002 standings on top, then M-008/C-02, M-090, M-170, M-074, M-014, M-161, M-071, M-076, M-077, M-011–M-013, M-009, M-010) through the shared `Report` shell. The lazy screen is `frontend/src/app/race/Race.tsx`. The league's divisions, conferences and standingsSort arrive with the rulebook (`league.RawConfig`).
 
 League Pulse › Now: `now_app.go` holds each opened week's NFL schedule, the season's bye weeks and, per week, the first held copy of its scores (read from the fetch archive, newer copies only). `TargetNowRefresh(week, force)` refreshes the race's feeds, then that week's NFL schedule and the byes (5-minute freshness, archive fallback scoped by `W`); `TargetNow(week, mine)` reads held data only and validates the week (0: the current NFL week). `now_reading.go` (week choice, held live scores for a week MFL has not scored, X-03 Classic matchup, M-005, M-003, M-004), `now_recap_reading.go` (M-007, M-021, M-022, M-088) and `now_nfl_reading.go` (M-015, M-016, M-072, M-018) write the reports on the race's view. The lazy screen is `frontend/src/app/now/Now.tsx`.
+
+### Data and sources
+
+- `internal/ingestion/leaguearchive`: offline, prevalidated MFL file-tree import through the archive Sink.
+- `internal/manifest`: pinned-input identity, body resolution and last-good snapshot standing; no I/O except the injected body reader.
+- `league_archive_app.go`, `data_sources_app.go`, `data_sources_reading.go`: settings, scoped refresh, manifest publishing and Go-written Control Room reports.
+- `internal/store/history/inputs.go`: archive locators, input manifests and append-only compile attempts (metadata, not fact tables).
+- `frontend/src/app/datasources`: lazy Control Room Data and sources, scope Acts, player crosswalk and engine parameter overrides.

@@ -1,0 +1,182 @@
+{
+  "data": {
+    "health": {
+      "id": "C-07",
+      "title": "Source health and freshness",
+      "note": "",
+      "status": "ok",
+      "source": "Source: the app's own fetch and load records",
+      "asOf": "As of: Oct 11, 2026, 6:00 PM",
+      "how": "A source's last good read is its latest load without an error; a failure is shown while it is newer than that. A source is lost when it has failed and had no good load within its window. The board runs reduced when a measure it reads has no source flowing; it is rebalanced only when you approve it.",
+      "columns": [
+        "Source",
+        "Last good",
+        "Last failure",
+        "Age",
+        "Board"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "MFL league archive, 2013–2026",
+            "Oct 11, 2026, 6:00 PM",
+            "None",
+            "Under an hour",
+            "Not read by the board"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    "signals": {
+      "id": "C-07-files",
+      "title": "Signal files",
+      "note": "",
+      "status": "ok",
+      "source": "Source: history.db",
+      "asOf": "As of: now",
+      "how": "A file is fresh while its last load is within its source's window. Players with data are counted in the latest season holding any; waiting ids are source players not yet matched to an MFL player. Rostered players with data covers every position the league rosters.",
+      "columns": [
+        "Signal",
+        "Source",
+        "Last loaded",
+        "Fresh",
+        "Players with data",
+        "Waiting for a match",
+        "Rostered players with data"
+      ],
+      "rows": [],
+      "summary": null,
+      "link": null
+    },
+    "facts": {
+      "id": "L-34",
+      "title": "Checked facts",
+      "note": "No manifest yet: import the league archive under Data refresh to pin the Lab's inputs.",
+      "status": "empty",
+      "source": "Source: the league archive in history.db",
+      "asOf": "As of: now",
+      "how": "The checked facts are compiled from exactly the archived MFL files a manifest pins, by their bytes' sha256, never from the newest copy of a file. A file the archive no longer holds blocks a same-cutoff parity claim; a fresh download does not stand in for it.",
+      "columns": [
+        "Fact",
+        "Value"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "Inputs",
+            "Legacy NFL 2013–2026 as frozen for the Lab"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Lab data",
+            "Captured through Oct 6, 2026, 1:42 AM; built Oct 6, 2026, 3:57 PM"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    "checks": {
+      "id": "L-34-checks",
+      "title": "Checks that will run",
+      "note": "These run each time the facts are compiled; their results appear here once the compiler is built.",
+      "status": "ok",
+      "source": "Source: the frozen Lab data and the build plan",
+      "asOf": "As of: now",
+      "how": "A compiled snapshot is published only when every check passes; a failed build keeps the last good one, marked stale.",
+      "columns": [
+        "Check",
+        "What it proves",
+        "Result"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "Compiled rows match the frozen Lab data",
+            "Row by row: ids, times, counts and money exact; derived decimals within one part in a billion.",
+            "Not run yet"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Engine goldens pass on the compiled data",
+            "The engines read the compiled facts and reproduce their checked results.",
+            "Not run yet"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    "archiveDir": "/fixture/raw",
+    "scopes": [
+      {
+        "id": "league",
+        "label": "League from MFL",
+        "note": "Rules, rosters and salary adjustments for the current season."
+      },
+      {
+        "id": "signals",
+        "label": "Signals",
+        "note": "The nflverse, CFBD and contract files that are due."
+      },
+      {
+        "id": "crosswalk",
+        "label": "Player crosswalk",
+        "note": "DynastyProcess's player ids, linked to the league's players."
+      },
+      {
+        "id": "archive",
+        "label": "League archive",
+        "note": "Files new to the 2013–2026 archive, then the Lab's pinned inputs."
+      }
+    ]
+  },
+  "crosswalk": {
+    "id": "C-08",
+    "title": "Player crosswalk",
+    "note": "No crosswalk loaded since launch. Refresh the Player crosswalk scope to load it.",
+    "status": "empty",
+    "source": "Source: DynastyProcess",
+    "asOf": "As of: this launch",
+    "how": "DynastyProcess links MFL players to NFL ids. Unmatched rostered players are listed with the reason; their facts wait for a link.",
+    "columns": [
+      "Position",
+      "Rostered matched",
+      "Free agents matched"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+  },
+  "params": {
+    "ok": true,
+    "error": "",
+    "params": [
+      {
+        "key": "test.weight",
+        "position": "WR",
+        "description": "Test weight",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "value": 0.5,
+        "calibrated": false,
+        "overridden": true
+      }
+    ]
+  },
+  "result": {
+    "ok": true,
+    "error": "",
+    "summary": "Looked at 8 files: 0 new, 8 already held."
+  }
+}

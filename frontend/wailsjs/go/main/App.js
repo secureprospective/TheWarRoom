@@ -70,16 +70,8 @@ export function GetRoster(arg1) {
   return window['go']['main']['App']['GetRoster'](arg1);
 }
 
-export function GetSignals() {
-  return window['go']['main']['App']['GetSignals']();
-}
-
 export function LoadCrosswalk() {
   return window['go']['main']['App']['LoadCrosswalk']();
-}
-
-export function LoadSignals() {
-  return window['go']['main']['App']['LoadSignals']();
 }
 
 export function MFLKeyStatus() {
@@ -100,6 +92,10 @@ export function ResetParam(arg1, arg2) {
 
 export function ScoreLeague() {
   return window['go']['main']['App']['ScoreLeague']();
+}
+
+export function SetLeagueArchiveDir(arg1) {
+  return window['go']['main']['App']['SetLeagueArchiveDir'](arg1);
 }
 
 export function SetLeagueSettingOverride(arg1, arg2, arg3) {
@@ -176,6 +172,18 @@ export function TargetCounterpartTeam(arg1) {
 
 export function TargetCounterparties(arg1) {
   return window['go']['main']['App']['TargetCounterparties'](arg1);
+}
+
+export function TargetCrosswalk() {
+  return window['go']['main']['App']['TargetCrosswalk']();
+}
+
+export function TargetDataRefresh(arg1) {
+  return window['go']['main']['App']['TargetDataRefresh'](arg1);
+}
+
+export function TargetDataSources() {
+  return window['go']['main']['App']['TargetDataSources']();
 }
 
 export function TargetDraftIR(arg1, arg2) {

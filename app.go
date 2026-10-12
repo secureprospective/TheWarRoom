@@ -49,6 +49,7 @@ type App struct {
 	workCancel context.CancelFunc
 	//nolint:containedctx // Wails supplies an app-lifetime context; bindings derive bounded contexts.
 	ctx         context.Context
+	dataDir     string    // the app's data directory: its databases and settings.json
 	pools       *db.Pools // thewarroom.db: the MFL mirror and app settings
 	histPools   *db.Pools // history.db: everything that cannot be rebuilt
 	whatifPools *db.Pools // whatif.db: moves made in the app, apart from MFL truth (R2)
@@ -193,6 +194,7 @@ func (a *App) startup(ctx context.Context) {
 		a.startupErr = fmt.Errorf("startup: resolve config dir: %w", err)
 		return
 	}
+	a.dataDir = dir
 	if lerr := setupLogging(dir); lerr != nil {
 		log.Printf("the war room: WARNING disk logging unavailable: %v", lerr)
 	}

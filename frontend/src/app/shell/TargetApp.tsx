@@ -20,6 +20,7 @@ import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
 
+const DataSources = lazy(() => import('../datasources/DataSources'));
 const Contracts = lazy(() => import('../contracts/Contracts'));
 const LazyEndpointIndex = lazy(() =>
   import('../registry/EndpointIndex').then((m) => ({ default: m.EndpointIndex })),
@@ -216,6 +217,10 @@ export function TargetApp() {
           ) : s.node === 'pulse' && workspace.slug === 'race' ? (
             <Suspense fallback={<p role="status">Opening Race…</p>}>
               <Race />
+            </Suspense>
+          ) : s.node === 'control' && workspace.slug === 'data-and-sources' ? (
+            <Suspense fallback={<p role="status">Opening Data and sources…</p>}>
+              <DataSources />
             </Suspense>
           ) : s.node === 'control' && workspace.slug === 'app' ? (
             <Suspense fallback={null}>

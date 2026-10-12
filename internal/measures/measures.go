@@ -95,8 +95,9 @@ const (
 )
 
 // Source is one place data comes from. A fetch belongs to it when the URL's host is Host or a
-// subdomain of it and the path starts with PathPrefix. MaxAge is how long the source may go
-// without a successful load, after a failure, before it counts as lost.
+// subdomain of it and the path starts with PathPrefix. A source with no Host is imported, never
+// fetched: its records name it explicitly. MaxAge is how long the source may go without a
+// successful load, after a failure, before it counts as lost.
 type Source struct {
 	ID         string
 	Name       string
@@ -112,8 +113,15 @@ func (s Source) MatchesURL(raw string) bool {
 	return err == nil && s.Matches(u)
 }
 
-// Matches reports whether a fetched URL belongs to this source.
+// Imported reports whether the source is imported rather than fetched.
+func (s Source) Imported() bool { return s.Host == "" }
+
+// Matches reports whether a fetched URL belongs to this source. No URL belongs to an imported
+// source.
 func (s Source) Matches(u *url.URL) bool {
+	if s.Imported() {
+		return false
+	}
 	h := strings.ToLower(u.Hostname())
 	if h != s.Host && !strings.HasSuffix(h, "."+s.Host) {
 		return false
@@ -294,8 +302,10 @@ func (r *Registry) loadSources(fsys fs.FS) []error {
 			errs = append(errs, fmt.Errorf("%s: source %q has status %q, want active or retired", at, s.ID, s.Status))
 		case derr != nil || days < 1:
 			errs = append(errs, fmt.Errorf("%s: source %q max_age_days %q is not a positive whole number", at, s.ID, row[3]))
-		case s.Host == "" || s.Host != strings.ToLower(s.Host):
+		case s.Host != strings.ToLower(s.Host):
 			errs = append(errs, fmt.Errorf("%s: source %q host %q must be a lower-case host name", at, s.ID, s.Host))
+		case s.Imported() && s.PathPrefix != "":
+			errs = append(errs, fmt.Errorf("%s: source %q has a path_prefix but no host", at, s.ID))
 		case s.PathPrefix != "" && !strings.HasPrefix(s.PathPrefix, "/"):
 			errs = append(errs, fmt.Errorf("%s: source %q path_prefix %q must start with /", at, s.ID, s.PathPrefix))
 		}
