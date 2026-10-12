@@ -1,4 +1,4 @@
-# Ring 3 RESUME — 2026-10-12 14:45 CT (second compaction of the day)
+# Ring 3 RESUME — 2026-10-12 15:50 CT (updated after the second compaction)
 
 ## Goal / deadline
 /goal: complete ring 3 to excellence. **Christopher demos TheWarRoom to league mates at tonight's game
@@ -43,3 +43,24 @@ navigation; offer to hide them for the demo if he wants.
 ## Environment
 See the prior summary for RUN, gates, deploy, clicks. Scroll outside inner tables (the box score has its
 own scroll box: use y≈752). Sol: Codex limit hit 12:32, back about 15:45.
+
+## 15:50 update
+- Done since 14:45 (session/ring-3): def06ff (one Pools report; trophy names; survivor words; unset source
+  = "not set up", not the red alarm), d2a87b8 (league_event reviewed), 445a80a (fact exam vs MFL standings
+  pages: 160/160, 4 known open; pages in RUN/mfl-pages; opt-in TWR_MFL_PAGES), e8e2645 (archive warmed after
+  launch). Uncommitted at 15:45, gates running: Comms drawer Acts as buttons; HQ lineup "Reading lineup from
+  MFL…" + plain roster while pending; seasonChanged emitted right after lineups (season_app.go); snapshot
+  workspaces read "Reading the league…" before the snapshot, not "Not wired".
+- Christopher: Endpoint index cards stay as they are (15:15).
+- Disk hygiene (Christopher 15:20): phase caches deleted (run dir 81 GB → ~1 GB); Claude-OS deploy.sh now
+  keeps 2 backups. Claude-OS 22 GB coding-standards-verification is ClaudeBox's to clean, not ours.
+- Sol back 15:47: s2b continuation dispatched in ring-3-d as phase p3g2-s2b3 (brief par/p3g2-s2b-cont.md;
+  partial snapshot p3g2-s2b/partial-1232.tgz). Liveness: mtime of p3g2-s2b3/sessions/*.jsonl; done: sentinel.
+- VITEST: always set BOTH VITEST_MAX_THREADS=2 and VITEST_MIN_THREADS=1, or vitest refuses to start.
+- 15:55: b748979 committed + deployed (ring3-demo5): HQ loading at launch, seasonChanged after lineups,
+  Comms drawer buttons. Gates 787 tests, 0 lint.
+- 15:49:37 Claude-OS lost SSH: host passt (libvirt passt backend, --one-off) crashed ("Flow 1 (UDP flow):
+  Failed to set SO_PEEK_OFF … Bad file descriptor"); libvirt's replacement died too; a manual foreground
+  `passt -f` (no --one-off) restored it; libvirt's later passt (15:52:31) now serves 127.0.0.1:2222. VM
+  and app never stopped. If it recurs: `pgrep -fa passt` shows no Claude-OS passt → start
+  `passt --socket /run/user/1000/libvirt/qemu/run/passt/1-Claude-OS-net0.socket --tcp-ports 127.0.0.1/2222:22`.
