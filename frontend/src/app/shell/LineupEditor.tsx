@@ -1,4 +1,3 @@
-import { WatchButton } from '../personal/WatchButton';
 import './lineup.css';
 import { useMemo, useEffect, type ReactNode } from 'react';
 import type { Snapshot, LineupReading } from '../data/contract';
@@ -81,7 +80,8 @@ export default function LineupEditor({ snapshot, roster, franchiseId, selected, 
               const action = group.label === 'Starters' ? 'Bench' : 'Start';
               const label = toggleable ? `${action} ${model.name}` : `Inspect ${model.name}`;
               return (
-                <div className="roster-player-row" key={model.id}><Act
+                <Act
+                  key={model.id}
                   verb={toggleable ? 'lineup.toggle' : 'inspector.open'}
                   args={toggleable
                     ? { playerId: model.id } : { subject: { kind: 'player', id: model.id, franchiseId } }}
@@ -103,7 +103,6 @@ export default function LineupEditor({ snapshot, roster, franchiseId, selected, 
                     model={model}
                   />
                 </Act>
-                <WatchButton id={model.id} name={model.name} mine={franchiseId} /></div>
               );
             })}
           </div>

@@ -101,7 +101,12 @@ func TestPersonalHeldReportsAndReadOnlyHandOff(t *testing.T) {
 		t.Fatal(err)
 	}
 	holdPersonalBody(t, a, "tradeBait", `{"tradeBaits":{"tradeBait":{"franchise_id":"0025","willGiveUp":"`+player+`","inExchangeFor":"Future picks"}}}`)
+	a.seasonInjuries.fetchedAt = time.Date(2026, 10, 12, 15, 24, 15, 0, time.UTC)
 	r, err := a.TargetPersonal("0025")
+	if err != nil || len(r.Players) != 1 || !strings.Contains(r.Players[0].Status, " · as of ") ||
+		strings.Contains(r.Players[0].Status, "T15:24:15Z") {
+		t.Fatalf("a watched player's status reads in local time: %+v %v", r.Players, err)
+	}
 	if err != nil || len(r.Entries) != 1 || len(r.Players) != 1 || len(r.Bait.Rows) != 1 ||
 		r.Bait.Rows[0].Cells[0] != "My franchise" || r.Bait.Rows[0].Cells[2] != "Future picks" {
 		t.Fatalf("held personal reading: %+v %v", r, err)
@@ -173,23 +178,6 @@ func TestRosterPointsFromHeldPeriods(t *testing.T) {
 	}
 	if len(transport.requests) != 0 {
 		t.Fatal("roster report fetched")
-	}
-}
-
-func TestWorstSourceHealth(t *testing.T) {
-	for _, test := range []struct{ age, failure, state string }{
-		{"Under an hour", "None", "live"},
-		{"Under an hour", "Oct 11: error", "stale"},
-		{"Lost · 8 days", "error", "fail"},
-		{"No good read yet", "None", "fail"},
-		{"Retired", "error", "live"},
-		{"Under an hour", "Oct 11 (recovered since)", "live"},
-	} {
-		report := Report{Rows: []ReportRow{{Cells: []string{"Source", test.age, test.failure}}}}
-		state, _ := worstSourceHealth(report)
-		if state != test.state {
-			t.Fatalf("%+v: %s", test, state)
-		}
 	}
 }
 

@@ -170,7 +170,9 @@ func (a *App) personalPlayers(entries []personal.Entry) []PersonalPlayer {
 			if status == "" {
 				status = "No injury designation"
 			}
-			status += " · " + injuries.Provenance.Freshness.FetchedAt
+			if at, err := time.Parse(time.RFC3339, injuries.Provenance.Freshness.FetchedAt); err == nil {
+				status += " · as of " + reportTime(at, time.Local)
+			}
 		}
 		market, ok := facts[entry.ID]
 		if !ok {

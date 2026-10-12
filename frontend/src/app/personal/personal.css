@@ -13,3 +13,5 @@
 .twr-app .personal-lists input:focus-visible, .twr-app .personal-note textarea:focus-visible {
   outline: 1px solid var(--surface-tx1); outline-offset: 2px;
 }
+/* A list entry's name and its watch or bait mark read as one line. */
+.twr-app .personal-entry > .act:first-child { display: inline-flex; align-items: center; gap: 6px; }

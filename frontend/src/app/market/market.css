@@ -16,25 +16,6 @@
   border-block: 1px solid var(--surface-line);
   padding: 0 0 16px;
 }
-.market-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 10px 0;
-}
-.market-controls > span {
-  display: inline-flex;
-  gap: 2px;
-}
-.market-controls .act {
-  border: 1px solid var(--surface-line);
-  padding: 6px 9px;
-}
-.market-controls .act.on {
-  background: var(--surface-3);
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
 .market-reading {
   margin-top: 24px;
 }

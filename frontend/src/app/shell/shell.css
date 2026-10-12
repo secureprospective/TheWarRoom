@@ -143,6 +143,10 @@
 .twr-app .matrix-roster th small { display: block; color: var(--surface-tx3); font-size: 9px; }
 .twr-app .matrix-roster tr[data-selected="true"] { background: var(--surface-3); }
 .twr-app .matrix-roster .act { width: 100%; overflow: hidden; text-overflow: ellipsis; padding: 0; }
+/* The player cell: the name truncates, Watch keeps its own width. */
+.twr-app .matrix-roster .matrix-player { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.twr-app .matrix-roster .matrix-player > .act:first-child { flex: 1 1 auto; min-width: 0; }
+.twr-app .matrix-roster .matrix-player > .act + .act { flex: none; width: auto; color: var(--surface-tx2); }
 .twr-app .matrix-roster tr:hover { background: var(--surface-3); }
 
 .twr-app .command-bar {
@@ -176,4 +180,3 @@
 .twr-app .shell-status { display: flex; flex-wrap: wrap; gap: 8px 16px; min-width: 0; }
 .twr-app .wtabs { flex-wrap: wrap; min-width: 0; }
 .twr-app .wtabs .act-tab { min-height: 44px; }
-.twr-app .roster-player-row > .act:first-child { width: 100%; display: block; padding: 0; }

@@ -1,8 +1,8 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -13,11 +13,16 @@ type ShellStatus struct {
 }
 
 func (a *App) TargetShellStatus() (ShellStatus, error) {
-	sources, err := a.TargetDataSources()
+	if err := a.ready(); err != nil {
+		return ShellStatus{}, fmt.Errorf("shell status: startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, m1Timeout)
+	defer cancel()
+	health, err := a.healthInput(ctx)
 	if err != nil {
 		return ShellStatus{}, fmt.Errorf("shell status: %w", err)
 	}
-	state, label := worstSourceHealth(sources.Health)
+	state, label := sourceStanding(health)
 	a.weekMu.Lock()
 	week, failed := a.week, a.weekRefreshError
 	a.weekMu.Unlock()
@@ -35,24 +40,4 @@ func (a *App) TargetShellStatus() (ShellStatus, error) {
 		gameday = fmt.Sprintf("Week %d · %d NFL games in progress · %d final", week.Number, playing, final)
 	}
 	return ShellStatus{Health: label, State: state, Gameday: gameday}, nil
-}
-
-func worstSourceHealth(report Report) (string, string) {
-	state, label := "live", "Sources flowing"
-	for _, row := range report.Rows {
-		if len(row.Cells) < 3 {
-			continue
-		}
-		age, failure := row.Cells[1], row.Cells[2]
-		if strings.Contains(age, "Retired") {
-			continue
-		}
-		if strings.Contains(age, "Lost ·") || strings.Contains(age, "No good read yet") {
-			return "fail", "Sources missing · board may be reduced"
-		}
-		if failure != "None" && !strings.Contains(failure, "(recovered since)") {
-			state, label = "stale", "Source failures · last good data"
-		}
-	}
-	return state, label
 }

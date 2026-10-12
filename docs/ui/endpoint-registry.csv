@@ -253,7 +253,7 @@ S-06,shell,Density tier: Narrative · Tactical · Matrix (one CSS attribute),Con
 S-07,shell,Command bar,Read,,ALL,G0,,,Command bar,commandbar.open,kept,0,built,,kept,,,,0,G0
 S-08,shell,Global search,Read,,ALL,G1,,,Command bar,commandbar.open,kept,3,built,,kept,,,,3,G1
 S-09,shell,Data refresh,Configure,,ALL,G1,,,Control Room › Data and sources,refresh.run scope=,kept,3,built,,kept,,,,data_sources_app.go: TargetDataRefresh; four scoped refresh Acts with progress and result.,G1
-S-10,shell,Filter state persistence across sub-sections,Configure,,ALL,G1,,,Control Room › App,view.filter scope=,kept,3,spec,,kept,,,,market/state.ts:33 holds market filters; view.filter awaits shared subsection-filter wiring.,G1
+S-10,shell,Filter state persistence across sub-sections,Configure,,ALL,G1,,,Control Room › App,market field=,kept,3,built,,kept,,,,"Market and Draft room filters are kept per workspace across sub-sections and restarts (shell/viewFilters.ts), validated on read; Reset shows everything again.",G1
 S-11,shell,Watch list / scratchpad store (app-local),Plan,,ALL,G1,,,Franchise HQ › My moves,watch.add id= entity= action= · note.add id= entity= action= text=,kept,3,built,,kept,,,,3,G1
 S-12,shell,Status bar (source health · gameday strip · clock),Read,,ALL,G1,,,Status strip,endpoint.open id=S-12,kept,3,built,,kept,,,,3,G1
 S-13,shell,Seasonal-card phase links,Read,,ALL,G2,,,Home › Seasonal card,phase.goto phase=,kept,3,built,,kept,,,,3,G2

@@ -3,6 +3,7 @@ import { useStore } from 'zustand';
 import { TargetDraftLab } from '../../../wailsjs/go/main/App';
 import { parseMarket, unavailable } from './provider';
 import type { MarketFilter, SurfaceReading } from './contract';
+import { FILTER_KEYS, keepFilter, restoreFilter, subset } from '../shell/viewFilters';
 
 export type DraftScope = {
   from: number;
@@ -20,9 +21,26 @@ export const nflRounds = [
   ['n1', 'NFL 1st'], ['n2', 'NFL 2nd'], ['n3', 'NFL 3rd'],
   ['n4', 'NFL 4th–7th'], ['nx', 'None that spring'],
 ] as const;
+const positions = ['QB', 'RB', 'WR', 'TE', 'PK', 'DL', 'LB', 'DB'];
 const initial = (): DraftScope => ({
   from: 2017, to: 2026, seasons: 3, group: 'DL', segments: [], nfl: [],
 });
+// parseDraftScope reads a kept draft filter (S-10); anything but the shape draftFiltered() makes is null.
+export function parseDraftScope(v: unknown): DraftScope | null {
+  if (typeof v !== 'object' || v === null) return null;
+  const r = v as Record<string, unknown>;
+  const kept = {
+    segments: subset(r.segments, segments.map(([id]) => id)),
+    nfl: subset(r.nfl, nflRounds.map(([id]) => id)),
+  };
+  const all = initial();
+  const recent = draftFiltered(all, { field: 'draft-from', value: 'recent' }).from;
+  if (![all.from, recent].includes(r.from as number) || r.to !== all.to ||
+    ![2, 3, 4].includes(r.seasons as number) || !positions.includes(r.group as string) ||
+    kept.segments === undefined || kept.nfl === undefined) return null;
+  return { from: r.from as number, to: all.to, seasons: r.seasons as number, group: r.group as string,
+    segments: kept.segments, nfl: kept.nfl };
+}
 export type DraftReader = (scope: DraftScope) => Promise<SurfaceReading>;
 function absent(reason: string, status: 'failed' | 'not_wired' = 'failed'): SurfaceReading {
   return { ...unavailable(reason, status), threshold: 40 };
@@ -53,7 +71,7 @@ export function draftFiltered(scope: DraftScope, change: MarketFilter): DraftSco
       ...scope, nfl: toggle(scope.nfl, change.value, nflRounds.map(([id]) => id)),
     };
     case 'draft-position':
-      if (!['QB', 'RB', 'WR', 'TE', 'PK', 'DL', 'LB', 'DB'].includes(change.value))
+      if (!positions.includes(change.value))
         throw new Error('Draft: invalid position');
       return { ...scope, group: change.value };
     case 'draft-seasons':
@@ -77,7 +95,9 @@ export function createDraftState(reader: DraftReader) {
     reading?: SurfaceReading;
     pending: boolean;
     picks: Record<string, SurfaceReading>;
-  }>(() => ({ scope: initial(), pending: false, picks: {} }));
+  }>(() => ({
+    scope: restoreFilter(FILTER_KEYS.draft, parseDraftScope, initial()), pending: false, picks: {},
+  }));
   let revision = 0;
   const seen = new Map<string, string>();
   async function read(scope: DraftScope) {
@@ -86,6 +106,7 @@ export function createDraftState(reader: DraftReader) {
   }
   async function refresh(scope = store.getState().scope) {
     const token = ++revision;
+    keepFilter(FILTER_KEYS.draft, scope);
     store.setState({ scope: { ...scope }, pending: true });
     const reading = await read(scope);
     if (token === revision) store.setState({ reading, pending: false });
