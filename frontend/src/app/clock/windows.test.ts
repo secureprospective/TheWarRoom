@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, it, expect, vi } from 'vitest';
@@ -64,7 +65,9 @@ describe('league window editing and destinations', () => {
   it('renders local dates, visible basis, commissioner marks and both calendar Acts', () => {
     const html = renderToStaticMarkup(createElement(CalendarPanel, { reading: moved() }));
     expect(html).toContain(localDate(at));
-    expect(html).toContain('Rulebook basis · set by the commissioner');
+    expect(html).toContain('<p class="league-window-basis">Rulebook basis</p>');
+    expect(html.match(/data-moved="true"/g)).toHaveLength(2);
+    expect(html).not.toContain('set by the commissioner');
     expect(html).toContain(`type="datetime-local" value="${localInput(at)}"`);
     expect(html.match(/aria-label="Set date"/g)).toHaveLength(9);
     expect(html).toContain('Back to the rulebook');
@@ -110,4 +113,12 @@ describe('league window editing and destinations', () => {
       else Reflect.deleteProperty(globalThis, 'window');
     }
   });
+});
+
+it('gives the Calendar date fields the shell dark face, overridable by any screen', () => {
+  const css = readFileSync('src/app/shell/shell.css', 'utf8');
+  const rule = css.match(/\.twr-app :where\(input:not\([^)]*\), textarea\) \{([^}]+)\}/)![1];
+  for (const want of ['color-scheme: dark', 'background-color: var(--surface-2)',
+    'color: var(--surface-tx1)'])
+    expect(rule).toContain(want);
 });

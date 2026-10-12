@@ -70,7 +70,10 @@ func windows(at time.Time, in WindowInputs) ([]Window, []Deadline) {
 		switch moved, ok := in.Moved[r.Kind]; {
 		case ok:
 			w.At, w.Moved = &moved, true
-			w.Reason = "Moved by the commissioner · " + r.Basis
+			w.Reason = "Set by the commissioner"
+			if r.Week != 0 {
+				w.Reason = "Moved by the commissioner · " + r.Basis
+			}
 		case r.Week != 0 && scheduled:
 			w.At = &kickoff
 		case r.Week != 0:

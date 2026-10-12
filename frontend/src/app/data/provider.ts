@@ -2,6 +2,7 @@ import type {
   LineupCheck, LineupReading, ClockReading, EnvelopeDemo, MFLKeyStatus,
   AlertReading, WindowKind, Provenance, Receipt, Snapshot, Sourced, TradeReading,
 } from './contract';
+import { ruleDatedWindows } from '../clock/labels';
 import {
   DeleteMFLKey, MFLKeyStatus as ReadMFLKey, SetMFLKey,
   TargetSetWindow, TargetClock, TargetDraftIR, TargetDraftTaxi, TargetMoves, TargetSnapshot,
@@ -72,7 +73,8 @@ export class FixtureProvider implements ReadingProvider, DemoProvider {
     }
     const windows = reading.value.windows.map(window => window.kind !== kind ? window : at
       ? { ...base, status: 'dated' as const, at, moved: true,
-        reason: `Moved by the commissioner · ${base.reason}` }
+        reason: ruleDatedWindows.has(kind) ? `Moved by the commissioner · ${base.reason}`
+          : 'Set by the commissioner' }
       : { ...base });
     const { grade } = await import('../clock/urgency');
     const now = Date.now();

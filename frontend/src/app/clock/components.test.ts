@@ -39,7 +39,7 @@ describe('honest clock surfaces', () => {
     expect(strip).not.toContain('title=');
     expect(strip).toContain('target-calendar');
     expect(panel).toContain('No deadlines on the commissioner calendar.');
-    expect(panel.match(/ · No date · /g)).toHaveLength(9);
+    expect(panel.match(/ · No date<\/p>/g)).toHaveLength(9);
     expect(panel).toContain('the rulebook gives no date; the commissioner sets it');
     expect(panel).toContain('fixture');
     for (const html of [strip, panel]) {
@@ -166,7 +166,7 @@ describe('honest clock surfaces', () => {
     // The mount read, then one catch-up read once the live event subscription is in place.
     expect(clock).toHaveBeenCalledTimes(2);
     expect(root.textContent).toContain('Offseason · no deadlines');
-    expect(root.textContent.match(/ · No date · /g)).toHaveLength(9);
+    expect(root.textContent.match(/ · No date/g)).toHaveLength(9);
     expect(document.listeners.size).toBe(1);
     await act(async () => { mounted.unmount(); });
     expect(document.listeners.size).toBe(0);

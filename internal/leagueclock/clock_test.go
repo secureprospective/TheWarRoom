@@ -116,7 +116,7 @@ func TestWindowsDateFromTheRulebookAndTheCommissionerWins(t *testing.T) {
 	if w := byKind[MultiYearBidsClose]; !w.At.Equal(kick(27)) || !strings.Contains(w.Reason, "end of Week 13") {
 		t.Fatal("§6 close at Week 14's first kickoff", w)
 	}
-	if w := byKind[CutDay]; !w.Moved || !w.At.Equal(kick(40)) || !strings.HasPrefix(w.Reason, "Moved by the commissioner") {
+	if w := byKind[CutDay]; !w.Moved || !w.At.Equal(kick(40)) || w.Reason != "Set by the commissioner" {
 		t.Fatal("the commissioner's date wins", w)
 	}
 	if w := byKind[Draft]; w.Status != WindowUnknown || w.At != nil {

@@ -20,6 +20,9 @@ export const windowLabels: Record<ClockReading['windows'][number]['kind'], strin
 };
 const dates = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
+// The windows the rulebook dates; the rest have only the commissioner's date.
+export const ruleDatedWindows = new Set(['trade_deadline', 'playoff_bids_only', 'multiyear_bids_close']);
+
 export function deadlineLabel(label: string): string {
   const kind = label.replace(/^window:/, '') as keyof typeof windowLabels;
   if (kind in windowLabels) return windowLabels[kind];
