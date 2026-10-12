@@ -173,6 +173,42 @@ func runParity(t *testing.T, inputs []ResolvedInput, oracle string, reduced bool
 	views := facts.Views()
 	t.Logf("views wall=%s", time.Since(start))
 	compareRelations(t, reflect.ValueOf(views), headers, rows, reduced, selectedTxns)
+	if !reduced {
+		compareChecks(t, facts, filepath.Join(filepath.Dir(oracle), "checks.json"))
+	}
+}
+
+// compareChecks runs the nine checks on the full archive: every difference is pinned, and each
+// check's counts equal the reference's checks.py result.
+func compareChecks(t *testing.T, facts Facts, reference string) {
+	t.Helper()
+	results, err := facts.Check(pinnedExceptions(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := readWithin(filepath.Dir(reference), filepath.Base(reference))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var want []struct {
+		Name                                     string
+		Passed, Checked, Agreed, Explained, Open int
+	}
+	if err := json.Unmarshal(body, &want); err != nil {
+		t.Fatal(err)
+	}
+	byName := map[string]CheckResult{}
+	for _, r := range results {
+		byName[r.Name] = r
+	}
+	for _, w := range want {
+		r := byName[w.Name]
+		got := [4]int{r.Checked, r.Agreed, r.Explained, r.Review}
+		if got != [4]int{w.Checked, w.Agreed, w.Explained, w.Open} || !r.Passed {
+			t.Errorf("%s: %v, reference %+v", w.Name, got, w)
+		}
+		t.Logf("check %q checked=%d agreed=%d explained=%d review=%d", r.Name, r.Checked, r.Agreed, r.Explained, r.Review)
+	}
 }
 
 func compareRelations(t *testing.T, relations reflect.Value, headers map[string]rawGoldenHeader, rows map[string][][]json.RawMessage, reduced bool, txns map[int64]bool) {
@@ -357,4 +393,46 @@ func supportedRelation(table string) bool {
 		}
 	}
 	return false
+}
+
+// TestWriteFullCheckItems writes every difference the checks find on the full archive, for the
+// exceptions file's provenance (TWR_FACTS_CHECK_ITEMS=<out file>, with the full-parity variables).
+func TestWriteFullCheckItems(t *testing.T) {
+	out := os.Getenv("TWR_FACTS_CHECK_ITEMS")
+	if out == "" {
+		t.Skip("opt-in")
+	}
+	inputs := fixtureInputs(t)
+	for i := range inputs {
+		body, err := readWithin(os.Getenv("TWR_FACTS_ARCHIVE"), inputs[i].File)
+		if err != nil {
+			t.Fatal(err)
+		}
+		inputs[i].Body = body
+	}
+	curated, err := os.ReadFile("../lab/testdata/note_readings.csv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	notes, err := ParseCurated(curated)
+	if err != nil {
+		t.Fatal(err)
+	}
+	facts, err := Compile(t.Context(), inputs, notes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	results, _ := facts.Check(Exceptions{})
+	body, err := json.MarshalIndent(results, "", " ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	root, err := os.OpenRoot(filepath.Dir(out))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = root.Close() }()
+	if err := root.WriteFile(filepath.Base(out), body, 0o600); err != nil {
+		t.Fatal(err)
+	}
 }

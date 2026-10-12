@@ -23,6 +23,36 @@ var inputsCSV []byte
 //go:embed testdata/missing-inputs.csv
 var missingInputsCSV []byte
 
+// noteReadingsCSV is the human-curated reading of trade notes: Christopher's and the Lab's, not
+// MFL data. It is a pinned compile input with its own sha256 in the facts manifest.
+//
+//go:embed testdata/note_readings.csv
+var noteReadingsCSV []byte
+
+// checkExceptionsCSV pins, by identity, every known difference between the compiled facts and
+// MFL's own figures, with its class and reason. Generated from the reference checks.py lists.
+//
+//go:embed testdata/check-exceptions.csv
+var checkExceptionsCSV []byte
+
+// Curated is a pinned input that is not MFL data.
+type Curated struct {
+	File   string
+	SHA256 string
+	Body   []byte
+}
+
+// NoteReadings returns the curated trade-note readings.
+func NoteReadings() Curated { return curated("note_readings.csv", noteReadingsCSV) }
+
+// CheckExceptions returns the pinned check exceptions.
+func CheckExceptions() Curated { return curated("check-exceptions.csv", checkExceptionsCSV) }
+
+func curated(file string, body []byte) Curated {
+	sum := sha256.Sum256(body)
+	return Curated{File: file, SHA256: hex.EncodeToString(sum[:]), Body: body}
+}
+
 // Input is one archive file the frozen Lab data read, by its path under the archive root.
 type Input struct {
 	File   string
