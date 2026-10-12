@@ -14,12 +14,15 @@ type Interval struct{ Low, High float64 }
 
 // AssetValue uses the same five-season frame and market as the Lab trade legs.
 // Unvalued assets have no forecast, price or interval; Reason explains the missing evidence.
+// Interval is the class price per expected win; Range is this asset's price at its ends.
 type AssetValue struct {
 	Forecast   []float64
 	Discounted float64
 	Class      string
+	Label      string
 	Price      *float64
 	Interval   *Interval
+	Range      *Interval
 	Valued     bool
 	Reason     string
 }
@@ -72,7 +75,7 @@ func (m *Model) asset(a Asset, at time.Time) AssetValue {
 	season, done := m.valuer.frame(year, at.Unix())
 	class := assetClass(a, m.valuer, season, at.Unix())
 	if class == "player:unknown" {
-		return AssetValue{Class: class, Reason: "The player has no known position or birth date"}
+		return AssetValue{Class: class, Label: classLabel(class), Reason: "The player has no known position or birth date"}
 	}
 	var forecast []float64
 	if a.Kind == "player" {
@@ -81,13 +84,14 @@ func (m *Model) asset(a Asset, at time.Time) AssetValue {
 		forecast = m.valuer.pick(a, season)
 	}
 	if forecast == nil {
-		return AssetValue{Class: class, Reason: "No production or rookie forecast is available"}
+		return AssetValue{Class: class, Label: classLabel(class), Reason: "No production or rookie forecast is available"}
 	}
 	x := discounted(forecast, discount)
-	out := AssetValue{Forecast: slices.Clone(forecast), Discounted: pythonRound(x, 3), Class: class, Valued: true}
+	out := AssetValue{Forecast: slices.Clone(forecast), Discounted: pythonRound(x, 3), Class: class, Label: classLabel(class), Valued: true}
 	if price, ok := m.prices[class]; ok {
 		out.Price = ptr(pythonRound(x*price.Price+m.perAsset, 3))
 		out.Interval = &Interval{price.Lo, price.Hi}
+		out.Range = &Interval{pythonRound(x*price.Lo+m.perAsset, 3), pythonRound(x*price.Hi+m.perAsset, 3)}
 	}
 	return out
 }

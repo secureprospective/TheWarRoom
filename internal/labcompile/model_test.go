@@ -126,6 +126,9 @@ func provePlayerLegs(t *testing.T, m *Model, data *lab.Data) {
 		if got.Discounted != value(leg.XValue) || got.Class != value(leg.XClass) || got.Price == nil || value(got.Price) != value(leg.XPrice) {
 			t.Errorf("asset API mismatch trade=%d player=%s", leg.Trade, value(leg.Pid))
 		}
+		if got.Label != classLabel(got.Class) || got.Range == nil || got.Range.Low > value(got.Price) || got.Range.High < value(got.Price) {
+			t.Errorf("asset price range or label missing trade=%d player=%s: %+v", leg.Trade, value(leg.Pid), got.Range)
+		}
 		count++
 		strata[got.Class] = true
 	}
