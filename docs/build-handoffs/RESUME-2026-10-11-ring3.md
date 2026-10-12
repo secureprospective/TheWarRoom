@@ -1,27 +1,19 @@
-## >>> RESUME HERE (written 07:35 CDT 2026-10-12) <<<
-The session paused about 23:10 on 10-11 and woke at 07:30 on 10-12; the 04:00 logout passed with nothing in flight.
-BRANCH session/ring-3 (worktree .worktrees/ring-3), all local, unpushed. HEAD d4e8a50:
-- 5c6a156 merge of session/ring-3-c (p3t trade Acts) into ring-3: conflicts resolved, verify 0, deployed `ring3-merge-p3t`,
-  Trade Floor > Trade desk checked on screen. ring-3-b and ring-3-c are now both fully merged.
-- 2fdb63c p3g1-s2 (Claude coded): game, lineup, player_week, injury_week, roster_week, nfl_game, points_allowed,
-  playoff_bracket, playoff_game + views played_game/regular_week/all_play_week/team_season (Facts.Views(), on demand).
-  The fixture inputs.json.gz now keeps every body of 2013/2020/2026 (4,318,066 B, sha 0b3d723a...), via
-  tools/labparity/facts-reference.py input_fixture.
-- d4e8a50 p3g1-s3 (Claude coded): contract, cap_charge, draft_pick, pick_owned, txn, txn_asset, trade_bait, mfl_adp,
-  mfl_aav + views trade_asset/offer/roster_move. ALL 37 oracle relations (except check_result/review_item) at ZERO
-  differences, reduced (verify) and full (opt-in). Full compile 13.9 s, peak RSS 631 MB (isolated measurement test).
-  Mutants planted and caught: DP slot offset, swapped offer side, IR/ROSTER double-listing order, T result in views.
+## >>> RESUME HERE (written 08:12 CDT 2026-10-12) <<<
+session/ring-3 HEAD 943644f (all local, unpushed). Since the 07:35 block:
+- 83545aa p3g1-s4 (1/2): nine checks as compile assertions; internal/lab/testdata/check-exceptions.csv pins 635 identities
+  (generated from the reference exceptions.json; Go finds exactly the same 635); full archive equals checks.json.
+- 943644f p3g1-s4 (2/2): manifest.WithCurated (note_readings.csv pinned by sha), facts_app.go compile after import + at
+  launch, snapshot_checks table, cache by manifest+compiler+rules, failure keeps last good stale, L-34 Checked facts
+  report with real results. Deployed `ring3-p3g1-s4b`; pre-compile screen checked. p3g1 is COMPLETE.
+- Live view WITH results needs the league archive on Claude-OS: a hook blocks rsync of the work tree. Ask Christopher
+  (BACKLOG). Do NOT route around the hook.
+- Sol lanes running since 07:31: p3s (shell/Home/HQ, worktree ring-3-b, RUN/p3s/) and p3r (Research, worktree
+  ring-3-c, RUN/p3r/). Background watcher in Claude session; liveness = mtime of RUN/<p>/sessions/*.jsonl; done =
+  RUN/<p>/sentinel. On done: review REPORT, plant mutant, verify, commit IN THAT WORKTREE, merge into ring-3.
 NEXT ACTIONS IN ORDER:
-1. p3g1-s4 (brief ~/fleet/briefs/warroom-ring3-p3g1-s4.md): port the 9 checks of the reference checks.py as compile
-   assertions with exceptions pinned by IDENTITY (testdata file, plain-words reason); note_readings.csv in the runtime
-   manifest; compile from p3f's manifest, cache by manifest sha + compiler version + rules hash, publish via p3f's
-   snapshot record, failed compile keeps last good snapshot marked stale; Control Room > Data and sources > Checked facts
-   (L-34) with real results; registry rows -> built; measure. Reference results: RUN/p3g1/oracle-final/checks.json,
-   exceptions.json. Full parity cmd: TWR_ARCHIVE_PARITY=1 TWR_FACTS_ORACLE=RUN/p3g1/oracle-final/facts.jsonl.gz
-   TWR_FACTS_ARCHIVE=~/work/TheWarRoom/league-archive/raw go test ./internal/facts -run Full -v.
-2. Sol should have budget again (it was out until ~00:15 on 10-12): dispatch parallel lanes from new worktrees off
-   ring-3 HEAD: p3n Control Room, p3s shell/Home/HQ (+ BACKLOG sideways scrollbar), p3r Research, p3l live game.
-   Then p3g2 Lab compiler and p3h archive/pools/events after s4.
+1. Review + merge p3s and p3r when their sentinels land.
+2. p3g2 Lab compiler (brief ~/fleet/briefs/warroom-ring3-p3g2-lab-compiler.md), then p3h archive/pools/events; p3n
+   Control Room and p3l live game (Sol lanes when free; worktree briefs go in RUN/par/).
 3. Spec rev 3, registry gate, Christopher click-through, PR squash-merge. Report the Pools decision to Christopher.
 REVIEW ROUTINE: report -> one planted mutant -> make verify/build -> deploy -> look myself (shot.sh) -> fix -> commit ->
 update this RESUME + scp CT105. Never `git add -A` without checking for build outputs.
