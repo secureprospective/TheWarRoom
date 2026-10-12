@@ -153,3 +153,24 @@ func TestArchiveLineupInWords(t *testing.T) {
 		t.Fatal("unreadable settings")
 	}
 }
+
+func TestTrophyTitleNamesATrophyOnce(t *testing.T) {
+	for _, c := range [][3]string{
+		{"NFC", "NFC Conference Champ", "NFC Conference Champ"},
+		{"2015 Legacy Superbowl III", "2015 Legacy Champions", "2015 Legacy Superbowl III · 2015 Legacy Champions"},
+		{"Division Champions", "", "Division Champions"},
+	} {
+		if got := trophyTitle(c[0], c[1]); got != c[2] {
+			t.Errorf("trophyTitle(%q, %q) = %q, want %q", c[0], c[1], got, c[2])
+		}
+	}
+}
+
+func TestSurvivorNoteInWords(t *testing.T) {
+	if got := survivorNote("Pool/Survivor Picks Not Setup"); got != "No survivor pool was set up on MFL this season." {
+		t.Error(got)
+	}
+	if got := survivorNote("Setup is recorded; no survivor report is implemented"); !strings.Contains(got, "was set up") {
+		t.Error(got)
+	}
+}

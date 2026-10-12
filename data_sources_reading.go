@@ -24,7 +24,8 @@ type healthInput struct {
 	missing  []string // measures the latest board run went without
 	now      time.Time
 	zone     *time.Location
-	photos   *photoHealth // nil before the photo cache starts
+	photos   *photoHealth      // nil before the photo cache starts
+	unset    map[string]string // source id → what it needs, for a source this install has not set up
 }
 
 // photoHealth is the player photo cache's standing: photos are not facts, so it is not a history source.
@@ -43,6 +44,7 @@ type healthRow struct {
 	lastGood, lastFail time.Time
 	lastError          string
 	lost, retired      bool
+	unset              string // what the source needs before it can be read; empty when set up
 }
 
 // healthReport is C-07: every source the app reads, MFL by export, with its last good read, its
@@ -77,6 +79,9 @@ func healthRows(in healthInput) []healthRow {
 		src, _ := in.reg.Source(h.Source)
 		row := healthRow{name: src.Name, measuresFrom: h.Source, lastGood: h.LastSuccess, lastFail: h.LastFailure,
 			lastError: h.LastError, lost: h.State == history.SourceLost, retired: h.State == history.SourceRetired}
+		if row.lastGood.IsZero() {
+			row.unset = in.unset[h.Source]
+		}
 		if h.Source != "mfl" {
 			rows = append(rows, row)
 			continue
@@ -104,9 +109,13 @@ func sourceStanding(in healthInput) (state, label string) {
 		return "fail", fmt.Sprintf("Board running reduced · %s not flowing", countText(len(in.missing), "measure"))
 	}
 	state, label = "live", "Sources flowing"
-	var missing []string
+	var missing, unset []string
 	for _, row := range healthRows(in) {
 		if row.retired {
+			continue
+		}
+		if row.unset != "" {
+			unset = append(unset, row.name)
 			continue
 		}
 		feedsBoard := row.measuresFrom != "" && boardText(row.measuresFrom, in) != "Not read by the board"
@@ -119,6 +128,10 @@ func sourceStanding(in healthInput) (state, label string) {
 	}
 	if len(missing) > 0 {
 		return "fail", "No data from " + strings.Join(missing, ", ") + " · board will run reduced"
+	}
+	// A source this install has not set up is a choice, not an outage: named, never the alarm.
+	if len(unset) > 0 && state == "live" {
+		label += " · " + strings.Join(unset, ", ") + " not set up"
 	}
 	return state, label
 }
@@ -193,6 +206,8 @@ func sourceAge(row healthRow, now time.Time) string {
 	switch {
 	case row.retired:
 		return "Retired"
+	case row.unset != "":
+		return "Not set up · " + row.unset
 	case row.lastGood.IsZero():
 		return "No good read yet"
 	}

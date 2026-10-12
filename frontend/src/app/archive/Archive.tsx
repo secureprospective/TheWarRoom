@@ -4,9 +4,12 @@ import { ReportsView } from '../draftreports/Reports';
 import { archiveState, type Archive as ArchiveBoard } from './state';
 
 const franchiseReports = ['M-104', 'M-105', 'M-023', 'M-110', 'M-019'];
-const seasonReports = ['M-111', 'M-112', 'M-113', 'M-174', 'M-200', 'M-201', 'M-079', 'M-089'];
+const seasonReports = ['M-111', 'M-079', 'M-089'];
+// One Pools report (M-111) answers every pool endpoint, so it is listed once, not once per id.
+const poolEndpoints = ['M-112', 'M-113', 'M-174', 'M-200', 'M-201'];
 export function ArchiveView({ archive, selected }: { archive: ArchiveBoard; selected: readonly string[] }) {
-  const shown = archive.board.reports.find(r => selected.includes(r.id)) ?? archive.board.reports[0];
+  const wanted = selected.some(id => poolEndpoints.includes(id)) ? [...selected, 'M-111'] : selected;
+  const shown = archive.board.reports.find(r => wanted.includes(r.id)) ?? archive.board.reports[0];
   const dispatch = commands.dispatch;
   const controls = <div className="market-controls race-choices" aria-label="Archive report choices">
     {seasonReports.includes(shown.id) && <label>Season{' '}

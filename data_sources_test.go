@@ -487,4 +487,17 @@ func TestSourceStandingAlarmsOnlyForTheBoard(t *testing.T) {
 	if _, label := sourceStanding(in); label != "No data from CollegeFootballData API · board will run reduced" {
 		t.Errorf("the alarm names the missing source: %q", label)
 	}
+	// A key this install never set up is named, not the alarm; once read, the source is held to its window.
+	in.unset = map[string]string{"cfbd": "needs a key"}
+	if state, label := sourceStanding(in); state != "live" || label != "Sources flowing · CollegeFootballData API not set up" {
+		t.Errorf("an unset source: %s %q", state, label)
+	}
+	if age := sourceAge(healthRows(in)[2], now); age != "Not set up · needs a key" {
+		t.Errorf("an unset source's age: %q", age)
+	}
+	in.sources[2].LastSuccess = now.Add(-40 * 24 * time.Hour)
+	in.sources[2].State = history.SourceLost
+	if state, _ := sourceStanding(in); state != "fail" {
+		t.Errorf("a once-read source that is lost still alarms: %s", state)
+	}
 }

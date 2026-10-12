@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/college"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/manifest"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -161,6 +164,9 @@ func (a *App) TargetDataSources() (DataSources, error) {
 
 func (a *App) healthInput(ctx context.Context) (healthInput, error) {
 	in := healthInput{reg: a.history.Registry(), now: time.Now(), zone: time.Local}
+	if strings.TrimSpace(os.Getenv(cfbdEnvVar)) == "" {
+		in.unset = map[string]string{college.Source: "needs a free CollegeFootballData key in " + cfbdEnvVar}
+	}
 	if photos := a.headshots.Load(); photos != nil {
 		st, held, size := photos.Stats()
 		in.photos = &photoHealth{off: a.photosOff.Load(), held: held, bytes: size, fetched: st.Fetched,

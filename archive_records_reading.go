@@ -357,7 +357,7 @@ func (v archiveView) pools() Report {
 	}
 	if len(pool.Picks) == 0 {
 		r.Status = "empty"
-		r.Note = "No pools are running this season."
+		r.Note = fmt.Sprintf("MFL records no pool picks for %d. Choose an earlier season to see its pools.", v.season)
 		return r
 	}
 	wins, losses, pending, points := map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}
@@ -385,7 +385,7 @@ func (v archiveView) pools() Report {
 	for i, id := range ids {
 		r.Summary = append(r.Summary, draftRow(fmt.Sprintf("Standing %d · %s", i+1, v.name(int64(v.season), id)), fmt.Sprintf("%d confidence points · %d won, %d lost, %d awaiting scores", points[id], wins[id], losses[id], pending[id])))
 	}
-	r.Note = "Only recorded picks count; standings are derived from held NFL final scores, not an MFL pool standings export. Survivor: " + pool.Survivor
+	r.Note = "Only recorded picks count; standings are derived from held NFL final scores, not an MFL pool standings export. " + survivorNote(pool.Survivor)
 	return r
 }
 
@@ -410,4 +410,16 @@ func (v archiveView) poolResult(p facts.PoolPick) string {
 		}
 	}
 	return "Not scored in the archive"
+}
+
+// survivorNote says in words whether MFL ran a survivor pool that season. The archive keeps MFL's
+// own answer, e.g. "Pool/Survivor Picks Not Setup".
+func survivorNote(recorded string) string {
+	switch {
+	case recorded == "":
+		return "MFL's survivor export is not held for this season."
+	case strings.Contains(strings.ToLower(recorded), "not setup"):
+		return "No survivor pool was set up on MFL this season."
+	}
+	return "A survivor pool was set up on MFL this season; its picks are not shown here yet."
 }

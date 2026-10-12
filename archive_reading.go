@@ -75,11 +75,6 @@ func buildArchive(cache archiveCache, stale bool, season int, team, other string
 		return cmp.Or(strings.Compare(a.Label, b.Label), strings.Compare(a.Value, b.Value))
 	})
 	b.Board.Reports = append(b.Board.Reports, v.history(), v.champions(), v.eras(), v.trophies(), v.franchise("M-105", "All-time franchise record"), v.franchiseBests(), v.franchiseSummary(), v.series(), v.matchupRecords(), v.seasonRecords(), v.careerRecords(), v.streaks(), v.playerRecords(), v.scoring(), v.playerChanges(), v.awards(), v.oddities(), v.pools())
-	for _, id := range []string{"M-112", "M-113", "M-174", "M-200", "M-201"} {
-		pool := v.pools()
-		pool.ID = id
-		b.Board.Reports = append(b.Board.Reports, pool)
-	}
 	return b, nil
 }
 
@@ -362,7 +357,7 @@ func (v archiveView) trophies() Report {
 		return r
 	}
 	for _, f := range v.teamFinals() {
-		r.Rows = append(r.Rows, draftRow(archiveYear(f.year), f.name+" · "+f.title, fmt.Sprintf("%.2f–%.2f over %s", f.winner, f.loser, v.name(f.year, f.lose))))
+		r.Rows = append(r.Rows, draftRow(archiveYear(f.year), trophyTitle(f.name, f.title), fmt.Sprintf("%.2f–%.2f over %s", f.winner, f.loser, v.name(f.year, f.lose))))
 	}
 	if len(r.Rows) == 0 {
 		r.Status, r.Note = "empty", v.name(slices.Max(v.cache.facts.Season.Year), v.team)+" has no recorded bracket championship."
@@ -493,4 +488,15 @@ func (v archiveView) series() Report {
 		r.Note = "No scored meetings recorded between these franchises."
 	}
 	return r
+}
+
+// trophyTitle names a trophy once: "NFC Conference Champ", not "NFC · NFC Conference Champ".
+func trophyTitle(name, title string) string {
+	switch {
+	case name == "" || strings.Contains(strings.ToLower(title), strings.ToLower(name)):
+		return title
+	case title == "" || strings.Contains(strings.ToLower(name), strings.ToLower(title)):
+		return name
+	}
+	return name + " · " + title
 }
