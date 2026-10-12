@@ -7,6 +7,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -140,19 +142,31 @@ func TestPersonalHeldReportsAndReadOnlyHandOff(t *testing.T) {
 
 func TestCalendarMergeHeldImport(t *testing.T) {
 	a, transport, _ := tradeDraftApp(t)
-	holdPersonalBody(t, a, "calendar", `{"calendar":{"event":{"end_time":"","type":"DRAFT_START","title":"Rookie draft","id":"8352818","start_time":"1784030400"}}}`)
-	clock := snapshot.Sourced[leagueclock.Reading]{Value: leagueclock.Clock(a.movesNow(), leagueclock.Inputs{
-		Events: []leagueclock.Event{{ID: "local", Kind: "LINEUP_LOCK", Status: "PLANNED", At: a.movesNow().Add(time.Hour)}}})}
-	a.mergeMFLCalendar(a.ctx, a.movesNow(), &clock)
-	found := false
+	now := a.movesNow()
+	next := strconv.FormatInt(now.Add(72*time.Hour).Unix(), 10)
+	holdPersonalBody(t, a, "calendar", `{"calendar":{"event":[`+
+		`{"end_time":"","type":"DRAFT_START","title":"Rookie draft","id":"8352818","start_time":"`+
+		strconv.FormatInt(now.Add(-24*time.Hour).Unix(), 10)+`"},`+
+		`{"end_time":"","type":"TRADE_DEADLINE","title":"Trade deadline","id":"8352819","start_time":"`+next+`"}]}}`)
+	clock := snapshot.Sourced[leagueclock.Reading]{Value: leagueclock.Clock(now, leagueclock.Inputs{
+		Events: []leagueclock.Event{{ID: "local", Kind: "LINEUP_LOCK", Status: "PLANNED", At: now.Add(time.Hour)}}})}
+	a.mergeMFLCalendar(a.ctx, now, &clock)
+	ids := []string{}
 	for _, d := range clock.Value.Deadlines {
-		if d.ID == "mfl-calendar:8352818" {
-			found = strings.Contains(d.Label, "Rookie draft") && d.At.Equal(time.Unix(1784030400, 0)) &&
-				d.Urgency == leagueclock.U0 && !d.Pinned
+		ids = append(ids, d.ID)
+		// The wire contract (frontend data/parse.ts deadline): dated exactly when urgency is not U0.
+		if (d.At == nil) != (d.Urgency == leagueclock.U0) {
+			t.Fatalf("deadline %s breaks the dated/urgency contract: %+v", d.ID, d)
+		}
+		if d.ID == "mfl-calendar:8352819" && (!strings.Contains(d.Label, "Trade deadline") || d.Urgency != leagueclock.U1) {
+			t.Fatalf("upcoming calendar event: %+v", d)
 		}
 	}
-	if !found || len(clock.Value.Deadlines) != 2 || len(transport.requests) != 0 {
-		t.Fatalf("calendar merge: %+v requests %v", clock, transport.requests)
+	if slices.Contains(ids, "mfl-calendar:8352818") || !slices.Contains(ids, "mfl-calendar:8352819") || len(ids) != 2 {
+		t.Fatalf("a past calendar event is not a deadline; the upcoming one is: %v", ids)
+	}
+	if len(transport.requests) != 0 {
+		t.Fatalf("calendar merge fetched: %v", transport.requests)
 	}
 }
 
