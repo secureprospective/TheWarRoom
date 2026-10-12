@@ -85,7 +85,7 @@ M-083,MFL,Matchup Records O=158,Read,Head-to-head marks,"ALL, rare",G0,none,fact
 M-084,MFL,Season Records O=204,Read,Single-season bests,"ALL, rare",G0,none,facts,League Pulse › Pools / Archive,endpoint.open id=M-084,kept,3,spec,A091 A145,kept,,,,3,G0
 M-085,MFL,Career Records O=208,Read,Career bests,"ALL, rare",G0,none,facts,League Pulse › Pools / Archive,endpoint.open id=M-085,kept,3,spec,A092 A118 A146,kept,,,,3,G0
 M-086,MFL,Record Streaks O=232,Read,Streaks,"ALL, rare",G0,none,facts,League Pulse › Pools / Archive,endpoint.open id=M-086,kept,3,spec,A093 A147,kept,,,,3,G0
-M-087,MFL,NFL Draft O=215,Read,Who entered the NFL from where?,RD,G1,none,players,Trade Floor › Draft room,endpoint.open id=M-087,kept,3,spec,A096,kept,,,,NFL Draft O=215 is not held; unrelated to the league draftResults export.,G1
+M-087,MFL,NFL Draft O=215,Read,Who entered the NFL from where?,RD,G1,none,players,Trade Floor › Draft room,endpoint.open id=M-087,kept,3,built,A096,kept,,,,3,G1
 M-088,MFL,Official Stat Changes,Read,Did a score change post-game?,season,G2,post-game,playerScores,League Pulse › Now,endpoint.open id=M-088,kept,3,built,A097,kept,,,can flip a win,3,G2 — can flip a win
 M-089,MFL,Strange Plays,Read,League lore,"ALL, rare",G0,none,facts,League Pulse › Pools / Archive,endpoint.open id=M-089,kept,3,spec,A098,kept,,,,3,G0
 M-090,MFL,Projected Playoff Seedings,Decide,If the season ended today?,DR+,G1,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-090,kept,3,built,A099,kept,,,,3,G1
@@ -94,14 +94,14 @@ M-092,MFL,Widgets,Retire,—,—,G0,—,—,,,retired,4,spec,,"retired — MFL-s
 M-093,MFL,Email Log,Read (gated),What did the league mail out?,"ALL, rare",G0,none,league,Control Room › League,endpoint.open id=M-093,kept,3,spec,A102,kept (gated),,,for GM; commish audit,3,G0 for GM; commish audit
 M-094,MFL,Edit My Links,Retire,—,—,G0,—,—,,,retired,4,spec,,"retired — MFL-site personalization; app watch list, scratchpad and presets replace",,,—,—,—
 M-095,MFL,Commissioner News ⛔,Social (gated write),League notices,ALL,G1,none,league,Control Room › League,endpoint.open id=M-095,kept,3,spec,A104,kept (gated),,,windows and rulings surface here,3,G1 — windows and rulings surface here
-M-096,MFL,League Calendar O=123,Read/Plan,What's due and when?,ALL,G2,window,"league, local",Calendar,endpoint.open id=M-096,kept,3,spec,A105,kept (merges with C-04),,,the league's deadlines live here,3,G2→G3 — the league's deadlines live here
+M-096,MFL,League Calendar O=123,Read/Plan,What's due and when?,ALL,G2,window,"league, local",Calendar,endpoint.open id=M-096,kept,3,built,A105,kept (merges with C-04),,,the league's deadlines live here,3,G2→G3 — the league's deadlines live here
 M-097,MFL,League Rules O=09 → League Settings,Read,The bylaws as written,ALL,G2,sync,"league, rules",Control Room › League,endpoint.open id=M-097,kept,3,spec,A106,kept,,,legality,3,G2 — legality
 M-098,MFL,Accounting Summary,Read,League money,"ALL, rare",G0,none,league,Control Room › League,endpoint.open id=M-098,kept,3,spec,A109,kept,,,,3,G0
 M-099,MFL,LeagueSafe ↗,Retire,—,—,G0,—,—,,,retired,4,spec,,retired — external payments site,,,—,—,—
 M-100,MFL,Franchise Information hub O=01,Retire,—,—,G0,—,—,,,retired,4,spec,,retired as a page — 25 onward doors (defect D1); function merges into the inspector (M-146),,,—,—,—
-M-101,MFL,Roster w/Stats O=138,Read,Roster and output in one view,ALL,G1,sync,"rosters, playerScores",Franchise HQ › Lineup and roster,endpoint.open id=M-101,kept,3,spec,A120,kept,,,,LineupEditor.tsx:72 shows rosters; player output awaits the player-scores feed.,G1
+M-101,MFL,Roster w/Stats O=138,Read,Roster and output in one view,ALL,G1,sync,"rosters, playerScores",Franchise HQ › Lineup and roster,endpoint.open id=M-101,kept,3,built,A120,kept,,,,3,G1
 M-102,MFL,Draft Pick O=52,Read,Who was this pick?,RD,G0,none,draftPickHistory,Trade Floor › Draft room,endpoint.open id=M-102,kept,3,built,A124 A296 A309,kept,,,,"Held MFL draft report beside the Draft lab; draftResults or futureDraftPicks with source, local as-of and counting disclosure; picks happen on MFL only.",G0
-M-103,MFL,My Draft List O=129,Plan,My board for the draft,RD,G2,RD,local (MFL-hosted today),Trade Floor › Draft room,endpoint.open id=M-103,kept,3,spec,A125 A294,kept,,,draft prep,App-local draft list needs its own persistence and editing flow; neither is part of held MFL draft reports.,G2 — draft prep
+M-103,MFL,My Draft List O=129,Plan,My board for the draft,RD,G2,RD,local (MFL-hosted today),Trade Floor › Draft room,endpoint.open id=M-103,kept,3,built,A125 A294,kept,,,draft prep,3,G2 — draft prep
 M-104,MFL,Trophy Case,Read,Franchise silverware,"ALL, rare",G0,none,facts,League Pulse › Pools / Archive,endpoint.open id=M-104,kept,3,spec,,kept,,,,3,G0
 M-105,MFL,Career Record,Read,Franchise W/L record,"ALL, rare",G0,none,facts,League Pulse › Pools / Archive,endpoint.open id=M-105,kept,3,spec,,kept,,,,3,G0
 M-106,MFL,Contact ⛔,Retire,—,—,G0,—,—,,,retired,4,spec,,"retired — members' personal contact data, excluded per §8",,,—,—,—
@@ -114,9 +114,9 @@ M-112,MFL,Pool Picks O=121,Read,Who picked what,"season, weekly",G1,weekly,leagu
 M-113,MFL,Survivor Pool O=120,Read/Decide,Survivor state and picks,"season, weekly",G2,weekly,league (pools),League Pulse › Pools / Archive,endpoint.open id=M-113,kept,3,spec,A137,kept,,,elimination risk,3,G2 — elimination risk
 M-114,MFL,League Champions O=194,Read,Past champions,"ALL, rare",G0,none,facts,League Pulse › Pools / Archive,endpoint.open id=M-114,kept,3,spec,A139 A216,kept,,,,Champions await an Archive report surface.,G0
 M-115,MFL,Franchise Setup ⛔,Retire,—,—,G0,—,—,,,retired,4,spec,,retired — MFL-site profile personalization (unlink/contact/mobile); personal data; Control Room keeps a generic MFL-account utility link,,,—,—,—
-M-116,MFL,Trade Bait O=133,Act/Social,Advertise an asset,ALL; peak DR,G2,none,"tradeBait, local",Franchise HQ › My moves,bait.set,kept,3,spec,A153 A226,kept,,,market signalling,3,G2 — market signalling
-M-117,MFL,My Watch List O=178,Plan,Track my targets,ALL,G1,none,local (MFL-hosted today),Franchise HQ › My moves,endpoint.open id=M-117,kept,3,spec,A155 A230,kept,,,,3,G1
-M-118,MFL,My Scratchpad O=234,Plan,My working notes,ALL,G1,none,local (MFL-hosted today),Franchise HQ › My moves,endpoint.open id=M-118,kept,3,spec,A156,kept,,,,3,G1
+M-116,MFL,Trade Bait O=133,Act/Social,Advertise an asset,ALL; peak DR,G2,none,"tradeBait, local",Franchise HQ › My moves,bait.set,kept,3,built,A153 A226,kept,,,market signalling,3,G2 — market signalling
+M-117,MFL,My Watch List O=178,Plan,Track my targets,ALL,G1,none,local (MFL-hosted today),Franchise HQ › My moves,watch.add,kept,3,built,A155 A230,kept,,,,3,G1
+M-118,MFL,My Scratchpad O=234,Plan,My working notes,ALL,G1,none,local (MFL-hosted today),Franchise HQ › My moves,note.add,kept,3,built,A156,kept,,,,3,G1
 M-119,MFL,My Links,Retire,—,—,G0,—,—,,,retired,4,spec,,retired — MFL-site personalization; app presets and watch list replace,,,—,—,—
 M-120,MFL,Message Board,Social,League talk and rulings,ALL,G1,none,league (board),Comms,endpoint.open id=M-120,kept,3,built,A157,kept → comms channel,,,,"Held MFL transactions and authenticated board/polls; 2026 exports and Oct 11 RSS have zero topics. ProBoards confirmed by Christopher 2026-10-11; 2013–2015 auth-error bodies are not archived, not empty.",G1
 M-121,MFL,Chat,Social,Live league chat,"ALL, gamedays",G1,live,league (chat),,social.post · poll.vote · comms.draft,merged,3,spec,A158,"League talk runs on ProBoards (Christopher 2026-10-11). Articles and videos have no MFL export; chat stays on MFL's page, its export was never sampled.",M-120,,,Merged into League board hand-off.,G1
@@ -147,17 +147,17 @@ M-145,MFL,Player page hub (11 onward link kinds),Read,Everything about this play
 M-146,MFL,Franchise page hub O=01 (25 onward kinds),Read,Everything about this franchise,ALL,G1,none,"rosters, weeklyResults, transactions, facts",,endpoint.open id=M-146,merged,0,spec,A111 A189,"merged → inspector, franchise view; children censed above/below",,Inspector,,with target,G1
 M-147,MFL,HOME tab (shell),Read,Landing view,ALL,G0,none,composite,,endpoint.open id=M-147,merged,1,spec,A203,merged → app Home,,Home › Seasonal card,,with target,G0
 M-148,MFL,Lineup Alert,Decide/Act,Is my lineup broken?,"season, gameday",G3,gameday,"rosters, projectedScores",Home › Alert tray,endpoint.open id=M-148,kept,1,built,A219,kept,,,a miss is a zero in a slot,1,G3 on gameday — a miss is a zero in a slot
-M-149,MFL,Possible IR Violations,Decide,Am I breaking IR rules?,season,G2,none,"rosters, league (rules)",Home › Alert tray,endpoint.open id=M-149,kept,3,spec,A218,kept,,,compliance,IR violations await an alert builder using held eligibility.,G2 — compliance
+M-149,MFL,Possible IR Violations,Decide,Am I breaking IR rules?,season,G2,none,"rosters, league (rules)",Home › Alert tray,endpoint.open id=M-149,kept,3,built,A218,kept,,,compliance,3,G2 — compliance
 M-150,MFL,H2H Results (HOME module),Read,Head-to-head history,"ALL, rare",G0,none,weeklyResults,,endpoint.open id=M-150,merged,1,spec,A214,merged → M-003/M-005,M-003 M-005,,,with target,G0
-M-151,MFL,My Schedule (HOME module),Read,My slate,season,G0,fixed,schedule,,endpoint.open id=M-151,merged,3,spec,A215,merged → M-011 (scoped),M-011,,,with target,G0
+M-151,MFL,My Schedule (HOME module),Read,My slate,season,G0,fixed,schedule,,endpoint.open id=M-151,merged,3,built,A215,merged → M-011/M-012 (scoped),M-011 M-012,,,3,G0
 M-152,MFL,MY TEAM tab (shell),Read,My franchise view,ALL,G0,none,composite,,endpoint.open id=M-152,merged,1,spec,A204,merged → Franchise HQ,,Franchise HQ › Lineup and roster,,with target,G0
 M-153,MFL,Pending Trades,Read/Decide,What's on my desk?,ALL; peak DR,G3,while pending,pendingTrades,Home › Alert tray,endpoint.open id=M-153,kept,1,built,A225,kept,,,accept/reject decisions expire,1,G3 while pending — accept/reject decisions expire
-M-154,MFL,Bye Weeks,Decide,Who's dark this week?,season,G2,weekly,"nflByeWeeks, rosters",Franchise HQ › Lineup and roster,endpoint.open id=M-154,kept,3,spec,A227,kept,,,lineup legality,Bye weeks await a held bye-week feed and roster display.,G2 — lineup legality
+M-154,MFL,Bye Weeks,Decide,Who's dark this week?,season,G2,weekly,"nflByeWeeks, rosters",Franchise HQ › Lineup and roster,endpoint.open id=M-154,kept,3,built,A227,kept,,,lineup legality,3,G2 — lineup legality
 M-155,MFL,My Leagues (module),Retire,—,—,G0,—,—,,,retired,4,spec,,retired — MFL account feature; replaced by the portfolio switcher concept (Step 8),,,—,—,—
-M-156,MFL,Waiver Claims,Read/Act,What am I owed from waivers?,ALL in season,G2,window,pendingWaivers,Home › Alert tray,endpoint.open id=M-156,kept,3,spec,A228,kept,,,claims resolve on a clock,Waiver claims await the native ProBoards waiver flow.,G2 — claims resolve on a clock
-M-157,MFL,Waiver Order,Decide,Where am I in line?,season,G2,weekly,league,Home › Alert tray,endpoint.open id=M-157,kept,3,spec,A229,kept,,,claim strategy,Waiver order awaits the native ProBoards waiver rules.,G2 — claim strategy
+M-156,MFL,Waiver Claims,Read/Act,What am I owed from waivers?,ALL in season,G2,window,pendingWaivers,Home › Alert tray,endpoint.open id=M-156,kept,4,spec,A228,kept,,,claims resolve on a clock,Waivers run on ProBoards; native claim and order mechanics remain open (spec §8 Q2).,G2 — claims resolve on a clock
+M-157,MFL,Waiver Order,Decide,Where am I in line?,season,G2,weekly,league,Home › Alert tray,endpoint.open id=M-157,kept,4,spec,A229,kept,,,claim strategy,Waivers run on ProBoards; native claim and order mechanics remain open (spec §8 Q2).,G2 — claim strategy
 M-158,MFL,Owner Activity,Read,What are owners doing?,ALL,G0,near-live,transactions,,endpoint.open id=M-158,merged,1,spec,A224,merged → C-05 league feed,C-05,,,with target,G0
-M-159,MFL,REPORTS tab (shell),Read,Report shortcuts,ALL,G0,none,composite,,endpoint.open id=M-159,merged,3,spec,A205,merged,,Report drawer,,with target,G0
+M-159,MFL,REPORTS tab (shell),Read,Report shortcuts,ALL,G0,none,composite,,endpoint.open id=M-159,merged,3,built,A205,merged,,Report drawer,,3,G0
 M-160,MFL,Overview (REPORTS module),Read,Week overview,season,G0,weekly,weeklyResults,,endpoint.open id=M-160,merged,1,spec,A236,merged → M-007,M-007,,,with target,G0
 M-161,MFL,All Play,Read/Decide,My record vs every team,season,G1,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-161,kept,3,built,A237,kept,,,,3,G1
 M-162,MFL,PLAYERS tab (shell),Read,Player shortcuts,ALL,G0,none,composite,,endpoint.open id=M-162,merged,2,spec,A206,merged,,War Room › Valuations and pool,,with target,G0
@@ -165,9 +165,9 @@ M-163,MFL,Top lists by position ◆ (11 splits × 2 lists),Read/Decide,Best at e
 M-164,MFL,Top Adds/Drops/Started/Owned ◆,Decide,Market pulse,season,G1,weekly,transactions,,endpoint.open id=M-164,merged,3,spec,A262 A263 A264 A265,merged → M-052 family,M-052,,,with target,G1
 M-165,MFL,LATEST NEWS tab (shell),Read,News view,ALL,G0,near-live,composite,,endpoint.open id=M-165,merged,3,spec,A207,merged,,Home › Digests,,with target,G0
 M-166,MFL,News digests (5 Newest · My 5 · Hot · Featured),Read,What moved today,ALL,G1,near-live,players (news),,endpoint.open id=M-166,merged,1,spec,A268 A269 A270 A271,merged → M-058 + C-05,M-058 C-05,,,with target,G1
-M-167,MFL,Game of the Week recap/preview,Read,Featured game,season,G0,weekly,weeklyResults,,endpoint.open id=M-167,merged,3,spec,A272 A273,merged → M-021/M-018,M-021 M-018,,,with target,G0
+M-167,MFL,Game of the Week recap/preview,Read,Featured game,season,G0,weekly,weeklyResults,,endpoint.open id=M-167,merged,3,built,A272 A273,merged → M-021/M-018,M-021 M-018,,,3,G0
 M-168,MFL,PLAYOFFS tab (shell),Read,Playoff view,DR+,G0,weekly,composite,,endpoint.open id=M-168,merged,3,spec,A208,merged,,League Pulse › Race,,with target,G0
-M-169,MFL,Playoff projections (Conf/Div/Wildcard winners),Decide,Who makes it?,DR+,G1,weekly,weeklyResults,,endpoint.open id=M-169,merged,3,spec,A274 A275 A276 A278 A279 A280,merged → M-090,M-090,,,with target,G1
+M-169,MFL,Playoff projections (Conf/Div/Wildcard winners),Decide,Who makes it?,DR+,G1,weekly,weeklyResults,,endpoint.open id=M-169,merged,3,built,A274 A275 A276 A278 A279 A280,merged → M-090,M-090,,,3,G1
 M-170,MFL,On the Bubble,Decide,Am I in or out?,DR+,G2,weekly,weeklyResults,League Pulse › Race,endpoint.open id=M-170,kept,3,built,A277 A281,kept,,,seeding decisions,3,G2 — seeding decisions
 M-171,MFL,POOLS tab (shell),Read,Pool view,season,G0,weekly,composite,,endpoint.open id=M-171,merged,3,spec,A209,merged,,League Pulse › Pools / Archive,,with target,G0
 M-172,MFL,Fantasy Pick'em submit O=179,Act,Make my picks,"season, weekly",G2,weekly,league (pools),League Pulse › Pools / Archive,pools.picks,kept,3,spec,A286,kept,,,weekly deadline,3,G2 — weekly deadline
@@ -244,19 +244,19 @@ C-06.7,app,Free agency handler,Plan,What's my cap plan for the windows?,OP/UFA/R
 C-07,app,Source health and freshness,Read,Can I trust these numbers?,ALL,G1,sync,local,Control Room › Data and sources,endpoint.open id=C-07,kept,3,built,C018 C021,kept — status bar badge + Control Room,,,,data_sources_reading.go: healthReport; lazy datasources/DataSources.tsx.,G1
 C-08,app,Player crosswalk,Read (infra),Are these the same player?,ALL,G0,sync,local,Control Room › Data and sources,endpoint.open id=C-08,kept,3,built,C019,kept — inspector provenance zone; never a user-facing surface,,,,data_sources_app.go: TargetCrosswalk; existing GetCrosswalkReport/LoadCrosswalk retained.,G0
 C-09,app,Admin console: engine parameters,Configure (gated),Tune the engine,ALL,G1,none,engine,Control Room › Data and sources,endpoint.open id=C-09,kept,3,built,C020,"kept — Control Room, role-gated",,,,"datasources/DataSources.tsx: engine parameter values and overrides; writes gated to admin, current GM read-only.",G1
-S-01,shell,Nav rail (6 nodes),Read,,ALL,G0,,,Home › Seasonal card,view.goto node=,kept,3,spec,,kept,,,,TargetApp.tsx:109 renders six nav nodes; view.goto awaits reconciliation with nav.open.,G0
-S-02,shell,"Inspector (fills on any entity click, no page change)",Read,,ALL,G0,,,Inspector,inspector.pin entity=` · `inspector.close,kept,3,spec,,kept,,,–G3 (hosts what it fills with),TargetApp.tsx:246 renders the Inspector; inspector.pin awaits entity-pinning wiring.,G0–G3 (hosts what it fills with)
+S-01,shell,Nav rail (6 nodes),Read,,ALL,G0,,,Home › Seasonal card,nav.open node=,kept,3,built,,kept,,,,3,G0
+S-02,shell,"Inspector (fills on any entity click, no page change)",Read,,ALL,G0,,,Inspector,inspector.pin entity= · inspector.close,kept,3,built,,kept,,,–G3 (hosts what it fills with),3,G0–G3 (hosts what it fills with)
 S-03,shell,Comms panel (48px collapsed / ~280px open),Social,,ALL,G1,,,Comms,comms.toggle channel=,kept,0,built,,kept,,,,0,G1
-S-04,shell,Calendar summon/collapse from any screen,Read,,ALL,G3,,,Calendar,calendar.toggle,kept,3,spec,,kept,,,(hosts deadlines),TargetApp.tsx:318 renders Calendar; calendar.toggle awaits reconciliation with calendar.summon.,G3 (hosts deadlines)
-S-05,shell,Workspace presets: Default · Draft Mode · Gameday · Trade Season · Admin,Configure,,ALL,G1,,,Control Room › App,preset.set name=,kept,3,spec,,kept,,,,AppSettings.tsx:14 renders presets; preset.set awaits reconciliation with preset.apply.,G1
+S-04,shell,Calendar summon/collapse from any screen,Read,,ALL,G3,,,Calendar,calendar.summon,kept,3,built,,kept,,,(hosts deadlines),3,G3 (hosts deadlines)
+S-05,shell,Workspace presets: Default · Draft Mode · Gameday · Trade Season · Admin,Configure,,ALL,G1,,,Control Room › App,preset.apply preset=,kept,3,built,,kept,,,,3,G1
 S-06,shell,Density tier: Narrative · Tactical · Matrix (one CSS attribute),Configure,,ALL,G0,,,Control Room › App,density.set tier=,kept,0,built,,kept,,,,0,G0
 S-07,shell,Command bar,Read,,ALL,G0,,,Command bar,commandbar.open,kept,0,built,,kept,,,,0,G0
-S-08,shell,Global search,Read,,ALL,G1,,,Command bar,search.find q=,kept,3,spec,,kept,,,,CommandBar.tsx:37 renders search; search.find awaits a registered search command.,G1
+S-08,shell,Global search,Read,,ALL,G1,,,Command bar,commandbar.open,kept,3,built,,kept,,,,3,G1
 S-09,shell,Data refresh,Configure,,ALL,G1,,,Control Room › Data and sources,refresh.run scope=,kept,3,built,,kept,,,,data_sources_app.go: TargetDataRefresh; four scoped refresh Acts with progress and result.,G1
 S-10,shell,Filter state persistence across sub-sections,Configure,,ALL,G1,,,Control Room › App,view.filter scope=,kept,3,spec,,kept,,,,market/state.ts:33 holds market filters; view.filter awaits shared subsection-filter wiring.,G1
-S-11,shell,Watch list / scratchpad store (app-local),Plan,,ALL,G1,,,Franchise HQ › My moves,watch.add entity=` · `note.add entity=,kept,3,spec,,kept,,,,Watch lists and notes await an app-local store and Acts.,G1
-S-12,shell,Status bar (source health · gameday strip · clock),Read,,ALL,G1,,,Status strip,read-only,kept,3,spec,,kept,,,,TargetApp.tsx:163 shows freshness and clock; the gameday strip awaits the live-game adapter.,G1
-S-13,shell,Seasonal-card phase links,Read,,ALL,G2,,,Home › Seasonal card,phase.goto phase=,kept,3,spec,,kept,,,,SeasonalCard.tsx:22 shows the phase; phase.goto links await phase-route wiring.,G2
+S-11,shell,Watch list / scratchpad store (app-local),Plan,,ALL,G1,,,Franchise HQ › My moves,watch.add id= entity= action= · note.add id= entity= action= text=,kept,3,built,,kept,,,,3,G1
+S-12,shell,Status bar (source health · gameday strip · clock),Read,,ALL,G1,,,Status strip,endpoint.open id=S-12,kept,3,built,,kept,,,,3,G1
+S-13,shell,Seasonal-card phase links,Read,,ALL,G2,,,Home › Seasonal card,phase.goto phase=,kept,3,built,,kept,,,,3,G2
 S-14,shell,League switcher (dormant; portfolio-ready),Configure,,ALL,G0,,,Control Room › App,league.switch id=,kept,4,spec,,kept,,,,League switching awaits ring 4 portfolio support.,G0
 X-01,new 2026-10-06,"Live game view: field graphic, last play, box score, followed-game bar",Read,"What is happening in this NFL game, and what does it mean for my matchup?",ES/MS/DR gamedays,G1,live,"ESPN site/summary (primary), Yahoo editorial scoreboard (failover), Fox bifrost (third); MFL liveScoring",League Pulse › Now,game.follow id=,kept,3,spec,,kept,,,,3,G1
 X-02,new 2026-10-06,Fantasy play spine: headshot + play when a player in this matchup does something,Read,"Which of our players just scored, and how?",ES/MS/DR gamedays,G1,live,play feeds matched via crosswalk espn_id; headshots ESPN/Sleeper (personal use),League Pulse › Now,endpoint.open id=X-02,kept,3,spec,,kept,,,,3,G1

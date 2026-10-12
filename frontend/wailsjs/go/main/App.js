@@ -262,6 +262,10 @@ export function TargetMoves(arg1) {
   return window['go']['main']['App']['TargetMoves'](arg1);
 }
 
+export function TargetNFLDraft() {
+  return window['go']['main']['App']['TargetNFLDraft']();
+}
+
 export function TargetNow(arg1, arg2) {
   return window['go']['main']['App']['TargetNow'](arg1, arg2);
 }
@@ -280,6 +284,18 @@ export function TargetOpenComms(arg1) {
 
 export function TargetOpenMFLDraftRoom() {
   return window['go']['main']['App']['TargetOpenMFLDraftRoom']();
+}
+
+export function TargetPersonal(arg1) {
+  return window['go']['main']['App']['TargetPersonal'](arg1);
+}
+
+export function TargetPersonalChange(arg1) {
+  return window['go']['main']['App']['TargetPersonalChange'](arg1);
+}
+
+export function TargetPersonalHandOff(arg1) {
+  return window['go']['main']['App']['TargetPersonalHandOff'](arg1);
 }
 
 export function TargetPhoto(arg1) {
@@ -314,8 +330,16 @@ export function TargetReleasePlans(arg1) {
   return window['go']['main']['App']['TargetReleasePlans'](arg1);
 }
 
+export function TargetRosterReports(arg1) {
+  return window['go']['main']['App']['TargetRosterReports'](arg1);
+}
+
 export function TargetSeason() {
   return window['go']['main']['App']['TargetSeason']();
+}
+
+export function TargetShellStatus() {
+  return window['go']['main']['App']['TargetShellStatus']();
 }
 
 export function TargetSnapshot() {

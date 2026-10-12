@@ -246,3 +246,8 @@ func unknown(direction Direction, source, reason string) Decision {
 func NotChecked(reason string) string {
 	return "Not checked: " + reason + "; MFL will decide"
 }
+
+// IRClassification checks the NFL designation, not the fantasy activation direction or capacity.
+func IRClassification(in Injuries, id string) Decision {
+	return toIR(Input{Injuries: in, IR: Capacity{Slots: 1, Held: true}}, id, 0)
+}

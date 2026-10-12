@@ -4,6 +4,7 @@ import {main} from '../models';
 import {lineup} from '../models';
 import {snapshot} from '../models';
 import {envelope} from '../models';
+import {personal} from '../models';
 
 export function AppInfo():Promise<main.AppInfo>;
 
@@ -135,6 +136,8 @@ export function TargetMarketStretches(arg1:main.RawMarketScope):Promise<main.Rea
 
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 
+export function TargetNFLDraft():Promise<main.Report>;
+
 export function TargetNow(arg1:number,arg2:string):Promise<main.NowBoard>;
 
 export function TargetNowRefresh(arg1:number,arg2:boolean):Promise<void>;
@@ -144,6 +147,12 @@ export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_
 export function TargetOpenComms(arg1:string):Promise<void>;
 
 export function TargetOpenMFLDraftRoom():Promise<void>;
+
+export function TargetPersonal(arg1:string):Promise<main.PersonalReading>;
+
+export function TargetPersonalChange(arg1:personal.RawChange):Promise<void>;
+
+export function TargetPersonalHandOff(arg1:string):Promise<void>;
 
 export function TargetPhoto(arg1:string):Promise<main.PhotoView>;
 
@@ -161,7 +170,11 @@ export function TargetRaceRefresh(arg1:boolean):Promise<void>;
 
 export function TargetReleasePlans(arg1:main.RawReleaseRequest):Promise<main.Reading___main_ReleasePlanView_>;
 
+export function TargetRosterReports(arg1:string):Promise<Array<main.Report>>;
+
 export function TargetSeason():Promise<main.SeasonReading>;
+
+export function TargetShellStatus():Promise<main.ShellStatus>;
 
 export function TargetSnapshot():Promise<snapshot.Snapshot>;
 

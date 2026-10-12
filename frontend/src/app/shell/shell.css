@@ -169,3 +169,11 @@
 .twr-app select option { background: var(--surface-2); color: var(--surface-tx1); }
 .twr-app select:focus-visible { outline: 2px solid var(--signal-blue); outline-offset: 2px; }
 .twr-app select:disabled { opacity: .6; cursor: not-allowed; }
+
+.twr-app .wbody > * { min-width: 0; }
+.twr-app .workspace-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  padding: 7px 14px; border-bottom: 1px solid var(--surface-line); font-size: 11px; }
+.twr-app .shell-status { display: flex; flex-wrap: wrap; gap: 8px 16px; min-width: 0; }
+.twr-app .wtabs { flex-wrap: wrap; min-width: 0; }
+.twr-app .wtabs .act-tab { min-height: 44px; }
+.twr-app .roster-player-row > .act:first-child { width: 100%; display: block; padding: 0; }

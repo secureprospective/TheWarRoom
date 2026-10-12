@@ -2,7 +2,6 @@ import { memo } from 'react';
 import type { ClockProps } from './labels';
 import { ClockSignal } from './ClockSignal';
 import { deadlineLabel, localDate, phaseLabels, windowLabels } from './labels';
-import { assertShortList } from '../shell/shortList';
 
 export const CalendarPanel = memo(function CalendarPanel(
   { reading }: ClockProps,
@@ -17,9 +16,9 @@ export const CalendarPanel = memo(function CalendarPanel(
     );
   }
   const { deadlines, windows, phase, week } = reading.value;
-  assertShortList(deadlines.length);
+
   return (
-    <section className="league-calendar" aria-label="League clock">
+    <section className="league-calendar" aria-label="League clock" data-endpoint="M-096">
       <h4>{phaseLabels[phase]}</h4>
       {week === undefined ? null : <p>NFL week {week}</p>}
       {deadlines.length ? (

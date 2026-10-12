@@ -278,3 +278,31 @@ func TestBuildEligibilityStaleFeedsReadUnknown(t *testing.T) {
 			got.Eligibility.Feeds[eligibility.SourceInjuries])
 	}
 }
+
+func TestSnapshotIncludesUnrosteredDirectoryPlayers(t *testing.T) {
+	dir := testDirectory(t)
+	lookup, err := normalize.NewLookup([]players.RawPlayer{
+		{ID: "0042", Name: "Rostered", Position: "QB", Team: "BUF"},
+		{ID: "0816", Name: "Available rookie", Position: "WR", Team: "IND"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir.Lookup = lookup
+	snap, err := Build(context.Background(), testSource(), dir, snapshotInjuries())
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, p := range snap.Players.Value {
+		if p.ID.String() == "0816" {
+			found = p.Name == "Available rookie"
+		}
+	}
+	if !found {
+		t.Fatal("global search and private lists lost an unrostered player")
+	}
+	if _, found := snap.Eligibility.Players["0816"]; found {
+		t.Fatal("invented roster eligibility")
+	}
+}

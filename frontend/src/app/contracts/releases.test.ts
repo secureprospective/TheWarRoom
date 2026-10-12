@@ -58,7 +58,7 @@ describe('Release plans', () => {
     }));
     expect(render()).toContain('Make this a plan');
     expect(render()).toContain('Make this a plan: Cut Example');
-    expect(render()).toMatch(/class="act act-command"[^>]*aria-label="Make this a plan: Cut Example"/);
+    expect(render()).toMatch(/class="act act-text"[^>]*aria-label="Make this a plan: Cut Example"/);
     expect(render()).toContain('class="whatif-plan-line"');
     Object.assign(reading.value.moves[0], { plan: 'Plan: Ready' });
     expect(render()).toContain('Plan: Ready');

@@ -20,6 +20,8 @@ import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
 
+const StatusStrip = lazy(() => import('./StatusStrip'));
+const EntityInspector = lazy(() => import('./EntityInspector'));
 const DataSources = lazy(() => import('../datasources/DataSources'));
 const Contracts = lazy(() => import('../contracts/Contracts'));
 const LazyEndpointIndex = lazy(() =>
@@ -164,12 +166,6 @@ export function TargetApp() {
             ))}
           </div>
           <div className="strip">
-            {summary ? (
-              <SignalChip {...summary.provenance} />
-            ) : (
-              <span>{error ?? 'Snapshot loading…'}</span>
-            )}
-            <ClockStrip reading={clock} />
             <span className="dens" aria-label="Density">
               {DENSITIES.map((density, index) => (
                 <Act
@@ -186,6 +182,10 @@ export function TargetApp() {
             </span>
           </div>
         </header>
+        <div className="workspace-status" aria-label="Status strip">
+          <Suspense fallback={null}><StatusStrip /></Suspense>
+          <ClockStrip reading={clock} />
+        </div>
         <div className="wbody" ref={workspaceBody}>
           {s.notice && (
             <p role="status" className="not-wired">
@@ -276,7 +276,9 @@ export function TargetApp() {
           </span>
         </div>
         <div className="insp-body">
-          {s.asset ? (
+          {s.entity && snapshot ? (
+            <Suspense fallback={null}><EntityInspector entity={s.entity} snapshot={snapshot} /></Suspense>
+          ) : s.asset ? (
             <Suspense fallback={null}>
               <Market kind={s.asset} snapshot={snapshot} />
             </Suspense>
@@ -358,6 +360,8 @@ export function TargetApp() {
               Close
             </Act>
           </header>
+          {s.endpointSurface === 'Status strip' && <Suspense fallback={null}>
+            <StatusStrip /><ClockStrip reading={clock} /></Suspense>}
           <EndpointIndex placement={s.endpointSurface} />
         </aside>
       )}

@@ -1,0 +1,64 @@
+{
+  "entries": [
+    {
+      "kind": "watch",
+      "entity": "player",
+      "id": "0816",
+      "text": "",
+      "at": "2026-10-11T00:00:00Z",
+      "order": 1
+    },
+    {
+      "kind": "draft",
+      "entity": "player",
+      "id": "17462",
+      "text": "",
+      "at": "2026-10-11T00:00:01Z",
+      "order": 2
+    },
+    {
+      "kind": "note",
+      "entity": "franchise",
+      "id": "0025",
+      "text": "Plain <text>\nSecond line",
+      "at": "2026-10-11T00:00:02Z",
+      "order": 1
+    }
+  ],
+  "players": [
+    {
+      "id": "0816",
+      "status": "Questionable \u00b7 2026-10-11T00:00:00Z",
+      "market": [
+        "Proj 12.4 \u00b7 Rank 45",
+        "ADP 112 \u00b7 AAV 1.2%"
+      ]
+    }
+  ],
+  "bait": {
+    "id": "M-116",
+    "title": "League trade bait",
+    "note": "",
+    "status": "ok",
+    "source": "Source: held MFL tradeBait archive",
+    "asOf": "As of: Oct 11, 2026, 12:00 AM",
+    "how": "MFL held trade bait; app never submits.",
+    "columns": [
+      "Franchise",
+      "Offering",
+      "Looking for"
+    ],
+    "rows": [
+      {
+        "cells": [
+          "Other franchise",
+          "Available rookie",
+          "Future picks"
+        ],
+        "range": null
+      }
+    ],
+    "summary": null,
+    "link": null
+  }
+}

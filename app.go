@@ -31,6 +31,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/moves"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
@@ -299,6 +300,7 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 		{"history", hist.Initialize},
 		{"params", pstore.Initialize},
 		{"moves", moveStore.Initialize},
+		{"personal lists", personal.New(a.pools).Initialize},
 		{"rulebook", func(c context.Context) error { return rb.Initialize(c, discoverSource{app: a}) }},
 		{"league mirror", mirror.Initialize},
 		{"first MFL refresh", func(c context.Context) error {

@@ -20,7 +20,7 @@ type Invocation = {
 export type SearchResult = {
   label: string;
   aliases: readonly string[];
-  kind: 'command' | 'place' | 'endpoint' | 'player';
+  kind: 'command' | 'place' | 'endpoint' | 'player' | 'franchise';
   position?: Position;
   invocation: Invocation;
 };
@@ -85,6 +85,10 @@ export function searchCandidates(executor: Executor, snapshot?: Snapshot): Index
   }
   const owners = new Map((snapshot?.franchises.value ?? [])
     .map((franchise) => [franchise.id, franchise.name]));
+  for (const franchise of snapshot?.franchises.value ?? []) {
+    results.push({ label: franchise.name ?? 'Franchise name unavailable', aliases: [], kind: 'franchise',
+      invocation: { verb: 'inspector.pin', args: { entity: { kind: 'franchise', id: franchise.id } } } });
+  }
   const players = new Map((snapshot?.players.value ?? []).map((player) => [player.id, player]));
   for (const roster of snapshot?.rosters.value ?? []) {
     for (const player of roster.players) {
@@ -107,6 +111,14 @@ export function searchCandidates(executor: Executor, snapshot?: Snapshot): Index
       });
     }
   }
+  const rostered = new Set(snapshot?.rosters.value.flatMap(r => r.players.map(p => p.id)) ?? []);
+  for (const player of snapshot?.players.value ?? []) {
+    if (rostered.has(player.id)) continue;
+    results.push({ label: [player.name ?? 'Player name unavailable', player.position, player.team]
+      .filter(Boolean).join(' · '), aliases: [], kind: 'player', position: player.position,
+      invocation: { verb: 'inspector.pin', args: { entity: { kind: 'player', id: player.id,
+        franchiseId: '' } } } });
+  }
   return results.map(indexResult);
 }
 
@@ -115,7 +127,7 @@ export function rankResults(
   candidates: readonly IndexedResult[],
 ): SearchResult[] {
   const normalized = query.trim().toLowerCase();
-  const order = { command: 0, place: 1, endpoint: 2, player: 3 };
+  const order = { command: 0, place: 1, endpoint: 2, player: 3, franchise: 4 };
   return candidates
     .map((result) => ({
       result,
