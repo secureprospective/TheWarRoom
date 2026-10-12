@@ -1,4 +1,32 @@
-## >>> RESUME HERE (written 22:45 CDT 2026-10-11, compaction) <<<
+## >>> RESUME HERE (written 07:35 CDT 2026-10-12) <<<
+The session paused about 23:10 on 10-11 and woke at 07:30 on 10-12; the 04:00 logout passed with nothing in flight.
+BRANCH session/ring-3 (worktree .worktrees/ring-3), all local, unpushed. HEAD d4e8a50:
+- 5c6a156 merge of session/ring-3-c (p3t trade Acts) into ring-3: conflicts resolved, verify 0, deployed `ring3-merge-p3t`,
+  Trade Floor > Trade desk checked on screen. ring-3-b and ring-3-c are now both fully merged.
+- 2fdb63c p3g1-s2 (Claude coded): game, lineup, player_week, injury_week, roster_week, nfl_game, points_allowed,
+  playoff_bracket, playoff_game + views played_game/regular_week/all_play_week/team_season (Facts.Views(), on demand).
+  The fixture inputs.json.gz now keeps every body of 2013/2020/2026 (4,318,066 B, sha 0b3d723a...), via
+  tools/labparity/facts-reference.py input_fixture.
+- d4e8a50 p3g1-s3 (Claude coded): contract, cap_charge, draft_pick, pick_owned, txn, txn_asset, trade_bait, mfl_adp,
+  mfl_aav + views trade_asset/offer/roster_move. ALL 37 oracle relations (except check_result/review_item) at ZERO
+  differences, reduced (verify) and full (opt-in). Full compile 13.9 s, peak RSS 631 MB (isolated measurement test).
+  Mutants planted and caught: DP slot offset, swapped offer side, IR/ROSTER double-listing order, T result in views.
+NEXT ACTIONS IN ORDER:
+1. p3g1-s4 (brief ~/fleet/briefs/warroom-ring3-p3g1-s4.md): port the 9 checks of the reference checks.py as compile
+   assertions with exceptions pinned by IDENTITY (testdata file, plain-words reason); note_readings.csv in the runtime
+   manifest; compile from p3f's manifest, cache by manifest sha + compiler version + rules hash, publish via p3f's
+   snapshot record, failed compile keeps last good snapshot marked stale; Control Room > Data and sources > Checked facts
+   (L-34) with real results; registry rows -> built; measure. Reference results: RUN/p3g1/oracle-final/checks.json,
+   exceptions.json. Full parity cmd: TWR_ARCHIVE_PARITY=1 TWR_FACTS_ORACLE=RUN/p3g1/oracle-final/facts.jsonl.gz
+   TWR_FACTS_ARCHIVE=~/work/TheWarRoom/league-archive/raw go test ./internal/facts -run Full -v.
+2. Sol should have budget again (it was out until ~00:15 on 10-12): dispatch parallel lanes from new worktrees off
+   ring-3 HEAD: p3n Control Room, p3s shell/Home/HQ (+ BACKLOG sideways scrollbar), p3r Research, p3l live game.
+   Then p3g2 Lab compiler and p3h archive/pools/events after s4.
+3. Spec rev 3, registry gate, Christopher click-through, PR squash-merge. Report the Pools decision to Christopher.
+REVIEW ROUTINE: report -> one planted mutant -> make verify/build -> deploy -> look myself (shot.sh) -> fix -> commit ->
+update this RESUME + scp CT105. Never `git add -A` without checking for build outputs.
+
+## (previous block, 22:45 10-11, superseded)
 HARD STOP: Claude account logs out 04:00 CDT 10-12; timer task wakes Claude at 03:15 to save. Sol budget OUT until ~00:15
 (Christopher 21:45); all chain.sh drivers killed. Claude codes the rest itself (Tom only if asked; shares Claude quota).
 BRANCHES (all local, unpushed):
