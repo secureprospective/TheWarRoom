@@ -34,6 +34,7 @@ type DataSources struct {
 	Facts      Report            `json:"facts"`
 	Checks     Report            `json:"checks"`
 	ArchiveDir string            `json:"archiveDir"`
+	PhotosOn   bool              `json:"photosOn"`
 	Scopes     []DataScope       `json:"scopes"`
 	Words      map[string]string `json:"words"`
 }
@@ -153,12 +154,17 @@ func (a *App) TargetDataSources() (DataSources, error) {
 	return DataSources{
 		Health: healthReport(health), Signals: signalFilesReport(signals, last, time.Local),
 		Facts: factsReport(facts), Checks: checksReport(facts.checks),
-		ArchiveDir: settings.LeagueArchiveDir, Scopes: dataScopes(), Words: dataWords(),
+		ArchiveDir: settings.LeagueArchiveDir, PhotosOn: !settings.PhotosOff, Scopes: dataScopes(), Words: dataWords(),
 	}, nil
 }
 
 func (a *App) healthInput(ctx context.Context) (healthInput, error) {
 	in := healthInput{reg: a.history.Registry(), now: time.Now(), zone: time.Local}
+	if photos := a.headshots.Load(); photos != nil {
+		st, held, size := photos.Stats()
+		in.photos = &photoHealth{off: a.photosOff.Load(), held: held, bytes: size, fetched: st.Fetched,
+			missing: st.Missing, lastFail: st.LastFailure, lastError: st.LastError}
+	}
 	var err error
 	if in.sources, err = a.history.SourceHealth(ctx); err != nil {
 		return in, fmt.Errorf("app: source health: %w", err)
@@ -274,6 +280,8 @@ func dataWords() map[string]string {
 		"setting": "Setting and position", "value": "Value", "default": "Default", "override": "Override",
 		"range": "Allowed", "overridden": "Overridden", "fitted": "Fitted", "handSet": "Hand-set",
 		"apply": "Apply", "reset": "Reset", "clear": "Clear the Admin value and follow the shipped default",
-		"kept": "The last reading is kept.",
+		"kept":   "The last reading is kept.",
+		"photos": "Player photos", "photosNote": "From ESPN, then Sleeper, cached on this computer for personal use. " +
+			"Off means no photo is requested.", "photosOn": "Turn photos on", "photosOff": "Turn photos off",
 	}
 }

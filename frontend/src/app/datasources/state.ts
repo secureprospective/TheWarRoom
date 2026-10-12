@@ -5,7 +5,7 @@ import type { Report } from '../reports/contract';
 import type { main } from '../../../wailsjs/go/models';
 export type ParamAction = { kind: 'parameter'; key: string; position: string; value: number | null };
 export type DataAction = { kind: 'read' } | { kind: 'folder'; path: string } |
-  { kind: 'refresh'; scope: string };
+  { kind: 'refresh'; scope: string } | { kind: 'photos'; on: boolean };
 export type Action = DataAction | ParamAction;
 export function createDataState(provider: DataProvider) {
   const store = createStore<{ data?: Sources; crosswalk?: Report; params?: main.ParamsResult;
@@ -22,9 +22,9 @@ export function createDataState(provider: DataProvider) {
     const busy = action.kind === 'refresh' ? action.scope : action.kind;
     store.setState(s => ({ busy, error: '', result: '', outcomes: { ...s.outcomes, [busy]: '' } }));
     try {
-      if (action.kind === 'refresh' || action.kind === 'folder') {
+      if (action.kind === 'refresh' || action.kind === 'folder' || action.kind === 'photos') {
         const result = action.kind === 'refresh' ? await provider.refresh(action.scope)
-          : await provider.folder(action.path);
+          : action.kind === 'photos' ? await provider.photos(action.on) : await provider.folder(action.path);
         store.setState(s => ({ result: result.summary, outcomes: { ...s.outcomes,
           [busy]: result.ok ? result.summary : result.error } }));
         if (!result.ok) store.setState({ error: result.error });

@@ -75,15 +75,18 @@ func photoView(mflID, name string, off bool) PhotoView {
 }
 
 // SetPhotos turns player photos on or off; off means no request reaches a photo host.
-func (a *App) SetPhotos(on bool) error {
+func (a *App) SetPhotos(on bool) DataActResult {
 	s, err := a.readSettings()
 	if err != nil {
-		return err
+		return DataActResult{Error: err.Error()}
 	}
 	s.PhotosOff = !on
 	if err := a.writeSettings(s); err != nil {
-		return err
+		return DataActResult{Error: err.Error()}
 	}
 	a.photosOff.Store(!on)
-	return nil
+	if on {
+		return DataActResult{OK: true, Summary: "Player photos are on; each shows the first time its card is drawn."}
+	}
+	return DataActResult{OK: true, Summary: "Player photos are off; cards show the NFL team instead."}
 }

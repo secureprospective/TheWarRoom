@@ -15,7 +15,7 @@ const provider = (): DataProvider => ({
   read: async () => data(), crosswalk: async () => report(wire.crosswalk, 'Crosswalk'),
   params: async () => wire.params as main.ParamsResult,
   refresh: async () => parseOutcome(wire.result), folder: async () => parseOutcome(wire.result),
-    parameter: async () => {},
+  photos: async () => parseOutcome(wire.result), parameter: async () => {},
 });
 const html = renderToStaticMarkup;
 describe('Control Room data and sources', () => {
@@ -35,7 +35,7 @@ describe('Control Room data and sources', () => {
     const markup = html(createElement(RefreshScopes, { data: d, busy: 'archive' }));
     expect(markup).toContain('id="archive-folder"');
     expect(markup).toContain(d.scopes[3].progress);
-    expect(markup.match(/disabled=""/g)?.length).toBe(5);
+    expect(markup.match(/disabled=""/g)?.length).toBe(6);
     for (const s of d.scopes) expect(markup).toContain(s.note.replaceAll("'", '&#x27;'));
     const unset = html(createElement(RefreshScopes, { data: { ...d, archiveDir: '' }, busy: '' }));
     expect(unset).toContain('disabled=""');
@@ -186,4 +186,17 @@ it('keeps held-read progress and its Go result beside the button, including fail
   p.read = async () => { throw new Error('held reader unavailable'); };
   await state.run({ kind: 'read' });
   expect(state.read().outcomes.read).toContain('held reader unavailable');
+  it('turns photos off when they are on, and keeps Go\'s result line', async () => {
+    const asked: boolean[] = [];
+    const p = { ...provider(), photos: async (on: boolean) => {
+      asked.push(on); return { ok: true, error: '', summary: 'Player photos are off.' }; } };
+    const state = createDataState(p);
+    await state.run({ kind: 'read' });
+    expect(state.read().data!.photosOn).toBe(true);
+    await state.run({ kind: 'photos', on: false });
+    expect(asked).toEqual([false]);
+    expect(state.read().outcomes.photos).toBe('Player photos are off.');
+    const markup = html(createElement(RefreshScopes, { data: state.read().data!, busy: '' }));
+    expect(markup).toContain('Turn photos off');
+  });
 });

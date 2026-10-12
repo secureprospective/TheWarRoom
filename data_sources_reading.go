@@ -6,6 +6,7 @@ import (
 	"maps"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,6 +24,17 @@ type healthInput struct {
 	missing  []string // measures the latest board run went without
 	now      time.Time
 	zone     *time.Location
+	photos   *photoHealth // nil before the photo cache starts
+}
+
+// photoHealth is the player photo cache's standing: photos are not facts, so it is not a history source.
+type photoHealth struct {
+	off              bool
+	held             int
+	bytes            int64
+	fetched, missing int
+	lastFail         time.Time
+	lastError        string
 }
 
 // healthRow is one line of the health report before it is worded.
@@ -72,7 +84,32 @@ func healthReport(in healthInput) Report {
 		r.Rows = append(r.Rows, ReportRow{Cells: []string{name,
 			whenText(row.lastGood, in.zone) + "\n" + sourceAge(row, in.now), failureText(row, in.zone)}})
 	}
+	if p := in.photos; p != nil {
+		r.Rows = append(r.Rows, ReportRow{Cells: photoCells(*p, in.zone)})
+	}
 	return r
+}
+
+// photoCells words the photo cache's health row: what is held, this launch's reads, the last failure.
+func photoCells(p photoHealth, zone *time.Location) []string {
+	name := "Player photos (ESPN, then Sleeper)\nPersonal use only"
+	if p.off {
+		name += " · Off: no photo is requested"
+	}
+	held := fmt.Sprintf("%s held (%.1f MB)\nSince launch: %s fetched, %s with no photo",
+		countText(p.held, "photo"), float64(p.bytes)/(1<<20), strconv.Itoa(p.fetched), strconv.Itoa(p.missing))
+	failure := "None"
+	if !p.lastFail.IsZero() {
+		failure = whenText(p.lastFail, zone) + ": " + p.lastError
+	}
+	return []string{name, held, failure}
+}
+
+func countText(n int, noun string) string {
+	if n == 1 {
+		return "1 " + noun
+	}
+	return strconv.Itoa(n) + " " + noun + "s"
 }
 
 // mflExportRows groups MFL's fetches by export type.

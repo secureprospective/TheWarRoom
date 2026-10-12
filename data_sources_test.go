@@ -306,7 +306,7 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 				Seasons:  []SeasonCount{{Season: 2026, Players: 1300, Waiting: 37}},
 				Coverage: []PositionShare{{Position: "WR", Rostered: 1454, WithData: 1105}}}}}, SignalsReport{}, time.UTC),
 			Facts:  factsReport(factsInput{labBuilt: "2026-10-06T15:57:20+00:00", labThrough: "2026-10-06T01:42:57+00:00", zone: time.UTC}),
-			Checks: checksReport(nil), ArchiveDir: "/fixture/raw", Scopes: dataScopes(), Words: dataWords()},
+			Checks: checksReport(nil), ArchiveDir: "/fixture/raw", PhotosOn: true, Scopes: dataScopes(), Words: dataWords()},
 		Crosswalk: c, Params: ParamsResult{OK: true, Params: []ParamView{{Key: "test.weight", Label: "Test weight", Group: "Other settings", Position: "WR", Value: 0.5, Default: 0.5, Min: 0, Max: 1, Description: "Test weight", Overridden: true}}},
 		Result: DataActResult{OK: true, Summary: "Looked at 8 files: 0 new, 8 already held."},
 	}
@@ -409,5 +409,22 @@ func TestSignalResultExplainsCrosswalkTimeAndRelinkFailure(t *testing.T) {
 		if !strings.HasSuffix(got, note) {
 			t.Errorf("summary = %q, want %q", got, note)
 		}
+	}
+}
+
+func TestPhotoHealthRowSaysWhatIsHeldAndWhenOff(t *testing.T) {
+	at := time.Date(2026, 10, 11, 21, 0, 0, 0, time.UTC)
+	got := photoCells(photoHealth{held: 412, bytes: 3 << 20, fetched: 40, missing: 2, lastFail: at,
+		lastError: "headshot: a.espncdn.com answered HTTP 503"}, time.UTC)
+	want := []string{"Player photos (ESPN, then Sleeper)\nPersonal use only",
+		"412 photos held (3.0 MB)\nSince launch: 40 fetched, 2 with no photo",
+		"Oct 11, 2026, 9:00 PM: headshot: a.espncdn.com answered HTTP 503"}
+	if strings.Join(got, " | ") != strings.Join(want, " | ") {
+		t.Fatalf("photo row\n got %q\nwant %q", got, want)
+	}
+	off := photoCells(photoHealth{off: true, held: 1}, time.UTC)
+	if !strings.HasSuffix(off[0], "Off: no photo is requested") || !strings.HasPrefix(off[1], "1 photo held") ||
+		off[2] != "None" {
+		t.Fatalf("photos off: %q", off)
 	}
 }

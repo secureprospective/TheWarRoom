@@ -59,7 +59,7 @@ export function SetMFLKey(arg1:string):Promise<main.MFLKeyStatus>;
 
 export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetParamResult>;
 
-export function SetPhotos(arg1:boolean):Promise<void>;
+export function SetPhotos(arg1:boolean):Promise<main.DataActResult>;
 
 export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
 

@@ -120,6 +120,7 @@
       "link": null
     },
     "archiveDir": "/fixture/raw",
+    "photosOn": true,
     "scopes": [
       {
         "id": "league",
@@ -167,6 +168,10 @@
       "override": "Override",
       "parameters": "Engine parameters",
       "permission": "Changes require the admin role. Running as GM: values are read-only.",
+      "photos": "Player photos",
+      "photosNote": "From ESPN, then Sleeper, cached on this computer for personal use. Off means no photo is requested.",
+      "photosOff": "Turn photos off",
+      "photosOn": "Turn photos on",
       "range": "Allowed",
       "read": "Read held records",
       "readProgress": "Refreshing…",

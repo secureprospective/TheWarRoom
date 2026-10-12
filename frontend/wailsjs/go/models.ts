@@ -1774,6 +1774,7 @@ export namespace main {
 	    facts: Report;
 	    checks: Report;
 	    archiveDir: string;
+	    photosOn: boolean;
 	    scopes: DataScope[];
 	    words: Record<string, string>;
 	
@@ -1788,6 +1789,7 @@ export namespace main {
 	        this.facts = this.convertValues(source["facts"], Report);
 	        this.checks = this.convertValues(source["checks"], Report);
 	        this.archiveDir = source["archiveDir"];
+	        this.photosOn = source["photosOn"];
 	        this.scopes = this.convertValues(source["scopes"], DataScope);
 	        this.words = source["words"];
 	    }

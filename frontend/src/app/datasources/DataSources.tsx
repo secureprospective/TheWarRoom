@@ -31,7 +31,14 @@ export function RefreshScopes({ data, busy, outcomes = {} }:
           <span role="status" aria-live="polite">
             {busy === scope.id ? scope.progress : outcomes[scope.id]}</span>
         </div>
-      </dd></div>)}</dl>
+      </dd></div>)}
+      <div><dt>{w.photos}</dt><dd><p>{w.photosNote}</p>
+        <div className="data-action">
+          <Act verb="data.run" args={{ kind: 'photos', on: !data.photosOn }} disabled={!!busy}>
+            {data.photosOn ? w.photosOff : w.photosOn}</Act>
+          <span role="status" aria-live="polite">{busy === 'photos' ? w.readProgress : outcomes.photos}</span>
+        </div>
+      </dd></div></dl>
   </section>;
 }
 export function Parameters({ params, busy, words: w }:
