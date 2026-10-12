@@ -225,7 +225,7 @@ func assertFixtureClock(t *testing.T, path string) {
 		t.Fatal(err)
 	}
 	if clock.Provenance.Kind != "fixture" || clock.Value.Phase != domain.PhaseOffseason ||
-		len(clock.Value.Deadlines) != 0 || len(clock.Value.Windows) != 7 {
+		len(clock.Value.Deadlines) != 0 || len(clock.Value.Windows) != 9 {
 		t.Fatal(clock)
 	}
 }

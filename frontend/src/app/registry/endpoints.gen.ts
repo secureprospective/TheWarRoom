@@ -4540,7 +4540,7 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     gm_question: "",
     gravity: "G0",
     clock: "",
-    placement: places[0],
+    placement: places[22],
     verb: "nav.open node=",
     disposition: "kept",
     ring: 3,

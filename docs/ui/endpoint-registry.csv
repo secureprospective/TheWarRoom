@@ -244,7 +244,7 @@ C-06.7,app,Free agency handler,Plan,What's my cap plan for the windows?,OP/UFA/R
 C-07,app,Source health and freshness,Read,Can I trust these numbers?,ALL,G1,sync,local,Control Room › Data and sources,endpoint.open id=C-07,kept,3,built,C018 C021,kept — status bar badge + Control Room,,,,data_sources_reading.go: healthReport; lazy datasources/DataSources.tsx.,G1
 C-08,app,Player crosswalk,Read (infra),Are these the same player?,ALL,G0,sync,local,Control Room › Data and sources,endpoint.open id=C-08,kept,3,built,C019,kept — inspector provenance zone; never a user-facing surface,,,,data_sources_app.go: TargetCrosswalk; existing GetCrosswalkReport/LoadCrosswalk retained.,G0
 C-09,app,Admin console: engine parameters,Configure (gated),Tune the engine,ALL,G1,none,engine,Control Room › Data and sources,endpoint.open id=C-09,kept,3,built,C020,"kept — Control Room, role-gated",,,,"datasources/DataSources.tsx: engine parameter values and overrides; writes gated to admin, current GM read-only.",G1
-S-01,shell,Nav rail (6 nodes),Read,,ALL,G0,,,Home › Seasonal card,nav.open node=,kept,3,built,,kept,,,,3,G0
+S-01,shell,Nav rail (6 nodes),Read,,ALL,G0,,,Command bar,nav.open node=,kept,3,built,,kept,,,,3,G0
 S-02,shell,"Inspector (fills on any entity click, no page change)",Read,,ALL,G0,,,Inspector,inspector.pin entity= · inspector.close,kept,3,built,,kept,,,–G3 (hosts what it fills with),3,G0–G3 (hosts what it fills with)
 S-03,shell,Comms panel (48px collapsed / ~280px open),Social,,ALL,G1,,,Comms,comms.toggle channel=,kept,0,built,,kept,,,,0,G1
 S-04,shell,Calendar summon/collapse from any screen,Read,,ALL,G3,,,Calendar,calendar.summon,kept,3,built,,kept,,,(hosts deadlines),3,G3 (hosts deadlines)

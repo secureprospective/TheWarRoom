@@ -26,7 +26,7 @@ afterEach(() => {
 });
 
 describe('honest clock surfaces', () => {
-  it('shows the real offseason, empty calendar and seven unknown windows without dates', () => {
+  it('shows the real offseason, empty calendar and nine undated windows without dates', () => {
     const strip = renderToStaticMarkup(createElement(ClockStrip, { reading }));
     const panel = renderToStaticMarkup(createElement(CalendarPanel, { reading }));
     expect(strip).toBe([
@@ -39,8 +39,8 @@ describe('honest clock surfaces', () => {
     expect(strip).not.toContain('title=');
     expect(strip).toContain('target-calendar');
     expect(panel).toContain('No deadlines on the commissioner calendar.');
-    expect(panel.match(/ · unknown · gap closure/g)).toHaveLength(7);
-    expect(panel.match(/title="league rules not yet captured/g)).toHaveLength(7);
+    expect(panel.match(/ · No date · /g)).toHaveLength(9);
+    expect(panel).toContain('the rulebook gives no date; the commissioner sets it');
     expect(panel).toContain('fixture');
     for (const html of [strip, panel]) {
       expect(html).not.toMatch(/\d{4}-\d{2}-\d{2}|<time|data-deadline|data-countdown/);
@@ -166,7 +166,7 @@ describe('honest clock surfaces', () => {
     // The mount read, then one catch-up read once the live event subscription is in place.
     expect(clock).toHaveBeenCalledTimes(2);
     expect(root.textContent).toContain('Offseason · no deadlines');
-    expect(root.textContent.match(/ · unknown · gap closure/g)).toHaveLength(7);
+    expect(root.textContent.match(/ · No date · /g)).toHaveLength(9);
     expect(document.listeners.size).toBe(1);
     await act(async () => { mounted.unmount(); });
     expect(document.listeners.size).toBe(0);

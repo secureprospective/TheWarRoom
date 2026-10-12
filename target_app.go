@@ -98,17 +98,21 @@ func (a *App) injuriesHeld() bool {
 
 // TargetClock reads the phase log and commissioner calendar from the local store; no network.
 func (a *App) TargetClock() (snapshot.Sourced[leagueclock.Reading], error) {
+	return a.targetClock(a.ctx)
+}
+
+func (a *App) targetClock(parent context.Context) (snapshot.Sourced[leagueclock.Reading], error) {
 	if err := a.ready(); err != nil {
 		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: startup: %w", err)
 	}
 	if err := a.whatif.Err(); err != nil {
 		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: state: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	ctx, cancel := context.WithTimeout(parent, m2Timeout)
 	defer cancel()
 	now := time.Now()
 	lineup, fresh := a.weekClock(now)
-	clock, err := snapshot.BuildClock(ctx, now.UTC(), a.league.Season(), a.whatif, lineup, snapshot.Provenance{
+	clock, err := snapshot.BuildClock(ctx, now.UTC(), a.league.Season(), a.whatif, lineup, a.windowInputs(now), snapshot.Provenance{
 		Source: "phase-log+commissioner-calendar+nflSchedule", Kind: "live", Freshness: fresh,
 	})
 	if err != nil {

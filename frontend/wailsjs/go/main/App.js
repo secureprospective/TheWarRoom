@@ -390,6 +390,10 @@ export function TargetSeason() {
   return window['go']['main']['App']['TargetSeason']();
 }
 
+export function TargetSetWindow(arg1, arg2) {
+  return window['go']['main']['App']['TargetSetWindow'](arg1, arg2);
+}
+
 export function TargetShellStatus() {
   return window['go']['main']['App']['TargetShellStatus']();
 }

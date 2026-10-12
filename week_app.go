@@ -27,6 +27,15 @@ func (a *App) refreshWeeksInBackground(parent context.Context) {
 		ctx, cancel = context.WithTimeout(parent, refreshTimeout)
 		a.refreshSeason(ctx)
 		cancel()
+		for _, rule := range leagueclock.Rules(a.lastRegularWeek()) {
+			if rule.Week == 0 {
+				continue
+			}
+			ctx, cancel = context.WithTimeout(parent, refreshTimeout)
+			a.refreshNowWeek(ctx, rule.Week, false)
+			cancel()
+		}
+		a.clockChanged(parent)
 		select {
 		case <-parent.Done():
 			return
@@ -125,7 +134,7 @@ func (a *App) weekClock(now time.Time) (*leagueclock.LineupLock, Freshness) {
 	if a.weekRefreshError != "" {
 		fresh.State = FreshStale
 	}
-	fresh.Note = a.weekNote() + "; league windows not yet captured"
+	fresh.Note = a.weekNote()
 	if lock, ok := leagueweek.NextLock(now, a.week); ok {
 		return &leagueclock.LineupLock{Week: a.week.Number, At: lock}, fresh
 	}
@@ -149,4 +158,27 @@ func (a *App) weekNote() string {
 		return "NFL schedule not fetched yet"
 	}
 	return "NFL schedule: " + held + ", fetched " + fetched
+}
+
+func (a *App) lastRegularWeek() int {
+	last, err := strconv.Atoi(a.rulebook.ActiveConfig().LastRegularSeasonWeek)
+	if err != nil || last < 2 || last > 18 {
+		return 0
+	}
+	return last
+}
+
+func (a *App) windowInputs(now time.Time) leagueclock.WindowInputs {
+	in := leagueclock.WindowInputs{LastRegular: a.lastRegularWeek(), FirstKickoff: map[int]time.Time{}}
+	a.seasonMu.Lock()
+	defer a.seasonMu.Unlock()
+	for _, rule := range leagueclock.Rules(in.LastRegular) {
+		for _, raw := range a.now.schedules[rule.Week].value {
+			w, err := nflschedule.ToWeek(raw, now)
+			if err == nil && w.Number == rule.Week && len(w.Games) > 0 {
+				in.FirstKickoff[rule.Week] = leagueweek.FirstLock(w)
+			}
+		}
+	}
+	return in
 }

@@ -5,39 +5,58 @@
     "deadlines": [],
     "windows": [
       {
+        "kind": "trade_deadline",
+        "status": "unknown",
+        "moved": false,
+        "reason": "Rulebook \u00a714: Week 9 schedule not held yet"
+      },
+      {
+        "kind": "playoff_bids_only",
+        "status": "unknown",
+        "moved": false,
+        "reason": "Rulebook \u00a76: regular-season setting not held"
+      },
+      {
+        "kind": "multiyear_bids_close",
+        "status": "unknown",
+        "moved": false,
+        "reason": "Rulebook \u00a76: regular-season setting not held"
+      },
+      {
         "kind": "contract_options",
         "status": "unknown",
-        "reason": "league rules not yet captured — gap closure"
+        "moved": false,
+        "reason": "the rulebook gives no date; the commissioner sets it"
       },
       {
         "kind": "rfa_tender",
         "status": "unknown",
-        "reason": "league rules not yet captured — gap closure"
+        "moved": false,
+        "reason": "the rulebook gives no date; the commissioner sets it"
       },
       {
         "kind": "ufa_bidding",
         "status": "unknown",
-        "reason": "league rules not yet captured — gap closure"
+        "moved": false,
+        "reason": "the rulebook gives no date; the commissioner sets it"
       },
       {
         "kind": "re_sign",
         "status": "unknown",
-        "reason": "league rules not yet captured — gap closure"
+        "moved": false,
+        "reason": "the rulebook gives no date; the commissioner sets it"
       },
       {
         "kind": "cut_day",
         "status": "unknown",
-        "reason": "league rules not yet captured — gap closure"
-      },
-      {
-        "kind": "trade_deadline",
-        "status": "unknown",
-        "reason": "league rules not yet captured — gap closure"
+        "moved": false,
+        "reason": "the rulebook gives no date; the commissioner sets it"
       },
       {
         "kind": "draft",
         "status": "unknown",
-        "reason": "league rules not yet captured — gap closure"
+        "moved": false,
+        "reason": "the rulebook gives no date; the commissioner sets it"
       }
     ]
   },
@@ -46,7 +65,7 @@
     "freshness": {
       "state": "live",
       "fetchedAt": "2026-10-05T18:43:52Z",
-      "note": "phase log and commissioner calendar from a what-if snapshot; league windows not yet captured"
+      "note": "phase log and commissioner calendar from a what-if snapshot"
     },
     "kind": "fixture"
   }

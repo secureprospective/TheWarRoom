@@ -7,6 +7,7 @@ type ActProps<K extends CommandId> = {
   variant?: Variant;
   children?: ReactNode;
   active?: boolean;
+  current?: boolean;
   label?: string;
   expanded?: boolean;
   controls?: string;
@@ -20,6 +21,7 @@ export function Act<K extends CommandId>({
   variant = 'text',
   children,
   active,
+  current,
   label,
   expanded,
   controls,
@@ -40,6 +42,7 @@ export function Act<K extends CommandId>({
       data-d={densityKey}
       aria-label={label ?? commands.registry[verb].label}
       aria-pressed={active}
+      aria-current={current ? 'true' : undefined}
       aria-expanded={expanded}
       aria-controls={controls}
       title={title}

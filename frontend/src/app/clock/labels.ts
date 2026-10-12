@@ -15,10 +15,14 @@ export const windowLabels: Record<ClockReading['windows'][number]['kind'], strin
   cut_day: 'Cut day',
   trade_deadline: 'Trade deadline',
   draft: 'Draft',
+  playoff_bids_only: 'Bids narrow to playoff teams',
+  multiyear_bids_close: 'Multi-year bids close',
 };
 const dates = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
 export function deadlineLabel(label: string): string {
+  const kind = label.replace(/^window:/, '') as keyof typeof windowLabels;
+  if (kind in windowLabels) return windowLabels[kind];
   if (!/^[A-Z0-9_]+$/.test(label)) return label;
   const words = label.toLowerCase().replaceAll('_', ' ');
   return words.charAt(0).toUpperCase() + words.slice(1);

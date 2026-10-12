@@ -70,7 +70,7 @@ describe('clock provider boundary', () => {
     expect(clock.provenance.kind).toBe('fixture');
     expect(clock.value.phase).toBe('OFFSEASON');
     expect(clock.value.deadlines).toEqual([]);
-    expect(clock.value.windows).toHaveLength(7);
+    expect(clock.value.windows).toHaveLength(9);
   });
   it('calls TargetClock and parses live provenance without waiting for snapshot', async () => {
     const payload = {

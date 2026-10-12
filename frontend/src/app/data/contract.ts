@@ -76,7 +76,8 @@ export type Snapshot = {
 export const PHASES = ['OFFSEASON', 'REGULAR_SEASON', 'PLAYOFFS'] as const;
 export const URGENCIES = ['U0', 'U1', 'U2', 'U3'] as const;
 export const WINDOW_KINDS = [
-  'contract_options', 'rfa_tender', 'ufa_bidding', 're_sign', 'cut_day', 'trade_deadline', 'draft',
+  'playoff_bids_only', 'multiyear_bids_close', 'contract_options', 'rfa_tender', 'ufa_bidding',
+  're_sign', 'cut_day', 'trade_deadline', 'draft',
 ] as const;
 export type Deadline = {
   id: string;
@@ -86,12 +87,16 @@ export type Deadline = {
   pinned: boolean;
   promoted: boolean;
 };
+export type WindowKind = (typeof WINDOW_KINDS)[number];
+export type LeagueWindow = { kind: WindowKind; moved: boolean; reason: string } & (
+  { status: 'dated'; at: string } | { status: 'unknown'; at?: never }
+);
 export type ClockReading = {
   season: number;
   week?: number;
   phase: (typeof PHASES)[number];
   deadlines: Deadline[];
-  windows: { kind: (typeof WINDOW_KINDS)[number]; status: 'unknown'; reason: string }[];
+  windows: LeagueWindow[];
 };
 export const ENVELOPE_STATES = [
   'draft', 'blocked', 'ready', 'handed_off', 'not_yet_done', 'landed', 'not_verified',
