@@ -1,10 +1,11 @@
 import type {
   LineupCheck, LineupReading, ClockReading, EnvelopeDemo, MFLKeyStatus,
-  AlertReading, Provenance, Receipt, Snapshot, Sourced, TradeReading,
+  AlertReading, WindowKind, Provenance, Receipt, Snapshot, Sourced, TradeReading,
 } from './contract';
+import { ruleDatedWindows } from '../clock/labels';
 import {
   DeleteMFLKey, MFLKeyStatus as ReadMFLKey, SetMFLKey,
-  TargetClock, TargetDraftIR, TargetDraftTaxi, TargetMoves, TargetSnapshot,
+  TargetSetWindow, TargetClock, TargetDraftIR, TargetDraftTaxi, TargetMoves, TargetSnapshot,
 } from '../../../wailsjs/go/main/App';
 
 interface ReadingProvider {
@@ -20,6 +21,7 @@ interface ReadingProvider {
   forgetMFL(): Promise<MFLKeyStatus>;
   snapshot(): Promise<Snapshot>;
   clock(): Promise<Sourced<ClockReading>>;
+  setWindow(kind: WindowKind, at: string): Promise<void>;
   onClockChange(listener: () => void): () => void;
   onSeasonChange(listener: () => void): () => void;
   lineup(franchiseId: string): Promise<LineupReading>;
@@ -46,7 +48,7 @@ function hasWails(): boolean {
 function lineupBindings() {
   return import('./lineupProvider');
 }
-// The fixture build reads only: every live reading and Act rejects with what needs the desktop app.
+// League dates can be rehearsed in fixtures; remote acts still require the desktop app.
 const desktop = (what: string) => async (): Promise<never> => {
   throw new Error(`${what} the desktop app`);
 };
@@ -55,6 +57,40 @@ const desktopTrades = desktop('Trades need');
 export class FixtureProvider implements ReadingProvider, DemoProvider {
   readonly kind = 'fixture';
   readonly reason = 'Drafting needs the desktop app';
+  private heldClock?: Sourced<ClockReading>;
+  private baseClock?: Sourced<ClockReading>;
+  private clockListeners = new Set<() => void>();
+  async setWindow(kind: WindowKind, at: string): Promise<void> {
+    const reading = await this.clock();
+    if (at && Number.isNaN(new Date(at).getTime())) throw new Error('Choose a valid date and time');
+    if (reading.provenance.freshness.state === 'fail' || !this.baseClock) {
+      throw new Error('League clock unavailable; reload before changing dates');
+    }
+    const base = this.baseClock.value.windows.find(window => window.kind === kind);
+    if (!base) throw new Error('Unknown league window');
+    if (!at && !reading.value.windows.find(window => window.kind === kind)?.moved) {
+      throw new Error('This window already follows the rulebook; there is nothing to reset');
+    }
+    const windows = reading.value.windows.map(window => window.kind !== kind ? window : at
+      ? { ...base, status: 'dated' as const, at, moved: true,
+        reason: ruleDatedWindows.has(kind) ? `Moved by the commissioner · ${base.reason}`
+          : 'Set by the commissioner' }
+      : { ...base });
+    const { grade } = await import('../clock/urgency');
+    const now = Date.now();
+    const deadlines = reading.value.deadlines.filter(deadline => !deadline.id.startsWith('window:'));
+    for (const window of windows) {
+      if (window.at && Date.parse(window.at) > now) deadlines.push({
+        id: `window:${window.kind}`, label: window.kind, at: window.at,
+        urgency: grade(window.at, now), pinned: Date.parse(window.at) - now <= 172_800_000,
+        promoted: Date.parse(window.at) - now <= 604_800_000,
+      });
+    }
+    deadlines.sort((a, b) => b.urgency.localeCompare(a.urgency)
+      || (Date.parse(a.at ?? '') - Date.parse(b.at ?? '')) || a.id.localeCompare(b.id));
+    this.heldClock = { ...reading, value: { ...reading.value, windows, deadlines } };
+    this.clockListeners.forEach(listener => listener());
+  }
   alerts: ReadingProvider['alerts'] = desktop('Alerts need');
   trades: ReadingProvider['trades'] = desktopTrades;
   draftTradeAccept: ReadingProvider['draftTradeAccept'] = desktopTrades;
@@ -73,8 +109,9 @@ export class FixtureProvider implements ReadingProvider, DemoProvider {
   async forgetMFL(): Promise<MFLKeyStatus> {
     throw new Error('Connecting MFL needs the desktop app');
   }
-  onClockChange(_listener: () => void): () => void {
-    return () => {};
+  onClockChange(listener: () => void): () => void {
+    this.clockListeners.add(listener);
+    return () => { this.clockListeners.delete(listener); };
   }
   onSeasonChange(_listener: () => void): () => void {
     return () => {};
@@ -94,7 +131,8 @@ export class FixtureProvider implements ReadingProvider, DemoProvider {
       const [{ parseClock }, fixture] = await Promise.all([
         import('./parse'), import('./fixtures/clock.json'),
       ]);
-      return parseClock(fixture.default);
+      if (!this.baseClock) this.baseClock = parseClock(fixture.default);
+      return this.heldClock ?? this.baseClock;
     } catch (cause) {
       return failedClock(cause, 'fixture');
     }
@@ -225,6 +263,10 @@ export class LiveProvider implements ReadingProvider, DraftingProvider {
     return receipts.map(parseReceipt);
   }
 
+  async setWindow(kind: WindowKind, at: string): Promise<void> {
+    if (!hasWails()) throw new Error('League date changes need the desktop app');
+    await TargetSetWindow(kind, at);
+  }
   async clock(): Promise<Sourced<ClockReading>> {
     try {
       if (!hasWails()) throw new Error('Wails runtime absent');
@@ -250,6 +292,7 @@ export class LiveProvider implements ReadingProvider, DraftingProvider {
   }
 }
 
+const fixtureProvider = new FixtureProvider();
 export function selectProvider(): Provider {
-  return hasWails() ? new LiveProvider() : new FixtureProvider();
+  return hasWails() ? new LiveProvider() : fixtureProvider;
 }

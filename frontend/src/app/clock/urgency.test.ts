@@ -33,6 +33,6 @@ describe('Go urgency boundaries', () => {
       new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(now)),
     );
     expect(Object.values(phaseLabels)).toEqual(['Offseason', 'Regular season', 'Playoffs']);
-    expect(Object.keys(windowLabels)).toHaveLength(7);
+    expect(Object.keys(windowLabels)).toHaveLength(9);
   });
 });

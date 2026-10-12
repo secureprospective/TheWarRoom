@@ -173,6 +173,12 @@
 .twr-app select option { background: var(--surface-2); color: var(--surface-tx1); }
 .twr-app select:focus-visible { outline: 2px solid var(--signal-blue); outline-offset: 2px; }
 .twr-app select:disabled { opacity: .6; cursor: not-allowed; }
+/* Text fields share the select's dark face; :where keeps this a default any screen's own rule overrides. */
+.twr-app :where(input:not([type="checkbox"], [type="radio"], [type="range"]), textarea) {
+  color-scheme: dark; border: 1px solid var(--surface-line-hi); border-radius: 0;
+  background-color: var(--surface-2); color: var(--surface-tx1); font: inherit; padding: 6px 9px; }
+.twr-app :where(input, textarea):focus-visible { outline: 2px solid var(--signal-blue); outline-offset: 2px; }
+.twr-app :where(input, textarea):disabled { opacity: .6; cursor: not-allowed; }
 
 .twr-app .wbody > * { min-width: 0; }
 .twr-app .workspace-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;

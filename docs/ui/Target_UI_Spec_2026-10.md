@@ -11,6 +11,7 @@ Revisions 0–2 are in git history. Revision 1 closed ring 1 (2026-10-10), revis
   runs as a GM (R1).
 - §14 (new): what ring 3 built, by node, with the file for each claim.
 - §15 (new): the ring 3 review and what is carried to ring 4.
+- §15a (new): what the registry status `landed` means, distinct from an Act's Landed state (§6).
 - Every kept ring 3 registry row is `built` (118 of 118). The 19 ring 3 rows still at `spec` are merged
   into a built place (17) or retired (2: M-075 Victory Points, M-192 option election).
 
@@ -499,6 +500,24 @@ app's own checked facts.
 - Proof against MFL itself, not only against our own reference: the fact exam reads MFL's standings pages.
 - The live look on Claude-OS before Christopher's click-through caught what tests did not: a player with
   negative points per game failed the whole asset board, and card qualifiers overflowed their tiles.
+
+### 15a. Registry status: built and landed
+
+The registry's `status` column (`docs/ui/endpoint-registry.csv`) says how far each row has come:
+
+- **spec:** designed, not wired.
+- **built:** the code is merged and its tests pass, but nobody has yet watched it work against the league.
+- **landed:** seen working on Claude-OS against a snapshot of the live database: its data, its empty state
+  where the league has one, and its Act, if it has one. The row's `ring_note` says when it was seen
+  and names the screenshot in the ring's run directory.
+
+A registry row that is `landed` is not the same as an Act that is Landed (§6). An Act is Landed only
+when MFL shows the change the app planned. A row is `landed` when the screen does its job. For an Act
+row, that means its hand-off opens correctly; the app itself never submits to MFL. M-027, Submit Lineup,
+is both: its envelope Landed on MFL on 2026-10-09.
+
+The landing walk of 2026-10-12 marked 70 rows `landed`. Its findings are the fix queue for the rows that
+are still `built`.
 
 **Carried to ring 4**
 - The commissioner pages (M-093 email log, M-095 commissioner news): the app runs as a GM (R1).

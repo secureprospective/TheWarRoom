@@ -227,6 +227,15 @@ export function createCommands(
           .catch(cause => state.write({ notice: String(cause) }));
       },
     }),
+    'window.set': command({
+      ...ambient, id: 'window.set', label: 'Commissioner: set a league date',
+      gravity: 'G2', undo: 'reversible', args: ['kind', 'at'],
+      // There is no commissioner sign-in yet; keep the shared command roles until there is.
+      run: ({ kind, at }: { kind: import('../data/contract').WindowKind; at: string }) => {
+        void import('../clock/windowState').then(m => m.setWindow(provider, kind, at))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     'phase.goto': command({
       ...ambient, id: 'phase.goto', label: 'Open phase workspace', args: ['phase'],
       run: ({ phase }: { phase: keyof typeof phaseRoutes }) => {

@@ -64,6 +64,7 @@ async function mountClock(clock: () => Promise<Sourced<ClockReading>>) {
     return unsubscribe;
   });
   vi.spyOn(providers, 'selectProvider').mockReturnValue({
+    setWindow: vi.fn(),
     mflKey: vi.fn(),
     connectMFL: vi.fn(),
     forgetMFL: vi.fn(),

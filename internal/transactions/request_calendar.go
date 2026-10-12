@@ -12,9 +12,17 @@ import (
 // The calendar ops record intent only. A stored payload is not executed when scheduled: it runs
 // later, from a commissioner's "fire now" or the scoped auto-fire scheduler.
 
-// schedulableKind is the whitelist of ops a calendar event may carry: the season-clock ops and the
-// §13 commissioner acts. Per-player transactions, calendar ops and corrections are not schedulable.
+// WindowDate is a league window's date (event id window:<season>:<kind>). It carries no op and never
+// fires, so it is not a transaction Kind and the exhaustive Kind switches stay as they are.
+const WindowDate = "WINDOW_DATE"
+
+// schedulableKind is the whitelist of ops a calendar event may carry: the season-clock ops, the §13
+// commissioner acts and WindowDate. Per-player transactions, calendar ops and corrections are not
+// schedulable.
 func schedulableKind(k string) bool {
+	if k == WindowDate {
+		return true
+	}
 	switch Kind(k) {
 	case KindAdvancePhase, KindRolloverSeason, KindSetSigningWindow, KindSetTradeDeadline, KindRetirement, KindDeath, KindCapRelief:
 		return true
@@ -33,6 +41,7 @@ type CalendarEvent struct {
 	EventKind   string // the eventual op
 	ScheduledAt string // RFC3339
 	Payload     string // opaque JSON, stored as-is
+	Note        string
 }
 
 // validateShape is the cheap check all three share; the store re-checks on append.
@@ -61,6 +70,7 @@ func (e CalendarEvent) appendWith(ctx context.Context, w state.TxWriter, status 
 		ScheduledAt: e.ScheduledAt,
 		Payload:     e.Payload,
 		Status:      status,
+		Note:        e.Note,
 	}
 	if err := w.AppendCalendarEvent(ctx, row); err != nil {
 		return applyResult{}, fmt.Errorf("calendar append: %w", err)

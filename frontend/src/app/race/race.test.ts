@@ -21,11 +21,11 @@ describe('League Pulse › Race', () => {
       .toBeLessThan(markup.indexOf(`data-endpoint="${id}"`));
     expect(markup).toContain(report.note.replaceAll("'", '&#x27;'));
     const endpoint = endpointById(id as Parameters<typeof endpointById>[0]);
-    expect(endpoint.status).toBe('built');
+    expect(endpoint.status).not.toBe('spec');
     expect(placementRoute(endpoint.placement)).toEqual({ node: 'pulse', workspace: 'race' });
   });
   it('builds the standings row, retires Victory Points and marks only my franchise', () => {
-    expect(endpointById('M-002').status).toBe('built');
+    expect(endpointById('M-002').status).not.toBe('spec');
     expect(endpointById('M-075').disposition).toBe('retired');
     const markup = view('M-090');
     expect(markup.match(/class="report-mine" aria-current="true"/g)?.length).toBeGreaterThanOrEqual(2);

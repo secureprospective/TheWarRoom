@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -159,10 +160,15 @@ func buildClock(ctx context.Context, wp *db.Pools, rb *rulebook.Store, mirror *s
 		return clockReading{}, fmt.Errorf("fixtures: clock time: %w", err)
 	}
 	fresh := snap.Rosters.Provenance.Freshness
-	fresh.Note = "phase log and commissioner calendar from a what-if snapshot; league windows not yet captured"
-	clock, err := snapshot.BuildClock(ctx, at, mirror.Season(), whatif, nil, snapshot.Provenance{
-		Source: "phase-log+commissioner-calendar", Kind: "fixture", Freshness: fresh,
-	})
+	fresh.Note = "phase log and commissioner calendar from a what-if snapshot"
+	last, err := strconv.Atoi(rb.ActiveConfig().LastRegularSeasonWeek)
+	if err != nil || last < 2 || last > 18 {
+		last = 0
+	}
+	clock, err := snapshot.BuildClock(ctx, at, mirror.Season(), whatif, nil,
+		leagueclock.WindowInputs{LastRegular: last}, snapshot.Provenance{
+			Source: "phase-log+commissioner-calendar", Kind: "fixture", Freshness: fresh,
+		})
 	if err != nil {
 		return clockReading{}, fmt.Errorf("fixtures: clock: %w", err)
 	}

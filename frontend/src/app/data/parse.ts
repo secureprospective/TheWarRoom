@@ -224,10 +224,16 @@ function clockReading(value: unknown, path: string): ClockReading {
   const week = r.week === undefined ? undefined : integer(r.week, `${path}.week`, 1);
   if (week !== undefined && week > 18) throw new Error(`${path}.week: expected integer 1–18`);
   const windows = array(r.windows, `${path}.windows`, (v, p) => {
-    const w = object(v, p, ['kind', 'status', 'reason']);
+    const w = object(v, p, ['kind', 'status', 'at', 'moved', 'reason']);
+    const status = choice(w.status, `${p}.status`, ['dated', 'unknown'] as const);
+    if ((w.at === undefined) !== (status === 'unknown')) {
+      throw new Error(`${p}.at: date required exactly when window is dated`);
+    }
+    const date = status === 'dated'
+      ? { status, at: utc(w.at, `${p}.at`) } : { status };
     return {
+      ...date, moved: boolean(w.moved, `${p}.moved`),
       kind: choice(w.kind, `${p}.kind`, WINDOW_KINDS),
-      status: choice(w.status, `${p}.status`, ['unknown'] as const),
       reason: requiredText(w.reason, `${p}.reason`),
     };
   });

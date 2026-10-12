@@ -200,6 +200,8 @@ export function TargetRosterReports(arg1:string):Promise<Array<main.Report>>;
 
 export function TargetSeason():Promise<main.SeasonReading>;
 
+export function TargetSetWindow(arg1:string,arg2:string):Promise<void>;
+
 export function TargetShellStatus():Promise<main.ShellStatus>;
 
 export function TargetSiteNews():Promise<main.Report>;

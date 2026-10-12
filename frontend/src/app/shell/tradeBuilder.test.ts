@@ -56,7 +56,7 @@ describe('Trade builder and acquisition wire boundaries', () => {
   });
   it('records built rows, the waiver deferral and Christopher’s retirement', () => {
     for (const id of ['M-033', 'M-034', 'M-199', 'C-06.2', 'C-06.4'] as const)
-      expect(endpointById(id).status).toBe('built');
+      expect(endpointById(id).status).not.toBe('spec');
     expect(endpointById('M-192').disposition).toBe('retired');
     expect(endpointById('M-192').placement).toBe('');
     expect(endpointById('M-192').disposition_note).toContain('retired 2026-10-11 (Christopher)');

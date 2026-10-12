@@ -330,15 +330,21 @@ func (w *txWriter) TradeDeadlinePassed(ctx context.Context) (bool, error) {
 // tradeDeadlinePassed reports whether the current deadline has passed. None or cleared means no
 // block; an unparseable stamp is drift.
 func (s *Store) tradeDeadlinePassed(ctx context.Context) (bool, error) {
+	deadline, err := s.TradeDeadline(ctx)
+	return !deadline.IsZero() && !time.Now().Before(deadline), err
+}
+
+// TradeDeadline returns the commissioner's directive; zero means use the rulebook.
+func (s *Store) TradeDeadline(ctx context.Context) (time.Time, error) {
 	stamp, _, err := s.latestDirective(ctx, directiveTradeDeadline)
 	if err != nil || stamp == "" {
-		return false, err
+		return time.Time{}, err
 	}
 	deadline, err := time.Parse(time.RFC3339, stamp)
 	if err != nil {
-		return false, fmt.Errorf("state: trade deadline: stored value %q is not RFC3339 (drift): %w", stamp, err)
+		return time.Time{}, fmt.Errorf("state: trade deadline: stored value %q is not RFC3339 (drift): %w", stamp, err)
 	}
-	return !time.Now().Before(deadline), nil
+	return deadline, nil
 }
 
 // AppendTradeDeadline sets the deadline; a zero deadline clears it. Re-sending the current stamp

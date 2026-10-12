@@ -1,7 +1,8 @@
 import { memo } from 'react';
+import { WindowRow } from './WindowRow';
 import type { ClockProps } from './labels';
 import { ClockSignal } from './ClockSignal';
-import { deadlineLabel, localDate, phaseLabels, windowLabels } from './labels';
+import { deadlineLabel, localDate, phaseLabels } from './labels';
 
 export const CalendarPanel = memo(function CalendarPanel(
   { reading }: ClockProps,
@@ -36,11 +37,7 @@ export const CalendarPanel = memo(function CalendarPanel(
       ) : <p>No deadlines on the commissioner calendar.</p>}
       <h4>League windows</h4>
       <ul>
-        {windows.map((window) => (
-          <li key={window.kind} title={window.reason}>
-            {windowLabels[window.kind]} · unknown · gap closure
-          </li>
-        ))}
+        {windows.map(window => <WindowRow key={window.kind} window={window} />)}
       </ul>
       <p>
         <ClockSignal provenance={reading.provenance} />{' '}

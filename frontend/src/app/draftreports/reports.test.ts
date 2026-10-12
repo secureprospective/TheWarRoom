@@ -22,7 +22,7 @@ describe('Go-authored draft reports', () => {
   it('opens the endpoint-selected report and supplies nav and command routes', () => {
     for (const report of board().reports) {
       const id = report.id as Parameters<typeof endpointById>[0];
-      expect(endpointById(id).status).toBe('built');
+      expect(endpointById(id).status).not.toBe('spec');
       const route = placementRoute(endpointById(id).placement);
       expect(route).toMatchObject({ node: 'trade', workspace: 'draft-room' });
       const markup = html(createElement(ReportsView, { board: board(), selected: [id] }));

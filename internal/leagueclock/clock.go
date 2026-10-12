@@ -45,9 +45,12 @@ type WindowStatus string
 
 const WindowUnknown WindowStatus = "unknown"
 
+// Window is a league window: its instant when dated, and in words where that instant comes from.
 type Window struct {
 	Kind   WindowKind   `json:"kind"`
 	Status WindowStatus `json:"status"`
+	At     *time.Time   `json:"at,omitempty"`
+	Moved  bool         `json:"moved"`
 	Reason string       `json:"reason"`
 }
 
@@ -68,6 +71,7 @@ type Inputs struct {
 	Phase  domain.Phase
 	Events []Event
 	Lineup *LineupLock
+	Rules  WindowInputs
 }
 
 type Deadline struct {
@@ -89,7 +93,11 @@ type Reading struct {
 
 // Clock reads the league at a supplied instant: deadlines soonest first, undated last.
 func Clock(at time.Time, in Inputs) Reading {
-	out := Reading{Season: in.Season, Phase: in.Phase, Deadlines: []Deadline{}, Windows: unknownWindows()}
+	out := Reading{Season: in.Season, Phase: in.Phase, Deadlines: []Deadline{}}
+	out.Windows, out.Deadlines = windows(at, in.Rules)
+	if out.Deadlines == nil {
+		out.Deadlines = []Deadline{}
+	}
 	for _, e := range in.Events {
 		if e.Status == "PLANNED" {
 			out.Deadlines = append(out.Deadlines, deadline(at, e))
@@ -138,14 +146,4 @@ func deadline(at time.Time, e Event) Deadline {
 		d.Urgency = U1
 	}
 	return d
-}
-
-func unknownWindows() []Window {
-	kinds := []WindowKind{ContractOptions, RFATender, UFABidding, Resign, CutDay, TradeDeadline, Draft}
-	out := make([]Window, 0, len(kinds))
-	for _, k := range kinds {
-		out = append(out, Window{Kind: k, Status: WindowUnknown,
-			Reason: "league rules not yet captured — gap closure"})
-	}
-	return out
 }

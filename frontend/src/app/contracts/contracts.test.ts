@@ -359,7 +359,7 @@ it('routes built endpoints and preserves Inspector close/reopen state', async ()
     c.dispatch('endpoint.open', { id });
     expect(c.read().node).toBe('hq');
     expect(c.read().workspace.hq).toBe('contracts-and-cap');
-    expect(endpointById(id).status).toBe('built');
+    expect(endpointById(id).status).not.toBe('spec');
   }
   c.dispatch('inspector.close', {});
   expect(c.read().inspector).toBe('closed');

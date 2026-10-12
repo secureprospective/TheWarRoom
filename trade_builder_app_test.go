@@ -15,10 +15,11 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
-	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
+	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
 
 func realTradeBuilderApp(t *testing.T) (*App, *seasonTransport) {
@@ -34,6 +35,18 @@ func realTradeBuilderApp(t *testing.T) (*App, *seasonTransport) {
 		}
 	})
 	a.whatifPools = pools
+	a.whatif = state.New(pools, ingestion.LeagueID, 2026, a.rulebook)
+	if err := a.whatif.Initialize(a.ctx, a.league); err != nil {
+		t.Fatal(err)
+	}
+	a.coordinator, err = transactions.New(a.whatif.Writer(), nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.clockChanged = func(context.Context) {}
+	if err := a.TargetSetWindow("trade_deadline", time.Now().Add(time.Hour).UTC().Format(time.RFC3339)); err != nil {
+		t.Fatal(err)
+	}
 	body, err := os.ReadFile("frontend/src/app/data/fixtures/snapshot.json")
 	if err != nil {
 		t.Fatal(err)
@@ -162,7 +175,9 @@ func TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff(t *testing.T) {
 			t.Fatal(target)
 		}
 	}
-	a.week = leagueweek.Week{Number: 10}
+	if err := a.TargetSetWindow("trade_deadline", time.Now().Add(-time.Hour).UTC().Format(time.RFC3339)); err != nil {
+		t.Fatal(err)
+	}
 	failed := a.TargetTradeBuilder(RawTradeBuilder{Mine: r.Mine, Action: "handoff", ID: id})
 	if failed.Status != ReadingFailed || opens != 0 {
 		t.Fatal("deadline bypass", failed)
@@ -171,7 +186,9 @@ func TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff(t *testing.T) {
 	if blocked.Receipt.State != envelope.Blocked || !strings.Contains(strings.Join(blocked.Reasons, " "), "deadline") {
 		t.Fatal(blocked)
 	}
-	a.week = leagueweek.Week{Number: 5}
+	if err := a.TargetSetWindow("trade_deadline", time.Now().Add(time.Hour).UTC().Format(time.RFC3339)); err != nil {
+		t.Fatal(err)
+	}
 	handed := a.TargetTradeBuilder(RawTradeBuilder{Mine: r.Mine, Action: "handoff", ID: id})
 	if handed.Status != ReadingOK || opens != 1 {
 		t.Fatal(handed, opens)

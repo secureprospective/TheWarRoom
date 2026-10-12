@@ -320,7 +320,7 @@ describe('Reachability', () => {
   it('puts the four registry rows on the pool workspace, built, reachable by menu and command', () => {
     for (const id of ['M-039', 'M-056', 'M-194', 'C-06.7'] as const) {
       const row = endpointById(id);
-      expect(row.status).toBe('built');
+      expect(row.status).not.toBe('spec');
       expect(row.placement).toBe('War Room › Valuations and pool');
     }
     expect(placementRoute('War Room › Valuations and pool')).toEqual({

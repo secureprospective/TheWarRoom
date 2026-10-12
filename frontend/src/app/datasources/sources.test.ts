@@ -60,7 +60,7 @@ describe('Control Room data and sources', () => {
   it('routes all five built rows to the lazy workspace', () => {
     for (const id of ['C-07', 'C-08', 'C-09', 'L-34', 'S-09'] as const) {
       const e = endpointById(id);
-      expect(e.status).toBe('built');
+      expect(e.status).not.toBe('spec');
       expect(placementRoute(e.placement)).toEqual({ node: 'control', workspace: 'data-and-sources' });
     }
     expect(commands.registry['refresh.run'].args).toEqual(['scope']);

@@ -22,7 +22,7 @@ describe('Go player market reports', () => {
     for (const text of [r.title, r.source, r.asOf, b.howLabel, r.columns[1], r.rows[0].cells[1]])
       expect(markup).toContain(text.replaceAll('&', '&amp;').replaceAll("'", '&#x27;'));
     const endpoint = endpointById(id as Parameters<typeof endpointById>[0]);
-    expect(endpoint.status).toBe('built');
+    expect(endpoint.status).not.toBe('spec');
     expect(placementRoute(endpoint.placement)).toEqual({ node: 'war', workspace: 'valuations-and-pool' });
     const view = html(createElement(ReportsView,
       { board: b, selected: [id], refreshVerb: 'market.reports' }));

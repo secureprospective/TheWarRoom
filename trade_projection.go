@@ -10,6 +10,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -77,7 +78,7 @@ func (a *App) tradeProjection(ctx context.Context, r RawTradeBuilder, snap snaps
 			out.Resets = append(out.Resets, TradeReset{Franchise: s.Mine, Label: "Reset " + possessive(name) + " what-if"})
 		}
 	}
-	out.Reasons = append(out.Reasons, tradeDeadlineReasons(a.marketWeek())...)
+	out.Reasons = append(out.Reasons, a.tradeClockReasons(ctx)...)
 	if reason := envelope.TradeFeedReason(snap.Rosters.Provenance); reason != "" {
 		out.Reasons = append(out.Reasons, "Roster unavailable: "+reason)
 	}
@@ -106,20 +107,25 @@ func (a *App) tradeProjection(ctx context.Context, r RawTradeBuilder, snap snaps
 	}
 	for _, s := range sim.Sessions {
 		team, blocks := tradeProjectedTeam(sim, s, before[s.Mine], players, tradeFranchiseName(snap, s.Mine))
-		out.Teams = append(out.Teams, team)
-		out.Reasons = append(out.Reasons, blocks...)
+		out.Teams, out.Reasons = append(out.Teams, team), append(out.Reasons, blocks...)
 	}
 	out.Post = tradeDealText(r, catalog, sim.Sessions[0].Snapshot)
 	return out, nil
 }
-func tradeDeadlineReasons(week int) []string {
-	if week > 9 {
-		return []string{"Trade deadline passed: the rulebook closes trades in Week 9."}
+func tradeDeadlineReasons(now time.Time, windows []leagueclock.Window) []string {
+	for _, window := range windows {
+		if window.Kind != leagueclock.TradeDeadline {
+			continue
+		}
+		if window.Status != leagueclock.WindowDated || window.At == nil {
+			return []string{"Trade deadline cannot be checked: " + window.Reason}
+		}
+		if !now.Before(*window.At) {
+			return []string{"Trade deadline passed " + reportTime(*window.At, time.Local) + " · " + window.Reason}
+		}
+		return []string{}
 	}
-	if week == 0 {
-		return []string{"Trade deadline cannot be checked: current league week unavailable."}
-	}
-	return []string{}
+	return []string{"Trade deadline cannot be checked: league window unavailable"}
 }
 func tradeLegs(r RawTradeBuilder, teams []TradeBuilderTeam, store *state.Store) ([]transactions.PlayerMove, []string) {
 	moves := []transactions.PlayerMove{}
@@ -366,4 +372,14 @@ func countRoster(status domain.RosterStatus, active, taxi *int) {
 		*taxi++
 	case domain.RosterIR:
 	}
+}
+
+// tradeClockReasons checks the deal against the effective trade deadline. A clock that cannot be read
+// blocks the deal with its reason rather than failing the whole check.
+func (a *App) tradeClockReasons(ctx context.Context) []string {
+	clock, err := a.targetClock(ctx)
+	if err != nil {
+		return []string{"Trade deadline cannot be checked: " + err.Error()}
+	}
+	return tradeDeadlineReasons(time.Now(), clock.Value.Windows)
 }

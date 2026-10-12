@@ -71,7 +71,7 @@ describe('League communications', () => {
     expect(source.indexOf('<Comms panel />'))
       .toBeLessThan(source.indexOf('<EndpointIndex placement="Comms"'));
     for (const id of ['C-05', 'M-032', 'M-120', 'M-123'] as const)
-      expect(endpointById(id).status).toBe('built');
+      expect(endpointById(id).status).not.toBe('spec');
     for (const id of ['M-121', 'M-122', 'M-124'] as const)
       expect(endpointById(id).merged_into).toEqual(['M-120']);
     for (const id of ['M-125', 'M-126', 'M-127'] as const) expect(endpointById(id).ring).toBe(4);

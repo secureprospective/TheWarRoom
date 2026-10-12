@@ -5,3 +5,9 @@
 .twr-app .strip > .act { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .twr-app .league-calendar ul { list-style: none; padding: 0; }
 .twr-app .league-calendar li { margin: 8px 0; }
+.twr-app .league-window p { margin: 0 0 4px; }
+.twr-app .league-window-basis { color: var(--surface-tx2); font-size: 12px; }
+.twr-app .league-window[data-moved] .league-window-basis { color: var(--signal-amber-text); }
+.twr-app .league-window-edit { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.twr-app .league-window-edit .act { border: 1px solid var(--surface-line-hi); background: var(--surface-1); padding: 4px 8px; }
+.twr-app .league-window-edit .act:disabled { opacity: .5; cursor: not-allowed; }
