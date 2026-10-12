@@ -106,3 +106,18 @@ func preciseMean(values []float64) float64 {
 	result, _ := total.Float64()
 	return result
 }
+
+// Python 3.13's built-in sum retains a low-order compensation for float inputs.
+func pythonSum(values []float64) float64 {
+	hi, lo := 0.0, 0.0
+	for _, x := range values {
+		sum := hi + x
+		if math.Abs(hi) >= math.Abs(x) {
+			lo += (hi - sum) + x
+		} else {
+			lo += (x - sum) + hi
+		}
+		hi = sum
+	}
+	return hi + lo
+}
