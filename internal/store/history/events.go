@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 )
@@ -44,12 +45,21 @@ CREATE TABLE IF NOT EXISTS authority_policy (
 // ErrRevisionConflict means the caller must reread the stream before appending.
 var ErrRevisionConflict = errors.New("league event revision conflict")
 
+// Authority answers which system is the record for a league domain at a moment.
+const (
+	AuthorityMFL   = "MFL"   // MFL is the record (every domain, until a cutover is set)
+	AuthorityLocal = "local" // this app's league_event stream is the record, from the cutover on
+)
+
+// EventPayload is an event's versioned body. Money is whole cents, never a float.
 type EventPayload struct {
 	Version    int               `json:"version"`
 	MoneyCents *int64            `json:"moneyCents,omitempty"`
 	Details    map[string]string `json:"details,omitempty"`
 }
 
+// LeagueEvent is one row of the append-only league event log. Revision orders a stream; a
+// correction is a new event that supersedes an earlier one in the same stream, never an edit.
 type LeagueEvent struct {
 	ID, League, Stream                   string
 	Revision                             int64
@@ -59,6 +69,7 @@ type LeagueEvent struct {
 	InputHash, CorrelationID, Supersedes string
 }
 
+// Validate checks the identity, input hash, effective time and payload version an event needs.
 func (e LeagueEvent) Validate() error {
 	for _, text := range []string{e.ID, e.League, e.Stream, e.Actor, e.Scope, e.Kind, e.CorrelationID} {
 		if strings.TrimSpace(text) == "" {
@@ -72,11 +83,14 @@ func (e LeagueEvent) Validate() error {
 	return nil
 }
 
+// AppendEvent adds e as the stream's next revision when the stream holds exactly expected
+// revisions, and returns it with its revision and recorded time. A stale expected revision
+// returns ErrRevisionConflict: reread the stream before appending.
 func (s *Store) AppendEvent(ctx context.Context, e LeagueEvent, expected int64) (LeagueEvent, error) {
 	if err := e.Validate(); err != nil {
 		return LeagueEvent{}, err
 	}
-	if expected < 0 || expected == int64(^uint64(0)>>1) {
+	if expected < 0 || expected == math.MaxInt64 {
 		return LeagueEvent{}, fmt.Errorf("league event: invalid expected revision")
 	}
 	s.wmu.Lock()
@@ -111,6 +125,7 @@ func (s *Store) AppendEvent(ctx context.Context, e LeagueEvent, expected int64) 
 	return e, nil
 }
 
+// Events returns a stream's events after revision after, in revision order.
 func (s *Store) Events(ctx context.Context, league, stream string, after int64) ([]LeagueEvent, error) {
 	rows, err := s.pools.Read().QueryContext(ctx, `SELECT id,league,stream,revision,effective_at,recorded_at,actor,scope,kind,payload,input_hash,correlation_id,COALESCE(supersedes,'') FROM league_event WHERE league=? AND stream=? AND revision>? ORDER BY revision`, league, stream, after)
 	if err != nil {
@@ -144,11 +159,14 @@ func (s *Store) Events(ctx context.Context, league, stream string, after int64) 
 	return out, nil
 }
 
+// AuthorityPolicy sets when a league domain moves from MFL to the local event log; a nil
+// cutover keeps MFL the record.
 type AuthorityPolicy struct {
 	League, Domain string
 	CutoverAt      *time.Time
 }
 
+// SetAuthorityPolicy saves or replaces a domain's cutover.
 func (s *Store) SetAuthorityPolicy(ctx context.Context, p AuthorityPolicy) error {
 	if strings.TrimSpace(p.League) == "" || strings.TrimSpace(p.Domain) == "" || (p.CutoverAt != nil && p.CutoverAt.IsZero()) {
 		return fmt.Errorf("authority policy: invalid league, domain or cutover")
@@ -163,24 +181,25 @@ func (s *Store) SetAuthorityPolicy(ctx context.Context, p AuthorityPolicy) error
 	return nil
 }
 
+// Authority returns AuthorityMFL or AuthorityLocal for a league domain at time at.
 func (s *Store) Authority(ctx context.Context, league, domain string, at time.Time) (string, error) {
 	var cutover sql.NullString
 	err := s.pools.Read().QueryRowContext(ctx, `SELECT cutover_at FROM authority_policy WHERE league=? AND domain=?`, league, domain).Scan(&cutover)
 	if errors.Is(err, sql.ErrNoRows) {
-		return "MFL", nil
+		return AuthorityMFL, nil
 	}
 	if err != nil {
 		return "", fmt.Errorf("authority policy: read: %w", err)
 	}
 	if !cutover.Valid {
-		return "MFL", nil
+		return AuthorityMFL, nil
 	}
 	cutoff, err := parseTime(cutover.String)
 	if err != nil {
 		return "", err
 	}
 	if at.Before(cutoff) {
-		return "MFL", nil
+		return AuthorityMFL, nil
 	}
-	return "local", nil
+	return AuthorityLocal, nil
 }
