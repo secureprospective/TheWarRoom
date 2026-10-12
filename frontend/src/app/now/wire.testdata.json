@@ -839,6 +839,57 @@
             }
           ],
           "link": null
+        },
+        {
+          "id": "M-001",
+          "title": "Live fantasy scoring",
+          "note": " Off-game view: held weekly scores; no live poll.",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "MFL liveScoring, refreshed every 30 seconds while Now is open and a held NFL game has kicked off but is not final. Errors back off and keep the held scores. My matchup reads first.",
+          "columns": [
+            "Matchup",
+            "Franchise",
+            "Points"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Buffalo Bills won 277.03 to 179.98",
+                "Buffalo Bills",
+                "277.03"
+              ],
+              "range": null,
+              "mine": true
+            },
+            {
+              "cells": [
+                "Buffalo Bills won 277.03 to 179.98",
+                "New York Jets",
+                "179.98"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "New England Patriots won 209.61 to 29.20",
+                "New England Patriots",
+                "209.61"
+              ],
+              "range": null
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Week",
+                "Week 5"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
         }
       ]
     }

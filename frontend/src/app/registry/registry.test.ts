@@ -93,6 +93,7 @@ describe('Endpoint map', () => {
   });
   it('distinguishes live-Landed Acts from built Acts and keeps every other row spec', () => {
     const built = [
+      'M-001', 'X-01', 'X-02',
       'S-01', 'S-02', 'S-04', 'S-05', 'S-08', 'S-11', 'S-12', 'S-13',
       'M-087', 'M-096', 'M-149', 'M-117', 'M-116', 'M-118', 'M-103', 'M-101', 'M-154',
       'M-151', 'M-159', 'M-167', 'M-169',
