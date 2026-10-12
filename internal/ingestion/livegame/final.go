@@ -193,15 +193,17 @@ func withPlays(g *Game, plays []Play) {
 	}
 }
 
-// ScoringPlays returns the plays after which either score changed, in game order.
+// ScoringPlays returns the plays that lift either team's score above its highest so far, in game
+// order. ESPN's running scores wobble around a try (a penalty or kickoff after a touchdown can
+// carry the score from before the extra point), so a plain "score changed" rule lists those too.
 func ScoringPlays(plays []Play) []Play {
 	out := []Play{}
 	home, away := 0, 0
 	for _, p := range plays {
-		if p.HomeScore != home || p.AwayScore != away {
+		if p.HomeScore > home || p.AwayScore > away {
 			out = append(out, p)
 		}
-		home, away = p.HomeScore, p.AwayScore
+		home, away = max(home, p.HomeScore), max(away, p.AwayScore)
 	}
 	return out
 }

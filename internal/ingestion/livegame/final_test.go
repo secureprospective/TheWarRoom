@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -153,10 +154,24 @@ func TestTeamCodesMatchAcrossMFLAndESPN(t *testing.T) {
 	}
 }
 
-func TestScoringPlaysAreTheScoreChanges(t *testing.T) {
+func TestScoringPlaysIgnoreTheScoreWobbleAroundATry(t *testing.T) {
 	plays := []Play{{Sequence: 1}, {Sequence: 2, HomeScore: 7}, {Sequence: 3, HomeScore: 7}, {Sequence: 4, HomeScore: 7, AwayScore: 3}}
 	got := ScoringPlays(plays)
 	if len(got) != 2 || got[0].Sequence != 2 || got[1].Sequence != 4 {
 		t.Fatal(got)
+	}
+	// The captured DET at ARI game: touchdown to 45-21, then a penalty read 45-20, then the kickoff 45-21.
+	all, err := ParseCore(fixture(t, "espn-core-plays"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	scoring := ScoringPlays(all)
+	for _, p := range scoring {
+		if strings.HasPrefix(p.Text, "PENALTY") || strings.Contains(p.Text, " kicks ") {
+			t.Fatal("a non-scoring play listed:", p.Text)
+		}
+	}
+	if last := scoring[len(scoring)-1]; last.HomeScore != 21 || last.AwayScore != 45 {
+		t.Fatal("final scoring play", last.Text, last.AwayScore, last.HomeScore)
 	}
 }
