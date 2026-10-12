@@ -58,7 +58,7 @@
       "status": "empty",
       "source": "Source: the league archive in history.db",
       "asOf": "As of: now",
-      "how": "The checked facts are compiled from exactly the archived MFL files a manifest pins, by their bytes' sha256, never from the newest copy of a file. A file the archive no longer holds blocks a same-cutoff parity claim; a fresh download does not stand in for it.",
+      "how": "The checked facts are compiled from exactly the archived MFL files a manifest pins, by their bytes' sha256, never from the newest copy of a file. Only the five exact frozen login-error pins have named non-data gaps; other missing bytes block compilation. A fresh download never stands in for a pin.",
       "columns": [
         "Fact",
         "Value"

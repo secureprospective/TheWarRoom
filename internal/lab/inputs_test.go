@@ -28,3 +28,24 @@ func sha(s string) string {
 	sum := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(sum[:])
 }
+
+func TestFrozenGapsAreExactNonDataPins(t *testing.T) {
+	gaps, err := FrozenGaps()
+	if err != nil || len(gaps) != 5 {
+		t.Fatalf("gaps = %+v, %v", gaps, err)
+	}
+	if gaps[1].SHA256 != gaps[2].SHA256 || gaps[1].File != "2014/assets.json" || gaps[2].File != "2014/calendar.json" {
+		t.Fatal("2014 assets and calendar must retain their shared frozen hash")
+	}
+	inputs, err := Inputs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bad := []byte("file,sha256,reason\n2013/assets.json," + gaps[0].SHA256 + ",reason\n2013/assets.json," + gaps[0].SHA256 + ",reason\n")
+	if _, err := decodeGaps(bad, inputs); err == nil {
+		t.Fatal("duplicate gap identity accepted")
+	}
+	if _, err := decodeGaps(missingInputsCSV, nil); err == nil {
+		t.Fatal("gaps without matching frozen pins accepted")
+	}
+}

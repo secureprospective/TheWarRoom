@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/manifest"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -175,6 +176,9 @@ func (a *App) factsInput(ctx context.Context) (factsInput, error) {
 		return in, fmt.Errorf("app: lab data: %w", err)
 	}
 	in.labBuilt, in.labThrough = data.Built, data.ArchiveThrough
+	if in.gaps, err = lab.FrozenGaps(); err != nil {
+		return in, fmt.Errorf("app: frozen input gaps: %w", err)
+	}
 	if in.checks, err = labSourceChecks(data.Raw.Source); err != nil {
 		return in, err
 	}

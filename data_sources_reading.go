@@ -229,6 +229,7 @@ func labSourceChecks(raw json.RawMessage) ([]labCheck, error) {
 type factsInput struct {
 	labBuilt, labThrough string
 	checks               []labCheck
+	gaps                 []manifest.Gap
 	published            bool
 	publishedAt          time.Time
 	manifest             manifest.Manifest
@@ -242,8 +243,8 @@ func factsReport(in factsInput) Report {
 	r := Report{ID: "L-34", Title: "Checked facts", Status: "ok", Source: "Source: the league archive in history.db",
 		AsOf: "As of: now", Columns: []string{"Fact", "Value"}, Rows: []ReportRow{},
 		How: "The checked facts are compiled from exactly the archived MFL files a manifest pins, by their bytes' " +
-			"sha256, never from the newest copy of a file. A file the archive no longer holds blocks a same-cutoff " +
-			"parity claim; a fresh download does not stand in for it."}
+			"sha256, never from the newest copy of a file. Only the five exact frozen login-error pins have named " +
+			"non-data gaps; other missing bytes block compilation. A fresh download never stands in for a pin."}
 	row := func(k, v string) { r.Rows = append(r.Rows, ReportRow{Cells: []string{k, v}}) }
 	row("Inputs", labFrozenInputs)
 	row("Lab data", "Captured through "+labTime(in.labThrough, in.zone)+"; built "+labTime(in.labBuilt, in.zone))
@@ -269,6 +270,13 @@ func factsReport(in factsInput) Report {
 	row("Exports", exportCounts(exports))
 	row("In the archive", fmt.Sprintf("%s of %s", thousands(len(m.Entries)-len(notHeld)), thousands(len(m.Entries))))
 	row("Not in the archive", missingText(notHeld))
+	for _, g := range in.gaps {
+		for _, e := range m.Entries {
+			if e.File == g.File && e.SHA256 == g.SHA256 && !in.held[e.SHA256] {
+				row("Named gap: "+g.File, g.Reason)
+			}
+		}
+	}
 	row("MFL error bodies", fmt.Sprintf("%s pinned files are MFL errors; they are kept as errors and never read as data", thousands(errorBodies)))
 	row("Compiled snapshot", snapshotText(in.status, in.zone))
 	return r
@@ -294,7 +302,7 @@ func missingText(files []string) string {
 	if len(files) == 0 {
 		return "None"
 	}
-	return fmt.Sprintf("%d: %s. A same-cutoff parity claim waits on these bytes.", len(files), strings.Join(files, ", "))
+	return fmt.Sprintf("%d: %s. No replacement bytes were used; approved non-data gaps are named below.", len(files), strings.Join(files, ", "))
 }
 
 func snapshotText(s manifest.Status, zone *time.Location) string {

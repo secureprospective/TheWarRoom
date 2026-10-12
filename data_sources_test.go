@@ -226,7 +226,7 @@ func TestFactsReportIsHonestBeforeAndAfterTheManifest(t *testing.T) {
 		"Files pinned":       "3, over seasons 2013–2026",
 		"Exports":            "assets 1, polls 1, rules 1",
 		"In the archive":     "2 of 3",
-		"Not in the archive": "1: 2013/assets.json. A same-cutoff parity claim waits on these bytes.",
+		"Not in the archive": "1: 2013/assets.json. No replacement bytes were used; approved non-data gaps are named below.",
 		"MFL error bodies":   "1 pinned files are MFL errors; they are kept as errors and never read as data",
 		"Compiled snapshot":  "Stale, built Oct 12, 2026, 1:00 AM. The inputs changed after it was built.",
 	} {
@@ -313,5 +313,34 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 	}
 	if string(body) != string(held) {
 		t.Fatal("data sources wire stale; regenerate with TWR_WRITE_WIRE=1")
+	}
+}
+
+func TestCheckedFactsNamesOnlyExactApprovedGaps(t *testing.T) {
+	a := targetTestApp(t)
+	a.dataDir = t.TempDir()
+	if r := a.SetLeagueArchiveDir(archiveTree(t)); !r.OK {
+		t.Fatal(r.Error)
+	}
+	if r := a.TargetDataRefresh("archive"); !r.OK {
+		t.Fatal(r.Error)
+	}
+	in, err := a.factsInput(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := factsReport(in)
+	for _, gap := range in.gaps {
+		if got := cell(r, "Named gap: "+gap.File); got != gap.Reason || !strings.Contains(got, "fed no fact") {
+			t.Errorf("gap %s = %q", gap.File, got)
+		}
+	}
+	for i := range in.manifest.Entries {
+		if in.manifest.Entries[i].File == in.gaps[0].File {
+			in.manifest.Entries[i].SHA256 = strings.Repeat("0", 64)
+		}
+	}
+	if got := cell(factsReport(in), "Named gap: "+in.gaps[0].File); got != "" {
+		t.Errorf("changed pin incorrectly received exception: %q", got)
 	}
 }

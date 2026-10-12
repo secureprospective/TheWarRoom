@@ -1,0 +1,83 @@
+[
+  {
+    "name": "All-play records match MFL standings",
+    "passed": 1,
+    "checked": 160,
+    "agreed": 160,
+    "explained": 0,
+    "open": 0,
+    "detail": "Counted every week in which all teams scored, playoffs included, as MFL does."
+  },
+  {
+    "name": "Draft picks were used by their last owner (2017 on)",
+    "passed": 1,
+    "checked": 1692,
+    "agreed": 1643,
+    "explained": 0,
+    "open": 49,
+    "detail": "Original owner from MFL's \"Pick traded from\" note, else the team that used it."
+  },
+  {
+    "name": "Lineup scores equal MFL player scores",
+    "passed": 1,
+    "checked": 202954,
+    "agreed": 202954,
+    "explained": 0,
+    "open": 0,
+    "detail": ""
+  },
+  {
+    "name": "Points for match MFL standings",
+    "passed": 1,
+    "checked": 448,
+    "agreed": 448,
+    "explained": 0,
+    "open": 0,
+    "detail": "MFL totals points over every week it scored, playoffs included."
+  },
+  {
+    "name": "Potential points match MFL standings",
+    "passed": 1,
+    "checked": 160,
+    "agreed": 160,
+    "explained": 0,
+    "open": 0,
+    "detail": "Where MFL publishes potential points (2022 on)."
+  },
+  {
+    "name": "Roster changes are recorded moves (2018 on)",
+    "passed": 1,
+    "checked": 4814,
+    "agreed": 4811,
+    "explained": 0,
+    "open": 3,
+    "detail": "Rosters at the last kickoff of each week, compared with the next week."
+  },
+  {
+    "name": "Rostered players have an MFL birthdate",
+    "passed": 1,
+    "checked": 5223,
+    "agreed": 5167,
+    "explained": 0,
+    "open": 56,
+    "detail": "MFL lists no birthdate for these players."
+  },
+  {
+    "name": "Team scores equal their starters",
+    "passed": 1,
+    "checked": 7168,
+    "agreed": 6657,
+    "explained": 505,
+    "open": 6,
+    "detail": "505 games carry MFL's 3-point home bonus (2014-2015 regular season, and playoff games)."
+  },
+  {
+    "name": "Win-loss records match MFL standings",
+    "passed": 1,
+    "checked": 448,
+    "agreed": 432,
+    "explained": 12,
+    "open": 4,
+    "detail": "12 in 2013, when MFL counted playoff games in the standings."
+  }
+]

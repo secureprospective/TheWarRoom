@@ -171,10 +171,36 @@ type Resolved struct {
 // Resolve reads every entry's pinned body. Every entry whose body is missing or does not match
 // its sha256 is named in the error.
 func (m Manifest) Resolve(ctx context.Context, bodies Bodies) ([]Resolved, error) {
+	out, _, err := m.ResolveWithGaps(ctx, bodies, nil)
+	return out, err
+}
+
+// Gap authorizes absence of one exact pin, never a replacement body.
+type Gap struct {
+	File   string
+	SHA256 string
+	Reason string
+}
+
+// ResolveWithGaps excludes only approved unheld pins. Held bytes still have to resolve
+// and pass their hash, even if the same pin has an absence exception.
+func (m Manifest) ResolveWithGaps(ctx context.Context, bodies Bodies, approved []Gap) ([]Resolved, []Gap, error) {
+	allowed, err := gapIndex(approved)
+	if err != nil {
+		return nil, nil, err
+	}
 	out := make([]Resolved, 0, len(m.Entries))
+	var gaps []Gap
 	var errs []error
 	for _, e := range m.Entries {
+		if err := ctx.Err(); err != nil {
+			return nil, nil, fmt.Errorf("manifest %s: resolve: %w", m.Name, err)
+		}
 		if !e.Held() {
+			if g, ok := allowed[[2]string{e.File, e.SHA256}]; ok {
+				gaps = append(gaps, g)
+				continue
+			}
 			errs = append(errs, fmt.Errorf("manifest %s: %s (sha256 %s): no pinned archive row", m.Name, e.File, e.SHA256))
 			continue
 		}
@@ -195,7 +221,23 @@ func (m Manifest) Resolve(ctx context.Context, bodies Bodies) ([]Resolved, error
 		out = append(out, Resolved{Entry: e, Body: body})
 	}
 	if len(errs) > 0 {
-		return nil, errors.Join(errs...)
+		return nil, gaps, errors.Join(errs...)
+	}
+	return out, gaps, nil
+}
+
+func gapIndex(approved []Gap) (map[[2]string]Gap, error) {
+	out := make(map[[2]string]Gap, len(approved))
+	for _, g := range approved {
+		decoded, err := hex.DecodeString(g.SHA256)
+		if g.File == "" || strings.TrimSpace(g.Reason) == "" || err != nil || len(decoded) != sha256.Size {
+			return nil, fmt.Errorf("manifest: invalid gap for %q", g.File)
+		}
+		key := [2]string{g.File, g.SHA256}
+		if _, exists := out[key]; exists {
+			return nil, fmt.Errorf("manifest: duplicate gap for %q", g.File)
+		}
+		out[key] = g
 	}
 	return out, nil
 }
