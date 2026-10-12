@@ -22,7 +22,7 @@ Old stop dirs: p3g2-s1-preflight (+symlink p3g2-s1), p3g2-s1b, p3l-nobrief, p3g2
 2. p3r review still owes the live look (search, Inspector, depth, injuries, news, article hand-off) after p3r2.
 3. s1c: rerun P4 full parity myself on Beelink before merging. Then p3g2-s2 brief (proof-2 seam, today's Lab,
    Control Room source lines). Then p3h (Pools/Archive rows, 30+ in registry) after p3g2.
-4. C-01 asset board (ring 3 row, "awaits engine-value wiring") — decide: build or move to ring 4 with reason.
+4. C-01 asset board: DECIDED build with p3g2-s2 (see BACKLOG "C-01 asset board").
 5. Spec rev 3 (BACKLOG "Spec revision 3 notes": League tab rename with shell.test, What's New articles, S-05/S-10),
    registry gate (no ring-3 row left spec), Christopher click-through, PR squash-merge.
 6. Ask Christopher: copy league-archive/raw to Claude-OS (hook blocks rsync) for live Checked facts look.
@@ -242,3 +242,78 @@ Lines >110 chars fail a frontend test. Wire fixtures: `TWR_WRITE_WIRE=1 go test 
 Roughly a quarter of ring 3 is done (steps 1–2). The heavy parts remain: pipeline port with parity (biggest
 risk: Python reference ~180 KB incl. a hand-curated note_readings.csv), League Pulse breadth, live game view
 (unlicensed feeds, personal use), and the remaining Acts whose MFL forms were never captured.
+
+## 11:20 10-12 progress (after compaction)
+- p3r2 done → Claude review fix: news daily cache + fallback were one archive scan PER PLAYER (1,454 × all bodies);
+  now one newest-first pass (archivedNews), test TestResearchNewsDailyCacheIsOneArchivePass, mutant caught.
+  Committed ring-3-c 5581469; merged into ring-3 a1ec703 (registry CSV merged by id; Sol had made it CRLF; LF kept).
+  Deployed `ring3-research` to Claude-OS. Live look → findings → par/p3r3.md dispatched (ring-3-c, Sol).
+- p3g2-s1c: P1 PASSED (508,219 values, only source.pages differs); kernels only, NO compiler (Sol stopped short,
+  honest report). Committed ring-3-d 02ce90b, merged ring-3 into it (4a4f8e0). Split: p3g2-s2a = build_lab.py +
+  ledger.py → Go Compile with Analysis seam, P4a uses reference's recorded value.analyse output (phase-local,
+  never in repo) → zero differences; p3g2-s2b = value.py on the kernels, full P4, P3 smoke, C-01 hook. s2a dispatched.
+- C-01 decided: build with p3g2-s2 (BACKLOG).
+- Running: p3l (ring-3-b), p3g2-s2a (ring-3-d), p3r3 (ring-3-c). Watcher covers all three.
+- messageBoard/polls auth: FIXED 079ec6d (keyed), deployed ring3-comms-key, verified live.
+- p3h brief ready: par/p3h.md (worktree ring-3-b, dispatch AFTER p3l merges; fast-forward ring-3-b to ring-3 first).
+
+## 12:30 10-12
+- p3l merged (ring-3 27f3836; Claude fix livegame.MaxGame 6 h). p3g2-s2a committed ring-3-d 4f65ea7 (P4a rerun by
+  Claude: zero diffs, 508,219 values). s2b dispatched (ring-3-d), p3h dispatched (ring-3-b @27f3836).
+- Clock bug fixed 2a85d2e (past MFL calendar event kept date + U0 → frontend rejected the whole clock at noon).
+  Deployed ring3-clockfix; clock back on Claude-OS.
+- Archive copied + imported on Claude-OS (BACKLOG).
+- par/p3l2.md READY (final-game one-shot fetch + hold, words, week-wide spine): dispatch to the first free
+  worktree (ring-3-c after p3r3 merges), fast-forward it to ring-3 first.
+- MNF BUF @ LAR 7:15 PM CT tonight = the live polling check (M-001/X-01/X-02).
+
+# ===== AT COMPACTION 12:45 10-12 (read this block first) =====
+## STATE
+- **Sol is DOWN** (Codex usage limit hit 12:32; Christopher: back ~15:45). Per standing order: "If sol is ever down,
+  code yourself". After compaction Claude CODES the remaining work itself, picking up Sol's partial work.
+  All three lanes died mid-work at 12:32 (sentinels EXIT=1, report=NO, stderr "Codex error: The usage limit has been
+  reached"). No watcher running. No Sol process running.
+- **ring-3 (session/ring-3) HEAD b630dba**, verified (784 frontend tests, 0 lint, bundle 302,174 B). Contains:
+  p3r+p3r2 (a1ec703), Comms keyed board (079ec6d), p3l live game + MaxGame (27f3836), clock fix (2a85d2e),
+  p3r3 Research finish (2d3fb37 in ring-3-c, merged b630dba). NOT yet deployed: b630dba (last deploy = 2a85d2e
+  label ring3-clockfix). Deploy and LOOK at Research (p3r3) next.
+- **ring-3-c**: clean at 2d3fb37 (free worktree).
+- **ring-3-b**: p3h PARTIAL, uncommitted, base 27f3836: M app.go, commands/registry.ts, draftreports/Reports.tsx,
+  shell/TargetApp.tsx, store/history/history.go, inputs.go; new archive_app.go, archive_reading.go,
+  archive_records_reading.go, frontend/src/app/archive/, internal/facts/pools.go, pool-inputs.csv,
+  internal/facts/testdata/, store/history/events.go + events_test.go. Brief par/p3h.md. Transcript
+  p3h/sessions/*.jsonl (last action: poolResult in archive view). Nothing gated yet.
+- **ring-3-d**: p3g2-s2b PARTIAL, uncommitted, base 4f65ea7 (s2a committed): M compiler_test.go, document.go,
+  source.go; new forecast.go, forecast_checks.go, model.go, model_test.go, picks_model.go, source_scope.go,
+  value_backtest.go, value_market.go, value_output.go, value_trades.go, valuer.go, wins.go, wins_checks.go,
+  analysis_goldens_test.go, testdata/analysis-goldens.json.gz. Brief par/p3g2-s2b.md. Transcript
+  p3g2-s2b/sessions/*.jsonl. Proof tools: P4 full parity:
+  `TWR_ARCHIVE_PARITY=1 TWR_FACTS_ARCHIVE=/home/chris/work/TheWarRoom/league-archive/raw TWR_LAB_ANALYSIS=RUN/p3g2-s2a/analysis.json.gz go test ./internal/labcompile/ -run FullDocumentParity -v`
+  (21 s; s2a P4a = 0 diffs on 508,219 values). Reference: RUN/lab-reference/tools/league-history/compile/value.py.
+- **p3r3 open item**: depth-chart "Crosswalk: 569 displayed players unmatched" not explained (Sol offline fixture
+  gave 576 unlinked of 2,333 slots). Explain from Claude-OS real data, reword for a GM.
+
+## NEXT ACTIONS (in order; Claude codes)
+1. Deploy b630dba (label ring3-research-finish), live-look Research: open (archived copy at once), search (Enter,
+   styled input), Inspector rostered + free agent, top performers source line, news newest first, depth 569.
+2. Finish p3h in ring-3-b myself (read the transcript tail + diff first; brief par/p3h.md): Archive reports
+   (M-080/182/114, 104/105/023/110, 019, 083-086, 082, 073, 079, 081, 089), Pools report, league_event table.
+   Gates, mutant, commit, merge, deploy, look (real archive now imported on Claude-OS).
+3. Finish p3g2-s2b in ring-3-d myself (value.py port; P2b goldens; P3 reduced smoke; P4 full end to end ZERO diffs
+   via Compile with Go analyse; valuer API Model.Player/Pick).
+4. p3l2 (par/p3l2.md): final-game one-shot fetch + hold, wording, week-wide spine. Use ring-3-c.
+5. p3g2-s3 (no brief yet): app wiring — Lab compiled at runtime from facts (Evidence from app), Lab tab reads it,
+   Control Room source lines; C-01 asset board on the valuer (BACKLOG "C-01 asset board"); PlayerInspector
+   "On-field-now / Dynasty value / Market" wired.
+6. MNF BUF @ LAR 7:15 PM CT tonight: check live polling on Claude-OS (Now › follow BUF at LAR).
+7. Polish items in BACKLOG (Comms drawer link affordance; checked-facts grouping), close-out: spec rev 3,
+   registry gate, Christopher's click-through, PR squash-merge (after his confirmation).
+When Sol returns (~15:45) it may take lanes again (dispatch-wt.sh), but never two builders in one worktree.
+
+## LESSONS THIS WINDOW (do not relearn)
+- dispatch: `WT=<wt> nohup setsid ./dispatch-wt.sh <phase> par/<brief>.md > <phase>.launch.log 2>&1 < /dev/null &`
+- ssh xdotool needs `export DISPLAY=:0;` inside a loop (`DISPLAY=:0 cmd` only covers the first command).
+- Scrolling over an inner scroll table scrolls the table; scroll with the mouse outside it (x≈800,y≈300).
+- Sol rewrote endpoint-registry.csv as CRLF once: merge rows by id against merge base, keep LF.
+- Data and sources: "Set folder" only stores the path; "Refresh League archive" imports.
+- MFL messageBoard/polls need the key (fixed). Claude-OS has a key connected.
