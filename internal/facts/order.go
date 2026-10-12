@@ -9,10 +9,13 @@ import (
 func sortFacts(f *factRows) {
 	rows := reflect.ValueOf(f).Elem()
 	for i := 0; i < rows.NumField(); i++ {
-		relation := rows.Field(i)
-		swap := reflect.Swapper(relation.Interface())
-		sort.Sort(relationOrder{relation, swap})
+		sortRelation(rows.Field(i))
 	}
+}
+
+// sortRelation orders a slice of rows by every column in turn, nulls first, as SQLite orders them.
+func sortRelation(relation reflect.Value) {
+	sort.Sort(relationOrder{relation, reflect.Swapper(relation.Interface())})
 }
 
 type relationOrder struct {
@@ -63,15 +66,18 @@ func toColumns(rows factRows) Facts {
 	source := reflect.ValueOf(rows)
 	target := reflect.ValueOf(&result).Elem()
 	for i := 0; i < source.NumField(); i++ {
-		relation := source.Field(i)
-		columns := target.Field(i)
-		for col := 0; col < columns.NumField(); col++ {
-			output := reflect.MakeSlice(columns.Field(col).Type(), relation.Len(), relation.Len())
-			for row := 0; row < relation.Len(); row++ {
-				output.Index(row).Set(relation.Index(row).Field(col))
-			}
-			columns.Field(col).Set(output)
-		}
+		setColumns(source.Field(i), target.Field(i))
 	}
 	return result
+}
+
+// setColumns copies a slice of rows into the matching struct of column slices.
+func setColumns(relation, columns reflect.Value) {
+	for col := 0; col < columns.NumField(); col++ {
+		output := reflect.MakeSlice(columns.Field(col).Type(), relation.Len(), relation.Len())
+		for row := 0; row < relation.Len(); row++ {
+			output.Index(row).Set(relation.Index(row).Field(col))
+		}
+		columns.Field(col).Set(output)
+	}
 }

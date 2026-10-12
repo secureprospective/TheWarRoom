@@ -46,16 +46,16 @@ Its SHA256 is
 
 ## Lossless pinned inputs for verify
 
-`inputs.json.gz` is 3,643,488 B, SHA256
-`2458008da347d21b6373374027e739f1e43f9ffd15061b2ba64cc89bea15ff93`.
+`inputs.json.gz` is 4,318,066 B, SHA256
+`0b3d723a02cd36d7e8d220fa1518e675541d8961350ae2c7bbe3cb9ea4f2b38d`.
 It is independently produced by the same Python tool from pinned archive bytes,
 NOT from either compiler's output. A shared dictionary of exact JSON lexical
 spans and each input's token indices reconstruct byte-identical retained bodies;
 Go checks reconstructed lengths and hashes before compiling.
 
-All 1,477 available source identities are present. Bodies are retained for the
-selected seasons' league/standings/rules/calendar/weekly-results/rosters, root
-rule codes, and the full league/player/draft/transaction context needed by global
+All 1,477 available source identities are present. Bodies are retained for every
+input of the selected seasons (stage 2 added their weekly scores, projections,
+injuries, NFL schedules, points allowed and playoff brackets), root rule codes, and the full league/player/draft/transaction context needed by global
 player identities and curated pick checks. Other bodies are deliberately absent
 from this TEST projection; their metadata does not prove their unselected facts.
 The full parity test replaces every body from the independently staged archive.

@@ -14,6 +14,15 @@ type factRows struct {
 	SourceFile      []SourceFile
 	LoadNote        []LoadNote
 	NoteReading     []NoteReading
+	Game            []Game
+	Lineup          []Lineup
+	PlayerWeek      []PlayerWeek
+	InjuryWeek      []InjuryWeek
+	RosterWeek      []RosterWeek
+	NflGame         []NflGame
+	PointsAllowed   []PointsAllowed
+	PlayoffBracket  []PlayoffBracket
+	PlayoffGame     []PlayoffGame
 }
 
 type Season struct {
@@ -166,6 +175,15 @@ type Facts struct {
 	SourceFile      SourceFileColumns
 	LoadNote        LoadNoteColumns
 	NoteReading     NoteReadingColumns
+	Game            GameColumns
+	Lineup          LineupColumns
+	PlayerWeek      PlayerWeekColumns
+	InjuryWeek      InjuryWeekColumns
+	RosterWeek      RosterWeekColumns
+	NflGame         NflGameColumns
+	PointsAllowed   PointsAllowedColumns
+	PlayoffBracket  PlayoffBracketColumns
+	PlayoffGame     PlayoffGameColumns
 }
 
 type SeasonColumns struct {
@@ -303,4 +321,196 @@ type NoteReadingColumns struct {
 	Reading    []string   `json:"reading"`
 	DraftCheck []*string  `json:"draft_check"`
 	Confirmed  []int64    `json:"confirmed"`
+}
+
+type Game struct {
+	Year   int64    `json:"year"`
+	Week   int64    `json:"week"`
+	Fid    string   `json:"fid"`
+	Opp    *string  `json:"opp"`
+	IsHome *int64   `json:"is_home"`
+	Score  *float64 `json:"score"`
+	Result *string  `json:"result"`
+	OptPts *float64 `json:"opt_pts"`
+	Src    string   `json:"src"`
+}
+
+type Lineup struct {
+	Year        int64    `json:"year"`
+	Week        int64    `json:"week"`
+	Fid         string   `json:"fid"`
+	Pid         string   `json:"pid"`
+	Started     int64    `json:"started"`
+	ShouldStart *int64   `json:"should_start"`
+	Score       *float64 `json:"score"`
+	Src         string   `json:"src"`
+}
+
+type PlayerWeek struct {
+	Year      int64    `json:"year"`
+	Week      int64    `json:"week"`
+	Pid       string   `json:"pid"`
+	Score     *float64 `json:"score"`
+	Projected *float64 `json:"projected"`
+}
+
+type InjuryWeek struct {
+	Year      int64   `json:"year"`
+	Week      int64   `json:"week"`
+	Pid       string  `json:"pid"`
+	Status    *string `json:"status"`
+	Details   *string `json:"details"`
+	ExpReturn *string `json:"exp_return"`
+	Src       string  `json:"src"`
+}
+
+type RosterWeek struct {
+	Year           int64    `json:"year"`
+	Week           int64    `json:"week"`
+	Fid            string   `json:"fid"`
+	Pid            string   `json:"pid"`
+	Status         *string  `json:"status"`
+	Salary         *float64 `json:"salary"`
+	ContractYear   *string  `json:"contract_year"`
+	ContractStatus *string  `json:"contract_status"`
+	ContractInfo   *string  `json:"contract_info"`
+	Src            string   `json:"src"`
+}
+
+type NflGame struct {
+	Year    int64    `json:"year"`
+	Week    int64    `json:"week"`
+	Team    string   `json:"team"`
+	Opp     *string  `json:"opp"`
+	IsHome  *int64   `json:"is_home"`
+	Score   *int64   `json:"score"`
+	Spread  *float64 `json:"spread"`
+	Kickoff *int64   `json:"kickoff"`
+	Src     string   `json:"src"`
+}
+
+type PointsAllowed struct {
+	Year     int64    `json:"year"`
+	NflTeam  string   `json:"nfl_team"`
+	Position string   `json:"position"`
+	Points   *float64 `json:"points"`
+	Src      string   `json:"src"`
+}
+
+type PlayoffBracket struct {
+	Year        int64   `json:"year"`
+	BracketID   string  `json:"bracket_id"`
+	Name        *string `json:"name"`
+	WinnerTitle *string `json:"winner_title"`
+	StartWeek   *int64  `json:"start_week"`
+	Teams       *int64  `json:"teams"`
+	Src         string  `json:"src"`
+}
+
+type PlayoffGame struct {
+	Year      int64    `json:"year"`
+	BracketID string   `json:"bracket_id"`
+	Week      *int64   `json:"week"`
+	GameID    *string  `json:"game_id"`
+	Fid       *string  `json:"fid"`
+	Side      *string  `json:"side"`
+	Points    *float64 `json:"points"`
+	Seed      *string  `json:"seed"`
+	Src       string   `json:"src"`
+}
+
+type GameColumns struct {
+	Year   []int64    `json:"year"`
+	Week   []int64    `json:"week"`
+	Fid    []string   `json:"fid"`
+	Opp    []*string  `json:"opp"`
+	IsHome []*int64   `json:"is_home"`
+	Score  []*float64 `json:"score"`
+	Result []*string  `json:"result"`
+	OptPts []*float64 `json:"opt_pts"`
+	Src    []string   `json:"src"`
+}
+
+type LineupColumns struct {
+	Year        []int64    `json:"year"`
+	Week        []int64    `json:"week"`
+	Fid         []string   `json:"fid"`
+	Pid         []string   `json:"pid"`
+	Started     []int64    `json:"started"`
+	ShouldStart []*int64   `json:"should_start"`
+	Score       []*float64 `json:"score"`
+	Src         []string   `json:"src"`
+}
+
+type PlayerWeekColumns struct {
+	Year      []int64    `json:"year"`
+	Week      []int64    `json:"week"`
+	Pid       []string   `json:"pid"`
+	Score     []*float64 `json:"score"`
+	Projected []*float64 `json:"projected"`
+}
+
+type InjuryWeekColumns struct {
+	Year      []int64   `json:"year"`
+	Week      []int64   `json:"week"`
+	Pid       []string  `json:"pid"`
+	Status    []*string `json:"status"`
+	Details   []*string `json:"details"`
+	ExpReturn []*string `json:"exp_return"`
+	Src       []string  `json:"src"`
+}
+
+type RosterWeekColumns struct {
+	Year           []int64    `json:"year"`
+	Week           []int64    `json:"week"`
+	Fid            []string   `json:"fid"`
+	Pid            []string   `json:"pid"`
+	Status         []*string  `json:"status"`
+	Salary         []*float64 `json:"salary"`
+	ContractYear   []*string  `json:"contract_year"`
+	ContractStatus []*string  `json:"contract_status"`
+	ContractInfo   []*string  `json:"contract_info"`
+	Src            []string   `json:"src"`
+}
+
+type NflGameColumns struct {
+	Year    []int64    `json:"year"`
+	Week    []int64    `json:"week"`
+	Team    []string   `json:"team"`
+	Opp     []*string  `json:"opp"`
+	IsHome  []*int64   `json:"is_home"`
+	Score   []*int64   `json:"score"`
+	Spread  []*float64 `json:"spread"`
+	Kickoff []*int64   `json:"kickoff"`
+	Src     []string   `json:"src"`
+}
+
+type PointsAllowedColumns struct {
+	Year     []int64    `json:"year"`
+	NflTeam  []string   `json:"nfl_team"`
+	Position []string   `json:"position"`
+	Points   []*float64 `json:"points"`
+	Src      []string   `json:"src"`
+}
+
+type PlayoffBracketColumns struct {
+	Year        []int64   `json:"year"`
+	BracketID   []string  `json:"bracket_id"`
+	Name        []*string `json:"name"`
+	WinnerTitle []*string `json:"winner_title"`
+	StartWeek   []*int64  `json:"start_week"`
+	Teams       []*int64  `json:"teams"`
+	Src         []string  `json:"src"`
+}
+
+type PlayoffGameColumns struct {
+	Year      []int64    `json:"year"`
+	BracketID []string   `json:"bracket_id"`
+	Week      []*int64   `json:"week"`
+	GameID    []*string  `json:"game_id"`
+	Fid       []*string  `json:"fid"`
+	Side      []*string  `json:"side"`
+	Points    []*float64 `json:"points"`
+	Seed      []*string  `json:"seed"`
+	Src       []string   `json:"src"`
 }

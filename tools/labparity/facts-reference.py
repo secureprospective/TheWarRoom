@@ -141,9 +141,7 @@ def input_fixture(args):
         year = int(pin['file'].split('/')[0]) if '/' in pin['file'] else 0
         keep = name in ('allRules.json', 'league.json', 'players_DETAILS1.json', 'players.json',
                         'transactions.json', 'draftResults.json')
-        keep = keep or (year in args.seasons and (name in ('leagueStandings.json', 'rules.json',
-                            'calendar.json', 'weeklyResults_WYTD.json', 'rosters.json')
-                            or name.startswith('rosters_W')))
+        keep = keep or year in args.seasons  # every body of a selected season: all season relations
         row = {'file': pin['file'], 'sha256': pin['sha256'], 'bytes': int(pin['bytes']), 'tokens': []}
         if keep:
             body = path.read_text()

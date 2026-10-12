@@ -167,7 +167,7 @@ func TestInputFixtureFingerprint(t *testing.T) {
 		t.Fatal(err)
 	}
 	sum := sha256.Sum256(body)
-	if hex.EncodeToString(sum[:]) != "2458008da347d21b6373374027e739f1e43f9ffd15061b2ba64cc89bea15ff93" {
+	if hex.EncodeToString(sum[:]) != "0b3d723a02cd36d7e8d220fa1518e675541d8961350ae2c7bbe3cb9ea4f2b38d" {
 		t.Fatal("independent pinned-input fixture changed")
 	}
 }

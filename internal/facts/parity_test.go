@@ -168,12 +168,15 @@ func runParity(t *testing.T, inputs []ResolvedInput, oracle string, reduced bool
 	if err := scanner.Err(); err != nil {
 		t.Fatal(err)
 	}
-	compareRelations(t, facts, headers, rows, reduced, selectedTxns)
+	compareRelations(t, reflect.ValueOf(facts), headers, rows, reduced, selectedTxns)
+	start = time.Now()
+	views := facts.Views()
+	t.Logf("views wall=%s", time.Since(start))
+	compareRelations(t, reflect.ValueOf(views), headers, rows, reduced, selectedTxns)
 }
 
-func compareRelations(t *testing.T, facts Facts, headers map[string]rawGoldenHeader, rows map[string][][]json.RawMessage, reduced bool, txns map[int64]bool) {
+func compareRelations(t *testing.T, relations reflect.Value, headers map[string]rawGoldenHeader, rows map[string][][]json.RawMessage, reduced bool, txns map[int64]bool) {
 	t.Helper()
-	relations := reflect.ValueOf(facts)
 	for i := 0; i < relations.NumField(); i++ {
 		relation := relations.Field(i)
 		name := relations.Type().Field(i).Name
@@ -345,10 +348,11 @@ func readWithin(root, file string) ([]byte, error) {
 }
 
 func supportedRelation(table string) bool {
-	typ := reflect.TypeFor[Facts]()
-	for i := 0; i < typ.NumField(); i++ {
-		if strings.EqualFold(strings.ReplaceAll(table, "_", ""), typ.Field(i).Name) {
-			return true
+	for _, typ := range []reflect.Type{reflect.TypeFor[Facts](), reflect.TypeFor[Views]()} {
+		for i := 0; i < typ.NumField(); i++ {
+			if strings.EqualFold(strings.ReplaceAll(table, "_", ""), typ.Field(i).Name) {
+				return true
+			}
 		}
 	}
 	return false

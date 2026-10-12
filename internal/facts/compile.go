@@ -44,7 +44,7 @@ func Compile(ctx context.Context, inputs []ResolvedInput, notes []RawNoteReading
 		if err := c.calendar(year); err != nil {
 			return Facts{}, err
 		}
-		if err := c.loadNotes(year); err != nil {
+		if err := c.season(year); err != nil {
 			return Facts{}, err
 		}
 	}
@@ -135,4 +135,14 @@ func requiredID(r RawValue, key, src string) (string, error) {
 		return "", fmt.Errorf("%s: missing %s", src, key)
 	}
 	return *id, nil
+}
+
+// keyID reads an id the Lab indexes as row[key]: it must be present as a JSON string, but MFL's
+// weekly files carry blank ids (projectedScores lists {"id": ""}) and the Lab keeps those rows.
+func keyID(r RawValue, key, src string) (string, error) {
+	field := r.get(key)
+	if field.Scalar == nil || len(field.JSON) == 0 || field.JSON[0] != '"' {
+		return "", fmt.Errorf("%s: missing %s", src, key)
+	}
+	return *field.Scalar, nil
 }
