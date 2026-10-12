@@ -5,6 +5,7 @@ import { FranchisePicker } from './FranchisePicker';
 import { EnvelopeRail } from './EnvelopeRail';
 import { useWorkAnchor } from './workScroll';
 
+const PersonalLists = lazy(() => import('../personal/PersonalLists'));
 const ReleasePlans = lazy(() => import('../contracts/ReleasePlans'));
 const BidPlans = lazy(() => import('../pool/BidPlans'));
 const ContractActs = lazy(() => import('../contracts/ContractActs'));
@@ -33,6 +34,7 @@ export default function MyMoves({ snapshot, executor = commands }: {
   return (
     <section ref={root} className="my-moves">
       <h4>My moves</h4>
+      <Suspense fallback={null}><PersonalLists snapshot={snapshot} /></Suspense>
       {fixture && <p>Fixture · demo envelope · landing simulated from a real roster snapshot</p>}
       {loading !== false && <p role="status">Moves loading…</p>}
       {error && <p role="alert">{error}</p>}

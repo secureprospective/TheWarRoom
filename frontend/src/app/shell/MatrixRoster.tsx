@@ -1,3 +1,4 @@
+import { WatchButton } from '../personal/WatchButton';
 import { Act } from '../commands/Act';
 import { matrixColumns, matrixCells } from '../cards/matrix';
 import type { PlayerCardModel } from '../cards/playerModel';
@@ -39,6 +40,7 @@ export function MatrixRoster({ cards, franchiseId, selected }: {
                     {value}
                   </Act>
                 ) : value}
+                {index === 1 && <WatchButton id={model.id} name={model.name} mine={franchiseId} />}
                 {index === 1 && provenance === 'own' && <SignalChip {...model.provenance} />}
               </td>
             ))}

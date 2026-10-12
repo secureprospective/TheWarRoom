@@ -15,7 +15,7 @@ import {
   type Surface,
 } from '../registry';
 import type { MFLKeyStatus, Snapshot, TradeReading } from '../data/contract';
-import type { PlayerSubject } from '../shell/state';
+import type { EntitySubject, PlayerSubject } from '../shell/state';
 import {
   browserStorage,
   loadFranchise,
@@ -197,7 +197,61 @@ export function createCommands(
     void import('../datasources/state').then(m => m.dataState.run(action))
       .catch(cause => state.write({ notice: String(cause) }));
   };
+  const phaseRoutes = {
+    OFFSEASON: { node: 'hq', workspace: 'contracts-and-cap' },
+    DRAFT: { node: 'trade', workspace: 'draft-room' },
+    REGULAR_SEASON: { node: 'hq', workspace: 'lineup-and-roster' },
+    PLAYOFFS: { node: 'pulse', workspace: 'race' },
+  } as const;
+  function personalCommand(kind: import('../personal/contract').ListKind, label: string) {
+    return command({
+      ...ambient, id: kind === 'watch' ? 'watch.add' : kind === 'bait' ? 'bait.set'
+        : kind === 'note' ? 'note.add' : 'draft.list', label, args: ['id', 'entity', 'action', 'text'],
+      run: (change: import('../personal/contract').ListChange) => {
+        const mine = state.read().franchiseId;
+        if (!mine) { state.write({ notice: 'Choose my franchise before keeping a private list' }); return; }
+        void import('../personal/state').then(m => m.personalState.change(mine, kind, change))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    });
+  }
   const registry = Object.freeze({
+    'watch.add': personalCommand('watch', 'Watch player'),
+    'bait.set': personalCommand('bait', 'Mark trade bait'),
+    'note.add': personalCommand('note', 'Keep note'),
+    'draft.list': personalCommand('draft', 'Change draft list'),
+    'personal.handoff': command({
+      ...ambient, id: 'personal.handoff', label: 'Open MFL list', args: ['kind'],
+      run: ({ kind }: { kind: import('../personal/contract').ListKind | 'ir' }) => {
+        void import('../personal/state').then(m => m.personalState.handoff(kind))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
+    'phase.goto': command({
+      ...ambient, id: 'phase.goto', label: 'Open phase workspace', args: ['phase'],
+      run: ({ phase }: { phase: keyof typeof phaseRoutes }) => {
+        const route = phaseRoutes[phase];
+        if (!route) throw new Error('phase.goto: unknown phase');
+        state.navigate(route);
+      },
+    }),
+    'inspector.pin': command({
+      ...ambient, id: 'inspector.pin', label: 'Inspect entity', args: ['entity'],
+      run: ({ entity }: { entity: EntitySubject | PlayerSubject }) => {
+        if (entity.kind === 'player') {
+          const roster = snapshot?.rosters.value.find(r => r.players.some(p => p.id === entity.id));
+          if (roster) state.write({ subject: { ...entity, franchiseId: roster.franchiseId },
+            asset: null, entity: null, inspector: 'rest' });
+          else if (snapshot?.players.value.some(p => p.id === entity.id))
+            state.write({ asset: `pool:${entity.id}`, subject: null, entity: null, inspector: 'rest' });
+          else throw new Error('inspector.pin: unknown player');
+        } else {
+          if (entity.kind === 'franchise' && !snapshot?.franchises.value.some(f => f.id === entity.id))
+            throw new Error('inspector.pin: unknown franchise');
+          state.write({ entity, subject: null, asset: null, inspector: 'rest' });
+        }
+      },
+    }),
     'refresh.run': command({
       ...ambient, id: 'refresh.run', label: 'Refresh data', gravity: 'G1', args: ['scope'],
       run: ({ scope }: { scope: string }) => dataRun({ kind: 'refresh', scope }),
@@ -245,7 +299,7 @@ export function createCommands(
         if (['pool-plan', 'pool-open'].includes(change.field))
           state.navigate({ node: 'war', workspace: 'valuations-and-pool' });
         if (change.field === 'inspect' || change.field === 'asset')
-          state.write({ asset: change.value, inspector: 'rest' });
+          state.write({ asset: change.value, entity: null, subject: null, inspector: 'rest' });
         if (change.field !== 'inspect')
           void loadMarket().then(
             (m) => m.set(change),
@@ -469,7 +523,7 @@ export function createCommands(
         ) {
           throw new Error('inspector.open: unknown roster player');
         }
-        state.write({ subject: { ...subject }, asset: null, inspector: 'rest' });
+        state.write({ subject: { ...subject }, asset: null, entity: null, inspector: 'rest' });
       },
     }),
     'inspector.collapse': command({
@@ -609,12 +663,6 @@ export function createCommands(
       id !== 'commandbar.open' &&
       !(id === 'endpoint.open' && state.read().endpointSurface === 'Command bar')
     ) {
-      if (
-        id === 'inspector.open' &&
-        state.read().subject?.franchiseId === state.read().franchiseId
-      ) {
-        dispatch('nav.open', { node: 'hq', workspace: 'lineup-and-roster' });
-      }
       state.write({ commandbar: false });
     }
     history.push(Object.freeze({ id, args: Object.freeze({ ...args }) }) as Entry);

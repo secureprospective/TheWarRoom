@@ -4,6 +4,7 @@ import { phaseLabels, deadlineLabel, localDate } from '../clock/labels';
 import { connectClock } from '../clock/ticker';
 import { countdown } from '../clock/urgency';
 import { ClockSignal } from '../clock/ClockSignal';
+import { Act } from '../commands/Act';
 import { Card } from '../cards/Card';
 
 export default function SeasonalCard({ reading }: ClockProps) {
@@ -27,6 +28,11 @@ export default function SeasonalCard({ reading }: ClockProps) {
           <span className="channel-countdown" data-countdown>{countdown(deadline.at, Date.now())}</span>
         </li>)}
       </ul> : <p>No deadlines on the commissioner calendar.</p>}
+      <div className="market-controls" aria-label="Season phase workspaces" data-endpoint="S-13">
+        {(['OFFSEASON', 'DRAFT', 'REGULAR_SEASON', 'PLAYOFFS'] as const).map(phase =>
+          <Act key={phase} verb="phase.goto" args={{ phase }}>
+            {phase === 'DRAFT' ? 'Draft' : phaseLabels[phase]}</Act>)}
+      </div>
       <ClockSignal provenance={reading.provenance} />
     </Card>
   </section>;

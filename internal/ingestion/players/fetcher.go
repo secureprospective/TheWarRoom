@@ -22,13 +22,15 @@ var errEmptyPlayers = errors.New("players: response contained zero players")
 
 // RawPlayer is one player row as MFL sends it.
 type RawPlayer struct {
-	ID        string // "0531"
-	Name      string // "Last, First"
-	Position  string // raw MFL code ("PK", "EDGE", "XX")
-	Team      string // 3-letter NFL code, or "FA" for free agent
-	Status    string // "R" for a rookie
-	Birthdate string // epoch seconds; empty for commissioner-created players
-	DraftYear string // §6 experience; "0" and "1970" mean undrafted
+	ID         string // "0531"
+	Name       string // "Last, First"
+	Position   string // raw MFL code ("PK", "EDGE", "XX")
+	Team       string // 3-letter NFL code, or "FA" for free agent
+	Status     string // "R" for a rookie
+	Birthdate  string // epoch seconds; empty for commissioner-created players
+	DraftRound string
+	DraftPick  string
+	DraftYear  string // §6 experience; "0" and "1970" mean undrafted
 	// College feeds SchoolTier; MFL's names differ from CFBD's ("Miami (FL)" vs "Miami").
 	College string
 }
@@ -54,6 +56,17 @@ func (p RawPlayer) Validate() error {
 			return fmt.Errorf("players: record %s (%q) non-numeric draft year %q: %w", p.ID, p.Name, p.DraftYear, err)
 		}
 	}
+	return p.validateDraftSelection()
+}
+
+func (p RawPlayer) validateDraftSelection() error {
+	for _, raw := range []string{p.DraftRound, p.DraftPick} {
+		if raw != "" {
+			if n, err := strconv.Atoi(raw); err != nil || n < 0 {
+				return fmt.Errorf("players: invalid draft selection %q", raw)
+			}
+		}
+	}
 	return nil
 }
 
@@ -65,14 +78,16 @@ type playersEnvelope struct {
 }
 
 type playerBlock struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Position  string `json:"position"`
-	Team      string `json:"team"`
-	Status    string `json:"status"`
-	Birthdate string `json:"birthdate"`
-	DraftYear string `json:"draft_year"`
-	College   string `json:"college"`
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Position   string `json:"position"`
+	Team       string `json:"team"`
+	Status     string `json:"status"`
+	Birthdate  string `json:"birthdate"`
+	DraftRound string `json:"draft_round"`
+	DraftPick  string `json:"draft_pick"`
+	DraftYear  string `json:"draft_year"`
+	College    string `json:"college"`
 }
 
 // Fetch discovers the league host, then fetches the league-scoped player database and returns

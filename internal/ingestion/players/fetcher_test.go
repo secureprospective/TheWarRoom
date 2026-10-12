@@ -35,6 +35,8 @@ func TestRawPlayer_Validate(t *testing.T) {
 		{"absent draft year tolerated", func(p *RawPlayer) { p.DraftYear = "" }, false},
 		{"valid draft year", func(p *RawPlayer) { p.DraftYear = "2020" }, false},
 		{"undrafted sentinel tolerated", func(p *RawPlayer) { p.DraftYear = "0" }, false},
+		{"non-numeric draft round", func(p *RawPlayer) { p.DraftRound = "first" }, true},
+		{"negative draft pick", func(p *RawPlayer) { p.DraftPick = "-1" }, true},
 		{"non-numeric draft year", func(p *RawPlayer) { p.DraftYear = "rookie" }, true},
 	}
 

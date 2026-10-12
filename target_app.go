@@ -114,6 +114,7 @@ func (a *App) TargetClock() (snapshot.Sourced[leagueclock.Reading], error) {
 	if err != nil {
 		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: %w", err)
 	}
+	a.mergeMFLCalendar(ctx, now, &clock)
 	return clock, nil
 }
 

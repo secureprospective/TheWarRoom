@@ -1,19 +1,24 @@
 import { URGENCIES } from './contract';
 import type { Alert, AlertReading, Unavailable } from './contract';
-import { array, choice, object, text, timestamp } from './parseValues';
+import { array, choice, object, text, timestamp, id } from './parseValues';
 import { provenance } from './parse';
 import { nodes, routeFor, type Node } from '../shell/nodes';
 
 function alert(value: unknown, path: string): Alert {
   const r = object(value, path, [
-    'kind', 'urgency', 'title', 'detail', 'node', 'workspace', 'at', 'provenance',
+    'playerId', 'mflUrl', 'kind', 'urgency', 'title', 'detail', 'node', 'workspace', 'at', 'provenance',
   ]);
   const node = choice(r.node, `${path}.node`, Object.keys(nodes) as Node[]);
   const workspace = text(r.workspace, `${path}.workspace`);
   if (!routeFor(node, workspace)) throw new Error(`${path}.workspace: unknown workspace for ${node}`);
   const at = timestamp(r.at, `${path}.at`);
   if (!at) throw new Error(`${path}.at: expected timestamp`);
+  const mflUrl = r.mflUrl === undefined ? undefined : text(r.mflUrl, path);
+  if (mflUrl && !/^https:\/\/[^/]+\/\d{4}\/options\?L=\d+&O=18$/.test(mflUrl))
+    throw new Error(`${path}: invalid IR hand-off`);
   return {
+    ...(r.playerId === undefined ? {} : { playerId: id(r.playerId, path, true) }),
+    ...(mflUrl === undefined ? {} : { mflUrl }),
     kind: text(r.kind, `${path}.kind`),
     urgency: choice(r.urgency, `${path}.urgency`, URGENCIES),
     title: text(r.title, `${path}.title`),

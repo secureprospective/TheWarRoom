@@ -95,7 +95,19 @@ func (s *Store) Body(ctx context.Context, sha256 string) ([]byte, error) {
 // feed's last good copy this way, so a body that later proved bad is passed over. Imported
 // bodies are never offered: a compile reads them through its manifest.
 func (s *Store) ArchivedBodies(ctx context.Context, part string,
-	accept func(fetchedURL string, body []byte, fetchedAt time.Time) bool) (found bool, err error) {
+	accept func(fetchedURL string, body []byte, fetchedAt time.Time) bool) (bool, error) {
+	return s.archivedBodies(ctx, part, accept, false)
+}
+
+// ReferenceBodies also admits imported league-archive bodies for read-only reference surfaces.
+// Live-fetch fallbacks still use ArchivedBodies and never relabel an imported capture as live.
+func (s *Store) ReferenceBodies(ctx context.Context, part string,
+	accept func(fetchedURL string, body []byte, fetchedAt time.Time) bool) (bool, error) {
+	return s.archivedBodies(ctx, part, accept, true)
+}
+
+func (s *Store) archivedBodies(ctx context.Context, part string,
+	accept func(fetchedURL string, body []byte, fetchedAt time.Time) bool, includeImports bool) (found bool, err error) {
 	rows, err := s.pools.Read().QueryContext(ctx, `
 SELECT f.source, f.url, f.fetched_at, r.body FROM fetch_log f JOIN raw_archive r ON r.sha256 = f.sha256
 WHERE f.status = 200 AND instr(f.url, ?) > 0 ORDER BY f.fetched_at DESC, f.fetch_id DESC`, part)
@@ -109,7 +121,7 @@ WHERE f.status = 200 AND instr(f.url, ?) > 0 ORDER BY f.fetched_at DESC, f.fetch
 		if err := rows.Scan(&source, &src, &at, &gz); err != nil {
 			return false, fmt.Errorf("history: scan archived body: %w", err)
 		}
-		if reg, ok := s.reg.Source(source); ok && reg.Imported() {
+		if reg, ok := s.reg.Source(source); ok && reg.Imported() && !includeImports {
 			continue
 		}
 		when, err := parseTime(at)

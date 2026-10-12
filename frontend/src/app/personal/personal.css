@@ -1,0 +1,15 @@
+.twr-app .personal-lists { display: grid; gap: 14px; min-width: 0; }
+.twr-app .personal-lists label, .twr-app .personal-note label { display: grid; gap: 6px; }
+.twr-app .personal-lists input, .twr-app .personal-note textarea {
+  background: var(--surface-0); color: var(--surface-tx1); border: 1px solid var(--surface-line-hi);
+  font: inherit; padding: 8px; width: 100%; box-sizing: border-box;
+}
+.twr-app .personal-note textarea { min-height: 80px; resize: vertical; }
+.twr-app .personal-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.twr-app .personal-entry { padding: 10px 0; border-bottom: 1px solid var(--surface-line); }
+.twr-app .personal-entry p { margin: 5px 0; }
+.twr-app .personal-actions { display: grid; gap: 8px; }
+.twr-app .personal-entry time { margin-left: 8px; color: var(--surface-tx3); }
+.twr-app .personal-lists input:focus-visible, .twr-app .personal-note textarea:focus-visible {
+  outline: 1px solid var(--surface-tx1); outline-offset: 2px;
+}
