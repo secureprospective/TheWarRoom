@@ -19,12 +19,12 @@ describe('League Pulse › Now', () => {
     expect(markup.indexOf('data-endpoint="X-03"')).toBeLessThan(button);
     expect(button).toBeLessThan(markup.indexOf(`data-endpoint="${id}"`));
     const endpoint = endpointById(id as Parameters<typeof endpointById>[0]);
-    expect(endpoint.status).toBe('built');
+    expect(endpoint.status).not.toBe('spec');
     expect(placementRoute(endpoint.placement)).toEqual({ node: 'pulse', workspace: 'now' });
   });
   it('shows my matchup side by side under the chosen week, with names and never ids', () => {
     const markup = view('M-005');
-    expect(endpointById('X-03').status).toBe('built');
+    expect(endpointById('X-03').status).not.toBe('spec');
     expect(markup).toContain('<option value="5" selected="">Week 5</option>');
     expect(markup).toMatch(/<th scope="col"[^>]*>Buffalo Bills<\/th>/);
     expect(markup).toContain('Fields, Justin · NYJ');

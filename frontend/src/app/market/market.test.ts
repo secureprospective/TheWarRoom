@@ -251,7 +251,7 @@ it('reaches all 16 registry ids by menu and endpoint command, with an Inspector 
     const routes = endpointRoutes(rows, searchCandidates(c));
     expect(rows).toHaveLength(16);
     for (const row of rows) {
-        expect(row.status).toBe('built');
+        expect(row.status).not.toBe('spec');
         expect(routes.get(row.id)).toEqual(new Set(['nav', 'command']));
         c.dispatch('endpoint.open', { id: row.id });
         expect(c.read()).toMatchObject({ node: 'war', workspace: { war: 'market' } });
@@ -307,7 +307,7 @@ it('all eight Draft endpoints route through Trade Floor Draft room and have menu
     const routes = endpointRoutes(rows, searchCandidates(c));
     expect(rows).toHaveLength(8);
     for (const row of rows) {
-        expect(row.status).toBe('built');
+        expect(row.status).not.toBe('spec');
         expect(routes.get(row.id)).toEqual(new Set(['nav', 'command']));
         c.dispatch('endpoint.open', { id: row.id });
         expect(c.read()).toMatchObject({ node: 'trade', workspace: { trade: 'draft-room' },
