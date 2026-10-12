@@ -107,3 +107,81 @@ Additional SHA256s:
 | lab-methods.json.gz (880,459 B) | `7f2f1215ded45e55d1080c5299b09f335c13d8a4cc2a40a68ec9da35839a68e8` |
 | analysis.json.gz (phase only) | `c54bd88abc64238c9a5239bd06802d5ff45ff0c6c919bf63b045edcbd20c4366` |
 | check-exceptions.csv | `6c2792a3553321b204d0de85c48ebaf019a6dfb9cbd2e03e2bbb01ebffb61790` |
+
+## Full value analysis (s2b continuation)
+
+`Compile` now runs the Go value analysis. `Build` returns that same document and
+its fitted `Model`; `Model.Player` and `Model.Pick` use the trade-leg valuer.
+The older recorded-analysis P4a test is retained strictly to isolate document
+assembly; P4 runs without any recorded analysis.
+
+Reproduce the independent analysis recording offline:
+
+```sh
+. /home/chris/fleet/runs/warroom-ring3-2026-10-11/p3g2-s2b3/env.sh
+python3 /home/chris/fleet/runs/warroom-ring3-2026-10-11/p3g2-s2b3/record_analysis.py
+cp /home/chris/fleet/runs/warroom-ring3-2026-10-11/p3g2-s2b3/analysis-goldens.json.gz \
+ internal/labcompile/testdata/analysis-goldens.json.gz
+go test -count=1 -v ./internal/labcompile -run TestAnalysisGoldens
+TWR_ARCHIVE_PARITY=1 \
+ TWR_FACTS_ARCHIVE=/home/chris/work/TheWarRoom/league-archive/raw \
+ go test -count=1 -v ./internal/labcompile -run '^TestFullAnalysisParity$'
+```
+
+The reference commit, database, Python files and frozen Lab hashes above still
+apply. The database is opened read-only. Passive wrappers call the original
+once and return its result unchanged. A return-event trace retains backtest
+trade tuples without replacing its implementation. The final build must be
+JSON-value-identical to the unrecorded P1 reference. Frozen timestamps and an
+absent page exam are inputs, not altered compiler behaviour. No Go result is
+recorded as an oracle.
+
+Checked coverage: all replacement levels/spreads/all-play rows, all forecast
+coefficients from eight fits (full out-of-fold plus seven historical training
+cutoffs), every horizon, full forecast/currency/backtest checks, all expected
+pick seasons and leave-one-class-out slots, all market classes/splits/intervals,
+all discounted trade legs/deal nets and all delivered records. In addition,
+37 complete per-trade side samples retain forecast vectors, realized vectors,
+costs, classes and valued flags: first 32 primary trades plus the first trade
+introducing each remaining class. All 699 sorted per-trade backtest tuples are
+compared. Valuer samples retain the first observed (group, age-band, weeks-done)
+player stratum and (actual pick round, next-frame/later, exact/round) pick
+stratum. Counts: player 220, realized_player 221, pick 20, realized_pick 20;
+all five vector horizons are retained. Picks were widened from six samples
+that collapsed rounds 3–5 to 20 covering all five actual rounds, same-season
+and future-season leads, and exact/unknown slots. The full market additionally
+pins the reference's next-draft/later class distinction at actual trade times.
+Primary calls observed: player 8,690; realized_player 11,771; pick and
+realized_pick 6,255 each (including historical backtests).
+
+Facts are projected from the independent SQL database, not Python model state.
+Every scored regular player-week, game, kickoff, started lineup, position,
+birthdate/NFL draft metadata, salary/contract-year roster and cap-charge input
+needed by the analysis is retained. Player names and roster note/status columns
+are omitted: value analysis never reads them. The existing test helper fills
+unused columns with zero/nil values. Coefficient inputs are reconstructed from
+these facts. Full archive parity uses unprojected compiled facts.
+Python all-play identity dictionaries are compared sorted by (year, franchise)
+inside the golden test only; document arrays remain compared in exact order.
+
+`TestReducedCompile` uses the same compressed archive inputs as
+`internal/facts`' `fixtureInputs`, compiles facts with curated notes, calls public
+`Compile`, and decodes through `lab.DecodeGzip`. No reduced Python value parity
+is claimed. In this fixture, forecast checks are empty (constant observed
+future targets), backtest is null (constant expected gain), and every delivery
+ratio/interval is null (insufficient expected production). Separate boundary
+tests pin empty price fits (including cost), insufficient/constant forecast
+checks, empty/constant-gain backtests, absent currency, no completed season,
+no pick curve, insufficient/zero-expectation ratios, and nonpositive/overflowing
+delivery intervals. These return absent evidence rather than an invented fit,
+check or interval where the reference divides by zero or reads an empty design
+(value.py:36,263,670). Unknown player position/birthdate or no forecast returns
+`Valued:false`, an explanation, and no forecast/price/interval. Consumers must
+check `Valued` before using the non-pointer discounted field. Missing initial
+forecast horizons carry the reference's explicit zero prior, not a learned fit.
+
+`analysis-goldens.json.gz`: **1,192,830 B**, SHA256
+`643db5949d654777cba801fa1de15732ee622c19f7c45b32fe67c1fcb945d6a5`.
+All three golden gzips total **2,980,149 B**, below 3,000,000 B.
+The recorder's SHA256 is recorded below; reference inputs remain as above.
+a31e025656337434b4b37452537d908ac2224aa273d86c24ae2291172314a376  /home/chris/fleet/runs/warroom-ring3-2026-10-11/p3g2-s2b3/record_analysis.py

@@ -28,7 +28,7 @@ func sourceChecks(f facts.Facts, pages PageExam) (Source, error) {
 	if err != nil {
 		return Source{}, fmt.Errorf("lab source exceptions: %w", err)
 	}
-	checks, err := f.Check(pinned)
+	checks, err := sourceFacts(f).Check(pinned)
 	if err != nil {
 		return Source{}, fmt.Errorf("lab source checks: %w", err)
 	}
@@ -47,4 +47,34 @@ func sourceDetail(c facts.CheckResult) string {
 		return fmt.Sprintf("%d games carry MFL's 3-point home bonus (2014-2015 regular season, and playoff games).", c.Explained)
 	}
 	return c.Detail
+}
+
+// A franchise directory alone is not evidence of a scored team-season.
+// Keep partially observed seasons: their discrepancies must still pass the identity pins.
+func sourceFacts(f facts.Facts) facts.Facts {
+	observed := map[teamYear]bool{}
+	for i, y := range f.Game.Year {
+		observed[teamYear{y, f.Game.Fid[i]}] = true
+	}
+	for i, y := range f.Standings.Year {
+		observed[teamYear{y, f.Standings.Fid[i]}] = true
+	}
+	original := f.FranchiseSeason
+	scoped := facts.FranchiseSeasonColumns{}
+	for i, y := range original.Year {
+		if !observed[teamYear{y, original.Fid[i]}] {
+			continue
+		}
+		scoped.Year = append(scoped.Year, y)
+		scoped.Fid = append(scoped.Fid, original.Fid[i])
+		scoped.Name = append(scoped.Name, original.Name[i])
+		scoped.Abbrev = append(scoped.Abbrev, original.Abbrev[i])
+		scoped.Division = append(scoped.Division, original.Division[i])
+		scoped.DivisionName = append(scoped.DivisionName, original.DivisionName[i])
+		scoped.Conference = append(scoped.Conference, original.Conference[i])
+		scoped.ConferenceName = append(scoped.ConferenceName, original.ConferenceName[i])
+		scoped.Src = append(scoped.Src, original.Src[i])
+	}
+	f.FranchiseSeason = scoped
+	return f
 }

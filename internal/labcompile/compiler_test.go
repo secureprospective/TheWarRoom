@@ -13,7 +13,7 @@ import (
 
 func TestCompilerSeam(t *testing.T) {
 	_, err := Compile(t.Context(), facts.Facts{}, Evidence{})
-	if err == nil || err.Error() != "value analysis is not ported yet" {
+	if err == nil || !strings.Contains(err.Error(), "timestamps") {
 		t.Fatalf("unexpected seam error: %v", err)
 	}
 	ctx, cancel := context.WithCancel(t.Context())
