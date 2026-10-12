@@ -97,6 +97,8 @@ func checkEmptyBoard(body []byte, export string) error {
 	return nil
 }
 
+// FetchLeagueBoard reads the league message board or polls. MFL answers both only to a logged-in league member,
+// so the request is keyed.
 func FetchLeagueBoard(ctx context.Context, client *mfl.Client, year, league, export string) ([]RawLeaguePost, error) {
 	if export != "messageBoard" && export != "polls" {
 		return nil, fmt.Errorf("league board: invalid export %q", export)
@@ -104,7 +106,7 @@ func FetchLeagueBoard(ctx context.Context, client *mfl.Client, year, league, exp
 	if err := client.DiscoverHost(ctx, year, league); err != nil {
 		return nil, fmt.Errorf("league board: discover: %w", err)
 	}
-	body, err := LeagueExport(ctx, client, export, year, league, nil)
+	body, err := KeyedLeagueExport(ctx, client, export, year, league, nil)
 	if err != nil {
 		return nil, fmt.Errorf("league board: fetch: %w", err)
 	}

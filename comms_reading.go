@@ -241,6 +241,9 @@ func commsPosts(in commsInput) ([]Report, string) {
 		if feed.fetchedAt.IsZero() {
 			unavailable = true
 			r.Note = title + " not available; refresh from MFL. An authentication error is not an empty board."
+			if feed.refreshError != "" {
+				r.Note = title + " not available: " + feed.refreshError + "."
+			}
 		}
 		rows := slices.Clone(feed.value)
 		slices.SortStableFunc(rows, func(a, b ingestion.RawLeaguePost) int { return strings.Compare(b.Timestamp, a.Timestamp) })

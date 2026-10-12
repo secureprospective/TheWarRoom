@@ -9,15 +9,19 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/zalando/go-keyring"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
 	feedtransactions "github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
@@ -321,8 +325,33 @@ func TestCommsHeldBindingAndWire(t *testing.T) {
 	}
 }
 
+func TestCommsBoardWithoutKeyAsksNothingAndSaysHowToConnect(t *testing.T) {
+	keyring.MockInit()
+	a, transport, _, _ := seasonTestApp(t)
+	a.seasonTransactions.fetchedAt = time.Now()
+	a.commsBoards[0] = heldSeasonFeed[[]ingestion.RawLeaguePost]{value: []ingestion.RawLeaguePost{{Title: "kept"}},
+		fetchedAt: time.Now()}
+	if err := a.TargetCommsRefresh(true); err != nil {
+		t.Fatal(err)
+	}
+	if slices.Contains(transport.requests, "messageBoard") || slices.Contains(transport.requests, "polls") {
+		t.Fatal("board requested without a key", transport.requests)
+	}
+	if a.commsBoards[0].value != nil {
+		t.Fatal("a member-only board outlived the key")
+	}
+	reports, _ := commsPosts(commsInput{boards: a.commsBoards, zone: time.UTC})
+	if !strings.Contains(reports[0].Note, "connect your MFL key in Control Room › App") {
+		t.Fatal(reports[0].Note)
+	}
+}
+
 func TestCommsRefreshUsesExistingTransactionFetcher(t *testing.T) {
+	keyring.MockInit()
 	a, transport, pauses, _ := seasonTestApp(t)
+	if err := a.keyStore.Set(context.Background(), mflkey.Key("fixture-key")); err != nil {
+		t.Fatal(err)
+	}
 	now := time.Now()
 	a.seasonTransactions.fetchedAt = now
 	for i := range a.commsBoards {
@@ -336,6 +365,9 @@ func TestCommsRefreshUsesExistingTransactionFetcher(t *testing.T) {
 	}
 	if err := a.TargetCommsRefresh(true); err != nil {
 		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(transport.keyed, []string{"messageBoard", "polls"}) {
+		t.Fatal("the member-only board must be read with the key", transport.keyed)
 	}
 	if !reflect.DeepEqual(transport.requests, []string{"transactions", "messageBoard", "polls"}) || len(*pauses) != 2 {
 		t.Fatal(transport.requests, *pauses)

@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 )
 
 func (a *App) TargetComms(raw RawCommsScope) (CommsBoard, error) {
@@ -28,7 +30,39 @@ func (a *App) TargetComms(raw RawCommsScope) (CommsBoard, error) {
 	return buildComms(in, raw)
 }
 
+// errCommsNeedsKey is the board's state when no MFL key is held: MFL serves the message board and polls only to
+// a logged-in league member, so nothing is requested without one.
+var errCommsNeedsKey = errors.New("MFL serves the message board and polls only to league members: connect your MFL key in Control Room › App")
+
+// commsKey reports whether a keyed board read can go out, reading the keyring first like pending trades.
+func (a *App) commsKey(ctx context.Context) error {
+	a.keyMu.Lock()
+	defer a.keyMu.Unlock()
+	if a.keyStore == nil {
+		return errors.New("MFL keyring is locked or unavailable")
+	}
+	_, err := a.keyStore.Get(ctx)
+	switch {
+	case errors.Is(err, mflkey.ErrNoKey):
+		return errCommsNeedsKey
+	case err != nil:
+		return errors.New("MFL keyring is locked or unavailable")
+	}
+	return nil
+}
+
 func (a *App) refreshCommsBoards(ctx context.Context) {
+	if err := a.commsKey(ctx); err != nil {
+		a.seasonMu.Lock()
+		for i := range a.commsBoards {
+			if errors.Is(err, errCommsNeedsKey) {
+				a.commsBoards[i] = heldSeasonFeed[[]ingestion.RawLeaguePost]{}
+			}
+			a.commsBoards[i].refreshError = err.Error()
+		}
+		a.seasonMu.Unlock()
+		return
+	}
 	for i, export := range []string{"messageBoard", "polls"} {
 		pause := a.seasonPause
 		if pause == nil {

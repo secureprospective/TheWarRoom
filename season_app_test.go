@@ -27,6 +27,7 @@ import (
 
 type seasonTransport struct {
 	requests []string
+	keyed    []string
 	weeks    []string
 	starts   []time.Time
 	now      time.Time
@@ -40,6 +41,9 @@ func (s *seasonTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 		return seasonResponse(`{"league":{"baseURL":"https://www47.myfantasyleague.com"}}`), nil
 	}
 	s.requests = append(s.requests, export)
+	if r.URL.Query().Get("APIKEY") != "" {
+		s.keyed = append(s.keyed, export)
+	}
 	s.weeks = append(s.weeks, r.URL.Query().Get("W"))
 	s.starts = append(s.starts, s.now)
 	if s.failure == export {

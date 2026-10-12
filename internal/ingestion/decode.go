@@ -66,11 +66,22 @@ func (l *MFLList[T]) UnmarshalJSON(data []byte) error {
 // error, a non-200 status, or MFL's HTTP-200 error envelope, so an outage never reads as "no
 // data". The caller has already run DiscoverHost.
 func LeagueExport(ctx context.Context, c *mfl.Client, export, year, leagueID string, extra map[string]string) ([]byte, error) {
-	params := map[string]string{"L": leagueID}
+	return leagueExport(ctx, c, mfl.Request{Type: export, Year: year}, leagueID, extra)
+}
+
+// KeyedLeagueExport fetches an export MFL serves only to a logged-in league member: the client adds the owner's
+// key privately (mfl.Request.Keyed) and needs the league host already discovered.
+func KeyedLeagueExport(ctx context.Context, c *mfl.Client, export, year, leagueID string, extra map[string]string) ([]byte, error) {
+	return leagueExport(ctx, c, mfl.Request{Type: export, Year: year, Keyed: true}, leagueID, extra)
+}
+
+func leagueExport(ctx context.Context, c *mfl.Client, req mfl.Request, leagueID string, extra map[string]string) ([]byte, error) {
+	export := req.Type
+	req.Params = map[string]string{"L": leagueID}
 	for k, v := range extra {
-		params[k] = v
+		req.Params[k] = v
 	}
-	resp, err := c.Do(ctx, mfl.Request{Type: export, Year: year, Params: params})
+	resp, err := c.Do(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("fetch %s: %w", export, err)
 	}
