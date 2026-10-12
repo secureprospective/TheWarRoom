@@ -40,20 +40,37 @@ func healthReport(in healthInput) Report {
 		AsOf: "As of: " + reportTime(in.now, in.zone), Rows: []ReportRow{},
 		How: "A source's last good read is its latest load without an error; a failure is shown while it is newer than " +
 			"that. A source is lost when it has failed and had no good load within its window. The board runs reduced " +
-			"when a measure it reads has no source flowing; it is rebalanced only when you approve it.",
-		Columns: []string{"Source", "Last good", "Last failure", "Age", "Board"}}
+			"when a measure it reads has no source flowing; it is rebalanced only when you approve it. " +
+			"Board use is noted only for sources supplying board measures; other rows are reference or linking inputs.",
+		Columns: []string{"Source and board use", "Last good and age", "Last failure"}}
 	var rows []healthRow
 	for _, h := range in.sources {
 		src, _ := in.reg.Source(h.Source)
-		rows = append(rows, healthRow{name: src.Name, measuresFrom: h.Source, lastGood: h.LastSuccess, lastFail: h.LastFailure,
-			lastError: h.LastError, lost: h.State == history.SourceLost, retired: h.State == history.SourceRetired})
-		if h.Source == "mfl" {
-			rows = append(rows, mflExportRows(in.mfl)...)
+		row := healthRow{name: src.Name, measuresFrom: h.Source, lastGood: h.LastSuccess, lastFail: h.LastFailure,
+			lastError: h.LastError, lost: h.State == history.SourceLost, retired: h.State == history.SourceRetired}
+		if h.Source != "mfl" {
+			rows = append(rows, row)
+			continue
 		}
+		// MFL's own row stands for its exports: its newest good read and newest failure come from them.
+		exports := mflExportRows(in.mfl)
+		for _, e := range exports {
+			if e.lastGood.After(row.lastGood) {
+				row.lastGood = e.lastGood
+			}
+			if e.lastFail.After(row.lastFail) {
+				row.lastFail, row.lastError = e.lastFail, e.lastError
+			}
+		}
+		rows = append(append(rows, row), exports...)
 	}
 	for _, row := range rows {
-		r.Rows = append(r.Rows, ReportRow{Cells: []string{row.name, whenText(row.lastGood, in.zone),
-			failureText(row, in.zone), sourceAge(row, in.now), boardText(row.measuresFrom, in)}})
+		name := row.name
+		if board := boardText(row.measuresFrom, in); board != "Not read by the board" {
+			name += "\n" + board
+		}
+		r.Rows = append(r.Rows, ReportRow{Cells: []string{name,
+			whenText(row.lastGood, in.zone) + "\n" + sourceAge(row, in.now), failureText(row, in.zone)}})
 	}
 	return r
 }
@@ -158,7 +175,7 @@ func signalFilesReport(v SignalsView, last SignalsReport, zone *time.Location) R
 		How: "A file is fresh while its last load is within its source's window. Players with data are counted in the " +
 			"latest season holding any; waiting ids are source players not yet matched to an MFL player. Rostered " +
 			"players with data covers every position the league rosters.",
-		Columns: []string{"Signal", "Source", "Last loaded", "Fresh", "Players with data", "Waiting for a match", "Rostered players with data"},
+		Columns: []string{"Signal and source", "Last load", "Players and matching", "Rostered coverage"},
 		Rows:    []ReportRow{}}
 	for _, f := range v.Feeds {
 		loaded, fresh := "Never", "No"
@@ -181,8 +198,8 @@ func signalFilesReport(v SignalsView, last SignalsReport, zone *time.Location) R
 		if rostered > 0 {
 			share = fmt.Sprintf("%d%% (%s of %s)", 100*with/rostered, thousands(with), thousands(rostered))
 		}
-		r.Rows = append(r.Rows, ReportRow{Cells: []string{f.Feed, f.Source, loaded, fresh,
-			seasonCount(players, f.CoverageSeason), thousands(waiting), share}})
+		r.Rows = append(r.Rows, ReportRow{Cells: []string{f.Feed + "\n" + f.Source, loaded + "\nFresh: " + fresh,
+			seasonCount(players, f.CoverageSeason) + "\nWaiting: " + thousands(waiting), share}})
 	}
 	if last.FinishedAt != "" {
 		r.Note = "Last signals load since launch: " + signalsSummary(last)

@@ -171,5 +171,5 @@ it.each(['war', 'hq', 'trade'] as const)('F: rail %s keeps its name without a na
 it('F: the replacing Admin Reset control has an accessible name, not a tooltip', () => {
   const source = readFileSync('src/app/datasources/DataSources.tsx', 'utf8');
   expect(source).not.toContain('title="Clear the Admin value');
-  expect(source).toContain('label="Clear the Admin value');
+  expect(source).toContain('label={w.clear}');
 });

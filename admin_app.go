@@ -1,7 +1,9 @@
 package main
 
 import (
+	"cmp"
 	"context"
+	"slices"
 	"time"
 )
 
@@ -11,6 +13,8 @@ import (
 // value in effect. Position is empty for a league-wide parameter.
 type ParamView struct {
 	Key         string  `json:"key"`
+	Label       string  `json:"label"`
+	Group       string  `json:"group"`
 	Position    string  `json:"position"`
 	Description string  `json:"description"`
 	Default     float64 `json:"default"`
@@ -41,10 +45,20 @@ func (a *App) GetParams() ParamsResult {
 		if err != nil {
 			return ParamsResult{OK: false, Error: err.Error()}
 		}
-		out[i] = ParamView{Key: d.Key, Position: d.Position, Description: d.Description,
+		label, group := parameterWords(d.Key, d.Description)
+		out[i] = ParamView{Key: d.Key, Label: label, Group: group, Position: d.Position, Description: d.Description,
 			Default: d.Default, Min: d.Min, Max: d.Max, Value: v, Calibrated: d.IsCalibrated,
 			Overridden: a.params.Overridden(d.Key, d.Position)}
 	}
+	slices.SortFunc(out, func(a, b ParamView) int {
+		if n := cmp.Compare(a.Group, b.Group); n != 0 {
+			return n
+		}
+		if n := cmp.Compare(a.Label, b.Label); n != 0 {
+			return n
+		}
+		return cmp.Compare(a.Position, b.Position)
+	})
 	return ParamsResult{OK: true, Params: out}
 }
 

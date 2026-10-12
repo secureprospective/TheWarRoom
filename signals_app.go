@@ -55,11 +55,12 @@ type SignalLoad struct {
 
 // SignalsReport is one signals load: every file it looked at.
 type SignalsReport struct {
-	OK         bool         `json:"ok"`
-	Error      string       `json:"error"`
-	StartedAt  string       `json:"startedAt"`
-	FinishedAt string       `json:"finishedAt"`
-	Loads      []SignalLoad `json:"loads"`
+	OK            bool         `json:"ok"`
+	Error         string       `json:"error"`
+	StartedAt     string       `json:"startedAt"`
+	FinishedAt    string       `json:"finishedAt"`
+	Loads         []SignalLoad `json:"loads"`
+	CrosswalkNote string       `json:"crosswalkNote"`
 }
 
 // loadSignals links the crosswalk first, so the facts resolve as they land, then loads each due
@@ -68,8 +69,10 @@ type SignalsReport struct {
 func (a *App) loadSignals(ctx context.Context) SignalsReport {
 	a.loadingSignals.Lock()
 	defer a.loadingSignals.Unlock()
-	rep := SignalsReport{OK: true, StartedAt: time.Now().Format(time.RFC3339)}
+	rep := SignalsReport{OK: true, StartedAt: time.Now().Format(time.RFC3339),
+		CrosswalkNote: "Player crosswalk reloaded and relinked before signals; its Loaded time records that relink."}
 	if err := a.linkDirectory(ctx); err != nil {
+		rep.CrosswalkNote = "Player crosswalk relink failed; its last Loaded time is kept: " + err.Error()
 		log.Printf("the war room: signals: directory not refreshed, facts may wait for a match: %v", err)
 	}
 	client := &http.Client{Timeout: rasFetchTimeout, Transport: a.fetches}

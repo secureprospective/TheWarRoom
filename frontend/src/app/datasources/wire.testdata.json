@@ -7,22 +7,18 @@
       "status": "ok",
       "source": "Source: the app's own fetch and load records",
       "asOf": "As of: Oct 11, 2026, 6:00 PM",
-      "how": "A source's last good read is its latest load without an error; a failure is shown while it is newer than that. A source is lost when it has failed and had no good load within its window. The board runs reduced when a measure it reads has no source flowing; it is rebalanced only when you approve it.",
+      "how": "A source's last good read is its latest load without an error; a failure is shown while it is newer than that. A source is lost when it has failed and had no good load within its window. The board runs reduced when a measure it reads has no source flowing; it is rebalanced only when you approve it. Board use is noted only for sources supplying board measures; other rows are reference or linking inputs.",
       "columns": [
-        "Source",
-        "Last good",
-        "Last failure",
-        "Age",
-        "Board"
+        "Source and board use",
+        "Last good and age",
+        "Last failure"
       ],
       "rows": [
         {
           "cells": [
             "MFL league archive, 2013–2026",
-            "Oct 11, 2026, 6:00 PM",
-            "None",
-            "Under an hour",
-            "Not read by the board"
+            "Oct 11, 2026, 6:00 PM\nUnder an hour",
+            "None"
           ],
           "range": null
         }
@@ -39,15 +35,22 @@
       "asOf": "As of: now",
       "how": "A file is fresh while its last load is within its source's window. Players with data are counted in the latest season holding any; waiting ids are source players not yet matched to an MFL player. Rostered players with data covers every position the league rosters.",
       "columns": [
-        "Signal",
-        "Source",
-        "Last loaded",
-        "Fresh",
-        "Players with data",
-        "Waiting for a match",
-        "Rostered players with data"
+        "Signal and source",
+        "Last load",
+        "Players and matching",
+        "Rostered coverage"
       ],
-      "rows": [],
+      "rows": [
+        {
+          "cells": [
+            "stats_player_week\nnflverse",
+            "Oct 11, 2026, 6:00 PM\nFresh: Yes",
+            "1,300 in 2026\nWaiting: 37",
+            "75% (1,105 of 1,454)"
+          ],
+          "range": null
+        }
+      ],
       "summary": null,
       "link": null
     },
@@ -121,39 +124,101 @@
       {
         "id": "league",
         "label": "League from MFL",
-        "note": "Rules, rosters and salary adjustments for the current season."
+        "note": "Rules, rosters and salary adjustments for the current season.",
+        "action": "Refresh League from MFL",
+        "progress": "Refreshing…"
       },
       {
         "id": "signals",
         "label": "Signals",
-        "note": "The nflverse, CFBD and contract files that are due."
+        "note": "The nflverse, CFBD and contract files that are due.",
+        "action": "Refresh Signals",
+        "progress": "Refreshing…"
       },
       {
         "id": "crosswalk",
         "label": "Player crosswalk",
-        "note": "DynastyProcess's player ids, linked to the league's players."
+        "note": "DynastyProcess's player ids, linked to the league's players.",
+        "action": "Refresh Player crosswalk",
+        "progress": "Refreshing…"
       },
       {
         "id": "archive",
         "label": "League archive",
-        "note": "Files new to the 2013–2026 archive, then the Lab's pinned inputs."
+        "note": "Files new to the 2013–2026 archive, then the Lab's pinned inputs.",
+        "action": "Refresh League archive",
+        "progress": "Refreshing…"
       }
-    ]
+    ],
+    "words": {
+      "apply": "Apply",
+      "clear": "Clear the Admin value and follow the shipped default",
+      "crosswalkHow": "How players are linked",
+      "default": "Default",
+      "empty": "No settings match.",
+      "find": "Find a setting",
+      "fitted": "Fitted",
+      "folder": "League archive folder (raw)",
+      "handSet": "Hand-set",
+      "how": "How this is counted",
+      "kept": "The last reading is kept.",
+      "league": "League",
+      "overridden": "Overridden",
+      "override": "Override",
+      "parameters": "Engine parameters",
+      "permission": "Changes require the admin role. Running as GM: values are read-only.",
+      "range": "Allowed",
+      "read": "Read held records",
+      "readProgress": "Refreshing…",
+      "readResult": "Held records read; source health, signals, checked facts, player links and engine parameters updated.",
+      "refresh": "Data refresh",
+      "reset": "Reset",
+      "setFolder": "Set folder",
+      "setting": "Setting and position",
+      "title": "Data and sources",
+      "value": "Value"
+    }
   },
   "crosswalk": {
     "id": "C-08",
     "title": "Player crosswalk",
-    "note": "No crosswalk loaded since launch. Refresh the Player crosswalk scope to load it.",
-    "status": "empty",
+    "note": "1,000 links; 0 waiting facts resolved.",
+    "status": "ok",
     "source": "Source: DynastyProcess",
-    "asOf": "As of: this launch",
+    "asOf": "Loaded: Oct 11, 2026, 1:00 PM",
     "how": "DynastyProcess links MFL players to NFL ids. Unmatched rostered players are listed with the reason; their facts wait for a link.",
     "columns": [
       "Position",
       "Rostered matched",
       "Free agents matched"
     ],
-    "rows": [],
+    "rows": [
+      {
+        "cells": [
+          "WR",
+          "3 of 4 · 75.0%",
+          "None"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "ALL",
+          "3 of 4 · 75.0%",
+          "None"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "Gosnell, Stephen",
+          "WR · MIN",
+          "no NFL id yet"
+        ],
+        "range": null,
+        "group": "Unmatched rostered players"
+      }
+    ],
     "summary": null,
     "link": null
   },
@@ -163,6 +228,8 @@
     "params": [
       {
         "key": "test.weight",
+        "label": "Test weight",
+        "group": "Other settings",
         "position": "WR",
         "description": "Test weight",
         "default": 0.5,

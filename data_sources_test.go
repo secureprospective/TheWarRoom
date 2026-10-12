@@ -12,6 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/manifest"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
 // Two bodies byte for byte as the frozen Lab read them (2013/aav.json, 2013/tradeBait.json).
@@ -182,16 +183,21 @@ func TestHealthReportSaysWhatFailedAndWhetherTheBoardRunsReduced(t *testing.T) {
 	r := healthReport(in)
 	rows := map[string][]string{}
 	for _, row := range r.Rows {
-		rows[row.Cells[0]] = row.Cells
+		rows[strings.Split(row.Cells[0], "\n")[0]] = row.Cells
 	}
 	want := map[string][]string{
-		"MFL · rosters": {"MFL · rosters", "Oct 11, 2026, 4:00 PM", "Oct 11, 2026, 5:00 PM: HTTP 503", "2 hours", "Not read by the board"},
-		"nflverse data releases": {"nflverse data releases", "Sep 21, 2026, 6:00 PM", "Oct 11, 2026, 5:00 PM: HTTP 404",
-			"Lost · 20 days", "Running reduced: 1 of its measures not flowing (" + nflverseMeasure + ")"},
-		"CollegeFootballData API":       {"CollegeFootballData API", "Oct 11, 2026, 5:59 PM", "Oct 11, 2026, 5:00 PM (recovered since)", "Under an hour", "Feeding the board"},
-		"EA Madden ratings":             {"EA Madden ratings", "Never", "None", "Retired", "Not read by the board"},
-		"MFL league archive, 2013–2026": {"MFL league archive, 2013–2026", "Never", "None", "No good read yet", "Not read by the board"},
+		"MFL · rosters": {"MFL · rosters", "Oct 11, 2026, 4:00 PM\n2 hours", "Oct 11, 2026, 5:00 PM: HTTP 503"},
+		"nflverse data releases": {"nflverse data releases\nRunning reduced: 1 of its measures not flowing (" + nflverseMeasure + ")",
+			"Sep 21, 2026, 6:00 PM\nLost · 20 days", "Oct 11, 2026, 5:00 PM: HTTP 404"},
+		"CollegeFootballData API": {"CollegeFootballData API\nFeeding the board", "Oct 11, 2026, 5:59 PM\nUnder an hour",
+			"Oct 11, 2026, 5:00 PM (recovered since)"},
+		"EA Madden ratings":             {"EA Madden ratings", "Never\nRetired", "None"},
+		"MFL league archive, 2013–2026": {"MFL league archive, 2013–2026", "Never\nNo good read yet", "None"},
 	}
+	// MFL's own row stands for its exports: the newest export read and failure, never "Never".
+	mfl, _ := reg.Source("mfl")
+	want[mfl.Name] = []string{mfl.Name + "\nFeeding the board", "Oct 11, 2026, 4:00 PM\n2 hours",
+		"Oct 11, 2026, 5:00 PM: HTTP 503"}
 	for name, cells := range want {
 		if strings.Join(rows[name], " | ") != strings.Join(cells, " | ") {
 			t.Errorf("%s:\n got %q\nwant %q", name, rows[name], cells)
@@ -266,10 +272,10 @@ func TestCrosswalkReportKeepsLeadingZeroIDsAndGoWording(t *testing.T) {
 	a.crosswalk = CrosswalkReport{OK: true, LoadedAt: "2026-10-11T18:00:00Z", Links: 1000, Promoted: 12,
 		Rates:     []CrosswalkRate{{Position: "QB", Rostered: 4, RosteredMatched: 3, FreeAgents: 0}},
 		Total:     CrosswalkRate{Position: "ALL", Rostered: 4, RosteredMatched: 3},
-		Unmatched: []CrosswalkMiss{{MFLID: "0042", Name: "Waiting", Position: "QB", Franchise: "0001", Reason: "no NFL id yet"}}}
+		Unmatched: []CrosswalkMiss{{MFLID: "0042", Name: "Waiting", Team: "BUF", Position: "QB", Franchise: "0001", Reason: "no NFL id yet"}}}
 	r := a.TargetCrosswalk()
 	if r.Note != "1,000 links; 12 waiting facts resolved." || r.Rows[0].Cells[1] != "3 of 4 · 75.0%" ||
-		r.Rows[0].Cells[2] != "None" || r.Rows[2].Cells[0] != "Waiting · 0042" {
+		r.Rows[0].Cells[2] != "None" || r.Rows[2].Cells[0] != "Waiting" || r.Rows[2].Cells[1] != "QB · BUF" {
 		t.Fatalf("crosswalk = %+v", r)
 	}
 }
@@ -281,6 +287,11 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 	}
 	at := time.Date(2026, 10, 11, 18, 0, 0, 0, time.UTC)
 	a := targetTestApp(t)
+	a.crosswalk = CrosswalkReport{OK: true, LoadedAt: "2026-10-11T18:00:00Z", Links: 1000,
+		Rates: []CrosswalkRate{{Position: "WR", Rostered: 4, RosteredMatched: 3}},
+		Total: CrosswalkRate{Position: "ALL", Rostered: 4, RosteredMatched: 3},
+		Unmatched: []CrosswalkMiss{{MFLID: "0816", Name: "Gosnell, Stephen", Team: "MIN", Position: "WR",
+			Franchise: "Cincinnati Bengals", Reason: "no NFL id yet"}}}
 	c := a.TargetCrosswalk()
 	wire := struct {
 		Data      DataSources   `json:"data"`
@@ -290,10 +301,13 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 	}{
 		Data: DataSources{Health: healthReport(healthInput{reg: reg, now: at, zone: time.UTC,
 			sources: []history.SourceHealth{{Source: leagueArchiveSource, State: history.SourceActive, LastSuccess: at}}}),
-			Signals: signalFilesReport(SignalsView{}, SignalsReport{}, time.UTC),
-			Facts:   factsReport(factsInput{labBuilt: "2026-10-06T15:57:20+00:00", labThrough: "2026-10-06T01:42:57+00:00", zone: time.UTC}),
-			Checks:  checksReport(nil), ArchiveDir: "/fixture/raw", Scopes: dataScopes()},
-		Crosswalk: c, Params: ParamsResult{OK: true, Params: []ParamView{{Key: "test.weight", Position: "WR", Value: 0.5, Default: 0.5, Min: 0, Max: 1, Description: "Test weight", Overridden: true}}},
+			Signals: signalFilesReport(SignalsView{Feeds: []FeedView{{Feed: "stats_player_week", Source: "nflverse",
+				LastLoaded: "2026-10-11T18:00:00Z", Fresh: true, CoverageSeason: 2026,
+				Seasons:  []SeasonCount{{Season: 2026, Players: 1300, Waiting: 37}},
+				Coverage: []PositionShare{{Position: "WR", Rostered: 1454, WithData: 1105}}}}}, SignalsReport{}, time.UTC),
+			Facts:  factsReport(factsInput{labBuilt: "2026-10-06T15:57:20+00:00", labThrough: "2026-10-06T01:42:57+00:00", zone: time.UTC}),
+			Checks: checksReport(nil), ArchiveDir: "/fixture/raw", Scopes: dataScopes(), Words: dataWords()},
+		Crosswalk: c, Params: ParamsResult{OK: true, Params: []ParamView{{Key: "test.weight", Label: "Test weight", Group: "Other settings", Position: "WR", Value: 0.5, Default: 0.5, Min: 0, Max: 1, Description: "Test weight", Overridden: true}}},
 		Result: DataActResult{OK: true, Summary: "Looked at 8 files: 0 new, 8 already held."},
 	}
 	body, err := json.MarshalIndent(wire, "", "  ")
@@ -342,5 +356,58 @@ func TestCheckedFactsNamesOnlyExactApprovedGaps(t *testing.T) {
 	}
 	if got := cell(factsReport(in), "Named gap: "+in.gaps[0].File); got != "" {
 		t.Errorf("changed pin incorrectly received exception: %q", got)
+	}
+}
+
+func TestEveryEngineParameterHasGoPlainWordsAndOrderedAreas(t *testing.T) {
+	a := targetTestApp(t)
+	a.params = params.New(a.pools)
+	if err := a.params.Initialize(a.ctx); err != nil {
+		t.Fatal(err)
+	}
+	result := a.GetParams()
+	if !result.OK || len(result.Params) < 100 {
+		t.Fatalf("params = %+v", result)
+	}
+	previous := ""
+	for _, p := range result.Params {
+		if p.Label == "" || p.Group == "" || p.Group == "Other settings" ||
+			strings.ContainsAny(p.Label, "._") || strings.Contains(p.Label, "model") {
+			t.Errorf("parameter %s has no plain label and area: %q / %q", p.Key, p.Label, p.Group)
+		}
+		if p.Group < previous {
+			t.Errorf("areas not grouped: %q after %q", p.Group, previous)
+		}
+		previous = p.Group
+		if p.Key == "captier.cold_ceiling_pct" && p.Label != "Cold salary tier ceiling (% of cap)" {
+			t.Errorf("cold ceiling = %q", p.Label)
+		}
+		if p.Key == "l4.breakout.athletic_lift" && p.Label != "how far athletic rating lifts breakout age and age trajectory" {
+			t.Errorf("breakout label = %q", p.Label)
+		}
+	}
+}
+
+func TestSignalTableKeepsAllFactsInFourColumns(t *testing.T) {
+	r := signalFilesReport(SignalsView{Feeds: []FeedView{{Feed: "stats_player_week", Source: "nflverse",
+		LastLoaded: "2026-10-11T18:00:00Z", Fresh: true, CoverageSeason: 2026,
+		Seasons:  []SeasonCount{{Season: 2026, Players: 1300, Waiting: 37}},
+		Coverage: []PositionShare{{Rostered: 1454, WithData: 1105}}}}}, SignalsReport{}, time.UTC)
+	want := []string{"stats_player_week\nnflverse", "Oct 11, 2026, 6:00 PM\nFresh: Yes",
+		"1,300 in 2026\nWaiting: 37", "75% (1,105 of 1,454)"}
+	if len(r.Columns) != 4 || strings.Join(r.Rows[0].Cells, "|") != strings.Join(want, "|") {
+		t.Fatalf("signal files = %+v", r)
+	}
+}
+
+func TestSignalResultExplainsCrosswalkTimeAndRelinkFailure(t *testing.T) {
+	for _, note := range []string{
+		"Player crosswalk reloaded and relinked before signals; its Loaded time records that relink.",
+		"Player crosswalk relink failed; its last Loaded time is kept: held failure",
+	} {
+		got := signalsSummary(SignalsReport{CrosswalkNote: note})
+		if !strings.HasSuffix(got, note) {
+			t.Errorf("summary = %q, want %q", got, note)
+		}
 	}
 }

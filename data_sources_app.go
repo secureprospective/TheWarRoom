@@ -19,29 +19,32 @@ type DataActResult struct {
 
 // DataScope is one part of the app's data a refresh Act can renew.
 type DataScope struct {
-	ID    string `json:"id"`
-	Label string `json:"label"`
-	Note  string `json:"note"`
+	ID       string `json:"id"`
+	Label    string `json:"label"`
+	Note     string `json:"note"`
+	Action   string `json:"action"`
+	Progress string `json:"progress"`
 }
 
 // DataSources is Control Room › Data and sources: source health and the signal files (C-07), the
 // checked facts and the checks that will prove them (L-34), and the refresh scopes (S-09).
 type DataSources struct {
-	Health     Report      `json:"health"`
-	Signals    Report      `json:"signals"`
-	Facts      Report      `json:"facts"`
-	Checks     Report      `json:"checks"`
-	ArchiveDir string      `json:"archiveDir"`
-	Scopes     []DataScope `json:"scopes"`
+	Health     Report            `json:"health"`
+	Signals    Report            `json:"signals"`
+	Facts      Report            `json:"facts"`
+	Checks     Report            `json:"checks"`
+	ArchiveDir string            `json:"archiveDir"`
+	Scopes     []DataScope       `json:"scopes"`
+	Words      map[string]string `json:"words"`
 }
 
 // dataScopes lists the refresh Acts in the order they are offered.
 func dataScopes() []DataScope {
 	return []DataScope{
-		{"league", "League from MFL", "Rules, rosters and salary adjustments for the current season."},
-		{"signals", "Signals", "The nflverse, CFBD and contract files that are due."},
-		{"crosswalk", "Player crosswalk", "DynastyProcess's player ids, linked to the league's players."},
-		{"archive", "League archive", "Files new to the 2013–2026 archive, then the Lab's pinned inputs."},
+		{"league", "League from MFL", "Rules, rosters and salary adjustments for the current season.", "Refresh League from MFL", "Refreshing…"},
+		{"signals", "Signals", "The nflverse, CFBD and contract files that are due.", "Refresh Signals", "Refreshing…"},
+		{"crosswalk", "Player crosswalk", "DynastyProcess's player ids, linked to the league's players.", "Refresh Player crosswalk", "Refreshing…"},
+		{"archive", "League archive", "Files new to the 2013–2026 archive, then the Lab's pinned inputs.", "Refresh League archive", "Refreshing…"},
 	}
 }
 
@@ -112,9 +115,13 @@ func signalsSummary(r SignalsReport) string {
 		added += l.Added
 		counts[l.Status]++
 	}
-	return fmt.Sprintf("Looked at %s files: %s loaded, %s already current, %s skipped, %s failed; %s new values.",
+	summary := fmt.Sprintf("Looked at %s files: %s loaded, %s already current, %s skipped, %s failed; %s new values.",
 		thousands(len(r.Loads)), thousands(counts[loadDone]), thousands(counts[loadCurrent]),
 		thousands(counts[loadSkipped]), thousands(counts[loadFailed]), thousands(added))
+	if r.CrosswalkNote != "" {
+		summary += " " + r.CrosswalkNote
+	}
+	return summary
 }
 
 // TargetDataSources reads what history holds about every source and the checked facts.
@@ -146,7 +153,7 @@ func (a *App) TargetDataSources() (DataSources, error) {
 	return DataSources{
 		Health: healthReport(health), Signals: signalFilesReport(signals, last, time.Local),
 		Facts: factsReport(facts), Checks: checksReport(facts.checks),
-		ArchiveDir: settings.LeagueArchiveDir, Scopes: dataScopes(),
+		ArchiveDir: settings.LeagueArchiveDir, Scopes: dataScopes(), Words: dataWords(),
 	}, nil
 }
 
@@ -236,7 +243,7 @@ func (a *App) TargetCrosswalk() Report {
 		r.Rows = append(r.Rows, ReportRow{Cells: []string{rate.Position, crosswalkShare(rate.RosteredMatched, rate.Rostered), crosswalkShare(rate.FreeAgentsMatched, rate.FreeAgents)}})
 	}
 	for _, m := range c.Unmatched {
-		r.Rows = append(r.Rows, ReportRow{Group: "Unmatched rostered players", Cells: []string{m.Name + " · " + m.MFLID, m.Position + " · " + m.Franchise, m.Reason}})
+		r.Rows = append(r.Rows, ReportRow{Group: "Unmatched rostered players", Cells: []string{m.Name, m.Position + " · " + nflTeamText(m.Team), m.Reason}})
 	}
 	return r
 }
@@ -246,4 +253,27 @@ func crosswalkShare(matched, total int) string {
 		return "None"
 	}
 	return fmt.Sprintf("%s of %s · %.1f%%", thousands(matched), thousands(total), 100*float64(matched)/float64(total))
+}
+
+func nflTeamText(team string) string {
+	if team == "" {
+		return "NFL team not held"
+	}
+	return team
+}
+
+func dataWords() map[string]string {
+	return map[string]string{
+		"title": "Data and sources", "refresh": "Data refresh",
+		"folder": "League archive folder (raw)", "setFolder": "Set folder",
+		"read": "Read held records", "readProgress": "Refreshing…",
+		"readResult": "Held records read; source health, signals, checked facts, player links and engine parameters updated.",
+		"how":        "How this is counted", "crosswalkHow": "How players are linked",
+		"parameters": "Engine parameters", "permission": "Changes require the admin role. Running as GM: values are read-only.",
+		"find": "Find a setting", "empty": "No settings match.", "league": "League",
+		"setting": "Setting and position", "value": "Value", "default": "Default", "override": "Override",
+		"range": "Allowed", "overridden": "Overridden", "fitted": "Fitted", "handSet": "Hand-set",
+		"apply": "Apply", "reset": "Reset", "clear": "Clear the Admin value and follow the shipped default",
+		"kept": "The last reading is kept.",
+	}
 }

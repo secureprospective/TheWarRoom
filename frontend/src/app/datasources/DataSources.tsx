@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
 import { ReportView } from '../reports/ReportView';
@@ -7,82 +7,99 @@ import type { Sources } from './provider';
 import type { main } from '../../../wailsjs/go/models';
 import './sources.css';
 
-export function RefreshScopes({ data, busy }: { data: Sources; busy: string }) {
+export function RefreshScopes({ data, busy, outcomes = {} }:
+  { data: Sources; busy: string; outcomes?: Record<string, string> }) {
   const [path, setPath] = useState(data.archiveDir);
+  const w = data.words;
   useEffect(() => setPath(data.archiveDir), [data.archiveDir]);
-  return <section data-endpoint="S-09" aria-label="Data refresh">
-    <h4>Data refresh</h4>
+  return <section data-endpoint="S-09" aria-label={w.refresh}>
+    <h4>{w.refresh}</h4>
     <div className="archive-folder">
-      <label htmlFor="archive-folder">League archive folder (raw)</label>
+      <label htmlFor="archive-folder">{w.folder}</label>
       <input id="archive-folder" value={path} onChange={e => setPath(e.target.value)} />
-      <Act verb="data.run" args={{ kind: 'folder', path }} disabled={!!busy || !path.trim()}>Set folder</Act>
+      <div className="data-action">
+        <Act verb="data.run" args={{ kind: 'folder', path }} disabled={!!busy || !path.trim()}>
+          {w.setFolder}</Act>
+        <span role="status" aria-live="polite">{busy === 'folder' ? w.readProgress : outcomes.folder}</span>
+      </div>
     </div>
     <dl className="refresh-scopes">{data.scopes.map(scope => <div key={scope.id}>
       <dt>{scope.label}</dt><dd><p>{scope.note}</p>
-        <Act verb="refresh.run" args={{ scope: scope.id }} disabled={!!busy || (scope.id === 'archive'
-          && !data.archiveDir)}>
-          {busy === scope.id ? `Refreshing ${scope.label}…` : `Refresh ${scope.label}`}
-        </Act>
+        <div className="data-action">
+          <Act verb="refresh.run" args={{ scope: scope.id }} disabled={!!busy || (scope.id === 'archive'
+            && !data.archiveDir)}>{scope.action}</Act>
+          <span role="status" aria-live="polite">
+            {busy === scope.id ? scope.progress : outcomes[scope.id]}</span>
+        </div>
       </dd></div>)}</dl>
   </section>;
 }
-export function Parameters({ params, busy }: { params: main.ParamsResult; busy: string }) {
+export function Parameters({ params, busy, words: w }:
+  { params: main.ParamsResult; busy: string; words: Record<string, string> }) {
   const canEdit = commands.registry['data.parameter'].roles.includes('gm');
   const [filter, setFilter] = useState('');
   const [edits, setEdits] = useState<Record<string, string>>({});
   const rows = (params.params ?? []).filter(p =>
-    `${p.key} ${p.position} ${p.description}`.toLowerCase().includes(filter.toLowerCase()));
-  return <section data-endpoint="C-09" aria-label="Engine parameters">
-    <h4>Engine parameters</h4>
-    <p>Changes require the admin role. Running as GM: values are read-only.</p>
-    <label htmlFor="parameter-filter">Find a setting</label>
+    `${p.label} ${p.group} ${p.position}`.toLowerCase().includes(filter.toLowerCase()));
+  return <section data-endpoint="C-09" aria-label={w.parameters}>
+    <h4>{w.parameters}</h4>
+    {!canEdit && <p>{w.permission}</p>}
+    <label htmlFor="parameter-filter">{w.find}</label>
     <input id="parameter-filter" value={filter} onChange={e => setFilter(e.target.value)} />
-    <div className="draft-table-scroll" role="region" aria-label="Engine parameter values" tabIndex={0}>
-      <table><thead><tr>{['Position', 'Setting', 'Value', 'Default', 'Range', 'Override'].map(h => <th
+    <div className="draft-table-scroll" role="region" aria-label={w.parameters} tabIndex={0}>
+      <table><thead><tr>{[w.setting, w.value, w.default, w.override].map(h => <th
         key={h} scope="col">{h}</th>)}</tr></thead>
-        <tbody>{rows.map(p => {
+        <tbody>{rows.map((p, i) => {
           const id = `${p.key}@${p.position}`;
           const draft = edits[id] ?? '';
           const value = Number(draft);
-          return <tr key={id}><td>{p.position || 'League'}</td><td>{p.key}<p>{p.description}</p></td>
-            <td>{p.value}{p.overridden && <p>Overridden</p>}</td><td>{p.default}<p>{p.calibrated
-              ? 'Fitted' : 'Hand-set'}</p></td><td>{p.min}–{p.max}</td>
-            <td><input type="number" step="any" min={p.min} max={p.max}
-              aria-label={`${p.key} ${p.position} override`}
-              disabled={!canEdit || !!busy}
-              value={draft} onChange={e => setEdits({ ...edits, [id]: e.target.value })} />
-              <Act verb="data.parameter" args={{ kind: 'parameter', key: p.key, position: p.position, value }}
-                disabled={!canEdit || !!busy || !draft.trim() || !Number.isFinite(value) || value
-                  < p.min || value > p.max}>Apply</Act>
-              {p.overridden && <Act verb="data.parameter" args={{ kind: 'parameter', key: p.key,
-                position: p.position, value: null }}
-                  label="Clear the Admin value and follow the shipped default" disabled={!canEdit
-                    || !!busy}>Reset</Act>}
-            </td></tr>;
+          return <Fragment key={id}>
+            {p.group !== rows[i - 1]?.group && <tr className="report-group">
+              <th scope="colgroup" colSpan={4}>{p.group}</th></tr>}
+            <tr><td>{p.label}<p>{p.position || w.league}</p><p>{w.range}: {p.min}–{p.max}</p></td>
+              <td>{p.value}{p.overridden && <p>{w.overridden}</p>}</td>
+              <td>{p.default}<p>{p.calibrated ? w.fitted : w.handSet}</p></td>
+              <td><input type="number" step="any" min={p.min} max={p.max}
+                aria-label={`${p.label} · ${p.position || w.league} · ${w.override}`}
+                disabled={!canEdit || !!busy}
+                value={draft} onChange={e => setEdits({ ...edits, [id]: e.target.value })} />
+                <Act verb="data.parameter" args={{ kind: 'parameter', key: p.key,
+                  position: p.position, value }}
+                  disabled={!canEdit || !!busy || !draft.trim() || !Number.isFinite(value) || value
+                    < p.min || value > p.max}>{w.apply}</Act>
+                {p.overridden && <Act verb="data.parameter" args={{ kind: 'parameter', key: p.key,
+                  position: p.position, value: null }} label={w.clear} disabled={!canEdit || !!busy}>
+                  {w.reset}</Act>}
+              </td></tr>
+          </Fragment>;
         })}</tbody></table>
     </div>
-    {rows.length === 0 && <p>No settings match.</p>}
+    {rows.length === 0 && <p>{w.empty}</p>}
   </section>;
+}
+export function HeldRead({ words: w, busy, result }:
+  { words: Record<string, string>; busy: string; result?: string }) {
+  return <div className="data-action"><Act verb="data.run" args={{ kind: 'read' }}
+    disabled={!!busy}>{w.read}</Act>
+    <span role="status" aria-live="polite">{busy === 'read' ? w.readProgress : result}</span>
+  </div>;
 }
 export default function DataSources() {
   const s = dataState.use();
   useEffect(() => { void dataState.run({ kind: 'read' }); }, []);
+  const w = s.data?.words;
   return <div className="data-sources draft-reports">
-    <h4>Data and sources</h4>
-    <div className="market-controls"><Act verb="data.run" args={{ kind: 'read' }}
-      disabled={!!s.busy}>Read held records</Act></div>
-    {s.busy && <p role="status" aria-live="polite">{s.busy === 'read' ? 'Reading held data…'
-      : `Working: ${s.busy}…`}</p>}
-    {s.error && <p role="alert">{s.error}{s.data && ' The last reading is kept.'}</p>}
-    {s.result && <p role="status">{s.result}</p>}
-    {s.data && <>
-      <ReportView report={s.data.health} howLabel="How this is counted" heading="h4" />
-      <ReportView report={s.data.signals} howLabel="How this is counted" heading="h4" />
-      <ReportView report={s.data.facts} howLabel="How this is counted" heading="h4" />
-      <ReportView report={s.data.checks} howLabel="How this is counted" heading="h4" />
-      <RefreshScopes data={s.data} busy={s.busy} />
+    {w && <>
+      <h4>{w.title}</h4>
+      <HeldRead words={w} busy={s.busy} result={s.outcomes.read} />
     </>}
-    {s.crosswalk && <ReportView report={s.crosswalk} howLabel="How players are linked" heading="h4" />}
-    {s.params && <Parameters params={s.params} busy={s.busy} />}
+    {s.error && <p role="alert">{s.error} {w?.kept}</p>}
+    {s.data && <>
+      {[s.data.health, s.data.signals, s.data.facts, s.data.checks].map(report =>
+        <ReportView key={report.id} report={report} howLabel={s.data!.words.how} heading="h4" />)}
+      <RefreshScopes data={s.data} busy={s.busy} outcomes={s.outcomes} />
+    </>}
+    {s.crosswalk && w && <ReportView report={s.crosswalk} howLabel={w.crosswalkHow} heading="h4" />}
+    {s.params && w && <Parameters params={s.params} busy={s.busy} words={w} />}
   </div>;
 }

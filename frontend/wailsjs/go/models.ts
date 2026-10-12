@@ -1438,6 +1438,7 @@ export namespace main {
 	export class CrosswalkMiss {
 	    mflId: string;
 	    name: string;
+	    team: string;
 	    position: string;
 	    franchise: string;
 	    reason: string;
@@ -1450,6 +1451,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.mflId = source["mflId"];
 	        this.name = source["name"];
+	        this.team = source["team"];
 	        this.position = source["position"];
 	        this.franchise = source["franchise"];
 	        this.reason = source["reason"];
@@ -1539,6 +1541,8 @@ export namespace main {
 	    id: string;
 	    label: string;
 	    note: string;
+	    action: string;
+	    progress: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new DataScope(source);
@@ -1549,6 +1553,8 @@ export namespace main {
 	        this.id = source["id"];
 	        this.label = source["label"];
 	        this.note = source["note"];
+	        this.action = source["action"];
+	        this.progress = source["progress"];
 	    }
 	}
 	export class ReportLink {
@@ -1692,6 +1698,7 @@ export namespace main {
 	    checks: Report;
 	    archiveDir: string;
 	    scopes: DataScope[];
+	    words: Record<string, string>;
 	
 	    static createFrom(source: any = {}) {
 	        return new DataSources(source);
@@ -1705,6 +1712,7 @@ export namespace main {
 	        this.checks = this.convertValues(source["checks"], Report);
 	        this.archiveDir = source["archiveDir"];
 	        this.scopes = this.convertValues(source["scopes"], DataScope);
+	        this.words = source["words"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -2248,6 +2256,8 @@ export namespace main {
 	}
 	export class ParamView {
 	    key: string;
+	    label: string;
+	    group: string;
 	    position: string;
 	    description: string;
 	    default: number;
@@ -2264,6 +2274,8 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.key = source["key"];
+	        this.label = source["label"];
+	        this.group = source["group"];
 	        this.position = source["position"];
 	        this.description = source["description"];
 	        this.default = source["default"];
