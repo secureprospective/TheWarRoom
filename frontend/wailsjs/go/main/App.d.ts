@@ -59,6 +59,8 @@ export function SetMFLKey(arg1:string):Promise<main.MFLKeyStatus>;
 
 export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetParamResult>;
 
+export function SetPhotos(arg1:boolean):Promise<void>;
+
 export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
 
 export function TargetAssetProfile(arg1:main.RawMarketAsset):Promise<main.Reading_main_MarketSurface_>;
@@ -82,6 +84,10 @@ export function TargetCheckLineup(arg1:string,arg2:Array<string>):Promise<lineup
 export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
+
+export function TargetComms(arg1:main.RawCommsScope):Promise<main.CommsBoard>;
+
+export function TargetCommsRefresh(arg1:boolean):Promise<void>;
 
 export function TargetContractActs(arg1:main.RawContractAct):Promise<main.Reading___main_ContractActView_>;
 
@@ -133,7 +139,11 @@ export function TargetNowRefresh(arg1:number,arg2:boolean):Promise<void>;
 
 export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_OffersView_>;
 
+export function TargetOpenComms(arg1:string):Promise<void>;
+
 export function TargetOpenMFLDraftRoom():Promise<void>;
+
+export function TargetPhoto(arg1:string):Promise<main.PhotoView>;
 
 export function TargetPickClock(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
 

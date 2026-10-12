@@ -413,6 +413,18 @@ func (s *Store) LinkedPlayers(ctx context.Context, idType string) (map[string]bo
 	return s.distinct(ctx, `SELECT DISTINCT player_id FROM player_ids WHERE id_type = ?`, idType)
 }
 
+// SourceID returns the player's id of idType from the directory, or "" when none is held. Two
+// values for one player resolve to the smallest, so the answer is stable.
+func (s *Store) SourceID(ctx context.Context, playerID, idType string) (string, error) {
+	var v sql.NullString
+	err := s.pools.Read().QueryRowContext(ctx,
+		`SELECT MIN(id_value) FROM player_ids WHERE player_id = ? AND id_type = ?`, playerID, idType).Scan(&v)
+	if err != nil {
+		return "", fmt.Errorf("history: directory read: %w", err)
+	}
+	return v.String, nil
+}
+
 // MeasuresHeld returns every measure source holds a value of in season.
 func (s *Store) MeasuresHeld(ctx context.Context, source string, season int) (map[string]bool, error) {
 	return s.distinct(ctx, `SELECT DISTINCT measure FROM observations WHERE source = ? AND season = ?`, source, season)

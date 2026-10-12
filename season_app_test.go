@@ -89,6 +89,8 @@ func seasonTestApp(t *testing.T) (*App, *seasonTransport, *[]time.Duration, *int
 			"transactions":     seasonFixture(t, "transactions", "transactions.json"),
 			"liveScoring":      seasonFixture(t, "livescoring", "liveScoring-w5.json"),
 			"pendingTrades":    `{"pendingTrades":{}}`,
+			"messageBoard":     `{"messageBoard":{}}`,
+			"polls":            `{"polls":{}}`,
 			"draftResults":     seasonFixture(t, "draftreports", "results-2026.json"),
 			"futureDraftPicks": seasonFixture(t, "draftreports", "future-2026.json"),
 			"projectedScores":  strings.Replace(seasonFixture(t, "marketfeeds", "projectedScores.json"), `"week":"6"`, `"week":"5"`, 1),
@@ -165,10 +167,10 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 		t.Fatal("wrong real feed counts or week")
 	}
 	if !reflect.DeepEqual(transport.requests,
-		[]string{"transactions", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks", "projectedScores", "playerRanks", "adp", "aav",
+		[]string{"transactions", "messageBoard", "polls", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks", "projectedScores", "playerRanks", "adp", "aav",
 			"weeklyResults", "playoffBrackets", "playoffBracket", "playoffBracket", "playoffBracket", "leagueStandings",
 			"nflSchedule", "nflByeWeeks"}) ||
-		!reflect.DeepEqual(*pauses, slices.Repeat([]time.Duration{time.Second}, 17)) ||
+		!reflect.DeepEqual(*pauses, slices.Repeat([]time.Duration{time.Second}, 19)) ||
 		*events != 1 {
 		t.Fatalf("requests %v pauses %v events %d", transport.requests, *pauses, *events)
 	}
@@ -177,14 +179,14 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 			t.Fatal("requests not spaced")
 		}
 	}
-	if transport.weeks[1] != "5" || transport.weeks[16] != "5" || r.Lineups.Provenance.Source != "liveScoring W=5" {
+	if transport.weeks[3] != "5" || transport.weeks[18] != "5" || r.Lineups.Provenance.Source != "liveScoring W=5" {
 		t.Fatal("requested wrong week")
 	}
 	a.week.Number = 0
 	transport.bodies["liveScoring"] = seasonFixture(t, "livescoring", "liveScoring.json")
 	a.refreshSeason(a.ctx)
 	r = seasonReading(t, a)
-	if transport.weeks[19] != "" || r.Lineups.Value.Week != 4 ||
+	if transport.weeks[23] != "" || r.Lineups.Value.Week != 4 ||
 		r.Lineups.Provenance.Source != "liveScoring default week" {
 		t.Fatal("default week not respected")
 	}
@@ -471,11 +473,11 @@ func TestSeasonWorkerUsesRefreshedWeek(t *testing.T) {
 	a.refreshInBackground(ctx)
 	a.weekWorkers.Wait()
 	if !reflect.DeepEqual(transport.requests, []string{
-		"nflSchedule", "transactions", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks",
+		"nflSchedule", "transactions", "messageBoard", "polls", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks",
 		"projectedScores", "playerRanks", "adp", "aav",
 		"weeklyResults", "playoffBrackets", "playoffBracket", "playoffBracket", "playoffBracket", "leagueStandings",
 		"nflSchedule", "nflByeWeeks",
-	}) || transport.weeks[2] != "5" || transport.weeks[17] != "5" {
+	}) || transport.weeks[4] != "5" || transport.weeks[19] != "5" {
 		t.Fatalf("order %v weeks %v", transport.requests, transport.weeks)
 	}
 }

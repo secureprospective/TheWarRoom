@@ -1,0 +1,287 @@
+{
+  "feed": {
+    "id": "C-05",
+    "title": "League feed",
+    "note": "",
+    "status": "ok",
+    "source": "Source: MFL",
+    "asOf": "As of: Oct 11, 2026, 12:00 PM",
+    "how": "Newest first, from held MFL transactions. A salary and contract end are the player's current contract on MFL, not the terms when the move was made; missing terms are labelled. No messages are sent.",
+    "columns": [
+      "Local time",
+      "Move"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+  },
+  "transactions": {
+    "sortAscending": "Sort oldest first",
+    "sortDescending": "Sort newest first",
+    "id": "M-032",
+    "title": "Transactions",
+    "note": "",
+    "status": "ok",
+    "source": "Source: MFL",
+    "asOf": "As of: Oct 11, 2026, 12:00 PM",
+    "how": "Newest first, from held MFL transactions. A salary and contract end are the player's current contract on MFL, not the terms when the move was made; missing terms are labelled. No messages are sent.",
+    "columns": [
+      "Local time",
+      "Move"
+    ],
+    "rows": [
+      {
+        "sort": [
+          1791338104,
+          1791338104
+        ],
+        "cells": [
+          "Oct 7, 2026, 1:55 AM",
+          "Minnesota Vikings placed Edgerrin Cooper (LB, GBP) on IR; placed Caleb Ransaw (S, JAC) on IR."
+        ],
+        "range": null
+      },
+      {
+        "sort": [
+          1790999418,
+          1790999418
+        ],
+        "cells": [
+          "Oct 3, 2026, 3:50 AM",
+          "New Orleans Saints traded Ben Sauls (K, FA), Azeez Ojulari (DE, LVR), Bub Means (WR, CLE), New Orleans Saints' 2027 round 1 pick, New Orleans Saints' 2027 round 2 pick, New Orleans Saints' 2028 round 1 pick to Carolina Panthers for Dalton Kincaid (TE, BUF), Eric Wilson (LB, MIN)."
+        ],
+        "range": null
+      },
+      {
+        "sort": [
+          1790892763,
+          1790892763
+        ],
+        "cells": [
+          "Oct 1, 2026, 10:12 PM",
+          "Denver Broncos added Akayleb Evans (CB, CAR) ($580,000, contract through 2026)."
+        ],
+        "range": null
+      }
+    ],
+    "summary": null,
+    "link": {
+      "label": "Read the league feed",
+      "endpoint": "C-05"
+    }
+  },
+  "events": [
+    {
+      "sentence": "Minnesota Vikings placed Edgerrin Cooper (LB, GBP) on IR; placed Caleb Ransaw (S, JAC) on IR.",
+      "date": "Oct 7, 2026, 1:55 AM"
+    },
+    {
+      "sentence": "New Orleans Saints traded Ben Sauls (K, FA), Azeez Ojulari (DE, LVR), Bub Means (WR, CLE), New Orleans Saints' 2027 round 1 pick, New Orleans Saints' 2027 round 2 pick, New Orleans Saints' 2028 round 1 pick to Carolina Panthers for Dalton Kincaid (TE, BUF), Eric Wilson (LB, MIN).",
+      "date": "Oct 3, 2026, 3:50 AM"
+    },
+    {
+      "sentence": "Denver Broncos added Akayleb Evans (CB, CAR) ($580,000, contract through 2026).",
+      "date": "Oct 1, 2026, 10:12 PM"
+    }
+  ],
+  "boardNote": "No posts on MFL's message board or polls this season.",
+  "leagueTalk": "The league talks on ProBoards.",
+  "boardPosts": [
+    {
+      "id": "M-120",
+      "title": "MFL message board",
+      "note": "MFL lists no records for this report.",
+      "status": "empty",
+      "source": "Source: MFL",
+      "asOf": "As of: Oct 11, 2026, 12:00 PM",
+      "how": "Held MFL exports; discussion and voting open on MFL. The app never posts or votes.",
+      "columns": [
+        "Title",
+        "Author franchise",
+        "Local time"
+      ],
+      "rows": [],
+      "summary": null,
+      "link": null
+    },
+    {
+      "id": "M-123",
+      "title": "MFL polls",
+      "note": "MFL lists no records for this report.",
+      "status": "empty",
+      "source": "Source: MFL",
+      "asOf": "As of: Oct 11, 2026, 12:00 PM",
+      "how": "Held MFL exports; discussion and voting open on MFL. The app never posts or votes.",
+      "columns": [
+        "Title",
+        "Author franchise",
+        "Local time"
+      ],
+      "rows": [],
+      "summary": null,
+      "link": null
+    }
+  ],
+  "team": "",
+  "kind": "",
+  "teams": [
+    {
+      "value": "",
+      "label": "All franchises"
+    },
+    {
+      "value": "0001",
+      "label": "Buffalo Bills"
+    },
+    {
+      "value": "0002",
+      "label": "New England Patriots"
+    },
+    {
+      "value": "0003",
+      "label": "New York Jets"
+    },
+    {
+      "value": "0004",
+      "label": "Miami Dolphins"
+    },
+    {
+      "value": "0005",
+      "label": "Los Angeles Chargers"
+    },
+    {
+      "value": "0006",
+      "label": "Kansas City Chiefs"
+    },
+    {
+      "value": "0007",
+      "label": "Las Vegas Raiders"
+    },
+    {
+      "value": "0008",
+      "label": "Denver Broncos"
+    },
+    {
+      "value": "0009",
+      "label": "Houston Texans"
+    },
+    {
+      "value": "0010",
+      "label": "Indianapolis Colts"
+    },
+    {
+      "value": "0011",
+      "label": "Jacksonville Jaguars"
+    },
+    {
+      "value": "0012",
+      "label": "Tennessee Titans"
+    },
+    {
+      "value": "0013",
+      "label": "Baltimore Ravens"
+    },
+    {
+      "value": "0014",
+      "label": "Cincinnati Bengals"
+    },
+    {
+      "value": "0015",
+      "label": "Cleveland Browns"
+    },
+    {
+      "value": "0016",
+      "label": "Pittsburgh Steelers"
+    },
+    {
+      "value": "0017",
+      "label": "Atlanta Falcons"
+    },
+    {
+      "value": "0018",
+      "label": "Carolina Panthers"
+    },
+    {
+      "value": "0019",
+      "label": "New Orleans Saints"
+    },
+    {
+      "value": "0020",
+      "label": "Tampa Bay Buccaneers"
+    },
+    {
+      "value": "0021",
+      "label": "Chicago Bears"
+    },
+    {
+      "value": "0022",
+      "label": "Detroit Lions"
+    },
+    {
+      "value": "0023",
+      "label": "Green Bay Packers"
+    },
+    {
+      "value": "0024",
+      "label": "Minnesota Vikings"
+    },
+    {
+      "value": "0025",
+      "label": "Arizona Cardinals"
+    },
+    {
+      "value": "0026",
+      "label": "San Francisco 49ers"
+    },
+    {
+      "value": "0027",
+      "label": "Los Angeles Rams"
+    },
+    {
+      "value": "0028",
+      "label": "Seattle Seahawks"
+    },
+    {
+      "value": "0029",
+      "label": "Dallas Cowboys"
+    },
+    {
+      "value": "0030",
+      "label": "New York Giants"
+    },
+    {
+      "value": "0031",
+      "label": "Philadelphia Eagles"
+    },
+    {
+      "value": "0032",
+      "label": "Washington Commanders"
+    }
+  ],
+  "kinds": [
+    {
+      "value": "",
+      "label": "All moves"
+    },
+    {
+      "value": "trade",
+      "label": "Trades"
+    },
+    {
+      "value": "add-drop",
+      "label": "Adds and drops"
+    },
+    {
+      "value": "ir",
+      "label": "IR moves"
+    },
+    {
+      "value": "taxi",
+      "label": "Taxi moves"
+    },
+    {
+      "value": "other",
+      "label": "Other transactions"
+    }
+  ]
+}

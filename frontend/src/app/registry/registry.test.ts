@@ -93,6 +93,7 @@ describe('Endpoint map', () => {
   });
   it('distinguishes live-Landed Acts from built Acts and keeps every other row spec', () => {
     const built = [
+      'C-05', 'M-032', 'M-120', 'M-123',
       'L-34', 'C-07', 'C-08', 'C-09', 'S-09',
       'M-046', 'M-047', 'M-067', 'M-069',
       'M-063', 'M-064', 'M-065', 'M-066', 'M-068', 'M-102', 'M-176', 'M-179', 'M-183',
@@ -212,7 +213,7 @@ describe('Endpoint map', () => {
 describe('Endpoint verbs and search', () => {
   it('offers all kept endpoints by their own name and never offers retired or merged rows', () => {
     const offered = candidates.filter((r) => r.kind === 'endpoint');
-    expect(offered).toHaveLength(208);
+    expect(offered).toHaveLength(205);
     for (const row of endpoints) {
       const match = rankResults(row.name, candidates).find(
         (r) => r.invocation.verb === 'endpoint.open' && r.invocation.args.id === row.id,

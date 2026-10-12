@@ -114,6 +114,7 @@ func (a *App) refreshSeason(ctx context.Context) {
 	}
 	defer a.seasonChanged(ctx)
 	a.refreshSeasonTransactions(ctx)
+	a.refreshCommsBoards(ctx)
 	pause := a.seasonPause
 	if pause == nil {
 		pause = seasonPause

@@ -5,6 +5,7 @@ import { SignalChip } from '../look/Slots';
 import { Card } from './Card';
 import { matrixColumns, matrixCells } from './matrix';
 import { playerCardModel, type PlayerCardModel } from './playerModel';
+import { PlayerPhoto, usePhoto } from './PlayerPhoto';
 
 export type PlayerCardProps = {
   snapshot: Snapshot;
@@ -26,6 +27,7 @@ export function PlayerCard({
   model: suppliedModel,
 }: PlayerCardProps) {
   const model = suppliedModel ?? playerCardModel(snapshot, franchiseId, playerId, asOf);
+  const photo = usePhoto(playerId);
   return (
     <>
       <div className="player-matrix">
@@ -42,6 +44,7 @@ export function PlayerCard({
         provenance={provenance === 'own' ? model.provenance : undefined}
         header={
           <div className="player-identity">
+            <PlayerPhoto view={photo} team={model.team} />
             {model.position && (
               <span className="classification-label">
                 <Glyph name={model.position} />

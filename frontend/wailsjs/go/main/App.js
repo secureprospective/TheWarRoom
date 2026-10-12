@@ -110,6 +110,10 @@ export function SetParam(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetParam'](arg1, arg2, arg3);
 }
 
+export function SetPhotos(arg1) {
+  return window['go']['main']['App']['SetPhotos'](arg1);
+}
+
 export function TargetAlerts(arg1) {
   return window['go']['main']['App']['TargetAlerts'](arg1);
 }
@@ -156,6 +160,14 @@ export function TargetCheckMoves() {
 
 export function TargetClock() {
   return window['go']['main']['App']['TargetClock']();
+}
+
+export function TargetComms(arg1) {
+  return window['go']['main']['App']['TargetComms'](arg1);
+}
+
+export function TargetCommsRefresh(arg1) {
+  return window['go']['main']['App']['TargetCommsRefresh'](arg1);
 }
 
 export function TargetContractActs(arg1) {
@@ -258,8 +270,16 @@ export function TargetOffers(arg1) {
   return window['go']['main']['App']['TargetOffers'](arg1);
 }
 
+export function TargetOpenComms(arg1) {
+  return window['go']['main']['App']['TargetOpenComms'](arg1);
+}
+
 export function TargetOpenMFLDraftRoom() {
   return window['go']['main']['App']['TargetOpenMFLDraftRoom']();
+}
+
+export function TargetPhoto(arg1) {
+  return window['go']['main']['App']['TargetPhoto'](arg1);
 }
 
 export function TargetPickClock(arg1) {
