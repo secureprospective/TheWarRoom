@@ -4,6 +4,7 @@ import {main} from '../models';
 import {lineup} from '../models';
 import {snapshot} from '../models';
 import {envelope} from '../models';
+import {personal} from '../models';
 
 export function AppInfo():Promise<main.AppInfo>;
 
@@ -39,11 +40,7 @@ export function GetRankings():Promise<main.RankingsResult>;
 
 export function GetRoster(arg1:string):Promise<main.RosterResult>;
 
-export function GetSignals():Promise<main.SignalsView>;
-
 export function LoadCrosswalk():Promise<main.CrosswalkReport>;
-
-export function LoadSignals():Promise<main.SignalsReport>;
 
 export function MFLKeyStatus():Promise<main.MFLKeyStatus>;
 
@@ -55,13 +52,25 @@ export function ResetParam(arg1:string,arg2:string):Promise<main.SetParamResult>
 
 export function ScoreLeague():Promise<main.ScoreLeagueResult>;
 
+export function SetLeagueArchiveDir(arg1:string):Promise<main.DataActResult>;
+
 export function SetLeagueSettingOverride(arg1:string,arg2:string,arg3:string):Promise<main.SetLeagueSettingResult>;
 
 export function SetMFLKey(arg1:string):Promise<main.MFLKeyStatus>;
 
 export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetParamResult>;
 
+export function SetPhotos(arg1:boolean):Promise<main.DataActResult>;
+
+export function TargetAccounting():Promise<main.Report>;
+
+export function TargetAcquisition(arg1:main.RawAcquisition):Promise<main.Reading_main_AcquisitionView_>;
+
 export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
+
+export function TargetArchive(arg1:number,arg2:string,arg3:string):Promise<main.ArchiveBoard>;
+
+export function TargetAssetBoard():Promise<main.AssetBoard>;
 
 export function TargetAssetProfile(arg1:main.RawMarketAsset):Promise<main.Reading_main_MarketSurface_>;
 
@@ -79,11 +88,17 @@ export function TargetBidRevise(arg1:string,arg2:main.RawBidInput):Promise<main.
 
 export function TargetBidWithdraw(arg1:string):Promise<main.BidPlan>;
 
+export function TargetBylaws():Promise<Array<main.BylawSection>>;
+
 export function TargetCheckLineup(arg1:string,arg2:Array<string>):Promise<lineup.Result>;
 
 export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
+
+export function TargetComms(arg1:main.RawCommsScope):Promise<main.CommsBoard>;
+
+export function TargetCommsRefresh(arg1:boolean):Promise<void>;
 
 export function TargetContractActs(arg1:main.RawContractAct):Promise<main.Reading___main_ContractActView_>;
 
@@ -93,11 +108,21 @@ export function TargetCounterpartTeam(arg1:main.RawCounterpartTeam):Promise<main
 
 export function TargetCounterparties(arg1:main.RawCounterpartiesScope):Promise<main.Reading_main_Counterparties_>;
 
+export function TargetCrosswalk():Promise<main.Report>;
+
+export function TargetDataRefresh(arg1:string):Promise<main.DataActResult>;
+
+export function TargetDataSources():Promise<main.DataSources>;
+
 export function TargetDraftIR(arg1:string,arg2:string):Promise<envelope.Receipt>;
 
 export function TargetDraftLab(arg1:main.RawDraftScope):Promise<main.Reading_main_MarketSurface_>;
 
 export function TargetDraftLineup(arg1:string,arg2:Array<string>):Promise<envelope.Receipt>;
+
+export function TargetDraftReports():Promise<main.ReportBoard>;
+
+export function TargetDraftReportsRefresh(arg1:boolean):Promise<void>;
 
 export function TargetDraftTaxi(arg1:string,arg2:string):Promise<envelope.Receipt>;
 
@@ -105,17 +130,47 @@ export function TargetDraftTradeAccept(arg1:string,arg2:string):Promise<envelope
 
 export function TargetHandOff(arg1:string):Promise<envelope.Receipt>;
 
+export function TargetLeagueSettings():Promise<main.Report>;
+
 export function TargetLineup(arg1:string):Promise<main.LineupReading>;
+
+export function TargetLiveGame(arg1:boolean,arg2:string,arg3:string):Promise<main.LiveGameView>;
 
 export function TargetMarket(arg1:main.RawMarketScope):Promise<main.Reading_github_com_secureprospective_TheWarRoom_internal_lab_Market_>;
 
 export function TargetMarketLists(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
 
+export function TargetMarketReports():Promise<main.ReportBoard>;
+
+export function TargetMarketReportsRefresh(arg1:boolean):Promise<void>;
+
 export function TargetMarketStretches(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
 
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 
+export function TargetNFLDraft():Promise<main.Report>;
+
+export function TargetNow(arg1:number,arg2:string):Promise<main.NowBoard>;
+
+export function TargetNowRefresh(arg1:number,arg2:boolean):Promise<void>;
+
 export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_OffersView_>;
+
+export function TargetOpenComms(arg1:string):Promise<void>;
+
+export function TargetOpenMFLAccounting():Promise<void>;
+
+export function TargetOpenMFLDraftRoom():Promise<void>;
+
+export function TargetOpenResearchArticle(arg1:string,arg2:string):Promise<void>;
+
+export function TargetPersonal(arg1:string):Promise<main.PersonalReading>;
+
+export function TargetPersonalChange(arg1:personal.RawChange):Promise<void>;
+
+export function TargetPersonalHandOff(arg1:string):Promise<void>;
+
+export function TargetPhoto(arg1:string):Promise<main.PhotoView>;
 
 export function TargetPickClock(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
 
@@ -125,13 +180,33 @@ export function TargetPool(arg1:main.RawPoolScope):Promise<main.Reading_main_Poo
 
 export function TargetPoolRefresh(arg1:boolean):Promise<void>;
 
-export function TargetPulseNow():Promise<main.PulseReading>;
+export function TargetRace(arg1:number,arg2:string,arg3:string):Promise<main.RaceBoard>;
+
+export function TargetRaceRefresh(arg1:boolean):Promise<void>;
 
 export function TargetReleasePlans(arg1:main.RawReleaseRequest):Promise<main.Reading___main_ReleasePlanView_>;
 
+export function TargetResearch(arg1:main.RawResearchScope):Promise<main.ResearchBoard>;
+
+export function TargetResearchNewsRefresh(arg1:string):Promise<void>;
+
+export function TargetResearchPlayer(arg1:string):Promise<main.ResearchPlayerReading>;
+
+export function TargetResearchRefresh(arg1:boolean):Promise<void>;
+
+export function TargetResearchStatus():Promise<string>;
+
+export function TargetRosterReports(arg1:string):Promise<Array<main.Report>>;
+
 export function TargetSeason():Promise<main.SeasonReading>;
 
+export function TargetShellStatus():Promise<main.ShellStatus>;
+
+export function TargetSiteNews():Promise<main.Report>;
+
 export function TargetSnapshot():Promise<snapshot.Snapshot>;
+
+export function TargetTradeBuilder(arg1:main.RawTradeBuilder):Promise<main.Reading_main_TradeBuilderView_>;
 
 export function TargetTrades(arg1:string):Promise<main.TradeReading>;
 

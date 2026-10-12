@@ -13,7 +13,7 @@ export function placementRoute(place: string): Route | undefined {
   for (const node of nodeKeys) {
     const workspaces: readonly { label: string; slug: string }[] = nodes[node].workspaces;
     const workspace = workspaces.find((w) =>
-      `${nodes[node].label} › ${w.label.replace(' (role-gated)', '')}` === place);
+      `${nodes[node].label} › ${w.label}` === place);
     if (workspace) return routeFor(node, workspace.slug);
   }
   return undefined;

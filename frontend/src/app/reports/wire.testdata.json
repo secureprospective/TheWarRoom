@@ -1,0 +1,388 @@
+{
+  "board": {
+    "title": "Player market reports",
+    "loading": "Reading player market reports…",
+    "refresh": "Refresh player market reports from MFL",
+    "howLabel": "How this is counted",
+    "mflLabel": "",
+    "mflUrl": "",
+    "reports": [
+      {
+        "sortAscending": "Sort ascending",
+        "sortDescending": "Sort descending",
+        "id": "M-046",
+        "title": "Projected points · NFL week 6",
+        "note": "",
+        "status": "ok",
+        "source": "Source: MFL · this league's scoring · NFL week 6",
+        "asOf": "As of: Oct 11, 2026, 12:00 PM",
+        "how": "MFL's projected fantasy points for this NFL week under this league's scoring, not the app's model. Missing players are not projected as zero.",
+        "columns": [
+          "Player",
+          "Projected points"
+        ],
+        "rows": [
+          {
+            "sort": [
+              2,
+              32.21
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+            ],
+            "cells": [
+              "Josh Allen",
+              "32.21"
+            ],
+            "range": null
+          },
+          {
+            "sort": [
+              0,
+              29.96
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+            ],
+            "cells": [
+              "Player name not held",
+              "29.96"
+            ],
+            "range": null
+          },
+          {
+            "sort": [
+              1,
+              29.62
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+            ],
+            "cells": [
+              "Player name not held",
+              "29.62"
+            ],
+            "range": null
+          }
+        ],
+        "summary": null,
+        "link": null
+      },
+      {
+        "sortAscending": "Sort ascending",
+        "sortDescending": "Sort descending",
+        "id": "M-047",
+        "title": "MFL player ranks",
+        "note": "",
+        "status": "ok",
+        "source": "Source: MFL",
+        "asOf": "As of: Oct 11, 2026, 12:00 PM",
+        "how": "MFL's player rank, not the app's model. Up means last week's rank minus this week's rank is positive; down means negative. A last-week rank of zero means MFL supplied no previous rank. New this week is MFL's new-entry flag; no earlier rank is shown.",
+        "columns": [
+          "Player",
+          "MFL rank",
+          "Weekly change",
+          "Last week"
+        ],
+        "rows": [
+          {
+            "sort": [
+              1,
+              1,
+              0,
+              1
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM"
+            ],
+            "cells": [
+              "Bijan Robinson",
+              "1",
+              "No change",
+              "1"
+            ],
+            "range": null
+          },
+          {
+            "sort": [
+              2,
+              2,
+              1,
+              3
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM"
+            ],
+            "cells": [
+              "Jahmyr Gibbs",
+              "2",
+              "Up 1",
+              "3"
+            ],
+            "range": null
+          },
+          {
+            "sort": [
+              0,
+              3,
+              14,
+              17
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM"
+            ],
+            "cells": [
+              "Player name not held",
+              "3",
+              "Up 14",
+              "17"
+            ],
+            "range": null
+          }
+        ],
+        "summary": null,
+        "link": null
+      },
+      {
+        "sortAscending": "Sort ascending",
+        "sortDescending": "Sort descending",
+        "id": "M-067",
+        "title": "Average draft position",
+        "note": "6734 drafts sampled by MFL.",
+        "status": "ok",
+        "source": "Source: MFL-wide · many leagues, not this league",
+        "asOf": "As of: Oct 11, 2026, 12:00 PM",
+        "how": "MFL-wide across many leagues, not this league. All draft periods are requested, since the default period can have no picks in season. The bar runs from the lowest to highest pick reported, with the average marked; it is not a confidence interval or a grade. Every bar shares one scale, from zero to the latest pick any player went.",
+        "columns": [
+          "Player",
+          "ADP · min–max pick"
+        ],
+        "rows": [
+          {
+            "sort": [
+              1,
+              1.85
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+            ],
+            "cells": [
+              "Bijan Robinson",
+              "Pick 1.9 · picks 1–34"
+            ],
+            "range": {
+              "max": 49,
+              "value": 1.85,
+              "lo": 1,
+              "hi": 34,
+              "text": "Pick 1.9 · picks 1–34"
+            }
+          },
+          {
+            "sort": [
+              2,
+              2.6
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+            ],
+            "cells": [
+              "Jahmyr Gibbs",
+              "Pick 2.6 · picks 1–29"
+            ],
+            "range": {
+              "max": 49,
+              "value": 2.6,
+              "lo": 1,
+              "hi": 29,
+              "text": "Pick 2.6 · picks 1–29"
+            }
+          },
+          {
+            "sort": [
+              0,
+              4.35
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+            ],
+            "cells": [
+              "Player name not held",
+              "Pick 4.3 · picks 1–49"
+            ],
+            "range": {
+              "max": 49,
+              "value": 4.35,
+              "lo": 1,
+              "hi": 49,
+              "text": "Pick 4.3 · picks 1–49"
+            }
+          }
+        ],
+        "summary": null,
+        "link": null
+      },
+      {
+        "sortAscending": "Sort ascending",
+        "sortDescending": "Sort descending",
+        "id": "M-069",
+        "title": "Average auction value",
+        "note": "111 auctions sampled by MFL.",
+        "status": "ok",
+        "source": "Source: MFL-wide · many leagues, not this league",
+        "asOf": "As of: Oct 11, 2026, 12:00 PM",
+        "how": "MFL-wide across many leagues, not this league. Values are MFL's auction-budget shares, expressed as percent, not this league's dollars. No dollar conversion is made. The bar runs from the smallest to largest share reported, with the average marked; it is not a confidence interval or a grade. Every bar shares one scale, from zero to the largest share any player drew. Outliers above 100% are shown as supplied, not clipped.",
+        "columns": [
+          "Player",
+          "AAV · min–max budget share"
+        ],
+        "rows": [
+          {
+            "sort": [
+              1,
+              30.1
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+            ],
+            "cells": [
+              "Bijan Robinson",
+              "30.1% of auction budget · 3.4%–113.6%"
+            ],
+            "range": {
+              "max": 113.64,
+              "value": 30.1,
+              "lo": 3.44,
+              "hi": 113.64,
+              "text": "30.1% of auction budget · 3.4%–113.6%"
+            }
+          },
+          {
+            "sort": [
+              2,
+              29.16
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+            ],
+            "cells": [
+              "Jahmyr Gibbs",
+              "29.2% of auction budget · 2.9%–60.4%"
+            ],
+            "range": {
+              "max": 113.64,
+              "value": 29.16,
+              "lo": 2.94,
+              "hi": 60.43,
+              "text": "29.2% of auction budget · 2.9%–60.4%"
+            }
+          },
+          {
+            "sort": [
+              0,
+              28.75
+            ],
+            "titles": [
+              "",
+              "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+            ],
+            "cells": [
+              "Player name not held",
+              "28.8% of auction budget · 3.3%–94.8%"
+            ],
+            "range": {
+              "max": 113.64,
+              "value": 28.75,
+              "lo": 3.34,
+              "hi": 94.8,
+              "text": "28.8% of auction budget · 3.3%–94.8%"
+            }
+          }
+        ],
+        "summary": null,
+        "link": null
+      }
+    ]
+  },
+  "facts": [
+    {
+      "label": "Projected points",
+      "text": "—",
+      "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL does not list this player.",
+      "range": null
+    },
+    {
+      "label": "MFL rank · weekly change",
+      "text": "1 · No change",
+      "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM",
+      "range": null
+    },
+    {
+      "label": "ADP · min–max pick",
+      "text": "Pick 1.9 · picks 1–34",
+      "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league",
+      "range": {
+        "max": 49,
+        "value": 1.85,
+        "lo": 1,
+        "hi": 34,
+        "text": "Pick 1.9 · picks 1–34"
+      }
+    },
+    {
+      "label": "AAV · min–max budget share",
+      "text": "30.1% of auction budget · 3.4%–113.6%",
+      "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league",
+      "range": {
+        "max": 113.64,
+        "value": 30.1,
+        "lo": 3.44,
+        "hi": 113.64,
+        "text": "30.1% of auction budget · 3.4%–113.6%"
+      }
+    }
+  ],
+  "missing": [
+    {
+      "label": "Projected points",
+      "text": "—",
+      "reason": "Projected points this week unavailable; refresh from MFL to check.",
+      "range": null
+    },
+    {
+      "label": "MFL rank · weekly change",
+      "text": "—",
+      "reason": "MFL player ranks unavailable; refresh from MFL to check.",
+      "range": null
+    },
+    {
+      "label": "ADP · min–max pick",
+      "text": "—",
+      "reason": "Average draft position unavailable; refresh from MFL to check.",
+      "range": null
+    },
+    {
+      "label": "AAV · min–max budget share",
+      "text": "—",
+      "reason": "Average auction value unavailable; refresh from MFL to check.",
+      "range": null
+    }
+  ]
+}

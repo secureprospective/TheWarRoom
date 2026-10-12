@@ -17,8 +17,12 @@ import (
 
 const Export = "nflSchedule"
 
+// RawMatchup is one NFL game. Home marks which of Teams is at home and Scores are each team's
+// points, empty before kickoff.
 type RawMatchup struct {
 	Teams                [2]string
+	Home                 [2]bool
+	Scores               [2]string
 	Kickoff              string
 	GameSecondsRemaining string
 }
@@ -44,6 +48,11 @@ func (w RawWeek) Validate() error {
 		if _, err := strconv.ParseInt(m.Kickoff, 10, 64); err != nil {
 			return fmt.Errorf("nflschedule: week %s matchup %d kickoff: %w", w.Week, i, err)
 		}
+		for _, score := range m.Scores {
+			if _, err := strconv.Atoi(score); score != "" && err != nil {
+				return fmt.Errorf("nflschedule: week %s matchup %d score %q: %w", w.Week, i, score, err)
+			}
+		}
 	}
 	return nil
 }
@@ -62,7 +71,9 @@ type matchupBlock struct {
 }
 
 type teamBlock struct {
-	ID string `json:"id"`
+	ID     string `json:"id"`
+	IsHome string `json:"isHome"`
+	Score  string `json:"score"`
 }
 
 // Fetch reads one NFL week; week 0 asks for MFL's default week. The request carries no league,
@@ -100,6 +111,8 @@ func Parse(body []byte) (RawWeek, error) {
 		}
 		w.Matchups = append(w.Matchups, RawMatchup{
 			Teams:                [2]string{m.Teams[0].ID, m.Teams[1].ID},
+			Home:                 [2]bool{m.Teams[0].IsHome == "1", m.Teams[1].IsHome == "1"},
+			Scores:               [2]string{m.Teams[0].Score, m.Teams[1].Score},
 			Kickoff:              m.Kickoff,
 			GameSecondsRemaining: m.GameSecondsRemaining,
 		})

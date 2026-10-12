@@ -1,9 +1,14 @@
-import { lazy, Suspense } from 'react';
+import { Fragment, lazy, Suspense } from 'react';
 import { PlayerActMount } from './MovesMount';
 import type { Snapshot } from '../data/contract';
 import { PlayerCard } from '../cards/PlayerCard';
 import { playerCardModel } from '../cards/playerModel';
 import type { PlayerSubject } from './state';
+import { commands } from '../commands/registry';
+import { AssetNumber } from '../assets/AssetNumber';
+
+const PlayerLists = lazy(() => import('../personal/PersonalLists').then(m => ({ default: m.PlayerLists })));
+const ResearchInspector = lazy(() => import('../research/PlayerInspector'));
 
 const ContractPanel = lazy(() =>
   import('../contracts/Contracts').then((m) => ({ default: m.ContractPanel })),
@@ -16,6 +21,13 @@ export function PlayerInspector({
   snapshot: Snapshot;
   subject: PlayerSubject;
 }) {
+  const mine = commands.use().franchiseId;
+  if (!subject.franchiseId) return <>
+    <Suspense fallback={<p role="status">Reading player…</p>}>
+      <ResearchInspector id={subject.id} />
+    </Suspense>
+    <Suspense fallback={null}><PlayerLists id={subject.id} /></Suspense>
+  </>;
   const model = playerCardModel(snapshot, subject.franchiseId, subject.id, new Date(), true);
   return (
     <>
@@ -26,10 +38,14 @@ export function PlayerInspector({
         asOf={new Date()}
         model={model}
       />
+      <Suspense fallback={<p role="status">Reading player research…</p>}>
+        <ResearchInspector id={subject.id} identity={false} />
+      </Suspense>
       <Suspense fallback={<p role="status">Reading contract years…</p>}>
         <ContractPanel id={subject.id} />
       </Suspense>
-      <PlayerActMount subject={subject} />
+      {subject.franchiseId === mine && <PlayerActMount subject={subject} />}
+      <Suspense fallback={null}><PlayerLists id={subject.id} /></Suspense>
       <section className="zone interrogate">
         <h5>Interrogate</h5>
         <div className="provenance-detail">{model.provenance.detail}</div>
@@ -41,7 +57,14 @@ export function PlayerInspector({
           <dt>Salary</dt>
           <dd>{model.salary}</dd>
         </dl>
-        {['On-field-now', 'Dynasty value', 'Dead cap', 'Form', 'Market'].map((label) => (
+        <dl className="kv asset-values">
+          {([['On-field-now', 'now'], ['Dynasty value', 'dynasty'], ['Market', 'market']] as const)
+            .map(([label, which]) => <Fragment key={label}>
+              <dt>{label}</dt>
+              <dd><AssetNumber playerId={subject.id} which={which} /></dd>
+            </Fragment>)}
+        </dl>
+        {['Dead cap', 'Form'].map((label) => (
           <p key={label} className="not-wired">
             {label} · not wired
           </p>

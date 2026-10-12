@@ -1,5 +1,6 @@
+import { WatchButton } from '../personal/WatchButton';
 import { scrollWorkIntoView, useWorkAnchor } from '../shell/workScroll';
-import { Fragment, useEffect, useRef } from 'react';
+import { Fragment, lazy, Suspense, useEffect, useRef } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { localDate } from '../clock/labels';
@@ -9,10 +10,18 @@ import { BidPlanCard, signals, usePoolData } from './BidPlans';
 import { BidForm } from './BidForm';
 import { SignalChip } from '../look/Slots';
 import {
-  planOpen, POOL_SORTS, type BoardReading, type Plan, type PoolFilter, type PoolReading, type PoolRow,
+  planOpen, type BoardReading, type Plan, type PoolFilter, type PoolReading, type PoolRow,
 } from './contract';
 import { poolState, type PoolState } from './state';
 import './pool.css';
+import { RangeBar } from '../market/ReadingView';
+const MarketReports = lazy(() => import('../reports/MarketReports'));
+
+export function MarketFacts({ row }: { row: PoolRow }) {
+  return <>{row.market?.map(f => <div key={f.label} title={f.reason}>
+    <dt>{f.label}</dt><dd>{f.text}{f.range && <RangeBar range={f.range} />}</dd>
+  </div>)}</>;
+}
 
 function PlayerCell({ row }: { row: PoolRow }) {
   return (
@@ -95,7 +104,7 @@ export function OpenPlans({ board, openId, focus, busy, state }: {
   );
 }
 
-function PoolTable({ rows, state }: { rows: PoolRow[]; state?: PoolState }) {
+function PoolTable({ rows, state, mine }: { rows: PoolRow[]; state?: PoolState; mine: string }) {
   return (
     <table className="pool-table" aria-label="Free agents">
       <thead>
@@ -104,6 +113,7 @@ function PoolTable({ rows, state }: { rows: PoolRow[]; state?: PoolState }) {
           <th>Age</th>
           <th>Experience</th>
           <th>Minimum</th>
+          <th>Market</th>
           <th>
             <span className="pool-sr">Bid</span>
           </th>
@@ -114,10 +124,14 @@ function PoolTable({ rows, state }: { rows: PoolRow[]; state?: PoolState }) {
           <Fragment key={row.id}><tr>
             <td>
               <PlayerCell row={row} />
+              <WatchButton id={row.id} name={row.name} mine={mine} />
             </td>
             <td>{row.age}</td>
             <td>{row.experience}</td>
             <td className="pool-money">{row.minimum.text}</td>
+            <td className={row.marketLines.length === 1 ? 'pool-market pool-market-none' : 'pool-market'}>
+              {row.marketLines.map((line, i) =>
+              <div key={i}>{line}</div>)}</td>
             <td>
               {row.plan && <span className="pool-plan">Bid plan: {row.plan}</span>}
               {row.planId ? (
@@ -140,7 +154,7 @@ function PoolTable({ rows, state }: { rows: PoolRow[]; state?: PoolState }) {
             </td>
           </tr>
           {state?.form && !state.form.planId && state.form.playerId === row.id &&
-            <tr className="pool-form-row"><td colSpan={5}>
+            <tr className="pool-form-row"><td colSpan={6}>
             <BidForm form={state.form} preview={state.preview} busy={state.busy} />
           </td></tr>}</Fragment>
         ))}
@@ -161,8 +175,8 @@ export function PoolHowCounted({ reading }: { reading: PoolReading }) {
   );
 }
 
-export function PoolFrame({ reading, refreshing, state }: {
-  reading?: PoolReading; refreshing: boolean; state?: PoolState;
+export function PoolFrame({ reading, refreshing, state, mine = '' }: {
+  reading?: PoolReading; refreshing: boolean; state?: PoolState; mine?: string;
 }) {
   const failed = reading?.status === 'failed';
   return (
@@ -185,7 +199,9 @@ export function PoolFrame({ reading, refreshing, state }: {
           {reading.value.rows.length === 0 ? (
             <p>No free agent matches this position.</p>
           ) : (
-            <PoolTable rows={reading.value.rows} state={state} />
+            <div className="pool-table-scroll" tabIndex={0} role="region" aria-label="Free agents">
+              <PoolTable rows={reading.value.rows} state={state} mine={mine} />
+            </div>
           )}
         </>
       )}
@@ -231,7 +247,7 @@ function Controls({ reading, state }: { reading?: PoolReading; state: PoolState 
           value={scope.sort}
           onChange={(e) => dispatch('market', { field: 'pool-sort', value: e.target.value })}
         >
-          {POOL_SORTS.map(([id, label]) => (
+          {reading?.value.sorts.map(({ key: id, label }) => (
             <option key={id} value={id}>
               {label}
             </option>
@@ -264,7 +280,9 @@ export function PoolScreen({ state, snapshot, franchiseId }: {
 }) {
   const root = useRef<HTMLElement>(null);
   useWorkAnchor(root, '.pool-table tbody tr:not(.pool-form-row), .bid-plan');
-  return (
+  // The market reports are navigation, not pool rows: they sit outside the anchored section so the
+  // pool's scroll anchor never undoes endpoint.open revealing the chosen report.
+  return (<>
     <section ref={root} className="pool" aria-label="Free-agent pool">
       <header>
         <h4>Free-agent pool</h4>
@@ -282,9 +300,10 @@ export function PoolScreen({ state, snapshot, franchiseId }: {
       <OpenPlans board={state.board} openId={state.openPlan} focus={state.focus}
         busy={state.busy} state={state} />
       <Controls reading={state.reading} state={state} />
-      <PoolFrame reading={state.reading} refreshing={state.refreshing} state={state} />
+      <PoolFrame reading={state.reading} refreshing={state.refreshing} state={state} mine={franchiseId} />
     </section>
-  );
+    <Suspense fallback={null}><MarketReports /></Suspense>
+  </>);
 }
 
 export default function Pool({ snapshot }: { snapshot?: Snapshot }) {
@@ -315,6 +334,7 @@ export function PoolInspectorView({ row, plans, busy, reading }: {
           <dd>{row.experience}</dd>
           <dt>Minimum salary</dt>
           <dd className="pool-money">{row.minimum.text}</dd>
+          <MarketFacts row={row} />
         </dl>
       )}
       {row && reading && <PoolHowCounted reading={reading} />}
@@ -341,13 +361,15 @@ export function PoolInspectorView({ row, plans, busy, reading }: {
 }
 
 // The Inspector for a free agent: his row and any open bid plan on him.
+const PlayerLists = lazy(() => import('../personal/PersonalLists').then(m => ({ default: m.PlayerLists })));
 export function PoolInspector({ id }: { id: string }) {
   const state = usePoolData(true);
   const row = state.reading?.value.rows.find((r) => r.id === id);
   const plans = (state.board?.value.plans ?? []).filter(
     (p) => p.playerId === id && planOpen(p.stateCode),
   );
-  return <PoolInspectorView row={row} plans={plans} busy={state.busy} reading={state.reading} />;
+  return <><PoolInspectorView row={row} plans={plans} busy={state.busy} reading={state.reading} />
+    <Suspense fallback={null}><PlayerLists id={id} /></Suspense></>;
 }
 
 export const set = (change: { field: string; value: string }) =>

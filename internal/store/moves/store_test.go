@@ -81,6 +81,12 @@ func testMove(t *testing.T, id string, created time.Time, events ...envelope.Eve
 			to = envelope.Withdrawn
 		case envelope.AwaitDOT:
 			spec.Intent = "trade.propose"
+			other, err := playerid.New("0043")
+			if err != nil {
+				t.Fatal(err)
+			}
+			spec.Subject = envelope.Subject{Players: []playerid.PlayerID{player, other}, Picks: []string{}}
+			spec.Expected = envelope.ExpectedChange{Trade: &envelope.ExpectedTrade{TradeID: "fixture", Offering: "0001", Accepting: "0002", OfferingGives: []string{"0042"}, AcceptingGives: []string{"0043"}}}
 			to = envelope.DOTReview
 		case envelope.AwaitBid:
 			spec.Intent = "bid.submit"

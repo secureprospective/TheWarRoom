@@ -37,3 +37,11 @@ it('pools repeated placement strings without changing the generated registry con
   expect(generated).toContain('placement: places[');
   expect(generated.match(/"Trade Floor › Draft room"/g)).toHaveLength(2);
 });
+
+it('keeps registry prose the app never reads out of the generated table', () => {
+  const generated = generateEndpoints(source);
+  for (const key of ['when', 'data', 'sol_ids', 'gravity_reason', 'ring_note', 'gravity_note']) {
+    expect(generated).not.toMatch(new RegExp(`^    ${key}:`, 'm'));
+  }
+  expect(generated).toMatch(/^    gm_question:/m);
+});

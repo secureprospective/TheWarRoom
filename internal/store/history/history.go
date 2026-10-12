@@ -56,7 +56,7 @@ func (s *Store) Registry() *measures.Registry { return s.reg }
 // appendOnly lists the tables whose rows never change once written.
 func appendOnly() []string {
 	return []string{"raw_archive", "fetch_log", "loads", "observations", "param_sets", "scoring_runs", "run_scores",
-		"model_runs", "model_scores"}
+		"model_runs", "model_scores", "input_manifests", "compiled_snapshots", "snapshot_checks", "league_event"}
 }
 
 const historyDDL = `
@@ -186,6 +186,26 @@ CREATE TABLE IF NOT EXISTS model_scores (
 	on_field     REAL NOT NULL,
 	inputs       TEXT NOT NULL,
 	PRIMARY KEY (run_id, mfl_id)
+);
+CREATE TABLE IF NOT EXISTS input_manifests (
+	manifest_sha TEXT PRIMARY KEY,
+	name         TEXT NOT NULL,
+	entries      TEXT NOT NULL,
+	published_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS compiled_snapshots (
+	snapshot_id  INTEGER PRIMARY KEY,
+	manifest_sha TEXT NOT NULL REFERENCES input_manifests(manifest_sha),
+	compiler     TEXT NOT NULL,
+	rules_hash   TEXT NOT NULL,
+	result_sha   TEXT,
+	error        TEXT NOT NULL DEFAULT '',
+	built_at     TEXT NOT NULL,
+	CHECK ((result_sha IS NULL) <> (error = ''))
+);
+CREATE TABLE IF NOT EXISTS snapshot_checks (
+	snapshot_id INTEGER PRIMARY KEY REFERENCES compiled_snapshots(snapshot_id),
+	checks      TEXT NOT NULL
 );`
 
 // registryDDL recreates the registry mirrors. They hold whatever the CSV files say, so their
@@ -233,6 +253,7 @@ func (s *Store) Initialize(ctx context.Context) error {
 
 	var ddl strings.Builder
 	ddl.WriteString(historyDDL)
+	ddl.WriteString(eventsDDL)
 	for _, t := range appendOnly() {
 		for _, op := range []string{"UPDATE", "DELETE"} {
 			fmt.Fprintf(&ddl, `

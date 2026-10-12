@@ -1,3 +1,4 @@
+import Acquisitions from './Acquisitions';
 import { useWorkAnchor } from '../shell/workScroll';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { localDate } from '../clock/labels';
@@ -389,6 +390,7 @@ export default function Contracts({
       />
       {!supplied && <><ReleasePlans mine={s.franchiseId ?? ''} />
         <ContractActs mine={s.franchiseId ?? ''} /></>}
+      <Acquisitions mine={s.franchiseId} />
       <p>What-if models the charge; Make this a plan keeps a checked move. Nothing is submitted.</p>
     </div>
   );

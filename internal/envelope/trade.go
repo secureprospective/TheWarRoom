@@ -40,7 +40,7 @@ func tradeSubject(t ExpectedTrade) (Subject, error) {
 
 func validateTradeExpected(s Spec) error {
 	t := s.Expected.Trade
-	if t == nil || !validTradeScope(*t, s.FranchiseID) ||
+	if t == nil || !validTradeIntentScope(s.Intent, *t, s.FranchiseID) ||
 		s.Expected.Lineup != nil || !s.Expected.Player.IsZero() || s.Expected.RosterStatus != "" {
 		return fmt.Errorf("envelope: trade requires both sides and accepting franchise, without other changes")
 	}
@@ -182,7 +182,7 @@ func tradeOwnership(s Spec, snap snapshot.Snapshot, assets []leaguefeed.Asset) [
 const tradeReviewWindow = 7 * 24 * time.Hour
 
 func (e Envelope) tradeReviewVerdict(observed time.Time, verdict Verdict) Verdict {
-	if e.spec.Intent != "trade.accept" || e.state != DOTReview || verdict.Event != AwaitDOT ||
+	if !IsTrade(e.spec.Intent) || e.state != DOTReview || verdict.Event != AwaitDOT ||
 		!e.tradeReviewExpired(observed) {
 		return verdict
 	}
@@ -210,7 +210,7 @@ func (TradePredicate) Sources() []Source { return []Source{Transactions, Pending
 func tradeObservationReason(s Spec, obs Observation) string {
 	reason := ""
 	switch {
-	case s.Intent != "trade.accept" || s.Expected.Trade == nil:
+	case !IsTrade(s.Intent) || s.Expected.Trade == nil:
 		reason = "trade intent missing"
 	case obs.LeagueID != s.LeagueID:
 		reason = "wrong league"

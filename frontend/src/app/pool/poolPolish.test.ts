@@ -233,12 +233,13 @@ describe('Fix 5: unknown age and experience', () => {
     expect(text).toContain('<td>—</td><td>Unknown (rookie minimum)</td>');
     expect(text).not.toContain('UnknownUnknown');
   });
-  it('leaves the columns room at 700 px', () => {
+  it('confines the six-column table to its work column, with a sticky player fallback', () => {
     const css = readFileSync('src/app/pool/pool.css', 'utf8');
-    const width = (n: number) =>
-      Number(new RegExp(`th:nth-child\\(${n}\\) \\{ width: (\\d+)%`).exec(css)?.[1]);
-    expect(width(2) * 7).toBeGreaterThanOrEqual(56);
-    expect(width(3) * 7).toBeGreaterThanOrEqual(150);
+    expect(css).toContain('min-width: 660px');
+    expect(css).not.toContain('min-width: 1600px');
+    expect(css).toContain('.pool, .twr-app .pool-reading { min-width: 0; max-width: 100%; }');
+    expect(css).toContain('.pool-table-scroll { min-width: 0; overflow: auto; max-width: 100%;');
+    expect(css).toContain('position: sticky; left: 0; background: var(--surface-0)');
   });
 });
 
@@ -378,7 +379,7 @@ it('G: the same bid form is full-width directly after its clicked row, never abo
     ...poolState.peek(), reading, form: { ...form, playerId: row.id, playerName: row.name },
   } }));
   expect(text.match(/aria-label="Bid plan form"/g)).toHaveLength(1);
-  expect(text).toMatch(/<\/tr><tr class="pool-form-row"><td colSpan="5"><section class="bid-form"/);
+  expect(text).toMatch(/<\/tr><tr class="pool-form-row"><td colSpan="6"><section class="bid-form"/);
   expect(text.indexOf('Bid plan form')).toBeGreaterThan(text.indexOf(row.name));
   expect(text.indexOf('Bid plan form')).toBeLessThan(text.indexOf('</tbody>'));
 });
@@ -409,4 +410,50 @@ it('G: saved Change figures keeps the same form beside its card, not in the dist
   expect(text.indexOf('Bid plan form')).toBeLessThan(text.indexOf('<table'));
   expect(readFileSync('src/app/pool/pool.css', 'utf8'))
     .toContain('.pool-table tr:not(.pool-form-row) td:nth-child(1) .act');
+});
+
+
+it('renders one Market column with two Go-authored lines, retaining ranges only in the Inspector', () => {
+  const reading = pool();
+  const row = { ...reading.value.rows[0],
+    marketLines: ['Proj 12.4 · Rank 45, Up 3', 'ADP 112 (88–140) · AAV 1.2%'] };
+  const text = html(createElement(PoolFrame, {
+    reading: { ...reading, value: { ...reading.value, rows: [row] } }, refreshing: false,
+  }));
+  expect(text.match(/<th>/g)).toHaveLength(6);
+  expect(text).toContain('<th>Market</th>');
+  for (const line of row.marketLines) expect(text).toContain(line);
+  expect(text).not.toContain('<svg');
+});
+
+it('orders intro, open plans, pool and reports in DOM order', () => {
+  const source = readFileSync('src/app/pool/Pool.tsx', 'utf8');
+  const screen = source.slice(
+    source.indexOf('export function PoolScreen'), source.indexOf('export default function Pool'),
+  );
+  const elements = ['<header>', '<OpenPlans', '<Controls', '<PoolFrame', '<MarketReports'];
+  const indices = elements.map(s => screen.indexOf(s));
+  expect(indices.every(i => i >= 0)).toBe(true);
+  expect(indices).toEqual([...indices].sort((a, b) => a - b));
+});
+
+it('offers all seven Go-supplied sorts and sends each market key and direction to Go', async () => {
+  const reading = pool();
+  const state = { ...poolState.peek(), reading };
+  const text = html(createElement(PoolScreen, { state, franchiseId: '0001' }));
+  for (const { key, label } of reading.value.sorts) {
+    const selected = key === 'name' ? ' selected=""' : '';
+    expect(text).toContain(`<option value="${key}"${selected}>${label}</option>`);
+  }
+  expect(reading.value.sorts.map(s => s.key))
+    .toEqual(['name', 'position', 'minimum', 'projected', 'rank', 'adp', 'aav']);
+  const { provider, calls } = fakeProvider();
+  const store = createPoolState({ provider, franchise: () => '0001', delay: 0 });
+  await store.open();
+  for (const key of ['projected', 'rank', 'adp', 'aav']) {
+    await store.change({ field: 'pool-sort', value: key });
+    expect(calls.at(-1)).toContain(`"sort":"${key}","desc":false`);
+    await store.change({ field: 'pool-sort', value: key });
+    expect(calls.at(-1)).toContain(`"sort":"${key}","desc":true`);
+  }
 });

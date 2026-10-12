@@ -170,6 +170,11 @@ func Build(ctx context.Context, src Source, dir Directory, inj Injuries) (Snapsh
 			}
 		}
 	}
+	if meta.MirrorAsOf != "" && out.Players.Provenance.Freshness.State != domain.FreshFail {
+		if err := appendDirectoryPlayers(&out, dir.Lookup, seen); err != nil {
+			return Snapshot{}, err
+		}
+	}
 	finishPlayers(&out, len(seen))
 	out.Eligibility = buildEligibility(meta, out.Rosters, dir, inj, src.Slots())
 	return out, nil
@@ -248,4 +253,22 @@ func buildRoster(src Source, season int, fid string) (Roster, error) {
 	}
 	slices.SortFunc(out.Players, func(a, b RosterPlayer) int { return strings.Compare(a.ID.String(), b.ID.String()) })
 	return out, nil
+}
+
+func appendDirectoryPlayers(out *Snapshot, lookup normalize.Lookup, rostered map[string]bool) error {
+	for _, id := range lookup.IDs() {
+		if rostered[id] {
+			continue
+		}
+		facts, ok := lookup.Facts(id)
+		if !ok || facts.Name == "" {
+			continue
+		}
+		pid, err := playerid.New(id)
+		if err != nil {
+			return fmt.Errorf("snapshot: directory player: %w", err)
+		}
+		out.Players.Value = append(out.Players.Value, directoryPlayer(pid, lookup))
+	}
+	return nil
 }

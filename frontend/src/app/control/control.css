@@ -1,0 +1,10 @@
+.twr-app .control-room { display: grid; gap: 16px; }
+.twr-app .bylaws details,
+.twr-app .site-news details { border-top: 1px solid var(--surface-line); padding: 6px 0; }
+.twr-app .bylaws summary,
+.twr-app .site-news summary { cursor: pointer; font-weight: 600; }
+.twr-app .site-news summary { display: flex; gap: 12px; justify-content: space-between; }
+.twr-app .site-news summary time { font-weight: 400; white-space: nowrap; color: var(--surface-tx2); }
+.twr-app .bylaws details p,
+.twr-app .site-news details p { margin: 4px 0 4px 12px; max-width: 72ch; }
+.twr-app .bylaws label { display: block; margin-top: 8px; }

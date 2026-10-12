@@ -155,3 +155,51 @@ WHERE source = ? AND season = ? AND measure IN `+in, args...).Scan(&waiting); er
 	}
 	return out, waiting, nil
 }
+
+// URLHealth is the fetch history of one URL: when it last answered well and when it last failed.
+type URLHealth struct {
+	URL         string
+	LastSuccess time.Time // zero when no fetch succeeded
+	LastFailure time.Time // zero when no fetch failed
+	LastError   string
+}
+
+// FetchHealth returns the fetch history of every URL fetched for source. A fetch failed when it
+// got no 200 or recorded an error.
+func (s *Store) FetchHealth(ctx context.Context, source string) ([]URLHealth, error) {
+	rows, err := s.pools.Read().QueryContext(ctx, `
+SELECT url,
+	MAX(CASE WHEN status = 200 AND error = '' THEN fetched_at END),
+	MAX(CASE WHEN status <> 200 OR error <> '' THEN fetched_at END),
+	COALESCE((SELECT CASE WHEN g.error <> '' THEN g.error ELSE 'HTTP ' || g.status END FROM fetch_log g
+		WHERE g.source = f.source AND g.url = f.url AND (g.status <> 200 OR g.error <> '')
+		ORDER BY g.fetched_at DESC, g.fetch_id DESC LIMIT 1), '')
+FROM fetch_log f WHERE source = ? GROUP BY url ORDER BY url`, source)
+	if err != nil {
+		return nil, fmt.Errorf("history: fetch health of %s: %w", source, err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []URLHealth
+	for rows.Next() {
+		var h URLHealth
+		var ok, failed sql.NullString
+		if err := rows.Scan(&h.URL, &ok, &failed, &h.LastError); err != nil {
+			return nil, fmt.Errorf("history: scan fetch health of %s: %w", source, err)
+		}
+		for _, t := range []struct {
+			at  sql.NullString
+			dst *time.Time
+		}{{ok, &h.LastSuccess}, {failed, &h.LastFailure}} {
+			if t.at.Valid {
+				if *t.dst, err = parseTime(t.at.String); err != nil {
+					return nil, err
+				}
+			}
+		}
+		out = append(out, h)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("history: fetch health of %s: %w", source, err)
+	}
+	return out, nil
+}

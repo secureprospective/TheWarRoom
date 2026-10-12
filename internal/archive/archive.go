@@ -25,6 +25,7 @@ import (
 // read.
 type Fetch struct {
 	URL       string // as first requested, before redirects, with secret query values removed
+	Source    string // the registered source, when an importer names it; empty for a live fetch
 	Status    int    // 0 when no response arrived
 	SHA256    string // of the body as received
 	Size      int64

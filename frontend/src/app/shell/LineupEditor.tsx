@@ -10,7 +10,7 @@ import type { PlayerSubject } from './state';
 import { useDraftCheck, draftReading } from './draftLineup';
 import { changedPlayers, editReason } from '../commands/lineupEdit';
 import { LineupPlan } from './LineupPlan';
-import { lineupGroups, lineupText, lineupVerdict } from './roster';
+import { lineupGroups, lineupPending, lineupText, lineupVerdict } from './roster';
 import { provenanceSlot } from '../cards/playerModel';
 import type { franchiseRoster } from './roster';
 
@@ -40,7 +40,8 @@ export default function LineupEditor({ snapshot, roster, franchiseId, selected, 
     read();
     return commands.onMovesChange(read);
   }, [franchiseId]);
-  const groups = useMemo(() => edited ? lineupGroups(snapshot, roster, edited) : roster.groups,
+  const groups = useMemo(() => edited && !lineupPending(edited) ? lineupGroups(snapshot, roster, edited)
+    : roster.groups,
     [snapshot, roster, edited]);
   return (
     <>
@@ -61,7 +62,7 @@ export default function LineupEditor({ snapshot, roster, franchiseId, selected, 
           ? `Draft · ${lineupVerdict(edited)}` +
             ` · ${changes.length} ${changes.length === 1 ? 'player' : 'players'} changed from saved`
           : lineupText(reading, error)}{' '}
-        {reading && <>
+        {reading && !lineupPending(reading) && <>
           <SignalChip {...provenanceSlot([['Lineup', reading.provenance]])} />{' '}
           <SignalChip {...provenanceSlot([['Rules', reading.rulesSource]])} />
         </>}

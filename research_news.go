@@ -1,0 +1,137 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"net/url"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
+)
+
+// archivedNews reads the archived playerProfile bodies once, newest first, and keeps each wanted player's newest
+// answer. A body is matched by the exact members of its P list, never a substring. The pass ends when every wanted
+// player is answered or when more says the remaining bodies are too old, so the cost is one scan per refresh, not
+// one per player.
+func archivedNews(ctx context.Context, bodies archivedBodies, season int, want []string,
+	more func(time.Time) bool) (map[string]heldSeasonFeed[[]researchfeeds.News], error) {
+	out := map[string]heldSeasonFeed[[]researchfeeds.News]{}
+	open := map[string]bool{}
+	for _, id := range want {
+		open[id] = true
+	}
+	if len(open) == 0 {
+		return out, nil
+	}
+	_, err := bodies(ctx, "TYPE=playerProfile", func(src string, body []byte, at time.Time) bool {
+		if !more(at) {
+			return true
+		}
+		u, err := url.Parse(src)
+		if err != nil || !sameExport(src, "playerProfile", season, true) {
+			return false
+		}
+		asked := strings.Split(u.Query().Get("P"), ",")
+		if !slices.ContainsFunc(asked, func(id string) bool { return open[id] }) {
+			return false
+		}
+		rows, err := researchfeeds.ParseNews(body, asked)
+		if err != nil {
+			return false
+		}
+		for _, id := range asked {
+			if news, ok := rows[id]; ok && open[id] {
+				out[id] = heldSeasonFeed[[]researchfeeds.News]{value: news, fetchedAt: at}
+				delete(open, id)
+			}
+		}
+		return len(open) == 0
+	})
+	if err != nil {
+		return out, fmt.Errorf("news archive: %w", err)
+	}
+	return out, nil
+}
+
+// readResearchNewsBatches serves today's reads from memory or the archive, then asks MFL for the rest in batches
+// of 100 with one pause per request. A player MFL does not answer is a named loss; the others are held.
+func readResearchNewsBatches(ctx context.Context, held map[string]heldSeasonFeed[[]researchfeeds.News], season int, ids []string, now time.Time,
+	bodies archivedBodies, pause func(context.Context, time.Duration) error,
+	fetch func(context.Context, []string) (map[string][]researchfeeds.News, error), logLine func(string)) error {
+	day := now.In(time.Local).Format("2006-01-02")
+	today := func(at time.Time) bool { return at.In(time.Local).Format("2006-01-02") == day }
+	need := []string{}
+	for _, id := range ids {
+		if h := held[id]; h.fetchedAt.IsZero() || !today(h.fetchedAt) {
+			need = append(need, id)
+		}
+	}
+	cached, err := archivedNews(ctx, bodies, season, need, today)
+	if err != nil {
+		return fmt.Errorf("news daily cache: %w", err)
+	}
+	pending := []string{}
+	for _, id := range need {
+		if h, ok := cached[id]; ok {
+			held[id] = h
+		} else {
+			pending = append(pending, id)
+		}
+	}
+	for batch := range slices.Chunk(pending, 100) {
+		if err := pause(ctx, time.Second); err != nil {
+			return err
+		}
+		rows, err := fetch(ctx, batch)
+		if err != nil {
+			logLine(fmt.Sprintf("news batch of %d players (%s to %s): %v", len(batch), batch[0], batch[len(batch)-1], err))
+		}
+		losses := map[string]error{}
+		for _, id := range batch {
+			news, answered := rows[id]
+			switch {
+			case err != nil:
+				losses[id] = err
+			case !answered:
+				losses[id] = fmt.Errorf("playerProfile: player %s unanswered", id)
+				logLine(fmt.Sprintf("news player %s: %v", id, losses[id]))
+			default:
+				next := held[id]
+				holdSeasonFeed(&next, news, liveFreshness(now), nil)
+				held[id] = next
+			}
+		}
+		fallbackResearchNews(ctx, held, season, batch, losses, bodies)
+		if ctx.Err() != nil {
+			return fmt.Errorf("news refresh: %w", ctx.Err())
+		}
+	}
+	return nil
+}
+
+// fallbackResearchNews holds each lost player's newest archived news, marked stale with the loss, in one archive
+// pass for the whole batch. A player with no archived news keeps the loss and nothing invented.
+func fallbackResearchNews(ctx context.Context, held map[string]heldSeasonFeed[[]researchfeeds.News], season int,
+	batch []string, losses map[string]error, bodies archivedBodies) {
+	if len(losses) == 0 {
+		return
+	}
+	lost := slices.DeleteFunc(slices.Clone(batch), func(id string) bool { return losses[id] == nil })
+	rctx, cancel := context.WithTimeout(ctx, fallbackTimeout)
+	defer cancel()
+	found, err := archivedNews(rctx, bodies, season, lost, func(time.Time) bool { return true })
+	for _, id := range lost {
+		next, loss := held[id], losses[id]
+		switch h, ok := found[id]; {
+		case ok:
+			holdSeasonFeed(&next, h.value, staleFreshness(h.fetchedAt, loss), nil)
+		case err != nil:
+			holdSeasonFeed(&next, nil, Freshness{}, fmt.Errorf("news player %s archive: %w (live: %v)", id, err, loss))
+		default:
+			holdSeasonFeed(&next, nil, Freshness{}, loss)
+		}
+		held[id] = next
+	}
+}

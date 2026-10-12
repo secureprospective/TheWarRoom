@@ -41,6 +41,7 @@ func diffScalars(old, cand league.RawConfig) []RuleDelta {
 		{"starters.count", old.Starters.Count, cand.Starters.Count},
 		{"starters.iop", old.Starters.IOPStarters, cand.Starters.IOPStarters},
 		{"starters.idp", old.Starters.IDPStarters, cand.Starters.IDPStarters},
+		{"standingsSort", old.StandingsSort, cand.StandingsSort},
 	}
 	var out []RuleDelta
 	for _, p := range pairs {

@@ -1,3 +1,4 @@
+import { range } from '../reports/contract';
 import { parseRailReceipt } from '../shell/railReceipt';
 import type * as Bindings from '../../../wailsjs/go/main/App';
 import { main } from '../../../wailsjs/go/models';
@@ -31,16 +32,27 @@ const amount: Parser<Amount> = (v, p) => {
 const poolRow: Parser<PoolRow> = (v, p) => {
   const r = object(v, p, [
     'id', 'name', 'position', 'team', 'age', 'experience', 'minimum', 'plan', 'planId',
+    'market', 'marketLines',
   ]);
   return {
+    marketLines: array(r.marketLines, p, text),
+    market: array(r.market, p, (v, p) => {
+      const fact = object(v, p, ['label', 'text', 'reason', 'range']);
+      return { label: text(fact.label, p), text: text(fact.text, p),
+        reason: text(fact.reason, p), range: range(fact.range, p) };
+    }),
     id: text(r.id, p), name: text(r.name, p), position: text(r.position, p), team: text(r.team, p),
     age: text(r.age, p), experience: text(r.experience, p), minimum: amount(r.minimum, p),
     plan: text(r.plan, p), planId: text(r.planId, p),
   };
 };
 const pool: Parser<Pool> = (v, p) => {
-  const r = object(v, p, ['rows', 'positions', 'summary']);
+  const r = object(v, p, ['rows', 'positions', 'summary', 'sorts']);
   return {
+    sorts: array(r.sorts, p, (v, p) => {
+      const s = object(v, p, ['key', 'label']);
+      return { key: text(s.key, p), label: text(s.label, p) };
+    }),
     rows: array(r.rows, p, poolRow), positions: array(r.positions, p, text), summary: text(r.summary, p),
   };
 };

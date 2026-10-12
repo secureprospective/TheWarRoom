@@ -14,7 +14,10 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/headshot"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -28,6 +31,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/moves"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
@@ -47,6 +51,7 @@ type App struct {
 	workCancel context.CancelFunc
 	//nolint:containedctx // Wails supplies an app-lifetime context; bindings derive bounded contexts.
 	ctx         context.Context
+	dataDir     string    // the app's data directory: its databases and settings.json
 	pools       *db.Pools // thewarroom.db: the MFL mirror and app settings
 	histPools   *db.Pools // history.db: everything that cannot be rebuilt
 	whatifPools *db.Pools // whatif.db: moves made in the app, apart from MFL truth (R2)
@@ -65,6 +70,17 @@ type App struct {
 	startupErr  error                     // startup failure; shown in the shell through AppInfo
 	started     chan struct{}             // closed when startup returns; read the fields above through ready
 	lockFile    *os.File                  // single-instance lock, held until shutdown
+	// headshots caches player photos in the data directory. Its client bypasses fetches on purpose:
+	// photos are images, not facts, and never enter history.db (spec §7).
+	headshots atomic.Pointer[headshot.Service]
+	// assetModel is the Lab's value model for C-01, set once the Lab compiles from the facts.
+	assetModel atomic.Pointer[assetModel]
+	// factsMu lets one checked-facts compile run at a time.
+	factsMu      sync.Mutex
+	archiveCache archiveCache
+	photosOff    atomic.Bool
+	// control holds Control Room's MFL feeds (site news, scoring-event names); guarded by seasonMu.
+	control controlFeeds
 
 	// The players directory is fetched at most once per process (MFL allows the endpoint once a
 	// day). Wails runs IPC calls concurrently, hence the mutex.
@@ -89,10 +105,19 @@ type App struct {
 
 	seasonMu            sync.Mutex
 	seasonTransactions  heldSeasonFeed[[]leaguefeed.Transaction]
+	commsBoards         [2]heldSeasonFeed[[]ingestion.RawLeaguePost]
 	seasonLineups       heldSeasonFeed[leaguefeed.Lineups]
 	seasonPendingTrades heldSeasonFeed[[]leaguefeed.PendingTrade]
 	seasonInjuries      heldSeasonFeed[[]leaguefeed.Injury]
 	seasonFreeAgents    heldSeasonFeed[[]playerid.PlayerID]
+	seasonMarket        map[string]heldSeasonFeed[[]marketfeeds.Feed]
+	seasonDraftResults  heldSeasonFeed[[]draftreports.Pick]
+	seasonFuturePicks   heldSeasonFeed[[]draftreports.FuturePick]
+	research            researchHeld
+	race                raceHeld
+	now                 nowHeld
+	liveGameMu          sync.Mutex
+	liveGame            liveGameHeld
 	lineupsWeek         int
 	seasonChanged       func(context.Context)
 	seasonPause         func(context.Context, time.Duration) error
@@ -110,6 +135,7 @@ type App struct {
 	fallbackLog  func(string)
 	movesUnknown map[string]bool
 
+	newsMu           sync.Mutex
 	refreshMu        sync.Mutex   // one MFL refresh at a time
 	rostersCheckedAt time.Time    // last successful roster refresh; refreshMu guards it
 	rulesCheckedAt   atomic.Int64 // unix seconds of the last rules sync, 0 if none; read lock-free
@@ -186,6 +212,7 @@ func (a *App) startup(ctx context.Context) {
 		a.startupErr = fmt.Errorf("startup: resolve config dir: %w", err)
 		return
 	}
+	a.dataDir = dir
 	if lerr := setupLogging(dir); lerr != nil {
 		log.Printf("the war room: WARNING disk logging unavailable: %v", lerr)
 	}
@@ -208,6 +235,7 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 	a.mflClient = client
+	a.startHeadshots()
 
 	log.Printf("the war room: starting %s, db %s", buildLabel(), path)
 	began := time.Now()
@@ -226,6 +254,7 @@ func (a *App) startup(ctx context.Context) {
 func (a *App) domReady(ctx context.Context) {
 	a.refreshInBackground(ctx)
 	a.signalsInBackground(ctx)
+	a.compileFactsInBackground(ctx)
 }
 
 // openDatabases takes the instance lock and opens the three databases. Every fetch after this goes
@@ -283,6 +312,7 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 		{"history", hist.Initialize},
 		{"params", pstore.Initialize},
 		{"moves", moveStore.Initialize},
+		{"personal lists", personal.New(a.pools).Initialize},
 		{"rulebook", func(c context.Context) error { return rb.Initialize(c, discoverSource{app: a}) }},
 		{"league mirror", mirror.Initialize},
 		{"first MFL refresh", func(c context.Context) error {

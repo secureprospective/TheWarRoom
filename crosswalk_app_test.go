@@ -25,7 +25,7 @@ func TestCrosswalkReportRatesAndReasons(t *testing.T) {
 	}
 	lk, err := normalize.NewLookup([]players.RawPlayer{
 		{ID: "13294", Name: "Veteran, Pat", Position: "QB"},
-		{ID: "0816", Name: "Gosnell, Stephen", Position: "WR"},
+		{ID: "0816", Name: "Gosnell, Stephen", Position: "WR", Team: "MIN"},
 		{ID: "17471", Name: "Pavia, Diego", Position: "QB"},
 		{ID: "0844", Name: "Wood, Julius", Position: "S"},
 		{ID: "20000", Name: "Agent, Free", Position: "WR"},
@@ -72,7 +72,7 @@ func TestCrosswalkReportRatesAndReasons(t *testing.T) {
 			t.Errorf("reason for %s = %q, want %q", id, reasons[id], why)
 		}
 	}
-	if len(rep.Unmatched) != 3 || rep.Unmatched[0].Franchise != "Buffalo Bills" {
+	if len(rep.Unmatched) != 3 || rep.Unmatched[0].Franchise != "Buffalo Bills" || rep.Unmatched[0].Team != "MIN" {
 		t.Errorf("unmatched = %+v", rep.Unmatched)
 	}
 }

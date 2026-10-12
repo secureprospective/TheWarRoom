@@ -29,6 +29,9 @@ func (a *App) TargetHandOff(correlationID string) (envelope.Receipt, error) {
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off: load: %w", err)
 	}
+	if envelope.IsTrade(e.Receipt().Spec.Intent) && e.Receipt().Spec.Intent != "trade.accept" {
+		return envelope.Receipt{}, fmt.Errorf("trade Act needs its trade-desk pre-flight and confirmation")
+	}
 	if envelope.IsRelease(e.Receipt().Spec.Intent) {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off: release needs its confirmation and checks")
 	}
@@ -92,10 +95,11 @@ func movePredicate(intent string) envelope.Predicate {
 		envelope.CutIntent:    envelope.ReleasePredicate{},
 		envelope.BuyoutIntent: envelope.ReleasePredicate{},
 		"rfa.tender":          envelope.ContractPredicate{}, "fa.resign": envelope.ContractPredicate{}, "contract.tag": envelope.ContractPredicate{}, "contract.extend": envelope.ContractPredicate{}, "contract.restructure": envelope.ContractPredicate{},
-		"roster.taxi":  envelope.TaxiPredicate{},
-		"lineup.set":   envelope.LineupPredicate{},
-		"trade.accept": envelope.TradePredicate{},
-		"bid.submit":   envelope.BidPredicate{},
+		"roster.taxi":   envelope.TaxiPredicate{},
+		"lineup.set":    envelope.LineupPredicate{},
+		"trade.accept":  envelope.TradePredicate{},
+		"trade.propose": envelope.TradeActPredicate{}, "trade.reject": envelope.TradeActPredicate{}, "trade.revoke": envelope.TradeActPredicate{},
+		"bid.submit": envelope.BidPredicate{},
 	}
 	return registry[intent]
 }
@@ -186,7 +190,7 @@ func (a *App) checkMoves(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("watch moves: observe %s: %w", e.ID(), err)
 		}
-		if next.State() == e.State() {
+		if !saveMoveEvidence(e, next) {
 			continue
 		}
 		if err := a.moves.Save(ctx, next); err != nil {
@@ -470,4 +474,15 @@ func (a *App) TargetWithdrawRoster(correlationID string) (envelope.Receipt, erro
 	a.logMove(next)
 	a.movesChanged(a.ctx)
 	return next.Receipt(), nil
+}
+
+func saveMoveEvidence(before, after envelope.Envelope) bool {
+	if before.State() != after.State() {
+		return true
+	}
+	old, next := before.Receipt(), after.Receipt()
+	if !envelope.IsTrade(old.Spec.Intent) || old.Spec.Intent == "trade.accept" || len(next.Audit) == 0 {
+		return false
+	}
+	return len(old.Audit) == 0 || old.Audit[len(old.Audit)-1].Note != next.Audit[len(next.Audit)-1].Note
 }

@@ -196,3 +196,52 @@ func TestFetchFailures(t *testing.T) {
 		t.Fatal("negative week accepted")
 	}
 }
+
+func TestReal2025WeekCarriesHomeAndScoresAndByes(t *testing.T) {
+	raw, err := Parse(fixture(t, "nflSchedule-2025-w05.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if raw.Week != "5" || len(raw.Matchups) != 14 {
+		t.Fatalf("week 5: %+v", raw)
+	}
+	byes, err := ParseByes(fixture(t, "nflByeWeeks-2025.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	playing := map[string]bool{}
+	for _, m := range raw.Matchups {
+		if m.Home[0] == m.Home[1] || m.Scores[0] == "" || m.Scores[1] == "" {
+			t.Fatalf("game needs one home side and both scores: %+v", m)
+		}
+		playing[m.Teams[0]], playing[m.Teams[1]] = true, true
+	}
+	off := []string{}
+	for _, b := range byes {
+		if b.ByeWeek() == 5 {
+			off = append(off, b.Team)
+		}
+		if playing[b.Team] == (b.ByeWeek() == 5) {
+			t.Fatalf("%s: bye week %d disagrees with the week 5 schedule", b.Team, b.ByeWeek())
+		}
+	}
+	if len(byes) != 32 || strings.Join(off, " ") != "ATL CHI GBP PIT" {
+		t.Fatal(len(byes), off)
+	}
+}
+
+func TestParseByesRejectsMalformed(t *testing.T) {
+	for _, body := range []string{
+		`{"nflByeWeeks":{"team":[]}}`,
+		`{"nflByeWeeks":{"team":{"id":"ARI","bye_week":""}}}`,
+		`{"nflByeWeeks":{"team":{"id":"","bye_week":"7"}}}`,
+		`{"error":{"$t":"bad"}}`,
+	} {
+		if _, err := ParseByes([]byte(body)); err == nil {
+			t.Fatal("accepted", body)
+		}
+	}
+	if _, err := Parse([]byte(strings.Replace(string(fixture(t, "nflSchedule-2025-w05.json")), `"score":"20"`, `"score":"x"`, 1))); err == nil {
+		t.Fatal("accepted a non-numeric score")
+	}
+}

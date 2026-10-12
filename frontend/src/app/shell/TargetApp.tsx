@@ -20,6 +20,9 @@ import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
 
+const StatusStrip = lazy(() => import('./StatusStrip'));
+const EntityInspector = lazy(() => import('./EntityInspector'));
+const DataSources = lazy(() => import('../datasources/DataSources'));
 const Contracts = lazy(() => import('../contracts/Contracts'));
 const LazyEndpointIndex = lazy(() =>
   import('../registry/EndpointIndex').then((m) => ({ default: m.EndpointIndex })),
@@ -35,13 +38,22 @@ function EndpointIndex({ placement }: { placement: Placement }) {
 const CalendarPanel = lazy(() =>
   import('../clock/CalendarPanel').then((m) => ({ default: m.CalendarPanel })),
 );
+const LeagueRoom = lazy(() => import('../control/LeagueRoom').then((m) => ({ default: m.LeagueRoom })));
 const AppSettings = lazy(() => import('./AppSettings').then((m) => ({ default: m.AppSettings })));
 const CommandBar = lazy(() => import('../commands/CommandBar').then((m) => ({ default: m.CommandBar })));
 const HomePulseMount = lazy(() => import('./HomePulseMount'));
 const TradeDesk = lazy(() => import('./TradeDesk'));
 const Market = lazy(loadMarket);
+const Research = lazy(() => import('../research/Research'));
+const Race = lazy(() => import('../race/Race'));
+const Archive = lazy(() => import('../archive/Archive'));
+const Comms = lazy(() => import('../comms/Comms'));
 const loadInspector = () => import('./PlayerInspector');
 const PlayerInspector = lazy(() => loadInspector().then((m) => ({ default: m.PlayerInspector })));
+
+// Workspaces that read the league snapshot: before it arrives they are loading, not unwired.
+const snapshotWorkspaces = ['hq/lineup-and-roster', 'hq/contracts-and-cap', 'hq/my-moves',
+  'trade/trade-desk'];
 
 export function TargetApp() {
   const s = commands.use();
@@ -84,7 +96,7 @@ export function TargetApp() {
   const node = nodes[s.node];
   const workspaces: readonly { slug: string; label: string; ring: string }[] = node.workspaces;
   const workspace = workspaces.find((w) => w.slug === s.workspace[s.node])!;
-  const placement = `${node.label} › ${workspace.label.replace(' (role-gated)', '')}` as Placement;
+  const placement = `${node.label} › ${workspace.label}` as Placement;
   return (
     <div className="twr-app target-frame" ref={root} data-inspector={s.inspector}>
       <aside className="rail">
@@ -161,12 +173,6 @@ export function TargetApp() {
             ))}
           </div>
           <div className="strip">
-            {summary ? (
-              <SignalChip {...summary.provenance} />
-            ) : (
-              <span>{error ?? 'Snapshot loading…'}</span>
-            )}
-            <ClockStrip reading={clock} />
             <span className="dens" aria-label="Density">
               {DENSITIES.map((density, index) => (
                 <Act
@@ -183,6 +189,10 @@ export function TargetApp() {
             </span>
           </div>
         </header>
+        <div className="workspace-status" aria-label="Status strip">
+          <Suspense fallback={null}><StatusStrip /></Suspense>
+          <ClockStrip reading={clock} />
+        </div>
         <div className="wbody" ref={workspaceBody}>
           {s.notice && (
             <p role="status" className="not-wired">
@@ -212,17 +222,43 @@ export function TargetApp() {
             <Suspense fallback={null}>
               <Market snapshot={snapshot} />
             </Suspense>
+          ) : s.node === 'war' && workspace.slug === 'research' ? (
+            <Suspense fallback={<p role="status">Opening Research…</p>}>
+              <Research />
+            </Suspense>
+          ) : s.node === 'pulse' && workspace.slug === 'race' ? (
+            <Suspense fallback={<p role="status">Opening Race…</p>}>
+              <Race />
+            </Suspense>
+          ) : s.node === 'pulse' && workspace.slug === 'pools-archive' ? (
+            <Suspense fallback={<p role="status">Opening Pools / Archive…</p>}>
+              <Archive />
+            </Suspense>
+          ) : s.node === 'home' && workspace.slug === 'digests' ? (
+            <Suspense fallback={<p role="status">Opening Digests…</p>}>
+              <Comms />
+              <Research newsOnly />
+            </Suspense>
+          ) : s.node === 'control' && workspace.slug === 'data-and-sources' ? (
+            <Suspense fallback={<p role="status">Opening Data and sources…</p>}>
+              <DataSources />
+            </Suspense>
           ) : s.node === 'control' && workspace.slug === 'app' ? (
             <Suspense fallback={null}>
               <AppSettings />
             </Suspense>
+          ) : s.node === 'control' && workspace.slug === 'league' ? (
+            <Suspense fallback={<p role="status">Opening League…</p>}>
+              <LeagueRoom />
+            </Suspense>
+          ) : !snapshot && snapshotWorkspaces.includes(`${s.node}/${workspace.slug}`) ? (
+            <p role="status">
+              {error ? `${workspace.label} unavailable · ${error}` : 'Reading the league…'}
+            </p>
           ) : (
             <section className="shell-unwired">
               <h4>{workspace.label}</h4>
               <p className="not-wired">Not wired · {workspace.ring}</p>
-              {s.node === 'control' && workspace.slug === 'league' && (
-                <p>Commissioner or admin role required · running as GM</p>
-              )}
             </section>
           )}
           {s.node === 'home' && summary && (
@@ -261,7 +297,9 @@ export function TargetApp() {
           </span>
         </div>
         <div className="insp-body">
-          {s.asset ? (
+          {s.entity && snapshot ? (
+            <Suspense fallback={null}><EntityInspector entity={s.entity} snapshot={snapshot} /></Suspense>
+          ) : s.asset ? (
             <Suspense fallback={null}>
               <Market kind={s.asset} snapshot={snapshot} />
             </Suspense>
@@ -312,6 +350,9 @@ export function TargetApp() {
             Close
           </Act>
         </header>
+        {s.comms && <Suspense fallback={<p role="status">Reading league communications…</p>}>
+          <Comms panel />
+        </Suspense>}
         <EndpointIndex placement="Comms" />
       </aside>
       <aside
@@ -340,6 +381,8 @@ export function TargetApp() {
               Close
             </Act>
           </header>
+          {s.endpointSurface === 'Status strip' && <Suspense fallback={null}>
+            <StatusStrip /><ClockStrip reading={clock} /></Suspense>}
           <EndpointIndex placement={s.endpointSurface} />
         </aside>
       )}

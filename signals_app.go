@@ -15,7 +15,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/feeds"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
-	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 // signalsTimeout bounds one signals load. The first load on a new history backfills every
@@ -56,21 +55,12 @@ type SignalLoad struct {
 
 // SignalsReport is one signals load: every file it looked at.
 type SignalsReport struct {
-	OK         bool         `json:"ok"`
-	Error      string       `json:"error"`
-	StartedAt  string       `json:"startedAt"`
-	FinishedAt string       `json:"finishedAt"`
-	Loads      []SignalLoad `json:"loads"`
-}
-
-// LoadSignals loads every signal file that is due, then reports what it did.
-func (a *App) LoadSignals() SignalsReport {
-	if err := a.ready(); err != nil {
-		return SignalsReport{Error: err.Error()}
-	}
-	ctx, cancel := context.WithTimeout(a.ctx, signalsTimeout)
-	defer cancel()
-	return a.loadSignals(ctx)
+	OK            bool         `json:"ok"`
+	Error         string       `json:"error"`
+	StartedAt     string       `json:"startedAt"`
+	FinishedAt    string       `json:"finishedAt"`
+	Loads         []SignalLoad `json:"loads"`
+	CrosswalkNote string       `json:"crosswalkNote"`
 }
 
 // loadSignals links the crosswalk first, so the facts resolve as they land, then loads each due
@@ -79,8 +69,10 @@ func (a *App) LoadSignals() SignalsReport {
 func (a *App) loadSignals(ctx context.Context) SignalsReport {
 	a.loadingSignals.Lock()
 	defer a.loadingSignals.Unlock()
-	rep := SignalsReport{OK: true, StartedAt: time.Now().Format(time.RFC3339)}
+	rep := SignalsReport{OK: true, StartedAt: time.Now().Format(time.RFC3339),
+		CrosswalkNote: "Player crosswalk reloaded and relinked before signals; its Loaded time records that relink."}
 	if err := a.linkDirectory(ctx); err != nil {
+		rep.CrosswalkNote = "Player crosswalk relink failed; its last Loaded time is kept: " + err.Error()
 		log.Printf("the war room: signals: directory not refreshed, facts may wait for a match: %v", err)
 	}
 	client := &http.Client{Timeout: rasFetchTimeout, Transport: a.fetches}
@@ -296,15 +288,6 @@ func (a *App) signalsInBackground(parent context.Context) {
 	}()
 }
 
-// SourceView is one source's health as the Sources screen shows it.
-type SourceView struct {
-	Source      string `json:"source"`
-	Name        string `json:"name"`
-	State       string `json:"state"`
-	LastSuccess string `json:"lastSuccess"`
-	LastError   string `json:"lastError"`
-}
-
 // PositionShare is how many rostered players at a position a signal has data for.
 type PositionShare struct {
 	Position string `json:"position"`
@@ -333,15 +316,9 @@ type FeedView struct {
 	Coverage       []PositionShare `json:"coverage"`
 }
 
-// SignalsView is the Sources screen: every source's health, every signal's coverage, and the
-// latest load since launch.
+// SignalsView is every signal's freshness and coverage, as history holds them.
 type SignalsView struct {
-	OK       bool          `json:"ok"`
-	Error    string        `json:"error"`
-	Season   int           `json:"season"`
-	Sources  []SourceView  `json:"sources"`
-	Feeds    []FeedView    `json:"feeds"`
-	LastLoad SignalsReport `json:"lastLoad"`
+	Feeds []FeedView
 }
 
 // allSeasons marks coverage measured across every season: college seasons, all behind a player,
@@ -352,39 +329,14 @@ const allSeasons = -1
 // contract a rostered veteran could still be playing on.
 const contractsFirstSeason = 2014
 
-// GetSignals reports source health, freshness and coverage from what history holds.
-func (a *App) GetSignals() SignalsView {
-	if err := a.ready(); err != nil {
-		return SignalsView{Error: err.Error()}
-	}
-	ctx, cancel := context.WithTimeout(a.ctx, m1Timeout)
-	defer cancel()
-	view, err := a.signalsView(ctx)
-	if err != nil {
-		return SignalsView{Error: err.Error()}
-	}
-	a.signalsMu.Lock()
-	view.LastLoad = a.signals
-	a.signalsMu.Unlock()
-	return view
-}
-
 func (a *App) signalsView(ctx context.Context) (SignalsView, error) {
-	view := SignalsView{OK: true, Season: a.season}
-	health, err := a.history.SourceHealth(ctx)
-	if err != nil {
-		return SignalsView{}, fmt.Errorf("app: signals view: %w", err)
-	}
+	var view SignalsView
 	reg := a.history.Registry()
 	maxAge := map[string]time.Duration{}
 	for _, s := range reg.Sources {
 		maxAge[s.ID] = s.MaxAge
 	}
-	for _, h := range health {
-		src, _ := reg.Source(h.Source)
-		view.Sources = append(view.Sources, sourceView(h, src.Name))
-	}
-	positions := a.rosteredPositions(ctx)
+	positions := a.rosteredPositions()
 	for _, f := range reg.Feeds {
 		var fields []string
 		for _, sf := range reg.FeedFields(f) {
@@ -423,19 +375,6 @@ func (a *App) signalsView(ctx context.Context) (SignalsView, error) {
 	return view, nil
 }
 
-// sourceView shows a source's error only while it is newer than its last good load: an error a
-// later load put right is history, not news.
-func sourceView(h history.SourceHealth, name string) SourceView {
-	v := SourceView{Source: h.Source, Name: name, State: string(h.State)}
-	if h.LastFailure.After(h.LastSuccess) {
-		v.LastError = h.LastError
-	}
-	if !h.LastSuccess.IsZero() {
-		v.LastSuccess = h.LastSuccess.Format(time.RFC3339)
-	}
-	return v
-}
-
 // feedView measures one signal. Coverage is taken in the latest season with data, or across
 // every season for college, where a player's seasons are all behind him, and for contracts.
 func (a *App) feedView(ctx context.Context, name, source, currentURL string, seasons []int, fields []string,
@@ -470,12 +409,14 @@ func (a *App) feedView(ctx context.Context, name, source, currentURL string, sea
 	return fv, nil
 }
 
-// rosteredPositions maps every rostered player to his league position. Without the players
-// directory (MFL down) the coverage table is empty rather than wrong.
-func (a *App) rosteredPositions(ctx context.Context) map[string]string {
-	lk, err := a.directory(ctx)
-	if err != nil {
-		log.Printf("the war room: signals coverage: %v", err)
+// rosteredPositions maps every rostered player to his league position, from the players
+// directory already held: reading coverage never fetches MFL's players. Without it the coverage
+// is empty rather than wrong.
+func (a *App) rosteredPositions() map[string]string {
+	a.lookupMu.Lock()
+	lk, ok := a.lookup, a.hasLookup
+	a.lookupMu.Unlock()
+	if !ok {
 		return map[string]string{}
 	}
 	out := map[string]string{}

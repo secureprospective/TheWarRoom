@@ -60,8 +60,9 @@ func (r *Registry) Dictionary() string {
 	b.WriteString("| Source | Name | Status | Lost after | Fetched from |\n")
 	b.WriteString("|---|---|---|---|---|\n")
 	for _, s := range r.Sources {
-		fmt.Fprintf(&b, "| `%s` | %s | %s | %d days | `%s%s` |\n",
-			s.ID, cell(s.Name), s.Status, int(s.MaxAge.Hours()/24), s.Host, s.PathPrefix)
+		from := sourceLocation(s)
+		fmt.Fprintf(&b, "| `%s` | %s | %s | %d days | %s |\n",
+			s.ID, cell(s.Name), s.Status, int(s.MaxAge.Hours()/24), from)
 	}
 	return b.String()
 }
@@ -107,4 +108,11 @@ func filterLabel(conds []Condition) string {
 		parts[i] = "`" + c.Column + "`" + op + strings.Join(c.Values, ", ")
 	}
 	return strings.Join(parts, "; ")
+}
+
+func sourceLocation(s Source) string {
+	if s.Imported() {
+		return "imported"
+	}
+	return "`" + s.Host + s.PathPrefix + "`"
 }

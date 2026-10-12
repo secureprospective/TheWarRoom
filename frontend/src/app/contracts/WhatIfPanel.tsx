@@ -47,20 +47,20 @@ export function WhatIfPanel({ mine, reading, error }: {
       {value && (empty ? <p>{value.empty}</p> : <div className="whatif-panel">
         <div className="whatif-heading">
           {value.stale && <p role="status">{value.banner}</p>}
-          <Act verb="contracts.set" variant="command" label="Reset"
+          <Act verb="contracts.set" variant="text" label="Reset"
             args={{ field: 'whatif', value: { mine, action: 'reset' } }}>Reset</Act>
         </div>
         {value.notice && <p role="alert">{value.notice}</p>}
         <ol className="whatif-moves">
           {value.moves.map(move => <li key={move.id}>
             <div><b>{move.label}</b><span className="contract-money">{move.charge.text}</span>
-              <Act verb="contracts.set" variant="command"
+              <Act verb="contracts.set" variant="text"
                 args={{ field: 'whatif', value: { mine, action: 'undo', move: move.id } }}
                 disabled={value.stale} label={`Undo ${move.label}`}>Undo</Act>
             </div>
             <p>{move.explanation}</p>
             <div className="whatif-plan-line">
-              {move.plan ? <p>{move.plan}</p> : <Act verb="contracts.set" variant="command"
+              {move.plan ? <p>{move.plan}</p> : <Act verb="contracts.set" variant="text"
               label={`Make this a plan: ${move.label}`}
               args={{ field: 'release', value: { mine, action: 'draft', move: move.id } }}>
               Make this a plan</Act>}</div>

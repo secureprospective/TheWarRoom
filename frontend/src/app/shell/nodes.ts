@@ -12,7 +12,7 @@ export const nodes = {
     workspaces: [
       { slug: 'market', label: 'Market', ring: 'Ring 2' },
       { slug: 'valuations-and-pool', label: 'Valuations and pool', ring: 'Ring 2' },
-      { slug: 'research', label: 'Research', ring: 'Ring 2' },
+      { slug: 'research', label: 'Research', ring: 'Ring 3' },
     ],
   },
   hq: {
@@ -45,7 +45,7 @@ export const nodes = {
     workspaces: [
       { slug: 'app', label: 'App', ring: 'Ring 3' },
       { slug: 'data-and-sources', label: 'Data and sources', ring: 'Ring 3' },
-      { slug: 'league', label: 'League (role-gated)', ring: 'Ring 3' },
+      { slug: 'league', label: 'League', ring: 'Ring 3' },
     ],
   },
 } as const;

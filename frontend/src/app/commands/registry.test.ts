@@ -18,7 +18,8 @@ describe('Command registry', () => {
       expect(Object.isFrozen(command.roles)).toBe(true);
       expect(Object.isFrozen(command.args)).toBe(true);
       expect(Object.isFrozen(command.aliases)).toBe(true);
-      expect(command.roles).toContain('gm');
+      if (id === 'data.parameter') expect(command.roles).toEqual(['admin']);
+      else expect(command.roles).toContain('gm');
     }
     expect(validGravity({ gravity: 'G3', undo: 'instant' })).toBe(false);
     expect(validGravity({ gravity: 'G0', undo: 'irreversible' })).toBe(false);

@@ -111,3 +111,7 @@
 .twr-app .contract-act-form input:focus-visible, .twr-app .contract-act-form select:focus-visible { outline: 2px solid var(--surface-tx1); outline-offset: 2px; }
 
 .twr-app .contract-move-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.twr-app .acquisition-panel { margin-block: 20px; }
+.twr-app .acquisition-panel label { display: grid; gap: 6px; margin-block: 10px; }
+.twr-app .acquisition-panel select { width: 100%; max-width: 42rem; font: inherit; }
+.twr-app .acquisition-panel .act { font-family: inherit; }

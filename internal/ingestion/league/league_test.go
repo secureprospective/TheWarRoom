@@ -2,6 +2,7 @@ package league
 
 import (
 	"errors"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -29,7 +30,7 @@ const rulesBody = `{"rules":{"positionRules":[
 		{"event":{"$t":"#P"},"points":{"$t":"*0"},"range":{"$t":"0-0"}}}]}}`
 
 func TestAssemble_DecodesBothExports(t *testing.T) {
-	cfg, err := assemble([]byte(leagueBody), []byte(rulesBody))
+	cfg, err := Parse([]byte(leagueBody), []byte(rulesBody))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -50,7 +51,7 @@ func TestAssemble_DecodesBothExports(t *testing.T) {
 }
 
 func TestAssemble_DecodesFranchiseDirectory(t *testing.T) {
-	cfg, err := assemble([]byte(leagueBody), []byte(rulesBody))
+	cfg, err := Parse([]byte(leagueBody), []byte(rulesBody))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -68,7 +69,7 @@ func TestAssemble_DecodesFranchiseDirectory(t *testing.T) {
 }
 
 func TestAssemble_UnwrapsAndCollapsesScoring(t *testing.T) {
-	cfg, err := assemble([]byte(leagueBody), []byte(rulesBody))
+	cfg, err := Parse([]byte(leagueBody), []byte(rulesBody))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -96,7 +97,7 @@ func TestAssemble_UnwrapsAndCollapsesScoring(t *testing.T) {
 }
 
 func TestAssemble_EmptyScoringFailsLoud(t *testing.T) {
-	_, err := assemble([]byte(leagueBody), []byte(`{"rules":{"positionRules":[]}}`))
+	_, err := Parse([]byte(leagueBody), []byte(`{"rules":{"positionRules":[]}}`))
 	if !errors.Is(err, errEmptyScoring) {
 		t.Fatalf("err = %v, want errEmptyScoring", err)
 	}
@@ -104,7 +105,7 @@ func TestAssemble_EmptyScoringFailsLoud(t *testing.T) {
 
 func TestAssemble_SalaryLeagueMissingCapFailsLoud(t *testing.T) {
 	body := `{"league":{"usesSalaries":"1","salaryCapAmount":""}}`
-	_, err := assemble([]byte(body), []byte(rulesBody))
+	_, err := Parse([]byte(body), []byte(rulesBody))
 	if err == nil {
 		t.Fatal("want error for salary league missing cap amount")
 	}
@@ -115,7 +116,7 @@ func TestAssemble_CurrentSeasonIsNewestYearUnderThisLeaguesID(t *testing.T) {
 		{"year":"2026","url":"https://www47.myfantasyleague.com/2026/home/14432"},
 		{"year":"2031","url":"https://www48.myfantasyleague.com/2031/home/51719"},
 		{"year":"2025","url":"https://www47.myfantasyleague.com/2025/home/14432"}]}}}`
-	cfg, err := assemble([]byte(body), []byte(rulesBody))
+	cfg, err := Parse([]byte(body), []byte(rulesBody))
 	if err != nil {
 		t.Fatalf("assemble: %v", err)
 	}
@@ -133,15 +134,42 @@ func TestAssemble_ScoringIsTheSameInAnyOrder(t *testing.T) {
 	{"positions":"CB|S","rule":[
 		{"event":{"$t":"FG"},"points":{"$t":"3"},"range":{"$t":"0-39"}},
 		{"event":{"$t":"TK"},"points":{"$t":"*0.5"},"range":{"$t":"0-99"}}]}]}}`
-	a, err := assemble([]byte(leagueBody), []byte(rulesBody))
+	a, err := Parse([]byte(leagueBody), []byte(rulesBody))
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := assemble([]byte(leagueBody), []byte(shuffled))
+	b, err := Parse([]byte(leagueBody), []byte(shuffled))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(a.ScoringRules, b.ScoringRules) {
 		t.Errorf("same rules in another order assembled differently:\n%+v\n%+v", a.ScoringRules, b.ScoringRules)
+	}
+}
+
+func TestAssemble_RealLeagueCarriesTheRaceStructure(t *testing.T) {
+	leagueRaw, err := os.ReadFile("testdata/league-2025.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rulesRaw, err := os.ReadFile("testdata/rules-2025.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Parse(leagueRaw, rulesRaw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.StandingsSort != "PCT,H2H,DIVPCT,CONFPCT,ALL_PLAY_PCT,PTS,PWR," {
+		t.Fatalf("standings sort = %q", cfg.StandingsSort)
+	}
+	if len(cfg.Conferences) != 2 || cfg.Conferences[1] != (Conference{ID: "01", Name: "NFC"}) {
+		t.Fatalf("conferences = %+v", cfg.Conferences)
+	}
+	if len(cfg.Divisions) != 8 || cfg.Divisions[3] != (Division{ID: "03", Name: "AFC North", Conference: "00"}) {
+		t.Fatalf("divisions = %+v", cfg.Divisions)
+	}
+	if cfg.Franchises[0] != (Franchise{ID: "0001", Name: "Buffalo Bills", Abbrev: "BUF", Division: "00"}) {
+		t.Fatalf("franchise = %+v", cfg.Franchises[0])
 	}
 }

@@ -10,55 +10,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 )
 
-func TestTargetPulseNow(t *testing.T) {
-	a, transport, _ := lineupDraftApp(t)
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
-	r, err := a.TargetPulseNow()
-	if err != nil || r.Week != 5 || len(r.Matchups) != 16 {
-		t.Fatalf("pulse: week %d, %d matchups, %v", r.Week, len(r.Matchups), err)
-	}
-	saved, err := a.TargetLineup("0025")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var mine PulseSide
-	for _, m := range r.Matchups {
-		if m.Home.FranchiseID == "" || m.Away.FranchiseID == "" || m.Home.FranchiseID == m.Away.FranchiseID {
-			t.Fatalf("matchup: %+v", m)
-		}
-		for _, side := range []PulseSide{m.Home, m.Away} {
-			if side.FranchiseID == "0025" {
-				mine = side
-			}
-		}
-	}
-	if len(mine.Starters) != 21 || mine.YetToPlay != 21 {
-		t.Fatalf("0025: %d starters, yet to play %d", len(mine.Starters), mine.YetToPlay)
-	}
-	for i, p := range mine.Starters {
-		if p.ID != saved.Starters[i].ID || p.Name == "" || p.Name == p.ID || p.Position == "" {
-			t.Fatalf("starter %d: %+v vs %+v", i, p, saved.Starters[i])
-		}
-	}
-	if len(transport.requests) != 0 {
-		t.Fatal("pulse fetched")
-	}
-	a.seasonLineups.refreshError = "offline"
-	failed, err := a.TargetPulseNow()
-	body, _ := json.Marshal(failed)
-	if err != nil || len(failed.Matchups) != 0 || !strings.Contains(string(body), `"matchups":[]`) {
-		t.Fatalf("failed feed: %s %v", body, err)
-	}
-}
-
-func TestHeldSideNeverNull(t *testing.T) {
-	body, err := json.Marshal(heldSide(map[string]PulseSide{}, "0007"))
-	if err != nil || !strings.Contains(string(body), `"starters":[]`) {
-		t.Fatalf("%s %v", body, err)
-	}
-}
-
 func alertKinds(r AlertReading) (alerts, unavailable []string) {
 	for _, a := range r.Alerts {
 		alerts = append(alerts, a.Kind)

@@ -4,15 +4,16 @@
 .twr-app .pool-controls { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: end; }
 .twr-app .pool-controls label, .twr-app .bid-field { display: grid; gap: 3px; min-width: 0; max-width: 100%; }
 .twr-app .pool-controls .act, .twr-app .pool-table .act, .twr-app .bid-actions .act { border: 1px solid var(--surface-line-hi); background: var(--surface-1); padding: 4px 8px; max-width: 100%; }
-.twr-app .pool-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.twr-app .pool-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 660px; }
 .twr-app .pool-table :is(th, td) { padding: 4px 6px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--surface-line); overflow-wrap: normal; word-break: normal; }
 .twr-app .pool-table th { color: var(--surface-tx2); font-weight: 500; }
-.twr-app .pool-table th:nth-child(1) { width: 32%; }
-.twr-app .pool-table th:nth-child(2) { width: 8%; }
-.twr-app .pool-table th:nth-child(3) { width: 24%; }
-.twr-app .pool-table th:nth-child(4) { width: 15%; }
+.twr-app .pool-table th:nth-child(1) { width: 22%; }
+.twr-app .pool-table th:nth-child(2) { width: 5%; }
+.twr-app .pool-table th:nth-child(3) { width: 14%; }
+.twr-app .pool-table th:nth-child(4) { width: 12%; }
 .twr-app .pool-table tr:not(.pool-form-row) td:nth-child(1) .act { padding: 0; border: 0; background: transparent; font-weight: 600; text-align: left; }
-.twr-app .pool-table td:nth-child(5) { text-align: right; }
+.twr-app .pool-table th:nth-child(5) { width: 29%; }
+.twr-app .pool-table th:nth-child(6) { width: 18%; }
 .twr-app .pool-money { white-space: nowrap; font-family: var(--surface-mono); font-variant-numeric: tabular-nums; }
 .twr-app .pool-pos, .twr-app .pool-plan { display: block; color: var(--surface-tx2); font-size: 11px; }
 .twr-app .pool-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -55,3 +56,14 @@
 .twr-app .bid-actions .act { color: var(--surface-tx1); font: inherit; margin: 0; }
 .twr-app .bid-actions .act:disabled { opacity: .55; cursor: not-allowed; }
 .twr-app .bid-actions .act:focus-visible { outline: 1px solid var(--surface-tx1); outline-offset: 2px; }
+
+.twr-app .pool-table-scroll { min-width: 0; overflow: auto; max-width: 100%; max-height: 60vh; }
+.twr-app .pool-table-scroll:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.twr-app .pool-inspector .market-range { display: block; width: 140px; height: 20px; }
+.twr-app .pool-inspector .kv > div { display: contents; }
+
+.twr-app .pool, .twr-app .pool-reading { min-width: 0; max-width: 100%; }
+.twr-app .pool-table tr:not(.pool-form-row) > :first-child { position: sticky; left: 0; background: var(--surface-0); }
+.twr-app .pool-table thead th:first-child { z-index: 1; }
+.twr-app .pool-market { font-variant-numeric: tabular-nums; }
+.twr-app .pool-market-none { color: var(--surface-tx3); }

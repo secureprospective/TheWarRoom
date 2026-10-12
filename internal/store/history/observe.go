@@ -413,6 +413,41 @@ func (s *Store) LinkedPlayers(ctx context.Context, idType string) (map[string]bo
 	return s.distinct(ctx, `SELECT DISTINCT player_id FROM player_ids WHERE id_type = ?`, idType)
 }
 
+// SourceID returns the player's id of idType from the directory, or "" when none is held. Two
+// values for one player resolve to the smallest, so the answer is stable.
+func (s *Store) SourceID(ctx context.Context, playerID, idType string) (string, error) {
+	var v sql.NullString
+	err := s.pools.Read().QueryRowContext(ctx,
+		`SELECT MIN(id_value) FROM player_ids WHERE player_id = ? AND id_type = ?`, playerID, idType).Scan(&v)
+	if err != nil {
+		return "", fmt.Errorf("history: directory read: %w", err)
+	}
+	return v.String, nil
+}
+
+// SourceIDs returns, for every player with an id of idType, the same value SourceID returns,
+// in one query: a whole-directory join reads this instead of one SourceID call per player.
+func (s *Store) SourceIDs(ctx context.Context, idType string) (map[string]string, error) {
+	rows, err := s.pools.Read().QueryContext(ctx,
+		`SELECT player_id, MIN(id_value) FROM player_ids WHERE id_type = ? GROUP BY player_id`, idType)
+	if err != nil {
+		return nil, fmt.Errorf("history: directory read: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	out := map[string]string{}
+	for rows.Next() {
+		var player, value string
+		if err := rows.Scan(&player, &value); err != nil {
+			return nil, fmt.Errorf("history: directory read: %w", err)
+		}
+		out[player] = value
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("history: directory read: %w", err)
+	}
+	return out, nil
+}
+
 // MeasuresHeld returns every measure source holds a value of in season.
 func (s *Store) MeasuresHeld(ctx context.Context, source string, season int) (map[string]bool, error) {
 	return s.distinct(ctx, `SELECT DISTINCT measure FROM observations WHERE source = ? AND season = ?`, source, season)

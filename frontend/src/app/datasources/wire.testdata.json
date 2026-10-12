@@ -1,0 +1,280 @@
+{
+  "data": {
+    "health": {
+      "id": "C-07",
+      "title": "Source health and freshness",
+      "note": "",
+      "status": "ok",
+      "source": "Source: the app's own fetch and load records",
+      "asOf": "As of: Oct 11, 2026, 6:00 PM",
+      "how": "A source's last good read is its latest load without an error; a failure is shown while it is newer than that. A source is lost when it has failed and had no good load within its window. The board runs reduced when a measure it reads has no source flowing; it is rebalanced only when you approve it. Board use is noted only for sources supplying board measures; other rows are reference or linking inputs.",
+      "columns": [
+        "Source and board use",
+        "Last good and age",
+        "Last failure"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "MFL league archive, 2013–2026",
+            "Oct 11, 2026, 6:00 PM\nUnder an hour",
+            "None"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    "signals": {
+      "id": "C-07-files",
+      "title": "Signal files",
+      "note": "",
+      "status": "ok",
+      "source": "Source: history.db",
+      "asOf": "As of: now",
+      "how": "A file is fresh while its last load is within its source's window. Players with data are counted in the latest season holding any; waiting ids are source players not yet matched to an MFL player. Rostered players with data covers every position the league rosters.",
+      "columns": [
+        "Signal and source",
+        "Last load",
+        "Players and matching",
+        "Rostered coverage"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "stats_player_week\nnflverse",
+            "Oct 11, 2026, 6:00 PM\nFresh: Yes",
+            "1,300 in 2026\nWaiting: 37",
+            "75% (1,105 of 1,454)"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    "facts": {
+      "id": "L-34",
+      "title": "Checked facts",
+      "note": "No manifest yet: import the league archive under Data refresh to pin the Lab's inputs.",
+      "status": "empty",
+      "source": "Source: the league archive in history.db",
+      "asOf": "As of: now",
+      "how": "The checked facts are compiled from exactly the archived MFL files a manifest pins, by their bytes' sha256, never from the newest copy of a file. Only the five exact frozen login-error pins have named non-data gaps; other missing bytes block compilation. A fresh download never stands in for a pin.",
+      "columns": [
+        "Fact",
+        "Value"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "Inputs",
+            "Legacy NFL 2013–2026 as frozen for the Lab"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Lab data",
+            "Captured through Oct 6, 2026, 1:42 AM; built Oct 6, 2026, 3:57 PM"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    "checks": {
+      "id": "L-34-checks",
+      "title": "Checks",
+      "note": "",
+      "status": "ok",
+      "source": "Source: the compiled facts and MFL's own figures",
+      "asOf": "Compiled: Oct 11, 2026, 6:00 PM",
+      "how": "Each check compares two records MFL keeps separately. Every difference must be named, by its identity, in the pinned list of explained and reviewed differences; a new one fails the compile, and the last good snapshot is kept, marked stale.",
+      "columns": [
+        "Check",
+        "What it proves",
+        "Result"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "Compiled facts match the Lab's reference",
+            "Row by row against the Lab's own Python build: ids, times, counts and money exact; derived decimals within one part in a billion.",
+            "Proved by the build's tests: 37 tables, no differences"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Win-loss records match MFL standings",
+            "MFL counted playoff games in the 2013 standings.",
+            "Passed: 448 compared, 446 agree, 1 explained, 1 for review"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Lineup scores equal MFL player scores",
+            "Checked against MFL's own figures.",
+            "Passed: 202,954 compared, 202,954 agree, 0 explained, 0 for review"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "2013 Buffalo Bills: MFL standings 11-3-0 count its playoff games (regular season 11-2-0).",
+            "In 2013 MFL counted playoff games in the standings.",
+            "Explained"
+          ],
+          "range": null,
+          "group": "Win-loss records match MFL standings"
+        },
+        {
+          "cells": [
+            "2014 Houston Texans: MFL standings 9-4-0, weekly games 9-3-0.",
+            "Possibly a commissioner adjustment.",
+            "For review"
+          ],
+          "range": null,
+          "group": "Win-loss records match MFL standings"
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    "archiveDir": "/fixture/raw",
+    "photosOn": true,
+    "scopes": [
+      {
+        "id": "league",
+        "label": "League from MFL",
+        "note": "Rules, rosters and salary adjustments for the current season.",
+        "action": "Refresh League from MFL",
+        "progress": "Refreshing…"
+      },
+      {
+        "id": "signals",
+        "label": "Signals",
+        "note": "The nflverse, CFBD and contract files that are due.",
+        "action": "Refresh Signals",
+        "progress": "Refreshing…"
+      },
+      {
+        "id": "crosswalk",
+        "label": "Player crosswalk",
+        "note": "DynastyProcess's player ids, linked to the league's players.",
+        "action": "Refresh Player crosswalk",
+        "progress": "Refreshing…"
+      },
+      {
+        "id": "archive",
+        "label": "League archive",
+        "note": "Files new to the 2013–2026 archive, then the Lab's pinned inputs.",
+        "action": "Refresh League archive",
+        "progress": "Refreshing…"
+      }
+    ],
+    "words": {
+      "apply": "Apply",
+      "clear": "Clear the Admin value and follow the shipped default",
+      "crosswalkHow": "How players are linked",
+      "default": "Default",
+      "empty": "No settings match.",
+      "find": "Find a setting",
+      "fitted": "Fitted",
+      "folder": "League archive folder (raw)",
+      "handSet": "Hand-set",
+      "how": "How this is counted",
+      "kept": "The last reading is kept.",
+      "league": "League",
+      "overridden": "Overridden",
+      "override": "Override",
+      "parameters": "Engine parameters",
+      "permission": "Changes require the admin role. Running as GM: values are read-only.",
+      "photos": "Player photos",
+      "photosNote": "From ESPN, then Sleeper, cached on this computer for personal use. Off means no photo is requested.",
+      "photosOff": "Turn photos off",
+      "photosOn": "Turn photos on",
+      "range": "Allowed",
+      "read": "Read held records",
+      "readProgress": "Refreshing…",
+      "readResult": "Held records read; source health, signals, checked facts, player links and engine parameters updated.",
+      "refresh": "Data refresh",
+      "reset": "Reset",
+      "setFolder": "Set folder",
+      "setting": "Setting and position",
+      "title": "Data and sources",
+      "value": "Value"
+    }
+  },
+  "crosswalk": {
+    "id": "C-08",
+    "title": "Player crosswalk",
+    "note": "1,000 links; 0 waiting facts resolved.",
+    "status": "ok",
+    "source": "Source: DynastyProcess",
+    "asOf": "Loaded: Oct 11, 2026, 1:00 PM",
+    "how": "DynastyProcess links MFL players to NFL ids. Unmatched rostered players are listed with the reason; their facts wait for a link.",
+    "columns": [
+      "Position",
+      "Rostered matched",
+      "Free agents matched"
+    ],
+    "rows": [
+      {
+        "cells": [
+          "WR",
+          "3 of 4 · 75.0%",
+          "None"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "ALL",
+          "3 of 4 · 75.0%",
+          "None"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "Gosnell, Stephen",
+          "WR · MIN",
+          "no NFL id yet"
+        ],
+        "range": null,
+        "group": "Unmatched rostered players"
+      }
+    ],
+    "summary": null,
+    "link": null
+  },
+  "params": {
+    "ok": true,
+    "error": "",
+    "params": [
+      {
+        "key": "test.weight",
+        "label": "Test weight",
+        "group": "Other settings",
+        "position": "WR",
+        "description": "Test weight",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "value": 0.5,
+        "calibrated": false,
+        "overridden": true
+      }
+    ]
+  },
+  "result": {
+    "ok": true,
+    "error": "",
+    "summary": "Looked at 8 files: 0 new, 8 already held."
+  }
+}

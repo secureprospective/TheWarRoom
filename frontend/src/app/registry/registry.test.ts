@@ -86,13 +86,23 @@ describe('Endpoint map', () => {
     }
     for (const node of nodeKeys) {
       for (const w of nodes[node].workspaces) {
-        const place = `${nodes[node].label} › ${w.label.replace(' (role-gated)', '')}`;
+        const place = `${nodes[node].label} › ${w.label}`;
         expect(placementRoute(place)).toEqual({ node, workspace: w.slug });
       }
     }
   });
   it('distinguishes live-Landed Acts from built Acts and keeps every other row spec', () => {
     const built = [
+      'M-001', 'X-01', 'X-02',
+      'S-01', 'S-02', 'S-04', 'S-05', 'S-08', 'S-11', 'S-12', 'S-13',
+      'M-087', 'M-096', 'M-149', 'M-117', 'M-116', 'M-118', 'M-103', 'M-101', 'M-154',
+      'M-151', 'M-159', 'M-167', 'M-169',
+      'M-037', 'M-038', 'M-040', 'M-048', 'M-051', 'M-052', 'M-053', 'M-054',
+      'M-057', 'M-058', 'M-059', 'M-060', 'M-062',
+      'C-05', 'M-032', 'M-120', 'M-123',
+      'L-34', 'C-07', 'C-08', 'C-09', 'S-09',
+      'M-046', 'M-047', 'M-067', 'M-069',
+      'M-063', 'M-064', 'M-065', 'M-066', 'M-068', 'M-102', 'M-176', 'M-179', 'M-183',
       'M-028',
       'M-029',
       'M-025',
@@ -105,10 +115,20 @@ describe('Endpoint map', () => {
       'C-06.5',
       'C-06.1', 'C-06.3', 'M-036', 'M-196',
       'C-06.6',
+      'C-06.2', 'C-06.4', 'M-199', 'M-033', 'M-034',
       'X-04',
       ...Array.from({ length: 32 }, (_, i) => `L-${String(i + 1).padStart(2, '0')}`),
       'L-33',
       'L-35', 'L-36',
+      'M-030', 'M-148', 'M-153', 'C-03', 'C-04', 'S-03', 'S-06', 'S-07',
+      'M-002', 'M-008', 'C-02', 'M-009', 'M-010', 'M-011', 'M-012', 'M-013', 'M-014',
+      'M-071', 'M-074', 'M-076', 'M-077', 'M-090', 'M-161', 'M-170',
+      'X-03', 'M-003', 'M-004', 'M-005', 'M-007', 'M-015', 'M-016', 'M-018', 'M-021', 'M-022',
+      'M-072', 'M-088',
+      'M-091', 'M-097', 'M-185', 'M-098', 'M-197', 'M-141', 'S-10',
+      'M-080', 'M-182', 'M-114', 'M-104', 'M-105', 'M-023', 'M-110', 'M-019', 'M-083', 'M-084', 'M-085',
+      'M-086', 'M-082', 'M-073', 'M-079', 'M-089', 'M-111', 'M-112', 'M-113', 'M-174', 'M-200', 'M-201',
+      'C-01',
     ];
     for (const row of endpoints) {
       let status = 'spec';
@@ -120,9 +140,9 @@ describe('Endpoint map', () => {
       ['M-027', 'landed live'],
       ['M-028', 'built, not yet landed live'],
       ['M-029', 'built, not yet landed live'],
-      ['M-033', 'not wired'],
+      ['M-033', 'built, not yet landed live'],
       ['X-04', 'built, not yet landed live'],
-      ['M-034', 'not wired'],
+      ['M-034', 'built, not yet landed live'],
     ];
     for (const [id, label] of checks) {
       const row = endpointById(id);
@@ -159,10 +179,15 @@ describe('Endpoint map', () => {
           commands.dispatch('nav.open', { node, workspace: w.slug } as Parameters<
             (typeof commands.registry)['nav.open']['run']
           >[0]);
-          const place = `${nodes[node].label} › ${w.label.replace(' (role-gated)', '')}`;
+          const place = `${nodes[node].label} › ${w.label}`;
           const html = await renderSettledApp();
           expect(html).toContain(`${place} endpoint index`);
           for (const row of endpointsAt(place as Placement)) expect(html).toContain(row.id);
+          // Rendered before the snapshot arrives: a snapshot workspace reads as loading, never unwired.
+          if (['lineup-and-roster', 'contracts-and-cap', 'my-moves', 'trade-desk'].includes(w.slug)) {
+            expect(html).toContain('Reading the league…');
+            expect(html).not.toContain('Not wired');
+          }
         }
       }
       for (const place of surfacePlaces) {
@@ -204,7 +229,7 @@ describe('Endpoint map', () => {
 describe('Endpoint verbs and search', () => {
   it('offers all kept endpoints by their own name and never offers retired or merged rows', () => {
     const offered = candidates.filter((r) => r.kind === 'endpoint');
-    expect(offered).toHaveLength(209);
+    expect(offered).toHaveLength(endpoints.filter(e => e.disposition === 'kept').length);
     for (const row of endpoints) {
       const match = rankResults(row.name, candidates).find(
         (r) => r.invocation.verb === 'endpoint.open' && r.invocation.args.id === row.id,
@@ -301,4 +326,86 @@ it('Draft room mounts the shared lazy Draft lab rather than a placeholder', asyn
   expect(source).toContain("lazy(() => import('./Draft'))");
   commands.dispatch('nav.open', { node: 'home', workspace: 'seasonal-card' });
   use.mockRestore();
+});
+
+it('reveals rendered endpoints instead of index cards, preserving controls that fit', async () => {
+  const { revealEndpoint } = await import('./EndpointIndex');
+  const work = { scrollTop: 800, clientTop: 0, clientHeight: 600,
+    getBoundingClientRect: () => ({top: 50}), querySelectorAll: () => [indexedSurface, surface] };
+  const card = { focus: vi.fn(), closest: () => work,
+    getBoundingClientRect: () => ({top: 1800, bottom: 1900}) };
+  const index = { closest: () => work, querySelector: () => card };
+  const parent = {closest: () => work,
+    getBoundingClientRect: () => ({top: 1000-work.scrollTop, bottom: 2000-work.scrollTop})};
+  const surface = { dataset: {endpoint: 'M-064'},
+    closest: (s: string) => s === '.endpoint-index' ? null : work,
+    getBoundingClientRect: () => ({top: 1150-work.scrollTop, bottom: 2000-work.scrollTop}),
+    parentElement: parent,
+    previousElementSibling: {classList: {contains: () => true}} };
+  const indexedSurface = {...surface,
+    closest: (s: string) => s === '.endpoint-index' ? index : work};
+  revealEndpoint(index as unknown as HTMLElement, ['M-064']);
+  expect(card.focus).not.toHaveBeenCalled();
+  expect(work.scrollTop).toBe(950);
+  surface.previousElementSibling.classList.contains = () => false;
+  work.scrollTop = 800;
+  revealEndpoint(index as unknown as HTMLElement, ['M-064']);
+  expect(work.scrollTop).toBe(1100);
+  work.scrollTop = 800;
+  revealEndpoint(index as unknown as HTMLElement, ['M-999']);
+  expect(card.focus).toHaveBeenCalledWith({preventScroll: true});
+  expect(work.scrollTop).toBe(2050);
+  card.focus.mockClear();
+  work.scrollTop = 300;
+  expect(revealEndpoint(index as unknown as HTMLElement, ['M-999'], false)).toBe(false);
+  expect(card.focus).not.toHaveBeenCalled();
+  expect(work.scrollTop).toBe(300);
+});
+
+it('reveals a lazily mounted endpoint once and stops watching after it arrives', async () => {
+  const { act } = await import('react');
+  const { createRoot } = await import('react-dom/client');
+  const { clockDom } = await import('../clock/testDom');
+  const dom = clockDom([]);
+  const keys = ['document', 'window', 'IS_REACT_ACT_ENVIRONMENT', 'MutationObserver'];
+  const saved = keys.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const);
+  const surfaces: HTMLElement[] = [];
+  const work = { scrollTop: 800, clientTop: 0, clientHeight: 600,
+    getBoundingClientRect: () => ({top: 50}), querySelectorAll: () => surfaces };
+  const create = dom.document.createElement.bind(dom.document);
+  dom.document.createElement = tag => {
+    const element = create(tag);
+    Object.assign(element, { closest: () => work });
+    return element;
+  };
+  let arrival!: () => void;
+  const stop = vi.fn();
+  Object.defineProperty(globalThis, 'document', {configurable: true, value: dom.document});
+  Object.defineProperty(globalThis, 'window', {configurable: true,
+    value: { document: dom.document, HTMLIFrameElement: class {} }});
+  Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {configurable: true, value: true});
+  Object.defineProperty(globalThis, 'MutationObserver', {configurable: true, value: class {
+    constructor(callback: () => void) { arrival = callback; }
+    observe() {} disconnect() { stop(); }
+  }});
+  const root = createRoot(dom.element);
+  try {
+    await act(async () => { commands.dispatch('endpoint.open', {id: 'M-064'}); });
+    await act(async () => {
+      root.render(createElement(EndpointIndex, {placement: 'Trade Floor › Draft room'}));
+    });
+    expect(arrival).toBeTypeOf('function');
+    surfaces.push({ dataset: {endpoint: 'M-064'}, closest: (s: string) =>
+      s === '.endpoint-index' ? null : work,
+      getBoundingClientRect: () => ({top: 350, bottom: 1000}) } as unknown as HTMLElement);
+    arrival();
+    expect(work.scrollTop).toBe(1100);
+    expect(stop).toHaveBeenCalledTimes(1);
+  } finally {
+    await act(async () => { root.unmount(); });
+    for (const [key, descriptor] of saved) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+      else Reflect.deleteProperty(globalThis, key);
+    }
+  }
 });

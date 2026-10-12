@@ -1,8 +1,13 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
+import type { Snapshot } from '../data/contract';
 import { Act } from '../commands/Act';
 import { ReadingView } from './ReadingView';
 import { draftState, segments, nflRounds } from './draftState';
 import type { MarketFilter, SurfaceReading } from './contract';
+
+const PersonalLists = lazy(() => import('../personal/PersonalLists'));
+const NFLDraft = lazy(() => import('../personal/RosterReports'));
+const Reports = lazy(() => import('../draftreports/Reports'));
 
 type Option = readonly [string, string, string];
 function Choices({
@@ -115,7 +120,7 @@ export function DraftReading({ reading, kind }: { reading?: SurfaceReading; kind
     />
   );
 }
-export default function Draft({ kind }: { kind?: string }) {
+export default function Draft({ kind, snapshot }: { kind?: string; snapshot?: Snapshot }) {
   const s = draftState.use();
   useEffect(() => {
     if (kind) void draftState.pick(kind);
@@ -123,6 +128,8 @@ export default function Draft({ kind }: { kind?: string }) {
   }, [kind, s.scope]);
   return (
     <div className="market">
+      {!kind && snapshot && <Suspense fallback={null}><PersonalLists snapshot={snapshot} draft /></Suspense>}
+      {!kind && <Suspense fallback={null}><Reports /><NFLDraft mine="" draft /></Suspense>}
       <h4>{kind ? 'What this round has returned' : 'Draft lab'}</h4>
       <p>
         Frozen draft history, not live prospect grades. 100% is the same slot in other classes. Empty

@@ -34,9 +34,9 @@ export function CommandBar({ snapshot }: { snapshot?: Snapshot }) {
     <section className="command-bar" data-open={open} aria-hidden={!open} aria-label="Command bar">
       <input
         ref={input}
-        aria-label="Search commands, places, endpoints and players"
+        aria-label="Search commands, places, endpoints, players and franchises"
         aria-controls="command-results"
-        placeholder="Type a command, place, endpoint or player…"
+        placeholder="Type a command, place, endpoint, player or franchise…"
         value={query}
         onChange={(event) => {
           setQuery(event.target.value);
@@ -72,7 +72,7 @@ export function CommandBar({ snapshot }: { snapshot?: Snapshot }) {
           </Act>
         ))}
         {!results.length && (
-          <p role="status">No matching commands, places, endpoints or rostered players.</p>
+          <p role="status">No matching commands, places, endpoints players or franchises.</p>
         )}
       </div>
       {(!query.trim() || 'preset: admin'.includes(query.trim().toLowerCase())) && (

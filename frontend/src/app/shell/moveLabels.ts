@@ -28,6 +28,7 @@ export function stateLabel(state: RailState, intent: string): string {
 export const intentLabels: Record<string, string> = {
   'roster.ir': 'IR placement', 'roster.taxi': 'Taxi move',
   'lineup.set': 'Lineup change', 'trade.accept': 'Trade accept',
+  'trade.propose': 'Trade proposal', 'trade.reject': 'Trade rejection', 'trade.revoke': 'Trade withdrawal',
 };
 export const stateSignals: Record<RailState, Signal> = {
   draft: 'grey',

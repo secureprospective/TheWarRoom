@@ -23,11 +23,12 @@ function AlertCard({ alert }: { alert: Alert }) {
   }, [alert, at]);
   const route = routeFor(alert.node as Node, alert.workspace)!;
   return <div ref={root}>
-    <Card gravity="G1" header={<h5>{alert.title}</h5>}
+    <Card gravity={alert.kind === 'ir' ? 'G2' : 'G1'} header={<h5>{alert.title}</h5>}
       provenance={provenanceSlot([['Alert', alert.provenance]])}
-      actionTray={<Act verb="nav.open" args={route}>
+      actionTray={<><Act verb="nav.open" args={route}>
         Open {alert.node === 'trade' ? 'Trade desk' : 'Franchise HQ'}
-      </Act>}>
+      </Act>{alert.kind === 'ir' && <Act verb="personal.handoff" args={{ kind: 'ir' }}
+          disabled={!alert.mflUrl}>Open IR page on MFL</Act>}</>}>
       <p>{alert.detail}</p>
       <p data-deadline="alert" data-urgency={alert.urgency}>
         <time dateTime={at}>{localDate(at)}</time>{' · '}
@@ -52,7 +53,7 @@ function FranchiseAlerts({ franchiseId, snapshot }: { franchiseId: string; snaps
 export default function AlertTray({ snapshot }: { snapshot: Snapshot }) {
   const franchiseId = commands.use().franchiseId;
   if (!franchiseId) return <FranchisePicker snapshot={snapshot} />;
-  return <section aria-label="Alert tray">
+  return <section aria-label="Alert tray" data-endpoint="M-149">
     <FranchiseAlerts key={franchiseId} franchiseId={franchiseId} snapshot={snapshot} />
   </section>;
 }

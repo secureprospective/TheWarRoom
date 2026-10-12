@@ -1,0 +1,1221 @@
+{
+  "race": {
+    "standings": {
+      "id": "M-002",
+      "title": "Standings",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL",
+      "asOf": "As of: Oct 11, 2026, 12:00 PM",
+      "how": "Records count regular-season games by MFL's result; a tie counts half a win in win percentage. Points for counts every week MFL scored, playoff weeks included, as MFL's own standings do; points against counts regular-season games. Games back trail the division leader: a win and a loss are one game apart. Each division is in the league's tiebreak order (Tiebreakers shows each step).",
+      "columns": [
+        "Franchise",
+        "Record",
+        "Win %",
+        "Points for",
+        "Points against",
+        "Streak",
+        "Games back"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "Buffalo Bills",
+            "3-0",
+            "1.000",
+            "855.20",
+            "644.30",
+            "Won 3",
+            "—"
+          ],
+          "range": null,
+          "mine": true,
+          "group": "AFC East"
+        },
+        {
+          "cells": [
+            "New England Patriots",
+            "2-1",
+            ".667",
+            "647.21",
+            "605.00",
+            "Won 1",
+            "1"
+          ],
+          "range": null,
+          "group": "AFC East"
+        },
+        {
+          "cells": [
+            "New York Jets",
+            "1-2",
+            ".333",
+            "580.45",
+            "620.45",
+            "Lost 1",
+            "2"
+          ],
+          "range": null,
+          "group": "AFC East"
+        },
+        {
+          "cells": [
+            "Miami Dolphins",
+            "0-3",
+            ".000",
+            "329.11",
+            "562.78",
+            "Lost 3",
+            "3"
+          ],
+          "range": null,
+          "group": "AFC East"
+        },
+        {
+          "cells": [
+            "Denver Broncos",
+            "2-1",
+            ".667",
+            "696.08",
+            "550.71",
+            "Won 1",
+            "—"
+          ],
+          "range": null,
+          "group": "AFC West"
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    "board": {
+      "title": "League race reports",
+      "loading": "Reading the league race…",
+      "refresh": "Refresh from MFL",
+      "howLabel": "How this is counted",
+      "mflLabel": "",
+      "mflUrl": "",
+      "reports": [
+        {
+          "id": "M-008",
+          "title": "Power rankings: this season",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL standings and the app's model",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "Each roster's on-field value now (the best lineup the league's starter rules allow, from the app's model run #3) blended with this season's results (all-play win percentage). After 3 weeks of results the roster counts 57% and results 43%: the roster's share is 4 ÷ (4 + weeks played), fitted on the league's own 2022–2025 seasons. Both parts are put on one scale before blending, so the shares are real. The blend runs from 0 (last) to 1 (first); moves compare with the board from the previous model run.",
+          "columns": [
+            "Rank",
+            "Franchise",
+            "Move",
+            "Record",
+            "Roster value",
+            "Results",
+            "Blend"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "1",
+                "Washington Commanders",
+                "Up 2",
+                "3-0",
+                "210.4",
+                ".957",
+                "1.00"
+              ],
+              "range": {
+                "max": 1,
+                "value": 1,
+                "lo": 0,
+                "hi": 1,
+                "text": "Blend 1.00 of 1"
+              }
+            },
+            {
+              "cells": [
+                "2",
+                "Buffalo Bills",
+                "—",
+                "3-0",
+                "205.1",
+                ".700",
+                "0.60"
+              ],
+              "range": {
+                "max": 1,
+                "value": 0.6,
+                "lo": 0,
+                "hi": 0.6,
+                "text": "Blend 0.60 of 1"
+              },
+              "mine": true
+            }
+          ],
+          "summary": null,
+          "link": null
+        },
+        {
+          "id": "C-02",
+          "title": "Power rankings: the franchise",
+          "note": "Power rankings unavailable.",
+          "status": "failed",
+          "source": "Source: MFL standings and the app's model",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "",
+          "columns": [
+            "Rank",
+            "Franchise",
+            "Move",
+            "Roster value",
+            "Roster age",
+            "Blend"
+          ],
+          "rows": [],
+          "summary": null,
+          "link": null
+        },
+        {
+          "id": "M-090",
+          "title": "Projected playoff seeding",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "If the regular season ended today: each division leader is seeded first, in the league's tiebreak order, then the best of the rest as wild cards, until each conference's bracket is full. The opening round follows the bracket's size: the top seeds sit out, and the rest meet highest seed against lowest.",
+          "columns": [
+            "Conference",
+            "Seed",
+            "Franchise",
+            "Record",
+            "How they get in",
+            "Opening round"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "AFC",
+                "1",
+                "Buffalo Bills",
+                "3-0",
+                "Leads the AFC East",
+                "Bye"
+              ],
+              "range": null,
+              "mine": true
+            },
+            {
+              "cells": [
+                "AFC",
+                "2",
+                "Indianapolis Colts",
+                "3-0",
+                "Leads the AFC South",
+                "Hosts seed 7"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "AFC",
+                "3",
+                "Cincinnati Bengals",
+                "3-0",
+                "Leads the AFC North",
+                "Hosts seed 6"
+              ],
+              "range": null
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Regular season",
+                "3 of 13 weeks scored"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-170",
+          "title": "On the bubble",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "The wild-card holders and every franchise that can still catch its conference's last seed: one that trails it by no more games than it has left. Games back: a win and a loss are one game apart. A team level on games back trails on the tiebreak order.",
+          "columns": [
+            "Conference",
+            "Franchise",
+            "Record",
+            "Place",
+            "Games left",
+            "Still to play"
+          ],
+          "rows": [
+            {
+              "titles": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "Denver Broncos, Philadelphia Eagles, Jacksonville Jaguars, Indianapolis Colts, Kansas City Chiefs, Denver Broncos, Detroit Lions, Houston Texans, Las Vegas Raiders, Kansas City Chiefs"
+              ],
+              "cells": [
+                "AFC",
+                "Los Angeles Chargers",
+                "2-1",
+                "Holds seed 5",
+                "10",
+                "DEN · PHI · JAX · IND · KC · DEN · DET · HOU · OAK · KC"
+              ],
+              "range": null
+            },
+            {
+              "titles": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "Indianapolis Colts, Jacksonville Jaguars, Denver Broncos, Kansas City Chiefs, Dallas Cowboys, Green Bay Packers, New Orleans Saints, Las Vegas Raiders, Houston Texans, Indianapolis Colts"
+              ],
+              "cells": [
+                "AFC",
+                "Tennessee Titans",
+                "2-1",
+                "Holds seed 6",
+                "10",
+                "IND · JAX · DEN · KC · DAL · GB · NO · OAK · HOU · IND"
+              ],
+              "range": null
+            },
+            {
+              "titles": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "Cincinnati Bengals, Pittsburgh Steelers, Cleveland Browns, New England Patriots, San Francisco 49ers, Buffalo Bills, New York Jets, Green Bay Packers, Miami Dolphins, Cincinnati Bengals"
+              ],
+              "cells": [
+                "AFC",
+                "Baltimore Ravens",
+                "2-1",
+                "Holds seed 7",
+                "10",
+                "CIN · PIT · CLE · NE · SF · BUF · NYJ · GB · MIA · CIN"
+              ],
+              "range": null
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Regular season",
+                "3 of 13 weeks scored"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-074",
+          "title": "Tiebreakers",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "The league's own tiebreak order from MFL, applied to today's ties step by step. When a step separates some teams but leaves others level, those still level start again from the first tiebreak. Head-to-head counts only when every tied team has played every other; division and conference percentage count only when all the tied teams share that division or conference. All-play and points for count every week MFL scored.",
+          "columns": [
+            "Race",
+            "Tied teams",
+            "Step",
+            "What it found",
+            "Result"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "AFC West · 2-1",
+                "Los Angeles Chargers · Denver Broncos",
+                "2. Head-to-head among the tied teams",
+                "Skipped: not every tied team has played every other",
+                "Skipped"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "AFC West · 2-1",
+                "Los Angeles Chargers · Denver Broncos",
+                "3. Division win percentage",
+                "Los Angeles Chargers 1-0\nDenver Broncos 1-0",
+                "Still level"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "AFC West · 2-1",
+                "Los Angeles Chargers · Denver Broncos",
+                "4. Conference win percentage",
+                "Los Angeles Chargers 2-0\nDenver Broncos 2-0",
+                "Still level"
+              ],
+              "range": null
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Tiebreak order",
+                "1 Win percentage · 2 Head-to-head among the tied teams · 3 Division win percentage · 4 Conference win percentage · 5 All-play win percentage · 6 Points for · 7 MFL power rating"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-014",
+          "title": "Playoff brackets",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "Every bracket the league defines on MFL, game by game, with MFL's seeds and scores. A side not yet known shows the seed or the earlier game it comes from. The winner is MFL's result for that week's game.",
+          "columns": [
+            "Bracket",
+            "Round",
+            "Home",
+            "Away",
+            "Result"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "AFC Conference",
+                "Week 14",
+                "Seed 2",
+                "Seed 7",
+                "Not played yet"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "AFC Conference",
+                "Week 14",
+                "Seed 3",
+                "Seed 6",
+                "Not played yet"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "AFC Conference",
+                "Week 14",
+                "Seed 4",
+                "Seed 5",
+                "Not played yet"
+              ],
+              "range": null
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "AFC Conference",
+                "Seeds are set when the regular season ends; Projected playoff seeding shows them if it ended today."
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "NFC Conference",
+                "Seeds are set when the regular season ends; Projected playoff seeding shows them if it ended today."
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Legacy NFL Super Bowl",
+                "Its teams are the other brackets' winners."
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-161",
+          "title": "All-play",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "Each week, every franchise's score is compared with every other franchise's score that week: higher is an all-play win, lower a loss, equal a tie. Every week MFL scored counts, playoff weeks included, as MFL's own all-play does. Wins against all-play pace are actual regular-season wins minus the wins the all-play percentage gives over the same games. Every bar runs from 0 to 1.",
+          "columns": [
+            "Franchise",
+            "All-play record",
+            "Record",
+            "Wins against all-play pace",
+            "All-play %"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Washington Commanders",
+                "89-4",
+                "3-0",
+                "+0.1",
+                ".957"
+              ],
+              "range": {
+                "max": 1,
+                "value": 0.956989247311828,
+                "lo": 0,
+                "hi": 0.956989247311828,
+                "text": "All-play .957"
+              }
+            },
+            {
+              "cells": [
+                "Buffalo Bills",
+                "88-5",
+                "3-0",
+                "+0.2",
+                ".946"
+              ],
+              "range": {
+                "max": 1,
+                "value": 0.946236559139785,
+                "lo": 0,
+                "hi": 0.946236559139785,
+                "text": "All-play .946"
+              },
+              "mine": true
+            },
+            {
+              "cells": [
+                "Minnesota Vikings",
+                "87-6",
+                "2-1",
+                "-0.8",
+                ".935"
+              ],
+              "range": {
+                "max": 1,
+                "value": 0.9354838709677419,
+                "lo": 0,
+                "hi": 0.9354838709677419,
+                "text": "All-play .935"
+              }
+            }
+          ],
+          "summary": null,
+          "link": null
+        },
+        {
+          "id": "M-071",
+          "title": "Weekly points",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "Each franchise's score in every week MFL scored, most points first. All bars share one scale, from zero to the highest score any franchise posted in a week, so they compare down the column.",
+          "columns": [
+            "Franchise",
+            "Points for",
+            "Per week",
+            "Points by week"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Buffalo Bills",
+                "855.20",
+                "285.06",
+                "Best: week 2, 306.95"
+              ],
+              "range": null,
+              "mine": true,
+              "bars": [
+                269.9,
+                306.95,
+                278.35
+              ]
+            },
+            {
+              "cells": [
+                "Minnesota Vikings",
+                "848.80",
+                "282.93",
+                "Best: week 3, 331.15"
+              ],
+              "range": null,
+              "bars": [
+                261.15,
+                256.5,
+                331.15
+              ]
+            },
+            {
+              "cells": [
+                "Washington Commanders",
+                "848.05",
+                "282.68",
+                "Best: week 2, 307.35"
+              ],
+              "range": null,
+              "bars": [
+                277.75,
+                307.35,
+                262.95
+              ]
+            }
+          ],
+          "summary": null,
+          "link": null,
+          "barMax": 331.15,
+          "barLabels": [
+            "Week 1",
+            "Week 2",
+            "Week 3"
+          ]
+        },
+        {
+          "id": "M-076",
+          "title": "Starter points by position",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "Points scored by each franchise's starters, by position, in every week MFL scored. Bench points do not count, and neither do the home-field points MFL adds in playoff games, so a playoff host's total sits just under its points for. Most starter points first.",
+          "columns": [
+            "Franchise",
+            "Starter points",
+            "QB",
+            "RB",
+            "WR",
+            "TE",
+            "K",
+            "DT",
+            "DE",
+            "LB",
+            "CB",
+            "S",
+            "Position unknown"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Buffalo Bills",
+                "855.20",
+                "50.00",
+                "98.65",
+                "208.70",
+                "39.70",
+                "0.00",
+                "47.00",
+                "67.50",
+                "209.40",
+                "65.00",
+                "69.25",
+                "0.00"
+              ],
+              "range": null,
+              "mine": true
+            },
+            {
+              "cells": [
+                "Minnesota Vikings",
+                "848.80",
+                "43.45",
+                "191.75",
+                "112.50",
+                "53.10",
+                "32.00",
+                "77.00",
+                "108.00",
+                "82.50",
+                "55.00",
+                "67.00",
+                "26.50"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Washington Commanders",
+                "848.05",
+                "19.65",
+                "98.95",
+                "189.95",
+                "60.10",
+                "25.00",
+                "83.00",
+                "159.70",
+                "82.70",
+                "47.00",
+                "82.00",
+                "0.00"
+              ],
+              "range": null
+            }
+          ],
+          "summary": null,
+          "link": null
+        },
+        {
+          "id": "M-077",
+          "title": "Starter points by player",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "Every player the franchise started in a week MFL scored, with his points in those starts. Bench weeks do not count. Most points first.",
+          "columns": [
+            "Player",
+            "Position",
+            "Starts",
+            "Points as starter",
+            "Per start"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Adams, Davante",
+                "WR",
+                "3",
+                "76.30",
+                "25.43"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Lloyd, Devin",
+                "LB",
+                "2",
+                "70.90",
+                "35.45"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "McCaffrey, Christian",
+                "RB",
+                "3",
+                "63.25",
+                "21.08"
+              ],
+              "range": null
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Franchise",
+                "Buffalo Bills"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-011",
+          "title": "Fantasy schedule by week",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "Every game MFL lists, week by week, away team first. Played games show MFL's score and winner.",
+          "columns": [
+            "Week",
+            "Away",
+            "Home",
+            "Result"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Week 1",
+                "Buffalo Bills",
+                "New York Jets",
+                "Buffalo Bills won 269.90 to 177.40"
+              ],
+              "range": null,
+              "mine": true
+            },
+            {
+              "cells": [
+                "Week 1",
+                "New England Patriots",
+                "Miami Dolphins",
+                "New England Patriots won 185.03 to 87.85"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Week 1",
+                "Cleveland Browns",
+                "Baltimore Ravens",
+                "Cleveland Browns won 253.60 to 209.73"
+              ],
+              "range": null
+            }
+          ],
+          "summary": null,
+          "link": null
+        },
+        {
+          "id": "M-012",
+          "title": "Schedule by franchise",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "One franchise's games in week order. A week without a game is a playoff bye or a week after its season ended.",
+          "columns": [
+            "Week",
+            "Opponent",
+            "Where",
+            "Result"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Week 1",
+                "New York Jets",
+                "Away",
+                "Won 269.90 to 177.40"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Week 2",
+                "New England Patriots",
+                "Away",
+                "Won 306.95 to 214.60"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Week 3",
+                "Atlanta Falcons",
+                "Away",
+                "Won 278.35 to 252.30"
+              ],
+              "range": null
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Franchise",
+                "Buffalo Bills"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-013",
+          "title": "Schedule grid",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "One row per franchise in standings order, one column per week. \"@\" marks an away game; W, L or T is MFL's result once the game is played. Team short names are the league's own.",
+          "columns": [
+            "Franchise",
+            "W1",
+            "W2",
+            "W3",
+            "W4",
+            "W5",
+            "W6",
+            "W7",
+            "W8",
+            "W9",
+            "W10",
+            "W11",
+            "W12",
+            "W13",
+            "W14",
+            "W15",
+            "W16",
+            "W17"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Buffalo Bills",
+                "@NYJ W",
+                "@NE W",
+                "@ATL W",
+                "@WASH",
+                "@MIA",
+                "@ARZ",
+                "@CLE",
+                "@NE",
+                "@BAL",
+                "@PIT",
+                "@NYJ",
+                "@CIN",
+                "@MIA",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "range": null,
+              "mine": true
+            },
+            {
+              "cells": [
+                "New England Patriots",
+                "@MIA W",
+                "BUF L",
+                "@CAR W",
+                "@PHI",
+                "@NYJ",
+                "@LAR",
+                "@BAL",
+                "BUF",
+                "@PIT",
+                "@CIN",
+                "@MIA",
+                "@CLE",
+                "@NYJ",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "New York Jets",
+                "BUF L",
+                "@MIA W",
+                "@NO L",
+                "@DAL",
+                "NE",
+                "@SF",
+                "@CIN",
+                "@MIA",
+                "@CLE",
+                "@BAL",
+                "BUF",
+                "@PIT",
+                "NE",
+                "",
+                "",
+                "",
+                ""
+              ],
+              "range": null
+            }
+          ],
+          "summary": null,
+          "link": null
+        },
+        {
+          "id": "M-009",
+          "title": "Starting lineups",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "Every franchise's starters in the chosen week, by position, with each starter's points. Most points first.",
+          "columns": [
+            "Franchise",
+            "Points",
+            "Starters"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Minnesota Vikings",
+                "331.15",
+                "QB · Herbert, Justin · 16.60\nRB · Croskey-Merritt, Jacory · 8.15\nRB · Jeanty, Ashton · 16.15\nRB · Robinson, Bijan · 42.65\nWR · Burden, Luther · 20.95\nWR · London, Drake · 34.90\nWR · Nabers, Malik · 7.60\nTE · Kelce, Travis · 15.90\nK · Fitzgerald, Ryan · 15.00\nDT · Lawrence, Dexter · 27.50\nDT · Roach, Malcolm · 14.00\nDE · Robinson, Tavius · 7.50\nDE · Tuipulotu, Tuli · 25.25\nDE · Young, Chase · 25.00\nLB · Cooper, Edgerrin · 9.50\nLB · Landman, Nate · 3.50\nCB · Davis, Jalen · 3.00\nCB · Witherspoon, Devon · 11.00\nS · Mukuba, Andrew · 13.00\nS · Smith, Harrison · 2.00\nPosition unknown · A player MFL's directory does not list · 12.00"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "San Francisco 49ers",
+                "286.63",
+                "QB · Burrow, Joe · 28.70\nRB · Warren, Jaylen · 26.15\nWR · Chase, Ja'Marr · 25.80\nWR · Metcalf, DK · 12.10\nWR · Washington, Malik · 13.78\nTE · Hockenson, T.J. · 3.10\nTE · Johnson, Juwan · 29.80\nK · Fairbairn, Ka'imi · 5.00\nDT · Allen, Jonathan · 6.50\nDT · Briggs, Jowon · 8.50\nDE · Chubb, Bradley · 6.50\nLB · Franklin, Zaire · 14.00\nLB · Tranquill, Drue · 11.00\nCB · Hughes, Mike · 13.00\nCB · Newsome, Greg · 10.00\nCB · Reed, D.J. · 16.00\nS · Byard, Kevin · 8.00\nS · Sanker, Jonas · 10.00\nPosition unknown · A player MFL's directory does not list · 9.10\nPosition unknown · A player MFL's directory does not list · 4.50\nPosition unknown · A player MFL's directory does not list · 25.10"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Buffalo Bills",
+                "278.35",
+                "QB · Willis, Malik · 15.45\nRB · McCaffrey, Christian · 23.85\nRB · Tuten, Bhayshul · 19.25\nWR · Adams, Davante · 24.70\nWR · McConkey, Ladd · 11.60\nWR · McLaurin, Terry · 20.70\nWR · Pickens, George · 15.20\nTE · Warren, Tyler · 14.85\nK · Gonzalez, Zane · 0.00\nDT · Kinlaw, Javon · 4.00\nDT · Redmond, Jalen · 5.00\nDE · Hines-Allen, Josh · 8.50\nDE · Latu, Laiatu · 3.50\nLB · Gibbens, Jack · 13.50\nLB · Jones, Ernest · 12.00\nLB · Singleton, Alex · 11.50\nLB · Wilson, Payton · 8.50\nCB · Green, Renardo · 23.00\nCB · Phillips, Andru · 19.00\nS · Metellus, Josh · 19.25\nS · Mustapha, Malik · 5.00"
+              ],
+              "range": null,
+              "mine": true
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Week",
+                "Week 3"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-010",
+          "title": "Lineup detail",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "The franchise's starters in the chosen week with each one's points, then any bench player MFL's best lineup would have started. Best lineup is the most the same roster could have scored under the league's starter rules, as MFL counts it.",
+          "columns": [
+            "Position",
+            "Player",
+            "Points",
+            "Lineup call"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "QB",
+                "Willis, Malik",
+                "15.45",
+                "In the best lineup"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "RB",
+                "McCaffrey, Christian",
+                "23.85",
+                "In the best lineup"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "RB",
+                "Tuten, Bhayshul",
+                "19.25",
+                "In the best lineup"
+              ],
+              "range": null
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Franchise",
+                "Buffalo Bills"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Week",
+                "Week 3"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Points",
+                "278.35"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Best lineup",
+                "305.30 · 26.95 left on the bench"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Opponent",
+                "Atlanta Falcons · 252.30"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        }
+      ]
+    },
+    "week": 3,
+    "weeks": [
+      {
+        "value": "1",
+        "label": "Week 1"
+      },
+      {
+        "value": "2",
+        "label": "Week 2"
+      },
+      {
+        "value": "3",
+        "label": "Week 3"
+      }
+    ],
+    "team": "0001",
+    "teams": [
+      {
+        "value": "0025",
+        "label": "Arizona Cardinals"
+      },
+      {
+        "value": "0017",
+        "label": "Atlanta Falcons"
+      },
+      {
+        "value": "0013",
+        "label": "Baltimore Ravens"
+      },
+      {
+        "value": "0001",
+        "label": "Buffalo Bills"
+      },
+      {
+        "value": "0018",
+        "label": "Carolina Panthers"
+      },
+      {
+        "value": "0021",
+        "label": "Chicago Bears"
+      },
+      {
+        "value": "0014",
+        "label": "Cincinnati Bengals"
+      },
+      {
+        "value": "0015",
+        "label": "Cleveland Browns"
+      },
+      {
+        "value": "0029",
+        "label": "Dallas Cowboys"
+      },
+      {
+        "value": "0008",
+        "label": "Denver Broncos"
+      },
+      {
+        "value": "0022",
+        "label": "Detroit Lions"
+      },
+      {
+        "value": "0023",
+        "label": "Green Bay Packers"
+      },
+      {
+        "value": "0009",
+        "label": "Houston Texans"
+      },
+      {
+        "value": "0010",
+        "label": "Indianapolis Colts"
+      },
+      {
+        "value": "0011",
+        "label": "Jacksonville Jaguars"
+      },
+      {
+        "value": "0006",
+        "label": "Kansas City Chiefs"
+      },
+      {
+        "value": "0007",
+        "label": "Las Vegas Raiders"
+      },
+      {
+        "value": "0005",
+        "label": "Los Angeles Chargers"
+      },
+      {
+        "value": "0027",
+        "label": "Los Angeles Rams"
+      },
+      {
+        "value": "0004",
+        "label": "Miami Dolphins"
+      },
+      {
+        "value": "0024",
+        "label": "Minnesota Vikings"
+      },
+      {
+        "value": "0002",
+        "label": "New England Patriots"
+      },
+      {
+        "value": "0019",
+        "label": "New Orleans Saints"
+      },
+      {
+        "value": "0030",
+        "label": "New York Giants"
+      },
+      {
+        "value": "0003",
+        "label": "New York Jets"
+      },
+      {
+        "value": "0031",
+        "label": "Philadelphia Eagles"
+      },
+      {
+        "value": "0016",
+        "label": "Pittsburgh Steelers"
+      },
+      {
+        "value": "0026",
+        "label": "San Francisco 49ers"
+      },
+      {
+        "value": "0028",
+        "label": "Seattle Seahawks"
+      },
+      {
+        "value": "0020",
+        "label": "Tampa Bay Buccaneers"
+      },
+      {
+        "value": "0012",
+        "label": "Tennessee Titans"
+      },
+      {
+        "value": "0032",
+        "label": "Washington Commanders"
+      }
+    ]
+  }
+}

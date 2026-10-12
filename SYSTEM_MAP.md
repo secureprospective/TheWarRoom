@@ -20,6 +20,10 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Layer 1 | `internal/ingestion/college` | CFBD season stats as a batch for the measure store: one call per college season, each team's totals summed for the share denominators. `Map` reads an archived body, so a season is re-read when the registry maps a measure it lacks. |
 | Layer 1 | `internal/ingestion/contracts` | NFL contracts (OverTheCap via nflverse, Parquet) as a batch: each player's contract terms under the season signed. Read every 30 days. |
 | Layer 1 | `internal/ingestion/injuries` | MFL's NFL injury designations (the league-less `injuries` export, fetched without L from api.myfantasyleague.com), the IR rule's input. Empty bodies and MFL's HTTP-200 error envelope both fail the fetch: a glitch must read "not checked", never "nobody is injured". |
+| Layer 1 | `internal/ingestion/weeklyresults` | Validated MFL weeklyResults for the whole season (W=YTD): every week's games, scores in exact hundredths, MFL's results and each side's started and benched players; unscored weeks keep their set lineups. |
+| Layer 1 | `internal/ingestion/playoffs` | Validated MFL playoffBrackets and playoffBracket (BRACKET_ID) exports: each bracket's games, seeds, scores and where an unknown side comes from. |
+| Layer 1 | `internal/ingestion/livegame` | Personal-use ESPN scoreboard, summary and core participant plays; Yahoo score/last-play failover, timed held copy and window-scoped polite demand polling. Injected transport; fixtures only. |
+| Layer 1 | `internal/ingestion/marketfeeds` | Validated MFL week projections and MFL-wide ranks, all-period ADP and auction-budget shares; fixture-only tests. |
 | Layer 1 | `internal/ingestion/freeagents` | MFL's `freeAgents` league export: the players on no roster, the pool bid plans are made from. MFL's HTTP-200 error envelope and a reply with no `freeAgents` section both fail the fetch; an empty pool is a valid answer. |
 | Layer 1 | `internal/normalize` | Raw records → domain types: the players lookup and roster join. |
 | Leaf | `internal/domain`, `internal/playerid`, `internal/numeric`, `internal/scouting` | Value types. `playerid.New` is the only way to build a `PlayerID`. `scouting` holds the Layer 4 input types. |
@@ -30,9 +34,12 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Store | `internal/store/moves` | Append-only envelope specs and replayable audit entries in `thewarroom.db`; restart-safe move receipts and awaiting evidence queries. `bid_facts` is its one side table, keyed by an envelope's correlation id: the owner's own bid figures, no franchise column, frozen by a trigger once the bid is handed off. |
 | Store | `internal/store/state` | Two things behind one `Reader`. **`Mirror`**: the league as MFL states it (season, rosters with contracts, salary adjustments), replaced whole by a refresh; every score surface reads it. **`Store`**: the what-if league in `whatif.db`, seeded from the mirror (rosters and MFL salary adjustments, so its cap starts equal): rosters, contracts, the contract-year ledger, dead cap, cap relief, phases, feed, calendar. Append-only ledgers; the transaction coordinator holds the only `Writer`. |
 | Store | `internal/store/history` | `history.db`: everything the app cannot rebuild. The fetch archive (`raw_archive`, `fetch_log`), facts per measure appended on change (`observations`, read as of a date through `Features`), source health, and scoring runs with the param set, engine and inputs they used. Append-only, enforced by triggers. |
-| Analytics | `internal/lab` | Frozen fingerprint-checked compiled Lab facts, typed columnar decoder, pure Market fitting, delivery, price lists, calendar, Draft slot returns, team-side Counterparties profiles and owner-scoped offer endings. Offline JS goldens in `tools/labparity` pin the reference engine and data hashes; Node is never required at runtime or by verify. |
+| Analytics | `internal/facts` | Pure pinned-input compiler for season, franchise, standings, rules, calendar, player identity/history/conflicts, source provenance, loader notes, curated trade-note readings, weekly games and lineups, player weeks, injuries, weekly rosters, NFL games, points allowed, playoffs, contracts, cap charges, the draft, picks owned, transactions and their assets, trade bait and MFL-wide ADP/AAV: every Lab relation except the checks; typed in-memory columns only. `Facts.Views()` computes the Lab's named readings (played_game, regular_week, all_play_week, team_season, trade_asset, offer, roster_move) from the columns on demand. `internal/facts/parity_test.go` compares the independent Python golden in verify; the full archive is opt-in. No snapshot publication or database tables. |
+| Analytics | `internal/labcompile` | Pure facts-to-Lab compiler: calendar, production, contracts, trades/draft, directories, ledger/source proofs and full wins/replacement, five-season forecast, pick curves, market and rolling backtest analysis. `Compile` produces the complete document; `Build` also returns an immutable `Model` whose `Player`/`Pick` API uses the trade-leg valuer at a supplied moment, with explicit unvalued reasons. Passive Python kernel/method/analysis goldens and reduced conservative smoke run in verify; opt-in full archive parity covers all 18 keys and player API/leg equality, while recorded-analysis document parity remains isolated. The app fits the model after launch (`fitAssetModel`, after `warmArchive`) and C-01 reads `Model.Player` through `labAssets`; the Lab screens still read the frozen document. |
+| Analytics | `internal/lab` | Frozen fingerprint-checked compiled Lab facts, typed columnar decoder, pure Market fitting, delivery, price lists, calendar, Draft slot returns, team-side Counterparties profiles and owner-scoped offer endings. Offline JS goldens in `tools/labparity` pin the reference engine and data hashes; Node is never required at runtime or by verify. Exact missing-input exceptions live in `testdata/missing-inputs.csv`; `facts-reference.py` independently rebuilds the Python facts oracle in a disposable directory, with its source-row proof and provenance under `internal/lab/testdata/facts`. The reduced three-season golden retains every reference relation; full parity is opt-in. |
 | Engine | `internal/engine` | The scoring pipeline as pure functions (L1, L3, L4 dispatch, L5, L6). |
 | Engine | `internal/engine/bid` | The free-agent auction's arithmetic and rules (rulebook §6) as pure functions: bid points in exact thousandths, the minimum salary by experience (`freeagency` reads the same table), eleven named rule checks with Go-written reasons, and the ProBoards post text. |
+| Engine | `internal/engine/race` | The league race as pure functions over weekly results: records, all-play, streaks, games back, MFL's standingsSort applied step by step with a trace, playoff seeding (division leaders first), the opening round and the bubble. Proved against the real 2025 and 2026 seasons in `race_test.go`. |
 | Engine | `internal/engine/eligibility` | MFL's IR and taxi rules as pure verdicts: per player and direction, eligible / ineligible (reason) / unknown (reason), from held feeds only (injuries status, players draft year, roster status, league capacities). The captured 2026-10-10 owner pages are its committed test oracle (`testdata/answer-key.csv`). |
 | Engine | `internal/model` | The measurable's model: a player's league-points percentile blended with a prior from pre-NFL facts, the talent and survival arcs, and `Params`, the fitted values per position (`model.*@POS`). Pure. |
 | Engine | `internal/model/fit` | Fits `model.Params` from stored seasons, scoring every choice on a holdout season. Pure; `cmd/fit` runs it. |
@@ -66,10 +73,12 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | `lab_app.go` | `TargetMarket` validates season/phase input and returns a typed historical Market payload in the generic `Reading` shell extending `snapshot.Sourced`; dated provenance, count/threshold and Go-authored counting disclosure, no spread grade. |
 | `whatif_app.go` | `TargetWhatIf` validates read/cut/buyout/undo/reset intents; per-franchise persistent baseline and ordered moves in `whatif.db`. Generation-scoped coordinator ledgers replay on mutation, publish after success, keep the mirror read-only, block stale edits until Reset. Lazy Contracts panel shows Go-authored before/after cents and rules. |
 | `contracts_app.go` | `TargetContracts` validates team/position/sort scopes and returns separate typed `Reading` shells for league contracts, my-franchise cap, literal MFL salary adjustments and the honest unavailable can’t-cut export. `TargetPlayerContract` validates player IDs and returns observed current salary / explicitly flat-filled inferred future years. Both read a coherent `Mirror.ContractsView`, never the what-if ledger. Lazy frontend in `frontend/src/app/contracts`; every player Inspector includes contract years. |
+| `market_feeds_app.go`, `market_feeds_reading.go`, `report_reading.go` | `TargetMarketReportsRefresh(force)` and `TargetMarketReports`: held week-scoped projections and daily MFL-wide market feeds, archive fallback; shared Go Report and lazy React ReportView used by draft and player-market reports; Go-written pool and Inspector market facts. |
 | `pool_app.go` | `TargetPoolRefresh(force bool)` fetches MFL's free-agent list (skipped when fresh); `TargetPool(RawPoolScope)` reads the held list with no network: name, position, team, age, experience and the §6 minimum per row, filtered and sorted in Go, in a `Reading[Pool]` that is failed before the first fetch, empty (thin) when MFL lists nobody, stale when a refresh fails. |
 | `bids_app.go`, `bids_plans_app.go` | Bid plans (intent `bid.submit`): `TargetBidPreview(RawBidInput)` checks typed figures against the rules without saving; `TargetBidDraft`, `TargetBidRevise`, `TargetBidHandOff` (records the copied ProBoards post; refused if the rules no longer pass), `TargetBidPosted` (the owner says it is up), `TargetBidWithdraw` (all nonterminal local plans; never removes a ProBoards post); `TargetBidPlans(franchiseID)` lists the owner's plans with Go's words, live rules and the actions on offer. The landing watcher looks for the player on the owner's roster with the planned contract. `TargetMoves` leaves bid plans out. |
 | `moves_app.go` | `TargetHandOff(correlationID string) (envelope.Receipt, error)` saves before browser hand-off; `TargetWithdrawRoster(correlationID)` ends a local IR/taxi plan without changing MFL; `TargetCheckMoves() error` wakes landing checks; `target:moves` signals a hand-off or changed move. |
 | `moves_watcher.go` | Cancellable landing watcher; shared 60-second wake/fast-mode rate limit and persisted restart recovery. |
+| `livegame_app.go`, `livegame_spine.go` | `TargetLiveGame(open, follow, mine)`: demand-driven Now poll on held NFL windows; MFL liveScoring at 30 s, ESPN board at 30 s/details at 15 s with capped backoff; separate held detail time, strict ESPN crosswalk starter matching, cached personal-use photos. Source URLs are data in `livegame_sources.json`. Lazy `frontend/src/app/now/LiveGame.tsx`; `game.follow id=` command. |
 | `season_app.go` | Held season feeds (transactions, lineups, pendingTrades, injuries); `TargetSeason` reads without network; `target:season` signals refreshes and key changes. Ready roster plans whose held eligibility turned ineligible return to Draft after a refresh (`revalidateReadyRosterMoves`, in `moves_app.go`). |
 | `target_app.go` | `TargetSnapshot` (initialized mirror and rulebook, cached live directory with archive fallback, held injuries feed fetched on first use; shared fixture/live contract; keeps the last good build); `TargetClock` (phase log and commissioner calendar from the what-if store; no network); `TargetDraftIR`, `TargetDraftTaxi`, `TargetMoves` (draft `roster.ir` / `roster.taxi` against the kept build into the persistent move store; no network) |
 | `mflkey_app.go` | `MFLKeyStatus`, `SetMFLKey`, `DeleteMFLKey` (keyring presence and verified replacement) |
@@ -154,7 +163,7 @@ UI. `frontend/src/TargetMount.tsx` switches between the target shell and the unc
 pure two-route gate. `endpoint.open` navigates and highlights; merged rows target kept ids or places.
 The harness is lazy-loaded only on `harness.open`; it is not in the target entry chunk.
 
-`internal/ingestion/nflschedule` fetches and validates MFL's league-independent NFL schedule,
+`internal/ingestion/nflschedule` fetches and validates MFL's league-independent NFL schedule (with home side and scores) and the season's bye weeks (`byes.go`),
 then converts it into dated `internal/leagueweek` facts at a supplied instant.
 `internal/leagueweek` derives the lineup week, per-team kickoff locks and bounded season phase;
 after the season ends it requires explicit rollover approval.
@@ -176,7 +185,7 @@ independently of React. Clock and snapshot providers load in parallel, never fal
 alone writes it and runs connect/forget. The provider lazily imports generated Wails bindings;
 `parseMFLKeyStatus` validates their five-state JSON before any status reaches the surface.
 
-`internal/leaguefeed` holds typed season transactions, assets, lineups and pending trades; pure leaf.
+`internal/leaguefeed` holds typed season transactions, assets, lineups, pending trades, weekly results and playoff brackets; pure leaf.
 `internal/ingestion/transactions` validates and converts the unkeyed MFL season transaction feed.
 `internal/ingestion/livescoring` validates and converts MFL saved weekly lineups and live totals.
 
@@ -199,13 +208,11 @@ Hand-off Act: `move.handoff` opens a Ready plan; `target:moves` reloads receipts
 Trade desk: `shell/TradeDesk.tsx` groups held offers; lazy `data/tradeProvider.ts` parses Go readings.
 Accept plan: `commands/tradeAccept.ts` drafts `trade.accept`; `shell/TradePlan.tsx` tracks desk hand-off.
 
-`pulse_app.go`: `TargetPulseNow() (PulseReading, error)` reads held matchups and ordered starter scores.
 `alerts_app.go`: `TargetAlerts(franchiseID string) (AlertReading, error)` reads lineup and incoming-offer alerts.
 `internal/leaguefeed`, `internal/ingestion/livescoring`: matchups, playing counts and per-player live scores.
 
 Home seasonal card: `shell/SeasonalCard.tsx` lazily renders the held clock and shared deadline ticker.
 Home alert tray: `shell/AlertTray.tsx` lazily reads ordered franchise alerts and routes to their workspaces.
-League Pulse Now: `shell/PulseNow.tsx` lazily reads matchups and toggles side-by-side starter scores.
 
 `target_app.go`: `TargetDraftTaxi(franchiseID, playerID string) (envelope.Receipt, error)` saves a taxi plan.
 `internal/envelope`: `roster.taxi` derives direction from held status and watches post-hand-off rosters.
@@ -249,3 +256,87 @@ Contracts/My moves release cards share `RailStrip`; no mirror write or MFL submi
 Contract Act plans: `contract_acts_app.go` exposes validated preview/draft/read and manual hand-off, posted, withdraw and rebase commands. `internal/engine/contractacts` owns pure §7/§9–11 price and term previews. `internal/envelope/contract.go` checks missing rules/evidence and declares the Contracts observation source. `internal/store/moves/contractfacts.go` stores priced baselines with envelope history atomically. Annual/expiration exports do not prove inferred future cells. Contract windows reuse coordinator LegalOps; RFA tender/re-sign are offseason only. Unknown history is noted for commissioner checking. Team projections install priced cells through the coordinator on isolated simulation generations and reuse the What-if result builder. Lazy menus and cards live in `frontend/src/app/contracts/ContractActs.tsx`.
 
 `frontend/src/app/shell/workScroll.ts` confines card reveals to `.wbody` and holds table rows through asynchronous panel changes.
+
+`internal/ingestion/draftreports` validates MFL draftResults and futureDraftPicks into typed held
+picks (string PlayerID, epoch instants) and ownership; one adapter family, two export fetchers.
+`draft_reports_app.go` refreshes both with archive fallback and reads local model values without
+network; `draft_reports_reading.go` authors nine report tables, grid, timing and value-distance bars.
+`frontend/src/app/draftreports/` is lazy inside Draft room alongside the unchanged Draft lab;
+`draft.reports` refreshes or opens the discovered MFL room without submitting a pick.
+
+League Pulse › Race: `race_app.go` holds weeklyResults, the playoff brackets, MFL's standings and both M2 boards, refreshed with the hourly season refresh or on open (`TargetRaceRefresh`). `TargetRace(week, team, mine)` reads held data only and validates the choices; `race_reading.go`, `race_playoffs_reading.go` and `race_points_reading.go` write every report (M-002 standings on top, then M-008/C-02, M-090, M-170, M-074, M-014, M-161, M-071, M-076, M-077, M-011–M-013, M-009, M-010) through the shared `Report` shell. The lazy screen is `frontend/src/app/race/Race.tsx`. The league's divisions, conferences and standingsSort arrive with the rulebook (`league.RawConfig`).
+
+League Pulse › Now: `now_app.go` holds each opened week's NFL schedule, the season's bye weeks and, per week, the first held copy of its scores (read from the fetch archive, newer copies only). `TargetNowRefresh(week, force)` refreshes the race's feeds, then that week's NFL schedule and the byes (5-minute freshness, archive fallback scoped by `W`); `TargetNow(week, mine)` reads held data only and validates the week (0: the current NFL week). `now_reading.go` (week choice, held live scores for a week MFL has not scored, X-03 Classic matchup, M-005, M-003, M-004), `now_recap_reading.go` (M-007, M-021, M-022, M-088) and `now_nfl_reading.go` (M-015, M-016, M-072, M-018) write the reports on the race's view. The lazy screen is `frontend/src/app/now/Now.tsx`.
+
+### Data and sources
+
+- `internal/ingestion/leaguearchive`: offline, prevalidated MFL file-tree import through the archive Sink.
+- `internal/manifest`: pinned-input identity, body resolution and last-good snapshot standing; no I/O except the injected body reader.
+- `league_archive_app.go`, `data_sources_app.go`, `data_sources_reading.go`: settings, scoped refresh, manifest publishing and Go-written Control Room reports.
+- `internal/store/history/inputs.go`: archive locators, input manifests and append-only compile attempts (metadata, not fact tables); `snapshot_checks` keeps each attempt's check results beside it.
+- `facts_app.go`: compiles the published manifest (archive pins plus the curated `note_readings.csv`, pinned by its own sha256) with `internal/facts`, runs the nine checks against the identity-pinned exceptions (`internal/lab/testdata/check-exceptions.csv`), and records the attempt; the same manifest, compiler and rules never compile twice, and a failure keeps the last good snapshot, stale. Runs after an archive import and at launch.
+- `frontend/src/app/datasources`: lazy Control Room Data and sources, scope Acts, player crosswalk and engine parameter overrides.
+
+## League communications
+
+`comms_app.go` holds authenticated messageBoard/polls exports with archive fallback.
+`TargetComms` reads existing season transactions, current mirror contracts and the held directory.
+`comms_reading.go` writes sentences shared by C-05 and M-032 with Go-validated filters.
+`TargetOpenComms` opens ProBoards or the discovered MFL board/polls pages only.
+`internal/ingestion/comms.go` validates posts. Lazy `frontend/src/app/comms` serves
+Comms and Home › Digests through the shared Report shell.
+
+## Player photos (ring 3, p3k)
+
+`internal/headshot` fetches a player's photo from ESPN's resizer (96×70), then Sleeper, keyed through the
+player directory's `espn` and `sleeper` ids (`history.Store.SourceID`). It paces requests at four a second,
+accepts only real PNG/JPEG bytes, treats 403/404 and known silhouettes as "no photo" (rechecked after seven
+days), and caches files in `<data dir>/headshots/` under a 200 MB least-recently-used cap. Photos are personal
+use only (spec §7): never bundled, never in git, never in `history.db`, so its HTTP client bypasses the
+archiving transport on purpose. The webview loads `/headshot/<mfl id>` through the Wails asset handler
+(`photos_app.go`); `TargetPhoto` gives a card Go's address and alt text, or none when photos are off
+(`settings.json` `photosOff`, `SetPhotos`). `cards/PlayerPhoto.tsx` reserves the box and shows the NFL team
+when there is no photo.
+
+## Trade Acts and acquisition costing (ring 3, p3t)
+
+Trade Acts and acquisition costing: `trade_builder_app.go` validates the IPC boundary and persists
+local proposals in `internal/store/state/trade_plans.go` on whatif.db. `trade_projection.go` projects
+two pinned what-if rosters through the coordinator, retaining exact cents, and rechecks hand-offs.
+`internal/envelope/trade_acts.go` watches full asset sets; rejection/withdrawal disappearance stays
+ambiguous, never Landed. `acquisitions_app.go` prices held incoming contracts or saved bid terms
+and an optional unclaimed cut through the same coordinator. Lazy Trade desk and Contracts chunks
+host `shell/TradeBuilder.tsx` and `contracts/Acquisitions.tsx`; all controls use the command registry.
+
+`internal/store/personal` owns watch, bait, dated plain-text notes and ordered draft entries in
+ the app's main SQLite pool (the existing dev/prod split). `personal_app.go` exposes validated
+`TargetPersonal`, `TargetPersonalChange` and read-only `TargetPersonalHandOff`; no MFL submission.
+`internal/ingestion/shellfeeds.go` validates calendar, trade bait and player-score exports.
+`roster_reports_app.go` exposes `TargetRosterReports` from held exports; `nfl_draft_app.go`
+exposes `TargetNFLDraft` from validated detailed player draft selections; `internal/lineup/byes.go`
+checks position-minimum bye shortfalls. `calendar_app.go` merges held MFL calendar events into C-04.
+`frontend/src/app/personal` is lazy list editing and persistence; `shell/StatusStrip.tsx` lazily
+reads source health and held gameday counts via `TargetShellStatus`.
+
+The snapshot's player directory now also includes named unrostered players for global search and
+private draft/watch lists; eligibility remains roster-only. `history.ReferenceBodies` admits imported
+league-archive responses on read-only surfaces; live fallbacks still exclude imports.
+
+## Player research
+
+`internal/ingestion/researchfeeds` validates display-only MFL playerScores (week and YTD,
+including team defenses), the five MFL-wide activity exports, pointsAllowed and playerProfile.
+It reads the newest nflverse depth-chart snapshot using `contracts.ReadRows` (shared Parquet
+reader), with the captured latest CSV as the fixture oracle. None of these readings write
+model observations or scouting inputs.
+`research_app.go` holds these feeds with archive fallback, resolves depth-chart identities
+through held gsis/ESPN crosswalk links, and caches rostered-player profiles per local day with
+one-second spacing. `TargetResearch`, `TargetResearchRefresh`, `TargetResearchNewsRefresh`,
+`TargetResearchPlayer` and `TargetOpenResearchArticle` validate the IPC surface; article links
+use the discovered MFL host and require an article held for that player.
+`research_reading.go` and `research_context_reading.go` author all Research reports through the
+shared Report shell. `frontend/src/app/research` is lazy, with one screen for research, a news
+section on Home › Digests, and a read-only player Inspector for directory search results.
+M-050 is explicitly ring 4: weekly NFL team box-score totals require an nflverse team-stat
+adapter; fantasy points and NFL game scores are not those statistics. M-055 resolves to the
+existing Race lineup detail's best-lineup reading.

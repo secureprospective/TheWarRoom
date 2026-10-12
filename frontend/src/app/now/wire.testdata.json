@@ -1,0 +1,897 @@
+{
+  "now": {
+    "week": 5,
+    "weeks": [
+      {
+        "value": "1",
+        "label": "Week 1"
+      },
+      {
+        "value": "2",
+        "label": "Week 2"
+      },
+      {
+        "value": "3",
+        "label": "Week 3"
+      },
+      {
+        "value": "4",
+        "label": "Week 4"
+      },
+      {
+        "value": "5",
+        "label": "Week 5"
+      },
+      {
+        "value": "6",
+        "label": "Week 6"
+      },
+      {
+        "value": "7",
+        "label": "Week 7"
+      },
+      {
+        "value": "8",
+        "label": "Week 8"
+      },
+      {
+        "value": "9",
+        "label": "Week 9"
+      },
+      {
+        "value": "10",
+        "label": "Week 10"
+      },
+      {
+        "value": "11",
+        "label": "Week 11"
+      },
+      {
+        "value": "12",
+        "label": "Week 12"
+      },
+      {
+        "value": "13",
+        "label": "Week 13"
+      },
+      {
+        "value": "14",
+        "label": "Week 14 · playoffs"
+      },
+      {
+        "value": "15",
+        "label": "Week 15 · playoffs"
+      },
+      {
+        "value": "16",
+        "label": "Week 16 · playoffs"
+      },
+      {
+        "value": "17",
+        "label": "Week 17 · playoffs"
+      }
+    ],
+    "matchup": {
+      "id": "X-03",
+      "title": "My matchup",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL",
+      "asOf": "As of: Oct 11, 2026, 12:00 PM",
+      "how": "Both lineups side by side, starter against starter in the league's slot order, with each starter's points and the team totals as MFL scores them. A week MFL has not scored shows the held live scores, or the lineups set so far.",
+      "columns": [
+        "Slot",
+        "Buffalo Bills",
+        "Points",
+        "New York Jets",
+        "Points"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "QB",
+            "Fields, Justin · NYJ",
+            "31.80",
+            "Rush, Cooper · BAL",
+            "3.95"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "RB",
+            "Harvey, RJ · DEN",
+            "8.68",
+            "Dobbins, J.K. · DEN",
+            "18.40"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "RB",
+            "Stevenson, Rhamondre · NEP",
+            "16.75",
+            "—",
+            ""
+          ],
+          "range": null
+        }
+      ],
+      "summary": [
+        {
+          "cells": [
+            "Week",
+            "Week 5"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Opponent",
+            "New York Jets"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Status",
+            "Buffalo Bills won 277.03 to 179.98"
+          ],
+          "range": null
+        }
+      ],
+      "link": null
+    },
+    "board": {
+      "title": "This week's reports",
+      "loading": "Reading the week…",
+      "refresh": "Refresh from MFL",
+      "howLabel": "How this is counted",
+      "mflLabel": "",
+      "mflUrl": "",
+      "reports": [
+        {
+          "id": "M-005",
+          "title": "Every matchup",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "Each game of the week, away team on the left, starter against starter in the league's slot order with each one's points and the totals. My game first.",
+          "columns": [
+            "Slot",
+            "Away",
+            "Points",
+            "Home",
+            "Points"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "QB",
+                "Fields, Justin · NYJ",
+                "31.80",
+                "Rush, Cooper · BAL",
+                "3.95"
+              ],
+              "range": null,
+              "mine": true,
+              "group": "Buffalo Bills at New York Jets · Buffalo Bills won 277.03 to 179.98"
+            },
+            {
+              "cells": [
+                "RB",
+                "Harvey, RJ · DEN",
+                "8.68",
+                "Dobbins, J.K. · DEN",
+                "18.40"
+              ],
+              "range": null,
+              "mine": true,
+              "group": "Buffalo Bills at New York Jets · Buffalo Bills won 277.03 to 179.98"
+            },
+            {
+              "cells": [
+                "RB",
+                "Stevenson, Rhamondre · NEP",
+                "16.75",
+                "—",
+                ""
+              ],
+              "range": null,
+              "mine": true,
+              "group": "Buffalo Bills at New York Jets · Buffalo Bills won 277.03 to 179.98"
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Week",
+                "Week 5"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-003",
+          "title": "Weekly results",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "Every game's score and winner as MFL scored it. Playoff scores include the home-field points MFL adds. My game first, then the highest winning score.",
+          "columns": [
+            "Winner",
+            "Points",
+            "Loser",
+            "Points",
+            "Margin"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Buffalo Bills",
+                "277.03",
+                "New York Jets",
+                "179.98",
+                "97.05"
+              ],
+              "range": null,
+              "mine": true
+            },
+            {
+              "cells": [
+                "Arizona Cardinals",
+                "281.60",
+                "Jacksonville Jaguars",
+                "270.95",
+                "10.65"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Dallas Cowboys",
+                "247.90",
+                "Washington Commanders",
+                "242.65",
+                "5.25"
+              ],
+              "range": null
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Week",
+                "Week 5"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-007",
+          "title": "Weekly summary",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "The week at a glance from MFL's scores: the high and low score, the league average, the closest game, the biggest win and the most points left on the bench (the best lineup MFL found from the same roster, less the points scored). Then the week's ten best starters.",
+          "columns": [
+            "Player",
+            "Position",
+            "Franchise",
+            "Points"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Dowdle, Rico",
+                "RB",
+                "New England Patriots",
+                "42.35"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Prescott, Dak",
+                "QB",
+                "New Orleans Saints",
+                "38.70"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Stroud, C.J.",
+                "QB",
+                "Arizona Cardinals",
+                "37.35"
+              ],
+              "range": null
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Week",
+                "Week 5"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "High score",
+                "Arizona Cardinals · 281.60"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Low score",
+                "Miami Dolphins · 29.20"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "League average",
+                "190.46"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Closest game",
+                "Indianapolis Colts beat Los Angeles Rams by 1.85"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Biggest win",
+                "New England Patriots beat Miami Dolphins by 180.41"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Most left on the bench",
+                "Cleveland Browns · 77.45"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-021",
+          "title": "Recaps",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "Each game in plain sentences, written only from MFL's numbers: the score and margin, each side's top starter, and what the loser's best lineup (MFL's best lineup from the same roster) would have scored. My game first, then the highest winning score.",
+          "columns": [
+            "Game",
+            "Recap"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Buffalo Bills at New York Jets",
+                "Buffalo Bills beat New York Jets 277.03 to 179.98, a margin of 97.05. Buffalo Bills' top starter was Fields, Justin (QB) with 31.80. New York Jets' top starter was Sweat, Josh (DE) with 27.50. New York Jets left 26.05 on the bench; its best lineup, 206.03, would still have lost."
+              ],
+              "range": null,
+              "mine": true
+            },
+            {
+              "cells": [
+                "Jacksonville Jaguars at Arizona Cardinals",
+                "Arizona Cardinals beat Jacksonville Jaguars 281.60 to 270.95, a margin of 10.65. Arizona Cardinals' top starter was Stroud, C.J. (QB) with 37.35. Jacksonville Jaguars' top starter was Mayfield, Baker (QB) with 34.20. Jacksonville Jaguars started its best lineup."
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Dallas Cowboys at Washington Commanders",
+                "Dallas Cowboys beat Washington Commanders 247.90 to 242.65, a margin of 5.25. Dallas Cowboys' top starter was Jones, Mac (QB) with 28.20. Washington Commanders' top starter was Egbuka, Emeka (WR) with 36.30. Washington Commanders left 19.50 on the bench; its best lineup, 262.15, would have won."
+              ],
+              "range": null
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Week",
+                "Week 5"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-022",
+          "title": "Top scorers by position",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "The week's three best starters at each position, in the league's position order. Ties keep name order.",
+          "columns": [
+            "Player",
+            "Franchise",
+            "Points"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Prescott, Dak",
+                "New Orleans Saints",
+                "38.70"
+              ],
+              "range": null,
+              "group": "QB"
+            },
+            {
+              "cells": [
+                "Stroud, C.J.",
+                "Arizona Cardinals",
+                "37.35"
+              ],
+              "range": null,
+              "group": "QB"
+            },
+            {
+              "cells": [
+                "Darnold, Sam",
+                "Green Bay Packers",
+                "36.05"
+              ],
+              "range": null,
+              "group": "QB"
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Week",
+                "Week 5"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-072",
+          "title": "Fantasy box score",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "My game, starter by starter: each one's NFL game and fantasy points, and whether MFL's best lineup (the most the same roster could have scored under the league's starter rules) started him; then any bench player it would have started. MFL's stat-by-stat scoring lines are not held, so each line is the player's points.",
+          "columns": [
+            "Slot",
+            "Player",
+            "NFL game",
+            "Points",
+            "Lineup call"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "QB",
+                "Fields, Justin",
+                "vs DAL · DAL won 37–22",
+                "31.80",
+                "In the best lineup"
+              ],
+              "range": null,
+              "mine": true,
+              "group": "Buffalo Bills · 277.03 · best lineup 286.03"
+            },
+            {
+              "cells": [
+                "RB",
+                "Harvey, RJ",
+                "at PHI · DEN won 21–17",
+                "8.68",
+                "In the best lineup"
+              ],
+              "range": null,
+              "mine": true,
+              "group": "Buffalo Bills · 277.03 · best lineup 286.03"
+            },
+            {
+              "cells": [
+                "RB",
+                "Stevenson, Rhamondre",
+                "at BUF · NEP won 23–20",
+                "16.75",
+                "In the best lineup"
+              ],
+              "range": null,
+              "mine": true,
+              "group": "Buffalo Bills · 277.03 · best lineup 286.03"
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Week",
+                "Week 5"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Opponent",
+                "New York Jets"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Status",
+                "Buffalo Bills won 277.03 to 179.98"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-004",
+          "title": "Last 3 weeks",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "Each franchise's result and points in the last three weeks MFL scored, up to the week chosen, then its points and record over those weeks. A week without a game counts its points but no result. Most points first.",
+          "columns": [
+            "Franchise",
+            "Week 3",
+            "Week 4",
+            "Week 5",
+            "Points",
+            "Record"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Buffalo Bills",
+                "W 272.95",
+                "W 332.00",
+                "W 277.03",
+                "881.98",
+                "3-0"
+              ],
+              "range": null,
+              "mine": true
+            },
+            {
+              "cells": [
+                "Dallas Cowboys",
+                "W 238.55",
+                "L 322.58",
+                "W 247.90",
+                "809.03",
+                "2-1"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Arizona Cardinals",
+                "L 216.70",
+                "W 294.85",
+                "W 281.60",
+                "793.15",
+                "2-1"
+              ],
+              "range": null
+            }
+          ],
+          "summary": null,
+          "link": null
+        },
+        {
+          "id": "M-018",
+          "title": "Fantasy previews",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "Each game's projected totals: the sum of MFL's projections for the starters each side has set. A starter MFL does not project counts zero. My game first.",
+          "columns": [
+            "Away",
+            "Projected",
+            "Home",
+            "Projected",
+            "Favored"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Buffalo Bills",
+                "255.24",
+                "New York Jets",
+                "167.72",
+                "Buffalo Bills by 87.52"
+              ],
+              "range": null,
+              "mine": true
+            },
+            {
+              "cells": [
+                "New England Patriots",
+                "141.65",
+                "Miami Dolphins",
+                "38.90",
+                "New England Patriots by 102.75"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Cleveland Browns",
+                "209.78",
+                "Cincinnati Bengals",
+                "159.05",
+                "Cleveland Browns by 50.73"
+              ],
+              "range": null
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Week",
+                "Week 5"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Starters MFL does not project",
+                "78"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-015",
+          "title": "NFL schedule",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL NFL schedule",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "The week's NFL games in kickoff order, with the teams on bye. My players are those on my roster for the week, by their NFL team in MFL's player directory today.",
+          "columns": [
+            "Kickoff",
+            "Game",
+            "Result",
+            "My players"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Oct 3, 2025, 12:15 AM",
+                "SFO at LAR",
+                "SFO won 26–23",
+                "Robinson , Jakob\nAdams, Davante"
+              ],
+              "range": null,
+              "mine": true
+            },
+            {
+              "cells": [
+                "Oct 5, 2025, 1:30 PM",
+                "MIN at CLE",
+                "MIN won 21–17",
+                "Metellus, Josh\nYurosek, Ben\nJeudy, Jerry"
+              ],
+              "range": null,
+              "mine": true
+            },
+            {
+              "cells": [
+                "Oct 5, 2025, 5:00 PM",
+                "DAL at NYJ",
+                "DAL won 37–22",
+                "Pickens, George\nChildress, Zion\nFields, Justin\nTaylor, Tyrod"
+              ],
+              "range": null,
+              "mine": true
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Week",
+                "Week 5"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "On bye",
+                "ATL, CHI, GBP, PIT"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "My players on bye",
+                "Pitts, Kyle; Jacobs, Josh; Stackhouse, Nazir; Wilson, Payton"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-016",
+          "title": "NFL box score",
+          "note": "",
+          "status": "ok",
+          "source": "Source: MFL NFL schedule",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "My players and my opponent's, grouped by the NFL game they played in, with each one's fantasy points. A player's NFL team is his team in MFL's player directory today. Games in kickoff order.",
+          "columns": [
+            "Player",
+            "Franchise",
+            "Role",
+            "Points"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Adams, Davante",
+                "Buffalo Bills",
+                "Started",
+                "15.80"
+              ],
+              "range": null,
+              "mine": true,
+              "group": "SFO at LAR · SFO won 26–23"
+            },
+            {
+              "cells": [
+                "Huff, Bryce",
+                "New York Jets",
+                "Bench",
+                "12.00"
+              ],
+              "range": null,
+              "group": "SFO at LAR · SFO won 26–23"
+            },
+            {
+              "cells": [
+                "Robinson , Jakob",
+                "Buffalo Bills",
+                "Bench",
+                "0.00"
+              ],
+              "range": null,
+              "mine": true,
+              "group": "SFO at LAR · SFO won 26–23"
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Week",
+                "Week 5"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Opponent",
+                "New York Jets"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "Status",
+                "Buffalo Bills won 277.03 to 179.98"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-088",
+          "title": "Official stat changes",
+          "note": "No held copy of the weekly results has a scored week yet; changes show once MFL has been read again.",
+          "status": "empty",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "MFL corrects stats after games. For each scored week, the app compares the first copy of MFL's weekly results it held with the latest, player by player; a change can flip a result. Weeks MFL scored before the app first read it compare from that first read. Newest week first.",
+          "columns": [
+            "Player",
+            "Franchise",
+            "First held",
+            "Now",
+            "Change"
+          ],
+          "rows": [],
+          "summary": [
+            {
+              "cells": [
+                "Copies compared",
+                "0"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        },
+        {
+          "id": "M-001",
+          "title": "Live fantasy scoring",
+          "note": " Off-game view: held weekly scores; no live poll.",
+          "status": "ok",
+          "source": "Source: MFL",
+          "asOf": "As of: Oct 11, 2026, 12:00 PM",
+          "how": "MFL liveScoring, refreshed every 30 seconds while Now is open and a held NFL game has kicked off but is not final. Errors back off and keep the held scores. My matchup reads first.",
+          "columns": [
+            "Matchup",
+            "Franchise",
+            "Points"
+          ],
+          "rows": [
+            {
+              "cells": [
+                "Buffalo Bills won 277.03 to 179.98",
+                "Buffalo Bills",
+                "277.03"
+              ],
+              "range": null,
+              "mine": true
+            },
+            {
+              "cells": [
+                "Buffalo Bills won 277.03 to 179.98",
+                "New York Jets",
+                "179.98"
+              ],
+              "range": null
+            },
+            {
+              "cells": [
+                "New England Patriots won 209.61 to 29.20",
+                "New England Patriots",
+                "209.61"
+              ],
+              "range": null
+            }
+          ],
+          "summary": [
+            {
+              "cells": [
+                "Week",
+                "Week 5"
+              ],
+              "range": null
+            }
+          ],
+          "link": null
+        }
+      ]
+    }
+  }
+}

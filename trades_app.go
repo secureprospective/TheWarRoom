@@ -53,7 +53,7 @@ func (a *App) tradeState(franchiseID string) (
 	held := a.seasonPendingTrades
 	return snap, snapshot.Sourced[[]leaguefeed.PendingTrade]{
 		Value:      append([]leaguefeed.PendingTrade{}, held.value...),
-		Provenance: held.provenance("pendingTrades", "pendingTrades"),
+		Provenance: held.provenance("pendingTrades", "pending trades"),
 	}, nil
 }
 
@@ -66,11 +66,11 @@ func tradeFranchiseName(snap snapshot.Snapshot, id string) string {
 	return id
 }
 
-func tradeAssets(assets []leaguefeed.Asset, players map[string]snapshot.Player) []TradeAsset {
+func tradeAssets(assets []leaguefeed.Asset, players map[string]snapshot.Player, snap snapshot.Snapshot) []TradeAsset {
 	out := make([]TradeAsset, 0, len(assets))
 	for _, asset := range assets {
 		token := leaguefeed.AssetToken(asset)
-		item := TradeAsset{Token: token, Name: token}
+		item := TradeAsset{Token: token, Name: heldTradeAssetName(asset, snap)}
 		if asset.Player != nil {
 			if player, found := players[asset.Player.String()]; found {
 				if player.Name != "" {
@@ -109,7 +109,7 @@ func (a *App) TargetTrades(franchiseID string) (TradeReading, error) {
 		reading.Offers = append(reading.Offers, TradeOffer{
 			TradeID: offer.ID, Direction: direction, OtherID: other,
 			OtherName: tradeFranchiseName(snap, other),
-			Give:      tradeAssets(give, players), Get: tradeAssets(get, players),
+			Give:      tradeAssets(give, players, snap), Get: tradeAssets(get, players, snap),
 			Expires: offer.Expires, Comments: offer.Comments,
 		})
 	}
@@ -184,4 +184,18 @@ func (a *App) TargetDraftTradeAccept(franchiseID, tradeID string) (envelope.Rece
 		return envelope.Receipt{}, fmt.Errorf("target draft trade accept: save: %w", err)
 	}
 	return e.Receipt(), nil
+}
+
+func heldTradeAssetName(asset leaguefeed.Asset, snap snapshot.Snapshot) string {
+	switch {
+	case asset.CurrentPick != nil:
+		return fmt.Sprintf("Round %d · pick %d", asset.CurrentPick.Round, asset.CurrentPick.Pick)
+	case asset.FuturePick != nil:
+		pick := asset.FuturePick
+		return fmt.Sprintf("%d round %d · originally %s", pick.Year, pick.Round, tradeFranchiseName(snap, pick.Franchise))
+	case asset.BlindBidCents != nil:
+		return fmt.Sprintf("Blind-bid cash: %d cents", *asset.BlindBidCents)
+	default:
+		return "Player name unavailable"
+	}
 }

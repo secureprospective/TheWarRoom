@@ -1,0 +1,202 @@
+package facts
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"reflect"
+	"slices"
+	"strconv"
+	"strings"
+	"time"
+)
+
+type ResolvedInput struct {
+	File   string
+	SHA256 string
+	Bytes  int64
+	Body   []byte
+}
+
+type compiler struct {
+	inputs  map[string]ResolvedInput
+	facts   factRows
+	years   []int64
+	eastern *time.Location // MFL shows every date in US Eastern
+	txnID   int64          // the last transaction numbered, across seasons
+}
+
+func Compile(ctx context.Context, inputs []ResolvedInput, notes []RawNoteReading) (Facts, error) {
+	c, err := newCompiler(ctx, inputs)
+	if err != nil {
+		return Facts{}, err
+	}
+	for _, year := range c.years {
+		if err := ctx.Err(); err != nil {
+			return Facts{}, fmt.Errorf("compile facts: %w", err)
+		}
+		if err := c.league(year); err != nil {
+			return Facts{}, err
+		}
+		if err := c.standings(year); err != nil {
+			return Facts{}, err
+		}
+		if err := c.rules(year); err != nil {
+			return Facts{}, err
+		}
+		if err := c.calendar(year); err != nil {
+			return Facts{}, err
+		}
+		if err := c.season(year); err != nil {
+			return Facts{}, err
+		}
+	}
+	if err := c.ruleCodes(); err != nil {
+		return Facts{}, err
+	}
+	if err := c.players(ctx); err != nil {
+		return Facts{}, err
+	}
+	if err := c.notes(ctx, notes); err != nil {
+		return Facts{}, err
+	}
+	if err := ctx.Err(); err != nil {
+		return Facts{}, fmt.Errorf("publish facts: %w", err)
+	}
+	sortFacts(&c.facts)
+	return toColumns(c.facts), nil
+}
+
+func newCompiler(ctx context.Context, inputs []ResolvedInput) (*compiler, error) {
+	c := &compiler{inputs: make(map[string]ResolvedInput, len(inputs))}
+	years := map[int64]bool{}
+	for _, input := range inputs {
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("compile inputs: %w", err)
+		}
+		if err := input.Validate(); err != nil {
+			return nil, err
+		}
+		if _, exists := c.inputs[input.File]; exists {
+			return nil, fmt.Errorf("duplicate input %s", input.File)
+		}
+		c.inputs[input.File] = input
+		c.facts.SourceFile = append(c.facts.SourceFile, SourceFile{Src: input.File, Bytes: input.Bytes, Sha256: input.SHA256})
+		if part, _, ok := strings.Cut(input.File, "/"); ok {
+			year, err := strconv.ParseInt(part, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("input year %s: %w", input.File, err)
+			}
+			years[year] = true
+		}
+	}
+	for year := range years {
+		c.years = append(c.years, year)
+	}
+	slices.Sort(c.years)
+	eastern, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		return nil, fmt.Errorf("eastern timezone: %w", err)
+	}
+	c.eastern = eastern
+	return c, nil
+}
+
+func (r ResolvedInput) Validate() error {
+	sha, err := hex.DecodeString(r.SHA256)
+	if err != nil || len(sha) != sha256.Size || r.Bytes < 0 || r.File == "" || strings.Contains(r.File, "..") || strings.HasPrefix(r.File, "/") {
+		return fmt.Errorf("invalid resolved input %q", r.File)
+	}
+	if r.Body != nil {
+		sum := sha256.Sum256(r.Body)
+		if hex.EncodeToString(sum[:]) != r.SHA256 || int64(len(r.Body)) != r.Bytes {
+			return fmt.Errorf("resolved bytes differ from pin: %s", r.File)
+		}
+	}
+	return nil
+}
+
+func (c *compiler) read(file string) (RawValue, error) {
+	input, exists := c.inputs[file]
+	if !exists || input.Body == nil {
+		return RawValue{}, nil
+	}
+	r, err := decodeRaw(input.Body)
+	if err != nil {
+		return RawValue{}, fmt.Errorf("%s: %w", file, err)
+	}
+	if err := r.Validate(); err != nil {
+		return RawValue{}, fmt.Errorf("%s: %w", file, err)
+	}
+	if _, exists := r.Object["error"]; exists {
+		return RawValue{}, nil
+	}
+	return r, nil
+}
+
+func seasonFile(year int64, name string) string { return fmt.Sprintf("%d/%s.json", year, name) }
+
+func requiredID(r RawValue, key, src string) (string, error) {
+	field := r.get(key)
+	id := field.str()
+	if id == nil || *id == "" || len(field.JSON) == 0 || field.JSON[0] != '"' {
+		return "", fmt.Errorf("%s: missing %s", src, key)
+	}
+	return *id, nil
+}
+
+// keyID reads an id the Lab indexes as row[key]: it must be present as a JSON string, but MFL's
+// weekly files carry blank ids (projectedScores lists {"id": ""}) and the Lab keeps those rows.
+func keyID(r RawValue, key, src string) (string, error) {
+	field := r.get(key)
+	if field.Scalar == nil || len(field.JSON) == 0 || field.JSON[0] != '"' {
+		return "", fmt.Errorf("%s: missing %s", src, key)
+	}
+	return *field.Scalar, nil
+}
+
+// Fingerprint is the sha256 of every compiled column, cell by cell with its type and nulls, so two
+// compiles agree exactly when their facts do. It names a published snapshot.
+func (f Facts) Fingerprint() string {
+	h := sha256.New()
+	write := func(b []byte) { // length-prefixed, so no two cell sequences hash alike
+		h.Write(strconv.AppendInt(nil, int64(len(b)), 10))
+		h.Write([]byte{':'})
+		h.Write(b)
+	}
+	relations := reflect.ValueOf(f)
+	for i := 0; i < relations.NumField(); i++ {
+		write([]byte(relations.Type().Field(i).Name))
+		columns := relations.Field(i)
+		for c := 0; c < columns.NumField(); c++ {
+			write([]byte(columns.Type().Field(c).Name))
+			column := columns.Field(c)
+			for row := 0; row < column.Len(); row++ {
+				write(cellBytes(column.Index(row)))
+			}
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// cellBytes writes a cell as a type mark and its exact value: null, text, a whole number, or a
+// float in the shortest form that reads back to the same bits.
+func cellBytes(v reflect.Value) []byte {
+	if v.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			return []byte{'n'}
+		}
+		v = v.Elem()
+	}
+	if v.Kind() == reflect.String {
+		return append([]byte{'s'}, v.String()...)
+	}
+	if v.Kind() == reflect.Int64 {
+		return strconv.AppendInt([]byte{'i'}, v.Int(), 10)
+	}
+	if v.Kind() == reflect.Float64 {
+		return strconv.AppendFloat([]byte{'f'}, v.Float(), 'g', -1, 64)
+	}
+	panic("unsupported facts column")
+}

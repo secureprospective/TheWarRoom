@@ -1,0 +1,6 @@
+file,sha256,reason
+2013/assets.json,71878f461ab55953de9cac9759848e6fe44c96962c6050046aa66b46f3fe5382,The frozen 175-byte login-error envelope is missing; the reference drops error envelopes before reading assets so it fed no fact.
+2014/assets.json,fe2f098a5d19d334f38f3f8987aa3596c874ec59b43105d6597c5ea2872e0bc4,The frozen 175-byte login-error envelope is missing; the reference drops error envelopes before reading assets so it fed no fact.
+2014/calendar.json,fe2f098a5d19d334f38f3f8987aa3596c874ec59b43105d6597c5ea2872e0bc4,The frozen 175-byte login-error envelope is missing; its sha matches the 2014 assets pin and the reference drops errors before reading calendar events so it fed no fact.
+2015/assets.json,3bb6f68c4a3b53112c9757b60296ff9078075bf36daf84753579ba4a5b3115a5,The frozen 175-byte login-error envelope is missing; the reference drops error envelopes before reading assets so it fed no fact.
+2015/calendar.json,761f3593cc184e477f78f1719425e88b12661c0f649c14c1854d17d19226e23d,The frozen 175-byte login-error envelope is missing; the reference drops errors before reading calendar events so it fed no fact.

@@ -45,7 +45,7 @@ WHERE cy.league_id = ? AND cy.league_year = ? AND cy.year_status = ?`,
 			return nil, nil, fmt.Errorf("state: cell cap scan: %w", err)
 		}
 		perPlayer[mflID] = domain.Money(cents)
-		perFranchise[fid] += domain.RoundToNearest10k(capContribution(domain.Money(cents), domain.RosterStatus(rosterStatus), discounts))
+		perFranchise[fid] += domain.RoundToNearest10k(CapContribution(domain.Money(cents), domain.RosterStatus(rosterStatus), discounts))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, nil, fmt.Errorf("state: cell cap iterate: %w", err)
@@ -55,7 +55,7 @@ WHERE cy.league_id = ? AND cy.league_year = ? AND cy.year_status = ?`,
 
 // capContribution applies the roster-status discount: active counts in full; taxi and IR count
 // at the configured percentage.
-func capContribution(cents domain.Money, status domain.RosterStatus, discounts CapDiscounts) domain.Money {
+func CapContribution(cents domain.Money, status domain.RosterStatus, discounts CapDiscounts) domain.Money {
 	var pct float64 = 100
 	switch status {
 	case domain.RosterActive:

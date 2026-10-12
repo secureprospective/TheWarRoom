@@ -6,9 +6,13 @@ import type { Density } from '../cards/Card';
 import { nodes, nodeKeys, type Node, type Route, type WorkspaceMemory } from './nodes';
 export type PlayerSubject = { kind: 'player'; id: string; franchiseId: string };
 
+export type EntitySubject =
+  | { kind: 'franchise'; id: string }
+  | { kind: 'offer'; id: string; franchiseId: string }
+  | { kind: 'pick'; id: string; name: string };
+
 export type LineupDraft = { franchiseId: string; week: number; starters: string[] };
 export type ShellState = {
-  pulseExpanded: Record<string, boolean>;
   lineupDraft: LineupDraft | null;
   lineupReceiptId: string | null;
   node: Node;
@@ -17,6 +21,7 @@ export type ShellState = {
   inspector: 'closed' | 'rest' | 'expanded';
   subject: PlayerSubject | null;
   asset: string | null;
+  entity: EntitySubject | null;
   franchiseId: string | null;
   commandbar: boolean;
   summoned: 'calendar' | null;
@@ -29,7 +34,6 @@ export type ShellState = {
 };
 export function initialShellState(): ShellState {
   return {
-    pulseExpanded: {},
     lineupDraft: null,
     lineupReceiptId: null,
     node: 'home',
@@ -40,6 +44,7 @@ export function initialShellState(): ShellState {
     inspector: 'rest',
     subject: null,
     asset: null,
+    entity: null,
     franchiseId: null,
     commandbar: false,
     summoned: null,
@@ -55,9 +60,8 @@ export function renderState({
   density: _density,
   lineupDraft: _draft,
   lineupReceiptId: _receipt,
-  pulseExpanded: _pulse,
   ...rest
-}: ShellState): Omit<ShellState, 'density' | 'lineupDraft' | 'lineupReceiptId' | 'pulseExpanded'> {
+}: ShellState): Omit<ShellState, 'density' | 'lineupDraft' | 'lineupReceiptId'> {
   return rest;
 }
 
@@ -67,7 +71,6 @@ export function createShellState() {
     read: store.getState,
     use: () => useStore(store, renderState, shallow),
     subscribe: store.subscribe,
-    usePulse: () => useStore(store, (s) => s.pulseExpanded),
     useLineupEdit: () =>
       useStore(
         store,

@@ -30,10 +30,10 @@ describe('player-card view model', () => {
           : [],
     );
     expect(model.numbers).toEqual([
-      { label: 'On-field-now', state: 'not wired' },
-      { label: 'Dynasty value', state: 'not wired' },
+      { label: 'On-field-now', key: 'now' },
+      { label: 'Dynasty value', key: 'dynasty' },
     ]);
-    expect(model.unwiredRows).toBe('Form and market · not wired');
+    expect(model.unwiredRows).toBe('Form · not wired');
     expect(model).not.toHaveProperty('injury');
     expect(model).not.toHaveProperty('bye');
     expect(model).not.toHaveProperty('deadCap');

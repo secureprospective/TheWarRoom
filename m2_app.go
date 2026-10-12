@@ -110,30 +110,48 @@ func (a *App) GetPowerRankings(weight float64, autoWeight bool, aggMode, view st
 		view = ViewSeason
 	}
 	mode := m2service.ResolveAggMode(aggMode, defaultAgg(view))
-	fail := func(err error) PowerRankingsResult {
-		return PowerRankingsResult{Error: err.Error(), Season: a.season, View: view, Weight: weight,
-			WeightAuto: autoWeight, AggMode: mode, Freshness: Freshness{State: FreshFail, Note: err.Error()}}
-	}
+	fail := func(err error) PowerRankingsResult { return a.powerFailure(err, view, weight, autoWeight, mode) }
 	if err := a.ready(); err != nil {
 		return fail(err)
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
 	defer cancel()
 
-	runs, err := a.modelRuns(ctx)
-	if err != nil {
-		return fail(err)
-	}
 	standings, fresh, err := a.standingsOrArchive(ctx)
 	if err != nil {
 		return fail(fmt.Errorf("power rankings: %w", err))
 	}
-	svc, err := m2service.New(a.league.Reader(), a.rulebook)
+	return a.powerRankings(ctx, standings, fresh, a.remainingSchedule, weight, autoWeight, mode, view)
+}
+
+func (a *App) powerFailure(err error, view string, weight float64, auto bool, mode string) PowerRankingsResult {
+	return PowerRankingsResult{Error: err.Error(), Season: a.season, View: view, Weight: weight,
+		WeightAuto: auto, AggMode: mode, Freshness: Freshness{State: FreshFail, Note: err.Error()}}
+}
+
+// powerRankings builds the M2 board from standings already read; schedule is read only when a
+// model run exists to rank.
+func (a *App) powerRankings(
+	ctx context.Context, standings []leaguestandings.RawStanding, fresh Freshness,
+	schedule func(context.Context) []leagueschedule.RawScheduleWeek, weight float64, autoWeight bool, mode, view string,
+) PowerRankingsResult {
+	fail := func(err error) PowerRankingsResult { return a.powerFailure(err, view, weight, autoWeight, mode) }
+	runs, err := a.modelRuns(ctx)
 	if err != nil {
 		return fail(err)
 	}
 	played := weeksScored(standings)
 	wt := boardWeights(view, weight, autoWeight, played)
+	res := PowerRankingsResult{OK: true, Season: a.season, View: view, Weight: wt.Roster,
+		WeightAuto: autoWeight && view == ViewSeason, AgeWeight: wt.Age, AggMode: mode, Freshness: fresh,
+		SeasonWeeks: a.seasonWeeks(), WeeksScored: played, Rows: []PowerRow{}}
+	if len(runs) == 0 {
+		return res
+	}
+	svc, err := m2service.New(a.league.Reader(), a.rulebook)
+	if err != nil {
+		return fail(err)
+	}
 	ages := a.ages(ctx)
 	boards := make([]m2service.Board, len(runs))
 	var now []m2service.PlayerValue
@@ -149,14 +167,8 @@ func (a *App) GetPowerRankings(weight float64, autoWeight bool, aggMode, view st
 			return fail(err)
 		}
 	}
-	res := PowerRankingsResult{OK: true, Season: a.season, View: view, Weight: wt.Roster,
-		WeightAuto: autoWeight && view == ViewSeason, AgeWeight: wt.Age, AggMode: mode, Freshness: fresh,
-		SeasonWeeks: a.seasonWeeks(), WeeksScored: played, Rows: []PowerRow{}}
-	if len(boards) == 0 {
-		return res
-	}
 	outlooks, err := svc.Outlooks(m2service.OutlookInputs{Standings: standings, Now: now,
-		Schedule: a.remainingSchedule(ctx), SeasonWeeks: res.SeasonWeeks, DeadCap: a.league.DeadCap()})
+		Schedule: schedule(ctx), SeasonWeeks: res.SeasonWeeks, DeadCap: a.league.DeadCap()})
 	if err != nil {
 		return fail(err)
 	}

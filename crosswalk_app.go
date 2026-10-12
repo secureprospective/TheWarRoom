@@ -47,6 +47,7 @@ type CrosswalkRate struct {
 type CrosswalkMiss struct {
 	MFLID     string `json:"mflId"`
 	Name      string `json:"name"`
+	Team      string `json:"team"`
 	Position  string `json:"position"`
 	Franchise string `json:"franchise"`
 	Reason    string `json:"reason"`
@@ -171,7 +172,7 @@ func crosswalkReport(rostered map[string]string, lk normalize.Lookup, linked map
 			r.RosteredMatched++
 			continue
 		}
-		rep.Unmatched = append(rep.Unmatched, CrosswalkMiss{MFLID: id, Name: f.Name, Position: string(f.Position),
+		rep.Unmatched = append(rep.Unmatched, CrosswalkMiss{MFLID: id, Name: f.Name, Team: f.Team, Position: string(f.Position),
 			Franchise: domain.FranchiseLabel(names, rostered[id]), Reason: missReason(id, cw, rejected)})
 	}
 	for _, id := range lk.IDs() {

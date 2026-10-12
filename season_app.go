@@ -86,10 +86,10 @@ func (a *App) TargetSeason() (SeasonReading, error) {
 			Value: txs, Provenance: a.seasonTransactions.provenance("transactions", "transactions"),
 		},
 		Lineups: snapshot.Sourced[leaguefeed.Lineups]{
-			Value: lineups, Provenance: a.seasonLineups.provenance(source, "liveScoring"),
+			Value: lineups, Provenance: a.seasonLineups.provenance(source, "live scores"),
 		},
 		PendingTrades: snapshot.Sourced[[]leaguefeed.PendingTrade]{
-			Value: trades, Provenance: a.seasonPendingTrades.provenance("pendingTrades", "pendingTrades"),
+			Value: trades, Provenance: a.seasonPendingTrades.provenance("pendingTrades", "pending trades"),
 		},
 	}, nil
 }
@@ -114,6 +114,7 @@ func (a *App) refreshSeason(ctx context.Context) {
 	}
 	defer a.seasonChanged(ctx)
 	a.refreshSeasonTransactions(ctx)
+	a.refreshCommsBoards(ctx)
 	pause := a.seasonPause
 	if pause == nil {
 		pause = seasonPause
@@ -122,6 +123,8 @@ func (a *App) refreshSeason(ctx context.Context) {
 		return
 	}
 	a.refreshSeasonLineups(ctx)
+	// Lineups are what Franchise HQ opens on: tell the views now, not after the whole refresh.
+	a.seasonChanged(ctx)
 	if err := pause(ctx, time.Second); err != nil {
 		return
 	}
@@ -130,6 +133,24 @@ func (a *App) refreshSeason(ctx context.Context) {
 		return
 	}
 	a.refreshInjuries(ctx)
+	if err := pause(ctx, time.Second); err != nil {
+		return
+	}
+	a.refreshDraftReports(ctx)
+	a.refreshMarketFeeds(ctx, false)
+	if err := pause(ctx, time.Second); err != nil {
+		return
+	}
+	a.refreshRace(ctx)
+	a.refreshScoreFirsts(ctx)
+	// The current NFL week's schedule and the byes are held like the race, so League Pulse › Now
+	// never waits on its own refresh (which can run before the week is known).
+	if week := a.marketWeek(); week >= 1 {
+		if err := pause(ctx, time.Second); err != nil {
+			return
+		}
+		a.refreshNowWeek(ctx, week, false)
+	}
 	a.revalidateReadyRosterMoves(ctx)
 }
 

@@ -168,3 +168,4 @@ A source is lost when its latest load failed and it has had no successful load w
 | `dynastyprocess` | DynastyProcess player id crosswalk | active | 14 days | `raw.githubusercontent.com/dynastyprocess/` |
 | `cfbd` | CollegeFootballData API | active | 30 days | `api.collegefootballdata.com` |
 | `madden` | EA Madden ratings | retired | 30 days | `ratings-api.ea.com` |
+| `league_archive` | MFL league archive, 2013–2026 | active | 365 days | imported |

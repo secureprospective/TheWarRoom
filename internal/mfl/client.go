@@ -86,8 +86,8 @@ func (c *Client) Do(ctx context.Context, req Request) (Response, error) {
 	c.mu.RUnlock()
 
 	switch {
-	case req.Type == "league":
-		// League lookups always use the api host, so a stale cached host cannot block rediscovery.
+	case req.Type == "league" || req.Type == "playerRanks" || req.Type == "adp" || req.Type == "aav":
+		// League discovery and MFL-wide market exports are served only by the api host.
 		host = "api"
 	case req.Params == nil || req.Params["L"] == "":
 		// A request with no L is one of MFL's league-less exports (injuries, nflSchedule, …);

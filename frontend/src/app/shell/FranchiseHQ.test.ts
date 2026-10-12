@@ -137,6 +137,18 @@ describe('HQ saved lineup', () => {
     expect(test.element.textContent).toContain(expected);
     expectReserves(test.element as unknown as TestElement, test.snapshot);
   });
+  it('reads as loading, not failing, before MFL lineups are first read', async () => {
+    const r = heldLineup();
+    r.starters = [];
+    r.bench = [];
+    r.provenance.freshness = { state: 'fail', fetchedAt: '', note: 'live scores not fetched yet' };
+    const test = await setup(vi.fn().mockResolvedValue(r));
+    const text = test.element.textContent ?? '';
+    expect(text).toContain('Reading lineup from MFL…');
+    expect(text).not.toContain('No saved lineup');
+    expect(text).not.toContain('Starters · 0');
+    expect(text).not.toContain('failing');
+  });
   it('shows and inspects a saved starter without a directory or roster row', async () => {
     const r = heldLineup();
     r.starters.unshift({ id: '99999' });

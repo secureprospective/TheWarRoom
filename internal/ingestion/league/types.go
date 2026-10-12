@@ -25,16 +25,34 @@ type RawConfig struct {
 	Starters                    Starters        // starter requirements
 	ScoringRules                []PositionRuleSet
 	Franchises                  []Franchise // the league's franchise directory (id -> display name)
+	Conferences                 []Conference
+	Divisions                   []Division
+	// StandingsSort is MFL's comma-separated tiebreak order, e.g. "PCT,H2H,DIVPCT,".
+	StandingsSort string
 	// CurrentSeason is the newest year MFL's league history lists under this league's id. It is
 	// the app's one source for the season.
 	CurrentSeason int
 }
 
-// Franchise is a directory entry: the MFL id ("0001"–"0032") and the display name, which may
-// be blank.
+// Franchise is a directory entry: the MFL id ("0001"–"0032"), the display name, which may be
+// blank, its short name and the id of its division ("" in a league without divisions).
 type Franchise struct {
+	ID       string
+	Name     string
+	Abbrev   string
+	Division string
+}
+
+// Conference and Division are the league's own groupings; a division names its conference.
+type Conference struct {
 	ID   string
 	Name string
+}
+
+type Division struct {
+	ID         string
+	Name       string
+	Conference string
 }
 
 // PositionLimit is one position's raw min-max ("QB" -> "1", "RB" -> "2-4").
@@ -95,7 +113,14 @@ type leagueEnvelope struct {
 		Franchises struct {
 			Franchise ingestion.MFLList[franchiseEntry] `json:"franchise"`
 		} `json:"franchises"`
-		History struct {
+		Conferences struct {
+			Conference ingestion.MFLList[Conference] `json:"conference"`
+		} `json:"conferences"`
+		Divisions struct {
+			Division ingestion.MFLList[Division] `json:"division"`
+		} `json:"divisions"`
+		StandingsSort string `json:"standingsSort"`
+		History       struct {
 			League ingestion.MFLList[historyEntry] `json:"league"`
 		} `json:"history"`
 	} `json:"league"`
@@ -113,10 +138,11 @@ type posLimit struct {
 	Limit string `json:"limit"`
 }
 
-// franchiseEntry decodes only the id and name of a franchise row.
 type franchiseEntry struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Abbrev   string `json:"abbrev"`
+	Division string `json:"division"`
 }
 
 // rulesEnvelope mirrors the MFL `rules` export. MFLList matters here: a group with exactly one

@@ -1,0 +1,411 @@
+{
+  "title": "MFL draft reports",
+  "loading": "Reading MFL draft reports…",
+  "refresh": "Refresh draft reports from MFL",
+  "howLabel": "How this is counted",
+  "mflLabel": "Open MFL draft results (picks happen on MFL)",
+  "mflUrl": "",
+  "reports": [
+    {
+      "id": "M-063",
+      "title": "Draft results · pick by pick",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL",
+      "asOf": "As of: Oct 11, 2026, 12:00 PM",
+      "how": "Picks are ordered by round, then pick number. Each pick shows the franchise MFL records, including traded picks. Times use this computer's local time zone. Skipped picks count as made. Refresh to check for changes; if it fails, the app keeps the last good copy.",
+      "columns": [
+        "Pick",
+        "Franchise",
+        "Player",
+        "Local time"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "1.01",
+            "Two",
+            "First",
+            "Jan 1, 1970, 12:01 AM"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "1.02",
+            "One",
+            "Second",
+            "Jan 1, 1970, 12:02 AM"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "2.01",
+            "Two",
+            "Third",
+            "Jan 1, 1970, 12:02 AM"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    {
+      "id": "M-064",
+      "title": "Draft results grid · round × franchise",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL",
+      "asOf": "As of: Oct 11, 2026, 12:00 PM",
+      "how": "Picks are ordered by round, then pick number. Each pick shows the franchise MFL records, including traded picks. Times use this computer's local time zone. Skipped picks count as made. Refresh to check for changes; if it fails, the app keeps the last good copy. A cell lists every slot drafted by that franchise in that round; traded picks do not shift other cells.",
+      "columns": [
+        "Round",
+        "One",
+        "Two"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "1",
+            "1.02 · Second",
+            "1.01 · First"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "2",
+            "No recorded pick",
+            "2.01 · Third"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    {
+      "id": "M-065",
+      "title": "Steals and busts · distance from expected",
+      "note": " Player values: the app's model, run Oct 11, 2026, 12:00 PM.",
+      "status": "ok",
+      "source": "Source: MFL",
+      "asOf": "As of: Oct 11, 2026, 12:00 PM",
+      "how": "Picks are ordered by round, then pick number. Each pick shows the franchise MFL records, including traded picks. Times use this computer's local time zone. Skipped picks count as made. Refresh to check for changes; if it fails, the app keeps the last good copy. Value is the app's latest dynasty value: discounted expected league points per game across its configured dynasty horizon. Expected is the median current value of drafted players in the same round, not an ADP or draft-day valuation. A bar is the point distance from that baseline (no uncertainty estimate and no letter grade); missing values are not zero. This retrospective comparison is not proof a draft pick was good or bad.",
+      "columns": [
+        "Pick",
+        "Player",
+        "Current dynasty value",
+        "Expected · same round",
+        "Distance from expected"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "1.01",
+            "First",
+            "30.00 points/game",
+            "20.00 points/game · 2 players",
+            "+10.00 points/game above the round 1 median"
+          ],
+          "range": {
+            "value": 1.5,
+            "lo": 1.5,
+            "hi": 1.5,
+            "text": "+10.00 points/game above the round 1 median · 150% of same-round expected value"
+          }
+        },
+        {
+          "cells": [
+            "1.02",
+            "Second",
+            "10.00 points/game",
+            "20.00 points/game · 2 players",
+            "10.00 points/game below the round 1 median"
+          ],
+          "range": {
+            "value": 0.5,
+            "lo": 0.5,
+            "hi": 0.5,
+            "text": "10.00 points/game below the round 1 median · 50% of same-round expected value"
+          }
+        },
+        {
+          "cells": [
+            "2.01",
+            "Third",
+            "Value unavailable",
+            "Expected unavailable",
+            "Not measured"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    {
+      "id": "M-066",
+      "title": "Draft recap per franchise",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL",
+      "asOf": "As of: Oct 11, 2026, 12:00 PM",
+      "how": "Picks are ordered by round, then pick number. Each pick shows the franchise MFL records, including traded picks. Times use this computer's local time zone. Skipped picks count as made. Refresh to check for changes; if it fails, the app keeps the last good copy.",
+      "columns": [
+        "Franchise",
+        "Made picks",
+        "Players"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "One",
+            "1",
+            "1.02 · Second"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Two",
+            "2",
+            "1.01 · First\n2.01 · Third"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    {
+      "id": "M-068",
+      "title": "Future draft picks · ownership",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL",
+      "asOf": "As of: Oct 11, 2026, 12:00 PM",
+      "how": "MFL lists each future pick under its current owner and names the original franchise. Ordered by year, round and original franchise. Picks MFL does not list are not added.",
+      "columns": [
+        "Year",
+        "Round",
+        "Original franchise",
+        "Current owner"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "2027",
+            "2",
+            "One",
+            "Two"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    {
+      "id": "M-102",
+      "title": "Draft pick detail",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL",
+      "asOf": "As of: Oct 11, 2026, 12:00 PM",
+      "how": "Picks are ordered by round, then pick number. Each pick shows the franchise MFL records, including traded picks. Times use this computer's local time zone. Skipped picks count as made. Refresh to check for changes; if it fails, the app keeps the last good copy.",
+      "columns": [
+        "Pick",
+        "Franchise",
+        "Player",
+        "Local time",
+        "From whom · MFL comments"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "1.01",
+            "Two",
+            "First",
+            "Jan 1, 1970, 12:01 AM",
+            "MFL lists no trade details"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "1.02",
+            "One",
+            "Second",
+            "Jan 1, 1970, 12:02 AM",
+            "MFL lists no trade details"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "2.01",
+            "Two",
+            "Third",
+            "Jan 1, 1970, 12:02 AM",
+            "MFL lists no trade details"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    {
+      "id": "M-176",
+      "title": "Draft status",
+      "note": " All 3 picks MFL lists are made. MFL does not say whether more picks are scheduled.",
+      "status": "ok",
+      "source": "Source: MFL",
+      "asOf": "As of: Oct 11, 2026, 12:00 PM",
+      "how": "Picks are ordered by round, then pick number. Each pick shows the franchise MFL records, including traded picks. Times use this computer's local time zone. Skipped picks count as made. Refresh to check for changes; if it fails, the app keeps the last good copy. Made counts player selections and skipped picks. Remaining counts only unmade picks MFL lists. MFL does not say how many rounds are scheduled or who is on the clock.",
+      "columns": [
+        "State",
+        "What MFL shows"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "Made",
+            "3"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "On the clock",
+            "MFL does not report who is on the clock."
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Remaining",
+            "MFL does not say whether more picks are scheduled."
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    {
+      "id": "M-179",
+      "title": "Average elapsed time per pick",
+      "note": "",
+      "status": "ok",
+      "source": "Source: MFL",
+      "asOf": "As of: Oct 11, 2026, 12:00 PM",
+      "how": "Picks are ordered by round, then pick number. Each pick shows the franchise MFL records, including traded picks. Times use this computer's local time zone. Skipped picks count as made. Refresh to check for changes; if it fails, the app keeps the last good copy. Average and median time since the preceding pick, including overnight pauses. The first pick, missing times and times earlier than the preceding pick do not count. A median under one minute is labelled mostly pre-queued; it can also reflect fast selections. MFL does not report pauses.",
+      "columns": [
+        "Franchise",
+        "Measured intervals",
+        "Average elapsed time",
+        "Median",
+        "Pace note"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "One",
+            "1",
+            "under 1 min",
+            "under 1 min",
+            "Mostly pre-queued picks"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Two",
+            "1",
+            "under 1 min",
+            "under 1 min",
+            "Mostly pre-queued picks"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
+    {
+      "id": "M-183",
+      "title": "Live draft room",
+      "note": " All 3 picks MFL lists are made. MFL does not say whether more picks are scheduled. Next draft: date unknown. Picks happen on MFL only; this app never makes a pick.",
+      "status": "ok",
+      "source": "Source: MFL",
+      "asOf": "As of: Oct 11, 2026, 12:00 PM",
+      "how": "Picks are ordered by round, then pick number. Each pick shows the franchise MFL records, including traded picks. Times use this computer's local time zone. Skipped picks count as made. Refresh to check for changes; if it fails, the app keeps the last good copy. Made counts player selections and skipped picks. Remaining counts only unmade picks MFL lists. MFL does not say how many rounds are scheduled or who is on the clock.",
+      "columns": [
+        "Pick",
+        "Franchise",
+        "Player",
+        "Local time"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "1.01",
+            "Two",
+            "First",
+            "Jan 1, 1970, 12:01 AM"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "1.02",
+            "One",
+            "Second",
+            "Jan 1, 1970, 12:02 AM"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "2.01",
+            "Two",
+            "Third",
+            "Jan 1, 1970, 12:02 AM"
+          ],
+          "range": null
+        }
+      ],
+      "summary": [
+        {
+          "cells": [
+            "Made",
+            "3"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "On the clock",
+            "MFL does not report who is on the clock."
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "Remaining",
+            "MFL does not say whether more picks are scheduled."
+          ],
+          "range": null
+        }
+      ],
+      "link": {
+        "label": "See every pick",
+        "endpoint": "M-063"
+      }
+    }
+  ]
+}

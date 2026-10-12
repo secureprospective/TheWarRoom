@@ -70,16 +70,8 @@ export function GetRoster(arg1) {
   return window['go']['main']['App']['GetRoster'](arg1);
 }
 
-export function GetSignals() {
-  return window['go']['main']['App']['GetSignals']();
-}
-
 export function LoadCrosswalk() {
   return window['go']['main']['App']['LoadCrosswalk']();
-}
-
-export function LoadSignals() {
-  return window['go']['main']['App']['LoadSignals']();
 }
 
 export function MFLKeyStatus() {
@@ -102,6 +94,10 @@ export function ScoreLeague() {
   return window['go']['main']['App']['ScoreLeague']();
 }
 
+export function SetLeagueArchiveDir(arg1) {
+  return window['go']['main']['App']['SetLeagueArchiveDir'](arg1);
+}
+
 export function SetLeagueSettingOverride(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetLeagueSettingOverride'](arg1, arg2, arg3);
 }
@@ -114,8 +110,28 @@ export function SetParam(arg1, arg2, arg3) {
   return window['go']['main']['App']['SetParam'](arg1, arg2, arg3);
 }
 
+export function SetPhotos(arg1) {
+  return window['go']['main']['App']['SetPhotos'](arg1);
+}
+
+export function TargetAccounting() {
+  return window['go']['main']['App']['TargetAccounting']();
+}
+
+export function TargetAcquisition(arg1) {
+  return window['go']['main']['App']['TargetAcquisition'](arg1);
+}
+
 export function TargetAlerts(arg1) {
   return window['go']['main']['App']['TargetAlerts'](arg1);
+}
+
+export function TargetArchive(arg1, arg2, arg3) {
+  return window['go']['main']['App']['TargetArchive'](arg1, arg2, arg3);
+}
+
+export function TargetAssetBoard() {
+  return window['go']['main']['App']['TargetAssetBoard']();
 }
 
 export function TargetAssetProfile(arg1) {
@@ -150,6 +166,10 @@ export function TargetBidWithdraw(arg1) {
   return window['go']['main']['App']['TargetBidWithdraw'](arg1);
 }
 
+export function TargetBylaws() {
+  return window['go']['main']['App']['TargetBylaws']();
+}
+
 export function TargetCheckLineup(arg1, arg2) {
   return window['go']['main']['App']['TargetCheckLineup'](arg1, arg2);
 }
@@ -160,6 +180,14 @@ export function TargetCheckMoves() {
 
 export function TargetClock() {
   return window['go']['main']['App']['TargetClock']();
+}
+
+export function TargetComms(arg1) {
+  return window['go']['main']['App']['TargetComms'](arg1);
+}
+
+export function TargetCommsRefresh(arg1) {
+  return window['go']['main']['App']['TargetCommsRefresh'](arg1);
 }
 
 export function TargetContractActs(arg1) {
@@ -178,6 +206,18 @@ export function TargetCounterparties(arg1) {
   return window['go']['main']['App']['TargetCounterparties'](arg1);
 }
 
+export function TargetCrosswalk() {
+  return window['go']['main']['App']['TargetCrosswalk']();
+}
+
+export function TargetDataRefresh(arg1) {
+  return window['go']['main']['App']['TargetDataRefresh'](arg1);
+}
+
+export function TargetDataSources() {
+  return window['go']['main']['App']['TargetDataSources']();
+}
+
 export function TargetDraftIR(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftIR'](arg1, arg2);
 }
@@ -188,6 +228,14 @@ export function TargetDraftLab(arg1) {
 
 export function TargetDraftLineup(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftLineup'](arg1, arg2);
+}
+
+export function TargetDraftReports() {
+  return window['go']['main']['App']['TargetDraftReports']();
+}
+
+export function TargetDraftReportsRefresh(arg1) {
+  return window['go']['main']['App']['TargetDraftReportsRefresh'](arg1);
 }
 
 export function TargetDraftTaxi(arg1, arg2) {
@@ -202,8 +250,16 @@ export function TargetHandOff(arg1) {
   return window['go']['main']['App']['TargetHandOff'](arg1);
 }
 
+export function TargetLeagueSettings() {
+  return window['go']['main']['App']['TargetLeagueSettings']();
+}
+
 export function TargetLineup(arg1) {
   return window['go']['main']['App']['TargetLineup'](arg1);
+}
+
+export function TargetLiveGame(arg1, arg2, arg3) {
+  return window['go']['main']['App']['TargetLiveGame'](arg1, arg2, arg3);
 }
 
 export function TargetMarket(arg1) {
@@ -214,6 +270,14 @@ export function TargetMarketLists(arg1) {
   return window['go']['main']['App']['TargetMarketLists'](arg1);
 }
 
+export function TargetMarketReports() {
+  return window['go']['main']['App']['TargetMarketReports']();
+}
+
+export function TargetMarketReportsRefresh(arg1) {
+  return window['go']['main']['App']['TargetMarketReportsRefresh'](arg1);
+}
+
 export function TargetMarketStretches(arg1) {
   return window['go']['main']['App']['TargetMarketStretches'](arg1);
 }
@@ -222,8 +286,52 @@ export function TargetMoves(arg1) {
   return window['go']['main']['App']['TargetMoves'](arg1);
 }
 
+export function TargetNFLDraft() {
+  return window['go']['main']['App']['TargetNFLDraft']();
+}
+
+export function TargetNow(arg1, arg2) {
+  return window['go']['main']['App']['TargetNow'](arg1, arg2);
+}
+
+export function TargetNowRefresh(arg1, arg2) {
+  return window['go']['main']['App']['TargetNowRefresh'](arg1, arg2);
+}
+
 export function TargetOffers(arg1) {
   return window['go']['main']['App']['TargetOffers'](arg1);
+}
+
+export function TargetOpenComms(arg1) {
+  return window['go']['main']['App']['TargetOpenComms'](arg1);
+}
+
+export function TargetOpenMFLAccounting() {
+  return window['go']['main']['App']['TargetOpenMFLAccounting']();
+}
+
+export function TargetOpenMFLDraftRoom() {
+  return window['go']['main']['App']['TargetOpenMFLDraftRoom']();
+}
+
+export function TargetOpenResearchArticle(arg1, arg2) {
+  return window['go']['main']['App']['TargetOpenResearchArticle'](arg1, arg2);
+}
+
+export function TargetPersonal(arg1) {
+  return window['go']['main']['App']['TargetPersonal'](arg1);
+}
+
+export function TargetPersonalChange(arg1) {
+  return window['go']['main']['App']['TargetPersonalChange'](arg1);
+}
+
+export function TargetPersonalHandOff(arg1) {
+  return window['go']['main']['App']['TargetPersonalHandOff'](arg1);
+}
+
+export function TargetPhoto(arg1) {
+  return window['go']['main']['App']['TargetPhoto'](arg1);
 }
 
 export function TargetPickClock(arg1) {
@@ -242,20 +350,60 @@ export function TargetPoolRefresh(arg1) {
   return window['go']['main']['App']['TargetPoolRefresh'](arg1);
 }
 
-export function TargetPulseNow() {
-  return window['go']['main']['App']['TargetPulseNow']();
+export function TargetRace(arg1, arg2, arg3) {
+  return window['go']['main']['App']['TargetRace'](arg1, arg2, arg3);
+}
+
+export function TargetRaceRefresh(arg1) {
+  return window['go']['main']['App']['TargetRaceRefresh'](arg1);
 }
 
 export function TargetReleasePlans(arg1) {
   return window['go']['main']['App']['TargetReleasePlans'](arg1);
 }
 
+export function TargetResearch(arg1) {
+  return window['go']['main']['App']['TargetResearch'](arg1);
+}
+
+export function TargetResearchNewsRefresh(arg1) {
+  return window['go']['main']['App']['TargetResearchNewsRefresh'](arg1);
+}
+
+export function TargetResearchPlayer(arg1) {
+  return window['go']['main']['App']['TargetResearchPlayer'](arg1);
+}
+
+export function TargetResearchRefresh(arg1) {
+  return window['go']['main']['App']['TargetResearchRefresh'](arg1);
+}
+
+export function TargetResearchStatus() {
+  return window['go']['main']['App']['TargetResearchStatus']();
+}
+
+export function TargetRosterReports(arg1) {
+  return window['go']['main']['App']['TargetRosterReports'](arg1);
+}
+
 export function TargetSeason() {
   return window['go']['main']['App']['TargetSeason']();
 }
 
+export function TargetShellStatus() {
+  return window['go']['main']['App']['TargetShellStatus']();
+}
+
+export function TargetSiteNews() {
+  return window['go']['main']['App']['TargetSiteNews']();
+}
+
 export function TargetSnapshot() {
   return window['go']['main']['App']['TargetSnapshot']();
+}
+
+export function TargetTradeBuilder(arg1) {
+  return window['go']['main']['App']['TargetTradeBuilder'](arg1);
 }
 
 export function TargetTrades(arg1) {

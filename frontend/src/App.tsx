@@ -9,9 +9,6 @@ import { PowerRankingsBoard } from './components/PowerRankingsBoard';
 import { TransactionWorkspace } from './components/transactions/TransactionWorkspace';
 import { TradeBuilder } from './components/transactions/TradeBuilder';
 import { LeagueControls } from './components/transactions/LeagueControls';
-import { AdminPanel } from './components/AdminPanel';
-import { CrosswalkPanel } from './components/CrosswalkPanel';
-import { SignalsPanel } from './components/SignalsPanel';
 import { CalendarBoard } from './components/calendar/CalendarBoard';
 import { FeedBoard } from './components/feed/FeedBoard';
 import { InspectorContent } from './components/inspector/InspectorContent';
@@ -122,45 +119,10 @@ function ModuleView({ module }: { module: ModuleId }) {
   }
 }
 
-type ControlTab = 'league' | 'admin' | 'crosswalk' | 'signals';
-
 function ControlModule() {
-  const [tab, setTab] = useState<ControlTab>('league');
-  const tabs: { id: ControlTab; label: string }[] = [
-    { id: 'league', label: 'League Controls' },
-    { id: 'admin', label: 'Engine Admin' },
-    { id: 'crosswalk', label: 'Crosswalk' },
-    { id: 'signals', label: 'Signals' },
-  ];
-  return (
-    <div className="p-4">
-      <div className="mb-4 flex gap-2 border-b border-hairline pb-2">
-        {(tabs ?? []).map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`rounded px-3 py-1 font-mono text-[11px] uppercase tracking-wide ${
-              tab === t.id
-                ? 'bg-surface-raised text-text-primary'
-                : 'text-text-secondary hover:bg-surface-tile'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-      {tab === 'league' ? (
-        <LeagueControls />
-      ) : tab === 'admin' ? (
-        <AdminPanel />
-      ) : tab === 'crosswalk' ? (
-        <CrosswalkPanel />
-      ) : (
-        <SignalsPanel />
-      )}
-    </div>
-  );
+  return <div className="p-4"><LeagueControls />
+    <p>Source health, player crosswalk and engine parameters are in Control Room › Data and sources in the target UI.</p>
+  </div>;
 }
 
 // Placeholder for the summon-over COMMS quick-dash (Ledger A10/A11). The calendar summon is now the

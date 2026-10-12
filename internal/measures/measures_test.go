@@ -75,6 +75,7 @@ func TestLoadRejects(t *testing.T) {
 		{"zero max age", okMeasure, "pfr,P,active,0,pfr.com,\n", "", "max_age_days"},
 		{"upper-case host", okMeasure, "pfr,P,active,7,PFR.com,\n", "", "lower-case host"},
 		{"relative path", okMeasure, "pfr,P,active,7,pfr.com,data/\n", "", "must start with /"},
+		{"path without host", okMeasure, "pfr,P,active,7,,/data/\n", "", "path_prefix but no host"},
 		{"unknown source", okMeasure, okSource, "espn,Solo,outcome.tackles_solo,1\n", "unknown source"},
 		{"unknown measure", okMeasure, okSource, "pfr,Solo,outcome.sacks,1\n", "unknown measure"},
 		{"zero priority", okMeasure, okSource, "pfr,Solo,outcome.tackles_solo,0\n", "priority"},
@@ -214,6 +215,14 @@ func TestEveryFetchedURLHasASource(t *testing.T) {
 	other, _ := url.Parse("https://github.com/someone/else/file.csv")
 	if got, ok := reg.SourceFor(other); ok {
 		t.Errorf("an unrelated GitHub URL matched source %q", got)
+	}
+	archive, ok := reg.Source("league_archive")
+	if !ok || !archive.Imported() {
+		t.Fatalf("league_archive = %+v, %v; want a registered imported source", archive, ok)
+	}
+	hostless, _ := url.Parse("file:///league-archive/raw/2013/league.json")
+	if got, ok := reg.SourceFor(hostless); ok {
+		t.Errorf("a host-less URL matched source %q; an imported source is named, never matched", got)
 	}
 }
 

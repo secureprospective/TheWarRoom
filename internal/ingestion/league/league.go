@@ -55,7 +55,7 @@ func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) (RawConfig
 		return RawConfig{}, fmt.Errorf("league: %w", err)
 	}
 
-	cfg, err := assemble(leagueBody, rulesBody)
+	cfg, err := Parse(leagueBody, rulesBody)
 	if err != nil {
 		return RawConfig{}, err
 	}
@@ -63,9 +63,9 @@ func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) (RawConfig
 	return cfg, nil
 }
 
-// assemble decodes both exports and rejects a config that cannot be valid: no scoring rules,
+// Parse decodes both exports and rejects a config that cannot be valid: no scoring rules,
 // or no cap amount in a salary league.
-func assemble(leagueBody, rulesBody []byte) (RawConfig, error) {
+func Parse(leagueBody, rulesBody []byte) (RawConfig, error) {
 	var le leagueEnvelope
 	if err := json.Unmarshal(leagueBody, &le); err != nil {
 		return RawConfig{}, fmt.Errorf("league: decode league export: %w", err)
@@ -111,6 +111,9 @@ func mapLeague(le leagueEnvelope) RawConfig {
 			Positions:   mapLimits(l.Starters.Position),
 		},
 		Franchises:    mapFranchises(l.Franchises.Franchise),
+		Conferences:   l.Conferences.Conference,
+		Divisions:     l.Divisions.Division,
+		StandingsSort: l.StandingsSort,
 		CurrentSeason: currentSeason(l.ID, l.History.League),
 	}
 	return cfg
