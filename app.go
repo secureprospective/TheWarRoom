@@ -74,8 +74,9 @@ type App struct {
 	// photos are images, not facts, and never enter history.db (spec §7).
 	headshots atomic.Pointer[headshot.Service]
 	// factsMu lets one checked-facts compile run at a time.
-	factsMu   sync.Mutex
-	photosOff atomic.Bool
+	factsMu      sync.Mutex
+	archiveCache archiveCache
+	photosOff    atomic.Bool
 	// control holds Control Room's MFL feeds (site news, scoring-event names); guarded by seasonMu.
 	control controlFeeds
 

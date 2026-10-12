@@ -56,7 +56,7 @@ func (s *Store) Registry() *measures.Registry { return s.reg }
 // appendOnly lists the tables whose rows never change once written.
 func appendOnly() []string {
 	return []string{"raw_archive", "fetch_log", "loads", "observations", "param_sets", "scoring_runs", "run_scores",
-		"model_runs", "model_scores", "input_manifests", "compiled_snapshots", "snapshot_checks"}
+		"model_runs", "model_scores", "input_manifests", "compiled_snapshots", "snapshot_checks", "league_event"}
 }
 
 const historyDDL = `
@@ -253,6 +253,7 @@ func (s *Store) Initialize(ctx context.Context) error {
 
 	var ddl strings.Builder
 	ddl.WriteString(historyDDL)
+	ddl.WriteString(eventsDDL)
 	for _, t := range appendOnly() {
 		for _, op := range []string{"UPDATE", "DELETE"} {
 			fmt.Fprintf(&ddl, `

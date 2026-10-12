@@ -433,6 +433,13 @@ export function createCommands(
           .catch(cause => state.write({ notice: String(cause) }));
       },
     }),
+    'archive.reports': command({
+      ...ambient, id: 'archive.reports', label: 'League archive reports', aliases: [], args: ['action', 'value'],
+      run: (args: { action: string; value: string }) => {
+        void import('../archive/state').then(m => m.archiveState.choose(args.action, args.value))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     'race.reports': command({
       ...ambient, id: 'race.reports', label: 'League race reports', aliases: [], args: ['action', 'value'],
       run: (args: { action: 'refresh' | 'week' | 'team'; value: string }) => {

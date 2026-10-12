@@ -46,6 +46,7 @@ const TradeDesk = lazy(() => import('./TradeDesk'));
 const Market = lazy(loadMarket);
 const Research = lazy(() => import('../research/Research'));
 const Race = lazy(() => import('../race/Race'));
+const Archive = lazy(() => import('../archive/Archive'));
 const Comms = lazy(() => import('../comms/Comms'));
 const loadInspector = () => import('./PlayerInspector');
 const PlayerInspector = lazy(() => loadInspector().then((m) => ({ default: m.PlayerInspector })));
@@ -224,6 +225,10 @@ export function TargetApp() {
           ) : s.node === 'pulse' && workspace.slug === 'race' ? (
             <Suspense fallback={<p role="status">Opening Race…</p>}>
               <Race />
+            </Suspense>
+          ) : s.node === 'pulse' && workspace.slug === 'pools-archive' ? (
+            <Suspense fallback={<p role="status">Opening Pools / Archive…</p>}>
+              <Archive />
             </Suspense>
           ) : s.node === 'home' && workspace.slug === 'digests' ? (
             <Suspense fallback={<p role="status">Opening Digests…</p>}>

@@ -199,3 +199,15 @@ WHERE m.name = ? ORDER BY c.built_at DESC, c.snapshot_id DESC`, name)
 	}
 	return out, nil
 }
+
+func (s *Store) ManifestBySHA(ctx context.Context, sha string) (ManifestRecord, error) {
+	var m ManifestRecord
+	var entries, at string
+	if err := s.pools.Read().QueryRowContext(ctx, `SELECT manifest_sha,name,entries,published_at FROM input_manifests WHERE manifest_sha=?`, sha).Scan(&m.SHA256, &m.Name, &entries, &at); err != nil {
+		return m, fmt.Errorf("history: manifest %s: %w", sha, err)
+	}
+	m.Entries = []byte(entries)
+	var err error
+	m.PublishedAt, err = parseTime(at)
+	return m, err
+}
