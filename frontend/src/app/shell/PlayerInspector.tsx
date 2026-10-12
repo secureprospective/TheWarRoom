@@ -20,7 +20,9 @@ export function PlayerInspector({
   subject: PlayerSubject;
 }) {
   if (!subject.franchiseId) return <>
-    <Suspense fallback={<p role="status">Reading player…</p>}><ResearchInspector id={subject.id} /></Suspense>
+    <Suspense fallback={<p role="status">Reading player…</p>}>
+      <ResearchInspector id={subject.id} />
+    </Suspense>
     <Suspense fallback={null}><PlayerLists id={subject.id} /></Suspense>
   </>;
   const model = playerCardModel(snapshot, subject.franchiseId, subject.id, new Date(), true);
@@ -33,6 +35,9 @@ export function PlayerInspector({
         asOf={new Date()}
         model={model}
       />
+      <Suspense fallback={<p role="status">Reading player research…</p>}>
+        <ResearchInspector id={subject.id} identity={false} />
+      </Suspense>
       <Suspense fallback={<p role="status">Reading contract years…</p>}>
         <ContractPanel id={subject.id} />
       </Suspense>

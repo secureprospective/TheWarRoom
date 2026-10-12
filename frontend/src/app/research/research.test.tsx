@@ -47,7 +47,7 @@ describe('Player research', () => {
     expect(html).toContain('data-endpoint="M-059"');
     expect(html).toContain('6 days');
     expect(html).toContain('Open article on MFL');
-    expect(html).toContain('Source: MFL playerProfile');
+    expect(html).toContain('Source: MFL player news');
   });
   it('dispatches refresh, filters, daily scoped news and only held article hand-offs', async () => {
     const r = reader();

@@ -8,16 +8,3 @@
 .twr-app .bylaws details p,
 .twr-app .site-news details p { margin: 4px 0 4px 12px; max-width: 72ch; }
 .twr-app .bylaws label { display: block; margin-top: 8px; }
-.twr-app .bylaws input[type='search'] {
-  display: block;
-  width: 100%;
-  max-width: 420px;
-  box-sizing: border-box;
-  margin: 4px 0 8px;
-  padding: 7px 9px;
-  color: var(--surface-tx1);
-  background: var(--surface-2);
-  border: 1px solid var(--surface-line);
-  font: inherit;
-}
-.twr-app .bylaws input[type='search']:focus-visible { outline: 2px solid var(--surface-tx1); outline-offset: 2px; }

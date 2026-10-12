@@ -17,7 +17,7 @@ func (v researchView) injuryReport(id string, team bool) Report {
 	if team {
 		title = "Injuries by NFL team"
 	}
-	r := reportShell(id, title, "MFL’s NFL injury report: its status, body part and expected return are preserved as supplied, not medical predictions. The game view includes only NFL teams in this week’s held schedule; byes are excluded.", v.injuries, v.zone, "Player", "Pos", "NFL", "Status", "Body part", "Expected return")
+	r := researchShell(id, title, "MFL’s NFL injury report: its status, body part and expected return are preserved as supplied, not medical predictions. The game view includes only NFL teams in this week’s held schedule; byes are excluded.", v.injuries, v.zone, "Player", "Pos", "NFL", "Status", "Body part", "Expected return")
 	r.Source = "Source: MFL injuries"
 	playing, ok := v.injuryGames(&r, team)
 	if !ok {
@@ -64,14 +64,14 @@ func (v researchView) depthName(r researchfeeds.RawDepth) (string, bool, bool) {
 		name = "Unnamed depth slot"
 	}
 	if id == "" {
-		return name + " · crosswalk unmatched", false, false
+		return name + " · MFL identity not linked", false, false
 	}
 	mine := v.mine[id]
 
 	return name, mine, true
 }
 func (v researchView) depthReport() Report {
-	r := reportShell("M-048", "NFL depth charts", "Only the newest nflverse snapshot is shown. Formation groups follow the source’s formation order, then slot and depth rank. ▸ marks your players. Identity joins use gsis, then ESPN through the held crosswalk; an unmatched player stays visible by nflverse’s name and is labelled. The grid shows rank-one players at each position, including different formations.", v.held.depth, v.zone, "Player", "Position", "Depth")
+	r := researchShell("M-048", "NFL depth charts", "Only the newest nflverse snapshot is shown. Formation groups follow the source’s formation order, then slot and depth rank. ▸ marks your players. Identity joins use gsis, then ESPN through the held crosswalk; an unmatched player stays visible by nflverse’s name and is labelled. The grid shows rank-one players at each position, including different formations.", v.held.depth, v.zone, "Player", "Position", "Depth")
 	r.Source = "Source: nflverse depth charts · latest snapshot"
 	if v.held.linkError != "" {
 		r.Note += " Crosswalk unavailable: " + v.held.linkError
@@ -93,7 +93,8 @@ func (v researchView) depthReport() Report {
 		}
 		r.Rows = append(r.Rows, ReportRow{Cells: []string{name, d.Position, fmt.Sprint(d.Rank)}, Mine: mine, Group: researchTeam(d.Team) + " · " + d.Group})
 	}
-	r.Note += fmt.Sprintf(" Crosswalk: %d displayed players unmatched.", misses)
+	r.Note += fmt.Sprintf(" %d displayed depth slots have no held MFL identity link (not a roster status).", misses)
+	r.Note += v.depthMissNote(false)
 	researchEmpty(&r)
 	return r
 }
@@ -146,7 +147,7 @@ func (v researchView) depthGrid(r Report) Report {
 		}
 		r.Rows = append(r.Rows, row)
 	}
-	r.Note += fmt.Sprintf(" Crosswalk: %d starter slots unmatched (*). ▸ marks your players.", misses)
+	r.Note += fmt.Sprintf(" %d starter slots have no held MFL identity link (*). ▸ marks your players.", misses) + v.depthMissNote(true)
 	researchEmpty(&r)
 	return r
 }
@@ -155,7 +156,7 @@ func (v researchView) newsReport(mine bool) (Report, []ResearchArticle) {
 	if mine {
 		id, title = "M-060", "My players’ news"
 	}
-	r := Report{ID: id, Title: title, Source: "Source: MFL playerProfile · rostered players only", AsOf: "As of: not fetched", Status: "ok", Rows: []ReportRow{}, Columns: []string{"Player", "Age", "Headline", "Published"}, How: "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Published is MFL’s literal relative wording, not a reconstructed timestamp. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted."}
+	r := Report{ID: id, Title: title, Source: "Source: MFL player news · rostered players only", AsOf: "As of: not fetched", Status: "ok", Rows: []ReportRow{}, Columns: []string{"Player", "Age", "Headline", "Published"}, How: "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Published is MFL’s literal relative wording, not a reconstructed timestamp. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted."}
 	articles := []ResearchArticle{}
 	if mine && v.scope.Mine == "" {
 		r.Status = "empty"
@@ -168,13 +169,13 @@ func (v researchView) newsReport(mine bool) (Report, []ResearchArticle) {
 			ids = append(ids, player)
 		}
 	}
-	sort.Slice(ids, func(i, j int) bool { return v.player(ids[i]).Name < v.player(ids[j]).Name })
+	sort.Strings(ids)
 	fetched := 0
 	for _, player := range ids {
 		held := v.held.news[player]
 		name := v.player(player).Name
 		if held.fetchedAt.IsZero() || held.refreshError != "" {
-			researchLoss(&r, "playerProfile · "+name, held.fetchedAt, held.refreshError, v.zone)
+			researchLoss(&r, "Player news · "+name, held.fetchedAt, held.refreshError, v.zone)
 		}
 		if !held.fetchedAt.IsZero() {
 			fetched++
@@ -182,6 +183,7 @@ func (v researchView) newsReport(mine bool) (Report, []ResearchArticle) {
 		}
 		v.appendNews(&r, &articles, player, held.value)
 	}
+	sortResearchNews(&r, articles)
 	r.Note = fmt.Sprintf("%d of %d rostered profiles held today or from the last fetch. Published is MFL’s wording.", fetched, len(ids))
 	if fetched == 0 && len(ids) > 0 {
 		r.Status = "failed"
@@ -262,8 +264,8 @@ func shortDepthNames(names []string) string {
 			marker = "▸ "
 			name = strings.TrimPrefix(name, "▸ ")
 		}
-		unmatched := strings.HasSuffix(name, " · crosswalk unmatched")
-		name = strings.TrimSuffix(name, " · crosswalk unmatched")
+		unmatched := strings.HasSuffix(name, " · MFL identity not linked")
+		name = strings.TrimSuffix(name, " · MFL identity not linked")
 		words := strings.Fields(name)
 		if len(words) > 1 {
 			name = string([]rune(words[0])[0]) + ". " + strings.Join(words[1:], " ")

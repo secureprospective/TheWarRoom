@@ -11,6 +11,7 @@ type ActProps<K extends CommandId> = {
   expanded?: boolean;
   controls?: string;
   disabled?: boolean;
+  submit?: boolean;
   densityKey?: string;
 };
 export function Act<K extends CommandId>({
@@ -23,6 +24,7 @@ export function Act<K extends CommandId>({
   expanded,
   controls,
   disabled,
+  submit = false,
   densityKey,
 }: ActProps<K>) {
   const accessibleLabel = label ?? commands.registry[verb].label;
@@ -32,7 +34,7 @@ export function Act<K extends CommandId>({
     ? accessibleLabel : undefined;
   return (
     <button
-      type="button"
+      type={submit ? 'submit' : 'button'}
       disabled={disabled}
       className={`act act-${variant}${active ? ' on' : ''}`}
       data-d={densityKey}
@@ -41,7 +43,7 @@ export function Act<K extends CommandId>({
       aria-expanded={expanded}
       aria-controls={controls}
       title={title}
-      onClick={() => dispatch(verb, args)}
+      onClick={submit ? undefined : () => dispatch(verb, args)}
     >
       {content}
     </button>
