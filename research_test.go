@@ -116,7 +116,7 @@ func TestResearchRealPointsActivityAndScales(t *testing.T) {
 	if allen < 0 {
 		t.Fatal("Josh Allen missing")
 	}
-	if row := stats.Rows[allen]; row.Cells[3] != "134.80" || row.Cells[4] != "21.80" || row.Cells[5] != "44.90" || row.Cells[8] != "21.80" || row.Cells[9] != "—" {
+	if row := stats.Rows[allen]; row.Cells[3] != "134.80" || row.Cells[4] != "44.90" || row.Cells[7] != "21.80" || row.Cells[8] != "—" || len(row.Cells) != 9 {
 		t.Fatal(row)
 	}
 	mine := reportByID(t, board.Board, "M-038")

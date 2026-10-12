@@ -74,10 +74,13 @@ export function ResearchView({ research, selected }: {
           placeholder="Name, position or NFL team"
           onChange={e => setSearch(e.target.value)} />
       </label>
-      <Act verb="research.read" args={{ action: 'search', value: search }} submit>Search players</Act>
+      <div className="market-controls">
+        <Act verb="research.read" args={{ action: 'search', value: search }} submit>Search players</Act>
+      </div>
       </form>
       {!s.search.trim() ? <p>Enter a name, position or NFL team to find a player.</p> : <>
-        <p>{research.players.length} matches · open a player in the Inspector</p>
+        <p>{research.players.length} {research.players.length === 1 ? 'match' : 'matches'}
+          {' · open a player in the Inspector'}</p>
         <ul>{research.players.map(p => <li key={p.id}>
           <Act verb="inspector.open"
             args={{ subject: { kind: 'player', id: p.id, franchiseId: p.franchiseId } }}>

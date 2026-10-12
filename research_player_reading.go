@@ -17,7 +17,7 @@ type ResearchPlayerReading struct {
 
 func researchHeldTime(at time.Time, loss string, zone *time.Location) string {
 	if at.IsZero() {
-		return "not held · feed time not held"
+		return "not read yet"
 	}
 	text := "as of " + reportTime(at, zone)
 	if loss != "" {
@@ -47,12 +47,19 @@ func (v researchView) playerReading(id string, names map[string]string, how stri
 		articles = append(articles, ResearchArticle{ID: id, Article: n.Article, Name: p.Name, Headline: n.Headline})
 	}
 	if len(news.value) == 0 {
-		r.Rows = append(r.Rows, ReportRow{Cells: []string{"News", "not held", researchHeldTime(news.fetchedAt, news.refreshError, v.zone)}})
+		text := "No MFL news for this player"
+		if news.fetchedAt.IsZero() {
+			text = "not held · My players’ news reads rostered players"
+		}
+		r.Rows = append(r.Rows, ReportRow{Cells: []string{"News", text, researchHeldTime(news.fetchedAt, news.refreshError, v.zone)}})
 	}
 	return ResearchPlayerReading{ResearchPlayer: p, Report: r, Articles: articles, HowLabel: how}
 }
 func (v researchView) playerInjury(r *Report, id string) {
 	text := "not held"
+	if !v.injuries.fetchedAt.IsZero() {
+		text = "Not on MFL’s injury report"
+	}
 	for _, i := range v.injuries.value {
 		if i.ID.String() == id {
 			body, back := i.Details, i.ExpReturn

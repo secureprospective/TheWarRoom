@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { parsePlayerReading, type PlayerReading } from './contract';
 import { Act } from '../commands/Act';
-import { ReportView } from '../reports/ReportView';
+import './research.css';
 import type * as Bindings from '../../../wailsjs/go/main/App';
 
 export default function ResearchPlayerInspector({ id, identity = true }: { id: string; identity?: boolean }) {
@@ -27,7 +27,15 @@ export default function ResearchPlayerInspector({ id, identity = true }: { id: s
 export function PlayerResearchView({ player, identity }: { player: PlayerReading; identity: boolean }) {
   return <div className="draft-reports">
     {identity && <><h4>{player.name}</h4><p>{player.position} · {player.team} · {player.owner}</p></>}
-    <ReportView report={player.report} howLabel={player.howLabel} />
+    <section className="research-facts" data-endpoint={player.report.id} aria-label={player.report.title}>
+      <h5>{player.report.title}</h5>
+      <p>{player.report.source}</p>
+      <dl>{player.report.rows.map((row, i) => <div key={i}>
+        <dt>{row.cells[0]}</dt>
+        <dd>{row.cells[1]}<small>{row.cells[2]}</small></dd>
+      </div>)}</dl>
+      <details><summary>{player.howLabel}</summary><p>{player.report.how}</p></details>
+    </section>
     <ul>{player.articles.map(a => <li key={a.article}>
       <Act verb="research.read" args={{ action: 'open', value: `${a.id}:${a.article}` }}
         label={`Open article on MFL · ${a.headline}`}>Open article on MFL · {a.headline}</Act>

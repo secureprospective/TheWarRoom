@@ -4,6 +4,7 @@ import type { Snapshot } from '../data/contract';
 import { PlayerCard } from '../cards/PlayerCard';
 import { playerCardModel } from '../cards/playerModel';
 import type { PlayerSubject } from './state';
+import { commands } from '../commands/registry';
 
 const PlayerLists = lazy(() => import('../personal/PersonalLists').then(m => ({ default: m.PlayerLists })));
 const ResearchInspector = lazy(() => import('../research/PlayerInspector'));
@@ -19,6 +20,7 @@ export function PlayerInspector({
   snapshot: Snapshot;
   subject: PlayerSubject;
 }) {
+  const mine = commands.use().franchiseId;
   if (!subject.franchiseId) return <>
     <Suspense fallback={<p role="status">Reading player…</p>}>
       <ResearchInspector id={subject.id} />
@@ -41,7 +43,7 @@ export function PlayerInspector({
       <Suspense fallback={<p role="status">Reading contract years…</p>}>
         <ContractPanel id={subject.id} />
       </Suspense>
-      <PlayerActMount subject={subject} />
+      {subject.franchiseId === mine && <PlayerActMount subject={subject} />}
       <Suspense fallback={null}><PlayerLists id={subject.id} /></Suspense>
       <section className="zone interrogate">
         <h5>Interrogate</h5>

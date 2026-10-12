@@ -22,3 +22,10 @@
 .research .report-dense th, .research .report-dense td { min-width: 0; padding: 8px 6px; }
 .research .draft-table-scroll::-webkit-scrollbar { height: 12px; width: 12px; }
 .research .draft-table-scroll::-webkit-scrollbar-thumb { background: var(--surface-tx3); border-radius: 6px; }
+
+.research-search li .act { text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.research-facts dl { margin: 8px 0; }
+.research-facts dl > div { padding: 6px 0; border-bottom: 1px solid var(--surface-line); }
+.research-facts dt { color: var(--surface-tx2); font-size: 12px; }
+.research-facts dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+.research-facts small { display: block; color: var(--surface-tx3); font-size: 11.5px; }

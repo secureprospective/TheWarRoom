@@ -214,7 +214,7 @@ func (v researchView) inGroup(p ResearchPlayer) bool {
 func (v researchView) stats(id string, mine, group bool) Report {
 	title := map[string]string{"M-037": "Player stats", "M-038": "My top performers", "M-040": "Position leaders"}[id]
 	feed := v.feed("playerScores", "YTD")
-	r := researchShell(id, title, "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate weekly fantasy points. A dash means a missing score, not zero. No points enter the scouting prior.", feed, v.zone, "Player", "Pos", "NFL", "Season", "Last week")
+	r := researchShell(id, title, "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate weekly fantasy points. A dash means a missing score, not zero. No points enter the scouting prior.", feed, v.zone, "Player", "Pos", "NFL", "Season")
 	r.Source = "Source: MFL fantasy points, this league’s scoring"
 	weekly := v.weekScores(&r)
 	last := max(v.week-1, 0)
@@ -237,7 +237,7 @@ func (v researchView) stats(id string, mine, group bool) Report {
 		if p.Position == "Unknown" {
 			missing++
 		}
-		r.Rows = append(r.Rows, v.statsRow(p, entry.Value, weekly, last))
+		r.Rows = append(r.Rows, v.statsRow(p, entry.Value, weekly))
 	}
 	researchTextSort(r.Rows, 3)
 	r.SortAscending = "Sort ascending"
@@ -264,6 +264,7 @@ func (v researchView) weekScores(r *Report) map[int]map[string]float64 {
 		base := v.feed("playerScores", "1")
 		if w == 1 {
 			r.Source += fmt.Sprintf(" · weeks 1–%d %s", v.week, researchHeldTime(h.fetchedAt, h.refreshError, v.zone))
+			r.AsOf = ""
 		}
 		text := researchHeldTime(h.fetchedAt, h.refreshError, v.zone)
 		if text != researchHeldTime(base.fetchedAt, base.refreshError, v.zone) {
@@ -281,9 +282,8 @@ func scoreCell(scores map[string]float64, id string) (string, float64) {
 	}
 	return "—", -1e9
 }
-func (v researchView) statsRow(p ResearchPlayer, total float64, weekly map[int]map[string]float64, last int) ReportRow {
-	text, key := scoreCell(weekly[last], p.ID)
-	row := ReportRow{Cells: []string{p.Name, p.Position, p.Team, fmt.Sprintf("%.2f", total), text}, Sort: []float64{0, 0, 0, total, key}, Mine: v.mine[p.ID]}
+func (v researchView) statsRow(p ResearchPlayer, total float64, weekly map[int]map[string]float64) ReportRow {
+	row := ReportRow{Cells: []string{p.Name, p.Position, p.Team, fmt.Sprintf("%.2f", total)}, Sort: []float64{0, 0, 0, total}, Mine: v.mine[p.ID]}
 	for w := 1; w <= v.week; w++ {
 		text, key := scoreCell(weekly[w], p.ID)
 		row.Cells = append(row.Cells, text)

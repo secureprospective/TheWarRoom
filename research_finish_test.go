@@ -136,9 +136,19 @@ func TestResearchPlayerHeldFactsAndMissingPieces(t *testing.T) {
 	}
 	empty := (researchView{researchInput: researchInput{lookup: in.lookup, zone: time.UTC}}).playerReading("16162", nil, "How this is counted")
 	for _, r := range empty.Report.Rows[1:] {
-		if r.Cells[1] != "not held" || !strings.Contains(r.Cells[2], "feed time not held") {
+		if !strings.HasPrefix(r.Cells[1], "not held") || r.Cells[2] != "not read yet" {
 			t.Fatal(r)
 		}
+	}
+	read := researchView{researchInput: in}
+	read.injuries.fetchedAt = time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC)
+	read.injuries.value = nil
+	quiet := read.held.news["16162"]
+	quiet.value = nil
+	read.held.news = map[string]heldSeasonFeed[[]researchfeeds.News]{"16162": quiet}
+	healthy := read.playerReading("16162", nil, "How this is counted").Report.Rows
+	if healthy[1].Cells[1] != "Not on MFL’s injury report" || healthy[len(healthy)-1].Cells[1] != "No MFL news for this player" {
+		t.Fatal(healthy)
 	}
 	d := in.held.depth.value[0]
 	in.held.links["gsis:"+*d.GSIS] = "16162"
