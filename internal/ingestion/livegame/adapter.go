@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -24,9 +25,11 @@ type Detail struct {
 	Game    Game      `json:"game"`
 	At      time.Time `json:"at"`
 	Failure string    `json:"failure"`
+	Final   bool      `json:"final"` // read once from a final game; never fetched again
 }
 type Adapter struct {
 	Fetch          Fetch
+	Finals         Finals
 	Board          Held
 	Details        map[string]Detail
 	NextBoard      time.Time
@@ -34,6 +37,7 @@ type Adapter struct {
 	boardFailures  int
 	detailFailures int
 	followed       string
+	finalTried     string // the follow a final's one-shot read was last tried on
 }
 
 // MaxGame bounds a window when no source has said the game is final: no NFL game runs six hours past kickoff,
@@ -48,8 +52,14 @@ func Live(at time.Time, windows []Window) bool {
 }
 func GameLive(at time.Time, windows []Window, g Game) bool {
 	return slices.ContainsFunc(windows, func(w Window) bool {
-		return w.open(at) && slices.Contains(w.Teams[:], g.Home.Abbreviation) && slices.Contains(w.Teams[:], g.Away.Abbreviation)
+		return w.open(at) && w.plays(g)
 	}) && g.Status != "post"
+}
+
+// plays reports whether g is this window's game, whichever source's team codes each uses.
+func (w Window) plays(g Game) bool {
+	teams := []string{Canonical(w.Teams[0]), Canonical(w.Teams[1])}
+	return slices.Contains(teams, Canonical(g.Home.Abbreviation)) && slices.Contains(teams, Canonical(g.Away.Abbreviation))
 }
 func delay(base time.Duration, failures int) time.Duration {
 	return base * time.Duration(1<<min(failures, 4))
@@ -61,7 +71,7 @@ func (a *Adapter) EffectiveWindows(windows []Window) []Window {
 	}
 	for i, w := range out {
 		for _, g := range a.Board.Games {
-			if !w.Kickoff.Equal(g.Kickoff) || !slices.Contains(w.Teams[:], g.Home.Abbreviation) || !slices.Contains(w.Teams[:], g.Away.Abbreviation) {
+			if !w.Kickoff.Equal(g.Kickoff) || !w.plays(g) {
 				continue
 			}
 			d := a.Details[g.ID]
@@ -137,11 +147,20 @@ func (a *Adapter) fetchBoard(ctx context.Context, source string, parse func([]by
 }
 func (a *Adapter) Followed(id string) (Game, bool) {
 	for _, g := range a.Board.Games {
-		if g.ID == id || g.Away.Abbreviation+"-"+g.Home.Abbreviation == id {
+		if g.ID == id || Canonical(g.Away.Abbreviation)+"-"+Canonical(g.Home.Abbreviation) == canonicalPair(id) {
 			return g, true
 		}
 	}
 	return Game{}, false
+}
+
+// canonicalPair puts an "AWAY-HOME" follow id into ESPN's team codes.
+func canonicalPair(id string) string {
+	away, home, ok := strings.Cut(id, "-")
+	if !ok {
+		return id
+	}
+	return Canonical(away) + "-" + Canonical(home)
 }
 func (a *Adapter) refreshDetail(ctx context.Context, at time.Time, g Game) {
 	if a.Details == nil {
@@ -186,13 +205,6 @@ func (a *Adapter) fetchDetail(ctx context.Context, id string) (Game, error) {
 	if err != nil {
 		return Game{}, fmt.Errorf("ESPN plays: %w", err)
 	}
-	g.Plays = plays
-	if len(plays) > 0 {
-		p := plays[len(plays)-1]
-		g.Last = &p
-		g.State = p.End
-		g.Clock = p.Clock
-		g.Period = p.Period
-	}
+	withPlays(&g, plays)
 	return g, nil
 }

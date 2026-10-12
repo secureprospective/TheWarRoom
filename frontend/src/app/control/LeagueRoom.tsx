@@ -18,7 +18,7 @@ export function LeagueRoom() {
         <h4>By-laws</h4>
         <p className="report-source">Source: the league's own rulebook, as written by the league</p>
         <label htmlFor="bylaw-search">Search the by-laws</label>
-        <input id="bylaw-search" type="search" value={s.search}
+        <input className="search-input" id="bylaw-search" type="search" value={s.search}
           onChange={e => commands.dispatch('control.read', { action: 'search', value: e.target.value })} />
         {s.bylaws && sections.length === 0 && <p>No section mentions “{s.search}”.</p>}
         {sections.map(section => (

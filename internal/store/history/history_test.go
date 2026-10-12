@@ -347,6 +347,12 @@ func TestUnmatchedFactsWaitThenResolveWithTheirAsOf(t *testing.T) {
 	if id, err := s.SourceID(ctx, "15241", "espn"); err != nil || id != "" {
 		t.Errorf("SourceID with no espn id = %q, %v; want empty", id, err)
 	}
+	if ids, err := s.SourceIDs(ctx, "gsis"); err != nil || len(ids) != 1 || ids["15241"] != "00-0036355" {
+		t.Errorf("SourceIDs(gsis) = %v, %v", ids, err)
+	}
+	if ids, err := s.SourceIDs(ctx, "espn"); err != nil || len(ids) != 0 {
+		t.Errorf("SourceIDs(espn) = %v, %v; want none", ids, err)
+	}
 	got := features(t, s, t0())
 	if len(got) != 1 || got[0].PlayerID != "15241" || got[0].Value != 55 || !got[0].AsOf.Equal(t0()) {
 		t.Fatalf("after linking: %+v, want 15241 = 55 known since t0()", got)

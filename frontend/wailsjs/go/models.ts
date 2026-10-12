@@ -2457,6 +2457,7 @@ export namespace main {
 	export class SpineEntry {
 	    player: SpinePlayer;
 	    play: livegame.Play;
+	    game: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new SpineEntry(source);
@@ -2466,6 +2467,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.player = this.convertValues(source["player"], SpinePlayer);
 	        this.play = this.convertValues(source["play"], livegame.Play);
+	        this.game = source["game"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -2494,8 +2496,12 @@ export namespace main {
 	    failure: string;
 	    detailAsOf: string;
 	    detailFailure: string;
+	    scoring: livegame.Play[];
 	    spine: SpineEntry[];
 	    unmatched: number;
+	    weekSpine: SpineEntry[];
+	    weekHeld: number;
+	    weekGames: number;
 	    box: Report;
 	    active: boolean;
 	
@@ -2512,8 +2518,12 @@ export namespace main {
 	        this.failure = source["failure"];
 	        this.detailAsOf = source["detailAsOf"];
 	        this.detailFailure = source["detailFailure"];
+	        this.scoring = this.convertValues(source["scoring"], livegame.Play);
 	        this.spine = this.convertValues(source["spine"], SpineEntry);
 	        this.unmatched = source["unmatched"];
+	        this.weekSpine = this.convertValues(source["weekSpine"], SpineEntry);
+	        this.weekHeld = source["weekHeld"];
+	        this.weekGames = source["weekGames"];
 	        this.box = this.convertValues(source["box"], Report);
 	        this.active = source["active"];
 	    }
@@ -5938,6 +5948,7 @@ export namespace main {
 	    position: string;
 	    team: string;
 	    franchiseId: string;
+	    owner: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ResearchPlayer(source);
@@ -5950,6 +5961,7 @@ export namespace main {
 	        this.position = source["position"];
 	        this.team = source["team"];
 	        this.franchiseId = source["franchiseId"];
+	        this.owner = source["owner"];
 	    }
 	}
 	export class ResearchBoard {
@@ -5995,6 +6007,52 @@ export namespace main {
 		}
 	}
 	
+	export class ResearchPlayerReading {
+	    id: string;
+	    name: string;
+	    position: string;
+	    team: string;
+	    franchiseId: string;
+	    owner: string;
+	    report: Report;
+	    articles: ResearchArticle[];
+	    howLabel: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ResearchPlayerReading(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.position = source["position"];
+	        this.team = source["team"];
+	        this.franchiseId = source["franchiseId"];
+	        this.owner = source["owner"];
+	        this.report = this.convertValues(source["report"], Report);
+	        this.articles = this.convertValues(source["articles"], ResearchArticle);
+	        this.howLabel = source["howLabel"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class RosterResult {
 	    ok: boolean;
 	    franchiseID: string;

@@ -55,18 +55,18 @@ func TestSpineCrosswalkOnlyAndNewestFirst(t *testing.T) {
 			td = p
 		}
 	}
-	entries, unmatched := matchSpine([]livegame.Play{td}, known, players)
+	entries, unmatched := matchSpine([]livegame.Game{{Plays: []livegame.Play{td}}}, known, players)
 	if len(entries) != 2 || unmatched != 1 || !entries[0].Player.Mine || entries[1].Player.Mine {
 		t.Fatalf("entries %+v unmatched %d", entries, unmatched)
 	}
 	newer := td
 	newer.ID = "later"
 	newer.Sequence++
-	entries, _ = matchSpine([]livegame.Play{td, newer}, known, players)
+	entries, _ = matchSpine([]livegame.Game{{Plays: []livegame.Play{td, newer}}}, known, players)
 	if entries[0].Play.ID != "later" || entries[2].Play.ID != td.ID {
 		t.Fatal("spine not newest first")
 	}
-	entries, unmatched = matchSpine([]livegame.Play{{Text: "Jacoby Brissett", Participants: []string{"unmapped"}}}, known, players)
+	entries, unmatched = matchSpine([]livegame.Game{{Plays: []livegame.Play{{Text: "Jacoby Brissett", Participants: []string{"unmapped"}}}}}, known, players)
 	if len(entries) != 0 || unmatched != 1 {
 		t.Fatal("matched by name")
 	}
@@ -114,7 +114,14 @@ func liveWire(t *testing.T) LiveGameView {
 			}
 		}
 	}
+	for i := range view.Spine {
+		view.Spine[i].Game = "DET at ARI"
+	}
 	view.Unmatched = 1
+	view.WeekSpine, view.WeekHeld = view.Spine, 1
+	if len(view.Scoring) > 2 {
+		view.Scoring = view.Scoring[:2]
+	}
 	return view
 }
 func TestLiveWireMatchesGo(t *testing.T) {

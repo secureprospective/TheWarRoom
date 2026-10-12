@@ -42,9 +42,14 @@ export function Field({ game }: { game: Game }) {
       Home attacks right; diagram normalized.</figcaption>
   </figure>;
 }
+// "Mon, Oct 12, 7:15 PM": the app's local wording, without seconds.
+export function kickoffText(kickoff: string) {
+  return new Date(kickoff).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit' });
+}
 export function gameTime(g: Game) {
   if (g.status === 'post') return 'Final';
-  if (g.status === 'pre') return `Kickoff ${new Date(g.kickoff).toLocaleString()}`;
+  if (g.status === 'pre') return `Kickoff ${kickoffText(g.kickoff)}`;
   return `${g.period > 4 ? 'OT' : `Q${g.period}`} · ${g.clock || 'Clock not supplied'}`;
 }
 function Photo({ player }: { player: Spine['player'] }) {
@@ -60,21 +65,37 @@ function Photo({ player }: { player: Spine['player'] }) {
 export function orderedSpine(entries: Spine[]) {
   return [...entries].sort((a, b) => b.play.sequence - a.play.sequence);
 }
-export function PlaySpine({ entries, unmatched }: { entries: Spine[]; unmatched: number }) {
-  return <section data-endpoint="X-02" aria-label="Fantasy play spine" className="play-spine">
-    <h4>Our players in this game</h4>
-    <p>{unmatched} participant appearances unmatched by ESPN crosswalk id; never matched by name.</p>
-    {entries.length === 0 && <p>No held plays matched a starter in your matchup.
-      Choose your franchise and follow a game.</p>}
-    <ol>{orderedSpine(entries).map(e => <li key={`${e.play.id}:${e.player.id}`}
+export function spineEmpty(mine: boolean, held: boolean) {
+  if (!mine) return 'Choose your franchise to see your matchup’s plays.';
+  if (!held) return 'No plays held for this game yet.';
+  return 'None of your matchup’s starters has a held play in this game.';
+}
+export function PlaySpine({ entries, title, empty, unmatched, week = false }: { entries: Spine[];
+  title: string; empty: string; unmatched?: number; week?: boolean }) {
+  return <section data-endpoint="X-02" aria-label={title} className="play-spine">
+    <h4>{title}</h4>
+    {unmatched !== undefined && <p>{unmatched} participant appearances unmatched by ESPN crosswalk id;
+      never matched by name.</p>}
+    {entries.length === 0 && <p>{empty}</p>}
+    <ol>{entries.map(e => <li key={`${e.game}:${e.play.id}:${e.player.id}`}
       data-side={e.player.mine ? 'mine' : 'theirs'}>
       <Photo player={e.player} />
       <div><strong>{e.player.name}</strong> · {e.player.team} · {e.player.mine ? 'Mine' : 'Opponent'}
+        {week && ` · ${e.game}`}
         <p>{e.play.text}</p>
         <small>Q{e.play.period} · {e.play.clock}
-          {e.play.at !== '0001-01-01T00:00:00Z' && ` · ${new Date(e.play.at).toLocaleTimeString()}`}</small>
+          {e.play.at !== '0001-01-01T00:00:00Z' && ` · ${new Date(e.play.at).toLocaleTimeString([],
+            { hour: 'numeric', minute: '2-digit' })}`}</small>
       </div>
     </li>)}</ol>
+  </section>;
+}
+function FinalPlays({ game, scoring }: { game: Game; scoring: Game['plays'] }) {
+  return <section aria-label="Scoring plays">
+    <p><strong>Final · {score(game)}</strong></p>
+    {scoring.length === 0 ? <p>Scoring plays not read yet.</p> : <ol className="scoring-plays">
+      {scoring.map(p => <li key={p.id}>Q{p.period} {p.clock} · {game.away.abbreviation} {p.awayScore},{' '}
+        {game.home.abbreviation} {p.homeScore} · {p.text}</li>)}</ol>}
   </section>;
 }
 function score(g: Game) {
@@ -82,7 +103,7 @@ function score(g: Game) {
   const home = `${g.home.abbreviation}${g.status === 'pre' ? '' : ` ${g.home.score}`}`;
   return `${away} at ${home}`;
 }
-export function LiveGameView({ view }: { view: LiveView }) {
+export function LiveGameView({ view, mine = true }: { view: LiveView; mine?: boolean }) {
   const g = view.followed;
   return <>
     {g && <div className="followed-bar market-controls" aria-label="Followed game">
@@ -103,14 +124,20 @@ export function LiveGameView({ view }: { view: LiveView }) {
     {view.failure && <p role="status">Refresh failed: {view.failure}. The held view stays available.</p>}
     {!view.active && <p>No NFL game window is live. Feeds are not being fetched.</p>}
     {g && <>
-      {g.status !== 'pre' && <Field game={g} />}
-      <p>{g.status === 'pre' ? 'Not started.' : g.last?.text || 'Last play not supplied.'}</p>
-      <p>ESPN game details as of {view.detailAsOf || 'not held'}</p>
+      {g.status === 'in' && <Field game={g} />}
+      {g.status === 'post' ? <FinalPlays game={g} scoring={view.scoring} />
+        : <p>{g.status === 'pre' ? 'Not started.' : g.last?.text || 'Last play not supplied.'}</p>}
+      <p>{view.detailAsOf ? `Game details as of ${view.detailAsOf}` : 'Game details not read yet'}</p>
       {view.detailFailure && <p role="status">{view.detailFailure}</p>}
       <ReportView report={view.box} howLabel="How this is counted" heading="h4" />
-      <PlaySpine entries={view.spine} unmatched={view.unmatched} />
+      <PlaySpine entries={view.spine} unmatched={view.unmatched} title="Our players in this game"
+        empty={spineEmpty(mine, g.plays.length > 0)} />
     </>}
     {!g && <p>Pick a game to follow. Its bar stays here while you browse Now reports.</p>}
+    <PlaySpine entries={view.weekSpine} title="My matchup’s plays this week" week
+      empty={mine ? 'No held play has a starter from your matchup yet.' : spineEmpty(false, false)} />
+    <p>Plays held for {view.weekHeld} of {view.weekGames} games this week: games you followed and
+      finals you opened. Other games are not read until you follow them.</p>
   </section></>;
 }
 export default function LiveGame() {
@@ -119,6 +146,6 @@ export default function LiveGame() {
   return <>
     {state.error && <p role="alert">{state.error}</p>}
     {state.pending && !state.view && <p role="status">Reading held games…</p>}
-    {state.view && <LiveGameView view={state.view} />}
+    {state.view && <LiveGameView view={state.view} mine={Boolean(mine)} />}
   </>;
 }

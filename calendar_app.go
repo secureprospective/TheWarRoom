@@ -28,14 +28,9 @@ func (a *App) mergeMFLCalendar(ctx context.Context, now time.Time, clock *snapsh
 		events = append(events, leagueclock.Event{ID: "mfl-calendar:" + r.ID, Kind: "MFL · " + label, Status: "PLANNED", At: at})
 	}
 	added := leagueclock.Clock(now, leagueclock.Inputs{Events: events})
-	for i := range added.Deadlines {
-		d := &added.Deadlines[i]
-		if d.At != nil && d.At.Before(now) {
-			d.Urgency, d.Pinned, d.Promoted = leagueclock.U0, false, false
-			d.Label += " · past calendar event"
-		}
-	}
-	clock.Value.Deadlines = append(clock.Value.Deadlines, added.Deadlines...)
+	// A calendar event that has passed is history, not a deadline: the clock lists what is coming.
+	upcoming := slices.DeleteFunc(added.Deadlines, func(d leagueclock.Deadline) bool { return d.At != nil && d.At.Before(now) })
+	clock.Value.Deadlines = append(clock.Value.Deadlines, upcoming...)
 	slices.SortFunc(clock.Value.Deadlines, func(a, b leagueclock.Deadline) int {
 		if a.Urgency != b.Urgency {
 			if a.Urgency > b.Urgency {

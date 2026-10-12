@@ -18,6 +18,7 @@ import (
 
 	"github.com/parquet-go/parquet-go"
 	"github.com/secureprospective/TheWarRoom/internal/archive"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/injuries"
@@ -115,7 +116,7 @@ func TestResearchRealPointsActivityAndScales(t *testing.T) {
 	if allen < 0 {
 		t.Fatal("Josh Allen missing")
 	}
-	if row := stats.Rows[allen]; row.Cells[3] != "134.80" || row.Cells[4] != "21.80" || row.Cells[5] != "44.90" || row.Cells[8] != "21.80" || row.Cells[9] != "—" {
+	if row := stats.Rows[allen]; row.Cells[3] != "134.80" || row.Cells[4] != "44.90" || row.Cells[7] != "21.80" || row.Cells[8] != "—" || len(row.Cells) != 9 {
 		t.Fatal(row)
 	}
 	mine := reportByID(t, board.Board, "M-038")
@@ -162,7 +163,7 @@ func TestResearchDepthInjuriesAndScopedNews(t *testing.T) {
 	in.held.links["gsis:"+*d.GSIS] = "16162"
 	out := buildResearch(in, RawResearchScope{Mine: "0001", Team: "ARI"})
 	depth := reportByID(t, out.Board, "M-048")
-	if !depth.Rows[0].Mine || !strings.Contains(depth.Note, "unmatched") {
+	if !depth.Rows[0].Mine || !strings.Contains(depth.Note, "no held MFL identity") {
 		t.Fatal(depth.Rows[0], depth.Note)
 	}
 	if !strings.HasPrefix(depth.Rows[0].Group, "ARI · ") {
@@ -324,7 +325,7 @@ func TestResearchAliasesAndHiddenFilters(t *testing.T) {
 			t.Fatal("NFL alias lost depth rows", mode, report)
 		}
 	}
-	if shortDepthNames([]string{"▸ Josh Sweat · crosswalk unmatched"}) != "▸ J. Sweat*" {
+	if shortDepthNames([]string{"▸ Josh Sweat · MFL identity not linked"}) != "▸ J. Sweat*" {
 		t.Fatal("grid name is not short and labelled")
 	}
 }
@@ -390,6 +391,7 @@ func TestResearchRefreshArchiveAndRosteredNewsEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 	events := []string{}
+	stages := []string{}
 	a.fetches = &archive.Transport{Sink: a.history, Base: researchFixtureTransport{t: t, events: &events, depth: parquetBody.Bytes()}}
 	client, err := mfl.New("api", 10000, mfl.WithTransport(a.fetches))
 	if err != nil {
@@ -402,10 +404,19 @@ func TestResearchRefreshArchiveAndRosteredNewsEndToEnd(t *testing.T) {
 			t.Fatal(d)
 		}
 		events = append(events, "pause")
+		if status := a.TargetResearchStatus(); status != "" {
+			stages = append(stages, status)
+		}
 		return nil
 	}
 	if err := a.TargetResearchRefresh(false); err != nil {
 		t.Fatal(err)
+	}
+	if !slices.Contains(stages, "Reading week 3 of 5") || !slices.Contains(stages, "Reading fantasy points") {
+		t.Fatal(stages)
+	}
+	if a.TargetResearchStatus() != "" {
+		t.Fatal("refresh status not cleared")
 	}
 	if len(a.research.depth.value) != 2333 || len(researchRows(a.research.feeds[researchKey("playerScores", "YTD")])) == 0 {
 		t.Fatal("refresh lost real fixtures")
@@ -438,6 +449,14 @@ func TestResearchRefreshArchiveAndRosteredNewsEndToEnd(t *testing.T) {
 	}
 	if len(events) != 0 || len(a.research.news["16162"].value) != 1 {
 		t.Fatal("persisted daily cache failed", events)
+	}
+	a.research = researchHeld{}
+	a.seasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{}
+	a.refreshMu.Lock()
+	cold, cerr := a.TargetResearch(RawResearchScope{Mine: "0001"})
+	a.refreshMu.Unlock()
+	if cerr != nil || len(a.research.depth.value) != 2333 || len(cold.Articles) != 1 || len(events) != 0 {
+		t.Fatal("cold read did not serve archived depth/news without fetching", cerr, len(events))
 	}
 	// The depth fallback reads the exact season URL and preserves stale provenance.
 	rows, fresh, err := readResearchDepthArchive(a.ctx, 2026, a.history.ArchivedBodies, errors.New("fixture offline"))
