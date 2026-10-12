@@ -3,6 +3,7 @@ import { Act } from '../commands/Act';
 import { presets, presetIds, presetAllowed } from './presets';
 
 const MFLConnection = lazy(() => import('./MFLConnection'));
+const WhatsNew = lazy(() => import('../control/WhatsNew').then((m) => ({ default: m.WhatsNew })));
 
 export function AppSettings() {
   return (
@@ -26,6 +27,9 @@ export function AppSettings() {
       <Act verb="harness.open" args={{}}>
         Open harness
       </Act>
+      <Suspense fallback={<p role="status">Reading MFL's site news…</p>}>
+        <WhatsNew />
+      </Suspense>
     </section>
   );
 }

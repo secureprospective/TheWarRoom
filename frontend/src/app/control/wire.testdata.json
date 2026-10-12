@@ -1,0 +1,195 @@
+{
+  "accounting": {
+    "id": "M-098",
+    "title": "Accounting",
+    "note": "MFL's accounting export holds no entries for this league in any season from 2013 to 2026. MFL's own accounting page opens from here.",
+    "status": "empty",
+    "source": "Source: MFL accounting export, every archived season",
+    "asOf": "As of: the league archive",
+    "how": "Checked against every archived accounting.json in the league archive.",
+    "columns": [
+      "Fact",
+      "Value"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+  },
+  "bylaws": [
+    {
+      "title": "1. SALARY CAP",
+      "lines": [
+        "• Each team: $125M cap for 2026",
+        "• Teams must stay under cap at all times. No exceptions.",
+        "• All salaries rounded to nearest $10,000",
+        "• Example: $10,987,000 becomes $10.99M"
+      ]
+    },
+    {
+      "title": "2. ROSTERS",
+      "lines": [
+        "Active Roster: Minimum 35, maximum 48 (in-season). IR and Practice Squad do not count toward the 48 limit but count toward the cap.",
+        "Practice Squad: Maximum 8 players. Must have 3 or fewer years of NFL experience (tracked by career games played on NFL.com). Once a player enters his 4th NFL season, he must be promoted or waived.",
+        "IR: Any player placed on IR or PUP by their NFL team is eligible for Legacy IR. IR players can be traded. Must be declared on Proboards."
+      ]
+    },
+    {
+      "title": "3. STARTING LINEUP (21 Starters)",
+      "lines": [
+        "Offense (9):",
+        "1 QB, 1 RB, 2 WR, 1 TE, 1 RB/WR Flex, 1 TE/WR Flex, 1 Offensive Flex (RB/WR/TE), 1 Kicker",
+        "Defense (12):",
+        "2 DT, 2 DE, 2 LB, 2 CB, 2 S, 2 Defensive Flex (DT/DE/LB/CB/S)",
+        "Lineup Penalties:",
+        "• Failure to set: removal from league",
+        "• Invalid lineup: zero applied to highest-scoring starter that week"
+      ]
+    }
+  ],
+  "news": {
+    "id": "M-141",
+    "title": "What's New on MFL",
+    "note": "",
+    "status": "ok",
+    "source": "Source: MFL site news (MFL-wide, not this league)",
+    "asOf": "As of: Oct 12, 2026, 8:00 AM",
+    "how": "MFL's site news feed, newest first. Its articles are written for every MFL league; the text is MFL's, with the formatting removed and its paragraphs kept.",
+    "columns": [
+      "Published",
+      "Article"
+    ],
+    "rows": [
+      {
+        "cells": [
+          "Oct 8, 2026",
+          "The following stat changes were made by the Elias Sports Bureau, and are now available to be applied to your league on MyFantasyLeague.com:\nNew York Jets at Chicago Bears\nJamien Sherwood: from 1 to 0 Passes Defended.\nJacksonville Jaguars at Cincinnati Bengals\nDennis Gardeck: from 0 to 1 Passes Defended.\nDallas Cowboys at Houston Texans\nTyrus Wheat: from 0 to 1 Special Teams Assists.\nMarkquese Bell: from 1 to 0 Special Teams Assists.\nGreen Bay Packers at Tampa Bay Buccaneers\nJavon Bullard: from 7 to 6 Assists.\nBrenton Cox: from 1 to 2 Tackles.\nBrenton Cox: from 2 to 1 Assists.\nLos Angeles Chargers at Seattle Seahawks\nDaiyan Henley: from 4 to 3 Tackles.\nDaiyan Henley: from 1 to 2 Assists.\nTarheeb Still: from 0 to 1 Tackles.\nDetroit Lions at Carolina Panthers\nJack Campbell: from 6 to 5 Tackles.\nChuck Clark: from 4 to 5 Tackles.\nTrevor Nowaske: from 0 to 1 Passes Defended."
+        ],
+        "range": null,
+        "group": "Week 4 Official Statistics Changes - Stat Changes for Week #4"
+      },
+      {
+        "cells": [
+          "Oct 2, 2026",
+          "Each week, we'll summarize some of the more unusual plays so you can make sure your rules are handling them properly. We'll cover Special Teams and Defensive scores, as well as Blocks and Safeties.\nAaron Rodgers (PIT) rushed for a 2Pt Conversion.\nDrake Maye (NEP) threw a 2pt Conversion to Rhamondre Stevenson.\nNajee Harris (NYG) rushed for a 2Pt Conversion.\nJacoby Brissett (ARI) threw an Interception and Deonte Banks (NYG) Returned it 98 yards for a TD.\nJason Sanders (NYJ) missed an Extra Point.\nCam Ward (TEN) threw a 2pt Conversion to Gunnar Helm.\nBrandon Aubrey (DAL) Had a 62 yard Field Goal attempt Blocked by Will Anderson (HOU) .\nKirk Cousins (LVR) threw a 2pt Conversion to Cody White.\nJason Myers (SEA) missed an Extra Point.\nEddy Pineiro (SFO) Had a 54 yard Field Goal attempt Blocked by Zach Allen (DEN) .\nTyler Badie (DEN) rushed for a 2Pt Conversion.\nRyan Fitzgerald (CAR) missed an Extra Point.\nRyan Fitzgerald (CAR) missed another Extra Point."
+        ],
+        "range": null,
+        "group": "Week 4 Strange Plays - Strange Plays for Week #4"
+      }
+    ],
+    "summary": null,
+    "link": null
+  },
+  "settings": {
+    "id": "M-091",
+    "title": "League settings",
+    "note": "",
+    "status": "ok",
+    "source": "Source: MFL league and rules exports",
+    "asOf": "As of: the held league settings",
+    "how": "Read from MFL's own league and rules exports, unchanged. Scoring events use MFL's own names for its codes.",
+    "columns": [
+      "Setting",
+      "Value"
+    ],
+    "rows": [
+      {
+        "cells": [
+          "Scoring weeks",
+          "Weeks 1 to 17; the regular season ends after week 13"
+        ],
+        "range": null,
+        "group": "Season"
+      },
+      {
+        "cells": [
+          "Standings order",
+          "win percentage, then head-to-head record, then division win percentage, then conference win percentage, then all-play win percentage, then points scored, then power rank"
+        ],
+        "range": null,
+        "group": "Season"
+      },
+      {
+        "cells": [
+          "Roster size",
+          "80 players"
+        ],
+        "range": null,
+        "group": "Roster"
+      },
+      {
+        "cells": [
+          "Taxi squad",
+          "8 players"
+        ],
+        "range": null,
+        "group": "Roster"
+      },
+      {
+        "cells": [
+          "Injured reserve",
+          "12 players"
+        ],
+        "range": null,
+        "group": "Roster"
+      },
+      {
+        "cells": [
+          "Position limits",
+          "None: any mix of positions"
+        ],
+        "range": null,
+        "group": "Roster"
+      },
+      {
+        "cells": [
+          "Starters each week",
+          "21"
+        ],
+        "range": null,
+        "group": "Starters"
+      },
+      {
+        "cells": [
+          "Offensive starters (MFL's count)",
+          "8"
+        ],
+        "range": null,
+        "group": "Starters"
+      },
+      {
+        "cells": [
+          "Defensive starters (MFL's count)",
+          "12"
+        ],
+        "range": null,
+        "group": "Starters"
+      },
+      {
+        "cells": [
+          "QB",
+          "Exactly 1"
+        ],
+        "range": null,
+        "group": "Starters"
+      },
+      {
+        "cells": [
+          "RB",
+          "1 to 3"
+        ],
+        "range": null,
+        "group": "Starters"
+      },
+      {
+        "cells": [
+          "WR",
+          "2 to 5"
+        ],
+        "range": null,
+        "group": "Starters"
+      }
+    ],
+    "summary": null,
+    "link": null
+  }
+}

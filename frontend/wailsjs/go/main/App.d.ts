@@ -61,6 +61,8 @@ export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetPa
 
 export function SetPhotos(arg1:boolean):Promise<main.DataActResult>;
 
+export function TargetAccounting():Promise<main.Report>;
+
 export function TargetAcquisition(arg1:main.RawAcquisition):Promise<main.Reading_main_AcquisitionView_>;
 
 export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
@@ -80,6 +82,8 @@ export function TargetBidPreview(arg1:main.RawBidInput):Promise<main.BidPreview>
 export function TargetBidRevise(arg1:string,arg2:main.RawBidInput):Promise<main.BidPlan>;
 
 export function TargetBidWithdraw(arg1:string):Promise<main.BidPlan>;
+
+export function TargetBylaws():Promise<Array<main.BylawSection>>;
 
 export function TargetCheckLineup(arg1:string,arg2:Array<string>):Promise<lineup.Result>;
 
@@ -121,6 +125,8 @@ export function TargetDraftTradeAccept(arg1:string,arg2:string):Promise<envelope
 
 export function TargetHandOff(arg1:string):Promise<envelope.Receipt>;
 
+export function TargetLeagueSettings():Promise<main.Report>;
+
 export function TargetLineup(arg1:string):Promise<main.LineupReading>;
 
 export function TargetMarket(arg1:main.RawMarketScope):Promise<main.Reading_github_com_secureprospective_TheWarRoom_internal_lab_Market_>;
@@ -143,6 +149,8 @@ export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_
 
 export function TargetOpenComms(arg1:string):Promise<void>;
 
+export function TargetOpenMFLAccounting():Promise<void>;
+
 export function TargetOpenMFLDraftRoom():Promise<void>;
 
 export function TargetPhoto(arg1:string):Promise<main.PhotoView>;
@@ -162,6 +170,8 @@ export function TargetRaceRefresh(arg1:boolean):Promise<void>;
 export function TargetReleasePlans(arg1:main.RawReleaseRequest):Promise<main.Reading___main_ReleasePlanView_>;
 
 export function TargetSeason():Promise<main.SeasonReading>;
+
+export function TargetSiteNews():Promise<main.Report>;
 
 export function TargetSnapshot():Promise<snapshot.Snapshot>;
 

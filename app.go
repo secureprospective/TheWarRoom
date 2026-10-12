@@ -75,6 +75,8 @@ type App struct {
 	// factsMu lets one checked-facts compile run at a time.
 	factsMu   sync.Mutex
 	photosOff atomic.Bool
+	// control holds Control Room's MFL feeds (site news, scoring-event names); guarded by seasonMu.
+	control controlFeeds
 
 	// The players directory is fetched at most once per process (MFL allows the endpoint once a
 	// day). Wails runs IPC calls concurrently, hence the mutex.

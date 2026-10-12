@@ -114,6 +114,10 @@ export function SetPhotos(arg1) {
   return window['go']['main']['App']['SetPhotos'](arg1);
 }
 
+export function TargetAccounting() {
+  return window['go']['main']['App']['TargetAccounting']();
+}
+
 export function TargetAcquisition(arg1) {
   return window['go']['main']['App']['TargetAcquisition'](arg1);
 }
@@ -152,6 +156,10 @@ export function TargetBidRevise(arg1, arg2) {
 
 export function TargetBidWithdraw(arg1) {
   return window['go']['main']['App']['TargetBidWithdraw'](arg1);
+}
+
+export function TargetBylaws() {
+  return window['go']['main']['App']['TargetBylaws']();
 }
 
 export function TargetCheckLineup(arg1, arg2) {
@@ -234,6 +242,10 @@ export function TargetHandOff(arg1) {
   return window['go']['main']['App']['TargetHandOff'](arg1);
 }
 
+export function TargetLeagueSettings() {
+  return window['go']['main']['App']['TargetLeagueSettings']();
+}
+
 export function TargetLineup(arg1) {
   return window['go']['main']['App']['TargetLineup'](arg1);
 }
@@ -278,6 +290,10 @@ export function TargetOpenComms(arg1) {
   return window['go']['main']['App']['TargetOpenComms'](arg1);
 }
 
+export function TargetOpenMFLAccounting() {
+  return window['go']['main']['App']['TargetOpenMFLAccounting']();
+}
+
 export function TargetOpenMFLDraftRoom() {
   return window['go']['main']['App']['TargetOpenMFLDraftRoom']();
 }
@@ -316,6 +332,10 @@ export function TargetReleasePlans(arg1) {
 
 export function TargetSeason() {
   return window['go']['main']['App']['TargetSeason']();
+}
+
+export function TargetSiteNews() {
+  return window['go']['main']['App']['TargetSiteNews']();
 }
 
 export function TargetSnapshot() {

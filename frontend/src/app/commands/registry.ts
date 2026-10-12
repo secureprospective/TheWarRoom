@@ -362,6 +362,16 @@ export function createCommands(
           .catch(cause => state.write({ notice: String(cause) }));
       },
     }),
+    'control.read': command({
+      ...ambient, id: 'control.read', label: 'Control Room league and site news', aliases: [],
+      args: ['action', 'value'],
+      run: (args: { action: 'league' | 'news' | 'search' | 'open-accounting'; value: string }) => {
+        if (!['league', 'news', 'search', 'open-accounting'].includes(args.action))
+          throw new Error('Control Room: invalid action');
+        void import('../control/state').then(m => m.controlState.choose(args.action, args.value))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     'race.reports': command({
       ...ambient, id: 'race.reports', label: 'League race reports', aliases: [], args: ['action', 'value'],
       run: (args: { action: 'refresh' | 'week' | 'team'; value: string }) => {

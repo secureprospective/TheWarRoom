@@ -1109,6 +1109,20 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class BylawSection {
+	    title: string;
+	    lines: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new BylawSection(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.title = source["title"];
+	        this.lines = source["lines"];
+	    }
+	}
 	export class CalendarEventDTO {
 	    eventID: string;
 	    kind: string;

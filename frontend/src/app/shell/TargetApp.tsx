@@ -36,6 +36,7 @@ function EndpointIndex({ placement }: { placement: Placement }) {
 const CalendarPanel = lazy(() =>
   import('../clock/CalendarPanel').then((m) => ({ default: m.CalendarPanel })),
 );
+const LeagueRoom = lazy(() => import('../control/LeagueRoom').then((m) => ({ default: m.LeagueRoom })));
 const AppSettings = lazy(() => import('./AppSettings').then((m) => ({ default: m.AppSettings })));
 const CommandBar = lazy(() => import('../commands/CommandBar').then((m) => ({ default: m.CommandBar })));
 const HomePulseMount = lazy(() => import('./HomePulseMount'));
@@ -231,13 +232,14 @@ export function TargetApp() {
             <Suspense fallback={null}>
               <AppSettings />
             </Suspense>
+          ) : s.node === 'control' && workspace.slug === 'league' ? (
+            <Suspense fallback={<p role="status">Opening League…</p>}>
+              <LeagueRoom />
+            </Suspense>
           ) : (
             <section className="shell-unwired">
               <h4>{workspace.label}</h4>
               <p className="not-wired">Not wired · {workspace.ring}</p>
-              {s.node === 'control' && workspace.slug === 'league' && (
-                <p>Commissioner or admin role required · running as GM</p>
-              )}
             </section>
           )}
           {s.node === 'home' && summary && (
