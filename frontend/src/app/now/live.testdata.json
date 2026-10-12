@@ -2088,6 +2088,65 @@
   "failure": "",
   "detailAsOf": "Oct 11, 2026, 7:00 PM",
   "detailFailure": "",
+  "scoring": [
+    {
+      "id": "401872991484",
+      "sequence": 48400,
+      "text": "J.Brissett pass short right to T.Quitoriano for 2 yards, TOUCHDOWN. C.Ryland extra point is GOOD, Center-C.Kreiter, Holder-B.Gillikin.",
+      "clock": "5:06",
+      "period": 1,
+      "at": "2026-10-11T20:39:47Z",
+      "homeScore": 7,
+      "awayScore": 0,
+      "start": {
+        "possession": "22",
+        "down": 1,
+        "distance": 2,
+        "yardLine": 98,
+        "toEndzone": 2
+      },
+      "end": {
+        "possession": "22",
+        "down": -1,
+        "distance": 10,
+        "yardLine": 100,
+        "toEndzone": 0
+      },
+      "participants": [
+        "2578570",
+        "4374045",
+        "4363538"
+      ]
+    },
+    {
+      "id": "4018729911237",
+      "sequence": 123700,
+      "text": "(No Huddle) J.Gibbs up the middle for 1 yard, TOUCHDOWN. J.Bates extra point is GOOD, Center-H.Hatten, Holder-J.Fox.",
+      "clock": "12:22",
+      "period": 2,
+      "at": "2026-10-11T21:09:41Z",
+      "homeScore": 7,
+      "awayScore": 7,
+      "start": {
+        "possession": "8",
+        "down": 2,
+        "distance": 1,
+        "yardLine": 1,
+        "toEndzone": 1
+      },
+      "end": {
+        "possession": "8",
+        "down": -1,
+        "distance": 10,
+        "yardLine": 0,
+        "toEndzone": 0
+      },
+      "participants": [
+        "4429795",
+        "4689936"
+      ]
+    }
+  ],
   "spine": [
     {
       "player": {
@@ -2128,7 +2187,8 @@
           "4374045",
           "4363538"
         ]
-      }
+      },
+      "game": "DET at ARI"
     },
     {
       "player": {
@@ -2169,17 +2229,106 @@
           "4374045",
           "4363538"
         ]
-      }
+      },
+      "game": "DET at ARI"
     }
   ],
   "unmatched": 1,
+  "weekSpine": [
+    {
+      "player": {
+        "id": "13130",
+        "name": "Jacoby Brissett",
+        "team": "ARI",
+        "mine": true,
+        "photo": {
+          "src": "",
+          "alt": "Jacoby Brissett"
+        }
+      },
+      "play": {
+        "id": "401872991484",
+        "sequence": 48400,
+        "text": "J.Brissett pass short right to T.Quitoriano for 2 yards, TOUCHDOWN. C.Ryland extra point is GOOD, Center-C.Kreiter, Holder-B.Gillikin.",
+        "clock": "5:06",
+        "period": 1,
+        "at": "2026-10-11T20:39:47Z",
+        "homeScore": 7,
+        "awayScore": 0,
+        "start": {
+          "possession": "22",
+          "down": 1,
+          "distance": 2,
+          "yardLine": 98,
+          "toEndzone": 2
+        },
+        "end": {
+          "possession": "22",
+          "down": -1,
+          "distance": 10,
+          "yardLine": 100,
+          "toEndzone": 0
+        },
+        "participants": [
+          "2578570",
+          "4374045",
+          "4363538"
+        ]
+      },
+      "game": "DET at ARI"
+    },
+    {
+      "player": {
+        "id": "16001",
+        "name": "Teagan Quitoriano",
+        "team": "ARI",
+        "mine": false,
+        "photo": {
+          "src": "",
+          "alt": "Teagan Quitoriano"
+        }
+      },
+      "play": {
+        "id": "401872991484",
+        "sequence": 48400,
+        "text": "J.Brissett pass short right to T.Quitoriano for 2 yards, TOUCHDOWN. C.Ryland extra point is GOOD, Center-C.Kreiter, Holder-B.Gillikin.",
+        "clock": "5:06",
+        "period": 1,
+        "at": "2026-10-11T20:39:47Z",
+        "homeScore": 7,
+        "awayScore": 0,
+        "start": {
+          "possession": "22",
+          "down": 1,
+          "distance": 2,
+          "yardLine": 98,
+          "toEndzone": 2
+        },
+        "end": {
+          "possession": "22",
+          "down": -1,
+          "distance": 10,
+          "yardLine": 100,
+          "toEndzone": 0
+        },
+        "participants": [
+          "2578570",
+          "4374045",
+          "4363538"
+        ]
+      },
+      "game": "DET at ARI"
+    }
+  ],
+  "weekHeld": 1,
+  "weekGames": 1,
   "box": {
     "id": "X-01",
     "title": "NFL box score",
     "note": "",
     "status": "ok",
     "source": "Source: ESPN game details · play feeds and headshots: personal use only",
-    "asOf": "Oct 11, 2026, 7:00 PM",
+    "asOf": "As of: Oct 11, 2026, 7:00 PM",
     "how": "Passing, rushing, receiving and defense by team, as ESPN supplies them. Yahoo supplies scores and last play only. Held details keep their own time.",
     "columns": [
       "Team",

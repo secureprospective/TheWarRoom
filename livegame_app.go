@@ -30,8 +30,12 @@ type LiveGameView struct {
 	Failure       string          `json:"failure"`
 	DetailAsOf    string          `json:"detailAsOf"`
 	DetailFailure string          `json:"detailFailure"`
+	Scoring       []livegame.Play `json:"scoring"`
 	Spine         []SpineEntry    `json:"spine"`
 	Unmatched     int             `json:"unmatched"`
+	WeekSpine     []SpineEntry    `json:"weekSpine"`
+	WeekHeld      int             `json:"weekHeld"`
+	WeekGames     int             `json:"weekGames"`
 	Box           Report          `json:"box"`
 	Active        bool            `json:"active"`
 }
@@ -57,6 +61,9 @@ func (a *App) startLiveGame() error {
 		return fmt.Errorf("live game sources: %w", err)
 	}
 	a.liveGame.adapter.Fetch = livegame.HTTPFetch(&http.Client{Timeout: 10 * time.Second}, endpoints)
+	if a.history != nil {
+		a.liveGame.adapter.Finals = heldFinals{store: a.history, endpoints: endpoints}
+	}
 	return nil
 }
 
@@ -85,8 +92,8 @@ func (a *App) TargetLiveGame(open bool, follow, mine string) (LiveGameView, erro
 	adapter := &a.liveGame.adapter
 	week := a.marketWeek()
 	if a.liveGame.week != week {
-		fetch := adapter.Fetch
-		a.liveGame = liveGameHeld{week: week, adapter: livegame.Adapter{Fetch: fetch}}
+		fetch, finals := adapter.Fetch, adapter.Finals
+		a.liveGame = liveGameHeld{week: week, adapter: livegame.Adapter{Fetch: fetch, Finals: finals}}
 		adapter = &a.liveGame.adapter
 	}
 	if len(adapter.Board.Games) == 0 {
@@ -98,15 +105,12 @@ func (a *App) TargetLiveGame(open bool, follow, mine string) (LiveGameView, erro
 		}
 	}
 	adapter.Refresh(ctx, now, open, windows, follow)
+	adapter.Final(ctx, now, follow)
 	active := livegame.Live(now, adapter.EffectiveWindows(windows))
 	a.pollLiveMFL(ctx, now, open && active)
 	view := liveGameReading(*adapter, follow, active)
-	entries, unmatched, err := a.liveGameSpine(ctx, view.Followed, mine)
-	if err != nil {
+	if err := a.liveGameSpines(ctx, &view, *adapter, mine); err != nil {
 		view.DetailFailure += " " + err.Error()
-	} else {
-		view.Spine = entries
-		view.Unmatched = unmatched
 	}
 	return view, nil
 }
@@ -160,19 +164,20 @@ func liveGameReading(a livegame.Adapter, follow string, active bool) LiveGameVie
 	if a.Board.Stale {
 		source = "Held " + source
 	}
-	v := LiveGameView{Games: a.Board.Games, Source: source + " · play feeds and headshots: personal use only", AsOf: reportTime(a.Board.At, time.Local), Failure: a.Board.Failure, Spine: []SpineEntry{}, Active: active}
+	v := LiveGameView{Games: a.Board.Games, Source: source + " · play feeds and headshots: personal use only", AsOf: reportTime(a.Board.At, time.Local), Failure: a.Board.Failure, Scoring: []livegame.Play{}, Spine: []SpineEntry{}, WeekSpine: []SpineEntry{}, WeekGames: len(a.Board.Games), Active: active}
 	if g, ok := a.Followed(follow); ok {
 		d := a.Details[g.ID]
-		v.DetailAsOf = reportTime(d.At, time.Local)
 		v.DetailFailure = d.Failure
 		if !d.At.IsZero() {
+			v.DetailAsOf = reportTime(d.At, time.Local)
 			g.Box = d.Game.Box
 			g.Plays = d.Game.Plays
 			if a.Board.Source == "ESPN" && d.At.After(a.Board.At) {
 				g = d.Game
 			} else {
-				g.State = d.Game.State
+				g.State, g.Last = d.Game.State, d.Game.Last
 			}
+			v.Scoring = livegame.ScoringPlays(g.Plays)
 		}
 		v.Followed = &g
 	}
@@ -180,7 +185,11 @@ func liveGameReading(a livegame.Adapter, follow string, active bool) LiveGameVie
 	return v
 }
 func liveBoxReport(v LiveGameView) Report {
-	r := Report{ID: "X-01", Title: "NFL box score", Status: "empty", Source: "Source: ESPN game details · play feeds and headshots: personal use only", AsOf: v.DetailAsOf, Note: v.DetailFailure, How: "Passing, rushing, receiving and defense by team, as ESPN supplies them. Yahoo supplies scores and last play only. Held details keep their own time.", Columns: []string{"Team", "Category", "Player", "Statistics"}, Rows: []ReportRow{}, Summary: []ReportRow{}}
+	asOf := ""
+	if v.DetailAsOf != "" {
+		asOf = "As of: " + v.DetailAsOf
+	}
+	r := Report{ID: "X-01", Title: "NFL box score", Status: "empty", Source: "Source: ESPN game details · play feeds and headshots: personal use only", AsOf: asOf, Note: v.DetailFailure, How: "Passing, rushing, receiving and defense by team, as ESPN supplies them. Yahoo supplies scores and last play only. Held details keep their own time.", Columns: []string{"Team", "Category", "Player", "Statistics"}, Rows: []ReportRow{}, Summary: []ReportRow{}}
 	if v.Followed == nil {
 		r.Note = "Follow a game from the week strip."
 		return r

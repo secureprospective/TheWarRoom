@@ -12,10 +12,10 @@ export type Box = { team: string; category: string; labels: string[];
 export type Game = { id: string; kickoff: string; home: Team; away: Team; status: 'pre' | 'in' | 'post';
   clock: string; period: number; state: FieldState | null; last: Play | null; box: Box[]; plays: Play[] };
 export type Spine = { player: { id: string; name: string; team: string; mine: boolean;
-  photo: { src: string; alt: string } }; play: Play };
+  photo: { src: string; alt: string } }; play: Play; game: string };
 export type LiveView = { games: Game[]; followed: Game | null; source: string; asOf: string; failure: string;
-  detailAsOf: string; detailFailure: string; spine: Spine[]; unmatched: number; box: Report;
-  active: boolean };
+  detailAsOf: string; detailFailure: string; scoring: Play[]; spine: Spine[]; unmatched: number;
+  weekSpine: Spine[]; weekHeld: number; weekGames: number; box: Report; active: boolean };
 function count(v: unknown, p: string, max: number, min = 0): number {
   const n = integer(v, p, min); if (n > max) throw new Error(`${p}: out of range`); return n;
 }
@@ -66,22 +66,26 @@ export function game(v: unknown, p: string): Game {
     plays: array(r.plays, p, play) };
 }
 function spine(v: unknown, p: string): Spine {
-  const r = object(v, p, ['player', 'play']);
+  const r = object(v, p, ['player', 'play', 'game']);
   const a = object(r.player, p, ['id', 'name', 'team', 'mine', 'photo']);
   const photo = object(a.photo, p, ['src', 'alt']);
   const src = text(photo.src, p);
   if (src !== '' && !/^\/headshot\/\d+$/.test(src)) throw new Error(`${p}: invalid cached photo path`);
   return { player: { id: id(a.id, p, true), name: requiredText(a.name, p), team: text(a.team, p),
-    mine: bool(a.mine, p), photo: { src, alt: text(photo.alt, p) } }, play: play(r.play, p) };
+    mine: bool(a.mine, p), photo: { src, alt: text(photo.alt, p) } }, play: play(r.play, p),
+    game: text(r.game, p) };
 }
 export function parseLive(v: unknown): LiveView {
   const p = 'Live game';
   const r = object(v, p, ['games', 'followed', 'source', 'asOf', 'failure',
-    'detailAsOf', 'detailFailure', 'spine', 'unmatched', 'box', 'active']);
+    'detailAsOf', 'detailFailure', 'scoring', 'spine', 'unmatched', 'weekSpine', 'weekHeld', 'weekGames',
+    'box', 'active']);
   return { games: array(r.games, p, game), followed: r.followed === null ? null : game(r.followed, p),
     source: text(r.source, p), asOf: text(r.asOf, p), failure: text(r.failure, p),
     detailAsOf: text(r.detailAsOf, p),
-    detailFailure: text(r.detailFailure, p), spine: array(r.spine, p, spine),
-    unmatched: integer(r.unmatched, p),
+    detailFailure: text(r.detailFailure, p), scoring: array(r.scoring, p, play),
+    spine: array(r.spine, p, spine), unmatched: integer(r.unmatched, p),
+    weekSpine: array(r.weekSpine, p, spine), weekHeld: integer(r.weekHeld, p),
+    weekGames: integer(r.weekGames, p),
     box: report(r.box, p), active: bool(r.active, p) };
 }

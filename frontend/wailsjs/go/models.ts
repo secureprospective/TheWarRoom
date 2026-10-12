@@ -2457,6 +2457,7 @@ export namespace main {
 	export class SpineEntry {
 	    player: SpinePlayer;
 	    play: livegame.Play;
+	    game: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new SpineEntry(source);
@@ -2466,6 +2467,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.player = this.convertValues(source["player"], SpinePlayer);
 	        this.play = this.convertValues(source["play"], livegame.Play);
+	        this.game = source["game"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -2494,8 +2496,12 @@ export namespace main {
 	    failure: string;
 	    detailAsOf: string;
 	    detailFailure: string;
+	    scoring: livegame.Play[];
 	    spine: SpineEntry[];
 	    unmatched: number;
+	    weekSpine: SpineEntry[];
+	    weekHeld: number;
+	    weekGames: number;
 	    box: Report;
 	    active: boolean;
 	
@@ -2512,8 +2518,12 @@ export namespace main {
 	        this.failure = source["failure"];
 	        this.detailAsOf = source["detailAsOf"];
 	        this.detailFailure = source["detailFailure"];
+	        this.scoring = this.convertValues(source["scoring"], livegame.Play);
 	        this.spine = this.convertValues(source["spine"], SpineEntry);
 	        this.unmatched = source["unmatched"];
+	        this.weekSpine = this.convertValues(source["weekSpine"], SpineEntry);
+	        this.weekHeld = source["weekHeld"];
+	        this.weekGames = source["weekGames"];
 	        this.box = this.convertValues(source["box"], Report);
 	        this.active = source["active"];
 	    }

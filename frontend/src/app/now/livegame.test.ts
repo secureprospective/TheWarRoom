@@ -1,7 +1,8 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import { Field, fieldPositions, gameTime, LiveGameView, PlaySpine, orderedSpine } from './LiveGame';
+import { Field, fieldPositions, gameTime, kickoffText, LiveGameView, PlaySpine, spineEmpty }
+  from './LiveGame';
 import { parseLive } from './liveContract';
 import { createLiveState, startLivePolling } from './liveState';
 import wire from './live.testdata.json';
@@ -30,21 +31,29 @@ describe('Personal live game view', () => {
   it('shows local kickoff without a pregame box score; renders Final truthfully', () => {
     const v = view(); const g = v.followed!;
     expect(gameTime(g)).toBe('Final');
-    expect(render(v)).toContain('Final');
+    const final = render(v);
+    expect(final).toContain('<strong>Final · DET');
+    expect(final).toContain('Scoring plays');
+    expect(final).not.toContain('data-line="scrimmage"');
+    expect(final).toContain('Game details as of ');
+    expect(final).not.toContain('Time not supplied');
     const pre = parseLive(pregameWire);
     const html = render(pre);
-    expect(gameTime(pre.followed!)).toBe(`Kickoff ${new Date(pre.followed!.kickoff).toLocaleString()}`);
+    expect(gameTime(pre.followed!)).toBe(`Kickoff ${kickoffText(pre.followed!.kickoff)}`);
+    expect(gameTime(pre.followed!)).not.toMatch(/\d:\d\d:\d\d/);
+    expect(html).toContain('Game details as of Oct 11, 2026, 7:00 PM');
+    expect(render({ ...pre, detailAsOf: '' })).toContain('Game details not read yet');
     expect(html).toContain('Not started.');
     expect(html).not.toContain('data-line="scrimmage"');
     expect(html).toContain('personal use only');
     expect(html).toContain('Feeds are not being fetched');
   });
-  it('orders the spine newest first and marks mine/opponent without name inference', () => {
+  it('keeps the server’s newest-first order and marks mine/opponent without name inference', () => {
     const v = view(); const newer = structuredClone(v.spine[1]);
     newer.play.id = 'later'; newer.play.sequence++;
-    const entries = [v.spine[0], newer, v.spine[1]];
-    expect(orderedSpine(entries)[0].play.id).toBe('later');
-    const html = renderToStaticMarkup(createElement(PlaySpine, { entries, unmatched: 1 }));
+    const entries = [newer, v.spine[1], v.spine[0]];
+    const html = renderToStaticMarkup(createElement(PlaySpine, { entries, unmatched: 1,
+      title: 'Our players in this game', empty: '' }));
     expect(html.indexOf('Teagan Quitoriano')).toBeLessThan(html.indexOf('Jacoby Brissett'));
     expect(html).toContain('data-side="mine"'); expect(html).toContain('data-side="theirs"');
     expect(html).toContain('Mine'); expect(html).toContain('Opponent');
@@ -52,6 +61,18 @@ describe('Personal live game view', () => {
     expect(html).toContain('photo unavailable'); expect(html).not.toContain('<img');
     expect(html).toContain('Q1 · 5:06');
     expect(html).toContain('TOUCHDOWN');
+  });
+  it('names each week entry’s game, counts held games and says why a spine is empty', () => {
+    const v = view();
+    const html = render(v);
+    expect(html).toContain('My matchup’s plays this week');
+    expect(html).toContain('· DET at ARI');
+    expect(html).toContain(`Plays held for ${v.weekHeld} of ${v.weekGames} games this week`);
+    expect(spineEmpty(false, true)).toContain('Choose your franchise');
+    expect(spineEmpty(true, false)).toBe('No plays held for this game yet.');
+    expect(spineEmpty(true, true)).toContain('None of your matchup’s starters');
+    const none = render({ ...v, spine: [], weekSpine: [] });
+    expect(none).not.toContain('Choose your franchise and follow a game');
   });
   it('polls only while mounted and visible, and removes its timer and visibility listener', async () => {
     vi.useFakeTimers();
