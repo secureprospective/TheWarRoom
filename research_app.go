@@ -65,13 +65,13 @@ func (a *App) refreshResearchFeed(ctx context.Context, kind, week string, force 
 }
 func (a *App) researchLinks(ctx context.Context, lookup normalize.Lookup) (map[string]string, error) {
 	out := map[string]string{}
-	for _, id := range lookup.IDs() {
-		for _, kind := range []string{"gsis", "espn"} {
-			source, err := a.history.SourceID(ctx, id, kind)
-			if err != nil {
-				return nil, fmt.Errorf("depth crosswalk: %w", err)
-			}
-			if source != "" {
+	for _, kind := range []string{"gsis", "espn"} {
+		sources, err := a.history.SourceIDs(ctx, kind)
+		if err != nil {
+			return nil, fmt.Errorf("depth crosswalk: %w", err)
+		}
+		for _, id := range lookup.IDs() {
+			if source := sources[id]; source != "" {
 				out[kind+":"+source] = id
 			}
 		}
