@@ -65,9 +65,9 @@ export function AssetBoardView({ snapshot }: { snapshot: Snapshot }) {
           label={`Inspect ${r.name}`}>{r.name}</Act></td>
         <td>{r.position}</td><td>{r.team}</td>
         {!shown && <td>{r.franchise}</td>}
-        <td><AssetNumber playerId={r.id} which="now" inline /></td>
-        <td><AssetNumber playerId={r.id} which="dynasty" inline /></td>
-        <td><AssetNumber playerId={r.id} which="market" inline /></td>
+        <td><AssetNumber playerId={r.id} which="now" /></td>
+        <td><AssetNumber playerId={r.id} which="dynasty" /></td>
+        <td><AssetNumber playerId={r.id} which="market" /></td>
       </tr>)}</tbody>
     </table>
     {board.board && <details className="market-how"><summary>How this is counted</summary>

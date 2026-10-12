@@ -45,7 +45,7 @@ export const nodes = {
     workspaces: [
       { slug: 'app', label: 'App', ring: 'Ring 3' },
       { slug: 'data-and-sources', label: 'Data and sources', ring: 'Ring 3' },
-      { slug: 'league', label: 'League (role-gated)', ring: 'Ring 3' },
+      { slug: 'league', label: 'League', ring: 'Ring 3' },
     ],
   },
 } as const;

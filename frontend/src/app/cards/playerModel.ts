@@ -95,7 +95,7 @@ export function playerCardModel(
       contract?.yearsRemaining === undefined
         ? undefined
         : `${contract.yearsRemaining} ${contract.yearsRemaining === 1 ? 'year' : 'years'}`,
-    unwiredRows: 'Form and market · not wired',
+    unwiredRows: 'Form · not wired',
     provenance: provenanceSlot([
       ['Players', snapshot.players.provenance],
       ['Contracts', snapshot.rosters.provenance],

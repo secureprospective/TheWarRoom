@@ -2,10 +2,15 @@ package main
 
 import (
 	"cmp"
+	"context"
 	"fmt"
+	"log"
+	"math"
 	"slices"
 	"strconv"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/labcompile"
 )
 
 // AssetBoard is C-01: what each player is worth on the field now and as a dynasty asset. Go words
@@ -56,9 +61,11 @@ type assetModel interface {
 
 const assetBoardHow = "On-field-now is points per game in this league's scoring over the finished weeks MFL has " +
 	"scored, counting only weeks in which the player has a score, ranked against every player at his position " +
-	"with a score this season. Dynasty value is the Lab's forecast of the wins he adds over the next five seasons, " +
-	"later seasons discounted; market is what the league has paid for that, in win-equivalents (1.00 is one " +
-	"expected win in a next-draft first-round pick), with the market's 95% range. Values only; this app moves nothing."
+	"with a score this season. Dynasty value is the Lab's forecast of the wins he adds over five seasons (this " +
+	"season's unplayed weeks and the four after), later seasons discounted; market is what the league has paid for " +
+	"that in trades, in win-equivalents (1.00 is the price of one expected win from a next-draft first-round pick), " +
+	"with the market's 95% range. Each player in a trade also costs a roster spot, so filler can price below zero. " +
+	"Values only; this app moves nothing."
 
 // buildAssetBoard words C-01 for every player with a held score this season, and every id in also.
 func buildAssetBoard(v researchView, model assetModel, at time.Time, also []string) AssetBoard {
@@ -143,7 +150,7 @@ func (v researchView) onFieldNow() (map[string]AssetCell, map[string]float64, st
 			}
 			ppg[r.id] = r.sum / float64(r.games)
 			out[r.id] = AssetCell{Held: true, Text: fmt.Sprintf("%.2f PPG", ppg[r.id]),
-				Sub:    fmt.Sprintf("%s %d of %d · top %d%%", position, rank, len(group), topPercent(rank, len(group))),
+				Sub:    fmt.Sprintf("%s %d/%d · top %d%%", position, rank, len(group), topPercent(rank, len(group))),
 				Detail: fmt.Sprintf("%.2f points in %s", r.sum, countText(r.games, "scored week"))}
 		}
 	}
@@ -167,16 +174,29 @@ func dynastyCells(model assetModel, id string, at time.Time) (AssetCell, AssetCe
 		return reason, reason, 0
 	}
 	dynasty := AssetCell{Held: true, Text: fmt.Sprintf("%.2f wins", d.Discounted),
-		Sub: fmt.Sprintf("next %d seasons", d.Seasons), Detail: d.ClassLabel}
+		Sub:    fmt.Sprintf("next %d seasons", d.Seasons),
+		Detail: fmt.Sprintf("%s · this season's unplayed weeks and the %d after, later ones discounted", d.ClassLabel, max(d.Seasons-1, 0))}
 	market := AssetCell{Text: "No price", Sub: "no market for " + d.ClassLabel}
 	if d.Price != nil {
-		market = AssetCell{Held: true, Text: fmt.Sprintf("%.2f", *d.Price), Sub: "win-equivalents",
-			Detail: "1.00 is one expected win in a next-draft first-round pick"}
+		market = AssetCell{Held: true, Text: signed(*d.Price), Sub: "win-equivalents",
+			Detail: "1.00 is the price of one expected win from a next-draft first-round pick"}
 		if d.Low != nil && d.High != nil {
-			market.Sub = fmt.Sprintf("win-equivalents · 95%% %.2f–%.2f", *d.Low, *d.High)
+			market.Sub = fmt.Sprintf("win-equivalents · 95%% %s to %s", signed(*d.Low), signed(*d.High))
+		}
+		if *d.Price < 0 {
+			market.Detail += ". Below zero: in trades the league has valued this kind of player at less than the roster spot he takes"
 		}
 	}
 	return dynasty, market, d.Discounted
+}
+
+// signed writes a price with a true minus sign, so a range reads "−0.04 to −0.01". A value that
+// rounds to zero reads 0.00, never −0.00.
+func signed(v float64) string {
+	if text := fmt.Sprintf("%.2f", -v); v < 0 && text != "0.00" {
+		return "−" + text
+	}
+	return fmt.Sprintf("%.2f", math.Abs(v))
 }
 
 // TargetAssetBoard reads C-01 from held state: the weekly scores (from their archived copies when
@@ -197,4 +217,43 @@ func (a *App) TargetAssetBoard() (AssetBoard, error) {
 		model = *m
 	}
 	return buildAssetBoard(researchView{researchInput: in}, model, time.Now(), rostered), nil
+}
+
+// labAssets is the Lab's fitted value model (internal/labcompile) as the asset board reads it.
+type labAssets struct{ model *labcompile.Model }
+
+func (l labAssets) player(pid string, at time.Time) dynastyValue {
+	return dynastyFrom(l.model.Player(pid, at))
+}
+
+// dynastyFrom keeps the Lab's answer as given: its forecast seasons, class words, price and range.
+func dynastyFrom(v labcompile.AssetValue) dynastyValue {
+	d := dynastyValue{Discounted: v.Discounted, Seasons: len(v.Forecast), Class: v.Class, ClassLabel: v.Label,
+		Price: v.Price, Valued: v.Valued, Reason: v.Reason}
+	if v.Range != nil {
+		d.Low, d.High = &v.Range.Low, &v.Range.High
+	}
+	return d
+}
+
+// fitAssetModel fits the Lab's value model on the verified facts warmArchive just read, so C-01
+// values players on the same frame and market as the Lab's trade legs. Until it lands the board
+// says the model is not compiled; when it lands the board reloads.
+func (a *App) fitAssetModel(ctx context.Context) {
+	began := time.Now()
+	a.factsMu.Lock()
+	cache := a.archiveCache
+	a.factsMu.Unlock()
+	if cache.sha == "" {
+		return
+	}
+	m, _, err := labcompile.Build(ctx, cache.facts, labcompile.Evidence{Built: began, ArchiveThrough: cache.through})
+	if err != nil {
+		log.Printf("the war room: value model: %v", err)
+		return
+	}
+	var model assetModel = labAssets{m}
+	a.assetModel.Store(&model)
+	log.Printf("the war room: value model fitted in %s", time.Since(began).Round(time.Millisecond))
+	a.seasonChanged(ctx)
 }

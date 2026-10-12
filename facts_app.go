@@ -45,6 +45,7 @@ func (a *App) compileFactsInBackground(parent context.Context) {
 			return
 		}
 		a.warmArchive(ctx)
+		a.fitAssetModel(ctx)
 	}()
 }
 

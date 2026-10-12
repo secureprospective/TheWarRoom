@@ -96,7 +96,7 @@ export function TargetApp() {
   const node = nodes[s.node];
   const workspaces: readonly { slug: string; label: string; ring: string }[] = node.workspaces;
   const workspace = workspaces.find((w) => w.slug === s.workspace[s.node])!;
-  const placement = `${node.label} › ${workspace.label.replace(' (role-gated)', '')}` as Placement;
+  const placement = `${node.label} › ${workspace.label}` as Placement;
   return (
     <div className="twr-app target-frame" ref={root} data-inspector={s.inspector}>
       <aside className="rail">

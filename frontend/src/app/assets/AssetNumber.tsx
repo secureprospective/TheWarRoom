@@ -7,6 +7,6 @@ export function AssetNumber({ playerId, which, inline = false }:
   const cell = assetState.useCell(playerId, which);
   const title = [cell.text, cell.sub, cell.detail].filter(Boolean).join(' · ');
   return <span className={cell.held ? 'asset-value' : 'asset-value asset-missing'} title={title}>
-    {cell.text}{cell.sub && (inline ? ` · ${cell.sub}` : <small className="asset-sub">{cell.sub}</small>)}
+    {cell.text}{cell.sub && (inline ? ` · ${cell.sub}` : <span className="asset-sub">{cell.sub}</span>)}
   </span>;
 }

@@ -1,6 +1,18 @@
-# TheWarRoom target UI: specification, revision 2 (2026-10-11)
+# TheWarRoom target UI: specification, revision 3 (2026-10-12)
 
-Revisions 0 and 1 are in git history. Revision 1 closed ring 1 (2026-10-10); revision 2 closes ring 2.
+Revisions 0–2 are in git history. Revision 1 closed ring 1 (2026-10-10), revision 2 closed ring 2
+(2026-10-11), and revision 3 closes ring 3.
+
+## What changed in rev 3
+
+- §4: Control Room's third workspace is **League**, no longer "League (role-gated)". Its settings
+  (M-091/M-097), by-laws (M-185) and accounting (M-098/M-197) are reads every GM may make. The two
+  commissioner pages, the email log (M-093) and commissioner news (M-095), moved to ring 4 because the app
+  runs as a GM (R1).
+- §14 (new): what ring 3 built, by node, with the file for each claim.
+- §15 (new): the ring 3 review and what is carried to ring 4.
+- Every kept ring 3 registry row is `built` (118 of 118). The 19 ring 3 rows still at `spec` are merged
+  into a built place (17) or retired (2: M-075 Victory Points, M-192 option election).
 
 ## What changed in rev 2
 
@@ -116,7 +128,7 @@ provenance. Colour is always paired with a text label or icon.
 | Franchise HQ | Lineup and roster · Contracts and cap · My moves | Act plans, what-if, dead cap, app-local lists |
 | Trade Floor | Trade desk · Offers history · Counterparties · Draft room | accept, reject, revoke, DOT state; draft timing inside the draft room |
 | League Pulse | Now · Race · Pools / Archive | live game view and Classic/Default matchup in Now; report drawer for every MFL read report |
-| Control Room | App · Data and sources · League (role-gated) | engine params gated to Admin |
+| Control Room | App · Data and sources · League | engine params gated to Admin; League is a GM read (commissioner pages are ring 4) |
 
 - **Outside the nodes:** the inspector, comms (feed, chat, board, articles, polls, hand-offs), the
   summoned calendar, the command bar, and the status strip in the workspace header.
@@ -443,3 +455,58 @@ This is the stand-alone app's plan. None of it is in ring 2. The full triage is
 | L-34 | The stand-alone data pipeline (s0–s5, Facts_Schema_Panel_2026-10.md) is not built; Control Room › Data and sources is not wired. |
 | C-06.4 | No acquisitions screen is built (the Go roster handlers in internal/transactions/acquisitions have no Franchise HQ surface); free-agent adds are checked only by the bid plan rules (C-06.7). |
 | M-163, M-175, M-177, M-178 (merged) | Their targets (M-037, M-176, M-183) are not built. M-162 and M-187 are merged into built places (Valuations and pool, M-039). |
+
+## 14. What ring 3 built
+
+Ring 3 was breadth and depth: every MFL read a GM uses gets a home, and the league's history becomes the
+app's own checked facts.
+
+- **League Pulse.** Now: my matchup, every matchup, results, recaps, the NFL schedule and box scores, and
+  the live game: MFL live scoring (M-001), the game view (X-01) and the fantasy play spine (X-02), with
+  finished games read once and held across restarts (`livegame_app.go`, `app/now/`). Race: standings, power,
+  seeding, tiebreaks, brackets, all-play, schedule and lineups. Pools / Archive: every season from 2013
+  read from the checked facts, one Pools report for the pool endpoints (`archive_app.go`, `Archive.tsx`).
+- **War Room.** Research: search, the Inspector's facts, depth, injuries and batched MFL news
+  (`research*.go`, `app/research/`). Valuations and pool: MFL projections, ranks, ADP and AAV
+  (M-046/047/067/069) and the **asset board** (C-01, `asset_board.go`, `app/assets/`): every rostered
+  player's points per game with his rank at his position, and his dynasty value and market price from the
+  Lab's value model, also on every player card, the roster table and the Inspector.
+- **Trade Floor.** The trade builder with propose, reject and withdraw hand-offs and the acquisition cost
+  (p3t); the Draft room's MFL draft reports (M-063–M-183) beside the Lab's Draft lab, the NFL draft
+  (M-087) and the app-local draft list (M-103).
+- **Franchise HQ.** Incoming contract and bid-plan cost by season (C-06.4); lineup and roster read as
+  loading, never failing, while MFL answers at launch.
+- **Home.** IR alerts in the alert tray (M-149), digests, and the shell rows: presets (S-05), market
+  filters kept per workspace (S-10), private watch, bait, note and draft lists (`app/personal/`).
+- **Comms.** The league feed, the message board and polls read with the MFL key, and the ProBoards
+  hand-off for the league's own board.
+- **Control Room.** Data and sources: archive import, the frozen input manifest, each source's health
+  and the checked facts with their nine checks (L-34, `data_sources_reading.go`). League: settings,
+  by-laws and accounting. App: MFL's site news as articles (M-141) and the presets.
+- **The facts and the Lab in Go.** `internal/facts` compiles the league archive into checked facts
+  (37 relations, nine checks, exceptions pinned by identity); every franchise-season matches MFL's own
+  standings pages (160 of 160, four known differences named). `internal/labcompile` compiles the Lab
+  from those facts, including the full value analysis: 508,219 values match the Python reference with no
+  difference. The app fits the value model after launch (`fitAssetModel`) and C-01 reads it.
+- **Player photos** from ESPN, then Sleeper, cached for personal use, with an on/off switch.
+
+## 15. Ring 3 review
+
+**What worked**
+- Sol built and Claude reviewed each phase with a planted mutant: in the Lab value analysis an age-band
+  edge moved by one year failed both the goldens and the full-archive comparison (1,291 trade
+  differences), and the clean code has none.
+- Proof against MFL itself, not only against our own reference: the fact exam reads MFL's standings pages.
+- The live look on Claude-OS before Christopher's click-through caught what tests did not: a player with
+  negative points per game failed the whole asset board, and card qualifiers overflowed their tiles.
+
+**Carried to ring 4**
+- The commissioner pages (M-093 email log, M-095 commissioner news): the app runs as a GM (R1).
+- Waivers (M-024, M-156, M-157): they run on ProBoards; native claim and order mechanics are open (§8).
+- Owner-only MFL communication pages (M-125–M-127): their addresses were never captured.
+- Acts the league does not run: pick'em and survivor selection (M-172, M-173, M-198); awards (M-081)
+  have no archived MFL report.
+- NFL team stats (M-050) need nflverse team box-score ingestion; draft preferences (M-108) and cache
+  tools (M-137) have no captured MFL address; the league switcher (S-14) waits for portfolio support.
+- The Lab screens still read the frozen Lab document; switching them to the runtime compile is ring 4.
+- Dead cap and form on the Inspector stay "not wired" until the engine has them.

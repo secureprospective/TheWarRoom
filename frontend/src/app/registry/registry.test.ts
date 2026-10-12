@@ -86,7 +86,7 @@ describe('Endpoint map', () => {
     }
     for (const node of nodeKeys) {
       for (const w of nodes[node].workspaces) {
-        const place = `${nodes[node].label} › ${w.label.replace(' (role-gated)', '')}`;
+        const place = `${nodes[node].label} › ${w.label}`;
         expect(placementRoute(place)).toEqual({ node, workspace: w.slug });
       }
     }
@@ -179,7 +179,7 @@ describe('Endpoint map', () => {
           commands.dispatch('nav.open', { node, workspace: w.slug } as Parameters<
             (typeof commands.registry)['nav.open']['run']
           >[0]);
-          const place = `${nodes[node].label} › ${w.label.replace(' (role-gated)', '')}`;
+          const place = `${nodes[node].label} › ${w.label}`;
           const html = await renderSettledApp();
           expect(html).toContain(`${place} endpoint index`);
           for (const row of endpointsAt(place as Placement)) expect(html).toContain(row.id);
