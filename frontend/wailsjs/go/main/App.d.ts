@@ -184,9 +184,11 @@ export function TargetResearch(arg1:main.RawResearchScope):Promise<main.Research
 
 export function TargetResearchNewsRefresh(arg1:string):Promise<void>;
 
-export function TargetResearchPlayer(arg1:string):Promise<main.ResearchPlayer>;
+export function TargetResearchPlayer(arg1:string):Promise<main.ResearchPlayerReading>;
 
 export function TargetResearchRefresh(arg1:boolean):Promise<void>;
+
+export function TargetResearchStatus():Promise<string>;
 
 export function TargetRosterReports(arg1:string):Promise<Array<main.Report>>;
 

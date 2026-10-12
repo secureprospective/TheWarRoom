@@ -65,19 +65,26 @@ export function ResearchView({ research, selected }: {
   </div>;
   return <section className={`research research-${s.depth}`} aria-label="Player research">
     <section data-endpoint="M-062" className="research-search" aria-label="Player search">
+      <form onSubmit={e => {
+        e.preventDefault();
+        void commands.dispatch('research.read', { action: 'search', value: search });
+      }}>
       <label>Find a player · name, position or NFL team
-        <input type="search" value={search} maxLength={100} placeholder="Name, position or NFL team"
+        <input className="search-input" type="search" value={search} maxLength={100}
+          placeholder="Name, position or NFL team"
           onChange={e => setSearch(e.target.value)} />
       </label>
-      <Act verb="research.read" args={{ action: 'search', value: search }}>Search players</Act>
-      <details><summary>{research.players.length} matches · open a player in the Inspector</summary>
+      <Act verb="research.read" args={{ action: 'search', value: search }} submit>Search players</Act>
+      </form>
+      {!s.search.trim() ? <p>Enter a name, position or NFL team to find a player.</p> : <>
+        <p>{research.players.length} matches · open a player in the Inspector</p>
         <ul>{research.players.map(p => <li key={p.id}>
           <Act verb="inspector.open"
             args={{ subject: { kind: 'player', id: p.id, franchiseId: p.franchiseId } }}>
-            {p.name} · {p.position} · {p.team}
+            {p.name} · {p.position} · {p.team} · {p.owner}
           </Act>
         </li>)}</ul>
-      </details>
+      </>}
     </section>
     <ReportsView board={research.board} selected={[shown.id]} refreshVerb="research.read"
       controls={controls} />
@@ -108,7 +115,7 @@ export default function Research({ newsOnly = false }: { newsOnly?: boolean }) {
   }, [mine, newsOnly, myNews]);
   return <>
     {state.pending && <p role="status">
-      {newsOnly ? 'Reading rostered player news…' : 'Reading research…'}
+      {newsOnly ? 'Reading rostered player news…' : state.status || 'Reading held research copies'}
     </p>}
     {state.error && <p role="alert">{state.error}</p>}
     {state.research && (newsOnly ? <NewsView research={state.research} />

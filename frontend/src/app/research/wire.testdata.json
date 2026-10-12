@@ -12,11 +12,11 @@
         "sortDescending": "Sort descending",
         "id": "M-038",
         "title": "My top performers",
-        "note": "",
+        "note": " Last finished week: Week 4.",
         "status": "ok",
-        "source": "Source: MFL playerScores · this league’s scoring",
+        "source": "Source: MFL fantasy points, this league’s scoring · weeks 1–5 as of Oct 11, 2026, 12:00 PM",
         "asOf": "As of: Oct 11, 2026, 12:00 PM",
-        "how": "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate playerScores week exports. A dash means a missing score, not zero. No points enter the scouting prior.",
+        "how": "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate weekly fantasy points. A dash means a missing score, not zero. No points enter the scouting prior.",
         "columns": [
           "Player",
           "Pos",
@@ -59,50 +59,7 @@
             "mine": true
           }
         ],
-        "summary": [
-          {
-            "cells": [
-              "Week 1 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Week 2 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Week 3 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Week 4 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Week 5 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Last week",
-              "Week 4"
-            ],
-            "range": null
-          }
-        ],
+        "summary": null,
         "link": null
       },
       {
@@ -110,11 +67,11 @@
         "sortDescending": "Sort descending",
         "id": "M-037",
         "title": "Player stats",
-        "note": "",
+        "note": " Last finished week: Week 4.",
         "status": "ok",
-        "source": "Source: MFL playerScores · this league’s scoring",
+        "source": "Source: MFL fantasy points, this league’s scoring · weeks 1–5 as of Oct 11, 2026, 12:00 PM",
         "asOf": "As of: Oct 11, 2026, 12:00 PM",
-        "how": "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate playerScores week exports. A dash means a missing score, not zero. No points enter the scouting prior.",
+        "how": "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate weekly fantasy points. A dash means a missing score, not zero. No points enter the scouting prior.",
         "columns": [
           "Player",
           "Pos",
@@ -211,50 +168,7 @@
             "mine": true
           }
         ],
-        "summary": [
-          {
-            "cells": [
-              "Week 1 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Week 2 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Week 3 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Week 4 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Week 5 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Last week",
-              "Week 4"
-            ],
-            "range": null
-          }
-        ],
+        "summary": null,
         "link": null
       },
       {
@@ -262,11 +176,11 @@
         "sortDescending": "Sort descending",
         "id": "M-040",
         "title": "Position leaders",
-        "note": "",
+        "note": " Last finished week: Week 4.",
         "status": "ok",
-        "source": "Source: MFL playerScores · this league’s scoring",
+        "source": "Source: MFL fantasy points, this league’s scoring · weeks 1–5 as of Oct 11, 2026, 12:00 PM",
         "asOf": "As of: Oct 11, 2026, 12:00 PM",
-        "how": "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate playerScores week exports. A dash means a missing score, not zero. No points enter the scouting prior.",
+        "how": "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate weekly fantasy points. A dash means a missing score, not zero. No points enter the scouting prior.",
         "columns": [
           "Player",
           "Pos",
@@ -362,50 +276,7 @@
             "range": null
           }
         ],
-        "summary": [
-          {
-            "cells": [
-              "Week 1 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Week 2 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Week 3 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Week 4 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Week 5 playerScores",
-              "As of Oct 11, 2026, 12:00 PM"
-            ],
-            "range": null
-          },
-          {
-            "cells": [
-              "Last week",
-              "Week 4"
-            ],
-            "range": null
-          }
-        ],
+        "summary": null,
         "link": null
       },
       {
@@ -522,7 +393,7 @@
       {
         "id": "M-048",
         "title": "NFL depth charts",
-        "note": " Crosswalk: 2333 displayed players unmatched.",
+        "note": " 2333 displayed depth slots have no held MFL identity link (not a roster status). Of those slots: 401 offensive line, 99 punter/holder/long snapper, 1833 other. These are NFL depth slots, including repeated formations, not missing fantasy roster players; names remain visible but roster ownership cannot be joined without an identity link.",
         "status": "ok",
         "source": "Source: nflverse depth charts · latest snapshot",
         "asOf": "As of: Oct 11, 2026, 12:00 PM",
@@ -535,7 +406,7 @@
         "rows": [
           {
             "cells": [
-              "Josh Sweat · crosswalk unmatched",
+              "Josh Sweat · MFL identity not linked",
               "LDE",
               "1"
             ],
@@ -544,7 +415,7 @@
           },
           {
             "cells": [
-              "Eku Leota · crosswalk unmatched",
+              "Eku Leota · MFL identity not linked",
               "LDE",
               "2"
             ],
@@ -553,7 +424,7 @@
           },
           {
             "cells": [
-              "Jordan Burch · crosswalk unmatched",
+              "Jordan Burch · MFL identity not linked",
               "LDE",
               "3"
             ],
@@ -577,7 +448,7 @@
         "title": "MFL-wide activity",
         "note": "",
         "status": "ok",
-        "source": "Source: MFL topAdds · MFL-wide, not this league",
+        "source": "Source: MFL most added players · MFL-wide, not this league",
         "asOf": "As of: Oct 11, 2026, 12:00 PM",
         "how": "The order and percentages are exactly MFL’s selected export. This is activity across MFL, not transactions in this league. Percentages are as MFL supplies them; no league-specific inference.",
         "columns": [
@@ -627,7 +498,7 @@
         "title": "Points allowed by position",
         "note": "",
         "status": "ok",
-        "source": "Source: MFL pointsAllowed · this league’s scoring",
+        "source": "Source: MFL points allowed · this league’s scoring",
         "asOf": "As of: Oct 11, 2026, 12:00 PM",
         "how": "MFL season fantasy points conceded under this league’s scoring. All bars share one scale within this report, from zero to the largest shown total. These are totals, not per-game averages.",
         "columns": [
@@ -690,7 +561,7 @@
         "title": "Points allowed per NFL team",
         "note": "",
         "status": "ok",
-        "source": "Source: MFL pointsAllowed · this league’s scoring",
+        "source": "Source: MFL points allowed · this league’s scoring",
         "asOf": "As of: Oct 11, 2026, 12:00 PM",
         "how": "MFL season fantasy points conceded under this league’s scoring. All bars share one scale within this report, from zero to the largest shown total. These are totals, not per-game averages.",
         "columns": [
@@ -750,7 +621,7 @@
         "title": "My players’ news",
         "note": "1 of 1 rostered profiles held today or from the last fetch. Published is MFL’s wording.",
         "status": "ok",
-        "source": "Source: MFL playerProfile · rostered players only",
+        "source": "Source: MFL player news · rostered players only",
         "asOf": "As of: Oct 11, 2026, 12:00 PM",
         "how": "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Published is MFL’s literal relative wording, not a reconstructed timestamp. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted.",
         "columns": [
@@ -781,7 +652,7 @@
     "title": "Rostered players’ news",
     "note": "1 of 2 rostered profiles held today or from the last fetch. Published is MFL’s wording.",
     "status": "stale",
-    "source": "Source: MFL playerProfile · rostered players only",
+    "source": "Source: MFL player news · rostered players only",
     "asOf": "As of: Oct 11, 2026, 12:00 PM",
     "how": "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Published is MFL’s literal relative wording, not a reconstructed timestamp. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted.",
     "columns": [
@@ -805,7 +676,7 @@
     "summary": [
       {
         "cells": [
-          "playerProfile · Allen, Josh",
+          "Player news · Allen, Josh",
           "Unavailable; refresh from sources"
         ],
         "range": null
@@ -827,7 +698,8 @@
       "name": "Gibbs, Jahmyr",
       "position": "RB",
       "team": "DET",
-      "franchiseId": "0001"
+      "franchiseId": "0001",
+      "owner": "Franchise 0001"
     }
   ],
   "teams": [

@@ -66,6 +66,7 @@ type ResearchPlayer struct {
 	Position    string `json:"position"`
 	Team        string `json:"team"`
 	FranchiseID string `json:"franchiseId"`
+	Owner       string `json:"owner"`
 }
 type ResearchArticle struct {
 	ID       string `json:"id"`
@@ -152,7 +153,18 @@ func (v researchView) player(id string) ResearchPlayer {
 			break
 		}
 	}
-	return ResearchPlayer{ID: id, Name: f.Name, Position: position, Team: researchTeam(f.Team), FranchiseID: owner}
+	label := "Free agent"
+	if owner != "" {
+		for _, f := range v.config.Franchises {
+			if f.ID == owner {
+				label = f.Name
+			}
+		}
+		if label == "Free agent" {
+			label = "Franchise " + owner
+		}
+	}
+	return ResearchPlayer{ID: id, Name: f.Name, Position: position, Team: researchTeam(f.Team), FranchiseID: owner, Owner: label}
 }
 func (v researchView) search() ([]ResearchPlayer, []string) {
 	players := []ResearchPlayer{}
@@ -163,7 +175,7 @@ func (v researchView) search() ([]ResearchPlayer, []string) {
 			teams[p.Team] = true
 		}
 		hay := strings.ToLower(p.Name + " " + p.Position + " " + p.Team)
-		if strings.Contains(hay, strings.ToLower(strings.TrimSpace(v.scope.Search))) {
+		if strings.TrimSpace(v.scope.Search) != "" && strings.Contains(hay, strings.ToLower(strings.TrimSpace(v.scope.Search))) {
 			players = append(players, p)
 		}
 	}
@@ -202,8 +214,8 @@ func (v researchView) inGroup(p ResearchPlayer) bool {
 func (v researchView) stats(id string, mine, group bool) Report {
 	title := map[string]string{"M-037": "Player stats", "M-038": "My top performers", "M-040": "Position leaders"}[id]
 	feed := v.feed("playerScores", "YTD")
-	r := reportShell(id, title, "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate playerScores week exports. A dash means a missing score, not zero. No points enter the scouting prior.", feed, v.zone, "Player", "Pos", "NFL", "Season", "Last week")
-	r.Source = "Source: MFL playerScores · this league’s scoring"
+	r := researchShell(id, title, "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate weekly fantasy points. A dash means a missing score, not zero. No points enter the scouting prior.", feed, v.zone, "Player", "Pos", "NFL", "Season", "Last week")
+	r.Source = "Source: MFL fantasy points, this league’s scoring"
 	weekly := v.weekScores(&r)
 	last := max(v.week-1, 0)
 	if mine && v.scope.Mine == "" {
@@ -230,7 +242,7 @@ func (v researchView) stats(id string, mine, group bool) Report {
 	researchTextSort(r.Rows, 3)
 	r.SortAscending = "Sort ascending"
 	r.SortDescending = "Sort descending"
-	r.Summary = append(r.Summary, ReportRow{Cells: []string{"Last week", researchLastLabel(last)}})
+	r.Note += " Last finished week: " + researchLastLabel(last) + "."
 	if missing > 0 {
 		r.Note += fmt.Sprintf(" Directory: %d scored players cannot be named.", missing)
 	}
@@ -249,7 +261,17 @@ func (v researchView) weekScores(r *Report) map[int]map[string]float64 {
 		for _, p := range researchRows(h) {
 			weekly[w][p.ID.String()] = p.Value
 		}
-		researchLoss(r, fmt.Sprintf("Week %d playerScores", w), h.fetchedAt, h.refreshError, v.zone)
+		base := v.feed("playerScores", "1")
+		if w == 1 {
+			r.Source += fmt.Sprintf(" · weeks 1–%d %s", v.week, researchHeldTime(h.fetchedAt, h.refreshError, v.zone))
+		}
+		text := researchHeldTime(h.fetchedAt, h.refreshError, v.zone)
+		if text != researchHeldTime(base.fetchedAt, base.refreshError, v.zone) {
+			r.Note += " Week " + strconv.Itoa(w) + " · " + text + "."
+		}
+		if (h.fetchedAt.IsZero() || h.refreshError != "") && r.Status == "ok" {
+			r.Status = "stale"
+		}
 	}
 	return weekly
 }
@@ -290,9 +312,12 @@ func researchEmpty(r *Report) {
 }
 func researchLoss(r *Report, label string, at time.Time, err string, zone *time.Location) {
 	text := "As of " + reportTime(at, zone)
-	if at.IsZero() {
+	switch {
+	case at.IsZero():
 		text = "Unavailable; refresh from sources"
-	} else if err != "" {
+	case strings.Contains(strings.ToLower(err), "archived copy"):
+		text += " · archived copy; refresh pending"
+	case err != "":
 		text += " · refresh failed; showing last held copy"
 	}
 	r.Summary = append(r.Summary, ReportRow{Cells: []string{label, text}})
@@ -302,8 +327,8 @@ func researchLoss(r *Report, label string, at time.Time, err string, zone *time.
 }
 func (v researchView) trends() Report {
 	feed := v.feed(v.scope.Trend, "")
-	r := reportShell("M-052", "MFL-wide activity", "The order and percentages are exactly MFL’s selected export. This is activity across MFL, not transactions in this league. Percentages are as MFL supplies them; no league-specific inference.", feed, v.zone, "Rank", "Player", "Pos", "NFL", "Percent")
-	r.Source = "Source: MFL " + v.scope.Trend + " · MFL-wide, not this league"
+	r := researchShell("M-052", "MFL-wide activity", "The order and percentages are exactly MFL’s selected export. This is activity across MFL, not transactions in this league. Percentages are as MFL supplies them; no league-specific inference.", feed, v.zone, "Rank", "Player", "Pos", "NFL", "Percent")
+	r.Source = "Source: MFL " + researchFeedLabel(v.scope.Trend) + " · MFL-wide, not this league"
 	for i, p := range researchRows(feed) {
 		name := v.player(p.ID.String())
 		r.Rows = append(r.Rows, ReportRow{Cells: []string{strconv.Itoa(i + 1), name.Name, name.Position, name.Team, fmt.Sprintf("%.2f%%", p.Value)}, Mine: v.mine[name.ID]})
@@ -316,8 +341,8 @@ func (v researchView) allowedReport(id string, position bool) Report {
 	if position {
 		title = "Points allowed by position"
 	}
-	r := reportShell(id, title, "MFL season fantasy points conceded under this league’s scoring. All bars share one scale within this report, from zero to the largest shown total. These are totals, not per-game averages.", feed, v.zone, "NFL team", "Position", "Points allowed")
-	r.Source = "Source: MFL pointsAllowed · this league’s scoring"
+	r := researchShell(id, title, "MFL season fantasy points conceded under this league’s scoring. All bars share one scale within this report, from zero to the largest shown total. These are totals, not per-game averages.", feed, v.zone, "NFL team", "Position", "Points allowed")
+	r.Source = "Source: MFL points allowed · this league’s scoring"
 	if len(feed.value) == 0 {
 		return r
 	}

@@ -366,6 +366,10 @@ export function TargetResearchRefresh(arg1) {
   return window['go']['main']['App']['TargetResearchRefresh'](arg1);
 }
 
+export function TargetResearchStatus() {
+  return window['go']['main']['App']['TargetResearchStatus']();
+}
+
 export function TargetRosterReports(arg1) {
   return window['go']['main']['App']['TargetRosterReports'](arg1);
 }
