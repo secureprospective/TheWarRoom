@@ -271,3 +271,11 @@ League Pulse › Now: `now_app.go` holds each opened week's NFL schedule, the se
 - `league_archive_app.go`, `data_sources_app.go`, `data_sources_reading.go`: settings, scoped refresh, manifest publishing and Go-written Control Room reports.
 - `internal/store/history/inputs.go`: archive locators, input manifests and append-only compile attempts (metadata, not fact tables).
 - `frontend/src/app/datasources`: lazy Control Room Data and sources, scope Acts, player crosswalk and engine parameter overrides.
+
+Trade Acts and acquisition costing: `trade_builder_app.go` validates the IPC boundary and persists
+local proposals in `internal/store/state/trade_plans.go` on whatif.db. `trade_projection.go` projects
+two pinned what-if rosters through the coordinator, retaining exact cents, and rechecks hand-offs.
+`internal/envelope/trade_acts.go` watches full asset sets; rejection/withdrawal disappearance stays
+ambiguous, never Landed. `acquisitions_app.go` prices held incoming contracts or saved bid terms
+and an optional unclaimed cut through the same coordinator. Lazy Trade desk and Contracts chunks
+host `shell/TradeBuilder.tsx` and `contracts/Acquisitions.tsx`; all controls use the command registry.

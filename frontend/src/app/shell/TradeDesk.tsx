@@ -11,6 +11,8 @@ import { TradePlan } from './TradePlan';
 import { tradeAssetLabel, tradeRailLabels } from './tradeLabels';
 import './lineup.css';
 import './trade.css';
+import TradeBuilder from './TradeBuilder';
+import { localDate } from '../clock/labels';
 
 const livePlan = new Set(['ready', 'handed_off', 'not_yet_done', 'not_verified', 'dot_review']);
 
@@ -26,9 +28,11 @@ function OfferCard({ offer, franchiseId }: { offer: TradeOffer; franchiseId: str
   const pending = commands.useMoves((s) => s.drafting[key]);
   const error = commands.useMoves((s) => s.draftErrors[key]);
   const receipt = commands.useMoves((s) => s.moves.find((r) =>
-    r.spec.franchiseId === franchiseId && r.spec.expected.trade?.tradeId === offer.tradeId));
+    r.spec.franchiseId === franchiseId && r.spec.intent === 'trade.accept' &&
+    r.spec.expected.trade?.tradeId === offer.tradeId));
+  const exits = commands.useMoves(s => s.moves);
   const knownExpiry = !offer.expires.startsWith('0001-');
-  return <Card gravity="G2" header={<h5>{offer.otherName || offer.otherId}</h5>}>
+  return <Card gravity="G3" header={<h5>{offer.otherName || offer.otherId}</h5>}>
     <div className="trade-assets">
       {(['give', 'get'] as const).map((side) => <div key={side}>
         <h6>{side === 'give' ? 'You give' : 'You get'}</h6>
@@ -36,7 +40,7 @@ function OfferCard({ offer, franchiseId }: { offer: TradeOffer; franchiseId: str
       </div>)}
     </div>
     <p>{knownExpiry && <time dateTime={offer.expires}>
-      {new Date(offer.expires).toLocaleString()}{' · '}
+      {localDate(offer.expires)}{' · '}
     </time>}{tradeExpiry(offer.expires)}</p>
     {offer.comments && <p className="trade-comments">{offer.comments}</p>}
     {offer.direction === 'to_you' && !(receipt && livePlan.has(receipt.state)) &&
@@ -45,7 +49,15 @@ function OfferCard({ offer, franchiseId }: { offer: TradeOffer; franchiseId: str
         disabled={Boolean(pending)} label={pending ? 'Planning accept…' : 'Plan accept'} />
       {error && <p role="alert">Trade plan · {error}</p>}
     </div>}
-    {receipt && offer.direction === 'to_you' && <TradePlan receipt={receipt} />}
+    <div className="plan-actions">
+      <Act verb="trade.builder" args={{ action: offer.direction === 'to_you' ? 'reject' : 'revoke',
+        mine: franchiseId, id: offer.tradeId }}
+        label={offer.direction === 'to_you' ? 'Plan rejection' : 'Plan withdrawal'} />
+    </div>
+    {receipt && <TradePlan receipt={receipt} />}
+    {exits.filter(r => r.spec.franchiseId === franchiseId &&
+      r.spec.expected.trade?.tradeId === offer.tradeId && r.spec.intent !== 'trade.accept')
+      .map(r => <TradePlan key={r.correlationId} receipt={r} />)}
   </Card>;
 }
 function FranchiseTrades({ franchiseId, snapshot }: { franchiseId: string; snapshot: Snapshot }) {
@@ -59,6 +71,7 @@ function FranchiseTrades({ franchiseId, snapshot }: { franchiseId: string; snaps
   const failed = freshness?.state === 'fail' || (freshness?.state === 'stale' && freshness.note);
   const reason = error || (failed && (freshness?.note || 'feed failed'));
   return <>
+    <TradeBuilder mine={franchiseId} />
     <PendingOffers reading={reading} reason={reason || undefined} franchiseId={franchiseId} />
     <SavedTradePlans franchiseId={franchiseId} snapshot={snapshot}
       visibleOffers={reason ? [] : reading?.offers.map((offer) => offer.tradeId) ?? []} />
@@ -89,6 +102,7 @@ function SavedTradePlans({ franchiseId, snapshot, visibleOffers }: {
   const moves = commands.useMoves((s) => s.moves);
   const seen = new Set(visibleOffers);
   const plans = moves.filter((receipt) => {
+    if (receipt.spec.intent === 'trade.propose') return false;
     const tradeId = receipt.spec.expected.trade?.tradeId;
     if (receipt.spec.franchiseId !== franchiseId || !tradeId || seen.has(tradeId)) return false;
     if (!receipt.audit.some((entry) => entry.to === 'handed_off')) return false;

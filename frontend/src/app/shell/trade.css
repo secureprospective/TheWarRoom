@@ -39,3 +39,17 @@
     grid-template-columns: 1fr;
   }
 }
+.trade-builder { margin-block: 0 2rem; }
+.trade-builder > label { display: grid; gap: 6px; margin-block: 12px; }
+.trade-builder :is(select, textarea) { width: 100%; max-width: 42rem; font: inherit; }
+.trade-builder fieldset { min-width: 0; padding: 10px; border: 1px solid var(--surface-line); }
+.trade-choices { max-height: 260px; overflow-y: auto; display: grid; gap: 6px; }
+.trade-choices label { display: flex; gap: 8px; align-items: baseline; }
+.trade-builder .bid-plan { margin-block: 16px; }
+.trade-builder .act { font-family: inherit; }
+.trade-builder .whatif-figures { table-layout: fixed; }
+/* The pre-flight stacks the two teams: side by side, their before/after money columns collide at 680 px. */
+.trade-teams { display: grid; gap: 1rem; }
+.trade-teams h6 { font: inherit; font-weight: 600; }
+.trade-builder textarea { background: var(--surface-0); color: inherit; border: 1px solid var(--surface-line);
+  padding: 6px 8px; min-height: 3.5rem; }

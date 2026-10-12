@@ -12,7 +12,7 @@ import (
 )
 
 func validateExpected(s Spec) error {
-	if s.Intent == "trade.accept" {
+	if IsTrade(s.Intent) {
 		return validateTradeExpected(s)
 	}
 	if s.Expected.Trade != nil {
