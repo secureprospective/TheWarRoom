@@ -24,6 +24,9 @@ type researchHeld struct {
 	linkVersion string
 	status      string
 	news        map[string]heldSeasonFeed[[]researchfeeds.News]
+	// archiveRead names the held copies already looked up in the archive this season, so a
+	// copy the archive does not hold is looked up once, not on every read while the refresh runs.
+	archiveRead map[string]bool
 }
 
 func researchKey(kind, week string) string { return kind + ":" + week }

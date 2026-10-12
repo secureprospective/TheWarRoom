@@ -62,6 +62,14 @@ func TestResearchColdOpenReadsArchiveBeforeFetch(t *testing.T) {
 		t.Fatal("profile URL without exact player accepted")
 	}
 	recordSeasonArchive(t, a, "playerProfile&P=16162", "", string(researchSample(t, "playerProfile.json")), at)
+	// An archive lookup that found nothing is not repeated on every read: the refresh fills it.
+	if _, err := a.TargetResearch(RawResearchScope{}); err != nil {
+		t.Fatal(err)
+	}
+	if len(a.research.news["16162"].value) != 0 || !a.research.archiveRead["news:16162"] {
+		t.Fatal("archive looked up again on a second read")
+	}
+	a.research.archiveRead = nil // the next launch looks again
 	if _, err := a.TargetResearch(RawResearchScope{}); err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +80,7 @@ func TestResearchColdOpenReadsArchiveBeforeFetch(t *testing.T) {
 	if _, err := a.league.Replace(a.ctx, in.mirror); err != nil {
 		t.Fatal(err)
 	}
-	a.research.news = nil
+	a.research.news, a.research.archiveRead = nil, nil
 	player, err := a.TargetResearchPlayer("16162")
 	if err != nil || player.Owner != "Free agent" || len(player.Articles) != 1 {
 		t.Fatal("free agent’s archived news was not served", player.Owner, err)
@@ -281,5 +289,15 @@ func TestResearchStatusWhileWaitingForLaunchRefresh(t *testing.T) {
 	}
 	if a.TargetResearchStatus() != "" {
 		t.Fatal("status retained after failure")
+	}
+}
+
+func TestResearchWeekRunsNameEachDifferingRunOnce(t *testing.T) {
+	got := weekRuns([]string{"", "as of A · Archived copy", "as of A · Archived copy", "as of A · Archived copy", "as of B"})
+	if got != " Weeks 2–4 · as of A · Archived copy. Week 5 · as of B." {
+		t.Fatal(got)
+	}
+	if weekRuns([]string{"", ""}) != "" {
+		t.Fatal("matching weeks named")
 	}
 }

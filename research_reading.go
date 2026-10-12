@@ -254,6 +254,7 @@ func (v researchView) stats(id string, mine, group bool) Report {
 }
 func (v researchView) weekScores(r *Report) map[int]map[string]float64 {
 	weekly := map[int]map[string]float64{}
+	var differ []string // per week: its held time when it differs from week 1's, else ""
 	for w := 1; w <= v.week; w++ {
 		r.Columns = append(r.Columns, fmt.Sprintf("W%d", w))
 		h := v.feed("playerScores", strconv.Itoa(w))
@@ -267,14 +268,40 @@ func (v researchView) weekScores(r *Report) map[int]map[string]float64 {
 			r.AsOf = ""
 		}
 		text := researchHeldTime(h.fetchedAt, h.refreshError, v.zone)
-		if text != researchHeldTime(base.fetchedAt, base.refreshError, v.zone) {
-			r.Note += " Week " + strconv.Itoa(w) + " · " + text + "."
+		if text == researchHeldTime(base.fetchedAt, base.refreshError, v.zone) {
+			text = ""
 		}
+		differ = append(differ, text)
 		if (h.fetchedAt.IsZero() || h.refreshError != "") && r.Status == "ok" {
 			r.Status = "stale"
 		}
 	}
+	if strings.Contains(r.Source, "Archived copy") { // the source line already says so
+		r.Note = strings.Replace(r.Note, "Archived copy held; refresh pending.", "", 1)
+	}
+	r.Note += weekRuns(differ)
 	return weekly
+}
+
+// weekRuns names each run of consecutive weeks whose held time differs from week 1's, once:
+// "Weeks 2–5 · as of … ." rather than one repeated line per week.
+func weekRuns(differ []string) string {
+	out := ""
+	for i := 0; i < len(differ); {
+		j := i
+		for j+1 < len(differ) && differ[j+1] == differ[i] {
+			j++
+		}
+		switch {
+		case differ[i] == "":
+		case i == j:
+			out += fmt.Sprintf(" Week %d · %s.", i+1, differ[i])
+		default:
+			out += fmt.Sprintf(" Weeks %d–%d · %s.", i+1, j+1, differ[i])
+		}
+		i = j + 1
+	}
+	return out
 }
 func scoreCell(scores map[string]float64, id string) (string, float64) {
 	if n, ok := scores[id]; ok {

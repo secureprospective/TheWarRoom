@@ -72,11 +72,11 @@ func (a *App) hydrateResearch(extraIDs ...string) {
 	for w := 1; w <= a.marketWeek(); w++ {
 		a.hydrateResearchFeed(ctx, feeds, "playerScores", strconv.Itoa(w))
 	}
-	if depth.fetchedAt.IsZero() {
+	if depth.fetchedAt.IsZero() && a.firstArchiveRead("depth") {
 		rows, fresh, err := readResearchDepthArchive(ctx, a.season, a.history.ArchivedBodies, fmt.Errorf("archived copy; refresh pending"))
 		holdSeasonFeed(&depth, rows, fresh, err)
 	}
-	if injury.fetchedAt.IsZero() {
+	if injury.fetchedAt.IsZero() && a.firstArchiveRead("injuries") {
 		injury = archivedOnly(ctx, a, "injuries", true, func(body []byte) ([]leaguefeed.Injury, error) {
 			return injuries.ParseToInjuries(ctx, body)
 		})
@@ -87,7 +87,7 @@ func (a *App) hydrateResearch(extraIDs ...string) {
 	mirror, _, _ := a.league.ContractsView()
 	missing := []string{}
 	for _, id := range append(researchRosterIDs(mirror, ""), extraIDs...) {
-		if news[id].fetchedAt.IsZero() {
+		if news[id].fetchedAt.IsZero() && a.firstArchiveRead("news:"+id) {
 			missing = append(missing, id)
 		}
 	}
@@ -98,9 +98,22 @@ func (a *App) hydrateResearch(extraIDs ...string) {
 	a.mergeResearchArchive(ctx, feeds, depth, injury, cached)
 }
 
+// firstArchiveRead reports whether key has not been looked up in the archive yet, and marks it.
+func (a *App) firstArchiveRead(key string) bool {
+	a.seasonMu.Lock()
+	defer a.seasonMu.Unlock()
+	if a.research.archiveRead[key] {
+		return false
+	}
+	if a.research.archiveRead == nil {
+		a.research.archiveRead = map[string]bool{}
+	}
+	a.research.archiveRead[key] = true
+	return true
+}
 func (a *App) hydrateResearchFeed(ctx context.Context, feeds map[string]heldSeasonFeed[[]researchfeeds.Feed], kind, week string) {
 	key := researchKey(kind, week)
-	if feeds[key].fetchedAt.IsZero() {
+	if feeds[key].fetchedAt.IsZero() && a.firstArchiveRead("feed:"+key) {
 		feeds[key] = a.archivedResearchFeed(ctx, kind, week)
 	}
 }
