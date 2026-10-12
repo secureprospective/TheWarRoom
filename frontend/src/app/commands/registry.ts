@@ -442,6 +442,14 @@ export function createCommands(
           .catch(cause => state.write({ notice: String(cause) }));
       },
     }),
+    'game.follow': command({
+      ...ambient, id: 'game.follow', label: 'Follow NFL game', args: ['id'],
+      run: ({ id }: { id: string }) => {
+        state.navigate({ node: 'pulse', workspace: 'now' });
+        void import('../now/liveState').then(m => m.liveState.follow(id))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     'now.reports': command({
       ...ambient, id: 'now.reports', label: 'This week in the league', aliases: [], args: ['action', 'value'],
       run: (args: { action: 'refresh' | 'week'; value: string }) => {

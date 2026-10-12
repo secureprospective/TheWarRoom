@@ -53,7 +53,7 @@ func buildNow(in nowInput) (NowBoard, error) {
 		Board: ReportBoard{Title: "This week's reports", Loading: "Reading the week…",
 			Refresh: "Refresh from MFL", HowLabel: "How this is counted", Reports: []Report{}}}
 	board.Board.Reports = append(board.Board.Reports, v.matchups(), v.results(), v.weekSummary(), v.recaps(),
-		v.topByPosition(), v.boxScore(), v.lastThree(), v.previews(), v.nflWeek(), v.nflBoxScore(), v.statChanges())
+		v.topByPosition(), v.boxScore(), v.lastThree(), v.previews(), v.nflWeek(), v.nflBoxScore(), v.statChanges(), v.liveScoring())
 	return board, nil
 }
 
@@ -452,4 +452,25 @@ func (v nowView) formCell(w leaguefeed.WeekResult, id string, points *leaguefeed
 		}
 	}
 	return "—"
+}
+
+func (v nowView) liveScoring() Report {
+	r := v.shownReport("M-001", "Live fantasy scoring", "MFL liveScoring, refreshed every 30 seconds while Now is open and a held NFL game has kicked off but is not final. Errors back off and keep the held scores. My matchup reads first.", "Matchup", "Franchise", "Points")
+	if !v.live {
+		r.Note += " Off-game view: held weekly scores; no live poll."
+	}
+	for _, g := range v.mineFirst(v.shown.Games) {
+		sides := []leaguefeed.Side{g.Away, g.Home}
+		if g.Home.Franchise == v.in.mine {
+			sides[0], sides[1] = sides[1], sides[0]
+		}
+		for _, side := range sides {
+			r.Rows = append(r.Rows, ReportRow{Cells: []string{v.gameState(g), v.name(side.Franchise), v.pointsText(side, side.Points)}, Mine: side.Franchise == v.in.mine})
+		}
+	}
+	if v.live && v.now.live.refreshError != "" {
+		r.Status = "stale"
+		r.Note += " " + v.now.live.refreshError
+	}
+	return r
 }

@@ -130,6 +130,8 @@ export function TargetLeagueSettings():Promise<main.Report>;
 
 export function TargetLineup(arg1:string):Promise<main.LineupReading>;
 
+export function TargetLiveGame(arg1:boolean,arg2:string,arg3:string):Promise<main.LiveGameView>;
+
 export function TargetMarket(arg1:main.RawMarketScope):Promise<main.Reading_github_com_secureprospective_TheWarRoom_internal_lab_Market_>;
 
 export function TargetMarketLists(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;

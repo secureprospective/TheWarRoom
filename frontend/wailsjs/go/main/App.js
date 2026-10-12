@@ -250,6 +250,10 @@ export function TargetLineup(arg1) {
   return window['go']['main']['App']['TargetLineup'](arg1);
 }
 
+export function TargetLiveGame(arg1, arg2, arg3) {
+  return window['go']['main']['App']['TargetLiveGame'](arg1, arg2, arg3);
+}
+
 export function TargetMarket(arg1) {
   return window['go']['main']['App']['TargetMarket'](arg1);
 }

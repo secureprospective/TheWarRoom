@@ -113,6 +113,8 @@ type App struct {
 	research            researchHeld
 	race                raceHeld
 	now                 nowHeld
+	liveGameMu          sync.Mutex
+	liveGame            liveGameHeld
 	lineupsWeek         int
 	seasonChanged       func(context.Context)
 	seasonPause         func(context.Context, time.Duration) error

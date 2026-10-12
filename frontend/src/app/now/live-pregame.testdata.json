@@ -1,0 +1,72 @@
+{
+  "games": [
+    {
+      "id": "401872994",
+      "kickoff": "2026-10-13T00:15:00Z",
+      "home": {
+        "id": "14",
+        "abbreviation": "LAR",
+        "score": 0
+      },
+      "away": {
+        "id": "2",
+        "abbreviation": "BUF",
+        "score": 0
+      },
+      "status": "pre",
+      "clock": "",
+      "period": 0,
+      "state": null,
+      "last": null,
+      "box": [],
+      "plays": []
+    }
+  ],
+  "followed": {
+    "id": "401872994",
+    "kickoff": "2026-10-13T00:15:00Z",
+    "home": {
+      "id": "14",
+      "abbreviation": "LAR",
+      "score": 0
+    },
+    "away": {
+      "id": "2",
+      "abbreviation": "BUF",
+      "score": 0
+    },
+    "status": "pre",
+    "clock": "",
+    "period": 0,
+    "state": null,
+    "last": null,
+    "box": [],
+    "plays": []
+  },
+  "source": "ESPN · play feeds and headshots: personal use only",
+  "asOf": "Oct 11, 2026, 7:00 PM",
+  "failure": "",
+  "detailAsOf": "Oct 11, 2026, 7:00 PM",
+  "detailFailure": "",
+  "spine": [],
+  "unmatched": 0,
+  "box": {
+    "id": "X-01",
+    "title": "NFL box score",
+    "note": "Not started; no game box score yet.",
+    "status": "empty",
+    "source": "Source: ESPN game details · play feeds and headshots: personal use only",
+    "asOf": "Oct 11, 2026, 7:00 PM",
+    "how": "Passing, rushing, receiving and defense by team, as ESPN supplies them. Yahoo supplies scores and last play only. Held details keep their own time.",
+    "columns": [
+      "Team",
+      "Category",
+      "Player",
+      "Statistics"
+    ],
+    "rows": [],
+    "summary": [],
+    "link": null
+  },
+  "active": false
+}

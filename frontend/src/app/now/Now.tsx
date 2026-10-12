@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
+const LiveGame = lazy(() => import('./LiveGame'));
 import { commands } from '../commands/registry';
 import { ReportsView } from '../draftreports/Reports';
 import { ReportView } from '../reports/ReportView';
@@ -18,6 +19,7 @@ export function NowView({ now, selected }: { now: NowBoard; selected: readonly s
     <div className="draft-reports race-standings">
       <ReportView report={now.matchup} howLabel={now.board.howLabel} heading="h4" />
     </div>
+    <Suspense fallback={<p role="status">Reading held games…</p>}><LiveGame /></Suspense>
     <ReportsView board={now.board} selected={selected} refreshVerb="now.reports" />
   </>;
 }

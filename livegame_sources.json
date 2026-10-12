@@ -1,0 +1,1 @@
+{"espn":"https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard","summary":"https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event={id}","plays":"https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/{id}/competitions/{id}/plays?limit=1000","yahoo":"https://api-secure.sports.yahoo.com/v1/editorial/s/scoreboard?leagues=nfl"}
