@@ -227,6 +227,26 @@ linters:
             - time$
             - time/tzdata
             - unicode/utf16
+        labcompile-is-pure:
+          list-mode: strict
+          files:
+            - "**/internal/labcompile/**"
+            - "!$test"
+          allow:
+            - context
+            - embed
+            - encoding/json
+            - fmt
+            - hash/crc32
+            - math$
+            - math/big
+            - regexp
+            - slices
+            - strconv
+            - strings
+            - time$
+            - github.com/secureprospective/TheWarRoom/internal/facts
+            - github.com/secureprospective/TheWarRoom/internal/lab
         archive-is-a-leaf:
           list-mode: strict
           files:
