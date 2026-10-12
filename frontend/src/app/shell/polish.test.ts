@@ -6,14 +6,14 @@ import fixture from '../data/fixtures/snapshot.json';
 import { parseSnapshot } from '../data/parse';
 import { createCommands } from '../commands/registry';
 import { searchCandidates } from '../commands/search';
-import { matrixColumns, matrixCells } from '../cards/matrix';
+import { assetColumn, matrixColumns, matrixCells } from '../cards/matrix';
 import { playerCardModel, inheritedProvenance } from '../cards/playerModel';
 import { franchiseRoster } from './roster';
 
 const snapshot = parseSnapshot(fixture);
 const roster = snapshot.rosters.value[0];
 
-it('aligns all nine matrix columns, showing unwired numbers as em dashes only', () => {
+it('aligns all nine matrix columns, the two value columns drawn from the asset board', () => {
   expect(matrixColumns.map((column) => column.label)).toEqual([
     'Pos', 'Player', 'Team', 'Age', 'On-field-now', 'Dynasty value', 'Salary', 'Years', 'Status',
   ]);
@@ -21,8 +21,7 @@ it('aligns all nine matrix columns, showing unwired numbers as em dashes only', 
   const cells = matrixCells(model);
   expect(cells).toHaveLength(matrixColumns.length);
   expect(cells.slice(4, 6)).toEqual(['—', '—']);
-  expect(matrixColumns.filter((column) => 'note' in column).map((column) => column.key))
-    .toEqual(['now', 'dynasty']);
+  expect(matrixColumns.map((_, index) => assetColumn(index)).filter(Boolean)).toEqual(['now', 'dynasty']);
   expect(cells[1]).toBe(model.name);
   expect(cells[6]).toBe(model.salary);
   expect(cells[8]).toBe(model.contractStatus);

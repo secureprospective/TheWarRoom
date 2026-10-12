@@ -48,7 +48,7 @@ export type PlayerCardModel = {
   position?: Position;
   team?: string;
   age?: number;
-  numbers: readonly { label: string; state: 'not wired' }[];
+  numbers: readonly { label: string; key: 'now' | 'dynasty' }[];
   status: LabelledSignal[];
   contractStatus: string;
   rosterNote?: string;
@@ -85,8 +85,8 @@ export function playerCardModel(
     team: player?.team,
     age: ageAt(player?.birthdate, asOf),
     numbers: [
-      { label: 'On-field-now', state: 'not wired' },
-      { label: 'Dynasty value', state: 'not wired' },
+      { label: 'On-field-now', key: 'now' },
+      { label: 'Dynasty value', key: 'dynasty' },
     ],
     status,
     contractStatus: contract?.contractStatus ?? 'Unavailable',

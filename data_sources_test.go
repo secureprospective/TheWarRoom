@@ -501,3 +501,25 @@ func TestSourceStandingAlarmsOnlyForTheBoard(t *testing.T) {
 		t.Errorf("a once-read source that is lost still alarms: %s", state)
 	}
 }
+
+func TestCheckDifferencesSharingAnExplanationAreListedOnce(t *testing.T) {
+	why := "MFL counted playoff games in the 2013 standings."
+	c := facts.CheckResult{Name: "Win-loss records match MFL standings", Items: []facts.CheckItem{
+		{Words: "2013 Buffalo Bills: standings 11-3-0, games 11-2-0", Reason: why, Class: facts.ClassExplained},
+		{Words: "2014 Houston Texans: standings 9-4-0, games 9-3-0", Class: facts.ClassReview,
+			Reason: "No game accounts for the difference."},
+		{Words: "2013 Miami Dolphins: standings 8-6-0, games 8-5-0", Reason: why, Class: facts.ClassExplained},
+	}}
+	rows := checkItemRows(c)
+	if len(rows) != 2 {
+		t.Fatalf("rows = %d, want one per explanation: %+v", len(rows), rows)
+	}
+	if got := rows[0].Cells[0]; got != "2 differences\n2013 Buffalo Bills: standings 11-3-0, games 11-2-0\n"+
+		"2013 Miami Dolphins: standings 8-6-0, games 8-5-0" || rows[0].Cells[1] != why || rows[0].Cells[2] != "Explained" {
+		t.Fatal(rows[0].Cells)
+	}
+	if rows[1].Cells[0] != "2014 Houston Texans: standings 9-4-0, games 9-3-0" || rows[1].Cells[2] != "For review" ||
+		rows[1].Group != c.Name {
+		t.Fatal(rows[1])
+	}
+}

@@ -1,6 +1,7 @@
 import { WatchButton } from '../personal/WatchButton';
 import { Act } from '../commands/Act';
-import { matrixColumns, matrixCells } from '../cards/matrix';
+import { assetColumn, matrixColumns, matrixCells } from '../cards/matrix';
+import { AssetNumber } from '../assets/AssetNumber';
 import type { PlayerCardModel } from '../cards/playerModel';
 import { SignalChip } from '../look/Slots';
 import type { PlayerSubject } from './state';
@@ -21,7 +22,7 @@ export function MatrixRoster({ cards, franchiseId, selected }: {
         <tr>
           {matrixColumns.map((column) => (
             <th key={column.key} scope="col">
-              {column.label}{'note' in column && <small>{column.note}</small>}
+              {column.label}
             </th>
           ))}
         </tr>
@@ -43,7 +44,8 @@ export function MatrixRoster({ cards, franchiseId, selected }: {
                     <WatchButton id={model.id} name={model.name} mine={franchiseId} />
                     {provenance === 'own' && <SignalChip {...model.provenance} />}
                   </div>
-                ) : value}
+                ) : assetColumn(index)
+                  ? <AssetNumber playerId={model.id} which={assetColumn(index)!} inline /> : value}
               </td>
             ))}
           </tr>

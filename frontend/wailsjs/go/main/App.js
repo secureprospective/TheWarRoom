@@ -130,6 +130,10 @@ export function TargetArchive(arg1, arg2, arg3) {
   return window['go']['main']['App']['TargetArchive'](arg1, arg2, arg3);
 }
 
+export function TargetAssetBoard() {
+  return window['go']['main']['App']['TargetAssetBoard']();
+}
+
 export function TargetAssetProfile(arg1) {
   return window['go']['main']['App']['TargetAssetProfile'](arg1);
 }

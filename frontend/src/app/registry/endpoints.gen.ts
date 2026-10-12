@@ -4287,7 +4287,7 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     verb: "endpoint.open id=C-01",
     disposition: "kept",
     ring: 3,
-    status: "spec",
+    status: "built",
     disposition_note: "kept — War Room (league-wide); mine-scoped view in Franchise HQ",
     merged_into: Object.freeze([] as const),
     merged_place: "",

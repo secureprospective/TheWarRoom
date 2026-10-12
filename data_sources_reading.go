@@ -440,9 +440,7 @@ func checksReport(in factsInput) Report {
 		row(c.Name, checkProves(c.Detail), checkResultText(c))
 	}
 	for _, c := range in.results {
-		for _, it := range c.Items {
-			r.Rows = append(r.Rows, ReportRow{Group: c.Name, Cells: []string{it.Words, itemReason(it), itemClass(it.Class)}})
-		}
+		r.Rows = append(r.Rows, checkItemRows(c)...)
 	}
 	if failed > 0 {
 		r.Status, r.Note = "failed", fmt.Sprintf("%d of %d checks found a difference no one has explained; the facts are "+
@@ -465,6 +463,30 @@ func checkResultText(c facts.CheckResult) string {
 	}
 	return fmt.Sprintf("%s: %s compared, %s agree, %s explained, %s for review", verdict, thousands(c.Checked),
 		thousands(c.Agreed), thousands(c.Explained), thousands(c.Review))
+}
+
+// checkItemRows lists a check's differences, one row per explanation: differences that share a
+// reason and a standing are listed together under it, not repeated once per team.
+func checkItemRows(c facts.CheckResult) []ReportRow {
+	type key struct{ reason, class string }
+	var order []key
+	words := map[key][]string{}
+	for _, it := range c.Items {
+		k := key{itemReason(it), itemClass(it.Class)}
+		if _, seen := words[k]; !seen {
+			order = append(order, k)
+		}
+		words[k] = append(words[k], it.Words)
+	}
+	rows := make([]ReportRow, 0, len(order))
+	for _, k := range order {
+		listed := words[k][0]
+		if n := len(words[k]); n > 1 {
+			listed = countText(n, "difference") + "\n" + strings.Join(words[k], "\n")
+		}
+		rows = append(rows, ReportRow{Group: c.Name, Cells: []string{listed, k.reason, k.class}})
+	}
+	return rows
 }
 
 func itemReason(it facts.CheckItem) string {

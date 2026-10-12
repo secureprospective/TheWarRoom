@@ -2,8 +2,9 @@ import type { Snapshot } from '../data/contract';
 import type { Gravity } from '../look/channels';
 import { Glyph } from '../look/Glyph';
 import { SignalChip } from '../look/Slots';
+import { AssetNumber } from '../assets/AssetNumber';
 import { Card } from './Card';
-import { matrixColumns, matrixCells } from './matrix';
+import { assetColumn, matrixColumns, matrixCells } from './matrix';
 import { playerCardModel, type PlayerCardModel } from './playerModel';
 import { PlayerPhoto, usePhoto } from './PlayerPhoto';
 
@@ -33,7 +34,8 @@ export function PlayerCard({
       <div className="player-matrix">
         {matrixCells(model).map((value, index) => (
           <span key={matrixColumns[index].key} title={value}>
-            {value}
+            {assetColumn(index)
+              ? <AssetNumber playerId={model.id} which={assetColumn(index)!} inline /> : value}
             {index === 1 && provenance === 'own' && <SignalChip {...model.provenance} />}
           </span>
         ))}
@@ -66,7 +68,7 @@ export function PlayerCard({
             {model.numbers.map((number) => (
               <div key={number.label}>
                 <small>{number.label}</small>
-                <b>{number.state}</b>
+                <b><AssetNumber playerId={model.id} which={number.key} /></b>
               </div>
             ))}
           </div>

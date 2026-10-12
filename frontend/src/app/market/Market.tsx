@@ -11,6 +11,9 @@ const Counterparties = lazy(() => import('../counterparties/Counterparties'));
 const OffersHistory = lazy(() => import('../offers/Offers'));
 const Draft = lazy(() => import('./Draft'));
 const Pool = lazy(() => import('../pool/Pool'));
+const AssetBoardView = lazy(() =>
+  import('../assets/AssetBoardView').then((m) => ({ default: m.AssetBoardView })),
+);
 const PoolInspector = lazy(() =>
   import('../pool/Pool').then((m) => ({ default: m.PoolInspector })),
 );
@@ -29,6 +32,7 @@ export default function Market({ kind, snapshot }: { kind?: string; snapshot?: S
   if (!kind && s.workspace[s.node] === 'valuations-and-pool')
     return (
       <Suspense fallback={<p role="status">Opening the free-agent pool…</p>}>
+        {snapshot && <AssetBoardView snapshot={snapshot} />}
         <Pool snapshot={snapshot} />
       </Suspense>
     );

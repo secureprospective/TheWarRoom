@@ -1,10 +1,11 @@
-import { lazy, Suspense } from 'react';
+import { Fragment, lazy, Suspense } from 'react';
 import { PlayerActMount } from './MovesMount';
 import type { Snapshot } from '../data/contract';
 import { PlayerCard } from '../cards/PlayerCard';
 import { playerCardModel } from '../cards/playerModel';
 import type { PlayerSubject } from './state';
 import { commands } from '../commands/registry';
+import { AssetNumber } from '../assets/AssetNumber';
 
 const PlayerLists = lazy(() => import('../personal/PersonalLists').then(m => ({ default: m.PlayerLists })));
 const ResearchInspector = lazy(() => import('../research/PlayerInspector'));
@@ -56,7 +57,14 @@ export function PlayerInspector({
           <dt>Salary</dt>
           <dd>{model.salary}</dd>
         </dl>
-        {['On-field-now', 'Dynasty value', 'Dead cap', 'Form', 'Market'].map((label) => (
+        <dl className="kv asset-values">
+          {([['On-field-now', 'now'], ['Dynasty value', 'dynasty'], ['Market', 'market']] as const)
+            .map(([label, which]) => <Fragment key={label}>
+              <dt>{label}</dt>
+              <dd><AssetNumber playerId={subject.id} which={which} /></dd>
+            </Fragment>)}
+        </dl>
+        {['Dead cap', 'Form'].map((label) => (
           <p key={label} className="not-wired">
             {label} · not wired
           </p>

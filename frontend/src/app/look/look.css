@@ -148,3 +148,8 @@
   font: inherit;
 }
 .twr-app .search-input:focus-visible { outline: 2px solid var(--surface-tx1); outline-offset: 2px; }
+/* C-01 values: a held value reads as data; a missing one keeps the quiet "not available" tone. */
+.twr-app .asset-value { color: var(--surface-tx1); }
+.twr-app .asset-value.asset-missing { color: var(--surface-tx3); }
+.twr-app .asset-sub { display: block; font-weight: 400; font-size: 11px; color: var(--surface-tx3);
+  white-space: normal; overflow-wrap: anywhere; }

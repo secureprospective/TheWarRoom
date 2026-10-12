@@ -73,6 +73,8 @@ type App struct {
 	// headshots caches player photos in the data directory. Its client bypasses fetches on purpose:
 	// photos are images, not facts, and never enter history.db (spec §7).
 	headshots atomic.Pointer[headshot.Service]
+	// assetModel is the Lab's value model for C-01, set once the Lab compiles from the facts.
+	assetModel atomic.Pointer[assetModel]
 	// factsMu lets one checked-facts compile run at a time.
 	factsMu      sync.Mutex
 	archiveCache archiveCache
