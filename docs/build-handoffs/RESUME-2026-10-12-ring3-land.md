@@ -1,54 +1,71 @@
-# Ring 3 RESUME — 2026-10-12 17:40 CT (ring 3 MERGED; next: land rings 0–3 live)
+# Ring 3 landing RESUME — 2026-10-12 18:22 CT (land-c03 committed; walk ~half done)
 
 ## What we are doing
-Ring 3 merged to main: PR #18 squash 5a1c329 (Christopher OK 17:3x, "looks great, push and merge").
-Christopher's next instruction (17:40): "when we come back from compaction we need to address all of the loose
-ends like C-03 Home seasonal card, and the rest of them from ring 0 to ring 3".
-Tonight still: demo to league mates at MNF BUF @ LAR 7:15 PM CT on Claude-OS build ring3-demo (= merged code).
-~18:45 hand Christopher numbered demo steps; 19:15 watch live polling (strip, followed bar, field, spine, MFL
-live scores). Do NOT redeploy Claude-OS between 18:30 and the end of the game unless something is broken.
+Landing rings 0–3 live: walk every built endpoint row on Claude-OS, fix what is wrong, mark `landed`.
+Worktree `~/work/TheWarRoom/.worktrees/ring-3-land`, branch `session/ring-3-land` (from main 5a1c329), NOT pushed.
+Commits: c702d43 (resume), 93d3775 (leagueclock window rules, mine), 1dbe69c (land-c03, Sol + my review fixes).
 
-## What "loose ends" means (evidence, 17:40)
-- Every endpoint card in the app's Endpoint index says "built, not yet landed live"
-  (frontend/src/app/registry/EndpointIndex.tsx:13). Registry status `landed` = proved live on Claude-OS;
-  only ONE row is landed (M-027 Submit Lineup). The spec never defines `landed` — define it in the spec.
-- Rows to land, rings 0–3 (status built): ring 0: 5 (incl. C-03 Home seasonal card), ring 1: 6, ring 2: 50,
-  ring 3: 122 → 183 rows. Query:
-  python3 csv over docs/ui/endpoint-registry.csv where ring in 0–3 and status == built.
-- Merged rows with lazy ring_note "with target" (M-145, M-146, M-147, M-150, M-152, M-158, M-160, M-162,
-  M-163, M-165, M-166, M-168, M-171, M-175, M-177, M-178, M-180, M-181, M-187, M-188, M-190): write the real
-  merged_into/merged_place reason each.
-- M-027 ring_note is a bare "1".
+## Christopher's rulings this window (do not relitigate)
+- League dates: "use the base dates in the rules, but those must be able to be edited by the commissioner at will" → built.
+- "dont let the game coming up slow us down … Lets keep moving as a normal build process. When something is fixed and
+  tested we merge it." → deploy/merge after gates + live check without waiting on the game; per-unit PRs are fine.
+- "engine points are important. Lab points still needs a face lift, its not as accurrat as engine points right now.
+  Do not cut engine points, only improve the accurracy if you touch them." (memory saved:
+  warroom-engine-points-outrank-lab-points). Never replace engine values with Lab values.
+- Demo tonight still exists (MNF BUF @ LAR 7:15 PM CT on Claude-OS): live-game rows (X-01..X-03, M-001, M-016, M-072)
+  land by watching them during the game.
 
-## Plan for the next window (NEXT ACTIONS, in order)
-1. After the demo (or before 18:30 only for read-only prep): branch from main, e.g.
-   `git -C ~/work/TheWarRoom worktree add .worktrees/ring-3-land -b session/ring-3-land origin/main`
-   (never work on main; never touch the main checkout ~/work/TheWarRoom except via git worktree commands).
-2. Define `landed` in spec §6/§14: "seen working on Claude-OS against the live snapshot, with its data, its
-   empty state and its Act (if any); screenshot in the run dir".
-3. Walk every built row node by node on Claude-OS (Home first: C-03 seasonal card), screenshot each to
-   RUN/shots/land-<id>.png, fix what is wrong (gate → deploy → recheck), then set status `landed` with a
-   ring_note naming the proof. Batch by workspace. Regenerate endpoints.gen.ts (node scripts/gen-endpoints.mjs);
-   check the bundle cap 321,818 B (status words ship in the bundle — 'landed' already exists, so no growth).
-4. Fix the 21 "with target" merged notes and M-027's note.
-5. Gate (verify+build), deploy, Christopher click-through, PR, squash-merge after his OK.
-6. Cleanup after that merge: remove worktrees ring-3 and ring-3-d with `git worktree remove` and log the
-   removal in ~/MOVED.md, ~/archive/MANIFEST.md and CT105 context.md.
+## land-c03 (committed 1dbe69c) — what it is
+C-03 seasonal card: rulebook windows dated from held NFL schedule (trade deadline = Week 9 first kickoff, §14;
+playoff_bids_only = first kickoff of week lastRegular (13); multiyear_bids_close = week lastRegular+1), deadlines are
+Acts (deadlineRoute: lineup→HQ lineup, trade→trade desk, bids→valuations-and-pool, else calendar.summon), Calendar link.
+S-13 phase links mark current + name destinations. Calendar (M-096) WindowRow: date input, Set date, Back to the
+rulebook/Clear date (window.set → TargetSetWindow). Trade deadline override = existing SET_TRADE_DEADLINE directive
+(season-scoped in snapshot.splitWindowDates by deadline year == season); other windows = calendar WINDOW_DATE events
+`window:<season>:<kind>`. trade_projection uses effective instant. S-01 placement → Command bar.
+Sol gates: verify 0, build 0, bundle 305,818 B. AFTER my review edits only targeted tests ran (snapshot, fixtures,
+transactions, root -run Trade|Window|Clock, vitest clock+shell 206) + lint → full verify NOT yet rerun.
+
+## NEXT ACTIONS, in order
+1. Gate: `timeout 600 nice -n 10 make verify …` and `make build …` (env below). Then deploy:
+   gzip build/bin/thewarroom → scp claudeos:warroom-ring1/thewarroom.new.gz → gunzip, chmod → `bash deploy.sh land-c03`.
+2. Live-check on Claude-OS: Home seasonal card (windows listed? Trade deadline Week 9 date ~Thu Oct 29 2026 kickoff;
+   deadline Acts route), S-13 current phase marked, Calendar (bottom-left "Calendar"): nine windows with sources,
+   set cut_day date → shows "set by the commissioner" → Back/Clear; trade deadline set & back to rulebook; trade desk
+   reason. Screenshot RUN/shots/land-c03-*.png. Also note: held schedules for weeks 9/13/14 arrive via the hourly
+   refreshWeeksInBackground loop (first pass at startup).
+3. Apply registry updates: set status `landed` + ring_note from RUN/land-landed.tsv (63 rows so far, ids + proof text)
+   plus C-03, S-13, S-01 after step 2; apply the 21 "with target" merge reasons + M-027 note from RUN/land-notes.tsv
+   (verify M-027 note claim on HQ lineup first). Regenerate `(cd frontend && node scripts/gen-endpoints.mjs)`.
+   Spec: define `landed` in docs/ui/Target_UI_Spec_2026-10.md ("seen working on Claude-OS against the live snapshot,
+   with its data, its empty state and its Act (if any); screenshot in the run dir").
+4. Push, PR, squash-merge (`~/.local/bin/gh pr merge <n> --squash`) — Christopher pre-authorised merge once fixed+tested;
+   tell him the PR and what landed.
+5. Brief Sol phase land-home (findings 1,2,3,4,7,8,11,13,14,15,17,19,20,22,25 from RUN/land-findings.md), then
+   land-pool (5,21,23,24,26,27,28,29,30,32,33,34,12,16,18). Review each with a planted mutant; live check; merge.
+6. Continue the walk for rows not yet seen: Pulse Now reports (M-003..M-088 tabs), Pools rows unviewed (M-023, M-083,
+   M-084, M-085, M-105, M-114, M-111, M-112, M-174, M-200, M-201), Counterparties L-23..L-29/L-36 tables, Offers L-30..32,
+   Draft lab L-15..L-18, L-21, L-22, Contracts rows (after fix 17/19), Control Room (League 5, Data 5, App 4),
+   Inspector, Comms 3, Calendar 3, Command bar 2, Status strip 1, Home Alert tray 3, Digests 3.
+   Helper: RUN/open-row.sh <ID> [wait] opens a row via the command bar and writes shots/row-<ID>.png (tab clicks
+   shift after the first click — always open by id).
+7. After the ring-3-land merge: `git worktree remove` ring-3 and ring-3-d; log in ~/MOVED.md, ~/archive/MANIFEST.md,
+   CT105 context.md; delete phase caches (chmod -R u+w first).
+
+## Files that carry the walk
+- RUN/land-findings.md — 34 numbered findings (bugs + polish) with screenshot refs. The fix queue.
+- RUN/land-landed.tsv — id<TAB>ring_note for rows proved live (63).
+- RUN/land-notes.tsv — the 21 merge reasons + M-027.
+- RUN/land-walk.txt — built rows grouped by placement.
+- RUN/par/land-c03.md — the brief; RUN/land-c03/REPORT.md — Sol's report.
 
 ## Environment
-- Gate env: PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOMEMLIMIT=1500MiB GOMAXPROCS=8
-  GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1; make … VERSION=dev
-  COMMIT=<ring> BUILD_DATE=<ring>. Never commit/edit while a gate runs (pre-commit stashes). Frontend lines ≤110.
-- Deploy: gzip build/bin/thewarroom → scp claudeos:warroom-ring1/thewarroom.new.gz → gunzip → deploy.sh <label>.
-  App log ~/warroom-ring1/run.log on Claude-OS ("value model fitted in ~7.7s" after "league archive read").
-- RUN = ~/fleet/runs/warroom-ring3-2026-10-11 (shot.sh <name>, click.sh x y). Clicks: nav Home (63,204) War Room
-  (75,240) HQ (87,276) Trade (80,312) Pulse (87,348) Control (87,384); War Room tabs Valuations (430,86) Research
-  (540,86); Pulse tabs Now (338,86) Race (393,86) Archive (479,86); Control tabs Data and sources (429,86);
-  Home Alert tray (415,86); Comms C (1256,90). Scroll: xdotool mousemove 550 500 click --repeat N 5.
-- passt outage fix: `passt --socket /run/user/1000/libvirt/qemu/run/passt/1-Claude-OS-net0.socket --tcp-ports 127.0.0.1/2222:22`.
-- Sol (gpt-6.1-sol, medium) available for bulk fixes: dispatch-wt.sh <phase> par/<brief>.md (WT=<worktree>);
-  review each with a planted mutant; delete <phase>/cache,tmp at merge.
+Gate env: export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOMEMLIMIT=1500MiB GOMAXPROCS=8
+GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1; make … VERSION=dev COMMIT=ring3
+BUILD_DATE=ring3. Frontend installed with pnpm in the worktree. Dispatch Sol: cd RUN && WT=<worktree> nohup setsid
+./dispatch-wt.sh <phase> par/<brief>.md > <phase>.launch.log 2>&1 < /dev/null & ; done = <phase>/sentinel.
+Claude-OS: RUN/shot.sh, click.sh, open-row.sh; app log ~/warroom-ring1/run.log; DB ~/.config/TheWarRoom/history-dev.db
+(sqlite3 -readonly). Density keys N/T/M are global shortcuts — never type outside a focused input.
 
 ## Honest status
-Ring 3 code is merged and live-checked on the screens changed today; the other ~180 built rows have not been
-individually re-proved live this ring — that is exactly the landing work. Nothing running in the background.
+Nothing running. land-c03 not yet live-checked or fully re-gated after my review edits. ~70 of 183 rows walked.
