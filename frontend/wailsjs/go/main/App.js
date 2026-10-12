@@ -158,6 +158,14 @@ export function TargetClock() {
   return window['go']['main']['App']['TargetClock']();
 }
 
+export function TargetComms(arg1) {
+  return window['go']['main']['App']['TargetComms'](arg1);
+}
+
+export function TargetCommsRefresh(arg1) {
+  return window['go']['main']['App']['TargetCommsRefresh'](arg1);
+}
+
 export function TargetContractActs(arg1) {
   return window['go']['main']['App']['TargetContractActs'](arg1);
 }
@@ -256,6 +264,10 @@ export function TargetNowRefresh(arg1, arg2) {
 
 export function TargetOffers(arg1) {
   return window['go']['main']['App']['TargetOffers'](arg1);
+}
+
+export function TargetOpenComms(arg1) {
+  return window['go']['main']['App']['TargetOpenComms'](arg1);
 }
 
 export function TargetOpenMFLDraftRoom() {

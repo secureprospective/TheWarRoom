@@ -92,6 +92,7 @@ type App struct {
 
 	seasonMu            sync.Mutex
 	seasonTransactions  heldSeasonFeed[[]leaguefeed.Transaction]
+	commsBoards         [2]heldSeasonFeed[[]ingestion.RawLeaguePost]
 	seasonLineups       heldSeasonFeed[leaguefeed.Lineups]
 	seasonPendingTrades heldSeasonFeed[[]leaguefeed.PendingTrade]
 	seasonInjuries      heldSeasonFeed[[]leaguefeed.Injury]

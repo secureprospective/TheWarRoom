@@ -1,0 +1,10 @@
+.twr-app .comms-panel { width: min(480px, calc(100% - 48px)); overflow-y: auto; overscroll-behavior: contain; }
+.twr-app .comms-reading { min-width: 0; }
+.twr-app .comms-reading h4 { margin: 22px 0 10px; }
+.twr-app .league-events { list-style: none; padding: 0; margin: 16px 0; }
+.twr-app .league-events li { padding: 10px 0; border-bottom: 1px solid var(--surface-line); }
+.twr-app .league-events time { font-size: 11px; font-variant-numeric: tabular-nums; }
+.twr-app .league-events p { margin: 4px 0 0; overflow-wrap: anywhere; max-width: 75ch; }
+.twr-app .comms-panel .market-controls { display: flex; flex-wrap: wrap; gap: 10px; }
+.twr-app .comms-panel select { max-width: 100%; }
+.twr-app .league-board { margin: 28px 0; }

@@ -271,3 +271,12 @@ League Pulse › Now: `now_app.go` holds each opened week's NFL schedule, the se
 - `league_archive_app.go`, `data_sources_app.go`, `data_sources_reading.go`: settings, scoped refresh, manifest publishing and Go-written Control Room reports.
 - `internal/store/history/inputs.go`: archive locators, input manifests and append-only compile attempts (metadata, not fact tables).
 - `frontend/src/app/datasources`: lazy Control Room Data and sources, scope Acts, player crosswalk and engine parameter overrides.
+
+## League communications
+
+`comms_app.go` holds authenticated messageBoard/polls exports with archive fallback.
+`TargetComms` reads existing season transactions, current mirror contracts and the held directory.
+`comms_reading.go` writes sentences shared by C-05 and M-032 with Go-validated filters.
+`TargetOpenComms` opens ProBoards or the discovered MFL board/polls pages only.
+`internal/ingestion/comms.go` validates posts. Lazy `frontend/src/app/comms` serves
+Comms and Home › Digests through the shared Report shell.

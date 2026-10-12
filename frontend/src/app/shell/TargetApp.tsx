@@ -42,6 +42,7 @@ const HomePulseMount = lazy(() => import('./HomePulseMount'));
 const TradeDesk = lazy(() => import('./TradeDesk'));
 const Market = lazy(loadMarket);
 const Race = lazy(() => import('../race/Race'));
+const Comms = lazy(() => import('../comms/Comms'));
 const loadInspector = () => import('./PlayerInspector');
 const PlayerInspector = lazy(() => loadInspector().then((m) => ({ default: m.PlayerInspector })));
 
@@ -218,6 +219,10 @@ export function TargetApp() {
             <Suspense fallback={<p role="status">Opening Race…</p>}>
               <Race />
             </Suspense>
+          ) : s.node === 'home' && workspace.slug === 'digests' ? (
+            <Suspense fallback={<p role="status">Opening Digests…</p>}>
+              <Comms />
+            </Suspense>
           ) : s.node === 'control' && workspace.slug === 'data-and-sources' ? (
             <Suspense fallback={<p role="status">Opening Data and sources…</p>}>
               <DataSources />
@@ -322,6 +327,9 @@ export function TargetApp() {
             Close
           </Act>
         </header>
+        {s.comms && <Suspense fallback={<p role="status">Reading league communications…</p>}>
+          <Comms panel />
+        </Suspense>}
         <EndpointIndex placement="Comms" />
       </aside>
       <aside

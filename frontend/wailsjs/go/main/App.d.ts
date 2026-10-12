@@ -83,6 +83,10 @@ export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
 
+export function TargetComms(arg1:main.RawCommsScope):Promise<main.CommsBoard>;
+
+export function TargetCommsRefresh(arg1:boolean):Promise<void>;
+
 export function TargetContractActs(arg1:main.RawContractAct):Promise<main.Reading___main_ContractActView_>;
 
 export function TargetContracts(arg1:snapshot.RawContractScope):Promise<main.ContractsReadings>;
@@ -132,6 +136,8 @@ export function TargetNow(arg1:number,arg2:string):Promise<main.NowBoard>;
 export function TargetNowRefresh(arg1:number,arg2:boolean):Promise<void>;
 
 export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_OffersView_>;
+
+export function TargetOpenComms(arg1:string):Promise<void>;
 
 export function TargetOpenMFLDraftRoom():Promise<void>;
 
