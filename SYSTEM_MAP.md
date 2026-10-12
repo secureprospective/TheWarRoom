@@ -293,3 +293,13 @@ archiving transport on purpose. The webview loads `/headshot/<mfl id>` through t
 (`photos_app.go`); `TargetPhoto` gives a card Go's address and alt text, or none when photos are off
 (`settings.json` `photosOff`, `SetPhotos`). `cards/PlayerPhoto.tsx` reserves the box and shows the NFL team
 when there is no photo.
+
+## Trade Acts and acquisition costing (ring 3, p3t)
+
+Trade Acts and acquisition costing: `trade_builder_app.go` validates the IPC boundary and persists
+local proposals in `internal/store/state/trade_plans.go` on whatif.db. `trade_projection.go` projects
+two pinned what-if rosters through the coordinator, retaining exact cents, and rechecks hand-offs.
+`internal/envelope/trade_acts.go` watches full asset sets; rejection/withdrawal disappearance stays
+ambiguous, never Landed. `acquisitions_app.go` prices held incoming contracts or saved bid terms
+and an optional unclaimed cut through the same coordinator. Lazy Trade desk and Contracts chunks
+host `shell/TradeBuilder.tsx` and `contracts/Acquisitions.tsx`; all controls use the command registry.

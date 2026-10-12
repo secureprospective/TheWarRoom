@@ -114,6 +114,10 @@ export function SetPhotos(arg1) {
   return window['go']['main']['App']['SetPhotos'](arg1);
 }
 
+export function TargetAcquisition(arg1) {
+  return window['go']['main']['App']['TargetAcquisition'](arg1);
+}
+
 export function TargetAlerts(arg1) {
   return window['go']['main']['App']['TargetAlerts'](arg1);
 }
@@ -316,6 +320,10 @@ export function TargetSeason() {
 
 export function TargetSnapshot() {
   return window['go']['main']['App']['TargetSnapshot']();
+}
+
+export function TargetTradeBuilder(arg1) {
+  return window['go']['main']['App']['TargetTradeBuilder'](arg1);
 }
 
 export function TargetTrades(arg1) {

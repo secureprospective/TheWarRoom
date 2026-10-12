@@ -27,7 +27,7 @@ function expectedChange(
   value: unknown, path: string, intent: string, players: string[], franchiseId: string,
 ): EnvelopeSpec['expected'] {
   const r = object(value, path, ['player', 'rosterStatus', 'lineup', 'trade']);
-  if (intent === 'trade.accept') {
+  if (['trade.accept', 'trade.propose', 'trade.reject', 'trade.revoke'].includes(intent)) {
     for (const key of ['player', 'rosterStatus', 'lineup']) {
       if (r[key] !== undefined) throw new Error(`${path}.${key}: forbidden for trade.accept`);
     }
@@ -36,7 +36,9 @@ function expectedChange(
     const offering = id(t.offering, `${p}.offering`);
     const accepting = id(t.accepting, `${p}.accepting`);
     if (offering === accepting) throw new Error(`${p}.offering: must differ from accepting`);
-    if (accepting !== franchiseId) throw new Error(`${p}.accepting: must equal franchiseId`);
+    const owner = ['trade.propose', 'trade.revoke'].includes(intent) ? offering : accepting;
+    if (owner !== franchiseId) throw new Error(`${p}.${owner === accepting
+      ? 'accepting' : 'offering'}: must equal franchiseId`);
     const offeringGives = array(t.offeringGives, `${p}.offeringGives`, requiredText);
     const acceptingGives = array(t.acceptingGives, `${p}.acceptingGives`, requiredText);
     if (!offeringGives.length) throw new Error(`${p}.offeringGives: expected nonempty array`);

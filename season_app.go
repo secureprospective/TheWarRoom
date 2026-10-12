@@ -86,10 +86,10 @@ func (a *App) TargetSeason() (SeasonReading, error) {
 			Value: txs, Provenance: a.seasonTransactions.provenance("transactions", "transactions"),
 		},
 		Lineups: snapshot.Sourced[leaguefeed.Lineups]{
-			Value: lineups, Provenance: a.seasonLineups.provenance(source, "liveScoring"),
+			Value: lineups, Provenance: a.seasonLineups.provenance(source, "live scores"),
 		},
 		PendingTrades: snapshot.Sourced[[]leaguefeed.PendingTrade]{
-			Value: trades, Provenance: a.seasonPendingTrades.provenance("pendingTrades", "pendingTrades"),
+			Value: trades, Provenance: a.seasonPendingTrades.provenance("pendingTrades", "pending trades"),
 		},
 	}, nil
 }

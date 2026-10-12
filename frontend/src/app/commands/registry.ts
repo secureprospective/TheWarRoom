@@ -253,6 +253,22 @@ export function createCommands(
           );
       },
     }),
+    'trade.builder': command({
+      ...ambient, id: 'trade.builder', label: 'Trade builder', gravity: 'G3', undo: 'irreversible',
+      args: ['action'],
+      run: (action: import('../shell/tradeBuilder').BuilderAction) => {
+        void import('../shell/tradeBuilder').then(m => m.builderAction(action))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
+    acquisition: command({
+      ...ambient, id: 'acquisition', label: 'What does the add cost me?', args: ['mine'],
+      run: (action: import('../contracts/acquisition').AcquisitionRequest) => {
+        state.navigate({ node: 'hq', workspace: 'contracts-and-cap' });
+        void import('../contracts/acquisition').then(m => m.openAcquisition(action))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     'trade.accept.plan': command({
       ...ambient,
       id: 'trade.accept.plan',

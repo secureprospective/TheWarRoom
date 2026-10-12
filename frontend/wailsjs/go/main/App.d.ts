@@ -61,6 +61,8 @@ export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetPa
 
 export function SetPhotos(arg1:boolean):Promise<main.DataActResult>;
 
+export function TargetAcquisition(arg1:main.RawAcquisition):Promise<main.Reading_main_AcquisitionView_>;
+
 export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
 
 export function TargetAssetProfile(arg1:main.RawMarketAsset):Promise<main.Reading_main_MarketSurface_>;
@@ -162,6 +164,8 @@ export function TargetReleasePlans(arg1:main.RawReleaseRequest):Promise<main.Rea
 export function TargetSeason():Promise<main.SeasonReading>;
 
 export function TargetSnapshot():Promise<snapshot.Snapshot>;
+
+export function TargetTradeBuilder(arg1:main.RawTradeBuilder):Promise<main.Reading_main_TradeBuilderView_>;
 
 export function TargetTrades(arg1:string):Promise<main.TradeReading>;
 

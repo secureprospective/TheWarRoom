@@ -90,6 +90,8 @@ export function BidPlanCard({ plan, busy = '' }: { plan: Plan; busy?: string }) 
       )}
       {!finished && plan.evidence && <p className="bid-evidence">Evidence: {plan.evidence}</p>}
       <div className="bid-actions">
+        {!finished && <Act verb="acquisition" args={{ mine: plan.franchiseId, bid: plan.id }}
+          label="What does the add cost me?" />}
         {plan.actions.map((action) => (
           <ActionButton key={action.id} plan={plan} action={action} busy={busy} />
         ))}

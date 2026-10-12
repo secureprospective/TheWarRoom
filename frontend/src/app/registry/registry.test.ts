@@ -109,6 +109,7 @@ describe('Endpoint map', () => {
       'C-06.5',
       'C-06.1', 'C-06.3', 'M-036', 'M-196',
       'C-06.6',
+      'C-06.2', 'C-06.4', 'M-199', 'M-033', 'M-034',
       'X-04',
       ...Array.from({ length: 32 }, (_, i) => `L-${String(i + 1).padStart(2, '0')}`),
       'L-33',
@@ -129,9 +130,9 @@ describe('Endpoint map', () => {
       ['M-027', 'landed live'],
       ['M-028', 'built, not yet landed live'],
       ['M-029', 'built, not yet landed live'],
-      ['M-033', 'not wired'],
+      ['M-033', 'built, not yet landed live'],
       ['X-04', 'built, not yet landed live'],
-      ['M-034', 'not wired'],
+      ['M-034', 'built, not yet landed live'],
     ];
     for (const [id, label] of checks) {
       const row = endpointById(id);
@@ -213,7 +214,7 @@ describe('Endpoint map', () => {
 describe('Endpoint verbs and search', () => {
   it('offers all kept endpoints by their own name and never offers retired or merged rows', () => {
     const offered = candidates.filter((r) => r.kind === 'endpoint');
-    expect(offered).toHaveLength(205);
+    expect(offered).toHaveLength(204);
     for (const row of endpoints) {
       const match = rankResults(row.name, candidates).find(
         (r) => r.invocation.verb === 'endpoint.open' && r.invocation.args.id === row.id,

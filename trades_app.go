@@ -53,7 +53,7 @@ func (a *App) tradeState(franchiseID string) (
 	held := a.seasonPendingTrades
 	return snap, snapshot.Sourced[[]leaguefeed.PendingTrade]{
 		Value:      append([]leaguefeed.PendingTrade{}, held.value...),
-		Provenance: held.provenance("pendingTrades", "pendingTrades"),
+		Provenance: held.provenance("pendingTrades", "pending trades"),
 	}, nil
 }
 

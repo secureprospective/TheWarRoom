@@ -148,7 +148,7 @@ func (m *Mirror) install(snap MirrorSnapshot) ([]byte, error) {
 			MFLID: p.MFLID, FranchiseID: p.FranchiseID, RosterStatus: p.RosterStatus,
 			Salary: p.Salary, CapSalary: p.Salary, ExpirationYear: p.ContractYear, ContractStatus: p.ContractStatus,
 		})
-		f.CapUsed += domain.RoundToNearest10k(capContribution(p.Salary, p.RosterStatus, m.discounts))
+		f.CapUsed += domain.RoundToNearest10k(CapContribution(p.Salary, p.RosterStatus, m.discounts))
 	}
 	for _, a := range snap.Adjustments {
 		franchise(a.FranchiseID).CapUsed += a.Amount

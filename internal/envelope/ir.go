@@ -139,6 +139,7 @@ type Observation struct {
 	Transactions  snapshot.Sourced[[]leaguefeed.Transaction]
 	Lineups       snapshot.Sourced[leaguefeed.Lineups]
 	PendingTrades snapshot.Sourced[[]leaguefeed.PendingTrade]
+	TradeProposed bool
 }
 
 func (o Observation) freshness(source Source) (domain.Freshness, bool) {
@@ -224,11 +225,12 @@ func (e Envelope) Observe(at time.Time, obs Observation, predicate Predicate) (E
 		return Envelope{}, err
 	}
 	obs.HandedOffAt = e.handedAt()
+	obs.TradeProposed = e.tradeWasProposed()
 	verdict := predicate.Evaluate(cloneSpec(e.spec), obs)
 	if !slices.Contains([]Event{Match, Partial, NoChange, Contradiction, AwaitDOT, AwardedElsewhere}, verdict.Event) {
 		return Envelope{}, fmt.Errorf("envelope: invalid predicate event %q", verdict.Event)
 	}
-	if verdict.Event == AwaitDOT && e.spec.Intent == "trade.accept" && e.state == NotVerified &&
+	if verdict.Event == AwaitDOT && IsTrade(e.spec.Intent) && e.state == NotVerified &&
 		e.tradeReviewExpired(observed) {
 		return e, nil
 	}
@@ -270,4 +272,13 @@ func (e Envelope) observedAt(at time.Time, obs Observation, sources []Source) (t
 		}
 	}
 	return oldest, nil
+}
+
+func (e Envelope) tradeWasProposed() bool {
+	for _, entry := range e.audit {
+		if entry.Note == "Proposed on MFL" {
+			return true
+		}
+	}
+	return false
 }
