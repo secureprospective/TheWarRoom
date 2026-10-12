@@ -318,3 +318,22 @@ reads source health and held gameday counts via `TargetShellStatus`.
 The snapshot's player directory now also includes named unrostered players for global search and
 private draft/watch lists; eligibility remains roster-only. `history.ReferenceBodies` admits imported
 league-archive responses on read-only surfaces; live fallbacks still exclude imports.
+
+## Player research
+
+`internal/ingestion/researchfeeds` validates display-only MFL playerScores (week and YTD,
+including team defenses), the five MFL-wide activity exports, pointsAllowed and playerProfile.
+It reads the newest nflverse depth-chart snapshot using `contracts.ReadRows` (shared Parquet
+reader), with the captured latest CSV as the fixture oracle. None of these readings write
+model observations or scouting inputs.
+`research_app.go` holds these feeds with archive fallback, resolves depth-chart identities
+through held gsis/ESPN crosswalk links, and caches rostered-player profiles per local day with
+one-second spacing. `TargetResearch`, `TargetResearchRefresh`, `TargetResearchNewsRefresh`,
+`TargetResearchPlayer` and `TargetOpenResearchArticle` validate the IPC surface; article links
+use the discovered MFL host and require an article held for that player.
+`research_reading.go` and `research_context_reading.go` author all Research reports through the
+shared Report shell. `frontend/src/app/research` is lazy, with one screen for research, a news
+section on Home › Digests, and a read-only player Inspector for directory search results.
+M-050 is explicitly ring 4: weekly NFL team box-score totals require an nflverse team-stat
+adapter; fantasy points and NFL game scores are not those statistics. M-055 resolves to the
+existing Race lineup detail's best-lineup reading.

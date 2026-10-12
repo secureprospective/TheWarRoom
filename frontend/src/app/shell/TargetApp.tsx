@@ -44,6 +44,7 @@ const CommandBar = lazy(() => import('../commands/CommandBar').then((m) => ({ de
 const HomePulseMount = lazy(() => import('./HomePulseMount'));
 const TradeDesk = lazy(() => import('./TradeDesk'));
 const Market = lazy(loadMarket);
+const Research = lazy(() => import('../research/Research'));
 const Race = lazy(() => import('../race/Race'));
 const Comms = lazy(() => import('../comms/Comms'));
 const loadInspector = () => import('./PlayerInspector');
@@ -216,6 +217,10 @@ export function TargetApp() {
             <Suspense fallback={null}>
               <Market snapshot={snapshot} />
             </Suspense>
+          ) : s.node === 'war' && workspace.slug === 'research' ? (
+            <Suspense fallback={<p role="status">Opening Research…</p>}>
+              <Research />
+            </Suspense>
           ) : s.node === 'pulse' && workspace.slug === 'race' ? (
             <Suspense fallback={<p role="status">Opening Race…</p>}>
               <Race />
@@ -223,6 +228,7 @@ export function TargetApp() {
           ) : s.node === 'home' && workspace.slug === 'digests' ? (
             <Suspense fallback={<p role="status">Opening Digests…</p>}>
               <Comms />
+              <Research newsOnly />
             </Suspense>
           ) : s.node === 'control' && workspace.slug === 'data-and-sources' ? (
             <Suspense fallback={<p role="status">Opening Data and sources…</p>}>

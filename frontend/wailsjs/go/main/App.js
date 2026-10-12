@@ -302,6 +302,10 @@ export function TargetOpenMFLDraftRoom() {
   return window['go']['main']['App']['TargetOpenMFLDraftRoom']();
 }
 
+export function TargetOpenResearchArticle(arg1, arg2) {
+  return window['go']['main']['App']['TargetOpenResearchArticle'](arg1, arg2);
+}
+
 export function TargetPersonal(arg1) {
   return window['go']['main']['App']['TargetPersonal'](arg1);
 }
@@ -344,6 +348,22 @@ export function TargetRaceRefresh(arg1) {
 
 export function TargetReleasePlans(arg1) {
   return window['go']['main']['App']['TargetReleasePlans'](arg1);
+}
+
+export function TargetResearch(arg1) {
+  return window['go']['main']['App']['TargetResearch'](arg1);
+}
+
+export function TargetResearchNewsRefresh(arg1) {
+  return window['go']['main']['App']['TargetResearchNewsRefresh'](arg1);
+}
+
+export function TargetResearchPlayer(arg1) {
+  return window['go']['main']['App']['TargetResearchPlayer'](arg1);
+}
+
+export function TargetResearchRefresh(arg1) {
+  return window['go']['main']['App']['TargetResearchRefresh'](arg1);
 }
 
 export function TargetRosterReports(arg1) {

@@ -156,6 +156,8 @@ export function TargetOpenMFLAccounting():Promise<void>;
 
 export function TargetOpenMFLDraftRoom():Promise<void>;
 
+export function TargetOpenResearchArticle(arg1:string,arg2:string):Promise<void>;
+
 export function TargetPersonal(arg1:string):Promise<main.PersonalReading>;
 
 export function TargetPersonalChange(arg1:personal.RawChange):Promise<void>;
@@ -177,6 +179,14 @@ export function TargetRace(arg1:number,arg2:string,arg3:string):Promise<main.Rac
 export function TargetRaceRefresh(arg1:boolean):Promise<void>;
 
 export function TargetReleasePlans(arg1:main.RawReleaseRequest):Promise<main.Reading___main_ReleasePlanView_>;
+
+export function TargetResearch(arg1:main.RawResearchScope):Promise<main.ResearchBoard>;
+
+export function TargetResearchNewsRefresh(arg1:string):Promise<void>;
+
+export function TargetResearchPlayer(arg1:string):Promise<main.ResearchPlayer>;
+
+export function TargetResearchRefresh(arg1:boolean):Promise<void>;
 
 export function TargetRosterReports(arg1:string):Promise<Array<main.Report>>;
 
