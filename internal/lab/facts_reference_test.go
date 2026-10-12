@@ -7,7 +7,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -19,13 +21,43 @@ type rawReferenceHeader struct {
 }
 
 func TestFactsReferencePinsMatchSourceRows(t *testing.T) {
-	compressed, err := os.ReadFile("testdata/facts/facts.jsonl.gz")
+	checkFactsReference(t, "testdata/facts/facts.jsonl.gz", false)
+}
+
+func TestFullFactsReferencePinsMatchSourceRows(t *testing.T) {
+	if os.Getenv("TWR_ARCHIVE_PARITY") != "1" {
+		t.Skip("full facts oracle is opt-in")
+	}
+	path := os.Getenv("TWR_FACTS_ORACLE")
+	if path == "" {
+		t.Fatal("set TWR_FACTS_ORACLE")
+	}
+	checkFactsReference(t, path, true)
+}
+
+func checkFactsReference(t *testing.T, path string, full bool) {
+	t.Helper()
+	file, err := os.OpenInRoot(filepath.Dir(path), filepath.Base(path))
 	if err != nil {
 		t.Fatal(err)
 	}
+	compressed, err := io.ReadAll(file)
+	if closeErr := file.Close(); closeErr != nil {
+		t.Fatal(closeErr)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "5c2724cdb2ec0c4c19d413e8f5a399e826e031a5411d4c9d8e86b34ca28523e0"
+	if full {
+		want = "491d0e807ef040c9e6fa9fa0caecdede72a9a2289176d0a3bc114eea56bbf876"
+	}
 	sum := sha256.Sum256(compressed)
-	if hex.EncodeToString(sum[:]) != "491d0e807ef040c9e6fa9fa0caecdede72a9a2289176d0a3bc114eea56bbf876" {
+	if hex.EncodeToString(sum[:]) != want {
 		t.Fatal("independent facts reference fingerprint changed")
+	}
+	if !full && len(compressed) > 1500000 {
+		t.Fatal("reduced golden exceeds 1.5 MB")
 	}
 	reader, err := gzip.NewReader(bytes.NewReader(compressed))
 	if err != nil {
@@ -37,9 +69,27 @@ func TestFactsReferencePinsMatchSourceRows(t *testing.T) {
 		}
 	}()
 	counts, source := scanReference(t, reader)
-	if len(counts) != 39 || counts["source_file"] != 1477 || counts["game"] != 7616 || counts["lineup"] != 307255 {
-		t.Fatalf("reference relation counts changed: %+v", counts)
+	expected := map[string]int{"source_file": 315, "game": 1632, "lineup": 46609}
+	if full {
+		expected = map[string]int{"source_file": 1477, "game": 7616, "lineup": 307255}
 	}
+	if len(counts) != 39 {
+		t.Fatalf("reference relation count changed: %d", len(counts))
+	}
+	for table, count := range expected {
+		if counts[table] != count {
+			t.Fatalf("%s rows=%d, want %d", table, counts[table], count)
+		}
+	}
+	checkReferenceSources(t, source, full)
+}
+
+func selectedReferenceFile(file string, full bool) bool {
+	return full || !strings.Contains(file, "/") || strings.HasPrefix(file, "2013/") || strings.HasPrefix(file, "2020/") || strings.HasPrefix(file, "2026/")
+}
+
+func checkReferenceSources(t *testing.T, source map[string]Input, full bool) {
+	t.Helper()
 	pins, err := Inputs()
 	if err != nil {
 		t.Fatal(err)
@@ -49,18 +99,26 @@ func TestFactsReferencePinsMatchSourceRows(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, gap := range gaps {
+		if !selectedReferenceFile(gap.File, full) {
+			continue
+		}
 		if _, exists := source[gap.File]; exists {
-			t.Errorf("missing pin substituted in reference: %s", gap.File)
+			t.Errorf("missing pin substituted: %s", gap.File)
 		}
 		source[gap.File] = Input{File: gap.File, Bytes: 175, SHA256: gap.SHA256}
 	}
-	if len(source) != len(pins) {
-		t.Fatalf("reference sources plus gaps = %d, pins = %d", len(source), len(pins))
-	}
+	selected := 0
 	for _, pin := range pins {
-		if source[pin.File] != pin {
-			t.Errorf("reference source mismatch: %s: %+v != %+v", pin.File, source[pin.File], pin)
+		if !selectedReferenceFile(pin.File, full) {
+			continue
 		}
+		selected++
+		if source[pin.File] != pin {
+			t.Errorf("reference source mismatch: %s", pin.File)
+		}
+	}
+	if len(source) != selected {
+		t.Fatalf("reference sources plus gaps=%d, pins=%d", len(source), selected)
 	}
 }
 

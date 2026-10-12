@@ -50,15 +50,20 @@ def stage(args):
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_bytes(body)
         held.append(pin)
+    selected_pins = held + [{k: r[k] for k in ('file', 'bytes', 'sha256')} for r in missing]
+    with (args.output / 'pins.csv').open('w') as file:
+        writer = csv.DictWriter(file, fieldnames=('file', 'bytes', 'sha256'))
+        writer.writeheader()
+        writer.writerows(sorted(selected_pins, key=lambda r: r['file']))
     (args.output / 'selection.json').write_text(json.dumps({
-        'pins_sha256': digest(args.pins.read_bytes()), 'held': len(held),
+        'pins_sha256': digest(args.pins.read_bytes()), 'seasons': args.seasons, 'held': len(held),
         'missing': missing, 'notes_sha256': digest((store / 'note_readings.csv').read_bytes()),
         'reference': (args.reference / 'SOURCE.txt').read_text().strip(),
     }, indent=2) + '\n')
     return store
 
 
-def extract(db_path, output):
+def extract(db_path, output, seasons=()):
     db = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True)
     store = db_path.parent.parent / 'store'
     relations = set(re.findall(r'CREATE (?:TABLE|VIEW) (\w+)',
@@ -87,10 +92,11 @@ def extract(db_path, output):
             for table, kind in tables:
                 columns = [r[1] for r in db.execute(f'PRAGMA table_info("{table}")')]
                 order = ', '.join(f'"{c}"' for c in columns)
-                query = f'SELECT * FROM "{table}" ORDER BY {order}'
+                where, params = season_filter(table, columns, seasons)
+                query = f'SELECT * FROM "{table}" {where} ORDER BY {order}'
                 gz.write((json.dumps({'table': table, 'kind': kind, 'columns': columns}, separators=(',', ':')) + '\n').encode())
                 count = 0
-                for row in db.execute(query):
+                for row in db.execute(query, params):
                     gz.write((json.dumps(row, separators=(',', ':'), ensure_ascii=True, allow_nan=False) + '\n').encode())
                     count += 1
                 counts[table] = count
@@ -114,23 +120,85 @@ def extract(db_path, output):
     (output / 'checks.json').write_text(json.dumps(checks, indent=2) + '\n')
     (output / 'exceptions.json').write_text(json.dumps(exceptions, indent=2) + '\n')
     db.close()
+    if seasons:
+        # Zopfli DEFLATE keeps every selected row under the checked-in golden budget.
+        payload = gzip.decompress((output / 'facts.jsonl.gz').read_bytes())
+        compressed = subprocess.run(['pigz', '-11', '-n', '-p', '4', '-c'], input=payload,
+                                    stdout=subprocess.PIPE, check=True).stdout
+        if len(compressed) > 1_500_000:
+            raise ValueError(f'reduced golden exceeds 1.5 MB: {len(compressed)}')
+        (output / 'facts.jsonl.gz').write_bytes(compressed)
     return counts
+
+
+def input_fixture(args):
+    dictionary, index, inputs = [], {}, []
+    for pin in csv.DictReader(args.pins.open()):
+        path = args.archive / pin['file']
+        if not path.is_file() or digest(path.read_bytes()) != pin['sha256']:
+            continue  # extract already proved the exact approved gaps
+        name = path.name
+        year = int(pin['file'].split('/')[0]) if '/' in pin['file'] else 0
+        keep = name in ('allRules.json', 'league.json', 'players_DETAILS1.json', 'players.json',
+                        'transactions.json', 'draftResults.json')
+        keep = keep or (year in args.seasons and (name in ('leagueStandings.json', 'rules.json',
+                            'calendar.json', 'weeklyResults_WYTD.json', 'rosters.json')
+                            or name.startswith('rosters_W')))
+        row = {'file': pin['file'], 'sha256': pin['sha256'], 'bytes': int(pin['bytes']), 'tokens': []}
+        if keep:
+            body = path.read_text()
+            parts = re.findall(r'"(?:[^"\\]|\\.)*"|[^"\\]+', body)
+            if ''.join(parts).encode() != path.read_bytes():
+                raise ValueError(f'lossless tokenization failed: {path}')
+            for token in parts:
+                if token not in index:
+                    index[token] = len(dictionary)
+                    dictionary.append(token)
+                row['tokens'].append(index[token])
+        inputs.append(row)
+    payload = json.dumps({'dictionary': dictionary, 'inputs': inputs}, separators=(',', ':')).encode()
+    (args.output / 'inputs.json.gz').write_bytes(gzip.compress(payload, mtime=0))
+
+
+def season_filter(table, columns, seasons):
+    if not seasons:
+        return '', []
+    placeholders = ','.join('?' for _ in seasons)
+    for col in ('year', 'snapshot_year'):
+        if col in columns:
+            return f'WHERE "{col}" IN ({placeholders})', list(seasons)
+    if 'txn_id' in columns:
+        return f'WHERE txn_id IN (SELECT txn_id FROM txn WHERE year IN ({placeholders}))', list(seasons)
+    if table in ('source_file', 'load_note'):
+        return 'WHERE ' + ' OR '.join(["src NOT LIKE '%/%'"] + ['src LIKE ?' for _ in seasons]), [f'{y}/%' for y in seasons]
+    return '', []
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('reference', 'archive', 'pins', 'gaps', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--seasons', type=lambda s: [int(y) for y in s.split(',')], default=[])
+    parser.add_argument('--database', type=Path, help='Extract an already independently rebuilt reference')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
+    if args.database:
+        shutil.copyfile(args.database.parents[4] / 'selection.json', args.output / 'selection.json')
+        shutil.copyfile(args.pins, args.output / 'pins.csv')
+        counts = extract(args.database, args.output, args.seasons)
+        if args.seasons:
+            input_fixture(args)
+        print(f'Reference extracted: {len(counts)} relations, {sum(counts.values())} rows exported.')
+        return
     store = stage(args)
-    shutil.copyfile(args.pins, args.output / 'pins.csv')
     with (args.output / 'build.log').open('w') as log:
         result = subprocess.run([sys.executable, str(store / 'build.py')], stdout=log, stderr=subprocess.STDOUT, check=False)
     (args.output / 'build-exit.txt').write_text(str(result.returncode) + '\n')
     if result.returncode != 0:
         raise SystemExit('Reference build failed; see build.log. No golden exported.')
-    counts = extract(store.parent / 'data/mfl.db', args.output)
+    counts = extract(store.parent / 'data/mfl.db', args.output, args.seasons)
+    if args.seasons:
+        input_fixture(args)
     print(f'Reference built: {len(counts)} relations, {sum(counts.values())} rows exported.')
 
 

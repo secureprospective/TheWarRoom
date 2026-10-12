@@ -1,67 +1,97 @@
-# Independent facts reference (not Go compiler output)
+# Independent Python facts reference
 
 Reference: `session/league-history-pwa` commit
-`b7213f63e52ecfa3950bc4bc650f47ea3aeabac9`, read-only export supplied by Claude.
-Rebuilt on 2026-10-11 with Python 3.13's standard library. The original checkout
-was not modified; no git or network commands were used.
+`b7213f63e52ecfa3950bc4bc650f47ea3aeabac9`, supplied read-only export.
+The full reference was rebuilt offline on 2026-10-11 with Python 3.13;
+`store/build.py` exited 0. Neither fixture contains Go-generated facts.
 
-`tools/labparity/facts-reference.py` copies the reference's `store/build.py`,
-`load.py`, `schema.sql`, `views.sql`, `checks.py`, `notes.py`, `cards.py` and
-`note_readings.csv` into a disposable output directory, stages only the archive
-bodies matching `internal/lab/testdata/inputs.csv`, and runs the copied
-`store/build.py`. It verifies rebuilt `source_file` rows against the input pins.
-It excludes card/search tables from extraction: they are not league facts.
+## Reduced golden
 
-Reproduce from the repo root, with a NEW output directory:
+`facts.jsonl.gz` contains all 39 reference relations, 207,031 rows, and seasons
+2013, 2020 and 2026. It is 1,487,539 B, SHA256
+`5c2724cdb2ec0c4c19d413e8f5a399e826e031a5411d4c9d8e86b34ca28523e0`.
+Each relation starts with its table, kind and ordered column names, followed by
+JSON row arrays ordered by every column using SQLite's native ordering. Nulls,
+string IDs, integers, Python round-trip REAL decimals and raw JSON are retained.
+Deterministic gzip uses zero timestamp and no filename; installed `pigz -11`
+provides Zopfli DEFLATE to keep every selected row below 1,500,000 B.
+
+Selection happens AFTER the full independent reference build. Rows with `year`
+or `snapshot_year` select the three seasons. Transaction-dependent relations
+select through the original transaction IDs. Source/load notes select those
+season prefixes plus root sources. Relations without a seasonal key retain all
+rows: player identities reflect the latest full-archive identity, rule codes
+remain global, and check/review annotations remain the full reference's checks.
+This preserves original transaction IDs and human interpretations; a three-year
+archive rebuild would renumber transactions and break historical pick chains.
+2013's explained playoff standings and 2026's partial season remain represented.
+`counts.json` records reduced counts; checks/exceptions/gap-proof describe the
+full independent build, not newly computed reduced-archive checks.
+
+Reproduce from the repo root into a NEW directory (Python 3 and pigz required):
 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 python3 tools/labparity/facts-reference.py \
   --reference "$REFERENCE_EXPORT" --archive "$ARCHIVE_RAW" \
   --pins internal/lab/testdata/inputs.csv \
-  --gaps internal/lab/testdata/missing-inputs.csv --output "$OUTPUT"
+  --gaps internal/lab/testdata/missing-inputs.csv --output "$OUTPUT" \
+  --seasons 2013,2020,2026
 ```
 
-The reference build exited 0. This pins 1,482 archive inputs and stages 1,477.
-Five approved missing originals are recorded in `gap-proof.json`; no bytes are
-reconstructed or substituted. All five pins have size 175 B, the size of the
-known login-error envelope. The 2014 assets and calendar pins share a SHA.
-Their non-data classification is the brief's explicit engineering decision;
-size alone does not prove the contents of unrecovered bytes. Reference
-`load.py` records a source then drops `error` envelopes before business loading.
-The rebuilt data has no 2013–2015 asset or calendar rows; calendar begins in 2016.
-
-## File format
-
-`facts.jsonl.gz`: deterministic gzip (`mtime=0`, empty filename), 39 relations,
-1,161,195 rows. Each relation begins with a JSON object naming `table`, `kind`
-and ordered `columns`; subsequent JSON arrays contain all its rows. Rows are
-ordered by every column using SQLite's native ordering. Nulls are JSON null,
-integers stay integers, ids stay strings, and REAL values retain Python's
-round-trip decimal encoding. Raw JSON columns retain reference strings.
-`counts.json` reports rows per relation. Source provenance is retained.
-
-Gzip SHA256:
+`--database "$INDEPENDENT_DB"` instead extracts an existing rebuilt reference;
+its neighboring staging `selection.json` and reference store schema are required.
+Omit `--seasons` to extract the full 1,161,195-row oracle, which is NOT checked in.
+Its SHA256 is
 `491d0e807ef040c9e6fa9fa0caecdede72a9a2289176d0a3bc114eea56bbf876`.
 
-`checks.json` is the independently run reference's nine check results.
-`exceptions.json` pins every review item's full identity/description, the twelve
-2013 playoff-standings identities, and the 505 three-point-bonus game identities
-with scores. It is preparation for identity-based Go assertions, not a port of
-those assertions. Reference count allowances must NOT be copied as Go policy.
+## Lossless pinned inputs for verify
 
-## Human-curated input
+`inputs.json.gz` is 3,643,488 B, SHA256
+`2458008da347d21b6373374027e739f1e43f9ffd15061b2ba64cc89bea15ff93`.
+It is independently produced by the same Python tool from pinned archive bytes,
+NOT from either compiler's output. A shared dictionary of exact JSON lexical
+spans and each input's token indices reconstruct byte-identical retained bodies;
+Go checks reconstructed lengths and hashes before compiling.
 
-`../note_readings.csv`: 469 readings, 37,943 B, byte-identical to the reference's
-human-curated file. It is not an MFL export and remains unconfirmed where the
-reference marks it unconfirmed. SHA256:
+All 1,477 available source identities are present. Bodies are retained for the
+selected seasons' league/standings/rules/calendar/weekly-results/rosters, root
+rule codes, and the full league/player/draft/transaction context needed by global
+player identities and curated pick checks. Other bodies are deliberately absent
+from this TEST projection; their metadata does not prove their unselected facts.
+The full parity test replaces every body from the independently staged archive.
+Together the golden and input fixture total 5,131,027 B, less than the deleted
+8,701,947 B full golden alone. The runtime compiler reads neither fixture.
+
+## Missing pins and curated input
+
+The full build resolves 1,477 of 1,482 pins. The five exact approved missing
+175-byte originals are listed in `../missing-inputs.csv` and `gap-proof.json`;
+no substitute bytes are constructed. Their non-data classification is the
+explicit engineering ruling, not an inference that size proves missing content.
+The loader records available error sources but emits no business facts for them.
+
+`../note_readings.csv` holds 469 human interpretations, not MFL records; SHA256
 `b69a8d56549eb9680a803fc0b4f225bd3bbb2326cf8128a081294adef9517f7e`.
-The reference staging manifest `selection.json` includes this hash separately
-from the MFL pins. Runtime manifest integration is NOT implemented yet.
+Confirmation remains 0, and draft checks are independently replayed in Go.
+The twelve 2013 standings identities, bonus-game identities and all review-item
+identities in `exceptions.json` remain reference evidence, not count allowances.
 
-## What is and is not proved
+## Executable comparisons
 
-`TestFactsReferencePinsMatchSourceRows` checks the golden fingerprint, relation
-counts and every source_file row against the Go input pins plus the five exact
-approved gaps. It does not compare Go-compiled fact columns: there is no Go
-facts compiler in this change. Neither full nor reduced-season facts parity is
-claimed. This fixture is never an input to a runtime facts compiler.
+`internal/lab/facts_reference_test.go` pins the golden and source identities.
+`internal/facts/parity_test.go` compares every typed column of the twelve
+implemented relations against the reduced oracle in normal verify. Imported
+numbers are exact normalized rationals; IDs, timestamps, enums, nulls and raw
+JSON strings compare exactly. The shared helper also supports derived floats
+with 1e-9 absolute plus relative tolerance, with deliberate mismatch tests.
+
+Full-source and full-column parity skip unless explicitly enabled:
+
+```sh
+TWR_ARCHIVE_PARITY=1 TWR_FACTS_ORACLE="$FULL_ORACLE" \
+TWR_FACTS_ARCHIVE="$ARCHIVE_RAW" go test -race ./internal/facts ./internal/lab \
+  -run 'TestFullReferenceParity|TestFullFactsReferencePinsMatchSourceRows' -v
+```
+
+The other reference relations remain independently present in the golden for
+subsequent compiler stages; this stage asserts only the twelve named relations.

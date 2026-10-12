@@ -203,6 +203,30 @@ linters:
           allow:
             - $gostd
             - github.com/secureprospective/TheWarRoom/internal/domain
+        facts-is-pure:
+          list-mode: strict
+          files:
+            - "**/internal/facts/**"
+            - "!$test"
+          allow:
+            - bytes
+            - cmp
+            - context
+            - crypto/sha256
+            - encoding/csv
+            - encoding/hex
+            - encoding/json
+            - fmt
+            - math
+            - reflect
+            - regexp
+            - slices
+            - sort
+            - strconv
+            - strings
+            - time$
+            - time/tzdata
+            - unicode/utf16
         archive-is-a-leaf:
           list-mode: strict
           files:
