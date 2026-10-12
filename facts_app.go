@@ -42,8 +42,24 @@ func (a *App) compileFactsInBackground(parent context.Context) {
 		}
 		if _, err := a.compileFacts(ctx); err != nil {
 			log.Printf("the war room: checked facts: %v", err)
+			return
 		}
+		a.warmArchive(ctx)
 	}()
+}
+
+// warmArchive reads the verified snapshot into the archive cache once the checked facts are in,
+// so League Pulse › Pools / Archive opens without its first-read rebuild (about twenty seconds).
+// The cache is what the first open would have held anyway.
+func (a *App) warmArchive(ctx context.Context) {
+	began := time.Now()
+	a.factsMu.Lock()
+	defer a.factsMu.Unlock()
+	if _, _, err := a.readArchiveFacts(ctx); err != nil {
+		log.Printf("the war room: league archive: %v", err)
+		return
+	}
+	log.Printf("the war room: league archive read in %s", time.Since(began).Round(time.Millisecond))
 }
 
 // compileFacts compiles the published manifest's pinned inputs into the league facts, runs the
