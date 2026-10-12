@@ -1,4 +1,31 @@
-# RESUME: TheWarRoom ring 3 (Tom = head brain, Sol builds) — compact-safe 2026-10-11 ~12:20 CDT
+## >>> RESUME HERE (written 22:45 CDT 2026-10-11, compaction) <<<
+HARD STOP: Claude account logs out 04:00 CDT 10-12; timer task wakes Claude at 03:15 to save. Sol budget OUT until ~00:15
+(Christopher 21:45); all chain.sh drivers killed. Claude codes the rest itself (Tom only if asked; shares Claude quota).
+BRANCHES (all local, unpushed):
+- session/ring-3 (worktree .worktrees/ring-3) HEAD 81e2804: p3f 9248f1a, p3g1 groundwork 1d21564, p3f-fix 13c7de5,
+  p3g1-s1 b546720 (internal/facts, 12 relations zero-diff parity), merge of ring-3-b 5fee4be (p3m Comms e540d59, p3k photos
+  6b5fc37), p3k Data-and-sources photo row+switch 4d97fd9, untrack root binary 81e2804.
+- session/ring-3-c (worktree .worktrees/ring-3-c) HEAD 5cff493: p3t Acts 48f6ea2 (reviewed: mutant on accepting-side
+  near-match SURVIVED -> test added; trade_link_guard_test.go added; UI fixes; verify 0) + untrack binary. NOT YET MERGED.
+- session/ring-3-b: fully merged into ring-3.
+NEXT ACTIONS IN ORDER:
+1. cd .worktrees/ring-3 && git merge --no-ff session/ring-3-c. Expected conflicts: SYSTEM_MAP.md (keep both sections),
+   docs/ui/endpoint-registry.csv (keep both rows' changes), registry.test.ts built list (union), wailsjs App.d.ts/App.js
+   (resolve then `make bindings`), endpoints.gen.ts (regenerate via frontend/scripts/gen-endpoints.mjs). TheWarRoom binary is
+   now untracked on both sides (should resolve as deleted). Then make verify + build, deploy, look at Trade Floor › Trade desk
+   (builder: pick franchise, select assets, Check both sides: teams stacked, Reset Act shown if stale, roster before/after).
+2. Code p3g1-s2 (games/lineups/rosters), -s3 (contracts/cap/picks/txns), -s4 (checks, snapshot, L-34) yourself from briefs
+   ~/fleet/briefs/warroom-ring3-p3g1-s[234].md, following internal/facts style; reduced-golden parity in verify; full opt-in
+   TWR_ARCHIVE_PARITY=1 TWR_FACTS_ORACLE=RUN/p3g1/oracle-final/facts.jsonl.gz TWR_FACTS_ARCHIVE=<archive raw>.
+3. Then p3n Control Room, p3s shell/Home/HQ (+ BACKLOG: app-wide sideways scrollbar strip at bottom of every view), p3r
+   Research, p3l live game, p3g2 Lab compiler, p3h archive/pools/events. When Sol is back (~00:15) dispatch with
+   ./dispatch-wt.sh (one per worktree; WT= env selects worktree); briefs in ~/fleet/briefs/ (worktree-path copies in RUN/par/).
+4. Spec rev 3, registry gate, Christopher click-through, PR squash-merge. Report the Pools decision to Christopher.
+REVIEW ROUTINE: report -> one planted mutant -> make verify/build -> deploy -> look myself (screenshots via shot.sh) -> fix ->
+commit -> update this RESUME + scp CT105. Never `git add -A` without checking for build outputs (the 36 MB root binary slip).
+Luna click tests: ./luna-click.sh (stops early; short checklists only).
+
+# RESUME: TheWarRoom ring 3 (Tom = head brain AND builder via tom-dispatch; Sol is Claudebox's) — compact-safe 2026-10-11 ~15:50 CDT
 
 ## 1. WHAT WE ARE DOING
 Complete ring 3 of TheWarRoom (Christopher's /goal): build, review, click-through every phase on Claude-OS
@@ -22,8 +49,10 @@ Main checkout `~/work/TheWarRoom` is on Christopher's `session/league-history-pw
 | CLAUDE.md ring 3 | done 56071e3 |
 | Step 1 registry check (p3a) | done 16e2aa2 |
 | Step 2a draft reports (p3b, p3b2) | done, click-verified vs MFL O=17 |
-| Step 2b market feeds + shared report shell (p3c, p3c2) | committed 20c693c; ADP format fix UNCOMMITTED (see §8); report-reveal on pool NOT yet click-verified |
-| Step 3 League Pulse Race (p3d), Now (p3e) | briefs ready, not run |
+| Step 2b market feeds + shared report shell (p3c, p3c2) | done d7f0456 + f7b8cf2 (shared bar axis, AAV desc, team units); click-verified |
+| Step 3 League Pulse Race (p3d) | done 35b9847 + 0185bec; mutant (all-play ties) caught; click-verified |
+| Now (p3e) | done 3a94003; mutant (average rounding) caught; fixes: NFL week held by season refresh, my side first, mine glyph |
+| p3f pipeline s0/s1/s4 + Data and sources | Tom dispatched 15:41 (watch p3f/sentinel; stale = 30 min) |
 | Step 5 pipeline s0/s1/s4 (p3f), s2a (p3g1), s2b+s3 (p3g2) | briefs ready, not run |
 | Archive + Pools + league_event (p3h) | brief ready, not run |
 | Step 4 headshots (p3k) | brief ready, not run |
@@ -61,8 +90,9 @@ working on Claude-OS.
 
 ## 7. DECISIONS
 Christopher: A Research tab = build in ring 3 · B M-192 in ring 3 · E what-if Reset/Undo/Make-this-a-plan →
-`act act-text` · F order as listed · CLAUDE.md approved · he clicks through only at the end. C (ProBoards post
-format) and D (season rollover) OPEN: ask before step 8.
+`act act-text` · F order as listed · CLAUDE.md approved · he clicks through only at the end. 12:50 CDT: C (Q15)
+post format kept as is · D (Q16) app rolls over when MFL rolls over · ProBoards = https://legacynfl.boards.net/
+(logged in on Claude-OS; app only OPENS it, never posts) · 15:15 M-192 RETIRE (no options in rulebook/MFL data) · 15:55 SOL AVAILABLE AGAIN (Christopher: "you now can use Sol at medium thinking to code with if needed"): dispatch-wt.sh for Sol, tom-dispatch-wt.sh for Tom; one builder in the worktree at a time.
 Tom: registry has no `deferred` status — deferred = ring names the ring + ring_note reason; generator emits
 only fields the app reads; shared Report shell with Report.Link; pool Market column; Pools = one report, Acts
 → ring 4; Archive from compiled facts (FS1), reference = Lab Python read via `git -C ~/work/TheWarRoom show
@@ -74,7 +104,38 @@ wire.testdata.json (the ADP/AAV format fix). Commit after verify passes:
 `git add -A && git commit -F <msg>` (msg: "Market reports: whole-pick ADP ranges, one-decimal AAV shares").
 
 ## 9. NEXT ACTIONS, IN ORDER
-1. Check /tmp/r3-verify.log (or rerun verify); commit the ADP fix.
+HARD STOP: this Claude account logs out at 04:00 CDT 2026-10-12 (Christopher). Save everything by 03:15 (timer set),
+or earlier if the 5-hour usage runs low. Per-stage routine now ends with: update this RESUME, copy to CT105, and commit
+the repo copy (docs/build-handoffs/RESUME-2026-10-11-ring3.md) in ring-3 BEFORE touching <stage>/APPROVED.
+Sol chains keep running after logout; each waits at its APPROVED gate until Claude returns.
+NOW (22:18): SOL BUDGET OUT (Christopher 21:45: Sol at 11%, p3g1-s1 and p3t were its last runs for ~2.5 h).
+All chains STOPPED (killed chain.sh drivers; no further Sol stages launch). Claude codes the rest itself.
+session/ring-3 HEAD 4d97fd9: p3f-fix 13c7de5, p3g1-s1 b546720 (facts skeleton, 12 relations, zero-diff parity),
+merge of ring-3-b 5fee4be (p3m Comms e540d59 + p3k photos 6b5fc37), p3k Data and sources row+switch 4d97fd9.
+p3t done on ring-3-c (session/ring-3-c, unreviewed at 22:18): review, mutant, commit there, merge into ring-3.
+NEXT (Claude codes): p3g1-s2..s4 (briefs ~/fleet/briefs/warroom-ring3-p3g1-s[234].md), p3n, p3s, p3r, p3l, p3g2, p3h.
+Deployed on Claude-OS: ring3-merge-b2. EARLIER (21:02) PARALLEL (Christopher: pick up the pace): worktrees ring-3-b (branch session/ring-3-b: chain p3m → p3k)
+and ring-3-c (session/ring-3-c: chain p3t → p3r), both from 1d21564, briefs in RUN/par/. Claude merges each approved
+phase into session/ring-3 (merge, regenerate registry/wire on conflict). Main ring-3 chain: p3f-fix → p3g1-s1..s4.
+Remaining after: p3g2, p3h (after facts), p3n, p3s, p3l. EARLIER (20:50): p3g1 groundwork COMMITTED 1d21564 (Python oracle via tools/labparity, five gaps approved by file+sha;
+the 8.7 MB facts.jsonl.gz is deliberately UNTRACKED; full oracle lives at RUN/p3g1/oracle-final/). Sol did not build
+the compiler, so the rest is split into small stages run by ./chain.sh (log chain.log): p3f-fix (FIXES from Luna's
+click test, p3f/FIXES.md) → p3g1-s1 (golden restructure + league/player facts) → s2 (games/lineups/rosters) → s3
+(contracts/cap/picks/txns) → s4 (checks, snapshot, L-34). After each stage's sentinel the chain WAITS for
+RUN/<stage>/APPROVED: review REPORT, verify, commit, then touch APPROVED. Send back: write <stage>/FEEDBACK.md and
+touch <stage>/REDO. Then deploy+Luna click (short checklists; see memory luna-briefs...). Then p3g2 onward.
+EARLIER (19:50): p3f COMMITTED 9248f1a (Sol finished it; 2 mutants caught; verify+build 0; deployed ring3-p3f-a). Luna click-testing Data and sources (p3f/click/); its defects get fixed AFTER p3g1. p3g1 running on Sol since 19:46 (first try blocked: Sol may not run git, so the Lab reference is exported to RUN/lab-reference/, briefs p3g1/p3g2/p3h updated). p3g1 brief carries the five missing 175 B error pins decision. EARLIER (19:10): p3f Tom hit the 5-hour usage limit at 15:58 (its transcript is in p3f-tom/); Sol resumed it from the unstaged edits with brief warroom-ring3-p3f2-continue.md (alive = mtime of p3f/sessions/*.jsonl). Luna click tests: ./luna-click.sh <phase> <click-brief> (report <phase>/click/CLICK-REPORT.md, done <phase>/click/click.done). Earlier: p3f running (Tom builder, started 15:41; alive = mtime of p3f/transcript.jsonl; done = p3f/sentinel; recover reasoning from that transcript). Next phases may go to Sol (dispatch-wt.sh) or Tom. On its sentinel: review REPORT, plant one mutant, verify+build, deploy,
+click Control Room › Data and sources, fix, commit; then dispatch p3g1 (tom-dispatch-wt.sh p3g1 <brief>) and repeat
+down the PHASE ORDER. The repo copy of this RESUME is stale (024be27); commit an update when no builder is running.
+0. (14:35) PHASE ORDER: p3e (running) → p3f → p3g1 → p3g2 → p3h → p3k → p3m Comms → p3n Control Room →
+   p3r Research → p3s shell/Home/HQ/lists/what-if/backlog → p3l live game → p3t Acts (all trade hand-offs = O=05,
+   no form capture needed; M-192 retired there). ALL briefs written: ~/fleet/briefs/warroom-ring3-*.md. p3n no
+   longer has Data and sources (p3f builds it). Samples: RUN/mfl-samples
+   (rss, siteNews, playerProfile, depth_charts_2026_latest.csv, mfl-api-info.html), RUN/live-samples (ESPN
+   scoreboard+summaries, Yahoo, Fox). FINDING (corrected 19:40 by p3f's import): 2013-2015 messageBoard/polls
+   archive files are MFL auth errors (175 B); 2016-2026 are genuinely empty (54 B). Pools archive files are real (decision holds).
+   Items 1-3 below are DONE.
+1. RERUN make verify (the background run at compaction overlapped a pre-commit stash, so its result is untrustworthy); then commit the ADP fix.
 2. `make build`, deploy (`gzip -1 -c build/bin/thewarroom > /tmp/twr.gz && scp -q /tmp/twr.gz
    claudeos:warroom-ring1/thewarroom.new.gz && ssh claudeos "cd ~/warroom-ring1 && gunzip -f thewarroom.new.gz &&
    chmod +x thewarroom.new && bash deploy.sh ring3-p3c2-a"`), open War Room (click 76,240) › Valuations and pool
