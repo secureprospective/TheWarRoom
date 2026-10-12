@@ -44,15 +44,11 @@ func (c *compiler) players(ctx context.Context) error {
 			c.mergePlayer(best, pid, p, year, src)
 		}
 	}
-	eastern, err := time.LoadLocation("America/New_York")
-	if err != nil {
-		return fmt.Errorf("birthdate timezone: %w", err)
-	}
 	for pid, rec := range best {
 		if rec.fields["name"] == nil {
 			return fmt.Errorf("player %s has no name", pid)
 		}
-		c.facts.Player = append(c.facts.Player, playerRow(pid, rec, eastern))
+		c.facts.Player = append(c.facts.Player, playerRow(pid, rec, c.eastern))
 	}
 	return nil
 }

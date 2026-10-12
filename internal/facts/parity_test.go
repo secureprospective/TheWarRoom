@@ -227,9 +227,6 @@ func relationRows(t *testing.T, relation reflect.Value, table string, reduced bo
 }
 
 func selectedRow(relation reflect.Value, row int, table string, txns map[int64]bool) bool {
-	if table == "note_reading" {
-		return txns[relation.Field(0).Index(row).Int()]
-	}
 	if table == "source_file" || table == "load_note" {
 		field := relation.FieldByName("Src").Index(row)
 		if field.Kind() == reflect.Pointer {
@@ -238,11 +235,15 @@ func selectedRow(relation reflect.Value, row int, table string, txns map[int64]b
 		src := field.String()
 		return !strings.Contains(src, "/") || strings.HasPrefix(src, "2013/") || strings.HasPrefix(src, "2020/") || strings.HasPrefix(src, "2026/")
 	}
-	field := relation.FieldByName("Year")
-	if !field.IsValid() {
-		return true
+	for _, name := range []string{"Year", "SnapshotYear"} {
+		if field := relation.FieldByName(name); field.IsValid() {
+			return selectedYear(field.Index(row).Int())
+		}
 	}
-	return selectedYear(field.Index(row).Int())
+	if field := relation.FieldByName("TxnID"); field.IsValid() {
+		return txns[field.Index(row).Int()]
+	}
+	return true
 }
 func selectedYear(year int64) bool { return year == 2013 || year == 2020 || year == 2026 }
 

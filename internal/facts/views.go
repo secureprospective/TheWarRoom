@@ -7,12 +7,16 @@ import (
 )
 
 // Views are the Lab's named readings (views.sql), computed from the fact columns on demand and
-// never stored: what "played", "regular season", "all-play" and a team's season mean, defined once.
+// never stored: what "played", "regular season", "all-play", a team's season, a trade's assets, an
+// offer and a roster move mean, defined once.
 type Views struct {
 	PlayedGame  GameColumns
 	RegularWeek RegularWeekColumns
 	AllPlayWeek AllPlayWeekColumns
 	TeamSeason  TeamSeasonColumns
+	TradeAsset  TradeAssetColumns
+	Offer       OfferColumns
+	RosterMove  RosterMoveColumns
 }
 
 type RegularWeek struct {
@@ -112,6 +116,10 @@ func (f Facts) Views() Views {
 	fill(&v.RegularWeek, regular)
 	fill(&v.AllPlayWeek, allPlay)
 	fill(&v.TeamSeason, f.teamSeasons(played, regular, allPlay))
+	trades, offers, moves := f.txnViews()
+	fill(&v.TradeAsset, trades)
+	fill(&v.Offer, offers)
+	fill(&v.RosterMove, moves)
 	return v
 }
 

@@ -374,10 +374,13 @@ func (c *compiler) addNote(step, src, note string, n int64) {
 	}
 }
 
-// season compiles one season's weekly facts: games and lineups, player weeks, rosters, points
-// allowed and the playoffs.
+// season compiles one season's facts after the league itself, in the Lab loader's order: games and
+// lineups, player weeks, rosters, contracts and cap, points allowed, the draft, picks owned, trade
+// bait, transactions (numbered across seasons, so seasons run in order), playoffs and MFL-wide values.
 func (c *compiler) season(year int64) error {
-	for _, step := range []func(int64) error{c.results, c.playerWeeks, c.rosters, c.pointsAllowed, c.playoffs} {
+	steps := []func(int64) error{c.results, c.playerWeeks, c.rosters, c.contracts, c.pointsAllowed, c.draft, c.picksOwned,
+		c.tradeBait, c.transactions, c.playoffs, c.mflWide}
+	for _, step := range steps {
 		if err := step(year); err != nil {
 			return err
 		}

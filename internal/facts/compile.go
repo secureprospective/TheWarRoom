@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type ResolvedInput struct {
@@ -18,9 +19,11 @@ type ResolvedInput struct {
 }
 
 type compiler struct {
-	inputs map[string]ResolvedInput
-	facts  factRows
-	years  []int64
+	inputs  map[string]ResolvedInput
+	facts   factRows
+	years   []int64
+	eastern *time.Location // MFL shows every date in US Eastern
+	txnID   int64          // the last transaction numbered, across seasons
 }
 
 func Compile(ctx context.Context, inputs []ResolvedInput, notes []RawNoteReading) (Facts, error) {
@@ -91,6 +94,11 @@ func newCompiler(ctx context.Context, inputs []ResolvedInput) (*compiler, error)
 		c.years = append(c.years, year)
 	}
 	slices.Sort(c.years)
+	eastern, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		return nil, fmt.Errorf("eastern timezone: %w", err)
+	}
+	c.eastern = eastern
 	return c, nil
 }
 

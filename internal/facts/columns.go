@@ -23,6 +23,15 @@ type factRows struct {
 	PointsAllowed   []PointsAllowed
 	PlayoffBracket  []PlayoffBracket
 	PlayoffGame     []PlayoffGame
+	Contract        []Contract
+	CapCharge       []CapCharge
+	DraftPick       []DraftPick
+	PickOwned       []PickOwned
+	Txn             []Txn
+	TxnAsset        []TxnAsset
+	TradeBait       []TradeBait
+	MflAdp          []MflAdp
+	MflAav          []MflAav
 }
 
 type Season struct {
@@ -184,6 +193,15 @@ type Facts struct {
 	PointsAllowed   PointsAllowedColumns
 	PlayoffBracket  PlayoffBracketColumns
 	PlayoffGame     PlayoffGameColumns
+	Contract        ContractColumns
+	CapCharge       CapChargeColumns
+	DraftPick       DraftPickColumns
+	PickOwned       PickOwnedColumns
+	Txn             TxnColumns
+	TxnAsset        TxnAssetColumns
+	TradeBait       TradeBaitColumns
+	MflAdp          MflAdpColumns
+	MflAav          MflAavColumns
 }
 
 type SeasonColumns struct {
@@ -513,4 +531,214 @@ type PlayoffGameColumns struct {
 	Points    []*float64 `json:"points"`
 	Seed      []*string  `json:"seed"`
 	Src       []string   `json:"src"`
+}
+
+type Contract struct {
+	Year           int64    `json:"year"`
+	Pid            string   `json:"pid"`
+	Salary         *float64 `json:"salary"`
+	ContractYear   *string  `json:"contract_year"`
+	ContractStatus *string  `json:"contract_status"`
+	ContractInfo   *string  `json:"contract_info"`
+	Src            string   `json:"src"`
+}
+
+type CapCharge struct {
+	Year        int64    `json:"year"`
+	AdjID       string   `json:"adj_id"`
+	Fid         *string  `json:"fid"`
+	Amount      *float64 `json:"amount"`
+	Description *string  `json:"description"`
+	Ts          *int64   `json:"ts"`
+	Src         string   `json:"src"`
+}
+
+type DraftPick struct {
+	Year     int64   `json:"year"`
+	Round    int64   `json:"round"`
+	Pick     int64   `json:"pick"`
+	Fid      *string `json:"fid"`
+	Pid      *string `json:"pid"`
+	Ts       *int64  `json:"ts"`
+	Day      *string `json:"day"`
+	Comments *string `json:"comments"`
+	Src      string  `json:"src"`
+}
+
+type PickOwned struct {
+	SnapshotYear int64   `json:"snapshot_year"`
+	Source       string  `json:"source"`
+	Fid          string  `json:"fid"`
+	PickYear     *int64  `json:"pick_year"`
+	Round        *int64  `json:"round"`
+	Slot         *int64  `json:"slot"`
+	OrigFid      *string `json:"orig_fid"`
+	Code         *string `json:"code"`
+	Description  *string `json:"description"`
+	Src          string  `json:"src"`
+}
+
+type Txn struct {
+	TxnID     int64   `json:"txn_id"`
+	Year      int64   `json:"year"`
+	Ts        *int64  `json:"ts"`
+	Day       *string `json:"day"`
+	Type      string  `json:"type"`
+	Fid       *string `json:"fid"`
+	Fid2      *string `json:"fid2"`
+	ByCommish int64   `json:"by_commish"`
+	Expires   *int64  `json:"expires"`
+	Comments  *string `json:"comments"`
+	Raw       string  `json:"raw"`
+	Src       string  `json:"src"`
+	SrcIdx    int64   `json:"src_idx"`
+}
+
+type TxnAsset struct {
+	TxnID     int64   `json:"txn_id"`
+	Role      string  `json:"role"`
+	FromFid   *string `json:"from_fid"`
+	ToFid     *string `json:"to_fid"`
+	Kind      string  `json:"kind"`
+	Pid       *string `json:"pid"`
+	PickYear  *int64  `json:"pick_year"`
+	PickRound *int64  `json:"pick_round"`
+	PickSlot  *int64  `json:"pick_slot"`
+	PickOrig  *string `json:"pick_orig"`
+	Code      string  `json:"code"`
+}
+
+type TradeBait struct {
+	Year          int64   `json:"year"`
+	Fid           string  `json:"fid"`
+	Ts            *int64  `json:"ts"`
+	WillGiveUp    *string `json:"will_give_up"`
+	InExchangeFor *string `json:"in_exchange_for"`
+	Src           string  `json:"src"`
+}
+
+type MflAdp struct {
+	Year    int64    `json:"year"`
+	Pid     string   `json:"pid"`
+	Rank    *int64   `json:"rank"`
+	AvgPick *float64 `json:"avg_pick"`
+	MinPick *int64   `json:"min_pick"`
+	MaxPick *int64   `json:"max_pick"`
+	Drafts  *int64   `json:"drafts"`
+	Src     string   `json:"src"`
+}
+
+type MflAav struct {
+	Year     int64    `json:"year"`
+	Pid      string   `json:"pid"`
+	Rank     *int64   `json:"rank"`
+	AvgValue *float64 `json:"avg_value"`
+	MinValue *float64 `json:"min_value"`
+	MaxValue *float64 `json:"max_value"`
+	Src      string   `json:"src"`
+}
+
+type ContractColumns struct {
+	Year           []int64    `json:"year"`
+	Pid            []string   `json:"pid"`
+	Salary         []*float64 `json:"salary"`
+	ContractYear   []*string  `json:"contract_year"`
+	ContractStatus []*string  `json:"contract_status"`
+	ContractInfo   []*string  `json:"contract_info"`
+	Src            []string   `json:"src"`
+}
+
+type CapChargeColumns struct {
+	Year        []int64    `json:"year"`
+	AdjID       []string   `json:"adj_id"`
+	Fid         []*string  `json:"fid"`
+	Amount      []*float64 `json:"amount"`
+	Description []*string  `json:"description"`
+	Ts          []*int64   `json:"ts"`
+	Src         []string   `json:"src"`
+}
+
+type DraftPickColumns struct {
+	Year     []int64   `json:"year"`
+	Round    []int64   `json:"round"`
+	Pick     []int64   `json:"pick"`
+	Fid      []*string `json:"fid"`
+	Pid      []*string `json:"pid"`
+	Ts       []*int64  `json:"ts"`
+	Day      []*string `json:"day"`
+	Comments []*string `json:"comments"`
+	Src      []string  `json:"src"`
+}
+
+type PickOwnedColumns struct {
+	SnapshotYear []int64   `json:"snapshot_year"`
+	Source       []string  `json:"source"`
+	Fid          []string  `json:"fid"`
+	PickYear     []*int64  `json:"pick_year"`
+	Round        []*int64  `json:"round"`
+	Slot         []*int64  `json:"slot"`
+	OrigFid      []*string `json:"orig_fid"`
+	Code         []*string `json:"code"`
+	Description  []*string `json:"description"`
+	Src          []string  `json:"src"`
+}
+
+type TxnColumns struct {
+	TxnID     []int64   `json:"txn_id"`
+	Year      []int64   `json:"year"`
+	Ts        []*int64  `json:"ts"`
+	Day       []*string `json:"day"`
+	Type      []string  `json:"type"`
+	Fid       []*string `json:"fid"`
+	Fid2      []*string `json:"fid2"`
+	ByCommish []int64   `json:"by_commish"`
+	Expires   []*int64  `json:"expires"`
+	Comments  []*string `json:"comments"`
+	Raw       []string  `json:"raw"`
+	Src       []string  `json:"src"`
+	SrcIdx    []int64   `json:"src_idx"`
+}
+
+type TxnAssetColumns struct {
+	TxnID     []int64   `json:"txn_id"`
+	Role      []string  `json:"role"`
+	FromFid   []*string `json:"from_fid"`
+	ToFid     []*string `json:"to_fid"`
+	Kind      []string  `json:"kind"`
+	Pid       []*string `json:"pid"`
+	PickYear  []*int64  `json:"pick_year"`
+	PickRound []*int64  `json:"pick_round"`
+	PickSlot  []*int64  `json:"pick_slot"`
+	PickOrig  []*string `json:"pick_orig"`
+	Code      []string  `json:"code"`
+}
+
+type TradeBaitColumns struct {
+	Year          []int64   `json:"year"`
+	Fid           []string  `json:"fid"`
+	Ts            []*int64  `json:"ts"`
+	WillGiveUp    []*string `json:"will_give_up"`
+	InExchangeFor []*string `json:"in_exchange_for"`
+	Src           []string  `json:"src"`
+}
+
+type MflAdpColumns struct {
+	Year    []int64    `json:"year"`
+	Pid     []string   `json:"pid"`
+	Rank    []*int64   `json:"rank"`
+	AvgPick []*float64 `json:"avg_pick"`
+	MinPick []*int64   `json:"min_pick"`
+	MaxPick []*int64   `json:"max_pick"`
+	Drafts  []*int64   `json:"drafts"`
+	Src     []string   `json:"src"`
+}
+
+type MflAavColumns struct {
+	Year     []int64    `json:"year"`
+	Pid      []string   `json:"pid"`
+	Rank     []*int64   `json:"rank"`
+	AvgValue []*float64 `json:"avg_value"`
+	MinValue []*float64 `json:"min_value"`
+	MaxValue []*float64 `json:"max_value"`
+	Src      []string   `json:"src"`
 }
