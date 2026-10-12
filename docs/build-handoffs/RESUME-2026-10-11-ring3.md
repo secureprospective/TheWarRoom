@@ -1,3 +1,36 @@
+# RESUME — ring 3 (updated 10:45 10-12, at compaction #2)
+
+## STATE IN ONE SCREEN
+ring-3 HEAD 60073a3 (local, unpushed). Committed since last RESUME: f111666 p3n Control Room (League settings,
+by-laws search, accounting, What's New articles); 1ac7344 merge p3s (shell rows, IR alerts, private lists);
+60073a3 review fixes (S-10 filter persistence, status strip reads structured C-07 + names the missing board source,
+.market-controls moved to look.css, Watch off card grid / matrix layout, local as-of time). Deployed: ring3-polish.
+Scrollbar BACKLOG item CLOSED: it is Claude-OS's auto-hidden XFCE dock (xfce4-panel 306x3 @ +487+797), not the app.
+
+## SOL LANES RUNNING (dispatch-wt.sh now realpaths the brief; relative path caused two 20-s "no brief" exits)
+| lane | worktree | brief | what |
+|---|---|---|---|
+| p3g2-s1c | ring-3-d | par/p3g2-s1c.md | Lab compiler. Proof redesigned (my ruling): P1 reference on full independent mfl.db (p3g2-s1b/four-season-reference/reference/tools/league-history/data/mfl.db) must reproduce frozen lab.json except source.pages; P2 kernel goldens from passive recorders (<1 MB) in verify; P3 reduced smoke only; P4 full opt-in parity. Evidence{Built,ArchiveThrough,Pages}. No facts fixture changes. |
+| p3l | ring-3-b (ff to 60073a3) | par/p3l.md | live game: M-001, X-01 field view + box score, X-02 play spine. Fixtures p3l-fixtures/ (ESPN scoreboard/summary/core plays w/ athlete participants, Yahoo failover). Live check: MNF BUF@LAR 7:15 PM CT tonight. |
+| p3r2 | ring-3-c (p3r work UNCOMMITTED there) | par/p3r2.md | batch playerProfile (P=comma list, 100/request; fixture p3r2-fixtures/), own news mutex not refreshMu. Then commit p3r+p3r2 together in ring-3-c, merge. |
+Liveness: mtime RUN/<p>/sessions/*.jsonl; done RUN/<p>/sentinel; watcher bg4byaxuc covers p3l + s1c only.
+Old stop dirs: p3g2-s1-preflight (+symlink p3g2-s1), p3g2-s1b, p3l-nobrief, p3g2-s1c-nobrief.
+
+## NEXT, IN ORDER
+1. On each sentinel: read REPORT, one planted mutant, verify, commit in that worktree, merge into ring-3 (union
+   registry CSV / registry.test / SYSTEM_MAP; make bindings; gen-endpoints), deploy, LOOK.
+2. p3r review still owes the live look (search, Inspector, depth, injuries, news, article hand-off) after p3r2.
+3. s1c: rerun P4 full parity myself on Beelink before merging. Then p3g2-s2 brief (proof-2 seam, today's Lab,
+   Control Room source lines). Then p3h (Pools/Archive rows, 30+ in registry) after p3g2.
+4. C-01 asset board (ring 3 row, "awaits engine-value wiring") — decide: build or move to ring 4 with reason.
+5. Spec rev 3 (BACKLOG "Spec revision 3 notes": League tab rename with shell.test, What's New articles, S-05/S-10),
+   registry gate (no ring-3 row left spec), Christopher click-through, PR squash-merge.
+6. Ask Christopher: copy league-archive/raw to Claude-OS (hook blocks rsync) for live Checked facts look.
+BACKLOG new: HQ shows "failing" while lineup still loading (p3l).
+
+
+---
+## PREVIOUS RESUME (08:40)
 ## >>> RESUME HERE (written 08:40 CDT 2026-10-12, compaction) <<<
 session/ring-3 HEAD 1787c9a (p3g1 COMPLETE: s2 2fdb63c, s3 d4e8a50, s4 83545aa + 943644f). Unpushed.
 IN FLIGHT, Sol (3 lanes, started 07:31 / 08:11; liveness = mtime RUN/<p>/sessions/*.jsonl, done = RUN/<p>/sentinel,
