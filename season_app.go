@@ -123,6 +123,8 @@ func (a *App) refreshSeason(ctx context.Context) {
 		return
 	}
 	a.refreshSeasonLineups(ctx)
+	// Lineups are what Franchise HQ opens on: tell the views now, not after the whole refresh.
+	a.seasonChanged(ctx)
 	if err := pause(ctx, time.Second); err != nil {
 		return
 	}

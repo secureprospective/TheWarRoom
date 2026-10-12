@@ -75,8 +75,16 @@ export function lineupGroups(
   return [...split, ...roster.groups.slice(1)];
 }
 
+// lineupPending: MFL's lineups have not been read since launch and no read has failed. Go words this
+// state "<feed> not fetched yet" with no fetch time (season_app.go heldSeasonFeed.provenance).
+export function lineupPending(reading: LineupReading): boolean {
+  const f = reading.provenance.freshness;
+  return f.state === 'fail' && !f.fetchedAt && f.note.endsWith('not fetched yet');
+}
+
 export function lineupText(reading?: LineupReading, error?: string): string {
   if (!reading) return error ? `Lineup unavailable · ${error}` : 'Reading lineup…';
+  if (lineupPending(reading)) return 'Reading lineup from MFL…';
   if (reading.rulesSource.freshness.state === 'fail') return lineupVerdict(reading);
   if (!reading.starters.length) return `No saved lineup · ${reading.provenance.freshness.note}`;
   return `Week ${reading.week} lineup · ${lineupVerdict(reading)}`;

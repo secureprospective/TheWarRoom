@@ -51,6 +51,10 @@ const Comms = lazy(() => import('../comms/Comms'));
 const loadInspector = () => import('./PlayerInspector');
 const PlayerInspector = lazy(() => loadInspector().then((m) => ({ default: m.PlayerInspector })));
 
+// Workspaces that read the league snapshot: before it arrives they are loading, not unwired.
+const snapshotWorkspaces = ['hq/lineup-and-roster', 'hq/contracts-and-cap', 'hq/my-moves',
+  'trade/trade-desk'];
+
 export function TargetApp() {
   const s = commands.use();
   const root = useRef<HTMLDivElement>(null);
@@ -247,6 +251,10 @@ export function TargetApp() {
             <Suspense fallback={<p role="status">Opening League…</p>}>
               <LeagueRoom />
             </Suspense>
+          ) : !snapshot && snapshotWorkspaces.includes(`${s.node}/${workspace.slug}`) ? (
+            <p role="status">
+              {error ? `${workspace.label} unavailable · ${error}` : 'Reading the league…'}
+            </p>
           ) : (
             <section className="shell-unwired">
               <h4>{workspace.label}</h4>

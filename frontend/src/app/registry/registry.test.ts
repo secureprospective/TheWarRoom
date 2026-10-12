@@ -182,6 +182,11 @@ describe('Endpoint map', () => {
           const html = await renderSettledApp();
           expect(html).toContain(`${place} endpoint index`);
           for (const row of endpointsAt(place as Placement)) expect(html).toContain(row.id);
+          // Rendered before the snapshot arrives: a snapshot workspace reads as loading, never unwired.
+          if (['lineup-and-roster', 'contracts-and-cap', 'my-moves', 'trade-desk'].includes(w.slug)) {
+            expect(html).toContain('Reading the league…');
+            expect(html).not.toContain('Not wired');
+          }
         }
       }
       for (const place of surfacePlaces) {

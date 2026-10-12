@@ -175,7 +175,7 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 			"weeklyResults", "playoffBrackets", "playoffBracket", "playoffBracket", "playoffBracket", "leagueStandings",
 			"nflSchedule", "nflByeWeeks"}) ||
 		!reflect.DeepEqual(*pauses, slices.Repeat([]time.Duration{time.Second}, 19)) ||
-		*events != 1 {
+		*events != 2 { // once when lineups land (Franchise HQ opens on them), once when the refresh ends
 		t.Fatalf("requests %v pauses %v events %d", transport.requests, *pauses, *events)
 	}
 	for i := 1; i < len(transport.starts); i++ {
@@ -473,7 +473,12 @@ func TestSeasonWorkerUsesRefreshedWeek(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(a.ctx)
 	defer cancel()
-	a.seasonChanged = func(context.Context) { cancel() }
+	changes := 0
+	a.seasonChanged = func(context.Context) { // the second change is the refresh's end
+		if changes++; changes == 2 {
+			cancel()
+		}
+	}
 	a.refreshInBackground(ctx)
 	a.weekWorkers.Wait()
 	if !reflect.DeepEqual(transport.requests, []string{
