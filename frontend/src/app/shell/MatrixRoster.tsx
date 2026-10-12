@@ -1,3 +1,4 @@
+import { WatchButton } from '../personal/WatchButton';
 import { Act } from '../commands/Act';
 import { matrixColumns, matrixCells } from '../cards/matrix';
 import type { PlayerCardModel } from '../cards/playerModel';
@@ -33,13 +34,16 @@ export function MatrixRoster({ cards, franchiseId, selected }: {
             {matrixCells(model).map((value, index) => (
               <td key={matrixColumns[index].key} title={value}>
                 {index === 1 ? (
-                  <Act verb="inspector.open" args={{
-                    subject: { kind: 'player', id: model.id, franchiseId },
-                  }} label={`Inspect ${model.name}`}>
-                    {value}
-                  </Act>
+                  <div className="matrix-player">
+                    <Act verb="inspector.open" args={{
+                      subject: { kind: 'player', id: model.id, franchiseId },
+                    }} label={`Inspect ${model.name}`}>
+                      {value}
+                    </Act>
+                    <WatchButton id={model.id} name={model.name} mine={franchiseId} />
+                    {provenance === 'own' && <SignalChip {...model.provenance} />}
+                  </div>
                 ) : value}
-                {index === 1 && provenance === 'own' && <SignalChip {...model.provenance} />}
               </td>
             ))}
           </tr>

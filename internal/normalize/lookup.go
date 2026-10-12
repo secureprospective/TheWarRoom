@@ -20,7 +20,8 @@ import (
 // lookupEntry is one player's resolved facts; raw MFL codes do not survive into it.
 type lookupEntry struct {
 	PlayerFacts
-	isAggregate bool // "Def", "TMWR", …
+	displayPosition string
+	isAggregate     bool // "Def", "TMWR", …
 }
 
 // Lookup is the players database keyed by canonical player id.
@@ -63,7 +64,8 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 				IsRookie: rp.Status == "R",
 				College:  strings.TrimSpace(rp.College),
 			},
-			isAggregate: isAgg,
+			isAggregate:     isAgg,
+			displayPosition: rp.Position,
 		}
 		// The fetcher validated the birthdate; absent stays absent and the consumer decides.
 		if bd := strings.TrimSpace(rp.Birthdate); bd != "" {
@@ -198,4 +200,14 @@ func newAggregateSet() map[string]struct{} {
 		"TMLB":  {},
 		"TMDB":  {},
 	}
+}
+
+// DisplayFacts includes team aggregates for read-only MFL reports, never model inputs.
+func (l Lookup) DisplayFacts(id string) (PlayerFacts, string, bool) {
+	pid, err := playerid.New(id)
+	if err != nil {
+		return PlayerFacts{}, "", false
+	}
+	e, ok := l.entry(pid)
+	return e.PlayerFacts, e.displayPosition, ok
 }

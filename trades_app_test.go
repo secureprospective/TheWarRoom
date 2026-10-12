@@ -54,7 +54,7 @@ func TestTargetTradesLocalReading(t *testing.T) {
 	incoming, by := r.Offers[1], r.Offers[0]
 	if incoming.Direction != "to_you" || incoming.OtherName != "Other team" || incoming.OtherID != "0001" ||
 		incoming.Give[0].Token != "15754" || incoming.Give[0].Name == "15754" ||
-		incoming.Give[0].Position == "" || incoming.Get[0].Name != "0099" ||
+		incoming.Give[0].Position == "" || incoming.Get[0].Name != "Player name unavailable" ||
 		incoming.Get[1].Token != "FP_0001_2027_1" || incoming.Comments != offer.Comments ||
 		by.Direction != "by_you" || by.Give[0].Token != "0099" || by.Get[0].Token != "15754" {
 		t.Fatalf("directions/assets: %+v %+v", incoming, by)

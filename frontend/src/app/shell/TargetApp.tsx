@@ -20,6 +20,8 @@ import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
 
+const StatusStrip = lazy(() => import('./StatusStrip'));
+const EntityInspector = lazy(() => import('./EntityInspector'));
 const DataSources = lazy(() => import('../datasources/DataSources'));
 const Contracts = lazy(() => import('../contracts/Contracts'));
 const LazyEndpointIndex = lazy(() =>
@@ -42,6 +44,7 @@ const CommandBar = lazy(() => import('../commands/CommandBar').then((m) => ({ de
 const HomePulseMount = lazy(() => import('./HomePulseMount'));
 const TradeDesk = lazy(() => import('./TradeDesk'));
 const Market = lazy(loadMarket);
+const Research = lazy(() => import('../research/Research'));
 const Race = lazy(() => import('../race/Race'));
 const Comms = lazy(() => import('../comms/Comms'));
 const loadInspector = () => import('./PlayerInspector');
@@ -165,12 +168,6 @@ export function TargetApp() {
             ))}
           </div>
           <div className="strip">
-            {summary ? (
-              <SignalChip {...summary.provenance} />
-            ) : (
-              <span>{error ?? 'Snapshot loading…'}</span>
-            )}
-            <ClockStrip reading={clock} />
             <span className="dens" aria-label="Density">
               {DENSITIES.map((density, index) => (
                 <Act
@@ -187,6 +184,10 @@ export function TargetApp() {
             </span>
           </div>
         </header>
+        <div className="workspace-status" aria-label="Status strip">
+          <Suspense fallback={null}><StatusStrip /></Suspense>
+          <ClockStrip reading={clock} />
+        </div>
         <div className="wbody" ref={workspaceBody}>
           {s.notice && (
             <p role="status" className="not-wired">
@@ -216,6 +217,10 @@ export function TargetApp() {
             <Suspense fallback={null}>
               <Market snapshot={snapshot} />
             </Suspense>
+          ) : s.node === 'war' && workspace.slug === 'research' ? (
+            <Suspense fallback={<p role="status">Opening Research…</p>}>
+              <Research />
+            </Suspense>
           ) : s.node === 'pulse' && workspace.slug === 'race' ? (
             <Suspense fallback={<p role="status">Opening Race…</p>}>
               <Race />
@@ -223,6 +228,7 @@ export function TargetApp() {
           ) : s.node === 'home' && workspace.slug === 'digests' ? (
             <Suspense fallback={<p role="status">Opening Digests…</p>}>
               <Comms />
+              <Research newsOnly />
             </Suspense>
           ) : s.node === 'control' && workspace.slug === 'data-and-sources' ? (
             <Suspense fallback={<p role="status">Opening Data and sources…</p>}>
@@ -278,7 +284,9 @@ export function TargetApp() {
           </span>
         </div>
         <div className="insp-body">
-          {s.asset ? (
+          {s.entity && snapshot ? (
+            <Suspense fallback={null}><EntityInspector entity={s.entity} snapshot={snapshot} /></Suspense>
+          ) : s.asset ? (
             <Suspense fallback={null}>
               <Market kind={s.asset} snapshot={snapshot} />
             </Suspense>
@@ -360,6 +368,8 @@ export function TargetApp() {
               Close
             </Act>
           </header>
+          {s.endpointSurface === 'Status strip' && <Suspense fallback={null}>
+            <StatusStrip /><ClockStrip reading={clock} /></Suspense>}
           <EndpointIndex placement={s.endpointSurface} />
         </aside>
       )}

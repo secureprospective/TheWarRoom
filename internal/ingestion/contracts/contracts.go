@@ -63,7 +63,7 @@ func Fetch(ctx context.Context, client *http.Client, url string, keep func(gsis 
 // twice in one season keeps the larger contract; a contract without a gsis id, a signing season
 // (OTC writes 0 for an unknown one) or a length is left out.
 func Map(body []byte, keep func(gsis string) bool) (measures.Batch, error) {
-	rows, err := parquet.Read[row](bytes.NewReader(body), int64(len(body)))
+	rows, err := ReadRows[row](body)
 	if err != nil {
 		return measures.Batch{}, fmt.Errorf("contracts: read parquet: %w", err)
 	}
@@ -112,4 +112,13 @@ func value(r row) float64 {
 		return 0
 	}
 	return *r.Value
+}
+
+// ReadRows decodes a bounded Parquet body without copying its columns into untyped maps.
+func ReadRows[T any](body []byte) ([]T, error) {
+	rows, err := parquet.Read[T](bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		return nil, fmt.Errorf("parquet rows: %w", err)
+	}
+	return rows, nil
 }

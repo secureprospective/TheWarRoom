@@ -143,6 +143,10 @@
 .twr-app .matrix-roster th small { display: block; color: var(--surface-tx3); font-size: 9px; }
 .twr-app .matrix-roster tr[data-selected="true"] { background: var(--surface-3); }
 .twr-app .matrix-roster .act { width: 100%; overflow: hidden; text-overflow: ellipsis; padding: 0; }
+/* The player cell: the name truncates, Watch keeps its own width. */
+.twr-app .matrix-roster .matrix-player { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.twr-app .matrix-roster .matrix-player > .act:first-child { flex: 1 1 auto; min-width: 0; }
+.twr-app .matrix-roster .matrix-player > .act + .act { flex: none; width: auto; color: var(--surface-tx2); }
 .twr-app .matrix-roster tr:hover { background: var(--surface-3); }
 
 .twr-app .command-bar {
@@ -169,3 +173,10 @@
 .twr-app select option { background: var(--surface-2); color: var(--surface-tx1); }
 .twr-app select:focus-visible { outline: 2px solid var(--signal-blue); outline-offset: 2px; }
 .twr-app select:disabled { opacity: .6; cursor: not-allowed; }
+
+.twr-app .wbody > * { min-width: 0; }
+.twr-app .workspace-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  padding: 7px 14px; border-bottom: 1px solid var(--surface-line); font-size: 11px; }
+.twr-app .shell-status { display: flex; flex-wrap: wrap; gap: 8px 16px; min-width: 0; }
+.twr-app .wtabs { flex-wrap: wrap; min-width: 0; }
+.twr-app .wtabs .act-tab { min-height: 44px; }

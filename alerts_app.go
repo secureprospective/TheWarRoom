@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -27,6 +29,8 @@ type Alert struct {
 	Workspace  string              `json:"workspace"`
 	At         time.Time           `json:"at"`
 	Provenance snapshot.Provenance `json:"provenance"`
+	PlayerID   string              `json:"playerId,omitempty"`
+	MFLURL     string              `json:"mflUrl,omitempty"`
 }
 
 type Unavailable struct {
@@ -45,9 +49,8 @@ func (a *App) TargetAlerts(franchiseID string) (AlertReading, error) {
 		return AlertReading{}, fmt.Errorf("target alerts: %w", err)
 	}
 	now := a.movesNow()
-	r := AlertReading{Alerts: []Alert{}, Unavailable: []Unavailable{{
-		Kind: "ir", Note: "NFL injury status not yet read (MFL injuries export)",
-	}}}
+	r := AlertReading{Alerts: []Alert{}, Unavailable: []Unavailable{}}
+	a.irAlerts(&r, franchiseID)
 	a.lineupAlert(&r, saved, now)
 	r.tradeAlert(trades, now)
 	slices.SortFunc(r.Alerts, func(a, b Alert) int {
@@ -63,7 +66,10 @@ func (a *App) TargetAlerts(franchiseID string) (AlertReading, error) {
 		if order := a.At.Compare(b.At); order != 0 {
 			return order
 		}
-		return cmp.Compare(a.Kind, b.Kind)
+		if order := cmp.Compare(a.Kind, b.Kind); order != 0 {
+			return order
+		}
+		return cmp.Compare(a.PlayerID, b.PlayerID)
 	})
 	return r, nil
 }
@@ -144,4 +150,46 @@ func alertUrgency(now, at time.Time) string {
 		Status: "PLANNED", At: at,
 	}}})
 	return string(reading.Deadlines[0].Urgency)
+}
+
+func (a *App) irAlerts(r *AlertReading, franchiseID string) {
+	a.targetSnapshotMu.Lock()
+	snap, loaded := a.targetSnapshot, a.hasTargetSnapshot
+	a.targetSnapshotMu.Unlock()
+	injuries := a.heldInjuries()
+	if !loaded || snap.Rosters.Provenance.Freshness.State == domain.FreshFail ||
+		snap.Rosters.Provenance.Freshness.State == domain.FreshStale || injuries.Provenance.Freshness.State != domain.FreshLive {
+		r.Unavailable = append(r.Unavailable, Unavailable{Kind: "ir", Note: "IR eligibility not checked; injuries or roster unavailable or stale"})
+		return
+	}
+	names := map[string]string{}
+	for _, p := range snap.Players.Value {
+		names[p.ID.String()] = p.Name
+	}
+	seen := map[string]bool{}
+	for _, roster := range snap.Rosters.Value {
+		if roster.FranchiseID != franchiseID {
+			continue
+		}
+		for _, p := range roster.Players {
+			id := p.ID.String()
+			if p.RosterStatus != domain.RosterIR || seen[id] {
+				continue
+			}
+			seen[id] = true
+			decision := eligibility.IRClassification(eligibility.Injuries{Status: injuries.Status,
+				Fresh: injuries.Provenance.Freshness}, id)
+			if decision.Verdict != eligibility.Ineligible {
+				continue
+			}
+			name := names[id]
+			if name == "" {
+				name = "Player name unavailable"
+			}
+			target, _ := a.rosterMoveTarget("18")
+			r.Alerts = append(r.Alerts, Alert{Kind: "ir", Urgency: "U0", Title: "Possible IR violation: " + name,
+				Detail: decision.Reason, Node: "hq", Workspace: "lineup-and-roster", PlayerID: id,
+				MFLURL: target.URL, Provenance: injuries.Provenance})
+		}
+	}
 }

@@ -9,6 +9,7 @@ import {
   type SurfaceReading,
 } from './contract';
 import { marketProvider, unavailable } from './provider';
+import { FILTER_KEYS, keepFilter, restoreFilter, subset } from '../shell/viewFilters';
 
 type State = {
   scope: MarketScope;
@@ -54,9 +55,24 @@ export function filtered(scope: MarketScope, change: MarketFilter): MarketScope 
   }
   return { ...scope, phases: null, assets: null, byAge: false };
 }
+const allScope = (): MarketScope => ({ from: 2017, to: 2026, phases: null, assets: null, byAge: false });
+// parseMarketScope reads a kept market filter (S-10); anything but the shape filtered() makes is null.
+export function parseMarketScope(v: unknown): MarketScope | null {
+  if (typeof v !== 'object' || v === null) return null;
+  const r = v as Record<string, unknown>;
+  const phaseIds = phases.map(([id]) => id);
+  const kept = {
+    phases: r.phases === null ? null : subset(r.phases, phaseIds),
+    assets: r.assets === null ? null : subset(r.assets, assets),
+  };
+  const all = allScope();
+  if (r.from !== all.from || r.to !== all.to || typeof r.byAge !== 'boolean' ||
+    kept.phases === undefined || kept.assets === undefined) return null;
+  return { ...all, phases: kept.phases, assets: kept.assets, byAge: r.byAge };
+}
 export function createMarketState(provider: MarketProvider) {
   const store = createStore<State>(() => ({
-    scope: { from: 2017, to: 2026, phases: null, assets: null, byAge: false },
+    scope: restoreFilter(FILTER_KEYS.market, parseMarketScope, allScope()),
     profiles: {},
     pending: false,
   }));
@@ -65,6 +81,7 @@ export function createMarketState(provider: MarketProvider) {
   const safe = (read: Promise<SurfaceReading>) => read.catch((cause) => unavailable(String(cause)));
   async function refresh(scope = store.getState().scope) {
     const token = ++revision;
+    keepFilter(FILTER_KEYS.market, scope);
     store.setState({ scope, pending: true });
     const [lists, clock, stretches] = await Promise.all([
       safe(provider.lists(scope)),

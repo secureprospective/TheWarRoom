@@ -55,6 +55,23 @@ func healthReport(in healthInput) Report {
 			"when a measure it reads has no source flowing; it is rebalanced only when you approve it. " +
 			"Board use is noted only for sources supplying board measures; other rows are reference or linking inputs.",
 		Columns: []string{"Source and board use", "Last good and age", "Last failure"}}
+	for _, row := range healthRows(in) {
+		name := row.name
+		if board := boardText(row.measuresFrom, in); board != "Not read by the board" {
+			name += "\n" + board
+		}
+		r.Rows = append(r.Rows, ReportRow{Cells: []string{name,
+			whenText(row.lastGood, in.zone) + "\n" + sourceAge(row, in.now), failureText(row, in.zone)}})
+	}
+	if p := in.photos; p != nil {
+		r.Rows = append(r.Rows, ReportRow{Cells: photoCells(*p, in.zone)})
+	}
+	return r
+}
+
+// healthRows are C-07's rows before wording: every registered source, with MFL standing for its
+// exports and followed by one row per export.
+func healthRows(in healthInput) []healthRow {
 	var rows []healthRow
 	for _, h := range in.sources {
 		src, _ := in.reg.Source(h.Source)
@@ -76,18 +93,34 @@ func healthReport(in healthInput) Report {
 		}
 		rows = append(append(rows, row), exports...)
 	}
-	for _, row := range rows {
-		name := row.name
-		if board := boardText(row.measuresFrom, in); board != "Not read by the board" {
-			name += "\n" + board
+	return rows
+}
+
+// sourceStanding is the status strip's reading of C-07 (S-12). The alarm is the board running
+// reduced, or a source the board reads that is lost or has never been read; a failure with no
+// newer good read is a warning; a source the board does not read never raises the alarm.
+func sourceStanding(in healthInput) (state, label string) {
+	if in.boardRun && len(in.missing) > 0 {
+		return "fail", fmt.Sprintf("Board running reduced · %s not flowing", countText(len(in.missing), "measure"))
+	}
+	state, label = "live", "Sources flowing"
+	var missing []string
+	for _, row := range healthRows(in) {
+		if row.retired {
+			continue
 		}
-		r.Rows = append(r.Rows, ReportRow{Cells: []string{name,
-			whenText(row.lastGood, in.zone) + "\n" + sourceAge(row, in.now), failureText(row, in.zone)}})
+		feedsBoard := row.measuresFrom != "" && boardText(row.measuresFrom, in) != "Not read by the board"
+		if feedsBoard && (row.lost || row.lastGood.IsZero()) {
+			missing = append(missing, row.name)
+		}
+		if !row.lastFail.IsZero() && !row.lastFail.Before(row.lastGood) {
+			state, label = "stale", "Source failures · last good data"
+		}
 	}
-	if p := in.photos; p != nil {
-		r.Rows = append(r.Rows, ReportRow{Cells: photoCells(*p, in.zone)})
+	if len(missing) > 0 {
+		return "fail", "No data from " + strings.Join(missing, ", ") + " · board will run reduced"
 	}
-	return r
+	return state, label
 }
 
 // photoCells words the photo cache's health row: what is held, this launch's reads, the last failure.

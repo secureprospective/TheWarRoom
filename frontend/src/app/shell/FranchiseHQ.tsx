@@ -1,5 +1,5 @@
 import { FranchisePicker } from './FranchisePicker';
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import type { Snapshot } from '../data/contract';
 import { formatMoney } from '../cards/format';
 import { provenanceSlot } from '../cards/playerModel';
@@ -8,6 +8,8 @@ import { commands } from '../commands/registry';
 import { franchiseRoster } from './roster';
 import { assertShortList } from './shortList';
 import { LineupRoster } from './LineupRoster';
+
+const RosterReports = lazy(() => import('../personal/RosterReports'));
 
 export function FranchiseHQ({ snapshot }: { snapshot: Snapshot }) {
   const s = commands.use();
@@ -41,6 +43,7 @@ export function FranchiseHQ({ snapshot }: { snapshot: Snapshot }) {
           </div>
         }
       />
+      <Suspense fallback={null}><RosterReports key={s.franchiseId} mine={s.franchiseId!} /></Suspense>
     </section>
   );
 }

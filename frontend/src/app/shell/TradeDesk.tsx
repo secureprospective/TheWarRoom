@@ -23,7 +23,7 @@ export function tradeExpiry(expires: string, now = Date.now()): string {
   if (hours === 0) return 'expires in less than 1h';
   return `expires in ${Math.floor(hours / 24)}d ${hours % 24}h`;
 }
-function OfferCard({ offer, franchiseId }: { offer: TradeOffer; franchiseId: string }) {
+export function OfferCard({ offer, franchiseId }: { offer: TradeOffer; franchiseId: string }) {
   const key = `trade:${franchiseId}:${offer.tradeId}`;
   const pending = commands.useMoves((s) => s.drafting[key]);
   const error = commands.useMoves((s) => s.draftErrors[key]);
@@ -32,11 +32,17 @@ function OfferCard({ offer, franchiseId }: { offer: TradeOffer; franchiseId: str
     r.spec.expected.trade?.tradeId === offer.tradeId));
   const exits = commands.useMoves(s => s.moves);
   const knownExpiry = !offer.expires.startsWith('0001-');
-  return <Card gravity="G3" header={<h5>{offer.otherName || offer.otherId}</h5>}>
+  return <Card gravity="G3" header={<h5><Act verb="inspector.pin"
+    args={{ entity: { kind: 'offer', id: offer.tradeId, franchiseId } }}>
+    Offer with {offer.otherName || 'Franchise name unavailable'}</Act></h5>}>
     <div className="trade-assets">
       {(['give', 'get'] as const).map((side) => <div key={side}>
         <h6>{side === 'give' ? 'You give' : 'You get'}</h6>
-        <ul>{offer[side].map((asset) => <li key={asset.token}>{tradeAssetLabel(asset)}</li>)}</ul>
+        <ul>{offer[side].map((asset) => <li key={asset.token}>
+          <Act verb="inspector.pin" args={{ entity: /^\d+$/.test(asset.token)
+          ? { kind: 'player', id: asset.token, franchiseId }
+          : { kind: 'pick', id: asset.token, name: tradeAssetLabel(asset) } }}>
+          {tradeAssetLabel(asset)}</Act></li>)}</ul>
       </div>)}
     </div>
     <p>{knownExpiry && <time dateTime={offer.expires}>

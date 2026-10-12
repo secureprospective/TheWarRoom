@@ -79,7 +79,7 @@ it('maps places, named presets, density and rostered players to registered verbs
   expect(c.history().some((entry) => entry.id === 'nav.open')).toBe(true);
 });
 
-it('navigates only for a chosen-franchise player and treats pointer and Enter alike', () => {
+it('keeps the workspace for every player and treats pointer and Enter alike', () => {
   const c = createCommands(() => undefined);
   c.loadSnapshot(snapshot);
   const roster = snapshot.rosters.value[0];
@@ -101,9 +101,9 @@ it('navigates only for a chosen-franchise player and treats pointer and Enter al
   expect(c.read()).toMatchObject({ node: 'war', inspector: 'rest', commandbar: false });
   c.dispatch('commandbar.open', {});
   runResult(c, own);
-  expect(c.read()).toMatchObject({ node: 'hq', workspace: { hq: 'lineup-and-roster' } });
+  expect(c.read()).toMatchObject({ node: 'war', workspace: { war: 'research' } });
   c.dispatch('nav.open', { node: 'war', workspace: 'research' });
   c.dispatch('commandbar.open', {});
   c.dispatch(own.invocation.verb, own.invocation.args);
-  expect(c.read()).toMatchObject({ node: 'hq', inspector: 'rest', commandbar: false });
+  expect(c.read()).toMatchObject({ node: 'war', inspector: 'rest', commandbar: false });
 });

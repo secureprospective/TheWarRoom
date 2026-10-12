@@ -1,3 +1,4 @@
+import { WatchButton } from '../personal/WatchButton';
 import { scrollWorkIntoView, useWorkAnchor } from '../shell/workScroll';
 import { Fragment, lazy, Suspense, useEffect, useRef } from 'react';
 import { Act } from '../commands/Act';
@@ -103,7 +104,7 @@ export function OpenPlans({ board, openId, focus, busy, state }: {
   );
 }
 
-function PoolTable({ rows, state }: { rows: PoolRow[]; state?: PoolState }) {
+function PoolTable({ rows, state, mine }: { rows: PoolRow[]; state?: PoolState; mine: string }) {
   return (
     <table className="pool-table" aria-label="Free agents">
       <thead>
@@ -123,6 +124,7 @@ function PoolTable({ rows, state }: { rows: PoolRow[]; state?: PoolState }) {
           <Fragment key={row.id}><tr>
             <td>
               <PlayerCell row={row} />
+              <WatchButton id={row.id} name={row.name} mine={mine} />
             </td>
             <td>{row.age}</td>
             <td>{row.experience}</td>
@@ -173,8 +175,8 @@ export function PoolHowCounted({ reading }: { reading: PoolReading }) {
   );
 }
 
-export function PoolFrame({ reading, refreshing, state }: {
-  reading?: PoolReading; refreshing: boolean; state?: PoolState;
+export function PoolFrame({ reading, refreshing, state, mine = '' }: {
+  reading?: PoolReading; refreshing: boolean; state?: PoolState; mine?: string;
 }) {
   const failed = reading?.status === 'failed';
   return (
@@ -198,7 +200,7 @@ export function PoolFrame({ reading, refreshing, state }: {
             <p>No free agent matches this position.</p>
           ) : (
             <div className="pool-table-scroll" tabIndex={0} role="region" aria-label="Free agents">
-              <PoolTable rows={reading.value.rows} state={state} />
+              <PoolTable rows={reading.value.rows} state={state} mine={mine} />
             </div>
           )}
         </>
@@ -298,7 +300,7 @@ export function PoolScreen({ state, snapshot, franchiseId }: {
       <OpenPlans board={state.board} openId={state.openPlan} focus={state.focus}
         busy={state.busy} state={state} />
       <Controls reading={state.reading} state={state} />
-      <PoolFrame reading={state.reading} refreshing={state.refreshing} state={state} />
+      <PoolFrame reading={state.reading} refreshing={state.refreshing} state={state} mine={franchiseId} />
     </section>
     <Suspense fallback={null}><MarketReports /></Suspense>
   </>);
@@ -359,13 +361,15 @@ export function PoolInspectorView({ row, plans, busy, reading }: {
 }
 
 // The Inspector for a free agent: his row and any open bid plan on him.
+const PlayerLists = lazy(() => import('../personal/PersonalLists').then(m => ({ default: m.PlayerLists })));
 export function PoolInspector({ id }: { id: string }) {
   const state = usePoolData(true);
   const row = state.reading?.value.rows.find((r) => r.id === id);
   const plans = (state.board?.value.plans ?? []).filter(
     (p) => p.playerId === id && planOpen(p.stateCode),
   );
-  return <PoolInspectorView row={row} plans={plans} busy={state.busy} reading={state.reading} />;
+  return <><PoolInspectorView row={row} plans={plans} busy={state.busy} reading={state.reading} />
+    <Suspense fallback={null}><PlayerLists id={id} /></Suspense></>;
 }
 
 export const set = (change: { field: string; value: string }) =>

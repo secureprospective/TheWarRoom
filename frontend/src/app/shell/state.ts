@@ -6,6 +6,11 @@ import type { Density } from '../cards/Card';
 import { nodes, nodeKeys, type Node, type Route, type WorkspaceMemory } from './nodes';
 export type PlayerSubject = { kind: 'player'; id: string; franchiseId: string };
 
+export type EntitySubject =
+  | { kind: 'franchise'; id: string }
+  | { kind: 'offer'; id: string; franchiseId: string }
+  | { kind: 'pick'; id: string; name: string };
+
 export type LineupDraft = { franchiseId: string; week: number; starters: string[] };
 export type ShellState = {
   lineupDraft: LineupDraft | null;
@@ -16,6 +21,7 @@ export type ShellState = {
   inspector: 'closed' | 'rest' | 'expanded';
   subject: PlayerSubject | null;
   asset: string | null;
+  entity: EntitySubject | null;
   franchiseId: string | null;
   commandbar: boolean;
   summoned: 'calendar' | null;
@@ -38,6 +44,7 @@ export function initialShellState(): ShellState {
     inspector: 'rest',
     subject: null,
     asset: null,
+    entity: null,
     franchiseId: null,
     commandbar: false,
     summoned: null,

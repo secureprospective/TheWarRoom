@@ -169,6 +169,8 @@ export type TradeOffer = {
 export type TradeReading = { offers: TradeOffer[]; provenance: Provenance };
 
 export type Alert = {
+  playerId?: string;
+  mflUrl?: string;
   kind: string;
   urgency: (typeof URGENCIES)[number];
   title: string;

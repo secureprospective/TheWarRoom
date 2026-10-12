@@ -438,3 +438,53 @@ func TestPhotoHealthRowSaysWhatIsHeldAndWhenOff(t *testing.T) {
 		t.Fatalf("photos off: %q", off)
 	}
 }
+
+// TestSourceStandingAlarmsOnlyForTheBoard is the status strip's reading (S-12): the alarm is the
+// board running reduced or a board source lost or never read; a source the board does not read,
+// such as the league archive, never raises it.
+func TestSourceStandingAlarmsOnlyForTheBoard(t *testing.T) {
+	reg, err := measures.Embedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 10, 12, 9, 0, 0, 0, time.UTC)
+	good := func(src string) history.SourceHealth {
+		return history.SourceHealth{Source: src, State: history.SourceActive, LastSuccess: now.Add(-time.Hour)}
+	}
+	base := func() healthInput {
+		return healthInput{reg: reg, now: now, zone: time.UTC, boardRun: true, sources: []history.SourceHealth{
+			good("mfl"), good("nflverse"), good("cfbd"), {Source: "madden", State: history.SourceRetired},
+			{Source: leagueArchiveSource, State: history.SourceActive}, // never read: not a board source
+		}}
+	}
+	for name, test := range map[string]struct {
+		change func(*healthInput)
+		state  string
+	}{
+		"all flowing, archive never read": {func(*healthInput) {}, "live"},
+		"board ran reduced":               {func(in *healthInput) { in.missing = []string{"x"} }, "fail"},
+		"board source never read":         {func(in *healthInput) { in.sources[1].LastSuccess = time.Time{} }, "fail"},
+		"board source lost":               {func(in *healthInput) { in.sources[2].State = history.SourceLost }, "fail"},
+		"failure not recovered": {func(in *healthInput) {
+			in.sources[2].LastFailure, in.sources[2].LastError = now, "timeout"
+		}, "stale"},
+		"failure recovered": {func(in *healthInput) {
+			in.sources[2].LastFailure, in.sources[2].LastError = now.Add(-2*time.Hour), "timeout"
+		}, "live"},
+		"MFL export failing": {func(in *healthInput) {
+			in.mfl = []history.URLHealth{{URL: "https://www47.myfantasyleague.com/2026/export?TYPE=rosters&L=14432",
+				LastFailure: now, LastError: "HTTP 503"}}
+		}, "stale"},
+	} {
+		in := base()
+		test.change(&in)
+		if state, label := sourceStanding(in); state != test.state {
+			t.Errorf("%s: %s (%s), want %s", name, state, label, test.state)
+		}
+	}
+	in := base()
+	in.sources[2].LastSuccess = time.Time{}
+	if _, label := sourceStanding(in); label != "No data from CollegeFootballData API · board will run reduced" {
+		t.Errorf("the alarm names the missing source: %q", label)
+	}
+}

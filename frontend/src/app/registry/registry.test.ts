@@ -93,6 +93,11 @@ describe('Endpoint map', () => {
   });
   it('distinguishes live-Landed Acts from built Acts and keeps every other row spec', () => {
     const built = [
+      'S-01', 'S-02', 'S-04', 'S-05', 'S-08', 'S-11', 'S-12', 'S-13',
+      'M-087', 'M-096', 'M-149', 'M-117', 'M-116', 'M-118', 'M-103', 'M-101', 'M-154',
+      'M-151', 'M-159', 'M-167', 'M-169',
+      'M-037', 'M-038', 'M-040', 'M-048', 'M-051', 'M-052', 'M-053', 'M-054',
+      'M-057', 'M-058', 'M-059', 'M-060', 'M-062',
       'C-05', 'M-032', 'M-120', 'M-123',
       'L-34', 'C-07', 'C-08', 'C-09', 'S-09',
       'M-046', 'M-047', 'M-067', 'M-069',
@@ -119,7 +124,7 @@ describe('Endpoint map', () => {
       'M-071', 'M-074', 'M-076', 'M-077', 'M-090', 'M-161', 'M-170',
       'X-03', 'M-003', 'M-004', 'M-005', 'M-007', 'M-015', 'M-016', 'M-018', 'M-021', 'M-022',
       'M-072', 'M-088',
-      'M-091', 'M-097', 'M-185', 'M-098', 'M-197', 'M-141',
+      'M-091', 'M-097', 'M-185', 'M-098', 'M-197', 'M-141', 'S-10',
     ];
     for (const row of endpoints) {
       let status = 'spec';
@@ -215,7 +220,7 @@ describe('Endpoint map', () => {
 describe('Endpoint verbs and search', () => {
   it('offers all kept endpoints by their own name and never offers retired or merged rows', () => {
     const offered = candidates.filter((r) => r.kind === 'endpoint');
-    expect(offered).toHaveLength(204);
+    expect(offered).toHaveLength(endpoints.filter(e => e.disposition === 'kept').length);
     for (const row of endpoints) {
       const match = rankResults(row.name, candidates).find(
         (r) => r.invocation.verb === 'endpoint.open' && r.invocation.args.id === row.id,
