@@ -30,6 +30,7 @@ const archiveImportTimeout = 10 * time.Minute
 // appSettings is the app's own configuration, kept as settings.json in its data directory.
 type appSettings struct {
 	LeagueArchiveDir string `json:"leagueArchiveDir"`
+	PhotosOff        bool   `json:"photosOff,omitempty"`
 }
 
 func (a *App) settingsPath() string { return filepath.Join(a.dataDir, "settings.json") }

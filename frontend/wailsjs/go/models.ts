@@ -2387,6 +2387,20 @@ export namespace main {
 	        this.detail = source["detail"];
 	    }
 	}
+	export class PhotoView {
+	    src: string;
+	    alt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PhotoView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.src = source["src"];
+	        this.alt = source["alt"];
+	    }
+	}
 	export class PlayerScoreDTO {
 	    mflID: string;
 	    name: string;

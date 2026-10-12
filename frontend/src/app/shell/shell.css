@@ -102,10 +102,11 @@
   transform: translateX(0); opacity: 1; visibility: visible;
 }
 .twr-app .insp .player-identity {
-  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 8px;
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 4px 8px; align-items: center;
 }
+.twr-app .insp .player-identity .player-photo { grid-row: 1 / span 2; }
 .twr-app .insp .player-identity .card-title { white-space: normal; overflow-wrap: anywhere; }
-.twr-app .insp .player-context { grid-column: 2; }
+.twr-app .insp .player-context { grid-column: 2 / span 2; }
 .twr-app .insp .card-header { display: block; }
 .twr-app .insp .card-provenance { display: block; margin: 8px 0 0; }
 .twr-app .two-numbers small { white-space: nowrap; }

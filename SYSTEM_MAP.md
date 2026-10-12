@@ -280,3 +280,15 @@ League Pulse › Now: `now_app.go` holds each opened week's NFL schedule, the se
 `TargetOpenComms` opens ProBoards or the discovered MFL board/polls pages only.
 `internal/ingestion/comms.go` validates posts. Lazy `frontend/src/app/comms` serves
 Comms and Home › Digests through the shared Report shell.
+
+## Player photos (ring 3, p3k)
+
+`internal/headshot` fetches a player's photo from ESPN's resizer (96×70), then Sleeper, keyed through the
+player directory's `espn` and `sleeper` ids (`history.Store.SourceID`). It paces requests at four a second,
+accepts only real PNG/JPEG bytes, treats 403/404 and known silhouettes as "no photo" (rechecked after seven
+days), and caches files in `<data dir>/headshots/` under a 200 MB least-recently-used cap. Photos are personal
+use only (spec §7): never bundled, never in git, never in `history.db`, so its HTTP client bypasses the
+archiving transport on purpose. The webview loads `/headshot/<mfl id>` through the Wails asset handler
+(`photos_app.go`); `TargetPhoto` gives a card Go's address and alt text, or none when photos are off
+(`settings.json` `photosOff`, `SetPhotos`). `cards/PlayerPhoto.tsx` reserves the box and shows the NFL team
+when there is no photo.

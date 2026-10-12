@@ -14,6 +14,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/headshot"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
@@ -68,6 +69,10 @@ type App struct {
 	startupErr  error                     // startup failure; shown in the shell through AppInfo
 	started     chan struct{}             // closed when startup returns; read the fields above through ready
 	lockFile    *os.File                  // single-instance lock, held until shutdown
+	// headshots caches player photos in the data directory. Its client bypasses fetches on purpose:
+	// photos are images, not facts, and never enter history.db (spec §7).
+	headshots atomic.Pointer[headshot.Service]
+	photosOff atomic.Bool
 
 	// The players directory is fetched at most once per process (MFL allows the endpoint once a
 	// day). Wails runs IPC calls concurrently, hence the mutex.
@@ -218,6 +223,7 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 	a.mflClient = client
+	a.startHeadshots()
 
 	log.Printf("the war room: starting %s, db %s", buildLabel(), path)
 	began := time.Now()

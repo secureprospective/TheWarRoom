@@ -34,6 +34,8 @@ func main() {
 		WindowStartState: options.Maximised,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
+			// Anything not in the bundle: player photos at /headshot/<mfl id>.
+			Handler: app.photoHandler(),
 		},
 		// --surface-0 (hsl(220 14% 4%)), opaque, so the window never flashes another colour.
 		BackgroundColour: &options.RGBA{R: 9, G: 10, B: 12, A: 255},

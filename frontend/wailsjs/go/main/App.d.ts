@@ -59,6 +59,8 @@ export function SetMFLKey(arg1:string):Promise<main.MFLKeyStatus>;
 
 export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetParamResult>;
 
+export function SetPhotos(arg1:boolean):Promise<void>;
+
 export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
 
 export function TargetAssetProfile(arg1:main.RawMarketAsset):Promise<main.Reading_main_MarketSurface_>;
@@ -140,6 +142,8 @@ export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_
 export function TargetOpenComms(arg1:string):Promise<void>;
 
 export function TargetOpenMFLDraftRoom():Promise<void>;
+
+export function TargetPhoto(arg1:string):Promise<main.PhotoView>;
 
 export function TargetPickClock(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
 

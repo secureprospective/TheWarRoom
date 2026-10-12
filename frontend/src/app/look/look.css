@@ -98,7 +98,15 @@
 :is(.twr-app[data-density="matrix"], .twr-app [data-density="matrix"]) .twr-card:not(.insp .twr-card) .player-unwired-rows { display: none; }
 /* Narrative has room: the name wraps instead of truncating, with team and age beneath it. */
 :is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .card-header { align-items: flex-start; }
-:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; row-gap: 4px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity { display: grid; grid-template-columns: auto auto 1fr; column-gap: 10px; row-gap: 4px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity .player-photo { grid-row: 1 / span 2; }
 :is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity .card-title { white-space: normal; }
-:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity .player-context { grid-column: 2; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity .player-context { grid-column: 2 / span 2; }
 :is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity .classification-label { align-self: start; margin-top: 2px; }
+/* Player photos (p3k): a reserved round box; the team abbreviation stands in when there is none. */
+.twr-app .player-photo { display: inline-flex; flex: none; align-items: center; justify-content: center; overflow: hidden; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--surface-line-hi); }
+.twr-app .player-photo-md { width: 32px; height: 32px; }
+.twr-app .insp .player-photo-md { width: 48px; height: 48px; }
+.twr-app .player-photo-sm { width: 24px; height: 24px; }
+.twr-app .player-photo img { width: 100%; height: 100%; object-fit: cover; }
+.twr-app .player-photo-fallback { font: 600 9.5px var(--surface-mono); color: var(--surface-tx2); }
