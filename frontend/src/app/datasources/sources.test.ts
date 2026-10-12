@@ -19,7 +19,7 @@ const provider = (): DataProvider => ({
 });
 const html = renderToStaticMarkup;
 describe('Control Room data and sources', () => {
-  it('renders Go health and honest unchecked facts, not a successful compile', () => {
+  it('renders Go health, the manifest standing and each check with its differences in words', () => {
     const d = data();
     for (const r of [d.health, d.facts, d.checks]) {
       const markup = html(createElement(ReportView, { report: r, howLabel: 'How this is counted' }));
@@ -28,7 +28,12 @@ describe('Control Room data and sources', () => {
     }
     expect(d.facts.status).toBe('empty');
     expect(d.facts.note).toContain('No manifest yet');
-    expect(d.checks.rows.every(r => r.cells[2] === 'Not run yet')).toBe(true);
+    const checks = html(createElement(ReportView, { report: d.checks, howLabel: 'How this is counted' }));
+    expect(checks).toContain('Passed: 448 compared, 446 agree, 1 explained, 1 for review');
+    expect(checks).toContain('2014 Houston Texans: MFL standings 9-4-0, weekly games 9-3-0.');
+    expect(checks).toContain('For review');
+    expect(checks).not.toContain('2014/0009');
+    expect(d.checks.rows.some(r => r.cells[2] === 'Not run yet')).toBe(false);
   });
   it('offers one Act per Go scope, a labelled folder and progress, disabling duplicate work', () => {
     const d = data();

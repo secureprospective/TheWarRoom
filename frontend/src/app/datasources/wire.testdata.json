@@ -87,12 +87,12 @@
     },
     "checks": {
       "id": "L-34-checks",
-      "title": "Checks that will run",
-      "note": "These run each time the facts are compiled; their results appear here once the compiler is built.",
+      "title": "Checks",
+      "note": "",
       "status": "ok",
-      "source": "Source: the frozen Lab data and the build plan",
-      "asOf": "As of: now",
-      "how": "A compiled snapshot is published only when every check passes; a failed build keeps the last good one, marked stale.",
+      "source": "Source: the compiled facts and MFL's own figures",
+      "asOf": "Compiled: Oct 11, 2026, 6:00 PM",
+      "how": "Each check compares two records MFL keeps separately. Every difference must be named, by its identity, in the pinned list of explained and reviewed differences; a new one fails the compile, and the last good snapshot is kept, marked stale.",
       "columns": [
         "Check",
         "What it proves",
@@ -101,19 +101,45 @@
       "rows": [
         {
           "cells": [
-            "Compiled rows match the frozen Lab data",
-            "Row by row: ids, times, counts and money exact; derived decimals within one part in a billion.",
-            "Not run yet"
+            "Compiled facts match the Lab's reference",
+            "Row by row against the Lab's own Python build: ids, times, counts and money exact; derived decimals within one part in a billion.",
+            "Proved by the build's tests: 37 tables, no differences"
           ],
           "range": null
         },
         {
           "cells": [
-            "Engine goldens pass on the compiled data",
-            "The engines read the compiled facts and reproduce their checked results.",
-            "Not run yet"
+            "Win-loss records match MFL standings",
+            "MFL counted playoff games in the 2013 standings.",
+            "Passed: 448 compared, 446 agree, 1 explained, 1 for review"
           ],
           "range": null
+        },
+        {
+          "cells": [
+            "Lineup scores equal MFL player scores",
+            "Checked against MFL's own figures.",
+            "Passed: 202,954 compared, 202,954 agree, 0 explained, 0 for review"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "2013 Buffalo Bills: MFL standings 11-3-0 count its playoff games (regular season 11-2-0).",
+            "In 2013 MFL counted playoff games in the standings.",
+            "Explained"
+          ],
+          "range": null,
+          "group": "Win-loss records match MFL standings"
+        },
+        {
+          "cells": [
+            "2014 Houston Texans: MFL standings 9-4-0, weekly games 9-3-0.",
+            "Possibly a commissioner adjustment.",
+            "For review"
+          ],
+          "range": null,
+          "group": "Win-loss records match MFL standings"
         }
       ],
       "summary": null,

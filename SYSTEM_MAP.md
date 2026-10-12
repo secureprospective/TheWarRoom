@@ -270,7 +270,8 @@ League Pulse › Now: `now_app.go` holds each opened week's NFL schedule, the se
 - `internal/ingestion/leaguearchive`: offline, prevalidated MFL file-tree import through the archive Sink.
 - `internal/manifest`: pinned-input identity, body resolution and last-good snapshot standing; no I/O except the injected body reader.
 - `league_archive_app.go`, `data_sources_app.go`, `data_sources_reading.go`: settings, scoped refresh, manifest publishing and Go-written Control Room reports.
-- `internal/store/history/inputs.go`: archive locators, input manifests and append-only compile attempts (metadata, not fact tables).
+- `internal/store/history/inputs.go`: archive locators, input manifests and append-only compile attempts (metadata, not fact tables); `snapshot_checks` keeps each attempt's check results beside it.
+- `facts_app.go`: compiles the published manifest (archive pins plus the curated `note_readings.csv`, pinned by its own sha256) with `internal/facts`, runs the nine checks against the identity-pinned exceptions (`internal/lab/testdata/check-exceptions.csv`), and records the attempt; the same manifest, compiler and rules never compile twice, and a failure keeps the last good snapshot, stale. Runs after an archive import and at launch.
 - `frontend/src/app/datasources`: lazy Control Room Data and sources, scope Acts, player crosswalk and engine parameter overrides.
 
 ## League communications

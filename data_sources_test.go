@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/facts"
+
 	"github.com/secureprospective/TheWarRoom/internal/manifest"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -229,7 +231,7 @@ func TestFactsReportIsHonestBeforeAndAfterTheManifest(t *testing.T) {
 	r = factsReport(in)
 	for k, v := range map[string]string{
 		"Manifest":           "abababababab, published Oct 11, 2026, 8:00 PM",
-		"Files pinned":       "3, over seasons 2013–2026",
+		"Files pinned":       "3 archive files, over seasons 2013–2026",
 		"Exports":            "assets 1, polls 1, rules 1",
 		"In the archive":     "2 of 3",
 		"Not in the archive": "1: 2013/assets.json. No replacement bytes were used; approved non-data gaps are named below.",
@@ -305,8 +307,16 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 				LastLoaded: "2026-10-11T18:00:00Z", Fresh: true, CoverageSeason: 2026,
 				Seasons:  []SeasonCount{{Season: 2026, Players: 1300, Waiting: 37}},
 				Coverage: []PositionShare{{Position: "WR", Rostered: 1454, WithData: 1105}}}}}, SignalsReport{}, time.UTC),
-			Facts:  factsReport(factsInput{labBuilt: "2026-10-06T15:57:20+00:00", labThrough: "2026-10-06T01:42:57+00:00", zone: time.UTC}),
-			Checks: checksReport(nil), ArchiveDir: "/fixture/raw", PhotosOn: true, Scopes: dataScopes(), Words: dataWords()},
+			Facts: factsReport(factsInput{labBuilt: "2026-10-06T15:57:20+00:00", labThrough: "2026-10-06T01:42:57+00:00", zone: time.UTC}),
+			Checks: checksReport(factsInput{zone: time.UTC, latest: &history.SnapshotRecord{BuiltAt: at}, results: []facts.CheckResult{
+				{Name: "Win-loss records match MFL standings", Detail: "MFL counted playoff games in the 2013 standings.",
+					Checked: 448, Agreed: 446, Explained: 1, Review: 1, Passed: true, Items: []facts.CheckItem{
+						{Key: "2013/0001", Words: "2013 Buffalo Bills: MFL standings 11-3-0 count its playoff games (regular season 11-2-0).",
+							Class: facts.ClassExplained, Reason: "In 2013 MFL counted playoff games in the standings."},
+						{Key: "2014/0009", Words: "2014 Houston Texans: MFL standings 9-4-0, weekly games 9-3-0.",
+							Class: facts.ClassReview, Reason: "Possibly a commissioner adjustment."}}},
+				{Name: "Lineup scores equal MFL player scores", Checked: 202954, Agreed: 202954, Passed: true}}}),
+			ArchiveDir: "/fixture/raw", PhotosOn: true, Scopes: dataScopes(), Words: dataWords()},
 		Crosswalk: c, Params: ParamsResult{OK: true, Params: []ParamView{{Key: "test.weight", Label: "Test weight", Group: "Other settings", Position: "WR", Value: 0.5, Default: 0.5, Min: 0, Max: 1, Description: "Test weight", Overridden: true}}},
 		Result: DataActResult{OK: true, Summary: "Looked at 8 files: 0 new, 8 already held."},
 	}

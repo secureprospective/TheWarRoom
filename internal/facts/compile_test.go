@@ -185,3 +185,16 @@ func TestCompiledCuratedValuesAreOwned(t *testing.T) {
 		t.Fatal("caller mutation changed published facts")
 	}
 }
+
+func TestFingerprintFollowsEveryCell(t *testing.T) {
+	a := compileFor(t, []ResolvedInput{inputFor("2020/rosters.json", `{"rosters":{"franchise":{"id":"0001","player":{"id":"1","salary":"5"}}}}`)})
+	b := compileFor(t, []ResolvedInput{inputFor("2020/rosters.json", `{"rosters":{"franchise":{"id":"0001","player":{"id":"1","salary":"6"}}}}`)})
+	c := compileFor(t, []ResolvedInput{inputFor("2020/rosters.json", `{"rosters":{"franchise":{"id":"0001","player":{"id":"1"}}}}`)})
+	if a.Fingerprint() == b.Fingerprint() || a.Fingerprint() == c.Fingerprint() || len(a.Fingerprint()) != 64 {
+		t.Fatal("a changed value or a null must change the fingerprint")
+	}
+	again := compileFor(t, []ResolvedInput{inputFor("2020/rosters.json", `{"rosters":{"franchise":{"id":"0001","player":{"id":"1","salary":"5"}}}}`)})
+	if a.Fingerprint() != again.Fingerprint() {
+		t.Fatal("the same inputs must give the same fingerprint")
+	}
+}

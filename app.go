@@ -72,6 +72,8 @@ type App struct {
 	// headshots caches player photos in the data directory. Its client bypasses fetches on purpose:
 	// photos are images, not facts, and never enter history.db (spec §7).
 	headshots atomic.Pointer[headshot.Service]
+	// factsMu lets one checked-facts compile run at a time.
+	factsMu   sync.Mutex
 	photosOff atomic.Bool
 
 	// The players directory is fetched at most once per process (MFL allows the endpoint once a
@@ -242,6 +244,7 @@ func (a *App) startup(ctx context.Context) {
 func (a *App) domReady(ctx context.Context) {
 	a.refreshInBackground(ctx)
 	a.signalsInBackground(ctx)
+	a.compileFactsInBackground(ctx)
 }
 
 // openDatabases takes the instance lock and opens the three databases. Every fetch after this goes

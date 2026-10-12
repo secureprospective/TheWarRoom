@@ -36,6 +36,31 @@ type Entry struct {
 // Held reports whether the archive held the pinned body when the manifest was built.
 func (e Entry) Held() bool { return e.FetchID != 0 }
 
+// ScopeCurated marks an entry that is a human-curated input, not MFL data: its body ships with the
+// app and resolves through Bodies like any other, by its sha256.
+const ScopeCurated = "curated"
+
+// Curated reports whether the entry is a curated input rather than an archived MFL response.
+func (e Entry) Curated() bool { return e.Scope == ScopeCurated }
+
+// WithCurated adds curated inputs to the manifest, each pinned by its own sha256, and re-derives
+// the manifest's identity, so a changed curated file is a changed manifest.
+func (m Manifest) WithCurated(files ...Pin) (Manifest, error) {
+	out := Manifest{Name: m.Name, Entries: slices.Clone(m.Entries)}
+	for _, f := range files {
+		if decoded, err := hex.DecodeString(f.SHA256); err != nil || len(decoded) != sha256.Size || f.File == "" {
+			return Manifest{}, fmt.Errorf("manifest %s: invalid curated input %q", m.Name, f.File)
+		}
+		out.Entries = append(out.Entries, Entry{File: f.File, Export: ScopeCurated, Scope: ScopeCurated, SHA256: f.SHA256})
+	}
+	slices.SortFunc(out.Entries, func(a, b Entry) int { return strings.Compare(a.File, b.File) })
+	var err error
+	if out.SHA256, err = identity(out.Entries); err != nil {
+		return Manifest{}, fmt.Errorf("manifest %s: %w", m.Name, err)
+	}
+	return out, nil
+}
+
 // Manifest is a named, ordered set of pinned inputs.
 type Manifest struct {
 	Name    string
@@ -145,11 +170,12 @@ func Decode(name, sha string, entries []byte) (Manifest, error) {
 	return m, nil
 }
 
-// Missing returns the entries the archive held no body for.
+// Missing returns the archive entries the archive held no body for. Curated inputs are not
+// archive entries.
 func (m Manifest) Missing() []Entry {
 	var out []Entry
 	for _, e := range m.Entries {
-		if !e.Held() {
+		if !e.Held() && !e.Curated() {
 			out = append(out, e)
 		}
 	}
@@ -162,10 +188,11 @@ type Bodies interface {
 }
 
 // Resolved is one entry and its body. Body is nil for an entry whose body is an MFL error:
-// it is pinned, but never read as data.
+// it is pinned, but never read as data. Bytes is the pinned body's size either way.
 type Resolved struct {
 	Entry Entry
 	Body  []byte
+	Bytes int64
 }
 
 // Resolve reads every entry's pinned body. Every entry whose body is missing or does not match
@@ -196,7 +223,7 @@ func (m Manifest) ResolveWithGaps(ctx context.Context, bodies Bodies, approved [
 		if err := ctx.Err(); err != nil {
 			return nil, nil, fmt.Errorf("manifest %s: resolve: %w", m.Name, err)
 		}
-		if !e.Held() {
+		if !e.Held() && !e.Curated() {
 			if g, ok := allowed[[2]string{e.File, e.SHA256}]; ok {
 				gaps = append(gaps, g)
 				continue
@@ -215,10 +242,11 @@ func (m Manifest) ResolveWithGaps(ctx context.Context, bodies Bodies, approved [
 			errs = append(errs, fmt.Errorf("manifest %s: %s (sha256 %s): %w", m.Name, e.File, e.SHA256, err))
 			continue
 		}
+		size := int64(len(body))
 		if e.MFLError != "" {
 			body = nil
 		}
-		out = append(out, Resolved{Entry: e, Body: body})
+		out = append(out, Resolved{Entry: e, Body: body, Bytes: size})
 	}
 	if len(errs) > 0 {
 		return nil, gaps, errors.Join(errs...)

@@ -75,7 +75,12 @@ func (f Facts) Check(pinned Exceptions) ([]CheckResult, error) {
 		}
 	}
 	if len(unpinned) > 0 {
-		return results, fmt.Errorf("check facts: %d differences are not pinned: %s", len(unpinned), strings.Join(unpinned, "; "))
+		shown := unpinned[:min(len(unpinned), 5)]
+		more := ""
+		if len(unpinned) > len(shown) {
+			more = fmt.Sprintf("; and %d more", len(unpinned)-len(shown))
+		}
+		return results, fmt.Errorf("check facts: %d differences are not pinned: %s%s", len(unpinned), strings.Join(shown, "; "), more)
 	}
 	return results, nil
 }

@@ -56,7 +56,7 @@ func (s *Store) Registry() *measures.Registry { return s.reg }
 // appendOnly lists the tables whose rows never change once written.
 func appendOnly() []string {
 	return []string{"raw_archive", "fetch_log", "loads", "observations", "param_sets", "scoring_runs", "run_scores",
-		"model_runs", "model_scores", "input_manifests", "compiled_snapshots"}
+		"model_runs", "model_scores", "input_manifests", "compiled_snapshots", "snapshot_checks"}
 }
 
 const historyDDL = `
@@ -202,6 +202,10 @@ CREATE TABLE IF NOT EXISTS compiled_snapshots (
 	error        TEXT NOT NULL DEFAULT '',
 	built_at     TEXT NOT NULL,
 	CHECK ((result_sha IS NULL) <> (error = ''))
+);
+CREATE TABLE IF NOT EXISTS snapshot_checks (
+	snapshot_id INTEGER PRIMARY KEY REFERENCES compiled_snapshots(snapshot_id),
+	checks      TEXT NOT NULL
 );`
 
 // registryDDL recreates the registry mirrors. They hold whatever the CSV files say, so their

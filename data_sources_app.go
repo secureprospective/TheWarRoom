@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -153,7 +154,7 @@ func (a *App) TargetDataSources() (DataSources, error) {
 	a.signalsMu.Unlock()
 	return DataSources{
 		Health: healthReport(health), Signals: signalFilesReport(signals, last, time.Local),
-		Facts: factsReport(facts), Checks: checksReport(facts.checks),
+		Facts: factsReport(facts), Checks: checksReport(facts),
 		ArchiveDir: settings.LeagueArchiveDir, PhotosOn: !settings.PhotosOff, Scopes: dataScopes(), Words: dataWords(),
 	}, nil
 }
@@ -192,9 +193,6 @@ func (a *App) factsInput(ctx context.Context) (factsInput, error) {
 	if in.gaps, err = lab.FrozenGaps(); err != nil {
 		return in, fmt.Errorf("app: frozen input gaps: %w", err)
 	}
-	if in.checks, err = labSourceChecks(data.Raw.Source); err != nil {
-		return in, err
-	}
 	rec, ok, err := a.history.LatestManifest(ctx, labFrozenInputs)
 	if err != nil || !ok {
 		return in, err //nolint:wrapcheck // the store names the manifest
@@ -214,7 +212,16 @@ func (a *App) factsInput(ctx context.Context) (factsInput, error) {
 	if err != nil {
 		return in, fmt.Errorf("app: checked facts: %w", err)
 	}
-	in.status = manifest.StatusOf(snapshotAttempts(attempts), manifest.Want{ManifestSHA: rec.SHA256})
+	in.status = manifest.StatusOf(snapshotAttempts(attempts), manifest.Want{ManifestSHA: rec.SHA256,
+		Compiler: factsCompiler, RulesHash: lab.CheckExceptions().SHA256})
+	if len(attempts) > 0 {
+		in.latest = &attempts[0]
+		if in.latest.Checks != "" {
+			if err := json.Unmarshal([]byte(in.latest.Checks), &in.results); err != nil {
+				return in, fmt.Errorf("app: checked facts: stored check results: %w", err)
+			}
+		}
+	}
 	return in, nil
 }
 

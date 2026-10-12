@@ -98,8 +98,9 @@ func (a *App) SetLeagueArchiveDir(dir string) DataActResult {
 	return DataActResult{OK: true, Summary: "League archive folder set to " + dir + "."}
 }
 
-// importLeagueArchive records every archive file not held yet, then publishes the Lab's input
-// manifest over what the archive holds. A failed import is recorded against the source.
+// importLeagueArchive records every archive file not held yet, publishes the Lab's input manifest
+// over what the archive holds, and compiles the checked facts from it. A failed import is recorded
+// against the source.
 func (a *App) importLeagueArchive(ctx context.Context) (string, error) {
 	s, err := a.readSettings()
 	if err != nil {
@@ -123,9 +124,13 @@ func (a *App) importLeagueArchive(ctx context.Context) (string, error) {
 	for _, e := range rep.Errors {
 		errorBodies += e.Files
 	}
+	compiled, err := a.compileFacts(ctx)
+	if err != nil {
+		return "", err
+	}
 	return fmt.Sprintf("Looked at %s files: %s new, %s already held. MFL error bodies, kept as errors: %s. "+
-		"The Lab's inputs: %s files pinned, %s not in the archive.", thousands(rep.Files), thousands(rep.Recorded),
-		thousands(rep.Held), thousands(errorBodies), thousands(len(m.Entries)), thousands(len(m.Missing()))), nil
+		"The Lab's inputs: %s files pinned, %s not in the archive. %s", thousands(rep.Files), thousands(rep.Recorded),
+		thousands(rep.Held), thousands(errorBodies), thousands(len(m.Entries)-curatedCount(m)), thousands(len(m.Missing())), compiled), nil
 }
 
 func (a *App) importArchiveFrom(ctx context.Context, dir string) (leaguearchive.Report, error) {
@@ -181,7 +186,12 @@ func (a *App) labManifest(ctx context.Context) (manifest.Manifest, error) {
 	for i, f := range fetches {
 		held[i] = manifest.Fetch{ID: f.ID, URL: f.URL, SHA256: f.SHA256, Error: f.Error, FetchedAt: f.FetchedAt}
 	}
-	return manifest.Build(labFrozenInputs, pins, held, slices.Max(data.Years), built) //nolint:wrapcheck // names the manifest
+	m, err := manifest.Build(labFrozenInputs, pins, held, slices.Max(data.Years), built)
+	if err != nil {
+		return manifest.Manifest{}, err //nolint:wrapcheck // names the manifest
+	}
+	readings := lab.NoteReadings()
+	return m.WithCurated(manifest.Pin{File: readings.File, SHA256: readings.SHA256}) //nolint:wrapcheck // names the manifest
 }
 
 // publishLabManifest stores the Lab's input manifest; published is false when it is held already.
@@ -199,6 +209,16 @@ func (a *App) publishLabManifest(ctx context.Context) (manifest.Manifest, bool, 
 		return manifest.Manifest{}, false, fmt.Errorf("app: publish lab manifest: %w", err)
 	}
 	return m, published, nil
+}
+
+func curatedCount(m manifest.Manifest) int {
+	n := 0
+	for _, e := range m.Entries {
+		if e.Curated() {
+			n++
+		}
+	}
+	return n
 }
 
 // thousands writes n with comma separators, as the app shows counts.

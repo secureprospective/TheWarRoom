@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -153,4 +154,49 @@ func keyID(r RawValue, key, src string) (string, error) {
 		return "", fmt.Errorf("%s: missing %s", src, key)
 	}
 	return *field.Scalar, nil
+}
+
+// Fingerprint is the sha256 of every compiled column, cell by cell with its type and nulls, so two
+// compiles agree exactly when their facts do. It names a published snapshot.
+func (f Facts) Fingerprint() string {
+	h := sha256.New()
+	write := func(b []byte) { // length-prefixed, so no two cell sequences hash alike
+		h.Write(strconv.AppendInt(nil, int64(len(b)), 10))
+		h.Write([]byte{':'})
+		h.Write(b)
+	}
+	relations := reflect.ValueOf(f)
+	for i := 0; i < relations.NumField(); i++ {
+		write([]byte(relations.Type().Field(i).Name))
+		columns := relations.Field(i)
+		for c := 0; c < columns.NumField(); c++ {
+			write([]byte(columns.Type().Field(c).Name))
+			column := columns.Field(c)
+			for row := 0; row < column.Len(); row++ {
+				write(cellBytes(column.Index(row)))
+			}
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// cellBytes writes a cell as a type mark and its exact value: null, text, a whole number, or a
+// float in the shortest form that reads back to the same bits.
+func cellBytes(v reflect.Value) []byte {
+	if v.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			return []byte{'n'}
+		}
+		v = v.Elem()
+	}
+	if v.Kind() == reflect.String {
+		return append([]byte{'s'}, v.String()...)
+	}
+	if v.Kind() == reflect.Int64 {
+		return strconv.AppendInt([]byte{'i'}, v.Int(), 10)
+	}
+	if v.Kind() == reflect.Float64 {
+		return strconv.AppendFloat([]byte{'f'}, v.Float(), 'g', -1, 64)
+	}
+	panic("unsupported facts column")
 }

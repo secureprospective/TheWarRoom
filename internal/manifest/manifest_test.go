@@ -196,3 +196,46 @@ func TestConflictingHistoricalLeagueIDsAreRefused(t *testing.T) {
 		t.Fatalf("conflicting leagues accepted: %v", err)
 	}
 }
+
+func TestCuratedInputsArePinnedResolvedAndChangeTheIdentity(t *testing.T) {
+	fetches, b := archive()
+	m, err := manifest.Build("frozen", pins(), fetches, 2026, cutoffTime())
+	if err != nil {
+		t.Fatal(err)
+	}
+	withNotes, err := m.WithCurated(manifest.Pin{File: "note_readings.csv", SHA256: sum("readings")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	edited, err := m.WithCurated(manifest.Pin{File: "note_readings.csv", SHA256: sum("readings, edited")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if withNotes.SHA256 == m.SHA256 || withNotes.SHA256 == edited.SHA256 || len(withNotes.Missing()) != len(m.Missing()) {
+		t.Fatal("a curated input must change the identity and never count as missing from the archive")
+	}
+	b[sum("readings")] = "readings"
+	got, err := withNotes.Resolve(context.Background(), b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var curated, login int
+	for _, r := range got {
+		if r.Entry.Curated() && string(r.Body) == "readings" {
+			curated++
+		}
+		if r.Entry.File == "2013/polls.json" && r.Body == nil && r.Bytes == int64(len("login")) {
+			login++
+		}
+	}
+	if curated != 1 || login != 1 {
+		t.Fatalf("curated %d, error body sized %d", curated, login)
+	}
+	delete(b, sum("readings"))
+	if _, err := withNotes.Resolve(context.Background(), b); err == nil || !strings.Contains(err.Error(), "note_readings.csv") {
+		t.Fatalf("an unresolvable curated input must fail by name: %v", err)
+	}
+	if _, err := m.WithCurated(manifest.Pin{File: "x.csv", SHA256: "nothex"}); err == nil {
+		t.Fatal("accepted an invalid curated pin")
+	}
+}

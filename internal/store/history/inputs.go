@@ -130,6 +130,9 @@ type SnapshotRecord struct {
 	ResultSHA   string
 	Error       string
 	BuiltAt     time.Time
+	// Checks is the compiler's check results as JSON, kept beside the attempt (good or failed) so
+	// Control Room shows them without compiling again; empty when the compile stopped before them.
+	Checks string
 }
 
 // RecordSnapshot appends a compile attempt. Attempts are never changed, so a failed build leaves
@@ -141,9 +144,27 @@ func (s *Store) RecordSnapshot(ctx context.Context, r SnapshotRecord) error {
 	}
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	if _, err := s.pools.Write().ExecContext(ctx, `
+	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("history: record snapshot of %s: %w", r.ManifestSHA, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.ExecContext(ctx, `
 INSERT INTO compiled_snapshots (manifest_sha, compiler, rules_hash, result_sha, error, built_at)
-VALUES (?, ?, ?, ?, ?, ?)`, r.ManifestSHA, r.Compiler, r.RulesHash, result, r.Error, formatTime(r.BuiltAt)); err != nil {
+VALUES (?, ?, ?, ?, ?, ?)`, r.ManifestSHA, r.Compiler, r.RulesHash, result, r.Error, formatTime(r.BuiltAt))
+	if err != nil {
+		return fmt.Errorf("history: record snapshot of %s: %w", r.ManifestSHA, err)
+	}
+	if r.Checks != "" {
+		id, err := res.LastInsertId()
+		if err != nil {
+			return fmt.Errorf("history: record snapshot of %s: %w", r.ManifestSHA, err)
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO snapshot_checks (snapshot_id, checks) VALUES (?, ?)`, id, r.Checks); err != nil {
+			return fmt.Errorf("history: record checks of %s: %w", r.ManifestSHA, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("history: record snapshot of %s: %w", r.ManifestSHA, err)
 	}
 	return nil
@@ -152,8 +173,10 @@ VALUES (?, ?, ?, ?, ?, ?)`, r.ManifestSHA, r.Compiler, r.RulesHash, result, r.Er
 // Snapshots returns every compile attempt over manifests of that name, newest first.
 func (s *Store) Snapshots(ctx context.Context, name string) ([]SnapshotRecord, error) {
 	rows, err := s.pools.Read().QueryContext(ctx, `
-SELECT c.manifest_sha, c.compiler, c.rules_hash, COALESCE(c.result_sha, ''), c.error, c.built_at
+SELECT c.manifest_sha, c.compiler, c.rules_hash, COALESCE(c.result_sha, ''), c.error, c.built_at,
+       COALESCE(k.checks, '')
 FROM compiled_snapshots c JOIN input_manifests m ON m.manifest_sha = c.manifest_sha
+LEFT JOIN snapshot_checks k ON k.snapshot_id = c.snapshot_id
 WHERE m.name = ? ORDER BY c.built_at DESC, c.snapshot_id DESC`, name)
 	if err != nil {
 		return nil, fmt.Errorf("history: snapshots of %s: %w", name, err)
@@ -163,7 +186,7 @@ WHERE m.name = ? ORDER BY c.built_at DESC, c.snapshot_id DESC`, name)
 	for rows.Next() {
 		var r SnapshotRecord
 		var at string
-		if err := rows.Scan(&r.ManifestSHA, &r.Compiler, &r.RulesHash, &r.ResultSHA, &r.Error, &at); err != nil {
+		if err := rows.Scan(&r.ManifestSHA, &r.Compiler, &r.RulesHash, &r.ResultSHA, &r.Error, &at, &r.Checks); err != nil {
 			return nil, fmt.Errorf("history: scan snapshot of %s: %w", name, err)
 		}
 		if r.BuiltAt, err = parseTime(at); err != nil {

@@ -108,7 +108,8 @@ func TestManifestsPublishOncePerSHAAndSnapshotsAppend(t *testing.T) {
 		t.Error("a manifest of another name was found")
 	}
 	good := SnapshotRecord{ManifestSHA: "m1", Compiler: "c", RulesHash: "r", ResultSHA: "res", BuiltAt: t0()}
-	failed := SnapshotRecord{ManifestSHA: "m2", Compiler: "c", RulesHash: "r", Error: "check failed", BuiltAt: t0().Add(time.Hour)}
+	failed := SnapshotRecord{ManifestSHA: "m2", Compiler: "c", RulesHash: "r", Error: "check failed", BuiltAt: t0().Add(time.Hour),
+		Checks: `[{"name":"one"}]`}
 	for _, r := range []SnapshotRecord{good, failed} {
 		if err := s.RecordSnapshot(ctx, r); err != nil {
 			t.Fatal(err)
@@ -118,10 +119,12 @@ func TestManifestsPublishOncePerSHAAndSnapshotsAppend(t *testing.T) {
 		t.Error("an attempt with both a result and an error was stored")
 	}
 	got, err := s.Snapshots(ctx, "frozen")
-	if err != nil || len(got) != 2 || got[0].Error != "check failed" || got[1].ResultSHA != "res" {
+	if err != nil || len(got) != 2 || got[0].Error != "check failed" || got[1].ResultSHA != "res" ||
+		got[0].Checks != `[{"name":"one"}]` || got[1].Checks != "" {
 		t.Fatalf("snapshots = %+v, %v; want the failure first, the good build kept", got, err)
 	}
-	for _, stmt := range []string{`UPDATE compiled_snapshots SET error = ''`, `DELETE FROM input_manifests`} {
+	for _, stmt := range []string{`UPDATE compiled_snapshots SET error = ''`, `DELETE FROM input_manifests`,
+		`UPDATE snapshot_checks SET checks = '[]'`} {
 		if _, err := s.pools.Write().Exec(stmt); err == nil || !strings.Contains(err.Error(), "append-only") {
 			t.Errorf("%s: err = %v, want append-only abort", stmt, err)
 		}

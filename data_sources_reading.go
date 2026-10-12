@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"maps"
 	"net/url"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/manifest"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -254,41 +254,18 @@ func seasonCount(players, season int) string {
 	return fmt.Sprintf("%s in %d", thousands(players), season)
 }
 
-// labCheck is one of the Lab's own proofs of its facts against MFL's figures.
-type labCheck struct {
-	Name   string `json:"name"`
-	Detail string `json:"detail"`
-}
-
-// rawLabSource is the part of the frozen Lab data's "source" block the checks list reads.
-type rawLabSource struct {
-	Checks []labCheck `json:"checks"`
-}
-
-func labSourceChecks(raw json.RawMessage) ([]labCheck, error) {
-	var s rawLabSource
-	if err := json.Unmarshal(raw, &s); err != nil {
-		return nil, fmt.Errorf("app: lab source checks: %w", err)
-	}
-	for _, c := range s.Checks {
-		if c.Name == "" {
-			return nil, fmt.Errorf("app: lab source checks: a check has no name")
-		}
-	}
-	return s.Checks, nil
-}
-
 // factsInput is what L-34 reports: the Lab's pinned inputs, what the archive holds of them, and
 // the compiled snapshot's standing.
 type factsInput struct {
 	labBuilt, labThrough string
-	checks               []labCheck
 	gaps                 []manifest.Gap
 	published            bool
 	publishedAt          time.Time
 	manifest             manifest.Manifest
 	held                 map[string]bool
 	status               manifest.Status
+	latest               *history.SnapshotRecord // the newest compile attempt, good or failed
+	results              []facts.CheckResult     // its check results, when it reached the checks
 	zone                 *time.Location
 }
 
@@ -309,7 +286,12 @@ func factsReport(in factsInput) Report {
 	m := in.manifest
 	seasons, exports, errorBodies := map[int]bool{}, map[string]int{}, 0
 	var notHeld []string
+	var curated []string
 	for _, e := range m.Entries {
+		if e.Curated() {
+			curated = append(curated, e.File+" ("+e.SHA256[:12]+")")
+			continue
+		}
 		seasons[e.Season], exports[e.Export] = true, exports[e.Export]+1
 		if e.MFLError != "" {
 			errorBodies++
@@ -320,9 +302,14 @@ func factsReport(in factsInput) Report {
 	}
 	years := slices.Sorted(maps.Keys(seasons))
 	row("Manifest", m.SHA256[:12]+", published "+reportTime(in.publishedAt, in.zone))
-	row("Files pinned", fmt.Sprintf("%s, over seasons %d–%d", thousands(len(m.Entries)), years[0], years[len(years)-1]))
+	row("Files pinned", fmt.Sprintf("%s archive files, over seasons %d–%d", thousands(len(m.Entries)-len(curated)), years[0], years[len(years)-1]))
+	if len(curated) > 0 {
+		row("Curated inputs", strings.Join(curated, ", ")+": the readings of trade notes, written by people, not MFL data. "+
+			"Pinned by their own sha256 like every archive file.")
+	}
 	row("Exports", exportCounts(exports))
-	row("In the archive", fmt.Sprintf("%s of %s", thousands(len(m.Entries)-len(notHeld)), thousands(len(m.Entries))))
+	archived := len(m.Entries) - len(curated)
+	row("In the archive", fmt.Sprintf("%s of %s", thousands(archived-len(notHeld)), thousands(archived)))
 	row("Not in the archive", missingText(notHeld))
 	for _, g := range in.gaps {
 		for _, e := range m.Entries {
@@ -371,24 +358,80 @@ func snapshotText(s manifest.Status, zone *time.Location) string {
 	return "None yet. " + s.Reason
 }
 
-// checksReport lists the proofs a compiled snapshot must pass before it is published.
-func checksReport(lab []labCheck) Report {
-	r := Report{ID: "L-34-checks", Title: "Checks that will run", Status: "ok", Source: "Source: the frozen Lab data and the build plan",
+// checksReport is the nine checks of the newest compile, each against MFL's own figures, with every
+// explained or reviewed difference in plain words. Before the first compile they read "Not run yet".
+func checksReport(in factsInput) Report {
+	r := Report{ID: "L-34-checks", Title: "Checks", Status: "ok", Source: "Source: the compiled facts and MFL's own figures",
 		AsOf: "As of: now", Columns: []string{"Check", "What it proves", "Result"}, Rows: []ReportRow{},
-		Note: "These run each time the facts are compiled; their results appear here once the compiler is built.",
-		How: "A compiled snapshot is published only when every check passes; a failed build keeps the last good one, " +
-			"marked stale."}
-	row := func(name, proves string) {
-		r.Rows = append(r.Rows, ReportRow{Cells: []string{name, proves, "Not run yet"}})
+		How: "Each check compares two records MFL keeps separately. Every difference must be named, by its identity, " +
+			"in the pinned list of explained and reviewed differences; a new one fails the compile, and the last good " +
+			"snapshot is kept, marked stale."}
+	row := func(name, proves, result string) {
+		r.Rows = append(r.Rows, ReportRow{Cells: []string{name, proves, result}})
 	}
-	row("Compiled rows match the frozen Lab data", "Row by row: ids, times, counts and money exact; derived decimals within one part in a billion.")
-	row("Engine goldens pass on the compiled data", "The engines read the compiled facts and reproduce their checked results.")
-	for _, c := range lab {
-		proves := c.Detail
-		if proves == "" {
-			proves = "Checked against MFL's own figures."
+	row("Compiled facts match the Lab's reference", "Row by row against the Lab's own Python build: ids, times, "+
+		"counts and money exact; derived decimals within one part in a billion.", "Proved by the build's tests: 37 tables, no differences")
+	if len(in.results) == 0 {
+		r.Note = "Not run yet: the checks run when the facts compile, after the league archive is imported."
+		if in.latest != nil && in.latest.Error != "" {
+			r.Status, r.Note = "failed", "The latest compile stopped before the checks: "+in.latest.Error
 		}
-		row(c.Name, proves)
+		// The checks over no facts: their names and what each proves, before anything has run.
+		defined, _ := facts.Facts{}.Check(facts.Exceptions{})
+		for _, c := range defined {
+			row(c.Name, checkProves(c.Detail), "Not run yet")
+		}
+		return r
+	}
+	r.AsOf = "Compiled: " + reportTime(in.latest.BuiltAt, in.zone)
+	failed := 0
+	for _, c := range in.results {
+		if !c.Passed {
+			failed++
+		}
+		row(c.Name, checkProves(c.Detail), checkResultText(c))
+	}
+	for _, c := range in.results {
+		for _, it := range c.Items {
+			r.Rows = append(r.Rows, ReportRow{Group: c.Name, Cells: []string{it.Words, itemReason(it), itemClass(it.Class)}})
+		}
+	}
+	if failed > 0 {
+		r.Status, r.Note = "failed", fmt.Sprintf("%d of %d checks found a difference no one has explained; the facts are "+
+			"not published until it is understood.", failed, len(in.results))
 	}
 	return r
+}
+
+func checkProves(detail string) string {
+	if detail == "" {
+		return "Checked against MFL's own figures."
+	}
+	return detail
+}
+
+func checkResultText(c facts.CheckResult) string {
+	verdict := "Passed"
+	if !c.Passed {
+		verdict = "Failed"
+	}
+	return fmt.Sprintf("%s: %s compared, %s agree, %s explained, %s for review", verdict, thousands(c.Checked),
+		thousands(c.Agreed), thousands(c.Explained), thousands(c.Review))
+}
+
+func itemReason(it facts.CheckItem) string {
+	if it.Reason == "" {
+		return "Not explained yet."
+	}
+	return it.Reason
+}
+
+func itemClass(class string) string {
+	switch class {
+	case facts.ClassExplained:
+		return "Explained"
+	case facts.ClassReview:
+		return "For review"
+	}
+	return "Not explained"
 }
