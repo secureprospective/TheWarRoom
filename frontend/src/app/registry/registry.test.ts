@@ -130,14 +130,26 @@ describe('Endpoint map', () => {
       'M-086', 'M-082', 'M-073', 'M-079', 'M-089', 'M-111', 'M-112', 'M-113', 'M-174', 'M-200', 'M-201',
       'C-01',
     ];
+    // Seen working on Claude-OS against the live snapshot during the 10-12 landing walk.
+    const landed = [
+      'C-01', 'C-02', 'C-03', 'C-04', 'L-01', 'L-02', 'L-03', 'L-04', 'L-05', 'L-06', 'L-07', 'L-08',
+      'L-09', 'L-10', 'L-11', 'L-12', 'L-13', 'L-14', 'L-19', 'L-20', 'L-33', 'L-35', 'M-002', 'M-008',
+      'M-009', 'M-010', 'M-011', 'M-013', 'M-014', 'M-037', 'M-038', 'M-040', 'M-046', 'M-047', 'M-048',
+      'M-051', 'M-052', 'M-053', 'M-054', 'M-057', 'M-062', 'M-063', 'M-064', 'M-066', 'M-067', 'M-068',
+      'M-069', 'M-071', 'M-074', 'M-076', 'M-077', 'M-079', 'M-080', 'M-082', 'M-086', 'M-090', 'M-096',
+      'M-102', 'M-103', 'M-104', 'M-110', 'M-161', 'M-170', 'M-179', 'M-182', 'M-183', 'S-01', 'S-04',
+      'S-13',
+      'M-027',
+    ];
     for (const row of endpoints) {
       let status = 'spec';
-      if (row.id === 'M-027') status = 'landed';
       if (built.includes(row.id)) status = 'built';
+      if (landed.includes(row.id)) status = 'landed';
       expect(row.status).toBe(status);
     }
     const checks: [EndpointId, string][] = [
       ['M-027', 'landed live'],
+      ['C-03', 'landed live'],
       ['M-028', 'built, not yet landed live'],
       ['M-029', 'built, not yet landed live'],
       ['M-033', 'built, not yet landed live'],
