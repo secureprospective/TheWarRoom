@@ -3047,6 +3047,32 @@ export namespace main {
 	        this.confirmed = source["confirmed"];
 	    }
 	}
+	export class RawResearchScope {
+	    mine: string;
+	    search: string;
+	    position: string;
+	    team: string;
+	    group: string;
+	    trend: string;
+	    depth: string;
+	    injuries: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawResearchScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.mine = source["mine"];
+	        this.search = source["search"];
+	        this.position = source["position"];
+	        this.team = source["team"];
+	        this.group = source["group"];
+	        this.trend = source["trend"];
+	        this.depth = source["depth"];
+	        this.injuries = source["injuries"];
+	    }
+	}
 	export class RawTradeBuilder {
 	    mine: string;
 	    other: string;
@@ -5504,6 +5530,87 @@ export namespace main {
 	
 	
 	
+	
+	export class ResearchArticle {
+	    id: string;
+	    article: string;
+	    name: string;
+	    headline: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ResearchArticle(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.article = source["article"];
+	        this.name = source["name"];
+	        this.headline = source["headline"];
+	    }
+	}
+	export class ResearchPlayer {
+	    id: string;
+	    name: string;
+	    position: string;
+	    team: string;
+	    franchiseId: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ResearchPlayer(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.position = source["position"];
+	        this.team = source["team"];
+	        this.franchiseId = source["franchiseId"];
+	    }
+	}
+	export class ResearchBoard {
+	    board: ReportBoard;
+	    news: Report;
+	    articles: ResearchArticle[];
+	    players: ResearchPlayer[];
+	    teams: string[];
+	    positions: string[];
+	    scope: RawResearchScope;
+	
+	    static createFrom(source: any = {}) {
+	        return new ResearchBoard(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.board = this.convertValues(source["board"], ReportBoard);
+	        this.news = this.convertValues(source["news"], Report);
+	        this.articles = this.convertValues(source["articles"], ResearchArticle);
+	        this.players = this.convertValues(source["players"], ResearchPlayer);
+	        this.teams = source["teams"];
+	        this.positions = source["positions"];
+	        this.scope = this.convertValues(source["scope"], RawResearchScope);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	
 	export class RosterResult {
 	    ok: boolean;

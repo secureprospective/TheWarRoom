@@ -1,0 +1,17 @@
+.research-search { margin-bottom: 24px; }
+.research-search label { display: block; }
+.research-search input { display: block; width: min(100%, 32rem); margin: 8px 0; }
+.research-search ul, .research-articles ul { list-style: none; padding: 0; }
+.research-search li, .research-articles li { margin: 6px 0; }
+.research .draft-report[data-endpoint="M-037"] td,
+.research .draft-report[data-endpoint="M-038"] td,
+.research .draft-report[data-endpoint="M-040"] td,
+.research-grid .draft-report[data-endpoint="M-048"] td { white-space: nowrap; }
+.research .draft-report[data-endpoint="M-051"] table,
+.research .draft-report[data-endpoint="M-057"] table { table-layout: fixed; }
+.research .draft-report[data-endpoint="M-051"] td,
+.research .draft-report[data-endpoint="M-057"] td { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.research .draft-report[data-endpoint="M-051"] td:first-child,
+.research .draft-report[data-endpoint="M-057"] td:first-child { width: 22%; }
+.research-news .draft-report td { min-width: 0; white-space: normal; }
+.research-news .draft-report td:first-child { white-space: normal; }

@@ -362,6 +362,13 @@ export function createCommands(
           .catch(cause => state.write({ notice: String(cause) }));
       },
     }),
+    'research.read': command({
+      ...ambient, id: 'research.read', label: 'Player research', aliases: [], args: ['action', 'value'],
+      run: (args: { action: string; value: string }) => {
+        void import('../research/state').then(m => m.researchState.choose(args.action, args.value))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     'race.reports': command({
       ...ambient, id: 'race.reports', label: 'League race reports', aliases: [], args: ['action', 'value'],
       run: (args: { action: 'refresh' | 'week' | 'team'; value: string }) => {

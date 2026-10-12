@@ -105,6 +105,7 @@ type App struct {
 	seasonMarket        map[string]heldSeasonFeed[[]marketfeeds.Feed]
 	seasonDraftResults  heldSeasonFeed[[]draftreports.Pick]
 	seasonFuturePicks   heldSeasonFeed[[]draftreports.FuturePick]
+	research            researchHeld
 	race                raceHeld
 	now                 nowHeld
 	lineupsWeek         int
@@ -124,6 +125,7 @@ type App struct {
 	fallbackLog  func(string)
 	movesUnknown map[string]bool
 
+	newsMu           sync.Mutex
 	refreshMu        sync.Mutex   // one MFL refresh at a time
 	rostersCheckedAt time.Time    // last successful roster refresh; refreshMu guards it
 	rulesCheckedAt   atomic.Int64 // unix seconds of the last rules sync, 0 if none; read lock-free

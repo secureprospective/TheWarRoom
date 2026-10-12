@@ -5,6 +5,8 @@ import { PlayerCard } from '../cards/PlayerCard';
 import { playerCardModel } from '../cards/playerModel';
 import type { PlayerSubject } from './state';
 
+const ResearchInspector = lazy(() => import('../research/PlayerInspector'));
+
 const ContractPanel = lazy(() =>
   import('../contracts/Contracts').then((m) => ({ default: m.ContractPanel })),
 );
@@ -16,6 +18,9 @@ export function PlayerInspector({
   snapshot: Snapshot;
   subject: PlayerSubject;
 }) {
+  if (!subject.franchiseId) return <Suspense fallback={<p role="status">Reading player…</p>}>
+    <ResearchInspector id={subject.id} />
+  </Suspense>;
   const model = playerCardModel(snapshot, subject.franchiseId, subject.id, new Date(), true);
   return (
     <>
