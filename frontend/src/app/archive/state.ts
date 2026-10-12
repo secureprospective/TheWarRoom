@@ -6,20 +6,26 @@ import { choice, type Choice } from '../race/contract';
 import { commands } from '../commands/registry';
 import type * as Bindings from '../../../wailsjs/go/main/App';
 
-export type Archive = { board: Board; season: number; seasons: Choice[]; team: string; other: string; teams: Choice[] };
+export type Archive = { board: Board; season: number; seasons: Choice[]; team: string; other: string;
+  teams: Choice[] };
 export function parseArchive(value: unknown): Archive {
   const p = 'League archive';
   const r = object(value, p, ['board', 'season', 'seasons', 'team', 'other', 'teams']);
   const a = { board: parseBoard(r.board), season: integer(r.season, p),
-    seasons: array(r.seasons, p, choice), team: text(r.team, p), other: text(r.other, p), teams: array(r.teams, p, choice) };
-  if (a.seasons.length && !a.seasons.some(s => s.value === String(a.season))) throw new Error(`${p}: season outside choices`);
+    seasons: array(r.seasons, p, choice), team: text(r.team, p), other: text(r.other, p),
+    teams: array(r.teams, p, choice) };
+  if (a.seasons.length && !a.seasons.some(s => s.value === String(a.season)))
+    throw new Error(`${p}: season outside choices`);
   if (a.teams.length && [a.team, a.other].some(t => t && !a.teams.some(c => c.value === t)))
     throw new Error(`${p}: franchise outside choices`);
   if (!a.board.reports.length) throw new Error(`${p}: missing reports`);
   return a;
 }
-export function createArchiveState(read: (season: number, team: string, other: string) => Promise<Archive>, mine: () => string) {
-  const store = createStore<{ archive?: Archive; pending: boolean; error: string; season: number; team: string | null; other: string }>(() =>
+type ArchiveState = { archive?: Archive; pending: boolean; error: string; season: number;
+  team: string | null; other: string };
+export function createArchiveState(read: (season: number, team: string, other: string) => Promise<Archive>,
+  mine: () => string) {
+  const store = createStore<ArchiveState>(() =>
     ({ pending: false, error: '', season: 0, team: null, other: '' }));
   let revision = 0;
   async function load() {
@@ -28,7 +34,8 @@ export function createArchiveState(read: (season: number, team: string, other: s
     const { season, team, other } = store.getState();
     try {
       const archive = await read(season, team ?? mine(), other);
-      if (request === revision) store.setState({ archive, season: archive.season, team: archive.team, other: archive.other });
+      if (request === revision)
+        store.setState({ archive, season: archive.season, team: archive.team, other: archive.other });
     } catch (cause) {
       if (request === revision) store.setState({ error: String(cause) });
     } finally {

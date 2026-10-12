@@ -1169,6 +1169,236 @@ export namespace main {
 	        this.startupError = source["startupError"];
 	    }
 	}
+	export class RaceChoice {
+	    value: string;
+	    label: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RaceChoice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = source["value"];
+	        this.label = source["label"];
+	    }
+	}
+	export class ReportLink {
+	    label: string;
+	    endpoint: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ReportLink(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.label = source["label"];
+	        this.endpoint = source["endpoint"];
+	    }
+	}
+	export class MarketRange {
+	    max?: number;
+	    value: number;
+	    lo: number;
+	    hi: number;
+	    text: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MarketRange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.max = source["max"];
+	        this.value = source["value"];
+	        this.lo = source["lo"];
+	        this.hi = source["hi"];
+	        this.text = source["text"];
+	    }
+	}
+	export class ReportRow {
+	    sort?: number[];
+	    titles?: string[];
+	    cells: string[];
+	    range?: MarketRange;
+	    mine?: boolean;
+	    bars?: number[];
+	    group?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ReportRow(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sort = source["sort"];
+	        this.titles = source["titles"];
+	        this.cells = source["cells"];
+	        this.range = this.convertValues(source["range"], MarketRange);
+	        this.mine = source["mine"];
+	        this.bars = source["bars"];
+	        this.group = source["group"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Report {
+	    sortAscending?: string;
+	    sortDescending?: string;
+	    id: string;
+	    title: string;
+	    note: string;
+	    status: string;
+	    source: string;
+	    asOf: string;
+	    how: string;
+	    columns: string[];
+	    rows: ReportRow[];
+	    summary: ReportRow[];
+	    link?: ReportLink;
+	    barMax?: number;
+	    barLabels?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Report(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sortAscending = source["sortAscending"];
+	        this.sortDescending = source["sortDescending"];
+	        this.id = source["id"];
+	        this.title = source["title"];
+	        this.note = source["note"];
+	        this.status = source["status"];
+	        this.source = source["source"];
+	        this.asOf = source["asOf"];
+	        this.how = source["how"];
+	        this.columns = source["columns"];
+	        this.rows = this.convertValues(source["rows"], ReportRow);
+	        this.summary = this.convertValues(source["summary"], ReportRow);
+	        this.link = this.convertValues(source["link"], ReportLink);
+	        this.barMax = source["barMax"];
+	        this.barLabels = source["barLabels"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ReportBoard {
+	    title: string;
+	    loading: string;
+	    refresh: string;
+	    howLabel: string;
+	    mflLabel: string;
+	    mflUrl: string;
+	    reports: Report[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ReportBoard(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.title = source["title"];
+	        this.loading = source["loading"];
+	        this.refresh = source["refresh"];
+	        this.howLabel = source["howLabel"];
+	        this.mflLabel = source["mflLabel"];
+	        this.mflUrl = source["mflUrl"];
+	        this.reports = this.convertValues(source["reports"], Report);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ArchiveBoard {
+	    board: ReportBoard;
+	    season: number;
+	    seasons: RaceChoice[];
+	    team: string;
+	    other: string;
+	    teams: RaceChoice[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ArchiveBoard(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.board = this.convertValues(source["board"], ReportBoard);
+	        this.season = source["season"];
+	        this.seasons = this.convertValues(source["seasons"], RaceChoice);
+	        this.team = source["team"];
+	        this.other = source["other"];
+	        this.teams = this.convertValues(source["teams"], RaceChoice);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class BidAction {
 	    id: string;
 	    label: string;
@@ -1399,20 +1629,6 @@ export namespace main {
 	        this.reason = source["reason"];
 	    }
 	}
-	export class RaceChoice {
-	    value: string;
-	    label: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new RaceChoice(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.value = source["value"];
-	        this.label = source["label"];
-	    }
-	}
 	export class CommsEvent {
 	    sentence: string;
 	    date: string;
@@ -1426,140 +1642,6 @@ export namespace main {
 	        this.sentence = source["sentence"];
 	        this.date = source["date"];
 	    }
-	}
-	export class ReportLink {
-	    label: string;
-	    endpoint: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ReportLink(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.label = source["label"];
-	        this.endpoint = source["endpoint"];
-	    }
-	}
-	export class MarketRange {
-	    max?: number;
-	    value: number;
-	    lo: number;
-	    hi: number;
-	    text: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new MarketRange(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.max = source["max"];
-	        this.value = source["value"];
-	        this.lo = source["lo"];
-	        this.hi = source["hi"];
-	        this.text = source["text"];
-	    }
-	}
-	export class ReportRow {
-	    sort?: number[];
-	    titles?: string[];
-	    cells: string[];
-	    range?: MarketRange;
-	    mine?: boolean;
-	    bars?: number[];
-	    group?: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ReportRow(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.sort = source["sort"];
-	        this.titles = source["titles"];
-	        this.cells = source["cells"];
-	        this.range = this.convertValues(source["range"], MarketRange);
-	        this.mine = source["mine"];
-	        this.bars = source["bars"];
-	        this.group = source["group"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-	export class Report {
-	    sortAscending?: string;
-	    sortDescending?: string;
-	    id: string;
-	    title: string;
-	    note: string;
-	    status: string;
-	    source: string;
-	    asOf: string;
-	    how: string;
-	    columns: string[];
-	    rows: ReportRow[];
-	    summary: ReportRow[];
-	    link?: ReportLink;
-	    barMax?: number;
-	    barLabels?: string[];
-	
-	    static createFrom(source: any = {}) {
-	        return new Report(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.sortAscending = source["sortAscending"];
-	        this.sortDescending = source["sortDescending"];
-	        this.id = source["id"];
-	        this.title = source["title"];
-	        this.note = source["note"];
-	        this.status = source["status"];
-	        this.source = source["source"];
-	        this.asOf = source["asOf"];
-	        this.how = source["how"];
-	        this.columns = source["columns"];
-	        this.rows = this.convertValues(source["rows"], ReportRow);
-	        this.summary = this.convertValues(source["summary"], ReportRow);
-	        this.link = this.convertValues(source["link"], ReportLink);
-	        this.barMax = source["barMax"];
-	        this.barLabels = source["barLabels"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class CommsBoard {
 	    feed: Report;
@@ -2596,48 +2678,6 @@ export namespace main {
 	        this.mflID = source["mflID"];
 	        this.toFranchiseID = source["toFranchiseID"];
 	    }
-	}
-	export class ReportBoard {
-	    title: string;
-	    loading: string;
-	    refresh: string;
-	    howLabel: string;
-	    mflLabel: string;
-	    mflUrl: string;
-	    reports: Report[];
-	
-	    static createFrom(source: any = {}) {
-	        return new ReportBoard(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.title = source["title"];
-	        this.loading = source["loading"];
-	        this.refresh = source["refresh"];
-	        this.howLabel = source["howLabel"];
-	        this.mflLabel = source["mflLabel"];
-	        this.mflUrl = source["mflUrl"];
-	        this.reports = this.convertValues(source["reports"], Report);
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class NowBoard {
 	    week: number;

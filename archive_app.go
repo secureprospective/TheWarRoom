@@ -124,7 +124,7 @@ func resolveArchive(ctx context.Context, bodies manifest.Bodies, m manifest.Mani
 	if err != nil {
 		return archiveCache{}, fmt.Errorf("archive: pools: %w", err)
 	}
-	return archiveCache{facts: compiled, pools: pools, cutoff: cutoff.UTC().Format(time.RFC3339)}, nil
+	return archiveCache{facts: compiled, pools: pools, cutoff: cutoff.Local().Format("Jan 2, 2006")}, nil
 }
 
 func (a *App) readPinnedPools(ctx context.Context) (map[int64]facts.PoolSeason, string) {

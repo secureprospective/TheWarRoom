@@ -68,6 +68,8 @@ export function TargetAcquisition(arg1:main.RawAcquisition):Promise<main.Reading
 
 export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
 
+export function TargetArchive(arg1:number,arg2:string,arg3:string):Promise<main.ArchiveBoard>;
+
 export function TargetAssetProfile(arg1:main.RawMarketAsset):Promise<main.Reading_main_MarketSurface_>;
 
 export function TargetBidDraft(arg1:main.RawBidInput):Promise<main.BidPlan>;

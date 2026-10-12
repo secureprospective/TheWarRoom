@@ -31,7 +31,7 @@ func appendArchiveExtremes(r *Report, entries []archiveRecordEntry) {
 		}
 		for _, e := range groups[label] {
 			if e.value == best {
-				r.Rows = append(r.Rows, draftRow(e.label, e.who, e.when, fmt.Sprintf("%.2f", e.value)))
+				r.Rows = append(r.Rows, draftRow(e.label, e.who, e.when, archiveRecordValue(e)))
 			}
 		}
 	}
@@ -39,6 +39,16 @@ func appendArchiveExtremes(r *Report, entries []archiveRecordEntry) {
 		r.Status = "empty"
 		r.Note = "No scored records are available in this snapshot."
 	}
+}
+
+// archiveRecordValue writes counts (wins, losses, games in a streak) as whole numbers and points
+// with two decimals.
+func archiveRecordValue(e archiveRecordEntry) string {
+	label := strings.ToLower(e.label)
+	if strings.Contains(label, "wins") || strings.Contains(label, "losses") || strings.Contains(label, "streak") {
+		return fmt.Sprintf("%.0f", e.value)
+	}
+	return fmt.Sprintf("%.2f", e.value)
 }
 
 func (v archiveView) matchupRecords() Report {
@@ -57,8 +67,9 @@ func (v archiveView) matchupRecords() Report {
 		if !ok || opp == "" || *g.Score[i] < *g.Score[j] || (*g.Score[i] == *g.Score[j] && g.Fid[i] > opp) {
 			continue
 		}
-		who := v.name(y, g.Fid[i]) + " / " + v.name(y, opp)
-		entries = append(entries, archiveRecordEntry{"Highest combined game", who, when, *g.Score[i] + *g.Score[j]}, archiveRecordEntry{"Largest winning margin", who, when, *g.Score[i] - *g.Score[j]})
+		game := v.name(y, g.Fid[i]) + " vs " + v.name(y, opp)
+		margin := v.name(y, g.Fid[i]) + " over " + v.name(y, opp)
+		entries = append(entries, archiveRecordEntry{"Highest combined game", game, when, *g.Score[i] + *g.Score[j]}, archiveRecordEntry{"Largest winning margin", margin, when, *g.Score[i] - *g.Score[j]})
 	}
 	appendArchiveExtremes(&r, entries)
 	return r
@@ -247,10 +258,10 @@ func (v archiveView) scoring() Report {
 }
 
 func (v archiveView) playerChanges() Report {
-	r := v.shell("M-079", "Player additions and position changes", "Additions are the reference's roster moves with an add role (free agents, waivers and roster loads). Position changes compare consecutive recorded seasonal player positions; a missing year is not assigned a date. Transaction dates are MFL's recorded dates.", "When", "Change", "Player", "Franchise / positions")
+	r := v.shell("M-079", "Player additions and position changes", "The selected season only. Additions are the reference's roster moves with an add role (free agents, waivers and roster loads). Position changes compare consecutive recorded seasonal player positions; a missing year is not assigned a date. Transaction dates are MFL's recorded dates.", "When", "Change", "Player", "Franchise / positions")
 	moves := v.views.RosterMove
 	for i, y := range moves.Year {
-		if moves.Role[i] == "add" && moves.Pid[i] != nil {
+		if y == int64(v.season) && moves.Role[i] == "add" && moves.Pid[i] != nil {
 			r.Rows = append(r.Rows, draftRow(archiveValue(moves.Day[i]), "Player added", v.player(*moves.Pid[i]), v.name(y, archiveValue(moves.Fid[i]))))
 		}
 	}
@@ -273,14 +284,14 @@ func (v archiveView) playerChanges() Report {
 			continue
 		}
 		held, seen := prior[pid]
-		if seen && held.position != pos {
+		if seen && held.position != pos && ps.Year[i] == int64(v.season) {
 			r.Rows = append(r.Rows, draftRow(fmt.Sprintf("%d → %d", held.year, ps.Year[i]), "Position changed", v.player(pid), held.position+" → "+pos))
 		}
 		prior[pid] = heldPosition{ps.Year[i], pos}
 	}
 	if len(r.Rows) == 0 && r.Status != "failed" {
 		r.Status = "empty"
-		r.Note = "No additions or position changes recorded."
+		r.Note = "No additions or position changes recorded this season."
 	}
 	return r
 }
@@ -295,17 +306,17 @@ func (v archiveView) awards() Report {
 }
 
 func (v archiveView) oddities() Report {
-	r := v.shell("M-089", "Recorded oddities", "This is not league lore. Only facts already flagged by the archived results are shown: scored ties and zero-point starters. A zero score does not say whether the player was injured, benched or simply scored zero.", "When", "Recorded oddity", "Who")
+	r := v.shell("M-089", "Recorded oddities", "The selected season only. This is not league lore. Only facts already flagged by the archived results are shown: scored ties and zero-point starters. A zero score does not say whether the player was injured, benched or simply scored zero.", "When", "Recorded oddity", "Who")
 	g, l := v.views.PlayedGame, v.cache.facts.Lineup
 	groups := map[string][]string{}
 	for i, y := range g.Year {
-		if archiveValue(g.Result[i]) == "T" && g.Opp[i] != nil && g.Fid[i] < *g.Opp[i] {
+		if y == int64(v.season) && archiveValue(g.Result[i]) == "T" && g.Opp[i] != nil && g.Fid[i] < *g.Opp[i] {
 			key := fmt.Sprintf("%d week %d · Scored tie", y, g.Week[i])
 			groups[key] = append(groups[key], v.name(y, g.Fid[i])+" / "+v.name(y, *g.Opp[i])+" · "+archivePoints(g.Score[i]))
 		}
 	}
 	for i, y := range l.Year {
-		if l.Started[i] == 1 && l.Score[i] != nil && *l.Score[i] == 0 {
+		if y == int64(v.season) && l.Started[i] == 1 && l.Score[i] != nil && *l.Score[i] == 0 {
 			key := fmt.Sprintf("%d week %d · Zero-point starter", y, l.Week[i])
 			groups[key] = append(groups[key], v.player(l.Pid[i])+" · "+v.name(y, l.Fid[i]))
 		}
@@ -314,10 +325,18 @@ func (v archiveView) oddities() Report {
 	for key := range groups {
 		keys = append(keys, key)
 	}
-	slices.Sort(keys)
+	slices.SortFunc(keys, func(a, b string) int {
+		var ay, aw, by, bw int
+		_, _ = fmt.Sscanf(a, "%d week %d", &ay, &aw)
+		_, _ = fmt.Sscanf(b, "%d week %d", &by, &bw)
+		return cmp.Or(cmp.Compare(ay, by), cmp.Compare(aw, bw), strings.Compare(a, b))
+	})
 	for _, key := range keys {
 		when, kind, _ := strings.Cut(key, " · ")
-		r.Rows = append(r.Rows, draftRow(when, kind, strings.Join(groups[key], "\n")))
+		if len(groups[key]) > 1 {
+			kind = fmt.Sprintf("%s · %d", kind, len(groups[key]))
+		}
+		r.Rows = append(r.Rows, draftRow(when, kind, strings.Join(groups[key], "; ")))
 	}
 	if r.Status != "failed" {
 		r.Note = "League lore and explanations are deferred to ring 4. These are recorded oddities only."
@@ -354,7 +373,7 @@ func (v archiveView) pools() Report {
 		if result == "Not scored in the archive" {
 			pending[p.Franchise]++
 		}
-		r.Rows = append(r.Rows, draftRow(v.name(int64(v.season), p.Franchise), fmt.Sprint(p.Week), p.Matchup, p.Pick, fmt.Sprint(p.Rank), result))
+		r.Rows = append(r.Rows, draftRow(v.name(int64(v.season), p.Franchise), fmt.Sprint(p.Week), strings.ReplaceAll(p.Matchup, ",", " vs "), p.Pick, fmt.Sprint(p.Rank), result))
 	}
 	ids := []string{}
 	for _, p := range pool.Picks {

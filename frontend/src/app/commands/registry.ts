@@ -434,7 +434,8 @@ export function createCommands(
       },
     }),
     'archive.reports': command({
-      ...ambient, id: 'archive.reports', label: 'League archive reports', aliases: [], args: ['action', 'value'],
+      ...ambient, id: 'archive.reports', label: 'League archive reports', aliases: [],
+      args: ['action', 'value'],
       run: (args: { action: string; value: string }) => {
         void import('../archive/state').then(m => m.archiveState.choose(args.action, args.value))
           .catch(cause => state.write({ notice: String(cause) }));
