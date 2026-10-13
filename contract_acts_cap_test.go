@@ -58,6 +58,7 @@ func contractMirrorFixture(t *testing.T) *App {
 }
 
 func TestContractActsArizonaHeldMirrorPricesAndReadiness(t *testing.T) {
+	t.Parallel()
 	a := contractMirrorFixture(t)
 	before, stamp, _ := a.league.ContractsView()
 	for _, tc := range []struct {
@@ -112,6 +113,7 @@ func TestContractActsArizonaHeldMirrorPricesAndReadiness(t *testing.T) {
 }
 
 func TestContractTeamCapMatchesCoordinatorForSameRestructure(t *testing.T) {
+	t.Parallel()
 	a := contractMirrorFixture(t)
 	raw := RawContractAct{Mine: "0025", Player: "13813", Action: "preview", Intent: "contract.restructure", Level: 1, Years: 1, Source: 2026, Destination: 2028, Move: "1"}
 	plan := a.TargetContractActs(raw)
@@ -147,6 +149,7 @@ func TestContractTeamCapMatchesCoordinatorForSameRestructure(t *testing.T) {
 }
 
 func TestContractTagPoolUsesLeagueMirrorBASE(t *testing.T) {
+	t.Parallel()
 	a := contractMirrorFixture(t)
 	releasePhase(t, a, domain.PhaseRegularSeason)
 	m, _, _ := a.league.ContractsView()
@@ -188,6 +191,7 @@ func contractFigure(t *testing.T, rows []WhatIfFigure, label string) WhatIfFigur
 }
 
 func TestContractNewContractStartsTheSeasonAfterExpiry(t *testing.T) {
+	t.Parallel()
 	a := contractMirrorFixture(t)
 	releasePhase(t, a, domain.PhaseOffseason)
 	resign, err := contractacts.Tender(83_000_000, 1)
@@ -242,6 +246,7 @@ func TestContractNewContractStartsTheSeasonAfterExpiry(t *testing.T) {
 }
 
 func TestContractOverCapJudgesTheSeasonTheMoneyLandsIn(t *testing.T) {
+	t.Parallel()
 	a := contractMirrorFixture(t)
 	releasePhase(t, a, domain.PhaseOffseason)
 	// $110M: this season is already over the cap; 2027 holds $104.67M before any Act.

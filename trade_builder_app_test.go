@@ -95,6 +95,7 @@ func realDeal() RawTradeBuilder {
 	return RawTradeBuilder{Mine: "0001", Other: "0025", Action: "preview", Give: []string{"11675"}, Get: []string{"15761"}, Rationale: "Balance salary with a younger starter."}
 }
 func TestTradeBuilderRealRosterExactCentsBothSides(t *testing.T) {
+	t.Parallel()
 	a, transport := realTradeBuilderApp(t)
 	m, _, _ := a.league.ContractsView()
 	// Sub-dollar cents on two observed contracts expose ledger rounding mistakes.
@@ -155,6 +156,7 @@ func TestTradeBuilderRealRosterExactCentsBothSides(t *testing.T) {
 	}
 }
 func TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff(t *testing.T) {
+	t.Parallel()
 	a, transport := realTradeBuilderApp(t)
 	r := realDeal()
 	r.Give = []string{"14167"}
@@ -216,6 +218,7 @@ func TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff(t *testing.T) {
 	}
 }
 func TestAcquisitionForcedCutUsesExistingCharge(t *testing.T) {
+	t.Parallel()
 	a, transport := realTradeBuilderApp(t)
 	m, _, used := a.league.ContractsView()
 	capAmount := domain.Money(125_0000_0000)
@@ -266,6 +269,7 @@ func TestAcquisitionForcedCutUsesExistingCharge(t *testing.T) {
 	}
 }
 func TestTradeBuilderBoundaryRejectsInvalidInputs(t *testing.T) {
+	t.Parallel()
 	for _, r := range []RawTradeBuilder{{Mine: "x", Action: "read"}, {Mine: "0001", Action: "submit"},
 		{Mine: "0001", Action: "revoke"}, {Mine: "0001", Other: "0001", Action: "save"},
 		{Mine: "0001", Other: "0002", Action: "save", Give: []string{"99", "0099"}, Get: []string{"12345"}},
@@ -276,6 +280,7 @@ func TestTradeBuilderBoundaryRejectsInvalidInputs(t *testing.T) {
 	}
 }
 func TestNoMutatingTradeLinkInSources(t *testing.T) {
+	t.Parallel()
 	forbidden := "trade" + "_response"
 	root, err := os.OpenRoot(".")
 	if err != nil {
@@ -310,6 +315,7 @@ func TestNoMutatingTradeLinkInSources(t *testing.T) {
 	}
 }
 func TestTradeExitDirectionsAndAmbiguity(t *testing.T) {
+	t.Parallel()
 	a, _, offer := tradeDraftApp(t)
 	// Exit preparation does not require a builder ledger, only a keyed held pending offer.
 	for _, tc := range []struct{ mine, action string }{{"0025", "reject"}, {"0001", "revoke"}} {
@@ -372,6 +378,7 @@ func TestTradeExitPlanSupersedesTheLastForTheSameOffer(t *testing.T) {
 }
 
 func TestTradeBuilderIRTaxiAndRemovedWhatIfAssets(t *testing.T) {
+	t.Parallel()
 	a, _ := realTradeBuilderApp(t)
 	raw := realDeal()
 	raw.Give = []string{"14167"}
@@ -407,6 +414,7 @@ func TestTradeBuilderIRTaxiAndRemovedWhatIfAssets(t *testing.T) {
 	}
 }
 func TestTradeBuilderNextSeasonToTheCentAndPickOnly(t *testing.T) {
+	t.Parallel()
 	a, _ := realTradeBuilderApp(t)
 	r := realDeal()
 	r.Give = []string{"14167"}
@@ -432,6 +440,7 @@ func TestTradeBuilderNextSeasonToTheCentAndPickOnly(t *testing.T) {
 }
 
 func TestProposalWatcherPersistsSameStateSubmissionEvidence(t *testing.T) {
+	t.Parallel()
 	a, _, offer := tradeDraftApp(t)
 	a.seasonPendingTrades.value = nil
 	req := a.tradeRequest("0001", offer)
@@ -482,6 +491,7 @@ func TestProposalWatcherPersistsSameStateSubmissionEvidence(t *testing.T) {
 }
 
 func TestRosterFigureShowsBeforeAfterAndChange(t *testing.T) {
+	t.Parallel()
 	if f := rosterFigure("Active roster · 35–48", 37, 36); f.Before != "37" || f.After != "36" || f.Change != "-1" {
 		t.Fatalf("one out: %+v", f)
 	}
@@ -491,6 +501,7 @@ func TestRosterFigureShowsBeforeAfterAndChange(t *testing.T) {
 }
 
 func TestTradeBuilderLandingRichAssets(t *testing.T) {
+	t.Parallel()
 	a, _ := realTradeBuilderApp(t)
 	view := builderCall(t, a, RawTradeBuilder{Mine: "0001", Action: "read"})
 	players, picks := 0, 0
@@ -532,6 +543,7 @@ func (landingPickModel) pick(year, round int, orig string, at time.Time) dynasty
 }
 
 func TestTradeBuilderLandingPickValue(t *testing.T) {
+	t.Parallel()
 	a, _ := realTradeBuilderApp(t)
 	var model assetModel = landingPickModel{}
 	a.assetModel.Store(&model)
@@ -542,6 +554,7 @@ func TestTradeBuilderLandingPickValue(t *testing.T) {
 }
 
 func TestKeptTradePlanRemovalIsLocalAndVisibleInMyMoves(t *testing.T) {
+	t.Parallel()
 	a, transport := realTradeBuilderApp(t)
 	r := realDeal()
 	r.Action = "save"
@@ -581,6 +594,7 @@ func TestKeptTradePlanRemovalIsLocalAndVisibleInMyMoves(t *testing.T) {
 }
 
 func TestTradeAndContractWhatIfExplainCarriedSalaries(t *testing.T) {
+	t.Parallel()
 	a, _ := realTradeBuilderApp(t)
 	reading := a.TargetTradeBuilder(realDeal())
 	body, err := json.Marshal(reading)
@@ -599,6 +613,7 @@ func TestTradeAndContractWhatIfExplainCarriedSalaries(t *testing.T) {
 }
 
 func TestTradeExitPlanRemovalIsLocal(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ mine, action string }{{"0025", "reject"}, {"0001", "revoke"}} {
 		t.Run(tc.action, func(t *testing.T) {
 			a, transport, offer := tradeDraftApp(t)
@@ -664,6 +679,7 @@ func TestTradeExitPlanRemovalIsLocal(t *testing.T) {
 }
 
 func TestTradeReceiptPickUsesBuilderName(t *testing.T) {
+	t.Parallel()
 	a, transport := realTradeBuilderApp(t)
 	r := realDeal()
 	r.Action = "save"

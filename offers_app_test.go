@@ -11,7 +11,8 @@ import (
 )
 
 func TestTargetOffers(t *testing.T) {
-	a := &App{}
+	t.Parallel()
+	a := NewApp()
 	raw := RawOfferScope{From: 2013, To: 2026, Direction: "all"}
 	r := a.TargetOffers(raw)
 	if r.Status != ReadingOK || r.Count != 470 || len(r.Value.Stretches) != 8 {
@@ -60,6 +61,7 @@ func TestTargetOffers(t *testing.T) {
 	}
 }
 func TestOfferWords(t *testing.T) {
+	t.Parallel()
 	if offerWords().Words.Retry != "Try again" {
 		t.Fatal("retry must name failure recovery")
 	}
@@ -102,6 +104,7 @@ func TestOffersWireFixture(t *testing.T) {
 }
 
 func TestOfferStackWidthsAndCounts(t *testing.T) {
+	t.Parallel()
 	r := (&App{}).TargetOffers(RawOfferScope{From: 2013, To: 2026, Direction: "all"})
 	for _, st := range r.Value.Stretches {
 		if len(st.Outcomes) != 5 {

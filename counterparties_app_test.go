@@ -12,6 +12,7 @@ import (
 func ptrFloat(v float64) *float64 { return &v }
 
 func TestTargetCounterpartiesReading(t *testing.T) {
+	t.Parallel()
 	a := &App{}
 	r := a.TargetCounterparties(RawCounterpartiesScope{From: 2017, To: 2026})
 	if r.Status != ReadingOK || r.Count < 40 || r.Threshold != 40 {
@@ -60,7 +61,8 @@ func TestTargetCounterpartiesReading(t *testing.T) {
 }
 
 func TestCounterpartiesWireAndWording(t *testing.T) {
-	a := &App{}
+	t.Parallel()
+	a := NewApp()
 	r := a.TargetCounterparties(RawCounterpartiesScope{From: 2017, To: 2026})
 	b, err := json.Marshal(r)
 	if err != nil {
@@ -101,7 +103,8 @@ func TestCounterpartiesWireAndWording(t *testing.T) {
 }
 
 func TestCounterpartiesStates(t *testing.T) {
-	a := &App{}
+	t.Parallel()
+	a := NewApp()
 	thin := a.TargetCounterparties(RawCounterpartiesScope{From: 2017, To: 2017, Tiers: []string{"hunt"}, Windows: []string{"summer"}, Postures: []string{"later"}})
 	if thin.Status != ReadingThin || thin.AbsenceReason == nil || thin.Count >= 40 {
 		t.Fatalf("narrow scope should read thin, got %s count %d", thin.Status, thin.Count)
@@ -127,7 +130,8 @@ func TestCounterpartiesStates(t *testing.T) {
 }
 
 func TestCounterpartTeamPanel(t *testing.T) {
-	a := &App{}
+	t.Parallel()
+	a := NewApp()
 	r := a.TargetCounterpartTeam(RawCounterpartTeam{Scope: RawCounterpartiesScope{From: 2017, To: 2026}, Fid: "0001"})
 	if r.Status != ReadingOK || r.Count == 0 || r.Threshold != 1 {
 		t.Fatalf("missing team panel: status %s count %d", r.Status, r.Count)
@@ -170,6 +174,7 @@ func TestCounterpartTeamPanel(t *testing.T) {
 }
 
 func TestDraftToneWordsOnScreen(t *testing.T) {
+	t.Parallel()
 	for tone, want := range map[string]string{
 		"up":   "above its slot beyond chance",
 		"down": "below its slot beyond chance",
@@ -197,6 +202,7 @@ func TestDraftToneWordsOnScreen(t *testing.T) {
 }
 
 func TestCountLabelPlural(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		n          int
 		noun, want string
@@ -212,6 +218,7 @@ func TestCountLabelPlural(t *testing.T) {
 }
 
 func TestCounterpartyDisplayThresholds(t *testing.T) {
+	t.Parallel()
 	rows := []lab.TierTrendRow{{N: 9}, {N: 10}}
 	view := counterTrends(lab.TeamTrends{Tiers: []lab.TierTrend{{Tier: "hunt", Rows: rows}}})
 	if view.Tiers[0].Rows[0].ShowShares || !view.Tiers[0].Rows[1].ShowShares {
@@ -228,6 +235,7 @@ func TestCounterpartyDisplayThresholds(t *testing.T) {
 }
 
 func TestCounterCountFormatting(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		n    int
 		want string
@@ -244,7 +252,7 @@ func TestCounterCountFormatting(t *testing.T) {
 	if got := countLabel(3810, "trade side"); got != "3,810 trade sides" {
 		t.Fatal(got)
 	}
-	a := &App{}
+	a := NewApp()
 	r := a.TargetCounterparties(RawCounterpartiesScope{From: 2017, To: 2026})
 	if !strings.Contains(r.Value.Summary, "3,810 trade sides") || r.Value.CountText != "3,810" {
 		t.Fatal("unformatted archive count")
@@ -263,6 +271,7 @@ func TestCounterCountFormatting(t *testing.T) {
 	}
 }
 func TestCounterRoundedZero(t *testing.T) {
+	t.Parallel()
 	for _, c := range []struct {
 		v    float64
 		dp   int
@@ -280,6 +289,7 @@ func TestCounterRoundedZero(t *testing.T) {
 	}
 }
 func TestCounterVisibleWording(t *testing.T) {
+	t.Parallel()
 	w := counterWords()
 	if w.Day != "On the day" || w.Since != "Since" || w.Up != "↑" || w.Down != "↓" {
 		t.Fatal("bar labels or non-colour marks missing")
@@ -294,7 +304,7 @@ func TestCounterVisibleWording(t *testing.T) {
 			t.Fatal("tier case drift")
 		}
 	}
-	a := &App{}
+	a := NewApp()
 	panel := a.TargetCounterpartTeam(RawCounterpartTeam{Scope: RawCounterpartiesScope{From: 2017, To: 2026}, Fid: "0001"}).Value
 	if panel.Words != w {
 		t.Fatal("panel wording drift")
@@ -312,6 +322,7 @@ func TestCounterVisibleWording(t *testing.T) {
 }
 
 func TestCounterMatrixPhrases(t *testing.T) {
+	t.Parallel()
 	picks := tierPicks(nil, 1)
 	for i, want := range []string{"With contenders", "With teams in the hunt", "With rebuilding teams"} {
 		if picks[i].With != want || picks[i].TradingAs != tierLabel(picks[i].ID) {
@@ -320,6 +331,7 @@ func TestCounterMatrixPhrases(t *testing.T) {
 	}
 }
 func TestCounterTableTotals(t *testing.T) {
+	t.Parallel()
 	e := lab.TeamEdge{Total: ptrFloat(4.59), Mean: ptrFloat(0.05), Lo: ptrFloat(-0.02), Hi: ptrFloat(0.12)}
 	if got := counterTotalWords(e); got != "+4.59 total · +0.05 a trade (-0.02 to +0.12)" {
 		t.Fatal(got)
@@ -335,11 +347,12 @@ func TestCounterTableTotals(t *testing.T) {
 }
 
 func TestCounterNarrowHeadingsAndPanelPartners(t *testing.T) {
+	t.Parallel()
 	words := counterWords()
 	if words.Sides != "Sides" || words.Now != "For now" || words.Later != "For later" || words.Day != "On the day" || words.Since != "Since" {
 		t.Fatalf("unexpected compact headings: %+v", words)
 	}
-	a := &App{}
+	a := NewApp()
 	surface := a.TargetCounterparties(RawCounterpartiesScope{From: 2017, To: 2026})
 	for _, row := range surface.Value.Rows {
 		panel := a.TargetCounterpartTeam(RawCounterpartTeam{Scope: RawCounterpartiesScope{From: 2017, To: 2026}, Fid: row.Fid})
@@ -355,6 +368,7 @@ func TestCounterNarrowHeadingsAndPanelPartners(t *testing.T) {
 // TestTierPicksParity recounts the per-tier "trades a season" figure from the Lab data:
 // one team's sides per tier, over the seasons in which the league traded at all.
 func TestTierPicksParity(t *testing.T) {
+	t.Parallel()
 	d, err := lab.Load()
 	if err != nil {
 		t.Fatal(err)
@@ -381,7 +395,8 @@ func TestTierPicksParity(t *testing.T) {
 }
 
 func TestFilteredPostureIsNotAChanceFinding(t *testing.T) {
-	a := &App{}
+	t.Parallel()
+	a := NewApp()
 	for _, selected := range [][]string{{"now"}, {"later"}, {"swap"}, {"now", "later"}} {
 		raw := RawCounterpartiesScope{From: 2017, To: 2026, Postures: selected}
 		r := a.TargetCounterparties(raw)
@@ -430,7 +445,8 @@ func TestFilteredPostureIsNotAChanceFinding(t *testing.T) {
 }
 
 func TestExcludedTiersAreNotThin(t *testing.T) {
-	a := &App{}
+	t.Parallel()
+	a := NewApp()
 	raw := RawCounterpartiesScope{From: 2017, To: 2026, Tiers: []string{"contender"}}
 	r := a.TargetCounterparties(raw)
 	for _, card := range r.Value.Cards {

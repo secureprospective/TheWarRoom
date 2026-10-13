@@ -14,6 +14,7 @@ import (
 )
 
 func TestContractActsPreviewDraftStaleRebaseAndMirrorIsolation(t *testing.T) {
+	t.Parallel()
 	a := releaseTestApp(t)
 	idPlayer, err := playerid.New("0042")
 	if err != nil {
@@ -54,6 +55,7 @@ func TestContractActsPreviewDraftStaleRebaseAndMirrorIsolation(t *testing.T) {
 	}
 }
 func TestContractActsWindowsAndHeldEligibility(t *testing.T) {
+	t.Parallel()
 	a := releaseTestApp(t)
 	id, err := playerid.New("0042")
 	if err != nil {
@@ -81,6 +83,7 @@ func TestContractActsWindowsAndHeldEligibility(t *testing.T) {
 	}
 }
 func TestContractActsRawBoundaryAndOwnRosterOnly(t *testing.T) {
+	t.Parallel()
 	a := releaseTestApp(t)
 	for _, raw := range []RawContractAct{
 		{Mine: "bad", Action: "read"}, {Mine: "0001", Action: "delete"},
@@ -109,6 +112,7 @@ func TestContractActsRawBoundaryAndOwnRosterOnly(t *testing.T) {
 	}
 }
 func TestBuyoutCommissionerChannelAndHandOffWords(t *testing.T) {
+	t.Parallel()
 	a := releaseTestApp(t)
 	plan := planRelease(t, a, "buyout", "0042")
 	if plan.Channel != "Post this to the commissioner on ProBoards." {
@@ -121,6 +125,7 @@ func TestBuyoutCommissionerChannelAndHandOffWords(t *testing.T) {
 }
 
 func TestContractPostOnlyNamesOwnTerms(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		intent string
 		want   string
@@ -150,6 +155,7 @@ func TestContractPostOnlyNamesOwnTerms(t *testing.T) {
 }
 
 func TestContractActSubjectAndOneOpenPlanPerAct(t *testing.T) {
+	t.Parallel()
 	a := releaseTestApp(t)
 	id, err := playerid.New("0042")
 	if err != nil {
@@ -191,6 +197,7 @@ func TestContractActSubjectAndOneOpenPlanPerAct(t *testing.T) {
 }
 
 func TestContractActChoicesComeFromTheRuleTable(t *testing.T) {
+	t.Parallel()
 	want := []string{"5th · $0.60M", "4th · $1.00M", "3rd · $1.50M", "2nd · $2.50M", "1st · $5.00M", "1st + 2nd · $6.50M"}
 	for _, intent := range []string{"rfa.tender", "fa.resign"} {
 		levels, _ := contractActChoices(intent)

@@ -86,6 +86,7 @@ func ruleWords(plan BidPlan, rule string) string {
 }
 
 func TestBidPreviewShowsGoFigures(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	p := a.TargetBidPreview(rawBid("5", 3))
 	if p.Problem != "" || p.Points != "7.000" || p.Salary.Cents != 500_000_000 || p.Blocked ||
@@ -116,6 +117,7 @@ func TestBidPreviewShowsGoFigures(t *testing.T) {
 }
 
 func TestBidPreviewMinimumAndCapRoom(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	// 13594 has no draft year: the rookie minimum applies, and the preview says why.
 	low := a.TargetBidPreview(RawBidInput{FranchiseID: "0001", Player: "13594", Salary: "0.32", Years: 1})
@@ -139,6 +141,7 @@ func TestBidPreviewMinimumAndCapRoom(t *testing.T) {
 }
 
 func TestBidDraftSavesPlanAndFactsAndLeavesTheMoveRailAlone(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	events := 0
 	a.movesChanged = func(context.Context) { events++ }
@@ -183,6 +186,7 @@ func TestBidDraftSavesPlanAndFactsAndLeavesTheMoveRailAlone(t *testing.T) {
 }
 
 func TestBidBlockedByPlayoffStatusKeepsTheActOff(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	a.week = leagueweek.Week{Number: 13}
 	plan, err := a.TargetBidDraft(rawBid("5", 1))
@@ -210,6 +214,7 @@ func TestBidBlockedByPlayoffStatusKeepsTheActOff(t *testing.T) {
 }
 
 func TestBidWithoutAHeldScheduleCannotCheckTheWeekLimits(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	a.weekFetchedAt = time.Time{}
 	plan, err := a.TargetBidDraft(rawBid("5", 1))
@@ -219,6 +224,7 @@ func TestBidWithoutAHeldScheduleCannotCheckTheWeekLimits(t *testing.T) {
 }
 
 func TestBidActiveLimitOfThirty(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	var extra []players.RawPlayer // one player per plan: a second open plan on a player is refused
 	for i := range 32 {
@@ -252,6 +258,7 @@ func TestBidActiveLimitOfThirty(t *testing.T) {
 }
 
 func TestBidReviseAndWithdraw(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	plan, err := a.TargetBidDraft(rawBid("5", 3))
 	if err != nil {
@@ -291,6 +298,7 @@ func TestBidReviseAndWithdraw(t *testing.T) {
 }
 
 func TestBidFactsFreezeOnceHandedOff(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	plan, err := a.TargetBidDraft(rawBid("5", 3))
 	if err != nil {
@@ -356,6 +364,7 @@ func landedBid(t *testing.T, closes string, extra ...state.MirrorPlayer) BidPlan
 }
 
 func TestBidWatcherLandsAMatchingContractFromTheMirror(t *testing.T) {
+	t.Parallel()
 	// Expiring in 2028 of a 2026 mirror is three years remaining.
 	plan := landedBid(t, "", state.MirrorPlayer{MFLID: "13593", FranchiseID: "0001",
 		RosterStatus: domain.RosterActive, Salary: 500_000_000, ContractYear: 2028})
@@ -366,6 +375,7 @@ func TestBidWatcherLandsAMatchingContractFromTheMirror(t *testing.T) {
 }
 
 func TestBidWatcherShowsAContractMismatchPlainly(t *testing.T) {
+	t.Parallel()
 	plan := landedBid(t, "", state.MirrorPlayer{MFLID: "13593", FranchiseID: "0001",
 		RosterStatus: domain.RosterActive, Salary: 450_000_000, ContractYear: 2027})
 	if plan.Receipt.State != envelope.NotVerified || plan.State != "Not verified" ||
@@ -375,6 +385,7 @@ func TestBidWatcherShowsAContractMismatchPlainly(t *testing.T) {
 }
 
 func TestBidWatcherAwardedOffAppWhenAnotherRosterHoldsHim(t *testing.T) {
+	t.Parallel()
 	plan := landedBid(t, "", state.MirrorPlayer{MFLID: "13593", FranchiseID: "0002",
 		RosterStatus: domain.RosterActive, Salary: 600_000_000, ContractYear: 2028})
 	if plan.Receipt.State != envelope.AwardedOffApp || plan.State != "Awarded off-app" ||
@@ -384,6 +395,7 @@ func TestBidWatcherAwardedOffAppWhenAnotherRosterHoldsHim(t *testing.T) {
 }
 
 func TestBidWatcherAwardedOffAppWhenTheWindowClosesAndNothingLanded(t *testing.T) {
+	t.Parallel()
 	plan := landedBid(t, time.Now().Add(-30*time.Minute).UTC().Format(time.RFC3339))
 	if plan.Receipt.State != envelope.AwardedOffApp || !strings.Contains(plan.Status, "the bidding window closed") {
 		t.Fatalf("plan = %v %q", plan.Receipt.State, plan.Status)
@@ -395,6 +407,7 @@ func TestBidWatcherAwardedOffAppWhenTheWindowClosesAndNothingLanded(t *testing.T
 }
 
 func TestFormOfWritesMillionsExactly(t *testing.T) {
+	t.Parallel()
 	for cents, want := range map[domain.Money]string{500_000_000: "5", 525_000_000: "5.25", 33_000_000: "0.33",
 		1_001_000_000: "10.01", 100_000_000: "1"} {
 		if got := formOf(envelope.BidFacts{Salary: cents}).Salary; got != want {
@@ -404,6 +417,7 @@ func TestFormOfWritesMillionsExactly(t *testing.T) {
 }
 
 func TestBlockedPlanThatWouldPassNowStillExplainsItself(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	a.week = leagueweek.Week{Number: 13}
 	plan, err := a.TargetBidDraft(rawBid("5", 1))

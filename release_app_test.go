@@ -62,6 +62,7 @@ func planRelease(t *testing.T, a *App, action, player string) ReleasePlanView {
 	return ReleasePlanView{}
 }
 func TestReleaseDraftFromWhatIfAndMirrorIsolation(t *testing.T) {
+	t.Parallel()
 	a := releaseTestApp(t)
 	before, stamp, _ := a.league.ContractsView()
 	plan := planRelease(t, a, "cut", "0042")
@@ -108,6 +109,7 @@ func TestReleaseDraftFromWhatIfAndMirrorIsolation(t *testing.T) {
 	}
 }
 func TestReleaseBuyoutPhaseAndCountIntegration(t *testing.T) {
+	t.Parallel()
 	a := releaseTestApp(t)
 	releasePhase(t, a, domain.PhaseRegularSeason)
 	first := planRelease(t, a, "buyout", "0042")
@@ -147,6 +149,7 @@ func TestReleaseBuyoutPhaseAndCountIntegration(t *testing.T) {
 	}
 }
 func TestReleaseInvalidationAndRebaseEngine(t *testing.T) {
+	t.Parallel()
 	for _, trigger := range []string{"contract", "adjustment", "dead-cap", "left", "window"} {
 		t.Run(trigger, func(t *testing.T) {
 			a := releaseTestApp(t)
@@ -204,6 +207,7 @@ func TestReleaseInvalidationAndRebaseEngine(t *testing.T) {
 	}
 }
 func TestReleaseWatcherLandsAndChargeMismatchIsNote(t *testing.T) {
+	t.Parallel()
 	a := releaseTestApp(t)
 	plan := planRelease(t, a, "cut", "0042")
 	releaseCall(t, a, "handoff", "", plan.ID, true)
@@ -245,6 +249,7 @@ func TestReleaseWatcherLandsAndChargeMismatchIsNote(t *testing.T) {
 }
 
 func TestReleaseBaselinePlayerNoLongerMineBlocksDraft(t *testing.T) {
+	t.Parallel()
 	a := releaseTestApp(t)
 	w := whatIfCall(t, a, "cut", "0042", "")
 	m, _, _ := a.league.ContractsView()
@@ -258,6 +263,7 @@ func TestReleaseBaselinePlayerNoLongerMineBlocksDraft(t *testing.T) {
 	}
 }
 func TestReleaseCountIncludesLandedBuyoutAndIgnoresOtherSeason(t *testing.T) {
+	t.Parallel()
 	a := releaseTestApp(t)
 	plan := planRelease(t, a, "buyout", "0042")
 	releaseCall(t, a, "handoff", "", plan.ID, false)
@@ -280,6 +286,7 @@ func TestReleaseCountIncludesLandedBuyoutAndIgnoresOtherSeason(t *testing.T) {
 }
 
 func TestReleaseWithdrawPathsFreePlayerSlot(t *testing.T) {
+	t.Parallel()
 	for _, stage := range []string{"ready", "blocked", "handed_off", "not_yet_done"} {
 		t.Run(stage, func(t *testing.T) {
 			a := releaseTestApp(t)
@@ -334,6 +341,7 @@ func TestReleaseWithdrawPathsFreePlayerSlot(t *testing.T) {
 	}
 }
 func TestReleaseViewWordsAndPostKeepIDsOnlyInFacts(t *testing.T) {
+	t.Parallel()
 	for _, action := range []string{"cut", "buyout"} {
 		t.Run(action, func(t *testing.T) {
 			a := releaseTestApp(t)

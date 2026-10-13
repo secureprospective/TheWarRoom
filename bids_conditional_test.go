@@ -12,6 +12,7 @@ import (
 )
 
 func TestConditionalBidUsesSharedChargeAndVersionsThePlan(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	setRosters(t, a, state.MirrorPlayer{MFLID: "13595", FranchiseID: "0001",
 		Salary: 10_490_000_000, ContractYear: 2026, RosterStatus: domain.RosterActive})
@@ -59,6 +60,7 @@ func TestConditionalBidUsesSharedChargeAndVersionsThePlan(t *testing.T) {
 }
 
 func TestConditionalBidRejectsForeignMissingOrUnpricedDrop(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	setRosters(t, a, state.MirrorPlayer{MFLID: "13595", FranchiseID: "0002", Salary: 1_000_000,
 		ContractYear: 2026}, state.MirrorPlayer{MFLID: "13594", FranchiseID: "0001", Salary: 1_000_000})
@@ -76,6 +78,7 @@ func TestConditionalBidRejectsForeignMissingOrUnpricedDrop(t *testing.T) {
 }
 
 func TestConditionalOptionsCoveringFirstAndShortfall(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	setRosters(t, a, state.MirrorPlayer{MFLID: "13595", FranchiseID: "0001", Salary: 10_490_000_000,
 		ContractYear: 2030}, state.MirrorPlayer{MFLID: "13594", FranchiseID: "0001", Salary: 1_000_000,

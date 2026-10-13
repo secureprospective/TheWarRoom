@@ -9,6 +9,7 @@ import (
 )
 
 func TestTargetMarketReading(t *testing.T) {
+	t.Parallel()
 	a := &App{}
 	r := a.TargetMarket(RawMarketScope{From: 2017, To: 2026})
 	if r.Status != ReadingOK || r.Count < 80 || r.Threshold != 80 || r.Value.Going == nil {
@@ -54,6 +55,7 @@ func TestTargetMarketReading(t *testing.T) {
 }
 
 func TestAppLabDecodesOnce(t *testing.T) {
+	t.Parallel()
 	a := NewApp()
 	first, err := a.lab()
 	if err != nil {

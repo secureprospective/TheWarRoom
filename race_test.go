@@ -168,6 +168,7 @@ func bracketSeeds(b leaguefeed.Bracket) []string {
 }
 
 func TestRace2025SeedsAndOpeningRoundMatchMFLBrackets(t *testing.T) {
+	t.Parallel()
 	v, err := newRaceView(realRace(t, "2025"))
 	if err != nil {
 		t.Fatal(err)
@@ -205,6 +206,7 @@ func TestRace2025SeedsAndOpeningRoundMatchMFLBrackets(t *testing.T) {
 }
 
 func TestRace2025BracketReportIsMFLsBracket(t *testing.T) {
+	t.Parallel()
 	v, err := newRaceView(realRace(t, "2025"))
 	if err != nil {
 		t.Fatal(err)
@@ -234,6 +236,7 @@ func TestRace2025BracketReportIsMFLsBracket(t *testing.T) {
 }
 
 func TestRace2025TiebreakersShowEachStep(t *testing.T) {
+	t.Parallel()
 	v, err := newRaceView(realRace(t, "2025"))
 	if err != nil {
 		t.Fatal(err)
@@ -269,6 +272,7 @@ func TestRace2025TiebreakersShowEachStep(t *testing.T) {
 // Every week's starters add up to the franchise's score, so starter points by position total
 // MFL's points for, less the +3 home-field points MFL adds to ten 2025 playoff scores.
 func TestRaceStarterPointsAddUpToPointsFor(t *testing.T) {
+	t.Parallel()
 	v, err := newRaceView(realRace(t, "2025"))
 	if err != nil {
 		t.Fatal(err)
@@ -306,6 +310,7 @@ func TestRaceStarterPointsAddUpToPointsFor(t *testing.T) {
 }
 
 func TestRaceChoicesAreCheckedInGo(t *testing.T) {
+	t.Parallel()
 	in := realRace(t, "2026")
 	for name, change := range map[string]func(*raceInput){
 		"unscored week": func(in *raceInput) { in.week = 4 },
@@ -339,6 +344,7 @@ func TestRaceChoicesAreCheckedInGo(t *testing.T) {
 
 // A row names franchises and players; it never shows an MFL id or says a name is missing.
 func TestRaceRowsNeverShowIDs(t *testing.T) {
+	t.Parallel()
 	franchiseID := regexp.MustCompile(`(^|[^\d.,])00\d\d([^\d.,]|$)`)
 	for _, year := range []string{"2025", "2026"} {
 		in := realRace(t, year)
@@ -372,6 +378,7 @@ func TestRaceRowsNeverShowIDs(t *testing.T) {
 }
 
 func TestRaceMissingFeedsAreLabelledNotBlank(t *testing.T) {
+	t.Parallel()
 	in := realRace(t, "2026")
 	in.held = raceHeld{}
 	in.config.StandingsSort = ""
@@ -405,6 +412,7 @@ func TestRaceMissingFeedsAreLabelledNotBlank(t *testing.T) {
 }
 
 func TestRace2026BubbleAndUnseededBrackets(t *testing.T) {
+	t.Parallel()
 	v, err := newRaceView(realRace(t, "2026"))
 	if err != nil {
 		t.Fatal(err)
@@ -426,6 +434,7 @@ func TestRace2026BubbleAndUnseededBrackets(t *testing.T) {
 }
 
 func TestRaceWeeklyPointsShareOneScale(t *testing.T) {
+	t.Parallel()
 	v, err := newRaceView(realRace(t, "2025"))
 	if err != nil {
 		t.Fatal(err)
@@ -457,6 +466,7 @@ func testPower() PowerRankingsResult {
 }
 
 func TestRacePowerRankingsNameTheBlend(t *testing.T) {
+	t.Parallel()
 	in := realRace(t, "2026")
 	in.held.power = map[string]PowerRankingsResult{ViewSeason: testPower(),
 		ViewFranchise: {OK: true, View: ViewFranchise, AgeWeight: 0.5, ModelRunID: 3, AggMode: "sum", Rows: []PowerRow{}}}

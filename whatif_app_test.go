@@ -54,6 +54,7 @@ func whatIfCall(t *testing.T, a *App, action, player, move string) Reading[WhatI
 	return r
 }
 func TestWhatIfComposeUndoResetRestartAndMirrorIsolation(t *testing.T) {
+	t.Parallel()
 	a := whatIfTestApp(t)
 	before, stamp, _ := a.league.ContractsView()
 	empty := whatIfCall(t, a, "read", "", "")
@@ -96,6 +97,7 @@ func TestWhatIfComposeUndoResetRestartAndMirrorIsolation(t *testing.T) {
 	}
 }
 func TestWhatIfStaleBlocksAllChangesUntilReset(t *testing.T) {
+	t.Parallel()
 	a := whatIfTestApp(t)
 	start := whatIfCall(t, a, "cut", "0042", "")
 	replaceWhatIfMirror(t, a, 11*100_000_000)
@@ -111,6 +113,7 @@ func TestWhatIfStaleBlocksAllChangesUntilReset(t *testing.T) {
 	}
 }
 func TestWhatIfRulesFailuresAndValidation(t *testing.T) {
+	t.Parallel()
 	a := whatIfTestApp(t)
 	start := whatIfCall(t, a, "read", "", "")
 	if start.Value.Choices[3].BuyoutAllowed || start.Value.Choices[4].BuyoutAllowed {
@@ -146,6 +149,7 @@ func TestWhatIfRulesFailuresAndValidation(t *testing.T) {
 }
 
 func TestWhatIfPresentation(t *testing.T) {
+	t.Parallel()
 	a := whatIfTestApp(t)
 	empty := whatIfCall(t, a, "read", "", "")
 	if empty.Baseline == "" || strings.Contains(empty.Baseline, "revision") || !strings.Contains(empty.HowCounted, "Separate contract-cell update time: not held by this mirror") || !strings.Contains(empty.HowCounted, "whole modelled charge lands in the cut year") {
@@ -190,6 +194,7 @@ func TestWhatIfPresentation(t *testing.T) {
 }
 
 func TestWhatIfStaleEmptyRebasesBeforeReadOrCut(t *testing.T) {
+	t.Parallel()
 	for _, action := range []string{"read", "cut"} {
 		t.Run(action, func(t *testing.T) {
 			a := whatIfTestApp(t)
@@ -208,6 +213,7 @@ func TestWhatIfStaleEmptyRebasesBeforeReadOrCut(t *testing.T) {
 }
 
 func TestWhatIfSourceUsesGMWords(t *testing.T) {
+	t.Parallel()
 	a := whatIfTestApp(t)
 	r := whatIfCall(t, a, "read", "", "")
 	if !strings.HasPrefix(r.Provenance.Source, "Your what-if, started from MFL rosters as of ") || strings.Contains(r.Provenance.Source, "whatif.db") || strings.Contains(r.Provenance.Source, "T00:") {

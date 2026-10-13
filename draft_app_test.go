@@ -10,6 +10,7 @@ import (
 )
 
 func TestDraftReadingStatesAndParity(t *testing.T) {
+	t.Parallel()
 	a := NewApp()
 	raw := RawDraftScope{From: 2017, To: 2026, Seasons: 3, Group: "DL"}
 	got := a.TargetDraftLab(raw)
@@ -56,6 +57,7 @@ func TestDraftReadingStatesAndParity(t *testing.T) {
 	}
 }
 func TestDraftBoundaryValidationAndFilters(t *testing.T) {
+	t.Parallel()
 	valid := RawDraftScope{From: 2017, To: 2026, Seasons: 3, Group: "DB"}
 	bads := []RawDraftScope{valid, valid, valid, valid, valid, valid, valid}
 	bads[0].Seasons = 5
@@ -97,6 +99,7 @@ func TestDraftBoundaryValidationAndFilters(t *testing.T) {
 	}
 }
 func TestDraftUnavailableCellsAndKnownRetention(t *testing.T) {
+	t.Parallel()
 	p := lab.DraftPosition{Group: "DB", All: []lab.JudgedPick{{DraftPick: lab.DraftPick{KeptYear2: nil}}, {DraftPick: lab.DraftPick{KeptYear2: boolPtr(true)}}}, Kept: floatPtr(1)}
 	if draftKeptSection(p).Rows[0].Count != 1 {
 		t.Fatal("unknown retention counted")
@@ -113,7 +116,8 @@ func boolPtr(v bool) *bool        { return &v }
 func floatPtr(v float64) *float64 { return &v }
 
 func TestDraftSummaryAndClosedBreakdownData(t *testing.T) {
-	a := &App{}
+	t.Parallel()
+	a := NewApp()
 	raw := RawDraftScope{From: 2017, To: 2026, Seasons: 3, Group: "DL"}
 	r := a.TargetDraftLab(raw)
 	d, err := a.lab()

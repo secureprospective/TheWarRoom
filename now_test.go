@@ -148,6 +148,7 @@ func franchiseNames(in nowInput) map[string]string {
 }
 
 func TestNow2025WeeklyResultsMatchMFLExactly(t *testing.T) {
+	t.Parallel()
 	mfl := mflWeeks(t, "2025")
 	in := realNow(t, 0)
 	names := franchiseNames(in)
@@ -183,6 +184,7 @@ func TestNow2025WeeklyResultsMatchMFLExactly(t *testing.T) {
 }
 
 func TestNow2025WeeklySummaryMatchesMFLExactly(t *testing.T) {
+	t.Parallel()
 	mfl := mflWeeks(t, "2025")
 	in := realNow(t, 0)
 	names := franchiseNames(in)
@@ -254,6 +256,7 @@ func TestNow2025WeeklySummaryMatchesMFLExactly(t *testing.T) {
 }
 
 func TestNow2025RecapsAreSentencesFromTheNumbers(t *testing.T) {
+	t.Parallel()
 	r := nowReport(t, nowBoard(t, realNow(t, 5)), "M-021")
 	recaps := map[string]string{}
 	for _, row := range r.Rows {
@@ -285,6 +288,7 @@ func TestNow2025RecapsAreSentencesFromTheNumbers(t *testing.T) {
 }
 
 func TestNowMyMatchupPairsStartersAndTotals(t *testing.T) {
+	t.Parallel()
 	in := realNow(t, 5)
 	r := nowReport(t, nowBoard(t, in), "X-03")
 	if strings.Join(r.Columns, "|") != "Slot|Buffalo Bills|Points|New York Jets|Points" {
@@ -315,6 +319,7 @@ func TestNowMyMatchupPairsStartersAndTotals(t *testing.T) {
 }
 
 func TestNowWeekIsCheckedInGo(t *testing.T) {
+	t.Parallel()
 	in := realNow(t, 0)
 	if b := nowBoard(t, in); b.Week != 5 || len(b.Weeks) != 17 || b.Weeks[14].Label != "Week 15 · playoffs" {
 		t.Fatal("the current week is the default", b.Week, b.Weeks)
@@ -336,6 +341,7 @@ func TestNowWeekIsCheckedInGo(t *testing.T) {
 }
 
 func TestNowUnscoredWeekShowsHeldLiveScores(t *testing.T) {
+	t.Parallel()
 	raw, err := livescoring.Parse([]byte(seasonFixture(t, "livescoring", "liveScoring-w5.json")))
 	if err != nil {
 		t.Fatal(err)
@@ -380,6 +386,7 @@ func TestNowUnscoredWeekShowsHeldLiveScores(t *testing.T) {
 }
 
 func TestNow2025NFLScheduleMarksMyGamesAndByes(t *testing.T) {
+	t.Parallel()
 	board := nowBoard(t, realNow(t, 5))
 	r := nowReport(t, board, "M-015")
 	summary := map[string]string{}
@@ -416,6 +423,7 @@ func TestNow2025NFLScheduleMarksMyGamesAndByes(t *testing.T) {
 }
 
 func TestNow2025PreviewsSumMFLProjections(t *testing.T) {
+	t.Parallel()
 	var env struct {
 		Projected struct {
 			Scores []mflPlayer `json:"playerScore"`
@@ -473,6 +481,7 @@ func archivedCopies(copies ...struct {
 }
 
 func TestNowStatChangesCompareTheFirstHeldCopy(t *testing.T) {
+	t.Parallel()
 	body := seasonGzFixture(t, "weeklyresults", "weeklyResults-2025.json.gz")
 	ytd := "/2025/export?TYPE=weeklyResults&L=" + "14432" + "&W=YTD"
 	day := func(d int) time.Time { return time.Date(2026, 1, d, 12, 0, 0, 0, time.UTC) }
@@ -534,6 +543,7 @@ func TestNowStatChangesCompareTheFirstHeldCopy(t *testing.T) {
 }
 
 func TestNowRowsNeverShowIDs(t *testing.T) {
+	t.Parallel()
 	franchiseID := regexp.MustCompile(`(^|[^\d.,])00\d\d([^\d.,]|$)`)
 	for _, week := range []int{1, 5, 15} {
 		in := realNow(t, week)

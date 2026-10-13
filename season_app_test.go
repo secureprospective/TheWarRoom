@@ -85,8 +85,16 @@ func seasonGzFixture(t *testing.T, feed, name string) string {
 func seasonTestApp(t *testing.T) (*App, *seasonTransport, *[]time.Duration, *int) {
 	t.Helper()
 	keyring.MockInit()
-	a := targetTestApp(t)
+	a, transport, pauses, events := isolatedSeasonTestApp(t)
 	a.keyStore = mflkey.New(ingestion.LeagueID, "2026")
+	a.mflClient = a.mflClient.WithKeySource(a.keyStore.Get)
+	return a, transport, pauses, events
+}
+
+// Local-plan tests need the feeds, not the process-global OS keyring mock.
+func isolatedSeasonTestApp(t *testing.T) (*App, *seasonTransport, *[]time.Duration, *int) {
+	t.Helper()
+	a := targetTestApp(t)
 	transport := &seasonTransport{
 		now: time.Date(2026, 10, 7, 0, 0, 0, 0, time.UTC),
 		bodies: map[string]string{
@@ -112,7 +120,8 @@ func seasonTestApp(t *testing.T) (*App, *seasonTransport, *[]time.Duration, *int
 		},
 	}
 	var err error
-	a.mflClient, err = mfl.New("api", 10000, mfl.WithTransport(transport), mfl.WithKeySource(a.keyStore.Get))
+	a.mflClient, err = mfl.New("api", 10000, mfl.WithTransport(transport),
+		mfl.WithKeySource(func(context.Context) (mflkey.Key, error) { return "", mflkey.ErrNoKey }))
 	if err != nil {
 		t.Fatal(err)
 	}
