@@ -10,6 +10,7 @@ export function TradePlan({ receipt }: { receipt: Receipt }) {
     ? "Open MFL's trade desk to reject" : "Open MFL's trade desk to withdraw it";
   const pending = commands.useMoves((s) => s.drafting[`handoff:${receipt.correlationId}`]);
   const error = commands.useMoves((s) => s.draftErrors[`handoff:${receipt.correlationId}`]);
+  if (receipt.state === 'withdrawn') return null;
   const note = receipt.audit.at(-1)?.note;
   const handed = !['landed', 'stale', 'failed'].includes(receipt.state) &&
     receipt.audit.some((entry) => entry.to === 'handed_off');

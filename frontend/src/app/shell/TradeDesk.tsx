@@ -35,6 +35,7 @@ export function OfferCard({ offer, franchiseId }: { offer: TradeOffer; franchise
   return <Card gravity="G3" header={<h5><Act variant="text" verb="inspector.pin"
     args={{ entity: { kind: 'offer', id: offer.tradeId, franchiseId } }}>
     Offer with {offer.otherName || 'Franchise name unavailable'}</Act></h5>}>
+    <p>Pending offer on MFL</p>
     <div className="trade-assets">
       {(['give', 'get'] as const).map((side) => <div key={side}>
         <h6>{side === 'give' ? 'You give' : 'You get'}</h6>

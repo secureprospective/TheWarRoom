@@ -10,6 +10,7 @@ import { dotNote, tradeOffer, tradeReading, tradeReceipt } from '../data/tradeTe
 import { clockDom, TestElement } from '../clock/testDom';
 import TradeDesk, { tradeExpiry } from './TradeDesk';
 import { EnvelopeRail } from './EnvelopeRail';
+import EntityInspector from './EntityInspector';
 
 const globals = ['window', 'document', 'IS_REACT_ACT_ENVIRONMENT'].map((key) => ({
   key, descriptor: Object.getOwnPropertyDescriptor(globalThis, key),
@@ -92,6 +93,45 @@ describe('Trade desk', () => {
     expect(t.buttons().filter((label) => label === 'Plan accept')).toHaveLength(1);
     expect(hasLabel(t.element, 'Trade accept plan')).toBe(false);
   });
+  it.each(['by_you', 'to_you'] as const)(
+    'hides a removed exit plan beside a pending %s offer on the desk and inspector', async (direction) => {
+      const receipt = tradeReceipt();
+      receipt.spec.intent = direction === 'by_you' ? 'trade.revoke' : 'trade.reject';
+      receipt.state = 'withdrawn';
+      receipt.audit.push({ at: '2026-10-07T21:01:00Z', from: 'ready', to: 'withdrawn',
+        event: 'withdraw', note: 'Removed by you before it was handed off.' });
+      const t = await setup(tradeReading([tradeOffer(direction)]), [receipt]);
+      await t.event();
+      const check = () => {
+        expect(t.text()).toContain('Pending offer on MFL');
+        expect(t.text()).not.toContain('Withdrawn');
+        expect(t.text()).not.toContain('Removed by you');
+        expect(t.buttons()).toContain(direction === 'by_you' ? 'Plan withdrawal' : 'Plan rejection');
+        expect(t.buttons()).not.toContain('Remove plan');
+      };
+      check();
+      await act(async () => {
+        t.root.render(createElement(EntityInspector, {
+          entity: { kind: 'offer', id: '901', franchiseId: '0025' }, snapshot: t.snapshot,
+        }));
+        await flush();
+      });
+      check();
+    },
+  );
+  it.each(['by_you', 'to_you'] as const)(
+    'keeps a Ready exit plan and its removal beside a pending %s offer', async (direction) => {
+      const receipt = tradeReceipt();
+      receipt.spec.intent = direction === 'by_you' ? 'trade.revoke' : 'trade.reject';
+      const t = await setup(tradeReading([tradeOffer(direction)]), [receipt]);
+      await t.event();
+      expect(t.text()).toContain('Pending offer on MFL');
+      expect(t.text()).toContain('Complete this yourself on MFL');
+      expect(t.buttons()).toContain('Remove plan');
+      expect(t.buttons()).toContain(direction === 'by_you'
+        ? "Open MFL's trade desk to withdraw it" : "Open MFL's trade desk to reject");
+    },
+  );
   it('states relative expiry and never invents one', () => {
     const now = Date.parse('2026-10-07T14:00:00Z');
     expect(tradeExpiry('2026-10-09T18:00:00Z', now)).toBe('expires in 2d 4h');
