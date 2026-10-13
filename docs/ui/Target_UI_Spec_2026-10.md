@@ -1,7 +1,19 @@
-# TheWarRoom target UI: specification, revision 3 (2026-10-12, ring 3 closed 2026-10-13)
+# TheWarRoom target UI: specification, revision 4 (2026-10-13, ring 4 opened)
 
-Revisions 0–2 are in git history. Revision 1 closed ring 1 (2026-10-10), revision 2 closed ring 2
-(2026-10-11), and revision 3 closes ring 3.
+Revisions 0–3 are in git history. Revision 1 closed ring 1 (2026-10-10), revision 2 closed ring 2
+(2026-10-11), revision 3 closed ring 3 (2026-10-13), and revision 4 adds the commissioner side (§16)
+that ring 4 builds.
+
+## What changed in rev 4
+
+- §16 (new): the commissioner side of the app (step K4 of `docs/commissioner/README.md`): the rulings,
+  the stance (independent of MFL and ProBoards; every rule a commissioner setting), roles and
+  succession, the rule model, organisation, jobs, the 56-control census, Acts, what owners see, the
+  wiring proof and what each ring builds.
+- §15b's "ring 4 is deferred" is lifted: Christopher opened ring 4 on 2026-10-13 after PR #35 closed
+  rings 0–3.
+- The census itself is `docs/commissioner/Commissioner_Control_Census.md`; its rows are in the
+  registry with the prefix `CM-` and a new `governs` column (step K5).
 
 ## What changed in rev 3
 
@@ -569,3 +581,208 @@ index. The registry keeps every row and its `ring_note`.
 
 **Speed.** The root package's race tests fell from 574 s to 233 s (shared read-only archive snapshot,
 per-test history copies, parallel tests), so the pre-push gate no longer times out under load.
+
+## 16. The commissioner side (K4, 2026-10-13)
+
+This section is step K4 of `docs/commissioner/README.md`: the commissioner control surface, built
+from the MFL commissioner map (K1–K2), two independent research passes (K3: Sol and GLM, merged by
+Claude) and Christopher's rulings. He agreed it section by section on 2026-10-13. The control list
+is `docs/commissioner/Commissioner_Control_Census.md`; its rows are in the registry as `CM-001` to
+`CM-056` (§16.7).
+
+### 16.1 Rulings
+
+**K3 rulings (Christopher, 2026-10-13).** Cited below as "ruling n".
+1. The League landing is a jobs strip over a search box.
+2. The draft-night commissioner tray lives in the Draft room (a recorded exception to "everything
+   under Control Room › League").
+3. The co-commissioner has near-parity day to day. Blocked only from: league shape, dynasty and carry,
+   engine parameters, roles, season rollover, standings override.
+4. Trades have two parties, sometimes three; multi-party trades are supported. A trade with no
+   eligible reviewer fails closed. There is no tiebreak machinery.
+5. Owners see every league-state change with who, what and why. Role grants and invites stay private.
+6. An unset rule shows its control marked **Needs a ruling**; anything that depends on it is blocked
+   with the reason stated. The app invents no competitive value.
+7. Stat corrections from the feed queue for the commissioner's approval (a new feature).
+8. G3 needs a typed reason. G2 is hold-to-fire with an optional reason.
+
+**League facts (Christopher, 2026-10-13).** Cited below as "fact n".
+
+| # | Fact | Ruling |
+|---|---|---|
+| 1 | Scoring | A deep catalogue of every recorded stat; any stat can be given a value; organised so unused stats stay out of the way. Rulebook §4 is the Legacy preset |
+| 2 | Waiver order | A menu of methods; default reverse standings |
+| 3 | Bids | Blind or open, set separately for UFA and RFA; UDFA follows UFA |
+| 4a | IR | A menu of NFL designations; default IR, PUP, NFI, Out, suspended; a player must come off once healthy |
+| 4b | Taxi | Flexible; default 3 calendar years and under |
+| 5 | Contracts | Each rulebook action kept; every number editable; every action on or off; new action kinds later. Covers dead money and the rookie draft |
+| R | Roster size | Default 18–80, IR and taxi excluded |
+| 7a | DOT | 4 to 10 seats; 3 approves or 3 vetoes decides |
+| 7b | DOT appeal | Either team may appeal a veto once to the commissioner; if the commissioner is a party, the co-commissioner decides |
+| 8a | First commissioner | The league's creator, automatically |
+| 8b | Commissioner gone | Steps down, goes inactive past a set period, or is voted out; each a recorded act |
+| 8c | Successor | The co-commissioner at once; if none, or they decline, the owners elect one |
+| 9a | Rollover, IR and taxi | Every player returns to the active roster |
+| 9b | Expiring contracts | Rollover (Mar 1) marks them pending and never releases them; the spring windows decide each; unsigned players reach open free agency on May 19 |
+| 9c | New picks | Issued when the rookie draft ends, for two seasons out, 5 rounds, tradable at once |
+| 11a | Playoff field | 7 per conference (4 division winners and 3 wild cards); the #1 seed has a bye |
+| 11b | Seeding | Division winners 1–4, wild cards 5–7, NFL-style reseeding each round |
+| 12a | Time | The commissioner sets the league timezone (Legacy: US Eastern, daylight saving followed); every owner sees local time |
+| 12b | Window edges | Windows change at midnight league time; the commissioner sets which side of a shared date the boundary falls on |
+| 12c | Trade deadline | Week 9; the commissioner sets the exact moment |
+| 13 | UDFA | No window of its own; undrafted rookies go straight into the UFA pool |
+| 14 | MFL and ProBoards | The commissioner side is independent of both (§16.2) |
+
+### 16.2 Stance
+
+- TheWarRoom is coded to no league's standard, MFL's or Legacy NFL's. Christopher, 2026-10-13: "We
+  arent coding this to MFL or Legacy standards, we have minimum and maximum, thats it, the
+  commish/league decides the rest."
+- Every competitive rule is league data set by the commissioner. Legacy NFL's rulebook
+  (`docs/league-rules/Official_Rulebook.md` v2026, `Math_Rules_Reference.md`) supplies the preset.
+  Another league can change any of it.
+- The commissioner side is app-owned: its Acts land in the app, with no MFL read-back and no "Handed
+  off" state. This replaces K3's take #5. The owner side's MFL and ProBoards hand-offs (§6, ring 2)
+  stay as built until a later ring retires them, and R2 ("MFL wins") still governs owner data read
+  from MFL.
+- No MFL wiring for the commissioner side. Christopher, 2026-10-13: "dont extend to much into wiring
+  into mfl for now, as its not the end goal". Ring 4 builds the native league: commissioner state is
+  app-owned, lives in the app's own event ledger, and drives the app's native rules and readings. The
+  Legacy league may be seeded once from its held data so the tools can be tested against real rosters,
+  but nothing syncs back and forth with MFL and no cut-over machinery is built. The owner side's MFL
+  reads are left as they are.
+- This supersedes, for the commissioner side only, the core build plan's exclusion of the
+  Commissioner Suite (`docs/build-handoffs/Core_Build_Plan_2026-10.md`).
+
+### 16.3 Roles and governance
+
+- **Ladder:** Commissioner > Co-commissioner > DOT > Owner. The humans decide who holds each role; the
+  app assigns nobody. The last commissioner cannot be revoked.
+- **Co-commissioner:** near-parity (ruling 3).
+- **DOT:** 4 to 10 seats; 3 approves or 3 vetoes decides. A member who is party to the trade is
+  recused. With fewer than 4 seats filled, trade review shows "Needs a ruling: DOT has n of 4 seats"
+  and trades wait. Either team may appeal a veto once (fact 7b). The commissioner may overturn any
+  DOT decision as a G3 act with a typed reason, visible to every owner.
+- **Succession:** the league's creator is the first commissioner. A commissioner is gone by stepping
+  down, by inactivity (14 days in season, 30 offseason; adjustable; every owner is notified), or by
+  owner vote. The co-commissioner takes over first; otherwise the owners elect a successor.
+- **Vote-out:** two-thirds of all franchises (22 of 32), locked in every league so no commissioner can
+  entrench. Only a co-commissioner or a DOT member may open a vote-out or an election. The locked
+  vote-out is the backstop if an inactivity setting is abused.
+- Role grants and invites stay private (ruling 5).
+
+### 16.4 The rule model
+
+Three deep models and a set of menus. Each value has its Legacy preset and the rulebook citation
+(the census holds them row by row).
+
+- **Scoring catalogue:** every recorded stat; any stat can be given a value; grouped so unused stats
+  stay out of the way (fact 1).
+- **Contract actions:** bid points, RFA tender and re-sign, dead cap, tag, extension, restructure,
+  buyout, retirement, death, cap relief appeal. Every number editable, every action on or off (fact 5).
+- **League calendar:** windows, midnight boundaries in league time, which side of a shared date a
+  boundary falls on, the trade deadline moment, draft dates (facts 12a–c).
+- **Menus:** waiver method (default reverse standings), IR designations, taxi rule, bid mode for UFA
+  and RFA, roster limits, lineup minimums and maximums per position and per group, the invalid-lineup
+  penalty (Legacy: zero the highest-scoring starter), cap enforcement hard or soft (Legacy: hard),
+  playoff field and reseeding, pick issuance after the draft.
+- **Needs a ruling:** any value a new league leaves unset (ruling 6). The draft's later-round pattern
+  and its tie rule have no default and show this state until the commissioner sets them.
+- **When a change applies:** a competitive rule change takes effect at the next rollover by default.
+  "Apply now" is a G3 act with a typed reason, a preview of who is affected, and a post to every owner.
+- **Versioned by season:** each change has an effective point, so a past season always recomputes under
+  the rules of its own time (the archive and the Lab need this).
+- **Density:** every commissioner screen has all three views (Narrative, Tactical, Matrix), opens in
+  Tactical and remembers the last choice. Scoring is built to a power-user standard; one click switches
+  from compressed to full-featured.
+
+### 16.5 Organisation
+
+Control Room › League holds the commissioner surface: a jobs strip over a search box (ruling 1). Live
+jobs lead with their countdown; the rest follow dimmed, one click away. Groups: Constitution, People,
+Calendar, Season ops, Draft, Playoffs, League ops, Ledger (read only). Four ways in: by place, by
+thing (the Inspector's commissioner tab on a player, pick or trade), by date (a calendar event opens
+its job), and by typing a command. The draft-night tray sits in the Draft room (ruling 2). No new
+nav node.
+
+### 16.6 Jobs
+
+The research passes' ten jobs, re-cut by the rulings:
+- **J3 Rollover (Mar 1):** the G3 rollover. IR and taxi players return to active (fact 9a); expiring
+  players are marked pending, never released (fact 9b); waiting rule changes take effect.
+- **J4 Contract season:** the spring windows decide each expiring player: the contract window
+  Mar 1–Apr 30 (its actions chosen by the commissioner, not hard-coded), RFA tenders May 1–3, UFA May
+  3–10, re-sign May 10–15, open free agency from May 19. No UDFA window (fact 13). Calendar windows
+  gate actions.
+- **J5 Rookie draft:** ends by issuing picks two seasons out (fact 9c).
+- **J7 Stat approval queue** (ruling 7). **J8 DOT review and appeal** (fact 7b). **J9 Playoffs** with
+  reseeding (fact 11b).
+- The other jobs (setup, in-season operations, communications) map onto census groups A, D and G.
+
+### 16.7 Control census
+
+`docs/commissioner/Commissioner_Control_Census.md`: 56 human-facing controls in 7 groups over 144
+typed verbs. Each row gives the plain question, the verbs with typed arguments, gravity, minimum role,
+the Legacy default with its citation, and the owner rows it governs.
+
+| Group | Rows | What it covers |
+|---|---|---|
+| A Constitution | CM-001–CM-017 | league shape, alignment, roster and lineup limits, dynasty, scoring, standings, cap, contract actions, IR, taxi, waivers, bids, trades, schedule, playoff rules, house rules |
+| B People | CM-018–CM-022 | franchise identity, owner seats, abilities and visibility, roles, succession |
+| C Calendar | CM-023–CM-026 | windows, league clock, trade deadline, window exceptions |
+| D Season ops | CM-027–CM-039 | rollover, corrections, stat queue, score and standings overrides, contract and cap overrides, waiver and bid processing, trade review, exceptions and reversal |
+| E Draft | CM-040–CM-045 | draft setup, order, start, live tray, revert, close |
+| F Playoffs and history | CM-046–CM-050 | brackets and seeds, advancement override, champion title, history links, awards (deferred) |
+| G League ops | CM-051–CM-056 | notifications, notices, What's New, data refresh, engine parameters, the ledger |
+
+Pools, survivor and accounting rows in the owner registry (M-172, M-173, M-198, M-098, M-197) are
+dormant: their commands refuse with a real message.
+
+### 16.8 Acts
+
+- Every commissioner change is an Act with the §6 envelope, written to an append-only ledger.
+  Corrections are compensating entries, never deletes.
+- Every change carries an expected version and an idempotency key.
+- G2 is hold-to-fire with an optional reason; G3 needs a typed reason (ruling 8). Hold-to-fire has a
+  keyboard equivalent.
+- Tray anatomy: the question, the frozen target, the fields with where each value came from,
+  before → after, the owner rows affected and how many, blockers, confirm.
+- The app resolves every waiver claim and bid itself; the manual run and the per-claim override stay
+  as commands.
+- Commissioner Acts never show "Handed off": they land in the app (§16.2).
+
+### 16.9 What owners see
+
+- A governed glyph on any commissioner-set value; clicking it shows who set it, when and with which
+  command.
+- A plain-sentence digest for each G2 and G3 change.
+- The ledger shows every league-state change with who, what and why (ruling 5).
+- Countdowns: an alert 1 hour before the snipe mark (the 20-hour mark of a bid), an alert at the mark,
+  then a red live countdown to close. Each owner can change the timings. All times show in the
+  owner's local time (fact 12a).
+
+### 16.10 Wiring proof
+
+Each CM row lists the owner rows it governs (the registry's `governs` column). For each edge a test
+sets the value through the command, reads every governed owner row and asserts the change, reverts,
+and asserts the old value. A commissioner row with no edge, and an owner rule value no commissioner
+row sets, both fail the build. The proof runs headless in CI, then once live in the landing walk (K7).
+
+### 16.11 What each ring builds
+
+- **Ring 4:** census groups A, B, C, D, E and G except CM-055; plus the commissioner-facing §15
+  carry items: the mail log M-093 and commissioner news M-095 (through CM-052), waivers M-024, M-156
+  and M-157 (through CM-012 and CM-035), and cache tools M-137 (through CM-054).
+- **Ring 5:** the owner-only §15 carry items: owner messaging M-125–M-127, NFL team stats M-050,
+  draft preferences M-108, the league switcher S-14, and the Lab screens on the runtime compile. (The
+  Inspector's dead cap and form rows, once on this list, were wired in ring 3: §15.)
+- **Later:** group F (CM-046–CM-049), engine parameters CM-055 (no parameter list yet), awards CM-050
+  (a native feature, much later), and new contract action kinds.
+
+### 16.12 Open items
+
+- Rulebook corrections owed, to be made with Christopher later: §2 IR (wider default), §2 roster
+  (18–80), §5 wild cards (3, not 2), §3 lineup (the minimum/maximum model).
+- Closed during K4: the rulebook's lineup penalties had no control. Ruled: CM-004 carries the penalty
+  menu (Legacy: zero the highest-scoring starter); a missed lineup only flags the team; removing an
+  owner stays a human G3 act (CM-019).
