@@ -516,3 +516,20 @@
 }
 .twr-app .report-table th:first-child { width: 22%; }
 .twr-app .act-text { padding: 0; }
+
+/* Comms owns a track beside the Inspector, even when that Inspector is closed. */
+.twr-app.target-frame[data-comms="true"] {
+  grid-template-columns: 192px minmax(0, 1fr) 600px 48px;
+}
+.twr-app.target-frame[data-inspector="expanded"][data-comms="true"] {
+  grid-template-columns: 192px minmax(0, 1fr) 760px 48px;
+}
+.twr-app.target-frame[data-inspector="closed"][data-comms="true"] {
+  grid-template-columns: 192px minmax(0, 1fr) 320px 48px;
+}
+.twr-app[data-comms="true"] .insp { right: 328px; }
+.twr-app .inspector-closed { width: 40px; box-sizing: border-box; }
+.twr-app .comms-panel { box-sizing: border-box; }
+.twr-app .insp .draft-report th, .twr-app .insp .draft-report th .act-button {
+  overflow-wrap: normal; word-break: normal;
+}

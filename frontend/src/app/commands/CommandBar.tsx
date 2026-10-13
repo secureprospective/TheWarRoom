@@ -72,7 +72,7 @@ export function CommandBar({ snapshot }: { snapshot?: Snapshot }) {
           </Act>
         ))}
         {!results.length && (
-          <p role="status">No matching commands, places, endpoints players or franchises.</p>
+          <p role="status">No matching commands, places, endpoints, players or franchises.</p>
         )}
       </div>
       {(!query.trim() || 'preset: admin'.includes(query.trim().toLowerCase())) && (

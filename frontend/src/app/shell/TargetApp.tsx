@@ -95,7 +95,7 @@ export function TargetApp() {
   const workspace = workspaces.find((w) => w.slug === s.workspace[s.node])!;
   const placement = `${node.label} › ${workspace.label}` as Placement;
   return (
-    <div className="twr-app target-frame" ref={root} data-inspector={s.inspector}>
+    <div className="twr-app target-frame" ref={root} data-inspector={s.inspector} data-comms={s.comms}>
       <aside className="rail">
         <div className="league">
           <div className="crest">

@@ -14,18 +14,21 @@ func readShellFeed[T any](ctx context.Context, a *App, held *heldSeasonFeed[[]T]
 	feed := *held
 	a.seasonMu.Unlock()
 	if !feed.fetchedAt.IsZero() {
-		return feed
+		return dailyShellReading(feed, a.timeNow())
 	}
 	feed = archivedOnly(ctx, a, export, false, parse)
-	if !feed.fetchedAt.IsZero() {
-		feed.refreshError = "Archived copy; daily refresh pending"
-	}
 	a.seasonMu.Lock()
 	defer a.seasonMu.Unlock()
 	if held.fetchedAt.IsZero() {
 		*held = feed
 	}
-	return *held
+	return dailyShellReading(*held, a.timeNow())
+}
+
+func dailyShellReading[T any](feed heldSeasonFeed[[]T], now time.Time) heldSeasonFeed[[]T] {
+	feed.readPending = !feed.fetchedAt.IsZero() && feed.refreshError == "" &&
+		feed.fetchedAt.In(time.Local).Format("2006-01-02") != now.In(time.Local).Format("2006-01-02")
+	return feed
 }
 
 func shellFeedTime[T any](feed heldSeasonFeed[[]T], zone *time.Location) string {
@@ -33,10 +36,16 @@ func shellFeedTime[T any](feed heldSeasonFeed[[]T], zone *time.Location) string 
 		return "unavailable · no held copy"
 	}
 	kind := "live"
-	if feed.refreshError != "" {
+	if feed.refreshError != "" || feed.readPending {
 		kind = "archived copy"
 	}
-	return kind + " · fetched " + reportTime(feed.fetchedAt, zone)
+	text := kind + " · fetched " + reportTime(feed.fetchedAt, zone)
+	if feed.readPending {
+		text += " · " + pendingShellRead(feed.fetchedAt, zone)
+	} else if feed.refreshError != "" {
+		text += " · Refresh failed"
+	}
+	return text
 }
 
 func refreshDailyShellFeed[T any](ctx context.Context, a *App, held *heldSeasonFeed[[]T], now time.Time,

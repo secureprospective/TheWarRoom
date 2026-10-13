@@ -13,15 +13,61 @@ export function scrollWorkIntoView(element: HTMLElement, block: 'start' | 'neare
   scroll.scrollTop += delta;
 }
 
-export function revealWorkSection(element: HTMLElement) {
+export function revealWorkSection(element: HTMLElement, alignment = element) {
   let parent: HTMLElement | null = element;
   while (parent && !parent.classList?.contains('wbody')) {
     if (parent.tagName === 'DETAILS') (parent as HTMLDetailsElement).open = true;
     parent = parent.parentElement;
   }
-  scrollWorkIntoView(element);
+  scrollWorkIntoView(alignment);
   element.tabIndex = -1;
   element.focus({ preventScroll: true });
+  settleWorkSection(alignment);
+}
+
+// Five seconds covers lazy reads without keeping a navigation anchor alive indefinitely.
+export const workSettleWindow = 5000;
+const settling = new WeakMap<HTMLElement, () => void>();
+
+function settleWorkSection(element: HTMLElement) {
+  const scroll = element.closest<HTMLElement>('.wbody');
+  if (!scroll || typeof ResizeObserver === 'undefined' || !scroll.addEventListener) return;
+  settling.get(scroll)?.();
+  let expected = scroll.scrollTop, active = true;
+  const inputs = ['wheel', 'touchmove', 'pointerdown', 'click', 'keydown', 'input'];
+  const stop = () => {
+    if (!active) return;
+    active = false;
+    clearTimeout(expire);
+    resize.disconnect();
+    mutation?.disconnect();
+    scroll.removeEventListener('scroll', moved);
+    for (const event of inputs) document.removeEventListener(event, stop, true);
+    settling.delete(scroll);
+  };
+  const align = () => {
+    if (!active) return;
+    if (!element.isConnected || scroll.scrollTop !== expected) { stop(); return; }
+    scrollWorkIntoView(element);
+    expected = scroll.scrollTop;
+  };
+  const moved = () => { if (scroll.scrollTop !== expected) stop(); };
+  const resize = new ResizeObserver(align);
+  const observe = () => {
+    if (!active) return;
+    resize.disconnect();
+    for (const child of Array.from(scroll.children)) resize.observe(child);
+    let parent: HTMLElement | null = element;
+    while (parent && parent !== scroll) { resize.observe(parent); parent = parent.parentElement; }
+    align();
+  };
+  const mutation = typeof MutationObserver === 'undefined' ? undefined : new MutationObserver(observe);
+  const expire = setTimeout(stop, workSettleWindow);
+  settling.set(scroll, stop);
+  for (const event of inputs) document.addEventListener(event, stop, true);
+  scroll.addEventListener('scroll', moved, { passive: true });
+  mutation?.observe(scroll, { childList: true, subtree: true });
+  observe();
 }
 
 export type WorkAnchor = { row: HTMLElement; top: number; scroll: HTMLElement; fallback?: WorkAnchor };

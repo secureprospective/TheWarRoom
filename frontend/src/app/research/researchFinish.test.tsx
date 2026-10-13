@@ -171,3 +171,17 @@ describe('One paged news list', () => {
     expect(html).not.toContain('<dd>RB Jahmyr Gibbs:');
   });
 });
+
+it('Inspector news uses a whole Posted header and a local absolute minute from Go', () => {
+  const player: PlayerReading = { ...fixture.players[0], report: {
+    ...fixture.news, rows: [{ cells: ['News · Oct 13, 2026, 12:22 AM', 'Headline',
+      'held · fetched Oct 13, 2026, 12:48 AM'], range: null }],
+  }, articles: fixture.articles, howLabel: fixture.board.howLabel };
+  const html = renderToStaticMarkup(createElement(PlayerResearchView, { player, identity: false }));
+  expect(html).toContain('Posted');
+  expect(html.match(/<thead>[\s\S]*?<\/thead>/)?.[0]).not.toContain('Published');
+  expect(html).toContain('Oct 13, 2026, 12:22 AM');
+  const css = readFileSync(new URL('../shell/shell.css', import.meta.url), 'utf8');
+  expect(css).toContain('.twr-app .insp .draft-report th .act-button {');
+  expect(css).toContain('overflow-wrap: normal; word-break: normal;');
+});

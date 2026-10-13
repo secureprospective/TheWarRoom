@@ -3,7 +3,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { readdirSync, readFileSync } from 'node:fs';
 import { clockDom } from '../clock/testDom';
-import { scrollWorkIntoView, useWorkAnchor } from './workScroll';
+import { revealWorkSection, scrollWorkIntoView, useWorkAnchor, workSettleWindow } from './workScroll';
 
 const globals = ['document', 'window', 'IS_REACT_ACT_ENVIRONMENT', 'ResizeObserver'].map(key => ({
   key, descriptor: Object.getOwnPropertyDescriptor(globalThis, key),
@@ -184,4 +184,46 @@ it('releases the row anchor for Contract Acts so resize cannot undo the form rev
   p.row.y += 300;
   p.resize();
   expect(p.scroll.scrollTop).toBe(0);
+});
+
+it.each(['wheel', 'scroll', 'click', 'keydown', 'input', 'timeout'])
+('settles a cold section after growth above it, then yields permanently to %s', event => {
+  vi.useFakeTimers();
+  try {
+    const document = new EventTarget();
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: document });
+    let resized!: () => void;
+    const disconnect = vi.fn();
+    Object.defineProperty(globalThis, 'ResizeObserver', { configurable: true, value: class {
+      constructor(callback: () => void) { resized = callback; }
+      observe() {} disconnect() { disconnect(); }
+    } });
+    const scroll = Object.assign(new EventTarget(), {
+      scrollTop: 0, clientTop: 0, clientHeight: 600, children: [],
+      getBoundingClientRect: () => ({ top: 60 }),
+      classList: { contains: (name: string) => name === 'wbody' },
+    });
+    let above = 430;
+    const section = { isConnected: true, parentElement: scroll, tagName: 'SECTION', focus: vi.fn(),
+      closest: () => scroll,
+      getBoundingClientRect: () => ({ top: 60 + above - scroll.scrollTop, bottom: 900 }),
+    };
+    revealWorkSection(section as unknown as HTMLElement);
+    expect(scroll.scrollTop).toBe(430);
+    above += 330; resized();
+    expect(section.getBoundingClientRect().top).toBe(60);
+    // A delayed event from our own scroll must not release the anchor.
+    scroll.dispatchEvent(new Event('scroll'));
+    above += 100; resized();
+    expect(section.getBoundingClientRect().top).toBe(60);
+    if (event === 'timeout') vi.advanceTimersByTime(workSettleWindow);
+    else if (event === 'scroll') {
+      scroll.scrollTop -= 150;
+      scroll.dispatchEvent(new Event('scroll'));
+    } else document.dispatchEvent(new Event(event));
+    const userTop = scroll.scrollTop;
+    above += 500; resized();
+    expect(scroll.scrollTop).toBe(userTop);
+    expect(disconnect).toHaveBeenCalled();
+  } finally { vi.useRealTimers(); }
 });
