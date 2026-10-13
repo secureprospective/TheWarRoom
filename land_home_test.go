@@ -16,6 +16,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
+	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
@@ -187,7 +188,9 @@ func TestLandingShellFeedsDailyLiveOrArchive(t *testing.T) {
 			"tradeBait": `{"tradeBaits":{"tradeBait":{"franchise_id":"0025","inExchangeFor":"Live bait"}}}`,
 		}}
 		var err error
-		a.mflClient, err = mfl.New("api", 10000, mfl.WithTransport(transport))
+		// MFL serves the calendar only to a keyed request; trade bait stays unkeyed.
+		a.mflClient, err = mfl.New("api", 10000, mfl.WithTransport(transport), mfl.WithKeySource(
+			func(context.Context) (mflkey.Key, error) { return "owner-key", nil }))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -201,8 +204,9 @@ func TestLandingShellFeedsDailyLiveOrArchive(t *testing.T) {
 		}
 		a.refreshShellFeeds(a.ctx)
 		a.refreshShellFeeds(a.ctx)
-		if !slices.Equal(transport.requests, []string{"calendar", "tradeBait"}) {
-			t.Fatal(transport.requests)
+		if !slices.Equal(transport.requests, []string{"calendar", "tradeBait"}) ||
+			!slices.Equal(transport.keyed, []string{"calendar"}) {
+			t.Fatal(transport.requests, transport.keyed)
 		}
 		wantEvent, wantBait, kind := "Live event", "Live bait", "live · fetched "
 		if offline {
