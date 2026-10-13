@@ -19,12 +19,16 @@ export function RangeBar({ range }: { range: MarketRange }) {
     </svg>
   );
 }
-export function HowCounted({ reading, countText }: { reading: ReadingShell; countText?: string }) {
+export function HowCounted({ reading, countText, observed = false }: {
+  reading: ReadingShell; countText?: string; observed?: boolean;
+}) {
   return (
     <details className="market-how" data-endpoint="L-33">
       <summary>How this is counted</summary>
       <p>
-        This is frozen archive history through the cutoff, not today’s live market.
+        {observed
+          ? 'The source dates show which history is available, not the whole live market.'
+          : 'This is frozen archive history through the cutoff, not today’s live market.'}
         The scope and counting method below define which records are visible.
       </p>
       <p>
@@ -56,11 +60,13 @@ export function ArchiveReading({
   title,
   children,
   countText,
+  observed = false,
 }: {
   reading?: ReadingShell;
   title: string;
   children?: ReactNode;
   countText?: string;
+  observed?: boolean;
 }) {
   if (!reading)
     return (
@@ -87,7 +93,7 @@ export function ArchiveReading({
         </p>
       )}
       {(reading.status === 'ok' || reading.status === 'thin') && children}
-      <HowCounted reading={reading} countText={countText} />
+      <HowCounted reading={reading} countText={countText} observed={observed} />
     </section>
   );
 }

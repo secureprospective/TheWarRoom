@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { selectProvider } from '../data/provider';
 import { localDate } from '../clock/labels';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
@@ -16,7 +18,9 @@ export function OffersScreen({ reading, scope, pending = false }: {
     at => localDate(at),
   );
   const displayed = { ...reading, cutoff: localText(reading.cutoff),
-    buildStamp: localText(reading.buildStamp), howCounted: localText(reading.howCounted) };
+    buildStamp: localText(reading.buildStamp), howCounted: localText(reading.howCounted),
+    provenance: reading.provenance && { ...reading.provenance,
+      source: localText(reading.provenance.source) } };
   return <section className="offers-history" aria-label={v.words.heading}>
     <header data-endpoint="L-32"><h4>{v.words.heading}</h4><p>{localText(v.disclosure)}</p></header>
     <div className="market-controls" data-endpoint="L-31" aria-label={v.words.direction}>
@@ -40,7 +44,9 @@ export function OffersScreen({ reading, scope, pending = false }: {
         args={{ field: 'retry', value: '' }} label={v.words.retry} />}
     </div>
     {pending && <p role="status">{v.words.pending}</p>}
-    <div data-endpoint="L-30"><ArchiveReading reading={displayed} title={v.title} countText={v.countText}>
+    <div data-endpoint="L-30">
+      <ArchiveReading reading={displayed} title={v.title} countText={v.countText} observed>
+      <p>{displayed.provenance?.source}</p>
       <p>{v.summary}</p>
       <ul className="offers-legend" aria-label="Offer endings">
         {v.stretches[0]?.outcomes.map(o => <li key={o.id}>
@@ -62,6 +68,10 @@ export function OffersScreen({ reading, scope, pending = false }: {
   </section>;
 }
 export default function OffersHistory() {
+  useEffect(() => {
+    void offerState.refresh();
+    return selectProvider().onSeasonChange(() => { void offerState.refresh(); });
+  }, []);
   offerState.first();
   const s = offerState.use();
   // first() suspends until a reading exists; a server render sees the initial store.

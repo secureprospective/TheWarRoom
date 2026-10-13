@@ -92,8 +92,20 @@ func (a *App) TargetOffers(raw RawOfferScope) Reading[OffersView] {
 		return r
 	}
 	setOfferDisclosure(&r.Value, d)
-	r.Cutoff = d.ArchiveThrough
+	merged, source, checked, err := a.offersWithLive(d)
+	if err != nil {
+		reason := err.Error()
+		r.AbsenceReason = &reason
+		return r
+	}
+	d = merged
+	r.Cutoff = source
 	r.Provenance = counterProvenance(d)
+	r.Provenance.Source = source
+	if !checked.IsZero() {
+		// Live offers are added since the archive, so the reading is as fresh as the last pending-offer read.
+		r.Provenance.Kind, r.Provenance.Freshness = "live", liveFreshness(checked)
+	}
 	if err := validateOfferTeam(raw, d); err != nil {
 		reason := err.Error()
 		r.AbsenceReason = &reason
@@ -108,8 +120,9 @@ func (a *App) TargetOffers(raw RawOfferScope) Reading[OffersView] {
 	r.Count = len(result.Offers)
 	r.Value.CountText = countNumber(r.Count)
 	r.Baseline = "Other stretches with at least 10 known endings in this same scope"
-	r.HowCounted = "Seasons use the league-year season field, not calendar year. Direction is relative to the archive owner (the busiest endpoint, stable first-appearance ties). Team and time-of-year filters apply before counts. Accepted, rejected, withdrawn and expired are known endings; unknown endings are excluded from acceptance. Per-season volume divides by the number of seasons with any archived offer in the selected years, before direction, team or window filtering (at least one). Rates display only at 5 known endings; a most/least often accepted finding requires at least 10 known endings in each compared stretch, two usable stretches, and a strict difference greater than 1.96 × the combined standard error against every other usable stretch. Unknown endings are never rejections. This is historical owner coverage, not league-wide or current pending offers."
+	r.HowCounted = "Seasons use the league-year season field, not calendar year. Direction is relative to the archive owner (the busiest endpoint, stable first-appearance ties). Team and time-of-year filters apply before counts. Accepted, rejected, withdrawn and expired are known endings; unknown endings are excluded from acceptance. Per-season volume divides by the number of seasons with any recorded offer in the selected years, before direction, team or window filtering (at least one). Rates display only at 5 known endings; a most/least often accepted finding requires at least 10 known endings in each compared stretch, two usable stretches, and a strict difference greater than 1.96 × the combined standard error against every other usable stretch. Unknown endings are never rejections. Open offers are counted separately and excluded from endings and acceptance. Ending not on record means MFL no longer lists the offer and no matching completed trade is held; it is not a rejection. Live coverage contains only offers seen by this app, not all offers since the archive. This is owner coverage, not league-wide activity."
 	r.Value.Summary = offerSummary(d, result, s)
+	r.Value.Summary += offerOpenSummary(result)
 	for _, st := range result.Stretches {
 		r.Value.Stretches = append(r.Value.Stretches, offerStretchView(st))
 	}
@@ -217,9 +230,22 @@ func offerStretchView(st lab.OfferStretch) OfferStretchView {
 	if st.Known >= 5 {
 		v.Acceptance = fmt.Sprintf("%s accepted · %s with a known ending", percent(*st.Rate), countLabel(st.Known, "offer"))
 	}
-	for _, o := range []OfferChoice{{ID: "accepted", Label: "Accepted"}, {ID: "rejected", Label: "Rejected"}, {ID: "withdrawn", Label: "Withdrawn"}, {ID: "expired", Label: "Expired"}, {ID: "unknown", Label: "Ending not on record"}} {
+	for _, o := range []OfferChoice{{ID: "accepted", Label: "Accepted"}, {ID: "rejected", Label: "Rejected"}, {ID: "withdrawn", Label: "Withdrawn"}, {ID: "expired", Label: "Expired"}, {ID: "unknown", Label: "Ending not on record"}, {ID: "pending", Label: "Open offers"}} {
 		n := st.Counts[o.ID]
 		v.Outcomes = append(v.Outcomes, OfferOutcomeView{ID: o.ID, Label: o.Label, Text: o.Label + " " + countNumber(n), Width: math.Round(float64(n)/float64(max(1, st.N))*10000) / 100})
 	}
 	return v
+}
+
+func offerOpenSummary(result lab.OfferResult) string {
+	open := 0
+	for _, o := range result.Offers {
+		if o.Outcome == "pending" {
+			open++
+		}
+	}
+	if open == 0 {
+		return " No open offers."
+	}
+	return " " + countLabel(open, "open offer") + "."
 }

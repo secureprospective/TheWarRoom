@@ -228,3 +228,16 @@ func (l *Lab) yearBefore(year int64, basis *string, fid string) *int64 {
 	}
 	return nil
 }
+
+// OfferTiming applies the compiler's date rules to a proposal in its MFL league year.
+func OfferTiming(year, ts int64, marks Markers, weeks map[int64]int64) (int64, string) {
+	l := &Lab{Marks: map[int64]Markers{year: marks}, WeekStart: make(map[yearWeek]int64)}
+	for week, start := range weeks {
+		l.WeekStart[yearWeek{year, week}] = start
+	}
+	season := year
+	if marks.RegularEnd != nil && dayOf(ts).After(*marks.RegularEnd) {
+		season++
+	}
+	return season, l.phase(year, ts)
+}

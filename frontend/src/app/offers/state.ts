@@ -20,6 +20,7 @@ export function createOfferState(read = readOffers) {
   return {
     use: () => useStore(store),
     peek: store.getState,
+    refresh: () => refresh(store.getState().scope),
     first: () => {
       if (!opening) opening = refresh(initialScope);
       if (!store.getState().reading) throw opening;

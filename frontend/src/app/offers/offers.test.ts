@@ -38,7 +38,7 @@ it('keeps the L-32 count/owner/cutoff header and HowCounted in all four reading 
           '0025', '470', localDate(wire.cutoff), 'How this is counted', "GM&#x27;s own offers"])
             expect(text).toContain(phrase);
         if (status === 'failed' || status === 'not_wired')
-            expect(text).not.toContain('Ending not on record ');
+            expect(text).not.toContain('class="offer-count"');
     }
     const text = screen(r);
     expect(text.match(/offer-bar-track/g)).toHaveLength(8);
@@ -158,11 +158,11 @@ it('shares readable shell selects without an Offers override', () => {
   expect(css).toContain('.twr-app select:focus-visible { outline: 2px solid var(--signal-blue)');
   expect(readFileSync('src/app/offers/offers.css', 'utf8')).not.toMatch(/select/);
 });
-it('uses five Go-width segments per bar, one legend, and all textual counts', () => {
+it('uses five ending segments plus open offers per bar, one legend, and all textual counts', () => {
   const html = screen(parseOffers(wire));
   expect(html.match(/class="offers-legend"/g)).toHaveLength(1);
   expect(html.match(/class="offer-counts"/g)).toHaveLength(8);
-  expect(html.match(/class="offer-count"/g)).toHaveLength(40);
+  expect(html.match(/class="offer-count"/g)).toHaveLength(48);
   for (const stretch of wire.value.stretches) for (const outcome of stretch.outcomes) {
     expect(html).toContain(`data-outcome="${outcome.id}" style="width:${outcome.width}%"`);
     expect(html).toContain(outcome.text);
@@ -184,4 +184,54 @@ it('offers Try again only for failed readings', () => {
     expect(html.includes('Try again')).toBe(status === 'failed');
     expect(html).not.toContain('Read again');
   }
+});
+
+it('shows a dated open offer separately from unknown endings without calling it frozen', () => {
+  const r = parseOffers(wire);
+  const checked = '2026-10-13T14:09:00Z';
+  r.cutoff = `League archive through ${wire.cutoff}; offers seen live since, last checked ${checked}`;
+  r.provenance!.source = r.cutoff;
+  r.value!.summary += ' 1 open offer.';
+  const stretch = r.value!.stretches.find(s => s.id === 'midseason')!;
+  stretch.outcomes.find(o => o.id === 'pending')!.text = 'Open offers 1';
+  stretch.outcomes.find(o => o.id === 'unknown')!.text = 'Ending not on record 1';
+  const html = screen(r);
+  expect(html).toContain(`last checked ${localDate(checked)}`);
+  expect(html).toContain('1 open offer.');
+  expect(html).toContain('Open offers 1');
+  expect(html).toContain('Ending not on record 1');
+  expect(html).not.toContain('frozen archive history');
+  expect(html).not.toContain(checked);
+});
+
+it('refreshes the current scope when the season feeds change and unsubscribes on leaving', async () => {
+  let changed = () => {};
+  const stop = vi.fn();
+  vi.spyOn(FixtureProvider.prototype, 'onSeasonChange').mockImplementation(listener => {
+    changed = listener;
+    return stop;
+  });
+  vi.mocked(TargetOffers).mockResolvedValue(wire as never);
+  const dom = clockDom([]);
+  vi.stubGlobal('document', dom.document);
+  vi.stubGlobal('window', { document: dom.document, HTMLIFrameElement: class {} });
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  const root = createRoot(dom.element);
+  roots.push(root);
+  const { Suspense } = await import('react');
+  await act(async () => {
+    root.render(createElement(Suspense, { fallback: null }, createElement(OffersHistory)));
+    await flush();
+  });
+  vi.mocked(TargetOffers).mockClear();
+  const { offerState } = await import('./state');
+  const scope = offerState.peek().scope;
+  const live = { ...wire, value: { ...wire.value, summary: '1 open offer.' } };
+  vi.mocked(TargetOffers).mockResolvedValue(live as never);
+  await act(async () => { changed(); await flush(); });
+  expect(TargetOffers).toHaveBeenCalledWith(scope);
+  expect(dom.element.textContent).toContain('1 open offer.');
+  await act(async () => { root.unmount(); });
+  roots.splice(roots.indexOf(root), 1);
+  expect(stop).toHaveBeenCalledOnce();
 });
