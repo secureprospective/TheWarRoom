@@ -645,6 +645,14 @@ is `docs/commissioner/Commissioner_Control_Census.md`; its rows are in the regis
   off" state. This replaces K3's take #5. The owner side's MFL and ProBoards hand-offs (§6, ring 2)
   stay as built until a later ring retires them, and R2 ("MFL wins") still governs owner data read
   from MFL.
+- No MFL wiring for the commissioner side. Christopher, 2026-10-13: "dont extend to much into wiring
+  into mfl for now, as its not the end goal". Ring 4 builds the native league: commissioner state is
+  app-owned, lives in the app's own event ledger, and drives the app's native rules and readings. The
+  Legacy league may be seeded once from its held data so the tools can be tested against real rosters,
+  but nothing syncs back and forth with MFL and no cut-over machinery is built. The owner side's MFL
+  reads are left as they are.
+- This supersedes, for the commissioner side only, the core build plan's exclusion of the
+  Commissioner Suite (`docs/build-handoffs/Core_Build_Plan_2026-10.md`).
 
 ### 16.3 Roles and governance
 
