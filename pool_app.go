@@ -16,6 +16,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 // poolFreshFor is how long a held free-agent list is trusted before opening the pool fetches
@@ -79,6 +80,7 @@ func (r RawPoolScope) Validate() error {
 // refreshFreeAgents pulls MFL's free-agent list live, with the archive as fallback, and holds
 // the last good copy like the other season feeds. The caller holds refreshMu.
 func (a *App) refreshFreeAgents(ctx context.Context) {
+	a.restoreFreeAgents(ctx)
 	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season,
 		archivedFeed[freeagents.RawFreeAgent]{
 			export: freeagents.Export,
@@ -101,10 +103,45 @@ func (a *App) refreshFreeAgents(ctx context.Context) {
 	var value []playerid.PlayerID
 	if err == nil {
 		value, err = freeagents.ToPlayerIDs(rows)
+		sortFreeAgentIDs(value)
 	}
 	a.seasonMu.Lock()
 	defer a.seasonMu.Unlock()
+	if err == nil && !slices.Equal(a.seasonFreeAgents.value, value) {
+		a.modelDirty.Store(true)
+	}
 	holdSeasonFeed(&a.seasonFreeAgents, value, fresh, err)
+}
+
+// restoreFreeAgents makes the first refresh compare with the last held list across launches.
+func (a *App) restoreFreeAgents(ctx context.Context) {
+	a.seasonMu.Lock()
+	held := !a.seasonFreeAgents.fetchedAt.IsZero()
+	a.seasonMu.Unlock()
+	if held {
+		return
+	}
+	_, err := a.history.ArchivedBodies(ctx, "TYPE="+freeagents.Export, func(src string, body []byte, at time.Time) bool {
+		if !sameExport(src, freeagents.Export, a.season, false) {
+			return false
+		}
+		rows, err := freeagents.Parse(body)
+		if err != nil {
+			return false
+		}
+		ids, err := freeagents.ToPlayerIDs(rows)
+		if err != nil {
+			return false
+		}
+		sortFreeAgentIDs(ids)
+		a.seasonMu.Lock()
+		holdSeasonFeed(&a.seasonFreeAgents, ids, liveFreshness(at), nil)
+		a.seasonMu.Unlock()
+		return true
+	})
+	if err != nil {
+		a.fallbackLog("engine: previous free-agent list unavailable: " + err.Error())
+	}
 }
 
 // TargetPoolRefresh fetches the free-agent list from MFL. Without force it skips a copy fetched
@@ -178,6 +215,15 @@ func (a *App) TargetPool(raw RawPoolScope) Reading[Pool] {
 		return poolReading(empty, p, ReadingFailed, "Player names unavailable: "+err.Error(), poolHow)
 	}
 	value, left := a.poolRows(ctx, feed.value, lk, raw)
+	run, held, runErr := a.history.LatestRun(ctx, a.season, history.RunModel)
+	switch {
+	case runErr != nil:
+		value.Summary += " · Engine run unavailable: " + runErr.Error()
+	case held:
+		value.Summary += " · Engine run " + reportTime(run.AsOf, time.Local)
+	default:
+		value.Summary += " · Engine run not yet available"
+	}
 	if len(feed.value) == 0 {
 		return poolReading(value, p, ReadingThin, "MFL lists no free agents right now", poolHow)
 	}
@@ -340,4 +386,8 @@ func poolMarketLines(facts []MarketFact) []string {
 		return []string{poolNoMarket}
 	}
 	return []string{parts[0] + " · " + parts[1], parts[2] + " · " + parts[3]}
+}
+
+func sortFreeAgentIDs(ids []playerid.PlayerID) {
+	slices.SortFunc(ids, func(a, b playerid.PlayerID) int { return strings.Compare(a.String(), b.String()) })
 }

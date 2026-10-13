@@ -186,6 +186,13 @@ func (a *App) healthInput(ctx context.Context) (healthInput, error) {
 	if ok {
 		in.boardRun, in.missing = true, run.MissingMeasures
 	}
+	engine, held, err := a.history.LatestRun(ctx, a.season, history.RunModel)
+	if err != nil {
+		return in, fmt.Errorf("app: engine health: %w", err)
+	}
+	if held {
+		in.engineAt = engine.AsOf
+	}
 	return in, nil
 }
 

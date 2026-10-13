@@ -641,3 +641,51 @@ func TestMeasuresHeldListsASourcesMeasuresBySeason(t *testing.T) {
 		}
 	}
 }
+
+func TestEngineRefreshRecordsFreshnessEvenWhenValuesMatch(t *testing.T) {
+	s, _, _ := newStore(t)
+	nr := modelRun(2)
+	first, _, err := s.WriteModelRun(context.Background(), nr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nr.AsOf = nr.AsOf.Add(time.Hour)
+	nr.Refresh = true
+	next, written, err := s.WriteModelRun(context.Background(), nr)
+	if err != nil || !written || next.ID == first.ID || next.ScoresHash != first.ScoresHash {
+		t.Fatalf("refresh: %+v %t %v", next, written, err)
+	}
+	nr.Refresh = false
+	nr.AsOf = nr.AsOf.Add(24 * time.Hour)
+	stale, written, err := s.WriteModelRun(context.Background(), nr)
+	if err != nil || !written || stale.ID == next.ID {
+		t.Fatalf("stale: %+v %t %v", stale, written, err)
+	}
+}
+
+func TestModelInputsChangedOnlyForNewValues(t *testing.T) {
+	s, clock, _ := newStore(t)
+	ctx := context.Background()
+	since := clock.now
+	clock.now = since.Add(time.Second)
+	b := solo("alpha", "Solo", "13604", "41")
+	if _, err := s.Ingest(ctx, b); err != nil {
+		t.Fatal(err)
+	}
+	changed, err := s.ModelInputsChanged(ctx, since)
+	if err != nil || !changed {
+		t.Fatalf("new values: %t %v", changed, err)
+	}
+	since = clock.now
+	clock.now = clock.now.Add(time.Second)
+	if _, err := s.Ingest(ctx, b); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.LoadFailed(ctx, "alpha", errors.New("fixture")); err != nil {
+		t.Fatal(err)
+	}
+	changed, err = s.ModelInputsChanged(ctx, since)
+	if err != nil || changed {
+		t.Fatalf("unchanged and failed loads: %t %v", changed, err)
+	}
+}

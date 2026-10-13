@@ -276,18 +276,6 @@ func withError(l SignalLoad, err error) SignalLoad {
 	return l
 }
 
-// signalsInBackground runs the launch signals load after startup, off the message loop.
-func (a *App) signalsInBackground(parent context.Context) {
-	go func() {
-		if a.ready() != nil {
-			return
-		}
-		ctx, cancel := context.WithTimeout(parent, signalsTimeout)
-		defer cancel()
-		a.loadSignals(ctx)
-	}()
-}
-
 // PositionShare is how many rostered players at a position a signal has data for.
 type PositionShare struct {
 	Position string `json:"position"`

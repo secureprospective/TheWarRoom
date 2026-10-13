@@ -14,6 +14,17 @@ import (
 
 // runModel values the league with the measurables model (plan Stage 7) and writes a model run.
 func (a *App) runModel(ctx context.Context, lk normalize.Lookup, set params.Set) (modelrun.Report, error) {
+	a.modelMu.Lock()
+	defer a.modelMu.Unlock()
+	started := time.Now()
+	rep, err := a.runModelLocked(ctx, lk, set, false)
+	if err == nil {
+		a.engineFinished(ctx, started, rep)
+	}
+	return rep, err
+}
+
+func (a *App) runModelLocked(ctx context.Context, lk normalize.Lookup, set params.Set, refresh bool) (modelrun.Report, error) {
 	end, _ := a.rulebook.GetSetting("endWeek")
 	last, err := strconv.Atoi(end)
 	if err != nil || last < 1 {
@@ -23,7 +34,13 @@ func (a *App) runModel(ctx context.Context, lk normalize.Lookup, set params.Set)
 	if err != nil {
 		return modelrun.Report{}, fmt.Errorf("app: %w", err)
 	}
-	rep, err := runner.Run(ctx, modelrun.Spec{Season: a.season, AsOf: time.Now(), Params: set, LastWeek: last})
+	a.seasonMu.Lock()
+	var free []string
+	for _, id := range a.seasonFreeAgents.value {
+		free = append(free, id.String())
+	}
+	a.seasonMu.Unlock()
+	rep, err := runner.Run(ctx, modelrun.Spec{Season: a.season, AsOf: time.Now(), Params: set, LastWeek: last, FreeAgents: free, Refresh: refresh})
 	if err != nil {
 		return modelrun.Report{}, fmt.Errorf("app: %w", err)
 	}

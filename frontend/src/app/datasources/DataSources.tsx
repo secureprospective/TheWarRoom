@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
+import { selectProvider } from '../data/provider';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
 import { ReportView } from '../reports/ReportView';
@@ -93,7 +94,11 @@ export function HeldRead({ words: w, busy, result }:
 }
 export default function DataSources() {
   const s = dataState.use();
-  useEffect(() => { void dataState.run({ kind: 'read' }); }, []);
+  useEffect(() => {
+    const read = () => { void dataState.run({ kind: 'read' }); };
+    read();
+    return selectProvider().onSeasonChange(read);
+  }, []);
   const w = s.data?.words;
   return <div className="data-sources draft-reports">
     {w && <>

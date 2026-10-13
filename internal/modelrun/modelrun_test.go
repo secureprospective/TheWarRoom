@@ -1,7 +1,9 @@
 package modelrun
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"testing"
@@ -174,5 +176,72 @@ func TestInputsNameTheContractOnlyWhereItWeighs(t *testing.T) {
 		if got != want {
 			t.Errorf("%s lists the contract: %v, want %v (shipped fit: kept at LB, dropped at S, none at offense)", pos, got, want)
 		}
+	}
+}
+
+func TestUniversePreservesEveryRosterValueAndValuesFreeAgentsOnce(t *testing.T) {
+	h, st, dir := league()
+	for i := 1; i < 25; i++ {
+		id := fmt.Sprintf("%04d", 200+i)
+		st.roster = append(st.roster, state.PlayerState{MFLID: id})
+		dir[id] = normalize.PlayerFacts{Name: id, Position: domain.PosWR}
+	}
+	dir["0400"] = normalize.PlayerFacts{Name: "Free rookie", Position: domain.PosWR, IsRookie: true}
+	spec := Spec{Season: 2026, AsOf: time.Now(), Params: params.DefaultSet(), LastWeek: 17}
+	obs, err := Observations(context.Background(), h, 2010, 2026, spec.AsOf, model.RuntimeMeasures())
+	if err != nil {
+		t.Fatal(err)
+	}
+	weeks := map[int]int{}
+	for y := 2010; y <= 2026; y++ {
+		weeks[y] = 17
+	}
+	data := model.Build(obs, weeks)
+	AtLeaguePositions(data, dir)
+	legacy, err := newPass(data, spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := map[string]history.ModelScore{}
+	for _, player := range st.roster {
+		score, _, reason := legacy.value(dir, player.MFLID)
+		if reason == "" {
+			before[player.MFLID] = score
+		}
+	}
+	r, err := New(st, dir, h, "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	spec.FreeAgents = []string{"0400", "0400", "0200", "0999", "0998", "0998"}
+	rep, err := r.Run(context.Background(), spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	after := map[string]history.ModelScore{}
+	for _, score := range h.written[0].Scores {
+		if _, duplicate := after[score.MFLID]; duplicate {
+			t.Fatal("valued twice", score.MFLID)
+		}
+		after[score.MFLID] = score
+	}
+	free, _, reason := legacy.value(dir, "0400")
+	if reason != "" {
+		t.Fatal(reason)
+	}
+	wantFree, _ := json.Marshal(free)
+	gotFree, _ := json.Marshal(after["0400"])
+	if !bytes.Equal(wantFree, gotFree) {
+		t.Fatalf("free agent did not use same path: %s != %s", gotFree, wantFree)
+	}
+	delete(after, "0400")
+	want, _ := json.Marshal(before)
+	got, _ := json.Marshal(after)
+	if !bytes.Equal(want, got) {
+		t.Fatalf("full roster map changed: %s != %s", got, want)
+	}
+	if rep.RosteredScored != 26 || rep.FreeAgentScored != 1 || rep.RosteredExcluded != 1 ||
+		rep.FreeAgentExcluded != 1 || rep.Scored != 27 || len(rep.Excluded) != 2 {
+		t.Fatalf("counts: %+v", rep)
 	}
 }

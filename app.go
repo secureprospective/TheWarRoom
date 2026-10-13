@@ -84,10 +84,12 @@ type App struct {
 
 	// The players directory is fetched at most once per process (MFL allows the endpoint once a
 	// day). Wails runs IPC calls concurrently, hence the mutex.
-	lookupMu  sync.Mutex
-	lookup    normalize.Lookup
-	hasLookup bool
-	lookupAt  time.Time
+	modelMu    sync.Mutex
+	modelDirty atomic.Bool
+	lookupMu   sync.Mutex
+	lookup     normalize.Lookup
+	hasLookup  bool
+	lookupAt   time.Time
 
 	// Drafts check against the last good TargetSnapshot build, so a draft never refetches.
 	targetSnapshotMu  sync.Mutex
@@ -255,7 +257,6 @@ func (a *App) startup(ctx context.Context) {
 // load run now, off the startup path. A windowless -probe never reaches it.
 func (a *App) domReady(ctx context.Context) {
 	a.refreshInBackground(ctx)
-	a.signalsInBackground(ctx)
 	a.compileFactsInBackground(ctx)
 }
 

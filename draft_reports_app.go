@@ -123,7 +123,7 @@ func (a *App) draftReportValues(ctx context.Context) (map[string]float64, string
 }
 
 func (a *App) draftValueNote(run history.Run) string {
-	note := "Player values: the app's model, run " + pickTime(draftreports.Pick{At: run.AsOf}, time.Local) + "."
+	note := "Engine run " + pickTime(draftreports.Pick{At: run.AsOf}, time.Local) + "."
 	missing := []string{}
 	for _, m := range a.describeMeasures(run.MissingMeasures) {
 		if m.Meaning != "" {

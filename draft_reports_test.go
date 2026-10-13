@@ -40,7 +40,7 @@ func testDraftBoard(t *testing.T) ReportBoard {
 	return buildDraftReports(heldSeasonFeed[[]draftreports.Pick]{value: picks, fetchedAt: at},
 		heldSeasonFeed[[]draftreports.FuturePick]{value: []draftreports.FuturePick{{Year: 2027, Round: 2, Original: "0001", Owner: "0002"}}, fetchedAt: at},
 		map[string]string{"0531": "Third", "0532": "Second", "0533": "First"}, map[string]string{"0001": "One", "0002": "Two"},
-		map[string]float64{"0531": 50, "0532": 10, "0533": 30}, "Player values: the app's model, run Oct 11, 2026, 12:00 PM.", "Next draft: date unknown.", time.UTC)
+		map[string]float64{"0531": 50, "0532": 10, "0533": 30}, "Engine run Oct 11, 2026, 12:00 PM.", "Next draft: date unknown.", time.UTC)
 }
 
 func TestDraftReportsOrderGridAndOwnership(t *testing.T) {
@@ -240,7 +240,7 @@ func TestDraftValueNotePlainWords(t *testing.T) {
 	a, _, _, _ := seasonTestApp(t)
 	at := time.Date(2026, 10, 5, 13, 44, 0, 0, time.Local)
 	run := history.Run{ID: 3, AsOf: at, Engine: "secret-version"}
-	want := "Player values: the app's model, run Oct 5, 2026, 1:44 PM."
+	want := "Engine run Oct 5, 2026, 1:44 PM."
 	if got := a.draftValueNote(run); got != want {
 		t.Fatal(got)
 	}
