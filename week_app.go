@@ -47,7 +47,7 @@ func (a *App) refreshWeeksInBackground(parent context.Context) {
 func (a *App) refreshWeek(ctx context.Context) {
 	a.refreshMu.Lock()
 	defer a.refreshMu.Unlock()
-	now := time.Now().UTC()
+	now := a.timeNow().UTC()
 	w, err := a.fetchLineupWeek(ctx, now)
 	fetched := time.Now().UTC()
 	a.weekMu.Lock()
@@ -181,4 +181,12 @@ func (a *App) windowInputs(now time.Time) leagueclock.WindowInputs {
 		}
 	}
 	return in
+}
+
+// timeNow is the league clock's current time: the wall clock unless a test pins it.
+func (a *App) timeNow() time.Time {
+	if a.clockNow != nil {
+		return a.clockNow()
+	}
+	return time.Now()
 }
