@@ -175,8 +175,19 @@ func TestLandingRejectedNewsIDCannotLoseGoodPlayers(t *testing.T) {
 	if err := readResearchNewsBatches(context.Background(), held, 2026, ids, time.Now(), noNewsArchive, pause, fetch, func(string) {}); err != nil {
 		t.Fatal(err)
 	}
-	if len(held["16162"].value) != 1 || len(held["13589"].value) != 1 || held["17400"].refreshError == "" || calls != pauses {
+	if len(held["16162"].value) != 1 || len(held["13589"].value) != 1 || calls != pauses {
 		t.Fatal(held, calls, pauses)
+	}
+	// MFL holds no profile for 17400: that is its answer (no news), held for the day, not a lost read.
+	if h := held["17400"]; h.refreshError != "" || h.value == nil || len(h.value) != 0 || h.fetchedAt.IsZero() {
+		t.Fatalf("player with no MFL profile: %+v", h)
+	}
+	before := calls
+	if err := readResearchNewsBatches(context.Background(), held, 2026, ids, time.Now(), noNewsArchive, pause, fetch, func(string) {}); err != nil {
+		t.Fatal(err)
+	}
+	if calls != before {
+		t.Fatalf("asked MFL again the same day: %d calls", calls-before)
 	}
 }
 

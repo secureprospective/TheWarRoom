@@ -442,6 +442,11 @@ func TestExcludedTiersAreNotThin(t *testing.T) {
 	if len(r.Value.Trends.Tiers) != 1 {
 		t.Fatal("excluded trend columns remain")
 	}
+	for _, pair := range r.Value.Pairs {
+		if pair.Excluded != (pair.tier != "contender") || pair.Excluded && pair.Trades != "Not in the current filter" {
+			t.Fatalf("standing against standing, excluded row: %+v", pair)
+		}
+	}
 	panel := a.TargetCounterpartTeam(RawCounterpartTeam{Scope: raw, Fid: "0014"})
 	for _, tier := range panel.Value.AsTier {
 		if tier.Tier != "contender" && (!tier.Excluded || tier.Text != "Not in the current filter") {

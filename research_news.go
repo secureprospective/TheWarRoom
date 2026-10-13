@@ -141,6 +141,10 @@ func isolatedNews(ctx context.Context, ids []string, pause func(context.Context,
 	if err == nil {
 		return rows, losses
 	}
+	if len(ids) == 1 && researchfeeds.InvalidPlayerIDs(err) {
+		// MFL holds no profile for this one player: that is its answer (no news), not a lost read.
+		return map[string][]researchfeeds.News{ids[0]: {}}, losses
+	}
 	if len(ids) == 1 || !researchfeeds.InvalidPlayerIDs(err) || ctx.Err() != nil {
 		for _, id := range ids {
 			losses[id] = err

@@ -96,12 +96,14 @@ type TierCard struct {
 	Rows         []CardRow     `json:"rows"`
 }
 type PairView struct {
-	Other  string       `json:"other"`
-	N      int          `json:"n"`
-	Now    lab.TeamEdge `json:"now"`
-	Real   lab.TeamEdge `json:"real"`
-	Trades string       `json:"trades"`
-	Title  string       `json:"title"`
+	tier     string
+	Other    string       `json:"other"`
+	Excluded bool         `json:"excluded"`
+	N        int          `json:"n"`
+	Now      lab.TeamEdge `json:"now"`
+	Real     lab.TeamEdge `json:"real"`
+	Trades   string       `json:"trades"`
+	Title    string       `json:"title"`
 }
 type CounterShare struct {
 	lab.TeamShare
@@ -428,7 +430,7 @@ func pairViews(sides []lab.TeamSide) []PairView {
 	out := []PairView{}
 	for _, row := range lab.TierPairs(sides) {
 		for _, c := range row.Cells {
-			out = append(out, PairView{Other: c.Other, N: c.N, Now: c.Now, Real: c.Real, Trades: countLabel(c.N, "trade"), Title: fmt.Sprintf("%s trading with %s: %s on the day; %s since.", tierLabel(row.Tier), tierTeams(c.Other), edgeWords(c.Now, "expected wins a trade"), edgeWords(c.Real, "wins a trade"))})
+			out = append(out, PairView{tier: row.Tier, Other: c.Other, N: c.N, Now: c.Now, Real: c.Real, Trades: countLabel(c.N, "trade"), Title: fmt.Sprintf("%s trading with %s: %s on the day; %s since.", tierLabel(row.Tier), tierTeams(c.Other), edgeWords(c.Now, "expected wins a trade"), edgeWords(c.Real, "wins a trade"))})
 		}
 	}
 	return out

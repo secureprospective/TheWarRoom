@@ -60,6 +60,13 @@ func applyCounterFilters(v *Counterparties, s lab.TeamScope, sides, league []lab
 			card.Thin = false
 		}
 	}
+	for i := range v.Pairs {
+		pair := &v.Pairs[i]
+		if pair.Excluded = tierExcluded(s, pair.tier, sides, league); pair.Excluded {
+			pair.Trades = "Not in the current filter"
+			pair.Title = tierLabel(pair.tier) + " · not in the current filter"
+		}
+	}
 	v.Trends.Tiers = slices.DeleteFunc(v.Trends.Tiers, func(t CounterTrend) bool {
 		return tierExcluded(s, t.Tier, sides, league)
 	})

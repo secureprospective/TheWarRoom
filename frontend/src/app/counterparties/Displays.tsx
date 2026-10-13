@@ -33,12 +33,13 @@ export function TeamLink({
   );
 }
 export function EdgeBar({ edge, label }: { edge: TeamEdge; label: string }) {
-  if (edge.mean == null) return <span>{label}: —</span>;
+  // Text-only readings are blocks too, so two of them never run together on one line.
+  if (edge.mean == null) return <div className="counter-edge"><span>{label}: —</span></div>;
   if (edge.lo == null || edge.hi == null)
     return (
-      <span>
-        {label}: {number(edge.mean)} · too few for a range
-      </span>
+      <div className="counter-edge">
+        <span>{label}: {number(edge.mean)} · too few for a range</span>
+      </div>
     );
   const span = Math.max(Math.abs(edge.lo), Math.abs(edge.hi), 0.01);
   const x = (v: number) => 150 + (v / span) * 135;

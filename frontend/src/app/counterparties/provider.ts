@@ -207,9 +207,10 @@ export function parseCounterparties(value: unknown): CounterpartiesReading {
       trendSay: list(body.trendSay, path, (say) => text(say, path)),
       trends: body.trends == null ? { seasons: [], tiers: [] } : parseTrends(body.trends, path),
       pairs: list(body.pairs, path, (cell) => {
-        const p = object(cell, `${path}.pairs`, ['other', 'n', 'now', 'real', 'trades', 'title']);
+        const p = object(cell, `${path}.pairs`, ['other', 'n', 'now', 'real', 'trades', 'title', 'excluded']);
         return {
           other: text(p.other, path),
+          excluded: p.excluded === undefined ? false : flag(p.excluded, path),
           n: integer(p.n, path),
           now: edge(p.now, `${path}.pairs.now`),
           real: edge(p.real, `${path}.pairs.real`),

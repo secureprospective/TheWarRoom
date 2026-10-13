@@ -33,16 +33,23 @@ func CheckAPIError(body []byte) error {
 }
 
 // MFLRefusal is archive.Transport's Judge for MFL: an MFL host's HTTP-200 error envelope is a refused fetch,
-// named by MFL's own text; any other body or host is data.
+// named by MFL's own text; any other body or host is data. "No Valid Player IDs" is MFL's answer about the
+// players asked for (it holds no profile for one of them), not a refusal of the source: the reader isolates them.
 func MFLRefusal(rawURL string, body []byte) string {
 	u, err := url.Parse(rawURL)
 	if err != nil || !strings.HasSuffix(u.Hostname(), "myfantasyleague.com") {
 		return ""
 	}
-	if err := CheckAPIError(body); err != nil {
+	if err := CheckAPIError(body); err != nil && !UnknownPlayerIDs(err) {
 		return err.Error()
 	}
 	return ""
+}
+
+// UnknownPlayerIDs reports MFL's "No Valid Player IDs!" answer to a request naming a player it holds no
+// record for.
+func UnknownPlayerIDs(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "no valid player ids")
 }
 
 // MFLList decodes an MFL list field that is an array, or a bare object when MFL's XML→JSON

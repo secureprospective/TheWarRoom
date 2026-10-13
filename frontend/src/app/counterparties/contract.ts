@@ -90,6 +90,7 @@ export type TierTrend = {
 export type TeamTrends = { seasons: number[]; tiers: TierTrend[] };
 export type PairView = {
   other: string;
+  excluded?: boolean;
   n: number;
   now: TeamEdge;
   real: TeamEdge;

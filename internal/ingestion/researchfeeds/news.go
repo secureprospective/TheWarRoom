@@ -136,5 +136,5 @@ func TeamUnit(position string) bool {
 // InvalidPlayerIDs reports MFL's playerProfile rejection of a request containing an id it has no
 // profile for ("No Valid Player IDs!"); only this answer is worth splitting the batch to isolate.
 func InvalidPlayerIDs(err error) bool {
-	return err != nil && strings.Contains(strings.ToLower(err.Error()), "no valid player ids")
+	return ingestion.UnknownPlayerIDs(err)
 }

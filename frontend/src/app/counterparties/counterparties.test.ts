@@ -8,6 +8,7 @@ import { createCommands } from '../commands/registry';
 import { FixtureProvider } from '../data/provider';
 import { CounterReading, CounterControls, TeamTable, sortedRows, panelEndpoint } from './Counterparties';
 import { TeamReading } from './TeamPanel';
+import { EdgeBar } from './Displays';
 import { EdgeBar, teamIdentity } from './Displays';
 import { createCounterState, filtered } from './state';
 import { parseCounterparties, parseTeamPanel, counterpartProvider } from './provider';
@@ -443,12 +444,20 @@ it('renders filtered shares without chance arrows and excluded tiers without thi
   }
   for (const row of v.rows) { row.forNow.tone = ''; row.forLater.tone = ''; }
   v.trends.tiers = [];
+  for (const [i, pair] of v.pairs.entries()) {
+    pair.excluded = i >= 3;
+    if (pair.excluded) pair.trades = 'Not in the current filter';
+  }
   const shown = html(CounterReading, r);
   expect(shown).toContain('Showing only trades that bought for now.');
   expect(shown).not.toContain('buy for now in');
   expect(shown).not.toMatch(/\d+%\s+[↑↓]/);
   expect(shown).not.toMatch(/data-tone="(?:up|down)"[^>]*>Bought for now/);
-  expect(shown.match(/Not in the current filter/g)).toHaveLength(2);
+  expect(shown.match(/Not in the current filter/g)).toHaveLength(2 + v.pairs.length - 3);
+  expect(shown.match(/<p>Not in the current filter<\/p><\/td>/g)).toHaveLength(v.pairs.length - 3);
+  const edge = { n: 0, mean: null, lo: null, hi: null, tone: '' };
+  const empty = renderToStaticMarkup(createElement(EdgeBar, { edge, label: 'Since' }));
+  expect(empty).toBe('<div class="counter-edge"><span>Since: —</span></div>');
   expect(shown).not.toContain('Too few to judge');
   const panel = parseTeamPanel(teamWire);
   for (const tier of panel.value!.asTier) {
