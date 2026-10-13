@@ -140,6 +140,13 @@ describe('Endpoint map', () => {
       'M-102', 'M-103', 'M-104', 'M-110', 'M-161', 'M-170', 'M-179', 'M-182', 'M-183', 'S-01', 'S-04',
       'S-13',
       'M-027',
+      // Second pass, 10-12 evening: Control Room, Now reports, archive, counterparties, comms, command bar.
+      'M-091', 'M-097', 'M-185', 'M-098', 'M-197', 'L-34', 'C-07', 'C-08', 'C-09', 'S-09', 'M-141',
+      'X-01', 'M-015', 'M-018', 'M-088', 'S-07', 'S-08', 'S-03', 'M-120', 'M-123', 'M-023', 'M-083',
+      'M-084', 'M-105', 'L-23', 'L-24', 'L-25',
+      // After land-pool (#21) and land-hq (#22): pool, Draft room and HQ reports, the team panel.
+      'M-087', 'M-154', 'M-101', 'M-176', 'M-039', 'M-056', 'M-194', 'L-27', 'L-28', 'L-29',
+      'M-065', 'L-15', 'L-16', 'L-21', 'L-22',
     ];
     for (const row of endpoints) {
       let status = 'spec';
