@@ -118,7 +118,7 @@ export function ReadingView({
                     data-mark={row.mark || undefined}
                   >
                     {inspect && row.key ? (
-                      <Act
+                      <Act variant="text"
                         verb="market"
                         args={{ field: 'inspect', value: row.key }}
                         label={`Inspect ${row.label}`}

@@ -40,7 +40,8 @@ export function EndpointIndex({ placement }: { placement: Placement }) {
       {s.endpointIds.length > 1 && (
         <div className="endpoint-targets" aria-label="Merged endpoint targets">
           {s.endpointIds.map((id) => (
-            <Act key={id} verb="endpoint.open" args={{ id }}>{id} · {endpointById(id).name}</Act>
+            <Act variant="text"
+              key={id} verb="endpoint.open" args={{ id }}>{id} · {endpointById(id).name}</Act>
           ))}
         </div>
       )}

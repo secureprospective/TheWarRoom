@@ -60,7 +60,7 @@ export function CommandBar({ snapshot }: { snapshot?: Snapshot }) {
       />
       <div id="command-results">
         {results.map((result, position) => (
-          <Act
+          <Act variant="card"
             key={`${result.kind}-${result.label}-${position}`}
             verb={result.invocation.verb}
             args={result.invocation.args}
@@ -82,7 +82,7 @@ export function CommandBar({ snapshot }: { snapshot?: Snapshot }) {
       )}
       {/* The bar's own map rows only on an empty query; typed results are the point. */}
       {!query.trim() && <EndpointIndex placement="Command bar" />}
-      <Act verb="commandbar.close" args={{}}>
+      <Act variant="button" verb="commandbar.close" args={{}}>
         Close · Escape
       </Act>
     </section>

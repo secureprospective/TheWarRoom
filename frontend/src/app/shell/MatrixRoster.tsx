@@ -36,7 +36,7 @@ export function MatrixRoster({ cards, franchiseId, selected }: {
               <td key={matrixColumns[index].key} title={value}>
                 {index === 1 ? (
                   <div className="matrix-player">
-                    <Act verb="inspector.open" args={{
+                    <Act variant="text" verb="inspector.open" args={{
                       subject: { kind: 'player', id: model.id, franchiseId },
                     }} label={`Inspect ${model.name}`}>
                       {value}

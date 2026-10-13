@@ -1,10 +1,10 @@
 import { type ReactNode } from 'react';
 import { commands, dispatch, type CommandId, type CommandArgs } from './registry';
-type Variant = 'rail' | 'tab' | 'density' | 'icon' | 'text' | 'command';
+type Variant = 'rail' | 'tab' | 'density' | 'icon' | 'text' | 'button' | 'card' | 'command';
 type ActProps<K extends CommandId> = {
   verb: K;
   args: CommandArgs<K>;
-  variant?: Variant;
+  variant: Variant;
   children?: ReactNode;
   active?: boolean;
   current?: boolean;
@@ -18,7 +18,7 @@ type ActProps<K extends CommandId> = {
 export function Act<K extends CommandId>({
   verb,
   args,
-  variant = 'text',
+  variant,
   children,
   active,
   current,

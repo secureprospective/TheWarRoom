@@ -209,20 +209,6 @@
 .counterparties .counter-nowrap button {
   white-space: nowrap;
 }
-.counter-sort {
-  display: none;
-}
-@container counter-teams (width < 900px) {
-  .counter-team-table :is(
-    [data-column='perSeason'], [data-column='picks'], [data-column='age'],
-    [data-column='partners'], [data-column='partner']) {
-    display: none;
-  }
-  .counter-sort {
-    display: flex;
-  }
-}
-
 /* On the day and Since are short sentences: they wrap between words at the narrow width. */
 .counterparties td.counter-total {
   min-width: 9.5em;
@@ -234,3 +220,16 @@
   width: 1%;
   min-width: 0;
 }
+
+.counter-team-table { table-layout: fixed; }
+.counter-team-table :is(th, td), .counter-team-table th:first-child {
+  min-width: 0; max-width: none; width: auto; overflow-wrap: anywhere;
+}
+.counterparties .counter-team-table :is(.counter-nowrap, .counter-nowrap span, .counter-nowrap button) {
+  white-space: normal; width: auto;
+}
+.counterparties .counter-team-table td.counter-total { min-width: 0; }
+.counter-team-table th:first-child { width: 18%; }
+.counter-team-table [data-column="partners"] { width: 16%; }
+.counter-partner-label { display: block; margin-top: 6px; color: var(--surface-tx3); }
+.counter-sort { display: flex; }

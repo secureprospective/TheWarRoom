@@ -27,9 +27,9 @@ function AlertCard({ alert }: { alert: Alert }) {
   return <div ref={root}>
     <Card gravity={alert.kind === 'ir' ? 'G2' : 'G1'} header={<h5>{alert.title}</h5>}
       provenance={provenanceSlot([['Alert', alert.provenance]])}
-      actionTray={<><Act verb="nav.open" args={route}>
+      actionTray={<><Act variant="text" verb="nav.open" args={route}>
         Open {alert.node === 'trade' ? 'Trade desk' : 'Franchise HQ'}
-      </Act>{alert.kind === 'ir' && <Act verb="personal.handoff" args={{ kind: 'ir' }}
+      </Act>{alert.kind === 'ir' && <Act variant="button" verb="personal.handoff" args={{ kind: 'ir' }}
           disabled={!alert.mflUrl}>Open IR page on MFL</Act>}</>}>
       <p>{alert.detail}</p>
       <p data-deadline="alert" data-urgency={alert.urgency}>
@@ -47,7 +47,8 @@ function PinnedDeadlines({ deadlines }: { deadlines: Deadline[] }) {
   }, [deadlines]);
   return <div ref={root}>{deadlines.map(deadline =>
     <Card key={deadline.id} gravity="G2" header={<h5>{deadlineLabel(deadline.label)}</h5>}
-      actionTray={<Act {...deadlineRoute(deadline.id)} label={`Act · ${deadlineLabel(deadline.label)}`} />}>
+      actionTray={<Act variant="text" {...deadlineRoute(deadline.id)}
+        label={`Act · ${deadlineLabel(deadline.label)}`} />}>
       <p data-deadline={deadline.id} data-urgency={deadline.urgency}>
         <time dateTime={deadline.at}>{localDate(deadline.at)}</time>{' · '}
         <span className="channel-countdown" data-countdown>{countdown(deadline.at, Date.now())}</span>

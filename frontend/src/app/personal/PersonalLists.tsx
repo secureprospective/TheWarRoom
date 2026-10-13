@@ -21,7 +21,7 @@ export function NoteEditor({ id, entity }: { id: string; entity: 'player' | 'fra
   return <div className="personal-note">
     <label>Plain-text note<textarea value={text} maxLength={8000}
       onChange={e => setText(e.target.value)} /></label>
-    <Act verb="note.add" args={{ id, entity, action: 'add', text }}
+    <Act variant="button" verb="note.add" args={{ id, entity, action: 'add', text }}
       disabled={!mine || s.pending || !text.trim()}>
       Keep dated note</Act>
     {s.error && <p role="alert">{s.error}</p>}
@@ -35,7 +35,7 @@ export function PlayerLists({ id }: { id: string }) {
     <h5>My private lists</h5>
     {(['watch', 'bait', 'draft'] as const).map(kind => {
       const listed = s.value?.entries.some(e => e.kind === kind && e.id === id);
-      return <Act key={kind} verb={verbs[kind]} disabled={!mine || s.pending}
+      return <Act variant="button" key={kind} verb={verbs[kind]} disabled={!mine || s.pending}
         args={{ id, entity: 'player', action: listed ? 'remove' : 'add' }}>
         {listed && kind !== 'draft' && <Glyph name={kind} />}
         {listed ? 'Remove from' : 'Add to'} {labels[kind].toLowerCase()}</Act>;
@@ -51,7 +51,7 @@ function EntryRow({ entry, snapshot, pending, facts }: {
   const name = entry.entity === 'player' ? snapshot.players.value.find(p => p.id === entry.id)?.name
     : snapshot.franchises.value.find(f => f.id === entry.id)?.name;
   return <li className="personal-entry">
-    <Act verb="inspector.pin" args={{ entity: entry.entity === 'player'
+    <Act variant="text" verb="inspector.pin" args={{ entity: entry.entity === 'player'
       ? { kind: 'player', id: entry.id, franchiseId: '' } : { kind: 'franchise', id: entry.id } }}>
       {(entry.kind === 'watch' || entry.kind === 'bait') && <Glyph name={entry.kind} />}
       {name ?? 'Name unavailable'}</Act>
@@ -61,9 +61,9 @@ function EntryRow({ entry, snapshot, pending, facts }: {
       {facts && <><p>{facts.status}</p><p>{facts.market.join(' · ')}</p></>}
       <div className="plan-actions">
         {entry.kind === 'draft' && (['up', 'down'] as const).map(action =>
-          <Act key={action} verb="draft.list" disabled={pending}
+          <Act variant="button" key={action} verb="draft.list" disabled={pending}
             args={{ id: entry.id, entity: 'player', action }}>Move {action}</Act>)}
-        <Act verb={verbs[entry.kind]} disabled={pending}
+        <Act variant="button" verb={verbs[entry.kind]} disabled={pending}
           args={{ id: entry.id, entity: entry.entity, action: 'remove' }}>Remove</Act>
       </div>
     </>}
@@ -97,9 +97,10 @@ export default function PersonalLists({ snapshot, draft = false }: { snapshot: S
       : kind === 'bait' ? 'M-116' : kind === 'note' ? 'M-118' : 'M-103'}>
       <h4>{labels[kind]}</h4>
       <div className="plan-actions">
-        {kind !== 'note' && <Act verb={verbs[kind]} disabled={!player || s.pending}
+        {kind !== 'note' && <Act variant="button" verb={verbs[kind]} disabled={!player || s.pending}
           args={{ id: player, entity: 'player', action: 'add' }}>Add selected player</Act>}
-        <Act verb="personal.handoff" args={{ kind }}>Open {labels[kind].toLowerCase()} on MFL</Act>
+        <Act variant="button"
+          verb="personal.handoff" args={{ kind }}>Open {labels[kind].toLowerCase()} on MFL</Act>
       </div>
       {kind === 'note' && <>
         <p>Keep a dated note for the selected player, or for your franchise when no player is chosen.</p>

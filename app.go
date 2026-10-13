@@ -119,6 +119,7 @@ type App struct {
 	seasonDraftResults  heldSeasonFeed[[]draftreports.Pick]
 	seasonFuturePicks   heldSeasonFeed[[]draftreports.FuturePick]
 	research            researchHeld
+	researchArchiveMu   sync.Mutex
 	race                raceHeld
 	now                 nowHeld
 	liveGameMu          sync.Mutex

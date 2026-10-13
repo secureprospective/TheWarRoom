@@ -40,7 +40,7 @@ export function LineupPlan({ receiptId, franchiseId, snapshot }: {
         ))}</ul>
         {receipt.state === 'ready' && <>
           <p>Make these changes on MFL; this plan does not submit them.</p>
-          <Act verb="move.handoff" args={{ correlationId: receipt.correlationId }}
+          <Act variant="button" verb="move.handoff" args={{ correlationId: receipt.correlationId }}
             disabled={Boolean(pending)} label={pending ? 'Opening MFL…' : 'Open MFL lineup page'} />
         </>}
         {handed && <p>

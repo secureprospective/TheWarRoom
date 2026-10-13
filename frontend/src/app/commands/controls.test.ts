@@ -113,7 +113,7 @@ describe('Act tooltips', () => {
   it('omits a redundant title on plain visible text, including nested text', () => {
     for (const children of [undefined, 'Edit lineup', createElement('span', null, 'Edit lineup')]) {
       const html = renderToStaticMarkup(createElement(Act, {
-        verb: 'lineup.edit', args: { franchiseId: '0025' }, label: 'Edit lineup', children,
+        verb: 'lineup.edit', variant: 'button', args: { franchiseId: '0025' }, label: 'Edit lineup', children,
       }));
       expect(html).toContain('Edit lineup</');
       expect(html).toContain('aria-label="Edit lineup"');
@@ -123,7 +123,7 @@ describe('Act tooltips', () => {
   it('gives a self-describing card no title, so none lingers over the next card', () => {
     const Card = () => createElement('div', null, 'Perine, Samaje · RB · CIN');
     const html = renderToStaticMarkup(createElement(Act, {
-      verb: 'lineup.edit', args: { franchiseId: '0025' }, label: 'Bench Perine, Samaje',
+      verb: 'lineup.edit', variant: 'button', args: { franchiseId: '0025' }, label: 'Bench Perine, Samaje',
       children: createElement(Card),
     }));
     expect(html).toContain('Perine, Samaje · RB · CIN');
@@ -132,7 +132,7 @@ describe('Act tooltips', () => {
   });
   it('keeps a disabled reason when the visible text does not explain it', () => {
     const html = renderToStaticMarkup(createElement(Act, {
-      verb: 'lineup.draft', args: {}, disabled: true,
+      verb: 'lineup.draft', variant: 'button', args: {}, disabled: true,
       label: 'No changes from saved lineup', children: 'Check and save plan',
     }));
     expect(html).toContain('>Check and save plan</button>');

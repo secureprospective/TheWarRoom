@@ -24,7 +24,7 @@ function Deal({ plan, mine, busy }: { plan: BuilderPlan; mine: string; busy: boo
     <h5>Both rosters after this deal</h5>
     {plan.receipt && <RailStrip receipt={plan.receipt} />}
     {plan.reasons.length > 0 && <ul>{plan.reasons.map((reason, i) => <li key={i}>{reason}</li>)}</ul>}
-    {plan.resets.map(r => <Act key={r.franchise} verb="contracts.set" variant="text" label={r.label}
+    {plan.resets.map(r => <Act key={r.franchise} verb="contracts.set" variant="button" label={r.label}
       args={{ field: 'whatif', value: { mine: r.franchise, action: 'reset' } }}
       disabled={busy}>{r.label}</Act>)}
     <div className="trade-teams">{plan.teams.map(team => <section key={team.team}>
@@ -34,10 +34,11 @@ function Deal({ plan, mine, busy }: { plan: BuilderPlan; mine: string; busy: boo
     </section>)}</div>
     <p>Agree on ProBoards first. After acceptance there, this deal cannot be withdrawn.</p>
     <pre className="bid-post">{plan.post}</pre>
-    {plan.receipt?.state === 'ready' && <Act verb="trade.builder"
+    {plan.receipt?.state === 'ready' && <Act variant="button" verb="trade.builder"
       args={{ action: 'handoff', mine, id: plan.id, post: plan.post }} disabled={busy}
       label="Copy the deal and open MFL's trade desk" />}
-    {!plan.receipt && <Act verb="trade.builder" args={{ action: 'save', mine }} disabled={busy}
+    {!plan.receipt && <Act variant="button"
+      verb="trade.builder" args={{ action: 'save', mine }} disabled={busy}
       label="Keep this local trade plan" />}
   </article>;
 }
@@ -73,12 +74,12 @@ export default function TradeBuilder({ mine }: { mine: string }) {
     <label>Why this deal helps my team <textarea value={s.rationale} disabled={s.busy}
       onChange={e => commands.dispatch('trade.builder',
         { action: 'rationale', value: e.target.value })} /></label>
-    <Act verb="trade.builder" args={{ action: 'preview', mine }}
+    <Act variant="button" verb="trade.builder" args={{ action: 'preview', mine }}
       disabled={s.busy || !s.other || !s.give.length || !s.get.length} label="Check both sides" />
     {s.busy && <p role="status">Checking held rosters and cap…</p>}
     {s.error && <p role="alert">{s.error}</p>}
     {view?.preview?.teams.length ? <Deal plan={view.preview} mine={mine} busy={s.busy} /> : null}
-    {s.get.filter(token => !token.startsWith('FP_')).map(player => <Act key={player}
+    {s.get.filter(token => !token.startsWith('FP_')).map(player => <Act variant="button" key={player}
       verb="acquisition" args={{ mine, player }} label={`What does ${view?.teams
         .find(t => t.id === s.other)?.assets.find(p => p.token === player)?.name
         ?? 'this add'} cost me?`} />)}

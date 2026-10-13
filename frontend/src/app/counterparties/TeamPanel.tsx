@@ -146,7 +146,7 @@ export default function TeamPanel({ fid, snapshot }: { fid: string; snapshot?: S
       )}
       <TeamReading reading={s.panels[fid]} snapshot={snapshot} />
       {s.panels[fid]?.status === 'failed' && (
-        <Act verb="market" args={{ field: 'counterpart-retry', value: '' }}>
+        <Act variant="button" verb="market" args={{ field: 'counterpart-retry', value: '' }}>
           Retry team history
         </Act>
       )}

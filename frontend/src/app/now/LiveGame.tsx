@@ -80,7 +80,10 @@ export function PlaySpine({ entries, title, empty, unmatched, week = false }: { 
     <ol>{entries.map(e => <li key={`${e.game}:${e.play.id}:${e.player.id}`}
       data-side={e.player.mine ? 'mine' : 'theirs'}>
       <Photo player={e.player} />
-      <div><strong>{e.player.name}</strong> · {e.player.team} · {e.player.mine ? 'Mine' : 'Opponent'}
+      <div><strong><Act variant="text" verb="inspector.pin"
+        args={{ entity: { kind: 'player', id: e.player.id, franchiseId: '' } }}
+        label={`Inspect ${e.player.name}`}>{e.player.name}</Act></strong>
+        · {e.player.team} · {e.player.mine ? 'Mine' : 'Opponent'}
         {week && ` · ${e.game}`}
         <p>{e.play.text}</p>
         <small>Q{e.play.period} · {e.play.clock}
@@ -108,13 +111,13 @@ export function LiveGameView({ view, mine = true }: { view: LiveView; mine?: boo
   return <>
     {g && <div className="followed-bar market-controls" aria-label="Followed game">
         <strong>{score(g)} · {gameTime(g)}</strong>
-        <Act verb="game.follow"
+        <Act variant="button" verb="game.follow"
         args={{ id: '' }} label="Stop following game">Stop following</Act>
       </div>}
     <section className="live-game" aria-label="Current NFL week live games">
     <h4>Current NFL week</h4>
     <div className="market-controls game-strip" aria-label="Follow an NFL game">
-      {view.games.map(game => <Act key={game.id} verb="game.follow"
+      {view.games.map(game => <Act variant="button" key={game.id} verb="game.follow"
         args={{ id: `${game.away.abbreviation}-${game.home.abbreviation}` }}
         active={g?.id === game.id} label={`Follow ${game.away.abbreviation} at ${game.home.abbreviation}`}>
         {score(game)} · {gameTime(game)}

@@ -886,6 +886,7 @@ export namespace lineup {
 export namespace livegame {
 	
 	export class BoxRow {
+	    id?: string;
 	    name: string;
 	    stats: string[];
 	
@@ -895,6 +896,7 @@ export namespace livegame {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.stats = source["stats"];
 	    }
@@ -1282,7 +1284,24 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class ReportEntity {
+	    text: string;
+	    kind: string;
+	    id: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ReportEntity(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.text = source["text"];
+	        this.kind = source["kind"];
+	        this.id = source["id"];
+	    }
+	}
 	export class Report {
+	    entities?: ReportEntity[];
 	    sortAscending?: string;
 	    sortDescending?: string;
 	    id: string;
@@ -1305,6 +1324,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.entities = this.convertValues(source["entities"], ReportEntity);
 	        this.sortAscending = source["sortAscending"];
 	        this.sortDescending = source["sortDescending"];
 	        this.id = source["id"];
@@ -6127,6 +6147,7 @@ export namespace main {
 	        this.players = source["players"];
 	    }
 	}
+	
 	
 	
 	

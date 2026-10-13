@@ -49,9 +49,9 @@ export default function MFLConnection() {
       />
       <p id="mfl-key-help">Stored in your OS keyring; never shown again.</p>
       <div className="mfl-key-actions">
-        <Act verb="mflkey.connect" args={{}} disabled={fixture || status.pending || empty} />
+        <Act variant="button" verb="mflkey.connect" args={{}} disabled={fixture || status.pending || empty} />
         {(fixture || status.state === 'connected') && (
-          <Act verb="mflkey.forget" args={{}} disabled={Boolean(commands.mflReason(true))} />
+          <Act variant="button" verb="mflkey.forget" args={{}} disabled={Boolean(commands.mflReason(true))} />
         )}
       </div>
     </section>

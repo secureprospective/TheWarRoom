@@ -49,7 +49,7 @@ function box(v: unknown, p: string): Box {
   const r = object(v, p, ['team', 'category', 'labels', 'rows']);
   const labels = array(r.labels, p, text);
   const rows = array(r.rows, p, (v, p) => {
-    const a = object(v, p, ['name', 'stats']); const stats = array(a.stats, p, text);
+    const a = object(v, p, ['id', 'name', 'stats']); const stats = array(a.stats, p, text);
     if (stats.length !== labels.length) throw new Error(`${p}: stats/labels mismatch`);
     return { name: requiredText(a.name, p), stats };
   });

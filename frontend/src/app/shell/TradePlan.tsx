@@ -22,8 +22,9 @@ export function TradePlan({ receipt }: { receipt: Receipt }) {
           : "Accept this offer on MFL's trade desk; this plan does not accept it."}</p>
         {receipt.spec.intent === 'trade.revoke' && <p>Warning: MFL's withdraw link acts at once.
           Do not withdraw a deal already accepted on ProBoards.</p>}
-        {exit ? <Act verb="trade.builder" args={{ action: 'handoff', mine, id: receipt.correlationId }}
-          label={label} disabled={Boolean(pending)} /> : <Act verb="move.handoff"
+        {exit ? <Act variant="button"
+          verb="trade.builder" args={{ action: 'handoff', mine, id: receipt.correlationId }}
+          label={label} disabled={Boolean(pending)} /> : <Act variant="button" verb="move.handoff"
           args={{ correlationId: receipt.correlationId }}
           disabled={Boolean(pending)} label={pending ? 'Opening MFL…' : 'Open MFL trade desk'} />}
       </>}

@@ -29,7 +29,7 @@ export default function PlayerAct({ subject, executor = commands }: {
   return (
     <section className="zone player-act">
       <h5>Act</h5>
-      {status !== 'TAXI_SQUAD' && <Act
+      {status !== 'TAXI_SQUAD' && <Act variant="button"
         verb="roster.ir"
         args={{ subject }}
         disabled={Boolean(reason) || eligibility?.ir.verdict === 'ineligible'}
@@ -37,7 +37,7 @@ export default function PlayerAct({ subject, executor = commands }: {
       >
         {pending ? 'Drafting…' : irLabel}
       </Act>}
-      {(status === 'ROSTER' || status === 'TAXI_SQUAD') && <Act
+      {(status === 'ROSTER' || status === 'TAXI_SQUAD') && <Act variant="button"
         verb="roster.taxi"
         args={{ subject }}
         disabled={Boolean(reason) || eligibility?.taxi.verdict === 'ineligible'}
@@ -55,14 +55,14 @@ export default function PlayerAct({ subject, executor = commands }: {
       {error && <p role="alert">{error}</p>}
       {receipt && <ReceiptStatus receipt={receipt} />}
       {handoffError && <p role="alert">{handoffError}</p>}
-      {receipt?.state === 'ready' && <Act
+      {receipt?.state === 'ready' && <Act variant="button"
         verb="move.handoff"
         args={{ correlationId: receipt.correlationId }}
         disabled={Boolean(opening)}
         label={opening ? 'Opening MFL…'
           : rosterHandoffLabel(receipt.spec.intent, receipt.spec.expected.rosterStatus)}
       />}
-      <Act verb="nav.open" args={{ node: 'hq', workspace: 'my-moves' }}>
+      <Act variant="text" verb="nav.open" args={{ node: 'hq', workspace: 'my-moves' }}>
         My moves
       </Act>
     </section>

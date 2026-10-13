@@ -54,7 +54,11 @@ func (a *App) hydrateResearch(extraIDs ...string) {
 	a.hydrateResearchContext(ctx, extraIDs...)
 }
 
+// hydrateResearchContext publishes archived research; one hydration at a time, so a reader
+// never sees lookups marked done before their results are held.
 func (a *App) hydrateResearchContext(ctx context.Context, extraIDs ...string) {
+	a.researchArchiveMu.Lock()
+	defer a.researchArchiveMu.Unlock()
 	if a.history == nil {
 		return
 	}

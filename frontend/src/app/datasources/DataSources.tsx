@@ -19,7 +19,8 @@ export function RefreshScopes({ data, busy, outcomes = {} }:
       <label htmlFor="archive-folder">{w.folder}</label>
       <input id="archive-folder" value={path} onChange={e => setPath(e.target.value)} />
       <div className="data-action">
-        <Act verb="data.run" args={{ kind: 'folder', path }} disabled={!!busy || !path.trim()}>
+        <Act variant="button"
+          verb="data.run" args={{ kind: 'folder', path }} disabled={!!busy || !path.trim()}>
           {w.setFolder}</Act>
         <span role="status" aria-live="polite">{busy === 'folder' ? w.readProgress : outcomes.folder}</span>
       </div>
@@ -27,7 +28,8 @@ export function RefreshScopes({ data, busy, outcomes = {} }:
     <dl className="refresh-scopes">{data.scopes.map(scope => <div key={scope.id}>
       <dt>{scope.label}</dt><dd><p>{scope.note}</p>
         <div className="data-action">
-          <Act verb="refresh.run" args={{ scope: scope.id }} disabled={!!busy || (scope.id === 'archive'
+          <Act variant="button"
+            verb="refresh.run" args={{ scope: scope.id }} disabled={!!busy || (scope.id === 'archive'
             && !data.archiveDir)}>{scope.action}</Act>
           <span role="status" aria-live="polite">
             {busy === scope.id ? scope.progress : outcomes[scope.id]}</span>
@@ -35,7 +37,8 @@ export function RefreshScopes({ data, busy, outcomes = {} }:
       </dd></div>)}
       <div><dt>{w.photos}</dt><dd><p>{w.photosNote}</p>
         <div className="data-action">
-          <Act verb="data.run" args={{ kind: 'photos', on: !data.photosOn }} disabled={!!busy}>
+          <Act variant="button"
+            verb="data.run" args={{ kind: 'photos', on: !data.photosOn }} disabled={!!busy}>
             {data.photosOn ? w.photosOff : w.photosOn}</Act>
           <span role="status" aria-live="polite">{busy === 'photos' ? w.readProgress : outcomes.photos}</span>
         </div>
@@ -71,11 +74,12 @@ export function Parameters({ params, busy, words: w }:
                 aria-label={`${p.label} · ${p.position || w.league} · ${w.override}`}
                 disabled={!canEdit || !!busy}
                 value={draft} onChange={e => setEdits({ ...edits, [id]: e.target.value })} />
-                <Act verb="data.parameter" args={{ kind: 'parameter', key: p.key,
+                <Act variant="button" verb="data.parameter" args={{ kind: 'parameter', key: p.key,
                   position: p.position, value }}
                   disabled={!canEdit || !!busy || !draft.trim() || !Number.isFinite(value) || value
                     < p.min || value > p.max}>{w.apply}</Act>
-                {p.overridden && <Act verb="data.parameter" args={{ kind: 'parameter', key: p.key,
+                {p.overridden && <Act variant="button"
+                  verb="data.parameter" args={{ kind: 'parameter', key: p.key,
                   position: p.position, value: null }} label={w.clear} disabled={!canEdit || !!busy}>
                   {w.reset}</Act>}
               </td></tr>
@@ -87,7 +91,7 @@ export function Parameters({ params, busy, words: w }:
 }
 export function HeldRead({ words: w, busy, result }:
   { words: Record<string, string>; busy: string; result?: string }) {
-  return <div className="data-action"><Act verb="data.run" args={{ kind: 'read' }}
+  return <div className="data-action"><Act variant="button" verb="data.run" args={{ kind: 'read' }}
     disabled={!!busy}>{w.read}</Act>
     <span role="status" aria-live="polite">{busy === 'read' ? w.readProgress : result}</span>
   </div>;

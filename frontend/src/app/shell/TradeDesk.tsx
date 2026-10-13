@@ -32,14 +32,14 @@ export function OfferCard({ offer, franchiseId }: { offer: TradeOffer; franchise
     r.spec.expected.trade?.tradeId === offer.tradeId));
   const exits = commands.useMoves(s => s.moves);
   const knownExpiry = !offer.expires.startsWith('0001-');
-  return <Card gravity="G3" header={<h5><Act verb="inspector.pin"
+  return <Card gravity="G3" header={<h5><Act variant="text" verb="inspector.pin"
     args={{ entity: { kind: 'offer', id: offer.tradeId, franchiseId } }}>
     Offer with {offer.otherName || 'Franchise name unavailable'}</Act></h5>}>
     <div className="trade-assets">
       {(['give', 'get'] as const).map((side) => <div key={side}>
         <h6>{side === 'give' ? 'You give' : 'You get'}</h6>
         <ul>{offer[side].map((asset) => <li key={asset.token}>
-          <Act verb="inspector.pin" args={{ entity: /^\d+$/.test(asset.token)
+          <Act variant="text" verb="inspector.pin" args={{ entity: /^\d+$/.test(asset.token)
           ? { kind: 'player', id: asset.token, franchiseId }
           : { kind: 'pick', id: asset.token, name: tradeAssetLabel(asset) } }}>
           {tradeAssetLabel(asset)}</Act></li>)}</ul>
@@ -51,12 +51,13 @@ export function OfferCard({ offer, franchiseId }: { offer: TradeOffer; franchise
     {offer.comments && <p className="trade-comments">{offer.comments}</p>}
     {offer.direction === 'to_you' && !(receipt && livePlan.has(receipt.state)) &&
       <div className="plan-actions">
-      <Act verb="trade.accept.plan" args={{ tradeId: offer.tradeId }}
+      <Act variant="button" verb="trade.accept.plan" args={{ tradeId: offer.tradeId }}
         disabled={Boolean(pending)} label={pending ? 'Planning accept…' : 'Plan accept'} />
       {error && <p role="alert">Trade plan · {error}</p>}
     </div>}
     <div className="plan-actions">
-      <Act verb="trade.builder" args={{ action: offer.direction === 'to_you' ? 'reject' : 'revoke',
+      <Act variant="button"
+        verb="trade.builder" args={{ action: offer.direction === 'to_you' ? 'reject' : 'revoke',
         mine: franchiseId, id: offer.tradeId }}
         label={offer.direction === 'to_you' ? 'Plan rejection' : 'Plan withdrawal'} />
     </div>

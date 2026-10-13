@@ -25,10 +25,11 @@ export function NewsList({ report, articles, howLabel, pageKey = report.id }: {
   return <>
     <ReportView report={visible} howLabel={howLabel} heading="h4"
       renderCell={(cell, row, column) => column === headline && articles[row] ?
-        <Act verb="research.read" args={{ action: 'open',
+        <Act variant="text" verb="research.read" args={{ action: 'open',
           value: `${articles[row].id}:${articles[row].article}` }}
           label={`Open article on MFL · ${cell}`}>{cell}</Act> : cell} />
-    {report.rows.length > limit && <Act verb="research.read" args={{ action: 'more', value: pageKey }}
+    {report.rows.length > limit && <Act variant="button" verb="research.read"
+      args={{ action: 'more', value: pageKey }}
       label="Show 25 more">Show 25 more</Act>}
   </>;
 }
@@ -37,7 +38,7 @@ export function NewsView({ research, mine = false }: { research: ResearchBoard; 
   const articles = mine ? research.articles.filter(a => report.rows.some(r =>
     r.cells[0] === a.name && r.cells[2] === a.headline)) : research.articles;
   return <div className="draft-reports research-news" data-endpoint="M-059">
-    <Act verb="research.read" args={{ action: 'news', value: mine ? 'mine' : 'league' }}
+    <Act variant="button" verb="research.read" args={{ action: 'news', value: mine ? 'mine' : 'league' }}
       disabled={mine && !research.scope.mine}>Refresh rostered players’ news</Act>
     <NewsList report={report} articles={articles} howLabel={research.board.howLabel} />
   </div>;
@@ -80,14 +81,15 @@ export function ResearchView({ research, selected }: {
           onChange={e => setSearch(e.target.value)} />
       </label>
       <div className="market-controls">
-        <Act verb="research.read" args={{ action: 'search', value: search }} submit>Search players</Act>
+        <Act variant="button"
+          verb="research.read" args={{ action: 'search', value: search }} submit>Search players</Act>
       </div>
       </form>
       {!s.search.trim() ? <p>Enter a name, position or NFL team to find a player.</p> : <>
         <p>{research.players.length} {research.players.length === 1 ? 'match' : 'matches'}
           {' · open a player in the Inspector'}</p>
         <ul>{research.players.map(p => <li key={p.id}>
-          <Act verb="inspector.open"
+          <Act variant="text" verb="inspector.open"
             args={{ subject: { kind: 'player', id: p.id, franchiseId: p.franchiseId } }}>
             {p.name} · {p.position} · {p.team} · {p.owner}
           </Act>
