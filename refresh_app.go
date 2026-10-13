@@ -103,6 +103,9 @@ func (a *App) refreshLeagueLocked(
 	if err != nil {
 		return RefreshResult{}, fmt.Errorf("refresh: %w", err)
 	}
+	if changed || rulesChanged {
+		a.modelDirty.Store(true)
+	}
 	a.rostersCheckedAt = time.Now().UTC()
 	return RefreshResult{OK: true, Season: snap.Season, RulesChanged: rulesChanged, Changed: changed,
 		Players: len(snap.Players)}, nil
@@ -178,6 +181,9 @@ func (a *App) launchRefresh(parent context.Context) {
 	if err != nil {
 		log.Printf("the war room: launch refresh failed (the league held is kept): %v", err)
 		return
+	}
+	if res.Changed || res.RulesChanged {
+		a.modelDirty.Store(true)
 	}
 	log.Printf("the war room: launch refresh: season %d, %d players, league changed %t, rules changed %t",
 		res.Season, res.Players, res.Changed, res.RulesChanged)

@@ -6637,6 +6637,10 @@ export namespace modelrun {
 	    runID: number;
 	    unchanged: boolean;
 	    scored: number;
+	    rosteredScored: number;
+	    freeAgentScored: number;
+	    rosteredExcluded: number;
+	    freeAgentExcluded: number;
 	    rookies: number;
 	    excluded: Exclusion[];
 	    mislinked: Exclusion[];
@@ -6650,6 +6654,10 @@ export namespace modelrun {
 	        this.runID = source["runID"];
 	        this.unchanged = source["unchanged"];
 	        this.scored = source["scored"];
+	        this.rosteredScored = source["rosteredScored"];
+	        this.freeAgentScored = source["freeAgentScored"];
+	        this.rosteredExcluded = source["rosteredExcluded"];
+	        this.freeAgentExcluded = source["freeAgentExcluded"];
 	        this.rookies = source["rookies"];
 	        this.excluded = this.convertValues(source["excluded"], Exclusion);
 	        this.mislinked = this.convertValues(source["mislinked"], Exclusion);

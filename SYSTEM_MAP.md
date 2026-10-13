@@ -48,7 +48,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Composition | `internal/rankings` | M1: scores every rostered player from a params snapshot and history features, and writes one scoring run. |
 | Composition | `internal/m2service`, `internal/powerrankings` | M2: counts each roster's model values (on-field-now or dynasty, league points per game) as the best legal lineup, the top N or the whole roster, and z-blends them: this season with the results (all-play when MFL reports it, otherwise points for) at 4 ÷ (4 + weeks played) or the slider's weight; the franchise with the roster's age. `m2service.Outlooks` adds the context columns (cap room, schedule luck, projected record), never in the score. |
 | Composition | `internal/scouting/assembly` | Builds today's board's scouting profiles: RAS, coverage and school tier from their feeds, college share and breakout age from history. |
-| Composition | `internal/modelrun` | The measurables: values every rostered player with `internal/model` and the run's params, and writes a model run beside the board. `AtLeaguePositions` puts every player MFL lists at MFL's position before the scales are built; `cmd/fit` does the same from MFL's players export. |
+| Composition | `internal/modelrun` | The measurables: values every rostered player and held MFL free agent exactly once with `internal/model` and the run's params, and writes a model run beside the board. `AtLeaguePositions` puts every player MFL lists at MFL's position before the scales are built; `cmd/fit` does the same from MFL's players export. |
 | Composition | `internal/snapshot` | Pure, deterministic target UI snapshot builder over a read-only source; shared freshness is `domain.Freshness`. Its `eligibility` section holds the IR/taxi verdicts for every rostered player plus each input feed's provenance. |
 | Tooling | `cmd/fixtures` | Copies league and history snapshots to disposable databases, initializes the app stores offline and exports the shared snapshot. |
 | Mutation | `internal/transactions` | The `Coordinator`: every league-state change runs here, in one transaction. Handler subpackages (`acquisitions`, `contracts`, `deadcap`, `freeagency`) are reachable only through it. |
@@ -343,3 +343,9 @@ section on Home › Digests, and a read-only player Inspector for directory sear
 M-050 is explicitly ring 4: weekly NFL team box-score totals require an nflverse team-stat
 adapter; fantasy points and NFL game scores are not those statistics. M-055 resolves to the
 existing Race lineup detail's best-lineup reading.
+
+`engine_refresh.go` scores after the background launch/hourly refresh has loaded signals, league
+points and the held free-agent list. A shared mutex excludes the manual path; changed-value loads,
+league/list changes or a 24-hour-old run make it due. `target:season` refreshes open readers.
+C-07 lists the engine run and its age; completed background checks append their run timestamp
+without changing any scoring formula or using ownership to find points.

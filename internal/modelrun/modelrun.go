@@ -62,19 +62,25 @@ func New(st state.Reader, dir Directory, hist History, engine string) (*Runner, 
 // Spec is one pass: the season valued, the date facts are read as of, the params, and the
 // league's last scoring week.
 type Spec struct {
-	Season   int
-	AsOf     time.Time
-	Params   params.Set
-	LastWeek int
+	Season     int
+	AsOf       time.Time
+	Params     params.Set
+	LastWeek   int
+	FreeAgents []string
+	Refresh    bool
 }
 
 // Report is what one pass valued and which run holds it.
 type Report struct {
-	RunID     int64       `json:"runID"`
-	Unchanged bool        `json:"unchanged"` // the pass matched the latest model run, so nothing was written
-	Scored    int         `json:"scored"`
-	Rookies   int         `json:"rookies"` // valued on the prior alone: no NFL season yet
-	Excluded  []Exclusion `json:"excluded"`
+	RunID             int64       `json:"runID"`
+	Unchanged         bool        `json:"unchanged"` // the pass matched the latest model run, so nothing was written
+	Scored            int         `json:"scored"`
+	RosteredScored    int         `json:"rosteredScored"`
+	FreeAgentScored   int         `json:"freeAgentScored"`
+	RosteredExcluded  int         `json:"rosteredExcluded"`
+	FreeAgentExcluded int         `json:"freeAgentExcluded"`
+	Rookies           int         `json:"rookies"` // valued on the prior alone: no NFL season yet
+	Excluded          []Exclusion `json:"excluded"`
 	// Mislinked are players whose history record was another player's; they are valued on MFL's
 	// facts and their college seasons.
 	Mislinked []Exclusion `json:"mislinked"`
@@ -110,38 +116,26 @@ func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
 	var rep Report
 	var scores []history.ModelScore
 	var inputs []playerInput
-	for _, fid := range r.state.Franchises() {
-		roster, ok := r.state.Roster(fid)
-		if !ok {
-			return Report{}, fmt.Errorf("modelrun: franchise %q listed but has no roster (store drift)", fid)
+	ids, err := r.universe(spec.FreeAgents)
+	if err != nil {
+		return Report{}, err
+	}
+	for _, p := range ids {
+		sc, in, reason := pass.value(r.dir, p.id)
+		if !rep.record(r.dir, p, in, reason) {
+			continue
 		}
-		for _, p := range roster {
-			sc, in, reason := pass.value(r.dir, p.MFLID)
-			if reason != "" {
-				facts, _ := r.dir.Facts(p.MFLID)
-				rep.Excluded = append(rep.Excluded, Exclusion{MFLID: p.MFLID, Name: facts.Name, Reason: reason})
-				continue
-			}
-			if len(in.Past) == 0 && in.Current.Games == 0 {
-				rep.Rookies++
-			}
-			if in.Mislinked {
-				facts, _ := r.dir.Facts(p.MFLID)
-				rep.Mislinked = append(rep.Mislinked, Exclusion{MFLID: p.MFLID, Name: facts.Name,
-					Reason: "history's record is another player's: its first NFL season is far from MFL's draft year"})
-			}
-			scores, inputs = append(scores, sc), append(inputs, in)
-		}
+		scores, inputs = append(scores, sc), append(inputs, in)
 	}
 	if len(scores) == 0 {
-		return Report{}, fmt.Errorf("modelrun: no rostered player could be valued for season %d", spec.Season)
+		return Report{}, fmt.Errorf("modelrun: no player could be valued for season %d", spec.Season)
 	}
 	hash, err := inputsHash(inputs, rep.Excluded)
 	if err != nil {
 		return Report{}, err
 	}
 	run, written, err := r.hist.WriteModelRun(ctx, history.NewModelRun{
-		Season: spec.Season, AsOf: spec.AsOf, Engine: r.engine, InputsHash: hash, Scores: scores,
+		Refresh: spec.Refresh, Season: spec.Season, AsOf: spec.AsOf, Engine: r.engine, InputsHash: hash, Scores: scores,
 		Params: history.ParamSet{Params: spec.Params.Model(), Measures: model.RuntimeMeasures()},
 	})
 	if err != nil {
@@ -149,6 +143,62 @@ func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
 	}
 	rep.RunID, rep.Unchanged, rep.Scored = run.ID, !written, len(scores)
 	return rep, nil
+}
+
+func (rep *Report) record(dir Directory, p universePlayer, in playerInput, reason string) bool {
+	if reason != "" {
+		facts, _ := dir.Facts(p.id)
+		rep.Excluded = append(rep.Excluded, Exclusion{MFLID: p.id, Name: facts.Name, Reason: reason})
+		if p.free {
+			rep.FreeAgentExcluded++
+		} else {
+			rep.RosteredExcluded++
+		}
+		return false
+	}
+	if p.free {
+		rep.FreeAgentScored++
+	} else {
+		rep.RosteredScored++
+	}
+	if len(in.Past) == 0 && in.Current.Games == 0 {
+		rep.Rookies++
+	}
+	if in.Mislinked {
+		facts, _ := dir.Facts(p.id)
+		rep.Mislinked = append(rep.Mislinked, Exclusion{MFLID: p.id, Name: facts.Name,
+			Reason: "history's record is another player's: its first NFL season is far from MFL's draft year"})
+	}
+	return true
+}
+
+type universePlayer struct {
+	id   string
+	free bool
+}
+
+func (r *Runner) universe(free []string) ([]universePlayer, error) {
+	var out []universePlayer
+	seen := map[string]bool{}
+	add := func(id string, fa bool) {
+		if !seen[id] {
+			out = append(out, universePlayer{id, fa})
+			seen[id] = true
+		}
+	}
+	for _, fid := range r.state.Franchises() {
+		roster, ok := r.state.Roster(fid)
+		if !ok {
+			return nil, fmt.Errorf("modelrun: franchise %q listed but has no roster (store drift)", fid)
+		}
+		for _, p := range roster {
+			add(p.MFLID, false)
+		}
+	}
+	for _, id := range free {
+		add(id, true)
+	}
+	return out, nil
 }
 
 // pass is what every player in one run is valued with.

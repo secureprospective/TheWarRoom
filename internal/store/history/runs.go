@@ -95,6 +95,7 @@ type Run struct {
 
 // pendingRun is a NewRun checked and reduced to what identifies it.
 type pendingRun struct {
+	refresh bool
 	NewRun
 	paramSetID       string
 	params, measures []byte
@@ -104,7 +105,7 @@ type pendingRun struct {
 
 // sameAs reports whether prev already holds this run.
 func (p pendingRun) sameAs(prev Run) bool {
-	return prev.ParamSetID == p.paramSetID && prev.Engine == p.Engine && prev.InputsHash == p.InputsHash &&
+	return !p.refresh && (p.Kind != RunModel || p.AsOf.Sub(prev.AsOf) < 24*time.Hour) && prev.ParamSetID == p.paramSetID && prev.Engine == p.Engine && prev.InputsHash == p.InputsHash &&
 		prev.ScoresHash == p.scoresHash && slices.Equal(prev.MissingMeasures, p.missing)
 }
 

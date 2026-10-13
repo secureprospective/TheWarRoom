@@ -35,11 +35,13 @@ func (a *App) refreshWeeksInBackground(parent context.Context) {
 			a.refreshNowWeek(ctx, rule.Week, false)
 			cancel()
 		}
+		a.refreshEngine(parent)
 		a.clockChanged(parent)
 		select {
 		case <-parent.Done():
 			return
 		case <-ticker.C:
+			a.launchRefresh(parent)
 		}
 	}
 }

@@ -118,8 +118,13 @@ func (a *App) draftReportValues(ctx context.Context) (map[string]float64, string
 	return values, a.draftValueNote(run)
 }
 
+// engineRunText is the one wording for when the engine last valued players, wherever it shows.
+func engineRunText(at time.Time, zone *time.Location) string {
+	return "Engine run: " + at.In(zone).Format("January 2, 2006, 3:04 PM")
+}
+
 func (a *App) draftValueNote(run history.Run) string {
-	note := "Engine run: " + run.AsOf.In(time.Local).Format("January 2, 2006, 3:04 PM") + "."
+	note := engineRunText(run.AsOf, time.Local) + "."
 	missing := []string{}
 	for _, m := range a.describeMeasures(run.MissingMeasures) {
 		if m.Meaning != "" {

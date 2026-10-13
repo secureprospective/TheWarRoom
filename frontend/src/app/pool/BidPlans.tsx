@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { selectProvider } from '../data/provider';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { localDate } from '../clock/labels';
@@ -154,7 +155,10 @@ export function usePoolData(withPool: boolean): PoolState {
   const franchiseId = commands.use().franchiseId ?? '';
   useEffect(() => {
     void (withPool ? poolState.open() : poolState.loadBoard());
-    return commands.onMovesChange(() => void (withPool ? poolState.reload() : poolState.loadBoard()));
+    const reload = () => void (withPool ? poolState.reload() : poolState.loadBoard());
+    const moves = commands.onMovesChange(reload);
+    const season = selectProvider().onSeasonChange(reload);
+    return () => { moves(); season(); };
   }, [franchiseId, withPool]);
   return poolState.use();
 }

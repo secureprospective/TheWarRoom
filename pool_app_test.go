@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
 const freeAgentBody = `{"version":"1.0","freeAgents":{"leagueUnit":{"unit":"LEAGUE","player":[` +
@@ -206,5 +209,55 @@ func TestAgeTextCountsBirthdays(t *testing.T) {
 	}
 	if got := ageText(normalize.PlayerFacts{}, time.Now()); got != "—" {
 		t.Errorf("no birthdate = %s", got)
+	}
+}
+
+func TestFreeAgentChangesAreHonestAcrossLaunches(t *testing.T) {
+	a, transport := poolApp(t)
+	recordSeasonArchive(t, a, "freeAgents", "", freeAgentBody, time.Now().Add(-time.Hour))
+	if err := a.TargetPoolRefresh(true); err != nil {
+		t.Fatal(err)
+	}
+	if a.modelDirty.Load() {
+		t.Fatal("identical archived pool was marked changed on launch")
+	}
+	transport.bodies["freeAgents"] = `{"freeAgents":{"leagueUnit":{"player":[{"id":"13594"},{"id":"13593"},{"id":"99999"},{"id":"13595"}]}}}`
+	if err := a.TargetPoolRefresh(true); err != nil {
+		t.Fatal(err)
+	}
+	if a.modelDirty.Load() {
+		t.Fatal("only list order changed")
+	}
+	a.seasonFreeAgents = heldSeasonFeed[[]playerid.PlayerID]{}
+	if err := a.TargetPoolRefresh(true); err != nil {
+		t.Fatal(err)
+	}
+	if a.modelDirty.Load() {
+		t.Fatal("restoring the held pool on launch looked like new inputs")
+	}
+	transport.bodies["freeAgents"] = `{"freeAgents":{"leagueUnit":{"player":{"id":"13594"}}}}`
+	if err := a.TargetPoolRefresh(true); err != nil {
+		t.Fatal(err)
+	}
+	if !a.modelDirty.Load() {
+		t.Fatal("changed pool did not mark engine inputs changed")
+	}
+}
+
+func TestPoolNamesEngineRunInLocalTime(t *testing.T) {
+	a, _ := poolApp(t)
+	if err := a.TargetPoolRefresh(true); err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 10, 11, 12, 34, 0, 0, time.Local)
+	if _, _, err := a.history.WriteModelRun(a.ctx, history.NewModelRun{Season: a.season, AsOf: at,
+		Engine: "fixture", InputsHash: "fixture", Params: history.ParamSet{Params: params.DefaultSet().Model()},
+		Scores: []history.ModelScore{{MFLID: "13594", Position: "WR"}}}); err != nil {
+		t.Fatal(err)
+	}
+	r := a.TargetPool(RawPoolScope{Sort: "name"})
+	if !strings.Contains(r.Value.EngineNote, engineRunText(at, time.Local)) ||
+		strings.Contains(r.Value.Summary, "Engine run") {
+		t.Fatal(r.Value.EngineNote, " | ", r.Value.Summary)
 	}
 }

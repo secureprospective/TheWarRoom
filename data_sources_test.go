@@ -206,7 +206,7 @@ func TestHealthReportSaysWhatFailedAndWhetherTheBoardRunsReduced(t *testing.T) {
 		}
 	}
 	in.boardRun = false
-	if got := boardText("cfbd", in); got != "No board run yet" {
+	if got := boardText("cfbd", in); got != "Engine run not yet available" {
 		t.Errorf("board text without a run = %q", got)
 	}
 }
