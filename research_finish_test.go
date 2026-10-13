@@ -318,7 +318,7 @@ func TestInspectorNewsPostedLocalMinute(t *testing.T) {
 		}
 	}
 	if len(rows) != 2 || rows[0].Cells[0] != "News · Oct 13, 2026, 12:22 AM" ||
-		rows[1].Cells[0] != "News · Posted time not supplied" {
+		rows[1].Cells[0] != "News · Posted time unknown: MFL wording not recognized" {
 		t.Fatal(rows)
 	}
 	if !strings.Contains(rows[0].Cells[2], "Oct 13, 2026, 12:48 AM") {
@@ -326,5 +326,69 @@ func TestInspectorNewsPostedLocalMinute(t *testing.T) {
 	}
 	if got.Articles[0].Article != "new" || !strings.Contains(got.Report.How, "estimated") {
 		t.Fatal(got)
+	}
+}
+
+func TestNewsPostedPrecision(t *testing.T) {
+	at := time.Date(2026, 10, 13, 5, 48, 37, 0, time.UTC)
+	zone := time.FixedZone("CDT", -5*60*60)
+	for _, tc := range []struct{ wording, want string }{
+		{"26 minutes", "Oct 13, 2026, 12:22 AM"},
+		{"3 hours", "Oct 12, 2026, about 9 PM"},
+		{"1 day", "Oct 12, 2026"},
+		{"", "Posted time not supplied"},
+		{"recently", "Posted time unknown: MFL wording not recognized"},
+	} {
+		t.Run(tc.wording, func(t *testing.T) {
+			got, order := newsPosted(tc.wording, at, zone)
+			if got != tc.want {
+				t.Fatalf("got %q, want %q", got, tc.want)
+			}
+			age, known := researchNewsAge(tc.wording)
+			if known && order != float64(at.Add(-age).Unix()) || !known && order != 0 {
+				t.Fatal("incorrect posted ordering", order)
+			}
+		})
+	}
+	if got, order := newsPosted("3 hours", time.Time{}, zone); order != 0 ||
+		got != "Posted time unknown: fetch time not held" {
+		t.Fatal(got, order)
+	}
+}
+
+func TestHeldNewsPostedSameOnEverySurface(t *testing.T) {
+	in := realResearch(t)
+	in.zone = time.FixedZone("CDT", -5*60*60)
+	out := buildResearch(in, RawResearchScope{Mine: "0001"})
+	v := researchView{researchInput: in}
+	player := v.playerReading("16162", nil, "How")
+	posted := ""
+	for _, row := range player.Report.Rows {
+		if strings.HasPrefix(row.Cells[0], "News · ") {
+			posted = strings.TrimPrefix(row.Cells[0], "News · ")
+		}
+	}
+	if posted != "Oct 5, 2026" {
+		t.Fatal("held six-day article should have date precision", posted)
+	}
+	for _, report := range []Report{out.News, reportByID(t, out.Board, "M-060")} {
+		if report.Columns[3] != "Posted" || len(report.Rows) != 1 || report.Rows[0].Cells[3] != posted {
+			t.Fatal("news surfaces disagree", report)
+		}
+		if !strings.Contains(report.How, researchNewsHow) {
+			t.Fatal("missing elapsed-time disclosure", report.How)
+		}
+	}
+}
+
+func TestNewsNewestFirstAcrossOwners(t *testing.T) {
+	in := realResearch(t)
+	at := in.held.news["16162"].fetchedAt
+	in.held.news["13589"] = heldSeasonFeed[[]researchfeeds.News]{fetchedAt: at, value: []researchfeeds.News{
+		{Article: "new", Headline: "Newest other franchise", Published: "1 minute"},
+	}}
+	out := buildResearch(in, RawResearchScope{Mine: "0001"})
+	if out.News.Rows[0].Cells[2] != "Newest other franchise" || out.Articles[0].Article != "new" {
+		t.Fatal("ownership must not override newest first", out.News.Rows, out.Articles)
 	}
 }

@@ -19,3 +19,26 @@
 .twr-app .registry-panel { right: 368px; width: 480px; overflow-y: auto; }
 .twr-app .shell-overlay { overflow-y: auto; }
 .twr-app .command-bar { max-height: calc(100vh - 70px); overflow-y: auto; }
+
+.twr-app .report-drawer { min-width: 0; }
+.twr-app .report-filter { display: grid; gap: 6px; }
+.twr-app .report-filter input {
+  width: 100%; min-width: 0; box-sizing: border-box; padding: 8px;
+  background: var(--surface-2); color: var(--surface-tx1); border: 1px solid var(--surface-line);
+}
+.twr-app .report-filter input::placeholder { color: var(--surface-tx2); }
+.twr-app .report-drawer h4 { margin: 20px 0 8px; }
+.twr-app .report-drawer ul { list-style: none; padding: 0; margin: 0; }
+.twr-app .report-drawer li { border-bottom: 1px solid var(--surface-line); }
+.twr-app .report-drawer .act-card {
+  min-width: 0; max-width: 100%; padding: 10px 8px; box-sizing: border-box;
+  white-space: normal; word-break: normal; overflow-wrap: break-word; text-align: left;
+}
+.twr-app .report-drawer .act-card:hover { background: var(--surface-2); }
+.twr-app .report-drawer .act-card:focus-visible,
+.twr-app .report-filter input:focus-visible { outline: 2px solid var(--surface-tx1); outline-offset: -2px; }
+.twr-app .report-drawer strong, .twr-app .report-drawer span, .twr-app .report-drawer small {
+  display: block;
+}
+.twr-app .report-drawer span { margin-top: 4px; color: var(--surface-tx2); }
+.twr-app .report-drawer small { margin-top: 4px; color: var(--surface-tx3); }

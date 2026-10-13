@@ -69,12 +69,27 @@ describe('league window editing and destinations', () => {
     expect(html.match(/data-moved="true"/g)).toHaveLength(2);
     expect(html).not.toContain('set by the commissioner');
     expect(html).toContain(`type="datetime-local" value="${localInput(at)}"`);
-    expect(html.match(/aria-label="Set date"/g)).toHaveLength(9);
+    // Only the two dated windows show a date box; the seven undated ones offer "Set a date" first.
+    expect(html.match(/aria-label="Set date"/g)).toHaveLength(2);
+    expect(html.match(/type="datetime-local"/g)).toHaveLength(2);
+    expect(html.match(/aria-label="Set a date for /g)).toHaveLength(7);
     expect(html).toContain('Back to the rulebook');
     expect(html).toContain('Clear date');
     expect(html).toContain('Bids narrow to playoff teams');
     expect(html).toContain('Multi-year bids close');
     expect(html).toContain('No date');
+  });
+  it('shows an undated window\'s date box, empty, only after Set a date', async () => {
+    const commands = createCommands(() => undefined, new FixtureProvider());
+    const ufa = () => renderToStaticMarkup(createElement(CalendarPanel, { reading: moved() }))
+      .split('<li class="league-window"').filter(row => row.includes('<b>UFA bidding</b>')).at(-1)!;
+    expect(ufa()).toContain('aria-label="Set a date for UFA bidding"');
+    expect(ufa()).not.toContain('datetime-local');
+    commands.dispatch('window.edit', { kind: 'ufa_bidding' });
+    await new Promise(resolve => setTimeout(resolve, 30));
+    expect(ufa()).toContain('type="datetime-local" value=""');
+    expect(ufa()).toContain('aria-label="Set date"');
+    expect(ufa()).not.toContain('Set a date for');
   });
   it('window.set calls the provider and reports errors beside its row', async () => {
     const provider = new FixtureProvider();

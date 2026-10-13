@@ -70,7 +70,8 @@ describe('Research live-look fixes', () => {
     const player: PlayerReading = { ...fixture.players[0], report: {
       ...fixture.news, columns: ['Reading', 'Held fact', 'Feed time'], rows: [
         { cells: ['NFL depth', 'not held', 'not held · feed time not held'], range: null },
-        { cells: ['News · 6 days', fixture.articles[0].headline, 'held · fetched today'], range: null },
+        { cells: ['News · Oct 5, 2026', fixture.articles[0].headline, 'held · fetched today'],
+          range: null },
       ], summary: [], status: 'ok',
     }, articles: fixture.articles, howLabel: fixture.board.howLabel };
     for (const identity of [true, false]) {
@@ -130,7 +131,7 @@ describe('One paged news list', () => {
     const articles = Array.from({ length: 60 }, (_, i) => ({ ...fixture.articles[0],
       article: `article${i}`, headline: `Headline ${i}` }));
     const news = { ...fixture.news, summary: [], rows: articles.map((a, i) => ({
-      cells: [a.name, '24', a.headline, `${i} hours`], range: null,
+      cells: [a.name, '24', a.headline, 'Oct 12, 2026, about 9 PM'], range: null,
     })) };
     const research = { ...fixture, news, articles };
     const dispatch = vi.spyOn(registry, 'dispatch').mockImplementation(() => undefined);
@@ -163,7 +164,7 @@ describe('One paged news list', () => {
     const article = fixture.articles[0];
     const player: PlayerReading = { ...fixture.players[0], report: {
       ...fixture.news, columns: ['Reading', 'Held fact', 'Feed time'], rows: [
-        { cells: ['News · 6 days', article.headline, 'held · fetched today'], range: null },
+        { cells: ['News · Oct 5, 2026', article.headline, 'held · fetched today'], range: null },
       ], summary: [], status: 'ok',
     }, articles: [article], howLabel: fixture.board.howLabel };
     const html = renderToStaticMarkup(createElement(PlayerResearchView, { player, identity: true }));
@@ -184,4 +185,33 @@ it('Inspector news uses a whole Posted header and a local absolute minute from G
   const css = readFileSync(new URL('../shell/shell.css', import.meta.url), 'utf8');
   expect(css).toContain('.twr-app .insp .draft-report th .act-button {');
   expect(css).toContain('overflow-wrap: normal; word-break: normal;');
+});
+
+it('renders one shared posted date without raw elapsed wording on all news tables', async () => {
+  const { NewsView } = await import('./Research');
+  const mine = fixture.board.reports.find(report => report.id === 'M-060')!;
+  const posted = fixture.news.rows[0].cells[3];
+  expect(posted).toBe('Oct 5, 2026');
+  expect(mine.rows[0].cells[3]).toBe(posted);
+  const player: PlayerReading = { ...fixture.players[0], report: {
+    ...fixture.news, rows: fixture.news.rows.map(row => ({ ...row,
+      cells: [`News · ${row.cells[3]}`, row.cells[2], fixture.news.asOf],
+    })),
+  }, articles: fixture.articles, howLabel: fixture.board.howLabel };
+  const surfaces = [createElement(NewsView, { research: fixture }),
+    createElement(NewsView, { research: fixture, mine: true }),
+    createElement(ResearchView, { research: fixture, selected: ['M-060'] }),
+    createElement(PlayerResearchView, { player, identity: false })];
+  for (const surface of surfaces) {
+    const html = renderToStaticMarkup(surface);
+    expect(html).toContain('Posted');
+    expect(html).toContain(posted);
+    expect(html).not.toContain('Published');
+    expect(html).not.toMatch(/\b\d+ (?:minutes?|hours?|days?)\b/);
+    expect(html).toContain('MFL’s elapsed wording at the fetch time');
+  }
+  const css = readFileSync(new URL('./research.css', import.meta.url), 'utf8');
+  expect(css).toContain('.draft-report[data-endpoint="M-058"] .draft-table-scroll :is(th, td),');
+  expect(css).toContain('.draft-report[data-endpoint="M-060"] .draft-table-scroll :is(th, td) {');
+  expect(css).toContain('overflow-wrap: normal; word-break: normal; white-space: normal;');
 });

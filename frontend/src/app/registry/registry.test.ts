@@ -162,6 +162,8 @@ describe('Endpoint map', () => {
       'C-06.7',
       // After batch7: one live exit plan per offer; removed plans leave the pending offer plain.
       'M-033', 'M-034',
+      // After batch8: one estimated posted time, one newest-first scratchpad, the Report drawer's shortcuts.
+      'M-060', 'M-118', 'S-11', 'M-159',
     ];
     for (const row of endpoints) {
       let status = 'spec';
@@ -227,7 +229,12 @@ describe('Endpoint map', () => {
       for (const place of surfacePlaces) {
         commands.dispatch('surface.open', { place });
         const html = await renderSettledApp();
-        expect(html).toContain(`${place} endpoint index`);
+        if (place === 'Report drawer') {
+          expect(html).toContain('Report shortcuts');
+          expect(html).toContain(endpointById('C-02').name.replaceAll('"', '&quot;'));
+          expect(html).toContain('League Pulse › Race');
+          expect(html).not.toContain('Report drawer endpoint index');
+        } else expect(html).toContain(`${place} endpoint index`);
       }
       expect(() => assertEndpointRoutes(endpoints, searchCandidates(executor))).not.toThrow();
       commands.dispatch('overlays.close', {});

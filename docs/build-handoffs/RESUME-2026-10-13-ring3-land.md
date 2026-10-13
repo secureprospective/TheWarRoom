@@ -281,3 +281,80 @@ come off `origin/main`, never off the main checkout's branch.
 - Claude fixed 94 (undated league windows show "Set a date", window.edit command) in polish93 bbf1437 → batch8.
 - Sol land-followup4 DONE 12:42 (86, 87) → review next; land M-060, M-118, S-11 in batch8.
 - Sol land-followup6 (90, Report drawer M-159) dispatched 12:50 from main eec5ab5. Sol land-followup7 (89) running.
+
+## 13:05 — COMPACTING NOW (read this first after "we are back")
+### In flight (check each)
+1. **batch7 push retry** — background task started 13:04 (after followup6's root test exited), log
+   `RUN/batch7/push2.log`. First push (push.log) failed: root pkg "panic: test timed out after 10m0s" 600.044 s
+   (finding 89, load ~10 from two Sol race suites) — NOT a test failure. Check: `tail -3 RUN/batch7/push2.log`;
+   `git -C .worktrees/ring-3-land-batch7 ls-remote origin session/ring-3-land-batch7` (branch on origin = pushed).
+   If pushed: `gh pr create` (title "Ring 3 landing batch7: one live exit plan per offer; status overlay clock;
+   bid shortfall once; offer card plain") then `~/.local/bin/gh pr merge <n> --squash`. If it times out again:
+   wait until no other `TheWarRoom.test` process runs (`ps -eo pid,args | grep TheWarRoom.test`), push again.
+   batch7 commits: 7b30bc3 (93) e802fb6 (92) b31fc30 (88) 6a2e7fa (95) 3c12244 (registry M-033/M-034 + RESUME).
+   Gate at 6a2e7fa verify 0 (881 tests, bundle 310,904 B) build 0; deployed "batch7b" 12:51, live-proven.
+2. **Sol land-followup6** (finding 90, Report drawer M-159) dispatched 12:50, worktree .worktrees/ring-3-land-followup6
+   from main eec5ab5. Alive: `ls -l --time-style=+%H:%M RUN/land-followup6/sessions/*.jsonl`; done: RUN/land-followup6/sentinel.
+3. **Sol land-followup7** (finding 89, root race suite speed; test-only) dispatched 12:21, worktree
+   .worktrees/ring-3-land-followup7 from batch6 5cd5522. Same checks in RUN/land-followup7/.
+   Sols cannot pass `timeout 600 make verify` while 89 stands — judge their gates by logs (lint 0, race ok, FE ok).
+
+### Committed, waiting for batch8 (cut from origin/main AFTER batch7 merges, cherry-pick):
+- followup4 33a411a (.worktrees/ring-3-land-followup4): 86 news posted time (newsPosted shared; minute / "about 9 PM" /
+  date precision; news newest first across owners — spec says newest first, finding 3 + land-home brief) and 87
+  scratchpad one list newest first. Reviewed; my mutants red (hour precision; showNotes=true). Rows M-060, M-118, S-11.
+  Live check: Research › My players' news Posted times match Inspector; My moves › Scratchpad keep a franchise note →
+  appears once, first, with Kept.
+- polish93 bbf1437 (.worktrees/ring-3-land-polish93): 94 undated league windows show "Set a date" (new command
+  window.edit, windowState.editWindow) instead of a filled-looking date box. Mutant red. Live: Calendar panel.
+- followup7 (89) and followup6 (M-159) when done → review, mutant, commit, batch8/9.
+
+### Worktrees to remove after batch7 merges (prove content in main, clean, no cwd; log 3 ledgers):
+ring-3-land-followup5 (7f81f15 → b31fc30 in batch7), ring-3-land-batch7. Keep polish93 until bbf1437 lands, followup4
+until 33a411a lands.
+
+### Findings this window (RUN/land-findings.md, now 1–95)
+92 fixed (Claude, shared ticker), 93 fixed (Claude), 88 fixed (Sol f5), 95 fixed (Claude, supersede exit plans),
+94 fixed (Claude, batch8), 86/87 fixed (Sol f4, batch8), 89 open (Sol f7), 90 open (Sol f6).
+
+### Endpoint state
+Ring 0–3 kept rows not landed after batch7: M-060, M-118, S-11 (batch8), M-159 merged row (followup6),
+M-148 / M-153 / X-04 (no live case: lineup legal; no incoming offer), X-02 / X-03 (Thu 10-15 7:15 PM game).
+Merged rows are covered by their targets (normalize.py); no separate landing.
+
+### Next actions
+1. Finish batch7: push → PR → merge. Remove followup5 + batch7 worktrees (3 ledgers).
+2. batch8 = origin/main + cherry-pick 33a411a + bbf1437 (+ followup7 if done). Install FE, gate (wait for quiet
+   host), deploy "batch8", live-check 86/87/94, land M-060/M-118/S-11, registry test list + endpoints.gen
+   (`node scripts/gen-endpoints.mjs` in frontend), commit with RESUME copy, push, PR, merge.
+3. followup6 → review → batch9 → land M-159.
+4. Update T428 on Hermes (`ssh hermes '~/work/command-center/bin/cc task show T428'`).
+5. Thu 10-15 7:15 PM: X-02/X-03 live.
+
+### Gotchas learned this window
+- A `cmd1 && cmd2 &` chain inside a foreground Bash call dies when the shell exits — use run_in_background.
+- After removing a worktree, run `golangci-lint cache clean` BEFORE the next gate/commit (stale cache lints removed
+  paths; it silently failed a commit and a gate).
+- `git checkout -- file` restores to HEAD and wipes a Sol's uncommitted change — restore mutants from a /tmp backup.
+- Trade desk layout shifts ~26 px while "Checking held rosters and cap…" shows; screenshot before clicking.
+
+## 13:2x — batch7 push retry #2 TIMED OUT (root pkg 600.050 s, panic in TestTradeBuilderIRTaxiAndRemovedWhatIfAssets; 3 root test binaries concurrent, load ~17). Not a test failure.
+Plan: wait for followup7 (before 574 s → after 233 s), review + mutant-check, cherry-pick onto batch7, gate, push once. Monitor bnybkho3p watches followup6/7 sentinels + staleness.
+
+## 13:40 — followup7 (finding 89) reviewed, mutant-checked by Claude, committed 029be28; cherry-picked onto batch7 as 3141d01. Push #3 running (task bebq7utf0, log batch7/push3.log). followup6 still working (monitor b5lkydt8r).
+
+## 13:50 — batch7 MERGED (#33, main 7bcae73); batch8 built, deployed, live-proven; landing commit next
+- batch7 push #3 passed pre-push verify once 89's fix rode along (root 600 s timeouts gone). Worktrees followup5/followup7/batch7
+  removed 13:36 after proof (batch7 tree == main; 029be28 reverse-applies; 7f81f15 reverse-applies except tradeDesk.test.ts,
+  whose added lines are all in main); logged in all 3 ledgers.
+- followup6 (finding 90, M-159) done 13:41; its own verify timed out only because its base lacked 89's fix. Reviewed; Claude's
+  mutant (drop C-02 from the selector) fails all 3 ReportDrawer tests. Committed 7183f39.
+- batch8 = main 7bcae73 + 1f813ad (86/87, from 33a411a) + 8dd5c7e (94, from bbf1437) + 7183f39 (90). Gate at 8dd5c7e: verify 0
+  (884 frontend tests, root package 207.8 s, bundle 311,131 B), build 0; after the 90 cherry-pick: registry tests 29/29, build 0.
+- Deployed "batch8" 13:42. Live: Reports drawer 102 shortcuts → filter c-02 → 1 → opens Race power rankings (90);
+  Calendar undated windows "No date" + "Set a date" reveals an empty box with Set date disabled (94); My players' news newest
+  first, Hemby "Oct 12, 2026, about 9 PM" in both the table and Inspector (86); scratchpad one list newest first, franchise
+  note once at top (87). Nothing saved, nothing clicked on MFL.
+- Landing: M-060, M-118, S-11, M-159 → land-landed.tsv, applied, registry.test list, endpoints.gen regenerated.
+- After batch8 every ring 0–3 kept row is landed except the held five: M-148, M-153, X-04 (no live case), X-02/X-03 (Thu 10-15
+  7:15 PM live games). No Sols running.

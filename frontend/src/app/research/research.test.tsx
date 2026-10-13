@@ -45,7 +45,8 @@ describe('Player research', () => {
     const html = renderToStaticMarkup(createElement(NewsView, { research: fixture }));
     expect(html).toContain('data-endpoint="M-058"');
     expect(html).toContain('data-endpoint="M-059"');
-    expect(html).toContain('6 days');
+    expect(html).toContain('Oct 5, 2026');
+    expect(html).not.toContain('6 days');
     expect(html).toContain('Open article on MFL');
     expect(html).toContain('Source: MFL player news');
   });

@@ -93,7 +93,7 @@ func TestLandingNewsRefreshFailureOneNotice(t *testing.T) {
 	}
 }
 
-func TestLandingNewsOrderUsesFetchTimeAndKeepsMineFirst(t *testing.T) {
+func TestLandingNewsOrderUsesFetchTimeRegardlessOfOwner(t *testing.T) {
 	in := realResearch(t)
 	in.held.news["16162"] = heldSeasonFeed[[]researchfeeds.News]{fetchedAt: in.now.AddDate(0, 0, -2),
 		value: []researchfeeds.News{{Article: "older", Headline: "older", Published: "1 hour"}}}
@@ -104,7 +104,7 @@ func TestLandingNewsOrderUsesFetchTimeAndKeepsMineFirst(t *testing.T) {
 		t.Fatal(out.Articles)
 	}
 	out = buildResearch(in, RawResearchScope{Mine: "0001"})
-	if out.Articles[0].Article != "older" || !out.News.Rows[0].Mine {
+	if out.Articles[0].Article != "newer" || out.News.Rows[0].Mine {
 		t.Fatal(out.Articles, out.News.Rows)
 	}
 }

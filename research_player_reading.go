@@ -11,6 +11,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
+const researchNewsHow = "Posted times are estimated from MFL’s elapsed wording at the fetch time, in your local time zone. Minutes show a minute, hours show about an hour, and days show only a date. Unrecognized wording or a missing fetch time has no posted time."
+
 type ResearchPlayerReading struct {
 	ResearchPlayer
 	Report   Report            `json:"report"`
@@ -40,7 +42,7 @@ func (v researchView) playerReading(id string, names map[string]string, how stri
 		}
 	}
 	r := Report{ID: "M-062", Title: "Held player research", Status: "ok", Source: "Source: held MFL and nflverse reports",
-		AsOf: "As of: each feed’s time below", How: "Depth slots match only through the held NFL identity crosswalk. Points per game uses finished weeks with a held score, including zero. Season points sum the same held finished-week scores used by the card; an unfinished week is excluded. Missing facts are not predictions. Posted times are estimated from MFL’s elapsed wording at the feed’s fetched time; unrecognized wording has no posted time.",
+		AsOf: "As of: each feed’s time below", How: "Depth slots match only through the held NFL identity crosswalk. Points per game uses finished weeks with a held score, including zero. Season points sum the same held finished-week scores used by the card; an unfinished week is excluded. Missing facts are not predictions. " + researchNewsHow,
 		Columns: []string{"Reading", "Held fact", "Feed time"}, Rows: []ReportRow{}}
 	r.Rows = append(r.Rows, ReportRow{Cells: []string{"Owner", p.Owner, "Held league roster"}})
 	v.playerInjury(&r, id)
@@ -52,13 +54,6 @@ func (v researchView) playerReading(id string, names map[string]string, how stri
 	articles := []ResearchArticle{}
 	newsReport := Report{Rows: []ReportRow{}}
 	v.appendNews(&newsReport, &articles, id, news.value)
-	for i := range newsReport.Rows {
-		row := &newsReport.Rows[i]
-		row.Cells[3] = "Posted time not supplied"
-		if row.Sort[0] != 0 && !news.fetchedAt.IsZero() {
-			row.Cells[3] = reportTime(time.Unix(int64(row.Sort[0]), 0), v.zone)
-		}
-	}
 	sortResearchNews(&newsReport, articles)
 	for _, row := range newsReport.Rows {
 		r.Rows = append(r.Rows, ReportRow{Cells: []string{"News · " + row.Cells[3], row.Cells[2], newsHeldTime(news.fetchedAt, news.refreshError, v.zone)}})
@@ -207,12 +202,26 @@ func newsHeldTime(at time.Time, loss string, zone *time.Location) string {
 	return text
 }
 
-func newsPublishedAt(wording string, fetched time.Time) float64 {
+func newsPosted(wording string, fetched time.Time, zone *time.Location) (string, float64) {
+	if strings.TrimSpace(wording) == "" {
+		return "Posted time not supplied", 0
+	}
 	age, ok := researchNewsAge(wording)
 	if !ok {
-		return 0
+		return "Posted time unknown: MFL wording not recognized", 0
 	}
-	return float64(fetched.Add(-age).Unix())
+	if fetched.IsZero() {
+		return "Posted time unknown: fetch time not held", 0
+	}
+	at := fetched.Add(-age)
+	text := reportTime(at, zone)
+	switch strings.Fields(wording)[1] {
+	case "hour", "hours":
+		text = at.In(zone).Format("Jan 2, 2006, about 3 PM")
+	case "day", "days":
+		text = at.In(zone).Format("Jan 2, 2006")
+	}
+	return text, float64(at.Unix())
 }
 
 func sortResearchNews(r *Report, articles []ResearchArticle) {
@@ -222,9 +231,6 @@ func sortResearchNews(r *Report, articles []ResearchArticle) {
 	}
 	sort.SliceStable(order, func(i, j int) bool {
 		a, b := r.Rows[order[i]], r.Rows[order[j]]
-		if a.Mine != b.Mine {
-			return a.Mine
-		}
 		return a.Sort[0] > b.Sort[0]
 	})
 	rows := append([]ReportRow{}, r.Rows...)

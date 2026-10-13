@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { clockDom, TestElement } from '../clock/testDom';
 import { commands } from '../commands/registry';
 import { renderState } from '../shell/state';
-import { NoteEditor } from './PersonalLists';
+import PersonalLists, { NoteEditor } from './PersonalLists';
 import { personalState } from './state';
 import { parsePersonal, type Entry, type ListChange } from './contract';
 import wire from './wire.testdata.json';
@@ -81,4 +81,55 @@ it('does not acknowledge a failed write', async () => {
   await state.change('0001', 'note', { id: '0816', entity: 'player', action: 'add', text: 'Keep me' });
   expect(state.peek('0001').savedNote).toBeUndefined();
   expect(state.peek('0001').error).toContain('Save failed');
+});
+
+
+it('keeps a franchise note once in the scratchpad, newest first, with its acknowledgement', async () => {
+  const { document, root: host, element } = clockDom([]);
+  const entries: Entry[] = [
+    { kind: 'note', entity: 'franchise', id: '0001', text: 'Older franchise note',
+      at: '2026-10-10T10:00:00Z', order: 1 },
+    { kind: 'note', entity: 'player', id: '0816', text: 'Older player note',
+      at: '2026-10-11T10:00:00Z', order: 2 },
+  ];
+  const change = vi.fn(async (raw: ListChange) => {
+    entries.push({ kind: 'note', entity: raw.entity, id: raw.id, text: raw.text!,
+      at: '2026-10-13T10:00:00Z', order: 3 });
+  });
+  vi.stubGlobal('document', document);
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  vi.stubGlobal('window', { document, HTMLIFrameElement: class {}, go: { main: { App: {
+    TargetPersonal: async () => ({ ...parsePersonal(wire), entries }), TargetPersonalChange: change,
+  } } } });
+  vi.spyOn(commands, 'use').mockReturnValue({ ...renderState(commands.read()), franchiseId: '0001' });
+  const { FixtureProvider } = await import('../data/provider');
+  const snapshot = await new FixtureProvider().snapshot();
+  commands.loadSnapshot(snapshot);
+  commands.dispatch('franchise.set', { franchiseId: '0001' });
+  await personalState.load('0001');
+  const root = createRoot(element);
+  function elements(node: TestElement): TestElement[] {
+    return [node, ...node.children.filter((child): child is TestElement => child instanceof TestElement)
+      .flatMap(elements)];
+  }
+  try {
+    await act(async () => { root.render(createElement(PersonalLists, { snapshot })); });
+    await act(async () => { props(find(host, 'TEXTAREA')).onChange({ target: { value: 'Newest note' } }); });
+    const keep = elements(host).find(e => e.tagName === 'BUTTON' && e.textContent === 'Keep dated note')!;
+    await act(async () => {
+      props(keep).onClick();
+      await new Promise(resolve => setTimeout(resolve, 25));
+    });
+    expect(change).toHaveBeenCalledWith(expect.objectContaining({ entity: 'franchise', id: '0001' }));
+    expect(host.textContent.match(/Newest note/g)).toHaveLength(1);
+    expect(host.textContent.match(/Older franchise note/g)).toHaveLength(1);
+    expect(host.textContent).toContain('Kept ·');
+    expect(props(find(host, 'TEXTAREA')).value).toBe('');
+    const scratchpad = elements(host).find(e => e.getAttribute('data-endpoint') === 'M-118')!;
+    const lists = elements(scratchpad).filter(e => e.tagName === 'OL');
+    expect(lists).toHaveLength(1);
+    expect(lists[0].children[0].textContent).toContain('Newest note');
+    expect(lists[0].children[1].textContent).toContain('Older player note');
+    expect(lists[0].children[2].textContent).toContain('Older franchise note');
+  } finally { await act(async () => { root.unmount(); }); }
 });

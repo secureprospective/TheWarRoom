@@ -236,6 +236,13 @@ export function createCommands(
           .catch(cause => state.write({ notice: String(cause) }));
       },
     }),
+    'window.edit': command({
+      ...ambient, id: 'window.edit', label: 'Commissioner: choose a league date', args: ['kind'],
+      run: ({ kind }: { kind: import('../data/contract').WindowKind }) => {
+        void import('../clock/windowState').then(m => m.editWindow(kind))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     'phase.goto': command({
       ...ambient, id: 'phase.goto', label: 'Open phase workspace', args: ['phase'],
       run: ({ phase }: { phase: keyof typeof phaseRoutes }) => {

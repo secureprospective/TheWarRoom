@@ -2,7 +2,8 @@ import { useSyncExternalStore } from 'react';
 import type { Provider } from '../data/provider';
 import type { WindowKind } from '../data/contract';
 
-type Result = { error?: string; pending?: boolean };
+// editing: the owner asked to set a date on a window that has none, so its date box is shown.
+type Result = { error?: string; pending?: boolean; editing?: boolean };
 let results: Partial<Record<WindowKind, Result>> = {};
 const listeners = new Set<() => void>();
 const read = () => results;
@@ -24,4 +25,7 @@ export async function setWindow(provider: Provider, kind: WindowKind, at: string
   } catch (cause) {
     write(kind, { error: cause instanceof Error ? cause.message : String(cause) });
   }
+}
+export function editWindow(kind: WindowKind) {
+  write(kind, { ...results[kind], editing: true });
 }
