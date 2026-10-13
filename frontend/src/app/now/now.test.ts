@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { endpointById, placementRoute } from '../registry';
 import { parseNow } from './contract';
-import { NowView } from './Now';
+import { NowBody, NowView } from './Now';
 import { commands } from '../commands/registry';
 import { createNowState, nowState, type NowReader } from './state';
 import wire from './wire.testdata.json';
@@ -81,4 +81,14 @@ describe('League Pulse › Now', () => {
     expect(reader.refresh).toHaveBeenLastCalledWith(5, true);
     expect(() => state.choose('week', 'x')).toThrow('invalid week');
   });
+});
+
+it('says the league\'s weeks are still being read instead of drawing an empty week (finding 96)', () => {
+  const waiting = { ...now(), waiting: 'Reading the league\'s weeks from MFL…' };
+  const body = (n: typeof waiting) =>
+    renderToStaticMarkup(createElement(NowBody, { now: n, pending: false, error: '', selected: [] }));
+  const cold = body(waiting);
+  expect(cold).toContain('Reading the league&#x27;s weeks from MFL…');
+  expect(cold).not.toContain('Weekly reports');
+  expect(body(now())).toContain('Weekly reports');
 });

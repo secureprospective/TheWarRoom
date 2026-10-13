@@ -138,3 +138,25 @@ func TestLandingRefusedProfileLoggedOnce(t *testing.T) {
 		t.Fatal(asked, lines, held)
 	}
 }
+
+// Finding 96: just after launch the league's weeks are not read yet; Now says so instead of drawing week 0,
+// and a failed read is shown as the failure it is, never as waiting.
+func TestLandingNowWaitsForTheLeaguesWeeks(t *testing.T) {
+	a, _, _, _ := seasonTestApp(t)
+	board, err := a.TargetNow(0, 0, "")
+	if err != nil || board.Waiting != "Reading the league's weeks from MFL…" {
+		t.Fatalf("cold Now must wait for the league's weeks: %q %v", board.Waiting, err)
+	}
+	a.seasonMu.Lock()
+	a.race.weeks.refreshError = "MFL refused the schedule"
+	a.seasonMu.Unlock()
+	if board, err = a.TargetNow(0, 0, ""); err != nil || board.Waiting != "" {
+		t.Fatalf("a failed read is not waiting: %q %v", board.Waiting, err)
+	}
+	a.seasonMu.Lock()
+	a.race.weeks.refreshError, a.race.weeks.fetchedAt = "", time.Now()
+	a.seasonMu.Unlock()
+	if board, err = a.TargetNow(0, 0, ""); err != nil || board.Waiting != "" {
+		t.Fatalf("held weeks are not waiting: %q %v", board.Waiting, err)
+	}
+}

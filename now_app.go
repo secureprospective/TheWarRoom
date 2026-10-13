@@ -241,9 +241,13 @@ func (a *App) TargetNow(week, reportWeek int, mine string) (NowBoard, error) {
 	a.lookupMu.Lock()
 	lookup, hasLookup := a.lookup, a.hasLookup
 	a.lookupMu.Unlock()
-	return buildNow(nowInput{
+	board, err := buildNow(nowInput{
 		race: raceInput{held: held, config: a.rulebook.ActiveConfig(), lookup: lookup, hasLookup: hasLookup,
 			mine: mine, zone: time.Local},
 		held: now, live: live, projections: projections, at: a.timeNow(), current: current, week: week, reportWeek: reportWeek,
 	})
+	if err == nil && held.weeks.fetchedAt.IsZero() && held.weeks.refreshError == "" {
+		board.Waiting = "Reading the league's weeks from MFL…"
+	}
+	return board, err
 }

@@ -23,6 +23,9 @@ type NowBoard struct {
 	Weeks       []RaceChoice `json:"weeks"`
 	Matchup     Report       `json:"matchup"`
 	Board       ReportBoard  `json:"board"`
+	// Waiting is set while the league's weeks have not been read yet (just after launch): the screen says so
+	// instead of drawing an empty week. The season event re-reads the board when they arrive.
+	Waiting string `json:"waiting"`
 }
 
 type nowInput struct {
