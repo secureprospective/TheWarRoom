@@ -97,7 +97,7 @@ func TestRosterPlanWithdrawalIsLocalAndPersisted(t *testing.T) {
 			if err != nil || gone.State != envelope.Withdrawn {
 				t.Fatal(gone, err)
 			}
-			if !strings.Contains(gone.Audit[len(gone.Audit)-1].Note, "Withdrawn by you before") {
+			if !strings.Contains(gone.Audit[len(gone.Audit)-1].Note, "Removed by you before") {
 				t.Fatal(gone.Audit)
 			}
 			held, err := a.moves.Get(a.ctx, e.ID())
@@ -113,7 +113,7 @@ func TestRosterPlanWithdrawalIsLocalAndPersisted(t *testing.T) {
 }
 
 func TestRemovalWordsAgreeAcrossKinds(t *testing.T) {
-	const want = "Withdrawn by you before it was handed off."
+	const want = "Removed by you before it was handed off."
 	for _, action := range []string{"cut", "buyout"} {
 		a := releaseTestApp(t)
 		p := planRelease(t, a, action, "0042")

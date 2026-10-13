@@ -64,7 +64,7 @@ export type BuilderAction =
   | { action: 'read' | 'preview' | 'save'; mine: string }
   | { action: 'other' | 'rationale'; value: string }
   | { action: 'give' | 'get'; value: string }
-  | { action: 'reject' | 'revoke' | 'handoff'; mine: string; id: string; post?: string };
+  | { action: 'reject' | 'revoke' | 'handoff' | 'remove'; mine: string; id: string; post?: string };
 export const useBuilder = create<{
   mine: string; other: string; give: string[]; get: string[]; rationale: string;
   reading?: Reading<BuilderView>; busy: boolean; error: string;

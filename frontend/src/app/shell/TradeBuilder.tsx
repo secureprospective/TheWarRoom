@@ -19,9 +19,9 @@ export function BuilderAsset({ asset }: { asset: TradeAsset }) {
       {' '}<AssetCellView cell={asset.dynasty} /></span>}
   </span>;
 }
-function Deal({ plan, mine, busy }: { plan: BuilderPlan; mine: string; busy: boolean }) {
+export function Deal({ plan, mine, busy }: { plan: BuilderPlan; mine: string; busy: boolean }) {
   return <article className={`bid-plan ${gravityClasses.G3}`} aria-label="Trade proposal plan">
-    <h5>Both rosters after this deal</h5>
+    <h5>Trade with {plan.teams[1]?.team ?? 'the other franchise'} · Both rosters after this deal</h5>
     {plan.receipt && <RailStrip receipt={plan.receipt} />}
     {plan.reasons.length > 0 && <ul>{plan.reasons.map((reason, i) => <li key={i}>{reason}</li>)}</ul>}
     {plan.resets.map(r => <Act key={r.franchise} verb="contracts.set" variant="button" label={r.label}
@@ -37,6 +37,10 @@ function Deal({ plan, mine, busy }: { plan: BuilderPlan; mine: string; busy: boo
     {plan.receipt?.state === 'ready' && <Act variant="button" verb="trade.builder"
       args={{ action: 'handoff', mine, id: plan.id, post: plan.post }} disabled={busy}
       label="Copy the deal and open MFL's trade desk" />}
+    {plan.receipt && !plan.receipt.audit.some(e => e.to === 'handed_off') &&
+      !['landed', 'failed', 'withdrawn'].includes(plan.receipt.state) && <Act variant="button"
+        verb="trade.builder" args={{ action: 'remove', mine, id: plan.id }} disabled={busy}
+        label="Remove plan" />}
     {!plan.receipt && <Act variant="button"
       verb="trade.builder" args={{ action: 'save', mine }} disabled={busy}
       label="Keep this local trade plan" />}

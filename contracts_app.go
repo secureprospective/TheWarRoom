@@ -89,7 +89,7 @@ func (a *App) TargetContracts(raw snapshot.RawContractScope) ContractsReadings {
 	if !ok {
 		capErr = fmt.Errorf("cap summary: select a franchise held in the MFL mirror")
 	}
-	out.Cap = contractReading(snapshot.ContractsCap(input.rows, raw.Mine, input.mirror.Season, used, input.cap, input.names), input.asOf, "MFL mirror + active league configuration", "Cap comes from active league configuration, not a hardcoded rulebook value. Used is the mirror's current cap total: active salary, configured IR/taxi contribution (snapped to $10k), and signed MFL adjustments. Room = cap minus used, in cents. Future gross commitments flat-fill annual salary through expiration: inferred, not observed year cells. No future discounts, adjustments or dead-cap charges are projected.", 1, capErr)
+	out.Cap = contractReading(snapshot.ContractsCap(input.rows, raw.Mine, input.mirror.Season, used, input.cap, input.names), input.asOf, "MFL mirror + active league configuration", "Cap comes from active league configuration, not a hardcoded rulebook value. Used is the mirror's current cap total: active salary, configured IR/taxi contribution (snapped to $10k), and signed MFL adjustments. Room = cap minus used, in cents. Future commitments carry today’s annual salary through contract expiration; MFL does not report those years separately. No future discounts, adjustments or dead-cap charges are projected.", 1, capErr)
 	if input.capOverride && out.Cap.Value.Cap != nil {
 		out.Cap.Value.CapSource = "League salary cap: " + out.Cap.Value.Cap.Text + " (set by the commissioner)"
 	}
@@ -108,7 +108,7 @@ func (a *App) TargetPlayerContract(rawID string) Reading[snapshot.PlayerContract
 	for _, row := range input.rows {
 		if row.ID == id.String() {
 			value := snapshot.PlayerContract{Player: row, Years: snapshot.ContractYears(row, input.mirror.Season)}
-			return contractReading(value, input.asOf, "MFL rosters: annual salary + expiration", "The current season's annual salary is observed from MFL. Future paid years are flat-filled from that salary through expiration, as in the seed ledger; they are inferred, not observed, and may differ after extension or restructure. Missing or expired expiration yields only the current salary, not a guessed term. No UFA cost or dead-cap figure is computed.", len(value.Years), nil)
+			return contractReading(value, input.asOf, "MFL rosters: annual salary + expiration", "The current season's annual salary is observed from MFL. Future years carry that annual salary through expiration and may change after an extension or restructure; MFL does not report those years separately. Missing or expired expiration yields only the current salary, not a guessed term. No UFA cost or dead-cap figure is computed.", len(value.Years), nil)
 		}
 	}
 	return contractReading(snapshot.PlayerContract{}, input.asOf, "MFL rosters", "", 0, fmt.Errorf("player contract: player %s is not in the mirror", id.String()))
