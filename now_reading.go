@@ -54,6 +54,10 @@ func buildNow(in nowInput) (NowBoard, error) {
 			Refresh: "Refresh from MFL", HowLabel: "How this is counted", Reports: []Report{}}}
 	board.Board.Reports = append(board.Board.Reports, v.matchups(), v.results(), v.weekSummary(), v.recaps(),
 		v.topByPosition(), v.boxScore(), v.lastThree(), v.previews(), v.nflWeek(), v.nflBoxScore(), v.statChanges(), v.liveScoring())
+	v.inspectable(&board.Matchup)
+	for i := range board.Board.Reports {
+		v.inspectable(&board.Board.Reports[i])
+	}
 	return board, nil
 }
 

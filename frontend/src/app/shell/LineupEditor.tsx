@@ -47,12 +47,12 @@ export default function LineupEditor({ snapshot, roster, franchiseId, selected, 
     <>
       <div className="lineup-actions">
         <h4>Roster</h4>
-        {!draft && <Act verb="lineup.edit" args={{ franchiseId }} disabled={Boolean(reason)}
+        {!draft && <Act variant="button" verb="lineup.edit" args={{ franchiseId }} disabled={Boolean(reason)}
           label={reason ?? 'Edit lineup'}>Edit lineup</Act>}
         {draft && <>
-          <Act verb="lineup.reset" args={{}} />
-          <Act verb="lineup.cancel" args={{}} />
-          <Act verb="lineup.draft" args={{}} disabled={Boolean(saveReason)}
+          <Act variant="button" verb="lineup.reset" args={{}} />
+          <Act variant="button" verb="lineup.cancel" args={{}} />
+          <Act variant="button" verb="lineup.draft" args={{}} disabled={Boolean(saveReason)}
             label={saveReason ?? 'Check and save plan'}>Check and save plan</Act>
         </>}
       </div>
@@ -81,7 +81,7 @@ export default function LineupEditor({ snapshot, roster, franchiseId, selected, 
               const action = group.label === 'Starters' ? 'Bench' : 'Start';
               const label = toggleable ? `${action} ${model.name}` : `Inspect ${model.name}`;
               return (
-                <Act
+                <Act variant="card"
                   key={model.id}
                   verb={toggleable ? 'lineup.toggle' : 'inspector.open'}
                   args={toggleable

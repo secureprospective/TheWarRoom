@@ -60,7 +60,7 @@ export function AssetBoardView({ snapshot }: { snapshot: Snapshot }) {
         <th scope="col">On-field-now</th><th scope="col">Dynasty value</th><th scope="col">Market</th>
       </tr></thead>
       <tbody>{rows.map(r => <tr key={`${r.franchiseId}:${r.id}`}>
-        <td><Act verb="inspector.open"
+        <td><Act variant="text" verb="inspector.open"
           args={{ subject: { kind: 'player', id: r.id, franchiseId: r.franchiseId } }}
           label={`Inspect ${r.name}`}>{r.name}</Act></td>
         <td>{r.position}</td><td>{r.team}</td>

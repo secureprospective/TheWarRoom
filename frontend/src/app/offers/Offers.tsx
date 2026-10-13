@@ -20,7 +20,7 @@ export function OffersScreen({ reading, scope, pending = false }: {
   return <section className="offers-history" aria-label={v.words.heading}>
     <header data-endpoint="L-32"><h4>{v.words.heading}</h4><p>{localText(v.disclosure)}</p></header>
     <div className="market-controls" data-endpoint="L-31" aria-label={v.words.direction}>
-      {v.directions.map(p => <Act key={p.id} verb="offers.filter"
+      {v.directions.map(p => <Act variant="button" key={p.id} verb="offers.filter"
         args={{ field: 'direction', value: p.id }} active={scope.direction === p.id} label={p.label} />)}
     </div>
     <div className="offers-filters">
@@ -36,7 +36,7 @@ export function OffersScreen({ reading, scope, pending = false }: {
       <label>{v.words.team} <select value={scope.team} onChange={e =>
         commands.dispatch('offers.filter', { field: 'team', value: e.target.value })}>
         {v.teams.map(p => <option key={p.fid} value={p.fid}>{p.name}</option>)}</select></label>
-      {reading.status === 'failed' && <Act verb="offers.filter"
+      {reading.status === 'failed' && <Act variant="button" verb="offers.filter"
         args={{ field: 'retry', value: '' }} label={v.words.retry} />}
     </div>
     {pending && <p role="status">{v.words.pending}</p>}

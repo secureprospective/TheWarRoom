@@ -103,9 +103,8 @@ type onFieldRow struct {
 	games        int
 }
 
-// onFieldNow is each scored player's points per game over the finished weeks and his rank at
-// his position, with the source line naming the weeks held.
-func (v researchView) onFieldNow() (map[string]AssetCell, map[string]float64, string) {
+// finishedScores is the one finished-week scope shared by cards and player research.
+func (v researchView) finishedScores() (map[string]*onFieldRow, int, time.Time) {
 	last := max(v.week-1, 0)
 	rows := map[string]*onFieldRow{}
 	held, latest := 0, time.Time{}
@@ -129,6 +128,13 @@ func (v researchView) onFieldNow() (map[string]AssetCell, map[string]float64, st
 			r.games++
 		}
 	}
+	return rows, held, latest
+}
+
+// onFieldNow is each scored player's points per game and rank at his position.
+func (v researchView) onFieldNow() (map[string]AssetCell, map[string]float64, string) {
+	rows, held, latest := v.finishedScores()
+	last := max(v.week-1, 0)
 	source := "Source: MFL fantasy points, this league's scoring · no finished week held yet"
 	if held > 0 {
 		source = fmt.Sprintf("Source: MFL fantasy points, this league's scoring · %d of %d finished weeks held · as of %s",

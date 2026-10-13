@@ -22,7 +22,7 @@ function Choices({
   return (
     <div className="market-controls">
       {options.map(([value, shown, label]) => (
-        <Act
+        <Act variant="button"
           key={value}
           verb="market"
           args={{ field, value }}
@@ -81,11 +81,12 @@ export function DraftControls() {
         )}
         selected={[s.scope.group]}
       />
-      <Act verb="market" args={{ field: 'draft-reset', value: '' }} label="Reset Draft filters">
+      <Act variant="button"
+        verb="market" args={{ field: 'draft-reset', value: '' }} label="Reset Draft filters">
         Every stretch and NFL round · reset
       </Act>
       {s.reading?.status === 'failed' && (
-        <Act
+        <Act variant="button"
           verb="market"
           args={{ field: 'draft-retry', value: '' }}
           label="Retry Draft archive reading"
@@ -144,7 +145,8 @@ export default function Draft({ kind, snapshot }: { kind?: string; snapshot?: Sn
         <DraftControls />
       )}
       {kind && s.picks[kind]?.status === 'failed' && (
-        <Act verb="market" args={{ field: 'draft-retry', value: '' }} label="Retry draft pick history">
+        <Act variant="button"
+          verb="market" args={{ field: 'draft-retry', value: '' }} label="Retry draft pick history">
           Retry reading
         </Act>
       )}

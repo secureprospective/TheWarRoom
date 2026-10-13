@@ -33,7 +33,7 @@ export function ContractActCard({ plan, mine, revealing = false }: {
   const finished = ['withdrawn', 'landed', 'failed'].includes(plan.receipt?.state ?? '');
   const post = <pre className="bid-post" aria-label="Contract ProBoards post">{plan.post}</pre>;
   const action = (kind: ContractActRequest['action'], label: string) =>
-    <Act verb="contracts.set" variant="text" label={label}
+    <Act verb="contracts.set" variant="button" label={label}
     args={{ field: 'contract-act', value: { mine, id: plan.id, action: kind } }}>{label}</Act>;
   return <article ref={card} tabIndex={-1} className="bid-plan contract-act-card" aria-label={plan.label}>
     <h5>{plan.label}</h5>
@@ -61,7 +61,7 @@ export function ContractActCard({ plan, mine, revealing = false }: {
 }
 
 export function ContractActMenu({ mine, player }: { mine: string; player: string }) {
-  return <Act verb="contracts.set" label="Contract Acts…"
+  return <Act variant="button" verb="contracts.set" label="Contract Acts…"
     args={{ field: 'contract-open', value: { mine, player } }}>
     Contract Acts…</Act>;
 }
@@ -81,7 +81,7 @@ export function ContractMoveFeedback({ plan }: { plan: ContractActPlan }) {
         <p>Plan: {stateLabel(plan.receipt?.state ?? 'draft', plan.intent)}</p>
         {plan.receipt?.state !== 'ready' && <ul>{plan.reasons.map(reason =>
           <li key={reason}>{reason}</li>)}</ul>}
-        <Act verb="contracts.set" label="See it in My moves"
+        <Act variant="button" verb="contracts.set" label="See it in My moves"
           args={{ field: 'contract-reveal', value: plan.id }}>See it in My moves</Act>
       </div>;
 }
@@ -182,7 +182,7 @@ function ContractMoveForm({ mine, player }: { mine: string; player: string }) {
       {error && <p role="alert">{error}</p>}
       {!error && options.length === 0 && <p>No eligible Acts found.</p>}
       {plan && <><ContractMovePreview plan={plan} />
-        <div className="bid-actions"><Act verb="contracts.set" variant="text"
+        <div className="bid-actions"><Act verb="contracts.set" variant="button"
           disabled={keep !== 'Keep plan'} label={keep}
           args={{ field: 'contract-keep', value: { ...request, mine, player } }}>{keep}</Act></div>
         {keepError && <p role="alert">{keepError}</p>}</>}

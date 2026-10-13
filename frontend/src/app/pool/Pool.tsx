@@ -26,7 +26,7 @@ export function MarketFacts({ row }: { row: PoolRow }) {
 function PlayerCell({ row }: { row: PoolRow }) {
   return (
     <>
-      <Act
+      <Act variant="text"
         verb="market"
         args={{ field: 'inspect', value: `pool:${row.id}` }}
         label={`Inspect ${row.name}`}
@@ -85,7 +85,7 @@ export function OpenPlans({ board, openId, focus, busy, state }: {
       <ul className="bid-open-list">
         {open.map((plan) => (
           <li key={plan.id}>
-            <Act
+            <Act variant="button"
               verb="market"
               args={{ field: 'pool-toggle', value: plan.id }}
               label={`Open bid plan: ${plan.player}`}
@@ -135,7 +135,7 @@ function PoolTable({ rows, state, mine }: { rows: PoolRow[]; state?: PoolState; 
             <td>
               {row.plan && <span className="pool-plan">Bid plan: {row.plan}</span>}
               {row.planId ? (
-                <Act
+                <Act variant="button"
                   verb="market"
                   args={{ field: 'pool-open', value: row.planId }}
                   label={`Open bid plan on ${row.name}`}
@@ -143,7 +143,7 @@ function PoolTable({ rows, state, mine }: { rows: PoolRow[]; state?: PoolState; 
                   Open bid plan
                 </Act>
               ) : (
-                <Act
+                <Act variant="button"
                   verb="market"
                   args={{ field: 'pool-plan', value: row.id }}
                   label={`Plan a bid on ${row.name}`}
@@ -186,7 +186,8 @@ export function PoolFrame({ reading, refreshing, state, mine = '' }: {
       {reading && failed && !refreshing && (
         <>
           <p role="alert">Failed · {reading.absenceReason}</p>
-          <Act verb="market" args={{ field: 'pool-refresh', value: '' }} label="Try MFL again">
+          <Act variant="button"
+            verb="market" args={{ field: 'pool-refresh', value: '' }} label="Try MFL again">
             Try MFL again
           </Act>
         </>
@@ -254,14 +255,14 @@ function Controls({ reading, state }: { reading?: PoolReading; state: PoolState 
           ))}
         </select>
       </label>
-      <Act
+      <Act variant="button"
         verb="market"
         args={{ field: 'pool-sort', value: scope.sort }}
         label={scope.desc ? 'Sort ascending' : 'Sort descending'}
       >
         {scope.desc ? 'Descending' : 'Ascending'}
       </Act>
-      <Act
+      <Act variant="button"
         verb="market"
         args={{ field: 'pool-refresh', value: '' }}
         label="Refresh the free-agent list from MFL"
@@ -344,11 +345,12 @@ export function PoolInspectorView({ row, plans, busy, reading }: {
           <h5>{plan.player}</h5>
           <p>{plan.state} · <time dateTime={plan.history.at(-1)?.at}>{plan.history.at(-1)?.at
             ? localDate(plan.history.at(-1)!.at) : 'Time not recorded'}</time></p>
-          <p>{plan.contract}</p><Act verb="market" args={{ field: 'pool-open', value: plan.id }}
+          <p>{plan.contract}</p><Act variant="button"
+            verb="market" args={{ field: 'pool-open', value: plan.id }}
             label={`Open bid plan: ${plan.player}`}>See bid plan</Act></article>
       ))}
       {row && plans.length === 0 && (
-        <Act
+        <Act variant="button"
           verb="market"
           args={{ field: 'pool-plan', value: row.id }}
           label={`Plan a bid on ${row.name}`}

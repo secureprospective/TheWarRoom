@@ -144,7 +144,7 @@ func TestResearchPlayerHeldFactsAndMissingPieces(t *testing.T) {
 	}
 	empty := (researchView{researchInput: researchInput{lookup: in.lookup, zone: time.UTC}}).playerReading("16162", nil, "How this is counted")
 	for _, r := range empty.Report.Rows[1:] {
-		if !strings.HasPrefix(r.Cells[1], "not held") || r.Cells[2] != "not read yet" {
+		if !strings.HasPrefix(r.Cells[1], "not held") || r.Cells[2] != "No held copy available" {
 			t.Fatal(r)
 		}
 	}

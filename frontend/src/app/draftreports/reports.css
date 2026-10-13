@@ -2,33 +2,84 @@
 .draft-report { margin-top: 20px; min-width: 0; max-width: 100%; }
 .draft-table-scroll { min-width: 0; overflow: auto; max-width: 100%; max-height: 60vh; }
 .draft-table-scroll:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
-.draft-reports table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
-.draft-reports table.report-compact { width: auto; }
-.draft-reports th, .draft-reports td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--surface-line); min-width: 12ch; white-space: pre-line; }
-.draft-reports th { position: sticky; top: 0; background: var(--surface-2); }
-.draft-reports td:first-child { white-space: nowrap; }
-.draft-reports .market-how { margin-top: 16px; }
+.draft-report table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.draft-report table.report-compact { width: auto; }
+.draft-report th, .draft-report td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--surface-line);
+  min-width: 12ch;
+  white-space: pre-line;
+  }
+.draft-report th { position: sticky; top: 0; background: var(--surface-2); }
+.draft-report td:first-child { white-space: nowrap; }
+.draft-report .market-how { margin-top: 16px; }
 .draft-pick-detail { border-bottom: 1px solid var(--surface-line); padding: 12px 0; }
 .draft-pick-detail .kv > div { display: contents; }
 
-.draft-reports .draft-local-time { white-space: nowrap; }
+.draft-report .draft-local-time { white-space: nowrap; }
 .draft-cell-line + .draft-cell-line { margin-top: 6px; }
 .draft-report[data-endpoint="M-064"] th:first-child,
-.draft-report[data-endpoint="M-064"] td:first-child { position: sticky; left: 0; background: var(--surface-2); }
+.draft-report[data-endpoint="M-064"] td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--surface-2);
+  }
 .draft-report[data-endpoint="M-064"] th:first-child { z-index: 1; }
-.draft-reports .draft-summary { width: auto; margin: 4px 0 12px; }
-.draft-reports .draft-summary th { font-weight: 400; color: var(--surface-tx3); padding-right: 24px; text-align: left; }
+.draft-report .draft-summary { width: auto; margin: 4px 0 12px; }
+.draft-report .draft-summary th {
+  font-weight: 400;
+  color: var(--surface-tx3);
+  padding-right: 24px;
+  text-align: left;
+  }
 
-.draft-report th button { color: inherit; font: inherit; text-align: left; background: transparent; border: 0; padding: 4px 0; cursor: pointer; }
+.draft-report th button {
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 4px 0;
+  cursor: pointer;
+  }
 .draft-report th button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-.draft-reports tr.report-mine td { font-weight: 600; }
+.draft-report tr.report-mine td { font-weight: 600; }
 /* The glyph sits inside the cell's first line, so it never pushes the text onto a line of its own. */
-.draft-reports tr.report-mine td:first-child > .draft-cell-line:first-child::before { content: '▸ '; }
+.draft-report tr.report-mine td:first-child > .draft-cell-line:first-child::before { content: '▸ '; }
 .report-bars { display: block; width: 300px; max-width: 100%; height: 40px; margin-top: 6px; }
 .report-bars rect { fill: currentColor; opacity: 0.7; }
 .report-bars .axis { stroke: currentColor; opacity: 0.4; }
-/* A wide report (six columns or more) packs its columns so it fits the work area without scrolling sideways. */
-.draft-reports table.report-dense th, .draft-reports table.report-dense td { min-width: 7ch; padding: 10px 8px; }
-.draft-reports tr.report-group th { position: static; background: transparent; padding-top: 18px; font-weight: 600; color: var(--surface-tx3); }
+/* Wide reports pack their columns within the work area. */
+.draft-report table.report-dense th, .draft-report table.report-dense td {
+  min-width: 7ch;
+  padding: 10px 8px;
+  }
+.draft-report tr.report-group th {
+  position: static;
+  background: transparent;
+  padding-top: 18px;
+  font-weight: 600;
+  color: var(--surface-tx3);
+  }
 .race-standings > .draft-report { margin-top: 0; }
 .draft-report[data-endpoint="M-013"] td { white-space: nowrap; }
+
+/* Reports share the pane's width, even when the Inspector takes half the window. */
+.draft-report .draft-table-scroll table { width: 100%; table-layout: fixed; }
+.draft-report .draft-table-scroll :is(th, td) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.draft-report .draft-summary { max-width: 100%; }
+.draft-report .draft-summary :is(th, td) { min-width: 0; overflow-wrap: anywhere; }
+.draft-report .draft-cell-line .act-text { white-space: normal; overflow-wrap: anywhere; }
+.draft-report .draft-table-scroll table.report-compact { width: 100%; }
+.draft-report .draft-table-scroll :is(th, td) { padding: 8px 6px; }
+/* Dense grids cannot inherit their old character floors or a button's intrinsic width. */
+.draft-report .draft-table-scroll table.report-dense :is(th, td) { min-width: 0; padding: 8px 2px; }
+.draft-report .draft-table-scroll th .act-button {
+  padding: 3px 0; min-width: 0; max-width: 100%; overflow-wrap: anywhere;
+}

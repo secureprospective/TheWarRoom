@@ -6,7 +6,7 @@ export function FranchisePicker({ snapshot }: { snapshot: Snapshot }) {
     <section className="franchise-picker">
       <h4>Choose my franchise</h4>
       {snapshot.franchises.value.map((f) => (
-        <Act key={f.id} verb="franchise.set" args={{ franchiseId: f.id }}>
+        <Act variant="button" key={f.id} verb="franchise.set" args={{ franchiseId: f.id }}>
           {f.name ?? f.id}
         </Act>
       ))}

@@ -7,7 +7,7 @@ export function WatchButton({ id, name, mine }: { id: string; name: string; mine
   const s = personalState.useReading(mine);
   useEffect(() => { if (mine) void personalState.ensure(mine); }, [mine]);
   const watched = s.value?.entries.some(e => e.kind === 'watch' && e.id === id);
-  return <Act verb="watch.add" disabled={!mine || s.pending}
+  return <Act variant="button" verb="watch.add" disabled={!mine || s.pending}
     args={{ id, entity: 'player', action: watched ? 'remove' : 'add' }}
     label={s.error || `${watched ? 'Unwatch' : 'Watch'} ${name}`}>
     {watched && <Glyph name="watch" />} {watched ? 'Unwatch' : 'Watch'}</Act>;

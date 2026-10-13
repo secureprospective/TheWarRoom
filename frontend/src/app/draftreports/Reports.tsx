@@ -18,17 +18,21 @@ export function ReportsView({ board, selected, refreshVerb = 'draft.reports', co
   return <div className="market draft-reports">
     <h4>{board.title}</h4>
     <div className="market-controls" aria-label={board.title}>
-      {board.reports.map(r => <Act key={r.id} verb="endpoint.open" args={{ id: r.id as EndpointId }}
+      {board.reports.map(r => <Act variant="text"
+        key={r.id} verb="endpoint.open" args={{ id: r.id as EndpointId }}
         label={r.title} active={report.id === r.id}>{r.title}</Act>)}
     </div>
     <div className="market-controls">
       {refreshVerb === 'race.reports' || refreshVerb === 'now.reports' || refreshVerb === 'research.read'
         || refreshVerb === 'archive.reports'
-        ? <Act verb={refreshVerb} args={{ action: 'refresh', value: '' }} label={board.refresh}>
+        ? <Act variant="button"
+          verb={refreshVerb} args={{ action: 'refresh', value: '' }} label={board.refresh}>
           {board.refresh}
         </Act>
-        : <Act verb={refreshVerb} args={{ action: 'refresh' }} label={board.refresh}>{board.refresh}</Act>}
-      {board.mflLabel && <Act verb="draft.reports" args={{ action: 'mfl' }} disabled={!board.mflUrl}
+        : <Act variant="button"
+          verb={refreshVerb} args={{ action: 'refresh' }} label={board.refresh}>{board.refresh}</Act>}
+      {board.mflLabel && <Act variant="button"
+        verb="draft.reports" args={{ action: 'mfl' }} disabled={!board.mflUrl}
         label={board.mflLabel}>{board.mflLabel}</Act>}
     </div>
     {controls}

@@ -257,7 +257,7 @@ it('shows Go restructuring words verbatim instead of inventing a price label', (
   expect(text).not.toContain('Price:');
 });
 
-it('K: all plan action buttons share the bid text-action class', () => {
+it('K: all plan action buttons share the shared button class', () => {
   const cut: ReleasePlan = { id: 'cut', label: 'Cut Example', player: 'Example', charge: '$0',
     post: 'Drop Example', channel: 'MFL', confirmation: 'Confirm', cut: true,
     receipt: { state: 'ready', spec: { intent: 'roster.cut' }, audit: [] },
@@ -269,10 +269,10 @@ it('K: all plan action buttons share the bid text-action class', () => {
     const text = renderToStaticMarkup(element);
     const buttons = text.match(/<button[^>]*>/g) ?? [];
     expect(buttons.length).toBeGreaterThan(0);
-    for (const button of buttons) expect(button).toContain('class="act act-text"');
+    for (const button of buttons) expect(button).toContain('class="act act-button"');
   }
   const source = readFileSync('src/app/contracts/ContractActs.tsx', 'utf8');
-  expect(source).toMatch(/className="bid-actions"><Act[^>]*variant="text"/);
+  expect(source).toMatch(/className="bid-actions"><Act[^>]*variant="button"/);
 });
 it('B: Contract move Close shares Inspector Close class in its heading row', () => {
   const source = readFileSync('src/app/contracts/ContractActs.tsx', 'utf8');

@@ -25,7 +25,7 @@ export function CounterControls({ snapshot }: { snapshot?: Snapshot }) {
           <h5>{heading}</h5>
           <div className="market-controls">
             {choices.map(([value, label]) => (
-              <Act
+              <Act variant="button"
                 key={value}
                 verb="market"
                 args={{ field, value }}
@@ -41,11 +41,12 @@ export function CounterControls({ snapshot }: { snapshot?: Snapshot }) {
       <details>
         <summary>Filter by team</summary>
         <div className="market-controls">
-          <Act verb="market" args={{ field: 'counterpart-team', value: '' }} active={!s.scope.team}>
+          <Act variant="button"
+            verb="market" args={{ field: 'counterpart-team', value: '' }} active={!s.scope.team}>
             All teams
           </Act>
           {s.reading?.value?.teams.map((t) => (
-            <Act
+            <Act variant="button"
               key={t.fid}
               verb="market"
               args={{ field: 'counterpart-team', value: t.fid }}
@@ -58,12 +59,12 @@ export function CounterControls({ snapshot }: { snapshot?: Snapshot }) {
         </div>
       </details>
       <div className="market-controls">
-        <Act verb="market" args={{ field: 'counterpart-reset', value: '' }}>
+        <Act variant="button" verb="market" args={{ field: 'counterpart-reset', value: '' }}>
           Reset Counterparties filters
         </Act>
         {(s.reading?.status === 'failed' ||
           Object.values(s.panels).some((r) => r.status === 'failed')) && (
-          <Act verb="market" args={{ field: 'counterpart-retry', value: '' }}>
+          <Act variant="button" verb="market" args={{ field: 'counterpart-retry', value: '' }}>
             Retry reading
           </Act>
         )}
@@ -140,7 +141,7 @@ export function TeamTable({
       <div className="market-controls counter-sort" role="group" aria-label="Sort by">
         <span>Sort by</span>
         {columns.map(([key, label]) => (
-          <Act key={key} verb="market" args={{ field: 'counterpart-sort', value: key }}
+          <Act variant="button" key={key} verb="market" args={{ field: 'counterpart-sort', value: key }}
             active={sort.key === key} label={`Sort by ${label}`}>
             {label}{sort.key === key ? (sort.descending ? ' ↓' : ' ↑') : ''}
           </Act>
@@ -164,7 +165,7 @@ export function TeamTable({
                     sort.key === key ? (sort.descending ? 'descending' : 'ascending') : 'none'
                   }
                 >
-                  <Act
+                  <Act variant="button"
                     verb="market"
                     args={{ field: 'counterpart-sort', value: key }}
                     label={`Sort by ${label}`}
@@ -173,7 +174,7 @@ export function TeamTable({
                   </Act>
                 </th>
               ))}
-              <th scope="col" data-column="partner" className="counter-nowrap">{words.partner}</th>
+
             </tr>
           </thead>
           <tbody>
@@ -203,8 +204,8 @@ export function TeamTable({
                 <td className="counter-nowrap" data-column="age">
                   {number(r.age.mean, 1)}
                 </td>
-                <td className="counter-nowrap" data-column="partners">{r.partnersText}</td>
-                <td data-column="partner">
+                <td data-column="partners">{r.partnersText}
+                  <small className="counter-partner-label">{words.partner}</small>
                   {r.partner ? (
                     <>
                       <TeamLink snapshot={snapshot} fid={r.partner.fid} name={r.partnerName} />{' '}

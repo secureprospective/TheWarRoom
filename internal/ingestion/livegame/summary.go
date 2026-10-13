@@ -123,7 +123,7 @@ func ParseSummary(body []byte) (Game, error) {
 				}
 				box := Box{Team: b.Team.Abbreviation, Category: s.Name, Labels: s.Labels, Rows: []BoxRow{}}
 				for _, a := range s.Athletes {
-					box.Rows = append(box.Rows, BoxRow{Name: a.Athlete.DisplayName, Stats: a.Stats})
+					box.Rows = append(box.Rows, BoxRow{ID: a.Athlete.ID, Name: a.Athlete.DisplayName, Stats: a.Stats})
 				}
 				g.Box = append(g.Box, box)
 			}

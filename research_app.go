@@ -250,6 +250,11 @@ func (a *App) TargetResearchPlayer(id string) (ResearchPlayerReading, error) {
 		return ResearchPlayerReading{}, fmt.Errorf("research player: %w", err)
 	}
 	a.hydrateResearch(pid.String())
+	if a.fetches != nil {
+		ctx, cancel := context.WithTimeout(a.fallbackParent(), rasFetchTimeout)
+		defer cancel()
+		a.refreshResearchDepth(ctx, false)
+	}
 	in := a.heldResearchInput()
 	if _, _, ok := in.lookup.DisplayFacts(pid.String()); !ok {
 		return ResearchPlayerReading{}, fmt.Errorf("research: player not in the held directory")

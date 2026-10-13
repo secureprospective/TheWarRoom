@@ -52,7 +52,7 @@ describe('league window editing and destinations', () => {
     const html = renderToStaticMarkup(createElement(SeasonalCard, { reading: moved() }));
     expect(html).toContain('twr-card gravity-g2');
     expect(html.match(/aria-current="true"/g)).toHaveLength(1);
-    expect(html).toMatch(/class="act act-text on"[^>]*aria-label="Regular season · Lineup and roster"/);
+    expect(html).toMatch(/class="act act-button on"[^>]*aria-label="Regular season · Lineup and roster"/);
     expect(html).toContain('Offseason · Contracts and cap');
     expect(html).toContain('Draft · Draft room');
     expect(html).toContain('Playoffs · Race');

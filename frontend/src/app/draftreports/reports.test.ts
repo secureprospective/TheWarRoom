@@ -141,10 +141,11 @@ it('contains the wide grid in a zero-minimum shell track and local table scrolle
   expect(markup.match(/scope="col"/g)).toHaveLength(33);
 });
 
-it('keeps local-time cells on one line', async () => {
+it('marks local-time cells and lets narrow table cells wrap without losing the time', async () => {
   const { readFileSync } = await import('node:fs');
   const css = readFileSync('src/app/draftreports/reports.css', 'utf8');
-  expect(css).toMatch(/\.draft-reports \.draft-local-time \{ white-space: nowrap;/);
+  expect(css).toMatch(/\.draft-report \.draft-local-time \{ white-space: nowrap;/);
+  expect(css).toMatch(/\.draft-report \.draft-table-scroll :is\(th, td\) \{[^}]*white-space: pre-line;/);
   const markup = html(createElement(ReportView,
     { report: board().reports[0], howLabel: board().howLabel }));
   expect(markup).toContain('class="draft-local-time"');

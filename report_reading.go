@@ -15,21 +15,22 @@ type ReportRow struct {
 }
 
 type Report struct {
-	SortAscending  string      `json:"sortAscending,omitempty"`
-	SortDescending string      `json:"sortDescending,omitempty"`
-	ID             string      `json:"id"`
-	Title          string      `json:"title"`
-	Note           string      `json:"note"`
-	Status         string      `json:"status"`
-	Source         string      `json:"source"`
-	AsOf           string      `json:"asOf"`
-	How            string      `json:"how"`
-	Columns        []string    `json:"columns"`
-	Rows           []ReportRow `json:"rows"`
-	Summary        []ReportRow `json:"summary"`
-	Link           *ReportLink `json:"link"`
-	BarMax         float64     `json:"barMax,omitempty"`
-	BarLabels      []string    `json:"barLabels,omitempty"`
+	Entities       []ReportEntity `json:"entities,omitempty"`
+	SortAscending  string         `json:"sortAscending,omitempty"`
+	SortDescending string         `json:"sortDescending,omitempty"`
+	ID             string         `json:"id"`
+	Title          string         `json:"title"`
+	Note           string         `json:"note"`
+	Status         string         `json:"status"`
+	Source         string         `json:"source"`
+	AsOf           string         `json:"asOf"`
+	How            string         `json:"how"`
+	Columns        []string       `json:"columns"`
+	Rows           []ReportRow    `json:"rows"`
+	Summary        []ReportRow    `json:"summary"`
+	Link           *ReportLink    `json:"link"`
+	BarMax         float64        `json:"barMax,omitempty"`
+	BarLabels      []string       `json:"barLabels,omitempty"`
 }
 
 // ReportLink opens another report by its registry id, e.g. the full list behind a summary.

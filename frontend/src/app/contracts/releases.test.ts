@@ -58,7 +58,7 @@ describe('Release plans', () => {
     }));
     expect(render()).toContain('Make this a plan');
     expect(render()).toContain('Make this a plan: Cut Example');
-    expect(render()).toMatch(/class="act act-text"[^>]*aria-label="Make this a plan: Cut Example"/);
+    expect(render()).toMatch(/class="act act-button"[^>]*aria-label="Make this a plan: Cut Example"/);
     expect(render()).toContain('class="whatif-plan-line"');
     Object.assign(reading.value.moves[0], { plan: 'Plan: Ready' });
     expect(render()).toContain('Plan: Ready');
@@ -78,14 +78,14 @@ describe('Release plans', () => {
     };
     expect(await render()).toContain('Open MFL drop page');
     const buttons = () => dom.root.querySelectorAll('[type]');
-    expect(buttons()[0].getAttribute('class')).toBe('act act-text');
+    expect(buttons()[0].getAttribute('class')).toBe('act act-button');
     expect(buttons()[0].getAttribute('type')).toBe('button');
     expect(await render()).not.toContain('Confirm and open MFL');
     await act(async () => { confirmRelease(`${p.id}:${p.charge}:${at}`); });
     expect(await render()).toContain(p.confirmation);
     expect(await render()).toContain('Confirm and open MFL');
-    expect(buttons()[0].getAttribute('class')).toBe('act act-text');
-    expect(buttons()[1].getAttribute('class')).toBe('act act-text');
+    expect(buttons()[0].getAttribute('class')).toBe('act act-button');
+    expect(buttons()[1].getAttribute('class')).toBe('act act-button');
     expect(buttons()[1].textContent).toBe('Cancel');
     expect(dom.root.querySelector('[data-primary]')).not.toBeNull();
     expect(dom.root.querySelector('[aria-label]')).not.toBeNull();
@@ -104,7 +104,7 @@ describe('Release plans', () => {
     p.receipt.audit[0].note = "Offseason only: can't be done until the offseason.";
     const render = () => renderToStaticMarkup(createElement(ReleaseCard, { plan: p, mine: '0001' }));
     expect(render()).toContain('Remove plan');
-    expect(render()).toContain('act act-text');
+    expect(render()).toContain('act act-button');
     expect(render()).toContain("Offseason only: can&#x27;t be done until the offseason.");
     expect(render()).not.toContain('Reprice');
     for (const state of ['handed_off', 'not_yet_done'] as const) {

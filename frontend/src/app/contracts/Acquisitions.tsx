@@ -36,7 +36,8 @@ export default function Acquisitions({ mine }: { mine: string }) {
       <WhatIfFigures figures={view.team} label="My cap after the add and selected cut" />
       <ul>{view.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>
     </>}
-    <Act verb="acquisition" args={request} disabled={s.busy} label="Recheck acquisition cost" />
+    <Act variant="button"
+      verb="acquisition" args={request} disabled={s.busy} label="Recheck acquisition cost" />
     <details><summary>How this is counted</summary><p>{s.reading?.howCounted}</p></details>
   </section>;
 }

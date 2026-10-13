@@ -17,7 +17,10 @@ type ResearchPlayerReading struct {
 
 func researchHeldTime(at time.Time, loss string, zone *time.Location) string {
 	if at.IsZero() {
-		return "not read yet"
+		if loss != "" {
+			return loss
+		}
+		return "No held copy available"
 	}
 	text := "as of " + reportTime(at, zone)
 	if loss != "" {
@@ -34,7 +37,7 @@ func (v researchView) playerReading(id string, names map[string]string, how stri
 		}
 	}
 	r := Report{ID: "M-062", Title: "Held player research", Status: "ok", Source: "Source: held MFL and nflverse reports",
-		AsOf: "As of: each feed’s time below", How: "Depth slots match only through the held NFL identity crosswalk. Points per game uses finished weeks with a held score, including zero. Position rank uses this league’s season fantasy points for all players at the same MFL position. Missing facts are not predictions.",
+		AsOf: "As of: each feed’s time below", How: "Depth slots match only through the held NFL identity crosswalk. Points per game uses finished weeks with a held score, including zero. Season points sum the same held finished-week scores used by the card; an unfinished week is excluded. Missing facts are not predictions.",
 		Columns: []string{"Reading", "Held fact", "Feed time"}, Rows: []ReportRow{}}
 	r.Rows = append(r.Rows, ReportRow{Cells: []string{"Owner", p.Owner, "Held league roster"}})
 	v.playerInjury(&r, id)
@@ -89,53 +92,38 @@ func (v researchView) playerDepth(r *Report, id string) {
 	}
 }
 func (v researchView) playerPoints(r *Report, p ResearchPlayer) {
-	h := v.feed("playerScores", "YTD")
-	total, rank, held := 0.0, 1, false
-	for _, e := range researchRows(h) {
-		if e.ID.String() == p.ID {
-			total, held = e.Value, true
-		}
-	}
-	season := "not held"
-	if held {
-		for _, e := range researchRows(h) {
-			if v.player(e.ID.String()).Position == p.Position && e.Value > total {
-				rank++
-			}
-		}
-		season = fmt.Sprintf("%.2f · position rank %d in this league’s scoring", total, rank)
-	}
-	r.Rows = append(r.Rows, ReportRow{Cells: []string{"Season fantasy points", season, researchHeldTime(h.fetchedAt, h.refreshError, v.zone)}})
 	last := max(v.week-1, 0)
 	week := v.feed("playerScores", strconv.Itoa(last))
 	text := "not held"
-	sum, games := 0.0, 0
-	missing := false
-	for w := 1; w <= last; w++ {
-		found := false
-		for _, e := range researchRows(v.feed("playerScores", strconv.Itoa(w))) {
-			if e.ID.String() == p.ID {
-				sum += e.Value
-				games++
-				found = true
-				if w == last {
-					text = fmt.Sprintf("%.2f", e.Value)
-				}
-			}
-		}
-		if !found {
-			missing = true
+	rows, _, latest := v.finishedScores()
+	sum, games, rank := 0.0, 0, 1
+	if row := rows[p.ID]; row != nil {
+		sum, games = row.sum, row.games
+	}
+	for _, row := range rows {
+		if row.position == p.Position && row.sum > sum {
+			rank++
 		}
 	}
+	for _, e := range researchRows(week) {
+		if e.ID.String() == p.ID {
+			text = fmt.Sprintf("%.2f", e.Value)
+		}
+	}
+	season := "not held · no finished weekly score for this player"
+	if games > 0 {
+		season = fmt.Sprintf("%.2f · %d finished weeks with scores · position rank %d", sum, games, rank)
+	}
+	r.Rows = append(r.Rows, ReportRow{Cells: []string{"Season fantasy points", season, researchHeldTime(latest, week.refreshError, v.zone)}})
 	r.Rows = append(r.Rows, ReportRow{Cells: []string{"Last finished week · " + researchLastLabel(last), text, researchHeldTime(week.fetchedAt, week.refreshError, v.zone)}})
 	ppg := "not held"
 	if games > 0 {
 		ppg = fmt.Sprintf("%.2f · %d finished weeks with scores", sum/float64(games), games)
 	}
-	if missing {
+	if games < last {
 		ppg += " · other weekly scores not held"
 	}
-	r.Rows = append(r.Rows, ReportRow{Cells: []string{"Points per game", ppg, researchHeldTime(week.fetchedAt, week.refreshError, v.zone)}})
+	r.Rows = append(r.Rows, ReportRow{Cells: []string{"Points per game", ppg, researchHeldTime(latest, week.refreshError, v.zone)}})
 }
 
 func researchNewsAge(wording string) (time.Duration, bool) {

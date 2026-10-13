@@ -24,15 +24,16 @@ export default function SeasonalCard({ reading }: ClockProps) {
       {deadlines.length ? <ul className="season-deadlines">
         {deadlines.map((deadline) => <li key={deadline.id} data-deadline={deadline.id}
           data-urgency={deadline.urgency}>
-          <Act {...deadlineRoute(deadline.id)} label={deadlineLabel(deadline.label)} />{' · '}
+          <Act variant="text"
+            {...deadlineRoute(deadline.id)} label={deadlineLabel(deadline.label)} />{' · '}
           <time dateTime={deadline.at}>{localDate(deadline.at)}</time>{' · '}
           <span className="channel-countdown" data-countdown>{countdown(deadline.at, Date.now())}</span>
         </li>)}
       </ul> : <p>No deadlines on the commissioner calendar.</p>}
-      <Act verb="calendar.summon" args={{}} label="League windows and their sources" />
+      <Act variant="button" verb="calendar.summon" args={{}} label="League windows and their sources" />
       <div className="market-controls" aria-label="Season phase workspaces" data-endpoint="S-13">
         {(['OFFSEASON', 'DRAFT', 'REGULAR_SEASON', 'PLAYOFFS'] as const).map(destination =>
-          <Act key={destination} verb="phase.goto" args={{ phase: destination }}
+          <Act variant="button" key={destination} verb="phase.goto" args={{ phase: destination }}
             active={destination === phase} current={destination === phase}
             label={phaseDestination[destination]} />)}
       </div>

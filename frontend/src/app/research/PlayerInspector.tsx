@@ -37,7 +37,7 @@ export function PlayerResearchView({ player, identity }: { player: PlayerReading
       <details><summary>{player.howLabel}</summary><p>{player.report.how}</p></details>
     </section>
     <ul>{player.articles.map(a => <li key={a.article}>
-      <Act verb="research.read" args={{ action: 'open', value: `${a.id}:${a.article}` }}
+      <Act variant="button" verb="research.read" args={{ action: 'open', value: `${a.id}:${a.article}` }}
         label={`Open article on MFL · ${a.headline}`}>Open article on MFL · {a.headline}</Act>
     </li>)}</ul>
   </div>;

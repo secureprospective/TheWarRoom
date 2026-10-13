@@ -26,7 +26,7 @@ export const ClockStrip = memo(function ClockStrip(
       {reading.provenance.freshness.state === 'stale' ? (
         <ClockSignal provenance={reading.provenance} />
       ) : null}
-      <Act
+      <Act variant="text"
         verb="calendar.summon"
         args={{}}
         controls="target-calendar"

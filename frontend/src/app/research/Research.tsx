@@ -20,13 +20,13 @@ function NewsActions({ research, mine }: { research: ResearchBoard; mine: boolea
   const names = mine ? new Set(research.board.reports.find(r => r.id === 'M-060')?.rows
     .map(r => r.cells[0])) : null;
   return <div className="research-articles" data-endpoint="M-059">
-    <Act verb="research.read" args={{ action: 'news', value: mine ? 'mine' : 'league' }}
+    <Act variant="button" verb="research.read" args={{ action: 'news', value: mine ? 'mine' : 'league' }}
       disabled={mine && !research.scope.mine}>
       Refresh rostered players’ news
     </Act>
     <ul>{research.articles.filter(a => !names || names.has(a.name)).map(a =>
       <li key={`${a.id}:${a.article}`}>
-        <Act verb="research.read" args={{ action: 'open', value: `${a.id}:${a.article}` }}
+        <Act variant="button" verb="research.read" args={{ action: 'open', value: `${a.id}:${a.article}` }}
           label={`Open on MFL · ${a.name} · ${a.headline}`}>{a.name} · Open article on MFL</Act>
       </li>)}</ul>
   </div>;
@@ -75,14 +75,15 @@ export function ResearchView({ research, selected }: {
           onChange={e => setSearch(e.target.value)} />
       </label>
       <div className="market-controls">
-        <Act verb="research.read" args={{ action: 'search', value: search }} submit>Search players</Act>
+        <Act variant="button"
+          verb="research.read" args={{ action: 'search', value: search }} submit>Search players</Act>
       </div>
       </form>
       {!s.search.trim() ? <p>Enter a name, position or NFL team to find a player.</p> : <>
         <p>{research.players.length} {research.players.length === 1 ? 'match' : 'matches'}
           {' · open a player in the Inspector'}</p>
         <ul>{research.players.map(p => <li key={p.id}>
-          <Act verb="inspector.open"
+          <Act variant="text" verb="inspector.open"
             args={{ subject: { kind: 'player', id: p.id, franchiseId: p.franchiseId } }}>
             {p.name} · {p.position} · {p.team} · {p.owner}
           </Act>

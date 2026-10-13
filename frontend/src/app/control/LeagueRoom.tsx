@@ -29,7 +29,8 @@ export function LeagueRoom() {
         ))}
       </section>
       {s.accounting && <ReportView report={s.accounting} howLabel="How this was checked" />}
-      <Act verb="control.read" args={{ action: 'open-accounting', value: '' }}>Open MFL accounting</Act>
+      <Act variant="button"
+        verb="control.read" args={{ action: 'open-accounting', value: '' }}>Open MFL accounting</Act>
     </section>
   );
 }

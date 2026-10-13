@@ -26,8 +26,9 @@ describe('League Pulse › Now', () => {
     const markup = view('M-005');
     expect(endpointById('X-03').status).not.toBe('spec');
     expect(markup).toContain('<option value="5" selected="">Week 5</option>');
-    expect(markup).toMatch(/<th scope="col"[^>]*>Buffalo Bills<\/th>/);
-    expect(markup).toContain('Fields, Justin · NYJ');
+    expect(markup).toContain('aria-label="Inspect Buffalo Bills"');
+    expect(markup).toContain('aria-label="Inspect Fields, Justin"');
+    expect(markup).toContain('Fields, Justin</button> · NYJ');
     expect(markup).not.toMatch(/>00\d\d</);
     expect(markup).toContain('class="report-group"');
     expect(markup).toMatch(/class="report-mine" aria-current="true"/);

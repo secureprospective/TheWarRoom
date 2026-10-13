@@ -49,6 +49,8 @@ func (a *App) archivedResearchFeed(ctx context.Context, kind, week string) heldS
 
 // Opening Research reads disk, never the network or the launch refresh lock.
 func (a *App) hydrateResearch(extraIDs ...string) {
+	a.researchArchiveMu.Lock()
+	defer a.researchArchiveMu.Unlock()
 	if a.history == nil {
 		return
 	}

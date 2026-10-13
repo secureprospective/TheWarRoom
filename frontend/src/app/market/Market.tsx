@@ -47,10 +47,10 @@ function MarketWorkspace() {
   return (
     <>
       <div className="market-controls" aria-label="Market views">
-        <Act verb="endpoint.open" args={{ id: 'L-01' }} label="Trade Market" active={!draft}>
+        <Act variant="button" verb="endpoint.open" args={{ id: 'L-01' }} label="Trade Market" active={!draft}>
           Trade Market
         </Act>
-        <Act verb="nav.open" args={{ node: 'trade', workspace: 'draft-room' }}
+        <Act variant="button" verb="nav.open" args={{ node: 'trade', workspace: 'draft-room' }}
           label="Draft lab" active={draft}>
           Draft lab
         </Act>
@@ -84,11 +84,12 @@ function MarketScreen() {
       <section className="market-filters" aria-label="Market filters">
         <h5>Time of year</h5>
         <div className="market-controls" data-endpoint="L-06">
-          <Act verb="market" args={{ field: 'reset', value: '' }} label="Show all year and assets">
+          <Act variant="button"
+            verb="market" args={{ field: 'reset', value: '' }} label="Show all year and assets">
             Everything
           </Act>
           {(['spring', 'summer', 'season'] as const).map((id) => (
-            <Act
+            <Act variant="button"
               key={id}
               verb="market"
               args={{ field: 'window', value: id }}
@@ -100,7 +101,7 @@ function MarketScreen() {
         </div>
         <div className="market-controls">
           {phases.map(([id, label]) => (
-            <Act
+            <Act variant="button"
               key={id}
               verb="market"
               args={{ field: 'phase', value: id }}
@@ -115,7 +116,7 @@ function MarketScreen() {
         <div className="market-controls" data-endpoint="L-07">
           {assets.map((kind) => (
             <span key={kind}>
-              <Act
+              <Act variant="text"
                 verb="market"
                 args={{ field: 'asset', value: kind }}
                 active={s.scope.assets?.includes(kind) ?? false}
@@ -136,7 +137,7 @@ function MarketScreen() {
         </div>
         <div className="market-controls" data-endpoint="L-08">
           {['together', 'split'].map((value) => (
-            <Act
+            <Act variant="button"
               key={value}
               verb="market"
               args={{ field: 'age', value }}
@@ -148,7 +149,8 @@ function MarketScreen() {
           ))}
         </div>
         {canRetry(s.lists, s.clock, s.stretches) && (
-          <Act verb="market" args={{ field: 'retry', value: '' }} label="Retry Market archive reading">
+          <Act variant="button"
+            verb="market" args={{ field: 'retry', value: '' }} label="Retry Market archive reading">
             Retry reading
           </Act>
         )}
