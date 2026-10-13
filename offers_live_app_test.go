@@ -64,7 +64,7 @@ func TestLiveOfferHistoryRestartAndDedup(t *testing.T) {
 	if r.Count != before.Count+1 || offerOutcomeCount(r, "pending") != 1 ||
 		!strings.Contains(r.Value.Summary, "1 open offer") ||
 		!strings.Contains(r.Cutoff, at.Format(time.RFC3339)) || r.Provenance.Source != r.Cutoff ||
-		r.Provenance.Freshness.State != FreshLive || !strings.Contains(before.Value.Summary, "No open offers.") {
+		r.Provenance.Freshness.State != FreshLive || r.Provenance.Kind != "archive" || !strings.Contains(before.Value.Summary, "No open offers.") {
 		t.Fatalf("live offer missing or undated: %+v", r)
 	}
 	for _, st := range r.Value.Stretches {

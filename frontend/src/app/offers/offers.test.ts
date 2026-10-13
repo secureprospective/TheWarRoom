@@ -235,3 +235,13 @@ it('refreshes the current scope when the season feeds change and unsubscribes on
   roots.splice(roots.indexOf(root), 1);
   expect(stop).toHaveBeenCalledOnce();
 });
+
+it('reads a history with live offers: archive kind, live freshness', () => {
+  const live = structuredClone(wire) as typeof wire & { provenance: { freshness: { state: string } } };
+  live.provenance.freshness = { state: 'live', fetchedAt: '2026-10-13T19:56:00Z', note: '' };
+  const r = parseOffers(live);
+  expect(r.provenance?.kind).toBe('archive');
+  expect(r.provenance?.freshness.state).toBe('live');
+  expect(() => parseOffers({ ...live, provenance: { ...live.provenance, kind: 'live' } }))
+    .toThrow('expected archive');
+});

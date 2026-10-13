@@ -103,8 +103,9 @@ func (a *App) TargetOffers(raw RawOfferScope) Reading[OffersView] {
 	r.Provenance = counterProvenance(d)
 	r.Provenance.Source = source
 	if !checked.IsZero() {
-		// Live offers are added since the archive, so the reading is as fresh as the last pending-offer read.
-		r.Provenance.Kind, r.Provenance.Freshness = "live", liveFreshness(checked)
+		// Live offers are added to the archive, so the reading is as fresh as the last pending-offer read. The
+		// kind stays "archive" (the screen's contract): the history still rests on it.
+		r.Provenance.Freshness = liveFreshness(checked)
 	}
 	if err := validateOfferTeam(raw, d); err != nil {
 		reason := err.Error()
