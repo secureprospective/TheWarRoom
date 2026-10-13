@@ -12,6 +12,7 @@ import (
 type fakeAssets map[string]dynastyValue
 
 func (f fakeAssets) player(pid string, _ time.Time) dynastyValue { return f[pid] }
+func (fakeAssets) pick(int, int, string, time.Time) dynastyValue { return dynastyValue{} }
 
 func TestAssetBoardOnFieldNowFromHeldWeeks(t *testing.T) {
 	in := realResearch(t) // week 5: weeks 1-4 are finished

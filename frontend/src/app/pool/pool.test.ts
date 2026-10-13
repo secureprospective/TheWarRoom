@@ -69,11 +69,11 @@ describe('Pool reading states', () => {
     html(createElement(PoolFrame, { reading, refreshing }));
   it('shows the table, source, as-of and how it is counted', () => {
     const text = frame(pool());
-    for (const phrase of ['Adams, Zed', '$630,000', 'Smith, John', '$530,000', 'Plan a bid on Jones, Amy',
+    for (const phrase of ['Adams, Zed', 'Smith, John', 'Plan a bid on Jones, Amy',
       'Open bid plan on Adams, Zed',
       'Source: MFL freeAgents', 'As of:', 'How this is counted', 'data-endpoint="M-056"',
-      '<th>Player</th>', '<th>Age</th>', '<th>Experience</th>', '<th>Minimum</th>',
-      'Unknown (rookie minimum)', '16 years'])
+      'Sort by Player', 'Sort by Pos', 'Sort by NFL team', 'Sort by Engine points',
+      'Sort by This season points per game', 'Sort by Lab dynasty value', 'Not valued'])
       expect(text).toContain(phrase);
   });
   it('is honest when nothing was fetched, MFL is empty, or the copy is old', () => {
@@ -100,8 +100,8 @@ describe('Pool reading states', () => {
     const state = { ...poolState.peek(), reading: pool() };
     const text = html(createElement(PoolScreen, { state, franchiseId: '0001' }));
     for (const phrase of ['<option value="QB">QB</option>', '<option value="WR">WR</option>',
-      '<option value="CB">CB</option>', 'All positions', '>Player</option>', '>Position</option>',
-      '>Minimum</option>', 'Refresh from MFL', 'Ascending'])
+      '<option value="CB">CB</option>', 'All positions', '>Player</option>', '>Pos</option>',
+      '>Minimum</option>', 'Refresh from MFL', 'Descending'])
       expect(text).toContain(phrase);
   });
   it('keeps pool sources free of broken words and sideways scroll', () => {
@@ -177,7 +177,7 @@ describe('Bid form re-queries Go', () => {
     await state.change({ field: 'pool-sort', value: 'minimum' });
     await state.change({ field: 'pool-sort', value: 'minimum' });
     await state.change({ field: 'pool-position', value: 'QB' });
-    expect(state.peek().scope).toEqual({ position: 'QB', sort: 'minimum', desc: true });
+    expect(state.peek().scope).toEqual({ position: 'QB', sort: 'minimum', desc: true, showNoTeam: false });
     expect(calls.filter((c) => c.startsWith('pool')).at(-1)).toContain('"position":"QB"');
   });
   it('renders the form, its verdicts, and holds Save until Go has answered', () => {
@@ -296,7 +296,7 @@ describe('My moves and the Inspector', () => {
   it('shows a pool player\'s open bid plan in the Inspector', () => {
     const row = pool().value.rows[2];
     const open = html(createElement(PoolInspectorView, { row, plans: [plan('ready')], busy: '' }));
-    for (const phrase of ['Smith, John', 'Minimum salary', '$530,000', 'Bid plan Smith, John', 'Ready'])
+    for (const phrase of ['Smith, John', 'Minimum salary', 'Bid plan Smith, John', 'Ready'])
       expect(open).toContain(phrase);
     expect(open).not.toContain('Plan a bid');
     const none = html(createElement(PoolInspectorView, { row, plans: [], busy: '' }));
