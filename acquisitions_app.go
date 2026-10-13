@@ -106,7 +106,7 @@ func (a *App) TargetAcquisition(r RawAcquisition) Reading[AcquisitionView] {
 	for year := s.Snapshot.Season; year <= p.ContractYear; year++ {
 		out.Seasons = append(out.Seasons, whatIfFigure(fmt.Sprint(year), 0, p.Salary))
 	}
-	out.Reasons = append(out.Reasons, "Future salaries are flat-filled from held salary and expiration; future season caps are not held.")
+	out.Reasons = append(out.Reasons, "Later seasons assume today's salary through expiration; MFL does not publish future salary caps.")
 	if err := a.acquisitionProjection(ctx, r, s, current, p, &out); err != nil {
 		return acquisitionReading(out, err)
 	}

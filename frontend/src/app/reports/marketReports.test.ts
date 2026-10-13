@@ -113,10 +113,34 @@ it('sizes two/three-column report tables to content, leaving wide reports locall
   for (const n of [2, 3, 4]) {
     const r = { ...report, columns: Array.from({ length: n }, (_, i) => `Column ${i}`) };
     const markup = html(createElement(ReportView, { report: r, howLabel: board().howLabel }));
-    expect(markup.includes('class="report-compact"')).toBe(n <= 3);
+    expect(markup.includes('class="report-table report-compact"')).toBe(n <= 3);
     expect(markup).toContain('class="draft-table-scroll"');
   }
   const css = readFileSync('src/app/draftreports/reports.css', 'utf8');
-  expect(css).toContain('.draft-reports table.report-compact { width: auto; }');
+  expect(css).toContain('.draft-report table.report-compact { width: auto; }');
   expect(css).toContain('.draft-table-scroll { min-width: 0; overflow: auto; max-width: 100%;');
+});
+
+it.each(['M-101', 'M-154', 'M-087'])('%s styles its table without a workspace wrapper', id => {
+  const report = { ...board().reports[0], id, columns: ['Player', 'Position', 'NFL team', 'Points'],
+    rows: [{ cells: ['Example', 'QB', 'BUF', 'No score'], range: null }], summary: [] };
+  const markup = html(createElement(ReportView, { report, howLabel: 'How' }));
+  expect(markup).toMatch(/<table class="report-table [^"]*"><thead>/);
+  expect(markup).toContain('scope="col"');
+  expect(markup).toContain('>Position</th>');
+  expect(markup).toContain('No score');
+  expect(markup).not.toContain('Unavailable');
+  const css = readFileSync(new URL('../draftreports/reports.css', import.meta.url), 'utf8');
+  expect(css).toContain('.draft-report th, .draft-report td');
+  expect(css).toContain('padding: 10px 12px;');
+  expect(css).toContain('position: sticky; top: 0;');
+  expect(css).toContain('.report-table thead { display: table-header-group;');
+});
+
+it('gives bye-week shortfalls their own titled block before the player table', () => {
+  const report = { ...board().reports[0], id: 'M-154',
+    summary: [{ cells: ['Week 6 · K', '0 available; needs 1'], range: null }] };
+  const markup = html(createElement(ReportView, { report, howLabel: 'How' }));
+  expect(markup).toContain('aria-label="Bye-week shortfalls"><h6>Bye-week shortfalls</h6>');
+  expect(markup).toMatch(/needs 1<\/td><\/tr><\/tbody><\/table><\/div><div class="draft-table-scroll"/);
 });

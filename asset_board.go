@@ -177,7 +177,7 @@ func dynastyValueCells(d dynastyValue) (AssetCell, AssetCell, float64) {
 		reason := AssetCell{Text: "Not valued", Sub: d.Reason}
 		return reason, reason, 0
 	}
-	dynasty := AssetCell{Held: true, Text: fmt.Sprintf("%.2f wins", d.Discounted),
+	dynasty := AssetCell{Held: true, Text: signed(d.Discounted) + " wins",
 		Sub:    fmt.Sprintf("next %d seasons", d.Seasons),
 		Detail: fmt.Sprintf("%s · this season's unplayed weeks and the %d after, later ones discounted", d.ClassLabel, max(d.Seasons-1, 0))}
 	market := AssetCell{Text: "No price", Sub: "no market for " + d.ClassLabel}

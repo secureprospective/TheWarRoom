@@ -63,3 +63,23 @@ describe('C-01 board view', async () => {
     expect(html).toContain('Reading…');
   });
 });
+
+it('keeps table values whole and wraps the qualifier on a separate line', async () => {
+  const { vi } = await import('vitest');
+  const { createElement } = await import('react');
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const { readFileSync } = await import('node:fs');
+  const { AssetNumber } = await import('./AssetNumber');
+  const { assetState } = await import('./state');
+  const spy = vi.spyOn(assetState, 'useCell').mockReturnValue({
+    text: '14.00 PPG', sub: 'QB 14/54 · top 26%', detail: '', held: true,
+  });
+  const markup = renderToStaticMarkup(createElement(AssetNumber,
+    { playerId: '0042', which: 'now', inline: true }));
+  expect(markup).toContain('14.00 PPG<span class="asset-sub asset-table-sub">QB 14/54 · top 26%</span>');
+  expect(markup).toContain('title="14.00 PPG · QB 14/54 · top 26%"');
+  const css = readFileSync(new URL('./assetNumber.css', import.meta.url), 'utf8');
+  expect(css).toContain('white-space: normal; overflow: visible; text-overflow: clip;');
+  expect(css).toContain('.matrix-roster .asset-table-sub { display: block; white-space: normal; }');
+  spy.mockRestore();
+});

@@ -255,7 +255,7 @@ func contractEvidenceReasons(f envelope.ContractFacts) []string {
 		reasons = append(reasons, "Not checked: restructure allowance already used on this contract or team, and any extension unlock")
 	}
 	if len(f.Baseline) > 1 {
-		reasons = append(reasons, "Not checked: future BASE salaries; baseline years are flat-filled from the held annual salary")
+		reasons = append(reasons, "Not checked: future salary amounts; later years assume today's salary")
 	}
 	return reasons
 }

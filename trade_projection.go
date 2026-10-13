@@ -195,7 +195,7 @@ func tradeProjectedTeam(sim tradeSimulation, s state.WhatIfSession, seed domain.
 		team.Roster = append(team.Roster, TradeAsset{Token: p.MFLID, Name: label + " · " + string(live.RosterStatus), Position: players[p.MFLID].Position})
 	}
 	team.Figures = append(team.Figures, whatIfFigure("Cap used this season", sim.Before[s.Mine], after),
-		whatIfFigure(fmt.Sprintf("%d commitments · inferred", s.Snapshot.Season+1), futureBefore, futureAfter))
+		whatIfFigure(fmt.Sprintf("%d commitments at today's salaries", s.Snapshot.Season+1), futureBefore, futureAfter))
 	team.Figures, blocks = tradeCapFigures(team.Figures, s, sim.Before[s.Mine], after, futureBefore, futureAfter, name)
 	team.Figures = append(team.Figures, rosterFigure("Active roster · 35–48", activeBefore, active),
 		rosterFigure("Taxi squad · maximum 8", taxiBefore, taxi))

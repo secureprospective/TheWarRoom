@@ -145,7 +145,7 @@ it('contains the wide grid in a zero-minimum shell track and local table scrolle
 it('keeps local-time cells on one line', async () => {
   const { readFileSync } = await import('node:fs');
   const css = readFileSync('src/app/draftreports/reports.css', 'utf8');
-  expect(css).toMatch(/\.draft-reports \.draft-local-time \{ white-space: nowrap;/);
+  expect(css).toMatch(/\.draft-report \.draft-local-time \{ white-space: nowrap;/);
   const markup = html(createElement(ReportView,
     { report: board().reports[0], howLabel: board().howLabel }));
   expect(markup).toContain('class="draft-local-time"');
