@@ -32,6 +32,10 @@ func main() {
 		Width:            1280,
 		Height:           800,
 		WindowStartState: options.Maximised,
+		// Wails on Linux turns a zero maximum into the monitor size at launch, so after a resolution change the
+		// window could not grow past the old screen. An explicit ceiling no display reaches keeps it unbounded.
+		MaxWidth:  16384,
+		MaxHeight: 16384,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 			// Anything not in the bundle: player photos at /headshot/<mfl id>.
