@@ -26,12 +26,8 @@ type RawSummary struct {
 		Players []RawBox `json:"players"`
 	} `json:"boxscore"`
 	Drives struct {
-		Previous []struct {
-			Plays []RawPlay `json:"plays"`
-		} `json:"previous"`
-		Current *struct {
-			Plays []RawPlay `json:"plays"`
-		} `json:"current"`
+		Previous []RawDrive `json:"previous"`
+		Current  *RawDrive  `json:"current"`
 	} `json:"drives"`
 }
 
@@ -70,13 +66,24 @@ func (r RawBox) Validate() error {
 	}
 	return nil
 }
+
+// RawDrive is one ESPN drive and its plays.
+type RawDrive struct {
+	ID    string    `json:"id"`
+	Plays []RawPlay `json:"plays"`
+}
+
+// rawPlays lists every play once. During a game ESPN also lists the drive in progress as the last
+// previous drive, under the same id (seen live on 2026-10-12), so the current drive counts only
+// when it is not already among the previous ones.
 func (r RawSummary) rawPlays() []RawPlay {
 	out := []RawPlay{}
 	for _, d := range r.Drives.Previous {
 		out = append(out, d.Plays...)
 	}
-	if r.Drives.Current != nil {
-		out = append(out, r.Drives.Current.Plays...)
+	cur := r.Drives.Current
+	if cur != nil && !slices.ContainsFunc(r.Drives.Previous, func(d RawDrive) bool { return cur.ID != "" && d.ID == cur.ID }) {
+		out = append(out, cur.Plays...)
 	}
 	return out
 }

@@ -106,9 +106,8 @@ func (r RawEvent) Validate() error {
 	if err := s.Validate(); err != nil {
 		return err
 	}
-	if c.Situation != nil {
-		return c.Situation.Validate(c.Competitors)
-	}
+	// The situation is optional detail: ESPN sends it without a possession or down at kickoffs,
+	// timeouts and changes of possession. An unreadable one drops the field state, never the board.
 	return nil
 }
 func validateCompetitors(teams []RawCompetitor, state string) error {
@@ -195,11 +194,12 @@ func (r RawEvent) game() Game {
 			g.Away = v
 		}
 	}
-	if c.Situation != nil {
-		v := c.Situation
-		g.State = &State{Possession: v.Possession, Down: *v.Down, Distance: *v.Distance, YardLine: *v.YardLine, ToEndzone: -1}
+	if v := c.Situation; v != nil {
+		if v.Validate(c.Competitors) == nil {
+			g.State = &State{Possession: v.Possession, Down: *v.Down, Distance: *v.Distance, YardLine: *v.YardLine, ToEndzone: -1}
+		}
 		// The scoreboard's yardLine has no reliable direction; drive state supplies the field.
-		if v.LastPlay != nil {
+		if v.LastPlay != nil && v.LastPlay.Validate() == nil {
 			p := Play{ID: v.LastPlay.ID, Text: v.LastPlay.Text, Clock: g.Clock, Period: g.Period, HomeScore: g.Home.Score, AwayScore: g.Away.Score, Participants: []string{}}
 			g.Last = &p
 		}
