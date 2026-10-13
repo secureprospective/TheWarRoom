@@ -33,7 +33,7 @@ describe('League communications', () => {
       expect(panel.split(escaped)).toHaveLength(2);
     }
   });
-  it('limits the panel to the latest 50 and exposes Show more, while Digests holds every row', () => {
+  it('limits the panel and Digests to the latest 50 and exposes Show more', () => {
     const view = comms();
     view.events = Array.from({ length: 60 }, (_, i) => ({ sentence: `Fixture move ${i}.`, date: 'Oct 11' }));
     const render = (panel: boolean, limit: number) => renderToStaticMarkup(
@@ -44,7 +44,9 @@ describe('League communications', () => {
     expect(render(true, 50)).toContain('Show more');
     expect(render(true, 100)).toContain('Fixture move 59.');
     expect(render(true, 100)).not.toContain('Show more');
-    expect(render(false, 50)).toContain('Fixture move 59.');
+    // Digests is capped too: an uncapped feed buried the rostered players' news below the whole season.
+    expect(render(false, 50)).not.toContain('Fixture move 50.');
+    expect(render(false, 50)).toContain('Show more');
   });
   it('sorts the shared report by numeric dates in either direction', () => {
     reportSort.set({ id: 'M-032', column: 0 });

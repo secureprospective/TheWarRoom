@@ -330,3 +330,48 @@ func TestPulseStartupDatesWindowsWithoutRefresh(t *testing.T) {
 		t.Fatal("startup seeding contacted MFL", transport.requests)
 	}
 }
+
+// Before the week's first kickoff a held live matchup is not in progress, and a starter whose NFL
+// team has no game that week reads bye (or no NFL team), never 0.00.
+func TestPulseByeAndNotStartedWeek(t *testing.T) {
+	v, err := newNowView(realNow(t, 5))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(v.games) == 0 {
+		t.Fatal("fixture holds no NFL schedule for week 5")
+	}
+	v.live = true
+	game, _, _, ok := v.myGame()
+	if !ok {
+		t.Fatal("fixture has no matchup")
+	}
+	first := time.Time{}
+	for _, g := range v.games {
+		if first.IsZero() || g.kickoff.Before(first) {
+			first = g.kickoff
+		}
+	}
+	all := leaguefeed.Game{Home: game, Away: game}
+	all.Home.Scored, all.Away.Scored = false, false
+	v.now.at = first.Add(-time.Minute)
+	if got := v.gameState(all); got != "Not played yet" {
+		t.Fatalf("before the first kickoff: %q", got)
+	}
+	v.now.at = first
+	if got := v.gameState(all); !strings.HasPrefix(got, "In progress: ") {
+		t.Fatalf("at the first kickoff: %q", got)
+	}
+	game.Scored = false
+	p := game.Players[0]
+	delete(v.games, v.team(p))
+	if v.team(p) == "" || v.team(p) == "FA" {
+		t.Fatal("fixture player has no NFL team", p.ID)
+	}
+	if got := v.playerPointsText(game, p); got != "bye" {
+		t.Fatalf("team without a game: %q, want bye", got)
+	}
+	if noGameText("FA") != "no NFL team" || noGameText("") != "no NFL team" {
+		t.Fatal("an NFL free agent must read no NFL team")
+	}
+}

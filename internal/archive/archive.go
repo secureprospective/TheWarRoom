@@ -44,7 +44,14 @@ type Sink interface {
 type Transport struct {
 	Base http.RoundTripper // nil means http.DefaultTransport
 	Sink Sink
+	// Judge, when set, reads a complete 200 body of at most judgedBytes and returns a refusal reason, or ""
+	// for data. A refused fetch is recorded with that reason as its error, body kept, so an API that answers
+	// errors with HTTP 200 (MFL) never reads as a good fetch.
+	Judge func(url string, body []byte) string
 }
+
+// judgedBytes bounds the bodies Judge sees: refusals are short envelopes, never data pages.
+const judgedBytes = 4096
 
 // RoundTrip performs the request and wraps the response body in the recorder.
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -65,6 +72,9 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	f.Status = resp.StatusCode
 	gz, _ := gzip.NewWriterLevel(nil, gzip.BestSpeed) // only an invalid level errors
 	rec := &recorder{body: resp.Body, sink: t.Sink, ctx: ctx, fetch: f, hash: sha256.New(), gz: gz}
+	if resp.StatusCode == http.StatusOK {
+		rec.judge = t.Judge
+	}
 	rec.secret = req.URL.Query().Get("APIKEY")
 	gz.Reset(&rec.buf)
 	resp.Body = rec
@@ -86,6 +96,8 @@ type recorder struct {
 	secret string
 	tail   []byte
 	leaked bool
+	judge  func(url string, body []byte) string
+	head   []byte // the body's first judgedBytes+1 bytes, kept only for judge
 }
 
 func (r *recorder) Read(p []byte) (int, error) {
@@ -101,6 +113,9 @@ func (r *recorder) Read(p []byte) (int, error) {
 				joined = joined[len(joined)-keep:]
 			}
 			r.tail = append([]byte(nil), joined...)
+		}
+		if r.judge != nil && len(r.head) <= judgedBytes {
+			r.head = append(r.head, p[:min(n, judgedBytes+1-len(r.head))]...)
 		}
 		r.size += int64(n)
 		r.hash.Write(p[:n])
@@ -136,6 +151,9 @@ func (r *recorder) finish(complete bool) error {
 			return fmt.Errorf("archive: compress %s: %w", f.URL, err)
 		}
 		f.SHA256, f.Size, f.Gzip = hex.EncodeToString(r.hash.Sum(nil)), r.size, r.buf.Bytes()
+		if r.judge != nil && len(r.head) <= judgedBytes {
+			f.Err = redactSecret(r.judge(f.URL, r.head), r.secret)
+		}
 	default:
 		f.Err = "body not read to the end"
 	}

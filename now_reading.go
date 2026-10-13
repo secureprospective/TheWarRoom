@@ -209,19 +209,48 @@ func (v nowView) pointsText(s leaguefeed.Side, p leaguefeed.Points) string {
 	return "—"
 }
 
+// playerPointsText is a starter's points, or why there are none yet. With the week's NFL schedule
+// held, a team missing from it has no game: on bye, or no NFL team at all for an NFL free agent.
 func (v nowView) playerPointsText(s leaguefeed.Side, p leaguefeed.WeekPlayer) string {
 	if !s.Scored {
-		if g, ok := v.games[v.team(p)]; ok && v.now.at.Before(g.kickoff) {
+		team := v.team(p)
+		g, ok := v.games[team]
+		switch {
+		case ok && v.now.at.Before(g.kickoff):
 			return "yet to play · " + g.kickoff.In(v.in.zone).Format("Mon 3:04 PM")
+		case !ok && len(v.games) > 0:
+			return noGameText(team)
 		}
 	}
 	return v.pointsText(s, p.Points)
+}
+
+func noGameText(team string) string {
+	if team == "" || team == "FA" {
+		return "no NFL team"
+	}
+	return "bye"
+}
+
+// kickedOff reports whether any NFL game of the held week has started; unknown counts as started.
+func (v nowView) kickedOff() bool {
+	if len(v.games) == 0 {
+		return true
+	}
+	for _, g := range v.games {
+		if !v.now.at.Before(g.kickoff) {
+			return true
+		}
+	}
+	return false
 }
 
 func (v nowView) gameState(g leaguefeed.Game) string {
 	switch {
 	case g.Home.Scored:
 		return v.gameResult(g)
+	case v.live && !v.kickedOff():
+		return "Not played yet"
 	case v.live:
 		// My side reads first, as in my matchup's columns; otherwise MFL's away-then-home order.
 		first, second := g.Away, g.Home

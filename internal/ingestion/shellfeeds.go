@@ -154,8 +154,13 @@ func ParsePlayerScores(body []byte) ([]RawPlayerScore, error) {
 	return rows, nil
 }
 
+// FetchCalendar reads the league calendar. MFL answers it only to a logged-in league member (since 10-12 it
+// refuses an unkeyed request with an HTTP-200 error), so the request is keyed, as the league board's is.
 func FetchCalendar(ctx context.Context, client *mfl.Client, year, league string) ([]RawCalendarEvent, error) {
-	body, err := LeagueExport(ctx, client, "calendar", year, league, nil)
+	if err := client.DiscoverHost(ctx, year, league); err != nil {
+		return nil, fmt.Errorf("calendar: discover: %w", err)
+	}
+	body, err := KeyedLeagueExport(ctx, client, "calendar", year, league, nil)
 	if err != nil {
 		return nil, fmt.Errorf("calendar: %w", err)
 	}

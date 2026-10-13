@@ -32,6 +32,19 @@ func CheckAPIError(body []byte) error {
 	return nil
 }
 
+// MFLRefusal is archive.Transport's Judge for MFL: an MFL host's HTTP-200 error envelope is a refused fetch,
+// named by MFL's own text; any other body or host is data.
+func MFLRefusal(rawURL string, body []byte) string {
+	u, err := url.Parse(rawURL)
+	if err != nil || !strings.HasSuffix(u.Hostname(), "myfantasyleague.com") {
+		return ""
+	}
+	if err := CheckAPIError(body); err != nil {
+		return err.Error()
+	}
+	return ""
+}
+
 // MFLList decodes an MFL list field that is an array, or a bare object when MFL's XML→JSON
 // converter collapses a single element. Use it for every MFL list. Null or empty gives nil;
 // the caller decides whether that is an error.
