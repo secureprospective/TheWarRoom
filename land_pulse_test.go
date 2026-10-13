@@ -123,10 +123,37 @@ func TestPulseRaceLiveSchedule(t *testing.T) {
 			if row.Cells[3] != "In progress · 246.15 to 221.25" {
 				t.Fatal(row.Cells)
 			}
-			return
 		}
 	}
-	t.Fatal("week 5 missing")
+	// Before the live week's first kickoff its 0.00 scores are not a game in progress.
+	in.liveUnplayed = true
+	if v, err = newRaceView(in); err != nil {
+		t.Fatal(err)
+	}
+	if got := v.scheduleByTeam().Rows[4].Cells; got[0] != "Week 5" || got[3] != "Not played yet" {
+		t.Fatalf("live week before kickoff: %v", got)
+	}
+}
+
+func TestPulseLiveWeekUnplayedFollowsKickoffs(t *testing.T) {
+	now := realNow(t, 5)
+	games := nflGames(now.held.schedules[5].value, now.at)
+	first := time.Time{}
+	for _, g := range games {
+		if first.IsZero() || g.kickoff.Before(first) {
+			first = g.kickoff
+		}
+	}
+	live := held(leaguefeed.Lineups{Week: 5})
+	if !liveWeekUnplayed(live, now.held.schedules, first.Add(-time.Minute)) {
+		t.Fatal("before the first kickoff the live week must read unplayed")
+	}
+	if liveWeekUnplayed(live, now.held.schedules, first) {
+		t.Fatal("at the first kickoff the live week has begun")
+	}
+	if liveWeekUnplayed(live, nil, first.Add(-time.Minute)) {
+		t.Fatal("a week whose schedule is not held counts as begun")
+	}
 }
 
 func TestPulsePluralAndProjectedBracket(t *testing.T) {

@@ -158,10 +158,12 @@ func (a *App) TargetRace(week int, team, mine string) (RaceBoard, error) {
 	}
 	a.seasonMu.Lock()
 	held, live := a.race, a.seasonLineups
+	unplayed := liveWeekUnplayed(live, a.now.schedules, time.Now())
 	a.seasonMu.Unlock()
 	a.lookupMu.Lock()
 	lookup, hasLookup := a.lookup, a.hasLookup
 	a.lookupMu.Unlock()
-	return buildRace(raceInput{held: held, live: live, config: a.rulebook.ActiveConfig(), lookup: lookup, hasLookup: hasLookup,
+	return buildRace(raceInput{held: held, live: live, liveUnplayed: unplayed, config: a.rulebook.ActiveConfig(),
+		lookup: lookup, hasLookup: hasLookup,
 		week: week, team: team, mine: mine, zone: time.Local})
 }
