@@ -147,6 +147,8 @@ describe('Endpoint map', () => {
       // After land-pool (#21) and land-hq (#22): pool, Draft room and HQ reports, the team panel.
       'M-087', 'M-154', 'M-101', 'M-176', 'M-039', 'M-056', 'M-194', 'L-27', 'L-28', 'L-29',
       'M-065', 'L-15', 'L-16', 'L-21', 'L-22',
+      // After the landing batch (#25): Alert tray, Inspector, Digests, filters kept per workspace.
+      'S-10', 'S-02', 'M-149', 'C-05', 'M-032', 'M-058',
     ];
     for (const row of endpoints) {
       let status = 'spec';

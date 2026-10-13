@@ -24,9 +24,9 @@ export function CommsView({ comms, panel, limit }: { comms: Comms; panel: boolea
         <Act variant="button" verb="comms.read" args={{ action: 'refresh', value: '' }}>Refresh from MFL</Act>
       </div>
       {comms.feed.note && <p role={comms.feed.status === 'failed' ? 'alert' : 'status'}>{comms.feed.note}</p>}
-      <ol className="league-events">{comms.events.slice(0, panel ? limit : undefined).map((event, i) =>
+      <ol className="league-events">{comms.events.slice(0, limit).map((event, i) =>
         <li key={i}><time>{event.date}</time><p>{event.sentence}</p></li>)}</ol>
-      {panel && comms.events.length > limit &&
+      {comms.events.length > limit &&
         <Act variant="button" verb="comms.read" args={{ action: 'more', value: '' }}>Show more</Act>}
       <details className="market-how"><summary>How this is counted</summary><p>{comms.feed.how}</p></details>
     </section>

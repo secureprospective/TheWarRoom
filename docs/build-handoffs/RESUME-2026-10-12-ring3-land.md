@@ -1,4 +1,4 @@
-# Ring 3 landing RESUME — 2026-10-12 20:15 CT (updated) (C-03 merged #19, live-game fix merged #20, 6 phases in flight)
+# Ring 3 landing RESUME — 2026-10-12 23:55 CT (main ab17dfc after #25; land-polish on Sol)
 
 ## What we are doing
 Landing rings 0–3 live: walk every built endpoint row on Claude-OS, fix what is wrong, mark `landed`, merge each
@@ -12,30 +12,22 @@ Main = 106bca6 (PR #19 C-03 + 70 rows landed; PR #20 live-game parser faults + c
   warroom-engine-points-outrank-lab-points).
 - Christopher 10-12 ~19:00: "work through the Endpoint Index systematically; ask me if you need me".
 
-## In flight (worktrees under ~/work/TheWarRoom/.worktrees/, run dir RUN=~/fleet/runs/warroom-ring3-2026-10-11)
-| phase | worktree / branch | state | next |
-|---|---|---|---|
-| land-home | ring-3-land / session/ring-3-land-home | Sol running (findings 1,2,3,4,7,8,11) | review, mutant, drop Sol's week_app_test patch if any, merge main, gate, live, PR |
-| land-hq | ring-3-land-hq | gate green; live-checked 20:05 (all 8 pass); review fix 955490a (Escape, inferred wording); push running (/tmp/hq-push.log) | PR, squash-merge (after pool) |
-| land-pool | ring-3-land-pool | gate green; live-checked 20:00 (pass); push running (/tmp/pool-push.log) | PR, squash-merge; after both merge, build main, deploy, sort pool by PPG to confirm scored FAs show |
-| land-engine | ring-3-land-engine | Sol dispatched 19:50 (par/land-engine.md: engine reruns itself + values free agents, scoring unchanged) | review: rostered points byte-identical proof is mandatory |
-| land-pulse | ring-3-land-pulse | Sol dispatched 19:50 (findings 27-30,32,34,39,40,41,43,45) | review, live |
-| land-shell | ring-3-land-shell | Sol dispatched 19:50 (findings 35,36,38,42,44) | review, live |
-Liveness: mtime of RUN/<phase>/sessions/*.jsonl; done = RUN/<phase>/sentinel; report RUN/<phase>/REPORT.md.
-Sol's phases all hit the wall-clock clock test; main's fix (App.clockNow) wins: `git checkout HEAD -- week_app_test.go`
-before committing Sol's work, then merge origin/main.
+## In flight (10-12 23:55) — read this first
+Main = ab17dfc: #25 landing batch 2 (home, pulse, engine, shell + live-check fixes 1e9157b/6f5a992), on top of
+#24 (ClaudeBox's MFL commissioner map, docs). Deployed on Claude-OS as "batch2b" (23:47) and checked live.
+Registry PR (session/ring-3-registry3, in worktree ring-3-land-pool): S-10, S-02, M-149, C-05, M-032, M-058 landed.
 
-## Sol quota (20:07)
-Sol hit "Codex error: The usage limit has been reached" at 20:07; engine/pulse/shell exited report=NO (transcripts intact);
-land-home was mid-gate and will stop at its next model call. resume-at-reset.sh (nohup, log resume-at-reset.log) waits
-until 20:53 and runs resume-wt.sh <phase> (same --session-id, "continue where you stopped") for each phase whose
-sentinel says report=NO. Check RUN/<phase>.resume.log and the sentinel afterwards.
+Sol phase land-polish RUNNING since 23:09 (worktree ring-3-land-polish, branched from batch2 09751b3 = same code as
+#25 minus the live-check fixes; merge main into it at review). Check: ls -l RUN/land-polish/sessions/ (mtime),
+cat RUN/land-polish/sentinel. Resume after a quota stop: WT=~/work/TheWarRoom/.worktrees/ring-3-land-polish ./resume-wt.sh land-polish.
+Next Sol brief written, NOT dispatched: par/land-tray-density.md (rulings 16 + 37, finding 58) — dispatch after
+land-polish merges (both touch command-bar routing); worktree ring-3-land-tray from main.
 
-## Background gates running at compaction (19:58) — DONE, both green
-- land-pool verify+build: log /tmp/pool-verify.log, /tmp/pool-build.log; result line "VERIFY=n / BUILD=n" in the
-  task output (task baomqn7u2). If the process is gone with no BUILD= line, rerun the gate in ring-3-land-pool.
-- land-hq verify+build: /tmp/hq-verify.log, /tmp/hq-build.log (task by43s9atx). Same rule.
-Do not edit those two worktrees until their gates finish.
+Claude-OS: Christopher 23:12 "claudebox is done with claudeos". 23:34 passt (VM network) segfaulted during my 31 MB
+scp; Christopher chose "I reattach the NIC": virsh detach/attach-device (saved XML RUN/claudeos-nic-2026-10-12.xml),
+network back 23:45. Copy builds with rsync --bwlimit=8000 --partial, not scp.
+Christopher 23:50: "im not doing anything in brave" — yet his week 6 lineup changed between 23:13 and 23:47 (Kiner,
+Benton, Tillman in) and Brave's tab title changed to an MFL page. Reported; not ours to act on.
 
 ## Landed so far
 Registry on main: 70 landed. RUN/land-landed.tsv has more since (Control Room League/Data/App, Now reports, archive,
@@ -50,10 +42,12 @@ pools (product call), M-114 (finding 43).
 RUN/land-findings.md, 1–45. 22 → ring 4 (Offers history reads the frozen Lab doc). Finding 33 corrected: the league
 never ran an MFL pool (every season's pool file empty; survivor "League Does Not Use Survivor Pool").
 
-## Questions for Christopher (product calls; ask as a matrix)
-1. Finding 16: next-week bye shortfalls (K wk6, QB wk8: 0 available) in the Alert tray, or only on HQ?
-2. Finding 33: retire the six pool rows (M-111/112/113/174/200/201) like Victory Points, or keep dormant?
-3. Finding 37: should density (N/T/M) change tables, or say it applies to cards only?
+## Christopher's answers 10-12 23:12 (rulings, do not relitigate)
+- 16: bye shortfalls go in the Alert tray AND stay on HQ.
+- 33: retire the six pool rows (M-111/112/113/174/200/201). Past MFL pool data is worthless; War Room will get its own
+  pools, mini games and league awards much later (memory warroom-pools-are-future-native-not-mfl).
+- 37: density N/T/M must change tables too.
+-> next Sol brief par/land-tray-density.md after land-polish.
 
 ## Process note
 19:04 I ran `pkill -f` with a pattern in my own command line (killed only my own shell). Use TaskStop for my

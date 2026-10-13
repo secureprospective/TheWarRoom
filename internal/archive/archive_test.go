@@ -121,3 +121,49 @@ func TestAPIKEYURLAndEchoRedaction(t *testing.T) {
 		t.Fatal("echoed credential body archived")
 	}
 }
+
+// A judged 200 refusal is recorded as a failed fetch with its body kept; data, large bodies and non-200
+// answers are never judged.
+func TestJudgeMarksRefusals(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/refused", func(w http.ResponseWriter, _ *http.Request) { _, _ = io.WriteString(w, "NO login") })
+	mux.HandleFunc("/data", func(w http.ResponseWriter, _ *http.Request) { _, _ = io.WriteString(w, "rows") })
+	mux.HandleFunc("/big", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, "NO"+strings.Repeat("x", judgedBytes))
+	})
+	mux.HandleFunc("/gone", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = io.WriteString(w, "NO")
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	sink := &memSink{}
+	judge := func(_ string, body []byte) string {
+		if strings.HasPrefix(string(body), "NO") {
+			return "refused: " + string(body)
+		}
+		return ""
+	}
+	client := &http.Client{Transport: &Transport{Sink: sink, Judge: judge}}
+	for _, path := range []string{"/refused?APIKEY=s3cret", "/data", "/big", "/gone"} {
+		resp, err := client.Get(srv.URL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _ = io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+	}
+	got := map[string]string{}
+	for _, f := range sink.got {
+		got[strings.SplitN(strings.TrimPrefix(f.URL, srv.URL), "?", 2)[0]] = f.Err
+		if f.SHA256 == "" {
+			t.Errorf("%s: body not kept", f.URL)
+		}
+	}
+	want := map[string]string{"/refused": "refused: NO login", "/data": "", "/big": "", "/gone": ""}
+	for path, err := range want {
+		if got[path] != err {
+			t.Errorf("%s: error %q, want %q", path, got[path], err)
+		}
+	}
+}

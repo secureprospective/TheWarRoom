@@ -288,7 +288,7 @@ func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.S
 		return "", nil, fmt.Errorf("open what-if database: %w", err)
 	}
 	hist := history.New(a.histPools, reg)
-	a.fetches = &archive.Transport{Sink: hist}
+	a.fetches = &archive.Transport{Sink: hist, Judge: ingestion.MFLRefusal}
 	return path, hist, nil
 }
 
