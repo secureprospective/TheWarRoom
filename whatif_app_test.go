@@ -172,7 +172,7 @@ func TestWhatIfPresentation(t *testing.T) {
 		t.Fatalf("result rows %+v", bought.Value.Figures)
 	}
 	for i, figure := range bought.Value.Figures {
-		if i > 3 && (!strings.Contains(figure.Label, "gross commitments") || strings.Contains(figure.Label, "dead cap")) {
+		if i > 3 && (!strings.Contains(figure.Label, "commitments at today's salaries") || strings.Contains(figure.Label, "dead cap")) {
 			t.Fatalf("future row %+v", figure)
 		}
 	}

@@ -34,16 +34,20 @@ export function dismissRowMenu(details: HTMLDetailsElement) {
 export function watchRowMenu(details: HTMLDetailsElement, popup: HTMLElement | null) {
   const doc = details.ownerDocument;
   const close = () => dismissRowMenu(details);
-  const key = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.preventDefault(); close(); } };
+  // Escape closes only the menu: capture it before the shell's Escape closes the Inspector too.
+  const key = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault(); event.stopPropagation(); close();
+  };
   const outside = (event: Event) => {
     const target = event.target as Node;
     if (!details.contains(target) && !popup?.contains(target)) close();
   };
-  doc.addEventListener('keydown', key);
+  doc.addEventListener('keydown', key, { capture: true });
   doc.addEventListener('pointerdown', outside);
   doc.addEventListener('scroll', close, { capture: true });
   return () => {
-    doc.removeEventListener('keydown', key);
+    doc.removeEventListener('keydown', key, { capture: true });
     doc.removeEventListener('pointerdown', outside);
     doc.removeEventListener('scroll', close, { capture: true });
   };

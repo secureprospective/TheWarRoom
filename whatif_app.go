@@ -319,7 +319,7 @@ func (a *App) whatIfViewThrough(ctx context.Context, s state.WhatIfSession, stor
 		out.Figures[2].Change = whatIfChange(s.Used - used)
 	}
 	for year := s.Snapshot.Season + 1; year <= last; year++ {
-		out.Figures = append(out.Figures, whatIfFigure(fmt.Sprintf("%d gross commitments · inferred", year), beforeFuture[year], afterFuture[year]))
+		out.Figures = append(out.Figures, whatIfFigure(fmt.Sprintf("%d commitments at today's salaries", year), beforeFuture[year], afterFuture[year]))
 	}
 	return out, nil
 }

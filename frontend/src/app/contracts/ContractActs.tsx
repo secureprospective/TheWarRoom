@@ -14,8 +14,8 @@ import {
 import '../pool/pool.css';
 
 export function Figures({ plan }: { plan: ContractActPlan }) {
-  return <div className="contract-act-figures"><p>My team's cap this season and gross commitments in
-    future seasons — future salaries are inferred.</p>
+  return <div className="contract-act-figures"><p>My team's cap this season and its commitments in
+    future seasons.</p>
     <WhatIfFigures figures={plan.teamFigures} label="Team cap before and after this Act" /></div>;
 
 }

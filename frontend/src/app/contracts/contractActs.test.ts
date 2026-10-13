@@ -294,8 +294,10 @@ it.each(['Escape', 'outside', 'scroll'])('dismisses the shared row menu on %s an
   const stop = watchRowMenu(details as unknown as HTMLDetailsElement, popup as unknown as HTMLElement);
   if (kind === 'Escape') {
     const event = new Event('keydown', { cancelable: true });
-    Object.defineProperty(event, 'key', { value: 'Escape' }); doc.dispatchEvent(event);
+    Object.defineProperty(event, 'key', { value: 'Escape' });
+    const stopped = vi.spyOn(event, 'stopPropagation'); doc.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true);
+    expect(stopped).toHaveBeenCalled(); // the shell's Escape must not also close the Inspector
   } else if (kind === 'outside') doc.dispatchEvent(new Event('pointerdown'));
   else doc.dispatchEvent(new Event('scroll'));
   expect(details.open).toBe(false);
