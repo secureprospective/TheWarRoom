@@ -3566,6 +3566,7 @@ export namespace main {
 	    }
 	}
 	export class RawPoolScope {
+	    showNoTeam: boolean;
 	    franchiseId: string;
 	    position: string;
 	    sort: string;
@@ -3577,6 +3578,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.showNoTeam = source["showNoTeam"];
 	        this.franchiseId = source["franchiseId"];
 	        this.position = source["position"];
 	        this.sort = source["sort"];
@@ -4056,6 +4058,10 @@ export namespace main {
 	}
 	
 	export class TradeAsset {
+	    team?: string;
+	    contract?: string;
+	    now?: AssetCell;
+	    dynasty?: AssetCell;
 	    token: string;
 	    name: string;
 	    position?: string;
@@ -4066,10 +4072,32 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.team = source["team"];
+	        this.contract = source["contract"];
+	        this.now = this.convertValues(source["now"], AssetCell);
+	        this.dynasty = this.convertValues(source["dynasty"], AssetCell);
 	        this.token = source["token"];
 	        this.name = source["name"];
 	        this.position = source["position"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class AcquisitionChoice {
 	    player: string;
@@ -5263,6 +5291,12 @@ export namespace main {
 		}
 	}
 	export class PoolRow {
+	    engine?: number;
+	    ppg?: number;
+	    lab?: number;
+	    engineText: string;
+	    ppgText: string;
+	    labText: string;
 	    marketLines: string[];
 	    market: MarketFact[];
 	    id: string;
@@ -5281,6 +5315,12 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.engine = source["engine"];
+	        this.ppg = source["ppg"];
+	        this.lab = source["lab"];
+	        this.engineText = source["engineText"];
+	        this.ppgText = source["ppgText"];
+	        this.labText = source["labText"];
 	        this.marketLines = source["marketLines"];
 	        this.market = this.convertValues(source["market"], MarketFact);
 	        this.id = source["id"];
@@ -5327,6 +5367,8 @@ export namespace main {
 	    }
 	}
 	export class Pool {
+	    engineNote: string;
+	    ppgNote: string;
 	    sorts: PoolSort[];
 	    rows: PoolRow[];
 	    positions: string[];
@@ -5338,6 +5380,8 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.engineNote = source["engineNote"];
+	        this.ppgNote = source["ppgNote"];
 	        this.sorts = this.convertValues(source["sorts"], PoolSort);
 	        this.rows = this.convertValues(source["rows"], PoolRow);
 	        this.positions = source["positions"];

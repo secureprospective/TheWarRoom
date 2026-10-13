@@ -10,6 +10,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
+	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -82,21 +83,16 @@ func (a *App) TargetDraftReports() (ReportBoard, error) {
 	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
 	defer cancel()
 	values, valueNote := a.draftReportValues(ctx)
-	next := "Next draft: no date on the commissioner calendar."
+	next := "Next draft: no date set by the commissioner."
 	if a.whatif != nil {
 		clock, err := a.TargetClock()
 		if err != nil {
 			next = "Next draft date unavailable: " + err.Error()
 		} else {
-			for _, d := range clock.Value.Deadlines {
-				if d.Label == "DRAFT" && d.At != nil && d.At.After(time.Now()) {
-					next = "Next draft: " + pickTime(draftreports.Pick{At: *d.At}, time.Local)
-					break
-				}
-			}
+			next = nextDraftDate(clock.Value.Windows, time.Now(), time.Local)
 		}
 	}
-	board := buildDraftReports(results, future, names, a.rulebook.FranchiseNames(), values, valueNote, next, time.Local)
+	board := buildDraftReports(a.league.Season(), results, future, names, a.rulebook.FranchiseNames(), values, valueNote, next, time.Local)
 	if a.mflClient != nil && a.mflClient.LeagueHost() != "" {
 		board.MFLURL = fmt.Sprintf("https://%s/%d/options?L=%s&O=17", a.mflClient.LeagueHost(), a.season, url.QueryEscape(ingestion.LeagueID))
 	}
@@ -107,14 +103,14 @@ func (a *App) draftReportValues(ctx context.Context) (map[string]float64, string
 	values := map[string]float64{}
 	run, ok, err := a.history.LatestRun(ctx, a.season, history.RunModel)
 	if err != nil {
-		return values, "Model values unavailable: " + err.Error()
+		return values, "Engine points unavailable: " + err.Error()
 	}
 	if !ok {
-		return values, "Player values unavailable; run the app's model first."
+		return values, "Engine points unavailable; use Score League to value players."
 	}
 	scores, err := a.history.ModelScores(ctx, run.ID)
 	if err != nil {
-		return values, "Model values unavailable: " + err.Error()
+		return values, "Engine points unavailable: " + err.Error()
 	}
 	for _, s := range scores {
 		values[s.MFLID] = s.DynastyPPG
@@ -123,7 +119,7 @@ func (a *App) draftReportValues(ctx context.Context) (map[string]float64, string
 }
 
 func (a *App) draftValueNote(run history.Run) string {
-	note := "Player values: the app's model, run " + pickTime(draftreports.Pick{At: run.AsOf}, time.Local) + "."
+	note := "Engine run: " + run.AsOf.In(time.Local).Format("January 2, 2006, 3:04 PM") + "."
 	missing := []string{}
 	for _, m := range a.describeMeasures(run.MissingMeasures) {
 		if m.Meaning != "" {
@@ -148,4 +144,13 @@ func (a *App) TargetOpenMFLDraftRoom() error {
 	target := fmt.Sprintf("https://%s/%d/options?L=%s&O=17", a.mflClient.LeagueHost(), a.season, url.QueryEscape(ingestion.LeagueID))
 	a.openURL(a.ctx, target)
 	return nil
+}
+
+func nextDraftDate(windows []leagueclock.Window, now time.Time, zone *time.Location) string {
+	for _, w := range windows {
+		if w.Kind == leagueclock.Draft && w.At != nil && w.At.After(now) {
+			return "Next draft: " + w.At.In(zone).Format("January 2, 2006, 3:04 PM")
+		}
+	}
+	return "Next draft: no date set by the commissioner."
 }

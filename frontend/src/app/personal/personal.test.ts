@@ -68,6 +68,9 @@ it('renders status, market, dated escaped notes, MFL handoffs and ordered-list A
     expect(html).toContain('Plain &lt;text&gt;');
     expect(html).not.toContain('Plain <text>');
     expect(html).toContain('Open scratchpad on MFL');
+    expect(html).toContain('Plain-text note');
+    expect(html).toContain('Keep dated note');
+    expect(html).toContain('for your franchise when no player is chosen');
     expect(html).toContain('data-endpoint="M-117"');
     const draft = renderToStaticMarkup(createElement(PersonalLists, { snapshot, draft: true }));
     expect(draft).toContain('Move up');

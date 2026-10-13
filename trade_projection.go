@@ -85,7 +85,7 @@ func (a *App) tradeProjection(ctx context.Context, r RawTradeBuilder, snap snaps
 	if reason := a.tradePickReason(r); reason != "" {
 		out.Reasons = append(out.Reasons, reason)
 	}
-	catalog := a.tradeBuilderTeams(snap)
+	catalog := a.tradeBuilderTeams(ctx, snap)
 	moves, blocks := tradeLegs(r, catalog, sim.Store)
 	out.Reasons = append(out.Reasons, blocks...)
 	before := map[string]domain.Money{}
@@ -107,6 +107,7 @@ func (a *App) tradeProjection(ctx context.Context, r RawTradeBuilder, snap snaps
 	}
 	for _, s := range sim.Sessions {
 		team, blocks := tradeProjectedTeam(sim, s, before[s.Mine], players, tradeFranchiseName(snap, s.Mine))
+		team.Roster = richTradeRoster(team.Roster, catalog)
 		out.Teams, out.Reasons = append(out.Teams, team), append(out.Reasons, blocks...)
 	}
 	out.Post = tradeDealText(r, catalog, sim.Sessions[0].Snapshot)
@@ -194,7 +195,7 @@ func tradeProjectedTeam(sim tradeSimulation, s state.WhatIfSession, seed domain.
 		team.Roster = append(team.Roster, TradeAsset{Token: p.MFLID, Name: label + " · " + string(live.RosterStatus), Position: players[p.MFLID].Position})
 	}
 	team.Figures = append(team.Figures, whatIfFigure("Cap used this season", sim.Before[s.Mine], after),
-		whatIfFigure(fmt.Sprintf("%d commitments · inferred", s.Snapshot.Season+1), futureBefore, futureAfter))
+		whatIfFigure(fmt.Sprintf("%d commitments at today's salaries", s.Snapshot.Season+1), futureBefore, futureAfter))
 	team.Figures, blocks = tradeCapFigures(team.Figures, s, sim.Before[s.Mine], after, futureBefore, futureAfter, name)
 	team.Figures = append(team.Figures, rosterFigure("Active roster · 35–48", activeBefore, active),
 		rosterFigure("Taxi squad · maximum 8", taxiBefore, taxi))

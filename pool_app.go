@@ -23,6 +23,12 @@ import (
 const poolFreshFor = 5 * time.Minute
 
 type PoolRow struct {
+	Engine      *float64                `json:"engine"`
+	PPG         *float64                `json:"ppg"`
+	Lab         *float64                `json:"lab"`
+	EngineText  string                  `json:"engineText"`
+	PPGText     string                  `json:"ppgText"`
+	LabText     string                  `json:"labText"`
 	MarketLines []string                `json:"marketLines"`
 	Market      []MarketFact            `json:"market"`
 	ID          string                  `json:"id"`
@@ -42,19 +48,23 @@ type PoolSort struct {
 }
 
 func poolSorts() []PoolSort {
-	return []PoolSort{{"name", "Player"}, {"position", "Position"}, {"minimum", "Minimum"},
+	return []PoolSort{{"name", "Player"}, {"position", "Pos"}, {"team", "NFL team"},
+		{"engine", "Engine points"}, {"ppg", "This season points per game"}, {"lab", "Lab dynasty value"}, {"minimum", "Minimum"},
 		{"projected", "Projected points"}, {"rank", "MFL rank"}, {"adp", "ADP"}, {"aav", "AAV"}}
 }
 
 type Pool struct {
-	Sorts     []PoolSort `json:"sorts"`
-	Rows      []PoolRow  `json:"rows"`
-	Positions []string   `json:"positions"`
-	Summary   string     `json:"summary"`
+	EngineNote string     `json:"engineNote"`
+	PPGNote    string     `json:"ppgNote"`
+	Sorts      []PoolSort `json:"sorts"`
+	Rows       []PoolRow  `json:"rows"`
+	Positions  []string   `json:"positions"`
+	Summary    string     `json:"summary"`
 }
 
 // RawPoolScope is the pool's filter and sort. FranchiseID only picks whose bid plans show.
 type RawPoolScope struct {
+	ShowNoTeam  bool   `json:"showNoTeam"`
 	FranchiseID string `json:"franchiseId"`
 	Position    string `json:"position"`
 	Sort        string `json:"sort"`
@@ -194,6 +204,8 @@ func (a *App) poolRows(ctx context.Context, ids []playerid.PlayerID, lk normaliz
 	season, now := a.league.Season(), time.Now()
 	all, seen, left := []PoolRow{}, map[string]bool{}, 0
 	facts := marketFacts(a.heldMarket())
+	values, engineNote := a.draftReportValues(ctx)
+	assets, ppgNote := a.poolAssetValues(ctx, ids, now)
 	for _, id := range ids {
 		f, ok := lk.Facts(id.String())
 		if !ok {
@@ -201,10 +213,11 @@ func (a *App) poolRows(ctx context.Context, ids []playerid.PlayerID, lk normaliz
 			continue
 		}
 		seen[string(f.Position)] = true
-		if raw.Position != "" && raw.Position != string(f.Position) {
+		if (!raw.ShowNoTeam && noNFLTeam(f.Team)) || (raw.Position != "" && raw.Position != string(f.Position)) {
 			continue
 		}
 		row := poolRow(id, f, season, now, plans[id.String()])
+		valuePoolRow(&row, values, assets)
 		row.Market = facts[id.String()]
 		if row.Market == nil {
 			row.Market = facts[""]
@@ -218,7 +231,7 @@ func (a *App) poolRows(ctx context.Context, ids []playerid.PlayerID, lk normaliz
 	if raw.Position != "" {
 		summary = fmt.Sprintf("%d free agents at %s of %d on MFL's list", len(all), raw.Position, len(ids)-left)
 	}
-	return Pool{Rows: all, Positions: positions, Summary: summary, Sorts: poolSorts()}, left
+	return Pool{Rows: all, Positions: positions, Summary: summary, Sorts: poolSorts(), EngineNote: engineNote, PPGNote: ppgNote}, left
 }
 
 func poolRow(id playerid.PlayerID, f normalize.PlayerFacts, season int, now time.Time, plan bidPlanBrief) PoolRow {
@@ -277,21 +290,13 @@ func sortPool(rows []PoolRow, raw RawPoolScope) {
 		return cmp.Or(strings.Compare(x.Name, y.Name), strings.Compare(x.ID, y.ID))
 	}
 	slices.SortFunc(rows, func(x, y PoolRow) int {
-		c := 0
-		if index := slices.Index([]string{"projected", "rank", "adp", "aav"}, raw.Sort); index >= 0 {
-			xv, yv := poolMarketValue(x, index), poolMarketValue(y, index)
-			if xv == nil || yv == nil {
-				if xv != nil {
-					return -1
-				}
-				if yv != nil {
-					return 1
-				}
-			} else {
-				c = cmp.Compare(*xv, *yv)
-			}
+		c, missing := poolNumericOrder(x, y, raw.Sort)
+		if missing {
+			return c
 		}
 		switch raw.Sort {
+		case "team":
+			c = strings.Compare(x.Team, y.Team)
 		case "position":
 			c = cmp.Compare(positionOrder(x.Position), positionOrder(y.Position))
 		case "minimum":

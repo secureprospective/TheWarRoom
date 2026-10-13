@@ -110,7 +110,8 @@ it('renders one Go-written pick per line in grid and recap cells', () => {
 it('shows live-room status and the Go-written see-every-pick endpoint Act', () => {
   const report = board().reports.find(r => r.id === 'M-183')!;
   const markup = html(createElement(ReportView, { report, howLabel: board().howLabel }));
-  expect(markup).toContain('MFL does not report who is on the clock.');
+  expect(markup).toContain('2026 rookie draft complete');
+  expect(markup).not.toContain('MFL does not report who is on the clock.');
   expect(markup).toContain('See every pick');
   expect(markup).toContain('aria-label="See every pick"');
   expect(markup).toContain('data-endpoint="M-183"');
@@ -144,7 +145,7 @@ it('contains the wide grid in a zero-minimum shell track and local table scrolle
 it('keeps local-time cells on one line', async () => {
   const { readFileSync } = await import('node:fs');
   const css = readFileSync('src/app/draftreports/reports.css', 'utf8');
-  expect(css).toMatch(/\.draft-reports \.draft-local-time \{ white-space: nowrap;/);
+  expect(css).toMatch(/\.draft-report \.draft-local-time \{ white-space: nowrap;/);
   const markup = html(createElement(ReportView,
     { report: board().reports[0], howLabel: board().howLabel }));
   expect(markup).toContain('class="draft-local-time"');

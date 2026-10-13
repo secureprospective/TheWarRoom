@@ -33,9 +33,7 @@ function PlayerCell({ row }: { row: PoolRow }) {
       >
         {row.name}
       </Act>
-      <span className="pool-pos">
-        {row.position} · {row.team}
-      </span>
+      <span className="pool-pos pool-market">{row.marketLines.join(' · ')}</span>
     </>
   );
 }
@@ -109,11 +107,16 @@ function PoolTable({ rows, state, mine }: { rows: PoolRow[]; state?: PoolState; 
     <table className="pool-table" aria-label="Free agents">
       <thead>
         <tr>
-          <th>Player</th>
-          <th>Age</th>
-          <th>Experience</th>
-          <th>Minimum</th>
-          <th>Market</th>
+          {[
+            ['name', 'Player'], ['position', 'Pos'], ['team', 'NFL team'],
+            ['engine', 'Engine points'], ['ppg', 'This season points per game'],
+            ['lab', 'Lab dynasty value'], ['minimum', 'Minimum bid'],
+          ].map(([key, label]) => <th key={key} scope="col"
+            aria-sort={state?.scope.sort === key ? (state.scope.desc ? 'descending' : 'ascending') : 'none'}>
+            <Act verb="market" args={{ field: 'pool-sort', value: key }} label={`Sort by ${label}`}>
+              {label}
+            </Act>
+          </th>)}
           <th>
             <span className="pool-sr">Bid</span>
           </th>
@@ -126,12 +129,12 @@ function PoolTable({ rows, state, mine }: { rows: PoolRow[]; state?: PoolState; 
               <PlayerCell row={row} />
               <WatchButton id={row.id} name={row.name} mine={mine} />
             </td>
-            <td>{row.age}</td>
-            <td>{row.experience}</td>
-            <td className="pool-money">{row.minimum.text}</td>
-            <td className={row.marketLines.length === 1 ? 'pool-market pool-market-none' : 'pool-market'}>
-              {row.marketLines.map((line, i) =>
-              <div key={i}>{line}</div>)}</td>
+            <td>{row.position}</td>
+            <td>{row.team}</td>
+            <td className="pool-money">{row.engineText ?? 'Not valued'}</td>
+            <td className="pool-money">{row.ppgText ?? 'No score'}</td>
+            <td className="pool-money">{row.labText ?? 'Not valued'}</td>
+            <td className="pool-money">{row.minimum.text}<span className="pool-pos">Age {row.age}</span></td>
             <td>
               {row.plan && <span className="pool-plan">Bid plan: {row.plan}</span>}
               {row.planId ? (
@@ -154,7 +157,7 @@ function PoolTable({ rows, state, mine }: { rows: PoolRow[]; state?: PoolState; 
             </td>
           </tr>
           {state?.form && !state.form.planId && state.form.playerId === row.id &&
-            <tr className="pool-form-row"><td colSpan={6}>
+            <tr className="pool-form-row"><td colSpan={8}>
             <BidForm form={state.form} preview={state.preview} busy={state.busy} />
           </td></tr>}</Fragment>
         ))}
@@ -196,6 +199,8 @@ export function PoolFrame({ reading, refreshing, state, mine = '' }: {
       {reading?.status === 'ok' && (
         <>
           <p>{reading.value.summary}</p>
+          <p>{reading.value.engineNote}</p>
+          <p>{reading.value.ppgNote}</p>
           {reading.value.rows.length === 0 ? (
             <p>No free agent matches this position.</p>
           ) : (
@@ -227,6 +232,10 @@ function Controls({ reading, state }: { reading?: PoolReading; state: PoolState 
   const dispatch = commands.dispatch;
   return (
     <div className="pool-controls" aria-label="Pool filter and sort" data-endpoint="M-039">
+      <Act verb="market" args={{ field: 'pool-no-team', value: '' }} active={!!scope.showNoTeam}
+        label="Show players without an NFL team">
+        {scope.showNoTeam ? 'Hide' : 'Show'} players without an NFL team
+      </Act>
       <label>
         Position
         <select

@@ -160,7 +160,9 @@ export type LineupReading = {
   rulesSource: Provenance;
 };
 
-export type TradeAsset = { token: string; name: string; position?: Position };
+export type TradeAsset = { token: string; name: string; position?: Position; team?: string;
+  contract?: string; now?: import('../assets/contract').AssetCell;
+  dynasty?: import('../assets/contract').AssetCell };
 export type TradeOffer = {
   tradeId: string;
   direction: 'to_you' | 'by_you';
