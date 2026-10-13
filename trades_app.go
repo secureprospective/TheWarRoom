@@ -196,10 +196,36 @@ func heldTradeAssetName(asset leaguefeed.Asset, snap snapshot.Snapshot) string {
 		return fmt.Sprintf("Round %d · pick %d", asset.CurrentPick.Round, asset.CurrentPick.Pick)
 	case asset.FuturePick != nil:
 		pick := asset.FuturePick
-		return fmt.Sprintf("%d round %d · originally %s", pick.Year, pick.Round, tradeFranchiseName(snap, pick.Franchise))
+		return futureTradePickName(pick.Year, pick.Round, pick.Franchise, snap)
 	case asset.BlindBidCents != nil:
 		return fmt.Sprintf("Blind-bid cash: %d cents", *asset.BlindBidCents)
 	default:
-		return "Player name unavailable"
+		return "Unnamed asset"
+	}
+}
+
+func futureTradePickName(year, round int, original string, snap snapshot.Snapshot) string {
+	name := tradeFranchiseName(snap, original)
+	if name == original {
+		name = "Franchise name unavailable"
+	}
+	return fmt.Sprintf("%d round %d · %s", year, round, name)
+}
+
+func labelTradeReceipts(receipts []envelope.Receipt, snap snapshot.Snapshot) {
+	for i, receipt := range receipts {
+		trade := receipt.Spec.Expected.Trade
+		if trade == nil {
+			continue
+		}
+		tokens := append(slices.Clone(trade.OfferingGives), trade.AcceptingGives...)
+		for _, token := range tokens {
+			assets, err := leaguefeed.ParseAssets(token)
+			name := "Unnamed asset"
+			if err == nil && len(assets) == 1 && assets[0].Player == nil {
+				name = heldTradeAssetName(assets[0], snap)
+			}
+			receipts[i].TradeAssets = append(receipts[i].TradeAssets, envelope.AssetLabel{Token: token, Name: name})
+		}
 	}
 }

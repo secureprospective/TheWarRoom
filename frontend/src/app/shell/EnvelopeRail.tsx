@@ -7,6 +7,7 @@ import './moves.css';
 import { Act } from '../commands/Act';
 import { lineupChanges } from './LineupPlan';
 import { tradeRailLabels } from './tradeLabels';
+import { RemoveTradePlan } from './TradePlan';
 import { rosterHandoffLabel } from './ReceiptStatus';
 
 const time = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
@@ -109,12 +110,7 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
           args={{ correlationId: receipt.correlationId }}
           label={receipt.audit.some(entry => entry.to === 'handed_off')
             ? "I didn't submit this move" : 'Remove plan'} />}
-      {receipt.spec.intent === 'trade.propose' &&
-        !receipt.audit.some(e => e.to === 'handed_off') &&
-        !['landed', 'failed', 'withdrawn'].includes(receipt.state) && <Act variant="button"
-          verb="trade.builder"
-          args={{ action: 'remove', mine: receipt.spec.franchiseId, id: receipt.correlationId }}
-          label="Remove plan" />}
+      <RemoveTradePlan receipt={receipt} />
       {receipt.state === 'ready' && <p>Ready is not MFL-accepted</p>}
       {receipt.state === 'ready' && receipt.spec.intent.startsWith('trade.') &&
         receipt.spec.intent !== 'trade.accept' ? <Act variant="button" verb="trade.builder"

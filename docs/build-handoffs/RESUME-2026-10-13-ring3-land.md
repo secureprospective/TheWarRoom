@@ -202,3 +202,27 @@ Christopher has 2 Bee sessions of his own working on other TheWarRoom components
 `.worktrees/ring-3-land-followup`), Sol land-followup2 (pi pid 1026866, `.worktrees/ring-3-land-followup2`), and any
 `ring-3-land-*` worktree / `session/ring-3-land-*` branch / RUN phase dir I create. Touch nothing else; batch worktrees
 come off `origin/main`, never off the main checkout's branch.
+- Window max-size fix: branch session/ring-3-land-window (.worktrees/ring-3-land-window) from batch4; ride the next batch; live proof = xprop WM_NORMAL_HINTS maximum 16384.
+
+## 09:45 update — batch4 MERGED
+- #30 squash-merged: main = 9ba38f3 (gate verify 0, 867 tests, bundle 310,590 B). Worktrees land-followup,
+  land-followup2, land-batch4 removed and logged (MOVED, MANIFEST, CT105). T428 updated on Hermes.
+- Still live: ring-3-land-conditional (Sol), ring-3-land-followup3 (Sol), ring-3-land-window (35f5c14, ride next
+  batch). Both Sol worktrees branch from batch4 commits that are inside main, so they batch onto origin/main cleanly.
+- Next: when a Sol finishes → review/mutant/commit; dispatch land-followup4 from origin/main 9ba38f3.
+- Claude-OS is now 1920×1080 (Christopher changed it 09:30); War Room relaunched 09:32 to pick it up.
+
+## 11:00 update
+- land-followup3 done (83/84/85), reviewed, mutant-checked (guard → "illegal withdraw from ready"), committed 8f0c21d.
+- batch5 = `.worktrees/ring-3-land-batch5`, branch session/ring-3-land-batch5 = origin/main 9ba38f3 + cherry-pick
+  followup3 (dab6a53) + window (32256d9). CHERRY-PICK, not merge: branches cut from batch4 conflict with the squashed
+  main. land-conditional (based on batch4 0706b70) must be cherry-picked the same way.
+- Gate running (task bksyxpnh2, logs RUN/batch5/). Then deploy, live-check 83/84/85 + window hint, land rows
+  (M-034, C-06.2, M-199, M-033 if clean), PR, merge.
+- land-followup4 dispatched 10:54 from main 9ba38f3. land-conditional still on its gate.
+
+## 11:15 update — batch5 live-checked
+- Deployed batch5 11:09 (1920×1080). Proven: window hint 16384; 83, 84 (GB withdrawal test plan removed), 85.
+- Landing in batch5: C-06.2, M-199. Held: M-033, M-034 for finding 88 (offer card says "Withdrawn" under an open
+  offer after its plan was removed). Brief par/land-followup5.md written; dispatch when a Sol slot frees, worktree
+  from batch5 tip (or main after batch5 merges).

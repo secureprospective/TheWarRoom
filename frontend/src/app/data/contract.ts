@@ -133,6 +133,7 @@ export type EnvelopeSpec = {
   deadline?: string;
 };
 export type Receipt = {
+  tradeAssets?: { token: string; name: string }[];
   correlationId: string; spec: EnvelopeSpec; state: EnvelopeState; audit: AuditEntry[];
 };
 export type EnvelopeDemo = { kind: 'fixture'; receipt: Receipt };

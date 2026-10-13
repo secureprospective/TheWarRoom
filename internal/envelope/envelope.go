@@ -137,7 +137,13 @@ type AuditEntry struct {
 	Note  string    `json:"note"`
 }
 
+type AssetLabel struct {
+	Token string `json:"token"`
+	Name  string `json:"name"`
+}
+
 type Receipt struct {
+	TradeAssets   []AssetLabel `json:"tradeAssets,omitempty"`
 	CorrelationID string       `json:"correlationId"`
 	Spec          Spec         `json:"spec"`
 	State         State        `json:"state"`

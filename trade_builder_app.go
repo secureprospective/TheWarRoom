@@ -163,7 +163,7 @@ func (a *App) tradeBuilderTeams(ctx context.Context, snap snapshot.Snapshot) []T
 				continue
 			}
 			team.Assets = append(team.Assets, TradeAsset{Token: fmt.Sprintf("FP_%s_%d_%d", pick.Original, pick.Year, pick.Round),
-				Name:    fmt.Sprintf("%d round %d · %s", pick.Year, pick.Round, tradeFranchiseName(snap, pick.Original)),
+				Name:    futureTradePickName(pick.Year, pick.Round, pick.Original, snap),
 				Dynasty: a.builderPickValue(pick.Year, pick.Round, pick.Original, time.Now())})
 		}
 		slices.SortFunc(team.Assets, func(a, b TradeAsset) int { return strings.Compare(a.Name, b.Name) })
