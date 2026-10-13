@@ -18,6 +18,7 @@ control is judged by one test: *does the league's own platform need this functio
 | `Commissioner_API_and_Build_Paths.md` | MFL API read/write types per control, and which build routes MFL makes possible (facts, not decisions) |
 | `Commissioner_Governs_Edges.md` / `.tsv` | kept controls × the owner pages their settings change (193 edges): seeds the registry `governs` column |
 | `Commissioner_Never_Open_Register.md` | every entry never opened (may act on load) or refused by the guard, with what its label says it does |
+| `Commissioner_Control_Census.md` | K4: the 56 commissioner controls (CM-001..CM-056) with verbs, gravity, role, Legacy default and governs; spec rev 4 §16.7 |
 
 **Not in this public repo:** the per-sector page reports, screenshots, captured field values, and
 league-private data (every player's salary/contract, 291 salary adjustments, owner details). They are
