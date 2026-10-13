@@ -43,3 +43,15 @@ it('ignores typing, modified shortcuts and the harness without dispatching', () 
   expect(dispatchKey({ ...event, key: '3' }, c)).toBe(false);
   expect(c.read().density).toBe('narrative');
 });
+
+it('opens old saved Archive hashes and writes the canonical Archive route', () => {
+  const c = createCommands();
+  const location = { hash: '#/pulse/pools-archive' };
+  const binding = connectRoutes(c, location, hash => { location.hash = hash; });
+  expect(c.read()).toMatchObject({ node: 'pulse', workspace: { pulse: 'archive' } });
+  expect(location.hash).toBe('#/pulse/archive');
+  c.dispatch('nav.open', { node: 'home' });
+  c.dispatch('nav.open', { node: 'pulse' });
+  expect(location.hash).toBe('#/pulse/archive');
+  binding.unsubscribe();
+});

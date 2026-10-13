@@ -227,8 +227,8 @@ export function TargetApp() {
             <Suspense fallback={<p role="status">Opening Race…</p>}>
               <Race />
             </Suspense>
-          ) : s.node === 'pulse' && workspace.slug === 'pools-archive' ? (
-            <Suspense fallback={<p role="status">Opening Pools / Archive…</p>}>
+          ) : s.node === 'pulse' && workspace.slug === 'archive' ? (
+            <Suspense fallback={<p role="status">Opening Archive…</p>}>
               <Archive />
             </Suspense>
           ) : s.node === 'home' && workspace.slug === 'digests' ? (

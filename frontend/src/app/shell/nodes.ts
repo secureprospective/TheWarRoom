@@ -37,7 +37,7 @@ export const nodes = {
     workspaces: [
       { slug: 'now', label: 'Now', ring: 'Ring 1' },
       { slug: 'race', label: 'Race', ring: 'Ring 3' },
-      { slug: 'pools-archive', label: 'Pools / Archive', ring: 'Ring 3' },
+      { slug: 'archive', label: 'Archive', ring: 'Ring 3' },
     ],
   },
   control: {
@@ -62,6 +62,7 @@ export function isNode(value: string): value is Node {
   return Object.prototype.hasOwnProperty.call(nodes, value);
 }
 export function routeFor(node: Node, workspace: string): Route | undefined {
+  if (node === 'pulse' && workspace === 'pools-archive') workspace = 'archive';
   return nodes[node].workspaces.some((w) => w.slug === workspace)
     ? ({ node, workspace } as Route)
     : undefined;

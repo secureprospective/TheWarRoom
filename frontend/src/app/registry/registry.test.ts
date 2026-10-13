@@ -457,3 +457,17 @@ it.each(['L-17', 'L-18', 'L-21'] as const)
   expect(shell.scrollTop).toBe(55);
   expect(card.focus).not.toHaveBeenCalled();
 });
+
+it('retires MFL pools from commands, placements and rendered endpoint surfaces', () => {
+  const ids = ['M-111', 'M-112', 'M-113', 'M-174', 'M-200', 'M-201', 'M-171'] as const;
+  const routes = assertEndpointRoutes(endpoints, candidates);
+  const markup = renderToStaticMarkup(createElement(EndpointIndex, { placement: 'League Pulse › Archive' }));
+  for (const id of ids) {
+    const row = endpointById(id);
+    expect(row).toMatchObject({ disposition: 'retired', placement: '', merged_place: '', merged_into: [] });
+    expect(resolve(id).kind).toBe('retired');
+    expect(routes.get(id)?.size).toBe(0);
+    expect(markup).not.toContain(`data-endpoint="${id}"`);
+    expect(endpointsAt('League Pulse › Archive').some(r => r.id === id)).toBe(false);
+  }
+});

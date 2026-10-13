@@ -6,8 +6,6 @@ import (
 	"math"
 	"slices"
 	"strings"
-
-	"github.com/secureprospective/TheWarRoom/internal/facts"
 )
 
 type archiveRecordEntry struct {
@@ -363,84 +361,4 @@ func oddityNames(names []string) string {
 		lines = append(lines, team+": "+strings.Join(groups[team], "; "))
 	}
 	return strings.Join(lines, "\n")
-}
-
-func (v archiveView) pools() Report {
-	r := v.shell("M-111", "Pools", "Picks are MFL's recorded NFL pick'em entries for the selected season. Confidence weights are preserved. Standings are counted only for NFL games with recorded final scores; equal NFL scores are ties, not wins. Survivor setup is reported separately. This app makes no picks.", "Franchise", "Week", "Matchup", "Pick", "Confidence", "Result")
-	if r.Status == "failed" {
-		return r
-	}
-	pool, ok := v.cache.pools[int64(v.season)]
-	if !ok {
-		r.Status = "empty"
-		r.Note = "The selected season's pool exports are not pinned in this snapshot. Import the league archive in Control Room › Data and sources."
-		return r
-	}
-	if len(pool.Picks) == 0 {
-		r.Status = "empty"
-		r.Note = fmt.Sprintf("MFL records no pool picks for %d. Choose an earlier season to see its pools.", v.season)
-		return r
-	}
-	wins, losses, pending, points := map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}
-	for _, p := range pool.Picks {
-		result := v.poolResult(p)
-		switch result {
-		case "Won":
-			wins[p.Franchise]++
-			points[p.Franchise] += int(p.Rank)
-		case "Lost":
-			losses[p.Franchise]++
-		}
-		if result == "Not scored in the archive" {
-			pending[p.Franchise]++
-		}
-		r.Rows = append(r.Rows, draftRow(v.name(int64(v.season), p.Franchise), fmt.Sprint(p.Week), strings.ReplaceAll(p.Matchup, ",", " vs "), p.Pick, fmt.Sprint(p.Rank), result))
-	}
-	ids := []string{}
-	for _, p := range pool.Picks {
-		if !slices.Contains(ids, p.Franchise) {
-			ids = append(ids, p.Franchise)
-		}
-	}
-	slices.SortFunc(ids, func(a, b string) int { return cmp.Or(cmp.Compare(points[b], points[a]), strings.Compare(a, b)) })
-	for i, id := range ids {
-		r.Summary = append(r.Summary, draftRow(fmt.Sprintf("Standing %d · %s", i+1, v.name(int64(v.season), id)), fmt.Sprintf("%d confidence points · %d won, %d lost, %d awaiting scores", points[id], wins[id], losses[id], pending[id])))
-	}
-	r.Note = "Only recorded picks count; standings are derived from held NFL final scores, not an MFL pool standings export. " + survivorNote(pool.Survivor)
-	return r
-}
-
-func (v archiveView) poolResult(p facts.PoolPick) string {
-	nfl := v.cache.facts.NflGame
-	for i, y := range nfl.Year {
-		if y != int64(v.season) || nfl.Week[i] != p.Week || nfl.Team[i] != p.Pick || nfl.Score[i] == nil {
-			continue
-		}
-		for j, oy := range nfl.Year {
-			if oy != y || nfl.Week[j] != p.Week || nfl.Team[j] != archiveValue(nfl.Opp[i]) || nfl.Score[j] == nil {
-				continue
-			}
-			switch {
-			case *nfl.Score[i] > *nfl.Score[j]:
-				return "Won"
-			case *nfl.Score[i] < *nfl.Score[j]:
-				return "Lost"
-			default:
-				return "Tied"
-			}
-		}
-	}
-	return "Not scored in the archive"
-}
-
-// survivorNote says in words whether MFL ran a survivor pool that season. The archive keeps MFL's
-// own answer, e.g. "Pool/Survivor Picks Not Setup".
-func survivorNote(recorded string) string {
-	switch {
-	case recorded == "":
-		return "MFL's survivor export is not held for this season."
-	case strings.Contains(strings.ToLower(recorded), "not setup"):
-		return "No survivor pool was set up on MFL this season."
-	}
-	return "A survivor pool was set up on MFL this season; its picks are not shown here yet."
 }

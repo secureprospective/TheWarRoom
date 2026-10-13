@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -59,7 +60,7 @@ func reducedArchive(t *testing.T) archiveCache {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return archiveCache{sha: compiled.Fingerprint(), facts: compiled, pools: map[int64]facts.PoolSeason{}, cutoff: "Oct 11, 2026"}
+	return archiveCache{sha: compiled.Fingerprint(), facts: compiled, cutoff: "Oct 11, 2026"}
 }
 
 func archiveReport(t *testing.T, b ArchiveBoard, id string) Report {
@@ -166,11 +167,21 @@ func TestTrophyTitleNamesATrophyOnce(t *testing.T) {
 	}
 }
 
-func TestSurvivorNoteInWords(t *testing.T) {
-	if got := survivorNote("Pool/Survivor Picks Not Setup"); got != "No survivor pool was set up on MFL this season." {
-		t.Error(got)
+func TestArchiveRetainsEveryNonPoolReport(t *testing.T) {
+	b, err := buildArchive(archiveCache{}, false, 0, "", "")
+	if err != nil {
+		t.Fatal(err)
 	}
-	if got := survivorNote("Setup is recorded; no survivor report is implemented"); !strings.Contains(got, "was set up") {
-		t.Error(got)
+	if b.Board.Title != "Archive" {
+		t.Fatal(b.Board.Title)
+	}
+	ids := []string{}
+	for _, r := range b.Board.Reports {
+		ids = append(ids, r.ID)
+	}
+	want := []string{"M-080", "M-114", "M-182", "M-104", "M-105", "M-023", "M-110", "M-019",
+		"M-083", "M-084", "M-085", "M-086", "M-082", "M-073", "M-079", "M-081", "M-089"}
+	if !slices.Equal(ids, want) {
+		t.Fatalf("report ids = %v, want %v", ids, want)
 	}
 }
