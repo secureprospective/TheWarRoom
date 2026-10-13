@@ -23,6 +23,141 @@ export namespace bid {
 
 }
 
+export namespace commissioner {
+	
+	export class Entry {
+	    id: string;
+	    who: string;
+	    what: string;
+	    why: string;
+	    // Go type: time
+	    when: any;
+	    gravity: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Entry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.who = source["who"];
+	        this.what = source["what"];
+	        this.why = source["why"];
+	        this.when = this.convertValues(source["when"], null);
+	        this.gravity = source["gravity"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Ledger {
+	    league: string;
+	    name: string;
+	    revision: number;
+	    entries: Entry[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Ledger(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.name = source["name"];
+	        this.revision = source["revision"];
+	        this.entries = this.convertValues(source["entries"], Entry);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class NativeLeague {
+	    id: string;
+	    name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeLeague(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	    }
+	}
+	export class Receipt {
+	    entry: string;
+	    league: string;
+	    revision: number;
+	    // Go type: time
+	    recordedAt: any;
+	    message: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Receipt(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.entry = source["entry"];
+	        this.league = source["league"];
+	        this.revision = source["revision"];
+	        this.recordedAt = this.convertValues(source["recordedAt"], null);
+	        this.message = source["message"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace domain {
 	
 	export class Freshness {

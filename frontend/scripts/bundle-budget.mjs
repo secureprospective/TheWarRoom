@@ -25,6 +25,9 @@ function check(entry, budget = BUDGET, source = readFileSync(entry, 'utf8')) {
   if (/CM-\d{3}|commish\.[a-z]/.test(source)) {
     throw new Error('Commissioner registry in owner entry');
   }
+  if (source.includes('League receipt')) {
+    throw new Error('Commissioner proxy in owner entry');
+  }
   if (source.includes(envelope.receipt.correlationId)) {
     throw new Error('Envelope fixture in entry');
   }
@@ -42,6 +45,7 @@ for (const entry of entries) {
     assert.throws(() => check(entry, BUDGET, names.slice(0, 12).join('|')), /Fixture player run/);
     assert.throws(() => check(entry, BUDGET, envelope.receipt.correlationId), /Envelope fixture in entry/);
     assert.throws(() => check(entry, BUDGET, 'Move stages'), /rail implementation in entry/);
+    assert.throws(() => check(entry, BUDGET, 'League receipt'), /Commissioner proxy in owner entry/);
     assert.throws(() => check(entry, BUDGET, 'CM-001'), /Commissioner registry in owner entry/);
     assert.throws(() => check(entry, BUDGET, 'commish.league.teams'), /Commissioner registry in owner entry/);
     console.log('bundle-budget: rejected 1 KB budget, snapshot, envelope, rail and commissioner leaks');
@@ -61,3 +65,10 @@ assert.ok(railSource.includes('Move stages'), 'Rail must live in a lazy chunk, n
 assert.ok(moveSource.includes('landing simulated from a real roster snapshot'),
   'MyMoves caption missing');
 console.log(`bundle-budget: lazy MyMoves + rail verified in ${moveChunk}`);
+
+const commissionerChunks = readdirSync(resolve(dist, 'assets'))
+  .filter((name) => /^proxy\..*\.js$/.test(name));
+assert.ok(commissionerChunks.some((name) =>
+  readFileSync(resolve(dist, 'assets', name), 'utf8').includes('League receipt')),
+  'Commissioner IPC proxy must live in a lazy chunk');
+console.log('bundle-budget: lazy commissioner IPC proxy verified');

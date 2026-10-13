@@ -1,0 +1,135 @@
+package commissioner
+
+import (
+	"fmt"
+	"strings"
+	"time"
+)
+
+type Receipt struct {
+	Entry      string    `json:"entry"`
+	League     string    `json:"league"`
+	Revision   int64     `json:"revision"`
+	RecordedAt time.Time `json:"recordedAt"`
+	Message    string    `json:"message"`
+}
+
+type Record struct {
+	Command   RawCommand `json:"command"`
+	Principal string     `json:"principal"`
+	Role      string     `json:"role"`
+	Gravity   string     `json:"gravity"`
+	Canonical string     `json:"canonical"`
+	Receipt   Receipt    `json:"receipt"`
+}
+
+func (r Record) Validate() error {
+	if err := r.Command.Validate(); err != nil {
+		return err
+	}
+	definition, err := DefinitionFor(r.Command.Command)
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(r.Principal) == "" || strings.TrimSpace(r.Role) == "" ||
+		r.Gravity != definition.Gravity || r.Command.Gravity != definition.Gravity ||
+		r.Receipt.League != r.Command.League || r.Receipt.Entry == "" ||
+		r.Receipt.Revision < 1 || r.Receipt.RecordedAt.IsZero() {
+		return fmt.Errorf("league ledger has invalid identity or receipt metadata")
+	}
+	canonical, err := r.Command.Canonical(r.Principal)
+	if err != nil {
+		return err
+	}
+	if canonical != r.Canonical {
+		return fmt.Errorf("league ledger command does not match its recorded request")
+	}
+	return nil
+}
+
+type Projection struct {
+	Creator string
+	Name    string
+	Active  map[string]bool
+}
+
+// Replay walks compensation links backwards: a reversed reversal no longer
+// compensates its target. Originals and every correction remain in the ledger.
+func Replay(records []Record) Projection {
+	p := Projection{Active: make(map[string]bool)}
+	for _, r := range records {
+		p.Active[r.Receipt.Entry] = true
+		if r.Command.Command == Create {
+			p.Creator, p.Name = r.Principal, r.Command.Args.Name
+		}
+	}
+	for i := len(records) - 1; i >= 0; i-- {
+		r := records[i]
+		if r.Command.Command == Revert && p.Active[r.Receipt.Entry] {
+			p.Active[r.Command.Args.Entry] = !p.Active[r.Command.Args.Entry]
+		}
+	}
+	return p
+}
+
+type CreatorAuthorizer struct{ Creator string }
+
+func (a CreatorAuthorizer) Allow(_ string, principal, _ string) (string, error) {
+	if a.Creator != "" && a.Creator == principal {
+		return "commissioner", nil
+	}
+	return "", fmt.Errorf("only this league's commissioner may make this change")
+}
+
+type Entry struct {
+	ID      string    `json:"id"`
+	Who     string    `json:"who"`
+	What    string    `json:"what"`
+	Why     string    `json:"why"`
+	When    time.Time `json:"when"`
+	Gravity string    `json:"gravity"`
+}
+
+type Ledger struct {
+	League   string  `json:"league"`
+	Name     string  `json:"name"`
+	Revision int64   `json:"revision"`
+	Entries  []Entry `json:"entries"`
+}
+
+// Reading deliberately excludes payloads, request bodies and private metadata.
+func Reading(league, principal string, records []Record, auth Authorizer) Ledger {
+	p := Replay(records)
+	out := Ledger{League: league, Name: p.Name, Entries: []Entry{}}
+	role, err := auth.Allow(league, principal, "commish.ledger.read")
+	private := err == nil && (role == "commissioner" || role == "cocommissioner")
+	for i := len(records) - 1; i >= 0; i-- {
+		r := records[i]
+		if r.Receipt.Revision > out.Revision {
+			out.Revision = r.Receipt.Revision
+		}
+		if r.Command.Visibility == "private" && !private {
+			continue
+		}
+		what := recordLabel(r)
+		who := r.Principal
+		if strings.HasPrefix(who, "local.") {
+			who = "Local operator"
+		}
+		out.Entries = append(out.Entries, Entry{r.Receipt.Entry, who, what,
+			r.Command.Reason, r.Receipt.RecordedAt, "Recorded reason required"})
+	}
+	return out
+}
+
+type NativeLeague struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+func recordLabel(r Record) string {
+	if r.Command.Command == Create {
+		return "Created league “" + r.Command.Args.Name + "”"
+	}
+	return "Reversed a recorded league change"
+}

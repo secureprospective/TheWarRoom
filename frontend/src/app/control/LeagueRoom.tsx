@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { ReportView } from '../reports/ReportView';
 import { controlState, matching } from './state';
 import './control.css';
+
+const LeagueLedger = lazy(() => import('../commissioner/LeagueLedger'));
 
 // LeagueRoom is Control Room › League: the league's settings, its own by-laws and accounting.
 export function LeagueRoom() {
@@ -28,6 +30,7 @@ export function LeagueRoom() {
           </details>
         ))}
       </section>
+      <Suspense fallback={<p role="status">Reading league ledger…</p>}><LeagueLedger /></Suspense>
       {s.accounting && <ReportView report={s.accounting} howLabel="How this was checked" />}
       <Act variant="button"
         verb="control.read" args={{ action: 'open-accounting', value: '' }}>Open MFL accounting</Act>

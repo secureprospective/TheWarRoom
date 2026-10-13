@@ -8,3 +8,7 @@
 .twr-app .bylaws details p,
 .twr-app .site-news details p { margin: 4px 0 4px 12px; max-width: 72ch; }
 .twr-app .bylaws label { display: block; margin-top: 8px; }
+
+.twr-app .league-ledger-entries { padding-inline-start: 24px; }
+.twr-app .league-ledger-entries li { border-top: 1px solid var(--surface-line); padding: 8px 0; }
+.twr-app .league-ledger-entries p { margin: 4px 0; max-width: 72ch; overflow-wrap: anywhere; }

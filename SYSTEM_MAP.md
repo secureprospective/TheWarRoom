@@ -11,6 +11,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Layer | Package | Job |
 |---|---|---|
 | App | repo root (`package main`) | Wails entrypoint (`main.go`), the `App` composition root (`app.go`) and the IPC adapters (`*_app.go`). Adapters validate, route and format; no business logic, no SQL. |
+| Leaf | `internal/commissioner` | Typed app-native command validation, session/authorization ports, receipts, compensation replay and privacy-filtered ledger readings. `history.ExecuteCommissioner` authorizes and appends once in `history.db`'s `league_event`, with a unique per-league request key; no what-if or MFL writes. Root `commissioner_app.go` exposes execute/ledger/native-leagues IPC; the actor comes only from the injected local session (stable installation/user identity). `frontend/src/app/commissioner` is lazy under Control Room › League; `commissioner.execute` dynamically loads its IPC proxy. Creation and correction reversal are the only registered mutation definitions in this foundation. |
 | Credentials | `internal/mflkey` | OS keyring store; redacted credential type, bounded operations. |
 | Layer 1 | `internal/ingestion/pendingtrades` | Keyed pending-trade feed and candidate-key verification; no franchise inference. |
 | Transport | `internal/mfl` | MFL HTTP client: rate limit, host discovery, 429 backoff. No domain types. |
