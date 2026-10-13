@@ -669,6 +669,17 @@ is `docs/commissioner/Commissioner_Control_Census.md`; its rows are in the regis
 - **Vote-out:** two-thirds of all franchises (22 of 32), locked in every league so no commissioner can
   entrench. Only a co-commissioner or a DOT member may open a vote-out or an election. The locked
   vote-out is the backstop if an inactivity setting is abused.
+- **At most one co-commissioner** (Christopher, 2026-10-13). A second grant is refused until the seat
+  is free, so succession is never ambiguous.
+- **Electing a commissioner** (Christopher, 2026-10-13): one ballot per franchise; a candidate needs a
+  majority of all franchises (17 of 32), locked like the vote-out. Without one when voting closes, the
+  top two (every tied candidate included) go to a runoff, and most votes wins it. A runoff tie is
+  broken by the co-commissioner if seated and not a candidate, otherwise by a majority of the DOT
+  members who are not candidates; if neither can, the runoff stays open marked "Needs a ruling".
+  Each round is open 7 days by default (a setting); closing is a recorded act, and the winner is
+  counted from the ballots, never chosen.
+- **Legacy bid modes** (Christopher, 2026-10-13): UFA and RFA bids are open in the Legacy preset;
+  UDFA follows UFA.
 - Role grants and invites stay private (ruling 5).
 
 ### 16.4 The rule model
