@@ -130,6 +130,7 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 | UI build order (rings) | `docs/build-handoffs/UI_Target_Roadmap_2026-10.md` |
 | UI target spec and its rulings | `docs/ui/Target_UI_Spec_2026-10.md` |
 | Every endpoint and its status | `docs/ui/endpoint-registry.csv` |
+| Commissioner surface: MFL map, cut, K1–K7 process, rulings | `docs/commissioner/README.md` |
 | Open questions and decisions | `docs/roadmap/Roadmap_and_Open_Questions.md` |
 | The 2026-10 engineering audit | `docs/reviews/engineering-audit-2026-10/` |
 | Deferred: the Commissioner Suite | `docs/build-handoffs/Commissioner_Suite_Plan_DEFERRED.md` |
