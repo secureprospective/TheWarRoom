@@ -27,7 +27,7 @@ func (r Record) Validate() error {
 	if err := r.Command.Validate(); err != nil {
 		return err
 	}
-	definition, err := DefinitionFor(r.Command.Command)
+	definition, err := r.Command.Definition()
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ type Ledger struct {
 }
 
 // Reading deliberately excludes payloads, request bodies and private metadata.
-func Reading(league, principal string, records []Record, auth Authorizer) Ledger {
+func Reading(league, principal string, records []Record, auth Authorizer) (Ledger, error) {
 	p := Replay(records)
 	out := Ledger{League: league, Name: p.Name, Entries: []Entry{}}
 	role, err := auth.Allow(league, principal, "commish.ledger.read")
@@ -111,7 +111,10 @@ func Reading(league, principal string, records []Record, auth Authorizer) Ledger
 		if r.Command.Visibility == "private" && !private {
 			continue
 		}
-		what := recordLabel(r)
+		what, err := entryLabel(records, i)
+		if err != nil {
+			return Ledger{}, err
+		}
 		who := r.Principal
 		if strings.HasPrefix(who, "local.") {
 			who = "Local operator"
@@ -123,7 +126,7 @@ func Reading(league, principal string, records []Record, auth Authorizer) Ledger
 		out.Entries = append(out.Entries, Entry{r.Receipt.Entry, who, what,
 			r.Command.Reason, r.Receipt.RecordedAt, gravity})
 	}
-	return out
+	return out, nil
 }
 
 type NativeLeague struct {
@@ -131,9 +134,28 @@ type NativeLeague struct {
 	Name string `json:"name"`
 }
 
+func entryLabel(records []Record, i int) (string, error) {
+	r := records[i]
+	switch r.Command.Command {
+	case RulesSet:
+		return ruleLabel(r, records[:i])
+	case Revert:
+		label, ok, err := revertRuleLabel(records, i)
+		if err != nil || ok {
+			return label, err
+		}
+	}
+	return recordLabel(r), nil
+}
+
 func recordLabel(r Record) string {
 	if r.Command.Command == Create {
-		return "Created league “" + r.Command.Args.Name + "”"
+		preset := "every rule waiting for a ruling"
+		if r.Command.Args.Preset == PresetLegacy {
+			preset = "the Legacy NFL rules"
+		}
+		return fmt.Sprintf("Created league “%s” with %d franchises and %s", r.Command.Args.Name,
+			len(r.Command.Args.Franchises), preset)
 	}
 	if _, ok := peopleDefinitionFor(r.Command.Command); ok && r.Command.Args.People != nil {
 		return r.Command.Args.People.label(r.Command.Command)

@@ -2,36 +2,21 @@ package commissioner
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
-func validateFranchises(ids []string) error {
-	if len(ids) == 0 {
-		return fmt.Errorf("list the new league's franchises")
-	}
-	seen := make(map[string]bool, len(ids))
-	for _, id := range ids {
-		if id == "" || strings.TrimSpace(id) != id || seen[id] {
-			return fmt.Errorf("give each franchise its own nonempty identity")
-		}
-		seen[id] = true
-	}
-	return nil
-}
-
-func recordEvent(r Record) (governance.Event, error) {
+func recordEvents(r Record) ([]governance.Event, error) {
 	if r.Command.Command == Create {
-		ids := make([]governance.FranchiseID, len(r.Command.Args.Franchises))
-		for i, id := range r.Command.Args.Franchises {
-			ids[i] = governance.FranchiseID(id)
-		}
-		return governance.LeagueCreated{Creator: governance.Principal(r.Principal), Franchises: ids}, nil
+		return creationEvents(r), nil
 	}
 	if r.Command.Args.People != nil {
-		return r.Command.Args.People.event(r.Command.Command)
+		event, err := r.Command.Args.People.event(r.Command.Command)
+		if err != nil {
+			return nil, err
+		}
+		return []governance.Event{event}, nil
 	}
 	return nil, nil
 }
@@ -44,13 +29,11 @@ func GovernanceState(records []Record) (governance.State, error) {
 		if !projection.Active[r.Receipt.Entry] && r.Command.Command != Create {
 			continue
 		}
-		event, err := recordEvent(r)
+		recorded, err := recordEvents(r)
 		if err != nil {
 			return governance.State{}, err
 		}
-		if event != nil {
-			events = append(events, event)
-		}
+		events = append(events, recorded...)
 	}
 	state, err := governance.Replay(events)
 	if err != nil {
@@ -109,6 +92,9 @@ func AuthorizeRecords(raw RawCommand, principal string, records []Record) (strin
 		return authorizeRedemption(state, raw, principal)
 	}
 	auth := GovernanceAuthorizer{State: state}
+	if raw.Command == RulesSet {
+		return authorizeRule(auth, raw, principal)
+	}
 	role, err := auth.Allow(raw.League, principal, raw.Command)
 	if err != nil {
 		return "", err
@@ -142,7 +128,13 @@ func authorizeReversal(auth GovernanceAuthorizer, entry, principal string, recor
 			entry = r.Command.Args.Entry
 			continue
 		}
-		if _, err := auth.Allow(r.Command.League, principal, r.Command.Command); err != nil {
+		var err error
+		if r.Command.Command == RulesSet {
+			_, err = authorizeRule(auth, r.Command, principal)
+		} else {
+			_, err = auth.Allow(r.Command.League, principal, r.Command.Command)
+		}
+		if err != nil {
 			return fmt.Errorf("reversing this change needs its original permission: %w", err)
 		}
 		return nil

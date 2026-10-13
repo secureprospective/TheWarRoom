@@ -252,6 +252,136 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class RulePending {
+	    entry: string;
+	    value: string;
+	    when: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RulePending(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.entry = source["entry"];
+	        this.value = source["value"];
+	        this.when = source["when"];
+	    }
+	}
+	export class RuleRow {
+	    field: string;
+	    label: string;
+	    value: string;
+	    state: string;
+	    citation: string;
+	    schema: leaguerules.ValueSchema;
+	    competitive: boolean;
+	    pending: RulePending[];
+	
+	    static createFrom(source: any = {}) {
+	        return new RuleRow(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.field = source["field"];
+	        this.label = source["label"];
+	        this.value = source["value"];
+	        this.state = source["state"];
+	        this.citation = source["citation"];
+	        this.schema = this.convertValues(source["schema"], leaguerules.ValueSchema);
+	        this.competitive = source["competitive"];
+	        this.pending = this.convertValues(source["pending"], RulePending);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class RuleSection {
+	    label: string;
+	    rows: RuleRow[];
+	
+	    static createFrom(source: any = {}) {
+	        return new RuleSection(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.label = source["label"];
+	        this.rows = this.convertValues(source["rows"], RuleRow);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Rules {
+	    league: string;
+	    name: string;
+	    revision: number;
+	    rollover: string;
+	    sections: RuleSection[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Rules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.name = source["name"];
+	        this.revision = source["revision"];
+	        this.rollover = source["rollover"];
+	        this.sections = this.convertValues(source["sections"], RuleSection);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 
 }
 
@@ -1057,6 +1187,101 @@ export namespace leaguefeed {
 	        this.ir = this.convertValues(source["ir"], RosterChange);
 	        this.taxi = this.convertValues(source["taxi"], RosterChange);
 	        this.unparsed = source["unparsed"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
+export namespace leaguerules {
+	
+	export class Choice {
+	    value: string;
+	    label: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Choice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.value = source["value"];
+	        this.label = source["label"];
+	    }
+	}
+	export class ValueSchema {
+	    kind: string;
+	    minimum?: number;
+	    maximum?: number;
+	    choices: Choice[];
+	    fields: SchemaField[];
+	    key?: ValueSchema;
+	    element?: ValueSchema;
+	
+	    static createFrom(source: any = {}) {
+	        return new ValueSchema(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	        this.minimum = source["minimum"];
+	        this.maximum = source["maximum"];
+	        this.choices = this.convertValues(source["choices"], Choice);
+	        this.fields = this.convertValues(source["fields"], SchemaField);
+	        this.key = this.convertValues(source["key"], ValueSchema);
+	        this.element = this.convertValues(source["element"], ValueSchema);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class SchemaField {
+	    name: string;
+	    label: string;
+	    schema: ValueSchema;
+	
+	    static createFrom(source: any = {}) {
+	        return new SchemaField(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.label = source["label"];
+	        this.schema = this.convertValues(source["schema"], ValueSchema);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

@@ -105,6 +105,8 @@ export function TargetCommissionerLedger(arg1:string):Promise<commissioner.Ledge
 
 export function TargetCommissionerPeople(arg1:string):Promise<commissioner.People>;
 
+export function TargetCommissionerRules(arg1:string):Promise<commissioner.Rules>;
+
 export function TargetComms(arg1:main.RawCommsScope):Promise<main.CommsBoard>;
 
 export function TargetCommsRefresh(arg1:boolean):Promise<void>;

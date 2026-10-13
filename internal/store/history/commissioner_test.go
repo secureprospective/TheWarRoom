@@ -15,7 +15,7 @@ import (
 
 func createCommand() commissioner.RawCommand {
 	return commissioner.RawCommand{League: "native.test", Command: commissioner.Create,
-		Args: commissioner.RawArgs{Name: "Test league", Franchises: []string{"f1", "f2"}}, Reason: "  start our league  ",
+		Args: commissioner.RawArgs{Name: "Test league", Preset: commissioner.PresetEmpty, FranchiseCount: 2}, Reason: "  start our league  ",
 		Request: "create", Effective: "now", Visibility: "league"}
 }
 

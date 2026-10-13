@@ -41,18 +41,29 @@ func DefinitionFor(command string) (Definition, error) {
 }
 
 type RawArgs struct {
-	Name       string     `json:"name,omitempty"`
-	Entry      string     `json:"entry,omitempty"`
-	Franchises []string   `json:"franchises,omitempty"`
-	People     *RawPeople `json:"people,omitempty"`
+	Name           string          `json:"name,omitempty"`
+	Entry          string          `json:"entry,omitempty"`
+	Franchises     []string        `json:"franchises,omitempty"`
+	People         *RawPeople      `json:"people,omitempty"`
+	Field          string          `json:"field,omitempty"`
+	Value          json.RawMessage `json:"value,omitempty"`
+	Preset         string          `json:"preset,omitempty"`
+	FranchiseCount int             `json:"franchiseCount,omitempty"`
+	Seed           []SeedValue     `json:"seed,omitempty"`
 }
 
 func (a RawArgs) Validate(command string) error {
+	if (command != RulesSet && (a.Field != "" || len(a.Value) != 0)) || (command != Create &&
+		(a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0)) {
+		return fmt.Errorf("send only the details of this league action")
+	}
 	switch command {
+	case RulesSet:
+		return a.validateRule()
 	case Create:
 		return a.validateCreation()
 	case Revert:
-		if strings.TrimSpace(a.Entry) == "" || a.Name != "" || a.People != nil || len(a.Franchises) != 0 {
+		if strings.TrimSpace(a.Entry) == "" || a.Name != "" || a.People != nil {
 			return fmt.Errorf("choose the recorded change to reverse")
 		}
 	default:
@@ -61,18 +72,11 @@ func (a RawArgs) Validate(command string) error {
 	return nil
 }
 
-func (a RawArgs) validateCreation() error {
-	if strings.TrimSpace(a.Name) == "" || a.Entry != "" || a.People != nil {
-		return fmt.Errorf("give the new league a name")
-	}
-	return validateFranchises(a.Franchises)
-}
-
 func (a RawArgs) validatePeople(command string) error {
 	if _, ok := peopleDefinitionFor(command); !ok {
 		return fmt.Errorf("this commissioner command is not available yet")
 	}
-	if a.People == nil || a.Name != "" || a.Entry != "" || len(a.Franchises) != 0 {
+	if a.People == nil || a.Name != "" || a.Entry != "" {
 		return fmt.Errorf("send the details of this people change")
 	}
 	return a.People.Validate(command)
@@ -91,7 +95,7 @@ type RawCommand struct {
 }
 
 func (r RawCommand) Validate() error {
-	definition, err := DefinitionFor(r.Command)
+	definition, err := r.Definition()
 	if err != nil {
 		return err
 	}
@@ -115,6 +119,9 @@ func (r RawCommand) Validate() error {
 }
 
 func (r RawCommand) validatePlacement() error {
+	if r.Command == RulesSet {
+		return r.validateRulePlacement()
+	}
 	if r.Visibility != "league" && r.Visibility != "private" {
 		return fmt.Errorf("choose who may read this change")
 	}
@@ -161,6 +168,10 @@ func Decode(body string) (RawCommand, error) {
 	if err := decoder.Decode(&struct{}{}); err != io.EOF {
 		return raw, fmt.Errorf("send exactly one commissioner command")
 	}
+	raw, err := raw.Prepared()
+	if err != nil {
+		return raw, err
+	}
 	if err := raw.Validate(); err != nil {
 		return raw, err
 	}
@@ -168,7 +179,7 @@ func Decode(body string) (RawCommand, error) {
 }
 
 func (r RawCommand) Canonical(principal string) (string, error) {
-	definition, err := DefinitionFor(r.Command)
+	definition, err := r.Definition()
 	if err != nil {
 		return "", err
 	}

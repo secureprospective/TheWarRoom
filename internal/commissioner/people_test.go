@@ -42,15 +42,3 @@ func TestPeopleBoundary(t *testing.T) {
 		t.Fatal("caller chose gravity")
 	}
 }
-
-func TestCreationFranchises(t *testing.T) {
-	for _, ids := range [][]string{nil, {""}, {"f1", "f1"}, {" f1"}} {
-		raw := RawArgs{Name: "League", Franchises: ids}
-		if err := raw.Validate(Create); err == nil {
-			t.Fatalf("invalid franchise inventory accepted: %v", ids)
-		}
-	}
-	if err := (RawArgs{Name: "League", Franchises: []string{"a", "b"}}).Validate(Create); err != nil {
-		t.Fatal(err)
-	}
-}

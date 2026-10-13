@@ -109,3 +109,19 @@ func (a *App) TargetCommissionerLeagues() ([]commissioner.NativeLeague, error) {
 	}
 	return leagues, nil
 }
+
+func (a *App) TargetCommissionerRules(league string) (commissioner.Rules, error) {
+	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
+		return commissioner.Rules{}, fmt.Errorf("choose an app league")
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.Rules{}, fmt.Errorf("league rules startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.CommissionerRules(ctx, league)
+	if err != nil {
+		return commissioner.Rules{}, fmt.Errorf("league rules: %w", err)
+	}
+	return reading, nil
+}

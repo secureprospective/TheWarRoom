@@ -56,7 +56,7 @@ func TestCommissionerGovernancePermissions(t *testing.T) {
 		t.Fatalf("second CC: %v", err)
 	}
 	raw = peopleCommand("commish.franchise.edit",
-		commissioner.RawPeople{Franchise: "f1", Name: "Falcons", Abbreviation: "FAL"}, 2)
+		commissioner.RawPeople{Franchise: "franchise.01", Name: "Falcons", Abbreviation: "FAL"}, 2)
 	if _, err := s.ExecuteCommissioner(t.Context(), raw, "owner", nil); err == nil {
 		t.Fatal("owner changed a franchise identity")
 	}
@@ -77,7 +77,7 @@ func TestCommissionerPeoplePrivacyAndRevert(t *testing.T) {
 	executePeople(t, s, "creator", "commish.role.grant",
 		commissioner.RawPeople{Principal: "secret-cc", Role: governance.CoCommissioner}, 1)
 	invite := executePeople(t, s, "creator", "commish.seat.invite",
-		commissioner.RawPeople{ID: "secret-invite", Franchise: "f1", Principal: "owner"}, 2)
+		commissioner.RawPeople{ID: "secret-invite", Franchise: "franchise.01", Principal: "owner"}, 2)
 	for _, principal := range []string{"creator", "secret-cc", "owner"} {
 		people, err := s.CommissionerPeople(t.Context(), "native.test", principal)
 		if err != nil {
@@ -122,7 +122,7 @@ func TestCommissionerInviteSessionAndRetry(t *testing.T) {
 		t.Fatal(err)
 	}
 	executePeople(t, s, "creator", "commish.seat.invite",
-		commissioner.RawPeople{ID: "invite", Franchise: "f1", Principal: "owner"}, 1)
+		commissioner.RawPeople{ID: "invite", Franchise: "franchise.01", Principal: "owner"}, 1)
 	raw := peopleCommand("commish.seat.invite.redeem", commissioner.RawPeople{ID: "invite", Principal: "owner"}, 2)
 	if _, err := s.ExecuteCommissioner(t.Context(), raw, "creator", nil); err == nil ||
 		!strings.Contains(err.Error(), "Other owners act from their own app; this desktop can only act as you") {
@@ -155,13 +155,13 @@ func TestCommissionerPeopleCommandsAndRestart(t *testing.T) {
 		command string
 		args    commissioner.RawPeople
 	}{
-		{"commish.seat.replace", commissioner.RawPeople{Franchise: "f1", Principal: "owner"}},
-		{"commish.seat.remove", commissioner.RawPeople{Franchise: "f1"}},
-		{"commish.abilities.set", commissioner.RawPeople{Franchise: "f1", Ability: "trades", On: false}},
+		{"commish.seat.replace", commissioner.RawPeople{Franchise: "franchise.01", Principal: "owner"}},
+		{"commish.seat.remove", commissioner.RawPeople{Franchise: "franchise.01"}},
+		{"commish.abilities.set", commissioner.RawPeople{Franchise: "franchise.01", Ability: "trades", On: false}},
 		{"commish.visibility.set", commissioner.RawPeople{Report: "finances", Audience: "commish"}},
 		{"commish.role.grant", commissioner.RawPeople{Principal: "judge", Role: governance.DOT}},
 		{"commish.role.revoke", commissioner.RawPeople{Principal: "judge", Role: governance.DOT}},
-		{"commish.seat.invite", commissioner.RawPeople{ID: "inv", Franchise: "f1", Principal: "owner"}},
+		{"commish.seat.invite", commissioner.RawPeople{ID: "inv", Franchise: "franchise.01", Principal: "owner"}},
 		{"commish.seat.invite.revoke", commissioner.RawPeople{ID: "inv"}},
 	}
 	for i, change := range changes {
@@ -179,7 +179,7 @@ func TestCommissionerPeopleCommandsAndRestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f, _ := state.Franchise("f1")
+	f, _ := state.Franchise("franchise.01")
 	if f.Seat != "" || f.Abilities["trades"] || state.Audience("finances") != "commish" ||
 		state.HasRole("judge", governance.DOT) {
 		t.Fatalf("commands missing from projection: %+v", f)

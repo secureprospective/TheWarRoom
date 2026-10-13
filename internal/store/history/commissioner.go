@@ -48,15 +48,9 @@ func transactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commi
 // immediate SQLite transaction, including across independently opened stores.
 func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer) (commissioner.Receipt, error) {
-	if err := raw.Validate(); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("validate league change: %w", err)
-	}
-	if strings.TrimSpace(principal) == "" {
-		return commissioner.Receipt{}, fmt.Errorf("your local identity is unavailable")
-	}
-	canonical, err := raw.Canonical(principal)
+	raw, canonical, err := preparedCommand(raw, principal)
 	if err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("canonical league change: %w", err)
+		return commissioner.Receipt{}, err
 	}
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
@@ -88,6 +82,9 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err := commissioner.CheckGovernanceAppend(raw, principal, records, s.now()); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("check league change: %w", err)
 	}
+	if err := commissioner.CheckRulesAppend(raw, records, s.now()); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("check league rules: %w", err)
+	}
 	receipt, err := s.appendCommissioner(ctx, tx, raw, principal, role, canonical)
 	if err != nil {
 		return commissioner.Receipt{}, err
@@ -96,6 +93,25 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 		return commissioner.Receipt{}, fmt.Errorf("record league change: %w", err)
 	}
 	return receipt, nil
+}
+
+// preparedCommand fills what Go owns on the command, validates it and fixes its retry identity.
+func preparedCommand(raw commissioner.RawCommand, principal string) (commissioner.RawCommand, string, error) {
+	raw, err := raw.Prepared()
+	if err != nil {
+		return raw, "", fmt.Errorf("validate league change: %w", err)
+	}
+	if err := raw.Validate(); err != nil {
+		return raw, "", fmt.Errorf("validate league change: %w", err)
+	}
+	if strings.TrimSpace(principal) == "" {
+		return raw, "", fmt.Errorf("your local identity is unavailable")
+	}
+	canonical, err := raw.Canonical(principal)
+	if err != nil {
+		return raw, "", fmt.Errorf("canonical league change: %w", err)
+	}
+	return raw, canonical, nil
 }
 
 func commandRole(raw commissioner.RawCommand, principal string, auth commissioner.Authorizer,
@@ -154,7 +170,7 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, raw commissi
 	now := s.now().UTC().Truncate(time.Microsecond)
 	receipt := commissioner.Receipt{Entry: "act." + hex.EncodeToString(identity[:]), League: raw.League,
 		Revision: raw.Expected + 1, RecordedAt: now, Message: "Recorded in the league ledger."}
-	definition, err := commissioner.DefinitionFor(raw.Command)
+	definition, err := raw.Definition()
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("define league change: %w", err)
 	}
@@ -196,7 +212,11 @@ func (s *Store) CommissionerLedger(ctx context.Context, league, principal string
 		}
 		auth = commissioner.GovernanceAuthorizer{State: state}
 	}
-	return commissioner.Reading(league, principal, records, auth), nil
+	reading, err := commissioner.Reading(league, principal, records, auth)
+	if err != nil {
+		return commissioner.Ledger{}, fmt.Errorf("read league ledger: %w", err)
+	}
+	return reading, nil
 }
 
 func (s *Store) CommissionerPeople(ctx context.Context, league, principal string) (commissioner.People, error) {
@@ -233,4 +253,20 @@ func (s *Store) NativeLeagues(ctx context.Context) ([]commissioner.NativeLeague,
 		return nil, fmt.Errorf("read app leagues: %w", err)
 	}
 	return out, nil
+}
+
+func (s *Store) CommissionerRules(ctx context.Context, league string) (commissioner.Rules, error) {
+	events, err := s.Events(ctx, league, commissioner.Stream, 0)
+	if err != nil {
+		return commissioner.Rules{}, err
+	}
+	records, err := commissionerRecords(events)
+	if err != nil {
+		return commissioner.Rules{}, err
+	}
+	reading, err := commissioner.RulesReading(league, records)
+	if err != nil {
+		return commissioner.Rules{}, fmt.Errorf("read league rules: %w", err)
+	}
+	return reading, nil
 }

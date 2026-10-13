@@ -198,6 +198,10 @@ export function TargetCommissionerPeople(arg1) {
   return window['go']['main']['App']['TargetCommissionerPeople'](arg1);
 }
 
+export function TargetCommissionerRules(arg1) {
+  return window['go']['main']['App']['TargetCommissionerRules'](arg1);
+}
+
 export function TargetComms(arg1) {
   return window['go']['main']['App']['TargetComms'](arg1);
 }

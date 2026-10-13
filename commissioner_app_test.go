@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -57,7 +58,7 @@ func executeCommissionerTest(t *testing.T, app *App, raw commissioner.RawCommand
 func TestCommissionerPeopleWire(t *testing.T) {
 	app := commissionerTestApp(t)
 	raw := commissioner.RawCommand{League: "native.people", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "People league", Franchises: []string{"f1"}},
+		Args:   commissioner.RawArgs{Name: "People league", Preset: commissioner.PresetEmpty, FranchiseCount: 2},
 		Reason: "Create our league", Request: "create", Effective: "now", Visibility: "league"}
 	executeCommissionerTest(t, app, raw)
 	raw.Command = "commish.role.grant"
@@ -91,7 +92,7 @@ func TestCommissionerPeopleWire(t *testing.T) {
 func TestCommissionerWire(t *testing.T) {
 	app := commissionerTestApp(t)
 	raw := commissioner.RawCommand{League: "native.wire", Command: commissioner.Create,
-		Args: commissioner.RawArgs{Name: "Our league", Franchises: []string{"f1", "f2"}}, Reason: "Start our own league", Request: "create",
+		Args: commissioner.RawArgs{Name: "Our league", Preset: commissioner.PresetEmpty, FranchiseCount: 2}, Reason: "Start our own league", Request: "create",
 		Effective: "now", Visibility: "league"}
 	first := executeCommissionerTest(t, app, raw)
 	raw.Command, raw.Args = commissioner.Revert, commissioner.RawArgs{Entry: first.Entry}
@@ -161,5 +162,51 @@ func TestLocalCommissionerSessionStableAndNotFranchise(t *testing.T) {
 	}
 	if _, err := (&App{}).commissionerPrincipal(); err == nil {
 		t.Fatal("missing installation fabricated identity")
+	}
+}
+
+func TestCommissionerRulesWire(t *testing.T) {
+	app := commissionerTestApp(t)
+	raw := commissioner.RawCommand{League: "native.rules", Command: commissioner.Create,
+		Args:   commissioner.RawArgs{Name: "Rules league", Preset: commissioner.PresetEmpty, FranchiseCount: 4},
+		Reason: "Start our own league", Request: "create", Effective: "now", Visibility: "league"}
+	executeCommissionerTest(t, app, raw)
+	raw.Command, raw.Reason, raw.Visibility = commissioner.RulesSet, "Owners agreed the roster size", "league"
+	raw.Args = commissioner.RawArgs{Field: "roster.limits", Value: json.RawMessage(`{"min":20,"max":70}`)}
+	raw.Expected, raw.Request, raw.Effective = 1, "limits", "now"
+	executeCommissionerTest(t, app, raw)
+	raw.Args = commissioner.RawArgs{Field: "cap.amount", Value: json.RawMessage(`12500000000`)}
+	raw.Expected, raw.Request, raw.Effective, raw.Reason = 2, "cap", "next_rollover", ""
+	executeCommissionerTest(t, app, raw)
+	creator, err := app.TargetCommissionerRules(raw.League)
+	if err != nil {
+		t.Fatal(err)
+	}
+	app.commissionerSession = testCommissionerSession{"owner"}
+	owner, err := app.TargetCommissionerRules(raw.League)
+	if err != nil || !reflect.DeepEqual(creator, owner) {
+		t.Fatalf("owners read the same public rules: %v", err)
+	}
+	body, err := json.Marshal(owner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := "frontend/src/app/commissioner/rules.wire.testdata.json"
+	if os.Getenv("TWR_WRITE_WIRE") == "1" {
+		if err := os.WriteFile(path, append(body, '\n'), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	held, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(string(held)) != string(body) {
+		t.Fatal("commissioner rules wire is stale")
+	}
+	for _, league := range []string{"legacy", "native.", " native.rules", "native.missing"} {
+		if _, err := app.TargetCommissionerRules(league); err == nil {
+			t.Fatalf("%q admitted to the app league rules reading", league)
+		}
 	}
 }

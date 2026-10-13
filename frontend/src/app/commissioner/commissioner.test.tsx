@@ -20,7 +20,8 @@ describe('Commissioner spine', () => {
     const reading = parseLedger(wire);
     expect(reading.entries).toHaveLength(1);
     expect(JSON.stringify(reading)).not.toContain('Private correction');
-    expect(reading.entries[0].what).toBe('Created league “Our league”');
+    expect(reading.entries[0].what)
+      .toBe('Created league “Our league” with 2 franchises and every rule waiting for a ruling');
     const html = renderToStaticMarkup(createElement(LedgerEntries, { reading }));
     for (const label of ['League version: 2', 'By creator', 'Reason:', 'Safeguard:', 'Start our own league'])
       expect(html).toContain(label);
