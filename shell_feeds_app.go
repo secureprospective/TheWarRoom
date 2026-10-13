@@ -67,7 +67,7 @@ func (a *App) refreshShellFeeds(ctx context.Context) {
 	if err := pause(ctx, time.Second); err != nil {
 		return
 	}
-	year, now := strconv.Itoa(a.season), time.Now()
+	year, now := strconv.Itoa(a.season), a.timeNow()
 	refreshDailyShellFeed(ctx, a, &a.seasonCalendar, now, archivedFeed[ingestion.RawCalendarEvent]{
 		export: "calendar", parse: ingestion.ParseCalendar, bodies: a.history.ReferenceBodies,
 		fetch: func(ctx context.Context) ([]ingestion.RawCalendarEvent, error) {
