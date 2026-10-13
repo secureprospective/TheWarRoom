@@ -43,7 +43,8 @@ func yahooState(s string) string {
 		return "post"
 	case "status.type.scheduled", "status.type.pregame":
 		return "pre"
-	case "status.type.inprogress":
+	// Yahoo sent status.type.in_progress for BUF at LAR on 2026-10-12; no live game was captured before.
+	case "status.type.in_progress", "status.type.inprogress":
 		return "in"
 	default:
 		return ""
