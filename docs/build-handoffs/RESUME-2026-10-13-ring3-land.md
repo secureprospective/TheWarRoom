@@ -1,0 +1,204 @@
+# Ring 3 landing RESUME — 2026-10-13 09:25 CT (main cff48ab; batch4 = PR pending)
+
+## 0. Other sessions on this repo — do not mix up
+Christopher runs 2 Bee sessions of his own on other TheWarRoom components (the main checkout is on
+`session/league-history-pwa`: his). Mine are ONLY `ring-3-land-*` worktrees, `session/ring-3-land-*` branches, RUN
+phase dirs, and the Sol pi processes with `--session-id ring3-land-*`. New worktrees come off my own branches or
+`origin/main`, never off the main checkout's branch.
+
+## 1. What we are doing
+Christopher's /goal: work systematically through the Endpoint Index (docs/ui/endpoint-registry.csv), marking rows
+landed only on live evidence; hold anything unclear; done = every row done or a good reason. I am head brain;
+Sol (pi, gpt-6.1-sol medium) writes code; I review, mutant-check, gate, deploy to Claude-OS, live-check, merge.
+Repo ~/work/TheWarRoom (never touch the main checkout; worktrees under .worktrees/). RUN=~/fleet/runs/warroom-ring3-2026-10-11.
+
+## 2. In flight (check first)
+- **batch4** — `.worktrees/ring-3-land-batch4`, branch `session/ring-3-land-batch4` from origin/main cff48ab:
+  land-followup b2f9670 + land-followup2 0a21c77 (merge 0706b70) + Claude's landing fix a572c80 (TargetApp
+  scroll-to-top is now a layout effect `useWorkScrollReset`, so it precedes the endpoint reveal; proof in
+  workScroll.test.ts fails 0 vs 640 without it) + registry commit (6 rows: L-17, M-116, M-059, L-30, L-31, L-32).
+  Gate verify 0 / build 0 / 866 tests / bundle 306,973 B on 0706b70; re-gate after a572c80 before the PR.
+  Deployed on Claude-OS as "batch4b" (a572c80) at 09:16; live walk done (findings 83–87).
+- Sol **land-conditional** (dispatched 09:11) — `.worktrees/ring-3-land-conditional` from batch4 0706b70, brief
+  par/land-conditional.md: conditional drop for over-cap bids (C-06.7) + finding 82 Report drawer / Status overlay
+  data-open (M-159).
+- Sol **land-followup3** (dispatched 09:20) — `.worktrees/ring-3-land-followup3` from batch4 a572c80, brief
+  par/land-followup3.md: 83 (trade receipts show FP_ pick tokens), 84 (Ready trade withdrawal/reject plans have no
+  Remove plan), 85 (Plan a bid in the Inspector opens the form off-screen).
+- **Queued, not dispatched:** par/land-followup4.md (86 Research news frozen "26 minutes"/"Published" + one honest
+  posted time everywhere; 87 scratchpad shows a new note twice, oldest-first). Dispatch when a Sol finishes (keep
+  ≤2 Sols: concurrent race-verify pushes Sol's 600 s gate to timeouts; Christopher's Bee sessions share the host).
+  Create the worktree from batch4 (or from main once batch4 merges), `pnpm install` + build in frontend first.
+- Alive? `ls -l --time-style=+%H:%M RUN/<phase>/sessions/*.jsonl`; done = `cat RUN/<phase>/sentinel`; REPORT.md in
+  the phase dir; the transcript jsonl is the recovery channel.
+
+## 3. Next actions, in order
+1. Re-gate batch4 (verify + build, background), push, PR, squash-merge. RESUME copy goes in
+   docs/build-handoffs/RESUME-2026-10-13-ring3-land.md with it.
+2. Remove merged worktrees land-followup, land-followup2 (+ batch4 after merge) and log in ~/MOVED.md,
+   ~/archive/MANIFEST.md, CT105 context.md.
+3. When land-conditional / land-followup3 finish: review REPORT + diff, plant a mutant per key proof, commit, batch
+   (both from batch4: merge onto new main), gate, deploy, live-check (C-06.7 over-cap Fail → conditional drop →
+   Pass + ProBoards line; Reports/Status overlays open; trade receipts name picks; remove the Green Bay withdrawal
+   test plan Claude made 08:04; Plan a bid reveals the form), land rows, merge. Dispatch land-followup4 as soon as
+   one finishes.
+4. Thursday 10-15 7:15 PM DEN game: live-check X-02/X-03 (and M-001 live re-read).
+
+## 4. Endpoint state (rings 0–3)
+- Landing in batch4: L-17, M-116, M-059, L-30, L-31, L-32.
+- Held, waiting on fixes: M-034 (84; tsv line moved to land-held.tsv), C-06.2/M-199/M-033 (83/84), C-06.7
+  (conditional + 85), M-159 merged (82), M-060 (86), M-118/S-11 (87).
+- Held, no live case (good reason): M-148 (lineup legal 21/21), M-153 + X-04 (no offer to you; GB offer is
+  outgoing), X-02/X-03 (need live play Thu).
+- Merged rows: 28 covered by landed targets; 10 merged into places present (M-146 franchise Inspector thin).
+- Ring 4 out of scope.
+
+## 5. Decisions (do not relitigate)
+- League dates = rulebook base, commissioner-editable. Engine points stay; only improve accuracy. Pools retired.
+  Bye shortfalls → tray + HQ. Density → tables. M-025 can't-cut retired. Merge when fixed and tested.
+- 10-13: scratchpad notes NOT removable; place personal lists well, don't overbuild (dynamic watchlist, rookie
+  scouting rankings come later). Over-cap bids need a ProBoards-style conditional drop (commissioner drops it if
+  the bid wins), secondary UI not first class; rulebook §1 "stay under cap at all times". (Memories saved.)
+- Scratch caches in RUN (~4 GB) kept: Christopher wants to be asked before deleting.
+
+## 6. Refuted / do not retest
+- `git cherry` and plain merge-tree vs main misjudge squash-merged branches: use `merge-base --is-ancestor` into
+  the batch branch that landed.
+- MFL article page is view_news_article?ID=<id> (ARTICLE_ID= and news_articles?ARTICLE_ID= error).
+- MFL playerProfile `published` is relative to the read time (verified: 26 minutes before the 12:48 AM CDT read).
+- Tray trade alert counts only offers "to_you" by design. Pulse's empty RB row is slot alignment, not a hole.
+- open-row.sh presses Escape first, which closes the Inspector: an "Open" Inspector after it is the helper, not a bug.
+- M-116 is "My trade bait" (bait.set); landing there, not on League trade bait, is correct.
+- MFL elapsed wording is coarse: "3 hours" at 12:48 AM ≈ 9:48 PM, the article was 9:27 PM (finding 86).
+- Inspector "Keep dated note" did save (twice) — the bug is feedback, not storage (thewarroom-dev.db personal_entries).
+
+## 7. Findings
+RUN/land-findings.md 1–87 (72–87 today). Screenshots RUN/shots/b3-*.png, b4-*.png, b4b-*.png.
+Dev-db test residue (notes are not removable by ruling): Roy Lopez ×3 "Walk test 10-13…", Arizona Cardinals ×1
+"Walk test 10-13 b4: scratchpad check" (thewarroom-dev.db personal_entries on Claude-OS). Green Bay "Trade withdrawal"
+Ready plan (Claude, 08:04) — remove once 84 lands.
+
+## 8. Environment
+- Claude-OS after reboot: 1280x800. Nav: Home (63,204) War Room (76,240) HQ (87,276) Trade (80,312) Pulse
+  (87,348) Control (87,384); tabs y=86; command bar "/" key (open-row.sh <ID> [wait]); scroll mouse at x≈550
+  (work) or 1070 (Inspector). Density N/T/M x 839/861/883 with Inspector open. Brave is the VM browser: never click
+  it; close tabs with xdotool key ctrl+w; re-activate "The War Room" window after.
+- Gate env: export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOMEMLIMIT=1500MiB GOMAXPROCS=8
+  GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1; make verify / make build
+  VERSION=dev COMMIT=ring3 BUILD_DATE=ring3 with run_in_background.
+- Deploy: gzip build/bin/thewarroom → rsync --bwlimit=8000 --partial → claudeos:warroom-ring1/thewarroom.new.gz →
+  gunzip, chmod +x → bash deploy.sh <tag> → wait "value model fitted" in run.log.
+- Dispatch: cat par/land-common.md par/<x>.md > par/<x>.full.md; WT=<worktree> nohup setsid ./dispatch-wt.sh
+  <phase> par/<x>.full.md > <phase>.launch.log 2>&1 < /dev/null &
+- Merge: ~/.local/bin/gh pr merge <n> --squash. PR body ends with the Claude Code line; commits with Co-Authored-By.
+- Removed worktrees today: commish-map, land-live, land-polish, land-pool, land-pools, land-tray, land-walk1,
+  land-batch3 (ledgers logged). Older ring-0, ring-2-lab, ring-3-b, ring-3-c unproven: leave.
+
+## 9. Honest status
+batch4 proves 6 rows and fixes 9 findings live; 10 kept rows still wait on 3 Sol phases (two running, one queued);
+6 held for no live case. Unproven: everything in land-conditional / followup3 / followup4.
+
+---
+(previous RESUME below for history)
+# Ring 3 landing RESUME — 2026-10-13 ~08:00 CT (main cff48ab after #29 batch3)
+
+## Latest (08:00) — read this first
+- #29 merged: land-pools + land-tray + land-walk1 + registry (36 rows landed). Deployed on Claude-OS as "batch3"
+  (07:42) and live-checked: bye alert, finished-week re-read, Inspector Form/Dead cap, Archive, champions,
+  density, Gameday layout, status strip all good.
+- Claude-OS rebooted by Christopher 10-13 morning: screen is now 1280x800 (old 1920 coordinates are wrong).
+  Nav x≈63-87, Home y=204, HQ 276, Pulse 348; tabs y=86; density N/T/M at x 1119/1141/1163 (Inspector closed)
+  or 839/861/883 (open).
+- Sol phase land-followup RUNNING (started 07:58), worktree ring-3-land-followup from cff48ab, brief
+  par/land-followup.md: findings 62 (cold landing), 73 (false "Refresh failed", holds M-116), 72, 74, 75.
+  Check: ls -l land-followup/sessions; cat land-followup/sentinel.
+- Removed worktrees (ledgers logged): commish-map, land-live, land-polish, land-pool, land-pools, land-tray,
+  land-walk1, land-batch3. Scratch caches in RUN (~4 GB) kept: Christopher asked to be asked.
+- apply-landed.py in RUN applies land-landed.tsv to rows not yet landed (dry run with --dry).
+- Held: M-116 (finding 73), M-118 (note saving not exercised). Old worktrees ring-0, ring-2-lab, ring-3-b,
+  ring-3-c not proven landed — leave.
+- Next: walk M-148/M-153 (tray), M-059/M-060, C-06.7, trade desk M-033/M-034/M-199/X-04/C-06.2 (hand-off only),
+  L-30/31/32, L-17, M-118, ring 0–2 not-landed rows (rings 0–2 have ~45 built/spec rows), X-02/X-03 Thu 7:15 PM.
+
+
+## Goal (Christopher /goal, 10-13 overnight, he is asleep)
+"Systematically work through the Endpoint Index and mark them off as they are completed. No shortcuts... if the
+answer is not clear, hold off. Sol reset — run more than one Sol if needed. Done = all endpoints done or a good
+reason why not. Don't crash host or VM; if VM loses network, work through it. Take the wheel. Finish."
+Earlier rulings stand (engine points stay; pools retired; bye shortfalls → tray+HQ; density → tables; merge when
+fixed and tested; never act on MFL; never --no-verify; rsync --bwlimit=8000 for builds, never scp).
+
+## State
+- main = 9b419e6 (#28 land-polish + live fixes: pairs-matrix exclusion, Judge exempts "No Valid Player IDs",
+  single refused id = answered/no news, Race "Not played yet" via shared weekKickedOff). Deployed on Claude-OS as
+  "polish2" (00:46) and checked live.
+- Worktree ring-3-land-polish: merged; remove at cleanup (log in 3 ledgers).
+
+## Walk 10-13 08:00–08:15 (after #29) — open kept rows rings 0–3 = 19
+- Landed (in land-landed.tsv, not yet applied): M-034, L-30, L-31, L-32.
+- Held, waiting on Sol fixes: L-17 (62), M-116 (73), M-060 (72/78), M-059 (78), C-06.2/M-199/M-033 (77),
+  C-06.7 (80), M-159 merged (82).
+- Held, no live case: M-148 (lineup legal 21/21), M-153 (no offer to you; your GB offer is outgoing),
+  X-04 (needs an offer to you), X-02/X-03 (live play Thu 10-15 7:15 PM).
+- Christopher rulings 10-13: (1) notes NOT removable; place personal lists well, don't overbuild (dynamic watch
+  list, rookie scouting rankings come later) → M-118/S-11 land once 81 (kept-note feedback) is fixed.
+  (2) over-cap bids need a ProBoards-style conditional drop (commish drops it if the bid wins), secondary UI →
+  brief par/land-conditional.md (also finding 82), dispatch after followup2 merges (BidForm overlap).
+- Sol land-followup (62,72-75) and land-followup2 (76-81) running in parallel; 82 (overlay data-open) queued.
+- Test residue on Claude-OS: blocked trade plan (2027 R2 for Butler, BUF) — removable once 77 lands; two notes
+  "Walk test 10-13: remove me" on Roy Lopez (no removal in app).
+- Merged rows: 28 covered by landed targets; 10 merged into places, all present (M-146 franchise Inspector thin).
+
+## In flight / pending review (read first)
+1. **land-pools (Sol) DONE, reviewed OK, NOT COMMITTED.** Worktree ring-3-land-pools (base 891136d). Diff reviewed:
+   7 rows retired (M-111/112/113/174/200/201/171), Pools report removed, "Pools / Archive"→"Archive", old
+   #/pulse/pools-archive maps via routeFor. Christopher interrupted my commit command (it also rm -rf'd .phase-tmp/
+   .phase-cache scratch dirs) — he asked to compact; it was NOT a rejection of the work as far as known. Next:
+   remove scratch dirs (chmod -R u+w first; ~GBs), commit, merge origin/main.
+2. **land-tray (Sol) DONE 00:49 EXIT=0, report=yes, NOT REVIEWED.** Worktree ring-3-land-tray (base 891136d).
+   Brief par/land-tray-density.md (bye alerts kind `bye`, density for tables, command-bar routing for every row).
+   At review ALSO check finding 62 (cold lazy surface: L-17 from Home opens disclosure but lands at lab top —
+   keep target aligned while layout settles). Plan: batch pools+tray onto main, one gate, deploy, live check, PR.
+3. **land-walk1 (Sol) DISPATCHED ~00:57**, worktree ring-3-land-walk1 from 864eb4a, phase dir land-walk1/.
+   Brief par/land-walk1.md items 1–9: finished-week scores re-read after final whistle (69), Inspector "not
+   wired"/raw provenance (66/67), plan wording "−Taxi" (68), champions 2026 wording (65), retire M-025 can't-cut
+   (Christopher 10-13 ruling in docs/commissioner/README.md), M-031 header, status strip re-read on health change
+   (70), omitted profile ids = no profile (71), contracts wording sweep. Check: ls -l land-walk1/sessions, cat
+   land-walk1/sentinel.
+
+## Gate / deploy / pitfalls
+- Gate: export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOMEMLIMIT=1500MiB GOMAXPROCS=8
+  GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1; make verify / make build
+  VERSION=dev COMMIT=ring3 BUILD_DATE=ring3 — run with run_in_background (a `&` inside a foreground call dies).
+  Never edit a worktree while its gate runs. tsc catches what vitest doesn't (duplicate imports).
+- golangci-lint cache held paths of removed worktrees → `golangci-lint cache clean` fixed it (not a bypass).
+- Push: pre-push hook reruns verify (~8 min). Wait on the push PID with kill -0, NOT pgrep -f (self-match).
+- Deploy: gzip → rsync --bwlimit=8000 --partial → claudeos:warroom-ring1/thewarroom.new.gz → gunzip, chmod →
+  bash deploy.sh <tag> → wait "value model fitted".
+- Claude-OS clicks dead (hover works) = SPICE tablet holding Button1 → run RUN/unstick-pointer.sh (finding 60).
+- open-row.sh now focuses the command bar with "/" (keyboard), not a click.
+- Test plans I created were withdrawn; an older "Activate Pearsall" IR plan (Ready, 10-12 6:58 PM) left alone.
+
+## Registry
+land-landed.tsv has many new rows since #27 (M-003/007/021/022/012/019/073/089/114/085/016, L-26, L-36, L-18,
+M-078, M-031, M-028/M-029 pending note, M-193/195/196, M-036, C-06.1/3/4/5/6, M-030 HELD (finding 69)).
+Apply in the next registry commit (replace ring_note, status=landed). M-028/M-029: taxi/IR drafting proven live
+(w-taxi*.png, w-moves*.png) — add tsv lines before applying.
+Still to walk: Home tray M-148/M-153 (after land-tray), S-06 density (after land-tray), Research M-059/M-060,
+C-06.7 FA handler, Trade desk M-033/M-034/M-199/X-04/C-06.2 (hand-off only; never submit), Offers L-30/31/32
+(22b ring 4), L-17 (finding 62), S-05 gameday preset, S-12 (after 70 fix), M-001/M-004/M-005/M-072 re-check,
+X-02/X-03 (need live play, Thu 7:15 PM), S-11, M-116/117/118 (My moves lists seen working).
+
+## Findings
+RUN/land-findings.md now 1–71. 60 = SPICE stuck button; 61–71 this window.
+
+## Environment
+RUN=~/fleet/runs/warroom-ring3-2026-10-11. Claude-OS 1920x1080, ssh claudeos. DB ~/.config/TheWarRoom/history-dev.db.
+Task list T428 on Hermes (cc task). Ledgers for moves: ~/MOVED.md, ~/archive/MANIFEST.md, CT105 context.md.
+
+## 10-13 08:30 — other sessions on this repo (Christopher)
+Christopher has 2 Bee sessions of his own working on other TheWarRoom components. The main checkout is now on
+`session/league-history-pwa` (b7213f6): that is his work, not ring 3. Mine are ONLY: Sol land-followup (pi pid 753684,
+`.worktrees/ring-3-land-followup`), Sol land-followup2 (pi pid 1026866, `.worktrees/ring-3-land-followup2`), and any
+`ring-3-land-*` worktree / `session/ring-3-land-*` branch / RUN phase dir I create. Touch nothing else; batch worktrees
+come off `origin/main`, never off the main checkout's branch.
