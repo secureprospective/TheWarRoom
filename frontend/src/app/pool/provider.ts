@@ -8,6 +8,7 @@ import { array, choice, integer, object, text } from '../data/parseValues';
 import type {
   Amount,
   BidFormState,
+  DropOption,
   Board,
   BoardReading,
   Plan,
@@ -72,13 +73,23 @@ export const rule: Parser<Rule> = (v, p) => {
     reason: text(r.reason, p), mark: text(r.mark, p),
   };
 };
+const dropOption: Parser<DropOption> = (v, p) => {
+  const r = object(v, p, ['id', 'name', 'label', 'salary', 'deadCap', 'freed', 'covers', 'available']);
+  return {
+    id: text(r.id, p), name: text(r.name, p), label: text(r.label, p),
+    salary: integer(r.salary, p), deadCap: integer(r.deadCap, p),
+    freed: integer(r.freed, p, -Number.MAX_SAFE_INTEGER),
+    covers: flag(r.covers, p), available: flag(r.available, p),
+  };
+};
 export function parsePreview(v: unknown): Preview {
   const p = 'Bid preview';
   const r = object(v, p, [
     'problem', 'player', 'salary', 'snapped', 'points', 'rules', 'blocked', 'note', 'post',
-    'ruleSummary', 'closesNote',
+    'ruleSummary', 'closesNote', 'conditionalDrops',
   ]);
   return {
+    conditionalDrops: r.conditionalDrops === null ? [] : array(r.conditionalDrops, p, dropOption),
     problem: text(r.problem, p), player: text(r.player, p), salary: amount(r.salary, p),
     snapped: text(r.snapped, p), points: text(r.points, p), rules: array(r.rules, p, rule),
     blocked: flag(r.blocked, p), note: text(r.note, p), post: text(r.post, p),
@@ -98,10 +109,12 @@ export function parsePlan(v: unknown, path = 'Bid plan'): Plan {
   ]);
   const facts = object(r.facts, path, [
     'player', 'salary', 'years', 'points', 'snipe', 'beat', 'evidence', 'closes',
+    'conditionalDrop', 'conditionalName',
   ]);
   const form = object(r.form, path, ['salary', 'beat']);
   const head = parseRailReceipt(r.receipt, path);
   return {
+    conditionalDrop: text(facts.conditionalDrop, path),
     id: head.id, stateCode: head.state, franchiseId: head.franchiseId, history: head.history,
     receipt: head.rail,
     playerId: text(facts.player, path), years: integer(facts.years, path, 1), snipe: flag(facts.snipe, path),
@@ -151,7 +164,7 @@ export function rawBid(franchiseId: string, form: BidFormState): main.RawBidInpu
     ? new Date(`${form.closesDate}T${form.closesTime}`) : undefined;
   return main.RawBidInput.createFrom({
     franchiseId, player: form.playerId, salary: form.salary, years: form.years, snipe: form.snipe,
-    beat: form.beat, evidence: form.evidence,
+    conditionalDrop: form.conditionalDrop ?? '', beat: form.beat, evidence: form.evidence,
     closes: closes && !Number.isNaN(closes.getTime()) ? closes.toISOString() : '',
   });
 }

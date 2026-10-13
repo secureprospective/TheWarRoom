@@ -177,7 +177,7 @@ func TestBidPlanWordsForTheScreens(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.RuleSummary != "10 rules pass" || len(plan.Rules) != 11 {
+	if plan.RuleSummary != "11 rules pass" || len(plan.Rules) != 11 {
 		t.Errorf("summary %q over %d rules", plan.RuleSummary, len(plan.Rules))
 	}
 	if got := ruleWords(plan, "flat-salary"); got != "OK: $5,000,000 a year, the same in each of the 3 years" {
@@ -219,7 +219,7 @@ func TestBidPlanWordsForTheScreens(t *testing.T) {
 func TestBidPreviewSaysWhatTheClosingTimeDoes(t *testing.T) {
 	a := bidTestApp(t)
 	none := a.TargetBidPreview(rawBid("5", 3))
-	if !strings.HasPrefix(none.ClosesNote, "No closing time is set") || none.RuleSummary != "10 rules pass" {
+	if !strings.HasPrefix(none.ClosesNote, "No closing time is set") || none.RuleSummary != "11 rules pass" {
 		t.Errorf("without a closing time: %q, %q", none.ClosesNote, none.RuleSummary)
 	}
 	set := rawBid("5", 3)

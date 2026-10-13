@@ -1,53 +1,57 @@
-# Ring 3 landing RESUME — 2026-10-13 09:25 CT (main cff48ab; batch4 = PR pending)
+# Ring 3 landing RESUME — 2026-10-13 11:50 CT (main 0a69f0b after #31; batch6 gating)
 
 ## 0. Other sessions on this repo — do not mix up
-Christopher runs 2 Bee sessions of his own on other TheWarRoom components (the main checkout is on
+Christopher runs 2 Bee sessions of his own on other TheWarRoom components (main checkout on
 `session/league-history-pwa`: his). Mine are ONLY `ring-3-land-*` worktrees, `session/ring-3-land-*` branches, RUN
-phase dirs, and the Sol pi processes with `--session-id ring3-land-*`. New worktrees come off my own branches or
-`origin/main`, never off the main checkout's branch.
+phase dirs, and Sol pi processes with `--session-id ring3-land-*`. New worktrees come off my branches or
+`origin/main`, never the main checkout's branch.
 
 ## 1. What we are doing
 Christopher's /goal: work systematically through the Endpoint Index (docs/ui/endpoint-registry.csv), marking rows
 landed only on live evidence; hold anything unclear; done = every row done or a good reason. I am head brain;
 Sol (pi, gpt-6.1-sol medium) writes code; I review, mutant-check, gate, deploy to Claude-OS, live-check, merge.
-Repo ~/work/TheWarRoom (never touch the main checkout; worktrees under .worktrees/). RUN=~/fleet/runs/warroom-ring3-2026-10-11.
+Repo ~/work/TheWarRoom (never touch the main checkout). RUN=~/fleet/runs/warroom-ring3-2026-10-11.
 
 ## 2. In flight (check first)
-- **batch4** — `.worktrees/ring-3-land-batch4`, branch `session/ring-3-land-batch4` from origin/main cff48ab:
-  land-followup b2f9670 + land-followup2 0a21c77 (merge 0706b70) + Claude's landing fix a572c80 (TargetApp
-  scroll-to-top is now a layout effect `useWorkScrollReset`, so it precedes the endpoint reveal; proof in
-  workScroll.test.ts fails 0 vs 640 without it) + registry commit (6 rows: L-17, M-116, M-059, L-30, L-31, L-32).
-  Gate verify 0 / build 0 / 866 tests / bundle 306,973 B on 0706b70; re-gate after a572c80 before the PR.
-  Deployed on Claude-OS as "batch4b" (a572c80) at 09:16; live walk done (findings 83–87).
-- Sol **land-conditional** (dispatched 09:11) — `.worktrees/ring-3-land-conditional` from batch4 0706b70, brief
-  par/land-conditional.md: conditional drop for over-cap bids (C-06.7) + finding 82 Report drawer / Status overlay
-  data-open (M-159).
-- Sol **land-followup3** (dispatched 09:20) — `.worktrees/ring-3-land-followup3` from batch4 a572c80, brief
-  par/land-followup3.md: 83 (trade receipts show FP_ pick tokens), 84 (Ready trade withdrawal/reject plans have no
-  Remove plan), 85 (Plan a bid in the Inspector opens the form off-screen).
-- **Queued, not dispatched:** par/land-followup4.md (86 Research news frozen "26 minutes"/"Published" + one honest
-  posted time everywhere; 87 scratchpad shows a new note twice, oldest-first). Dispatch when a Sol finishes (keep
-  ≤2 Sols: concurrent race-verify pushes Sol's 600 s gate to timeouts; Christopher's Bee sessions share the host).
-  Create the worktree from batch4 (or from main once batch4 merges), `pnpm install` + build in frontend first.
+- **batch6 verify** — task bfotewm61 (background shell in this session; dies with the session? it is a child of
+  the Claude shell: if gone, just rerun). Worktree `.worktrees/ring-3-land-batch6`, branch session/ring-3-land-batch6
+  = main 0a69f0b + cherry-pick land-conditional (7d3fa6b). First verify failed ONLY on stale golangci cache (removed
+  batch5 paths); cache cleaned, rerun writes RUN/batch6/verify2.log. `make build` already 0 and DEPLOYED as
+  "batch6" on Claude-OS 11:43; live-check done (C-06.7 proven, see findings "Batch6 live walk").
+- **Sol land-followup4** (dispatched 10:54) — `.worktrees/ring-3-land-followup4` from main 9ba38f3; brief
+  par/land-followup4.md: 86 (Research news frozen "26 minutes"/"Published"; one honest posted time in Go for all news
+  surfaces) + 87 (scratchpad shows a new note twice, oldest-first). Transcript RUN/land-followup4/sessions/*.jsonl.
+- **Sol land-followup5** (dispatched ~11:12) — `.worktrees/ring-3-land-followup5` from batch5 41af5c5; brief
+  par/land-followup5.md: 88 (offer card reads "Withdrawn · Removed by you…" under a still-open offer after its local
+  plan was removed). Transcript RUN/land-followup5/sessions/*.jsonl.
+- **Kept until batch6 merges:** `.worktrees/ring-3-land-conditional` (1bb84b9).
+- **Queued:** par/land-followup6.md (90 Report drawer empty → list every read report from the registry, grouped,
+  filter, endpoint.open; 92 Status overlay lineup lock "–"). Dispatch when a Sol finishes; worktree from main after
+  batch6 merges (or batch6 tip). Then a brief for finding 89 (root package race suite ~550 s vs go test's 600 s
+  default: profile + speed up the slowest root tests; do NOT raise timeouts).
 - Alive? `ls -l --time-style=+%H:%M RUN/<phase>/sessions/*.jsonl`; done = `cat RUN/<phase>/sentinel`; REPORT.md in
-  the phase dir; the transcript jsonl is the recovery channel.
+  the phase dir. Keep ≤2 Sols at once (host shared with Christopher's sessions; concurrent race gates time out).
 
 ## 3. Next actions, in order
-1. Re-gate batch4 (verify + build, background), push, PR, squash-merge. RESUME copy goes in
-   docs/build-handoffs/RESUME-2026-10-13-ring3-land.md with it.
-2. Remove merged worktrees land-followup, land-followup2 (+ batch4 after merge) and log in ~/MOVED.md,
-   ~/archive/MANIFEST.md, CT105 context.md.
-3. When land-conditional / land-followup3 finish: review REPORT + diff, plant a mutant per key proof, commit, batch
-   (both from batch4: merge onto new main), gate, deploy, live-check (C-06.7 over-cap Fail → conditional drop →
-   Pass + ProBoards line; Reports/Status overlays open; trade receipts name picks; remove the Green Bay withdrawal
-   test plan Claude made 08:04; Plan a bid reveals the form), land rows, merge. Dispatch land-followup4 as soon as
-   one finishes.
-4. Thursday 10-15 7:15 PM DEN game: live-check X-02/X-03 (and M-001 live re-read).
+1. When batch6 verify2 = 0: fix finding 91 in batch6 yourself — "1 years" in `bids_conditional.go` label (options and
+   chosen line; also check `frontend/src/app/pool/BidForm.tsx` chosen-line text) → "1 year"; add a test that fails
+   without it; commit (if commit hook lint fails on stale paths: `golangci-lint cache clean`, recommit).
+2. Land C-06.7 in batch6: tsv note (Batch6 live walk evidence), `apply-landed.py`, `node scripts/gen-endpoints.mjs`,
+   add 'C-06.7' to registry.test.ts landed list ("After batch6" comment). M-159 stays built (finding 90).
+   Copy RESUME into docs/build-handoffs/RESUME-2026-10-13-ring3-land.md; commit.
+3. Re-gate batch6 (verify+build), redeploy, glance at the options' "1 year"; push (pre-push hook runs make verify;
+   if root package times out at 600 s under load, retry — finding 89), PR, `gh pr merge --squash`.
+4. Remove land-conditional + batch6 worktrees after merge (prove files identical to main; clean; no cwd) and log in
+   ~/MOVED.md, ~/archive/MANIFEST.md, CT105 /root/.claude/backbone/context.md.
+5. As each Sol finishes: review REPORT + diff, plant a mutant per key proof, commit, CHERRY-PICK onto origin/main
+   in a new batch worktree (branches cut before a squash conflict on merge), gate, deploy, live-check, land rows
+   (followup4 → M-060, M-118, S-11; followup5 → M-033, M-034; followup6 → M-159), PR, merge.
+6. Thursday 10-15 7:15 PM DEN game: live-check X-02/X-03 (and M-001 live re-read).
 
 ## 4. Endpoint state (rings 0–3)
-- Landing in batch4: L-17, M-116, M-059, L-30, L-31, L-32.
-- Held, waiting on fixes: M-034 (84; tsv line moved to land-held.tsv), C-06.2/M-199/M-033 (83/84), C-06.7
-  (conditional + 85), M-159 merged (82), M-060 (86), M-118/S-11 (87).
+- Landed today after #29: L-17, M-116, M-059, L-30, L-31, L-32 (#30); C-06.2, M-199 (#31).
+- Proven, landing in batch6: C-06.7 (after the "1 years" fix).
+- Held, waiting on fixes: M-060 (86), M-118/S-11 (87), M-033/M-034 (88), M-159 (90).
 - Held, no live case (good reason): M-148 (lineup legal 21/21), M-153 + X-04 (no offer to you; GB offer is
   outgoing), X-02/X-03 (need live play Thu).
 - Merged rows: 28 covered by landed targets; 10 merged into places present (M-146 franchise Inspector thin).
@@ -72,17 +76,26 @@ Repo ~/work/TheWarRoom (never touch the main checkout; worktrees under .worktree
 - MFL elapsed wording is coarse: "3 hours" at 12:48 AM ≈ 9:48 PM, the article was 9:27 PM (finding 86).
 - Inspector "Keep dated note" did save (twice) — the bug is feedback, not storage (thewarroom-dev.db personal_entries).
 
+- Merging a branch cut from a batch that was later squash-merged conflicts; cherry-pick its commit(s) onto
+  origin/main instead (worked for followup3, window, conditional).
+- batch5 pre-push failure was the root package hitting 600.045 s under load, not a hang (the test then running takes
+  0.5 s alone); a retry passed.
+- golangci "can't read file …/ring-3-land-<removed>/…" = stale cache after removing a worktree: `golangci-lint cache clean`.
+- Wails Linux caps the window at the launch-time monitor size when MaxWidth/MaxHeight are 0 (fixed in #31).
+
 ## 7. Findings
-RUN/land-findings.md 1–87 (72–87 today). Screenshots RUN/shots/b3-*.png, b4-*.png, b4b-*.png.
+RUN/land-findings.md 1–92 (72–92 today). Screenshots RUN/shots/b3-*, b4-*, b4b-*, b5-*, b6-*.png.
 Dev-db test residue (notes are not removable by ruling): Roy Lopez ×3 "Walk test 10-13…", Arizona Cardinals ×1
-"Walk test 10-13 b4: scratchpad check" (thewarroom-dev.db personal_entries on Claude-OS). Green Bay "Trade withdrawal"
-Ready plan (Claude, 08:04) — remove once 84 lands.
+"Walk test 10-13 b4: scratchpad check" (thewarroom-dev.db personal_entries on Claude-OS). Green Bay withdrawal test plan
+removed 11:09; Butler proposal removed 09:17; Thomas bid test plan (Dulin drop) saved+removed 11:46.
 
 ## 8. Environment
 - Claude-OS after reboot: 1280x800. Nav: Home (63,204) War Room (76,240) HQ (87,276) Trade (80,312) Pulse
   (87,348) Control (87,384); tabs y=86; command bar "/" key (open-row.sh <ID> [wait]); scroll mouse at x≈550
   (work) or 1070 (Inspector). Density N/T/M x 839/861/883 with Inspector open. Brave is the VM browser: never click
   it; close tabs with xdotool key ctrl+w; re-activate "The War Room" window after.
+- Claude-OS is 1920×1080 since 09:30 (Christopher). Nav x≈60–130 same y; Reports (116,955), Status (31,992),
+  Inspector Plan a bid (1710,416), work scroll at x≈1000 (pool table has its own inner scroll; use gutter x=1800).
 - Gate env: export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOMEMLIMIT=1500MiB GOMAXPROCS=8
   GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1; make verify / make build
   VERSION=dev COMMIT=ring3 BUILD_DATE=ring3 with run_in_background.
@@ -94,9 +107,14 @@ Ready plan (Claude, 08:04) — remove once 84 lands.
 - Removed worktrees today: commish-map, land-live, land-polish, land-pool, land-pools, land-tray, land-walk1,
   land-batch3 (ledgers logged). Older ring-0, ring-2-lab, ring-3-b, ring-3-c unproven: leave.
 
+## 12:05 progress
+- batch6 verify2 = 0 (874 tests). Finding 91 fixed by Claude (bid.YearsText; proof in
+  TestConditionalOptionsCoveringFirstAndShortfall fails "1 years" without it). C-06.7 landed in batch6 registry.
+  Next: re-gate, redeploy, push, PR, merge (next actions 3+).
+
 ## 9. Honest status
-batch4 proves 6 rows and fixes 9 findings live; 10 kept rows still wait on 3 Sol phases (two running, one queued);
-6 held for no live case. Unproven: everything in land-conditional / followup3 / followup4.
+Rings 0–3: 9 kept rows open + M-159: 1 proven awaiting a one-word fix (C-06.7), 6 waiting on 3 Sol phases (two
+running, one queued), 6 held for no live case (3 need Thursday's game). Unproven: everything in followup4/5/6.
 
 ---
 (previous RESUME below for history)
@@ -226,3 +244,12 @@ come off `origin/main`, never off the main checkout's branch.
 - Landing in batch5: C-06.2, M-199. Held: M-033, M-034 for finding 88 (offer card says "Withdrawn" under an open
   offer after its plan was removed). Brief par/land-followup5.md written; dispatch when a Sol slot frees, worktree
   from batch5 tip (or main after batch5 merges).
+
+## 11:45 update — batch5 MERGED (#31, main 0a69f0b)
+- C-06.2, M-199 landed. Worktrees followup3, window, batch5 removed + logged.
+- batch6 = `.worktrees/ring-3-land-batch6` = main 0a69f0b + cherry-pick land-conditional (7d3fa6b). Gate running
+  (task b9n52f2s4, RUN/batch6/). Then deploy, live-check C-06.7 (over-cap Fail → conditional drop Pass → post line;
+  revise/clear; nothing submitted) and M-159 (Reports/Status overlays open), land rows, PR, merge.
+- Running Sols: land-followup4 (from 9ba38f3), land-followup5 (from batch5 41af5c5). Both need CHERRY-PICK onto main.
+- Finding 89: root package race suite ~550 s vs go test's 600 s default; batch5's first pre-push timed out under
+  load; retry passed. Brief a proper speed-up after the current Sols.

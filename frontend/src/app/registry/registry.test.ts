@@ -158,6 +158,8 @@ describe('Endpoint map', () => {
       'L-17', 'M-116', 'M-059', 'L-30', 'L-31', 'L-32',
       // After batch5 (followup3): trade receipts name picks, plans removable.
       'C-06.2', 'M-199',
+      // After batch6 (land-conditional): over-cap bids name a conditional drop.
+      'C-06.7',
     ];
     for (const row of endpoints) {
       let status = 'spec';

@@ -51,7 +51,12 @@ export type Rule = {
   reason: string;
   mark: string;
 };
+export type DropOption = {
+  id: string; name: string; label: string; salary: number; deadCap: number; freed: number;
+  covers: boolean; available: boolean;
+};
 export type Preview = {
+  conditionalDrops?: DropOption[];
   problem: string;
   player: string;
   salary: Amount;
@@ -66,6 +71,7 @@ export type Preview = {
 };
 export type BidAction = { id: string; label: string; disabled: boolean; reason: string };
 export type Plan = {
+  conditionalDrop?: string;
   id: string;
   stateCode: string;
   franchiseId: string;
@@ -98,6 +104,8 @@ export type BoardReading = Reading<Board>;
 
 // What the bid form holds while it is open: the owner's figures as typed.
 export type BidFormState = {
+  conditionalDrop?: string;
+  conditionalOpen?: boolean;
   planId: string;
   playerId: string;
   playerName: string;
@@ -112,7 +120,7 @@ export type BidFormState = {
   closesTime: string;
 };
 export type FormField =
-  'salary' | 'years' | 'snipe' | 'beat' | 'evidence' | 'closesDate' | 'closesTime';
+  'conditionalDrop' | 'salary' | 'years' | 'snipe' | 'beat' | 'evidence' | 'closesDate' | 'closesTime';
 
 export type PoolFilter = {
   field:
@@ -131,6 +139,8 @@ export type PoolFilter = {
     | 'pool-open'
     | 'pool-toggle'
     | 'pool-unposted'
+    | 'pool-conditional-change'
+    | 'pool-conditional-clear'
     | 'pool-closes-set'
     | 'pool-closes-clear';
   value: string;

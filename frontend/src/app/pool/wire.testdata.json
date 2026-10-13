@@ -51,6 +51,8 @@
       ]
      },
      "facts": {
+      "conditionalDrop": "",
+      "conditionalName": "",
       "player": "13594",
       "salary": 100000000,
       "years": 1,
@@ -114,6 +116,8 @@
       ]
      },
      "facts": {
+      "conditionalDrop": "",
+      "conditionalName": "",
       "player": "13595",
       "salary": 200000000,
       "years": 1,
@@ -211,12 +215,12 @@
       {
        "rule": "cap-room",
        "label": "Cap room",
-       "verdict": "info",
+       "verdict": "pass",
        "reason": "$2,000,000 a year against $105,000,000 of room leaves $103,000,000",
-       "mark": "Note"
+       "mark": "OK"
       }
      ],
-     "ruleSummary": "10 rules pass",
+     "ruleSummary": "11 rules pass",
      "post": "Player: Adams, Zed (CB, MIA)\nContract: 1 year at $2,000,000 a year, flat\nCap hit: $2,000,000 a year\nPoints: 2.000",
      "actions": [
       {
@@ -274,6 +278,8 @@
       ]
      },
      "facts": {
+      "conditionalDrop": "",
+      "conditionalName": "",
       "player": "13593",
       "salary": 500000000,
       "years": 3,
@@ -371,12 +377,12 @@
       {
        "rule": "cap-room",
        "label": "Cap room",
-       "verdict": "info",
+       "verdict": "pass",
        "reason": "$5,000,000 a year against $105,000,000 of room leaves $100,000,000",
-       "mark": "Note"
+       "mark": "OK"
       }
      ],
-     "ruleSummary": "10 rules pass",
+     "ruleSummary": "11 rules pass",
      "post": "Player: Smith, John (WR, DAL)\nContract: 3 years at $5,000,000 a year, flat\nCap hit: $5,000,000 a year\nPoints: 7.000\nSnipe",
      "actions": [
       {
@@ -737,6 +743,18 @@
   "howCounted": "Every player MFL lists as a free agent, joined to the held players directory for name, position, NFL team, age and draft year. Experience is this season minus the draft year; a player with no real draft year is shown at the rookie minimum and marked. The minimum is the Official Rulebook §6 table by experience. Free agents the directory does not know (team units) are left out. Left out of this list: 1 ids the directory does not know."
  },
  "preview": {
+  "conditionalDrops": [
+   {
+    "id": "0042",
+    "name": "Rostered, Rick (QB, BUF)",
+    "label": "Rostered, Rick (QB, BUF) · $20,000,000 salary · 2 years · $7,000,000 dead cap if dropped",
+    "salary": 2000000000,
+    "deadCap": 700000000,
+    "freed": 1300000000,
+    "covers": true,
+    "available": true
+   }
+  ],
   "problem": "",
   "player": "Smith, John (WR, DAL)",
   "salary": {
@@ -819,18 +837,19 @@
    {
     "rule": "cap-room",
     "label": "Cap room",
-    "verdict": "info",
+    "verdict": "pass",
     "reason": "$5,000,000 a year against $105,000,000 of room leaves $100,000,000",
-    "mark": "Note"
+    "mark": "OK"
    }
   ],
   "blocked": false,
   "note": "Bid rules checked; the plan is ready to hand off",
   "post": "Player: Smith, John (WR, DAL)\nContract: 3 years at $5,000,000 a year, flat\nCap hit: $5,000,000 a year\nPoints: 7.000",
-  "ruleSummary": "10 rules pass",
+  "ruleSummary": "11 rules pass",
   "closesNote": "No closing time is set: the app keeps watching the rosters until the player shows up on one."
  },
  "problem": {
+  "conditionalDrops": null,
   "problem": "Enter the annual salary in millions, such as 5.25",
   "player": "",
   "salary": {

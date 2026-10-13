@@ -9,8 +9,6 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
-	"github.com/secureprospective/TheWarRoom/internal/store/state"
-	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
 
 type ResearchPlayerReading struct {
@@ -271,15 +269,12 @@ func (v researchView) playerCutCharge(r *Report, id string) {
 			continue
 		}
 		source = "MFL roster contract"
-		if p.ContractYear < v.mirror.Season {
+		charge, available := heldCutCharge(p, v.mirror.Season)
+		if !available {
 			text = "Cannot price a cut: contract expiration is not held"
 			continue
 		}
-		cells := []state.LedgerCell{}
-		for year := v.mirror.Season; year <= p.ContractYear; year++ {
-			cells = append(cells, state.LedgerCell{Year: year, Salary: p.Salary})
-		}
-		text = snapshot.ContractAmountOf(transactions.CutCharge(cells, v.mirror.Season, false)).Text +
+		text = snapshot.ContractAmountOf(charge).Text +
 			" if unclaimed · future salaries held flat; restructure history not held"
 	}
 	r.Rows = append(r.Rows, ReportRow{Cells: []string{"Dead cap if cut today", text, source}})

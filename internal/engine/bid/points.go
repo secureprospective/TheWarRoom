@@ -106,14 +106,20 @@ func ExperienceFrom(season, draftYear int, hasDraftYear bool) Experience {
 
 // Post is what the forum post says about one bid.
 type Post struct {
-	Player string // "Name (POS, TEAM)"
-	Salary domain.Money
-	Years  int
-	Points Points
-	Snipe  bool
+	Conditional string
+	Player      string // "Name (POS, TEAM)"
+	Salary      domain.Money
+	Years       int
+	Points      Points
+	Snipe       bool
 }
 
 // ContractText is the contract in words: "3 years at $5,000,000 a year".
+// YearsText is a contract length in words: "1 year", "3 years".
+func YearsText(years int) string {
+	return fmt.Sprintf("%d %s", years, plural(years, "year"))
+}
+
 func ContractText(salary domain.Money, years int) string {
 	return fmt.Sprintf("%d %s at %s a year", years, plural(years, "year"), MoneyText(salary))
 }
@@ -126,6 +132,9 @@ func (p Post) Text() string {
 		"Contract: " + ContractText(p.Salary, p.Years) + ", flat",
 		fmt.Sprintf("Cap hit: %s a year", MoneyText(p.Salary)),
 		"Points: " + p.Points.String(),
+	}
+	if p.Conditional != "" {
+		lines = append(lines, "Conditional drop if I win: "+p.Conditional+", commissioner to drop to cover the cap.")
 	}
 	if p.Snipe {
 		lines = append(lines, "Snipe")

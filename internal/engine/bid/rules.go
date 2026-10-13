@@ -87,17 +87,25 @@ type Experience struct {
 
 // Input is everything the rules read about one bid plan.
 type Input struct {
-	Salary     domain.Money // annual, flat across the years
-	Years      int
-	Minimum    domain.Money // the §6 minimum for the player's experience
-	Experience Experience
-	Snipe      bool    // the owner says the bid lands after the 20-hour mark
-	Beat       *Points // the bid to beat, as the owner typed it
-	Active     int     // the owner's other active bid plans
-	Room       *domain.Money
-	Week       int  // the NFL week in play; 0 outside the season
-	WeekKnown  bool // false when the app holds no schedule, so the week limits cannot be checked
-	Standing   Standing
+	Salary      domain.Money // annual, flat across the years
+	Years       int
+	Minimum     domain.Money // the §6 minimum for the player's experience
+	Experience  Experience
+	Snipe       bool    // the owner says the bid lands after the 20-hour mark
+	Beat        *Points // the bid to beat, as the owner typed it
+	Active      int     // the owner's other active bid plans
+	Conditional *ConditionalDrop
+	Room        *domain.Money
+	Week        int  // the NFL week in play; 0 outside the season
+	WeekKnown   bool // false when the app holds no schedule, so the week limits cannot be checked
+	Standing    Standing
+}
+
+// ConditionalDrop is a held roster cut priced by the shared transaction rule at the app boundary.
+type ConditionalDrop struct {
+	Name    string
+	Salary  domain.Money
+	DeadCap domain.Money
 }
 
 // Check runs every rule and returns one result each, always in the same order.
@@ -312,9 +320,22 @@ func capRoom(in Input) finding {
 	after := *in.Room - in.Salary
 	reason := fmt.Sprintf("%s a year against %s of room leaves %s", MoneyText(in.Salary),
 		MoneyText(*in.Room), MoneyText(after))
-	if after < 0 {
-		reason = fmt.Sprintf("%s a year is %s over your %s of room; the commissioner's cap rules decide",
-			MoneyText(in.Salary), MoneyText(-after), MoneyText(*in.Room))
+	if after >= 0 {
+		return finding{RuleCapRoom, label, Pass, reason}
 	}
-	return finding{RuleCapRoom, label, Info, reason}
+	if in.Conditional == nil {
+		return finding{RuleCapRoom, label, Fail, fmt.Sprintf(
+			"%s a year is %s over your %s of room. Name a conditional drop to cover it.",
+			MoneyText(in.Salary), MoneyText(-after), MoneyText(*in.Room))}
+	}
+	drop := in.Conditional
+	freed := drop.Salary - drop.DeadCap
+	if after+freed < 0 {
+		return finding{RuleCapRoom, label, Fail, fmt.Sprintf(
+			"Dropping %s frees %s after %s dead cap; still %s short. Choose a drop that covers it.",
+			drop.Name, MoneyText(freed), MoneyText(drop.DeadCap), MoneyText(-after-freed))}
+	}
+	return finding{RuleCapRoom, label, Pass, fmt.Sprintf(
+		"Covered if you win: the commissioner drops %s (%s freed after %s dead cap)",
+		drop.Name, MoneyText(freed), MoneyText(drop.DeadCap))}
 }

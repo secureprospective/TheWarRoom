@@ -385,6 +385,7 @@ func (a *App) TargetBidRevise(id string, raw RawBidInput) (BidPlan, error) {
 	if err != nil {
 		return BidPlan{}, fmt.Errorf("bid revise: %w", err)
 	}
+	entry.facts = withConditionalName(entry.facts, a.bidDropOptions(entry.franchise, entry.facts.Salary))
 	checked, err := next.Check(a.movesNow(), snapshot.Snapshot{}, envelope.BidCheck{Input: in})
 	if err != nil {
 		return BidPlan{}, fmt.Errorf("bid revise: check: %w", err)
@@ -399,7 +400,7 @@ func (a *App) TargetBidRevise(id string, raw RawBidInput) (BidPlan, error) {
 
 // reopened returns a Ready or Blocked plan to a state that can be checked again.
 func (a *App) reopened(e envelope.Envelope) (envelope.Envelope, error) {
-	if e.State() == envelope.Blocked {
+	if e.State() == envelope.Blocked || e.State() == envelope.Draft {
 		return e, nil
 	}
 	if e.State() != envelope.Ready {

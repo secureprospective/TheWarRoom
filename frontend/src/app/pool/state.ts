@@ -54,7 +54,7 @@ type Deps = {
   delay: number;
 };
 const blank = {
-  years: 1, snipe: false, beat: '', evidence: '', salary: '',
+  conditionalDrop: '', conditionalOpen: false, years: 1, snipe: false, beat: '', evidence: '', salary: '',
   closesOpen: false, closesDate: '', closesTime: '',
 };
 
@@ -216,6 +216,7 @@ export function createPoolState(supplied: Partial<Deps> = {}) {
         const p = plan(filter.value);
         const closes = localInput(p.closes).split('T');
         openForm({
+          conditionalDrop: p.conditionalDrop, conditionalOpen: false,
           planId: p.id, playerId: p.playerId, playerName: p.player, salary: p.form.salary, years: p.years,
           snipe: p.snipe, beat: p.form.beat, evidence: p.evidence, closesOpen: Boolean(p.closes),
           closesDate: closes[0], closesTime: closes[1] ?? '',
@@ -229,6 +230,15 @@ export function createPoolState(supplied: Partial<Deps> = {}) {
         if (store.getState().openPlan === filter.value) set({ openPlan: '' });
         else show(filter.value);
         return Promise.resolve();
+      case 'pool-conditional-change':
+      case 'pool-conditional-clear': {
+        const { form } = store.getState();
+        if (!form) return Promise.resolve();
+        const clear = filter.field === 'pool-conditional-clear';
+        set({ form: { ...form, conditionalOpen: !clear, ...(clear && { conditionalDrop: '' }) } });
+        if (clear) schedulePreview();
+        return Promise.resolve();
+      }
       case 'pool-closes-set':
       case 'pool-closes-clear': {
         const { form } = store.getState();
@@ -266,7 +276,8 @@ export function createPoolState(supplied: Partial<Deps> = {}) {
   function edit(field: FormField, value: string | number | boolean) {
     const { form } = store.getState();
     if (!form) return;
-    set({ form: { ...form, [field]: value } });
+    set({ form: { ...form, [field]: value,
+      ...(field === 'conditionalDrop' && { conditionalOpen: false }) } });
     schedulePreview();
   }
   return {
