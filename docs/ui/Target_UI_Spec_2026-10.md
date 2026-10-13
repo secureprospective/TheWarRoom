@@ -555,12 +555,13 @@ M-173, M-198 and S-14.
 **Merges.** Ring 3 landed through PRs #18–#34 (#24 and #26 are commissioner documents). #18 built the
 breadth and depth. #19–#34 are the landing walk and its fix batches.
 
-**Findings.** The live walks raised findings 1–95 (`land-findings.md` in the ring's run directory).
+**Findings.** The live walks raised findings 1–96 (`land-findings.md` in the ring's run directory).
 A read-only close audit checked each against main 6c6e1f3 and reran the test that proves it.
 Six were still open (6, 22, 22b, 41, 46, and part of 61); they were fixed, reviewed and seen working
-live in the closing batch (#35). Of the 97 (1–95 plus 22b and 51b): 87 fixed, each with a test that
-fails without its fix; 3 ruled by Christopher (16, 33, 37); 5 not defects (9, 10, 31, 50, 57); 2 were
-the VM, not the app (59, 60).
+live in the closing batch (#35). Its live check found one more (96: Now drew "Week 0" while the league's
+weeks were still being read after a launch), fixed in the same batch. Of the 98 (1–96 plus 22b and 51b):
+88 fixed, each with a test that fails without its fix; 3 ruled by Christopher (16, 33, 37); 5 not
+defects (9, 10, 31, 50, 57); 2 were the VM, not the app (59, 60).
 
 **Endpoint index.** Christopher, 2026-10-13: "if they are finished they need to be removed, not
 retagged". Each screen's index lists only the endpoints still to land; a screen with none left shows no
