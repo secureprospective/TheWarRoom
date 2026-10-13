@@ -154,6 +154,8 @@ describe('Endpoint map', () => {
       'M-029', 'M-030', 'M-031', 'M-036', 'M-072', 'M-073', 'M-078', 'M-085', 'M-089', 'M-114', 'M-117',
       'M-193', 'M-195', 'M-196', 'L-18', 'L-26', 'C-06.1', 'C-06.3', 'C-06.4', 'C-06.5', 'C-06.6', 'S-05',
       'S-06', 'S-12', 'L-36',
+      // After batch4 (followup, followup2): cold landing, archived reads, article links, offers history.
+      'L-17', 'M-116', 'M-059', 'L-30', 'L-31', 'L-32',
     ];
     for (const row of endpoints) {
       let status = 'spec';

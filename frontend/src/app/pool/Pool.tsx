@@ -78,7 +78,7 @@ export function OpenPlans({ board, openId, focus, busy, state }: {
     <section className="bid-open" aria-label="Your open bid plans" data-endpoint="M-194">
       <h4>Your open bid plans</h4>
       {board?.status === 'ok' && open.length === 0 && (
-        <p>No open bid plans. Press Plan a bid on a player below.</p>
+        <p>No open bid plans. Choose a player, then Plan a bid in the Inspector.</p>
       )}
       <ul className="bid-open-list">
         {open.map((plan) => (
@@ -157,10 +157,7 @@ function PoolTable({ rows, state, mine }: { rows: PoolRow[]; state?: PoolState; 
               )}
             </td>
           </tr>
-          {state?.form && !state.form.planId && state.form.playerId === row.id &&
-            <tr className="pool-form-row"><td colSpan={8}>
-            <BidForm form={state.form} preview={state.preview} busy={state.busy} />
-          </td></tr>}</Fragment>
+</Fragment>
         ))}
       </tbody>
     </table>
@@ -307,7 +304,6 @@ export function PoolScreen({ state, snapshot, franchiseId }: {
       {state.error && <p role="alert">{state.error}</p>}
       {state.notice && <p role="status">{state.notice}</p>}
       {state.form && !state.form.planId &&
-        !state.reading?.value.rows.some(row => row.id === state.form?.playerId) &&
         <BidForm form={state.form} preview={state.preview} busy={state.busy} />}
       <OpenPlans board={state.board} openId={state.openPlan} focus={state.focus}
         busy={state.busy} state={state} />

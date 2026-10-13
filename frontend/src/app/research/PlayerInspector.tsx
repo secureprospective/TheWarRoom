@@ -46,7 +46,7 @@ export function PlayerResearchView({ player, identity }: { player: PlayerReading
     </section>
     {player.articles.length > 0 && <NewsList pageKey={`player:${player.id}`}
       report={{ ...player.report, id: 'M-058', title: 'Player news',
-        columns: ['Published', 'Headline', 'Feed time'], summary: [],
+        columns: ['Posted', 'Headline', 'Feed time'], summary: [],
         rows: player.report.rows.filter(row => row.cells[0].startsWith('News · '))
           .map(row => ({ ...row, cells: [row.cells[0].slice(7), ...row.cells.slice(1)] })) }}
       articles={player.articles} howLabel={player.howLabel} />}

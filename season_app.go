@@ -23,12 +23,16 @@ type heldSeasonFeed[T any] struct {
 	value        T
 	fetchedAt    time.Time
 	refreshError string
+	readPending  bool
 }
 
 func (h heldSeasonFeed[T]) provenance(source, feed string) snapshot.Provenance {
 	fresh := Freshness{State: FreshFail, Note: feed + " not fetched yet"}
 	if !h.fetchedAt.IsZero() {
 		fresh = liveFreshness(h.fetchedAt)
+	}
+	if h.readPending {
+		fresh.State, fresh.Note = FreshStale, pendingShellRead(h.fetchedAt, time.Local)
 	}
 	if h.refreshError != "" {
 		fresh.Note = h.refreshError
@@ -49,7 +53,7 @@ func holdSeasonFeed[T any](h *heldSeasonFeed[T], value T, fresh Freshness, err e
 		h.refreshError = "season refresh time: " + parseErr.Error()
 		return
 	}
-	h.value, h.fetchedAt, h.refreshError = value, at, fresh.Note
+	h.value, h.fetchedAt, h.refreshError, h.readPending = value, at, fresh.Note, false
 }
 
 // SeasonReading is the three season feeds as held, each with its own provenance.

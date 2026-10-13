@@ -61,6 +61,9 @@ func reportShell[T any](id, title, how string, feed heldSeasonFeed[[]T], zone *t
 	if !feed.fetchedAt.IsZero() {
 		r.AsOf = "As of: " + reportTime(feed.fetchedAt, zone)
 	}
+	if feed.readPending {
+		r.Status, r.Note = "stale", pendingShellRead(feed.fetchedAt, zone)
+	}
 	if feed.refreshError != "" {
 		if !feed.fetchedAt.IsZero() {
 			r.Note += " Refresh failed; showing the last known data. Try refreshing from MFL again."
@@ -77,4 +80,8 @@ func reportTime(at time.Time, zone *time.Location) string {
 		return "Time not supplied"
 	}
 	return at.In(zone).Format("Jan 2, 2006, 3:04 PM")
+}
+
+func pendingShellRead(at time.Time, zone *time.Location) string {
+	return "Last read " + reportTime(at, zone) + "; today's read pending"
 }

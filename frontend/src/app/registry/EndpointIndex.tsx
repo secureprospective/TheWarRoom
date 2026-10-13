@@ -79,14 +79,15 @@ export function revealEndpoint(index: HTMLElement, ids: readonly string[], fallb
   const surface = Array.from(work?.querySelectorAll<HTMLElement>('[data-endpoint]') ?? [])
     .find(element => ids.includes(element.dataset.endpoint ?? '') && !element.closest('.endpoint-index'));
   if (surface) {
-    revealWorkSection(surface);
+    let alignment = surface;
     const controls = surface.previousElementSibling as HTMLElement | null;
     if (controls?.classList.contains('market-controls') && work) {
       const parent = surface.parentElement;
       const top = parent?.getBoundingClientRect().top;
       const gap = surface.getBoundingClientRect().top - (top ?? 0);
-      if (parent && gap > 0 && gap < work.clientHeight / 2) scrollWorkIntoView(parent, 'start');
+      if (parent && gap > 0 && gap < work.clientHeight / 2) alignment = parent;
     }
+    revealWorkSection(surface, alignment);
     return true;
   }
   if (!fallback) return false;

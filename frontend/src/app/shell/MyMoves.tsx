@@ -29,7 +29,7 @@ export default function MyMoves({ snapshot, executor = commands }: {
   const error = executor.useMoves((state) => state.movesErrors[franchiseId]);
   const demo = executor.useMoves((state) => state.demo);
   const receipts = moves.filter((r) => r.spec.franchiseId === franchiseId);
-  const visible = receipts.slice(0, 15);
+  const visible = receipts.filter((r, i) => i < 15 || r.spec.intent === 'trade.propose');
   if (!fixture && !franchiseId) return <FranchisePicker snapshot={snapshot} />;
   return (
     <section ref={root} className="my-moves">
@@ -42,8 +42,8 @@ export default function MyMoves({ snapshot, executor = commands }: {
       {!fixture && visible.map((receipt) => (
         <EnvelopeRail key={receipt.correlationId} receipt={receipt} snapshot={snapshot} />
       ))}
-      {!fixture && receipts.length > 15 && (
-        <p>{receipts.length - 15} older moves this session not shown</p>
+      {!fixture && receipts.length > visible.length && (
+        <p>{receipts.length - visible.length} older moves this session not shown</p>
       )}
       {!fixture && !receipts.length && loading === false &&
         !error && <p>No moves drafted this session</p>}

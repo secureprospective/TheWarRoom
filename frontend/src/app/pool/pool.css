@@ -98,3 +98,6 @@
 
 .twr-app .builder-asset { display: grid; gap: 3px; font-variant-numeric: tabular-nums; }
 .twr-app .builder-asset .asset-sub { display: inline; margin-left: 6px; }
+
+.twr-app .bid-preview .kv { grid-template-columns: minmax(0, 1fr) auto; max-width: 100%; }
+.twr-app .bid-preview .kv dd { margin: 0; }

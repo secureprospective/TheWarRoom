@@ -1,5 +1,5 @@
 .twr-app .comms-panel {
-  width: min(480px, calc(100% - 48px)); overflow-y: auto; overscroll-behavior: contain;
+  overflow-y: auto; overscroll-behavior: contain;
 }
 .twr-app .comms-reading { min-width: 0; }
 .twr-app .comms-reading h4 { margin: 22px 0 10px; }

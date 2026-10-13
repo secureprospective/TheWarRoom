@@ -42,7 +42,7 @@ func (v researchView) playerReading(id string, names map[string]string, how stri
 		}
 	}
 	r := Report{ID: "M-062", Title: "Held player research", Status: "ok", Source: "Source: held MFL and nflverse reports",
-		AsOf: "As of: each feed’s time below", How: "Depth slots match only through the held NFL identity crosswalk. Points per game uses finished weeks with a held score, including zero. Season points sum the same held finished-week scores used by the card; an unfinished week is excluded. Missing facts are not predictions.",
+		AsOf: "As of: each feed’s time below", How: "Depth slots match only through the held NFL identity crosswalk. Points per game uses finished weeks with a held score, including zero. Season points sum the same held finished-week scores used by the card; an unfinished week is excluded. Missing facts are not predictions. Posted times are estimated from MFL’s elapsed wording at the feed’s fetched time; unrecognized wording has no posted time.",
 		Columns: []string{"Reading", "Held fact", "Feed time"}, Rows: []ReportRow{}}
 	r.Rows = append(r.Rows, ReportRow{Cells: []string{"Owner", p.Owner, "Held league roster"}})
 	v.playerInjury(&r, id)
@@ -54,6 +54,13 @@ func (v researchView) playerReading(id string, names map[string]string, how stri
 	articles := []ResearchArticle{}
 	newsReport := Report{Rows: []ReportRow{}}
 	v.appendNews(&newsReport, &articles, id, news.value)
+	for i := range newsReport.Rows {
+		row := &newsReport.Rows[i]
+		row.Cells[3] = "Posted time not supplied"
+		if row.Sort[0] != 0 && !news.fetchedAt.IsZero() {
+			row.Cells[3] = reportTime(time.Unix(int64(row.Sort[0]), 0), v.zone)
+		}
+	}
 	sortResearchNews(&newsReport, articles)
 	for _, row := range newsReport.Rows {
 		r.Rows = append(r.Rows, ReportRow{Cells: []string{"News · " + row.Cells[3], row.Cells[2], newsHeldTime(news.fetchedAt, news.refreshError, v.zone)}})

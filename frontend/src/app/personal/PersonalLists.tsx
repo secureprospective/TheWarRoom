@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
 import type { Snapshot } from '../data/contract';
@@ -18,12 +18,28 @@ export function NoteEditor({ id, entity }: { id: string; entity: 'player' | 'fra
   const [text, setText] = useState('');
   const mine = commands.use().franchiseId ?? '';
   const s = personalState.useReading(mine);
+  const seen = useRef(s.savedNote);
+  const [kept, setKept] = useState('');
+  useEffect(() => {
+    const saved = s.savedNote;
+    if (saved !== seen.current && saved?.id === id && saved.entity === entity) {
+      setText('');
+      setKept(saved.at);
+    }
+    seen.current = saved;
+  }, [s.savedNote, id, entity]);
+  const notes = s.value?.entries.filter(e => e.kind === 'note' && e.id === id && e.entity === entity)
+    .slice().sort((a, b) => b.at.localeCompare(a.at)) ?? [];
   return <div className="personal-note">
-    <label>Plain-text note<textarea value={text} maxLength={8000}
+    <label>Plain-text note<textarea value={text} maxLength={8000} disabled={s.pending}
       onChange={e => setText(e.target.value)} /></label>
     <Act variant="button" verb="note.add" args={{ id, entity, action: 'add', text }}
       disabled={!mine || s.pending || !text.trim()}>
       Keep dated note</Act>
+    {kept && <p role="status">Kept · <time dateTime={kept}>{localDate(kept)}</time></p>}
+    <ol aria-label="Kept notes">{notes.map(note => <li key={`${note.at}:${note.order}`}>
+      <time dateTime={note.at}>{localDate(note.at)}</time><p className="personal-text">{note.text}</p>
+    </li>)}</ol>
     {s.error && <p role="alert">{s.error}</p>}
   </div>;
 }

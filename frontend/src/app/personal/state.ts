@@ -21,7 +21,8 @@ const live: PersonalProvider = {
   handoff: async kind => bindings().TargetPersonalHandOff(kind),
 };
 export function createPersonalState(provider: PersonalProvider) {
-  type Reading = { value?: PersonalReading; pending: boolean; error: string };
+  type Reading = { value?: PersonalReading; pending: boolean; error: string;
+    savedNote?: ListChange & { at: string } };
   const store = createStore<Record<string, Reading>>(() => ({}));
   const empty: Reading = { pending: false, error: '' };
   const revisions = new Map<string, number>();
@@ -44,6 +45,8 @@ export function createPersonalState(provider: PersonalProvider) {
     write(mine, { pending: true, error: '' });
     try {
       await provider.change(mine, kind, change);
+      if (kind === 'note' && change.action === 'add')
+        write(mine, { savedNote: { ...change, at: new Date().toISOString() } });
       await load(mine);
     } catch (cause) { write(mine, { pending: false, error: String(cause) }); }
   }

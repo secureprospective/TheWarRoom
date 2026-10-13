@@ -301,3 +301,30 @@ func TestResearchWeekRunsNameEachDifferingRunOnce(t *testing.T) {
 		t.Fatal("matching weeks named")
 	}
 }
+
+func TestInspectorNewsPostedLocalMinute(t *testing.T) {
+	in := realResearch(t)
+	in.zone = time.FixedZone("CDT", -5*60*60)
+	at := time.Date(2026, 10, 13, 5, 48, 37, 0, time.UTC)
+	in.held.news["16162"] = heldSeasonFeed[[]researchfeeds.News]{fetchedAt: at, value: []researchfeeds.News{
+		{Article: "new", Headline: "newest", Published: "26 minutes"},
+		{Article: "unknown", Headline: "unknown", Published: "recently"},
+	}}
+	got := (researchView{researchInput: in}).playerReading("16162", nil, "How")
+	rows := []ReportRow{}
+	for _, row := range got.Report.Rows {
+		if strings.HasPrefix(row.Cells[0], "News · ") {
+			rows = append(rows, row)
+		}
+	}
+	if len(rows) != 2 || rows[0].Cells[0] != "News · Oct 13, 2026, 12:22 AM" ||
+		rows[1].Cells[0] != "News · Posted time not supplied" {
+		t.Fatal(rows)
+	}
+	if !strings.Contains(rows[0].Cells[2], "Oct 13, 2026, 12:48 AM") {
+		t.Fatal(rows[0])
+	}
+	if got.Articles[0].Article != "new" || !strings.Contains(got.Report.How, "estimated") {
+		t.Fatal(got)
+	}
+}

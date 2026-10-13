@@ -17,6 +17,7 @@ import { NavIcon } from './NavIcon';
 import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
+import { useWorkScrollReset } from './workScroll';
 
 const StatusStrip = lazy(() => import('./StatusStrip'));
 const EntityInspector = lazy(() => import('./EntityInspector'));
@@ -59,9 +60,7 @@ export function TargetApp() {
   const clock = useLeagueClock(root);
   const workspaceBody = useRef<HTMLDivElement>(null);
   useEffect(() => connectDensity(commands, root.current!), []);
-  useEffect(() => {
-    if (workspaceBody.current) workspaceBody.current.scrollTop = 0;
-  }, [s.scrollRevision]);
+  useWorkScrollReset(workspaceBody, s.scrollRevision);
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [error, setError] = useState<string>();
   useEffect(() => {
@@ -95,7 +94,7 @@ export function TargetApp() {
   const workspace = workspaces.find((w) => w.slug === s.workspace[s.node])!;
   const placement = `${node.label} › ${workspace.label}` as Placement;
   return (
-    <div className="twr-app target-frame" ref={root} data-inspector={s.inspector}>
+    <div className="twr-app target-frame" ref={root} data-inspector={s.inspector} data-comms={s.comms}>
       <aside className="rail">
         <div className="league">
           <div className="crest">

@@ -29,10 +29,10 @@ func (r RawTradeBuilder) Validate() error {
 	if err := (snapshot.RawContractScope{Mine: r.Mine, Sort: "name"}).Validate(); err != nil {
 		return fmt.Errorf("trade builder scope: %w", err)
 	}
-	if r.Mine == "" || !slices.Contains([]string{"read", "preview", "save", "reject", "revoke", "handoff"}, r.Action) {
+	if r.Mine == "" || !slices.Contains([]string{"read", "preview", "save", "reject", "revoke", "handoff", "remove"}, r.Action) {
 		return fmt.Errorf("trade builder: franchise and known action required")
 	}
-	if slices.Contains([]string{"reject", "revoke", "handoff"}, r.Action) && r.ID == "" {
+	if slices.Contains([]string{"reject", "revoke", "handoff", "remove"}, r.Action) && r.ID == "" {
 		return fmt.Errorf("trade builder: offer or plan required")
 	}
 	if r.Action != "preview" && r.Action != "save" {
@@ -118,10 +118,8 @@ func (a *App) TargetTradeBuilder(r RawTradeBuilder) Reading[TradeBuilderView] {
 		}
 		out.Preview = &TradeBuilderPlan{ID: receipt.CorrelationID, Reasons: []string{}, Teams: []TradeProjection{}, Receipt: &receipt}
 	}
-	if r.Action == "handoff" {
-		if err := a.tradeBuilderHandOff(ctx, r, snap); err != nil {
-			return tradeBuilderReading(out, err)
-		}
+	if err := a.tradeBuilderPlanAction(ctx, r, snap); err != nil {
+		return tradeBuilderReading(out, err)
 	}
 	out.Plans, err = a.savedTradePlans(ctx, r.Mine, snap)
 	if err != nil {
@@ -268,14 +266,17 @@ func (a *App) savedTradePlans(ctx context.Context, mine string, snap snapshot.Sn
 		return nil, fmt.Errorf("saved trade plans: %w", err)
 	}
 	for _, plan := range plans {
+		e, err := a.moves.Get(ctx, plan.ID)
+		if err != nil {
+			return nil, fmt.Errorf("saved trade receipt: %w", err)
+		}
+		if e.State() == envelope.Withdrawn {
+			continue
+		}
 		p, err := a.tradeProjection(ctx, RawTradeBuilder{Mine: plan.Mine, Other: plan.Other, Give: plan.Give,
 			Get: plan.Get, Rationale: plan.Rationale}, snap)
 		if err != nil {
 			return nil, err
-		}
-		e, err := a.moves.Get(ctx, plan.ID)
-		if err != nil {
-			return nil, fmt.Errorf("saved trade receipt: %w", err)
 		}
 		receipt := e.Receipt()
 		p.ID, p.Receipt = plan.ID, &receipt
@@ -317,4 +318,37 @@ func richTradeRoster(roster []TradeAsset, catalog []TradeBuilderTeam) []TradeAss
 		}
 	}
 	return roster
+}
+
+func (a *App) removeTradePlan(ctx context.Context, r RawTradeBuilder) error {
+	a.movesMu.Lock()
+	defer a.movesMu.Unlock()
+	e, err := a.moves.Get(ctx, r.ID)
+	if err != nil {
+		return fmt.Errorf("remove trade plan: %w", err)
+	}
+	if e.Receipt().Spec.FranchiseID != r.Mine {
+		return fmt.Errorf("remove trade plan: belongs to another franchise")
+	}
+	next, err := e.WithdrawTrade(a.movesNow())
+	if err != nil {
+		return fmt.Errorf("remove trade plan: %w", err)
+	}
+	if err := a.moves.Save(ctx, next); err != nil {
+		return fmt.Errorf("remove trade plan: save: %w", err)
+	}
+	a.logMove(next)
+	a.movesChanged(ctx)
+	return nil
+}
+
+func (a *App) tradeBuilderPlanAction(ctx context.Context, r RawTradeBuilder, snap snapshot.Snapshot) error {
+	switch r.Action {
+	case "remove":
+		return a.removeTradePlan(ctx, r)
+	case "handoff":
+		return a.tradeBuilderHandOff(ctx, r, snap)
+	default:
+		return nil
+	}
 }
