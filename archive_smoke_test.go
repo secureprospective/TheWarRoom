@@ -76,19 +76,7 @@ func fullArchive(t *testing.T) archiveCache {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pins, err := poolPins()
-	if err != nil {
-		t.Fatal(err)
-	}
-	poolInputs := []facts.ResolvedInput{}
-	for _, p := range pins {
-		poolInputs = append(poolInputs, read(p.File))
-	}
-	pools, err := facts.CompilePools(poolInputs)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return archiveCache{sha: compiled.Fingerprint(), facts: compiled, pools: pools, cutoff: "full archive"}
+	return archiveCache{sha: compiled.Fingerprint(), facts: compiled, cutoff: "full archive"}
 }
 
 // TestArchiveReportsOnTheFullArchive compiles the facts from the full league archive (read only)

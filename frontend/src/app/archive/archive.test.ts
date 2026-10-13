@@ -6,11 +6,13 @@ import type { Report } from '../reports/contract';
 import { ArchiveView } from './Archive';
 import type { Archive } from './state';
 
-const report = (id: string, title: string) => ({ id, title, note: '', status: 'ok', source: 'Source: test',
-  asOf: '', how: 'Counted.', columns: ['Season'], rows: [{ cells: ['2016'] }], summary: [] });
+const report = (id: string, title: string) => ({ id, title, note: '', status: 'ok' as const, link: null,
+  source: 'Source: test',
+  asOf: '', how: 'Counted.', columns: ['Season'], rows: [{ cells: ['2016'], range: null }], summary: [] });
 const archive = (): Archive => ({ season: 2016, seasons: [{ value: '2016', label: '2016' }], team: '',
-  other: '', teams: [], board: { title: 'Pools / Archive', loading: '', refresh: 'Reread', howLabel: 'How',
-    reports: [report('M-080', 'League history'), report('M-111', 'Pools')] } } as unknown as Archive);
+  other: '', teams: [], board: { title: 'Archive', loading: '', refresh: 'Reread', howLabel: 'How',
+    mflLabel: '', mflUrl: '',
+    reports: [report('M-080', 'League history'), report('M-079', 'Player additions')] } });
 
 describe('League archive', () => {
   it('puts oddity counts in closed disclosures with names grouped by franchise', () => {
@@ -25,12 +27,20 @@ describe('League archive', () => {
     expect(markup).not.toContain('<td>');
     expect(markup).not.toContain('ring');
   });
-  it('answers every pool endpoint with the one Pools report, listed once', () => {
-    for (const id of ['M-111', 'M-112', 'M-113', 'M-174', 'M-200', 'M-201']) {
-      const markup = renderToStaticMarkup(createElement(ArchiveView, { archive: archive(), selected: [id] }));
-      expect(markup).toContain('aria-label="Pools" aria-pressed="true"');
-      expect(markup.match(/aria-label="Pools" aria-pressed/g)).toHaveLength(1);
-      expect(markup).toContain('Season');
-    }
+  it('does not turn a retired pool selection into a Pools report', () => {
+    const stale = archive();
+    stale.board.reports.push(report('M-111', 'Pools'));
+    const markup = renderToStaticMarkup(createElement(ArchiveView, {
+      archive: stale, selected: ['M-112'],
+    }));
+    expect(markup).toContain('aria-label="League history" aria-pressed="true"');
+    expect(markup).not.toContain('aria-label="Pools" aria-pressed="true"');
+  });
+  it('keeps the remaining season report selectable without pool aliases', () => {
+    const markup = renderToStaticMarkup(createElement(ArchiveView, {
+      archive: archive(), selected: ['M-079'],
+    }));
+    expect(markup).toContain('aria-label="Player additions" aria-pressed="true"');
+    expect(markup).not.toContain('Pools');
   });
 });

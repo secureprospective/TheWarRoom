@@ -353,3 +353,9 @@ points and the held free-agent list. A shared mutex excludes the manual path; ch
 league/list changes or a 24-hour-old run make it due. `target:season` refreshes open readers.
 C-07 lists the engine run and its age; completed background checks append their run timestamp
 without changing any scoring formula or using ownership to find points.
+
+League Pulse › Archive: `archive_app.go` rebuilds only the checked archive facts and caches them;
+`archive_reading.go` and `archive_records_reading.go` author historical reports. The lazy
+`frontend/src/app/archive/Archive.tsx` has no MFL Pools report. MFL pool exports remain accepted
+by the offline importer and preserved in the raw archive; native pools and mini games are deferred.
+The shared shell route resolver reads legacy `pools-archive` links as `archive`.

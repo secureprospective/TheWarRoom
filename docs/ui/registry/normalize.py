@@ -10,7 +10,7 @@ WORKSPACES = {
     'War Room': ('Market', 'Valuations and pool', 'Research'),
     'Franchise HQ': ('Lineup and roster', 'Contracts and cap', 'My moves'),
     'Trade Floor': ('Trade desk and offers', 'Counterparties', 'Draft room'),
-    'League Pulse': ('Now', 'Race', 'Pools / Archive'),
+    'League Pulse': ('Now', 'Race', 'Archive'),
     'Control Room': ('App', 'Data and sources', 'League'),
 }
 SURFACES = ('Inspector', 'Comms', 'Calendar', 'Command bar', 'Status strip', 'Report drawer')
@@ -23,8 +23,8 @@ ALIASES = {
     'Franchise HQ › Acquire': 'Franchise HQ › My moves',
     'Trade Floor › Trade desk': 'Trade Floor › Trade desk and offers',
     'Trade Floor › Offers': 'Trade Floor › Trade desk and offers',
-    'League Pulse › Archive': 'League Pulse › Pools / Archive',
-    'League Pulse › Pools': 'League Pulse › Pools / Archive',
+    'League Pulse › Archive': 'League Pulse › Archive',
+    'League Pulse › Pools': 'League Pulse › Archive',
     'League Pulse › Now (Gameday preset)': 'League Pulse › Now',
     'Control Room › Data & sources': 'Control Room › Data and sources',
     'Control Room › Data & sources (Admin role)': 'Control Room › Data and sources',
@@ -53,7 +53,7 @@ JUDGEMENTS = {
     'M-102': ('Trade Floor › Draft room', 'draft pick identity'),
     'M-103': ('Trade Floor › Draft room', 'personal draft board'),
     'M-108': ('Control Room › App', 'personal MFL automation settings'),
-    'M-114': ('League Pulse › Pools / Archive', 'past champions are history'),
+    'M-114': ('League Pulse › Archive', 'past champions are history'),
     'M-137': ('Control Room › App', 'note names MFL utilities; canonical app home'),
     'M-148': ('Home › Alert tray', 'lineup legality alert'),
     'M-149': ('Home › Alert tray', 'IR compliance alert'),
@@ -62,7 +62,7 @@ JUDGEMENTS = {
     'M-157': ('Home › Alert tray', 'waiver claim order context'),
     'M-176': ('Trade Floor › Draft room', 'draft status'),
     'M-179': ('Trade Floor › Draft room', 'draft pace'),
-    'M-182': ('League Pulse › Pools / Archive', 'note explicitly places history in Archive'),
+    'M-182': ('League Pulse › Archive', 'note explicitly places history in Archive'),
     'M-183': ('Trade Floor › Draft room', 'canonical live draft console'),
     'M-185': ('Control Room › League', 'league bylaws'),
     'L-30': ('Trade Floor › Trade desk and offers', 'note names Offers; canonical desk'),
@@ -86,7 +86,7 @@ MERGED_PLACES = {
     'M-162': ('War Room › Valuations and pool', 'MFL PLAYERS tab → the asset board and pool'),
     'M-165': ('Home › Digests', 'MFL LATEST NEWS tab → Home digests'),
     'M-168': ('League Pulse › Race', 'MFL PLAYOFFS tab → the race'),
-    'M-171': ('League Pulse › Pools / Archive', 'MFL POOLS tab → Pools'),
+    'M-171': ('League Pulse › Archive', 'MFL POOLS tab → Pools'),
     'M-180': ('Status strip', 'news ticker → status strip'),
     'M-181': ('Status strip', 'scoreboard strip → status strip (gameday ticker)'),
 }
@@ -95,7 +95,7 @@ GRAVITY_CALLS = {'M-110': 'G0', 'L-12': 'G0', 'C-06.3': 'G3', 'S-02': 'G0'}
 PLACE_RINGS = dict(zip(SURFACES, (0, 3, 0, 0, 0, 3))) | {
     'Home › Seasonal card': 1, 'Franchise HQ › Lineup and roster': 1,
     'War Room › Valuations and pool': 2, 'Home › Digests': 3,
-    'League Pulse › Race': 3, 'League Pulse › Pools / Archive': 3,
+    'League Pulse › Race': 3, 'League Pulse › Archive': 3,
 }
 
 METADATA_JUDGEMENTS = {

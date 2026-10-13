@@ -128,7 +128,7 @@ provenance. Colour is always paired with a text label or icon.
 | War Room | Market · Valuations and pool · Research | Lab market, asset board, free-agent pool, bid tracker |
 | Franchise HQ | Lineup and roster · Contracts and cap · My moves | Act plans, what-if, dead cap, app-local lists |
 | Trade Floor | Trade desk · Offers history · Counterparties · Draft room | accept, reject, revoke, DOT state; draft timing inside the draft room |
-| League Pulse | Now · Race · Pools / Archive | live game view and Classic/Default matchup in Now; report drawer for every MFL read report |
+| League Pulse | Now · Race · Archive | live game view and Classic/Default matchup in Now; report drawer for every MFL read report |
 | Control Room | App · Data and sources · League | engine params gated to Admin; League is a GM read (commissioner pages are ring 4) |
 
 - **Outside the nodes:** the inspector, comms (feed, chat, board, articles, polls, hand-offs), the
@@ -465,8 +465,8 @@ app's own checked facts.
 - **League Pulse.** Now: my matchup, every matchup, results, recaps, the NFL schedule and box scores, and
   the live game: MFL live scoring (M-001), the game view (X-01) and the fantasy play spine (X-02), with
   finished games read once and held across restarts (`livegame_app.go`, `app/now/`). Race: standings, power,
-  seeding, tiebreaks, brackets, all-play, schedule and lineups. Pools / Archive: every season from 2013
-  read from the checked facts, one Pools report for the pool endpoints (`archive_app.go`, `Archive.tsx`).
+  seeding, tiebreaks, brackets, all-play, schedule and lineups. Archive: every season from 2013
+  read from the checked facts; MFL pools are retired (`archive_app.go`, `Archive.tsx`).
 - **War Room.** Research: search, the Inspector's facts, depth, injuries and batched MFL news
   (`research*.go`, `app/research/`). Valuations and pool: MFL projections, ranks, ADP and AAV
   (M-046/047/067/069) and the **asset board** (C-01, `asset_board.go`, `app/assets/`): every rostered
