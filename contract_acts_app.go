@@ -236,7 +236,7 @@ func contractEvidenceReasons(f envelope.ContractFacts) []string {
 	reasons := []string{}
 	switch f.Intent {
 	case "rfa.tender", "fa.resign", "contract.tag":
-		reasons = append(reasons, fmt.Sprintf("Using his %d salary, %s, as prior-season BASE for this expiring contract.", f.Season, snapshot.ContractAmountOf(f.Baseline[0].Salary).Text))
+		reasons = append(reasons, fmt.Sprintf("Priced from his %d salary, %s.", f.Season, snapshot.ContractAmountOf(f.Baseline[0].Salary).Text))
 	}
 	switch f.Intent {
 	case "fa.resign":

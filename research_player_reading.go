@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
+	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
 
 type ResearchPlayerReading struct {
@@ -45,6 +48,8 @@ func (v researchView) playerReading(id string, names map[string]string, how stri
 	v.playerInjury(&r, id)
 	v.playerDepth(&r, id)
 	v.playerPoints(&r, p)
+	v.playerForm(&r, p)
+	v.playerCutCharge(&r, id)
 	news := v.newsHeld(id)
 	articles := []ResearchArticle{}
 	newsReport := Report{Rows: []ReportRow{}}
@@ -249,4 +254,50 @@ func (v researchView) depthMissNote(starters bool) string {
 		}
 	}
 	return fmt.Sprintf(" Of those slots: %d offensive line, %d punter/holder/long snapper, %d other. These are NFL depth slots, including repeated formations, not missing fantasy roster players; names remain visible but roster ownership cannot be joined without an identity link.", line, special, other)
+}
+
+func (v researchView) playerCutCharge(r *Report, id string) {
+	text := "not held · no roster contract for this player"
+	source := "No held copy available"
+	for _, p := range v.mirror.Players {
+		if p.MFLID != id {
+			continue
+		}
+		source = "MFL roster contract"
+		if p.ContractYear < v.mirror.Season {
+			text = "Cannot price a cut: contract expiration is not held"
+			continue
+		}
+		cells := []state.LedgerCell{}
+		for year := v.mirror.Season; year <= p.ContractYear; year++ {
+			cells = append(cells, state.LedgerCell{Year: year, Salary: p.Salary})
+		}
+		text = snapshot.ContractAmountOf(transactions.CutCharge(cells, v.mirror.Season, false)).Text +
+			" if unclaimed · future salaries held flat; restructure history not held"
+	}
+	r.Rows = append(r.Rows, ReportRow{Cells: []string{"Dead cap if cut today", text, source}})
+}
+
+func (v researchView) playerForm(r *Report, p ResearchPlayer) {
+	rows, _, latest := v.finishedScores()
+	season := rows[p.ID]
+	text := "not held · no finished weekly scores for this player"
+	if season != nil && season.games > 0 {
+		weeks, total := []string{}, 0.0
+		for w := max(v.week-3, 1); w < v.week; w++ {
+			for _, score := range researchRows(v.feed("playerScores", strconv.Itoa(w))) {
+				if score.ID.String() == p.ID {
+					weeks = append(weeks, fmt.Sprintf("W%d: %.2f", w, score.Value))
+					total += score.Value
+				}
+			}
+		}
+		if len(weeks) > 0 {
+			text = fmt.Sprintf("%s · %.2f PPG over %d of the last 3 finished weeks; season %.2f PPG",
+				strings.Join(weeks, ", "), total/float64(len(weeks)), len(weeks), season.sum/float64(season.games))
+		} else {
+			text = "None of the last 3 finished weekly scores held for this player"
+		}
+	}
+	r.Rows = append(r.Rows, ReportRow{Cells: []string{"Form", text, researchHeldTime(latest, "", v.zone)}})
 }

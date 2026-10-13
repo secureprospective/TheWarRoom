@@ -9,6 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
+	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -162,7 +163,7 @@ func TestEngineRefreshIsWiredAfterInputs(t *testing.T) {
 		calls []string
 	}{
 		{"refresh_app.go", []string{"a.launchRefresh(parent)", "a.refreshWeeksInBackground(parent)"}},
-		{"week_app.go", []string{"a.refreshSeason(ctx)", "a.refreshEngine(parent)", "case <-ticker.C:", "a.launchRefresh(parent)"}},
+		{"week_app.go", []string{"a.refreshSeason(ctx)", "a.refreshFinishedScores(ctx)", "a.refreshEngine(parent)", "case <-ticker.C:", "a.launchRefresh(parent)"}},
 		{"engine_refresh.go", []string{"a.loadSignals(ctx)", "a.loadSeasonPoints(ctx)", "a.refreshFreeAgents(ctx)", "a.checkEngine(ctx)"}},
 	} {
 		body, err := os.ReadFile(tc.path)
@@ -177,5 +178,20 @@ func TestEngineRefreshIsWiredAfterInputs(t *testing.T) {
 			}
 			from += index + len(call)
 		}
+	}
+}
+
+func TestSourceHealthEventOnFailedManualRefresh(t *testing.T) {
+	a := targetTestApp(t)
+	events := 0
+	a.seasonChanged = func(context.Context) { events++ }
+	var err error
+	a.mflClient, err = mfl.New("", 1000, mfl.WithTransport(&directoryDown{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.RefreshLeague()
+	if events != 1 {
+		t.Fatal("failed refresh did not notify source health", events)
 	}
 }

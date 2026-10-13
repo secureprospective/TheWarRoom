@@ -227,7 +227,9 @@ func (v archiveView) champions() Report {
 					scoreText(hundredths(f.winner))+"–"+scoreText(hundredths(f.loser))+" over "+v.name(y, f.lose)))
 			}
 		}
-		if !found {
+		if !found && y == slices.Max(v.cache.facts.Season.Year) {
+			r.Rows = append(r.Rows, draftRow(archiveYear(y), "Season under way", "Its championship final has not been played yet"))
+		} else if !found {
 			r.Rows = append(r.Rows, draftRow(archiveYear(y), "not in MFL's archive", "No scored championship final held"))
 		}
 	}

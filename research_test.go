@@ -464,3 +464,34 @@ func TestResearchRefreshArchiveAndRosteredNewsEndToEnd(t *testing.T) {
 		t.Fatal(len(rows), fresh, err)
 	}
 }
+
+func TestPlayerFormAndCutUseHeldWeeksAndSharedRule(t *testing.T) {
+	in := realResearch(t)
+	in.mirror.Season = 2026
+	in.mirror.Players = []state.MirrorPlayer{{MFLID: "16162", FranchiseID: "0002", Salary: 100_000_000, ContractYear: 2028}}
+	v := researchView{researchInput: in}
+	r := v.playerReading("16162", map[string]string{"0002": "Other"}, "Counting")
+	text := ""
+	for _, row := range r.Report.Rows {
+		text += strings.Join(row.Cells, " ") + "\n"
+	}
+	if !strings.Contains(text, "W2:") || !strings.Contains(text, "W3:") || !strings.Contains(text, "W4:") || !strings.Contains(text, "season ") || !strings.Contains(text, "$700,000") {
+		t.Fatal(text)
+	}
+	a := whatIfTestApp(t)
+	cut := whatIfCall(t, a, "cut", "0042", "")
+	mirror, _, _ := a.league.ContractsView()
+	v.mirror = mirror
+	probe := Report{}
+	v.playerCutCharge(&probe, "0042")
+	if !strings.Contains(probe.Rows[0].Cells[1], cut.Value.Moves[0].Charge.Text) {
+		t.Fatal(probe, cut)
+	}
+	delete(v.held.feeds, researchKey("playerScores", "3"))
+	delete(v.held.feeds, researchKey("playerScores", "4"))
+	probe = Report{}
+	v.playerForm(&probe, v.player("16162"))
+	if !strings.Contains(probe.Rows[0].Cells[1], "1 of the last 3") {
+		t.Fatal(probe)
+	}
+}

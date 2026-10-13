@@ -17,10 +17,6 @@ func TestContractReadingStatesAndCantCut(t *testing.T) {
 	if failed.Table.Status != ReadingFailed || failed.Cap.Status != ReadingFailed || failed.Adjustments.Status != ReadingFailed {
 		t.Fatal("failure became figures")
 	}
-	cant := cantCutReading("2026-10-10T00:00:00Z")
-	if cant.Status != ReadingNotWired || cant.AbsenceReason == nil || len(cant.Value) != 0 || cant.Provenance.Source == "" {
-		t.Fatalf("can't cut: %+v", cant)
-	}
 	a := &App{}
 	if a.TargetContracts(snapshot.RawContractScope{Sort: "bad"}).Table.Status != ReadingFailed {
 		t.Fatal("invalid scope accepted")
@@ -34,7 +30,7 @@ func TestTargetContractsAndPlayerReadOnlyMirror(t *testing.T) {
 	a := targetTestApp(t)
 	raw := snapshot.RawContractScope{Mine: "0001", Sort: "salary"}
 	got := a.TargetContracts(raw)
-	if got.Table.Status != ReadingOK || len(got.Table.Value.Rows) != 1 || got.Cap.Status != ReadingOK || got.Cap.Value.Cap != nil || got.Cap.Value.Room != nil || got.Adjustments.Status != ReadingOK || got.CantCut.Status != ReadingNotWired {
+	if got.Table.Status != ReadingOK || len(got.Table.Value.Rows) != 1 || got.Cap.Status != ReadingOK || got.Cap.Value.Cap != nil || got.Cap.Value.Room != nil || got.Adjustments.Status != ReadingOK {
 		t.Fatalf("dashboard: %+v", got)
 	}
 	player := a.TargetPlayerContract("0042")

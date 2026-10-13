@@ -174,3 +174,12 @@ func TestSurvivorNoteInWords(t *testing.T) {
 		t.Error(got)
 	}
 }
+
+func TestChampionsLatestUnplayedAndOldMissing(t *testing.T) {
+	cache := reducedArchive(t)
+	cache.facts.Season.Year = []int64{2013, 2026}
+	r := (archiveView{cache: cache}).champions()
+	if len(r.Rows) != 2 || r.Rows[0].Cells[1] != "not in MFL's archive" || r.Rows[0].Cells[2] != "No scored championship final held" || !strings.Contains(r.Rows[1].Cells[2], "final has not been played") {
+		t.Fatal(r.Rows)
+	}
+}

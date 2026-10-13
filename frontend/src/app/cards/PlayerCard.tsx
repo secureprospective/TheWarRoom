@@ -82,7 +82,6 @@ export function PlayerCard({
           {' · '}
           {model.contractStatus}
         </div>
-        <p className="player-unwired-rows not-wired">{model.unwiredRows}</p>
       </Card>
     </>
   );

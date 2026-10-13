@@ -457,3 +457,10 @@ it.each(['L-17', 'L-18', 'L-21'] as const)
   expect(shell.scrollTop).toBe(55);
   expect(card.focus).not.toHaveBeenCalled();
 });
+
+it('retires M-025 without a placement or route', () => {
+  const row = endpointById('M-025');
+  expect(row.disposition).toBe('retired');
+  expect(row.placement).toBe('');
+  expect(() => createCommands().dispatch('endpoint.open', { id: 'M-025' })).toThrow('retired');
+});

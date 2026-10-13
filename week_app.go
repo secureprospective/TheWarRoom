@@ -35,6 +35,9 @@ func (a *App) refreshWeeksInBackground(parent context.Context) {
 			a.refreshNowWeek(ctx, rule.Week, false)
 			cancel()
 		}
+		ctx, cancel = context.WithTimeout(parent, refreshTimeout)
+		a.refreshFinishedScores(ctx)
+		cancel()
 		a.refreshEngine(parent)
 		a.clockChanged(parent)
 		select {

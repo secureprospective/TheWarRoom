@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { commands } from '../commands/registry';
 import { parsePlayerReading, type PlayerReading } from './contract';
 import { NewsList } from './Research';
 import './research.css';
@@ -13,10 +14,16 @@ export default function ResearchPlayerInspector({ id, identity = true }: { id: s
     setError('');
     const app = (window as unknown as { go?: { main: { App: typeof Bindings } } }).go?.main.App;
     if (!app) { setError('Player research requires the desktop app.'); return; }
-    void app.TargetResearchPlayer(id).then(value => {
-      if (!disposed) setPlayer(parsePlayerReading(value));
-    }).catch(cause => { if (!disposed) setError(String(cause)); });
-    return () => { disposed = true; };
+    let revision = 0;
+    const read = () => {
+      const request = ++revision;
+      void app.TargetResearchPlayer(id).then(value => {
+      if (!disposed && request === revision) setPlayer(parsePlayerReading(value));
+      }).catch(cause => { if (!disposed && request === revision) setError(String(cause)); });
+    };
+    read();
+    const stop = commands.alerts.onSeasonChange(read);
+    return () => { disposed = true; stop(); };
   }, [id]);
   return <section aria-label="Research player Inspector">
     {error && <p role="alert">{error}</p>}

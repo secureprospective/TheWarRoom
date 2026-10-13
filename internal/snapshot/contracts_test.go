@@ -43,11 +43,11 @@ func TestContractsCentsCapAndAdjustments(t *testing.T) {
 	if absent.Cap != nil || absent.Room != nil {
 		t.Fatal("missing cap must not become zero or guessed room")
 	}
-	adjs := ContractsAdjustments([]state.Adjustment{{ID: "7", FranchiseID: "0001", Amount: -123, Description: "BUYOUT: literal"}}, nil)
+	adjs := ContractsAdjustments([]state.Adjustment{{ID: "7", FranchiseID: "0001", Amount: -123, Description: "BUYOUT: literal"}}, nil, "")
 	if len(adjs) != 1 || adjs[0].Amount.Cents != -123 || adjs[0].Amount.Text != "-$1.23" || adjs[0].Description != "BUYOUT: literal" {
 		t.Fatalf("adjustments: %+v", adjs)
 	}
-	if ContractsAdjustments(nil, nil) == nil {
+	if ContractsAdjustments(nil, nil, "") == nil {
 		t.Fatal("empty adjustments must be array")
 	}
 }
@@ -115,5 +115,15 @@ func TestContractYearTagsAndReasons(t *testing.T) {
 		if year.Tag != "Inferred" || strings.Contains(year.Reason, year.Tag) || year.Cost.Text != "$670,000" {
 			t.Fatalf("future: %+v", year)
 		}
+	}
+}
+
+func TestSalaryAdjustmentsMineFirstStable(t *testing.T) {
+	rows := ContractsAdjustments([]state.Adjustment{
+		{ID: "other", FranchiseID: "0002"}, {ID: "mine-a", FranchiseID: "0001"},
+		{ID: "mine-b", FranchiseID: "0001"},
+	}, nil, "0001")
+	if rows[0].ID != "mine-a" || rows[1].ID != "mine-b" || rows[2].ID != "other" {
+		t.Fatal(rows)
 	}
 }
