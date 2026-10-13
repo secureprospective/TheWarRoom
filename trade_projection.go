@@ -329,7 +329,7 @@ func tradeCapFigures(figures []WhatIfFigure, s state.WhatIfSession, before, afte
 
 	if s.Cap != nil {
 		figures = append(figures, whatIfFigure("Cap room this season", *s.Cap-before, *s.Cap-after),
-			whatIfFigure("Next-season room · held cap, inferred", *s.Cap-futureBefore, *s.Cap-futureAfter))
+			whatIfFigure("Next season’s cap room (this season’s cap carried forward)", *s.Cap-futureBefore, *s.Cap-futureAfter))
 		if after > *s.Cap || futureAfter > *s.Cap {
 			blocks = append(blocks, name+": deal exceeds the held salary cap")
 		}

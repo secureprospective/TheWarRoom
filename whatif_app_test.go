@@ -125,7 +125,7 @@ func TestWhatIfRulesFailuresAndValidation(t *testing.T) {
 		t.Fatalf("final %+v", final)
 	}
 	first := whatIfCall(t, a, "buyout", "0042", "")
-	if !strings.Contains(first.HowCounted, "35%") || !strings.Contains(first.HowCounted, "inferred") {
+	if !strings.Contains(first.HowCounted, "35%") || !strings.Contains(first.HowCounted, "carry today’s MFL annual salary") {
 		t.Fatal("inference absent")
 	}
 	whatIfCall(t, a, "buyout", "0043", "")

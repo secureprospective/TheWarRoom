@@ -85,7 +85,7 @@ describe('Fix 1: open plans sit above the table', () => {
     const none = { ...board(), value: { plans: [], summary: '0 open of 0 bid plans' } };
     const focus = { id: '', seq: 0 };
     const text = html(createElement(OpenPlans, { board: none, openId: '', focus, busy: '' }));
-    expect(text).toContain('No open bid plans.');
+    expect(text).toContain('No open bid plans. Choose a player, then Plan a bid in the Inspector.');
   });
   it('G: saves inline without a reveal jump; explicit card opens still reveal', async () => {
     const { provider } = fakeProvider();
@@ -374,16 +374,15 @@ it('pool form insertion uses the same row anchor as Contracts', () => {
   expect(source).toContain("useWorkAnchor(root, '.pool-table tbody tr:not(.pool-form-row), .bid-plan')");
 });
 
-it('G: the same bid form is full-width directly after its clicked row, never above the table', () => {
+it('the bid preview stays in the work column, outside the overflowing pool table', () => {
   const reading = pool();
   const row = reading.value.rows[1];
   const text = html(createElement(PoolScreen, { franchiseId: '0001', state: {
     ...poolState.peek(), reading, form: { ...form, playerId: row.id, playerName: row.name },
   } }));
   expect(text.match(/aria-label="Bid plan form"/g)).toHaveLength(1);
-  expect(text).toMatch(/<\/tr><tr class="pool-form-row"><td colSpan="8"><section class="bid-form"/);
-  expect(text.indexOf('Bid plan form')).toBeGreaterThan(text.indexOf(row.name));
-  expect(text.indexOf('Bid plan form')).toBeLessThan(text.indexOf('</tbody>'));
+  expect(text.indexOf('Bid plan form')).toBeLessThan(text.indexOf('<table'));
+  expect(text).not.toContain('<tr class="pool-form-row">');
 });
 it('I: terminal chosen plans stay out of the pool, including the finished list', () => {
   const chosen = plan('withdrawn');
@@ -391,7 +390,7 @@ it('I: terminal chosen plans stay out of the pool, including the finished list',
   const text = html(createElement(PoolScreen, { franchiseId: '0001', state: {
     ...poolState.peek(), reading: pool(), board: reading, openPlan: chosen.id,
   } }));
-  expect(text).toContain('No open bid plans.');
+  expect(text).toContain('No open bid plans. Choose a player, then Plan a bid in the Inspector.');
   expect(text).not.toContain(`aria-label="Bid plan ${chosen.player}`);
   expect(text).not.toContain('Finished bid plans');
 });
@@ -461,4 +460,19 @@ it('offers all seven Go-supplied sorts and sends each market key and direction t
     await store.change({ field: 'pool-sort', value: key });
     expect(calls.at(-1)).toContain(`"sort":"${key}","desc":true`);
   }
+});
+
+it('renders salary and points above the overflow region with a bounded preview value column', () => {
+  const preview = parsePreview(wire.preview);
+  const text = html(createElement(PoolScreen, { franchiseId: '0001', state: {
+    ...poolState.peek(), reading: pool(), form, preview,
+  } }));
+  const start = text.indexOf('class="bid-preview"');
+  const end = text.indexOf('</dl>', start);
+  expect(start).toBeGreaterThan(-1);
+  expect(end).toBeLessThan(text.indexOf('class="pool-table-scroll"'));
+  expect(text.slice(start, end)).toContain(preview.salary.text);
+  expect(text.slice(start, end)).toContain(preview.points);
+  const css = readFileSync('src/app/pool/pool.css', 'utf8');
+  expect(css).toMatch(/\.bid-preview \.kv \{ grid-template-columns: minmax\(0, 1fr\) auto;/);
 });

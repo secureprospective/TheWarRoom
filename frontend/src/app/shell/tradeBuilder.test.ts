@@ -64,3 +64,52 @@ describe('Trade builder and acquisition wire boundaries', () => {
     expect(endpointById('M-024').disposition_note).toContain('native claim/order mechanics remain open');
   });
 });
+
+it('names the counterpart and offers local removal on both the desk and shared My moves rail', async () => {
+  const { Deal } = await import('./TradeBuilder');
+  const { EnvelopeRail } = await import('./EnvelopeRail');
+  const { FixtureProvider } = await import('../data/provider');
+  const receipt = tradeReceipt('ready');
+  receipt.spec.intent = 'trade.propose';
+  receipt.spec.franchiseId = receipt.spec.expected.trade!.offering;
+  const plan = parseBuilder(tradeWire).value!.preview!;
+  plan.receipt = receipt;
+  plan.id = receipt.correlationId;
+  plan.teams[1].team = 'Buffalo Bills';
+  const snapshot = await new FixtureProvider().snapshot();
+  const desk = renderToStaticMarkup(createElement(Deal, {
+    plan, mine: receipt.spec.franchiseId, busy: false,
+  }));
+  expect(desk).toContain('Trade with Buffalo Bills · Both rosters after this deal');
+  expect(desk).toContain('Remove plan');
+  const rail = () => renderToStaticMarkup(createElement(EnvelopeRail, { receipt, snapshot }));
+  expect(rail()).toContain('Remove plan');
+  receipt.state = 'withdrawn';
+  receipt.audit.push({ at: '2026-10-13T10:00:00Z', event: 'withdraw', from: 'ready', to: 'withdrawn',
+    note: 'Removed by you before it was handed off.' });
+  expect(rail()).toContain('Removed by you before it was handed off.');
+  expect(rail()).not.toContain('Remove plan');
+});
+
+it('keeps older trade plans in My moves using the shared receipt rail', async () => {
+  const { default: MyMoves } = await import('./MyMoves');
+  const { createCommands } = await import('../commands/registry');
+  const { renderState } = await import('./state');
+  const { FixtureProvider } = await import('../data/provider');
+  const executor = createCommands(() => undefined);
+  const snapshot = await new FixtureProvider().snapshot();
+  const receipt = tradeReceipt('ready');
+  receipt.spec.intent = 'trade.propose';
+  receipt.spec.franchiseId = receipt.spec.expected.trade!.offering;
+  const other = Array.from({ length: 15 }, (_, i) => ({ ...receipt,
+    correlationId: `other-${i}`, spec: { ...receipt.spec, intent: 'trade.revoke' } }));
+  const moves = { ...executor.readMoves(), moves: [...other, receipt],
+    movesLoading: { [receipt.spec.franchiseId]: false } };
+  const html = renderToStaticMarkup(createElement(MyMoves, { snapshot, executor: {
+    ...executor, providerKind: 'live',
+    use: () => ({ ...renderState(executor.read()), franchiseId: receipt.spec.franchiseId }),
+    useMoves: selector => selector(moves),
+  } }));
+  expect(html).toContain('Trade proposal');
+  expect(html).toContain('Remove plan');
+});

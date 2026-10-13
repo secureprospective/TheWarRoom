@@ -506,3 +506,60 @@ func TestTradeBuilderLandingPickValue(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestKeptTradePlanRemovalIsLocalAndVisibleInMyMoves(t *testing.T) {
+	a, transport := realTradeBuilderApp(t)
+	r := realDeal()
+	r.Action = "save"
+	saved := builderCall(t, a, r).Preview
+	opened := 0
+	a.openURL = func(context.Context, string) { opened++ }
+	m, stamp, _ := a.league.ContractsView()
+	wrong := a.TargetTradeBuilder(RawTradeBuilder{Mine: r.Other, Action: "remove", ID: saved.ID})
+	if wrong.Status == ReadingOK {
+		t.Fatal("another owner removed plan")
+	}
+	view := builderCall(t, a, RawTradeBuilder{Mine: r.Mine, Action: "remove", ID: saved.ID})
+	if len(view.Plans) != 0 || view.Preview != nil {
+		t.Fatalf("removed plan still on desk: %+v", view)
+	}
+	receipts, err := a.TargetMoves(r.Mine)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, receipt := range receipts {
+		if receipt.CorrelationID == saved.ID {
+			found = receipt.State == envelope.Withdrawn &&
+				receipt.Audit[len(receipt.Audit)-1].Note == "Removed by you before it was handed off."
+		}
+	}
+	if !found {
+		t.Fatal("My moves lost the removed receipt")
+	}
+	after, nextStamp, _ := a.league.ContractsView()
+	if opened != 0 || len(transport.requests) != 0 || !reflect.DeepEqual(m, after) || stamp != nextStamp {
+		t.Fatal("local removal opened MFL, fetched or changed mirror")
+	}
+	if len(builderCall(t, a, RawTradeBuilder{Mine: r.Mine, Action: "read"}).Plans) != 0 {
+		t.Fatal("removed plan reappeared on read")
+	}
+}
+
+func TestTradeAndContractWhatIfExplainCarriedSalaries(t *testing.T) {
+	a, _ := realTradeBuilderApp(t)
+	reading := a.TargetTradeBuilder(realDeal())
+	body, err := json.Marshal(reading)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(strings.ToLower(string(body)), "inferred") ||
+		!strings.Contains(string(body), "this season’s cap carried forward") {
+		t.Fatalf("trade wording: %s", body)
+	}
+	whatif := a.TargetWhatIf(RawWhatIfRequest{Mine: "0001", Action: "read"})
+	if strings.Contains(strings.ToLower(whatif.HowCounted), "inferred") ||
+		!strings.Contains(whatif.HowCounted, "carry today’s MFL annual salary") {
+		t.Fatal(whatif.HowCounted)
+	}
+}

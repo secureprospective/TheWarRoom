@@ -241,7 +241,7 @@ func (a *App) TargetOpenResearchArticle(id, article string) error {
 	if host == "" {
 		return fmt.Errorf("news: MFL host not held; refresh from MFL first")
 	}
-	target := fmt.Sprintf("https://%s/%d/news_articles?P=%s&ARTICLE_ID=%s", host, a.season, url.QueryEscape(pid.String()), url.QueryEscape(article))
+	target := fmt.Sprintf("https://%s/%d/view_news_article?ID=%s", host, a.season, url.QueryEscape(article))
 	a.openURL(a.ctx, target)
 	return nil
 }

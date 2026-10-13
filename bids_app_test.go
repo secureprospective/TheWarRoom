@@ -282,7 +282,7 @@ func TestBidReviseAndWithdraw(t *testing.T) {
 	}
 	gone, err := a.TargetBidWithdraw(id)
 	if err != nil || gone.Receipt.State != envelope.Withdrawn || gone.State != "Withdrawn" ||
-		gone.Status != "Withdrawn by you before it was handed off." || len(gone.Actions) != 0 {
+		gone.Status != "Removed by you before it was handed off." || len(gone.Actions) != 0 {
 		t.Fatalf("withdrawn = %+v, %v", gone, err)
 	}
 	if _, err := a.TargetBidRevise(id, rawBid("6", 4)); err == nil {

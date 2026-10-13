@@ -16,7 +16,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
-const RemovePlanNote = "Withdrawn by you before it was handed off."
+const RemovePlanNote = "Removed by you before it was handed off."
 
 type State string
 

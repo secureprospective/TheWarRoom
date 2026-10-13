@@ -301,7 +301,7 @@ func TestResearchHeldIPCAndArticleHandOff(t *testing.T) {
 	if err := a.TargetOpenResearchArticle("16162", "rotowire640841"); err != nil {
 		t.Fatal(err)
 	}
-	if opened != "https://www99.myfantasyleague.com/2026/news_articles?P=16162&ARTICLE_ID=rotowire640841" {
+	if opened != "https://www99.myfantasyleague.com/2026/view_news_article?ID=rotowire640841" {
 		t.Fatal(opened)
 	}
 }
