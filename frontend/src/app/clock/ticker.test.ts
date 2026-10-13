@@ -163,3 +163,53 @@ describe('single DOM clock ticker', () => {
     stop();
   });
 });
+
+describe('countdowns that mount after the reading', () => {
+  const lateNode = (document: ReturnType<typeof clockDom>['document']) => {
+    const node = document.createElement('span');
+    node.setAttribute('data-deadline', 'trade');
+    const text = document.createElement('span');
+    text.setAttribute('data-countdown', '');
+    text.textContent = '—';
+    node.appendChild(text);
+    return node;
+  };
+  it('paints a late mount at once through the observer, and stops watching when disconnected', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    let mounted: ((records: { addedNodes: unknown[] }[]) => void) | undefined;
+    const disconnect = vi.fn();
+    const saved = Object.getOwnPropertyDescriptor(globalThis, 'MutationObserver');
+    Object.defineProperty(globalThis, 'MutationObserver', { configurable: true, value: class {
+      constructor(callback: typeof mounted) { mounted = callback; }
+      observe() {}
+      disconnect() { disconnect(); }
+    } });
+    try {
+      const { root, element, document } = clockDom([]);
+      const stop = connectClock(element, [deadline(at(7_210_000))]);
+      const node = lateNode(document);
+      root.appendChild(node);
+      expect(node.textContent).toBe('—');
+      mounted!([{ addedNodes: [node] }]);
+      expect(node.textContent).toBe('2h 0m');
+      expect(node.getAttribute('data-urgency')).toBe('U2');
+      stop();
+      expect(disconnect).toHaveBeenCalledTimes(1);
+    } finally {
+      if (saved) Object.defineProperty(globalThis, 'MutationObserver', saved);
+      else delete (globalThis as { MutationObserver?: unknown }).MutationObserver;
+    }
+  });
+  it('finds a late mount on the next tick even without an observer', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    const { root, element, document } = clockDom([]);
+    const stop = connectClock(element, [deadline(at(7_210_000))]);
+    const node = lateNode(document);
+    root.appendChild(node);
+    vi.advanceTimersByTime(10_025);
+    expect(node.textContent).toBe('1h 59m');
+    stop();
+  });
+});

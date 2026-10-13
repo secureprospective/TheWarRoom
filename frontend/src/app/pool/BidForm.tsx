@@ -87,6 +87,15 @@ function ConditionalDrop({ form, preview }: { form: BidFormState; preview: Previ
   );
 }
 
+// The rules box above already states every rule that holds the plan back, in full, so the status
+// line only points at them instead of repeating their reasons.
+function blockedLine(preview: Preview) {
+  const held = preview.rules.filter((r) => r.verdict === 'fail' || r.verdict === 'unknown').length;
+  if (held === 0) return `Blocked: ${preview.note}.`;
+  const which = held === 1 ? 'the rule above' : `the ${held} rules above`;
+  return `Blocked by ${which}. Saved now, the plan waits as Blocked until it passes.`;
+}
+
 export function PreviewView({ preview, form }: { preview?: Preview; form?: BidFormState }) {
   if (!preview) return <p role="status">Checking the bid rules…</p>;
   if (preview.problem) return <p role="status" className="bid-problem">{preview.problem}</p>;
@@ -101,7 +110,7 @@ export function PreviewView({ preview, form }: { preview?: Preview; form?: BidFo
       {preview.snapped && <p>{preview.snapped}.</p>}
       <Rules rules={preview.rules} summary={preview.ruleSummary} />
       {form && <ConditionalDrop form={form} preview={preview} />}
-      <p role="status">{preview.blocked ? `Blocked: ${preview.note}` : 'Every rule passes.'}</p>
+      <p role="status">{preview.blocked ? blockedLine(preview) : 'Every rule passes.'}</p>
     </div>
   );
 }

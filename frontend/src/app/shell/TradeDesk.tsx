@@ -30,11 +30,15 @@ export function OfferCard({ offer, franchiseId }: { offer: TradeOffer; franchise
   const receipt = commands.useMoves((s) => s.moves.find((r) =>
     r.spec.franchiseId === franchiseId && r.spec.intent === 'trade.accept' &&
     r.spec.expected.trade?.tradeId === offer.tradeId));
-  const exits = commands.useMoves(s => s.moves);
+  const exits = commands.useMoves(s => s.moves).filter(r => r.spec.franchiseId === franchiseId &&
+    r.spec.expected.trade?.tradeId === offer.tradeId && r.spec.intent !== 'trade.accept');
+  // One live exit plan per offer: while one stands, the card offers its removal, not a second plan.
+  const exitPlanned = exits.some(r => livePlan.has(r.state));
   const knownExpiry = !offer.expires.startsWith('0001-');
   return <Card gravity="G3" header={<h5><Act variant="text" verb="inspector.pin"
     args={{ entity: { kind: 'offer', id: offer.tradeId, franchiseId } }}>
     Offer with {offer.otherName || 'Franchise name unavailable'}</Act></h5>}>
+    <p>Pending offer on MFL</p>
     <div className="trade-assets">
       {(['give', 'get'] as const).map((side) => <div key={side}>
         <h6>{side === 'give' ? 'You give' : 'You get'}</h6>
@@ -55,16 +59,14 @@ export function OfferCard({ offer, franchiseId }: { offer: TradeOffer; franchise
         disabled={Boolean(pending)} label={pending ? 'Planning accept…' : 'Plan accept'} />
       {error && <p role="alert">Trade plan · {error}</p>}
     </div>}
-    <div className="plan-actions">
+    {!exitPlanned && <div className="plan-actions">
       <Act variant="button"
         verb="trade.builder" args={{ action: offer.direction === 'to_you' ? 'reject' : 'revoke',
         mine: franchiseId, id: offer.tradeId }}
         label={offer.direction === 'to_you' ? 'Plan rejection' : 'Plan withdrawal'} />
-    </div>
+    </div>}
     {receipt && <TradePlan receipt={receipt} />}
-    {exits.filter(r => r.spec.franchiseId === franchiseId &&
-      r.spec.expected.trade?.tradeId === offer.tradeId && r.spec.intent !== 'trade.accept')
-      .map(r => <TradePlan key={r.correlationId} receipt={r} />)}
+    {exits.map(r => <TradePlan key={r.correlationId} receipt={r} />)}
   </Card>;
 }
 function FranchiseTrades({ franchiseId, snapshot }: { franchiseId: string; snapshot: Snapshot }) {

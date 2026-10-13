@@ -172,7 +172,7 @@ func competingMove(left, right envelope.Spec) bool {
 	switch left.Intent {
 	case "lineup.set":
 		return left.Expected.Lineup.Week == right.Expected.Lineup.Week
-	case "trade.accept":
+	case "trade.accept", "trade.reject", "trade.revoke":
 		return left.Expected.Trade.TradeID == right.Expected.Trade.TradeID
 	default:
 		return false

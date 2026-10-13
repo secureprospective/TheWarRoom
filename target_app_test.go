@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"net/http"
+	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -66,7 +67,24 @@ func targetTestAppAt(t *testing.T, path string) *App {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	hp, err := db.Open(ctx, filepath.Join(t.TempDir(), "history.db"))
+	historyDir := t.TempDir()
+	seed, err := os.ReadFile(suiteFixturePath(t, "history.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	root, err := os.OpenRoot(historyDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := root.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	if err := root.WriteFile("history.db", seed, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	hp, err := db.Open(ctx, filepath.Join(historyDir, "history.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,9 +98,6 @@ func targetTestAppAt(t *testing.T, path string) *App {
 		t.Fatal(err)
 	}
 	hs := history.New(hp, reg)
-	if err := hs.Initialize(ctx); err != nil {
-		t.Fatal(err)
-	}
 	moveStore := moves.New(p)
 	if err := moveStore.Initialize(ctx); err != nil {
 		t.Fatal(err)

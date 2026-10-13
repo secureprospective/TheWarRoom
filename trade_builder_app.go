@@ -225,12 +225,17 @@ func (a *App) draftTradeExit(ctx context.Context, r RawTradeBuilder,
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("trade draft: %w", err)
 	}
-	e, err := envelope.DraftTradeAct(a.movesNow(), "trade."+r.Action, req, blocks, func() string { return id })
+	now := a.movesNow()
+	e, err := envelope.DraftTradeAct(now, "trade."+r.Action, req, blocks, func() string { return id })
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("trade draft: %w", err)
 	}
 	a.movesMu.Lock()
 	defer a.movesMu.Unlock()
+	// One live exit plan per offer, as with accept plans: a new one supersedes the old.
+	if err := a.supersedeMoves(ctx, e, now); err != nil {
+		return envelope.Receipt{}, err
+	}
 	if err := a.moves.Save(ctx, e); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("trade exit save: %w", err)
 	}

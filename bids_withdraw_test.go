@@ -18,6 +18,7 @@ func actionIDs(plan BidPlan) string {
 }
 
 func TestBidOnlyOnePlanOpenPerPlayer(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	first, err := a.TargetBidDraft(rawBid("5", 3))
 	if err != nil {
@@ -50,6 +51,7 @@ func TestBidOnlyOnePlanOpenPerPlayer(t *testing.T) {
 }
 
 func TestBidBlockedPlanStillCountsAsTheOpenPlan(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	if plan, err := a.TargetBidDraft(rawBid("5", 5)); err != nil || plan.Receipt.State != envelope.Blocked {
 		t.Fatalf("blocked plan = %v, %v", plan.Receipt.State, err)
@@ -60,6 +62,7 @@ func TestBidBlockedPlanStillCountsAsTheOpenPlan(t *testing.T) {
 }
 
 func TestBidHandedOffPlanCanBeWithdrawnAndItsFactsStayFrozen(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	raw := rawBid("5", 3)
 	raw.Snipe, raw.Beat, raw.Evidence = true, "5.500", "thread"
@@ -126,6 +129,7 @@ func mustGet(t *testing.T, a *App, id string) envelope.Envelope {
 }
 
 func TestBidNotYetDoneAndPendingCanBeWithdrawn(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	past := time.Now().Add(-time.Hour)
 	a.movesNow = func() time.Time { return past }
@@ -172,6 +176,7 @@ func TestBidNotYetDoneAndPendingCanBeWithdrawn(t *testing.T) {
 }
 
 func TestBidPlanWordsForTheScreens(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	plan, err := a.TargetBidDraft(rawBid("5", 3))
 	if err != nil {
@@ -217,6 +222,7 @@ func TestBidPlanWordsForTheScreens(t *testing.T) {
 }
 
 func TestBidPreviewSaysWhatTheClosingTimeDoes(t *testing.T) {
+	t.Parallel()
 	a := bidTestApp(t)
 	none := a.TargetBidPreview(rawBid("5", 3))
 	if !strings.HasPrefix(none.ClosesNote, "No closing time is set") || none.RuleSummary != "11 rules pass" {

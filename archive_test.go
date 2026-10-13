@@ -13,8 +13,37 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/facts"
 )
 
-// reducedArchive compiles the reduced fixture archive the facts parity test uses.
+type reducedArchiveFixture struct {
+	SHA   string
+	Facts facts.Facts
+}
+
+// Only serial tests call this helper. The on-disk snapshot is immutable after its first compile.
 func reducedArchive(t *testing.T) archiveCache {
+	t.Helper()
+	path := suiteFixturePath(t, "reduced-archive.json")
+	body, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		compiled := compileReducedArchive(t)
+		fixture := reducedArchiveFixture{SHA: compiled.sha, Facts: compiled.facts}
+		body, err = json.Marshal(fixture)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, body, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	} else if err != nil {
+		t.Fatal(err)
+	}
+	var fixture reducedArchiveFixture
+	if err := json.Unmarshal(body, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	return archiveCache{sha: fixture.SHA, facts: fixture.Facts, cutoff: "Oct 11, 2026"}
+}
+
+func compileReducedArchive(t *testing.T) archiveCache {
 	t.Helper()
 	raw, err := os.ReadFile("internal/lab/testdata/facts/inputs.json.gz")
 	if err != nil {
@@ -26,6 +55,9 @@ func reducedArchive(t *testing.T) archiveCache {
 	}
 	body, err := io.ReadAll(gz)
 	if err != nil {
+		t.Fatal(err)
+	}
+	if err := gz.Close(); err != nil {
 		t.Fatal(err)
 	}
 	var fixture struct {

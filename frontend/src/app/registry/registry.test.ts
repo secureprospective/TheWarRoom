@@ -160,6 +160,8 @@ describe('Endpoint map', () => {
       'C-06.2', 'M-199',
       // After batch6 (land-conditional): over-cap bids name a conditional drop.
       'C-06.7',
+      // After batch7: one live exit plan per offer; removed plans leave the pending offer plain.
+      'M-033', 'M-034',
     ];
     for (const row of endpoints) {
       let status = 'spec';
@@ -172,9 +174,9 @@ describe('Endpoint map', () => {
       ['C-03', 'landed live'],
       ['M-028', 'landed live'],
       ['M-029', 'landed live'],
-      ['M-033', 'built, not yet landed live'],
+      ['M-033', 'landed live'],
       ['X-04', 'built, not yet landed live'],
-      ['M-034', 'built, not yet landed live'],
+      ['M-034', 'landed live'],
     ];
     for (const [id, label] of checks) {
       const row = endpointById(id);

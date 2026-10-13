@@ -12,6 +12,7 @@ import (
 )
 
 func TestMarketSurfaceMethods(t *testing.T) {
+	t.Parallel()
 	a := NewApp()
 	full := RawMarketScope{From: 2017, To: 2026}
 	methods := []struct {
@@ -47,6 +48,7 @@ func TestMarketSurfaceMethods(t *testing.T) {
 	}
 }
 func TestMarketListsEngineParity(t *testing.T) {
+	t.Parallel()
 	a := NewApp()
 	d, err := a.lab()
 	if err != nil {
@@ -95,6 +97,7 @@ func TestMarketListsEngineParity(t *testing.T) {
 	}
 }
 func TestMarketClockEngineParity(t *testing.T) {
+	t.Parallel()
 	a := NewApp()
 	d, err := a.lab()
 	if err != nil {
@@ -120,6 +123,7 @@ func TestMarketClockEngineParity(t *testing.T) {
 	}
 }
 func TestMarketStretchEngineParity(t *testing.T) {
+	t.Parallel()
 	a := NewApp()
 	d, err := a.lab()
 	if err != nil {
@@ -143,6 +147,7 @@ func TestMarketStretchEngineParity(t *testing.T) {
 	}
 }
 func TestAssetProfileEngineParityAndStates(t *testing.T) {
+	t.Parallel()
 	a := NewApp()
 	d, err := a.lab()
 	if err != nil {
@@ -180,6 +185,7 @@ func TestAssetProfileEngineParityAndStates(t *testing.T) {
 	}
 }
 func TestMarketInputValidationAndLoadFailure(t *testing.T) {
+	t.Parallel()
 	for _, raw := range []RawMarketScope{{From: 2017, To: 2026, Assets: []string{"bogus"}}, {From: 2017, To: 2026, Assets: []string{"LB", "LB"}}} {
 		if raw.Validate() == nil {
 			t.Fatal("invalid asset selection accepted")
@@ -193,6 +199,7 @@ func TestMarketInputValidationAndLoadFailure(t *testing.T) {
 	}
 }
 func TestMarketRangeWire(t *testing.T) {
+	t.Parallel()
 	r := marketRange(&lab.Interval{Value: 0.4, Lo: 0.2, Hi: 0.8})
 	if math.Abs(r.Value-0.4) > 1e-12 || r.Text != "40.0%; likely 20.0% to 80.0%" {
 		t.Fatal("wrong displayed range")
@@ -203,6 +210,7 @@ func TestMarketRangeWire(t *testing.T) {
 }
 
 func TestMarketAnchorClassification(t *testing.T) {
+	t.Parallel()
 	a := NewApp()
 	raw := RawMarketScope{From: 2017, To: 2026}
 	lists := a.TargetMarketLists(raw)

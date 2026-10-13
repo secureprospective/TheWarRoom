@@ -9,6 +9,7 @@ import (
 )
 
 func TestContractReadingStatesAndCantCut(t *testing.T) {
+	t.Parallel()
 	r := contractReading(123, "2026-10-10T00:00:00Z", "MFL", "Integer cents", 1, nil)
 	if r.Status != ReadingOK || r.Value != 123 || r.HowCounted == "" || r.Cutoff != r.Provenance.Freshness.FetchedAt {
 		t.Fatalf("reading: %+v", r)
@@ -27,6 +28,7 @@ func TestContractReadingStatesAndCantCut(t *testing.T) {
 }
 
 func TestTargetContractsAndPlayerReadOnlyMirror(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	raw := snapshot.RawContractScope{Mine: "0001", Sort: "salary"}
 	got := a.TargetContracts(raw)
@@ -51,6 +53,7 @@ func TestTargetContractsAndPlayerReadOnlyMirror(t *testing.T) {
 }
 
 func TestCapSourceUsesGMSettingsWords(t *testing.T) {
+	t.Parallel()
 	a := whatIfTestApp(t)
 	if err := a.rulebook.Initialize(a.ctx, lineupRulesSource{cfg: league.RawConfig{SalaryCapAmount: "120"}}); err != nil {
 		t.Fatal(err)
