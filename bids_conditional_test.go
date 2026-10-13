@@ -94,4 +94,10 @@ func TestConditionalOptionsCoveringFirstAndShortfall(t *testing.T) {
 			t.Fatal(r)
 		}
 	}
+	for _, o := range p.ConditionalDrops {
+		want := map[string]string{"13594": " · 1 year · ", "13595": " · 5 years · "}[o.ID]
+		if want != "" && !strings.Contains(o.Label, want) {
+			t.Fatalf("option %s label %q, want %q", o.ID, o.Label, want)
+		}
+	}
 }

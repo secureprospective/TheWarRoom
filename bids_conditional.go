@@ -51,8 +51,8 @@ func (a *App) bidDropOptions(mine string, salary domain.Money) []BidDropOption {
 		}
 		charge, available := heldCutCharge(p, m.Season)
 		freed := p.Salary - charge
-		label := fmt.Sprintf("%s · %s salary · %d years · %s dead cap if dropped",
-			name, bid.MoneyText(p.Salary), p.ContractYear-m.Season+1, bid.MoneyText(charge))
+		label := fmt.Sprintf("%s · %s salary · %s · %s dead cap if dropped",
+			name, bid.MoneyText(p.Salary), bid.YearsText(p.ContractYear-m.Season+1), bid.MoneyText(charge))
 		if !available {
 			label = name + " · contract length not held; cannot price a drop"
 		}

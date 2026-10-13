@@ -115,6 +115,11 @@ type Post struct {
 }
 
 // ContractText is the contract in words: "3 years at $5,000,000 a year".
+// YearsText is a contract length in words: "1 year", "3 years".
+func YearsText(years int) string {
+	return fmt.Sprintf("%d %s", years, plural(years, "year"))
+}
+
 func ContractText(salary domain.Money, years int) string {
 	return fmt.Sprintf("%d %s at %s a year", years, plural(years, "year"), MoneyText(salary))
 }
