@@ -101,6 +101,20 @@ export namespace eligibility {
 
 export namespace envelope {
 	
+	export class AssetLabel {
+	    token: string;
+	    name: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AssetLabel(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.token = source["token"];
+	        this.name = source["name"];
+	    }
+	}
 	export class AuditEntry {
 	    // Go type: time
 	    at: any;
@@ -316,6 +330,7 @@ export namespace envelope {
 		}
 	}
 	export class Receipt {
+	    tradeAssets?: AssetLabel[];
 	    correlationId: string;
 	    spec: Spec;
 	    state: string;
@@ -327,6 +342,7 @@ export namespace envelope {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.tradeAssets = this.convertValues(source["tradeAssets"], AssetLabel);
 	        this.correlationId = source["correlationId"];
 	        this.spec = this.convertValues(source["spec"], Spec);
 	        this.state = source["state"];

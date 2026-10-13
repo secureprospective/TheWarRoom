@@ -563,3 +563,95 @@ func TestTradeAndContractWhatIfExplainCarriedSalaries(t *testing.T) {
 		t.Fatal(whatif.HowCounted)
 	}
 }
+
+func TestTradeExitPlanRemovalIsLocal(t *testing.T) {
+	for _, tc := range []struct{ mine, action string }{{"0025", "reject"}, {"0001", "revoke"}} {
+		t.Run(tc.action, func(t *testing.T) {
+			a, transport, offer := tradeDraftApp(t)
+			opened := 0
+			a.openURL = func(context.Context, string) { opened++ }
+			_, held, err := a.tradeState(tc.mine)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r, err := a.draftTradeExit(a.ctx, RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
+			if err != nil || r.State != envelope.Ready {
+				t.Fatal(r, err)
+			}
+			before, stamp, _ := a.league.ContractsView()
+			if err := a.removeTradePlan(a.ctx, RawTradeBuilder{Mine: "9999", ID: r.CorrelationID}); err == nil {
+				t.Fatal("another franchise removed plan")
+			}
+			if err := a.removeTradePlan(a.ctx, RawTradeBuilder{Mine: tc.mine, ID: r.CorrelationID}); err != nil {
+				t.Fatal(err)
+			}
+			receipts, err := a.TargetMoves(tc.mine)
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, receipt := range receipts {
+				if receipt.CorrelationID == r.CorrelationID {
+					found = receipt.State == envelope.Withdrawn &&
+						receipt.Audit[len(receipt.Audit)-1].Note == envelope.RemovePlanNote
+				}
+			}
+			if !found {
+				t.Fatal("removed receipt missing")
+			}
+			r, err = a.draftTradeExit(a.ctx, RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
+			if err != nil {
+				t.Fatal(err)
+			}
+			e, err := a.moves.Get(a.ctx, r.CorrelationID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			handed, err := e.HandOff(a.movesNow())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := a.moves.Save(a.ctx, handed); err != nil {
+				t.Fatal(err)
+			}
+			if err := a.removeTradePlan(a.ctx, RawTradeBuilder{Mine: tc.mine, ID: r.CorrelationID}); err == nil {
+				t.Fatal("removed plan after hand-off")
+			}
+			kept, err := a.moves.Get(a.ctx, r.CorrelationID)
+			if err != nil || kept.State() != envelope.HandedOff {
+				t.Fatal(kept.Receipt(), err)
+			}
+			after, next, _ := a.league.ContractsView()
+			if opened != 0 || len(transport.requests) != 0 || stamp != next || !reflect.DeepEqual(before, after) {
+				t.Fatal("removal touched MFL or mirror")
+			}
+		})
+	}
+}
+
+func TestTradeReceiptPickUsesBuilderName(t *testing.T) {
+	a, transport := realTradeBuilderApp(t)
+	r := realDeal()
+	r.Action = "save"
+	r.Give = []string{"FP_0001_2027_1"}
+	saved := builderCall(t, a, r).Preview
+	receipts, err := a.TargetMoves(r.Mine)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := futureTradePickName(2027, 1, "0001", a.targetSnapshot)
+	found := false
+	for _, receipt := range receipts {
+		if receipt.CorrelationID != saved.ID {
+			continue
+		}
+		for _, asset := range receipt.TradeAssets {
+			if asset.Token == r.Give[0] {
+				found = asset.Name == want
+			}
+		}
+	}
+	if !found || len(transport.requests) != 0 {
+		t.Fatal("pick name missing or fetched", receipts)
+	}
+}

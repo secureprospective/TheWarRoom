@@ -313,6 +313,9 @@ two pinned what-if rosters through the coordinator, retaining exact cents, and r
 ambiguous, never Landed. `acquisitions_app.go` prices held incoming contracts or saved bid terms
 and an optional unclaimed cut through the same coordinator. Lazy Trade desk and Contracts chunks
 host `shell/TradeBuilder.tsx` and `contracts/Acquisitions.tsx`; all controls use the command registry.
+Trade receipts carry Go-authored asset labels using the desk/builder pick formatter. Proposal, rejection
+and withdrawal plans share local removal before hand-off; accept plans are unchanged. New pool bid forms
+release the old table anchor, reveal within the work column and focus the salary field after mounting.
 
 `internal/store/personal` owns watch, bait, dated plain-text notes and ordered draft entries in
  the app's main SQLite pool (the existing dev/prod split). `personal_app.go` exposes validated

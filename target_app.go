@@ -202,6 +202,10 @@ func (a *App) TargetMoves(franchiseID string) ([]envelope.Receipt, error) {
 	if err != nil {
 		return nil, fmt.Errorf("target moves: list: %w", err)
 	}
+	a.targetSnapshotMu.Lock()
+	snap := a.targetSnapshot
+	a.targetSnapshotMu.Unlock()
+	labelTradeReceipts(receipts, snap)
 	// Bid plans carry facts the move rail cannot show; TargetBidPlans lists them.
 	return slices.DeleteFunc(receipts, func(r envelope.Receipt) bool {
 		return r.Spec.Intent == envelope.BidIntent || envelope.IsRelease(r.Spec.Intent) || envelope.IsContract(r.Spec.Intent)

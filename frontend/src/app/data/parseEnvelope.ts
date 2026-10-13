@@ -102,7 +102,7 @@ function auditEntry(value: unknown, path: string): AuditEntry {
   };
 }
 function receipt(value: unknown, path: string): Receipt {
-  const r = object(value, path, ['correlationId', 'spec', 'state', 'audit']);
+  const r = object(value, path, ['correlationId', 'spec', 'state', 'audit', 'tradeAssets']);
   const spec = envelopeSpec(r.spec, `${path}.spec`);
   const state = choice(r.state, `${path}.state`, ENVELOPE_STATES);
   if (spec.target.kind === 'unmapped' && state !== 'draft' && state !== 'blocked') {
@@ -121,6 +121,10 @@ function receipt(value: unknown, path: string): Receipt {
   if (previous !== state) throw new Error(`${path}.state: must match audit head`);
   return {
     correlationId: requiredText(r.correlationId, `${path}.correlationId`), spec, state, audit,
+    ...(r.tradeAssets !== undefined && { tradeAssets: array(r.tradeAssets, `${path}.tradeAssets`, (v, p) => {
+      const asset = object(v, p, ['token', 'name']);
+      return { token: requiredText(asset.token, `${p}.token`), name: requiredText(asset.name, `${p}.name`) };
+    }) }),
   };
 }
 export function parseReceipt(value: unknown): Receipt {

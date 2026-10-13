@@ -15,6 +15,7 @@ export function TradePlan({ receipt }: { receipt: Receipt }) {
     receipt.audit.some((entry) => entry.to === 'handed_off');
   return <div className="lineup-plan plan-actions"
     aria-label={exit ? 'Trade reject or withdraw plan' : 'Trade accept plan'} aria-live="polite">
+    <RemoveTradePlan receipt={receipt} />
     {error && <p role="alert">Trade hand-off · {error}</p>}
     {receipt.state === 'blocked' ? <p>Not ready · {note}</p> : <>
       {receipt.state === 'ready' && <>
@@ -36,4 +37,13 @@ export function TradePlan({ receipt }: { receipt: Receipt }) {
       {receipt.state !== 'ready' && <p>{stateLabels[receipt.state]} · {note}</p>}
     </>}
   </div>;
+}
+
+export function RemoveTradePlan({ receipt }: { receipt: Receipt }) {
+  if (!['trade.propose', 'trade.reject', 'trade.revoke'].includes(receipt.spec.intent) ||
+    receipt.audit.some(entry => entry.to === 'handed_off') ||
+    ['landed', 'failed', 'withdrawn'].includes(receipt.state)) return null;
+  return <Act variant="button" verb="trade.builder"
+    args={{ action: 'remove', mine: receipt.spec.franchiseId, id: receipt.correlationId }}
+    label="Remove plan" />;
 }

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type RefObject } from 'react';
+import { useCallback, useLayoutEffect, useRef, type RefObject } from 'react';
 
 // Native scrollIntoView can scroll the clipped shell as well as its work column.
 export function scrollWorkIntoView(element: HTMLElement, block: 'start' | 'nearest' = 'start') {
@@ -138,4 +138,5 @@ export function useWorkAnchor(root: RefObject<HTMLElement>, selector: string) {
       scroll.removeEventListener('touchmove', remember);
     };
   }, [root, selector]);
+  return useCallback(() => { anchor.current = undefined; }, []);
 }

@@ -83,11 +83,11 @@ async function setup(reading: TradeReading = tradeReading(), held: Receipt[] = [
 const handedText = "Opened MFL's trade desk. Accept offer 901 there.";
 
 describe('Trade desk', () => {
-  it('lists both groups with names, positions, pick tokens, expiry and comments', async () => {
+  it('lists both groups with names, positions, unnamed assets, expiry and comments', async () => {
     const t = await setup(tradeReading([tradeOffer('to_you', '901'), tradeOffer('by_you', '902')]));
     for (const part of [
       'Offered to you · 1', 'Your offers · 1', 'Rivals', 'You give', 'You get', 'Given, Player (WR)',
-      'FP_0007_2027_1', 'Talked on ProBoards',
+      'Unnamed asset', 'Talked on ProBoards',
     ]) expect(t.text()).toContain(part);
     expect(t.buttons().filter((label) => label === 'Plan accept')).toHaveLength(1);
     expect(hasLabel(t.element, 'Trade accept plan')).toBe(false);
@@ -164,7 +164,7 @@ describe('Trade desk', () => {
       t.root.render(createElement(EnvelopeRail, { receipt: tradeReceipt(), snapshot: t.snapshot }));
     });
     expect(t.text()).toContain('Offer 901 · Rivals');
-    expect(t.text()).toContain(`+FP_0007_2027_1 −${last}`);
+    expect(t.text()).toContain(`+Unnamed asset −${last}`);
     expect(t.text()).toContain('Trade accept');
     expect(t.buttons()).toContain('Open MFL trade desk');
   });

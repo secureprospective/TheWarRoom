@@ -108,9 +108,9 @@ func tradePendingVerdict(s Spec, obs Observation) (Verdict, bool) {
 	return Verdict{}, false
 }
 
-// WithdrawTrade removes an unsubmitted local proposal, not an offer on MFL.
+// WithdrawTrade removes a local trade plan, not an offer on MFL.
 func (e Envelope) WithdrawTrade(at time.Time) (Envelope, error) {
-	if e.spec.Intent != "trade.propose" {
+	if !slices.Contains([]string{"trade.propose", "trade.reject", "trade.revoke"}, e.spec.Intent) {
 		return Envelope{}, ErrIllegalTransition{From: e.state, Event: Withdraw}
 	}
 	for _, entry := range e.audit {

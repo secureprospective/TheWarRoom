@@ -1,5 +1,5 @@
 import { WatchButton } from '../personal/WatchButton';
-import { scrollWorkIntoView, useWorkAnchor } from '../shell/workScroll';
+import { revealWorkSection, scrollWorkIntoView, useWorkAnchor } from '../shell/workScroll';
 import { Fragment, lazy, Suspense, useEffect, useRef } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
@@ -48,6 +48,22 @@ function useBringIntoView(wanted: boolean, seq: number) {
     if (ref.current) scrollWorkIntoView(ref.current);
   }, [wanted, seq]);
   return ref;
+}
+
+function NewBidForm({ state, releaseAnchor }: { state: PoolState; releaseAnchor: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const playerId = state.form?.playerId;
+  useEffect(() => {
+    const section = ref.current;
+    const field = section?.querySelector<HTMLElement>('input:not([disabled]), select:not([disabled])');
+    if (section && field) {
+      releaseAnchor();
+      revealWorkSection(field, section);
+    }
+  }, [playerId, releaseAnchor]);
+  return <div ref={ref}>
+    <BidForm form={state.form!} preview={state.preview} busy={state.busy} />
+  </div>;
 }
 
 function OpenCard({ plan, focus, busy, state }: {
@@ -288,7 +304,7 @@ export function PoolScreen({ state, snapshot, franchiseId }: {
   franchiseId: string;
 }) {
   const root = useRef<HTMLElement>(null);
-  useWorkAnchor(root, '.pool-table tbody tr:not(.pool-form-row), .bid-plan');
+  const releaseAnchor = useWorkAnchor(root, '.pool-table tbody tr:not(.pool-form-row), .bid-plan');
   // The market reports are navigation, not pool rows: they sit outside the anchored section so the
   // pool's scroll anchor never undoes endpoint.open revealing the chosen report.
   return (<>
@@ -304,7 +320,7 @@ export function PoolScreen({ state, snapshot, franchiseId }: {
       {state.error && <p role="alert">{state.error}</p>}
       {state.notice && <p role="status">{state.notice}</p>}
       {state.form && !state.form.planId &&
-        <BidForm form={state.form} preview={state.preview} busy={state.busy} />}
+        <NewBidForm state={state} releaseAnchor={releaseAnchor} />}
       <OpenPlans board={state.board} openId={state.openPlan} focus={state.focus}
         busy={state.busy} state={state} />
       <Controls reading={state.reading} state={state} />

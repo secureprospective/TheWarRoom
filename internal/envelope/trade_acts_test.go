@@ -198,29 +198,34 @@ func TestTradeActOnRealTransactionsAndDecodedPendingFixture(t *testing.T) {
 	}
 }
 
-func TestTradeProposalRemovalStopsAtHandOff(t *testing.T) {
+func TestTradePlanRemovalStopsAtHandOff(t *testing.T) {
 	req, _, _, at := tradeFixture(t)
-	req.FranchiseID = req.Trade.Offering
-	e, err := DraftTradeAct(at, "trade.propose", req, nil, func() string { return "proposal" })
-	if err != nil {
-		t.Fatal(err)
-	}
-	removed, err := e.WithdrawTrade(at.Add(time.Minute))
-	if err != nil || removed.State() != Withdrawn || removed.Receipt().Audit[len(removed.audit)-1].Note != RemovePlanNote {
-		t.Fatal(removed.Receipt(), err)
-	}
-	handed, err := e.HandOff(at.Add(time.Minute))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := handed.WithdrawTrade(at.Add(2 * time.Minute)); err == nil {
-		t.Fatal("removed a plan already handed off to MFL")
-	}
-	for _, intent := range []string{"trade.accept", "trade.reject", "trade.revoke"} {
-		other := e
-		other.spec.Intent = intent
-		if _, err := other.WithdrawTrade(at.Add(time.Minute)); err == nil {
-			t.Fatalf("proposal removal accepted %s", intent)
-		}
+	for _, intent := range []string{"trade.propose", "trade.reject", "trade.revoke"} {
+		t.Run(intent, func(t *testing.T) {
+			if intent != "trade.reject" {
+				req.FranchiseID = req.Trade.Offering
+			} else {
+				req.FranchiseID = req.Trade.Accepting
+			}
+			e, err := DraftTradeAct(at, intent, req, nil, func() string { return "plan" })
+			if err != nil {
+				t.Fatal(err)
+			}
+			removed, err := e.WithdrawTrade(at.Add(time.Minute))
+			if err != nil || removed.State() != Withdrawn || removed.audit[len(removed.audit)-1].Note != RemovePlanNote {
+				t.Fatal(removed.Receipt(), err)
+			}
+			handed, err := e.HandOff(at.Add(time.Minute))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := handed.WithdrawTrade(at.Add(2 * time.Minute)); err == nil {
+				t.Fatal("removed a plan already handed off to MFL")
+			}
+			e.spec.Intent = "trade.accept"
+			if _, err := e.WithdrawTrade(at.Add(time.Minute)); err == nil {
+				t.Fatal("accept removal changed")
+			}
+		})
 	}
 }

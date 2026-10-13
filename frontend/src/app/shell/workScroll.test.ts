@@ -126,10 +126,11 @@ async function anchorProbe(selector: string) {
   const element = { closest: () => scroll, contains: (target: { inside?: boolean }) => target.inside,
     querySelectorAll: () => [row] };
   const ref = { current: element as unknown as HTMLElement };
-  function Probe() { useWorkAnchor(ref, selector); return null; }
+  let release!: () => void;
+  function Probe() { release = useWorkAnchor(ref, selector); return null; }
   const root = createRoot(dom.element); roots.push(root);
   await act(async () => { root.render(createElement(Probe)); });
-  return { scroll, row, control, capture: (target: unknown, event = 'click') =>
+  return { scroll, row, control, release: () => release(), capture: (target: unknown, event = 'click') =>
     captures.get(event)!({ target } as unknown as Event), resize: () => resized() };
 }
 it.each(['bid', 'contract', 'cut', 'buyout'])
@@ -182,6 +183,16 @@ it('releases the row anchor for Contract Acts so resize cannot undo the form rev
   p.capture(p.row);
   p.capture({ closest: (query: string) => query === 'button'
     ? { getAttribute: () => 'Contract Acts…' } : null });
+  p.scroll.scrollTop = 0;
+  p.row.y += 300;
+  p.resize();
+  expect(p.scroll.scrollTop).toBe(0);
+});
+
+it('releases a remembered pool row before revealing a new bid form', async () => {
+  const p = await anchorProbe('.pool-table tbody tr');
+  p.capture({ closest: () => null });
+  p.release();
   p.scroll.scrollTop = 0;
   p.row.y += 300;
   p.resize();

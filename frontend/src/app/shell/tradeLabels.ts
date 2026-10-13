@@ -1,7 +1,7 @@
 import type { Receipt, Snapshot, TradeAsset } from '../data/contract';
 
 export function tradeAssetLabel(asset: TradeAsset): string {
-  const name = asset.name || asset.token;
+  const name = asset.name || 'Unnamed asset';
   return asset.position ? `${name} (${asset.position})` : name;
 }
 export function tradeRailLabels(receipt: Receipt, snapshot: Snapshot) {
@@ -11,7 +11,9 @@ export function tradeRailLabels(receipt: Receipt, snapshot: Snapshot) {
   const otherId = outgoing ? trade.accepting : trade.offering;
   const other = snapshot.franchises.value.find((f) => f.id === otherId);
   const players = new Map(snapshot.players.value.map((p) => [p.id, p]));
-  const names = (tokens: string[]) => tokens.map((token) => players.get(token)?.name?.split(',')[0] || token)
+  const assets = new Map(receipt.tradeAssets?.map(asset => [asset.token, asset.name]));
+  const names = (tokens: string[]) => tokens.map(token =>
+    players.get(token)?.name?.split(',')[0] || assets.get(token) || 'Unnamed asset')
     .join(', ');
   return {
     header: receipt.spec.intent === 'trade.accept' ? `Offer ${trade.tradeId} · ${other?.name || otherId}`
