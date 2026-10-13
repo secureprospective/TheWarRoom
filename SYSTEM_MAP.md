@@ -387,3 +387,15 @@ Successful pendingTrades refreshes capture proposal/first/last-seen times; held 
 prove acceptance inside the proposal-to-first-miss interval. Other disappearances remain unknown.
 `internal/labcompile.OfferTiming` shares the archive's Eastern-date season/stretch rules. Open offers
 are excluded from ending rates. The lazy Offers surface reloads its selected scope on season events.
+
+## Native fantasy scoring
+
+`internal/fantasyscore` is a pure leaf: exact ten-thousandths, commissioner catalogue values,
+true-position tackle/assist rates, per-play stacking bonuses, explicit unused stats and Needs a ruling.
+It imports only the standard library and `internal/leaguerules`; no store, ingestion, I/O or scouting.
+`StatLine` records canonical tackles/assists once; positional catalogue entries are rates, not extra stats.
+`internal/fantasyscore/source` validates held nflverse weekly CSV and play-by-play, retains exact
+long-play distances and return-touchdown credits (returning team only), and adapts them without fetching or store writes.
+`source/testdata/comparison.csv` pins two complete held Legacy roster weeks against MFL totals,
+with an independent native-points reference and every mismatch classified; preset differences
+remain differences, never silently fitted. Neither package is connected to runtime score surfaces yet.
