@@ -1,4 +1,4 @@
-# TheWarRoom target UI: specification, revision 3 (2026-10-12)
+# TheWarRoom target UI: specification, revision 3 (2026-10-12, ring 3 closed 2026-10-13)
 
 Revisions 0–2 are in git history. Revision 1 closed ring 1 (2026-10-10), revision 2 closed ring 2
 (2026-10-11), and revision 3 closes ring 3.
@@ -12,8 +12,8 @@ Revisions 0–2 are in git history. Revision 1 closed ring 1 (2026-10-10), revis
 - §14 (new): what ring 3 built, by node, with the file for each claim.
 - §15 (new): the ring 3 review and what is carried to ring 4.
 - §15a (new): what the registry status `landed` means, distinct from an Act's Landed state (§6).
-- Every kept ring 3 registry row is `built` (118 of 118). The 19 ring 3 rows still at `spec` are merged
-  into a built place (17) or retired (2: M-075 Victory Points, M-192 option election).
+- §15b (new, 2026-10-13): ring 3 closed. 168 of the 173 kept ring 0–3 rows are `landed`; five wait for a
+  league event; every merged row's target is landed; ring 4 is deferred (Christopher, 2026-10-13).
 
 ## What changed in rev 2
 
@@ -256,9 +256,12 @@ Answered items retain their answers and dates. Remaining questions are owed befo
     ring 1 working budgets stand as an exception. Ruling 1 is unchanged.
 14. **Lineup rework:** **answered 2026-10-10:** it is part of the eventual move away from MFL,
     when TheWarRoom becomes its own stand-alone app. Not scheduled for ring 2.
-15. **ProBoards post format (ring 2):** open. The post text the app writes for bids, buyouts and
-    contract Acts has not been checked against what the commissioner expects. Christopher to confirm.
-16. **Tender and re-sign dates (ring 2):** open. The registry says May 1–3 (M-193) and May 10–15
+15. **ProBoards post format (ring 2):** answered 2026-10-13, Christopher: "not important, we are building
+    the math and system. pay attention to the rules, not what human slop is typed on proboards." The post
+    text stays a plain hand-off; the rulebook and the engine's rules decide every Act, not the post's wording.
+16. **Tender and re-sign dates (ring 2):** answered 2026-10-12: league dates take the rulebook as their
+    base and the commissioner edits them; a window the rulebook leaves undated reads "the rulebook gives
+    no date; the commissioner sets it" with "Set a date" (Calendar, `WindowRow.tsx`). The original note: The registry says May 1–3 (M-193) and May 10–15
     (M-195); the rulebook has no such dates. The Acts say "Offseason only" without dates.
     A tender, re-sign or tag always starts the new contract at the season after the held contract
     expires (expires + 1), so only eligibility (`expires == season`) depends on when the app rolls over.
@@ -516,8 +519,8 @@ when MFL shows the change the app planned. A row is `landed` when the screen doe
 row, that means its hand-off opens correctly; the app itself never submits to MFL. M-027, Submit Lineup,
 is both: its envelope Landed on MFL on 2026-10-09.
 
-The landing walk of 2026-10-12 marked 70 rows `landed`. Its findings are the fix queue for the rows that
-are still `built`.
+The landing walk of 2026-10-12 marked 70 rows `landed`. Its findings became the fix queue for the rows
+still `built`; §15b gives where that queue ended.
 
 **Carried to ring 4**
 - The commissioner pages (M-093 email log, M-095 commissioner news): the app runs as a GM (R1).
@@ -528,4 +531,5 @@ are still `built`.
 - NFL team stats (M-050) need nflverse team box-score ingestion; draft preferences (M-108) and cache
   tools (M-137) have no captured MFL address; the league switcher (S-14) waits for portfolio support.
 - The Lab screens still read the frozen Lab document; switching them to the runtime compile is ring 4.
-- Dead cap and form on the Inspector stay "not wired" until the engine has them.
+- (Done in ring 3: the Inspector's "Dead cap if cut today" and "Form" rows are wired,
+  `research_player_reading.go:286` and `:310`.)
