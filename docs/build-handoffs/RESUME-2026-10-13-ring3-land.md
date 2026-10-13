@@ -253,3 +253,31 @@ come off `origin/main`, never off the main checkout's branch.
 - Running Sols: land-followup4 (from 9ba38f3), land-followup5 (from batch5 41af5c5). Both need CHERRY-PICK onto main.
 - Finding 89: root package race suite ~550 s vs go test's 600 s default; batch5's first pre-push timed out under
   load; retry passed. Brief a proper speed-up after the current Sols.
+
+## 12:10 — COMPACTING NOW (read this first after "we are back")
+- batch6 commits done: 3b6a080 ("1 year" fix + proof), 5cd5522 (C-06.7 landed + this RESUME in
+  docs/build-handoffs/RESUME-2026-10-13-ring3-land.md). Nothing is running in batch6.
+- RESUME next = Next actions item 3: gate batch6 in background (make verify + make build, env in §8), redeploy
+  ("batch6b"), check the drop options read "1 year", push (pre-push ~8 min; retry once if root pkg hits 600 s),
+  `gh pr create` + `gh pr merge <n> --squash`. Then item 4 (remove land-conditional + batch6 worktrees, 3 ledgers).
+- Sols followup4 + followup5 still running (detached); followup6 brief queued.
+
+## 12:25 update — batch6 MERGED (#32, main eec5ab5); batch7 gating
+- C-06.7 landed (#32). Worktrees land-conditional + batch6 removed + logged (3 ledgers).
+- Claude fixed in `.worktrees/ring-3-land-polish93`: 93 (bid form says the failing rule once; d91e75c) and 92 (shared
+  clock ticker paints late-mounted countdowns — Status overlay "–"; 77245da). Both mutant-checked.
+- land-followup5 (88) done: Sol's verify timed out on finding 89 (root pkg 579 s); reviewed + mutant + committed 7f81f15.
+- batch7 = `.worktrees/ring-3-land-batch7` = main eec5ab5 + cherry-picks 7b30bc3 (93), e802fb6 (92), b31fc30 (88).
+  Gate running (RUN/batch7/). Then deploy "batch7", live-check: Status overlay lock countdown = strip; offer card with
+  GB pending offer shows "Pending offer on MFL" and no "Withdrawn"; bid form Blocked line. Land M-033, M-034. PR, merge.
+- Sol land-followup7 (finding 89, root race suite speed) dispatched 12:21 from batch6 5cd5522 — cherry-pick later.
+- Sol land-followup4 (86, 87) still running. followup6 brief now finding 90 only (Report drawer, M-159); dispatch
+  when followup4 finishes.
+
+## 12:55 update — batch7 live-proven, pushing
+- batch7 tip: 7b30bc3 (93) e802fb6 (92) b31fc30 (88) 6a2e7fa (95, Claude: one live exit plan per offer) + registry.
+  Gate at 6a2e7fa verify 0 (881 tests; root pkg 555 s!) build 0. Deployed batch7b 12:51. Live: 92 Status overlay
+  lock = strip; 93 bid shortfall once; 88 + 95 GB offer card cycle. M-033, M-034 landed.
+- Claude fixed 94 (undated league windows show "Set a date", window.edit command) in polish93 bbf1437 → batch8.
+- Sol land-followup4 DONE 12:42 (86, 87) → review next; land M-060, M-118, S-11 in batch8.
+- Sol land-followup6 (90, Report drawer M-159) dispatched 12:50 from main eec5ab5. Sol land-followup7 (89) running.
