@@ -130,6 +130,7 @@ describe('Trade desk', () => {
       expect(t.buttons()).toContain('Remove plan');
       expect(t.buttons()).toContain(direction === 'by_you'
         ? "Open MFL's trade desk to withdraw it" : "Open MFL's trade desk to reject");
+      expect(t.buttons()).not.toContain(direction === 'by_you' ? 'Plan withdrawal' : 'Plan rejection');
     },
   );
   it('states relative expiry and never invents one', () => {

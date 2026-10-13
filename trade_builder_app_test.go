@@ -337,6 +337,40 @@ func TestTradeExitDirectionsAndAmbiguity(t *testing.T) {
 	}
 }
 
+// A second withdrawal plan for the same offer supersedes the first, so one offer never carries two live plans.
+func TestTradeExitPlanSupersedesTheLastForTheSameOffer(t *testing.T) {
+	a, _, offer := tradeDraftApp(t)
+	_, held, err := a.tradeState("0001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := RawTradeBuilder{Mine: "0001", Action: "revoke", ID: offer.ID}
+	first, err := a.draftTradeExit(a.ctx, raw, held)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := a.draftTradeExit(a.ctx, raw, held)
+	if err != nil || second.State != envelope.Ready {
+		t.Fatal(second, err)
+	}
+	receipts, err := a.moves.List(a.ctx, second.Spec.LeagueID, "0001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	live := 0
+	for _, r := range receipts {
+		if r.Spec.Intent == "trade.revoke" && r.State == envelope.Ready {
+			live++
+		}
+		if r.CorrelationID == first.CorrelationID && r.State != envelope.Stale {
+			t.Fatalf("first plan is %s, want stale", r.State)
+		}
+	}
+	if live != 1 {
+		t.Fatalf("%d live withdrawal plans for one offer, want 1", live)
+	}
+}
+
 func TestTradeBuilderIRTaxiAndRemovedWhatIfAssets(t *testing.T) {
 	a, _ := realTradeBuilderApp(t)
 	raw := realDeal()
