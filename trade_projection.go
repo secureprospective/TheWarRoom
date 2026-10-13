@@ -85,7 +85,7 @@ func (a *App) tradeProjection(ctx context.Context, r RawTradeBuilder, snap snaps
 	if reason := a.tradePickReason(r); reason != "" {
 		out.Reasons = append(out.Reasons, reason)
 	}
-	catalog := a.tradeBuilderTeams(snap)
+	catalog := a.tradeBuilderTeams(ctx, snap)
 	moves, blocks := tradeLegs(r, catalog, sim.Store)
 	out.Reasons = append(out.Reasons, blocks...)
 	before := map[string]domain.Money{}
@@ -107,6 +107,7 @@ func (a *App) tradeProjection(ctx context.Context, r RawTradeBuilder, snap snaps
 	}
 	for _, s := range sim.Sessions {
 		team, blocks := tradeProjectedTeam(sim, s, before[s.Mine], players, tradeFranchiseName(snap, s.Mine))
+		team.Roster = richTradeRoster(team.Roster, catalog)
 		out.Teams, out.Reasons = append(out.Teams, team), append(out.Reasons, blocks...)
 	}
 	out.Post = tradeDealText(r, catalog, sim.Sessions[0].Snapshot)

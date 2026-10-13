@@ -19,6 +19,8 @@ export type Reading<T> = {
 };
 export type MarketFact = { label: string; text: string; reason: string; range: MarketRange | null };
 export type PoolRow = {
+  engineText?: string; ppgText?: string; labText?: string;
+  engine?: number | null; ppg?: number | null; lab?: number | null;
   market?: MarketFact[];
   marketLines: string[];
   id: string;
@@ -32,11 +34,14 @@ export type PoolRow = {
   planId: string;
 };
 export type Pool = {
+  engineNote?: string; ppgNote?: string;
   rows: PoolRow[]; positions: string[]; summary: string; sorts: { key: string; label: string }[];
 };
 export type PoolScope = {
+  showNoTeam?: boolean;
   position: string;
-  sort: 'name' | 'position' | 'minimum' | 'projected' | 'rank' | 'adp' | 'aav';
+  sort: 'engine' | 'team' | 'ppg' | 'lab' | 'name' | 'position' | 'minimum'
+    | 'projected' | 'rank' | 'adp' | 'aav';
   desc: boolean;
 };
 export type Rule = {
@@ -111,6 +116,7 @@ export type FormField =
 
 export type PoolFilter = {
   field:
+    | 'pool-no-team'
     | 'pool-position'
     | 'pool-sort'
     | 'pool-refresh'

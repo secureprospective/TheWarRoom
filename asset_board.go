@@ -57,6 +57,7 @@ type dynastyValue struct {
 // assetModel values a player at a moment. Nil until the Lab's value model is compiled.
 type assetModel interface {
 	player(pid string, at time.Time) dynastyValue
+	pick(year, round int, original string, at time.Time) dynastyValue
 }
 
 const assetBoardHow = "On-field-now is points per game in this league's scoring over the finished weeks MFL has " +
@@ -168,7 +169,10 @@ func dynastyCells(model assetModel, id string, at time.Time) (AssetCell, AssetCe
 		missing := AssetCell{Text: "Not valued yet", Sub: "Lab model not compiled"}
 		return missing, missing, 0
 	}
-	d := model.player(id, at)
+	return dynastyValueCells(model.player(id, at))
+}
+
+func dynastyValueCells(d dynastyValue) (AssetCell, AssetCell, float64) {
 	if !d.Valued {
 		reason := AssetCell{Text: "Not valued", Sub: d.Reason}
 		return reason, reason, 0
@@ -206,7 +210,13 @@ func (a *App) TargetAssetBoard() (AssetBoard, error) {
 	if err := a.ready(); err != nil {
 		return AssetBoard{}, fmt.Errorf("asset board: startup: %w", err)
 	}
-	a.hydrateResearch()
+	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
+	defer cancel()
+	return a.assetBoard(ctx)
+}
+
+func (a *App) assetBoard(ctx context.Context) (AssetBoard, error) {
+	a.hydrateResearchContext(ctx)
 	in := a.heldResearchInput()
 	rostered := make([]string, 0, len(in.mirror.Players))
 	for _, p := range in.mirror.Players {
@@ -221,6 +231,10 @@ func (a *App) TargetAssetBoard() (AssetBoard, error) {
 
 // labAssets is the Lab's fitted value model (internal/labcompile) as the asset board reads it.
 type labAssets struct{ model *labcompile.Model }
+
+func (l labAssets) pick(year, round int, original string, at time.Time) dynastyValue {
+	return dynastyFrom(l.model.Pick(year, round, 0, original, at))
+}
 
 func (l labAssets) player(pid string, at time.Time) dynastyValue {
 	return dynastyFrom(l.model.Player(pid, at))

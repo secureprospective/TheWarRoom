@@ -101,7 +101,10 @@ export default function PersonalLists({ snapshot, draft = false }: { snapshot: S
           args={{ id: player, entity: 'player', action: 'add' }}>Add selected player</Act>}
         <Act verb="personal.handoff" args={{ kind }}>Open {labels[kind].toLowerCase()} on MFL</Act>
       </div>
-      {kind === 'note' && player && <NoteEditor key={player} id={player} entity="player" />}
+      {kind === 'note' && <>
+        <p>Keep a dated note for the selected player, or for your franchise when no player is chosen.</p>
+        <NoteEditor key={player || mine} id={player || mine} entity={player ? 'player' : 'franchise'} />
+      </>}
       {!s.value?.entries.some(e => e.kind === kind) && <p>No entries kept.</p>}
       <ol>{s.value?.entries.filter(e => e.kind === kind).map(e =>
         <EntryRow key={`${e.kind}:${e.id}:${e.at}`} entry={e} snapshot={snapshot} pending={s.pending}

@@ -455,3 +455,54 @@ func TestRosterFigureShowsBeforeAfterAndChange(t *testing.T) {
 		t.Fatalf("no change shows none: %+v", f)
 	}
 }
+
+func TestTradeBuilderLandingRichAssets(t *testing.T) {
+	a, _ := realTradeBuilderApp(t)
+	view := builderCall(t, a, RawTradeBuilder{Mine: "0001", Action: "read"})
+	players, picks := 0, 0
+	for _, team := range view.Teams {
+		for _, asset := range team.Assets {
+			if strings.HasPrefix(asset.Token, "FP_") {
+				picks++
+				if asset.Dynasty == nil || asset.Dynasty.Text != "Not valued" {
+					t.Fatal(asset)
+				}
+			} else {
+				players++
+				if asset.Position == "" || asset.Team == "" || !strings.Contains(asset.Contract, "years") ||
+					!strings.HasPrefix(asset.Contract, "$") || asset.Now == nil || asset.Dynasty == nil {
+					t.Fatal(asset)
+				}
+			}
+		}
+	}
+	if players == 0 || picks == 0 {
+		t.Fatal(players, picks)
+	}
+	value := builderPlayerAsset(state.MirrorPlayer{MFLID: "13593", Salary: 123456789, ContractYear: 2028},
+		snapshot.Player{Position: domain.PosWR, Team: "DAL"}, "Name", AssetValue{ID: "13593",
+			Now: AssetCell{Text: "12.00 PPG", Held: true}, Dynasty: AssetCell{Text: "0.3 wins", Held: true}}, 2026)
+	if value.Contract != "$1,234,567.89 · 3 years" || value.Now.Text != "12.00 PPG" || value.Dynasty.Text != "0.3 wins" {
+		t.Fatal(value)
+	}
+}
+
+type landingPickModel struct{}
+
+func (landingPickModel) player(string, time.Time) dynastyValue { return dynastyValue{} }
+func (landingPickModel) pick(year, round int, orig string, at time.Time) dynastyValue {
+	if year != 2027 || round != 1 || orig != "0001" || at.IsZero() {
+		return dynastyValue{}
+	}
+	return dynastyValue{Valued: true, Discounted: 0.78, Seasons: 5}
+}
+
+func TestTradeBuilderLandingPickValue(t *testing.T) {
+	a, _ := realTradeBuilderApp(t)
+	var model assetModel = landingPickModel{}
+	a.assetModel.Store(&model)
+	got := a.builderPickValue(2027, 1, "0001", time.Now())
+	if !got.Held || got.Text != "0.78 wins" {
+		t.Fatal(got)
+	}
+}
