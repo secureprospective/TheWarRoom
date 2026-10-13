@@ -33,29 +33,49 @@ func DefinitionFor(command string) (Definition, error) {
 	case Create, Revert:
 		return Definition{Gravity: "G3"}, nil
 	default:
+		if d, ok := peopleDefinitionFor(command); ok {
+			return Definition{Gravity: d.gravity}, nil
+		}
 		return Definition{}, fmt.Errorf("this commissioner command is not available yet")
 	}
 }
 
 type RawArgs struct {
-	Name  string `json:"name,omitempty"`
-	Entry string `json:"entry,omitempty"`
+	Name       string     `json:"name,omitempty"`
+	Entry      string     `json:"entry,omitempty"`
+	Franchises []string   `json:"franchises,omitempty"`
+	People     *RawPeople `json:"people,omitempty"`
 }
 
 func (a RawArgs) Validate(command string) error {
 	switch command {
 	case Create:
-		if strings.TrimSpace(a.Name) == "" || a.Entry != "" {
-			return fmt.Errorf("give the new league a name")
-		}
+		return a.validateCreation()
 	case Revert:
-		if strings.TrimSpace(a.Entry) == "" || a.Name != "" {
+		if strings.TrimSpace(a.Entry) == "" || a.Name != "" || a.People != nil || len(a.Franchises) != 0 {
 			return fmt.Errorf("choose the recorded change to reverse")
 		}
 	default:
-		return fmt.Errorf("this commissioner command is not available yet")
+		return a.validatePeople(command)
 	}
 	return nil
+}
+
+func (a RawArgs) validateCreation() error {
+	if strings.TrimSpace(a.Name) == "" || a.Entry != "" || a.People != nil {
+		return fmt.Errorf("give the new league a name")
+	}
+	return validateFranchises(a.Franchises)
+}
+
+func (a RawArgs) validatePeople(command string) error {
+	if _, ok := peopleDefinitionFor(command); !ok {
+		return fmt.Errorf("this commissioner command is not available yet")
+	}
+	if a.People == nil || a.Name != "" || a.Entry != "" || len(a.Franchises) != 0 {
+		return fmt.Errorf("send the details of this people change")
+	}
+	return a.People.Validate(command)
 }
 
 type RawCommand struct {
@@ -106,6 +126,26 @@ func (r RawCommand) validatePlacement() error {
 	}
 	if r.Command == Create && (r.Effective != "now" || r.Visibility != "league") {
 		return fmt.Errorf("a new league is created now and recorded for the league")
+	}
+	return r.validatePeoplePlacement()
+}
+
+func (r RawCommand) validatePeoplePlacement() error {
+	if r.Args.People == nil {
+		return nil
+	}
+	event, err := r.Args.People.event(r.Command)
+	if err != nil {
+		return err
+	}
+	if r.Effective != "now" {
+		return fmt.Errorf("people changes take effect now")
+	}
+	if event.Private() && r.Visibility != "private" {
+		return fmt.Errorf("role changes and invitations must stay private")
+	}
+	if !event.Private() && r.Visibility != "league" {
+		return fmt.Errorf("league-state changes must be visible to owners")
 	}
 	return nil
 }

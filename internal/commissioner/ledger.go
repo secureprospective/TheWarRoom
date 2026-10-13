@@ -116,8 +116,12 @@ func Reading(league, principal string, records []Record, auth Authorizer) Ledger
 		if strings.HasPrefix(who, "local.") {
 			who = "Local operator"
 		}
+		gravity := "Confirmation required"
+		if r.Gravity == "G3" {
+			gravity = "Recorded reason required"
+		}
 		out.Entries = append(out.Entries, Entry{r.Receipt.Entry, who, what,
-			r.Command.Reason, r.Receipt.RecordedAt, "Recorded reason required"})
+			r.Command.Reason, r.Receipt.RecordedAt, gravity})
 	}
 	return out
 }
@@ -130,6 +134,9 @@ type NativeLeague struct {
 func recordLabel(r Record) string {
 	if r.Command.Command == Create {
 		return "Created league “" + r.Command.Args.Name + "”"
+	}
+	if _, ok := peopleDefinitionFor(r.Command.Command); ok && r.Command.Args.People != nil {
+		return r.Command.Args.People.label(r.Command.Command)
 	}
 	return "Reversed a recorded league change"
 }

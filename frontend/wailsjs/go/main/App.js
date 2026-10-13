@@ -194,6 +194,10 @@ export function TargetCommissionerLedger(arg1) {
   return window['go']['main']['App']['TargetCommissionerLedger'](arg1);
 }
 
+export function TargetCommissionerPeople(arg1) {
+  return window['go']['main']['App']['TargetCommissionerPeople'](arg1);
+}
+
 export function TargetComms(arg1) {
   return window['go']['main']['App']['TargetComms'](arg1);
 }

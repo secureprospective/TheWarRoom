@@ -77,6 +77,26 @@ func (a *App) TargetCommissionerLedger(league string) (commissioner.Ledger, erro
 	return reading, nil
 }
 
+func (a *App) TargetCommissionerPeople(league string) (commissioner.People, error) {
+	if !strings.HasPrefix(league, "native.") || league == "native." {
+		return commissioner.People{}, fmt.Errorf("choose an app league")
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.People{}, fmt.Errorf("league people startup: %w", err)
+	}
+	principal, err := a.commissionerPrincipal()
+	if err != nil {
+		return commissioner.People{}, err
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	people, err := a.history.CommissionerPeople(ctx, league, principal)
+	if err != nil {
+		return commissioner.People{}, fmt.Errorf("league people: %w", err)
+	}
+	return people, nil
+}
+
 func (a *App) TargetCommissionerLeagues() ([]commissioner.NativeLeague, error) {
 	if err := a.ready(); err != nil {
 		return nil, fmt.Errorf("app leagues startup: %w", err)

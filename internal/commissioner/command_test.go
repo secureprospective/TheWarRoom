@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-const createBody = `{"league":"native.test","command":"commish.league.create","args":{"name":"Test"},"reason":"start","expected":0,"request":"first","effective":"now","visibility":"league"}`
+const createBody = `{"league":"native.test","command":"commish.league.create","args":{"name":"Test","franchises":["f1"]},"reason":"start","expected":0,"request":"first","effective":"now","visibility":"league"}`
 
 func TestDecodeCommissionerBoundary(t *testing.T) {
 	raw, err := Decode(createBody)
@@ -13,7 +13,7 @@ func TestDecodeCommissionerBoundary(t *testing.T) {
 		t.Fatalf("decode: %+v %v", raw, err)
 	}
 	for _, body := range []string{
-		strings.Replace(createBody, `"args":{"name":"Test"}`, `"args":{"name":"Test","actor":"other"}`, 1),
+		strings.Replace(createBody, `"args":{"name":"Test","franchises":["f1"]}`, `"args":{"name":"Test","franchises":["f1"],"actor":"other"}`, 1),
 		strings.Replace(createBody, `"expected":0`, `"expected":-1`, 1),
 		strings.Replace(createBody, `"reason":"start"`, `"reason":" \t"`, 1),
 		strings.Replace(createBody, `"expected":0`, `"expected":0,"principal":"other"`, 1),

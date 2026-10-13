@@ -85,6 +85,9 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err := checkCommissionerAppend(raw, records); err != nil {
 		return commissioner.Receipt{}, err
 	}
+	if err := commissioner.CheckGovernanceAppend(raw, principal, records, s.now()); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("check league change: %w", err)
+	}
 	receipt, err := s.appendCommissioner(ctx, tx, raw, principal, role, canonical)
 	if err != nil {
 		return commissioner.Receipt{}, err
@@ -97,12 +100,12 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 
 func commandRole(raw commissioner.RawCommand, principal string, auth commissioner.Authorizer,
 	records []commissioner.Record) (string, error) {
-	creator := commissioner.Replay(records).Creator
 	if auth == nil {
-		if creator == "" && raw.Command == commissioner.Create {
-			creator = principal
+		role, err := commissioner.AuthorizeRecords(raw, principal, records)
+		if err != nil {
+			return "", fmt.Errorf("league change refused: %w", err)
 		}
-		auth = commissioner.CreatorAuthorizer{Creator: creator}
+		return role, nil
 	}
 	role, err := auth.Allow(raw.League, principal, raw.Command)
 	if err != nil {
@@ -128,6 +131,9 @@ func checkCommissionerAppend(raw commissioner.RawCommand, records []commissioner
 	}
 	if current == 0 {
 		return fmt.Errorf("create this app league before changing it")
+	}
+	if raw.Command != commissioner.Revert {
+		return nil
 	}
 	for _, r := range records {
 		if r.Receipt.Entry != raw.Args.Entry {
@@ -184,9 +190,29 @@ func (s *Store) CommissionerLedger(ctx context.Context, league, principal string
 		return commissioner.Ledger{}, err
 	}
 	if auth == nil {
-		auth = commissioner.CreatorAuthorizer{Creator: commissioner.Replay(records).Creator}
+		state, err := commissioner.GovernanceState(records)
+		if err != nil {
+			return commissioner.Ledger{}, fmt.Errorf("read league permissions: %w", err)
+		}
+		auth = commissioner.GovernanceAuthorizer{State: state}
 	}
 	return commissioner.Reading(league, principal, records, auth), nil
+}
+
+func (s *Store) CommissionerPeople(ctx context.Context, league, principal string) (commissioner.People, error) {
+	events, err := s.Events(ctx, league, commissioner.Stream, 0)
+	if err != nil {
+		return commissioner.People{}, err
+	}
+	records, err := commissionerRecords(events)
+	if err != nil {
+		return commissioner.People{}, err
+	}
+	people, err := commissioner.PeopleReading(league, principal, records)
+	if err != nil {
+		return commissioner.People{}, fmt.Errorf("read league people: %w", err)
+	}
+	return people, nil
 }
 
 func (s *Store) NativeLeagues(ctx context.Context) ([]commissioner.NativeLeague, error) {

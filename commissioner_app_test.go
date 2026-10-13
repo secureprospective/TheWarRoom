@@ -10,6 +10,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -53,10 +54,44 @@ func executeCommissionerTest(t *testing.T, app *App, raw commissioner.RawCommand
 	return receipt
 }
 
+func TestCommissionerPeopleWire(t *testing.T) {
+	app := commissionerTestApp(t)
+	raw := commissioner.RawCommand{League: "native.people", Command: commissioner.Create,
+		Args:   commissioner.RawArgs{Name: "People league", Franchises: []string{"f1"}},
+		Reason: "Create our league", Request: "create", Effective: "now", Visibility: "league"}
+	executeCommissionerTest(t, app, raw)
+	raw.Command = "commish.role.grant"
+	raw.Args = commissioner.RawArgs{People: &commissioner.RawPeople{
+		Principal: "private-deputy", Role: governance.CoCommissioner}}
+	raw.Expected, raw.Request, raw.Visibility = 1, "grant", "private"
+	executeCommissionerTest(t, app, raw)
+	for _, principal := range []string{"creator", "private-deputy", "owner"} {
+		app.commissionerSession = testCommissionerSession{principal}
+		people, err := app.TargetCommissionerPeople(raw.League)
+		if err != nil || people.Revision != 2 || people.Seats[0].Owner != "Vacant" {
+			t.Fatalf("IPC reading: %+v %v", people, err)
+		}
+		body, err := json.Marshal(people)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if principal == "owner" {
+			if strings.Contains(string(body), "private-deputy") || len(people.Roles) != 0 {
+				t.Fatalf("owner people wire leaks private role: %s", body)
+			}
+		} else if len(people.Roles) != 2 {
+			t.Fatalf("session role missing from people wire: %s", body)
+		}
+	}
+	if _, err := app.TargetCommissionerPeople("legacy"); err == nil {
+		t.Fatal("imported league admitted to native people reading")
+	}
+}
+
 func TestCommissionerWire(t *testing.T) {
 	app := commissionerTestApp(t)
 	raw := commissioner.RawCommand{League: "native.wire", Command: commissioner.Create,
-		Args: commissioner.RawArgs{Name: "Our league"}, Reason: "Start our own league", Request: "create",
+		Args: commissioner.RawArgs{Name: "Our league", Franchises: []string{"f1", "f2"}}, Reason: "Start our own league", Request: "create",
 		Effective: "now", Visibility: "league"}
 	first := executeCommissionerTest(t, app, raw)
 	raw.Command, raw.Args = commissioner.Revert, commissioner.RawArgs{Entry: first.Entry}

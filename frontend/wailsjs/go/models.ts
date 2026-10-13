@@ -116,6 +116,103 @@ export namespace commissioner {
 	        this.name = source["name"];
 	    }
 	}
+	export class PeopleInvite {
+	    id: string;
+	    franchise: string;
+	    person: string;
+	    status: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PeopleInvite(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.franchise = source["franchise"];
+	        this.person = source["person"];
+	        this.status = source["status"];
+	    }
+	}
+	export class PeopleRole {
+	    person: string;
+	    role: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PeopleRole(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.person = source["person"];
+	        this.role = source["role"];
+	    }
+	}
+	export class PeopleSeat {
+	    franchise: string;
+	    name: string;
+	    abbreviation: string;
+	    owner: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PeopleSeat(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchise = source["franchise"];
+	        this.name = source["name"];
+	        this.abbreviation = source["abbreviation"];
+	        this.owner = source["owner"];
+	    }
+	}
+	export class People {
+	    league: string;
+	    name: string;
+	    revision: number;
+	    seats: PeopleSeat[];
+	    roles: PeopleRole[];
+	    invites: PeopleInvite[];
+	    dotCount: number;
+	    dotStatus: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new People(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.name = source["name"];
+	        this.revision = source["revision"];
+	        this.seats = this.convertValues(source["seats"], PeopleSeat);
+	        this.roles = this.convertValues(source["roles"], PeopleRole);
+	        this.invites = this.convertValues(source["invites"], PeopleInvite);
+	        this.dotCount = source["dotCount"];
+	        this.dotStatus = source["dotStatus"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
+	
 	export class Receipt {
 	    entry: string;
 	    league: string;
