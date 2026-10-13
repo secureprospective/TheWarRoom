@@ -267,7 +267,7 @@ export default function Contracts({
             </dl>
             <p>{cap.capSource}</p>
             {!cap.cap && <p>Cap configuration unavailable; room cannot be calculated.</p>}
-            <h5>Committed by future season · gross salary</h5>
+            <h5>Committed in future seasons (salaries before any dead cap)</h5>
             {cap.future.length ? (
               <Years years={cap.future} />
             ) : (
@@ -367,7 +367,8 @@ export default function Contracts({
         reading={readings?.adjustments}
         error={error}
       >
-        <p>MFL adjustments, not proven itemised dead cap.</p>
+        <p>MFL’s salary adjustments, as MFL recorded them
+          (dead cap from drops, retirements and commissioner changes).</p>
         {readings?.adjustments.value?.rows.length === 0 && (
           <p>No MFL salary adjustments in the held mirror.</p>
         )}
@@ -381,12 +382,6 @@ export default function Contracts({
           ))}
         </ul>
       </ContractReading>
-      <ContractReading
-        title="Can't-cut list"
-        endpoint="M-025"
-        reading={readings?.cantCut}
-        error={error}
-      />
       {!supplied && <><ReleasePlans mine={s.franchiseId ?? ''} />
         <ContractActs mine={s.franchiseId ?? ''} /></>}
       <Acquisitions mine={s.franchiseId} />

@@ -80,12 +80,12 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
   let summary = trade?.summary || lineupSummary;
   const shortName = player?.name?.split(',')[0];
   if (receipt.spec.intent === 'roster.ir') {
-    const direction = receipt.spec.expected.rosterStatus === 'ROSTER' ? 'Activate' : 'IR';
-    summary = shortName ? `${direction} ${shortName}` : '';
+    summary = shortName ? receipt.spec.expected.rosterStatus === 'ROSTER'
+      ? `Activate ${shortName}` : `Place ${shortName} on IR` : '';
   }
   if (receipt.spec.intent === 'roster.taxi') {
-    const direction = receipt.spec.expected.rosterStatus === 'TAXI_SQUAD' ? '+' : '−';
-    summary = shortName ? `${direction}Taxi ${shortName}` : '';
+    summary = shortName ? receipt.spec.expected.rosterStatus === 'TAXI_SQUAD'
+      ? `Move ${shortName} to the taxi squad` : `Promote ${shortName} from the taxi squad` : '';
   }
   return (
     <Card
@@ -95,7 +95,9 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
           <h4>{header}</h4>
           {summary && <p>{summary}</p>}
           <span>{receipt.spec.intent === 'roster.ir' && receipt.spec.expected.rosterStatus === 'ROSTER'
-            ? 'IR activation' : intentLabels[receipt.spec.intent] ?? receipt.spec.intent}</span>
+            ? 'IR activation' : receipt.spec.intent === 'roster.taxi'
+              ? receipt.spec.expected.rosterStatus === 'ROSTER' ? 'Taxi promotion' : 'Taxi placement'
+              : intentLabels[receipt.spec.intent] ?? receipt.spec.intent}</span>
           <span className="move-classification">{receipt.spec.gravity} · {receipt.spec.undo}</span>
         </div>
       }

@@ -225,7 +225,7 @@ func TestAcquisitionForcedCutUsesExistingCharge(t *testing.T) {
 	}
 	raw := RawAcquisition{Mine: "0001", Player: "15761"}
 	noCut := a.TargetAcquisition(raw)
-	if noCut.Status != ReadingOK || !strings.Contains(strings.Join(noCut.Value.Reasons, " "), "does not fit") {
+	if noCut.Status != ReadingOK || !strings.Contains(strings.Join(noCut.Value.Reasons, " "), "does not fit") || !strings.HasPrefix(noCut.Value.Spot, "One active roster spot") {
 		t.Fatal(noCut)
 	}
 	raw.Cut = "14109"

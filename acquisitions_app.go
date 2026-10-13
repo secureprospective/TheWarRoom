@@ -210,7 +210,7 @@ func (a *App) acquisitionProjection(ctx context.Context, r RawAcquisition, s sta
 	after := before + projected - seed + state.CapContribution(incoming.Salary, incoming.RosterStatus, s)
 	active, correction := acquisitionRoster(store, m, s)
 	after += correction
-	out.Spot = fmt.Sprintf("One %s roster spot · %d active players after the add (35–48 allowed)", incoming.RosterStatus, active)
+	out.Spot = fmt.Sprintf("One active roster spot · %d active players after the add (35–48 allowed)", active)
 	out.Team = append(out.Team, whatIfFigure("Cap used this season", before, after))
 	if s.Cap != nil {
 		out.Team = append(out.Team, whatIfFigure("Cap room this season", *s.Cap-before, *s.Cap-after))

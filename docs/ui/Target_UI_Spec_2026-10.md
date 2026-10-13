@@ -339,10 +339,10 @@ receipts is the p2l report in the ring 2 run folder. Nothing in ring 2 posts to 
   (at most 30 open bids, `internal/engine/bid/rules.go:13`). It is the GM's own plan only; nothing
   about other teams' bids is stored. The plan follows the ProBoards hand-off in §6.
 
-**Franchise HQ › Contracts and cap** (M-078, C-06.5, M-031, M-025, C-06.1, C-06.6, C-06.3, M-036, M-196, M-193, M-195)
+**Franchise HQ › Contracts and cap** (M-078, C-06.5, M-031, C-06.1, C-06.6, C-06.3, M-036, M-196, M-193, M-195)
 - Every contract in the league, my team first, in exact cents with Go's own money text; a player's
   contract years; my franchise cap; MFL salary adjustments, labelled as MFL adjustments and not
-  proven dead cap; the can't-cut list (`frontend/src/app/contracts/Contracts.tsx:67`).
+  proven dead cap. MFL's can't-cut/can't-add lists are retired and not used by the War Room.
 - **What-if:** each row of my team has one "What if…" menu: cut, buy out, or Contract Acts. The
   what-if shows the charge, my cap before and after, Undo and Reset. It keeps its starting numbers until
   Reset; if MFL changes underneath it, a banner says so (`whatif_app.go:273`).

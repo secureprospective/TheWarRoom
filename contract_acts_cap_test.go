@@ -83,6 +83,9 @@ func TestContractActsArizonaHeldMirrorPricesAndReadiness(t *testing.T) {
 				plan = p
 			}
 		}
+		if tc.intent == "rfa.tender" && !strings.Contains(plan.Post, "Priced from his 2026 salary, $330,000.") {
+			t.Fatal(plan.Post)
+		}
 		if (plan.Receipt.State == envelope.Ready) != tc.ready {
 			t.Fatalf("%s %+v", tc.intent, plan)
 		}

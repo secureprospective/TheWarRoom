@@ -33,7 +33,7 @@ describe('player-card view model', () => {
       { label: 'On-field-now', key: 'now' },
       { label: 'Dynasty value', key: 'dynasty' },
     ]);
-    expect(model.unwiredRows).toBe('Form · not wired');
+    expect(JSON.stringify(model)).not.toContain('not wired');
     expect(model).not.toHaveProperty('injury');
     expect(model).not.toHaveProperty('bye');
     expect(model).not.toHaveProperty('deadCap');
@@ -72,8 +72,9 @@ describe('player-card view model', () => {
     snapshot.rosters.provenance.freshness.state = 'stale';
     const model = playerCardModel(snapshot, roster.franchiseId, player.id, asOf);
     expect(model.provenance.signal).toBe('red');
-    expect(model.provenance.detail).toContain('Players · fixture · fail');
-    expect(model.provenance.detail).toContain('Contracts · fixture · stale');
+    expect(model.provenance.detail).not.toMatch(/T\d{2}:|live · live/);
+    expect(model.provenance.detail).toContain('Players: example data');
+    expect(model.provenance.detail).toContain('Contracts: example data');
   });
   it.each(FRESHNESS_STATES)(
     'labels a lone %s section by origin and date, never by its note',
@@ -121,4 +122,17 @@ describe('player-card view model', () => {
         expect(model.status).toContainEqual({ signal: 'red', label: 'IR' });
     }
   });
+});
+
+it('never renders not-wired placeholders in the rostered Inspector', async () => {
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const { createElement } = await import('react');
+  const { PlayerInspector } = await import('../shell/PlayerInspector');
+  const { snapshot, roster, player } = input();
+  const html = renderToStaticMarkup(createElement(PlayerInspector, {
+    snapshot, subject: { kind: 'player', id: player.id, franchiseId: roster.franchiseId },
+  }));
+  expect(html.toLowerCase()).not.toContain('not wired');
+  expect(html).toContain('On-field-now');
+  expect(html).toContain('Dynasty value');
 });

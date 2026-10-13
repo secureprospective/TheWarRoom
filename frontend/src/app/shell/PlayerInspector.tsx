@@ -64,11 +64,7 @@ export function PlayerInspector({
               <dd><AssetNumber playerId={subject.id} which={which} /></dd>
             </Fragment>)}
         </dl>
-        {['Dead cap', 'Form'].map((label) => (
-          <p key={label} className="not-wired">
-            {label} · not wired
-          </p>
-        ))}
+
       </section>
     </>
   );

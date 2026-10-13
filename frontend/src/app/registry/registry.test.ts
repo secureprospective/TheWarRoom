@@ -473,3 +473,10 @@ it('retires MFL pools from commands, placements and rendered endpoint surfaces',
     expect(endpointsAt('League Pulse › Archive').some(r => r.id === id)).toBe(false);
   }
 });
+
+it('retires M-025 without a placement or route', () => {
+  const row = endpointById('M-025');
+  expect(row.disposition).toBe('retired');
+  expect(row.placement).toBe('');
+  expect(() => createCommands().dispatch('endpoint.open', { id: 'M-025' })).toThrow('retired');
+});
