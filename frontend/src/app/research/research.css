@@ -29,3 +29,8 @@
 .research-facts dt { color: var(--surface-tx2); font-size: 12px; }
 .research-facts dd { margin: 2px 0 0; overflow-wrap: anywhere; }
 .research-facts small { display: block; color: var(--surface-tx3); font-size: 11.5px; }
+
+.draft-report[data-endpoint="M-058"] .draft-table-scroll :is(th, td),
+.draft-report[data-endpoint="M-060"] .draft-table-scroll :is(th, td) {
+  overflow-wrap: normal; word-break: normal; white-space: normal;
+}

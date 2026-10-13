@@ -156,7 +156,7 @@ func (v researchView) newsReport(mine bool) (Report, []ResearchArticle) {
 	if mine {
 		id, title = "M-060", "My players’ news"
 	}
-	r := Report{ID: id, Title: title, Source: "Source: MFL player news · rostered players only", AsOf: "As of: not fetched", Status: "ok", Rows: []ReportRow{}, Columns: []string{"Player", "Age", "Headline", "Published"}, How: "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Published is MFL’s literal relative wording, not a reconstructed timestamp. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted."}
+	r := Report{ID: id, Title: title, Source: "Source: MFL player news · rostered players only", AsOf: "As of: not fetched", Status: "ok", Rows: []ReportRow{}, Columns: []string{"Player", "Age", "Headline", "Posted"}, How: "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted. " + researchNewsHow}
 	articles := []ResearchArticle{}
 	if mine && v.scope.Mine == "" {
 		r.Status = "empty"
@@ -179,7 +179,7 @@ func (v researchView) newsReport(mine bool) (Report, []ResearchArticle) {
 		researchLoss(&r, fmt.Sprintf("Player news · %d profiles need refreshing", health.losses), at, health.loss, v.zone)
 	}
 	sortResearchNews(&r, articles)
-	r.Note = fmt.Sprintf("%d of %d rostered profiles held today or from the last fetch. Published is MFL’s wording.", health.fetched, len(ids))
+	r.Note = fmt.Sprintf("%d of %d rostered profiles held today or from the last fetch. Posted times are estimates.", health.fetched, len(ids))
 	if health.fetched == 0 && len(ids) > 0 {
 		r.Status = "failed"
 	} else {
@@ -240,14 +240,12 @@ func (v researchView) injuryRow(p ResearchPlayer, injury leaguefeed.Injury, team
 func (v researchView) appendNews(r *Report, articles *[]ResearchArticle, player string, rows []researchfeeds.News) {
 	name := v.player(player).Name
 	for _, news := range rows {
-		age, published := news.Age, news.Published
+		age := news.Age
+		posted, order := newsPosted(news.Published, v.held.news[player].fetchedAt, v.zone)
 		if age == "" {
 			age = "Not supplied"
 		}
-		if published == "" {
-			published = "Not supplied"
-		}
-		r.Rows = append(r.Rows, ReportRow{Cells: []string{name, age, news.Headline, published}, Mine: v.mine[player], Sort: []float64{newsPublishedAt(published, v.held.news[player].fetchedAt)}})
+		r.Rows = append(r.Rows, ReportRow{Cells: []string{name, age, news.Headline, posted}, Mine: v.mine[player], Sort: []float64{order}})
 		*articles = append(*articles, ResearchArticle{ID: player, Article: news.Article, Name: name, Headline: news.Headline})
 	}
 }

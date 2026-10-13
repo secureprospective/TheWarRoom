@@ -602,16 +602,16 @@
       {
         "id": "M-060",
         "title": "My players’ news",
-        "note": "1 of 1 rostered profiles held today or from the last fetch. Published is MFL’s wording.",
+        "note": "1 of 1 rostered profiles held today or from the last fetch. Posted times are estimates.",
         "status": "ok",
         "source": "Source: MFL player news · rostered players only",
         "asOf": "held · fetched Oct 11, 2026, 12:00 PM",
-        "how": "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Published is MFL’s literal relative wording, not a reconstructed timestamp. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted.",
+        "how": "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted. Posted times are estimated from MFL’s elapsed wording at the fetch time, in your local time zone. Minutes show a minute, hours show about an hour, and days show only a date. Unrecognized wording or a missing fetch time has no posted time.",
         "columns": [
           "Player",
           "Age",
           "Headline",
-          "Published"
+          "Posted"
         ],
         "rows": [
           {
@@ -619,7 +619,7 @@
               "Gibbs, Jahmyr",
               "24",
               "RB Jahmyr Gibbs: Surprisingly stymied by Panthers",
-              "6 days"
+              "Oct 5, 2026"
             ],
             "range": null,
             "mine": true
@@ -633,16 +633,16 @@
   "news": {
     "id": "M-058",
     "title": "Rostered players’ news",
-    "note": "1 of 2 rostered profiles held today or from the last fetch. Published is MFL’s wording.",
+    "note": "1 of 2 rostered profiles held today or from the last fetch. Posted times are estimates.",
     "status": "stale",
     "source": "Source: MFL player news · rostered players only",
     "asOf": "held · fetched Oct 11, 2026, 12:00 PM",
-    "how": "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Published is MFL’s literal relative wording, not a reconstructed timestamp. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted.",
+    "how": "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted. Posted times are estimated from MFL’s elapsed wording at the fetch time, in your local time zone. Minutes show a minute, hours show about an hour, and days show only a date. Unrecognized wording or a missing fetch time has no posted time.",
     "columns": [
       "Player",
       "Age",
       "Headline",
-      "Published"
+      "Posted"
     ],
     "rows": [
       {
@@ -650,7 +650,7 @@
           "Gibbs, Jahmyr",
           "24",
           "RB Jahmyr Gibbs: Surprisingly stymied by Panthers",
-          "6 days"
+          "Oct 5, 2026"
         ],
         "range": null,
         "mine": true

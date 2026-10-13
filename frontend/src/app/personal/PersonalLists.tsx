@@ -14,7 +14,12 @@ const labels: Record<ListKind, string> = {
 };
 const verbs = { watch: 'watch.add', bait: 'bait.set', note: 'note.add', draft: 'draft.list' } as const;
 
-export function NoteEditor({ id, entity }: { id: string; entity: 'player' | 'franchise' }) {
+function newestNote(a: Entry, b: Entry) {
+  return b.at.localeCompare(a.at) || b.order - a.order;
+}
+export function NoteEditor({ id, entity, showNotes = true }: {
+  id: string; entity: 'player' | 'franchise'; showNotes?: boolean;
+}) {
   const [text, setText] = useState('');
   const mine = commands.use().franchiseId ?? '';
   const s = personalState.useReading(mine);
@@ -29,7 +34,7 @@ export function NoteEditor({ id, entity }: { id: string; entity: 'player' | 'fra
     seen.current = saved;
   }, [s.savedNote, id, entity]);
   const notes = s.value?.entries.filter(e => e.kind === 'note' && e.id === id && e.entity === entity)
-    .slice().sort((a, b) => b.at.localeCompare(a.at)) ?? [];
+    .slice().sort(newestNote) ?? [];
   return <div className="personal-note">
     <label>Plain-text note<textarea value={text} maxLength={8000} disabled={s.pending}
       onChange={e => setText(e.target.value)} /></label>
@@ -37,9 +42,9 @@ export function NoteEditor({ id, entity }: { id: string; entity: 'player' | 'fra
       disabled={!mine || s.pending || !text.trim()}>
       Keep dated note</Act>
     {kept && <p role="status">Kept · <time dateTime={kept}>{localDate(kept)}</time></p>}
-    <ol aria-label="Kept notes">{notes.map(note => <li key={`${note.at}:${note.order}`}>
+    {showNotes && <ol aria-label="Kept notes">{notes.map(note => <li key={`${note.at}:${note.order}`}>
       <time dateTime={note.at}>{localDate(note.at)}</time><p className="personal-text">{note.text}</p>
-    </li>)}</ol>
+    </li>)}</ol>}
     {s.error && <p role="alert">{s.error}</p>}
   </div>;
 }
@@ -120,10 +125,12 @@ export default function PersonalLists({ snapshot, draft = false }: { snapshot: S
       </div>
       {kind === 'note' && <>
         <p>Keep a dated note for the selected player, or for your franchise when no player is chosen.</p>
-        <NoteEditor key={player || mine} id={player || mine} entity={player ? 'player' : 'franchise'} />
+        <NoteEditor key={player || mine} id={player || mine}
+          entity={player ? 'player' : 'franchise'} showNotes={false} />
       </>}
       {!s.value?.entries.some(e => e.kind === kind) && <p>No entries kept.</p>}
-      <ol>{s.value?.entries.filter(e => e.kind === kind).map(e =>
+      <ol>{s.value?.entries.filter(e => e.kind === kind)
+        .sort((a, b) => kind === 'note' ? newestNote(a, b) : 0).map(e =>
         <EntryRow key={`${e.kind}:${e.id}:${e.at}`} entry={e} snapshot={snapshot} pending={s.pending}
           facts={s.value?.players.find(p => p.id === e.id)} />)}</ol>
     </section>)}

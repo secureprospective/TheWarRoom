@@ -202,7 +202,7 @@ func TestResearchDepthInjuriesAndScopedNews(t *testing.T) {
 		}
 	}
 	news := reportByID(t, out.Board, "M-060")
-	if len(news.Rows) != 1 || news.Rows[0].Cells[1] != "24" || news.Rows[0].Cells[3] != "6 days" {
+	if len(news.Rows) != 1 || news.Rows[0].Cells[1] != "24" || news.Rows[0].Cells[3] != "Oct 5, 2026" {
 		t.Fatal(news)
 	}
 	if out.News.Status != "stale" || len(out.News.Summary) != 1 || !strings.Contains(out.News.Summary[0].Cells[0], "1 profiles need refreshing") {
