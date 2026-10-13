@@ -255,7 +255,11 @@ Contracts/My moves release cards share `RailStrip`; no mirror write or MFL submi
 
 Contract Act plans: `contract_acts_app.go` exposes validated preview/draft/read and manual hand-off, posted, withdraw and rebase commands. `internal/engine/contractacts` owns pure §7/§9–11 price and term previews. `internal/envelope/contract.go` checks missing rules/evidence and declares the Contracts observation source. `internal/store/moves/contractfacts.go` stores priced baselines with envelope history atomically. Annual/expiration exports do not prove inferred future cells. Contract windows reuse coordinator LegalOps; RFA tender/re-sign are offseason only. Unknown history is noted for commissioner checking. Team projections install priced cells through the coordinator on isolated simulation generations and reuse the What-if result builder. Lazy menus and cards live in `frontend/src/app/contracts/ContractActs.tsx`.
 
-`frontend/src/app/shell/workScroll.ts` confines card reveals to `.wbody` and holds table rows through asynchronous panel changes.
+`frontend/src/app/shell/workScroll.ts` confines card reveals to `.wbody`, opens enclosing disclosures
+and focuses endpoint sections, and holds table rows through asynchronous panel changes.
+Draft Lab return maps lead with all-position summaries and closed, counted position breakdowns.
+`counter_filters.go` owns display treatment for filter-fixed posture shares and excluded tiers
+in both Counterparties and its team Inspector.
 
 `internal/ingestion/draftreports` validates MFL draftResults and futureDraftPicks into typed held
 picks (string PlayerID, epoch instants) and ownership; one adapter family, two export fetchers.

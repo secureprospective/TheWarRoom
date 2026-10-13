@@ -13,6 +13,17 @@ export function scrollWorkIntoView(element: HTMLElement, block: 'start' | 'neare
   scroll.scrollTop += delta;
 }
 
+export function revealWorkSection(element: HTMLElement) {
+  let parent: HTMLElement | null = element;
+  while (parent && !parent.classList?.contains('wbody')) {
+    if (parent.tagName === 'DETAILS') (parent as HTMLDetailsElement).open = true;
+    parent = parent.parentElement;
+  }
+  scrollWorkIntoView(element);
+  element.tabIndex = -1;
+  element.focus({ preventScroll: true });
+}
+
 export type WorkAnchor = { row: HTMLElement; top: number; scroll: HTMLElement; fallback?: WorkAnchor };
 export function restoreWorkAnchor(anchor?: WorkAnchor) {
   if (anchor?.row.isConnected) {

@@ -31,15 +31,17 @@ type RaceChoice struct {
 }
 
 type raceInput struct {
-	live      heldSeasonFeed[leaguefeed.Lineups]
-	held      raceHeld
-	config    league.RawConfig
-	lookup    normalize.Lookup
-	week      int
-	team      string
-	mine      string
-	zone      *time.Location
-	hasLookup bool
+	live heldSeasonFeed[leaguefeed.Lineups]
+	// liveUnplayed: no NFL game of the live week has kicked off, so its 0.00 scores are not a game in progress.
+	liveUnplayed bool
+	held         raceHeld
+	config       league.RawConfig
+	lookup       normalize.Lookup
+	week         int
+	team         string
+	mine         string
+	zone         *time.Location
+	hasLookup    bool
 }
 
 // raceView is everything the reports read, resolved once: the season's table, names, the
@@ -328,7 +330,7 @@ func (v raceView) scheduleByTeam() Report {
 			me, them, where = game.Away, game.Home, "Away"
 		}
 		result := "Not played yet"
-		if !me.Scored && v.in.live.value.Week == w.Week && !v.in.live.fetchedAt.IsZero() {
+		if !me.Scored && v.in.live.value.Week == w.Week && !v.in.live.fetchedAt.IsZero() && !v.in.liveUnplayed {
 			if live, found := findGame(liveWeek(v.in.live.value, w), v.team); found {
 				left, right := live.Home, live.Away
 				if left.Franchise != v.team {

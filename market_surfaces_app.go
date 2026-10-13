@@ -22,11 +22,18 @@ type MarketLine struct {
 	Range  *MarketRange `json:"range"`
 	Mark   string       `json:"mark"`
 }
-type MarketSection struct {
-	ID    string       `json:"id"`
+type MarketBreakdown struct {
 	Title string       `json:"title"`
-	Note  string       `json:"note"`
+	Count int          `json:"count"`
 	Rows  []MarketLine `json:"rows"`
+}
+
+type MarketSection struct {
+	Breakdowns []MarketBreakdown `json:"breakdowns,omitempty"`
+	ID         string            `json:"id"`
+	Title      string            `json:"title"`
+	Note       string            `json:"note"`
+	Rows       []MarketLine      `json:"rows"`
 }
 type MarketSurface struct {
 	Summary  string          `json:"summary"`

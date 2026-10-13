@@ -89,12 +89,6 @@ func draftHowCounted() string {
 func draftLabel(id string) string {
 	return map[string]string{"r1a": "1.01–1.10", "r1b": "1.11–1.32", "r2a": "2.01–2.16", "r2b": "2.17–2.32", "r3": "Round 3", "r4": "Round 4", "r5": "Round 5 on", "n1": "NFL round 1", "n2": "NFL round 2", "n3": "NFL round 3", "n4": "NFL rounds 4–7", "nx": "No NFL pick that spring", "a21": "21 or younger", "a22": "22", "a23": "23 or older"}[id]
 }
-func draftRatioRange(r *lab.DraftRatio) *MarketRange {
-	if r == nil {
-		return nil
-	}
-	return marketRange(&lab.Interval{Value: r.Ratio, Lo: r.Lo, Hi: r.Hi})
-}
 func draftCellLine(c lab.DraftCell) MarketLine {
 	label := draftLabel(c.Segment + c.NFL + c.Age)
 	if c.Season > 0 {
@@ -125,19 +119,20 @@ func draftSections(d *lab.Data, s lab.DraftScopeFilter, picks []lab.JudgedPick, 
 	sections := []MarketSection{
 		draftAxis("L-15", "Return by draft stretch · "+marketName(group), p.Where),
 		draftAxis("L-16", "Return by season after draft · "+marketName(group), p.When),
-		draftAxis("L-17", "Return by NFL draft round", p.NFL),
-		draftAxis("L-18", "Return by age at the draft", p.Age),
+		draftAxis("L-17", "Return by NFL draft round · "+marketName(group), p.NFL),
+		draftAxis("L-18", "Return by age at the draft · "+marketName(group), p.Age),
 		draftLikeSection(p), draftHitsSection(p), draftKeptSection(p), draftBuySection(d, s, p),
 	}
-	// The league maps remain visible alongside the selected position's profile.
-	for _, row := range lab.DraftMap(picks, marketAssets()[:8]) {
-		for _, c := range row.When {
-			line := draftCellLine(c)
-			line.Label = marketName(row.Group) + " · " + line.Label
-			sections[1].Rows = append(sections[1].Rows, line)
-		}
-		for _, c := range row.Where {
-			sections[0].Rows = append(sections[0].Rows, MarketLine{Label: marketName(row.Group) + " · " + draftLabel(c.Segment), Count: c.N, Range: draftRatioRange(c.Reading), Detail: "Against the same slots; at least 8 judged picks and 0.5 slot wins"})
+	all := lab.PositionDraft(picks, "")
+	sections[0] = draftAxis("L-15", "Return by draft stretch · all positions", all.Where)
+	sections[1] = draftAxis("L-16", "Return by season after draft · all positions", all.When)
+	for _, group := range marketAssets()[:8] {
+		position := lab.PositionDraft(picks, group)
+		for i, cells := range [][]lab.DraftCell{position.Where, position.When} {
+			rows := draftAxis("", "", cells).Rows
+			sections[i].Breakdowns = append(sections[i].Breakdowns, MarketBreakdown{
+				Title: marketName(group), Count: position.N, Rows: rows,
+			})
 		}
 	}
 	return sections

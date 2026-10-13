@@ -249,7 +249,9 @@ export function CounterReading({
                     <section key={c.id}>
                       <h5>{c.label}</h5>
                       <p>{c.hint}</p>
-                      {c.thin ? (
+                      {c.excluded ? (
+                        <p>Not in the current filter</p>
+                      ) : c.thin ? (
                         <p>Too few to judge · fewer than 20 trade sides</p>
                       ) : (
                         <>
@@ -343,8 +345,10 @@ export function CounterReading({
                           {v.pairs.slice(index * 3, index * 3 + 3).map((p) => (
                             <td key={p.other} title={p.title}>
                               <p>{p.trades}</p>
-                              <EdgeBar edge={p.now} label={v.words.day} />
-                              <EdgeBar edge={p.real} label={v.words.since} />
+                              {!p.excluded && <>
+                                <EdgeBar edge={p.now} label={v.words.day} />
+                                <EdgeBar edge={p.real} label={v.words.since} />
+                              </>}
                             </td>
                           ))}
                         </tr>

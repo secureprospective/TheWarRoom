@@ -30,7 +30,7 @@ func TestDraftReadingStatesAndParity(t *testing.T) {
 			t.Fatal("registry surface missing")
 		}
 	}
-	if got.Value.Sections[1].Rows[0].Range.Value != *p.When[0].Ratio {
+	if got.Value.Sections[1].Rows[0].Range.Value != *lab.PositionDraft(picks, "").When[0].Ratio {
 		t.Fatal("season range not computed by Go")
 	}
 	foundLike := false
@@ -111,3 +111,43 @@ func TestDraftUnavailableCellsAndKnownRetention(t *testing.T) {
 }
 func boolPtr(v bool) *bool        { return &v }
 func floatPtr(v float64) *float64 { return &v }
+
+func TestDraftSummaryAndClosedBreakdownData(t *testing.T) {
+	a := &App{}
+	raw := RawDraftScope{From: 2017, To: 2026, Seasons: 3, Group: "DL"}
+	r := a.TargetDraftLab(raw)
+	d, err := a.lab()
+	if err != nil {
+		t.Fatal(err)
+	}
+	picks := lab.DraftScope(d, draftScope(raw))
+	all := lab.PositionDraft(picks, "")
+	if all.N != r.Count || all.Overall == nil {
+		t.Fatal("all-position summary must count every judged pick")
+	}
+	for i, cells := range [][]lab.DraftCell{all.Where, all.When} {
+		section := r.Value.Sections[i]
+		if !strings.Contains(section.Title, "all positions") || len(section.Breakdowns) != 8 ||
+			!reflect.DeepEqual(section.Rows, draftAxis("", "", cells).Rows) {
+			t.Fatal("all-position summary missing")
+		}
+		for j, group := range marketAssets()[:8] {
+			p := lab.PositionDraft(picks, group)
+			b := section.Breakdowns[j]
+			expected := p.Where
+			if i == 1 {
+				expected = p.When
+			}
+			if b.Title != marketName(group) || b.Count != p.N ||
+				!reflect.DeepEqual(b.Rows, draftAxis("", "", expected).Rows) {
+				t.Fatal("position counts or rows drifted")
+			}
+		}
+	}
+	p := lab.PositionDraft(picks, "DL")
+	for i, cells := range [][]lab.DraftCell{p.NFL, p.Age} {
+		if !reflect.DeepEqual(r.Value.Sections[i+2].Rows, draftAxis("", "", cells).Rows) {
+			t.Fatal("NFL round or age lost frozen ranges and chance treatment")
+		}
+	}
+}

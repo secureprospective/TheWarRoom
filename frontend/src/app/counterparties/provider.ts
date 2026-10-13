@@ -169,6 +169,7 @@ export function parseCounterparties(value: unknown): CounterpartiesReading {
           'label',
           'hint',
           'thin',
+          'excluded',
           'perSeason',
           'perSeasonText',
           'posture',
@@ -179,6 +180,7 @@ export function parseCounterparties(value: unknown): CounterpartiesReading {
           label: text(c.label, path),
           hint: text(c.hint, path),
           thin: flag(c.thin, path),
+          excluded: c.excluded === undefined ? false : flag(c.excluded, path),
           perSeason: finite(c.perSeason, path),
           perSeasonText: text(c.perSeasonText, path),
           posture: list(c.posture, path, (cell) => {
@@ -205,9 +207,10 @@ export function parseCounterparties(value: unknown): CounterpartiesReading {
       trendSay: list(body.trendSay, path, (say) => text(say, path)),
       trends: body.trends == null ? { seasons: [], tiers: [] } : parseTrends(body.trends, path),
       pairs: list(body.pairs, path, (cell) => {
-        const p = object(cell, `${path}.pairs`, ['other', 'n', 'now', 'real', 'trades', 'title']);
+        const p = object(cell, `${path}.pairs`, ['other', 'n', 'now', 'real', 'trades', 'title', 'excluded']);
         return {
           other: text(p.other, path),
+          excluded: p.excluded === undefined ? false : flag(p.excluded, path),
           n: integer(p.n, path),
           now: edge(p.now, `${path}.pairs.now`),
           real: edge(p.real, `${path}.pairs.real`),
@@ -511,9 +514,10 @@ export function parseTeamPanel(value: unknown): TeamPanelReading {
         age: edge(behaviour.age, path),
       },
       asTier: array(body.asTier, path, (tier) => {
-        const t = object(tier, `${path}.asTier`, ['tier', 'n', 'edge', 'label', 'text']);
+        const t = object(tier, `${path}.asTier`, ['tier', 'n', 'edge', 'label', 'text', 'excluded']);
         return {
           tier: text(t.tier, path),
+          excluded: t.excluded === undefined ? false : flag(t.excluded, path),
           n: integer(t.n, path),
           edge: edge(t.edge, path),
           label: text(t.label, path),

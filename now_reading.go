@@ -233,16 +233,29 @@ func noGameText(team string) string {
 }
 
 // kickedOff reports whether any NFL game of the held week has started; unknown counts as started.
-func (v nowView) kickedOff() bool {
-	if len(v.games) == 0 {
+func (v nowView) kickedOff() bool { return weekKickedOff(v.games, v.now.at) }
+
+// weekKickedOff is Now's and Race's one kickoff rule: an NFL week has begun once any of its games
+// has kicked off; a week whose schedule is not held counts as begun.
+func weekKickedOff(games map[string]nflGame, at time.Time) bool {
+	if len(games) == 0 {
 		return true
 	}
-	for _, g := range v.games {
-		if !v.now.at.Before(g.kickoff) {
+	for _, g := range games {
+		if !at.Before(g.kickoff) {
 			return true
 		}
 	}
 	return false
+}
+
+// liveWeekUnplayed reports that MFL's live week has not begun: its held NFL schedule shows no kickoff yet.
+func liveWeekUnplayed(live heldSeasonFeed[leaguefeed.Lineups],
+	schedules map[int]heldSeasonFeed[[]nflschedule.RawWeek], at time.Time) bool {
+	if live.fetchedAt.IsZero() {
+		return false
+	}
+	return !weekKickedOff(nflGames(schedules[live.value.Week].value, at), at)
 }
 
 func (v nowView) gameState(g leaguefeed.Game) string {

@@ -53,6 +53,10 @@ func TestMFLRefusal(t *testing.T) {
 	if got := MFLRefusal(mflURL, []byte(`{"calendar":{}}`)); got != "" {
 		t.Fatalf("MFL data judged a refusal: %q", got)
 	}
+	unknown := []byte(`{"error":{"$t":"Error - No Valid Player IDs!"}}`)
+	if got := MFLRefusal(mflURL, unknown); got != "" {
+		t.Fatalf("an answer about unknown players judged a refusal: %q", got)
+	}
 	if got := MFLRefusal("https://example.test/feed.json", refusal); got != "" {
 		t.Fatalf("another host judged by MFL's envelope: %q", got)
 	}

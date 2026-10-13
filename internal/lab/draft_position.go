@@ -106,7 +106,7 @@ func ageBand(p JudgedPick) string {
 	return "a23"
 }
 func PositionDraft(picks []JudgedPick, group string) DraftPosition {
-	mine := draftSelect(picks, func(p JudgedPick) bool { return *p.Group == group })
+	mine := draftSelect(picks, func(p JudgedPick) bool { return group == "" || *p.Group == group })
 	curve := SlotCurve(picks)
 	out := DraftPosition{Group: group, N: judgedCount(mine), All: mine, Overall: VsSlot(mine), Hits: HitRate(mine, picks), Where: []DraftCell{}, When: markExtremes(BySeason(mine)), NFL: []DraftCell{}, Age: []DraftCell{}, Curve: curve}
 	kept, total := 0, 0

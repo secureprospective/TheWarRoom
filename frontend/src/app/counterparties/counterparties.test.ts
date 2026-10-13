@@ -428,3 +428,41 @@ it('keeps the five narrow omissions available in the team panel from supplied fi
   expect(text).toContain('Most frequent partner:');
   expect(text).toContain(r.value!.partners[0].tradesText);
 });
+
+it('renders filtered shares without chance arrows and excluded tiers without thin warnings', () => {
+  const r = parseCounterparties(surfaceWire);
+  const v = r.value!;
+  v.summary = 'Showing only trades that bought for now.';
+  v.headline = 'Contenders come out ahead on the day.';
+  v.words.legend = 'Ranges show gains and losses beyond chance.';
+  v.trendSay = [];
+  for (const card of v.cards) {
+    card.excluded = card.id !== 'contender';
+    card.thin = false;
+    for (const cell of card.posture) { cell.tone = ''; cell.title = 'Share of filtered trades'; }
+  }
+  for (const row of v.rows) { row.forNow.tone = ''; row.forLater.tone = ''; }
+  v.trends.tiers = [];
+  for (const [i, pair] of v.pairs.entries()) {
+    pair.excluded = i >= 3;
+    if (pair.excluded) pair.trades = 'Not in the current filter';
+  }
+  const shown = html(CounterReading, r);
+  expect(shown).toContain('Showing only trades that bought for now.');
+  expect(shown).not.toContain('buy for now in');
+  expect(shown).not.toMatch(/\d+%\s+[↑↓]/);
+  expect(shown).not.toMatch(/data-tone="(?:up|down)"[^>]*>Bought for now/);
+  expect(shown.match(/Not in the current filter/g)).toHaveLength(2 + v.pairs.length - 3);
+  expect(shown.match(/<p>Not in the current filter<\/p><\/td>/g)).toHaveLength(v.pairs.length - 3);
+  const edge = { n: 0, mean: null, lo: null, hi: null, tone: '' };
+  const empty = renderToStaticMarkup(createElement(EdgeBar, { edge, label: 'Since' }));
+  expect(empty).toBe('<div class="counter-edge"><span>Since: —</span></div>');
+  expect(shown).not.toContain('Too few to judge');
+  const panel = parseTeamPanel(teamWire);
+  for (const tier of panel.value!.asTier) {
+    tier.excluded = true;
+    tier.text = 'Not in the current filter';
+  }
+  expect(html(TeamReading, panel)).toContain('Not in the current filter');
+  expect(html(TeamReading, panel)).not.toMatch(/As [^<]+: .*likely/);
+});

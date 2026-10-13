@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Act } from '../commands/Act';
-import type { MarketRange, ReadingShell, SurfaceReading } from './contract';
+import type { MarketLine, MarketSection, MarketRange, ReadingShell, SurfaceReading } from './contract';
 
 export function countNoun(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? '' : 's'}`;
@@ -95,10 +95,12 @@ export function ReadingView({
   reading,
   title,
   inspect = false,
+  disclose = false,
 }: {
   reading?: SurfaceReading;
   title: string;
   inspect?: boolean;
+  disclose?: boolean;
 }) {
   return (
     <ArchiveReading reading={reading} title={title}>
@@ -107,44 +109,50 @@ export function ReadingView({
           <p className="market-finding">{reading.value.summary}</p>
           <div className="market-sections">
             {reading.value.sections.map((section) => (
-              <section key={section.id} data-endpoint={section.id}>
-                <h5>{section.title}</h5>
-                <p>{section.note}</p>
-                {section.rows.length === 0 && <p>No asset in view clears chance on this side.</p>}
-                {section.rows.map((row, index) => (
-                  <div
-                    className="market-row"
-                    key={`${row.key}:${index}`}
-                    data-mark={row.mark || undefined}
-                  >
-                    {inspect && row.key ? (
-                      <Act variant="text"
-                        verb="market"
-                        args={{ field: 'inspect', value: row.key }}
-                        label={`Inspect ${row.label}`}
-                      >
-                        {row.label}
-                      </Act>
-                    ) : (
-                      <b>{row.label}</b>
-                    )}
-                    {row.range && (
-                      <>
-                        <span>{row.range.text}</span>
-                        <RangeBar range={row.range} />
-                      </>
-                    )}
-                    <small>
-                      {row.detail}
-                      {row.count > 0 ? ` · ${countNoun(row.count, 'record')}` : ''}
-                    </small>
-                  </div>
-                ))}
-              </section>
+              <SurfaceSection key={section.id} section={section} inspect={inspect} disclose={disclose} />
             ))}
           </div>
         </>
       )}
     </ArchiveReading>
+  );
+}
+
+function SurfaceRows({ rows, inspect }: { rows: MarketLine[]; inspect: boolean }) {
+  return <>
+    {rows.length === 0 && <p>No asset in view clears chance on this side.</p>}
+    {rows.map((row, index) => (
+      <div className="market-row" key={`${row.key}:${index}`} data-mark={row.mark || undefined}>
+        {inspect && row.key ? (
+          <Act variant="text" verb="market" args={{ field: 'inspect', value: row.key }}
+            label={`Inspect ${row.label}`}>{row.label}</Act>
+        ) : <b>{row.label}</b>}
+        {row.range && <><span>{row.range.text}</span><RangeBar range={row.range} /></>}
+        <small>{row.detail}{row.count > 0 ? ` · ${countNoun(row.count, 'record')}` : ''}</small>
+      </div>
+    ))}
+  </>;
+}
+function SurfaceSection({ section, inspect, disclose }: {
+  section: MarketSection; inspect: boolean; disclose: boolean;
+}) {
+  const content = <>
+    <p>{section.note}</p>
+    <SurfaceRows rows={section.rows} inspect={inspect} />
+    {section.breakdowns?.map(b => (
+      <details className="market-breakdown" key={b.title}>
+        <summary>{b.title} · {countNoun(b.count, 'judged pick')}</summary>
+        <SurfaceRows rows={b.rows} inspect={inspect} />
+      </details>
+    ))}
+  </>;
+  return disclose && !section.breakdowns?.length ? (
+    <details className="market-section" data-endpoint={section.id} tabIndex={-1}>
+      <summary>{section.title}</summary>{content}
+    </details>
+  ) : (
+    <section data-endpoint={section.id} tabIndex={-1}>
+      <h5>{section.title}</h5>{content}
+    </section>
   );
 }

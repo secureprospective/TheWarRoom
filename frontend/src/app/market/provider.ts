@@ -46,12 +46,16 @@ function line(value: unknown, path: string): MarketLine {
   };
 }
 function section(value: unknown, path: string): MarketSection {
-  const r = object(value, path, ['id', 'title', 'note', 'rows']);
+  const r = object(value, path, ['id', 'title', 'note', 'rows', 'breakdowns']);
   return {
     id: text(r.id, path),
     title: text(r.title, path),
     note: text(r.note, path),
     rows: array(r.rows, path, line),
+    breakdowns: r.breakdowns === undefined ? undefined : array(r.breakdowns, path, (value, path) => {
+      const b = object(value, path, ['title', 'count', 'rows']);
+      return { title: text(b.title, path), count: integer(b.count, path), rows: array(b.rows, path, line) };
+    }),
   };
 }
 export function parseMarket(value: unknown): SurfaceReading {

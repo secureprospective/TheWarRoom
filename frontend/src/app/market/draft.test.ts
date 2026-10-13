@@ -78,3 +78,35 @@ it('Draft controls have explicit accessible labels and use only typed Acts', () 
     expect(code).not.toMatch(/onClick=|Math\.|reduce\(/);
     expect(code).toContain('verb="market"');
 });
+
+it('all-position rows precede closed position disclosures and selected-position sections', () => {
+    const reading: SurfaceReading = { ...unavailable(''), status: 'ok', value: {
+        summary: '100 judged picks', sections: [{ id: 'L-15', title: 'All positions', note: '',
+            rows: [{ key: '', label: 'All-position return', detail: '', count: 100, range: null, mark: '' }],
+            breakdowns: [{ title: 'Quarterbacks', count: 25, rows: [] }],
+        }, ...['L-17', 'L-18', 'L-21'].map(id => ({ id, title: id, note: '', rows: [] }))],
+    } };
+    const html = renderToStaticMarkup(createElement(DraftReading, { reading }));
+    expect(html.indexOf('All-position return')).toBeLessThan(html.indexOf('Quarterbacks'));
+    expect(html).toContain('<summary>Quarterbacks · 25 judged picks</summary>');
+    expect(html).not.toMatch(/<details[^>]*\bopen[=> ]/);
+    for (const id of ['L-17', 'L-18', 'L-21']) {
+        expect(html).toContain(`data-endpoint="${id}" tabindex="-1"`);
+        expect(html).toContain(`<summary>${id}</summary>`);
+    }
+});
+
+it('parses counted position breakdowns and rejects untyped record counts', async () => {
+    const { parseMarket } = await import('./provider');
+    const wire = {
+        ...unavailable(''), status: 'ok', cutoff: '2026-10-06', howCounted: 'Frozen picks',
+        inputSHA: 'a'.repeat(64), provenance: { source: 'Lab', kind: 'archive',
+            freshness: { state: 'stale', fetchedAt: '2026-10-06T00:00:00Z', note: 'Frozen' } },
+        value: { summary: 'All positions', sections: [{ id: 'L-15', title: 'All positions',
+            note: '', rows: [], breakdowns: [{ title: 'Quarterbacks', count: 25, rows: [] }] }] },
+    };
+    expect(parseMarket(wire).value?.sections[0].breakdowns?.[0].count).toBe(25);
+    expect(() => parseMarket({ ...wire, value: { ...wire.value, sections: [{
+        ...wire.value.sections[0], breakdowns: [{ title: 'Quarterbacks', count: '25', rows: [] }],
+    }] } })).toThrow();
+});
