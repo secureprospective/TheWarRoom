@@ -83,7 +83,7 @@ func (s *Store) Initialize(ctx context.Context) error {
  PRIMARY KEY (mine, kind, entity, entity_id, at));
  CREATE UNIQUE INDEX IF NOT EXISTS personal_marker ON personal_entries(mine,kind,entity,entity_id)
  WHERE kind != 'note';`
-	if _, err := s.pools.Write().ExecContext(ctx, ddl); err != nil {
+	if _, err := s.pools.Write().ExecContext(ctx, ddl+offersDDL); err != nil {
 		return fmt.Errorf("personal: initialize: %w", err)
 	}
 	return nil

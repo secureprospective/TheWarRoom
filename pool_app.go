@@ -374,7 +374,7 @@ func poolMarketLines(facts []MarketFact) []string {
 		case 2:
 			parts[i] = fmt.Sprintf("ADP %.0f (%.0f–%.0f)", *fact.value, fact.Range.Lo, fact.Range.Hi)
 		case 3:
-			parts[i] = fmt.Sprintf("AAV %.1f%%", *fact.value)
+			parts[i] = fmt.Sprintf("AAV $%.1f on MFL’s $1,000 scale", *fact.value)
 		}
 	}
 	if !held {

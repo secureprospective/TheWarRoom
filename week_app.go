@@ -73,8 +73,14 @@ func (a *App) refreshWeek(ctx context.Context) {
 
 func (a *App) fetchLineupWeek(ctx context.Context, now time.Time) (leagueweek.Week, error) {
 	year := strconv.Itoa(a.league.Season())
+	return lineupWeekFrom(now, func(requested int) (nflschedule.RawWeek, error) {
+		return nflschedule.Fetch(ctx, a.mflClient, year, requested)
+	})
+}
+
+func lineupWeekFrom(now time.Time, read func(int) (nflschedule.RawWeek, error)) (leagueweek.Week, error) {
 	for requested := 0; ; {
-		raw, err := nflschedule.Fetch(ctx, a.mflClient, year, requested)
+		raw, err := read(requested)
 		if err != nil {
 			return leagueweek.Week{}, fmt.Errorf("week refresh: %w", err)
 		}
@@ -93,6 +99,43 @@ func (a *App) fetchLineupWeek(ctx context.Context, now time.Time) (leagueweek.We
 		}
 		requested = w.Number + 1
 	}
+}
+
+// seedCurrentWeek applies the live refresh's finality rule to held schedules, without fetching.
+func (a *App) seedCurrentWeek(ctx context.Context) {
+	var fetched time.Time
+	w, err := lineupWeekFrom(a.timeNow().UTC(), func(requested int) (nflschedule.RawWeek, error) {
+		week := ""
+		if requested != 0 {
+			week = strconv.Itoa(requested)
+		}
+		rows, at, found, err := readArchivedFeed(ctx, a.season, archivedFeed[nflschedule.RawWeek]{
+			export: nflschedule.Export, leagueless: true,
+			parse: func(body []byte) ([]nflschedule.RawWeek, error) {
+				raw, err := nflschedule.Parse(body)
+				if err != nil {
+					return nil, fmt.Errorf("held NFL week: %w", err)
+				}
+				return []nflschedule.RawWeek{raw}, nil
+			},
+			bodies: a.scopedBodies("W", week),
+		})
+		if err != nil {
+			return nflschedule.RawWeek{}, fmt.Errorf("held NFL week: %w", err)
+		}
+		if !found || len(rows) != 1 {
+			return nflschedule.RawWeek{}, fmt.Errorf("held NFL week: no schedule for week %d", requested)
+		}
+		fetched = at
+		return rows[0], nil
+	})
+	if err != nil {
+		a.fallbackLog(err.Error())
+		return
+	}
+	a.weekMu.Lock()
+	defer a.weekMu.Unlock()
+	a.week, a.weekFetchedAt, a.weekRefreshError = w, fetched, ""
 }
 
 func (a *App) deriveWeekPhase(ctx context.Context, w leagueweek.Week, fetched time.Time) {

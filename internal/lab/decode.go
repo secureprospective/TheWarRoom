@@ -19,6 +19,7 @@ const DataSHA = "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed374883
 var frozen []byte
 
 type Data struct {
+	OfferOwnerID   string
 	Raw            RawData
 	Trades         []Trade
 	Legs           []Leg

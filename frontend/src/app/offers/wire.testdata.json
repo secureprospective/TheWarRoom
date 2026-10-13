@@ -11,7 +11,7 @@
     },
     "disclosure": "MFL exposes only the GM's own offers. This archive holds 470 offers visible to Arizona Cardinals (0025), sent and received, through 2026-10-06T01:42:57+00:00. It does not show other GMs' private offers or league-wide offer activity.",
     "title": "How do offers end?",
-    "summary": "470 offers to and from Arizona Cardinals. 33.6% of known endings were accepted. No stretch clears the comparison against every other usable stretch; fewer than two usable stretches means no comparison.",
+    "summary": "470 offers to and from Arizona Cardinals. 33.6% of known endings were accepted. No stretch clears the comparison against every other usable stretch; fewer than two usable stretches means no comparison. 0 open offers.",
     "countText": "470",
     "directions": [
       {
@@ -250,6 +250,12 @@
             "label": "Ending not on record",
             "text": "Ending not on record 2",
             "width": 12.5
+          },
+          {
+            "id": "pending",
+            "label": "Open offers",
+            "text": "Open offers 0",
+            "width": 0
           }
         ]
       },
@@ -288,6 +294,12 @@
             "id": "unknown",
             "label": "Ending not on record",
             "text": "Ending not on record 0",
+            "width": 0
+          },
+          {
+            "id": "pending",
+            "label": "Open offers",
+            "text": "Open offers 0",
             "width": 0
           }
         ]
@@ -328,6 +340,12 @@
             "label": "Ending not on record",
             "text": "Ending not on record 1",
             "width": 2.78
+          },
+          {
+            "id": "pending",
+            "label": "Open offers",
+            "text": "Open offers 0",
+            "width": 0
           }
         ]
       },
@@ -367,6 +385,12 @@
             "label": "Ending not on record",
             "text": "Ending not on record 7",
             "width": 6.48
+          },
+          {
+            "id": "pending",
+            "label": "Open offers",
+            "text": "Open offers 0",
+            "width": 0
           }
         ]
       },
@@ -406,6 +430,12 @@
             "label": "Ending not on record",
             "text": "Ending not on record 3",
             "width": 3.13
+          },
+          {
+            "id": "pending",
+            "label": "Open offers",
+            "text": "Open offers 0",
+            "width": 0
           }
         ]
       },
@@ -445,6 +475,12 @@
             "label": "Ending not on record",
             "text": "Ending not on record 7",
             "width": 15.91
+          },
+          {
+            "id": "pending",
+            "label": "Open offers",
+            "text": "Open offers 0",
+            "width": 0
           }
         ]
       },
@@ -484,6 +520,12 @@
             "label": "Ending not on record",
             "text": "Ending not on record 6",
             "width": 27.27
+          },
+          {
+            "id": "pending",
+            "label": "Open offers",
+            "text": "Open offers 0",
+            "width": 0
           }
         ]
       },
@@ -523,13 +565,19 @@
             "label": "Ending not on record",
             "text": "Ending not on record 4",
             "width": 7.55
+          },
+          {
+            "id": "pending",
+            "label": "Open offers",
+            "text": "Open offers 0",
+            "width": 0
           }
         ]
       }
     ]
   },
   "provenance": {
-    "source": "Lab compiled facts sha256:6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
+    "source": "2026-10-06T01:42:57+00:00",
     "freshness": {
       "state": "stale",
       "fetchedAt": "2026-10-06T15:57:20+00:00",
@@ -546,5 +594,5 @@
   "method": "owner-scoped offerStretches; 1.96 standard-error comparisons",
   "inputSHA": "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
   "buildStamp": "dev ",
-  "howCounted": "Seasons use the league-year season field, not calendar year. Direction is relative to the archive owner (the busiest endpoint, stable first-appearance ties). Team and time-of-year filters apply before counts. Accepted, rejected, withdrawn and expired are known endings; unknown endings are excluded from acceptance. Per-season volume divides by the number of seasons with any archived offer in the selected years, before direction, team or window filtering (at least one). Rates display only at 5 known endings; a most/least often accepted finding requires at least 10 known endings in each compared stretch, two usable stretches, and a strict difference greater than 1.96 × the combined standard error against every other usable stretch. Unknown endings are never rejections. This is historical owner coverage, not league-wide or current pending offers."
+  "howCounted": "Seasons use the league-year season field, not calendar year. Direction is relative to the archive owner (the busiest endpoint, stable first-appearance ties). Team and time-of-year filters apply before counts. Accepted, rejected, withdrawn and expired are known endings; unknown endings are excluded from acceptance. Per-season volume divides by the number of seasons with any recorded offer in the selected years, before direction, team or window filtering (at least one). Rates display only at 5 known endings; a most/least often accepted finding requires at least 10 known endings in each compared stretch, two usable stretches, and a strict difference greater than 1.96 × the combined standard error against every other usable stretch. Unknown endings are never rejections. Open offers are counted separately and excluded from endings and acceptance. Ending not on record means MFL no longer lists the offer and no matching completed trade is held; it is not a rejection. Live coverage contains only offers seen by this app, not all offers since the archive. This is owner coverage, not league-wide activity."
 }

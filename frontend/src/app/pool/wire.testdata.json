@@ -584,7 +584,7 @@
        "range": null
       },
       {
-       "label": "AAV · min–max budget share",
+       "label": "AAV · min–max dollars on MFL’s $1,000 scale",
        "text": "—",
        "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL-wide, not this league · MFL does not list this player.",
        "range": null
@@ -633,7 +633,7 @@
        "range": null
       },
       {
-       "label": "AAV · min–max budget share",
+       "label": "AAV · min–max dollars on MFL’s $1,000 scale",
        "text": "—",
        "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL-wide, not this league · MFL does not list this player.",
        "range": null
@@ -661,7 +661,7 @@
      "labText": "Not valued",
      "marketLines": [
       "Proj 17.9 · Rank 929, Down 538",
-      "ADP 25 (1–179) · AAV 16.1%"
+      "ADP 25 (1–179) · AAV $16.1 on MFL’s $1,000 scale"
      ],
      "market": [
       {
@@ -689,15 +689,15 @@
        }
       },
       {
-       "label": "AAV · min–max budget share",
-       "text": "16.1% of auction budget · 0.8%–57.6%",
+       "label": "AAV · min–max dollars on MFL’s $1,000 scale",
+       "text": "$16.1 of a $1,000 league pool · $0.8–$57.6",
        "reason": "Source: MFL · As of: Oct 10, 2026, 12:00 PM · MFL-wide, not this league",
        "range": {
         "max": 164.14,
         "value": 16.06,
         "lo": 0.84,
         "hi": 57.61,
-        "text": "16.1% of auction budget · 0.8%–57.6%"
+        "text": "$16.1 of a $1,000 league pool · $0.8–$57.6"
        }
       }
      ],

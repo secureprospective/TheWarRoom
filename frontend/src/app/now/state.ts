@@ -28,7 +28,10 @@ export function createNowState(reader: NowReader, mine: () => string) {
     store.setState({ pending: true, error: '' });
     try {
       const { week, reportWeek } = store.getState();
-      if (refresh) await reader.refresh(week, force);
+      if (refresh) {
+        await reader.refresh(week, force);
+        if (reportWeek !== 0 && reportWeek !== week) await reader.refresh(reportWeek, force);
+      }
       const now = await reader.read(week, reportWeek, mine());
       if (request === revision) store.setState({ now, week: now.week });
     } catch (cause) {

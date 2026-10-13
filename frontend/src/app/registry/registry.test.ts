@@ -74,8 +74,11 @@ describe('Endpoint map', () => {
       );
       const html = renderToStaticMarkup(createElement(EndpointIndex, { placement: place }));
       for (const row of rows) {
-        expect(html).toContain(row.id);
         const item = html.split('<li').find((part) => part.includes(`<b>${row.id} ·`));
+        if (row.status === 'landed') {
+          expect(item, `${row.id} landed, so it leaves the index`).toBeUndefined();
+          continue;
+        }
         const labels: Record<string, string> = {
           landed: 'landed live',
           built: 'built, not yet landed live',
@@ -188,6 +191,10 @@ describe('Endpoint map', () => {
         }),
       );
       const item = html.split('<li').find((part) => part.includes(`<b>${id} ·`));
+      if (row.status === 'landed') {
+        expect(item).toBeUndefined();
+        continue;
+      }
       expect(item).toContain(`<small>${label} · ring ${row.ring}</small>`);
       if (row.status !== 'spec') expect(item).not.toContain('not wired');
     }
@@ -218,7 +225,9 @@ describe('Endpoint map', () => {
           const place = `${nodes[node].label} › ${w.label}`;
           const html = await renderSettledApp();
           expect(html).toContain(`${place} endpoint index`);
-          for (const row of endpointsAt(place as Placement)) expect(html).toContain(row.id);
+          for (const row of endpointsAt(place as Placement)) {
+            if (row.status !== 'landed') expect(html).toContain(row.id);
+          }
           // Rendered before the snapshot arrives: a snapshot workspace reads as loading, never unwired.
           if (['lineup-and-roster', 'contracts-and-cap', 'my-moves', 'trade-desk'].includes(w.slug)) {
             expect(html).toContain('Reading the league…');
@@ -501,4 +510,24 @@ it('retires M-025 without a placement or route', () => {
   expect(row.disposition).toBe('retired');
   expect(row.placement).toBe('');
   expect(() => createCommands().dispatch('endpoint.open', { id: 'M-025' })).toThrow('retired');
+});
+
+it('removes landed endpoints from every index and hides an index with nothing left to land', () => {
+  let emptied = 0;
+  for (const node of nodeKeys) {
+    for (const w of nodes[node].workspaces) {
+      const place = `${nodes[node].label} › ${w.label}` as Placement;
+      const rows = endpointsAt(place);
+      const html = renderToStaticMarkup(createElement(EndpointIndex, { placement: place }));
+      const cards = html.split('<ul>')[1] ?? '';
+      expect(cards).not.toContain('<small>landed live');
+      expect(html).not.toContain('finished');
+      for (const row of rows) expect(html.includes(`<b>${row.id} ·`), row.id).toBe(row.status !== 'landed');
+      if (rows.every((r) => r.status === 'landed')) {
+        expect(html).toMatch(/^<section class="endpoint-index"[^>]* hidden=""><\/section>$/);
+        emptied++;
+      }
+    }
+  }
+  expect(emptied).toBeGreaterThan(0);
 });

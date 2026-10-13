@@ -358,3 +358,40 @@ Plan: wait for followup7 (before 574 s → after 233 s), review + mutant-check, 
 - Landing: M-060, M-118, S-11, M-159 → land-landed.tsv, applied, registry.test list, endpoints.gen regenerated.
 - After batch8 every ring 0–3 kept row is landed except the held five: M-148, M-153, X-04 (no live case), X-02/X-03 (Thu 10-15
   7:15 PM live games). No Sols running.
+
+## 13:53 — batch8 MERGED (#34, main 6c6e1f3). M-060, M-118, S-11, M-159 landed. All ring-3-land worktrees removed (ledgers 13:36, 13:52).
+STATE: every ring 0–3 kept row of the Endpoint Index is landed except the held five:
+- X-02, X-03 (built): need live NFL play. Next window Thu 10-15, 7:15 PM CT kickoff. Deploy is already main; live-check then land.
+- M-148 Lineup Alert (built): needs an illegal/short lineup inside 48 h of a lock (lineup is legal 21/21).
+- M-153 Pending Trades, X-04 accept/reject/review (built): need an incoming offer to Arizona (only our outgoing GB offer exists).
+No Sols running. Nothing in flight.
+
+## 14:07 — COMPACTING NOW. Goal (re-stated by Christopher 10-13 ~13:58): "we need ring 0-3 ratified and finished, thats the goal. Ring 4 is defered for now."
+STATE
+- main 6c6e1f3 (#34). Registry rings 0–3: 168/173 kept landed; 5 held (X-02/X-03 Thu 10-15 7:15 PM games; M-148 needs a short
+  lineup within 48 h; M-153/X-04 need an incoming offer). 37 merged spec/built rows: every target landed (checked row by row
+  13:5x). 10 retired rows each carry a reason. 16 kept ring 4 rows: deferred, reasons in spec §15 "Carried to ring 4".
+- Q15 answered (Christopher 10-13): "not important, we are building the math and system. pay attention to the rules, not what
+  human slop is typed on proboards." Q16 answered by the league-dates ruling. Both written into the spec (uncommitted → see below).
+IN FLIGHT (both Sol, read-only audits, worktree ~/work/TheWarRoom/.worktrees/ring-3-land-audit = main 6c6e1f3)
+- land-audit  (findings 1–52, 22b, 51b) started 13:54. Alive: `ls -l RUN/land-audit/sessions/*.jsonl` mtime; done: RUN/land-audit/sentinel.
+  Output: RUN/land-audit/audit.tsv + REPORT.md. It copied the repo into its phase dir (1.4 GB) to run tests: delete that copy after.
+- land-audit2 (findings 53–95 fix records vs code) started 14:03. Same paths under RUN/land-audit2/.
+- Monitors bj98cy3w2 / bkpo79ds5 may have expired; re-check by the commands above.
+- Each outcome is FIXED (file:line, test, PR, test run result) / RULED / NOT A DEFECT / ENVIRONMENT / OPEN / UNCLEAR.
+SPEC CLOSE (worktree ~/work/TheWarRoom/.worktrees/ring-3-land-close, branch session/ring-3-land-close from main 6c6e1f3)
+- Edited docs/ui/Target_UI_Spec_2026-10.md: title "ring 3 closed 2026-10-13"; rev-3 changelog bullet → §15b summary (168/173,
+  five wait, merged targets landed, ring 4 deferred); 15a landing-walk line points to §15b; Inspector dead cap/form "Done in ring 3"
+  (research_player_reading.go:286/:310); Q15 and Q16 answered. Committed with this RESUME as a WIP close commit.
+NEXT ACTIONS
+1. When each audit finishes: read REPORT.md; spot-check ≥5 FIXED claims (open the cited file:line, rerun 2 cited tests); verify
+   every OPEN/UNCLEAR yourself. UNCLEAR needing a screen → live look on Claude-OS (batch8 build = main minus registry labels).
+2. Any OPEN finding: brief a Sol fix phase (par/land-common.md + brief, worktree from main), review + mutant, batch, deploy, live check.
+3. Write spec §15b "Ring 3 close (2026-10-13)" at the end of §15: registry counts above; held five with reasons; retired ids
+   (M-025, M-075, M-111, M-112, M-113, M-171, M-174, M-192, M-200, M-201); ring 4 deferred (quote); PRs #19–#34; findings 1–95
+   outcome counts from both audits (OPEN ones fixed or named); root race suite 574→233 s.
+4. Append the outcome line for findings 1–52 to land-findings.md (and corrections from audit2).
+5. Commit, push (pre-push verify), PR, `gh pr merge --squash`. Remove worktrees ring-3-land-audit and ring-3-land-close after proof
+   (3 ledgers), delete RUN/land-audit*/ repo copies, `golangci-lint cache clean`. Update T428. Tell Christopher rings 0–3 are ready to ratify.
+6. Thu 10-15 7:15 PM: live-check X-02/X-03 and land them.
+ETA told to Christopher: ~15:45 if no OPEN findings; ~17:00 with one fix round.

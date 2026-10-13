@@ -21,6 +21,54 @@
       {
         "value": "5",
         "label": "Week 5"
+      },
+      {
+        "value": "6",
+        "label": "Week 6"
+      },
+      {
+        "value": "7",
+        "label": "Week 7"
+      },
+      {
+        "value": "8",
+        "label": "Week 8"
+      },
+      {
+        "value": "9",
+        "label": "Week 9"
+      },
+      {
+        "value": "10",
+        "label": "Week 10"
+      },
+      {
+        "value": "11",
+        "label": "Week 11"
+      },
+      {
+        "value": "12",
+        "label": "Week 12"
+      },
+      {
+        "value": "13",
+        "label": "Week 13"
+      },
+      {
+        "value": "14",
+        "label": "Week 14 · playoffs"
+      },
+      {
+        "value": "15",
+        "label": "Week 15 · playoffs"
+      },
+      {
+        "value": "16",
+        "label": "Week 16 · playoffs"
+      },
+      {
+        "value": "17",
+        "label": "Week 17 · playoffs"
       }
     ],
     "week": 5,
@@ -6804,6 +6852,7 @@
           "link": null
         }
       ]
-    }
+    },
+    "waiting": ""
   }
 }

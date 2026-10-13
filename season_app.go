@@ -325,7 +325,13 @@ func (a *App) refreshPendingTrades(ctx context.Context) {
 	case errors.Is(err, mflkey.ErrUnavailable), errors.Is(err, mflkey.ErrTimeout):
 		a.seasonPendingTrades.refreshError = "MFL keyring is locked or unavailable"
 	default:
-		holdSeasonFeed(&a.seasonPendingTrades, value, liveFreshness(time.Now()), err)
+		at := a.timeNow()
+		// The desk's read stands on its own: failing to save it into Offers history is logged, never
+		// reported as an MFL failure.
+		if rerr := a.recordOffers(ctx, value, at, err); rerr != nil && err == nil {
+			a.fallbackLog(rerr.Error())
+		}
+		holdSeasonFeed(&a.seasonPendingTrades, value, liveFreshness(at), err)
 	}
 }
 

@@ -1,16 +1,17 @@
-import { array, integer, object } from '../data/parseValues';
+import { array, integer, object, text } from '../data/parseValues';
 import { parseBoard, report, type Board, type Report } from '../reports/contract';
 import { choice, type Choice } from '../race/contract';
 
 export type Now = { week: number; weeks: Choice[]; reportWeek: number; reportWeeks: Choice[];
-  matchup: Report; board: Board };
+  matchup: Report; board: Board; waiting: string };
 export function parseNow(v: unknown): Now {
   const p = 'League Pulse now';
-  const r = object(v, p, ['week', 'weeks', 'reportWeek', 'reportWeeks', 'matchup', 'board']);
+  const r = object(v, p, ['week', 'weeks', 'reportWeek', 'reportWeeks', 'matchup', 'board',
+    'waiting']);
   const now = {
     week: integer(r.week, p), weeks: array(r.weeks, p, choice),
     reportWeek: integer(r.reportWeek, p), reportWeeks: array(r.reportWeeks, p, choice),
-    matchup: report(r.matchup, `${p}.matchup`), board: parseBoard(r.board),
+    matchup: report(r.matchup, `${p}.matchup`), board: parseBoard(r.board), waiting: text(r.waiting, p),
   };
   if (now.matchup.id !== 'X-03') throw new Error(`${p}: the matchup must be X-03`);
   if (now.week !== 0 && !now.weeks.some(w => w.value === String(now.week)))

@@ -20,7 +20,7 @@ type OfferPhase struct {
 }
 
 func OfferPhases() []OfferPhase {
-	return []OfferPhase{{"winter", "spring", "After the season"}, {"opening", "spring", "Before the NFL draft"}, {"between", "spring", "NFL draft to rookie draft"}, {"rookieDraft", "summer", "During the rookie draft"}, {"summer", "summer", "Rookie draft to kickoff"}, {"early", "season", "Weeks 1–4"}, {"midseason", "season", "Midseason"}, {"deadline", "season", "Deadline run-in"}}
+	return []OfferPhase{{"winter", "spring", "After the season"}, {"opening", "spring", "Before the NFL draft"}, {"between", "spring", "NFL draft to rookie draft"}, {"rookieDraft", "summer", "During the rookie draft"}, {"summer", "summer", "Rookie draft to kickoff"}, {"early", "season", "Weeks 1–4"}, {"midseason", "season", "Midseason"}, {"deadline", "season", "Deadline run-in"}, {"closed", "season", "After the trade deadline"}}
 }
 
 type OfferStretch struct {
@@ -45,6 +45,9 @@ type OfferResult struct {
 
 // Ties follow first appearance in the archived offers, matching the reference's stable Map sort.
 func OfferOwner(d *Data) string {
+	if d.OfferOwnerID != "" {
+		return d.OfferOwnerID
+	}
 	counts := make(map[string]int)
 	order := []string{}
 	for _, o := range d.Offers {
@@ -76,6 +79,9 @@ func offerStretches(d *Data, s OfferScope, minimum int, unknownEnding string) Of
 			continue
 		}
 		st := countOfferStretch(out.Offers, p.ID, out.Seasons, unknownEnding)
+		if p.ID == "closed" && st.N == 0 {
+			continue
+		}
 		known += st.Known
 		accepted += st.Counts["accepted"]
 		out.Stretches = append(out.Stretches, st)
@@ -123,6 +129,9 @@ func offersInScope(d *Data, s OfferScope, owner, direction string) ([]Offer, int
 	phases := OfferPhases()
 	years := make(map[int]bool)
 	for _, o := range d.Offers {
+		if !offerVisibleTo(o, owner) {
+			continue
+		}
 		if o.Season < s.From || o.Season > s.To {
 			continue
 		}
@@ -131,7 +140,7 @@ func offersInScope(d *Data, s OfferScope, owner, direction string) ([]Offer, int
 		if p < 0 || (s.Windows != nil && !slices.Contains(s.Windows, phases[p].Window)) {
 			continue
 		}
-		if direction == "sent" && o.By != owner || direction == "received" && o.To != owner {
+		if !offerDirectionMatches(o, owner, direction) {
 			continue
 		}
 		if s.Team != "" && s.Team != owner && o.By != s.Team && o.To != s.Team {
@@ -154,7 +163,7 @@ func countOfferStretch(offers []Offer, phase string, seasons int, unknownEnding 
 			st.Counts[outcome]++
 		}
 	}
-	st.Known = st.N - st.Counts["unknown"]
+	st.Known = st.N - st.Counts["unknown"] - st.Counts["pending"]
 	st.PerSeason = float64(st.N) / float64(seasons)
 	if st.Known > 0 {
 		rate := float64(st.Counts["accepted"]) / float64(st.Known)
@@ -174,4 +183,10 @@ func validateOfferValues(r RawOfferColumns) error {
 		}
 	}
 	return nil
+}
+
+func offerVisibleTo(o Offer, owner string) bool { return o.By == owner || o.To == owner }
+
+func offerDirectionMatches(o Offer, owner, direction string) bool {
+	return (direction != "sent" || o.By == owner) && (direction != "received" || o.To == owner)
 }

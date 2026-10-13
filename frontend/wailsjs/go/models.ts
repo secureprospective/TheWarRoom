@@ -2818,6 +2818,7 @@ export namespace main {
 	    weeks: RaceChoice[];
 	    matchup: Report;
 	    board: ReportBoard;
+	    waiting: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new NowBoard(source);
@@ -2831,6 +2832,7 @@ export namespace main {
 	        this.weeks = this.convertValues(source["weeks"], RaceChoice);
 	        this.matchup = this.convertValues(source["matchup"], Report);
 	        this.board = this.convertValues(source["board"], ReportBoard);
+	        this.waiting = source["waiting"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

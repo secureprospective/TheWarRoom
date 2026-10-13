@@ -28,6 +28,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/moves"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
@@ -56,6 +57,9 @@ func targetTestAppAt(t *testing.T, path string) *App {
 			t.Error(err)
 		}
 	})
+	if err := personal.New(p).Initialize(ctx); err != nil {
+		t.Fatal(err)
+	}
 	rb := rulebook.New(p)
 	mirror := state.NewMirror(p, rb)
 	if err := mirror.Initialize(ctx); err != nil {

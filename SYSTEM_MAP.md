@@ -374,3 +374,10 @@ and mounted research Inspector re-read held facts. M-025 is retired and has no r
 Bid conditional drops: `bids_conditional.go` prices held roster choices through `transactions.CutCharge`,
 shared with the research Inspector. `bid_conditions` versions the named drop and its post label atomically
 with envelope history; no change after hand-off. The lazy bid form reveals the choice only over cap room.
+
+Offers history freshness: `offers_live_app.go` merges the archive owner's proposals with persisted
+`personal_offers` and `personal_offer_checks` in the existing GM store (`internal/store/personal`).
+Successful pendingTrades refreshes capture proposal/first/last-seen times; held completed transactions
+prove acceptance inside the proposal-to-first-miss interval. Other disappearances remain unknown.
+`internal/labcompile.OfferTiming` shares the archive's Eastern-date season/stretch rules. Open offers
+are excluded from ending rates. The lazy Offers surface reloads its selected scope on season events.

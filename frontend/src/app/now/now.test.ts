@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { endpointById, placementRoute } from '../registry';
 import { parseNow } from './contract';
-import { NowView } from './Now';
+import { NowBody, NowView } from './Now';
 import { commands } from '../commands/registry';
 import { createNowState, nowState, type NowReader } from './state';
 import wire from './wire.testdata.json';
@@ -60,6 +60,14 @@ describe('League Pulse › Now', () => {
     expect(bad(r => { r.matchup.id = 'M-005'; })).toThrow('X-03');
     expect(bad(r => { r.matchup.rows[0].cells.pop(); })).toThrow('column count');
   });
+  it('refreshes the selected report week so future reports can name its kickoff', async () => {
+    const reader: NowReader = { read: vi.fn(async () => now()), refresh: vi.fn(async () => {}) };
+    const state = createNowState(reader, () => '0001');
+    await state.load(true);
+    await state.choose('reports-week', '9');
+    expect(reader.refresh).toHaveBeenLastCalledWith(9, false);
+    expect(reader.read).toHaveBeenLastCalledWith(5, 9, '0001');
+  });
   it('asks Go for the chosen week, refreshing that week, and follows my franchise', async () => {
     const reader: NowReader = { read: vi.fn(async () => now()), refresh: vi.fn(async () => {}) };
     const state = createNowState(reader, () => '0001');
@@ -73,4 +81,14 @@ describe('League Pulse › Now', () => {
     expect(reader.refresh).toHaveBeenLastCalledWith(5, true);
     expect(() => state.choose('week', 'x')).toThrow('invalid week');
   });
+});
+
+it('says the league\'s weeks are still being read instead of drawing an empty week (finding 96)', () => {
+  const waiting = { ...now(), waiting: 'Reading the league\'s weeks from MFL…' };
+  const body = (n: typeof waiting) =>
+    renderToStaticMarkup(createElement(NowBody, { now: n, pending: false, error: '', selected: [] }));
+  const cold = body(waiting);
+  expect(cold).toContain('Reading the league&#x27;s weeks from MFL…');
+  expect(cold).not.toContain('Weekly reports');
+  expect(body(now())).toContain('Weekly reports');
 });

@@ -107,8 +107,8 @@ func TestOfferStackWidthsAndCounts(t *testing.T) {
 	t.Parallel()
 	r := (&App{}).TargetOffers(RawOfferScope{From: 2013, To: 2026, Direction: "all"})
 	for _, st := range r.Value.Stretches {
-		if len(st.Outcomes) != 5 {
-			t.Fatal("stack requires five named outcomes")
+		if len(st.Outcomes) != 6 {
+			t.Fatal("stack requires five endings and open offers")
 		}
 		sum := 0.0
 		for _, o := range st.Outcomes {

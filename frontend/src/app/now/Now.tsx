@@ -49,9 +49,16 @@ export default function Now() {
   useEffect(() => {
     if (nowState.peek().now) void nowState.load(false);
   }, [mine]);
+  return <NowBody now={state.now} pending={state.pending} error={state.error} selected={selected} />;
+}
+
+export function NowBody({ now, pending, error, selected }: {
+  now?: NowBoard; pending: boolean; error: string; selected: readonly string[];
+}) {
   return <section className="pulse-now" aria-label="League Pulse now">
-    {state.pending && <p role="status">{state.now?.board.loading ?? 'Reading the week…'}</p>}
-    {state.error && <p role="alert">{state.error}</p>}
-    {state.now && <NowView now={state.now} selected={selected} />}
+    {pending && <p role="status">{now?.board.loading ?? 'Reading the week…'}</p>}
+    {error && <p role="alert">{error}</p>}
+    {now?.waiting && <p role="status">{now.waiting}</p>}
+    {now && !now.waiting && <NowView now={now} selected={selected} />}
   </section>;
 }

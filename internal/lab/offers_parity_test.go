@@ -96,3 +96,22 @@ func TestRawOfferOutcomeValidation(t *testing.T) {
 		t.Fatal("unrecognized ending accepted")
 	}
 }
+
+func TestPendingOffersAreNotEndings(t *testing.T) {
+	d := &Data{OfferOwnerID: "a", Offers: []Offer{}}
+	for i := 0; i < 5; i++ {
+		d.Offers = append(d.Offers, Offer{By: "a", To: "b", Season: 2026, Phase: "midseason", Outcome: "accepted"})
+	}
+	d.Offers = append(d.Offers, Offer{By: "a", To: "b", Season: 2026, Phase: "midseason", Outcome: "pending"},
+		Offer{By: "a", To: "b", Season: 2026, Phase: "midseason", Outcome: "unknown"})
+	got := OfferStretches(d, OfferScope{From: 2026, To: 2026, Direction: "all"})
+	if len(got.Offers) != 7 || got.Rate == nil || *got.Rate != 1 {
+		t.Fatal("pending changed acceptance", got)
+	}
+	for _, st := range got.Stretches {
+		if st.Phase == "midseason" && (st.Known != 5 || st.Counts["pending"] != 1 ||
+			st.Counts["unknown"] != 1 || st.Rate == nil || *st.Rate != 1) {
+			t.Fatal("pending is an ending", st)
+		}
+	}
+}
