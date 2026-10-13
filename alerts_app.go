@@ -52,6 +52,7 @@ func (a *App) TargetAlerts(franchiseID string) (AlertReading, error) {
 	r := AlertReading{Alerts: []Alert{}, Unavailable: []Unavailable{}}
 	a.irAlerts(&r, franchiseID)
 	a.lineupAlert(&r, saved, now)
+	a.byeAlerts(&r, franchiseID, now)
 	r.tradeAlert(trades, now)
 	slices.SortFunc(r.Alerts, compareAlerts)
 	return r, nil

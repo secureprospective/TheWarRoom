@@ -431,12 +431,14 @@ it('reveals a lazily mounted endpoint once and stops watching after it arrives',
   }
 });
 
-it.each(['L-17', 'L-18', 'L-21'] as const)
+it.each(['L-17', 'L-18', 'L-21', 'M-039', 'M-154'] as const)
 ('opening %s reveals its disclosure, scrolls the work column and focuses the section', async id => {
   const { revealEndpoint } = await import('./EndpointIndex');
   commands.dispatch('endpoint.open', { id });
   expect(commands.read().endpointIds).toEqual([id]);
-  expect(commands.read().workspace.trade).toBe('draft-room');
+  const route = placementRoute(endpointById(id).placement)!;
+  expect(commands.read().node).toBe(route.node);
+  expect(commands.read().workspace[route.node]).toBe(route.workspace);
   const shell = { scrollTop: 55 };
   const work = { scrollTop: 10, clientTop: 0, clientHeight: 600, parentElement: shell,
     classList: { contains: (name: string) => name === 'wbody' },

@@ -51,33 +51,43 @@
   .twr-app .signal-amber { color: var(--signal-amber-text); }
   .twr-app .signal-red { color: var(--signal-red-text); }
   .twr-app .signal-grey { color: var(--signal-grey-text); }
-  .twr-app .channel-chip { display: inline-flex; align-items: center; gap: 6px; font: 600 11px var(--surface-sans); white-space: nowrap; }
-  .twr-app .channel-chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+  .twr-app .channel-chip { display: inline-flex; align-items: center; gap: 6px; font: 600 11px
+  var(--surface-sans); white-space: nowrap; }
+  .twr-app .channel-chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background:
+  currentColor; flex: none; }
   .twr-app .channel-countdown { font: 600 11.5px var(--surface-mono); white-space: nowrap; }
   .twr-app .urgency-u0 { color: var(--surface-tx3); }
   .twr-app .urgency-u1 { color: var(--surface-tx2); }
   .twr-app .urgency-u2 { color: var(--signal-amber-text); }
   .twr-app .urgency-u3 { color: var(--signal-red-text); }
-  .twr-app .twr-card { background: var(--surface-2); border: 1px solid var(--surface-line); padding: 12px 14px; position: relative; min-width: 0; }
+  .twr-app .twr-card { background: var(--surface-2); border: 1px solid var(--surface-line); padding: 12px
+  14px; position: relative; min-width: 0; }
   .twr-app .gravity-g0 { border-color: var(--surface-line); }
   .twr-app .gravity-g1 { border-color: var(--surface-line-hi); }
   .twr-app .gravity-g2 { border: 2px solid var(--surface-stakes-edge); background: var(--surface-3); }
-  .twr-app .gravity-g3 { border: 3px solid var(--surface-irreversible-edge); background: var(--surface-3); box-shadow: 0 10px 28px -12px var(--surface-shadow), inset 0 1px 0 var(--surface-elevation-edge); }
+  .twr-app .gravity-g3 { border: 3px solid var(--surface-irreversible-edge); background: var(--surface-3);
+  box-shadow: 0 10px 28px -12px var(--surface-shadow), inset 0 1px 0 var(--surface-elevation-edge); }
   .twr-app .gravity-g2 .card-title, .twr-app .gravity-g3 .card-title { font-weight: 700; }
 }
 /* An Act carrying a mark (Watch's eye) keeps the mark and its word on one line. */
-.twr-app .act:has(> .classification-glyph) { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
-.twr-app .classification-glyph { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 1.6; flex: none; }
-.twr-app .classification-label { display: inline-flex; align-items: center; gap: 5px; font: 600 10.5px var(--surface-sans); color: var(--surface-tx2); border: 1px solid var(--surface-line-hi); padding: 1px 7px 1px 5px; white-space: nowrap; }
+.twr-app .act:has(> .classification-glyph) { display: inline-flex; align-items: center; gap: 4px;
+  white-space: nowrap; }
+.twr-app .classification-glyph { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width:
+  1.6; flex: none; }
+.twr-app .classification-label { display: inline-flex; align-items: center; gap: 5px; font: 600 10.5px
+  var(--surface-sans); color: var(--surface-tx2); border: 1px solid var(--surface-line-hi); padding: 1px 7px
+  1px 5px; white-space: nowrap; }
 .twr-app .card-title { font-size: 13px; font-weight: 600; }
 .twr-app .card-header { display: flex; align-items: center; gap: 10px; }
 .twr-app .card-body { display: grid; gap: 10px; margin-top: 10px; }
 .twr-app .card-status { display: flex; gap: 10px; flex-wrap: wrap; }
 .twr-app .card-provenance { margin-left: auto; flex: none; }
 .twr-app .card-provenance .channel-chip { font: 10.5px var(--surface-mono); cursor: help; }
-.twr-app .card-action-tray:not(:empty) { border-top: 1px solid var(--surface-line); padding-top: 12px; margin-top: 10px; }
+.twr-app .card-action-tray:not(:empty) { border-top: 1px solid var(--surface-line); padding-top: 12px;
+  margin-top: 10px; }
 .twr-app .player-identity { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
-.twr-app .player-identity .card-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.twr-app .player-identity .card-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space:
+  nowrap; }
 .twr-app .player-identity .player-context { flex: none; white-space: nowrap; }
 .twr-app .player-context, .twr-app .player-contract { color: var(--surface-tx2); font-size: 12px; }
 .twr-app .player-context, .twr-app .player-contract-data { font-family: var(--surface-mono); }
@@ -87,26 +97,45 @@
 .twr-app .not-wired { color: var(--surface-tx3); font: 11.5px var(--surface-mono); }
 .twr-app .two-numbers b { display: block; font: 600 11.5px var(--surface-mono); color: var(--surface-tx3); }
 /* Narrative: the two numbers lead at twice the size; colour and chips do the rest. */
-:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) { padding: 16px 18px; }
-:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .card-title { font-size: 17px; }
-:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .two-numbers > div { padding: 12px 14px; min-height: 84px; }
-:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .two-numbers b { font-size: 20px; margin-top: 8px; }
-:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-contract { font-size: 13px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) {
+  padding: 16px 18px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card)
+  .card-title { font-size: 17px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card)
+  .two-numbers > div { padding: 12px 14px; min-height: 84px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card)
+  .two-numbers b { font-size: 20px; margin-top: 8px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card)
+  .player-contract { font-size: 13px; }
 /* Tactical: the default anatomy, one line per zone. */
-:is(.twr-app[data-density="tactical"], .twr-app [data-density="tactical"]) .twr-card:not(.insp .twr-card) .card-body { gap: 8px; margin-top: 8px; }
-:is(.twr-app[data-density="tactical"], .twr-app [data-density="tactical"]) .twr-card:not(.insp .twr-card) .two-numbers > div { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 10px; }
-:is(.twr-app[data-density="tactical"], .twr-app [data-density="tactical"]) .twr-card:not(.insp .twr-card) .two-numbers small { display: inline; }
-:is(.twr-app[data-density="tactical"], .twr-app [data-density="tactical"]) .twr-card:not(.insp .twr-card) .player-unwired-rows,
-:is(.twr-app[data-density="matrix"], .twr-app [data-density="matrix"]) .twr-card:not(.insp .twr-card) .player-unwired-rows { display: none; }
+:is(.twr-app[data-density="tactical"], .twr-app [data-density="tactical"]) .twr-card:not(.insp .twr-card)
+  .card-body { gap: 8px; margin-top: 8px; }
+:is(.twr-app[data-density="tactical"], .twr-app [data-density="tactical"]) .twr-card:not(.insp .twr-card)
+  .two-numbers > div { display: flex; justify-content: space-between; align-items: baseline; padding: 6px
+  10px; }
+:is(.twr-app[data-density="tactical"], .twr-app [data-density="tactical"]) .twr-card:not(.insp .twr-card)
+  .two-numbers small { display: inline; }
+:is(.twr-app[data-density="tactical"], .twr-app [data-density="tactical"]) .twr-card:not(.insp .twr-card)
+  .player-unwired-rows,
+:is(.twr-app[data-density="matrix"], .twr-app [data-density="matrix"]) .twr-card:not(.insp .twr-card)
+  .player-unwired-rows { display: none; }
 /* Narrative has room: the name wraps instead of truncating, with team and age beneath it. */
-:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .card-header { align-items: flex-start; }
-:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity { display: grid; grid-template-columns: auto auto 1fr; column-gap: 10px; row-gap: 4px; }
-:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity .player-photo { grid-row: 1 / span 2; }
-:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity .card-title { white-space: normal; }
-:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity .player-context { grid-column: 2 / span 2; }
-:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card) .player-identity .classification-label { align-self: start; margin-top: 2px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card)
+  .card-header { align-items: flex-start; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card)
+  .player-identity { display: grid; grid-template-columns: auto auto 1fr; column-gap: 10px; row-gap: 4px; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card)
+  .player-identity .player-photo { grid-row: 1 / span 2; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card)
+  .player-identity .card-title { white-space: normal; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card)
+  .player-identity .player-context { grid-column: 2 / span 2; }
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) .twr-card:not(.insp .twr-card)
+  .player-identity .classification-label { align-self: start; margin-top: 2px; }
 /* Player photos (p3k): a reserved round box; the team abbreviation stands in when there is none. */
-.twr-app .player-photo { display: inline-flex; flex: none; align-items: center; justify-content: center; overflow: hidden; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--surface-line-hi); }
+.twr-app .player-photo { display: inline-flex; flex: none; align-items: center; justify-content: center;
+  overflow: hidden; border-radius: 50%; background: var(--surface-2); border: 1px solid
+  var(--surface-line-hi); }
 .twr-app .player-photo-md { width: 32px; height: 32px; }
 .twr-app .insp .player-photo-md { width: 48px; height: 48px; }
 .twr-app .player-photo-sm { width: 24px; height: 24px; }
@@ -153,3 +182,20 @@
 .twr-app .asset-value.asset-missing { color: var(--surface-tx3); }
 .twr-app .asset-sub { display: block; font-weight: 400; font-size: 11px; color: var(--surface-tx3);
   white-space: normal; overflow-wrap: anywhere; }
+
+/* Table density is inherited, so lazy tables and nested panes use the same selection. */
+:is(.twr-app[data-density="narrative"], .twr-app [data-density="narrative"]) {
+  --density-table-padding: 12px 10px;
+  --density-table-line-gap: 8px;
+  --density-table-summary-right: 10px;
+}
+:is(.twr-app[data-density="tactical"], .twr-app [data-density="tactical"]) {
+  --density-table-padding: initial;
+  --density-table-line-gap: initial;
+  --density-table-summary-right: initial;
+}
+:is(.twr-app[data-density="matrix"], .twr-app [data-density="matrix"]) {
+  --density-table-padding: 3px 4px;
+  --density-table-line-gap: 2px;
+  --density-table-summary-right: 4px;
+}
