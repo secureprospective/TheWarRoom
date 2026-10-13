@@ -22,11 +22,16 @@ export function WindowRow({ window }: { window: LeagueWindow }) {
     <p><b>{label}</b> · {window.at ? localDate(window.at) : 'No date'}</p>
     <p className="league-window-basis">{window.reason}</p>
     <div className="league-window-edit">
-      <label>{label} date{' '}
-        <input type="datetime-local" value={date} onChange={event => setDate(event.target.value)} />
-      </label>
-      <Act variant="button" verb="window.set" args={{ kind: window.kind, at: instant }} label="Set date"
-        disabled={!instant || result?.pending} />
+      {/* The webview draws an empty date box as a filled-in date, so an undated window offers a
+          button until the commissioner asks to set one. */}
+      {window.at || result?.editing ? <>
+        <label>{label} date{' '}
+          <input type="datetime-local" value={date} onChange={event => setDate(event.target.value)} />
+        </label>
+        <Act variant="button" verb="window.set" args={{ kind: window.kind, at: instant }} label="Set date"
+          disabled={!instant || result?.pending} />
+      </> : <Act variant="button" verb="window.edit" args={{ kind: window.kind }}
+        label={`Set a date for ${label}`}>Set a date</Act>}
       {window.moved || (!hasRule && window.at) ?
         <Act variant="button"
           verb="window.set" args={{ kind: window.kind, at: '' }} disabled={result?.pending}
