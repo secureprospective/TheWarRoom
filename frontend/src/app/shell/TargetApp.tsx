@@ -17,6 +17,7 @@ import { NavIcon } from './NavIcon';
 import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
+import { useWorkScrollReset } from './workScroll';
 
 const StatusStrip = lazy(() => import('./StatusStrip'));
 const EntityInspector = lazy(() => import('./EntityInspector'));
@@ -59,9 +60,7 @@ export function TargetApp() {
   const clock = useLeagueClock(root);
   const workspaceBody = useRef<HTMLDivElement>(null);
   useEffect(() => connectDensity(commands, root.current!), []);
-  useEffect(() => {
-    if (workspaceBody.current) workspaceBody.current.scrollTop = 0;
-  }, [s.scrollRevision]);
+  useWorkScrollReset(workspaceBody, s.scrollRevision);
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [error, setError] = useState<string>();
   useEffect(() => {

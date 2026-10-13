@@ -1,9 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { act, createElement } from 'react';
+import { act, createElement, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { readdirSync, readFileSync } from 'node:fs';
 import { clockDom } from '../clock/testDom';
-import { revealWorkSection, scrollWorkIntoView, useWorkAnchor, workSettleWindow } from './workScroll';
+import {
+  revealWorkSection, scrollWorkIntoView, useWorkAnchor, useWorkScrollReset, workSettleWindow,
+} from './workScroll';
 
 const globals = ['document', 'window', 'IS_REACT_ACT_ENVIRONMENT', 'ResizeObserver'].map(key => ({
   key, descriptor: Object.getOwnPropertyDescriptor(globalThis, key),
@@ -226,4 +228,26 @@ it.each(['wheel', 'scroll', 'click', 'keydown', 'input', 'timeout'])
     expect(scroll.scrollTop).toBe(userTop);
     expect(disconnect).toHaveBeenCalled();
   } finally { vi.useRealTimers(); }
+});
+
+it('a new page resets to its top before, never after, the reveal of a requested endpoint on it', async () => {
+  const dom = clockDom([]);
+  Object.defineProperty(globalThis, 'document', { configurable: true, writable: true, value: dom.document });
+  Object.defineProperty(globalThis, 'window', { configurable: true, writable: true,
+    value: { document: dom.document, HTMLIFrameElement: class {} } });
+  Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', { configurable: true, value: true });
+  const scroll = { scrollTop: 120 } as HTMLElement;
+  function Reveal({ revision }: { revision: number }) {
+    useEffect(() => { if (revision) scroll.scrollTop = 640; }, [revision]);
+    return null;
+  }
+  function Page({ revision }: { revision: number }) {
+    useWorkScrollReset({ current: scroll }, revision);
+    return createElement(Reveal, { revision });
+  }
+  const root = createRoot(dom.element); roots.push(root);
+  await act(async () => { root.render(createElement(Page, { revision: 0 })); });
+  expect(scroll.scrollTop).toBe(0);
+  await act(async () => { root.render(createElement(Page, { revision: 1 })); });
+  expect(scroll.scrollTop).toBe(640);
 });

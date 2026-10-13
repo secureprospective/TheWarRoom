@@ -13,6 +13,14 @@ export function scrollWorkIntoView(element: HTMLElement, block: 'start' | 'neare
   scroll.scrollTop += delta;
 }
 
+// A new page starts at its top. This runs as a layout effect so it always precedes the passive effects that
+// reveal a requested endpoint on that page; a passive reset would run after them and undo the reveal.
+export function useWorkScrollReset(scroll: RefObject<HTMLElement | null>, revision: number) {
+  useLayoutEffect(() => {
+    if (scroll.current) scroll.current.scrollTop = 0;
+  }, [scroll, revision]);
+}
+
 export function revealWorkSection(element: HTMLElement, alignment = element) {
   let parent: HTMLElement | null = element;
   while (parent && !parent.classList?.contains('wbody')) {
