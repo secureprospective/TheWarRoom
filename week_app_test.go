@@ -125,6 +125,9 @@ func weekTestApp(t *testing.T, end string, bodies ...string) (*App, *weekTranspo
 
 func TestRefreshWeekAndClock(t *testing.T) {
 	a, transport, recorder := weekTestApp(t, "17", weekFixture(t, "nflSchedule-w5.json"))
+	// Inside week 5, before its first kickoff: the wall clock passed the fixture's last kickoff on
+	// 2026-10-12, after which no lineup lock is left and the reading has no week.
+	a.clockNow = func() time.Time { return time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC) }
 	before, err := a.TargetClock()
 	if err != nil || before.Value.Week != nil || before.Provenance.Freshness.State != FreshLive ||
 		!strings.Contains(before.Provenance.Freshness.Note, "NFL schedule not fetched yet") {

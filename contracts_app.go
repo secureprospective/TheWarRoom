@@ -17,13 +17,14 @@ type ContractsReadings struct {
 }
 
 type contractsInput struct {
-	directory snapshot.Provenance
-	mirror    state.MirrorSnapshot
-	asOf      string
-	used      map[string]domain.Money
-	rows      []snapshot.ContractRow
-	names     map[string]string
-	cap       *domain.Money
+	directory   snapshot.Provenance
+	mirror      state.MirrorSnapshot
+	asOf        string
+	used        map[string]domain.Money
+	rows        []snapshot.ContractRow
+	names       map[string]string
+	cap         *domain.Money
+	capOverride bool
 }
 
 func (a *App) contractsInput() (contractsInput, error) {
@@ -48,7 +49,7 @@ func (a *App) contractsInput() (contractsInput, error) {
 		}
 		capAmount = &parsed
 	}
-	return contractsInput{directory: directory.Players.Provenance, mirror: m, asOf: at, used: used, rows: snapshot.ContractRows(m, directory, names), names: names, cap: capAmount}, nil
+	return contractsInput{directory: directory.Players.Provenance, mirror: m, asOf: at, used: used, rows: snapshot.ContractRows(m, directory, names), names: names, cap: capAmount, capOverride: a.rulebook.SalaryCapOverridden()}, nil
 }
 
 func contractReading[T any](value T, at, source, how string, count int, err error) Reading[T] {
@@ -99,6 +100,9 @@ func (a *App) TargetContracts(raw snapshot.RawContractScope) ContractsReadings {
 		capErr = fmt.Errorf("cap summary: select a franchise held in the MFL mirror")
 	}
 	out.Cap = contractReading(snapshot.ContractsCap(input.rows, raw.Mine, input.mirror.Season, used, input.cap, input.names), input.asOf, "MFL mirror + active league configuration", "Cap comes from active league configuration, not a hardcoded rulebook value. Used is the mirror's current cap total: active salary, configured IR/taxi contribution (snapped to $10k), and signed MFL adjustments. Room = cap minus used, in cents. Future gross commitments flat-fill annual salary through expiration: inferred, not observed year cells. No future discounts, adjustments or dead-cap charges are projected.", 1, capErr)
+	if input.capOverride && out.Cap.Value.Cap != nil {
+		out.Cap.Value.CapSource = "League salary cap: " + out.Cap.Value.Cap.Text + " (set by the commissioner)"
+	}
 	return out
 }
 

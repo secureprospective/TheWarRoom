@@ -24,8 +24,8 @@ function ReportTable({ report, renderCell }: { report: Report; renderCell?: Cell
   const sortLabel = (i: number) => sort?.column === i && !sort.desc
     ? report.sortDescending : report.sortAscending;
   return <div className="draft-table-scroll" tabIndex={0} role="region" aria-label={report.title}>
-    <table className={report.columns.length <= 3 ? 'report-compact'
-      : report.columns.length >= 6 ? 'report-dense' : undefined}>
+    <table className={`report-table ${report.columns.length <= 3 ? 'report-compact'
+      : report.columns.length >= 6 ? 'report-dense' : ''}`}>
       <thead><tr>{report.columns.map((c, i) =>
       <th key={i} scope="col"
         aria-sort={sort?.column === i ? (sort.desc ? 'descending' : 'ascending') : 'none'}>
@@ -58,8 +58,11 @@ export function ReportView({ report, howLabel, heading: Heading = 'h5', renderCe
     <Heading>{report.title}</Heading>
     <p>{report.source}{report.asOf && <> · <span className="draft-local-time">{report.asOf}</span></>}</p>
     {report.note && <p role={report.status === 'failed' ? 'alert' : 'status'}>{report.note}</p>}
-    {report.summary.length > 0 && <table className="draft-summary"><tbody>{report.summary.map((row, i) =>
-      <tr key={i}><th scope="row">{row.cells[0]}</th><td>{row.cells[1]}</td></tr>)}</tbody></table>}
+    {report.summary.length > 0 && <div className="report-summary"
+      aria-label={report.id === 'M-154' ? 'Bye-week shortfalls' : 'Report summary'}>
+      {report.id === 'M-154' && <h6>Bye-week shortfalls</h6>}
+      <table className="draft-summary"><tbody>{report.summary.map((row, i) =>
+      <tr key={i}><th scope="row">{row.cells[0]}</th><td>{row.cells[1]}</td></tr>)}</tbody></table></div>}
     {report.link && <div className="market-controls">
       <Act verb="endpoint.open" args={{ id: report.link.endpoint }} label={report.link.label}>
         {report.link.label}

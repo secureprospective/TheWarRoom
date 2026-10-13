@@ -124,6 +124,8 @@ type App struct {
 	lineupsWeek         int
 	seasonChanged       func(context.Context)
 	seasonPause         func(context.Context, time.Duration) error
+	// clockNow is the league clock's "now"; nil is the wall clock. Tests pin it inside a held week.
+	clockNow func() time.Time
 
 	movesMu      sync.Mutex
 	movesWake    chan struct{}

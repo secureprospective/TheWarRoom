@@ -29,12 +29,19 @@ const amount: Parser<Amount> = (v, p) => {
   const r = object(v, p, ['cents', 'text']);
   return { cents: integer(r.cents, p, -Number.MAX_SAFE_INTEGER), text: text(r.text, p) };
 };
+function optionalNumber(v: unknown, p: string): number | null {
+  if (v === null) return null;
+  if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(`${p}: expected finite number`);
+  return v;
+}
 const poolRow: Parser<PoolRow> = (v, p) => {
   const r = object(v, p, [
     'id', 'name', 'position', 'team', 'age', 'experience', 'minimum', 'plan', 'planId',
-    'market', 'marketLines',
+    'market', 'marketLines', 'engine', 'ppg', 'lab', 'engineText', 'ppgText', 'labText',
   ]);
   return {
+    engineText: text(r.engineText, p), ppgText: text(r.ppgText, p), labText: text(r.labText, p),
+    engine: optionalNumber(r.engine, p), ppg: optionalNumber(r.ppg, p), lab: optionalNumber(r.lab, p),
     marketLines: array(r.marketLines, p, text),
     market: array(r.market, p, (v, p) => {
       const fact = object(v, p, ['label', 'text', 'reason', 'range']);
@@ -47,8 +54,9 @@ const poolRow: Parser<PoolRow> = (v, p) => {
   };
 };
 const pool: Parser<Pool> = (v, p) => {
-  const r = object(v, p, ['rows', 'positions', 'summary', 'sorts']);
+  const r = object(v, p, ['rows', 'positions', 'summary', 'sorts', 'engineNote', 'ppgNote']);
   return {
+    engineNote: text(r.engineNote, p), ppgNote: text(r.ppgNote, p),
     sorts: array(r.sorts, p, (v, p) => {
       const s = object(v, p, ['key', 'label']);
       return { key: text(s.key, p), label: text(s.label, p) };
@@ -167,6 +175,7 @@ export const poolProvider: PoolProvider = {
       await go().TargetPool(
         main.RawPoolScope.createFrom({
           franchiseId, position: scope.position, sort: scope.sort, desc: scope.desc,
+          showNoTeam: scope.showNoTeam ?? false,
         }),
       ),
     ),

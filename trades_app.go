@@ -18,6 +18,10 @@ import (
 )
 
 type TradeAsset struct {
+	Team     string          `json:"team,omitempty"`
+	Contract string          `json:"contract,omitempty"`
+	Now      *AssetCell      `json:"now,omitempty"`
+	Dynasty  *AssetCell      `json:"dynasty,omitempty"`
 	Token    string          `json:"token"`
 	Name     string          `json:"name"`
 	Position domain.Position `json:"position,omitempty"`

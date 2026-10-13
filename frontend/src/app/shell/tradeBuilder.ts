@@ -1,3 +1,4 @@
+import { parseAssetCell } from '../assets/contract';
 import { create } from 'zustand';
 import { TargetTradeBuilder } from '../../../wailsjs/go/main/App';
 import type { main } from '../../../wailsjs/go/models';
@@ -28,8 +29,12 @@ export function parseFigures(v: unknown, p: string): Figure[] {
 }
 export function parseAssets(v: unknown, p: string): TradeAsset[] {
   return array(v, p, (v, p) => {
-    const r = object(v, p, ['token', 'name', 'position']);
+    const r = object(v, p, ['token', 'name', 'position', 'team', 'contract', 'now', 'dynasty']);
     return { token: text(r.token, p), name: text(r.name, p),
+      ...(r.team === undefined ? {} : { team: text(r.team, p) }),
+      ...(r.contract === undefined ? {} : { contract: text(r.contract, p) }),
+      ...(r.now === undefined ? {} : { now: parseAssetCell(r.now, p) }),
+      ...(r.dynasty === undefined ? {} : { dynasty: parseAssetCell(r.dynasty, p) }),
       ...(r.position === undefined ? {} : { position: text(r.position, p) as TradeAsset['position'] }) };
   });
 }

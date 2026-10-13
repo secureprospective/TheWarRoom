@@ -197,7 +197,6 @@ describe('Contracts and cap read surfaces', () => {
       '$125,000,000',
       '$123.45',
       '$124,999,876.55',
-      'Inferred',
       'Flat-filled',
       '-$1.23',
       'MFL literal credit',
@@ -206,6 +205,8 @@ describe('Contracts and cap read surfaces', () => {
       'What-if models the charge; Make this a plan keeps a checked move',
     ])
       expect(text).toContain(value);
+    expect(text).not.toContain("Inferred");
+    expect(text).not.toContain("configuration as-of");
     const endpoints = test.root
       .querySelectorAll('[data-endpoint]')
       .map((node) => node.getAttribute('data-endpoint'));
@@ -669,4 +670,64 @@ it('re-reads the kept plan on moves change and clears terminal feedback', async 
   expect(go.main.App.TargetContractActs.mock.calls.length).toBeGreaterThan(before);
   expect(test.element.textContent).not.toContain('Plan:');
   expect(useContractMove.getState().kept).toBeUndefined();
+});
+
+it('Contract Acts menu click renders the row form, scrolls to it and focuses it', async () => {
+  shell(); useContractMove.setState({ mine: '', player: '' });
+  const wire = actPlan();
+  const go = { main: { App: { TargetContractActs: vi.fn(async () => reading([wire])) } } };
+  const scroll = { scrollTop: 0, clientTop: 0, clientHeight: 700,
+    getBoundingClientRect: () => ({ top: 0 }) };
+  const focus = vi.spyOn(TestElement.prototype, 'focus');
+  const test = await mount(createElement('div', null,
+    createElement(WhatIfActs, { mine: '0001', player: '0042', menu: true, value: {
+      stale: false, banner: '', empty: '', notice: '', moves: [], figures: [],
+      choices: [{ player: '0042', cutLabel: 'Cut him', buyoutLabel: 'Buy him out',
+        buyoutAllowed: false, reason: 'No buyout' }],
+    } }), createElement(ContractMovePanel, { mine: '0001' })), { go });
+  const create = document.createElement.bind(document);
+  vi.spyOn(document, 'createElement').mockImplementation(tag => {
+    const node = create(tag);
+    if (tag === 'section') Object.assign(node, { closest: () => scroll,
+      getBoundingClientRect: () => ({ top: -300 }) });
+    return node;
+  });
+  const menu = nodes(test.root, 'BUTTON').find(b => b.textContent === 'Contract Acts…')!;
+  await act(async () => { (props(menu).onClick as () => void)(); });
+  const panel = nodes(test.root, 'SECTION').find(s => s.getAttribute('aria-label') === 'Contract move');
+  expect(panel?.textContent).toContain(wire.subject);
+  expect(panel?.textContent).toContain('Extend him');
+  expect(panel?.getAttribute('tabindex')).toBe('-1');
+  expect(scroll.scrollTop).toBe(-300);
+  expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  expect(go.main.App.TargetContractActs.mock.calls.length).toBeGreaterThan(0);
+  await act(async () => { useContractMove.setState({ mine: '', player: '' }); });
+});
+
+it.each(['keydown', 'pointerdown', 'scroll'])('wires open RowMenu dismissal to document %s', async name => {
+  const events = new EventTarget();
+  const test = await mount(createElement(WhatIfActs, { mine: '0001', player: '0042', menu: true,
+    value: { stale: false, banner: '', empty: '', notice: '', moves: [], figures: [],
+      choices: [{ player: '0042', cutLabel: 'Cut', buyoutLabel: 'Buyout',
+        buyoutAllowed: false, reason: '' }] } }));
+  const details = nodes(test.root, 'DETAILS')[0], summary = nodes(details, 'SUMMARY')[0];
+  const focus = vi.spyOn(summary, 'focus');
+  Object.assign(details, { open: true, querySelector: () => summary, contains: () => false });
+  vi.spyOn(document, 'addEventListener').mockImplementation((type, listener, options) => {
+    events.addEventListener(type, listener, options);
+  });
+  vi.spyOn(document, 'removeEventListener').mockImplementation((type, listener, options) => {
+    events.removeEventListener(type, listener, options);
+  });
+  await act(async () => {
+    (props(details).onToggle as (e: unknown) => void)({ currentTarget: details });
+  });
+  const event = new Event(name);
+  Object.defineProperty(event, 'key', { value: 'Escape' });
+  await act(async () => { events.dispatchEvent(event); });
+  expect((details as unknown as HTMLDetailsElement).open).toBe(false);
+  expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  await act(async () => { test.renderer.unmount(); });
+  Object.assign(details, { open: true }); events.dispatchEvent(new Event('scroll'));
+  expect((details as unknown as HTMLDetailsElement).open).toBe(true);
 });
