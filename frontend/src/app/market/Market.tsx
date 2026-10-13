@@ -41,7 +41,7 @@ export default function Market({ kind, snapshot }: { kind?: string; snapshot?: S
   if (kind) return <MarketInspector kind={kind} />;
   return <MarketWorkspace />;
 }
-function MarketWorkspace() {
+export function MarketWorkspace() {
   const s = commands.use();
   const draft = s.endpointIds.some((id) => /^L-(1[5-9]|2[0-2])$/.test(id));
   return (
@@ -50,7 +50,7 @@ function MarketWorkspace() {
         <Act variant="button" verb="endpoint.open" args={{ id: 'L-01' }} label="Trade Market" active={!draft}>
           Trade Market
         </Act>
-        <Act variant="button" verb="nav.open" args={{ node: 'trade', workspace: 'draft-room' }}
+        <Act variant="button" verb="endpoint.open" args={{ id: 'L-15' }}
           label="Draft lab" active={draft}>
           Draft lab
         </Act>

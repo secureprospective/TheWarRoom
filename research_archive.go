@@ -49,13 +49,19 @@ func (a *App) archivedResearchFeed(ctx context.Context, kind, week string) heldS
 
 // Opening Research reads disk, never the network or the launch refresh lock.
 func (a *App) hydrateResearch(extraIDs ...string) {
+	ctx, cancel := context.WithTimeout(a.fallbackParent(), fallbackTimeout)
+	defer cancel()
+	a.hydrateResearchContext(ctx, extraIDs...)
+}
+
+// hydrateResearchContext publishes archived research; one hydration at a time, so a reader
+// never sees lookups marked done before their results are held.
+func (a *App) hydrateResearchContext(ctx context.Context, extraIDs ...string) {
 	a.researchArchiveMu.Lock()
 	defer a.researchArchiveMu.Unlock()
 	if a.history == nil {
 		return
 	}
-	ctx, cancel := context.WithTimeout(a.fallbackParent(), fallbackTimeout)
-	defer cancel()
 	a.seasonMu.Lock()
 	feeds := maps.Clone(a.research.feeds)
 	depth, injury := a.research.depth, a.seasonInjuries

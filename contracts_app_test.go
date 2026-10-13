@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
@@ -50,5 +51,28 @@ func TestTargetContractsAndPlayerReadOnlyMirror(t *testing.T) {
 	raw.Mine = "9999"
 	if a.TargetContracts(raw).Cap.Status != ReadingFailed {
 		t.Fatal("unknown team cap shown")
+	}
+}
+
+func TestCapSourceUsesGMSettingsWords(t *testing.T) {
+	a := whatIfTestApp(t)
+	if err := a.rulebook.Initialize(a.ctx, lineupRulesSource{cfg: league.RawConfig{SalaryCapAmount: "120"}}); err != nil {
+		t.Fatal(err)
+	}
+	read := func() string {
+		r := a.TargetContracts(snapshot.RawContractScope{Mine: "0001", Sort: "name"})
+		if r.Cap.Status != ReadingOK {
+			t.Fatalf("cap reading: %+v", r.Cap)
+		}
+		return r.Cap.Value.CapSource
+	}
+	if got := read(); got != "League salary cap: $120,000,000 (MFL league settings)" {
+		t.Fatal(got)
+	}
+	if err := a.rulebook.SetOverride(a.ctx, "cap", "salaryCapAmount", "150", "test"); err != nil {
+		t.Fatal(err)
+	}
+	if got := read(); got != "League salary cap: $150,000,000 (set by the commissioner)" {
+		t.Fatal(got)
 	}
 }

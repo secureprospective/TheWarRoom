@@ -40,6 +40,10 @@ export function useWorkAnchor(root: RefObject<HTMLElement>, selector: string) {
     const hold = (row: HTMLElement): WorkAnchor => ({ row, scroll, top: row.getBoundingClientRect().top });
     const capture = (event: Event) => {
       const target = event.target as HTMLElement;
+      if (target.closest?.('button')?.getAttribute('aria-label') === 'Contract Acts…') {
+        anchor.current = undefined;
+        return;
+      }
       const inside = element.contains(target);
       const row = target.closest?.<HTMLElement>(selector);
       const insert = target.closest?.<HTMLElement>('.bid-form, .contract-move');

@@ -317,6 +317,6 @@ it('all eight Draft endpoints route through Trade Floor Draft room and have menu
     expect(c.read()).toMatchObject({ asset: 'pick1:next', inspector: 'rest' });
     const source = readFileSync('src/app/market/Market.tsx', 'utf8');
     expect(source).toContain("import('./Draft')");
-    expect(source).toContain("workspace: 'draft-room'");
+    expect(source).toContain("args={{ id: 'L-15' }}");
     expect(source).toContain('<Draft kind={kind}');
 });

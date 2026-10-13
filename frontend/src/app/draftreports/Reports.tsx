@@ -18,6 +18,8 @@ export function ReportsView({ board, selected, refreshVerb = 'draft.reports', co
   return <div className="market draft-reports">
     <h4>{board.title}</h4>
     <div className="market-controls" aria-label={board.title}>
+      {refreshVerb === 'draft.reports' &&
+        <Act variant="text" verb="endpoint.open" args={{ id: 'L-15' }} label="Draft lab">Draft lab</Act>}
       {board.reports.map(r => <Act variant="text"
         key={r.id} verb="endpoint.open" args={{ id: r.id as EndpointId }}
         label={r.title} active={report.id === r.id}>{r.title}</Act>)}

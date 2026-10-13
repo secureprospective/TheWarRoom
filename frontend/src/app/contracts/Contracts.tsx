@@ -111,14 +111,13 @@ function Years({ years }: { years: Year[] }) {
     <>
       <table className="contract-years" aria-label="Year commitments">
         <thead>
-          <tr><th>Year</th><th>Amount</th><th>Tag</th></tr>
+          <tr><th>Year</th><th>Amount</th></tr>
         </thead>
         <tbody>
           {years.map((year) => (
             <tr key={year.season}>
               <th scope="row">{year.season}</th>
               <td className="contract-money">{year.cost.text}</td>
-              <td>{year.tag}</td>
             </tr>
           ))}
         </tbody>

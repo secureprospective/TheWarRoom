@@ -128,5 +128,5 @@ func personalScoreText(points map[string]string, id string) string {
 	if value, ok := points[id]; ok {
 		return value
 	}
-	return "Unavailable"
+	return "No score"
 }

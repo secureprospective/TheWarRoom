@@ -172,7 +172,7 @@ func TestWhatIfPresentation(t *testing.T) {
 		t.Fatalf("result rows %+v", bought.Value.Figures)
 	}
 	for i, figure := range bought.Value.Figures {
-		if i > 3 && (!strings.Contains(figure.Label, "gross commitments") || strings.Contains(figure.Label, "dead cap")) {
+		if i > 3 && (!strings.Contains(figure.Label, "commitments at today's salaries") || strings.Contains(figure.Label, "dead cap")) {
 			t.Fatalf("future row %+v", figure)
 		}
 	}
@@ -186,5 +186,23 @@ func TestWhatIfPresentation(t *testing.T) {
 		if got := whatIfChange(delta.cents); got != delta.want {
 			t.Fatalf("change %d: %s", delta.cents, got)
 		}
+	}
+}
+
+func TestWhatIfStaleEmptyRebasesBeforeReadOrCut(t *testing.T) {
+	for _, action := range []string{"read", "cut"} {
+		t.Run(action, func(t *testing.T) {
+			a := whatIfTestApp(t)
+			before := whatIfCall(t, a, "read", "", "")
+			replaceWhatIfMirror(t, a, 11*100_000_000)
+			r := whatIfCall(t, a, action, "0042", "")
+			if r.Value.Stale || r.Value.Notice != "" || r.Baseline == before.Baseline ||
+				r.Value.Figures[1].Before == before.Value.Figures[1].Before {
+				t.Fatalf("empty session did not rebase: %+v", r)
+			}
+			if action == "cut" && (len(r.Value.Moves) != 1 || r.Value.Moves[0].Charge.Cents != 770_000_000) {
+				t.Fatalf("cut did not use new salary: %+v", r.Value)
+			}
+		})
 	}
 }

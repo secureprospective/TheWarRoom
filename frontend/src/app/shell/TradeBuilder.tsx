@@ -1,3 +1,5 @@
+import { AssetCellView } from '../assets/AssetNumber';
+import type { TradeAsset } from '../data/contract';
 import { useEffect } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
@@ -8,6 +10,15 @@ import { useBuilder, builderAction, type BuilderPlan } from './tradeBuilder';
 import '../contracts/contracts.css';
 import '../pool/pool.css';
 
+export function BuilderAsset({ asset }: { asset: TradeAsset }) {
+  return <span className="builder-asset">
+    <b>{asset.name}</b>
+    {asset.position && <span>{asset.position} · {asset.team || 'No NFL team'} · {asset.contract}</span>}
+    {asset.now && <span>On-field-now: <AssetCellView cell={asset.now} /></span>}
+    {asset.dynasty && <span>{asset.position ? 'Dynasty value' : 'Lab pick value'}:
+      {' '}<AssetCellView cell={asset.dynasty} /></span>}
+  </span>;
+}
 function Deal({ plan, mine, busy }: { plan: BuilderPlan; mine: string; busy: boolean }) {
   return <article className={`bid-plan ${gravityClasses.G3}`} aria-label="Trade proposal plan">
     <h5>Both rosters after this deal</h5>
@@ -19,7 +30,7 @@ function Deal({ plan, mine, busy }: { plan: BuilderPlan; mine: string; busy: boo
     <div className="trade-teams">{plan.teams.map(team => <section key={team.team}>
       <h6>{team.team}</h6><WhatIfFigures figures={team.figures} label={`${team.team} trade pre-flight`} />
       <details><summary>Roster after the deal · {team.roster.length}</summary>
-        <ul>{team.roster.map(p => <li key={p.token}>{p.name}</li>)}</ul></details>
+        <ul>{team.roster.map(p => <li key={p.token}><BuilderAsset asset={p} /></li>)}</ul></details>
     </section>)}</div>
     <p>Agree on ProBoards first. After acceptance there, this deal cannot be withdrawn.</p>
     <pre className="bid-post">{plan.post}</pre>
@@ -57,7 +68,7 @@ export default function TradeBuilder({ mine }: { mine: string }) {
         <div className="trade-choices">{team?.assets.map(p => <label key={p.token}>
           <input type="checkbox" checked={s[side].includes(p.token)} disabled={s.busy}
             onChange={() => commands.dispatch('trade.builder', { action: side, value: p.token })} />
-          {p.name}</label>)}</div>
+          <BuilderAsset asset={p} /></label>)}</div>
       </fieldset>;
     })}</div>}
     <label>Why this deal helps my team <textarea value={s.rationale} disabled={s.busy}
