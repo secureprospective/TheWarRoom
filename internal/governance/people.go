@@ -56,10 +56,16 @@ func (e RoleGranted) apply(s *State) error {
 	if e.Principal == "" || !validRole(e.Role) {
 		return fmt.Errorf("choose a person and a league role")
 	}
+	if e.Role == CoCommissioner && s.coCommissioner != "" {
+		return fmt.Errorf("%s: revoke them first", "This league already has a co-commissioner")
+	}
 	if e.Role == DOT && !s.HasRole(e.Principal, DOT) && len(s.members(DOT)) >= 10 {
 		return fmt.Errorf("dOT already has its maximum of 10 seats")
 	}
 	s.grant(e.Principal, e.Role)
+	if e.Role == CoCommissioner {
+		s.coCommissioner = e.Principal
+	}
 	return nil
 }
 
@@ -77,6 +83,9 @@ func (e RoleRevoked) apply(s *State) error {
 		return fmt.Errorf("the last commissioner cannot be removed; choose a successor first")
 	}
 	delete(s.roles[e.Principal], e.Role)
+	if e.Role == CoCommissioner {
+		s.coCommissioner = ""
+	}
 	return nil
 }
 

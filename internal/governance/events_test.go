@@ -114,10 +114,13 @@ func TestSuccession(t *testing.T) {
 	}
 	rejected(t, s, ElectionOpened{ID: "election", Principal: "owner"})
 	s = change(t, s, SeatReplaced{Franchise: "f00", Principal: "owner"})
-	s = change(t, s, ElectionOpened{ID: "election", Principal: "cc"})
-	s = change(t, s, BallotCast{ID: "election", Principal: "owner", Choice: "new"})
-	rejected(t, s, VoteClosed{ID: "election", Winner: "unvoted"})
-	s = change(t, s, VoteClosed{ID: "election", Winner: "new"})
+	at := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	s = change(t, s, SeatReplaced{Franchise: "f01", Principal: "second"})
+	s = change(t, s, ElectionOpened{ID: "election", Principal: "cc", Now: at})
+	s = change(t, s, BallotCast{ID: "election", Principal: "owner", Choice: "new", Now: at})
+	s = change(t, s, BallotCast{ID: "election", Principal: "second", Choice: "new", Now: at})
+	rejected(t, s, VoteClosed{ID: "election", Winner: "unvoted", Now: at.Add(7 * 24 * time.Hour)})
+	s = change(t, s, VoteClosed{ID: "election", Winner: "new", Now: at.Add(7 * 24 * time.Hour)})
 	if !s.HasRole("new", Commissioner) || s.HasRole("creator", Commissioner) || s.ElectionNeeded() {
 		t.Fatal("elected successor not installed")
 	}

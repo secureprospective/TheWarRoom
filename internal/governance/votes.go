@@ -3,14 +3,22 @@ package governance
 import (
 	"fmt"
 	"maps"
+	"slices"
+	"time"
 )
 
 type Vote struct {
-	ID             string
-	Target         Principal
-	Election       bool
-	Ballots        map[FranchiseID]Principal
-	Closed, Passed bool
+	ID               string
+	Target           Principal
+	Election         bool
+	Ballots          map[FranchiseID]Principal
+	Closed, Passed   bool
+	Runoff           bool
+	Candidates       []Principal
+	FirstBallots     map[FranchiseID]Principal
+	TieBallots       map[Principal]Principal
+	OpenedAt, EndsAt time.Time
+	Winner           Principal
 }
 type VoteOutOpened struct {
 	ID                      string
@@ -26,6 +34,7 @@ func (e VoteOutOpened) apply(s *State) error {
 }
 
 type ElectionOpened struct {
+	Now       time.Time
 	ID        string
 	Principal Principal
 }
@@ -35,7 +44,16 @@ func (e ElectionOpened) apply(s *State) error {
 	if !s.ElectionNeeded() {
 		return fmt.Errorf("an election needs a commissioner succession first")
 	}
-	return s.openVote(e.ID, e.Principal, s.outgoing, true)
+	if e.Now.IsZero() {
+		return fmt.Errorf("record when voting opens")
+	}
+	if err := s.openVote(e.ID, e.Principal, s.outgoing, true); err != nil {
+		return err
+	}
+	v := s.votes[e.ID]
+	v.OpenedAt, v.EndsAt = e.Now, e.Now.Add(s.electionPeriod)
+	s.votes[e.ID] = v
+	return nil
 }
 func (s *State) openVote(id string, p, target Principal, election bool) error {
 	if !s.HasRole(p, CoCommissioner) && !s.HasRole(p, DOT) {
@@ -60,6 +78,7 @@ type BallotCast struct {
 	ID        string
 	Principal Principal
 	Choice    Principal
+	Now       time.Time
 }
 
 func (BallotCast) Private() bool { return false }
@@ -69,8 +88,19 @@ func (e BallotCast) apply(s *State) error {
 	if !ok || v.Closed || id == "" {
 		return fmt.Errorf("only a seated owner may vote in an open ballot")
 	}
-	if v.Election && e.Choice == "" {
-		return fmt.Errorf("choose a successor")
+	if v.Election {
+		if e.Choice == "" {
+			return fmt.Errorf("choose a successor")
+		}
+		if e.Now.IsZero() || e.Now.Before(v.OpenedAt) || !e.Now.Before(v.EndsAt) {
+			return fmt.Errorf("cast your ballot during the voting period")
+		}
+		if len(v.TieBallots) != 0 {
+			return fmt.Errorf("the runoff ballots are sealed for a tie ruling")
+		}
+		if v.Runoff && !slices.Contains(v.Candidates, e.Choice) {
+			return fmt.Errorf("choose a runoff candidate")
+		}
 	}
 	if !v.Election && e.Choice != "yes" && e.Choice != "no" {
 		return fmt.Errorf("choose yes or no")
@@ -81,6 +111,7 @@ func (e BallotCast) apply(s *State) error {
 }
 
 type VoteClosed struct {
+	Now    time.Time
 	ID     string
 	Winner Principal
 }
@@ -92,32 +123,17 @@ func (e VoteClosed) apply(s *State) error {
 		return fmt.Errorf("choose an open vote")
 	}
 	if v.Election {
-		// Election selection belongs to the caller: the spec sets no election formula.
-		if e.Winner == "" {
-			return fmt.Errorf("record the owners' elected successor")
+		return s.closeElection(v, e)
+	}
+	yes := 0
+	for _, choice := range v.Ballots {
+		if choice == "yes" {
+			yes++
 		}
-		found := false
-		for _, choice := range v.Ballots {
-			if choice == e.Winner {
-				found = true
-			}
-		}
-		if !found {
-			return fmt.Errorf("the successor needs an owner ballot")
-		}
-		s.transfer(v.Target, e.Winner)
-		v.Passed = true
-	} else {
-		yes := 0
-		for _, choice := range v.Ballots {
-			if choice == "yes" {
-				yes++
-			}
-		}
-		v.Passed = yes >= VoteOutThreshold(len(s.franchises))
-		if v.Passed {
-			s.startSuccession(v.Target)
-		}
+	}
+	v.Passed = yes >= VoteOutThreshold(len(s.franchises))
+	if v.Passed {
+		s.startSuccession(v.Target)
 	}
 	v.Closed = true
 	s.votes[e.ID] = v
@@ -126,6 +142,13 @@ func (e VoteClosed) apply(s *State) error {
 func VoteOutThreshold(franchises int) int { return franchises - franchises/3 }
 func (s State) Vote(id string) (Vote, bool) {
 	v, ok := s.votes[id]
+	return v.clone(), ok
+}
+
+func (v Vote) clone() Vote {
 	v.Ballots = maps.Clone(v.Ballots)
-	return v, ok
+	v.FirstBallots = maps.Clone(v.FirstBallots)
+	v.TieBallots = maps.Clone(v.TieBallots)
+	v.Candidates = slices.Clone(v.Candidates)
+	return v
 }

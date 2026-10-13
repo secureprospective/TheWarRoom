@@ -35,16 +35,18 @@ type Invite struct {
 	Revoked, Redeemed bool
 }
 type State struct {
-	created             bool
-	franchises          map[FranchiseID]Franchise
-	roles               map[Principal]map[Role]bool
-	invites             map[string]Invite
-	visibility          map[string]string
-	activity            map[Principal]time.Time
-	inSeason, offseason time.Duration
-	votes               map[string]Vote
-	pending             Principal
-	outgoing            Principal
+	created                      bool
+	franchises                   map[FranchiseID]Franchise
+	roles                        map[Principal]map[Role]bool
+	invites                      map[string]Invite
+	visibility                   map[string]string
+	activity                     map[Principal]time.Time
+	inSeason, offseason          time.Duration
+	votes                        map[string]Vote
+	pending                      Principal
+	outgoing                     Principal
+	coCommissioner               Principal
+	electionPeriod, runoffPeriod time.Duration
 }
 type Event interface {
 	apply(*State) error
@@ -54,7 +56,8 @@ type Event interface {
 func emptyState() State {
 	return State{franchises: make(map[FranchiseID]Franchise), roles: make(map[Principal]map[Role]bool),
 		invites: make(map[string]Invite), visibility: make(map[string]string), activity: make(map[Principal]time.Time),
-		inSeason: 14 * 24 * time.Hour, offseason: 30 * 24 * time.Hour, votes: make(map[string]Vote)}
+		inSeason: 14 * 24 * time.Hour, offseason: 30 * 24 * time.Hour, electionPeriod: 7 * 24 * time.Hour,
+		runoffPeriod: 7 * 24 * time.Hour, votes: make(map[string]Vote)}
 }
 func (s State) clone() State {
 	n := s
@@ -72,7 +75,7 @@ func (s State) clone() State {
 	n.activity = maps.Clone(s.activity)
 	n.votes = maps.Clone(s.votes)
 	for id, v := range n.votes {
-		v.Ballots = maps.Clone(v.Ballots)
+		v = v.clone()
 		n.votes[id] = v
 	}
 	return n

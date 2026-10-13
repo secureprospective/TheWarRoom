@@ -82,14 +82,10 @@ func (s *State) transfer(from, to Principal) {
 func (s *State) startSuccession(from Principal) {
 	s.outgoing = from
 	delete(s.roles[from], Commissioner)
-	for _, p := range s.members(CoCommissioner) {
-		if p != from {
-			s.pending = p
-			s.transfer(from, p)
-			s.pending = p
-			s.outgoing = from
-			return
-		}
+	if p := s.coCommissioner; p != "" && p != from {
+		s.transfer(from, p)
+		s.pending = p
+		s.outgoing = from
 	}
 }
 
