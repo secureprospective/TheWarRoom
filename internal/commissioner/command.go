@@ -148,10 +148,14 @@ func (r RawCommand) validatePeoplePlacement() error {
 	if r.Effective != "now" {
 		return fmt.Errorf("people changes take effect now")
 	}
-	if event.Private() && r.Visibility != "private" {
-		return fmt.Errorf("role changes and invitations must stay private")
+	private := event.Private()
+	if d, ok := successionDefinitionFor(r.Command); ok {
+		private = d.private
 	}
-	if !event.Private() && r.Visibility != "league" {
+	if private && r.Visibility != "private" {
+		return fmt.Errorf("role changes, invitations and ballots must stay private")
+	}
+	if !private && r.Visibility != "league" {
 		return fmt.Errorf("league-state changes must be visible to owners")
 	}
 	return nil

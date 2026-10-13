@@ -27,14 +27,16 @@ type PeopleInvite struct {
 }
 
 type People struct {
-	League    string         `json:"league"`
-	Name      string         `json:"name"`
-	Revision  int64          `json:"revision"`
-	Seats     []PeopleSeat   `json:"seats"`
-	Roles     []PeopleRole   `json:"roles"`
-	Invites   []PeopleInvite `json:"invites"`
-	DOTCount  int            `json:"dotCount"`
-	DOTStatus string         `json:"dotStatus"`
+	League     string         `json:"league"`
+	Name       string         `json:"name"`
+	Revision   int64          `json:"revision"`
+	Seats      []PeopleSeat   `json:"seats"`
+	Roles      []PeopleRole   `json:"roles"`
+	Invites    []PeopleInvite `json:"invites"`
+	DOTCount   int            `json:"dotCount"`
+	DOTStatus  string         `json:"dotStatus"`
+	Votes      []PeopleVote   `json:"votes"`
+	Succession string         `json:"succession"`
 }
 
 func PeopleReading(league, principal string, records []Record) (People, error) {
@@ -72,6 +74,8 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 	if private {
 		out.Invites = readInvites(state, invites)
 	}
+	out.Votes = readVotes(state, records, len(out.Seats), private)
+	out.Succession = successionStatus(state, records)
 	return out, nil
 }
 

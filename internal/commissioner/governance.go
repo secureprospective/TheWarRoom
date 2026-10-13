@@ -12,7 +12,14 @@ func recordEvents(r Record) ([]governance.Event, error) {
 		return creationEvents(r), nil
 	}
 	if r.Command.Args.People != nil {
-		event, err := r.Command.Args.People.event(r.Command.Command)
+		people := r.Command.Args.People
+		var event governance.Event
+		var err error
+		if _, ok := successionDefinitionFor(r.Command.Command); ok {
+			event, err = people.successionEvent(r.Command.Command, r.Receipt.RecordedAt)
+		} else {
+			event, err = people.event(r.Command.Command)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -27,6 +34,8 @@ func GovernanceState(records []Record) (governance.State, error) {
 	for _, r := range records {
 		// Creation remains bootstrap metadata, just as in the ledger's identity projection.
 		if !projection.Active[r.Receipt.Entry] && r.Command.Command != Create {
+			// A reversed change was still the person's activity when it was recorded.
+			events = withActivity(events, r)
 			continue
 		}
 		recorded, err := recordEvents(r)
@@ -34,6 +43,7 @@ func GovernanceState(records []Record) (governance.State, error) {
 			return governance.State{}, err
 		}
 		events = append(events, recorded...)
+		events = withActivity(events, r)
 	}
 	state, err := governance.Replay(events)
 	if err != nil {
@@ -45,6 +55,9 @@ func GovernanceState(records []Record) (governance.State, error) {
 type GovernanceAuthorizer struct{ State governance.State }
 
 func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string, error) {
+	if d, ok := successionDefinitionFor(command); ok {
+		return successionPermission(a.State, principal, d)
+	}
 	control := ""
 	switch command {
 	case Create:
@@ -90,6 +103,9 @@ func AuthorizeRecords(raw RawCommand, principal string, records []Record) (strin
 	}
 	if raw.Command == "commish.seat.invite.redeem" {
 		return authorizeRedemption(state, raw, principal)
+	}
+	if _, ok := successionDefinitionFor(raw.Command); ok {
+		return authorizeSuccession(state, raw, principal)
 	}
 	auth := GovernanceAuthorizer{State: state}
 	if raw.Command == RulesSet {
@@ -148,6 +164,16 @@ func CheckGovernanceAppend(raw RawCommand, principal string, records []Record, a
 	trial = append(trial, Record{Command: raw, Principal: principal,
 		Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: at}})
 	if _, err := GovernanceState(trial); err != nil {
+		return fmt.Errorf("people change refused: %w", err)
+	}
+	if _, ok := successionDefinitionFor(raw.Command); !ok {
+		return nil
+	}
+	before, err := GovernanceState(records)
+	if err != nil {
+		return err
+	}
+	if err := takeoverWaitedLongest(before, raw, at); err != nil {
 		return fmt.Errorf("people change refused: %w", err)
 	}
 	return nil
