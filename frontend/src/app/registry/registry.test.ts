@@ -227,7 +227,12 @@ describe('Endpoint map', () => {
       for (const place of surfacePlaces) {
         commands.dispatch('surface.open', { place });
         const html = await renderSettledApp();
-        expect(html).toContain(`${place} endpoint index`);
+        if (place === 'Report drawer') {
+          expect(html).toContain('Report shortcuts');
+          expect(html).toContain(endpointById('C-02').name.replaceAll('"', '&quot;'));
+          expect(html).toContain('League Pulse › Race');
+          expect(html).not.toContain('Report drawer endpoint index');
+        } else expect(html).toContain(`${place} endpoint index`);
       }
       expect(() => assertEndpointRoutes(endpoints, searchCandidates(executor))).not.toThrow();
       commands.dispatch('overlays.close', {});

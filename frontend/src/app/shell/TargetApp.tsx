@@ -19,6 +19,7 @@ import './shell.css';
 import { connectDensity } from './density';
 import { useWorkScrollReset } from './workScroll';
 
+const ReportDrawer = lazy(() => import('../registry/ReportDrawer'));
 const StatusStrip = lazy(() => import('./StatusStrip'));
 const EntityInspector = lazy(() => import('./EntityInspector'));
 const DataSources = lazy(() => import('../datasources/DataSources'));
@@ -364,7 +365,9 @@ export function TargetApp() {
           </header>
           {s.endpointSurface === 'Status strip' && <Suspense fallback={null}>
             <StatusStrip /><ClockStrip reading={clock} /></Suspense>}
-          <EndpointIndex placement={s.endpointSurface} />
+          {s.endpointSurface === 'Report drawer' ? <Suspense fallback={<p>Reading reports…</p>}>
+            <ReportDrawer />
+          </Suspense> : <EndpointIndex placement={s.endpointSurface} />}
         </aside>
       )}
     </div>
