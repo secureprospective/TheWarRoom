@@ -37,10 +37,10 @@ func testDraftBoard(t *testing.T) ReportBoard {
 	t.Helper()
 	at := time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC)
 	picks := []draftreports.Pick{draftFixturePick(t, 2, 1, "0002", "0531", 160), draftFixturePick(t, 1, 2, "0001", "0532", 130), draftFixturePick(t, 1, 1, "0002", "0533", 100)}
-	return buildDraftReports(heldSeasonFeed[[]draftreports.Pick]{value: picks, fetchedAt: at},
+	return buildDraftReports(2026, heldSeasonFeed[[]draftreports.Pick]{value: picks, fetchedAt: at},
 		heldSeasonFeed[[]draftreports.FuturePick]{value: []draftreports.FuturePick{{Year: 2027, Round: 2, Original: "0001", Owner: "0002"}}, fetchedAt: at},
 		map[string]string{"0531": "Third", "0532": "Second", "0533": "First"}, map[string]string{"0001": "One", "0002": "Two"},
-		map[string]float64{"0531": 50, "0532": 10, "0533": 30}, "Player values: the app's model, run Oct 11, 2026, 12:00 PM.", "Next draft: date unknown.", time.UTC)
+		map[string]float64{"0531": 50, "0532": 10, "0533": 30}, "Engine run: October 11, 2026, 12:00 PM.", "Next draft: date unknown.", time.UTC)
 }
 
 func TestDraftReportsOrderGridAndOwnership(t *testing.T) {
@@ -91,20 +91,20 @@ func TestDraftValueDistanceAndMissingValues(t *testing.T) {
 	if r.Rows[0].Range == nil || r.Rows[0].Range.Value != 1.5 || r.Rows[1].Range.Value != 0.5 || r.Rows[2].Range != nil {
 		t.Fatal(r.Rows)
 	}
-	if r.Rows[0].Cells[4] != "+10.00 points/game above the round 1 median" || r.Rows[1].Cells[4] != "10.00 points/game below the round 1 median" || !strings.Contains(r.How, "median") || !strings.Contains(r.How, "dynasty value") {
+	if r.Rows[0].Cells[4] != "+10.00 points/game above the round 1 median" || r.Rows[1].Cells[4] != "10.00 points/game below the round 1 median" || !strings.Contains(r.How, "median") || !strings.Contains(r.How, "Engine points per game") {
 		t.Fatal(r)
 	}
 }
 
 func TestDraftEmptyUnavailableAndStale(t *testing.T) {
-	b := buildDraftReports(heldSeasonFeed[[]draftreports.Pick]{}, heldSeasonFeed[[]draftreports.FuturePick]{}, nil, nil, nil, "No model", "Next unknown", time.UTC)
+	b := buildDraftReports(2026, heldSeasonFeed[[]draftreports.Pick]{}, heldSeasonFeed[[]draftreports.FuturePick]{}, nil, nil, nil, "No model", "Next unknown", time.UTC)
 	for _, r := range b.Reports {
 		if r.Status != "failed" || !strings.Contains(r.Note, "Report data unavailable") || r.How == "" || r.Source == "" {
 			t.Fatal(r)
 		}
 	}
 	at := time.Now()
-	b = buildDraftReports(heldSeasonFeed[[]draftreports.Pick]{value: []draftreports.Pick{}, fetchedAt: at}, heldSeasonFeed[[]draftreports.FuturePick]{value: []draftreports.FuturePick{}, fetchedAt: at}, nil, nil, nil, "No model", "Next unknown", time.UTC)
+	b = buildDraftReports(2026, heldSeasonFeed[[]draftreports.Pick]{value: []draftreports.Pick{}, fetchedAt: at}, heldSeasonFeed[[]draftreports.FuturePick]{value: []draftreports.FuturePick{}, fetchedAt: at}, nil, nil, nil, "No model", "Next unknown", time.UTC)
 	for _, r := range b.Reports {
 		if r.Status != "empty" || !strings.Contains(r.Note, "no records") {
 			t.Fatal(r)
@@ -195,7 +195,7 @@ func TestDraftExplicitUnmadeStatusAndLocalTime(t *testing.T) {
 	p := draftFixturePick(t, 1, 1, "0001", "0531", 100)
 	pending := draftreports.Pick{Round: 1, Slot: 2, Franchise: "0002"}
 	feed := heldSeasonFeed[[]draftreports.Pick]{value: []draftreports.Pick{p, pending}, fetchedAt: time.Unix(100, 0)}
-	r := draftStatus(feed.value, nil, feed, "Method", time.UTC)
+	r := draftStatus(2026, feed.value, nil, feed, "Method", time.UTC)
 	if r.Rows[0].Cells[1] != "1" || !strings.Contains(r.Rows[1].Cells[1], "1.02") || !strings.Contains(r.Rows[2].Cells[1], "1 unmade") {
 		t.Fatal(r)
 	}
@@ -208,7 +208,7 @@ func TestDraftExplicitUnmadeStatusAndLocalTime(t *testing.T) {
 func TestDraftCellLinesAndNameFallback(t *testing.T) {
 	picks := []draftreports.Pick{draftFixturePick(t, 1, 1, "0001", "0531", 100), draftFixturePick(t, 1, 2, "0001", "0532", 130)}
 	feed := heldSeasonFeed[[]draftreports.Pick]{value: picks, fetchedAt: time.Unix(100, 0)}
-	b := buildDraftReports(feed, heldSeasonFeed[[]draftreports.FuturePick]{}, map[string]string{"0531": "First"}, nil, nil, "", "", time.UTC)
+	b := buildDraftReports(2026, feed, heldSeasonFeed[[]draftreports.FuturePick]{}, map[string]string{"0531": "First"}, nil, nil, "", "", time.UTC)
 	want := "1.01 · First\n1.02 · Player 0532 (name not held)"
 	if got := reportByID(t, b, "M-064").Rows[0].Cells[1]; got != want {
 		t.Fatal(got)
@@ -225,7 +225,7 @@ func TestDraftAllDatesUseAppStyle(t *testing.T) {
 	at := time.Date(2026, 10, 11, 12, 0, 51, 0, time.UTC)
 	zone := time.FixedZone("LOCAL", -5*3600)
 	p := draftFixturePick(t, 1, 1, "0001", "0531", at.Unix())
-	b := buildDraftReports(heldSeasonFeed[[]draftreports.Pick]{value: []draftreports.Pick{p}, fetchedAt: at}, heldSeasonFeed[[]draftreports.FuturePick]{fetchedAt: at}, nil, nil, nil, "", "", zone)
+	b := buildDraftReports(2026, heldSeasonFeed[[]draftreports.Pick]{value: []draftreports.Pick{p}, fetchedAt: at}, heldSeasonFeed[[]draftreports.FuturePick]{fetchedAt: at}, nil, nil, nil, "", "", zone)
 	for _, r := range b.Reports {
 		if r.AsOf != "As of: Oct 11, 2026, 7:00 AM" {
 			t.Fatal(r.AsOf)
@@ -240,7 +240,7 @@ func TestDraftValueNotePlainWords(t *testing.T) {
 	a, _, _, _ := seasonTestApp(t)
 	at := time.Date(2026, 10, 5, 13, 44, 0, 0, time.Local)
 	run := history.Run{ID: 3, AsOf: at, Engine: "secret-version"}
-	want := "Player values: the app's model, run Oct 5, 2026, 1:44 PM."
+	want := "Engine run: October 5, 2026, 1:44 PM."
 	if got := a.draftValueNote(run); got != want {
 		t.Fatal(got)
 	}
@@ -264,7 +264,7 @@ func TestDraftReportLanguage(t *testing.T) {
 		}
 	}
 	r := reportByID(t, b, "M-176")
-	if r.Columns[1] != "What MFL shows" || r.Rows[1].Cells[1] != "MFL does not report who is on the clock." || !strings.Contains(r.Note, "All 3 picks MFL lists are made.") {
+	if r.Columns[1] != "What MFL shows" || len(r.Rows) != 1 || !strings.Contains(r.Rows[0].Cells[1], "2026 rookie draft complete · 3 picks") {
 		t.Fatal(r)
 	}
 }
@@ -303,7 +303,7 @@ func TestDraftLiveRecentPicksAndStatus(t *testing.T) {
 		picks = append(picks, draftFixturePick(t, 1, i, "0001", "0531", int64(i)*100))
 	}
 	build := func() ReportBoard {
-		return buildDraftReports(heldSeasonFeed[[]draftreports.Pick]{value: picks, fetchedAt: time.Unix(100, 0)}, heldSeasonFeed[[]draftreports.FuturePick]{}, nil, nil, nil, "", "", time.UTC)
+		return buildDraftReports(2026, heldSeasonFeed[[]draftreports.Pick]{value: picks, fetchedAt: time.Unix(100, 0)}, heldSeasonFeed[[]draftreports.FuturePick]{}, nil, nil, nil, "", "", time.UTC)
 	}
 	b := build()
 	r := reportByID(t, b, "M-183")

@@ -230,12 +230,13 @@ describe('Fix 4: passing rules fold into Go\'s line', () => {
 describe('Fix 5: unknown age and experience', () => {
   it('shows a dash for the age and a plain phrase for the experience, in separate cells', () => {
     const text = html(createElement(PoolFrame, { reading: pool(), refreshing: false }));
-    expect(text).toContain('<td>—</td><td>Unknown (rookie minimum)</td>');
+    expect(text).toContain('No score');
+    expect(text).toContain('Not valued');
     expect(text).not.toContain('UnknownUnknown');
   });
   it('confines the six-column table to its work column, with a sticky player fallback', () => {
     const css = readFileSync('src/app/pool/pool.css', 'utf8');
-    expect(css).toContain('min-width: 660px');
+    expect(css).toContain('min-width: 920px');
     expect(css).not.toContain('min-width: 1600px');
     expect(css).toContain('.pool, .twr-app .pool-reading { min-width: 0; max-width: 100%; }');
     expect(css).toContain('.pool-table-scroll { min-width: 0; overflow: auto; max-width: 100%;');
@@ -379,7 +380,7 @@ it('G: the same bid form is full-width directly after its clicked row, never abo
     ...poolState.peek(), reading, form: { ...form, playerId: row.id, playerName: row.name },
   } }));
   expect(text.match(/aria-label="Bid plan form"/g)).toHaveLength(1);
-  expect(text).toMatch(/<\/tr><tr class="pool-form-row"><td colSpan="6"><section class="bid-form"/);
+  expect(text).toMatch(/<\/tr><tr class="pool-form-row"><td colSpan="8"><section class="bid-form"/);
   expect(text.indexOf('Bid plan form')).toBeGreaterThan(text.indexOf(row.name));
   expect(text.indexOf('Bid plan form')).toBeLessThan(text.indexOf('</tbody>'));
 });
@@ -413,16 +414,18 @@ it('G: saved Change figures keeps the same form beside its card, not in the dist
 });
 
 
-it('renders one Market column with two Go-authored lines, retaining ranges only in the Inspector', () => {
+it('keeps MFL market lines under the player and the minimum bid, ranges only in the Inspector', () => {
   const reading = pool();
   const row = { ...reading.value.rows[0],
     marketLines: ['Proj 12.4 · Rank 45, Up 3', 'ADP 112 (88–140) · AAV 1.2%'] };
   const text = html(createElement(PoolFrame, {
     reading: { ...reading, value: { ...reading.value, rows: [row] } }, refreshing: false,
   }));
-  expect(text.match(/<th>/g)).toHaveLength(6);
-  expect(text).toContain('<th>Market</th>');
-  for (const line of row.marketLines) expect(text).toContain(line);
+  expect(text.match(/<th[ >]/g)).toHaveLength(8);
+  expect(text).toContain('Sort by Lab dynasty value');
+  expect(text).toContain('Sort by Minimum bid');
+  expect(text).toContain(row.marketLines.join(' · '));
+  expect(text).toContain(row.minimum.text);
   expect(text).not.toContain('<svg');
 });
 
@@ -442,11 +445,12 @@ it('offers all seven Go-supplied sorts and sends each market key and direction t
   const state = { ...poolState.peek(), reading };
   const text = html(createElement(PoolScreen, { state, franchiseId: '0001' }));
   for (const { key, label } of reading.value.sorts) {
-    const selected = key === 'name' ? ' selected=""' : '';
+    const selected = key === 'engine' ? ' selected=""' : '';
     expect(text).toContain(`<option value="${key}"${selected}>${label}</option>`);
   }
   expect(reading.value.sorts.map(s => s.key))
-    .toEqual(['name', 'position', 'minimum', 'projected', 'rank', 'adp', 'aav']);
+    .toEqual(['name', 'position', 'team', 'engine', 'ppg', 'lab', 'minimum',
+      'projected', 'rank', 'adp', 'aav']);
   const { provider, calls } = fakeProvider();
   const store = createPoolState({ provider, franchise: () => '0001', delay: 0 });
   await store.open();

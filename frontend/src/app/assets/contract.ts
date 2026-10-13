@@ -13,7 +13,7 @@ function finite(value: unknown, path: string): number {
     throw new Error(`${path}: expected number`);
   return value;
 }
-function cell(value: unknown, path: string): AssetCell {
+export function parseAssetCell(value: unknown, path: string): AssetCell {
   const r = object(value, path, ['text', 'sub', 'detail', 'held']);
   if (typeof r.held !== 'boolean') throw new Error(`${path}.held: expected boolean`);
   return { text: text(r.text, `${path}.text`), sub: text(r.sub, `${path}.sub`),
@@ -21,8 +21,8 @@ function cell(value: unknown, path: string): AssetCell {
 }
 function assetValue(value: unknown, path: string): AssetValue {
   const r = object(value, path, ['id', 'now', 'dynasty', 'market', 'nowValue', 'dynastyValue']);
-  return { id: id(r.id, `${path}.id`, true), now: cell(r.now, `${path}.now`),
-    dynasty: cell(r.dynasty, `${path}.dynasty`), market: cell(r.market, `${path}.market`),
+  return { id: id(r.id, `${path}.id`, true), now: parseAssetCell(r.now, `${path}.now`),
+    dynasty: parseAssetCell(r.dynasty, `${path}.dynasty`), market: parseAssetCell(r.market, `${path}.market`),
     nowValue: finite(r.nowValue, `${path}.nowValue`),
     dynastyValue: finite(r.dynastyValue, `${path}.dynastyValue`) };
 }

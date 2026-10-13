@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -95,7 +96,7 @@ func (a *App) TargetTradeBuilder(r RawTradeBuilder) Reading[TradeBuilderView] {
 	if err != nil {
 		return tradeBuilderReading(out, err)
 	}
-	out.Teams = a.tradeBuilderTeams(snap)
+	out.Teams = a.tradeBuilderTeams(ctx, snap)
 	if r.Action == "preview" || r.Action == "save" {
 		preview, err := a.tradeProjection(ctx, r, snap)
 		if err != nil {
@@ -129,9 +130,9 @@ func (a *App) TargetTradeBuilder(r RawTradeBuilder) Reading[TradeBuilderView] {
 	return tradeBuilderReading(out, nil)
 }
 func tradeBuilderReading(v TradeBuilderView, err error) Reading[TradeBuilderView] {
-	return contractReading(v, "", "whatif.db; held MFL rosters and futureDraftPicks", "Both pinned what-if rosters are projected through the trade coordinator. Current cap includes MFL adjustments and modelled cuts; cents retained. Next-season gross commitments use flat-filled held salaries and this season's cap, not a known future cap. IR may be traded; taxi status carries with the player. Week 9 is the trade deadline; its exact instant is not held. Compensatory picks are not identified by this export: commissioner verification required. Three DOT approvals, then commissioner approval on MFL. Nothing submitted by the app.", len(v.Plans), err)
+	return contractReading(v, "", "whatif.db; held MFL rosters and futureDraftPicks", "Both pinned what-if rosters are projected through the trade coordinator. Current cap includes MFL adjustments and modelled cuts; cents retained. Next-season gross commitments use flat-filled held salaries and this season's cap, not a known future cap. IR may be traded; taxi status carries with the player. The trade deadline is the league clock's: Week 9's first kickoff unless the commissioner moved it. Compensatory picks are not identified by this export: commissioner verification required. Three DOT approvals, then commissioner approval on MFL. Nothing submitted by the app.", len(v.Plans), err)
 }
-func (a *App) tradeBuilderTeams(snap snapshot.Snapshot) []TradeBuilderTeam {
+func (a *App) tradeBuilderTeams(ctx context.Context, snap snapshot.Snapshot) []TradeBuilderTeam {
 	players := map[string]snapshot.Player{}
 	for _, p := range snap.Players.Value {
 		players[p.ID.String()] = p
@@ -140,6 +141,13 @@ func (a *App) tradeBuilderTeams(snap snapshot.Snapshot) []TradeBuilderTeam {
 	a.seasonMu.Lock()
 	picks := slices.Clone(a.seasonFuturePicks.value)
 	a.seasonMu.Unlock()
+	board, err := a.assetBoard(ctx)
+	values := map[string]AssetValue{}
+	if err == nil {
+		for _, v := range board.Values {
+			values[v.ID] = v
+		}
+	}
 	out := []TradeBuilderTeam{}
 	for _, f := range snap.Franchises.Value {
 		team := TradeBuilderTeam{ID: f.ID, Name: f.Name, Assets: []TradeAsset{}}
@@ -149,7 +157,7 @@ func (a *App) tradeBuilderTeams(snap snapshot.Snapshot) []TradeBuilderTeam {
 				if name == "" {
 					name = "Name unavailable"
 				}
-				team.Assets = append(team.Assets, TradeAsset{Token: p.MFLID, Name: name, Position: players[p.MFLID].Position})
+				team.Assets = append(team.Assets, builderPlayerAsset(p, players[p.MFLID], name, values[p.MFLID], m.Season))
 			}
 		}
 		for _, pick := range picks {
@@ -157,7 +165,8 @@ func (a *App) tradeBuilderTeams(snap snapshot.Snapshot) []TradeBuilderTeam {
 				continue
 			}
 			team.Assets = append(team.Assets, TradeAsset{Token: fmt.Sprintf("FP_%s_%d_%d", pick.Original, pick.Year, pick.Round),
-				Name: fmt.Sprintf("%d round %d · %s", pick.Year, pick.Round, tradeFranchiseName(snap, pick.Original))})
+				Name:    fmt.Sprintf("%d round %d · %s", pick.Year, pick.Round, tradeFranchiseName(snap, pick.Original)),
+				Dynasty: a.builderPickValue(pick.Year, pick.Round, pick.Original, time.Now())})
 		}
 		slices.SortFunc(team.Assets, func(a, b TradeAsset) int { return strings.Compare(a.Name, b.Name) })
 		out = append(out, team)
@@ -273,4 +282,39 @@ func (a *App) savedTradePlans(ctx context.Context, mine string, snap snapshot.Sn
 		out = append(out, p)
 	}
 	return out, nil
+}
+
+func builderPlayerAsset(p state.MirrorPlayer, player snapshot.Player, name string, value AssetValue, season int) TradeAsset {
+	if value.ID == "" {
+		value.Now = AssetCell{Text: "No score", Sub: "This season's points per game"}
+		value.Dynasty = AssetCell{Text: "Not valued"}
+	}
+	return TradeAsset{Token: p.MFLID, Name: name, Position: player.Position, Team: player.Team,
+		Contract: fmt.Sprintf("%s · %d years", snapshot.ContractAmountOf(p.Salary).Text, max(p.ContractYear-season+1, 0)),
+		Now:      &value.Now, Dynasty: &value.Dynasty}
+}
+
+func (a *App) builderPickValue(year, round int, original string, at time.Time) *AssetCell {
+	held := a.assetModel.Load()
+	if held == nil {
+		return &AssetCell{Text: "Not valued", Sub: "Lab model not compiled"}
+	}
+	cell, _, _ := dynastyValueCells((*held).pick(year, round, original, at))
+	return &cell
+}
+
+func richTradeRoster(roster []TradeAsset, catalog []TradeBuilderTeam) []TradeAsset {
+	values := map[string]TradeAsset{}
+	for _, team := range catalog {
+		for _, asset := range team.Assets {
+			values[asset.Token] = asset
+		}
+	}
+	for i, player := range roster {
+		if asset, ok := values[player.Token]; ok {
+			asset.Name = player.Name
+			roster[i] = asset
+		}
+	}
+	return roster
 }

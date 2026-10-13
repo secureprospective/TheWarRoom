@@ -110,7 +110,8 @@ it('renders one Go-written pick per line in grid and recap cells', () => {
 it('shows live-room status and the Go-written see-every-pick endpoint Act', () => {
   const report = board().reports.find(r => r.id === 'M-183')!;
   const markup = html(createElement(ReportView, { report, howLabel: board().howLabel }));
-  expect(markup).toContain('MFL does not report who is on the clock.');
+  expect(markup).toContain('2026 rookie draft complete');
+  expect(markup).not.toContain('MFL does not report who is on the clock.');
   expect(markup).toContain('See every pick');
   expect(markup).toContain('aria-label="See every pick"');
   expect(markup).toContain('data-endpoint="M-183"');

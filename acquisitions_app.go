@@ -84,7 +84,7 @@ func (a *App) TargetAcquisition(r RawAcquisition) Reading[AcquisitionView] {
 	if err != nil {
 		return acquisitionReading(out, err)
 	}
-	for _, team := range a.tradeBuilderTeams(snap) {
+	for _, team := range a.tradeBuilderTeams(ctx, snap) {
 		if team.ID != r.Mine {
 			continue
 		}
@@ -117,7 +117,7 @@ func acquisitionReading(v AcquisitionView, err error) Reading[AcquisitionView] {
 }
 func (a *App) acquisitionChoices(ctx context.Context, mine string, snap snapshot.Snapshot) ([]AcquisitionChoice, error) {
 	out := []AcquisitionChoice{}
-	for _, team := range a.tradeBuilderTeams(snap) {
+	for _, team := range a.tradeBuilderTeams(ctx, snap) {
 		if team.ID == mine {
 			continue
 		}
