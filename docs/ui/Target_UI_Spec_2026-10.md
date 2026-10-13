@@ -533,3 +533,37 @@ still `built`; §15b gives where that queue ended.
 - The Lab screens still read the frozen Lab document; switching them to the runtime compile is ring 4.
 - (Done in ring 3: the Inspector's "Dead cap if cut today" and "Form" rows are wired,
   `research_player_reading.go:286` and `:310`.)
+
+### 15b. Ring 3 close (2026-10-13)
+
+Christopher, 2026-10-13: "we need ring 0- 3 ratified and finished, thats the goal. Ring 4 is defered
+for now". This section is the record he ratifies.
+
+**Registry.** The registry has 173 kept rows in rings 0–3: ring 0 holds 5, ring 1 holds 4, ring 2 holds 49
+and ring 3 holds 115. 168 of them are `landed`. The other five are `built`, and each waits for a league
+event the app cannot stage:
+- X-02 (play spine) and X-03 (matchup view) need games in progress; the next window is Thursday
+  2026-10-15, 7:15 PM.
+- M-148 (lineup alert) needs a short lineup within 48 hours of the lock.
+- M-153 (pending trades) and X-04 (accept / reject review) need an offer from another GM.
+
+Ten rows are retired, each with its reason in `ring_note`: M-025, M-075, M-111, M-112, M-113, M-171,
+M-174, M-192, M-200 and M-201. Sixteen kept rows are ring 4 and carried with their reasons (the list
+above): M-024, M-050, M-081, M-093, M-095, M-108, M-125, M-126, M-127, M-137, M-156, M-157, M-172,
+M-173, M-198 and S-14.
+
+**Merges.** Ring 3 landed through PRs #18–#34 (#24 and #26 are commissioner documents). #18 built the
+breadth and depth. #19–#34 are the landing walk and its fix batches.
+
+**Findings.** The live walks raised findings 1–95 (`land-findings.md` in the ring's run directory).
+A read-only close audit checked each against main 6c6e1f3 and reran the test that proves it.
+Six were still open (6, 22, 22b, 41, 46, and part of 61); they were fixed, reviewed and seen working
+live in the closing batch (#35). Of the 97 (1–95 plus 22b and 51b): 87 fixed, each with a test that
+fails without its fix; 3 ruled by Christopher (16, 33, 37); 5 not defects (9, 10, 31, 50, 57); 2 were
+the VM, not the app (59, 60).
+
+**Endpoint index.** Christopher, 2026-10-13: hide landed rows. Each screen's index lists the rows still
+to land; the landed ones fold into "N finished", which opens when the endpoint just opened has landed.
+
+**Speed.** The root package's race tests fell from 574 s to 233 s (shared read-only archive snapshot,
+per-test history copies, parallel tests), so the pre-push gate no longer times out under load.
