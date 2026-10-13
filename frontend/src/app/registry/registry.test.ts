@@ -74,8 +74,11 @@ describe('Endpoint map', () => {
       );
       const html = renderToStaticMarkup(createElement(EndpointIndex, { placement: place }));
       for (const row of rows) {
-        expect(html).toContain(row.id);
         const item = html.split('<li').find((part) => part.includes(`<b>${row.id} ·`));
+        if (row.status === 'landed') {
+          expect(item, `${row.id} landed, so it leaves the index`).toBeUndefined();
+          continue;
+        }
         const labels: Record<string, string> = {
           landed: 'landed live',
           built: 'built, not yet landed live',
@@ -188,6 +191,10 @@ describe('Endpoint map', () => {
         }),
       );
       const item = html.split('<li').find((part) => part.includes(`<b>${id} ·`));
+      if (row.status === 'landed') {
+        expect(item).toBeUndefined();
+        continue;
+      }
       expect(item).toContain(`<small>${label} · ring ${row.ring}</small>`);
       if (row.status !== 'spec') expect(item).not.toContain('not wired');
     }
@@ -218,7 +225,9 @@ describe('Endpoint map', () => {
           const place = `${nodes[node].label} › ${w.label}`;
           const html = await renderSettledApp();
           expect(html).toContain(`${place} endpoint index`);
-          for (const row of endpointsAt(place as Placement)) expect(html).toContain(row.id);
+          for (const row of endpointsAt(place as Placement)) {
+            if (row.status !== 'landed') expect(html).toContain(row.id);
+          }
           // Rendered before the snapshot arrives: a snapshot workspace reads as loading, never unwired.
           if (['lineup-and-roster', 'contracts-and-cap', 'my-moves', 'trade-desk'].includes(w.slug)) {
             expect(html).toContain('Reading the league…');
@@ -503,36 +512,22 @@ it('retires M-025 without a placement or route', () => {
   expect(() => createCommands().dispatch('endpoint.open', { id: 'M-025' })).toThrow('retired');
 });
 
-it('lists rows still to land and folds landed rows into a finished disclosure', () => {
-  commands.dispatch('endpoint.open', { id: 'M-024' });
-  let mixed = 0;
+it('removes landed endpoints from every index and hides an index with nothing left to land', () => {
+  let emptied = 0;
   for (const node of nodeKeys) {
     for (const w of nodes[node].workspaces) {
       const place = `${nodes[node].label} › ${w.label}` as Placement;
       const rows = endpointsAt(place);
-      const landed = rows.filter((r) => r.status === 'landed');
       const html = renderToStaticMarkup(createElement(EndpointIndex, { placement: place }));
-      const [lead, fold = ''] = html.split('<details class="endpoint-finished"');
-      for (const row of rows) {
-        const inFold = fold.includes(`<b>${row.id} ·`);
-        expect(inFold, `${row.id} at ${place}`).toBe(row.status === 'landed');
-        expect(lead.includes(`<b>${row.id} ·`), `${row.id} at ${place}`).toBe(row.status !== 'landed');
+      const cards = html.split('<ul>')[1] ?? '';
+      expect(cards).not.toContain('<small>landed live');
+      expect(html).not.toContain('finished');
+      for (const row of rows) expect(html.includes(`<b>${row.id} ·`), row.id).toBe(row.status !== 'landed');
+      if (rows.every((r) => r.status === 'landed')) {
+        expect(html).toMatch(/^<section class="endpoint-index"[^>]* hidden=""><\/section>$/);
+        emptied++;
       }
-      if (landed.length) expect(fold).toContain(`<summary>${landed.length} finished</summary>`);
-      else expect(fold).toBe('');
-      if (landed.length && landed.length < rows.length) mixed++;
     }
   }
-  expect(mixed).toBeGreaterThan(0);
-});
-
-it('opens the finished fold only when the opened endpoint has landed', async () => {
-  const { splitIndexRows } = await import('./EndpointIndex');
-  const rows = endpointsAt(endpointById('M-116').placement as Placement);
-  const split = splitIndexRows(rows, ['M-116']);
-  expect(split.finished.map((r) => r.id)).toContain('M-116');
-  expect(split.open.every((r) => r.status !== 'landed')).toBe(true);
-  expect(split.unfold).toBe(true);
-  expect(splitIndexRows(rows, ['M-024']).unfold).toBe(false);
-  expect(splitIndexRows(rows, []).unfold).toBe(false);
+  expect(emptied).toBeGreaterThan(0);
 });

@@ -20,7 +20,7 @@ export function EndpointIndex({ placement }: { placement: Placement }) {
   const root = useRef<HTMLElement>(null);
   const rows = endpointsAt(placement);
   assertShortList(rows.length);
-  const { open, finished, unfold } = splitIndexRows(rows, s.endpointIds);
+  const open = unfinishedRows(rows);
   useEffect(() => {
     const index = root.current;
     if (!index) return;
@@ -35,9 +35,13 @@ export function EndpointIndex({ placement }: { placement: Placement }) {
     return () => { clearTimeout(expire); observer?.disconnect(); };
   }, [s.endpointIds, placement]);
   const merged = s.endpointIds.map(endpointById).filter((e) => e.merged_place === placement);
+  // A screen whose endpoints have all landed has no index left to show. The empty section stays mounted
+  // (hidden) because it is what reveals an endpoint opened from the command bar.
+  const empty = !open.length && !merged.length && s.endpointIds.length < 2;
   return (
-    <section ref={root} className="endpoint-index" aria-label={`${placement} endpoint index`}>
-      <h4>Endpoint index</h4>
+    <section ref={root} className="endpoint-index" aria-label={`${placement} endpoint index`}
+      hidden={empty}>
+      {!empty && <h4>Endpoint index</h4>}
       {s.endpointIds.length > 1 && (
         <div className="endpoint-targets" aria-label="Merged endpoint targets">
           {s.endpointIds.map((id) => (
@@ -54,29 +58,16 @@ export function EndpointIndex({ placement }: { placement: Placement }) {
       {open.length > 0 && (
         <ul>{open.map((row) => <IndexRow key={row.id} row={row} selected={s.endpointIds} />)}</ul>
       )}
-      {rows.length > 0 && !open.length && <p>Every endpoint here has landed live.</p>}
-      {finished.length > 0 && (
-        <details className="endpoint-finished" open={unfold}>
-          <summary>{finished.length} finished</summary>
-          <ul>{finished.map((row) => <IndexRow key={row.id} row={row} selected={s.endpointIds} />)}</ul>
-        </details>
-      )}
-      {!rows.length && <p className="not-wired">No individual endpoints placed here.</p>}
     </section>
   );
 }
 
 type Row = ReturnType<typeof endpointsAt>[number];
 
-// Finished rows step aside (Christopher, 10-13): the index lists what is still to land and keeps the landed
-// ones one click away. The fold opens when the endpoint just opened from the command bar is a landed one.
-export function splitIndexRows(rows: readonly Row[], selected: readonly string[]) {
-  const finished = rows.filter((row) => row.status === 'landed');
-  return {
-    open: rows.filter((row) => row.status !== 'landed'),
-    finished,
-    unfold: finished.some((row) => selected.includes(row.id)),
-  };
+// The index is the list of what is still to land (Christopher, 10-13: "if they are finished they need to be
+// removed"). A landed endpoint leaves it; its screen is the endpoint now.
+export function unfinishedRows(rows: readonly Row[]) {
+  return rows.filter((row) => row.status !== 'landed');
 }
 
 function IndexRow({ row, selected }: { row: Row; selected: readonly string[] }) {

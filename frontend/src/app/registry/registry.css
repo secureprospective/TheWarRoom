@@ -42,5 +42,3 @@
 }
 .twr-app .report-drawer span { margin-top: 4px; color: var(--surface-tx2); }
 .twr-app .report-drawer small { margin-top: 4px; color: var(--surface-tx3); }
-.twr-app .endpoint-finished { margin-top: 8px; }
-.twr-app .endpoint-finished summary { cursor: pointer; color: var(--surface-tx3); }
