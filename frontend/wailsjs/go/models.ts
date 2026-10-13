@@ -116,6 +116,69 @@ export namespace commissioner {
 	        this.name = source["name"];
 	    }
 	}
+	export class PeopleVoteCount {
+	    choice: string;
+	    ballots: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PeopleVoteCount(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.choice = source["choice"];
+	        this.ballots = source["ballots"];
+	    }
+	}
+	export class PeopleVote {
+	    id: string;
+	    status: string;
+	    ballotsCast: number;
+	    totalFranchises: number;
+	    votesRequired: number;
+	    requirement: string;
+	    // Go type: time
+	    endsAt: any;
+	    candidates: string[];
+	    counts: PeopleVoteCount[];
+	    votedFranchises?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new PeopleVote(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.status = source["status"];
+	        this.ballotsCast = source["ballotsCast"];
+	        this.totalFranchises = source["totalFranchises"];
+	        this.votesRequired = source["votesRequired"];
+	        this.requirement = source["requirement"];
+	        this.endsAt = this.convertValues(source["endsAt"], null);
+	        this.candidates = source["candidates"];
+	        this.counts = this.convertValues(source["counts"], PeopleVoteCount);
+	        this.votedFranchises = source["votedFranchises"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class PeopleInvite {
 	    id: string;
 	    franchise: string;
@@ -175,6 +238,8 @@ export namespace commissioner {
 	    invites: PeopleInvite[];
 	    dotCount: number;
 	    dotStatus: string;
+	    votes: PeopleVote[];
+	    succession: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new People(source);
@@ -190,6 +255,8 @@ export namespace commissioner {
 	        this.invites = this.convertValues(source["invites"], PeopleInvite);
 	        this.dotCount = source["dotCount"];
 	        this.dotStatus = source["dotStatus"];
+	        this.votes = this.convertValues(source["votes"], PeopleVote);
+	        this.succession = source["succession"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -210,6 +277,8 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
+	
 	
 	
 	

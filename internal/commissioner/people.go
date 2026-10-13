@@ -4,22 +4,30 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
 type RawPeople struct {
-	Franchise    string          `json:"franchise,omitempty"`
-	Principal    string          `json:"principal,omitempty"`
-	Name         string          `json:"name,omitempty"`
-	Abbreviation string          `json:"abbreviation,omitempty"`
-	ID           string          `json:"id,omitempty"`
-	Role         governance.Role `json:"role,omitempty"`
-	Ability      string          `json:"ability,omitempty"`
-	On           bool            `json:"on,omitempty"`
-	All          bool            `json:"all,omitempty"`
-	Report       string          `json:"report,omitempty"`
-	Audience     string          `json:"audience,omitempty"`
+	Franchise     string          `json:"franchise,omitempty"`
+	Principal     string          `json:"principal,omitempty"`
+	Name          string          `json:"name,omitempty"`
+	Abbreviation  string          `json:"abbreviation,omitempty"`
+	ID            string          `json:"id,omitempty"`
+	Role          governance.Role `json:"role,omitempty"`
+	Ability       string          `json:"ability,omitempty"`
+	On            bool            `json:"on,omitempty"`
+	All           bool            `json:"all,omitempty"`
+	Report        string          `json:"report,omitempty"`
+	Audience      string          `json:"audience,omitempty"`
+	Successor     string          `json:"successor,omitempty"`
+	Commissioner  string          `json:"commissioner,omitempty"`
+	Choice        string          `json:"choice,omitempty"`
+	InSeasonDays  int64           `json:"inSeasonDays,omitempty"`
+	OffseasonDays int64           `json:"offseasonDays,omitempty"`
+	ElectionDays  int64           `json:"electionDays,omitempty"`
+	RunoffDays    int64           `json:"runoffDays,omitempty"`
 }
 
 type peopleDefinition struct {
@@ -47,6 +55,9 @@ func peopleDefinitionFor(command string) (peopleDefinition, bool) {
 			return d, true
 		}
 	}
+	if d, ok := successionDefinitionFor(command); ok {
+		return peopleDefinition{command, "CM-022", d.gravity, d.label}, true
+	}
 	return peopleDefinition{}, false
 }
 
@@ -59,7 +70,7 @@ func (r RawPeople) Validate(command string) error {
 		return fmt.Errorf("send only the details this people change needs")
 	}
 	for _, text := range []string{r.Franchise, r.Principal, r.Name, r.Abbreviation, r.ID,
-		r.Ability, r.Report, r.Audience, string(r.Role)} {
+		r.Ability, r.Report, r.Audience, string(r.Role), r.Successor, r.Commissioner, r.Choice} {
 		if text != strings.TrimSpace(text) {
 			return fmt.Errorf("remove surrounding spaces from the people change")
 		}
@@ -67,7 +78,7 @@ func (r RawPeople) Validate(command string) error {
 	if command == "commish.abilities.set" {
 		return r.validateAbility()
 	}
-	return nil
+	return r.validateSuccession(command)
 }
 
 func (r RawPeople) validateAbility() error {
@@ -104,7 +115,7 @@ func (r RawPeople) selected(command string) (RawPeople, error) {
 	case "commish.role.grant", "commish.role.revoke":
 		return RawPeople{Principal: r.Principal, Role: r.Role}, nil
 	default:
-		return RawPeople{}, fmt.Errorf("choose an available people change")
+		return r.selectedSuccession(command)
 	}
 }
 
@@ -168,6 +179,6 @@ func (r RawPeople) event(command string) (governance.Event, error) {
 	case "commish.role.revoke":
 		return governance.RoleRevoked{Principal: p, Role: r.Role}, nil
 	default:
-		return nil, fmt.Errorf("choose an available people change")
+		return r.successionEvent(command, time.Time{})
 	}
 }
