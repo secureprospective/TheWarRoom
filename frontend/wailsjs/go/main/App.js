@@ -290,8 +290,8 @@ export function TargetNFLDraft() {
   return window['go']['main']['App']['TargetNFLDraft']();
 }
 
-export function TargetNow(arg1, arg2) {
-  return window['go']['main']['App']['TargetNow'](arg1, arg2);
+export function TargetNow(arg1, arg2, arg3) {
+  return window['go']['main']['App']['TargetNow'](arg1, arg2, arg3);
 }
 
 export function TargetNowRefresh(arg1, arg2) {

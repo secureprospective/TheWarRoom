@@ -419,7 +419,7 @@ func TestRace2026BubbleAndUnseededBrackets(t *testing.T) {
 		}
 	}
 	brackets := v.brackets()
-	if brackets.Rows[0].Cells[2] != "Seed 2" || brackets.Rows[0].Cells[4] != "Not played yet" ||
+	if !strings.HasPrefix(brackets.Rows[0].Cells[2], "Seed 2 · ") || !strings.Contains(brackets.Rows[0].Cells[2], "(projected)") || brackets.Rows[0].Cells[4] != "Not played yet" ||
 		!strings.HasPrefix(brackets.Summary[0].Cells[1], "Seeds are set when the regular season ends") {
 		t.Fatal(brackets.Rows[0].Cells, brackets.Summary)
 	}

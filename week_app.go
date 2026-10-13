@@ -138,6 +138,9 @@ func (a *App) weekClock(now time.Time) (*leagueclock.LineupLock, Freshness) {
 	if lock, ok := leagueweek.NextLock(now, a.week); ok {
 		return &leagueclock.LineupLock{Week: a.week.Number, At: lock}, fresh
 	}
+	if a.week.Number != 0 && len(a.week.Games) > 0 {
+		return &leagueclock.LineupLock{Week: a.week.Number, At: leagueweek.LastLock(a.week)}, fresh
+	}
 	return nil, fresh
 }
 

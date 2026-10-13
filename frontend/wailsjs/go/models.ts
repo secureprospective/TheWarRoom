@@ -2799,6 +2799,8 @@ export namespace main {
 	    }
 	}
 	export class NowBoard {
+	    reportWeek: number;
+	    reportWeeks: RaceChoice[];
 	    week: number;
 	    weeks: RaceChoice[];
 	    matchup: Report;
@@ -2810,6 +2812,8 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.reportWeek = source["reportWeek"];
+	        this.reportWeeks = this.convertValues(source["reportWeeks"], RaceChoice);
 	        this.week = source["week"];
 	        this.weeks = this.convertValues(source["weeks"], RaceChoice);
 	        this.matchup = this.convertValues(source["matchup"], Report);

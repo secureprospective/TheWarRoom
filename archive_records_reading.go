@@ -48,7 +48,7 @@ func archiveRecordValue(e archiveRecordEntry) string {
 	if strings.Contains(label, "wins") || strings.Contains(label, "losses") || strings.Contains(label, "streak") {
 		return fmt.Sprintf("%.0f", e.value)
 	}
-	return fmt.Sprintf("%.2f", e.value)
+	return scoreText(hundredths(e.value))
 }
 
 func (v archiveView) matchupRecords() Report {
@@ -223,6 +223,7 @@ func (v archiveView) scoring() Report {
 	last := ""
 	totals := map[string]float64{}
 	order := []string{}
+	years := map[string][]string{}
 	for _, y := range v.cache.facts.Season.Year {
 		if era == "" || fingerprints[y] != last {
 			era = archiveYear(y) + " scoring rules"
@@ -246,13 +247,14 @@ func (v archiveView) scoring() Report {
 		if len(weeks) > 0 {
 			span = fmt.Sprintf("Weeks %d–%d", slices.Min(weeks), slices.Max(weeks))
 		}
-		row := draftRow(archiveYear(y), era, fmt.Sprintf("%.2f", total), fmt.Sprint(count), span)
+		row := draftRow(archiveYear(y), era, scoreText(hundredths(total)), fmt.Sprint(count), span)
 		row.Group = era
 		r.Rows = append(r.Rows, row)
 		totals[era] += total
+		years[era] = append(years[era], archiveYear(y))
 	}
 	for _, era := range order {
-		r.Summary = append(r.Summary, draftRow(era+" · total points", fmt.Sprintf("%.2f", totals[era])))
+		r.Summary = append(r.Summary, draftRow(strings.Join(years[era], ", ")+" · all scored weeks · total points", scoreText(hundredths(totals[era]))))
 	}
 	return r
 }
@@ -318,7 +320,7 @@ func (v archiveView) oddities() Report {
 	for i, y := range l.Year {
 		if y == int64(v.season) && l.Started[i] == 1 && l.Score[i] != nil && *l.Score[i] == 0 {
 			key := fmt.Sprintf("%d week %d · Zero-point starter", y, l.Week[i])
-			groups[key] = append(groups[key], v.player(l.Pid[i])+" · "+v.name(y, l.Fid[i]))
+			groups[key] = append(groups[key], v.name(y, l.Fid[i])+" · "+v.player(l.Pid[i]))
 		}
 	}
 	keys := []string{}
@@ -336,12 +338,31 @@ func (v archiveView) oddities() Report {
 		if len(groups[key]) > 1 {
 			kind = fmt.Sprintf("%s · %d", kind, len(groups[key]))
 		}
-		r.Rows = append(r.Rows, draftRow(when, kind, strings.Join(groups[key], "; ")))
+		r.Rows = append(r.Rows, draftRow(when, kind, oddityNames(groups[key])))
 	}
 	if r.Status != "failed" {
-		r.Note = "League lore and explanations are deferred to ring 4. These are recorded oddities only."
+		r.Note = "These are recorded results, not explanations of why they happened."
 	}
 	return r
+}
+
+func oddityNames(names []string) string {
+	groups := map[string][]string{}
+	for _, name := range names {
+		team, player, _ := strings.Cut(name, " · ")
+		groups[team] = append(groups[team], player)
+	}
+	teams := []string{}
+	for team := range groups {
+		teams = append(teams, team)
+	}
+	slices.Sort(teams)
+	lines := []string{}
+	for _, team := range teams {
+		slices.Sort(groups[team])
+		lines = append(lines, team+": "+strings.Join(groups[team], "; "))
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (v archiveView) pools() Report {

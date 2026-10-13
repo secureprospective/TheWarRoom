@@ -344,7 +344,7 @@ func TestNowUnscoredWeekShowsHeldLiveScores(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	in := nowInput{race: realRace(t, "2026"), current: 5, at: raceHeldAt}
+	in := nowInput{race: realRace(t, "2026"), current: 5, reportWeek: 5, at: raceHeldAt}
 	in.race.mine = lineups.Matchups[0].Home
 	before := nowBoard(t, in)
 	if r := nowReport(t, before, "X-03"); r.Rows[len(r.Rows)-1].Cells[2] != "—" {
@@ -585,11 +585,11 @@ func TestNowBindingReadsHeldAndRefreshReadsTheWeek(t *testing.T) {
 	a.weekMu.Lock()
 	a.week.Number = 5
 	a.weekMu.Unlock()
-	board, err := a.TargetNow(0, "")
+	board, err := a.TargetNow(0, 0, "")
 	if err != nil || len(transport.requests) != 0 || board.Week != 0 || board.Matchup.Status != "failed" {
 		t.Fatal("reading fetched or invented a week", err, transport.requests, board.Week)
 	}
-	if _, err := a.TargetNow(3, ""); err == nil {
+	if _, err := a.TargetNow(3, 0, ""); err == nil {
 		t.Fatal("accepted a week no held schedule lists")
 	}
 	if err := a.TargetNowRefresh(0, false); err != nil {

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"time"
 )
 
 type ShellStatus struct {
@@ -29,15 +28,16 @@ func (a *App) TargetShellStatus() (ShellStatus, error) {
 	gameday := "Gameday unavailable"
 	if failed == "" && len(week.Games) > 0 {
 		playing, final := 0, 0
-		now := time.Now()
+		now := a.timeNow()
 		for _, game := range week.Games {
-			if game.Final {
+			started := !game.Kickoff.After(now)
+			if started && game.Final {
 				final++
-			} else if !game.Kickoff.After(now) {
+			} else if started {
 				playing++
 			}
 		}
-		gameday = fmt.Sprintf("Week %d · %d NFL games in progress · %d final", week.Number, playing, final)
+		gameday = fmt.Sprintf("Week %d · %s in progress · %d final", week.Number, countText(playing, "NFL game"), final)
 	}
 	return ShellStatus{Health: label, State: state, Gameday: gameday}, nil
 }

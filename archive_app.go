@@ -38,6 +38,9 @@ func (a *App) TargetArchive(season int, team, other string) (ArchiveBoard, error
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, factsTimeout)
 	defer cancel()
+	if other == "" {
+		other = a.archiveOpponent(team)
+	}
 	a.factsMu.Lock()
 	defer a.factsMu.Unlock()
 	cache, stale, err := a.readArchiveFacts(ctx)
@@ -45,6 +48,35 @@ func (a *App) TargetArchive(season int, team, other string) (ArchiveBoard, error
 		return ArchiveBoard{}, err
 	}
 	return buildArchive(cache, stale, season, team, other)
+}
+
+func (a *App) archiveOpponent(team string) string {
+	week := a.marketWeek()
+	a.seasonMu.Lock()
+	defer a.seasonMu.Unlock()
+	for _, m := range a.seasonLineups.value.Matchups {
+		if a.seasonLineups.value.Week != week {
+			break
+		}
+		if m.Home == team {
+			return m.Away
+		}
+		if m.Away == team {
+			return m.Home
+		}
+	}
+	for _, w := range a.race.weeks.value {
+		if w.Week != week {
+			continue
+		}
+		if g, ok := findGame(w, team); ok {
+			if g.Home.Franchise == team {
+				return g.Away.Franchise
+			}
+			return g.Home.Franchise
+		}
+	}
+	return ""
 }
 
 func (a *App) readArchiveFacts(ctx context.Context) (archiveCache, bool, error) {
