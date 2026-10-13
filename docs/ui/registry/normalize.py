@@ -9,7 +9,7 @@ WORKSPACES = {
     'Home': ('Seasonal card', 'Alert tray', 'Digests'),
     'War Room': ('Market', 'Valuations and pool', 'Research'),
     'Franchise HQ': ('Lineup and roster', 'Contracts and cap', 'My moves'),
-    'Trade Floor': ('Trade desk and offers', 'Counterparties', 'Draft room'),
+    'Trade Floor': ('Trade desk', 'Offers history', 'Counterparties', 'Draft room'),
     'League Pulse': ('Now', 'Race', 'Archive'),
     'Control Room': ('App', 'Data and sources', 'League'),
 }
@@ -21,8 +21,8 @@ ALIASES = {
     'Franchise HQ › Roster': 'Franchise HQ › Lineup and roster',
     'Franchise HQ › Lineup': 'Franchise HQ › Lineup and roster',
     'Franchise HQ › Acquire': 'Franchise HQ › My moves',
-    'Trade Floor › Trade desk': 'Trade Floor › Trade desk and offers',
-    'Trade Floor › Offers': 'Trade Floor › Trade desk and offers',
+    'Trade Floor › Trade desk and offers': 'Trade Floor › Trade desk',
+    'Trade Floor › Offers': 'Trade Floor › Offers history',
     'League Pulse › Archive': 'League Pulse › Archive',
     'League Pulse › Pools': 'League Pulse › Archive',
     'League Pulse › Now (Gameday preset)': 'League Pulse › Now',
@@ -65,7 +65,7 @@ JUDGEMENTS = {
     'M-182': ('League Pulse › Archive', 'note explicitly places history in Archive'),
     'M-183': ('Trade Floor › Draft room', 'canonical live draft console'),
     'M-185': ('Control Room › League', 'league bylaws'),
-    'L-30': ('Trade Floor › Trade desk and offers', 'note names Offers; canonical desk'),
+    'L-30': ('Trade Floor › Offers history', 'offer history has its own workspace'),
     'L-34': ('Control Room › Data and sources', 'Sources provenance is this workspace panel'),
     'C-02': ('League Pulse › Race', 'note wins: power rankings in Race'),
     'C-03': ('Home › Seasonal card', 'note: seasonal card owns Home'),
@@ -131,16 +131,20 @@ def validate(rows):
     by_id = {r['id']: r for r in rows}
     if len(by_id) != len(rows):
         raise ValueError('duplicate endpoint id')
+    expected = {f'CM-{n:03}' for n in range(1, 57)}
+    controls = {ident for ident in by_id if ident.startswith('CM-')}
+    if controls != expected:
+        raise ValueError('CM ids must be contiguous CM-001..CM-056')
     for r in rows:
         ident = r['id']
-        if not re.fullmatch(r'(?:M-\d{3}|[LCSX]-\d{2}(?:\.\d+)?)', ident):
+        if not re.fullmatch(r'(?:CM-\d{3}|M-\d{3}|[LCSX]-\d{2}(?:\.\d+)?)', ident):
             raise ValueError(f'{ident}: invalid id')
         disposition = r['disposition']
         if disposition not in ('kept', 'merged', 'retired'):
             raise ValueError(f'{ident}: invalid disposition')
         if r['gravity'] not in ('G0', 'G1', 'G2', 'G3'):
             raise ValueError(f'{ident}: invalid gravity')
-        if r['ring'] not in tuple('01234'):
+        if r['ring'] not in tuple('0123456789'):
             raise ValueError(f'{ident}: invalid ring')
         if disposition == 'kept' and r['placement'] not in PLACEMENTS:
             raise ValueError(f'{ident}: kept row needs valid placement')
@@ -157,6 +161,23 @@ def validate(rows):
                     raise ValueError(f'{ident}: merged target {target} is not kept')
         elif targets or place:
             raise ValueError(f'{ident}: non-merged row has merge target')
+        if ident in controls and disposition != 'kept':
+            raise ValueError(f'{ident}: commissioner must be kept')
+        governs = r.get('governs', '').split(' ') if r.get('governs') else []
+        if ident in controls and not governs:
+            raise ValueError(f'{ident}: empty governs')
+        if ident not in controls and governs:
+            raise ValueError(f'{ident}: owner has governs')
+        if len(set(governs)) != len(governs):
+            raise ValueError(f'{ident}: duplicate governs')
+        for target in governs:
+            if target == 'ledger-wide':
+                if ident not in ('CM-039', 'CM-056') or len(governs) != 1:
+                    raise ValueError(f'{ident}: invalid ledger-wide governs')
+            elif target not in by_id or target in controls:
+                raise ValueError(f'{ident}: governs target {target} is not an owner id')
+        if ident in ('CM-039', 'CM-056') and governs != ['ledger-wide']:
+            raise ValueError(f'{ident}: requires ledger-wide governs')
 
 
 def normalize(path):

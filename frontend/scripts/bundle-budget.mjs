@@ -22,6 +22,9 @@ function check(entry, budget = BUDGET, source = readFileSync(entry, 'utf8')) {
   if (names.slice(0, 12).every((name) => source.includes(name))) {
     throw new Error('Fixture player run in entry');
   }
+  if (/CM-\d{3}|commish\.[a-z]/.test(source)) {
+    throw new Error('Commissioner registry in owner entry');
+  }
   if (source.includes(envelope.receipt.correlationId)) {
     throw new Error('Envelope fixture in entry');
   }
@@ -39,11 +42,14 @@ for (const entry of entries) {
     assert.throws(() => check(entry, BUDGET, names.slice(0, 12).join('|')), /Fixture player run/);
     assert.throws(() => check(entry, BUDGET, envelope.receipt.correlationId), /Envelope fixture in entry/);
     assert.throws(() => check(entry, BUDGET, 'Move stages'), /rail implementation in entry/);
-    console.log('bundle-budget: rejected 1 KB budget, snapshot, envelope and rail leaks');
+    assert.throws(() => check(entry, BUDGET, 'CM-001'), /Commissioner registry in owner entry/);
+    assert.throws(() => check(entry, BUDGET, 'commish.league.teams'), /Commissioner registry in owner entry/);
+    console.log('bundle-budget: rejected 1 KB budget, snapshot, envelope, rail and commissioner leaks');
   }
 }
 
-const moveChunk = readdirSync(resolve(dist, 'assets')).find((name) => /^MyMoves\..*\.js$/.test(name));
+const moveChunk = readdirSync(resolve(dist, 'assets'))
+  .find((name) => /^MyMoves\..*\.js$/.test(name));
 if (!moveChunk) throw new Error('No lazy MyMoves chunk');
 const moveSource = readFileSync(resolve(dist, 'assets', moveChunk), 'utf8');
 // The rail is shared with the bid plans, so it may sit in its own lazy chunk beside MyMoves.
@@ -52,5 +58,6 @@ const railSource = readdirSync(resolve(dist, 'assets'))
   .map((name) => readFileSync(resolve(dist, 'assets', name), 'utf8'))
   .join(moveSource);
 assert.ok(railSource.includes('Move stages'), 'Rail must live in a lazy chunk, not the entry');
-assert.ok(moveSource.includes('landing simulated from a real roster snapshot'), 'MyMoves caption missing');
+assert.ok(moveSource.includes('landing simulated from a real roster snapshot'),
+  'MyMoves caption missing');
 console.log(`bundle-budget: lazy MyMoves + rail verified in ${moveChunk}`);

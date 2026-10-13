@@ -531,3 +531,29 @@ it('removes landed endpoints from every index and hides an index with nothing le
   }
   expect(emptied).toBeGreaterThan(0);
 });
+
+it('keeps commissioner rows out of owner indexes, lookups, counts and command search', async () => {
+  const { commissionerControls } = await import('./commissioner.gen');
+  expect(commissionerControls).toHaveLength(56);
+  expect(endpoints).toHaveLength(270);
+  const ownerIds = new Set<string>(endpoints.map(row => row.id));
+  const places = new Set(commissionerControls.map(row => row.placement));
+  for (const place of places) {
+    const indexed = endpointsAt(place);
+    expect(indexed.every(row => !row.id.startsWith('CM-'))).toBe(true);
+    const html = renderToStaticMarkup(createElement(EndpointIndex, { placement: place }));
+    expect(html).not.toMatch(/CM-\d{3}/);
+  }
+  for (const row of commissionerControls) {
+    expect(ownerIds.has(row.id)).toBe(false);
+    expect(() => endpointById(row.id as unknown as EndpointId)).toThrow('Unknown endpoint');
+    expect(candidates.some(result => result.label.includes(row.id))).toBe(false);
+    expect(row).toMatchObject({ source: 'K4 census', disposition: 'kept', status: 'spec' });
+    expect(Object.isFrozen(row)).toBe(true);
+    expect(Object.isFrozen(row.governs)).toBe(true);
+    for (const target of row.governs) {
+      if (target !== 'ledger-wide') expect(ownerIds.has(target)).toBe(true);
+    }
+  }
+  expect(Object.isFrozen(commissionerControls)).toBe(true);
+});

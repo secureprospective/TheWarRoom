@@ -158,7 +158,10 @@ bindings and in-memory recent-command log. `Act` is the only clickable primitive
 UI. `frontend/src/TargetMount.tsx` switches between the target shell and the unchanged harness.
 
 `docs/ui/registry/normalize.py` normalizes and validates `docs/ui/endpoint-registry.csv`.
-`frontend/scripts/gen-endpoints.mjs` generates its frozen TypeScript endpoint map;
+`frontend/scripts/gen-endpoints.mjs` validates the shared owner/commissioner CSV and generates
+`endpoints.gen.ts` (owner rows only) and `commissioner.gen.ts` (CM-001..CM-056 with owner `governs`
+edges). The commissioner module is not imported by the app entry graph; future commissioner screens
+must load it lazily. Both maps are frozen and freshness-tested;
 `frontend/src/app/registry/` owns resolution, indexed placements, compact not-wired rows and the
 pure two-route gate. `endpoint.open` navigates and highlights; merged rows target kept ids or places.
 The harness is lazy-loaded only on `harness.open`; it is not in the target entry chunk.
