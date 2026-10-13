@@ -127,3 +127,100 @@ func TestMalformedFields(t *testing.T) {
 		t.Fatalf("error %v", e)
 	}
 }
+
+// liveBoard puts the fixture's first game in progress with the given situation, the shape ESPN
+// sent on 2026-10-12 during BUF at LAR.
+func liveBoard(t *testing.T, situation map[string]any) []byte {
+	t.Helper()
+	var board map[string]any
+	if err := json.Unmarshal(fixture(t, "espn-scoreboard"), &board); err != nil {
+		t.Fatal(err)
+	}
+	event := board["events"].([]any)[0].(map[string]any)
+	inPlay := map[string]any{"displayClock": "12:40", "period": 1, "type": map[string]any{"state": "in", "completed": false}}
+	event["status"] = inPlay
+	competition := event["competitions"].([]any)[0].(map[string]any)
+	competition["status"] = inPlay
+	for _, c := range competition["competitors"].([]any) {
+		c.(map[string]any)["score"] = "3"
+	}
+	competition["situation"] = situation
+	b, err := json.Marshal(board)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
+func TestScoreboardKeepsTheBoardWhenASituationHasNoPossession(t *testing.T) {
+	last := map[string]any{"id": "401872994183", "text": "Kickoff to the LAR 30."}
+	games, err := ParseScoreboard(liveBoard(t, map[string]any{"possession": "", "lastPlay": last}))
+	if err != nil {
+		t.Fatal("a kickoff situation failed the whole board:", err)
+	}
+	if games[0].State != nil || games[0].Last == nil || games[0].Last.Text != "Kickoff to the LAR 30." {
+		t.Fatalf("no field state, last play kept: %+v", games[0])
+	}
+	games, err = ParseScoreboard(liveBoard(t, map[string]any{"possession": "14", "down": 2, "distance": 7,
+		"yardLine": 33, "lastPlay": last}))
+	if err != nil || games[0].State == nil || games[0].State.Possession != "14" || games[0].State.Down != 2 {
+		t.Fatalf("a full situation gives the field state: %v %+v", err, games)
+	}
+}
+
+func TestYahooReadsAGameInProgress(t *testing.T) {
+	var board map[string]any
+	if err := json.Unmarshal(fixture(t, "yahoo-scoreboard"), &board); err != nil {
+		t.Fatal(err)
+	}
+	games := board["service"].(map[string]any)["scoreboard"].(map[string]any)["games"].(map[string]any)
+	for _, g := range games {
+		g.(map[string]any)["status_type"] = "status.type.in_progress"
+		break
+	}
+	b, err := json.Marshal(board)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := ParseYahoo(b)
+	if err != nil {
+		t.Fatal("a live game failed the Yahoo board:", err)
+	}
+	live := 0
+	for _, g := range parsed {
+		if g.Status == "in" {
+			live++
+		}
+	}
+	if live != 1 {
+		t.Fatalf("one game in progress, got %d", live)
+	}
+}
+
+func TestSummaryCountsTheDriveInProgressOnce(t *testing.T) {
+	var summary map[string]any
+	if err := json.Unmarshal(fixture(t, "espn-summary-401872991"), &summary); err != nil {
+		t.Fatal(err)
+	}
+	drives := summary["drives"].(map[string]any)
+	previous := drives["previous"].([]any)
+	want, err := ParseSummary(fixture(t, "espn-summary-401872991"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// ESPN's live shape: the drive in progress is also the last previous drive, same id.
+	last := previous[len(previous)-1].(map[string]any)
+	last["id"] = "4018729942"
+	drives["current"] = last
+	b, err := json.Marshal(summary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := ParseSummary(b)
+	if err != nil {
+		t.Fatal("the drive in progress failed the game details:", err)
+	}
+	if len(got.Plays) != len(want.Plays) {
+		t.Fatalf("plays %d, want %d", len(got.Plays), len(want.Plays))
+	}
+}
