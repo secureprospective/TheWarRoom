@@ -5,7 +5,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { ContractActCard, ContractActChoices, ContractActMenu, ContractMovePreview, ContractMoveFeedback,
   switchAct,
 } from './ContractActs';
-import { menuPlacement, placeRowMenu } from './RowMenu';
+import { menuPlacement, placeRowMenu, watchRowMenu } from './RowMenu';
 import { keepContractMove, keepLabel, openContractMove, revealContractPlan, useContractMove,
   type ContractActPlan, type ContractActRequest } from './contractActs';
 import { commands } from '../commands/registry';
@@ -282,4 +282,24 @@ it('B: Contract move Close shares Inspector Close class in its heading row', () 
   expect(heading).toContain('variant="icon" label="Close contract move">Close</Act>');
   const css = readFileSync('src/app/contracts/contracts.css', 'utf8');
   expect(css).toContain('justify-content: space-between; gap: 12px;');
+});
+
+it.each(['Escape', 'outside', 'scroll'])('dismisses the shared row menu on %s and restores focus', kind => {
+  const doc = new EventTarget();
+  const focus = vi.fn();
+  const inside = new EventTarget();
+  const popup = { contains: (node: unknown) => node === inside };
+  const details = { open: true, ownerDocument: doc, contains: () => false,
+    querySelector: () => ({ focus }) };
+  const stop = watchRowMenu(details as unknown as HTMLDetailsElement, popup as unknown as HTMLElement);
+  if (kind === 'Escape') {
+    const event = new Event('keydown', { cancelable: true });
+    Object.defineProperty(event, 'key', { value: 'Escape' }); doc.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+  } else if (kind === 'outside') doc.dispatchEvent(new Event('pointerdown'));
+  else doc.dispatchEvent(new Event('scroll'));
+  expect(details.open).toBe(false);
+  expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  stop(); details.open = true; doc.dispatchEvent(new Event('scroll'));
+  expect(details.open).toBe(true);
 });

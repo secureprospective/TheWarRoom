@@ -125,3 +125,16 @@ func TestDynastyFromKeepsTheLabAnswer(t *testing.T) {
 		t.Fatalf("a missing model must say so: %+v", d)
 	}
 }
+
+func TestDynastyDisplayNeverShowsMinusZero(t *testing.T) {
+	for _, v := range []float64{-0.0001, -0.004, 0} {
+		cell, _, raw := dynastyCells(fakeAssets{"1": {Valued: true, Discounted: v, Seasons: 5}}, "1", time.Now())
+		if cell.Text != "0.00 wins" || raw != v {
+			t.Fatalf("display rounded zero or raw value changed: %+v, %v", cell, raw)
+		}
+	}
+	cell, _, _ := dynastyCells(fakeAssets{"1": {Valued: true, Discounted: -0.01}}, "1", time.Now())
+	if cell.Text != "−0.01 wins" {
+		t.Fatal(cell.Text)
+	}
+}

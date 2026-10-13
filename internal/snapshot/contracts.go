@@ -195,7 +195,7 @@ func ContractYears(row ContractRow, season int) []ContractYear {
 		inferred := year > season
 		tag, reason := "Observed", "MFL annual salary for the mirror season"
 		if inferred {
-			tag, reason = "Inferred", "Flat-filled from MFL annual salary and expiration; future year cells are not observed"
+			tag, reason = "Inferred", "Future years assume today’s annual salary through contract expiration; MFL does not report those year amounts"
 		}
 		years = append(years, ContractYear{Season: year, Cost: row.Salary, Inferred: inferred, Tag: tag, Reason: reason})
 	}
@@ -203,10 +203,11 @@ func ContractYears(row ContractRow, season int) []ContractYear {
 }
 
 func ContractsCap(rows []ContractRow, mine string, season int, used domain.Money, capAmount *domain.Money, names map[string]string) CapSummary {
-	out := CapSummary{Team: contractTeamName(names, mine), Season: season, Used: ContractAmountOf(used), CapSource: "Active MFL league configuration / commissioner override; configuration as-of time not held", Future: []ContractYear{}}
+	out := CapSummary{Team: contractTeamName(names, mine), Season: season, Used: ContractAmountOf(used), CapSource: "League salary cap unavailable (MFL league settings)", Future: []ContractYear{}}
 	if capAmount != nil {
 		capValue, room := ContractAmountOf(*capAmount), ContractAmountOf(*capAmount-used)
 		out.Cap, out.Room = &capValue, &room
+		out.CapSource = "League salary cap: " + capValue.Text + " (MFL league settings)"
 	}
 	future := make(map[int]domain.Money)
 	for _, row := range rows {
@@ -220,7 +221,7 @@ func ContractsCap(rows []ContractRow, mine string, season int, used domain.Money
 		}
 	}
 	for year, cents := range future {
-		out.Future = append(out.Future, ContractYear{Season: year, Cost: ContractAmountOf(cents), Inferred: true, Tag: "Inferred", Reason: "Sum of flat-filled annual salaries through expiration; gross commitments, no future roster discounts or adjustments assumed"})
+		out.Future = append(out.Future, ContractYear{Season: year, Cost: ContractAmountOf(cents), Inferred: true, Tag: "Inferred", Reason: "Future commitments assume today’s annual salary through each contract’s expiration; MFL does not report those year amounts. No future reserve discounts or adjustments are included."})
 	}
 	slices.SortFunc(out.Future, func(a, b ContractYear) int { return cmp.Compare(a.Season, b.Season) })
 	return out

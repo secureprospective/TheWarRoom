@@ -1,7 +1,7 @@
 import { stateLabel } from '../shell/moveLabels';
 import { scrollWorkIntoView } from '../shell/workScroll';
 import { WhatIfFigures } from './WhatIfFigures';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { RailStrip } from '../shell/EnvelopeRail';
@@ -116,6 +116,12 @@ export function ContractActChoices({ request, options, onChange }: {
   </>;
 }
 function ContractMoveForm({ mine, player }: { mine: string; player: string }) {
+  const form = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    if (!form.current) return;
+    scrollWorkIntoView(form.current);
+    form.current.focus({ preventScroll: true });
+  }, [mine, player]);
   const [request, setRequest] = useState<ContractActRequest>({
     mine, player, action: 'preview', intent: 'rfa.tender', level: 1, years: 1,
     move: '1', source: 0, destination: 0,
@@ -161,7 +167,8 @@ function ContractMoveForm({ mine, player }: { mine: string; player: string }) {
     );
     return () => { active = false; };
   }, [request, mine, player, options]);
-  return <section className="contract-reading contract-move" aria-label="Contract move">
+  return <section ref={form} tabIndex={-1} className="contract-reading contract-move"
+    aria-label="Contract move">
     <header className="contract-move-head"><h4>Contract move</h4>
     <Act verb="contracts.set" args={{ field: 'contract-close', value: '' }}
       variant="icon" label="Close contract move">Close</Act></header>

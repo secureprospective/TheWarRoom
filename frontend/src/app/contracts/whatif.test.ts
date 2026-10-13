@@ -130,3 +130,9 @@ it('puts both Acts and a disabled reason in the menu, and Go move tags in the ro
     expect(view()).not.toContain('<button');
   }
 });
+
+it('offers Reset and the explanation even for a stale empty session', () => {
+  const r = reading(); r.value!.stale = true; r.value!.banner = 'MFL changed';
+  expect(html(r)).toContain('aria-label="Reset"');
+  expect(html(r)).toContain('MFL changed');
+});

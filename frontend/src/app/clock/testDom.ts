@@ -39,6 +39,7 @@ export class TestElement {
   setAttribute(name: string, value: string) { this.attributes.set(name, String(value)); }
   removeAttribute(name: string) { this.attributes.delete(name); }
   getAttribute(name: string) { return this.attributes.get(name) ?? null; }
+  focus(_options?: FocusOptions) {}
   addEventListener() {}
   removeEventListener() {}
   querySelectorAll(selector: string): TestElement[] {

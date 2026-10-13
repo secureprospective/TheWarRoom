@@ -99,6 +99,13 @@ func (a *App) TargetWhatIf(raw RawWhatIfRequest) Reading[WhatIfView] {
 		return whatIfReading(WhatIfView{}, session, fmt.Errorf("what-if current stamps: %w", err))
 	}
 	stale := stamps.NewerThan(session.Stamps)
+	if stale && len(session.Moves) == 0 {
+		session, store, err = a.whatIfSession(ctx, RawWhatIfRequest{Mine: raw.Mine, Action: "reset"})
+		if err != nil {
+			return whatIfReading(WhatIfView{}, session, err)
+		}
+		stale = false
+	}
 	var notice string
 	if raw.Action != "read" && raw.Action != "reset" {
 		if stale {
