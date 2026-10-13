@@ -104,6 +104,9 @@ type App struct {
 	weekStart        sync.Once // domReady fires again on a webview reload; one worker only
 
 	seasonMu            sync.Mutex
+	seasonCalendar      heldSeasonFeed[[]ingestion.RawCalendarEvent]
+	seasonTradeBait     heldSeasonFeed[[]ingestion.RawTradeBait]
+	shellFeedDays       map[string]string
 	seasonTransactions  heldSeasonFeed[[]leaguefeed.Transaction]
 	commsBoards         [2]heldSeasonFeed[[]ingestion.RawLeaguePost]
 	seasonLineups       heldSeasonFeed[leaguefeed.Lineups]

@@ -8,6 +8,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
+	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
@@ -56,6 +57,9 @@ type commsInput struct {
 	lookup       normalize.Lookup
 	mirror       state.MirrorSnapshot
 	zone         *time.Location
+	rosters      facts.RosterWeekColumns
+	rosterTimes  map[[2]int64]int64
+	rosterNote   string
 }
 
 func buildComms(in commsInput, scope RawCommsScope) (CommsBoard, error) {
@@ -78,7 +82,8 @@ func buildComms(in commsInput, scope RawCommsScope) (CommsBoard, error) {
 	for _, id := range ids {
 		out.Teams = append(out.Teams, RaceChoice{Value: id, Label: in.names[id]})
 	}
-	out.Feed = reportShell("C-05", "League feed", "Newest first, from held MFL transactions. A salary and contract end are the player's current contract on MFL, not the terms when the move was made; missing terms are labelled. No messages are sent.", in.transactions, in.zone, "Local time", "Move")
+	out.Feed = reportShell("C-05", "League feed", "Newest first, from held MFL transactions. Adds show the current MFL contract. Drops show the last held weekly contract before the move; missing salary is labelled. No messages are sent.", in.transactions, in.zone, "Local time", "Move")
+	out.Feed.Note += in.rosterNote
 	out.Transactions = out.Feed
 	out.Transactions.ID, out.Transactions.Title = "M-032", "Transactions"
 	out.Transactions.SortAscending, out.Transactions.SortDescending = "Sort oldest first", "Sort newest first"
@@ -171,7 +176,7 @@ func (in commsInput) contract(id string) string {
 		}
 		return fmt.Sprintf(" (%s, contract through %d)", bid.MoneyText(p.Salary), p.ContractYear)
 	}
-	return " (salary and contract unavailable)"
+	return " (salary not held)"
 }
 
 // proseName turns MFL's "Last, First" into the "First Last" a sentence reads.
@@ -217,7 +222,11 @@ func (in commsInput) transactionSentence(tx leaguefeed.Transaction) string {
 			verb string
 		}{{c.change.In, c.incoming}, {c.change.Out, c.outgoing}} {
 			for _, a := range side.rows {
-				clauses = append(clauses, fmt.Sprintf(side.verb, in.asset(a, c.contract)))
+				asset := in.asset(a, c.contract)
+				if c.contract && side.verb == c.outgoing && a.Player != nil {
+					asset = in.asset(a, false) + in.droppedContract(a.Player.String(), tx.Franchise, tx.Time)
+				}
+				clauses = append(clauses, fmt.Sprintf(side.verb, asset))
 			}
 		}
 		if len(clauses) > 0 {

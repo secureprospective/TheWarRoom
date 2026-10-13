@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { parsePlayerReading, type PlayerReading } from './contract';
-import { Act } from '../commands/Act';
+import { NewsList } from './Research';
 import './research.css';
 import type * as Bindings from '../../../wailsjs/go/main/App';
 
@@ -30,15 +30,19 @@ export function PlayerResearchView({ player, identity }: { player: PlayerReading
     <section className="research-facts" data-endpoint={player.report.id} aria-label={player.report.title}>
       <h5>{player.report.title}</h5>
       <p>{player.report.source}</p>
-      <dl>{player.report.rows.map((row, i) => <div key={i}>
+      <dl>{player.report.rows.filter(row => !row.cells[0].startsWith('News · '))
+        .map((row, i) => <div key={i}>
         <dt>{row.cells[0]}</dt>
         <dd>{row.cells[1]}<small>{row.cells[2]}</small></dd>
       </div>)}</dl>
       <details><summary>{player.howLabel}</summary><p>{player.report.how}</p></details>
     </section>
-    <ul>{player.articles.map(a => <li key={a.article}>
-      <Act verb="research.read" args={{ action: 'open', value: `${a.id}:${a.article}` }}
-        label={`Open article on MFL · ${a.headline}`}>Open article on MFL · {a.headline}</Act>
-    </li>)}</ul>
+    {player.articles.length > 0 && <NewsList pageKey={`player:${player.id}`}
+      report={{ ...player.report, id: 'M-058', title: 'Player news',
+        columns: ['Published', 'Headline', 'Feed time'], summary: [],
+        rows: player.report.rows.filter(row => row.cells[0].startsWith('News · '))
+          .map(row => ({ ...row, cells: [row.cells[0].slice(7), ...row.cells.slice(1)] })) }}
+      articles={player.articles} howLabel={player.howLabel} />}
+
   </div>;
 }

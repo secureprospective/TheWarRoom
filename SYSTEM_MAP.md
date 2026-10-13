@@ -282,6 +282,7 @@ League Pulse › Now: `now_app.go` holds each opened week's NFL schedule, the se
 `comms_app.go` holds authenticated messageBoard/polls exports with archive fallback.
 `TargetComms` reads existing season transactions, current mirror contracts and the held directory.
 `comms_reading.go` writes sentences shared by C-05 and M-032 with Go-validated filters.
+Drops use the last held weekly roster before the move, dated by the last NFL kickoff.
 `TargetOpenComms` opens ProBoards or the discovered MFL board/polls pages only.
 `internal/ingestion/comms.go` validates posts. Lazy `frontend/src/app/comms` serves
 Comms and Home › Digests through the shared Report shell.
@@ -315,6 +316,8 @@ host `shell/TradeBuilder.tsx` and `contracts/Acquisitions.tsx`; all controls use
 `roster_reports_app.go` exposes `TargetRosterReports` from held exports; `nfl_draft_app.go`
 exposes `TargetNFLDraft` from validated detailed player draft selections; `internal/lineup/byes.go`
 checks position-minimum bye shortfalls. `calendar_app.go` merges held MFL calendar events into C-04.
+`shell_feeds_app.go` holds calendar and tradeBait, refreshed once per local day with archive fallback;
+screen reads never fetch. Their fetchers live beside the parsers in `internal/ingestion/shellfeeds.go`.
 `frontend/src/app/personal` is lazy list editing and persistence; `shell/StatusStrip.tsx` lazily
 reads source health and held gameday counts via `TargetShellStatus`.
 

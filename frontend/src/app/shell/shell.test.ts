@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import { createCommands } from '../commands/registry';
 import { nodes, nodeKeys, homeRoute, routeFor } from './nodes';
 import { parseRoute, formatRoute } from './routes';
-import { snapshotSummary } from './snapshotSummary';
 import { FixtureProvider } from '../data/provider';
 
 describe('Shell routes and data', () => {
@@ -41,19 +40,10 @@ describe('Shell routes and data', () => {
       expect(parseRoute(hash)).toEqual(homeRoute);
     }
   });
-  it('shows weakest source and date and never zeroes failed data', async () => {
-    const snapshot = await new FixtureProvider().snapshot();
-    snapshot.players.provenance.freshness = {
-      state: 'fail',
-      fetchedAt: '2026-10-05T00:00:00Z',
-      note: 'failed directory',
-    };
-    const summary = snapshotSummary(snapshot);
-    expect(summary.provenance.label).toBe('fixture · 10-05');
-    expect(summary.provenance.detail).toContain('players · fixture · fail');
-    expect(summary.provenance.signal).toBe('red');
-    snapshot.rosters.provenance.freshness.state = 'fail';
-    expect(snapshotSummary(snapshot).rostered).toBe('Unavailable');
+  it('leaves freshness to the status strip, without a Home summary card', () => {
+    const shell = readFileSync(new URL('./TargetApp.tsx', import.meta.url), 'utf8');
+    expect(shell).not.toContain('Snapshot summary');
+    expect(shell).not.toContain('snapshotSummary');
   });
 });
 describe('Shell transitions through dispatch only', () => {

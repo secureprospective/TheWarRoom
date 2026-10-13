@@ -15,7 +15,7 @@ export default function HomePulseMount({ snapshot, reading }: ClockProps & { sna
   } else if (node !== 'home') {
     screen = <Now />;
   } else if (snapshot) {
-    screen = <AlertTray snapshot={snapshot} />;
+    screen = <AlertTray snapshot={snapshot} reading={reading} />;
   } else {
     screen = <p role="status">Snapshot loading…</p>;
   }

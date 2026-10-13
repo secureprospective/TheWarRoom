@@ -84,16 +84,13 @@ func readResearchNewsBatches(ctx context.Context, held map[string]heldSeasonFeed
 		if err := pause(ctx, time.Second); err != nil {
 			return err
 		}
-		rows, err := fetch(ctx, batch)
-		if err != nil {
-			logLine(fmt.Sprintf("news batch of %d players (%s to %s): %v", len(batch), batch[0], batch[len(batch)-1], err))
-		}
+		rows, failures := isolatedNews(ctx, batch, pause, fetch)
 		losses := map[string]error{}
 		for _, id := range batch {
 			news, answered := rows[id]
 			switch {
-			case err != nil:
-				losses[id] = err
+			case failures[id] != nil:
+				losses[id] = failures[id]
 			case !answered:
 				losses[id] = fmt.Errorf("playerProfile: player %s unanswered", id)
 				logLine(fmt.Sprintf("news player %s: %v", id, losses[id]))
@@ -134,4 +131,37 @@ func fallbackResearchNews(ctx context.Context, held map[string]heldSeasonFeed[[]
 		}
 		held[id] = next
 	}
+}
+
+// Only an invalid-ID rejection is split; outages and rate limits must not multiply requests.
+func isolatedNews(ctx context.Context, ids []string, pause func(context.Context, time.Duration) error,
+	fetch func(context.Context, []string) (map[string][]researchfeeds.News, error)) (map[string][]researchfeeds.News, map[string]error) {
+	rows, err := fetch(ctx, ids)
+	losses := map[string]error{}
+	if err == nil {
+		return rows, losses
+	}
+	if len(ids) == 1 || !strings.Contains(strings.ToLower(err.Error()), "no valid player ids") || ctx.Err() != nil {
+		for _, id := range ids {
+			losses[id] = err
+		}
+		return rows, losses
+	}
+	out := map[string][]researchfeeds.News{}
+	for _, half := range [][]string{ids[:len(ids)/2], ids[len(ids)/2:]} {
+		if err := pause(ctx, time.Second); err != nil {
+			for _, id := range half {
+				losses[id] = err
+			}
+			continue
+		}
+		good, lost := isolatedNews(ctx, half, pause, fetch)
+		for id, news := range good {
+			out[id] = news
+		}
+		for id, loss := range lost {
+			losses[id] = loss
+		}
+	}
+	return out, losses
 }

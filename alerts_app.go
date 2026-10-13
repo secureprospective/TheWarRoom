@@ -53,25 +53,24 @@ func (a *App) TargetAlerts(franchiseID string) (AlertReading, error) {
 	a.irAlerts(&r, franchiseID)
 	a.lineupAlert(&r, saved, now)
 	r.tradeAlert(trades, now)
-	slices.SortFunc(r.Alerts, func(a, b Alert) int {
-		if order := cmp.Compare(b.Urgency, a.Urgency); order != 0 {
-			return order
-		}
-		if a.At.IsZero() != b.At.IsZero() {
-			if a.At.IsZero() {
-				return 1
-			}
-			return -1
-		}
-		if order := a.At.Compare(b.At); order != 0 {
-			return order
-		}
-		if order := cmp.Compare(a.Kind, b.Kind); order != 0 {
-			return order
-		}
-		return cmp.Compare(a.PlayerID, b.PlayerID)
-	})
+	slices.SortFunc(r.Alerts, compareAlerts)
 	return r, nil
+}
+
+func compareAlerts(a, b Alert) int {
+	if order := cmp.Compare(b.Urgency, a.Urgency); order != 0 {
+		return order
+	}
+	gravity := func(alert Alert) int {
+		if alert.Kind == "ir" {
+			return 2
+		}
+		return 1
+	}
+	if order := cmp.Compare(gravity(b), gravity(a)); order != 0 {
+		return order
+	}
+	return cmp.Compare(a.Kind+":"+a.PlayerID, b.Kind+":"+b.PlayerID)
 }
 
 func (a *App) lineupAlert(r *AlertReading, saved LineupReading, now time.Time) {

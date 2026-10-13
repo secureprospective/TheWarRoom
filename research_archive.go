@@ -154,7 +154,9 @@ func (a *App) mergeResearchArchive(ctx context.Context, feeds map[string]heldSea
 	}
 	for id, h := range news {
 		if a.research.news[id].fetchedAt.IsZero() {
-			h.refreshError = "Archived copy; refresh pending"
+			if h.fetchedAt.In(time.Local).Format("2006-01-02") != time.Now().In(time.Local).Format("2006-01-02") {
+				h.refreshError = "Archived copy; refresh pending"
+			}
 			a.research.news[id] = h
 		}
 	}

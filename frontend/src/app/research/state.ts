@@ -25,8 +25,13 @@ const live: ResearchReader = {
 export function createResearchState(reader: ResearchReader, mine: () => string) {
   const initial: Scope = { mine: '', search: '', team: '', position: '', group: 'QB',
     trend: 'topAdds', depth: 'team', injuries: 'all' };
-  type State = { research?: Research; pending: boolean; error: string; status: string; scope: Scope };
-  const store = createStore<State>(() => ({ pending: false, error: '', status: '', scope: initial }));
+  type State = {
+    research?: Research; pending: boolean; error: string; status: string;
+    scope: Scope; pages: Record<string, number>;
+  };
+  const store = createStore<State>(() => ({
+    pending: false, error: '', status: '', scope: initial, pages: {},
+  }));
   let revision = 0;
   async function load(refresh = false, news = false, league = false, force = false) {
     const request = ++revision;
@@ -55,6 +60,11 @@ export function createResearchState(reader: ResearchReader, mine: () => string) 
     }
   }
   async function choose(action: string, value: string) {
+    if (action === 'more') {
+      const pages = store.getState().pages;
+      store.setState({ pages: { ...pages, [value]: (pages[value] ?? 25) + 25 } });
+      return;
+    }
     if (action === 'refresh') return load(true, false, false, true);
     if (action === 'news') return load(false, true, value === 'league');
     if (action === 'open') {

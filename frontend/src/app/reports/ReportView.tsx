@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Act } from '../commands/Act';
 import { RangeBar } from '../market/ReadingView';
 import { reportSort, sortedRows } from './sortState';
@@ -16,7 +17,8 @@ export function WeekBars({ bars, labels, max }: { bars: number[]; labels: string
     </rect>)}
   </svg>;
 }
-function ReportTable({ report }: { report: Report }) {
+type CellRenderer = (cell: string, row: number, column: number) => ReactNode;
+function ReportTable({ report, renderCell }: { report: Report; renderCell?: CellRenderer }) {
   const sort = reportSort.use()[report.id];
   const rows = sortedRows(report.rows, sort);
   const sortLabel = (i: number) => sort?.column === i && !sort.desc
@@ -40,7 +42,8 @@ function ReportTable({ report }: { report: Report }) {
         aria-current={row.mine ? 'true' : undefined}>{row.cells.map((cell, j) =>
         <td key={j} title={row.titles?.[j]}
           className={report.columns[j] === 'Local time' ? 'draft-local-time' : undefined}>
-          {cell.split('\n').map((line, k) => <div className="draft-cell-line" key={k}>{line}</div>)}
+          {renderCell ? renderCell(cell, i, j) : cell.split('\n').map((line, k) =>
+            <div className="draft-cell-line" key={k}>{line}</div>)}
           {j === row.cells.length - 1 && row.range && <RangeBar range={row.range} />}
           {j === row.cells.length - 1 && row.bars && report.barMax && report.barLabels &&
             <WeekBars bars={row.bars} labels={report.barLabels} max={report.barMax} />}
@@ -49,8 +52,8 @@ function ReportTable({ report }: { report: Report }) {
   </div>;
 }
 // A report that heads its page (the Race standings) takes the page heading level.
-export function ReportView({ report, howLabel, heading: Heading = 'h5' }:
-  { report: Report; howLabel: string; heading?: 'h4' | 'h5' }) {
+export function ReportView({ report, howLabel, heading: Heading = 'h5', renderCell }:
+  { report: Report; howLabel: string; heading?: 'h4' | 'h5'; renderCell?: CellRenderer }) {
   return <section className="draft-report" data-endpoint={report.id} aria-label={report.title}>
     <Heading>{report.title}</Heading>
     <p>{report.source}{report.asOf && <> · <span className="draft-local-time">{report.asOf}</span></>}</p>
@@ -70,7 +73,7 @@ export function ReportView({ report, howLabel, heading: Heading = 'h5' }:
             <dt>{report.columns[j]}</dt>
             <dd className={report.columns[j] === 'Local time' ? 'draft-local-time' : undefined}>{cell}</dd>
           </div>)}</dl>
-        </details>)}</div> : <ReportTable report={report} />)}
+        </details>)}</div> : <ReportTable report={report} renderCell={renderCell} />)}
     <details className="market-how"><summary>{howLabel}</summary><p>{report.how}</p></details>
   </section>;
 }

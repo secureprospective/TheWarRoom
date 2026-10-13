@@ -11,11 +11,9 @@ import type { Snapshot } from '../data/contract';
 import { selectProvider } from '../data/provider';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
-import { SignalChip } from '../look/Slots';
 import { DENSITIES } from '../cards/Card';
 import { nodes, nodeKeys, routeFor } from './nodes';
 import { NavIcon } from './NavIcon';
-import { snapshotSummary } from './snapshotSummary';
 import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
@@ -92,7 +90,6 @@ export function TargetApp() {
       active = false;
     };
   }, []);
-  const summary = snapshot && snapshotSummary(snapshot);
   const node = nodes[s.node];
   const workspaces: readonly { slug: string; label: string; ring: string }[] = node.workspaces;
   const workspace = workspaces.find((w) => w.slug === s.workspace[s.node])!;
@@ -259,20 +256,6 @@ export function TargetApp() {
             <section className="shell-unwired">
               <h4>{workspace.label}</h4>
               <p className="not-wired">Not wired · {workspace.ring}</p>
-            </section>
-          )}
-          {s.node === 'home' && summary && (
-            <section className="snapshot-summary" aria-label="Snapshot summary">
-              <h4>Snapshot summary</h4>
-              <dl className="kv">
-                <dt>Season</dt>
-                <dd>{summary.season}</dd>
-                <dt>Franchises</dt>
-                <dd>{summary.franchises}</dd>
-                <dt>Rostered players</dt>
-                <dd>{summary.rostered}</dd>
-              </dl>
-              <SignalChip {...summary.provenance} />
             </section>
           )}
           <EndpointIndex placement={placement} />

@@ -45,11 +45,11 @@ func (a *App) TargetPersonal(mine string) (PersonalReading, error) {
 	if err != nil {
 		return PersonalReading{}, fmt.Errorf("personal: %w", err)
 	}
-	feed := archivedOnly(ctx, a, "tradeBait", false, ingestion.ParseTradeBait)
+	feed := readShellFeed(ctx, a, &a.seasonTradeBait, "tradeBait", ingestion.ParseTradeBait)
 	report := reportShell("M-116", "League trade bait",
 		"MFL's held tradeBait export, beside your private list. The app never submits either list to MFL.",
 		feed, time.Local, "Franchise", "Offering", "Looking for")
-	report.Source = "Source: held MFL tradeBait archive"
+	report.Source = "Source: MFL trade bait · " + shellFeedTime(feed, time.Local)
 	names, franchises := snapshotNames(snap)
 	for _, bait := range feed.value {
 		offered := []string{}

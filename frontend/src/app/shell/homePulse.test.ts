@@ -9,6 +9,7 @@ import { parseAlerts } from '../data/parseAlerts';
 import { clockDom, TestElement } from '../clock/testDom';
 import AlertTray from './AlertTray';
 import SeasonalCard from './SeasonalCard';
+import * as registry from '../commands/registry';
 
 const globals = ['window', 'document', 'IS_REACT_ACT_ENVIRONMENT'].map((key) => ({
   key, descriptor: Object.getOwnPropertyDescriptor(globalThis, key),
@@ -46,7 +47,7 @@ function alertReading(): AlertReading {
     ],
   };
 }
-async function setup(reading: { alerts?: AlertReading } = {}) {
+async function setup(reading: { alerts?: AlertReading; clock?: Sourced<ClockReading> } = {}) {
   const snapshot = heldSnapshot();
   const provider = new LiveProvider();
   vi.spyOn(provider, 'lineup').mockResolvedValue(heldLineup());
@@ -70,7 +71,7 @@ async function setup(reading: { alerts?: AlertReading } = {}) {
   const root = createRoot(dom.element);
   roots.push(root);
   await act(async () => {
-    root.render(createElement(AlertTray, { snapshot }));
+    root.render(createElement(AlertTray, { snapshot, reading: reading.clock }));
     await flush();
   });
   const element = dom.element as unknown as TestElement;
@@ -103,6 +104,34 @@ describe('Alert tray', () => {
     expect(text).toContain('IR · NFL injury status not yet read (MFL injuries export)');
     expect(text).toContain('Trades · MFL timed out');
     expect(text.toLowerCase()).not.toContain('waiver');
+  });
+  it('pins clock deadlines above alerts with an action and ticking countdown', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-08T22:00:00Z'));
+    const clock: Sourced<ClockReading> = { provenance, value: {
+      season: 2026, week: 5, phase: 'REGULAR_SEASON', windows: [], deadlines: [
+        { id: 'lineup-w5', label: 'LINEUP_LOCK', at: '2026-10-08T23:15:00Z', urgency: 'U2',
+          pinned: true, promoted: true },
+        { id: 'not-pinned', label: 'Not yet', urgency: 'U1', pinned: false, promoted: false },
+      ],
+    } };
+    const t = await setup({ clock, alerts: { alerts: [], unavailable: [] } });
+    expect(t.text()).toContain('Lineup lock');
+    expect(t.text()).toContain('1h 15m');
+    expect(t.text()).not.toContain('Nothing needs you');
+    expect(t.text()).not.toContain('Not yet');
+    expect(t.buttons()).toEqual(['Act · Lineup lock']);
+    now.mockReturnValue(Date.parse('2026-10-08T22:01:00Z'));
+    const document = t.element.ownerDocument;
+    document.visibility(false);
+    expect(t.text()).toContain('1h 14m');
+    vi.spyOn(registry, 'dispatch').mockImplementation(t.c.dispatch);
+    const button = t.element.querySelectorAll('[aria-label]').find(e =>
+      e.tagName === 'BUTTON' && e.getAttribute('aria-label') === 'Act · Lineup lock')!;
+    const key = Object.keys(button).find(name => name.startsWith('__reactProps$'))!;
+    const props = (button as unknown as Record<string, { onClick(): void }>)[key];
+    await act(async () => props.onClick());
+    expect(t.c.read().node).toBe('hq');
+    expect(t.c.read().workspace.hq).toBe('lineup-and-roster');
   });
   it('says when nothing needs him', async () => {
     const t = await setup({ alerts: { alerts: [], unavailable: [] } });

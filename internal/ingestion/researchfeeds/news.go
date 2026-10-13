@@ -126,3 +126,9 @@ func FetchNews(ctx context.Context, c *mfl.Client, season int, ids []string) (ma
 	}
 	return ParseNews(response.Body, ids)
 }
+
+// TeamUnit uses the directory position, not IDs: leagues can create unit IDs of their own.
+func TeamUnit(position string) bool {
+	p := strings.ToUpper(strings.TrimSpace(position))
+	return slices.Contains([]string{"DEF", "DST", "ST", "OFF"}, p) || strings.HasPrefix(p, "TM")
+}

@@ -1,11 +1,14 @@
 package ingestion
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/secureprospective/TheWarRoom/internal/mfl"
 )
 
 type RawCalendarEvent struct {
@@ -149,4 +152,20 @@ func ParsePlayerScores(body []byte) ([]RawPlayerScore, error) {
 		}
 	}
 	return rows, nil
+}
+
+func FetchCalendar(ctx context.Context, client *mfl.Client, year, league string) ([]RawCalendarEvent, error) {
+	body, err := LeagueExport(ctx, client, "calendar", year, league, nil)
+	if err != nil {
+		return nil, fmt.Errorf("calendar: %w", err)
+	}
+	return ParseCalendar(body)
+}
+
+func FetchTradeBait(ctx context.Context, client *mfl.Client, year, league string) ([]RawTradeBait, error) {
+	body, err := LeagueExport(ctx, client, "tradeBait", year, league, nil)
+	if err != nil {
+		return nil, fmt.Errorf("trade bait: %w", err)
+	}
+	return ParseTradeBait(body)
 }
