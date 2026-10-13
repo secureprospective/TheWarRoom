@@ -253,3 +253,16 @@ details are league-private and stay in the run dir.
 | Draft Start Date/Time | kept (shown on calendar) | Christopher 10-13: the commissioner gets the complete draft control surface | C5 is an alias of O=110, not a separate draft-settings page. Its kept (shown on calendar) disposition and C1 calendar’s merged → calendar disposition coexist on one URL; the registry must preserve label/context, not deduplicate disposition solely by URL. |
 | Adjust Standings (+ div/conf/VP adjusters) | kept (one control) | commissioner standings override | The kept (one control) row includes the Victory Points Adjuster, while Victory Points Setup is retired. No changed disposition is proposed; confirm whether the kept unified override retains a dormant VP field or excludes it. |
 
+
+### Answers (Christopher, 2026-10-13)
+- **Custom Standings Order:** yes, the app keeps the commissioner's manual override of the full standings order.
+- **Process Waivers:** the app resolves ALL claims. Bids only matter after waivers have cleared.
+- **Trade deadline:** set on ProBoards today; in the app it is set on the league calendar.
+- **Draft Start / League Calendar same page:** registry note only, no decision needed.
+- **Additional League Rules (free-text rules):** parked with the first-class CLI/chat campaign. The idea
+  worth keeping: a commissioner writes a rule in words and the platform turns it into an enforced rule.
+- **Waivers (how the league runs them):** a player hits waivers only when he is cut; he stays on waivers
+  for 24 hours; the waiver order is set by league rules. Bids apply only after waivers clear. These are
+  the waiver settings the app needs (each with that logical default); MFL's add limits, rookie-waiver
+  switch and minimum-stay days are not part of the model.
+- **Victory points:** dropped, including the victory-points adjuster inside Adjust Standings.
