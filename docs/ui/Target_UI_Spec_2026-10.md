@@ -562,8 +562,9 @@ live in the closing batch (#35). Of the 97 (1–95 plus 22b and 51b): 87 fixed, 
 fails without its fix; 3 ruled by Christopher (16, 33, 37); 5 not defects (9, 10, 31, 50, 57); 2 were
 the VM, not the app (59, 60).
 
-**Endpoint index.** Christopher, 2026-10-13: hide landed rows. Each screen's index lists the rows still
-to land; the landed ones fold into "N finished", which opens when the endpoint just opened has landed.
+**Endpoint index.** Christopher, 2026-10-13: "if they are finished they need to be removed, not
+retagged". Each screen's index lists only the endpoints still to land; a screen with none left shows no
+index. The registry keeps every row and its `ring_note`.
 
 **Speed.** The root package's race tests fell from 574 s to 233 s (shared read-only archive snapshot,
 per-test history copies, parallel tests), so the pre-push gate no longer times out under load.
