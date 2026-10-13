@@ -511,7 +511,7 @@
 
 .twr-app .report-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
 .twr-app .report-table :is(th, td) {
-  padding: 8px 6px; text-align: left; vertical-align: top;
+  padding: var(--density-table-padding, 8px 6px); text-align: left; vertical-align: top;
   border-bottom: 1px solid var(--surface-line); overflow-wrap: anywhere;
 }
 .twr-app .report-table th:first-child { width: 22%; }

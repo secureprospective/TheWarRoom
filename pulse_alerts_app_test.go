@@ -29,7 +29,7 @@ func TestTargetAlerts(t *testing.T) {
 		t.Fatal(err)
 	}
 	alerts, unavailable := alertKinds(r)
-	if !slices.Equal(alerts, []string{"trades"}) || !slices.Equal(unavailable, []string{"ir"}) {
+	if !slices.Equal(alerts, []string{"trades"}) || !slices.Equal(unavailable, []string{"ir", "bye"}) {
 		t.Fatalf("legal lineup, one offer: %v %v", alerts, unavailable)
 	}
 	trade := r.Alerts[0]

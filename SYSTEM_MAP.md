@@ -208,7 +208,8 @@ Hand-off Act: `move.handoff` opens a Ready plan; `target:moves` reloads receipts
 Trade desk: `shell/TradeDesk.tsx` groups held offers; lazy `data/tradeProvider.ts` parses Go readings.
 Accept plan: `commands/tradeAccept.ts` drafts `trade.accept`; `shell/TradePlan.tsx` tracks desk hand-off.
 
-`alerts_app.go`: `TargetAlerts(franchiseID string) (AlertReading, error)` reads lineup and incoming-offer alerts.
+`alerts_app.go`, `bye_alerts_app.go`: `TargetAlerts(franchiseID string) (AlertReading, error)` reads
+lineup, incoming-offer and current/next-week position-minimum bye alerts from held inputs only.
 `internal/leaguefeed`, `internal/ingestion/livescoring`: matchups, playing counts and per-player live scores.
 
 Home seasonal card: `shell/SeasonalCard.tsx` lazily renders the held clock and shared deadline ticker.

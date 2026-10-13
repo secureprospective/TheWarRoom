@@ -240,7 +240,8 @@ describe('Fix 5: unknown age and experience', () => {
     expect(css).not.toContain('min-width: 1600px');
     expect(css).toContain('.pool, .twr-app .pool-reading { min-width: 0; max-width: 100%; }');
     expect(css).toContain('.pool-table-scroll { min-width: 0; overflow: auto; max-width: 100%;');
-    expect(css).toContain('position: sticky; left: 0; background: var(--surface-0)');
+    expect(css.replace(/\s+/g, ' '))
+      .toContain('position: sticky; left: 0; background: var(--surface-0)');
   });
 });
 
