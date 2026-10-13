@@ -25,7 +25,7 @@ func TestPoolMarketLines(t *testing.T) {
 	aav.value[0].Players[0].Value = 1.2
 	held[marketfeeds.AAV] = aav
 	facts := marketFacts(held)
-	want := []string{"Proj 12.4 · Rank 45, Up 3", "ADP 112 (88–140) · AAV 1.2%"}
+	want := []string{"Proj 12.4 · Rank 45, Up 3", "ADP 112 (88–140) · AAV $1.2 on MFL’s $1,000 scale"}
 	if got := poolMarketLines(facts["13589"]); !slices.Equal(got, want) {
 		t.Fatal(got)
 	}

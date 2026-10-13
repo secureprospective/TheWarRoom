@@ -161,6 +161,7 @@ func (a *App) scheduleFeed(week int) archivedFeed[nflschedule.RawWeek] {
 }
 
 func (a *App) seedClockSchedules(ctx context.Context) {
+	a.seedCurrentWeek(ctx)
 	for _, rule := range leagueclock.Rules(a.lastRegularWeek()) {
 		if rule.Week == 0 {
 			continue

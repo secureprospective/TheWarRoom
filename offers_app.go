@@ -178,7 +178,17 @@ func offerSummary(d *lab.Data, v lab.OfferResult, s lab.OfferScope) string {
 		}
 	}
 	if len(findings) == 1 {
-		findings = append(findings, "No stretch clears the comparison against every other usable stretch; fewer than two usable stretches means no comparison.")
+		usable := 0
+		for _, st := range v.Stretches {
+			if st.Known >= 10 {
+				usable++
+			}
+		}
+		headline := "Too few stretches have enough decided offers to compare."
+		if usable >= 2 {
+			headline = "No stretch's acceptance rate stands out from the others beyond chance."
+		}
+		findings = append(findings, headline)
 	}
 	return strings.Join(findings, " ")
 }

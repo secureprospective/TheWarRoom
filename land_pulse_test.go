@@ -211,7 +211,7 @@ func TestPulseReportsDefaultLastScored(t *testing.T) {
 		}
 	}
 	board := nowBoard(t, in)
-	if board.Week != 5 || board.ReportWeek != 4 || len(board.ReportWeeks) != 5 {
+	if board.Week != 5 || board.ReportWeek != 4 || len(board.ReportWeeks) != len(in.race.held.weeks.value) {
 		t.Fatal(board.Week, board.ReportWeek, board.ReportWeeks)
 	}
 	for i, w := range board.ReportWeeks {

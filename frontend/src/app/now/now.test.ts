@@ -60,6 +60,14 @@ describe('League Pulse › Now', () => {
     expect(bad(r => { r.matchup.id = 'M-005'; })).toThrow('X-03');
     expect(bad(r => { r.matchup.rows[0].cells.pop(); })).toThrow('column count');
   });
+  it('refreshes the selected report week so future reports can name its kickoff', async () => {
+    const reader: NowReader = { read: vi.fn(async () => now()), refresh: vi.fn(async () => {}) };
+    const state = createNowState(reader, () => '0001');
+    await state.load(true);
+    await state.choose('reports-week', '9');
+    expect(reader.refresh).toHaveBeenLastCalledWith(9, false);
+    expect(reader.read).toHaveBeenLastCalledWith(5, 9, '0001');
+  });
   it('asks Go for the chosen week, refreshing that week, and follows my franchise', async () => {
     const reader: NowReader = { read: vi.fn(async () => now()), refresh: vi.fn(async () => {}) };
     const state = createNowState(reader, () => '0001');

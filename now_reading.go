@@ -55,9 +55,6 @@ func buildNow(in nowInput) (NowBoard, error) {
 	board := NowBoard{Week: v.week, Weeks: v.nowWeekChoices(), Matchup: v.myMatchup(),
 		Board: ReportBoard{Title: "This week's reports", Loading: "Reading the week…",
 			Refresh: "Refresh from MFL", HowLabel: "How this is counted", Reports: []Report{}}}
-	if in.reportWeek > max(v.week, in.current) {
-		return NowBoard{}, fmt.Errorf("now: report week %d has not begun", in.reportWeek)
-	}
 	reports := v
 	reportWeek := in.reportWeek
 	if reportWeek == 0 {
@@ -78,9 +75,7 @@ func buildNow(in nowInput) (NowBoard, error) {
 	board.ReportWeek = reports.week
 	board.ReportWeeks = []RaceChoice{}
 	for _, w := range v.weeks {
-		if w.Week <= max(v.week, in.current) {
-			board.ReportWeeks = append(board.ReportWeeks, RaceChoice{Value: strconv.Itoa(w.Week), Label: weekLabel(w)})
-		}
+		board.ReportWeeks = append(board.ReportWeeks, RaceChoice{Value: strconv.Itoa(w.Week), Label: weekLabel(w)})
 	}
 	board.Board.Reports = append(board.Board.Reports, v.matchups(), reports.results(), reports.weekSummary(), reports.recaps(),
 		reports.topByPosition(), v.boxScore(), v.lastThree(), v.previews(), v.nflWeek(), v.nflBoxScore(), v.statChanges(), v.liveScoring())
@@ -196,7 +191,21 @@ func (v nowView) scoredReport(id, title, how string, columns ...string) (Report,
 	r.Summary = append(r.Summary, ReportRow{Cells: []string{"Week", weekLabel(v.shown)}})
 	if v.live || !weekScored(v.shown) {
 		r.Status = "empty"
-		r.Note = strings.TrimSpace(r.Note + fmt.Sprintf(" MFL has not scored week %d yet.", v.week))
+		note := fmt.Sprintf("MFL has not scored week %d yet.", v.week)
+		if v.week > v.now.current && v.now.current > 0 || !v.kickedOff() {
+			note = fmt.Sprintf("Week %d has not been played yet", v.week)
+			var kickoff time.Time
+			for _, g := range v.games {
+				if kickoff.IsZero() || g.kickoff.Before(kickoff) {
+					kickoff = g.kickoff
+				}
+			}
+			if !kickoff.IsZero() {
+				note += "; kickoff " + kickoff.In(v.in.zone).Format("Mon Jan 2, 3:04 PM")
+			}
+			note += "."
+		}
+		r.Note = strings.TrimSpace(r.Note + " " + note)
 		return r, false
 	}
 	return r, true

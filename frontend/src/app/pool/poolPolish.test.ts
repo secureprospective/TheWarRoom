@@ -417,7 +417,8 @@ it('G: saved Change figures keeps the same form beside its card, not in the dist
 it('keeps MFL market lines under the player and the minimum bid, ranges only in the Inspector', () => {
   const reading = pool();
   const row = { ...reading.value.rows[0],
-    marketLines: ['Proj 12.4 · Rank 45, Up 3', 'ADP 112 (88–140) · AAV 1.2%'] };
+    marketLines: ['Proj 12.4 · Rank 45, Up 3', 'ADP 112 (88–140) · AAV $1.2 on MFL’s $1,000 scale'],
+  };
   const text = html(createElement(PoolFrame, {
     reading: { ...reading, value: { ...reading.value, rows: [row] } }, refreshing: false,
   }));

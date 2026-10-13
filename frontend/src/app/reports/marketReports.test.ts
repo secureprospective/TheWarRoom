@@ -39,7 +39,15 @@ describe('Go player market reports', () => {
       expect(markup).toContain('class="range"');
       expect(markup).not.toContain('class="reference"');
       expect(markup).not.toContain('grade="');
-      expect(markup).not.toContain('$');
+      if (id === 'M-069') {
+        expect(markup).toContain('$1,000 league pool');
+        expect(r.how).toContain('across all its teams');
+        expect(r.columns[1]).toContain('dollars');
+        expect(r.rows[0].cells[1]).toBe('$30.1 of a $1,000 league pool · $3.4–$113.6');
+        expect(r.rows[0].cells[1]).not.toContain('%');
+      } else {
+        expect(markup).not.toContain('$');
+      }
       expect(r.rows[0].range?.hi).toBeGreaterThan(r.rows[0].range!.lo);
     }
     expect(board().reports.find(r => r.id === 'M-069')!.how).toContain('not this league\'s dollars');

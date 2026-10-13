@@ -63,8 +63,8 @@ func TestMarketReportsFactsAndMissing(t *testing.T) {
 		t.Fatalf("ADP text %q", got)
 	}
 	aav := reportByID(t, board, "M-069")
-	// The costliest share leads.
-	if got := aav.Rows[0].Range.Text; got != "30.1% of auction budget · 3.4%–113.6%" {
+	// The costliest value leads.
+	if got := aav.Rows[0].Range.Text; got != "$30.1 of a $1,000 league pool · $3.4–$113.6" {
 		t.Fatalf("AAV text %q", got)
 	}
 	if aav.Rows[0].Range.Value != 30.1 || !strings.Contains(aav.How, "not this league's dollars") || !strings.Contains(aav.Note, "111 auctions") {

@@ -246,10 +246,10 @@
         "status": "ok",
         "source": "Source: MFL-wide · many leagues, not this league",
         "asOf": "As of: Oct 11, 2026, 12:00 PM",
-        "how": "MFL-wide across many leagues, not this league. Values are MFL's auction-budget shares, expressed as percent, not this league's dollars. No dollar conversion is made. The bar runs from the smallest to largest share reported, with the average marked; it is not a confidence interval or a grade. Every bar shares one scale, from zero to the largest share any player drew. Outliers above 100% are shown as supplied, not clipped.",
+        "how": "MFL-wide across many leagues, not this league's dollars. Every league's auction is scaled to a $1,000 pool across all its teams. No conversion to this league's money is made. The bar runs from the smallest to largest dollar value reported, with the average marked; it is not a confidence interval or a grade. Every bar shares one scale, from zero to the largest dollar value any player drew.",
         "columns": [
           "Player",
-          "AAV · min–max budget share"
+          "AAV · min–max dollars on MFL’s $1,000 scale"
         ],
         "rows": [
           {
@@ -263,14 +263,14 @@
             ],
             "cells": [
               "Bijan Robinson",
-              "30.1% of auction budget · 3.4%–113.6%"
+              "$30.1 of a $1,000 league pool · $3.4–$113.6"
             ],
             "range": {
               "max": 113.64,
               "value": 30.1,
               "lo": 3.44,
               "hi": 113.64,
-              "text": "30.1% of auction budget · 3.4%–113.6%"
+              "text": "$30.1 of a $1,000 league pool · $3.4–$113.6"
             }
           },
           {
@@ -284,14 +284,14 @@
             ],
             "cells": [
               "Jahmyr Gibbs",
-              "29.2% of auction budget · 2.9%–60.4%"
+              "$29.2 of a $1,000 league pool · $2.9–$60.4"
             ],
             "range": {
               "max": 113.64,
               "value": 29.16,
               "lo": 2.94,
               "hi": 60.43,
-              "text": "29.2% of auction budget · 2.9%–60.4%"
+              "text": "$29.2 of a $1,000 league pool · $2.9–$60.4"
             }
           },
           {
@@ -305,14 +305,14 @@
             ],
             "cells": [
               "Player name not held",
-              "28.8% of auction budget · 3.3%–94.8%"
+              "$28.8 of a $1,000 league pool · $3.3–$94.8"
             ],
             "range": {
               "max": 113.64,
               "value": 28.75,
               "lo": 3.34,
               "hi": 94.8,
-              "text": "28.8% of auction budget · 3.3%–94.8%"
+              "text": "$28.8 of a $1,000 league pool · $3.3–$94.8"
             }
           }
         ],
@@ -347,15 +347,15 @@
       }
     },
     {
-      "label": "AAV · min–max budget share",
-      "text": "30.1% of auction budget · 3.4%–113.6%",
+      "label": "AAV · min–max dollars on MFL’s $1,000 scale",
+      "text": "$30.1 of a $1,000 league pool · $3.4–$113.6",
       "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league",
       "range": {
         "max": 113.64,
         "value": 30.1,
         "lo": 3.44,
         "hi": 113.64,
-        "text": "30.1% of auction budget · 3.4%–113.6%"
+        "text": "$30.1 of a $1,000 league pool · $3.4–$113.6"
       }
     }
   ],
@@ -379,7 +379,7 @@
       "range": null
     },
     {
-      "label": "AAV · min–max budget share",
+      "label": "AAV · min–max dollars on MFL’s $1,000 scale",
       "text": "—",
       "reason": "Average auction value unavailable; refresh from MFL to check.",
       "range": null

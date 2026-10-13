@@ -95,6 +95,7 @@ func readResearchNewsBatches(ctx context.Context, held map[string]heldSeasonFeed
 			default:
 				if !answered {
 					omitted = append(omitted, id)
+					news = []researchfeeds.News{}
 				}
 				next := held[id]
 				holdSeasonFeed(&next, news, liveFreshness(now), nil)
@@ -147,7 +148,7 @@ func isolatedNews(ctx context.Context, ids []string, pause func(context.Context,
 	}
 	if len(ids) == 1 && researchfeeds.InvalidPlayerIDs(err) {
 		// MFL holds no profile for this one player: that is its answer (no news), not a lost read.
-		return map[string][]researchfeeds.News{ids[0]: {}}, losses
+		return map[string][]researchfeeds.News{}, losses
 	}
 	if len(ids) == 1 || !researchfeeds.InvalidPlayerIDs(err) || ctx.Err() != nil {
 		for _, id := range ids {

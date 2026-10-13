@@ -20,6 +20,7 @@ export function EndpointIndex({ placement }: { placement: Placement }) {
   const root = useRef<HTMLElement>(null);
   const rows = endpointsAt(placement);
   assertShortList(rows.length);
+  const { open, finished, unfold } = splitIndexRows(rows, s.endpointIds);
   useEffect(() => {
     const index = root.current;
     if (!index) return;
@@ -50,25 +51,44 @@ export function EndpointIndex({ placement }: { placement: Placement }) {
           {e.id} · {e.name} → {placement} · {statusLabel(e.status)} · ring {e.ring}
         </p>
       ))}
-      <ul>
-        {rows.map((row) => (
-          <li
-            key={row.id}
-            className={gravityClasses[row.gravity]}
-            data-selected={s.endpointIds.includes(row.id)}
-            tabIndex={-1}
-          >
-            <div className="endpoint-heading">
-              <b>{row.id} · {row.name}</b>
-              <span>{row.kind} · {row.gravity} · ring {row.ring}</span>
-            </div>
-            {row.gm_question && row.gm_question !== '—' && <p>{row.gm_question}</p>}
-            <small>{statusLabel(row.status)} · ring {row.ring}</small>
-          </li>
-        ))}
-      </ul>
+      {open.length > 0 && (
+        <ul>{open.map((row) => <IndexRow key={row.id} row={row} selected={s.endpointIds} />)}</ul>
+      )}
+      {rows.length > 0 && !open.length && <p>Every endpoint here has landed live.</p>}
+      {finished.length > 0 && (
+        <details className="endpoint-finished" open={unfold}>
+          <summary>{finished.length} finished</summary>
+          <ul>{finished.map((row) => <IndexRow key={row.id} row={row} selected={s.endpointIds} />)}</ul>
+        </details>
+      )}
       {!rows.length && <p className="not-wired">No individual endpoints placed here.</p>}
     </section>
+  );
+}
+
+type Row = ReturnType<typeof endpointsAt>[number];
+
+// Finished rows step aside (Christopher, 10-13): the index lists what is still to land and keeps the landed
+// ones one click away. The fold opens when the endpoint just opened from the command bar is a landed one.
+export function splitIndexRows(rows: readonly Row[], selected: readonly string[]) {
+  const finished = rows.filter((row) => row.status === 'landed');
+  return {
+    open: rows.filter((row) => row.status !== 'landed'),
+    finished,
+    unfold: finished.some((row) => selected.includes(row.id)),
+  };
+}
+
+function IndexRow({ row, selected }: { row: Row; selected: readonly string[] }) {
+  return (
+    <li className={gravityClasses[row.gravity]} data-selected={selected.includes(row.id)} tabIndex={-1}>
+      <div className="endpoint-heading">
+        <b>{row.id} · {row.name}</b>
+        <span>{row.kind} · {row.gravity} · ring {row.ring}</span>
+      </div>
+      {row.gm_question && row.gm_question !== '—' && <p>{row.gm_question}</p>}
+      <small>{statusLabel(row.status)} · ring {row.ring}</small>
+    </li>
   );
 }
 

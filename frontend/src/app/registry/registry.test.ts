@@ -502,3 +502,37 @@ it('retires M-025 without a placement or route', () => {
   expect(row.placement).toBe('');
   expect(() => createCommands().dispatch('endpoint.open', { id: 'M-025' })).toThrow('retired');
 });
+
+it('lists rows still to land and folds landed rows into a finished disclosure', () => {
+  commands.dispatch('endpoint.open', { id: 'M-024' });
+  let mixed = 0;
+  for (const node of nodeKeys) {
+    for (const w of nodes[node].workspaces) {
+      const place = `${nodes[node].label} › ${w.label}` as Placement;
+      const rows = endpointsAt(place);
+      const landed = rows.filter((r) => r.status === 'landed');
+      const html = renderToStaticMarkup(createElement(EndpointIndex, { placement: place }));
+      const [lead, fold = ''] = html.split('<details class="endpoint-finished"');
+      for (const row of rows) {
+        const inFold = fold.includes(`<b>${row.id} ·`);
+        expect(inFold, `${row.id} at ${place}`).toBe(row.status === 'landed');
+        expect(lead.includes(`<b>${row.id} ·`), `${row.id} at ${place}`).toBe(row.status !== 'landed');
+      }
+      if (landed.length) expect(fold).toContain(`<summary>${landed.length} finished</summary>`);
+      else expect(fold).toBe('');
+      if (landed.length && landed.length < rows.length) mixed++;
+    }
+  }
+  expect(mixed).toBeGreaterThan(0);
+});
+
+it('opens the finished fold only when the opened endpoint has landed', async () => {
+  const { splitIndexRows } = await import('./EndpointIndex');
+  const rows = endpointsAt(endpointById('M-116').placement as Placement);
+  const split = splitIndexRows(rows, ['M-116']);
+  expect(split.finished.map((r) => r.id)).toContain('M-116');
+  expect(split.open.every((r) => r.status !== 'landed')).toBe(true);
+  expect(split.unfold).toBe(true);
+  expect(splitIndexRows(rows, ['M-024']).unfold).toBe(false);
+  expect(splitIndexRows(rows, []).unfold).toBe(false);
+});
