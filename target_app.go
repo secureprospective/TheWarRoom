@@ -110,7 +110,7 @@ func (a *App) targetClock(parent context.Context) (snapshot.Sourced[leagueclock.
 	}
 	ctx, cancel := context.WithTimeout(parent, m2Timeout)
 	defer cancel()
-	now := time.Now()
+	now := a.timeNow()
 	lineup, fresh := a.weekClock(now)
 	clock, err := snapshot.BuildClock(ctx, now.UTC(), a.league.Season(), a.whatif, lineup, a.windowInputs(now), snapshot.Provenance{
 		Source: "phase-log+commissioner-calendar+nflSchedule", Kind: "live", Freshness: fresh,
