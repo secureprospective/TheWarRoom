@@ -10,7 +10,7 @@ import (
 func TestBlockedContractNoteIsOnlyFirstBlockingSentence(t *testing.T) {
 	reason := "Offseason only: can't be done until the offseason."
 	for _, reasons := range [][]string{
-		{reason, "Using his 2026 salary, $600,000, as prior-season BASE.", "Not checked: offer"},
+		{reason, "Priced from his 2026 salary, $600,000.", "Not checked: offer"},
 		{"Not checked: offer", reason, "Another block."},
 	} {
 		got := (ContractCheck{Reasons: reasons}).Evaluate(Spec{Intent: "rfa.tender"}, snapshot.Snapshot{})

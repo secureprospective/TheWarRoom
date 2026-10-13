@@ -125,7 +125,7 @@ func (a *App) TargetWhatIf(raw RawWhatIfRequest) Reading[WhatIfView] {
 }
 
 func whatIfReading(view WhatIfView, s state.WhatIfSession, err error) Reading[WhatIfView] {
-	r := contractReading(view, s.Stamps.Rosters, "whatif.db; pinned MFL mirror baseline", "Cut = 35% of each paid cell after this season, or 50% for a known restructured contract; claimed and final-year cuts cost $0. Sum exact cents, round half-up once, then snap once to $10,000. Buyout = mean of remaining paid cells times 60% / 75% / 90% for 2 / 3 / 4 years, then one snap; at most two per season. Future cells are inferred: flat-filled from MFL salary and expiration, not observed year cells. The exports do not establish restructure history: seeded contracts assume 35%, not a proven unrestructured verdict. This season's used begins at the mirror total; the engine's ledger delta is applied without changing the original MFL adjustments. MFL adjustments remain literal adjustments, not proven dead cap. The whole modelled charge lands in the cut year; future seasons have no modelled dead cap. Buyouts here model offseason terms without asserting that today's window is open; offseason start is not held. No submission or plan is created.", len(s.Moves), err)
+	r := contractReading(view, s.Stamps.Rosters, "Your what-if, started from MFL rosters as of "+stampText(s.Stamps.Rosters), "Cut = 35% of each paid cell after this season, or 50% for a known restructured contract; claimed and final-year cuts cost $0. Sum exact cents, round half-up once, then snap once to $10,000. Buyout = mean of remaining paid cells times 60% / 75% / 90% for 2 / 3 / 4 years, then one snap; at most two per season. Future cells are inferred: flat-filled from MFL salary and expiration, not observed year cells. The exports do not establish restructure history: seeded contracts assume 35%, not a proven unrestructured verdict. This season's used begins at the mirror total; the engine's ledger delta is applied without changing the original MFL adjustments. MFL adjustments remain literal adjustments, not proven dead cap. The whole modelled charge lands in the cut year; future seasons have no modelled dead cap. Buyouts here model offseason terms without asserting that today's window is open; offseason start is not held. No submission or plan is created.", len(s.Moves), err)
 	r.Baseline = s.Stamps.Rosters
 	r.HowCounted += fmt.Sprintf(" Separate contract-cell update time: %s. Separate dead-cap update time: %s.", stampText(s.Stamps.Contract), stampText(s.Stamps.DeadCap))
 	r.Method = "Coordinator handlers on a generation-scoped whatif.db ledger; integer cents"
@@ -136,7 +136,11 @@ func stampText(s string) string {
 	if s == "" {
 		return "not held by this mirror"
 	}
-	return s
+	at, err := time.Parse(time.RFC3339Nano, s)
+	if err != nil {
+		return "date unavailable"
+	}
+	return reportTime(at, time.Local)
 }
 
 func (a *App) whatIfSession(ctx context.Context, raw RawWhatIfRequest) (state.WhatIfSession, *state.Store, error) {

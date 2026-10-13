@@ -13,7 +13,6 @@ type ContractsReadings struct {
 	Table       Reading[snapshot.ContractTable]     `json:"table"`
 	Cap         Reading[snapshot.CapSummary]        `json:"cap"`
 	Adjustments Reading[snapshot.SalaryAdjustments] `json:"adjustments"`
-	CantCut     Reading[[]string]                   `json:"cantCut"`
 }
 
 type contractsInput struct {
@@ -62,19 +61,11 @@ func contractReading[T any](value T, at, source, how string, count int, err erro
 	return r
 }
 
-func cantCutReading(at string) Reading[[]string] {
-	reason := "The held MFL exports contain no can't-cut eligibility list. O=199 is an owner page, not an exported verdict; owner pages are not scraped. No player is assumed cuttable."
-	r := contractReading([]string{}, at, "MFL exports: can't-cut list unavailable", reason, 0, nil)
-	r.Status, r.AbsenceReason = ReadingNotWired, &reason
-	return r
-}
-
 func failedContracts(err error) ContractsReadings {
 	return ContractsReadings{
 		Table:       contractReading(snapshot.ContractTable{}, "", "MFL rosters", "League contracts from MFL annual salary and expiration.", 0, err),
 		Cap:         contractReading(snapshot.CapSummary{}, "", "MFL mirror + active league configuration", "Mirror cap usage includes configured reserve discounts and signed MFL salary adjustments.", 0, err),
-		Adjustments: contractReading(snapshot.SalaryAdjustments{Rows: []snapshot.SalaryAdjustment{}}, "", "MFL salaryAdjustments", "MFL adjustments, not proven itemised dead cap.", 0, err),
-		CantCut:     cantCutReading(""),
+		Adjustments: contractReading(snapshot.SalaryAdjustments{Rows: []snapshot.SalaryAdjustment{}}, "", "MFL salaryAdjustments", "MFL's salary adjustments, as MFL recorded them (dead cap from drops, retirements and commissioner changes).", 0, err),
 	}
 }
 
@@ -91,8 +82,7 @@ func (a *App) TargetContracts(raw snapshot.RawContractScope) ContractsReadings {
 	table.DirectoryAsOf = input.directory.Freshness.FetchedAt
 	out := ContractsReadings{
 		Table:       contractReading(table, input.asOf, "MFL rosters: salary, contractYear, contractStatus, contractInfo; held players directory", "Every rostered MFL contract, including IR and taxi. Go filters by franchise and position and sorts within the my-team-first group. Names and positions come from the held player directory; unknown names show the player ID. No calculated dead cap.", len(table.Rows), nil),
-		Adjustments: contractReading(snapshot.SalaryAdjustments{Rows: snapshot.ContractsAdjustments(input.mirror.Adjustments, input.names)}, input.asOf, "MFL salaryAdjustments", "Signed amounts and descriptions exactly as MFL states them. These are MFL salary adjustments, not proven itemised dead cap; credits stay negative. No description is interpreted as a computed charge.", len(input.mirror.Adjustments), nil),
-		CantCut:     cantCutReading(input.asOf),
+		Adjustments: contractReading(snapshot.SalaryAdjustments{Rows: snapshot.ContractsAdjustments(input.mirror.Adjustments, input.names, raw.Mine)}, input.asOf, "MFL salaryAdjustments", "Signed amounts and descriptions exactly as MFL states them. These are MFL's recorded salary adjustments (drops, retirements and commissioner changes); credits stay negative. No description is interpreted as a computed charge.", len(input.mirror.Adjustments), nil),
 	}
 	used, ok := input.used[raw.Mine]
 	var capErr error

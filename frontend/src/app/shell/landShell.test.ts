@@ -79,7 +79,7 @@ it('expanded Inspector reserves its width; density wraps instead of being overla
   expect(declarations(reports, '.draft-report .draft-table-scroll th .act-button'))
     .toContain('max-width: 100%');
   expect(declarations(reports, '.draft-report .draft-table-scroll table.report-dense :is(th, td)'))
-    .toContain('min-width: 0; padding: 8px 2px');
+    .toContain('min-width: 0; padding: var(--density-table-padding, 8px 2px)');
 });
 it('a rendered Now player name dispatches inspect and the franchise header is inspectable', () => {
   const snapshot = parseSnapshot(fixture);

@@ -15,6 +15,7 @@ func (a *App) refreshEngine(parent context.Context) {
 		return
 	}
 	defer a.modelMu.Unlock()
+	defer a.sourceHealthChanged(parent)
 	ctx, cancel := context.WithTimeout(parent, signalsTimeout)
 	defer cancel()
 	a.loadSignals(ctx)
@@ -72,6 +73,12 @@ func (a *App) engineFinished(ctx context.Context, started time.Time, rep modelru
 	log.Printf("Engine run %s: %d players valued (%d rostered, %d free agents), %s",
 		started.Local().Format(time.RFC3339), rep.Scored, rep.RosteredScored, rep.FreeAgentScored,
 		time.Since(started).Round(time.Millisecond))
+	if a.seasonChanged != nil {
+		a.seasonChanged(ctx)
+	}
+}
+
+func (a *App) sourceHealthChanged(ctx context.Context) {
 	if a.seasonChanged != nil {
 		a.seasonChanged(ctx)
 	}

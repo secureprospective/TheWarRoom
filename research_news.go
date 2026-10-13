@@ -42,7 +42,7 @@ func archivedNews(ctx context.Context, bodies archivedBodies, season int, want [
 			return false
 		}
 		for _, id := range asked {
-			if news, ok := rows[id]; ok && open[id] {
+			if news := rows[id]; open[id] {
 				out[id] = heldSeasonFeed[[]researchfeeds.News]{value: news, fetchedAt: at}
 				delete(open, id)
 			}
@@ -56,7 +56,7 @@ func archivedNews(ctx context.Context, bodies archivedBodies, season int, want [
 }
 
 // readResearchNewsBatches serves today's reads from memory or the archive, then asks MFL for the rest in batches
-// of 100 with one pause per request. A player MFL does not answer is a named loss; the others are held.
+// of 100 with one pause per request. Omitted profiles are held as no news for the day.
 func readResearchNewsBatches(ctx context.Context, held map[string]heldSeasonFeed[[]researchfeeds.News], season int, ids []string, now time.Time,
 	bodies archivedBodies, pause func(context.Context, time.Duration) error,
 	fetch func(context.Context, []string) (map[string][]researchfeeds.News, error), logLine func(string)) error {
@@ -80,6 +80,7 @@ func readResearchNewsBatches(ctx context.Context, held map[string]heldSeasonFeed
 			pending = append(pending, id)
 		}
 	}
+	omitted := []string{}
 	for batch := range slices.Chunk(pending, 100) {
 		if err := pause(ctx, time.Second); err != nil {
 			return err
@@ -91,10 +92,10 @@ func readResearchNewsBatches(ctx context.Context, held map[string]heldSeasonFeed
 			switch {
 			case failures[id] != nil:
 				losses[id] = failures[id]
-			case !answered:
-				losses[id] = fmt.Errorf("playerProfile: player %s unanswered", id)
-				logLine(fmt.Sprintf("news player %s: %v", id, losses[id]))
 			default:
+				if !answered {
+					omitted = append(omitted, id)
+				}
 				next := held[id]
 				holdSeasonFeed(&next, news, liveFreshness(now), nil)
 				held[id] = next
@@ -104,6 +105,9 @@ func readResearchNewsBatches(ctx context.Context, held map[string]heldSeasonFeed
 		if ctx.Err() != nil {
 			return fmt.Errorf("news refresh: %w", ctx.Err())
 		}
+	}
+	if len(omitted) > 0 {
+		logLine("MFL has no profile for: " + strings.Join(omitted, ", "))
 	}
 	return nil
 }

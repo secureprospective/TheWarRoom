@@ -139,7 +139,7 @@ export function parseReading<T>(v: unknown, parse: Parser<T>): Reading<T> {
   };
 }
 export function parseContracts(v: unknown): Readings {
-  const r = object(v, 'Contracts', ['table', 'cap', 'adjustments', 'cantCut']);
+  const r = object(v, 'Contracts', ['table', 'cap', 'adjustments']);
   return {
     table: parseReading(r.table, table),
     cap: parseReading(r.cap, cap),
@@ -147,7 +147,6 @@ export function parseContracts(v: unknown): Readings {
       const r = object(v, p, ['rows']);
       return { rows: array(r.rows, p, adjustment) };
     }),
-    cantCut: parseReading(r.cantCut, (v, p) => array(v, p, text)),
   };
 }
 export function parsePlayerContract(v: unknown) {

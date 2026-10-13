@@ -132,7 +132,7 @@ it.each(['M-101', 'M-154', 'M-087'])('%s styles its table without a workspace wr
   expect(markup).not.toContain('Unavailable');
   const css = readFileSync(new URL('../draftreports/reports.css', import.meta.url), 'utf8');
   expect(css).toContain('.draft-report th, .draft-report td');
-  expect(css).toContain('padding: 10px 12px;');
+  expect(css).toContain('padding: var(--density-table-padding, 10px 12px);');
   expect(css).toContain('position: sticky; top: 0;');
   expect(css).toContain('.report-table thead { display: table-header-group;');
 });

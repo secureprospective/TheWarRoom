@@ -61,7 +61,6 @@ export type Readings = {
   table: Reading<Table>;
   cap: Reading<Cap>;
   adjustments: Reading<{ rows: Adjustment[] }>;
-  cantCut: Reading<string[]>;
 };
 export type Scope = {
   mine: string;

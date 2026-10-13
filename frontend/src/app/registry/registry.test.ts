@@ -149,6 +149,11 @@ describe('Endpoint map', () => {
       'M-065', 'L-15', 'L-16', 'L-21', 'L-22',
       // After the landing batch (#25): Alert tray, Inspector, Digests, filters kept per workspace.
       'S-10', 'S-02', 'M-149', 'C-05', 'M-032', 'M-058',
+      // After the 10-13 walk and batch3 (pools, tray, walk1): Pulse, Archive, Trade Floor, contracts.
+      'M-001', 'M-003', 'M-004', 'M-005', 'M-007', 'M-012', 'M-016', 'M-019', 'M-021', 'M-022', 'M-028',
+      'M-029', 'M-030', 'M-031', 'M-036', 'M-072', 'M-073', 'M-078', 'M-085', 'M-089', 'M-114', 'M-117',
+      'M-193', 'M-195', 'M-196', 'L-18', 'L-26', 'C-06.1', 'C-06.3', 'C-06.4', 'C-06.5', 'C-06.6', 'S-05',
+      'S-06', 'S-12', 'L-36',
     ];
     for (const row of endpoints) {
       let status = 'spec';
@@ -159,8 +164,8 @@ describe('Endpoint map', () => {
     const checks: [EndpointId, string][] = [
       ['M-027', 'landed live'],
       ['C-03', 'landed live'],
-      ['M-028', 'built, not yet landed live'],
-      ['M-029', 'built, not yet landed live'],
+      ['M-028', 'landed live'],
+      ['M-029', 'landed live'],
       ['M-033', 'built, not yet landed live'],
       ['X-04', 'built, not yet landed live'],
       ['M-034', 'built, not yet landed live'],
@@ -431,12 +436,14 @@ it('reveals a lazily mounted endpoint once and stops watching after it arrives',
   }
 });
 
-it.each(['L-17', 'L-18', 'L-21'] as const)
+it.each(['L-17', 'L-18', 'L-21', 'M-039', 'M-154'] as const)
 ('opening %s reveals its disclosure, scrolls the work column and focuses the section', async id => {
   const { revealEndpoint } = await import('./EndpointIndex');
   commands.dispatch('endpoint.open', { id });
   expect(commands.read().endpointIds).toEqual([id]);
-  expect(commands.read().workspace.trade).toBe('draft-room');
+  const route = placementRoute(endpointById(id).placement)!;
+  expect(commands.read().node).toBe(route.node);
+  expect(commands.read().workspace[route.node]).toBe(route.workspace);
   const shell = { scrollTop: 55 };
   const work = { scrollTop: 10, clientTop: 0, clientHeight: 600, parentElement: shell,
     classList: { contains: (name: string) => name === 'wbody' },
@@ -456,4 +463,27 @@ it.each(['L-17', 'L-18', 'L-21'] as const)
   expect(work.scrollTop).toBe(810);
   expect(shell.scrollTop).toBe(55);
   expect(card.focus).not.toHaveBeenCalled();
+});
+
+it('retires MFL pools from commands, placements and rendered endpoint surfaces', () => {
+  const ids = ['M-111', 'M-112', 'M-113', 'M-174', 'M-200', 'M-201', 'M-171'] as const;
+  const routes = assertEndpointRoutes(endpoints, candidates);
+  const markup = renderToStaticMarkup(
+    createElement(EndpointIndex, { placement: 'League Pulse › Archive' }),
+  );
+  for (const id of ids) {
+    const row = endpointById(id);
+    expect(row).toMatchObject({ disposition: 'retired', placement: '', merged_place: '', merged_into: [] });
+    expect(resolve(id).kind).toBe('retired');
+    expect(routes.get(id)?.size).toBe(0);
+    expect(markup).not.toContain(`data-endpoint="${id}"`);
+    expect(endpointsAt('League Pulse › Archive').some(r => r.id === id)).toBe(false);
+  }
+});
+
+it('retires M-025 without a placement or route', () => {
+  const row = endpointById('M-025');
+  expect(row.disposition).toBe('retired');
+  expect(row.placement).toBe('');
+  expect(() => createCommands().dispatch('endpoint.open', { id: 'M-025' })).toThrow('retired');
 });

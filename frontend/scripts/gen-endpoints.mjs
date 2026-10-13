@@ -39,7 +39,7 @@ const workspaces = {
   'War Room': ['Market', 'Valuations and pool', 'Research'],
   'Franchise HQ': ['Lineup and roster', 'Contracts and cap', 'My moves'],
   'Trade Floor': ['Trade desk', 'Offers history', 'Counterparties', 'Draft room'],
-  'League Pulse': ['Now', 'Race', 'Pools / Archive'],
+  'League Pulse': ['Now', 'Race', 'Archive'],
   'Control Room': ['App', 'Data and sources', 'League'],
 };
 const placements = [

@@ -98,11 +98,7 @@ function readings(): Readings {
         },
       ],
     }),
-    cantCut: {
-      ...reading<string[]>([]),
-      status: 'not_wired',
-      absenceReason: "No can't-cut verdict in held exports; owner pages are not scraped",
-    },
+
   };
 }
 function provider(): ContractsProvider {
@@ -181,7 +177,6 @@ describe('Contracts and cap read surfaces', () => {
       absenceReason: 'Mirror unavailable',
     };
     expect(html(failed)).not.toContain('FIGURE');
-    expect(html(readings().cantCut)).toContain('Not wired');
     expect(html(reading({}))).toContain('FIGURE');
     expect(html(reading({}))).toContain('Source: MFL mirror');
     expect(html(reading({}))).toContain(localDate('2026-10-10T00:00:00Z'));
@@ -200,17 +195,18 @@ describe('Contracts and cap read surfaces', () => {
       'Flat-filled',
       '-$1.23',
       'MFL literal credit',
-      'not proven itemised dead cap',
-      'owner pages are not scraped',
+      'dead cap from drops, retirements and commissioner changes',
       'What-if models the charge; Make this a plan keeps a checked move',
     ])
       expect(text).toContain(value);
+    expect(text).not.toContain("Not wired");
+    expect(text).not.toContain("Committed by future season");
     expect(text).not.toContain("Inferred");
     expect(text).not.toContain("configuration as-of");
     const endpoints = test.root
       .querySelectorAll('[data-endpoint]')
       .map((node) => node.getAttribute('data-endpoint'));
-    expect(endpoints).toEqual(['C-06.1', 'M-078', 'M-031', 'M-025']);
+    expect(endpoints).toEqual(['C-06.1', 'M-078', 'M-031']);
     expect(text).toContain('MFL players archive');
     expect(text).toContain(localDate('2026-10-05T00:00:00Z'));
     expect(text).not.toContain('2026-10-05T00:00:00Z');
@@ -356,7 +352,7 @@ it('routes built endpoints and preserves Inspector close/reopen state', async ()
   const { createCommands } = await import('../commands/registry');
   const { endpointById } = await import('../registry');
   const c = createCommands();
-  for (const id of ['M-078', 'M-031', 'M-025', 'C-06.5'] as const) {
+  for (const id of ['M-078', 'M-031', 'C-06.5'] as const) {
     c.dispatch('endpoint.open', { id });
     expect(c.read().node).toBe('hq');
     expect(c.read().workspace.hq).toBe('contracts-and-cap');
@@ -385,16 +381,16 @@ it('covers each failed surface and refreshes on held-feed change', async () => {
     return unsubscribe;
   };
   const test = await mount(createElement(Contracts, { snapshot: heldSnapshot(), provider: p }));
-  expect(test.element.textContent?.match(/No figures yet/g)).toHaveLength(4);
+  expect(test.element.textContent?.match(/No figures yet/g)).toHaveLength(3);
   const value = readings();
-  for (const key of ['table', 'cap', 'adjustments', 'cantCut'] as const) {
+  for (const key of ['table', 'cap', 'adjustments'] as const) {
     value[key].status = 'failed';
     value[key].absenceReason = `${key} unavailable`;
   }
   await act(async () => {
     resolve(value);
   });
-  for (const key of ['table', 'cap', 'adjustments', 'cantCut']) {
+  for (const key of ['table', 'cap', 'adjustments']) {
     expect(test.element.textContent).toContain(`${key} unavailable`);
   }
   expect(test.element.textContent).not.toContain('$125,000,000');
@@ -402,7 +398,7 @@ it('covers each failed surface and refreshes on held-feed change', async () => {
     changed();
   });
   expect(p.contracts).toHaveBeenCalledTimes(2);
-  expect(test.element.textContent?.match(/No figures yet/g)).toHaveLength(4);
+  expect(test.element.textContent?.match(/No figures yet/g)).toHaveLength(3);
   await act(async () => {
     test.renderer.unmount();
   });

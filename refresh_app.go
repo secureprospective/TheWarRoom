@@ -71,6 +71,7 @@ func (a *App) refreshLeague(
 	ctx context.Context, rb *rulebook.Store, mirror *state.Mirror,
 ) (RefreshResult, error) {
 	a.refreshMu.Lock()
+	defer a.sourceHealthChanged(ctx)
 	defer a.refreshMu.Unlock()
 	res, err := a.refreshLeagueLocked(ctx, rb, mirror)
 	if err != nil {

@@ -67,6 +67,7 @@ type SignalsReport struct {
 // file of each feed and each due college season. A file that fails is recorded against its
 // source and the rest still load (R11).
 func (a *App) loadSignals(ctx context.Context) SignalsReport {
+	defer a.sourceHealthChanged(ctx)
 	a.loadingSignals.Lock()
 	defer a.loadingSignals.Unlock()
 	rep := SignalsReport{OK: true, StartedAt: time.Now().Format(time.RFC3339),

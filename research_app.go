@@ -23,6 +23,7 @@ type researchHeld struct {
 	links       map[string]string
 	linkError   string
 	linkVersion string
+	finishedAt  map[int]time.Time
 	status      string
 	news        map[string]heldSeasonFeed[[]researchfeeds.News]
 	// archiveRead names the held copies already looked up in the archive this season, so a

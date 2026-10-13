@@ -57,7 +57,7 @@ func buildArchive(cache archiveCache, stale bool, season int, team, other string
 	for i, pid := range cache.facts.Player.Pid {
 		v.players[pid] = cache.facts.Player.Name[i]
 	}
-	b := ArchiveBoard{Season: season, Team: team, Other: other, Seasons: []RaceChoice{}, Teams: []RaceChoice{}, Board: ReportBoard{Title: "Pools / Archive", Loading: "Reading the league archive…", Refresh: "Reread the imported archive", HowLabel: "How this is counted", Reports: []Report{}}}
+	b := ArchiveBoard{Season: season, Team: team, Other: other, Seasons: []RaceChoice{}, Teams: []RaceChoice{}, Board: ReportBoard{Title: "Archive", Loading: "Reading the league archive…", Refresh: "Reread the imported archive", HowLabel: "How this is counted", Reports: []Report{}}}
 	for _, y := range cache.facts.Season.Year {
 		b.Seasons = append(b.Seasons, RaceChoice{Value: archiveYear(y), Label: archiveYear(y)})
 	}
@@ -74,7 +74,7 @@ func buildArchive(cache archiveCache, stale bool, season int, team, other string
 	slices.SortFunc(b.Teams, func(a, b RaceChoice) int {
 		return cmp.Or(strings.Compare(a.Label, b.Label), strings.Compare(a.Value, b.Value))
 	})
-	b.Board.Reports = append(b.Board.Reports, v.history(), v.champions(), v.eras(), v.trophies(), v.franchise("M-105", "All-time franchise record"), v.franchiseBests(), v.franchiseSummary(), v.series(), v.matchupRecords(), v.seasonRecords(), v.careerRecords(), v.streaks(), v.playerRecords(), v.scoring(), v.playerChanges(), v.awards(), v.oddities(), v.pools())
+	b.Board.Reports = append(b.Board.Reports, v.history(), v.champions(), v.eras(), v.trophies(), v.franchise("M-105", "All-time franchise record"), v.franchiseBests(), v.franchiseSummary(), v.series(), v.matchupRecords(), v.seasonRecords(), v.careerRecords(), v.streaks(), v.playerRecords(), v.scoring(), v.playerChanges(), v.awards(), v.oddities())
 	return b, nil
 }
 
@@ -227,7 +227,9 @@ func (v archiveView) champions() Report {
 					scoreText(hundredths(f.winner))+"–"+scoreText(hundredths(f.loser))+" over "+v.name(y, f.lose)))
 			}
 		}
-		if !found {
+		if !found && y == slices.Max(v.cache.facts.Season.Year) {
+			r.Rows = append(r.Rows, draftRow(archiveYear(y), "Season under way", "Its championship final has not been played yet"))
+		} else if !found {
 			r.Rows = append(r.Rows, draftRow(archiveYear(y), "not in MFL's archive", "No scored championship final held"))
 		}
 	}

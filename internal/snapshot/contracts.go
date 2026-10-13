@@ -227,10 +227,19 @@ func ContractsCap(rows []ContractRow, mine string, season int, used domain.Money
 	return out
 }
 
-func ContractsAdjustments(adjustments []state.Adjustment, names map[string]string) []SalaryAdjustment {
+func ContractsAdjustments(adjustments []state.Adjustment, names map[string]string, mine string) []SalaryAdjustment {
 	out := make([]SalaryAdjustment, 0, len(adjustments))
 	for _, a := range adjustments {
 		out = append(out, SalaryAdjustment{ID: a.ID, Team: contractTeamName(names, a.FranchiseID), FranchiseID: a.FranchiseID, Amount: ContractAmountOf(a.Amount), Description: a.Description})
 	}
+	slices.SortStableFunc(out, func(a, b SalaryAdjustment) int {
+		if (a.FranchiseID == mine) != (b.FranchiseID == mine) {
+			if a.FranchiseID == mine {
+				return -1
+			}
+			return 1
+		}
+		return 0
+	})
 	return out
 }

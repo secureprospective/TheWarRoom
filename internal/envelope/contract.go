@@ -68,7 +68,7 @@ func (c ContractCheck) Evaluate(s Spec, _ snapshot.Snapshot) CheckResult {
 		return CheckResult{Blocked: true, Note: "Contract check: unsupported intent"}
 	}
 	for _, reason := range c.Reasons {
-		if reason != "" && !strings.HasPrefix(reason, "Not checked:") && !strings.HasPrefix(reason, "Using ") {
+		if reason != "" && !strings.HasPrefix(reason, "Not checked:") && !strings.HasPrefix(reason, "Priced from ") {
 			return CheckResult{Blocked: true, Note: strings.TrimRight(reason, ".; ") + "."}
 		}
 	}

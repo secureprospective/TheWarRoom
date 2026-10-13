@@ -1,6 +1,7 @@
 import type { Freshness, Position, Provenance, Snapshot } from '../data/contract';
 import type { LabelledSignal, Signal } from '../look/channels';
 import { ageAt, formatMoney } from './format';
+import { localDate } from '../clock/labels';
 
 export const freshnessSignals: Record<Freshness['state'], Signal> = {
   live: 'green',
@@ -16,10 +17,11 @@ const restingWords: Record<Freshness['state'], string> = {
 };
 
 function describe(section: string, p: Provenance): string {
-  const { state, fetchedAt, note } = p.freshness;
-  return [section, p.kind, state, p.source, fetchedAt || 'no fetch time', note]
-    .filter(Boolean)
-    .join(' · ');
+  const { state, fetchedAt } = p.freshness;
+  const source = p.kind === 'fixture' ? 'example data' : section === 'Contracts'
+    ? 'MFL rosters' : section === 'Players' ? 'MFL player directory' : 'MFL';
+  const health = state === 'live' ? '' : state === 'stale' ? ' · last good copy' : ' · read failed';
+  return `${section}: ${source}, ${fetchedAt ? `read ${localDate(fetchedAt)}` : 'not read yet'}${health}`;
 }
 
 // A card has one provenance dot. It reports its weakest section, because a card is only as current
@@ -54,7 +56,6 @@ export type PlayerCardModel = {
   rosterNote?: string;
   salary: string;
   years?: string;
-  unwiredRows: string;
   provenance: LabelledSignal;
 };
 
@@ -95,7 +96,6 @@ export function playerCardModel(
       contract?.yearsRemaining === undefined
         ? undefined
         : `${contract.yearsRemaining} ${contract.yearsRemaining === 1 ? 'year' : 'years'}`,
-    unwiredRows: 'Form · not wired',
     provenance: provenanceSlot([
       ['Players', snapshot.players.provenance],
       ['Contracts', snapshot.rosters.provenance],

@@ -13,7 +13,9 @@ import { routeFor, type Node } from './nodes';
 import { FranchisePicker } from './FranchisePicker';
 import { useReading } from './lineups';
 
-const unavailableLabels: Record<string, string> = { ir: 'IR', lineup: 'Lineup', trades: 'Trades' };
+const unavailableLabels: Record<string, string> = {
+  ir: 'IR', lineup: 'Lineup', trades: 'Trades', bye: 'Bye weeks',
+};
 
 function AlertCard({ alert }: { alert: Alert }) {
   const root = useRef<HTMLDivElement>(null);
@@ -27,14 +29,15 @@ function AlertCard({ alert }: { alert: Alert }) {
   return <div ref={root}>
     <Card gravity={alert.kind === 'ir' ? 'G2' : 'G1'} header={<h5>{alert.title}</h5>}
       provenance={provenanceSlot([['Alert', alert.provenance]])}
-      actionTray={<><Act variant="text" verb="nav.open" args={route}>
+      actionTray={<><Act variant="text" verb={alert.kind === 'bye' ? 'endpoint.open' : 'nav.open'}
+        args={alert.kind === 'bye' ? { id: 'M-154' } : route}>
         Open {alert.node === 'trade' ? 'Trade desk' : 'Franchise HQ'}
       </Act>{alert.kind === 'ir' && <Act variant="button" verb="personal.handoff" args={{ kind: 'ir' }}
           disabled={!alert.mflUrl}>Open IR page on MFL</Act>}</>}>
       <p>{alert.detail}</p>
       <p data-deadline="alert" data-urgency={alert.urgency}>
         <time dateTime={at}>{localDate(at)}</time>{' · '}
-        {at && (alert.kind === 'lineup' ? 'lock in ' : 'expires in ')}
+        {at && (['lineup', 'bye'].includes(alert.kind) ? 'lock in ' : 'expires in ')}
         <span className="channel-countdown" data-countdown>{countdown(at, Date.now())}</span>
       </p>
     </Card>
@@ -62,7 +65,7 @@ function FranchiseAlerts({ franchiseId, snapshot, pinned }: {
   if (!reading) return <p role="status">{error || 'Reading alerts…'}</p>;
   return <>
     {error && <p role="alert">Alerts unavailable · {error}</p>}
-    {!reading.alerts.length && !pinned && <p>Nothing needs you right now</p>}
+    {!reading.alerts.length && !reading.unavailable.length && !pinned && <p>Nothing needs you right now</p>}
     {reading.alerts.map((alert, index) => <AlertCard key={`${alert.kind}:${index}`} alert={alert} />)}
     {reading.unavailable.map((item, index) => <p className="not-wired" key={`${item.kind}:${index}`}>
       {unavailableLabels[item.kind] ?? item.kind} · {item.note}

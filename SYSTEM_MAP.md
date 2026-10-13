@@ -72,7 +72,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | `counterparties_app.go`, `counterpanel_app.go` | `TargetCounterparties`, `TargetCounterpartTeam`: validated historical standing/window/posture scopes; tier cards, trends, pair matrix, sortable team values and season/asset-flow/partner Inspector readings. Lazy frontend in `frontend/src/app/counterparties`, franchise ids resolved against the shared snapshot. |
 | `lab_app.go` | `TargetMarket` validates season/phase input and returns a typed historical Market payload in the generic `Reading` shell extending `snapshot.Sourced`; dated provenance, count/threshold and Go-authored counting disclosure, no spread grade. |
 | `whatif_app.go` | `TargetWhatIf` validates read/cut/buyout/undo/reset intents; per-franchise persistent baseline and ordered moves in `whatif.db`. Generation-scoped coordinator ledgers replay on mutation, publish after success, keep the mirror read-only, block stale edits until Reset. Lazy Contracts panel shows Go-authored before/after cents and rules. |
-| `contracts_app.go` | `TargetContracts` validates team/position/sort scopes and returns separate typed `Reading` shells for league contracts, my-franchise cap, literal MFL salary adjustments and the honest unavailable can’t-cut export. `TargetPlayerContract` validates player IDs and returns observed current salary / explicitly flat-filled inferred future years. Both read a coherent `Mirror.ContractsView`, never the what-if ledger. Lazy frontend in `frontend/src/app/contracts`; every player Inspector includes contract years. |
+| `contracts_app.go` | `TargetContracts` validates team/position/sort scopes and returns separate typed `Reading` shells for league contracts, my-franchise cap, literal MFL salary adjustments. `TargetPlayerContract` validates player IDs and returns observed current salary / explicitly flat-filled inferred future years. Both read a coherent `Mirror.ContractsView`, never the what-if ledger. Lazy frontend in `frontend/src/app/contracts`; every player Inspector includes contract years. |
 | `market_feeds_app.go`, `market_feeds_reading.go`, `report_reading.go` | `TargetMarketReportsRefresh(force)` and `TargetMarketReports`: held week-scoped projections and daily MFL-wide market feeds, archive fallback; shared Go Report and lazy React ReportView used by draft and player-market reports; Go-written pool and Inspector market facts. |
 | `pool_app.go` | `TargetPoolRefresh(force bool)` fetches MFL's free-agent list (skipped when fresh); `TargetPool(RawPoolScope)` reads the held list with no network: name, position, team, age, experience and the §6 minimum per row, filtered and sorted in Go, in a `Reading[Pool]` that is failed before the first fetch, empty (thin) when MFL lists nobody, stale when a refresh fails. |
 | `bids_app.go`, `bids_plans_app.go` | Bid plans (intent `bid.submit`): `TargetBidPreview(RawBidInput)` checks typed figures against the rules without saving; `TargetBidDraft`, `TargetBidRevise`, `TargetBidHandOff` (records the copied ProBoards post; refused if the rules no longer pass), `TargetBidPosted` (the owner says it is up), `TargetBidWithdraw` (all nonterminal local plans; never removes a ProBoards post); `TargetBidPlans(franchiseID)` lists the owner's plans with Go's words, live rules and the actions on offer. The landing watcher looks for the player on the owner's roster with the planned contract. `TargetMoves` leaves bid plans out. |
@@ -208,7 +208,8 @@ Hand-off Act: `move.handoff` opens a Ready plan; `target:moves` reloads receipts
 Trade desk: `shell/TradeDesk.tsx` groups held offers; lazy `data/tradeProvider.ts` parses Go readings.
 Accept plan: `commands/tradeAccept.ts` drafts `trade.accept`; `shell/TradePlan.tsx` tracks desk hand-off.
 
-`alerts_app.go`: `TargetAlerts(franchiseID string) (AlertReading, error)` reads lineup and incoming-offer alerts.
+`alerts_app.go`, `bye_alerts_app.go`: `TargetAlerts(franchiseID string) (AlertReading, error)` reads
+lineup, incoming-offer and current/next-week position-minimum bye alerts from held inputs only.
 `internal/leaguefeed`, `internal/ingestion/livescoring`: matchups, playing counts and per-player live scores.
 
 Home seasonal card: `shell/SeasonalCard.tsx` lazily renders the held clock and shared deadline ticker.
@@ -353,3 +354,16 @@ points and the held free-agent list. A shared mutex excludes the manual path; ch
 league/list changes or a 24-hour-old run make it due. `target:season` refreshes open readers.
 C-07 lists the engine run and its age; completed background checks append their run timestamp
 without changing any scoring formula or using ownership to find points.
+
+League Pulse › Archive: `archive_app.go` rebuilds only the checked archive facts and caches them;
+`archive_reading.go` and `archive_records_reading.go` author historical reports. The lazy
+`frontend/src/app/archive/Archive.tsx` has no MFL Pools report. MFL pool exports remain accepted
+by the offline importer and preserved in the raw archive; native pools and mini games are deferred.
+The shared shell route resolver reads legacy `pools-archive` links as `archive`.
+
+`finished_scores.go` re-reads only the last finished week and YTD after the held NFL schedule
+first proves completion, preserving its completion time across hourly passes. With no final flag,
+four hours from kickoff is the allowance. Player research prices unclaimed cuts through
+`transactions.CutCharge`, the coordinator’s existing rule, and names the last three finished weeks.
+Refresh completion emits `target:season` even after failed or unchanged source reads, so the strip
+and mounted research Inspector re-read held facts. M-025 is retired and has no route.

@@ -50,7 +50,7 @@ func (a *App) compileFactsInBackground(parent context.Context) {
 }
 
 // warmArchive reads the verified snapshot into the archive cache once the checked facts are in,
-// so League Pulse › Pools / Archive opens without its first-read rebuild (about twenty seconds).
+// so League Pulse › Archive opens without its first-read rebuild (about twenty seconds).
 // The cache is what the first open would have held anyway.
 func (a *App) warmArchive(ctx context.Context) {
 	began := time.Now()

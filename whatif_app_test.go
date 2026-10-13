@@ -206,3 +206,11 @@ func TestWhatIfStaleEmptyRebasesBeforeReadOrCut(t *testing.T) {
 		})
 	}
 }
+
+func TestWhatIfSourceUsesGMWords(t *testing.T) {
+	a := whatIfTestApp(t)
+	r := whatIfCall(t, a, "read", "", "")
+	if !strings.HasPrefix(r.Provenance.Source, "Your what-if, started from MFL rosters as of ") || strings.Contains(r.Provenance.Source, "whatif.db") || strings.Contains(r.Provenance.Source, "T00:") {
+		t.Fatal(r.Provenance.Source)
+	}
+}

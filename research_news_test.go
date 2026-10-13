@@ -114,8 +114,8 @@ func TestResearchNewsDailyCacheIsOneArchivePass(t *testing.T) {
 	}
 }
 
-func TestResearchNewsMissingPlayerIsNamedLoss(t *testing.T) {
-	at := time.Now()
+func TestResearchNewsMissingPlayerIsHeldNoNews(t *testing.T) {
+	at := time.Now().Truncate(time.Second)
 	parsed, err := researchfeeds.ParseNews(researchSample(t, "playerProfile-batch2.json"), []string{"13116", "15761", "16162"})
 	if err != nil {
 		t.Fatal(err)
@@ -125,9 +125,20 @@ func TestResearchNewsMissingPlayerIsNamedLoss(t *testing.T) {
 	fetch := func(context.Context, []string) (map[string][]researchfeeds.News, error) { return parsed, nil }
 	err = readResearchNewsBatches(context.Background(), held, 2026, []string{"13116", "15761", "16162"}, at, noNewsArchive,
 		func(context.Context, time.Duration) error { return nil }, fetch, func(s string) { lines = append(lines, s) })
-	if err != nil || len(held["15761"].value) != 1 || held["13116"].fetchedAt.IsZero() || len(held["16162"].value) != 1 || !strings.Contains(held["16162"].refreshError, "16162 unanswered") || len(lines) != 1 || !strings.Contains(lines[0], "16162") {
+	if err != nil || len(held["15761"].value) != 1 || held["13116"].fetchedAt.IsZero() || len(held["16162"].value) != 0 || held["16162"].refreshError != "" || !held["16162"].fetchedAt.Equal(at) || len(lines) != 1 || !strings.Contains(lines[0], "16162") {
 		t.Fatal(held, lines, err)
 	}
+	asked := false
+	err = readResearchNewsBatches(context.Background(), held, 2026, []string{"16162"}, at, noNewsArchive,
+		func(context.Context, time.Duration) error { return nil },
+		func(context.Context, []string) (map[string][]researchfeeds.News, error) {
+			asked = true
+			return nil, nil
+		}, func(string) {})
+	if err != nil || asked {
+		t.Fatal("omitted profile re-asked today", err)
+	}
+
 }
 
 func TestResearchNewsBatchArchiveFallbackPreservesProvenance(t *testing.T) {
@@ -208,5 +219,31 @@ func TestResearchNewsDoesNotBlockNowAndRejectsConcurrentNews(t *testing.T) {
 	f.release <- struct{}{}
 	if err := <-done; err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestOmittedProfilesLogOnceAndSurviveArchive(t *testing.T) {
+	now := time.Now().Truncate(time.Second)
+	ids := []string{}
+	for n := 10000; n < 10101; n++ {
+		ids = append(ids, strconv.Itoa(n))
+	}
+	held := map[string]heldSeasonFeed[[]researchfeeds.News]{}
+	lines := []string{}
+	err := readResearchNewsBatches(context.Background(), held, 2026, ids, now, noNewsArchive,
+		func(context.Context, time.Duration) error { return nil },
+		func(context.Context, []string) (map[string][]researchfeeds.News, error) {
+			return map[string][]researchfeeds.News{}, nil
+		},
+		func(s string) { lines = append(lines, s) })
+	if err != nil || len(lines) != 1 || !strings.Contains(lines[0], "10100") || len(held) != 101 {
+		t.Fatal(err, lines, len(held))
+	}
+	bodies := func(_ context.Context, _ string, accept func(string, []byte, time.Time) bool) (bool, error) {
+		return accept("/2026/export?TYPE=playerProfile&P=13116,15761,16162", researchSample(t, "playerProfile-batch2.json"), now), nil
+	}
+	cached, err := archivedNews(context.Background(), bodies, 2026, []string{"16162"}, func(time.Time) bool { return true })
+	if err != nil || !cached["16162"].fetchedAt.Equal(now) || len(cached["16162"].value) != 0 {
+		t.Fatal(cached, err)
 	}
 }

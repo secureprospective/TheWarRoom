@@ -10,8 +10,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/contractacts"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
+	"github.com/secureprospective/TheWarRoom/internal/transactions/deadcap"
 )
 
 // errDryRun makes Preview roll back after a fully validated, applied request: proof it would
@@ -168,4 +170,9 @@ func (c *Coordinator) ProjectContract(ctx context.Context, id string, cells []co
 		return fmt.Errorf("contract projection: %w", err)
 	}
 	return nil
+}
+
+// CutCharge reads the same unclaimed-cut rule used by the coordinator without changing state.
+func CutCharge(cells []state.LedgerCell, season int, restructured bool) domain.Money {
+	return deadcap.Charge(cells, season, restructured, false)
 }

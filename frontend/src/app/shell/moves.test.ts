@@ -326,11 +326,12 @@ describe('Inspector IR and taxi Acts', () => {
     expect(html).not.toContain('Draft promotion from taxi');
   });
   it.each([
-    ['roster.ir', 'IR', 'Open MFL IR page', 'IR '],
-    ['roster.ir', 'ROSTER', 'Open MFL IR page for activation', 'Activate '],
-    ['roster.taxi', 'TAXI_SQUAD', 'Open MFL taxi page', '+Taxi '],
-    ['roster.taxi', 'ROSTER', 'Open MFL taxi page', '−Taxi '],
-  ] as const)('shows %s %s hand-off and summary as visible text', async (intent, status, label, prefix) => {
+    ['roster.ir', 'IR', 'Open MFL IR page', 'Place ', ' on IR'],
+    ['roster.ir', 'ROSTER', 'Open MFL IR page for activation', 'Activate ', ''],
+    ['roster.taxi', 'TAXI_SQUAD', 'Open MFL taxi page', 'Move ', ' to the taxi squad'],
+    ['roster.taxi', 'ROSTER', 'Open MFL taxi page', 'Promote ', ' from the taxi squad'],
+  ] as const)('shows %s %s hand-off and summary as visible text',
+    async (intent, status, label, prefix, suffix) => {
     const { executor, provider } = held('ROSTER');
     const ready = forSubject({
       ...receipt, state: 'ready' as const, audit: receipt.audit.slice(0, 1),
@@ -343,7 +344,7 @@ describe('Inspector IR and taxi Acts', () => {
     expect(rail).toContain(`>${label}</button>`);
     const name = snapshot.players.value.find((p) => p.id === subject.id)!.name!;
     expect(rail).toContain(`<h4>${name}</h4>`);
-    expect(rail).toContain(`<p>${prefix}${name.split(',')[0]}</p>`);
+    expect(rail).toContain(`<p>${prefix}${name.split(',')[0]}${suffix}</p>`);
     expect(rail).not.toContain(`<p>${prefix}${name}</p>`);
     expect(rail).not.toContain('roster.taxi');
     if (intent === 'roster.ir' && status === 'ROSTER') {

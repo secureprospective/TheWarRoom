@@ -133,6 +133,31 @@ describe('Alert tray', () => {
     expect(t.c.read().node).toBe('hq');
     expect(t.c.read().workspace.hq).toBe('lineup-and-roster');
   });
+  it('labels bye alerts with a lock and never promises all clear when bye data is missing', async () => {
+    const reading: AlertReading = { alerts: [{ ...alertReading().alerts[0], kind: 'bye',
+      title: 'Week 6: no kicker available', detail: '0 available; needs 1. On bye: Bates.' }],
+      unavailable: [{ kind: 'bye', note: 'NFL bye weeks not held.' }] };
+    const t = await setup({ alerts: reading });
+    expect(t.text()).toContain('Week 6: no kicker available');
+    expect(t.text()).toContain('Bates');
+    expect(t.text()).toContain('lock in');
+    expect(t.text()).not.toContain('expires in');
+    expect(t.buttons()).toEqual(['Open Franchise HQ']);
+    vi.spyOn(registry, 'dispatch').mockImplementation(t.c.dispatch);
+    const button = t.element.querySelectorAll('[aria-label]').find(e => e.tagName === 'BUTTON')!;
+    const key = Object.keys(button).find(name => name.startsWith('__reactProps$'))!;
+    const props = (button as unknown as Record<string, { onClick(): void }>)[key];
+    await act(async () => props.onClick());
+    expect(t.c.read().endpointIds).toEqual(['M-154']);
+    expect(t.c.read().workspace.hq).toBe('lineup-and-roster');
+    await act(async () => {
+      t.alerts.mockResolvedValue({ alerts: [], unavailable: reading.unavailable });
+      await t.c.alerts.refresh('0025');
+      await flush();
+    });
+    expect(t.text()).toContain('Bye weeks · NFL bye weeks not held.');
+    expect(t.text()).not.toContain('Nothing needs you');
+  });
   it('says when nothing needs him', async () => {
     const t = await setup({ alerts: { alerts: [], unavailable: [] } });
     expect(t.text()).toContain('Nothing needs you right now');
