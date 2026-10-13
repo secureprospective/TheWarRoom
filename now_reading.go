@@ -17,10 +17,12 @@ import (
 // NowBoard is League Pulse › Now: the week shown, the GM's own matchup first, then the week's
 // reports. Week is the week Go accepted.
 type NowBoard struct {
-	Week    int          `json:"week"`
-	Weeks   []RaceChoice `json:"weeks"`
-	Matchup Report       `json:"matchup"`
-	Board   ReportBoard  `json:"board"`
+	ReportWeek  int          `json:"reportWeek"`
+	ReportWeeks []RaceChoice `json:"reportWeeks"`
+	Week        int          `json:"week"`
+	Weeks       []RaceChoice `json:"weeks"`
+	Matchup     Report       `json:"matchup"`
+	Board       ReportBoard  `json:"board"`
 }
 
 type nowInput struct {
@@ -29,6 +31,7 @@ type nowInput struct {
 	live        heldSeasonFeed[leaguefeed.Lineups]
 	projections heldSeasonFeed[[]marketfeeds.Feed]
 	at          time.Time
+	reportWeek  int
 	current     int
 	week        int
 }
@@ -52,8 +55,39 @@ func buildNow(in nowInput) (NowBoard, error) {
 	board := NowBoard{Week: v.week, Weeks: v.nowWeekChoices(), Matchup: v.myMatchup(),
 		Board: ReportBoard{Title: "This week's reports", Loading: "Reading the week…",
 			Refresh: "Refresh from MFL", HowLabel: "How this is counted", Reports: []Report{}}}
-	board.Board.Reports = append(board.Board.Reports, v.matchups(), v.results(), v.weekSummary(), v.recaps(),
-		v.topByPosition(), v.boxScore(), v.lastThree(), v.previews(), v.nflWeek(), v.nflBoxScore(), v.statChanges(), v.liveScoring())
+	if in.reportWeek > max(v.week, in.current) {
+		return NowBoard{}, fmt.Errorf("now: report week %d has not begun", in.reportWeek)
+	}
+	reports := v
+	reportWeek := in.reportWeek
+	if reportWeek == 0 {
+		for _, w := range v.weeks {
+			if weekScored(w) && w.Week <= v.week {
+				reportWeek = w.Week
+			}
+		}
+	}
+	if reportWeek != 0 {
+		reportInput := in
+		reportInput.week = reportWeek
+		reports, err = newNowView(reportInput)
+		if err != nil {
+			return NowBoard{}, err
+		}
+	}
+	board.ReportWeek = reports.week
+	board.ReportWeeks = []RaceChoice{}
+	for _, w := range v.weeks {
+		if w.Week <= max(v.week, in.current) {
+			board.ReportWeeks = append(board.ReportWeeks, RaceChoice{Value: strconv.Itoa(w.Week), Label: weekLabel(w)})
+		}
+	}
+	board.Board.Reports = append(board.Board.Reports, v.matchups(), reports.results(), reports.weekSummary(), reports.recaps(),
+		reports.topByPosition(), v.boxScore(), v.lastThree(), v.previews(), v.nflWeek(), v.nflBoxScore(), v.statChanges(), v.liveScoring())
+	v.inspectable(&board.Matchup)
+	for i := range board.Board.Reports {
+		v.inspectable(&board.Board.Reports[i])
+	}
 	return board, nil
 }
 
@@ -175,10 +209,48 @@ func (v nowView) pointsText(s leaguefeed.Side, p leaguefeed.Points) string {
 	return "—"
 }
 
+// playerPointsText is a starter's points, or why there are none yet. With the week's NFL schedule
+// held, a team missing from it has no game: on bye, or no NFL team at all for an NFL free agent.
+func (v nowView) playerPointsText(s leaguefeed.Side, p leaguefeed.WeekPlayer) string {
+	if !s.Scored {
+		team := v.team(p)
+		g, ok := v.games[team]
+		switch {
+		case ok && v.now.at.Before(g.kickoff):
+			return "yet to play · " + g.kickoff.In(v.in.zone).Format("Mon 3:04 PM")
+		case !ok && len(v.games) > 0:
+			return noGameText(team)
+		}
+	}
+	return v.pointsText(s, p.Points)
+}
+
+func noGameText(team string) string {
+	if team == "" || team == "FA" {
+		return "no NFL team"
+	}
+	return "bye"
+}
+
+// kickedOff reports whether any NFL game of the held week has started; unknown counts as started.
+func (v nowView) kickedOff() bool {
+	if len(v.games) == 0 {
+		return true
+	}
+	for _, g := range v.games {
+		if !v.now.at.Before(g.kickoff) {
+			return true
+		}
+	}
+	return false
+}
+
 func (v nowView) gameState(g leaguefeed.Game) string {
 	switch {
 	case g.Home.Scored:
 		return v.gameResult(g)
+	case v.live && !v.kickedOff():
+		return "Not played yet"
 	case v.live:
 		// My side reads first, as in my matchup's columns; otherwise MFL's away-then-home order.
 		first, second := g.Away, g.Home
@@ -240,7 +312,7 @@ func (v nowView) classicRows(left, right leaguefeed.Side) []ReportRow {
 		if i >= len(ps) {
 			return "—", ""
 		}
-		return v.playerText(ps[i]), v.pointsText(s, ps[i].Points)
+		return v.playerText(ps[i]), v.playerPointsText(s, ps[i])
 	}
 	rows := []ReportRow{}
 	for _, pos := range v.positions(seen) {

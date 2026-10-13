@@ -31,6 +31,7 @@ type RaceChoice struct {
 }
 
 type raceInput struct {
+	live      heldSeasonFeed[leaguefeed.Lineups]
 	held      raceHeld
 	config    league.RawConfig
 	lookup    normalize.Lookup
@@ -327,6 +328,15 @@ func (v raceView) scheduleByTeam() Report {
 			me, them, where = game.Away, game.Home, "Away"
 		}
 		result := "Not played yet"
+		if !me.Scored && v.in.live.value.Week == w.Week && !v.in.live.fetchedAt.IsZero() {
+			if live, found := findGame(liveWeek(v.in.live.value, w), v.team); found {
+				left, right := live.Home, live.Away
+				if left.Franchise != v.team {
+					left, right = right, left
+				}
+				result = "In progress · " + scoreText(left.Points) + " to " + scoreText(right.Points)
+			}
+		}
 		if me.Scored {
 			words := map[leaguefeed.Result]string{"W": "Won", "L": "Lost", "T": "Tied"}
 			result = words[me.Result] + " " + scoreText(me.Points) + " to " + scoreText(them.Points)

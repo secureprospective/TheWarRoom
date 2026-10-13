@@ -6,6 +6,7 @@ import (
 	"maps"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strconv"
 	"time"
@@ -194,7 +195,10 @@ func (a *App) TargetResearchNewsRefresh(mine string) error {
 	}
 	defer a.newsMu.Unlock()
 	mirror, _, _ := a.league.ContractsView()
-	ordered := researchRosterIDs(mirror, mine)
+	a.lookupMu.Lock()
+	lookup := a.lookup
+	a.lookupMu.Unlock()
+	ordered := researchPlayerIDs(researchRosterIDs(mirror, mine), lookup)
 	pause := a.seasonPause
 	if pause == nil {
 		pause = seasonPause
@@ -250,6 +254,11 @@ func (a *App) TargetResearchPlayer(id string) (ResearchPlayerReading, error) {
 		return ResearchPlayerReading{}, fmt.Errorf("research player: %w", err)
 	}
 	a.hydrateResearch(pid.String())
+	if a.fetches != nil {
+		ctx, cancel := context.WithTimeout(a.fallbackParent(), rasFetchTimeout)
+		defer cancel()
+		a.refreshResearchDepth(ctx, false)
+	}
 	in := a.heldResearchInput()
 	if _, _, ok := in.lookup.DisplayFacts(pid.String()); !ok {
 		return ResearchPlayerReading{}, fmt.Errorf("research: player not in the held directory")
@@ -281,6 +290,13 @@ func researchRosterIDs(mirror state.MirrorSnapshot, mine string) []string {
 	}
 	sort.Strings(ordered)
 	return ordered
+}
+
+func researchPlayerIDs(ids []string, lookup normalize.Lookup) []string {
+	return slices.DeleteFunc(slices.Clone(ids), func(id string) bool {
+		_, position, _ := lookup.DisplayFacts(id)
+		return researchfeeds.TeamUnit(position)
+	})
 }
 
 func (a *App) researchDepthOrArchive(ctx, fallback context.Context) ([]researchfeeds.RawDepth, Freshness, error) {

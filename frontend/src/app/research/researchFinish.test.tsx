@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { KeyDocument, descendants } from '../shell/mflKeyTestDom';
 import { commands } from '../commands/registry';
+import * as registry from '../commands/registry';
 import { ResearchView } from './Research';
 import { PlayerResearchView } from './PlayerInspector';
 import { parseResearch, type PlayerReading } from './contract';
@@ -69,6 +70,7 @@ describe('Research live-look fixes', () => {
     const player: PlayerReading = { ...fixture.players[0], report: {
       ...fixture.news, columns: ['Reading', 'Held fact', 'Feed time'], rows: [
         { cells: ['NFL depth', 'not held', 'not held · feed time not held'], range: null },
+        { cells: ['News · 6 days', fixture.articles[0].headline, 'held · fetched today'], range: null },
       ], summary: [], status: 'ok',
     }, articles: fixture.articles, howLabel: fixture.board.howLabel };
     for (const identity of [true, false]) {
@@ -115,5 +117,57 @@ describe('Research live-look fixes', () => {
     finish?.(); await pending;
     expect(state.peek().pending).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe('One paged news list', () => {
+  it('opens the headline itself and expands by 25 through an Act, without another fetch', async () => {
+    const document = new KeyDocument();
+    const element = document.createElement('div');
+    vi.stubGlobal('document', document);
+    vi.stubGlobal('window', { document, HTMLIFrameElement: class {} });
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    const articles = Array.from({ length: 60 }, (_, i) => ({ ...fixture.articles[0],
+      article: `article${i}`, headline: `Headline ${i}` }));
+    const news = { ...fixture.news, summary: [], rows: articles.map((a, i) => ({
+      cells: [a.name, '24', a.headline, `${i} hours`], range: null,
+    })) };
+    const research = { ...fixture, news, articles };
+    const dispatch = vi.spyOn(registry, 'dispatch').mockImplementation(() => undefined);
+    root = createRoot(element as unknown as HTMLElement);
+    const { NewsView } = await import('./Research');
+    const { researchState } = await import('./state');
+    await act(async () => root?.render(createElement(NewsView, { research })));
+    const headlineButtons = () => descendants(element).filter(e =>
+      e.tagName === 'BUTTON' && e.textContent.startsWith('Headline '));
+    expect(headlineButtons()).toHaveLength(25);
+    expect(headlineButtons()[0].textContent).toBe('Headline 0');
+    expect(element.textContent.split('Headline 0')).toHaveLength(2);
+    expect(element.textContent).not.toContain('Open article on MFL');
+    await act(async () => {
+      (headlineButtons()[0].props().onClick as () => void)();
+    });
+    expect(dispatch).toHaveBeenCalledWith('research.read', { action: 'open',
+      value: `${articles[0].id}:article0` });
+    const more = descendants(element).find(e => e.tagName === 'BUTTON' &&
+      e.textContent === 'Show 25 more')!;
+    await act(async () => (more.props().onClick as () => void)());
+    expect(dispatch).toHaveBeenCalledWith('research.read', { action: 'more', value: 'M-058' });
+    await act(async () => { await researchState.choose('more', 'M-058'); });
+    expect(headlineButtons()).toHaveLength(50);
+    await act(async () => { await researchState.choose('more', 'M-058'); });
+    expect(headlineButtons()).toHaveLength(60);
+    expect(descendants(element).some(e => e.textContent === 'Show 25 more')).toBe(false);
+  });
+  it('does not render Inspector headlines a second time among the held facts', () => {
+    const article = fixture.articles[0];
+    const player: PlayerReading = { ...fixture.players[0], report: {
+      ...fixture.news, columns: ['Reading', 'Held fact', 'Feed time'], rows: [
+        { cells: ['News · 6 days', article.headline, 'held · fetched today'], range: null },
+      ], summary: [], status: 'ok',
+    }, articles: [article], howLabel: fixture.board.howLabel };
+    const html = renderToStaticMarkup(createElement(PlayerResearchView, { player, identity: true }));
+    expect(html.match(/aria-label="Open article on MFL/g)).toHaveLength(1);
+    expect(html).not.toContain('<dd>RB Jahmyr Gibbs:');
   });
 });

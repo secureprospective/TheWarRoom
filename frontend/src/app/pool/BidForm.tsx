@@ -21,7 +21,8 @@ function ClosingTime({ form, note }: { form: BidFormState; note?: string }) {
     <div className="bid-field bid-closes" role="group" aria-label="Bidding closes">
       <span>Bidding closes (optional)</span>
       {!form.closesOpen && (
-        <Act verb="market" args={{ field: 'pool-closes-set', value: '' }} label="Set a closing time">
+        <Act variant="button"
+          verb="market" args={{ field: 'pool-closes-set', value: '' }} label="Set a closing time">
           Set a closing time
         </Act>
       )}
@@ -39,7 +40,8 @@ function ClosingTime({ form, note }: { form: BidFormState; note?: string }) {
             value={form.closesTime}
             onChange={(e) => edit('closesTime')(e.target.value)}
           />
-          <Act verb="market" args={{ field: 'pool-closes-clear', value: '' }} label="Clear the closing time">
+          <Act variant="button"
+            verb="market" args={{ field: 'pool-closes-clear', value: '' }} label="Clear the closing time">
             Clear
           </Act>
         </div>
@@ -124,7 +126,7 @@ export function BidForm({ form, preview, busy }: { form: BidFormState; preview?:
         </pre>
       )}
       <div className="bid-actions">
-        <Act
+        <Act variant="button"
           verb="market"
           args={{ field: 'pool-save', value: form.planId }}
           label={save}
@@ -132,7 +134,8 @@ export function BidForm({ form, preview, busy }: { form: BidFormState; preview?:
         >
           {save}
         </Act>
-        <Act verb="market" args={{ field: 'pool-cancel', value: '' }} label="Close the bid form">
+        <Act variant="button"
+          verb="market" args={{ field: 'pool-cancel', value: '' }} label="Close the bid form">
           Cancel
         </Act>
       </div>

@@ -6,7 +6,7 @@
     "status": "ok",
     "source": "Source: MFL",
     "asOf": "As of: Oct 11, 2026, 12:00 PM",
-    "how": "Newest first, from held MFL transactions. A salary and contract end are the player's current contract on MFL, not the terms when the move was made; missing terms are labelled. No messages are sent.",
+    "how": "Newest first, from held MFL transactions. Adds show the current MFL contract. Drops show the last held weekly contract before the move; missing salary is labelled. No messages are sent.",
     "columns": [
       "Local time",
       "Move"
@@ -24,7 +24,7 @@
     "status": "ok",
     "source": "Source: MFL",
     "asOf": "As of: Oct 11, 2026, 12:00 PM",
-    "how": "Newest first, from held MFL transactions. A salary and contract end are the player's current contract on MFL, not the terms when the move was made; missing terms are labelled. No messages are sent.",
+    "how": "Newest first, from held MFL transactions. Adds show the current MFL contract. Drops show the last held weekly contract before the move; missing salary is labelled. No messages are sent.",
     "columns": [
       "Local time",
       "Move"

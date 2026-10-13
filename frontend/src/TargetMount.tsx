@@ -11,7 +11,7 @@ export function TargetMount() {
     <Suspense fallback={<p>Opening harness…</p>}>
       <App />
       <div className="twr-app harness-return">
-        <Act verb="target.open" args={{}}>Target UI</Act>
+        <Act variant="button" verb="target.open" args={{}}>Target UI</Act>
       </div>
     </Suspense>
   ) : <TargetApp />;

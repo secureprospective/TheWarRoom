@@ -69,3 +69,21 @@
 .report-table thead { display: table-header-group; color: var(--surface-tx1); }
 .report-summary { margin: 16px 0 24px; }
 .report-summary h6 { font: inherit; font-weight: 600; margin: 0 0 8px; }
+
+/* Reports share the pane's width, even when the Inspector takes half the window. */
+.draft-report .draft-table-scroll table { width: 100%; table-layout: fixed; }
+.draft-report .draft-table-scroll :is(th, td) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.draft-report .draft-summary { max-width: 100%; }
+.draft-report .draft-summary :is(th, td) { min-width: 0; overflow-wrap: anywhere; }
+.draft-report .draft-cell-line .act-text { white-space: normal; overflow-wrap: anywhere; }
+.draft-report .draft-table-scroll table.report-compact { width: 100%; }
+.draft-report .draft-table-scroll :is(th, td) { padding: 8px 6px; }
+/* Dense grids cannot inherit their old character floors or a button's intrinsic width. */
+.draft-report .draft-table-scroll table.report-dense :is(th, td) { min-width: 0; padding: 8px 2px; }
+.draft-report .draft-table-scroll th .act-button {
+  padding: 3px 0; min-width: 0; max-width: 100%; overflow-wrap: anywhere;
+}

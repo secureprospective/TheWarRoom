@@ -126,3 +126,15 @@ func FetchNews(ctx context.Context, c *mfl.Client, season int, ids []string) (ma
 	}
 	return ParseNews(response.Body, ids)
 }
+
+// TeamUnit uses the directory position, not IDs: leagues can create unit IDs of their own.
+func TeamUnit(position string) bool {
+	p := strings.ToUpper(strings.TrimSpace(position))
+	return slices.Contains([]string{"DEF", "DST", "ST", "OFF"}, p) || strings.HasPrefix(p, "TM")
+}
+
+// InvalidPlayerIDs reports MFL's playerProfile rejection of a request containing an id it has no
+// profile for ("No Valid Player IDs!"); only this answer is worth splitting the batch to isolate.
+func InvalidPlayerIDs(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "no valid player ids")
+}

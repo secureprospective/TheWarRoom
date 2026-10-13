@@ -52,18 +52,7 @@ func liveOrArchive[T any](
 	}
 	rctx, cancel := context.WithTimeout(fallback, fallbackTimeout)
 	defer cancel()
-	var at time.Time
-	found, err := f.bodies(rctx, "TYPE="+f.export, func(src string, body []byte, fetched time.Time) bool {
-		if !sameExport(src, f.export, season, f.leagueless) {
-			return false
-		}
-		parsed, perr := f.parse(body)
-		if perr != nil {
-			return false
-		}
-		rows, at = parsed, fetched
-		return true
-	})
+	rows, at, found, err := readArchivedFeed(rctx, season, f)
 	switch {
 	case err != nil:
 		logLine(fmt.Sprintf("the war room: %s: live fetch failed and the archive is unreadable: %v", f.export, ferr))
@@ -75,6 +64,26 @@ func liveOrArchive[T any](
 	logLine(fmt.Sprintf("the war room: %s: live fetch failed, serving the archived copy fetched %s: %v",
 		f.export, at.UTC().Format(time.RFC3339), ferr))
 	return rows, staleFreshness(at, ferr), nil
+}
+
+func readArchivedFeed[T any](ctx context.Context, season int, f archivedFeed[T]) ([]T, time.Time, bool, error) {
+	var rows []T
+	var at time.Time
+	found, err := f.bodies(ctx, "TYPE="+f.export, func(src string, body []byte, fetched time.Time) bool {
+		if !sameExport(src, f.export, season, f.leagueless) {
+			return false
+		}
+		parsed, perr := f.parse(body)
+		if perr != nil {
+			return false
+		}
+		rows, at = parsed, fetched
+		return true
+	})
+	if err != nil {
+		return nil, at, false, fmt.Errorf("%s archive: %w", f.export, err)
+	}
+	return rows, at, found, nil
 }
 
 // sameExport reports whether an archived URL is this league's export for season; a league-less

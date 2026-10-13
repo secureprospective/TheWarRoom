@@ -16,25 +16,31 @@ function Choice({ name, field, value, options, all = false }: {
     {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
   </select></label>;
 }
-function NewsActions({ research, mine }: { research: ResearchBoard; mine: boolean }) {
-  const names = mine ? new Set(research.board.reports.find(r => r.id === 'M-060')?.rows
-    .map(r => r.cells[0])) : null;
-  return <div className="research-articles" data-endpoint="M-059">
-    <Act verb="research.read" args={{ action: 'news', value: mine ? 'mine' : 'league' }}
-      disabled={mine && !research.scope.mine}>
-      Refresh rostered players’ news
-    </Act>
-    <ul>{research.articles.filter(a => !names || names.has(a.name)).map(a =>
-      <li key={`${a.id}:${a.article}`}>
-        <Act verb="research.read" args={{ action: 'open', value: `${a.id}:${a.article}` }}
-          label={`Open on MFL · ${a.name} · ${a.headline}`}>{a.name} · Open article on MFL</Act>
-      </li>)}</ul>
-  </div>;
+export function NewsList({ report, articles, howLabel, pageKey = report.id }: {
+  report: ResearchBoard['news']; articles: ResearchBoard['articles']; howLabel: string; pageKey?: string;
+}) {
+  const limit = researchState.use().pages[pageKey] ?? 25;
+  const visible = { ...report, rows: report.rows.slice(0, limit) };
+  const headline = report.columns.indexOf('Headline');
+  return <>
+    <ReportView report={visible} howLabel={howLabel} heading="h4"
+      renderCell={(cell, row, column) => column === headline && articles[row] ?
+        <Act variant="text" verb="research.read" args={{ action: 'open',
+          value: `${articles[row].id}:${articles[row].article}` }}
+          label={`Open article on MFL · ${cell}`}>{cell}</Act> : cell} />
+    {report.rows.length > limit && <Act variant="button" verb="research.read"
+      args={{ action: 'more', value: pageKey }}
+      label="Show 25 more">Show 25 more</Act>}
+  </>;
 }
-export function NewsView({ research }: { research: ResearchBoard }) {
-  return <div className="draft-reports research-news">
-    <ReportView report={research.news} howLabel={research.board.howLabel} heading="h4" />
-    <NewsActions research={research} mine={false} />
+export function NewsView({ research, mine = false }: { research: ResearchBoard; mine?: boolean }) {
+  const report = mine ? research.board.reports.find(r => r.id === 'M-060')! : research.news;
+  const articles = mine ? research.articles.filter(a => report.rows.some(r =>
+    r.cells[0] === a.name && r.cells[2] === a.headline)) : research.articles;
+  return <div className="draft-reports research-news" data-endpoint="M-059">
+    <Act variant="button" verb="research.read" args={{ action: 'news', value: mine ? 'mine' : 'league' }}
+      disabled={mine && !research.scope.mine}>Refresh rostered players’ news</Act>
+    <NewsList report={report} articles={articles} howLabel={research.board.howLabel} />
   </div>;
 }
 export function ResearchView({ research, selected }: {
@@ -75,23 +81,24 @@ export function ResearchView({ research, selected }: {
           onChange={e => setSearch(e.target.value)} />
       </label>
       <div className="market-controls">
-        <Act verb="research.read" args={{ action: 'search', value: search }} submit>Search players</Act>
+        <Act variant="button"
+          verb="research.read" args={{ action: 'search', value: search }} submit>Search players</Act>
       </div>
       </form>
       {!s.search.trim() ? <p>Enter a name, position or NFL team to find a player.</p> : <>
         <p>{research.players.length} {research.players.length === 1 ? 'match' : 'matches'}
           {' · open a player in the Inspector'}</p>
         <ul>{research.players.map(p => <li key={p.id}>
-          <Act verb="inspector.open"
+          <Act variant="text" verb="inspector.open"
             args={{ subject: { kind: 'player', id: p.id, franchiseId: p.franchiseId } }}>
             {p.name} · {p.position} · {p.team} · {p.owner}
           </Act>
         </li>)}</ul>
       </>}
     </section>
-    <ReportsView board={research.board} selected={[shown.id]} refreshVerb="research.read"
-      controls={controls} />
-    {shown.id === 'M-060' && <NewsActions research={research} mine />}
+    {shown.id === 'M-060' ? <NewsView research={research} mine /> :
+      <ReportsView board={research.board} selected={[shown.id]} refreshVerb="research.read"
+        controls={controls} />}
   </section>;
 }
 export default function Research({ newsOnly = false }: { newsOnly?: boolean }) {

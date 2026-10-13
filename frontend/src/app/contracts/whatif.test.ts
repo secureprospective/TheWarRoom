@@ -49,8 +49,8 @@ describe('What-if', () => {
     expect(html(r)).toContain('−$30,000');
     expect(html(r)).toContain(`Started from MFL rosters as of ${localDate(r.baseline)}`);
     expect(html(r)).not.toContain(r.baseline);
-    expect(html(r)).toMatch(/class="act act-text"[^>]*aria-label="Reset"/);
-    expect(html(r)).toMatch(/class="act act-text"[^>]*aria-label="Undo Cut Example player"/);
+    expect(html(r)).toMatch(/class="act act-button"[^>]*aria-label="Reset"/);
+    expect(html(r)).toMatch(/class="act act-button"[^>]*aria-label="Undo Cut Example player"/);
     expect(html(r)).toContain('Undo Cut Example player');
     r.value!.stale = true; r.value!.banner = 'MFL changed since this what-if started';
     expect(html(r)).toContain(r.value!.banner);

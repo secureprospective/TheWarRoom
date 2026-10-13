@@ -388,7 +388,7 @@ func TestCommsMissingTermsAndSources(t *testing.T) {
 		if tx.AddsDrops == nil || len(tx.AddsDrops.In) == 0 {
 			continue
 		}
-		if !strings.Contains(in.transactionSentence(tx), "salary and contract unavailable") {
+		if !strings.Contains(in.transactionSentence(tx), "salary not held") {
 			t.Fatal("invented terms")
 		}
 		break

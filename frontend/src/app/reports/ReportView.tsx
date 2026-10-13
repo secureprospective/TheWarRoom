@@ -1,8 +1,25 @@
+import type { ReactNode } from 'react';
 import { Act } from '../commands/Act';
 import { RangeBar } from '../market/ReadingView';
 import { reportSort, sortedRows } from './sortState';
-import type { Report } from './contract';
+import type { Report, ReportEntity } from './contract';
 import '../draftreports/reports.css';
+
+// Go supplies held identities; the renderer never infers an id from a label or NFL name.
+export function ReportText({ text, entities = [] }: { text: string; entities?: ReportEntity[] }) {
+  const matches = entities.map(entity => ({ entity, at: text.indexOf(entity.text) }))
+    .filter(match => match.at >= 0)
+    .sort((a, b) => a.at - b.at || b.entity.text.length - a.entity.text.length);
+  const match = matches[0];
+  if (!match) return <>{text}</>;
+  const { entity, at } = match;
+  const subject = entity.kind === 'player'
+    ? { kind: 'player' as const, id: entity.id, franchiseId: '' }
+    : { kind: 'franchise' as const, id: entity.id };
+  return <>{text.slice(0, at)}<Act variant="text" verb="inspector.pin" args={{ entity: subject }}
+    label={`Inspect ${entity.text}`}>{entity.text}</Act>
+    <ReportText text={text.slice(at + entity.text.length)} entities={entities} /></>;
+}
 
 // WeekBars is a row's values as bars on the report's one scale, zero to barMax.
 export function WeekBars({ bars, labels, max }: { bars: number[]; labels: string[]; max: number }) {
@@ -16,7 +33,8 @@ export function WeekBars({ bars, labels, max }: { bars: number[]; labels: string
     </rect>)}
   </svg>;
 }
-function ReportTable({ report }: { report: Report }) {
+type CellRenderer = (cell: string, row: number, column: number) => ReactNode;
+function ReportTable({ report, renderCell }: { report: Report; renderCell?: CellRenderer }) {
   const sort = reportSort.use()[report.id];
   const rows = sortedRows(report.rows, sort);
   const sortLabel = (i: number) => sort?.column === i && !sort.desc
@@ -28,19 +46,21 @@ function ReportTable({ report }: { report: Report }) {
       <th key={i} scope="col"
         aria-sort={sort?.column === i ? (sort.desc ? 'descending' : 'ascending') : 'none'}>
         {report.rows.every(row => row.sort) && report.sortAscending ?
-          <Act verb="report.sort" args={{ id: report.id, column: i }}
+          <Act variant="button" verb="report.sort" args={{ id: report.id, column: i }}
             label={`${sortLabel(i)} · ${c}`}>
             {c}
-          </Act> : c}
+          </Act> : <ReportText text={c} entities={report.entities} />}
       </th>)}</tr></thead>
       <tbody>{rows.map((row, i) => [row.group && row.group !== rows[i - 1]?.group &&
         <tr key={`g${i}`} className="report-group"><th scope="colgroup" colSpan={report.columns.length}>
-          {row.group}</th></tr>,
+          <ReportText text={row.group} entities={report.entities} /></th></tr>,
       <tr key={i} className={row.mine ? 'report-mine' : undefined}
         aria-current={row.mine ? 'true' : undefined}>{row.cells.map((cell, j) =>
         <td key={j} title={row.titles?.[j]}
           className={report.columns[j] === 'Local time' ? 'draft-local-time' : undefined}>
-          {cell.split('\n').map((line, k) => <div className="draft-cell-line" key={k}>{line}</div>)}
+          {renderCell ? renderCell(cell, i, j) : cell.split('\n').map((line, k) =>
+            <div className="draft-cell-line" key={k}>
+              <ReportText text={line} entities={report.entities} /></div>)}
           {j === row.cells.length - 1 && row.range && <RangeBar range={row.range} />}
           {j === row.cells.length - 1 && row.bars && report.barMax && report.barLabels &&
             <WeekBars bars={row.bars} labels={report.barLabels} max={report.barMax} />}
@@ -49,31 +69,39 @@ function ReportTable({ report }: { report: Report }) {
   </div>;
 }
 // A report that heads its page (the Race standings) takes the page heading level.
-export function ReportView({ report, howLabel, heading: Heading = 'h5' }:
-  { report: Report; howLabel: string; heading?: 'h4' | 'h5' }) {
+export function ReportView({ report, howLabel, heading: Heading = 'h5', renderCell }:
+  { report: Report; howLabel: string; heading?: 'h4' | 'h5'; renderCell?: CellRenderer }) {
   return <section className="draft-report" data-endpoint={report.id} aria-label={report.title}>
-    <Heading>{report.title}</Heading>
+    <Heading><ReportText text={report.title} entities={report.entities} /></Heading>
     <p>{report.source}{report.asOf && <> · <span className="draft-local-time">{report.asOf}</span></>}</p>
-    {report.note && <p role={report.status === 'failed' ? 'alert' : 'status'}>{report.note}</p>}
+    {report.note && <p role={report.status === 'failed' ? 'alert' : 'status'}>
+      <ReportText text={report.note} entities={report.entities} /></p>}
     {report.summary.length > 0 && <div className="report-summary"
       aria-label={report.id === 'M-154' ? 'Bye-week shortfalls' : 'Report summary'}>
       {report.id === 'M-154' && <h6>Bye-week shortfalls</h6>}
       <table className="draft-summary"><tbody>{report.summary.map((row, i) =>
-      <tr key={i}><th scope="row">{row.cells[0]}</th><td>{row.cells[1]}</td></tr>)}</tbody></table></div>}
+        <tr key={i}><th scope="row">
+          <ReportText text={row.cells[0]} entities={report.entities} /></th>
+          <td><ReportText text={row.cells[1]} entities={report.entities} /></td></tr>)}</tbody></table></div>}
     {report.link && <div className="market-controls">
-      <Act verb="endpoint.open" args={{ id: report.link.endpoint }} label={report.link.label}>
+      <Act variant="text" verb="endpoint.open" args={{ id: report.link.endpoint }} label={report.link.label}>
         {report.link.label}
       </Act>
     </div>}
     {report.status !== 'failed' && report.status !== 'empty' && report.rows.length > 0 &&
-      (report.id === 'M-102' ?
+      (report.id === 'M-089' ?
+        <div>{report.rows.map((row, i) => <details key={i} className="draft-pick-detail">
+          <summary>{row.cells[0]} · {row.cells[1]}</summary>
+          {row.cells[2].split('\n').map((line, j) => <p key={j}>{line}</p>)}
+        </details>)}</div> : report.id === 'M-102' ?
         <div>{report.rows.map((row, i) => <details key={i} className="draft-pick-detail">
           <summary>{row.cells[0]} · {row.cells[2]}</summary>
           <dl className="kv">{row.cells.map((cell, j) => <div key={j}>
             <dt>{report.columns[j]}</dt>
             <dd className={report.columns[j] === 'Local time' ? 'draft-local-time' : undefined}>{cell}</dd>
           </div>)}</dl>
-        </details>)}</div> : <ReportTable report={report} />)}
-    <details className="market-how"><summary>{howLabel}</summary><p>{report.how}</p></details>
+        </details>)}</div> : <ReportTable report={report} renderCell={renderCell} />)}
+    <details className="market-how"><summary>{howLabel}</summary>
+      <p><ReportText text={report.how} entities={report.entities} /></p></details>
   </section>;
 }

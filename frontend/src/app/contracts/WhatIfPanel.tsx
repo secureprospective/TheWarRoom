@@ -22,10 +22,10 @@ export function WhatIfActs({ mine, player, value, menu = false }: {
   const choice = value?.choices.find(choice => choice.player === player);
   if (!choice || !value) return null;
   const acts = <div className="contract-whatif-acts">
-    <Act verb="contracts.set" variant="text"
+    <Act verb="contracts.set" variant="button"
       args={{ field: 'whatif', value: { mine, action: 'cut', player } }}
       disabled={value.stale} label={choice.cutLabel}>{choice.cutLabel}</Act>
-    <Act verb="contracts.set" variant="text"
+    <Act verb="contracts.set" variant="button"
       args={{ field: 'whatif', value: { mine, action: 'buyout', player } }}
       disabled={value.stale || !choice.buyoutAllowed}
       label={choice.buyoutAllowed ? choice.buyoutLabel : choice.reason}>{choice.buyoutLabel}</Act>
@@ -47,7 +47,7 @@ export function WhatIfPanel({ mine, reading, error }: {
       {value && <div className="whatif-panel">
         {(!empty || value.stale) && <div className="whatif-heading">
           {value.stale && <p role="status">{value.banner}</p>}
-          <Act verb="contracts.set" variant="text" label="Reset"
+          <Act verb="contracts.set" variant="button" label="Reset"
             args={{ field: 'whatif', value: { mine, action: 'reset' } }}>Reset</Act>
         </div>}
         {empty && <p>{value.empty}</p>}
@@ -55,13 +55,13 @@ export function WhatIfPanel({ mine, reading, error }: {
         {!empty && <><ol className="whatif-moves">
           {value.moves.map(move => <li key={move.id}>
             <div><b>{move.label}</b><span className="contract-money">{move.charge.text}</span>
-              <Act verb="contracts.set" variant="text"
+              <Act verb="contracts.set" variant="button"
                 args={{ field: 'whatif', value: { mine, action: 'undo', move: move.id } }}
                 disabled={value.stale} label={`Undo ${move.label}`}>Undo</Act>
             </div>
             <p>{move.explanation}</p>
             <div className="whatif-plan-line">
-              {move.plan ? <p>{move.plan}</p> : <Act verb="contracts.set" variant="text"
+              {move.plan ? <p>{move.plan}</p> : <Act verb="contracts.set" variant="button"
               label={`Make this a plan: ${move.label}`}
               args={{ field: 'release', value: { mine, action: 'draft', move: move.id } }}>
               Make this a plan</Act>}</div>

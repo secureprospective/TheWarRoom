@@ -25,10 +25,11 @@ export function WindowRow({ window }: { window: LeagueWindow }) {
       <label>{label} date{' '}
         <input type="datetime-local" value={date} onChange={event => setDate(event.target.value)} />
       </label>
-      <Act verb="window.set" args={{ kind: window.kind, at: instant }} label="Set date"
+      <Act variant="button" verb="window.set" args={{ kind: window.kind, at: instant }} label="Set date"
         disabled={!instant || result?.pending} />
       {window.moved || (!hasRule && window.at) ?
-        <Act verb="window.set" args={{ kind: window.kind, at: '' }} disabled={result?.pending}
+        <Act variant="button"
+          verb="window.set" args={{ kind: window.kind, at: '' }} disabled={result?.pending}
           label={hasRule ? 'Back to the rulebook' : 'Clear date'} /> : null}
     </div>
     {result?.pending ? <p role="status">Saving league date…</p> : null}

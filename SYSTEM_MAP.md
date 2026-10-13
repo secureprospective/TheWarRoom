@@ -48,7 +48,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Composition | `internal/rankings` | M1: scores every rostered player from a params snapshot and history features, and writes one scoring run. |
 | Composition | `internal/m2service`, `internal/powerrankings` | M2: counts each roster's model values (on-field-now or dynasty, league points per game) as the best legal lineup, the top N or the whole roster, and z-blends them: this season with the results (all-play when MFL reports it, otherwise points for) at 4 ÷ (4 + weeks played) or the slider's weight; the franchise with the roster's age. `m2service.Outlooks` adds the context columns (cap room, schedule luck, projected record), never in the score. |
 | Composition | `internal/scouting/assembly` | Builds today's board's scouting profiles: RAS, coverage and school tier from their feeds, college share and breakout age from history. |
-| Composition | `internal/modelrun` | The measurables: values every rostered player with `internal/model` and the run's params, and writes a model run beside the board. `AtLeaguePositions` puts every player MFL lists at MFL's position before the scales are built; `cmd/fit` does the same from MFL's players export. |
+| Composition | `internal/modelrun` | The measurables: values every rostered player and held MFL free agent exactly once with `internal/model` and the run's params, and writes a model run beside the board. `AtLeaguePositions` puts every player MFL lists at MFL's position before the scales are built; `cmd/fit` does the same from MFL's players export. |
 | Composition | `internal/snapshot` | Pure, deterministic target UI snapshot builder over a read-only source; shared freshness is `domain.Freshness`. Its `eligibility` section holds the IR/taxi verdicts for every rostered player plus each input feed's provenance. |
 | Tooling | `cmd/fixtures` | Copies league and history snapshots to disposable databases, initializes the app stores offline and exports the shared snapshot. |
 | Mutation | `internal/transactions` | The `Coordinator`: every league-state change runs here, in one transaction. Handler subpackages (`acquisitions`, `contracts`, `deadcap`, `freeagency`) are reachable only through it. |
@@ -266,7 +266,7 @@ network; `draft_reports_reading.go` authors nine report tables, grid, timing and
 
 League Pulse › Race: `race_app.go` holds weeklyResults, the playoff brackets, MFL's standings and both M2 boards, refreshed with the hourly season refresh or on open (`TargetRaceRefresh`). `TargetRace(week, team, mine)` reads held data only and validates the choices; `race_reading.go`, `race_playoffs_reading.go` and `race_points_reading.go` write every report (M-002 standings on top, then M-008/C-02, M-090, M-170, M-074, M-014, M-161, M-071, M-076, M-077, M-011–M-013, M-009, M-010) through the shared `Report` shell. The lazy screen is `frontend/src/app/race/Race.tsx`. The league's divisions, conferences and standingsSort arrive with the rulebook (`league.RawConfig`).
 
-League Pulse › Now: `now_app.go` holds each opened week's NFL schedule, the season's bye weeks and, per week, the first held copy of its scores (read from the fetch archive, newer copies only). `TargetNowRefresh(week, force)` refreshes the race's feeds, then that week's NFL schedule and the byes (5-minute freshness, archive fallback scoped by `W`); `TargetNow(week, mine)` reads held data only and validates the week (0: the current NFL week). `now_reading.go` (week choice, held live scores for a week MFL has not scored, X-03 Classic matchup, M-005, M-003, M-004), `now_recap_reading.go` (M-007, M-021, M-022, M-088) and `now_nfl_reading.go` (M-015, M-016, M-072, M-018) write the reports on the race's view. The lazy screen is `frontend/src/app/now/Now.tsx`.
+League Pulse › Now: `now_app.go` holds each opened week's NFL schedule, the season's bye weeks and, per week, the first held copy of its scores (read from the fetch archive, newer copies only). `TargetNowRefresh(week, force)` refreshes the race's feeds, then that week's NFL schedule and the byes (5-minute freshness, archive fallback scoped by `W`); `TargetNow(week, reportWeek, mine)` reads held data only and validates the week (0: the current NFL week; reportWeek 0: the last scored week). `now_reading.go` (week choice, held live scores for a week MFL has not scored, X-03 Classic matchup, M-005, M-003, M-004), `now_recap_reading.go` (M-007, M-021, M-022, M-088) and `now_nfl_reading.go` (M-015, M-016, M-072, M-018) write the reports on the race's view. The lazy screen is `frontend/src/app/now/Now.tsx`.
 
 ### Data and sources
 
@@ -282,6 +282,7 @@ League Pulse › Now: `now_app.go` holds each opened week's NFL schedule, the se
 `comms_app.go` holds authenticated messageBoard/polls exports with archive fallback.
 `TargetComms` reads existing season transactions, current mirror contracts and the held directory.
 `comms_reading.go` writes sentences shared by C-05 and M-032 with Go-validated filters.
+Drops use the last held weekly roster before the move, dated by the last NFL kickoff.
 `TargetOpenComms` opens ProBoards or the discovered MFL board/polls pages only.
 `internal/ingestion/comms.go` validates posts. Lazy `frontend/src/app/comms` serves
 Comms and Home › Digests through the shared Report shell.
@@ -315,6 +316,8 @@ host `shell/TradeBuilder.tsx` and `contracts/Acquisitions.tsx`; all controls use
 `roster_reports_app.go` exposes `TargetRosterReports` from held exports; `nfl_draft_app.go`
 exposes `TargetNFLDraft` from validated detailed player draft selections; `internal/lineup/byes.go`
 checks position-minimum bye shortfalls. `calendar_app.go` merges held MFL calendar events into C-04.
+`shell_feeds_app.go` holds calendar and tradeBait, refreshed once per local day with archive fallback;
+screen reads never fetch. Their fetchers live beside the parsers in `internal/ingestion/shellfeeds.go`.
 `frontend/src/app/personal` is lazy list editing and persistence; `shell/StatusStrip.tsx` lazily
 reads source health and held gameday counts via `TargetShellStatus`.
 
@@ -340,3 +343,9 @@ section on Home › Digests, and a read-only player Inspector for directory sear
 M-050 is explicitly ring 4: weekly NFL team box-score totals require an nflverse team-stat
 adapter; fantasy points and NFL game scores are not those statistics. M-055 resolves to the
 existing Race lineup detail's best-lineup reading.
+
+`engine_refresh.go` scores after the background launch/hourly refresh has loaded signals, league
+points and the held free-agent list. A shared mutex excludes the manual path; changed-value loads,
+league/list changes or a 24-hour-old run make it due. `target:season` refreshes open readers.
+C-07 lists the engine run and its age; completed background checks append their run timestamp
+without changing any scoring formula or using ownership to find points.

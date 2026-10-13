@@ -51,7 +51,7 @@ func researchSample(t *testing.T, name string) []byte {
 func realResearch(t *testing.T) researchInput {
 	t.Helper()
 	at := time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC)
-	in := researchInput{week: 5, zone: time.UTC, held: researchHeld{feeds: map[string]heldSeasonFeed[[]researchfeeds.Feed]{}, news: map[string]heldSeasonFeed[[]researchfeeds.News]{}, links: map[string]string{}}}
+	in := researchInput{week: 5, zone: time.UTC, now: at, held: researchHeld{feeds: map[string]heldSeasonFeed[[]researchfeeds.Feed]{}, news: map[string]heldSeasonFeed[[]researchfeeds.News]{}, links: map[string]string{}}}
 	reader, err := gzip.NewReader(bytes.NewReader(researchSample(t, "players.json.gz")))
 	if err != nil {
 		t.Fatal(err)
@@ -205,7 +205,7 @@ func TestResearchDepthInjuriesAndScopedNews(t *testing.T) {
 	if len(news.Rows) != 1 || news.Rows[0].Cells[1] != "24" || news.Rows[0].Cells[3] != "6 days" {
 		t.Fatal(news)
 	}
-	if out.News.Status != "stale" || len(out.News.Summary) != 1 || !strings.Contains(out.News.Summary[0].Cells[0], "Allen") {
+	if out.News.Status != "stale" || len(out.News.Summary) != 1 || !strings.Contains(out.News.Summary[0].Cells[0], "1 profiles need refreshing") {
 		t.Fatal(out.News)
 	}
 	if len(out.Articles) != 1 || out.Articles[0].Article != "rotowire640841" {

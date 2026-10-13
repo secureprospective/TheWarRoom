@@ -32,7 +32,7 @@ func archivePoints(p *float64) string {
 	if p == nil {
 		return "Not recorded"
 	}
-	return fmt.Sprintf("%.2f", *p)
+	return scoreText(hundredths(*p))
 }
 func archiveRecord(w, l, t *int64) string {
 	if w == nil {
@@ -183,7 +183,7 @@ func (v archiveView) history() Report {
 		}
 		for _, f := range finals {
 			if f.year == y && superBowl(f.name) {
-				champion, runner, score = v.name(y, f.win), v.name(y, f.lose), fmt.Sprintf("%.2f–%.2f", f.winner, f.loser)
+				champion, runner, score = v.name(y, f.win), v.name(y, f.lose), scoreText(hundredths(f.winner))+"–"+scoreText(hundredths(f.loser))
 			}
 		}
 		best := float64(-1)
@@ -214,13 +214,22 @@ func (v archiveView) history() Report {
 
 func (v archiveView) champions() Report {
 	r := v.shell("M-114", "League champions", "Each season's Super Bowl winner, from the final round of MFL's recorded playoff bracket. A season without a scored, untied final has no champion here.", "Season", "Champion", "Final")
-	for _, f := range v.finals() {
-		if superBowl(f.name) {
-			r.Rows = append(r.Rows, draftRow(archiveYear(f.year), v.name(f.year, f.win), fmt.Sprintf("%.2f–%.2f over %s", f.winner, f.loser, v.name(f.year, f.lose))))
-		}
+	if r.Status == "failed" {
+		return r
 	}
-	if len(r.Rows) == 0 && r.Status == "ok" {
-		r.Status, r.Note = "empty", "No scored championship final is recorded in this snapshot."
+	finals := v.finals()
+	for _, y := range v.cache.facts.Season.Year {
+		found := false
+		for _, f := range finals {
+			if f.year == y && superBowl(f.name) {
+				found = true
+				r.Rows = append(r.Rows, draftRow(archiveYear(y), v.name(y, f.win),
+					scoreText(hundredths(f.winner))+"–"+scoreText(hundredths(f.loser))+" over "+v.name(y, f.lose)))
+			}
+		}
+		if !found {
+			r.Rows = append(r.Rows, draftRow(archiveYear(y), "not in MFL's archive", "No scored championship final held"))
+		}
 	}
 	return r
 }
@@ -326,11 +335,11 @@ func (v archiveView) franchise(id, title string) Report {
 			bestWhen = fmt.Sprintf("%s week %d", archiveYear(y), g.Week[i])
 		}
 	}
-	r.Summary = append(r.Summary, draftRow("All-time regular record", archiveRecord(&rw, &rl, &rt)), draftRow("All-time playoff record", archiveRecord(&pw, &pl, &pt)), draftRow("Highest weekly score", fmt.Sprintf("%.2f · %s", best, bestWhen)))
+	r.Summary = append(r.Summary, draftRow("All-time regular record", archiveRecord(&rw, &rl, &rt)), draftRow("All-time playoff record", archiveRecord(&pw, &pl, &pt)), draftRow("Highest weekly score", scoreText(hundredths(best))+" · "+bestWhen))
 	trophies := []string{}
 	for _, f := range v.finals() {
 		if f.win == v.team {
-			trophies = append(trophies, fmt.Sprintf("%d · %s (%s) · %.2f–%.2f", f.year, f.name, f.title, f.winner, f.loser))
+			trophies = append(trophies, fmt.Sprintf("%d · %s (%s) · %s–%s", f.year, f.name, f.title, scoreText(hundredths(f.winner)), scoreText(hundredths(f.loser))))
 		}
 	}
 	if len(trophies) == 0 {
@@ -357,7 +366,7 @@ func (v archiveView) trophies() Report {
 		return r
 	}
 	for _, f := range v.teamFinals() {
-		r.Rows = append(r.Rows, draftRow(archiveYear(f.year), trophyTitle(f.name, f.title), fmt.Sprintf("%.2f–%.2f over %s", f.winner, f.loser, v.name(f.year, f.lose))))
+		r.Rows = append(r.Rows, draftRow(archiveYear(f.year), trophyTitle(f.name, f.title), scoreText(hundredths(f.winner))+"–"+scoreText(hundredths(f.loser))+" over "+v.name(f.year, f.lose)))
 	}
 	if len(r.Rows) == 0 {
 		r.Status, r.Note = "empty", v.name(slices.Max(v.cache.facts.Season.Year), v.team)+" has no recorded bracket championship."

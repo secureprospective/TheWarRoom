@@ -7,7 +7,9 @@ export type ReportRow = {
   cells: string[]; range: MarketRange | null; sort?: number[]; titles?: string[];
   mine?: boolean; bars?: number[]; group?: string;
 };
+export type ReportEntity = { text: string; kind: 'player' | 'franchise'; id: string };
 export type Report = {
+  entities?: ReportEntity[];
   id: string; title: string; note: string; status: 'ok' | 'empty' | 'failed' | 'stale';
   source: string; asOf: string; how: string; columns: string[];
   sortAscending?: string; sortDescending?: string;
@@ -34,13 +36,20 @@ export function range(v: unknown, p: string): MarketRange | null {
 }
 export function report(v: unknown, p: string): Report {
   const r = object(v, p, ['id', 'title', 'note', 'status', 'source', 'asOf', 'how',
-    'columns', 'rows', 'summary', 'link', 'sortAscending', 'sortDescending', 'barMax', 'barLabels']);
+    'columns', 'rows', 'summary', 'link', 'sortAscending', 'sortDescending',
+    'barMax', 'barLabels', 'entities']);
   const columns = array(r.columns, p, text);
   const barLabels = r.barLabels === undefined ? undefined : array(r.barLabels, p, text);
   const barMax = r.barMax === undefined ? undefined : r.barMax;
   if (barMax !== undefined && (typeof barMax !== 'number' || !Number.isFinite(barMax) || barMax <= 0))
     throw new Error(`${p}: invalid chart scale`);
   return {
+    entities: r.entities === undefined ? undefined : array(r.entities, p, (v, p) => {
+      const e = object(v, p, ['text', 'kind', 'id']);
+      const id = text(e.id, p), name = text(e.text, p);
+      if (!/^\d{4,5}$/.test(id) || !name) throw new Error(`${p}: invalid entity identity`);
+      return { text: name, kind: choice(e.kind, p, ['player', 'franchise']), id };
+    }),
     id: text(r.id, p), title: text(r.title, p), note: text(r.note, p),
     status: choice(r.status, p, ['ok', 'empty', 'failed', 'stale']), source: text(r.source, p),
     asOf: text(r.asOf, p), how: text(r.how, p), columns,

@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { endpointById, placementRoute } from '../registry';
 import { parseNow } from './contract';
 import { NowView } from './Now';
-import { createNowState, type NowReader } from './state';
+import { commands } from '../commands/registry';
+import { createNowState, nowState, type NowReader } from './state';
 import wire from './wire.testdata.json';
 
 const now = () => parseNow(wire.now);
@@ -26,11 +27,28 @@ describe('League Pulse › Now', () => {
     const markup = view('M-005');
     expect(endpointById('X-03').status).not.toBe('spec');
     expect(markup).toContain('<option value="5" selected="">Week 5</option>');
-    expect(markup).toMatch(/<th scope="col"[^>]*>Buffalo Bills<\/th>/);
-    expect(markup).toContain('Fields, Justin · NYJ');
+    expect(markup).toContain('aria-label="Inspect Buffalo Bills"');
+    expect(markup).toContain('aria-label="Inspect Fields, Justin"');
+    expect(markup).toContain('Fields, Justin</button> · NYJ');
     expect(markup).not.toMatch(/>00\d\d</);
     expect(markup).toContain('class="report-group"');
     expect(markup).toMatch(/class="report-mine" aria-current="true"/);
+  });
+  it('offers weekly reports independently of the live matchup week', async () => {
+    const markup = view('M-003');
+    expect(markup).toContain('<label>Weekly reports');
+    const reader: NowReader = { read: vi.fn(async () => now()), refresh: vi.fn(async () => {}) };
+    const state = createNowState(reader, () => '0001');
+    await state.choose('reports-week', '4');
+    expect(reader.read).toHaveBeenLastCalledWith(0, 4, '0001');
+    expect(markup.match(/<option /g)?.length).toBe(now().weeks.length + now().reportWeeks.length);
+  });
+  it('dispatches the weekly report picker through the command registry', async () => {
+    const choose = vi.spyOn(nowState, 'choose').mockResolvedValue(undefined);
+    commands.dispatch('now.reports', { action: 'reports-week', value: '4' });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(choose).toHaveBeenCalledWith('reports-week', '4');
+    choose.mockRestore();
   });
   it('rejects a board Go would never send', () => {
     const bad = (change: (r: typeof wire.now) => void) => {
@@ -47,10 +65,10 @@ describe('League Pulse › Now', () => {
     const state = createNowState(reader, () => '0001');
     await state.load(true);
     expect(reader.refresh).toHaveBeenCalledWith(0, false);
-    expect(reader.read).toHaveBeenLastCalledWith(0, '0001');
+    expect(reader.read).toHaveBeenLastCalledWith(0, 0, '0001');
     await state.choose('week', '3');
     expect(reader.refresh).toHaveBeenLastCalledWith(3, false);
-    expect(reader.read).toHaveBeenLastCalledWith(3, '0001');
+    expect(reader.read).toHaveBeenLastCalledWith(3, 0, '0001');
     await state.choose('refresh', '');
     expect(reader.refresh).toHaveBeenLastCalledWith(5, true);
     expect(() => state.choose('week', 'x')).toThrow('invalid week');

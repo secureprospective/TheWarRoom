@@ -11,11 +11,9 @@ import type { Snapshot } from '../data/contract';
 import { selectProvider } from '../data/provider';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
-import { SignalChip } from '../look/Slots';
 import { DENSITIES } from '../cards/Card';
 import { nodes, nodeKeys, routeFor } from './nodes';
 import { NavIcon } from './NavIcon';
-import { snapshotSummary } from './snapshotSummary';
 import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
@@ -92,7 +90,6 @@ export function TargetApp() {
       active = false;
     };
   }, []);
-  const summary = snapshot && snapshotSummary(snapshot);
   const node = nodes[s.node];
   const workspaces: readonly { slug: string; label: string; ring: string }[] = node.workspaces;
   const workspace = workspaces.find((w) => w.slug === s.workspace[s.node])!;
@@ -133,7 +130,7 @@ export function TargetApp() {
           ))}
         </nav>
         <div className="rail-tools">
-          <Act
+          <Act variant="button"
             verb="calendar.summon"
             args={{}}
             expanded={s.summoned !== null}
@@ -141,13 +138,13 @@ export function TargetApp() {
           >
             Calendar
           </Act>
-          <Act verb="surface.open" args={{ place: 'Report drawer' }}>
+          <Act variant="text" verb="surface.open" args={{ place: 'Report drawer' }}>
             Reports
           </Act>
-          <Act verb="surface.open" args={{ place: 'Status strip' }}>
+          <Act variant="text" verb="surface.open" args={{ place: 'Status strip' }}>
             Status
           </Act>
-          <Act verb="harness.open" args={{}}>
+          <Act variant="button" verb="harness.open" args={{}}>
             Harness
           </Act>
         </div>
@@ -261,20 +258,6 @@ export function TargetApp() {
               <p className="not-wired">Not wired · {workspace.ring}</p>
             </section>
           )}
-          {s.node === 'home' && summary && (
-            <section className="snapshot-summary" aria-label="Snapshot summary">
-              <h4>Snapshot summary</h4>
-              <dl className="kv">
-                <dt>Season</dt>
-                <dd>{summary.season}</dd>
-                <dt>Franchises</dt>
-                <dd>{summary.franchises}</dd>
-                <dt>Rostered players</dt>
-                <dd>{summary.rostered}</dd>
-              </dl>
-              <SignalChip {...summary.provenance} />
-            </section>
-          )}
           <EndpointIndex placement={placement} />
           {error && <p role="alert">{error}</p>}
         </div>
@@ -285,8 +268,7 @@ export function TargetApp() {
           <span className="x">
             <Act
               verb={s.inspector === 'expanded' ? 'inspector.collapse' : 'inspector.expand'}
-              args={{}}
-              variant="text"
+              args={{}} variant="button"
               expanded={s.inspector === 'expanded'}
             >
               {s.inspector === 'expanded' ? 'collapse ⇥' : 'expand ⇤'}
@@ -317,7 +299,7 @@ export function TargetApp() {
       </aside>
       {s.inspector === 'closed' && (
         <aside className="inspector-closed">
-          <Act verb="inspector.toggle" args={{}} label="Open inspector">
+          <Act variant="button" verb="inspector.toggle" args={{}} label="Open inspector">
             Open
           </Act>
         </aside>
@@ -346,7 +328,7 @@ export function TargetApp() {
       >
         <header>
           Comms
-          <Act verb="comms.toggle" args={{}}>
+          <Act variant="button" verb="comms.toggle" args={{}}>
             Close
           </Act>
         </header>
@@ -364,7 +346,7 @@ export function TargetApp() {
       >
         <header>
           Calendar
-          <Act verb="calendar.summon" args={{}}>
+          <Act variant="button" verb="calendar.summon" args={{}}>
             Close
           </Act>
         </header>
@@ -377,7 +359,7 @@ export function TargetApp() {
         <aside className="shell-overlay registry-panel" aria-label={s.endpointSurface}>
           <header>
             {s.endpointSurface}
-            <Act verb="surface.close" args={{}}>
+            <Act variant="button" verb="surface.close" args={{}}>
               Close
             </Act>
           </header>

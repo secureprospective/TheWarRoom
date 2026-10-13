@@ -13,6 +13,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
+	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
@@ -107,24 +108,7 @@ func (a *App) refreshNowWeek(ctx context.Context, week int, force bool) {
 	held, byes := a.now.schedules[week], a.now.byes
 	a.seasonMu.Unlock()
 	if force || !feedFresh(held.fetchedAt, held.refreshError) {
-		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season, archivedFeed[nflschedule.RawWeek]{
-			export: nflschedule.Export, leagueless: true,
-			fetch: func(ctx context.Context) ([]nflschedule.RawWeek, error) {
-				raw, ferr := nflschedule.Fetch(ctx, a.mflClient, year, week)
-				if ferr != nil {
-					return nil, fmt.Errorf("NFL schedule: %w", ferr)
-				}
-				return checkScheduleWeek(raw, week)
-			},
-			parse: func(body []byte) ([]nflschedule.RawWeek, error) {
-				raw, perr := nflschedule.Parse(body)
-				if perr != nil {
-					return nil, fmt.Errorf("NFL schedule: %w", perr)
-				}
-				return checkScheduleWeek(raw, week)
-			},
-			bodies: a.scopedBodies("W", strconv.Itoa(week)),
-		}, a.fallbackLog)
+		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season, a.scheduleFeed(week), a.fallbackLog)
 		a.seasonMu.Lock()
 		schedules := maps.Clone(a.now.schedules)
 		if schedules == nil {
@@ -152,6 +136,50 @@ func (a *App) refreshNowWeek(ctx context.Context, week int, force bool) {
 	a.seasonMu.Lock()
 	defer a.seasonMu.Unlock()
 	holdSeasonFeed(&a.now.byes, rows, fresh, err)
+}
+
+func (a *App) scheduleFeed(week int) archivedFeed[nflschedule.RawWeek] {
+	year := strconv.Itoa(a.season)
+	return archivedFeed[nflschedule.RawWeek]{
+		export: nflschedule.Export, leagueless: true,
+		fetch: func(ctx context.Context) ([]nflschedule.RawWeek, error) {
+			raw, ferr := nflschedule.Fetch(ctx, a.mflClient, year, week)
+			if ferr != nil {
+				return nil, fmt.Errorf("NFL schedule: %w", ferr)
+			}
+			return checkScheduleWeek(raw, week)
+		},
+		parse: func(body []byte) ([]nflschedule.RawWeek, error) {
+			raw, perr := nflschedule.Parse(body)
+			if perr != nil {
+				return nil, fmt.Errorf("NFL schedule: %w", perr)
+			}
+			return checkScheduleWeek(raw, week)
+		},
+		bodies: a.scopedBodies("W", strconv.Itoa(week)),
+	}
+}
+
+func (a *App) seedClockSchedules(ctx context.Context) {
+	for _, rule := range leagueclock.Rules(a.lastRegularWeek()) {
+		if rule.Week == 0 {
+			continue
+		}
+		rows, at, found, err := readArchivedFeed(ctx, a.season, a.scheduleFeed(rule.Week))
+		if err != nil {
+			a.fallbackLog(err.Error())
+			continue
+		}
+		if !found {
+			continue
+		}
+		a.seasonMu.Lock()
+		if a.now.schedules == nil {
+			a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{}
+		}
+		a.now.schedules[rule.Week] = heldSeasonFeed[[]nflschedule.RawWeek]{value: rows, fetchedAt: at}
+		a.seasonMu.Unlock()
+	}
 }
 
 func checkScheduleWeek(raw nflschedule.RawWeek, week int) ([]nflschedule.RawWeek, error) {
@@ -200,7 +228,7 @@ func (a *App) TargetNowRefresh(week int, force bool) error {
 
 // TargetNow reads held data only. week is the week shown (0: the current NFL week) and mine the
 // GM's franchise ("": none chosen); Go checks both.
-func (a *App) TargetNow(week int, mine string) (NowBoard, error) {
+func (a *App) TargetNow(week, reportWeek int, mine string) (NowBoard, error) {
 	if err := a.ready(); err != nil {
 		return NowBoard{}, fmt.Errorf("now: startup: %w", err)
 	}
@@ -215,6 +243,6 @@ func (a *App) TargetNow(week int, mine string) (NowBoard, error) {
 	return buildNow(nowInput{
 		race: raceInput{held: held, config: a.rulebook.ActiveConfig(), lookup: lookup, hasLookup: hasLookup,
 			mine: mine, zone: time.Local},
-		held: now, live: live, projections: projections, at: time.Now(), current: current, week: week,
+		held: now, live: live, projections: projections, at: a.timeNow(), current: current, week: week, reportWeek: reportWeek,
 	})
 }

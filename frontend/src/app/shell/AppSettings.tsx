@@ -14,7 +14,7 @@ export function AppSettings() {
       <h4>View presets</h4>
       {presetIds.map((preset) => (
         <div key={preset}>
-          <Act verb="preset.apply" args={{ preset }} disabled={!presetAllowed(preset)}>
+          <Act variant="button" verb="preset.apply" args={{ preset }} disabled={!presetAllowed(preset)}>
             {presets[preset].label}
           </Act>
           {!presetAllowed(preset) && (
@@ -24,7 +24,7 @@ export function AppSettings() {
           )}
         </div>
       ))}
-      <Act verb="harness.open" args={{}}>
+      <Act variant="button" verb="harness.open" args={{}}>
         Open harness
       </Act>
       <Suspense fallback={<p role="status">Reading MFL's site news…</p>}>

@@ -401,35 +401,19 @@ it('matrix headers use the phrases sent by Go', () => {
   expect(html(CounterReading, r)).not.toContain('With In the hunt');
 });
 
-it('uses the table container to expose exactly six narrow and eleven wide columns', () => {
+it('keeps all ten wrapping columns and nests the frequent partner under Partners', () => {
   const v = parseCounterparties(surfaceWire).value!;
   const text = renderToStaticMarkup(createElement(TeamTable, { rows: v.rows, words: v.words }));
   const css = readFileSync('src/app/counterparties/counterparties.css', 'utf8');
-  expect(css).toMatch(/container-type: inline-size;\s*container-name: counter-teams;/);
-  const query = css.slice(css.indexOf('@container counter-teams (width < 900px)'));
-  expect(query).toMatch(/\[data-column='partner'\]\)\s*\{\s*display: none;/);
-  const hidden = [...query.matchAll(/\[data-column='([^']+)'\]/g)].map((m) => m[1]);
-  expect(hidden).toEqual(['perSeason', 'picks', 'age', 'partners', 'partner']);
   const headers = [...text.slice(text.indexOf('<thead'), text.indexOf('</thead>'))
-    .matchAll(/<th\b[^>]*data-column="([^"]+)"/g)].map((m) => m[1]);
-  expect(headers).toHaveLength(11);
-  expect(headers.filter((key) => !hidden.includes(key)))
-    .toEqual(['name', 'n', 'now', 'later', 'day', 'since']);
-  expect(css.slice(0, css.indexOf('@container'))).not.toMatch(/data-column=/);
+    .matchAll(/<th\b[^>]*data-column="([^"]+)"/g)].map(m => m[1]);
+  expect(headers).toEqual(['name', 'n', 'perSeason', 'now', 'later', 'day', 'since', 'picks',
+    'age', 'partners']);
+  expect(text).toContain(v.words.partner);
+  expect(css).not.toMatch(/display:\s*none/);
+  expect(css).toContain('.counter-team-table { table-layout: fixed; }');
   const controls = text.slice(text.indexOf('aria-label="Sort by"'), text.indexOf('counter-scroll'));
   expect(controls.match(/<button/g)).toHaveLength(10);
-  for (const key of headers.filter((k) => k !== 'partner')) {
-    const wordKey = key === 'name' ? 'team' : key === 'n' ? 'sides' : key;
-    const label = v.words[wordKey as keyof typeof v.words];
-    expect(controls).toContain(`aria-label="Sort by ${label}"`);
-  }
-  expect(css).not.toMatch(/break-all|anywhere/);
-  for (const cell of [...text.matchAll(/<td\b([^>]*)>/g)]) {
-    // Totals are short Go sentences: they wrap between words, never inside a number.
-    if (cell[1].includes('counter-total')) expect(cell[1]).not.toContain('counter-nowrap');
-    else if (!cell[1].includes('data-column="partner"')) expect(cell[1]).toContain('counter-nowrap');
-  }
-  expect(css).toMatch(/\.counterparties \.counter-nowrap button\s*\{\s*white-space: nowrap;/);
 });
 it('keeps the five narrow omissions available in the team panel from supplied fields', () => {
   const r = parseTeamPanel(teamWire);

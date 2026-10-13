@@ -79,7 +79,7 @@ func (a *App) heldMatchupStarters(mine string) map[string]bool {
 func (a *App) liveGameSpines(ctx context.Context, v *LiveGameView, adapter livegame.Adapter, mine string) error {
 	held := heldWeekGames(adapter)
 	v.WeekHeld = len(held)
-	if (v.Followed == nil || len(v.Followed.Plays) == 0) && len(held) == 0 {
+	if v.Followed == nil && len(held) == 0 {
 		return nil
 	}
 	if a.history == nil {
@@ -88,6 +88,11 @@ func (a *App) liveGameSpines(ctx context.Context, v *LiveGameView, adapter liveg
 	known, err := a.history.KnownIDs(ctx, "espn")
 	if err != nil {
 		return fmt.Errorf("live game crosswalk: %w", err)
+	}
+	if v.Followed != nil {
+		if err := a.inspectLiveBox(ctx, v); err != nil {
+			return err
+		}
 	}
 	players, err := a.spinePlayers(ctx, mine)
 	if err != nil {
@@ -168,4 +173,25 @@ func matchSpine(games []livegame.Game, known map[string]bool, players map[string
 		return b.Play.Sequence - a.Play.Sequence
 	})
 	return out, unmatched
+}
+
+func (a *App) inspectLiveBox(ctx context.Context, v *LiveGameView) error {
+	ids, err := a.history.SourceIDs(ctx, "espn")
+	if err != nil {
+		return fmt.Errorf("box score crosswalk: %w", err)
+	}
+	bySource := map[string]string{}
+	for id, source := range ids {
+		bySource[source] = id
+	}
+	entities := map[string]ReportEntity{}
+	for _, box := range v.Followed.Box {
+		for _, p := range box.Rows {
+			if id := bySource[p.ID]; id != "" {
+				entities[id] = ReportEntity{Text: p.Name, Kind: "player", ID: id}
+			}
+		}
+	}
+	attachReportEntities(&v.Box, slices.Collect(maps.Values(entities)))
+	return nil
 }

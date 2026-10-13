@@ -27,6 +27,18 @@ func (a *App) TargetComms(raw RawCommsScope) (CommsBoard, error) {
 	a.lookupMu.Unlock()
 	in.names = a.rulebook.FranchiseNames()
 	in.mirror, _, _ = a.league.ContractsView()
+	if a.history != nil {
+		ctx, cancel := context.WithTimeout(a.fallbackParent(), factsTimeout)
+		defer cancel()
+		a.factsMu.Lock()
+		cache, _, err := a.readArchiveFacts(ctx)
+		a.factsMu.Unlock()
+		if err != nil {
+			in.rosterNote = " Weekly contract history unavailable; dropped salaries may not be held."
+			a.fallbackLog(err.Error())
+		}
+		in.rosters, in.rosterTimes = cache.facts.RosterWeek, rosterWeekTimes(cache.facts.NflGame)
+	}
 	return buildComms(in, raw)
 }
 

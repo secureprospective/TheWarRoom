@@ -26,6 +26,7 @@ type ModelScore struct {
 
 // NewModelRun is a model run to write; the fields mean what they do on NewRun.
 type NewModelRun struct {
+	Refresh    bool
 	Season     int
 	AsOf       time.Time
 	Params     ParamSet
@@ -52,6 +53,7 @@ func (s *Store) WriteModelRun(ctx context.Context, nr NewModelRun) (Run, bool, e
 	if err != nil {
 		return Run{}, false, err
 	}
+	p.refresh = nr.Refresh
 	return s.writeRun(ctx, p, func(tx *sql.Tx, runID int64) error {
 		for _, sc := range nr.Scores {
 			inputs, err := json.Marshal(sc.Inputs)
@@ -128,4 +130,14 @@ WHERE run_id = ? ORDER BY dynasty_ppg DESC, mfl_id ASC`, runID)
 		return nil, fmt.Errorf("history: model scores rows: %w", err)
 	}
 	return out, nil
+}
+
+// ModelInputsChanged uses successful loads that actually added values, not fetch attempts.
+func (s *Store) ModelInputsChanged(ctx context.Context, since time.Time) (bool, error) {
+	var changed bool
+	if err := s.pools.Read().QueryRowContext(ctx, `SELECT EXISTS (
+SELECT 1 FROM loads WHERE added > 0 AND error = '' AND loaded_at > ?)`, formatTime(since)).Scan(&changed); err != nil {
+		return false, fmt.Errorf("history: engine input changes: %w", err)
+	}
+	return changed, nil
 }

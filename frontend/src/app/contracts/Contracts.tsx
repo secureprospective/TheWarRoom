@@ -146,7 +146,7 @@ function ContractGroup({ title, rows, mine, whatif }: {
           {rows.map((row) => (
             <tr key={row.id} data-mine={mine}>
               <td>
-                <Act
+                <Act variant="text"
                   verb="inspector.open"
                   args={{ subject: { kind: 'player', id: row.id, franchiseId: row.franchiseId } }}
                   label={`Inspect ${row.name} contract`}
@@ -327,7 +327,7 @@ export default function Contracts({
             <option value="expiration">Expiration</option>
           </select>
         </label>
-        <Act verb="contracts.set" args={{ field: 'desc', value: !filters.desc }}>
+        <Act variant="button" verb="contracts.set" args={{ field: 'desc', value: !filters.desc }}>
           {filters.desc ? 'Descending' : 'Ascending'}
         </Act>
         <p>My team first.</p>

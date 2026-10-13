@@ -84,10 +84,12 @@ type App struct {
 
 	// The players directory is fetched at most once per process (MFL allows the endpoint once a
 	// day). Wails runs IPC calls concurrently, hence the mutex.
-	lookupMu  sync.Mutex
-	lookup    normalize.Lookup
-	hasLookup bool
-	lookupAt  time.Time
+	modelMu    sync.Mutex
+	modelDirty atomic.Bool
+	lookupMu   sync.Mutex
+	lookup     normalize.Lookup
+	hasLookup  bool
+	lookupAt   time.Time
 
 	// Drafts check against the last good TargetSnapshot build, so a draft never refetches.
 	targetSnapshotMu  sync.Mutex
@@ -104,6 +106,9 @@ type App struct {
 	weekStart        sync.Once // domReady fires again on a webview reload; one worker only
 
 	seasonMu            sync.Mutex
+	seasonCalendar      heldSeasonFeed[[]ingestion.RawCalendarEvent]
+	seasonTradeBait     heldSeasonFeed[[]ingestion.RawTradeBait]
+	shellFeedDays       map[string]string
 	seasonTransactions  heldSeasonFeed[[]leaguefeed.Transaction]
 	commsBoards         [2]heldSeasonFeed[[]ingestion.RawLeaguePost]
 	seasonLineups       heldSeasonFeed[leaguefeed.Lineups]
@@ -114,6 +119,7 @@ type App struct {
 	seasonDraftResults  heldSeasonFeed[[]draftreports.Pick]
 	seasonFuturePicks   heldSeasonFeed[[]draftreports.FuturePick]
 	research            researchHeld
+	researchArchiveMu   sync.Mutex
 	race                raceHeld
 	now                 nowHeld
 	liveGameMu          sync.Mutex
@@ -255,7 +261,6 @@ func (a *App) startup(ctx context.Context) {
 // load run now, off the startup path. A windowless -probe never reaches it.
 func (a *App) domReady(ctx context.Context) {
 	a.refreshInBackground(ctx)
-	a.signalsInBackground(ctx)
 	a.compileFactsInBackground(ctx)
 }
 
@@ -283,7 +288,7 @@ func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.S
 		return "", nil, fmt.Errorf("open what-if database: %w", err)
 	}
 	hist := history.New(a.histPools, reg)
-	a.fetches = &archive.Transport{Sink: hist}
+	a.fetches = &archive.Transport{Sink: hist, Judge: ingestion.MFLRefusal}
 	return path, hist, nil
 }
 
@@ -347,6 +352,7 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 	}
 	a.params, a.rulebook, a.league, a.whatif, a.coordinator, a.history = pstore, rb, mirror, whatif, coord, hist
 	a.moves = moveStore
+	a.seedClockSchedules(ctx)
 	return refreshed, nil
 }
 

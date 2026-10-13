@@ -163,34 +163,41 @@ func (v researchView) newsReport(mine bool) (Report, []ResearchArticle) {
 		r.Note = "Choose your franchise to see its news."
 		return r, articles
 	}
-	ids := []string{}
-	for player := range v.owners {
-		if !mine || v.mine[player] {
-			ids = append(ids, player)
-		}
-	}
-	sort.Strings(ids)
-	fetched := 0
+	ids := v.newsIDs(mine)
+	health := v.newsHealth(ids)
 	for _, player := range ids {
-		held := v.held.news[player]
-		name := v.player(player).Name
-		if held.fetchedAt.IsZero() || held.refreshError != "" {
-			researchLoss(&r, "Player news · "+name, held.fetchedAt, held.refreshError, v.zone)
+		v.appendNews(&r, &articles, player, v.held.news[player].value)
+	}
+	if !health.oldest.IsZero() {
+		r.AsOf = "held · fetched " + reportTime(health.oldest, v.zone)
+	}
+	if health.losses > 0 {
+		at := health.oldest
+		if health.loss == "" {
+			at = time.Time{}
 		}
-		if !held.fetchedAt.IsZero() {
-			fetched++
-			r.AsOf = "As of: " + reportTime(held.fetchedAt, v.zone)
-		}
-		v.appendNews(&r, &articles, player, held.value)
+		researchLoss(&r, fmt.Sprintf("Player news · %d profiles need refreshing", health.losses), at, health.loss, v.zone)
 	}
 	sortResearchNews(&r, articles)
-	r.Note = fmt.Sprintf("%d of %d rostered profiles held today or from the last fetch. Published is MFL’s wording.", fetched, len(ids))
-	if fetched == 0 && len(ids) > 0 {
+	r.Note = fmt.Sprintf("%d of %d rostered profiles held today or from the last fetch. Published is MFL’s wording.", health.fetched, len(ids))
+	if health.fetched == 0 && len(ids) > 0 {
 		r.Status = "failed"
 	} else {
 		researchEmpty(&r)
 	}
 	return r, articles
+}
+
+func (v researchView) newsIDs(mine bool) []string {
+	ids := []string{}
+	for player := range v.owners {
+		_, position, _ := v.lookup.DisplayFacts(player)
+		if (!mine || v.mine[player]) && !researchfeeds.TeamUnit(position) {
+			ids = append(ids, player)
+		}
+	}
+	sort.Strings(ids)
+	return ids
 }
 
 func (v researchView) injuryGames(r *Report, team bool) (map[string]bool, bool) {
@@ -240,7 +247,7 @@ func (v researchView) appendNews(r *Report, articles *[]ResearchArticle, player 
 		if published == "" {
 			published = "Not supplied"
 		}
-		r.Rows = append(r.Rows, ReportRow{Cells: []string{name, age, news.Headline, published}, Mine: v.mine[player]})
+		r.Rows = append(r.Rows, ReportRow{Cells: []string{name, age, news.Headline, published}, Mine: v.mine[player], Sort: []float64{newsPublishedAt(published, v.held.news[player].fetchedAt)}})
 		*articles = append(*articles, ResearchArticle{ID: player, Article: news.Article, Name: name, Headline: news.Headline})
 	}
 }

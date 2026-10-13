@@ -102,18 +102,19 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
     >
       <RailStrip receipt={receipt} />
       {['roster.ir', 'roster.taxi'].includes(receipt.spec.intent) &&
-        !['landed', 'failed', 'withdrawn'].includes(receipt.state) && <Act verb="move.withdraw"
+        !['landed', 'failed', 'withdrawn'].includes(receipt.state) && <Act variant="button"
+          verb="move.withdraw"
           args={{ correlationId: receipt.correlationId }}
           label={receipt.audit.some(entry => entry.to === 'handed_off')
             ? "I didn't submit this move" : 'Remove plan'} />}
       {receipt.state === 'ready' && <p>Ready is not MFL-accepted</p>}
       {receipt.state === 'ready' && receipt.spec.intent.startsWith('trade.') &&
-        receipt.spec.intent !== 'trade.accept' ? <Act verb="trade.builder"
+        receipt.spec.intent !== 'trade.accept' ? <Act variant="button" verb="trade.builder"
           args={{ action: 'handoff', mine: receipt.spec.franchiseId, id: receipt.correlationId }}
           label={receipt.spec.intent === 'trade.propose' ? "Copy the deal and open MFL's trade desk"
             : receipt.spec.intent === 'trade.reject' ? "Open MFL's trade desk to reject"
               : "Open MFL's trade desk to withdraw it"} />
-        : receipt.state === 'ready' && <Act
+        : receipt.state === 'ready' && <Act variant="button"
         verb="move.handoff" args={{ correlationId: receipt.correlationId }}
         label={lineup ? 'Open MFL lineup page' : handoffLabel}
       />}

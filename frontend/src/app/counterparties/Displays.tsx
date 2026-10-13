@@ -21,7 +21,7 @@ export function TeamLink({
   const identity = teamIdentity(snapshot, fid, name);
   return (
     <span className="counter-team">
-      <Act
+      <Act variant="text"
         verb="market"
         args={{ field: 'inspect', value: `team:${fid}` }}
         label={`Inspect ${identity.name}`}

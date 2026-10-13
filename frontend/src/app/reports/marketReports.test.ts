@@ -108,7 +108,7 @@ it('the Inspector keeps full Go facts and ranges, with missing shown as a dash',
 });
 
 
-it('sizes two/three-column report tables to content, leaving wide reports locally scrollable', () => {
+it('fits compact and wide report tables to their pane with a local scroller', () => {
   const report = board().reports[0];
   for (const n of [2, 3, 4]) {
     const r = { ...report, columns: Array.from({ length: n }, (_, i) => `Column ${i}`) };
@@ -117,7 +117,7 @@ it('sizes two/three-column report tables to content, leaving wide reports locall
     expect(markup).toContain('class="draft-table-scroll"');
   }
   const css = readFileSync('src/app/draftreports/reports.css', 'utf8');
-  expect(css).toContain('.draft-report table.report-compact { width: auto; }');
+  expect(css).toContain('.draft-report .draft-table-scroll table { width: 100%; table-layout: fixed; }');
   expect(css).toContain('.draft-table-scroll { min-width: 0; overflow: auto; max-width: 100%;');
 });
 

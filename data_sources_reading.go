@@ -20,6 +20,7 @@ type healthInput struct {
 	reg      *measures.Registry
 	sources  []history.SourceHealth
 	mfl      []history.URLHealth
+	engineAt time.Time
 	boardRun bool
 	missing  []string // measures the latest board run went without
 	now      time.Time
@@ -65,6 +66,12 @@ func healthReport(in healthInput) Report {
 		r.Rows = append(r.Rows, ReportRow{Cells: []string{name,
 			whenText(row.lastGood, in.zone) + "\n" + sourceAge(row, in.now), failureText(row, in.zone)}})
 	}
+	engine := "Engine run not yet available"
+	if !in.engineAt.IsZero() {
+		engine = "Engine run" // its date and age sit in the columns, like every source's
+	}
+	r.Rows = append(r.Rows, ReportRow{Cells: []string{engine,
+		whenText(in.engineAt, in.zone) + "\n" + sourceAge(healthRow{lastGood: in.engineAt}, in.now), "—"}})
 	if p := in.photos; p != nil {
 		r.Rows = append(r.Rows, ReportRow{Cells: photoCells(*p, in.zone)})
 	}
@@ -151,11 +158,15 @@ func photoCells(p photoHealth, zone *time.Location) []string {
 	return []string{name, held, failure}
 }
 
-func countText(n int, noun string) string {
+func pluralNoun(n float64, noun string) string {
 	if n == 1 {
-		return "1 " + noun
+		return noun
 	}
-	return strconv.Itoa(n) + " " + noun + "s"
+	return noun + "s"
+}
+
+func countText(n int, noun string) string {
+	return strconv.Itoa(n) + " " + pluralNoun(float64(n), noun)
 }
 
 // mflExportRows groups MFL's fetches by export type.
@@ -247,7 +258,10 @@ func boardText(source string, in healthInput) string {
 	case len(feeds) == 0:
 		return "Not read by the board"
 	case !in.boardRun:
-		return "No board run yet"
+		if !in.engineAt.IsZero() {
+			return engineRunText(in.engineAt, in.zone)
+		}
+		return "Engine run not yet available"
 	case len(short) > 0:
 		return fmt.Sprintf("Running reduced: %d of its measures not flowing (%s)", len(short), strings.Join(short, ", "))
 	}

@@ -31,7 +31,7 @@ export function WhatsNew() {
     <section className="control-room" aria-busy={s.pending}>
       {s.error && <p role="alert">{s.error}</p>}
       {s.news && <NewsArticles news={s.news} />}
-      <Act verb="control.read" args={{ action: 'news', value: '' }}>Refresh from MFL</Act>
+      <Act variant="button" verb="control.read" args={{ action: 'news', value: '' }}>Refresh from MFL</Act>
     </section>
   );
 }

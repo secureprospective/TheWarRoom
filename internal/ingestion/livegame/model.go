@@ -41,6 +41,7 @@ type Box struct {
 	Rows     []BoxRow `json:"rows"`
 }
 type BoxRow struct {
+	ID    string   `json:"id,omitempty"`
 	Name  string   `json:"name"`
 	Stats []string `json:"stats"`
 }

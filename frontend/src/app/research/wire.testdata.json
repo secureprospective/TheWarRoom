@@ -605,7 +605,7 @@
         "note": "1 of 1 rostered profiles held today or from the last fetch. Published is MFL’s wording.",
         "status": "ok",
         "source": "Source: MFL player news · rostered players only",
-        "asOf": "As of: Oct 11, 2026, 12:00 PM",
+        "asOf": "held · fetched Oct 11, 2026, 12:00 PM",
         "how": "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Published is MFL’s literal relative wording, not a reconstructed timestamp. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted.",
         "columns": [
           "Player",
@@ -636,7 +636,7 @@
     "note": "1 of 2 rostered profiles held today or from the last fetch. Published is MFL’s wording.",
     "status": "stale",
     "source": "Source: MFL player news · rostered players only",
-    "asOf": "As of: Oct 11, 2026, 12:00 PM",
+    "asOf": "held · fetched Oct 11, 2026, 12:00 PM",
     "how": "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Published is MFL’s literal relative wording, not a reconstructed timestamp. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted.",
     "columns": [
       "Player",
@@ -659,7 +659,7 @@
     "summary": [
       {
         "cells": [
-          "Player news · Allen, Josh",
+          "Player news · 1 profiles need refreshing",
           "Unavailable; refresh from sources"
         ],
         "range": null

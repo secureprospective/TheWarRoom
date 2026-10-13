@@ -21,25 +21,27 @@ export function CommsView({ comms, panel, limit }: { comms: Comms; panel: boolea
           onChange={e => dispatch('comms.read', { action: 'kind', value: e.target.value })}>
           {comms.kinds.map(k => <option key={k.value} value={k.value}>{k.label}</option>)}
         </select></label>
-        <Act verb="comms.read" args={{ action: 'refresh', value: '' }}>Refresh from MFL</Act>
+        <Act variant="button" verb="comms.read" args={{ action: 'refresh', value: '' }}>Refresh from MFL</Act>
       </div>
       {comms.feed.note && <p role={comms.feed.status === 'failed' ? 'alert' : 'status'}>{comms.feed.note}</p>}
-      <ol className="league-events">{comms.events.slice(0, panel ? limit : undefined).map((event, i) =>
+      <ol className="league-events">{comms.events.slice(0, limit).map((event, i) =>
         <li key={i}><time>{event.date}</time><p>{event.sentence}</p></li>)}</ol>
-      {panel && comms.events.length > limit &&
-        <Act verb="comms.read" args={{ action: 'more', value: '' }}>Show more</Act>}
+      {comms.events.length > limit &&
+        <Act variant="button" verb="comms.read" args={{ action: 'more', value: '' }}>Show more</Act>}
       <details className="market-how"><summary>How this is counted</summary><p>{comms.feed.how}</p></details>
     </section>
     {!panel && <ReportView report={comms.transactions} howLabel="How this is counted" heading="h4" />}
     {panel && <section data-endpoint="M-120" className="league-board" aria-label="League board">
       <h4>League board</h4>
       <p>{comms.leagueTalk}</p>
-      <Act verb="comms.read" args={{ action: 'open', value: 'league-board' }}>Open the league board</Act>
+      <Act variant="button"
+        verb="comms.read" args={{ action: 'open', value: 'league-board' }}>Open the league board</Act>
       <p role="status">{comms.boardNote}</p>
       {comms.boardPosts.map((report, i) => <section key={report.id} data-endpoint={report.id}>
         {report.rows.length > 0 || report.status === 'failed' || report.status === 'stale' ?
           <ReportView report={report} howLabel="How this is counted" /> : <h5>{report.title}</h5>}
-        <Act verb="comms.read" args={{ action: 'open', value: i === 0 ? 'message-board' : 'polls' }}
+        <Act variant="button"
+          verb="comms.read" args={{ action: 'open', value: i === 0 ? 'message-board' : 'polls' }}
           label={`Open on MFL · ${report.title}`}>Open on MFL</Act>
       </section>)}
     </section>}

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { selectProvider } from '../data/provider';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { localDate } from '../clock/labels';
@@ -55,7 +56,7 @@ export function Rules({ rules, summary }: { rules: Rule[]; summary: string }) {
 function ActionButton({ plan, action, busy }: { plan: Plan; action: BidAction; busy: string }) {
   return (
     <>
-      <Act
+      <Act variant="button"
         verb="market"
         args={{ field: verbFields[action.id], value: plan.id }}
         label={`${action.label}: ${plan.player}`}
@@ -90,7 +91,7 @@ export function BidPlanCard({ plan, busy = '' }: { plan: Plan; busy?: string }) 
       )}
       {!finished && plan.evidence && <p className="bid-evidence">Evidence: {plan.evidence}</p>}
       <div className="bid-actions">
-        {!finished && <Act verb="acquisition" args={{ mine: plan.franchiseId, bid: plan.id }}
+        {!finished && <Act variant="button" verb="acquisition" args={{ mine: plan.franchiseId, bid: plan.id }}
           label="What does the add cost me?" />}
         {plan.actions.map((action) => (
           <ActionButton key={action.id} plan={plan} action={action} busy={busy} />
@@ -154,7 +155,10 @@ export function usePoolData(withPool: boolean): PoolState {
   const franchiseId = commands.use().franchiseId ?? '';
   useEffect(() => {
     void (withPool ? poolState.open() : poolState.loadBoard());
-    return commands.onMovesChange(() => void (withPool ? poolState.reload() : poolState.loadBoard()));
+    const reload = () => void (withPool ? poolState.reload() : poolState.loadBoard());
+    const moves = commands.onMovesChange(reload);
+    const season = selectProvider().onSeasonChange(reload);
+    return () => { moves(); season(); };
   }, [franchiseId, withPool]);
   return poolState.use();
 }

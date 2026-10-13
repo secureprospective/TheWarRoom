@@ -35,11 +35,13 @@ func (a *App) refreshWeeksInBackground(parent context.Context) {
 			a.refreshNowWeek(ctx, rule.Week, false)
 			cancel()
 		}
+		a.refreshEngine(parent)
 		a.clockChanged(parent)
 		select {
 		case <-parent.Done():
 			return
 		case <-ticker.C:
+			a.launchRefresh(parent)
 		}
 	}
 }
@@ -137,6 +139,9 @@ func (a *App) weekClock(now time.Time) (*leagueclock.LineupLock, Freshness) {
 	fresh.Note = a.weekNote()
 	if lock, ok := leagueweek.NextLock(now, a.week); ok {
 		return &leagueclock.LineupLock{Week: a.week.Number, At: lock}, fresh
+	}
+	if a.week.Number != 0 && len(a.week.Games) > 0 {
+		return &leagueclock.LineupLock{Week: a.week.Number, At: leagueweek.LastLock(a.week)}, fresh
 	}
 	return nil, fresh
 }

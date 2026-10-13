@@ -20,6 +20,14 @@ export function NowView({ now, selected }: { now: NowBoard; selected: readonly s
       <ReportView report={now.matchup} howLabel={now.board.howLabel} heading="h4" />
     </div>
     <Suspense fallback={<p role="status">Reading held games…</p>}><LiveGame /></Suspense>
+    <div className="market-controls race-choices">
+      <label>Weekly reports{' '}
+        <select value={String(now.reportWeek)} disabled={now.reportWeeks.length === 0}
+          onChange={e => commands.dispatch('now.reports', { action: 'reports-week', value: e.target.value })}>
+          {now.reportWeeks.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
+        </select>
+      </label>
+    </div>
     <ReportsView board={now.board} selected={selected} refreshVerb="now.reports" />
   </>;
 }

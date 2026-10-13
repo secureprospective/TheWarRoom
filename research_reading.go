@@ -92,6 +92,7 @@ type researchInput struct {
 	config    league.RawConfig
 	week      int
 	zone      *time.Location
+	now       time.Time
 }
 type researchView struct {
 	researchInput

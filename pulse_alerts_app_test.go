@@ -49,13 +49,13 @@ func TestTargetAlerts(t *testing.T) {
 		}
 	}
 	r, err = a.TargetAlerts("0025")
-	if alerts, _ = alertKinds(r); err != nil || !slices.Equal(alerts, []string{"trades", "lineup"}) {
+	if alerts, _ = alertKinds(r); err != nil || !slices.Equal(alerts, []string{"lineup", "trades"}) {
 		t.Fatalf("partial lineup: %v %v", alerts, err)
 	}
-	lineup := r.Alerts[1]
+	lineup := r.Alerts[0]
 	lock := a.movesNow().Add(24 * time.Hour)
 	if lineup.Title != "Check your lineup" || lineup.Node != "hq" || !lineup.At.Equal(lock) ||
-		lineup.Detail == "" || r.Alerts[0].Urgency < lineup.Urgency {
+		lineup.Detail == "" || r.Alerts[1].Urgency > lineup.Urgency {
 		t.Fatalf("lineup alert: %+v", r.Alerts)
 	}
 
