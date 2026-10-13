@@ -350,6 +350,7 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 	}
 	a.params, a.rulebook, a.league, a.whatif, a.coordinator, a.history = pstore, rb, mirror, whatif, coord, hist
 	a.moves = moveStore
+	a.seedClockSchedules(ctx)
 	return refreshed, nil
 }
 

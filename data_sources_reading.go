@@ -151,11 +151,15 @@ func photoCells(p photoHealth, zone *time.Location) []string {
 	return []string{name, held, failure}
 }
 
-func countText(n int, noun string) string {
+func pluralNoun(n float64, noun string) string {
 	if n == 1 {
-		return "1 " + noun
+		return noun
 	}
-	return strconv.Itoa(n) + " " + noun + "s"
+	return noun + "s"
+}
+
+func countText(n int, noun string) string {
+	return strconv.Itoa(n) + " " + pluralNoun(float64(n), noun)
 }
 
 // mflExportRows groups MFL's fetches by export type.

@@ -469,8 +469,9 @@ export function createCommands(
     }),
     'now.reports': command({
       ...ambient, id: 'now.reports', label: 'This week in the league', aliases: [], args: ['action', 'value'],
-      run: (args: { action: 'refresh' | 'week'; value: string }) => {
-        if (!['refresh', 'week'].includes(args.action)) throw new Error('League Pulse: invalid action');
+      run: (args: { action: 'refresh' | 'week' | 'reports-week'; value: string }) => {
+        if (!['refresh', 'week', 'reports-week'].includes(args.action))
+          throw new Error('League Pulse: invalid action');
         void import('../now/state').then(m => m.nowState.choose(args.action, args.value))
           .catch(cause => state.write({ notice: String(cause) }));
       },

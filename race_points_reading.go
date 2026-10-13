@@ -374,7 +374,12 @@ func (v raceView) starters(s leaguefeed.Side) []leaguefeed.WeekPlayer {
 		}
 		return len(order)
 	}
-	slices.SortStableFunc(out, func(a, b leaguefeed.WeekPlayer) int { return cmp.Compare(rank(a), rank(b)) })
+	slices.SortStableFunc(out, func(a, b leaguefeed.WeekPlayer) int {
+		an, _ := v.player(a.ID)
+		bn, _ := v.player(b.ID)
+		return cmp.Or(cmp.Compare(rank(a), rank(b)), strings.Compare(an, bn),
+			strings.Compare(a.ID.String(), b.ID.String()))
+	})
 	return out
 }
 

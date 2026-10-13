@@ -69,7 +69,11 @@ export function ReportView({ report, howLabel, heading: Heading = 'h5', renderCe
       </Act>
     </div>}
     {report.status !== 'failed' && report.status !== 'empty' && report.rows.length > 0 &&
-      (report.id === 'M-102' ?
+      (report.id === 'M-089' ?
+        <div>{report.rows.map((row, i) => <details key={i} className="draft-pick-detail">
+          <summary>{row.cells[0]} · {row.cells[1]}</summary>
+          {row.cells[2].split('\n').map((line, j) => <p key={j}>{line}</p>)}
+        </details>)}</div> : report.id === 'M-102' ?
         <div>{report.rows.map((row, i) => <details key={i} className="draft-pick-detail">
           <summary>{row.cells[0]} · {row.cells[2]}</summary>
           <dl className="kv">{row.cells.map((cell, j) => <div key={j}>

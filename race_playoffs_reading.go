@@ -135,7 +135,7 @@ func (v raceView) bubble() Report {
 			case c.Seed == 0 && c.HalfGamesBack == 0:
 				place = "Level with seed " + strconv.Itoa(len(f.field.Seeds)) + "; behind on the tiebreak order"
 			case c.Seed == 0:
-				place = halfGamesText(c.HalfGamesBack) + " games back of seed " + strconv.Itoa(len(f.field.Seeds))
+				place = halfGamesText(c.HalfGamesBack) + " " + pluralNoun(float64(c.HalfGamesBack)/2, "game") + " back"
 			}
 			left, titles := []string{}, []string{}
 			for _, o := range l.Remaining {
@@ -306,7 +306,7 @@ func (v raceView) brackets() Report {
 	for _, b := range brackets {
 		r.Summary = append(r.Summary, ReportRow{Cells: []string{b.Name, v.bracketSeeds(b)}})
 		for _, g := range b.Games {
-			row := v.row("", b.Name, "Week "+strconv.Itoa(g.Week), v.bracketSide(g.Home, names), v.bracketSide(g.Away, names),
+			row := v.row("", b.Name, "Week "+strconv.Itoa(g.Week), v.projectedBracketSide(b, g.Home, names), v.projectedBracketSide(b, g.Away, names),
 				v.bracketResult(g))
 			row.Mine = v.in.mine != "" && (g.Home.Franchise == v.in.mine || g.Away.Franchise == v.in.mine)
 			r.Rows = append(r.Rows, row)
@@ -342,6 +342,25 @@ func (v raceView) bracketSeeds(b leaguefeed.Bracket) string {
 		}
 	}
 	return "Seeds: " + strings.Join(out, " · ")
+}
+
+func (v raceView) projectedBracketSide(b leaguefeed.Bracket, s leaguefeed.BracketSide, names map[int]string) string {
+	label := v.bracketSide(s, names)
+	if s.Franchise != "" || s.Seed == 0 {
+		return label
+	}
+	fields, _ := v.fields()
+	for _, f := range fields {
+		if f.bracket.ID != b.ID {
+			continue
+		}
+		for _, seed := range f.field.Seeds {
+			if seed.Number == s.Seed {
+				return label + " · " + v.name(seed.Franchise) + " (projected)"
+			}
+		}
+	}
+	return label
 }
 
 func (v raceView) bracketSide(s leaguefeed.BracketSide, names map[int]string) string {

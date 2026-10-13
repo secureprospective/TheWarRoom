@@ -229,7 +229,7 @@ func (v nowView) nflBoxScore() Report {
 		})
 		for _, l := range g.lines {
 			name, _ := v.player(l.p.ID)
-			row := v.row(l.side.Franchise, name, v.name(l.side.Franchise), roleText(l.p), v.pointsText(l.side, l.p.Points))
+			row := v.row(l.side.Franchise, name, v.name(l.side.Franchise), roleText(l.p), v.playerPointsText(l.side, l.p))
 			row.Group = g.heading
 			r.Rows = append(r.Rows, row)
 		}
@@ -283,7 +283,7 @@ func (v nowView) boxRow(s leaguefeed.Side, p leaguefeed.WeekPlayer, group string
 	default:
 		call = "The best lineup started someone else"
 	}
-	row := v.row(s.Franchise, pos, name, v.nflGameText(v.team(p)), v.pointsText(s, p.Points), call)
+	row := v.row(s.Franchise, pos, name, v.nflGameText(v.team(p)), v.playerPointsText(s, p), call)
 	row.Group = group
 	return row
 }
