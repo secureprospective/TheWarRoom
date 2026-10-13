@@ -4395,7 +4395,7 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     verb: "endpoint.open id=C-06.2",
     disposition: "kept",
     ring: 3,
-    status: "built",
+    status: "landed",
     disposition_note: "Built: local trade/acquisition pre-flight and safe MFL trade-desk hand-off; no" +
       " submission.",
     merged_into: Object.freeze([] as const),
@@ -4891,7 +4891,7 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     verb: "endpoint.open id=M-199",
     disposition: "kept",
     ring: 3,
-    status: "built",
+    status: "landed",
     disposition_note: "Built: local trade/acquisition pre-flight and safe MFL trade-desk hand-off; no" +
       " submission.",
     merged_into: Object.freeze([] as const),
