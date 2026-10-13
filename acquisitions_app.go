@@ -84,7 +84,7 @@ func (a *App) TargetAcquisition(r RawAcquisition) Reading[AcquisitionView] {
 	if err != nil {
 		return acquisitionReading(out, err)
 	}
-	for _, team := range a.tradeBuilderTeams(snap) {
+	for _, team := range a.tradeBuilderTeams(ctx, snap) {
 		if team.ID != r.Mine {
 			continue
 		}
@@ -106,7 +106,7 @@ func (a *App) TargetAcquisition(r RawAcquisition) Reading[AcquisitionView] {
 	for year := s.Snapshot.Season; year <= p.ContractYear; year++ {
 		out.Seasons = append(out.Seasons, whatIfFigure(fmt.Sprint(year), 0, p.Salary))
 	}
-	out.Reasons = append(out.Reasons, "Future salaries are flat-filled from held salary and expiration; future season caps are not held.")
+	out.Reasons = append(out.Reasons, "Later seasons assume today's salary through expiration; MFL does not publish future salary caps.")
 	if err := a.acquisitionProjection(ctx, r, s, current, p, &out); err != nil {
 		return acquisitionReading(out, err)
 	}
@@ -117,7 +117,7 @@ func acquisitionReading(v AcquisitionView, err error) Reading[AcquisitionView] {
 }
 func (a *App) acquisitionChoices(ctx context.Context, mine string, snap snapshot.Snapshot) ([]AcquisitionChoice, error) {
 	out := []AcquisitionChoice{}
-	for _, team := range a.tradeBuilderTeams(snap) {
+	for _, team := range a.tradeBuilderTeams(ctx, snap) {
 		if team.ID == mine {
 			continue
 		}

@@ -256,7 +256,8 @@ func TestPoolNamesEngineRunInLocalTime(t *testing.T) {
 		t.Fatal(err)
 	}
 	r := a.TargetPool(RawPoolScope{Sort: "name"})
-	if !strings.Contains(r.Value.Summary, "Engine run "+reportTime(at, time.Local)) {
-		t.Fatal(r.Value.Summary)
+	if !strings.Contains(r.Value.EngineNote, engineRunText(at, time.Local)) ||
+		strings.Contains(r.Value.Summary, "Engine run") {
+		t.Fatal(r.Value.EngineNote, " | ", r.Value.Summary)
 	}
 }

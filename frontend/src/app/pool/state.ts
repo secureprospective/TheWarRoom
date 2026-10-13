@@ -64,7 +64,8 @@ export function createPoolState(supplied: Partial<Deps> = {}) {
     delay: 200, ...supplied,
   };
   const store = createStore<PoolState>(() => ({
-    scope: { position: '', sort: 'name', desc: false }, refreshing: false, error: '', notice: '', busy: '',
+    scope: { position: '', sort: 'engine', desc: true, showNoTeam: false },
+    refreshing: false, error: '', notice: '', busy: '',
     openPlan: '', focus: { id: '', seq: 0 },
   }));
   let poolToken = 0;
@@ -183,13 +184,17 @@ export function createPoolState(supplied: Partial<Deps> = {}) {
   function run(filter: PoolFilter): Promise<void> {
     const { scope } = store.getState();
     switch (filter.field) {
+      case 'pool-no-team':
+        set({ scope: { ...scope, showNoTeam: !scope.showNoTeam } });
+        return readPool();
       case 'pool-position':
         set({ scope: { ...scope, position: filter.value } });
         return readPool();
       case 'pool-sort': {
         const same = scope.sort === filter.value;
         const sort = filter.value as PoolScope['sort'];
-        set({ scope: { ...scope, sort, desc: same ? !scope.desc : false } });
+        const desc = same ? !scope.desc : ['engine', 'ppg', 'lab'].includes(sort);
+        set({ scope: { ...scope, sort, desc } });
         return readPool();
       }
       case 'pool-refresh':

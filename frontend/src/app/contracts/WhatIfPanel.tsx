@@ -44,14 +44,15 @@ export function WhatIfPanel({ mine, reading, error }: {
   return (
     <ContractReading title="What-if" endpoint="C-06.1" reading={reading} error={error}
       metadata={!empty}>
-      {value && (empty ? <p>{value.empty}</p> : <div className="whatif-panel">
-        <div className="whatif-heading">
+      {value && <div className="whatif-panel">
+        {(!empty || value.stale) && <div className="whatif-heading">
           {value.stale && <p role="status">{value.banner}</p>}
           <Act verb="contracts.set" variant="text" label="Reset"
             args={{ field: 'whatif', value: { mine, action: 'reset' } }}>Reset</Act>
-        </div>
+        </div>}
+        {empty && <p>{value.empty}</p>}
         {value.notice && <p role="alert">{value.notice}</p>}
-        <ol className="whatif-moves">
+        {!empty && <><ol className="whatif-moves">
           {value.moves.map(move => <li key={move.id}>
             <div><b>{move.label}</b><span className="contract-money">{move.charge.text}</span>
               <Act verb="contracts.set" variant="text"
@@ -69,8 +70,8 @@ export function WhatIfPanel({ mine, reading, error }: {
         <WhatIfFigures figures={value.figures} label="Before and after this what-if" />
         <p className="contract-source">Started from MFL rosters as of{' '}
           {reading?.baseline ? localDate(reading.baseline) : 'Not recorded'}
-        </p>
-      </div>)}
+        </p></>}
+      </div>}
     </ContractReading>
   );
 }

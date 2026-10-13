@@ -223,7 +223,7 @@ func TestContractNewContractStartsTheSeasonAfterExpiry(t *testing.T) {
 				}
 			}
 			for _, c := range tc.cells {
-				row := contractFigure(t, view.TeamFigures, fmt.Sprintf("%d gross commitments · inferred", c.Season))
+				row := contractFigure(t, view.TeamFigures, fmt.Sprintf("%d commitments at today's salaries", c.Season))
 				if row.Change != "+"+snapshot.ContractAmountOf(c.Salary).Text {
 					t.Fatalf("%d not raised by the new cell %+v", c.Season, row)
 				}

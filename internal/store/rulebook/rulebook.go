@@ -201,6 +201,14 @@ func (s *Store) GetSalaryCap() string {
 	return s.active.SalaryCapAmount
 }
 
+// SalaryCapOverridden reports whether the commissioner supplied the cap.
+func (s *Store) SalaryCapOverridden() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	_, ok := s.overrides[ovKey(scopeCap, capKey)]
+	return ok
+}
+
 // GetScoringRules returns the active scoring rules as raw MFL values.
 func (s *Store) GetScoringRules() []league.PositionRuleSet {
 	s.mu.RLock()

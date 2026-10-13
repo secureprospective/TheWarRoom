@@ -46,7 +46,7 @@ func (a *App) checkEngine(ctx context.Context) {
 		log.Printf("engine input changes: %v", err)
 		return
 	}
-	if !engineDue(time.Now(), last, exists, changed || a.modelDirty.Load()) {
+	if !engineDue(a.timeNow(), last, exists, changed || a.modelDirty.Load()) {
 		return
 	}
 	lk, err := a.directory(ctx)

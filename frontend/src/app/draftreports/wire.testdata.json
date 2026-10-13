@@ -89,15 +89,15 @@
     {
       "id": "M-065",
       "title": "Steals and busts · distance from expected",
-      "note": " Engine run Oct 11, 2026, 12:00 PM.",
+      "note": " Engine run: October 11, 2026, 12:00 PM.",
       "status": "ok",
       "source": "Source: MFL",
       "asOf": "As of: Oct 11, 2026, 12:00 PM",
-      "how": "Picks are ordered by round, then pick number. Each pick shows the franchise MFL records, including traded picks. Times use this computer's local time zone. Skipped picks count as made. Refresh to check for changes; if it fails, the app keeps the last good copy. Value is the app's latest dynasty value: discounted expected league points per game across its configured dynasty horizon. Expected is the median current value of drafted players in the same round, not an ADP or draft-day valuation. A bar is the point distance from that baseline (no uncertainty estimate and no letter grade); missing values are not zero. This retrospective comparison is not proof a draft pick was good or bad.",
+      "how": "Picks are ordered by round, then pick number. Each pick shows the franchise MFL records, including traded picks. Times use this computer's local time zone. Skipped picks count as made. Refresh to check for changes; if it fails, the app keeps the last good copy. Engine points per game are discounted expected league points per game across the engine’s configured dynasty horizon. Expected is the median current value of drafted players in the same round, not an ADP or draft-day valuation. A bar is the point distance from that baseline (no uncertainty estimate and no letter grade); missing values are not zero. This retrospective comparison is not proof a draft pick was good or bad.",
       "columns": [
         "Pick",
         "Player",
-        "Current dynasty value",
+        "Engine points per game",
         "Expected · same round",
         "Distance from expected"
       ],
@@ -261,7 +261,7 @@
     {
       "id": "M-176",
       "title": "Draft status",
-      "note": " All 3 picks MFL lists are made. MFL does not say whether more picks are scheduled.",
+      "note": " Next draft: date unknown.",
       "status": "ok",
       "source": "Source: MFL",
       "asOf": "As of: Oct 11, 2026, 12:00 PM",
@@ -273,22 +273,8 @@
       "rows": [
         {
           "cells": [
-            "Made",
-            "3"
-          ],
-          "range": null
-        },
-        {
-          "cells": [
-            "On the clock",
-            "MFL does not report who is on the clock."
-          ],
-          "range": null
-        },
-        {
-          "cells": [
-            "Remaining",
-            "MFL does not say whether more picks are scheduled."
+            "Draft",
+            "2026 rookie draft complete · 3 picks, January 1, 1970–January 1, 1970"
           ],
           "range": null
         }
@@ -339,7 +325,7 @@
     {
       "id": "M-183",
       "title": "Live draft room",
-      "note": " All 3 picks MFL lists are made. MFL does not say whether more picks are scheduled. Next draft: date unknown. Picks happen on MFL only; this app never makes a pick.",
+      "note": " Next draft: date unknown. Picks happen on MFL only; this app never makes a pick.",
       "status": "ok",
       "source": "Source: MFL",
       "asOf": "As of: Oct 11, 2026, 12:00 PM",
@@ -382,22 +368,8 @@
       "summary": [
         {
           "cells": [
-            "Made",
-            "3"
-          ],
-          "range": null
-        },
-        {
-          "cells": [
-            "On the clock",
-            "MFL does not report who is on the clock."
-          ],
-          "range": null
-        },
-        {
-          "cells": [
-            "Remaining",
-            "MFL does not say whether more picks are scheduled."
+            "Draft",
+            "2026 rookie draft complete · 3 picks, January 1, 1970–January 1, 1970"
           ],
           "range": null
         }

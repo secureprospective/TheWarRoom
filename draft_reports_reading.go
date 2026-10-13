@@ -40,7 +40,7 @@ func orderedPicks(picks []draftreports.Pick) []draftreports.Pick {
 	return out
 }
 
-func buildDraftReports(results heldSeasonFeed[[]draftreports.Pick], future heldSeasonFeed[[]draftreports.FuturePick],
+func buildDraftReports(season int, results heldSeasonFeed[[]draftreports.Pick], future heldSeasonFeed[[]draftreports.FuturePick],
 	names, franchises map[string]string, values map[string]float64, valueNote, next string, zone *time.Location) ReportBoard {
 	picks := orderedPicks(results.value)
 	how := "Picks are ordered by round, then pick number. Each pick shows the franchise MFL records, including traded picks. " +
@@ -62,10 +62,11 @@ func buildDraftReports(results heldSeasonFeed[[]draftreports.Pick], future heldS
 	grid := draftGrid(picks, names, franchises, reportShell("M-064", "Draft results grid · round × franchise",
 		how+" A cell lists every slot drafted by that franchise in that round; traded picks do not shift other cells.", results, zone))
 	recap, pace := draftFranchises(picks, names, franchises, results, how, zone)
-	status := draftStatus(picks, franchises, results, how, zone)
+	status := draftStatus(season, picks, franchises, results, how, zone)
+	status.Note += " " + next
 	live := status
 	live.ID, live.Title = "M-183", "Live draft room"
-	live.Note += " " + next + " Picks happen on MFL only; this app never makes a pick."
+	live.Note += " Picks happen on MFL only; this app never makes a pick."
 	live.Rows = slices.Clone(rows.Rows)
 	if !slices.ContainsFunc(picks, func(p draftreports.Pick) bool { return p.Player == nil && !p.Skipped }) {
 		live.Rows = live.Rows[max(0, len(live.Rows)-12):]
@@ -156,7 +157,7 @@ func draftFranchises(picks []draftreports.Pick, names, franchises map[string]str
 	return recap, pace
 }
 
-func draftStatus(picks []draftreports.Pick, franchises map[string]string, feed heldSeasonFeed[[]draftreports.Pick], how string, zone *time.Location) Report {
+func draftStatus(season int, picks []draftreports.Pick, franchises map[string]string, feed heldSeasonFeed[[]draftreports.Pick], how string, zone *time.Location) Report {
 	r := reportShell("M-176", "Draft status", how+
 		" Made counts player selections and skipped picks. Remaining counts only unmade picks MFL lists. MFL does not say how many rounds are scheduled or who is on the clock.", feed, zone, "State", "What MFL shows")
 	made, unmade := 0, 0
@@ -180,8 +181,8 @@ func draftStatus(picks []draftreports.Pick, franchises map[string]string, feed h
 		}
 	}
 	r.Rows = append(r.Rows, draftRow("On the clock", clock), draftRow("Remaining", remaining))
-	if made > 0 && unmade == 0 {
-		r.Note += fmt.Sprintf(" All %d picks MFL lists are made. MFL does not say whether more picks are scheduled.", made)
+	if complete := completedDraft(season, picks, time.Now(), zone); complete != "" {
+		r.Rows = []ReportRow{draftRow("Draft", complete)}
 	}
 	return r
 }
@@ -202,8 +203,8 @@ func draftFuture(feed heldSeasonFeed[[]draftreports.FuturePick], franchises map[
 
 func draftValueReport(picks []draftreports.Pick, names map[string]string, values map[string]float64, feed heldSeasonFeed[[]draftreports.Pick], how, valueNote string, zone *time.Location) Report {
 	r := reportShell("M-065", "Steals and busts · distance from expected",
-		how+" Value is the app's latest dynasty value: discounted expected league points per game across its configured dynasty horizon. Expected is the median current value of drafted players in the same round, not an ADP or draft-day valuation. A bar is the point distance from that baseline (no uncertainty estimate and no letter grade); missing values are not zero. This retrospective comparison is not proof a draft pick was good or bad.",
-		feed, zone, "Pick", "Player", "Current dynasty value", "Expected · same round", "Distance from expected")
+		how+" Engine points per game are discounted expected league points per game across the engine’s configured dynasty horizon. Expected is the median current value of drafted players in the same round, not an ADP or draft-day valuation. A bar is the point distance from that baseline (no uncertainty estimate and no letter grade); missing values are not zero. This retrospective comparison is not proof a draft pick was good or bad.",
+		feed, zone, "Pick", "Player", "Engine points per game", "Expected · same round", "Distance from expected")
 
 	r.Note += " " + valueNote
 	byRound := map[int][]float64{}
@@ -268,4 +269,28 @@ func draftPace(intervals []time.Duration) (string, string, string) {
 		note = "Mostly pre-queued picks"
 	}
 	return draftDuration(total / time.Duration(n)), draftDuration(median), note
+}
+
+func completedDraft(season int, picks []draftreports.Pick, now time.Time, zone *time.Location) string {
+	if len(picks) == 0 {
+		return ""
+	}
+	first, last := picks[0].At, picks[0].At
+	for _, p := range picks {
+		if (p.Player == nil && !p.Skipped) || p.At.IsZero() {
+			return ""
+		}
+		if p.At.Before(first) {
+			first = p.At
+		}
+		if p.At.After(last) {
+			last = p.At
+		}
+	}
+	if !last.Before(now) {
+		return ""
+	}
+	// The league season the feed belongs to, never the year it was read.
+	return fmt.Sprintf("%d rookie draft complete · %d picks, %s–%s", season, len(picks),
+		first.In(zone).Format("January 2, 2006"), last.In(zone).Format("January 2, 2006"))
 }

@@ -174,3 +174,14 @@ it('A: terminal collapse reveals a card whose buttons were visible but top was h
   p.row.height = 30; p.resize();
   expect(p.row.getBoundingClientRect().top).toBe(60);
 });
+
+it('releases the row anchor for Contract Acts so resize cannot undo the form reveal', async () => {
+  const p = await anchorProbe('.contract-table tbody tr');
+  p.capture(p.row);
+  p.capture({ closest: (query: string) => query === 'button'
+    ? { getAttribute: () => 'Contract Acts…' } : null });
+  p.scroll.scrollTop = 0;
+  p.row.y += 300;
+  p.resize();
+  expect(p.scroll.scrollTop).toBe(0);
+});

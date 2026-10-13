@@ -424,6 +424,8 @@
  },
  "empty": {
   "value": {
+   "engineNote": "",
+   "ppgNote": "",
    "sorts": [
     {
      "key": "name",
@@ -431,7 +433,23 @@
     },
     {
      "key": "position",
-     "label": "Position"
+     "label": "Pos"
+    },
+    {
+     "key": "team",
+     "label": "NFL team"
+    },
+    {
+     "key": "engine",
+     "label": "Engine points"
+    },
+    {
+     "key": "ppg",
+     "label": "This season points per game"
+    },
+    {
+     "key": "lab",
+     "label": "Lab dynasty value"
     },
     {
      "key": "minimum",
@@ -480,6 +498,8 @@
  },
  "pool": {
   "value": {
+   "engineNote": "Engine points unavailable; use Score League to value players.",
+   "ppgNote": "Source: MFL fantasy points, this league's scoring · no finished week held yet",
    "sorts": [
     {
      "key": "name",
@@ -487,7 +507,23 @@
     },
     {
      "key": "position",
-     "label": "Position"
+     "label": "Pos"
+    },
+    {
+     "key": "team",
+     "label": "NFL team"
+    },
+    {
+     "key": "engine",
+     "label": "Engine points"
+    },
+    {
+     "key": "ppg",
+     "label": "This season points per game"
+    },
+    {
+     "key": "lab",
+     "label": "Lab dynasty value"
     },
     {
      "key": "minimum",
@@ -512,6 +548,12 @@
    ],
    "rows": [
     {
+     "engine": null,
+     "ppg": null,
+     "lab": null,
+     "engineText": "Not valued",
+     "ppgText": "No score",
+     "labText": "Not valued",
      "marketLines": [
       "Proj 2.2 · Rank 1296, Up 20",
       "ADP — · AAV —"
@@ -556,6 +598,12 @@
      "planId": "bid-00000000000000000000000000000002"
     },
     {
+     "engine": null,
+     "ppg": null,
+     "lab": null,
+     "engineText": "Not valued",
+     "ppgText": "No score",
+     "labText": "Not valued",
      "marketLines": [
       "No MFL market data"
      ],
@@ -599,6 +647,12 @@
      "planId": ""
     },
     {
+     "engine": null,
+     "ppg": null,
+     "lab": null,
+     "engineText": "Not valued",
+     "ppgText": "No score",
+     "labText": "Not valued",
      "marketLines": [
       "Proj 17.9 · Rank 929, Down 538",
       "ADP 25 (1–179) · AAV 16.1%"
@@ -660,7 +714,7 @@
     "WR",
     "CB"
    ],
-   "summary": "3 free agents · Engine run not yet available"
+   "summary": "3 free agents"
   },
   "provenance": {
    "source": "MFL freeAgents",

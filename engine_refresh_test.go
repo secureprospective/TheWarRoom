@@ -145,8 +145,8 @@ func TestC07ListsEngineRunAndAge(t *testing.T) {
 	}
 	report := healthReport(in)
 	for _, row := range report.Rows {
-		if strings.HasPrefix(row.Cells[0], "Engine run ") {
-			if !strings.Contains(row.Cells[0], reportTime(nr.AsOf, time.Local)) ||
+		if row.Cells[0] == "Engine run" {
+			if !strings.Contains(row.Cells[1], whenText(nr.AsOf, time.Local)) ||
 				!strings.Contains(row.Cells[1], sourceAge(healthRow{lastGood: nr.AsOf}, in.now)) {
 				t.Fatalf("engine date or age missing: %+v", row)
 			}

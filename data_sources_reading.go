@@ -68,7 +68,7 @@ func healthReport(in healthInput) Report {
 	}
 	engine := "Engine run not yet available"
 	if !in.engineAt.IsZero() {
-		engine = "Engine run " + reportTime(in.engineAt, in.zone)
+		engine = "Engine run" // its date and age sit in the columns, like every source's
 	}
 	r.Rows = append(r.Rows, ReportRow{Cells: []string{engine,
 		whenText(in.engineAt, in.zone) + "\n" + sourceAge(healthRow{lastGood: in.engineAt}, in.now), "—"}})
@@ -255,7 +255,7 @@ func boardText(source string, in healthInput) string {
 		return "Not read by the board"
 	case !in.boardRun:
 		if !in.engineAt.IsZero() {
-			return "Engine run " + reportTime(in.engineAt, in.zone)
+			return engineRunText(in.engineAt, in.zone)
 		}
 		return "Engine run not yet available"
 	case len(short) > 0:

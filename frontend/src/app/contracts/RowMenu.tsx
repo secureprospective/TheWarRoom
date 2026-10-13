@@ -27,12 +27,40 @@ export function placeRowMenu(popup: HTMLElement, control: Element, work: Element
   Object.assign(popup.style, Object.fromEntries(Object.entries(position)
     .map(([key, value]) => [key, `${value}px`])));
 }
+export function dismissRowMenu(details: HTMLDetailsElement) {
+  details.open = false;
+  details.querySelector<HTMLElement>('summary')?.focus({ preventScroll: true });
+}
+export function watchRowMenu(details: HTMLDetailsElement, popup: HTMLElement | null) {
+  const doc = details.ownerDocument;
+  const close = () => dismissRowMenu(details);
+  // Escape closes only the menu: capture it before the shell's Escape closes the Inspector too.
+  const key = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault(); event.stopPropagation(); close();
+  };
+  const outside = (event: Event) => {
+    const target = event.target as Node;
+    if (!details.contains(target) && !popup?.contains(target)) close();
+  };
+  doc.addEventListener('keydown', key, { capture: true });
+  doc.addEventListener('pointerdown', outside);
+  doc.addEventListener('scroll', close, { capture: true });
+  return () => {
+    doc.removeEventListener('keydown', key, { capture: true });
+    doc.removeEventListener('pointerdown', outside);
+    doc.removeEventListener('scroll', close, { capture: true });
+  };
+}
 export function RowMenu({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDetailsElement>(null);
   const [open, setOpen] = useState(false);
   const [host, setHost] = useState<Element | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => { setHost(ref.current?.closest('.twr-app') ?? null); }, []);
+  useLayoutEffect(() => {
+    if (open && ref.current) return watchRowMenu(ref.current, popupRef.current);
+  }, [open, host]);
   useLayoutEffect(() => {
     const details = ref.current;
     if (!open || !details) return;
@@ -43,12 +71,11 @@ export function RowMenu({ children }: { children: ReactNode }) {
     const place = () => placeRowMenu(popup, control, work, host);
     place();
     const observer = new ResizeObserver(place); observer.observe(popup);
-    window.addEventListener('resize', place); work.addEventListener('scroll', place);
-    return () => { observer.disconnect(); window.removeEventListener('resize', place);
-      work.removeEventListener('scroll', place); };
+    window.addEventListener('resize', place);
+    return () => { observer.disconnect(); window.removeEventListener('resize', place); };
   }, [open, host]);
   const close = (target: EventTarget) => {
-    if ((target as HTMLElement).closest('button') && ref.current) ref.current.open = false;
+    if ((target as HTMLElement).closest('button') && ref.current) dismissRowMenu(ref.current);
   };
   return <details ref={ref} className="contract-menu" onToggle={e => setOpen(e.currentTarget.open)}
     onClickCapture={e => close(e.target)}><summary>What if…</summary>

@@ -1,7 +1,7 @@
 import { stateLabel } from '../shell/moveLabels';
 import { scrollWorkIntoView } from '../shell/workScroll';
 import { WhatIfFigures } from './WhatIfFigures';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { RailStrip } from '../shell/EnvelopeRail';
@@ -14,8 +14,8 @@ import {
 import '../pool/pool.css';
 
 export function Figures({ plan }: { plan: ContractActPlan }) {
-  return <div className="contract-act-figures"><p>My team's cap this season and gross commitments in
-    future seasons — future salaries are inferred.</p>
+  return <div className="contract-act-figures"><p>My team's cap this season and its commitments in
+    future seasons.</p>
     <WhatIfFigures figures={plan.teamFigures} label="Team cap before and after this Act" /></div>;
 
 }
@@ -116,6 +116,12 @@ export function ContractActChoices({ request, options, onChange }: {
   </>;
 }
 function ContractMoveForm({ mine, player }: { mine: string; player: string }) {
+  const form = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    if (!form.current) return;
+    scrollWorkIntoView(form.current);
+    form.current.focus({ preventScroll: true });
+  }, [mine, player]);
   const [request, setRequest] = useState<ContractActRequest>({
     mine, player, action: 'preview', intent: 'rfa.tender', level: 1, years: 1,
     move: '1', source: 0, destination: 0,
@@ -161,7 +167,8 @@ function ContractMoveForm({ mine, player }: { mine: string; player: string }) {
     );
     return () => { active = false; };
   }, [request, mine, player, options]);
-  return <section className="contract-reading contract-move" aria-label="Contract move">
+  return <section ref={form} tabIndex={-1} className="contract-reading contract-move"
+    aria-label="Contract move">
     <header className="contract-move-head"><h4>Contract move</h4>
     <Act verb="contracts.set" args={{ field: 'contract-close', value: '' }}
       variant="icon" label="Close contract move">Close</Act></header>
