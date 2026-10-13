@@ -162,6 +162,8 @@ describe('Endpoint map', () => {
       'C-06.7',
       // After batch7: one live exit plan per offer; removed plans leave the pending offer plain.
       'M-033', 'M-034',
+      // After batch8: one estimated posted time, one newest-first scratchpad, the Report drawer's shortcuts.
+      'M-060', 'M-118', 'S-11', 'M-159',
     ];
     for (const row of endpoints) {
       let status = 'spec';
