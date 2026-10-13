@@ -169,6 +169,7 @@ export function parseCounterparties(value: unknown): CounterpartiesReading {
           'label',
           'hint',
           'thin',
+          'excluded',
           'perSeason',
           'perSeasonText',
           'posture',
@@ -179,6 +180,7 @@ export function parseCounterparties(value: unknown): CounterpartiesReading {
           label: text(c.label, path),
           hint: text(c.hint, path),
           thin: flag(c.thin, path),
+          excluded: c.excluded === undefined ? false : flag(c.excluded, path),
           perSeason: finite(c.perSeason, path),
           perSeasonText: text(c.perSeasonText, path),
           posture: list(c.posture, path, (cell) => {
@@ -511,9 +513,10 @@ export function parseTeamPanel(value: unknown): TeamPanelReading {
         age: edge(behaviour.age, path),
       },
       asTier: array(body.asTier, path, (tier) => {
-        const t = object(tier, `${path}.asTier`, ['tier', 'n', 'edge', 'label', 'text']);
+        const t = object(tier, `${path}.asTier`, ['tier', 'n', 'edge', 'label', 'text', 'excluded']);
         return {
           tier: text(t.tier, path),
+          excluded: t.excluded === undefined ? false : flag(t.excluded, path),
           n: integer(t.n, path),
           edge: edge(t.edge, path),
           label: text(t.label, path),

@@ -88,6 +88,7 @@ type TierCard struct {
 	ID           string        `json:"id"`
 	Label        string        `json:"label"`
 	Hint         string        `json:"hint"`
+	Excluded     bool          `json:"excluded"`
 	Thin         bool          `json:"thin"`
 	PerSeason    float64       `json:"perSeason"`
 	PerSeasonTxt string        `json:"perSeasonText"`
@@ -246,14 +247,17 @@ func counterpartiesReading(d *lab.Data, s lab.TeamScope) Reading[Counterparties]
 	if len(sides) < 40 {
 		reason := "Fewer than 40 trade sides in view; widen the standing, time of year or what the trades did"
 		r.Status, r.AbsenceReason = ReadingThin, &reason
+		applyCounterFilters(&value, s, sides, league)
+		r.Value = value
 		return r
 	}
-	value.Headline = headline(sides, league)
+	value.Headline = headline(sides, league, len(s.Postures) == 0)
 	value.Cards = tierCards(sides, league)
 	say, trends := trendSay(lab.TierTrends(sides))
 	value.TrendSay, value.Trends = say, counterTrends(trends)
 	value.Pairs = pairViews(sides)
 	value.Rows = counterRows(d, sides, league)
+	applyCounterFilters(&value, s, sides, league)
 	r.Value = value
 	return r
 }
@@ -374,14 +378,14 @@ func tradesWith(b lab.TeamBehaviour) string {
 	}
 	return strings.Join(parts, " · ")
 }
-func headline(sides, league []lab.TeamSide) string {
+func headline(sides, league []lab.TeamSide, showPosture bool) string {
 	by := map[string]lab.TeamBehaviour{}
 	for _, t := range lab.TeamTiers() {
 		by[t] = lab.Behaviour(sidesOf(sides, t), league)
 	}
 	bits := []string{}
 	c, r := by["contender"], by["rebuild"]
-	if c.N >= 20 && r.N >= 20 {
+	if showPosture && c.N >= 20 && r.N >= 20 {
 		bits = append(bits, fmt.Sprintf("Contenders buy for now in %s of their trades and rebuilding teams build for later in %s; most trades on both sides are like for like.", percent(*c.Posture["now"].P), percent(*r.Posture["later"].P)))
 	}
 	winners := []string{}

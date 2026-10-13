@@ -1,4 +1,4 @@
-import { scrollWorkIntoView } from '../shell/workScroll';
+import { revealWorkSection, scrollWorkIntoView } from '../shell/workScroll';
 import { useEffect, useRef } from 'react';
 import { endpointsAt, endpointById, type Placement } from './index';
 import { commands } from '../commands/registry';
@@ -79,7 +79,7 @@ export function revealEndpoint(index: HTMLElement, ids: readonly string[], fallb
   const surface = Array.from(work?.querySelectorAll<HTMLElement>('[data-endpoint]') ?? [])
     .find(element => ids.includes(element.dataset.endpoint ?? '') && !element.closest('.endpoint-index'));
   if (surface) {
-    scrollWorkIntoView(surface, 'start');
+    revealWorkSection(surface);
     const controls = surface.previousElementSibling as HTMLElement | null;
     if (controls?.classList.contains('market-controls') && work) {
       const parent = surface.parentElement;

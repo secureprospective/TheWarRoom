@@ -83,3 +83,11 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.market-breakdown {
+  margin-top: 16px;
+}
+.market-breakdown summary, .market-section > summary {
+  cursor: pointer;
+  padding: 8px 0;
+}

@@ -4688,6 +4688,7 @@ export namespace main {
 	    id: string;
 	    label: string;
 	    hint: string;
+	    excluded: boolean;
 	    thin: boolean;
 	    perSeason: number;
 	    perSeasonText: string;
@@ -4703,6 +4704,7 @@ export namespace main {
 	        this.id = source["id"];
 	        this.label = source["label"];
 	        this.hint = source["hint"];
+	        this.excluded = source["excluded"];
 	        this.thin = source["thin"];
 	        this.perSeason = source["perSeason"];
 	        this.perSeasonText = source["perSeasonText"];
@@ -4951,7 +4953,42 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class MarketBreakdown {
+	    title: string;
+	    count: number;
+	    rows: MarketLine[];
+	
+	    static createFrom(source: any = {}) {
+	        return new MarketBreakdown(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.title = source["title"];
+	        this.count = source["count"];
+	        this.rows = this.convertValues(source["rows"], MarketLine);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class MarketSection {
+	    breakdowns?: MarketBreakdown[];
 	    id: string;
 	    title: string;
 	    note: string;
@@ -4963,6 +5000,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.breakdowns = this.convertValues(source["breakdowns"], MarketBreakdown);
 	        this.id = source["id"];
 	        this.title = source["title"];
 	        this.note = source["note"];
@@ -5480,6 +5518,7 @@ export namespace main {
 		}
 	}
 	export class AsTierView {
+	    excluded: boolean;
 	    tier: string;
 	    n: number;
 	    // Go type: lab
@@ -5493,6 +5532,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.excluded = source["excluded"];
 	        this.tier = source["tier"];
 	        this.n = source["n"];
 	        this.edge = this.convertValues(source["edge"], null);

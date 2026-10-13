@@ -15,7 +15,10 @@ export type MarketLine = {
   range: MarketRange | null;
   mark: string;
 };
-export type MarketSection = { id: string; title: string; note: string; rows: MarketLine[] };
+export type MarketBreakdown = { title: string; count: number; rows: MarketLine[] };
+export type MarketSection = {
+  id: string; title: string; note: string; rows: MarketLine[]; breakdowns?: MarketBreakdown[];
+};
 export type MarketSurface = { summary: string; sections: MarketSection[] };
 export type Reading<T> = {
   status: 'ok' | 'thin' | 'failed' | 'not_wired';

@@ -356,7 +356,7 @@ it('reveals rendered endpoints instead of index cards, preserving controls that 
   const index = { closest: () => work, querySelector: () => card };
   const parent = {closest: () => work,
     getBoundingClientRect: () => ({top: 1000-work.scrollTop, bottom: 2000-work.scrollTop})};
-  const surface = { dataset: {endpoint: 'M-064'},
+  const surface = { dataset: {endpoint: 'M-064'}, focus: vi.fn(),
     closest: (s: string) => s === '.endpoint-index' ? null : work,
     getBoundingClientRect: () => ({top: 1150-work.scrollTop, bottom: 2000-work.scrollTop}),
     parentElement: parent,
@@ -414,7 +414,7 @@ it('reveals a lazily mounted endpoint once and stops watching after it arrives',
       root.render(createElement(EndpointIndex, {placement: 'Trade Floor › Draft room'}));
     });
     expect(arrival).toBeTypeOf('function');
-    surfaces.push({ dataset: {endpoint: 'M-064'}, closest: (s: string) =>
+    surfaces.push({ dataset: {endpoint: 'M-064'}, focus: vi.fn(), closest: (s: string) =>
       s === '.endpoint-index' ? null : work,
       getBoundingClientRect: () => ({top: 350, bottom: 1000}) } as unknown as HTMLElement);
     arrival();
@@ -427,4 +427,31 @@ it('reveals a lazily mounted endpoint once and stops watching after it arrives',
       else Reflect.deleteProperty(globalThis, key);
     }
   }
+});
+
+it.each(['L-17', 'L-18', 'L-21'] as const)
+('opening %s reveals its disclosure, scrolls the work column and focuses the section', async id => {
+  const { revealEndpoint } = await import('./EndpointIndex');
+  commands.dispatch('endpoint.open', { id });
+  expect(commands.read().endpointIds).toEqual([id]);
+  expect(commands.read().workspace.trade).toBe('draft-room');
+  const shell = { scrollTop: 55 };
+  const work = { scrollTop: 10, clientTop: 0, clientHeight: 600, parentElement: shell,
+    classList: { contains: (name: string) => name === 'wbody' },
+    getBoundingClientRect: () => ({ top: 50 }), querySelectorAll: () => [surface] };
+  const outer = { tagName: 'DETAILS', open: false, parentElement: work };
+  const surface = { dataset: { endpoint: id }, tagName: 'DETAILS', open: false, tabIndex: 0,
+    parentElement: outer, focus: vi.fn(() => {
+      expect(surface.open).toBe(true);
+      expect(outer.open).toBe(true);
+    }), closest: (selector: string) => selector === '.wbody' ? work : null,
+    getBoundingClientRect: () => ({ top: 850, bottom: 950 }) };
+  const card = { focus: vi.fn() };
+  const index = { closest: () => work, querySelector: () => card };
+  expect(revealEndpoint(index as unknown as HTMLElement, commands.read().endpointIds)).toBe(true);
+  expect(surface.focus).toHaveBeenCalledWith({ preventScroll: true });
+  expect(surface.tabIndex).toBe(-1);
+  expect(work.scrollTop).toBe(810);
+  expect(shell.scrollTop).toBe(55);
+  expect(card.focus).not.toHaveBeenCalled();
 });

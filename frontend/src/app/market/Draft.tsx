@@ -118,6 +118,7 @@ export function DraftReading({ reading, kind }: { reading?: SurfaceReading; kind
       reading={shown}
       title={kind ? `Draft pick card · ${kind}` : 'When to take each position'}
       inspect
+      disclose={!kind}
     />
   );
 }

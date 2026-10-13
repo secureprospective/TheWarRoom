@@ -81,7 +81,7 @@ export function TeamReading({
                   <div className="market-row" key={t.tier}>
                     <b>{t.label}</b>
                     <span>{t.text}</span>
-                    <EdgeBar edge={t.edge} label={t.label} />
+                    {!t.excluded && <EdgeBar edge={t.edge} label={t.label} />}
                   </div>
                 ))}
               </section>

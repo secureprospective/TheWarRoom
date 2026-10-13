@@ -249,7 +249,9 @@ export function CounterReading({
                     <section key={c.id}>
                       <h5>{c.label}</h5>
                       <p>{c.hint}</p>
-                      {c.thin ? (
+                      {c.excluded ? (
+                        <p>Not in the current filter</p>
+                      ) : c.thin ? (
                         <p>Too few to judge · fewer than 20 trade sides</p>
                       ) : (
                         <>

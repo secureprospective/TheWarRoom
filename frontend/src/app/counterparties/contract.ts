@@ -63,6 +63,7 @@ export type PostureCell = {
 };
 export type CardRow = { label: string; text: string; tone: string; range?: TeamEdge };
 export type TierCard = {
+  excluded?: boolean;
   id: string;
   label: string;
   hint: string;
@@ -184,6 +185,7 @@ export type PartnerView = {
   netText: string;
 };
 export type AsTierView = {
+  excluded?: boolean;
   tier: string;
   n: number;
   edge: TeamEdge;

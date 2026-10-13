@@ -51,11 +51,12 @@ type PartnerView struct {
 	NetTxt    string       `json:"netText"`
 }
 type AsTierView struct {
-	Tier  string       `json:"tier"`
-	N     int          `json:"n"`
-	Edge  lab.TeamEdge `json:"edge"`
-	Label string       `json:"label"`
-	Text  string       `json:"text"`
+	Excluded bool         `json:"excluded"`
+	Tier     string       `json:"tier"`
+	N        int          `json:"n"`
+	Edge     lab.TeamEdge `json:"edge"`
+	Label    string       `json:"label"`
+	Text     string       `json:"text"`
 }
 type TeamCounterpart struct {
 	PartnersText string            `json:"partnersText"`
@@ -119,6 +120,7 @@ func (a *App) TargetCounterpartTeam(raw RawCounterpartTeam) Reading[TeamCounterp
 		Since:        b.Real,
 	}
 	value.Words, value.CountText = counterWords(), countNumber(len(profile.Sides))
+	applyTeamFilters(&value, s, profile.Sides, lab.FilterSides(league, func(side lab.TeamSide) bool { return side.Fid == raw.Fid }))
 	if b.Now.Total != nil {
 		value.DayTxt = fmt.Sprintf("%s expected wins on the day, all trades", wins(*b.Now.Total, 2))
 	} else {
@@ -129,13 +131,7 @@ func (a *App) TargetCounterpartTeam(raw RawCounterpartTeam) Reading[TeamCounterp
 	}
 	r := Reading[TeamCounterpart]{Sourced: snapshot.Sourced[TeamCounterpart]{Value: value, Provenance: counterProvenance(d)}, Status: ReadingOK, Count: len(profile.Sides), Threshold: 1, Baseline: "The league's own posture and window shares in the same seasons; a share is coloured only where it clears chance", Cutoff: d.ArchiveThrough, Method: "this team's sides of the valued trades against the league in the same seasons; 1.96 standard-error ranges", InputSHA: lab.DataSHA, BuildStamp: buildLabel() + " " + buildDate, HowCounted: counterpartHowCounted(d)}
 	if len(profile.Sides) == 0 {
-		reason := "No trade sides for this team in the seasons and filters in view"
-		value.Empty = true
-		value.Note = "This team shows no valued trades in view. Widen the seasons, time of year or what the trades did."
-		value.PartnersSay = "No partners in view."
-		r.Status, r.AbsenceReason = ReadingThin, &reason
-		r.Value = value
-		return r
+		return emptyTeamReading(r, value, s, league)
 	}
 	more := len(profile.Partners) - len(value.Partners)
 	if more > 0 {

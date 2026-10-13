@@ -379,3 +379,88 @@ func TestTierPicksParity(t *testing.T) {
 		}
 	}
 }
+
+func TestFilteredPostureIsNotAChanceFinding(t *testing.T) {
+	a := &App{}
+	for _, selected := range [][]string{{"now"}, {"later"}, {"swap"}, {"now", "later"}} {
+		raw := RawCounterpartiesScope{From: 2017, To: 2026, Postures: selected}
+		r := a.TargetCounterparties(raw)
+		v := r.Value
+		if r.Status != ReadingOK || !strings.Contains(v.Summary, "Showing only trades that") ||
+			strings.Contains(v.Headline, "buy for now in") || strings.Contains(v.Words.Legend, "↑") ||
+			len(v.TrendSay) != 0 {
+			t.Fatalf("filter presented as a finding: %+v", v)
+		}
+		for _, card := range v.Cards {
+			for _, cell := range card.Posture {
+				if cell.Tone != "" || strings.Contains(cell.Title, "chance") {
+					t.Fatal("posture card marked")
+				}
+			}
+		}
+		for _, row := range v.Rows {
+			if row.ForNow.Tone != "" || row.ForLater.Tone != "" {
+				t.Fatal("team shares marked")
+			}
+			if row.DayText == "" {
+				t.Fatal("on-the-day result removed")
+			}
+		}
+		for _, tier := range v.Trends.Tiers {
+			for _, row := range tier.Rows {
+				if row.Now.Tone != "" || row.Later.Tone != "" {
+					t.Fatal("trend shares marked")
+				}
+			}
+		}
+		panel := a.TargetCounterpartTeam(RawCounterpartTeam{Scope: raw, Fid: "0014"}).Value
+		if !strings.Contains(panel.AsOf, "Showing only trades that") {
+			t.Fatal("Inspector scope missing")
+		}
+		for _, cell := range panel.Posture {
+			if cell.Tone != "" {
+				t.Fatal("Inspector posture marked")
+			}
+		}
+	}
+	thin := a.TargetCounterparties(RawCounterpartiesScope{From: 2017, To: 2017, Postures: []string{"later"}, Windows: []string{"summer"}})
+	if !strings.Contains(thin.Value.Summary, "Showing only trades that") {
+		t.Fatal("thin scope lost filter words")
+	}
+}
+
+func TestExcludedTiersAreNotThin(t *testing.T) {
+	a := &App{}
+	raw := RawCounterpartiesScope{From: 2017, To: 2026, Tiers: []string{"contender"}}
+	r := a.TargetCounterparties(raw)
+	for _, card := range r.Value.Cards {
+		excluded := card.ID != "contender"
+		if card.Excluded != excluded || excluded && card.Thin {
+			t.Fatalf("excluded card: %+v", card)
+		}
+	}
+	if len(r.Value.Trends.Tiers) != 1 {
+		t.Fatal("excluded trend columns remain")
+	}
+	panel := a.TargetCounterpartTeam(RawCounterpartTeam{Scope: raw, Fid: "0014"})
+	for _, tier := range panel.Value.AsTier {
+		if tier.Tier != "contender" && (!tier.Excluded || tier.Text != "Not in the current filter") {
+			t.Fatalf("Inspector excluded tier: %+v", tier)
+		}
+	}
+	sides := []lab.TeamSide{{Tier: "contender", Window: "spring"}, {Tier: "hunt", Window: "summer"}}
+	s := lab.TeamScope{Windows: []string{"spring"}}
+	shown := sides[:1]
+	if !tierExcluded(s, "hunt", shown, sides) || tierExcluded(s, "contender", shown, sides) ||
+		tierExcluded(lab.TeamScope{}, "hunt", nil, sides) {
+		t.Fatal("window exclusion confused with thin history")
+	}
+	empty := emptyTeamReading(Reading[TeamCounterpart]{}, TeamCounterpart{Fid: "0014"}, s,
+		[]lab.TeamSide{{Fid: "0014", Tier: "hunt", Window: "summer"}})
+	if empty.Status != ReadingOK || !empty.Value.Empty || empty.Value.Note != "Not in the current filter" || empty.AbsenceReason != nil {
+		t.Fatal("filtered-out Inspector still claims thin history")
+	}
+	if !teamExcluded(s, nil, sides) || teamExcluded(lab.TeamScope{}, nil, sides) {
+		t.Fatal("empty filtered Inspector confused with thin history")
+	}
+}
