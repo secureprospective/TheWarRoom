@@ -218,12 +218,12 @@ describe('Fix 4: passing rules fold into Go\'s line', () => {
     expect(text).not.toContain('<details class="bid-pass" open');
   });
   it('writes the summary in Go, for the plan and for the form\'s preview', () => {
-    expect(plan('ready').ruleSummary).toBe('10 rules pass');
-    expect(parsePreview(wire.preview).ruleSummary).toBe('10 rules pass');
+    expect(plan('ready').ruleSummary).toBe('11 rules pass');
+    expect(parsePreview(wire.preview).ruleSummary).toBe('11 rules pass');
     const text = html(createElement(BidForm, { form, preview: parsePreview(wire.preview), busy: '' }));
-    expect(text).toContain('<summary>10 rules pass</summary>');
-    expect(text.split('<li data-verdict="pass"').length - 1).toBe(10);
-    expect(text.indexOf('data-verdict="info"')).toBeLessThan(text.indexOf('<summary>10 rules pass'));
+    expect(text).toContain('<summary>11 rules pass</summary>');
+    expect(text.split('<li data-verdict="pass"').length - 1).toBe(11);
+    expect(text).not.toContain('data-verdict="info"');
   });
 });
 

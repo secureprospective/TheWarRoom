@@ -155,6 +155,8 @@ export namespace envelope {
 		}
 	}
 	export class BidFacts {
+	    conditionalDrop: string;
+	    conditionalName: string;
 	    player: string;
 	    salary: number;
 	    years: number;
@@ -170,6 +172,8 @@ export namespace envelope {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.conditionalDrop = source["conditionalDrop"];
+	        this.conditionalName = source["conditionalName"];
 	        this.player = source["player"];
 	        this.salary = source["salary"];
 	        this.years = source["years"];
@@ -1572,6 +1576,32 @@ export namespace main {
 	        this.reason = source["reason"];
 	    }
 	}
+	export class BidDropOption {
+	    id: string;
+	    name: string;
+	    label: string;
+	    salary: number;
+	    deadCap: number;
+	    freed: number;
+	    covers: boolean;
+	    available: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new BidDropOption(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.label = source["label"];
+	        this.salary = source["salary"];
+	        this.deadCap = source["deadCap"];
+	        this.freed = source["freed"];
+	        this.covers = source["covers"];
+	        this.available = source["available"];
+	    }
+	}
 	export class BidForm {
 	    salary: string;
 	    beat: string;
@@ -1643,6 +1673,7 @@ export namespace main {
 		}
 	}
 	export class BidPreview {
+	    conditionalDrops: BidDropOption[];
 	    problem: string;
 	    player: string;
 	    salary: snapshot.ContractAmount;
@@ -1661,6 +1692,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.conditionalDrops = this.convertValues(source["conditionalDrops"], BidDropOption);
 	        this.problem = source["problem"];
 	        this.player = source["player"];
 	        this.salary = this.convertValues(source["salary"], snapshot.ContractAmount);
@@ -3327,6 +3359,7 @@ export namespace main {
 	    }
 	}
 	export class RawBidInput {
+	    conditionalDrop: string;
 	    franchiseId: string;
 	    player: string;
 	    salary: string;
@@ -3342,6 +3375,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.conditionalDrop = source["conditionalDrop"];
 	        this.franchiseId = source["franchiseId"];
 	        this.player = source["player"];
 	        this.salary = source["salary"];

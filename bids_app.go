@@ -23,14 +23,15 @@ const maxEvidenceRunes = 500
 // RawBidInput is what the bid form sends: the owner's figures as typed. Salary is in millions
 // ("5.25"), Beat in points ("6.500"), Closes an RFC 3339 time or empty.
 type RawBidInput struct {
-	FranchiseID string `json:"franchiseId"`
-	Player      string `json:"player"`
-	Salary      string `json:"salary"`
-	Years       int    `json:"years"`
-	Snipe       bool   `json:"snipe"`
-	Beat        string `json:"beat"`
-	Evidence    string `json:"evidence"`
-	Closes      string `json:"closes"`
+	ConditionalDrop string `json:"conditionalDrop"`
+	FranchiseID     string `json:"franchiseId"`
+	Player          string `json:"player"`
+	Salary          string `json:"salary"`
+	Years           int    `json:"years"`
+	Snipe           bool   `json:"snipe"`
+	Beat            string `json:"beat"`
+	Evidence        string `json:"evidence"`
+	Closes          string `json:"closes"`
 }
 
 type bidEntry struct {
@@ -57,6 +58,12 @@ func (r RawBidInput) entry() (bidEntry, error) {
 	}
 	facts := envelope.BidFacts{Player: pid, Salary: domain.RoundToNearest10k(entered), Years: r.Years,
 		Snipe: r.Snipe, Evidence: strings.TrimSpace(r.Evidence)}
+	if r.ConditionalDrop != "" {
+		facts.ConditionalDrop, err = playerid.New(r.ConditionalDrop)
+		if err != nil {
+			return bidEntry{}, fmt.Errorf("conditional drop: %w", err)
+		}
+	}
 	facts.Points, _ = bid.Score(facts.Salary, facts.Years) // a bad length fails the length rule instead
 	if strings.TrimSpace(r.Beat) != "" {
 		beat, err := bid.ParsePoints(r.Beat)
@@ -97,15 +104,16 @@ func closesNote(closes string) string {
 // BidPreview is the form's live answer: the figures as Go reads them and every rule's verdict.
 // Problem is set instead when the typed figures cannot be read at all.
 type BidPreview struct {
-	Problem string                  `json:"problem"`
-	Player  string                  `json:"player"`
-	Salary  snapshot.ContractAmount `json:"salary"`
-	Snapped string                  `json:"snapped"`
-	Points  string                  `json:"points"`
-	Rules   []bid.Result            `json:"rules"`
-	Blocked bool                    `json:"blocked"`
-	Note    string                  `json:"note"`
-	Post    string                  `json:"post"`
+	ConditionalDrops []BidDropOption         `json:"conditionalDrops"`
+	Problem          string                  `json:"problem"`
+	Player           string                  `json:"player"`
+	Salary           snapshot.ContractAmount `json:"salary"`
+	Snapped          string                  `json:"snapped"`
+	Points           string                  `json:"points"`
+	Rules            []bid.Result            `json:"rules"`
+	Blocked          bool                    `json:"blocked"`
+	Note             string                  `json:"note"`
+	Post             string                  `json:"post"`
 	// RuleSummary is Go's line for the rules that pass; ClosesNote says what the app does with
 	// the closing time, set or not.
 	RuleSummary string `json:"ruleSummary"`
@@ -140,7 +148,9 @@ func (a *App) TargetBidPreview(raw RawBidInput) BidPreview {
 		return BidPreview{Problem: sentence(err), Rules: []bid.Result{}}
 	}
 	rules := bid.Check(in)
-	p := BidPreview{Player: line, Salary: amountOf(entry.facts.Salary),
+	options := a.bidDropOptions(entry.franchise, entry.facts.Salary)
+	entry.facts = withConditionalName(entry.facts, options)
+	p := BidPreview{ConditionalDrops: options, Player: line, Salary: amountOf(entry.facts.Salary),
 		Points: pointsText(entry.facts.Salary, entry.facts.Years), Rules: rules,
 		Blocked: bid.Blocked(rules), Note: bid.Note(rules), Post: postText(line, entry.facts),
 		RuleSummary: bid.Summary(rules), ClosesNote: closesNote(entry.facts.Closes)}
@@ -159,7 +169,7 @@ func sentence(err error) string {
 }
 
 func postText(line string, f envelope.BidFacts) string {
-	return bid.Post{Player: line, Salary: f.Salary, Years: f.Years, Points: f.Points, Snipe: f.Snipe}.Text()
+	return bid.Post{Conditional: f.ConditionalName, Player: line, Salary: f.Salary, Years: f.Years, Points: f.Points, Snipe: f.Snipe}.Text()
 }
 
 // bidInput gathers what the rules read about one plan. exclude is the plan's own id, so a plan
@@ -177,10 +187,14 @@ func (a *App) bidInput(ctx context.Context, e bidEntry, exclude string) (bid.Inp
 	if err != nil {
 		return bid.Input{}, "", err
 	}
+	conditional, err := a.bidConditional(e.franchise, e.facts)
+	if err != nil {
+		return bid.Input{}, "", err
+	}
 	exp := bid.ExperienceFrom(a.league.Season(), facts.DraftYear, facts.HasDraftYear)
 	week, weekKnown := a.heldWeek()
 	return bid.Input{Salary: e.facts.Salary, Years: e.facts.Years, Minimum: bid.MinimumSalary(exp.Years),
-		Experience: exp, Snipe: e.facts.Snipe, Beat: e.facts.Beat, Active: active, Room: a.capRoom(e.franchise),
+		Conditional: conditional, Experience: exp, Snipe: e.facts.Snipe, Beat: e.facts.Beat, Active: active, Room: a.capRoom(e.franchise),
 		Week: week, WeekKnown: weekKnown}, fmt.Sprintf("%s (%s, %s)", facts.Name, facts.Position, facts.Team), nil
 }
 
@@ -247,6 +261,7 @@ func (a *App) TargetBidDraft(raw RawBidInput) (BidPlan, error) {
 		return BidPlan{}, fmt.Errorf("bid draft: you already have an open bid plan on %s (%s); "+
 			"open that plan instead of starting a second", line, strings.ToLower(open.State))
 	}
+	entry.facts = withConditionalName(entry.facts, a.bidDropOptions(entry.franchise, entry.facts.Salary))
 	var random [16]byte
 	if _, err := rand.Read(random[:]); err != nil {
 		return BidPlan{}, fmt.Errorf("bid draft: correlation ID: %w", err)

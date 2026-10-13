@@ -16,14 +16,16 @@ const BidIntent = "bid.submit"
 // BidFacts is what a bid plan holds beside its envelope (the bid_facts row). It names no other
 // franchise: the bid to beat is points only, as the owner typed it.
 type BidFacts struct {
-	Player   playerid.PlayerID `json:"player" ts_type:"string"`
-	Salary   domain.Money      `json:"salary"` // annual cents, flat across the years
-	Years    int               `json:"years"`
-	Points   bid.Points        `json:"points"`
-	Snipe    bool              `json:"snipe"`
-	Beat     *bid.Points       `json:"beat"`
-	Evidence string            `json:"evidence"`
-	Closes   string            `json:"closes"` // RFC 3339 UTC when the owner says bidding closes, else empty
+	ConditionalDrop playerid.PlayerID `json:"conditionalDrop" ts_type:"string"`
+	ConditionalName string            `json:"conditionalName"`
+	Player          playerid.PlayerID `json:"player" ts_type:"string"`
+	Salary          domain.Money      `json:"salary"` // annual cents, flat across the years
+	Years           int               `json:"years"`
+	Points          bid.Points        `json:"points"`
+	Snipe           bool              `json:"snipe"`
+	Beat            *bid.Points       `json:"beat"`
+	Evidence        string            `json:"evidence"`
+	Closes          string            `json:"closes"` // RFC 3339 UTC when the owner says bidding closes, else empty
 }
 
 // BidRequest drafts one bid plan for the owner's franchise.

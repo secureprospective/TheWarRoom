@@ -153,7 +153,7 @@ func TestRuleBoundaries(t *testing.T) {
 		}, Fail},
 		{"week 13, playoffs unknown", RuleLateSeason, func(in *Input) { in.Week, in.Years = 13, 1 }, Unknown},
 		{"no schedule held", RuleLateSeason, func(in *Input) { in.WeekKnown = false }, Unknown},
-		{"cap room is only shown", RuleCapRoom, func(in *Input) { r := millions(1); in.Room = &r }, Info},
+		{"over cap blocks", RuleCapRoom, func(in *Input) { r := millions(1); in.Room = &r }, Fail},
 		{"no cap room held", RuleCapRoom, func(in *Input) { in.Room = nil }, Info},
 	} {
 		in := passing()
@@ -173,13 +173,13 @@ func TestUnknownPlayoffStatusBlocksWithItsReason(t *testing.T) {
 	}
 }
 
-func TestCapRoomNeverBlocks(t *testing.T) {
+func TestCapRoomBlocks(t *testing.T) {
 	in := passing()
 	room := millions(1)
 	in.Room = &room
 	results := Check(in)
-	if Blocked(results) {
-		t.Fatalf("a bid over the cap room blocked the plan: %q", Note(results))
+	if !Blocked(results) {
+		t.Fatalf("a bid over the cap room did not block the plan: %q", Note(results))
 	}
 	for _, r := range results {
 		if r.Rule == RuleCapRoom && !strings.Contains(r.Reason, "$4,000,000 over your $1,000,000 of room") {
@@ -317,5 +317,40 @@ func TestNoteDoesNotJoinFullStopsToSemicolons(t *testing.T) {
 	got := Note([]Result{{Verdict: Fail, Reason: "First."}, {Verdict: Unknown, Reason: "Second."}})
 	if strings.Contains(got, ".;") {
 		t.Fatal(got)
+	}
+}
+
+func TestConditionalCapRoomCases(t *testing.T) {
+	room := domain.Money(14_950_000)
+	salary := domain.Money(60_000_000)
+	for _, tc := range []struct {
+		name   string
+		room   *domain.Money
+		salary domain.Money
+		drop   *ConditionalDrop
+		want   Verdict
+		reason string
+	}{
+		{"fits", &room, room, nil, Pass, "leaves $0"},
+		{"over without drop", &room, salary, nil, Fail,
+			"$600,000 a year is $450,500 over your $149,500 of room. Name a conditional drop to cover it."},
+		{"covered", &room, salary, &ConditionalDrop{"Brooks, Jordyn", 90_000_000, 30_000_000}, Pass,
+			"Covered if you win: the commissioner drops Brooks, Jordyn ($600,000 freed after $300,000 dead cap)"},
+		{"exactly covered", &room, salary, &ConditionalDrop{"Brooks, Jordyn", 75_050_000, 30_000_000}, Pass,
+			"$450,500 freed"},
+		{"still short", &room, salary, &ConditionalDrop{"Brooks, Jordyn", 50_000_000, 30_000_000}, Fail,
+			"still $250,500 short"},
+		{"negative savings", &room, salary, &ConditionalDrop{"Brooks, Jordyn", 10_000_000, 30_000_000}, Fail,
+			"still $650,500 short"},
+		{"unknown", nil, salary, nil, Info, "Cap room is not available"},
+		{"unknown with drop", nil, salary, &ConditionalDrop{"Brooks, Jordyn", 90_000_000, 30_000_000}, Info,
+			"Cap room is not available"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := capRoom(Input{Room: tc.room, Salary: tc.salary, Conditional: tc.drop})
+			if got.verdict != tc.want || !strings.Contains(got.reason, tc.reason) {
+				t.Fatalf("cap room: %+v, want %s containing %q", got, tc.want, tc.reason)
+			}
+		})
 	}
 }

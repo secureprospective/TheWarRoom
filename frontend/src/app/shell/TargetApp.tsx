@@ -355,7 +355,7 @@ export function TargetApp() {
         <EndpointIndex placement="Calendar" />
       </aside>
       {(s.endpointSurface === 'Report drawer' || s.endpointSurface === 'Status strip') && (
-        <aside className="shell-overlay registry-panel" aria-label={s.endpointSurface}>
+        <aside className="shell-overlay registry-panel" data-open="true" aria-label={s.endpointSurface}>
           <header>
             {s.endpointSurface}
             <Act variant="button" verb="surface.close" args={{}}>

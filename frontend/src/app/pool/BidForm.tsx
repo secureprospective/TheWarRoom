@@ -51,7 +51,43 @@ function ClosingTime({ form, note }: { form: BidFormState; note?: string }) {
   );
 }
 
-export function PreviewView({ preview }: { preview?: Preview }) {
+function ConditionalDrop({ form, preview }: { form: BidFormState; preview: Preview }) {
+  const selected = form.conditionalDrop;
+  const over = preview.rules.some((r) => r.rule === 'cap-room' && r.verdict === 'fail');
+  if (!selected && !over) return null;
+  const chosen = preview.conditionalDrops?.find((p) => p.id === selected);
+  return (
+    <div className="bid-field">
+      {selected ? <span>
+        Conditional drop if you win: {chosen?.label ?? selected}{' '}
+        <Act variant="text" verb="market" args={{ field: 'pool-conditional-change', value: '' }}>
+          Change
+        </Act>{' '}
+        <Act variant="text" verb="market" args={{ field: 'pool-conditional-clear', value: '' }}>
+          Clear
+        </Act>
+      </span> : <Act variant="text" verb="market"
+        args={{ field: 'pool-conditional-change', value: '' }}>
+        Over your cap room? Name a conditional drop
+      </Act>}
+      {form.conditionalOpen && <>
+        <select aria-label="Conditional drop if you win" value={selected ?? ''}
+          onChange={(e) => edit('conditionalDrop')(e.target.value)}>
+          <option value="">Choose one of your rostered players</option>
+          {preview.conditionalDrops?.map((p) => (
+            <option key={p.id} value={p.id} disabled={!p.available}>{p.label}</option>
+          ))}
+        </select>
+        <small className="bid-note">
+          Only if you win; the commissioner makes the drop. Future salaries are held flat;
+          restructure history is not held. Nothing is dropped for you.
+        </small>
+      </>}
+    </div>
+  );
+}
+
+export function PreviewView({ preview, form }: { preview?: Preview; form?: BidFormState }) {
   if (!preview) return <p role="status">Checking the bid rules…</p>;
   if (preview.problem) return <p role="status" className="bid-problem">{preview.problem}</p>;
   return (
@@ -64,6 +100,7 @@ export function PreviewView({ preview }: { preview?: Preview }) {
       </dl>
       {preview.snapped && <p>{preview.snapped}.</p>}
       <Rules rules={preview.rules} summary={preview.ruleSummary} />
+      {form && <ConditionalDrop form={form} preview={preview} />}
       <p role="status">{preview.blocked ? `Blocked: ${preview.note}` : 'Every rule passes.'}</p>
     </div>
   );
@@ -119,7 +156,7 @@ export function BidForm({ form, preview, busy }: { form: BidFormState; preview?:
         You tell the app about a snipe and the bid to beat; it cannot see the auction clock or other
         teams' bids.
       </p>
-      <PreviewView preview={preview} />
+      <PreviewView preview={preview} form={form} />
       {preview && !preview.problem && preview.post && (
         <pre className="bid-post" aria-label="ProBoards post preview">
           {preview.post}

@@ -133,8 +133,8 @@ func TestBidPreviewMinimumAndCapRoom(t *testing.T) {
 		t.Errorf("cap room = %+v", last)
 	}
 	over := a.TargetBidPreview(rawBid("110", 3))
-	if over.Blocked && strings.Contains(over.Note, "room") {
-		t.Errorf("cap room blocked the plan: %s", over.Note)
+	if !over.Blocked || !strings.Contains(over.Note, "room") {
+		t.Errorf("cap room did not block the plan: %s", over.Note)
 	}
 }
 
