@@ -8,7 +8,6 @@ import { createCommands } from '../commands/registry';
 import { FixtureProvider } from '../data/provider';
 import { CounterReading, CounterControls, TeamTable, sortedRows, panelEndpoint } from './Counterparties';
 import { TeamReading } from './TeamPanel';
-import { EdgeBar } from './Displays';
 import { EdgeBar, teamIdentity } from './Displays';
 import { createCounterState, filtered } from './state';
 import { parseCounterparties, parseTeamPanel, counterpartProvider } from './provider';

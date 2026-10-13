@@ -4396,6 +4396,7 @@ export namespace main {
 	}
 	export class PairView {
 	    other: string;
+	    excluded: boolean;
 	    n: number;
 	    // Go type: lab
 	    now: any;
@@ -4411,6 +4412,7 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.other = source["other"];
+	        this.excluded = source["excluded"];
 	        this.n = source["n"];
 	        this.now = this.convertValues(source["now"], null);
 	        this.real = this.convertValues(source["real"], null);
