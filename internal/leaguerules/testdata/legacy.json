@@ -1,0 +1,3866 @@
+{
+  "LeagueID": "",
+  "Season": 0,
+  "League": {
+    "Teams": {
+      "State": 1,
+      "Value": 32,
+      "Citation": "Census CM-001"
+    },
+    "Conferences": {
+      "State": 1,
+      "Value": 2,
+      "Citation": "Census CM-001"
+    },
+    "Divisions": {
+      "State": 1,
+      "Value": 8,
+      "Citation": "Census CM-001"
+    },
+    "Format": {
+      "State": 1,
+      "Value": "head_to_head",
+      "Citation": "Census CM-001"
+    },
+    "InitialRosters": {
+      "State": 1,
+      "Value": "draft",
+      "Citation": "Census CM-001"
+    },
+    "Alignment": {
+      "State": 0,
+      "Value": null,
+      "Citation": "Census CM-002: carried at setup"
+    },
+    "Dynasty": {
+      "State": 1,
+      "Value": true,
+      "Citation": "Census CM-005"
+    },
+    "Carry": {
+      "State": 1,
+      "Value": "all",
+      "Citation": "Census CM-005"
+    },
+    "Keepers": {
+      "State": 0,
+      "Value": 0,
+      "Citation": "Census CM-005: only for keeper leagues"
+    }
+  },
+  "Roster": {
+    "Limits": {
+      "State": 1,
+      "Value": {
+        "Min": {
+          "State": 1,
+          "Value": 18,
+          "Citation": "fact R"
+        },
+        "Max": {
+          "State": 1,
+          "Value": 80,
+          "Citation": "fact R"
+        }
+      },
+      "Citation": "fact R"
+    },
+    "ReserveExcluded": {
+      "State": 1,
+      "Value": true,
+      "Citation": "fact R"
+    },
+    "PositionBounds": {
+      "State": 1,
+      "Value": {},
+      "Citation": "fact R"
+    }
+  },
+  "Lineup": {
+    "Positions": {
+      "State": 1,
+      "Value": {
+        "CB": {
+          "Min": {
+            "State": 1,
+            "Value": 2,
+            "Citation": "Census CM-004"
+          },
+          "Max": {
+            "State": 1,
+            "Value": 4,
+            "Citation": "Census CM-004"
+          }
+        },
+        "DE": {
+          "Min": {
+            "State": 1,
+            "Value": 2,
+            "Citation": "Census CM-004"
+          },
+          "Max": {
+            "State": 1,
+            "Value": 4,
+            "Citation": "Census CM-004"
+          }
+        },
+        "DT": {
+          "Min": {
+            "State": 1,
+            "Value": 2,
+            "Citation": "Census CM-004"
+          },
+          "Max": {
+            "State": 1,
+            "Value": 4,
+            "Citation": "Census CM-004"
+          }
+        },
+        "LB": {
+          "Min": {
+            "State": 1,
+            "Value": 2,
+            "Citation": "Census CM-004"
+          },
+          "Max": {
+            "State": 1,
+            "Value": 4,
+            "Citation": "Census CM-004"
+          }
+        },
+        "PK": {
+          "Min": {
+            "State": 1,
+            "Value": 1,
+            "Citation": "Census CM-004"
+          },
+          "Max": {
+            "State": 1,
+            "Value": 1,
+            "Citation": "Census CM-004"
+          }
+        },
+        "QB": {
+          "Min": {
+            "State": 1,
+            "Value": 1,
+            "Citation": "Census CM-004"
+          },
+          "Max": {
+            "State": 1,
+            "Value": 1,
+            "Citation": "Census CM-004"
+          }
+        },
+        "RB": {
+          "Min": {
+            "State": 1,
+            "Value": 1,
+            "Citation": "Census CM-004"
+          },
+          "Max": {
+            "State": 1,
+            "Value": 3,
+            "Citation": "Census CM-004"
+          }
+        },
+        "S": {
+          "Min": {
+            "State": 1,
+            "Value": 2,
+            "Citation": "Census CM-004"
+          },
+          "Max": {
+            "State": 1,
+            "Value": 4,
+            "Citation": "Census CM-004"
+          }
+        },
+        "TE": {
+          "Min": {
+            "State": 1,
+            "Value": 1,
+            "Citation": "Census CM-004"
+          },
+          "Max": {
+            "State": 1,
+            "Value": 3,
+            "Citation": "Census CM-004"
+          }
+        },
+        "WR": {
+          "Min": {
+            "State": 1,
+            "Value": 2,
+            "Citation": "Census CM-004"
+          },
+          "Max": {
+            "State": 1,
+            "Value": 5,
+            "Citation": "Census CM-004"
+          }
+        }
+      },
+      "Citation": "Census CM-004 Q-A1"
+    },
+    "Groups": {
+      "State": 1,
+      "Value": {
+        "defense": {
+          "Min": {
+            "State": 1,
+            "Value": 12,
+            "Citation": "Census CM-004"
+          },
+          "Max": {
+            "State": 1,
+            "Value": 12,
+            "Citation": "Census CM-004"
+          }
+        },
+        "offense": {
+          "Min": {
+            "State": 0,
+            "Value": 0,
+            "Citation": "Census CM-004: only maximum stated"
+          },
+          "Max": {
+            "State": 1,
+            "Value": 8,
+            "Citation": "Census CM-004"
+          }
+        },
+        "total": {
+          "Min": {
+            "State": 1,
+            "Value": 21,
+            "Citation": "Census CM-004"
+          },
+          "Max": {
+            "State": 1,
+            "Value": 21,
+            "Citation": "Census CM-004"
+          }
+        }
+      },
+      "Citation": "Census CM-004 Q-A1"
+    },
+    "InvalidPenalty": {
+      "State": 1,
+      "Value": "zero_top_starter",
+      "Citation": "Rulebook §3"
+    },
+    "MissedFlag": {
+      "State": 1,
+      "Value": true,
+      "Citation": "Census CM-004"
+    }
+  },
+  "Scoring": {
+    "Catalogue": {
+      "State": 1,
+      "Value": {
+        "assist": {
+          "Label": {
+            "State": 1,
+            "Value": "Assisted tackle",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 10000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [
+              "LB",
+              "CB",
+              "S",
+              "QB",
+              "RB",
+              "WR",
+              "TE",
+              "PK"
+            ],
+            "Citation": "Math §13: all except DT/DE"
+          }
+        },
+        "assist_line": {
+          "Label": {
+            "State": 1,
+            "Value": "Defensive line assisted tackle",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 15000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [
+              "DT",
+              "DE"
+            ],
+            "Citation": "Math §13: true-position base rate"
+          }
+        },
+        "blocked_extra_point": {
+          "Label": {
+            "State": 1,
+            "Value": "Blocked extra point",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 70000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "blocked_fg": {
+          "Label": {
+            "State": 1,
+            "Value": "Blocked field goal",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 70000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "blocked_punt": {
+          "Label": {
+            "State": 1,
+            "Value": "Blocked punt",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 70000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "fg_made_0_39": {
+          "Label": {
+            "State": 1,
+            "Value": "Field goal made from 0 to 39 yards",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Kicking",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 30000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "fg_made_40_49": {
+          "Label": {
+            "State": 1,
+            "Value": "Field goal made from 40 to 49 yards",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Kicking",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 40000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "fg_made_50_59": {
+          "Label": {
+            "State": 1,
+            "Value": "Field goal made from 50 to 59 yards",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Kicking",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 50000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "fg_made_60_69": {
+          "Label": {
+            "State": 1,
+            "Value": "Field goal made from 60 to 69 yards",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Kicking",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 60000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "fg_missed_0_29": {
+          "Label": {
+            "State": 1,
+            "Value": "Field goal missed from 0 to 29 yards",
+            "Citation": "Rulebook §4; MFL_Scoring_Rules_Decode OQ-002"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Kicking",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": -30000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "fg_missed_30_99": {
+          "Label": {
+            "State": 1,
+            "Value": "Field goal missed from 30 yards or longer",
+            "Citation": "Rulebook §4; MFL_Scoring_Rules_Decode OQ-002"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Kicking",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": -10000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "forced_fumble": {
+          "Label": {
+            "State": 1,
+            "Value": "Forced fumble",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Fumbles",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 40000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "fumble_lost": {
+          "Label": {
+            "State": 1,
+            "Value": "Fumble lost",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Fumbles",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": -20000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "interception_caught": {
+          "Label": {
+            "State": 1,
+            "Value": "Interception caught",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 50000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "interception_return_td": {
+          "Label": {
+            "State": 1,
+            "Value": "Interception return touchdown",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 60000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "interception_return_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Interception return yards",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 250,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "interception_thrown": {
+          "Label": {
+            "State": 1,
+            "Value": "Interception thrown",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Passing",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": -20000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "kickoff_return_td": {
+          "Label": {
+            "State": 1,
+            "Value": "Kickoff return touchdown",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Returns",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 100000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "kickoff_return_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Kickoff return yards",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Returns",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 250,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "long_pass": {
+          "Label": {
+            "State": 1,
+            "Value": "Long pass",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Passing",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 0,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [
+              {
+                "At": {
+                  "State": 1,
+                  "Value": 400000,
+                  "Citation": "Rulebook §4"
+                },
+                "Points": {
+                  "State": 1,
+                  "Value": 10000,
+                  "Citation": "Rulebook §4; Math §13: stacking"
+                }
+              }
+            ],
+            "Citation": "Rulebook §4; Math §13: stacking"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "long_reception": {
+          "Label": {
+            "State": 1,
+            "Value": "Long reception",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Receiving",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 0,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [
+              {
+                "At": {
+                  "State": 1,
+                  "Value": 200000,
+                  "Citation": "Rulebook §4"
+                },
+                "Points": {
+                  "State": 1,
+                  "Value": 10000,
+                  "Citation": "Rulebook §4; Math §13: stacking"
+                }
+              },
+              {
+                "At": {
+                  "State": 1,
+                  "Value": 400000,
+                  "Citation": "Rulebook §4"
+                },
+                "Points": {
+                  "State": 1,
+                  "Value": 10000,
+                  "Citation": "Rulebook §4; Math §13: stacking"
+                }
+              }
+            ],
+            "Citation": "Rulebook §4; Math §13: stacking"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "long_rush": {
+          "Label": {
+            "State": 1,
+            "Value": "Long rush",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Rushing",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 0,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [
+              {
+                "At": {
+                  "State": 1,
+                  "Value": 200000,
+                  "Citation": "Rulebook §4"
+                },
+                "Points": {
+                  "State": 1,
+                  "Value": 10000,
+                  "Citation": "Rulebook §4; Math §13: stacking"
+                }
+              },
+              {
+                "At": {
+                  "State": 1,
+                  "Value": 400000,
+                  "Citation": "Rulebook §4"
+                },
+                "Points": {
+                  "State": 1,
+                  "Value": 10000,
+                  "Citation": "Rulebook §4; Math §13: stacking"
+                }
+              }
+            ],
+            "Citation": "Rulebook §4; Math §13: stacking"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "opponent_fumble_recovery": {
+          "Label": {
+            "State": 1,
+            "Value": "Opponent fumble recovery",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Fumbles",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 30000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "opponent_fumble_recovery_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Opponent fumble recovery yards",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Fumbles",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 250,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "own_fumble_recovery": {
+          "Label": {
+            "State": 1,
+            "Value": "Own fumble recovery",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Fumbles",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 20000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "pass_defensed": {
+          "Label": {
+            "State": 1,
+            "Value": "Pass defensed",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 25000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "passing_td": {
+          "Label": {
+            "State": 1,
+            "Value": "Passing touchdown",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Passing",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 50000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "passing_two_point": {
+          "Label": {
+            "State": 1,
+            "Value": "Passing two point conversion",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Passing",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 20000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "passing_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Passing yards",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Passing",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 500,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "punt_return_td": {
+          "Label": {
+            "State": 1,
+            "Value": "Punt return touchdown",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Returns",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 60000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "punt_return_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Punt return yards",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Returns",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 250,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "qb_hit": {
+          "Label": {
+            "State": 1,
+            "Value": "Quarterback hit",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 10000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "receiving_td": {
+          "Label": {
+            "State": 1,
+            "Value": "Receiving touchdown",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Receiving",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 60000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "receiving_two_point": {
+          "Label": {
+            "State": 1,
+            "Value": "Receiving two point conversion",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Receiving",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 20000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "receiving_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Receiving yards",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Receiving",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 1000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "reception": {
+          "Label": {
+            "State": 1,
+            "Value": "Reception",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Receiving",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 10000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "rushing_attempt": {
+          "Label": {
+            "State": 1,
+            "Value": "Rushing attempt",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Rushing",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 1500,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "rushing_td": {
+          "Label": {
+            "State": 1,
+            "Value": "Rushing touchdown",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Rushing",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 60000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "rushing_two_point": {
+          "Label": {
+            "State": 1,
+            "Value": "Rushing two point conversion",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Rushing",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 20000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "rushing_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Rushing yards",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Rushing",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 1000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "sack": {
+          "Label": {
+            "State": 1,
+            "Value": "Sack",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 45000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "safety": {
+          "Label": {
+            "State": 1,
+            "Value": "Safety",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 100000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "tackle": {
+          "Label": {
+            "State": 1,
+            "Value": "Tackle",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 15000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [
+              "LB",
+              "CB",
+              "S",
+              "QB",
+              "RB",
+              "WR",
+              "TE",
+              "PK"
+            ],
+            "Citation": "Math §13: all except DT/DE"
+          }
+        },
+        "tackle_for_loss": {
+          "Label": {
+            "State": 1,
+            "Value": "Tackle for loss",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 25000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          }
+        },
+        "tackle_line": {
+          "Label": {
+            "State": 1,
+            "Value": "Defensive line tackle",
+            "Citation": "Rulebook §4"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "Rulebook §4"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §4"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 25000,
+            "Citation": "Rulebook §4"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "Rulebook §4"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [
+              "DT",
+              "DE"
+            ],
+            "Citation": "Math §13: true-position base rate"
+          }
+        }
+      },
+      "Citation": "Rulebook §4; Math §13"
+    }
+  },
+  "Standings": {
+    "Criteria": {
+      "State": 1,
+      "Value": [
+        "win_percentage",
+        "head_to_head",
+        "division_percentage",
+        "conference_percentage",
+        "all_play_percentage",
+        "points",
+        "power_rank"
+      ],
+      "Citation": "Census CM-007"
+    }
+  },
+  "Cap": {
+    "Amount": {
+      "State": 1,
+      "Value": 12500000000,
+      "Citation": "Rulebook §1"
+    },
+    "Enforcement": {
+      "State": 1,
+      "Value": "hard",
+      "Citation": "Census CM-008 Q-A3"
+    },
+    "IRShare": {
+      "State": 1,
+      "Value": 10000,
+      "Citation": "Rulebook §1; Math §0"
+    },
+    "TaxiShare": {
+      "State": 1,
+      "Value": 10000,
+      "Citation": "Rulebook §1; Math §0"
+    },
+    "Quantum": {
+      "State": 1,
+      "Value": 1000000,
+      "Citation": "Math §0"
+    },
+    "ComplianceDeadline": {
+      "State": 0,
+      "Value": "0001-01-01T00:00:00Z",
+      "Citation": "Census CM-008 Q-A3"
+    }
+  },
+  "Contracts": {
+    "MaximumYears": {
+      "State": 1,
+      "Value": 4,
+      "Citation": "Rulebook §6"
+    },
+    "FlatSalaries": {
+      "State": 1,
+      "Value": true,
+      "Citation": "Math §1"
+    },
+    "MinimumSalaries": {
+      "State": 1,
+      "Value": [
+        {
+          "MaximumUnlimited": {
+            "State": 1,
+            "Value": false,
+            "Citation": "Rulebook §6"
+          },
+          "Years": {
+            "Min": {
+              "State": 1,
+              "Value": 0,
+              "Citation": "Rulebook §6"
+            },
+            "Max": {
+              "State": 1,
+              "Value": 0,
+              "Citation": "Rulebook §6"
+            }
+          },
+          "Minimum": {
+            "State": 1,
+            "Value": 33000000,
+            "Citation": "Rulebook §6"
+          }
+        },
+        {
+          "MaximumUnlimited": {
+            "State": 1,
+            "Value": false,
+            "Citation": "Rulebook §6"
+          },
+          "Years": {
+            "Min": {
+              "State": 1,
+              "Value": 1,
+              "Citation": "Rulebook §6"
+            },
+            "Max": {
+              "State": 1,
+              "Value": 1,
+              "Citation": "Rulebook §6"
+            }
+          },
+          "Minimum": {
+            "State": 1,
+            "Value": 38000000,
+            "Citation": "Rulebook §6"
+          }
+        },
+        {
+          "MaximumUnlimited": {
+            "State": 1,
+            "Value": false,
+            "Citation": "Rulebook §6"
+          },
+          "Years": {
+            "Min": {
+              "State": 1,
+              "Value": 2,
+              "Citation": "Rulebook §6"
+            },
+            "Max": {
+              "State": 1,
+              "Value": 2,
+              "Citation": "Rulebook §6"
+            }
+          },
+          "Minimum": {
+            "State": 1,
+            "Value": 43000000,
+            "Citation": "Rulebook §6"
+          }
+        },
+        {
+          "MaximumUnlimited": {
+            "State": 1,
+            "Value": false,
+            "Citation": "Rulebook §6"
+          },
+          "Years": {
+            "Min": {
+              "State": 1,
+              "Value": 3,
+              "Citation": "Rulebook §6"
+            },
+            "Max": {
+              "State": 1,
+              "Value": 3,
+              "Citation": "Rulebook §6"
+            }
+          },
+          "Minimum": {
+            "State": 1,
+            "Value": 48000000,
+            "Citation": "Rulebook §6"
+          }
+        },
+        {
+          "MaximumUnlimited": {
+            "State": 1,
+            "Value": false,
+            "Citation": "Rulebook §6"
+          },
+          "Years": {
+            "Min": {
+              "State": 1,
+              "Value": 4,
+              "Citation": "Rulebook §6"
+            },
+            "Max": {
+              "State": 1,
+              "Value": 6,
+              "Citation": "Rulebook §6"
+            }
+          },
+          "Minimum": {
+            "State": 1,
+            "Value": 53000000,
+            "Citation": "Rulebook §6"
+          }
+        },
+        {
+          "MaximumUnlimited": {
+            "State": 1,
+            "Value": false,
+            "Citation": "Rulebook §6"
+          },
+          "Years": {
+            "Min": {
+              "State": 1,
+              "Value": 7,
+              "Citation": "Rulebook §6"
+            },
+            "Max": {
+              "State": 1,
+              "Value": 9,
+              "Citation": "Rulebook §6"
+            }
+          },
+          "Minimum": {
+            "State": 1,
+            "Value": 58000000,
+            "Citation": "Rulebook §6"
+          }
+        },
+        {
+          "MaximumUnlimited": {
+            "State": 1,
+            "Value": true,
+            "Citation": "Rulebook §6"
+          },
+          "Years": {
+            "Min": {
+              "State": 1,
+              "Value": 10,
+              "Citation": "Rulebook §6"
+            },
+            "Max": {
+              "State": 0,
+              "Value": 0,
+              "Citation": "Rulebook §6: no upper bound"
+            }
+          },
+          "Minimum": {
+            "State": 1,
+            "Value": 63000000,
+            "Citation": "Rulebook §6"
+          }
+        }
+      ],
+      "Citation": "Rulebook §6; Math §14 ruling 2"
+    },
+    "DeadCap": {
+      "State": 1,
+      "Value": 3500,
+      "Citation": "Math §4"
+    },
+    "RestructuredDeadCap": {
+      "State": 1,
+      "Value": 5000,
+      "Citation": "Math §4"
+    },
+    "ClaimClearsDeadCap": {
+      "State": 1,
+      "Value": true,
+      "Citation": "Math §4"
+    },
+    "ReleaseReSignSameSeason": {
+      "State": 1,
+      "Value": false,
+      "Citation": "Rulebook §8"
+    },
+    "Tag": {
+      "State": 1,
+      "Value": {
+        "Enabled": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §9"
+        },
+        "AnnualLimit": {
+          "State": 1,
+          "Value": 1,
+          "Citation": "Rulebook §9"
+        },
+        "TopPlayers": {
+          "State": 1,
+          "Value": 5,
+          "Citation": "Rulebook §9"
+        },
+        "FloorMultiplier": {
+          "State": 1,
+          "Value": 12000,
+          "Citation": "Rulebook §9"
+        },
+        "ConsecutiveLimit": {
+          "State": 1,
+          "Value": 2,
+          "Citation": "Rulebook §9"
+        },
+        "SecondMultiplier": {
+          "State": 1,
+          "Value": 12000,
+          "Citation": "Rulebook §9"
+        },
+        "ExtensionMultiplier": {
+          "State": 1,
+          "Value": 12000,
+          "Citation": "Rulebook §9"
+        },
+        "ExcludePlayoffContracts": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §9"
+        }
+      },
+      "Citation": "Rulebook §9; Math §5"
+    },
+    "Extension": {
+      "State": 1,
+      "Value": {
+        "Enabled": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §10"
+        },
+        "AnnualLimit": {
+          "State": 1,
+          "Value": 1,
+          "Citation": "Rulebook §10"
+        },
+        "MinimumRemaining": {
+          "State": 1,
+          "Value": 1,
+          "Citation": "Rulebook §10"
+        },
+        "AddedYears": {
+          "State": 1,
+          "Value": 3,
+          "Citation": "Rulebook §10"
+        },
+        "TotalYears": {
+          "State": 1,
+          "Value": 6,
+          "Citation": "Rulebook §10"
+        },
+        "Multiplier": {
+          "State": 1,
+          "Value": 15000,
+          "Citation": "Rulebook §10"
+        },
+        "Floors": {
+          "State": 1,
+          "Value": {
+            "CB": {
+              "State": 1,
+              "Value": 300000000,
+              "Citation": "Rulebook §10"
+            },
+            "DE": {
+              "State": 1,
+              "Value": 700000000,
+              "Citation": "Rulebook §10"
+            },
+            "DT": {
+              "State": 1,
+              "Value": 400000000,
+              "Citation": "Rulebook §10"
+            },
+            "LB": {
+              "State": 1,
+              "Value": 800000000,
+              "Citation": "Rulebook §10"
+            },
+            "PK": {
+              "State": 1,
+              "Value": 300000000,
+              "Citation": "Rulebook §10"
+            },
+            "QB": {
+              "State": 1,
+              "Value": 1500000000,
+              "Citation": "Rulebook §10"
+            },
+            "RB": {
+              "State": 1,
+              "Value": 800000000,
+              "Citation": "Rulebook §10"
+            },
+            "S": {
+              "State": 1,
+              "Value": 500000000,
+              "Citation": "Rulebook §10"
+            },
+            "TE": {
+              "State": 1,
+              "Value": 800000000,
+              "Citation": "Rulebook §10"
+            },
+            "WR": {
+              "State": 1,
+              "Value": 1000000000,
+              "Citation": "Rulebook §10"
+            }
+          },
+          "Citation": "Rulebook §10"
+        },
+        "RepeatBeforeFreeAgency": {
+          "State": 1,
+          "Value": false,
+          "Citation": "Rulebook §10"
+        },
+        "UFAEligible": {
+          "State": 1,
+          "Value": false,
+          "Citation": "Rulebook §10"
+        }
+      },
+      "Citation": "Rulebook §10; Math §6"
+    },
+    "Restructure": {
+      "State": 1,
+      "Value": {
+        "Enabled": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §11"
+        },
+        "AnnualLimit": {
+          "State": 1,
+          "Value": 1,
+          "Citation": "Rulebook §11"
+        },
+        "PerContract": {
+          "State": 1,
+          "Value": 1,
+          "Citation": "Rulebook §11"
+        },
+        "ExtraPerExtension": {
+          "State": 1,
+          "Value": 1,
+          "Citation": "Rulebook §11"
+        },
+        "Tiers": {
+          "State": 1,
+          "Value": [
+            {
+              "At": {
+                "State": 1,
+                "Value": 300000000,
+                "Citation": "Rulebook §11"
+              },
+              "Amount": {
+                "State": 1,
+                "Value": 100000000,
+                "Citation": "Rulebook §11"
+              }
+            },
+            {
+              "At": {
+                "State": 1,
+                "Value": 600000000,
+                "Citation": "Rulebook §11"
+              },
+              "Amount": {
+                "State": 1,
+                "Value": 200000000,
+                "Citation": "Rulebook §11"
+              }
+            },
+            {
+              "At": {
+                "State": 1,
+                "Value": 1200000000,
+                "Citation": "Rulebook §11"
+              },
+              "Amount": {
+                "State": 1,
+                "Value": 300000000,
+                "Citation": "Rulebook §11"
+              }
+            }
+          ],
+          "Citation": "Rulebook §11"
+        },
+        "ConserveTotal": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Math §7"
+        },
+        "ExistingYearsOnly": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Math §7"
+        }
+      },
+      "Citation": "Rulebook §11; Math §7"
+    },
+    "Buyout": {
+      "State": 1,
+      "Value": {
+        "Enabled": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §12"
+        },
+        "AnnualLimit": {
+          "State": 1,
+          "Value": 2,
+          "Citation": "Rulebook §12"
+        },
+        "OffseasonOnly": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §12"
+        },
+        "OneYearAllowed": {
+          "State": 1,
+          "Value": false,
+          "Citation": "Math §14 ruling 3"
+        },
+        "Rates": {
+          "State": 1,
+          "Value": {
+            "2": {
+              "State": 1,
+              "Value": 6000,
+              "Citation": "Rulebook §12"
+            },
+            "3": {
+              "State": 1,
+              "Value": 7500,
+              "Citation": "Rulebook §12"
+            },
+            "4": {
+              "State": 1,
+              "Value": 9000,
+              "Citation": "Rulebook §12"
+            }
+          },
+          "Citation": "Rulebook §12"
+        },
+        "RebidNextOffseason": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §12"
+        }
+      },
+      "Citation": "Rulebook §12; Math §14 ruling 3"
+    },
+    "Tender": {
+      "State": 1,
+      "Value": {
+        "Enabled": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §7"
+        },
+        "Prices": {
+          "State": 1,
+          "Value": [
+            {
+              "Price": {
+                "State": 1,
+                "Value": 60000000,
+                "Citation": "Rulebook §7"
+              },
+              "Rounds": {
+                "State": 1,
+                "Value": [
+                  5
+                ],
+                "Citation": "Rulebook §7"
+              }
+            },
+            {
+              "Price": {
+                "State": 1,
+                "Value": 100000000,
+                "Citation": "Rulebook §7"
+              },
+              "Rounds": {
+                "State": 1,
+                "Value": [
+                  4
+                ],
+                "Citation": "Rulebook §7"
+              }
+            },
+            {
+              "Price": {
+                "State": 1,
+                "Value": 150000000,
+                "Citation": "Rulebook §7"
+              },
+              "Rounds": {
+                "State": 1,
+                "Value": [
+                  3
+                ],
+                "Citation": "Rulebook §7"
+              }
+            },
+            {
+              "Price": {
+                "State": 1,
+                "Value": 250000000,
+                "Citation": "Rulebook §7"
+              },
+              "Rounds": {
+                "State": 1,
+                "Value": [
+                  2
+                ],
+                "Citation": "Rulebook §7"
+              }
+            },
+            {
+              "Price": {
+                "State": 1,
+                "Value": 500000000,
+                "Citation": "Rulebook §7"
+              },
+              "Rounds": {
+                "State": 1,
+                "Value": [
+                  1
+                ],
+                "Citation": "Rulebook §7"
+              }
+            },
+            {
+              "Price": {
+                "State": 1,
+                "Value": 650000000,
+                "Citation": "Rulebook §7"
+              },
+              "Rounds": {
+                "State": 1,
+                "Value": [
+                  1,
+                  2
+                ],
+                "Citation": "Rulebook §7"
+              }
+            }
+          ],
+          "Citation": "Rulebook §7"
+        },
+        "PriorSalaryMultiplier": {
+          "State": 1,
+          "Value": 11000,
+          "Citation": "Rulebook §7"
+        },
+        "MatchWindow": {
+          "State": 1,
+          "Value": 86400000000000,
+          "Citation": "Rulebook §7"
+        },
+        "CompensatoryAllowed": {
+          "State": 1,
+          "Value": false,
+          "Citation": "Rulebook §14"
+        }
+      },
+      "Citation": "Rulebook §7"
+    },
+    "ReSign": {
+      "State": 1,
+      "Value": {
+        "Enabled": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §7"
+        },
+        "Premiums": {
+          "State": 1,
+          "Value": {
+            "1": {
+              "State": 1,
+              "Value": 0,
+              "Citation": "Rulebook §7"
+            },
+            "2": {
+              "State": 1,
+              "Value": 1500,
+              "Citation": "Rulebook §7"
+            },
+            "3": {
+              "State": 1,
+              "Value": 3000,
+              "Citation": "Rulebook §7"
+            },
+            "4": {
+              "State": 1,
+              "Value": 4500,
+              "Citation": "Rulebook §7"
+            }
+          },
+          "Citation": "Rulebook §7"
+        }
+      },
+      "Citation": "Rulebook §7"
+    },
+    "Retirement": {
+      "State": 1,
+      "Value": {
+        "Enabled": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §13"
+        },
+        "Rate": {
+          "State": 1,
+          "Value": 3000,
+          "Citation": "Rulebook §13"
+        }
+      },
+      "Citation": "Rulebook §13; Math §9"
+    },
+    "Death": {
+      "State": 1,
+      "Value": {
+        "Enabled": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §13"
+        },
+        "Rate": {
+          "State": 1,
+          "Value": 0,
+          "Citation": "Rulebook §13"
+        }
+      },
+      "Citation": "Rulebook §13"
+    },
+    "CapRelief": {
+      "State": 1,
+      "Value": {
+        "Enabled": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §13"
+        },
+        "Reasons": {
+          "State": 1,
+          "Value": [
+            "Career-ending injury",
+            "Recurring injury",
+            "Behavioral suspension"
+          ],
+          "Citation": "Rulebook §13"
+        }
+      },
+      "Citation": "Rulebook §13"
+    }
+  },
+  "IR": {
+    "Slots": {
+      "State": 1,
+      "Value": 12,
+      "Citation": "fact 4a; Census CM-010"
+    },
+    "Eligible": {
+      "State": 1,
+      "Value": [
+        "IR",
+        "PUP",
+        "NFI",
+        "Out",
+        "suspended"
+      ],
+      "Citation": "fact 4a"
+    },
+    "MustLeaveHealthy": {
+      "State": 1,
+      "Value": true,
+      "Citation": "fact 4a"
+    }
+  },
+  "Taxi": {
+    "Slots": {
+      "State": 1,
+      "Value": 8,
+      "Citation": "Rulebook §2"
+    },
+    "MaximumYears": {
+      "State": 1,
+      "Value": 3,
+      "Citation": "fact 4b"
+    },
+    "Basis": {
+      "State": 1,
+      "Value": "calendar_years",
+      "Citation": "fact 4b"
+    }
+  },
+  "Waivers": {
+    "Trigger": {
+      "State": 1,
+      "Value": "cut",
+      "Citation": "Census CM-012"
+    },
+    "Duration": {
+      "State": 1,
+      "Value": 86400000000000,
+      "Citation": "Census CM-012"
+    },
+    "Method": {
+      "State": 1,
+      "Value": "reverse_standings",
+      "Citation": "fact 2"
+    }
+  },
+  "Bids": {
+    "UFA": {
+      "State": 1,
+      "Value": "open",
+      "Citation": "fact 3; Christopher 2026-10-13: Legacy UFA open"
+    },
+    "RFA": {
+      "State": 1,
+      "Value": "open",
+      "Citation": "fact 3; Christopher 2026-10-13: Legacy RFA open"
+    },
+    "YearMultipliers": {
+      "State": 1,
+      "Value": [
+        {
+          "State": 1,
+          "Value": 10000,
+          "Citation": "Rulebook §6"
+        },
+        {
+          "State": 1,
+          "Value": 12000,
+          "Citation": "Rulebook §6"
+        },
+        {
+          "State": 1,
+          "Value": 14000,
+          "Citation": "Rulebook §6"
+        },
+        {
+          "State": 1,
+          "Value": 16000,
+          "Citation": "Rulebook §6"
+        }
+      ],
+      "Citation": "Rulebook §6"
+    },
+    "MaximumActive": {
+      "State": 1,
+      "Value": 30,
+      "Citation": "Rulebook §6"
+    },
+    "OneYearMaximum": {
+      "State": 1,
+      "Value": 1200000000,
+      "Citation": "Rulebook §6"
+    },
+    "Tiers": {
+      "State": 1,
+      "Value": [
+        {
+          "Salary": {
+            "MaximumUnlimited": {
+              "State": 1,
+              "Value": false,
+              "Citation": "Rulebook §6"
+            },
+            "Min": {
+              "State": 1,
+              "Value": 1200000000,
+              "Citation": "Rulebook §6"
+            },
+            "Max": {
+              "State": 1,
+              "Value": 2400000000,
+              "Citation": "Rulebook §6"
+            }
+          },
+          "MinimumYears": {
+            "State": 1,
+            "Value": 2,
+            "Citation": "Rulebook §6"
+          },
+          "LowerInclusive": {
+            "State": 1,
+            "Value": false,
+            "Citation": "Rulebook §6: $12M one year allowed"
+          }
+        },
+        {
+          "Salary": {
+            "MaximumUnlimited": {
+              "State": 1,
+              "Value": true,
+              "Citation": "Rulebook §6"
+            },
+            "Min": {
+              "State": 1,
+              "Value": 2400000000,
+              "Citation": "Rulebook §6"
+            },
+            "Max": {
+              "State": 0,
+              "Value": 0,
+              "Citation": "Rulebook §6: no ceiling"
+            }
+          },
+          "MinimumYears": {
+            "State": 1,
+            "Value": 3,
+            "Citation": "Rulebook §6"
+          },
+          "LowerInclusive": {
+            "State": 1,
+            "Value": false,
+            "Citation": "Rulebook §6"
+          }
+        }
+      ],
+      "Citation": "Rulebook §6"
+    },
+    "MinimumIncrement": {
+      "State": 1,
+      "Value": 1000,
+      "Citation": "Rulebook §6"
+    },
+    "SnipeAfter": {
+      "State": 1,
+      "Value": 72000000000000,
+      "Citation": "Rulebook §6"
+    },
+    "SnipeIncrement": {
+      "State": 1,
+      "Value": 10000,
+      "Citation": "Rulebook §6"
+    },
+    "MultiYearEndWeek": {
+      "State": 1,
+      "Value": 13,
+      "Citation": "Rulebook §6"
+    },
+    "PlayoffOnlyAfterWeek": {
+      "State": 1,
+      "Value": 12,
+      "Citation": "Rulebook §6"
+    },
+    "PlayoffMaximumYears": {
+      "State": 1,
+      "Value": 1,
+      "Citation": "Rulebook §6"
+    },
+    "PlayoffCapLifted": {
+      "State": 1,
+      "Value": true,
+      "Citation": "Rulebook §6"
+    },
+    "PointDecimals": {
+      "State": 1,
+      "Value": 3,
+      "Citation": "Rulebook §6"
+    }
+  },
+  "Trades": {
+    "Review": {
+      "State": 1,
+      "Value": "dot",
+      "Citation": "Rulebook §14"
+    },
+    "DOTSeats": {
+      "State": 0,
+      "Value": 0,
+      "Citation": "fact 7a: actual seats chosen by league"
+    },
+    "DecideAt": {
+      "State": 1,
+      "Value": 3,
+      "Citation": "fact 7a"
+    },
+    "FutureYears": {
+      "State": 1,
+      "Value": 2,
+      "Citation": "Rulebook §14"
+    },
+    "Rounds": {
+      "State": 1,
+      "Value": {
+        "Min": {
+          "State": 1,
+          "Value": 1,
+          "Citation": "Census CM-014"
+        },
+        "Max": {
+          "State": 1,
+          "Value": 5,
+          "Citation": "Census CM-014"
+        }
+      },
+      "Citation": "Census CM-014"
+    },
+    "RosterGate": {
+      "State": 1,
+      "Value": true,
+      "Citation": "Census CM-014"
+    },
+    "OfferExpiry": {
+      "State": 1,
+      "Value": 604800000000000,
+      "Citation": "Census CM-014"
+    },
+    "MaximumParties": {
+      "State": 1,
+      "Value": 3,
+      "Citation": "ruling 4"
+    },
+    "CompensatoryPicks": {
+      "State": 1,
+      "Value": false,
+      "Citation": "Rulebook §14"
+    },
+    "CapSpace": {
+      "State": 1,
+      "Value": false,
+      "Citation": "Math §11"
+    },
+    "AcceptedWithdrawal": {
+      "State": 1,
+      "Value": false,
+      "Citation": "Rulebook §14"
+    }
+  },
+  "Schedule": {
+    "RegularWeeks": {
+      "State": 1,
+      "Value": 13,
+      "Citation": "Rulebook §5"
+    },
+    "Pattern": {
+      "State": 1,
+      "Value": "division_weighted",
+      "Citation": "Census CM-015"
+    }
+  },
+  "Playoffs": {
+    "PerConference": {
+      "State": 1,
+      "Value": 7,
+      "Citation": "fact 11a"
+    },
+    "DivisionWinners": {
+      "State": 1,
+      "Value": 4,
+      "Citation": "fact 11a"
+    },
+    "WildCards": {
+      "State": 1,
+      "Value": 3,
+      "Citation": "fact 11a"
+    },
+    "ByeSeed": {
+      "State": 1,
+      "Value": 1,
+      "Citation": "fact 11a"
+    },
+    "Seeding": {
+      "State": 1,
+      "Value": "division_winners_first",
+      "Citation": "fact 11b"
+    },
+    "Reseed": {
+      "State": 1,
+      "Value": true,
+      "Citation": "fact 11b"
+    },
+    "StartWeek": {
+      "State": 1,
+      "Value": 14,
+      "Citation": "Census CM-016"
+    },
+    "FinalWeek": {
+      "State": 1,
+      "Value": 17,
+      "Citation": "Census CM-016"
+    },
+    "HomeBonus": {
+      "State": 1,
+      "Value": 30000,
+      "Citation": "Rulebook §5"
+    },
+    "Graph": {
+      "State": 1,
+      "Value": [
+        {
+          "ID": {
+            "State": 1,
+            "Value": "wildcard_2",
+            "Citation": "fact 11a-b"
+          },
+          "Week": {
+            "State": 1,
+            "Value": 14,
+            "Citation": "Census CM-016"
+          },
+          "HomeSeed": {
+            "State": 1,
+            "Value": 2,
+            "Citation": "fact 11a-b"
+          },
+          "AwaySeed": {
+            "State": 1,
+            "Value": 7,
+            "Citation": "fact 11a-b"
+          },
+          "HomeWinner": {
+            "State": 1,
+            "Value": "",
+            "Citation": "fact 11b"
+          },
+          "AwayWinner": {
+            "State": 1,
+            "Value": "",
+            "Citation": "fact 11b"
+          }
+        },
+        {
+          "ID": {
+            "State": 1,
+            "Value": "wildcard_3",
+            "Citation": "fact 11a-b"
+          },
+          "Week": {
+            "State": 1,
+            "Value": 14,
+            "Citation": "Census CM-016"
+          },
+          "HomeSeed": {
+            "State": 1,
+            "Value": 3,
+            "Citation": "fact 11a-b"
+          },
+          "AwaySeed": {
+            "State": 1,
+            "Value": 6,
+            "Citation": "fact 11a-b"
+          },
+          "HomeWinner": {
+            "State": 1,
+            "Value": "",
+            "Citation": "fact 11b"
+          },
+          "AwayWinner": {
+            "State": 1,
+            "Value": "",
+            "Citation": "fact 11b"
+          }
+        },
+        {
+          "ID": {
+            "State": 1,
+            "Value": "wildcard_4",
+            "Citation": "fact 11a-b"
+          },
+          "Week": {
+            "State": 1,
+            "Value": 14,
+            "Citation": "Census CM-016"
+          },
+          "HomeSeed": {
+            "State": 1,
+            "Value": 4,
+            "Citation": "fact 11a-b"
+          },
+          "AwaySeed": {
+            "State": 1,
+            "Value": 5,
+            "Citation": "fact 11a-b"
+          },
+          "HomeWinner": {
+            "State": 1,
+            "Value": "",
+            "Citation": "fact 11b"
+          },
+          "AwayWinner": {
+            "State": 1,
+            "Value": "",
+            "Citation": "fact 11b"
+          }
+        },
+        {
+          "ID": {
+            "State": 1,
+            "Value": "division_1",
+            "Citation": "fact 11a-b"
+          },
+          "Week": {
+            "State": 1,
+            "Value": 15,
+            "Citation": "Census CM-016"
+          },
+          "HomeSeed": {
+            "State": 1,
+            "Value": 1,
+            "Citation": "fact 11a-b"
+          },
+          "AwaySeed": {
+            "State": 0,
+            "Value": 0,
+            "Citation": "fact 11b: reseeded winner"
+          },
+          "HomeWinner": {
+            "State": 1,
+            "Value": "",
+            "Citation": "fact 11b"
+          },
+          "AwayWinner": {
+            "State": 1,
+            "Value": "lowest remaining seed",
+            "Citation": "fact 11b"
+          }
+        },
+        {
+          "ID": {
+            "State": 1,
+            "Value": "division_2",
+            "Citation": "fact 11a-b"
+          },
+          "Week": {
+            "State": 1,
+            "Value": 15,
+            "Citation": "Census CM-016"
+          },
+          "HomeSeed": {
+            "State": 0,
+            "Value": 0,
+            "Citation": "fact 11b: reseeded winner"
+          },
+          "AwaySeed": {
+            "State": 0,
+            "Value": 0,
+            "Citation": "fact 11b: reseeded winner"
+          },
+          "HomeWinner": {
+            "State": 1,
+            "Value": "highest remaining seed",
+            "Citation": "fact 11b"
+          },
+          "AwayWinner": {
+            "State": 1,
+            "Value": "other remaining seed",
+            "Citation": "fact 11b"
+          }
+        },
+        {
+          "ID": {
+            "State": 1,
+            "Value": "conference",
+            "Citation": "fact 11a-b"
+          },
+          "Week": {
+            "State": 1,
+            "Value": 16,
+            "Citation": "Census CM-016"
+          },
+          "HomeSeed": {
+            "State": 0,
+            "Value": 0,
+            "Citation": "fact 11b: reseeded winner"
+          },
+          "AwaySeed": {
+            "State": 0,
+            "Value": 0,
+            "Citation": "fact 11b: reseeded winner"
+          },
+          "HomeWinner": {
+            "State": 1,
+            "Value": "division winner",
+            "Citation": "fact 11b"
+          },
+          "AwayWinner": {
+            "State": 1,
+            "Value": "division winner",
+            "Citation": "fact 11b"
+          }
+        },
+        {
+          "ID": {
+            "State": 1,
+            "Value": "championship",
+            "Citation": "fact 11a-b"
+          },
+          "Week": {
+            "State": 1,
+            "Value": 17,
+            "Citation": "Census CM-016"
+          },
+          "HomeSeed": {
+            "State": 0,
+            "Value": 0,
+            "Citation": "fact 11b: reseeded winner"
+          },
+          "AwaySeed": {
+            "State": 0,
+            "Value": 0,
+            "Citation": "fact 11b: reseeded winner"
+          },
+          "HomeWinner": {
+            "State": 1,
+            "Value": "conference winner",
+            "Citation": "fact 11b"
+          },
+          "AwayWinner": {
+            "State": 1,
+            "Value": "conference winner",
+            "Citation": "fact 11b"
+          }
+        }
+      ],
+      "Citation": "fact 11a-b"
+    }
+  },
+  "House": {
+    "Texts": {
+      "State": 1,
+      "Value": {
+        "legacy-reference": "docs/league-rules/Official_Rulebook.md v2026 (read-only reference)"
+      },
+      "Citation": "Census CM-017"
+    }
+  },
+  "Calendar": {
+    "Windows": {
+      "State": 1,
+      "Value": {
+        "contracts": {
+          "Start": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 3,
+                "Citation": "Census CM-023"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 1,
+                "Citation": "Census CM-023"
+              }
+            },
+            "Citation": "Census CM-023"
+          },
+          "End": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 4,
+                "Citation": "Census CM-023"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 30,
+                "Citation": "Census CM-023"
+              }
+            },
+            "Citation": "Census CM-023"
+          },
+          "Opens": {
+            "State": 0,
+            "Value": null,
+            "Citation": "Census CM-023: actions chosen by commissioner"
+          },
+          "DatedStart": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          },
+          "DatedEnd": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          }
+        },
+        "cut_buyout": {
+          "Start": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 8,
+                "Citation": "Census CM-023"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 25,
+                "Citation": "Census CM-023"
+              }
+            },
+            "Citation": "Census CM-023"
+          },
+          "End": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 9,
+                "Citation": "Census CM-023"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 1,
+                "Citation": "Census CM-023"
+              }
+            },
+            "Citation": "Census CM-023"
+          },
+          "Opens": {
+            "State": 1,
+            "Value": [
+              "cut",
+              "buyout"
+            ],
+            "Citation": "Census CM-023"
+          },
+          "DatedStart": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          },
+          "DatedEnd": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          }
+        },
+        "open_fa": {
+          "Start": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 5,
+                "Citation": "Census CM-023"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 19,
+                "Citation": "Census CM-023"
+              }
+            },
+            "Citation": "Census CM-023"
+          },
+          "End": {
+            "State": 0,
+            "Value": {
+              "Month": {
+                "State": 0,
+                "Value": 0,
+                "Citation": ""
+              },
+              "Day": {
+                "State": 0,
+                "Value": 0,
+                "Citation": ""
+              }
+            },
+            "Citation": "Census CM-023: no closing date given"
+          },
+          "Opens": {
+            "State": 1,
+            "Value": [
+              "ufa_bid"
+            ],
+            "Citation": "Census CM-023"
+          },
+          "DatedStart": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          },
+          "DatedEnd": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          }
+        },
+        "resign": {
+          "Start": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 5,
+                "Citation": "Census CM-023"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 10,
+                "Citation": "Census CM-023"
+              }
+            },
+            "Citation": "Census CM-023"
+          },
+          "End": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 5,
+                "Citation": "Census CM-023"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 15,
+                "Citation": "Census CM-023"
+              }
+            },
+            "Citation": "Census CM-023"
+          },
+          "Opens": {
+            "State": 1,
+            "Value": [
+              "resign"
+            ],
+            "Citation": "Census CM-023"
+          },
+          "DatedStart": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          },
+          "DatedEnd": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          }
+        },
+        "rfa_tenders": {
+          "Start": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 5,
+                "Citation": "Census CM-023"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 1,
+                "Citation": "Census CM-023"
+              }
+            },
+            "Citation": "Census CM-023"
+          },
+          "End": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 5,
+                "Citation": "Census CM-023"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 3,
+                "Citation": "Census CM-023"
+              }
+            },
+            "Citation": "Census CM-023"
+          },
+          "Opens": {
+            "State": 1,
+            "Value": [
+              "rfa_tender"
+            ],
+            "Citation": "Census CM-023"
+          },
+          "DatedStart": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          },
+          "DatedEnd": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          }
+        },
+        "rookie_draft": {
+          "Start": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 7,
+                "Citation": "Census CM-023"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 14,
+                "Citation": "Census CM-023"
+              }
+            },
+            "Citation": "Census CM-023"
+          },
+          "End": {
+            "State": 0,
+            "Value": {
+              "Month": {
+                "State": 0,
+                "Value": 0,
+                "Citation": ""
+              },
+              "Day": {
+                "State": 0,
+                "Value": 0,
+                "Citation": ""
+              }
+            },
+            "Citation": "Census CM-023: no closing date given"
+          },
+          "Opens": {
+            "State": 1,
+            "Value": [
+              "draft_pick"
+            ],
+            "Citation": "Census CM-023"
+          },
+          "DatedStart": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          },
+          "DatedEnd": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          }
+        },
+        "ufa": {
+          "Start": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 5,
+                "Citation": "Census CM-023"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 3,
+                "Citation": "Census CM-023"
+              }
+            },
+            "Citation": "Census CM-023"
+          },
+          "End": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 5,
+                "Citation": "Census CM-023"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 10,
+                "Citation": "Census CM-023"
+              }
+            },
+            "Citation": "Census CM-023"
+          },
+          "Opens": {
+            "State": 1,
+            "Value": [
+              "ufa_bid"
+            ],
+            "Citation": "Census CM-023"
+          },
+          "DatedStart": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          },
+          "DatedEnd": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          }
+        }
+      },
+      "Citation": "Census CM-023"
+    },
+    "Timezone": {
+      "State": 1,
+      "Value": "America/New_York",
+      "Citation": "fact 12a"
+    },
+    "Boundary": {
+      "State": 0,
+      "Value": "",
+      "Citation": "fact 12b: commissioner chooses"
+    },
+    "Rollover": {
+      "State": 0,
+      "Value": "0001-01-01T00:00:00Z",
+      "Citation": "fact 9b: March 1 requires a dated season"
+    },
+    "RolloverDate": {
+      "State": 1,
+      "Value": {
+        "Month": {
+          "State": 1,
+          "Value": 3,
+          "Citation": "fact 9b"
+        },
+        "Day": {
+          "State": 1,
+          "Value": 1,
+          "Citation": "fact 9b"
+        }
+      },
+      "Citation": "fact 9b"
+    },
+    "TradeDeadline": {
+      "State": 0,
+      "Value": "0001-01-01T00:00:00Z",
+      "Citation": "fact 12c: exact instant chosen by commissioner"
+    },
+    "TradeDeadlineWeek": {
+      "State": 1,
+      "Value": 9,
+      "Citation": "fact 12c"
+    }
+  },
+  "Draft": {
+    "Mode": {
+      "State": 1,
+      "Value": "slow",
+      "Citation": "Census CM-040"
+    },
+    "Clock": {
+      "State": 1,
+      "Value": 21600000000000,
+      "Citation": "Census CM-040"
+    },
+    "OnExpire": {
+      "State": 1,
+      "Value": "skip",
+      "Citation": "Census CM-040"
+    },
+    "Timeouts": {
+      "State": 1,
+      "Value": {
+        "Unlimited": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Census CM-040"
+        },
+        "Count": {
+          "State": 0,
+          "Value": 0,
+          "Citation": "Census CM-040: unlimited"
+        }
+      },
+      "Citation": "Census CM-040"
+    },
+    "Rounds": {
+      "State": 1,
+      "Value": 5,
+      "Citation": "Rulebook §15"
+    },
+    "MaximumPicks": {
+      "State": 1,
+      "Value": 15,
+      "Citation": "Rulebook §15"
+    },
+    "ForfeitExtra": {
+      "State": 1,
+      "Value": true,
+      "Citation": "Rulebook §15"
+    },
+    "Pricing": {
+      "State": 1,
+      "Value": {
+        "1": [
+          {
+            "Slots": {
+              "Min": {
+                "State": 1,
+                "Value": 1,
+                "Citation": "Rulebook §15"
+              },
+              "Max": {
+                "State": 1,
+                "Value": 10,
+                "Citation": "Rulebook §15"
+              }
+            },
+            "Salary": {
+              "State": 1,
+              "Value": 300000000,
+              "Citation": "Rulebook §15"
+            }
+          },
+          {
+            "Slots": {
+              "Min": {
+                "State": 1,
+                "Value": 11,
+                "Citation": "Rulebook §15"
+              },
+              "Max": {
+                "State": 1,
+                "Value": 15,
+                "Citation": "Rulebook §15"
+              }
+            },
+            "Salary": {
+              "State": 1,
+              "Value": 240000000,
+              "Citation": "Rulebook §15"
+            }
+          },
+          {
+            "Slots": {
+              "Min": {
+                "State": 1,
+                "Value": 16,
+                "Citation": "Rulebook §15"
+              },
+              "Max": {
+                "State": 1,
+                "Value": 20,
+                "Citation": "Rulebook §15"
+              }
+            },
+            "Salary": {
+              "State": 1,
+              "Value": 200000000,
+              "Citation": "Rulebook §15"
+            }
+          },
+          {
+            "Slots": {
+              "Min": {
+                "State": 1,
+                "Value": 21,
+                "Citation": "Rulebook §15"
+              },
+              "Max": {
+                "State": 1,
+                "Value": 32,
+                "Citation": "Rulebook §15"
+              }
+            },
+            "Salary": {
+              "State": 1,
+              "Value": 150000000,
+              "Citation": "Rulebook §15"
+            }
+          }
+        ],
+        "2": [
+          {
+            "Slots": {
+              "Min": {
+                "State": 1,
+                "Value": 1,
+                "Citation": "Rulebook §15"
+              },
+              "Max": {
+                "State": 1,
+                "Value": 12,
+                "Citation": "Rulebook §15"
+              }
+            },
+            "Salary": {
+              "State": 1,
+              "Value": 142000000,
+              "Citation": "Rulebook §15"
+            }
+          },
+          {
+            "Slots": {
+              "Min": {
+                "State": 1,
+                "Value": 13,
+                "Citation": "Rulebook §15"
+              },
+              "Max": {
+                "State": 1,
+                "Value": 24,
+                "Citation": "Rulebook §15"
+              }
+            },
+            "Salary": {
+              "State": 1,
+              "Value": 125000000,
+              "Citation": "Rulebook §15"
+            }
+          },
+          {
+            "Slots": {
+              "Min": {
+                "State": 1,
+                "Value": 25,
+                "Citation": "Rulebook §15"
+              },
+              "Max": {
+                "State": 1,
+                "Value": 32,
+                "Citation": "Rulebook §15"
+              }
+            },
+            "Salary": {
+              "State": 1,
+              "Value": 108000000,
+              "Citation": "Rulebook §15"
+            }
+          }
+        ],
+        "3": [
+          {
+            "Slots": {
+              "Min": {
+                "State": 1,
+                "Value": 1,
+                "Citation": "Rulebook §15"
+              },
+              "Max": {
+                "State": 1,
+                "Value": 16,
+                "Citation": "Rulebook §15"
+              }
+            },
+            "Salary": {
+              "State": 1,
+              "Value": 83000000,
+              "Citation": "Rulebook §15"
+            }
+          },
+          {
+            "Slots": {
+              "Min": {
+                "State": 1,
+                "Value": 17,
+                "Citation": "Rulebook §15"
+              },
+              "Max": {
+                "State": 1,
+                "Value": 32,
+                "Citation": "Rulebook §15"
+              }
+            },
+            "Salary": {
+              "State": 1,
+              "Value": 67000000,
+              "Citation": "Rulebook §15"
+            }
+          }
+        ],
+        "4": [
+          {
+            "Slots": {
+              "Min": {
+                "State": 1,
+                "Value": 1,
+                "Citation": "Rulebook §15"
+              },
+              "Max": {
+                "State": 1,
+                "Value": 32,
+                "Citation": "Rulebook §15"
+              }
+            },
+            "Salary": {
+              "State": 1,
+              "Value": 60000000,
+              "Citation": "Rulebook §15"
+            }
+          }
+        ],
+        "5": [
+          {
+            "Slots": {
+              "Min": {
+                "State": 1,
+                "Value": 1,
+                "Citation": "Rulebook §15"
+              },
+              "Max": {
+                "State": 1,
+                "Value": 32,
+                "Citation": "Rulebook §15"
+              }
+            },
+            "Salary": {
+              "State": 1,
+              "Value": 50000000,
+              "Citation": "Rulebook §15"
+            }
+          }
+        ]
+      },
+      "Citation": "Rulebook §15"
+    },
+    "Lengths": {
+      "State": 1,
+      "Value": {
+        "1": {
+          "State": 1,
+          "Value": 5,
+          "Citation": "Rulebook §15"
+        },
+        "2": {
+          "State": 1,
+          "Value": 3,
+          "Citation": "Rulebook §15"
+        },
+        "3": {
+          "State": 1,
+          "Value": 3,
+          "Citation": "Rulebook §15"
+        },
+        "4": {
+          "State": 1,
+          "Value": 3,
+          "Citation": "Rulebook §15"
+        },
+        "5": {
+          "State": 1,
+          "Value": 3,
+          "Citation": "Rulebook §15"
+        }
+      },
+      "Citation": "Rulebook §15"
+    },
+    "RFAAfter": {
+      "State": 1,
+      "Value": {
+        "1": {
+          "State": 1,
+          "Value": false,
+          "Citation": "Rulebook §15"
+        },
+        "2": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §15"
+        },
+        "3": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §15"
+        },
+        "4": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §15"
+        },
+        "5": {
+          "State": 1,
+          "Value": true,
+          "Citation": "Rulebook §15"
+        }
+      },
+      "Citation": "Rulebook §15"
+    },
+    "OrderSource": {
+      "State": 1,
+      "Value": "standings",
+      "Citation": "Census CM-041"
+    },
+    "Order": {
+      "State": 1,
+      "Value": {},
+      "Citation": "Census CM-041"
+    },
+    "LaterPattern": {
+      "State": 0,
+      "Value": "",
+      "Citation": "Census CM-041 Q-E1"
+    },
+    "TieRule": {
+      "State": 0,
+      "Value": "",
+      "Citation": "Census CM-041 Q-E1"
+    }
+  }
+}
