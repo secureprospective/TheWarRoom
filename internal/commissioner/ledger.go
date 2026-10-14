@@ -154,6 +154,12 @@ type NativeLeague struct {
 func entryLabel(records []Record, i int) (string, error) {
 	r := records[i]
 	switch r.Command.Command {
+	case PlayerPosition, PlayerPositionClear, ScorePlayer, ScoreFranchise:
+		change, err := DecodeScoreChange(r.Command.Args, r.Command.Command)
+		if err != nil {
+			return "", err
+		}
+		return scoreChangeLabel(r.Command.Command, change), nil
 	case RulesSet:
 		return ruleLabel(r, records[:i])
 	case Revert:

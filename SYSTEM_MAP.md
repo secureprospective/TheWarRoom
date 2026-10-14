@@ -405,3 +405,14 @@ returned newest first with held timestamps, exact quantities and the feed positi
 stays absent rather than reusing an older line. Play-by-play is not a registered Signals feed, so each
 weekly revision explicitly reports that missing evidence; consumers must not treat it as a complete
 native scoring line. No fixture or network fallback is installed.
+
+`source.IdentityPort` reads the existing `history.Store.SourceID` crosswalk; `ReadNativeEvidence`
+validates a league player/week, selects only the newest held revision and preserves missing identity,
+week and play-by-play as explicit absence. It does not fetch or manufacture a zero stat line.
+`internal/commissioner/score_commands.go` adds CM-030 position set/clear and CM-032 season/week-scoped
+player/franchise deltas through the existing command ledger, with CC+ permission, reasons and G2/G3.
+`score_changes.go` folds compensation before selecting native scoring position and adding each delta
+once, retaining linked ledger provenance; overflow is refused on append and compensation.
+`ResultFlipCheck` explicitly reports that a change of game result is not known yet. These utilities
+are not yet composed into `TargetNativePlayerScore`; season-bound `RulesInForce` and the score reading
+remain unimplemented. Existing MFL owner readings and scouting positions are unchanged.

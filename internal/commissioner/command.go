@@ -65,6 +65,10 @@ func DefinitionFor(command string) (Definition, error) {
 	switch command {
 	case Create, Revert:
 		return Definition{Gravity: "G3"}, nil
+	case PlayerPosition, PlayerPositionClear, ScorePlayer:
+		return Definition{Gravity: "G2"}, nil
+	case ScoreFranchise:
+		return Definition{Gravity: "G3"}, nil
 	default:
 		if d, ok := peopleDefinitionFor(command); ok {
 			return Definition{Gravity: d.gravity}, nil
@@ -86,11 +90,13 @@ type RawArgs struct {
 }
 
 func (a RawArgs) Validate(command string) error {
-	if (command != RulesSet && (a.Field != "" || len(a.Value) != 0)) || (command != Create &&
-		(a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0)) {
-		return fmt.Errorf("send only the details of this league action")
+	if err := a.validateExclusiveArgs(command); err != nil {
+		return err
 	}
 	switch command {
+	case PlayerPosition, PlayerPositionClear, ScorePlayer, ScoreFranchise:
+		_, err := DecodeScoreChange(a, command)
+		return err
 	case RulesSet:
 		return a.validateRule()
 	case Create:
@@ -152,6 +158,10 @@ func (r RawCommand) Validate() error {
 }
 
 func (r RawCommand) validatePlacement() error {
+	switch r.Command {
+	case PlayerPosition, PlayerPositionClear, ScorePlayer, ScoreFranchise:
+		return r.validateScorePlacement()
+	}
 	if r.Command == RulesSet {
 		return r.validateRulePlacement()
 	}

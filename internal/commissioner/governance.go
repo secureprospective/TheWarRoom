@@ -64,6 +64,10 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 		control = "CM-001"
 	case Revert:
 		control = "CM-039"
+	case PlayerPosition, PlayerPositionClear:
+		control = "CM-030"
+	case ScorePlayer, ScoreFranchise:
+		control = "CM-032"
 	case "commish.ledger.read":
 		p := governance.Principal(principal)
 		if a.State.HasRole(p, governance.Commissioner) {
@@ -159,6 +163,14 @@ func authorizeReversal(auth GovernanceAuthorizer, entry, principal string, recor
 }
 
 func CheckGovernanceAppend(raw RawCommand, principal string, records []Record, at time.Time) error {
+	switch raw.Command {
+	case Revert:
+		if err := checkScoreCompensation(raw, records); err != nil {
+			return err
+		}
+	case PlayerPosition, PlayerPositionClear, ScorePlayer, ScoreFranchise:
+		return checkScoreAppend(raw, records)
+	}
 	trial := make([]Record, len(records), len(records)+1)
 	copy(trial, records)
 	trial = append(trial, Record{Command: raw, Principal: principal,
