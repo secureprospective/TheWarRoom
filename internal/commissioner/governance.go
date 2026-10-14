@@ -60,7 +60,7 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 	}
 	control := ""
 	switch command {
-	case Create:
+	case Create, NativeSeed:
 		control = "CM-001"
 	case Revert:
 		control = "CM-039"

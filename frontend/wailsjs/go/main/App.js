@@ -310,6 +310,14 @@ export function TargetNFLDraft() {
   return window['go']['main']['App']['TargetNFLDraft']();
 }
 
+export function TargetNativeAssets(arg1) {
+  return window['go']['main']['App']['TargetNativeAssets'](arg1);
+}
+
+export function TargetNativeSeed(arg1) {
+  return window['go']['main']['App']['TargetNativeSeed'](arg1);
+}
+
 export function TargetNow(arg1, arg2, arg3) {
   return window['go']['main']['App']['TargetNow'](arg1, arg2, arg3);
 }

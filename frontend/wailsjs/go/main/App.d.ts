@@ -161,6 +161,10 @@ export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 
 export function TargetNFLDraft():Promise<main.Report>;
 
+export function TargetNativeAssets(arg1:string):Promise<commissioner.NativeAssets>;
+
+export function TargetNativeSeed(arg1:main.RawNativeSeedRequest):Promise<commissioner.Receipt>;
+
 export function TargetNow(arg1:number,arg2:number,arg3:string):Promise<main.NowBoard>;
 
 export function TargetNowRefresh(arg1:number,arg2:boolean):Promise<void>;
