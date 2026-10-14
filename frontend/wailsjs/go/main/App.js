@@ -170,6 +170,14 @@ export function TargetBylaws() {
   return window['go']['main']['App']['TargetBylaws']();
 }
 
+export function TargetCacheClear(arg1) {
+  return window['go']['main']['App']['TargetCacheClear'](arg1);
+}
+
+export function TargetCacheScopes() {
+  return window['go']['main']['App']['TargetCacheScopes']();
+}
+
 export function TargetCheckLineup(arg1, arg2) {
   return window['go']['main']['App']['TargetCheckLineup'](arg1, arg2);
 }
@@ -184,6 +192,10 @@ export function TargetClock() {
 
 export function TargetCommissionerControls() {
   return window['go']['main']['App']['TargetCommissionerControls']();
+}
+
+export function TargetCommissionerDigests(arg1) {
+  return window['go']['main']['App']['TargetCommissionerDigests'](arg1);
 }
 
 export function TargetCommissionerExecute(arg1) {
@@ -204,6 +216,10 @@ export function TargetCommissionerLedger(arg1) {
 
 export function TargetCommissionerLedgerFiltered(arg1, arg2) {
   return window['go']['main']['App']['TargetCommissionerLedgerFiltered'](arg1, arg2);
+}
+
+export function TargetCommissionerNotices(arg1) {
+  return window['go']['main']['App']['TargetCommissionerNotices'](arg1);
 }
 
 export function TargetCommissionerPeople(arg1) {

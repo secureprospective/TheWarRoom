@@ -140,6 +140,73 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class Digest {
+	    id: string;
+	    sentence: string;
+	    // Go type: time
+	    when: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new Digest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.sentence = source["sentence"];
+	        this.when = this.convertValues(source["when"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Digests {
+	    league: string;
+	    digests: Digest[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Digests(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.digests = this.convertValues(source["digests"], Digest);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Entry {
 	    id: string;
 	    who: string;
@@ -165,6 +232,43 @@ export namespace commissioner {
 	        this.gravity = source["gravity"];
 	        this.undo = source["undo"];
 	        this.replacedAt = source["replacedAt"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Governed {
+	    entry: string;
+	    who: string;
+	    // Go type: time
+	    when: any;
+	    change: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Governed(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.entry = source["entry"];
+	        this.who = source["who"];
+	        this.when = this.convertValues(source["when"], null);
+	        this.change = source["change"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -245,6 +349,139 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class MailLog {
+	    words: string;
+	    recorded: Note[];
+	
+	    static createFrom(source: any = {}) {
+	        return new MailLog(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.words = source["words"];
+	        this.recorded = this.convertValues(source["recorded"], Note);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Release {
+	    date: string;
+	    title: string;
+	    words: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Release(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.date = source["date"];
+	        this.title = source["title"];
+	        this.words = source["words"];
+	    }
+	}
+	export class Note {
+	    id: string;
+	    kind: string;
+	    text: string;
+	    pinned: boolean;
+	    who: string;
+	    // Go type: time
+	    when: any;
+	    withdrawn: boolean;
+	    change: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Note(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.kind = source["kind"];
+	        this.text = source["text"];
+	        this.pinned = source["pinned"];
+	        this.who = source["who"];
+	        this.when = this.convertValues(source["when"], null);
+	        this.withdrawn = source["withdrawn"];
+	        this.change = source["change"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class LeagueNotes {
+	    league: string;
+	    revision: number;
+	    notices: Note[];
+	    notes: Note[];
+	    releases: Release[];
+	    mail: MailLog;
+	
+	    static createFrom(source: any = {}) {
+	        return new LeagueNotes(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.revision = source["revision"];
+	        this.notices = this.convertValues(source["notices"], Note);
+	        this.notes = this.convertValues(source["notes"], Note);
+	        this.releases = this.convertValues(source["releases"], Release);
+	        this.mail = this.convertValues(source["mail"], MailLog);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Ledger {
 	    league: string;
 	    name: string;
@@ -281,6 +518,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	export class NativeLeague {
 	    id: string;
 	    name: string;
@@ -295,6 +533,7 @@ export namespace commissioner {
 	        this.name = source["name"];
 	    }
 	}
+	
 	export class PeopleVoteCount {
 	    choice: string;
 	    ballots: number;
@@ -422,6 +661,7 @@ export namespace commissioner {
 	    yourRole: string;
 	    mayChangeRules: boolean;
 	    mayGrantRoles: boolean;
+	    mayPostNotices: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new People(source);
@@ -442,6 +682,7 @@ export namespace commissioner {
 	        this.yourRole = source["yourRole"];
 	        this.mayChangeRules = source["mayChangeRules"];
 	        this.mayGrantRoles = source["mayGrantRoles"];
+	        this.mayPostNotices = source["mayPostNotices"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -603,6 +844,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	export class RulePending {
 	    entry: string;
 	    value: string;
@@ -648,6 +890,7 @@ export namespace commissioner {
 	    current: number[];
 	    unit: string;
 	    safeguards: RuleSafeguards;
+	    governed?: Governed;
 	
 	    static createFrom(source: any = {}) {
 	        return new RuleRow(source);
@@ -667,6 +910,7 @@ export namespace commissioner {
 	        this.current = source["current"];
 	        this.unit = source["unit"];
 	        this.safeguards = this.convertValues(source["safeguards"], RuleSafeguards);
+	        this.governed = this.convertValues(source["governed"], Governed);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

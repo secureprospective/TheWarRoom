@@ -190,3 +190,23 @@ func LegacyNFLForTeams(count int) RuleSet {
 	r.Trades.MaximumParties = cited(min(3, count), "Legacy template: bounded by team count")
 	return r
 }
+
+// NotifyRules are what the league tells its owners inside the app. Nothing is delivered outside it.
+type NotifyRules struct {
+	Transactions Value[bool]
+	Reminders    Value[bool]
+}
+
+func legacyNotify() NotifyRules {
+	return NotifyRules{
+		Transactions: cited[bool](true, "Census CM-051"),
+		Reminders:    cited[bool](true, "Census CM-051"),
+	}
+}
+
+func notifyFields() []ruleField {
+	return []ruleField{
+		field[bool]{path: "notify.transactions", label: "Tell the league about transactions", access: func(r *RuleSet) *Value[bool] { return &r.Notify.Transactions }},
+		field[bool]{path: "notify.reminders", label: "Remind owners of deadlines", access: func(r *RuleSet) *Value[bool] { return &r.Notify.Reminders }},
+	}
+}

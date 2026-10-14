@@ -12,6 +12,18 @@
     "safeguard": "reason"
   },
   {
+    "command": "commish.notice.publish",
+    "effective": "now",
+    "field": "",
+    "safeguard": "confirm"
+  },
+  {
+    "command": "commish.whatsnew.post",
+    "effective": "now",
+    "field": "",
+    "safeguard": "confirm"
+  },
+  {
     "command": "commish.franchise.edit",
     "effective": "now",
     "field": "",

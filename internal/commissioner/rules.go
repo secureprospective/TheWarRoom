@@ -36,7 +36,7 @@ func ruleOwners() []ruleOwner {
 		{"draft.onExpire", "CM-040", "G2"}, {"draft.timeouts", "CM-040", "G2"},
 		{"draft.rounds", "CM-040", "G2"}, {"draft.maximumPicks", "CM-040", "G2"},
 		{"draft.forfeitExtra", "CM-040", "G2"}, {"draft.pricing", "CM-040", "G2"},
-		{"draft.lengths", "CM-040", "G2"}, {"draft.rfaAfter", "CM-040", "G2"},
+		{"notify.", "CM-051", "G1"}, {"draft.lengths", "CM-040", "G2"}, {"draft.rfaAfter", "CM-040", "G2"},
 		{"draft.orderSource", "CM-041", "G2"}, {"draft.order", "CM-041", "G2"},
 		{"draft.laterPattern", "CM-041", "G2"}, {"draft.tieRule", "CM-041", "G2"},
 	}

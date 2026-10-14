@@ -1,4 +1,5 @@
 import { Act } from '../commands/Act';
+import { GovernedGlyph } from '../governed/GovernedGlyph';
 import type { Entry } from './controls';
 import type { RuleRow } from './rules';
 
@@ -23,6 +24,7 @@ export function ControlRow({ entry, rules, mayChange, refer }: Props) {
             return (
               <li key={f.field}>
                 <span>{f.label}: {row ? row.value : 'Not read yet'}</span>
+                {row?.governed && <GovernedGlyph governed={row.governed} subject={f.label} />}
                 {mayChange && row && <Act verb="commissioner.surface" variant="text"
                   args={{ screen: 'landing', action: 'open', value: `${entry.id} ${f.field}` }}
                   label={`Change ${f.label}`}>Change</Act>}

@@ -134,3 +134,14 @@
 @media (prefers-reduced-motion: reduce) {
   .twr-app .side-tray .hold-fill { transition: none; }
 }
+
+.twr-app .league-notes, .twr-app .release-notes, .twr-app .mail-log, .twr-app .league-digest {
+  display: grid; gap: 8px; margin: 0; padding: 0; list-style: none;
+}
+.twr-app .league-notes li, .twr-app .release-notes li, .twr-app .mail-log li, .twr-app .league-digest li {
+  border-top: 1px solid var(--surface-line); padding-top: 8px;
+}
+.twr-app .league-notes li[data-pinned="true"] { border-top-color: var(--surface-tx1); }
+.twr-app .note-pin { color: var(--surface-tx2); }
+.twr-app .note-text { white-space: pre-wrap; }
+.twr-app .note-by, .twr-app .release-notes p, .twr-app .mail-log p { margin: 0; color: var(--surface-tx2); }

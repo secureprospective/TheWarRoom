@@ -63,7 +63,8 @@ describe('League rules screen', () => {
     expect(row?.textContent).toContain('20 to 70');
     expect(row?.textContent).toContain('25 to 60: Waits for the next rollover');
     const cells = row?.children.map(c => c.textContent) ?? [];
-    expect(cells[1]).toBe('20 to 70');
+    expect(cells[1]).toContain('20 to 70');
+    expect(cells[1]).not.toContain('25 to 60');
   });
   it('draws scoring as grouped tables from its schema, with unused stats folded away', async () => {
     const host = await show(render(LeagueRules), { rules: withStats({ assist: false, assist_line: false }) });

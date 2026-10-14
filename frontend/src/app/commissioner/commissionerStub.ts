@@ -7,6 +7,8 @@ import peopleWire from './people.wire.testdata.json';
 import rulesWire from './rules.wire.testdata.json';
 import previewWire from './preview.wire.testdata.json';
 import formsWire from './preview-forms.wire.testdata.json';
+import noticesWire from './notices.wire.testdata.json';
+import digestsWire from './digests.wire.testdata.json';
 
 // The Go bindings as the forms see them: readings are the Go-written fixtures, and every execute call
 // is recorded so a test can read exactly what was sent.
@@ -24,6 +26,8 @@ function previewFor(sent: Sent) {
   if (sent.command === 'commish.league.create') return formsWire.start;
   if (sent.command === 'commish.correction.revert') return formsWire.undo;
   if (sent.command.startsWith('commish.role.')) return formsWire.role;
+  if (sent.command === 'commish.notice.publish') return formsWire.notice;
+  if (sent.command === 'commish.whatsnew.post') return formsWire.note;
   return sent.effective === 'now' ? previewWire.reason : previewWire.hold;
 }
 type Reading = unknown | (() => unknown);
@@ -43,6 +47,8 @@ export function stub(over: Partial<App> = {}, readings: { people?: Reading; rule
       calls.rules.push(league);
       return read(readings.rules ?? rulesWire);
     },
+    TargetCommissionerNotices: async () => noticesWire.commissioner,
+    TargetCommissionerDigests: async () => digestsWire.creator,
     TargetCommissionerPeople: async league => {
       calls.people.push(league);
       return read(readings.people ?? peopleWire.commissioner);

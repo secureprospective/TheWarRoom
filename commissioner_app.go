@@ -163,3 +163,42 @@ func (a *App) TargetCommissionerJobs(league string) (commissioner.Jobs, error) {
 func (a *App) TargetCommissionerControls() commissioner.Controls {
 	return commissioner.ControlsReading()
 }
+
+// TargetCommissionerNotices reads the posted notices, league notes, release notes and the mail log. Every
+// owner may read it.
+func (a *App) TargetCommissionerNotices(league string) (commissioner.LeagueNotes, error) {
+	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
+		return commissioner.LeagueNotes{}, fmt.Errorf("choose an app league")
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.LeagueNotes{}, fmt.Errorf("league notices startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.CommissionerNotes(ctx, league)
+	if err != nil {
+		return commissioner.LeagueNotes{}, fmt.Errorf("league notices: %w", err)
+	}
+	return reading, nil
+}
+
+// TargetCommissionerDigests writes a plain sentence for each change that took a hold or a typed reason.
+func (a *App) TargetCommissionerDigests(league string) (commissioner.Digests, error) {
+	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
+		return commissioner.Digests{}, fmt.Errorf("choose an app league")
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.Digests{}, fmt.Errorf("league digests startup: %w", err)
+	}
+	principal, err := a.commissionerPrincipal()
+	if err != nil {
+		return commissioner.Digests{}, err
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.CommissionerDigests(ctx, league, principal, a.commissionerAuthorizer)
+	if err != nil {
+		return commissioner.Digests{}, fmt.Errorf("league digests: %w", err)
+	}
+	return reading, nil
+}

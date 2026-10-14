@@ -9,6 +9,7 @@ import { TrayLauncher } from './TrayLauncher';
 const LeagueRules = lazy(() => import('./LeagueRules'));
 const LeaguePeople = lazy(() => import('./LeaguePeople'));
 const LeagueLedger = lazy(() => import('./LeagueLedger'));
+const LeagueOps = lazy(() => import('./LeagueOps'));
 
 export type GroupEntries = { id: string; label: string; entries: Entry[] };
 type Props = {
@@ -34,6 +35,7 @@ function Existing({ id }: { id: string }) {
       {people?.mayGrantRoles && <TrayLauncher tray="role" label="Give or take a role" />}
     </>
   );
+  if (id === 'ops') return <LeagueOps />;
   return id === 'ledger' ? <LeagueLedger /> : null;
 }
 

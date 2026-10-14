@@ -54,6 +54,7 @@ export function LedgerFilters({ reading, children, read = readLedgerFiltered }: 
           <select value={draft.kind} onChange={e => update('kind', e.target.value)}>
             <option value="">All changes</option><option value="setup">League setup</option>
             <option value="rules">Rules</option><option value="people">People</option>
+            <option value="notices">Notices and notes</option>
             <option value="corrections">Corrections</option>
           </select>
         </label>

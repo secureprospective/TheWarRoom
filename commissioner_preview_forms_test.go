@@ -129,6 +129,12 @@ func TestCommissionerPreviewDescribesUndoingAChange(t *testing.T) {
 	}
 }
 
+func previewNotice(command, text string, pin bool) commissioner.RawCommand {
+	raw := noticeCommand(command, 2, "notice.request", text, pin)
+	raw.League = "native.preview"
+	return raw
+}
+
 func TestCommissionerPreviewFormsWire(t *testing.T) {
 	app := previewApp(t)
 	made := executeCommissionerTest(t, app, commissioner.RawCommand{League: "native.preview",
@@ -145,6 +151,9 @@ func TestCommissionerPreviewFormsWire(t *testing.T) {
 		"roleUnchanged": mustPreview(t, app, atVersion(roleCommand("commish.role.grant", "creator",
 			governance.Commissioner, "Agreed"), 2)),
 		"needsReason": mustPreview(t, app, createCommand("")),
+		"notice": mustPreview(t, app, previewNotice(commissioner.NoticePublish,
+			"Rookie draft is Saturday", true)),
+		"note": mustPreview(t, app, previewNotice(commissioner.NotePost, "Trades close in week 9", false)),
 	}
 	unchanged, err := app.TargetCommissionerPreview(previewRuleBody(t, "roster.limits",
 		`{"min":20,"max":70}`, "next_rollover", "", 2))

@@ -439,3 +439,20 @@ four forms. Go describes each command and refuses unchanged rules and roles in t
 `CommandSafeguards` writes the command/safeguard fixture used by the frontend click/keypress guard.
 The Go-written fixture is
 `frontend/src/app/commissioner/preview.wire.testdata.json`.
+
+League ops: notifications are two ordinary rules (`notify.transactions`, `notify.reminders`, owned by CM-051 and
+not competitive, so a change needs one confirm). Notices and league notes are recorded acts
+(`commish.notice.publish`, `commish.whatsnew.post`: plain text, pinned or not, shown to every owner, posted now);
+`TargetCommissionerNotices` reads them from the ledger alone through `commissioner.NotesReading`, so a notice
+exists for owners only once its entry is recorded and stops when a later entry withdraws it. The same reading
+carries the app's own release notes (a Go table, nobody posts them) and the mail log (M-093), which says the
+app sends no mail and lists every notice recorded, withdrawn ones marked. `TargetCommissionerDigests` writes one
+plain sentence for each ledger entry the viewer may read that took a hold or a typed reason, through the same
+privacy as the ledger. `commissioner.Governed` (who, when, which change) rides on each rule row Go shows as set
+in the ledger and on each note; the reusable `app/governed/GovernedGlyph` shows it in the viewer's own time.
+The commissioner package imports nothing that can reach a network or a mail system, and a test enforces it.
+Ledger filters gain the kind "notices". Control Room › Data and sources gains "Read data again":
+`TargetCacheScopes` lists the held copies and `TargetCacheClear` runs the refresh each screen already has, asked
+to ignore the copy held (`cache_app.go`); the refresh scopes there are the existing S-09 Acts. The lazy
+`LeagueOps` screen shows notices, What's New, the mail log and the digest in League ops; `NoteForm` posts in the
+shared side tray with Go's preview.

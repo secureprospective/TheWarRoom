@@ -78,6 +78,9 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 		if d, ok := peopleDefinitionFor(command); ok {
 			control = d.control
 		}
+		if d, ok := noteDefinitionFor(command); ok {
+			control = d.control
+		}
 	}
 	row, ok := governance.CensusControl(control)
 	if !ok {

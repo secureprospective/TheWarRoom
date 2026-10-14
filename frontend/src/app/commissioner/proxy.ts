@@ -3,6 +3,7 @@ import { useStore } from 'zustand';
 import { array, choice, integer, object, text, timestamp } from '../data/parseValues';
 import { parseControls, type Controls } from './controls';
 import { parseJobs, type Jobs } from './jobs';
+import { parseDigests, parseNotes, type Digests, type LeagueNotes } from './notes';
 import { parsePeople, type People } from './people';
 import { parseRules, type Rules } from './rules';
 import { parsePreview } from './preview';
@@ -27,6 +28,8 @@ export type Port = {
   people(league: string): Promise<unknown>;
   jobs(league: string): Promise<unknown>;
   controls(): Promise<unknown>;
+  notices(league: string): Promise<unknown>;
+  digests(league: string): Promise<unknown>;
 };
 
 function bindings(): typeof Bindings {
@@ -43,6 +46,8 @@ const live: Port = {
   people: league => bindings().TargetCommissionerPeople(league),
   jobs: league => bindings().TargetCommissionerJobs(league),
   controls: async () => bindings().TargetCommissionerControls(),
+  notices: league => bindings().TargetCommissionerNotices(league),
+  digests: league => bindings().TargetCommissionerDigests(league),
 };
 export function parseReceipt(v: unknown): Receipt {
   const r = object(v, 'League receipt', ['entry', 'league', 'revision', 'recordedAt', 'message']);
@@ -77,6 +82,8 @@ export function createProxy(port: Port) {
     people: async (league: string) => parsePeople(await port.people(league)),
     jobs: async (league: string) => parseJobs(await port.jobs(league)),
     controls: async () => parseControls(await port.controls()),
+    notices: async (league: string) => parseNotes(await port.notices(league)),
+    digests: async (league: string) => parseDigests(await port.digests(league)),
     leagues: async () => array(await port.leagues(), 'App leagues', (v, p): NativeLeague => {
       const r = object(v, p, ['id', 'name']);
       return { id: text(r.id, p), name: text(r.name, p) };
@@ -91,6 +98,8 @@ export function formOf(body: string): string {
     if (sent.command === 'commish.league.create') return 'create';
     if (sent.command === 'commish.rules.set') return 'rule';
     if (sent.command === 'commish.correction.revert') return `undo:${sent.args?.entry ?? ''}`;
+    if (sent.command === 'commish.notice.publish') return 'notice';
+    if (sent.command === 'commish.whatsnew.post') return 'note';
     return sent.command?.startsWith('commish.role.') ? 'role' : 'other';
   } catch {
     return 'other';
@@ -112,12 +121,15 @@ type LeagueState = {
   // The jobs and the control list are read apart from the rest: if either fails, the screens still work
   // and the landing says what it could not read.
   jobs?: Jobs; controls?: Controls; landingError: string;
+  // The notices and digests are read apart too, so the rules and the ledger never wait on them.
+  notes?: LeagueNotes; digests?: Digests; opsError: string;
   error: string; pending: boolean; outcome: Outcome;
 };
 // One state serves the picker, the three readings and every form, so a receipt reloads them together.
 export function createLeagueState(proxy = createProxy(live)) {
   const store = createStore<LeagueState>(() => ({
-    choices: [], selected: '', error: '', landingError: '', pending: true, outcome: { status: 'idle' },
+    choices: [], selected: '', error: '', landingError: '', opsError: '', pending: true,
+    outcome: { status: 'idle' },
   }));
   let generation = 0;
   // The control list does not depend on the league, so it is read once.
@@ -135,11 +147,25 @@ export function createLeagueState(proxy = createProxy(live)) {
     if (failed.length > 0) landing.landingError = `The league page could not read ${failed.join(' or ')}.`;
     return landing;
   }
+  async function readOps(selected: string) {
+    type Ops = Pick<LeagueState, 'notes' | 'digests' | 'opsError'>;
+    const ops: Ops = { notes: undefined, digests: undefined, opsError: '' };
+    if (!selected) return ops;
+    const [notes, digests] = await Promise.allSettled([proxy.notices(selected), proxy.digests(selected)]);
+    const failed: string[] = [];
+    if (notes.status === 'fulfilled') ops.notes = notes.value;
+    else failed.push(`the league notices (${refusalText(notes.reason)})`);
+    if (digests.status === 'fulfilled') ops.digests = digests.value;
+    else failed.push(`the digest of changes (${refusalText(digests.reason)})`);
+    if (failed.length > 0) ops.opsError = `The league page could not read ${failed.join(' or ')}.`;
+    return ops;
+  }
   async function choose(league = '') {
     const request = ++generation;
     const was = store.getState().selected;
     store.setState({ pending: true, error: '', ...(league && league !== was ?
-      { ledger: undefined, rules: undefined, people: undefined, jobs: undefined } : {}) });
+      { ledger: undefined, rules: undefined, people: undefined, jobs: undefined, notes: undefined,
+        digests: undefined } : {}) });
     try {
       const choices = await proxy.leagues();
       const selected = league || was || choices[0]?.id || '';
@@ -147,12 +173,13 @@ export function createLeagueState(proxy = createProxy(live)) {
         throw new Error('This app league is no longer available. Choose another league.');
       const [ledger, rules, people] = selected ? await Promise.all([
         proxy.ledger(selected), proxy.rules(selected), proxy.people(selected)]) : [];
-      const landing = await readLanding(selected);
-      if (request === generation) store.setState({ choices, selected, ledger, rules, people, ...landing });
+      const [landing, ops] = await Promise.all([readLanding(selected), readOps(selected)]);
+      if (request === generation)
+        store.setState({ choices, selected, ledger, rules, people, ...landing, ...ops });
     } catch (cause) {
       if (request === generation)
         store.setState({ error: String(cause), ledger: undefined, rules: undefined, people: undefined,
-          jobs: undefined });
+          jobs: undefined, notes: undefined, digests: undefined });
     } finally {
       if (request === generation) store.setState({ pending: false });
     }

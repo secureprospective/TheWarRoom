@@ -1,6 +1,8 @@
 import previewWire from './preview.wire.testdata.json';
 import jobsWire from './jobs.wire.testdata.json';
 import controlsWire from './controls.wire.testdata.json';
+import noticesWire from './notices.wire.testdata.json';
+import digestsWire from './digests.wire.testdata.json';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -20,6 +22,7 @@ const receipt = {
 const port = (over: Partial<Port> = {}): Port => ({
   execute: async () => receipt, preview: async () => previewWire.hold, ledger: async () => wire,
   jobs: async () => jobsWire.fresh, controls: async () => controlsWire,
+  notices: async () => noticesWire.commissioner, digests: async () => digestsWire.creator,
   leagues: async () => [{ id: wire.league, name: wire.name }],
   rules: async () => rulesWire, people: async () => peopleWire.owner, ...over,
 });

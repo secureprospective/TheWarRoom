@@ -20,6 +20,8 @@ func CommandPreview(raw RawCommand, records []Record, catalogue PreviewCatalogue
 		return undoPreview(raw, records, catalogue)
 	case roleGrant, roleRevoke:
 		return rolePreview(raw, records, catalogue)
+	case NoticePublish, NotePost:
+		return notePreview(raw, records, catalogue)
 	}
 	return Preview{}, fmt.Errorf("a preview is not available for this change yet")
 }
@@ -117,6 +119,9 @@ func controlOf(r Record) string {
 	if d, ok := peopleDefinitionFor(r.Command.Command); ok {
 		return d.control
 	}
+	if d, ok := noteDefinitionFor(r.Command.Command); ok {
+		return d.control
+	}
 	return ""
 }
 
@@ -145,4 +150,26 @@ func undoPreview(raw RawCommand, records []Record, catalogue PreviewCatalogue) (
 			Affects: catalogue.affects(controlOf(r))}, nil
 	}
 	return Preview{}, fmt.Errorf("that recorded change is not in this league")
+}
+
+// notePreview shows the words exactly as owners will read them. Nothing is posted until it is confirmed.
+func notePreview(raw RawCommand, records []Record, catalogue PreviewCatalogue) (Preview, error) {
+	if len(records) == 0 {
+		return Preview{}, fmt.Errorf("this app league has not been created")
+	}
+	d, _ := noteDefinitionFor(raw.Command)
+	safeguard, err := safeguardOf(raw)
+	if err != nil {
+		return Preview{}, err
+	}
+	where := "At the top of the league notices"
+	if !raw.Args.Note.Pin {
+		where = "In the league notices, newest first"
+	}
+	return Preview{Question: catalogue.questions[d.control], Safeguard: safeguard, Blockers: []string{},
+		Target: PreviewTarget{League: raw.League, Name: Replay(records).Name, Version: raw.Expected},
+		Fields: []PreviewField{{Label: d.title, Before: "Not posted",
+			BeforeSource: "Nothing is shown to owners until you confirm", After: raw.Args.Note.Text,
+			AfterSource: proposed + ". " + where, When: "now"}},
+		Affects: catalogue.affects(d.control)}, nil
 }

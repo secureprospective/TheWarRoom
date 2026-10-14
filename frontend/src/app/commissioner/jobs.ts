@@ -29,15 +29,7 @@ export function parseJobs(v: unknown): Jobs {
   };
 }
 
-// The viewer's own time zone, read the way the browser reports it. Every time on the strip is shown in it.
-export const viewerZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-export function localTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-    timeZoneName: 'short', timeZone: viewerZone(),
-  });
-}
+export { localTime, viewerZone } from '../clock/localTime';
 
 const unit = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 // How long until an instant, in the two largest units that matter.

@@ -69,6 +69,9 @@ func DefinitionFor(command string) (Definition, error) {
 		if d, ok := peopleDefinitionFor(command); ok {
 			return Definition{Gravity: d.gravity}, nil
 		}
+		if d, ok := noteDefinitionFor(command); ok {
+			return Definition{Gravity: d.gravity}, nil
+		}
 		return Definition{}, fmt.Errorf("this commissioner command is not available yet")
 	}
 }
@@ -78,6 +81,7 @@ type RawArgs struct {
 	Entry          string          `json:"entry,omitempty"`
 	Franchises     []string        `json:"franchises,omitempty"`
 	People         *RawPeople      `json:"people,omitempty"`
+	Note           *RawNote        `json:"note,omitempty"`
 	Field          string          `json:"field,omitempty"`
 	Value          json.RawMessage `json:"value,omitempty"`
 	Preset         string          `json:"preset,omitempty"`
@@ -85,9 +89,15 @@ type RawArgs struct {
 	Seed           []SeedValue     `json:"seed,omitempty"`
 }
 
+// strays reports details that belong to a different kind of action than command.
+func (a RawArgs) strays(command string) bool {
+	_, isNote := noteDefinitionFor(command)
+	return (a.Note != nil && !isNote) || (command != RulesSet && (a.Field != "" || len(a.Value) != 0)) ||
+		(command != Create && (a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0))
+}
+
 func (a RawArgs) Validate(command string) error {
-	if (command != RulesSet && (a.Field != "" || len(a.Value) != 0)) || (command != Create &&
-		(a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0)) {
+	if a.strays(command) {
 		return fmt.Errorf("send only the details of this league action")
 	}
 	switch command {
@@ -100,9 +110,16 @@ func (a RawArgs) Validate(command string) error {
 			return fmt.Errorf("choose the recorded change to reverse")
 		}
 	default:
-		return a.validatePeople(command)
+		return a.validateOther(command)
 	}
 	return nil
+}
+
+func (a RawArgs) validateOther(command string) error {
+	if _, isNote := noteDefinitionFor(command); isNote {
+		return a.validateNote()
+	}
+	return a.validatePeople(command)
 }
 
 func (a RawArgs) validatePeople(command string) error {
@@ -189,6 +206,9 @@ func (r RawCommand) validatePlacement() error {
 	}
 	if r.Command == Create && (r.Effective != "now" || r.Visibility != "league") {
 		return fmt.Errorf("a new league is created now and recorded for the league")
+	}
+	if _, isNote := noteDefinitionFor(r.Command); isNote && (r.Effective != "now" || r.Visibility != "league") {
+		return fmt.Errorf("notices and league notes are posted now and shown to every owner")
 	}
 	return r.validatePeoplePlacement()
 }

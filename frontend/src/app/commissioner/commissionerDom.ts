@@ -11,7 +11,7 @@ type Binding = (...args: string[]) => Promise<unknown>;
 export type App = Record<'TargetCommissionerExecute' | 'TargetCommissionerLedger'
   | 'TargetCommissionerLeagues' | 'TargetCommissionerRules' | 'TargetCommissionerPeople'
   | 'TargetCommissionerPreview' | 'TargetCommissionerLedgerFiltered' | 'TargetCommissionerJobs'
-  | 'TargetCommissionerControls', Binding>;
+  | 'TargetCommissionerControls' | 'TargetCommissionerNotices' | 'TargetCommissionerDigests', Binding>;
 
 const globals = ['window', 'document', 'IS_REACT_ACT_ENVIRONMENT'];
 const held = globals.map(key => ({ key, descriptor: Object.getOwnPropertyDescriptor(globalThis, key) }));

@@ -325,3 +325,45 @@ func (s *Store) CommissionerJobs(ctx context.Context, league string) (commission
 	}
 	return reading, nil
 }
+
+// CommissionerNotes reads the posted notices and league notes from the ledger.
+func (s *Store) CommissionerNotes(ctx context.Context, league string) (commissioner.LeagueNotes, error) {
+	records, err := s.leagueRecords(ctx, league)
+	if err != nil {
+		return commissioner.LeagueNotes{}, err
+	}
+	reading, err := commissioner.NotesReading(league, records)
+	if err != nil {
+		return commissioner.LeagueNotes{}, fmt.Errorf("read league notices: %w", err)
+	}
+	return reading, nil
+}
+
+// CommissionerDigests writes the digest sentences for the changes this principal may read about.
+func (s *Store) CommissionerDigests(ctx context.Context, league, principal string,
+	auth commissioner.Authorizer) (commissioner.Digests, error) {
+	records, err := s.leagueRecords(ctx, league)
+	if err != nil {
+		return commissioner.Digests{}, err
+	}
+	if auth == nil {
+		state, err := commissioner.GovernanceState(records)
+		if err != nil {
+			return commissioner.Digests{}, fmt.Errorf("read league permissions: %w", err)
+		}
+		auth = commissioner.GovernanceAuthorizer{State: state}
+	}
+	reading, err := commissioner.DigestsReading(league, principal, records, auth)
+	if err != nil {
+		return commissioner.Digests{}, fmt.Errorf("read league digests: %w", err)
+	}
+	return reading, nil
+}
+
+func (s *Store) leagueRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
+	events, err := s.Events(ctx, league, commissioner.Stream, 0)
+	if err != nil {
+		return nil, err
+	}
+	return commissionerRecords(events)
+}

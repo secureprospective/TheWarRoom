@@ -56,8 +56,20 @@ func partlyThere() map[string]string {
 	}
 }
 
-// otherwiseBuilt are rows with a working screen that owns no rule: roles and the ledger.
-func otherwiseBuilt() []string { return []string{"CM-021", "CM-056"} }
+// otherwiseBuilt are rows with a working screen that owns no rule: roles, notices, league notes, data
+// refresh and the ledger.
+func otherwiseBuilt() []string {
+	return []string{"CM-021", "CM-052", "CM-053", "CM-054", "CM-056"}
+}
+
+// builtNotes are what a person should know about a row that works, so it never promises more.
+func builtNotes() map[string]string {
+	return map[string]string{
+		"CM-051": "The app tells owners inside the app only. It sends no email and no messages.",
+		"CM-052": "Notices are shown to owners in the app. The app sends no email and no messages.",
+		"CM-054": "Refresh and re-read live in Control Room › Data and sources.",
+	}
+}
 
 func ownedFields(control string) []ControlField {
 	fields := []ControlField{}
@@ -88,8 +100,12 @@ func ControlsReading() Controls {
 				continue
 			}
 			fields := ownedFields(row.ID)
+			note := partlyThere()[row.ID]
+			if note == "" {
+				note = builtNotes()[row.ID]
+			}
 			group.Controls = append(group.Controls, ControlEntry{ID: row.ID, Built: controlBuilt(row.ID, fields),
-				Note: partlyThere()[row.ID], Fields: fields})
+				Note: note, Fields: fields})
 		}
 		out.Groups = append(out.Groups, group)
 	}

@@ -132,6 +132,8 @@ describe('Endpoint map', () => {
       'M-080', 'M-182', 'M-114', 'M-104', 'M-105', 'M-023', 'M-110', 'M-019', 'M-083', 'M-084', 'M-085',
       'M-086', 'M-082', 'M-073', 'M-079', 'M-089', 'M-111', 'M-112', 'M-113', 'M-174', 'M-200', 'M-201',
       'C-01',
+      // Ring 4 league ops: League notices, the mail log and the app's own read-again tools.
+      'M-093', 'M-095', 'M-137',
     ];
     // Seen working on Claude-OS against the live snapshot during the 10-12 landing walk.
     const landed = [
@@ -537,6 +539,7 @@ it('keeps commissioner rows out of owner indexes, lookups, counts and command se
   expect(commissionerControls).toHaveLength(56);
   expect(endpoints).toHaveLength(270);
   const ownerIds = new Set<string>(endpoints.map(row => row.id));
+  const builtRows = new Set(['CM-051', 'CM-052', 'CM-053', 'CM-054', 'CM-056']);
   const places = new Set(commissionerControls.map(row => row.placement));
   for (const place of places) {
     const indexed = endpointsAt(place);
@@ -549,7 +552,7 @@ it('keeps commissioner rows out of owner indexes, lookups, counts and command se
     expect(() => endpointById(row.id as unknown as EndpointId)).toThrow('Unknown endpoint');
     expect(candidates.some(result => result.label.includes(row.id))).toBe(false);
     expect(row).toMatchObject({ source: 'K4 census', disposition: 'kept',
-      status: row.id === 'CM-056' ? 'built' : 'spec' });
+      status: builtRows.has(row.id) ? 'built' : 'spec' });
     expect(Object.isFrozen(row)).toBe(true);
     expect(Object.isFrozen(row.governs)).toBe(true);
     for (const target of row.governs) {

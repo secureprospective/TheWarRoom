@@ -21,11 +21,13 @@ export function scopedRules(rules: Rules, owned: ReadonlySet<string>): Rules {
   return { ...rules, sections };
 }
 
-// The other three changes, each opened in the same tray as a rule change: "start", "role" or
+// The other changes, each opened in the same tray as a rule change: "start", "role", "notice", "note" or
 // "undo <entry>".
-export type ActionKind = { kind: 'start' } | { kind: 'role' } | { kind: 'undo'; entry: string };
+export type ActionKind = { kind: 'start' } | { kind: 'role' } | { kind: 'notice' } | { kind: 'note' }
+  | { kind: 'undo'; entry: string };
 export function parseTray(value: string): ActionKind | null {
   const [kind, entry = ''] = value.split(' ');
-  if (kind === 'start' || kind === 'role') return entry === '' ? { kind } : null;
+  if (kind === 'start' || kind === 'role' || kind === 'notice' || kind === 'note')
+    return entry === '' ? { kind } : null;
   return kind === 'undo' && entry !== '' ? { kind, entry } : null;
 }

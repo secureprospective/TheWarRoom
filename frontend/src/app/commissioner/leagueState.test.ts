@@ -1,6 +1,8 @@
 import previewWire from './preview.wire.testdata.json';
 import jobsWire from './jobs.wire.testdata.json';
 import controlsWire from './controls.wire.testdata.json';
+import noticesWire from './notices.wire.testdata.json';
+import digestsWire from './digests.wire.testdata.json';
 import { describe, expect, it } from 'vitest';
 import { createLeagueState, createProxy, formOf, staleWords, type Port } from './proxy';
 import ledger from './wire.testdata.json';
@@ -17,6 +19,7 @@ function port(over: Partial<Port> = {}) {
     rules: async league => { calls.rules.push(league); return { ...rules, league }; },
     people: async league => { calls.people.push(league); return { ...people.owner, league }; },
     jobs: async () => jobsWire.fresh, controls: async () => controlsWire,
+    notices: async () => noticesWire.commissioner, digests: async () => digestsWire.creator,
     leagues: async () => [{ id: 'native.one', name: 'One' }, { id: 'native.two', name: 'Two' }],
   };
   return { calls, state: createLeagueState(createProxy({ ...base, ...over })) };

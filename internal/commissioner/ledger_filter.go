@@ -18,7 +18,7 @@ type RawLedgerFilter struct {
 
 func (r RawLedgerFilter) Validate() error {
 	switch r.Kind {
-	case "", "setup", "rules", "people", "corrections":
+	case "", "setup", "rules", "people", "notices", "corrections":
 	default:
 		return fmt.Errorf("choose a kind of league change")
 	}
@@ -104,6 +104,8 @@ func ledgerKind(command string) string {
 		return "rules"
 	case Revert:
 		return "corrections"
+	case NoticePublish, NotePost:
+		return "notices"
 	default:
 		return "people"
 	}

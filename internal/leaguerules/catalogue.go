@@ -55,7 +55,7 @@ func Catalogue() []CatalogueField {
 		fieldBounds(f.pathName(), &schema)
 		// Reference text and the display timezone do not change competitive rules.
 		result = append(result, CatalogueField{f.pathName(), f.labelText(), sectionLabels()[section], schema,
-			section != "house" && f.pathName() != "calendar.timezone"})
+			section != "house" && section != "notify" && f.pathName() != "calendar.timezone"})
 	}
 	return result
 }
@@ -65,7 +65,7 @@ func sectionLabels() map[string]string {
 		"scoring": "Scoring", "standings": "Standings", "cap": "Salary cap", "contracts": "Contracts",
 		"ir": "IR", "taxi": "Taxi squad", "waivers": "Waivers", "bids": "Free-agent bids", "trades": "Trades",
 		"schedule": "Schedule", "playoffs": "Playoffs", "house": "House rules", "calendar": "Calendar",
-		"draft": "Draft"}
+		"draft": "Draft", "notify": "Notifications"}
 }
 
 // percentFields hold a share of one, which a GM reads as a percentage.

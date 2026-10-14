@@ -801,26 +801,35 @@
       "controls": [
         {
           "id": "CM-051",
-          "built": false,
-          "note": "",
-          "fields": []
+          "built": true,
+          "note": "The app tells owners inside the app only. It sends no email and no messages.",
+          "fields": [
+            {
+              "field": "notify.transactions",
+              "label": "Tell the league about transactions"
+            },
+            {
+              "field": "notify.reminders",
+              "label": "Remind owners of deadlines"
+            }
+          ]
         },
         {
           "id": "CM-052",
-          "built": false,
-          "note": "",
+          "built": true,
+          "note": "Notices are shown to owners in the app. The app sends no email and no messages.",
           "fields": []
         },
         {
           "id": "CM-053",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-054",
-          "built": false,
-          "note": "",
+          "built": true,
+          "note": "Refresh and re-read live in Control Room › Data and sources.",
           "fields": []
         },
         {

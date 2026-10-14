@@ -21,6 +21,9 @@ type CommandSafeguard struct {
 func CommandSafeguards() []CommandSafeguard {
 	var out []CommandSafeguard
 	commands := []string{Create, Revert}
+	for _, d := range noteDefinitions() {
+		commands = append(commands, d.command)
+	}
 	for _, d := range peopleDefinitions() {
 		commands = append(commands, d.command)
 	}

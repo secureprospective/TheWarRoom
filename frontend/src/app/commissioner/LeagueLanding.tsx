@@ -6,6 +6,7 @@ import { DensityScreen } from './DensityScreen';
 import { JobsStrip } from './JobsStrip';
 import { parseOpen, parseTray, scopedRules, type ActionKind, type LandingView } from './landing';
 import { LeaguePicker } from './LeaguePicker';
+import type { People } from './people';
 import { leagueState } from './proxy';
 import { surfaceActions } from './surfaceActions';
 import { revealWorkSection } from '../shell/workScroll';
@@ -17,6 +18,12 @@ const ActionTray = lazy(() => import('./ActionTray'));
 // Which change is open in the tray, and the control that opened it (focus goes back there).
 type Tray = { opener: HTMLElement } & (
   { kind: 'rule'; field: string; group: string } | ActionKind);
+
+// Go says what this person may start; a launcher the person cannot use opens nothing.
+function mayOpen(action: ActionKind, people?: People): boolean {
+  if (action.kind === 'role') return people?.mayGrantRoles === true;
+  return action.kind === 'notice' || action.kind === 'note' ? people?.mayPostNotices === true : true;
+}
 
 // LeagueLanding is the front of Control Room › League: the jobs strip, a search over every control, then
 // the control groups. Go decides every job and every control; this only presents them.
@@ -41,7 +48,7 @@ export default function LeagueLanding() {
     }
     const opener = document.activeElement as HTMLElement;
     const action = args.action === 'tray' ? parseTray(args.value) : null;
-    if (action && (action.kind !== 'role' || people?.mayGrantRoles)) {
+    if (action && mayOpen(action, people)) {
       setTray({ ...action, opener });
       return;
     }

@@ -272,6 +272,13 @@ export function createCommands(
       ...ambient, id: 'refresh.run', label: 'Refresh data', gravity: 'G1', args: ['scope'],
       run: ({ scope }: { scope: string }) => dataRun({ kind: 'refresh', scope }),
     }),
+    'cache.run': command({
+      ...ambient, id: 'cache.run', label: 'Read data again', gravity: 'G1', args: ['scope'],
+      run: ({ scope }: { scope: string }) => {
+        void import('../datasources/cacheState').then(m => m.cacheState.run(scope))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     'data.run': command({
       ...ambient, id: 'data.run', label: 'Data settings', gravity: 'G1', args: ['kind'],
       run: (action: import('../datasources/state').DataAction) => dataRun(action),

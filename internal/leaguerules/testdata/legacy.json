@@ -4413,5 +4413,17 @@
       "Value": "",
       "Citation": "Census CM-041 Q-E1"
     }
+  },
+  "Notify": {
+    "Transactions": {
+      "State": 1,
+      "Value": true,
+      "Citation": "Census CM-051"
+    },
+    "Reminders": {
+      "State": 1,
+      "Value": true,
+      "Citation": "Census CM-051"
+    }
   }
 }

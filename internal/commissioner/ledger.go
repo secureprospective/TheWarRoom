@@ -161,6 +161,9 @@ func entryLabel(records []Record, i int) (string, error) {
 		if err != nil || ok {
 			return label, err
 		}
+		if label, ok := revertNoteLabel(records, i); ok {
+			return label, nil
+		}
 	}
 	return recordLabel(r), nil
 }
@@ -176,6 +179,9 @@ func recordLabel(r Record) string {
 	}
 	if _, ok := peopleDefinitionFor(r.Command.Command); ok && r.Command.Args.People != nil {
 		return r.Command.Args.People.label(r.Command.Command)
+	}
+	if _, ok := noteDefinitionFor(r.Command.Command); ok && r.Command.Args.Note != nil {
+		return noteLabel(r)
 	}
 	return "Reversed a recorded league change"
 }
