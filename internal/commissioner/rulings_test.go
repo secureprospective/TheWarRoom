@@ -82,11 +82,12 @@ func waitingRecord(entry, value string, at time.Time) Record {
 
 func TestNewestWaitingRuleWinsAndUndoRestores(t *testing.T) {
 	at := time.Date(2026, 10, 14, 4, 17, 3, 0, time.UTC)
-	records := []Record{waitingRecord("first", `{"min":20,"max":70}`, at),
-		waitingRecord("second", `{"min":22,"max":75}`, at.Add(time.Minute))}
+	records := newLedger(t, PresetLegacy).records
+	records = append(records, waitingRecord("first", `{"min":20,"max":70}`, at),
+		waitingRecord("second", `{"min":22,"max":75}`, at.Add(time.Minute)))
 	assertWaiting := func(winner string, replaced map[string]string) {
 		t.Helper()
-		_, pending, err := ruleHistory(records)
+		_, pending, err := ruleHistory(records, at.Add(time.Hour))
 		if err != nil {
 			t.Fatal(err)
 		}

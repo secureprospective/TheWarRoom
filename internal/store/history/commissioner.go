@@ -81,6 +81,9 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err := checkCommissionerAppend(raw, records); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("check league version: %w", commissioner.Refused(err))
 	}
+	if err := commissioner.CheckNativeAppend(raw, records); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("check starting snapshot: %w", err)
+	}
 	if err := commissioner.CheckGovernanceAppend(raw, principal, records, s.now()); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("check league change: %w", err)
 	}
@@ -275,7 +278,7 @@ func (s *Store) CommissionerRules(ctx context.Context, league string) (commissio
 	if err != nil {
 		return commissioner.Rules{}, err
 	}
-	reading, err := commissioner.RulesReading(league, records)
+	reading, err := commissioner.RulesReading(league, records, s.now())
 	if err != nil {
 		return commissioner.Rules{}, fmt.Errorf("read league rules: %w", err)
 	}

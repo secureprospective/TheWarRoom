@@ -103,15 +103,9 @@ type Ledger struct {
 // Reading deliberately excludes payloads, request bodies and private metadata.
 func Reading(league, principal string, records []Record, auth Authorizer) (Ledger, error) {
 	p := Replay(records)
-	_, pending, err := ruleHistory(records)
+	replaced, err := replacedWaiting(records)
 	if err != nil {
 		return Ledger{}, err
-	}
-	replaced := map[string]string{}
-	for _, changes := range pending {
-		for _, change := range changes {
-			replaced[change.Entry] = change.ReplacedAt
-		}
 	}
 	out := Ledger{League: league, Name: p.Name, Entries: []Entry{}}
 	role, err := auth.Allow(league, principal, "commish.ledger.read")
@@ -166,6 +160,9 @@ func entryLabel(records []Record, i int) (string, error) {
 }
 
 func recordLabel(r Record) string {
+	if r.Command.Command == NativeSeed {
+		return "Recorded the starting rosters, contracts, reserves, franchises and picks from held data"
+	}
 	if r.Command.Command == Create {
 		preset := "every rule waiting for a ruling"
 		if r.Command.Args.Preset == PresetLegacy {
@@ -184,7 +181,7 @@ func recordLabel(r Record) string {
 // It asks the same checks a submitted reversal meets; Go still decides when it is sent.
 func undoPlacement(records []Record, i int, p Projection, principal string, auth Authorizer) string {
 	r := records[i]
-	if r.Command.Command == Create || !p.Active[r.Receipt.Entry] {
+	if r.Command.Command == Create || r.Command.Command == NativeSeed || !p.Active[r.Receipt.Entry] {
 		return ""
 	}
 	if _, err := auth.Allow(r.Command.League, principal, Revert); err != nil {
