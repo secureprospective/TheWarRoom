@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -72,12 +73,13 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 			continue
 		}
 		if r.Canonical != canonical {
-			return commissioner.Receipt{}, fmt.Errorf("this request was already used for a different change")
+			return commissioner.Receipt{}, fmt.Errorf("league change refused: %w",
+				commissioner.Refused(errors.New("this request was already used for a different change")))
 		}
 		return r.Receipt, nil
 	}
 	if err := checkCommissionerAppend(raw, records); err != nil {
-		return commissioner.Receipt{}, err
+		return commissioner.Receipt{}, fmt.Errorf("check league version: %w", commissioner.Refused(err))
 	}
 	if err := commissioner.CheckGovernanceAppend(raw, principal, records, s.now()); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("check league change: %w", err)
@@ -99,10 +101,10 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 func preparedCommand(raw commissioner.RawCommand, principal string) (commissioner.RawCommand, string, error) {
 	raw, err := raw.Prepared()
 	if err != nil {
-		return raw, "", fmt.Errorf("validate league change: %w", err)
+		return raw, "", fmt.Errorf("validate league change: %w", commissioner.Refused(err))
 	}
 	if err := raw.Validate(); err != nil {
-		return raw, "", fmt.Errorf("validate league change: %w", err)
+		return raw, "", fmt.Errorf("validate league change: %w", commissioner.Refused(err))
 	}
 	if strings.TrimSpace(principal) == "" {
 		return raw, "", fmt.Errorf("your local identity is unavailable")
@@ -119,25 +121,34 @@ func commandRole(raw commissioner.RawCommand, principal string, auth commissione
 	if auth == nil {
 		role, err := commissioner.AuthorizeRecords(raw, principal, records)
 		if err != nil {
-			return "", fmt.Errorf("league change refused: %w", err)
+			return "", fmt.Errorf("league change refused: %w", commissioner.Refused(err))
 		}
 		return role, nil
 	}
 	role, err := auth.Allow(raw.League, principal, raw.Command)
 	if err != nil {
-		return "", fmt.Errorf("league change refused: %w", err)
+		return "", fmt.Errorf("league change refused: %w", commissioner.Refused(err))
 	}
 	if role == "" {
-		return "", fmt.Errorf("you do not have permission to make this league change")
+		return "", fmt.Errorf("league change refused: %w",
+			commissioner.Refused(errors.New("you do not have permission to make this league change")))
 	}
 	return role, nil
 }
 
+// staleVersion refuses a change made against an older league version. It is ErrRevisionConflict, and its
+// own message is the reason the owner reads.
+type staleVersion struct{ current, expected int64 }
+
+func (e staleVersion) Error() string {
+	return fmt.Sprintf("league version is %d; reread before changing it (expected %d)", e.current, e.expected)
+}
+func (e staleVersion) Is(target error) bool { return target == ErrRevisionConflict }
+
 func checkCommissionerAppend(raw commissioner.RawCommand, records []commissioner.Record) error {
 	current := int64(len(records))
 	if raw.Expected != current {
-		return fmt.Errorf("league version is %d; reread before changing it (expected %d): %w",
-			current, raw.Expected, ErrRevisionConflict)
+		return staleVersion{current: current, expected: raw.Expected}
 	}
 	if raw.Command == commissioner.Create {
 		if current != 0 {

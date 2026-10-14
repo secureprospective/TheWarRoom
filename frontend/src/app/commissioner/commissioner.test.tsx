@@ -2,9 +2,13 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { createProxy, createLedgerState, parseLedger, parseReceipt, type Port } from './proxy';
+import { createProxy, createLeagueState, parseLedger, parseReceipt, type Port } from './proxy';
+import { parsePeople } from './people';
+import { parseRules } from './rules';
 import { LedgerEntries } from './LeagueLedger';
 import wire from './wire.testdata.json';
+import peopleWire from './people.wire.testdata.json';
+import rulesWire from './rules.wire.testdata.json';
 
 const receipt = {
   entry: 'act.test', league: wire.league, revision: 3, recordedAt: '2026-10-13T12:00:00Z',
@@ -12,7 +16,8 @@ const receipt = {
 };
 const port = (over: Partial<Port> = {}): Port => ({
   execute: async () => receipt, ledger: async () => wire,
-  leagues: async () => [{ id: wire.league, name: wire.name }], ...over,
+  leagues: async () => [{ id: wire.league, name: wire.name }],
+  rules: async () => rulesWire, people: async () => peopleWire.owner, ...over,
 });
 
 describe('Commissioner spine', () => {
@@ -46,14 +51,14 @@ describe('Commissioner spine', () => {
     expect(() => parseLedger({ ...wire, entries: [{ ...wire.entries[0], role: 'commissioner' }] })).toThrow();
   });
   it('refreshes and selects leagues through the registered reader, clearing failed readings', async () => {
-    const state = createLedgerState(createProxy(port()));
+    const state = createLeagueState(createProxy(port()));
     await state.choose();
     expect(state.peek().selected).toBe(wire.league);
-    expect(state.peek().reading?.entries).toHaveLength(1);
+    expect(state.peek().ledger?.entries).toHaveLength(1);
     expect(state.peek().pending).toBe(false);
     await state.choose('native.missing');
     expect(state.peek().error).toContain('Choose another league');
-    expect(state.peek().reading).toBeUndefined();
+    expect(state.peek().ledger).toBeUndefined();
     await state.choose();
     expect(state.peek().error).toBe('');
     const view = readFileSync(new URL('./LeagueLedger.tsx', import.meta.url), 'utf8');
@@ -65,7 +70,9 @@ describe('Commissioner spine', () => {
     const room = readFileSync(new URL('../control/LeagueRoom.tsx', import.meta.url), 'utf8');
     expect(registry).toContain("import('../commissioner/proxy')");
     expect(registry).not.toMatch(/import .* from ['"].*commissioner/);
-    expect(room).toContain("lazy(() => import('../commissioner/LeagueLedger'))");
+    for (const screen of ['LeagueDesk', 'LeagueLedger', 'LeagueRules', 'LeaguePeople'])
+      expect(room).toContain(`lazy(() => import('../commissioner/${screen}'))`);
+    expect(room).not.toMatch(/import [^l].* from ['"]\.\.\/commissioner/);
     const budget = readFileSync(new URL('../../../scripts/bundle-budget.mjs', import.meta.url), 'utf8');
     expect(budget).toContain('Commissioner proxy in owner entry');
   });

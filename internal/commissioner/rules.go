@@ -105,7 +105,7 @@ func (a RawArgs) validateRule() error {
 		return fmt.Errorf("send only the rule and its new value")
 	}
 	if _, err := leaguerules.DecodeSetting(leaguerules.FieldPath(a.Field), a.Value); err != nil {
-		return fmt.Errorf("rule change refused: %w", err)
+		return Refused(fmt.Errorf("rule change refused: %w", err))
 	}
 	return nil
 }
@@ -184,7 +184,7 @@ func CheckRulesAppend(raw RawCommand, records []Record, at time.Time) error {
 	copy(trial, records)
 	trial = append(trial, Record{Command: raw, Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: at}})
 	if _, err := resolveRecords(trial); err != nil {
-		return fmt.Errorf("rule change refused: %w", err)
+		return Refused(fmt.Errorf("rule change refused: %w", err))
 	}
 	return nil
 }

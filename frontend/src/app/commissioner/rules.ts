@@ -10,9 +10,13 @@ export type RuleSchema = {
   fields: { name: string; label: string; schema: RuleSchema }[]; key?: RuleSchema; element?: RuleSchema;
 };
 export type RulePending = { entry: string; value: string; when: string };
+// What Go asks of whoever confirms: a plain button, a hold, or a typed reason.
+export const safeguardKinds = ['confirm', 'hold', 'reason'] as const;
+export type Safeguard = (typeof safeguardKinds)[number];
 export type RuleRow = {
   field: string; label: string; value: string; state: 'Set' | 'Needs a ruling'; citation: string;
   schema: RuleSchema; competitive: boolean; pending: RulePending[];
+  current: unknown; unit: '' | 'percent'; safeguards: { nextRollover: Safeguard; now: Safeguard };
 };
 export type Rules = {
   league: string; name: string; revision: number; rollover: string;
@@ -47,13 +51,21 @@ export function parseSchema(v: unknown, path: string): RuleSchema {
   if (r.element !== undefined) schema.element = parseSchema(r.element, `${path}.element`);
   return schema;
 }
+function parseSafeguards(v: unknown, p: string): RuleRow['safeguards'] {
+  const o = object(v, p, ['nextRollover', 'now']);
+  return { nextRollover: choice(o.nextRollover, `${p}.nextRollover`, safeguardKinds),
+    now: choice(o.now, `${p}.now`, safeguardKinds) };
+}
 function parseRow(v: unknown, p: string): RuleRow {
-  const keys = ['field', 'label', 'value', 'state', 'citation', 'schema', 'competitive', 'pending'];
+  const keys = ['field', 'label', 'value', 'state', 'citation', 'schema', 'competitive', 'pending', 'current',
+    'unit', 'safeguards'];
   const r = object(v, p, keys);
   return {
     field: text(r.field, p), label: text(r.label, p), value: text(r.value, p),
     state: choice(r.state, `${p}.state`, ['Set', 'Needs a ruling'] as const), citation: text(r.citation, p),
     schema: parseSchema(r.schema, `${p}.schema`), competitive: flag(r.competitive, `${p}.competitive`),
+    current: r.current, unit: choice(r.unit, `${p}.unit`, ['', 'percent'] as const),
+    safeguards: parseSafeguards(r.safeguards, `${p}.safeguards`),
     pending: array(r.pending, `${p}.pending`, (w, q) => {
       const o = object(w, q, ['entry', 'value', 'when']);
       return { entry: text(o.entry, q), value: text(o.value, q), when: text(o.when, q) };

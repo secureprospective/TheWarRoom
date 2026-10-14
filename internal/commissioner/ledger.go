@@ -88,6 +88,8 @@ type Entry struct {
 	Why     string    `json:"why"`
 	When    time.Time `json:"when"`
 	Gravity string    `json:"gravity"`
+	// Undo is "league" or "private" where this principal may reverse the entry, and says how to send it.
+	Undo string `json:"undo"`
 }
 
 type Ledger struct {
@@ -124,7 +126,7 @@ func Reading(league, principal string, records []Record, auth Authorizer) (Ledge
 			gravity = "Recorded reason required"
 		}
 		out.Entries = append(out.Entries, Entry{r.Receipt.Entry, who, what,
-			r.Command.Reason, r.Receipt.RecordedAt, gravity})
+			r.Command.Reason, r.Receipt.RecordedAt, gravity, undoPlacement(records, i, p, principal, auth)})
 	}
 	return out, nil
 }
@@ -161,4 +163,21 @@ func recordLabel(r Record) string {
 		return r.Command.Args.People.label(r.Command.Command)
 	}
 	return "Reversed a recorded league change"
+}
+
+// undoPlacement says whether this principal may reverse the entry and who may read the reversal.
+// It asks the same checks a submitted reversal meets; Go still decides when it is sent.
+func undoPlacement(records []Record, i int, p Projection, principal string, auth Authorizer) string {
+	r := records[i]
+	if r.Command.Command == Create || !p.Active[r.Receipt.Entry] {
+		return ""
+	}
+	if _, err := auth.Allow(r.Command.League, principal, Revert); err != nil {
+		return ""
+	}
+	if governed, ok := auth.(GovernanceAuthorizer); ok &&
+		authorizeReversal(governed, r.Receipt.Entry, principal, records[:i+1]) != nil {
+		return ""
+	}
+	return r.Command.Visibility
 }

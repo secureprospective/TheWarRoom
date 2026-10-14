@@ -37,6 +37,10 @@ type People struct {
 	DOTStatus  string         `json:"dotStatus"`
 	Votes      []PeopleVote   `json:"votes"`
 	Succession string         `json:"succession"`
+	// YourRole and the two flags say what this principal may start, so the forms can stay out of the way.
+	YourRole       string `json:"yourRole"`
+	MayChangeRules bool   `json:"mayChangeRules"`
+	MayGrantRoles  bool   `json:"mayGrantRoles"`
 }
 
 func PeopleReading(league, principal string, records []Record) (People, error) {
@@ -74,9 +78,28 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 	if private {
 		out.Invites = readInvites(state, invites)
 	}
+	out.YourRole = yourRole(state, p, out.Seats)
+	out.MayChangeRules = private
+	_, grantErr := GovernanceAuthorizer{State: state}.Allow(league, principal, "commish.role.grant")
+	out.MayGrantRoles = grantErr == nil
 	out.Votes = readVotes(state, records, len(out.Seats), private)
 	out.Succession = successionStatus(state, records)
 	return out, nil
+}
+
+func yourRole(state governance.State, p governance.Principal, seats []PeopleSeat) string {
+	if state.HasRole(p, governance.Commissioner) {
+		return roleLabel(governance.Commissioner)
+	}
+	if state.HasRole(p, governance.CoCommissioner) {
+		return roleLabel(governance.CoCommissioner)
+	}
+	for _, seat := range seats {
+		if seat.Owner == string(p) {
+			return roleLabel(governance.Owner)
+		}
+	}
+	return "Visitor"
 }
 
 func peopleInventory(records []Record) ([]string, []string) {

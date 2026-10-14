@@ -16,6 +16,8 @@ const keyHandlerAllowlist = {
   'shell/MFLConnection.tsx': 'Password field Enter dispatches Connect without copying the key.',
   'commands/CommandBar.tsx':
     'Search input needs arrows, Enter and Escape; execution remains dispatch.',
+  'commissioner/HoldToFire.tsx':
+    'Hold-to-fire times a held Space or Enter; the held button then dispatches commissioner.execute.',
 } as const;
 
 function scan(root: string): string[] {
@@ -42,7 +44,11 @@ function scan(root: string): string[] {
 }
 describe('Controls are verbs (§M2/§M3)', () => {
   it('has exactly the reviewed keyboard exceptions', () => {
-    expect(Object.keys(keyHandlerAllowlist)).toEqual(['shell/MFLConnection.tsx', 'commands/CommandBar.tsx']);
+    expect(Object.keys(keyHandlerAllowlist)).toEqual([
+      'shell/MFLConnection.tsx',
+      'commands/CommandBar.tsx',
+      'commissioner/HoldToFire.tsx',
+    ]);
     expect(keyHandlerAllowlist['commands/CommandBar.tsx']).toContain('dispatch');
   });
   it('rejects raw controls throughout app except Act and specimen', () => {

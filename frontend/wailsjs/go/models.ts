@@ -33,6 +33,7 @@ export namespace commissioner {
 	    // Go type: time
 	    when: any;
 	    gravity: string;
+	    undo: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Entry(source);
@@ -46,6 +47,7 @@ export namespace commissioner {
 	        this.why = source["why"];
 	        this.when = this.convertValues(source["when"], null);
 	        this.gravity = source["gravity"];
+	        this.undo = source["undo"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -240,6 +242,9 @@ export namespace commissioner {
 	    dotStatus: string;
 	    votes: PeopleVote[];
 	    succession: string;
+	    yourRole: string;
+	    mayChangeRules: boolean;
+	    mayGrantRoles: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new People(source);
@@ -257,6 +262,9 @@ export namespace commissioner {
 	        this.dotStatus = source["dotStatus"];
 	        this.votes = this.convertValues(source["votes"], PeopleVote);
 	        this.succession = source["succession"];
+	        this.yourRole = source["yourRole"];
+	        this.mayChangeRules = source["mayChangeRules"];
+	        this.mayGrantRoles = source["mayGrantRoles"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -337,6 +345,20 @@ export namespace commissioner {
 	        this.when = source["when"];
 	    }
 	}
+	export class RuleSafeguards {
+	    nextRollover: string;
+	    now: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RuleSafeguards(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.nextRollover = source["nextRollover"];
+	        this.now = source["now"];
+	    }
+	}
 	export class RuleRow {
 	    field: string;
 	    label: string;
@@ -346,6 +368,9 @@ export namespace commissioner {
 	    schema: leaguerules.ValueSchema;
 	    competitive: boolean;
 	    pending: RulePending[];
+	    current: number[];
+	    unit: string;
+	    safeguards: RuleSafeguards;
 	
 	    static createFrom(source: any = {}) {
 	        return new RuleRow(source);
@@ -361,6 +386,9 @@ export namespace commissioner {
 	        this.schema = this.convertValues(source["schema"], leaguerules.ValueSchema);
 	        this.competitive = source["competitive"];
 	        this.pending = this.convertValues(source["pending"], RulePending);
+	        this.current = source["current"];
+	        this.unit = source["unit"];
+	        this.safeguards = this.convertValues(source["safeguards"], RuleSafeguards);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -381,6 +409,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	export class RuleSection {
 	    label: string;
 	    rows: RuleRow[];

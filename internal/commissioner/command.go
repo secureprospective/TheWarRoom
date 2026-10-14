@@ -4,11 +4,14 @@ package commissioner
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
 
 const (
@@ -16,6 +19,36 @@ const (
 	Revert = "commish.correction.revert"
 	Stream = "commissioner"
 )
+
+// Refusal marks a league change the league's own rules turned down, as distinct from a failure to read
+// or record it. Each layer wraps the cause with its own context for the log; the owner reads Reason.
+type Refusal struct{ err error }
+
+// Refused marks err as a refusal. A nil err stays nil, and an error already marked is returned as is.
+func Refused(err error) error {
+	var r *Refusal
+	if err == nil || errors.As(err, &r) {
+		return err
+	}
+	return &Refusal{err: err}
+}
+
+func (r *Refusal) Error() string { return r.err.Error() }
+func (r *Refusal) Unwrap() error { return r.err }
+
+// Reason is the innermost message, the sentence that says why, starting with a capital letter.
+func (r *Refusal) Reason() string {
+	cause := r.err
+	for next := errors.Unwrap(cause); next != nil; next = errors.Unwrap(cause) {
+		cause = next
+	}
+	text := cause.Error()
+	if text == "" {
+		return text
+	}
+	first, size := utf8.DecodeRuneInString(text)
+	return string(unicode.ToUpper(first)) + text[size:]
+}
 
 // Session supplies identity independently of IPC arguments and franchise selection.
 type Session interface{ Principal() (string, error) }

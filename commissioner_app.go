@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -51,6 +52,10 @@ func (a *App) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
 	defer cancel()
 	receipt, err := a.history.ExecuteCommissioner(ctx, raw, principal, a.commissionerAuthorizer)
+	var refused *commissioner.Refusal
+	if errors.As(err, &refused) {
+		return commissioner.Receipt{}, errors.New(refused.Reason())
+	}
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("league change: %w", err)
 	}

@@ -1,6 +1,8 @@
 package commissioner
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -39,5 +41,20 @@ func TestDecodeCommissionerBoundary(t *testing.T) {
 	other, err := raw.Canonical("other")
 	if err != nil || other == canonical {
 		t.Fatal("principal missing from retry identity")
+	}
+}
+
+func TestRefusalReasonIsTheInnermostSentence(t *testing.T) {
+	leaf := errors.New("this league already has a co-commissioner: revoke them first")
+	wrapped := fmt.Errorf("check league change: %w", Refused(fmt.Errorf("people change refused: change 19: %w", leaf)))
+	var r *Refusal
+	if !errors.As(wrapped, &r) || r.Reason() != "This league already has a co-commissioner: revoke them first" {
+		t.Fatalf("reason: %v", wrapped)
+	}
+	if !errors.Is(wrapped, leaf) || Refused(r) != error(r) || Refused(nil) != nil {
+		t.Fatal("a refusal must keep its cause, mark once and leave nil alone")
+	}
+	if errors.As(fmt.Errorf("record league change: %w", leaf), &r) {
+		t.Fatal("an unmarked failure is not a refusal")
 	}
 }

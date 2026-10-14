@@ -164,7 +164,7 @@ func CheckGovernanceAppend(raw RawCommand, principal string, records []Record, a
 	trial = append(trial, Record{Command: raw, Principal: principal,
 		Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: at}})
 	if _, err := GovernanceState(trial); err != nil {
-		return fmt.Errorf("people change refused: %w", err)
+		return Refused(fmt.Errorf("people change refused: %w", err))
 	}
 	if _, ok := successionDefinitionFor(raw.Command); !ok {
 		return nil
@@ -174,7 +174,7 @@ func CheckGovernanceAppend(raw RawCommand, principal string, records []Record, a
 		return err
 	}
 	if err := takeoverWaitedLongest(before, raw, at); err != nil {
-		return fmt.Errorf("people change refused: %w", err)
+		return Refused(fmt.Errorf("people change refused: %w", err))
 	}
 	return nil
 }

@@ -1,0 +1,83 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { all, mount, present, render, settle, unmount, type Element } from './commissionerDom';
+import { stub } from './commissionerStub';
+import LeaguePeople from './LeaguePeople';
+import LeagueRules from './LeagueRules';
+import { leagueState } from './proxy';
+import peopleWire from './people.wire.testdata.json';
+import legacy from './rules.legacy.wire.testdata.json';
+import rulesWire from './rules.wire.testdata.json';
+
+beforeEach(() => leagueState.forget());
+afterEach(unmount);
+
+const show = async (node: ReturnType<typeof render>, readings: object) => {
+  const { app } = stub({}, readings);
+  const host = await mount(node, app);
+  await leagueState.choose('native.rules');
+  await settle();
+  return host;
+};
+const text = (host: Element) => host.textContent;
+const used = (changes: Record<string, boolean>, current: unknown) => Object.fromEntries(
+  Object.entries(current as Record<string, object>).map(([k, v]) => [k, { ...v, Used: changes[k] ?? true }]));
+const withStats = (changes: Record<string, boolean>) => ({ ...legacy, sections: legacy.sections.map(s => ({
+  ...s, rows: s.rows.map(r => r.field !== 'scoring.catalogue' ? r
+    : { ...r, current: used(changes, r.current) }) })) });
+
+describe('League rules screen', () => {
+  it('lists each section with its settings in words, their state, source and what is waiting', async () => {
+    const host = await show(render(LeagueRules), { rules: rulesWire });
+    const view = text(host);
+    for (const part of ['League shape', 'Roster', 'Active roster size', '20 to 70', 'Set',
+      'Needs a ruling', 'Not set when the league was created', 'Changed in the league ledger on 13 Oct 2026'])
+      expect(view).toContain(part);
+    expect(view).toContain('$125,000,000: Waits for the next rollover');
+    expect(view).toContain('Next rollover: Needs a ruling: the next rollover has no date');
+    expect(view).not.toMatch(/roster\.limits|CM-\d|G[123]\b/);
+  });
+  it('shows a waiting change beside the value still in force, never as in force', async () => {
+    const waiting = { ...rulesWire, sections: rulesWire.sections.map(s => ({ ...s, rows: s.rows.map(r =>
+      r.field === 'roster.limits' ? { ...r, pending: [{ entry: 'act.x', value: '25 to 60',
+        when: 'Waits for the next rollover' }] } : r) })) };
+    const host = await show(render(LeagueRules), { rules: waiting });
+    const row = all(host, 'tr').find(tr => tr.textContent.startsWith('Active roster size'));
+    expect(row?.textContent).toContain('20 to 70');
+    expect(row?.textContent).toContain('25 to 60: Waits for the next rollover');
+    const cells = row?.children.map(c => c.textContent) ?? [];
+    expect(cells[1]).toBe('20 to 70');
+  });
+  it('draws scoring as grouped tables from its schema, with unused stats folded away', async () => {
+    const host = await show(render(LeagueRules), { rules: withStats({ assist: false, assist_line: false }) });
+    const used = all(host, 'section').find(s => s.getAttribute('aria-label') === 'Scoring: stats in use');
+    expect(used).toBeDefined();
+    expect(text(used as Element)).toContain('Passing');
+    expect(text(used as Element)).not.toContain('Assisted tackle');
+    const folded = all(host, 'details').find(d => d.textContent.startsWith('Stats not used (2)'));
+    expect(folded?.textContent).toContain('Assisted tackle');
+    expect(folded?.textContent).toContain('Defensive line assisted tackle');
+    expect(all(host, 'tr').some(tr => tr.textContent.startsWith('Scoring'))).toBe(false);
+    expect(text(host)).not.toContain('Passing yards: 0.04; Passing');
+  });
+});
+
+describe('League people screen', () => {
+  it('shows seats, roles, the trade review count with its ruling state, votes and succession', async () => {
+    const host = await show(render(LeaguePeople), { people: peopleWire.commissioner });
+    const view = text(host);
+    for (const part of ['Franchise 1 (F1)', 'owner-one', 'Vacant', 'Co-commissioner', 'private-deputy',
+      'Needs a ruling: DOT has 0 of 4 seats', 'Trade review seats (DOT): 0',
+      'Commissioner removal voting is open', '1 of 4 franchises have voted', 'Voted: Franchise 2 (F2)',
+      'The commissioner is serving; no succession is pending', 'You are: Commissioner'])
+      expect(view).toContain(part);
+  });
+  it('gives an owner no role or invitation rows and no list of who voted', async () => {
+    const host = await show(render(LeaguePeople), { people: peopleWire.owner });
+    const view = text(host);
+    expect(view).toContain('You are: Owner');
+    expect(view).toContain('1 of 4 franchises have voted');
+    for (const hidden of ['private-deputy', 'Roles', 'Owner invitations', 'Voted:'])
+      expect(view).not.toContain(hidden);
+    expect(present(host, 'Franchise 3 (F3)')).toBe(true);
+  });
+});

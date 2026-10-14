@@ -1,0 +1,129 @@
+{
+  "commissioner": {
+    "league": "native.people",
+    "name": "People league",
+    "revision": 7,
+    "seats": [
+      {
+        "franchise": "franchise.01",
+        "name": "Franchise 1",
+        "abbreviation": "F1",
+        "owner": "owner-one"
+      },
+      {
+        "franchise": "franchise.02",
+        "name": "Franchise 2",
+        "abbreviation": "F2",
+        "owner": "owner-two"
+      },
+      {
+        "franchise": "franchise.03",
+        "name": "Franchise 3",
+        "abbreviation": "F3",
+        "owner": "owner-three"
+      },
+      {
+        "franchise": "franchise.04",
+        "name": "Franchise 4",
+        "abbreviation": "F4",
+        "owner": "Vacant"
+      }
+    ],
+    "roles": [
+      {
+        "person": "creator",
+        "role": "Commissioner"
+      },
+      {
+        "person": "private-deputy",
+        "role": "Co-commissioner"
+      }
+    ],
+    "invites": [],
+    "dotCount": 0,
+    "dotStatus": "Needs a ruling: DOT has 0 of 4 seats",
+    "votes": [
+      {
+        "id": "removal",
+        "status": "Commissioner removal voting is open: 1 yes ballots; 3 needed",
+        "ballotsCast": 1,
+        "totalFranchises": 4,
+        "votesRequired": 3,
+        "requirement": "Yes ballots needed to remove the commissioner",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "candidates": [],
+        "counts": [
+          {
+            "choice": "yes",
+            "ballots": 1
+          }
+        ],
+        "votedFranchises": [
+          "franchise.02"
+        ]
+      }
+    ],
+    "succession": "The commissioner is serving; no succession is pending",
+    "yourRole": "Commissioner",
+    "mayChangeRules": true,
+    "mayGrantRoles": true
+  },
+  "owner": {
+    "league": "native.people",
+    "name": "People league",
+    "revision": 7,
+    "seats": [
+      {
+        "franchise": "franchise.01",
+        "name": "Franchise 1",
+        "abbreviation": "F1",
+        "owner": "owner-one"
+      },
+      {
+        "franchise": "franchise.02",
+        "name": "Franchise 2",
+        "abbreviation": "F2",
+        "owner": "owner-two"
+      },
+      {
+        "franchise": "franchise.03",
+        "name": "Franchise 3",
+        "abbreviation": "F3",
+        "owner": "owner-three"
+      },
+      {
+        "franchise": "franchise.04",
+        "name": "Franchise 4",
+        "abbreviation": "F4",
+        "owner": "Vacant"
+      }
+    ],
+    "roles": [],
+    "invites": [],
+    "dotCount": 0,
+    "dotStatus": "Needs a ruling: DOT has 0 of 4 seats",
+    "votes": [
+      {
+        "id": "removal",
+        "status": "Commissioner removal voting is open: 1 yes ballots; 3 needed",
+        "ballotsCast": 1,
+        "totalFranchises": 4,
+        "votesRequired": 3,
+        "requirement": "Yes ballots needed to remove the commissioner",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "candidates": [],
+        "counts": [
+          {
+            "choice": "yes",
+            "ballots": 1
+          }
+        ]
+      }
+    ],
+    "succession": "The commissioner is serving; no succession is pending",
+    "yourRole": "Owner",
+    "mayChangeRules": false,
+    "mayGrantRoles": false
+  },
+  "secondCoCommissionerRefusal": "This league already has a co-commissioner: revoke them first"
+}
