@@ -408,3 +408,15 @@ bounds to RFC3339, ignores superseded answers and reapplies on refresh. `Density
 existing commissioner screens and uses the current shell's `connectDensity` and `createShellState` for independent memory;
 `screenDensity` binds that projection outside React, through the `commissioner.surface` Act;
 Narrative labels report cells, Tactical keeps the existing tables, Matrix compresses spacing.
+
+Commissioner League landing: `TargetCommissionerJobs` reads native league records through
+`history.CommissionerJobs`; `commissioner.JobsReading` derives ordered jobs from resolved rules.
+`commissioner.JobCalendar` (`RolloverAt`, `Window`) is the typed replacement seam for the native
+ActionCalendar; today's private `ruleCalendar` accepts only recorded exact instants, never inventing
+season dates from month/day presets. Unbuilt jobs stay explicit. `TargetCommissionerControls` returns
+all 56 rows' grouping, usable status and owned rule labels; questions reuse the generated commissioner
+registry. Both readings have Go-written frontend wire fixtures. The lazy `LeagueLanding` replaces the
+four stacked screens in `control/LeagueRoom`: jobs, question/rule search and eight collapsible groups;
+existing forms/screens live inside their groups, MFL references stay below. Search opens and focuses
+through `commissioner.surface` and `revealWorkSection`. `JobsStrip` reuses `clock.connectClock`'s DOM
+projection with an optional plain-word formatter, so counting never rerenders React. Dates are viewer-local.

@@ -1,3 +1,5 @@
+import jobsWire from './jobs.wire.testdata.json';
+import controlsWire from './controls.wire.testdata.json';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -16,6 +18,7 @@ const receipt = {
 };
 const port = (over: Partial<Port> = {}): Port => ({
   execute: async () => receipt, ledger: async () => wire,
+  jobs: async () => jobsWire.fresh, controls: async () => controlsWire,
   leagues: async () => [{ id: wire.league, name: wire.name }],
   rules: async () => rulesWire, people: async () => peopleWire.owner, ...over,
 });
@@ -70,8 +73,10 @@ describe('Commissioner spine', () => {
     const room = readFileSync(new URL('../control/LeagueRoom.tsx', import.meta.url), 'utf8');
     expect(registry).toContain("import('../commissioner/proxy')");
     expect(registry).not.toMatch(/import .* from ['"].*commissioner/);
-    for (const screen of ['LeagueDesk', 'LeagueLedger', 'LeagueRules', 'LeaguePeople'])
-      expect(room).toContain(`lazy(() => import('../commissioner/${screen}'))`);
+    expect(room).toContain("lazy(() => import('../commissioner/LeagueLanding'))");
+    const groups = readFileSync(new URL('./ControlGroupView.tsx', import.meta.url), 'utf8');
+    for (const screen of ['LeagueLedger', 'LeagueRules', 'LeaguePeople'])
+      expect(groups).toContain(`lazy(() => import('./${screen}'))`);
     expect(room).not.toMatch(/import [^l].* from ['"]\.\.\/commissioner/);
     const budget = readFileSync(new URL('../../../scripts/bundle-budget.mjs', import.meta.url), 'utf8');
     expect(budget).toContain('Commissioner proxy in owner entry');

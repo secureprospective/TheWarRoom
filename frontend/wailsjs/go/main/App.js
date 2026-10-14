@@ -182,8 +182,16 @@ export function TargetClock() {
   return window['go']['main']['App']['TargetClock']();
 }
 
+export function TargetCommissionerControls() {
+  return window['go']['main']['App']['TargetCommissionerControls']();
+}
+
 export function TargetCommissionerExecute(arg1) {
   return window['go']['main']['App']['TargetCommissionerExecute'](arg1);
+}
+
+export function TargetCommissionerJobs(arg1) {
+  return window['go']['main']['App']['TargetCommissionerJobs'](arg1);
 }
 
 export function TargetCommissionerLeagues() {

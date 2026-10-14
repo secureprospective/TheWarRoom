@@ -97,7 +97,11 @@ export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
 
+export function TargetCommissionerControls():Promise<commissioner.Controls>;
+
 export function TargetCommissionerExecute(arg1:string):Promise<commissioner.Receipt>;
+
+export function TargetCommissionerJobs(arg1:string):Promise<commissioner.Jobs>;
 
 export function TargetCommissionerLeagues():Promise<Array<commissioner.NativeLeague>>;
 

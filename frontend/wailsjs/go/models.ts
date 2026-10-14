@@ -25,6 +25,121 @@ export namespace bid {
 
 export namespace commissioner {
 	
+	export class ControlField {
+	    field: string;
+	    label: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ControlField(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.field = source["field"];
+	        this.label = source["label"];
+	    }
+	}
+	export class ControlEntry {
+	    id: string;
+	    built: boolean;
+	    note: string;
+	    fields: ControlField[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ControlEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.built = source["built"];
+	        this.note = source["note"];
+	        this.fields = this.convertValues(source["fields"], ControlField);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class ControlGroup {
+	    id: string;
+	    label: string;
+	    controls: ControlEntry[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ControlGroup(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.label = source["label"];
+	        this.controls = this.convertValues(source["controls"], ControlEntry);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Controls {
+	    groups: ControlGroup[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Controls(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.groups = this.convertValues(source["groups"], ControlGroup);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Entry {
 	    id: string;
 	    who: string;
@@ -50,6 +165,66 @@ export namespace commissioner {
 	        this.gravity = source["gravity"];
 	        this.undo = source["undo"];
 	        this.replacedAt = source["replacedAt"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Job {
+	    id: string;
+	    name: string;
+	    state: string;
+	    words: string;
+	    opens: string;
+	    closes: string;
+	    controls: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Job(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.state = source["state"];
+	        this.words = source["words"];
+	        this.opens = source["opens"];
+	        this.closes = source["closes"];
+	        this.controls = source["controls"];
+	    }
+	}
+	export class Jobs {
+	    league: string;
+	    name: string;
+	    revision: number;
+	    jobs: Job[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Jobs(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.name = source["name"];
+	        this.revision = source["revision"];
+	        this.jobs = this.convertValues(source["jobs"], Job);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

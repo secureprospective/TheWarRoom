@@ -289,3 +289,20 @@ func (s *Store) CommissionerRules(ctx context.Context, league string) (commissio
 	}
 	return reading, nil
 }
+
+// CommissionerJobs reads the league's jobs as of the store's clock.
+func (s *Store) CommissionerJobs(ctx context.Context, league string) (commissioner.Jobs, error) {
+	events, err := s.Events(ctx, league, commissioner.Stream, 0)
+	if err != nil {
+		return commissioner.Jobs{}, err
+	}
+	records, err := commissionerRecords(events)
+	if err != nil {
+		return commissioner.Jobs{}, err
+	}
+	reading, err := commissioner.JobsReading(league, records, s.now())
+	if err != nil {
+		return commissioner.Jobs{}, fmt.Errorf("read league jobs: %w", err)
+	}
+	return reading, nil
+}

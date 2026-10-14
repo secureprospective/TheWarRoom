@@ -1,4 +1,6 @@
-export type SurfaceAction = { screen: string; action: 'view' | 'find' | 'clear'; value: string };
+export type SurfaceAction = {
+  screen: string; action: 'view' | 'find' | 'clear' | 'open' | 'group'; value: string;
+};
 type Handler = (args: SurfaceAction) => void;
 
 const handlers = new Map<string, Handler>();

@@ -21,6 +21,7 @@ export function connectClock(
   root: HTMLElement,
   deadlines: readonly Deadline[],
   now: () => number = Date.now,
+  format: typeof countdown = countdown,
 ): () => void {
   const byId = new Map(deadlines.map((deadline) => [deadline.id, deadline]));
   const document = root.ownerDocument;
@@ -35,7 +36,7 @@ export function connectClock(
       if (!deadline) continue;
       node.setAttribute('data-urgency', grade(deadline.at, time));
       const text = node.querySelector('[data-countdown]');
-      const label = countdown(deadline.at, time);
+      const label = format(deadline.at, time);
       if (text && text.textContent !== label) text.textContent = label;
     }
   };

@@ -142,3 +142,24 @@ func (a *App) TargetCommissionerRules(league string) (commissioner.Rules, error)
 	}
 	return reading, nil
 }
+
+func (a *App) TargetCommissionerJobs(league string) (commissioner.Jobs, error) {
+	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
+		return commissioner.Jobs{}, fmt.Errorf("choose an app league")
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.Jobs{}, fmt.Errorf("league jobs startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.CommissionerJobs(ctx, league)
+	if err != nil {
+		return commissioner.Jobs{}, fmt.Errorf("league jobs: %w", err)
+	}
+	return reading, nil
+}
+
+// TargetCommissionerControls lists every commissioner control, grouped, and whether it is built yet.
+func (a *App) TargetCommissionerControls() commissioner.Controls {
+	return commissioner.ControlsReading()
+}

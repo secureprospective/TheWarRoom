@@ -76,3 +76,33 @@
 .twr-app .ledger-filters input,
 .twr-app .ledger-filters select,
 .twr-app .ledger-filters button { min-height: 32px; }
+
+.twr-app .league-landing { display: grid; gap: 20px; min-width: 0; }
+.twr-app .jobs-strip h4,
+.twr-app .control-group h4 { margin: 0 0 8px; }
+.twr-app .jobs,
+.twr-app .control-hits,
+.twr-app .control-rows { list-style: none; padding: 0; margin: 0; }
+.twr-app .jobs { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.twr-app .job { flex: 1 1 220px; min-width: 0; color: var(--surface-tx2); }
+.twr-app .job-live { color: var(--surface-tx1); }
+.twr-app .job .act,
+.twr-app .control-hits .act { display: block; width: 100%; text-align: start; }
+.twr-app .job-line { display: block; margin-top: 4px; }
+.twr-app .job time { font-variant-numeric: tabular-nums; }
+.twr-app .control-search { display: grid; gap: 8px; }
+.twr-app .control-search input { width: 100%; box-sizing: border-box; min-height: 36px; }
+.twr-app .control-hits li { padding-block: 8px; border-bottom: 1px solid var(--surface-line); }
+.twr-app .control-group { border-top: 1px solid var(--surface-line); padding-top: 12px; }
+.twr-app .control-group-body { display: grid; gap: 16px; }
+.twr-app .control-count { font-size: 0.85em; font-weight: normal; color: var(--surface-tx2); }
+.twr-app .control-row { padding: 12px 4px; border-top: 1px solid var(--surface-line); }
+.twr-app .control-row h6 { font-size: 1em; margin: 0 0 4px; }
+.twr-app .control-row p { max-width: 72ch; margin-block: 4px; }
+.twr-app .control-row:focus { outline: 2px solid currentColor; outline-offset: 2px; }
+.twr-app .control-status { color: var(--surface-tx2); }
+.twr-app .control-rules { padding-inline-start: 20px; }
+.twr-app .control-rules li { padding-block: 4px; overflow-wrap: anywhere; }
+.twr-app .mfl-reference { border-top: 1px solid var(--surface-line); padding-top: 16px; }
+.twr-app .mfl-reference > summary { cursor: pointer; }
+.twr-app .mfl-reference > summary:focus-visible { outline: 2px solid currentColor; }
