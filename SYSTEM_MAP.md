@@ -68,10 +68,41 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 - `database/sql` is confined to `db` and `store`.
 - `transactions/*` handler packages are imported only by `transactions`.
 
+## App-owned calendar reading
+
+`internal/leagueclock/action_calendar.go` dates commissioner action windows at civil midnight in
+league time, assigns shared dates to the chosen side, and provides one default-deny action decision
+with exact trade cutoff and franchise/time-scoped exceptions. It carries live closes and countdown
+seconds. `Countdown` calculates a bid's late-bid mark from its configured duration; bid-plan wiring
+is still pending. The imported (MFL league) clock keeps Rulebook §14's week 9 first-kickoff deadline.
+`internal/commissioner/calendar.go` folds public exception Acts (`commish.calendar.exception`, CM-026,
+G3) and rule compensation into the reading. The existing history transaction authorizes, validates,
+retries and appends the exception. `league_calendar_app.go` exposes `TargetLeagueCalendar` for an
+explicit app league, season, franchise, action and owner time zone; it reads only durable local events.
+This read port does not yet replace the what-if transaction phase gate or the imported owner screens.
+`internal/commissioner/schedule_generator.go` generates complete division-weighted rounds for 2–32
+franchises, with one rotating bye in odd leagues. `schedule.generate`, `schedule.edit` and
+`schedule.publish` share the authorized/versioned/idempotent append path (CM-015, G2; published
+week edits are G3). Generation reads the current schedule rules and division alignment; an unset
+pattern refuses to guess. `league_schedule_app.go` exposes `TargetLeagueSchedule`: only the published
+projection, replayed from local events and compensations. Draft changes never replace that reading.
+`internal/commissioner/windows.go` holds the named window doors, `calendar.window.set`, `.move` and
+`.remove` (CM-023, G2, co-commissioner): each replays into the same `calendar.windows` value a
+`rules.set` writes (`windowChange` feeds the season resolver's `seasonChanges`), so the two doors read one projection and a
+reversal that would strand a later window change is refused. `gate.go` holds `NativeActionGate`, the one
+decision every native owner action asks: it answers through `ActionCalendar.Decide` (exceptions and the
+exact trade deadline included), says in the owner's local time which window opens a closed action, and
+mints the `Permit` an action needs to run. Root `native_gate.go` is the registry and its only door,
+`runNativeAction`; `native_gate_test.go` runs every registered action shut and open. The registry is
+empty until later chunks add native owner actions. Now/Race integration and the remaining census
+owner-edge wiring are still pending.
+
 ## IPC surface
 
 | File | Methods |
 |---|---|
+| `league_calendar_app.go` | `TargetLeagueCalendar(RawLeagueCalendarScope)`: app-owned action windows, live close countdowns, exact chosen trade deadline and public scoped exceptions, replayed from the league ledger and localized for the owner. |
+| `league_schedule_app.go` | `TargetLeagueSchedule(RawLeagueScheduleScope)`: published native head-to-head schedule only; draft changes are not owner readings. |
 | `market_surfaces_app.go`, `market_profile_app.go` | `TargetMarketLists`, `TargetPickClock`, `TargetMarketStretches`, `TargetAssetProfile`: validated historical scopes and asset kinds; typed Go-computed display sections in `Reading[MarketSurface]`, fitted ranges and archive disclosure, no spread grade. |
 | `counterparties_app.go`, `counterpanel_app.go` | `TargetCounterparties`, `TargetCounterpartTeam`: validated historical standing/window/posture scopes; tier cards, trends, pair matrix, sortable team values and season/asset-flow/partner Inspector readings. Lazy frontend in `frontend/src/app/counterparties`, franchise ids resolved against the shared snapshot. |
 | `lab_app.go` | `TargetMarket` validates season/phase input and returns a typed historical Market payload in the generic `Reading` shell extending `snapshot.Sourced`; dated provenance, count/threshold and Go-authored counting disclosure, no spread grade. |

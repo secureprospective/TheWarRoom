@@ -68,27 +68,11 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
-	for _, r := range records {
-		if r.Command.Request != raw.Request {
-			continue
-		}
-		if r.Canonical != canonical {
-			return commissioner.Receipt{}, fmt.Errorf("league change refused: %w",
-				commissioner.Refused(errors.New("this request was already used for a different change")))
-		}
-		return r.Receipt, nil
+	if prior, retried, err := retriedReceipt(raw, canonical, records); err != nil || retried {
+		return prior, err
 	}
-	if err := checkCommissionerAppend(raw, records); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("check league version: %w", commissioner.Refused(err))
-	}
-	if err := commissioner.CheckNativeAppend(raw, records); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("check starting snapshot: %w", err)
-	}
-	if err := commissioner.CheckGovernanceAppend(raw, principal, records, s.now()); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("check league change: %w", err)
-	}
-	if err := commissioner.CheckRulesAppend(raw, records, s.now()); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("check league rules: %w", err)
+	if err := s.checkAppend(raw, principal, records); err != nil {
+		return commissioner.Receipt{}, err
 	}
 	receipt, err := s.appendCommissioner(ctx, tx, raw, principal, role, canonical)
 	if err != nil {
@@ -98,6 +82,46 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 		return commissioner.Receipt{}, fmt.Errorf("record league change: %w", err)
 	}
 	return receipt, nil
+}
+
+// retriedReceipt returns the stored receipt when this request was already recorded, and refuses a
+// request key reused for a different change.
+func retriedReceipt(raw commissioner.RawCommand, canonical string,
+	records []commissioner.Record) (commissioner.Receipt, bool, error) {
+	for _, r := range records {
+		if r.Command.Request != raw.Request {
+			continue
+		}
+		if r.Canonical != canonical {
+			return commissioner.Receipt{}, false, fmt.Errorf("league change refused: %w",
+				commissioner.Refused(errors.New("this request was already used for a different change")))
+		}
+		return r.Receipt, true, nil
+	}
+	return commissioner.Receipt{}, false, nil
+}
+
+// checkAppend runs every check a league change must pass before it is recorded, in order.
+func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, records []commissioner.Record) error {
+	if err := checkCommissionerAppend(raw, records); err != nil {
+		return fmt.Errorf("check league version: %w", commissioner.Refused(err))
+	}
+	checks := []struct {
+		what  string
+		check func() error
+	}{
+		{"starting snapshot", func() error { return commissioner.CheckNativeAppend(raw, records) }},
+		{"league change", func() error { return commissioner.CheckGovernanceAppend(raw, principal, records, s.now()) }},
+		{"league calendar", func() error { return commissioner.CheckCalendarAppend(raw, records, s.now()) }},
+		{"league schedule", func() error { return commissioner.CheckScheduleAppend(raw, records) }},
+		{"league rules", func() error { return commissioner.CheckRulesAppend(raw, records, s.now()) }},
+	}
+	for _, c := range checks {
+		if err := c.check(); err != nil {
+			return fmt.Errorf("check %s: %w", c.what, err)
+		}
+	}
+	return nil
 }
 
 // preparedCommand fills what Go owns on the command, validates it and fixes its retry identity.
@@ -184,7 +208,7 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, raw commissi
 	now := s.now().UTC().Truncate(time.Microsecond)
 	receipt := commissioner.Receipt{Entry: "act." + hex.EncodeToString(identity[:]), League: raw.League,
 		Revision: raw.Expected + 1, RecordedAt: now, Message: "Recorded in the league ledger."}
-	definition, err := raw.Definition()
+	definition, err := raw.EffectiveDefinition()
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("define league change: %w", err)
 	}

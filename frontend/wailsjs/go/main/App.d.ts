@@ -141,6 +141,10 @@ export function TargetDraftTradeAccept(arg1:string,arg2:string):Promise<envelope
 
 export function TargetHandOff(arg1:string):Promise<envelope.Receipt>;
 
+export function TargetLeagueCalendar(arg1:main.RawLeagueCalendarScope):Promise<commissioner.Calendar>;
+
+export function TargetLeagueSchedule(arg1:main.RawLeagueScheduleScope):Promise<commissioner.Schedule>;
+
 export function TargetLeagueSettings():Promise<main.Report>;
 
 export function TargetLineup(arg1:string):Promise<main.LineupReading>;

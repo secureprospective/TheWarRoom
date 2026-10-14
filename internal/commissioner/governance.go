@@ -64,6 +64,12 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 		control = "CM-001"
 	case Revert:
 		control = "CM-039"
+	case WindowSet, WindowMove, WindowRemove:
+		control = "CM-023"
+	case CalendarException:
+		control = "CM-026"
+	case ScheduleGenerate, ScheduleEdit, SchedulePublish:
+		control = "CM-015"
 	case "commish.ledger.read":
 		p := governance.Principal(principal)
 		if a.State.HasRole(p, governance.Commissioner) {

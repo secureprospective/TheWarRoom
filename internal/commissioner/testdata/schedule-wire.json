@@ -1,0 +1,123 @@
+{
+  "league": "native.calendar",
+  "revision": 11,
+  "weeks": [
+    {
+      "week": 1,
+      "games": [
+        {
+          "home": "franchise.01",
+          "away": "franchise.02"
+        }
+      ]
+    },
+    {
+      "week": 2,
+      "games": [
+        {
+          "home": "franchise.02",
+          "away": "franchise.01"
+        }
+      ]
+    },
+    {
+      "week": 3,
+      "games": [
+        {
+          "home": "franchise.01",
+          "away": "franchise.02"
+        }
+      ]
+    },
+    {
+      "week": 4,
+      "games": [
+        {
+          "home": "franchise.02",
+          "away": "franchise.01"
+        }
+      ]
+    },
+    {
+      "week": 5,
+      "games": [
+        {
+          "home": "franchise.01",
+          "away": "franchise.02"
+        }
+      ]
+    },
+    {
+      "week": 6,
+      "games": [
+        {
+          "home": "franchise.02",
+          "away": "franchise.01"
+        }
+      ]
+    },
+    {
+      "week": 7,
+      "games": [
+        {
+          "home": "franchise.01",
+          "away": "franchise.02"
+        }
+      ]
+    },
+    {
+      "week": 8,
+      "games": [
+        {
+          "home": "franchise.02",
+          "away": "franchise.01"
+        }
+      ]
+    },
+    {
+      "week": 9,
+      "games": [
+        {
+          "home": "franchise.01",
+          "away": "franchise.02"
+        }
+      ]
+    },
+    {
+      "week": 10,
+      "games": [
+        {
+          "home": "franchise.02",
+          "away": "franchise.01"
+        }
+      ]
+    },
+    {
+      "week": 11,
+      "games": [
+        {
+          "home": "franchise.01",
+          "away": "franchise.02"
+        }
+      ]
+    },
+    {
+      "week": 12,
+      "games": [
+        {
+          "home": "franchise.02",
+          "away": "franchise.01"
+        }
+      ]
+    },
+    {
+      "week": 13,
+      "games": [
+        {
+          "home": "franchise.01",
+          "away": "franchise.02"
+        }
+      ]
+    }
+  ]
+}

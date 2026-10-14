@@ -181,44 +181,64 @@ type startedChange struct {
 // seasonChanges lists every change in force in the ledger, labelled with the season being read and
 // ordered by when each starts (ledger order breaks ties).
 func seasonChanges(records []Record, starts []time.Time, season int) ([]leaguerules.Change, error) {
-	active := Replay(records).Active
-	var timed []startedChange
-	alignmentSet := false
+	fold := seasonFold{starts: starts, active: Replay(records).Active}
 	for _, r := range records {
-		switch r.Command.Command {
-		case Create:
-			seeded, err := seedChanges(r)
-			if err != nil {
-				return nil, err
-			}
-			for _, c := range seeded {
-				timed = append(timed, startedChange{c, c.RecordedAt})
-			}
-		case NativeSeed:
-			if c, ok := carriedAlignment(r, alignmentSet); ok {
-				timed = append(timed, startedChange{c, c.RecordedAt})
-			}
-		case RulesSet:
-			if !active[r.Receipt.Entry] {
-				continue
-			}
-			c, start, ok, err := recordedChange(r, starts)
-			if err != nil {
-				return nil, err
-			}
-			if ok {
-				timed = append(timed, startedChange{c, start})
-				alignmentSet = alignmentSet || (r.Command.Effective == "now" && r.Command.Args.Field == alignmentField)
-			}
+		if err := fold.add(r); err != nil {
+			return nil, err
 		}
 	}
-	slices.SortStableFunc(timed, func(a, b startedChange) int { return a.start.Compare(b.start) })
-	changes := make([]leaguerules.Change, len(timed))
-	for i, t := range timed {
+	slices.SortStableFunc(fold.timed, func(a, b startedChange) int { return a.start.Compare(b.start) })
+	changes := make([]leaguerules.Change, len(fold.timed))
+	for i, t := range fold.timed {
 		changes[i] = t.change
 		changes[i].Season = season
 	}
 	return changes, nil
+}
+
+// seasonFold collects, in ledger order, every change in force with the instant it starts.
+type seasonFold struct {
+	starts       []time.Time
+	active       map[string]bool
+	timed        []startedChange
+	alignmentSet bool
+}
+
+func (f *seasonFold) add(r Record) error {
+	switch r.Command.Command {
+	case Create:
+		seeded, err := seedChanges(r)
+		if err != nil {
+			return err
+		}
+		for _, c := range seeded {
+			f.timed = append(f.timed, startedChange{c, c.RecordedAt})
+		}
+	case NativeSeed:
+		if c, ok := carriedAlignment(r, f.alignmentSet); ok {
+			f.timed = append(f.timed, startedChange{c, c.RecordedAt})
+		}
+	case WindowSet, WindowMove, WindowRemove:
+		if !f.active[r.Receipt.Entry] {
+			return nil
+		}
+		c, err := windowChange(f.timed, r)
+		if err != nil {
+			return err
+		}
+		f.timed = append(f.timed, startedChange{c, c.RecordedAt})
+	case RulesSet:
+		if !f.active[r.Receipt.Entry] {
+			return nil
+		}
+		c, start, ok, err := recordedChange(r, f.starts)
+		if err != nil || !ok {
+			return err
+		}
+		f.timed = append(f.timed, startedChange{c, start})
+		f.alignmentSet = f.alignmentSet || (r.Command.Effective == "now" && r.Command.Args.Field == alignmentField)
+	}
+	return nil
 }
 
 // recordedChange turns an in-force rule change into a resolver change. ok is false while a

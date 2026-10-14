@@ -270,6 +270,14 @@ export function TargetHandOff(arg1) {
   return window['go']['main']['App']['TargetHandOff'](arg1);
 }
 
+export function TargetLeagueCalendar(arg1) {
+  return window['go']['main']['App']['TargetLeagueCalendar'](arg1);
+}
+
+export function TargetLeagueSchedule(arg1) {
+  return window['go']['main']['App']['TargetLeagueSchedule'](arg1);
+}
+
 export function TargetLeagueSettings() {
   return window['go']['main']['App']['TargetLeagueSettings']();
 }

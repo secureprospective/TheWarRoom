@@ -110,18 +110,21 @@ func ruleHistory(records []Record, at time.Time) (map[string]string, map[string]
 	sources, pending := map[string]string{}, map[string][]RulePending{}
 	latest := map[string]time.Time{}
 	for _, r := range records {
+		if windowCommand(r.Command.Command) && active[r.Receipt.Entry] {
+			sources[string(windowsField)] = r.Receipt.RecordedAt.Format(time.RFC3339Nano)
+			continue
+		}
 		if r.Command.Command != RulesSet || !active[r.Receipt.Entry] {
 			continue
 		}
 		field, startedAt := r.Command.Args.Field, r.Receipt.RecordedAt
 		if rollover, ok := nextRollover(starts, startedAt); r.Command.Effective != "now" {
 			if !ok || at.Before(rollover) {
-				setting, err := leaguerules.DecodeSetting(leaguerules.FieldPath(field), r.Command.Args.Value)
+				change, err := waitingChange(r)
 				if err != nil {
-					return nil, nil, fmt.Errorf("read waiting rule: %w", err)
+					return nil, nil, err
 				}
-				pending[field] = append(pending[field], RulePending{Entry: r.Receipt.Entry,
-					Value: leaguerules.DescribeField(leaguerules.FieldPath(field), setting).Words, When: waitingWords})
+				pending[field] = append(pending[field], change)
 				continue
 			}
 			startedAt = rollover
@@ -131,9 +134,28 @@ func ruleHistory(records []Record, at time.Time) (map[string]string, map[string]
 			sources[field] = startedAt.Format(time.RFC3339Nano)
 		}
 	}
+	if err := markReplaced(records, pending); err != nil {
+		return nil, nil, err
+	}
+	return sources, pending, nil
+}
+
+// waitingChange describes one recorded change that still waits for its rollover.
+func waitingChange(r Record) (RulePending, error) {
+	field := leaguerules.FieldPath(r.Command.Args.Field)
+	setting, err := leaguerules.DecodeSetting(field, r.Command.Args.Value)
+	if err != nil {
+		return RulePending{}, fmt.Errorf("read waiting rule: %w", err)
+	}
+	return RulePending{Entry: r.Receipt.Entry, Value: leaguerules.DescribeField(field, setting).Words,
+		When: waitingWords}, nil
+}
+
+// markReplaced marks each waiting change a later one for the same rule and rollover replaced.
+func markReplaced(records []Record, pending map[string][]RulePending) error {
 	replaced, err := replacedWaiting(records)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 	for _, changes := range pending {
 		for i := range changes {
@@ -142,7 +164,7 @@ func ruleHistory(records []Record, at time.Time) (map[string]string, map[string]
 			}
 		}
 	}
-	return sources, pending, nil
+	return nil
 }
 
 // replacedWaiting names each waiting change that a later one for the same rule and the same rollover

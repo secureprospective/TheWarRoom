@@ -27,7 +27,7 @@ func (r Record) Validate() error {
 	if err := r.Command.Validate(); err != nil {
 		return err
 	}
-	definition, err := r.Command.Definition()
+	definition, err := r.Command.EffectiveDefinition()
 	if err != nil {
 		return err
 	}
@@ -160,8 +160,23 @@ func entryLabel(records []Record, i int) (string, error) {
 }
 
 func recordLabel(r Record) string {
-	if r.Command.Command == NativeSeed {
+	switch r.Command.Command {
+	case NativeSeed:
 		return "Recorded the starting rosters, contracts, reserves, franchises and picks from held data"
+	case WindowSet, WindowMove, WindowRemove:
+		return windowLabel(r)
+	case ScheduleGenerate:
+		return "Generated a draft league schedule"
+	case SchedulePublish:
+		return "Published the league schedule"
+	case ScheduleEdit:
+		return fmt.Sprintf("Changed the league schedule for week %d", r.Command.Args.Schedule.Week.Week)
+	}
+
+	if r.Command.Command == CalendarException {
+		e := r.Command.Args.Exception
+		return fmt.Sprintf("Allowed %s for %s outside its window until %s: %s",
+			e.Action, e.Franchise, e.Until.Format(time.RFC3339), r.Command.Reason)
 	}
 	if r.Command.Command == Create {
 		preset := "every rule waiting for a ruling"
