@@ -432,7 +432,7 @@ It imports only the standard library and `internal/leaguerules`; no store, inges
 long-play distances and return-touchdown credits (returning team only), and adapts them without fetching or store writes.
 `source/testdata/comparison.csv` pins two complete held Legacy roster weeks against MFL totals,
 with an independent native-points reference and every mismatch classified; the Legacy preset follows the held league’s MFL scoring settings, with optional per-stat rounding
-and once-per-week counting. Eight source-credit differences remain explicitly unresolved. Neither package is connected to runtime score surfaces yet.
+and once-per-week counting. Eight source-credit differences remain explicitly unresolved. The app-owned player score reading composes these packages; existing MFL score surfaces remain unchanged.
 `source.StatPort` is the read-only player-week revision port; `history.Store.PlayerWeekStats` implements
 it over the exact registered weekly-file URL in the existing fetch archive. Distinct body hashes are
 returned newest first with held timestamps, exact quantities and the feed position. A missing player
@@ -448,5 +448,10 @@ player/franchise deltas through the existing command ledger, with CC+ permission
 `score_changes.go` folds compensation before selecting native scoring position and adding each delta
 once, retaining linked ledger provenance; overflow is refused on append and compensation.
 `ResultFlipCheck` explicitly reports that a change of game result is not known yet. These utilities
-are not yet composed into `TargetNativePlayerScore`; season-bound `RulesInForce` and the score reading
-remain unimplemented. Existing MFL owner readings and scouting positions are unchanged.
+feed `TargetNativePlayerScore` in `native_legality_app.go` through `history.Store.NativePlayerScore`.
+`commissioner.NativePlayerScoreReading` combines newest held identity/stat evidence, native position
+and adjustment provenance, and season-bound `RulesInForce`. Complete totals alone have `points`;
+incomplete evidence has explicitly labelled `partialPoints`, and missing identity/week or unsettled
+rules have neither. Missing play-by-play stays explicit. The Go-written wire fixture lives at
+`internal/commissioner/testdata/player-score-wire.json`. Existing MFL owner readings and scouting
+positions are unchanged.

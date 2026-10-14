@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 )
 
@@ -53,4 +55,35 @@ func (s *Store) PlayerWeekStats(ctx context.Context, scope source.RawStatScope) 
 		return nil, parseErr
 	}
 	return out, nil
+}
+
+func (s *Store) NativePlayerScore(ctx context.Context, league string,
+	scope source.RawNativeScope) (commissioner.NativePlayerScore, error) {
+	if err := scope.Validate(); err != nil {
+		return commissioner.NativePlayerScore{}, fmt.Errorf("read player score: %w", err)
+	}
+	records, err := s.nativeRecords(ctx, league)
+	if err != nil {
+		return commissioner.NativePlayerScore{}, err
+	}
+	seeded := false
+	for _, record := range records {
+		seeded = seeded || record.Command.Command == commissioner.NativeSeed
+	}
+	if !seeded {
+		reading, err := commissioner.NativePlayerScoreReading(league, scope, records, source.NativeEvidence{}, s.now())
+		if err != nil {
+			return reading, fmt.Errorf("read native score: %w", err)
+		}
+		return reading, nil
+	}
+	evidence, err := source.ReadNativeEvidence(ctx, s, s, scope)
+	if err != nil {
+		return commissioner.NativePlayerScore{}, fmt.Errorf("read native score evidence: %w", err)
+	}
+	reading, err := commissioner.NativePlayerScoreReading(league, scope, records, evidence, s.now())
+	if err != nil {
+		return commissioner.NativePlayerScore{}, fmt.Errorf("read native score: %w", err)
+	}
+	return reading, nil
 }

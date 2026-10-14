@@ -658,6 +658,99 @@ export namespace commissioner {
 	}
 	
 	
+	export class ScoreChange {
+	    entry: string;
+	    what: string;
+	    reason: string;
+	    status: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ScoreChange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.entry = source["entry"];
+	        this.what = source["what"];
+	        this.reason = source["reason"];
+	        this.status = source["status"];
+	    }
+	}
+	export class NativeScoreItem {
+	    stat: string;
+	    words: string;
+	    points?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeScoreItem(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.stat = source["stat"];
+	        this.words = source["words"];
+	        this.points = source["points"];
+	    }
+	}
+	export class NativePlayerScore {
+	    league: string;
+	    player: string;
+	    season: number;
+	    week: number;
+	    status: string;
+	    words: string;
+	    points?: number;
+	    partialPoints?: number;
+	    position?: string;
+	    positionWhy?: string;
+	    missing: string[];
+	    items: NativeScoreItem[];
+	    changes: ScoreChange[];
+	    sha256?: string;
+	    // Go type: time
+	    fetchedAt?: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativePlayerScore(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.player = source["player"];
+	        this.season = source["season"];
+	        this.week = source["week"];
+	        this.status = source["status"];
+	        this.words = source["words"];
+	        this.points = source["points"];
+	        this.partialPoints = source["partialPoints"];
+	        this.position = source["position"];
+	        this.positionWhy = source["positionWhy"];
+	        this.missing = source["missing"];
+	        this.items = this.convertValues(source["items"], NativeScoreItem);
+	        this.changes = this.convertValues(source["changes"], ScoreChange);
+	        this.sha256 = source["sha256"];
+	        this.fetchedAt = this.convertValues(source["fetchedAt"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class NativeReserveFranchise {
 	    franchise: string;
 	    name: string;
@@ -817,6 +910,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	export class PeopleVoteCount {
@@ -1287,6 +1381,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 
 }

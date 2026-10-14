@@ -175,6 +175,8 @@ export function TargetNativeHouseRules(arg1:string):Promise<commissioner.NativeH
 
 export function TargetNativeLineupCheck(arg1:commissioner.RawNativeLineup):Promise<commissioner.NativeLineupCheck>;
 
+export function TargetNativePlayerScore(arg1:string,arg2:string,arg3:number,arg4:number):Promise<commissioner.NativePlayerScore>;
+
 export function TargetNativeReserveCheck(arg1:string):Promise<commissioner.NativeReserveCheck>;
 
 export function TargetNativeRosterCheck(arg1:string):Promise<commissioner.NativeRosterCheck>;

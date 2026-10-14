@@ -338,6 +338,10 @@ export function TargetNativeLineupCheck(arg1) {
   return window['go']['main']['App']['TargetNativeLineupCheck'](arg1);
 }
 
+export function TargetNativePlayerScore(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['TargetNativePlayerScore'](arg1, arg2, arg3, arg4);
+}
+
 export function TargetNativeReserveCheck(arg1) {
   return window['go']['main']['App']['TargetNativeReserveCheck'](arg1);
 }
