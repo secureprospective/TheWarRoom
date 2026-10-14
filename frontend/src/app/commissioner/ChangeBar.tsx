@@ -1,0 +1,45 @@
+import { Act } from '../commands/Act';
+import type { Safeguard } from './rules';
+import { bodyOf, noReasonWords, safeguardWords, useRequestKey, type Change } from './forms';
+import { HoldToFire } from './HoldToFire';
+import { leagueState } from './proxy';
+
+type Props = {
+  form: string; change: Change | null; safeguard: Safeguard; reason: string; onReason(text: string): void;
+  confirmLabel: string; blocked?: string; note?: string;
+};
+
+// ChangeBar is the end of every commissioner form: the reason, the safeguard Go applies, the confirm and
+// whatever Go answered. Nothing here decides who may act; it sends the typed body and shows the answer.
+export function ChangeBar({ form, change, safeguard, reason, onReason, confirmLabel, blocked, note }: Props) {
+  const outcome = leagueState.use().outcome;
+  const typed = reason.trim();
+  const sent = change && { ...change, reason: typed };
+  const key = useRequestKey(sent);
+  const body = sent ? bodyOf(sent, key) : '';
+  const sending = outcome.status === 'sending' && outcome.form === form;
+  const need = safeguard === 'reason' && typed === '' ? noReasonWords : '';
+  const why = blocked || need || (sending ? 'Sending the change…' : '');
+  const ready = body !== '' && why === '';
+  return (
+    <div className="change-bar">
+      <label className="change-reason">
+        Reason {safeguard === 'reason' ? '(required)' : '(optional)'}
+        <textarea value={reason} rows={2} onChange={e => onReason(e.target.value)} />
+      </label>
+      <p className="change-safeguard">{safeguardWords[safeguard]}</p>
+      {note && <p className="change-note">{note}</p>}
+      {safeguard === 'hold'
+        ? <HoldToFire label={confirmLabel} disabled={!ready} body={body}
+          answer={outcome.status !== 'idle' && outcome.form === form ? outcome.status : ''} />
+        : <Act verb="commissioner.execute" args={{ body }} variant="button" disabled={!ready}>
+          {confirmLabel}
+        </Act>}
+      {why && !ready && <p className="change-why" role="status">{why}</p>}
+      {outcome.status === 'done' && outcome.form === form &&
+        <p role="status" className="change-done">{outcome.receipt.message}</p>}
+      {outcome.status === 'refused' && outcome.form === form &&
+        <p role="alert" className="change-refused">{outcome.message}</p>}
+    </div>
+  );
+}

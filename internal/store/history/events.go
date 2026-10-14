@@ -10,6 +10,8 @@ import (
 	"math"
 	"strings"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
 const eventsDDL = `
@@ -35,6 +37,7 @@ BEGIN SELECT RAISE(ABORT,'league event revision conflict'); END;
 CREATE TRIGGER IF NOT EXISTS league_event_supersedes BEFORE INSERT ON league_event
 WHEN NEW.supersedes IS NOT NULL AND NOT EXISTS(SELECT 1 FROM league_event WHERE id=NEW.supersedes AND league=NEW.league AND stream=NEW.stream)
 BEGIN SELECT RAISE(ABORT,'superseded event must be in the same stream'); END;
+CREATE UNIQUE INDEX IF NOT EXISTS commissioner_request ON league_event(league,correlation_id) WHERE stream='commissioner';
 CREATE TABLE IF NOT EXISTS authority_policy (
  league TEXT NOT NULL CHECK(length(league)>0),
  domain TEXT NOT NULL CHECK(length(domain)>0),
@@ -53,9 +56,10 @@ const (
 
 // EventPayload is an event's versioned body. Money is whole cents, never a float.
 type EventPayload struct {
-	Version    int               `json:"version"`
-	MoneyCents *int64            `json:"moneyCents,omitempty"`
-	Details    map[string]string `json:"details,omitempty"`
+	Commissioner *commissioner.Record `json:"commissioner,omitempty"`
+	Version      int                  `json:"version"`
+	MoneyCents   *int64               `json:"moneyCents,omitempty"`
+	Details      map[string]string    `json:"details,omitempty"`
 }
 
 // LeagueEvent is one row of the append-only league event log. Revision orders a stream; a
@@ -107,7 +111,21 @@ func (s *Store) AppendEvent(ctx context.Context, e LeagueEvent, expected int64) 
 	if revision != expected {
 		return LeagueEvent{}, fmt.Errorf("league event: expected %d, held %d: %w", expected, revision, ErrRevisionConflict)
 	}
-	e.Revision, e.RecordedAt = expected+1, s.now().UTC()
+	e, err = s.insertEvent(ctx, tx, e, expected)
+	if err != nil {
+		return LeagueEvent{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return LeagueEvent{}, fmt.Errorf("league event: commit: %w", err)
+	}
+	return e, nil
+}
+
+func (s *Store) insertEvent(ctx context.Context, tx *sql.Tx, e LeagueEvent, expected int64) (LeagueEvent, error) {
+	e.Revision = expected + 1
+	if e.RecordedAt.IsZero() {
+		e.RecordedAt = s.now().UTC()
+	}
 	payload, err := json.Marshal(e.Payload)
 	if err != nil {
 		return LeagueEvent{}, fmt.Errorf("league event: encode payload: %w", err)
@@ -119,18 +137,22 @@ func (s *Store) AppendEvent(ctx context.Context, e LeagueEvent, expected int64) 
 	if _, err := tx.ExecContext(ctx, `INSERT INTO league_event (id,league,stream,revision,effective_at,recorded_at,actor,scope,kind,payload,input_hash,correlation_id,supersedes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`, e.ID, e.League, e.Stream, e.Revision, formatTime(e.EffectiveAt), formatTime(e.RecordedAt), e.Actor, e.Scope, e.Kind, string(payload), e.InputHash, e.CorrelationID, supersedes); err != nil {
 		return LeagueEvent{}, fmt.Errorf("league event: append: %w", err)
 	}
-	if err := tx.Commit(); err != nil {
-		return LeagueEvent{}, fmt.Errorf("league event: commit: %w", err)
-	}
 	return e, nil
 }
 
 // Events returns a stream's events after revision after, in revision order.
 func (s *Store) Events(ctx context.Context, league, stream string, after int64) ([]LeagueEvent, error) {
-	rows, err := s.pools.Read().QueryContext(ctx, `SELECT id,league,stream,revision,effective_at,recorded_at,actor,scope,kind,payload,input_hash,correlation_id,COALESCE(supersedes,'') FROM league_event WHERE league=? AND stream=? AND revision>? ORDER BY revision`, league, stream, after)
+	rows, err := s.pools.Read().QueryContext(ctx, eventsQuery, league, stream, after)
 	if err != nil {
 		return nil, fmt.Errorf("league event: read: %w", err)
 	}
+	return scanEvents(rows)
+}
+
+const eventsQuery = `SELECT id,league,stream,revision,effective_at,recorded_at,actor,scope,kind,payload,input_hash,correlation_id,COALESCE(supersedes,'') FROM league_event WHERE league=? AND stream=? AND revision>? ORDER BY revision`
+
+func scanEvents(rows *sql.Rows) ([]LeagueEvent, error) {
+	var err error
 	defer func() { _ = rows.Close() }()
 	out := []LeagueEvent{}
 	for rows.Next() {

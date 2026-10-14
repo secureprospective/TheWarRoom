@@ -1,0 +1,1784 @@
+week,mfl,gsis,position,name,points,native_units,mfl_units,cause,residual_units
+1,15238,00-0036945,QB,"Fields, Justin",34.50,345000,345000,,0
+1,17068,00-0040730,RB,"Harvey, RJ",10.80,108000,108000,,0
+1,14073,00-0035700,RB,"Jacobs, Josh",16.85,168500,168500,,0
+1,11675,00-0031381,WR,"Adams, Davante",10.10,101000,101000,,0
+1,16190,00-0039064,WR,"Flowers, Zay",32.40,324000,324000,,0
+1,14833,00-0036407,WR,"Jeudy, Jerry",14.10,141000,141000,,0
+1,15762,00-0037247,WR,"Pickens, George",6.00,60000,60000,,0
+1,17102,00-0040128,TE,"Warren, Tyler",16.05,160500,160500,,0
+1,16775,00-0039750,PK,"Karty, Joshua",2.00,0,20000,MFL PAT made/missed/blocked absent from preset (2 points),0
+1,14900,00-0036130,DT,"Madubuike, Nnamdi",21.00,210000,210000,,0
+1,12698,00-0032387,DT,"Reed, Jarran",11.50,115000,115000,,0
+1,16651,00-0039340,DE,"Latu, Laiatu",10.60,101500,106000,MFL interception return yards .1 versus preset .025 (0.450 points),0
+1,11721,00-0031040,DE,"Mack, Khalil",3.50,35000,35000,,0
+1,15869,00-0037254,LB,"Bernard, Terrel",9.50,95000,95000,,0
+1,14218,00-0035687,LB,"Okereke, Bobby",19.50,195000,195000,,0
+1,16716,00-0039741,LB,"Wilson, Payton",10.00,100000,100000,,0
+1,15881,00-0038039,CB,"Jones, Jack",14.00,120000,140000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,16703,00-0039821,CB,"Phillips, Andru",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,14910,00-0036221,S,"Jones, Brandon",12.00,110000,120000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,14179,00-0034974,S,"Love, Julian",33.00,290000,330000,MFL CB/S tackle bonus omitted by preset (4.0 points),0
+1,14995,00-0036348,S,"Metellus, Josh",10.00,80000,100000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,12221,00-0031565,DE,"Hunter, Danielle",8.50,85000,85000,,0
+1,15894,00-0037079,CB,"Woolen, Tariq",10.00,80000,100000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,13759,00-0034373,DE,"Armstrong, Dorance",18.00,180000,180000,,0
+1,16344,00-0038623,DT,"Stills, Dante",6.50,65000,65000,,0
+1,17058,00-0040208,RB,"Brooks, Tahj",1.50,15000,15000,,0
+1,15259,00-0036875,RB,"Stevenson, Rhamondre",5.75,57500,57500,,0
+1,15329,00-0036970,TE,"Pitts, Kyle",12.90,129000,129000,,0
+1,11872,00-0031270,DT,"Harris, Shelby",1.50,15000,15000,,0
+1,15681,00-0036813,LB,"Elliss, Christian",10.50,105000,105000,,0
+1,13168,00-0033943,WR,"Reynolds, Josh",3.80,38000,38000,,0
+1,16237,00-0038600,LB,"Pappoe, Owen",1.00,10000,10000,,0
+1,17330,00-0040041,DT,"Stackhouse, Nazir",1.50,15000,15000,,0
+1,16596,00-0039794,RB,"Allen, Braelon",7.80,78000,78000,,0
+1,16164,00-0038555,RB,"Bigsby, Tank",2.45,24500,24500,,0
+1,14823,00-0036139,RB,"Dowdle, Rico",5.55,55500,55500,,0
+1,15779,00-0037816,WR,"Doubs, Romeo",11.80,118000,118000,,0
+1,17083,00-0040130,WR,"Higgins, Jayden",7.70,77000,77000,,0
+1,15319,00-0036988,WR,"Palmer, Joshua",12.10,121000,121000,,0
+1,16723,00-0039793,TE,"Barner, AJ",2.85,28500,28500,,0
+1,13718,00-0034161,PK,"Carlson, Daniel",10.00,80000,100000,MFL PAT made/missed/blocked absent from preset (2 points),0
+1,13692,00-0034773,DT,"Vea, Vita",4.00,40000,40000,,0
+1,14405,00-0035402,DE,"Granderson, Carl",29.25,292500,292500,,0
+1,14947,00-0036335,DE,"Wonnum, D.J.",2.50,25000,25000,,0
+1,13268,00-0033914,LB,"Anzalone, Alex",4.50,45000,45000,,0
+1,15473,00-0036658,LB,"McDuffie, Isaiah",4.50,45000,45000,,0
+1,13743,00-0034815,LB,"Warner, Fred",12.50,125000,125000,,0
+1,14219,00-0035699,CB,"Dean, Jamel",21.00,165000,210000,MFL CB/S tackle bonus omitted by preset (3.0 points); MFL CB/S pass-defense bonus omitted by preset (1.5 points),0
+1,16673,00-0039232,CB,"Wiggins, Nate",10.00,75000,100000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+1,13713,00-0034789,S,"Fitzpatrick, Minkah",18.00,145000,180000,MFL CB/S tackle bonus omitted by preset (3.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,14871,00-0036244,TE,"Parkinson, Colby",-0.60,-6000,-6000,,0
+1,15755,00-0037741,WR,"Dotson, Jahan",10.90,109000,109000,,0
+1,14944,00-0036394,CB,"Holmes, Darnay",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,16227,00-0038980,DE,"Harrison, Zach",3.00,30000,30000,,0
+1,16732,00-0039816,WR,"Gould, Anthony",0.00,0,0,,0
+1,13694,00-0034397,DT,"Settle, Tim",1.50,15000,15000,,0
+1,15874,00-0038100,S,"Butler, Percy",4.00,25000,40000,MFL CB/S tackle bonus omitted by preset (0.5 points); Unresolved source/credit disagreement after held-rule reconstruction (1.00 points); MFL stat breakdown not held,10000
+1,15970,00-0037539,TE,"Krull, Lucas",1.60,16000,16000,,0
+1,15718,00-0037085,RB,"Badie, Tyler",3.60,36000,36000,,0
+1,17103,00-0040663,TE,"Fannin, Harold",14.75,147500,147500,,0
+1,17061,00-0040238,RB,"Allen, LeQuint",2.25,22500,22500,,0
+1,17191,00-0040171,DT,"Farmer, Joshua",1.50,15000,15000,,0
+1,13593,00-0034796,QB,"Jackson, Lamar",34.35,343500,343500,,0
+1,14800,00-0036158,RB,"Dobbins, J.K.",17.20,172000,172000,,0
+1,15777,00-0037837,WR,"Austin III, Calvin",19.00,190000,190000,,0
+1,13289,00-0033555,WR,"Hollins, Mack",1.30,13000,13000,,0
+1,15786,00-0037291,WR,"Nailor, Jalen",4.80,48000,48000,,0
+1,16080,00-0037545,WR,"Shaheed, Rashid",9.75,97500,97500,,0
+1,16684,00-0039880,WR,"Washington, Malik",6.55,65500,65500,,0
+1,15337,00-0036637,TE,"Gray, Noah",1.30,13000,13000,,0
+1,16444,00-0038905,PK,"Grupe, Blake",6.00,50000,60000,MFL PAT made/missed/blocked absent from preset (1 points),0
+1,13317,00-0033860,DT,"Godchaux, Davon",5.50,55000,55000,,0
+1,15081,00-0035890,DT,"Wharton, Tershawn",7.00,70000,70000,,0
+1,14882,00-0036224,DE,"Greenard, Jonathan",7.00,70000,70000,,0
+1,13750,00-0034754,LB,"Burks, Oren",5.00,50000,50000,,0
+1,15823,00-0037823,LB,"Harris, Christian",1.50,15000,15000,,0
+1,16722,00-0039815,LB,"Knight, Tyrice",9.00,90000,90000,,0
+1,16736,00-0039372,CB,"Brownlee, Jarvis",23.00,195000,230000,MFL CB/S tackle bonus omitted by preset (3.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,15989,00-0037137,CB,"Jobe, Josh",12.00,100000,120000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points),0
+1,13470,00-0033393,CB,"Moore, Kenny",18.50,170000,185000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,15834,00-0038038,S,"Hamilton, Kyle",25.00,210000,250000,MFL CB/S tackle bonus omitted by preset (3.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+1,14908,00-0036388,S,"McKinney, Xavier",9.00,75000,90000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,15446,00-0036642,DT,"Slaton, Tedarrell",5.50,55000,55000,,0
+1,15121,00-0036151,DE,"Huff, Bryce",0.00,0,0,,0
+1,14414,00-0034485,S,"Owens, Jonathan",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,16727,00-0039825,S,"Hicks, Jaden",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,16752,00-0039798,RB,"Davis, Isaiah",3.10,31000,31000,,0
+1,16601,00-0039746,RB,"Shipley, Will",4.35,43500,43500,,0
+1,13920,00-0034573,CB,"Ward, Charvarius",10.00,80000,100000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,13143,00-0033955,RB,"McNichols, Jeremy",3.10,31000,31000,,0
+1,15991,00-0037348,TE,"Conner, Tanner",4.00,40000,40000,,0
+1,17157,00-0040669,WR,"TeSlaa, Isaac",8.30,83000,83000,,0
+1,17066,00-0040236,RB,"Monangai, Kyle",2.10,21000,21000,,0
+1,17146,00-0040672,DT,"Williams, Tyleik",4.00,40000,40000,,0
+1,14782,00-0036264,QB,"Love, Jordan",21.25,212500,212500,,0
+1,15723,00-0037276,RB,"Chandler, Ty",2.10,21000,21000,,0
+1,11367,00-0029892,RB,"Juszczyk, Kyle",7.20,72000,72000,,0
+1,17097,00-0040154,WR,"Felton, Tai",4.50,45000,45000,,0
+1,13963,00-0034854,WR,"Hodge, KhaDarel",0.00,0,0,,0
+1,16185,00-0038543,WR,"Smith-Njigba, Jaxon",21.40,234000,214000,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+1,17232,00-0040075,WR,"Wester, LaJohntay",0.15,1500,1500,,0
+1,12956,00-0032569,PK,"Lutz, Wil",8.00,60000,80000,MFL PAT made/missed/blocked absent from preset (2 points),0
+1,15812,00-0038127,DT,"Hall, Logan",2.50,25000,25000,,0
+1,12741,00-0032762,DT,"Jones, Chris",3.00,30000,30000,,0
+1,14167,00-0035642,DE,"Hines-Allen, Josh",1.00,10000,10000,,0
+1,13690,00-0034381,DE,"Sweat, Josh",2.50,25000,25000,,0
+1,16669,00-0039388,LB,"Ford, Jaylan",1.00,10000,10000,,0
+1,15404,00-0036994,LB,"Jones, Ernest",22.70,221750,227000,MFL interception return yards .1 versus preset .025 (0.525 points),0
+1,15913,00-0037288,CB,"Benford, Christian",12.00,95000,120000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+1,13710,00-0034778,CB,"Davis, Carlton",12.00,100000,120000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+1,13707,00-0034856,CB,"Ward, Denzel",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,16705,00-0039838,S,"Bullock, Calen",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,15366,00-0036998,S,"Holland, Jevon",14.00,120000,140000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,14197,00-0034968,S,"Savage, Darnell",0.00,25000,0,MFL CB/S pass-defense bonus omitted by preset (0.5 points); Unresolved source/credit disagreement after held-rule reconstruction (-3.00 points); MFL stat breakdown not held,-30000
+1,15491,00-0036862,WR,"Skowronek, Ben",14.70,147000,147000,,0
+1,14956,00-0036374,CB,"Sneed, L'Jarius",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,14899,00-0036260,DT,"Kinlaw, Javon",10.00,100000,100000,,0
+1,15527,00-0036683,S,"Key, Devon",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,17161,00-0040137,DE,"Burch, Jordan",4.00,40000,40000,,0
+1,17213,00-0040194,TE,"Hawes, Jackson",4.90,49000,49000,,0
+1,15414,00-0036842,RB,"Nwangwu, Kene",0.83,8250,8300,MFL per-stat hundredths rounding (0.005 points),0
+1,15237,00-0036971,QB,"Lawrence, Trevor",13.70,137000,137000,,0
+1,16167,00-0039040,RB,"Achane, De'Von",20.05,200500,200500,,0
+1,13604,00-0034844,RB,"Barkley, Saquon",21.10,211000,211000,,0
+1,16189,00-0038976,WR,"Mims, Marvin",5.43,54250,54300,MFL per-stat hundredths rounding (0.005 points),0
+1,15757,00-0038117,WR,"Robinson, Wan'Dale",13.53,135250,135300,MFL per-stat hundredths rounding (0.005 points),0
+1,15756,00-0037240,WR,"Williams, Jameson",6.75,67500,67500,,0
+1,16222,00-0038996,TE,"Kraft, Tucker",10.05,100500,100500,,0
+1,16286,00-0038562,PK,"Moody, Jake",1.00,-10000,10000,MFL PAT made/missed/blocked absent from preset (2 points),0
+1,12305,00-0031583,DT,"Jarrett, Grady",5.50,55000,55000,,0
+1,12361,00-0031957,DT,"Nunez-Roches, Rakeem",1.50,15000,15000,,0
+1,13284,00-0033935,DE,"Hendrickson, Trey",17.50,175000,175000,,0
+1,15378,00-0036940,DE,"Oweh, Odafe",2.50,25000,25000,,0
+1,16383,00-0038807,LB,"Pace, Ivan",6.00,60000,60000,,0
+1,13696,00-0034874,LB,"Smith, Roquan",14.00,140000,140000,,0
+1,16698,00-0039898,CB,"Sainristil, Mike",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,16268,00-0038549,CB,"Turner, DJ",14.70,121750,147000,MFL CB/S pass-defense bonus omitted by preset (1.0 points); MFL CB/S interception bonus omitted by preset (1 points); MFL interception return yards .1 versus preset .025 (0.525 points),0
+1,15950,00-0037195,CB,"Watson, Jaylen",14.00,110000,140000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,15839,00-0037616,S,"Cross, Nick",18.00,160000,180000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,15452,00-0036564,S,"Hufanga, Talanoa",22.00,185000,220000,MFL CB/S tackle bonus omitted by preset (3.5 points),0
+1,15402,00-0036992,S,"Molden, Elijah",8.00,60000,80000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,15875,00-0038123,S,"Belton, Dane",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,16148,00-0039150,QB,"Young, Bryce",12.45,124500,124500,,0
+1,16226,00-0038541,DE,"Wilson, Tyree",15.50,155000,155000,,0
+1,15392,00-0036625,CB,"St-Juste, Benjamin",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,16650,00-0039924,DE,"Turner, Dallas",5.50,55000,55000,,0
+1,16714,00-0039353,CB,"Jones, Jarrian",8.00,60000,80000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,16288,00-0038565,CB,"Blackmon, Mekhi",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,11945,00-0031203,PK,"Santos, Cairo",6.00,30000,60000,MFL PAT made/missed/blocked absent from preset (3 points),0
+1,13281,00-0033551,CB,"Douglas, Rasul",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,12795,00-0032415,DE,"Judon, Matt",4.00,40000,40000,,0
+1,13296,00-0033947,DE,"Wise, Deatrich",10.00,100000,100000,,0
+1,10267,00-0027940,DE,"Miller, Von",3.50,35000,35000,,0
+1,15456,00-0036648,LB,"Niemann, Nick",4.50,45000,45000,,0
+1,17181,00-0040159,S,"Ransom, Lathan",1.00,10000,10000,,0
+1,12745,00-0032388,LB,"Jones, Deion",1.00,10000,10000,,0
+1,10514,00-0028292,LB,"Bellore, Nick",2.50,30000,25000,Unresolved source/credit disagreement after held-rule reconstruction (-0.50 points); MFL stat breakdown not held,-5000
+1,16583,00-0039917,QB,"Penix Jr., Michael",27.90,299000,279000,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+1,17047,00-0040162,RB,"Sampson, Dylan",19.10,191000,191000,,0
+1,15916,00-0037292,TE,"Ogletree, Andrew",1.50,15000,15000,,0
+1,17220,00-0040200,PK,"Borregales, Andres",7.00,60000,70000,MFL PAT made/missed/blocked absent from preset (1 points),0
+1,12739,00-0033120,DT,"Clark, Kenny",9.50,95000,95000,,0
+1,13810,00-0034810,DT,"Joseph-Day, Sebastian",12.50,125000,125000,,0
+1,17135,00-0040725,DE,"Ezeiruaku, Donovan",3.50,35000,35000,,0
+1,17120,00-0040722,DE,"Green, Mike",2.50,25000,25000,,0
+1,16710,00-0039812,LB,"Hopper, Ty'Ron",1.50,15000,15000,,0
+1,17178,00-0040645,LB,"Simon, Cody",1.50,15000,15000,,0
+1,17128,00-0040720,CB,"Barron, Jahdae",5.00,45000,50000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,17163,00-0040143,CB,"Parrish, Jacob",10.50,90000,105000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,17144,00-0040733,S,"Emmanwori, Nick",4.50,40000,45000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,17186,00-0040165,S,"Moore, Malachi",1.00,10000,10000,,0
+1,14902,00-0036274,CB,"Okudah, Jeff",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,14954,00-0036302,S,"Hawkins, Jaylinn",29.60,255250,296000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points); MFL interception return yards .1 versus preset .025 (0.075 points),0
+1,17116,00-0040160,DE,"Sawyer, Jack",1.50,15000,15000,,0
+1,17118,00-0040580,DE,"Stewart, Josaiah",2.50,25000,25000,,0
+1,17168,00-0040149,CB,"Smith, Jaylin",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,12611,00-0033106,QB,"Goff, Jared",14.30,143000,143000,,0
+1,14802,00-0036223,RB,"Taylor, Jonathan",15.50,155000,155000,,0
+1,15710,00-0037840,RB,"Williams, Kyren",16.60,166000,166000,,0
+1,17076,00-0040782,WR,"Bond, Isaiah",1.50,15000,15000,,0
+1,11671,00-0031408,WR,"Evans, Mike",10.10,101000,101000,,0
+1,15768,00-0037664,WR,"Pierce, Alec",5.60,56000,56000,,0
+1,15331,00-0036894,TE,"Freiermuth, Pat",5.80,58000,58000,,0
+1,13693,00-0034782,DT,"Phillips, Harrison",5.00,50000,50000,,0
+1,15813,00-0037083,DE,"Enagbare, Kingsley",4.50,45000,45000,,0
+1,16235,00-0039047,DE,"Hall, Derick",5.00,50000,50000,,0
+1,15396,00-0036990,LB,"Deablo, Divine",14.75,147500,147500,,0
+1,15822,00-0037244,LB,"Lloyd, Devin",4.00,40000,40000,,0
+1,14672,00-0035617,LB,"Reeder, Troy",1.50,15000,15000,,0
+1,12711,00-0033055,CB,"Ramsey, Jalen",12.00,100000,120000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+1,15362,00-0036874,CB,"Surtain II, Patrick",3.00,25000,30000,MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,14921,00-0036231,S,"Dugger, Kyle",2.00,20000,20000,,0
+1,17131,00-0040148,S,"Watts, Xavier",18.00,140000,180000,MFL CB/S tackle bonus omitted by preset (3.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+1,16750,00-0039818,S,"Oladapo, Kitan",1.00,10000,10000,,0
+1,15759,00-0037614,WR,"Metchie, John",2.00,20000,20000,,0
+1,15928,00-0037310,DE,"Houston, James",7.50,75000,75000,,0
+1,17053,00-0040583,RB,"Marks, Woody",0.75,7500,7500,,0
+1,17205,00-0040184,WR,"Lambert-Smith, KeAndre",0.00,0,0,,0
+1,16580,00-0039851,QB,"Maye, Drake",18.25,202500,182500,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+1,17056,00-0040644,RB,"Etienne, Trevor",1.63,16250,16300,MFL per-stat hundredths rounding (0.005 points),0
+1,17043,00-0040734,RB,"Henderson, TreVeyon",12.93,129250,129300,MFL per-stat hundredths rounding (0.005 points),0
+1,16342,00-0038621,WR,"Douglas, Demario",8.35,83500,83500,,0
+1,16639,00-0039342,WR,"Legette, Xavier",4.00,40000,40000,,0
+1,17071,00-0040124,WR,"McMillan, Tetairoa",12.80,128000,128000,,0
+1,16214,00-0039065,TE,"LaPorta, Sam",14.90,149000,149000,,0
+1,16215,00-0039144,TE,"Musgrave, Luke",1.40,14000,14000,,0
+1,17222,00-0040074,PK,"Loop, Tyler",13.50,105000,135000,MFL PAT made/missed/blocked absent from preset (3 points),0
+1,17121,00-0040685,DT,"Graham, Mason",4.50,45000,45000,,0
+1,15395,00-0036989,DE,"Koonce, Malcolm",18.50,185000,185000,,0
+1,16262,00-0039148,DE,"White, Keion",4.00,40000,40000,,0
+1,17113,00-0040660,DE,"Williams, Mykel",1.50,15000,15000,,0
+1,16702,00-0039345,CB,"Green, Renardo",12.00,100000,120000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+1,17127,00-0040751,CB,"Johnson, Will",11.00,90000,110000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (1.5 points),0
+1,16677,00-0039867,S,"Bullard, Javon",16.00,125000,160000,MFL CB/S tackle bonus omitted by preset (3.5 points),0
+1,16726,00-0039234,CB,"Tampa, T.J.",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,14925,00-0036159,DE,"Uche, Josh",1.50,15000,15000,,0
+1,15936,00-0037316,LB,"Robinson, Mark",2.50,25000,25000,,0
+1,17062,00-0040466,RB,"Sanders, Raheim",6.75,67500,67500,,0
+1,14434,00-0034465,S,"Reaves, Jeremy",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,16586,00-0039376,QB,"Rattler, Spencer",14.20,142000,142000,,0
+1,15749,00-0037197,RB,"Pacheco, Isiah",5.55,55500,55500,,0
+1,15256,00-0036997,RB,"Williams, Javonte",22.65,226500,226500,,0
+1,15287,00-0036963,WR,"St. Brown, Amon-Ra",10.00,100000,100000,,0
+1,16195,00-0038393,WR,"Wicks, Dontayvion",5.00,50000,50000,,0
+1,11244,00-0030506,TE,"Kelce, Travis",13.70,137000,137000,,0
+1,15889,00-0037809,TE,"Okonkwo, Chigoziem",4.90,49000,49000,,0
+1,12437,00-0031492,PK,"Myers, Jason",8.00,70000,80000,MFL PAT made/missed/blocked absent from preset (1 points),0
+1,16691,00-0039733,DT,"Orhorhoro, Ruke",3.00,30000,30000,,0
+1,14171,00-0035713,DE,"Burns, Brian",27.00,270000,270000,,0
+1,15484,00-0036952,DE,"Cooper, Jonathon",13.00,130000,130000,,0
+1,15398,00-0037007,DE,"Jones, Patrick",2.50,25000,25000,,0
+1,14590,00-0035166,LB,"Al-Shaair, Azeez",12.50,125000,125000,,0
+1,14896,00-0036323,LB,"Queen, Patrick",11.50,115000,115000,,0
+1,15394,00-0036937,CB,"Adebo, Paulson",16.00,125000,160000,MFL CB/S tackle bonus omitted by preset (3.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,15849,00-0038125,CB,"McCreary, Roger",18.00,145000,180000,MFL CB/S tackle bonus omitted by preset (2.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points),0
+1,15364,00-0036941,S,"Cisco, Andre",7.00,60000,70000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,16295,00-0038982,S,"Conner, Chamarri",21.00,175000,210000,MFL CB/S tackle bonus omitted by preset (3.5 points),0
+1,13714,00-0034790,S,"James, Derwin",16.50,140000,165000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+1,14209,00-0035249,TE,"Oliver, Josh",1.50,15000,15000,,0
+1,15498,00-0036672,LB,"Stuard, Grant",0.60,6000,6000,,0
+1,14951,00-0036337,DT,"Lynch, James",4.00,40000,40000,,0
+1,15785,00-0037091,CB,"Melton, Bo",0.00,0,0,,0
+1,16300,00-0038574,DE,"McGuire, Isaiah",24.50,245000,245000,,0
+1,16704,00-0039347,LB,"Wallace, Trevin",7.50,75000,75000,,0
+1,15288,00-0036980,WR,"Moore, Elijah",2.25,22500,22500,,0
+1,16896,00-0039576,PK,"Shrader, Spencer",16.00,130000,160000,MFL PAT made/missed/blocked absent from preset (3 points),0
+1,15419,00-0036876,TE,"Granson, Kylen",2.60,26000,26000,,0
+1,14154,00-0035254,DE,"Nelson, Anthony",5.50,55000,55000,,0
+1,16138,00-0037527,LB,"Olubi, Segun",1.50,15000,15000,,0
+1,16608,00-0039299,RB,"Holani, George",1.00,10000,10000,,0
+1,13116,00-0033873,QB,"Mahomes, Patrick",33.50,335000,335000,,0
+1,13146,00-0033553,RB,"Conner, James",16.20,162000,162000,,0
+1,14104,00-0035676,WR,"Brown, A.J.",1.80,18000,18000,,0
+1,14836,00-0036322,WR,"Jefferson, Justin",14.95,149500,149500,,0
+1,14127,00-0034960,WR,"Meyers, Jakobi",19.70,197000,197000,,0
+1,15282,00-0036912,WR,"Smith, DeVonta",4.60,46000,46000,,0
+1,14592,00-0035208,WR,"Zaccheaus, Olamide",8.20,82000,82000,,0
+1,13674,00-0034351,TE,"Goedert, Dallas",11.40,114000,114000,,0
+1,11947,00-0029822,PK,"McManus, Brandon",9.00,60000,90000,MFL PAT made/missed/blocked absent from preset (3 points),0
+1,16369,00-0038412,DT,"Ojomo, Moro",2.50,25000,25000,,0
+1,15391,00-0036916,DT,"Williams, Milton",10.00,100000,100000,,0
+1,11769,00-0031411,DE,"Lawrence, Demarcus",17.00,170000,170000,,0
+1,15515,00-0036711,DE,"Snowden, Charles",4.00,40000,40000,,0
+1,13214,00-0033886,DE,"Watt, T.J.",18.00,180000,180000,,0
+1,14251,00-0035276,LB,"Cashman, Blake",4.00,40000,40000,,0
+1,14891,00-0036280,LB,"Harrison, Malik",2.50,25000,25000,,0
+1,13730,00-0034728,CB,"Alexander, Jaire",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,16671,00-0039903,CB,"Arnold, Terrion",12.00,100000,120000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,16139,00-0037549,CB,"Baker, Darrell",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,15003,00-0036199,S,"Stone, Geno",6.00,55000,60000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,15285,00-0036630,WR,"Wallace, Tylan",1.50,15000,15000,,0
+1,15255,00-0036919,RB,"Gainwell, Kenneth",12.68,146750,126800,MFL FU includes retained fumbles unlike preset lost-only (-2 points); MFL per-stat hundredths rounding (0.005 points),0
+1,16422,00-0038519,WR,"Remigio, Nikko",1.58,15750,15800,MFL per-stat hundredths rounding (0.005 points),0
+1,16799,00-0039435,LB,"Bethune, Tatum",2.50,25000,25000,,0
+1,15787,00-0038104,WR,"Thornton, Tyquan",7.80,78000,78000,,0
+1,13802,00-0034163,DE,"Martin, Jake",1.50,15000,15000,,0
+1,16450,00-0038922,LB,"Thomas, Drake",2.00,20000,20000,,0
+1,13590,00-0034855,QB,"Mayfield, Baker",29.00,290000,290000,,0
+1,17046,00-0040202,RB,"Neal, Devin",1.20,12000,12000,,0
+1,13176,00-0033891,WR,"Jones, Zay",1.40,14000,14000,,0
+1,16626,00-0039890,WR,"Mitchell, Adonai",4.10,41000,41000,,0
+1,13629,00-0034837,WR,"Ridley, Calvin",6.70,67000,67000,,0
+1,12678,00-0033110,TE,"Higbee, Tyler",0.00,0,0,,0
+1,16212,00-0039066,TE,"Mayer, Michael",7.80,78000,78000,,0
+1,13403,00-0033702,PK,"Koo, Younghoe",9.50,75000,95000,MFL PAT made/missed/blocked absent from preset (2 points),0
+1,14153,00-0035248,DT,"Allen, Zach",14.50,145000,145000,,0
+1,17138,00-0040127,DT,"Grant, Kenneth",7.00,70000,70000,,0
+1,15805,00-0037236,DE,"Hutchinson, Aidan",1.00,10000,10000,,0
+1,15388,00-0036902,DE,"Ossai, Joseph",2.50,25000,25000,,0
+1,14893,00-0036418,LB,"Baun, Zack",17.00,170000,170000,,0
+1,14892,00-0036409,LB,"Brooks, Jordyn",19.00,190000,190000,,0
+1,14904,00-0036416,CB,"Fulton, Kristian",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,13731,00-0034843,CB,"Hughes, Mike",5.00,45000,50000,MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,15845,00-0037191,CB,"McDuffie, Trent",12.00,95000,120000,MFL CB/S tackle bonus omitted by preset (2.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,14180,00-0035236,CB,"Murphy, Byron",8.00,60000,80000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,14907,00-0036282,S,"Delpit, Grant",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,16708,00-0039846,S,"Smith, Tykee",21.00,170000,210000,MFL CB/S tackle bonus omitted by preset (3.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,13294,00-0033945,DE,"Ebukam, Samson",12.50,125000,125000,,0
+1,14215,00-0035656,DT,"Saunders, Khalen",3.00,30000,30000,,0
+1,16667,00-0039858,LB,"Gray, Cedric",10.50,105000,105000,,0
+1,17098,00-0040648,WR,"Horton, Tory",0.30,3000,3000,,0
+1,16579,00-0039918,QB,"Williams, Caleb",28.20,282000,282000,,0
+1,16181,00-0038597,RB,"Brown, Chase",16.25,162500,162500,,0
+1,16166,00-0038951,RB,"Tucker, Sean",2.38,23750,23800,MFL per-stat hundredths rounding (0.005 points),0
+1,16193,00-0038608,WR,"Boutte, Kayshon",18.30,183000,183000,,0
+1,16614,00-0039849,WR,"Harrison Jr., Marvin",20.10,201000,201000,,0
+1,14136,00-0035719,WR,"Samuel, Deebo",25.00,250000,250000,,0
+1,16643,00-0039356,TE,"Sanders, Ja'Tavion",6.20,62000,62000,,0
+1,16292,00-0038567,PK,"Ryland, Chad",10.00,80000,100000,MFL PAT made/missed/blocked absent from preset (2 points),0
+1,13839,00-0034285,DT,"Sieler, Zach",7.50,75000,75000,,0
+1,17112,00-0040677,DE,"Carter, Abdul",8.75,87500,87500,,0
+1,12234,00-0032146,DE,"Dupree, Bud",2.50,25000,25000,,0
+1,10768,00-0029562,LB,"David, Lavonte",13.00,130000,130000,,0
+1,14303,00-0035316,LB,"Elliss, Kaden",9.00,90000,90000,,0
+1,15846,00-0037074,LB,"Walker, Quay",19.50,195000,195000,,0
+1,15868,00-0037253,CB,"Jones, Marcus",12.90,109000,129000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,15895,00-0037268,CB,"McCollum, Zyon",19.50,160000,195000,MFL CB/S tackle bonus omitted by preset (3.5 points),0
+1,14669,00-0035133,CB,"Nixon, Keisean",13.50,110000,135000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+1,13737,00-0034675,S,"Bates, Jessie",9.00,80000,90000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,15001,00-0036349,S,"Curl, Kamren",18.00,140000,180000,MFL CB/S tackle bonus omitted by preset (4.0 points),0
+1,15140,00-0035357,S,"Lewis, Cam",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,16594,00-0039921,RB,"Benson, Trey",11.70,117000,117000,,0
+1,15716,00-0037746,RB,"Robinson, Brian",6.05,60500,60500,,0
+1,15711,00-0038134,RB,"Walker III, Kenneth",6.90,69000,69000,,0
+1,13630,00-0034348,WR,"Sutton, Courtland",20.60,206000,206000,,0
+1,15788,00-0037666,WR,"Tolbert, Jalen",1.50,15000,15000,,0
+1,15753,00-0037740,WR,"Wilson, Garrett",24.50,245000,245000,,0
+1,13772,00-0034383,TE,"Schultz, Dalton",5.80,58000,58000,,0
+1,14897,00-0036220,DT,"Brown, Derrick",9.00,90000,90000,,0
+1,14157,00-0035718,DT,"Williams, Quinnen",28.00,280000,280000,,0
+1,15861,00-0037249,DE,"Bonitto, Nik",20.00,200000,200000,,0
+1,15809,00-0037663,DE,"Johnson, Jermaine",4.50,45000,45000,,0
+1,15815,00-0037235,DE,"Walker, Travon",4.00,40000,40000,,0
+1,13230,00-0033872,LB,"Adams, Jamal",5.50,55000,55000,,0
+1,13952,00-0034302,LB,"Luvu, Frankie",7.50,75000,75000,,0
+1,16284,00-0038557,LB,"Williams, Dorian",7.00,70000,70000,,0
+1,15405,00-0036987,CB,"Stephens, Brandon",10.00,80000,100000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,16245,00-0038560,S,"Battle, Jordan",26.20,220500,262000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points); MFL interception return yards .1 versus preset .025 (0.150 points),0
+1,16933,00-0039601,S,"Richardson, Demani",1.00,10000,10000,,0
+1,14122,00-0035535,WR,"Slayton, Darius",0.00,0,0,,0
+1,15851,00-0038116,DE,"Ebiketie, Arnold",13.00,130000,130000,,0
+1,15332,00-0037005,TE,"Tremble, Tommy",1.20,12000,12000,,0
+1,16246,00-0038596,S,"Johnson, Antonio",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,15461,00-0036568,DT,"Lopez, Roy",1.50,15000,15000,,0
+1,16642,00-0039359,TE,"Stover, Cade",6.20,62000,62000,,0
+1,14888,00-0036286,DE,"Chaisson, K'Lavon",6.25,62500,62500,,0
+1,16900,00-0039692,S,"Pettus, Dell",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,14979,00-0036428,LB,"Strnad, Justin",15.50,155000,155000,,0
+1,13592,00-0034869,QB,"Darnold, Sam",8.20,82000,82000,,0
+1,13404,00-0033699,RB,"Ekeler, Austin",9.60,96000,96000,,0
+1,14852,00-0036328,RB,"Gibson, Antonio",2.15,21500,21500,,0
+1,17087,00-0040581,WR,"Thornton, Dont'e",7.50,75000,75000,,0
+1,16425,00-0038720,TE,"Hill, Julian",2.00,20000,20000,,0
+1,14143,00-0035689,TE,"Knox, Dawson",4.00,40000,40000,,0
+1,13193,00-0033858,TE,"Smith, Jonnu",12.50,125000,125000,,0
+1,9694,00-0026858,PK,"Gano, Graham",8.00,80000,80000,,0
+1,16256,00-0038995,DT,"Bresee, Bryan",11.00,110000,110000,,0
+1,14158,00-0035230,DT,"Oliver, Ed",33.00,330000,330000,,0
+1,13700,00-0034828,DE,"Landry, Harold",34.25,342500,342500,,0
+1,16077,00-0037602,DE,"Okuayinonu, Sam",9.00,90000,90000,,0
+1,16872,00-0039763,LB,"Andreessen, Joe",1.00,10000,10000,,0
+1,12231,00-0031550,LB,"Thompson, Shaq",1.50,15000,15000,,0
+1,13738,00-0034356,CB,"Jackson, Donte",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,16279,00-0038552,CB,"Moss, Riley",18.00,145000,180000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+1,16729,00-0039366,CB,"Still, Tarheeb",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,15860,00-0037193,S,"Cook, Bryan",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,14982,00-0036380,S,"Gilman, Alohi",13.00,110000,130000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,12764,00-0033109,DT,"Hargrave, Javon",25.50,255000,255000,,0
+1,15866,00-0037758,CB,"Flott, Cordale",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,9064,00-0026158,QB,"Flacco, Joe",16.40,164000,164000,,0
+1,12626,00-0032764,RB,"Henry, Derrick",36.90,369000,369000,,0
+1,13138,00-0033923,RB,"Hunt, Kareem",5.35,53500,53500,,0
+1,11674,00-0031236,WR,"Cooks, Brandin",5.60,56000,56000,,0
+1,12658,00-0032385,WR,"Shepard, Sterling",6.90,69000,69000,,0
+1,16788,00-0039424,WR,"Vele, Devaughn",2.30,23000,23000,,0
+1,15109,00-0036182,WR,"Westbrook-Ikhine, Nick",1.70,17000,17000,,0
+1,11247,00-0030061,TE,"Ertz, Zach",11.60,116000,116000,,0
+1,14244,00-0035269,PK,"Gay, Matt",3.00,0,30000,MFL PAT made/missed/blocked absent from preset (3 points),0
+1,13933,00-0034234,DT,"Ford, Poona",1.00,10000,10000,,0
+1,13683,00-0034371,DT,"Hand, Da'Shawn",13.00,130000,130000,,0
+1,12691,00-0033073,DE,"Ogbah, Emmanuel",1.50,15000,15000,,0
+1,15345,00-0036479,DE,"Paye, Kwity",5.00,50000,50000,,0
+1,13245,00-0033875,DE,"Reddick, Haason",13.50,135000,135000,,0
+1,14170,00-0035525,LB,"Bush, Devin",15.00,150000,150000,,0
+1,14168,00-0035707,LB,"White, Devin",17.50,175000,175000,,0
+1,15380,00-0036974,CB,"Campbell, Tyson",15.50,130000,155000,MFL CB/S tackle bonus omitted by preset (2.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,17200,00-0040178,CB,"Marshall, Jason",4.00,35000,40000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,16018,00-0037130,S,"Blankenship, Reed",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,15365,00-0036962,S,"Moehrig, Trevon",18.00,145000,180000,MFL CB/S tackle bonus omitted by preset (3.5 points),0
+1,14919,00-0036287,CB,"Igbinoghene, Noah",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,15720,00-0037617,RB,"Haskins, Hassan",1.68,16750,16800,MFL per-stat hundredths rounding (0.005 points),0
+1,15863,00-0037756,DT,"Jones, Travis",9.00,90000,90000,,0
+1,13348,00-0033589,WR,"Moore, David",0.00,0,0,,0
+1,14870,00-0036422,TE,"Trautman, Adam",1.50,15000,15000,,0
+1,16271,00-0039002,S,"Brown, Sydney",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,7836,00-0023459,QB,"Rodgers, Aaron",32.25,322500,322500,,0
+1,16169,00-0039165,RB,"Charbonnet, Zach",12.50,125000,125000,,0
+1,17171,00-0040705,WR,"Dike, Chimere",4.95,49500,49500,,0
+1,12801,00-0033040,WR,"Hill, Tyreek",9.00,90000,90000,,0
+1,14864,00-0036427,WR,"Johnson, Tyler",6.10,61000,61000,,0
+1,16635,00-0039355,WR,"McCaffrey, Luke",0.90,9000,9000,,0
+1,17080,00-0040138,WR,"Noel, Jaylin",2.20,22000,22000,,0
+1,15802,00-0038129,TE,"Otton, Cade",0.00,0,0,,0
+1,13354,00-0033303,PK,"Butker, Harrison",10.00,110000,100000,MFL PAT made/missed/blocked absent from preset (-1 points),0
+1,16265,00-0039070,DT,"Dexter, Gervon",14.50,145000,145000,,0
+1,16693,00-0039886,DT,"Sweat, T'Vondre",5.00,50000,50000,,0
+1,16712,00-0039740,DE,"Hunt, Jalyx",8.00,80000,80000,,0
+1,16252,00-0039142,DE,"McDonald, Will",23.50,235000,235000,,0
+1,14217,00-0035672,LB,"Barton, Cody",14.00,140000,140000,,0
+1,16707,00-0039352,LB,"Liufau, Marist",4.50,45000,45000,,0
+1,10775,00-0029255,LB,"Wagner, Bobby",15.00,150000,150000,,0
+1,16240,00-0039167,CB,"Porter Jr., Joey",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,15859,00-0037753,CB,"Taylor-Britt, Cam",1.00,10000,10000,,0
+1,16274,00-0039007,CB,"Williams, Garrett",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,16700,00-0039872,S,"Bishop, Cole",8.00,60000,80000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,14909,00-0036411,S,"Winfield, Antoine",9.00,80000,90000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,15956,00-0037096,S,"Hicks, Elijah",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,15921,00-0037301,S,"Jackson, Theo",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,15800,00-0037304,TE,"Heyward, Connor",0.00,0,0,,0
+1,16296,00-0038570,LB,"Miller, Ventrell",5.00,50000,50000,,0
+1,16582,00-0039732,QB,"Nix, Bo",10.80,108000,108000,,0
+1,16749,00-0039879,DE,"Solomon, Javon",2.50,25000,25000,,0
+1,17155,00-0040640,DE,"Gillotte, Ashton",2.50,25000,25000,,0
+1,17208,00-0040186,LB,"Mauigoa, Francisco",1.00,10000,10000,,0
+1,15698,00-0037834,QB,"Purdy, Brock",23.30,233000,233000,,0
+1,14086,00-0034975,RB,"Hill, Justice",0.20,22000,2000,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+1,14085,00-0035261,RB,"Pollard, Tony",11.60,116000,116000,,0
+1,16187,00-0038997,WR,"Downs, Josh",3.20,32000,32000,,0
+1,16618,00-0039893,WR,"Thomas Jr., Brian",9.15,91500,91500,,0
+1,16649,00-0039847,TE,"Johnson, Theo",1.50,15000,15000,,0
+1,16647,00-0039530,TE,"Spann-Ford, Brevyn",0.00,0,0,,0
+1,13303,00-0033787,PK,"Elliott, Jake",8.00,50000,80000,MFL PAT made/missed/blocked absent from preset (3 points),0
+1,12688,00-0032378,DT,"Buckner, DeForest",4.50,45000,45000,,0
+1,13742,00-0034800,DT,"Hill, B.J.",21.50,215000,215000,,0
+1,14225,00-0034973,DE,"Crosby, Maxx",15.50,155000,155000,,0
+1,16276,00-0039137,DE,"Young, Byron",27.50,275000,275000,,0
+1,14472,00-0035352,LB,"Dodson, Tyrel",18.50,185000,185000,,0
+1,14953,00-0036338,LB,"Dye, Troy",6.50,65000,65000,,0
+1,13227,00-0033928,CB,"Lewis, Jourdan",27.00,230000,270000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (1.5 points); MFL CB/S interception bonus omitted by preset (1 points),0
+1,13266,00-0033783,CB,"Witherspoon, Ahkello",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,16244,00-0039141,S,"Branch, Brian",11.50,95000,115000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,14927,00-0036293,S,"Chinn, Jeremy",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,14283,00-0035301,S,"Wilson, Donovan",1.00,10000,10000,,0
+1,15352,00-0036933,DE,"Collins, Zaven",11.00,110000,110000,,0
+1,9051,00-0026190,DT,"Campbell, Calais",10.50,105000,105000,,0
+1,14957,00-0036375,CB,"Robertson, Amik",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,16273,00-0038978,DT,"Young, Byron",1.50,15000,15000,,0
+1,17236,00-0040076,DT,"Peebles, Aeneas",2.50,25000,25000,,0
+1,17242,00-0040019,DT,"Toia, Jay",1.50,15000,15000,,0
+1,13589,00-0034857,QB,"Allen, Josh",47.80,478000,478000,,0
+1,13319,00-0033293,RB,"Jones, Aaron",17.90,179000,179000,,0
+1,15717,00-0037258,RB,"Pierce, Dameon",0.95,9500,9500,,0
+1,14105,00-0035662,WR,"Brown, Marquise",21.90,219000,219000,,0
+1,16619,00-0039868,WR,"Franklin, Troy",8.40,84000,84000,,0
+1,14842,00-0036252,WR,"Pittman, Michael",21.00,210000,210000,,0
+1,17104,00-0040126,TE,"Loveland, Colston",3.20,32000,32000,,0
+1,15979,00-0037224,PK,"Dicker, Cameron",9.00,60000,90000,MFL PAT made/missed/blocked absent from preset (3 points),0
+1,16694,00-0039734,DT,"Fiske, Braden",8.50,85000,85000,,0
+1,14163,00-0035643,DT,"Simmons, Jeffery",24.00,240000,240000,,0
+1,14149,00-0034967,DE,"Gary, Rashan",25.75,257500,257500,,0
+1,14878,00-0036288,DE,"Gross-Matos, Yetur",1.00,10000,10000,,0
+1,10816,00-0029607,LB,"Davis, Demario",17.00,170000,170000,,0
+1,14257,00-0034987,LB,"Speed, E.J.",0.00,0,0,,0
+1,13987,00-0034720,LB,"Spillane, Robert",4.50,45000,45000,,0
+1,14221,00-0035680,LB,"Williams, Quincy",16.00,160000,160000,,0
+1,16145,00-0037384,CB,"McMillian, Ja'Quan",15.00,145000,150000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,17132,00-0040688,S,"Starks, Malaki",10.00,85000,100000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,14420,00-0035125,RB,"Ingold, Alec",1.10,11000,11000,,0
+1,16356,00-0038408,CB,"Valentine, Carrington",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,16275,00-0039054,LB,"Mapu, Marte",1.50,15000,15000,,0
+1,16294,00-0038387,DT,"Wooden, Colby",18.00,180000,180000,,0
+1,14056,00-0035228,QB,"Murray, Kyler",24.00,240000,240000,,0
+1,14797,00-0036275,RB,"Swift, D'Andre",12.05,120500,120500,,0
+1,17073,00-0040170,WR,"Ayomanor, Elic",3.30,33000,33000,,0
+1,14108,00-0035500,WR,"Dortch, Greg",3.65,36500,36500,,0
+1,17081,00-0040129,WR,"Egbuka, Emeka",25.75,257500,257500,,0
+1,16184,00-0039146,WR,"Reed, Jayden",15.03,150250,150300,MFL per-stat hundredths rounding (0.005 points),0
+1,16287,00-0038563,WR,"Tucker, Tre",15.73,157250,157300,MFL per-stat hundredths rounding (0.005 points),0
+1,15794,00-0037744,TE,"McBride, Trey",13.10,131000,131000,,0
+1,8930,00-0023853,PK,"Prater, Matt",12.00,100000,120000,MFL PAT made/missed/blocked absent from preset (2 points),0
+1,10292,00-0027962,DT,"Jordan, Cameron",22.75,227500,227500,,0
+1,12225,00-0031933,DT,"Williams, Leonard",17.00,170000,170000,,0
+1,16223,00-0039108,DE,"Anderson, Will",24.00,240000,240000,,0
+1,15350,00-0036932,DE,"Parsons, Micah",10.50,105000,105000,,0
+1,14249,00-0035272,DE,"Van Ginkel, Andrew",18.00,180000,180000,,0
+1,13837,00-0034431,LB,"Franklin, Zaire",5.00,50000,50000,,0
+1,17147,00-0040579,LB,"Schwesinger, Carson",13.00,130000,130000,,0
+1,13224,00-0033874,CB,"Lattimore, Marshon",10.00,85000,100000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+1,14182,00-0035632,S,"Hooker, Amani",11.00,90000,110000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,15850,00-0037246,S,"Pitre, Jalen",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,16719,00-0039813,S,"Williams, Evan",13.00,110000,130000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points),0
+1,16236,00-0038599,LB,"To'oTo'o, Henry",17.50,175000,175000,,0
+1,16660,00-0039854,DT,"Robinson, Darius",0.00,0,0,,0
+1,15853,00-0038133,DE,"Mafe, Boye",4.00,40000,40000,,0
+1,16706,00-0039737,TE,"Reiman, Tip",2.00,20000,20000,,0
+1,16333,00-0039041,TE,"Higgins, Elijah",2.30,23000,23000,,0
+1,16695,00-0039807,CB,"Melton, Max",13.00,105000,130000,MFL CB/S tackle bonus omitted by preset (2.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,14095,00-0035537,RB,"Johnson, Ty",4.05,40500,40500,,0
+1,15981,00-0037801,WR,"Turpin, KaVontae",7.03,70250,70300,MFL per-stat hundredths rounding (0.005 points),0
+1,14235,00-0035262,LB,"Tranquill, Drue",23.00,230000,230000,,0
+1,16717,00-0039864,S,"Taylor-Demerson, Dadrion",12.00,95000,120000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+1,16654,00-0039809,DE,"Elliss, Jonah",15.50,155000,155000,,0
+1,17072,00-0040727,WR,"Harris, Tre",2.10,21000,21000,,0
+1,17125,00-0040738,LB,"Knight, Demetrius",16.50,165000,165000,,0
+1,15926,00-0037307,CB,"Taylor, Ja'Sir",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,16735,00-0039371,CB,"Abrams-Draine, Kris",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,13133,00-0033526,RB,"Perine, Samaje",4.60,46000,46000,,0
+1,16241,00-0039169,CB,"Witherspoon, Devon",17.50,140000,175000,MFL CB/S tackle bonus omitted by preset (3.5 points),0
+1,14933,00-0036253,S,"Blackmon, Julian",14.00,115000,140000,MFL CB/S tackle bonus omitted by preset (2.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,17030,00-0040676,QB,"Ward, Cam",3.60,36000,36000,,0
+1,12187,00-0032211,WR,"Lockett, Tyler",0.00,0,0,,0
+1,15751,00-0037238,WR,"London, Drake",13.50,135000,135000,,0
+1,15766,00-0038090,WR,"Moore, Skyy",1.58,35750,15800,MFL FU includes retained fumbles unlike preset lost-only (-2 points); MFL per-stat hundredths rounding (0.005 points),0
+1,16221,00-0038547,TE,"Schoonmaker, Luke",0.00,0,0,,0
+1,16419,00-0038428,PK,"Szmyt, Andre",3.00,30000,30000,,0
+1,16787,00-0039423,DT,"Laulu, Jonah",8.50,85000,85000,,0
+1,16800,00-0039436,DE,"Harrell, Jaylen",6.50,65000,65000,,0
+1,15386,00-0036480,DE,"Odeyingbo, Dayo",15.50,155000,155000,,0
+1,15450,00-0036644,LB,"McGrone, Cameron",1.50,15000,15000,,0
+1,16731,00-0039369,CB,"Hart, Cam",8.00,60000,80000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,15856,00-0038121,CB,"Taylor, Alontae",11.00,105000,110000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,15835,00-0038135,S,"Brisker, Jaquan",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,15871,00-0037667,S,"Joseph, Kerby",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,16102,00-0037512,S,"Pola-Mao, Isaiah",23.50,195000,235000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points),0
+1,13226,00-0033878,CB,"Jackson, Adoree",15.00,120000,150000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,16728,00-0039795,CB,"Pritchett, Nehemiah",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,16737,00-0039375,CB,"Newton, Josh",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,15946,00-0037323,S,"Thomas II, Rodney",8.50,70000,85000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,15334,00-0037004,TE,"Long, Hunter",7.60,76000,76000,,0
+1,16584,00-0039923,QB,"McCarthy, J.J.",25.95,259500,259500,,0
+1,17048,00-0040142,RB,"Johnson, Kaleb",1.25,32500,12500,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+1,13132,00-0033906,RB,"Kamara, Alvin",15.35,153500,153500,,0
+1,14080,00-0035250,RB,"Singletary, Devin",1.35,13500,13500,,0
+1,14860,00-0036259,WR,"Jennings, Jauan",3.60,36000,36000,,0
+1,13164,00-0033908,WR,"Kupp, Cooper",3.50,35000,35000,,0
+1,13635,00-0034827,WR,"Moore, D.J.",11.05,110500,110500,,0
+1,12676,00-0033090,TE,"Henry, Hunter",11.60,116000,116000,,0
+1,16414,00-0037692,PK,"Aubrey, Brandon",11.00,90000,110000,MFL PAT made/missed/blocked absent from preset (2 points),0
+1,13332,00-0033297,DT,"Jones, D.J.",3.50,35000,35000,,0
+1,12686,00-0033156,DE,"Bosa, Joey",9.00,90000,90000,,0
+1,14147,00-0035717,DE,"Bosa, Nick",35.00,350000,350000,,0
+1,16280,00-0038553,LB,"Henley, Daiyan",17.50,175000,175000,,0
+1,14889,00-0036441,LB,"Murray, Kenneth",11.00,110000,110000,,0
+1,15428,00-0036500,LB,"Sherwood, Jamien",10.00,100000,100000,,0
+1,13223,00-0033281,CB,"Humphrey, Marlon",8.00,60000,80000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,16670,00-0039860,CB,"McKinstry, Kool-Aid",17.50,145000,175000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,13251,00-0033890,S,"Baker, Budda",20.50,175000,205000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,13228,00-0033877,S,"Hooker, Malik",13.00,110000,130000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,16679,00-0039861,S,"Nubin, Tyler",7.00,65000,70000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,13148,00-0033854,RB,"Ogunbowale, Dare",4.40,44000,44000,,0
+1,13940,00-0033246,TE,"Mundt, Johnny",1.50,15000,15000,,0
+1,13263,00-0033548,CB,"Awuzie, Chidobe",8.00,70000,80000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,12677,00-0032392,TE,"Hooper, Austin",2.00,20000,20000,,0
+1,15353,00-0037003,LB,"Surratt, Chazz",1.00,10000,10000,,0
+1,13798,00-0034275,DT,"Fatukasi, Foley",14.50,145000,145000,,0
+1,15409,00-0036964,LB,"Barnes, Derrick",10.50,105000,105000,,0
+1,17115,00-0040578,DE,"Pearce, James",1.00,10000,10000,,0
+1,11150,00-0030565,QB,"Smith, Geno",22.40,224000,224000,,0
+1,16688,00-0039363,RB,"Guerendo, Isaac",0.40,4000,4000,,0
+1,16747,00-0039384,RB,"Tracy, Tyrone",7.00,70000,70000,,0
+1,17075,00-0040667,WR,"Golden, Matthew",3.88,38750,38800,MFL per-stat hundredths rounding (0.005 points),0
+1,17074,00-0040718,WR,"Hunter, Travis",10.30,103000,103000,,0
+1,14109,00-0035659,WR,"McLaurin, Terry",4.70,47000,47000,,0
+1,16616,00-0039919,WR,"Odunze, Rome",15.70,157000,157000,,0
+1,17108,00-0040739,TE,"Arroyo, Elijah",1.70,17000,17000,,0
+1,16681,00-0039404,PK,"Reichard, Will",9.00,80000,90000,MFL PAT made/missed/blocked absent from preset (1 points),0
+1,15808,00-0037192,DE,"Karlaftis, George",17.00,170000,170000,,0
+1,16228,00-0039013,DE,"Smith, Nolan",7.00,70000,70000,,0
+1,15864,00-0037251,DE,"Wright, Alex",1.50,15000,15000,,0
+1,14412,00-0031898,LB,"Singleton, Alex",9.50,95000,95000,,0
+1,16346,00-0038625,LB,"Winters, Dee",13.50,135000,135000,,0
+1,15833,00-0037190,CB,"Gardner, Sauce",8.00,70000,80000,MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+1,15445,00-0036563,CB,"Lenoir, Deommodore",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,15832,00-0037237,CB,"Stingley Jr., Derek",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,16281,00-0038554,S,"Brown, Ji'Ayir",0.00,0,0,,0
+1,15872,00-0038136,S,"Bryant, Coby",14.00,110000,140000,MFL CB/S tackle bonus omitted by preset (3.0 points),0
+1,14254,00-0035279,DE,"Omenihu, Charles",6.00,60000,60000,,0
+1,16171,00-0038551,RB,"Miller, Kendre",5.35,53500,53500,,0
+1,16238,00-0038390,LB,"Sewell, Noah",12.50,125000,125000,,0
+1,13246,00-0033217,TE,"Alie-Cox, Mo",4.00,40000,40000,,0
+1,15335,00-0036887,TE,"Farrell, Luke",1.40,14000,14000,,0
+1,17124,00-0040157,LB,"Carter, Barrett",5.50,55000,55000,,0
+1,17148,00-0040721,DT,"Collins, Alfred",1.50,15000,15000,,0
+1,17169,00-0040152,CB,"Stout, Upton",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,11793,00-0031054,DT,"Jones, DaQuan",5.00,50000,50000,,0
+1,14971,00-0036081,DT,"Washington, Broderick",2.50,25000,25000,,0
+1,16581,00-0039910,QB,"Daniels, Jayden",25.10,251000,251000,,0
+1,15253,00-0036973,RB,"Etienne, Travis",23.00,230000,230000,,0
+1,15261,00-0036555,RB,"Hubbard, Chuba",21.30,213000,213000,,0
+1,15293,00-0036550,WR,"Bateman, Rashod",3.00,30000,30000,,0
+1,15290,00-0036554,WR,"Collins, Nico",5.50,55000,55000,,0
+1,13189,00-0033881,TE,"Engram, Evan",5.10,51000,51000,,0
+1,13192,00-0033885,TE,"Njoku, David",6.70,67000,67000,,0
+1,15369,00-0036816,PK,"Patterson, Riley",0.00,0,0,,0
+1,10266,00-0027969,DT,"Heyward, Cameron",12.50,125000,125000,,0
+1,13723,00-0034333,DT,"Payne, Da'Ron",22.50,225000,225000,,0
+1,16278,00-0039068,DE,"Diaby, YaYa",12.00,120000,120000,,0
+1,15346,00-0036914,DE,"Rousseau, Gregory",10.00,100000,100000,,0
+1,15806,00-0037611,DE,"Thibodeaux, Kayvon",9.75,97500,97500,,0
+1,16239,00-0039018,LB,"Campbell, Jack",12.50,125000,125000,,0
+1,16314,00-0039049,LB,"Dennis, SirVocea",21.00,210000,210000,,0
+1,13764,00-0034376,CB,"Johnson, Taron",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,13754,00-0034780,CB,"Yiadom, Isaac",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,13806,00-0034277,S,"Elliott, DeShon",11.00,85000,110000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+1,15712,00-0037263,RB,"Allgeier, Tyler",3.90,39000,39000,,0
+1,12349,00-0031608,S,"Diggs, Quandre",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,16760,00-0039394,WR,"Washington, Casey",6.30,63000,63000,,0
+1,12735,00-0032759,DT,"Rankins, Sheldon",6.00,60000,60000,,0
+1,13641,00-0034407,WR,"McCloud, Ray-Ray",9.10,91000,91000,,0
+1,16299,00-0038573,WR,"Davis, Derius",0.45,4500,4500,,0
+1,13767,00-0034377,CB,"Maddox, Avonte",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,16375,00-0038414,S,"Williamson, Kendall",1.00,10000,10000,,0
+1,14779,00-0036355,QB,"Herbert, Justin",35.15,351500,351500,,0
+1,17042,00-0040122,RB,"Jeanty, Ashton",14.85,148500,148500,,0
+1,15972,00-0037525,RB,"Mason, Jordan",10.75,107500,107500,,0
+1,16161,00-0038542,RB,"Robinson, Bijan",31.20,312000,312000,,0
+1,17070,00-0040735,WR,"Burden, Luther",1.80,18000,18000,,0
+1,16615,00-0039337,WR,"Nabers, Malik",14.10,141000,141000,,0
+1,13156,00-0033857,WR,"Smith-Schuster, JuJu",10.50,105000,105000,,0
+1,13672,00-0034829,TE,"Gesicki, Mike",2.40,24000,24000,,0
+1,8851,00-0025565,PK,"Folk, Nick",10.00,80000,100000,MFL PAT made/missed/blocked absent from preset (2 points),0
+1,12218,00-0032164,DT,"Armstead, Arik",2.50,25000,25000,,0
+1,14159,00-0035683,DT,"Lawrence, Dexter",4.50,45000,45000,,0
+1,13198,00-0033868,DE,"Garrett, Myles",34.50,345000,345000,,0
+1,16266,00-0039111,DE,"Tuipulotu, Tuli",3.50,35000,35000,,0
+1,16696,00-0039850,LB,"Cooper, Edgerrin",16.00,160000,160000,,0
+1,16013,00-0037587,LB,"Landman, Nate",18.00,180000,180000,,0
+1,16063,00-0037526,LB,"McCrary-Ball, Marcelino",11.00,110000,110000,,0
+1,12742,00-0033050,CB,"Howard, Xavien",3.20,30500,32000,MFL opponent recovery yards .1 versus preset .025 (0.150 points),0
+1,15375,00-0036996,CB,"Newsome, Greg",12.00,95000,120000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+1,14186,00-0035663,S,"Rapp, Taylor",10.00,80000,100000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,13717,00-0034361,S,"Reid, Justin",9.00,75000,90000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,15857,00-0037665,DE,"Williams, Sam",14.00,140000,140000,,0
+1,16201,00-0038618,WR,"Hutchinson, Xavier",6.65,66500,66500,,0
+1,16298,00-0038505,DE,"Robinson, Tavius",11.50,115000,115000,,0
+1,15714,00-0038040,RB,"White, Zamir",2.03,20250,20300,MFL per-stat hundredths rounding (0.005 points),0
+1,14079,00-0035243,RB,"Sanders, Miles",6.60,66000,66000,,0
+1,16927,00-0038778,DT,"Redmond, Jalen",4.00,40000,40000,,0
+1,14847,00-0036331,WR,"Duvernay, Devin",2.96,29500,29600,MFL per-stat hundredths rounding (0.010 points),0
+1,14495,00-0035413,LB,"Gifford, Luke",4.50,45000,45000,,0
+1,15903,00-0037752,S,"Anderson, Tycen",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,12988,00-0032580,CB,"Jones, Jonathan",0.00,0,0,,0
+1,17153,00-0040749,S,"Mukuba, Andrew",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,17096,00-0040009,WR,"Williams, Savion",2.08,20750,20800,MFL per-stat hundredths rounding (0.005 points),0
+1,17185,00-0040069,LB,"Buchanan, Teddye",5.50,55000,55000,,0
+1,17256,00-0040242,RB,"Croskey-Merritt, Jacory",17.70,177000,177000,,0
+1,17217,00-0040197,CB,"Strong, Dorian",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,12394,00-0031763,WR,"Carter, DeAndre",3.66,36500,36600,MFL per-stat hundredths rounding (0.010 points),0
+1,14059,00-0035710,QB,"Jones, Daniel",34.25,342500,342500,,0
+1,14071,00-0035685,RB,"Montgomery, David",9.95,99500,99500,,0
+1,14727,00-0035567,RB,"Reynolds, Craig",1.50,15000,15000,,0
+1,15721,00-0037256,RB,"White, Rachaad",2.90,29000,29000,,0
+1,11222,00-0030279,WR,"Allen, Keenan",19.80,198000,198000,,0
+1,15292,00-0036626,WR,"Brown, Dyami",10.10,101000,101000,,0
+1,13172,00-0033591,WR,"Brown, Noah",4.70,47000,47000,,0
+1,13763,00-0034159,TE,"Dissly, Will",2.80,28000,28000,,0
+1,14717,00-0035358,PK,"McLaughlin, Chase",4.00,30000,40000,MFL PAT made/missed/blocked absent from preset (1 points),0
+1,13448,00-0033381,DT,"Butler, Adam",5.50,55000,55000,,0
+1,12697,00-0032889,DT,"Robinson, A'Shawn",14.00,140000,140000,,0
+1,13688,00-0034344,DE,"Davenport, Marcus",6.50,65000,65000,,0
+1,13682,00-0034825,DE,"Key, Arden",2.50,25000,25000,,0
+1,16072,00-0037208,LB,"Cochrane, Jack",1.00,10000,10000,,0
+1,15076,00-0035942,LB,"Rozeboom, Christian",11.50,115000,115000,,0
+1,14928,00-0036294,LB,"Wilson, Logan",14.00,140000,140000,,0
+1,16289,00-0039072,CB,"Bennett, Jakorian",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,15377,00-0036901,CB,"Stokes, Eric",10.50,90000,105000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,14911,00-0036329,S,"Davis, Ashtyn",4.50,40000,45000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,14328,00-0035378,S,"Wingard, Andrew",12.00,105000,120000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,15049,00-0035895,LB,"Bachie, Joe",6.50,65000,65000,,0
+1,14270,00-0034993,S,"Epps, Marcus",0.00,0,0,,0
+1,16883,00-0039589,WR,"Johnson, Kameron",1.35,13500,13500,,0
+1,15363,00-0036993,S,"Melifonwu, Ifeatu",12.00,90000,120000,MFL CB/S tackle bonus omitted by preset (3.0 points),0
+1,16017,00-0037633,LB,"Hummel, Jake",1.50,15000,15000,,0
+1,14146,00-0035631,TE,"Sample, Drew",0.00,0,0,,0
+1,15464,00-0036504,CB,"Echols, Brandin",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,14934,00-0036266,DT,"Elliott, Jordan",4.50,45000,45000,,0
+1,13216,00-0033547,LB,"Cunningham, Zach",0.00,0,0,,0
+1,13687,00-0034359,DE,"Lewis, Tyquan",1.50,15000,15000,,0
+1,10703,00-0029263,QB,"Wilson, Russell",14.00,160000,140000,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+1,16162,00-0039139,RB,"Gibbs, Jahmyr",16.35,163500,163500,,0
+1,17052,00-0040719,RB,"Tuten, Bhayshul",1.85,18500,18500,,0
+1,16188,00-0038544,WR,"Johnston, Quentin",26.90,269000,269000,,0
+1,14832,00-0036358,WR,"Lamb, CeeDee",20.00,200000,200000,,0
+1,16620,00-0039894,WR,"Worthy, Xavier",0.15,1500,1500,,0
+1,14867,00-0036290,TE,"Kmet, Cole",5.10,51000,51000,,0
+1,16269,00-0038935,TE,"Strange, Brenton",10.90,109000,109000,,0
+1,15368,00-0036854,PK,"McPherson, Evan",5.00,30000,50000,MFL PAT made/missed/blocked absent from preset (2 points),0
+1,15817,00-0037073,DT,"Davis, Jordan",17.00,170000,170000,,0
+1,15819,00-0037075,DT,"Wyatt, Devonte",15.50,155000,155000,,0
+1,15892,00-0037262,DE,"Booker, Thomas",9.00,90000,90000,,0
+1,14148,00-0035647,DE,"Sweat, Montez",12.50,125000,125000,,0
+1,15355,00-0036621,LB,"Bolton, Nick",11.00,110000,110000,,0
+1,17123,00-0040708,LB,"Campbell, Jihaad",9.50,95000,95000,,0
+1,13697,00-0034673,LB,"Edmunds, Tremaine",11.00,110000,110000,,0
+1,16675,00-0039841,CB,"DeJean, Cooper",11.00,90000,110000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,15361,00-0036944,CB,"Horn, Jaycee",13.00,102500,130000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points); MFL interception return yards .1 versus preset .025 (0.750 points),0
+1,16690,00-0039888,CB,"Mitchell, Quinyon",13.60,111500,136000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL opponent recovery yards .1 versus preset .025 (0.450 points),0
+1,15418,00-0036629,S,"Bynum, Camryn",17.40,138500,174000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points); MFL CB/S interception bonus omitted by preset (1 points); MFL interception return yards .1 versus preset .025 (1.050 points),0
+1,13325,00-0033579,S,"Woods, Xavier",12.60,99000,126000,MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points); MFL interception return yards .1 versus preset .025 (1.200 points),0
+1,15847,00-0037242,CB,"Elam, Kaiir",10.00,80000,100000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,16759,00-0039829,LB,"Muasau, Darius",2.50,25000,25000,,0
+1,16385,00-0038705,RB,"Demercado, Emari",2.23,22250,22300,MFL per-stat hundredths rounding (0.005 points),0
+1,14137,00-0035644,TE,"Fant, Noah",12.60,126000,126000,,0
+1,14943,00-0036298,LB,"Davis-Gaither, Akeem",11.00,110000,110000,,0
+1,16009,00-0037596,LB,"Gibbens, Jack",2.50,25000,25000,,0
+1,17229,00-0040213,S,"Lane, Rayuan",1.00,10000,10000,,0
+1,12620,00-0033077,QB,"Prescott, Dak",11.35,113500,113500,,0
+1,15708,00-0038120,RB,"Hall, Breece",20.35,203500,203500,,0
+1,17044,00-0040666,RB,"Hampton, Omarion",10.35,103500,103500,,0
+1,17045,00-0040715,RB,"Skattebo, Cam",3.20,32000,32000,,0
+1,14835,00-0036410,WR,"Higgins, Tee",6.30,63000,63000,,0
+1,13066,00-0032464,WR,"Raymond, Kalif",4.08,40750,40800,MFL per-stat hundredths rounding (0.005 points),0
+1,13299,00-0033288,TE,"Kittle, George",12.50,125000,125000,,0
+1,17106,00-0040736,TE,"Taylor, Mason",4.00,40000,40000,,0
+1,13298,00-0033952,DT,"Stewart, Grover",4.00,40000,40000,,0
+1,13199,00-0033870,DT,"Thomas, Solomon",13.00,130000,130000,,0
+1,16655,00-0039911,DE,"Robinson, Chop",2.50,25000,25000,,0
+1,17122,00-0040577,DE,"Walker, Jalon",6.50,65000,65000,,0
+1,17188,00-0040167,LB,"Hyppolite, Ruben",3.50,35000,35000,,0
+1,17126,00-0040155,LB,"Stutsman, Danny",1.50,15000,15000,,0
+1,14997,00-0036222,CB,"Rodgers, Isaiah",10.50,90000,105000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,11348,00-0030062,CB,"Slay, Darius",10.00,75000,100000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+1,12772,00-0033038,S,"Murray, Eric",17.00,145000,170000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+1,15448,00-0036502,S,"Pinnock, Jason",8.00,60000,80000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,16203,00-0038576,WR,"Jones, Charlie",2.33,23250,23300,MFL per-stat hundredths rounding (0.005 points),0
+1,16291,00-0039031,DT,"Adebawore, Adetomiwa",1.50,15000,15000,,0
+1,16304,00-0038578,S,"Ward, Jay",8.00,70000,80000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,16689,00-0039309,DT,"Murphy, Byron",12.00,120000,120000,,0
+1,17078,00-0040729,WR,"Bech, Jack",4.30,43000,43000,,0
+1,17184,00-0040164,WR,"Lane, Jaylin",2.10,21000,21000,,0
+1,17175,00-0040582,WR,"Smith, Arian",0.78,7750,7800,MFL per-stat hundredths rounding (0.005 points),0
+1,14778,00-0036212,QB,"Tagovailoa, Tua",7.55,75500,75500,,0
+1,16598,00-0039361,RB,"Irving, Bucky",16.60,166000,166000,,0
+1,16432,00-0038797,RB,"Wilson, Emanuel",0.55,5500,5500,,0
+1,11232,00-0030564,WR,"Hopkins, DeAndre",12.50,125000,125000,,0
+1,14123,00-0034983,WR,"Renfrow, Hunter",3.10,31000,31000,,0
+1,16624,00-0039379,WR,"Thrash, Jamari",1.60,16000,16000,,0
+1,15284,00-0036613,WR,"Waddle, Jaylen",7.00,70000,70000,,0
+1,16213,00-0038933,TE,"Kincaid, Dalton",13.80,158000,138000,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+1,14600,00-0035192,PK,"Slye, Joey",15.00,150000,150000,,0
+1,13770,00-0034805,DT,"Franklin-Myers, John",1.50,15000,15000,,0
+1,12217,00-0032052,DE,"Fowler, Dante",1.00,10000,10000,,0
+1,15826,00-0037281,LB,"Clark, Damone",7.50,75000,75000,,0
+1,15890,00-0037259,LB,"McFadden, Micah",5.00,50000,50000,,0
+1,14252,00-0035277,CB,"Jackson, Michael",13.50,110000,135000,MFL CB/S tackle bonus omitted by preset (2.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,16672,00-0039343,CB,"Lassiter, Kamari",14.00,115000,140000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+1,16741,00-0039380,CB,"Smith-Wade, Chau",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,16014,00-0037155,S,"Adams, Tony",9.00,75000,90000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,14302,00-0035669,S,"Scott, Nick",10.00,85000,100000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,14207,00-0035625,S,"Thornhill, Juan",15.00,130000,150000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,15796,00-0037805,TE,"Ruckert, Jeremy",3.60,36000,36000,,0
+1,15873,00-0038115,TE,"Bellinger, Daniel",2.40,24000,24000,,0
+1,15239,00-0037013,QB,"Wilson, Zach",2.05,20500,20500,,0
+1,13201,00-0033876,DE,"Barnett, Derek",1.50,15000,15000,,0
+1,13447,00-0033336,LB,"Wilson, Eric",9.00,90000,90000,,0
+1,14805,00-0036265,RB,"Dillon, AJ",1.45,14500,14500,,0
+1,14670,00-0034251,DT,"Ekuale, Daniel",2.50,25000,25000,,0
+1,17134,00-0040131,WR,"Williams, Kyle",2.20,22000,22000,,0
+1,17060,00-0040179,RB,"Giddens, DJ",5.90,59000,59000,,0
+1,16316,00-0038381,CB,"Kelly, Kyu Blu",19.00,150000,190000,MFL CB/S tackle bonus omitted by preset (3.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,17358,00-0040416,LB,"Bullock, John",2.00,20000,20000,,0
+1,17357,00-0040296,CB,"Thornton, Corey",0.00,0,0,,0
+1,15880,00-0038101,CB,"Evans, Akayleb",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,9431,00-0026498,QB,"Stafford, Matthew",17.65,196500,176500,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+1,15713,00-0037267,RB,"Ford, Jerome",3.90,39000,39000,,0
+1,16627,00-0039915,WR,"McConkey, Ladd",14.40,144000,144000,,0
+1,16211,00-0039075,WR,"Nacua, Puka",26.25,262500,262500,,0
+1,11938,00-0030035,WR,"Thielen, Adam",2.00,20000,20000,,0
+1,16633,00-0039751,WR,"Whittington, Jordan",2.15,21500,21500,,0
+1,16206,00-0038559,WR,"Wilson, Michael",1.50,15000,15000,,0
+1,15799,00-0038041,TE,"Ferguson, Jake",7.30,73000,73000,,0
+1,11936,00-0031136,PK,"Boswell, Chris",15.00,110000,150000,MFL PAT made/missed/blocked absent from preset (4 points),0
+1,15412,00-0036903,DT,"Brown, Bobby",5.50,55000,55000,,0
+1,16282,00-0039138,DT,"Turner, Kobie",5.50,55000,55000,,0
+1,14164,00-0035678,DE,"Jones, Dre'Mont",3.00,30000,30000,,0
+1,16653,00-0039852,DE,"Verse, Jared",6.50,65000,65000,,0
+1,14210,00-0035697,LB,"Pratt, Germaine",8.50,85000,85000,,0
+1,15975,00-0037109,LB,"Sanborn, Jack",9.50,95000,95000,,0
+1,16870,00-0039774,LB,"Speights, Omar",5.50,55000,55000,,0
+1,15387,00-0036927,LB,"Werner, Pete",18.00,180000,180000,,0
+1,15888,00-0037839,CB,"Durant, Decobie",13.00,105000,130000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points),0
+1,16676,00-0039834,S,"Kinchens, Kamren",9.00,75000,90000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,15923,00-0037841,S,"Lake, Quentin",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,16219,00-0039074,TE,"Allen, Davis",8.30,83000,83000,,0
+1,16192,00-0038606,WR,"Washington, Parker",0.18,1750,1800,MFL per-stat hundredths rounding (0.005 points),0
+1,16662,00-0039908,DT,"Jenkins, Kris",5.00,50000,50000,,0
+1,16767,00-0039749,DT,"Davis, Tyler",15.00,150000,150000,,0
+1,16224,00-0038546,DE,"Murphy, Myles",4.00,40000,40000,,0
+1,16263,00-0039149,S,"Martin, Quan",9.00,75000,90000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,16593,00-0039738,RB,"Corum, Blake",2.75,27500,27500,,0
+1,13675,00-0034270,TE,"Conklin, Tyler",6.35,83500,63500,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+1,14879,00-0036192,DE,"Epenesa, A.J.",2.50,25000,25000,,0
+1,14918,00-0036285,CB,"Terrell, A.J.",18.00,140000,180000,MFL CB/S tackle bonus omitted by preset (3.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+1,15254,00-0036893,RB,"Harris, Najee",2.15,21500,21500,,0
+1,16912,00-0039776,S,"McCollough, Jaylen",14.00,125000,140000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,15301,00-0036849,WR,"Atwell, Tutu",1.40,14000,14000,,0
+1,16664,00-0039826,LB,"Trotter Jr., Jeremiah",2.00,20000,20000,,0
+1,16666,00-0039374,LB,"Eichenberg, Tommy",2.50,25000,25000,,0
+1,17164,00-0040670,CB,"Williams, Nohl",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,17202,00-0040182,S,"Trader, Dante",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,16603,00-0039875,RB,"Davis, Ray",1.25,12500,12500,,0
+1,14777,00-0036442,QB,"Burrow, Joe",11.25,112500,112500,,0
+1,15742,00-0037228,RB,"Warren, Jaylen",15.55,155500,155500,,0
+1,15281,00-0036900,WR,"Chase, Ja'Marr",5.60,56000,56000,,0
+1,12186,00-0031588,WR,"Diggs, Stefon",13.20,132000,132000,,0
+1,14102,00-0035640,WR,"Metcalf, DK",14.30,143000,143000,,0
+1,16191,00-0038979,WR,"Tillman, Cedric",17.20,172000,172000,,0
+1,14138,00-0035229,TE,"Hockenson, T.J.",4.50,45000,45000,,0
+1,14861,00-0036040,TE,"Johnson, Juwan",16.60,166000,166000,,0
+1,12860,00-0032726,PK,"Fairbairn, Ka'imi",15.50,155000,155000,,0
+1,13208,00-0033523,DT,"Allen, Jonathan",5.50,55000,55000,,0
+1,15173,00-0036181,DT,"Tart, Teair",7.50,75000,75000,,0
+1,15356,00-0036995,DE,"Browning, Baron",15.00,150000,150000,,0
+1,13681,00-0034832,DE,"Chubb, Bradley",10.50,105000,105000,,0
+1,14923,00-0036413,DE,"Taylor, Darrell",2.50,25000,25000,,0
+1,14169,00-0035144,LB,"Wilson, Mack",15.00,150000,150000,,0
+1,17130,00-0040731,CB,"Amos, Trey",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,16889,00-0039481,CB,"Duck, Storm",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,13774,00-0034384,CB,"Reed, D.J.",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+1,17179,00-0040156,S,"Bowman, Billy",11.25,102500,112500,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,12752,00-0033132,S,"Byard, Kevin",10.00,75000,100000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+1,13776,00-0034386,WR,"Watson, Justin",4.70,47000,47000,,0
+1,16218,00-0039050,TE,"Durham, Payne",1.00,10000,10000,,0
+1,16416,00-0038496,WR,"Gipson, Xavier",3.53,35250,35300,MFL per-stat hundredths rounding (0.005 points),0
+1,16210,00-0038590,WR,"Shorter, Justin",2.00,20000,20000,,0
+1,14783,00-0036389,QB,"Hurts, Jalen",28.90,289000,289000,,0
+1,15715,00-0037248,RB,"Cook, James",25.15,251500,251500,,0
+1,13671,00-0034753,TE,"Andrews, Mark",1.50,15000,15000,,0
+1,16680,00-0039409,PK,"Little, Cam",15.00,130000,150000,MFL PAT made/missed/blocked absent from preset (2 points),0
+1,16233,00-0038386,DT,"Carter, Jalen",0.00,0,0,,0
+1,15393,00-0036942,DT,"Odighizuwa, Osa",6.50,65000,65000,,0
+1,14978,00-0036378,DE,"Danna, Michael",6.50,65000,65000,,0
+1,14940,00-0036333,DE,"Highsmith, Alex",27.00,270000,270000,,0
+1,13706,00-0034797,LB,"Baker, Jerome",1.00,10000,10000,,0
+1,13307,00-0033571,LB,"Milano, Matt",11.50,115000,115000,,0
+1,12831,00-0032442,LB,"Roberts, Elandon",1.50,15000,15000,,0
+1,15432,00-0036501,CB,"Carter, Michael",12.50,105000,125000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,14903,00-0036361,CB,"Diggs, Trevon",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,16720,00-0039357,CB,"Richardson, Decamerion",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+1,14224,00-0035253,S,"Gardner-Johnson, Chauncey",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,14213,00-0035655,S,"Harris, Will",11.00,95000,110000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+1,16253,00-0039151,CB,"Forbes, Emmanuel",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,13888,00-0034473,DE,"Gardeck, Dennis",5.00,50000,50000,,0
+1,14161,00-0035674,DT,"Tillery, Jerry",5.00,50000,50000,,0
+1,16150,00-0039163,QB,"Stroud, C.J.",11.35,113500,113500,,0
+1,13610,00-0034791,RB,"Chubb, Nick",7.95,79500,79500,,0
+1,13130,00-0033280,RB,"McCaffrey, Christian",28.50,285000,285000,,0
+1,16617,00-0039901,WR,"Coleman, Keon",27.20,272000,272000,,0
+1,15754,00-0037239,WR,"Olave, Chris",12.40,124000,124000,,0
+1,16622,00-0039916,WR,"Pearsall, Ricky",20.30,203000,203000,,0
+1,15761,00-0037261,WR,"Shakir, Khalil",13.40,134000,134000,,0
+1,16641,00-0039338,TE,"Bowers, Brock",19.80,198000,198000,,0
+1,16846,00-0039172,PK,"Bates, Jake",8.50,75000,85000,MFL PAT made/missed/blocked absent from preset (1 points),0
+1,15357,00-0036981,DT,"Barmore, Christian",8.50,85000,85000,,0
+1,16692,00-0039906,DT,"Newton, Jer'Zhan",6.00,60000,60000,,0
+1,16699,00-0039900,DE,"Kneeland, Marshawn",14.50,145000,145000,,0
+1,15349,00-0036934,DE,"Phillips, Jaelan",4.00,40000,40000,,0
+1,11723,00-0031360,DE,"Van Noy, Kyle",6.50,65000,65000,,0
+1,13813,00-0034413,LB,"Oluokun, Foyesade",24.00,240000,240000,,0
+1,16234,00-0038504,LB,"Simpson, Trenton",4.00,40000,40000,,0
+1,15904,00-0037275,CB,"Bland, DaRon",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+1,15836,00-0037743,CB,"Hill, Daxton",14.00,115000,140000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+1,16267,00-0039071,CB,"Stevenson, Tyrique",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,16460,00-0038715,S,"Hickman, Ronnie",11.00,90000,110000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,14518,00-0035705,S,"Thompson, Jalen",15.00,125000,150000,MFL CB/S tackle bonus omitted by preset (2.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+1,15831,00-0037819,LB,"Chenal, Leo",2.50,25000,25000,,0
+1,16230,00-0039112,DE,"Van Ness, Lukas",12.75,127500,127500,,0
+1,16264,00-0039110,DT,"Benton, Keeanu",4.00,40000,40000,,0
+1,16439,00-0038711,LB,"Diabate, Mohamoud",4.00,40000,40000,,0
+1,16428,00-0038359,WR,"Smith, Xavier",6.13,61250,61300,MFL per-stat hundredths rounding (0.005 points),0
+1,16387,00-0038685,RB,"Brooks, Chris",4.45,44500,44500,,0
+1,13322,00-0033294,S,"Clark, Chuck",16.50,135000,165000,MFL CB/S tackle bonus omitted by preset (3.0 points),0
+1,16975,00-0039650,WR,"Oliver, Bryce",1.80,18000,18000,,0
+1,16793,00-0039430,LB,"Williams, James",0.00,0,0,,0
+1,16318,00-0039076,LB,"Hampton, Nick",1.00,10000,10000,,0
+1,14315,00-0035021,WR,"Dulin, Ashton",3.83,38250,38300,MFL per-stat hundredths rounding (0.005 points),0
+1,16958,00-0038824,WR,"Miller, Ryan",2.50,25000,25000,,0
+1,15965,00-0037594,RB,"Chestnut, Julius",0.50,5000,5000,,0
+1,12744,00-0033046,DT,"Ward, Jihad",4.00,40000,40000,,0
+2,15238,00-0036945,QB,"Fields, Justin",4.00,60000,40000,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,14073,00-0035700,RB,"Jacobs, Josh",17.85,178500,178500,,0
+2,11675,00-0031381,WR,"Adams, Davante",24.60,246000,246000,,0
+2,16190,00-0039064,WR,"Flowers, Zay",15.05,150500,150500,,0
+2,14833,00-0036407,WR,"Jeudy, Jerry",10.10,101000,101000,,0
+2,15762,00-0037247,WR,"Pickens, George",18.80,188000,188000,,0
+2,16185,00-0038543,WR,"Smith-Njigba, Jaxon",20.30,203000,203000,,0
+2,17102,00-0040128,TE,"Warren, Tyler",14.05,140500,140500,,0
+2,16775,00-0039750,PK,"Karty, Joshua",8.00,60000,80000,MFL PAT made/missed/blocked absent from preset (2 points),0
+2,14900,00-0036130,DT,"Madubuike, Nnamdi",11.50,115000,115000,,0
+2,12698,00-0032387,DT,"Reed, Jarran",15.50,155000,155000,,0
+2,11721,00-0031040,DE,"Mack, Khalil",10.50,105000,105000,,0
+2,15869,00-0037254,LB,"Bernard, Terrel",6.00,60000,60000,,0
+2,15404,00-0036994,LB,"Jones, Ernest",14.00,140000,140000,,0
+2,14218,00-0035687,LB,"Okereke, Bobby",15.50,155000,155000,,0
+2,15881,00-0038039,CB,"Jones, Jack",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,16703,00-0039821,CB,"Phillips, Andru",33.50,300000,335000,MFL CB/S tackle bonus omitted by preset (4.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points); MFL CB/S interception bonus omitted by preset (1 points); Unresolved source/credit disagreement after held-rule reconstruction (-2.50 points); MFL stat breakdown not held,-25000
+2,14910,00-0036221,S,"Jones, Brandon",13.00,110000,130000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,14179,00-0034974,S,"Love, Julian",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,14995,00-0036348,S,"Metellus, Josh",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,15894,00-0037079,CB,"Woolen, Tariq",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,13759,00-0034373,DE,"Armstrong, Dorance",21.00,210000,210000,,0
+2,10413,00-0028118,QB,"Taylor, Tyrod",10.35,103500,103500,,0
+2,16344,00-0038623,DT,"Stills, Dante",5.50,55000,55000,,0
+2,17068,00-0040730,RB,"Harvey, RJ",5.90,59000,59000,,0
+2,17058,00-0040208,RB,"Brooks, Tahj",1.50,15000,15000,,0
+2,15259,00-0036875,RB,"Stevenson, Rhamondre",25.85,258500,258500,,0
+2,15329,00-0036970,TE,"Pitts, Kyle",7.70,77000,77000,,0
+2,16716,00-0039741,LB,"Wilson, Payton",22.00,220000,220000,,0
+2,15681,00-0036813,LB,"Elliss, Christian",10.50,105000,105000,,0
+2,15469,00-0036888,S,"Hamlin, Damar",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,17303,00-0040432,WR,"Collins, Beaux",2.00,20000,20000,,0
+2,17285,00-0040509,TE,"Yurosek, Ben",0.00,0,0,,0
+2,14899,00-0036260,DT,"Kinlaw, Javon",5.00,50000,50000,,0
+2,16586,00-0039376,QB,"Rattler, Spencer",25.35,273500,253500,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,15749,00-0037197,RB,"Pacheco, Isiah",5.40,54000,54000,,0
+2,15256,00-0036997,RB,"Williams, Javonte",28.70,287000,287000,,0
+2,15287,00-0036963,WR,"St. Brown, Amon-Ra",41.50,415000,415000,,0
+2,16195,00-0038393,WR,"Wicks, Dontayvion",8.40,84000,84000,,0
+2,11244,00-0030506,TE,"Kelce, Travis",11.10,111000,111000,,0
+2,15889,00-0037809,TE,"Okonkwo, Chigoziem",7.50,75000,75000,,0
+2,12437,00-0031492,PK,"Myers, Jason",8.00,40000,80000,MFL PAT made/missed/blocked absent from preset (4 points),0
+2,14951,00-0036337,DT,"Lynch, James",1.50,15000,15000,,0
+2,16691,00-0039733,DT,"Orhorhoro, Ruke",4.75,47500,47500,,0
+2,14171,00-0035713,DE,"Burns, Brian",20.50,205000,205000,,0
+2,15484,00-0036952,DE,"Cooper, Jonathon",10.50,105000,105000,,0
+2,15398,00-0037007,DE,"Jones, Patrick",15.00,150000,150000,,0
+2,14590,00-0035166,LB,"Al-Shaair, Azeez",16.50,165000,165000,,0
+2,14896,00-0036323,LB,"Queen, Patrick",11.00,110000,110000,,0
+2,15394,00-0036937,CB,"Adebo, Paulson",27.00,210000,270000,MFL CB/S tackle bonus omitted by preset (5.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,15849,00-0038125,CB,"McCreary, Roger",13.00,110000,130000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,15364,00-0036941,S,"Cisco, Andre",13.00,105000,130000,MFL CB/S tackle bonus omitted by preset (2.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16295,00-0038982,S,"Conner, Chamarri",13.00,115000,130000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,13714,00-0034790,S,"James, Derwin",16.00,135000,160000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+2,15498,00-0036672,LB,"Stuard, Grant",4.20,42000,42000,,0
+2,15449,00-0036643,LB,"Britt, K.J.",1.50,15000,15000,,0
+2,16300,00-0038574,DE,"McGuire, Isaiah",1.50,15000,15000,,0
+2,16704,00-0039347,LB,"Wallace, Trevin",3.50,35000,35000,,0
+2,15288,00-0036980,WR,"Moore, Elijah",12.00,120000,120000,,0
+2,16896,00-0039576,PK,"Shrader, Spencer",18.00,160000,180000,MFL PAT made/missed/blocked absent from preset (2 points),0
+2,15419,00-0036876,TE,"Granson, Kylen",5.50,55000,55000,,0
+2,14154,00-0035254,DE,"Nelson, Anthony",0.00,0,0,,0
+2,16138,00-0037527,LB,"Olubi, Segun",1.00,10000,10000,,0
+2,16608,00-0039299,RB,"Holani, George",9.33,33250,93300,"Kicking team recovered its own kick for a touchdown, which the preset does not score and MFL counts as its fumble-recovery TD (#DR 6) (6 points); MFL per-stat hundredths rounding (0.005 points)",0
+2,17193,00-0040173,DT,"Ingram-Dawkins, Tyrion",3.00,30000,30000,,0
+2,16440,00-0038851,LB,"Murphy, Caleb",2.50,25000,25000,,0
+2,13593,00-0034796,QB,"Jackson, Lamar",33.85,338500,338500,,0
+2,14800,00-0036158,RB,"Dobbins, J.K.",18.60,186000,186000,,0
+2,15777,00-0037837,WR,"Austin III, Calvin",4.20,42000,42000,,0
+2,13289,00-0033555,WR,"Hollins, Mack",7.80,78000,78000,,0
+2,15786,00-0037291,WR,"Nailor, Jalen",7.60,76000,76000,,0
+2,16080,00-0037545,WR,"Shaheed, Rashid",16.78,167750,167800,MFL per-stat hundredths rounding (0.005 points),0
+2,16684,00-0039880,WR,"Washington, Malik",13.00,130000,130000,,0
+2,15337,00-0036637,TE,"Gray, Noah",1.10,11000,11000,,0
+2,16444,00-0038905,PK,"Grupe, Blake",2.00,-10000,20000,MFL PAT made/missed/blocked absent from preset (3 points),0
+2,13317,00-0033860,DT,"Godchaux, Davon",2.50,25000,25000,,0
+2,14882,00-0036224,DE,"Greenard, Jonathan",16.00,160000,160000,,0
+2,13750,00-0034754,LB,"Burks, Oren",5.00,50000,50000,,0
+2,15823,00-0037823,LB,"Harris, Christian",1.50,15000,15000,,0
+2,16722,00-0039815,LB,"Knight, Tyrice",10.50,105000,105000,,0
+2,16736,00-0039372,CB,"Brownlee, Jarvis",13.00,105000,130000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,15989,00-0037137,CB,"Jobe, Josh",10.00,80000,100000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,13470,00-0033393,CB,"Moore, Kenny",8.50,75000,85000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,15834,00-0038038,S,"Hamilton, Kyle",10.50,90000,105000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,14908,00-0036388,S,"McKinney, Xavier",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,15446,00-0036642,DT,"Slaton, Tedarrell",9.00,90000,90000,,0
+2,14675,00-0035409,DT,"Tuttle, Shy",2.50,25000,25000,,0
+2,15121,00-0036151,DE,"Huff, Bryce",21.00,210000,210000,,0
+2,14414,00-0034485,S,"Owens, Jonathan",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,16727,00-0039825,S,"Hicks, Jaden",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,16752,00-0039798,RB,"Davis, Isaiah",4.95,49500,49500,,0
+2,13124,00-0033662,QB,"Rush, Cooper",0.05,500,500,,0
+2,17157,00-0040669,WR,"TeSlaa, Isaac",4.90,49000,49000,,0
+2,17066,00-0040236,RB,"Monangai, Kyle",7.65,76500,76500,,0
+2,17146,00-0040672,DT,"Williams, Tyleik",5.00,50000,50000,,0
+2,13116,00-0033873,QB,"Mahomes, Patrick",28.00,280000,280000,,0
+2,13146,00-0033553,RB,"Conner, James",13.85,138500,138500,,0
+2,14104,00-0035676,WR,"Brown, A.J.",7.70,77000,77000,,0
+2,14836,00-0036322,WR,"Jefferson, Justin",14.10,141000,141000,,0
+2,14127,00-0034960,WR,"Meyers, Jakobi",14.80,148000,148000,,0
+2,15282,00-0036912,WR,"Smith, DeVonta",10.30,103000,103000,,0
+2,14592,00-0035208,WR,"Zaccheaus, Olamide",4.25,42500,42500,,0
+2,11947,00-0029822,PK,"McManus, Brandon",10.00,70000,100000,MFL PAT made/missed/blocked absent from preset (3 points),0
+2,16369,00-0038412,DT,"Ojomo, Moro",13.00,130000,130000,,0
+2,15391,00-0036916,DT,"Williams, Milton",22.50,225000,225000,,0
+2,11769,00-0031411,DE,"Lawrence, Demarcus",4.50,45000,45000,,0
+2,13214,00-0033886,DE,"Watt, T.J.",10.00,100000,100000,,0
+2,16799,00-0039435,LB,"Bethune, Tatum",1.50,15000,15000,,0
+2,16019,00-0037457,LB,"Hansen, Jake",1.50,15000,15000,,0
+2,16671,00-0039903,CB,"Arnold, Terrion",15.00,115000,150000,MFL CB/S tackle bonus omitted by preset (3.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16139,00-0037549,CB,"Baker, Darrell",4.00,35000,40000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,15985,00-0037561,S,"Bell, Markquese",0.00,0,0,,0
+2,15003,00-0036199,S,"Stone, Geno",16.00,125000,160000,MFL CB/S tackle bonus omitted by preset (3.5 points),0
+2,13595,00-0034771,QB,"Rudolph, Mason",0.60,6000,6000,,0
+2,15285,00-0036630,WR,"Wallace, Tylan",14.48,144750,144800,MFL per-stat hundredths rounding (0.005 points),0
+2,15255,00-0036919,RB,"Gainwell, Kenneth",7.85,78500,78500,,0
+2,16413,00-0038465,WR,"Heath, Malik",7.20,72000,72000,,0
+2,16422,00-0038519,WR,"Remigio, Nikko",6.23,62250,62300,MFL per-stat hundredths rounding (0.005 points),0
+2,15787,00-0038104,WR,"Thornton, Tyquan",15.90,159000,159000,,0
+2,13802,00-0034163,DE,"Martin, Jake",9.75,97500,97500,,0
+2,16596,00-0039794,RB,"Allen, Braelon",1.40,14000,14000,,0
+2,15718,00-0037085,RB,"Badie, Tyler",5.35,53500,53500,,0
+2,15755,00-0037741,WR,"Dotson, Jahan",1.75,17500,17500,,0
+2,15779,00-0037816,WR,"Doubs, Romeo",11.80,118000,118000,,0
+2,17083,00-0040130,WR,"Higgins, Jayden",4.80,48000,48000,,0
+2,15319,00-0036988,WR,"Palmer, Joshua",7.70,77000,77000,,0
+2,17103,00-0040663,TE,"Fannin, Harold",10.80,108000,108000,,0
+2,13718,00-0034161,PK,"Carlson, Daniel",12.00,120000,120000,,0
+2,12782,00-0033051,DT,"Onyemata, David",13.00,130000,130000,,0
+2,13692,00-0034773,DT,"Vea, Vita",6.50,65000,65000,,0
+2,14405,00-0035402,DE,"Granderson, Carl",35.00,350000,350000,,0
+2,14947,00-0036335,DE,"Wonnum, D.J.",18.00,180000,180000,,0
+2,13268,00-0033914,LB,"Anzalone, Alex",8.00,80000,80000,,0
+2,15473,00-0036658,LB,"McDuffie, Isaiah",3.00,30000,30000,,0
+2,13743,00-0034815,LB,"Warner, Fred",26.50,265000,265000,,0
+2,14219,00-0035699,CB,"Dean, Jamel",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,16673,00-0039232,CB,"Wiggins, Nate",28.60,205250,286000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (1.5 points); MFL CB/S interception bonus omitted by preset (1 points); MFL interception return yards .1 versus preset .025 (4.575 points),0
+2,13713,00-0034789,S,"Fitzpatrick, Minkah",12.00,100000,120000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,13288,00-0033941,S,"Jenkins, Rayshawn",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,15626,00-0036754,TE,"Wright, Brock",11.80,118000,118000,,0
+2,16255,00-0039000,CB,"Banks, Deonte",17.00,140000,170000,MFL CB/S tackle bonus omitted by preset (3.0 points),0
+2,16227,00-0038980,DE,"Harrison, Zach",24.75,247500,247500,,0
+2,14823,00-0036139,RB,"Dowdle, Rico",4.40,44000,44000,,0
+2,15094,00-0035227,S,"Locke, P.J.",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16732,00-0039816,WR,"Gould, Anthony",2.03,20250,20300,MFL per-stat hundredths rounding (0.005 points),0
+2,16723,00-0039793,TE,"Barner, AJ",11.95,119500,119500,,0
+2,13694,00-0034397,DT,"Settle, Tim",4.00,40000,40000,,0
+2,15874,00-0038100,S,"Butler, Percy",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,17061,00-0040238,RB,"Allen, LeQuint",1.60,16000,16000,,0
+2,13590,00-0034855,QB,"Mayfield, Baker",22.50,245000,225000,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,17098,00-0040648,WR,"Horton, Tory",12.95,129500,129500,,0
+2,13629,00-0034837,WR,"Ridley, Calvin",10.70,107000,107000,,0
+2,12678,00-0033110,TE,"Higbee, Tyler",8.70,87000,87000,,0
+2,16212,00-0039066,TE,"Mayer, Michael",4.40,44000,44000,,0
+2,14153,00-0035248,DT,"Allen, Zach",11.50,115000,115000,,0
+2,17138,00-0040127,DT,"Grant, Kenneth",6.50,65000,65000,,0
+2,13294,00-0033945,DE,"Ebukam, Samson",2.50,25000,25000,,0
+2,15805,00-0037236,DE,"Hutchinson, Aidan",12.00,120000,120000,,0
+2,14893,00-0036418,LB,"Baun, Zack",9.50,95000,95000,,0
+2,14892,00-0036409,LB,"Brooks, Jordyn",18.00,180000,180000,,0
+2,16667,00-0039858,LB,"Gray, Cedric",6.50,65000,65000,,0
+2,13731,00-0034843,CB,"Hughes, Mike",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,15845,00-0037191,CB,"McDuffie, Trent",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,14180,00-0035236,CB,"Murphy, Byron",12.00,95000,120000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,14907,00-0036282,S,"Delpit, Grant",11.00,90000,110000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16708,00-0039846,S,"Smith, Tykee",20.50,185000,205000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,15388,00-0036902,DE,"Ossai, Joseph",5.00,50000,50000,,0
+2,15397,00-0036982,DE,"Golston, Chauncey",5.00,50000,50000,,0
+2,16012,00-0037034,CB,"Alford, Dee",7.53,60250,75300,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL per-stat hundredths rounding (0.005 points),0
+2,16216,00-0038558,TE,"Washington, Darnell",2.00,20000,20000,,0
+2,16626,00-0039890,WR,"Mitchell, Adonai",4.00,40000,40000,,0
+2,17199,00-0040585,DT,"Hamilton, Ty",3.00,30000,30000,,0
+2,14782,00-0036264,QB,"Love, Jordan",27.25,272500,272500,,0
+2,11367,00-0029892,RB,"Juszczyk, Kyle",1.50,15000,15000,,0
+2,16391,00-0038738,RB,"Luepke, Hunter",2.00,20000,20000,,0
+2,14108,00-0035500,WR,"Dortch, Greg",3.93,39250,39300,MFL per-stat hundredths rounding (0.005 points),0
+2,15491,00-0036862,WR,"Skowronek, Ben",1.00,10000,10000,,0
+2,12956,00-0032569,PK,"Lutz, Wil",3.00,-10000,30000,MFL PAT made/missed/blocked absent from preset (4 points),0
+2,11872,00-0031270,DT,"Harris, Shelby",2.50,25000,25000,,0
+2,12741,00-0032762,DT,"Jones, Chris",11.00,110000,110000,,0
+2,14167,00-0035642,DE,"Hines-Allen, Josh",16.00,160000,160000,,0
+2,13690,00-0034381,DE,"Sweat, Josh",22.00,220000,220000,,0
+2,16237,00-0038600,LB,"Pappoe, Owen",1.50,15000,15000,,0
+2,15913,00-0037288,CB,"Benford, Christian",8.50,75000,85000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,14956,00-0036374,CB,"Sneed, L'Jarius",11.00,90000,110000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+2,13707,00-0034856,CB,"Ward, Denzel",1.00,10000,10000,,0
+2,16705,00-0039838,S,"Bullock, Calen",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,15366,00-0036998,S,"Holland, Jevon",13.00,100000,130000,MFL CB/S tackle bonus omitted by preset (3.0 points),0
+2,14197,00-0034968,S,"Savage, Darnell",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,16054,00-0037129,CB,"Blackwell, Josh",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,15527,00-0036683,S,"Key, Devon",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,15878,00-0038107,DE,"Clemons, Micheal",3.00,30000,30000,,0
+2,17154,00-0040694,DT,"Alexander, Darius",1.00,10000,10000,,0
+2,17161,00-0040137,DE,"Burch, Jordan",5.00,50000,50000,,0
+2,17232,00-0040075,WR,"Wester, LaJohntay",0.58,5750,5800,MFL per-stat hundredths rounding (0.005 points),0
+2,17213,00-0040194,TE,"Hawes, Jackson",1.50,15000,15000,,0
+2,17182,00-0040010,DE,"Sorrell, Barryn",4.75,47500,47500,,0
+2,16798,00-0039235,S,"Kane, Sanoussi",0.00,0,0,,0
+2,16579,00-0039918,QB,"Williams, Caleb",21.80,218000,218000,,0
+2,16181,00-0038597,RB,"Brown, Chase",12.40,124000,124000,,0
+2,16166,00-0038951,RB,"Tucker, Sean",0.65,6500,6500,,0
+2,16193,00-0038608,WR,"Boutte, Kayshon",8.60,86000,86000,,0
+2,16614,00-0039849,WR,"Harrison Jr., Marvin",4.70,47000,47000,,0
+2,14136,00-0035719,WR,"Samuel, Deebo",19.35,193500,193500,,0
+2,16643,00-0039356,TE,"Sanders, Ja'Tavion",12.40,124000,124000,,0
+2,16292,00-0038567,PK,"Ryland, Chad",10.00,70000,100000,MFL PAT made/missed/blocked absent from preset (3 points),0
+2,13839,00-0034285,DT,"Sieler, Zach",3.00,30000,30000,,0
+2,17112,00-0040677,DE,"Carter, Abdul",3.50,35000,35000,,0
+2,12221,00-0031565,DE,"Hunter, Danielle",29.50,295000,295000,,0
+2,10768,00-0029562,LB,"David, Lavonte",8.25,82500,82500,,0
+2,14303,00-0035316,LB,"Elliss, Kaden",6.00,60000,60000,,0
+2,15846,00-0037074,LB,"Walker, Quay",11.00,110000,110000,,0
+2,15868,00-0037253,CB,"Jones, Marcus",11.70,97000,117000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,15895,00-0037268,CB,"McCollum, Zyon",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,14669,00-0035133,CB,"Nixon, Keisean",19.08,155750,190800,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (2.5 points); MFL per-stat hundredths rounding (0.005 points),0
+2,13737,00-0034675,S,"Bates, Jessie",4.00,35000,40000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,15001,00-0036349,S,"Curl, Kamren",21.50,190000,215000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,12234,00-0032146,DE,"Dupree, Bud",3.00,30000,30000,,0
+2,15140,00-0035357,S,"Lewis, Cam",10.00,90000,100000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,15237,00-0036971,QB,"Lawrence, Trevor",26.25,282500,262500,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,16167,00-0039040,RB,"Achane, De'Von",28.85,288500,288500,,0
+2,13604,00-0034844,RB,"Barkley, Saquon",20.70,207000,207000,,0
+2,16189,00-0038976,WR,"Mims, Marvin",12.70,127000,127000,,0
+2,15757,00-0038117,WR,"Robinson, Wan'Dale",32.20,322000,322000,,0
+2,15756,00-0037240,WR,"Williams, Jameson",22.80,228000,228000,,0
+2,16222,00-0038996,TE,"Kraft, Tucker",26.40,264000,264000,,0
+2,16036,00-0037112,TE,"Tonges, Jake",7.10,71000,71000,,0
+2,11945,00-0031203,PK,"Santos, Cairo",3.00,0,30000,MFL PAT made/missed/blocked absent from preset (3 points),0
+2,12305,00-0031583,DT,"Jarrett, Grady",3.50,35000,35000,,0
+2,16697,00-0039889,DT,"Smith, Maason",1.50,15000,15000,,0
+2,13284,00-0033935,DE,"Hendrickson, Trey",19.00,190000,190000,,0
+2,15378,00-0036940,DE,"Oweh, Odafe",3.50,35000,35000,,0
+2,16226,00-0038541,DE,"Wilson, Tyree",2.50,25000,25000,,0
+2,16383,00-0038807,LB,"Pace, Ivan",15.00,150000,150000,,0
+2,13696,00-0034874,LB,"Smith, Roquan",43.80,330750,438000,"MFL opponent recovery yards .1 versus preset .025 (4.725 points); MFL scores fumble recovery TD, which the preset does not score (6 points)",0
+2,16698,00-0039898,CB,"Sainristil, Mike",11.00,85000,110000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,16268,00-0038549,CB,"Turner, DJ",10.00,80000,100000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+2,15950,00-0037195,CB,"Watson, Jaylen",11.00,100000,110000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,15839,00-0037616,S,"Cross, Nick",15.00,120000,150000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,15452,00-0036564,S,"Hufanga, Talanoa",15.00,125000,150000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,15875,00-0038123,S,"Belton, Dane",12.00,105000,120000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16148,00-0039150,QB,"Young, Bryce",28.90,289000,289000,,0
+2,15392,00-0036625,CB,"St-Juste, Benjamin",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,16650,00-0039924,DE,"Turner, Dallas",18.50,185000,185000,,0
+2,16714,00-0039353,CB,"Jones, Jarrian",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16657,00-0039859,DT,"Dorlus, Brandon",16.75,167500,167500,,0
+2,16288,00-0038565,CB,"Blackmon, Mekhi",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,13793,00-0034272,WR,"Valdes-Scantling, Marquez",0.00,0,0,,0
+2,13281,00-0033551,CB,"Douglas, Rasul",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,12795,00-0032415,DE,"Judon, Matt",1.50,15000,15000,,0
+2,13296,00-0033947,DE,"Wise, Deatrich",1.50,15000,15000,,0
+2,11327,00-0030294,S,"Jefferson, Tony",19.00,160000,190000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points); MFL CB/S interception bonus omitted by preset (1 points),0
+2,10267,00-0027940,DE,"Miller, Von",4.75,47500,47500,,0
+2,15456,00-0036648,LB,"Niemann, Nick",1.50,15000,15000,,0
+2,17181,00-0040159,S,"Ransom, Lathan",5.00,45000,50000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,12745,00-0032388,LB,"Jones, Deion",3.00,30000,30000,,0
+2,16594,00-0039921,RB,"Benson, Trey",8.85,88500,88500,,0
+2,15716,00-0037746,RB,"Robinson, Brian",3.80,38000,38000,,0
+2,15711,00-0038134,RB,"Walker III, Kenneth",21.75,217500,217500,,0
+2,13630,00-0034348,WR,"Sutton, Courtland",3.10,31000,31000,,0
+2,15788,00-0037666,WR,"Tolbert, Jalen",5.73,57250,57300,MFL per-stat hundredths rounding (0.005 points),0
+2,15753,00-0037740,WR,"Wilson, Garrett",9.00,110000,90000,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,13772,00-0034383,TE,"Schultz, Dalton",5.90,59000,59000,,0
+2,14897,00-0036220,DT,"Brown, Derrick",13.50,135000,135000,,0
+2,14157,00-0035718,DT,"Williams, Quinnen",7.50,75000,75000,,0
+2,15861,00-0037249,DE,"Bonitto, Nik",6.50,65000,65000,,0
+2,15851,00-0038116,DE,"Ebiketie, Arnold",5.00,50000,50000,,0
+2,15815,00-0037235,DE,"Walker, Travon",23.00,230000,230000,,0
+2,13952,00-0034302,LB,"Luvu, Frankie",2.00,20000,20000,,0
+2,14979,00-0036428,LB,"Strnad, Justin",14.00,140000,140000,,0
+2,16284,00-0038557,LB,"Williams, Dorian",3.50,35000,35000,,0
+2,15441,00-0036871,CB,"Hobbs, Nate",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,15405,00-0036987,CB,"Stephens, Brandon",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,16245,00-0038560,S,"Battle, Jordan",14.40,121000,144000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points); MFL interception return yards .1 versus preset .025 (0.300 points),0
+2,16900,00-0039692,S,"Pettus, Dell",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,14122,00-0035535,WR,"Slayton, Darius",10.10,101000,101000,,0
+2,15332,00-0037005,TE,"Tremble, Tommy",6.50,65000,65000,,0
+2,16246,00-0038596,S,"Johnson, Antonio",1.00,10000,10000,,0
+2,14888,00-0036286,DE,"Chaisson, K'Lavon",12.00,120000,120000,,0
+2,16933,00-0039601,S,"Richardson, Demani",0.00,0,0,,0
+2,16326,00-0039051,CB,"Hayes, Josh",1.00,10000,10000,,0
+2,15809,00-0037663,DE,"Johnson, Jermaine",10.50,105000,105000,,0
+2,13230,00-0033872,LB,"Adams, Jamal",4.50,55000,45000,Unresolved source/credit disagreement after held-rule reconstruction (-1.00 points); MFL stat breakdown not held,-10000
+2,12611,00-0033106,QB,"Goff, Jared",44.45,444500,444500,,0
+2,17053,00-0040583,RB,"Marks, Woody",7.55,75500,75500,,0
+2,14802,00-0036223,RB,"Taylor, Jonathan",37.25,372500,372500,,0
+2,15710,00-0037840,RB,"Williams, Kyren",12.55,125500,125500,,0
+2,17076,00-0040782,WR,"Bond, Isaiah",2.65,26500,26500,,0
+2,11671,00-0031408,WR,"Evans, Mike",11.60,116000,116000,,0
+2,15768,00-0037664,WR,"Pierce, Alec",12.80,128000,128000,,0
+2,15331,00-0036894,TE,"Freiermuth, Pat",7.10,71000,71000,,0
+2,13693,00-0034782,DT,"Phillips, Harrison",7.00,70000,70000,,0
+2,15813,00-0037083,DE,"Enagbare, Kingsley",5.00,50000,50000,,0
+2,16235,00-0039047,DE,"Hall, Derick",4.50,45000,45000,,0
+2,15928,00-0037310,DE,"Houston, James",12.00,120000,120000,,0
+2,15396,00-0036990,LB,"Deablo, Divine",10.00,100000,100000,,0
+2,15822,00-0037244,LB,"Lloyd, Devin",16.70,150500,167000,MFL interception return yards .1 versus preset .025 (1.650 points),0
+2,12711,00-0033055,CB,"Ramsey, Jalen",22.20,180500,222000,MFL CB/S tackle bonus omitted by preset (2.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points); MFL CB/S interception bonus omitted by preset (1 points); MFL interception return yards .1 versus preset .025 (0.150 points),0
+2,15362,00-0036874,CB,"Surtain II, Patrick",23.00,180000,230000,MFL CB/S tackle bonus omitted by preset (4.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,14921,00-0036231,S,"Dugger, Kyle",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,17131,00-0040148,S,"Watts, Xavier",12.00,100000,120000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points),0
+2,16644,00-0039912,TE,"Sinnott, Ben",1.70,17000,17000,,0
+2,16750,00-0039818,S,"Oladapo, Kitan",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,15759,00-0037614,WR,"Metchie, John",2.73,27250,27300,MFL per-stat hundredths rounding (0.005 points),0
+2,14672,00-0035617,LB,"Reeder, Troy",1.50,15000,15000,,0
+2,17205,00-0040184,WR,"Lambert-Smith, KeAndre",0.00,0,0,,0
+2,13592,00-0034869,QB,"Darnold, Sam",21.75,217500,217500,,0
+2,13404,00-0033699,RB,"Ekeler, Austin",5.60,56000,56000,,0
+2,14852,00-0036328,RB,"Gibson, Antonio",18.83,188250,188300,MFL per-stat hundredths rounding (0.005 points),0
+2,17087,00-0040581,WR,"Thornton, Dont'e",5.50,55000,55000,,0
+2,14143,00-0035689,TE,"Knox, Dawson",3.90,39000,39000,,0
+2,13193,00-0033858,TE,"Smith, Jonnu",6.70,67000,67000,,0
+2,9694,00-0026858,PK,"Gano, Graham",13.00,90000,130000,MFL PAT made/missed/blocked absent from preset (4 points),0
+2,16256,00-0038995,DT,"Bresee, Bryan",3.50,35000,35000,,0
+2,12764,00-0033109,DT,"Hargrave, Javon",9.50,95000,95000,,0
+2,13700,00-0034828,DE,"Landry, Harold",15.50,170000,155000,Unresolved source/credit disagreement after held-rule reconstruction (-1.50 points); MFL stat breakdown not held,-15000
+2,16077,00-0037602,DE,"Okuayinonu, Sam",1.50,15000,15000,,0
+2,16872,00-0039763,LB,"Andreessen, Joe",5.50,55000,55000,,0
+2,13738,00-0034356,CB,"Jackson, Donte",14.00,115000,140000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points); MFL CB/S interception bonus omitted by preset (1 points),0
+2,16279,00-0038552,CB,"Moss, Riley",12.00,95000,120000,MFL CB/S tackle bonus omitted by preset (2.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16729,00-0039366,CB,"Still, Tarheeb",24.50,200000,245000,MFL CB/S tackle bonus omitted by preset (3.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+2,15860,00-0037193,S,"Cook, Bryan",11.00,85000,110000,MFL CB/S tackle bonus omitted by preset (2.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,14982,00-0036380,S,"Gilman, Alohi",11.00,90000,110000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+2,16817,00-0039289,DT,"Taylor, Leonard",6.50,65000,65000,,0
+2,16894,00-0039284,DE,"McGregor, Braiden",8.00,80000,80000,,0
+2,15866,00-0037758,CB,"Flott, Cordale",9.00,75000,90000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+2,16254,00-0039063,DT,"Kancey, Calijah",5.00,50000,50000,,0
+2,16820,00-0039241,S,"Brade, Beau",1.00,10000,10000,,0
+2,16583,00-0039917,QB,"Penix Jr., Michael",6.80,68000,68000,,0
+2,17047,00-0040162,RB,"Sampson, Dylan",11.50,115000,115000,,0
+2,15916,00-0037292,TE,"Ogletree, Andrew",1.00,10000,10000,,0
+2,17220,00-0040200,PK,"Borregales, Andres",7.00,80000,70000,MFL PAT made/missed/blocked absent from preset (-1 points),0
+2,12739,00-0033120,DT,"Clark, Kenny",16.00,160000,160000,,0
+2,14930,00-0036262,DT,"Hamilton, Davon",8.00,80000,80000,,0
+2,13810,00-0034810,DT,"Joseph-Day, Sebastian",2.50,25000,25000,,0
+2,17135,00-0040725,DE,"Ezeiruaku, Donovan",2.00,20000,20000,,0
+2,17120,00-0040722,DE,"Green, Mike",4.00,40000,40000,,0
+2,16710,00-0039812,LB,"Hopper, Ty'Ron",1.50,15000,15000,,0
+2,17128,00-0040720,CB,"Barron, Jahdae",3.00,25000,30000,MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,17163,00-0040143,CB,"Parrish, Jacob",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,14954,00-0036302,S,"Hawkins, Jaylinn",13.00,95000,130000,MFL CB/S tackle bonus omitted by preset (2.5 points); Unresolved source/credit disagreement after held-rule reconstruction (1.00 points); MFL stat breakdown not held,10000
+2,17186,00-0040165,S,"Moore, Malachi",6.00,55000,60000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,16485,00-0038791,LB,"Incoom, Thomas",2.50,25000,25000,,0
+2,17116,00-0040160,DE,"Sawyer, Jack",25.00,250000,250000,,0
+2,17118,00-0040580,DE,"Stewart, Josaiah",14.00,140000,140000,,0
+2,17152,00-0040748,DT,"Norman-Lott, Omarr",13.00,130000,130000,,0
+2,17187,00-0040166,CB,"Riley, Quincy",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,17158,00-0040642,DT,"Broughton, Vernon",4.50,45000,45000,,0
+2,17168,00-0040149,CB,"Smith, Jaylin",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,9064,00-0026158,QB,"Flacco, Joe",11.90,119000,119000,,0
+2,12626,00-0032764,RB,"Henry, Derrick",1.95,39500,19500,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,13138,00-0033923,RB,"Hunt, Kareem",5.60,76000,56000,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,16175,00-0039021,RB,"Johnson, Roschon",1.50,15000,15000,,0
+2,11674,00-0031236,WR,"Cooks, Brandin",5.60,56000,56000,,0
+2,12658,00-0032385,WR,"Shepard, Sterling",7.40,74000,74000,,0
+2,15109,00-0036182,WR,"Westbrook-Ikhine, Nick",3.80,38000,38000,,0
+2,11247,00-0030061,TE,"Ertz, Zach",19.40,194000,194000,,0
+2,14244,00-0035269,PK,"Gay, Matt",4.00,30000,40000,MFL PAT made/missed/blocked absent from preset (1 points),0
+2,13683,00-0034371,DT,"Hand, Da'Shawn",2.50,25000,25000,,0
+2,15863,00-0037756,DT,"Jones, Travis",4.00,40000,40000,,0
+2,15345,00-0036479,DE,"Paye, Kwity",1.50,15000,15000,,0
+2,13245,00-0033875,DE,"Reddick, Haason",5.00,50000,50000,,0
+2,14170,00-0035525,LB,"Bush, Devin",23.00,230000,230000,,0
+2,14168,00-0035707,LB,"White, Devin",13.50,135000,135000,,0
+2,15380,00-0036974,CB,"Campbell, Tyson",17.00,140000,170000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (1.5 points),0
+2,14924,00-0036292,CB,"Johnson, Jaylon",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,16018,00-0037130,S,"Blankenship, Reed",2.00,20000,20000,,0
+2,16271,00-0039002,S,"Brown, Sydney",1.00,10000,10000,,0
+2,15365,00-0036962,S,"Moehrig, Trevon",16.00,125000,160000,MFL CB/S tackle bonus omitted by preset (3.5 points),0
+2,15720,00-0037617,RB,"Haskins, Hassan",4.28,42750,42800,MFL per-stat hundredths rounding (0.005 points),0
+2,13933,00-0034234,DT,"Ford, Poona",1.50,15000,15000,,0
+2,16788,00-0039424,WR,"Vele, Devaughn",7.30,73000,73000,,0
+2,14946,00-0036371,DT,"Fotu, Leki",6.50,65000,65000,,0
+2,16118,00-0037493,S,"Brown, Mike",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,12301,00-0031576,DE,"Smith, Za'Darius",13.75,137500,137500,,0
+2,14894,00-0036193,DE,"Jennings, Anfernee",6.50,65000,65000,,0
+2,16472,00-0037578,S,"Thomas, Juanyeh",3.00,30000,30000,,0
+2,14870,00-0036422,TE,"Trautman, Adam",10.00,100000,100000,,0
+2,15401,00-0036986,CB,"Wright, Nahshon",2.00,20000,20000,,0
+2,16580,00-0039851,QB,"Maye, Drake",35.10,351000,351000,,0
+2,17056,00-0040644,RB,"Etienne, Trevor",3.73,37250,37300,MFL per-stat hundredths rounding (0.005 points),0
+2,17043,00-0040734,RB,"Henderson, TreVeyon",6.45,64500,64500,,0
+2,16342,00-0038621,WR,"Douglas, Demario",1.80,18000,18000,,0
+2,16639,00-0039342,WR,"Legette, Xavier",0.95,9500,9500,,0
+2,17071,00-0040124,WR,"McMillan, Tetairoa",20.00,200000,200000,,0
+2,16214,00-0039065,TE,"LaPorta, Sam",5.60,56000,56000,,0
+2,16215,00-0039144,TE,"Musgrave, Luke",6.20,62000,62000,,0
+2,17222,00-0040074,PK,"Loop, Tyler",12.00,70000,120000,MFL PAT made/missed/blocked absent from preset (5 points),0
+2,17121,00-0040685,DT,"Graham, Mason",13.00,130000,130000,,0
+2,16232,00-0038591,DT,"Morris, Mike",5.00,50000,50000,,0
+2,15395,00-0036989,DE,"Koonce, Malcolm",1.50,15000,15000,,0
+2,17113,00-0040660,DE,"Williams, Mykel",16.50,165000,165000,,0
+2,16702,00-0039345,CB,"Green, Renardo",13.00,100000,130000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,17127,00-0040751,CB,"Johnson, Will",8.00,65000,80000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16726,00-0039234,CB,"Tampa, T.J.",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16677,00-0039867,S,"Bullard, Javon",10.00,75000,100000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,14434,00-0034465,S,"Reaves, Jeremy",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,16315,00-0038594,CB,"Luter, Darrell",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,14925,00-0036159,DE,"Uche, Josh",8.00,80000,80000,,0
+2,15936,00-0037316,LB,"Robinson, Mark",1.50,15000,15000,,0
+2,17244,00-0040228,LB,"Lindenberg, Cody",1.00,10000,10000,,0
+2,7836,00-0023459,QB,"Rodgers, Aaron",14.60,146000,146000,,0
+2,16169,00-0039165,RB,"Charbonnet, Zach",3.25,32500,32500,,0
+2,17051,00-0040784,RB,"Judkins, Quinshon",12.60,126000,126000,,0
+2,17171,00-0040705,WR,"Dike, Chimere",6.11,61000,61100,MFL per-stat hundredths rounding (0.010 points),0
+2,12801,00-0033040,WR,"Hill, Tyreek",20.38,203750,203800,MFL per-stat hundredths rounding (0.005 points),0
+2,16635,00-0039355,WR,"McCaffrey, Luke",5.53,55250,55300,MFL per-stat hundredths rounding (0.005 points),0
+2,17080,00-0040138,WR,"Noel, Jaylin",3.63,36250,36300,MFL per-stat hundredths rounding (0.005 points),0
+2,15802,00-0038129,TE,"Otton, Cade",5.50,55000,55000,,0
+2,13354,00-0033303,PK,"Butker, Harrison",6.00,40000,60000,MFL PAT made/missed/blocked absent from preset (2 points),0
+2,16265,00-0039070,DT,"Dexter, Gervon",6.00,60000,60000,,0
+2,16663,00-0039835,DT,"Eboigbe, Justin",4.00,40000,40000,,0
+2,16712,00-0039740,DE,"Hunt, Jalyx",1.00,10000,10000,,0
+2,14217,00-0035672,LB,"Barton, Cody",13.50,135000,135000,,0
+2,16296,00-0038570,LB,"Miller, Ventrell",2.50,25000,25000,,0
+2,10775,00-0029255,LB,"Wagner, Bobby",12.50,125000,125000,,0
+2,15859,00-0037753,CB,"Taylor-Britt, Cam",11.00,90000,110000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+2,16274,00-0039007,CB,"Williams, Garrett",15.00,120000,150000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16700,00-0039872,S,"Bishop, Cole",17.00,150000,170000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,14909,00-0036411,S,"Winfield, Antoine",8.00,60000,80000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,14864,00-0036427,WR,"Johnson, Tyler",0.00,0,0,,0
+2,15921,00-0037301,S,"Jackson, Theo",17.90,147250,179000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL opponent recovery yards .1 versus preset .025 (0.675 points),0
+2,15800,00-0037304,TE,"Heyward, Connor",1.60,16000,16000,,0
+2,16582,00-0039732,QB,"Nix, Bo",26.75,267500,267500,,0
+2,16749,00-0039879,DE,"Solomon, Javon",0.00,0,0,,0
+2,17203,00-0040072,LB,"Bassa, Jeffrey",3.00,30000,30000,,0
+2,17129,00-0040747,CB,"Morrison, Benjamin",0.00,0,0,,0
+2,17155,00-0040640,DE,"Gillotte, Ashton",8.00,80000,80000,,0
+2,17208,00-0040186,LB,"Mauigoa, Francisco",3.00,30000,30000,,0
+2,15241,00-0036972,QB,"Jones, Mac",29.45,314500,294500,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,14086,00-0034975,RB,"Hill, Justice",5.95,59500,59500,,0
+2,14085,00-0035261,RB,"Pollard, Tony",12.20,122000,122000,,0
+2,16187,00-0038997,WR,"Downs, Josh",11.10,111000,111000,,0
+2,16618,00-0039893,WR,"Thomas Jr., Brian",10.40,104000,104000,,0
+2,16649,00-0039847,TE,"Johnson, Theo",7.40,74000,74000,,0
+2,16647,00-0039530,TE,"Spann-Ford, Brevyn",4.30,43000,43000,,0
+2,13303,00-0033787,PK,"Elliott, Jake",12.00,100000,120000,MFL PAT made/missed/blocked absent from preset (2 points),0
+2,12688,00-0032378,DT,"Buckner, DeForest",20.00,200000,200000,,0
+2,13742,00-0034800,DT,"Hill, B.J.",3.00,30000,30000,,0
+2,14225,00-0034973,DE,"Crosby, Maxx",11.00,110000,110000,,0
+2,12734,00-0033072,DE,"Floyd, Leonard",12.50,125000,125000,,0
+2,16276,00-0039137,DE,"Young, Byron",31.50,315000,315000,,0
+2,14472,00-0035352,LB,"Dodson, Tyrel",12.00,120000,120000,,0
+2,14953,00-0036338,LB,"Dye, Troy",3.00,30000,30000,,0
+2,13227,00-0033928,CB,"Lewis, Jourdan",21.00,180000,210000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,13266,00-0033783,CB,"Witherspoon, Ahkello",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,16244,00-0039141,S,"Branch, Brian",29.50,260000,295000,MFL CB/S tackle bonus omitted by preset (3.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,14927,00-0036293,S,"Chinn, Jeremy",17.50,140000,175000,MFL CB/S tackle bonus omitted by preset (3.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,14283,00-0035301,S,"Wilson, Donovan",18.00,150000,180000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points),0
+2,14260,00-0035286,LB,"Holcomb, Cole",3.00,30000,30000,,0
+2,15352,00-0036933,DE,"Collins, Zaven",15.80,95750,158000,"MFL opponent recovery yards .1 versus preset .025 (0.225 points); MFL scores fumble recovery TD, which the preset does not score (6 points)",0
+2,9051,00-0026190,DT,"Campbell, Calais",27.50,275000,275000,,0
+2,14957,00-0036375,CB,"Robertson, Amik",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,16273,00-0038978,DT,"Young, Byron",1.50,15000,15000,,0
+2,17236,00-0040076,DT,"Peebles, Aeneas",2.50,25000,25000,,0
+2,10703,00-0029263,QB,"Wilson, Russell",39.25,412500,392500,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,16162,00-0039139,RB,"Gibbs, Jahmyr",24.20,242000,242000,,0
+2,17052,00-0040719,RB,"Tuten, Bhayshul",18.25,182500,182500,,0
+2,16188,00-0038544,WR,"Johnston, Quentin",18.05,180500,180500,,0
+2,14832,00-0036358,WR,"Lamb, CeeDee",23.70,237000,237000,,0
+2,15804,00-0037086,TE,"Calcaterra, Grant",3.60,36000,36000,,0
+2,14137,00-0035644,TE,"Fant, Noah",6.80,68000,68000,,0
+2,16269,00-0038935,TE,"Strange, Brenton",4.70,47000,47000,,0
+2,13719,00-0034173,PK,"Pineiro, Eddy",9.00,80000,90000,MFL PAT made/missed/blocked absent from preset (1 points),0
+2,15817,00-0037073,DT,"Davis, Jordan",15.50,155000,155000,,0
+2,15819,00-0037075,DT,"Wyatt, Devonte",19.00,190000,190000,,0
+2,13262,00-0033902,DE,"Kpassagnon, Tanoh",2.50,25000,25000,,0
+2,14148,00-0035647,DE,"Sweat, Montez",10.00,100000,100000,,0
+2,15355,00-0036621,LB,"Bolton, Nick",7.50,75000,75000,,0
+2,17123,00-0040708,LB,"Campbell, Jihaad",10.50,105000,105000,,0
+2,14943,00-0036298,LB,"Davis-Gaither, Akeem",8.00,80000,80000,,0
+2,13697,00-0034673,LB,"Edmunds, Tremaine",12.50,125000,125000,,0
+2,16675,00-0039841,CB,"DeJean, Cooper",14.00,110000,140000,MFL CB/S tackle bonus omitted by preset (3.0 points),0
+2,15361,00-0036944,CB,"Horn, Jaycee",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,15418,00-0036629,S,"Bynum, Camryn",16.00,130000,160000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points),0
+2,13325,00-0033579,S,"Woods, Xavier",11.00,85000,110000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,15892,00-0037262,DE,"Booker, Thomas",1.50,15000,15000,,0
+2,16690,00-0039888,CB,"Mitchell, Quinyon",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,16759,00-0039829,LB,"Muasau, Darius",1.50,15000,15000,,0
+2,15368,00-0036854,PK,"McPherson, Evan",7.00,30000,70000,MFL PAT made/missed/blocked absent from preset (4 points),0
+2,14858,00-0036415,WR,"Jefferson, Van",3.00,30000,30000,,0
+2,17032,00-0040691,QB,"Dart, Jaxson",-0.15,-1500,-1500,,0
+2,16009,00-0037596,LB,"Gibbens, Jack",3.00,30000,30000,,0
+2,17229,00-0040213,S,"Lane, Rayuan",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,17209,00-0040188,DT,"Black, Yahya",6.50,65000,65000,,0
+2,14056,00-0035228,QB,"Murray, Kyler",19.25,192500,192500,,0
+2,14797,00-0036275,RB,"Swift, D'Andre",16.70,167000,167000,,0
+2,17073,00-0040170,WR,"Ayomanor, Elic",16.60,166000,166000,,0
+2,17081,00-0040129,WR,"Egbuka, Emeka",12.90,129000,129000,,0
+2,17072,00-0040727,WR,"Harris, Tre",6.40,64000,64000,,0
+2,16287,00-0038563,WR,"Tucker, Tre",5.43,54250,54300,MFL per-stat hundredths rounding (0.005 points),0
+2,15794,00-0037744,TE,"McBride, Trey",14.80,148000,148000,,0
+2,8930,00-0023853,PK,"Prater, Matt",14.00,110000,140000,MFL PAT made/missed/blocked absent from preset (3 points),0
+2,10292,00-0027962,DT,"Jordan, Cameron",2.50,25000,25000,,0
+2,12225,00-0031933,DT,"Williams, Leonard",12.25,122500,122500,,0
+2,16223,00-0039108,DE,"Anderson, Will",17.00,170000,170000,,0
+2,16654,00-0039809,DE,"Elliss, Jonah",6.00,60000,60000,,0
+2,15350,00-0036932,DE,"Parsons, Micah",8.25,82500,82500,,0
+2,17125,00-0040738,LB,"Knight, Demetrius",6.00,60000,60000,,0
+2,17147,00-0040579,LB,"Schwesinger, Carson",6.00,60000,60000,,0
+2,16236,00-0038599,LB,"To'oTo'o, Henry",17.00,170000,170000,,0
+2,13710,00-0034778,CB,"Davis, Carlton",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,16695,00-0039807,CB,"Melton, Max",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,15850,00-0037246,S,"Pitre, Jalen",11.00,85000,110000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,16719,00-0039813,S,"Williams, Evan",7.00,60000,70000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,16660,00-0039854,DT,"Robinson, Darius",2.50,25000,25000,,0
+2,15853,00-0038133,DE,"Mafe, Boye",1.50,15000,15000,,0
+2,16333,00-0039041,TE,"Higgins, Elijah",8.50,85000,85000,,0
+2,14095,00-0035537,RB,"Johnson, Ty",1.40,14000,14000,,0
+2,15981,00-0037801,WR,"Turpin, KaVontae",18.15,181500,181500,,0
+2,13260,00-0033546,DT,"Tomlinson, Dalvin",6.50,65000,65000,,0
+2,14235,00-0035262,LB,"Tranquill, Drue",8.00,80000,80000,,0
+2,16717,00-0039864,S,"Taylor-Demerson, Dadrion",5.00,45000,50000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,12616,00-0033119,QB,"Brissett, Jacoby",0.35,3500,3500,,0
+2,13837,00-0034431,LB,"Franklin, Zaire",9.00,90000,90000,,0
+2,16735,00-0039371,CB,"Abrams-Draine, Kris",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,13133,00-0033526,RB,"Perine, Samaje",4.85,48500,48500,,0
+2,17172,00-0040716,S,"Woodson, Craig",10.00,80000,100000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,15812,00-0038127,DT,"Hall, Logan",5.00,50000,50000,,0
+2,14059,00-0035710,QB,"Jones, Daniel",30.90,309000,309000,,0
+2,14071,00-0035685,RB,"Montgomery, David",14.75,147500,147500,,0
+2,15721,00-0037256,RB,"White, Rachaad",18.10,181000,181000,,0
+2,11222,00-0030279,WR,"Allen, Keenan",18.10,181000,181000,,0
+2,15292,00-0036626,WR,"Brown, Dyami",17.75,177500,177500,,0
+2,13172,00-0033591,WR,"Brown, Noah",1.90,19000,19000,,0
+2,13893,00-0034487,WR,"Sherfield, Trent",1.30,13000,13000,,0
+2,13763,00-0034159,TE,"Dissly, Will",1.70,17000,17000,,0
+2,14717,00-0035358,PK,"McLaughlin, Chase",1.00,-10000,10000,MFL PAT made/missed/blocked absent from preset (2 points),0
+2,13448,00-0033381,DT,"Butler, Adam",7.50,75000,75000,,0
+2,12697,00-0032889,DT,"Robinson, A'Shawn",1.50,15000,15000,,0
+2,13688,00-0034344,DE,"Davenport, Marcus",12.00,120000,120000,,0
+2,13682,00-0034825,DE,"Key, Arden",8.50,85000,85000,,0
+2,15049,00-0035895,LB,"Bachie, Joe",8.50,85000,85000,,0
+2,15076,00-0035942,LB,"Rozeboom, Christian",7.50,75000,75000,,0
+2,14928,00-0036294,LB,"Wilson, Logan",12.50,125000,125000,,0
+2,15377,00-0036901,CB,"Stokes, Eric",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,15363,00-0036993,S,"Melifonwu, Ifeatu",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,14328,00-0035378,S,"Wingard, Andrew",16.90,114750,169000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points); MFL interception return yards .1 versus preset .025 (2.925 points),0
+2,14727,00-0035567,RB,"Reynolds, Craig",2.35,23500,23500,,0
+2,15614,00-0036589,CB,"McCloud, Nick",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,16883,00-0039589,WR,"Johnson, Kameron",1.20,12000,12000,,0
+2,16780,00-0039412,DE,"Jean-Baptiste, Javontae",4.00,40000,40000,,0
+2,16017,00-0037633,LB,"Hummel, Jake",7.00,70000,70000,,0
+2,14146,00-0035631,TE,"Sample, Drew",1.70,17000,17000,,0
+2,14934,00-0036266,DT,"Elliott, Jordan",3.00,30000,30000,,0
+2,13216,00-0033547,LB,"Cunningham, Zach",5.00,50000,50000,,0
+2,13687,00-0034359,DE,"Lewis, Tyquan",2.50,25000,25000,,0
+2,13589,00-0034857,QB,"Allen, Josh",16.20,162000,162000,,0
+2,13319,00-0033293,RB,"Jones, Aaron",3.05,30500,30500,,0
+2,14105,00-0035662,WR,"Brown, Marquise",8.00,80000,80000,,0
+2,16619,00-0039868,WR,"Franklin, Troy",26.15,261500,261500,,0
+2,16207,00-0038619,WR,"Iosivas, Andrei",2.20,22000,22000,,0
+2,14842,00-0036252,WR,"Pittman, Michael",8.00,80000,80000,,0
+2,14867,00-0036290,TE,"Kmet, Cole",5.90,59000,59000,,0
+2,17104,00-0040126,TE,"Loveland, Colston",0.00,0,0,,0
+2,15979,00-0037224,PK,"Dicker, Cameron",8.00,60000,80000,MFL PAT made/missed/blocked absent from preset (2 points),0
+2,14163,00-0035643,DT,"Simmons, Jeffery",6.00,60000,60000,,0
+2,14149,00-0034967,DE,"Gary, Rashan",14.50,145000,145000,,0
+2,14878,00-0036288,DE,"Gross-Matos, Yetur",2.50,25000,25000,,0
+2,10816,00-0029607,LB,"Davis, Demario",16.50,165000,165000,,0
+2,14257,00-0034987,LB,"Speed, E.J.",1.50,15000,15000,,0
+2,13987,00-0034720,LB,"Spillane, Robert",11.50,115000,115000,,0
+2,14221,00-0035680,LB,"Williams, Quincy",8.00,80000,80000,,0
+2,16145,00-0037384,CB,"McMillian, Ja'Quan",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,17132,00-0040688,S,"Starks, Malaki",11.00,90000,110000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,14420,00-0035125,RB,"Ingold, Alec",3.30,33000,33000,,0
+2,16356,00-0038408,CB,"Valentine, Carrington",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,13115,00-0033869,QB,"Trubisky, Mitchell",1.75,17500,17500,,0
+2,16275,00-0039054,LB,"Mapu, Marte",9.50,80000,95000,MFL interception return yards .1 versus preset .025 (1.500 points),0
+2,16294,00-0038387,DT,"Wooden, Colby",2.50,25000,25000,,0
+2,16247,00-0038605,S,"Skinner, JL",1.00,10000,10000,,0
+2,15847,00-0037242,CB,"Elam, Kaiir",15.00,120000,150000,MFL CB/S tackle bonus omitted by preset (3.0 points),0
+2,14778,00-0036212,QB,"Tagovailoa, Tua",24.75,247500,247500,,0
+2,17060,00-0040179,RB,"Giddens, DJ",0.00,0,0,,0
+2,16598,00-0039361,RB,"Irving, Bucky",21.65,216500,216500,,0
+2,11232,00-0030564,WR,"Hopkins, DeAndre",17.40,174000,174000,,0
+2,14974,00-0036309,WR,"Mooney, Darnell",4.00,40000,40000,,0
+2,16624,00-0039379,WR,"Thrash, Jamari",1.50,15000,15000,,0
+2,15284,00-0036613,WR,"Waddle, Jaylen",18.80,188000,188000,,0
+2,16213,00-0038933,TE,"Kincaid, Dalton",7.70,77000,77000,,0
+2,14600,00-0035192,PK,"Slye, Joey",17.00,160000,170000,MFL PAT made/missed/blocked absent from preset (1 points),0
+2,16324,00-0038398,DT,"Brooks, Karl",7.75,77500,77500,,0
+2,12217,00-0032052,DE,"Fowler, Dante",2.50,25000,25000,,0
+2,15826,00-0037281,LB,"Clark, Damone",5.00,50000,50000,,0
+2,13447,00-0033336,LB,"Wilson, Eric",9.50,95000,95000,,0
+2,14252,00-0035277,CB,"Jackson, Michael",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16316,00-0038381,CB,"Kelly, Kyu Blu",9.50,80000,95000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16672,00-0039343,CB,"Lassiter, Kamari",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,16014,00-0037155,S,"Adams, Tony",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,14302,00-0035669,S,"Scott, Nick",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,14207,00-0035625,S,"Thornhill, Juan",12.00,95000,120000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,16457,00-0038820,S,"Izien, Christian",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,15796,00-0037805,TE,"Ruckert, Jeremy",7.50,75000,75000,,0
+2,13709,00-0034357,S,"Oliver, Isaiah",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,14123,00-0034983,WR,"Renfrow, Hunter",23.80,238000,238000,,0
+2,16432,00-0038797,RB,"Wilson, Emanuel",0.68,6750,6800,MFL per-stat hundredths rounding (0.005 points),0
+2,13377,00-0033375,WR,"Patrick, Tim",0.00,0,0,,0
+2,16741,00-0039380,CB,"Smith-Wade, Chau",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,15873,00-0038115,TE,"Bellinger, Daniel",0.00,0,0,,0
+2,13201,00-0033876,DE,"Barnett, Derek",2.00,20000,20000,,0
+2,14805,00-0036265,RB,"Dillon, AJ",2.35,23500,23500,,0
+2,14670,00-0034251,DT,"Ekuale, Daniel",4.00,40000,40000,,0
+2,17358,00-0040416,LB,"Bullock, John",1.50,15000,15000,,0
+2,17030,00-0040676,QB,"Ward, Cam",13.15,131500,131500,,0
+2,12187,00-0032211,WR,"Lockett, Tyler",2.90,29000,29000,,0
+2,15751,00-0037238,WR,"London, Drake",9.40,84000,94000,Unresolved source/credit disagreement after held-rule reconstruction (1.00 points); MFL stat breakdown not held,10000
+2,15766,00-0038090,WR,"Moore, Skyy",0.03,250,300,MFL per-stat hundredths rounding (0.005 points),0
+2,16221,00-0038547,TE,"Schoonmaker, Luke",0.00,0,0,,0
+2,16419,00-0038428,PK,"Szmyt, Andre",5.00,30000,50000,MFL PAT made/missed/blocked absent from preset (2 points),0
+2,16787,00-0039423,DT,"Laulu, Jonah",28.50,285000,285000,,0
+2,16800,00-0039436,DE,"Harrell, Jaylen",0.00,0,0,,0
+2,15386,00-0036480,DE,"Odeyingbo, Dayo",3.00,30000,30000,,0
+2,15450,00-0036644,LB,"McGrone, Cameron",1.00,10000,10000,,0
+2,16731,00-0039369,CB,"Hart, Cam",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,16309,00-0038585,CB,"Mitchell, Cameron",5.00,50000,50000,,0
+2,15856,00-0038121,CB,"Taylor, Alontae",17.50,150000,175000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+2,15835,00-0038135,S,"Brisker, Jaquan",16.00,125000,160000,MFL CB/S tackle bonus omitted by preset (3.5 points),0
+2,15871,00-0037667,S,"Joseph, Kerby",14.00,115000,140000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points),0
+2,16102,00-0037512,S,"Pola-Mao, Isaiah",8.00,65000,80000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,13226,00-0033878,CB,"Jackson, Adoree",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16405,00-0037542,PK,"Romo, John Parker",18.00,170000,180000,MFL PAT made/missed/blocked absent from preset (1 points),0
+2,16451,00-0038679,WR,"Shavers, Tyrell",0.00,0,0,,0
+2,17204,00-0040183,DT,"Roberts, Elijah",4.75,47500,47500,,0
+2,15946,00-0037323,S,"Thomas II, Rodney",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,16463,00-0038823,S,"Merriweather, Kaevon",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,15830,00-0037811,LB,"Muma, Chad",1.50,15000,15000,,0
+2,15103,00-0036187,RB,"Gilliam, Reggie",2.00,20000,20000,,0
+2,12620,00-0033077,QB,"Prescott, Dak",28.20,302000,282000,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,15708,00-0038120,RB,"Hall, Breece",7.30,73000,73000,,0
+2,17044,00-0040666,RB,"Hampton, Omarion",4.70,47000,47000,,0
+2,17045,00-0040715,RB,"Skattebo, Cam",16.55,165500,165500,,0
+2,14835,00-0036410,WR,"Higgins, Tee",16.60,166000,166000,,0
+2,13066,00-0032464,WR,"Raymond, Kalif",3.93,39250,39300,MFL per-stat hundredths rounding (0.005 points),0
+2,17106,00-0040736,TE,"Taylor, Mason",3.50,35000,35000,,0
+2,16689,00-0039309,DT,"Murphy, Byron",21.75,217500,217500,,0
+2,13199,00-0033870,DT,"Thomas, Solomon",14.50,145000,145000,,0
+2,16655,00-0039911,DE,"Robinson, Chop",13.00,130000,130000,,0
+2,17122,00-0040577,DE,"Walker, Jalon",12.00,120000,120000,,0
+2,17188,00-0040167,LB,"Hyppolite, Ruben",1.50,15000,15000,,0
+2,17126,00-0040155,LB,"Stutsman, Danny",1.50,15000,15000,,0
+2,14997,00-0036222,CB,"Rodgers, Isaiah",10.50,85000,105000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,11348,00-0030062,CB,"Slay, Darius",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,12772,00-0033038,S,"Murray, Eric",23.20,178000,232000,MFL CB/S tackle bonus omitted by preset (3.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points); MFL interception return yards .1 versus preset .025 (0.900 points),0
+2,15448,00-0036502,S,"Pinnock, Jason",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,16304,00-0038578,S,"Ward, Jay",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,16203,00-0038576,WR,"Jones, Charlie",0.28,2750,2800,MFL per-stat hundredths rounding (0.005 points),0
+2,16291,00-0039031,DT,"Adebawore, Adetomiwa",8.00,80000,80000,,0
+2,13298,00-0033952,DT,"Stewart, Grover",15.50,155000,155000,,0
+2,17082,00-0040134,WR,"Bryant, Pat",3.80,38000,38000,,0
+2,17184,00-0040164,WR,"Lane, Jaylin",2.45,24500,24500,,0
+2,17037,00-0040704,QB,"Gabriel, Dillon",5.95,59500,59500,,0
+2,17175,00-0040582,WR,"Smith, Arian",0.95,9500,9500,,0
+2,16584,00-0039923,QB,"McCarthy, J.J.",4.15,101500,41500,MFL FU includes retained fumbles unlike preset lost-only (-4 points); MFL own recovery rule gives flat 2 rather than 2 per recovery (-2 points),0
+2,17048,00-0040142,RB,"Johnson, Kaleb",1.70,17000,17000,,0
+2,13132,00-0033906,RB,"Kamara, Alvin",19.15,191500,191500,,0
+2,14860,00-0036259,WR,"Jennings, Jauan",22.90,229000,229000,,0
+2,13164,00-0033908,WR,"Kupp, Cooper",16.00,160000,160000,,0
+2,13635,00-0034827,WR,"Moore, D.J.",9.60,96000,96000,,0
+2,12676,00-0033090,TE,"Henry, Hunter",1.90,19000,19000,,0
+2,12677,00-0032392,TE,"Hooper, Austin",7.80,78000,78000,,0
+2,16414,00-0037692,PK,"Aubrey, Brandon",23.00,190000,230000,MFL PAT made/missed/blocked absent from preset (4 points),0
+2,13798,00-0034275,DT,"Fatukasi, Foley",7.50,75000,75000,,0
+2,13332,00-0033297,DT,"Jones, D.J.",2.50,25000,25000,,0
+2,12686,00-0033156,DE,"Bosa, Joey",21.00,210000,210000,,0
+2,14147,00-0035717,DE,"Bosa, Nick",25.50,255000,255000,,0
+2,16280,00-0038553,LB,"Henley, Daiyan",34.80,342000,348000,MFL interception return yards .1 versus preset .025 (0.600 points),0
+2,14889,00-0036441,LB,"Murray, Kenneth",14.50,145000,145000,,0
+2,15428,00-0036500,LB,"Sherwood, Jamien",21.00,210000,210000,,0
+2,13223,00-0033281,CB,"Humphrey, Marlon",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16670,00-0039860,CB,"McKinstry, Kool-Aid",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,13251,00-0033890,S,"Baker, Budda",12.00,100000,120000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,13228,00-0033877,S,"Hooker, Malik",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,16679,00-0039861,S,"Nubin, Tyler",12.50,100000,125000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,13148,00-0033854,RB,"Ogunbowale, Dare",2.50,25000,25000,,0
+2,13926,00-0034787,LB,"Board, Chris",4.00,40000,40000,,0
+2,13736,00-0034355,S,"Stewart, M.J.",1.00,10000,10000,,0
+2,14080,00-0035250,RB,"Singletary, Devin",1.15,11500,11500,,0
+2,12754,00-0033131,DT,"Collins, Maliek",1.00,10000,10000,,0
+2,13263,00-0033548,CB,"Awuzie, Chidobe",8.00,65000,80000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,15353,00-0037003,LB,"Surratt, Chazz",1.00,10000,10000,,0
+2,16059,00-0037661,CB,"Ingram, Ja'Marcus",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,15409,00-0036964,LB,"Barnes, Derrick",7.00,70000,70000,,0
+2,17115,00-0040578,DE,"Pearce, James",6.25,62500,62500,,0
+2,17119,00-0040746,DE,"Scourton, Nic",1.50,15000,15000,,0
+2,17143,00-0040133,CB,"Thomas, Azareye'h",1.00,10000,10000,,0
+2,13953,00-0034488,CB,"Thomas, Tavierre",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,16581,00-0039910,QB,"Daniels, Jayden",24.75,247500,247500,,0
+2,15253,00-0036973,RB,"Etienne, Travis",20.00,200000,200000,,0
+2,15261,00-0036555,RB,"Hubbard, Chuba",20.20,202000,202000,,0
+2,15293,00-0036550,WR,"Bateman, Rashod",3.50,35000,35000,,0
+2,15290,00-0036554,WR,"Collins, Nico",15.20,152000,152000,,0
+2,13641,00-0034407,WR,"McCloud, Ray-Ray",0.00,0,0,,0
+2,13189,00-0033881,TE,"Engram, Evan",2.20,22000,22000,,0
+2,13192,00-0033885,TE,"Njoku, David",9.00,90000,90000,,0
+2,15369,00-0036816,PK,"Patterson, Riley",11.00,80000,110000,MFL PAT made/missed/blocked absent from preset (3 points),0
+2,10266,00-0027969,DT,"Heyward, Cameron",12.00,120000,120000,,0
+2,13723,00-0034333,DT,"Payne, Da'Ron",1.50,15000,15000,,0
+2,16278,00-0039068,DE,"Diaby, YaYa",4.00,40000,40000,,0
+2,15346,00-0036914,DE,"Rousseau, Gregory",7.25,72500,72500,,0
+2,15806,00-0037611,DE,"Thibodeaux, Kayvon",23.00,230000,230000,,0
+2,16239,00-0039018,LB,"Campbell, Jack",13.20,130500,132000,MFL opponent recovery yards .1 versus preset .025 (0.150 points),0
+2,16314,00-0039049,LB,"Dennis, SirVocea",9.50,95000,95000,,0
+2,14322,00-0035386,LB,"Edwards, T.J.",4.00,40000,40000,,0
+2,16371,00-0038646,CB,"Austin, Alex",6.00,45000,60000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,13224,00-0033874,CB,"Lattimore, Marshon",14.00,110000,140000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,12349,00-0031608,S,"Diggs, Quandre",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,14182,00-0035632,S,"Hooker, Amani",21.00,185000,210000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,16305,00-0038580,LB,"Abdullah, Yasir",1.00,10000,10000,,0
+2,15712,00-0037263,RB,"Allgeier, Tyler",17.40,174000,174000,,0
+2,13754,00-0034780,CB,"Yiadom, Isaac",15.50,125000,155000,MFL CB/S tackle bonus omitted by preset (3.0 points),0
+2,16629,00-0039739,WR,"Wilson, Roman",1.70,17000,17000,,0
+2,13704,00-0034350,DE,"Nwosu, Uchenna",5.00,50000,50000,,0
+2,12735,00-0032759,DT,"Rankins, Sheldon",15.50,155000,155000,,0
+2,16299,00-0038573,WR,"Davis, Derius",2.91,29000,29100,MFL per-stat hundredths rounding (0.010 points),0
+2,13767,00-0034377,CB,"Maddox, Avonte",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,11150,00-0030565,QB,"Smith, Geno",7.75,77500,77500,,0
+2,16171,00-0038551,RB,"Miller, Kendre",4.80,48000,48000,,0
+2,16747,00-0039384,RB,"Tracy, Tyrone",13.15,131500,131500,,0
+2,17075,00-0040667,WR,"Golden, Matthew",1.75,17500,17500,,0
+2,17074,00-0040718,WR,"Hunter, Travis",10.70,107000,107000,,0
+2,14109,00-0035659,WR,"McLaurin, Terry",9.80,98000,98000,,0
+2,16616,00-0039919,WR,"Odunze, Rome",34.80,348000,348000,,0
+2,17108,00-0040739,TE,"Arroyo, Elijah",6.10,61000,61000,,0
+2,16681,00-0039404,PK,"Reichard, Will",8.00,80000,80000,,0
+2,11793,00-0031054,DT,"Jones, DaQuan",7.00,70000,70000,,0
+2,15808,00-0037192,DE,"Karlaftis, George",5.50,55000,55000,,0
+2,16228,00-0039013,DE,"Smith, Nolan",8.50,85000,85000,,0
+2,16238,00-0038390,LB,"Sewell, Noah",9.00,90000,90000,,0
+2,14412,00-0031898,LB,"Singleton, Alex",11.00,110000,110000,,0
+2,16346,00-0038625,LB,"Winters, Dee",11.00,110000,110000,,0
+2,15833,00-0037190,CB,"Gardner, Sauce",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,15445,00-0036563,CB,"Lenoir, Deommodore",10.50,85000,105000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,15832,00-0037237,CB,"Stingley Jr., Derek",12.00,95000,120000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+2,16281,00-0038554,S,"Brown, Ji'Ayir",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,15872,00-0038136,S,"Bryant, Coby",17.80,132000,178000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points); MFL interception return yards .1 versus preset .025 (2.100 points),0
+2,14254,00-0035279,DE,"Omenihu, Charles",4.00,40000,40000,,0
+2,16688,00-0039363,RB,"Guerendo, Isaac",1.18,11750,11800,MFL per-stat hundredths rounding (0.005 points),0
+2,15867,00-0037808,DE,"Malone, DeAngelo",1.50,15000,15000,,0
+2,15864,00-0037251,DE,"Wright, Alex",1.50,15000,15000,,0
+2,13246,00-0033217,TE,"Alie-Cox, Mo",1.80,18000,18000,,0
+2,15335,00-0036887,TE,"Farrell, Luke",9.50,95000,95000,,0
+2,13249,00-0033884,CB,"White, Tre'Davious",11.50,95000,115000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,15595,00-0034248,S,"Campbell, Elijah",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,17148,00-0040721,DT,"Collins, Alfred",4.00,40000,40000,,0
+2,17169,00-0040152,CB,"Stout, Upton",17.00,150000,170000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,14779,00-0036355,QB,"Herbert, Justin",23.55,255500,235500,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,17042,00-0040122,RB,"Jeanty, Ashton",9.05,90500,90500,,0
+2,15972,00-0037525,RB,"Mason, Jordan",7.15,71500,71500,,0
+2,16161,00-0038542,RB,"Robinson, Bijan",24.10,241000,241000,,0
+2,16201,00-0038618,WR,"Hutchinson, Xavier",5.90,59000,59000,,0
+2,16615,00-0039337,WR,"Nabers, Malik",43.20,432000,432000,,0
+2,13156,00-0033857,WR,"Smith-Schuster, JuJu",1.50,15000,15000,,0
+2,13672,00-0034829,TE,"Gesicki, Mike",4.80,48000,48000,,0
+2,8851,00-0025565,PK,"Folk, Nick",6.00,50000,60000,MFL PAT made/missed/blocked absent from preset (1 points),0
+2,12218,00-0032164,DT,"Armstead, Arik",12.00,120000,120000,,0
+2,14159,00-0035683,DT,"Lawrence, Dexter",10.00,100000,100000,,0
+2,13198,00-0033868,DE,"Garrett, Myles",23.25,232500,232500,,0
+2,16266,00-0039111,DE,"Tuipulotu, Tuli",20.00,200000,200000,,0
+2,15857,00-0037665,DE,"Williams, Sam",1.50,15000,15000,,0
+2,16696,00-0039850,LB,"Cooper, Edgerrin",17.75,177500,177500,,0
+2,16013,00-0037587,LB,"Landman, Nate",13.00,130000,130000,,0
+2,16063,00-0037526,LB,"McCrary-Ball, Marcelino",6.00,60000,60000,,0
+2,12742,00-0033050,CB,"Howard, Xavien",4.00,35000,40000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,15375,00-0036996,CB,"Newsome, Greg",15.50,125000,155000,MFL CB/S tackle bonus omitted by preset (3.0 points),0
+2,14186,00-0035663,S,"Rapp, Taylor",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,13717,00-0034361,S,"Reid, Justin",13.00,100000,130000,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16242,00-0039140,CB,"Ringo, Kelee",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,16298,00-0038505,DE,"Robinson, Tavius",25.00,250000,250000,,0
+2,15714,00-0038040,RB,"White, Zamir",5.88,58750,58800,MFL per-stat hundredths rounding (0.005 points),0
+2,14079,00-0035243,RB,"Sanders, Miles",11.25,112500,112500,,0
+2,16927,00-0038778,DT,"Redmond, Jalen",22.50,225000,225000,,0
+2,14847,00-0036331,WR,"Duvernay, Devin",4.33,43250,43300,MFL per-stat hundredths rounding (0.005 points),0
+2,14495,00-0035413,LB,"Gifford, Luke",3.00,30000,30000,,0
+2,15903,00-0037752,S,"Anderson, Tycen",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,12988,00-0032580,CB,"Jones, Jonathan",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,17070,00-0040735,WR,"Burden, Luther",4.45,44500,44500,,0
+2,17153,00-0040749,S,"Mukuba, Andrew",29.85,227750,298500,MFL CB/S tackle bonus omitted by preset (2.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points); MFL interception return yards .1 versus preset .025 (3.075 points),0
+2,17096,00-0040009,WR,"Williams, Savion",4.45,44500,44500,,0
+2,17114,00-0040756,DE,"Stewart, Shemar",4.00,40000,40000,,0
+2,17185,00-0040069,LB,"Buchanan, Teddye",7.00,70000,70000,,0
+2,17256,00-0040242,RB,"Croskey-Merritt, Jacory",2.30,23000,23000,,0
+2,17217,00-0040197,CB,"Strong, Dorian",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,12394,00-0031763,WR,"Carter, DeAndre",0.33,3250,3300,MFL per-stat hundredths rounding (0.005 points),0
+2,17174,00-0040710,DT,"Walker, Deone",5.00,50000,50000,,0
+2,16784,00-0039417,CB,"Harden, Myles",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,9431,00-0026498,QB,"Stafford, Matthew",23.60,256000,236000,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,15713,00-0037267,RB,"Ford, Jerome",13.33,133250,133300,MFL per-stat hundredths rounding (0.005 points),0
+2,16627,00-0039915,WR,"McConkey, Ladd",9.80,98000,98000,,0
+2,16211,00-0039075,WR,"Nacua, Puka",31.75,317500,317500,,0
+2,11938,00-0030035,WR,"Thielen, Adam",4.60,46000,46000,,0
+2,16633,00-0039751,WR,"Whittington, Jordan",8.20,82000,82000,,0
+2,16206,00-0038559,WR,"Wilson, Michael",8.10,81000,81000,,0
+2,15799,00-0038041,TE,"Ferguson, Jake",16.80,168000,168000,,0
+2,11936,00-0031136,PK,"Boswell, Chris",12.00,120000,120000,,0
+2,16662,00-0039908,DT,"Jenkins, Kris",6.50,65000,65000,,0
+2,16282,00-0039138,DT,"Turner, Kobie",16.50,165000,165000,,0
+2,14164,00-0035678,DE,"Jones, Dre'Mont",7.50,75000,75000,,0
+2,16653,00-0039852,DE,"Verse, Jared",6.00,60000,60000,,0
+2,14210,00-0035697,LB,"Pratt, Germaine",14.50,145000,145000,,0
+2,15975,00-0037109,LB,"Sanborn, Jack",10.00,100000,100000,,0
+2,16870,00-0039774,LB,"Speights, Omar",5.00,50000,50000,,0
+2,15387,00-0036927,LB,"Werner, Pete",15.00,150000,150000,,0
+2,15888,00-0037839,CB,"Durant, Decobie",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,14918,00-0036285,CB,"Terrell, A.J.",5.00,40000,50000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,16676,00-0039834,S,"Kinchens, Kamren",17.00,135000,170000,MFL CB/S tackle bonus omitted by preset (3.5 points),0
+2,15923,00-0037841,S,"Lake, Quentin",12.00,95000,120000,MFL CB/S tackle bonus omitted by preset (2.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,15412,00-0036903,DT,"Brown, Bobby",9.00,90000,90000,,0
+2,16219,00-0039074,TE,"Allen, Davis",7.80,78000,78000,,0
+2,16321,00-0038602,S,"Smith, Christopher",1.00,10000,10000,,0
+2,13959,00-0034203,CB,"Williams, Darious",3.00,25000,30000,MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,16192,00-0038606,WR,"Washington, Parker",17.96,179500,179600,MFL per-stat hundredths rounding (0.010 points),0
+2,16767,00-0039749,DT,"Davis, Tyler",9.50,95000,95000,,0
+2,16263,00-0039149,S,"Martin, Quan",12.00,100000,120000,MFL CB/S tackle bonus omitted by preset (2.0 points),0
+2,16593,00-0039738,RB,"Corum, Blake",13.15,131500,131500,,0
+2,14879,00-0036192,DE,"Epenesa, A.J.",4.00,40000,40000,,0
+2,15254,00-0036893,RB,"Harris, Najee",8.00,80000,80000,,0
+2,16912,00-0039776,S,"McCollough, Jaylen",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,15301,00-0036849,WR,"Atwell, Tutu",0.00,0,0,,0
+2,16664,00-0039826,LB,"Trotter Jr., Jeremiah",1.50,15000,15000,,0
+2,16666,00-0039374,LB,"Eichenberg, Tommy",1.50,15000,15000,,0
+2,17164,00-0040670,CB,"Williams, Nohl",9.00,75000,90000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+2,17202,00-0040182,S,"Trader, Dante",4.00,30000,40000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,16603,00-0039875,RB,"Davis, Ray",3.75,37500,37500,,0
+2,13434,00-0032667,DT,"Robertson-Harris, Roy",0.00,0,0,,0
+2,16150,00-0039163,QB,"Stroud, C.J.",18.65,186500,186500,,0
+2,13610,00-0034791,RB,"Chubb, Nick",19.00,190000,190000,,0
+2,13130,00-0033280,RB,"McCaffrey, Christian",24.65,246500,246500,,0
+2,16617,00-0039901,WR,"Coleman, Keon",5.60,56000,56000,,0
+2,15754,00-0037239,WR,"Olave, Chris",11.40,114000,114000,,0
+2,16622,00-0039916,WR,"Pearsall, Ricky",9.35,93500,93500,,0
+2,15761,00-0037261,WR,"Shakir, Khalil",2.20,22000,22000,,0
+2,16641,00-0039338,TE,"Bowers, Brock",8.80,88000,88000,,0
+2,16846,00-0039172,PK,"Bates, Jake",9.00,20000,90000,MFL PAT made/missed/blocked absent from preset (7 points),0
+2,15357,00-0036981,DT,"Barmore, Christian",6.00,60000,60000,,0
+2,16692,00-0039906,DT,"Newton, Jer'Zhan",2.50,25000,25000,,0
+2,16699,00-0039900,DE,"Kneeland, Marshawn",1.50,15000,15000,,0
+2,15349,00-0036934,DE,"Phillips, Jaelan",6.00,60000,60000,,0
+2,16230,00-0039112,DE,"Van Ness, Lukas",11.00,110000,110000,,0
+2,13813,00-0034413,LB,"Oluokun, Foyesade",21.50,215000,215000,,0
+2,16234,00-0038504,LB,"Simpson, Trenton",5.50,55000,55000,,0
+2,15836,00-0037743,CB,"Hill, Daxton",29.50,235000,295000,MFL CB/S tackle bonus omitted by preset (4.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points); MFL CB/S interception bonus omitted by preset (1 points),0
+2,16267,00-0039071,CB,"Stevenson, Tyrique",14.50,120000,145000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,13322,00-0033294,S,"Clark, Chuck",15.00,120000,150000,MFL CB/S tackle bonus omitted by preset (3.0 points),0
+2,16460,00-0038715,S,"Hickman, Ronnie",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (1.0 points),0
+2,14518,00-0035705,S,"Thompson, Jalen",16.00,130000,160000,MFL CB/S tackle bonus omitted by preset (3.0 points),0
+2,15831,00-0037819,LB,"Chenal, Leo",7.50,75000,75000,,0
+2,16264,00-0039110,DT,"Benton, Keeanu",2.50,25000,25000,,0
+2,11723,00-0031360,DE,"Van Noy, Kyle",3.50,35000,35000,,0
+2,16439,00-0038711,LB,"Diabate, Mohamoud",1.00,10000,10000,,0
+2,16303,00-0038577,DE,"Herbig, Nick",24.10,210250,241000,MFL interception return yards .1 versus preset .025 (3.075 points),0
+2,16428,00-0038359,WR,"Smith, Xavier",1.85,18500,18500,,0
+2,16387,00-0038685,RB,"Brooks, Chris",5.70,57000,57000,,0
+2,16975,00-0039650,WR,"Oliver, Bryce",1.50,15000,15000,,0
+2,16352,00-0038628,S,"Hellams, DeMarcco",3.00,25000,30000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,16793,00-0039430,LB,"Williams, James",0.00,0,0,,0
+2,15941,00-0037093,WR,"Young, Dareke",1.00,10000,10000,,0
+2,14315,00-0035021,WR,"Dulin, Ashton",1.58,15750,15800,MFL per-stat hundredths rounding (0.005 points),0
+2,16958,00-0038824,WR,"Miller, Ryan",11.50,115000,115000,,0
+2,12744,00-0033046,DT,"Ward, Jihad",2.00,20000,20000,,0
+2,14777,00-0036442,QB,"Burrow, Joe",8.80,88000,88000,,0
+2,15742,00-0037228,RB,"Warren, Jaylen",21.50,215000,215000,,0
+2,15281,00-0036900,WR,"Chase, Ja'Marr",40.00,400000,400000,,0
+2,12186,00-0031588,WR,"Diggs, Stefon",7.20,72000,72000,,0
+2,14102,00-0035640,WR,"Metcalf, DK",11.00,110000,110000,,0
+2,16191,00-0038979,WR,"Tillman, Cedric",10.20,102000,102000,,0
+2,14138,00-0035229,TE,"Hockenson, T.J.",2.20,22000,22000,,0
+2,14861,00-0036040,TE,"Johnson, Juwan",15.90,159000,159000,,0
+2,12860,00-0032726,PK,"Fairbairn, Ka'imi",9.00,80000,90000,MFL PAT made/missed/blocked absent from preset (1 points),0
+2,13208,00-0033523,DT,"Allen, Jonathan",14.50,145000,145000,,0
+2,15173,00-0036181,DT,"Tart, Teair",3.50,35000,35000,,0
+2,15356,00-0036995,DE,"Browning, Baron",16.40,161000,164000,MFL interception return yards .1 versus preset .025 (0.300 points),0
+2,13681,00-0034832,DE,"Chubb, Bradley",18.50,185000,185000,,0
+2,14926,00-0036362,LB,"Gay, Willie",6.00,60000,60000,,0
+2,14169,00-0035144,LB,"Wilson, Mack",13.50,135000,135000,,0
+2,17130,00-0040731,CB,"Amos, Trey",9.00,75000,90000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points),0
+2,13774,00-0034384,CB,"Reed, D.J.",10.00,75000,100000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,17179,00-0040156,S,"Bowman, Billy",18.00,150000,180000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (1.0 points); MFL CB/S interception bonus omitted by preset (1 points),0
+2,12752,00-0033132,S,"Byard, Kevin",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,13776,00-0034386,WR,"Watson, Justin",1.30,13000,13000,,0
+2,16218,00-0039050,TE,"Durham, Payne",0.00,0,0,,0
+2,14358,00-0035100,QB,"Browning, Jake",23.30,233000,233000,,0
+2,16325,00-0038984,CB,"Clark, Kei'Trel",6.00,50000,60000,MFL CB/S tackle bonus omitted by preset (0.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,17167,00-0040643,S,"Sanker, Jonas",13.00,105000,130000,MFL CB/S tackle bonus omitted by preset (2.5 points),0
+2,14783,00-0036389,QB,"Hurts, Jalen",11.90,139000,119000,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,15715,00-0037248,RB,"Cook, James",29.65,316500,296500,MFL FU includes retained fumbles unlike preset lost-only (-2 points),0
+2,13418,00-0033307,WR,"Bourne, Kendrick",6.20,62000,62000,,0
+2,13671,00-0034753,TE,"Andrews, Mark",1.55,15500,15500,,0
+2,16680,00-0039409,PK,"Little, Cam",10.00,70000,100000,MFL PAT made/missed/blocked absent from preset (3 points),0
+2,16233,00-0038386,DT,"Carter, Jalen",9.50,95000,95000,,0
+2,15393,00-0036942,DT,"Odighizuwa, Osa",4.50,45000,45000,,0
+2,14940,00-0036333,DE,"Highsmith, Alex",2.50,25000,25000,,0
+2,13706,00-0034797,LB,"Baker, Jerome",2.00,20000,20000,,0
+2,13307,00-0033571,LB,"Milano, Matt",8.50,85000,85000,,0
+2,12831,00-0032442,LB,"Roberts, Elandon",6.00,60000,60000,,0
+2,15432,00-0036501,CB,"Carter, Michael",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.0 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,14903,00-0036361,CB,"Diggs, Trevon",7.00,55000,70000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,16720,00-0039357,CB,"Richardson, Decamerion",2.00,15000,20000,MFL CB/S tackle bonus omitted by preset (0.5 points),0
+2,14224,00-0035253,S,"Gardner-Johnson, Chauncey",13.00,100000,130000,MFL CB/S tackle bonus omitted by preset (3.0 points),0
+2,14213,00-0035655,S,"Harris, Will",8.00,65000,80000,MFL CB/S tackle bonus omitted by preset (1.5 points),0
+2,16253,00-0039151,CB,"Forbes, Emmanuel",9.00,70000,90000,MFL CB/S tackle bonus omitted by preset (1.5 points); MFL CB/S pass-defense bonus omitted by preset (0.5 points),0
+2,14875,00-0036232,TE,"Bryant, Harrison",0.00,0,0,,0
+2,17139,00-0040724,DT,"Sanders, T.J.",2.50,25000,25000,,0
+2,14161,00-0035674,DT,"Tillery, Jerry",2.50,25000,25000,,0
+2,16424,00-0038678,RB,"Mims, Jordan",1.50,15000,15000,,0

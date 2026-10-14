@@ -3,6 +3,7 @@
 import {main} from '../models';
 import {lineup} from '../models';
 import {snapshot} from '../models';
+import {commissioner} from '../models';
 import {envelope} from '../models';
 import {personal} from '../models';
 
@@ -95,6 +96,16 @@ export function TargetCheckLineup(arg1:string,arg2:Array<string>):Promise<lineup
 export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
+
+export function TargetCommissionerExecute(arg1:string):Promise<commissioner.Receipt>;
+
+export function TargetCommissionerLeagues():Promise<Array<commissioner.NativeLeague>>;
+
+export function TargetCommissionerLedger(arg1:string):Promise<commissioner.Ledger>;
+
+export function TargetCommissionerPeople(arg1:string):Promise<commissioner.People>;
+
+export function TargetCommissionerRules(arg1:string):Promise<commissioner.Rules>;
 
 export function TargetComms(arg1:main.RawCommsScope):Promise<main.CommsBoard>;
 

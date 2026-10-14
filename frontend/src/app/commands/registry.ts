@@ -432,6 +432,28 @@ export function createCommands(
           .catch(cause => state.write({ notice: String(cause) }));
       },
     }),
+    'commissioner.read': command({
+      ...ambient, id: 'commissioner.read', label: 'Read the league ledger', args: ['league'],
+      run: (args: { league: string }) => {
+        void import('../commissioner/proxy').then(m => m.leagueState.choose(args.league))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
+    'commissioner.draft': command({
+      ...ambient, id: 'commissioner.draft', label: 'Edit a rule value', args: ['action', 'path', 'index'],
+      run: (args: { action: 'add' | 'remove'; path: string; index: number }) => {
+        void import('../commissioner/draftEditor').then(m => m.draftEditor.run(args))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
+    'commissioner.execute': command({
+      ...ambient, id: 'commissioner.execute', label: 'Record a league change', args: ['body'],
+      run: (args: { body: string }) => {
+        void import('../commissioner/proxy').then(m => m.execute(args.body))
+          .then(receipt => state.write({ notice: receipt.message }))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     'control.read': command({
       ...ambient, id: 'control.read', label: 'Control Room league and site news', aliases: [],
       args: ['action', 'value'],

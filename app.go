@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
@@ -41,11 +42,13 @@ import (
 // App is the Wails root and the backend's composition root: it wires the stores and routes
 // IPC calls. Business logic lives in the engine, store and transaction packages, never here.
 type App struct {
-	whatifMu      sync.Mutex
-	keyMu         sync.Mutex
-	keyStore      *mflkey.Store
-	keyVerifiedAt string
-	keyGeneration uint64
+	commissionerSession    commissioner.Session
+	commissionerAuthorizer commissioner.Authorizer
+	whatifMu               sync.Mutex
+	keyMu                  sync.Mutex
+	keyStore               *mflkey.Store
+	keyVerifiedAt          string
+	keyGeneration          uint64
 	//nolint:containedctx // Key-change refreshes run under it; shutdown cancels it.
 	workCtx    context.Context
 	workCancel context.CancelFunc

@@ -15,6 +15,9 @@ const names = fixture.players.value.map((player) => player.name).filter(Boolean)
 // Entry ceiling: ring 1 left 320,449 bytes; ring 2 allowed eligibility (p2a, +369) and Market
 // (p2c, +1,000). 321,818 is their sum, not a loosening: new surfaces must load lazily.
 const BUDGET = 321_818;
+// Words only the commissioner forms and screens carry: they must live in lazy chunks.
+const commissionerForms = ['Start an app league', 'Give or take a role', 'Change a rule',
+  'Press and hold to confirm', 'Undo this change'];
 
 function check(entry, budget = BUDGET, source = readFileSync(entry, 'utf8')) {
   const size = Buffer.byteLength(source);
@@ -24,6 +27,12 @@ function check(entry, budget = BUDGET, source = readFileSync(entry, 'utf8')) {
   }
   if (/CM-\d{3}|commish\.[a-z]/.test(source)) {
     throw new Error('Commissioner registry in owner entry');
+  }
+  if (source.includes('League receipt')) {
+    throw new Error('Commissioner proxy in owner entry');
+  }
+  if (commissionerForms.some((words) => source.includes(words))) {
+    throw new Error('Commissioner forms in owner entry');
   }
   if (source.includes(envelope.receipt.correlationId)) {
     throw new Error('Envelope fixture in entry');
@@ -42,7 +51,9 @@ for (const entry of entries) {
     assert.throws(() => check(entry, BUDGET, names.slice(0, 12).join('|')), /Fixture player run/);
     assert.throws(() => check(entry, BUDGET, envelope.receipt.correlationId), /Envelope fixture in entry/);
     assert.throws(() => check(entry, BUDGET, 'Move stages'), /rail implementation in entry/);
+    assert.throws(() => check(entry, BUDGET, 'League receipt'), /Commissioner proxy in owner entry/);
     assert.throws(() => check(entry, BUDGET, 'CM-001'), /Commissioner registry in owner entry/);
+    assert.throws(() => check(entry, BUDGET, 'Give or take a role'), /Commissioner forms in owner entry/);
     assert.throws(() => check(entry, BUDGET, 'commish.league.teams'), /Commissioner registry in owner entry/);
     console.log('bundle-budget: rejected 1 KB budget, snapshot, envelope, rail and commissioner leaks');
   }
@@ -61,3 +72,19 @@ assert.ok(railSource.includes('Move stages'), 'Rail must live in a lazy chunk, n
 assert.ok(moveSource.includes('landing simulated from a real roster snapshot'),
   'MyMoves caption missing');
 console.log(`bundle-budget: lazy MyMoves + rail verified in ${moveChunk}`);
+
+const commissionerChunks = readdirSync(resolve(dist, 'assets'))
+  .filter((name) => /^proxy\..*\.js$/.test(name));
+assert.ok(commissionerChunks.some((name) =>
+  readFileSync(resolve(dist, 'assets', name), 'utf8').includes('League receipt')),
+  'Commissioner IPC proxy must live in a lazy chunk');
+console.log('bundle-budget: lazy commissioner IPC proxy verified');
+
+const lazySources = readdirSync(resolve(dist, 'assets')).filter((name) => /\.js$/.test(name))
+  .filter((name) => !entries.some((entry) => entry.endsWith(name)))
+  .map((name) => readFileSync(resolve(dist, 'assets', name), 'utf8'));
+for (const words of commissionerForms) {
+  assert.ok(lazySources.some((source) => source.includes(words)),
+    `Commissioner form text “${words}” must live in a lazy chunk`);
+}
+console.log('bundle-budget: lazy commissioner forms and screens verified');

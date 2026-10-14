@@ -1,0 +1,39 @@
+.twr-app .league-desk,
+.twr-app .league-rules,
+.twr-app .league-people { display: grid; gap: 12px; }
+.twr-app .league-form {
+  display: grid; gap: 8px; border-top: 1px solid var(--surface-line); padding-top: 12px;
+}
+.twr-app .league-form label { display: grid; gap: 4px; max-width: 48ch; }
+.twr-app .league-form fieldset { border: 1px solid var(--surface-line); margin: 4px 0; padding: 8px 12px; }
+.twr-app .rule-field { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; max-width: none; }
+.twr-app .rule-flag { display: flex; align-items: center; gap: 8px; }
+.twr-app .rule-hint { color: var(--surface-tx2); }
+.twr-app .rule-entry { display: flex; flex-wrap: wrap; align-items: start; gap: 8px; padding: 4px 0; }
+.twr-app .rule-current { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 0; }
+.twr-app .rule-current > div { display: contents; }
+.twr-app .rule-current dd { margin: 0; overflow-wrap: anywhere; }
+.twr-app .change-bar { display: grid; gap: 8px; max-width: 72ch; }
+.twr-app .change-note,
+.twr-app .change-safeguard,
+.twr-app .change-why { margin: 0; color: var(--surface-tx2); }
+.twr-app .change-refused { margin: 0; font-weight: 600; }
+.twr-app .ledger-undo { margin-top: 4px; }
+.twr-app .ledger-undo summary { cursor: pointer; }
+.twr-app .league-votes { padding-inline-start: 24px; }
+.twr-app .league-votes p { margin: 4px 0; }
+
+.twr-app .change-reason { display: grid; gap: 4px; width: 100%; }
+.twr-app .change-reason textarea { width: 100%; box-sizing: border-box; }
+.twr-app .hold-to-fire { display: grid; gap: 4px; }
+.twr-app .hold-to-fire .act {
+  position: relative; width: 100%; overflow: hidden; touch-action: none; user-select: none;
+}
+.twr-app .hold-label { position: relative; }
+.twr-app .hold-fill {
+  position: absolute; inset: 0; width: 0; background: currentColor; opacity: 0.25;
+  transition-property: width; transition-timing-function: linear;
+}
+.twr-app .hold-to-fire.holding .hold-fill { width: 100%; }
+.twr-app .hold-help,
+.twr-app .hold-said { color: var(--surface-tx2); }

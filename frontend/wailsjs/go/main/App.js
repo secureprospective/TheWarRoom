@@ -182,6 +182,26 @@ export function TargetClock() {
   return window['go']['main']['App']['TargetClock']();
 }
 
+export function TargetCommissionerExecute(arg1) {
+  return window['go']['main']['App']['TargetCommissionerExecute'](arg1);
+}
+
+export function TargetCommissionerLeagues() {
+  return window['go']['main']['App']['TargetCommissionerLeagues']();
+}
+
+export function TargetCommissionerLedger(arg1) {
+  return window['go']['main']['App']['TargetCommissionerLedger'](arg1);
+}
+
+export function TargetCommissionerPeople(arg1) {
+  return window['go']['main']['App']['TargetCommissionerPeople'](arg1);
+}
+
+export function TargetCommissionerRules(arg1) {
+  return window['go']['main']['App']['TargetCommissionerRules'](arg1);
+}
+
 export function TargetComms(arg1) {
   return window['go']['main']['App']['TargetComms'](arg1);
 }
