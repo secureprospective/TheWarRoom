@@ -145,6 +145,19 @@ func seedPicks(seed *commissioner.RawNativeSnapshot, results []draftreports.Pick
 	}
 }
 
+func (a *App) TargetNativeDirectory(leagueID string) (commissioner.NativeDirectory, error) {
+	if err := a.ready(); err != nil {
+		return commissioner.NativeDirectory{}, fmt.Errorf("native directory startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	directory, err := a.history.NativeDirectory(ctx, leagueID)
+	if err != nil {
+		return commissioner.NativeDirectory{}, fmt.Errorf("native league directory: %w", err)
+	}
+	return directory, nil
+}
+
 func (a *App) TargetNativeAssets(leagueID string) (commissioner.NativeAssets, error) {
 	if err := a.ready(); err != nil {
 		return commissioner.NativeAssets{}, fmt.Errorf("native assets startup: %w", err)

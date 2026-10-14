@@ -53,10 +53,12 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 	p := governance.Principal(principal)
 	private := state.HasRole(p, governance.Commissioner) || state.HasRole(p, governance.CoCommissioner)
 	persons, invites := peopleInventory(records)
-	for _, r := range records {
-		if r.Command.Command == Create {
-			out.Seats = readSeats(state, r.Command.Args.Franchises)
-		}
+	directory, err := nativeDirectory(league, records, state)
+	if err != nil {
+		return People{}, err
+	}
+	for _, f := range directory.Franchises {
+		out.Seats = append(out.Seats, f.PeopleSeat)
 	}
 	for _, person := range persons {
 		for _, role := range []governance.Role{governance.Commissioner, governance.CoCommissioner, governance.DOT} {
@@ -138,7 +140,7 @@ func readSeats(state governance.State, ids []string) []PeopleSeat {
 		if owner == "" {
 			owner = "Vacant"
 		}
-		seats = append(seats, PeopleSeat{id, f.Name, f.Abbreviation, owner})
+		seats = append(seats, PeopleSeat{Franchise: id, Name: f.Name, Abbreviation: f.Abbreviation, Owner: owner})
 	}
 	return seats
 }

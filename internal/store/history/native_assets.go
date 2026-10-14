@@ -35,6 +35,18 @@ func (s *Store) NativeAssets(ctx context.Context, league string) (commissioner.N
 	return reading, nil
 }
 
+func (s *Store) NativeDirectory(ctx context.Context, league string) (commissioner.NativeDirectory, error) {
+	records, err := s.nativeRecords(ctx, league)
+	if err != nil {
+		return commissioner.NativeDirectory{}, err
+	}
+	reading, err := commissioner.NativeDirectoryReading(league, records)
+	if err != nil {
+		return commissioner.NativeDirectory{}, fmt.Errorf("read native league directory: %w", err)
+	}
+	return reading, nil
+}
+
 // NativeSeedRetry returns a recorded command, not a receipt: ExecuteCommissioner must still
 // check the current principal's permission and the complete request identity on every retry.
 func (s *Store) NativeSeedRetry(ctx context.Context, league, request string) (commissioner.RawCommand, bool, error) {

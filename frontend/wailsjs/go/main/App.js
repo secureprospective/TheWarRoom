@@ -314,6 +314,10 @@ export function TargetNativeAssets(arg1) {
   return window['go']['main']['App']['TargetNativeAssets'](arg1);
 }
 
+export function TargetNativeDirectory(arg1) {
+  return window['go']['main']['App']['TargetNativeDirectory'](arg1);
+}
+
 export function TargetNativeSeed(arg1) {
   return window['go']['main']['App']['TargetNativeSeed'](arg1);
 }
