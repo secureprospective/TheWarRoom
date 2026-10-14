@@ -86,6 +86,9 @@
 .twr-app .jobs { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 .twr-app .job { flex: 1 1 220px; min-width: 0; color: var(--surface-tx2); }
 .twr-app .job-live { color: var(--surface-tx1); }
+.twr-app .job:not(.job-live) .act { color: var(--surface-tx2); }
+.twr-app .job:not(.job-live) strong { font-weight: 400; }
+.twr-app .job-live strong { font-weight: 700; }
 .twr-app .job .act,
 .twr-app .control-hits .act { display: block; width: 100%; text-align: start; }
 .twr-app .job-line { display: block; margin-top: 4px; }
@@ -102,7 +105,12 @@
 .twr-app .control-row:focus { outline: 2px solid currentColor; outline-offset: 2px; }
 .twr-app .control-status { color: var(--surface-tx2); }
 .twr-app .control-rules { padding-inline-start: 20px; }
-.twr-app .control-rules li { padding-block: 4px; overflow-wrap: anywhere; }
+.twr-app .control-rules li {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  padding-block: 4px; overflow-wrap: anywhere;
+}
+.twr-app .control-rules li > span { min-width: 0; }
+.twr-app .control-rules li > .act { flex: none; }
 .twr-app .mfl-reference { border-top: 1px solid var(--surface-line); padding-top: 16px; }
 .twr-app .mfl-reference > summary { cursor: pointer; }
 .twr-app .mfl-reference > summary:focus-visible { outline: 2px solid currentColor; }

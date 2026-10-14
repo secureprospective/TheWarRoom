@@ -43,6 +43,17 @@ describe('League rules screen', () => {
     expect(view).toContain('Next rollover: The next rollover has no date yet; the commissioner sets it.');
     expect(view).not.toMatch(/roster\.limits|CM-\d|G[123]\b/);
   });
+  it('keeps the full Needs-a-ruling sentence in the source cell without requiring a colon', async () => {
+    const sentence = 'Needs a ruling; the commissioner sets the exact trade deadline.';
+    const reading = { ...rulesWire, sections: rulesWire.sections.map(s => ({ ...s,
+      rows: s.rows.map(r => r.field === 'calendar.tradeDeadline' ? { ...r, citation: sentence } : r),
+    })) };
+    const host = await show(render(LeagueRules), { rules: reading });
+    const row = all(host, 'tr').find(tr => tr.textContent.startsWith('Trade deadline'));
+    const cell = row && all(row, 'td')[2];
+    expect(cell?.getAttribute('data-label')).toBe('Where it comes from');
+    expect(cell?.textContent).toBe(sentence);
+  });
   it('shows a waiting change beside the value still in force, never as in force', async () => {
     const waiting = { ...rulesWire, sections: rulesWire.sections.map(s => ({ ...s, rows: s.rows.map(r =>
       r.field === 'roster.limits' ? { ...r, pending: [{ entry: 'act.x', value: '25 to 60',
@@ -123,6 +134,20 @@ describe('Plain rule provenance', () => {
 });
 
 describe('Replaced waiting changes', () => {
+  it('shows Go’s full smaller-league ruling sentences in each source cell', async () => {
+    const host = await show(render(LeagueRules), { rules: replacedWire.rules });
+    const sources = [
+      ['Schedule pattern', 'Choose how often teams meet in this smaller league.'],
+      ['First round bye seed', 'Choose first-round byes for this smaller playoff field.'],
+      ['Final playoff week', 'Choose the final week after setting the smaller bracket.'],
+      ['Playoff bracket', 'Choose a bracket for this smaller playoff field.'],
+    ];
+    for (const [label, sentence] of sources) {
+      const row = all(host, 'tr').find(tr => tr.textContent.startsWith(label));
+      const cell = row && all(row, 'td')[2];
+      expect(cell?.textContent).toBe(`Needs a ruling: ${sentence}`);
+    }
+  });
   it('shows Go’s replacement date in viewer-local time in the rules and ledger', async () => {
     const replacedAt = '2026-10-14T04:19:03Z';
     const changed = parseRules(replacedWire.rules);

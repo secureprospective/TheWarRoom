@@ -17,6 +17,8 @@ import rulesWire from './rules.wire.testdata.json';
 
 const entries = entriesOf(parseControls(controlsWire));
 const html = (node: ReturnType<typeof createElement>) => renderToStaticMarkup(node);
+const css = readFileSync(new URL('./commissioner.css', import.meta.url), 'utf8');
+const style = (selector: string) => css.split(`${selector} {`)[1]?.split('}')[0] ?? '';
 afterEach(() => { vi.restoreAllMocks(); });
 
 describe('League landing wire and search', () => {
@@ -59,6 +61,21 @@ describe('League landing wire and search', () => {
     expect(search).toContain('Search the league controls');
     expect(search).not.toMatch(/CM-\d|G[123]\b/);
   });
+  it('separates the rule value and Change with wrapping layout, not a hard-coded space', () => {
+    const rules = parseRules(rulesWire).sections.flatMap(s => s.rows);
+    const row = html(createElement(ControlRow, {
+      entry: entries.find(e => e.id === 'CM-025')!,
+      rules: new Map(rules.map(r => [r.field, r])), mayChange: true, refer: () => undefined,
+    }));
+    expect(row).toMatch(/<span>Trade deadline: Needs a ruling<\/span><[^>]+class="act act-text"/);
+    expect(row).toContain('aria-label="Change Trade deadline"');
+    const layout = style('.twr-app .control-rules li');
+    expect(layout).toMatch(/display:\s*flex;/);
+    expect(layout).toMatch(/flex-wrap:\s*wrap;/);
+    expect(layout).toMatch(/gap:\s*4px 12px;/);
+    expect(style('.twr-app .control-rules li > span')).toMatch(/min-width:\s*0;/);
+    expect(style('.twr-app .control-rules li > .act')).toMatch(/flex:\s*none;/);
+  });
   it('keeps the native landing lazy and first, and all MFL references below it', () => {
     const source = readFileSync(new URL('../control/LeagueRoom.tsx', import.meta.url), 'utf8');
     expect(source).toContain("lazy(() => import('../commissioner/LeagueLanding'))");
@@ -71,6 +88,19 @@ describe('League landing wire and search', () => {
 });
 
 describe('League jobs strip', () => {
+  it('dims every non-live job at the clickable surface without fading its text or focus', () => {
+    const strip = Object.values(jobsWire).map(wire =>
+      html(createElement(JobsStrip, { jobs: parseJobs(wire) }))).join('');
+    for (const state of ['upcoming', 'blocked', 'unbuilt'])
+      expect(strip).toContain(`class="job job-${state}"`);
+    expect(strip).toContain('class="job job-live"');
+    expect(style('.twr-app .job:not(.job-live) .act')).toMatch(/color:\s*var\(--surface-tx2\);/);
+    expect(style('.twr-app .job:not(.job-live) strong')).toMatch(/font-weight:\s*400;/);
+    expect(style('.twr-app .job-live strong')).toMatch(/font-weight:\s*700;/);
+    expect(style('.twr-app .job-live')).toMatch(/color:\s*var\(--surface-tx1\);/);
+    const jobStyles = [...css.matchAll(/\.twr-app \.job[^{}]*\{([^}]*)\}/g)].map(m => m[1]).join('');
+    expect(jobStyles).not.toMatch(/opacity:|pointer-events:|outline:\s*(none|0)/);
+  });
   it('renders the Go wire in live-first order, blocked reasons and truthful unbuilt states', () => {
     for (const view of Object.values(jobsWire)) {
       const reading = parseJobs(view);

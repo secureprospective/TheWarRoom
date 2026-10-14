@@ -163,7 +163,14 @@ func startingSource(preset, state, citation string) string {
 		if _, detail, ok := strings.Cut(citation, ":"); ok && strings.TrimSpace(detail) != "" {
 			return "Needs a ruling: " + strings.TrimSpace(detail)
 		}
-		return "Needs a ruling"
+		detail := strings.TrimSpace(citation)
+		if detail == "" || strings.HasPrefix(detail, "Census ") || strings.HasPrefix(detail, "fact ") {
+			return "Needs a ruling"
+		}
+		if strings.HasPrefix(detail, "Needs a ruling") {
+			return detail
+		}
+		return "Needs a ruling: " + detail
 	}
 	if preset == PresetEmpty {
 		return "Empty league default"
