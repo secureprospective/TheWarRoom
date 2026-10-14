@@ -179,9 +179,15 @@ export function TargetNativePlayerScore(arg1:string,arg2:string,arg3:number,arg4
 
 export function TargetNativeReserveCheck(arg1:string):Promise<commissioner.NativeReserveCheck>;
 
+export function TargetNativeResults(arg1:string,arg2:number,arg3:number):Promise<commissioner.NativeResults>;
+
 export function TargetNativeRosterCheck(arg1:string):Promise<commissioner.NativeRosterCheck>;
 
+export function TargetNativeScorePreview(arg1:string):Promise<commissioner.ScorePreview>;
+
 export function TargetNativeSeed(arg1:main.RawNativeSeedRequest):Promise<commissioner.Receipt>;
+
+export function TargetNativeStandings(arg1:string,arg2:number):Promise<commissioner.NativeStandings>;
 
 export function TargetNow(arg1:number,arg2:number,arg3:string):Promise<main.NowBoard>;
 

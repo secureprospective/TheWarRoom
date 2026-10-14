@@ -108,11 +108,6 @@ func (r RawCommand) validateScorePlacement() error {
 	return nil
 }
 
-// ResultFlipCheck is unknown until native results can prove whether a player adjustment flips a game.
-func ResultFlipCheck(_ RawScoreChange) leaguerules.Value[bool] {
-	return leaguerules.Needs[bool]("A change of game result is not known yet")
-}
-
 func scoreChangeLabel(command string, change RawScoreChange) string {
 	switch command {
 	case PlayerPosition:

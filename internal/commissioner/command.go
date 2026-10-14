@@ -73,7 +73,7 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G2"}, nil
 	case PlayerPosition, PlayerPositionClear, ScorePlayer:
 		return Definition{Gravity: "G2"}, nil
-	case ScoreFranchise:
+	case ScoreFranchise, StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear:
 		return Definition{Gravity: "G3"}, nil
 	default:
 		if d, ok := peopleDefinitionFor(command); ok {
@@ -98,11 +98,12 @@ type RawArgs struct {
 	Schedule       *RawScheduleArgs    `json:"schedule,omitempty"`
 	Window         *RawWindowArgs      `json:"window,omitempty"`
 	Score          *RawScoreChange     `json:"score,omitempty"`
+	Standings      *RawStandingsChange `json:"standings,omitempty"`
 }
 
 // validateDetails refuses arguments that belong to another command.
 func (a RawArgs) validateDetails(command string) error {
-	if (command != NativeSeed && a.Native != nil) || a.Schedule != nil || a.Window != nil || a.Score != nil ||
+	if (command != NativeSeed && a.Native != nil) || a.Schedule != nil || a.Window != nil || a.Score != nil || a.Standings != nil ||
 		(command != CalendarException && a.Exception != nil) || a.foreignRuleArgs(command) {
 		return fmt.Errorf("send only the details of this league action")
 	}
@@ -112,6 +113,10 @@ func (a RawArgs) validateDetails(command string) error {
 func (a RawArgs) Validate(command string) error {
 	if isScoreCommand(command) {
 		_, err := DecodeScoreChange(a, command)
+		return err
+	}
+	if isStandingsCommand(command) {
+		_, err := DecodeStandingsChange(a, command)
 		return err
 	}
 	if scheduleCommand(command) {
@@ -201,6 +206,8 @@ func publicNowRule(command string) string {
 		return "the starting snapshot is recorded now for every owner"
 	case windowCommand(command):
 		return "window changes take effect now and are visible to every owner"
+	case isStandingsCommand(command):
+		return "standings overrides take effect now and are shown to the league"
 	case command == CalendarException:
 		return "window exceptions take effect now and are visible to every owner"
 	}

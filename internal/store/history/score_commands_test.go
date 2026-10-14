@@ -259,7 +259,7 @@ func TestNativeScoreCommandRefusalsDoNotAppend(t *testing.T) {
 	}
 }
 
-func TestNativeScoreDeltaValidationAndSeam(t *testing.T) {
+func TestNativeScoreDeltaValidation(t *testing.T) {
 	for _, change := range []commissioner.RawScoreChange{
 		{Player: "0099", Season: 2025, Week: 1},
 		{Player: "0099", Season: 2025, Week: 1, Delta: pointsDelta(0)},
@@ -270,10 +270,6 @@ func TestNativeScoreDeltaValidationAndSeam(t *testing.T) {
 		if err := change.Validate(commissioner.ScorePlayer); err == nil {
 			t.Fatalf("invalid delta: %+v", change)
 		}
-	}
-	seam := commissioner.ResultFlipCheck(commissioner.RawScoreChange{Player: "0099", Season: 2025, Week: 1, Delta: pointsDelta(math.MaxInt64)})
-	if seam.State != leaguerules.NeedsRuling || !strings.Contains(seam.Citation, "not known yet") {
-		t.Fatalf("result flip asserted without results: %+v", seam)
 	}
 }
 

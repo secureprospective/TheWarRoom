@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 )
 
@@ -38,6 +39,10 @@ type Store struct {
 	pools *db.Pools
 	reg   *measures.Registry
 	now   func() time.Time
+
+	// evidence and lineups feed native results; zero values read the held archive and no lineups.
+	evidence func(context.Context, source.RawNativeScope) (source.NativeEvidence, error)
+	lineups  LineupSource
 
 	wmu sync.Mutex
 }

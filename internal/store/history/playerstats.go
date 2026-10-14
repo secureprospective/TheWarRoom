@@ -66,24 +66,44 @@ func (s *Store) NativePlayerScore(ctx context.Context, league string,
 	if err != nil {
 		return commissioner.NativePlayerScore{}, err
 	}
-	seeded := false
-	for _, record := range records {
-		seeded = seeded || record.Command.Command == commissioner.NativeSeed
-	}
-	if !seeded {
-		reading, err := commissioner.NativePlayerScoreReading(league, scope, records, source.NativeEvidence{}, s.now())
-		if err != nil {
-			return reading, fmt.Errorf("read native score: %w", err)
+	return s.scorePlayer(ctx, league, records, scope)
+}
+
+// scorePlayer scores one player under the given ledger. An unseeded league reads no NFL statistics, so
+// an ordinal season is never taken for an NFL one.
+func (s *Store) scorePlayer(ctx context.Context, league string, records []commissioner.Record,
+	scope source.RawNativeScope) (commissioner.NativePlayerScore, error) {
+	evidence := source.NativeEvidence{}
+	if nativeSeeded(records) {
+		var err error
+		if evidence, err = s.nativeEvidence(ctx, scope); err != nil {
+			return commissioner.NativePlayerScore{}, fmt.Errorf("read native score evidence: %w", err)
 		}
-		return reading, nil
-	}
-	evidence, err := source.ReadNativeEvidence(ctx, s, s, scope)
-	if err != nil {
-		return commissioner.NativePlayerScore{}, fmt.Errorf("read native score evidence: %w", err)
 	}
 	reading, err := commissioner.NativePlayerScoreReading(league, scope, records, evidence, s.now())
 	if err != nil {
 		return commissioner.NativePlayerScore{}, fmt.Errorf("read native score: %w", err)
 	}
 	return reading, nil
+}
+
+func nativeSeeded(records []commissioner.Record) bool {
+	for _, record := range records {
+		if record.Command.Command == commissioner.NativeSeed {
+			return true
+		}
+	}
+	return false
+}
+
+// nativeEvidence reads the held NFL evidence for a player's week; tests replace it with supplied evidence.
+func (s *Store) nativeEvidence(ctx context.Context, scope source.RawNativeScope) (source.NativeEvidence, error) {
+	if s.evidence != nil {
+		return s.evidence(ctx, scope)
+	}
+	out, err := source.ReadNativeEvidence(ctx, s, s, scope)
+	if err != nil {
+		return out, fmt.Errorf("read held native evidence: %w", err)
+	}
+	return out, nil
 }

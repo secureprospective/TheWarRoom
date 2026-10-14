@@ -1,0 +1,164 @@
+package commissioner
+
+import (
+	"context"
+	"fmt"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+)
+
+// Game statuses: a result needs both scores complete; a level score is a tie, never a coin toss.
+const (
+	GameFinal    = "Final"
+	GameTie      = "Tie"
+	GameNoResult = "No result yet"
+)
+
+// NativeGame is one published head-to-head game and, when both scores are complete, its result.
+type NativeGame struct {
+	Week       int                  `json:"week"`
+	Home       string               `json:"home"`
+	Away       string               `json:"away"`
+	HomeName   string               `json:"homeName"`
+	AwayName   string               `json:"awayName"`
+	Status     string               `json:"status"`
+	HomePoints *leaguerules.Decimal `json:"homePoints,omitempty"`
+	AwayPoints *leaguerules.Decimal `json:"awayPoints,omitempty"`
+	Winner     string               `json:"winner,omitempty"`
+	Words      string               `json:"words"`
+	Why        []string             `json:"why"`
+}
+
+// NativeResults is one week of the published schedule scored under the league's own rules.
+type NativeResults struct {
+	League    string               `json:"league"`
+	Season    int                  `json:"season"`
+	Week      int                  `json:"week"`
+	Revision  int64                `json:"revision"`
+	Published bool                 `json:"published"`
+	Words     string               `json:"words"`
+	Games     []NativeGame         `json:"games"`
+	Bye       string               `json:"bye,omitempty"`
+	ByeName   string               `json:"byeName,omitempty"`
+	Scores    []FranchiseWeekScore `json:"scores"`
+}
+
+// NativeResultsReading scores a published week. Nothing is guessed: a game missing either score has no
+// result yet and says why.
+func NativeResultsReading(ctx context.Context, league string, records []Record, src ResultSources, season, week int,
+	now time.Time) (NativeResults, error) {
+	if week < 1 || week > 22 || season < 1920 || season > 9999 {
+		return NativeResults{}, fmt.Errorf("choose a season and week")
+	}
+	directory, err := NativeDirectoryReading(league, records, now)
+	if err != nil {
+		return NativeResults{}, err
+	}
+	published, err := resultSchedule(records, season, now)
+	if err != nil {
+		return NativeResults{}, err
+	}
+	return weekResults(ctx, league, records, src, directory, published, season, week)
+}
+
+func weekResults(ctx context.Context, league string, records []Record, src ResultSources, directory NativeDirectory,
+	published []ScheduleWeek, season, week int) (NativeResults, error) {
+	out := NativeResults{League: league, Season: season, Week: week, Revision: int64(len(records)),
+		Published: len(published) != 0, Games: []NativeGame{}, Scores: []FranchiseWeekScore{}}
+	if !out.Published {
+		out.Words = "The league schedule is not published yet, so there are no games to score"
+		return out, nil
+	}
+	index := slices.IndexFunc(published, func(w ScheduleWeek) bool { return w.Week == week })
+	if index < 0 {
+		out.Words = fmt.Sprintf("Week %d is not in the published schedule", week)
+		return out, nil
+	}
+	names := directory.seats()
+	scored := map[string]FranchiseWeekScore{}
+	for _, game := range published[index].Games {
+		for _, id := range []string{game.Home, game.Away} {
+			score, err := franchiseWeekScore(ctx, records, src, names.of(id), season, week)
+			if err != nil {
+				return NativeResults{}, err
+			}
+			scored[id] = score
+			out.Scores = append(out.Scores, score)
+		}
+		out.Games = append(out.Games, gameResult(week, names.of(game.Home), names.of(game.Away),
+			scored[game.Home], scored[game.Away]))
+	}
+	if bye := published[index].Bye; bye != "" {
+		out.Bye, out.ByeName = bye, names.of(bye).Name
+		score, err := franchiseWeekScore(ctx, records, src, names.of(bye), season, week)
+		if err != nil {
+			return NativeResults{}, err
+		}
+		out.Scores = append(out.Scores, score)
+	}
+	out.Words = resultsWords(out)
+	return out, nil
+}
+
+func resultsWords(r NativeResults) string {
+	decided := 0
+	for _, g := range r.Games {
+		if g.Status != GameNoResult {
+			decided++
+		}
+	}
+	return fmt.Sprintf("%d of %d games in week %d have a result", decided, len(r.Games), r.Week)
+}
+
+// gameResult turns two franchise scores into a result. Either score being incomplete leaves the game
+// without one.
+func gameResult(week int, home, away NativeDirectorySeat, hs, as FranchiseWeekScore) NativeGame {
+	game := NativeGame{Week: week, Home: home.Franchise, Away: away.Franchise, HomeName: home.Name,
+		AwayName: away.Name, Status: GameNoResult, Why: []string{}}
+	for _, s := range []FranchiseWeekScore{hs, as} {
+		if s.Points == nil {
+			game.Why = append(game.Why, s.Words)
+		}
+	}
+	if len(game.Why) != 0 {
+		game.Words = "No result yet: " + strings.Join(game.Why, " ")
+		return game
+	}
+	game.HomePoints, game.AwayPoints = hs.Points, as.Points
+	switch {
+	case *hs.Points == *as.Points:
+		game.Status = GameTie
+		game.Words = fmt.Sprintf("%s and %s tied at %s", home.Name, away.Name, scorePointsWords(*hs.Points))
+	case *hs.Points > *as.Points:
+		game.Status, game.Winner = GameFinal, home.Franchise
+		game.Words = finalWords(home.Name, away.Name, *hs.Points, *as.Points)
+	default:
+		game.Status, game.Winner = GameFinal, away.Franchise
+		game.Words = finalWords(away.Name, home.Name, *as.Points, *hs.Points)
+	}
+	return game
+}
+
+func finalWords(winner, loser string, high, low leaguerules.Decimal) string {
+	return fmt.Sprintf("%s beat %s, %s to %s", winner, loser, scorePointsWords(high), scorePointsWords(low))
+}
+
+// A closed season keeps its published schedule; later seasons' edits do not rewrite its games.
+func resultSchedule(records []Record, season int, now time.Time) ([]ScheduleWeek, error) {
+	at := ReadingInstant(records, now)
+	if _, err := RulesInForce(records, season, at); err != nil {
+		return nil, err
+	}
+	starts, err := rolloverInstants(records)
+	if err != nil {
+		return nil, err
+	}
+	if index := season - firstSeason(records); index < len(starts) && !at.Before(starts[index]) {
+		at = starts[index].Add(-time.Nanosecond)
+	}
+	_, published, err := replaySchedule(recordsThrough(records, at))
+	return published, err
+}

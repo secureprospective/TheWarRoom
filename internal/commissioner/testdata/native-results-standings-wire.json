@@ -1,0 +1,3064 @@
+{
+  "preview": {
+    "command": "commish.score.franchise",
+    "words": "Adjusted franchise franchise.01 by 1.5001 points in season 2026, week 2",
+    "warnings": [
+      "We can't tell whether this changes a result. Held team 1 v Held team 32: Held team 1's score is incomplete: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 32's score is incomplete: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported Held team 1's score is incomplete: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 32's score is incomplete: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported Held team 2 v Held team 31: Held team 2's score is incomplete: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 31's score is incomplete: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 2's score is incomplete: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 31's score is incomplete: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 3 v Held team 30: Held team 3's score is incomplete: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 30's score is incomplete: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 3's score is incomplete: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 30's score is incomplete: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 4 v Held team 29: Held team 4's score is incomplete: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 29's score is incomplete: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 4's score is incomplete: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 29's score is incomplete: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 5 v Held team 28: Held team 5's score is incomplete: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 28's score is incomplete: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 5's score is incomplete: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 28's score is incomplete: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 6 v Held team 27: Held team 6's score is incomplete: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 27's score is incomplete: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 6's score is incomplete: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 27's score is incomplete: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 7 v Held team 26: Held team 7's score is incomplete: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 26's score is incomplete: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 7's score is incomplete: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 26's score is incomplete: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 8 v Held team 25: Held team 8's score is incomplete: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 25's score is incomplete: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 8's score is incomplete: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 25's score is incomplete: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 9 v Held team 24: Held team 9's score is incomplete: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 24's score is incomplete: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 9's score is incomplete: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 24's score is incomplete: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 10 v Held team 23: Held team 10's score is incomplete: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 23's score is incomplete: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 10's score is incomplete: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 23's score is incomplete: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 11 v Held team 22: Held team 11's score is incomplete: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 22's score is incomplete: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 11's score is incomplete: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 22's score is incomplete: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 12 v Held team 21: Held team 12's score is incomplete: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 21's score is incomplete: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 12's score is incomplete: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 21's score is incomplete: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 13 v Held team 20: Held team 13's score is incomplete: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 20's score is incomplete: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 13's score is incomplete: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 20's score is incomplete: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 14 v Held team 19: Held team 14's score is incomplete: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 19's score is incomplete: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 14's score is incomplete: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 19's score is incomplete: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 15 v Held team 18: Held team 15's score is incomplete: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 18's score is incomplete: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 15's score is incomplete: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 18's score is incomplete: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 16 v Held team 17: Held team 16's score is incomplete: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 17's score is incomplete: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 16's score is incomplete: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 17's score is incomplete: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+    ],
+    "flip": {
+      "status": "Not known",
+      "words": "We can't tell whether this changes a result. Held team 1 v Held team 32: Held team 1's score is incomplete: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 32's score is incomplete: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported Held team 1's score is incomplete: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 32's score is incomplete: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported Held team 2 v Held team 31: Held team 2's score is incomplete: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 31's score is incomplete: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 2's score is incomplete: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 31's score is incomplete: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 3 v Held team 30: Held team 3's score is incomplete: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 30's score is incomplete: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 3's score is incomplete: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 30's score is incomplete: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 4 v Held team 29: Held team 4's score is incomplete: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 29's score is incomplete: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 4's score is incomplete: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 29's score is incomplete: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 5 v Held team 28: Held team 5's score is incomplete: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 28's score is incomplete: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 5's score is incomplete: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 28's score is incomplete: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 6 v Held team 27: Held team 6's score is incomplete: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 27's score is incomplete: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 6's score is incomplete: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 27's score is incomplete: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 7 v Held team 26: Held team 7's score is incomplete: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 26's score is incomplete: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 7's score is incomplete: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 26's score is incomplete: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 8 v Held team 25: Held team 8's score is incomplete: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 25's score is incomplete: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 8's score is incomplete: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 25's score is incomplete: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 9 v Held team 24: Held team 9's score is incomplete: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 24's score is incomplete: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 9's score is incomplete: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 24's score is incomplete: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 10 v Held team 23: Held team 10's score is incomplete: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 23's score is incomplete: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 10's score is incomplete: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 23's score is incomplete: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 11 v Held team 22: Held team 11's score is incomplete: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 22's score is incomplete: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 11's score is incomplete: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 22's score is incomplete: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 12 v Held team 21: Held team 12's score is incomplete: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 21's score is incomplete: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 12's score is incomplete: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 21's score is incomplete: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 13 v Held team 20: Held team 13's score is incomplete: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 20's score is incomplete: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 13's score is incomplete: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 20's score is incomplete: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 14 v Held team 19: Held team 14's score is incomplete: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 19's score is incomplete: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 14's score is incomplete: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 19's score is incomplete: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 15 v Held team 18: Held team 15's score is incomplete: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 18's score is incomplete: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 15's score is incomplete: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 18's score is incomplete: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 16 v Held team 17: Held team 16's score is incomplete: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 17's score is incomplete: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 16's score is incomplete: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 17's score is incomplete: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+      "flips": []
+    }
+  },
+  "results": {
+    "league": "native.test",
+    "season": 2026,
+    "week": 2,
+    "revision": 7,
+    "published": true,
+    "words": "16 of 16 games in week 2 have a result",
+    "games": [
+      {
+        "week": 2,
+        "home": "franchise.01",
+        "away": "franchise.32",
+        "homeName": "Held team 1",
+        "awayName": "Held team 32",
+        "status": "Final",
+        "homePoints": 15000,
+        "awayPoints": 30000,
+        "winner": "franchise.32",
+        "words": "Held team 32 beat Held team 1, 3 to 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.02",
+        "away": "franchise.31",
+        "homeName": "Held team 2",
+        "awayName": "Held team 31",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 2 and Held team 31 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.03",
+        "away": "franchise.30",
+        "homeName": "Held team 3",
+        "awayName": "Held team 30",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 3 and Held team 30 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.04",
+        "away": "franchise.29",
+        "homeName": "Held team 4",
+        "awayName": "Held team 29",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 4 and Held team 29 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.05",
+        "away": "franchise.28",
+        "homeName": "Held team 5",
+        "awayName": "Held team 28",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 5 and Held team 28 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.06",
+        "away": "franchise.27",
+        "homeName": "Held team 6",
+        "awayName": "Held team 27",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 6 and Held team 27 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.07",
+        "away": "franchise.26",
+        "homeName": "Held team 7",
+        "awayName": "Held team 26",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 7 and Held team 26 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.08",
+        "away": "franchise.25",
+        "homeName": "Held team 8",
+        "awayName": "Held team 25",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 8 and Held team 25 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.09",
+        "away": "franchise.24",
+        "homeName": "Held team 9",
+        "awayName": "Held team 24",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 9 and Held team 24 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.10",
+        "away": "franchise.23",
+        "homeName": "Held team 10",
+        "awayName": "Held team 23",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 10 and Held team 23 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.11",
+        "away": "franchise.22",
+        "homeName": "Held team 11",
+        "awayName": "Held team 22",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 11 and Held team 22 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.12",
+        "away": "franchise.21",
+        "homeName": "Held team 12",
+        "awayName": "Held team 21",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 12 and Held team 21 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.13",
+        "away": "franchise.20",
+        "homeName": "Held team 13",
+        "awayName": "Held team 20",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 13 and Held team 20 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.14",
+        "away": "franchise.19",
+        "homeName": "Held team 14",
+        "awayName": "Held team 19",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 14 and Held team 19 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.15",
+        "away": "franchise.18",
+        "homeName": "Held team 15",
+        "awayName": "Held team 18",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 15 and Held team 18 tied at 1.5",
+        "why": []
+      },
+      {
+        "week": 2,
+        "home": "franchise.16",
+        "away": "franchise.17",
+        "homeName": "Held team 16",
+        "awayName": "Held team 17",
+        "status": "Tie",
+        "homePoints": 15000,
+        "awayPoints": 15000,
+        "words": "Held team 16 and Held team 17 tied at 1.5",
+        "why": []
+      }
+    ],
+    "scores": [
+      {
+        "franchise": "franchise.01",
+        "name": "Held team 1",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 1 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1001",
+            "name": "franchise.01 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.32",
+        "name": "Held team 32",
+        "status": "Complete",
+        "points": 30000,
+        "words": "Held team 32 scored 3 points",
+        "starters": [
+          {
+            "player": "1032",
+            "name": "franchise.32 starter",
+            "words": "3 points",
+            "points": 30000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.02",
+        "name": "Held team 2",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 2 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1002",
+            "name": "franchise.02 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.31",
+        "name": "Held team 31",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 31 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1031",
+            "name": "franchise.31 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.03",
+        "name": "Held team 3",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 3 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1003",
+            "name": "franchise.03 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.30",
+        "name": "Held team 30",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 30 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1030",
+            "name": "franchise.30 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.04",
+        "name": "Held team 4",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 4 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1004",
+            "name": "franchise.04 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.29",
+        "name": "Held team 29",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 29 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1029",
+            "name": "franchise.29 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.05",
+        "name": "Held team 5",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 5 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1005",
+            "name": "franchise.05 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.28",
+        "name": "Held team 28",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 28 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1028",
+            "name": "franchise.28 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.06",
+        "name": "Held team 6",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 6 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1006",
+            "name": "franchise.06 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.27",
+        "name": "Held team 27",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 27 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1027",
+            "name": "franchise.27 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.07",
+        "name": "Held team 7",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 7 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1007",
+            "name": "franchise.07 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.26",
+        "name": "Held team 26",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 26 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1026",
+            "name": "franchise.26 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.08",
+        "name": "Held team 8",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 8 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1008",
+            "name": "franchise.08 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.25",
+        "name": "Held team 25",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 25 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1025",
+            "name": "franchise.25 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.09",
+        "name": "Held team 9",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 9 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1009",
+            "name": "franchise.09 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.24",
+        "name": "Held team 24",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 24 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1024",
+            "name": "franchise.24 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.10",
+        "name": "Held team 10",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 10 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1010",
+            "name": "franchise.10 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.23",
+        "name": "Held team 23",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 23 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1023",
+            "name": "franchise.23 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.11",
+        "name": "Held team 11",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 11 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1011",
+            "name": "franchise.11 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.22",
+        "name": "Held team 22",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 22 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1022",
+            "name": "franchise.22 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.12",
+        "name": "Held team 12",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 12 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1012",
+            "name": "franchise.12 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.21",
+        "name": "Held team 21",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 21 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1021",
+            "name": "franchise.21 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.13",
+        "name": "Held team 13",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 13 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1013",
+            "name": "franchise.13 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.20",
+        "name": "Held team 20",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 20 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1020",
+            "name": "franchise.20 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.14",
+        "name": "Held team 14",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 14 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1014",
+            "name": "franchise.14 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.19",
+        "name": "Held team 19",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 19 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1019",
+            "name": "franchise.19 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.15",
+        "name": "Held team 15",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 15 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1015",
+            "name": "franchise.15 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.18",
+        "name": "Held team 18",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 18 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1018",
+            "name": "franchise.18 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.16",
+        "name": "Held team 16",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 16 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1016",
+            "name": "franchise.16 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.17",
+        "name": "Held team 17",
+        "status": "Complete",
+        "points": 15000,
+        "words": "Held team 17 scored 1.5 points",
+        "starters": [
+          {
+            "player": "1017",
+            "name": "franchise.17 starter",
+            "words": "1.5 points",
+            "points": 15000
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      }
+    ]
+  },
+  "incomplete": {
+    "league": "native.test",
+    "season": 2026,
+    "week": 2,
+    "revision": 8,
+    "published": true,
+    "words": "0 of 16 games in week 2 have a result",
+    "games": [
+      {
+        "week": 2,
+        "home": "franchise.01",
+        "away": "franchise.32",
+        "homeName": "Held team 1",
+        "awayName": "Held team 32",
+        "status": "No result yet",
+        "words": "No result yet: Held team 1's score is incomplete: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 32's score is incomplete: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 1's score is incomplete: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 32's score is incomplete: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.02",
+        "away": "franchise.31",
+        "homeName": "Held team 2",
+        "awayName": "Held team 31",
+        "status": "No result yet",
+        "words": "No result yet: Held team 2's score is incomplete: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 31's score is incomplete: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 2's score is incomplete: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 31's score is incomplete: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.03",
+        "away": "franchise.30",
+        "homeName": "Held team 3",
+        "awayName": "Held team 30",
+        "status": "No result yet",
+        "words": "No result yet: Held team 3's score is incomplete: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 30's score is incomplete: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 3's score is incomplete: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 30's score is incomplete: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.04",
+        "away": "franchise.29",
+        "homeName": "Held team 4",
+        "awayName": "Held team 29",
+        "status": "No result yet",
+        "words": "No result yet: Held team 4's score is incomplete: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 29's score is incomplete: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 4's score is incomplete: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 29's score is incomplete: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.05",
+        "away": "franchise.28",
+        "homeName": "Held team 5",
+        "awayName": "Held team 28",
+        "status": "No result yet",
+        "words": "No result yet: Held team 5's score is incomplete: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 28's score is incomplete: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 5's score is incomplete: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 28's score is incomplete: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.06",
+        "away": "franchise.27",
+        "homeName": "Held team 6",
+        "awayName": "Held team 27",
+        "status": "No result yet",
+        "words": "No result yet: Held team 6's score is incomplete: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 27's score is incomplete: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 6's score is incomplete: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 27's score is incomplete: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.07",
+        "away": "franchise.26",
+        "homeName": "Held team 7",
+        "awayName": "Held team 26",
+        "status": "No result yet",
+        "words": "No result yet: Held team 7's score is incomplete: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 26's score is incomplete: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 7's score is incomplete: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 26's score is incomplete: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.08",
+        "away": "franchise.25",
+        "homeName": "Held team 8",
+        "awayName": "Held team 25",
+        "status": "No result yet",
+        "words": "No result yet: Held team 8's score is incomplete: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 25's score is incomplete: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 8's score is incomplete: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 25's score is incomplete: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.09",
+        "away": "franchise.24",
+        "homeName": "Held team 9",
+        "awayName": "Held team 24",
+        "status": "No result yet",
+        "words": "No result yet: Held team 9's score is incomplete: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 24's score is incomplete: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 9's score is incomplete: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 24's score is incomplete: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.10",
+        "away": "franchise.23",
+        "homeName": "Held team 10",
+        "awayName": "Held team 23",
+        "status": "No result yet",
+        "words": "No result yet: Held team 10's score is incomplete: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 23's score is incomplete: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 10's score is incomplete: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 23's score is incomplete: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.11",
+        "away": "franchise.22",
+        "homeName": "Held team 11",
+        "awayName": "Held team 22",
+        "status": "No result yet",
+        "words": "No result yet: Held team 11's score is incomplete: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 22's score is incomplete: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 11's score is incomplete: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 22's score is incomplete: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.12",
+        "away": "franchise.21",
+        "homeName": "Held team 12",
+        "awayName": "Held team 21",
+        "status": "No result yet",
+        "words": "No result yet: Held team 12's score is incomplete: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 21's score is incomplete: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 12's score is incomplete: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 21's score is incomplete: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.13",
+        "away": "franchise.20",
+        "homeName": "Held team 13",
+        "awayName": "Held team 20",
+        "status": "No result yet",
+        "words": "No result yet: Held team 13's score is incomplete: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 20's score is incomplete: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 13's score is incomplete: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 20's score is incomplete: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.14",
+        "away": "franchise.19",
+        "homeName": "Held team 14",
+        "awayName": "Held team 19",
+        "status": "No result yet",
+        "words": "No result yet: Held team 14's score is incomplete: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 19's score is incomplete: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 14's score is incomplete: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 19's score is incomplete: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.15",
+        "away": "franchise.18",
+        "homeName": "Held team 15",
+        "awayName": "Held team 18",
+        "status": "No result yet",
+        "words": "No result yet: Held team 15's score is incomplete: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 18's score is incomplete: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 15's score is incomplete: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 18's score is incomplete: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      },
+      {
+        "week": 2,
+        "home": "franchise.16",
+        "away": "franchise.17",
+        "homeName": "Held team 16",
+        "awayName": "Held team 17",
+        "status": "No result yet",
+        "words": "No result yet: Held team 16's score is incomplete: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 17's score is incomplete: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "why": [
+          "Held team 16's score is incomplete: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 17's score is incomplete: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+        ]
+      }
+    ],
+    "scores": [
+      {
+        "franchise": "franchise.01",
+        "name": "Held team 1",
+        "status": "Incomplete",
+        "words": "Held team 1's score is incomplete: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1001",
+            "name": "franchise.01 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.32",
+        "name": "Held team 32",
+        "status": "Incomplete",
+        "words": "Held team 32's score is incomplete: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1032",
+            "name": "franchise.32 starter",
+            "words": "3 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.02",
+        "name": "Held team 2",
+        "status": "Incomplete",
+        "words": "Held team 2's score is incomplete: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1002",
+            "name": "franchise.02 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.31",
+        "name": "Held team 31",
+        "status": "Incomplete",
+        "words": "Held team 31's score is incomplete: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1031",
+            "name": "franchise.31 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.03",
+        "name": "Held team 3",
+        "status": "Incomplete",
+        "words": "Held team 3's score is incomplete: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1003",
+            "name": "franchise.03 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.30",
+        "name": "Held team 30",
+        "status": "Incomplete",
+        "words": "Held team 30's score is incomplete: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1030",
+            "name": "franchise.30 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.04",
+        "name": "Held team 4",
+        "status": "Incomplete",
+        "words": "Held team 4's score is incomplete: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1004",
+            "name": "franchise.04 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.29",
+        "name": "Held team 29",
+        "status": "Incomplete",
+        "words": "Held team 29's score is incomplete: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1029",
+            "name": "franchise.29 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.05",
+        "name": "Held team 5",
+        "status": "Incomplete",
+        "words": "Held team 5's score is incomplete: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1005",
+            "name": "franchise.05 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.28",
+        "name": "Held team 28",
+        "status": "Incomplete",
+        "words": "Held team 28's score is incomplete: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1028",
+            "name": "franchise.28 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.06",
+        "name": "Held team 6",
+        "status": "Incomplete",
+        "words": "Held team 6's score is incomplete: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1006",
+            "name": "franchise.06 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.27",
+        "name": "Held team 27",
+        "status": "Incomplete",
+        "words": "Held team 27's score is incomplete: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1027",
+            "name": "franchise.27 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.07",
+        "name": "Held team 7",
+        "status": "Incomplete",
+        "words": "Held team 7's score is incomplete: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1007",
+            "name": "franchise.07 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.26",
+        "name": "Held team 26",
+        "status": "Incomplete",
+        "words": "Held team 26's score is incomplete: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1026",
+            "name": "franchise.26 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.08",
+        "name": "Held team 8",
+        "status": "Incomplete",
+        "words": "Held team 8's score is incomplete: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1008",
+            "name": "franchise.08 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.25",
+        "name": "Held team 25",
+        "status": "Incomplete",
+        "words": "Held team 25's score is incomplete: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1025",
+            "name": "franchise.25 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.09",
+        "name": "Held team 9",
+        "status": "Incomplete",
+        "words": "Held team 9's score is incomplete: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1009",
+            "name": "franchise.09 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.24",
+        "name": "Held team 24",
+        "status": "Incomplete",
+        "words": "Held team 24's score is incomplete: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1024",
+            "name": "franchise.24 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.10",
+        "name": "Held team 10",
+        "status": "Incomplete",
+        "words": "Held team 10's score is incomplete: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1010",
+            "name": "franchise.10 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.23",
+        "name": "Held team 23",
+        "status": "Incomplete",
+        "words": "Held team 23's score is incomplete: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1023",
+            "name": "franchise.23 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.11",
+        "name": "Held team 11",
+        "status": "Incomplete",
+        "words": "Held team 11's score is incomplete: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1011",
+            "name": "franchise.11 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.22",
+        "name": "Held team 22",
+        "status": "Incomplete",
+        "words": "Held team 22's score is incomplete: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1022",
+            "name": "franchise.22 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.12",
+        "name": "Held team 12",
+        "status": "Incomplete",
+        "words": "Held team 12's score is incomplete: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1012",
+            "name": "franchise.12 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.21",
+        "name": "Held team 21",
+        "status": "Incomplete",
+        "words": "Held team 21's score is incomplete: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1021",
+            "name": "franchise.21 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.13",
+        "name": "Held team 13",
+        "status": "Incomplete",
+        "words": "Held team 13's score is incomplete: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1013",
+            "name": "franchise.13 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.20",
+        "name": "Held team 20",
+        "status": "Incomplete",
+        "words": "Held team 20's score is incomplete: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1020",
+            "name": "franchise.20 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.14",
+        "name": "Held team 14",
+        "status": "Incomplete",
+        "words": "Held team 14's score is incomplete: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1014",
+            "name": "franchise.14 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.19",
+        "name": "Held team 19",
+        "status": "Incomplete",
+        "words": "Held team 19's score is incomplete: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1019",
+            "name": "franchise.19 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.15",
+        "name": "Held team 15",
+        "status": "Incomplete",
+        "words": "Held team 15's score is incomplete: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1015",
+            "name": "franchise.15 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.18",
+        "name": "Held team 18",
+        "status": "Incomplete",
+        "words": "Held team 18's score is incomplete: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1018",
+            "name": "franchise.18 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.16",
+        "name": "Held team 16",
+        "status": "Incomplete",
+        "words": "Held team 16's score is incomplete: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1016",
+            "name": "franchise.16 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      },
+      {
+        "franchise": "franchise.17",
+        "name": "Held team 17",
+        "status": "Incomplete",
+        "words": "Held team 17's score is incomplete: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "starters": [
+          {
+            "player": "1017",
+            "name": "franchise.17 starter",
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+          }
+        ],
+        "adjustment": 0,
+        "changes": []
+      }
+    ]
+  },
+  "standings": {
+    "league": "native.test",
+    "name": "Rules league",
+    "season": 2026,
+    "revision": 7,
+    "status": "Ranked",
+    "words": "Standings through week 3: 48 games have a result, 0 do not yet",
+    "through": 3,
+    "decided": 48,
+    "pending": 0,
+    "criteria": [
+      "winning percentage",
+      "head-to-head record",
+      "division record",
+      "conference record",
+      "all-play record",
+      "points scored",
+      "power rank"
+    ],
+    "noData": [],
+    "computed": [
+      {
+        "rank": 1,
+        "franchise": "franchise.32",
+        "name": "Held team 32",
+        "division": "division.1",
+        "wins": 2,
+        "losses": 1,
+        "ties": 0,
+        "record": "2-1",
+        "pointsFor": 75000,
+        "pointsWords": "7.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2)."
+        ]
+      },
+      {
+        "rank": 2,
+        "franchise": "franchise.02",
+        "name": "Held team 2",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 3,
+        "franchise": "franchise.03",
+        "name": "Held team 3",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 4,
+        "franchise": "franchise.04",
+        "name": "Held team 4",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 5,
+        "franchise": "franchise.05",
+        "name": "Held team 5",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 6,
+        "franchise": "franchise.06",
+        "name": "Held team 6",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 7,
+        "franchise": "franchise.07",
+        "name": "Held team 7",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 8,
+        "franchise": "franchise.08",
+        "name": "Held team 8",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 9,
+        "franchise": "franchise.09",
+        "name": "Held team 9",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 10,
+        "franchise": "franchise.10",
+        "name": "Held team 10",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 11,
+        "franchise": "franchise.11",
+        "name": "Held team 11",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 12,
+        "franchise": "franchise.12",
+        "name": "Held team 12",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 13,
+        "franchise": "franchise.13",
+        "name": "Held team 13",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 14,
+        "franchise": "franchise.14",
+        "name": "Held team 14",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 15,
+        "franchise": "franchise.15",
+        "name": "Held team 15",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 16,
+        "franchise": "franchise.16",
+        "name": "Held team 16",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 17,
+        "franchise": "franchise.17",
+        "name": "Held team 17",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 18,
+        "franchise": "franchise.18",
+        "name": "Held team 18",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 19,
+        "franchise": "franchise.19",
+        "name": "Held team 19",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 20,
+        "franchise": "franchise.20",
+        "name": "Held team 20",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 21,
+        "franchise": "franchise.21",
+        "name": "Held team 21",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 22,
+        "franchise": "franchise.22",
+        "name": "Held team 22",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 23,
+        "franchise": "franchise.23",
+        "name": "Held team 23",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 24,
+        "franchise": "franchise.24",
+        "name": "Held team 24",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 25,
+        "franchise": "franchise.25",
+        "name": "Held team 25",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 26,
+        "franchise": "franchise.26",
+        "name": "Held team 26",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 27,
+        "franchise": "franchise.27",
+        "name": "Held team 27",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 28,
+        "franchise": "franchise.28",
+        "name": "Held team 28",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 29,
+        "franchise": "franchise.29",
+        "name": "Held team 29",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 30,
+        "franchise": "franchise.30",
+        "name": "Held team 30",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 31,
+        "franchise": "franchise.31",
+        "name": "Held team 31",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 32,
+        "franchise": "franchise.01",
+        "name": "Held team 1",
+        "division": "division.1",
+        "wins": 1,
+        "losses": 2,
+        "ties": 0,
+        "record": "1-2",
+        "pointsFor": 1530000,
+        "pointsWords": "153 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2)."
+        ]
+      }
+    ],
+    "changes": []
+  },
+  "override": {
+    "league": "native.test",
+    "name": "Rules league",
+    "season": 2026,
+    "revision": 8,
+    "status": "Ranked",
+    "words": "Standings through week 3: 48 games have a result, 0 do not yet",
+    "through": 3,
+    "decided": 48,
+    "pending": 0,
+    "criteria": [
+      "winning percentage",
+      "head-to-head record",
+      "division record",
+      "conference record",
+      "all-play record",
+      "points scored",
+      "power rank"
+    ],
+    "noData": [],
+    "computed": [
+      {
+        "rank": 1,
+        "franchise": "franchise.32",
+        "name": "Held team 32",
+        "division": "division.1",
+        "wins": 2,
+        "losses": 1,
+        "ties": 0,
+        "record": "2-1",
+        "pointsFor": 75000,
+        "pointsWords": "7.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2)."
+        ]
+      },
+      {
+        "rank": 2,
+        "franchise": "franchise.02",
+        "name": "Held team 2",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 3,
+        "franchise": "franchise.03",
+        "name": "Held team 3",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 4,
+        "franchise": "franchise.04",
+        "name": "Held team 4",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 5,
+        "franchise": "franchise.05",
+        "name": "Held team 5",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 6,
+        "franchise": "franchise.06",
+        "name": "Held team 6",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 7,
+        "franchise": "franchise.07",
+        "name": "Held team 7",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 8,
+        "franchise": "franchise.08",
+        "name": "Held team 8",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 9,
+        "franchise": "franchise.09",
+        "name": "Held team 9",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 10,
+        "franchise": "franchise.10",
+        "name": "Held team 10",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 11,
+        "franchise": "franchise.11",
+        "name": "Held team 11",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 12,
+        "franchise": "franchise.12",
+        "name": "Held team 12",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 13,
+        "franchise": "franchise.13",
+        "name": "Held team 13",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 14,
+        "franchise": "franchise.14",
+        "name": "Held team 14",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 15,
+        "franchise": "franchise.15",
+        "name": "Held team 15",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 16,
+        "franchise": "franchise.16",
+        "name": "Held team 16",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 17,
+        "franchise": "franchise.17",
+        "name": "Held team 17",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 18,
+        "franchise": "franchise.18",
+        "name": "Held team 18",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 19,
+        "franchise": "franchise.19",
+        "name": "Held team 19",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 20,
+        "franchise": "franchise.20",
+        "name": "Held team 20",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 21,
+        "franchise": "franchise.21",
+        "name": "Held team 21",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 22,
+        "franchise": "franchise.22",
+        "name": "Held team 22",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 23,
+        "franchise": "franchise.23",
+        "name": "Held team 23",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 24,
+        "franchise": "franchise.24",
+        "name": "Held team 24",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 25,
+        "franchise": "franchise.25",
+        "name": "Held team 25",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 26,
+        "franchise": "franchise.26",
+        "name": "Held team 26",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 27,
+        "franchise": "franchise.27",
+        "name": "Held team 27",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 28,
+        "franchise": "franchise.28",
+        "name": "Held team 28",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 29,
+        "franchise": "franchise.29",
+        "name": "Held team 29",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 30,
+        "franchise": "franchise.30",
+        "name": "Held team 30",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 31,
+        "franchise": "franchise.31",
+        "name": "Held team 31",
+        "division": "division.1",
+        "wins": 0,
+        "losses": 0,
+        "ties": 3,
+        "record": "0-0-3",
+        "pointsFor": 45000,
+        "pointsWords": "4.5 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2).",
+          "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+        ]
+      },
+      {
+        "rank": 32,
+        "franchise": "franchise.01",
+        "name": "Held team 1",
+        "division": "division.1",
+        "wins": 1,
+        "losses": 2,
+        "ties": 0,
+        "record": "1-2",
+        "pointsFor": 1530000,
+        "pointsWords": "153 points scored",
+        "why": [
+          "Winning percentage put Held team 32 (2-1) over 30 teams (0-0-3) over Held team 1 (1-2)."
+        ]
+      }
+    ],
+    "override": {
+      "words": "The commissioner's records stand beside the computed standings",
+      "rows": [
+        {
+          "rank": 1,
+          "franchise": "franchise.01",
+          "name": "Held team 1",
+          "division": "division.1",
+          "wins": 3,
+          "losses": 0,
+          "ties": 0,
+          "record": "3-0",
+          "computedRecord": "1-2",
+          "pointsFor": 1530000,
+          "pointsWords": "153 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3)."
+          ]
+        },
+        {
+          "rank": 2,
+          "franchise": "franchise.32",
+          "name": "Held team 32",
+          "division": "division.1",
+          "wins": 2,
+          "losses": 1,
+          "ties": 0,
+          "record": "2-1",
+          "pointsFor": 75000,
+          "pointsWords": "7.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3)."
+          ]
+        },
+        {
+          "rank": 3,
+          "franchise": "franchise.02",
+          "name": "Held team 2",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 4,
+          "franchise": "franchise.03",
+          "name": "Held team 3",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 5,
+          "franchise": "franchise.04",
+          "name": "Held team 4",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 6,
+          "franchise": "franchise.05",
+          "name": "Held team 5",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 7,
+          "franchise": "franchise.06",
+          "name": "Held team 6",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 8,
+          "franchise": "franchise.07",
+          "name": "Held team 7",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 9,
+          "franchise": "franchise.08",
+          "name": "Held team 8",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 10,
+          "franchise": "franchise.09",
+          "name": "Held team 9",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 11,
+          "franchise": "franchise.10",
+          "name": "Held team 10",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 12,
+          "franchise": "franchise.11",
+          "name": "Held team 11",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 13,
+          "franchise": "franchise.12",
+          "name": "Held team 12",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 14,
+          "franchise": "franchise.13",
+          "name": "Held team 13",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 15,
+          "franchise": "franchise.14",
+          "name": "Held team 14",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 16,
+          "franchise": "franchise.15",
+          "name": "Held team 15",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 17,
+          "franchise": "franchise.16",
+          "name": "Held team 16",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 18,
+          "franchise": "franchise.17",
+          "name": "Held team 17",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 19,
+          "franchise": "franchise.18",
+          "name": "Held team 18",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 20,
+          "franchise": "franchise.19",
+          "name": "Held team 19",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 21,
+          "franchise": "franchise.20",
+          "name": "Held team 20",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 22,
+          "franchise": "franchise.21",
+          "name": "Held team 21",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 23,
+          "franchise": "franchise.22",
+          "name": "Held team 22",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 24,
+          "franchise": "franchise.23",
+          "name": "Held team 23",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 25,
+          "franchise": "franchise.24",
+          "name": "Held team 24",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 26,
+          "franchise": "franchise.25",
+          "name": "Held team 25",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 27,
+          "franchise": "franchise.26",
+          "name": "Held team 26",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 28,
+          "franchise": "franchise.27",
+          "name": "Held team 27",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 29,
+          "franchise": "franchise.28",
+          "name": "Held team 28",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 30,
+          "franchise": "franchise.29",
+          "name": "Held team 29",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 31,
+          "franchise": "franchise.30",
+          "name": "Held team 30",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        },
+        {
+          "rank": 32,
+          "franchise": "franchise.31",
+          "name": "Held team 31",
+          "division": "division.1",
+          "wins": 0,
+          "losses": 0,
+          "ties": 3,
+          "record": "0-0-3",
+          "pointsFor": 45000,
+          "pointsWords": "4.5 points scored",
+          "why": [
+            "Winning percentage put Held team 1 (3-0) over Held team 32 (2-1) over 30 teams (0-0-3).",
+            "Head-to-head record did not apply: not every tied team has played every other. Conference record did not apply: the league has not said which conference Held team 2 is in. Power rank did not apply: no power rank is held for this league yet. 30 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+          ]
+        }
+      ],
+      "records": {
+        "franchise.01": {
+          "franchise": "franchise.01",
+          "wins": 3,
+          "losses": 0,
+          "ties": 0,
+          "entry": "act.ffa4fc36bc1cd3b6632431a7f390ab65fe67db328ba6698783987b4af8490430",
+          "reason": "Correct the season record"
+        }
+      }
+    },
+    "changes": [
+      {
+        "entry": "act.ffa4fc36bc1cd3b6632431a7f390ab65fe67db328ba6698783987b4af8490430",
+        "what": "Set the record of franchise.01 to 3-0 for season 2026",
+        "reason": "Correct the season record",
+        "status": "Applied"
+      }
+    ]
+  }
+}

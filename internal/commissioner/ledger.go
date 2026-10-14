@@ -154,6 +154,12 @@ func entryLabel(records []Record, i int) (string, error) {
 			return "", err
 		}
 		return scoreChangeLabel(r.Command.Command, change), nil
+	case StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear:
+		change, err := DecodeStandingsChange(r.Command.Args, r.Command.Command)
+		if err != nil {
+			return "", err
+		}
+		return standingsLabel(r.Command.Command, change), nil
 	case RulesSet:
 		return ruleLabel(r, records[:i])
 	case Revert:

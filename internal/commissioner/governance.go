@@ -89,8 +89,9 @@ func commandControls() map[string]string {
 		PlayerPosition: "CM-030", PlayerPositionClear: "CM-030",
 		ScorePlayer: "CM-032", ScoreFranchise: "CM-032",
 		WindowSet: "CM-023", WindowMove: "CM-023", WindowRemove: "CM-023",
-		CalendarException: "CM-026",
-		ScheduleGenerate:  "CM-015", ScheduleEdit: "CM-015", SchedulePublish: "CM-015",
+		CalendarException:     "CM-026",
+		StandingsRecordAdjust: "CM-033", StandingsOverride: "CM-033", StandingsOverrideClear: "CM-033",
+		ScheduleGenerate: "CM-015", ScheduleEdit: "CM-015", SchedulePublish: "CM-015",
 	}
 }
 
@@ -179,6 +180,8 @@ func CheckGovernanceAppend(raw RawCommand, principal string, records []Record, a
 		}
 	case PlayerPosition, PlayerPositionClear, ScorePlayer, ScoreFranchise:
 		return checkScoreAppend(raw, records)
+	case StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear:
+		return checkStandingsAppend(raw, records)
 	}
 	trial := make([]Record, len(records), len(records)+1)
 	copy(trial, records)

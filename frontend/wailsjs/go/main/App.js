@@ -346,12 +346,24 @@ export function TargetNativeReserveCheck(arg1) {
   return window['go']['main']['App']['TargetNativeReserveCheck'](arg1);
 }
 
+export function TargetNativeResults(arg1, arg2, arg3) {
+  return window['go']['main']['App']['TargetNativeResults'](arg1, arg2, arg3);
+}
+
 export function TargetNativeRosterCheck(arg1) {
   return window['go']['main']['App']['TargetNativeRosterCheck'](arg1);
 }
 
+export function TargetNativeScorePreview(arg1) {
+  return window['go']['main']['App']['TargetNativeScorePreview'](arg1);
+}
+
 export function TargetNativeSeed(arg1) {
   return window['go']['main']['App']['TargetNativeSeed'](arg1);
+}
+
+export function TargetNativeStandings(arg1, arg2) {
+  return window['go']['main']['App']['TargetNativeStandings'](arg1, arg2);
 }
 
 export function TargetNow(arg1, arg2, arg3) {
