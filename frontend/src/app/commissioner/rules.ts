@@ -9,7 +9,7 @@ export type RuleSchema = {
   kind: RuleKind; minimum?: number; maximum?: number; choices: RuleChoice[];
   fields: { name: string; label: string; schema: RuleSchema }[]; key?: RuleSchema; element?: RuleSchema;
 };
-export type RulePending = { entry: string; value: string; when: string };
+export type RulePending = { entry: string; value: string; when: string; replacedAt?: string };
 // What Go asks of whoever confirms: a plain button, a hold, or a typed reason.
 export const safeguardKinds = ['confirm', 'hold', 'reason'] as const;
 export type Safeguard = (typeof safeguardKinds)[number];
@@ -68,8 +68,9 @@ function parseRow(v: unknown, p: string): RuleRow {
     current: r.current, unit: choice(r.unit, `${p}.unit`, ['', 'percent'] as const),
     safeguards: parseSafeguards(r.safeguards, `${p}.safeguards`),
     pending: array(r.pending, `${p}.pending`, (w, q) => {
-      const o = object(w, q, ['entry', 'value', 'when']);
-      return { entry: text(o.entry, q), value: text(o.value, q), when: text(o.when, q) };
+      const o = object(w, q, ['entry', 'value', 'when', 'replacedAt']);
+      return { entry: text(o.entry, q), value: text(o.value, q), when: text(o.when, q),
+        replacedAt: o.replacedAt === undefined ? '' : timestamp(o.replacedAt, `${q}.replacedAt`) };
     }),
   };
 }
@@ -84,3 +85,6 @@ export function parseRules(v: unknown): Rules {
     }),
   };
 }
+
+export const pendingWhen = (pending: RulePending) => pending.replacedAt
+  ? `Replaced by a later change on ${new Date(pending.replacedAt).toLocaleString()}` : pending.when;

@@ -12,6 +12,7 @@ import { leagueState } from './proxy';
 import peopleWire from './people.wire.testdata.json';
 import legacy from './rules.legacy.wire.testdata.json';
 import rulesWire from './rules.wire.testdata.json';
+import replacedWire from './replaced.wire.testdata.json';
 
 beforeEach(() => leagueState.forget());
 afterEach(unmount);
@@ -62,7 +63,7 @@ describe('League rules screen', () => {
     const folded = all(host, 'details').find(d => d.textContent.startsWith('Stats not used (2)'));
     expect(folded?.textContent).toContain('Assisted tackle');
     expect(folded?.textContent).toContain('Defensive line assisted tackle');
-    expect(all(host, 'tr').some(tr => tr.textContent.startsWith('Scoring'))).toBe(false);
+    expect(all(host, 'tr').some(tr => tr.textContent.startsWith('Scoring values'))).toBe(false);
     expect(text(host)).not.toContain('Passing yards: 0.04; Passing');
   });
 });
@@ -98,11 +99,13 @@ describe('Plain rule provenance', () => {
     expect(host.textContent).not.toContain('(Set)');
     expect(all(host, 'th').map(t => t.textContent)).not.toContain('State');
   });
-  it('shows the scoring source exactly once, in plain words', async () => {
+  it('shows the scoring sources and counting settings in plain words', async () => {
     const host = await show(render(LeagueRules), { rules: legacy });
-    const source = 'Legacy NFL rules (rulebook section 4)';
-    expect(host.textContent.split(source)).toHaveLength(2);
+    const source = 'Legacy NFL rules (the league’s MFL scoring)';
+    expect(host.textContent.split(source)).toHaveLength(3);
     expect(host.textContent).not.toMatch(/Rulebook §|Math §/);
+    expect(host.textContent).toContain('Once per player-week');
+    expect(host.textContent).toContain('Round each stat’s points to the cent');
   });
   it('agrees with the ledger for a change made before midnight Central but after midnight UTC', async () => {
     const when = '2026-10-14T04:17:03Z';
@@ -116,5 +119,21 @@ describe('Plain rule provenance', () => {
     const local = new Date(when).toLocaleString();
     expect(host.textContent.split(`Changed in the league ledger on ${local}`)).toHaveLength(3);
     expect(all(host, 'time')[0].textContent).toBe(local);
+  });
+});
+
+describe('Replaced waiting changes', () => {
+  it('shows Go’s replacement date in viewer-local time in the rules and ledger', async () => {
+    const replacedAt = '2026-10-14T04:19:03Z';
+    const changed = parseRules(replacedWire.rules);
+    const ledger = parseLedger(replacedWire.ledger);
+    const host = await show(render('div', null, render(LeagueRules),
+      render(LedgerEntries, { reading: ledger })), { rules: changed });
+    const words = `Replaced by a later change on ${new Date(replacedAt).toLocaleString()}`;
+    expect(host.textContent.split(words)).toHaveLength(5);
+    const row = all(host, 'tr').find(tr => tr.textContent.startsWith('Active roster size'));
+    expect(row?.textContent).toContain('24 to 78: Waits for the next rollover');
+    expect(row?.textContent).not.toContain('20 to 70: Waits for the next rollover');
+    expect(row?.textContent).not.toContain('22 to 75: Waits for the next rollover');
   });
 });

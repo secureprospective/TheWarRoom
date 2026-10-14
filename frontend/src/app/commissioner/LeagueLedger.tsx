@@ -12,6 +12,8 @@ export function LedgerEntries({ reading }: { reading: Ledger }) {
         {reading.entries.map(entry => (
           <li key={entry.id}>
             <strong>{entry.what}</strong>
+            {entry.replacedAt && <p>Replaced by a later change on{' '}
+              <time dateTime={entry.replacedAt}>{new Date(entry.replacedAt).toLocaleString()}</time></p>}
             <p>By {entry.who} ·{' '}
               <time dateTime={entry.when}>{new Date(entry.when).toLocaleString()}</time></p>
             <p>Reason: {entry.why || 'No reason recorded'}</p>

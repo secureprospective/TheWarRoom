@@ -264,27 +264,27 @@
           "Label": {
             "State": 1,
             "Value": "Assisted tackle",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Defense",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": 10000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
@@ -298,34 +298,39 @@
               "TE",
               "PK"
             ],
-            "Citation": "Math §13: all except DT/DE"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "assist_line": {
           "Label": {
             "State": 1,
             "Value": "Defensive line assisted tackle",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Defense",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": 15000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
@@ -333,1450 +338,1946 @@
               "DT",
               "DE"
             ],
-            "Citation": "Math §13: true-position base rate"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "blocked_extra_point": {
           "Label": {
             "State": 1,
             "Value": "Blocked extra point",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Defense",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": 70000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "blocked_fg": {
           "Label": {
             "State": 1,
             "Value": "Blocked field goal",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Defense",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": 70000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "blocked_punt": {
           "Label": {
             "State": 1,
             "Value": "Blocked punt",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Defense",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": 70000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "fg_made_0_39": {
           "Label": {
             "State": 1,
             "Value": "Field goal made from 0 to 39 yards",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Kicking",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": 30000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "fg_made_40_49": {
           "Label": {
             "State": 1,
             "Value": "Field goal made from 40 to 49 yards",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Kicking",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": 40000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "fg_made_50_59": {
           "Label": {
             "State": 1,
             "Value": "Field goal made from 50 to 59 yards",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Kicking",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": 50000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
-        "fg_made_60_69": {
+        "fg_made_60_99": {
           "Label": {
             "State": 1,
-            "Value": "Field goal made from 60 to 69 yards",
-            "Citation": "Rulebook §4"
+            "Value": "Field goal made from 60 to 99 yards",
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Kicking",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": 60000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "fg_missed_0_29": {
           "Label": {
             "State": 1,
             "Value": "Field goal missed from 0 to 29 yards",
-            "Citation": "Rulebook §4; MFL_Scoring_Rules_Decode OQ-002"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Kicking",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": -30000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "fg_missed_30_99": {
           "Label": {
             "State": 1,
             "Value": "Field goal missed from 30 yards or longer",
-            "Citation": "Rulebook §4; MFL_Scoring_Rules_Decode OQ-002"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Kicking",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": -10000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "forced_fumble": {
           "Label": {
             "State": 1,
             "Value": "Forced fumble",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Fumbles",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": 40000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "fumble_lost": {
           "Label": {
             "State": 1,
-            "Value": "Fumble lost",
-            "Citation": "Rulebook §4"
+            "Value": "Fumbles lost",
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Fumbles",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": -20000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "fumble_recovery_tds": {
+          "Label": {
+            "State": 1,
+            "Value": "Fumble recovery touchdown",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Fumbles",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 60000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "fumbles_total": {
+          "Label": {
+            "State": 1,
+            "Value": "All fumbles",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Fumbles",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": -20000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "interception_caught": {
           "Label": {
             "State": 1,
             "Value": "Interception caught",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Defense",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": 50000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "interception_return_td": {
-          "Label": {
-            "State": 1,
-            "Value": "Interception return touchdown",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Defense",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 60000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "interception_return_yards": {
-          "Label": {
-            "State": 1,
-            "Value": "Interception return yards",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Defense",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 250,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "interception_thrown": {
-          "Label": {
-            "State": 1,
-            "Value": "Interception thrown",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Passing",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": -20000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "kickoff_return_td": {
-          "Label": {
-            "State": 1,
-            "Value": "Kickoff return touchdown",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Returns",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 100000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "kickoff_return_yards": {
-          "Label": {
-            "State": 1,
-            "Value": "Kickoff return yards",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Returns",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 250,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "long_pass": {
-          "Label": {
-            "State": 1,
-            "Value": "Long pass",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Passing",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 0,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [
-              {
-                "At": {
-                  "State": 1,
-                  "Value": 400000,
-                  "Citation": "Rulebook §4"
-                },
-                "Points": {
-                  "State": 1,
-                  "Value": 10000,
-                  "Citation": "Rulebook §4; Math §13: stacking"
-                }
-              }
-            ],
-            "Citation": "Rulebook §4; Math §13: stacking"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "long_reception": {
-          "Label": {
-            "State": 1,
-            "Value": "Long reception",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Receiving",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 0,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [
-              {
-                "At": {
-                  "State": 1,
-                  "Value": 200000,
-                  "Citation": "Rulebook §4"
-                },
-                "Points": {
-                  "State": 1,
-                  "Value": 10000,
-                  "Citation": "Rulebook §4; Math §13: stacking"
-                }
-              },
-              {
-                "At": {
-                  "State": 1,
-                  "Value": 400000,
-                  "Citation": "Rulebook §4"
-                },
-                "Points": {
-                  "State": 1,
-                  "Value": 10000,
-                  "Citation": "Rulebook §4; Math §13: stacking"
-                }
-              }
-            ],
-            "Citation": "Rulebook §4; Math §13: stacking"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "long_rush": {
-          "Label": {
-            "State": 1,
-            "Value": "Long rush",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Rushing",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 0,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [
-              {
-                "At": {
-                  "State": 1,
-                  "Value": 200000,
-                  "Citation": "Rulebook §4"
-                },
-                "Points": {
-                  "State": 1,
-                  "Value": 10000,
-                  "Citation": "Rulebook §4; Math §13: stacking"
-                }
-              },
-              {
-                "At": {
-                  "State": 1,
-                  "Value": 400000,
-                  "Citation": "Rulebook §4"
-                },
-                "Points": {
-                  "State": 1,
-                  "Value": 10000,
-                  "Citation": "Rulebook §4; Math §13: stacking"
-                }
-              }
-            ],
-            "Citation": "Rulebook §4; Math §13: stacking"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "opponent_fumble_recovery": {
-          "Label": {
-            "State": 1,
-            "Value": "Opponent fumble recovery",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Fumbles",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 30000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "opponent_fumble_recovery_yards": {
-          "Label": {
-            "State": 1,
-            "Value": "Opponent fumble recovery yards",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Fumbles",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 250,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "own_fumble_recovery": {
-          "Label": {
-            "State": 1,
-            "Value": "Own fumble recovery",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Fumbles",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 20000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "pass_defensed": {
-          "Label": {
-            "State": 1,
-            "Value": "Pass defensed",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Defense",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 25000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "passing_td": {
-          "Label": {
-            "State": 1,
-            "Value": "Passing touchdown",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Passing",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 50000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "passing_two_point": {
-          "Label": {
-            "State": 1,
-            "Value": "Passing two point conversion",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Passing",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 20000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "passing_yards": {
-          "Label": {
-            "State": 1,
-            "Value": "Passing yards",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Passing",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 500,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "punt_return_td": {
-          "Label": {
-            "State": 1,
-            "Value": "Punt return touchdown",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Returns",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 60000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "punt_return_yards": {
-          "Label": {
-            "State": 1,
-            "Value": "Punt return yards",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Returns",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 250,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "qb_hit": {
-          "Label": {
-            "State": 1,
-            "Value": "Quarterback hit",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Defense",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 10000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "receiving_td": {
-          "Label": {
-            "State": 1,
-            "Value": "Receiving touchdown",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Receiving",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 60000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "receiving_two_point": {
-          "Label": {
-            "State": 1,
-            "Value": "Receiving two point conversion",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Receiving",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 20000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "receiving_yards": {
-          "Label": {
-            "State": 1,
-            "Value": "Receiving yards",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Receiving",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 1000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "reception": {
-          "Label": {
-            "State": 1,
-            "Value": "Reception",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Receiving",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 10000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "rushing_attempt": {
-          "Label": {
-            "State": 1,
-            "Value": "Rushing attempt",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Rushing",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 1500,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "rushing_td": {
-          "Label": {
-            "State": 1,
-            "Value": "Rushing touchdown",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Rushing",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 60000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "rushing_two_point": {
-          "Label": {
-            "State": 1,
-            "Value": "Rushing two point conversion",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Rushing",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 20000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "rushing_yards": {
-          "Label": {
-            "State": 1,
-            "Value": "Rushing yards",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Rushing",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 1000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "sack": {
-          "Label": {
-            "State": 1,
-            "Value": "Sack",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Defense",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 45000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "safety": {
-          "Label": {
-            "State": 1,
-            "Value": "Safety",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Defense",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 100000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          },
-          "Positions": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
-          }
-        },
-        "tackle": {
-          "Label": {
-            "State": 1,
-            "Value": "Tackle",
-            "Citation": "Rulebook §4"
-          },
-          "Group": {
-            "State": 1,
-            "Value": "Defense",
-            "Citation": "Rulebook §4"
-          },
-          "Used": {
-            "State": 1,
-            "Value": true,
-            "Citation": "Rulebook §4"
-          },
-          "Points": {
-            "State": 1,
-            "Value": 15000,
-            "Citation": "Rulebook §4"
-          },
-          "Bonuses": {
-            "State": 1,
-            "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
             "Value": [
+              "DT",
+              "DE",
               "LB",
-              "CB",
-              "S",
               "QB",
               "RB",
               "WR",
               "TE",
               "PK"
             ],
-            "Citation": "Math §13: all except DT/DE"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "interception_caught_secondary": {
+          "Label": {
+            "State": 1,
+            "Value": "Interception caught (cornerbacks and safeties)",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 60000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [
+              "CB",
+              "S"
+            ],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "interception_return_td": {
+          "Label": {
+            "State": 1,
+            "Value": "Interception return touchdown",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 60000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "interception_return_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Interception return yards",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 1000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "interception_thrown": {
+          "Label": {
+            "State": 1,
+            "Value": "Interception thrown",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Passing",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": -20000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "kickoff_return_td": {
+          "Label": {
+            "State": 1,
+            "Value": "Kickoff return touchdown",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Returns",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 100000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "kickoff_return_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Kickoff return yards",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Returns",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 250,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "long_pass": {
+          "Label": {
+            "State": 1,
+            "Value": "Long pass",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Passing",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 0,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [
+              {
+                "At": {
+                  "State": 1,
+                  "Value": 400000,
+                  "Citation": "MFL league scoring settings"
+                },
+                "Points": {
+                  "State": 1,
+                  "Value": 10000,
+                  "Citation": "MFL league scoring settings"
+                }
+              }
+            ],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "long_reception": {
+          "Label": {
+            "State": 1,
+            "Value": "Long reception",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Receiving",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 0,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [
+              {
+                "At": {
+                  "State": 1,
+                  "Value": 200000,
+                  "Citation": "MFL league scoring settings"
+                },
+                "Points": {
+                  "State": 1,
+                  "Value": 10000,
+                  "Citation": "MFL league scoring settings"
+                }
+              },
+              {
+                "At": {
+                  "State": 1,
+                  "Value": 400000,
+                  "Citation": "MFL league scoring settings"
+                },
+                "Points": {
+                  "State": 1,
+                  "Value": 10000,
+                  "Citation": "MFL league scoring settings"
+                }
+              }
+            ],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "long_rush": {
+          "Label": {
+            "State": 1,
+            "Value": "Long rush",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Rushing",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 0,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [
+              {
+                "At": {
+                  "State": 1,
+                  "Value": 200000,
+                  "Citation": "MFL league scoring settings"
+                },
+                "Points": {
+                  "State": 1,
+                  "Value": 10000,
+                  "Citation": "MFL league scoring settings"
+                }
+              },
+              {
+                "At": {
+                  "State": 1,
+                  "Value": 400000,
+                  "Citation": "MFL league scoring settings"
+                },
+                "Points": {
+                  "State": 1,
+                  "Value": 10000,
+                  "Citation": "MFL league scoring settings"
+                }
+              }
+            ],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "opponent_fumble_recovery": {
+          "Label": {
+            "State": 1,
+            "Value": "Opponent fumble recovery",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Fumbles",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 30000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "opponent_fumble_recovery_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Opponent fumble recovery yards",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Fumbles",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 1000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "own_fumble_recovery": {
+          "Label": {
+            "State": 1,
+            "Value": "Own fumble recovery",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Fumbles",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 20000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "pass_defensed": {
+          "Label": {
+            "State": 1,
+            "Value": "Pass defensed",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 25000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [
+              "DT",
+              "DE",
+              "LB",
+              "QB",
+              "RB",
+              "WR",
+              "TE",
+              "PK"
+            ],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "pass_defensed_secondary": {
+          "Label": {
+            "State": 1,
+            "Value": "Pass defensed (cornerbacks and safeties)",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 30000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [
+              "CB",
+              "S"
+            ],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "passing_td": {
+          "Label": {
+            "State": 1,
+            "Value": "Passing touchdown",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Passing",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 50000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "passing_two_point": {
+          "Label": {
+            "State": 1,
+            "Value": "Passing two point conversion",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Passing",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 20000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "passing_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Passing yards",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Passing",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 500,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "pat_blocked": {
+          "Label": {
+            "State": 1,
+            "Value": "Extra point blocked",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Kicking",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": -10000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "pat_made": {
+          "Label": {
+            "State": 1,
+            "Value": "Extra point made",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Kicking",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 10000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "pat_missed": {
+          "Label": {
+            "State": 1,
+            "Value": "Extra point missed",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Kicking",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": -10000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "punt_return_td": {
+          "Label": {
+            "State": 1,
+            "Value": "Punt return touchdown",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Returns",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 60000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "punt_return_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Punt return yards",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Returns",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 250,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "qb_hit": {
+          "Label": {
+            "State": 1,
+            "Value": "Quarterback hit",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 10000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "receiving_td": {
+          "Label": {
+            "State": 1,
+            "Value": "Receiving touchdown",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Receiving",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 60000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "receiving_two_point": {
+          "Label": {
+            "State": 1,
+            "Value": "Receiving two point conversion",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Receiving",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 20000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "receiving_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Receiving yards",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Receiving",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 1000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "reception": {
+          "Label": {
+            "State": 1,
+            "Value": "Reception",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Receiving",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 10000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "rushing_attempt": {
+          "Label": {
+            "State": 1,
+            "Value": "Rushing attempt",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Rushing",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 1500,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "rushing_td": {
+          "Label": {
+            "State": 1,
+            "Value": "Rushing touchdown",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Rushing",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 60000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "rushing_two_point": {
+          "Label": {
+            "State": 1,
+            "Value": "Rushing two point conversion",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Rushing",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 20000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "rushing_yards": {
+          "Label": {
+            "State": 1,
+            "Value": "Rushing yards",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Rushing",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 1000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "sack": {
+          "Label": {
+            "State": 1,
+            "Value": "Sack",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 45000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "safety": {
+          "Label": {
+            "State": 1,
+            "Value": "Safety",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 100000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "tackle": {
+          "Label": {
+            "State": 1,
+            "Value": "Tackle",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 15000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [
+              "LB",
+              "QB",
+              "RB",
+              "WR",
+              "TE",
+              "PK"
+            ],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "tackle_for_loss": {
           "Label": {
             "State": 1,
             "Value": "Tackle for loss",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Defense",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": 25000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         },
         "tackle_line": {
           "Label": {
             "State": 1,
             "Value": "Defensive line tackle",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Group": {
             "State": 1,
             "Value": "Defense",
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Used": {
             "State": 1,
             "Value": true,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Points": {
             "State": 1,
             "Value": 25000,
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Bonuses": {
             "State": 1,
             "Value": [],
-            "Citation": "Rulebook §4"
+            "Citation": "MFL league scoring settings"
           },
           "Positions": {
             "State": 1,
@@ -1784,11 +2285,61 @@
               "DT",
               "DE"
             ],
-            "Citation": "Math §13: true-position base rate"
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
+          }
+        },
+        "tackle_secondary": {
+          "Label": {
+            "State": 1,
+            "Value": "Tackle (cornerbacks and safeties)",
+            "Citation": "MFL league scoring settings"
+          },
+          "Group": {
+            "State": 1,
+            "Value": "Defense",
+            "Citation": "MFL league scoring settings"
+          },
+          "Used": {
+            "State": 1,
+            "Value": true,
+            "Citation": "MFL league scoring settings"
+          },
+          "Points": {
+            "State": 1,
+            "Value": 20000,
+            "Citation": "MFL league scoring settings"
+          },
+          "Bonuses": {
+            "State": 1,
+            "Value": [],
+            "Citation": "MFL league scoring settings"
+          },
+          "Positions": {
+            "State": 1,
+            "Value": [
+              "CB",
+              "S"
+            ],
+            "Citation": "MFL league scoring settings"
+          },
+          "Once": {
+            "State": 1,
+            "Value": false,
+            "Citation": "MFL league scoring settings"
           }
         }
       },
-      "Citation": "Rulebook §4; Math §13"
+      "Citation": "MFL league scoring settings"
+    },
+    "RoundStatPoints": {
+      "State": 1,
+      "Value": true,
+      "Citation": "MFL league scoring settings"
     }
   },
   "Standings": {

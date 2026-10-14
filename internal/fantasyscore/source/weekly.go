@@ -18,12 +18,13 @@ type RawWeek struct {
 }
 
 type PlayerWeek struct {
-	GSIS       string
-	Season     int
-	Week       int
-	GameID     string
-	SeasonType string
-	Line       fantasyscore.StatLine
+	GSIS        string
+	Season      int
+	Week        int
+	GameID      string
+	SeasonType  string
+	RecoveryTDs leaguerules.Decimal
+	Line        fantasyscore.StatLine
 }
 
 func mappings() map[leaguerules.StatID][]string {
@@ -105,8 +106,8 @@ func (r RawWeek) validateDistances() error {
 		return fmt.Errorf("field goals made: %w", err)
 	}
 	for _, distance := range made {
-		if distance < 0 || distance > 690000 {
-			return fmt.Errorf("field goal distance outside the preset's 0–69 yard bands")
+		if distance < 0 || distance > 990000 {
+			return fmt.Errorf("field goal distance outside the preset's 0–99 yard bands")
 		}
 	}
 	count, err := decimal(r.Fields["fg_made_60_"])
@@ -169,7 +170,7 @@ func (r RawWeek) Convert() (PlayerWeek, error) {
 	for _, field := range []string{"pat_made", "pat_missed", "pat_blocked", "fg_blocked", "fumbles_total", "fumble_recovery_tds", "def_tds"} {
 		line.Quantities[leaguerules.StatID(field)], _ = decimal(r.Fields[field])
 	}
-	line.Quantities["fg_made_60_69"], _ = decimal(r.Fields["fg_made_60_"])
+	line.Quantities["fg_made_60_99"], _ = decimal(r.Fields["fg_made_60_"])
 	blocked, _ := distances(r.Fields["fg_blocked_list"])
 	for _, distance := range blocked {
 		id := leaguerules.StatID("fg_missed_30_99")
@@ -179,7 +180,7 @@ func (r RawWeek) Convert() (PlayerWeek, error) {
 		line.Quantities[id] += 10000
 	}
 	return PlayerWeek{GSIS: r.Fields["player_id"], Season: season, Week: week,
-		GameID: r.Fields["game_id"], SeasonType: r.Fields["season_type"], Line: line}, nil
+		GameID: r.Fields["game_id"], SeasonType: r.Fields["season_type"], RecoveryTDs: line.Quantities["fumble_recovery_tds"], Line: line}, nil
 }
 
 func ReadWeeks(input io.Reader) ([]PlayerWeek, error) {

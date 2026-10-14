@@ -31,6 +31,18 @@ describe('Start an app league', () => {
     expect(sent.league).toMatch(/^native\.[0-9a-f]{16}$/);
     expect(sent.request).toMatch(/^[0-9a-f]{32}$/);
   });
+  it.each([2, 6, 12, 32])('offers %i franchises with the Legacy template', async count => {
+    const { app, calls } = stub();
+    const host = await mount(render(StartLeagueForm), app);
+    await type(control(host, 'League name'), 'Our league');
+    await type(control(host, 'Number of franchises'), String(count));
+    await type(control(host, 'Reason'), 'Start');
+    expect(host.textContent).not.toContain('are for 32 franchises');
+    expect(host.textContent).toContain('Both starting choices work with 2 to 32 franchises.');
+    await act(async () => { (button(host, start).props().onClick as () => void)(); });
+    await settle();
+    expect(calls.sent[0].args).toEqual({ name: 'Our league', preset: 'legacy_nfl', franchiseCount: count });
+  });
   it('offers an empty league of any size and sends that preset', async () => {
     const { app, calls } = stub();
     const host = await mount(render(StartLeagueForm), app);
@@ -63,7 +75,7 @@ describe('Start an app league', () => {
     expect(control(host, 'League name').props().value).toBe('');
   });
   it('shows Go’s refusal as written and changes nothing else', async () => {
-    const words = 'The Legacy NFL preset is for 32 franchises';
+    const words = 'Choose between 2 and 32 franchises';
     const { app, calls } = stub({ TargetCommissionerExecute: async () => { throw new Error(words); } });
     const host = await mount(render(StartLeagueForm), app);
     await open();

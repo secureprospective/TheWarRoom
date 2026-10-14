@@ -1,5 +1,6 @@
 import { ReportView } from '../reports/ReportView';
 import { leagueState } from './proxy';
+import { pendingWhen } from './rules';
 import { rulesReport, scoringReports } from './rulesReport';
 import './commissioner.css';
 
@@ -17,7 +18,7 @@ export default function LeagueRules() {
         <section aria-label="Scoring">
           <h4>Scoring</h4>
           {!reports && <p>{scoring.citation}</p>}
-          {scoring.pending.map(p => <p key={p.entry}>{p.when} (a scoring change)</p>)}
+          {scoring.pending.map(p => <p key={p.entry}>{pendingWhen(p)} (a scoring change)</p>)}
           {reports && <ReportView report={reports.used} howLabel="How to read this" />}
           {reports?.unused && (
             <details><summary>{reports.unused.title}</summary>

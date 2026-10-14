@@ -35,7 +35,7 @@ func TestWeeklyMappingPreservesDirectStatsAndFieldGoalBands(t *testing.T) {
 		"def_tackles_for_loss": "2", "def_sacks": "1.5", "carries": "7",
 		"fg_made_0_19": "1", "fg_made_20_29": "1", "fg_made_30_39": "1",
 		"fg_made_40_49": "1", "fg_made_50_59": "1", "fg_made_60_": "2",
-		"fg_made_list": "19;29;39;49;59;60;69", "fg_missed_0_19": "1",
+		"fg_made_list": "19;29;39;49;59;60;99", "fg_missed_0_19": "1",
 		"fg_missed_20_29": "1", "fg_missed_30_39": "1", "fg_missed_40_49": "1",
 		"fg_missed_50_59": "1", "fg_missed_60_": "1", "pat_made": "3",
 		"fg_blocked": "2", "fg_blocked_list": "29;30",
@@ -50,7 +50,7 @@ func TestWeeklyMappingPreservesDirectStatsAndFieldGoalBands(t *testing.T) {
 		"tackle": 50000, "assist": 40000,
 		"tackle_for_loss": 20000, "sack": 15000, "rushing_attempt": 70000,
 		"fg_made_0_39": 30000, "fg_made_40_49": 10000, "fg_made_50_59": 10000,
-		"fg_made_60_69": 20000, "fg_missed_0_29": 30000, "fg_missed_30_99": 50000, "pat_made": 30000,
+		"fg_made_60_99": 20000, "fg_missed_0_29": 30000, "fg_missed_30_99": 50000, "pat_made": 30000,
 	} {
 		if week.Line.Quantities[id] != want {
 			t.Errorf("%s: got %d want %d", id, week.Line.Quantities[id], want)
@@ -62,7 +62,7 @@ func TestRawWeekRejectsMissingMalformedAndUnsupportedEvidence(t *testing.T) {
 	for _, tc := range []struct{ field, value string }{
 		{"player_id", "00-abcdefg"}, {"season", "0"}, {"week", "-1"}, {"season_type", "ALL"},
 		{"game_id", ""}, {"carries", ""}, {"carries", "-1"}, {"def_sacks", "NaN"}, {"def_tackles_for_loss", "1.00001"},
-		{"fg_made_list", "70"}, {"fg_made_list", "-1"}, {"fg_made_60_", "1"},
+		{"fg_made_list", "100"}, {"fg_made_list", "-1"}, {"fg_made_60_", "1"},
 		{"fg_blocked_list", "100"}, {"fg_blocked", "1"},
 	} {
 		t.Run(tc.field+tc.value, func(t *testing.T) {
@@ -170,5 +170,25 @@ func TestMissingOrMalformedPlayEvidenceFailsBeforeMutation(t *testing.T) {
 	}
 	if err := AttachPlays([]PlayerWeek{{Line: fantasyscore.StatLine{}}}, []RawPlay{base}); err == nil {
 		t.Fatal("incomplete player-week accepted")
+	}
+}
+
+func TestKickRecoveryTDIsNotAReturnAndAttachesOnce(t *testing.T) {
+	week, err := rawFixture(t).Convert()
+	if err != nil {
+		t.Fatal(err)
+	}
+	week.RecoveryTDs = 10000
+	base := RawPlay{GameID: week.GameID, PlayID: "1", Season: "2025", Week: "1", SeasonType: "REG",
+		Scorer: week.GSIS, Touchdown: "1", ScoringTeam: "SEA", Kickoff: "1"}
+	weeks := []PlayerWeek{week}
+	for range 2 {
+		if err := AttachPlays(weeks, []RawPlay{base}); err != nil {
+			t.Fatal(err)
+		}
+		if weeks[0].Line.Quantities["fumble_recovery_tds"] != 20000 ||
+			weeks[0].Line.Quantities["kickoff_return_td"] != 0 {
+			t.Fatalf("credits changed: %+v", weeks[0].Line)
+		}
 	}
 }

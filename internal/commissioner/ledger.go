@@ -89,7 +89,8 @@ type Entry struct {
 	When    time.Time `json:"when"`
 	Gravity string    `json:"gravity"`
 	// Undo is "league" or "private" where this principal may reverse the entry, and says how to send it.
-	Undo string `json:"undo"`
+	Undo       string `json:"undo"`
+	ReplacedAt string `json:"replacedAt,omitempty"`
 }
 
 type Ledger struct {
@@ -102,6 +103,16 @@ type Ledger struct {
 // Reading deliberately excludes payloads, request bodies and private metadata.
 func Reading(league, principal string, records []Record, auth Authorizer) (Ledger, error) {
 	p := Replay(records)
+	_, pending, err := ruleHistory(records)
+	if err != nil {
+		return Ledger{}, err
+	}
+	replaced := map[string]string{}
+	for _, changes := range pending {
+		for _, change := range changes {
+			replaced[change.Entry] = change.ReplacedAt
+		}
+	}
 	out := Ledger{League: league, Name: p.Name, Entries: []Entry{}}
 	role, err := auth.Allow(league, principal, "commish.ledger.read")
 	private := err == nil && (role == "commissioner" || role == "cocommissioner")
@@ -125,8 +136,12 @@ func Reading(league, principal string, records []Record, auth Authorizer) (Ledge
 		if r.Gravity == "G3" {
 			gravity = "Recorded reason required"
 		}
-		out.Entries = append(out.Entries, Entry{r.Receipt.Entry, who, what,
-			r.Command.Reason, r.Receipt.RecordedAt, gravity, undoPlacement(records, i, p, principal, auth)})
+		if replaced[r.Receipt.Entry] != "" {
+			what = strings.TrimSuffix(what, ", from the next rollover")
+		}
+		out.Entries = append(out.Entries, Entry{ID: r.Receipt.Entry, Who: who, What: what,
+			Why: r.Command.Reason, When: r.Receipt.RecordedAt, Gravity: gravity,
+			Undo: undoPlacement(records, i, p, principal, auth), ReplacedAt: replaced[r.Receipt.Entry]})
 	}
 	return out, nil
 }

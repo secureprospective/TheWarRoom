@@ -11,7 +11,7 @@ export type Receipt = {
 export type LedgerEntry = {
   id: string; who: string; what: string; why: string; when: string; gravity: string;
   // Where Go lets this principal reverse the entry, and who may read the reversal.
-  undo: '' | 'league' | 'private';
+  undo: '' | 'league' | 'private'; replacedAt?: string;
 };
 export type Ledger = { league: string; name: string; revision: number; entries: LedgerEntry[] };
 export type NativeLeague = { id: string; name: string };
@@ -49,10 +49,11 @@ export function parseLedger(v: unknown): Ledger {
     league: text(r.league, 'League'), name: text(r.name, 'League name'),
     revision: integer(r.revision, 'League version'),
     entries: array(r.entries, 'Entries', (v, p) => {
-      const e = object(v, p, ['id', 'who', 'what', 'why', 'when', 'gravity', 'undo']);
+      const e = object(v, p, ['id', 'who', 'what', 'why', 'when', 'gravity', 'undo', 'replacedAt']);
       return {
         id: text(e.id, p), who: text(e.who, p), what: text(e.what, p), why: text(e.why, p),
         when: timestamp(e.when, p), gravity: text(e.gravity, p),
+        replacedAt: e.replacedAt === undefined ? '' : timestamp(e.replacedAt, `${p}.replacedAt`),
         undo: choice(e.undo, `${p}.undo`, ['', 'league', 'private'] as const),
       };
     }),

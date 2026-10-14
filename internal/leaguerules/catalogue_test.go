@@ -17,7 +17,7 @@ func TestCatalogueDescribesEveryField(t *testing.T) {
 		if f.Label == "" || f.Section == "" || f.Schema.Kind == "" {
 			t.Fatalf("incomplete catalogue entry: %+v", f)
 		}
-		if f.Competitive != !strings.HasPrefix(string(f.Path), "house.") {
+		if f.Competitive != (!strings.HasPrefix(string(f.Path), "house.") && f.Path != "calendar.timezone") {
 			t.Fatalf("%s competitive = %v", f.Path, f.Competitive)
 		}
 	}

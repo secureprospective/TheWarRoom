@@ -28,7 +28,7 @@ func ruleOwners() []ruleOwner {
 		{"bids.", "CM-013", "G2"}, {"trades.", "CM-014", "G2"},
 		{"schedule.", "CM-015", "G2"}, {"playoffs.", "CM-016", "G2"},
 		{"house.", "CM-017", "G1"}, {"calendar.windows", "CM-023", "G2"},
-		{"calendar.timezone", "CM-024", "G2"}, {"calendar.boundary", "CM-024", "G2"},
+		{"calendar.timezone", "CM-024", "G1"}, {"calendar.boundary", "CM-024", "G2"},
 		{"calendar.rollover", "CM-027", "G3"}, {"calendar.rolloverDate", "CM-027", "G3"},
 		{"calendar.tradeDeadline", "CM-025", "G2"}, {"calendar.tradeDeadlineWeek", "CM-025", "G2"},
 		{"draft.mode", "CM-040", "G2"}, {"draft.clock", "CM-040", "G2"},

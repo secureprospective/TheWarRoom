@@ -39,7 +39,7 @@ export function StartLeagueForm() {
         <input type="number" min={2} max={32} step={1} value={count}
           onChange={e => setCount(e.target.value)} />
       </label>
-      <p className="change-note">The Legacy NFL rules are for 32 franchises.</p>
+      <p className="change-note">Both starting choices work with 2 to 32 franchises.</p>
       <label>Starting rules
         <select value={preset} onChange={e => setPreset(e.target.value as typeof preset)}>
           {presets.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}

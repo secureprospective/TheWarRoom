@@ -53,9 +53,9 @@ func Catalogue() []CatalogueField {
 		value := reflect.ValueOf(f.read(RuleSet{})).FieldByName("Value")
 		schema := schemaFor(value.Type())
 		fieldBounds(f.pathName(), &schema)
-		// House rules are reference text; every other registered field changes competition.
+		// Reference text and the display timezone do not change competitive rules.
 		result = append(result, CatalogueField{f.pathName(), f.labelText(), sectionLabels()[section], schema,
-			section != "house"})
+			section != "house" && f.pathName() != "calendar.timezone"})
 	}
 	return result
 }

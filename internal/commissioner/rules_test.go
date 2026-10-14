@@ -113,7 +113,7 @@ func TestCreationIsExpandedByGo(t *testing.T) {
 		t.Fatal("caller-chosen preset value accepted")
 	}
 	for _, args := range []RawArgs{
-		{Name: "Ours", Preset: PresetLegacy, FranchiseCount: 12}, {Name: "Ours", Preset: PresetEmpty},
+		{Name: "Ours", Preset: PresetEmpty},
 		{Name: "Ours", Preset: PresetEmpty, FranchiseCount: 1}, {Name: "Ours", Preset: PresetEmpty, FranchiseCount: 33},
 		{Name: "Ours", Preset: "mfl", FranchiseCount: 12}, {Name: "Ours", FranchiseCount: 12},
 	} {

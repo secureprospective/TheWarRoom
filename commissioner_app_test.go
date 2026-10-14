@@ -324,3 +324,39 @@ func TestCommissionerLegacyRulesWire(t *testing.T) {
 	}
 	checkWire(t, "frontend/src/app/commissioner/rules.legacy.wire.testdata.json", body, "legacy rules")
 }
+
+func TestCommissionerReplacedRulesWire(t *testing.T) {
+	app := commissionerTestApp(t)
+	raw := commissioner.RawCommand{League: "native.replaced", Command: commissioner.Create,
+		Args:   commissioner.RawArgs{Name: "Waiting rules", Preset: commissioner.PresetLegacy, FranchiseCount: 6},
+		Reason: "Start", Request: "create", Effective: "now", Visibility: "league"}
+	executeCommissionerTest(t, app, raw)
+	raw.Command, raw.Effective, raw.Reason = commissioner.RulesSet, "next_rollover", ""
+	for i, value := range []string{`{"min":20,"max":70}`, `{"min":22,"max":75}`, `{"min":24,"max":78}`} {
+		at := time.Date(2026, 10, 14, 4, 17+i, 3, 0, time.UTC)
+		app.history.SetClock(func() time.Time { return at })
+		raw.Args = commissioner.RawArgs{Field: "roster.limits", Value: json.RawMessage(value)}
+		raw.Expected, raw.Request = int64(i+1), fmt.Sprintf("waiting.%d", i)
+		executeCommissionerTest(t, app, raw)
+	}
+	rules, err := app.TargetCommissionerRules(raw.League)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ledger, err := app.TargetCommissionerLedger(raw.League)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ledger.Entries[0].ReplacedAt != "" || ledger.Entries[1].ReplacedAt != "2026-10-14T04:19:03Z" ||
+		ledger.Entries[2].ReplacedAt != ledger.Entries[1].ReplacedAt {
+		t.Fatalf("ledger winners %+v", ledger)
+	}
+	body, err := json.Marshal(struct {
+		Rules  commissioner.Rules  `json:"rules"`
+		Ledger commissioner.Ledger `json:"ledger"`
+	}{rules, ledger})
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkWire(t, "frontend/src/app/commissioner/replaced.wire.testdata.json", body, "replaced rules")
+}

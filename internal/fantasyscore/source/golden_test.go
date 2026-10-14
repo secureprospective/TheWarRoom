@@ -60,10 +60,26 @@ func TestHeldLegacyWeeks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	oracleBody, err := os.ReadFile("testdata/mfl.csv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	oracle, err := csv.NewReader(strings.NewReader(string(oracleBody))).ReadAll()
+	if err != nil || len(oracle) != len(rows) {
+		t.Fatal("held MFL roster oracle changed", err)
+	}
+	residuals := map[string]leaguerules.Decimal{
+		"1/15874": 10000, "1/14197": -30000, "1/10514": -5000,
+		"2/16703": -25000, "2/13230": -10000, "2/13700": -15000,
+		"2/14954": 10000, "2/15751": 10000,
+	}
 	matched := 0
 	counts := make(map[string]int)
 	positions := make(map[string]bool)
-	for _, row := range rows[1:] {
+	for i, row := range rows[1:] {
+		if strings.Join(row[:6], "/") != strings.Join(oracle[i+1], "/") {
+			t.Fatalf("comparison changed a held MFL identity or score: %v", row)
+		}
 		counts[row[0]]++
 		positions[row[3]] = true
 		w, found := index[row[2]+"/"+row[0]]
@@ -88,6 +104,9 @@ func TestHeldLegacyWeeks(t *testing.T) {
 				row[1], points.Value, native, want)
 		}
 		if points.Value != want {
+			if want-points.Value != residuals[row[0]+"/"+row[1]] {
+				t.Errorf("new or changed residual: %v", row)
+			}
 			if row[8] == "" {
 				t.Errorf("unclassified MFL mismatch: %v", row)
 			}
@@ -101,10 +120,10 @@ func TestHeldLegacyWeeks(t *testing.T) {
 	if counts["1"] != 879 || counts["2"] != 904 || len(positions) != 10 {
 		t.Fatalf("two full offense/IDP weeks lost: weeks %v positions %v", counts, positions)
 	}
-	if len(rows)-1 != 1783 || matched != 1237 {
-		t.Fatalf("coverage or match rate changed: %d/%d, want 1237/1783", matched, len(rows)-1)
+	if len(rows)-1 != 1783 || matched != 1775 {
+		t.Fatalf("coverage or match rate changed: %d/%d, want 1775/1783", matched, len(rows)-1)
 	}
-	t.Logf("MATCHED %d/%d; all 546 mismatches listed in testdata/comparison.csv", matched, len(rows)-1)
+	t.Logf("MATCHED %d/%d; all 8 mismatches listed in testdata/comparison.csv", matched, len(rows)-1)
 }
 
 func integer(t *testing.T, raw string) leaguerules.Decimal {

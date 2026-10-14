@@ -34,6 +34,7 @@ export namespace commissioner {
 	    when: any;
 	    gravity: string;
 	    undo: string;
+	    replacedAt?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Entry(source);
@@ -48,6 +49,7 @@ export namespace commissioner {
 	        this.when = this.convertValues(source["when"], null);
 	        this.gravity = source["gravity"];
 	        this.undo = source["undo"];
+	        this.replacedAt = source["replacedAt"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -333,6 +335,7 @@ export namespace commissioner {
 	    entry: string;
 	    value: string;
 	    when: string;
+	    replacedAt?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new RulePending(source);
@@ -343,6 +346,7 @@ export namespace commissioner {
 	        this.entry = source["entry"];
 	        this.value = source["value"];
 	        this.when = source["when"];
+	        this.replacedAt = source["replacedAt"];
 	    }
 	}
 	export class RuleSafeguards {

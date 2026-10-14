@@ -36,11 +36,11 @@ func franchiseIDs(count int) []string {
 	return ids
 }
 
-func presetSeed(preset string) ([]SeedValue, error) {
+func presetSeed(preset string, count int) ([]SeedValue, error) {
 	if preset != PresetLegacy {
 		return nil, nil
 	}
-	changes := leaguerules.SeedChanges(leaguerules.LegacyNFL(), "preset", ledgerSeason, time.Unix(1, 0).UTC())
+	changes := leaguerules.SeedChanges(leaguerules.LegacyNFLForTeams(count), "preset", ledgerSeason, time.Unix(1, 0).UTC())
 	seed := make([]SeedValue, len(changes))
 	for i, c := range changes {
 		body, err := leaguerules.EncodeStored(c.New)
@@ -80,7 +80,7 @@ func (r RawCommand) Prepared() (RawCommand, error) {
 		return r, err
 	}
 	ids := franchiseIDs(a.FranchiseCount)
-	seed, err := presetSeed(a.Preset)
+	seed, err := presetSeed(a.Preset, a.FranchiseCount)
 	if err != nil {
 		return r, err
 	}
@@ -94,11 +94,7 @@ func (r RawCommand) Prepared() (RawCommand, error) {
 
 func (a RawArgs) validatePreset() error {
 	switch a.Preset {
-	case PresetLegacy:
-		if a.FranchiseCount != legacyTeams {
-			return fmt.Errorf("the Legacy NFL preset is for 32 franchises; start an empty league for another size")
-		}
-	case PresetEmpty:
+	case PresetLegacy, PresetEmpty:
 		if a.FranchiseCount < minFranchises || a.FranchiseCount > maxFranchises {
 			return fmt.Errorf("choose between 2 and 32 franchises")
 		}

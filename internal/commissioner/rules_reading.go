@@ -12,9 +12,10 @@ import (
 
 // RulePending is a recorded change that is not in force yet.
 type RulePending struct {
-	Entry string `json:"entry"`
-	Value string `json:"value"`
-	When  string `json:"when"`
+	Entry      string `json:"entry"`
+	Value      string `json:"value"`
+	When       string `json:"when"`
+	ReplacedAt string `json:"replacedAt,omitempty"`
 }
 
 // RuleSafeguards says what Go asks of the person confirming a change, for each time it can take effect:
@@ -102,6 +103,7 @@ func RulesReading(league string, records []Record) (Rules, error) {
 func ruleHistory(records []Record) (map[string]string, map[string][]RulePending, error) {
 	active := Replay(records).Active
 	sources, pending := map[string]string{}, map[string][]RulePending{}
+	newest := map[string]string{}
 	for _, r := range records {
 		if r.Command.Command != RulesSet || !active[r.Receipt.Entry] {
 			continue
@@ -115,8 +117,16 @@ func ruleHistory(records []Record) (map[string]string, map[string][]RulePending,
 		if err != nil {
 			return nil, nil, fmt.Errorf("read waiting rule: %w", err)
 		}
+		newest[field] = r.Receipt.RecordedAt.Format(time.RFC3339Nano)
 		pending[field] = append(pending[field], RulePending{Entry: r.Receipt.Entry,
 			Value: leaguerules.DescribeField(leaguerules.FieldPath(field), setting).Words, When: waitingWords})
+	}
+	for field, changes := range pending {
+		for i := range len(changes) - 1 {
+			changes[i].When = "Replaced by a later change"
+			changes[i].ReplacedAt = newest[field]
+		}
+		pending[field] = changes
 	}
 	return sources, pending, nil
 }
@@ -159,6 +169,9 @@ func startingSource(preset, state, citation string) string {
 		return "Empty league default"
 	}
 	source := "Legacy NFL rules"
+	if strings.Contains(citation, "MFL league scoring settings") {
+		return source + " (the league’s MFL scoring)"
+	}
 	if _, section, ok := strings.Cut(citation, "Rulebook §"); ok {
 		number := strings.TrimLeftFunc(section, unicode.IsSpace)
 		end := strings.IndexFunc(number, func(r rune) bool { return !unicode.IsDigit(r) })

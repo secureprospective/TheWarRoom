@@ -162,3 +162,31 @@ func taxiFields() []ruleField {
 		field[ExperienceBasis]{path: "taxi.basis", label: "Taxi experience measure", access: func(r *RuleSet) *Value[ExperienceBasis] { return &r.Taxi.Basis }},
 	}
 }
+
+// LegacyNFLForTeams adapts the template without guessing a smaller league's playoff bracket.
+func LegacyNFLForTeams(count int) RuleSet {
+	r := LegacyNFL()
+	r.League.Teams = cited(count, "Legacy template: chosen team count")
+	if count == 32 {
+		return r
+	}
+	conferenceSize := count / 2
+	divisions := min(4, conferenceSize)
+	r.League.Divisions = cited(2*divisions, "Legacy template: at most one division per team")
+	field := min(7, conferenceSize)
+	r.Playoffs.PerConference = cited(field, "Legacy template: bounded by the smaller conference")
+	r.Playoffs.DivisionWinners = cited(min(divisions, field), "Legacy template: one winner per division")
+	r.Playoffs.WildCards = cited(field-min(divisions, field), "Legacy template: remaining playoff places")
+	if field != 7 {
+		r.Playoffs.ByeSeed = Needs[int]("Choose first-round byes for this smaller playoff field.")
+		r.Playoffs.Graph = Needs[[]BracketNode]("Choose a bracket for this smaller playoff field.")
+		r.Playoffs.FinalWeek = Needs[int]("Choose the final week after setting the smaller bracket.")
+	}
+	if count < 4 {
+		r.Trades.Review = Needs[ReviewRoute]("Fewer than four teams: choose who reviews trades; DOT needs four seats.")
+		r.Trades.DOTSeats = Needs[int]("DOT needs four to ten people; choose reviewers for this small league.")
+	}
+	r.Schedule.Pattern = Needs[SchedulePattern]("Choose how often teams meet in this smaller league.")
+	r.Trades.MaximumParties = cited(min(3, count), "Legacy template: bounded by team count")
+	return r
+}

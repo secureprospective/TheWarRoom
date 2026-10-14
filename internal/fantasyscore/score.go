@@ -38,6 +38,9 @@ func Score(rules leaguerules.ScoringRules, position leaguerules.Position, line S
 	if rules.Catalogue.State != leaguerules.IsKnown {
 		return leaguerules.Needs[leaguerules.Decimal]("Scoring values: " + rules.Catalogue.Citation), nil, nil
 	}
+	if rules.RoundStatPoints.State != leaguerules.IsKnown {
+		return leaguerules.Needs[leaguerules.Decimal]("Choose whether to round each stat’s points to the cent"), nil, nil
+	}
 	ids := statIDs(line)
 	items := make([]LineItem, 0, len(ids))
 	total := leaguerules.Decimal(0)
@@ -46,6 +49,12 @@ func Score(rules leaguerules.ScoringRules, position leaguerules.Position, line S
 		item, err := countStat(id, rules.Catalogue.Value, position, line)
 		if err != nil {
 			return Points{}, nil, fmt.Errorf("count %s: %w", id, err)
+		}
+		if rules.RoundStatPoints.Value && item.Points.State == leaguerules.IsKnown {
+			item.Points.Value, err = roundCent(item.Points.Value)
+			if err != nil {
+				return Points{}, nil, err
+			}
 		}
 		items = append(items, item)
 		if item.Unused {
@@ -115,14 +124,7 @@ func countStat(id leaguerules.StatID, catalogue map[leaguerules.StatID]leaguerul
 		item.Unused = true
 		return item, nil
 	}
-	points, err := multiply(quantity, stat.Points.Value)
-	if err != nil {
-		return LineItem{}, err
-	}
-	if len(stat.Bonuses.Value) != 0 && !hasEvents {
-		return LineItem{}, fmt.Errorf("play distances required for bonuses")
-	}
-	points, err = countBonuses(points, events, stat.Bonuses.Value)
+	points, err := contribution(stat, quantity, events, hasEvents)
 	if err != nil {
 		return LineItem{}, err
 	}
@@ -132,11 +134,11 @@ func countStat(id leaguerules.StatID, catalogue map[leaguerules.StatID]leaguerul
 
 func positionStat(id leaguerules.StatID, position leaguerules.Position,
 	catalogue map[leaguerules.StatID]leaguerules.Stat) (leaguerules.StatID, string) {
-	if id != "tackle" && id != "assist" {
+	if id != "tackle" && id != "assist" && id != "pass_defensed" && id != "interception_caught" {
 		return id, ""
 	}
 	var selected leaguerules.StatID
-	for _, candidate := range []leaguerules.StatID{id, id + "_line"} {
+	for _, candidate := range []leaguerules.StatID{id, id + "_line", id + "_secondary"} {
 		stat, found := catalogue[candidate]
 		if !found || (stat.Used.State == leaguerules.IsKnown && !stat.Used.Value) {
 			continue
@@ -161,7 +163,7 @@ func positionStat(id leaguerules.StatID, position leaguerules.Position,
 func recordedQuantity(id leaguerules.StatID, line StatLine) (leaguerules.Decimal, error) {
 	quantity, hasQuantity := line.Quantities[id]
 	events, hasEvents := line.Events[id]
-	if id == "tackle_line" || id == "assist_line" {
+	if id == "tackle_line" || id == "assist_line" || strings.HasSuffix(string(id), "_secondary") {
 		return 0, fmt.Errorf("record tackles and assists once; true position selects their rate")
 	}
 	if id == "" || (hasQuantity && hasEvents) {
@@ -182,6 +184,9 @@ func unresolved(stat leaguerules.Stat) string {
 	}
 	if !stat.Used.Value {
 		return ""
+	}
+	if stat.Once.State != leaguerules.IsKnown {
+		return "Choose whether this stat scores once: " + stat.Once.Citation
 	}
 	if stat.Label.State != leaguerules.IsKnown {
 		return "Choose a stat name: " + stat.Label.Citation
@@ -258,4 +263,30 @@ func joinReasons(reasons []string) string {
 		result += reason
 	}
 	return result
+}
+
+func roundCent(points leaguerules.Decimal) (leaguerules.Decimal, error) {
+	whole, remainder := points/100, points%100
+	if remainder >= 50 {
+		whole++
+	}
+	if remainder <= -50 {
+		whole--
+	}
+	return multiply(whole, 1000000)
+}
+
+func contribution(stat leaguerules.Stat, quantity leaguerules.Decimal,
+	events []leaguerules.Decimal, hasEvents bool) (leaguerules.Decimal, error) {
+	if stat.Once.Value && quantity > 0 {
+		quantity = 10000
+	}
+	points, err := multiply(quantity, stat.Points.Value)
+	if err != nil {
+		return 0, err
+	}
+	if len(stat.Bonuses.Value) != 0 && !hasEvents {
+		return 0, fmt.Errorf("play distances required for bonuses")
+	}
+	return countBonuses(points, events, stat.Bonuses.Value)
 }

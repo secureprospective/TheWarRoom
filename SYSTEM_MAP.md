@@ -397,5 +397,5 @@ It imports only the standard library and `internal/leaguerules`; no store, inges
 `internal/fantasyscore/source` validates held nflverse weekly CSV and play-by-play, retains exact
 long-play distances and return-touchdown credits (returning team only), and adapts them without fetching or store writes.
 `source/testdata/comparison.csv` pins two complete held Legacy roster weeks against MFL totals,
-with an independent native-points reference and every mismatch classified; preset differences
-remain differences, never silently fitted. Neither package is connected to runtime score surfaces yet.
+with an independent native-points reference and every mismatch classified; the Legacy preset follows the held league’s MFL scoring settings, with optional per-stat rounding
+and once-per-week counting. Eight source-credit differences remain explicitly unresolved. Neither package is connected to runtime score surfaces yet.
