@@ -15,16 +15,20 @@ type Receipt struct {
 }
 
 type Record struct {
-	Command   RawCommand `json:"command"`
-	Principal string     `json:"principal"`
-	Role      string     `json:"role"`
-	Gravity   string     `json:"gravity"`
-	Canonical string     `json:"canonical"`
-	Receipt   Receipt    `json:"receipt"`
+	GeneratedSchedule []ScheduleWeek `json:"generatedSchedule,omitempty"`
+	Command           RawCommand     `json:"command"`
+	Principal         string         `json:"principal"`
+	Role              string         `json:"role"`
+	Gravity           string         `json:"gravity"`
+	Canonical         string         `json:"canonical"`
+	Receipt           Receipt        `json:"receipt"`
 }
 
 func (r Record) Validate() error {
 	if err := r.Command.Validate(); err != nil {
+		return err
+	}
+	if err := r.validateGeneratedSchedule(); err != nil {
 		return err
 	}
 	definition, err := r.Command.EffectiveDefinition()
@@ -174,7 +178,7 @@ func recordLabel(r Record) string {
 	case SchedulePublish:
 		return "Published the league schedule"
 	case ScheduleEdit:
-		return fmt.Sprintf("Changed the league schedule for week %d", r.Command.Args.Schedule.Week.Week)
+		return fmt.Sprintf("Changed the league schedule for week %d", r.Command.Args.Schedule.Week)
 	}
 
 	if r.Command.Command == CalendarException {

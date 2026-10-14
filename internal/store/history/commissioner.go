@@ -74,7 +74,7 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err := s.checkAppend(raw, principal, records); err != nil {
 		return commissioner.Receipt{}, err
 	}
-	receipt, err := s.appendCommissioner(ctx, tx, raw, principal, role, canonical)
+	receipt, err := s.appendCommissioner(ctx, tx, raw, principal, role, canonical, records)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
@@ -203,7 +203,7 @@ func checkCommissionerAppend(raw commissioner.RawCommand, records []commissioner
 }
 
 func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, raw commissioner.RawCommand,
-	principal, role, canonical string) (commissioner.Receipt, error) {
+	principal, role, canonical string, records []commissioner.Record) (commissioner.Receipt, error) {
 	hash := sha256.Sum256([]byte(canonical))
 	identity := sha256.Sum256([]byte(raw.League + "\x00" + raw.Request))
 	now := s.now().UTC().Truncate(time.Microsecond)
@@ -216,6 +216,12 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, raw commissi
 	raw.Gravity = definition.Gravity
 	record := commissioner.Record{Command: raw, Principal: principal, Role: role,
 		Gravity: definition.Gravity, Canonical: canonical, Receipt: receipt}
+	if raw.Command == commissioner.ScheduleGenerate {
+		record.GeneratedSchedule, err = commissioner.FreezeSchedule(raw, records)
+		if err != nil {
+			return commissioner.Receipt{}, fmt.Errorf("freeze league schedule: %w", err)
+		}
+	}
 	effective := now
 	if raw.Effective != "now" && raw.Effective != "next_rollover" {
 		parsed, err := time.Parse(time.RFC3339Nano, raw.Effective)

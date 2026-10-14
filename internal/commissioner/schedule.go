@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 const (
@@ -13,8 +15,13 @@ const (
 )
 
 type RawScheduleArgs struct {
-	Week      *ScheduleWeek `json:"week,omitempty"`
-	Published bool          `json:"published,omitempty"`
+	Weeks     int                         `json:"weeks,omitempty"`
+	Pattern   leaguerules.SchedulePattern `json:"pattern,omitempty"`
+	Week      int                         `json:"week,omitempty"`
+	Game      string                      `json:"game,omitempty"`
+	Home      string                      `json:"home,omitempty"`
+	Away      string                      `json:"away,omitempty"`
+	Published bool                        `json:"published,omitempty"`
 }
 
 func scheduleCommand(command string) bool {
@@ -27,14 +34,28 @@ func (a RawArgs) validateSchedule(command string) error {
 	if a.Schedule == nil || !reflect.DeepEqual(other, RawArgs{}) {
 		return fmt.Errorf("send only the details of this schedule change")
 	}
-	if command != ScheduleEdit {
-		if a.Schedule.Week != nil || a.Schedule.Published {
-			return fmt.Errorf("send no week details when generating or publishing the schedule")
+	details := *a.Schedule
+	switch command {
+	case ScheduleGenerate:
+		if details.Weeks < 1 || details.Weeks > 52 {
+			return fmt.Errorf("choose between 1 and 52 regular-season weeks")
 		}
-		return nil
+		if details.Pattern == "" {
+			return fmt.Errorf("%s", "Choose how often teams meet in this smaller league.")
+		}
+		if details.Pattern != leaguerules.DivisionWeighted {
+			return fmt.Errorf("choose a recognised schedule pattern")
+		}
+		details.Weeks, details.Pattern = 0, ""
+	case ScheduleEdit:
+		if details.Week < 1 || strings.TrimSpace(details.Game) == "" ||
+			strings.TrimSpace(details.Home) == "" || strings.TrimSpace(details.Away) == "" {
+			return fmt.Errorf("choose a week, game and both franchises to edit")
+		}
+		details.Week, details.Game, details.Home, details.Away, details.Published = 0, "", "", "", false
 	}
-	if a.Schedule.Week == nil || a.Schedule.Week.Week < 1 {
-		return fmt.Errorf("choose the schedule week to edit")
+	if details != (RawScheduleArgs{}) {
+		return fmt.Errorf("send only the details of this schedule change")
 	}
 	return nil
 }
@@ -57,23 +78,22 @@ func ScheduleReading(league string, records []Record) (Schedule, error) {
 func replaySchedule(records []Record) ([]ScheduleWeek, []ScheduleWeek, error) {
 	active := Replay(records).Active
 	draft, published := []ScheduleWeek{}, []ScheduleWeek{}
-	for i, r := range records {
+	for _, r := range records {
 		if !active[r.Receipt.Entry] || !scheduleCommand(r.Command.Command) {
 			continue
 		}
 		switch r.Command.Command {
 		case ScheduleGenerate:
-			var err error
-			draft, err = generatedSchedule(records[:i])
-			if err != nil {
-				return nil, nil, err
+			if len(r.GeneratedSchedule) == 0 {
+				return nil, nil, fmt.Errorf("the recorded schedule is missing its generated weeks")
 			}
+			draft = cloneSchedule(r.GeneratedSchedule)
 		case ScheduleEdit:
-			week := *r.Command.Args.Schedule.Week
+			patch := *r.Command.Args.Schedule
 			if r.Command.Args.Schedule.Published {
-				published = replaceScheduleWeek(published, week)
+				published = patchScheduleGame(published, patch)
 			} else {
-				draft = replaceScheduleWeek(draft, week)
+				draft = patchScheduleGame(draft, patch)
 			}
 		case SchedulePublish:
 			published = append([]ScheduleWeek{}, draft...)
@@ -82,17 +102,32 @@ func replaySchedule(records []Record) ([]ScheduleWeek, []ScheduleWeek, error) {
 	return draft, published, nil
 }
 
-func replaceScheduleWeek(weeks []ScheduleWeek, week ScheduleWeek) []ScheduleWeek {
+func cloneSchedule(weeks []ScheduleWeek) []ScheduleWeek {
 	result := append([]ScheduleWeek{}, weeks...)
 	for i := range result {
-		if result[i].Week == week.Week {
-			result[i] = week
+		result[i].Games = append([]ScheduleGame{}, result[i].Games...)
+	}
+	return result
+}
+
+func patchScheduleGame(weeks []ScheduleWeek, patch RawScheduleArgs) []ScheduleWeek {
+	result := cloneSchedule(weeks)
+	for i := range result {
+		if result[i].Week != patch.Week {
+			continue
+		}
+		for j := range result[i].Games {
+			game := &result[i].Games[j]
+			if game.ID == patch.Game {
+				game.Home, game.Away = patch.Home, patch.Away
+			}
 		}
 	}
 	return result
 }
 
-func generatedSchedule(records []Record) ([]ScheduleWeek, error) {
+// FreezeSchedule captures generation at append time, outside the request's retry identity.
+func FreezeSchedule(raw RawCommand, records []Record) ([]ScheduleWeek, error) {
 	if len(records) == 0 {
 		return nil, fmt.Errorf("create the league before generating its schedule")
 	}
@@ -102,7 +137,10 @@ func generatedSchedule(records []Record) ([]ScheduleWeek, error) {
 	}
 	teams := records[0].Command.Args.Franchises
 
-	return GenerateSchedule(teams, rules.League.Alignment.Value, rules.Schedule)
+	return GenerateSchedule(teams, rules.League.Alignment.Value, leaguerules.ScheduleRules{
+		RegularWeeks: leaguerules.Known(raw.Args.Schedule.Weeks),
+		Pattern:      leaguerules.Known(raw.Args.Schedule.Pattern),
+	})
 }
 
 func CheckScheduleAppend(raw RawCommand, records []Record) error {
@@ -115,7 +153,7 @@ func CheckScheduleAppend(raw RawCommand, records []Record) error {
 	}
 	switch raw.Command {
 	case ScheduleGenerate:
-		_, err = generatedSchedule(records)
+		_, err = FreezeSchedule(raw, records)
 	case SchedulePublish:
 		if len(draft) == 0 {
 			err = fmt.Errorf("generate a schedule before publishing it")
@@ -128,9 +166,24 @@ func CheckScheduleAppend(raw RawCommand, records []Record) error {
 				return Refused(fmt.Errorf("give a reason for changing a published week"))
 			}
 		}
-		err = checkScheduleWeek(*raw.Args.Schedule.Week, target, records)
+		err = checkSchedulePatch(*raw.Args.Schedule, target, records)
 	}
 	return Refused(err)
+}
+
+func checkSchedulePatch(patch RawScheduleArgs, target []ScheduleWeek, records []Record) error {
+	for _, week := range target {
+		if week.Week != patch.Week {
+			continue
+		}
+		for _, game := range week.Games {
+			if game.ID == patch.Game {
+				changed := patchScheduleGame([]ScheduleWeek{week}, patch)[0]
+				return checkScheduleWeek(changed, target, records)
+			}
+		}
+	}
+	return fmt.Errorf("choose a game in the generated or published schedule")
 }
 
 func checkScheduleWeek(week ScheduleWeek, target []ScheduleWeek, records []Record) error {
@@ -162,6 +215,44 @@ func checkScheduleWeek(week ScheduleWeek, target []ScheduleWeek, records []Recor
 func (r RawCommand) validateSchedulePlacement() error {
 	if scheduleCommand(r.Command) && (r.Visibility != "league" || r.Effective != "now") {
 		return fmt.Errorf("schedule changes take effect now and are visible to every owner")
+	}
+	return nil
+}
+
+func (r Record) validateGeneratedSchedule() error {
+	if r.Command.Command != ScheduleGenerate {
+		if len(r.GeneratedSchedule) != 0 {
+			return fmt.Errorf("only schedule generation may record generated weeks")
+		}
+		return nil
+	}
+	if len(r.GeneratedSchedule) != r.Command.Args.Schedule.Weeks {
+		return fmt.Errorf("the recorded schedule does not contain its requested weeks")
+	}
+	ids := make(map[string]bool)
+	for i, week := range r.GeneratedSchedule {
+		if week.Week != i+1 || len(week.Games) == 0 {
+			return fmt.Errorf("the recorded schedule has an invalid week")
+		}
+		if err := week.validateFrozenGames(ids); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (w ScheduleWeek) validateFrozenGames(ids map[string]bool) error {
+	teams := make(map[string]bool)
+	for _, game := range w.Games {
+		if strings.TrimSpace(game.ID) == "" || ids[game.ID] ||
+			strings.TrimSpace(game.Home) == "" || strings.TrimSpace(game.Away) == "" ||
+			game.Home == game.Away || teams[game.Home] || teams[game.Away] {
+			return fmt.Errorf("the recorded schedule has an invalid or repeated game")
+		}
+		ids[game.ID], teams[game.Home], teams[game.Away] = true, true, true
+	}
+	if teams[w.Bye] {
+		return fmt.Errorf("a franchise with a bye cannot also play")
 	}
 	return nil
 }

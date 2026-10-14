@@ -1208,6 +1208,7 @@ export namespace commissioner {
 		}
 	}
 	export class ScheduleGame {
+	    id: string;
 	    home: string;
 	    away: string;
 	
@@ -1217,6 +1218,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
 	        this.home = source["home"];
 	        this.away = source["away"];
 	    }

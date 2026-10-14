@@ -83,8 +83,10 @@ This read port does not yet replace the what-if transaction phase gate or the im
 `internal/commissioner/schedule_generator.go` generates complete division-weighted rounds for 2–32
 franchises, with one rotating bye in odd leagues. `schedule.generate`, `schedule.edit` and
 `schedule.publish` share the authorized/versioned/idempotent append path (CM-015, G2; published
-week edits are G3). Generation reads the current schedule rules and division alignment; an unset
-pattern refuses to guess. `league_schedule_app.go` exposes `TargetLeagueSchedule`: only the published
+week edits are G3). Generation takes explicit weeks and pattern with the current division alignment; an unset
+pattern refuses to guess. Each game has a stable week/slot id. Edits patch one game's home/away
+franchises, validating the complete resulting week. Generated weeks are frozen in the ledger record;
+publication replay never reruns the generator or resolves today's schedule rules. `league_schedule_app.go` exposes `TargetLeagueSchedule`: only the published
 projection, replayed from local events and compensations. Draft changes never replace that reading.
 `internal/commissioner/windows.go` holds the named window doors, `calendar.window.set`, `.move` and
 `.remove` (CM-023, G2, co-commissioner): each replays into the same `calendar.windows` value a

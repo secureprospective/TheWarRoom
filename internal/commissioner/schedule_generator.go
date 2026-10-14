@@ -9,6 +9,7 @@ import (
 )
 
 type ScheduleGame struct {
+	ID   string `json:"id"`
 	Home string `json:"home"`
 	Away string `json:"away"`
 }
@@ -58,10 +59,11 @@ func GenerateSchedule(teams []string, divisions map[string]string,
 		round := rounds[selected]
 		round.Week = week
 		round.Games = slices.Clone(round.Games)
-		if uses[selected]%2 == 1 {
-			for i := range round.Games {
+		for i := range round.Games {
+			if uses[selected]%2 == 1 {
 				round.Games[i].Home, round.Games[i].Away = round.Games[i].Away, round.Games[i].Home
 			}
+			round.Games[i].ID = fmt.Sprintf("week.%d.game.%d", week, i+1)
 		}
 		result = append(result, round)
 		uses[selected]++
