@@ -84,6 +84,9 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err := commissioner.CheckGovernanceAppend(raw, principal, records, s.now()); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("check league change: %w", err)
 	}
+	if err := commissioner.CheckCalendarAppend(raw, records, s.now()); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("check league calendar: %w", err)
+	}
 	if err := commissioner.CheckRulesAppend(raw, records, s.now()); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("check league rules: %w", err)
 	}

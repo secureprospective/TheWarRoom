@@ -65,6 +65,8 @@ func DefinitionFor(command string) (Definition, error) {
 	switch command {
 	case Create, Revert:
 		return Definition{Gravity: "G3"}, nil
+	case CalendarException:
+		return Definition{Gravity: "G3"}, nil
 	default:
 		if d, ok := peopleDefinitionFor(command); ok {
 			return Definition{Gravity: d.gravity}, nil
@@ -74,20 +76,26 @@ func DefinitionFor(command string) (Definition, error) {
 }
 
 type RawArgs struct {
-	Name           string          `json:"name,omitempty"`
-	Entry          string          `json:"entry,omitempty"`
-	Franchises     []string        `json:"franchises,omitempty"`
-	People         *RawPeople      `json:"people,omitempty"`
-	Field          string          `json:"field,omitempty"`
-	Value          json.RawMessage `json:"value,omitempty"`
-	Preset         string          `json:"preset,omitempty"`
-	FranchiseCount int             `json:"franchiseCount,omitempty"`
-	Seed           []SeedValue     `json:"seed,omitempty"`
+	Name           string              `json:"name,omitempty"`
+	Entry          string              `json:"entry,omitempty"`
+	Franchises     []string            `json:"franchises,omitempty"`
+	People         *RawPeople          `json:"people,omitempty"`
+	Field          string              `json:"field,omitempty"`
+	Value          json.RawMessage     `json:"value,omitempty"`
+	Preset         string              `json:"preset,omitempty"`
+	FranchiseCount int                 `json:"franchiseCount,omitempty"`
+	Seed           []SeedValue         `json:"seed,omitempty"`
+	Exception      *RawWindowException `json:"exception,omitempty"`
 }
 
 func (a RawArgs) Validate(command string) error {
-	if (command != RulesSet && (a.Field != "" || len(a.Value) != 0)) || (command != Create &&
-		(a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0)) {
+	if command == CalendarException {
+		return a.validateException()
+	}
+	if a.Exception != nil {
+		return fmt.Errorf("send only the details of this league action")
+	}
+	if a.foreignRuleArgs(command) {
 		return fmt.Errorf("send only the details of this league action")
 	}
 	switch command {
@@ -103,6 +111,11 @@ func (a RawArgs) Validate(command string) error {
 		return a.validatePeople(command)
 	}
 	return nil
+}
+
+func (a RawArgs) foreignRuleArgs(command string) bool {
+	return (command != RulesSet && (a.Field != "" || len(a.Value) != 0)) || (command != Create &&
+		(a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0))
 }
 
 func (a RawArgs) validatePeople(command string) error {
@@ -152,6 +165,9 @@ func (r RawCommand) Validate() error {
 }
 
 func (r RawCommand) validatePlacement() error {
+	if r.Command == CalendarException && (r.Visibility != "league" || r.Effective != "now") {
+		return fmt.Errorf("window exceptions take effect now and are visible to every owner")
+	}
 	if r.Command == RulesSet {
 		return r.validateRulePlacement()
 	}

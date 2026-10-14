@@ -151,6 +151,11 @@ func entryLabel(records []Record, i int) (string, error) {
 }
 
 func recordLabel(r Record) string {
+	if r.Command.Command == CalendarException {
+		e := r.Command.Args.Exception
+		return fmt.Sprintf("Allowed %s for %s outside its window until %s: %s",
+			e.Action, e.Franchise, e.Until.Format(time.RFC3339), r.Command.Reason)
+	}
 	if r.Command.Command == Create {
 		preset := "every rule waiting for a ruling"
 		if r.Command.Args.Preset == PresetLegacy {

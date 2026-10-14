@@ -25,6 +25,42 @@ export namespace bid {
 
 export namespace commissioner {
 	
+	export class Calendar {
+	    league: string;
+	    revision: number;
+	    clock: leagueclock.ActionCalendar;
+	    decision: leagueclock.ActionDecision;
+	
+	    static createFrom(source: any = {}) {
+	        return new Calendar(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.revision = source["revision"];
+	        this.clock = this.convertValues(source["clock"], leagueclock.ActionCalendar);
+	        this.decision = this.convertValues(source["decision"], leagueclock.ActionDecision);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Entry {
 	    id: string;
 	    who: string;
@@ -840,6 +876,163 @@ export namespace envelope {
 
 export namespace leagueclock {
 	
+	export class WindowException {
+	    action: string;
+	    franchise: string;
+	    // Go type: time
+	    start: any;
+	    // Go type: time
+	    until: any;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new WindowException(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.action = source["action"];
+	        this.franchise = source["franchise"];
+	        this.start = this.convertValues(source["start"], null);
+	        this.until = this.convertValues(source["until"], null);
+	        this.reason = source["reason"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ActionWindow {
+	    id: string;
+	    opens: string[];
+	    // Go type: time
+	    start: any;
+	    // Go type: time
+	    close?: any;
+	    live: boolean;
+	    secondsToClose?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ActionWindow(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.opens = source["opens"];
+	        this.start = this.convertValues(source["start"], null);
+	        this.close = this.convertValues(source["close"], null);
+	        this.live = source["live"];
+	        this.secondsToClose = source["secondsToClose"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ActionCalendar {
+	    windows: ActionWindow[];
+	    exceptions: WindowException[];
+	    // Go type: time
+	    tradeDeadline?: any;
+	    secondsToTradeDeadline?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ActionCalendar(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.windows = this.convertValues(source["windows"], ActionWindow);
+	        this.exceptions = this.convertValues(source["exceptions"], WindowException);
+	        this.tradeDeadline = this.convertValues(source["tradeDeadline"], null);
+	        this.secondsToTradeDeadline = source["secondsToTradeDeadline"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ActionDecision {
+	    open: boolean;
+	    reason: string;
+	    window: string;
+	    // Go type: time
+	    next?: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new ActionDecision(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.open = source["open"];
+	        this.reason = source["reason"];
+	        this.window = source["window"];
+	        this.next = this.convertValues(source["next"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	export class Deadline {
 	    id: string;
 	    label: string;
@@ -958,6 +1151,7 @@ export namespace leagueclock {
 		    return a;
 		}
 	}
+	
 
 }
 
@@ -4064,6 +4258,26 @@ export namespace main {
 	        this.segments = source["segments"];
 	        this.nfl = source["nfl"];
 	        this.group = source["group"];
+	    }
+	}
+	export class RawLeagueCalendarScope {
+	    league: string;
+	    season: number;
+	    localZone: string;
+	    franchise: string;
+	    action: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawLeagueCalendarScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.season = source["season"];
+	        this.localZone = source["localZone"];
+	        this.franchise = source["franchise"];
+	        this.action = source["action"];
 	    }
 	}
 	export class RawMarketScope {
