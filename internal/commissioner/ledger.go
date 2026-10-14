@@ -152,6 +152,8 @@ func entryLabel(records []Record, i int) (string, error) {
 
 func recordLabel(r Record) string {
 	switch r.Command.Command {
+	case WindowSet, WindowMove, WindowRemove:
+		return windowLabel(r)
 	case ScheduleGenerate:
 		return "Generated a draft league schedule"
 	case SchedulePublish:

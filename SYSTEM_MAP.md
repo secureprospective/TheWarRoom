@@ -85,7 +85,15 @@ franchises, with one rotating bye in odd leagues. `schedule.generate`, `schedule
 week edits are G3). Generation reads the current schedule rules and division alignment; an unset
 pattern refuses to guess. `league_schedule_app.go` exposes `TargetLeagueSchedule`: only the published
 projection, replayed from local events and compensations. Draft changes never replace that reading.
-Native action execution, named window commands, Now/Race integration and the remaining census
+`internal/commissioner/windows.go` holds the named window doors, `calendar.window.set`, `.move` and
+`.remove` (CM-023, G2, co-commissioner): each replays into the same `calendar.windows` value a
+`rules.set` writes (`windowChange` feeds `ruleChanges`), so the two doors read one projection and a
+reversal that would strand a later window change is refused. `gate.go` holds `NativeActionGate`, the one
+decision every native owner action asks: it answers through `ActionCalendar.Decide` (exceptions and the
+exact trade deadline included), says in the owner's local time which window opens a closed action, and
+mints the `Permit` an action needs to run. Root `native_gate.go` is the registry and its only door,
+`runNativeAction`; `native_gate_test.go` runs every registered action shut and open. The registry is
+empty until later chunks add native owner actions. Now/Race integration and the remaining census
 owner-edge wiring are still pending.
 
 ## IPC surface (42 methods on `App`)

@@ -116,7 +116,7 @@ func CalendarReading(league string, records []Record, at time.Time, year int,
 	if decision.Next != nil {
 		next := decision.Next.In(local)
 		decision.Next = &next
-		decision.Reason = fmt.Sprintf("This action opens in %s on %s.", decision.Window,
+		decision.Reason = fmt.Sprintf("This action opens with the %s window on %s.", decision.Window,
 			next.Format("Jan 2, 2006 at 3:04 PM MST"))
 	}
 	clock.Localize(local)

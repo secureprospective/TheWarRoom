@@ -145,6 +145,14 @@ func ruleChanges(records []Record) ([]leaguerules.Change, error) {
 			changes = append(changes, seeded...)
 			continue
 		}
+		if windowCommand(r.Command.Command) && projection.Active[r.Receipt.Entry] {
+			change, err := windowChange(changes, r)
+			if err != nil {
+				return nil, err
+			}
+			changes = append(changes, change)
+			continue
+		}
 		if r.Command.Command != RulesSet || !projection.Active[r.Receipt.Entry] || r.Command.Effective != "now" {
 			continue
 		}

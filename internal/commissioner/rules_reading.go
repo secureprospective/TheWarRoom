@@ -103,6 +103,10 @@ func ruleHistory(records []Record) (map[string]string, map[string][]RulePending,
 	active := Replay(records).Active
 	sources, pending := map[string]string{}, map[string][]RulePending{}
 	for _, r := range records {
+		if windowCommand(r.Command.Command) && active[r.Receipt.Entry] {
+			sources[string(windowsField)] = r.Receipt.RecordedAt.Format(time.RFC3339Nano)
+			continue
+		}
 		if r.Command.Command != RulesSet || !active[r.Receipt.Entry] {
 			continue
 		}

@@ -67,6 +67,8 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G3"}, nil
 	case CalendarException:
 		return Definition{Gravity: "G3"}, nil
+	case WindowSet, WindowMove, WindowRemove:
+		return Definition{Gravity: "G2"}, nil
 	case ScheduleGenerate, ScheduleEdit, SchedulePublish:
 		return Definition{Gravity: "G2"}, nil
 	default:
@@ -89,13 +91,17 @@ type RawArgs struct {
 	Seed           []SeedValue         `json:"seed,omitempty"`
 	Exception      *RawWindowException `json:"exception,omitempty"`
 	Schedule       *RawScheduleArgs    `json:"schedule,omitempty"`
+	Window         *RawWindowArgs      `json:"window,omitempty"`
 }
 
 func (a RawArgs) Validate(command string) error {
 	if scheduleCommand(command) {
 		return a.validateSchedule(command)
 	}
-	if a.Schedule != nil {
+	if windowCommand(command) {
+		return a.validateWindow(command)
+	}
+	if a.Schedule != nil || a.Window != nil {
 		return fmt.Errorf("send only the details of this league action")
 	}
 	if command == CalendarException {
@@ -173,9 +179,20 @@ func (r RawCommand) Validate() error {
 	return r.validateSchedulePlacement()
 }
 
+// publicNowChange names the commands that are never private and never wait for a rollover.
+func publicNowChange(command string) string {
+	switch {
+	case windowCommand(command):
+		return "window changes"
+	case command == CalendarException:
+		return "window exceptions"
+	}
+	return ""
+}
+
 func (r RawCommand) validatePlacement() error {
-	if r.Command == CalendarException && (r.Visibility != "league" || r.Effective != "now") {
-		return fmt.Errorf("window exceptions take effect now and are visible to every owner")
+	if what := publicNowChange(r.Command); what != "" && (r.Visibility != "league" || r.Effective != "now") {
+		return fmt.Errorf("%s take effect now and are visible to every owner", what)
 	}
 	if r.Command == RulesSet {
 		return r.validateRulePlacement()

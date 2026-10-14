@@ -41,22 +41,9 @@ func (a *App) TargetLeagueCalendar(raw RawLeagueCalendarScope) (commissioner.Cal
 	if err := a.ready(); err != nil {
 		return commissioner.Calendar{}, fmt.Errorf("league calendar startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
-	defer cancel()
-	events, err := a.history.Events(ctx, raw.League, commissioner.Stream, 0)
+	records, err := a.leagueRecords(raw.League)
 	if err != nil {
-		return commissioner.Calendar{}, fmt.Errorf("read league calendar ledger: %w", err)
-	}
-	records := make([]commissioner.Record, 0, len(events))
-	for _, event := range events {
-		if event.Payload.Commissioner == nil {
-			return commissioner.Calendar{}, fmt.Errorf("the league calendar has an unreadable change")
-		}
-		record := *event.Payload.Commissioner
-		if err := record.Validate(); err != nil {
-			return commissioner.Calendar{}, fmt.Errorf("read league calendar change: %w", err)
-		}
-		records = append(records, record)
+		return commissioner.Calendar{}, err
 	}
 	zone, err := time.LoadLocation(raw.LocalZone)
 	if err != nil {
@@ -68,4 +55,26 @@ func (a *App) TargetLeagueCalendar(raw RawLeagueCalendarScope) (commissioner.Cal
 		return commissioner.Calendar{}, fmt.Errorf("league calendar: %w", err)
 	}
 	return reading, nil
+}
+
+// leagueRecords replays one app league's commissioner ledger; the calendar and the gate read the same one.
+func (a *App) leagueRecords(league string) ([]commissioner.Record, error) {
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	events, err := a.history.Events(ctx, league, commissioner.Stream, 0)
+	if err != nil {
+		return nil, fmt.Errorf("read league calendar ledger: %w", err)
+	}
+	records := make([]commissioner.Record, 0, len(events))
+	for _, event := range events {
+		if event.Payload.Commissioner == nil {
+			return nil, fmt.Errorf("the league calendar has an unreadable change")
+		}
+		record := *event.Payload.Commissioner
+		if err := record.Validate(); err != nil {
+			return nil, fmt.Errorf("read league calendar change: %w", err)
+		}
+		records = append(records, record)
+	}
+	return records, nil
 }
