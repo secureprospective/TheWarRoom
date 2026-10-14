@@ -18,12 +18,8 @@ import (
 func scoreCommand(t *testing.T, command string, change commissioner.RawScoreChange,
 	expected int64, request string) commissioner.RawCommand {
 	t.Helper()
-	body, err := json.Marshal(change)
-	if err != nil {
-		t.Fatal(err)
-	}
 	return commissioner.RawCommand{League: "native.test", Command: command,
-		Args: commissioner.RawArgs{Value: body}, Reason: "Correct the held evidence",
+		Args: commissioner.RawArgs{Score: &change}, Reason: "Correct the held evidence",
 		Expected: expected, Request: request, Effective: "now", Visibility: "league"}
 }
 

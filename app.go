@@ -132,6 +132,8 @@ type App struct {
 	seasonPause         func(context.Context, time.Duration) error
 	// clockNow is the league clock's "now"; nil is the wall clock. Tests pin it inside a held week.
 	clockNow func() time.Time
+	// localZone is the owner's zone for reading times; nil is the desktop's own. Tests pin it.
+	localZone *time.Location
 
 	movesMu      sync.Mutex
 	movesWake    chan struct{}

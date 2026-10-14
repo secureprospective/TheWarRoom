@@ -270,6 +270,14 @@ export function TargetHandOff(arg1) {
   return window['go']['main']['App']['TargetHandOff'](arg1);
 }
 
+export function TargetLeagueCalendar(arg1) {
+  return window['go']['main']['App']['TargetLeagueCalendar'](arg1);
+}
+
+export function TargetLeagueSchedule(arg1) {
+  return window['go']['main']['App']['TargetLeagueSchedule'](arg1);
+}
+
 export function TargetLeagueSettings() {
   return window['go']['main']['App']['TargetLeagueSettings']();
 }
@@ -308,6 +316,38 @@ export function TargetMoves(arg1) {
 
 export function TargetNFLDraft() {
   return window['go']['main']['App']['TargetNFLDraft']();
+}
+
+export function TargetNativeAssets(arg1) {
+  return window['go']['main']['App']['TargetNativeAssets'](arg1);
+}
+
+export function TargetNativeCapCheck(arg1) {
+  return window['go']['main']['App']['TargetNativeCapCheck'](arg1);
+}
+
+export function TargetNativeDirectory(arg1) {
+  return window['go']['main']['App']['TargetNativeDirectory'](arg1);
+}
+
+export function TargetNativeHouseRules(arg1) {
+  return window['go']['main']['App']['TargetNativeHouseRules'](arg1);
+}
+
+export function TargetNativeLineupCheck(arg1) {
+  return window['go']['main']['App']['TargetNativeLineupCheck'](arg1);
+}
+
+export function TargetNativeReserveCheck(arg1) {
+  return window['go']['main']['App']['TargetNativeReserveCheck'](arg1);
+}
+
+export function TargetNativeRosterCheck(arg1) {
+  return window['go']['main']['App']['TargetNativeRosterCheck'](arg1);
+}
+
+export function TargetNativeSeed(arg1) {
+  return window['go']['main']['App']['TargetNativeSeed'](arg1);
 }
 
 export function TargetNow(arg1, arg2, arg3) {

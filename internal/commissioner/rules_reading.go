@@ -60,15 +60,15 @@ const (
 )
 
 // RulesReading is public: every owner may read the league's rules and the changes waiting on them.
-func RulesReading(league string, records []Record) (Rules, error) {
+func RulesReading(league string, records []Record, now time.Time) (Rules, error) {
 	if len(records) == 0 {
 		return Rules{}, fmt.Errorf("this app league has not been created")
 	}
-	rules, err := resolveRecords(records)
+	rules, err := RulesNow(records, now)
 	if err != nil {
 		return Rules{}, err
 	}
-	sources, pending, err := ruleHistory(records)
+	sources, pending, err := ruleHistory(records, ReadingInstant(records, now))
 	if err != nil {
 		return Rules{}, err
 	}
@@ -99,36 +99,106 @@ func RulesReading(league string, records []Record) (Rules, error) {
 	return out, nil
 }
 
-// ruleHistory finds where each in-force value came from and which recorded changes still wait.
-func ruleHistory(records []Record) (map[string]string, map[string][]RulePending, error) {
+// ruleHistory finds where each in-force value came from and which recorded changes still wait. A
+// next-rollover change stops waiting once its rollover has come.
+func ruleHistory(records []Record, at time.Time) (map[string]string, map[string][]RulePending, error) {
+	starts, err := rolloverInstants(records)
+	if err != nil {
+		return nil, nil, err
+	}
 	active := Replay(records).Active
 	sources, pending := map[string]string{}, map[string][]RulePending{}
-	newest := map[string]string{}
+	latest := map[string]time.Time{}
 	for _, r := range records {
+		if windowCommand(r.Command.Command) && active[r.Receipt.Entry] {
+			sources[string(windowsField)] = r.Receipt.RecordedAt.Format(time.RFC3339Nano)
+			continue
+		}
 		if r.Command.Command != RulesSet || !active[r.Receipt.Entry] {
 			continue
 		}
-		field := r.Command.Args.Field
-		if r.Command.Effective == "now" {
-			sources[field] = r.Receipt.RecordedAt.Format(time.RFC3339Nano)
-			continue
+		field, startedAt := r.Command.Args.Field, r.Receipt.RecordedAt
+		if rollover, ok := nextRollover(starts, startedAt); r.Command.Effective != "now" {
+			if !ok || at.Before(rollover) {
+				change, err := waitingChange(r)
+				if err != nil {
+					return nil, nil, err
+				}
+				pending[field] = append(pending[field], change)
+				continue
+			}
+			startedAt = rollover
 		}
-		setting, err := leaguerules.DecodeSetting(leaguerules.FieldPath(field), r.Command.Args.Value)
-		if err != nil {
-			return nil, nil, fmt.Errorf("read waiting rule: %w", err)
+		if previous, ok := latest[field]; !ok || !startedAt.Before(previous) {
+			latest[field] = startedAt
+			sources[field] = startedAt.Format(time.RFC3339Nano)
 		}
-		newest[field] = r.Receipt.RecordedAt.Format(time.RFC3339Nano)
-		pending[field] = append(pending[field], RulePending{Entry: r.Receipt.Entry,
-			Value: leaguerules.DescribeField(leaguerules.FieldPath(field), setting).Words, When: waitingWords})
 	}
-	for field, changes := range pending {
-		for i := range len(changes) - 1 {
-			changes[i].When = "Replaced by a later change"
-			changes[i].ReplacedAt = newest[field]
-		}
-		pending[field] = changes
+	if err := markReplaced(records, pending); err != nil {
+		return nil, nil, err
 	}
 	return sources, pending, nil
+}
+
+// waitingChange describes one recorded change that still waits for its rollover.
+func waitingChange(r Record) (RulePending, error) {
+	field := leaguerules.FieldPath(r.Command.Args.Field)
+	setting, err := leaguerules.DecodeSetting(field, r.Command.Args.Value)
+	if err != nil {
+		return RulePending{}, fmt.Errorf("read waiting rule: %w", err)
+	}
+	return RulePending{Entry: r.Receipt.Entry, Value: leaguerules.DescribeField(field, setting).Words,
+		When: waitingWords}, nil
+}
+
+// markReplaced marks each waiting change a later one for the same rule and rollover replaced.
+func markReplaced(records []Record, pending map[string][]RulePending) error {
+	replaced, err := replacedWaiting(records)
+	if err != nil {
+		return err
+	}
+	for _, changes := range pending {
+		for i := range changes {
+			if at, ok := replaced[changes[i].Entry]; ok {
+				changes[i].When, changes[i].ReplacedAt = "Replaced by a later change", at
+			}
+		}
+	}
+	return nil
+}
+
+// replacedWaiting names each waiting change that a later one for the same rule and the same rollover
+// replaced, with when it was replaced. Only the newest takes effect (Christopher, 10-14). It does not
+// depend on the clock, so the ledger keeps the mark after the rollover has passed.
+func replacedWaiting(records []Record) (map[string]string, error) {
+	starts, err := rolloverInstants(records)
+	if err != nil {
+		return nil, err
+	}
+	active := Replay(records).Active
+	groups, order := map[string][]Record{}, []string{}
+	for _, r := range records {
+		if r.Command.Command != RulesSet || !active[r.Receipt.Entry] || r.Command.Effective == "now" {
+			continue
+		}
+		key := r.Command.Args.Field + "|unscheduled"
+		if rollover, ok := nextRollover(starts, r.Receipt.RecordedAt); ok {
+			key = r.Command.Args.Field + "|" + rollover.Format(time.RFC3339Nano)
+		}
+		if _, seen := groups[key]; !seen {
+			order = append(order, key)
+		}
+		groups[key] = append(groups[key], r)
+	}
+	replaced := map[string]string{}
+	for _, key := range order {
+		changes := groups[key]
+		newest := changes[len(changes)-1].Receipt.RecordedAt.Format(time.RFC3339Nano)
+		for _, r := range changes[:len(changes)-1] {
+			replaced[r.Receipt.Entry] = newest
+		}
+	}
+	return replaced, nil
 }
 
 func unitFor(path leaguerules.FieldPath) string {

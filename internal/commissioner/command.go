@@ -63,8 +63,14 @@ type Definition struct{ Gravity string }
 
 func DefinitionFor(command string) (Definition, error) {
 	switch command {
-	case Create, Revert:
+	case Create, Revert, NativeSeed:
 		return Definition{Gravity: "G3"}, nil
+	case CalendarException:
+		return Definition{Gravity: "G3"}, nil
+	case WindowSet, WindowMove, WindowRemove:
+		return Definition{Gravity: "G2"}, nil
+	case ScheduleGenerate, ScheduleEdit, SchedulePublish:
+		return Definition{Gravity: "G2"}, nil
 	case PlayerPosition, PlayerPositionClear, ScorePlayer:
 		return Definition{Gravity: "G2"}, nil
 	case ScoreFranchise:
@@ -78,25 +84,50 @@ func DefinitionFor(command string) (Definition, error) {
 }
 
 type RawArgs struct {
-	Name           string          `json:"name,omitempty"`
-	Entry          string          `json:"entry,omitempty"`
-	Franchises     []string        `json:"franchises,omitempty"`
-	People         *RawPeople      `json:"people,omitempty"`
-	Field          string          `json:"field,omitempty"`
-	Value          json.RawMessage `json:"value,omitempty"`
-	Preset         string          `json:"preset,omitempty"`
-	FranchiseCount int             `json:"franchiseCount,omitempty"`
-	Seed           []SeedValue     `json:"seed,omitempty"`
+	Name           string              `json:"name,omitempty"`
+	Entry          string              `json:"entry,omitempty"`
+	Franchises     []string            `json:"franchises,omitempty"`
+	People         *RawPeople          `json:"people,omitempty"`
+	Field          string              `json:"field,omitempty"`
+	Value          json.RawMessage     `json:"value,omitempty"`
+	Preset         string              `json:"preset,omitempty"`
+	FranchiseCount int                 `json:"franchiseCount,omitempty"`
+	Seed           []SeedValue         `json:"seed,omitempty"`
+	Native         *RawNativeSnapshot  `json:"native,omitempty"`
+	Exception      *RawWindowException `json:"exception,omitempty"`
+	Schedule       *RawScheduleArgs    `json:"schedule,omitempty"`
+	Window         *RawWindowArgs      `json:"window,omitempty"`
+	Score          *RawScoreChange     `json:"score,omitempty"`
+}
+
+// validateDetails refuses arguments that belong to another command.
+func (a RawArgs) validateDetails(command string) error {
+	if (command != NativeSeed && a.Native != nil) || a.Schedule != nil || a.Window != nil || a.Score != nil ||
+		(command != CalendarException && a.Exception != nil) || a.foreignRuleArgs(command) {
+		return fmt.Errorf("send only the details of this league action")
+	}
+	return nil
 }
 
 func (a RawArgs) Validate(command string) error {
-	if err := a.validateExclusiveArgs(command); err != nil {
+	if isScoreCommand(command) {
+		_, err := DecodeScoreChange(a, command)
+		return err
+	}
+	if scheduleCommand(command) {
+		return a.validateSchedule(command)
+	}
+	if windowCommand(command) {
+		return a.validateWindow(command)
+	}
+	if err := a.validateDetails(command); err != nil {
 		return err
 	}
 	switch command {
-	case PlayerPosition, PlayerPositionClear, ScorePlayer, ScoreFranchise:
-		_, err := DecodeScoreChange(a, command)
-		return err
+	case CalendarException:
+		return a.validateException()
+	case NativeSeed:
+		return a.validateNativeSeed()
 	case RulesSet:
 		return a.validateRule()
 	case Create:
@@ -109,6 +140,11 @@ func (a RawArgs) Validate(command string) error {
 		return a.validatePeople(command)
 	}
 	return nil
+}
+
+func (a RawArgs) foreignRuleArgs(command string) bool {
+	return (command != RulesSet && (a.Field != "" || len(a.Value) != 0)) || (command != Create &&
+		(a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0))
 }
 
 func (a RawArgs) validatePeople(command string) error {
@@ -134,7 +170,7 @@ type RawCommand struct {
 }
 
 func (r RawCommand) Validate() error {
-	definition, err := r.Definition()
+	definition, err := r.EffectiveDefinition()
 	if err != nil {
 		return err
 	}
@@ -154,12 +190,28 @@ func (r RawCommand) Validate() error {
 	if err := r.Args.Validate(r.Command); err != nil {
 		return err
 	}
-	return nil
+	return r.validateSchedulePlacement()
+}
+
+// publicNowRule says why a command that is never private and never waits for a rollover must be
+// recorded now for the league; it is empty for every other command.
+func publicNowRule(command string) string {
+	switch {
+	case command == NativeSeed:
+		return "the starting snapshot is recorded now for every owner"
+	case windowCommand(command):
+		return "window changes take effect now and are visible to every owner"
+	case command == CalendarException:
+		return "window exceptions take effect now and are visible to every owner"
+	}
+	return ""
 }
 
 func (r RawCommand) validatePlacement() error {
-	switch r.Command {
-	case PlayerPosition, PlayerPositionClear, ScorePlayer, ScoreFranchise:
+	if rule := publicNowRule(r.Command); rule != "" && (r.Visibility != "league" || r.Effective != "now") {
+		return errors.New(rule)
+	}
+	if isScoreCommand(r.Command) {
 		return r.validateScorePlacement()
 	}
 	if r.Command == RulesSet {
@@ -226,7 +278,7 @@ func Decode(body string) (RawCommand, error) {
 }
 
 func (r RawCommand) Canonical(principal string) (string, error) {
-	definition, err := r.Definition()
+	definition, err := r.EffectiveDefinition()
 	if err != nil {
 		return "", err
 	}
@@ -246,4 +298,15 @@ func (r RawCommand) Canonical(principal string) (string, error) {
 		return "", fmt.Errorf("encode commissioner command: %w", err)
 	}
 	return string(body), nil
+}
+
+func (r RawCommand) EffectiveDefinition() (Definition, error) {
+	definition, err := r.Definition()
+	if err != nil {
+		return Definition{}, err
+	}
+	if r.Command == ScheduleEdit && r.Args.Schedule != nil && r.Args.Schedule.Published {
+		definition.Gravity = "G3"
+	}
+	return definition, nil
 }

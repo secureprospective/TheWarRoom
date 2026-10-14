@@ -58,27 +58,12 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 	if d, ok := successionDefinitionFor(command); ok {
 		return successionPermission(a.State, principal, d)
 	}
-	control := ""
-	switch command {
-	case Create:
-		control = "CM-001"
-	case Revert:
-		control = "CM-039"
-	case PlayerPosition, PlayerPositionClear:
-		control = "CM-030"
-	case ScorePlayer, ScoreFranchise:
-		control = "CM-032"
-	case "commish.ledger.read":
-		p := governance.Principal(principal)
-		if a.State.HasRole(p, governance.Commissioner) {
-			return "commissioner", nil
-		}
-		if a.State.HasRole(p, governance.CoCommissioner) {
-			return "cocommissioner", nil
-		}
-		return "owner", nil
-	default:
-		if d, ok := peopleDefinitionFor(command); ok {
+	if command == "commish.ledger.read" {
+		return ledgerReader(a.State, principal), nil
+	}
+	control, ok := commandControls()[command]
+	if !ok {
+		if d, isPeople := peopleDefinitionFor(command); isPeople {
 			control = d.control
 		}
 	}
@@ -95,6 +80,30 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 		return "cocommissioner", nil
 	}
 	return string(role), nil
+}
+
+// commandControls names the census control that governs each commissioner command.
+func commandControls() map[string]string {
+	return map[string]string{
+		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039",
+		PlayerPosition: "CM-030", PlayerPositionClear: "CM-030",
+		ScorePlayer: "CM-032", ScoreFranchise: "CM-032",
+		WindowSet: "CM-023", WindowMove: "CM-023", WindowRemove: "CM-023",
+		CalendarException: "CM-026",
+		ScheduleGenerate:  "CM-015", ScheduleEdit: "CM-015", SchedulePublish: "CM-015",
+	}
+}
+
+// ledgerReader says how much of the ledger a principal may read.
+func ledgerReader(state governance.State, principal string) string {
+	p := governance.Principal(principal)
+	switch {
+	case state.HasRole(p, governance.Commissioner):
+		return "commissioner"
+	case state.HasRole(p, governance.CoCommissioner):
+		return "cocommissioner"
+	}
+	return "owner"
 }
 
 func AuthorizeRecords(raw RawCommand, principal string, records []Record) (string, error) {

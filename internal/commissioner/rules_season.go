@@ -1,0 +1,282 @@
+package commissioner
+
+import (
+	"fmt"
+	"slices"
+	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+)
+
+const (
+	rolloverField  = "calendar.rollover"
+	alignmentField = "league.alignment"
+	// carriedDivisions is the citation on a division alignment carried in from the starting snapshot.
+	carriedDivisions = "Carried from the held Legacy NFL divisions when the league was seeded"
+)
+
+// firstSeason numbers the season the ledger opens in: the starting snapshot's season once the league
+// is seeded, else ledgerSeason. Later seasons follow the league's rollover dates.
+func firstSeason(records []Record) int {
+	for _, r := range records {
+		if r.Command.Command == NativeSeed && r.Command.Args.Native != nil {
+			return r.Command.Args.Native.Season
+		}
+	}
+	return ledgerSeason
+}
+
+// rolloverInstants lists, in order, the instants at which a new season begins. Each comes from an
+// in-force "now" setting of the season rollover instant. A date set before the previous rollover has
+// passed moves that rollover; one set after it schedules the next. A date that does not come after the
+// one before it is not a new season.
+func rolloverInstants(records []Record) ([]time.Time, error) {
+	starts := []time.Time{}
+	var pending time.Time
+	for i, r := range records {
+		if !pending.IsZero() && !r.Receipt.RecordedAt.Before(pending) {
+			starts = append(starts, pending)
+			pending = time.Time{}
+		}
+		if r.Command.Command != Revert && (r.Command.Command != RulesSet ||
+			r.Command.Args.Field != rolloverField) {
+			continue
+		}
+		date, err := activeRollover(records[:i+1])
+		if err != nil {
+			return nil, err
+		}
+		pending = time.Time{}
+		if len(starts) == 0 || date.After(starts[len(starts)-1]) {
+			pending = date
+		}
+	}
+	if !pending.IsZero() {
+		starts = append(starts, pending)
+	}
+	return starts, nil
+}
+
+// activeRollover reads the date held by a ledger prefix; later reversals cannot erase elapsed seasons.
+func activeRollover(records []Record) (time.Time, error) {
+	active := Replay(records).Active
+	for i := len(records) - 1; i >= 0; i-- {
+		r := records[i]
+		if r.Command.Command != RulesSet || !active[r.Receipt.Entry] || r.Command.Effective != "now" ||
+			r.Command.Args.Field != rolloverField {
+			continue
+		}
+		setting, err := leaguerules.DecodeSetting(rolloverField, r.Command.Args.Value)
+		if err != nil {
+			return time.Time{}, fmt.Errorf("read recorded rollover: %w", err)
+		}
+		if date, ok := setting.(leaguerules.Value[time.Time]); ok && date.State == leaguerules.IsKnown {
+			return date.Value, nil
+		}
+		return time.Time{}, nil
+	}
+	return time.Time{}, nil
+}
+
+// nextRollover is the first rollover instant strictly after the moment a change was recorded.
+func nextRollover(starts []time.Time, recorded time.Time) (time.Time, bool) {
+	for _, s := range starts {
+		if s.After(recorded) {
+			return s, true
+		}
+	}
+	return time.Time{}, false
+}
+
+// SeasonAt says which season the league is in at an instant.
+func SeasonAt(records []Record, at time.Time) (int, error) {
+	records = recordsThrough(records, at)
+	starts, err := rolloverInstants(records)
+	if err != nil {
+		return 0, err
+	}
+	season := firstSeason(records)
+	for _, s := range starts {
+		if !at.Before(s) {
+			season++
+		}
+	}
+	return season, nil
+}
+
+// ReadingInstant is the later of the clock and the ledger's last entry, so a slow clock never
+// hides a recorded change.
+func ReadingInstant(records []Record, now time.Time) time.Time {
+	at := now
+	for _, r := range records {
+		if r.Receipt.RecordedAt.After(at) {
+			at = r.Receipt.RecordedAt
+		}
+	}
+	if at.IsZero() {
+		return time.Unix(1, 0).UTC()
+	}
+	return at
+}
+
+// RulesNow is the league's rules in force at the clock (never before its last recorded entry).
+func RulesNow(records []Record, now time.Time) (leaguerules.RuleSet, error) {
+	at := ReadingInstant(records, now)
+	season, err := SeasonAt(records, at)
+	if err != nil {
+		return leaguerules.RuleSet{}, err
+	}
+	return RulesInForce(records, season, at)
+}
+
+// RulesInForce is the one place a native league's rules are resolved. It returns the rules a season
+// held at an instant: a change counts from the moment it starts (a next-rollover change from the
+// rollover after it was recorded), and a season that has ended keeps the rules it ended with.
+func RulesInForce(records []Record, season int, at time.Time) (leaguerules.RuleSet, error) {
+	if len(records) == 0 {
+		return leaguerules.RuleSet{}, fmt.Errorf("this app league has not been created")
+	}
+	records = recordsThrough(records, at)
+	starts, err := rolloverInstants(records)
+	if err != nil {
+		return leaguerules.RuleSet{}, err
+	}
+	index := season - firstSeason(records)
+	if index < 0 || index > len(starts) {
+		return leaguerules.RuleSet{}, fmt.Errorf("read league rules: season %d is not in this league's history", season)
+	}
+	if index > 0 && at.Before(starts[index-1]) {
+		return leaguerules.RuleSet{}, fmt.Errorf("read league rules: season %d has not started", season)
+	}
+	if index < len(starts) && !at.Before(starts[index]) {
+		at = starts[index].Add(-time.Nanosecond)
+	}
+	changes, err := seasonChanges(recordsThrough(records, at), starts, season)
+	if err != nil {
+		return leaguerules.RuleSet{}, err
+	}
+	rules, err := leaguerules.Resolve(changes, season, at)
+	if err != nil {
+		return leaguerules.RuleSet{}, fmt.Errorf("read league rules: %w", err)
+	}
+	return rules, nil
+}
+
+// recordsThrough prevents later corrections from rewriting an earlier season or instant.
+func recordsThrough(records []Record, at time.Time) []Record {
+	out := make([]Record, 0, len(records))
+	for _, r := range records {
+		if !r.Receipt.RecordedAt.After(at) {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+type startedChange struct {
+	change leaguerules.Change
+	start  time.Time
+}
+
+// seasonChanges lists every change in force in the ledger, labelled with the season being read and
+// ordered by when each starts (ledger order breaks ties).
+func seasonChanges(records []Record, starts []time.Time, season int) ([]leaguerules.Change, error) {
+	fold := seasonFold{starts: starts, active: Replay(records).Active}
+	for _, r := range records {
+		if err := fold.add(r); err != nil {
+			return nil, err
+		}
+	}
+	slices.SortStableFunc(fold.timed, func(a, b startedChange) int { return a.start.Compare(b.start) })
+	changes := make([]leaguerules.Change, len(fold.timed))
+	for i, t := range fold.timed {
+		changes[i] = t.change
+		changes[i].Season = season
+	}
+	return changes, nil
+}
+
+// seasonFold collects, in ledger order, every change in force with the instant it starts.
+type seasonFold struct {
+	starts       []time.Time
+	active       map[string]bool
+	timed        []startedChange
+	alignmentSet bool
+}
+
+func (f *seasonFold) add(r Record) error {
+	switch r.Command.Command {
+	case Create:
+		seeded, err := seedChanges(r)
+		if err != nil {
+			return err
+		}
+		for _, c := range seeded {
+			f.timed = append(f.timed, startedChange{c, c.RecordedAt})
+		}
+	case NativeSeed:
+		if c, ok := carriedAlignment(r, f.alignmentSet); ok {
+			f.timed = append(f.timed, startedChange{c, c.RecordedAt})
+		}
+	case WindowSet, WindowMove, WindowRemove:
+		if !f.active[r.Receipt.Entry] {
+			return nil
+		}
+		c, err := windowChange(f.timed, r)
+		if err != nil {
+			return err
+		}
+		f.timed = append(f.timed, startedChange{c, c.RecordedAt})
+	case RulesSet:
+		if !f.active[r.Receipt.Entry] {
+			return nil
+		}
+		c, start, ok, err := recordedChange(r, f.starts)
+		if err != nil || !ok {
+			return err
+		}
+		f.timed = append(f.timed, startedChange{c, start})
+		f.alignmentSet = f.alignmentSet || (r.Command.Effective == "now" && r.Command.Args.Field == alignmentField)
+	}
+	return nil
+}
+
+// recordedChange turns an in-force rule change into a resolver change. ok is false while a
+// next-rollover change has no rollover date to wait for.
+func recordedChange(r Record, starts []time.Time) (leaguerules.Change, time.Time, bool, error) {
+	setting, err := leaguerules.DecodeSetting(leaguerules.FieldPath(r.Command.Args.Field), r.Command.Args.Value)
+	if err != nil {
+		return leaguerules.Change{}, time.Time{}, false, fmt.Errorf("read recorded rule: %w", err)
+	}
+	c := leaguerules.Change{LeagueID: r.Command.League, Field: leaguerules.FieldPath(r.Command.Args.Field),
+		New: setting, Effective: leaguerules.Effective{Kind: leaguerules.Now}, RecordedAt: r.Receipt.RecordedAt}
+	if r.Command.Effective == "now" {
+		return c, c.RecordedAt, true, nil
+	}
+	rollover, ok := nextRollover(starts, r.Receipt.RecordedAt)
+	if !ok {
+		return leaguerules.Change{}, time.Time{}, false, nil
+	}
+	c.Effective = leaguerules.Effective{Kind: leaguerules.NextRollover, At: rollover}
+	return c, rollover, true, nil
+}
+
+// carriedAlignment gives the league the divisions of the starting snapshot, unless the commissioner
+// had already set an alignment. Later changes and their reversals then act on it like any other value.
+func carriedAlignment(r Record, alignmentSet bool) (leaguerules.Change, bool) {
+	if alignmentSet || r.Command.Args.Native == nil {
+		return leaguerules.Change{}, false
+	}
+	divisions := map[string]string{}
+	for _, f := range r.Command.Args.Native.Franchises {
+		if f.Division != "" {
+			divisions[f.ID] = f.Division
+		}
+	}
+	if len(divisions) == 0 {
+		return leaguerules.Change{}, false
+	}
+	return leaguerules.Change{LeagueID: r.Command.League, Field: alignmentField,
+		New:       leaguerules.Value[map[string]string]{State: leaguerules.IsKnown, Value: divisions, Citation: carriedDivisions},
+		Effective: leaguerules.Effective{Kind: leaguerules.Now}, RecordedAt: r.Receipt.RecordedAt}, true
+}

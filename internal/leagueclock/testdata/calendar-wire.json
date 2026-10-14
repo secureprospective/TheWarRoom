@@ -1,0 +1,37 @@
+{
+  "league": "native.calendar",
+  "revision": 6,
+  "clock": {
+    "windows": [
+      {
+        "id": "rfa",
+        "opens": [
+          "rfa_tender"
+        ],
+        "start": "2026-04-30T21:00:00-07:00",
+        "close": "2026-05-02T21:00:00-07:00",
+        "live": false,
+        "secondsToClose": null
+      },
+      {
+        "id": "ufa",
+        "opens": [
+          "ufa_bid"
+        ],
+        "start": "2026-05-02T21:00:00-07:00",
+        "close": "2026-05-10T21:00:00-07:00",
+        "live": true,
+        "secondsToClose": 691200
+      }
+    ],
+    "exceptions": [],
+    "tradeDeadline": null,
+    "secondsToTradeDeadline": null
+  },
+  "decision": {
+    "open": true,
+    "reason": "",
+    "window": "",
+    "next": null
+  }
+}

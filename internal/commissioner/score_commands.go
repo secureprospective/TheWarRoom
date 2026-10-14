@@ -1,10 +1,8 @@
 package commissioner
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -19,7 +17,7 @@ const (
 	ScoreFranchise      = "commish.score.franchise"
 )
 
-// RawScoreChange is carried in Args.Value; Delta is exact ten-thousandths, never a replacement total.
+// RawScoreChange is the score command's argument (Args.Score); Delta is exact ten-thousandths, never a replacement total.
 type RawScoreChange struct {
 	Player    string               `json:"player,omitempty"`
 	Position  leaguerules.Position `json:"position,omitempty"`
@@ -29,20 +27,14 @@ type RawScoreChange struct {
 	Delta     *leaguerules.Decimal `json:"delta,omitempty"`
 }
 
+// DecodeScoreChange reads a score command's argument and refuses details that belong to another command.
 func DecodeScoreChange(a RawArgs, command string) (RawScoreChange, error) {
-	var raw RawScoreChange
-	if a.Name != "" || a.Entry != "" || a.People != nil || a.Field != "" || a.Preset != "" ||
-		a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0 {
-		return raw, fmt.Errorf("send only the details of this score change")
+	other := a
+	other.Score = nil
+	if a.Score == nil || !reflect.DeepEqual(other, RawArgs{}) {
+		return RawScoreChange{}, fmt.Errorf("send only the details of this score change")
 	}
-	decoder := json.NewDecoder(bytes.NewReader(a.Value))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&raw); err != nil {
-		return raw, fmt.Errorf("read score change: %w", err)
-	}
-	if err := decoder.Decode(&struct{}{}); err != io.EOF {
-		return raw, fmt.Errorf("send exactly one score change")
-	}
+	raw := *a.Score
 	if err := raw.Validate(command); err != nil {
 		return raw, err
 	}
@@ -135,15 +127,4 @@ func scoreChangeLabel(command string, change RawScoreChange) string {
 		return fmt.Sprintf("Adjusted %s by %s points in season %d, week %d", target,
 			scorePointsWords(*change.Delta), change.Season, change.Week)
 	}
-}
-
-func (a RawArgs) validateExclusiveArgs(command string) error {
-	if isScoreCommand(command) {
-		return nil
-	}
-	if (command != RulesSet && (a.Field != "" || len(a.Value) != 0)) || (command != Create &&
-		(a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0)) {
-		return fmt.Errorf("send only the details of this league action")
-	}
-	return nil
 }
