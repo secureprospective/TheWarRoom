@@ -41,22 +41,28 @@ func TestSchedulePatchKeepsOtherGamesAndRejectsDoubleBooking(t *testing.T) {
 		{ID: "second", Home: "c", Away: "d"},
 	}}
 	records := []Record{{Command: RawCommand{Args: RawArgs{Franchises: []string{"a", "b", "c", "d"}}}}}
-	patch := RawScheduleArgs{Week: 1, Game: "first", Home: "b", Away: "a"}
+	patch := RawScheduleArgs{Week: 1, Games: []ScheduleGame{{ID: "first", Home: "b", Away: "a"}}}
 	if err := checkSchedulePatch(patch, []ScheduleWeek{week}, records); err != nil {
 		t.Fatal(err)
 	}
-	changed := patchScheduleGame([]ScheduleWeek{week}, patch)[0]
+	changed := patchScheduleGames([]ScheduleWeek{week}, patch)[0]
 	if changed.Games[0].ID != "first" || changed.Games[0].Home != "b" ||
 		changed.Games[1] != week.Games[1] || week.Games[0].Home != "a" {
 		t.Fatal("patch changed an identity, another game, or its input", changed, week)
 	}
-	patch.Home = "c"
+	patch.Games[0].Home = "c"
 	if err := checkSchedulePatch(patch, []ScheduleWeek{week}, records); err == nil {
 		t.Fatal("accepted a team playing twice and another team left idle")
 	}
-	patch.Game = "missing"
+	patch.Games[0].ID = "missing"
 	if err := checkSchedulePatch(patch, []ScheduleWeek{week}, records); err == nil {
 		t.Fatal("accepted an unknown game")
+	}
+	// Re-pairing two games is one edit: one game at a time would pass through a team playing twice.
+	swap := RawScheduleArgs{Week: 1, Games: []ScheduleGame{{ID: "first", Home: "a", Away: "c"},
+		{ID: "second", Home: "b", Away: "d"}}}
+	if err := checkSchedulePatch(swap, []ScheduleWeek{week}, records); err != nil {
+		t.Fatal("refused re-pairing two games together", err)
 	}
 }
 
@@ -72,8 +78,10 @@ func TestScheduleCommandArgumentShape(t *testing.T) {
 		{ScheduleGenerate, RawScheduleArgs{Weeks: 53, Pattern: leaguerules.DivisionWeighted}, false},
 		{ScheduleGenerate, RawScheduleArgs{Weeks: 3, Pattern: "unknown"}, false},
 		{ScheduleGenerate, RawScheduleArgs{Weeks: 3, Pattern: leaguerules.DivisionWeighted, Week: 1}, false},
-		{ScheduleEdit, RawScheduleArgs{Week: 1, Game: "first", Home: "a", Away: "b"}, true},
-		{ScheduleEdit, RawScheduleArgs{Week: 1, Home: "a", Away: "b"}, false},
+		{ScheduleEdit, RawScheduleArgs{Week: 1, Games: []ScheduleGame{{ID: "first", Home: "a", Away: "b"}}}, true},
+		{ScheduleEdit, RawScheduleArgs{Week: 1}, false},
+		{ScheduleEdit, RawScheduleArgs{Week: 1, Games: []ScheduleGame{{ID: "first", Home: "a", Away: "b"},
+			{ID: "first", Home: "c", Away: "d"}}}, false},
 		{SchedulePublish, RawScheduleArgs{}, true},
 		{SchedulePublish, RawScheduleArgs{Weeks: 3}, false},
 	} {

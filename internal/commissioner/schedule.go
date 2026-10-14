@@ -19,9 +19,7 @@ type RawScheduleArgs struct {
 	Weeks     int                         `json:"weeks,omitempty"`
 	Pattern   leaguerules.SchedulePattern `json:"pattern,omitempty"`
 	Week      int                         `json:"week,omitempty"`
-	Game      string                      `json:"game,omitempty"`
-	Home      string                      `json:"home,omitempty"`
-	Away      string                      `json:"away,omitempty"`
+	Games     []ScheduleGame              `json:"games,omitempty"`
 	Published bool                        `json:"published,omitempty"`
 }
 
@@ -46,13 +44,12 @@ func (a RawArgs) validateSchedule(command string) error {
 		}
 		details.Weeks, details.Pattern = 0, ""
 	case ScheduleEdit:
-		if details.Week < 1 || strings.TrimSpace(details.Game) == "" ||
-			strings.TrimSpace(details.Home) == "" || strings.TrimSpace(details.Away) == "" {
-			return fmt.Errorf("choose a week, game and both franchises to edit")
+		if err := details.validateGamePatches(); err != nil {
+			return err
 		}
-		details.Week, details.Game, details.Home, details.Away, details.Published = 0, "", "", "", false
+		details.Week, details.Games, details.Published = 0, nil, false
 	}
-	if details != (RawScheduleArgs{}) {
+	if !reflect.DeepEqual(details, RawScheduleArgs{}) {
 		return fmt.Errorf("send only the details of this schedule change")
 	}
 	return nil
@@ -123,9 +120,9 @@ func replaySchedule(records []Record) ([]ScheduleWeek, []ScheduleWeek, error) {
 		case ScheduleEdit:
 			patch := *r.Command.Args.Schedule
 			if r.Command.Args.Schedule.Published {
-				published = patchScheduleGame(published, patch)
+				published = patchScheduleGames(published, patch)
 			} else {
-				draft = patchScheduleGame(draft, patch)
+				draft = patchScheduleGames(draft, patch)
 			}
 		case SchedulePublish:
 			published = append([]ScheduleWeek{}, draft...)
@@ -142,7 +139,32 @@ func cloneSchedule(weeks []ScheduleWeek) []ScheduleWeek {
 	return result
 }
 
-func patchScheduleGame(weeks []ScheduleWeek, patch RawScheduleArgs) []ScheduleWeek {
+// validateGamePatches needs a week and at least one game, each named once with both franchises. Several
+// games change together, so two pairings can be swapped without a team playing twice in between.
+func (r RawScheduleArgs) validateGamePatches() error {
+	if r.Week < 1 || len(r.Games) == 0 {
+		return fmt.Errorf("choose a week and the games to edit")
+	}
+	seen := map[string]bool{}
+	for _, game := range r.Games {
+		if strings.TrimSpace(game.ID) == "" || strings.TrimSpace(game.Home) == "" ||
+			strings.TrimSpace(game.Away) == "" {
+			return fmt.Errorf("choose each game and both of its franchises")
+		}
+		if seen[game.ID] {
+			return fmt.Errorf("name each game once")
+		}
+		seen[game.ID] = true
+	}
+	return nil
+}
+
+// patchScheduleGames sets the named games' franchises in one week and leaves every other game as it was.
+func patchScheduleGames(weeks []ScheduleWeek, patch RawScheduleArgs) []ScheduleWeek {
+	changes := map[string]ScheduleGame{}
+	for _, game := range patch.Games {
+		changes[game.ID] = game
+	}
 	result := cloneSchedule(weeks)
 	for i := range result {
 		if result[i].Week != patch.Week {
@@ -150,8 +172,8 @@ func patchScheduleGame(weeks []ScheduleWeek, patch RawScheduleArgs) []ScheduleWe
 		}
 		for j := range result[i].Games {
 			game := &result[i].Games[j]
-			if game.ID == patch.Game {
-				game.Home, game.Away = patch.Home, patch.Away
+			if change, ok := changes[game.ID]; ok {
+				game.Home, game.Away = change.Home, change.Away
 			}
 		}
 	}
@@ -212,12 +234,16 @@ func checkSchedulePatch(patch RawScheduleArgs, target []ScheduleWeek, records []
 		if week.Week != patch.Week {
 			continue
 		}
+		ids := map[string]bool{}
 		for _, game := range week.Games {
-			if game.ID == patch.Game {
-				changed := patchScheduleGame([]ScheduleWeek{week}, patch)[0]
-				return checkScheduleWeek(changed, target, records)
+			ids[game.ID] = true
+		}
+		for _, game := range patch.Games {
+			if !ids[game.ID] {
+				return fmt.Errorf("choose a game in the generated or published schedule")
 			}
 		}
+		return checkScheduleWeek(patchScheduleGames([]ScheduleWeek{week}, patch)[0], target, records)
 	}
 	return fmt.Errorf("choose a game in the generated or published schedule")
 }

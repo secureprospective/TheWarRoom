@@ -87,9 +87,12 @@ func commandControls() map[string]string {
 	return map[string]string{
 		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039",
 		ContractEdit: "CM-034", CapAdjust: "CM-034", CapRelief: "CM-034", ReserveException: "CM-038",
+		PlayerPosition: "CM-030", PlayerPositionClear: "CM-030",
+		ScorePlayer: "CM-032", ScoreFranchise: "CM-032",
 		WindowSet: "CM-023", WindowMove: "CM-023", WindowRemove: "CM-023",
-		CalendarException: "CM-026",
-		ScheduleGenerate:  "CM-015", ScheduleEdit: "CM-015", SchedulePublish: "CM-015",
+		CalendarException:     "CM-026",
+		StandingsRecordAdjust: "CM-033", StandingsOverride: "CM-033", StandingsOverrideClear: "CM-033",
+		ScheduleGenerate: "CM-015", ScheduleEdit: "CM-015", SchedulePublish: "CM-015",
 	}
 }
 
@@ -171,6 +174,16 @@ func authorizeReversal(auth GovernanceAuthorizer, entry, principal string, recor
 }
 
 func CheckGovernanceAppend(raw RawCommand, principal string, records []Record, at time.Time) error {
+	switch raw.Command {
+	case Revert:
+		if err := checkScoreCompensation(raw, records); err != nil {
+			return err
+		}
+	case PlayerPosition, PlayerPositionClear, ScorePlayer, ScoreFranchise:
+		return checkScoreAppend(raw, records)
+	case StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear:
+		return checkStandingsAppend(raw, records)
+	}
 	trial := make([]Record, len(records), len(records)+1)
 	copy(trial, records)
 	trial = append(trial, Record{Command: raw, Principal: principal,

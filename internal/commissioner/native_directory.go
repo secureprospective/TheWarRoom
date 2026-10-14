@@ -85,3 +85,21 @@ func setNativeName(seats []PeopleSeat, id, name, abbreviation string) {
 		}
 	}
 }
+
+type seatIndex map[string]NativeDirectorySeat
+
+func (d NativeDirectory) seats() seatIndex {
+	index := make(seatIndex, len(d.Franchises))
+	for _, seat := range d.Franchises {
+		index[seat.Franchise] = seat
+	}
+	return index
+}
+
+// of names a franchise the directory does not hold by its id, so a result is never left unnamed.
+func (i seatIndex) of(franchise string) NativeDirectorySeat {
+	if seat, ok := i[franchise]; ok {
+		return seat
+	}
+	return NativeDirectorySeat{PeopleSeat: PeopleSeat{Franchise: franchise, Name: franchise}}
+}

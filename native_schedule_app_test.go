@@ -72,7 +72,7 @@ func TestNativeScheduleOwnerCommandsRevertRestart(t *testing.T) {
 	game := scheduleRead(t, app).Weeks[0].Games[0]
 	raw.Command, raw.Expected, raw.Request = commissioner.ScheduleEdit, 8, "owner-draft-edit"
 	raw.Args = commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{
-		Week: 1, Game: game.ID, Home: game.Away, Away: game.Home,
+		Week: 1, Games: []commissioner.ScheduleGame{{ID: game.ID, Home: game.Away, Away: game.Home}},
 	}}
 	executeCommissionerTest(t, app, raw)
 	for range 2 {
@@ -183,7 +183,7 @@ func TestNativeScheduleRegenerationChangesOwnerOpponentRevertRestart(t *testing.
 	game := scheduleRead(t, app).Weeks[0].Games[0]
 	raw.Command, raw.Expected, raw.Request = commissioner.ScheduleEdit, 4, "double-booking"
 	raw.Args = commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{
-		Week: 1, Game: game.ID, Home: "franchise.01", Away: "franchise.03", Published: true,
+		Week: 1, Games: []commissioner.ScheduleGame{{ID: game.ID, Home: "franchise.01", Away: "franchise.03"}}, Published: true,
 	}}
 	body, err := json.Marshal(raw)
 	if err != nil {

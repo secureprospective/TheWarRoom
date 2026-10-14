@@ -154,6 +154,18 @@ func entryLabel(records []Record, i int) (string, error) {
 	switch r.Command.Command {
 	case ContractEdit, CapAdjust, CapRelief, ReserveException:
 		return overrideLabel(r), nil
+	case PlayerPosition, PlayerPositionClear, ScorePlayer, ScoreFranchise:
+		change, err := DecodeScoreChange(r.Command.Args, r.Command.Command)
+		if err != nil {
+			return "", err
+		}
+		return scoreChangeLabel(r.Command.Command, change), nil
+	case StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear:
+		change, err := DecodeStandingsChange(r.Command.Args, r.Command.Command)
+		if err != nil {
+			return "", err
+		}
+		return standingsLabel(r.Command.Command, change), nil
 	case RulesSet:
 		return ruleLabel(r, records[:i])
 	case Revert:

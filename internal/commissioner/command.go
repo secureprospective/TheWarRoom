@@ -75,6 +75,10 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G2"}, nil
 	case ScheduleGenerate, ScheduleEdit, SchedulePublish:
 		return Definition{Gravity: "G2"}, nil
+	case PlayerPosition, PlayerPositionClear, ScorePlayer:
+		return Definition{Gravity: "G2"}, nil
+	case ScoreFranchise, StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear:
+		return Definition{Gravity: "G3"}, nil
 	default:
 		if d, ok := peopleDefinitionFor(command); ok {
 			return Definition{Gravity: d.gravity}, nil
@@ -98,11 +102,14 @@ type RawArgs struct {
 	Schedule       *RawScheduleArgs    `json:"schedule,omitempty"`
 	Window         *RawWindowArgs      `json:"window,omitempty"`
 	Override       *RawNativeOverride  `json:"override,omitempty"`
+	Score          *RawScoreChange     `json:"score,omitempty"`
+	Standings      *RawStandingsChange `json:"standings,omitempty"`
 }
 
 // validateDetails refuses arguments that belong to another command.
 func (a RawArgs) validateDetails(command string) error {
-	if (command != NativeSeed && a.Native != nil) || a.Schedule != nil || a.Window != nil || a.Override != nil ||
+	if (command != NativeSeed && a.Native != nil) || a.Schedule != nil || a.Window != nil ||
+		a.Override != nil || a.Score != nil || a.Standings != nil ||
 		(command != CalendarException && a.Exception != nil) || a.foreignRuleArgs(command) {
 		return fmt.Errorf("send only the details of this league action")
 	}
@@ -110,6 +117,14 @@ func (a RawArgs) validateDetails(command string) error {
 }
 
 func (a RawArgs) Validate(command string) error {
+	if isScoreCommand(command) {
+		_, err := DecodeScoreChange(a, command)
+		return err
+	}
+	if isStandingsCommand(command) {
+		_, err := DecodeStandingsChange(a, command)
+		return err
+	}
 	if scheduleCommand(command) {
 		return a.validateSchedule(command)
 	}
@@ -201,6 +216,8 @@ func publicNowRule(command string) string {
 		return "the starting snapshot is recorded now for every owner"
 	case windowCommand(command):
 		return "window changes take effect now and are visible to every owner"
+	case isStandingsCommand(command):
+		return "standings overrides take effect now and are shown to the league"
 	case command == CalendarException:
 		return "window exceptions take effect now and are visible to every owner"
 	}
@@ -211,11 +228,8 @@ func (r RawCommand) validatePlacement() error {
 	if rule := publicNowRule(r.Command); rule != "" && (r.Visibility != "league" || r.Effective != "now") {
 		return errors.New(rule)
 	}
-	if overrideCommand(r.Command) {
-		return r.validateOverridePlacement()
-	}
-	if r.Command == RulesSet {
-		return r.validateRulePlacement()
+	if check, ok := r.ownPlacement(); ok {
+		return check()
 	}
 	if r.Visibility != "league" && r.Visibility != "private" {
 		return fmt.Errorf("choose who may read this change")
@@ -230,6 +244,19 @@ func (r RawCommand) validatePlacement() error {
 		return fmt.Errorf("a new league is created now and recorded for the league")
 	}
 	return r.validatePeoplePlacement()
+}
+
+// ownPlacement is the placement check of a command family that sets its own timing and audience.
+func (r RawCommand) ownPlacement() (func() error, bool) {
+	switch {
+	case overrideCommand(r.Command):
+		return r.validateOverridePlacement, true
+	case isScoreCommand(r.Command):
+		return r.validateScorePlacement, true
+	case r.Command == RulesSet:
+		return r.validateRulePlacement, true
+	}
+	return nil, false
 }
 
 func (r RawCommand) validatePeoplePlacement() error {

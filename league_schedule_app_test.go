@@ -87,8 +87,8 @@ func TestScheduleEditOwnerRevertRestart(t *testing.T) {
 		{ID: before[0].Games[0].ID, Home: before[0].Games[0].Away, Away: before[0].Games[0].Home},
 	}}
 	raw.Command, raw.Expected, raw.Request = commissioner.ScheduleEdit, 8, "edit-draft"
-	raw.Args = commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Week: 1, Game: changed.Games[0].ID,
-		Home: changed.Games[0].Home, Away: changed.Games[0].Away}}
+	raw.Args = commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Week: 1,
+		Games: changed.Games}}
 	executeCommissionerTest(t, app, raw)
 	if !reflect.DeepEqual(scheduleRead(t, app).Weeks, before) {
 		t.Fatal("draft edit leaked to owners")
@@ -178,11 +178,13 @@ func TestScheduleCommandSafety(t *testing.T) {
 	executeCommissionerTest(t, app, raw)
 	raw.Command, raw.Expected = commissioner.ScheduleEdit, 7
 	for i, patch := range []commissioner.RawScheduleArgs{
-		{Week: 14, Game: "week.1.game.1", Home: "franchise.01", Away: "franchise.02"},
-		{Week: 1, Game: "missing", Home: "franchise.01", Away: "franchise.02"},
-		{Week: 1, Game: "week.1.game.1", Home: "franchise.01", Away: "franchise.01"},
-		{Week: 1, Game: "week.1.game.1", Home: "franchise.01", Away: "foreign"},
-		{Week: 1, Game: "week.1.game.1", Home: "franchise.01"},
+		{Week: 14, Games: []commissioner.ScheduleGame{{ID: "week.1.game.1", Home: "franchise.01", Away: "franchise.02"}}},
+		{Week: 1, Games: []commissioner.ScheduleGame{{ID: "missing", Home: "franchise.01", Away: "franchise.02"}}},
+		{Week: 1, Games: []commissioner.ScheduleGame{{ID: "week.1.game.1", Home: "franchise.01", Away: "franchise.01"}}},
+		{Week: 1, Games: []commissioner.ScheduleGame{{ID: "week.1.game.1", Home: "franchise.01", Away: "foreign"}}},
+		{Week: 1, Games: []commissioner.ScheduleGame{{ID: "week.1.game.1", Home: "franchise.01"}}},
+		{Week: 1, Games: []commissioner.ScheduleGame{{ID: "week.1.game.1", Home: "franchise.01", Away: "franchise.02"},
+			{ID: "week.1.game.1", Home: "franchise.03", Away: "franchise.04"}}},
 	} {
 		raw.Request = string(rune('a' + i))
 		raw.Args = commissioner.RawArgs{Schedule: &patch}

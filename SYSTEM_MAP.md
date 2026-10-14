@@ -451,4 +451,47 @@ It imports only the standard library and `internal/leaguerules`; no store, inges
 long-play distances and return-touchdown credits (returning team only), and adapts them without fetching or store writes.
 `source/testdata/comparison.csv` pins two complete held Legacy roster weeks against MFL totals,
 with an independent native-points reference and every mismatch classified; the Legacy preset follows the held league’s MFL scoring settings, with optional per-stat rounding
-and once-per-week counting. Eight source-credit differences remain explicitly unresolved. Neither package is connected to runtime score surfaces yet.
+and once-per-week counting. Eight source-credit differences remain explicitly unresolved. The app-owned player score reading composes these packages; existing MFL score surfaces remain unchanged.
+`source.StatPort` is the read-only player-week revision port; `history.Store.PlayerWeekStats` implements
+it over the exact registered weekly-file URL in the existing fetch archive. Distinct body hashes are
+returned newest first with held timestamps, exact quantities and the feed position. A missing player
+stays absent rather than reusing an older line. Play-by-play is not a registered Signals feed, so each
+weekly revision explicitly reports that missing evidence; consumers must not treat it as a complete
+native scoring line. No fixture or network fallback is installed.
+
+`source.IdentityPort` reads the existing `history.Store.SourceID` crosswalk; `ReadNativeEvidence`
+validates a league player/week, selects only the newest held revision and preserves missing identity,
+week and play-by-play as explicit absence. It does not fetch or manufacture a zero stat line.
+`internal/commissioner/score_commands.go` adds CM-030 position set/clear and CM-032 season/week-scoped
+player/franchise deltas through the existing command ledger, with CC+ permission, reasons and G2/G3.
+`score_changes.go` folds compensation before selecting native scoring position and adding each delta
+once, retaining linked ledger provenance; overflow is refused on append and compensation.
+`ResultFlipCheck` compares published native games before and after a proposed score change. These utilities
+feed `TargetNativePlayerScore` in `native_legality_app.go` through `history.Store.NativePlayerScore`.
+`commissioner.NativePlayerScoreReading` combines newest held identity/stat evidence, native position
+and adjustment provenance, and season-bound `RulesInForce`. Complete totals alone have `points`;
+incomplete evidence has explicitly labelled `partialPoints`, and missing identity/week or unsettled
+rules have neither. Missing play-by-play stays explicit. The Go-written wire fixture lives at
+`internal/commissioner/testdata/player-score-wire.json`. Existing MFL owner readings and scouting
+positions are unchanged.
+
+## Native results and standings
+
+`native_results_app.go` exposes `TargetNativeResults(league, season, week)`,
+`TargetNativeStandings(league, season)` and read-only `TargetNativeScorePreview(body)`.
+`internal/commissioner/native_week_score.go` folds supplied weekly starters through the native
+player-score reading, then adds franchise deltas once; an incomplete starter leaves no final total.
+`native_results.go` scores only published games, preserves ties and freezes a closed season's
+publication. `standings_rank.go` ranks exact records under the season's ordered criteria with plain
+reasons and explicit missing-data skips. `standings_reading.go` counts regular-season weeks only,
+complete weekly points (including byes) and whole-complete-week all-play comparisons.
+`standings_commands.go` folds commissioner-only G3 record/order overrides and clear commands beside,
+never over, computed standings; existing authorization, append, request-key and compensation paths own
+all changes. `result_flip.go` compares before/after games for score previews: yes, no, or unknown with
+reasons; a flip warns, never blocks recording. Go owns the results/standings wire fixture in
+`internal/commissioner/testdata/native-results-standings-wire.json`.
+`internal/store/history/native_results.go` composes held evidence and the injected `LineupSource`.
+There is no production native lineup provider yet: its default explicitly reports no lineup, never
+substitutes MFL starters. The existing held-stat adapter still lacks play-by-play. Conference alignment
+and native power-rank inputs are not available in the current rule model; those criteria explicitly
+pass with no data. No owner screen is migrated and no scouting or imported MFL reading changes.

@@ -7,6 +7,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
@@ -142,6 +143,24 @@ func (a *App) TargetNativeHouseRules(leagueID string) (commissioner.NativeHouseR
 	reading, err := a.history.NativeHouseRules(ctx, leagueID)
 	if err != nil {
 		return commissioner.NativeHouseRules{}, fmt.Errorf("native house rules: %w", err)
+	}
+	return reading, nil
+}
+
+// TargetNativePlayerScore reads only held NFL evidence and the app league's recorded decisions.
+func (a *App) TargetNativePlayerScore(league, player string, season, week int) (commissioner.NativePlayerScore, error) {
+	scope := source.RawNativeScope{Player: player, Season: season, Week: week}
+	if err := scope.Validate(); err != nil {
+		return commissioner.NativePlayerScore{}, fmt.Errorf("player score input: %w", err)
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.NativePlayerScore{}, fmt.Errorf("player score startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.NativePlayerScore(ctx, league, scope)
+	if err != nil {
+		return commissioner.NativePlayerScore{}, fmt.Errorf("player score: %w", err)
 	}
 	return reading, nil
 }

@@ -59,13 +59,16 @@ vet:
 
 # -race is non-negotiable (failure mode #2: concurrent map access from Wails IPC
 # goroutines hitting B3c). Never make this optional.
+# The root package's race run passed 10 minutes (Go's default) as the commissioner side grew; the limit
+# is explicit so a slow package fails as a timeout we chose, not one we inherited.
+GO_TEST_TIMEOUT := 25m
 test:
-	go test -race ./...
+	go test -race -timeout $(GO_TEST_TIMEOUT) ./...
 
 COVERAGE_THRESHOLD := 80
 
 test-coverage:
-	go test -race -coverprofile=coverage.out ./...
+	go test -race -timeout $(GO_TEST_TIMEOUT) -coverprofile=coverage.out ./...
 	go tool cover -func=coverage.out
 	@total=$$(go tool cover -func=coverage.out | grep '^total:' | grep -oE '[0-9]+\.[0-9]+'); \
 	awk -v t="$$total" -v min="$(COVERAGE_THRESHOLD)" 'BEGIN { if (t+0 < min+0) { printf "coverage %.1f%% < threshold %d%%\n", t, min; exit 1 } else { printf "coverage %.1f%% >= threshold %d%%\n", t, min } }'
@@ -87,7 +90,7 @@ setup:
 verify: lint
 	$(MAKE) bindings
 	cd frontend && pnpm tsc --noEmit
-	go test -race ./...
+	go test -race -timeout $(GO_TEST_TIMEOUT) ./...
 	cd frontend && pnpm test && pnpm run build && node scripts/bundle-budget.mjs
 
 # Desktop shell. Wails embeds the built frontend; before the frontend is wired
