@@ -314,6 +314,10 @@ export function TargetNativeAssets(arg1) {
   return window['go']['main']['App']['TargetNativeAssets'](arg1);
 }
 
+export function TargetNativeCapCheck(arg1) {
+  return window['go']['main']['App']['TargetNativeCapCheck'](arg1);
+}
+
 export function TargetNativeDirectory(arg1) {
   return window['go']['main']['App']['TargetNativeDirectory'](arg1);
 }

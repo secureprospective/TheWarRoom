@@ -11,6 +11,18 @@ import (
 // The native legality readings judge the recorded league against its own rules at the store's clock.
 // Player facts arrive from the caller, because the ledger holds none.
 
+func (s *Store) NativeCapCheck(ctx context.Context, league string) (commissioner.NativeCapCheck, error) {
+	records, err := s.nativeRecords(ctx, league)
+	if err != nil {
+		return commissioner.NativeCapCheck{}, err
+	}
+	reading, err := commissioner.NativeCapCheckReading(league, records, s.now())
+	if err != nil {
+		return commissioner.NativeCapCheck{}, fmt.Errorf("read native salary cap check: %w", err)
+	}
+	return reading, nil
+}
+
 func (s *Store) NativeRosterCheck(ctx context.Context, league string, facts nativecheck.Facts) (commissioner.NativeRosterCheck, error) {
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {

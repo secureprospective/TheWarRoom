@@ -291,6 +291,148 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class NativeCapCharge {
+	    id: string;
+	    description: string;
+	    amountCents?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeCapCharge(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.description = source["description"];
+	        this.amountCents = source["amountCents"];
+	    }
+	}
+	export class NativeCapFranchise {
+	    capCents?: number;
+	    salaryCents?: number;
+	    activeCents?: number;
+	    irCents?: number;
+	    taxiCents?: number;
+	    adjustmentCents?: number;
+	    committedCents?: number;
+	    roomCents?: number;
+	    quantumCents?: number;
+	    mode: string;
+	    // Go type: time
+	    deadline?: any;
+	    words: string;
+	    enforcement: string;
+	    franchise: string;
+	    name: string;
+	    abbreviation: string;
+	    charges: NativeCapCharge[];
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeCapFranchise(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.capCents = source["capCents"];
+	        this.salaryCents = source["salaryCents"];
+	        this.activeCents = source["activeCents"];
+	        this.irCents = source["irCents"];
+	        this.taxiCents = source["taxiCents"];
+	        this.adjustmentCents = source["adjustmentCents"];
+	        this.committedCents = source["committedCents"];
+	        this.roomCents = source["roomCents"];
+	        this.quantumCents = source["quantumCents"];
+	        this.mode = source["mode"];
+	        this.deadline = this.convertValues(source["deadline"], null);
+	        this.words = source["words"];
+	        this.enforcement = source["enforcement"];
+	        this.franchise = source["franchise"];
+	        this.name = source["name"];
+	        this.abbreviation = source["abbreviation"];
+	        this.charges = this.convertValues(source["charges"], NativeCapCharge);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class RuleLine {
+	    label: string;
+	    words: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RuleLine(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.label = source["label"];
+	        this.words = source["words"];
+	    }
+	}
+	export class NativeCapCheck {
+	    league: string;
+	    name: string;
+	    revision: number;
+	    rosterSeason: number;
+	    rulesSeason: number;
+	    seeded: boolean;
+	    source: string;
+	    counting: string;
+	    rules: RuleLine[];
+	    franchises: NativeCapFranchise[];
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeCapCheck(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.name = source["name"];
+	        this.revision = source["revision"];
+	        this.rosterSeason = source["rosterSeason"];
+	        this.rulesSeason = source["rulesSeason"];
+	        this.seeded = source["seeded"];
+	        this.source = source["source"];
+	        this.counting = source["counting"];
+	        this.rules = this.convertValues(source["rules"], RuleLine);
+	        this.franchises = this.convertValues(source["franchises"], NativeCapFranchise);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	
 	export class NativeDirectorySeat {
 	    franchise: string;
@@ -424,20 +566,6 @@ export namespace commissioner {
 	        this.player = source["player"];
 	        this.name = source["name"];
 	        this.position = source["position"];
-	    }
-	}
-	export class RuleLine {
-	    label: string;
-	    words: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new RuleLine(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.label = source["label"];
-	        this.words = source["words"];
 	    }
 	}
 	export class NativeLineupCheck {
