@@ -39,7 +39,7 @@ func capApp(t *testing.T) *legalityFixture {
 
 func readCap(t *testing.T, f *legalityFixture) commissioner.NativeCapCheck {
 	t.Helper()
-	reading, err := f.app.TargetNativeCapCheck(legalityLeague)
+	reading, err := f.app.TargetNativeCapCheck(legalityLeague, "UTC")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +108,7 @@ func TestNativeCapEnforcementAndDeadlineGovernActualReading(t *testing.T) {
 	f.set(t, "cap.amount", `2000000000`, "now")
 	read := func(t *testing.T, f *legalityFixture) string {
 		team := capTeam(t, f)
-		allow, words := nativecheck.CapAllows(team.CapState, 0)
+		allow, words := nativecheck.CapAllows(team.CapState, 0, time.UTC)
 		if words != team.Enforcement {
 			t.Fatalf("reading and pure move decision diverged: %s / %s", words, team.Enforcement)
 		}
@@ -120,7 +120,7 @@ func TestNativeCapEnforcementAndDeadlineGovernActualReading(t *testing.T) {
 	f.set(t, "cap.enforcement", `"soft"`, "now")
 	f.governs(t, "cap.complianceDeadline", `"2026-10-20T00:00:00Z"`, read,
 		"true Over the salary cap: flagged; compliance deadline needs a ruling",
-		"true Over the salary cap: flagged; comply by 2026-10-20T00:00:00Z")
+		"true Over the salary cap: flagged; comply by 20 Oct 2026 at 12:00 AM UTC")
 }
 
 func TestNativeCapRulesAndCompensationSurviveReopen(t *testing.T) {
@@ -156,7 +156,7 @@ func TestNativeCapWaitsForSeasonEffectiveRules(t *testing.T) {
 func TestNativeCapUnseededAndInvalidScope(t *testing.T) {
 	a := nativeSeedTestApp(t)
 	createNativeSeedLeague(t, a, commissioner.PresetEmpty)
-	reading, err := a.TargetNativeCapCheck(legalityLeague)
+	reading, err := a.TargetNativeCapCheck(legalityLeague, "UTC")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func TestNativeCapUnseededAndInvalidScope(t *testing.T) {
 		t.Fatalf("unseeded cap invented rosters: %+v", reading)
 	}
 	for _, scope := range []string{"", "14432", "native.missing", " native.seed"} {
-		if _, err := a.TargetNativeCapCheck(scope); err == nil {
+		if _, err := a.TargetNativeCapCheck(scope, "UTC"); err == nil {
 			t.Fatalf("invalid scope accepted: %q", scope)
 		}
 	}
@@ -179,4 +179,88 @@ func TestNativeCapWire(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkWire(t, "internal/commissioner/testdata/native-cap-check.wire.json", body, "native cap")
+}
+
+func capDeadlineInZone(t *testing.T, f *legalityFixture, zone string) string {
+	t.Helper()
+	reading, err := f.app.TargetNativeCapCheck(legalityLeague, zone)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, team := range reading.Franchises {
+		if team.Franchise != "franchise.02" {
+			continue
+		}
+		for _, rule := range reading.Rules {
+			if rule.Label == "Soft cap compliance deadline" {
+				return team.Enforcement + " / " + rule.Words
+			}
+		}
+		t.Fatal("compliance deadline rule missing")
+	}
+	t.Fatal("native franchise missing")
+	return ""
+}
+
+func TestNativeCapViewerDeadlineGovernsActualReading(t *testing.T) {
+	f := capApp(t)
+	f.set(t, "cap.amount", `2000000000`, "now")
+	f.set(t, "cap.enforcement", `"soft"`, "now")
+	read := func(t *testing.T, f *legalityFixture) string {
+		return capDeadlineInZone(t, f, "America/Los_Angeles")
+	}
+	before := read(t, f)
+	f.governs(t, "cap.complianceDeadline", `"2026-10-20T00:00:00Z"`, read, before,
+		"Over the salary cap: flagged; comply by 19 Oct 2026 at 5:00 PM PDT / 19 Oct 2026 at 5:00 PM PDT")
+	receipt := f.set(t, "cap.complianceDeadline", `"2026-10-20T00:00:00Z"`, "now")
+	f.reopen(t)
+	if got := read(t, f); got !=
+		"Over the salary cap: flagged; comply by 19 Oct 2026 at 5:00 PM PDT / 19 Oct 2026 at 5:00 PM PDT" {
+		t.Fatal("viewer-local deadline did not replay: " + got)
+	}
+	f.revert(t, receipt)
+	f.reopen(t)
+	if got := read(t, f); got != before {
+		t.Fatal("deadline compensation did not replay: " + got)
+	}
+}
+
+func TestNativeCapViewerZoneAndDaylightSaving(t *testing.T) {
+	f := capApp(t)
+	f.set(t, "cap.amount", `2000000000`, "now")
+	f.set(t, "cap.enforcement", `"soft"`, "now")
+	for _, tc := range []struct{ at, zone, words string }{
+		{"2026-11-01T08:30:00Z", "America/Los_Angeles", "1 Nov 2026 at 1:30 AM PDT"},
+		{"2026-11-01T09:30:00Z", "America/Los_Angeles", "1 Nov 2026 at 1:30 AM PST"},
+		{"2026-11-01T09:30:00Z", "Asia/Kolkata", "1 Nov 2026 at 3:00 PM IST"},
+		{"2026-11-01T09:30:00Z", "UTC", "1 Nov 2026 at 9:30 AM UTC"},
+	} {
+		receipt := f.set(t, "cap.complianceDeadline", `"`+tc.at+`"`, "now")
+		if got := capDeadlineInZone(t, f, tc.zone); got !=
+			"Over the salary cap: flagged; comply by "+tc.words+" / "+tc.words {
+			t.Fatalf("%s in %s: %s", tc.at, tc.zone, got)
+		}
+		f.revert(t, receipt)
+	}
+	for _, zone := range []string{"", "Local", "bad/zone", " UTC"} {
+		if _, err := f.app.TargetNativeCapCheck(legalityLeague, zone); err == nil {
+			t.Fatalf("invalid viewer timezone accepted: %q", zone)
+		}
+	}
+}
+
+func TestNativeCapLocalDeadlineWire(t *testing.T) {
+	f := capApp(t)
+	f.set(t, "cap.amount", `2000000000`, "now")
+	f.set(t, "cap.enforcement", `"soft"`, "now")
+	f.set(t, "cap.complianceDeadline", `"2026-10-20T00:00:00Z"`, "now")
+	reading, err := f.app.TargetNativeCapCheck(legalityLeague, "America/Los_Angeles")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := json.Marshal(reading)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkWire(t, "internal/commissioner/testdata/native-cap-local-deadline.wire.json", body, "local cap deadline")
 }
