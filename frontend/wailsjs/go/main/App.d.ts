@@ -171,6 +171,8 @@ export function TargetNativeCapCheck(arg1:string,arg2:string):Promise<commission
 
 export function TargetNativeDirectory(arg1:string):Promise<commissioner.NativeDirectory>;
 
+export function TargetNativeFranchiseSchedule(arg1:main.RawNativeScheduleScope):Promise<commissioner.FranchiseSchedule>;
+
 export function TargetNativeHouseRules(arg1:string):Promise<commissioner.NativeHouseRules>;
 
 export function TargetNativeLineupCheck(arg1:commissioner.RawNativeLineup):Promise<commissioner.NativeLineupCheck>;
@@ -180,6 +182,8 @@ export function TargetNativeReserveCheck(arg1:string):Promise<commissioner.Nativ
 export function TargetNativeRosterCheck(arg1:string):Promise<commissioner.NativeRosterCheck>;
 
 export function TargetNativeSeed(arg1:main.RawNativeSeedRequest):Promise<commissioner.Receipt>;
+
+export function TargetNativeWeek(arg1:main.RawNativeWeekScope):Promise<commissioner.NativeWeek>;
 
 export function TargetNow(arg1:number,arg2:number,arg3:string):Promise<main.NowBoard>;
 

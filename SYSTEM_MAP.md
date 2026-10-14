@@ -83,11 +83,17 @@ This read port does not yet replace the what-if transaction phase gate or the im
 `internal/commissioner/schedule_generator.go` generates complete division-weighted rounds for 2–32
 franchises, with one rotating bye in odd leagues. `schedule.generate`, `schedule.edit` and
 `schedule.publish` share the authorized/versioned/idempotent append path (CM-015, G2; published
-week edits are G3). Generation takes explicit weeks and pattern with the current division alignment; an unset
-pattern refuses to guess. Each game has a stable week/slot id. Edits patch one game's home/away
+week edits are G3). Generation takes explicit weeks with the current division alignment; an omitted
+pattern uses the in-force rule, and an unset rule refuses to guess. Equal even-sized divisions use
+complete within-division rounds; reciprocal meetings and oriented remaining trails balance home games. Each game has a stable week/slot id. Edits patch one game's home/away
 franchises, validating the complete resulting week. Generated weeks are frozen in the ledger record;
 publication replay never reruns the generator or resolves today's schedule rules. `league_schedule_app.go` exposes `TargetLeagueSchedule`: only the published
 projection, replayed from local events and compensations. Draft changes never replace that reading.
+`native_schedule_app.go` exposes the franchise season and current-week owner readings over those
+publications. Opponents are native; kickoff and finality come only from locally archived NFL weeks,
+localized for the owner, with missing dates explicit. Ended seasons stop at their rollover boundary;
+new seasons do not inherit a publication. Until a native seed supplies a season, the first schedule
+season is the creation record's year. No imported fantasy schedule or network fetch is used.
 `internal/commissioner/windows.go` holds the named window doors, `calendar.window.set`, `.move` and
 `.remove` (CM-023, G2, co-commissioner): each replays into the same `calendar.windows` value a
 `rules.set` writes (`windowChange` feeds the season resolver's `seasonChanges`), so the two doors read one projection and a
@@ -105,6 +111,7 @@ owner-edge wiring are still pending.
 |---|---|
 | `league_calendar_app.go` | `TargetLeagueCalendar(RawLeagueCalendarScope)`: app-owned action windows, live close countdowns, exact chosen trade deadline and public scoped exceptions, replayed from the league ledger and localized for the owner. |
 | `league_schedule_app.go` | `TargetLeagueSchedule(RawLeagueScheduleScope)`: published native head-to-head schedule only; draft changes are not owner readings. |
+| `native_schedule_app.go` | `TargetNativeWeek(RawNativeWeekScope)`, `TargetNativeFranchiseSchedule(RawNativeScheduleScope)`: validated league/franchise/season/owner-zone scopes and explicit week reading time; published opponents, venue, bye, local first NFL kickoff and next week. Unknown held NFL dates never become guessed weeks. |
 | `market_surfaces_app.go`, `market_profile_app.go` | `TargetMarketLists`, `TargetPickClock`, `TargetMarketStretches`, `TargetAssetProfile`: validated historical scopes and asset kinds; typed Go-computed display sections in `Reading[MarketSurface]`, fitted ranges and archive disclosure, no spread grade. |
 | `counterparties_app.go`, `counterpanel_app.go` | `TargetCounterparties`, `TargetCounterpartTeam`: validated historical standing/window/posture scopes; tier cards, trends, pair matrix, sortable team values and season/asset-flow/partner Inspector readings. Lazy frontend in `frontend/src/app/counterparties`, franchise ids resolved against the shared snapshot. |
 | `lab_app.go` | `TargetMarket` validates season/phase input and returns a typed historical Market payload in the generic `Reading` shell extending `snapshot.Sourced`; dated provenance, count/threshold and Go-authored counting disclosure, no spread grade. |

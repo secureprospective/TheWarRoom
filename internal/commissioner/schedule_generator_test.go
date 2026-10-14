@@ -121,3 +121,83 @@ func TestScheduleRejectsInvalidInputs(t *testing.T) {
 		t.Fatal("accepted unknown pattern")
 	}
 }
+
+func TestLegacyScheduleBalanceAndMeetings(t *testing.T) {
+	teams := make([]string, 32)
+	divisions := make(map[string]string)
+	for i := range teams {
+		teams[i] = fmt.Sprintf("franchise.%02d", i+1)
+		divisions[teams[i]] = fmt.Sprint(i / 4)
+	}
+	weeks, err := GenerateSchedule(teams, divisions, leaguerules.ScheduleRules{
+		RegularWeeks: leaguerules.Known(13), Pattern: leaguerules.Known(leaguerules.DivisionWeighted),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	homes, aways := make(map[string]int), make(map[string]int)
+	meetings := make(map[[2]string]int)
+	for _, week := range weeks {
+		for _, game := range week.Games {
+			homes[game.Home]++
+			aways[game.Away]++
+			meetings[[2]string{game.Home, game.Away}]++
+		}
+	}
+	for _, team := range teams {
+		if homes[team]+aways[team] != 13 || homes[team] < 6 || homes[team] > 7 {
+			t.Fatal("Legacy requires six or seven home games", team, homes, aways)
+		}
+		cross := 0
+		for _, other := range teams {
+			if team == other {
+				continue
+			}
+			home, away := meetings[[2]string{team, other}], meetings[[2]string{other, team}]
+			if divisions[team] == divisions[other] {
+				if home != 1 || away != 1 {
+					t.Fatal("division opponents require reciprocal meetings", team, other, home, away)
+				}
+			} else {
+				if home+away > 1 {
+					t.Fatal("cross-division opponent repeated", team, other, home, away)
+				}
+				cross += home + away
+			}
+		}
+		if cross != 7 {
+			t.Fatal("expected seven cross-division games", team, cross)
+		}
+	}
+}
+
+func TestScheduleHomesBalancedAcrossSizesAndLengths(t *testing.T) {
+	for count := 2; count <= 32; count++ {
+		teams := make([]string, count)
+		divisions := make(map[string]string)
+		for i := range teams {
+			teams[i] = fmt.Sprint(i)
+			divisions[teams[i]] = fmt.Sprint(i / 4)
+		}
+		for length := 1; length <= 52; length++ {
+			weeks, err := GenerateSchedule(teams, divisions, leaguerules.ScheduleRules{
+				RegularWeeks: leaguerules.Known(length), Pattern: leaguerules.Known(leaguerules.DivisionWeighted),
+			})
+			if err != nil {
+				t.Fatal(count, length, err)
+			}
+			balance := make(map[string]int)
+			for _, week := range weeks {
+				for _, game := range week.Games {
+					balance[game.Home]++
+					balance[game.Away]--
+				}
+			}
+			for team, difference := range balance {
+				if difference < -1 || difference > 1 {
+					t.Fatal(count, length, team, difference)
+				}
+			}
+		}
+	}
+}

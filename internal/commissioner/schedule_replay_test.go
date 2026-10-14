@@ -1,8 +1,11 @@
 package commissioner
 
 import (
+	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
@@ -64,7 +67,7 @@ func TestScheduleCommandArgumentShape(t *testing.T) {
 		valid   bool
 	}{
 		{ScheduleGenerate, RawScheduleArgs{Weeks: 3, Pattern: leaguerules.DivisionWeighted}, true},
-		{ScheduleGenerate, RawScheduleArgs{Weeks: 3}, false},
+		{ScheduleGenerate, RawScheduleArgs{Weeks: 3}, true},
 		{ScheduleGenerate, RawScheduleArgs{Weeks: 0, Pattern: leaguerules.DivisionWeighted}, false},
 		{ScheduleGenerate, RawScheduleArgs{Weeks: 53, Pattern: leaguerules.DivisionWeighted}, false},
 		{ScheduleGenerate, RawScheduleArgs{Weeks: 3, Pattern: "unknown"}, false},
@@ -106,6 +109,40 @@ func TestScheduleFrozenPayloadValidation(t *testing.T) {
 		change(&invalid)
 		if err := invalid.validateGeneratedSchedule(); err == nil {
 			t.Fatal("accepted malformed frozen generation", invalid)
+		}
+	}
+}
+
+func TestScheduleGenerationUsesInForcePatternWhenOmitted(t *testing.T) {
+	for _, count := range []int{2, 32} {
+		create, err := (RawCommand{League: "native.test", Command: Create,
+			Args:   RawArgs{Name: "Ours", Preset: PresetLegacy, FranchiseCount: count},
+			Reason: "Start", Request: "create", Effective: "now", Visibility: "league"}).Prepared()
+		if err != nil {
+			t.Fatal(err)
+		}
+		alignment := make(map[string]string)
+		for i, franchise := range create.Args.Franchises {
+			alignment[franchise] = fmt.Sprint(i / 4)
+		}
+		body, err := json.Marshal(alignment)
+		if err != nil {
+			t.Fatal(err)
+		}
+		records := []Record{
+			{Command: create, Receipt: Receipt{Entry: "create", RecordedAt: time.Unix(1, 0)}},
+			{Command: RawCommand{League: "native.test", Command: RulesSet, Effective: "now",
+				Args: RawArgs{Field: "league.alignment", Value: body}},
+				Receipt: Receipt{Entry: "align", RecordedAt: time.Unix(2, 0)}},
+		}
+		raw := RawCommand{Command: ScheduleGenerate, Args: RawArgs{Schedule: &RawScheduleArgs{Weeks: 13}}}
+		weeks, err := FreezeSchedule(raw, records)
+		if count == 32 {
+			if err != nil || len(weeks) != 13 {
+				t.Fatal("omitted pattern did not use the in-force Legacy rule", weeks, err)
+			}
+		} else if err == nil || err.Error() != "Choose how often teams meet in this smaller league." {
+			t.Fatal("unset rule did not demand a commissioner choice", weeks, err)
 		}
 	}
 }

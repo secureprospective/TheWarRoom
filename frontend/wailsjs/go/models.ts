@@ -106,6 +106,85 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class FranchiseGame {
+	    week: number;
+	    game?: string;
+	    opponent?: string;
+	    venue: string;
+	    // Go type: time
+	    kickoff?: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new FranchiseGame(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.week = source["week"];
+	        this.game = source["game"];
+	        this.opponent = source["opponent"];
+	        this.venue = source["venue"];
+	        this.kickoff = this.convertValues(source["kickoff"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class FranchiseSchedule {
+	    league: string;
+	    franchise: string;
+	    season: number;
+	    revision: number;
+	    message?: string;
+	    games: FranchiseGame[];
+	
+	    static createFrom(source: any = {}) {
+	        return new FranchiseSchedule(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.franchise = source["franchise"];
+	        this.season = source["season"];
+	        this.revision = source["revision"];
+	        this.message = source["message"];
+	        this.games = this.convertValues(source["games"], FranchiseGame);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class HouseRule {
 	    id: string;
 	    text: string;
@@ -821,6 +900,42 @@ export namespace commissioner {
 	}
 	
 	
+	export class NativeWeek {
+	    schedule: FranchiseSchedule;
+	    current?: FranchiseGame;
+	    nextWeek?: number;
+	    message?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeWeek(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.schedule = this.convertValues(source["schedule"], FranchiseSchedule);
+	        this.current = this.convertValues(source["current"], FranchiseGame);
+	        this.nextWeek = source["nextWeek"];
+	        this.message = source["message"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class PeopleVoteCount {
 	    choice: string;
 	    ballots: number;
@@ -5119,6 +5234,24 @@ export namespace main {
 		}
 	}
 	
+	export class RawNativeScheduleScope {
+	    league: string;
+	    franchise: string;
+	    season: number;
+	    localZone: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawNativeScheduleScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.franchise = source["franchise"];
+	        this.season = source["season"];
+	        this.localZone = source["localZone"];
+	    }
+	}
 	export class RawNativeSeedRequest {
 	    league: string;
 	    expected: number;
@@ -5136,6 +5269,45 @@ export namespace main {
 	        this.request = source["request"];
 	        this.reason = source["reason"];
 	    }
+	}
+	export class RawNativeWeekScope {
+	    league: string;
+	    franchise: string;
+	    season: number;
+	    localZone: string;
+	    // Go type: time
+	    at: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawNativeWeekScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.franchise = source["franchise"];
+	        this.season = source["season"];
+	        this.localZone = source["localZone"];
+	        this.at = this.convertValues(source["at"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class RawOfferScope {
 	    from: number;

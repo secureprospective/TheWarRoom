@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
@@ -40,10 +41,7 @@ func (a RawArgs) validateSchedule(command string) error {
 		if details.Weeks < 1 || details.Weeks > 52 {
 			return fmt.Errorf("choose between 1 and 52 regular-season weeks")
 		}
-		if details.Pattern == "" {
-			return fmt.Errorf("%s", "Choose how often teams meet in this smaller league.")
-		}
-		if details.Pattern != leaguerules.DivisionWeighted {
+		if details.Pattern != "" && details.Pattern != leaguerules.DivisionWeighted {
 			return fmt.Errorf("choose a recognised schedule pattern")
 		}
 		details.Weeks, details.Pattern = 0, ""
@@ -73,6 +71,40 @@ func ScheduleReading(league string, records []Record) (Schedule, error) {
 		return Schedule{}, err
 	}
 	return Schedule{League: league, Revision: int64(len(records)), Weeks: published}, nil
+}
+
+// ScheduleSeasonReading freezes ended seasons at their rollover boundary. A new
+// season has no publication until its own schedule is published.
+func ScheduleSeasonReading(league string, records []Record, season int, at time.Time) (Schedule, error) {
+	if len(records) == 0 {
+		return Schedule{}, fmt.Errorf("create this app league before reading its schedule")
+	}
+	starts, err := rolloverInstants(recordsThrough(records, at))
+	if err != nil {
+		return Schedule{}, err
+	}
+	first := firstSeason(records)
+	if first == ledgerSeason {
+		first = records[0].Receipt.RecordedAt.Year()
+	}
+	index := season - first
+	if index < 0 || index > len(starts) || (index > 0 && at.Before(starts[index-1])) {
+		return Schedule{}, fmt.Errorf("choose a season in this league's history")
+	}
+	var start time.Time
+	if index > 0 {
+		start = starts[index-1]
+	}
+	if index < len(starts) && !at.Before(starts[index]) {
+		at = starts[index].Add(-time.Nanosecond)
+	}
+	selected := append([]Record{}, recordsThrough(records, at)...)
+	for i := range selected {
+		if selected[i].Receipt.RecordedAt.Before(start) && scheduleCommand(selected[i].Command.Command) {
+			selected[i].Command.Command = ""
+		}
+	}
+	return ScheduleReading(league, selected)
 }
 
 func replaySchedule(records []Record) ([]ScheduleWeek, []ScheduleWeek, error) {
@@ -137,9 +169,13 @@ func FreezeSchedule(raw RawCommand, records []Record) ([]ScheduleWeek, error) {
 	}
 	teams := records[0].Command.Args.Franchises
 
+	pattern := rules.Schedule.Pattern
+	if raw.Args.Schedule.Pattern != "" {
+		pattern = leaguerules.Known(raw.Args.Schedule.Pattern)
+	}
 	return GenerateSchedule(teams, rules.League.Alignment.Value, leaguerules.ScheduleRules{
 		RegularWeeks: leaguerules.Known(raw.Args.Schedule.Weeks),
-		Pattern:      leaguerules.Known(raw.Args.Schedule.Pattern),
+		Pattern:      pattern,
 	})
 }
 

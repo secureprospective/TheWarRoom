@@ -330,6 +330,10 @@ export function TargetNativeDirectory(arg1) {
   return window['go']['main']['App']['TargetNativeDirectory'](arg1);
 }
 
+export function TargetNativeFranchiseSchedule(arg1) {
+  return window['go']['main']['App']['TargetNativeFranchiseSchedule'](arg1);
+}
+
 export function TargetNativeHouseRules(arg1) {
   return window['go']['main']['App']['TargetNativeHouseRules'](arg1);
 }
@@ -348,6 +352,10 @@ export function TargetNativeRosterCheck(arg1) {
 
 export function TargetNativeSeed(arg1) {
   return window['go']['main']['App']['TargetNativeSeed'](arg1);
+}
+
+export function TargetNativeWeek(arg1) {
+  return window['go']['main']['App']['TargetNativeWeek'](arg1);
 }
 
 export function TargetNow(arg1, arg2, arg3) {

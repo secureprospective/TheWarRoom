@@ -44,7 +44,7 @@ func GenerateSchedule(teams []string, divisions map[string]string,
 	if err != nil {
 		return nil, err
 	}
-	rounds := scheduleRounds(order)
+	rounds := alignedScheduleRounds(order, divisions)
 	uses := make([]int, len(rounds))
 	byes := make(map[string]int)
 	result := make([]ScheduleWeek, 0, weeks)
@@ -71,6 +71,7 @@ func GenerateSchedule(teams []string, divisions map[string]string,
 			byes[round.Bye]++
 		}
 	}
+	balanceScheduleHomes(result)
 	return result, nil
 }
 
