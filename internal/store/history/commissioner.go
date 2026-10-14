@@ -64,28 +64,12 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
-	role, err := commandRole(raw, principal, auth, records)
+	role, retry, err := s.checkCommissionerCommand(raw, principal, auth, records, canonical)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
-	for _, r := range records {
-		if r.Command.Request != raw.Request {
-			continue
-		}
-		if r.Canonical != canonical {
-			return commissioner.Receipt{}, fmt.Errorf("league change refused: %w",
-				commissioner.Refused(errors.New("this request was already used for a different change")))
-		}
-		return r.Receipt, nil
-	}
-	if err := checkCommissionerAppend(raw, records); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("check league version: %w", commissioner.Refused(err))
-	}
-	if err := commissioner.CheckGovernanceAppend(raw, principal, records, s.now()); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("check league change: %w", err)
-	}
-	if err := commissioner.CheckRulesAppend(raw, records, s.now()); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("check league rules: %w", err)
+	if retry != nil {
+		return *retry, nil
 	}
 	receipt, err := s.appendCommissioner(ctx, tx, raw, principal, role, canonical)
 	if err != nil {
@@ -95,6 +79,35 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 		return commissioner.Receipt{}, fmt.Errorf("record league change: %w", err)
 	}
 	return receipt, nil
+}
+
+func (s *Store) checkCommissionerCommand(raw commissioner.RawCommand, principal string,
+	auth commissioner.Authorizer, records []commissioner.Record, canonical string) (string, *commissioner.Receipt, error) {
+	role, err := commandRole(raw, principal, auth, records)
+	if err != nil {
+		return "", nil, err
+	}
+	for _, r := range records {
+		if r.Command.Request != raw.Request {
+			continue
+		}
+		if r.Canonical != canonical {
+			return "", nil, fmt.Errorf("league change refused: %w",
+				commissioner.Refused(errors.New("this request was already used for a different change")))
+		}
+		return role, &r.Receipt, nil
+	}
+	if err := checkCommissionerAppend(raw, records); err != nil {
+		return "", nil, fmt.Errorf("check league version: %w", commissioner.Refused(err))
+	}
+	at := s.now()
+	if err := commissioner.CheckGovernanceAppend(raw, principal, records, at); err != nil {
+		return "", nil, fmt.Errorf("check league change: %w", err)
+	}
+	if err := commissioner.CheckRulesAppend(raw, records, at); err != nil {
+		return "", nil, fmt.Errorf("check league rules: %w", err)
+	}
+	return role, nil, nil
 }
 
 // preparedCommand fills what Go owns on the command, validates it and fixes its retry identity.

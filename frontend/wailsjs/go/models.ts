@@ -467,6 +467,103 @@ export namespace commissioner {
 	
 	
 	
+	export class PreviewAffects {
+	    readings: string[];
+	    count?: number;
+	    words: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PreviewAffects(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.readings = source["readings"];
+	        this.count = source["count"];
+	        this.words = source["words"];
+	    }
+	}
+	export class PreviewField {
+	    label: string;
+	    before: string;
+	    beforeSource: string;
+	    after: string;
+	    afterSource: string;
+	    when: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PreviewField(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.label = source["label"];
+	        this.before = source["before"];
+	        this.beforeSource = source["beforeSource"];
+	        this.after = source["after"];
+	        this.afterSource = source["afterSource"];
+	        this.when = source["when"];
+	    }
+	}
+	export class PreviewTarget {
+	    league: string;
+	    name: string;
+	    version: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PreviewTarget(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.name = source["name"];
+	        this.version = source["version"];
+	    }
+	}
+	export class Preview {
+	    question: string;
+	    target: PreviewTarget;
+	    fields: PreviewField[];
+	    affects: PreviewAffects;
+	    blockers: string[];
+	    safeguard: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Preview(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.question = source["question"];
+	        this.target = this.convertValues(source["target"], PreviewTarget);
+	        this.fields = this.convertValues(source["fields"], PreviewField);
+	        this.affects = this.convertValues(source["affects"], PreviewAffects);
+	        this.blockers = source["blockers"];
+	        this.safeguard = source["safeguard"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
+	
 	export class Receipt {
 	    entry: string;
 	    league: string;

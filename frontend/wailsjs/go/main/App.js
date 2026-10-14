@@ -210,6 +210,10 @@ export function TargetCommissionerPeople(arg1) {
   return window['go']['main']['App']['TargetCommissionerPeople'](arg1);
 }
 
+export function TargetCommissionerPreview(arg1) {
+  return window['go']['main']['App']['TargetCommissionerPreview'](arg1);
+}
+
 export function TargetCommissionerRules(arg1) {
   return window['go']['main']['App']['TargetCommissionerRules'](arg1);
 }

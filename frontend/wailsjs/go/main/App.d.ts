@@ -111,6 +111,8 @@ export function TargetCommissionerLedgerFiltered(arg1:string,arg2:string):Promis
 
 export function TargetCommissionerPeople(arg1:string):Promise<commissioner.People>;
 
+export function TargetCommissionerPreview(arg1:string):Promise<commissioner.Preview>;
+
 export function TargetCommissionerRules(arg1:string):Promise<commissioner.Rules>;
 
 export function TargetComms(arg1:main.RawCommsScope):Promise<main.CommsBoard>;
