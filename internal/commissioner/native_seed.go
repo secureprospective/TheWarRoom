@@ -53,6 +53,7 @@ type NativePick struct {
 }
 
 type NativeCharge struct {
+	Season      int          `json:"season,omitempty"`
 	ID          string       `json:"id"`
 	Franchise   string       `json:"franchise"`
 	Amount      domain.Money `json:"amountCents"`
@@ -91,7 +92,7 @@ func (r RawNativeSnapshot) franchiseIndex() (map[string]bool, error) {
 func (r RawNativeSnapshot) validateCharges(franchises map[string]bool) error {
 	charges := map[string]bool{}
 	for _, c := range r.Adjustments {
-		if c.ID == "" || charges[c.ID] || !franchises[c.Franchise] {
+		if c.ID == "" || charges[c.ID] || !franchises[c.Franchise] || c.Season < 0 || c.Season > 9999 {
 			return fmt.Errorf("a held salary adjustment has no unique identity or franchise")
 		}
 		charges[c.ID] = true

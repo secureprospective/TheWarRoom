@@ -139,6 +139,8 @@ type NativeLeague struct {
 func entryLabel(records []Record, i int) (string, error) {
 	r := records[i]
 	switch r.Command.Command {
+	case ContractEdit, CapAdjust, CapRelief, ReserveException:
+		return overrideLabel(r), nil
 	case RulesSet:
 		return ruleLabel(r, records[:i])
 	case Revert:
@@ -151,6 +153,10 @@ func entryLabel(records []Record, i int) (string, error) {
 }
 
 func recordLabel(r Record) string {
+	switch r.Command.Command {
+	case ContractEdit, CapAdjust, CapRelief, ReserveException:
+		return overrideLabel(r)
+	}
 	if r.Command.Command == NativeSeed {
 		return "Recorded the starting rosters, contracts, reserves, franchises and picks from held data"
 	}

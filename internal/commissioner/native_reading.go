@@ -38,6 +38,9 @@ func NativeAssetsReading(league string, records []Record) (NativeAssets, error) 
 		out.Seeded, out.Entry, out.Snapshot = true, r.Receipt.Entry, &seed
 		out.Source = "App league; starting snapshot recorded from held data, never synced with MFL"
 	}
+	if err := projectNativeOverrides(&out, records); err != nil {
+		return NativeAssets{}, err
+	}
 	return out, nil
 }
 

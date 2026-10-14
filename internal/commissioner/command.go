@@ -63,6 +63,10 @@ type Definition struct{ Gravity string }
 
 func DefinitionFor(command string) (Definition, error) {
 	switch command {
+	case ContractEdit, CapAdjust, CapRelief:
+		return Definition{Gravity: "G2"}, nil
+	case ReserveException:
+		return Definition{Gravity: "G3"}, nil
 	case Create, Revert, NativeSeed:
 		return Definition{Gravity: "G3"}, nil
 	default:
@@ -87,6 +91,10 @@ type RawArgs struct {
 }
 
 func (a RawArgs) validateDetails(command string) error {
+	switch command {
+	case ContractEdit, CapAdjust, CapRelief, ReserveException:
+		return a.validateOverride(command)
+	}
 	if command != NativeSeed && a.Native != nil {
 		return fmt.Errorf("send only the details of this league action")
 	}
@@ -102,6 +110,8 @@ func (a RawArgs) Validate(command string) error {
 		return err
 	}
 	switch command {
+	case ContractEdit, CapAdjust, CapRelief, ReserveException:
+		return a.validateOverride(command)
 	case NativeSeed:
 		return a.validateNativeSeed()
 	case RulesSet:
@@ -165,6 +175,10 @@ func (r RawCommand) Validate() error {
 }
 
 func (r RawCommand) validatePlacement() error {
+	switch r.Command {
+	case ContractEdit, CapAdjust, CapRelief, ReserveException:
+		return r.validateOverridePlacement()
+	}
 	if r.Command == NativeSeed && (r.Effective != "now" || r.Visibility != "league") {
 		return fmt.Errorf("the starting snapshot is recorded now for every owner")
 	}

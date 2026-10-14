@@ -86,6 +86,9 @@ func NativeCapCheckReading(scope RawNativeCapScope, records []Record, now time.T
 		players[p.Franchise] = append(players[p.Franchise], nativecheck.CapPlayer{Salary: p.Salary, Status: p.Status})
 	}
 	for _, c := range base.assets.Snapshot.Adjustments {
+		if c.Season != 0 && c.Season != out.RulesSeason {
+			continue
+		}
 		charges[c.Franchise] = append(charges[c.Franchise], c.Amount)
 		details[c.Franchise] = append(details[c.Franchise], c)
 	}

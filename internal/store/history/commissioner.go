@@ -81,6 +81,9 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err := checkCommissionerAppend(raw, records); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("check league version: %w", commissioner.Refused(err))
 	}
+	if err := commissioner.CheckOverrideAppend(raw, records, s.now()); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("check native correction: %w", err)
+	}
 	if err := commissioner.CheckNativeAppend(raw, records); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("check starting snapshot: %w", err)
 	}

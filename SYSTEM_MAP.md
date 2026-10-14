@@ -391,6 +391,16 @@ prove acceptance inside the proposal-to-first-miss interval. Other disappearance
 `internal/labcompile.OfferTiming` shares the archive's Eastern-date season/stretch rules. Open offers
 are excluded from ending rates. The lazy Offers surface reloads its selected scope on season events.
 
+## Native asset corrections
+
+`internal/commissioner/native_projector.go` replays active contract corrections, season-scoped cap
+adjustments and player cap relief in ledger order over cloned seed assets. Roster, reserve, cap and
+directory readings share this projection. `native_override.go` validates CM-034 (G2) and CM-038 (G3)
+commands on the existing commissioner append path, requiring a public reason and co-commissioner
+permission; compensation uses the same replay. `PendingTradeCapCheck` is the future trade-escalation
+seam, currently reporting no pending trades. Reserve exceptions match only their player and bucket,
+expire at the supplied instant and explain the commissioner reason; no MFL or what-if state changes.
+
 ## Native fantasy scoring
 
 `internal/fantasyscore` is a pure leaf: exact ten-thousandths, commissioner catalogue values,
