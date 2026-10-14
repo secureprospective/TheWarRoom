@@ -131,51 +131,10 @@ func authorizeRule(auth GovernanceAuthorizer, raw RawCommand, principal string) 
 	return string(role), nil
 }
 
-// ruleChanges feeds Resolve only what is in force: the creation preset and active "now" changes.
-// A next-rollover change waits on the ledger until the rollover Act exists.
-func ruleChanges(records []Record) ([]leaguerules.Change, error) {
-	projection := Replay(records)
-	changes := []leaguerules.Change{}
-	for _, r := range records {
-		if r.Command.Command == Create {
-			seeded, err := seedChanges(r)
-			if err != nil {
-				return nil, err
-			}
-			changes = append(changes, seeded...)
-			continue
-		}
-		if r.Command.Command != RulesSet || !projection.Active[r.Receipt.Entry] || r.Command.Effective != "now" {
-			continue
-		}
-		setting, err := leaguerules.DecodeSetting(leaguerules.FieldPath(r.Command.Args.Field), r.Command.Args.Value)
-		if err != nil {
-			return nil, fmt.Errorf("read recorded rule: %w", err)
-		}
-		changes = append(changes, leaguerules.Change{LeagueID: r.Command.League,
-			Field: leaguerules.FieldPath(r.Command.Args.Field), New: setting,
-			Effective: leaguerules.Effective{Kind: leaguerules.Now}, RecordedAt: r.Receipt.RecordedAt,
-			Season: ledgerSeason})
-	}
-	return changes, nil
-}
-
+// resolveRecords reads the rules in force at the ledger's last entry. Readings that run on the
+// clock call RulesNow instead.
 func resolveRecords(records []Record) (leaguerules.RuleSet, error) {
-	changes, err := ruleChanges(records)
-	if err != nil {
-		return leaguerules.RuleSet{}, err
-	}
-	at := time.Unix(1, 0).UTC()
-	for _, r := range records {
-		if r.Receipt.RecordedAt.After(at) {
-			at = r.Receipt.RecordedAt
-		}
-	}
-	rules, err := leaguerules.Resolve(changes, ledgerSeason, at)
-	if err != nil {
-		return leaguerules.RuleSet{}, fmt.Errorf("read league rules: %w", err)
-	}
-	return rules, nil
+	return RulesNow(records, time.Time{})
 }
 
 // CheckRulesAppend refuses a change whose result the league's rules could not hold together.

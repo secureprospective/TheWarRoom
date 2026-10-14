@@ -40,7 +40,7 @@ func (s *Store) NativeDirectory(ctx context.Context, league string) (commissione
 	if err != nil {
 		return commissioner.NativeDirectory{}, err
 	}
-	reading, err := commissioner.NativeDirectoryReading(league, records)
+	reading, err := commissioner.NativeDirectoryReading(league, records, s.now())
 	if err != nil {
 		return commissioner.NativeDirectory{}, fmt.Errorf("read native league directory: %w", err)
 	}

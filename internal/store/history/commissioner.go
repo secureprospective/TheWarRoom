@@ -278,7 +278,7 @@ func (s *Store) CommissionerRules(ctx context.Context, league string) (commissio
 	if err != nil {
 		return commissioner.Rules{}, err
 	}
-	reading, err := commissioner.RulesReading(league, records)
+	reading, err := commissioner.RulesReading(league, records, s.now())
 	if err != nil {
 		return commissioner.Rules{}, fmt.Errorf("read league rules: %w", err)
 	}

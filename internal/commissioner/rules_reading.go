@@ -59,15 +59,15 @@ const (
 )
 
 // RulesReading is public: every owner may read the league's rules and the changes waiting on them.
-func RulesReading(league string, records []Record) (Rules, error) {
+func RulesReading(league string, records []Record, now time.Time) (Rules, error) {
 	if len(records) == 0 {
 		return Rules{}, fmt.Errorf("this app league has not been created")
 	}
-	rules, err := resolveRecords(records)
+	rules, err := RulesNow(records, now)
 	if err != nil {
 		return Rules{}, err
 	}
-	sources, pending, err := ruleHistory(records)
+	sources, pending, err := ruleHistory(records, ReadingInstant(records, now))
 	if err != nil {
 		return Rules{}, err
 	}
@@ -98,25 +98,37 @@ func RulesReading(league string, records []Record) (Rules, error) {
 	return out, nil
 }
 
-// ruleHistory finds where each in-force value came from and which recorded changes still wait.
-func ruleHistory(records []Record) (map[string]string, map[string][]RulePending, error) {
+// ruleHistory finds where each in-force value came from and which recorded changes still wait. A
+// next-rollover change stops waiting once its rollover has come.
+func ruleHistory(records []Record, at time.Time) (map[string]string, map[string][]RulePending, error) {
+	starts, err := rolloverInstants(records)
+	if err != nil {
+		return nil, nil, err
+	}
 	active := Replay(records).Active
 	sources, pending := map[string]string{}, map[string][]RulePending{}
+	latest := map[string]time.Time{}
 	for _, r := range records {
 		if r.Command.Command != RulesSet || !active[r.Receipt.Entry] {
 			continue
 		}
-		field := r.Command.Args.Field
-		if r.Command.Effective == "now" {
-			sources[field] = r.Receipt.RecordedAt.Format(time.RFC3339Nano)
-			continue
+		field, startedAt := r.Command.Args.Field, r.Receipt.RecordedAt
+		if rollover, ok := nextRollover(starts, startedAt); r.Command.Effective != "now" {
+			if !ok || at.Before(rollover) {
+				setting, err := leaguerules.DecodeSetting(leaguerules.FieldPath(field), r.Command.Args.Value)
+				if err != nil {
+					return nil, nil, fmt.Errorf("read waiting rule: %w", err)
+				}
+				pending[field] = append(pending[field], RulePending{Entry: r.Receipt.Entry,
+					Value: leaguerules.DescribeField(leaguerules.FieldPath(field), setting).Words, When: waitingWords})
+				continue
+			}
+			startedAt = rollover
 		}
-		setting, err := leaguerules.DecodeSetting(leaguerules.FieldPath(field), r.Command.Args.Value)
-		if err != nil {
-			return nil, nil, fmt.Errorf("read waiting rule: %w", err)
+		if previous, ok := latest[field]; !ok || !startedAt.Before(previous) {
+			latest[field] = startedAt
+			sources[field] = startedAt.Format(time.RFC3339Nano)
 		}
-		pending[field] = append(pending[field], RulePending{Entry: r.Receipt.Entry,
-			Value: leaguerules.DescribeField(leaguerules.FieldPath(field), setting).Words, When: waitingWords})
 	}
 	return sources, pending, nil
 }

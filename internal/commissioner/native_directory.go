@@ -1,6 +1,8 @@
 package commissioner
 
 import (
+	"time"
+
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
@@ -20,20 +22,20 @@ type NativeDirectory struct {
 }
 
 // NativeDirectoryReading keeps recorded starting identities separate from the held MFL directory.
-func NativeDirectoryReading(league string, records []Record) (NativeDirectory, error) {
+func NativeDirectoryReading(league string, records []Record, now time.Time) (NativeDirectory, error) {
 	state, err := GovernanceState(records)
 	if err != nil {
 		return NativeDirectory{}, err
 	}
-	return nativeDirectory(league, records, state)
+	return nativeDirectory(league, records, state, now)
 }
 
-func nativeDirectory(league string, records []Record, state governance.State) (NativeDirectory, error) {
+func nativeDirectory(league string, records []Record, state governance.State, now time.Time) (NativeDirectory, error) {
 	assets, err := NativeAssetsReading(league, records)
 	if err != nil {
 		return NativeDirectory{}, err
 	}
-	rules, err := resolveRecords(records)
+	rules, err := RulesNow(records, now)
 	if err != nil {
 		return NativeDirectory{}, err
 	}
@@ -49,13 +51,6 @@ func nativeDirectory(league string, records []Record, state governance.State) (N
 	alignment := rules.League.Alignment
 	if assets.Seeded {
 		out.RosterSeason = assets.Snapshot.Season
-		if alignment.State != leaguerules.IsKnown {
-			carried := map[string]string{}
-			for _, f := range assets.Snapshot.Franchises {
-				carried[f.ID] = f.Division
-			}
-			alignment = leaguerules.Known(carried)
-		}
 	}
 	applyNativeNames(seats, records)
 	for _, seat := range seats {

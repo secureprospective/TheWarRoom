@@ -3,6 +3,7 @@ package commissioner
 import (
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
@@ -53,7 +54,8 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 	p := governance.Principal(principal)
 	private := state.HasRole(p, governance.Commissioner) || state.HasRole(p, governance.CoCommissioner)
 	persons, invites := peopleInventory(records)
-	directory, err := nativeDirectory(league, records, state)
+	// Seats and names do not depend on the clock, only the alignment beside them does.
+	directory, err := nativeDirectory(league, records, state, time.Time{})
 	if err != nil {
 		return People{}, err
 	}
