@@ -87,6 +87,9 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err := commissioner.CheckCalendarAppend(raw, records, s.now()); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("check league calendar: %w", err)
 	}
+	if err := commissioner.CheckScheduleAppend(raw, records); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("check league schedule: %w", err)
+	}
 	if err := commissioner.CheckRulesAppend(raw, records, s.now()); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("check league rules: %w", err)
 	}
@@ -184,7 +187,7 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, raw commissi
 	now := s.now().UTC().Truncate(time.Microsecond)
 	receipt := commissioner.Receipt{Entry: "act." + hex.EncodeToString(identity[:]), League: raw.League,
 		Revision: raw.Expected + 1, RecordedAt: now, Message: "Recorded in the league ledger."}
-	definition, err := raw.Definition()
+	definition, err := raw.EffectiveDefinition()
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("define league change: %w", err)
 	}

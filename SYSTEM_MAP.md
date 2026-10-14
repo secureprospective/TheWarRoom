@@ -79,13 +79,21 @@ G3) and rule compensation into the reading. The existing history transaction aut
 retries and appends the exception. `league_calendar_app.go` exposes `TargetLeagueCalendar` for an
 explicit app league, season, franchise, action and owner time zone; it reads only durable local events.
 This read port does not yet replace the what-if transaction phase gate or the imported owner screens.
-Schedule generation/publication and the remaining census owner-edge wiring are not implemented here.
+`internal/commissioner/schedule_generator.go` generates complete division-weighted rounds for 2–32
+franchises, with one rotating bye in odd leagues. `schedule.generate`, `schedule.edit` and
+`schedule.publish` share the authorized/versioned/idempotent append path (CM-015, G2; published
+week edits are G3). Generation reads the current schedule rules and division alignment; an unset
+pattern refuses to guess. `league_schedule_app.go` exposes `TargetLeagueSchedule`: only the published
+projection, replayed from local events and compensations. Draft changes never replace that reading.
+Native action execution, named window commands, Now/Race integration and the remaining census
+owner-edge wiring are still pending.
 
 ## IPC surface (42 methods on `App`)
 
 | File | Methods |
 |---|---|
 | `league_calendar_app.go` | `TargetLeagueCalendar(RawLeagueCalendarScope)`: app-owned action windows, live close countdowns, exact chosen trade deadline and public scoped exceptions, replayed from the league ledger and localized for the owner. |
+| `league_schedule_app.go` | `TargetLeagueSchedule(RawLeagueScheduleScope)`: published native head-to-head schedule only; draft changes are not owner readings. |
 | `market_surfaces_app.go`, `market_profile_app.go` | `TargetMarketLists`, `TargetPickClock`, `TargetMarketStretches`, `TargetAssetProfile`: validated historical scopes and asset kinds; typed Go-computed display sections in `Reading[MarketSurface]`, fitted ranges and archive disclosure, no spread grade. |
 | `counterparties_app.go`, `counterpanel_app.go` | `TargetCounterparties`, `TargetCounterpartTeam`: validated historical standing/window/posture scopes; tier cards, trends, pair matrix, sortable team values and season/asset-flow/partner Inspector readings. Lazy frontend in `frontend/src/app/counterparties`, franchise ids resolved against the shared snapshot. |
 | `lab_app.go` | `TargetMarket` validates season/phase input and returns a typed historical Market payload in the generic `Reading` shell extending `snapshot.Sourced`; dated provenance, count/threshold and Go-authored counting disclosure, no spread grade. |

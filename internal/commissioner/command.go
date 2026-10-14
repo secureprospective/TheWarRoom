@@ -67,6 +67,8 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G3"}, nil
 	case CalendarException:
 		return Definition{Gravity: "G3"}, nil
+	case ScheduleGenerate, ScheduleEdit, SchedulePublish:
+		return Definition{Gravity: "G2"}, nil
 	default:
 		if d, ok := peopleDefinitionFor(command); ok {
 			return Definition{Gravity: d.gravity}, nil
@@ -86,9 +88,16 @@ type RawArgs struct {
 	FranchiseCount int                 `json:"franchiseCount,omitempty"`
 	Seed           []SeedValue         `json:"seed,omitempty"`
 	Exception      *RawWindowException `json:"exception,omitempty"`
+	Schedule       *RawScheduleArgs    `json:"schedule,omitempty"`
 }
 
 func (a RawArgs) Validate(command string) error {
+	if scheduleCommand(command) {
+		return a.validateSchedule(command)
+	}
+	if a.Schedule != nil {
+		return fmt.Errorf("send only the details of this league action")
+	}
 	if command == CalendarException {
 		return a.validateException()
 	}
@@ -141,7 +150,7 @@ type RawCommand struct {
 }
 
 func (r RawCommand) Validate() error {
-	definition, err := r.Definition()
+	definition, err := r.EffectiveDefinition()
 	if err != nil {
 		return err
 	}
@@ -161,7 +170,7 @@ func (r RawCommand) Validate() error {
 	if err := r.Args.Validate(r.Command); err != nil {
 		return err
 	}
-	return nil
+	return r.validateSchedulePlacement()
 }
 
 func (r RawCommand) validatePlacement() error {
@@ -232,7 +241,7 @@ func Decode(body string) (RawCommand, error) {
 }
 
 func (r RawCommand) Canonical(principal string) (string, error) {
-	definition, err := r.Definition()
+	definition, err := r.EffectiveDefinition()
 	if err != nil {
 		return "", err
 	}
@@ -252,4 +261,15 @@ func (r RawCommand) Canonical(principal string) (string, error) {
 		return "", fmt.Errorf("encode commissioner command: %w", err)
 	}
 	return string(body), nil
+}
+
+func (r RawCommand) EffectiveDefinition() (Definition, error) {
+	definition, err := r.Definition()
+	if err != nil {
+		return Definition{}, err
+	}
+	if r.Command == ScheduleEdit && r.Args.Schedule != nil && r.Args.Schedule.Published {
+		definition.Gravity = "G3"
+	}
+	return definition, nil
 }

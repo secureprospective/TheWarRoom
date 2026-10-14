@@ -518,6 +518,89 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class ScheduleGame {
+	    home: string;
+	    away: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ScheduleGame(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.home = source["home"];
+	        this.away = source["away"];
+	    }
+	}
+	export class ScheduleWeek {
+	    week: number;
+	    games: ScheduleGame[];
+	    bye?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ScheduleWeek(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.week = source["week"];
+	        this.games = this.convertValues(source["games"], ScheduleGame);
+	        this.bye = source["bye"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Schedule {
+	    league: string;
+	    revision: number;
+	    weeks: ScheduleWeek[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Schedule(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.revision = source["revision"];
+	        this.weeks = this.convertValues(source["weeks"], ScheduleWeek);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 
 }
 
@@ -4278,6 +4361,18 @@ export namespace main {
 	        this.localZone = source["localZone"];
 	        this.franchise = source["franchise"];
 	        this.action = source["action"];
+	    }
+	}
+	export class RawLeagueScheduleScope {
+	    league: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawLeagueScheduleScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
 	    }
 	}
 	export class RawMarketScope {
