@@ -19,6 +19,7 @@ type RawWeek struct {
 
 type PlayerWeek struct {
 	GSIS        string
+	Position    string
 	Season      int
 	Week        int
 	GameID      string
@@ -179,7 +180,7 @@ func (r RawWeek) Convert() (PlayerWeek, error) {
 		}
 		line.Quantities[id] += 10000
 	}
-	return PlayerWeek{GSIS: r.Fields["player_id"], Season: season, Week: week,
+	return PlayerWeek{GSIS: r.Fields["player_id"], Position: r.Fields["position"], Season: season, Week: week,
 		GameID: r.Fields["game_id"], SeasonType: r.Fields["season_type"], RecoveryTDs: line.Quantities["fumble_recovery_tds"], Line: line}, nil
 }
 

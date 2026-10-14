@@ -399,3 +399,9 @@ long-play distances and return-touchdown credits (returning team only), and adap
 `source/testdata/comparison.csv` pins two complete held Legacy roster weeks against MFL totals,
 with an independent native-points reference and every mismatch classified; the Legacy preset follows the held league’s MFL scoring settings, with optional per-stat rounding
 and once-per-week counting. Eight source-credit differences remain explicitly unresolved. Neither package is connected to runtime score surfaces yet.
+`source.StatPort` is the read-only player-week revision port; `history.Store.PlayerWeekStats` implements
+it over the exact registered weekly-file URL in the existing fetch archive. Distinct body hashes are
+returned newest first with held timestamps, exact quantities and the feed position. A missing player
+stays absent rather than reusing an older line. Play-by-play is not a registered Signals feed, so each
+weekly revision explicitly reports that missing evidence; consumers must not treat it as a complete
+native scoring line. No fixture or network fallback is installed.
