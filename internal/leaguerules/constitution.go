@@ -163,25 +163,23 @@ func taxiFields() []ruleField {
 	}
 }
 
-// LegacyNFLForTeams adapts the template without guessing a smaller league's playoff bracket.
+// LegacyNFLForTeams adapts the template to a team count without guessing a smaller league's playoffs.
 func LegacyNFLForTeams(count int) RuleSet {
 	r := LegacyNFL()
 	r.League.Teams = cited(count, "Legacy template: chosen team count")
 	if count == 32 {
 		return r
 	}
-	conferenceSize := count / 2
-	divisions := min(4, conferenceSize)
-	r.League.Divisions = cited(2*divisions, "Legacy template: at most one division per team")
-	field := min(7, conferenceSize)
-	r.Playoffs.PerConference = cited(field, "Legacy template: bounded by the smaller conference")
-	r.Playoffs.DivisionWinners = cited(min(divisions, field), "Legacy template: one winner per division")
-	r.Playoffs.WildCards = cited(field-min(divisions, field), "Legacy template: remaining playoff places")
-	if field != 7 {
-		r.Playoffs.ByeSeed = Needs[int]("Choose first-round byes for this smaller playoff field.")
-		r.Playoffs.Graph = Needs[[]BracketNode]("Choose a bracket for this smaller playoff field.")
-		r.Playoffs.FinalWeek = Needs[int]("Choose the final week after setting the smaller bracket.")
-	}
+	// Legacy divisions hold four teams; a smaller conference keeps that size with fewer divisions.
+	perConference := max(1, count/2/4)
+	r.League.Divisions = cited(2*perConference, "Legacy template: divisions of about four teams")
+	// The playoff field is competitive: the app does not scale Legacy's seven per conference.
+	r.Playoffs.PerConference = Needs[int]("Choose how many teams per conference make the playoffs in this smaller league.")
+	r.Playoffs.DivisionWinners = Needs[int]("Choose the playoff field first, then how many division winners qualify.")
+	r.Playoffs.WildCards = Needs[int]("Choose the playoff field first, then how many wild cards qualify.")
+	r.Playoffs.ByeSeed = Needs[int]("Choose first-round byes for this smaller playoff field.")
+	r.Playoffs.Graph = Needs[[]BracketNode]("Choose a bracket for this smaller playoff field.")
+	r.Playoffs.FinalWeek = Needs[int]("Choose the final week after setting the smaller bracket.")
 	if count < 4 {
 		r.Trades.Review = Needs[ReviewRoute]("Fewer than four teams: choose who reviews trades; DOT needs four seats.")
 		r.Trades.DOTSeats = Needs[int]("DOT needs four to ten people; choose reviewers for this small league.")

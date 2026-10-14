@@ -25,7 +25,7 @@ func TestTimezoneOnlyNeedsConfirm(t *testing.T) {
 }
 
 func TestLegacyCreationForAnySize(t *testing.T) {
-	for _, count := range []int{2, 6, 12, 32} {
+	for count, divisions := range map[int]int{2: 2, 6: 2, 12: 2, 16: 4, 24: 6, 32: 8} {
 		t.Run(fmt.Sprint(count), func(t *testing.T) {
 			raw, err := (RawCommand{League: "native.test", Command: Create,
 				Args:   RawArgs{Name: "Ours", Preset: PresetLegacy, FranchiseCount: count},
@@ -43,10 +43,17 @@ func TestLegacyCreationForAnySize(t *testing.T) {
 				t.Fatal(err)
 			}
 			if rules.League.Teams.Value != count || rules.League.Conferences.Value != 2 ||
-				rules.League.Divisions.Value != 2*min(4, count/2) ||
-				rules.Playoffs.PerConference.Value != min(7, count/2) ||
-				rules.Playoffs.DivisionWinners.Value+rules.Playoffs.WildCards.Value != rules.Playoffs.PerConference.Value {
-				t.Fatalf("incoherent sized preset: %+v %+v", rules.League, rules.Playoffs)
+				rules.League.Divisions.Value != divisions {
+				t.Fatalf("%d teams: want %d divisions of about four: %+v", count, divisions, rules.League)
+			}
+			field := rules.Playoffs
+			if count == 32 && (field.PerConference.Value != 7 || field.DivisionWinners.Value != 4 ||
+				field.WildCards.Value != 3) {
+				t.Fatalf("Legacy playoff field lost: %+v", field)
+			}
+			if count != 32 && (field.PerConference.State != leaguerules.NeedsRuling ||
+				field.DivisionWinners.State != leaguerules.NeedsRuling || field.WildCards.State != leaguerules.NeedsRuling) {
+				t.Fatalf("%d teams: a smaller playoff field was invented: %+v", count, field)
 			}
 			if count == 32 {
 				if rules.Playoffs.ByeSeed.Value != 1 || len(rules.Playoffs.Graph.Value) != 7 {
