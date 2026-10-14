@@ -103,6 +103,8 @@ export function TargetCommissionerLeagues():Promise<Array<commissioner.NativeLea
 
 export function TargetCommissionerLedger(arg1:string):Promise<commissioner.Ledger>;
 
+export function TargetCommissionerLedgerFiltered(arg1:string,arg2:string):Promise<commissioner.Ledger>;
+
 export function TargetCommissionerPeople(arg1:string):Promise<commissioner.People>;
 
 export function TargetCommissionerRules(arg1:string):Promise<commissioner.Rules>;

@@ -146,3 +146,8 @@ export function createLeagueState(proxy = createProxy(live)) {
 }
 export const leagueState = createLeagueState();
 export const execute = leagueState.execute;
+
+export type LedgerFilter = { person: string; kind: string; from: string; before: string };
+export async function readLedgerFiltered(league: string, filter: LedgerFilter): Promise<Ledger> {
+  return parseLedger(await bindings().TargetCommissionerLedgerFiltered(league, JSON.stringify(filter)));
+}

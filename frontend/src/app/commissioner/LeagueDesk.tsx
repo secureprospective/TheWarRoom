@@ -1,3 +1,4 @@
+import { DensityScreen } from './DensityScreen';
 import { useEffect } from 'react';
 import { LeaguePicker } from './LeaguePicker';
 import { leagueState } from './proxy';
@@ -12,14 +13,16 @@ export default function LeagueDesk() {
   const { choices, rules, people, pending } = leagueState.use();
   useEffect(() => { void leagueState.choose(); }, []);
   return (
-    <section className="league-desk" aria-label="Commissioner tools" aria-busy={pending}>
-      <h4>Commissioner tools</h4>
-      <LeaguePicker />
-      {choices.length === 0 ? <StartLeagueForm /> : (
-        <details><summary>Start another app league</summary><StartLeagueForm /></details>
-      )}
-      {rules && people?.mayChangeRules && <RuleChangeForm key={rules.league} rules={rules} />}
-      {people?.mayGrantRoles && <RoleForm key={people.league} people={people} />}
-    </section>
+    <DensityScreen screen="desk" label="Commissioner tools" pending={pending}>
+      <div className="league-desk">
+        <h4>Commissioner tools</h4>
+        <LeaguePicker />
+        {choices.length === 0 ? <StartLeagueForm /> : (
+          <details><summary>Start another app league</summary><StartLeagueForm /></details>
+        )}
+        {rules && people?.mayChangeRules && <RuleChangeForm key={rules.league} rules={rules} />}
+        {people?.mayGrantRoles && <RoleForm key={people.league} people={people} />}
+      </div>
+    </DensityScreen>
   );
 }

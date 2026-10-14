@@ -432,6 +432,14 @@ export function createCommands(
           .catch(cause => state.write({ notice: String(cause) }));
       },
     }),
+    'commissioner.surface': command({
+      ...ambient, id: 'commissioner.surface', label: 'Change the league view',
+      args: ['screen', 'action', 'value'],
+      run: (args: import('../commissioner/surfaceActions').SurfaceAction) => {
+        void import('../commissioner/surfaceActions').then(m => m.surfaceActions.run(args))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     'commissioner.read': command({
       ...ambient, id: 'commissioner.read', label: 'Read the league ledger', args: ['league'],
       run: (args: { league: string }) => {

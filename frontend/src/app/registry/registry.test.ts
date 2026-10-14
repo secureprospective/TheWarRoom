@@ -548,7 +548,8 @@ it('keeps commissioner rows out of owner indexes, lookups, counts and command se
     expect(ownerIds.has(row.id)).toBe(false);
     expect(() => endpointById(row.id as unknown as EndpointId)).toThrow('Unknown endpoint');
     expect(candidates.some(result => result.label.includes(row.id))).toBe(false);
-    expect(row).toMatchObject({ source: 'K4 census', disposition: 'kept', status: 'spec' });
+    expect(row).toMatchObject({ source: 'K4 census', disposition: 'kept',
+      status: row.id === 'CM-056' ? 'built' : 'spec' });
     expect(Object.isFrozen(row)).toBe(true);
     expect(Object.isFrozen(row.governs)).toBe(true);
     for (const target of row.governs) {

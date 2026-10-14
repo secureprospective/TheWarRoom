@@ -208,6 +208,14 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, raw commissi
 
 func (s *Store) CommissionerLedger(ctx context.Context, league, principal string,
 	auth commissioner.Authorizer) (commissioner.Ledger, error) {
+	return s.CommissionerLedgerFiltered(ctx, league, principal, auth, commissioner.RawLedgerFilter{})
+}
+
+func (s *Store) CommissionerLedgerFiltered(ctx context.Context, league, principal string,
+	auth commissioner.Authorizer, filter commissioner.RawLedgerFilter) (commissioner.Ledger, error) {
+	if err := filter.Validate(); err != nil {
+		return commissioner.Ledger{}, fmt.Errorf("validate ledger filters: %w", err)
+	}
 	events, err := s.Events(ctx, league, commissioner.Stream, 0)
 	if err != nil {
 		return commissioner.Ledger{}, err
@@ -223,7 +231,7 @@ func (s *Store) CommissionerLedger(ctx context.Context, league, principal string
 		}
 		auth = commissioner.GovernanceAuthorizer{State: state}
 	}
-	reading, err := commissioner.Reading(league, principal, records, auth)
+	reading, err := commissioner.FilteredReading(league, principal, records, auth, filter)
 	if err != nil {
 		return commissioner.Ledger{}, fmt.Errorf("read league ledger: %w", err)
 	}

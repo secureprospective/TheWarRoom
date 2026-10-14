@@ -56,7 +56,7 @@ function ReportTable({ report, renderCell }: { report: Report; renderCell?: Cell
           <ReportText text={row.group} entities={report.entities} /></th></tr>,
       <tr key={i} className={row.mine ? 'report-mine' : undefined}
         aria-current={row.mine ? 'true' : undefined}>{row.cells.map((cell, j) =>
-        <td key={j} title={row.titles?.[j]}
+        <td key={j} title={row.titles?.[j]} data-label={report.columns[j]}
           className={report.columns[j] === 'Local time' ? 'draft-local-time' : undefined}>
           {renderCell ? renderCell(cell, i, j) : cell.split('\n').map((line, k) =>
             <div className="draft-cell-line" key={k}>

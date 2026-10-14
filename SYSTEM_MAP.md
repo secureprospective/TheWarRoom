@@ -399,3 +399,12 @@ long-play distances and return-touchdown credits (returning team only), and adap
 `source/testdata/comparison.csv` pins two complete held Legacy roster weeks against MFL totals,
 with an independent native-points reference and every mismatch classified; the Legacy preset follows the held league’s MFL scoring settings, with optional per-stat rounding
 and once-per-week counting. Eight source-credit differences remain explicitly unresolved. Neither package is connected to runtime score surfaces yet.
+
+Commissioner ledger filters: `TargetCommissionerLedgerFiltered(league, body)` decodes a
+`commissioner.RawLedgerFilter`, then the history store builds the authorized reading before Go filters
+by author, command kind and recorded time (inclusive start, exclusive end). Filters never change the
+league version or expose private rows. `LedgerFilters` presents that reading, converts viewer-local
+bounds to RFC3339, ignores superseded answers and reapplies on refresh. `DensityScreen` wraps the four
+existing commissioner screens and uses the current shell's `connectDensity` and `createShellState` for independent memory;
+`screenDensity` binds that projection outside React, through the `commissioner.surface` Act;
+Narrative labels report cells, Tactical keeps the existing tables, Matrix compresses spacing.

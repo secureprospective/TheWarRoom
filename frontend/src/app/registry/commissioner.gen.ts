@@ -1542,7 +1542,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.ledger.read",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "Append-only history of every league-state change with who, what an" +
       "d why, excluding private role grants and invites from owner reads " +
       "(ruling 5).",

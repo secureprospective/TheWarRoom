@@ -63,6 +63,18 @@ func (a *App) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 }
 
 func (a *App) TargetCommissionerLedger(league string) (commissioner.Ledger, error) {
+	return a.commissionerLedger(league, commissioner.RawLedgerFilter{})
+}
+
+func (a *App) TargetCommissionerLedgerFiltered(league, body string) (commissioner.Ledger, error) {
+	filter, err := commissioner.DecodeLedgerFilter(body)
+	if err != nil {
+		return commissioner.Ledger{}, fmt.Errorf("league ledger filters: %w", err)
+	}
+	return a.commissionerLedger(league, filter)
+}
+
+func (a *App) commissionerLedger(league string, filter commissioner.RawLedgerFilter) (commissioner.Ledger, error) {
 	if !strings.HasPrefix(league, "native.") {
 		return commissioner.Ledger{}, fmt.Errorf("choose an app league")
 	}
@@ -75,7 +87,7 @@ func (a *App) TargetCommissionerLedger(league string) (commissioner.Ledger, erro
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.CommissionerLedger(ctx, league, principal, a.commissionerAuthorizer)
+	reading, err := a.history.CommissionerLedgerFiltered(ctx, league, principal, a.commissionerAuthorizer, filter)
 	if err != nil {
 		return commissioner.Ledger{}, fmt.Errorf("league ledger: %w", err)
 	}

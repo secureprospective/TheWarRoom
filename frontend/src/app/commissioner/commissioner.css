@@ -37,3 +37,42 @@
 .twr-app .hold-to-fire.holding .hold-fill { width: 100%; }
 .twr-app .hold-help,
 .twr-app .hold-said { color: var(--surface-tx2); }
+
+.twr-app .commissioner-screen { --commissioner-gap: 12px; display: grid; gap: var(--commissioner-gap); }
+.twr-app .commissioner-density { display: flex; flex-wrap: wrap; gap: 4px; }
+.twr-app .commissioner-density button {
+  min-height: 32px; padding: 4px 10px; border: 1px solid var(--surface-line);
+  background: transparent; color: inherit; cursor: pointer;
+}
+.twr-app .commissioner-density button[aria-pressed="true"] {
+  background: var(--surface-tx1); color: var(--surface-0); font-weight: 600;
+}
+.twr-app .commissioner-density button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.twr-app .commissioner-screen[data-density="matrix"] { --commissioner-gap: 4px; }
+.twr-app .commissioner-screen[data-density="matrix"] .report-table td,
+.twr-app .commissioner-screen[data-density="matrix"] .report-table th { padding: 2px 6px; }
+.twr-app .commissioner-screen[data-density="matrix"] p { margin-block: 4px; }
+.twr-app .commissioner-screen[data-density="matrix"] .league-form,
+.twr-app .commissioner-screen[data-density="matrix"] .league-rules,
+.twr-app .commissioner-screen[data-density="matrix"] .league-people { gap: 4px; }
+.twr-app .commissioner-screen[data-density="narrative"] { --commissioner-gap: 20px; }
+.twr-app .commissioner-screen[data-density="narrative"] .report-table { width: 100%; }
+.twr-app .commissioner-screen[data-density="narrative"] .report-table thead { display: block; }
+.twr-app .commissioner-screen[data-density="narrative"] .report-table tbody,
+.twr-app .commissioner-screen[data-density="narrative"] .report-table tr,
+.twr-app .commissioner-screen[data-density="narrative"] .report-table td { display: block; }
+.twr-app .commissioner-screen[data-density="narrative"] .report-table tr {
+  margin-block: 12px; padding: 8px 0;
+}
+.twr-app .commissioner-screen[data-density="narrative"] .report-table td {
+  padding: 4px 8px; white-space: normal;
+}
+.twr-app .commissioner-screen[data-density="narrative"] .report-table td::before {
+  content: attr(data-label) ": "; font-weight: 600;
+}
+.twr-app .commissioner-screen[data-density="narrative"] .draft-cell-line { display: inline; }
+.twr-app .ledger-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+.twr-app .ledger-filters label { display: grid; gap: 4px; }
+.twr-app .ledger-filters input,
+.twr-app .ledger-filters select,
+.twr-app .ledger-filters button { min-height: 32px; }
