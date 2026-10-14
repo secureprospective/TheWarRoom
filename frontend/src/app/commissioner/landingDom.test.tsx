@@ -22,7 +22,7 @@ afterEach(async () => {
 });
 const show = async (empty = false) => {
   await Promise.all([import('./LeagueRules'), import('./LeaguePeople'),
-    import('./LeagueLedger'), import('./RuleTray')]);
+    import('./LeagueLedger'), import('./RuleTray'), import('./ActionTray')]);
   const { app } = stub({
     TargetCommissionerJobs: async () => jobsWire.fresh,
     TargetCommissionerControls: async () => controlsWire,
@@ -70,14 +70,17 @@ describe('League landing interactions', () => {
       ?.getAttribute('data-open')).toBe('true');
     expect(all(host, 'section').filter(s => s.getAttribute('aria-label') === 'Change a rule'))
       .toHaveLength(0);
-    expect(all(host, 'section').some(s => s.getAttribute('aria-label') === 'Give or take a role')).toBe(true);
+    expect(all(host, 'section').filter(s => s.getAttribute('aria-label') === 'Give or take a role'))
+      .toHaveLength(0);
+    expect(all(host, 'button').some(b => b.getAttribute('aria-label') === 'Give or take a role')).toBe(true);
   });
-  it('offers the existing setup form under Constitution and keeps the ledger in its own group', async () => {
+  it('offers league start under Constitution and keeps the ledger in its own group', async () => {
     const host = await show();
     await act(async () => surfaceActions.run({ screen: 'landing', action: 'group', value: 'constitution' }));
     await settle();
     expect(host.textContent).toContain('Start another app league');
-    expect(host.textContent).toContain('Start an app league');
+    expect(all(host, 'section').filter(s => s.getAttribute('aria-label') === 'Start an app league'))
+      .toHaveLength(0);
     expect(host.textContent).toContain(parseRules(rulesWire).sections[0].label);
     await act(async () => surfaceActions.run({ screen: 'landing', action: 'open', value: 'CM-056' }));
     await settle();

@@ -14,7 +14,7 @@ var commissionerPreviewRegistry string
 
 // TargetCommissionerPreview checks the execute body without recording the change.
 func (a *App) TargetCommissionerPreview(body string) (commissioner.Preview, error) {
-	raw, err := commissioner.Decode(body)
+	raw, err := commissioner.DecodePreview(body)
 	if err != nil {
 		var refusal *commissioner.Refusal
 		words := err.Error()

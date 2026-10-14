@@ -49,7 +49,7 @@ func transactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commi
 // immediate SQLite transaction, including across independently opened stores.
 func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer) (commissioner.Receipt, error) {
-	raw, canonical, err := preparedCommand(raw, principal)
+	raw, canonical, err := preparedCommand(raw, principal, true)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
@@ -110,13 +110,19 @@ func (s *Store) checkCommissionerCommand(raw commissioner.RawCommand, principal 
 	return role, nil, nil
 }
 
-// preparedCommand fills what Go owns on the command, validates it and fixes its retry identity.
-func preparedCommand(raw commissioner.RawCommand, principal string) (commissioner.RawCommand, string, error) {
+// preparedCommand fills what Go owns on the command, validates it and fixes its retry identity. A dry run
+// passes requireReason false and reports the missing reason itself.
+func preparedCommand(raw commissioner.RawCommand, principal string,
+	requireReason bool) (commissioner.RawCommand, string, error) {
 	raw, err := raw.Prepared()
 	if err != nil {
 		return raw, "", fmt.Errorf("validate league change: %w", commissioner.Refused(err))
 	}
-	if err := raw.Validate(); err != nil {
+	validate := raw.ValidatePreview
+	if requireReason {
+		validate = raw.Validate
+	}
+	if err := validate(); err != nil {
 		return raw, "", fmt.Errorf("validate league change: %w", commissioner.Refused(err))
 	}
 	if strings.TrimSpace(principal) == "" {

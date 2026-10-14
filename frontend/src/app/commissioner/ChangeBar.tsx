@@ -5,12 +5,14 @@ import { HoldToFire } from './HoldToFire';
 import { leagueState } from './proxy';
 
 type Props = {
-  form: string; change: Change | null; safeguard: Safeguard; reason: string; onReason(text: string): void;
+  form: string; change: Change | null; safeguard: Safeguard | null; reason: string;
+  onReason(text: string): void;
   request?: string; confirmLabel: string; blocked?: string; note?: string;
 };
 
-// ChangeBar is the end of every commissioner form: the reason, the safeguard Go applies, the confirm and
-// whatever Go answered. Nothing here decides who may act; it sends the typed body and shows the answer.
+// ChangeBar is the end of every commissioner form, and it is drawn inside the side tray only: the reason,
+// the safeguard Go applies, the confirm and whatever Go answered. Nothing here decides who may act or how
+// firmly to confirm; the safeguard is Go's, and until Go has named one there is nothing to confirm with.
 export function ChangeBar({ form, change, safeguard, reason, onReason, confirmLabel,
   blocked, note, request }: Props) {
   const outcome = leagueState.use().outcome;
@@ -21,14 +23,14 @@ export function ChangeBar({ form, change, safeguard, reason, onReason, confirmLa
   const sending = outcome.status === 'sending' && outcome.form === form;
   const need = safeguard === 'reason' && typed === '' ? noReasonWords : '';
   const why = blocked || need || (sending ? 'Sending the change…' : '');
-  const ready = body !== '' && why === '';
+  const ready = body !== '' && why === '' && safeguard !== null;
   return (
     <div className="change-bar">
       <label className="change-reason">
-        Reason {safeguard === 'reason' ? '(required)' : '(optional)'}
+        Reason{safeguard && (safeguard === 'reason' ? ' (required)' : ' (optional)')}
         <textarea value={reason} rows={2} onChange={e => onReason(e.target.value)} />
       </label>
-      <p className="change-safeguard">{safeguardWords[safeguard]}</p>
+      {safeguard && <p className="change-safeguard">{safeguardWords[safeguard]}</p>}
       {note && <p className="change-note">{note}</p>}
       {safeguard === 'hold'
         ? <HoldToFire label={confirmLabel} disabled={!ready} body={body}

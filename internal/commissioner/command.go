@@ -127,7 +127,28 @@ type RawCommand struct {
 	Gravity    string  `json:"gravity,omitempty"`
 }
 
-func (r RawCommand) Validate() error {
+// Validate is the full check a change must pass before it can be recorded.
+func (r RawCommand) Validate() error { return r.validate(true) }
+
+// ValidatePreview is Validate without the typed-reason demand, so a dry run can describe a change
+// before the reason is written. MissingReason says what is still owed.
+func (r RawCommand) ValidatePreview() error { return r.validate(false) }
+
+const reasonRequired = "give a reason for this change"
+
+// MissingReason is a refusal while a change that needs a typed reason has none, and nil otherwise.
+func (r RawCommand) MissingReason() error {
+	definition, err := r.Definition()
+	if err != nil {
+		return err
+	}
+	if definition.Gravity != "G3" || strings.TrimSpace(r.Reason) != "" {
+		return nil
+	}
+	return Refused(errors.New(reasonRequired))
+}
+
+func (r RawCommand) validate(requireReason bool) error {
 	definition, err := r.Definition()
 	if err != nil {
 		return err
@@ -139,8 +160,10 @@ func (r RawCommand) Validate() error {
 	if r.Gravity != "" && r.Gravity != definition.Gravity {
 		return fmt.Errorf("this change requires a recorded reason; its safeguards cannot be lowered")
 	}
-	if definition.Gravity == "G3" && strings.TrimSpace(r.Reason) == "" {
-		return fmt.Errorf("give a reason for this change")
+	if requireReason {
+		if err := r.MissingReason(); err != nil {
+			return err
+		}
 	}
 	if err := r.validatePlacement(); err != nil {
 		return err
@@ -195,7 +218,12 @@ func (r RawCommand) validatePeoplePlacement() error {
 }
 
 // Decode rejects identity/role fields and unknown arguments even for direct IPC calls.
-func Decode(body string) (RawCommand, error) {
+func Decode(body string) (RawCommand, error) { return decode(body, true) }
+
+// DecodePreview reads a command for a dry run: every check of Decode except the typed reason.
+func DecodePreview(body string) (RawCommand, error) { return decode(body, false) }
+
+func decode(body string, requireReason bool) (RawCommand, error) {
 	var raw RawCommand
 	decoder := json.NewDecoder(bytes.NewBufferString(body))
 	decoder.DisallowUnknownFields()
@@ -209,7 +237,7 @@ func Decode(body string) (RawCommand, error) {
 	if err != nil {
 		return raw, err
 	}
-	if err := raw.Validate(); err != nil {
+	if err := raw.validate(requireReason); err != nil {
 		return raw, err
 	}
 	return raw, nil

@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { all, button, click, mount, render, settle, unmount } from './commissionerDom';
 import { stub } from './commissionerStub';
 import { leagueState } from './proxy';
-import LeagueDesk from './LeagueDesk';
 import LeagueRules from './LeagueRules';
+import LeagueLanding from './LeagueLanding';
 import LeaguePeople from './LeaguePeople';
 import LeagueLedger from './LeagueLedger';
 import { DensityScreen } from './DensityScreen';
@@ -25,8 +25,9 @@ afterEach(async () => {
 });
 
 const screens = [
-  { node: LeagueDesk, key: 'desk' }, { node: LeagueRules, key: 'rules' },
-  { node: LeaguePeople, key: 'people' }, { node: LeagueLedger, key: 'ledger' },
+  { node: LeagueLanding, key: 'landing' },
+  { node: LeagueRules, key: 'rules' }, { node: LeaguePeople, key: 'people' },
+  { node: LeagueLedger, key: 'ledger' },
 ];
 
 describe('Commissioner density', () => {

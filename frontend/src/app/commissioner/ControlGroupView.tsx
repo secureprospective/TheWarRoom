@@ -3,10 +3,8 @@ import { Act } from '../commands/Act';
 import { ControlRow } from './ControlRow';
 import type { Entry } from './controls';
 import { leagueState } from './proxy';
-import { RoleForm } from './RoleForm';
 import type { RuleRow } from './rules';
-import { StartLeagueForm } from './StartLeagueForm';
-
+import { TrayLauncher } from './TrayLauncher';
 
 const LeagueRules = lazy(() => import('./LeagueRules'));
 const LeaguePeople = lazy(() => import('./LeaguePeople'));
@@ -19,21 +17,21 @@ type Props = {
 };
 
 // What a group shows besides its controls: the screens that already exist, placed with the controls they
-// answer for.
+// answer for, and the way into each change. A change itself is made in the side tray, never in the group.
 function Existing({ id }: { id: string }) {
   const { choices, people, pending } = leagueState.use();
   if (id === 'constitution') return (
     <>
-      {choices.length === 0 && !pending ? <StartLeagueForm /> : (
-        <details><summary>Start another app league</summary><StartLeagueForm /></details>
-      )}
+      <p>A league run in this app. You become its commissioner.</p>
+      <TrayLauncher tray="start" label={choices.length === 0 && !pending ? 'Start an app league'
+        : 'Start another app league'} />
       <LeagueRules />
     </>
   );
   if (id === 'people') return (
     <>
       <LeaguePeople />
-      {people?.mayGrantRoles && <RoleForm key={people.league} people={people} />}
+      {people?.mayGrantRoles && <TrayLauncher tray="role" label="Give or take a role" />}
     </>
   );
   return id === 'ledger' ? <LeagueLedger /> : null;

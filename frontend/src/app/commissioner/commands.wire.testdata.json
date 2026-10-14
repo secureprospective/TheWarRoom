@@ -1,0 +1,176 @@
+[
+  {
+    "command": "commish.league.create",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.correction.revert",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.franchise.edit",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.seat.invite",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.seat.invite.revoke",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.seat.invite.redeem",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.seat.remove",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.seat.replace",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.abilities.set",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.visibility.set",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.role.grant",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.role.revoke",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.accept",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.activity",
+    "effective": "now",
+    "field": "",
+    "safeguard": "confirm"
+  },
+  {
+    "command": "commish.succession.decline",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.election.open",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.inactivity.set",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.periods.set",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.stepdown",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.takeover",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.voteout.open",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.vote.cast",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.vote.close",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.vote.tiebreak",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.rules.set",
+    "effective": "now",
+    "field": "league.teams",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.rules.set",
+    "effective": "now",
+    "field": "house.texts",
+    "safeguard": "confirm"
+  },
+  {
+    "command": "commish.rules.set",
+    "effective": "next_rollover",
+    "field": "league.teams",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.rules.set",
+    "effective": "next_rollover",
+    "field": "house.texts",
+    "safeguard": "confirm"
+  },
+  {
+    "command": "commish.rules.set",
+    "effective": "next_rollover",
+    "field": "calendar.rollover",
+    "safeguard": "reason"
+  }
+]

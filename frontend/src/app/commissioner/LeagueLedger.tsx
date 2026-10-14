@@ -21,7 +21,7 @@ export function LedgerEntries({ reading, filtered = false }: { reading: Ledger; 
               <time dateTime={entry.when}>{new Date(entry.when).toLocaleString()}</time></p>
             <p>Reason: {entry.why || 'No reason recorded'}</p>
             <p>Safeguard: {entry.gravity}</p>
-            <UndoEntry reading={reading} entry={entry} />
+            <UndoEntry entry={entry} />
           </li>
         ))}
       </ol>

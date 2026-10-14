@@ -99,8 +99,11 @@ func (c PreviewCatalogue) affects(control string) PreviewAffects {
 		return PreviewAffects{Readings: readings, Words: "Not known yet"}
 	}
 	count := len(readings)
-	return PreviewAffects{Readings: readings, Count: &count,
-		Words: fmt.Sprintf("%d owner readings use this rule", count)}
+	words := fmt.Sprintf("%d owner readings use this rule", count)
+	if count == 1 {
+		words = "1 owner reading uses this rule"
+	}
+	return PreviewAffects{Readings: readings, Count: &count, Words: words}
 }
 
 // RulePreview describes the proposed value even when the append checks refuse it.

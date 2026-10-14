@@ -138,6 +138,19 @@ func unitFor(path leaguerules.FieldPath) string {
 	return ""
 }
 
+// safeguardFor says what a person confirming a change of this gravity is asked: "reason" (a typed reason),
+// "hold" (hold to confirm) or "confirm" (one plain confirm).
+func safeguardFor(gravity string) string {
+	switch gravity {
+	case "G3":
+		return "reason"
+	case "G2":
+		return "hold"
+	default:
+		return "confirm"
+	}
+}
+
 // safeguardsFor asks the same Definition a submitted change gets, so the form never guesses.
 func safeguardsFor(field string) RuleSafeguards {
 	words := func(effective string) string {
@@ -145,14 +158,7 @@ func safeguardsFor(field string) RuleSafeguards {
 		if err != nil {
 			return "reason"
 		}
-		switch d.Gravity {
-		case "G3":
-			return "reason"
-		case "G2":
-			return "hold"
-		default:
-			return "confirm"
-		}
+		return safeguardFor(d.Gravity)
 	}
 	return RuleSafeguards{NextRollover: words("next_rollover"), Now: words("now")}
 }

@@ -1,10 +1,10 @@
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { KeyInputElement, descendants } from '../shell/mflKeyTestDom';
 import { all, button, click, control, disabled, flush, holder, mount, render, settle, type,
   unmount, type Element } from './commissionerDom';
 import { open, rules, stub } from './commissionerStub';
 import { leagueState } from './proxy';
+import { active, focused, key, modelFocusApis } from './trayHarness';
 import LeagueLanding from './LeagueLanding';
 import { RuleChangeForm } from './RuleChangeForm';
 import { PreviewReview } from './PreviewReview';
@@ -13,45 +13,15 @@ import previewWire from './preview.wire.testdata.json';
 import controlsWire from './controls.wire.testdata.json';
 import jobsWire from './jobs.wire.testdata.json';
 
-// Model only the browser focus APIs the tray consumes; the form harness already models rendering.
-const descriptors = new Map<string, PropertyDescriptor | undefined>();
+let restoreFocus: () => void;
 beforeEach(() => {
   leagueState.forget();
-  for (const key of ['querySelectorAll', 'hasAttribute', 'tabIndex', 'closest', 'contains'])
-    descriptors.set(key, Object.getOwnPropertyDescriptor(KeyInputElement.prototype, key));
-  Object.defineProperties(KeyInputElement.prototype, {
-    querySelectorAll: { configurable: true, value(this: Element, selector: string) {
-      return descendants(this).filter(e => selector === '[hidden]' ? e.attributes.has('hidden') :
-        ['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'].includes(e.tagName) || e.attributes.has('tabindex'));
-    } },
-    hasAttribute: { configurable: true, value(this: Element, key: string) {
-      return this.attributes.has(key);
-    } },
-    tabIndex: { configurable: true, get(this: Element) {
-      return Number(this.getAttribute('tabindex') ?? 0);
-    } },
-    closest: { configurable: true, value() { return null; } },
-    contains: { configurable: true, value(this: Element, other: Element) {
-      return this === other || descendants(this).includes(other);
-    } },
-  });
+  restoreFocus = modelFocusApis();
 });
 afterEach(async () => {
   await unmount();
   vi.useRealTimers();
-  for (const [key, descriptor] of descriptors) {
-    if (descriptor) Object.defineProperty(KeyInputElement.prototype, key, descriptor);
-    else Reflect.deleteProperty(KeyInputElement.prototype, key);
-  }
-});
-const focused = (host: Element) => (host.ownerDocument as unknown as { focused: Element }).focused;
-function active(host: Element) {
-  Object.defineProperty(host.ownerDocument, 'activeElement', { configurable: true,
-    get: () => focused(host) });
-}
-const key = (panel: Element, name: string, shiftKey = false) => act(async () => {
-  (panel.props().onKeyDown as (event: object) => void)({ key: name, shiftKey,
-    preventDefault() {}, stopPropagation() {} });
+  restoreFocus();
 });
 const confirm = 'Record this rule change';
 const mountForm = (over: Parameters<typeof stub>[0] = {}) => {

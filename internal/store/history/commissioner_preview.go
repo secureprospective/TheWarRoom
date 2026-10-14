@@ -12,7 +12,7 @@ import (
 // It never opens the writer pool, reserves a request key or records a trial event.
 func (s *Store) PreviewCommissioner(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer, catalogue commissioner.PreviewCatalogue) (commissioner.Preview, error) {
-	raw, canonical, err := preparedCommand(raw, principal)
+	raw, canonical, err := preparedCommand(raw, principal, false)
 	if err != nil {
 		return previewRefusal(err)
 	}
@@ -30,20 +30,34 @@ func (s *Store) PreviewCommissioner(ctx context.Context, raw commissioner.RawCom
 	if checkErr != nil && !errors.As(checkErr, &refusal) {
 		return commissioner.Preview{}, fmt.Errorf("check league preview: %w", checkErr)
 	}
-	preview, err := commissioner.RulePreview(raw, records, catalogue)
+	blockers := []string{}
+	if missing := raw.MissingReason(); missing != nil {
+		blockers = append(blockers, reasonOf(missing))
+	}
+	if refusal != nil {
+		blockers = append(blockers, refusal.Reason())
+	}
+	if retry != nil {
+		blockers = append(blockers, "This change is already recorded in the league ledger.")
+	}
+	preview, err := commissioner.CommandPreview(raw, records, catalogue)
 	if err != nil {
-		if refusal != nil {
-			return previewRefusal(checkErr)
+		if len(blockers) > 0 {
+			return blockedPreview(blockers), nil
 		}
 		return commissioner.Preview{}, fmt.Errorf("describe league preview: %w", err)
 	}
-	if refusal != nil {
-		preview.Blockers = append(preview.Blockers, refusal.Reason())
-	}
-	if retry != nil {
-		preview.Blockers = append(preview.Blockers, "This change is already recorded in the league ledger.")
-	}
+	preview.Blockers = append(preview.Blockers, blockers...)
 	return preview, nil
+}
+
+// reasonOf is the sentence a refusal gives the person reading it.
+func reasonOf(err error) string {
+	var refusal *commissioner.Refusal
+	if errors.As(err, &refusal) {
+		return refusal.Reason()
+	}
+	return err.Error()
 }
 
 func previewRefusal(err error) (commissioner.Preview, error) {
@@ -51,7 +65,12 @@ func previewRefusal(err error) (commissioner.Preview, error) {
 	if !errors.As(err, &refusal) {
 		return commissioner.Preview{}, fmt.Errorf("league preview: %w", err)
 	}
+	return blockedPreview([]string{refusal.Reason()}), nil
+}
+
+// blockedPreview is what a change gets when it cannot be described: only the reasons it is refused.
+func blockedPreview(blockers []string) commissioner.Preview {
 	return commissioner.Preview{Fields: []commissioner.PreviewField{},
 		Affects:  commissioner.PreviewAffects{Readings: []string{}, Words: "Not known yet"},
-		Blockers: []string{refusal.Reason()}}, nil
+		Blockers: blockers}
 }

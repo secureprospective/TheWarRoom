@@ -1,4 +1,3 @@
-.twr-app .league-desk,
 .twr-app .league-rules,
 .twr-app .league-people { display: grid; gap: 12px; }
 .twr-app .league-form {
@@ -18,8 +17,6 @@
 .twr-app .change-safeguard,
 .twr-app .change-why { margin: 0; color: var(--surface-tx2); }
 .twr-app .change-refused { margin: 0; font-weight: 600; }
-.twr-app .ledger-undo { margin-top: 4px; }
-.twr-app .ledger-undo summary { cursor: pointer; }
 .twr-app .league-votes { padding-inline-start: 24px; }
 .twr-app .league-votes p { margin: 4px 0; }
 

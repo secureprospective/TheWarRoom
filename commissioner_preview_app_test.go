@@ -65,6 +65,7 @@ func TestCommissionerPreviewChecksMatchExecute(t *testing.T) {
 		{"rules", "creator", "playoffs.startWeek", `18`, "now", "Delay playoffs", 1},
 		{"validation", "creator", "roster.limits", `{"min":71,"max":70}`, "next_rollover", "", 1},
 		{"reason", "creator", "roster.limits", `{"min":20,"max":70}`, "now", "", 1},
+		{"unchanged", "creator", "roster.limits", `{"min":18,"max":80}`, "next_rollover", "", 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			app := previewApp(t)

@@ -20,3 +20,12 @@ export function scopedRules(rules: Rules, owned: ReadonlySet<string>): Rules {
     .filter(s => s.rows.length > 0);
   return { ...rules, sections };
 }
+
+// The other three changes, each opened in the same tray as a rule change: "start", "role" or
+// "undo <entry>".
+export type ActionKind = { kind: 'start' } | { kind: 'role' } | { kind: 'undo'; entry: string };
+export function parseTray(value: string): ActionKind | null {
+  const [kind, entry = ''] = value.split(' ');
+  if (kind === 'start' || kind === 'role') return entry === '' ? { kind } : null;
+  return kind === 'undo' && entry !== '' ? { kind, entry } : null;
+}

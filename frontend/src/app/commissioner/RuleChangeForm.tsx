@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { ChangeBar } from './ChangeBar';
 import { draftEditor } from './draftEditor';
-import { bodyOf, useRequestKey, type Change } from './forms';
+import { useRequestKey, type Change } from './forms';
 import { PreviewReview } from './PreviewReview';
-import type { Preview } from './preview';
-import { leagueState, readPreview, refusalText } from './proxy';
+import { leagueState } from './proxy';
 import { ruleSource } from './rulesReport';
 import { RuleInput } from './RuleInput';
 import { draftFrom, editDraft, toNatural, type Draft } from './ruleDraft';
+import { useChangePreview } from './useChangePreview';
 import type { RuleRow, Rules } from './rules';
 
 type Effective = Change['effective'];
@@ -58,28 +58,14 @@ export function RuleChangeForm({ rules, initialField = '' }: { rules: Rules; ini
     reason: reason.trim(), expected: rules.revision, effective, visibility: 'league',
   } : null;
   const request = useRequestKey(change);
-  const body = change ? bodyOf(change, request) : '';
-  const [review, setReview] = useState<{ body: string; preview?: Preview; error?: string }>();
-  useEffect(() => {
-    if (!body) return;
-    let active = true;
-    void readPreview(body).then(preview => {
-      if (preview.target.league !== change?.league || preview.target.version !== change.expected)
-        throw new Error('The preview does not match this league version. Reopen the change.');
-      if (active) setReview({ body, preview });
-    }).catch(cause => { if (active) setReview({ body, error: refusalText(cause) }); });
-    return () => { active = false; };
-  }, [body]);
-  const current = review?.body === body ? review : undefined;
-  const preview = current?.preview;
-  const blocked = !row ? 'Choose a rule to change.' : typed && !typed.ok ? typed.error :
-    current?.error || (!preview ? 'Reading the change preview…' : preview.blockers.join(' '));
+  const { preview, wait, safeguard } = useChangePreview(change, request);
+  const blocked = !row ? 'Choose a rule to change.' : typed && !typed.ok ? typed.error : wait;
   return (
     <section className="league-form" aria-label="Change a rule">
       {!preview && <h5>Change a rule</h5>}
       <PreviewReview preview={preview} confirm={
         <ChangeBar form="rule" change={change} reason={reason} onReason={setReason} request={request}
-          safeguard={preview?.safeguard ?? 'hold'} confirmLabel="Record this rule change" blocked={blocked} />
+          safeguard={safeguard} confirmLabel="Record this rule change" blocked={blocked} />
       }>
         <label>Rule
           <select value={field} onChange={e => pick(e.target.value)}>
