@@ -114,3 +114,26 @@
 .twr-app .mfl-reference { border-top: 1px solid var(--surface-line); padding-top: 16px; }
 .twr-app .mfl-reference > summary { cursor: pointer; }
 .twr-app .mfl-reference > summary:focus-visible { outline: 2px solid currentColor; }
+
+.twr-app .tray-shade {
+  position: fixed; inset: 0; z-index: 50; display: flex; justify-content: flex-end;
+  background: rgb(0 0 0 / 45%);
+}
+.twr-app .side-tray {
+  width: min(100%, 640px); height: 100%; overflow-y: auto; box-sizing: border-box;
+  background: var(--surface-0); color: var(--surface-tx1); border-left: 1px solid var(--surface-line);
+  padding: 20px; overscroll-behavior: contain;
+}
+.twr-app .tray-heading {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.twr-app .tray-heading h3 { margin: 0; }
+.twr-app .tray-heading button { min-height: 36px; }
+.twr-app .side-tray h4 { margin-block: 4px; }
+.twr-app .side-tray h5 { margin-block: 8px; font-size: 1em; }
+.twr-app .side-tray p { overflow-wrap: anywhere; }
+.twr-app .side-tray :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.twr-app .tray-target { font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) {
+  .twr-app .side-tray .hold-fill { transition: none; }
+}

@@ -5,6 +5,7 @@ import type { App } from './commissionerDom';
 import ledgerWire from './wire.testdata.json';
 import peopleWire from './people.wire.testdata.json';
 import rulesWire from './rules.wire.testdata.json';
+import previewWire from './preview.wire.testdata.json';
 
 // The Go bindings as the forms see them: readings are the Go-written fixtures, and every execute call
 // is recorded so a test can read exactly what was sent.
@@ -22,6 +23,11 @@ const read = (value: Reading) => (typeof value === 'function' ? (value as () => 
 export function stub(over: Partial<App> = {}, readings: { people?: Reading; rules?: Reading } = {}) {
   const calls = { sent: [] as Sent[], ledger: [] as string[], rules: [] as string[], people: [] as string[] };
   const app: Partial<App> = {
+    TargetCommissionerPreview: async body => {
+      const sent = JSON.parse(body) as Sent;
+      const source = sent.effective === 'now' ? previewWire.reason : previewWire.hold;
+      return { ...source, target: { ...source.target, league: sent.league, version: sent.expected } };
+    },
     TargetCommissionerExecute: async body => { calls.sent.push(JSON.parse(body)); return receipt(); },
     TargetCommissionerLedger: async league => { calls.ledger.push(league); return ledgerWire; },
     TargetCommissionerLeagues: async () => [{ id: rulesWire.league, name: rulesWire.name }],

@@ -4,10 +4,9 @@ import { ControlRow } from './ControlRow';
 import type { Entry } from './controls';
 import { leagueState } from './proxy';
 import { RoleForm } from './RoleForm';
-import { RuleChangeForm } from './RuleChangeForm';
 import type { RuleRow } from './rules';
 import { StartLeagueForm } from './StartLeagueForm';
-import { scopedRules, type Reveal } from './landing';
+
 
 const LeagueRules = lazy(() => import('./LeagueRules'));
 const LeaguePeople = lazy(() => import('./LeaguePeople'));
@@ -15,7 +14,7 @@ const LeagueLedger = lazy(() => import('./LeagueLedger'));
 
 export type GroupEntries = { id: string; label: string; entries: Entry[] };
 type Props = {
-  group: GroupEntries; open: boolean; reveal?: Reveal;
+  group: GroupEntries; open: boolean;
   refer: (id: string, element: HTMLLIElement | null) => void;
 };
 
@@ -40,15 +39,12 @@ function Existing({ id }: { id: string }) {
   return id === 'ledger' ? <LeagueLedger /> : null;
 }
 
-// ControlGroupView is one collapsible group of the census. Only the open group is drawn, so there is
-// only ever one rule form on the page.
-export function ControlGroupView({ group, open, reveal, refer }: Props) {
+// ControlGroupView draws only the open group of the census.
+export function ControlGroupView({ group, open, refer }: Props) {
   const { rules, people } = leagueState.use();
   const available = group.entries.filter(e => e.built).length;
-  const owned = new Set(group.entries.flatMap(e => e.fields.map(f => f.field)));
   const rows = new Map(rules?.sections.flatMap(s => s.rows).map((r): [string, RuleRow] => [r.field, r]));
   const mayChange = people?.mayChangeRules === true;
-  const mine = reveal && group.entries.some(e => e.id === reveal.control) ? reveal : undefined;
   return (
     <section className="control-group" aria-label={group.label} data-open={open}>
       <h4>
@@ -64,10 +60,6 @@ export function ControlGroupView({ group, open, reveal, refer }: Props) {
           <Suspense fallback={<p role="status">Reading {group.label}…</p>}>
             <Existing id={group.id} />
           </Suspense>
-          {rules && mayChange && owned.size > 0 && (
-            <RuleChangeForm key={`${group.id}:${mine?.n ?? 0}`} rules={scopedRules(rules, owned)}
-              initialField={mine?.field ?? ''} />
-          )}
           <ul className="control-rows">
             {group.entries.map(entry => (
               <ControlRow key={entry.id} entry={entry} rules={rows} mayChange={mayChange} refer={refer} />

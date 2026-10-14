@@ -21,7 +21,8 @@ afterEach(async () => {
   Reflect.deleteProperty(KeyInputElement.prototype, 'closest');
 });
 const show = async (empty = false) => {
-  await Promise.all([import('./LeagueRules'), import('./LeaguePeople'), import('./LeagueLedger')]);
+  await Promise.all([import('./LeagueRules'), import('./LeaguePeople'),
+    import('./LeagueLedger'), import('./RuleTray')]);
   const { app } = stub({
     TargetCommissionerJobs: async () => jobsWire.fresh,
     TargetCommissionerControls: async () => controlsWire,
@@ -55,8 +56,9 @@ describe('League landing interactions', () => {
       screen: 'landing', action: 'open', value: 'CM-024 calendar.timezone',
     }));
     const group = all(host, 'section').find(s => s.getAttribute('aria-label') === 'Calendar')!;
-    expect(group.getAttribute('data-open')).toBe('true');
-    const form = all(group, 'section').find(s => s.getAttribute('aria-label') === 'Change a rule')!;
+    expect(group.getAttribute('data-open')).toBe('false');
+    const tray = all(host, 'section').find(s => s.getAttribute('role') === 'dialog')!;
+    const form = all(tray, 'section').find(s => s.getAttribute('aria-label') === 'Change a rule')!;
     const pick = all(form, 'select')[0];
     expect(pick.props().value).toBe('calendar.timezone');
     expect(all(pick, 'option').map(o => o.props().value).filter(Boolean))

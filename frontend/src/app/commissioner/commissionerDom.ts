@@ -10,7 +10,8 @@ export type Element = KeyInputElement;
 type Binding = (...args: string[]) => Promise<unknown>;
 export type App = Record<'TargetCommissionerExecute' | 'TargetCommissionerLedger'
   | 'TargetCommissionerLeagues' | 'TargetCommissionerRules' | 'TargetCommissionerPeople'
-  | 'TargetCommissionerLedgerFiltered' | 'TargetCommissionerJobs' | 'TargetCommissionerControls', Binding>;
+  | 'TargetCommissionerPreview' | 'TargetCommissionerLedgerFiltered' | 'TargetCommissionerJobs'
+  | 'TargetCommissionerControls', Binding>;
 
 const globals = ['window', 'document', 'IS_REACT_ACT_ENVIRONMENT'];
 const held = globals.map(key => ({ key, descriptor: Object.getOwnPropertyDescriptor(globalThis, key) }));

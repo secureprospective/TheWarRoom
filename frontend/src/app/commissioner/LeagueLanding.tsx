@@ -1,33 +1,49 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { ControlGroupView } from './ControlGroupView';
 import { ControlSearch } from './ControlSearch';
 import { entriesOf } from './controls';
 import { DensityScreen } from './DensityScreen';
 import { JobsStrip } from './JobsStrip';
-import { parseOpen, type LandingView } from './landing';
+import { parseOpen, scopedRules, type LandingView } from './landing';
 import { LeaguePicker } from './LeaguePicker';
 import { leagueState } from './proxy';
 import { surfaceActions } from './surfaceActions';
 import { revealWorkSection } from '../shell/workScroll';
 import './commissioner.css';
 
+const RuleTray = lazy(() => import('./RuleTray'));
+
 // LeagueLanding is the front of Control Room › League: the jobs strip, a search over every control, then
 // the control groups. Go decides every job and every control; this only presents them.
 export default function LeagueLanding() {
-  const { choices, selected, jobs, controls, landingError, error, pending } = leagueState.use();
+  const { choices, selected, jobs, controls, rules, people, landingError, error, pending }
+    = leagueState.use();
+  const [tray, setTray] = useState<{ field: string; group: string; opener: HTMLElement }>();
+  const background = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<LandingView>({ open: null });
   const rows = useRef(new Map<string, HTMLLIElement>());
   const entries = useMemo(() => (controls ? entriesOf(controls) : []), [controls]);
   useEffect(() => { void leagueState.choose(); }, []);
   useEffect(() => surfaceActions.register('landing', args => {
+    if (args.action === 'close') {
+      setTray(undefined);
+      return;
+    }
     if (args.action === 'group') {
+      setTray(undefined);
       setView(v => ({ ...v, open: v.open === args.value ? '' : args.value, reveal: undefined }));
       return;
     }
     const found = args.action === 'open' ? parseOpen(args.value, entries) : null;
+    if (found?.field && rules && people?.mayChangeRules) {
+      setTray({ field: found.field, group: found.control.group,
+        opener: document.activeElement as HTMLElement });
+      return;
+    }
     if (found) setView(v => ({ open: found.control.group,
       reveal: { control: found.control.id, field: found.field, n: (v.reveal?.n ?? 0) + 1 } }));
-  }), [entries]);
+  }), [entries, rules, people]);
+  useEffect(() => { setTray(undefined); }, [selected]);
   // Once the opened group is drawn, move to the control it was opened for.
   useEffect(() => {
     const row = view.reveal && rows.current.get(view.reveal.control);
@@ -40,7 +56,7 @@ export default function LeagueLanding() {
   };
   return (
     <DensityScreen screen="landing" label="League landing" pending={pending}>
-      <div className="league-landing">
+      <div className="league-landing" ref={background} aria-hidden={tray ? true : undefined}>
         {error && <p role="alert">{error}</p>}
         {landingError && <p role="alert">{landingError}</p>}
         <LeaguePicker />
@@ -49,11 +65,17 @@ export default function LeagueLanding() {
         {!jobs && selected && pending && <p role="status">Reading the league’s jobs…</p>}
         {entries.length > 0 && <ControlSearch entries={entries} />}
         {controls?.groups.map(group => (
-          <ControlGroupView key={group.id} open={open === group.id} reveal={view.reveal} refer={refer}
+          <ControlGroupView key={group.id} open={open === group.id} refer={refer}
             group={{ id: group.id, label: group.label,
               entries: entries.filter(e => e.group === group.id) }} />
         ))}
       </div>
+      {tray && rules && <Suspense fallback={<p role="status">Opening the rule change…</p>}>
+        <RuleTray key={`${rules.league}:${tray.field}`} field={tray.field} opener={tray.opener}
+          background={background.current} onClose={() => setTray(undefined)}
+          rules={scopedRules(rules, new Set(entries
+            .filter(e => e.group === tray.group).flatMap(e => e.fields.map(f => f.field))))} />
+      </Suspense>}
     </DensityScreen>
   );
 }

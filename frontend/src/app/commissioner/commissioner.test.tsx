@@ -1,3 +1,4 @@
+import previewWire from './preview.wire.testdata.json';
 import jobsWire from './jobs.wire.testdata.json';
 import controlsWire from './controls.wire.testdata.json';
 import { createElement } from 'react';
@@ -17,7 +18,7 @@ const receipt = {
   message: 'Recorded in the league ledger.',
 };
 const port = (over: Partial<Port> = {}): Port => ({
-  execute: async () => receipt, ledger: async () => wire,
+  execute: async () => receipt, preview: async () => previewWire.hold, ledger: async () => wire,
   jobs: async () => jobsWire.fresh, controls: async () => controlsWire,
   leagues: async () => [{ id: wire.league, name: wire.name }],
   rules: async () => rulesWire, people: async () => peopleWire.owner, ...over,

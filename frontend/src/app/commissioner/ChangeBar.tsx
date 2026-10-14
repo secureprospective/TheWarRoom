@@ -6,17 +6,18 @@ import { leagueState } from './proxy';
 
 type Props = {
   form: string; change: Change | null; safeguard: Safeguard; reason: string; onReason(text: string): void;
-  confirmLabel: string; blocked?: string; note?: string;
+  request?: string; confirmLabel: string; blocked?: string; note?: string;
 };
 
 // ChangeBar is the end of every commissioner form: the reason, the safeguard Go applies, the confirm and
 // whatever Go answered. Nothing here decides who may act; it sends the typed body and shows the answer.
-export function ChangeBar({ form, change, safeguard, reason, onReason, confirmLabel, blocked, note }: Props) {
+export function ChangeBar({ form, change, safeguard, reason, onReason, confirmLabel,
+  blocked, note, request }: Props) {
   const outcome = leagueState.use().outcome;
   const typed = reason.trim();
   const sent = change && { ...change, reason: typed };
   const key = useRequestKey(sent);
-  const body = sent ? bodyOf(sent, key) : '';
+  const body = sent ? bodyOf(sent, request ?? key) : '';
   const sending = outcome.status === 'sending' && outcome.form === form;
   const need = safeguard === 'reason' && typed === '' ? noReasonWords : '';
   const why = blocked || need || (sending ? 'Sending the change…' : '');

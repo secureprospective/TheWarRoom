@@ -1,3 +1,4 @@
+import previewWire from './preview.wire.testdata.json';
 import jobsWire from './jobs.wire.testdata.json';
 import controlsWire from './controls.wire.testdata.json';
 import { describe, expect, it } from 'vitest';
@@ -11,7 +12,7 @@ const receipt = { entry: 'act.new', league: 'native.two', revision: 2, recordedA
 function port(over: Partial<Port> = {}) {
   const calls = { ledger: [] as string[], rules: [] as string[], people: [] as string[] };
   const base: Port = {
-    execute: async () => receipt,
+    execute: async () => receipt, preview: async () => previewWire.hold,
     ledger: async league => { calls.ledger.push(league); return { ...ledger, league }; },
     rules: async league => { calls.rules.push(league); return { ...rules, league }; },
     people: async league => { calls.people.push(league); return { ...people.owner, league }; },

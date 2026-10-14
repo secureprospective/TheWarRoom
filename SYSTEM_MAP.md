@@ -417,8 +417,8 @@ season dates from month/day presets. Unbuilt jobs stay explicit. `TargetCommissi
 all 56 rows' grouping, usable status and owned rule labels; questions reuse the generated commissioner
 registry. Both readings have Go-written frontend wire fixtures. The lazy `LeagueLanding` replaces the
 four stacked screens in `control/LeagueRoom`: jobs, question/rule search and eight collapsible groups;
-existing forms/screens live inside their groups, MFL references stay below. Search opens and focuses
-through `commissioner.surface` and `revealWorkSection`. `JobsStrip` reuses `clock.connectClock`'s DOM
+existing setup/role forms and screens live inside their groups, MFL references stay below.
+Non-rule search opens and focuses through `commissioner.surface` and `revealWorkSection`. `JobsStrip` reuses `clock.connectClock`'s DOM
 projection with an optional plain-word formatter, so counting never rerenders React. Dates are viewer-local.
 
 Commissioner rule dry runs: `TargetCommissionerPreview(body)` accepts the execute command body;
@@ -428,6 +428,11 @@ plain-word blockers, while storage failures remain errors. `commissioner.RulePre
 question, frozen expected league/version, current/proposed values and provenance, timing and Go's
 safeguard. The root embeds the existing endpoint registry; `ReadPreviewCatalogue` derives affected
 owner-reading names and their catalogue-row count from its `governs` edges, never a player/team count.
-No edges means a null count and "Not known yet". Preview presentation is currently rule-only; the
-frontend tray and the other forms' previews are not wired yet. The Go-written fixture is
+No edges means a null count and "Not known yet". The lazy `RuleTray` uses the shared `SideTray` focus
+lifecycle and `PreviewReview` anatomy. Landing Change links and rule search open it for the selected
+rule; the background is inert until close. `RuleChangeForm` reads previews for the exact execute body
+and request key, discards superseded responses and blocks confirmation until a matching preview is
+ready. `preview.ts` parses the boundary; `ChangeBar` retains Go's confirm/hold/reason safeguards.
+Preview presentation is currently rule-only; setup, role and undo migration are the next phase.
+The Go-written fixture is
 `frontend/src/app/commissioner/preview.wire.testdata.json`.

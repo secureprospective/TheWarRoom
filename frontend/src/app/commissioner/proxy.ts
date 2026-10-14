@@ -5,6 +5,7 @@ import { parseControls, type Controls } from './controls';
 import { parseJobs, type Jobs } from './jobs';
 import { parsePeople, type People } from './people';
 import { parseRules, type Rules } from './rules';
+import { parsePreview } from './preview';
 import type * as Bindings from '../../../wailsjs/go/main/App';
 
 export type Receipt = {
@@ -19,6 +20,7 @@ export type Ledger = { league: string; name: string; revision: number; entries: 
 export type NativeLeague = { id: string; name: string };
 export type Port = {
   execute(body: string): Promise<unknown>;
+  preview(body: string): Promise<unknown>;
   ledger(league: string): Promise<unknown>;
   leagues(): Promise<unknown>;
   rules(league: string): Promise<unknown>;
@@ -34,6 +36,7 @@ function bindings(): typeof Bindings {
 }
 const live: Port = {
   execute: body => bindings().TargetCommissionerExecute(body),
+  preview: body => bindings().TargetCommissionerPreview(body),
   ledger: league => bindings().TargetCommissionerLedger(league),
   leagues: () => bindings().TargetCommissionerLeagues(),
   rules: league => bindings().TargetCommissionerRules(league),
@@ -68,6 +71,7 @@ export function parseLedger(v: unknown): Ledger {
 export function createProxy(port: Port) {
   return {
     execute: async (body: string) => parseReceipt(await port.execute(body)),
+    preview: async (body: string) => parsePreview(await port.preview(body)),
     ledger: async (league: string) => parseLedger(await port.ledger(league)),
     rules: async (league: string) => parseRules(await port.rules(league)),
     people: async (league: string) => parsePeople(await port.people(league)),
@@ -179,3 +183,5 @@ export type LedgerFilter = { person: string; kind: string; from: string; before:
 export async function readLedgerFiltered(league: string, filter: LedgerFilter): Promise<Ledger> {
   return parseLedger(await bindings().TargetCommissionerLedgerFiltered(league, JSON.stringify(filter)));
 }
+
+export const readPreview = createProxy(live).preview;
