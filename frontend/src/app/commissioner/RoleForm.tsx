@@ -23,14 +23,16 @@ export function RoleForm({ people }: { people: People }) {
   return (
     <section className="league-form" aria-label="Give or take a role">
       <h5>Give or take a role</h5>
-      <label>Franchise
+      {seated.length === 0 ? (
+        <p>Nobody else has joined this league yet. Roles go to owners who hold a franchise.</p>
+      ) : <label>Franchise
         <select value={franchise} onChange={e => setFranchise(e.target.value)}>
           <option value="">Choose a franchise…</option>
           {seated.map(s => (
             <option key={s.franchise} value={s.franchise}>{s.name} ({personLabel(s.owner)})</option>
           ))}
         </select>
-      </label>
+      </label>}
       <label>What to do
         <select value={action} onChange={e => setAction(e.target.value as typeof action)}>
           <option value="grant">Give the role</option>

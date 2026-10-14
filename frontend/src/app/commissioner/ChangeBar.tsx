@@ -30,7 +30,8 @@ export function ChangeBar({ form, change, safeguard, reason, onReason, confirmLa
       <p className="change-safeguard">{safeguardWords[safeguard]}</p>
       {note && <p className="change-note">{note}</p>}
       {safeguard === 'hold'
-        ? <HoldToFire label={confirmLabel} disabled={!ready} body={body} />
+        ? <HoldToFire label={confirmLabel} disabled={!ready} body={body}
+          answer={outcome.status !== 'idle' && outcome.form === form ? outcome.status : ''} />
         : <Act verb="commissioner.execute" args={{ body }} variant="button" disabled={!ready}>
           {confirmLabel}
         </Act>}

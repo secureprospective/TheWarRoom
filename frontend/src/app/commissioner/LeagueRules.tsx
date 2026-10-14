@@ -16,8 +16,7 @@ export default function LeagueRules() {
       {scoring && (
         <section aria-label="Scoring">
           <h4>Scoring</h4>
-          <p>{scoring.state === 'Set' ? scoring.citation
-            : 'Needs a ruling: no stat has been given a value.'}</p>
+          {!reports && <p>{scoring.citation}</p>}
           {scoring.pending.map(p => <p key={p.entry}>{p.when} (a scoring change)</p>)}
           {reports && <ReportView report={reports.used} howLabel="How to read this" />}
           {reports?.unused && (

@@ -9,7 +9,7 @@ describe('Commissioner rules wire', () => {
   it('reads the real Go rules reading with values, sources and waiting changes in words', () => {
     const reading = parseRules(wire);
     expect(reading.revision).toBe(3);
-    expect(reading.rollover).toMatch(/^Needs a ruling/);
+    expect(reading.rollover).toBe('The next rollover has no date yet; the commissioner sets it.');
     const limits = rows().find(r => r.field === 'roster.limits');
     expect(limits).toMatchObject({ label: 'Active roster size', value: '20 to 70', state: 'Set' });
     expect(limits?.schema.fields.map(f => f.label)).toEqual(['Minimum', 'Maximum']);

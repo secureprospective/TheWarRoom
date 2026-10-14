@@ -1,4 +1,4 @@
-import { array, choice, integer, object, text } from '../data/parseValues';
+import { array, choice, integer, object, text, timestamp } from '../data/parseValues';
 
 // The Go rules reading (TargetCommissionerRules). The rules screen imports this lazily.
 export const ruleKinds = ['count', 'cents', 'ten_thousandths', 'nanoseconds', 'boolean', 'date', 'string',
@@ -15,7 +15,7 @@ export const safeguardKinds = ['confirm', 'hold', 'reason'] as const;
 export type Safeguard = (typeof safeguardKinds)[number];
 export type RuleRow = {
   field: string; label: string; value: string; state: 'Set' | 'Needs a ruling'; citation: string;
-  schema: RuleSchema; competitive: boolean; pending: RulePending[];
+  changedAt: string; schema: RuleSchema; competitive: boolean; pending: RulePending[];
   current: unknown; unit: '' | 'percent'; safeguards: { nextRollover: Safeguard; now: Safeguard };
 };
 export type Rules = {
@@ -58,11 +58,12 @@ function parseSafeguards(v: unknown, p: string): RuleRow['safeguards'] {
 }
 function parseRow(v: unknown, p: string): RuleRow {
   const keys = ['field', 'label', 'value', 'state', 'citation', 'schema', 'competitive', 'pending', 'current',
-    'unit', 'safeguards'];
+    'unit', 'safeguards', 'changedAt'];
   const r = object(v, p, keys);
   return {
     field: text(r.field, p), label: text(r.label, p), value: text(r.value, p),
     state: choice(r.state, `${p}.state`, ['Set', 'Needs a ruling'] as const), citation: text(r.citation, p),
+    changedAt: r.changedAt === '' ? '' : timestamp(r.changedAt, `${p}.changedAt`),
     schema: parseSchema(r.schema, `${p}.schema`), competitive: flag(r.competitive, `${p}.competitive`),
     current: r.current, unit: choice(r.unit, `${p}.unit`, ['', 'percent'] as const),
     safeguards: parseSafeguards(r.safeguards, `${p}.safeguards`),

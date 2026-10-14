@@ -365,6 +365,7 @@ export namespace commissioner {
 	    value: string;
 	    state: string;
 	    citation: string;
+	    changedAt: string;
 	    schema: leaguerules.ValueSchema;
 	    competitive: boolean;
 	    pending: RulePending[];
@@ -383,6 +384,7 @@ export namespace commissioner {
 	        this.value = source["value"];
 	        this.state = source["state"];
 	        this.citation = source["citation"];
+	        this.changedAt = source["changedAt"];
 	        this.schema = this.convertValues(source["schema"], leaguerules.ValueSchema);
 	        this.competitive = source["competitive"];
 	        this.pending = this.convertValues(source["pending"], RulePending);

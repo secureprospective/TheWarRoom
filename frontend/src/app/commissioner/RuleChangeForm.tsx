@@ -3,6 +3,7 @@ import { ChangeBar } from './ChangeBar';
 import { draftEditor } from './draftEditor';
 import type { Change } from './forms';
 import { leagueState } from './proxy';
+import { ruleSource } from './rulesReport';
 import { RuleInput } from './RuleInput';
 import { draftFrom, editDraft, toNatural, type Draft } from './ruleDraft';
 import type { RuleRow, Rules } from './rules';
@@ -17,8 +18,8 @@ const start = (row?: RuleRow): Draft | undefined =>
 function CurrentValue({ row }: { row: RuleRow }) {
   return (
     <dl className="rule-current">
-      <dt>In force now</dt><dd>{row.value} ({row.state})</dd>
-      <dt>Where it comes from</dt><dd>{row.citation}</dd>
+      <dt>In force now</dt><dd>{row.value}</dd>
+      <dt>Where it comes from</dt><dd>{ruleSource(row)}</dd>
       {row.pending.map(p => <div key={p.entry}><dt>Waiting</dt><dd>{p.value}: {p.when}</dd></div>)}
     </dl>
   );

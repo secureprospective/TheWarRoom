@@ -66,3 +66,14 @@ describe('Give or take a role', () => {
     expect([calls.ledger, calls.rules, calls.people]).toEqual([[], [], []]);
   });
 });
+
+it('explains vacant seats instead of presenting an empty franchise choice', async () => {
+  const people = { ...commissionerPeople,
+    seats: commissionerPeople.seats.map(s => ({ ...s, owner: 'Vacant' })) };
+  const host = await mount(render(RoleForm, { people }), stub().app);
+  expect(host.textContent)
+    .toContain('Nobody else has joined this league yet. Roles go to owners who hold a franchise.');
+  expect(host.textContent).not.toContain('Choose a franchise…');
+  expect(disabled(button(host, give))).toBe(true);
+  expect(control(host, 'What to do')).toBeDefined();
+});

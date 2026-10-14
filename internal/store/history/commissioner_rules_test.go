@@ -120,14 +120,16 @@ func TestCommissionerRulesTiming(t *testing.T) {
 		t.Fatal(err)
 	}
 	row = ruleRow(t, s, "roster.limits")
-	if row.Value != "20 to 70" || row.State != "Set" || !strings.HasPrefix(row.Citation, "Changed in the league") {
+	if row.Value != "20 to 70" || row.State != "Set" || row.Citation != "Changed in the league ledger" ||
+		row.ChangedAt != now.RecordedAt.Format(time.RFC3339Nano) {
 		t.Fatalf("apply now: %+v", row)
 	}
 	c.now = c.now.Add(time.Hour)
 	if _, err := s.ExecuteCommissioner(t.Context(), reverseCommand(now.Entry, 3, "undo.now"), "creator", nil); err != nil {
 		t.Fatal(err)
 	}
-	if row = ruleRow(t, s, "roster.limits"); row.Value != "18 to 80" || row.Citation != "fact R" {
+	if row = ruleRow(t, s, "roster.limits"); row.Value != "18 to 80" ||
+		row.Citation != "Legacy NFL rules" || row.ChangedAt != "" {
 		t.Fatalf("revert did not bring back the prior value: %+v", row)
 	}
 	if _, err := s.ExecuteCommissioner(t.Context(), reverseCommand(waiting.Entry, 4, "undo.wait"), "creator", nil); err != nil {
@@ -193,7 +195,7 @@ func TestCommissionerPresets(t *testing.T) {
 	for _, section := range rules.Sections {
 		for _, row := range section.Rows {
 			if row.State != "Needs a ruling" || row.Value != "Needs a ruling" ||
-				row.Citation != "Not set when the league was created" {
+				row.Citation != "Needs a ruling" || row.ChangedAt != "" {
 				t.Fatalf("empty league invented %s: %+v", row.Field, row)
 			}
 		}

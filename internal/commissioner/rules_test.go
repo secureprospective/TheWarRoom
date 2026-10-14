@@ -130,3 +130,25 @@ func TestCreationIsExpandedByGo(t *testing.T) {
 		t.Fatal("empty league stored with preset values")
 	}
 }
+
+func TestStartingRuleSourcesArePlainWords(t *testing.T) {
+	for _, c := range []struct{ preset, state, citation, want string }{
+		{PresetLegacy, "Set", "Census CM-001", "Legacy NFL rules"},
+		{PresetLegacy, "Set", "Census CM-002: carried at setup", "Legacy NFL rules"},
+		{PresetLegacy, "Set", "fact R", "Legacy NFL rules"},
+		{PresetLegacy, "Set", "Rulebook §4; Math §13", "Legacy NFL rules (rulebook section 4)"},
+		{PresetLegacy, "Set", "Rulebook §15", "Legacy NFL rules (rulebook section 15)"},
+		{PresetEmpty, "Set", "", "Empty league default"},
+		{PresetLegacy, "Needs a ruling", "Census CM-001: only for keeper leagues",
+			"Needs a ruling: only for keeper leagues"},
+		{PresetLegacy, "Needs a ruling", "Census CM-041 Q-E1", "Needs a ruling"},
+		{PresetEmpty, "Needs a ruling", "", "Needs a ruling"},
+	} {
+		if got := startingSource(c.preset, c.state, c.citation); got != c.want {
+			t.Errorf("%s %s %q: got %q, want %q", c.preset, c.state, c.citation, got, c.want)
+		}
+	}
+	if rolloverWords != "The next rollover has no date yet; the commissioner sets it." {
+		t.Fatal("rollover wording must not depend on implementation status")
+	}
+}

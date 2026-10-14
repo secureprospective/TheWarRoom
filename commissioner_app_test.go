@@ -262,7 +262,9 @@ func TestCommissionerRulesWire(t *testing.T) {
 	raw.Command, raw.Reason, raw.Visibility = commissioner.RulesSet, "Owners agreed the roster size", "league"
 	raw.Args = commissioner.RawArgs{Field: "roster.limits", Value: json.RawMessage(`{"min":20,"max":70}`)}
 	raw.Expected, raw.Request, raw.Effective = 1, "limits", "now"
-	executeCommissionerTest(t, app, raw)
+	recorded := time.Date(2026, 10, 14, 4, 17, 3, 0, time.UTC)
+	app.history.SetClock(func() time.Time { return recorded })
+	receipt := executeCommissionerTest(t, app, raw)
 	raw.Args = commissioner.RawArgs{Field: "cap.amount", Value: json.RawMessage(`12500000000`)}
 	raw.Expected, raw.Request, raw.Effective, raw.Reason = 2, "cap", "next_rollover", ""
 	executeCommissionerTest(t, app, raw)
@@ -274,6 +276,14 @@ func TestCommissionerRulesWire(t *testing.T) {
 	owner, err := app.TargetCommissionerRules(raw.League)
 	if err != nil || !reflect.DeepEqual(creator, owner) {
 		t.Fatalf("owners read the same public rules: %v", err)
+	}
+	for _, section := range owner.Sections {
+		for _, row := range section.Rows {
+			if row.Field == "roster.limits" && (row.ChangedAt != receipt.RecordedAt.Format(time.RFC3339Nano) ||
+				row.Citation != "Changed in the league ledger") {
+				t.Fatalf("rule source must carry the recorded instant, not a UTC date: %+v", row)
+			}
+		}
 	}
 	body, err := json.Marshal(owner)
 	if err != nil {

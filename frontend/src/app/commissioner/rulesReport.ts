@@ -13,14 +13,14 @@ export function rulesReport(rules: Rules): Report {
   const rows = rules.sections.flatMap(section => section.rows.filter(r => r.field !== scoringField)
     .map(r => ({
       group: section.label, range: null,
-      cells: [r.label, r.value, r.state, r.citation,
+      cells: [r.label, r.value, ruleSource(r),
         r.pending.map(p => `${p.value}: ${p.when}`).join('\n') || 'Nothing waiting'],
     })));
   return { ...base, id: 'league-rules', title: 'League rules',
     source: `${rules.name} · League version ${rules.revision}`,
     how: 'Each setting is read from this league’s ledger. A change set to take effect from the next '
       + 'rollover waits in the last column and is not in force yet.',
-    columns: ['Rule', 'Setting', 'State', 'Where it comes from', 'Waiting'], rows };
+    columns: ['Rule', 'Setting', 'Where it comes from', 'Waiting'], rows };
 }
 
 function stats(row: RuleRow): Stat[] {
@@ -46,8 +46,12 @@ export function scoringReports(row: RuleRow): { used: Report; unused: Report | n
   });
   const unused = all.filter(s => !s.Used);
   return {
-    used: make('league-scoring', 'Scoring: stats in use', all.filter(s => s.Used), row.citation),
+    used: make('league-scoring', 'Scoring: stats in use', all.filter(s => s.Used), ruleSource(row)),
     unused: unused.length === 0 ? null : make('league-scoring-unused',
       `Stats not used (${unused.length})`, unused, 'These stats exist but earn nothing in this league.'),
   };
 }
+
+// The viewer's clock matches the ledger, including changes recorded across midnight in UTC.
+export const ruleSource = (row: RuleRow) => row.changedAt
+  ? `${row.citation} on ${new Date(row.changedAt).toLocaleString()}` : row.citation;

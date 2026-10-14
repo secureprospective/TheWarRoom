@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { act } from 'react';
 import { all, button, control, disabled, mount, present, render, settle, type, unmount }
   from './commissionerDom';
@@ -42,4 +43,16 @@ describe('Undo this change', () => {
     await settle();
     expect(calls.sent[0].visibility).toBe('private');
   });
+});
+
+it('lays out the undo reason above a full-width textarea, independently of the league form', async () => {
+  const host = await mount(render(LedgerEntries, { reading: as('league') }), stub().app);
+  const reason = control(host, 'Reason');
+  expect(reason.parentNode?.getAttribute('class')).toBe('change-reason');
+  const css = readFileSync(new URL('./commissioner.css', import.meta.url), 'utf8');
+  const label = css.slice(css.indexOf('.twr-app .change-reason {')).split('}')[0];
+  const textarea = css.slice(css.indexOf('.twr-app .change-reason textarea {')).split('}')[0];
+  expect(label).toContain('display: grid');
+  expect(label).toContain('width: 100%');
+  expect(textarea).toContain('width: 100%');
 });

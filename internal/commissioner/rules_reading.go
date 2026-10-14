@@ -3,6 +3,9 @@ package commissioner
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+	"unicode"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
@@ -28,6 +31,7 @@ type RuleRow struct {
 	Value       string                  `json:"value"`
 	State       string                  `json:"state"`
 	Citation    string                  `json:"citation"`
+	ChangedAt   string                  `json:"changedAt"`
 	Schema      leaguerules.ValueSchema `json:"schema"`
 	Competitive bool                    `json:"competitive"`
 	Pending     []RulePending           `json:"pending"`
@@ -50,9 +54,8 @@ type Rules struct {
 }
 
 const (
-	rolloverWords = "Needs a ruling: the next rollover has no date until the season rollover is built"
+	rolloverWords = "The next rollover has no date yet; the commissioner sets it."
 	waitingWords  = "Waits for the next rollover"
-	unsetWords    = "Not set when the league was created"
 )
 
 // RulesReading is public: every owner may read the league's rules and the changes waiting on them.
@@ -71,17 +74,17 @@ func RulesReading(league string, records []Record) (Rules, error) {
 	values, fields, current := leaguerules.ReadSettings(rules), leaguerules.Catalogue(), leaguerules.Current(rules)
 	out := Rules{League: league, Name: Replay(records).Name, Revision: int64(len(records)),
 		Rollover: rolloverWords, Sections: []RuleSection{}}
+	preset := records[0].Command.Args.Preset
 	for i, field := range fields {
 		value := values[i]
 		row := RuleRow{Field: string(field.Path), Label: field.Label, Value: value.Words, State: value.State,
-			Citation: value.Citation, Schema: field.Schema, Competitive: field.Competitive,
-			Pending: pending[string(field.Path)], Current: current[i], Unit: unitFor(field.Path),
+			Citation: startingSource(preset, value.State, value.Citation), Schema: field.Schema,
+			Competitive: field.Competitive, Pending: pending[string(field.Path)], Current: current[i],
+			Unit:       unitFor(field.Path),
 			Safeguards: safeguardsFor(string(field.Path))}
 		if source, ok := sources[row.Field]; ok {
-			row.Citation = source
-		}
-		if row.Citation == "" {
-			row.Citation = unsetWords
+			row.Citation = "Changed in the league ledger"
+			row.ChangedAt = source
 		}
 		if row.Pending == nil {
 			row.Pending = []RulePending{}
@@ -105,7 +108,7 @@ func ruleHistory(records []Record) (map[string]string, map[string][]RulePending,
 		}
 		field := r.Command.Args.Field
 		if r.Command.Effective == "now" {
-			sources[field] = "Changed in the league ledger on " + r.Receipt.RecordedAt.Format("2 Jan 2006")
+			sources[field] = r.Receipt.RecordedAt.Format(time.RFC3339Nano)
 			continue
 		}
 		setting, err := leaguerules.DecodeSetting(leaguerules.FieldPath(field), r.Command.Args.Value)
@@ -142,4 +145,29 @@ func safeguardsFor(field string) RuleSafeguards {
 		}
 	}
 	return RuleSafeguards{NextRollover: words("next_rollover"), Now: words("now")}
+}
+
+// startingSource translates catalogue provenance without changing the stored preset.
+func startingSource(preset, state, citation string) string {
+	if state == "Needs a ruling" {
+		if _, detail, ok := strings.Cut(citation, ":"); ok && strings.TrimSpace(detail) != "" {
+			return "Needs a ruling: " + strings.TrimSpace(detail)
+		}
+		return "Needs a ruling"
+	}
+	if preset == PresetEmpty {
+		return "Empty league default"
+	}
+	source := "Legacy NFL rules"
+	if _, section, ok := strings.Cut(citation, "Rulebook §"); ok {
+		number := strings.TrimLeftFunc(section, unicode.IsSpace)
+		end := strings.IndexFunc(number, func(r rune) bool { return !unicode.IsDigit(r) })
+		if end >= 0 {
+			number = number[:end]
+		}
+		if number != "" {
+			source += " (rulebook section " + number + ")"
+		}
+	}
+	return source
 }

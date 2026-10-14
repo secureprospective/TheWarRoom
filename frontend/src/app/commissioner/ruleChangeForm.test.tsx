@@ -45,13 +45,15 @@ describe('Change a rule', () => {
       expect(control(host, end).props()).toMatchObject({ type: 'number', min: 0, step: 1 });
     }
     expect(control(host, 'Minimum').props().value).toBe('20');
-    expect(present(host, 'In force now20 to 70 (Set)')).toBe(true);
-    expect(present(host, 'Changed in the league ledger on 13 Oct 2026')).toBe(true);
+    expect(present(host, 'In force now20 to 70')).toBe(true);
+    expect(host.textContent).not.toContain('(Set)');
+    const local = new Date('2026-10-14T04:17:03Z').toLocaleString();
+    expect(present(host, `Changed in the league ledger on ${local}`)).toBe(true);
   });
   it('shows the safeguard Go reports before anything is confirmed', async () => {
     const host = await mount(form(), stub().app);
     expect(present(host, 'Hold the confirm button to record it. A reason is optional.')).toBe(true);
-    expect(present(host, 'Needs a ruling: the next rollover has no date')).toBe(true);
+    expect(present(host, 'The next rollover has no date yet; the commissioner sets it.')).toBe(true);
     await type(control(host, 'When it takes effect'), 'now');
     expect(present(host, 'Needs a typed reason before it can be recorded.')).toBe(true);
     expect(present(host, 'Reason (required)')).toBe(true);
@@ -76,6 +78,7 @@ describe('Change a rule', () => {
       args: { field: 'roster.limits', value: { Min: 25, Max: 60 } } });
     expect(present(host, '25 to 60: Waits for the next rollover')).toBe(true);
     expect(present(host, '20 to 70')).toBe(true);
+    expect(host.textContent).not.toContain('Confirmed. Sending the change.');
   });
   it('cannot confirm Now until a reason is typed, then sends effective now', async () => {
     const { app, calls } = stub();

@@ -12,6 +12,12 @@ const headings = (host: Parameters<typeof all>[0]) => all(host, 'h5').map(h => h
 const coCommissioner = { ...peopleWire.commissioner, yourRole: 'Co-commissioner', mayGrantRoles: false };
 
 describe('The commissioner desk', () => {
+  it('keeps the first start form open when no league exists', async () => {
+    const host = await mount(render(LeagueDesk), stub({ TargetCommissionerLeagues: async () => [] }).app);
+    await settle();
+    expect(all(host, 'details')).toHaveLength(0);
+    expect(control(host, 'League name')).toBeDefined();
+  });
   it('gives the commissioner all three forms and the one league picker', async () => {
     const host = await mount(render(LeagueDesk), stub().app);
     await settle();
@@ -31,4 +37,16 @@ describe('The commissioner desk', () => {
     expect(ownerPeople.mayChangeRules).toBe(false);
     expect(present(host, 'Change a rule')).toBe(false);
   });
+});
+
+describe('Start league disclosure', () => {
+  it('closes the start form when an app league exists', async () => {
+    const host = await mount(render(LeagueDesk), stub().app);
+    await settle();
+    const disclosure = all(host, 'details').find(d => d.textContent.startsWith('Start another app league'));
+    expect(disclosure).toBeDefined();
+    expect(disclosure?.attributes.has('open')).toBe(false);
+    expect(all(disclosure!, 'input').length).toBeGreaterThan(0);
+  });
+
 });

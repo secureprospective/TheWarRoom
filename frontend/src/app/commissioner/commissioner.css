@@ -1,7 +1,9 @@
 .twr-app .league-desk,
 .twr-app .league-rules,
 .twr-app .league-people { display: grid; gap: 12px; }
-.twr-app .league-form { display: grid; gap: 8px; border-top: 1px solid var(--surface-line); padding-top: 12px; }
+.twr-app .league-form {
+  display: grid; gap: 8px; border-top: 1px solid var(--surface-line); padding-top: 12px;
+}
 .twr-app .league-form label { display: grid; gap: 4px; max-width: 48ch; }
 .twr-app .league-form fieldset { border: 1px solid var(--surface-line); margin: 4px 0; padding: 8px 12px; }
 .twr-app .rule-field { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; max-width: none; }
@@ -21,11 +23,13 @@
 .twr-app .league-votes { padding-inline-start: 24px; }
 .twr-app .league-votes p { margin: 4px 0; }
 
-.twr-app .hold-to-fire {
-  position: relative; display: inline-flex; overflow: hidden; touch-action: none; user-select: none;
-  border: 1px solid var(--surface-line);
+.twr-app .change-reason { display: grid; gap: 4px; width: 100%; }
+.twr-app .change-reason textarea { width: 100%; box-sizing: border-box; }
+.twr-app .hold-to-fire { display: grid; gap: 4px; }
+.twr-app .hold-to-fire .act {
+  position: relative; width: 100%; overflow: hidden; touch-action: none; user-select: none;
 }
-.twr-app .hold-to-fire .act { position: relative; background: transparent; }
+.twr-app .hold-label { position: relative; }
 .twr-app .hold-fill {
   position: absolute; inset: 0; width: 0; background: currentColor; opacity: 0.25;
   transition-property: width; transition-timing-function: linear;
@@ -33,4 +37,3 @@
 .twr-app .hold-to-fire.holding .hold-fill { width: 100%; }
 .twr-app .hold-help,
 .twr-app .hold-said { color: var(--surface-tx2); }
-.twr-app .hold-help { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

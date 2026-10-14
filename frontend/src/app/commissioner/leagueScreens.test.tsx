@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { all, mount, present, render, settle, unmount, type Element } from './commissionerDom';
+import { RuleChangeForm } from './RuleChangeForm';
+import { parseRules } from './rules';
+import { LedgerEntries } from './LeagueLedger';
+import { parseLedger } from './proxy';
+import ledgerWire from './wire.testdata.json';
 import { stub } from './commissionerStub';
 import LeaguePeople from './LeaguePeople';
 import LeagueRules from './LeagueRules';
@@ -29,11 +34,12 @@ describe('League rules screen', () => {
   it('lists each section with its settings in words, their state, source and what is waiting', async () => {
     const host = await show(render(LeagueRules), { rules: rulesWire });
     const view = text(host);
-    for (const part of ['League shape', 'Roster', 'Active roster size', '20 to 70', 'Set',
-      'Needs a ruling', 'Not set when the league was created', 'Changed in the league ledger on 13 Oct 2026'])
+    for (const part of ['League shape', 'Roster', 'Active roster size', '20 to 70',
+      'Needs a ruling',
+      `Changed in the league ledger on ${new Date('2026-10-14T04:17:03Z').toLocaleString()}`])
       expect(view).toContain(part);
     expect(view).toContain('$125,000,000: Waits for the next rollover');
-    expect(view).toContain('Next rollover: Needs a ruling: the next rollover has no date');
+    expect(view).toContain('Next rollover: The next rollover has no date yet; the commissioner sets it.');
     expect(view).not.toMatch(/roster\.limits|CM-\d|G[123]\b/);
   });
   it('shows a waiting change beside the value still in force, never as in force', async () => {
@@ -79,5 +85,36 @@ describe('League people screen', () => {
     for (const hidden of ['private-deputy', 'Roles', 'Owner invitations', 'Voted:'])
       expect(view).not.toContain(hidden);
     expect(present(host, 'Franchise 3 (F3)')).toBe(true);
+  });
+});
+
+describe('Plain rule provenance', () => {
+  it('never shows census or fact labels in the Legacy rules screen or any rule form', async () => {
+    const reading = parseRules(legacy);
+    const host = await show(render('div', null, render(LeagueRules),
+      ...reading.sections.flatMap(s => s.rows).map(r => render(RuleChangeForm,
+        { key: r.field, rules: reading, initialField: r.field }))), { rules: legacy });
+    expect(host.textContent).not.toMatch(/Census|CM-0|fact R/);
+    expect(host.textContent).not.toContain('(Set)');
+    expect(all(host, 'th').map(t => t.textContent)).not.toContain('State');
+  });
+  it('shows the scoring source exactly once, in plain words', async () => {
+    const host = await show(render(LeagueRules), { rules: legacy });
+    const source = 'Legacy NFL rules (rulebook section 4)';
+    expect(host.textContent.split(source)).toHaveLength(2);
+    expect(host.textContent).not.toMatch(/Rulebook §|Math §/);
+  });
+  it('agrees with the ledger for a change made before midnight Central but after midnight UTC', async () => {
+    const when = '2026-10-14T04:17:03Z';
+    const changed = { ...rulesWire, sections: rulesWire.sections.map(s => ({ ...s,
+      rows: s.rows.map(r => r.field === 'roster.limits' ? { ...r, changedAt: when } : r) })) };
+    const ledger = parseLedger({ ...ledgerWire,
+      entries: ledgerWire.entries.map(e => ({ ...e, when })) });
+    const host = await show(render('div', null, render(LeagueRules),
+      render(RuleChangeForm, { rules: parseRules(changed), initialField: 'roster.limits' }),
+      render(LedgerEntries, { reading: ledger })), { rules: changed });
+    const local = new Date(when).toLocaleString();
+    expect(host.textContent.split(`Changed in the league ledger on ${local}`)).toHaveLength(3);
+    expect(all(host, 'time')[0].textContent).toBe(local);
   });
 });

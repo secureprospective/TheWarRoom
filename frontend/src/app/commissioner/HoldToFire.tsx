@@ -3,13 +3,13 @@ import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { createHold, holdMs } from './hold';
 
-type Props = { label: string; body: string; disabled?: boolean; ms?: number };
+type Props = { label: string; body: string; disabled?: boolean; ms?: number; answer?: string };
 const holdKey = (key: string) => key === ' ' || key === 'Enter';
 
 // HoldToFire confirms a change that needs a deliberate act: hold the pointer, Space or Enter for about
 // 700 ms. Releasing early cancels. Held long enough it sends `body` through commissioner.execute, once.
 // It is self-contained so chunk 4 can move it to the shared shell.
-export function HoldToFire({ label, body, disabled = false, ms = holdMs }: Props) {
+export function HoldToFire({ label, body, disabled = false, ms = holdMs, answer = '' }: Props) {
   const latest = useRef(body);
   latest.current = body;
   const help = useId();
@@ -35,6 +35,11 @@ export function HoldToFire({ label, body, disabled = false, ms = holdMs }: Props
     if (hold.current?.release() === 'early') setSaid('Released early. Nothing was sent.');
   };
   useEffect(() => { if (disabled) release(); }, [disabled]);
+  useEffect(() => {
+    hold.current?.release();
+    setHolding(false);
+    setSaid('');
+  }, [body, answer]);
   useEffect(() => () => { hold.current?.release(); }, []);
   // The button is an Act that never fires on a click; the wrapper times the hold from the events
   // it bubbles.
@@ -44,11 +49,11 @@ export function HoldToFire({ label, body, disabled = false, ms = holdMs }: Props
       onPointerUp={release} onPointerLeave={release} onPointerCancel={release} onBlur={release}
       onKeyDown={e => { if (holdKey(e.key)) { e.preventDefault(); start(); } }}
       onKeyUp={e => { if (holdKey(e.key)) release(); }}>
-      <span className="hold-fill" aria-hidden="true"
-        style={{ transitionDuration: holding ? `${ms}ms` : '120ms' }} />
       <Act verb="commissioner.execute" args={{ body }} variant="button" label={label}
         disabled={disabled} submit>
-        {label}
+        <span className="hold-fill" aria-hidden="true"
+          style={{ transitionDuration: holding ? `${ms}ms` : '120ms' }} />
+        <span className="hold-label">{label}</span>
       </Act>
       <span id={help} className="hold-help">Press and hold to confirm</span>
       <span role="status" aria-live="polite" className="hold-said">{said}</span>

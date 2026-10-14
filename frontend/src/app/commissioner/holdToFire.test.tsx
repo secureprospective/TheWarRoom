@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { act } from 'react';
 import { createHold } from './hold';
 import { HoldToFire } from './HoldToFire';
@@ -98,5 +99,43 @@ describe('Hold to fire', () => {
     await rerender(render(HoldToFire, { label: 'Confirm', body: 'B', disabled: true }));
     await wait(5000);
     expect(fired()).toHaveLength(0);
+  });
+});
+
+const css = readFileSync(new URL('./commissioner.css', import.meta.url), 'utf8');
+const style = (selector: string) => css.slice(css.indexOf(selector)).split('}')[0];
+describe('Hold presentation and lifetime', () => {
+  it('fills the button itself, with full width and visible help and status on separate lines', async () => {
+    const { host } = await press();
+    const button = all(host, 'button')[0];
+    const fill = all(host, 'span').find(s => s.getAttribute('class') === 'hold-fill');
+    expect(fill?.parentNode).toBe(button);
+    expect(style('.twr-app .hold-to-fire {')).toContain('display: grid');
+    expect(style('.twr-app .hold-to-fire .act {')).toContain('width: 100%');
+    expect(style('.twr-app .hold-to-fire .act {')).toContain('overflow: hidden');
+    expect(css).not.toMatch(/clip:|width: 1px/);
+    expect(host.textContent).toContain('Press and hold to confirm');
+    expect(all(host, 'span').find(s => s.getAttribute('role') === 'status')?.parentNode)
+      .toBe(button.parentNode);
+    expect(button.props().onClick).toBeUndefined();
+  });
+  it('clears confirmation when an answer arrives or the inputs change; cancels an edited hold', async () => {
+    const { host, button } = await press();
+    await fire(button, 'onPointerDown');
+    await wait(700);
+    expect(said(host)).toContain('Confirmed');
+    await rerender(render(HoldToFire, { label: 'Confirm', body: 'B', answer: 'done' }));
+    expect(said(host)).toBe('');
+    await fire(button, 'onPointerDown');
+    await wait(700);
+    expect(said(host)).toContain('Confirmed');
+    await rerender(render(HoldToFire, { label: 'Confirm', body: 'C', answer: 'done' }));
+    expect(said(host)).toBe('');
+    await fire(button, 'onPointerDown');
+    await wait(300);
+    await rerender(render(HoldToFire, { label: 'Confirm', body: 'D', answer: 'done' }));
+    await wait(700);
+    expect(fired()).toHaveLength(2);
+    expect(said(host)).toBe('');
   });
 });
