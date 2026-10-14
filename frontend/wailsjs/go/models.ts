@@ -157,6 +157,7 @@ export namespace commissioner {
 		}
 	}
 	export class NativeCharge {
+	    season?: number;
 	    id: string;
 	    franchise: string;
 	    amountCents: number;
@@ -168,6 +169,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
 	        this.id = source["id"];
 	        this.franchise = source["franchise"];
 	        this.amountCents = source["amountCents"];

@@ -35,7 +35,8 @@ type CapState struct {
 
 // CheckCap counts each salary at its squad's share, rounds percentage math to cents, then snaps each
 // resulting salary or signed charge. Already-rounded entries are summed, never rounded as one pool.
-func CheckCap(rules leaguerules.CapRules, players []CapPlayer, charges []domain.Money) (CapState, error) {
+func CheckCap(rules leaguerules.CapRules, players []CapPlayer, charges []domain.Money,
+	viewer *time.Location) (CapState, error) {
 	out := CapState{Words: "Needs a ruling: salary cap, reserve salary shares or money rounding increment"}
 	if rules.Enforcement.State == leaguerules.IsKnown {
 		out.Mode = rules.Enforcement.Value
@@ -45,7 +46,7 @@ func CheckCap(rules leaguerules.CapRules, players []CapPlayer, charges []domain.
 		out.Deadline = &date
 	}
 	if rules.Quantum.State != leaguerules.IsKnown || rules.Quantum.Value <= 0 {
-		_, out.Enforcement = CapAllows(out, 0)
+		_, out.Enforcement = CapAllows(out, 0, viewer)
 		return out, nil
 	}
 	quantum := domain.Money(rules.Quantum.Value)
@@ -64,7 +65,7 @@ func CheckCap(rules leaguerules.CapRules, players []CapPlayer, charges []domain.
 			out.Words = fmt.Sprintf("Within the salary cap; %s cap room", room)
 		}
 	}
-	_, out.Enforcement = CapAllows(out, 0)
+	_, out.Enforcement = CapAllows(out, 0, viewer)
 	return out, nil
 }
 
@@ -150,7 +151,10 @@ func finishCap(out *CapState, totals []big.Int) error {
 
 // CapAllows takes the net change in counted salary and charges, including any conditional drop.
 // Soft enforcement never refuses an over-cap move, even while its deadline needs a ruling.
-func CapAllows(state CapState, delta domain.Money) (bool, string) {
+func CapAllows(state CapState, delta domain.Money, zone *time.Location) (bool, string) {
+	if zone == nil {
+		zone = time.UTC
+	}
 	if state.CapCents == nil || state.CommittedCents == nil || state.QuantumCents == nil {
 		return false, "Needs a ruling: the salary cap or counted salary cannot be judged"
 	}
@@ -174,7 +178,7 @@ func CapAllows(state CapState, delta domain.Money) (bool, string) {
 		if state.Deadline == nil {
 			return true, "Over the salary cap: flagged; compliance deadline needs a ruling"
 		}
-		return true, "Over the salary cap: flagged; comply by " + state.Deadline.Format(time.RFC3339)
+		return true, "Over the salary cap: flagged; comply by " + state.Deadline.In(zone).Format("2 Jan 2006 at 3:04 PM MST")
 	default:
 		return false, "Needs a ruling: whether over-cap moves are refused or flagged"
 	}

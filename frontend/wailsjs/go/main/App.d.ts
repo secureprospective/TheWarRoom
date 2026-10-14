@@ -167,7 +167,7 @@ export function TargetNFLDraft():Promise<main.Report>;
 
 export function TargetNativeAssets(arg1:string):Promise<commissioner.NativeAssets>;
 
-export function TargetNativeCapCheck(arg1:string):Promise<commissioner.NativeCapCheck>;
+export function TargetNativeCapCheck(arg1:string,arg2:string):Promise<commissioner.NativeCapCheck>;
 
 export function TargetNativeDirectory(arg1:string):Promise<commissioner.NativeDirectory>;
 

@@ -23,7 +23,7 @@ func capFigure(t *testing.T, label string, got *domain.Money, want domain.Money)
 func TestNativeCapCountsReservesAndSignedCharges(t *testing.T) {
 	players := []nativecheck.CapPlayer{{Salary: 10_987_00000, Status: domain.RosterActive},
 		{Salary: 5_555_55555, Status: domain.RosterIR}, {Salary: 3_333_33333, Status: domain.RosterTaxi}}
-	state, err := nativecheck.CheckCap(capRules(), players, []domain.Money{2_500_00000, -1_200_00000})
+	state, err := nativecheck.CheckCap(capRules(), players, []domain.Money{2_500_00000, -1_200_00000}, time.UTC)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestNativeCapRoundsEachCountedSalaryAfterPercentageMath(t *testing.T) {
 	rules.TaxiShare = leaguerules.Known(leaguerules.Decimal(5000))
 	players := []nativecheck.CapPlayer{{Salary: 999999, Status: domain.RosterTaxi},
 		{Salary: 1_428_571, Status: domain.RosterIR}, {Salary: 1_428_571, Status: domain.RosterIR}}
-	state, err := nativecheck.CheckCap(rules, players, []domain.Money{-500000})
+	state, err := nativecheck.CheckCap(rules, players, []domain.Money{-500000}, time.UTC)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestNativeCapRoundsEachCountedSalaryAfterPercentageMath(t *testing.T) {
 	capFigure(t, "negative half snaps away from zero", state.AdjustmentCents, -1000000)
 	capFigure(t, "counted total", state.CommittedCents, 2000000)
 	rules.Quantum = leaguerules.Known(leaguerules.Money(100))
-	state, err = nativecheck.CheckCap(rules, players, nil)
+	state, err = nativecheck.CheckCap(rules, players, nil, time.UTC)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,41 +67,41 @@ func TestNativeCapMoveEnforcementAndConditionalDrop(t *testing.T) {
 	for _, mode := range []leaguerules.CapMode{leaguerules.HardCap, leaguerules.SoftCap} {
 		rules := capRules()
 		rules.Enforcement = leaguerules.Known(mode)
-		state, err := nativecheck.CheckCap(rules,
-			[]nativecheck.CapPlayer{{Salary: 126_000_00000, Status: domain.RosterActive}}, nil)
+		state, err := nativecheck.CheckCap(rules, []nativecheck.CapPlayer{{Salary: 126_000_00000, Status: domain.RosterActive}}, nil, time.UTC)
+
 		if err != nil {
 			t.Fatal(err)
 		}
 		if state.Words != "Over the salary cap by $1,000,000.00" {
 			t.Fatal(state.Words)
 		}
-		allowed, words := nativecheck.CapAllows(state, 0)
+		allowed, words := nativecheck.CapAllows(state, 0, time.UTC)
 		if allowed != (mode == leaguerules.SoftCap) {
 			t.Fatalf("%s over-cap move: %v %s", mode, allowed, words)
 		}
 		if mode == leaguerules.SoftCap && !strings.Contains(words, "deadline needs a ruling") {
 			t.Fatal(words)
 		}
-		if allowed, words := nativecheck.CapAllows(state, -1_000_00000); !allowed ||
+		if allowed, words := nativecheck.CapAllows(state, -1_000_00000, time.UTC); !allowed ||
 			words != "The move ends within the salary cap" {
 			t.Fatalf("%s conditional drop: %v %s", mode, allowed, words)
 		}
 		rules.ComplianceDeadline = leaguerules.Known(deadline)
-		state, err = nativecheck.CheckCap(rules,
-			[]nativecheck.CapPlayer{{Salary: 126_000_00000, Status: domain.RosterActive}}, nil)
+		state, err = nativecheck.CheckCap(rules, []nativecheck.CapPlayer{{Salary: 126_000_00000, Status: domain.RosterActive}}, nil, time.UTC)
+
 		if err != nil {
 			t.Fatal(err)
 		}
 		if mode == leaguerules.SoftCap && state.Enforcement !=
-			"Over the salary cap: flagged; comply by 2026-10-20T00:00:00Z" {
+			"Over the salary cap: flagged; comply by 20 Oct 2026 at 12:00 AM UTC" {
 			t.Fatal(state.Enforcement)
 		}
 	}
 }
 
 func TestNativeCapMoveUsesNetCountedDeltaAndRounding(t *testing.T) {
-	state, err := nativecheck.CheckCap(capRules(),
-		[]nativecheck.CapPlayer{{Salary: 125_000_00000, Status: domain.RosterActive}}, nil)
+	state, err := nativecheck.CheckCap(capRules(), []nativecheck.CapPlayer{{Salary: 125_000_00000, Status: domain.RosterActive}}, nil, time.UTC)
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +109,7 @@ func TestNativeCapMoveUsesNetCountedDeltaAndRounding(t *testing.T) {
 		delta domain.Money
 		allow bool
 	}{{0, true}, {499999, true}, {500000, false}, {-500000, true}, {math.MaxInt64, false}} {
-		if allow, words := nativecheck.CapAllows(state, tc.delta); allow != tc.allow {
+		if allow, words := nativecheck.CapAllows(state, tc.delta, time.UTC); allow != tc.allow {
 			t.Fatalf("net delta %d: %v %s", tc.delta, allow, words)
 		}
 	}
@@ -130,11 +130,11 @@ func TestNativeCapNeedsRulesRatherThanInventingZero(t *testing.T) {
 		case "enforcement":
 			rules.Enforcement = leaguerules.Needs[leaguerules.CapMode]("")
 		}
-		state, err := nativecheck.CheckCap(rules, nil, nil)
+		state, err := nativecheck.CheckCap(rules, nil, nil, time.UTC)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if allow, words := nativecheck.CapAllows(state, 0); allow || !strings.Contains(words, "Needs a ruling") {
+		if allow, words := nativecheck.CapAllows(state, 0, time.UTC); allow || !strings.Contains(words, "Needs a ruling") {
 			t.Fatalf("%s: %v %s", field, allow, words)
 		}
 		if field != "enforcement" && state.RoomCents != nil {
@@ -153,7 +153,7 @@ func TestNativeCapSnapsTheCapAndMatchesTheSharedLegacySnap(t *testing.T) {
 	}
 	rules := capRules()
 	rules.Amount = leaguerules.Known(leaguerules.Money(12500500000))
-	state, err := nativecheck.CheckCap(rules, nil, nil)
+	state, err := nativecheck.CheckCap(rules, nil, nil, time.UTC)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,11 +169,11 @@ func TestNativeCapRejectsOverflowAndInvalidContracts(t *testing.T) {
 		{{Salary: 5_000_000_000_000_000_000, Status: domain.RosterActive},
 			{Salary: 5_000_000_000_000_000_000, Status: domain.RosterActive}},
 	} {
-		if _, err := nativecheck.CheckCap(capRules(), players, nil); err == nil {
+		if _, err := nativecheck.CheckCap(capRules(), players, nil, time.UTC); err == nil {
 			t.Fatalf("invalid or overflowing salary accepted: %+v", players)
 		}
 	}
-	if _, err := nativecheck.CheckCap(capRules(), nil, []domain.Money{math.MinInt64}); err == nil {
+	if _, err := nativecheck.CheckCap(capRules(), nil, []domain.Money{math.MinInt64}, time.UTC); err == nil {
 		t.Fatal("overflowing signed charge accepted")
 	}
 }

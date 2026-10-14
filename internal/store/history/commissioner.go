@@ -110,6 +110,7 @@ func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, recor
 		what  string
 		check func() error
 	}{
+		{"native correction", func() error { return commissioner.CheckOverrideAppend(raw, records, s.now()) }},
 		{"starting snapshot", func() error { return commissioner.CheckNativeAppend(raw, records) }},
 		{"league change", func() error { return commissioner.CheckGovernanceAppend(raw, principal, records, s.now()) }},
 		{"league calendar", func() error { return commissioner.CheckCalendarAppend(raw, records, s.now()) }},

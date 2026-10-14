@@ -73,13 +73,17 @@ func nativeDesignation(status string) leaguerules.NFLStatus {
 	return leaguerules.NFLStatus(strings.TrimSpace(status))
 }
 
-func (a *App) TargetNativeCapCheck(leagueID string) (commissioner.NativeCapCheck, error) {
+func (a *App) TargetNativeCapCheck(leagueID, viewerZone string) (commissioner.NativeCapCheck, error) {
+	scope := commissioner.RawNativeCapScope{League: leagueID, ViewerZone: viewerZone}
+	if err := scope.Validate(); err != nil {
+		return commissioner.NativeCapCheck{}, fmt.Errorf("native salary cap input: %w", err)
+	}
 	if err := a.ready(); err != nil {
 		return commissioner.NativeCapCheck{}, fmt.Errorf("native salary cap check startup: %w", err)
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.NativeCapCheck(ctx, leagueID)
+	reading, err := a.history.NativeCapCheck(ctx, scope)
 	if err != nil {
 		return commissioner.NativeCapCheck{}, fmt.Errorf("native salary cap check: %w", err)
 	}

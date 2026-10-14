@@ -49,6 +49,9 @@ func NativeReserveCheckReading(league string, records []Record, now time.Time, f
 	for _, seat := range base.directory.Franchises {
 		check := nativecheck.CheckReserves(base.rules.IR, base.rules.Taxi, out.RulesSeason,
 			players[seat.Franchise], facts)
+		if err := applyReserveExceptions(check.Players, records, now); err != nil {
+			return NativeReserveCheck{}, err
+		}
 		out.Franchises = append(out.Franchises, NativeReserveFranchise{Franchise: seat.Franchise, Name: seat.Name,
 			Abbreviation: seat.Abbreviation, IR: check.IR, Taxi: check.Taxi, Players: check.Players})
 	}
