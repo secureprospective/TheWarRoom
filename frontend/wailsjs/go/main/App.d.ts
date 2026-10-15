@@ -280,6 +280,8 @@ export function TargetSiteNews():Promise<main.Report>;
 
 export function TargetSnapshot():Promise<snapshot.Snapshot>;
 
+export function TargetStatQueue(arg1:string,arg2:number):Promise<commissioner.StatQueue>;
+
 export function TargetTradeBuilder(arg1:main.RawTradeBuilder):Promise<main.Reading_main_TradeBuilderView_>;
 
 export function TargetTrades(arg1:string):Promise<main.TradeReading>;

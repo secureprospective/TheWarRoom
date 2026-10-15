@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -44,6 +45,7 @@ type Store struct {
 	// franchise (the default is the league's own ledger); lineupEnv supplies the football facts a lineup
 	// is judged against and is installed at startup.
 	evidence  func(context.Context, source.RawNativeScope) (source.NativeEvidence, error)
+	statWeeks func(context.Context, int) ([]commissioner.StatWeek, error)
 	lineups   LineupSource
 	lineupEnv LineupEnvironment
 

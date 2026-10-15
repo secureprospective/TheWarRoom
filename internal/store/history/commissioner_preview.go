@@ -16,7 +16,7 @@ func (s *Store) PreviewCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err != nil {
 		return previewRefusal(err)
 	}
-	lineup, err := s.lineupFactsFor(ctx, raw)
+	facts, err := s.appendFactsFor(ctx, raw)
 	if err != nil {
 		return commissioner.Preview{}, err
 	}
@@ -29,7 +29,7 @@ func (s *Store) PreviewCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err != nil {
 		return commissioner.Preview{}, err
 	}
-	_, retry, checkErr := s.checkCommissionerCommand(raw, principal, auth, records, canonical, lineup)
+	_, retry, checkErr := s.checkCommissionerCommand(raw, principal, auth, records, canonical, facts)
 	var refusal *commissioner.Refusal
 	if checkErr != nil && !errors.As(checkErr, &refusal) {
 		return commissioner.Preview{}, fmt.Errorf("check league preview: %w", checkErr)

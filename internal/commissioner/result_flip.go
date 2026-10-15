@@ -90,13 +90,16 @@ func ResultFlipCheck(ctx context.Context, league string, records []Record, src R
 	if err != nil {
 		return ResultFlip{}, err
 	}
-	after, err := weekResults(ctx, league, scoreTrial(raw, records), src, rules.Lineup, directory, published, season, week)
-	if err != nil {
-		return ResultFlip{}, err
-	}
 	if len(before.Games) == 0 {
 		return ResultFlip{Status: FlipUnknown, Flips: []FlippedGame{},
 			Words: fmt.Sprintf("We can't tell whether this changes a result: %s.", before.Words)}, nil
+	}
+	after := before
+	if touched := franchisesTouched(raw, before); len(touched) != 0 {
+		after, err = weekResults(ctx, league, scoreTrial(raw, records), src, rules.Lineup, directory, published, season, week)
+		if err != nil {
+			return ResultFlip{}, err
+		}
 	}
 	return compareWeeks(before, after, franchisesTouched(raw, before, after)), nil
 }
@@ -111,17 +114,23 @@ func franchisesTouched(raw RawCommand, readings ...NativeResults) map[string]boo
 	case raw.Command == ScoreFranchise && raw.Args.Score != nil:
 		touched[raw.Args.Score.Franchise] = true
 	case raw.Command == ScorePlayer && raw.Args.Score != nil:
-		for _, reading := range readings {
-			for _, score := range reading.Scores {
-				for _, starter := range score.Starters {
-					if starter.Player == raw.Args.Score.Player {
-						touched[score.Franchise] = true
-					}
+		startersOf(raw.Args.Score.Player, touched, readings)
+	case isStatCommand(raw.Command) && raw.Args.Stat != nil:
+		startersOf(raw.Args.Stat.key().player, touched, readings)
+	}
+	return touched
+}
+
+func startersOf(player string, touched map[string]bool, readings []NativeResults) {
+	for _, reading := range readings {
+		for _, score := range reading.Scores {
+			for _, starter := range score.Starters {
+				if starter.Player == player {
+					touched[score.Franchise] = true
 				}
 			}
 		}
 	}
-	return touched
 }
 
 func compareWeeks(before, after NativeResults, touched map[string]bool) ResultFlip {

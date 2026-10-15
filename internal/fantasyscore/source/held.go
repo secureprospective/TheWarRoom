@@ -2,9 +2,15 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 )
+
+// ErrSeasonNotLoaded marks a season the weekly statistics feed does not reach.
+var ErrSeasonNotLoaded = errors.New("weekly NFL statistics are not loaded for this season")
+
+const missingPlayByPlay = "Held play-by-play is needed for long plays and return touchdowns"
 
 // StatPort reads held revisions newest first, without fetching. A missing player in a revision
 // stays missing; callers must not silently substitute that player's older revision.
@@ -43,8 +49,7 @@ type HeldWeek struct {
 }
 
 func SelectHeldWeek(scope RawStatScope, weeks []PlayerWeek, sha string, at time.Time) HeldWeek {
-	out := HeldWeek{SHA256: sha, FetchedAt: at,
-		Missing: []string{"Held play-by-play is needed for long plays and return touchdowns"}}
+	out := HeldWeek{SHA256: sha, FetchedAt: at, Missing: []string{missingPlayByPlay}}
 	for _, week := range weeks {
 		if week.GSIS == scope.GSIS && week.Season == scope.Season && week.Week == scope.Week &&
 			week.SeasonType == "REG" {

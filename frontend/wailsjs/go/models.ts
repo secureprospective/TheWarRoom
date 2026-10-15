@@ -2426,6 +2426,30 @@ export namespace commissioner {
 	        this.starters = source["starters"];
 	    }
 	}
+	export class RawStatChange {
+	    item?: string;
+	    player?: string;
+	    season?: number;
+	    week?: number;
+	    stat?: string;
+	    value?: number;
+	    source?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawStatChange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.item = source["item"];
+	        this.player = source["player"];
+	        this.season = source["season"];
+	        this.week = source["week"];
+	        this.stat = source["stat"];
+	        this.value = source["value"];
+	        this.source = source["source"];
+	    }
+	}
 	export class RawStandingsChange {
 	    season: number;
 	    franchise?: string;
@@ -2899,6 +2923,7 @@ export namespace commissioner {
 	    override?: RawNativeOverride;
 	    score?: RawScoreChange;
 	    standings?: RawStandingsChange;
+	    stat?: RawStatChange;
 	    lineup?: RawLineupChange;
 	    rollover?: RawRolloverArgs;
 	    season?: number;
@@ -2929,6 +2954,7 @@ export namespace commissioner {
 	        this.override = this.convertValues(source["override"], RawNativeOverride);
 	        this.score = this.convertValues(source["score"], RawScoreChange);
 	        this.standings = this.convertValues(source["standings"], RawStandingsChange);
+	        this.stat = this.convertValues(source["stat"], RawStatChange);
 	        this.lineup = this.convertValues(source["lineup"], RawLineupChange);
 	        this.rollover = this.convertValues(source["rollover"], RawRolloverArgs);
 	        this.season = source["season"];
@@ -3056,6 +3082,7 @@ export namespace commissioner {
 	        this.starters = source["starters"];
 	    }
 	}
+	
 	
 	
 	
@@ -3463,6 +3490,167 @@ export namespace commissioner {
 	
 	
 	
+	
+	export class StatChange {
+	    stat: string;
+	    label: string;
+	    before: string;
+	    after: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new StatChange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.stat = source["stat"];
+	        this.label = source["label"];
+	        this.before = source["before"];
+	        this.after = source["after"];
+	    }
+	}
+	export class StatDecision {
+	    entry: string;
+	    kind: string;
+	    status: string;
+	    player: string;
+	    name: string;
+	    season: number;
+	    week: number;
+	    words: string;
+	    by: string;
+	    at: time.Time;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new StatDecision(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.entry = source["entry"];
+	        this.kind = source["kind"];
+	        this.status = source["status"];
+	        this.player = source["player"];
+	        this.name = source["name"];
+	        this.season = source["season"];
+	        this.week = source["week"];
+	        this.words = source["words"];
+	        this.by = source["by"];
+	        this.at = this.convertValues(source["at"], time.Time);
+	        this.reason = source["reason"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class StatQueueItem {
+	    id: string;
+	    player: string;
+	    name: string;
+	    season: number;
+	    week: number;
+	    changes: StatChange[];
+	    points?: number;
+	    flip: string;
+	    flipWords: string;
+	    words: string;
+	    arrived: time.Time;
+	    sha256: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new StatQueueItem(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.player = source["player"];
+	        this.name = source["name"];
+	        this.season = source["season"];
+	        this.week = source["week"];
+	        this.changes = this.convertValues(source["changes"], StatChange);
+	        this.points = source["points"];
+	        this.flip = source["flip"];
+	        this.flipWords = source["flipWords"];
+	        this.words = source["words"];
+	        this.arrived = this.convertValues(source["arrived"], time.Time);
+	        this.sha256 = source["sha256"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class StatQueue {
+	    league: string;
+	    season: number;
+	    revision: number;
+	    words: string;
+	    open: StatQueueItem[];
+	    decided: StatDecision[];
+	
+	    static createFrom(source: any = {}) {
+	        return new StatQueue(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.season = source["season"];
+	        this.revision = source["revision"];
+	        this.words = source["words"];
+	        this.open = this.convertValues(source["open"], StatQueueItem);
+	        this.decided = this.convertValues(source["decided"], StatDecision);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	
 	
 

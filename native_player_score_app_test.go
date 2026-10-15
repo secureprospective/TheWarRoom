@@ -36,6 +36,13 @@ func scoreApp(t *testing.T) *legalityFixture {
 // The held row records one tackle and nothing else, so exact position and rule effects are visible.
 func holdNativeScore(t *testing.T, f *legalityFixture, include bool, position string, revision int) string {
 	t.Helper()
+	return holdNativeStats(t, f, include, position, "1", revision)
+}
+
+// holdNativeStats archives one more copy of the season's weekly file, the way a feed refresh would, with the
+// player credited the given number of tackles.
+func holdNativeStats(t *testing.T, f *legalityFixture, include bool, position, tackles string, revision int) string {
+	t.Helper()
 	body, err := os.ReadFile("internal/fantasyscore/source/testdata/weeks.csv")
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +65,7 @@ func holdNativeScore(t *testing.T, f *legalityFixture, include bool, position st
 		case "game_id":
 			rows[1][i] = "2026_01_PIT_NYJ"
 		case "def_tackles_solo":
-			rows[1][i] = "1"
+			rows[1][i] = tackles
 		case "fg_made_list", "fg_missed_list", "fg_blocked_list":
 			rows[1][i] = ""
 		case "week", "season_type", "player_name", "player_display_name", "position_group", "headshot_url", "team", "opponent_team":
@@ -226,11 +233,11 @@ func TestNativeScoreHonestAbsenceAndNeedsRuling(t *testing.T) {
 		!strings.Contains(out.Words, "no NFL statistics identity") {
 		t.Fatalf("missing identity became zero: %+v %v", out, err)
 	}
-	sha := holdNativeScore(t, f, false, "LB", 2)
+	counted := readNativeScore(t, f).SHA256
+	holdNativeScore(t, f, false, "LB", 2)
 	out = readNativeScore(t, f)
-	if out.Status != "Unavailable" || out.Points != nil || out.PartialPoints != nil || out.SHA256 != sha ||
-		!strings.Contains(out.Words, "not reported this week") {
-		t.Fatalf("missing newest player became zero: %+v", out)
+	if out.Status != "Incomplete" || out.SHA256 != counted {
+		t.Fatalf("a refresh that dropped the player unscored him or moved the score: %+v", out)
 	}
 	holdNativeScore(t, f, true, "LB", 3)
 	f.set(t, "scoring.catalogue", scoreCatalogue(t, leaguerules.Needs[leaguerules.Decimal]("Choose tackle points")), "now")
@@ -299,6 +306,11 @@ func TestNativeScoreWireFixtureMatchesGo(t *testing.T) {
 	readings = append(readings, readNativeScore(t, f))
 	holdNativeScore(t, f, false, "LB", 2)
 	readings = append(readings, readNativeScore(t, f))
+	notReported, err := f.app.TargetNativePlayerScore(legalityLeague, "1000", 2026, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	readings = append(readings, notReported)
 	body, err := json.MarshalIndent(readings, "", "  ")
 	if err != nil {
 		t.Fatal(err)
@@ -319,15 +331,15 @@ func TestNativeScoreWireFixtureMatchesGo(t *testing.T) {
 	}
 }
 
-func TestNativeScoreNewestPositionAndMissingHeldWeek(t *testing.T) {
+func TestNativeScoreKeepsTheCountedVersionUntilTheLeagueApprovesTheNewest(t *testing.T) {
 	f := scoreApp(t)
-	sha := holdNativeScore(t, f, true, "DT", 2)
+	counted := readNativeScore(t, f).SHA256
+	holdNativeScore(t, f, true, "DT", 2)
 	out := readNativeScore(t, f)
-	if out.SHA256 != sha || out.Position != leaguerules.DT ||
-		out.PositionWhy != "The position reported with the NFL statistics" {
-		t.Fatalf("old revision reused: %+v", out)
+	if out.SHA256 != counted || out.Position != leaguerules.LB {
+		t.Fatalf("a feed revision moved the score without approval: %+v", out)
 	}
-	assertNativePoints(t, f, 25000)
+	assertNativePoints(t, f, 15000)
 	missing, err := f.app.TargetNativePlayerScore(legalityLeague, "1000", 2026, 2)
 	if err != nil || missing.Status != "Unavailable" || missing.Points != nil || missing.PartialPoints != nil ||
 		!strings.Contains(missing.Words, "not reported this week") {

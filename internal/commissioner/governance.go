@@ -96,6 +96,7 @@ func commandControls() map[string]string {
 		ContractEdit: "CM-034", CapAdjust: "CM-034", CapRelief: "CM-034", ReserveException: "CM-038",
 		PlayerPosition: "CM-030", PlayerPositionClear: "CM-030",
 		ScorePlayer: "CM-032", ScoreFranchise: "CM-032",
+		StatApprove: "CM-031", StatReject: "CM-031", StatCorrect: "CM-031",
 		WindowSet: "CM-023", WindowMove: "CM-023", WindowRemove: "CM-023",
 		CalendarException: "CM-026", SeasonRollover: "CM-027",
 		StandingsRecordAdjust: "CM-033", StandingsOverride: "CM-033", StandingsOverrideClear: "CM-033",

@@ -77,3 +77,21 @@ func (a *App) TargetNativeScorePreview(body string) (commissioner.ScorePreview, 
 	}
 	return preview, nil
 }
+
+// TargetStatQueue lists the statistics the NFL changed after the league counted them, newest first, with the
+// decisions already made. Nothing in the queue moves a score until it is approved.
+func (a *App) TargetStatQueue(league string, season int) (commissioner.StatQueue, error) {
+	if err := (RawNativeResultsScope{League: league, Season: season, Week: 1}).Validate(); err != nil {
+		return commissioner.StatQueue{}, err
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.StatQueue{}, fmt.Errorf("statistics queue startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.StatQueue(ctx, league, season)
+	if err != nil {
+		return commissioner.StatQueue{}, fmt.Errorf("statistics queue: %w", err)
+	}
+	return reading, nil
+}

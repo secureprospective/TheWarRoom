@@ -32,11 +32,22 @@ func (r RawNativeScope) Validate() error {
 	return nil
 }
 
-// NativeEvidence retains absence rather than manufacturing a stat line or reusing an older revision.
+// NativeEvidence retains absence rather than manufacturing a stat line. Held is the newest file, whether or
+// not it reports the player; Lines are the versions of the player's week the files reported, oldest first.
+// Which version counts is the league's decision, never the feed's.
 type NativeEvidence struct {
 	GSIS    string
 	Held    *HeldWeek
+	Lines   []LineRevision
 	Missing []string
+}
+
+// Versions are the versions of the player's week. Evidence supplied as one held week has just that one.
+func (e NativeEvidence) Versions() []LineRevision {
+	if len(e.Lines) != 0 || e.Held == nil || e.Held.Week == nil {
+		return e.Lines
+	}
+	return []LineRevision{{Digest: LineDigest(*e.Held.Week), Held: *e.Held}}
 }
 
 func ReadNativeEvidence(ctx context.Context, identity IdentityPort, stats StatPort,
@@ -65,10 +76,11 @@ func ReadNativeEvidence(ctx context.Context, identity IdentityPort, stats StatPo
 		out.Missing = append(out.Missing, "No NFL statistics are held for this season and week")
 		return out, nil
 	}
-	out.Held = &revisions[0]
-	out.Missing = append(out.Missing, out.Held.Missing...)
-	if out.Held.Week == nil && len(out.Missing) == 0 {
-		out.Missing = append(out.Missing, "The newest held statistics do not report this player's week")
+	out.Held, out.Lines = &revisions[0], DistinctLines(revisions)
+	reporting := *out.Held
+	if n := len(out.Lines); n != 0 {
+		reporting = out.Lines[n-1].Held
 	}
+	out.Missing = append(out.Missing, reporting.Missing...)
 	return out, nil
 }
