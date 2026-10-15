@@ -158,6 +158,13 @@ func (a *App) refreshInBackground(parent context.Context) {
 		go func() {
 			defer a.weekWorkers.Done()
 			if a.ready() == nil {
+				a.nativeWaiverClock(parent)
+			}
+		}()
+		a.weekWorkers.Add(1)
+		go func() {
+			defer a.weekWorkers.Done()
+			if a.ready() == nil {
 				a.watchMoves(parent)
 			}
 		}()

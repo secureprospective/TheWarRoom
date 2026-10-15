@@ -5,6 +5,7 @@ import {lineup} from '../models';
 import {snapshot} from '../models';
 import {commissioner} from '../models';
 import {envelope} from '../models';
+import {time} from '../models';
 import {personal} from '../models';
 
 export function AppInfo():Promise<main.AppInfo>;
@@ -214,6 +215,10 @@ export function TargetNativeScorePreview(arg1:string):Promise<commissioner.Score
 export function TargetNativeSeed(arg1:main.RawNativeSeedRequest):Promise<commissioner.Receipt>;
 
 export function TargetNativeStandings(arg1:string,arg2:number):Promise<commissioner.NativeStandings>;
+
+export function TargetNativeWaiverAction(arg1:commissioner.RawCommand):Promise<commissioner.Receipt>;
+
+export function TargetNativeWaivers(arg1:string,arg2:string,arg3:time.Time):Promise<commissioner.NativeWaivers>;
 
 export function TargetNativeWeek(arg1:main.RawNativeWeekScope):Promise<commissioner.NativeWeek>;
 

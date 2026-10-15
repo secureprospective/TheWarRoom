@@ -124,7 +124,7 @@ func Reading(league, principal string, records []Record, auth Authorizer) (Ledge
 		if r.Receipt.Revision > out.Revision {
 			out.Revision = r.Receipt.Revision
 		}
-		if r.Command.Visibility == "private" && !private {
+		if !ledgerEntryVisible(r, records, principal, private) {
 			continue
 		}
 		what, err := entryLabel(records, i)
@@ -192,8 +192,8 @@ func entryLabel(records []Record, i int) (string, error) {
 }
 
 func recordLabel(r Record) string {
-	if draftCommand(r.Command.Command) {
-		return draftLabel(r)
+	if label, ok := familyLabel(r); ok {
+		return label
 	}
 	switch r.Command.Command {
 	case ContractEdit, CapAdjust, CapRelief, ReserveException:
@@ -204,9 +204,6 @@ func recordLabel(r Record) string {
 		return "Recorded the starting rosters, contracts, reserves, franchises and picks from held data"
 	case WindowSet, WindowMove, WindowRemove:
 		return windowLabel(r)
-	}
-	if scheduleCommand(r.Command.Command) {
-		return scheduleLabel(r)
 	}
 
 	if r.Command.Command == CalendarException {
@@ -229,6 +226,19 @@ func recordLabel(r Record) string {
 		return noteLabel(r)
 	}
 	return "Reversed a recorded league change"
+}
+
+// familyLabel describes an entry of a command family that writes its own labels: draft, waiver, schedule.
+func familyLabel(r Record) (string, bool) {
+	switch c := r.Command.Command; {
+	case draftCommand(c):
+		return draftLabel(r), true
+	case WaiverCommand(c):
+		return waiverLabel(c), true
+	case scheduleCommand(c):
+		return scheduleLabel(r), true
+	}
+	return "", false
 }
 
 // scheduleLabel describes a schedule entry for the ledger.
@@ -261,4 +271,12 @@ func undoPlacement(records []Record, i int, p Projection, principal string, auth
 		return ""
 	}
 	return r.Command.Visibility
+}
+
+func ledgerEntryVisible(r Record, records []Record, principal string, privileged bool) bool {
+	if privateWaiverRecord(r, records) {
+		return (r.Principal == principal && r.Command.Command == WaiverClaim) ||
+			(privileged && processedWaiverClaim(r, records))
+	}
+	return r.Command.Visibility != "private" || privileged
 }

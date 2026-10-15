@@ -42,6 +42,9 @@ func (a *App) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("league change: %w", err)
 	}
+	if commissioner.OwnerWaiverAction(raw.Command) != "" {
+		return commissioner.Receipt{}, fmt.Errorf("use the native owner action for cuts and claims")
+	}
 	if raw.Command == commissioner.NativeSeed {
 		return commissioner.Receipt{}, fmt.Errorf("record the starting snapshot through the held-data action")
 	}
@@ -60,7 +63,7 @@ func (a *App) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
 	defer cancel()
-	receipt, err := a.history.ExecuteCommissioner(ctx, raw, principal, a.commissionerAuthorizer)
+	receipt, err := a.history.ExecuteCommissionerWithFacts(ctx, raw, principal, a.commissionerAuthorizer, a.nativeFacts(), a.ownerZone())
 	var refused *commissioner.Refusal
 	if errors.As(err, &refused) {
 		return commissioner.Receipt{}, errors.New(refused.Reason())

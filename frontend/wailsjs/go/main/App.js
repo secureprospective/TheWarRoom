@@ -418,6 +418,14 @@ export function TargetNativeStandings(arg1, arg2) {
   return window['go']['main']['App']['TargetNativeStandings'](arg1, arg2);
 }
 
+export function TargetNativeWaiverAction(arg1) {
+  return window['go']['main']['App']['TargetNativeWaiverAction'](arg1);
+}
+
+export function TargetNativeWaivers(arg1, arg2, arg3) {
+  return window['go']['main']['App']['TargetNativeWaivers'](arg1, arg2, arg3);
+}
+
 export function TargetNativeWeek(arg1) {
   return window['go']['main']['App']['TargetNativeWeek'](arg1);
 }

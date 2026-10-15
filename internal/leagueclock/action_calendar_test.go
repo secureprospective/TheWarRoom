@@ -116,8 +116,9 @@ func TestExactDeadlineAndBidCountdown(t *testing.T) {
 	}
 }
 
-// Lineups have no closing window in the Legacy preset: each player locks at his own kickoff instead.
-func TestLegacyLineupsStayOpenAllLeagueYear(t *testing.T) {
+// Lineups and waivers have no closing window in the Legacy preset: each player locks at his own kickoff,
+// and each cut opens its own waiver window.
+func TestLegacyLineupsAndWaiversStayOpenAllLeagueYear(t *testing.T) {
 	rules := leaguerules.LegacyNFL().Calendar
 	rules.Boundary = leaguerules.Known(leaguerules.StartOfDay)
 	for _, at := range []string{"2026-03-01T05:00:00Z", "2026-09-13T17:00:00Z", "2026-12-27T18:00:00Z"} {
@@ -131,6 +132,10 @@ func TestLegacyLineupsStayOpenAllLeagueYear(t *testing.T) {
 		}
 		if !c.Decide(instant, "lineup", "one").Open {
 			t.Fatalf("a Legacy lineup must be open at %s", at)
+		}
+		// Rulebook §8: a player may be released, and claimed off waivers, at any time of year.
+		if !c.Decide(instant, "cut", "one").Open || !c.Decide(instant, "waiver_claim", "one").Open {
+			t.Fatalf("a Legacy cut and waiver claim must be open at %s", at)
 		}
 	}
 }

@@ -312,6 +312,30 @@
     "safeguard": "reason"
   },
   {
+    "command": "waivers.award.override",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "waivers.order.auto",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "waivers.order.set",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "waivers.process",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
     "command": "commish.rules.set",
     "effective": "now",
     "field": "league.teams",

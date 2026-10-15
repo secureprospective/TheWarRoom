@@ -27,7 +27,8 @@ var errActionClosed = errors.New("league action closed")
 // nativeOwnerActions is the registry. Each chunk that adds an owner action to the app-owned league adds
 // it here; native_gate_test.go holds every entry to the gate.
 func nativeOwnerActions() []NativeOwnerAction {
-	return []NativeOwnerAction{lineupSetAction(), draftPickAction()}
+	return []NativeOwnerAction{lineupSetAction(), draftPickAction(), waiverAction(commissioner.RosterCut),
+		waiverAction(commissioner.WaiverClaim)}
 }
 
 // ownerZone is where the owner reads times: the desktop's own zone unless a test pins another.

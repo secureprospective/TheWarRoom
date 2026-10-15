@@ -1,7 +1,7 @@
 {
   "from": 2026,
   "to": 2027,
-  "beforeDigest": "54a90a08f31243ec58913ba853f395624818b51f85b0886384bf0c33adbdc015",
+  "beforeDigest": "491a342ba1d39b12abf249a5ecf7ddcc37e1bbdf34c332361351bbdb94632a4e",
   "blocked": false,
   "reasons": [],
   "lines": [
@@ -21,6 +21,7 @@
     "The rfa tenders window opens 1 May 2027 at 12:00 AM EDT and closes 3 May 2027 at 12:00 AM EDT.",
     "The rookie draft window opens 14 Jul 2027 at 12:00 AM EDT.",
     "The ufa window opens 3 May 2027 at 12:00 AM EDT and closes 10 May 2027 at 12:00 AM EDT.",
+    "The waivers window opens 1 Mar 2027 at 12:00 AM EST.",
     "The new season's salary cap resets to $125,000,000.",
     "Future annual contract salaries: not built yet; recorded salaries are unchanged.",
     "No draft picks are issued at rollover.",
@@ -4381,6 +4382,58 @@
               "Value": "0001-01-01T00:00:00Z",
               "Citation": "Census CM-023: date for season required"
             }
+          },
+          "waivers": {
+            "Start": {
+              "State": 1,
+              "Value": {
+                "Month": {
+                  "State": 1,
+                  "Value": 3,
+                  "Citation": "Rulebook §8: release at any time; each cut opens its own waiver window"
+                },
+                "Day": {
+                  "State": 1,
+                  "Value": 1,
+                  "Citation": "Rulebook §8: release at any time; each cut opens its own waiver window"
+                }
+              },
+              "Citation": "Rulebook §8: release at any time; each cut opens its own waiver window"
+            },
+            "End": {
+              "State": 0,
+              "Value": {
+                "Month": {
+                  "State": 0,
+                  "Value": 0,
+                  "Citation": ""
+                },
+                "Day": {
+                  "State": 0,
+                  "Value": 0,
+                  "Citation": ""
+                }
+              },
+              "Citation": "Census CM-023: no closing date given"
+            },
+            "Opens": {
+              "State": 1,
+              "Value": [
+                "cut",
+                "waiver_claim"
+              ],
+              "Citation": "Rulebook §8: release at any time; each cut opens its own waiver window"
+            },
+            "DatedStart": {
+              "State": 0,
+              "Value": "0001-01-01T00:00:00Z",
+              "Citation": "Census CM-023: date for season required"
+            },
+            "DatedEnd": {
+              "State": 0,
+              "Value": "0001-01-01T00:00:00Z",
+              "Citation": "Census CM-023: date for season required"
+            }
           }
         },
         "Citation": "Census CM-023"
@@ -4874,6 +4927,17 @@
         "start": "2027-05-03T04:00:00Z",
         "close": "2027-05-10T04:00:00Z",
         "live": false,
+        "secondsToClose": null
+      },
+      {
+        "id": "waivers",
+        "opens": [
+          "cut",
+          "waiver_claim"
+        ],
+        "start": "2027-03-01T05:00:00Z",
+        "close": null,
+        "live": true,
         "secondsToClose": null
       }
     ],

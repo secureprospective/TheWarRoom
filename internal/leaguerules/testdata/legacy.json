@@ -4064,6 +4064,58 @@
             "Value": "0001-01-01T00:00:00Z",
             "Citation": "Census CM-023: date for season required"
           }
+        },
+        "waivers": {
+          "Start": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 3,
+                "Citation": "Rulebook §8: release at any time; each cut opens its own waiver window"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 1,
+                "Citation": "Rulebook §8: release at any time; each cut opens its own waiver window"
+              }
+            },
+            "Citation": "Rulebook §8: release at any time; each cut opens its own waiver window"
+          },
+          "End": {
+            "State": 0,
+            "Value": {
+              "Month": {
+                "State": 0,
+                "Value": 0,
+                "Citation": ""
+              },
+              "Day": {
+                "State": 0,
+                "Value": 0,
+                "Citation": ""
+              }
+            },
+            "Citation": "Census CM-023: no closing date given"
+          },
+          "Opens": {
+            "State": 1,
+            "Value": [
+              "cut",
+              "waiver_claim"
+            ],
+            "Citation": "Rulebook §8: release at any time; each cut opens its own waiver window"
+          },
+          "DatedStart": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          },
+          "DatedEnd": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          }
         }
       },
       "Citation": "Census CM-023"

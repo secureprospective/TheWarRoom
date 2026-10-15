@@ -91,6 +91,7 @@ func commandControls() map[string]string {
 	return map[string]string{
 		DraftStart: "CM-042", DraftOrderAuto: "CM-041", DraftOrderSet: "CM-041",
 		DraftOrderPattern: "CM-041", DraftOrderTiebreak: "CM-041",
+		WaiverProcess: "CM-035", WaiverOrderSet: "CM-035", WaiverOrderAuto: "CM-035", WaiverOverride: "CM-035",
 		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039",
 		ContractEdit: "CM-034", CapAdjust: "CM-034", CapRelief: "CM-034", ReserveException: "CM-038",
 		PlayerPosition: "CM-030", PlayerPositionClear: "CM-030",
@@ -118,6 +119,12 @@ func ledgerReader(state governance.State, principal string) string {
 func AuthorizeRecords(raw RawCommand, principal string, records []Record) (string, error) {
 	if len(records) == 0 && raw.Command == Create {
 		return "commissioner", nil
+	}
+	if OwnerWaiverAction(raw.Command) != "" {
+		if err := AuthorizeWaiverOwner(records, principal, raw.Args.Waiver.Franchise); err != nil {
+			return "", err
+		}
+		return "owner", nil
 	}
 	state, err := GovernanceState(records)
 	if err != nil {
@@ -187,12 +194,14 @@ func authorizeReversal(auth GovernanceAuthorizer, entry, principal string, recor
 			continue
 		}
 		var err error
-		if r.Command.Command == LineupSet {
+		switch {
+		case r.Command.Command == LineupSet:
 			return nil // reversing needs only the reversal permission itself; the owner's seat is not asked for
-		}
-		if r.Command.Command == RulesSet {
+		case OwnerWaiverAction(r.Command.Command) != "":
+			_, err = auth.Allow(r.Command.League, principal, WaiverProcess)
+		case r.Command.Command == RulesSet:
 			_, err = authorizeRule(auth, r.Command, principal)
-		} else {
+		default:
 			_, err = auth.Allow(r.Command.League, principal, r.Command.Command)
 		}
 		if err != nil {

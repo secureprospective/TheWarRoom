@@ -56,6 +56,10 @@ func monthDay(month, day int, source string) MonthDay {
 // his own kickoff (the native lineup check), so no window closes them.
 const lineupSource = "Ring 4 lineup ruling: open all year, each player locks at kickoff"
 
+// waiverSource cites the waivers window: a player may be released at any time (rulebook §8), and each
+// release opens its own waiver window that bounds the claims on him.
+const waiverSource = "Rulebook §8: release at any time; each cut opens its own waiver window"
+
 func legacyWindows() map[string]Window {
 	rows := []struct {
 		id                                     string
@@ -70,10 +74,14 @@ func legacyWindows() map[string]Window {
 		{"rookie_draft", 7, 14, 0, 0, []Action{"draft_pick"}},
 		{"cut_buyout", 8, 25, 9, 1, []Action{"cut", "buyout"}},
 		{"lineups", 3, 1, 0, 0, []Action{"lineup"}},
+		{"waivers", 3, 1, 0, 0, []Action{"cut", "waiver_claim"}},
 	}
 	sourceOf := func(id string) string {
-		if id == "lineups" {
+		switch id {
+		case "lineups":
 			return lineupSource
+		case "waivers":
+			return waiverSource
 		}
 		return "Census CM-023"
 	}

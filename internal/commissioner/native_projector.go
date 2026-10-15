@@ -9,39 +9,46 @@ import (
 )
 
 // projectNativeOverrides starts from cloned seed slices; neither ledger bodies nor held inputs mutate.
-func projectNativeOverrides(assets *NativeAssets, records []Record) error {
+func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *waiverState) error {
 	active := Replay(records).Active
 	for i, record := range records {
-		switch record.Command.Command {
-		case SeasonRollover:
-			if active[record.Receipt.Entry] {
-				if err := applyNativeRollover(assets, record); err != nil {
-					return err
-				}
-			}
-		case DraftPick:
-			if active[record.Receipt.Entry] {
-				applyDraftPick(assets.Snapshot, record)
-			}
-		case ContractEdit, CapAdjust, CapRelief, ReserveException:
-			if !active[record.Receipt.Entry] {
-				continue
-			}
-			if !assets.Seeded {
-				return fmt.Errorf("a native correction has no starting assets")
-			}
-			value, err := decodeOverride(record.Command.Command, record.Command.Args)
-			if err != nil {
-				return err
-			}
-			rules, err := RulesNow(records[:i+1], record.Receipt.RecordedAt)
-			if err != nil {
-				return err
-			}
-			if err := applyNativeOverride(assets.Snapshot, record, value, rules.Season); err != nil {
-				return err
-			}
+		if !active[record.Receipt.Entry] {
+			continue
 		}
+		if err := projectNativeEntry(assets, records, i, waivers); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// projectNativeEntry applies one active ledger entry to the native assets.
+func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *waiverState) error {
+	record := records[i]
+	if WaiverCommand(record.Command.Command) {
+		if !assets.Seeded {
+			return fmt.Errorf("record starting assets before waiver actions")
+		}
+		return projectWaiver(assets.Snapshot, waivers, record)
+	}
+	switch record.Command.Command {
+	case SeasonRollover:
+		return applyNativeRollover(assets, record)
+	case DraftPick:
+		applyDraftPick(assets.Snapshot, record)
+	case ContractEdit, CapAdjust, CapRelief, ReserveException:
+		if !assets.Seeded {
+			return fmt.Errorf("a native correction has no starting assets")
+		}
+		value, err := decodeOverride(record.Command.Command, record.Command.Args)
+		if err != nil {
+			return err
+		}
+		rules, err := RulesNow(records[:i+1], record.Receipt.RecordedAt)
+		if err != nil {
+			return err
+		}
+		return applyNativeOverride(assets.Snapshot, record, value, rules.Season)
 	}
 	return nil
 }

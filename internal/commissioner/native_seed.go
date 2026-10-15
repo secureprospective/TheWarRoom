@@ -20,7 +20,8 @@ type NativeChampion struct {
 
 // RawNativeSnapshot is captured by Go from held inputs, never supplied by an IPC caller.
 type RawNativeSnapshot struct {
-	Season int `json:"season"`
+	StandingsOrder []string `json:"standingsOrder,omitempty"`
+	Season         int      `json:"season"`
 	// Champion is the franchise recorded as the champion of Season, once decided; the rollover archives it.
 	Champion string `json:"champion,omitempty"`
 	// Champions archives the winner of each finished season.
@@ -49,6 +50,7 @@ type NativePlayer struct {
 	RookieRound int `json:"rookieRound,omitempty"`
 	// Pending marks a player whose contract has ended and whose decision is still to be made.
 	Pending        bool                  `json:"pending,omitempty"`
+	Restructured   bool                  `json:"restructured,omitempty"`
 	ID             string                `json:"id"`
 	Franchise      string                `json:"franchise"`
 	Status         domain.RosterStatus   `json:"status"`
@@ -91,6 +93,11 @@ func (r RawNativeSnapshot) validate(rolled bool) error {
 	franchises, err := r.franchiseIndex()
 	if err != nil {
 		return err
+	}
+	if len(r.StandingsOrder) != 0 {
+		if err := completeWaiverOrder(r.StandingsOrder, &r); err != nil {
+			return err
+		}
 	}
 	if err := r.validatePlayers(franchises); err != nil {
 		return err
