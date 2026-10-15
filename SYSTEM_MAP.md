@@ -533,26 +533,50 @@ with an independent native-points reference and every mismatch classified; the L
 and once-per-week counting. Eight source-credit differences remain explicitly unresolved. The app-owned player score reading composes these packages; existing MFL score surfaces remain unchanged.
 `source.StatPort` is the read-only player-week revision port; `history.Store.PlayerWeekStats` implements
 it over the exact registered weekly-file URL in the existing fetch archive. Distinct body hashes are
-returned newest first with held timestamps, exact quantities and the feed position. A missing player
+returned newest first with held timestamps, exact quantities and the feed position; only a refetch of the
+body just before is collapsed, so a feed that goes back to an earlier line is a new revision. A missing player
 stays absent rather than reusing an older line. Play-by-play is not a registered Signals feed, so each
 weekly revision explicitly reports that missing evidence; consumers must not treat it as a complete
 native scoring line. No fixture or network fallback is installed.
 
 `source.IdentityPort` reads the existing `history.Store.SourceID` crosswalk; `ReadNativeEvidence`
-validates a league player/week, selects only the newest held revision and preserves missing identity,
-week and play-by-play as explicit absence. It does not fetch or manufacture a zero stat line.
+validates a league player/week and returns every version of the player's week the held files gave
+(`source.LineRevision`, oldest first, equal consecutive lines collapsed), plus the newest file; which version
+counts is the league's (see Native statistics queue). Missing identity, week and play-by-play stay explicit absence. It does not fetch or manufacture a zero stat line.
 `internal/commissioner/score_commands.go` adds CM-030 position set/clear and CM-032 season/week-scoped
 player/franchise deltas through the existing command ledger, with CC+ permission, reasons and G2/G3.
 `score_changes.go` folds compensation before selecting native scoring position and adding each delta
 once, retaining linked ledger provenance; overflow is refused on append and compensation.
 `ResultFlipCheck` compares published native games before and after a proposed score change. These utilities
 feed `TargetNativePlayerScore` in `native_legality_app.go` through `history.Store.NativePlayerScore`.
-`commissioner.NativePlayerScoreReading` combines newest held identity/stat evidence, native position
+`commissioner.NativePlayerScoreReading` combines the counted held version of the week, native position
 and adjustment provenance, and season-bound `RulesInForce`. Complete totals alone have `points`;
 incomplete evidence has explicitly labelled `partialPoints`, and missing identity/week or unsettled
 rules have neither. Missing play-by-play stays explicit. The Go-written wire fixture lives at
 `internal/commissioner/testdata/player-score-wire.json`. Existing MFL owner readings and scouting
 positions are unchanged.
+
+## Native statistics queue
+
+CM-031. A native score never moves because the NFL feed changed: it counts the player's week at the
+league's *baseline*, the first version the held files gave, until the ledger approves a later one.
+`source/revisions.go` numbers a week's versions (`LineRevision`, digest over position and quantities) and
+`LineBook` gathers them for a whole season in one pass; `history.Store.heldWeeklyFiles` is the one place the
+archive is walked. `stat_commands.go` holds the three G2 commands (`commish.stat.queue.approve`,
+`.reject`, `commish.stat.correct`; CC+, public, effective now, reason optional) and `StatItemID`
+(`stat.<season>.<week>.<player>.<version>.<digest>`, parsed once at the boundary). `stat_ledger.go` folds the
+active commands, compensation included: the last active approval is the baseline, an active rejection hides
+that exact item, a correction sets one stat of the week. Replay never reads the feed to decide a past
+approval; it only looks the approved version up in the archive and refuses if it is gone.
+`NativePlayerScoreReading` counts baseline + corrections. `stat_queue.go` (`StatQueueReading`) makes one item
+per player-week whose newest version differs from the baseline, priced by two real score readings (before,
+and with the approval laid in a trial ledger) and by `ResultFlipCheck` with that same trial command;
+`stat_decisions.go` lists decided items with who and when; `stat_preview.go` previews any of the three
+(points and flip stated, a flip is a warning). `CheckStatAppend` refuses an item that is no longer the newest
+version, is decided, or counts the same, and a correction without a source, with no effect or for a stat the
+league does not score. Root `TargetStatQueue(league, season)` reads `history.Store.StatQueue`; the preview
+goes through `TargetNativeScorePreview`. A week the newest file drops makes no item and unscores nobody.
+Wire fixture: `internal/commissioner/testdata/stat-queue-wire.json`.
 
 ## Native results and standings
 

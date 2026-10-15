@@ -81,7 +81,7 @@ func DefinitionFor(command string) (Definition, error) {
 	case ScheduleGenerate, ScheduleEdit, SchedulePublish, BracketBuild, BracketEdit, BracketSeed, BracketPresetSave,
 		HistoryLink:
 		return Definition{Gravity: "G2"}, nil
-	case PlayerPosition, PlayerPositionClear, ScorePlayer:
+	case PlayerPosition, PlayerPositionClear, ScorePlayer, StatApprove, StatReject, StatCorrect:
 		return Definition{Gravity: "G2"}, nil
 	case ScoreFranchise, StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear:
 		return Definition{Gravity: "G3"}, nil
@@ -121,6 +121,7 @@ type RawArgs struct {
 	Override       *RawNativeOverride  `json:"override,omitempty"`
 	Score          *RawScoreChange     `json:"score,omitempty"`
 	Standings      *RawStandingsChange `json:"standings,omitempty"`
+	Stat           *RawStatChange      `json:"stat,omitempty"`
 	Lineup         *RawLineupChange    `json:"lineup,omitempty"`
 	Rollover       *RawRolloverArgs    `json:"rollover,omitempty"`
 	Bracket        *RawBracketChange   `json:"bracket,omitempty"`
@@ -141,7 +142,7 @@ func (a RawArgs) validateDetails(command string) error {
 // decodedDetails says whether any argument that only a typed decoder may read is present here.
 func (a RawArgs) decodedDetails() bool {
 	return a.Schedule != nil || a.Window != nil || a.Override != nil || a.Score != nil || a.Standings != nil ||
-		a.Lineup != nil || a.Draft != nil || a.Waiver != nil || a.WaiverOutcome != nil || a.ContractAction != nil ||
+		a.Stat != nil || a.Lineup != nil || a.Draft != nil || a.Waiver != nil || a.WaiverOutcome != nil || a.ContractAction != nil ||
 		a.Bracket != nil || a.Title != nil || a.Link != nil
 }
 
@@ -159,6 +160,8 @@ func (a RawArgs) validateDecoded(command string) (handled bool, err error) {
 		_, err = DecodeScoreChange(a, command)
 	case isStandingsCommand(command):
 		_, err = DecodeStandingsChange(a, command)
+	case isStatCommand(command):
+		_, err = DecodeStatChange(a, command)
 	case isLineupCommand(command):
 		_, err = DecodeLineupChange(a, command)
 	case draftCommand(command):
@@ -308,6 +311,8 @@ func publicNowRule(command string) string {
 		return "window changes take effect now and are visible to every owner"
 	case isStandingsCommand(command):
 		return "standings overrides take effect now and are shown to the league"
+	case isStatCommand(command):
+		return "statistic decisions take effect now and are shown to the league"
 	case command == CalendarException:
 		return "window exceptions take effect now and are visible to every owner"
 	case playoffCommand(command):

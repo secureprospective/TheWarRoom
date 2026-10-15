@@ -123,7 +123,8 @@ func (s *Store) NativeStandings(ctx context.Context, league string, season int) 
 	return out, nil
 }
 
-// NativeScorePreview warns when a score change or a lineup correction would turn over a game's result.
+// NativeScorePreview warns when a score change, a lineup correction or a statistic decision would turn over a
+// game's result.
 func (s *Store) NativeScorePreview(ctx context.Context, raw commissioner.RawCommand) (commissioner.ScorePreview, error) {
 	records, err := s.nativeRecords(ctx, raw.League)
 	if err != nil {
@@ -131,6 +132,9 @@ func (s *Store) NativeScorePreview(ctx context.Context, raw commissioner.RawComm
 	}
 	if raw.Command == commissioner.LineupCorrect {
 		return s.lineupCorrectionPreview(ctx, records, raw)
+	}
+	if commissioner.IsStatCommand(raw.Command) {
+		return s.statChangePreview(ctx, records, raw)
 	}
 	if raw.Args.Score == nil {
 		return commissioner.ScorePreview{}, fmt.Errorf("preview a score change")

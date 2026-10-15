@@ -554,6 +554,10 @@ export function TargetSnapshot() {
   return window['go']['main']['App']['TargetSnapshot']();
 }
 
+export function TargetStatQueue(arg1, arg2) {
+  return window['go']['main']['App']['TargetStatQueue'](arg1, arg2);
+}
+
 export function TargetTradeBuilder(arg1) {
   return window['go']['main']['App']['TargetTradeBuilder'](arg1);
 }

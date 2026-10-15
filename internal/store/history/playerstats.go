@@ -13,46 +13,57 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 )
 
-// PlayerWeekStats reads the original weekly files, not the reduced floating-point observations.
-// Play-by-play is not loaded by Signals; Missing keeps those required inputs explicit.
-func (s *Store) PlayerWeekStats(ctx context.Context, scope source.RawStatScope) ([]source.HeldWeek, error) {
-	if err := scope.Validate(); err != nil {
-		return nil, fmt.Errorf("read held player statistics: %w", err)
-	}
+// heldWeeklyFiles offers each held copy of a season's weekly file to accept, newest first, parsed once. A
+// refetch of the body just offered is not offered again; a return to an earlier body is, because the
+// feed really did change back.
+func (s *Store) heldWeeklyFiles(ctx context.Context, season int,
+	accept func(sha string, at time.Time, weeks []source.PlayerWeek)) error {
 	feed, ok := s.reg.Feed("stats_player_week")
 	if !ok {
-		return nil, fmt.Errorf("weekly NFL statistics feed is not registered")
+		return fmt.Errorf("weekly NFL statistics feed is not registered")
 	}
-	if scope.Season < feed.FirstSeason {
-		return nil, fmt.Errorf("weekly NFL statistics are not loaded for this season")
+	if season < feed.FirstSeason {
+		return fmt.Errorf("%w", source.ErrSeasonNotLoaded)
 	}
-	wanted := feed.URLFor(scope.Season)
-	out := []source.HeldWeek{}
-	seen := make(map[string]bool)
+	wanted := feed.URLFor(season)
 	var parseErr error
+	var previous string
 	_, err := s.ArchivedBodies(ctx, wanted, func(fetchedURL string, body []byte, at time.Time) bool {
 		if fetchedURL != wanted {
 			return false
 		}
 		hash := sha256.Sum256(body)
 		sha := hex.EncodeToString(hash[:])
-		if seen[sha] {
+		if sha == previous {
 			return false
 		}
-		seen[sha] = true
+		previous = sha
 		weeks, err := source.ReadWeeks(bytes.NewReader(body))
 		if err != nil {
 			parseErr = fmt.Errorf("read held weekly statistics %s: %w", sha, err)
 			return true
 		}
-		out = append(out, source.SelectHeldWeek(scope, weeks, sha, at))
+		accept(sha, at, weeks)
 		return false
 	})
 	if err != nil {
-		return nil, fmt.Errorf("read weekly statistics archive: %w", err)
+		return fmt.Errorf("read weekly statistics archive: %w", err)
 	}
-	if parseErr != nil {
-		return nil, parseErr
+	return parseErr
+}
+
+// PlayerWeekStats reads the original weekly files, not the reduced floating-point observations.
+// Play-by-play is not loaded by Signals; Missing keeps those required inputs explicit.
+func (s *Store) PlayerWeekStats(ctx context.Context, scope source.RawStatScope) ([]source.HeldWeek, error) {
+	if err := scope.Validate(); err != nil {
+		return nil, fmt.Errorf("read held player statistics: %w", err)
+	}
+	out := []source.HeldWeek{}
+	err := s.heldWeeklyFiles(ctx, scope.Season, func(sha string, at time.Time, weeks []source.PlayerWeek) {
+		out = append(out, source.SelectHeldWeek(scope, weeks, sha, at))
+	})
+	if err != nil {
+		return nil, err
 	}
 	return out, nil
 }

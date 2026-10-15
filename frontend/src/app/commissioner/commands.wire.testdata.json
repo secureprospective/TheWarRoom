@@ -288,6 +288,24 @@
     "safeguard": "reason"
   },
   {
+    "command": "commish.stat.correct",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.stat.queue.approve",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.stat.queue.reject",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
     "command": "contract.action.set",
     "effective": "now",
     "field": "",

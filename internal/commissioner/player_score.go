@@ -57,27 +57,50 @@ func NativePlayerScoreReading(league string, scope source.RawNativeScope, record
 	if err != nil {
 		return out, err
 	}
-	out.Changes = changes.Changes
+	effects, err := foldStatEffects(records)
+	if err != nil {
+		return out, err
+	}
+	key := statKey{scope.Player, scope.Season, scope.Week}
+	out.Changes = orderChanges(records, changes.Changes, effects.changes[key])
 	out.Missing = append(out.Missing, evidence.Missing...)
-	if evidence.GSIS == "" {
-		out.Words = "This player has no NFL statistics identity"
-		return out, nil
+	counted, err := countedVersion(evidence.Versions(), effects.baselines[key])
+	if err != nil {
+		return out, err
 	}
-	if evidence.Held == nil {
-		out.Words = "No NFL statistics are held for this season and week"
-		return out, nil
+	corrections := effects.corrections[key]
+	var week source.PlayerWeek
+	switch {
+	case counted != nil:
+		week = *counted.Held.Week
+		out.SHA256, out.FetchedAt = counted.Held.SHA256, &counted.Held.FetchedAt
+	case len(corrections) != 0:
+		week = source.PlayerWeek{Season: scope.Season, Week: scope.Week}
+		out.Missing = append(out.Missing, "Only the statistics the commissioner entered are counted; the NFL feed has none for this week")
+	default:
+		return out.withoutStatistics(evidence), nil
 	}
-	out.SHA256, out.FetchedAt = evidence.Held.SHA256, &evidence.Held.FetchedAt
-	if evidence.Held.Week == nil {
-		out.Words = "This player is not reported this week in the newest held statistics"
-		return out, nil
-	}
-	out.Position, out.PositionWhy = changes.PositionUsed(scoreFeedPosition(evidence.Held.Week.Position))
+	week = withCorrections(week, corrections)
+	out.Position, out.PositionWhy = changes.PositionUsed(scoreFeedPosition(week.Position))
 	if out.Position == "" {
 		out.Status, out.Words = "Needs a ruling", "Choose this player's position for league scoring"
 		return out, nil
 	}
-	return out.count(rules.Scoring, evidence.Held.Week.Line, changes.Delta)
+	return out.count(rules.Scoring, week.Line, changes.Delta)
+}
+
+// withoutStatistics says why no statistics are counted for the week; no zero line is made up.
+func (out NativePlayerScore) withoutStatistics(evidence source.NativeEvidence) NativePlayerScore {
+	switch {
+	case evidence.GSIS == "":
+		out.Words = "This player has no NFL statistics identity"
+	case evidence.Held == nil:
+		out.Words = "No NFL statistics are held for this season and week"
+	default:
+		out.SHA256, out.FetchedAt = evidence.Held.SHA256, &evidence.Held.FetchedAt
+		out.Words = "This player is not reported this week in the newest held statistics"
+	}
+	return out
 }
 
 func (out NativePlayerScore) count(rules leaguerules.ScoringRules, line fantasyscore.StatLine,

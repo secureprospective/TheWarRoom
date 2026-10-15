@@ -985,6 +985,255 @@
     "player": "1000",
     "season": 2026,
     "week": 1,
+    "status": "Incomplete",
+    "words": "2.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+    "partialPoints": 25000,
+    "position": "DT",
+    "positionWhy": "The commissioner chose this position for league scoring",
+    "missing": [
+      "Held play-by-play is needed for long plays and return touchdowns"
+    ],
+    "items": [
+      {
+        "stat": "assist",
+        "words": "Defensive line assisted tackle: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "blocked_extra_point",
+        "words": "Blocked extra point: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "blocked_fg",
+        "words": "Blocked field goal: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "blocked_punt",
+        "words": "Blocked punt: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "def_tds",
+        "words": "Defensive touchdowns: 0 recorded; not used for league scoring"
+      },
+      {
+        "stat": "fg_blocked",
+        "words": "Field goals blocked: 0 recorded; not used for league scoring"
+      },
+      {
+        "stat": "fg_made_0_39",
+        "words": "Field goal made from 0 to 39 yards: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "fg_made_40_49",
+        "words": "Field goal made from 40 to 49 yards: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "fg_made_50_59",
+        "words": "Field goal made from 50 to 59 yards: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "fg_made_60_99",
+        "words": "Field goal made from 60 to 99 yards: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "fg_missed_0_29",
+        "words": "Field goal missed from 0 to 29 yards: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "fg_missed_30_99",
+        "words": "Field goal missed from 30 yards or longer: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "forced_fumble",
+        "words": "Forced fumble: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "fumble_lost",
+        "words": "Fumbles lost: 0 recorded; not used for league scoring"
+      },
+      {
+        "stat": "fumble_recovery_tds",
+        "words": "Fumble recovery touchdown: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "fumbles_total",
+        "words": "All fumbles: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "interception_caught",
+        "words": "Interception caught: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "interception_return_yards",
+        "words": "Interception return yards: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "interception_thrown",
+        "words": "Interception thrown: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "kickoff_return_yards",
+        "words": "Kickoff return yards: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "opponent_fumble_recovery",
+        "words": "Opponent fumble recovery: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "opponent_fumble_recovery_yards",
+        "words": "Opponent fumble recovery yards: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "own_fumble_recovery",
+        "words": "Own fumble recovery: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "pass_defensed",
+        "words": "Pass defensed: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "passing_td",
+        "words": "Passing touchdown: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "passing_two_point",
+        "words": "Passing two point conversion: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "passing_yards",
+        "words": "Passing yards: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "pat_blocked",
+        "words": "Extra point blocked: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "pat_made",
+        "words": "Extra point made: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "pat_missed",
+        "words": "Extra point missed: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "punt_return_yards",
+        "words": "Punt return yards: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "qb_hit",
+        "words": "Quarterback hit: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "receiving_td",
+        "words": "Receiving touchdown: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "receiving_two_point",
+        "words": "Receiving two point conversion: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "receiving_yards",
+        "words": "Receiving yards: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "reception",
+        "words": "Reception: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "rushing_attempt",
+        "words": "Rushing attempt: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "rushing_td",
+        "words": "Rushing touchdown: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "rushing_two_point",
+        "words": "Rushing two point conversion: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "rushing_yards",
+        "words": "Rushing yards: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "sack",
+        "words": "Sack: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "safety",
+        "words": "Safety: 0 recorded; 0 points",
+        "points": 0
+      },
+      {
+        "stat": "tackle",
+        "words": "Defensive line tackle: 1 recorded; 2.5 points",
+        "points": 25000
+      },
+      {
+        "stat": "tackle_for_loss",
+        "words": "Tackle for loss: 0 recorded; 0 points",
+        "points": 0
+      }
+    ],
+    "changes": [
+      {
+        "entry": "act.5b7739b9c3d22923f62e83303467995085dba0cb5ba4461313e618eda9e16ea8",
+        "what": "Set player 1000 to DT for league scoring",
+        "reason": "Record our league choice",
+        "status": "Applied"
+      },
+      {
+        "entry": "act.5ca931cd4b925fcf69605fd461bd1f90764d0c9226ce513c8790ecd390785cba",
+        "what": "Adjusted player 1000 by 1.25 points in season 2026, week 1",
+        "reason": "Record our league choice",
+        "status": "Reversed"
+      }
+    ],
+    "sha256": "4a2f1540a716e8f35b6c1a388aced073817bb820ed3af6680d500eeb6f35cfa8",
+    "fetchedAt": "2026-10-13T11:01:00Z"
+  },
+  {
+    "league": "native.seed",
+    "player": "1000",
+    "season": 2026,
+    "week": 2,
     "status": "Unavailable",
     "words": "This player is not reported this week in the newest held statistics",
     "missing": [
@@ -998,12 +1247,6 @@
         "what": "Set player 1000 to DT for league scoring",
         "reason": "Record our league choice",
         "status": "Applied"
-      },
-      {
-        "entry": "act.5ca931cd4b925fcf69605fd461bd1f90764d0c9226ce513c8790ecd390785cba",
-        "what": "Adjusted player 1000 by 1.25 points in season 2026, week 1",
-        "reason": "Record our league choice",
-        "status": "Reversed"
       }
     ],
     "sha256": "b958d8089782c170be9752765cf5c168f5b8c6df57facb2f66046dc55afeae9b",
