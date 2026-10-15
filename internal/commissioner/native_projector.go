@@ -13,6 +13,12 @@ func projectNativeOverrides(assets *NativeAssets, records []Record) error {
 	active := Replay(records).Active
 	for i, record := range records {
 		switch record.Command.Command {
+		case SeasonRollover:
+			if active[record.Receipt.Entry] {
+				if err := applyNativeRollover(assets, record); err != nil {
+					return err
+				}
+			}
 		case ContractEdit, CapAdjust, CapRelief, ReserveException:
 			if !active[record.Receipt.Entry] {
 				continue

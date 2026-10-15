@@ -74,7 +74,20 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err := s.checkAppend(raw, principal, records); err != nil {
 		return commissioner.Receipt{}, err
 	}
-	receipt, err := s.appendCommissioner(ctx, tx, raw, principal, role, canonical)
+	now := s.now().UTC().Truncate(time.Microsecond)
+	before, plan, err := commissioner.PrepareRollover(raw, records, now)
+	if err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("prepare season rollover: %w", err)
+	}
+	if raw.Command == commissioner.SeasonRollover && raw.Args.Rollover.DryRun {
+		return commissioner.Receipt{League: raw.League, Revision: raw.Expected, RecordedAt: before.At,
+			Message: "Preview only; nothing was recorded.", Plan: plan}, nil
+	}
+	if before != nil {
+		now = before.At
+	}
+	receipt, err := s.appendCommissioner(ctx, tx, appendRequest{raw: raw, principal: principal, role: role,
+		canonical: canonical, at: now, before: before, plan: plan})
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
@@ -115,6 +128,7 @@ func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, recor
 		{"league change", func() error { return commissioner.CheckGovernanceAppend(raw, principal, records, s.now()) }},
 		{"league calendar", func() error { return commissioner.CheckCalendarAppend(raw, records, s.now()) }},
 		{"league schedule", func() error { return commissioner.CheckScheduleAppend(raw, records) }},
+		{"season rollover", func() error { return commissioner.CheckRolloverAppend(raw, records) }},
 		{"league rules", func() error { return commissioner.CheckRulesAppend(raw, records, s.now()) }},
 	}
 	for _, c := range checks {
@@ -202,20 +216,29 @@ func checkCommissionerAppend(raw commissioner.RawCommand, records []commissioner
 	return fmt.Errorf("that recorded change is not in this league")
 }
 
-func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, raw commissioner.RawCommand,
-	principal, role, canonical string) (commissioner.Receipt, error) {
-	hash := sha256.Sum256([]byte(canonical))
+// appendRequest is one league change ready to be recorded, with the instant it is recorded at and, for a
+// season rollover, its before-state and plan.
+type appendRequest struct {
+	raw                        commissioner.RawCommand
+	principal, role, canonical string
+	at                         time.Time
+	before                     *commissioner.RolloverBefore
+	plan                       *commissioner.RolloverPlan
+}
+
+func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, req appendRequest) (commissioner.Receipt, error) {
+	raw, principal, now := req.raw, req.principal, req.at
+	hash := sha256.Sum256([]byte(req.canonical))
 	identity := sha256.Sum256([]byte(raw.League + "\x00" + raw.Request))
-	now := s.now().UTC().Truncate(time.Microsecond)
 	receipt := commissioner.Receipt{Entry: "act." + hex.EncodeToString(identity[:]), League: raw.League,
-		Revision: raw.Expected + 1, RecordedAt: now, Message: "Recorded in the league ledger."}
+		Revision: raw.Expected + 1, RecordedAt: now, Plan: req.plan, Message: "Recorded in the league ledger."}
 	definition, err := raw.EffectiveDefinition()
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("define league change: %w", err)
 	}
 	raw.Gravity = definition.Gravity
-	record := commissioner.Record{Command: raw, Principal: principal, Role: role,
-		Gravity: definition.Gravity, Canonical: canonical, Receipt: receipt}
+	record := commissioner.Record{Command: raw, Principal: principal, Role: req.role,
+		Gravity: definition.Gravity, Canonical: req.canonical, Receipt: receipt, Before: req.before}
 	effective := now
 	if raw.Effective != "now" && raw.Effective != "next_rollover" {
 		parsed, err := time.Parse(time.RFC3339Nano, raw.Effective)

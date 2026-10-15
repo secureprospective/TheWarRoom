@@ -7,23 +7,28 @@ import (
 )
 
 type Receipt struct {
-	Entry      string    `json:"entry"`
-	League     string    `json:"league"`
-	Revision   int64     `json:"revision"`
-	RecordedAt time.Time `json:"recordedAt"`
-	Message    string    `json:"message"`
+	Entry      string        `json:"entry"`
+	League     string        `json:"league"`
+	Revision   int64         `json:"revision"`
+	RecordedAt time.Time     `json:"recordedAt"`
+	Message    string        `json:"message"`
+	Plan       *RolloverPlan `json:"plan,omitempty"`
 }
 
 type Record struct {
-	Command   RawCommand `json:"command"`
-	Principal string     `json:"principal"`
-	Role      string     `json:"role"`
-	Gravity   string     `json:"gravity"`
-	Canonical string     `json:"canonical"`
-	Receipt   Receipt    `json:"receipt"`
+	Before    *RolloverBefore `json:"before,omitempty"`
+	Command   RawCommand      `json:"command"`
+	Principal string          `json:"principal"`
+	Role      string          `json:"role"`
+	Gravity   string          `json:"gravity"`
+	Canonical string          `json:"canonical"`
+	Receipt   Receipt         `json:"receipt"`
 }
 
 func (r Record) Validate() error {
+	if err := r.validateRolloverRecord(); err != nil {
+		return err
+	}
 	if err := r.Command.Validate(); err != nil {
 		return err
 	}
@@ -165,6 +170,8 @@ func recordLabel(r Record) string {
 	switch r.Command.Command {
 	case ContractEdit, CapAdjust, CapRelief, ReserveException:
 		return overrideLabel(r)
+	case SeasonRollover:
+		return fmt.Sprintf("Moved the league to season %d", r.Command.Args.Rollover.To)
 	case NativeSeed:
 		return "Recorded the starting rosters, contracts, reserves, franchises and picks from held data"
 	case WindowSet, WindowMove, WindowRemove:
@@ -204,6 +211,9 @@ func undoPlacement(records []Record, i int, p Projection, principal string, auth
 		return ""
 	}
 	if _, err := auth.Allow(r.Command.League, principal, Revert); err != nil {
+		return ""
+	}
+	if rolloverReversalRefusal(records, r.Receipt.Entry) != "" {
 		return ""
 	}
 	if governed, ok := auth.(GovernanceAuthorizer); ok &&

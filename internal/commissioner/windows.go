@@ -134,17 +134,17 @@ func applyWindow(command string, w RawWindowArgs, now map[string]leaguerules.Win
 
 // windowChange turns one active window command into the rule change that rules.set would have recorded.
 // prior holds every change already in the ledger, each with the instant it starts.
-func windowChange(prior []startedChange, r Record) (leaguerules.Change, error) {
+func windowChange(prior []startedChange, r Record, season int) (leaguerules.Change, error) {
 	at := r.Receipt.RecordedAt
 	var started []leaguerules.Change
 	for _, t := range prior {
 		if !t.start.After(at) {
 			c := t.change
-			c.Season = ledgerSeason
+			c.Season = season
 			started = append(started, c)
 		}
 	}
-	current, err := leaguerules.Resolve(started, ledgerSeason, at)
+	current, err := leaguerules.Resolve(started, season, at)
 	if err != nil {
 		return leaguerules.Change{}, fmt.Errorf("read windows before change: %w", err)
 	}

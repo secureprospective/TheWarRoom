@@ -88,8 +88,8 @@ func commandControls() map[string]string {
 		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039",
 		ContractEdit: "CM-034", CapAdjust: "CM-034", CapRelief: "CM-034", ReserveException: "CM-038",
 		WindowSet: "CM-023", WindowMove: "CM-023", WindowRemove: "CM-023",
-		CalendarException: "CM-026",
-		ScheduleGenerate:  "CM-015", ScheduleEdit: "CM-015", SchedulePublish: "CM-015",
+		CalendarException: "CM-026", SeasonRollover: "CM-027",
+		ScheduleGenerate: "CM-015", ScheduleEdit: "CM-015", SchedulePublish: "CM-015",
 	}
 }
 

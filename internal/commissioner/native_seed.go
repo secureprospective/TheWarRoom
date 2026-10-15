@@ -12,9 +12,19 @@ import (
 
 const NativeSeed = "commish.league.seed_held"
 
+// NativeChampion is the franchise that won a finished season.
+type NativeChampion struct {
+	Season    int    `json:"season"`
+	Franchise string `json:"franchise"`
+}
+
 // RawNativeSnapshot is captured by Go from held inputs, never supplied by an IPC caller.
 type RawNativeSnapshot struct {
-	Season      int               `json:"season"`
+	Season int `json:"season"`
+	// Champion is the franchise recorded as the champion of Season, once decided; the rollover archives it.
+	Champion string `json:"champion,omitempty"`
+	// Champions archives the winner of each finished season.
+	Champions   []NativeChampion  `json:"champions,omitempty"`
 	RosterAt    time.Time         `json:"rosterAt"`
 	DraftAt     time.Time         `json:"draftAt"`
 	FutureAt    time.Time         `json:"futureAt"`
@@ -33,6 +43,12 @@ type NativeFranchise struct {
 }
 
 type NativePlayer struct {
+	// Name is the name the app held for the player when the snapshot was captured.
+	Name string `json:"name,omitempty"`
+	// RookieRound is the draft round of the player's rookie contract, where it is recorded; 0 is unknown.
+	RookieRound int `json:"rookieRound,omitempty"`
+	// Pending marks a player whose contract has ended and whose decision is still to be made.
+	Pending        bool                  `json:"pending,omitempty"`
 	ID             string                `json:"id"`
 	Franchise      string                `json:"franchise"`
 	Status         domain.RosterStatus   `json:"status"`
@@ -53,6 +69,8 @@ type NativePick struct {
 }
 
 type NativeCharge struct {
+	// Kind is "dead_money" for dead money, which carries into the next season; empty otherwise.
+	Kind        string       `json:"kind,omitempty"`
 	Season      int          `json:"season,omitempty"`
 	ID          string       `json:"id"`
 	Franchise   string       `json:"franchise"`
@@ -60,7 +78,12 @@ type NativeCharge struct {
 	Description string       `json:"description"`
 }
 
-func (r RawNativeSnapshot) Validate() error {
+// Validate checks a snapshot captured from held data, as it is recorded.
+func (r RawNativeSnapshot) Validate() error { return r.validate(false) }
+
+// validate checks a snapshot; rolled is true for assets a season rollover has carried past the season they
+// were captured in, whose picks keep their history and whose new season's picks wait for the draft.
+func (r RawNativeSnapshot) validate(rolled bool) error {
 	if r.Season < 1 || r.Season > 9999 || r.RosterAt.IsZero() || r.DraftAt.IsZero() || r.FutureAt.IsZero() ||
 		len(r.Franchises) != legacyTeams || len(r.Players) == 0 {
 		return fmt.Errorf("hold the Legacy NFL rosters, franchises and both draft reports before seeding")
@@ -72,10 +95,28 @@ func (r RawNativeSnapshot) Validate() error {
 	if err := r.validatePlayers(franchises); err != nil {
 		return err
 	}
-	if err := r.validatePicks(franchises); err != nil {
+	if err := r.validatePicks(franchises, rolled); err != nil {
+		return err
+	}
+	if err := r.validateChampions(franchises); err != nil {
 		return err
 	}
 	return r.validateCharges(franchises)
+}
+
+func (r RawNativeSnapshot) validateChampions(franchises map[string]bool) error {
+	if r.Champion != "" && !franchises[r.Champion] {
+		return fmt.Errorf("the champion must be a recorded franchise")
+	}
+	seen := map[int]bool{}
+	for _, champion := range r.Champions {
+		if champion.Season < 1 || champion.Season >= r.Season || seen[champion.Season] ||
+			!franchises[champion.Franchise] {
+			return fmt.Errorf("the champion archive has invalid seasons or franchises")
+		}
+		seen[champion.Season] = true
+	}
+	return nil
 }
 
 func (r RawNativeSnapshot) franchiseIndex() (map[string]bool, error) {
@@ -92,7 +133,8 @@ func (r RawNativeSnapshot) franchiseIndex() (map[string]bool, error) {
 func (r RawNativeSnapshot) validateCharges(franchises map[string]bool) error {
 	charges := map[string]bool{}
 	for _, c := range r.Adjustments {
-		if c.ID == "" || charges[c.ID] || !franchises[c.Franchise] || c.Season < 0 || c.Season > 9999 {
+		if (c.Kind != "" && c.Kind != deadMoney) || c.ID == "" || charges[c.ID] || !franchises[c.Franchise] ||
+			c.Season < 0 || c.Season > lastSeason {
 			return fmt.Errorf("a held salary adjustment has no unique identity or franchise")
 		}
 		charges[c.ID] = true
@@ -108,7 +150,7 @@ func (r RawNativeSnapshot) validatePlayers(franchises map[string]bool) error {
 			return fmt.Errorf("held roster player: %w", err)
 		}
 		if id.String() != p.ID || players[p.ID] || !franchises[p.Franchise] || p.Salary < 0 ||
-			p.ExpirationYear < 0 || p.ExpirationYear > 9999 {
+			p.RookieRound < 0 || p.RookieRound > 99 || p.ExpirationYear < 0 || p.ExpirationYear > 9999 {
 			return fmt.Errorf("a held player has repeated or invalid contract details")
 		}
 		if !slices.Contains([]domain.RosterStatus{domain.RosterActive, domain.RosterIR, domain.RosterTaxi}, p.Status) {
@@ -119,10 +161,14 @@ func (r RawNativeSnapshot) validatePlayers(franchises map[string]bool) error {
 	return nil
 }
 
-func (r RawNativeSnapshot) validatePicks(franchises map[string]bool) error {
+func (r RawNativeSnapshot) validatePicks(franchises map[string]bool, rolled bool) error {
 	picks := map[string]bool{}
 	for _, p := range r.Picks {
-		if err := p.validate(r.Season, franchises); err != nil {
+		check := func() error { return p.validate(r.Season, franchises) }
+		if rolled {
+			check = func() error { return p.validateRolled(franchises) }
+		}
+		if err := check(); err != nil {
 			return err
 		}
 		identity := fmt.Sprintf("%d/%d/%d/%s", p.Season, p.Round, p.Slot, p.Original)
@@ -149,6 +195,16 @@ func (p NativePick) validate(season int, franchises map[string]bool) error {
 	}
 	if p.Slot != 0 || !franchises[p.Original] || p.Player != "" || p.Skipped {
 		return fmt.Errorf("a held future pick has invalid original ownership")
+	}
+	return nil
+}
+
+// validateRolled accepts a pick of any season: a finished draft's picks stay as history, and the picks of
+// the season that has begun still show their original owner until the draft orders them.
+func (p NativePick) validateRolled(franchises map[string]bool) error {
+	if p.Season < 1 || p.Season > lastSeason || p.Round < 1 || p.Round > 100 || p.Slot < 0 || p.Slot > 1000 ||
+		!franchises[p.Owner] || (p.Original != "" && !franchises[p.Original]) || (p.Skipped && p.Player != "") {
+		return fmt.Errorf("a recorded pick has invalid ownership, season or round")
 	}
 	return nil
 }
@@ -181,6 +237,13 @@ func CheckNativeAppend(raw RawCommand, records []Record) error {
 	}
 	if len(records) == 0 || records[0].Command.Args.Preset != PresetLegacy {
 		return Refused(fmt.Errorf("only a Legacy NFL league can be seeded from held data"))
+	}
+	if season := records[0].Command.Args.Season; season != 0 && season != raw.Args.Native.Season {
+		return Refused(fmt.Errorf("the starting snapshot must be for season %d, the season this league starts in",
+			season))
+	}
+	if moved, _ := explicitRolloverInstants(records); len(moved) > 0 {
+		return Refused(fmt.Errorf("record the starting assets before moving the league to a new season"))
 	}
 	for _, r := range records {
 		if r.Command.Command == NativeSeed {

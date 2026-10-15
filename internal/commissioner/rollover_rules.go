@@ -3,6 +3,7 @@ package commissioner
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
@@ -43,7 +44,8 @@ func rolloverRules(state RolloverState, rules leaguerules.RuleSet, to int) (leag
 	return resolved, nil
 }
 
-func (p *RolloverPlan) dateCalendar(at time.Time) {
+// Dates inherited from the old season advance before waiting replacements are applied.
+func (p *RolloverPlan) redateCalendar(state RolloverState) {
 	calendar := &p.Rules.Calendar
 	if calendar.Timezone.State != leaguerules.IsKnown {
 		p.block("League timezone needs a ruling: choose where the new season's dates begin.")
@@ -54,23 +56,52 @@ func (p *RolloverPlan) dateCalendar(at time.Time) {
 		p.block("League timezone needs a ruling: " + err.Error())
 		return
 	}
-	windows := make(map[string]leaguerules.Window, len(calendar.Windows.Value))
-	for id, window := range calendar.Windows.Value {
-		window.DatedStart = p.redate(window.DatedStart, zone, "Window "+id+" opening")
-		window.DatedEnd = p.redate(window.DatedEnd, zone, "Window "+id+" closing")
-		windows[id] = window
+	replaced := map[leaguerules.FieldPath]bool{}
+	for _, change := range state.Waiting {
+		replaced[change.Field] = true
 	}
-	calendar.Windows.Value = windows
-	calendar.TradeDeadline = p.redate(calendar.TradeDeadline, zone, "Trade deadline")
-	calendar.Rollover = p.redate(calendar.Rollover, zone, "Next rollover")
-	reading, err := leagueclock.Calendar(at, p.To, *calendar, nil)
+	if !replaced["calendar.windows"] {
+		ids := make([]string, 0, len(calendar.Windows.Value))
+		for id := range calendar.Windows.Value {
+			ids = append(ids, id)
+		}
+		slices.Sort(ids)
+		for _, id := range ids {
+			window := calendar.Windows.Value[id]
+			label := rolloverWindowLabel(id, state.WindowLabels)
+			window.DatedStart = p.redate(window.DatedStart, zone, label+" opening")
+			window.DatedEnd = p.redate(window.DatedEnd, zone, label+" closing")
+			calendar.Windows.Value[id] = window
+		}
+	}
+	if !replaced["calendar.tradeDeadline"] {
+		calendar.TradeDeadline = p.redate(calendar.TradeDeadline, zone, "Trade deadline")
+	}
+	if !replaced["calendar.rollover"] {
+		calendar.Rollover = p.redate(calendar.Rollover, zone, "Next rollover")
+	}
+}
+
+func (p *RolloverPlan) dateCalendar(at time.Time, labels map[string]string) {
+	calendar := p.Rules.Calendar
+	if calendar.Timezone.State != leaguerules.IsKnown {
+		p.block("League timezone needs a ruling: choose where the new season's dates begin.")
+		return
+	}
+	zone, err := time.LoadLocation(calendar.Timezone.Value)
+	if err != nil {
+		p.block("League timezone needs a ruling: " + err.Error())
+		return
+	}
+	reading, err := leagueclock.Calendar(at, p.To, calendar, nil)
 	if err != nil {
 		p.block("League action windows need a ruling: " + err.Error())
 		return
 	}
 	p.Calendar = reading
 	for _, window := range reading.Windows {
-		words := fmt.Sprintf("Window %s opens %s", window.ID, window.Start.In(zone).Format("2 Jan 2006 at 3:04 PM MST"))
+		words := fmt.Sprintf("%s opens %s", rolloverWindowLabel(window.ID, labels),
+			window.Start.In(zone).Format("2 Jan 2006 at 3:04 PM MST"))
 		if window.Close != nil {
 			words += " and closes " + window.Close.In(zone).Format("2 Jan 2006 at 3:04 PM MST")
 		}
@@ -78,20 +109,20 @@ func (p *RolloverPlan) dateCalendar(at time.Time) {
 	}
 }
 
-// Newly waiting dates in the destination season are already dated; old dates advance by civil year.
+func rolloverWindowLabel(id string, labels map[string]string) string {
+	if label := strings.TrimSpace(labels[id]); label != "" {
+		return label
+	}
+	return "The " + strings.ReplaceAll(id, "_", " ") + " window"
+}
+
+// A season includes dates after December; advance by civil year, not by calendar-year membership.
 func (p *RolloverPlan) redate(value leaguerules.Value[time.Time], zone *time.Location,
 	label string) leaguerules.Value[time.Time] {
 	if value.State != leaguerules.IsKnown {
 		return value
 	}
 	local := value.Value.In(zone)
-	if local.Year() == p.To {
-		return value
-	}
-	if local.Year() != p.From {
-		p.block(label + " needs a ruling: the recorded date belongs to neither season.")
-		return value
-	}
 	moved := local.AddDate(1, 0, 0)
 	if moved.Month() != local.Month() || moved.Day() != local.Day() {
 		p.block(label + " needs a ruling: this day does not exist in the new season.")

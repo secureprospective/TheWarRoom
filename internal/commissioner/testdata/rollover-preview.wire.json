@@ -1,29 +1,29 @@
 {
   "from": 2026,
   "to": 2027,
-  "beforeDigest": "0b1166866f233c280b4e3241bc02071f62589056b00b2e9f354fe7a1d4d5238b",
+  "beforeDigest": "aabf495e0ca8fa3834273dab936f80aeef8183995a7fb80bb501081a05c39050",
   "blocked": false,
   "reasons": [],
   "lines": [
-    "Player 0001 returns from taxi to the active roster.",
-    "Player 0001: contract years remaining change from 1 to 0.",
-    "Player 0001 is pending a contract decision, not released. RFA/UFA sorting is not built yet.",
-    "Player 0002 returns from injured reserve to the active roster.",
-    "Player 0002: contract years remaining change from 3 to 2.",
-    "Player 0003: contract years are not built yet; no end year recorded.",
-    "Window contracts opens 1 Mar 2027 at 12:00 AM EST and closes 1 May 2027 at 12:00 AM EDT.",
-    "Window cut_buyout opens 25 Aug 2027 at 12:00 AM EDT and closes 2 Sep 2027 at 12:00 AM EDT.",
-    "Window open_fa opens 19 May 2027 at 12:00 AM EDT.",
-    "Window resign opens 10 May 2027 at 12:00 AM EDT and closes 16 May 2027 at 12:00 AM EDT.",
-    "Window rfa_tenders opens 1 May 2027 at 12:00 AM EDT and closes 3 May 2027 at 12:00 AM EDT.",
-    "Window rookie_draft opens 14 Jul 2027 at 12:00 AM EDT.",
-    "Window ufa opens 3 May 2027 at 12:00 AM EDT and closes 10 May 2027 at 12:00 AM EDT.",
+    "A player with no name recorded (0001) returns from taxi to the active roster.",
+    "A player with no name recorded (0001): contract years remaining change from 1 to 0.",
+    "A player with no name recorded (0001) is pending a contract decision, not released. RFA or UFA cannot be determined: the rookie contract's draft round is not recorded.",
+    "A player with no name recorded (0002) returns from injured reserve to the active roster.",
+    "A player with no name recorded (0002): contract years remaining change from 3 to 2.",
+    "A player with no name recorded (0003): contract years are not built yet; no end year recorded.",
+    "No champion is recorded for season 2026, so none is archived.",
+    "Team f01: the salary adjustment (, $1.23) ends with season 2026; the cap resets.",
+    "The contracts window opens 1 Mar 2027 at 12:00 AM EST and closes 1 May 2027 at 12:00 AM EDT.",
+    "The cut buyout window opens 25 Aug 2027 at 12:00 AM EDT and closes 2 Sep 2027 at 12:00 AM EDT.",
+    "The open fa window opens 19 May 2027 at 12:00 AM EDT.",
+    "The resign window opens 10 May 2027 at 12:00 AM EDT and closes 16 May 2027 at 12:00 AM EDT.",
+    "The rfa tenders window opens 1 May 2027 at 12:00 AM EDT and closes 3 May 2027 at 12:00 AM EDT.",
+    "The rookie draft window opens 14 Jul 2027 at 12:00 AM EDT.",
+    "The ufa window opens 3 May 2027 at 12:00 AM EDT and closes 10 May 2027 at 12:00 AM EDT.",
     "The new season's salary cap resets to $125,000,000.",
-    "Recorded salary adjustments are preserved with their season and amount.",
-    "Dead money carry: not built yet; recorded adjustments do not identify dead money separately.",
     "Future annual contract salaries: not built yet; recorded salaries are unchanged.",
     "No draft picks are issued at rollover.",
-    "Champion archive: not built yet; no champion has been recorded in the native assets."
+    "The league schedule starts empty for season 2027; the season 2026 schedule stays in the ledger."
   ],
   "after": {
     "season": 2027,
@@ -258,6 +258,7 @@
     ],
     "players": [
       {
+        "pending": true,
         "id": "0001",
         "franchise": "f01",
         "status": "ROSTER",
@@ -310,7 +311,7 @@
     {
       "player": "0001",
       "franchise": "f01",
-      "route": "RFA/UFA sorting is not built yet; contract history is not recorded."
+      "route": "RFA or UFA cannot be determined: the rookie contract's draft round is not recorded."
     }
   ],
   "rules": {

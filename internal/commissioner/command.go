@@ -67,7 +67,7 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G2"}, nil
 	case ReserveException:
 		return Definition{Gravity: "G3"}, nil
-	case Create, Revert, NativeSeed:
+	case Create, Revert, NativeSeed, SeasonRollover:
 		return Definition{Gravity: "G3"}, nil
 	case CalendarException:
 		return Definition{Gravity: "G3"}, nil
@@ -98,11 +98,14 @@ type RawArgs struct {
 	Schedule       *RawScheduleArgs    `json:"schedule,omitempty"`
 	Window         *RawWindowArgs      `json:"window,omitempty"`
 	Override       *RawNativeOverride  `json:"override,omitempty"`
+	Rollover       *RawRolloverArgs    `json:"rollover,omitempty"`
+	Season         int                 `json:"season,omitempty"`
 }
 
 // validateDetails refuses arguments that belong to another command.
 func (a RawArgs) validateDetails(command string) error {
-	if (command != NativeSeed && a.Native != nil) || a.Schedule != nil || a.Window != nil || a.Override != nil ||
+	if (command != SeasonRollover && a.Rollover != nil) || (command != NativeSeed && a.Native != nil) ||
+		a.Schedule != nil || a.Window != nil || a.Override != nil ||
 		(command != CalendarException && a.Exception != nil) || a.foreignRuleArgs(command) {
 		return fmt.Errorf("send only the details of this league action")
 	}
@@ -124,6 +127,8 @@ func (a RawArgs) Validate(command string) error {
 		return err
 	}
 	switch command {
+	case SeasonRollover:
+		return a.validateRollover()
 	case CalendarException:
 		return a.validateException()
 	case NativeSeed:
@@ -144,7 +149,7 @@ func (a RawArgs) Validate(command string) error {
 
 func (a RawArgs) foreignRuleArgs(command string) bool {
 	return (command != RulesSet && (a.Field != "" || len(a.Value) != 0)) || (command != Create &&
-		(a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0))
+		(a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0 || a.Season != 0))
 }
 
 func (a RawArgs) validatePeople(command string) error {
@@ -197,6 +202,8 @@ func (r RawCommand) Validate() error {
 // recorded now for the league; it is empty for every other command.
 func publicNowRule(command string) string {
 	switch {
+	case command == SeasonRollover:
+		return "the season rollover takes effect now and is visible to every owner"
 	case command == NativeSeed:
 		return "the starting snapshot is recorded now for every owner"
 	case windowCommand(command):

@@ -16,14 +16,20 @@ const (
 )
 
 // firstSeason numbers the season the ledger opens in: the starting snapshot's season once the league
-// is seeded, else ledgerSeason. Later seasons follow the league's rollover dates.
-func firstSeason(records []Record) int {
+// is seeded, else the NFL season the creation records. A league recorded before seasons were numbered,
+// and not yet seeded, has no season to read; a year is never guessed. Later seasons follow the season
+// rollover acts, or the league's rollover dates where no act exists.
+func firstSeason(records []Record) (int, error) {
 	for _, r := range records {
 		if r.Command.Command == NativeSeed && r.Command.Args.Native != nil {
-			return r.Command.Args.Native.Season
+			return r.Command.Args.Native.Season, nil
 		}
 	}
-	return ledgerSeason
+	if len(records) > 0 && records[0].Command.Command == Create && records[0].Command.Args.Season != 0 {
+		return records[0].Command.Args.Season, nil
+	}
+	return 0, fmt.Errorf("this league was started before its first season was recorded; " +
+		"record its starting assets to name the season")
 }
 
 // rolloverInstants lists, in order, the instants at which a new season begins. Each comes from an
@@ -31,6 +37,9 @@ func firstSeason(records []Record) int {
 // passed moves that rollover; one set after it schedules the next. A date that does not come after the
 // one before it is not a new season.
 func rolloverInstants(records []Record) ([]time.Time, error) {
+	if starts, explicit := explicitRolloverInstants(records); explicit {
+		return starts, nil
+	}
 	starts := []time.Time{}
 	var pending time.Time
 	for i, r := range records {
@@ -95,7 +104,10 @@ func SeasonAt(records []Record, at time.Time) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	season := firstSeason(records)
+	season, err := firstSeason(records)
+	if err != nil {
+		return 0, err
+	}
 	for _, s := range starts {
 		if !at.Before(s) {
 			season++
@@ -137,11 +149,18 @@ func RulesInForce(records []Record, season int, at time.Time) (leaguerules.RuleS
 		return leaguerules.RuleSet{}, fmt.Errorf("this app league has not been created")
 	}
 	records = recordsThrough(records, at)
+	if rules, explicit, err := explicitSeasonRules(records, season, at); explicit {
+		return rules, err
+	}
 	starts, err := rolloverInstants(records)
 	if err != nil {
 		return leaguerules.RuleSet{}, err
 	}
-	index := season - firstSeason(records)
+	first, err := firstSeason(records)
+	if err != nil {
+		return leaguerules.RuleSet{}, err
+	}
+	index := season - first
 	if index < 0 || index > len(starts) {
 		return leaguerules.RuleSet{}, fmt.Errorf("read league rules: season %d is not in this league's history", season)
 	}
@@ -181,7 +200,7 @@ type startedChange struct {
 // seasonChanges lists every change in force in the ledger, labelled with the season being read and
 // ordered by when each starts (ledger order breaks ties).
 func seasonChanges(records []Record, starts []time.Time, season int) ([]leaguerules.Change, error) {
-	fold := seasonFold{starts: starts, active: Replay(records).Active}
+	fold := seasonFold{starts: starts, active: Replay(records).Active, season: season}
 	for _, r := range records {
 		if err := fold.add(r); err != nil {
 			return nil, err
@@ -198,6 +217,7 @@ func seasonChanges(records []Record, starts []time.Time, season int) ([]leagueru
 
 // seasonFold collects, in ledger order, every change in force with the instant it starts.
 type seasonFold struct {
+	season       int
 	starts       []time.Time
 	active       map[string]bool
 	timed        []startedChange
@@ -207,7 +227,7 @@ type seasonFold struct {
 func (f *seasonFold) add(r Record) error {
 	switch r.Command.Command {
 	case Create:
-		seeded, err := seedChanges(r)
+		seeded, err := seedChanges(r, f.season)
 		if err != nil {
 			return err
 		}
@@ -222,7 +242,7 @@ func (f *seasonFold) add(r Record) error {
 		if !f.active[r.Receipt.Entry] {
 			return nil
 		}
-		c, err := windowChange(f.timed, r)
+		c, err := windowChange(f.timed, r, f.season)
 		if err != nil {
 			return err
 		}

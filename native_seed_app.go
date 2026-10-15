@@ -10,6 +10,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -95,7 +96,10 @@ func (a *App) heldNativeSnapshot() (commissioner.RawNativeSnapshot, error) {
 		Adjustments: []commissioner.NativeCharge{}}
 	franchises, mapping := nativeFranchises(a.rulebook.ActiveConfig().Franchises)
 	seed.Franchises = franchises
-	seedPlayers(&seed, snap, mapping)
+	a.targetSnapshotMu.Lock()
+	directory := a.targetSnapshot.Players.Value
+	a.targetSnapshotMu.Unlock()
+	seedPlayers(&seed, snap, mapping, directory)
 	seedPicks(&seed, results.value, future.value, mapping)
 	if err := seed.Validate(); err != nil {
 		return commissioner.RawNativeSnapshot{}, fmt.Errorf("held starting snapshot: %w", err)
@@ -117,10 +121,17 @@ func nativeFranchises(held []league.Franchise) ([]commissioner.NativeFranchise, 
 	return out, mapping
 }
 
-func seedPlayers(seed *commissioner.RawNativeSnapshot, snap state.MirrorSnapshot, mapping map[string]string) {
+// seedPlayers keeps each rostered player's name from the held player directory, so a plan can name them.
+func seedPlayers(seed *commissioner.RawNativeSnapshot, snap state.MirrorSnapshot, mapping map[string]string,
+	directory []snapshot.Player) {
+	names := make(map[string]string, len(directory))
+	for _, p := range directory {
+		names[p.ID.String()] = p.Name
+	}
 	for _, p := range snap.Players {
-		seed.Players = append(seed.Players, commissioner.NativePlayer{ID: p.MFLID, Franchise: mapping[p.FranchiseID],
-			Status: p.RosterStatus, Salary: p.Salary, ExpirationYear: p.ContractYear,
+		seed.Players = append(seed.Players, commissioner.NativePlayer{Name: names[p.MFLID], ID: p.MFLID,
+			Franchise: mapping[p.FranchiseID],
+			Status:    p.RosterStatus, Salary: p.Salary, ExpirationYear: p.ContractYear,
 			ContractStatus: p.ContractStatus, ContractInfo: p.ContractInfo})
 	}
 	for _, c := range snap.Adjustments {

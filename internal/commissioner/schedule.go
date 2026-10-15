@@ -40,9 +40,11 @@ func (a RawArgs) validateSchedule(command string) error {
 }
 
 type Schedule struct {
-	League   string         `json:"league"`
-	Revision int64          `json:"revision"`
-	Weeks    []ScheduleWeek `json:"weeks"`
+	League   string `json:"league"`
+	Revision int64  `json:"revision"`
+	// Season is the NFL season the published weeks are for.
+	Season int            `json:"season"`
+	Weeks  []ScheduleWeek `json:"weeks"`
 }
 
 // ScheduleReading exposes publications only; a later draft never replaces an owner's schedule.
@@ -51,17 +53,24 @@ func ScheduleReading(league string, records []Record) (Schedule, error) {
 	if err != nil {
 		return Schedule{}, err
 	}
-	return Schedule{League: league, Revision: int64(len(records)), Weeks: published}, nil
+	rules, err := resolveRecords(records)
+	if err != nil {
+		return Schedule{}, err
+	}
+	return Schedule{League: league, Revision: int64(len(records)), Season: rules.Season, Weeks: published}, nil
 }
 
 func replaySchedule(records []Record) ([]ScheduleWeek, []ScheduleWeek, error) {
 	active := Replay(records).Active
 	draft, published := []ScheduleWeek{}, []ScheduleWeek{}
 	for i, r := range records {
-		if !active[r.Receipt.Entry] || !scheduleCommand(r.Command.Command) {
+		if !active[r.Receipt.Entry] || (!scheduleCommand(r.Command.Command) && r.Command.Command != SeasonRollover) {
 			continue
 		}
 		switch r.Command.Command {
+		case SeasonRollover:
+			// A schedule belongs to one season; the new season starts with none.
+			draft, published = []ScheduleWeek{}, []ScheduleWeek{}
 		case ScheduleGenerate:
 			var err error
 			draft, err = generatedSchedule(records[:i])
