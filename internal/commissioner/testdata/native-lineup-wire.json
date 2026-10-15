@@ -1,0 +1,1306 @@
+{
+  "missed": {
+    "league": "native.test",
+    "name": "Rules league",
+    "revision": 10,
+    "season": 2026,
+    "week": 1,
+    "franchise": "franchise.01",
+    "franchiseName": "Held team 1",
+    "zone": "PDT",
+    "set": false,
+    "corrected": false,
+    "words": "Held team 1, week 1: No lineup was set. It is flagged to the commissioner; nothing is zeroed.",
+    "starters": [],
+    "bench": [
+      {
+        "player": "10101",
+        "name": "QB1 of team 01",
+        "position": "QB",
+        "team": "DAL",
+        "locked": false,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10102",
+        "name": "QB2 of team 01",
+        "position": "QB",
+        "team": "FA",
+        "locked": false,
+        "words": "No NFL game this week, so this player never locks"
+      },
+      {
+        "player": "10103",
+        "name": "RB1 of team 01",
+        "position": "RB",
+        "team": "DAL",
+        "locked": false,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10104",
+        "name": "RB2 of team 01",
+        "position": "RB",
+        "team": "DAL",
+        "locked": false,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10105",
+        "name": "RB3 of team 01",
+        "position": "RB",
+        "team": "NOP",
+        "locked": false,
+        "words": "No NFL game this week, so this player never locks"
+      },
+      {
+        "player": "10106",
+        "name": "WR1 of team 01",
+        "position": "WR",
+        "team": "DAL",
+        "locked": false,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10107",
+        "name": "WR2 of team 01",
+        "position": "WR",
+        "team": "DAL",
+        "locked": false,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10108",
+        "name": "WR3 of team 01",
+        "position": "WR",
+        "team": "DAL",
+        "locked": false,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10109",
+        "name": "WR4 of team 01",
+        "position": "WR",
+        "team": "DAL",
+        "locked": false,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10110",
+        "name": "TE1 of team 01",
+        "position": "TE",
+        "team": "DAL",
+        "locked": false,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10111",
+        "name": "TE2 of team 01",
+        "position": "TE",
+        "team": "DAL",
+        "locked": false,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10112",
+        "name": "PK1 of team 01",
+        "position": "PK",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10113",
+        "name": "DT1 of team 01",
+        "position": "DT",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10114",
+        "name": "DT2 of team 01",
+        "position": "DT",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10115",
+        "name": "DT3 of team 01",
+        "position": "DT",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10116",
+        "name": "DE1 of team 01",
+        "position": "DE",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10117",
+        "name": "DE2 of team 01",
+        "position": "DE",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10118",
+        "name": "DE3 of team 01",
+        "position": "DE",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10119",
+        "name": "LB1 of team 01",
+        "position": "LB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10120",
+        "name": "LB2 of team 01",
+        "position": "LB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10121",
+        "name": "LB3 of team 01",
+        "position": "LB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10122",
+        "name": "LB4 of team 01",
+        "position": "LB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10123",
+        "name": "CB1 of team 01",
+        "position": "CB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10124",
+        "name": "CB2 of team 01",
+        "position": "CB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10125",
+        "name": "CB3 of team 01",
+        "position": "CB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10126",
+        "name": "S1 of team 01",
+        "position": "S",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10127",
+        "name": "S2 of team 01",
+        "position": "S",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10128",
+        "name": "S3 of team 01",
+        "position": "S",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10129",
+        "name": "S4 of team 01",
+        "position": "S",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      }
+    ],
+    "verdict": {
+      "status": "missed",
+      "words": "No lineup was set. It is flagged to the commissioner; nothing is zeroed",
+      "problems": [],
+      "flagged": true,
+      "penalty": ""
+    },
+    "rules": [
+      {
+        "label": "Starting position limits",
+        "words": "CB: 2 to 4; DE: 2 to 4; DT: 2 to 4; LB: 2 to 4; PK: Exactly 1; QB: Exactly 1; RB: 1 to 3; S: 2 to 4; TE: 1 to 3; WR: 2 to 5"
+      },
+      {
+        "label": "Starting group limits",
+        "words": "Defense: Exactly 12; Offense: At most 8; Total: Exactly 21"
+      },
+      {
+        "label": "Invalid lineup penalty",
+        "words": "Zero top starter"
+      },
+      {
+        "label": "Flag missed lineups",
+        "words": "On"
+      }
+    ]
+  },
+  "locked": {
+    "league": "native.test",
+    "name": "Rules league",
+    "revision": 12,
+    "season": 2026,
+    "week": 1,
+    "franchise": "franchise.01",
+    "franchiseName": "Held team 1",
+    "zone": "PDT",
+    "set": true,
+    "corrected": false,
+    "words": "Held team 1's week 1 lineup is set. Valid lineup.",
+    "starters": [
+      {
+        "player": "10101",
+        "name": "QB1 of team 01",
+        "position": "QB",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10103",
+        "name": "RB1 of team 01",
+        "position": "RB",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10104",
+        "name": "RB2 of team 01",
+        "position": "RB",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10106",
+        "name": "WR1 of team 01",
+        "position": "WR",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10107",
+        "name": "WR2 of team 01",
+        "position": "WR",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10108",
+        "name": "WR3 of team 01",
+        "position": "WR",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10109",
+        "name": "WR4 of team 01",
+        "position": "WR",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10110",
+        "name": "TE1 of team 01",
+        "position": "TE",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10112",
+        "name": "PK1 of team 01",
+        "position": "PK",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10113",
+        "name": "DT1 of team 01",
+        "position": "DT",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10114",
+        "name": "DT2 of team 01",
+        "position": "DT",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10116",
+        "name": "DE1 of team 01",
+        "position": "DE",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10117",
+        "name": "DE2 of team 01",
+        "position": "DE",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10119",
+        "name": "LB1 of team 01",
+        "position": "LB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10120",
+        "name": "LB2 of team 01",
+        "position": "LB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10121",
+        "name": "LB3 of team 01",
+        "position": "LB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10123",
+        "name": "CB1 of team 01",
+        "position": "CB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10124",
+        "name": "CB2 of team 01",
+        "position": "CB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10126",
+        "name": "S1 of team 01",
+        "position": "S",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10127",
+        "name": "S2 of team 01",
+        "position": "S",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10128",
+        "name": "S3 of team 01",
+        "position": "S",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      }
+    ],
+    "bench": [
+      {
+        "player": "10102",
+        "name": "QB2 of team 01",
+        "position": "QB",
+        "team": "FA",
+        "locked": false,
+        "words": "No NFL game this week, so this player never locks"
+      },
+      {
+        "player": "10105",
+        "name": "RB3 of team 01",
+        "position": "RB",
+        "team": "NOP",
+        "locked": false,
+        "words": "No NFL game this week, so this player never locks"
+      },
+      {
+        "player": "10111",
+        "name": "TE2 of team 01",
+        "position": "TE",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10115",
+        "name": "DT3 of team 01",
+        "position": "DT",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10118",
+        "name": "DE3 of team 01",
+        "position": "DE",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10122",
+        "name": "LB4 of team 01",
+        "position": "LB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10125",
+        "name": "CB3 of team 01",
+        "position": "CB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10129",
+        "name": "S4 of team 01",
+        "position": "S",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      }
+    ],
+    "verdict": {
+      "status": "valid",
+      "words": "Valid lineup",
+      "problems": [],
+      "flagged": false,
+      "penalty": ""
+    },
+    "rules": [
+      {
+        "label": "Starting position limits",
+        "words": "CB: 2 to 4; DE: 2 to 4; DT: 2 to 4; LB: 2 to 4; PK: Exactly 1; QB: Exactly 1; RB: 1 to 3; S: 2 to 4; TE: 1 to 3; WR: 2 to 5"
+      },
+      {
+        "label": "Starting group limits",
+        "words": "Defense: Exactly 12; Offense: At most 8; Total: Exactly 21"
+      },
+      {
+        "label": "Invalid lineup penalty",
+        "words": "Zero top starter"
+      },
+      {
+        "label": "Flag missed lineups",
+        "words": "On"
+      }
+    ]
+  },
+  "preview": {
+    "command": "commish.lineup.correct",
+    "words": "Count these 21 starters as Held team 1's week 1 lineup, lock or no lock",
+    "warnings": [
+      "This change turns over a result in week 1: Held team 1 beat Held team 32, 50 to 21 becomes Held team 1 and Held team 32 tied at 21."
+    ],
+    "flip": {
+      "status": "A result changes",
+      "words": "This change turns over a result in week 1: Held team 1 beat Held team 32, 50 to 21 becomes Held team 1 and Held team 32 tied at 21.",
+      "flips": [
+        {
+          "week": 1,
+          "home": "franchise.01",
+          "away": "franchise.32",
+          "before": "Held team 1 beat Held team 32, 50 to 21",
+          "after": "Held team 1 and Held team 32 tied at 21"
+        }
+      ]
+    },
+    "lineup": {
+      "status": "valid",
+      "words": "Valid lineup",
+      "problems": [],
+      "flagged": false,
+      "penalty": ""
+    }
+  },
+  "corrected": {
+    "league": "native.test",
+    "name": "Rules league",
+    "revision": 13,
+    "season": 2026,
+    "week": 1,
+    "franchise": "franchise.01",
+    "franchiseName": "Held team 1",
+    "zone": "PDT",
+    "set": true,
+    "corrected": true,
+    "words": "A commissioner set Held team 1's week 1 lineup (The owner's lineup was lost in the outage). Invalid lineup: Defense: 11 starting, needs exactly 12; Total: 20 starting, needs exactly 21.",
+    "reason": "The owner's lineup was lost in the outage",
+    "starters": [
+      {
+        "player": "10101",
+        "name": "QB1 of team 01",
+        "position": "QB",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10103",
+        "name": "RB1 of team 01",
+        "position": "RB",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10104",
+        "name": "RB2 of team 01",
+        "position": "RB",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10106",
+        "name": "WR1 of team 01",
+        "position": "WR",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10107",
+        "name": "WR2 of team 01",
+        "position": "WR",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10108",
+        "name": "WR3 of team 01",
+        "position": "WR",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10109",
+        "name": "WR4 of team 01",
+        "position": "WR",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10110",
+        "name": "TE1 of team 01",
+        "position": "TE",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10112",
+        "name": "PK1 of team 01",
+        "position": "PK",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10113",
+        "name": "DT1 of team 01",
+        "position": "DT",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10114",
+        "name": "DT2 of team 01",
+        "position": "DT",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10116",
+        "name": "DE1 of team 01",
+        "position": "DE",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10117",
+        "name": "DE2 of team 01",
+        "position": "DE",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10119",
+        "name": "LB1 of team 01",
+        "position": "LB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10120",
+        "name": "LB2 of team 01",
+        "position": "LB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10121",
+        "name": "LB3 of team 01",
+        "position": "LB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10123",
+        "name": "CB1 of team 01",
+        "position": "CB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10124",
+        "name": "CB2 of team 01",
+        "position": "CB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10126",
+        "name": "S1 of team 01",
+        "position": "S",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10127",
+        "name": "S2 of team 01",
+        "position": "S",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      }
+    ],
+    "bench": [
+      {
+        "player": "10102",
+        "name": "QB2 of team 01",
+        "position": "QB",
+        "team": "FA",
+        "locked": false,
+        "words": "No NFL game this week, so this player never locks"
+      },
+      {
+        "player": "10105",
+        "name": "RB3 of team 01",
+        "position": "RB",
+        "team": "NOP",
+        "locked": false,
+        "words": "No NFL game this week, so this player never locks"
+      },
+      {
+        "player": "10111",
+        "name": "TE2 of team 01",
+        "position": "TE",
+        "team": "DAL",
+        "locked": true,
+        "locksAt": "2026-10-18T10:00:00-07:00",
+        "words": "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+      },
+      {
+        "player": "10115",
+        "name": "DT3 of team 01",
+        "position": "DT",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10118",
+        "name": "DE3 of team 01",
+        "position": "DE",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10122",
+        "name": "LB4 of team 01",
+        "position": "LB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10125",
+        "name": "CB3 of team 01",
+        "position": "CB",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10128",
+        "name": "S3 of team 01",
+        "position": "S",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      },
+      {
+        "player": "10129",
+        "name": "S4 of team 01",
+        "position": "S",
+        "team": "NYG",
+        "locked": false,
+        "locksAt": "2026-10-18T17:20:00-07:00",
+        "words": "Locks at kickoff, Oct 18, 2026 at 5:20 PM PDT"
+      }
+    ],
+    "verdict": {
+      "status": "invalid",
+      "words": "Invalid lineup: Defense: 11 starting, needs exactly 12; Total: 20 starting, needs exactly 21",
+      "problems": [
+        {
+          "subject": "Defense",
+          "words": "Defense: 11 starting, needs exactly 12"
+        },
+        {
+          "subject": "Total",
+          "words": "Total: 20 starting, needs exactly 21"
+        }
+      ],
+      "flagged": false,
+      "penalty": "The highest-scoring starter's points are set to zero"
+    },
+    "rules": [
+      {
+        "label": "Starting position limits",
+        "words": "CB: 2 to 4; DE: 2 to 4; DT: 2 to 4; LB: 2 to 4; PK: Exactly 1; QB: Exactly 1; RB: 1 to 3; S: 2 to 4; TE: 1 to 3; WR: 2 to 5"
+      },
+      {
+        "label": "Starting group limits",
+        "words": "Defense: Exactly 12; Offense: At most 8; Total: Exactly 21"
+      },
+      {
+        "label": "Invalid lineup penalty",
+        "words": "Zero top starter"
+      },
+      {
+        "label": "Flag missed lineups",
+        "words": "On"
+      }
+    ]
+  },
+  "results": {
+    "league": "native.test",
+    "season": 2026,
+    "week": 1,
+    "revision": 13,
+    "published": true,
+    "words": "1 of 16 games in week 1 have a result",
+    "games": [
+      {
+        "week": 1,
+        "home": "franchise.01",
+        "away": "franchise.32",
+        "homeName": "Held team 1",
+        "awayName": "Held team 32",
+        "status": "Final",
+        "homePoints": 190000,
+        "awayPoints": 210000,
+        "winner": "franchise.32",
+        "words": "Held team 32 beat Held team 1, 21 to 19",
+        "why": []
+      }
+    ],
+    "scores": [
+      {
+        "franchise": "franchise.01",
+        "name": "Held team 1",
+        "status": "Complete",
+        "points": 190000,
+        "words": "Held team 1 scored 19 points; the lineup is invalid, so QB1 of team 01 counts for nothing",
+        "starters": [
+          {
+            "player": "10101",
+            "name": "QB1 of team 01",
+            "position": "QB",
+            "words": "30 points; zeroed because the lineup is invalid",
+            "points": 0
+          },
+          {
+            "player": "10103",
+            "name": "RB1 of team 01",
+            "position": "RB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10104",
+            "name": "RB2 of team 01",
+            "position": "RB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10106",
+            "name": "WR1 of team 01",
+            "position": "WR",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10107",
+            "name": "WR2 of team 01",
+            "position": "WR",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10108",
+            "name": "WR3 of team 01",
+            "position": "WR",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10109",
+            "name": "WR4 of team 01",
+            "position": "WR",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10110",
+            "name": "TE1 of team 01",
+            "position": "TE",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10112",
+            "name": "PK1 of team 01",
+            "position": "PK",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10113",
+            "name": "DT1 of team 01",
+            "position": "DT",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10114",
+            "name": "DT2 of team 01",
+            "position": "DT",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10116",
+            "name": "DE1 of team 01",
+            "position": "DE",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10117",
+            "name": "DE2 of team 01",
+            "position": "DE",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10119",
+            "name": "LB1 of team 01",
+            "position": "LB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10120",
+            "name": "LB2 of team 01",
+            "position": "LB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10121",
+            "name": "LB3 of team 01",
+            "position": "LB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10123",
+            "name": "CB1 of team 01",
+            "position": "CB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10124",
+            "name": "CB2 of team 01",
+            "position": "CB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10126",
+            "name": "S1 of team 01",
+            "position": "S",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "10127",
+            "name": "S2 of team 01",
+            "position": "S",
+            "words": "1 points",
+            "points": 10000
+          }
+        ],
+        "adjustment": 0,
+        "changes": [],
+        "lineup": {
+          "status": "invalid",
+          "words": "Invalid lineup: Defense: 11 starting, needs exactly 12; Total: 20 starting, needs exactly 21",
+          "problems": [
+            {
+              "subject": "Defense",
+              "words": "Defense: 11 starting, needs exactly 12"
+            },
+            {
+              "subject": "Total",
+              "words": "Total: 20 starting, needs exactly 21"
+            }
+          ],
+          "flagged": false,
+          "penalty": "The highest-scoring starter's points are set to zero"
+        },
+        "zeroed": "10101"
+      },
+      {
+        "franchise": "franchise.32",
+        "name": "Held team 32",
+        "status": "Complete",
+        "points": 210000,
+        "words": "Held team 32 scored 21 points",
+        "starters": [
+          {
+            "player": "13201",
+            "name": "QB1 of team 32",
+            "position": "QB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13203",
+            "name": "RB1 of team 32",
+            "position": "RB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13204",
+            "name": "RB2 of team 32",
+            "position": "RB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13206",
+            "name": "WR1 of team 32",
+            "position": "WR",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13207",
+            "name": "WR2 of team 32",
+            "position": "WR",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13208",
+            "name": "WR3 of team 32",
+            "position": "WR",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13209",
+            "name": "WR4 of team 32",
+            "position": "WR",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13210",
+            "name": "TE1 of team 32",
+            "position": "TE",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13212",
+            "name": "PK1 of team 32",
+            "position": "PK",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13213",
+            "name": "DT1 of team 32",
+            "position": "DT",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13214",
+            "name": "DT2 of team 32",
+            "position": "DT",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13216",
+            "name": "DE1 of team 32",
+            "position": "DE",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13217",
+            "name": "DE2 of team 32",
+            "position": "DE",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13219",
+            "name": "LB1 of team 32",
+            "position": "LB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13220",
+            "name": "LB2 of team 32",
+            "position": "LB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13221",
+            "name": "LB3 of team 32",
+            "position": "LB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13223",
+            "name": "CB1 of team 32",
+            "position": "CB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13224",
+            "name": "CB2 of team 32",
+            "position": "CB",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13226",
+            "name": "S1 of team 32",
+            "position": "S",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13227",
+            "name": "S2 of team 32",
+            "position": "S",
+            "words": "1 points",
+            "points": 10000
+          },
+          {
+            "player": "13228",
+            "name": "S3 of team 32",
+            "position": "S",
+            "words": "1 points",
+            "points": 10000
+          }
+        ],
+        "adjustment": 0,
+        "changes": [],
+        "lineup": {
+          "status": "valid",
+          "words": "Valid lineup",
+          "problems": [],
+          "flagged": false,
+          "penalty": ""
+        }
+      }
+    ],
+    "missed": [
+      {
+        "franchise": "franchise.02",
+        "name": "Held team 2",
+        "flagged": true
+      }
+    ]
+  }
+}

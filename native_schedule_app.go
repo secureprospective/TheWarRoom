@@ -86,7 +86,7 @@ func (a *App) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Time) 
 	if err != nil {
 		return commissioner.FranchiseSchedule{}, nil, fmt.Errorf("read owner time zone: %w", err)
 	}
-	weeks, err := a.nativeScheduleDates(raw.Season, at)
+	weeks, err := a.nativeScheduleDates(a.ctx, raw.Season, at)
 	if err != nil {
 		return commissioner.FranchiseSchedule{}, nil, err
 	}
@@ -99,8 +99,8 @@ func (a *App) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Time) 
 }
 
 // This is a local reference read. It has no fetch path and never reads a fantasy league's schedule.
-func (a *App) nativeScheduleDates(season int, at time.Time) ([]leagueweek.Week, error) {
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+func (a *App) nativeScheduleDates(parent context.Context, season int, at time.Time) ([]leagueweek.Week, error) {
+	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 	defer cancel()
 	var weeks []leagueweek.Week
 	seen := make(map[int]bool)

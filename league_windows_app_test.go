@@ -34,9 +34,9 @@ type gateProbe struct {
 func newGateProbe(action leaguerules.Action) *gateProbe {
 	p := &gateProbe{}
 	p.registry = append(nativeOwnerActions(), NativeOwnerAction{Name: "probe", Opens: action,
-		Run: func(_ context.Context, permit commissioner.Permit) error {
+		Run: func(_ context.Context, _ *App, permit commissioner.Permit, _ json.RawMessage) (commissioner.Receipt, error) {
 			p.ran = append(p.ran, permit.Franchise())
-			return nil
+			return commissioner.Receipt{}, nil
 		}})
 	return p
 }
@@ -45,7 +45,7 @@ func newGateProbe(action leaguerules.Action) *gateProbe {
 func (p *gateProbe) try(t *testing.T, app *App, league, franchise string) (bool, string) {
 	t.Helper()
 	before := len(p.ran)
-	err := app.runNativeAction(p.registry, league, franchise, "probe")
+	_, err := app.runNativeAction(p.registry, league, franchise, "probe", nil)
 	ran := len(p.ran) == before+1
 	if ran != (err == nil) {
 		t.Fatal("the action ran or was refused inconsistently", ran, err)

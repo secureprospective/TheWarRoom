@@ -19,10 +19,13 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
-type resultLineups struct{ missing bool }
+type resultLineups struct {
+	missing bool
+	without map[string]bool
+}
 
-func (l *resultLineups) WeekLineup(_ context.Context, _, franchise string, _, _ int) (commissioner.WeekLineup, error) {
-	if l.missing {
+func (l *resultLineups) WeekLineup(_ context.Context, _ []commissioner.Record, _, franchise string, _, _ int) (commissioner.WeekLineup, error) {
+	if l.missing || l.without[franchise] {
 		return commissioner.WeekLineup{}, nil
 	}
 	return commissioner.WeekLineup{Set: true, Starters: []commissioner.Starter{{Player: "10" + strings.TrimPrefix(franchise, "franchise."), Name: franchise + " starter"}}}, nil
@@ -44,10 +47,13 @@ func resultsTest(t *testing.T) *resultsFixture {
 	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
 	runScoreCommand(t, s, heldSeedCommand(t), "creator")
 	runScoreCommand(t, s, ruleCommand("schedule.regularWeeks", "3", "now", "Choose the season length", 2), "creator")
+	// These fixtures start one player per franchise, which is not a legal lineup, so the invalid-lineup
+	// penalty would zero every score. The lineup tests below keep the penalty and use legal lineups.
+	runScoreCommand(t, s, ruleCommand("lineup.invalidPenalty", `"none"`, "now", "Score one-player lineups as they are", 3), "creator")
 	raw := commissioner.RawCommand{League: "native.test", Command: commissioner.ScheduleGenerate,
-		Args: commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Weeks: 3}}, Expected: 3, Request: "generate", Effective: "now", Visibility: "league"}
+		Args: commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Weeks: 3}}, Expected: 4, Request: "generate", Effective: "now", Visibility: "league"}
 	runScoreCommand(t, s, raw, "creator")
-	raw.Command, raw.Expected, raw.Request = commissioner.SchedulePublish, 4, "publish"
+	raw.Command, raw.Expected, raw.Request = commissioner.SchedulePublish, 5, "publish"
 	raw.Args = commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{}}
 	runScoreCommand(t, s, raw, "creator")
 	schedule, err := commissioner.ScheduleReading("native.test", scoreRecords(t, s))
@@ -60,7 +66,7 @@ func resultsTest(t *testing.T) *resultsFixture {
 		for i, game := range first.Games {
 			games[i] = commissioner.ScheduleGame{ID: fmt.Sprintf("week.%d.game.%d", week, i+1), Home: game.Home, Away: game.Away}
 		}
-		raw.Command, raw.Expected, raw.Request, raw.Reason = commissioner.ScheduleEdit, int64(week+3), fmt.Sprint("week", week), "Keep these opponents"
+		raw.Command, raw.Expected, raw.Request, raw.Reason = commissioner.ScheduleEdit, int64(week+4), fmt.Sprint("week", week), "Keep these opponents"
 		raw.Args = commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Week: week, Games: games, Published: true}}
 		runScoreCommand(t, s, raw, "creator")
 	}
@@ -280,6 +286,59 @@ func TestNativeResultsAndFlipPreview(t *testing.T) {
 		t.Fatal("tie replay", err)
 	}
 	runScoreCommand(t, f.s, reverseCommand(receipt.Entry, revision(t, f.s), "undo-tie"), "creator")
+}
+
+// TestResultFlipWarningNamesOnlyTheGameTheChangeTouches pins the sentence an owner reads when a score change
+// cannot be called: one game, named once by franchise name, and why - never every game of the week, never an id.
+func TestResultFlipWarningNamesOnlyTheGameTheChangeTouches(t *testing.T) {
+	f := resultsTest(t)
+	change := func(kind string) commissioner.RawCommand {
+		c := commissioner.RawScoreChange{Season: 2026, Week: 2, Delta: pointsDelta(15001)}
+		if kind == commissioner.ScoreFranchise {
+			c.Franchise = f.a
+		} else {
+			c.Player = "10" + strings.TrimPrefix(f.a, "franchise.")
+		}
+		return scoreCommand(t, kind, c, revision(t, f.s), "words-"+kind)
+	}
+	notTouched := "This change does not turn over any result in week 2."
+	for _, tc := range []struct {
+		name   string
+		setup  func()
+		want   string
+		player string // what a change to a player's score says, which differs when no one starts him
+	}{
+		{"neither score is complete", func() { f.incomplete = true },
+			"We can't tell yet whether this changes Held team 1 v Held team 32: neither score is complete.", ""},
+		{"neither team has a lineup", func() { f.incomplete, f.lineups.missing = false, true },
+			"We can't tell yet whether this changes Held team 1 v Held team 32: neither team has a lineup set.", notTouched},
+		{"one team has no lineup", func() { f.lineups.missing, f.lineups.without = false, map[string]bool{f.b: true} },
+			"We can't tell yet whether this changes Held team 1 v Held team 32: Held team 32 has no lineup set.", ""},
+	} {
+		tc.setup()
+		for _, kind := range []string{commissioner.ScoreFranchise, commissioner.ScorePlayer} {
+			want := tc.want
+			if kind == commissioner.ScorePlayer && tc.player != "" {
+				want = tc.player
+			}
+			preview, err := f.s.NativeScorePreview(t.Context(), change(kind))
+			if err != nil {
+				t.Fatalf("%s %s: %v", tc.name, kind, err)
+			}
+			if preview.Flip.Words != want {
+				t.Fatalf("%s %s: got %q", tc.name, kind, preview.Flip.Words)
+			}
+			if want == notTouched {
+				continue
+			}
+			if preview.Flip.Status != commissioner.FlipUnknown || len(preview.Warnings) != 1 || preview.Warnings[0] != want {
+				t.Fatalf("%s %s: %+v", tc.name, kind, preview)
+			}
+			if strings.Contains(preview.Flip.Words, "franchise.") || strings.Contains(preview.Flip.Words, "Held team 2 v") {
+				t.Fatalf("%s %s: the warning names a franchise id, or a game the change does not touch: %q", tc.name, kind, preview.Flip.Words)
+			}
+		}
+	}
 }
 
 func TestNativeStandingsPermissionsAndRefusals(t *testing.T) {

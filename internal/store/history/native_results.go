@@ -6,16 +6,36 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-// LineupSource says which players count for a franchise in a week. No native lineup is recorded yet, so
-// until one is supplied every franchise has none and no game has a result.
+// LineupSource says which players count for a franchise in a week, from the ledger it is given so that a
+// proposed change can be read as it would stand.
 type LineupSource interface {
-	WeekLineup(ctx context.Context, league, franchise string, season, week int) (commissioner.WeekLineup, error)
+	WeekLineup(ctx context.Context, records []commissioner.Record, league, franchise string, season, week int) (commissioner.WeekLineup, error)
 }
 
-// SetNativeLineups supplies the lineups native results are scored from. Set it at startup, before readings.
-func (s *Store) SetNativeLineups(lineups LineupSource) { s.lineups = lineups }
+// ledgerLineups is the durable source: the lineups the league recorded, owners' and commissioners', folded
+// from its ledger. A franchise that recorded none has none, and nothing is read from any outside league.
+type ledgerLineups struct{}
+
+func (ledgerLineups) WeekLineup(_ context.Context, records []commissioner.Record, _, franchise string, season,
+	week int) (commissioner.WeekLineup, error) {
+	lineup, err := commissioner.LedgerWeekLineup(records, franchise, season, week)
+	if err != nil {
+		return commissioner.WeekLineup{}, fmt.Errorf("read recorded lineup: %w", err)
+	}
+	return lineup, nil
+}
+
+// SetNativeLineups replaces the lineup source native results are scored from; nil restores the ledger.
+// Tests use it to score a league without recording lineups.
+func (s *Store) SetNativeLineups(lineups LineupSource) {
+	if lineups == nil {
+		lineups = ledgerLineups{}
+	}
+	s.lineups = lineups
+}
 
 // nativeSources is one reading's view of lineups and player scores. Held evidence does not depend on the
 // ledger, so a player's week is read once however many ledgers it is scored under.
@@ -24,6 +44,7 @@ type nativeSources struct {
 	league string
 	season int
 	held   map[source.RawNativeScope]source.NativeEvidence
+	facts  nativecheck.Facts
 }
 
 func (s *Store) nativeSources(league string, season int) *nativeSources {
@@ -31,13 +52,22 @@ func (s *Store) nativeSources(league string, season int) *nativeSources {
 		held: map[source.RawNativeScope]source.NativeEvidence{}}
 }
 
-func (n *nativeSources) Lineup(ctx context.Context, franchise string, week int) (commissioner.WeekLineup, error) {
-	if n.store.lineups == nil {
-		return commissioner.WeekLineup{}, nil
-	}
-	lineup, err := n.store.lineups.WeekLineup(ctx, n.league, franchise, n.season, week)
+func (n *nativeSources) Lineup(ctx context.Context, records []commissioner.Record, franchise string,
+	week int) (commissioner.WeekLineup, error) {
+	lineup, err := n.store.lineups.WeekLineup(ctx, records, n.league, franchise, n.season, week)
 	if err != nil {
 		return commissioner.WeekLineup{}, fmt.Errorf("read the franchise lineup: %w", err)
+	}
+	if n.store.lineupEnv == nil {
+		return lineup, nil
+	}
+	if n.facts == nil {
+		n.facts = n.store.lineupEnv.PlayerFacts()
+	}
+	for i, starter := range lineup.Starters {
+		if starter.Name == "" {
+			lineup.Starters[i].Name = n.facts[starter.Player].Name
+		}
 	}
 	return lineup, nil
 }
@@ -93,11 +123,14 @@ func (s *Store) NativeStandings(ctx context.Context, league string, season int) 
 	return out, nil
 }
 
-// NativeScorePreview warns when a score change would turn over a game's result.
+// NativeScorePreview warns when a score change or a lineup correction would turn over a game's result.
 func (s *Store) NativeScorePreview(ctx context.Context, raw commissioner.RawCommand) (commissioner.ScorePreview, error) {
 	records, err := s.nativeRecords(ctx, raw.League)
 	if err != nil {
 		return commissioner.ScorePreview{}, err
+	}
+	if raw.Command == commissioner.LineupCorrect {
+		return s.lineupCorrectionPreview(ctx, records, raw)
 	}
 	if raw.Args.Score == nil {
 		return commissioner.ScorePreview{}, fmt.Errorf("preview a score change")

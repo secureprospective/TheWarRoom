@@ -40,16 +40,19 @@ type Store struct {
 	reg   *measures.Registry
 	now   func() time.Time
 
-	// evidence and lineups feed native results; zero values read the held archive and no lineups.
-	evidence func(context.Context, source.RawNativeScope) (source.NativeEvidence, error)
-	lineups  LineupSource
+	// evidence feeds native results (the zero value reads the held archive); lineups say who counts for a
+	// franchise (the default is the league's own ledger); lineupEnv supplies the football facts a lineup
+	// is judged against and is installed at startup.
+	evidence  func(context.Context, source.RawNativeScope) (source.NativeEvidence, error)
+	lineups   LineupSource
+	lineupEnv LineupEnvironment
 
 	wmu sync.Mutex
 }
 
 // New returns an unprepared store over history.db's pools, using reg as the registry.
 func New(pools *db.Pools, reg *measures.Registry) *Store {
-	return &Store{pools: pools, reg: reg, now: time.Now}
+	return &Store{pools: pools, reg: reg, now: time.Now, lineups: ledgerLineups{}}
 }
 
 // SetClock replaces the store's clock. Tests use it to write corrections at known times.

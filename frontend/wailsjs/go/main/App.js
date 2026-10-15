@@ -370,8 +370,16 @@ export function TargetNativeHouseRules(arg1) {
   return window['go']['main']['App']['TargetNativeHouseRules'](arg1);
 }
 
+export function TargetNativeLineup(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['TargetNativeLineup'](arg1, arg2, arg3, arg4);
+}
+
 export function TargetNativeLineupCheck(arg1) {
   return window['go']['main']['App']['TargetNativeLineupCheck'](arg1);
+}
+
+export function TargetNativeLineupSet(arg1) {
+  return window['go']['main']['App']['TargetNativeLineupSet'](arg1);
 }
 
 export function TargetNativePlayerScore(arg1, arg2, arg3, arg4) {

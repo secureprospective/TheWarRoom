@@ -97,6 +97,7 @@ func commandControls() map[string]string {
 		CalendarException:     "CM-026",
 		StandingsRecordAdjust: "CM-033", StandingsOverride: "CM-033", StandingsOverrideClear: "CM-033",
 		ScheduleGenerate: "CM-015", ScheduleEdit: "CM-015", SchedulePublish: "CM-015",
+		LineupCorrect: "CM-029",
 	}
 }
 
@@ -130,6 +131,9 @@ func AuthorizeRecords(raw RawCommand, principal string, records []Record) (strin
 	if raw.Command == RulesSet {
 		return authorizeRule(auth, raw, principal)
 	}
+	if raw.Command == LineupSet {
+		return authorizeLineupSet(state, raw, principal)
+	}
 	role, err := auth.Allow(raw.League, principal, raw.Command)
 	if err != nil {
 		return "", err
@@ -140,6 +144,23 @@ func AuthorizeRecords(raw RawCommand, principal string, records []Record) (strin
 		}
 	}
 	return role, nil
+}
+
+// authorizeLineupSet lets an owner set the lineup of the franchise they hold and no other: a commissioner
+// changes someone else's lineup only by the CM-029 correction, which is recorded with a reason.
+func authorizeLineupSet(state governance.State, raw RawCommand, principal string) (string, error) {
+	change, err := DecodeLineupChange(raw.Args, raw.Command)
+	if err != nil {
+		return "", err
+	}
+	seat, ok := state.Franchise(governance.FranchiseID(change.Franchise))
+	if !ok || principal == "" || seat.Seat != governance.Principal(principal) {
+		return "", fmt.Errorf("you may set a lineup only for your own franchise")
+	}
+	if !seat.Abilities["lineups"] {
+		return "", fmt.Errorf("the commissioner has turned off lineup changes for your franchise")
+	}
+	return "owner", nil
 }
 
 func authorizeRedemption(state governance.State, raw RawCommand, principal string) (string, error) {
@@ -164,6 +185,9 @@ func authorizeReversal(auth GovernanceAuthorizer, entry, principal string, recor
 			continue
 		}
 		var err error
+		if r.Command.Command == LineupSet {
+			return nil // reversing needs only the reversal permission itself; the owner's seat is not asked for
+		}
 		if r.Command.Command == RulesSet {
 			_, err = authorizeRule(auth, r.Command, principal)
 		} else {

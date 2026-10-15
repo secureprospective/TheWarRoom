@@ -204,6 +204,12 @@
     "safeguard": "reason"
   },
   {
+    "command": "commish.lineup.correct",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
     "command": "commish.player.position",
     "effective": "now",
     "field": "",

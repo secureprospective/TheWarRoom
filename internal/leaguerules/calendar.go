@@ -48,9 +48,14 @@ type Window struct {
 	DatedEnd   Value[time.Time]
 }
 
-func monthDay(month, day int) MonthDay {
-	return MonthDay{Month: cited(month, "Census CM-023"), Day: cited(day, "Census CM-023")}
+func monthDay(month, day int, source string) MonthDay {
+	return MonthDay{Month: cited(month, source), Day: cited(day, source)}
 }
+
+// lineupSource cites the lineups window: lineups stay open all league year, and each player locks at
+// his own kickoff (the native lineup check), so no window closes them.
+const lineupSource = "Ring 4 lineup ruling: open all year, each player locks at kickoff"
+
 func legacyWindows() map[string]Window {
 	rows := []struct {
 		id                                     string
@@ -64,19 +69,27 @@ func legacyWindows() map[string]Window {
 		{"open_fa", 5, 19, 0, 0, []Action{"ufa_bid"}},
 		{"rookie_draft", 7, 14, 0, 0, []Action{"draft_pick"}},
 		{"cut_buyout", 8, 25, 9, 1, []Action{"cut", "buyout"}},
+		{"lineups", 3, 1, 0, 0, []Action{"lineup"}},
+	}
+	sourceOf := func(id string) string {
+		if id == "lineups" {
+			return lineupSource
+		}
+		return "Census CM-023"
 	}
 	result := make(map[string]Window, len(rows))
 	for _, row := range rows {
-		window := Window{Start: cited(monthDay(row.startMonth, row.startDay), "Census CM-023"),
+		source := sourceOf(row.id)
+		window := Window{Start: cited(monthDay(row.startMonth, row.startDay, source), source),
 			End:        Needs[MonthDay]("Census CM-023: no closing date given"),
 			Opens:      Needs[[]Action]("Census CM-023: actions chosen by commissioner"),
 			DatedStart: Needs[time.Time]("Census CM-023: date for season required"),
 			DatedEnd:   Needs[time.Time]("Census CM-023: date for season required")}
 		if row.endMonth != 0 {
-			window.End = cited(monthDay(row.endMonth, row.endDay), "Census CM-023")
+			window.End = cited(monthDay(row.endMonth, row.endDay, source), source)
 		}
 		if row.actions != nil {
-			window.Opens = cited(row.actions, "Census CM-023")
+			window.Opens = cited(row.actions, source)
 		}
 		result[row.id] = window
 	}

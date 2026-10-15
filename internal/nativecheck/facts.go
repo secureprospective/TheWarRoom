@@ -11,6 +11,8 @@ import (
 type PlayerFacts struct {
 	Name     string
 	Position leaguerules.Position // empty when not held
+	// Team is the NFL team code the schedule uses; empty or FA when the player has no NFL team.
+	Team string
 	// Designation is the NFL's injury listing; empty means the NFL lists the player with none.
 	Designation     leaguerules.NFLStatus
 	DesignationHeld bool

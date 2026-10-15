@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // Game statuses: a result needs both scores complete; a level score is a tie, never a coin toss.
@@ -44,6 +45,16 @@ type NativeResults struct {
 	Bye       string               `json:"bye,omitempty"`
 	ByeName   string               `json:"byeName,omitempty"`
 	Scores    []FranchiseWeekScore `json:"scores"`
+	// Missed lists the franchises with no lineup this week, flagged to the commissioner when the league
+	// flags them. Nothing is taken from them.
+	Missed []MissedLineup `json:"missed"`
+}
+
+// MissedLineup is a franchise that set no lineup for a week.
+type MissedLineup struct {
+	Franchise string `json:"franchise"`
+	Name      string `json:"name"`
+	Flagged   bool   `json:"flagged"`
 }
 
 // NativeResultsReading scores a published week. Nothing is guessed: a game missing either score has no
@@ -61,13 +72,17 @@ func NativeResultsReading(ctx context.Context, league string, records []Record, 
 	if err != nil {
 		return NativeResults{}, err
 	}
-	return weekResults(ctx, league, records, src, directory, published, season, week)
+	rules, err := RulesInForce(records, season, ReadingInstant(records, now))
+	if err != nil {
+		return NativeResults{}, err
+	}
+	return weekResults(ctx, league, records, src, rules.Lineup, directory, published, season, week)
 }
 
-func weekResults(ctx context.Context, league string, records []Record, src ResultSources, directory NativeDirectory,
-	published []ScheduleWeek, season, week int) (NativeResults, error) {
+func weekResults(ctx context.Context, league string, records []Record, src ResultSources, lineup leaguerules.LineupRules,
+	directory NativeDirectory, published []ScheduleWeek, season, week int) (NativeResults, error) {
 	out := NativeResults{League: league, Season: season, Week: week, Revision: int64(len(records)),
-		Published: len(published) != 0, Games: []NativeGame{}, Scores: []FranchiseWeekScore{}}
+		Published: len(published) != 0, Games: []NativeGame{}, Scores: []FranchiseWeekScore{}, Missed: []MissedLineup{}}
 	if !out.Published {
 		out.Words = "The league schedule is not published yet, so there are no games to score"
 		return out, nil
@@ -81,7 +96,7 @@ func weekResults(ctx context.Context, league string, records []Record, src Resul
 	scored := map[string]FranchiseWeekScore{}
 	for _, game := range published[index].Games {
 		for _, id := range []string{game.Home, game.Away} {
-			score, err := franchiseWeekScore(ctx, records, src, names.of(id), season, week)
+			score, err := franchiseWeekScore(ctx, records, src, lineup, names.of(id), season, week)
 			if err != nil {
 				return NativeResults{}, err
 			}
@@ -93,11 +108,16 @@ func weekResults(ctx context.Context, league string, records []Record, src Resul
 	}
 	if bye := published[index].Bye; bye != "" {
 		out.Bye, out.ByeName = bye, names.of(bye).Name
-		score, err := franchiseWeekScore(ctx, records, src, names.of(bye), season, week)
+		score, err := franchiseWeekScore(ctx, records, src, lineup, names.of(bye), season, week)
 		if err != nil {
 			return NativeResults{}, err
 		}
 		out.Scores = append(out.Scores, score)
+	}
+	for _, score := range out.Scores {
+		if score.Lineup.Status == nativecheck.LineupMissed {
+			out.Missed = append(out.Missed, MissedLineup{Franchise: score.Franchise, Name: score.Name, Flagged: score.Lineup.Flagged})
+		}
 	}
 	out.Words = resultsWords(out)
 	return out, nil

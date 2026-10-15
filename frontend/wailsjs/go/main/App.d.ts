@@ -191,7 +191,11 @@ export function TargetNativeFranchiseSchedule(arg1:main.RawNativeScheduleScope):
 
 export function TargetNativeHouseRules(arg1:string):Promise<commissioner.NativeHouseRules>;
 
+export function TargetNativeLineup(arg1:string,arg2:string,arg3:number,arg4:string):Promise<commissioner.NativeLineup>;
+
 export function TargetNativeLineupCheck(arg1:commissioner.RawNativeLineup):Promise<commissioner.NativeLineupCheck>;
+
+export function TargetNativeLineupSet(arg1:string):Promise<commissioner.Receipt>;
 
 export function TargetNativePlayerScore(arg1:string,arg2:string,arg3:number,arg4:number):Promise<commissioner.NativePlayerScore>;
 
