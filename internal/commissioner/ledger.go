@@ -237,6 +237,8 @@ func familyLabel(r Record) (string, bool) {
 		return waiverLabel(c), true
 	case scheduleCommand(c):
 		return scheduleLabel(r), true
+	case playoffCommand(c):
+		return playoffLabel(r), true
 	}
 	return "", false
 }

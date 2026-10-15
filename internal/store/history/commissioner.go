@@ -167,6 +167,7 @@ func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, recor
 		{"season rollover", func() error { return commissioner.CheckRolloverAppend(raw, records) }},
 		{"league rules", func() error { return commissioner.CheckRulesAppend(raw, records, s.now()) }},
 		{"lineup", func() error { return commissioner.CheckLineupAppend(raw, records, s.now(), lineup) }},
+		{"playoffs", func() error { return commissioner.CheckPlayoffAppend(raw, records, s.now(), lineup) }},
 	}
 	for _, c := range checks {
 		if err := c.check(); err != nil {

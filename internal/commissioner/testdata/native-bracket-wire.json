@@ -1,0 +1,1112 @@
+{
+  "ready": {
+    "league": "native.test",
+    "name": "Rules league",
+    "season": 2026,
+    "revision": 6,
+    "status": "Ready to build",
+    "words": "The regular season is over and the playoff field is set. Build the bracket to set the games.",
+    "preset": "league_rules",
+    "presets": [],
+    "rules": {
+      "words": "",
+      "perConference": 7,
+      "divisionWinners": 4,
+      "wildCards": 3,
+      "byeSeeds": 1,
+      "seeding": "Division winners first, then wild cards",
+      "reseed": true,
+      "startWeek": 14,
+      "finalWeek": 17,
+      "homeBonus": 30000,
+      "shape": [
+        {
+          "id": "wildcard_2",
+          "week": 14,
+          "homeSeed": 2,
+          "awaySeed": 7
+        },
+        {
+          "id": "wildcard_3",
+          "week": 14,
+          "homeSeed": 3,
+          "awaySeed": 6
+        },
+        {
+          "id": "wildcard_4",
+          "week": 14,
+          "homeSeed": 4,
+          "awaySeed": 5
+        },
+        {
+          "id": "division_1",
+          "week": 15,
+          "homeSeed": 1,
+          "awayFrom": "lowest remaining seed"
+        },
+        {
+          "id": "division_2",
+          "week": 15,
+          "homeFrom": "highest remaining seed",
+          "awayFrom": "other remaining seed"
+        },
+        {
+          "id": "conference",
+          "week": 16,
+          "homeFrom": "division winner",
+          "awayFrom": "division winner"
+        },
+        {
+          "id": "championship",
+          "week": 17,
+          "homeFrom": "conference winner",
+          "awayFrom": "conference winner"
+        }
+      ]
+    },
+    "started": false,
+    "startKnown": false,
+    "fields": [
+      {
+        "conference": "AFC",
+        "seeds": [
+          {
+            "seed": 1,
+            "franchise": "franchise.16",
+            "name": "Held team 16",
+            "division": "division.4",
+            "rank": 9,
+            "kind": "Division winner",
+            "bye": true,
+            "byHand": false
+          },
+          {
+            "seed": 2,
+            "franchise": "franchise.12",
+            "name": "Held team 12",
+            "division": "division.3",
+            "rank": 11,
+            "kind": "Division winner",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 3,
+            "franchise": "franchise.08",
+            "name": "Held team 8",
+            "division": "division.2",
+            "rank": 13,
+            "kind": "Division winner",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 4,
+            "franchise": "franchise.04",
+            "name": "Held team 4",
+            "division": "division.1",
+            "rank": 15,
+            "kind": "Division winner",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 5,
+            "franchise": "franchise.15",
+            "name": "Held team 15",
+            "division": "division.4",
+            "rank": 10,
+            "kind": "Wild card",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 6,
+            "franchise": "franchise.11",
+            "name": "Held team 11",
+            "division": "division.3",
+            "rank": 12,
+            "kind": "Wild card",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 7,
+            "franchise": "franchise.07",
+            "name": "Held team 7",
+            "division": "division.2",
+            "rank": 14,
+            "kind": "Wild card",
+            "bye": false,
+            "byHand": false
+          }
+        ]
+      },
+      {
+        "conference": "NFC",
+        "seeds": [
+          {
+            "seed": 1,
+            "franchise": "franchise.32",
+            "name": "Held team 32",
+            "division": "division.8",
+            "rank": 1,
+            "kind": "Division winner",
+            "bye": true,
+            "byHand": false
+          },
+          {
+            "seed": 2,
+            "franchise": "franchise.28",
+            "name": "Held team 28",
+            "division": "division.7",
+            "rank": 3,
+            "kind": "Division winner",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 3,
+            "franchise": "franchise.24",
+            "name": "Held team 24",
+            "division": "division.6",
+            "rank": 5,
+            "kind": "Division winner",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 4,
+            "franchise": "franchise.20",
+            "name": "Held team 20",
+            "division": "division.5",
+            "rank": 7,
+            "kind": "Division winner",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 5,
+            "franchise": "franchise.31",
+            "name": "Held team 31",
+            "division": "division.8",
+            "rank": 2,
+            "kind": "Wild card",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 6,
+            "franchise": "franchise.27",
+            "name": "Held team 27",
+            "division": "division.7",
+            "rank": 4,
+            "kind": "Wild card",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 7,
+            "franchise": "franchise.23",
+            "name": "Held team 23",
+            "division": "division.6",
+            "rank": 6,
+            "kind": "Wild card",
+            "bye": false,
+            "byHand": false
+          }
+        ]
+      }
+    ],
+    "rounds": [],
+    "title": {
+      "season": 2026,
+      "label": "2026 League Champion",
+      "default": true
+    },
+    "history": [
+      {
+        "record": "champion.2025",
+        "franchise": "franchise.05",
+        "name": "Held team 5",
+        "byCommissioner": false
+      }
+    ],
+    "changes": []
+  },
+  "built": {
+    "league": "native.test",
+    "name": "Rules league",
+    "season": 2026,
+    "revision": 12,
+    "status": "Built",
+    "words": "13 of 13 playoff games have a winner",
+    "preset": "league_rules",
+    "presets": [],
+    "rules": {
+      "words": "",
+      "perConference": 7,
+      "divisionWinners": 4,
+      "wildCards": 3,
+      "byeSeeds": 1,
+      "seeding": "Division winners first, then wild cards",
+      "reseed": true,
+      "startWeek": 14,
+      "finalWeek": 17,
+      "homeBonus": 30000,
+      "shape": [
+        {
+          "id": "wildcard_2",
+          "week": 14,
+          "homeSeed": 2,
+          "awaySeed": 7
+        },
+        {
+          "id": "wildcard_3",
+          "week": 14,
+          "homeSeed": 3,
+          "awaySeed": 6
+        },
+        {
+          "id": "wildcard_4",
+          "week": 14,
+          "homeSeed": 4,
+          "awaySeed": 5
+        },
+        {
+          "id": "division_1",
+          "week": 15,
+          "homeSeed": 1,
+          "awayFrom": "lowest remaining seed"
+        },
+        {
+          "id": "division_2",
+          "week": 15,
+          "homeFrom": "highest remaining seed",
+          "awayFrom": "other remaining seed"
+        },
+        {
+          "id": "conference",
+          "week": 16,
+          "homeFrom": "division winner",
+          "awayFrom": "division winner"
+        },
+        {
+          "id": "championship",
+          "week": 17,
+          "homeFrom": "conference winner",
+          "awayFrom": "conference winner"
+        }
+      ]
+    },
+    "started": false,
+    "startKnown": false,
+    "fields": [
+      {
+        "conference": "AFC",
+        "seeds": [
+          {
+            "seed": 1,
+            "franchise": "franchise.01",
+            "name": "Held team 1",
+            "division": "division.1",
+            "rank": 32,
+            "kind": "Set by the commissioner",
+            "bye": true,
+            "byHand": true
+          },
+          {
+            "seed": 2,
+            "franchise": "franchise.16",
+            "name": "Held team 16",
+            "division": "division.4",
+            "rank": 9,
+            "kind": "Division winner",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 3,
+            "franchise": "franchise.12",
+            "name": "Held team 12",
+            "division": "division.3",
+            "rank": 11,
+            "kind": "Division winner",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 4,
+            "franchise": "franchise.08",
+            "name": "Held team 8",
+            "division": "division.2",
+            "rank": 13,
+            "kind": "Division winner",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 5,
+            "franchise": "franchise.04",
+            "name": "Held team 4",
+            "division": "division.1",
+            "rank": 15,
+            "kind": "Division winner",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 6,
+            "franchise": "franchise.15",
+            "name": "Held team 15",
+            "division": "division.4",
+            "rank": 10,
+            "kind": "Wild card",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 7,
+            "franchise": "franchise.11",
+            "name": "Held team 11",
+            "division": "division.3",
+            "rank": 12,
+            "kind": "Wild card",
+            "bye": false,
+            "byHand": false
+          }
+        ]
+      },
+      {
+        "conference": "NFC",
+        "seeds": [
+          {
+            "seed": 1,
+            "franchise": "franchise.32",
+            "name": "Held team 32",
+            "division": "division.8",
+            "rank": 1,
+            "kind": "Division winner",
+            "bye": true,
+            "byHand": false
+          },
+          {
+            "seed": 2,
+            "franchise": "franchise.28",
+            "name": "Held team 28",
+            "division": "division.7",
+            "rank": 3,
+            "kind": "Division winner",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 3,
+            "franchise": "franchise.24",
+            "name": "Held team 24",
+            "division": "division.6",
+            "rank": 5,
+            "kind": "Division winner",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 4,
+            "franchise": "franchise.20",
+            "name": "Held team 20",
+            "division": "division.5",
+            "rank": 7,
+            "kind": "Division winner",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 5,
+            "franchise": "franchise.31",
+            "name": "Held team 31",
+            "division": "division.8",
+            "rank": 2,
+            "kind": "Wild card",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 6,
+            "franchise": "franchise.27",
+            "name": "Held team 27",
+            "division": "division.7",
+            "rank": 4,
+            "kind": "Wild card",
+            "bye": false,
+            "byHand": false
+          },
+          {
+            "seed": 7,
+            "franchise": "franchise.23",
+            "name": "Held team 23",
+            "division": "division.6",
+            "rank": 6,
+            "kind": "Wild card",
+            "bye": false,
+            "byHand": false
+          }
+        ]
+      }
+    ],
+    "rounds": [
+      {
+        "round": 1,
+        "week": 14,
+        "name": "Wildcard round",
+        "games": [
+          {
+            "id": "AFC/wildcard_2",
+            "node": "wildcard_2",
+            "conference": "AFC",
+            "week": 14,
+            "homeSlot": "AFC/wildcard_2/home",
+            "awaySlot": "AFC/wildcard_2/away",
+            "home": {
+              "franchise": "franchise.16",
+              "name": "Held team 16",
+              "seed": 2,
+              "rank": 9,
+              "byHand": false
+            },
+            "away": {
+              "franchise": "franchise.11",
+              "name": "Held team 11",
+              "seed": 7,
+              "rank": 12,
+              "byHand": false
+            },
+            "status": "Final",
+            "homePoints": 240000,
+            "awayPoints": 165000,
+            "homeBonus": 30000,
+            "homeTotal": 270000,
+            "awayTotal": 165000,
+            "winner": "franchise.16",
+            "byHand": false,
+            "words": "Held team 16 beat Held team 11, 27 to 16.5, counting 3 home field points for Held team 16"
+          },
+          {
+            "id": "AFC/wildcard_3",
+            "node": "wildcard_3",
+            "conference": "AFC",
+            "week": 14,
+            "homeSlot": "AFC/wildcard_3/home",
+            "awaySlot": "AFC/wildcard_3/away",
+            "home": {
+              "franchise": "franchise.12",
+              "name": "Held team 12",
+              "seed": 3,
+              "rank": 11,
+              "byHand": false
+            },
+            "away": {
+              "franchise": "franchise.15",
+              "name": "Held team 15",
+              "seed": 6,
+              "rank": 10,
+              "byHand": false
+            },
+            "status": "Final",
+            "homePoints": 180000,
+            "awayPoints": 225000,
+            "homeBonus": 30000,
+            "homeTotal": 210000,
+            "awayTotal": 225000,
+            "winner": "franchise.15",
+            "byHand": false,
+            "words": "Held team 15 beat Held team 12, 22.5 to 21, counting 3 home field points for Held team 12; the commissioner's choice of Held team 8 is set aside because that team no longer plays in this game"
+          },
+          {
+            "id": "AFC/wildcard_4",
+            "node": "wildcard_4",
+            "conference": "AFC",
+            "week": 14,
+            "homeSlot": "AFC/wildcard_4/home",
+            "awaySlot": "AFC/wildcard_4/away",
+            "home": {
+              "franchise": "franchise.08",
+              "name": "Held team 8",
+              "seed": 4,
+              "rank": 13,
+              "byHand": false
+            },
+            "away": {
+              "franchise": "franchise.04",
+              "name": "Held team 4",
+              "seed": 5,
+              "rank": 15,
+              "byHand": false
+            },
+            "status": "Final",
+            "homePoints": 120000,
+            "awayPoints": 60000,
+            "homeBonus": 30000,
+            "homeTotal": 150000,
+            "awayTotal": 60000,
+            "winner": "franchise.08",
+            "byHand": false,
+            "words": "Held team 8 beat Held team 4, 15 to 6, counting 3 home field points for Held team 8"
+          },
+          {
+            "id": "NFC/wildcard_2",
+            "node": "wildcard_2",
+            "conference": "NFC",
+            "week": 14,
+            "homeSlot": "NFC/wildcard_2/home",
+            "awaySlot": "NFC/wildcard_2/away",
+            "home": {
+              "franchise": "franchise.28",
+              "name": "Held team 28",
+              "seed": 2,
+              "rank": 3,
+              "byHand": false
+            },
+            "away": {
+              "franchise": "franchise.17",
+              "name": "Held team 17",
+              "seed": 0,
+              "rank": 24,
+              "byHand": true
+            },
+            "status": "Final",
+            "homePoints": 420000,
+            "awayPoints": 255000,
+            "homeBonus": 30000,
+            "homeTotal": 450000,
+            "awayTotal": 255000,
+            "winner": "franchise.28",
+            "byHand": false,
+            "words": "Held team 28 beat Held team 17, 45 to 25.5, counting 3 home field points for Held team 28"
+          },
+          {
+            "id": "NFC/wildcard_3",
+            "node": "wildcard_3",
+            "conference": "NFC",
+            "week": 14,
+            "homeSlot": "NFC/wildcard_3/home",
+            "awaySlot": "NFC/wildcard_3/away",
+            "home": {
+              "franchise": "franchise.24",
+              "name": "Held team 24",
+              "seed": 3,
+              "rank": 5,
+              "byHand": false
+            },
+            "away": {
+              "franchise": "franchise.27",
+              "name": "Held team 27",
+              "seed": 6,
+              "rank": 4,
+              "byHand": false
+            },
+            "status": "Final",
+            "homePoints": 360000,
+            "awayPoints": 405000,
+            "homeBonus": 30000,
+            "homeTotal": 390000,
+            "awayTotal": 405000,
+            "winner": "franchise.27",
+            "byHand": false,
+            "words": "Held team 27 beat Held team 24, 40.5 to 39, counting 3 home field points for Held team 24"
+          },
+          {
+            "id": "NFC/wildcard_4",
+            "node": "wildcard_4",
+            "conference": "NFC",
+            "week": 14,
+            "homeSlot": "NFC/wildcard_4/home",
+            "awaySlot": "NFC/wildcard_4/away",
+            "home": {
+              "franchise": "franchise.20",
+              "name": "Held team 20",
+              "seed": 4,
+              "rank": 7,
+              "byHand": false
+            },
+            "away": {
+              "franchise": "franchise.31",
+              "name": "Held team 31",
+              "seed": 5,
+              "rank": 2,
+              "byHand": false
+            },
+            "status": "Final",
+            "homePoints": 300000,
+            "awayPoints": 465000,
+            "homeBonus": 30000,
+            "homeTotal": 330000,
+            "awayTotal": 465000,
+            "winner": "franchise.31",
+            "byHand": false,
+            "words": "Held team 31 beat Held team 20, 46.5 to 33, counting 3 home field points for Held team 20"
+          }
+        ]
+      },
+      {
+        "round": 2,
+        "week": 15,
+        "name": "Division round",
+        "games": [
+          {
+            "id": "AFC/division_1",
+            "node": "division_1",
+            "conference": "AFC",
+            "week": 15,
+            "homeSlot": "AFC/division_1/home",
+            "awaySlot": "AFC/division_1/away",
+            "home": {
+              "franchise": "franchise.01",
+              "name": "Held team 1",
+              "seed": 1,
+              "rank": 32,
+              "byHand": false
+            },
+            "away": {
+              "franchise": "franchise.15",
+              "name": "Held team 15",
+              "seed": 6,
+              "rank": 10,
+              "byHand": false
+            },
+            "status": "Final",
+            "homePoints": 15000,
+            "awayPoints": 225000,
+            "homeBonus": 30000,
+            "homeTotal": 45000,
+            "awayTotal": 225000,
+            "winner": "franchise.15",
+            "byHand": false,
+            "words": "Held team 15 beat Held team 1, 22.5 to 4.5, counting 3 home field points for Held team 1"
+          },
+          {
+            "id": "AFC/division_2",
+            "node": "division_2",
+            "conference": "AFC",
+            "week": 15,
+            "homeSlot": "AFC/division_2/home",
+            "awaySlot": "AFC/division_2/away",
+            "home": {
+              "franchise": "franchise.16",
+              "name": "Held team 16",
+              "seed": 2,
+              "rank": 9,
+              "byHand": false
+            },
+            "away": {
+              "franchise": "franchise.08",
+              "name": "Held team 8",
+              "seed": 4,
+              "rank": 13,
+              "byHand": false
+            },
+            "status": "Final",
+            "homePoints": 240000,
+            "awayPoints": 120000,
+            "homeBonus": 30000,
+            "homeTotal": 270000,
+            "awayTotal": 120000,
+            "winner": "franchise.16",
+            "byHand": false,
+            "words": "Held team 16 beat Held team 8, 27 to 12, counting 3 home field points for Held team 16"
+          },
+          {
+            "id": "NFC/division_1",
+            "node": "division_1",
+            "conference": "NFC",
+            "week": 15,
+            "homeSlot": "NFC/division_1/home",
+            "awaySlot": "NFC/division_1/away",
+            "home": {
+              "franchise": "franchise.32",
+              "name": "Held team 32",
+              "seed": 1,
+              "rank": 1,
+              "byHand": false
+            },
+            "away": {
+              "franchise": "franchise.27",
+              "name": "Held team 27",
+              "seed": 6,
+              "rank": 4,
+              "byHand": false
+            },
+            "status": "Final",
+            "homePoints": 480000,
+            "awayPoints": 405000,
+            "homeBonus": 30000,
+            "homeTotal": 510000,
+            "awayTotal": 405000,
+            "winner": "franchise.32",
+            "byHand": false,
+            "words": "Held team 32 beat Held team 27, 51 to 40.5, counting 3 home field points for Held team 32"
+          },
+          {
+            "id": "NFC/division_2",
+            "node": "division_2",
+            "conference": "NFC",
+            "week": 15,
+            "homeSlot": "NFC/division_2/home",
+            "awaySlot": "NFC/division_2/away",
+            "home": {
+              "franchise": "franchise.28",
+              "name": "Held team 28",
+              "seed": 2,
+              "rank": 3,
+              "byHand": false
+            },
+            "away": {
+              "franchise": "franchise.31",
+              "name": "Held team 31",
+              "seed": 5,
+              "rank": 2,
+              "byHand": false
+            },
+            "status": "Final",
+            "homePoints": 420000,
+            "awayPoints": 465000,
+            "homeBonus": 30000,
+            "homeTotal": 450000,
+            "awayTotal": 465000,
+            "winner": "franchise.31",
+            "byHand": false,
+            "words": "Held team 31 beat Held team 28, 46.5 to 45, counting 3 home field points for Held team 28"
+          }
+        ]
+      },
+      {
+        "round": 3,
+        "week": 16,
+        "name": "Conference round",
+        "games": [
+          {
+            "id": "AFC/conference",
+            "node": "conference",
+            "conference": "AFC",
+            "week": 16,
+            "homeSlot": "AFC/conference/home",
+            "awaySlot": "AFC/conference/away",
+            "home": {
+              "franchise": "franchise.16",
+              "name": "Held team 16",
+              "seed": 2,
+              "rank": 9,
+              "byHand": false
+            },
+            "away": {
+              "franchise": "franchise.15",
+              "name": "Held team 15",
+              "seed": 6,
+              "rank": 10,
+              "byHand": false
+            },
+            "status": "Final",
+            "homePoints": 240000,
+            "awayPoints": 225000,
+            "homeBonus": 30000,
+            "homeTotal": 270000,
+            "awayTotal": 225000,
+            "winner": "franchise.16",
+            "byHand": false,
+            "words": "Held team 16 beat Held team 15, 27 to 22.5, counting 3 home field points for Held team 16"
+          },
+          {
+            "id": "NFC/conference",
+            "node": "conference",
+            "conference": "NFC",
+            "week": 16,
+            "homeSlot": "NFC/conference/home",
+            "awaySlot": "NFC/conference/away",
+            "home": {
+              "franchise": "franchise.32",
+              "name": "Held team 32",
+              "seed": 1,
+              "rank": 1,
+              "byHand": false
+            },
+            "away": {
+              "franchise": "franchise.31",
+              "name": "Held team 31",
+              "seed": 5,
+              "rank": 2,
+              "byHand": false
+            },
+            "status": "Final",
+            "homePoints": 480000,
+            "awayPoints": 465000,
+            "homeBonus": 30000,
+            "homeTotal": 510000,
+            "awayTotal": 465000,
+            "winner": "franchise.32",
+            "byHand": false,
+            "words": "Held team 32 beat Held team 31, 51 to 46.5, counting 3 home field points for Held team 32"
+          }
+        ]
+      },
+      {
+        "round": 4,
+        "week": 17,
+        "name": "Championship",
+        "games": [
+          {
+            "id": "championship",
+            "node": "championship",
+            "week": 17,
+            "homeSlot": "championship/home",
+            "awaySlot": "championship/away",
+            "home": {
+              "franchise": "franchise.32",
+              "name": "Held team 32",
+              "seed": 1,
+              "rank": 1,
+              "byHand": false
+            },
+            "away": {
+              "franchise": "franchise.16",
+              "name": "Held team 16",
+              "seed": 2,
+              "rank": 9,
+              "byHand": false
+            },
+            "status": "Final",
+            "homePoints": 480000,
+            "awayPoints": 240000,
+            "homeBonus": 30000,
+            "homeTotal": 510000,
+            "awayTotal": 240000,
+            "winner": "franchise.32",
+            "byHand": false,
+            "words": "Held team 32 beat Held team 16, 51 to 24, counting 3 home field points for Held team 32"
+          }
+        ]
+      }
+    ],
+    "champion": {
+      "franchise": "franchise.32",
+      "name": "Held team 32",
+      "label": "2026 Legacy Champions",
+      "source": "Won the final",
+      "record": "champion.2026"
+    },
+    "title": {
+      "season": 2026,
+      "label": "2026 Legacy Champions",
+      "default": false,
+      "entry": "act.b610ce28ca48d0c0fbfa3307b6378e2e9defc6fc5100101a3a085ed7150ab748"
+    },
+    "history": [
+      {
+        "record": "champion.2025",
+        "franchise": "franchise.09",
+        "name": "Held team 9",
+        "byCommissioner": true,
+        "reason": "Fix the record"
+      }
+    ],
+    "changes": [
+      {
+        "entry": "act.537d5d295d65d69bc0ca9f7315159362bde57baa500ea5c66f186b64ba31d5b8",
+        "what": "Built the season 2026 playoff bracket from the league's playoff rules",
+        "reason": "Set the playoffs",
+        "status": "Applied"
+      },
+      {
+        "entry": "act.0630a349cf987ea47da35b926f9caa29f768f6a71bf746e28452c56a9d18babf",
+        "what": "Set Held team 1 as playoff seed 1 for season 2026",
+        "reason": "Set the playoffs",
+        "status": "Applied"
+      },
+      {
+        "entry": "act.5947e8cc88ee01b04fd30d9f7499cc3fe0538a6fca330feabab3af21c9f9e780",
+        "what": "Put Held team 17 in as the away team of the NFC wildcard 2 game for the season 2026 playoffs",
+        "reason": "Set the playoffs",
+        "status": "Applied"
+      },
+      {
+        "entry": "act.228a574782da25acc8c6edd17b6d1b69e33f07f7d5a9407b3b461995b2290e77",
+        "what": "Advanced Held team 8 from the AFC wildcard 3 game in the season 2026 playoffs",
+        "reason": "Scoring error",
+        "status": "Applied"
+      }
+    ]
+  },
+  "archived": {
+    "league": "native.test",
+    "name": "Rules league",
+    "season": 2025,
+    "revision": 12,
+    "status": "Archived",
+    "words": "Season 2025 was played before this league moved into the app, so only its champion is kept",
+    "preset": "league_rules",
+    "presets": [],
+    "rules": {
+      "words": "",
+      "perConference": 0,
+      "divisionWinners": 0,
+      "wildCards": 0,
+      "byeSeeds": 0,
+      "seeding": "",
+      "reseed": false,
+      "startWeek": 0,
+      "finalWeek": 0,
+      "homeBonus": 0,
+      "shape": []
+    },
+    "started": false,
+    "startKnown": false,
+    "fields": [],
+    "rounds": [],
+    "champion": {
+      "franchise": "franchise.09",
+      "name": "Held team 9",
+      "label": "2025 League Champion",
+      "source": "Set by the commissioner's history link",
+      "record": "champion.2025"
+    },
+    "title": {
+      "season": 2025,
+      "label": "2025 League Champion",
+      "default": true
+    },
+    "history": [
+      {
+        "record": "champion.2025",
+        "franchise": "franchise.09",
+        "name": "Held team 9",
+        "byCommissioner": true,
+        "reason": "Fix the record"
+      }
+    ],
+    "changes": []
+  },
+  "waiting": {
+    "league": "native.test",
+    "name": "Rules league",
+    "season": 2026,
+    "revision": 13,
+    "status": "Waiting for the regular season",
+    "words": "The regular season isn't over: the schedule covers only 3 of 4 weeks",
+    "preset": "league_rules",
+    "presets": [],
+    "rules": {
+      "words": "",
+      "perConference": 7,
+      "divisionWinners": 4,
+      "wildCards": 3,
+      "byeSeeds": 1,
+      "seeding": "Division winners first, then wild cards",
+      "reseed": true,
+      "startWeek": 14,
+      "finalWeek": 17,
+      "homeBonus": 30000,
+      "shape": [
+        {
+          "id": "wildcard_2",
+          "week": 14,
+          "homeSeed": 2,
+          "awaySeed": 7
+        },
+        {
+          "id": "wildcard_3",
+          "week": 14,
+          "homeSeed": 3,
+          "awaySeed": 6
+        },
+        {
+          "id": "wildcard_4",
+          "week": 14,
+          "homeSeed": 4,
+          "awaySeed": 5
+        },
+        {
+          "id": "division_1",
+          "week": 15,
+          "homeSeed": 1,
+          "awayFrom": "lowest remaining seed"
+        },
+        {
+          "id": "division_2",
+          "week": 15,
+          "homeFrom": "highest remaining seed",
+          "awayFrom": "other remaining seed"
+        },
+        {
+          "id": "conference",
+          "week": 16,
+          "homeFrom": "division winner",
+          "awayFrom": "division winner"
+        },
+        {
+          "id": "championship",
+          "week": 17,
+          "homeFrom": "conference winner",
+          "awayFrom": "conference winner"
+        }
+      ]
+    },
+    "started": false,
+    "startKnown": false,
+    "fields": [],
+    "rounds": [],
+    "title": {
+      "season": 2026,
+      "label": "2026 Legacy Champions",
+      "default": false,
+      "entry": "act.b610ce28ca48d0c0fbfa3307b6378e2e9defc6fc5100101a3a085ed7150ab748"
+    },
+    "history": [
+      {
+        "record": "champion.2025",
+        "franchise": "franchise.09",
+        "name": "Held team 9",
+        "byCommissioner": true,
+        "reason": "Fix the record"
+      }
+    ],
+    "changes": [
+      {
+        "entry": "act.537d5d295d65d69bc0ca9f7315159362bde57baa500ea5c66f186b64ba31d5b8",
+        "what": "Built the season 2026 playoff bracket from the league's playoff rules",
+        "reason": "Set the playoffs",
+        "status": "Applied"
+      },
+      {
+        "entry": "act.0630a349cf987ea47da35b926f9caa29f768f6a71bf746e28452c56a9d18babf",
+        "what": "Set Held team 1 as playoff seed 1 for season 2026",
+        "reason": "Set the playoffs",
+        "status": "Applied"
+      },
+      {
+        "entry": "act.5947e8cc88ee01b04fd30d9f7499cc3fe0538a6fca330feabab3af21c9f9e780",
+        "what": "Put Held team 17 in as the away team of the NFC wildcard 2 game for the season 2026 playoffs",
+        "reason": "Set the playoffs",
+        "status": "Applied"
+      },
+      {
+        "entry": "act.228a574782da25acc8c6edd17b6d1b69e33f07f7d5a9407b3b461995b2290e77",
+        "what": "Advanced Held team 8 from the AFC wildcard 3 game in the season 2026 playoffs",
+        "reason": "Scoring error",
+        "status": "Applied"
+      }
+    ]
+  },
+  "history": {
+    "franchise": "franchise.09",
+    "titles": [
+      2025
+    ],
+    "records": [
+      {
+        "record": "champion.2025",
+        "franchise": "franchise.09",
+        "byCommissioner": true,
+        "entry": "act.cd1633055557271e329eec30768c08c5ff8e75cb73940a24de53819a84f63bbf",
+        "reason": "Fix the record"
+      }
+    ]
+  }
+}

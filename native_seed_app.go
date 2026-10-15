@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
@@ -94,8 +95,9 @@ func (a *App) heldNativeSnapshot() (commissioner.RawNativeSnapshot, error) {
 	seed := commissioner.RawNativeSnapshot{Season: snap.Season, RosterAt: rosterAt, DraftAt: results.fetchedAt,
 		FutureAt: future.fetchedAt, Players: []commissioner.NativePlayer{}, Picks: []commissioner.NativePick{},
 		Adjustments: []commissioner.NativeCharge{}}
-	franchises, mapping := nativeFranchises(a.rulebook.ActiveConfig().Franchises)
-	seed.Franchises = franchises
+	config := a.rulebook.ActiveConfig()
+	franchises, mapping := nativeFranchises(config.Franchises)
+	seed.Franchises, seed.Conferences = franchises, heldConferences(config)
 	a.targetSnapshotMu.Lock()
 	directory := a.targetSnapshot.Players.Value
 	a.targetSnapshotMu.Unlock()
@@ -105,6 +107,21 @@ func (a *App) heldNativeSnapshot() (commissioner.RawNativeSnapshot, error) {
 		return commissioner.RawNativeSnapshot{}, fmt.Errorf("held starting snapshot: %w", err)
 	}
 	return seed, nil
+}
+
+// heldConferences names the conference of each held division, by the conference's own name.
+func heldConferences(config league.RawConfig) map[string]string {
+	names := map[string]string{}
+	for _, c := range config.Conferences {
+		names[c.ID] = cmp.Or(strings.TrimSpace(c.Name), c.ID)
+	}
+	out := map[string]string{}
+	for _, d := range config.Divisions {
+		if conference := cmp.Or(names[d.Conference], d.Conference); conference != "" {
+			out[d.ID] = conference
+		}
+	}
+	return out
 }
 
 func nativeFranchises(held []league.Franchise) ([]commissioner.NativeFranchise, map[string]string) {

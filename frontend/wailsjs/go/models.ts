@@ -47,6 +47,187 @@ export namespace commissioner {
 	        this.reason = source["reason"];
 	    }
 	}
+	export class BracketChampion {
+	    franchise: string;
+	    name: string;
+	    label: string;
+	    source: string;
+	    record: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BracketChampion(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchise = source["franchise"];
+	        this.name = source["name"];
+	        this.label = source["label"];
+	        this.source = source["source"];
+	        this.record = source["record"];
+	    }
+	}
+	export class BracketSide {
+	    franchise: string;
+	    name: string;
+	    seed: number;
+	    rank: number;
+	    byHand: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new BracketSide(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchise = source["franchise"];
+	        this.name = source["name"];
+	        this.seed = source["seed"];
+	        this.rank = source["rank"];
+	        this.byHand = source["byHand"];
+	    }
+	}
+	export class BracketGame {
+	    id: string;
+	    node: string;
+	    conference?: string;
+	    week: number;
+	    homeSlot: string;
+	    awaySlot: string;
+	    home?: BracketSide;
+	    away?: BracketSide;
+	    status: string;
+	    homePoints?: number;
+	    awayPoints?: number;
+	    homeBonus: number;
+	    homeTotal?: number;
+	    awayTotal?: number;
+	    winner?: string;
+	    byHand: boolean;
+	    words: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BracketGame(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.node = source["node"];
+	        this.conference = source["conference"];
+	        this.week = source["week"];
+	        this.homeSlot = source["homeSlot"];
+	        this.awaySlot = source["awaySlot"];
+	        this.home = this.convertValues(source["home"], BracketSide);
+	        this.away = this.convertValues(source["away"], BracketSide);
+	        this.status = source["status"];
+	        this.homePoints = source["homePoints"];
+	        this.awayPoints = source["awayPoints"];
+	        this.homeBonus = source["homeBonus"];
+	        this.homeTotal = source["homeTotal"];
+	        this.awayTotal = source["awayTotal"];
+	        this.winner = source["winner"];
+	        this.byHand = source["byHand"];
+	        this.words = source["words"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class BracketNodeSpec {
+	    id: string;
+	    week: number;
+	    homeSeed?: number;
+	    awaySeed?: number;
+	    homeFrom?: string;
+	    awayFrom?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BracketNodeSpec(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.week = source["week"];
+	        this.homeSeed = source["homeSeed"];
+	        this.awaySeed = source["awaySeed"];
+	        this.homeFrom = source["homeFrom"];
+	        this.awayFrom = source["awayFrom"];
+	    }
+	}
+	export class BracketRound {
+	    round: number;
+	    week: number;
+	    name: string;
+	    games: BracketGame[];
+	
+	    static createFrom(source: any = {}) {
+	        return new BracketRound(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.round = source["round"];
+	        this.week = source["week"];
+	        this.name = source["name"];
+	        this.games = this.convertValues(source["games"], BracketGame);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class BracketTitle {
+	    season: number;
+	    label: string;
+	    default: boolean;
+	    entry?: string;
+	    reason?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BracketTitle(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.label = source["label"];
+	        this.default = source["default"];
+	        this.entry = source["entry"];
+	        this.reason = source["reason"];
+	    }
+	}
 	export class Calendar {
 	    league: string;
 	    revision: number;
@@ -63,6 +244,64 @@ export namespace commissioner {
 	        this.revision = source["revision"];
 	        this.clock = this.convertValues(source["clock"], leagueclock.ActionCalendar);
 	        this.decision = this.convertValues(source["decision"], leagueclock.ActionDecision);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class FieldSeed {
+	    seed: number;
+	    franchise: string;
+	    name: string;
+	    division: string;
+	    rank: number;
+	    kind: string;
+	    bye: boolean;
+	    byHand: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new FieldSeed(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.seed = source["seed"];
+	        this.franchise = source["franchise"];
+	        this.name = source["name"];
+	        this.division = source["division"];
+	        this.rank = source["rank"];
+	        this.kind = source["kind"];
+	        this.bye = source["bye"];
+	        this.byHand = source["byHand"];
+	    }
+	}
+	export class ConferenceField {
+	    conference: string;
+	    seeds: FieldSeed[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ConferenceField(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.conference = source["conference"];
+	        this.seeds = this.convertValues(source["seeds"], FieldSeed);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -344,6 +583,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	export class FlippedGame {
 	    week: number;
 	    home: string;
@@ -565,6 +805,26 @@ export namespace commissioner {
 		    }
 		    return a;
 		}
+	}
+	export class HistoryRecord {
+	    record: string;
+	    franchise: string;
+	    name: string;
+	    byCommissioner: boolean;
+	    reason?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new HistoryRecord(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.record = source["record"];
+	        this.franchise = source["franchise"];
+	        this.name = source["name"];
+	        this.byCommissioner = source["byCommissioner"];
+	        this.reason = source["reason"];
+	    }
 	}
 	export class HouseRule {
 	    id: string;
@@ -984,6 +1244,7 @@ export namespace commissioner {
 	    season: number;
 	    champion?: string;
 	    champions?: NativeChampion[];
+	    conferences?: Record<string, string>;
 	    rosterAt: time.Time;
 	    draftAt: time.Time;
 	    futureAt: time.Time;
@@ -1002,6 +1263,7 @@ export namespace commissioner {
 	        this.season = source["season"];
 	        this.champion = source["champion"];
 	        this.champions = this.convertValues(source["champions"], NativeChampion);
+	        this.conferences = source["conferences"];
 	        this.rosterAt = this.convertValues(source["rosterAt"], time.Time);
 	        this.draftAt = this.convertValues(source["draftAt"], time.Time);
 	        this.futureAt = this.convertValues(source["futureAt"], time.Time);
@@ -1049,6 +1311,118 @@ export namespace commissioner {
 	        this.entry = source["entry"];
 	        this.source = source["source"];
 	        this.snapshot = this.convertValues(source["snapshot"], RawNativeSnapshot);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class PlayoffRulesView {
+	    words: string;
+	    perConference: number;
+	    divisionWinners: number;
+	    wildCards: number;
+	    byeSeeds: number;
+	    seeding: string;
+	    reseed: boolean;
+	    startWeek: number;
+	    finalWeek: number;
+	    homeBonus: number;
+	    shape: BracketNodeSpec[];
+	
+	    static createFrom(source: any = {}) {
+	        return new PlayoffRulesView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.words = source["words"];
+	        this.perConference = source["perConference"];
+	        this.divisionWinners = source["divisionWinners"];
+	        this.wildCards = source["wildCards"];
+	        this.byeSeeds = source["byeSeeds"];
+	        this.seeding = source["seeding"];
+	        this.reseed = source["reseed"];
+	        this.startWeek = source["startWeek"];
+	        this.finalWeek = source["finalWeek"];
+	        this.homeBonus = source["homeBonus"];
+	        this.shape = this.convertValues(source["shape"], BracketNodeSpec);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class NativeBracket {
+	    league: string;
+	    name: string;
+	    season: number;
+	    revision: number;
+	    status: string;
+	    words: string;
+	    preset: string;
+	    presets: string[];
+	    rules: PlayoffRulesView;
+	    started: boolean;
+	    startKnown: boolean;
+	    fields: ConferenceField[];
+	    rounds: BracketRound[];
+	    champion?: BracketChampion;
+	    title: BracketTitle;
+	    history: HistoryRecord[];
+	    changes: ScoreChange[];
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeBracket(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.name = source["name"];
+	        this.season = source["season"];
+	        this.revision = source["revision"];
+	        this.status = source["status"];
+	        this.words = source["words"];
+	        this.preset = source["preset"];
+	        this.presets = source["presets"];
+	        this.rules = this.convertValues(source["rules"], PlayoffRulesView);
+	        this.started = source["started"];
+	        this.startKnown = source["startKnown"];
+	        this.fields = this.convertValues(source["fields"], ConferenceField);
+	        this.rounds = this.convertValues(source["rounds"], BracketRound);
+	        this.champion = this.convertValues(source["champion"], BracketChampion);
+	        this.title = this.convertValues(source["title"], BracketTitle);
+	        this.history = this.convertValues(source["history"], HistoryRecord);
+	        this.changes = this.convertValues(source["changes"], ScoreChange);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -2297,6 +2671,7 @@ export namespace commissioner {
 	
 	
 	
+	
 	export class PreviewAffects {
 	    readings: string[];
 	    count?: number;
@@ -2394,6 +2769,80 @@ export namespace commissioner {
 	
 	
 	
+	export class RawHistoryLink {
+	    record: string;
+	    franchise: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawHistoryLink(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.record = source["record"];
+	        this.franchise = source["franchise"];
+	    }
+	}
+	export class RawTitleChange {
+	    season: number;
+	    label?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawTitleChange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.label = source["label"];
+	    }
+	}
+	export class RawBracketChange {
+	    season: number;
+	    started?: boolean;
+	    preset?: string;
+	    node?: string;
+	    slot?: number;
+	    game?: string;
+	    team?: string;
+	    name?: string;
+	    shape?: BracketNodeSpec[];
+	
+	    static createFrom(source: any = {}) {
+	        return new RawBracketChange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.started = source["started"];
+	        this.preset = source["preset"];
+	        this.node = source["node"];
+	        this.slot = source["slot"];
+	        this.game = source["game"];
+	        this.team = source["team"];
+	        this.name = source["name"];
+	        this.shape = this.convertValues(source["shape"], BracketNodeSpec);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class RawRolloverArgs {
 	    to: number;
 	    dry_run: boolean;
@@ -2901,6 +3350,9 @@ export namespace commissioner {
 	    standings?: RawStandingsChange;
 	    lineup?: RawLineupChange;
 	    rollover?: RawRolloverArgs;
+	    bracket?: RawBracketChange;
+	    title?: RawTitleChange;
+	    link?: RawHistoryLink;
 	    season?: number;
 	
 	    static createFrom(source: any = {}) {
@@ -2931,6 +3383,9 @@ export namespace commissioner {
 	        this.standings = this.convertValues(source["standings"], RawStandingsChange);
 	        this.lineup = this.convertValues(source["lineup"], RawLineupChange);
 	        this.rollover = this.convertValues(source["rollover"], RawRolloverArgs);
+	        this.bracket = this.convertValues(source["bracket"], RawBracketChange);
+	        this.title = this.convertValues(source["title"], RawTitleChange);
+	        this.link = this.convertValues(source["link"], RawHistoryLink);
 	        this.season = source["season"];
 	    }
 	
@@ -2952,6 +3407,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	export class RawCommand {
 	    league: string;
 	    command: string;
@@ -2998,6 +3454,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	
@@ -3056,6 +3513,7 @@ export namespace commissioner {
 	        this.starters = source["starters"];
 	    }
 	}
+	
 	
 	
 	
