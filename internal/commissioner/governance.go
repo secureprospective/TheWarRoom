@@ -56,6 +56,9 @@ func GovernanceState(records []Record) (governance.State, error) {
 type GovernanceAuthorizer struct{ State governance.State }
 
 func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string, error) {
+	if command == ContractActionSet && !a.State.HasRole(governance.Principal(principal), governance.Commissioner) {
+		return "", fmt.Errorf("only this league's commissioner may set contract actions")
+	}
 	if d, ok := successionDefinitionFor(command); ok {
 		return successionPermission(a.State, principal, d)
 	}
@@ -92,7 +95,7 @@ func commandControls() map[string]string {
 		DraftStart: "CM-042", DraftOrderAuto: "CM-041", DraftOrderSet: "CM-041",
 		DraftOrderPattern: "CM-041", DraftOrderTiebreak: "CM-041",
 		WaiverProcess: "CM-035", WaiverOrderSet: "CM-035", WaiverOrderAuto: "CM-035", WaiverOverride: "CM-035",
-		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039",
+		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039", ContractActionSet: "CM-009",
 		ContractEdit: "CM-034", CapAdjust: "CM-034", CapRelief: "CM-034", ReserveException: "CM-038",
 		PlayerPosition: "CM-030", PlayerPositionClear: "CM-030",
 		ScorePlayer: "CM-032", ScoreFranchise: "CM-032",

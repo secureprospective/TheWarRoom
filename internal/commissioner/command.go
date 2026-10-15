@@ -76,7 +76,7 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G3"}, nil
 	case CalendarException:
 		return Definition{Gravity: "G3"}, nil
-	case WindowSet, WindowMove, WindowRemove:
+	case WindowSet, WindowMove, WindowRemove, ContractActionSet:
 		return Definition{Gravity: "G2"}, nil
 	case ScheduleGenerate, ScheduleEdit, SchedulePublish:
 		return Definition{Gravity: "G2"}, nil
@@ -123,6 +123,7 @@ type RawArgs struct {
 	Lineup         *RawLineupChange    `json:"lineup,omitempty"`
 	Rollover       *RawRolloverArgs    `json:"rollover,omitempty"`
 	Season         int                 `json:"season,omitempty"`
+	ContractAction *RawContractAction  `json:"contractAction,omitempty"`
 }
 
 // validateDetails refuses arguments that belong to another command.
@@ -136,7 +137,7 @@ func (a RawArgs) validateDetails(command string) error {
 // decodedDetails says whether any argument that only a typed decoder may read is present here.
 func (a RawArgs) decodedDetails() bool {
 	return a.Schedule != nil || a.Window != nil || a.Override != nil || a.Score != nil || a.Standings != nil ||
-		a.Lineup != nil || a.Draft != nil || a.Waiver != nil || a.WaiverOutcome != nil
+		a.Lineup != nil || a.Draft != nil || a.Waiver != nil || a.WaiverOutcome != nil || a.ContractAction != nil
 }
 
 // ownedDetails says whether an argument that belongs to one command is sent with another.
@@ -159,6 +160,8 @@ func (a RawArgs) validateDecoded(command string) (handled bool, err error) {
 		err = a.validateDraft(command)
 	case WaiverCommand(command):
 		err = a.validateWaiver(command)
+	case command == ContractActionSet:
+		err = a.validateContractAction()
 	default:
 		return false, nil
 	}
@@ -341,7 +344,7 @@ func (r RawCommand) ownPlacement() (func() error, bool) {
 		return r.validateScorePlacement, true
 	case isLineupCommand(r.Command):
 		return r.validateLineupPlacement, true
-	case r.Command == RulesSet:
+	case ruleCommand(r.Command):
 		return r.validateRulePlacement, true
 	}
 	return nil, false

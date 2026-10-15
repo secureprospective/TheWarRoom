@@ -103,9 +103,13 @@ decision every native owner action asks: it answers through `ActionCalendar.Deci
 exact trade deadline included), says in the owner's local time which window opens a closed action, and
 mints the `Permit` an action needs to run. Root `native_gate.go` is the registry and its only door,
 `runNativeAction`; `native_gate_test.go` runs every registered action shut and open (an action may refuse
-for want of its own details, but not for a closed gate). The registry holds the lineup (`lineup.set`), the
-rookie pick (`draft.pick`), and the native cut and claim (`roster.cut`, `waivers.claim`); each action takes
-the owner's input and returns its receipt. The waiver append transaction rechecks the gate and the owner's
+for want of its own details, but not for a closed gate). The registry (`nativeOwnerActions`) holds the lineup
+(`lineup.set`), the rookie pick (`draft.pick`), the native cut and claim (`roster.cut`, `waivers.claim`) and
+one `contract.<action>` start for each contract action an owner takes under a window (tag, extension,
+restructure, buyout, RFA tender, re-sign, release), built from `nativecheck.ContractActions`. Each action
+takes the owner's input and returns its receipt; a contract start only confirms the league has that action
+on, through the same `nativecheck.Availability` the quote reads, and records nothing until choosing the
+contract and paying its price are built. The waiver append transaction rechecks the gate and the owner's
 seat, including callers below the IPC door. Now/Race integration and the remaining census owner-edge wiring
 are still pending.
 
@@ -120,7 +124,7 @@ are still pending.
 | `counterparties_app.go`, `counterpanel_app.go` | `TargetCounterparties`, `TargetCounterpartTeam`: validated historical standing/window/posture scopes; tier cards, trends, pair matrix, sortable team values and season/asset-flow/partner Inspector readings. Lazy frontend in `frontend/src/app/counterparties`, franchise ids resolved against the shared snapshot. |
 | `lab_app.go` | `TargetMarket` validates season/phase input and returns a typed historical Market payload in the generic `Reading` shell extending `snapshot.Sourced`; dated provenance, count/threshold and Go-authored counting disclosure, no spread grade. |
 | `whatif_app.go` | `TargetWhatIf` validates read/cut/buyout/undo/reset intents; per-franchise persistent baseline and ordered moves in `whatif.db`. Generation-scoped coordinator ledgers replay on mutation, publish after success, keep the mirror read-only, block stale edits until Reset. Lazy Contracts panel shows Go-authored before/after cents and rules. |
-| `native_legality_app.go` | `TargetNativeCapCheck(league, viewerZone)`, `TargetNativeRosterCheck`, `TargetNativeReserveCheck`, `TargetNativeLineupCheck`, `TargetNativeHouseRules`: app-owned recorded rosters and season-effective rules, with held player positions, NFL designations and draft years. No refresh, MFL acceptance promise, score-feed wiring or owner-screen migration. |
+| `native_legality_app.go` | `TargetNativeCapCheck(league, viewerZone)`, `TargetNativeRosterCheck`, `TargetNativeReserveCheck`, `TargetNativeLineupCheck`, `TargetNativeHouseRules`, `TargetNativeContractQuote(RawContractQuote)` (one contract action priced on one recorded native contract at the app clock: allowed or refused with the plain reason, new salary and years, dead money by season, cap effect and how each number was reached; reads the app league ledger and held player positions only and records nothing): app-owned recorded rosters and season-effective rules, with held player positions, NFL designations and draft years. No refresh, MFL acceptance promise, score-feed wiring or owner-screen migration. |
 | `native_seed_app.go` | `TargetNativeSeed(RawNativeSeedRequest)` records one held Legacy NFL starting snapshot in the commissioner event stream: rosters, contract terms, reserve status, franchises, current/future picks and salary adjustments. Go captures the inputs without network or client-supplied assets; retries retain the original receipt after mirror refresh. `TargetNativeAssets` replays that app-owned snapshot, separate from MFL and what-if. `TargetNativeDirectory` reads the native franchise directory: recorded seed names/abbreviations, later active identity edits, current governance seats, and season-resolved alignment (held seed divisions carried into the shared rules resolver). `TargetCommissionerPeople` shares this directory projection; pending alignment changes do not apply, and compensation restores the recorded basis. No MFL directory or hand-off is changed. Empty leagues have no seed. |
 | `contracts_app.go` | `TargetContracts` validates team/position/sort scopes and returns separate typed `Reading` shells for league contracts, my-franchise cap, literal MFL salary adjustments. `TargetPlayerContract` validates player IDs and returns observed current salary / explicitly flat-filled inferred future years. Both read a coherent `Mirror.ContractsView`, never the what-if ledger. Lazy frontend in `frontend/src/app/contracts`; every player Inspector includes contract years. |
 | `market_feeds_app.go`, `market_feeds_reading.go`, `report_reading.go` | `TargetMarketReportsRefresh(force)` and `TargetMarketReports`: held week-scoped projections and daily MFL-wide market feeds, archive fallback; shared Go Report and lazy React ReportView used by draft and player-market reports; Go-written pool and Inspector market facts. |
@@ -483,6 +487,38 @@ transaction. Go fixes the slot and contract in the record; `TargetCommissionerEx
 the order, picks, clock and the viewer's next pick in the viewer's time zone. Final standings are not built:
 round one's automatic order says so until a commissioner sets it. The live tray, draft revert and close
 (CM-043..045) are not built.
+
+## Native contract action settings
+
+`internal/commissioner/contract_actions.go` validates `contract.action.set` for the nine CM-009 actions.
+The commissioner-only named command replaces one action's parameters and enable switch. Its replay
+projects onto the same typed `contracts.*` field as `commish.rules.set`; current rules, pending changes,
+replacement history, compensation and season-effective ordering all share that projection. Omitted
+parameters explicitly need a ruling, rather than borrowing preset numbers. The command uses G2 at the
+next rollover and the binding competitive-rule G3 safeguard for apply-now changes. Existing MFL owner
+actions are unchanged.
+
+## Native contract pricing
+
+`internal/nativecheck/contract_*.go` is the pure price: `PriceContract(Input, ContractAction)` takes the rules
+in force, one recorded contract (flat salary through its last season), what the franchise and contract have
+already used (`Trail`) and what was asked, and returns `Pricing`: a plain refusal (off in this league, a limit
+used, the contract does not qualify, a length over the maximum), each ruling still Needed, the new salary and
+years, the season-by-season salary after, and the dead money by the season it lands in. Percentage math is
+taken to cents first and then snapped to the league's increment (`scaleMoney`, shared with cap counting);
+every rate, floor, tier, premium and limit is read from the catalogue, none is written in the code. A
+contract's years left are the seasons after the current one (`Expiration - season`), the count a release and
+a buyout charge by. A release charges the restructured rate when the contract has been restructured.
+`internal/commissioner/native_contract_quote.go` is the one check both the preview and the later owner action
+call (`QuoteContract` -> `checkContract`): it asks `NativeActionGate` for the action's window (a retirement,
+death and cap relief are found by the commissioner and have none), prices, then counts the franchise's cap
+before and after with `nativecheck.CheckCap` and `CapAllows` (`native_contract_cap.go`); only a move that
+raises this season's counted salary can be refused for the cap. The verdict order is: off or unruled or not
+qualifying, then the calendar, then the cap. A refused quote still carries its price when the cause is only
+the calendar or the cap. `TargetNativeContractQuote(RawContractQuote)` (`native_legality_app.go`) reads
+the ledger and held player facts and records nothing. Limits count only contract actions recorded in the app
+league; none is recorded yet (the owner action that records them comes later), so the used counts are empty
+and the quote says so.
 
 ## Native fantasy scoring
 

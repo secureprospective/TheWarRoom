@@ -10,6 +10,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // NativeOwnerAction is one thing an owner can do in an app-owned league. Run takes the gate's Permit, so
@@ -25,10 +26,42 @@ type NativeOwnerAction struct {
 var errActionClosed = errors.New("league action closed")
 
 // nativeOwnerActions is the registry. Each chunk that adds an owner action to the app-owned league adds
-// it here; native_gate_test.go holds every entry to the gate.
+// it here; native_gate_test.go holds every entry to the gate. The contract actions an owner takes under a
+// window are registered from the shared list of priced actions, so a new one cannot be priced without being
+// gated.
 func nativeOwnerActions() []NativeOwnerAction {
-	return []NativeOwnerAction{lineupSetAction(), draftPickAction(), waiverAction(commissioner.RosterCut),
+	registry := []NativeOwnerAction{lineupSetAction(), draftPickAction(), waiverAction(commissioner.RosterCut),
 		waiverAction(commissioner.WaiverClaim)}
+	for _, action := range nativecheck.ContractActions() {
+		window, gated := commissioner.OwnerContractWindow(action)
+		if !gated {
+			continue
+		}
+		registry = append(registry, NativeOwnerAction{Name: contractActionName(action), Opens: window,
+			Run: func(ctx context.Context, a *App, permit commissioner.Permit, _ json.RawMessage) (commissioner.Receipt, error) {
+				return commissioner.Receipt{}, a.startContractAction(ctx, permit, action)
+			}})
+	}
+	return registry
+}
+
+func contractActionName(action nativecheck.ContractAction) string {
+	return "contract." + string(action)
+}
+
+// startContractAction is the first thing an owner's contract action does once the gate has said yes:
+// confirm the league has that action on. Choosing the contract and paying its price follow it, through the
+// same QuoteContract check the preview reads; until that is built the action records nothing.
+func (a *App) startContractAction(ctx context.Context, permit commissioner.Permit,
+	action nativecheck.ContractAction) error {
+	records, err := a.leagueRecords(ctx, permit.League())
+	if err != nil {
+		return err
+	}
+	if err := commissioner.ContractActionOn(records, a.timeNow(), action); err != nil {
+		return fmt.Errorf("start %s: %w", action.Name(), err)
+	}
+	return nil
 }
 
 // ownerZone is where the owner reads times: the desktop's own zone unless a test pins another.

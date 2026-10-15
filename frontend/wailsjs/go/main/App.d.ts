@@ -186,6 +186,8 @@ export function TargetNativeAssets(arg1:string):Promise<commissioner.NativeAsset
 
 export function TargetNativeCapCheck(arg1:string,arg2:string):Promise<commissioner.NativeCapCheck>;
 
+export function TargetNativeContractQuote(arg1:commissioner.RawContractQuote):Promise<commissioner.ContractQuote>;
+
 export function TargetNativeDirectory(arg1:string):Promise<commissioner.NativeDirectory>;
 
 export function TargetNativeDraft(arg1:commissioner.RawNativeDraftScope):Promise<commissioner.NativeDraft>;

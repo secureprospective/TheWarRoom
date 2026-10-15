@@ -177,7 +177,7 @@ func entryLabel(records []Record, i int) (string, error) {
 			return "", err
 		}
 		return lineupLabel(r.Command.Command, change), nil
-	case RulesSet:
+	case RulesSet, ContractActionSet:
 		return ruleLabel(r, records[:i])
 	case Revert:
 		label, ok, err := revertRuleLabel(records, i)

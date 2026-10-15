@@ -12,6 +12,10 @@ import (
 
 const RulesSet = "commish.rules.set"
 
+func ruleCommand(command string) bool {
+	return command == RulesSet || command == ContractActionSet
+}
+
 // ruleOwner maps a rule field (exact path, or a section ending in ".") to the census row that owns it.
 type ruleOwner struct{ prefix, control, gravity string }
 
@@ -74,8 +78,19 @@ func catalogueField(path string) (leaguerules.CatalogueField, error) {
 
 // Definition derives gravity from the command and, for rules, from the field's census row and timing.
 func (r RawCommand) Definition() (Definition, error) {
-	if r.Command != RulesSet {
+	if !ruleCommand(r.Command) {
 		return DefinitionFor(r.Command)
+	}
+	if r.Command == ContractActionSet {
+		if r.Args.ContractAction == nil {
+			return Definition{}, fmt.Errorf("choose a contract action")
+		}
+		field, err := r.Args.ContractAction.field()
+		if err != nil {
+			return Definition{}, err
+		}
+		return (RawCommand{Command: RulesSet, Effective: r.Effective,
+			Args: RawArgs{Field: string(field)}}).Definition()
 	}
 	field, err := catalogueField(r.Args.Field)
 	if err != nil {
@@ -238,6 +253,10 @@ func timingWords(effective string) string {
 
 // ruleLabel says, for the ledger, label: before → after and when it takes effect.
 func ruleLabel(r Record, before []Record) (string, error) {
+	r, err := ruleRecord(r)
+	if err != nil {
+		return "", err
+	}
 	field, err := catalogueField(r.Command.Args.Field)
 	if err != nil {
 		return "", err
@@ -268,6 +287,11 @@ func revertRuleLabel(records []Record, i int) (string, bool, error) {
 		if !found {
 			return "", false, nil
 		}
+	}
+	var err error
+	target, err = ruleRecord(target)
+	if err != nil {
+		return "", false, err
 	}
 	if target.Command.Command != RulesSet {
 		return "", false, nil

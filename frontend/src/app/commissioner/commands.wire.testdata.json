@@ -258,6 +258,12 @@
     "safeguard": "reason"
   },
   {
+    "command": "contract.action.set",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
     "command": "draft.order.auto",
     "effective": "now",
     "field": "",

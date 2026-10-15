@@ -212,7 +212,11 @@ type startedChange struct {
 func seasonChanges(records []Record, starts []time.Time, season int) ([]leaguerules.Change, error) {
 	fold := seasonFold{starts: starts, active: Replay(records).Active, season: season}
 	for _, r := range records {
-		if err := fold.add(r); err != nil {
+		projected, err := ruleRecord(r)
+		if err != nil {
+			return nil, err
+		}
+		if err := fold.add(projected); err != nil {
 			return nil, err
 		}
 	}

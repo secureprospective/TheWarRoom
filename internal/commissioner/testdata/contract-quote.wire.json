@@ -1,0 +1,232 @@
+{
+  "buyout": {
+    "league": "native.seed",
+    "revision": 5,
+    "season": 2026,
+    "player": "0099",
+    "name": "Player, 0099",
+    "franchise": "Held team 2",
+    "action": "buyout",
+    "actionName": "contract buyout",
+    "allowed": true,
+    "reason": "",
+    "needs": [],
+    "years": 0,
+    "salaryCents": null,
+    "salaries": [],
+    "deadMoney": [
+      {
+        "season": 2026,
+        "cents": 750000000
+      }
+    ],
+    "reliefCents": 0,
+    "cap": {
+      "beforeCents": 1850000000,
+      "afterCents": 1600000000,
+      "changeCents": -250000000,
+      "roomAfterCents": 10900000000,
+      "words": "Counted salary this season goes from $18,500,000.00 to $16,000,000.00; the cap is no tighter."
+    },
+    "basis": [
+      "75% of the average of his 3 remaining salaries, $10,000,000.00 each, all charged to the 2026 season."
+    ],
+    "notes": [
+      "Yearly limits count only the contract actions recorded in this app league.",
+      "Player, 0099 cannot be bid on again until the next offseason."
+    ],
+    "source": "App league; priced from this league's own rules and recorded contract, never from MFL"
+  },
+  "cutAtGate": {
+    "league": "native.seed",
+    "revision": 5,
+    "season": 2026,
+    "player": "0099",
+    "name": "Player, 0099",
+    "franchise": "Held team 2",
+    "action": "cut",
+    "actionName": "release",
+    "allowed": true,
+    "reason": "",
+    "needs": [],
+    "years": 0,
+    "salaryCents": null,
+    "salaries": [],
+    "deadMoney": [
+      {
+        "season": 2026,
+        "cents": 1050000000
+      }
+    ],
+    "reliefCents": 0,
+    "cap": {
+      "beforeCents": 1850000000,
+      "afterCents": 1900000000,
+      "changeCents": 50000000,
+      "roomAfterCents": 10600000000,
+      "words": "Counted salary this season rises by $500,000.00, from $18,500,000.00 to $19,000,000.00. The move ends within the salary cap."
+    },
+    "basis": [
+      "35% of each of his remaining salaries, $30,000,000.00 in all, charged to the 2026 season."
+    ],
+    "notes": [
+      "If another team claims Player, 0099 on waivers, this charge ends."
+    ],
+    "source": "App league; priced from this league's own rules and recorded contract, never from MFL"
+  },
+  "extensionOff": {
+    "league": "native.seed",
+    "revision": 5,
+    "season": 2026,
+    "player": "0099",
+    "name": "Player, 0099",
+    "franchise": "Held team 2",
+    "action": "extension",
+    "actionName": "contract extension",
+    "allowed": false,
+    "reason": "This league has the contract extension turned off.",
+    "needs": [],
+    "years": 0,
+    "salaryCents": null,
+    "salaries": [],
+    "deadMoney": [],
+    "reliefCents": 0,
+    "cap": null,
+    "basis": [],
+    "notes": [],
+    "source": "App league; priced from this league's own rules and recorded contract, never from MFL"
+  },
+  "resign": {
+    "league": "native.seed",
+    "revision": 5,
+    "season": 2026,
+    "player": "0097",
+    "name": "Player, 0097",
+    "franchise": "Held team 2",
+    "action": "resign",
+    "actionName": "restricted free agent re-sign",
+    "allowed": true,
+    "reason": "",
+    "needs": [],
+    "years": 3,
+    "salaryCents": 78000000,
+    "salaries": [
+      {
+        "season": 2027,
+        "cents": 78000000
+      },
+      {
+        "season": 2028,
+        "cents": 78000000
+      },
+      {
+        "season": 2029,
+        "cents": 78000000
+      }
+    ],
+    "deadMoney": [],
+    "reliefCents": 0,
+    "cap": {
+      "beforeCents": 1850000000,
+      "afterCents": 1850000000,
+      "changeCents": 0,
+      "roomAfterCents": 10650000000,
+      "words": "Counted salary this season goes from $18,500,000.00 to $18,500,000.00; the cap is no tighter."
+    },
+    "basis": [
+      "Tender level 1 is $600,000.00, with draft pick compensation in round 5. 110% of his $500,000.00 salary is $550,000.00; the higher applies.",
+      "A 3-year deal costs the tender plus 30%: $780,000.00 a year."
+    ],
+    "notes": [],
+    "source": "App league; priced from this league's own rules and recorded contract, never from MFL"
+  },
+  "restructure": {
+    "league": "native.seed",
+    "revision": 5,
+    "season": 2026,
+    "player": "0099",
+    "name": "Player, 0099",
+    "franchise": "Held team 2",
+    "action": "restructure",
+    "actionName": "contract restructure",
+    "allowed": true,
+    "reason": "",
+    "needs": [],
+    "years": 0,
+    "salaryCents": null,
+    "salaries": [
+      {
+        "season": 2026,
+        "cents": 800000000
+      },
+      {
+        "season": 2027,
+        "cents": 1066000000
+      },
+      {
+        "season": 2028,
+        "cents": 1066000000
+      },
+      {
+        "season": 2029,
+        "cents": 1068000000
+      }
+    ],
+    "deadMoney": [],
+    "reliefCents": 0,
+    "cap": {
+      "beforeCents": 1850000000,
+      "afterCents": 1650000000,
+      "changeCents": -200000000,
+      "roomAfterCents": 10850000000,
+      "words": "Counted salary this season goes from $18,500,000.00 to $16,500,000.00; the cap is no tighter."
+    },
+    "basis": [
+      "$2,000,000.00 moves out of 2026 into the 3 later years after it, spread evenly; the contract's total stays the same.",
+      "The most that can move is $2,000,000.00, set by this season's salary of $10,000,000.00."
+    ],
+    "notes": [
+      "Yearly limits count only the contract actions recorded in this app league.",
+      "If a restructured contract is released later, the charge is 50% of the remaining salaries instead of 35%."
+    ],
+    "source": "App league; priced from this league's own rules and recorded contract, never from MFL"
+  },
+  "tag": {
+    "league": "native.seed",
+    "revision": 5,
+    "season": 2026,
+    "player": "0098",
+    "name": "Player, 0098",
+    "franchise": "Held team 2",
+    "action": "tag",
+    "actionName": "franchise tag",
+    "allowed": true,
+    "reason": "",
+    "needs": [],
+    "years": 1,
+    "salaryCents": 960000000,
+    "salaries": [
+      {
+        "season": 2027,
+        "cents": 960000000
+      }
+    ],
+    "deadMoney": [],
+    "reliefCents": 0,
+    "cap": {
+      "beforeCents": 1850000000,
+      "afterCents": 1850000000,
+      "changeCents": 0,
+      "roomAfterCents": 10650000000,
+      "words": "Counted salary this season goes from $18,500,000.00 to $18,500,000.00; the cap is no tighter."
+    },
+    "basis": [
+      "The average of the top 5 QB salaries, $6,000,000.00, is below his own $8,000,000.00, so the tag is 120% of his salary."
+    ],
+    "notes": [
+      "Yearly limits count only the contract actions recorded in this app league.",
+      "The league leaves out contracts signed during the playoffs. This league's record does not mark which were, so every salary at the position counts."
+    ],
+    "source": "App league; priced from this league's own rules and recorded contract, never from MFL"
+  }
+}

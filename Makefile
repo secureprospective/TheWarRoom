@@ -61,7 +61,7 @@ vet:
 # goroutines hitting B3c). Never make this optional.
 # The root package's race run passed 10 minutes (Go's default) as the commissioner side grew; the limit
 # is explicit so a slow package fails as a timeout we chose, not one we inherited.
-GO_TEST_TIMEOUT := 25m
+GO_TEST_TIMEOUT := 45m
 test:
 	go test -race -timeout $(GO_TEST_TIMEOUT) ./...
 

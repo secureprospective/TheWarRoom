@@ -37,7 +37,7 @@ func TestEveryRegisteredNativeActionAsksTheGate(t *testing.T) {
 	raw := seedCalendarTest(t, app)
 	probe := newGateProbe("rfa_tender")
 	registry := probe.registry
-	expected := int64(4)
+	expected := switchContractRulesOn(t, app, raw, 4)
 	for i, entry := range registry {
 		expected++
 		executeCommissionerTest(t, app, windowCommandFrom(raw, commissioner.WindowSet,

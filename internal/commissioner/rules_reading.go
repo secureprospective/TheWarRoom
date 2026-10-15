@@ -119,7 +119,11 @@ func ruleHistory(records []Record, at time.Time) (map[string]string, map[string]
 	active := Replay(records).Active
 	sources, pending := map[string]string{}, map[string][]RulePending{}
 	latest := map[string]time.Time{}
-	for _, r := range records {
+	for _, stored := range records {
+		r, err := ruleRecord(stored)
+		if err != nil {
+			return nil, nil, err
+		}
 		if windowCommand(r.Command.Command) && active[r.Receipt.Entry] {
 			sources[string(windowsField)] = r.Receipt.RecordedAt.Format(time.RFC3339Nano)
 			continue
@@ -187,7 +191,11 @@ func replacedWaiting(records []Record) (map[string]string, error) {
 	}
 	active := Replay(records).Active
 	groups, order := map[string][]Record{}, []string{}
-	for _, r := range records {
+	for _, stored := range records {
+		r, err := ruleRecord(stored)
+		if err != nil {
+			return nil, err
+		}
 		if r.Command.Command != RulesSet || !active[r.Receipt.Entry] || r.Command.Effective == "now" {
 			continue
 		}
