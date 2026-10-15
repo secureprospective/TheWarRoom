@@ -42,6 +42,7 @@ type People struct {
 	YourRole       string `json:"yourRole"`
 	MayChangeRules bool   `json:"mayChangeRules"`
 	MayGrantRoles  bool   `json:"mayGrantRoles"`
+	MayPostNotices bool   `json:"mayPostNotices"`
 }
 
 func PeopleReading(league, principal string, records []Record) (People, error) {
@@ -86,6 +87,8 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 	out.MayChangeRules = private
 	_, grantErr := GovernanceAuthorizer{State: state}.Allow(league, principal, "commish.role.grant")
 	out.MayGrantRoles = grantErr == nil
+	_, postErr := GovernanceAuthorizer{State: state}.Allow(league, principal, NoticePublish)
+	out.MayPostNotices = postErr == nil
 	out.Votes = readVotes(state, records, len(out.Seats), private)
 	out.Succession = successionStatus(state, records)
 	return out, nil

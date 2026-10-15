@@ -7,15 +7,19 @@ type Stat = { Label: string; Group: string; Used: boolean; Points: number;
   Bonuses: { At: number; Points: number }[]; Positions: string[]; Once?: boolean };
 const base = { note: '', status: 'ok' as const, asOf: '', link: null, summary: [] as Report['summary'] };
 
+const reported = (rules: Rules) => rules.sections.flatMap(section =>
+  section.rows.filter(r => r.field !== scoringField).map(row => ({ section: section.label, row })));
+// The rules in the order rulesReport lays them out, so a row of the table can be matched to its rule.
+export const reportedRules = (rules: Rules): RuleRow[] => reported(rules).map(r => r.row);
+
 // rulesReport lays every rule out as one table grouped by section, with what is waiting beside each.
 // Scoring has its own tables, so it is left out here.
 export function rulesReport(rules: Rules): Report {
-  const rows = rules.sections.flatMap(section => section.rows.filter(r => r.field !== scoringField)
-    .map(r => ({
-      group: section.label, range: null,
-      cells: [r.label, r.value, ruleSource(r),
-        r.pending.map(p => `${p.value}: ${pendingWhen(p)}`).join('\n') || 'Nothing waiting'],
-    })));
+  const rows = reported(rules).map(({ section, row: r }) => ({
+    group: section, range: null,
+    cells: [r.label, r.value, ruleSource(r),
+      r.pending.map(p => `${p.value}: ${pendingWhen(p)}`).join('\n') || 'Nothing waiting'],
+  }));
   return { ...base, id: 'league-rules', title: 'League rules',
     source: `${rules.name} · League version ${rules.revision}`,
     how: 'Each setting is read from this league’s ledger. A change set to take effect from the next '

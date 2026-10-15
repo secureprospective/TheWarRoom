@@ -1,3 +1,8 @@
+import previewWire from './preview.wire.testdata.json';
+import jobsWire from './jobs.wire.testdata.json';
+import controlsWire from './controls.wire.testdata.json';
+import noticesWire from './notices.wire.testdata.json';
+import digestsWire from './digests.wire.testdata.json';
 import { describe, expect, it } from 'vitest';
 import { createLeagueState, createProxy, formOf, staleWords, type Port } from './proxy';
 import ledger from './wire.testdata.json';
@@ -9,10 +14,12 @@ const receipt = { entry: 'act.new', league: 'native.two', revision: 2, recordedA
 function port(over: Partial<Port> = {}) {
   const calls = { ledger: [] as string[], rules: [] as string[], people: [] as string[] };
   const base: Port = {
-    execute: async () => receipt,
+    execute: async () => receipt, preview: async () => previewWire.hold,
     ledger: async league => { calls.ledger.push(league); return { ...ledger, league }; },
     rules: async league => { calls.rules.push(league); return { ...rules, league }; },
     people: async league => { calls.people.push(league); return { ...people.owner, league }; },
+    jobs: async () => jobsWire.fresh, controls: async () => controlsWire,
+    notices: async () => noticesWire.commissioner, digests: async () => digestsWire.creator,
     leagues: async () => [{ id: 'native.one', name: 'One' }, { id: 'native.two', name: 'Two' }],
   };
   return { calls, state: createLeagueState(createProxy({ ...base, ...over })) };
@@ -90,5 +97,31 @@ describe('League state', () => {
     await expect(state.execute('{"command":"commish.rules.set"}')).rejects.toThrow(staleWords);
     expect(state.peek().outcome).toMatchObject({ status: 'refused', message: staleWords });
     expect(calls.rules).toEqual(['native.one']);
+  });
+});
+
+describe('Landing reading lifecycle', () => {
+  it('reads controls without a league, and reloads jobs on each recorded receipt', async () => {
+    let reads = 0;
+    const { state } = port({ jobs: async league => { reads++; return { ...jobsWire.live, league }; } });
+    await state.choose();
+    expect(state.peek().jobs?.league).toBe('native.one');
+    expect(state.peek().controls?.groups).toHaveLength(8);
+    await state.execute('{}');
+    expect(state.peek().jobs?.league).toBe('native.two');
+    expect(reads).toBe(2);
+    const empty = port({ leagues: async () => [] });
+    await empty.state.choose();
+    expect(empty.state.peek().jobs).toBeUndefined();
+    expect(empty.state.peek().controls?.groups).toHaveLength(8);
+  });
+  it('keeps existing screens usable when jobs fail, without pretending jobs exist', async () => {
+    const { state } = port({ jobs: async () => { throw new Error('No recorded calendar'); } });
+    await state.choose();
+    expect(state.peek().landingError).toContain('No recorded calendar');
+    expect(state.peek().jobs).toBeUndefined();
+    expect(state.peek().rules?.league).toBe('native.one');
+    expect(state.peek().controls?.groups).toHaveLength(8);
+    expect(state.peek().pending).toBe(false);
   });
 });

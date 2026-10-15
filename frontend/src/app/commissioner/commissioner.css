@@ -1,4 +1,3 @@
-.twr-app .league-desk,
 .twr-app .league-rules,
 .twr-app .league-people { display: grid; gap: 12px; }
 .twr-app .league-form {
@@ -18,8 +17,6 @@
 .twr-app .change-safeguard,
 .twr-app .change-why { margin: 0; color: var(--surface-tx2); }
 .twr-app .change-refused { margin: 0; font-weight: 600; }
-.twr-app .ledger-undo { margin-top: 4px; }
-.twr-app .ledger-undo summary { cursor: pointer; }
 .twr-app .league-votes { padding-inline-start: 24px; }
 .twr-app .league-votes p { margin: 4px 0; }
 
@@ -37,3 +34,114 @@
 .twr-app .hold-to-fire.holding .hold-fill { width: 100%; }
 .twr-app .hold-help,
 .twr-app .hold-said { color: var(--surface-tx2); }
+
+.twr-app .commissioner-screen { --commissioner-gap: 12px; display: grid; gap: var(--commissioner-gap); }
+.twr-app .commissioner-density { display: flex; flex-wrap: wrap; gap: 4px; }
+.twr-app .commissioner-density button {
+  min-height: 32px; padding: 4px 10px; border: 1px solid var(--surface-line);
+  background: transparent; color: inherit; cursor: pointer;
+}
+.twr-app .commissioner-density button[aria-pressed="true"] {
+  background: var(--surface-tx1); color: var(--surface-0); font-weight: 600;
+}
+.twr-app .commissioner-density button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.twr-app .commissioner-screen[data-density="matrix"] { --commissioner-gap: 4px; }
+.twr-app .commissioner-screen[data-density="matrix"] .report-table td,
+.twr-app .commissioner-screen[data-density="matrix"] .report-table th { padding: 2px 6px; }
+.twr-app .commissioner-screen[data-density="matrix"] p { margin-block: 4px; }
+.twr-app .commissioner-screen[data-density="matrix"] .league-form,
+.twr-app .commissioner-screen[data-density="matrix"] .league-rules,
+.twr-app .commissioner-screen[data-density="matrix"] .league-people { gap: 4px; }
+.twr-app .commissioner-screen[data-density="narrative"] { --commissioner-gap: 20px; }
+.twr-app .commissioner-screen[data-density="narrative"] .report-table { width: 100%; }
+.twr-app .commissioner-screen[data-density="narrative"] .report-table thead { display: block; }
+.twr-app .commissioner-screen[data-density="narrative"] .report-table tbody,
+.twr-app .commissioner-screen[data-density="narrative"] .report-table tr,
+.twr-app .commissioner-screen[data-density="narrative"] .report-table td { display: block; }
+.twr-app .commissioner-screen[data-density="narrative"] .report-table tr {
+  margin-block: 12px; padding: 8px 0;
+}
+.twr-app .commissioner-screen[data-density="narrative"] .report-table td {
+  padding: 4px 8px; white-space: normal;
+}
+.twr-app .commissioner-screen[data-density="narrative"] .report-table td::before {
+  content: attr(data-label) ": "; font-weight: 600;
+}
+.twr-app .commissioner-screen[data-density="narrative"] .draft-cell-line { display: inline; }
+.twr-app .ledger-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+.twr-app .ledger-filters label { display: grid; gap: 4px; }
+.twr-app .ledger-filters input,
+.twr-app .ledger-filters select,
+.twr-app .ledger-filters button { min-height: 32px; }
+
+.twr-app .league-landing { display: grid; gap: 20px; min-width: 0; }
+.twr-app .jobs-strip h4,
+.twr-app .control-group h4 { margin: 0 0 8px; }
+.twr-app .jobs,
+.twr-app .control-hits,
+.twr-app .control-rows { list-style: none; padding: 0; margin: 0; }
+.twr-app .jobs { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.twr-app .job { flex: 1 1 220px; min-width: 0; color: var(--surface-tx2); }
+.twr-app .job-live { color: var(--surface-tx1); }
+.twr-app .job:not(.job-live) .act { color: var(--surface-tx2); }
+.twr-app .job:not(.job-live) strong { font-weight: 400; }
+.twr-app .job-live strong { font-weight: 700; }
+.twr-app .job .act,
+.twr-app .control-hits .act { display: block; width: 100%; text-align: start; }
+.twr-app .job-line { display: block; margin-top: 4px; }
+.twr-app .job time { font-variant-numeric: tabular-nums; }
+.twr-app .control-search { display: grid; gap: 8px; }
+.twr-app .control-search input { width: 100%; box-sizing: border-box; min-height: 36px; }
+.twr-app .control-hits li { padding-block: 8px; border-bottom: 1px solid var(--surface-line); }
+.twr-app .control-group { border-top: 1px solid var(--surface-line); padding-top: 12px; }
+.twr-app .control-group-body { display: grid; gap: 16px; }
+.twr-app .control-count { font-size: 0.85em; font-weight: normal; color: var(--surface-tx2); }
+.twr-app .control-row { padding: 12px 4px; border-top: 1px solid var(--surface-line); }
+.twr-app .control-row h6 { font-size: 1em; margin: 0 0 4px; }
+.twr-app .control-row p { max-width: 72ch; margin-block: 4px; }
+.twr-app .control-row:focus { outline: 2px solid currentColor; outline-offset: 2px; }
+.twr-app .control-status { color: var(--surface-tx2); }
+.twr-app .control-rules { padding-inline-start: 20px; }
+.twr-app .control-rules li {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  padding-block: 4px; overflow-wrap: anywhere;
+}
+.twr-app .control-rules li > span { min-width: 0; }
+.twr-app .control-rules li > .act { flex: none; }
+.twr-app .mfl-reference { border-top: 1px solid var(--surface-line); padding-top: 16px; }
+.twr-app .mfl-reference > summary { cursor: pointer; }
+.twr-app .mfl-reference > summary:focus-visible { outline: 2px solid currentColor; }
+
+.twr-app .tray-shade {
+  position: fixed; inset: 0; z-index: 50; display: flex; justify-content: flex-end;
+  background: rgb(0 0 0 / 45%);
+}
+.twr-app .side-tray {
+  width: min(100%, 640px); height: 100%; overflow-y: auto; box-sizing: border-box;
+  background: var(--surface-0); color: var(--surface-tx1); border-left: 1px solid var(--surface-line);
+  padding: 20px; overscroll-behavior: contain;
+}
+.twr-app .tray-heading {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.twr-app .tray-heading h3 { margin: 0; }
+.twr-app .tray-heading button { min-height: 36px; }
+.twr-app .side-tray h4 { margin-block: 4px; }
+.twr-app .side-tray h5 { margin-block: 8px; font-size: 1em; }
+.twr-app .side-tray p { overflow-wrap: anywhere; }
+.twr-app .side-tray :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.twr-app .tray-target { font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) {
+  .twr-app .side-tray .hold-fill { transition: none; }
+}
+
+.twr-app .league-notes, .twr-app .release-notes, .twr-app .mail-log, .twr-app .league-digest {
+  display: grid; gap: 8px; margin: 0; padding: 0; list-style: none;
+}
+.twr-app .league-notes li, .twr-app .release-notes li, .twr-app .mail-log li, .twr-app .league-digest li {
+  border-top: 1px solid var(--surface-line); padding-top: 8px;
+}
+.twr-app .league-notes li[data-pinned="true"] { border-top-color: var(--surface-tx1); }
+.twr-app .note-pin { color: var(--surface-tx2); }
+.twr-app .note-text { white-space: pre-wrap; }
+.twr-app .note-by, .twr-app .release-notes p, .twr-app .mail-log p { margin: 0; color: var(--surface-tx2); }

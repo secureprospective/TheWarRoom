@@ -1,0 +1,302 @@
+[
+  {
+    "command": "commish.league.create",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.correction.revert",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.notice.publish",
+    "effective": "now",
+    "field": "",
+    "safeguard": "confirm"
+  },
+  {
+    "command": "commish.whatsnew.post",
+    "effective": "now",
+    "field": "",
+    "safeguard": "confirm"
+  },
+  {
+    "command": "commish.franchise.edit",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.seat.invite",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.seat.invite.revoke",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.seat.invite.redeem",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.seat.remove",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.seat.replace",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.abilities.set",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.visibility.set",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.role.grant",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.role.revoke",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.accept",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.activity",
+    "effective": "now",
+    "field": "",
+    "safeguard": "confirm"
+  },
+  {
+    "command": "commish.succession.decline",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.election.open",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.inactivity.set",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.periods.set",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.stepdown",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.takeover",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.succession.voteout.open",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.vote.cast",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.vote.close",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.vote.tiebreak",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "calendar.window.move",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "calendar.window.remove",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "calendar.window.set",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.calendar.exception",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.cap.adjust",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.cap.relief",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.contract.edit",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.league.seed_held",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.player.position",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.player.position.clear",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.reserve.exception",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.score.franchise",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.score.player",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.standings.override",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.standings.override.clear",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.standings.record.adjust",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "schedule.edit",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "schedule.generate",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "schedule.publish",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.rules.set",
+    "effective": "now",
+    "field": "league.teams",
+    "safeguard": "reason"
+  },
+  {
+    "command": "commish.rules.set",
+    "effective": "now",
+    "field": "house.texts",
+    "safeguard": "confirm"
+  },
+  {
+    "command": "commish.rules.set",
+    "effective": "next_rollover",
+    "field": "league.teams",
+    "safeguard": "hold"
+  },
+  {
+    "command": "commish.rules.set",
+    "effective": "next_rollover",
+    "field": "house.texts",
+    "safeguard": "confirm"
+  },
+  {
+    "command": "commish.rules.set",
+    "effective": "next_rollover",
+    "field": "calendar.rollover",
+    "safeguard": "reason"
+  }
+]

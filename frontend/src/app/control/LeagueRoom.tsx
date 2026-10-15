@@ -5,10 +5,7 @@ import { ReportView } from '../reports/ReportView';
 import { controlState, matching } from './state';
 import './control.css';
 
-const LeagueDesk = lazy(() => import('../commissioner/LeagueDesk'));
-const LeagueLedger = lazy(() => import('../commissioner/LeagueLedger'));
-const LeagueRules = lazy(() => import('../commissioner/LeagueRules'));
-const LeaguePeople = lazy(() => import('../commissioner/LeaguePeople'));
+const LeagueLanding = lazy(() => import('../commissioner/LeagueLanding'));
 
 // LeagueRoom is Control Room › League: the league's settings, its own by-laws and accounting.
 export function LeagueRoom() {
@@ -18,6 +15,11 @@ export function LeagueRoom() {
   return (
     <section className="control-room" aria-busy={s.pending}>
       {s.error && <p role="alert">{s.error}</p>}
+      <Suspense fallback={<p role="status">Reading the league…</p>}>
+        <LeagueLanding />
+      </Suspense>
+      <details className="mfl-reference">
+        <summary>MFL settings, by-laws and accounting</summary>
       {s.settings && <ReportView report={s.settings} howLabel="Where this comes from" />}
       <section className="bylaws" data-endpoint="M-185" aria-label="By-laws">
         <h4>By-laws</h4>
@@ -33,15 +35,10 @@ export function LeagueRoom() {
           </details>
         ))}
       </section>
-      <Suspense fallback={<p role="status">Reading the commissioner side…</p>}>
-        <LeagueDesk />
-        <LeagueLedger />
-        <LeagueRules />
-        <LeaguePeople />
-      </Suspense>
       {s.accounting && <ReportView report={s.accounting} howLabel="How this was checked" />}
       <Act variant="button"
         verb="control.read" args={{ action: 'open-accounting', value: '' }}>Open MFL accounting</Act>
+      </details>
     </section>
   );
 }

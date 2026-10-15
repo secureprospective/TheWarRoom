@@ -91,19 +91,35 @@ export function TargetBidWithdraw(arg1:string):Promise<main.BidPlan>;
 
 export function TargetBylaws():Promise<Array<main.BylawSection>>;
 
+export function TargetCacheClear(arg1:string):Promise<main.DataActResult>;
+
+export function TargetCacheScopes():Promise<Array<main.DataScope>>;
+
 export function TargetCheckLineup(arg1:string,arg2:Array<string>):Promise<lineup.Result>;
 
 export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
 
+export function TargetCommissionerControls():Promise<commissioner.Controls>;
+
+export function TargetCommissionerDigests(arg1:string):Promise<commissioner.Digests>;
+
 export function TargetCommissionerExecute(arg1:string):Promise<commissioner.Receipt>;
+
+export function TargetCommissionerJobs(arg1:string):Promise<commissioner.Jobs>;
 
 export function TargetCommissionerLeagues():Promise<Array<commissioner.NativeLeague>>;
 
 export function TargetCommissionerLedger(arg1:string):Promise<commissioner.Ledger>;
 
+export function TargetCommissionerLedgerFiltered(arg1:string,arg2:string):Promise<commissioner.Ledger>;
+
+export function TargetCommissionerNotices(arg1:string):Promise<commissioner.LeagueNotes>;
+
 export function TargetCommissionerPeople(arg1:string):Promise<commissioner.People>;
+
+export function TargetCommissionerPreview(arg1:string):Promise<commissioner.Preview>;
 
 export function TargetCommissionerRules(arg1:string):Promise<commissioner.Rules>;
 

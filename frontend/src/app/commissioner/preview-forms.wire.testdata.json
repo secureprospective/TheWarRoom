@@ -1,0 +1,261 @@
+{
+  "needsReason": {
+    "question": "How many teams, conferences, divisions; how do teams compete; how are first rosters built?",
+    "target": {
+      "league": "native.fresh",
+      "name": "Fresh league",
+      "version": 0
+    },
+    "fields": [
+      {
+        "label": "League name",
+        "before": "No league yet",
+        "beforeSource": "Not started",
+        "after": "Fresh league",
+        "afterSource": "Your proposed change",
+        "when": "now"
+      },
+      {
+        "label": "Franchises",
+        "before": "None",
+        "beforeSource": "Not started",
+        "after": "12 franchises",
+        "afterSource": "Your proposed change",
+        "when": "now"
+      },
+      {
+        "label": "Starting rules",
+        "before": "None",
+        "beforeSource": "Not started",
+        "after": "Legacy NFL rules",
+        "afterSource": "Your proposed change",
+        "when": "now"
+      }
+    ],
+    "affects": {
+      "readings": [],
+      "count": 0,
+      "words": "No existing league changes. This starts a new one."
+    },
+    "blockers": [
+      "Give a reason for this change"
+    ],
+    "safeguard": "reason"
+  },
+  "note": {
+    "question": "What changed in the app or the league?",
+    "target": {
+      "league": "native.preview",
+      "name": "Preview league",
+      "version": 2
+    },
+    "fields": [
+      {
+        "label": "League note",
+        "before": "Not posted",
+        "beforeSource": "Nothing is shown to owners until you confirm",
+        "after": "Trades close in week 9",
+        "afterSource": "Your proposed change. In the league notices, newest first",
+        "when": "now"
+      }
+    ],
+    "affects": {
+      "readings": [
+        "What's New",
+        "League feed"
+      ],
+      "count": 2,
+      "words": "2 owner readings use this rule"
+    },
+    "blockers": [],
+    "safeguard": "confirm"
+  },
+  "notice": {
+    "question": "What official notice or newsletter should owners see?",
+    "target": {
+      "league": "native.preview",
+      "name": "Preview league",
+      "version": 2
+    },
+    "fields": [
+      {
+        "label": "Official notice",
+        "before": "Not posted",
+        "beforeSource": "Nothing is shown to owners until you confirm",
+        "after": "Rookie draft is Saturday",
+        "afterSource": "Your proposed change. At the top of the league notices",
+        "when": "now"
+      }
+    ],
+    "affects": {
+      "readings": [
+        "Commissioner News",
+        "Email Log",
+        "League feed"
+      ],
+      "count": 3,
+      "words": "3 owner readings use this rule"
+    },
+    "blockers": [],
+    "safeguard": "confirm"
+  },
+  "role": {
+    "question": "Who is commissioner, co-commissioner, or on the DOT?",
+    "target": {
+      "league": "native.preview",
+      "name": "Preview league",
+      "version": 2
+    },
+    "fields": [
+      {
+        "label": "Co-commissioner for owner-two",
+        "before": "Does not hold the role",
+        "beforeSource": "Recorded league roles",
+        "after": "Holds the role",
+        "afterSource": "Your proposed change",
+        "when": "now"
+      }
+    ],
+    "affects": {
+      "readings": [
+        "League Settings"
+      ],
+      "count": 1,
+      "words": "1 owner reading uses this rule"
+    },
+    "blockers": [],
+    "safeguard": "reason"
+  },
+  "roleUnchanged": {
+    "question": "Who is commissioner, co-commissioner, or on the DOT?",
+    "target": {
+      "league": "native.preview",
+      "name": "Preview league",
+      "version": 2
+    },
+    "fields": [
+      {
+        "label": "Commissioner for creator",
+        "before": "Holds the role",
+        "beforeSource": "Recorded league roles",
+        "after": "Holds the role",
+        "afterSource": "Your proposed change",
+        "when": "now"
+      }
+    ],
+    "affects": {
+      "readings": [
+        "League Settings"
+      ],
+      "count": 1,
+      "words": "1 owner reading uses this rule"
+    },
+    "blockers": [
+      "This person already holds that role. Nothing would change"
+    ],
+    "safeguard": "reason"
+  },
+  "ruleUnchanged": {
+    "question": "How small and how large may a roster be? Any position minimums?",
+    "target": {
+      "league": "native.preview",
+      "name": "Preview league",
+      "version": 2
+    },
+    "fields": [
+      {
+        "label": "Active roster size",
+        "before": "18 to 80",
+        "beforeSource": "Legacy NFL rules",
+        "after": "20 to 70",
+        "afterSource": "Your proposed change",
+        "when": "from the next rollover"
+      }
+    ],
+    "affects": {
+      "readings": [
+        "Rosters",
+        "Roster w/Stats",
+        "Submit Lineup",
+        "Drop Players"
+      ],
+      "count": 4,
+      "words": "4 owner readings use this rule"
+    },
+    "blockers": [
+      "This change is already waiting for the next rollover. Nothing would change"
+    ],
+    "safeguard": "hold"
+  },
+  "start": {
+    "question": "How many teams, conferences, divisions; how do teams compete; how are first rosters built?",
+    "target": {
+      "league": "native.fresh",
+      "name": "Fresh league",
+      "version": 0
+    },
+    "fields": [
+      {
+        "label": "League name",
+        "before": "No league yet",
+        "beforeSource": "Not started",
+        "after": "Fresh league",
+        "afterSource": "Your proposed change",
+        "when": "now"
+      },
+      {
+        "label": "Franchises",
+        "before": "None",
+        "beforeSource": "Not started",
+        "after": "12 franchises",
+        "afterSource": "Your proposed change",
+        "when": "now"
+      },
+      {
+        "label": "Starting rules",
+        "before": "None",
+        "beforeSource": "Not started",
+        "after": "Legacy NFL rules",
+        "afterSource": "Your proposed change",
+        "when": "now"
+      }
+    ],
+    "affects": {
+      "readings": [],
+      "count": 0,
+      "words": "No existing league changes. This starts a new one."
+    },
+    "blockers": [],
+    "safeguard": "reason"
+  },
+  "undo": {
+    "question": "Override one automated decision here, or undo one recorded change?",
+    "target": {
+      "league": "native.preview",
+      "name": "Preview league",
+      "version": 2
+    },
+    "fields": [
+      {
+        "label": "Recorded change",
+        "before": "Active roster size: 18 to 80 → 20 to 70, from the next rollover",
+        "beforeSource": "Recorded by creator in the league ledger",
+        "after": "Undone: this change stops counting. The original stays in the ledger.",
+        "afterSource": "Your proposed change",
+        "when": "now"
+      }
+    ],
+    "affects": {
+      "readings": [
+        "Rosters",
+        "Roster w/Stats",
+        "Submit Lineup",
+        "Drop Players"
+      ],
+      "count": 4,
+      "words": "4 owner readings use this rule"
+    },
+    "blockers": [],
+    "safeguard": "reason"
+  }
+}

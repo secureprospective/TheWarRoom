@@ -11,7 +11,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Layer | Package | Job |
 |---|---|---|
 | App | repo root (`package main`) | Wails entrypoint (`main.go`), the `App` composition root (`app.go`) and the IPC adapters (`*_app.go`). Adapters validate, route and format; no business logic, no SQL. |
-| Composition | `internal/commissioner` | Typed app-native command validation, session/authorization ports, receipts, compensation replay and privacy-filtered ledger/people readings. Imports the pure governance policy; the production authorizer replays the transaction's existing records and uses census permissions, without I/O or re-entry. `history.ExecuteCommissioner` trial-folds the proposed change and appends once in `history.db`'s `league_event`; no what-if or MFL writes. Creation takes `{name, preset: legacy_nfl|empty, franchiseCount}`; Go expands `franchise.01`..`NN` (named "Franchise N") and, for Legacy NFL, the whole typed preset seed into the durable record, so replay never depends on later preset code; the creator becomes commissioner. `commish.rules.set` changes one `internal/leaguerules` catalogue field: `rules.go` maps every field to exactly one census row (authorization and gravity; apply-now on a competitive field is G3), `rules_season.go` resolves rules by season and instant; `next_rollover` changes stay pending until the recorded rollover instant arrives, and ended-season reads ignore later compensation, and the trial resolve refuses incoherent rule sets before append. `rules_reading.go` is the public sectioned rules reading. CM-018..021 people changes, rule changes and correction reversal share the one append path; reversal also requires the target's original permission. Root `commissioner_app.go` exposes execute/ledger/people/rules/native-leagues IPC, using only the injected local session. Rule rows also carry the in-force value as plain JSON (`leaguerules.Current`), a percent unit and the safeguard Go applies for each timing; the people reading says what this principal's role may start (`yourRole`, `mayChangeRules`, `mayGrantRoles`); a ledger entry says where this principal may undo it (`undo`: league or private). The frontend lives in `frontend/src/app/commissioner/`, all lazy under Control Room › League: one shared state (`proxy.ts`, `leagueState`) holds the league picker, the ledger/rules/people readings and the outcome of the last form, and reloads all three on a receipt; typed parsers `rules.ts`, `people.ts`; screens `LeagueRules`, `LeaguePeople`, `LeagueLedger` (with `UndoEntry`) and `LeagueDesk` (picker plus the forms `StartLeagueForm`, `RuleChangeForm`, `RoleForm`). Forms only build the typed body and send it through the `commissioner.execute` verb, with a request key that repeats on a retry of the same submit (`ChangeBar`, `forms.ts`); G2 confirms by `HoldToFire` (a self-contained hold timer, the one reviewed keyboard exception besides the command bar). Rule values are edited through `ruleDraft.ts` (drafts to and from Go's plain JSON) and `RuleInput.tsx`; list and map add/remove go through the `commissioner.draft` verb. Go stays the authority. Succession forms and ballots are not built. CM-022 succession, inactivity, elections and vote commands (`succession.go`) use recorded ledger times and the same append path: CM-022 is a composite census row, so each command names its gate (commissioner only for the inactivity and voting periods and the activity check-in; co-commissioner or DOT to open votes; a vote's target may not close it) and the governance trial fold decides the rest. Every recorded change counts as its author's activity; an inactivity takeover waits out the longer of the two periods while season dates need a ruling. People readings show public vote counts and succession status, with voter participation private to C/CC; ballot ledger entries are private, tie rulings public. |
+| Composition | `internal/commissioner` | Typed app-native command validation, session/authorization ports, receipts, compensation replay and privacy-filtered ledger/people readings. Imports the pure governance policy; the production authorizer replays the transaction's existing records and uses census permissions, without I/O or re-entry. `history.ExecuteCommissioner` trial-folds the proposed change and appends once in `history.db`'s `league_event`; no what-if or MFL writes. Creation takes `{name, preset: legacy_nfl|empty, franchiseCount}`; Go expands `franchise.01`..`NN` (named "Franchise N") and, for Legacy NFL, the whole typed preset seed into the durable record, so replay never depends on later preset code; the creator becomes commissioner. `commish.rules.set` changes one `internal/leaguerules` catalogue field: `rules.go` maps every field to exactly one census row (authorization and gravity; apply-now on a competitive field is G3), `rules_season.go` resolves rules by season and instant; `next_rollover` changes stay pending until the recorded rollover instant arrives, and ended-season reads ignore later compensation, and the trial resolve refuses incoherent rule sets before append. `rules_reading.go` is the public sectioned rules reading. CM-018..021 people changes, rule changes and correction reversal share the one append path; reversal also requires the target's original permission. Root `commissioner_app.go` exposes execute/ledger/people/rules/native-leagues IPC, using only the injected local session. Rule rows also carry the in-force value as plain JSON (`leaguerules.Current`), a percent unit and the safeguard Go applies for each timing; the people reading says what this principal's role may start (`yourRole`, `mayChangeRules`, `mayGrantRoles`); a ledger entry says where this principal may undo it (`undo`: league or private). The frontend lives in `frontend/src/app/commissioner/`, all lazy under Control Room › League: one shared state (`proxy.ts`, `leagueState`) holds the league picker, the ledger/rules/people readings and the outcome of the last form, and reloads all three on a receipt; typed parsers `rules.ts`, `people.ts`; screens `LeagueRules`, `LeaguePeople`, `LeagueLedger` (with `UndoEntry`) and `LeaguePicker` and the tray forms `StartLeagueForm`, `RuleChangeForm`, `RoleForm`. Forms only build the typed body and send it through the `commissioner.execute` verb, with a request key that repeats on a retry of the same submit (`ChangeBar`, `forms.ts`); G2 confirms by `HoldToFire` (a self-contained hold timer, the one reviewed keyboard exception besides the command bar). Rule values are edited through `ruleDraft.ts` (drafts to and from Go's plain JSON) and `RuleInput.tsx`; list and map add/remove go through the `commissioner.draft` verb. Go stays the authority. Succession forms and ballots are not built. CM-022 succession, inactivity, elections and vote commands (`succession.go`) use recorded ledger times and the same append path: CM-022 is a composite census row, so each command names its gate (commissioner only for the inactivity and voting periods and the activity check-in; co-commissioner or DOT to open votes; a vote's target may not close it) and the governance trial fold decides the rest. Every recorded change counts as its author's activity; an inactivity takeover waits out the longer of the two periods while season dates need a ruling. People readings show public vote counts and succession status, with voter participation private to C/CC; ballot ledger entries are private, tie rulings public. |
 | Credentials | `internal/mflkey` | OS keyring store; redacted credential type, bounded operations. |
 | Layer 1 | `internal/ingestion/pendingtrades` | Keyed pending-trade feed and candidate-key verification; no franchise inference. |
 | Transport | `internal/mfl` | MFL HTTP client: rate limit, host discovery, 429 backoff. No domain types. |
@@ -495,3 +495,61 @@ There is no production native lineup provider yet: its default explicitly report
 substitutes MFL starters. The existing held-stat adapter still lacks play-by-play. Conference alignment
 and native power-rank inputs are not available in the current rule model; those criteria explicitly
 pass with no data. No owner screen is migrated and no scouting or imported MFL reading changes.
+
+
+Commissioner ledger filters: `TargetCommissionerLedgerFiltered(league, body)` decodes a
+`commissioner.RawLedgerFilter`, then the history store builds the authorized reading before Go filters
+by author, command kind and recorded time (inclusive start, exclusive end). Filters never change the
+league version or expose private rows. `LedgerFilters` presents that reading, converts viewer-local
+bounds to RFC3339, ignores superseded answers and reapplies on refresh. `DensityScreen` wraps the four
+existing commissioner screens and uses the current shell's `connectDensity` and `createShellState` for independent memory;
+`screenDensity` binds that projection outside React, through the `commissioner.surface` Act;
+Narrative labels report cells, Tactical keeps the existing tables, Matrix compresses spacing.
+
+Commissioner League landing: `TargetCommissionerJobs` reads native league records through
+`history.CommissionerJobs`; `commissioner.JobsReading` derives ordered jobs from resolved rules.
+`commissioner.JobCalendar` (`RolloverAt`, `Window`) is the typed replacement seam for the native
+ActionCalendar; today's private `ruleCalendar` accepts only recorded exact instants, never inventing
+season dates from month/day presets. Unbuilt jobs stay explicit. `TargetCommissionerControls` returns
+all 56 rows' grouping, usable status and owned rule labels; questions reuse the generated commissioner
+registry. Both readings have Go-written frontend wire fixtures. The lazy `LeagueLanding` replaces the
+four stacked screens in `control/LeagueRoom`: jobs, question/rule search and eight collapsible groups;
+existing setup/role forms and screens live inside their groups, MFL references stay below.
+Non-rule search opens and focuses through `commissioner.surface` and `revealWorkSection`. `JobsStrip` reuses `clock.connectClock`'s DOM
+projection with an optional plain-word formatter, so counting never rerenders React. Dates are viewer-local.
+
+Commissioner rule dry runs: `TargetCommissionerPreview(body)` accepts the execute command body;
+`history.PreviewCommissioner` holds a read-only snapshot and calls the same preparation, permission,
+request-retry, version, governance and rule checks as execute, stopping before append. Refusals become
+plain-word blockers, while storage failures remain errors. `commissioner.RulePreview` supplies the
+question, frozen expected league/version, current/proposed values and provenance, timing and Go's
+safeguard. The root embeds the existing endpoint registry; `ReadPreviewCatalogue` derives affected
+owner-reading names and their catalogue-row count from its `governs` edges, never a player/team count.
+No edges means a null count and "Not known yet". The lazy `RuleTray` uses the shared `SideTray` focus
+lifecycle and `PreviewReview` anatomy. Landing Change links and rule search open it for the selected
+rule; the background is inert until close. `RuleChangeForm` reads previews for the exact execute body
+and request key, discards superseded responses and blocks confirmation until a matching preview is
+ready. `preview.ts` parses the boundary; `ChangeBar` retains Go's confirm/hold/reason safeguards.
+Setup, role changes and undo use the same lazy `ActionTray` and `PreviewReview` as rule changes;
+`TrayLauncher` replaces inline confirms. `useChangePreview` shares exact-body/request matching across all
+four forms. Go describes each command and refuses unchanged rules and roles in the shared append checks.
+`CommandSafeguards` writes the command/safeguard fixture used by the frontend click/keypress guard.
+The Go-written fixture is
+`frontend/src/app/commissioner/preview.wire.testdata.json`.
+
+League ops: notifications are two ordinary rules (`notify.transactions`, `notify.reminders`, owned by CM-051 and
+not competitive, so a change needs one confirm). Notices and league notes are recorded acts
+(`commish.notice.publish`, `commish.whatsnew.post`: plain text, pinned or not, shown to every owner, posted now);
+`TargetCommissionerNotices` reads them from the ledger alone through `commissioner.NotesReading`, so a notice
+exists for owners only once its entry is recorded and stops when a later entry withdraws it. The same reading
+carries the app's own release notes (a Go table, nobody posts them) and the mail log (M-093), which says the
+app sends no mail and lists every notice recorded, withdrawn ones marked. `TargetCommissionerDigests` writes one
+plain sentence for each ledger entry the viewer may read that took a hold or a typed reason, through the same
+privacy as the ledger. `commissioner.Governed` (who, when, which change) rides on each rule row Go shows as set
+in the ledger and on each note; the reusable `app/governed/GovernedGlyph` shows it in the viewer's own time.
+The commissioner package imports nothing that can reach a network or a mail system, and a test enforces it.
+Ledger filters gain the kind "notices". Control Room › Data and sources gains "Read data again":
+`TargetCacheScopes` lists the held copies and `TargetCacheClear` runs the refresh each screen already has, asked
+to ignore the copy held (`cache_app.go`); the refresh scopes there are the existing S-09 Acts. The lazy
+`LeagueOps` screen shows notices, What's New, the mail log and the digest in League ops; `NoteForm` posts in the
+shared side tray with Go's preview.

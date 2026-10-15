@@ -83,6 +83,9 @@ func DefinitionFor(command string) (Definition, error) {
 		if d, ok := peopleDefinitionFor(command); ok {
 			return Definition{Gravity: d.gravity}, nil
 		}
+		if d, ok := noteDefinitionFor(command); ok {
+			return Definition{Gravity: d.gravity}, nil
+		}
 		return Definition{}, fmt.Errorf("this commissioner command is not available yet")
 	}
 }
@@ -92,6 +95,7 @@ type RawArgs struct {
 	Entry          string              `json:"entry,omitempty"`
 	Franchises     []string            `json:"franchises,omitempty"`
 	People         *RawPeople          `json:"people,omitempty"`
+	Note           *RawNote            `json:"note,omitempty"`
 	Field          string              `json:"field,omitempty"`
 	Value          json.RawMessage     `json:"value,omitempty"`
 	Preset         string              `json:"preset,omitempty"`
@@ -108,8 +112,9 @@ type RawArgs struct {
 
 // validateDetails refuses arguments that belong to another command.
 func (a RawArgs) validateDetails(command string) error {
+	_, isNote := noteDefinitionFor(command)
 	if (command != NativeSeed && a.Native != nil) || a.Schedule != nil || a.Window != nil ||
-		a.Override != nil || a.Score != nil || a.Standings != nil ||
+		a.Override != nil || a.Score != nil || a.Standings != nil || (a.Note != nil && !isNote) ||
 		(command != CalendarException && a.Exception != nil) || a.foreignRuleArgs(command) {
 		return fmt.Errorf("send only the details of this league action")
 	}
@@ -152,7 +157,7 @@ func (a RawArgs) Validate(command string) error {
 			return fmt.Errorf("choose the recorded change to reverse")
 		}
 	default:
-		return a.validatePeople(command)
+		return a.validateOther(command)
 	}
 	return nil
 }
@@ -160,6 +165,13 @@ func (a RawArgs) Validate(command string) error {
 func (a RawArgs) foreignRuleArgs(command string) bool {
 	return (command != RulesSet && (a.Field != "" || len(a.Value) != 0)) || (command != Create &&
 		(a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0))
+}
+
+func (a RawArgs) validateOther(command string) error {
+	if _, isNote := noteDefinitionFor(command); isNote {
+		return a.validateNote()
+	}
+	return a.validatePeople(command)
 }
 
 func (a RawArgs) validatePeople(command string) error {
@@ -184,7 +196,28 @@ type RawCommand struct {
 	Gravity    string  `json:"gravity,omitempty"`
 }
 
-func (r RawCommand) Validate() error {
+// Validate is the full check a change must pass before it can be recorded.
+func (r RawCommand) Validate() error { return r.validate(true) }
+
+// ValidatePreview is Validate without the typed-reason demand, so a dry run can describe a change
+// before the reason is written. MissingReason says what is still owed.
+func (r RawCommand) ValidatePreview() error { return r.validate(false) }
+
+const reasonRequired = "give a reason for this change"
+
+// MissingReason is a refusal while a change that needs a typed reason has none, and nil otherwise.
+func (r RawCommand) MissingReason() error {
+	definition, err := r.EffectiveDefinition()
+	if err != nil {
+		return err
+	}
+	if definition.Gravity != "G3" || strings.TrimSpace(r.Reason) != "" {
+		return nil
+	}
+	return Refused(errors.New(reasonRequired))
+}
+
+func (r RawCommand) validate(requireReason bool) error {
 	definition, err := r.EffectiveDefinition()
 	if err != nil {
 		return err
@@ -196,8 +229,10 @@ func (r RawCommand) Validate() error {
 	if r.Gravity != "" && r.Gravity != definition.Gravity {
 		return fmt.Errorf("this change requires a recorded reason; its safeguards cannot be lowered")
 	}
-	if definition.Gravity == "G3" && strings.TrimSpace(r.Reason) == "" {
-		return fmt.Errorf("give a reason for this change")
+	if requireReason {
+		if err := r.MissingReason(); err != nil {
+			return err
+		}
 	}
 	if err := r.validatePlacement(); err != nil {
 		return err
@@ -220,6 +255,11 @@ func publicNowRule(command string) string {
 		return "standings overrides take effect now and are shown to the league"
 	case command == CalendarException:
 		return "window exceptions take effect now and are visible to every owner"
+	case command == Create:
+		return "a new league is created now and recorded for the league"
+	}
+	if _, isNote := noteDefinitionFor(command); isNote {
+		return "notices and league notes are posted now and shown to every owner"
 	}
 	return ""
 }
@@ -239,9 +279,6 @@ func (r RawCommand) validatePlacement() error {
 		if err != nil || at.IsZero() {
 			return fmt.Errorf("choose when this change takes effect")
 		}
-	}
-	if r.Command == Create && (r.Effective != "now" || r.Visibility != "league") {
-		return fmt.Errorf("a new league is created now and recorded for the league")
 	}
 	return r.validatePeoplePlacement()
 }
@@ -284,7 +321,12 @@ func (r RawCommand) validatePeoplePlacement() error {
 }
 
 // Decode rejects identity/role fields and unknown arguments even for direct IPC calls.
-func Decode(body string) (RawCommand, error) {
+func Decode(body string) (RawCommand, error) { return decode(body, true) }
+
+// DecodePreview reads a command for a dry run: every check of Decode except the typed reason.
+func DecodePreview(body string) (RawCommand, error) { return decode(body, false) }
+
+func decode(body string, requireReason bool) (RawCommand, error) {
 	var raw RawCommand
 	decoder := json.NewDecoder(bytes.NewBufferString(body))
 	decoder.DisallowUnknownFields()
@@ -298,7 +340,7 @@ func Decode(body string) (RawCommand, error) {
 	if err != nil {
 		return raw, err
 	}
-	if err := raw.Validate(); err != nil {
+	if err := raw.validate(requireReason); err != nil {
 		return raw, err
 	}
 	return raw, nil

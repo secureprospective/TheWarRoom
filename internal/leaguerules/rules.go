@@ -20,6 +20,7 @@ type RuleSet struct {
 	House     HouseRules
 	Calendar  CalendarRules
 	Draft     DraftRules
+	Notify    NotifyRules
 }
 
 func LegacyNFL() RuleSet {
@@ -41,6 +42,7 @@ func LegacyNFL() RuleSet {
 		House:     legacyHouse(),
 		Calendar:  legacyCalendar(),
 		Draft:     legacyDraft(),
+		Notify:    legacyNotify(),
 	}
 }
 
@@ -63,5 +65,6 @@ func ruleFields() []ruleField {
 	result = append(result, houseFields()...)
 	result = append(result, calendarFields()...)
 	result = append(result, draftFields()...)
+	result = append(result, notifyFields()...)
 	return result
 }

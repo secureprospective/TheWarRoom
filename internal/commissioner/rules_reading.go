@@ -41,6 +41,9 @@ type RuleRow struct {
 	// Unit is "percent" where the value is a share a GM types as a percentage.
 	Unit       string         `json:"unit"`
 	Safeguards RuleSafeguards `json:"safeguards"`
+	// Governed is who set the value in force, when and with which change; null while it is the starting
+	// preset or still waiting.
+	Governed *Governed `json:"governed"`
 }
 type RuleSection struct {
 	Label string    `json:"label"`
@@ -72,6 +75,10 @@ func RulesReading(league string, records []Record, now time.Time) (Rules, error)
 	if err != nil {
 		return Rules{}, err
 	}
+	governed, err := governedRules(records)
+	if err != nil {
+		return Rules{}, err
+	}
 	values, fields, current := leaguerules.ReadSettings(rules), leaguerules.Catalogue(), leaguerules.Current(rules)
 	out := Rules{League: league, Name: Replay(records).Name, Revision: int64(len(records)),
 		Rollover: rolloverWords, Sections: []RuleSection{}}
@@ -86,6 +93,9 @@ func RulesReading(league string, records []Record, now time.Time) (Rules, error)
 		if source, ok := sources[row.Field]; ok {
 			row.Citation = "Changed in the league ledger"
 			row.ChangedAt = source
+			if g, ok := governed[row.Field]; ok {
+				row.Governed = &g
+			}
 		}
 		if row.Pending == nil {
 			row.Pending = []RulePending{}
@@ -208,6 +218,19 @@ func unitFor(path leaguerules.FieldPath) string {
 	return ""
 }
 
+// safeguardFor says what a person confirming a change of this gravity is asked: "reason" (a typed reason),
+// "hold" (hold to confirm) or "confirm" (one plain confirm).
+func safeguardFor(gravity string) string {
+	switch gravity {
+	case "G3":
+		return "reason"
+	case "G2":
+		return "hold"
+	default:
+		return "confirm"
+	}
+}
+
 // safeguardsFor asks the same Definition a submitted change gets, so the form never guesses.
 func safeguardsFor(field string) RuleSafeguards {
 	words := func(effective string) string {
@@ -215,14 +238,7 @@ func safeguardsFor(field string) RuleSafeguards {
 		if err != nil {
 			return "reason"
 		}
-		switch d.Gravity {
-		case "G3":
-			return "reason"
-		case "G2":
-			return "hold"
-		default:
-			return "confirm"
-		}
+		return safeguardFor(d.Gravity)
 	}
 	return RuleSafeguards{NextRollover: words("next_rollover"), Now: words("now")}
 }
@@ -233,7 +249,14 @@ func startingSource(preset, state, citation string) string {
 		if _, detail, ok := strings.Cut(citation, ":"); ok && strings.TrimSpace(detail) != "" {
 			return "Needs a ruling: " + strings.TrimSpace(detail)
 		}
-		return "Needs a ruling"
+		detail := strings.TrimSpace(citation)
+		if detail == "" || strings.HasPrefix(detail, "Census ") || strings.HasPrefix(detail, "fact ") {
+			return "Needs a ruling"
+		}
+		if strings.HasPrefix(detail, "Needs a ruling") {
+			return detail
+		}
+		return "Needs a ruling: " + detail
 	}
 	if preset == PresetEmpty {
 		return "Empty league default"
@@ -253,4 +276,36 @@ func startingSource(preset, state, citation string) string {
 		}
 	}
 	return source
+}
+
+// Governed says who set a value, when and with which recorded change. It is what the governed marker
+// shows beside any value the commissioner set, here or on an owner's screen.
+type Governed struct {
+	Entry  string    `json:"entry"`
+	Who    string    `json:"who"`
+	When   time.Time `json:"when"`
+	Change string    `json:"change"`
+}
+
+// governedRules finds, for each rule changed in the ledger, the change that set the value now in force.
+// A value still at the league's starting preset, or only waiting for a rollover, has none.
+func governedRules(records []Record) (map[string]Governed, error) {
+	active := Replay(records).Active
+	newest := map[string]int{}
+	for i, r := range records {
+		if r.Command.Command == RulesSet && active[r.Receipt.Entry] && r.Command.Effective == "now" {
+			newest[r.Command.Args.Field] = i
+		}
+	}
+	out := make(map[string]Governed, len(newest))
+	for field, i := range newest {
+		change, err := entryLabel(records, i)
+		if err != nil {
+			return nil, err
+		}
+		r := records[i]
+		out[field] = Governed{Entry: r.Receipt.Entry, Who: personWords(r.Principal), When: r.Receipt.RecordedAt,
+			Change: change}
+	}
+	return out, nil
 }

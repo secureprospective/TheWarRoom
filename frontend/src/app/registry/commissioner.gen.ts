@@ -1422,7 +1422,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.notify.set commish.notify.route",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "Transaction digests and calendar deadline reminders on, with a pla" +
       "in-sentence digest for every G2/G3 change (§16.9).",
     merged_into: Object.freeze([] as const),
@@ -1447,7 +1447,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.notice.publish commish.newsletter.publish",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "Weekly newsletter in season, with official notices and mail histor" +
       "y on the owner surfaces (§15 ring-4 carry; census CM-052).",
     merged_into: Object.freeze([] as const),
@@ -1470,7 +1470,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.whatsnew.post",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "App release notes post automatically and the commissioner may pin " +
       "league notes (census CM-053).",
     merged_into: Object.freeze([] as const),
@@ -1492,7 +1492,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.data.refresh commish.cache.clear",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "Refresh on schedule and show data health on the status strip (cens" +
       "us CM-054).",
     merged_into: Object.freeze([] as const),
@@ -1542,7 +1542,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.ledger.read",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "Append-only history of every league-state change with who, what an" +
       "d why, excluding private role grants and invites from owner reads " +
       "(ruling 5).",

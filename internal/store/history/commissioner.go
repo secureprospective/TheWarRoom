@@ -49,7 +49,7 @@ func transactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commi
 // immediate SQLite transaction, including across independently opened stores.
 func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer) (commissioner.Receipt, error) {
-	raw, canonical, err := preparedCommand(raw, principal)
+	raw, canonical, err := preparedCommand(raw, principal, true)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
@@ -64,15 +64,12 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
-	role, err := commandRole(raw, principal, auth, records)
+	role, retry, err := s.checkCommissionerCommand(raw, principal, auth, records, canonical)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
-	if prior, retried, err := retriedReceipt(raw, canonical, records); err != nil || retried {
-		return prior, err
-	}
-	if err := s.checkAppend(raw, principal, records); err != nil {
-		return commissioner.Receipt{}, err
+	if retry != nil {
+		return *retry, nil
 	}
 	receipt, err := s.appendCommissioner(ctx, tx, raw, principal, role, canonical, records)
 	if err != nil {
@@ -82,6 +79,27 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 		return commissioner.Receipt{}, fmt.Errorf("record league change: %w", err)
 	}
 	return receipt, nil
+}
+
+// checkCommissionerCommand is every check a league change must pass, shared by execute and the dry-run
+// preview so the two can never disagree. A retried request returns its stored receipt.
+func (s *Store) checkCommissionerCommand(raw commissioner.RawCommand, principal string,
+	auth commissioner.Authorizer, records []commissioner.Record, canonical string) (string, *commissioner.Receipt, error) {
+	role, err := commandRole(raw, principal, auth, records)
+	if err != nil {
+		return "", nil, err
+	}
+	prior, retried, err := retriedReceipt(raw, canonical, records)
+	if err != nil {
+		return "", nil, err
+	}
+	if retried {
+		return role, &prior, nil
+	}
+	if err := s.checkAppend(raw, principal, records); err != nil {
+		return "", nil, err
+	}
+	return role, nil, nil
 }
 
 // retriedReceipt returns the stored receipt when this request was already recorded, and refuses a
@@ -125,13 +143,19 @@ func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, recor
 	return nil
 }
 
-// preparedCommand fills what Go owns on the command, validates it and fixes its retry identity.
-func preparedCommand(raw commissioner.RawCommand, principal string) (commissioner.RawCommand, string, error) {
+// preparedCommand fills what Go owns on the command, validates it and fixes its retry identity. A dry run
+// passes requireReason false and reports the missing reason itself.
+func preparedCommand(raw commissioner.RawCommand, principal string,
+	requireReason bool) (commissioner.RawCommand, string, error) {
 	raw, err := raw.Prepared()
 	if err != nil {
 		return raw, "", fmt.Errorf("validate league change: %w", commissioner.Refused(err))
 	}
-	if err := raw.Validate(); err != nil {
+	validate := raw.ValidatePreview
+	if requireReason {
+		validate = raw.Validate
+	}
+	if err := validate(); err != nil {
 		return raw, "", fmt.Errorf("validate league change: %w", commissioner.Refused(err))
 	}
 	if strings.TrimSpace(principal) == "" {
@@ -242,6 +266,14 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, raw commissi
 
 func (s *Store) CommissionerLedger(ctx context.Context, league, principal string,
 	auth commissioner.Authorizer) (commissioner.Ledger, error) {
+	return s.CommissionerLedgerFiltered(ctx, league, principal, auth, commissioner.RawLedgerFilter{})
+}
+
+func (s *Store) CommissionerLedgerFiltered(ctx context.Context, league, principal string,
+	auth commissioner.Authorizer, filter commissioner.RawLedgerFilter) (commissioner.Ledger, error) {
+	if err := filter.Validate(); err != nil {
+		return commissioner.Ledger{}, fmt.Errorf("validate ledger filters: %w", err)
+	}
 	events, err := s.Events(ctx, league, commissioner.Stream, 0)
 	if err != nil {
 		return commissioner.Ledger{}, err
@@ -257,7 +289,7 @@ func (s *Store) CommissionerLedger(ctx context.Context, league, principal string
 		}
 		auth = commissioner.GovernanceAuthorizer{State: state}
 	}
-	reading, err := commissioner.Reading(league, principal, records, auth)
+	reading, err := commissioner.FilteredReading(league, principal, records, auth, filter)
 	if err != nil {
 		return commissioner.Ledger{}, fmt.Errorf("read league ledger: %w", err)
 	}
@@ -314,4 +346,63 @@ func (s *Store) CommissionerRules(ctx context.Context, league string) (commissio
 		return commissioner.Rules{}, fmt.Errorf("read league rules: %w", err)
 	}
 	return reading, nil
+}
+
+// CommissionerJobs reads the league's jobs as of the store's clock.
+func (s *Store) CommissionerJobs(ctx context.Context, league string) (commissioner.Jobs, error) {
+	events, err := s.Events(ctx, league, commissioner.Stream, 0)
+	if err != nil {
+		return commissioner.Jobs{}, err
+	}
+	records, err := commissionerRecords(events)
+	if err != nil {
+		return commissioner.Jobs{}, err
+	}
+	reading, err := commissioner.JobsReading(league, records, s.now())
+	if err != nil {
+		return commissioner.Jobs{}, fmt.Errorf("read league jobs: %w", err)
+	}
+	return reading, nil
+}
+
+// CommissionerNotes reads the posted notices and league notes from the ledger.
+func (s *Store) CommissionerNotes(ctx context.Context, league string) (commissioner.LeagueNotes, error) {
+	records, err := s.leagueRecords(ctx, league)
+	if err != nil {
+		return commissioner.LeagueNotes{}, err
+	}
+	reading, err := commissioner.NotesReading(league, records)
+	if err != nil {
+		return commissioner.LeagueNotes{}, fmt.Errorf("read league notices: %w", err)
+	}
+	return reading, nil
+}
+
+// CommissionerDigests writes the digest sentences for the changes this principal may read about.
+func (s *Store) CommissionerDigests(ctx context.Context, league, principal string,
+	auth commissioner.Authorizer) (commissioner.Digests, error) {
+	records, err := s.leagueRecords(ctx, league)
+	if err != nil {
+		return commissioner.Digests{}, err
+	}
+	if auth == nil {
+		state, err := commissioner.GovernanceState(records)
+		if err != nil {
+			return commissioner.Digests{}, fmt.Errorf("read league permissions: %w", err)
+		}
+		auth = commissioner.GovernanceAuthorizer{State: state}
+	}
+	reading, err := commissioner.DigestsReading(league, principal, records, auth)
+	if err != nil {
+		return commissioner.Digests{}, fmt.Errorf("read league digests: %w", err)
+	}
+	return reading, nil
+}
+
+func (s *Store) leagueRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
+	events, err := s.Events(ctx, league, commissioner.Stream, 0)
+	if err != nil {
+		return nil, err
+	}
+	return commissionerRecords(events)
 }

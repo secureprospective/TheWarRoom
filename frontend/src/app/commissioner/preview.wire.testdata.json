@@ -1,0 +1,123 @@
+{
+  "confirm": {
+    "question": "Which timezone runs the league, and where does a shared date split?",
+    "target": {
+      "league": "native.preview",
+      "name": "Preview league",
+      "version": 1
+    },
+    "fields": [
+      {
+        "label": "League timezone",
+        "before": "America/New_York",
+        "beforeSource": "Legacy NFL rules",
+        "after": "America/Chicago",
+        "afterSource": "Your proposed change",
+        "when": "from the next rollover"
+      }
+    ],
+    "affects": {
+      "readings": [
+        "League Calendar",
+        "Calendar board",
+        "Calendar summon/collapse from any screen"
+      ],
+      "count": 3,
+      "words": "3 owner readings use this rule"
+    },
+    "blockers": [],
+    "safeguard": "confirm"
+  },
+  "hold": {
+    "question": "How small and how large may a roster be? Any position minimums?",
+    "target": {
+      "league": "native.preview",
+      "name": "Preview league",
+      "version": 1
+    },
+    "fields": [
+      {
+        "label": "Active roster size",
+        "before": "18 to 80",
+        "beforeSource": "Legacy NFL rules",
+        "after": "20 to 70",
+        "afterSource": "Your proposed change",
+        "when": "from the next rollover"
+      }
+    ],
+    "affects": {
+      "readings": [
+        "Rosters",
+        "Roster w/Stats",
+        "Submit Lineup",
+        "Drop Players"
+      ],
+      "count": 4,
+      "words": "4 owner readings use this rule"
+    },
+    "blockers": [],
+    "safeguard": "hold"
+  },
+  "reason": {
+    "question": "How small and how large may a roster be? Any position minimums?",
+    "target": {
+      "league": "native.preview",
+      "name": "Preview league",
+      "version": 1
+    },
+    "fields": [
+      {
+        "label": "Active roster size",
+        "before": "18 to 80",
+        "beforeSource": "Legacy NFL rules",
+        "after": "20 to 70",
+        "afterSource": "Your proposed change",
+        "when": "in force now"
+      }
+    ],
+    "affects": {
+      "readings": [
+        "Rosters",
+        "Roster w/Stats",
+        "Submit Lineup",
+        "Drop Players"
+      ],
+      "count": 4,
+      "words": "4 owner readings use this rule"
+    },
+    "blockers": [],
+    "safeguard": "reason"
+  },
+  "stale": {
+    "question": "How small and how large may a roster be? Any position minimums?",
+    "target": {
+      "league": "native.preview",
+      "name": "Preview league",
+      "version": 0
+    },
+    "fields": [
+      {
+        "label": "Active roster size",
+        "before": "18 to 80",
+        "beforeSource": "Legacy NFL rules",
+        "after": "20 to 70",
+        "afterSource": "Your proposed change",
+        "when": "from the next rollover"
+      }
+    ],
+    "affects": {
+      "readings": [
+        "Rosters",
+        "Roster w/Stats",
+        "Submit Lineup",
+        "Drop Players"
+      ],
+      "count": 4,
+      "words": "4 owner readings use this rule"
+    },
+    "blockers": [
+      "League version is 1; reread before changing it (expected 0)"
+    ],
+    "safeguard": "hold"
+  }
+}

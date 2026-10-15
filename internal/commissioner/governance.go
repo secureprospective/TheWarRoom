@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -64,6 +65,9 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 	control, ok := commandControls()[command]
 	if !ok {
 		if d, isPeople := peopleDefinitionFor(command); isPeople {
+			control = d.control
+		}
+		if d, ok := noteDefinitionFor(command); ok {
 			control = d.control
 		}
 	}
@@ -173,7 +177,30 @@ func authorizeReversal(auth GovernanceAuthorizer, entry, principal string, recor
 	return fmt.Errorf("that recorded change is not in this league")
 }
 
+// checkRoleChangesSomething refuses to give a role the person already holds or take one they do not.
+// Preview and execute share it, so a change that changes nothing is never offered.
+func checkRoleChangesSomething(raw RawCommand, records []Record) error {
+	if (raw.Command != roleGrant && raw.Command != roleRevoke) || raw.Args.People == nil {
+		return nil
+	}
+	state, err := GovernanceState(records)
+	if err != nil {
+		return err
+	}
+	held := state.HasRole(governance.Principal(raw.Args.People.Principal), raw.Args.People.Role)
+	if held && raw.Command == roleGrant {
+		return Refused(errors.New("this person already holds that role. Nothing would change"))
+	}
+	if !held && raw.Command == roleRevoke {
+		return Refused(errors.New("this person does not hold that role. Nothing would change"))
+	}
+	return nil
+}
+
 func CheckGovernanceAppend(raw RawCommand, principal string, records []Record, at time.Time) error {
+	if err := checkRoleChangesSomething(raw, records); err != nil {
+		return err
+	}
 	switch raw.Command {
 	case Revert:
 		if err := checkScoreCompensation(raw, records); err != nil {

@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -35,7 +36,7 @@ func ruleOwners() []ruleOwner {
 		{"draft.onExpire", "CM-040", "G2"}, {"draft.timeouts", "CM-040", "G2"},
 		{"draft.rounds", "CM-040", "G2"}, {"draft.maximumPicks", "CM-040", "G2"},
 		{"draft.forfeitExtra", "CM-040", "G2"}, {"draft.pricing", "CM-040", "G2"},
-		{"draft.lengths", "CM-040", "G2"}, {"draft.rfaAfter", "CM-040", "G2"},
+		{"notify.", "CM-051", "G1"}, {"draft.lengths", "CM-040", "G2"}, {"draft.rfaAfter", "CM-040", "G2"},
 		{"draft.orderSource", "CM-041", "G2"}, {"draft.order", "CM-041", "G2"},
 		{"draft.laterPattern", "CM-041", "G2"}, {"draft.tieRule", "CM-041", "G2"},
 	}
@@ -145,7 +146,77 @@ func CheckRulesAppend(raw RawCommand, records []Record, at time.Time) error {
 	if _, err := resolveRecords(trial); err != nil {
 		return Refused(fmt.Errorf("rule change refused: %w", err))
 	}
-	return nil
+	return checkRuleChangesSomething(raw, records, at)
+}
+
+// ruleValue reads one rule as the plain JSON a change is sent in; "null" while it needs a ruling.
+func ruleValue(records []Record, field string) (string, error) {
+	rules, err := resolveRecords(records)
+	if err != nil {
+		return "", err
+	}
+	current := leaguerules.Current(rules)
+	for i, f := range leaguerules.Catalogue() {
+		if string(f.Path) == field {
+			return string(current[i]), nil
+		}
+	}
+	return "", fmt.Errorf("choose a recognised league rule")
+}
+
+// withWaitingInForce counts the newest change waiting on the next rollover for field as already in force.
+// That is what a second change from the next rollover has to differ from.
+func withWaitingInForce(records []Record, field string) ([]Record, bool) {
+	active := Replay(records).Active
+	for i := len(records) - 1; i >= 0; i-- {
+		r := records[i]
+		if r.Command.Command != RulesSet || r.Command.Args.Field != field || !active[r.Receipt.Entry] ||
+			r.Command.Effective != "next_rollover" {
+			continue
+		}
+		counted := append([]Record(nil), records...)
+		r.Command.Effective = "now"
+		r.Receipt.Entry = "waiting." + r.Receipt.Entry
+		// Rules resolve by recorded instant, so the waiting change is counted at the newest one:
+		// an immediate change recorded after it must not shadow it.
+		for _, later := range records[i+1:] {
+			if later.Receipt.RecordedAt.After(r.Receipt.RecordedAt) {
+				r.Receipt.RecordedAt = later.Receipt.RecordedAt
+			}
+		}
+		return append(counted, r), true
+	}
+	return records, false
+}
+
+// checkRuleChangesSomething refuses a rule change that leaves the rule exactly as it already is, whether
+// it is in force or already waiting for the next rollover. Preview and execute share it.
+func checkRuleChangesSomething(raw RawCommand, records []Record, at time.Time) error {
+	if raw.Command != RulesSet {
+		return nil
+	}
+	base, waiting := records, false
+	if raw.Effective == "next_rollover" {
+		base, waiting = withWaitingInForce(records, raw.Args.Field)
+	}
+	before, err := ruleValue(base, raw.Args.Field)
+	if err != nil {
+		return Refused(fmt.Errorf("rule change refused: %w", err))
+	}
+	trial := raw
+	trial.Effective = "now"
+	after, err := ruleValue(append(append([]Record(nil), base...), Record{Command: trial,
+		Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: at}}), raw.Args.Field)
+	if err != nil {
+		return Refused(fmt.Errorf("rule change refused: %w", err))
+	}
+	if before != after {
+		return nil
+	}
+	if waiting {
+		return Refused(errors.New("this change is already waiting for the next rollover. Nothing would change"))
+	}
+	return Refused(errors.New("this is already the rule. Nothing would change"))
 }
 
 func fieldWords(rules leaguerules.RuleSet, path string) string {

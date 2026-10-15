@@ -1,0 +1,196 @@
+{
+  "absent": {
+    "league": "native.shell",
+    "name": "Our league",
+    "revision": 4,
+    "entries": []
+  },
+  "all": {
+    "league": "native.shell",
+    "name": "Our league",
+    "revision": 4,
+    "entries": [
+      {
+        "id": "act.9d179de2124ded0a5fe4013778587f07f39a2528b223336d4c26c5f5f70eea99",
+        "who": "creator",
+        "what": "Reversed a rule change. League timezone: Europe/London → Needs a ruling, in force now",
+        "why": "Start",
+        "when": "2026-10-13T15:00:00Z",
+        "gravity": "Recorded reason required",
+        "undo": "league"
+      },
+      {
+        "id": "act.fddefc66126060e1322afdf1bd85c866740b7458007a2f1ebce33ae5560718ad",
+        "who": "creator",
+        "what": "League timezone: Needs a ruling → Europe/London, in force now",
+        "why": "Start",
+        "when": "2026-10-13T14:00:00Z",
+        "gravity": "Confirmation required",
+        "undo": ""
+      },
+      {
+        "id": "act.b3323e72780481ef8c7015b9af9ea738811f4cd914bc1659e866ff1a634cf9b0",
+        "who": "creator",
+        "what": "Granted Co-commissioner to secret-deputy",
+        "why": "Start",
+        "when": "2026-10-13T13:00:00Z",
+        "gravity": "Recorded reason required",
+        "undo": "private"
+      },
+      {
+        "id": "act.a2cf3028f195bf346286726448cad3a2c7cec5264bd216fb0b60f590c15b0cbd",
+        "who": "creator",
+        "what": "Created league “Our league” with 4 franchises and every rule waiting for a ruling",
+        "why": "Start",
+        "when": "2026-10-13T12:00:00Z",
+        "gravity": "Recorded reason required",
+        "undo": ""
+      }
+    ]
+  },
+  "combined": {
+    "league": "native.shell",
+    "name": "Our league",
+    "revision": 4,
+    "entries": [
+      {
+        "id": "act.fddefc66126060e1322afdf1bd85c866740b7458007a2f1ebce33ae5560718ad",
+        "who": "creator",
+        "what": "League timezone: Needs a ruling → Europe/London, in force now",
+        "why": "Start",
+        "when": "2026-10-13T14:00:00Z",
+        "gravity": "Confirmation required",
+        "undo": ""
+      }
+    ]
+  },
+  "corrections": {
+    "league": "native.shell",
+    "name": "Our league",
+    "revision": 4,
+    "entries": [
+      {
+        "id": "act.9d179de2124ded0a5fe4013778587f07f39a2528b223336d4c26c5f5f70eea99",
+        "who": "creator",
+        "what": "Reversed a rule change. League timezone: Europe/London → Needs a ruling, in force now",
+        "why": "Start",
+        "when": "2026-10-13T15:00:00Z",
+        "gravity": "Recorded reason required",
+        "undo": "league"
+      }
+    ]
+  },
+  "dates": {
+    "league": "native.shell",
+    "name": "Our league",
+    "revision": 4,
+    "entries": [
+      {
+        "id": "act.b3323e72780481ef8c7015b9af9ea738811f4cd914bc1659e866ff1a634cf9b0",
+        "who": "creator",
+        "what": "Granted Co-commissioner to secret-deputy",
+        "why": "Start",
+        "when": "2026-10-13T13:00:00Z",
+        "gravity": "Recorded reason required",
+        "undo": "private"
+      }
+    ]
+  },
+  "owner": {
+    "league": "native.shell",
+    "name": "Our league",
+    "revision": 4,
+    "entries": []
+  },
+  "people": {
+    "league": "native.shell",
+    "name": "Our league",
+    "revision": 4,
+    "entries": [
+      {
+        "id": "act.b3323e72780481ef8c7015b9af9ea738811f4cd914bc1659e866ff1a634cf9b0",
+        "who": "creator",
+        "what": "Granted Co-commissioner to secret-deputy",
+        "why": "Start",
+        "when": "2026-10-13T13:00:00Z",
+        "gravity": "Recorded reason required",
+        "undo": "private"
+      }
+    ]
+  },
+  "person": {
+    "league": "native.shell",
+    "name": "Our league",
+    "revision": 4,
+    "entries": [
+      {
+        "id": "act.9d179de2124ded0a5fe4013778587f07f39a2528b223336d4c26c5f5f70eea99",
+        "who": "creator",
+        "what": "Reversed a rule change. League timezone: Europe/London → Needs a ruling, in force now",
+        "why": "Start",
+        "when": "2026-10-13T15:00:00Z",
+        "gravity": "Recorded reason required",
+        "undo": "league"
+      },
+      {
+        "id": "act.fddefc66126060e1322afdf1bd85c866740b7458007a2f1ebce33ae5560718ad",
+        "who": "creator",
+        "what": "League timezone: Needs a ruling → Europe/London, in force now",
+        "why": "Start",
+        "when": "2026-10-13T14:00:00Z",
+        "gravity": "Confirmation required",
+        "undo": ""
+      },
+      {
+        "id": "act.b3323e72780481ef8c7015b9af9ea738811f4cd914bc1659e866ff1a634cf9b0",
+        "who": "creator",
+        "what": "Granted Co-commissioner to secret-deputy",
+        "why": "Start",
+        "when": "2026-10-13T13:00:00Z",
+        "gravity": "Recorded reason required",
+        "undo": "private"
+      },
+      {
+        "id": "act.a2cf3028f195bf346286726448cad3a2c7cec5264bd216fb0b60f590c15b0cbd",
+        "who": "creator",
+        "what": "Created league “Our league” with 4 franchises and every rule waiting for a ruling",
+        "why": "Start",
+        "when": "2026-10-13T12:00:00Z",
+        "gravity": "Recorded reason required",
+        "undo": ""
+      }
+    ]
+  },
+  "rules": {
+    "league": "native.shell",
+    "name": "Our league",
+    "revision": 4,
+    "entries": [
+      {
+        "id": "act.fddefc66126060e1322afdf1bd85c866740b7458007a2f1ebce33ae5560718ad",
+        "who": "creator",
+        "what": "League timezone: Needs a ruling → Europe/London, in force now",
+        "why": "Start",
+        "when": "2026-10-13T14:00:00Z",
+        "gravity": "Confirmation required",
+        "undo": ""
+      }
+    ]
+  },
+  "setup": {
+    "league": "native.shell",
+    "name": "Our league",
+    "revision": 4,
+    "entries": [
+      {
+        "id": "act.a2cf3028f195bf346286726448cad3a2c7cec5264bd216fb0b60f590c15b0cbd",
+        "who": "creator",
+        "what": "Created league “Our league” with 4 franchises and every rule waiting for a ruling",
+        "why": "Start",
+        "when": "2026-10-13T12:00:00Z",
+        "gravity": "Recorded reason required",
+        "undo": ""
+      }
+    ]
+  }
+}

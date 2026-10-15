@@ -143,6 +143,16 @@ func TestStartingRuleSourcesArePlainWords(t *testing.T) {
 			"Needs a ruling: only for keeper leagues"},
 		{PresetLegacy, "Needs a ruling", "Census CM-041 Q-E1", "Needs a ruling"},
 		{PresetEmpty, "Needs a ruling", "", "Needs a ruling"},
+		{PresetEmpty, "Needs a ruling", "Needs a ruling; the commissioner sets the exact trade deadline.",
+			"Needs a ruling; the commissioner sets the exact trade deadline."},
+		{PresetLegacy, "Needs a ruling", "The commissioner sets the exact trade deadline.",
+			"Needs a ruling: The commissioner sets the exact trade deadline."},
+		{PresetLegacy, "Needs a ruling", "fact 12c: exact instant chosen by commissioner",
+			"Needs a ruling: exact instant chosen by commissioner"},
+		{PresetLegacy, "Needs a ruling", "fact 12c", "Needs a ruling"},
+		{PresetEmpty, "Needs a ruling", "  Needs a ruling; the commissioner sets it.  ",
+			"Needs a ruling; the commissioner sets it."},
+		{PresetEmpty, "Needs a ruling", "  ", "Needs a ruling"},
 	} {
 		if got := startingSource(c.preset, c.state, c.citation); got != c.want {
 			t.Errorf("%s %s %q: got %q, want %q", c.preset, c.state, c.citation, got, c.want)

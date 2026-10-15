@@ -15,11 +15,13 @@ describe('Start an app league', () => {
     const { app, calls } = stub();
     const host = await mount(render(StartLeagueForm), app);
     await type(control(host, 'League name'), 'Our league');
+    await settle();
     expect(disabled(button(host, start))).toBe(true);
     expect(present(host, 'Needs a typed reason')).toBe(true);
     await type(control(host, 'Reason'), '   ');
     expect(disabled(button(host, start))).toBe(true);
     await type(control(host, 'Reason'), 'Owners voted to move the league here');
+    await settle();
     expect(disabled(button(host, start))).toBe(false);
     await act(async () => { (button(host, start).props().onClick as () => void)(); });
     await settle();
@@ -37,6 +39,7 @@ describe('Start an app league', () => {
     await type(control(host, 'League name'), 'Our league');
     await type(control(host, 'Number of franchises'), String(count));
     await type(control(host, 'Reason'), 'Start');
+    await settle();
     expect(host.textContent).not.toContain('are for 32 franchises');
     expect(host.textContent).toContain('Both starting choices work with 2 to 32 franchises.');
     await act(async () => { (button(host, start).props().onClick as () => void)(); });
@@ -50,6 +53,7 @@ describe('Start an app league', () => {
     await type(control(host, 'Starting rules'), 'empty');
     await type(control(host, 'Number of franchises'), '12');
     await type(control(host, 'Reason'), 'A new league');
+    await settle();
     expect(present(host, 'Start empty: every rule Needs a ruling')).toBe(true);
     await act(async () => { (button(host, start).props().onClick as () => void)(); });
     await settle();
@@ -67,6 +71,7 @@ describe('Start an app league', () => {
     calls.ledger.length = calls.rules.length = calls.people.length = 0;
     await type(control(host, 'League name'), 'Our league');
     await type(control(host, 'Reason'), 'Start');
+    await settle();
     await act(async () => { (button(host, start).props().onClick as () => void)(); });
     await settle();
     expect(leagueState.peek().selected).toBe('native.created');
@@ -83,6 +88,7 @@ describe('Start an app league', () => {
     await type(control(host, 'League name'), 'Our league');
     await type(control(host, 'Number of franchises'), '12');
     await type(control(host, 'Reason'), 'Start');
+    await settle();
     await act(async () => { (button(host, start).props().onClick as () => void)(); });
     await settle();
     expect(host.textContent).toContain(words);

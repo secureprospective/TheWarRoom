@@ -3,6 +3,7 @@ import { selectProvider } from '../data/provider';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
 import { ReportView } from '../reports/ReportView';
+import { CacheTools } from './CacheTools';
 import { dataState } from './state';
 import type { Sources } from './provider';
 import type { main } from '../../../wailsjs/go/models';
@@ -114,6 +115,7 @@ export default function DataSources() {
       {[s.data.health, s.data.signals, s.data.facts, s.data.checks].map(report =>
         <ReportView key={report.id} report={report} howLabel={s.data!.words.how} heading="h4" />)}
       <RefreshScopes data={s.data} busy={s.busy} outcomes={s.outcomes} />
+      <CacheTools />
     </>}
     {s.crosswalk && w && <ReportView report={s.crosswalk} howLabel={w.crosswalkHow} heading="h4" />}
     {s.params && w && <Parameters params={s.params} busy={s.busy} words={w} />}
