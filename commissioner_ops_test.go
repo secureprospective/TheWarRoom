@@ -38,7 +38,7 @@ func opsApp(t *testing.T) *App {
 	app := commissionerTestApp(t)
 	opsClock(app, 9)
 	create := opsCommand(commissioner.Create, 0, "create", commissioner.RawArgs{Name: "Ops league",
-		Preset: commissioner.PresetLegacy})
+		Preset: commissioner.PresetLegacy, Season: 2026})
 	create.Reason = "Start our league"
 	executeCommissionerTest(t, app, create)
 	return app

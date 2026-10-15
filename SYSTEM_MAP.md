@@ -441,6 +441,24 @@ permission; compensation uses the same replay. `PendingTradeCapCheck` is the fut
 seam, currently reporting no pending trades. Reserve exceptions match only their player and bucket,
 expire at the supplied instant and explain the commissioner reason; no MFL or what-if state changes.
 
+## Season rollover
+
+`season.rollover` (`internal/commissioner/rollover_command.go`, CM-027, G3, commissioner only) moves a
+native league to the next NFL season in one ledger entry. `Rollover` (`rollover.go`, `rollover_rules.go`,
+`rollover_carry.go`) is the pure plan: contracts age a year, expiring players stay on their franchise marked
+pending with an RFA or UFA route only where the rookie round is recorded, IR and taxi return to active, dead
+money carries and season charges end, the champion is archived, waiting rule changes apply (the newest per
+rule only) and every dated calendar edge moves one civil year. Picks are not issued. A rule it needs that is
+unset blocks the plan with the reason. `PrepareRollover` builds the before-state (`RolloverBefore`: assets,
+rules in force with their calendar, waiting changes) and the plan under the ledger transaction; a dry run
+returns the plan and writes nothing. The one entry stores the before-state and the plan, and
+`validateRolloverRecord` checks the plan's digest against the stored before-state on every read; replay
+applies the stored plan and never rebuilds it. Once a ledger holds a rollover entry, entries (not dates) number
+seasons (`rollover_season.go`): the closed season keeps the rules captured before the entry, the new one starts
+from the plan's rules, and a compensating revert restores both. `CheckRolloverAppend` refuses reversing a
+change the rollover captured, or a rollover with later changes. A league's first season is the NFL season its
+creation records (`firstSeason`); a ledger recorded before that existed names no season until it is seeded.
+
 ## Native fantasy scoring
 
 `internal/fantasyscore` is a pure leaf: exact ten-thousandths, commissioner catalogue values,

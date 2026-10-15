@@ -31,6 +31,7 @@ func NativeAssetsReading(league string, records []Record) (NativeAssets, error) 
 			return NativeAssets{}, fmt.Errorf("read starting snapshot: %w", err)
 		}
 		seed := *r.Command.Args.Native
+		seed.Champions = slices.Clone(seed.Champions)
 		seed.Franchises = slices.Clone(seed.Franchises)
 		seed.Players = slices.Clone(seed.Players)
 		seed.Picks = slices.Clone(seed.Picks)

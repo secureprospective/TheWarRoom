@@ -18,6 +18,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
@@ -70,7 +71,9 @@ func legalityLookup(t *testing.T) normalize.Lookup {
 	return lookup
 }
 
-func legalityMirror(t *testing.T, a *App) {
+// legalityMirrorEnding holds the fixture's rosters; the given players' contracts end in the given seasons
+// and every other contract ends in 2028.
+func legalityMirrorEnding(t *testing.T, a *App, ends map[string]int) {
 	t.Helper()
 	p, err := db.Open(t.Context(), filepath.Join(t.TempDir(), "mirror.db"))
 	if err != nil {
@@ -93,8 +96,12 @@ func legalityMirror(t *testing.T, a *App) {
 	a.season = 2026
 	snap := state.MirrorSnapshot{Season: a.season}
 	add := func(id, franchise string, status domain.RosterStatus) {
+		year := 2028
+		if end, ok := ends[id]; ok {
+			year = end
+		}
 		snap.Players = append(snap.Players, state.MirrorPlayer{MFLID: id, FranchiseID: franchise, RosterStatus: status,
-			Salary: 1000000, ContractYear: 2028, ContractStatus: domain.CStatusUFA})
+			Salary: 1000000, ContractYear: year, ContractStatus: domain.CStatusUFA})
 	}
 	for i := 0; i < 82; i++ {
 		add(legalityID(1000, i), "0002", domain.RosterActive)
@@ -114,13 +121,20 @@ func legalityMirror(t *testing.T, a *App) {
 
 // legalityApp is a seeded Legacy league on a database that can be physically reopened, with the held
 // players directory and injuries feed a native check reads its facts from.
-func legalityApp(t *testing.T) *legalityFixture {
+func legalityApp(t *testing.T) *legalityFixture { return legalityAppWith(t, nil, nil) }
+
+// legalityAppWith is legalityApp with the given players' contracts ending in the given seasons and the
+// held player directory naming the given players.
+func legalityAppWith(t *testing.T, ends map[string]int, named []snapshot.Player) *legalityFixture {
 	t.Helper()
 	a := commissionerTestApp(t)
 	path := filepath.Join(t.TempDir(), "legality.db")
 	store, pools := openDirectoryHistory(t, path)
 	a.history = store
-	legalityMirror(t, a)
+	legalityMirrorEnding(t, a, ends)
+	a.targetSnapshotMu.Lock()
+	a.targetSnapshot.Players.Value = named
+	a.targetSnapshotMu.Unlock()
 	a.lookup, a.hasLookup = legalityLookup(t), true
 	at := time.Date(2026, 10, 13, 10, 0, 0, 0, time.UTC)
 	out, err := playerid.New("2001")

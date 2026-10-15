@@ -15,7 +15,7 @@ func noChangeTime() time.Time { return time.Date(2026, 10, 14, 12, 0, 0, 0, time
 func legacyLeague(t *testing.T) []Record {
 	t.Helper()
 	raw, err := (RawCommand{League: "native.test", Command: Create,
-		Args:   RawArgs{Name: "Ours", Preset: PresetLegacy, FranchiseCount: 32},
+		Args:   RawArgs{Name: "Ours", Preset: PresetLegacy, FranchiseCount: 32, Season: 2026},
 		Reason: "Start", Request: "create", Effective: "now", Visibility: "league"}).Prepared()
 	if err != nil {
 		t.Fatal(err)

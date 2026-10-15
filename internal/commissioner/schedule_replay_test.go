@@ -16,6 +16,7 @@ func TestScheduleReplayUsesRecordedWeeks(t *testing.T) {
 		{ID: "held.game", Home: "b", Away: "a"},
 	}}}
 	records := []Record{
+		{Command: RawCommand{Command: Create, Args: RawArgs{Season: 2026}}, Receipt: Receipt{Entry: "create"}},
 		{Command: RawCommand{Command: ScheduleGenerate, Args: RawArgs{Schedule: &RawScheduleArgs{
 			Weeks: 1, Pattern: leaguerules.DivisionWeighted,
 		}}}, GeneratedSchedule: frozen, Receipt: Receipt{Entry: "generate"}},
@@ -29,7 +30,7 @@ func TestScheduleReplayUsesRecordedWeeks(t *testing.T) {
 	if frozen[0].Games[0].Home != "b" {
 		t.Fatal("owner reading mutated the recorded generation")
 	}
-	records[0].GeneratedSchedule = nil
+	records[1].GeneratedSchedule = nil
 	if _, err := ScheduleReading("native.replay", records); err == nil {
 		t.Fatal("missing frozen result was silently recomputed")
 	}
@@ -124,7 +125,7 @@ func TestScheduleFrozenPayloadValidation(t *testing.T) {
 func TestScheduleGenerationUsesInForcePatternWhenOmitted(t *testing.T) {
 	for _, count := range []int{2, 32} {
 		create, err := (RawCommand{League: "native.test", Command: Create,
-			Args:   RawArgs{Name: "Ours", Preset: PresetLegacy, FranchiseCount: count},
+			Args:   RawArgs{Name: "Ours", Preset: PresetLegacy, FranchiseCount: count, Season: 2026},
 			Reason: "Start", Request: "create", Effective: "now", Visibility: "league"}).Prepared()
 		if err != nil {
 			t.Fatal(err)

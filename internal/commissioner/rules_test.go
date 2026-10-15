@@ -89,7 +89,7 @@ func TestRuleGravityComesFromTheCensus(t *testing.T) {
 
 func TestCreationIsExpandedByGo(t *testing.T) {
 	legacy, err := RawCommand{League: "native.test", Command: Create, Args: RawArgs{Name: "Ours",
-		Preset: PresetLegacy}, Reason: "start", Request: "create", Effective: "now", Visibility: "league"}.Prepared()
+		Preset: PresetLegacy, Season: 2026}, Reason: "start", Request: "create", Effective: "now", Visibility: "league"}.Prepared()
 	if err != nil || legacy.Args.FranchiseCount != 32 || len(legacy.Args.Franchises) != 32 ||
 		legacy.Args.Franchises[0] != "franchise.01" || legacy.Args.Franchises[31] != "franchise.32" ||
 		len(legacy.Args.Seed) != len(leaguerules.Catalogue()) {

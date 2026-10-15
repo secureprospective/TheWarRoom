@@ -276,6 +276,12 @@
     "safeguard": "hold"
   },
   {
+    "command": "season.rollover",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
     "command": "commish.rules.set",
     "effective": "now",
     "field": "league.teams",

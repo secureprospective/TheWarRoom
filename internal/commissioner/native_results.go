@@ -176,7 +176,11 @@ func resultSchedule(records []Record, season int, now time.Time) ([]ScheduleWeek
 	if err != nil {
 		return nil, err
 	}
-	if index := season - firstSeason(records); index < len(starts) && !at.Before(starts[index]) {
+	first, err := firstSeason(records)
+	if err != nil {
+		return nil, err
+	}
+	if index := season - first; index < len(starts) && !at.Before(starts[index]) {
 		at = starts[index].Add(-time.Nanosecond)
 	}
 	_, published, err := replaySchedule(recordsThrough(records, at))

@@ -45,7 +45,7 @@ func NativePlayerScoreReading(league string, scope source.RawNativeScope, record
 	if len(records) == 0 {
 		return out, fmt.Errorf("this app league has not been created")
 	}
-	if firstSeason(records) == ledgerSeason {
+	if !seeded(records) {
 		out.Words = "Record the starting snapshot first"
 		return out, nil
 	}

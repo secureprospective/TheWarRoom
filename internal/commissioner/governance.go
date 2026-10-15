@@ -94,7 +94,7 @@ func commandControls() map[string]string {
 		PlayerPosition: "CM-030", PlayerPositionClear: "CM-030",
 		ScorePlayer: "CM-032", ScoreFranchise: "CM-032",
 		WindowSet: "CM-023", WindowMove: "CM-023", WindowRemove: "CM-023",
-		CalendarException:     "CM-026",
+		CalendarException: "CM-026", SeasonRollover: "CM-027",
 		StandingsRecordAdjust: "CM-033", StandingsOverride: "CM-033", StandingsOverrideClear: "CM-033",
 		ScheduleGenerate: "CM-015", ScheduleEdit: "CM-015", SchedulePublish: "CM-015",
 		LineupCorrect: "CM-029",

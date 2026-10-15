@@ -53,7 +53,7 @@ func calendarTestApp(t *testing.T, at time.Time) (*App, func()) {
 func seedCalendarTest(t *testing.T, app *App) commissioner.RawCommand {
 	t.Helper()
 	raw := commissioner.RawCommand{League: "native.calendar", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Calendar league", Preset: commissioner.PresetEmpty, FranchiseCount: 2},
+		Args:   commissioner.RawArgs{Name: "Calendar league", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 2},
 		Reason: "Start our league", Request: "create", Effective: "now", Visibility: "league"}
 	executeCommissionerTest(t, app, raw)
 	raw.Command = commissioner.RulesSet

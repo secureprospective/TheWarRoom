@@ -72,7 +72,7 @@ func NativeStandingsReading(ctx context.Context, league string, records []Record
 		return out, fmt.Errorf("this app league has not been created")
 	}
 	out.Name = Replay(records).Name
-	if firstSeason(records) == ledgerSeason {
+	if !seeded(records) {
 		out.Words = "Record the starting snapshot first"
 		return out, nil
 	}

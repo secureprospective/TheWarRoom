@@ -10,6 +10,7 @@ beforeEach(() => leagueState.forget());
 afterEach(unmount);
 
 const start = 'Start this league';
+const thisYear = new Date().getFullYear();
 describe('Start an app league', () => {
   it('cannot be confirmed without a typed reason, then sends one create with preset and key', async () => {
     const { app, calls } = stub();
@@ -29,7 +30,7 @@ describe('Start an app league', () => {
     const [sent] = calls.sent;
     expect(sent).toMatchObject({ command: 'commish.league.create',
       reason: 'Owners voted to move the league here', expected: 0, effective: 'now', visibility: 'league',
-      args: { name: 'Our league', preset: 'legacy_nfl', franchiseCount: 32 } });
+      args: { name: 'Our league', preset: 'legacy_nfl', franchiseCount: 32, season: thisYear } });
     expect(sent.league).toMatch(/^native\.[0-9a-f]{16}$/);
     expect(sent.request).toMatch(/^[0-9a-f]{32}$/);
   });
@@ -44,7 +45,8 @@ describe('Start an app league', () => {
     expect(host.textContent).toContain('Both starting choices work with 2 to 32 franchises.');
     await act(async () => { (button(host, start).props().onClick as () => void)(); });
     await settle();
-    expect(calls.sent[0].args).toEqual({ name: 'Our league', preset: 'legacy_nfl', franchiseCount: count });
+    expect(calls.sent[0].args).toEqual({ name: 'Our league', preset: 'legacy_nfl', franchiseCount: count,
+      season: thisYear });
   });
   it('offers an empty league of any size and sends that preset', async () => {
     const { app, calls } = stub();
@@ -57,7 +59,23 @@ describe('Start an app league', () => {
     expect(present(host, 'Start empty: every rule Needs a ruling')).toBe(true);
     await act(async () => { (button(host, start).props().onClick as () => void)(); });
     await settle();
-    expect(calls.sent[0].args).toEqual({ name: 'Small league', preset: 'empty', franchiseCount: 12 });
+    expect(calls.sent[0].args).toEqual({ name: 'Small league', preset: 'empty', franchiseCount: 12,
+      season: thisYear });
+  });
+  it('sends the NFL season the commissioner types, and needs one', async () => {
+    const { app, calls } = stub();
+    const host = await mount(render(StartLeagueForm), app);
+    await type(control(host, 'League name'), 'Our league');
+    await type(control(host, 'Reason'), 'Start');
+    await type(control(host, 'First NFL season'), '');
+    await settle();
+    expect(disabled(button(host, start))).toBe(true);
+    expect(present(host, 'Enter the NFL season the league starts in.')).toBe(true);
+    await type(control(host, 'First NFL season'), '2027');
+    await settle();
+    await act(async () => { (button(host, start).props().onClick as () => void)(); });
+    await settle();
+    expect(calls.sent[0].args).toMatchObject({ season: 2027 });
   });
   it('selects the new league on the receipt and reloads the ledger, rules and people for it', async () => {
     const created = receipt({ league: 'native.created', entry: 'act.created' });

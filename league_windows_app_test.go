@@ -163,7 +163,7 @@ func TestWindowCommandsAndRulesSetNeverDisagree(t *testing.T) {
 	other := raw
 	other.League, other.Request, other.Expected = "native.byverbs", "create", 0
 	other.Command = commissioner.Create
-	other.Args = commissioner.RawArgs{Name: "By commands", Preset: commissioner.PresetEmpty, FranchiseCount: 2}
+	other.Args = commissioner.RawArgs{Name: "By commands", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 2}
 	executeCommissionerTest(t, app, other)
 	other.Command = commissioner.RulesSet
 	for i, s := range []struct{ field, value string }{{"calendar.timezone", `"America/New_York"`},

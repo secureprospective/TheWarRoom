@@ -20,7 +20,7 @@ type ledgerBuilder struct {
 func newLedger(t *testing.T, preset string) *ledgerBuilder {
 	t.Helper()
 	create, err := RawCommand{League: "native.test", Command: Create, Args: RawArgs{Name: "Ours", Preset: preset,
-		FranchiseCount: map[string]int{PresetLegacy: 32, PresetEmpty: 4}[preset]}, Request: "create",
+		Season: 2026, FranchiseCount: map[string]int{PresetLegacy: 32, PresetEmpty: 4}[preset]}, Request: "create",
 		Effective: "now", Visibility: "league"}.Prepared()
 	if err != nil {
 		t.Fatal(err)
@@ -28,6 +28,15 @@ func newLedger(t *testing.T, preset string) *ledgerBuilder {
 	b := &ledgerBuilder{t: t}
 	b.add(create, seasonMoment(1))
 	return b
+}
+
+func (b *ledgerBuilder) first() int {
+	b.t.Helper()
+	season, err := firstSeason(b.records)
+	if err != nil {
+		b.t.Fatal(err)
+	}
+	return season
 }
 
 func (b *ledgerBuilder) add(raw RawCommand, at time.Time) string {
@@ -78,7 +87,7 @@ func TestNextRolloverChangeCountsOnlyFromItsRollover(t *testing.T) {
 	b := newLedger(t, PresetLegacy)
 	b.set("calendar.rollover", rolloverAt, "now", seasonMoment(2))
 	b.set("roster.limits", `{"min":20,"max":70}`, "next_rollover", seasonMoment(3))
-	first := firstSeason(b.records)
+	first := b.first()
 	for _, c := range []struct {
 		name   string
 		season int
@@ -105,7 +114,7 @@ func TestNextRolloverChangeCountsOnlyFromItsRollover(t *testing.T) {
 func TestNextRolloverWithoutADateNeverCounts(t *testing.T) {
 	b := newLedger(t, PresetLegacy)
 	b.set("roster.limits", `{"min":20,"max":70}`, "next_rollover", seasonMoment(3))
-	if got := rosterMax(t, b.records, firstSeason(b.records), seasonMoment(30)); got != 80 {
+	if got := rosterMax(t, b.records, b.first(), seasonMoment(30)); got != 80 {
 		t.Fatalf("a change with no rollover to wait for counted: maximum %d", got)
 	}
 }
@@ -115,7 +124,7 @@ func TestWithdrawnNextRolloverChangeDoesNotCount(t *testing.T) {
 	b.set("calendar.rollover", rolloverAt, "now", seasonMoment(2))
 	entry := b.set("roster.limits", `{"min":20,"max":70}`, "next_rollover", seasonMoment(3))
 	b.revert(entry, seasonMoment(4))
-	if got := rosterMax(t, b.records, firstSeason(b.records)+1, time.Date(2027, 4, 1, 0, 0, 0, 0, time.UTC)); got != 80 {
+	if got := rosterMax(t, b.records, b.first()+1, time.Date(2027, 4, 1, 0, 0, 0, 0, time.UTC)); got != 80 {
 		t.Fatalf("withdrawn change counted: maximum %d", got)
 	}
 }
@@ -125,7 +134,7 @@ func TestScheduledChangeBeatsALaterNowChangeAtItsRollover(t *testing.T) {
 	b.set("calendar.rollover", rolloverAt, "now", seasonMoment(2))
 	b.set("roster.limits", `{"min":20,"max":70}`, "next_rollover", seasonMoment(3))
 	b.set("roster.limits", `{"min":18,"max":75}`, "now", seasonMoment(4))
-	first := firstSeason(b.records)
+	first := b.first()
 	if got := rosterMax(t, b.records, first, seasonMoment(5)); got != 75 {
 		t.Fatalf("this season's own change: maximum %d", got)
 	}
@@ -148,7 +157,7 @@ func TestRolloverDateMovesUntilItPasses(t *testing.T) {
 		t.Fatalf("a date set after the rollover passed did not schedule the next: %v %v", starts, err)
 	}
 	if season, err := SeasonAt(b.records, time.Date(2028, 3, 2, 0, 0, 0, 0, time.UTC)); err != nil ||
-		season != firstSeason(b.records)+2 {
+		season != b.first()+2 {
 		t.Fatalf("season after two rollovers: %d %v", season, err)
 	}
 }
@@ -156,7 +165,7 @@ func TestRolloverDateMovesUntilItPasses(t *testing.T) {
 func TestSeasonReadingsRefuseSeasonsOutsideTheLeague(t *testing.T) {
 	b := newLedger(t, PresetLegacy)
 	b.set("calendar.rollover", rolloverAt, "now", seasonMoment(2))
-	first := firstSeason(b.records)
+	first := b.first()
 	if _, err := RulesInForce(b.records, first-1, seasonMoment(5)); err == nil {
 		t.Fatal("a season before the league began was read")
 	}
@@ -243,7 +252,7 @@ func TestHistoricalRulesIgnoreLaterCompensation(t *testing.T) {
 	b.set("calendar.rollover", rolloverAt, "now", seasonMoment(2))
 	entry := b.set("roster.limits", `{"min":18,"max":75}`, "now", seasonMoment(3))
 	b.revert(entry, time.Date(2027, 3, 2, 0, 0, 0, 0, time.UTC))
-	first := firstSeason(b.records)
+	first := b.first()
 	if got := rosterMax(t, b.records, first, seasonMoment(2)); got != 80 {
 		t.Fatalf("future change affected past instant: %d", got)
 	}
@@ -273,7 +282,7 @@ func TestReversingAnElapsedRolloverCannotEraseASeason(t *testing.T) {
 	b.revert(rollover, time.Date(2027, 3, 2, 0, 0, 0, 0, time.UTC))
 	b.set("roster.limits", `{"min":18,"max":90}`, "now", time.Date(2027, 3, 3, 0, 0, 0, 0, time.UTC))
 	at := time.Date(2027, 4, 1, 0, 0, 0, 0, time.UTC)
-	first := firstSeason(b.records)
+	first := b.first()
 	if got, err := SeasonAt(b.records, at); err != nil || got != first+1 {
 		t.Fatalf("elapsed season erased by compensation: %d %v", got, err)
 	}

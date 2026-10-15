@@ -838,6 +838,7 @@ export namespace commissioner {
 	    }
 	}
 	export class NativeCharge {
+	    kind?: string;
 	    season?: number;
 	    id: string;
 	    franchise: string;
@@ -850,6 +851,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
 	        this.season = source["season"];
 	        this.id = source["id"];
 	        this.franchise = source["franchise"];
@@ -882,6 +884,9 @@ export namespace commissioner {
 	    }
 	}
 	export class NativePlayer {
+	    name?: string;
+	    rookieRound?: number;
+	    pending?: boolean;
 	    id: string;
 	    franchise: string;
 	    status: string;
@@ -896,6 +901,9 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.rookieRound = source["rookieRound"];
+	        this.pending = source["pending"];
 	        this.id = source["id"];
 	        this.franchise = source["franchise"];
 	        this.status = source["status"];
@@ -925,8 +933,24 @@ export namespace commissioner {
 	        this.division = source["division"];
 	    }
 	}
+	export class NativeChampion {
+	    season: number;
+	    franchise: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeChampion(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.franchise = source["franchise"];
+	    }
+	}
 	export class RawNativeSnapshot {
 	    season: number;
+	    champion?: string;
+	    champions?: NativeChampion[];
 	    // Go type: time
 	    rosterAt: any;
 	    // Go type: time
@@ -945,6 +969,8 @@ export namespace commissioner {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.season = source["season"];
+	        this.champion = source["champion"];
+	        this.champions = this.convertValues(source["champions"], NativeChampion);
 	        this.rosterAt = this.convertValues(source["rosterAt"], null);
 	        this.draftAt = this.convertValues(source["draftAt"], null);
 	        this.futureAt = this.convertValues(source["futureAt"], null);
@@ -1153,6 +1179,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	export class NativeDirectorySeat {
@@ -1900,6 +1927,22 @@ export namespace commissioner {
 	}
 	
 	
+	export class PendingExpiry {
+	    player: string;
+	    franchise: string;
+	    route: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PendingExpiry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.player = source["player"];
+	        this.franchise = source["franchise"];
+	        this.route = source["route"];
+	    }
+	}
 	export class PeopleVoteCount {
 	    choice: string;
 	    ballots: number;
@@ -2190,6 +2233,54 @@ export namespace commissioner {
 	    }
 	}
 	
+	export class RolloverPlan {
+	    from: number;
+	    to: number;
+	    beforeDigest: string;
+	    blocked: boolean;
+	    reasons: string[];
+	    lines: string[];
+	    after: RawNativeSnapshot;
+	    pending: PendingExpiry[];
+	    rules: leaguerules.RuleSet;
+	    calendar: leagueclock.ActionCalendar;
+	
+	    static createFrom(source: any = {}) {
+	        return new RolloverPlan(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.from = source["from"];
+	        this.to = source["to"];
+	        this.beforeDigest = source["beforeDigest"];
+	        this.blocked = source["blocked"];
+	        this.reasons = source["reasons"];
+	        this.lines = source["lines"];
+	        this.after = this.convertValues(source["after"], RawNativeSnapshot);
+	        this.pending = this.convertValues(source["pending"], PendingExpiry);
+	        this.rules = this.convertValues(source["rules"], leaguerules.RuleSet);
+	        this.calendar = this.convertValues(source["calendar"], leagueclock.ActionCalendar);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Receipt {
 	    entry: string;
 	    league: string;
@@ -2197,6 +2288,7 @@ export namespace commissioner {
 	    // Go type: time
 	    recordedAt: any;
 	    message: string;
+	    plan?: RolloverPlan;
 	
 	    static createFrom(source: any = {}) {
 	        return new Receipt(source);
@@ -2209,6 +2301,7 @@ export namespace commissioner {
 	        this.revision = source["revision"];
 	        this.recordedAt = this.convertValues(source["recordedAt"], null);
 	        this.message = source["message"];
+	        this.plan = this.convertValues(source["plan"], RolloverPlan);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -2264,6 +2357,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	export class RulePending {
 	    entry: string;
@@ -2475,6 +2569,7 @@ export namespace commissioner {
 	export class Schedule {
 	    league: string;
 	    revision: number;
+	    season: number;
 	    weeks: ScheduleWeek[];
 	
 	    static createFrom(source: any = {}) {
@@ -2485,6 +2580,7 @@ export namespace commissioner {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.league = source["league"];
 	        this.revision = source["revision"];
+	        this.season = source["season"];
 	        this.weeks = this.convertValues(source["weeks"], ScheduleWeek);
 	    }
 	
@@ -3537,6 +3633,795 @@ export namespace leaguefeed {
 
 export namespace leaguerules {
 	
+	export class Value_int_ {
+	    State: number;
+	    Value: number;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_int_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_ {
+	    State: number;
+	    Value: number;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value_bool_ {
+	    State: number;
+	    Value: boolean;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_bool_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class BoundsMoney {
+	    MaximumUnlimited: Value_bool_;
+	    Min: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_;
+	    Max: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_;
+	
+	    static createFrom(source: any = {}) {
+	        return new BoundsMoney(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.MaximumUnlimited = this.convertValues(source["MaximumUnlimited"], Value_bool_);
+	        this.Min = this.convertValues(source["Min"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_);
+	        this.Max = this.convertValues(source["Max"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class BidTier {
+	    Salary: BoundsMoney;
+	    MinimumYears: Value_int_;
+	    LowerInclusive: Value_bool_;
+	
+	    static createFrom(source: any = {}) {
+	        return new BidTier(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Salary = this.convertValues(source["Salary"], BoundsMoney);
+	        this.MinimumYears = this.convertValues(source["MinimumYears"], Value_int_);
+	        this.LowerInclusive = this.convertValues(source["LowerInclusive"], Value_bool_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_time_Duration_ {
+	    State: number;
+	    Value: number;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_time_Duration_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_BidTier_ {
+	    State: number;
+	    Value: BidTier[];
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_BidTier_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], BidTier);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_ {
+	    State: number;
+	    Value: number;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal__ {
+	    State: number;
+	    Value: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_[];
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal__(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BidMode_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BidMode_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class BidsRules {
+	    UFA: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BidMode_;
+	    RFA: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BidMode_;
+	    // Go type: Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal__
+	    YearMultipliers: any;
+	    MaximumActive: Value_int_;
+	    OneYearMaximum: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_;
+	    // Go type: Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_BidTier_
+	    Tiers: any;
+	    MinimumIncrement: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    SnipeAfter: Value_time_Duration_;
+	    SnipeIncrement: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    MultiYearEndWeek: Value_int_;
+	    PlayoffOnlyAfterWeek: Value_int_;
+	    PlayoffMaximumYears: Value_int_;
+	    PlayoffCapLifted: Value_bool_;
+	    PointDecimals: Value_int_;
+	
+	    static createFrom(source: any = {}) {
+	        return new BidsRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.UFA = this.convertValues(source["UFA"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BidMode_);
+	        this.RFA = this.convertValues(source["RFA"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BidMode_);
+	        this.YearMultipliers = this.convertValues(source["YearMultipliers"], null);
+	        this.MaximumActive = this.convertValues(source["MaximumActive"], Value_int_);
+	        this.OneYearMaximum = this.convertValues(source["OneYearMaximum"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_);
+	        this.Tiers = this.convertValues(source["Tiers"], null);
+	        this.MinimumIncrement = this.convertValues(source["MinimumIncrement"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.SnipeAfter = this.convertValues(source["SnipeAfter"], Value_time_Duration_);
+	        this.SnipeIncrement = this.convertValues(source["SnipeIncrement"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.MultiYearEndWeek = this.convertValues(source["MultiYearEndWeek"], Value_int_);
+	        this.PlayoffOnlyAfterWeek = this.convertValues(source["PlayoffOnlyAfterWeek"], Value_int_);
+	        this.PlayoffMaximumYears = this.convertValues(source["PlayoffMaximumYears"], Value_int_);
+	        this.PlayoffCapLifted = this.convertValues(source["PlayoffCapLifted"], Value_bool_);
+	        this.PointDecimals = this.convertValues(source["PointDecimals"], Value_int_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Bonus {
+	    At: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    Points: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	
+	    static createFrom(source: any = {}) {
+	        return new Bonus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.At = this.convertValues(source["At"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.Points = this.convertValues(source["Points"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Bounds {
+	    Min: Value_int_;
+	    Max: Value_int_;
+	
+	    static createFrom(source: any = {}) {
+	        return new Bounds(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Min = this.convertValues(source["Min"], Value_int_);
+	        this.Max = this.convertValues(source["Max"], Value_int_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class Value_string_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_string_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class BracketNode {
+	    ID: Value_string_;
+	    Week: Value_int_;
+	    HomeSeed: Value_int_;
+	    AwaySeed: Value_int_;
+	    HomeWinner: Value_string_;
+	    AwayWinner: Value_string_;
+	
+	    static createFrom(source: any = {}) {
+	        return new BracketNode(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ID = this.convertValues(source["ID"], Value_string_);
+	        this.Week = this.convertValues(source["Week"], Value_int_);
+	        this.HomeSeed = this.convertValues(source["HomeSeed"], Value_int_);
+	        this.AwaySeed = this.convertValues(source["AwaySeed"], Value_int_);
+	        this.HomeWinner = this.convertValues(source["HomeWinner"], Value_string_);
+	        this.AwayWinner = this.convertValues(source["AwayWinner"], Value_string_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal__ {
+	    State: number;
+	    Value: Record<number, Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal__(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_, true);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class BuyoutRules {
+	    Enabled: Value_bool_;
+	    AnnualLimit: Value_int_;
+	    OffseasonOnly: Value_bool_;
+	    OneYearAllowed: Value_bool_;
+	    Rates: Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal__;
+	    RebidNextOffseason: Value_bool_;
+	
+	    static createFrom(source: any = {}) {
+	        return new BuyoutRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Enabled = this.convertValues(source["Enabled"], Value_bool_);
+	        this.AnnualLimit = this.convertValues(source["AnnualLimit"], Value_int_);
+	        this.OffseasonOnly = this.convertValues(source["OffseasonOnly"], Value_bool_);
+	        this.OneYearAllowed = this.convertValues(source["OneYearAllowed"], Value_bool_);
+	        this.Rates = this.convertValues(source["Rates"], Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal__);
+	        this.RebidNextOffseason = this.convertValues(source["RebidNextOffseason"], Value_bool_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BoundarySide_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BoundarySide_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value_time_Time_ {
+	    State: number;
+	    // Go type: time
+	    Value: any;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_time_Time_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], null);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Action_ {
+	    State: number;
+	    Value: string[];
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Action_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class MonthDay {
+	    Month: Value_int_;
+	    Day: Value_int_;
+	
+	    static createFrom(source: any = {}) {
+	        return new MonthDay(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Month = this.convertValues(source["Month"], Value_int_);
+	        this.Day = this.convertValues(source["Day"], Value_int_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_MonthDay_ {
+	    State: number;
+	    Value: MonthDay;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_MonthDay_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], MonthDay);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Window {
+	    Start: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_MonthDay_;
+	    End: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_MonthDay_;
+	    // Go type: Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Action_
+	    Opens: any;
+	    DatedStart: Value_time_Time_;
+	    DatedEnd: Value_time_Time_;
+	
+	    static createFrom(source: any = {}) {
+	        return new Window(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Start = this.convertValues(source["Start"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_MonthDay_);
+	        this.End = this.convertValues(source["End"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_MonthDay_);
+	        this.Opens = this.convertValues(source["Opens"], null);
+	        this.DatedStart = this.convertValues(source["DatedStart"], Value_time_Time_);
+	        this.DatedEnd = this.convertValues(source["DatedEnd"], Value_time_Time_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_map_string_github_com_secureprospective_TheWarRoom_internal_leaguerules_Window_ {
+	    State: number;
+	    Value: Record<string, Window>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_string_github_com_secureprospective_TheWarRoom_internal_leaguerules_Window_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Window, true);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class CalendarRules {
+	    Windows: Value_map_string_github_com_secureprospective_TheWarRoom_internal_leaguerules_Window_;
+	    Timezone: Value_string_;
+	    Boundary: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BoundarySide_;
+	    Rollover: Value_time_Time_;
+	    RolloverDate: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_MonthDay_;
+	    TradeDeadline: Value_time_Time_;
+	    TradeDeadlineWeek: Value_int_;
+	
+	    static createFrom(source: any = {}) {
+	        return new CalendarRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Windows = this.convertValues(source["Windows"], Value_map_string_github_com_secureprospective_TheWarRoom_internal_leaguerules_Window_);
+	        this.Timezone = this.convertValues(source["Timezone"], Value_string_);
+	        this.Boundary = this.convertValues(source["Boundary"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BoundarySide_);
+	        this.Rollover = this.convertValues(source["Rollover"], Value_time_Time_);
+	        this.RolloverDate = this.convertValues(source["RolloverDate"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_MonthDay_);
+	        this.TradeDeadline = this.convertValues(source["TradeDeadline"], Value_time_Time_);
+	        this.TradeDeadlineWeek = this.convertValues(source["TradeDeadlineWeek"], Value_int_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_CapMode_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_CapMode_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class CapRules {
+	    Amount: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_;
+	    Enforcement: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_CapMode_;
+	    IRShare: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    TaxiShare: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    Quantum: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_;
+	    ComplianceDeadline: Value_time_Time_;
+	
+	    static createFrom(source: any = {}) {
+	        return new CapRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Amount = this.convertValues(source["Amount"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_);
+	        this.Enforcement = this.convertValues(source["Enforcement"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_CapMode_);
+	        this.IRShare = this.convertValues(source["IRShare"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.TaxiShare = this.convertValues(source["TaxiShare"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.Quantum = this.convertValues(source["Quantum"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_);
+	        this.ComplianceDeadline = this.convertValues(source["ComplianceDeadline"], Value_time_Time_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Choice {
 	    value: string;
 	    label: string;
@@ -3551,6 +4436,2218 @@ export namespace leaguerules {
 	        this.label = source["label"];
 	    }
 	}
+	export class Value___string_ {
+	    State: number;
+	    Value: string[];
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value___string_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class ReliefRules {
+	    Enabled: Value_bool_;
+	    Reasons: Value___string_;
+	
+	    static createFrom(source: any = {}) {
+	        return new ReliefRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Enabled = this.convertValues(source["Enabled"], Value_bool_);
+	        this.Reasons = this.convertValues(source["Reasons"], Value___string_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ReliefRules_ {
+	    State: number;
+	    Value: ReliefRules;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ReliefRules_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], ReliefRules);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class SpecialRules {
+	    Enabled: Value_bool_;
+	    Rate: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	
+	    static createFrom(source: any = {}) {
+	        return new SpecialRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Enabled = this.convertValues(source["Enabled"], Value_bool_);
+	        this.Rate = this.convertValues(source["Rate"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SpecialRules_ {
+	    State: number;
+	    Value: SpecialRules;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SpecialRules_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], SpecialRules);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ReSignRules {
+	    Enabled: Value_bool_;
+	    Premiums: Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal__;
+	
+	    static createFrom(source: any = {}) {
+	        return new ReSignRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Enabled = this.convertValues(source["Enabled"], Value_bool_);
+	        this.Premiums = this.convertValues(source["Premiums"], Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal__);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ReSignRules_ {
+	    State: number;
+	    Value: ReSignRules;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ReSignRules_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], ReSignRules);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value___int_ {
+	    State: number;
+	    Value: number[];
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value___int_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Tender {
+	    Price: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_;
+	    Rounds: Value___int_;
+	
+	    static createFrom(source: any = {}) {
+	        return new Tender(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Price = this.convertValues(source["Price"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_);
+	        this.Rounds = this.convertValues(source["Rounds"], Value___int_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Tender_ {
+	    State: number;
+	    Value: Tender[];
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Tender_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Tender);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class TenderRules {
+	    Enabled: Value_bool_;
+	    // Go type: Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Tender_
+	    Prices: any;
+	    PriorSalaryMultiplier: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    MatchWindow: Value_time_Duration_;
+	    CompensatoryAllowed: Value_bool_;
+	
+	    static createFrom(source: any = {}) {
+	        return new TenderRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Enabled = this.convertValues(source["Enabled"], Value_bool_);
+	        this.Prices = this.convertValues(source["Prices"], null);
+	        this.PriorSalaryMultiplier = this.convertValues(source["PriorSalaryMultiplier"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.MatchWindow = this.convertValues(source["MatchWindow"], Value_time_Duration_);
+	        this.CompensatoryAllowed = this.convertValues(source["CompensatoryAllowed"], Value_bool_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TenderRules_ {
+	    State: number;
+	    Value: TenderRules;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TenderRules_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], TenderRules);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BuyoutRules_ {
+	    State: number;
+	    Value: BuyoutRules;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BuyoutRules_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], BuyoutRules);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class MoneyTier {
+	    At: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_;
+	    Amount: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_;
+	
+	    static createFrom(source: any = {}) {
+	        return new MoneyTier(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.At = this.convertValues(source["At"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_);
+	        this.Amount = this.convertValues(source["Amount"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_MoneyTier_ {
+	    State: number;
+	    Value: MoneyTier[];
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_MoneyTier_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], MoneyTier);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class RestructureRules {
+	    Enabled: Value_bool_;
+	    AnnualLimit: Value_int_;
+	    PerContract: Value_int_;
+	    ExtraPerExtension: Value_int_;
+	    // Go type: Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_MoneyTier_
+	    Tiers: any;
+	    ConserveTotal: Value_bool_;
+	    ExistingYearsOnly: Value_bool_;
+	
+	    static createFrom(source: any = {}) {
+	        return new RestructureRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Enabled = this.convertValues(source["Enabled"], Value_bool_);
+	        this.AnnualLimit = this.convertValues(source["AnnualLimit"], Value_int_);
+	        this.PerContract = this.convertValues(source["PerContract"], Value_int_);
+	        this.ExtraPerExtension = this.convertValues(source["ExtraPerExtension"], Value_int_);
+	        this.Tiers = this.convertValues(source["Tiers"], null);
+	        this.ConserveTotal = this.convertValues(source["ConserveTotal"], Value_bool_);
+	        this.ExistingYearsOnly = this.convertValues(source["ExistingYearsOnly"], Value_bool_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_RestructureRules_ {
+	    State: number;
+	    Value: RestructureRules;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_RestructureRules_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], RestructureRules);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money__ {
+	    State: number;
+	    Value: Record<string, Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money__(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_, true);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ExtensionRules {
+	    Enabled: Value_bool_;
+	    AnnualLimit: Value_int_;
+	    MinimumRemaining: Value_int_;
+	    AddedYears: Value_int_;
+	    TotalYears: Value_int_;
+	    Multiplier: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    Floors: Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money__;
+	    RepeatBeforeFreeAgency: Value_bool_;
+	    UFAEligible: Value_bool_;
+	
+	    static createFrom(source: any = {}) {
+	        return new ExtensionRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Enabled = this.convertValues(source["Enabled"], Value_bool_);
+	        this.AnnualLimit = this.convertValues(source["AnnualLimit"], Value_int_);
+	        this.MinimumRemaining = this.convertValues(source["MinimumRemaining"], Value_int_);
+	        this.AddedYears = this.convertValues(source["AddedYears"], Value_int_);
+	        this.TotalYears = this.convertValues(source["TotalYears"], Value_int_);
+	        this.Multiplier = this.convertValues(source["Multiplier"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.Floors = this.convertValues(source["Floors"], Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money__);
+	        this.RepeatBeforeFreeAgency = this.convertValues(source["RepeatBeforeFreeAgency"], Value_bool_);
+	        this.UFAEligible = this.convertValues(source["UFAEligible"], Value_bool_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ExtensionRules_ {
+	    State: number;
+	    Value: ExtensionRules;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ExtensionRules_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], ExtensionRules);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class TagRules {
+	    Enabled: Value_bool_;
+	    AnnualLimit: Value_int_;
+	    TopPlayers: Value_int_;
+	    FloorMultiplier: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    ConsecutiveLimit: Value_int_;
+	    SecondMultiplier: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    ExtensionMultiplier: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    ExcludePlayoffContracts: Value_bool_;
+	
+	    static createFrom(source: any = {}) {
+	        return new TagRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Enabled = this.convertValues(source["Enabled"], Value_bool_);
+	        this.AnnualLimit = this.convertValues(source["AnnualLimit"], Value_int_);
+	        this.TopPlayers = this.convertValues(source["TopPlayers"], Value_int_);
+	        this.FloorMultiplier = this.convertValues(source["FloorMultiplier"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.ConsecutiveLimit = this.convertValues(source["ConsecutiveLimit"], Value_int_);
+	        this.SecondMultiplier = this.convertValues(source["SecondMultiplier"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.ExtensionMultiplier = this.convertValues(source["ExtensionMultiplier"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.ExcludePlayoffContracts = this.convertValues(source["ExcludePlayoffContracts"], Value_bool_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TagRules_ {
+	    State: number;
+	    Value: TagRules;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TagRules_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], TagRules);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ExperienceSalary {
+	    MaximumUnlimited: Value_bool_;
+	    Years: Bounds;
+	    Minimum: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_;
+	
+	    static createFrom(source: any = {}) {
+	        return new ExperienceSalary(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.MaximumUnlimited = this.convertValues(source["MaximumUnlimited"], Value_bool_);
+	        this.Years = this.convertValues(source["Years"], Bounds);
+	        this.Minimum = this.convertValues(source["Minimum"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_ExperienceSalary_ {
+	    State: number;
+	    Value: ExperienceSalary[];
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_ExperienceSalary_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], ExperienceSalary);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ContractsRules {
+	    MaximumYears: Value_int_;
+	    FlatSalaries: Value_bool_;
+	    // Go type: Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_ExperienceSalary_
+	    MinimumSalaries: any;
+	    DeadCap: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    RestructuredDeadCap: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    ClaimClearsDeadCap: Value_bool_;
+	    ReleaseReSignSameSeason: Value_bool_;
+	    Tag: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TagRules_;
+	    Extension: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ExtensionRules_;
+	    Restructure: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_RestructureRules_;
+	    Buyout: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BuyoutRules_;
+	    Tender: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TenderRules_;
+	    ReSign: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ReSignRules_;
+	    Retirement: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SpecialRules_;
+	    Death: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SpecialRules_;
+	    CapRelief: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ReliefRules_;
+	
+	    static createFrom(source: any = {}) {
+	        return new ContractsRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.MaximumYears = this.convertValues(source["MaximumYears"], Value_int_);
+	        this.FlatSalaries = this.convertValues(source["FlatSalaries"], Value_bool_);
+	        this.MinimumSalaries = this.convertValues(source["MinimumSalaries"], null);
+	        this.DeadCap = this.convertValues(source["DeadCap"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.RestructuredDeadCap = this.convertValues(source["RestructuredDeadCap"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.ClaimClearsDeadCap = this.convertValues(source["ClaimClearsDeadCap"], Value_bool_);
+	        this.ReleaseReSignSameSeason = this.convertValues(source["ReleaseReSignSameSeason"], Value_bool_);
+	        this.Tag = this.convertValues(source["Tag"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TagRules_);
+	        this.Extension = this.convertValues(source["Extension"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ExtensionRules_);
+	        this.Restructure = this.convertValues(source["Restructure"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_RestructureRules_);
+	        this.Buyout = this.convertValues(source["Buyout"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_BuyoutRules_);
+	        this.Tender = this.convertValues(source["Tender"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TenderRules_);
+	        this.ReSign = this.convertValues(source["ReSign"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ReSignRules_);
+	        this.Retirement = this.convertValues(source["Retirement"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SpecialRules_);
+	        this.Death = this.convertValues(source["Death"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SpecialRules_);
+	        this.CapRelief = this.convertValues(source["CapRelief"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ReliefRules_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TieRule_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TieRule_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_OrderPattern_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_OrderPattern_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value_map_int___string_ {
+	    State: number;
+	    Value: Record<number, Array<string>>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_int___string_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_OrderSource_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_OrderSource_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_bool__ {
+	    State: number;
+	    Value: Record<number, Value_bool_>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_bool__(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Value_bool_, true);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_int__ {
+	    State: number;
+	    Value: Record<number, Value_int_>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_int__(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Value_int_, true);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_map_int___github_com_secureprospective_TheWarRoom_internal_leaguerules_SlotPrice_ {
+	    State: number;
+	    Value: Record<number, Array<SlotPrice>>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_int___github_com_secureprospective_TheWarRoom_internal_leaguerules_SlotPrice_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Array<SlotPrice>, true);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class TimeoutPolicy {
+	    Unlimited: Value_bool_;
+	    Count: Value_int_;
+	
+	    static createFrom(source: any = {}) {
+	        return new TimeoutPolicy(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Unlimited = this.convertValues(source["Unlimited"], Value_bool_);
+	        this.Count = this.convertValues(source["Count"], Value_int_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TimeoutPolicy_ {
+	    State: number;
+	    Value: TimeoutPolicy;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TimeoutPolicy_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], TimeoutPolicy);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ExpiryAction_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ExpiryAction_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_DraftMode_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_DraftMode_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class DraftRules {
+	    Mode: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_DraftMode_;
+	    Clock: Value_time_Duration_;
+	    OnExpire: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ExpiryAction_;
+	    Timeouts: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TimeoutPolicy_;
+	    Rounds: Value_int_;
+	    MaximumPicks: Value_int_;
+	    ForfeitExtra: Value_bool_;
+	    // Go type: Value_map_int___github_com_secureprospective_TheWarRoom_internal_leaguerules_SlotPrice_
+	    Pricing: any;
+	    Lengths: Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_int__;
+	    RFAAfter: Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_bool__;
+	    OrderSource: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_OrderSource_;
+	    // Go type: Value_map_int___string_
+	    Order: any;
+	    LaterPattern: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_OrderPattern_;
+	    TieRule: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TieRule_;
+	
+	    static createFrom(source: any = {}) {
+	        return new DraftRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Mode = this.convertValues(source["Mode"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_DraftMode_);
+	        this.Clock = this.convertValues(source["Clock"], Value_time_Duration_);
+	        this.OnExpire = this.convertValues(source["OnExpire"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ExpiryAction_);
+	        this.Timeouts = this.convertValues(source["Timeouts"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TimeoutPolicy_);
+	        this.Rounds = this.convertValues(source["Rounds"], Value_int_);
+	        this.MaximumPicks = this.convertValues(source["MaximumPicks"], Value_int_);
+	        this.ForfeitExtra = this.convertValues(source["ForfeitExtra"], Value_bool_);
+	        this.Pricing = this.convertValues(source["Pricing"], null);
+	        this.Lengths = this.convertValues(source["Lengths"], Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_int__);
+	        this.RFAAfter = this.convertValues(source["RFAAfter"], Value_map_int_github_com_secureprospective_TheWarRoom_internal_leaguerules_Value_bool__);
+	        this.OrderSource = this.convertValues(source["OrderSource"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_OrderSource_);
+	        this.Order = this.convertValues(source["Order"], null);
+	        this.LaterPattern = this.convertValues(source["LaterPattern"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_OrderPattern_);
+	        this.TieRule = this.convertValues(source["TieRule"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TieRule_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
+	export class Value_map_string_string_ {
+	    State: number;
+	    Value: Record<string, string>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_string_string_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class HouseRules {
+	    Texts: Value_map_string_string_;
+	
+	    static createFrom(source: any = {}) {
+	        return new HouseRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Texts = this.convertValues(source["Texts"], Value_map_string_string_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_NFLStatus_ {
+	    State: number;
+	    Value: string[];
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_NFLStatus_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class IRRules {
+	    Slots: Value_int_;
+	    // Go type: Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_NFLStatus_
+	    Eligible: any;
+	    MustLeaveHealthy: Value_bool_;
+	
+	    static createFrom(source: any = {}) {
+	        return new IRRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Slots = this.convertValues(source["Slots"], Value_int_);
+	        this.Eligible = this.convertValues(source["Eligible"], null);
+	        this.MustLeaveHealthy = this.convertValues(source["MustLeaveHealthy"], Value_bool_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_CarryPolicy_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_CarryPolicy_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_InitialRosters_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_InitialRosters_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Format_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Format_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class LeagueRules {
+	    Teams: Value_int_;
+	    Conferences: Value_int_;
+	    Divisions: Value_int_;
+	    Format: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Format_;
+	    InitialRosters: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_InitialRosters_;
+	    Alignment: Value_map_string_string_;
+	    Dynasty: Value_bool_;
+	    Carry: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_CarryPolicy_;
+	    Keepers: Value_int_;
+	
+	    static createFrom(source: any = {}) {
+	        return new LeagueRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Teams = this.convertValues(source["Teams"], Value_int_);
+	        this.Conferences = this.convertValues(source["Conferences"], Value_int_);
+	        this.Divisions = this.convertValues(source["Divisions"], Value_int_);
+	        this.Format = this.convertValues(source["Format"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Format_);
+	        this.InitialRosters = this.convertValues(source["InitialRosters"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_InitialRosters_);
+	        this.Alignment = this.convertValues(source["Alignment"], Value_map_string_string_);
+	        this.Dynasty = this.convertValues(source["Dynasty"], Value_bool_);
+	        this.Carry = this.convertValues(source["Carry"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_CarryPolicy_);
+	        this.Keepers = this.convertValues(source["Keepers"], Value_int_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Penalty_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Penalty_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_LineupGroup_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_ {
+	    State: number;
+	    Value: Record<string, Bounds>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_LineupGroup_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Bounds, true);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_ {
+	    State: number;
+	    Value: Record<string, Bounds>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Bounds, true);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class LineupRules {
+	    Positions: Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_;
+	    Groups: Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_LineupGroup_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_;
+	    InvalidPenalty: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Penalty_;
+	    MissedFlag: Value_bool_;
+	
+	    static createFrom(source: any = {}) {
+	        return new LineupRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Positions = this.convertValues(source["Positions"], Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_);
+	        this.Groups = this.convertValues(source["Groups"], Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_LineupGroup_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_);
+	        this.InvalidPenalty = this.convertValues(source["InvalidPenalty"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Penalty_);
+	        this.MissedFlag = this.convertValues(source["MissedFlag"], Value_bool_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
+	export class NotifyRules {
+	    Transactions: Value_bool_;
+	    Reminders: Value_bool_;
+	
+	    static createFrom(source: any = {}) {
+	        return new NotifyRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Transactions = this.convertValues(source["Transactions"], Value_bool_);
+	        this.Reminders = this.convertValues(source["Reminders"], Value_bool_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_BracketNode_ {
+	    State: number;
+	    Value: BracketNode[];
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_BracketNode_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], BracketNode);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SeedPolicy_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SeedPolicy_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class PlayoffsRules {
+	    PerConference: Value_int_;
+	    DivisionWinners: Value_int_;
+	    WildCards: Value_int_;
+	    ByeSeed: Value_int_;
+	    Seeding: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SeedPolicy_;
+	    Reseed: Value_bool_;
+	    StartWeek: Value_int_;
+	    FinalWeek: Value_int_;
+	    HomeBonus: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    // Go type: Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_BracketNode_
+	    Graph: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new PlayoffsRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.PerConference = this.convertValues(source["PerConference"], Value_int_);
+	        this.DivisionWinners = this.convertValues(source["DivisionWinners"], Value_int_);
+	        this.WildCards = this.convertValues(source["WildCards"], Value_int_);
+	        this.ByeSeed = this.convertValues(source["ByeSeed"], Value_int_);
+	        this.Seeding = this.convertValues(source["Seeding"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SeedPolicy_);
+	        this.Reseed = this.convertValues(source["Reseed"], Value_bool_);
+	        this.StartWeek = this.convertValues(source["StartWeek"], Value_int_);
+	        this.FinalWeek = this.convertValues(source["FinalWeek"], Value_int_);
+	        this.HomeBonus = this.convertValues(source["HomeBonus"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.Graph = this.convertValues(source["Graph"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
+	
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_ {
+	    State: number;
+	    Value: Bounds;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Bounds);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class RosterRules {
+	    Limits: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_;
+	    ReserveExcluded: Value_bool_;
+	    PositionBounds: Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_;
+	
+	    static createFrom(source: any = {}) {
+	        return new RosterRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Limits = this.convertValues(source["Limits"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_);
+	        this.ReserveExcluded = this.convertValues(source["ReserveExcluded"], Value_bool_);
+	        this.PositionBounds = this.convertValues(source["PositionBounds"], Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SchedulePattern_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SchedulePattern_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class ScheduleRules {
+	    RegularWeeks: Value_int_;
+	    Pattern: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SchedulePattern_;
+	
+	    static createFrom(source: any = {}) {
+	        return new ScheduleRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.RegularWeeks = this.convertValues(source["RegularWeeks"], Value_int_);
+	        this.Pattern = this.convertValues(source["Pattern"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_SchedulePattern_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ReviewRoute_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ReviewRoute_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class TradesRules {
+	    Review: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ReviewRoute_;
+	    DOTSeats: Value_int_;
+	    DecideAt: Value_int_;
+	    FutureYears: Value_int_;
+	    Rounds: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_;
+	    RosterGate: Value_bool_;
+	    OfferExpiry: Value_time_Duration_;
+	    MaximumParties: Value_int_;
+	    CompensatoryPicks: Value_bool_;
+	    CapSpace: Value_bool_;
+	    AcceptedWithdrawal: Value_bool_;
+	
+	    static createFrom(source: any = {}) {
+	        return new TradesRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Review = this.convertValues(source["Review"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ReviewRoute_);
+	        this.DOTSeats = this.convertValues(source["DOTSeats"], Value_int_);
+	        this.DecideAt = this.convertValues(source["DecideAt"], Value_int_);
+	        this.FutureYears = this.convertValues(source["FutureYears"], Value_int_);
+	        this.Rounds = this.convertValues(source["Rounds"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Bounds_);
+	        this.RosterGate = this.convertValues(source["RosterGate"], Value_bool_);
+	        this.OfferExpiry = this.convertValues(source["OfferExpiry"], Value_time_Duration_);
+	        this.MaximumParties = this.convertValues(source["MaximumParties"], Value_int_);
+	        this.CompensatoryPicks = this.convertValues(source["CompensatoryPicks"], Value_bool_);
+	        this.CapSpace = this.convertValues(source["CapSpace"], Value_bool_);
+	        this.AcceptedWithdrawal = this.convertValues(source["AcceptedWithdrawal"], Value_bool_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_WaiverMethod_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_WaiverMethod_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_WaiverTrigger_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_WaiverTrigger_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class WaiversRules {
+	    Trigger: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_WaiverTrigger_;
+	    Duration: Value_time_Duration_;
+	    Method: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_WaiverMethod_;
+	
+	    static createFrom(source: any = {}) {
+	        return new WaiversRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Trigger = this.convertValues(source["Trigger"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_WaiverTrigger_);
+	        this.Duration = this.convertValues(source["Duration"], Value_time_Duration_);
+	        this.Method = this.convertValues(source["Method"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_WaiverMethod_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ExperienceBasis_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ExperienceBasis_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class TaxiRules {
+	    Slots: Value_int_;
+	    MaximumYears: Value_int_;
+	    Basis: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ExperienceBasis_;
+	
+	    static createFrom(source: any = {}) {
+	        return new TaxiRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Slots = this.convertValues(source["Slots"], Value_int_);
+	        this.MaximumYears = this.convertValues(source["MaximumYears"], Value_int_);
+	        this.Basis = this.convertValues(source["Basis"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_ExperienceBasis_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Criterion_ {
+	    State: number;
+	    Value: string[];
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Criterion_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class StandingsRules {
+	    // Go type: Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Criterion_
+	    Criteria: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new StandingsRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Criteria = this.convertValues(source["Criteria"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_ {
+	    State: number;
+	    Value: string[];
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Bonus_ {
+	    State: number;
+	    Value: Bonus[];
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Bonus_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Bonus);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Stat {
+	    Label: Value_string_;
+	    Group: Value_string_;
+	    Used: Value_bool_;
+	    Points: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    // Go type: Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Bonus_
+	    Bonuses: any;
+	    // Go type: Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_
+	    Positions: any;
+	    Once: Value_bool_;
+	
+	    static createFrom(source: any = {}) {
+	        return new Stat(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Label = this.convertValues(source["Label"], Value_string_);
+	        this.Group = this.convertValues(source["Group"], Value_string_);
+	        this.Used = this.convertValues(source["Used"], Value_bool_);
+	        this.Points = this.convertValues(source["Points"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.Bonuses = this.convertValues(source["Bonuses"], null);
+	        this.Positions = this.convertValues(source["Positions"], null);
+	        this.Once = this.convertValues(source["Once"], Value_bool_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_Stat_ {
+	    State: number;
+	    Value: Record<string, Stat>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_Stat_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Stat, true);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ScoringRules {
+	    Catalogue: Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_Stat_;
+	    RoundStatPoints: Value_bool_;
+	
+	    static createFrom(source: any = {}) {
+	        return new ScoringRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Catalogue = this.convertValues(source["Catalogue"], Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_Stat_);
+	        this.RoundStatPoints = this.convertValues(source["RoundStatPoints"], Value_bool_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class RuleSet {
+	    LeagueID: string;
+	    Season: number;
+	    League: LeagueRules;
+	    Roster: RosterRules;
+	    Lineup: LineupRules;
+	    Scoring: ScoringRules;
+	    Standings: StandingsRules;
+	    Cap: CapRules;
+	    Contracts: ContractsRules;
+	    IR: IRRules;
+	    Taxi: TaxiRules;
+	    Waivers: WaiversRules;
+	    Bids: BidsRules;
+	    Trades: TradesRules;
+	    Schedule: ScheduleRules;
+	    Playoffs: PlayoffsRules;
+	    House: HouseRules;
+	    Calendar: CalendarRules;
+	    Draft: DraftRules;
+	    Notify: NotifyRules;
+	
+	    static createFrom(source: any = {}) {
+	        return new RuleSet(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.LeagueID = source["LeagueID"];
+	        this.Season = source["Season"];
+	        this.League = this.convertValues(source["League"], LeagueRules);
+	        this.Roster = this.convertValues(source["Roster"], RosterRules);
+	        this.Lineup = this.convertValues(source["Lineup"], LineupRules);
+	        this.Scoring = this.convertValues(source["Scoring"], ScoringRules);
+	        this.Standings = this.convertValues(source["Standings"], StandingsRules);
+	        this.Cap = this.convertValues(source["Cap"], CapRules);
+	        this.Contracts = this.convertValues(source["Contracts"], ContractsRules);
+	        this.IR = this.convertValues(source["IR"], IRRules);
+	        this.Taxi = this.convertValues(source["Taxi"], TaxiRules);
+	        this.Waivers = this.convertValues(source["Waivers"], WaiversRules);
+	        this.Bids = this.convertValues(source["Bids"], BidsRules);
+	        this.Trades = this.convertValues(source["Trades"], TradesRules);
+	        this.Schedule = this.convertValues(source["Schedule"], ScheduleRules);
+	        this.Playoffs = this.convertValues(source["Playoffs"], PlayoffsRules);
+	        this.House = this.convertValues(source["House"], HouseRules);
+	        this.Calendar = this.convertValues(source["Calendar"], CalendarRules);
+	        this.Draft = this.convertValues(source["Draft"], DraftRules);
+	        this.Notify = this.convertValues(source["Notify"], NotifyRules);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	export class ValueSchema {
 	    kind: string;
 	    minimum?: number;
@@ -3627,6 +6724,110 @@ export namespace leaguerules {
 		    return a;
 		}
 	}
+	
+	export class SlotPrice {
+	    Slots: Bounds;
+	    Salary: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_;
+	
+	    static createFrom(source: any = {}) {
+	        return new SlotPrice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Slots = this.convertValues(source["Slots"], Bounds);
+	        this.Salary = this.convertValues(source["Salary"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 
 }
 

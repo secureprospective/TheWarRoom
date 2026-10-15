@@ -28,7 +28,7 @@ func TestLegacyCreationForAnySize(t *testing.T) {
 	for count, divisions := range map[int]int{2: 2, 6: 2, 12: 2, 16: 4, 24: 6, 32: 8} {
 		t.Run(fmt.Sprint(count), func(t *testing.T) {
 			raw, err := (RawCommand{League: "native.test", Command: Create,
-				Args:   RawArgs{Name: "Ours", Preset: PresetLegacy, FranchiseCount: count},
+				Args:   RawArgs{Name: "Ours", Preset: PresetLegacy, Season: 2026, FranchiseCount: count},
 				Reason: "Start", Request: "create", Effective: "now", Visibility: "league"}).Prepared()
 			if err != nil || raw.Validate() != nil || len(raw.Args.Franchises) != count {
 				t.Fatalf("create %d: %+v %v", count, raw, err)

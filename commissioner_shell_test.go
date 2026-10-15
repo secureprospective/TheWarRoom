@@ -14,7 +14,7 @@ func shellLedgerApp(t *testing.T) (*App, string) {
 	t.Helper()
 	app := commissionerTestApp(t)
 	raw := commissioner.RawCommand{League: "native.shell", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Our league", Preset: commissioner.PresetEmpty, FranchiseCount: 4},
+		Args:   commissioner.RawArgs{Name: "Our league", Preset: commissioner.PresetEmpty, FranchiseCount: 4, Season: 2026},
 		Reason: "Start", Request: "create", Effective: "now", Visibility: "league"}
 	executeCommissionerTest(t, app, raw)
 	app.history.SetClock(func() time.Time { return time.Date(2026, 10, 13, 13, 0, 0, 0, time.UTC) })

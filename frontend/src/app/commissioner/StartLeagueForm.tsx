@@ -12,11 +12,12 @@ const presets = [
 const freshId = () => `native.${newKey().slice(0, 16)}`;
 
 // StartLeagueForm creates an app league, in the side tray. Go expands the franchises and the preset; the
-// form sends the name, the size and the preset, and a typed reason.
+// form sends the name, the size, the preset, the NFL season the league starts in, and a typed reason.
 export function StartLeagueForm() {
   const [name, setName] = useState('');
   const [preset, setPreset] = useState<(typeof presets)[number]['value']>('legacy_nfl');
   const [count, setCount] = useState('32');
+  const [season, setSeason] = useState(() => String(new Date().getFullYear()));
   const [reason, setReason] = useState('');
   const [league, setLeague] = useState(freshId);
   const outcome = leagueState.use().outcome;
@@ -26,14 +27,17 @@ export function StartLeagueForm() {
     setName(''); setReason(''); setLeague(freshId());
   }, [landed]);
   const size = /^\d+$/.test(count.trim()) ? Number(count) : 0;
-  const change: Change | null = name.trim() !== '' && size > 0 ? {
-    league, command: 'commish.league.create', args: { name: name.trim(), preset, franchiseCount: size },
+  const year = /^\d{4}$/.test(season.trim()) ? Number(season) : 0;
+  const change: Change | null = name.trim() !== '' && size > 0 && year > 0 ? {
+    league, command: 'commish.league.create',
+    args: { name: name.trim(), preset, franchiseCount: size, season: year },
     reason: reason.trim(), expected: 0, effective: 'now', visibility: 'league',
   } : null;
   const request = useRequestKey(change);
   const { preview, wait, safeguard } = useChangePreview(change, request);
   const blocked = name.trim() === '' ? 'Name the league.'
-    : size === 0 ? 'Enter the number of franchises.' : wait;
+    : size === 0 ? 'Enter the number of franchises.'
+    : year === 0 ? 'Enter the NFL season the league starts in.' : wait;
   return (
     <section className="league-form" aria-label="Start an app league">
       <PreviewReview preview={preview} confirm={
@@ -49,6 +53,10 @@ export function StartLeagueForm() {
             onChange={e => setCount(e.target.value)} />
         </label>
         <p className="change-note">Both starting choices work with 2 to 32 franchises.</p>
+        <label>First NFL season
+          <input type="number" min={1920} max={9999} step={1} value={season}
+            onChange={e => setSeason(e.target.value)} />
+        </label>
         <label>Starting rules
           <select value={preset} onChange={e => setPreset(e.target.value as typeof preset)}>
             {presets.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}

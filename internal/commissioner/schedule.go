@@ -56,9 +56,11 @@ func (a RawArgs) validateSchedule(command string) error {
 }
 
 type Schedule struct {
-	League   string         `json:"league"`
-	Revision int64          `json:"revision"`
-	Weeks    []ScheduleWeek `json:"weeks"`
+	League   string `json:"league"`
+	Revision int64  `json:"revision"`
+	// Season is the NFL season the published weeks are for.
+	Season int            `json:"season"`
+	Weeks  []ScheduleWeek `json:"weeks"`
 }
 
 // ScheduleReading exposes publications only; a later draft never replaces an owner's schedule.
@@ -67,7 +69,11 @@ func ScheduleReading(league string, records []Record) (Schedule, error) {
 	if err != nil {
 		return Schedule{}, err
 	}
-	return Schedule{League: league, Revision: int64(len(records)), Weeks: published}, nil
+	rules, err := resolveRecords(records)
+	if err != nil {
+		return Schedule{}, err
+	}
+	return Schedule{League: league, Revision: int64(len(records)), Season: rules.Season, Weeks: published}, nil
 }
 
 // ScheduleSeasonReading freezes ended seasons at their rollover boundary. A new
@@ -80,9 +86,9 @@ func ScheduleSeasonReading(league string, records []Record, season int, at time.
 	if err != nil {
 		return Schedule{}, err
 	}
-	first := firstSeason(records)
-	if first == ledgerSeason {
-		first = records[0].Receipt.RecordedAt.Year()
+	first, err := firstSeason(records)
+	if err != nil {
+		return Schedule{}, err
 	}
 	index := season - first
 	if index < 0 || index > len(starts) || (index > 0 && at.Before(starts[index-1])) {
@@ -108,10 +114,13 @@ func replaySchedule(records []Record) ([]ScheduleWeek, []ScheduleWeek, error) {
 	active := Replay(records).Active
 	draft, published := []ScheduleWeek{}, []ScheduleWeek{}
 	for _, r := range records {
-		if !active[r.Receipt.Entry] || !scheduleCommand(r.Command.Command) {
+		if !active[r.Receipt.Entry] || (!scheduleCommand(r.Command.Command) && r.Command.Command != SeasonRollover) {
 			continue
 		}
 		switch r.Command.Command {
+		case SeasonRollover:
+			// A schedule belongs to one season; the new season starts with none.
+			draft, published = []ScheduleWeek{}, []ScheduleWeek{}
 		case ScheduleGenerate:
 			if len(r.GeneratedSchedule) == 0 {
 				return nil, nil, fmt.Errorf("the recorded schedule is missing its generated weeks")
