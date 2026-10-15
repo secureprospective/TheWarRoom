@@ -5,6 +5,7 @@ import {lineup} from '../models';
 import {snapshot} from '../models';
 import {commissioner} from '../models';
 import {envelope} from '../models';
+import {time} from '../models';
 import {personal} from '../models';
 
 export function AppInfo():Promise<main.AppInfo>;
@@ -180,6 +181,10 @@ export function TargetNativeReserveCheck(arg1:string):Promise<commissioner.Nativ
 export function TargetNativeRosterCheck(arg1:string):Promise<commissioner.NativeRosterCheck>;
 
 export function TargetNativeSeed(arg1:main.RawNativeSeedRequest):Promise<commissioner.Receipt>;
+
+export function TargetNativeWaiverAction(arg1:commissioner.RawCommand):Promise<commissioner.Receipt>;
+
+export function TargetNativeWaivers(arg1:string,arg2:string,arg3:time.Time):Promise<commissioner.NativeWaivers>;
 
 export function TargetNow(arg1:number,arg2:number,arg3:string):Promise<main.NowBoard>;
 

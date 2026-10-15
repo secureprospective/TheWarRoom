@@ -1,0 +1,80 @@
+[
+  {
+    "field": "waivers.trigger",
+    "label": "Waiver trigger",
+    "value": "Cut",
+    "state": "Set",
+    "citation": "Legacy NFL rules",
+    "changedAt": "",
+    "schema": {
+      "kind": "string",
+      "choices": [
+        {
+          "value": "cut",
+          "label": "Cut"
+        }
+      ],
+      "fields": []
+    },
+    "competitive": true,
+    "pending": [],
+    "current": "cut",
+    "unit": "",
+    "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+    }
+  },
+  {
+    "field": "waivers.duration",
+    "label": "Waiver period",
+    "value": "1 day",
+    "state": "Set",
+    "citation": "Legacy NFL rules",
+    "changedAt": "",
+    "schema": {
+      "kind": "nanoseconds",
+      "minimum": 0,
+      "choices": [],
+      "fields": []
+    },
+    "competitive": true,
+    "pending": [],
+    "current": 86400000000000,
+    "unit": "",
+    "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+    }
+  },
+  {
+    "field": "waivers.method",
+    "label": "Waiver priority",
+    "value": "Reverse standings",
+    "state": "Set",
+    "citation": "Legacy NFL rules",
+    "changedAt": "",
+    "schema": {
+      "kind": "string",
+      "choices": [
+        {
+          "value": "reverse_standings",
+          "label": "Reverse standings"
+        },
+        {
+          "value": "rolling",
+          "label": "Rolling"
+        }
+      ],
+      "fields": []
+    },
+    "competitive": true,
+    "pending": [],
+    "current": "reverse_standings",
+    "unit": "",
+    "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+    }
+  }
+]

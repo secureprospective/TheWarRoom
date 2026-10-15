@@ -66,8 +66,7 @@ export namespace commissioner {
 	    who: string;
 	    what: string;
 	    why: string;
-	    // Go type: time
-	    when: any;
+	    when: time.Time;
 	    gravity: string;
 	    undo: string;
 	    replacedAt?: string;
@@ -82,7 +81,7 @@ export namespace commissioner {
 	        this.who = source["who"];
 	        this.what = source["what"];
 	        this.why = source["why"];
-	        this.when = this.convertValues(source["when"], null);
+	        this.when = this.convertValues(source["when"], time.Time);
 	        this.gravity = source["gravity"];
 	        this.undo = source["undo"];
 	        this.replacedAt = source["replacedAt"];
@@ -201,6 +200,7 @@ export namespace commissioner {
 	    }
 	}
 	export class NativePlayer {
+	    restructured?: boolean;
 	    id: string;
 	    franchise: string;
 	    status: string;
@@ -215,6 +215,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.restructured = source["restructured"];
 	        this.id = source["id"];
 	        this.franchise = source["franchise"];
 	        this.status = source["status"];
@@ -245,13 +246,11 @@ export namespace commissioner {
 	    }
 	}
 	export class RawNativeSnapshot {
+	    standingsOrder?: string[];
 	    season: number;
-	    // Go type: time
-	    rosterAt: any;
-	    // Go type: time
-	    draftAt: any;
-	    // Go type: time
-	    futureAt: any;
+	    rosterAt: time.Time;
+	    draftAt: time.Time;
+	    futureAt: time.Time;
 	    franchises: NativeFranchise[];
 	    players: NativePlayer[];
 	    picks: NativePick[];
@@ -263,10 +262,11 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.standingsOrder = source["standingsOrder"];
 	        this.season = source["season"];
-	        this.rosterAt = this.convertValues(source["rosterAt"], null);
-	        this.draftAt = this.convertValues(source["draftAt"], null);
-	        this.futureAt = this.convertValues(source["futureAt"], null);
+	        this.rosterAt = this.convertValues(source["rosterAt"], time.Time);
+	        this.draftAt = this.convertValues(source["draftAt"], time.Time);
+	        this.futureAt = this.convertValues(source["futureAt"], time.Time);
 	        this.franchises = this.convertValues(source["franchises"], NativeFranchise);
 	        this.players = this.convertValues(source["players"], NativePlayer);
 	        this.picks = this.convertValues(source["picks"], NativePick);
@@ -358,8 +358,7 @@ export namespace commissioner {
 	    roomCents?: number;
 	    quantumCents?: number;
 	    mode: string;
-	    // Go type: time
-	    deadline?: any;
+	    deadline?: time.Time;
 	    words: string;
 	    enforcement: string;
 	    franchise: string;
@@ -383,7 +382,7 @@ export namespace commissioner {
 	        this.roomCents = source["roomCents"];
 	        this.quantumCents = source["quantumCents"];
 	        this.mode = source["mode"];
-	        this.deadline = this.convertValues(source["deadline"], null);
+	        this.deadline = this.convertValues(source["deadline"], time.Time);
 	        this.words = source["words"];
 	        this.enforcement = source["enforcement"];
 	        this.franchise = source["franchise"];
@@ -821,6 +820,112 @@ export namespace commissioner {
 	}
 	
 	
+	export class NativeWaiverClaim {
+	    id: string;
+	    window: string;
+	    player: string;
+	    status: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeWaiverClaim(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.window = source["window"];
+	        this.player = source["player"];
+	        this.status = source["status"];
+	    }
+	}
+	export class NativeWaiverPlayer {
+	    window: string;
+	    player: string;
+	    name: string;
+	    closesAt: time.Time;
+	    closes: string;
+	    status: string;
+	    winner?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeWaiverPlayer(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.window = source["window"];
+	        this.player = source["player"];
+	        this.name = source["name"];
+	        this.closesAt = this.convertValues(source["closesAt"], time.Time);
+	        this.closes = source["closes"];
+	        this.status = source["status"];
+	        this.winner = source["winner"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class NativeWaivers {
+	    league: string;
+	    franchise: string;
+	    revision: number;
+	    season: number;
+	    players: NativeWaiverPlayer[];
+	    claims: NativeWaiverClaim[];
+	    order: string[];
+	    orderSource: string;
+	    method: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeWaivers(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.franchise = source["franchise"];
+	        this.revision = source["revision"];
+	        this.season = source["season"];
+	        this.players = this.convertValues(source["players"], NativeWaiverPlayer);
+	        this.claims = this.convertValues(source["claims"], NativeWaiverClaim);
+	        this.order = source["order"];
+	        this.orderSource = source["orderSource"];
+	        this.method = source["method"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class PeopleVoteCount {
 	    choice: string;
 	    ballots: number;
@@ -842,8 +947,7 @@ export namespace commissioner {
 	    totalFranchises: number;
 	    votesRequired: number;
 	    requirement: string;
-	    // Go type: time
-	    endsAt: any;
+	    endsAt: time.Time;
 	    candidates: string[];
 	    counts: PeopleVoteCount[];
 	    votedFranchises?: string[];
@@ -860,7 +964,7 @@ export namespace commissioner {
 	        this.totalFranchises = source["totalFranchises"];
 	        this.votesRequired = source["votesRequired"];
 	        this.requirement = source["requirement"];
-	        this.endsAt = this.convertValues(source["endsAt"], null);
+	        this.endsAt = this.convertValues(source["endsAt"], time.Time);
 	        this.candidates = source["candidates"];
 	        this.counts = this.convertValues(source["counts"], PeopleVoteCount);
 	        this.votedFranchises = source["votedFranchises"];
@@ -993,6 +1097,445 @@ export namespace commissioner {
 	
 	
 	
+	export class RawNativeOverride {
+	    player?: string;
+	    franchise?: string;
+	    years?: number;
+	    salaryCents?: number;
+	    amountCents?: number;
+	    season?: number;
+	    bucket?: string;
+	    until?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawNativeOverride(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.player = source["player"];
+	        this.franchise = source["franchise"];
+	        this.years = source["years"];
+	        this.salaryCents = source["salaryCents"];
+	        this.amountCents = source["amountCents"];
+	        this.season = source["season"];
+	        this.bucket = source["bucket"];
+	        this.until = source["until"];
+	    }
+	}
+	export class RawDate {
+	    month: number;
+	    day: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawDate(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.month = source["month"];
+	        this.day = source["day"];
+	    }
+	}
+	export class RawWindowArgs {
+	    id: string;
+	    start?: RawDate;
+	    end?: RawDate;
+	    opens?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new RawWindowArgs(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.start = this.convertValues(source["start"], RawDate);
+	        this.end = this.convertValues(source["end"], RawDate);
+	        this.opens = source["opens"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ScheduleGame {
+	    home: string;
+	    away: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ScheduleGame(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.home = source["home"];
+	        this.away = source["away"];
+	    }
+	}
+	export class ScheduleWeek {
+	    week: number;
+	    games: ScheduleGame[];
+	    bye?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ScheduleWeek(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.week = source["week"];
+	        this.games = this.convertValues(source["games"], ScheduleGame);
+	        this.bye = source["bye"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class RawScheduleArgs {
+	    week?: ScheduleWeek;
+	    published?: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawScheduleArgs(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.week = this.convertValues(source["week"], ScheduleWeek);
+	        this.published = source["published"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class RawWindowException {
+	    action: string;
+	    franchise: string;
+	    until: time.Time;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawWindowException(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.action = source["action"];
+	        this.franchise = source["franchise"];
+	        this.until = this.convertValues(source["until"], time.Time);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class SeedValue {
+	    field: string;
+	    value: number[];
+	
+	    static createFrom(source: any = {}) {
+	        return new SeedValue(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.field = source["field"];
+	        this.value = source["value"];
+	    }
+	}
+	export class RawPeople {
+	    franchise?: string;
+	    principal?: string;
+	    name?: string;
+	    abbreviation?: string;
+	    id?: string;
+	    role?: string;
+	    ability?: string;
+	    on?: boolean;
+	    all?: boolean;
+	    report?: string;
+	    audience?: string;
+	    successor?: string;
+	    commissioner?: string;
+	    choice?: string;
+	    inSeasonDays?: number;
+	    offseasonDays?: number;
+	    electionDays?: number;
+	    runoffDays?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawPeople(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchise = source["franchise"];
+	        this.principal = source["principal"];
+	        this.name = source["name"];
+	        this.abbreviation = source["abbreviation"];
+	        this.id = source["id"];
+	        this.role = source["role"];
+	        this.ability = source["ability"];
+	        this.on = source["on"];
+	        this.all = source["all"];
+	        this.report = source["report"];
+	        this.audience = source["audience"];
+	        this.successor = source["successor"];
+	        this.commissioner = source["commissioner"];
+	        this.choice = source["choice"];
+	        this.inSeasonDays = source["inSeasonDays"];
+	        this.offseasonDays = source["offseasonDays"];
+	        this.electionDays = source["electionDays"];
+	        this.runoffDays = source["runoffDays"];
+	    }
+	}
+	export class WaiverClaimResult {
+	    id: string;
+	    refusal?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new WaiverClaimResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.refusal = source["refusal"];
+	    }
+	}
+	export class WaiverOutcome {
+	    claims?: WaiverClaimResult[];
+	    priorOrder?: string[];
+	    closeAt?: time.Time;
+	    player?: NativePlayer;
+	    deadCents?: number;
+	    season: number;
+	    winner?: string;
+	    order?: string[];
+	    source?: string;
+	    clearsDead: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new WaiverOutcome(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.claims = this.convertValues(source["claims"], WaiverClaimResult);
+	        this.priorOrder = source["priorOrder"];
+	        this.closeAt = this.convertValues(source["closeAt"], time.Time);
+	        this.player = this.convertValues(source["player"], NativePlayer);
+	        this.deadCents = source["deadCents"];
+	        this.season = source["season"];
+	        this.winner = source["winner"];
+	        this.order = source["order"];
+	        this.source = source["source"];
+	        this.clearsDead = source["clearsDead"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class RawWaiverArgs {
+	    player?: string;
+	    franchise?: string;
+	    window?: string;
+	    claim?: string;
+	    order?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new RawWaiverArgs(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.player = source["player"];
+	        this.franchise = source["franchise"];
+	        this.window = source["window"];
+	        this.claim = source["claim"];
+	        this.order = source["order"];
+	    }
+	}
+	export class RawArgs {
+	    waiver?: RawWaiverArgs;
+	    waiverOutcome?: WaiverOutcome;
+	    name?: string;
+	    entry?: string;
+	    franchises?: string[];
+	    people?: RawPeople;
+	    field?: string;
+	    value?: number[];
+	    preset?: string;
+	    franchiseCount?: number;
+	    seed?: SeedValue[];
+	    native?: RawNativeSnapshot;
+	    exception?: RawWindowException;
+	    schedule?: RawScheduleArgs;
+	    window?: RawWindowArgs;
+	    override?: RawNativeOverride;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawArgs(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.waiver = this.convertValues(source["waiver"], RawWaiverArgs);
+	        this.waiverOutcome = this.convertValues(source["waiverOutcome"], WaiverOutcome);
+	        this.name = source["name"];
+	        this.entry = source["entry"];
+	        this.franchises = source["franchises"];
+	        this.people = this.convertValues(source["people"], RawPeople);
+	        this.field = source["field"];
+	        this.value = source["value"];
+	        this.preset = source["preset"];
+	        this.franchiseCount = source["franchiseCount"];
+	        this.seed = this.convertValues(source["seed"], SeedValue);
+	        this.native = this.convertValues(source["native"], RawNativeSnapshot);
+	        this.exception = this.convertValues(source["exception"], RawWindowException);
+	        this.schedule = this.convertValues(source["schedule"], RawScheduleArgs);
+	        this.window = this.convertValues(source["window"], RawWindowArgs);
+	        this.override = this.convertValues(source["override"], RawNativeOverride);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class RawCommand {
+	    league: string;
+	    command: string;
+	    args: RawArgs;
+	    reason: string;
+	    expected: number;
+	    request: string;
+	    effective: string;
+	    visibility: string;
+	    gravity?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawCommand(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.command = source["command"];
+	        this.args = this.convertValues(source["args"], RawArgs);
+	        this.reason = source["reason"];
+	        this.expected = source["expected"];
+	        this.request = source["request"];
+	        this.effective = source["effective"];
+	        this.visibility = source["visibility"];
+	        this.gravity = source["gravity"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 	export class RawNativeLineup {
 	    league: string;
 	    franchise: string;
@@ -1012,12 +1555,17 @@ export namespace commissioner {
 	    }
 	}
 	
+	
+	
+	
+	
+	
+	
 	export class Receipt {
 	    entry: string;
 	    league: string;
 	    revision: number;
-	    // Go type: time
-	    recordedAt: any;
+	    recordedAt: time.Time;
 	    message: string;
 	
 	    static createFrom(source: any = {}) {
@@ -1029,7 +1577,7 @@ export namespace commissioner {
 	        this.entry = source["entry"];
 	        this.league = source["league"];
 	        this.revision = source["revision"];
-	        this.recordedAt = this.convertValues(source["recordedAt"], null);
+	        this.recordedAt = this.convertValues(source["recordedAt"], time.Time);
 	        this.message = source["message"];
 	    }
 	
@@ -1207,54 +1755,6 @@ export namespace commissioner {
 		    return a;
 		}
 	}
-	export class ScheduleGame {
-	    home: string;
-	    away: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ScheduleGame(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.home = source["home"];
-	        this.away = source["away"];
-	    }
-	}
-	export class ScheduleWeek {
-	    week: number;
-	    games: ScheduleGame[];
-	    bye?: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ScheduleWeek(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.week = source["week"];
-	        this.games = this.convertValues(source["games"], ScheduleGame);
-	        this.bye = source["bye"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
 	export class Schedule {
 	    league: string;
 	    revision: number;
@@ -1289,6 +1789,9 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
+	
+	
 	
 
 }
@@ -1386,8 +1889,7 @@ export namespace envelope {
 	    }
 	}
 	export class AuditEntry {
-	    // Go type: time
-	    at: any;
+	    at: time.Time;
 	    from: string;
 	    event: string;
 	    to: string;
@@ -1399,7 +1901,7 @@ export namespace envelope {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.at = this.convertValues(source["at"], null);
+	        this.at = this.convertValues(source["at"], time.Time);
 	        this.from = source["from"];
 	        this.event = source["event"];
 	        this.to = source["to"];
@@ -1565,8 +2067,7 @@ export namespace envelope {
 	    gravity: string;
 	    undo: string;
 	    target: Target;
-	    // Go type: time
-	    deadline?: any;
+	    deadline?: time.Time;
 	
 	    static createFrom(source: any = {}) {
 	        return new Spec(source);
@@ -1582,7 +2083,7 @@ export namespace envelope {
 	        this.gravity = source["gravity"];
 	        this.undo = source["undo"];
 	        this.target = this.convertValues(source["target"], Target);
-	        this.deadline = this.convertValues(source["deadline"], null);
+	        this.deadline = this.convertValues(source["deadline"], time.Time);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -1651,10 +2152,8 @@ export namespace leagueclock {
 	export class WindowException {
 	    action: string;
 	    franchise: string;
-	    // Go type: time
-	    start: any;
-	    // Go type: time
-	    until: any;
+	    start: time.Time;
+	    until: time.Time;
 	    reason: string;
 	
 	    static createFrom(source: any = {}) {
@@ -1665,8 +2164,8 @@ export namespace leagueclock {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.action = source["action"];
 	        this.franchise = source["franchise"];
-	        this.start = this.convertValues(source["start"], null);
-	        this.until = this.convertValues(source["until"], null);
+	        this.start = this.convertValues(source["start"], time.Time);
+	        this.until = this.convertValues(source["until"], time.Time);
 	        this.reason = source["reason"];
 	    }
 	
@@ -1691,10 +2190,8 @@ export namespace leagueclock {
 	export class ActionWindow {
 	    id: string;
 	    opens: string[];
-	    // Go type: time
-	    start: any;
-	    // Go type: time
-	    close?: any;
+	    start: time.Time;
+	    close?: time.Time;
 	    live: boolean;
 	    secondsToClose?: number;
 	
@@ -1706,8 +2203,8 @@ export namespace leagueclock {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
 	        this.opens = source["opens"];
-	        this.start = this.convertValues(source["start"], null);
-	        this.close = this.convertValues(source["close"], null);
+	        this.start = this.convertValues(source["start"], time.Time);
+	        this.close = this.convertValues(source["close"], time.Time);
 	        this.live = source["live"];
 	        this.secondsToClose = source["secondsToClose"];
 	    }
@@ -1733,8 +2230,7 @@ export namespace leagueclock {
 	export class ActionCalendar {
 	    windows: ActionWindow[];
 	    exceptions: WindowException[];
-	    // Go type: time
-	    tradeDeadline?: any;
+	    tradeDeadline?: time.Time;
 	    secondsToTradeDeadline?: number;
 	
 	    static createFrom(source: any = {}) {
@@ -1745,7 +2241,7 @@ export namespace leagueclock {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.windows = this.convertValues(source["windows"], ActionWindow);
 	        this.exceptions = this.convertValues(source["exceptions"], WindowException);
-	        this.tradeDeadline = this.convertValues(source["tradeDeadline"], null);
+	        this.tradeDeadline = this.convertValues(source["tradeDeadline"], time.Time);
 	        this.secondsToTradeDeadline = source["secondsToTradeDeadline"];
 	    }
 	
@@ -1771,8 +2267,7 @@ export namespace leagueclock {
 	    open: boolean;
 	    reason: string;
 	    window: string;
-	    // Go type: time
-	    next?: any;
+	    next?: time.Time;
 	
 	    static createFrom(source: any = {}) {
 	        return new ActionDecision(source);
@@ -1783,7 +2278,7 @@ export namespace leagueclock {
 	        this.open = source["open"];
 	        this.reason = source["reason"];
 	        this.window = source["window"];
-	        this.next = this.convertValues(source["next"], null);
+	        this.next = this.convertValues(source["next"], time.Time);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -1808,8 +2303,7 @@ export namespace leagueclock {
 	export class Deadline {
 	    id: string;
 	    label: string;
-	    // Go type: time
-	    at?: any;
+	    at?: time.Time;
 	    urgency: string;
 	    pinned: boolean;
 	    promoted: boolean;
@@ -1822,7 +2316,7 @@ export namespace leagueclock {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
 	        this.label = source["label"];
-	        this.at = this.convertValues(source["at"], null);
+	        this.at = this.convertValues(source["at"], time.Time);
 	        this.urgency = source["urgency"];
 	        this.pinned = source["pinned"];
 	        this.promoted = source["promoted"];
@@ -1849,8 +2343,7 @@ export namespace leagueclock {
 	export class Window {
 	    kind: string;
 	    status: string;
-	    // Go type: time
-	    at?: any;
+	    at?: time.Time;
 	    moved: boolean;
 	    reason: string;
 	
@@ -1862,7 +2355,7 @@ export namespace leagueclock {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.kind = source["kind"];
 	        this.status = source["status"];
-	        this.at = this.convertValues(source["at"], null);
+	        this.at = this.convertValues(source["at"], time.Time);
 	        this.moved = source["moved"];
 	        this.reason = source["reason"];
 	    }
@@ -2112,10 +2605,8 @@ export namespace leaguefeed {
 	    offeredTo: string;
 	    gives: Asset[];
 	    gets: Asset[];
-	    // Go type: time
-	    proposed: any;
-	    // Go type: time
-	    expires: any;
+	    proposed: time.Time;
+	    expires: time.Time;
 	    comments: string;
 	    description: string;
 	
@@ -2130,8 +2621,8 @@ export namespace leaguefeed {
 	        this.offeredTo = source["offeredTo"];
 	        this.gives = this.convertValues(source["gives"], Asset);
 	        this.gets = this.convertValues(source["gets"], Asset);
-	        this.proposed = this.convertValues(source["proposed"], null);
-	        this.expires = this.convertValues(source["expires"], null);
+	        this.proposed = this.convertValues(source["proposed"], time.Time);
+	        this.expires = this.convertValues(source["expires"], time.Time);
 	        this.comments = source["comments"];
 	        this.description = source["description"];
 	    }
@@ -2192,8 +2683,7 @@ export namespace leaguefeed {
 	    gave: Asset[];
 	    counterpartyGave: Asset[];
 	    comments: string;
-	    // Go type: time
-	    expires: any;
+	    expires: time.Time;
 	
 	    static createFrom(source: any = {}) {
 	        return new Trade(source);
@@ -2205,7 +2695,7 @@ export namespace leaguefeed {
 	        this.gave = this.convertValues(source["gave"], Asset);
 	        this.counterpartyGave = this.convertValues(source["counterpartyGave"], Asset);
 	        this.comments = source["comments"];
-	        this.expires = this.convertValues(source["expires"], null);
+	        this.expires = this.convertValues(source["expires"], time.Time);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -2228,8 +2718,7 @@ export namespace leaguefeed {
 	}
 	export class Transaction {
 	    kind: string;
-	    // Go type: time
-	    time: any;
+	    time: time.Time;
 	    franchise: string;
 	    byCommish: boolean;
 	    trade?: Trade;
@@ -2245,7 +2734,7 @@ export namespace leaguefeed {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.kind = source["kind"];
-	        this.time = this.convertValues(source["time"], null);
+	        this.time = this.convertValues(source["time"], time.Time);
 	        this.franchise = source["franchise"];
 	        this.byCommish = source["byCommish"];
 	        this.trade = this.convertValues(source["trade"], Trade);
@@ -2631,8 +3120,7 @@ export namespace main {
 	    detail: string;
 	    node: string;
 	    workspace: string;
-	    // Go type: time
-	    at: any;
+	    at: time.Time;
 	    provenance: snapshot.Provenance;
 	    playerId?: string;
 	    mflUrl?: string;
@@ -2649,7 +3137,7 @@ export namespace main {
 	        this.detail = source["detail"];
 	        this.node = source["node"];
 	        this.workspace = source["workspace"];
-	        this.at = this.convertValues(source["at"], null);
+	        this.at = this.convertValues(source["at"], time.Time);
 	        this.provenance = this.convertValues(source["provenance"], snapshot.Provenance);
 	        this.playerId = source["playerId"];
 	        this.mflUrl = source["mflUrl"];
@@ -8064,8 +8552,7 @@ export namespace main {
 	    otherName: string;
 	    give: TradeAsset[];
 	    get: TradeAsset[];
-	    // Go type: time
-	    expires: any;
+	    expires: time.Time;
 	    comments: string;
 	
 	    static createFrom(source: any = {}) {
@@ -8080,7 +8567,7 @@ export namespace main {
 	        this.otherName = source["otherName"];
 	        this.give = this.convertValues(source["give"], TradeAsset);
 	        this.get = this.convertValues(source["get"], TradeAsset);
-	        this.expires = this.convertValues(source["expires"], null);
+	        this.expires = this.convertValues(source["expires"], time.Time);
 	        this.comments = source["comments"];
 	    }
 	
@@ -9078,6 +9565,23 @@ export namespace snapshot {
 		    }
 		    return a;
 		}
+	}
+
+}
+
+export namespace time {
+	
+	export class Time {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new Time(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
+	    }
 	}
 
 }

@@ -63,6 +63,8 @@ type Definition struct{ Gravity string }
 
 func DefinitionFor(command string) (Definition, error) {
 	switch command {
+	case RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride:
+		return Definition{Gravity: "G2"}, nil
 	case ContractEdit, CapAdjust, CapRelief:
 		return Definition{Gravity: "G2"}, nil
 	case ReserveException:
@@ -84,6 +86,8 @@ func DefinitionFor(command string) (Definition, error) {
 }
 
 type RawArgs struct {
+	Waiver         *RawWaiverArgs      `json:"waiver,omitempty"`
+	WaiverOutcome  *WaiverOutcome      `json:"waiverOutcome,omitempty"`
 	Name           string              `json:"name,omitempty"`
 	Entry          string              `json:"entry,omitempty"`
 	Franchises     []string            `json:"franchises,omitempty"`
@@ -103,13 +107,16 @@ type RawArgs struct {
 // validateDetails refuses arguments that belong to another command.
 func (a RawArgs) validateDetails(command string) error {
 	if (command != NativeSeed && a.Native != nil) || a.Schedule != nil || a.Window != nil || a.Override != nil ||
-		(command != CalendarException && a.Exception != nil) || a.foreignRuleArgs(command) {
+		(command != CalendarException && a.Exception != nil) || a.Waiver != nil || a.WaiverOutcome != nil || a.foreignRuleArgs(command) {
 		return fmt.Errorf("send only the details of this league action")
 	}
 	return nil
 }
 
 func (a RawArgs) Validate(command string) error {
+	if WaiverCommand(command) {
+		return a.validateWaiver(command)
+	}
 	if scheduleCommand(command) {
 		return a.validateSchedule(command)
 	}
@@ -208,12 +215,14 @@ func publicNowRule(command string) string {
 }
 
 func (r RawCommand) validatePlacement() error {
+	if special, err := r.nativePlacement(); special {
+		return err
+	}
+
 	if rule := publicNowRule(r.Command); rule != "" && (r.Visibility != "league" || r.Effective != "now") {
 		return errors.New(rule)
 	}
-	if overrideCommand(r.Command) {
-		return r.validateOverridePlacement()
-	}
+
 	if r.Command == RulesSet {
 		return r.validateRulePlacement()
 	}
@@ -267,6 +276,9 @@ func Decode(body string) (RawCommand, error) {
 	if err := decoder.Decode(&struct{}{}); err != io.EOF {
 		return raw, fmt.Errorf("send exactly one commissioner command")
 	}
+	if raw.Args.WaiverOutcome != nil {
+		return raw, fmt.Errorf("waiver decisions are made by the app")
+	}
 	raw, err := raw.Prepared()
 	if err != nil {
 		return raw, err
@@ -278,6 +290,7 @@ func Decode(body string) (RawCommand, error) {
 }
 
 func (r RawCommand) Canonical(principal string) (string, error) {
+	r.Args.WaiverOutcome = nil
 	definition, err := r.EffectiveDefinition()
 	if err != nil {
 		return "", err

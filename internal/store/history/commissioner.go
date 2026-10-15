@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 func commissionerRecords(events []LeagueEvent) ([]commissioner.Record, error) {
@@ -49,6 +50,13 @@ func transactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commi
 // immediate SQLite transaction, including across independently opened stores.
 func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer) (commissioner.Receipt, error) {
+
+	return s.ExecuteCommissionerWithFacts(ctx, raw, principal, auth, nil, time.UTC)
+}
+
+// ExecuteCommissionerWithFacts keeps held football facts inside the same atomic native append path.
+func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commissioner.RawCommand,
+	principal string, auth commissioner.Authorizer, facts nativecheck.Facts, zone *time.Location) (commissioner.Receipt, error) {
 	raw, canonical, err := preparedCommand(raw, principal)
 	if err != nil {
 		return commissioner.Receipt{}, err
@@ -70,6 +78,12 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	}
 	if prior, retried, err := retriedReceipt(raw, canonical, records); err != nil || retried {
 		return prior, err
+	}
+	if err := checkCommissionerAppend(raw, records); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("check league version: %w", commissioner.Refused(err))
+	}
+	if err := commissioner.PrepareWaiverAppend(&raw, records, s.now(), facts, zone); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("check waiver action: %w", commissioner.Refused(err))
 	}
 	if err := s.checkAppend(raw, principal, records); err != nil {
 		return commissioner.Receipt{}, err
@@ -127,6 +141,9 @@ func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, recor
 
 // preparedCommand fills what Go owns on the command, validates it and fixes its retry identity.
 func preparedCommand(raw commissioner.RawCommand, principal string) (commissioner.RawCommand, string, error) {
+	if raw.Args.WaiverOutcome != nil {
+		return raw, "", fmt.Errorf("waiver decisions are made by the app")
+	}
 	raw, err := raw.Prepared()
 	if err != nil {
 		return raw, "", fmt.Errorf("validate league change: %w", commissioner.Refused(err))
@@ -146,7 +163,7 @@ func preparedCommand(raw commissioner.RawCommand, principal string) (commissione
 
 func commandRole(raw commissioner.RawCommand, principal string, auth commissioner.Authorizer,
 	records []commissioner.Record) (string, error) {
-	if auth == nil {
+	if auth == nil || commissioner.OwnerWaiverAction(raw.Command) != "" {
 		role, err := commissioner.AuthorizeRecords(raw, principal, records)
 		if err != nil {
 			return "", fmt.Errorf("league change refused: %w", commissioner.Refused(err))

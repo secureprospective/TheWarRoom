@@ -21,7 +21,20 @@ type NativeOwnerAction struct {
 
 // nativeOwnerActions is the registry. Each chunk that adds an owner action to the app-owned league adds
 // it here; native_gate_test.go holds every entry to the gate.
-func nativeOwnerActions() []NativeOwnerAction { return nil }
+func nativeOwnerActions() []NativeOwnerAction {
+	actions := []NativeOwnerAction{}
+	for _, name := range []string{commissioner.RosterCut, commissioner.WaiverClaim} {
+		action := commissioner.OwnerWaiverAction(name)
+		actions = append(actions, NativeOwnerAction{Name: name, Opens: action,
+			Run: func(_ context.Context, permit commissioner.Permit) error {
+				if permit.League() == "" || permit.Franchise() == "" || permit.Action() != action {
+					return fmt.Errorf("ask the league calendar before acting")
+				}
+				return nil
+			}})
+	}
+	return actions
+}
 
 // ownerZone is where the owner reads times: the desktop's own zone unless a test pins another.
 func (a *App) ownerZone() *time.Location {

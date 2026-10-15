@@ -9,9 +9,17 @@ import (
 )
 
 // projectNativeOverrides starts from cloned seed slices; neither ledger bodies nor held inputs mutate.
-func projectNativeOverrides(assets *NativeAssets, records []Record) error {
+func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *waiverState) error {
 	active := Replay(records).Active
 	for i, record := range records {
+		if WaiverCommand(record.Command.Command) && active[record.Receipt.Entry] {
+			if !assets.Seeded {
+				return fmt.Errorf("record starting assets before waiver actions")
+			}
+			if err := projectWaiver(assets.Snapshot, waivers, record); err != nil {
+				return err
+			}
+		}
 		switch record.Command.Command {
 		case ContractEdit, CapAdjust, CapRelief, ReserveException:
 			if !active[record.Receipt.Entry] {

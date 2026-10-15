@@ -115,7 +115,7 @@ func Reading(league, principal string, records []Record, auth Authorizer) (Ledge
 		if r.Receipt.Revision > out.Revision {
 			out.Revision = r.Receipt.Revision
 		}
-		if r.Command.Visibility == "private" && !private {
+		if !ledgerEntryVisible(r, records, principal, private) {
 			continue
 		}
 		what, err := entryLabel(records, i)
@@ -162,6 +162,9 @@ func entryLabel(records []Record, i int) (string, error) {
 }
 
 func recordLabel(r Record) string {
+	if WaiverCommand(r.Command.Command) {
+		return waiverLabel(r.Command.Command)
+	}
 	switch r.Command.Command {
 	case ContractEdit, CapAdjust, CapRelief, ReserveException:
 		return overrideLabel(r)
@@ -211,4 +214,12 @@ func undoPlacement(records []Record, i int, p Projection, principal string, auth
 		return ""
 	}
 	return r.Command.Visibility
+}
+
+func ledgerEntryVisible(r Record, records []Record, principal string, privileged bool) bool {
+	if privateWaiverRecord(r, records) {
+		return (r.Principal == principal && r.Command.Command == WaiverClaim) ||
+			(privileged && processedWaiverClaim(r, records))
+	}
+	return r.Command.Visibility != "private" || privileged
 }

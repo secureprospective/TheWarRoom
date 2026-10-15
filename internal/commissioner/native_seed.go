@@ -14,14 +14,15 @@ const NativeSeed = "commish.league.seed_held"
 
 // RawNativeSnapshot is captured by Go from held inputs, never supplied by an IPC caller.
 type RawNativeSnapshot struct {
-	Season      int               `json:"season"`
-	RosterAt    time.Time         `json:"rosterAt"`
-	DraftAt     time.Time         `json:"draftAt"`
-	FutureAt    time.Time         `json:"futureAt"`
-	Franchises  []NativeFranchise `json:"franchises"`
-	Players     []NativePlayer    `json:"players"`
-	Picks       []NativePick      `json:"picks"`
-	Adjustments []NativeCharge    `json:"adjustments"`
+	StandingsOrder []string          `json:"standingsOrder,omitempty"`
+	Season         int               `json:"season"`
+	RosterAt       time.Time         `json:"rosterAt"`
+	DraftAt        time.Time         `json:"draftAt"`
+	FutureAt       time.Time         `json:"futureAt"`
+	Franchises     []NativeFranchise `json:"franchises"`
+	Players        []NativePlayer    `json:"players"`
+	Picks          []NativePick      `json:"picks"`
+	Adjustments    []NativeCharge    `json:"adjustments"`
 }
 
 type NativeFranchise struct {
@@ -33,6 +34,7 @@ type NativeFranchise struct {
 }
 
 type NativePlayer struct {
+	Restructured   bool                  `json:"restructured,omitempty"`
 	ID             string                `json:"id"`
 	Franchise      string                `json:"franchise"`
 	Status         domain.RosterStatus   `json:"status"`
@@ -68,6 +70,11 @@ func (r RawNativeSnapshot) Validate() error {
 	franchises, err := r.franchiseIndex()
 	if err != nil {
 		return err
+	}
+	if len(r.StandingsOrder) != 0 {
+		if err := completeWaiverOrder(r.StandingsOrder, &r); err != nil {
+			return err
+		}
 	}
 	if err := r.validatePlayers(franchises); err != nil {
 		return err

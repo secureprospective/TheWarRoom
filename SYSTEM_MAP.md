@@ -29,7 +29,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Layer 1 | `internal/normalize` | Raw records → domain types: the players lookup and roster join. |
 | Leaf | `internal/domain`, `internal/playerid`, `internal/numeric`, `internal/scouting` | Value types. `playerid.New` is the only way to build a `PlayerID`. `scouting` holds the Layer 4 input types. |
 | Leaf | `internal/measures` | The measure registry: `measures.csv`, `sources.csv`, `source_fields.csv` and `feeds.csv`, embedded and validated. Generates `docs/data-layer/Measure_Dictionary.md` (`make measure-dictionary`). Adding a source is a CSV row, not code. |
-| Leaf | `internal/nativecheck` | Pure native active-roster limits, per-position/group lineup checks, constrained best-lineup selection, invalid-lineup penalty, missed flag, IR/taxi verdicts and salary-cap counting. Cap counting applies season rules, reserve shares and signed recorded charges with the league's money increment; `CapAllows` judges a net counted move delta (including conditional drops), refusing hard-cap overages and flagging soft-cap overages with a plain-word deadline in a supplied viewer zone or Needs a ruling. Rules and held football facts arrive as values; no MFL policy, I/O or stores. |
+| Leaf | `internal/nativecheck` | Pure native active-roster limits, per-position/group lineup checks, constrained best-lineup selection, invalid-lineup penalty, missed flag, IR/taxi verdicts and salary-cap counting. Cap counting applies season rules, reserve shares and signed recorded charges with the league's money increment; `CapAllows` judges a net counted move delta (including conditional drops), refusing hard-cap overages and flagging soft-cap overages with a plain-word deadline in a supplied viewer zone or Needs a ruling. `NewWaiverPolicy` consumes resolved CM-012 settings without inventing missing values; `Close` dates an unprocessed window from its original cut and `Award` chooses among already-eligible franchises using a supplied priority-first standings or rolling order (rolling moves the winner last). The native commissioner ledger consumes this policy for cuts, private claims and atomic awards; no imported league or hand-off state is changed. Rules and held football facts arrive as values; no MFL policy, I/O or stores. |
 | Leaf | `internal/leaguerules` | Typed commissioner-owned season rules, explicit unset values, cited Legacy NFL preset, pure ordered change resolver and preview diffs. `catalogue.go` exports the read-only field catalogue (label, section, value schema, competitive), plain-JSON `DecodeSetting`, whole-value stored encoding for durable seeds, and plain-words rendering. Imports only the standard library and pure domain value types; no store, transport, ingestion or I/O. |
 | Store | `internal/db` | SQLite pools: one write connection, many read-only ones, one WAL file. |
 | Store | `internal/store/rulebook` | League rules from MFL as immutable versions with one active pointer, plus commissioner overrides. |
@@ -93,8 +93,9 @@ reversal that would strand a later window change is refused. `gate.go` holds `Na
 decision every native owner action asks: it answers through `ActionCalendar.Decide` (exceptions and the
 exact trade deadline included), says in the owner's local time which window opens a closed action, and
 mints the `Permit` an action needs to run. Root `native_gate.go` is the registry and its only door,
-`runNativeAction`; `native_gate_test.go` runs every registered action shut and open. The registry is
-empty until later chunks add native owner actions. Now/Race integration and the remaining census
+`runNativeAction`; `native_gate_test.go` runs every registered action shut and open. The registry now contains `roster.cut` (cut window) and `waivers.claim` (free-agent window);
+`native_waivers_app.go` binds their native append callbacks. The append transaction rechecks the gate
+and current owner seat, including callers below the IPC door. Now/Race integration and the remaining census
 owner-edge wiring are still pending.
 
 ## IPC surface
@@ -443,3 +444,23 @@ long-play distances and return-touchdown credits (returning team only), and adap
 `source/testdata/comparison.csv` pins two complete held Legacy roster weeks against MFL totals,
 with an independent native-points reference and every mismatch classified; the Legacy preset follows the held league’s MFL scoring settings, with optional per-stat rounding
 and once-per-week counting. Eight source-credit differences remain explicitly unresolved. Neither package is connected to runtime score surfaces yet.
+
+## Native waiver wire
+
+`internal/commissioner/waiver_command.go` validates CM-035 commands and owner cut/claim arguments;
+`waiver_execute.go` computes decisions under the history append lock, using held player facts and the
+resolved roster, cap, contract and CM-012 rules. `waiver_legality.go` prices each remaining flat paid
+season at the configured release rate and money increment, and rechecks claim eligibility at processing.
+`waiver_projector.go` replays frozen cuts, private claims, orders and awards together with native asset
+corrections; compensations cannot strand dependent awards. `waiver_reading.go` gives owners their own
+claims, localized closes and priority provenance. Commissioner ledger claims remain hidden until processing.
+`internal/store/history/native_waivers.go` owns the `StandingsOrder(ctx, league, season, at)` typed seam:
+native recorded priority in `RawNativeSnapshot.StandingsOrder`, never imported or inferred standings.
+Without that input, automatic order selection explicitly needs the unfinished native standings source.
+Commissioner manual order is separate and can supply priority without inventing standings.
+`ExecuteCommissionerWithFacts` retains the existing authorized, versioned, idempotent append transaction;
+its server-computed decisions are not accepted from IPC. `ProcessDueWaivers` submits only closed-window
+processing through that same path. The cancellable `nativeWaiverClock` runs with the app's managed
+background workers and resumes held windows after restart; no network feed is involved.
+`native_waivers_app.go` exposes `TargetNativeWaiverAction(RawCommand)` and
+`TargetNativeWaivers(league, franchise, at)`. Neither port migrates the imported owner screens.

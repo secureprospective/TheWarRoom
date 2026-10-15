@@ -350,6 +350,14 @@ export function TargetNativeSeed(arg1) {
   return window['go']['main']['App']['TargetNativeSeed'](arg1);
 }
 
+export function TargetNativeWaiverAction(arg1) {
+  return window['go']['main']['App']['TargetNativeWaiverAction'](arg1);
+}
+
+export function TargetNativeWaivers(arg1, arg2, arg3) {
+  return window['go']['main']['App']['TargetNativeWaivers'](arg1, arg2, arg3);
+}
+
 export function TargetNow(arg1, arg2, arg3) {
   return window['go']['main']['App']['TargetNow'](arg1, arg2, arg3);
 }
