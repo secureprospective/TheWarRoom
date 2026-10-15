@@ -12,7 +12,7 @@ import (
 
 type nativeResultLineups struct{}
 
-func (nativeResultLineups) WeekLineup(context.Context, string, string, int, int) (commissioner.WeekLineup, error) {
+func (nativeResultLineups) WeekLineup(context.Context, []commissioner.Record, string, string, int, int) (commissioner.WeekLineup, error) {
 	return commissioner.WeekLineup{Set: true, Starters: []commissioner.Starter{{Player: "1000", Name: "Held starter"}}}, nil
 }
 

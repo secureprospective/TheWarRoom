@@ -78,7 +78,9 @@ type scoreSource struct {
 	err    error
 }
 
-func (s scoreSource) Lineup(context.Context, string, int) (WeekLineup, error) { return s.lineup, s.err }
+func (s scoreSource) Lineup(context.Context, []Record, string, int) (WeekLineup, error) {
+	return s.lineup, s.err
+}
 func (s scoreSource) PlayerScore(context.Context, []Record, string, int) (NativePlayerScore, error) {
 	return s.score, s.err
 }
@@ -108,27 +110,27 @@ func TestNativeWeekScoreNeverUsesPartialOrDuplicateStarter(t *testing.T) {
 	seat := NativeDirectorySeat{PeopleSeat: PeopleSeat{Franchise: "a", Name: "Alpha"}}
 	src := scoreSource{lineup: WeekLineup{Set: true, Starters: []Starter{{Player: "0099"}}},
 		score: NativePlayerScore{Status: "Incomplete", PartialPoints: &total, Words: "Still waiting for a starter"}}
-	got, err := franchiseWeekScore(t.Context(), nil, src, seat, 2026, 1)
+	got, err := franchiseWeekScore(t.Context(), nil, src, leaguerules.LineupRules{}, seat, 2026, 1)
 	if err != nil || got.Points != nil || !strings.Contains(got.Words, "waiting") {
 		t.Fatal(got, err)
 	}
 	src.score = NativePlayerScore{Status: "Complete", Points: &total}
-	got, err = franchiseWeekScore(t.Context(), nil, src, seat, 2026, 1)
+	got, err = franchiseWeekScore(t.Context(), nil, src, leaguerules.LineupRules{}, seat, 2026, 1)
 	if err != nil || got.Points == nil || *got.Points != total {
 		t.Fatal(got, err)
 	}
 	src.lineup.Starters = append(src.lineup.Starters, src.lineup.Starters[0])
-	if _, err = franchiseWeekScore(t.Context(), nil, src, seat, 2026, 1); err == nil {
+	if _, err = franchiseWeekScore(t.Context(), nil, src, leaguerules.LineupRules{}, seat, 2026, 1); err == nil {
 		t.Fatal("duplicate starter counted")
 	}
 	src.err = errors.New("unreadable lineup")
-	if _, err = franchiseWeekScore(t.Context(), nil, src, seat, 2026, 1); !errors.Is(err, src.err) {
+	if _, err = franchiseWeekScore(t.Context(), nil, src, leaguerules.LineupRules{}, seat, 2026, 1); !errors.Is(err, src.err) {
 		t.Fatal(err)
 	}
 	src.err = nil
 	src.lineup.Starters[1].Player = "0100"
 	total = leaguerules.Decimal(math.MaxInt64)
-	if _, err = franchiseWeekScore(t.Context(), nil, src, seat, 2026, 1); err == nil {
+	if _, err = franchiseWeekScore(t.Context(), nil, src, leaguerules.LineupRules{}, seat, 2026, 1); err == nil {
 		t.Fatal("overflow accepted")
 	}
 }
@@ -150,7 +152,7 @@ func TestNativeAllPlayIncludesByesAndRequiresCompleteWeek(t *testing.T) {
 
 type unevenScores struct{}
 
-func (unevenScores) Lineup(_ context.Context, id string, _ int) (WeekLineup, error) {
+func (unevenScores) Lineup(_ context.Context, _ []Record, id string, _ int) (WeekLineup, error) {
 	return WeekLineup{Set: true, Starters: []Starter{{Player: id}}}, nil
 }
 func (unevenScores) PlayerScore(_ context.Context, _ []Record, id string, _ int) (NativePlayerScore, error) {
@@ -170,7 +172,7 @@ func TestNativePointsCountCompleteSidesAndByeWithoutInventingResults(t *testing.
 		directory.Franchises = append(directory.Franchises, NativeDirectorySeat{PeopleSeat: PeopleSeat{Franchise: id, Name: id}})
 	}
 	weeks := []ScheduleWeek{{Week: 1, Games: []ScheduleGame{{Home: "a", Away: "b"}}, Bye: "c"}}
-	got, err := countSeason(t.Context(), "native.test", nil, unevenScores{}, directory, weeks, 2026)
+	got, err := countSeason(t.Context(), "native.test", nil, unevenScores{}, leaguerules.LineupRules{}, directory, weeks, 2026)
 	if err != nil || got.points["a"] != 10000 || got.points["c"] != 30000 || got.decided != 0 || got.pending != 1 ||
 		len(got.allPlay) != 0 {
 		t.Fatalf("complete side/bye lost or result guessed: %+v %v", got, err)

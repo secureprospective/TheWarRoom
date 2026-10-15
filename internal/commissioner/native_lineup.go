@@ -79,22 +79,12 @@ func NativeLineupCheckReading(in RawNativeLineup, records []Record, now time.Tim
 		RosterSeason: base.assets.Snapshot.Season, RulesSeason: base.rules.Season, Franchise: in.Franchise,
 		FranchiseName: seat.Name, Source: base.source(), Starters: []NativeStarter{},
 		Rules: ruleLines(base.rules, "lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag")}
-	starters, unplaced := []nativecheck.Starter{}, 0
 	for _, id := range in.Starters {
 		if !active[id] {
 			return NativeLineupCheck{}, fmt.Errorf("a starter must be on this franchise's active roster")
 		}
-		f := facts[id]
-		if f.Position == "" {
-			unplaced++
-		}
-		starters = append(starters, nativecheck.Starter{ID: id, Position: f.Position})
-		out.Starters = append(out.Starters, NativeStarter{Player: id, Name: f.Name, Position: string(f.Position)})
 	}
-	out.Verdict = nativecheck.JudgeLineup(base.rules.Lineup, in.Submitted, starters)
-	if unplaced > 0 {
-		out.Verdict = unjudgedLineup(unplaced)
-	}
+	out.Verdict, out.Starters = judgeStarters(base.rules.Lineup, in.Submitted, in.Starters, facts)
 	return out, nil
 }
 

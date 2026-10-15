@@ -115,3 +115,22 @@ func TestExactDeadlineAndBidCountdown(t *testing.T) {
 		t.Fatal("threshold must remain a commissioner setting", custom)
 	}
 }
+
+// Lineups have no closing window in the Legacy preset: each player locks at his own kickoff instead.
+func TestLegacyLineupsStayOpenAllLeagueYear(t *testing.T) {
+	rules := leaguerules.LegacyNFL().Calendar
+	rules.Boundary = leaguerules.Known(leaguerules.StartOfDay)
+	for _, at := range []string{"2026-03-01T05:00:00Z", "2026-09-13T17:00:00Z", "2026-12-27T18:00:00Z"} {
+		instant, err := time.Parse(time.RFC3339, at)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c, err := Calendar(instant, 2026, rules, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !c.Decide(instant, "lineup", "one").Open {
+			t.Fatalf("a Legacy lineup must be open at %s", at)
+		}
+	}
+}

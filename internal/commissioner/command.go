@@ -79,6 +79,10 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G2"}, nil
 	case ScoreFranchise, StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear:
 		return Definition{Gravity: "G3"}, nil
+	case LineupSet:
+		return Definition{Gravity: "G2"}, nil
+	case LineupCorrect:
+		return Definition{Gravity: "G3"}, nil
 	default:
 		if d, ok := peopleDefinitionFor(command); ok {
 			return Definition{Gravity: d.gravity}, nil
@@ -104,25 +108,36 @@ type RawArgs struct {
 	Override       *RawNativeOverride  `json:"override,omitempty"`
 	Score          *RawScoreChange     `json:"score,omitempty"`
 	Standings      *RawStandingsChange `json:"standings,omitempty"`
+	Lineup         *RawLineupChange    `json:"lineup,omitempty"`
 }
 
 // validateDetails refuses arguments that belong to another command.
 func (a RawArgs) validateDetails(command string) error {
 	if (command != NativeSeed && a.Native != nil) || a.Schedule != nil || a.Window != nil ||
-		a.Override != nil || a.Score != nil || a.Standings != nil ||
+		a.Override != nil || a.Score != nil || a.Standings != nil || a.Lineup != nil ||
 		(command != CalendarException && a.Exception != nil) || a.foreignRuleArgs(command) {
 		return fmt.Errorf("send only the details of this league action")
 	}
 	return nil
 }
 
-func (a RawArgs) Validate(command string) error {
-	if isScoreCommand(command) {
-		_, err := DecodeScoreChange(a, command)
-		return err
+// validateDecoded checks the commands that decode their own typed argument; handled is false for any other.
+func (a RawArgs) validateDecoded(command string) (handled bool, err error) {
+	switch {
+	case isScoreCommand(command):
+		_, err = DecodeScoreChange(a, command)
+	case isStandingsCommand(command):
+		_, err = DecodeStandingsChange(a, command)
+	case isLineupCommand(command):
+		_, err = DecodeLineupChange(a, command)
+	default:
+		return false, nil
 	}
-	if isStandingsCommand(command) {
-		_, err := DecodeStandingsChange(a, command)
+	return true, err
+}
+
+func (a RawArgs) Validate(command string) error {
+	if handled, err := a.validateDecoded(command); handled {
 		return err
 	}
 	if scheduleCommand(command) {
@@ -253,6 +268,8 @@ func (r RawCommand) ownPlacement() (func() error, bool) {
 		return r.validateOverridePlacement, true
 	case isScoreCommand(r.Command):
 		return r.validateScorePlacement, true
+	case isLineupCommand(r.Command):
+		return r.validateLineupPlacement, true
 	case r.Command == RulesSet:
 		return r.validateRulePlacement, true
 	}

@@ -108,7 +108,7 @@ func NativeStandingsReading(ctx context.Context, league string, records []Record
 		return out, err
 	}
 	out.Through = min(rules.Schedule.RegularWeeks.Value, len(published))
-	counted, err := countSeason(ctx, league, records, src, directory, published[:out.Through], season)
+	counted, err := countSeason(ctx, league, records, src, rules.Lineup, directory, published[:out.Through], season)
 	if err != nil {
 		return out, err
 	}
@@ -116,11 +116,11 @@ func NativeStandingsReading(ctx context.Context, league string, records []Record
 }
 
 // countSeason reads each counted week's results once.
-func countSeason(ctx context.Context, league string, records []Record, src ResultSources, directory NativeDirectory,
-	weeks []ScheduleWeek, season int) (seasonGames, error) {
+func countSeason(ctx context.Context, league string, records []Record, src ResultSources, lineup leaguerules.LineupRules,
+	directory NativeDirectory, weeks []ScheduleWeek, season int) (seasonGames, error) {
 	out := seasonGames{allPlay: map[string]tally{}, points: map[string]leaguerules.Decimal{}}
 	for _, week := range weeks {
-		results, err := weekResults(ctx, league, records, src, directory, weeks, season, week.Week)
+		results, err := weekResults(ctx, league, records, src, lineup, directory, weeks, season, week.Week)
 		if err != nil {
 			return out, err
 		}

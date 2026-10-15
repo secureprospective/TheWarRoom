@@ -490,8 +490,37 @@ never over, computed standings; existing authorization, append, request-key and 
 all changes. `result_flip.go` compares before/after games for score previews: yes, no, or unknown with
 reasons; a flip warns, never blocks recording. Go owns the results/standings wire fixture in
 `internal/commissioner/testdata/native-results-standings-wire.json`.
-`internal/store/history/native_results.go` composes held evidence and the injected `LineupSource`.
-There is no production native lineup provider yet: its default explicitly reports no lineup, never
-substitutes MFL starters. The existing held-stat adapter still lacks play-by-play. Conference alignment
-and native power-rank inputs are not available in the current rule model; those criteria explicitly
-pass with no data. No owner screen is migrated and no scouting or imported MFL reading changes.
+`internal/store/history/native_results.go` composes held evidence and the `LineupSource`, which defaults
+to the league's own ledger (see Native lineups); it never substitutes MFL starters. The existing held-stat
+adapter still lacks play-by-play. Conference alignment and native power-rank inputs are not available in
+the current rule model; those criteria explicitly pass with no data. No owner screen is migrated and no
+scouting or imported MFL reading changes.
+
+A result-flip warning names only the games of the franchises the change touches (a player's score touches
+the franchise that starts him), once each and by franchise name: "We can't tell yet whether this changes
+A v B: neither score is complete."
+
+## Native lineups
+
+`internal/commissioner/lineup_commands.go` adds `commish.lineup.set` (an owner, G2, private) and
+`commish.lineup.correct` (CM-029, co-commissioner or above, G3, typed reason, shown to the league). A lineup
+is the whole set of starters for one franchise, season and week; the latest active one stands, so
+compensation restores the one before it (`RecordedLineupFor`, `LedgerWeekLineup` in `lineup_week.go`).
+`AuthorizeRecords` lets only the seated owner of the franchise, with the `lineups` ability, set its lineup;
+a commissioner changes someone else's only by the correction, and an owner cannot overwrite a correction.
+`CheckLineupAppend` (run inside the append transaction through `Store.ExecuteCommissioner`) requires an
+owner's lineup to be this season's, on the active roster, legal under `nativecheck.JudgeLineup` and not to
+move any player whose game has kicked off, in or out; with the week's kickoffs not held it refuses rather
+than guess. A correction skips the lock and the legality refusal: an illegal one is penalised when scored.
+`LineupFacts` (names, positions, NFL teams, the week's kickoffs, the owner's zone) comes from the
+`history.LineupEnvironment` the app installs at startup (`appLineupEnv` in `native_lineup_app.go`, reading the
+held directory and held NFL schedule, no fetch); without it lineups cannot be set or corrected.
+`franchiseWeekScore` judges a complete lineup with the same `nativecheck` functions: an invalid one loses
+what the league's penalty rule says (Legacy: the top starter), a missing one is a flagged missed lineup
+(`NativeResults.Missed`) and is never penalised. `NativeLineupReading` / `TargetNativeLineup(league,
+franchise, week, at)` read starters, bench, who is locked and when (owner's zone) and the verdict.
+`TargetNativeLineupSet` is the only door for an owner: it runs `lineup.set` through `runNativeAction`, the
+first entry in `nativeOwnerActions()`. The action opens on the calendar action `lineup`, so a window (or
+exception) that opens `lineup` must exist: the Legacy preset has none. `lineup.correct` is sent through
+`TargetCommissionerExecute` and previewed through `TargetNativeScorePreview` with the result-flip check.
+Go owns `internal/commissioner/testdata/native-lineup-wire.json`.

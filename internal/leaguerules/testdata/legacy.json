@@ -3759,6 +3759,57 @@
             "Citation": "Census CM-023: date for season required"
           }
         },
+        "lineups": {
+          "Start": {
+            "State": 1,
+            "Value": {
+              "Month": {
+                "State": 1,
+                "Value": 3,
+                "Citation": "Ring 4 lineup ruling: open all year, each player locks at kickoff"
+              },
+              "Day": {
+                "State": 1,
+                "Value": 1,
+                "Citation": "Ring 4 lineup ruling: open all year, each player locks at kickoff"
+              }
+            },
+            "Citation": "Ring 4 lineup ruling: open all year, each player locks at kickoff"
+          },
+          "End": {
+            "State": 0,
+            "Value": {
+              "Month": {
+                "State": 0,
+                "Value": 0,
+                "Citation": ""
+              },
+              "Day": {
+                "State": 0,
+                "Value": 0,
+                "Citation": ""
+              }
+            },
+            "Citation": "Census CM-023: no closing date given"
+          },
+          "Opens": {
+            "State": 1,
+            "Value": [
+              "lineup"
+            ],
+            "Citation": "Ring 4 lineup ruling: open all year, each player locks at kickoff"
+          },
+          "DatedStart": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          },
+          "DatedEnd": {
+            "State": 0,
+            "Value": "0001-01-01T00:00:00Z",
+            "Citation": "Census CM-023: date for season required"
+          }
+        },
         "open_fa": {
           "Start": {
             "State": 1,

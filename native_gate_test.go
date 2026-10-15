@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -51,18 +52,23 @@ func TestEveryRegisteredNativeActionAsksTheGate(t *testing.T) {
 		ran := 0
 		entry := entry
 		run := entry.Run
-		entry.Run = func(ctx context.Context, p commissioner.Permit) error { ran++; return run(ctx, p) }
+		entry.Run = func(ctx context.Context, a *App, p commissioner.Permit, in json.RawMessage) (commissioner.Receipt, error) {
+			ran++
+			return run(ctx, a, p, in)
+		}
 		one := []NativeOwnerAction{entry}
-		if err := app.runNativeAction(one, raw.League, "franchise.01", entry.Name); err == nil || ran != 0 {
+		// The guard is about the gate, not the action's own work: an action handed no request fails inside
+		// its body, and that must not be mistaken for the gate's no.
+		if _, err := app.runNativeAction(one, raw.League, "franchise.01", entry.Name, nil); !errors.Is(err, errActionClosed) || ran != 0 {
 			t.Fatalf("%s ran with its window shut (ran %d, %v)", entry.Name, ran, err)
 		}
 		app.clockNow = func() time.Time { return time.Date(2026, 6, 2, 12, 0, 0, 0, time.UTC) }
-		if err := app.runNativeAction(one, raw.League, "franchise.01", entry.Name); err != nil || ran != 1 {
+		if _, err := app.runNativeAction(one, raw.League, "franchise.01", entry.Name, nil); errors.Is(err, errActionClosed) || ran != 1 {
 			t.Fatalf("%s did not run in its window (ran %d, %v)", entry.Name, ran, err)
 		}
 		app.clockNow = func() time.Time { return shut }
 	}
-	if err := app.runNativeAction(registry, raw.League, "franchise.01", "unregistered"); err == nil {
+	if _, err := app.runNativeAction(registry, raw.League, "franchise.01", "unregistered", nil); err == nil {
 		t.Fatal("an action outside the registry ran")
 	}
 }

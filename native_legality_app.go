@@ -24,7 +24,7 @@ func (a *App) nativeFacts() nativecheck.Facts {
 	if a.hasLookup {
 		for _, id := range a.lookup.IDs() {
 			if f, ok := a.lookup.Facts(id); ok {
-				facts[id] = nativecheck.PlayerFacts{Name: f.Name, Position: nativePosition(f.Position),
+				facts[id] = nativecheck.PlayerFacts{Name: f.Name, Position: nativePosition(f.Position), Team: f.Team,
 					DraftYear: f.DraftYear, DraftYearHeld: f.HasDraftYear && f.DraftYear > mflNoDraftYear}
 			}
 		}

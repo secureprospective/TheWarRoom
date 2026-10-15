@@ -166,6 +166,12 @@ func entryLabel(records []Record, i int) (string, error) {
 			return "", err
 		}
 		return standingsLabel(r.Command.Command, change), nil
+	case LineupSet, LineupCorrect:
+		change, err := DecodeLineupChange(r.Command.Args, r.Command.Command)
+		if err != nil {
+			return "", err
+		}
+		return lineupLabel(r.Command.Command, change), nil
 	case RulesSet:
 		return ruleLabel(r, records[:i])
 	case Revert:
