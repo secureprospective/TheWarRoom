@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -144,4 +145,30 @@ func (a *App) TargetNativeHouseRules(leagueID string) (commissioner.NativeHouseR
 		return commissioner.NativeHouseRules{}, fmt.Errorf("native house rules: %w", err)
 	}
 	return reading, nil
+}
+
+// TargetNativeContractQuote prices one contract action on one recorded native contract: allowed or
+// refused with the plain reason, the new salary and years, the dead money by season and the cap effect.
+// It reads the app league's ledger only and records nothing; the owner action that follows runs the same
+// check.
+func (a *App) TargetNativeContractQuote(raw commissioner.RawContractQuote) (commissioner.ContractQuote, error) {
+	if err := raw.Validate(); err != nil {
+		return commissioner.ContractQuote{}, fmt.Errorf("native contract quote input: %w", err)
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.ContractQuote{}, fmt.Errorf("native contract quote startup: %w", err)
+	}
+	zone, err := time.LoadLocation(raw.ViewerZone)
+	if err != nil {
+		return commissioner.ContractQuote{}, fmt.Errorf("read viewer timezone: %w", err)
+	}
+	records, err := a.leagueRecords(raw.League)
+	if err != nil {
+		return commissioner.ContractQuote{}, err
+	}
+	quote, err := commissioner.QuoteContract(raw, records, a.timeNow(), zone, a.nativeFacts())
+	if err != nil {
+		return commissioner.ContractQuote{}, fmt.Errorf("native contract quote: %w", err)
+	}
+	return quote, nil
 }

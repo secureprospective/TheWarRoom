@@ -34,9 +34,9 @@ func TestEveryRegisteredNativeActionAsksTheGate(t *testing.T) {
 	app, _ := calendarTestApp(t, shut)
 	app.localZone = westCoast(t)
 	raw := seedCalendarTest(t, app)
-	probe := newGateProbe("rfa_tender")
+	probe := newGateProbe(app, "rfa_tender")
 	registry := probe.registry
-	expected := int64(4)
+	expected := switchContractRulesOn(t, app, raw, 4)
 	for i, entry := range registry {
 		expected++
 		executeCommissionerTest(t, app, windowCommandFrom(raw, commissioner.WindowSet,
@@ -74,7 +74,7 @@ func TestTradeDeadlineClosesTheGateAtTheChosenInstant(t *testing.T) {
 	raw := seedCalendarTest(t, app)
 	executeCommissionerTest(t, app, windowCommandFrom(raw, commissioner.WindowSet, "season", 4,
 		commissioner.RawWindowArgs{ID: "season", Start: date(3, 1), Opens: []leaguerules.Action{"trade"}}))
-	probe := newGateProbe("trade")
+	probe := newGateProbe(app, "trade")
 	check := func(now string, open bool, sentence string) {
 		t.Helper()
 		instant, err := time.Parse(time.RFC3339, now)
@@ -116,7 +116,7 @@ func TestWindowExceptionOpensOneFranchiseUntilItExpires(t *testing.T) {
 	app, restart := calendarTestApp(t, recorded)
 	app.localZone = westCoast(t)
 	raw := seedCalendarTest(t, app)
-	probe := newGateProbe("ufa_bid")
+	probe := newGateProbe(app, "ufa_bid")
 	until := recorded.Add(time.Hour)
 	raw.Command, raw.Request, raw.Expected = commissioner.CalendarException, "exception", 4
 	raw.Args = commissioner.RawArgs{Exception: &commissioner.RawWindowException{
@@ -139,7 +139,7 @@ func TestWindowExceptionOpensOneFranchiseUntilItExpires(t *testing.T) {
 		restart()
 	}
 	at(recorded.Add(time.Minute))
-	other := newGateProbe("rfa_tender")
+	other := newGateProbe(app, "rfa_tender")
 	if ran, _ := other.try(t, app, raw.League, "franchise.01"); ran {
 		t.Fatal("an exception for one action opened another")
 	}

@@ -150,7 +150,7 @@ func entryLabel(records []Record, i int) (string, error) {
 	switch r.Command.Command {
 	case ContractEdit, CapAdjust, CapRelief, ReserveException:
 		return overrideLabel(r), nil
-	case RulesSet:
+	case RulesSet, ContractActionSet:
 		return ruleLabel(r, records[:i])
 	case Revert:
 		label, ok, err := revertRuleLabel(records, i)

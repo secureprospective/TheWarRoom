@@ -59,7 +59,12 @@ func (a *App) TargetLeagueCalendar(raw RawLeagueCalendarScope) (commissioner.Cal
 
 // leagueRecords replays one app league's commissioner ledger; the calendar and the gate read the same one.
 func (a *App) leagueRecords(league string) ([]commissioner.Record, error) {
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	return a.leagueRecordsIn(a.ctx, league)
+}
+
+// leagueRecordsIn is leagueRecords for a caller that already holds a context, as an owner action does.
+func (a *App) leagueRecordsIn(parent context.Context, league string) ([]commissioner.Record, error) {
+	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 	defer cancel()
 	events, err := a.history.Events(ctx, league, commissioner.Stream, 0)
 	if err != nil {

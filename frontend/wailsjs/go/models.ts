@@ -61,6 +61,94 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class ContractCapEffect {
+	    beforeCents?: number;
+	    afterCents?: number;
+	    changeCents?: number;
+	    roomAfterCents?: number;
+	    words: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ContractCapEffect(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.beforeCents = source["beforeCents"];
+	        this.afterCents = source["afterCents"];
+	        this.changeCents = source["changeCents"];
+	        this.roomAfterCents = source["roomAfterCents"];
+	        this.words = source["words"];
+	    }
+	}
+	export class ContractQuote {
+	    league: string;
+	    revision: number;
+	    season: number;
+	    player: string;
+	    name: string;
+	    franchise: string;
+	    action: string;
+	    actionName: string;
+	    allowed: boolean;
+	    reason: string;
+	    needs: string[];
+	    years: number;
+	    salaryCents?: number;
+	    salaries: nativecheck.SeasonAmount[];
+	    deadMoney: nativecheck.SeasonAmount[];
+	    reliefCents: number;
+	    cap?: ContractCapEffect;
+	    basis: string[];
+	    notes: string[];
+	    source: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ContractQuote(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.revision = source["revision"];
+	        this.season = source["season"];
+	        this.player = source["player"];
+	        this.name = source["name"];
+	        this.franchise = source["franchise"];
+	        this.action = source["action"];
+	        this.actionName = source["actionName"];
+	        this.allowed = source["allowed"];
+	        this.reason = source["reason"];
+	        this.needs = source["needs"];
+	        this.years = source["years"];
+	        this.salaryCents = source["salaryCents"];
+	        this.salaries = this.convertValues(source["salaries"], nativecheck.SeasonAmount);
+	        this.deadMoney = this.convertValues(source["deadMoney"], nativecheck.SeasonAmount);
+	        this.reliefCents = source["reliefCents"];
+	        this.cap = this.convertValues(source["cap"], ContractCapEffect);
+	        this.basis = source["basis"];
+	        this.notes = source["notes"];
+	        this.source = source["source"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Entry {
 	    id: string;
 	    who: string;
@@ -993,6 +1081,34 @@ export namespace commissioner {
 	
 	
 	
+	export class RawContractQuote {
+	    league: string;
+	    player: string;
+	    action: string;
+	    viewerZone: string;
+	    years: number;
+	    level: number;
+	    moveCents: number;
+	    amountCents: number;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawContractQuote(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.player = source["player"];
+	        this.action = source["action"];
+	        this.viewerZone = source["viewerZone"];
+	        this.years = source["years"];
+	        this.level = source["level"];
+	        this.moveCents = source["moveCents"];
+	        this.amountCents = source["amountCents"];
+	        this.reason = source["reason"];
+	    }
+	}
 	export class RawNativeLineup {
 	    league: string;
 	    franchise: string;
@@ -8388,6 +8504,20 @@ export namespace nativecheck {
 	        this.squad = source["squad"];
 	        this.standing = source["standing"];
 	        this.words = source["words"];
+	    }
+	}
+	export class SeasonAmount {
+	    season: number;
+	    cents: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new SeasonAmount(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.cents = source["cents"];
 	    }
 	}
 	export class SquadUse {

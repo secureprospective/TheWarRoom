@@ -71,7 +71,7 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G3"}, nil
 	case CalendarException:
 		return Definition{Gravity: "G3"}, nil
-	case WindowSet, WindowMove, WindowRemove:
+	case WindowSet, WindowMove, WindowRemove, ContractActionSet:
 		return Definition{Gravity: "G2"}, nil
 	case ScheduleGenerate, ScheduleEdit, SchedulePublish:
 		return Definition{Gravity: "G2"}, nil
@@ -98,11 +98,12 @@ type RawArgs struct {
 	Schedule       *RawScheduleArgs    `json:"schedule,omitempty"`
 	Window         *RawWindowArgs      `json:"window,omitempty"`
 	Override       *RawNativeOverride  `json:"override,omitempty"`
+	ContractAction *RawContractAction  `json:"contractAction,omitempty"`
 }
 
 // validateDetails refuses arguments that belong to another command.
 func (a RawArgs) validateDetails(command string) error {
-	if (command != NativeSeed && a.Native != nil) || a.Schedule != nil || a.Window != nil || a.Override != nil ||
+	if (command != NativeSeed && a.Native != nil) || a.Schedule != nil || a.Window != nil || a.Override != nil || a.ContractAction != nil ||
 		(command != CalendarException && a.Exception != nil) || a.foreignRuleArgs(command) {
 		return fmt.Errorf("send only the details of this league action")
 	}
@@ -110,6 +111,9 @@ func (a RawArgs) validateDetails(command string) error {
 }
 
 func (a RawArgs) Validate(command string) error {
+	if command == ContractActionSet {
+		return a.validateContractAction()
+	}
 	if scheduleCommand(command) {
 		return a.validateSchedule(command)
 	}
@@ -214,7 +218,7 @@ func (r RawCommand) validatePlacement() error {
 	if overrideCommand(r.Command) {
 		return r.validateOverridePlacement()
 	}
-	if r.Command == RulesSet {
+	if ruleCommand(r.Command) {
 		return r.validateRulePlacement()
 	}
 	if r.Visibility != "league" && r.Visibility != "private" {

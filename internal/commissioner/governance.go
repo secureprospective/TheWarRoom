@@ -55,6 +55,9 @@ func GovernanceState(records []Record) (governance.State, error) {
 type GovernanceAuthorizer struct{ State governance.State }
 
 func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string, error) {
+	if command == ContractActionSet && !a.State.HasRole(governance.Principal(principal), governance.Commissioner) {
+		return "", fmt.Errorf("only this league's commissioner may set contract actions")
+	}
 	if d, ok := successionDefinitionFor(command); ok {
 		return successionPermission(a.State, principal, d)
 	}
@@ -85,7 +88,7 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 // commandControls names the census control that governs each commissioner command.
 func commandControls() map[string]string {
 	return map[string]string{
-		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039",
+		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039", ContractActionSet: "CM-009",
 		ContractEdit: "CM-034", CapAdjust: "CM-034", CapRelief: "CM-034", ReserveException: "CM-038",
 		WindowSet: "CM-023", WindowMove: "CM-023", WindowRemove: "CM-023",
 		CalendarException: "CM-026",

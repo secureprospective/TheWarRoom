@@ -149,6 +149,18 @@ func finishCap(out *CapState, totals []big.Int) error {
 	return nil
 }
 
+// CountedChange is how far the committed salary moved between two readings of the same franchise, exact
+// and signed. A reading that could not be counted has no change to report.
+func CountedChange(before, after CapState) (domain.Money, bool, error) {
+	if before.CommittedCents == nil || after.CommittedCents == nil {
+		return 0, false, nil
+	}
+	var change big.Int
+	change.Sub(big.NewInt(int64(*after.CommittedCents)), big.NewInt(int64(*before.CommittedCents)))
+	amount, err := checkedCapMoney(&change)
+	return amount, err == nil, err
+}
+
 // CapAllows takes the net change in counted salary and charges, including any conditional drop.
 // Soft enforcement never refuses an over-cap move, even while its deadline needs a ruling.
 func CapAllows(state CapState, delta domain.Money, zone *time.Location) (bool, string) {
@@ -199,11 +211,20 @@ func SnapCapMoney(amount, quantum domain.Money) (domain.Money, error) {
 }
 
 func capMoney(amount domain.Money, share leaguerules.Decimal, quantum domain.Money) (domain.Money, error) {
-	if quantum <= 0 || share < 0 || share > 10000 {
+	if share < 0 || share > 10000 {
+		return 0, fmt.Errorf("the cap needs a positive money increment and reserve shares from 0 to 100 percent")
+	}
+	return scaleMoney(amount, share, quantum)
+}
+
+// scaleMoney takes a rate of an amount (a rate above 100 percent is fine) to exact cents first, half
+// away from zero, and only then snaps the result to the league's increment.
+func scaleMoney(amount domain.Money, rate leaguerules.Decimal, quantum domain.Money) (domain.Money, error) {
+	if quantum <= 0 || rate < 0 {
 		return 0, fmt.Errorf("the cap needs a positive money increment and reserve shares from 0 to 100 percent")
 	}
 	var cents big.Int
-	cents.Mul(big.NewInt(int64(amount)), big.NewInt(int64(share)))
+	cents.Mul(big.NewInt(int64(amount)), big.NewInt(int64(rate)))
 	roundCapQuotient(&cents, big.NewInt(10000))
 	roundCapQuotient(&cents, big.NewInt(int64(quantum)))
 	cents.Mul(&cents, big.NewInt(int64(quantum)))

@@ -31,9 +31,9 @@ type gateProbe struct {
 	ran      []string
 }
 
-func newGateProbe(action leaguerules.Action) *gateProbe {
+func newGateProbe(app *App, action leaguerules.Action) *gateProbe {
 	p := &gateProbe{}
-	p.registry = append(nativeOwnerActions(), NativeOwnerAction{Name: "probe", Opens: action,
+	p.registry = append(app.nativeOwnerActions(), NativeOwnerAction{Name: "probe", Opens: action,
 		Run: func(_ context.Context, permit commissioner.Permit) error {
 			p.ran = append(p.ran, permit.Franchise())
 			return nil
@@ -74,7 +74,7 @@ func TestWindowMoveRedatesTheGateRevertRestart(t *testing.T) {
 	app, restart := calendarTestApp(t, at)
 	app.localZone = westCoast(t)
 	raw := seedCalendarTest(t, app)
-	probe := newGateProbe("ufa_bid")
+	probe := newGateProbe(app, "ufa_bid")
 	if ran, why := probe.try(t, app, raw.League, "franchise.01"); !ran {
 		t.Fatal("the window is open on May 5", why)
 	}
@@ -106,7 +106,7 @@ func TestWindowSetAndRemoveGateAnAction(t *testing.T) {
 	app, restart := calendarTestApp(t, at)
 	app.localZone = westCoast(t)
 	raw := seedCalendarTest(t, app)
-	probe := newGateProbe("cut")
+	probe := newGateProbe(app, "cut")
 	if ran, _ := probe.try(t, app, raw.League, "franchise.01"); ran {
 		t.Fatal("no window opens a cut yet")
 	}
@@ -334,7 +334,7 @@ func TestWindowMoveKeepsNoStaleDatedStart(t *testing.T) {
 		"Opens":["ufa_bid"]}}`)}
 	raw.Command, raw.Request, raw.Expected = commissioner.RulesSet, "dated", 4
 	executeCommissionerTest(t, app, raw)
-	probe := newGateProbe("ufa_bid")
+	probe := newGateProbe(app, "ufa_bid")
 	if ran, why := probe.try(t, app, raw.League, "franchise.01"); !ran {
 		t.Fatal("the dated window is open on May 5", why)
 	}
