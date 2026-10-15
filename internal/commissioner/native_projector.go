@@ -19,6 +19,10 @@ func projectNativeOverrides(assets *NativeAssets, records []Record) error {
 					return err
 				}
 			}
+		case DraftPick:
+			if active[record.Receipt.Entry] {
+				applyDraftPick(assets.Snapshot, record)
+			}
 		case ContractEdit, CapAdjust, CapRelief, ReserveException:
 			if !active[record.Receipt.Entry] {
 				continue

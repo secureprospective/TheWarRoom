@@ -235,6 +235,14 @@ type seasonFold struct {
 }
 
 func (f *seasonFold) add(r Record) error {
+	if standingRule(r.Command.Command) {
+		f.addStanding(r)
+		return nil
+	}
+	return f.addChange(r)
+}
+
+func (f *seasonFold) addChange(r Record) error {
 	switch r.Command.Command {
 	case Create:
 		seeded, err := seedChanges(r, f.season)
@@ -269,6 +277,13 @@ func (f *seasonFold) add(r Record) error {
 		f.alignmentSet = f.alignmentSet || (r.Command.Effective == "now" && r.Command.Args.Field == alignmentField)
 	}
 	return nil
+}
+
+// addStanding adds a draft pattern or tie rule that is in force.
+func (f *seasonFold) addStanding(r Record) {
+	if c, ok := standingChange(r); ok && f.active[r.Receipt.Entry] {
+		f.timed = append(f.timed, startedChange{c, c.RecordedAt})
+	}
 }
 
 // recordedChange turns an in-force rule change into a resolver change. ok is false while a

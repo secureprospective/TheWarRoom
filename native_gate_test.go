@@ -63,6 +63,7 @@ func TestEveryRegisteredNativeActionAsksTheGate(t *testing.T) {
 			t.Fatalf("%s ran with its window shut (ran %d, %v)", entry.Name, ran, err)
 		}
 		app.clockNow = func() time.Time { return time.Date(2026, 6, 2, 12, 0, 0, 0, time.UTC) }
+		// A real action may refuse for want of its own details; it must still have been let through the gate.
 		if _, err := app.runNativeAction(one, raw.League, "franchise.01", entry.Name, nil); errors.Is(err, errActionClosed) || ran != 1 {
 			t.Fatalf("%s did not run in its window (ran %d, %v)", entry.Name, ran, err)
 		}

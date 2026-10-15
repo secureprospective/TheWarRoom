@@ -27,7 +27,7 @@ var errActionClosed = errors.New("league action closed")
 // nativeOwnerActions is the registry. Each chunk that adds an owner action to the app-owned league adds
 // it here; native_gate_test.go holds every entry to the gate.
 func nativeOwnerActions() []NativeOwnerAction {
-	return []NativeOwnerAction{lineupSetAction()}
+	return []NativeOwnerAction{lineupSetAction(), draftPickAction()}
 }
 
 // ownerZone is where the owner reads times: the desktop's own zone unless a test pins another.
@@ -42,6 +42,7 @@ func (a *App) ownerZone() *time.Location {
 // the gate at the current time and runs the action only on a yes. A closed gate returns its sentence.
 func (a *App) runNativeAction(registry []NativeOwnerAction, league, franchise, name string,
 	input json.RawMessage) (commissioner.Receipt, error) {
+	ctx := a.ctx
 	index := slices.IndexFunc(registry, func(r NativeOwnerAction) bool { return r.Name == name })
 	if index < 0 {
 		return commissioner.Receipt{}, fmt.Errorf("this league action is not available")
@@ -50,7 +51,7 @@ func (a *App) runNativeAction(registry []NativeOwnerAction, league, franchise, n
 	if err := a.ready(); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("league action startup: %w", err)
 	}
-	records, err := a.leagueRecords(league)
+	records, err := a.leagueRecords(ctx, league)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
@@ -62,5 +63,5 @@ func (a *App) runNativeAction(registry []NativeOwnerAction, league, franchise, n
 	if !ok {
 		return commissioner.Receipt{}, fmt.Errorf("%w: %w", errActionClosed, commissioner.Refused(errors.New(gate.Sentence)))
 	}
-	return action.Run(a.ctx, a, permit, input)
+	return action.Run(ctx, a, permit, input)
 }

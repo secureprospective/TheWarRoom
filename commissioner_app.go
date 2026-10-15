@@ -48,6 +48,9 @@ func (a *App) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 	if raw.Command == commissioner.LineupSet {
 		return commissioner.Receipt{}, fmt.Errorf("set a lineup from the lineup screen, which asks the league calendar first")
 	}
+	if raw.Command == commissioner.DraftPick {
+		return commissioner.Receipt{}, fmt.Errorf("a rookie pick is made by the franchise on the clock, in the draft room")
+	}
 	if err := a.ready(); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("league change startup: %w", err)
 	}

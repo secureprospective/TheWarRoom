@@ -258,6 +258,36 @@
     "safeguard": "reason"
   },
   {
+    "command": "draft.order.auto",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "draft.order.pattern",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "draft.order.set",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "draft.order.tiebreak",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "draft.start",
+    "effective": "now",
+    "field": "",
+    "safeguard": "confirm"
+  },
+  {
     "command": "schedule.edit",
     "effective": "now",
     "field": "",

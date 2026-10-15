@@ -89,6 +89,8 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 // commandControls names the census control that governs each commissioner command.
 func commandControls() map[string]string {
 	return map[string]string{
+		DraftStart: "CM-042", DraftOrderAuto: "CM-041", DraftOrderSet: "CM-041",
+		DraftOrderPattern: "CM-041", DraftOrderTiebreak: "CM-041",
 		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039",
 		ContractEdit: "CM-034", CapAdjust: "CM-034", CapRelief: "CM-034", ReserveException: "CM-038",
 		PlayerPosition: "CM-030", PlayerPositionClear: "CM-030",

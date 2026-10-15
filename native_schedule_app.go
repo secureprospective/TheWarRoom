@@ -78,7 +78,7 @@ func (a *App) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Time) 
 	if err := a.ready(); err != nil {
 		return commissioner.FranchiseSchedule{}, nil, fmt.Errorf("native schedule startup: %w", err)
 	}
-	records, err := a.leagueRecords(raw.League)
+	records, err := a.leagueRecords(a.ctx, raw.League)
 	if err != nil {
 		return commissioner.FranchiseSchedule{}, nil, err
 	}

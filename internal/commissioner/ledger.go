@@ -192,6 +192,9 @@ func entryLabel(records []Record, i int) (string, error) {
 }
 
 func recordLabel(r Record) string {
+	if draftCommand(r.Command.Command) {
+		return draftLabel(r)
+	}
 	switch r.Command.Command {
 	case ContractEdit, CapAdjust, CapRelief, ReserveException:
 		return overrideLabel(r)
@@ -201,12 +204,9 @@ func recordLabel(r Record) string {
 		return "Recorded the starting rosters, contracts, reserves, franchises and picks from held data"
 	case WindowSet, WindowMove, WindowRemove:
 		return windowLabel(r)
-	case ScheduleGenerate:
-		return "Generated a draft league schedule"
-	case SchedulePublish:
-		return "Published the league schedule"
-	case ScheduleEdit:
-		return fmt.Sprintf("Changed the league schedule for week %d", r.Command.Args.Schedule.Week)
+	}
+	if scheduleCommand(r.Command.Command) {
+		return scheduleLabel(r)
 	}
 
 	if r.Command.Command == CalendarException {
@@ -231,11 +231,23 @@ func recordLabel(r Record) string {
 	return "Reversed a recorded league change"
 }
 
+// scheduleLabel describes a schedule entry for the ledger.
+func scheduleLabel(r Record) string {
+	switch r.Command.Command {
+	case ScheduleGenerate:
+		return "Generated a draft league schedule"
+	case SchedulePublish:
+		return "Published the league schedule"
+	default:
+		return fmt.Sprintf("Changed the league schedule for week %d", r.Command.Args.Schedule.Week)
+	}
+}
+
 // undoPlacement says whether this principal may reverse the entry and who may read the reversal.
 // It asks the same checks a submitted reversal meets; Go still decides when it is sent.
 func undoPlacement(records []Record, i int, p Projection, principal string, auth Authorizer) string {
 	r := records[i]
-	if r.Command.Command == Create || r.Command.Command == NativeSeed || !p.Active[r.Receipt.Entry] {
+	if r.Command.Command == Create || r.Command.Command == NativeSeed || r.Command.Command == DraftPick || !p.Active[r.Receipt.Entry] {
 		return ""
 	}
 	if _, err := auth.Allow(r.Command.League, principal, Revert); err != nil {

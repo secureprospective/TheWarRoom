@@ -362,6 +362,14 @@ export function TargetNativeDirectory(arg1) {
   return window['go']['main']['App']['TargetNativeDirectory'](arg1);
 }
 
+export function TargetNativeDraft(arg1) {
+  return window['go']['main']['App']['TargetNativeDraft'](arg1);
+}
+
+export function TargetNativeDraftPick(arg1) {
+  return window['go']['main']['App']['TargetNativeDraftPick'](arg1);
+}
+
 export function TargetNativeFranchiseSchedule(arg1) {
   return window['go']['main']['App']['TargetNativeFranchiseSchedule'](arg1);
 }

@@ -187,6 +187,10 @@ export function TargetNativeCapCheck(arg1:string,arg2:string):Promise<commission
 
 export function TargetNativeDirectory(arg1:string):Promise<commissioner.NativeDirectory>;
 
+export function TargetNativeDraft(arg1:commissioner.RawNativeDraftScope):Promise<commissioner.NativeDraft>;
+
+export function TargetNativeDraftPick(arg1:commissioner.DraftPickInput):Promise<commissioner.Receipt>;
+
 export function TargetNativeFranchiseSchedule(arg1:main.RawNativeScheduleScope):Promise<commissioner.FranchiseSchedule>;
 
 export function TargetNativeHouseRules(arg1:string):Promise<commissioner.NativeHouseRules>;

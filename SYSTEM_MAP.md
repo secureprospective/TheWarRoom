@@ -42,6 +42,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Analytics | `internal/lab` | Frozen fingerprint-checked compiled Lab facts, typed columnar decoder, pure Market fitting, delivery, price lists, calendar, Draft slot returns, team-side Counterparties profiles and owner-scoped offer endings. Offline JS goldens in `tools/labparity` pin the reference engine and data hashes; Node is never required at runtime or by verify. Exact missing-input exceptions live in `testdata/missing-inputs.csv`; `facts-reference.py` independently rebuilds the Python facts oracle in a disposable directory, with its source-row proof and provenance under `internal/lab/testdata/facts`. The reduced three-season golden retains every reference relation; full parity is opt-in. |
 | Policy | `internal/governance` | Pure typed-event fold for principals, seats, private invites, abilities, role permissions, DOT recusal and succession; standard library only, no I/O or stores. Census permission data, a single co-commissioner seat and explicit activity/ballot evidence; locked all-franchise election majority, timed recorded runoff closure and candidate-recused tie rulings. |
 | Engine | `internal/engine` | The scoring pipeline as pure functions (L1, L3, L4 dispatch, L5, L6). |
+| Engine | `internal/engine/rookiedraft` | Pure native rookie-draft setup, slot contracts, order/ownership planning, selection preview and fixed-instant clock replay. `FinalStandings.FirstRound` is the typed worst-first standings seam; `MissingFinalStandings` refuses absent results with "The draft order needs the final standings, which are not built yet." Unset later patterns and tie rules never default. Rules, owned picks, accepted selections (each carrying the contract fixed when it was made) and native roster/cap facts arrive as values; a pick is refused only for pushing a roster over a limit, never for a roster still short of its minimum. The ledger, calendar and gate wiring is in `internal/commissioner` (below). |
 | Engine | `internal/engine/bid` | The free-agent auction's arithmetic and rules (rulebook §6) as pure functions: bid points in exact thousandths, the minimum salary by experience (`freeagency` reads the same table), eleven named rule checks with Go-written reasons (including cap coverage by one conditional drop), and the ProBoards post text. |
 | Engine | `internal/engine/race` | The league race as pure functions over weekly results: records, all-play, streaks, games back, MFL's standingsSort applied step by step with a trace, playoff seeding (division leaders first), the opening round and the bubble. Proved against the real 2025 and 2026 seasons in `race_test.go`. |
 | Engine | `internal/engine/eligibility` | MFL's IR and taxi rules as pure verdicts: per player and direction, eligible / ineligible (reason) / unknown (reason), from held feeds only (injuries status, players draft year, roster status, league capacities). The captured 2026-10-10 owner pages are its committed test oracle (`testdata/answer-key.csv`). |
@@ -101,9 +102,10 @@ reversal that would strand a later window change is refused. `gate.go` holds `Na
 decision every native owner action asks: it answers through `ActionCalendar.Decide` (exceptions and the
 exact trade deadline included), says in the owner's local time which window opens a closed action, and
 mints the `Permit` an action needs to run. Root `native_gate.go` is the registry and its only door,
-`runNativeAction`; `native_gate_test.go` runs every registered action shut and open. The registry is
-empty until later chunks add native owner actions. Now/Race integration and the remaining census
-owner-edge wiring are still pending.
+`runNativeAction`; `native_gate_test.go` runs every registered action shut and open (an action may refuse
+for want of its own details, but not for a closed gate). The registry holds the rookie pick
+(`draft.pick`, opens `draft_pick`). Now/Race integration and the remaining census owner-edge wiring are
+still pending.
 
 ## IPC surface
 
@@ -458,6 +460,27 @@ seasons (`rollover_season.go`): the closed season keeps the rules captured befor
 from the plan's rules, and a compensating revert restores both. `CheckRolloverAppend` refuses reversing a
 change the rollover captured, or a rollover with later changes. A league's first season is the NFL season its
 creation records (`firstSeason`); a ledger recorded before that existed names no season until it is seeded.
+
+## Native rookie draft
+
+`internal/commissioner/draft_commands.go` holds the CM-041/CM-042 commands (`draft.order.auto`, `.set`,
+`.pattern`, `.tiebreak` at G2, `draft.start` at G1) on the existing append path; setup (CM-040) is the
+`draft.*` rule fields through `rules.set`. An order change made after the draft's start must say the clock
+runs, which makes it G3 with a reason; `CheckDraftAppend` verifies that claim and refuses an order change
+that would leave a made pick without its place. `draft_overlay.go` lays one draft's recorded order over the
+rules in force, and `projectDraftCalendar` gives the calendar the draft's own start: `CalendarReading`, the
+native gate and `draft_reading.go` all read the start through it, so the calendar's `rookie_draft` window
+and the draft cannot disagree (a window command on that window is refused once a start is recorded).
+`draft_reading.go` (`readDraft`) replays the ledger into `internal/engine/rookiedraft`; pick ownership comes
+from the starting snapshot's future picks and is never recreated. A pick is the one owner action recorded in
+the commissioner stream without commissioner permission: root `native_draft_app.go` registers it, so
+`runNativeAction` asks the calendar first, and `history.RecordDraftPick` (`internal/store/history/draft.go`)
+checks the franchise's seated owner, replays the draft, judges roster and cap and appends in one immediate
+transaction. Go fixes the slot and contract in the record; `TargetCommissionerExecute` refuses `draft.pick`.
+`native_projector.go` gives a drafted rookie his contract in the native assets. `TargetNativeDraft` reads
+the order, picks, clock and the viewer's next pick in the viewer's time zone. Final standings are not built:
+round one's automatic order says so until a commissioner sets it. The live tray, draft revert and close
+(CM-043..045) are not built.
 
 ## Native fantasy scoring
 

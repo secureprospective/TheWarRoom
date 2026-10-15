@@ -41,7 +41,7 @@ func (a *App) TargetLeagueCalendar(raw RawLeagueCalendarScope) (commissioner.Cal
 	if err := a.ready(); err != nil {
 		return commissioner.Calendar{}, fmt.Errorf("league calendar startup: %w", err)
 	}
-	records, err := a.leagueRecords(raw.League)
+	records, err := a.leagueRecords(a.ctx, raw.League)
 	if err != nil {
 		return commissioner.Calendar{}, err
 	}
@@ -58,8 +58,8 @@ func (a *App) TargetLeagueCalendar(raw RawLeagueCalendarScope) (commissioner.Cal
 }
 
 // leagueRecords replays one app league's commissioner ledger; the calendar and the gate read the same one.
-func (a *App) leagueRecords(league string) ([]commissioner.Record, error) {
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+func (a *App) leagueRecords(parent context.Context, league string) ([]commissioner.Record, error) {
+	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 	defer cancel()
 	events, err := a.history.Events(ctx, league, commissioner.Stream, 0)
 	if err != nil {
