@@ -125,7 +125,7 @@ are still pending.
 | `lab_app.go` | `TargetMarket` validates season/phase input and returns a typed historical Market payload in the generic `Reading` shell extending `snapshot.Sourced`; dated provenance, count/threshold and Go-authored counting disclosure, no spread grade. |
 | `whatif_app.go` | `TargetWhatIf` validates read/cut/buyout/undo/reset intents; per-franchise persistent baseline and ordered moves in `whatif.db`. Generation-scoped coordinator ledgers replay on mutation, publish after success, keep the mirror read-only, block stale edits until Reset. Lazy Contracts panel shows Go-authored before/after cents and rules. |
 | `native_legality_app.go` | `TargetNativeCapCheck(league, viewerZone)`, `TargetNativeRosterCheck`, `TargetNativeReserveCheck`, `TargetNativeLineupCheck`, `TargetNativeHouseRules`, `TargetNativeContractQuote(RawContractQuote)` (one contract action priced on one recorded native contract at the app clock: allowed or refused with the plain reason, new salary and years, dead money by season, cap effect and how each number was reached; reads the app league ledger and held player positions only and records nothing): app-owned recorded rosters and season-effective rules, with held player positions, NFL designations and draft years. No refresh, MFL acceptance promise, score-feed wiring or owner-screen migration. |
-| `native_seed_app.go` | `TargetNativeSeed(RawNativeSeedRequest)` records one held Legacy NFL starting snapshot in the commissioner event stream: rosters, contract terms, reserve status, franchises, current/future picks and salary adjustments. Go captures the inputs without network or client-supplied assets; retries retain the original receipt after mirror refresh. `TargetNativeAssets` replays that app-owned snapshot, separate from MFL and what-if. `TargetNativeDirectory` reads the native franchise directory: recorded seed names/abbreviations, later active identity edits, current governance seats, and season-resolved alignment (held seed divisions carried into the shared rules resolver). `TargetCommissionerPeople` shares this directory projection; pending alignment changes do not apply, and compensation restores the recorded basis. No MFL directory or hand-off is changed. Empty leagues have no seed. |
+| `native_seed_app.go` | `TargetNativeSeed(RawNativeSeedRequest)` records one held Legacy NFL starting snapshot in the commissioner event stream: rosters, contract terms, reserve status, franchises (with each division's conference, `heldConferences`), current/future picks and salary adjustments. Go captures the inputs without network or client-supplied assets; retries retain the original receipt after mirror refresh. `TargetNativeAssets` replays that app-owned snapshot, separate from MFL and what-if. `TargetNativeDirectory` reads the native franchise directory: recorded seed names/abbreviations, later active identity edits, current governance seats, and season-resolved alignment (held seed divisions carried into the shared rules resolver). `TargetCommissionerPeople` shares this directory projection; pending alignment changes do not apply, and compensation restores the recorded basis. No MFL directory or hand-off is changed. Empty leagues have no seed. |
 | `contracts_app.go` | `TargetContracts` validates team/position/sort scopes and returns separate typed `Reading` shells for league contracts, my-franchise cap, literal MFL salary adjustments. `TargetPlayerContract` validates player IDs and returns observed current salary / explicitly flat-filled inferred future years. Both read a coherent `Mirror.ContractsView`, never the what-if ledger. Lazy frontend in `frontend/src/app/contracts`; every player Inspector includes contract years. |
 | `market_feeds_app.go`, `market_feeds_reading.go`, `report_reading.go` | `TargetMarketReportsRefresh(force)` and `TargetMarketReports`: held week-scoped projections and daily MFL-wide market feeds, archive fallback; shared Go Report and lazy React ReportView used by draft and player-market reports; Go-written pool and Inspector market facts. |
 | `pool_app.go` | `TargetPoolRefresh(force bool)` fetches MFL's free-agent list (skipped when fresh); `TargetPool(RawPoolScope)` reads the held list with no network: name, position, team, age, experience and the §6 minimum per row, filtered and sorted in Go, in a `Reading[Pool]` that is failed before the first fetch, empty (thin) when MFL lists nobody, stale when a refresh fails. |
@@ -571,13 +571,45 @@ reasons; a flip warns, never blocks recording. Go owns the results/standings wir
 `internal/commissioner/testdata/native-results-standings-wire.json`.
 `internal/store/history/native_results.go` composes held evidence and the `LineupSource`, which defaults
 to the league's own ledger (see Native lineups); it never substitutes MFL starters. The existing held-stat
-adapter still lacks play-by-play. Conference alignment and native power-rank inputs are not available in
-the current rule model; those criteria explicitly pass with no data. No owner screen is migrated and no
-scouting or imported MFL reading changes.
+adapter still lacks play-by-play. The conference of each division now comes from the starting snapshot's
+`Conferences` (see Native playoffs); while a league holds none, the conference criterion passes with no
+data, as does the native power rank, which has no input yet. No owner screen is migrated and no scouting
+or imported MFL reading changes.
 
 A result-flip warning names only the games of the franchises the change touches (a player's score touches
 the franchise that starts him), once each and by franchise name: "We can't tell yet whether this changes
 A v B: neither score is complete."
+
+## Native playoffs
+
+`native_results_app.go` adds `TargetNativeBracket(league, season)`, a read-only reading of a season's playoffs.
+`internal/commissioner/playoff_rules.go` resolves the playoff rules the season runs under
+(`RulesInForce`, plus a bracket shape from the league's own graph, the built-in Legacy graph or a saved
+shape) into `PlayoffRules`, or into a plain "Needs a ruling: ..." sentence when they do not fit together (a
+field that does not add up, a shape that names a seed that does not exist, a shape that pairs by the seeds
+left while reseeding is off, weeks that disagree). `playoff_conference.go` reads each team's conference from
+the division alignment and the snapshot's `Conferences` (a one-conference league needs none).
+`playoff_field.go` seeds each conference from the final standings: division winners first, wild cards next,
+byes, and a seed set by hand replaces one slot. `playoff_slots.go` and `playoff_game.go` follow the shape
+round by round, so a round pairs from the teams that reached it (the highest seed left plays the lowest when
+reseeding is on); a game's winner is the higher total of the franchises' native weekly scores, the home team
+adding the home field points; a tie has no winner until the commissioner advances a team. These are pure and
+tested without a store. `bracket_reading.go` and `bracket_build.go` compose them with
+`NativeStandingsReading` (the effective order: the commissioner's, when set) and the native weekly score of
+each playoff week; the bracket is shown only once every regular-season game has a result.
+
+Commands (all through the one execute path; typed, expected version, request key, compensation and replay):
+`bracket.build`, `.edit`, `.seed`, `.preset.save` (CM-046, G2 until the first playoff game kicks off, G3 with
+a typed reason after), `bracket.advance` (CM-047, always G3), `title.set` (CM-048, G1; the label is stamped
+with the season's own year and a label naming another year is refused) and `history.link` (CM-049, G2,
+co-commissioner or above). `bracket_state.go` folds the active commands of a season; `playoff_check.go` is the
+append check. Whether the playoffs have begun is judged from the held NFL kickoffs of the first playoff week
+(`store/history.playoffFactsFor`, the lineup environment); while they are not held the command is taken as
+stated. `history_link.go` reads links: the champions archived with the league are the starting state, a link set
+by hand replaces one and shows as set by the commissioner, and the bracket's champion and
+`FranchiseHistoryReading` read through them. The season rollover does not yet take its champion from the
+bracket. The Go-written wire fixture is `internal/commissioner/testdata/native-bracket-wire.json`. No
+frontend screen reads it yet.
 
 ## Native lineups
 

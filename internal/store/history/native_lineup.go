@@ -27,6 +27,10 @@ var errNoLineupFacts = errors.New("lineups can't be judged until the app holds t
 
 // lineupFactsFor gathers a lineup command's facts before the write begins; any other command needs none.
 func (s *Store) lineupFactsFor(ctx context.Context, raw commissioner.RawCommand) (commissioner.LineupFacts, error) {
+	if raw.Command == commissioner.BracketBuild || raw.Command == commissioner.BracketEdit ||
+		raw.Command == commissioner.BracketSeed || raw.Command == commissioner.BracketPresetSave {
+		return s.playoffFactsFor(ctx, raw)
+	}
 	if raw.Command != commissioner.LineupSet && raw.Command != commissioner.LineupCorrect {
 		return commissioner.LineupFacts{}, nil
 	}
@@ -35,6 +39,27 @@ func (s *Store) lineupFactsFor(ctx context.Context, raw commissioner.RawCommand)
 		return commissioner.LineupFacts{}, fmt.Errorf("validate league change: %w", commissioner.Refused(err))
 	}
 	return s.weekFacts(ctx, change.Season, change.Week)
+}
+
+// playoffFactsFor gathers the NFL kickoffs of the season's first playoff week, which say whether the playoffs
+// have begun. Without the held schedule they are not known, and the bracket check takes the command as stated.
+func (s *Store) playoffFactsFor(ctx context.Context, raw commissioner.RawCommand) (commissioner.LineupFacts, error) {
+	change, err := commissioner.DecodeBracketChange(raw.Args, raw.Command)
+	if err != nil {
+		return commissioner.LineupFacts{}, fmt.Errorf("validate league change: %w", commissioner.Refused(err))
+	}
+	if s.lineupEnv == nil {
+		return commissioner.LineupFacts{}, nil
+	}
+	records, err := s.nativeRecords(ctx, raw.League)
+	if err != nil {
+		return commissioner.LineupFacts{}, fmt.Errorf("read the league before checking its playoffs: %w", err)
+	}
+	week, ok := commissioner.PlayoffStartWeek(records, change.Season, s.now())
+	if !ok {
+		return commissioner.LineupFacts{}, nil
+	}
+	return s.weekFacts(ctx, change.Season, week)
 }
 
 func (s *Store) weekFacts(ctx context.Context, season, week int) (commissioner.LineupFacts, error) {

@@ -77,3 +77,21 @@ func (a *App) TargetNativeScorePreview(body string) (commissioner.ScorePreview, 
 	}
 	return preview, nil
 }
+
+// TargetNativeBracket reads a season's playoffs: the seeds, each round's games, anything the commissioner set
+// by hand, and the champion with the season's title once the final is decided.
+func (a *App) TargetNativeBracket(league string, season int) (commissioner.NativeBracket, error) {
+	if err := (RawNativeResultsScope{League: league, Season: season, Week: 1}).Validate(); err != nil {
+		return commissioner.NativeBracket{}, err
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.NativeBracket{}, fmt.Errorf("native bracket startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.NativeBracket(ctx, league, season)
+	if err != nil {
+		return commissioner.NativeBracket{}, fmt.Errorf("native bracket: %w", err)
+	}
+	return reading, nil
+}

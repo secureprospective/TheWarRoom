@@ -63,7 +63,7 @@ type Definition struct{ Gravity string }
 
 func DefinitionFor(command string) (Definition, error) {
 	switch command {
-	case DraftStart, DraftPick:
+	case DraftStart, DraftPick, TitleSet:
 		return Definition{Gravity: "G1"}, nil
 	case DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak,
 		RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride:
@@ -78,7 +78,8 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G3"}, nil
 	case WindowSet, WindowMove, WindowRemove, ContractActionSet:
 		return Definition{Gravity: "G2"}, nil
-	case ScheduleGenerate, ScheduleEdit, SchedulePublish:
+	case ScheduleGenerate, ScheduleEdit, SchedulePublish, BracketBuild, BracketEdit, BracketSeed, BracketPresetSave,
+		HistoryLink:
 		return Definition{Gravity: "G2"}, nil
 	case PlayerPosition, PlayerPositionClear, ScorePlayer:
 		return Definition{Gravity: "G2"}, nil
@@ -86,7 +87,7 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G3"}, nil
 	case LineupSet:
 		return Definition{Gravity: "G2"}, nil
-	case LineupCorrect:
+	case LineupCorrect, BracketAdvance:
 		return Definition{Gravity: "G3"}, nil
 	default:
 		if d, ok := peopleDefinitionFor(command); ok {
@@ -122,6 +123,9 @@ type RawArgs struct {
 	Standings      *RawStandingsChange `json:"standings,omitempty"`
 	Lineup         *RawLineupChange    `json:"lineup,omitempty"`
 	Rollover       *RawRolloverArgs    `json:"rollover,omitempty"`
+	Bracket        *RawBracketChange   `json:"bracket,omitempty"`
+	Title          *RawTitleChange     `json:"title,omitempty"`
+	Link           *RawHistoryLink     `json:"link,omitempty"`
 	Season         int                 `json:"season,omitempty"`
 	ContractAction *RawContractAction  `json:"contractAction,omitempty"`
 }
@@ -137,7 +141,8 @@ func (a RawArgs) validateDetails(command string) error {
 // decodedDetails says whether any argument that only a typed decoder may read is present here.
 func (a RawArgs) decodedDetails() bool {
 	return a.Schedule != nil || a.Window != nil || a.Override != nil || a.Score != nil || a.Standings != nil ||
-		a.Lineup != nil || a.Draft != nil || a.Waiver != nil || a.WaiverOutcome != nil || a.ContractAction != nil
+		a.Lineup != nil || a.Draft != nil || a.Waiver != nil || a.WaiverOutcome != nil || a.ContractAction != nil ||
+		a.Bracket != nil || a.Title != nil || a.Link != nil
 }
 
 // ownedDetails says whether an argument that belongs to one command is sent with another.
@@ -162,6 +167,8 @@ func (a RawArgs) validateDecoded(command string) (handled bool, err error) {
 		err = a.validateWaiver(command)
 	case command == ContractActionSet:
 		err = a.validateContractAction()
+	case playoffCommand(command):
+		err = a.validatePlayoff(command)
 	default:
 		return false, nil
 	}
@@ -303,6 +310,8 @@ func publicNowRule(command string) string {
 		return "standings overrides take effect now and are shown to the league"
 	case command == CalendarException:
 		return "window exceptions take effect now and are visible to every owner"
+	case playoffCommand(command):
+		return playoffPlacement(command)
 	case command == Create:
 		return "a new league is created now and recorded for the league"
 	}
@@ -436,6 +445,9 @@ func (r RawCommand) EffectiveDefinition() (Definition, error) {
 		definition.Gravity = "G3"
 	}
 	if r.Command == ScheduleEdit && r.Args.Schedule != nil && r.Args.Schedule.Published {
+		definition.Gravity = "G3"
+	}
+	if changesAfterKickoff(r.Command) && r.Args.Bracket != nil && r.Args.Bracket.Started {
 		definition.Gravity = "G3"
 	}
 	return definition, nil

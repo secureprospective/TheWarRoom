@@ -112,7 +112,7 @@ func NativeStandingsReading(ctx context.Context, league string, records []Record
 	if err != nil {
 		return out, err
 	}
-	return out.rank(rules, directory, counted, adjustments)
+	return out.rank(rules, directory, counted, adjustments, conferencesFor(records, rules, directoryIDs(directory)))
 }
 
 // countSeason reads each counted week's results once.
@@ -162,14 +162,15 @@ func (s *seasonGames) addAllPlay(scores []FranchiseWeekScore) {
 }
 
 func (out NativeStandings) rank(rules leaguerules.RuleSet, directory NativeDirectory, counted seasonGames,
-	adjustments StandingsAdjustments) (NativeStandings, error) {
+	adjustments StandingsAdjustments, conferences conferenceLayout) (NativeStandings, error) {
 	teams := make([]rankTeam, 0, len(directory.Franchises))
 	for _, seat := range directory.Franchises {
 		division := ""
 		if rules.League.Alignment.State == leaguerules.IsKnown {
 			division = rules.League.Alignment.Value[seat.Franchise]
 		}
-		teams = append(teams, rankTeam{ID: seat.Franchise, Name: seat.Name, Division: division})
+		teams = append(teams, rankTeam{ID: seat.Franchise, Name: seat.Name, Division: division,
+			Conference: conferences.Of[seat.Franchise]})
 	}
 	input := rankInput{teams: teams, games: counted.games, allPlay: counted.allPlay, points: counted.points,
 		criteria: rules.Standings.Criteria.Value}
@@ -237,4 +238,12 @@ func overrideOrderRows(rows []StandingRow, override OrderOverride) []StandingRow
 		ordered = append(ordered, row)
 	}
 	return ordered
+}
+
+func directoryIDs(d NativeDirectory) []string {
+	ids := make([]string, len(d.Franchises))
+	for i, seat := range d.Franchises {
+		ids[i] = seat.Franchise
+	}
+	return ids
 }

@@ -156,6 +156,36 @@
     "safeguard": "reason"
   },
   {
+    "command": "bracket.advance",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "bracket.build",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "bracket.edit",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "bracket.preset.save",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "bracket.seed",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
     "command": "calendar.window.move",
     "effective": "now",
     "field": "",
@@ -294,6 +324,12 @@
     "safeguard": "confirm"
   },
   {
+    "command": "history.link",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
     "command": "schedule.edit",
     "effective": "now",
     "field": "",
@@ -316,6 +352,12 @@
     "effective": "now",
     "field": "",
     "safeguard": "reason"
+  },
+  {
+    "command": "title.set",
+    "effective": "now",
+    "field": "",
+    "safeguard": "confirm"
   },
   {
     "command": "waivers.award.override",

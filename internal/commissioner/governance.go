@@ -104,6 +104,8 @@ func commandControls() map[string]string {
 		StandingsRecordAdjust: "CM-033", StandingsOverride: "CM-033", StandingsOverrideClear: "CM-033",
 		ScheduleGenerate: "CM-015", ScheduleEdit: "CM-015", SchedulePublish: "CM-015",
 		LineupCorrect: "CM-029",
+		BracketBuild:  "CM-046", BracketEdit: "CM-046", BracketSeed: "CM-046", BracketPresetSave: "CM-046",
+		BracketAdvance: "CM-047", TitleSet: "CM-048", HistoryLink: "CM-049",
 	}
 }
 

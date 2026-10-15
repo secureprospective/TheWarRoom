@@ -93,3 +93,42 @@ func TestNativeResultsIPCScopeAndStartup(t *testing.T) {
 		t.Fatal("invalid preview")
 	}
 }
+
+func TestNativeBracketIPCSaysWhyTheBracketIsNotBuiltYet(t *testing.T) {
+	f := scoreApp(t)
+	f.app.history.SetNativeLineups(nativeResultLineups{})
+	raw := commissioner.RawCommand{League: legalityLeague, Command: commissioner.ScheduleGenerate,
+		Args: commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Weeks: 13}}, Expected: 2, Request: "generate-bracket",
+		Effective: "now", Visibility: "league"}
+	executeCommissionerTest(t, f.app, raw)
+	raw.Command, raw.Expected, raw.Request = commissioner.SchedulePublish, 3, "publish-bracket"
+	raw.Args = commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{}}
+	executeCommissionerTest(t, f.app, raw)
+	for range 2 {
+		bracket, err := f.app.TargetNativeBracket(legalityLeague, 2026)
+		if err != nil || len(bracket.Rounds) != 0 || bracket.Champion != nil || bracket.Title.Label != "2026 League Champion" ||
+			!strings.HasPrefix(bracket.Status, "Needs a ruling") && !strings.HasPrefix(bracket.Status, "Waiting") {
+			t.Fatalf("a bracket without results must say why: %+v %v", bracket, err)
+		}
+		t.Log(bracket.Status, bracket.Words)
+		if bracket.Words == "" {
+			t.Fatal("a missing bracket owes a sentence")
+		}
+		f.reopen(t)
+		f.app.history.SetNativeLineups(nativeResultLineups{})
+	}
+}
+
+func TestNativeBracketIPCScopeAndStartup(t *testing.T) {
+	a := &App{started: make(chan struct{}), startupErr: errors.New("startup failed")}
+	close(a.started)
+	for _, scope := range []RawNativeResultsScope{{League: "native.", Season: 2026}, {League: "imported", Season: 2026},
+		{League: "native.test", Season: 0}, {League: "native.test", Season: 10000}} {
+		if _, err := a.TargetNativeBracket(scope.League, scope.Season); err == nil {
+			t.Fatalf("accepted %+v", scope)
+		}
+	}
+	if _, err := a.TargetNativeBracket("native.test", 2026); err == nil || !strings.Contains(err.Error(), "startup") {
+		t.Fatalf("the bracket ignored a failed startup: %v", err)
+	}
+}

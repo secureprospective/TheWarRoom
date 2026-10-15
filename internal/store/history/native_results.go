@@ -142,3 +142,23 @@ func (s *Store) NativeScorePreview(ctx context.Context, raw commissioner.RawComm
 	}
 	return out, nil
 }
+
+// NativeBracket reads a season's playoffs. The first playoff week's kickoffs are added when the app holds
+// them, so the reading can say whether the playoffs have begun.
+func (s *Store) NativeBracket(ctx context.Context, league string, season int) (commissioner.NativeBracket, error) {
+	records, err := s.nativeRecords(ctx, league)
+	if err != nil {
+		return commissioner.NativeBracket{}, err
+	}
+	facts := commissioner.LineupFacts{}
+	if week, ok := commissioner.PlayoffStartWeek(records, season, s.now()); ok && s.lineupEnv != nil {
+		if facts, err = s.weekFacts(ctx, season, week); err != nil {
+			return commissioner.NativeBracket{}, err
+		}
+	}
+	out, err := commissioner.NativeBracketReading(ctx, league, records, s.nativeSources(league, season), season, s.now(), facts)
+	if err != nil {
+		return commissioner.NativeBracket{}, fmt.Errorf("read native bracket: %w", err)
+	}
+	return out, nil
+}

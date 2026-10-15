@@ -354,6 +354,10 @@ export function TargetNativeAssets(arg1) {
   return window['go']['main']['App']['TargetNativeAssets'](arg1);
 }
 
+export function TargetNativeBracket(arg1, arg2) {
+  return window['go']['main']['App']['TargetNativeBracket'](arg1, arg2);
+}
+
 export function TargetNativeCapCheck(arg1, arg2) {
   return window['go']['main']['App']['TargetNativeCapCheck'](arg1, arg2);
 }

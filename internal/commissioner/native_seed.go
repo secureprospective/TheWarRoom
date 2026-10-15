@@ -25,7 +25,9 @@ type RawNativeSnapshot struct {
 	// Champion is the franchise recorded as the champion of Season, once decided; the rollover archives it.
 	Champion string `json:"champion,omitempty"`
 	// Champions archives the winner of each finished season.
-	Champions   []NativeChampion  `json:"champions,omitempty"`
+	Champions []NativeChampion `json:"champions,omitempty"`
+	// Conferences names the conference each division sits in, as the held league sets them out.
+	Conferences map[string]string `json:"conferences,omitempty"`
 	RosterAt    time.Time         `json:"rosterAt"`
 	DraftAt     time.Time         `json:"draftAt"`
 	FutureAt    time.Time         `json:"futureAt"`
@@ -105,10 +107,27 @@ func (r RawNativeSnapshot) validate(rolled bool) error {
 	if err := r.validatePicks(franchises, rolled); err != nil {
 		return err
 	}
-	if err := r.validateChampions(franchises); err != nil {
+	if err := r.validateArchive(franchises); err != nil {
 		return err
 	}
 	return r.validateCharges(franchises)
+}
+
+// validateArchive checks what the snapshot carries of the league's past and its conference layout.
+func (r RawNativeSnapshot) validateArchive(franchises map[string]bool) error {
+	if err := r.validateChampions(franchises); err != nil {
+		return err
+	}
+	divisions := map[string]bool{}
+	for _, f := range r.Franchises {
+		divisions[f.Division] = true
+	}
+	for division, conference := range r.Conferences {
+		if !divisions[division] || strings.TrimSpace(conference) == "" {
+			return fmt.Errorf("the held conferences name a division no franchise sits in, or no conference")
+		}
+	}
+	return nil
 }
 
 func (r RawNativeSnapshot) validateChampions(franchises map[string]bool) error {
