@@ -45,6 +45,9 @@ func (a *App) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 	if raw.Command == commissioner.NativeSeed {
 		return commissioner.Receipt{}, fmt.Errorf("record the starting snapshot through the held-data action")
 	}
+	if raw.Command == commissioner.DraftPick {
+		return commissioner.Receipt{}, fmt.Errorf("a rookie pick is made by the franchise on the clock, in the draft room")
+	}
 	if err := a.ready(); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("league change startup: %w", err)
 	}

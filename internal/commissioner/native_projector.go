@@ -13,6 +13,10 @@ func projectNativeOverrides(assets *NativeAssets, records []Record) error {
 	active := Replay(records).Active
 	for i, record := range records {
 		switch record.Command.Command {
+		case DraftPick:
+			if active[record.Receipt.Entry] {
+				applyDraftPick(assets.Snapshot, record)
+			}
 		case ContractEdit, CapAdjust, CapRelief, ReserveException:
 			if !active[record.Receipt.Entry] {
 				continue

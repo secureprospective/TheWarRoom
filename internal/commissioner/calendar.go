@@ -112,6 +112,7 @@ func CalendarReading(league string, records []Record, at time.Time, year int,
 	if err != nil {
 		return Calendar{}, fmt.Errorf("read league calendar: %w", err)
 	}
+	projectDraftCalendar(&clock, records, year, at)
 	decision := clock.Decide(at, action, franchise)
 	if decision.Next != nil {
 		next := decision.Next.In(local)

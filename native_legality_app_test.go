@@ -61,6 +61,9 @@ func legalityLookup(t *testing.T) normalize.Lookup {
 	for i := 0; i < 40; i++ {
 		raws = append(raws, legalityRaw(legalityID(4000, i), "WR", "2019"))
 	}
+	for i := 1; i <= 6; i++ {
+		raws = append(raws, legalityRaw(fmt.Sprintf("%04d", 5000+i), "WR", "2027"))
+	}
 	raws = append(raws, legalityRaw("2001", "LB", "2019"), legalityRaw("2002", "CB", "2019"),
 		legalityRaw("3001", "WR", "2025"), legalityRaw("3002", "RB", "2024"), legalityRaw("3003", "TE", "2022"))
 	lookup, err := normalize.NewLookup(raws)

@@ -74,7 +74,7 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err := s.checkAppend(raw, principal, records); err != nil {
 		return commissioner.Receipt{}, err
 	}
-	receipt, err := s.appendCommissioner(ctx, tx, raw, principal, role, canonical)
+	receipt, err := s.appendCommissioner(ctx, tx, raw, principal, role, canonical, s.now())
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
@@ -114,6 +114,7 @@ func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, recor
 		{"starting snapshot", func() error { return commissioner.CheckNativeAppend(raw, records) }},
 		{"league change", func() error { return commissioner.CheckGovernanceAppend(raw, principal, records, s.now()) }},
 		{"league calendar", func() error { return commissioner.CheckCalendarAppend(raw, records, s.now()) }},
+		{"rookie draft", func() error { return commissioner.CheckDraftAppend(raw, records, s.now()) }},
 		{"league schedule", func() error { return commissioner.CheckScheduleAppend(raw, records) }},
 		{"league rules", func() error { return commissioner.CheckRulesAppend(raw, records, s.now()) }},
 	}
@@ -203,10 +204,10 @@ func checkCommissionerAppend(raw commissioner.RawCommand, records []commissioner
 }
 
 func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, raw commissioner.RawCommand,
-	principal, role, canonical string) (commissioner.Receipt, error) {
+	principal, role, canonical string, at time.Time) (commissioner.Receipt, error) {
 	hash := sha256.Sum256([]byte(canonical))
 	identity := sha256.Sum256([]byte(raw.League + "\x00" + raw.Request))
-	now := s.now().UTC().Truncate(time.Microsecond)
+	now := at.UTC().Truncate(time.Microsecond)
 	receipt := commissioner.Receipt{Entry: "act." + hex.EncodeToString(identity[:]), League: raw.League,
 		Revision: raw.Expected + 1, RecordedAt: now, Message: "Recorded in the league ledger."}
 	definition, err := raw.EffectiveDefinition()

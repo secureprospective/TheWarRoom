@@ -63,6 +63,10 @@ type Definition struct{ Gravity string }
 
 func DefinitionFor(command string) (Definition, error) {
 	switch command {
+	case DraftStart, DraftPick:
+		return Definition{Gravity: "G1"}, nil
+	case DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak:
+		return Definition{Gravity: "G2"}, nil
 	case ContractEdit, CapAdjust, CapRelief:
 		return Definition{Gravity: "G2"}, nil
 	case ReserveException:
@@ -84,6 +88,7 @@ func DefinitionFor(command string) (Definition, error) {
 }
 
 type RawArgs struct {
+	Draft          *RawDraftArgs       `json:"draft,omitempty"`
 	Name           string              `json:"name,omitempty"`
 	Entry          string              `json:"entry,omitempty"`
 	Franchises     []string            `json:"franchises,omitempty"`
@@ -102,7 +107,7 @@ type RawArgs struct {
 
 // validateDetails refuses arguments that belong to another command.
 func (a RawArgs) validateDetails(command string) error {
-	if (command != NativeSeed && a.Native != nil) || a.Schedule != nil || a.Window != nil || a.Override != nil ||
+	if (command != NativeSeed && a.Native != nil) || a.Schedule != nil || a.Window != nil || a.Override != nil || a.Draft != nil ||
 		(command != CalendarException && a.Exception != nil) || a.foreignRuleArgs(command) {
 		return fmt.Errorf("send only the details of this league action")
 	}
@@ -110,6 +115,9 @@ func (a RawArgs) validateDetails(command string) error {
 }
 
 func (a RawArgs) Validate(command string) error {
+	if draftCommand(command) {
+		return a.validateDraft(command)
+	}
 	if scheduleCommand(command) {
 		return a.validateSchedule(command)
 	}
@@ -197,6 +205,8 @@ func (r RawCommand) Validate() error {
 // recorded now for the league; it is empty for every other command.
 func publicNowRule(command string) string {
 	switch {
+	case draftCommand(command):
+		return "draft changes take effect now and are visible to every owner"
 	case command == NativeSeed:
 		return "the starting snapshot is recorded now for every owner"
 	case windowCommand(command):
@@ -304,6 +314,9 @@ func (r RawCommand) EffectiveDefinition() (Definition, error) {
 	definition, err := r.Definition()
 	if err != nil {
 		return Definition{}, err
+	}
+	if r.Args.Draft != nil && r.Args.Draft.Running {
+		definition.Gravity = "G3"
 	}
 	if r.Command == ScheduleEdit && r.Args.Schedule != nil && r.Args.Schedule.Published {
 		definition.Gravity = "G3"
