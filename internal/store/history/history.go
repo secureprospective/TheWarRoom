@@ -46,6 +46,8 @@ type Store struct {
 	evidence  func(context.Context, source.RawNativeScope) (source.NativeEvidence, error)
 	lineups   LineupSource
 	lineupEnv LineupEnvironment
+	// bidEnv says which week of the NFL season it is and who is in the playoffs when a bid is judged.
+	bidEnv BidEnvironmentSource
 
 	wmu sync.Mutex
 }

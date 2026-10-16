@@ -66,7 +66,8 @@ func DefinitionFor(command string) (Definition, error) {
 	case DraftStart, DraftPick:
 		return Definition{Gravity: "G1"}, nil
 	case DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak,
-		RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride:
+		RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
+		BidPlace, BidRaise, BidWithdraw, BidsProcess, BidsOverride:
 		return Definition{Gravity: "G2"}, nil
 	case ContractEdit, CapAdjust, CapRelief:
 		return Definition{Gravity: "G2"}, nil
@@ -103,6 +104,8 @@ type RawArgs struct {
 	Draft          *RawDraftArgs       `json:"draft,omitempty"`
 	Waiver         *RawWaiverArgs      `json:"waiver,omitempty"`
 	WaiverOutcome  *WaiverOutcome      `json:"waiverOutcome,omitempty"`
+	Bid            *RawBidArgs         `json:"bid,omitempty"`
+	BidOutcome     *BidOutcome         `json:"bidOutcome,omitempty"`
 	Name           string              `json:"name,omitempty"`
 	Entry          string              `json:"entry,omitempty"`
 	Franchises     []string            `json:"franchises,omitempty"`
@@ -137,7 +140,8 @@ func (a RawArgs) validateDetails(command string) error {
 // decodedDetails says whether any argument that only a typed decoder may read is present here.
 func (a RawArgs) decodedDetails() bool {
 	return a.Schedule != nil || a.Window != nil || a.Override != nil || a.Score != nil || a.Standings != nil ||
-		a.Lineup != nil || a.Draft != nil || a.Waiver != nil || a.WaiverOutcome != nil || a.ContractAction != nil
+		a.Lineup != nil || a.Draft != nil || a.Waiver != nil || a.WaiverOutcome != nil || a.Bid != nil || a.BidOutcome != nil ||
+		a.ContractAction != nil
 }
 
 // ownedDetails says whether an argument that belongs to one command is sent with another.
@@ -160,6 +164,8 @@ func (a RawArgs) validateDecoded(command string) (handled bool, err error) {
 		err = a.validateDraft(command)
 	case WaiverCommand(command):
 		err = a.validateWaiver(command)
+	case BidCommand(command):
+		err = a.validateBid(command)
 	case command == ContractActionSet:
 		err = a.validateContractAction()
 	default:
@@ -390,8 +396,8 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 	if err := decoder.Decode(&struct{}{}); err != io.EOF {
 		return raw, fmt.Errorf("send exactly one commissioner command")
 	}
-	if raw.Args.WaiverOutcome != nil {
-		return raw, fmt.Errorf("waiver decisions are made by the app")
+	if raw.Args.WaiverOutcome != nil || raw.Args.BidOutcome != nil {
+		return raw, fmt.Errorf("waiver and bid decisions are made by the app")
 	}
 	raw, err := raw.Prepared()
 	if err != nil {
@@ -404,7 +410,7 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 }
 
 func (r RawCommand) Canonical(principal string) (string, error) {
-	r.Args.WaiverOutcome = nil
+	r.Args.WaiverOutcome, r.Args.BidOutcome = nil, nil
 	definition, err := r.EffectiveDefinition()
 	if err != nil {
 		return "", err

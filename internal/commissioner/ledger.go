@@ -235,6 +235,8 @@ func familyLabel(r Record) (string, bool) {
 		return draftLabel(r), true
 	case WaiverCommand(c):
 		return waiverLabel(c), true
+	case BidCommand(c):
+		return bidLabel(r), true
 	case scheduleCommand(c):
 		return scheduleLabel(r), true
 	}
@@ -277,6 +279,9 @@ func ledgerEntryVisible(r Record, records []Record, principal string, privileged
 	if privateWaiverRecord(r, records) {
 		return (r.Principal == principal && r.Command.Command == WaiverClaim) ||
 			(privileged && processedWaiverClaim(r, records))
+	}
+	if privateBidRecord(r, records) {
+		return r.Principal == principal || (privileged && decidedBidRecord(r, records))
 	}
 	return r.Command.Visibility != "private" || privileged
 }

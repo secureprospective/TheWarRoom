@@ -39,7 +39,7 @@ type NativeWaivers struct {
 
 func NativeWaiversReading(league, franchise, principal string, records []Record, at time.Time,
 	zone *time.Location, facts nativecheck.Facts) (NativeWaivers, error) {
-	if err := AuthorizeWaiverOwner(records, principal, franchise); err != nil {
+	if err := AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
 		return NativeWaivers{}, err
 	}
 	assets, state, err := nativeAssetsState(league, records)

@@ -61,7 +61,7 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
-	lineup, err := s.lineupFactsFor(ctx, raw)
+	lineup, bidSeason, err := s.environmentFor(ctx, raw)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
@@ -86,6 +86,9 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 	now := s.now().UTC().Truncate(time.Microsecond)
 	if err := commissioner.PrepareWaiverAppend(&raw, records, now, facts, zone); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("check waiver action: %w", commissioner.Refused(err))
+	}
+	if err := commissioner.PrepareBidAppend(&raw, records, now, facts, zone, bidSeason); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("check bid action: %w", commissioner.Refused(err))
 	}
 	before, plan, err := commissioner.PrepareRollover(raw, records, now)
 	if err != nil {
@@ -180,8 +183,8 @@ func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, recor
 // passes requireReason false and reports the missing reason itself.
 func preparedCommand(raw commissioner.RawCommand, principal string,
 	requireReason bool) (commissioner.RawCommand, string, error) {
-	if raw.Args.WaiverOutcome != nil {
-		return raw, "", fmt.Errorf("waiver decisions are made by the app")
+	if raw.Args.WaiverOutcome != nil || raw.Args.BidOutcome != nil {
+		return raw, "", fmt.Errorf("waiver and bid decisions are made by the app")
 	}
 	raw, err := raw.Prepared()
 	if err != nil {
@@ -206,7 +209,7 @@ func preparedCommand(raw commissioner.RawCommand, principal string,
 
 func commandRole(raw commissioner.RawCommand, principal string, auth commissioner.Authorizer,
 	records []commissioner.Record) (string, error) {
-	if auth == nil || commissioner.OwnerWaiverAction(raw.Command) != "" {
+	if auth == nil || commissioner.OwnerWaiverAction(raw.Command) != "" || commissioner.OwnerBidAction(raw.Command) != "" {
 		role, err := commissioner.AuthorizeRecords(raw, principal, records)
 		if err != nil {
 			return "", fmt.Errorf("league change refused: %w", commissioner.Refused(err))

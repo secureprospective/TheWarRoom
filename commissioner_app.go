@@ -45,6 +45,9 @@ func (a *App) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 	if commissioner.OwnerWaiverAction(raw.Command) != "" {
 		return commissioner.Receipt{}, fmt.Errorf("use the native owner action for cuts and claims")
 	}
+	if commissioner.OwnerBidAction(raw.Command) != "" {
+		return commissioner.Receipt{}, fmt.Errorf("use the native owner action to place, raise or withdraw a bid")
+	}
 	if raw.Command == commissioner.NativeSeed {
 		return commissioner.Receipt{}, fmt.Errorf("record the starting snapshot through the held-data action")
 	}

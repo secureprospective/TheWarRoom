@@ -354,6 +354,14 @@ export function TargetNativeAssets(arg1) {
   return window['go']['main']['App']['TargetNativeAssets'](arg1);
 }
 
+export function TargetNativeBidAction(arg1) {
+  return window['go']['main']['App']['TargetNativeBidAction'](arg1);
+}
+
+export function TargetNativeBids(arg1, arg2) {
+  return window['go']['main']['App']['TargetNativeBids'](arg1, arg2);
+}
+
 export function TargetNativeCapCheck(arg1, arg2) {
   return window['go']['main']['App']['TargetNativeCapCheck'](arg1, arg2);
 }
