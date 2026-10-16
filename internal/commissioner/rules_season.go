@@ -329,3 +329,49 @@ func carriedAlignment(r Record, alignmentSet bool) (leaguerules.Change, bool) {
 		New:       leaguerules.Value[map[string]string]{State: leaguerules.IsKnown, Value: divisions, Citation: carriedDivisions},
 		Effective: leaguerules.Effective{Kind: leaguerules.Now}, RecordedAt: r.Receipt.RecordedAt}, true
 }
+
+// RulesFunc resolves the rules a season held at an instant; RulesInForce is the one real resolver.
+type RulesFunc func(records []Record, season int, at time.Time) (leaguerules.RuleSet, error)
+
+// rulesKey is everything a resolution depends on: which ledger was read (the same entries, not merely the
+// same length), the season, and the instant. Two readings of one ledger at different instants can see
+// different rules when a change starts between them, so the instant is part of the key.
+type rulesKey struct {
+	ledger *Record
+	length int
+	season int
+	at     time.Time
+}
+
+type rulesEntry struct {
+	rules leaguerules.RuleSet
+	err   error
+}
+
+// RulesMemo remembers resolved rules for the length of one reading, so scoring every starter of a season
+// reads the ledger once, not once per starter. It is never shared between readings: a later reading starts
+// from a new memo and so sees any change recorded since. The rule sets it returns are shared, read-only.
+type RulesMemo struct {
+	entries  map[rulesKey]rulesEntry
+	resolved int
+}
+
+func NewRulesMemo() *RulesMemo { return &RulesMemo{entries: map[rulesKey]rulesEntry{}} }
+
+// InForce is RulesInForce, answered from memory when this ledger, season and instant were already resolved.
+func (m *RulesMemo) InForce(records []Record, season int, at time.Time) (leaguerules.RuleSet, error) {
+	if len(records) == 0 {
+		return RulesInForce(records, season, at)
+	}
+	key := rulesKey{ledger: &records[0], length: len(records), season: season, at: at.Round(0).UTC()}
+	if hit, ok := m.entries[key]; ok {
+		return hit.rules, hit.err
+	}
+	m.resolved++
+	rules, err := RulesInForce(records, season, at)
+	m.entries[key] = rulesEntry{rules, err}
+	return rules, err
+}
+
+// Resolved counts the times the ledger was actually read, which is what the memo exists to keep small.
+func (m *RulesMemo) Resolved() int { return m.resolved }
