@@ -40,6 +40,19 @@ func TestCatalogueDescribesEveryField(t *testing.T) {
 	}
 }
 
+// The catalogue is built once and shared, so one caller's edits to its list must not reach the next.
+func TestCatalogueCallersCannotChangeEachOthersList(t *testing.T) {
+	first := Catalogue()
+	if !reflect.DeepEqual(first, buildCatalogue()) {
+		t.Fatal("the remembered catalogue differs from a fresh build")
+	}
+	label := first[0].Label
+	first[0].Label = "changed by a caller"
+	if got := Catalogue()[0].Label; got != label {
+		t.Fatalf("a caller's edit reached the shared catalogue: %q", got)
+	}
+}
+
 func TestDecodeSettingRefusals(t *testing.T) {
 	for _, c := range []struct{ path, body string }{
 		{"roster.unknown", `{"min":20,"max":70}`},
