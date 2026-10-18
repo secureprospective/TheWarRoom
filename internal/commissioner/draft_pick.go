@@ -57,7 +57,7 @@ func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts,
 		return RawCommand{}, err
 	}
 	preview, err := rookiedraft.PreviewSelection(basis.rules, basis.draft, in.Franchise, candidateFrom(facts, in),
-		pickBasis(assets, basis, in, facts, local))
+		pickBasis(assets, basis, in, facts, local, records, at))
 	if err != nil {
 		return RawCommand{}, Refused(err)
 	}
@@ -78,8 +78,8 @@ func candidateFrom(facts nativecheck.Facts, in DraftPickInput) rookiedraft.Candi
 }
 
 func pickBasis(assets NativeAssets, basis draftBasis, in DraftPickInput, facts nativecheck.Facts,
-	local *time.Location) rookiedraft.SelectionBasis {
-	out := rookiedraft.SelectionBasis{Season: in.Season, Facts: facts, Local: local}
+	local *time.Location, records []Record, at time.Time) rookiedraft.SelectionBasis {
+	out := rookiedraft.SelectionBasis{Exceptions: scopedDecisionExceptions(records, ExceptionScope{Franchise: in.Franchise, Player: in.Player}, at), Season: in.Season, Facts: facts, Local: local}
 	if !assets.Seeded {
 		return out
 	}

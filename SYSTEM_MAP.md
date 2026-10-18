@@ -765,3 +765,31 @@ a `BidEnvironmentSource` (the app supplies the week from held NFL week dates and
 a week a bid is refused in words. `native_bids_app.go` exposes `TargetNativeBidAction(RawCommand)` and
 `TargetNativeBids(league, franchise)`, and registers all three owner actions with the native gate.
 Restricted free-agent bids wait for the tender step, which the app does not yet record.
+
+## Native roster and asset corrections
+
+`internal/commissioner/correction_command.go` validates CM-028's `correct.roster`,
+`correct.transaction`, `correct.provenance` and `correct.pick`, and CM-039's `rule.exception`.
+All are public-now G3 changes requiring a typed reason and co-commissioner permission, through
+`ExecuteCommissioner` with version, request-key retry and compensation. `correction_projector.go`
+changes cloned native assets only; an add uses the player's last recorded contract. Transaction
+corrections compensate one active cut, waiver award or draft selection; dependent actions must be
+reversed first. Draft consistency is checked on both correction and compensation. Draft ownership
+reads the projected picks, never the original owners alone.
+
+Rule exceptions match exactly one franchise, player or recorded transaction and stop counting at
+their expiry instant. The shared native roster, cap, IR and taxi checks consume matched exceptions;
+waiver eligibility (including rechecking at processing), bidding and rookie-selection legality pass
+those same values to those same checks. Supported references are `roster.limits`,
+`roster.positionBounds`, `cap.enforcement`, `ir.eligible`, `taxi.maximumYears`, and
+`calendar.<action>` (franchise-scoped). Calendar exceptions feed `ActionCalendar.Decide` itself,
+including permanent exceptions, rather than patching a second decision after it. Other rule references
+are refused, never silently accepted. Rules and the imported MFL owner readings are unchanged.
+
+`TargetCorrections(league)` (`commissioner_app.go`, `history.Corrections`) lists active corrections
+newest first with author, recorded time, public reason, scope and named asset descriptions.
+Native assets, roster legality, cap, reserves, waivers and draft readings carry the public corrections;
+individual corrected players and picks also carry their reason. Go owns
+`internal/commissioner/testdata/corrections-wire.json`; Wails generates the binding.
+The rollover append lock resolves `NativeBracketReading` through history links before preparing its
+frozen plan, so the archived champion is the decided season winner, not an unset snapshot field.

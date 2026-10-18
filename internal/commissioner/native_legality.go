@@ -18,6 +18,8 @@ type RuleLine struct {
 // nativeBase is what every native legality reading starts from: the recorded starting rosters, the
 // native directory and the rules in force now, all read from the one ledger.
 type nativeBase struct {
+	records   []Record
+	now       time.Time
 	assets    NativeAssets
 	directory NativeDirectory
 	rules     leaguerules.RuleSet
@@ -32,7 +34,7 @@ func readNativeBase(league string, records []Record, now time.Time) (nativeBase,
 	if err != nil {
 		return nativeBase{}, err
 	}
-	assets, err := NativeAssetsReading(league, records)
+	assets, err := NativeAssetsReading(league, records, now)
 	if err != nil {
 		return nativeBase{}, err
 	}
@@ -40,7 +42,7 @@ func readNativeBase(league string, records []Record, now time.Time) (nativeBase,
 	if err != nil {
 		return nativeBase{}, err
 	}
-	return nativeBase{assets: assets, directory: directory, rules: rules}, nil
+	return nativeBase{records: records, now: now, assets: assets, directory: directory, rules: rules}, nil
 }
 
 // playersOf groups the recorded players by franchise.
@@ -50,7 +52,8 @@ func (b nativeBase) playersOf() map[string][]nativecheck.RosterPlayer {
 		return byFranchise
 	}
 	for _, p := range b.assets.Snapshot.Players {
-		byFranchise[p.Franchise] = append(byFranchise[p.Franchise], nativecheck.RosterPlayer{ID: p.ID, Status: p.Status})
+		byFranchise[p.Franchise] = append(byFranchise[p.Franchise], nativecheck.RosterPlayer{ID: p.ID, Status: p.Status,
+			Exceptions: scopedDecisionExceptions(b.records, ExceptionScope{Franchise: p.Franchise, Player: p.ID}, b.now)})
 	}
 	return byFranchise
 }
@@ -85,6 +88,7 @@ type NativeRosterFranchise struct {
 
 // NativeRosterCheck judges every native franchise's roster against the league's size and position limits.
 type NativeRosterCheck struct {
+	Corrections  []Correction            `json:"corrections,omitempty"`
 	League       string                  `json:"league"`
 	Name         string                  `json:"name"`
 	Revision     int64                   `json:"revision"`
@@ -110,10 +114,15 @@ func NativeRosterCheckReading(league string, records []Record, now time.Time, fa
 		return out, nil
 	}
 	out.RosterSeason = base.assets.Snapshot.Season
+	changes, err := CorrectionsReading(league, records, now)
+	if err != nil {
+		return NativeRosterCheck{}, err
+	}
+	out.Corrections = changes.Items
 	players := base.playersOf()
 	for _, seat := range base.directory.Franchises {
 		out.Franchises = append(out.Franchises, NativeRosterFranchise{
-			RosterVerdict: nativecheck.CheckRoster(base.rules.Roster, seat.Franchise, players[seat.Franchise], facts),
+			RosterVerdict: nativecheck.CheckRoster(base.rules.Roster, seat.Franchise, players[seat.Franchise], facts, scopedDecisionExceptions(records, ExceptionScope{Franchise: seat.Franchise}, now)...),
 			Name:          seat.Name, Abbreviation: seat.Abbreviation})
 	}
 	return out, nil

@@ -15,8 +15,9 @@ import (
 
 // RosterPlayer is one player on a native franchise: who, and where he sits.
 type RosterPlayer struct {
-	ID     string
-	Status domain.RosterStatus
+	Exceptions []DecisionException
+	ID         string
+	Status     domain.RosterStatus
 }
 
 // RosterVerdict is one franchise's roster against the league's size and position limits.
@@ -36,7 +37,7 @@ type RosterVerdict struct {
 
 // CheckRoster counts a franchise's players against the roster rules. Positions come from facts and
 // are only read when the league sets position limits.
-func CheckRoster(rules leaguerules.RosterRules, franchise string, players []RosterPlayer, facts Facts) RosterVerdict {
+func CheckRoster(rules leaguerules.RosterRules, franchise string, players []RosterPlayer, facts Facts, exceptions ...DecisionException) RosterVerdict {
 	v := RosterVerdict{Franchise: franchise, Problems: []string{}, Notes: []string{}}
 	if rules.ReserveExcluded.State != leaguerules.IsKnown {
 		v.Words = "Needs a ruling: whether IR and taxi players count toward roster size"
@@ -49,7 +50,14 @@ func CheckRoster(rules leaguerules.RosterRules, franchise string, players []Rost
 	counted := countedPlayers(rules.ReserveExcluded.Value, players)
 	v.Counted = len(counted)
 	sizeOK := judgeSize(&v, label, rules.Limits)
+	if why, allowed := ExceptionReason(exceptions, "roster.limits"); allowed {
+		sizeOK, v.Words = true, why
+	}
 	positionsOK := judgePositions(&v, rules.PositionBounds, counted, facts)
+	if why, allowed := ExceptionReason(exceptions, "roster.positionBounds"); allowed {
+		positionsOK, v.Problems = true, nil
+		v.Notes = append(v.Notes, why)
+	}
 	v.Fits = sizeOK && positionsOK
 	return v
 }
@@ -152,4 +160,20 @@ func sortedPositions[V any](m map[leaguerules.Position]V) []leaguerules.Position
 		return strings.Compare(string(a), string(b))
 	})
 	return keys
+}
+
+// DecisionException has already been matched to one decision's scope and instant by the ledger reader.
+// The rule itself consumes it; callers must not maintain a parallel version of the decision.
+type DecisionException struct {
+	Rule   string
+	Reason string
+}
+
+func ExceptionReason(exceptions []DecisionException, rule string) (string, bool) {
+	for _, exception := range exceptions {
+		if exception.Rule == rule && exception.Reason != "" {
+			return exception.Reason, true
+		}
+	}
+	return "", false
 }

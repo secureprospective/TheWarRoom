@@ -132,6 +132,8 @@ export function TargetContractActs(arg1:main.RawContractAct):Promise<main.Readin
 
 export function TargetContracts(arg1:snapshot.RawContractScope):Promise<main.ContractsReadings>;
 
+export function TargetCorrections(arg1:string):Promise<commissioner.Corrections>;
+
 export function TargetCounterpartTeam(arg1:main.RawCounterpartTeam):Promise<main.Reading_main_TeamCounterpart_>;
 
 export function TargetCounterparties(arg1:main.RawCounterpartiesScope):Promise<main.Reading_main_Counterparties_>;

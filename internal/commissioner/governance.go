@@ -96,6 +96,8 @@ func commandControls() map[string]string {
 		DraftOrderPattern: "CM-041", DraftOrderTiebreak: "CM-041",
 		WaiverProcess: "CM-035", WaiverOrderSet: "CM-035", WaiverOrderAuto: "CM-035", WaiverOverride: "CM-035",
 		BidsProcess: "CM-036", BidsOverride: "CM-036",
+		CorrectRoster: "CM-028", CorrectTransaction: "CM-028", CorrectProvenance: "CM-028",
+		CorrectPick: "CM-028", RuleException: "CM-039",
 		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039", ContractActionSet: "CM-009",
 		ContractEdit: "CM-034", CapAdjust: "CM-034", CapRelief: "CM-034", ReserveException: "CM-038",
 		PlayerPosition: "CM-030", PlayerPositionClear: "CM-030",

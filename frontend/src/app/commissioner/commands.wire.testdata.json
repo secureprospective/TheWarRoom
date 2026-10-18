@@ -324,6 +324,30 @@
     "safeguard": "hold"
   },
   {
+    "command": "correct.pick",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "correct.provenance",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "correct.roster",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "correct.transaction",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
     "command": "draft.order.auto",
     "effective": "now",
     "field": "",
@@ -358,6 +382,12 @@
     "effective": "now",
     "field": "",
     "safeguard": "hold"
+  },
+  {
+    "command": "rule.exception",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
   },
   {
     "command": "schedule.edit",

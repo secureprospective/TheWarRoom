@@ -1,0 +1,25 @@
+{
+  "league": "native.seed",
+  "revision": 5,
+  "items": [
+    {
+      "entry": "entry.Allowed an exception to lineup window for Held team 1, with no expiry",
+      "who": "creator",
+      "when": "2027-06-01T12:00:00Z",
+      "why": "Repair the recorded asset",
+      "what": "Allowed an exception to lineup window for Held team 1, with no expiry",
+      "rule": "calendar.lineup",
+      "scope": {
+        "franchise": "franchise.01"
+      }
+    },
+    {
+      "entry": "entry.Corrected Player 1000's acquisition to a waiver claim",
+      "who": "creator",
+      "when": "2027-06-01T12:00:00Z",
+      "why": "Repair the recorded asset",
+      "what": "Corrected Player 1000's acquisition to a waiver claim",
+      "player": "1000"
+    }
+  ]
+}

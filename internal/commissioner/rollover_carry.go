@@ -53,7 +53,7 @@ func (p *RolloverPlan) carrySeasonFacts() {
 func (p *RolloverPlan) archiveChampion() {
 	champion := p.After.Champion
 	if champion == "" {
-		p.Lines = append(p.Lines, fmt.Sprintf("No champion is recorded for season %d, so none is archived.", p.From))
+		p.Lines = append(p.Lines, fmt.Sprintf("No champion is decided for season %d, so none is archived.", p.From))
 		return
 	}
 	p.After.Champions = append(p.After.Champions, NativeChampion{Season: p.From, Franchise: champion})

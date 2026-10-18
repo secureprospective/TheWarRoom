@@ -30,15 +30,16 @@ func (r RawNativeDraftScope) Validate() error {
 // NativeDraft is the rookie draft as a franchise sees it: the order with its owners, the picks made,
 // who is on the clock until when (in the viewer's time) and the viewer's own next pick.
 type NativeDraft struct {
-	League   string                   `json:"league"`
-	Season   int                      `json:"season"`
-	Revision int64                    `json:"revision"`
-	Rules    []RuleLine               `json:"rules"`
-	Owners   []DraftOwner             `json:"owners"`
-	Order    []rookiedraft.RoundOrder `json:"order"`
-	Words    string                   `json:"words"`
-	Draft    rookiedraft.Draft        `json:"draft"`
-	Next     *rookiedraft.Pick        `json:"nextOwnedPick"`
+	Corrections []Correction             `json:"corrections,omitempty"`
+	League      string                   `json:"league"`
+	Season      int                      `json:"season"`
+	Revision    int64                    `json:"revision"`
+	Rules       []RuleLine               `json:"rules"`
+	Owners      []DraftOwner             `json:"owners"`
+	Order       []rookiedraft.RoundOrder `json:"order"`
+	Words       string                   `json:"words"`
+	Draft       rookiedraft.Draft        `json:"draft"`
+	Next        *rookiedraft.Pick        `json:"nextOwnedPick"`
 }
 
 type DraftOwner struct {
@@ -133,6 +134,11 @@ func NativeDraftReading(scope RawNativeDraftScope, records []Record, local *time
 	out := NativeDraft{League: scope.League, Season: scope.Season, Revision: int64(len(recordsThrough(records, scope.At))),
 		Rules: ruleLines(basis.rules, draftReadingFields()...), Owners: basis.owners, Order: basis.order,
 		Words: basis.words, Draft: basis.draft}
+	changes, err := CorrectionsReading(scope.League, records, scope.At)
+	if err != nil {
+		return NativeDraft{}, err
+	}
+	out.Corrections = changes.Items
 	if out.Order == nil {
 		out.Order = []rookiedraft.RoundOrder{}
 	}
@@ -180,12 +186,21 @@ func draftOwnership(season int, records []Record) ([]rookiedraft.OwnedPick, erro
 	if idx < 0 {
 		return nil, fmt.Errorf("record the starting snapshot's draft picks before ordering the draft")
 	}
-	owned := []rookiedraft.OwnedPick{}
 	for _, p := range records[idx].Command.Args.Native.Picks {
+		if p.Season == season && p.Slot != 0 {
+			return nil, fmt.Errorf("this draft was run before the league began; it cannot be run again here")
+		}
+	}
+	owned := []rookiedraft.OwnedPick{}
+	assets, err := NativeAssetsReading(records[0].Command.League, records)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range assets.Snapshot.Picks {
 		if p.Season != season {
 			continue
 		}
-		if p.Slot != 0 || p.Original == "" {
+		if p.Original == "" {
 			return nil, fmt.Errorf("this draft was run before the league began; it cannot be run again here")
 		}
 		owned = append(owned, rookiedraft.OwnedPick{Round: p.Round, Original: p.Original, Owner: p.Owner})

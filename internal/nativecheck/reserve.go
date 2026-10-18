@@ -58,10 +58,10 @@ func CheckReserves(ir leaguerules.IRRules, taxi leaguerules.TaxiRules, season in
 		switch p.Status {
 		case domain.RosterIR:
 			onIR++
-			check.Players = append(check.Players, irStanding(ir, p.ID, f))
+			check.Players = append(check.Players, irStanding(ir, p.ID, f, p.Exceptions...))
 		case domain.RosterTaxi:
 			onTaxi++
-			check.Players = append(check.Players, taxiStanding(taxi, season, p.ID, f))
+			check.Players = append(check.Players, taxiStanding(taxi, season, p.ID, f, p.Exceptions...))
 		case domain.RosterActive:
 		}
 	}
@@ -94,7 +94,10 @@ const (
 )
 
 // irQualification tests the NFL's listing of a player against the designations the league accepts.
-func irQualification(rules leaguerules.IRRules, f PlayerFacts) (qualification, string) {
+func irQualification(rules leaguerules.IRRules, f PlayerFacts, exceptions ...DecisionException) (qualification, string) {
+	if why, allowed := ExceptionReason(exceptions, "ir.eligible"); allowed {
+		return qualifies, why
+	}
 	switch {
 	case rules.Eligible.State != leaguerules.IsKnown:
 		return undetermined, "Needs a ruling: which NFL listings qualify for IR"
@@ -108,9 +111,9 @@ func irQualification(rules leaguerules.IRRules, f PlayerFacts) (qualification, s
 	return disqualified, "the NFL lists him " + designationWords(f.Designation) + ", which this league does not accept for IR"
 }
 
-func irStanding(rules leaguerules.IRRules, id string, f PlayerFacts) ReserveVerdict {
+func irStanding(rules leaguerules.IRRules, id string, f PlayerFacts, exceptions ...DecisionException) ReserveVerdict {
 	v := ReserveVerdict{Player: id, Name: f.Name, Squad: "IR"}
-	q, why := irQualification(rules, f)
+	q, why := irQualification(rules, f, exceptions...)
 	switch {
 	case q == undetermined:
 		v.Standing, v.Words = Unclear, "Can't tell: "+why
@@ -127,8 +130,8 @@ func irStanding(rules leaguerules.IRRules, id string, f PlayerFacts) ReserveVerd
 }
 
 // CanEnterIR says whether a player may be placed on IR now, with used IR spots already taken.
-func CanEnterIR(rules leaguerules.IRRules, f PlayerFacts, used int) Entry {
-	q, why := irQualification(rules, f)
+func CanEnterIR(rules leaguerules.IRRules, f PlayerFacts, used int, exceptions ...DecisionException) Entry {
+	q, why := irQualification(rules, f, exceptions...)
 	switch {
 	case q == undetermined:
 		return Entry{Words: "Can't tell: " + why}

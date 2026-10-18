@@ -21,7 +21,10 @@ type experience struct {
 
 // taxiExperience measures a player by the rule's basis: calendar years counts the season he was drafted
 // as his first; career games counts each season's worth of games played, rounding up.
-func taxiExperience(rules leaguerules.TaxiRules, f PlayerFacts, season int) experience {
+func taxiExperience(rules leaguerules.TaxiRules, f PlayerFacts, season int, exceptions ...DecisionException) experience {
+	if why, allowed := ExceptionReason(exceptions, "taxi.maximumYears"); allowed {
+		return experience{known: true, words: why}
+	}
 	if rules.Basis.State != leaguerules.IsKnown || rules.MaximumYears.State != leaguerules.IsKnown {
 		return experience{reason: "Needs a ruling: the taxi experience limit"}
 	}
@@ -46,9 +49,9 @@ func taxiExperience(rules leaguerules.TaxiRules, f PlayerFacts, season int) expe
 	return e
 }
 
-func taxiStanding(rules leaguerules.TaxiRules, season int, id string, f PlayerFacts) ReserveVerdict {
+func taxiStanding(rules leaguerules.TaxiRules, season int, id string, f PlayerFacts, exceptions ...DecisionException) ReserveVerdict {
 	v := ReserveVerdict{Player: id, Name: f.Name, Squad: "Taxi"}
-	e := taxiExperience(rules, f, season)
+	e := taxiExperience(rules, f, season, exceptions...)
 	switch {
 	case !e.known:
 		v.Standing, v.Words = Unclear, "Can't tell: "+e.reason
@@ -61,8 +64,8 @@ func taxiStanding(rules leaguerules.TaxiRules, season int, id string, f PlayerFa
 }
 
 // CanEnterTaxi says whether a player may be placed on the taxi squad now, with used spots already taken.
-func CanEnterTaxi(rules leaguerules.TaxiRules, f PlayerFacts, season, used int) Entry {
-	e := taxiExperience(rules, f, season)
+func CanEnterTaxi(rules leaguerules.TaxiRules, f PlayerFacts, season, used int, exceptions ...DecisionException) Entry {
+	e := taxiExperience(rules, f, season, exceptions...)
 	switch {
 	case !e.known:
 		return Entry{Words: "Can't tell: " + e.reason}

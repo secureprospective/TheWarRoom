@@ -176,6 +176,9 @@ func standingChange(r Record) (leaguerules.Change, bool) {
 // a start cannot move once the clock runs, an order change cannot contradict a pick already made, and a
 // change made while the clock runs must say so, and give its reason.
 func CheckDraftAppend(raw RawCommand, records []Record, at time.Time) error {
+	if correctionCommand(raw.Command) {
+		return Refused(draftReadable(withProposed(raw, records, at), draftsWithPicks(records), at))
+	}
 	if raw.Command == Revert {
 		return Refused(checkDraftReversal(raw, records, at))
 	}
@@ -289,6 +292,9 @@ func draftRuleField(field string) bool { return strings.HasPrefix(field, "draft.
 // checkDraftReversal and checkDraftRule keep a drafted class intact: undoing the start or the order, or
 // changing a draft rule, must leave every pick already made with its place on the clock.
 func checkDraftReversal(raw RawCommand, records []Record, at time.Time) error {
+	if err := draftReadable(withProposed(raw, records, at), draftsWithPicks(records), at); err != nil {
+		return err
+	}
 	for _, r := range records {
 		if r.Receipt.Entry != raw.Args.Entry {
 			continue

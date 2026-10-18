@@ -174,3 +174,34 @@ func (s *Store) NativeBracket(ctx context.Context, league string, season int) (c
 	}
 	return out, nil
 }
+
+// rolloverChampion resolves the final and its history link under the same append lock as the rollover.
+func (s *Store) rolloverChampion(ctx context.Context, raw commissioner.RawCommand, records []commissioner.Record,
+	now time.Time) (*commissioner.BracketChampion, error) {
+	if raw.Command != commissioner.SeasonRollover {
+		return nil, nil
+	}
+	season, err := commissioner.SeasonAt(records, commissioner.ReadingInstant(records, now))
+	if err != nil {
+		return nil, fmt.Errorf("read closing season: %w", err)
+	}
+	src := s.nativeSources(raw.League, season)
+	bracket, err := commissioner.NativeBracketReading(ctx, raw.League, records, src, season, now, commissioner.LineupFacts{})
+	if err != nil {
+		return nil, fmt.Errorf("read closing champion: %w", err)
+	}
+	return bracket.Champion, nil
+}
+
+func (s *Store) prepareRollover(ctx context.Context, raw commissioner.RawCommand, records []commissioner.Record,
+	now time.Time) (*commissioner.RolloverBefore, *commissioner.RolloverPlan, error) {
+	champion, err := s.rolloverChampion(ctx, raw, records, now)
+	if err != nil {
+		return nil, nil, err
+	}
+	before, plan, err := commissioner.PrepareRollover(raw, records, now, champion)
+	if err != nil {
+		return nil, nil, fmt.Errorf("prepare season rollover: %w", err)
+	}
+	return before, plan, nil
+}

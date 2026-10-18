@@ -76,11 +76,11 @@ func (x *waiverExecution) prepare(raw *RawCommand) error {
 			return err
 		}
 		if w.Winner != "" && w.Winner != raw.Args.WaiverOutcome.Winner {
-			return rosterCapAllows(assets.Snapshot, x.rules, w.Winner, x.facts, x.zone)
+			return rosterCapAllows(assets.Snapshot, x.rules, w.Winner, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: w.Winner}, x.now)...)
 		}
 	}
 	if raw.Command == RosterCut {
-		return rosterCapAllows(assets.Snapshot, x.rules, raw.Args.Waiver.Franchise, x.facts, x.zone)
+		return rosterCapAllows(assets.Snapshot, x.rules, raw.Args.Waiver.Franchise, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: raw.Args.Waiver.Franchise}, x.now)...)
 	}
 	return nil
 }
@@ -130,7 +130,7 @@ func (x *waiverExecution) claim(raw *RawCommand) error {
 			return fmt.Errorf("you already claimed this player")
 		}
 	}
-	return waiverClaimAllows(x.assets.Snapshot, x.rules, w, franchise, x.facts, x.zone)
+	return waiverClaimAllows(x.assets.Snapshot, x.rules, w, franchise, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: franchise, Player: w.Player.ID, Transaction: w.ID}, x.now)...)
 }
 
 func (x *waiverExecution) setOrder(raw *RawCommand) error {
@@ -252,7 +252,7 @@ func (x *waiverExecution) eligibleClaims(w *waiverWindow) ([]string, []WaiverCla
 	results := []WaiverClaimResult{}
 	for _, c := range w.Claims {
 		result := WaiverClaimResult{ID: c.ID}
-		if err := waiverClaimAllows(x.assets.Snapshot, x.rules, w, c.Franchise, x.facts, x.zone); err != nil {
+		if err := waiverClaimAllows(x.assets.Snapshot, x.rules, w, c.Franchise, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: c.Franchise, Player: w.Player.ID, Transaction: c.ID}, x.now)...); err != nil {
 			result.Refusal = err.Error()
 		} else {
 			eligible = append(eligible, c.Franchise)
