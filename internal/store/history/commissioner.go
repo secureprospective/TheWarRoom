@@ -90,10 +90,11 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 	if err := commissioner.PrepareBidAppend(&raw, records, now, facts, zone, gathered.bid); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("check bid action: %w", commissioner.Refused(err))
 	}
-	before, plan, err := commissioner.PrepareRollover(raw, records, now)
+	before, plan, err := s.prepareRollover(ctx, raw, records, now)
 	if err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("prepare season rollover: %w", err)
+		return commissioner.Receipt{}, err
 	}
+
 	if raw.Command == commissioner.SeasonRollover && raw.Args.Rollover.DryRun {
 		return commissioner.Receipt{League: raw.League, Revision: raw.Expected, RecordedAt: before.At,
 			Message: "Preview only; nothing was recorded.", Plan: plan}, nil
@@ -161,6 +162,7 @@ func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, recor
 		what  string
 		check func() error
 	}{
+		{"asset correction", func() error { return commissioner.CheckCorrectionAppend(raw, records, s.now()) }},
 		{"native correction", func() error { return commissioner.CheckOverrideAppend(raw, records, s.now()) }},
 		{"starting snapshot", func() error { return commissioner.CheckNativeAppend(raw, records) }},
 		{"league change", func() error { return commissioner.CheckGovernanceAppend(raw, principal, records, s.now()) }},

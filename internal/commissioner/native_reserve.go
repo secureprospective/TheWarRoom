@@ -18,6 +18,7 @@ type NativeReserveFranchise struct {
 
 // NativeReserveCheck judges every IR and taxi player on every native franchise, and how full each squad is.
 type NativeReserveCheck struct {
+	Corrections  []Correction             `json:"corrections,omitempty"`
 	League       string                   `json:"league"`
 	Name         string                   `json:"name"`
 	Revision     int64                    `json:"revision"`
@@ -36,7 +37,11 @@ func NativeReserveCheckReading(league string, records []Record, now time.Time, f
 	if err != nil {
 		return NativeReserveCheck{}, err
 	}
-	out := NativeReserveCheck{League: league, Name: Replay(records).Name, Revision: int64(len(records)),
+	changes, err := CorrectionsReading(league, records, now)
+	if err != nil {
+		return NativeReserveCheck{}, err
+	}
+	out := NativeReserveCheck{Corrections: changes.Items, League: league, Name: Replay(records).Name, Revision: int64(len(records)),
 		RulesSeason: base.rules.Season, Seeded: base.assets.Seeded, Source: base.source(),
 		Rules: ruleLines(base.rules, "ir.slots", "ir.eligible", "ir.mustLeaveHealthy", "taxi.slots",
 			"taxi.maximumYears", "taxi.basis"),

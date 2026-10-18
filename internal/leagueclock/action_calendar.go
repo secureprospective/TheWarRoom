@@ -18,6 +18,7 @@ type ActionWindow struct {
 }
 
 type WindowException struct {
+	Permanent bool               `json:"permanent,omitempty"`
 	Action    leaguerules.Action `json:"action"`
 	Franchise string             `json:"franchise"`
 	Start     time.Time          `json:"start"`
@@ -185,7 +186,7 @@ func (c ActionCalendar) Decide(at time.Time, action leaguerules.Action, franchis
 func (c ActionCalendar) exception(at time.Time, action leaguerules.Action, franchise string) (WindowException, bool) {
 	for _, exception := range c.Exceptions {
 		if exception.Action == action && exception.Franchise == franchise && !at.Before(exception.Start) &&
-			at.Before(exception.Until) {
+			(exception.Permanent || at.Before(exception.Until)) {
 			return exception, true
 		}
 	}

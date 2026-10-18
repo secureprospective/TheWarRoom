@@ -46,6 +46,8 @@ type NativeFranchise struct {
 }
 
 type NativePlayer struct {
+	AcquiredVia string `json:"acquiredVia,omitempty"`
+	Correction  string `json:"correction,omitempty"`
 	// Name is the name the app held for the player when the snapshot was captured.
 	Name string `json:"name,omitempty"`
 	// RookieRound is the draft round of the player's rookie contract, where it is recorded; 0 is unknown.
@@ -63,13 +65,14 @@ type NativePlayer struct {
 }
 
 type NativePick struct {
-	Season   int    `json:"season"`
-	Round    int    `json:"round"`
-	Slot     int    `json:"slot"`
-	Original string `json:"original"`
-	Owner    string `json:"owner"`
-	Player   string `json:"player"`
-	Skipped  bool   `json:"skipped"`
+	Correction string `json:"correction,omitempty"`
+	Season     int    `json:"season"`
+	Round      int    `json:"round"`
+	Slot       int    `json:"slot"`
+	Original   string `json:"original"`
+	Owner      string `json:"owner"`
+	Player     string `json:"player"`
+	Skipped    bool   `json:"skipped"`
 }
 
 type NativeCharge struct {

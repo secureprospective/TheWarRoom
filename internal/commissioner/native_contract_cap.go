@@ -13,11 +13,11 @@ import (
 func (in contractCheck) addCap(q *ContractQuote, p nativecheck.Pricing) (bool, error) {
 	rules := in.base.rules
 	before, after := in.capCounts(p)
-	was, err := nativecheck.CheckCap(rules.Cap, before.players, before.charges, in.zone)
+	was, err := nativecheck.CheckCap(rules.Cap, before.players, before.charges, in.zone, scopedDecisionExceptions(in.base.records, ExceptionScope{Franchise: in.player.Franchise, Player: in.player.ID}, in.base.now)...)
 	if err != nil {
 		return false, fmt.Errorf("count the salary cap before the action: %w", err)
 	}
-	now, err := nativecheck.CheckCap(rules.Cap, after.players, after.charges, in.zone)
+	now, err := nativecheck.CheckCap(rules.Cap, after.players, after.charges, in.zone, scopedDecisionExceptions(in.base.records, ExceptionScope{Franchise: in.player.Franchise, Player: in.player.ID}, in.base.now)...)
 	if err != nil {
 		return false, fmt.Errorf("count the salary cap after the action: %w", err)
 	}

@@ -584,6 +584,123 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class ExceptionScope {
+	    franchise?: string;
+	    player?: string;
+	    transaction?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ExceptionScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchise = source["franchise"];
+	        this.player = source["player"];
+	        this.transaction = source["transaction"];
+	    }
+	}
+	export class CorrectionPick {
+	    season: number;
+	    round: number;
+	    original: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CorrectionPick(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.round = source["round"];
+	        this.original = source["original"];
+	    }
+	}
+	export class Correction {
+	    entry: string;
+	    who: string;
+	    when: time.Time;
+	    why: string;
+	    what: string;
+	    player?: string;
+	    franchise?: string;
+	    pick?: CorrectionPick;
+	    rule?: string;
+	    scope?: ExceptionScope;
+	    until?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Correction(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.entry = source["entry"];
+	        this.who = source["who"];
+	        this.when = this.convertValues(source["when"], time.Time);
+	        this.why = source["why"];
+	        this.what = source["what"];
+	        this.player = source["player"];
+	        this.franchise = source["franchise"];
+	        this.pick = this.convertValues(source["pick"], CorrectionPick);
+	        this.rule = source["rule"];
+	        this.scope = this.convertValues(source["scope"], ExceptionScope);
+	        this.until = source["until"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class Corrections {
+	    league: string;
+	    revision: number;
+	    items: Correction[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Corrections(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.revision = source["revision"];
+	        this.items = this.convertValues(source["items"], Correction);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Digest {
 	    id: string;
 	    sentence: string;
@@ -730,6 +847,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	export class FlippedGame {
 	    week: number;
@@ -1297,6 +1415,7 @@ export namespace commissioner {
 	    }
 	}
 	export class NativePick {
+	    correction?: string;
 	    season: number;
 	    round: number;
 	    slot: number;
@@ -1311,6 +1430,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.correction = source["correction"];
 	        this.season = source["season"];
 	        this.round = source["round"];
 	        this.slot = source["slot"];
@@ -1321,6 +1441,8 @@ export namespace commissioner {
 	    }
 	}
 	export class NativePlayer {
+	    acquiredVia?: string;
+	    correction?: string;
 	    name?: string;
 	    rookieRound?: number;
 	    pending?: boolean;
@@ -1339,6 +1461,8 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.acquiredVia = source["acquiredVia"];
+	        this.correction = source["correction"];
 	        this.name = source["name"];
 	        this.rookieRound = source["rookieRound"];
 	        this.pending = source["pending"];
@@ -1439,6 +1563,7 @@ export namespace commissioner {
 		}
 	}
 	export class NativeAssets {
+	    corrections?: Correction[];
 	    league: string;
 	    revision: number;
 	    seeded: boolean;
@@ -1452,6 +1577,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.corrections = this.convertValues(source["corrections"], Correction);
 	        this.league = source["league"];
 	        this.revision = source["revision"];
 	        this.seeded = source["seeded"];
@@ -1798,6 +1924,7 @@ export namespace commissioner {
 	    }
 	}
 	export class NativeCapFranchise {
+	    exception?: string;
 	    capCents?: number;
 	    salaryCents?: number;
 	    activeCents?: number;
@@ -1822,6 +1949,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.exception = source["exception"];
 	        this.capCents = source["capCents"];
 	        this.salaryCents = source["salaryCents"];
 	        this.activeCents = source["activeCents"];
@@ -1874,6 +2002,7 @@ export namespace commissioner {
 	    }
 	}
 	export class NativeCapCheck {
+	    corrections?: Correction[];
 	    league: string;
 	    name: string;
 	    revision: number;
@@ -1891,6 +2020,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.corrections = this.convertValues(source["corrections"], Correction);
 	        this.league = source["league"];
 	        this.name = source["name"];
 	        this.revision = source["revision"];
@@ -1986,6 +2116,7 @@ export namespace commissioner {
 	}
 	
 	export class NativeDraft {
+	    corrections?: Correction[];
 	    league: string;
 	    season: number;
 	    revision: number;
@@ -2002,6 +2133,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.corrections = this.convertValues(source["corrections"], Correction);
 	        this.league = source["league"];
 	        this.season = source["season"];
 	        this.revision = source["revision"];
@@ -2363,6 +2495,7 @@ export namespace commissioner {
 		}
 	}
 	export class NativeReserveCheck {
+	    corrections?: Correction[];
 	    league: string;
 	    name: string;
 	    revision: number;
@@ -2379,6 +2512,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.corrections = this.convertValues(source["corrections"], Correction);
 	        this.league = source["league"];
 	        this.name = source["name"];
 	        this.revision = source["revision"];
@@ -2486,6 +2620,7 @@ export namespace commissioner {
 	    }
 	}
 	export class NativeRosterCheck {
+	    corrections?: Correction[];
 	    league: string;
 	    name: string;
 	    revision: number;
@@ -2502,6 +2637,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.corrections = this.convertValues(source["corrections"], Correction);
 	        this.league = source["league"];
 	        this.name = source["name"];
 	        this.revision = source["revision"];
@@ -2737,6 +2873,7 @@ export namespace commissioner {
 		}
 	}
 	export class NativeWaivers {
+	    corrections?: Correction[];
 	    league: string;
 	    franchise: string;
 	    revision: number;
@@ -2753,6 +2890,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.corrections = this.convertValues(source["corrections"], Correction);
 	        this.league = source["league"];
 	        this.franchise = source["franchise"];
 	        this.revision = source["revision"];
@@ -3725,7 +3863,56 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class RawCorrection {
+	    franchise?: string;
+	    player?: string;
+	    action?: string;
+	    entry?: string;
+	    via?: string;
+	    pick?: CorrectionPick;
+	    owner?: string;
+	    rule?: string;
+	    scope?: ExceptionScope;
+	    until?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawCorrection(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchise = source["franchise"];
+	        this.player = source["player"];
+	        this.action = source["action"];
+	        this.entry = source["entry"];
+	        this.via = source["via"];
+	        this.pick = this.convertValues(source["pick"], CorrectionPick);
+	        this.owner = source["owner"];
+	        this.rule = source["rule"];
+	        this.scope = this.convertValues(source["scope"], ExceptionScope);
+	        this.until = source["until"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class RawArgs {
+	    correction?: RawCorrection;
 	    draft?: RawDraftArgs;
 	    waiver?: RawWaiverArgs;
 	    waiverOutcome?: WaiverOutcome;
@@ -3763,6 +3950,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.correction = this.convertValues(source["correction"], RawCorrection);
 	        this.draft = this.convertValues(source["draft"], RawDraftArgs);
 	        this.waiver = this.convertValues(source["waiver"], RawWaiverArgs);
 	        this.waiverOutcome = this.convertValues(source["waiverOutcome"], WaiverOutcome);
@@ -3890,6 +4078,7 @@ export namespace commissioner {
 	        this.reason = source["reason"];
 	    }
 	}
+	
 	
 	
 	
@@ -4878,6 +5067,7 @@ export namespace envelope {
 export namespace leagueclock {
 	
 	export class WindowException {
+	    permanent?: boolean;
 	    action: string;
 	    franchise: string;
 	    start: time.Time;
@@ -4890,6 +5080,7 @@ export namespace leagueclock {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.permanent = source["permanent"];
 	        this.action = source["action"];
 	        this.franchise = source["franchise"];
 	        this.start = this.convertValues(source["start"], time.Time);

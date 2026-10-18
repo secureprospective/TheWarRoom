@@ -28,7 +28,7 @@ func (s *Store) NativeAssets(ctx context.Context, league string) (commissioner.N
 	if err != nil {
 		return commissioner.NativeAssets{}, err
 	}
-	reading, err := commissioner.NativeAssetsReading(league, records)
+	reading, err := commissioner.NativeAssetsReading(league, records, s.now())
 	if err != nil {
 		return commissioner.NativeAssets{}, fmt.Errorf("read native assets: %w", err)
 	}
@@ -56,4 +56,17 @@ func (s *Store) NativeSeedRetry(ctx context.Context, league, request string) (co
 	}
 	raw, found := commissioner.NativeSeedRetry(records, request)
 	return raw, found, nil
+}
+
+// Corrections reads public compensations without exposing private owner claims.
+func (s *Store) Corrections(ctx context.Context, league string) (commissioner.Corrections, error) {
+	records, err := s.nativeRecords(ctx, league)
+	if err != nil {
+		return commissioner.Corrections{}, err
+	}
+	out, err := commissioner.CorrectionsReading(league, records, s.now())
+	if err != nil {
+		return commissioner.Corrections{}, fmt.Errorf("read native corrections: %w", err)
+	}
+	return out, nil
 }

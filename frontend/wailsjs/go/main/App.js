@@ -250,6 +250,10 @@ export function TargetContracts(arg1) {
   return window['go']['main']['App']['TargetContracts'](arg1);
 }
 
+export function TargetCorrections(arg1) {
+  return window['go']['main']['App']['TargetCorrections'](arg1);
+}
+
 export function TargetCounterpartTeam(arg1) {
   return window['go']['main']['App']['TargetCounterpartTeam'](arg1);
 }

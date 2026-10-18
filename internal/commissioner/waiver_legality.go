@@ -13,7 +13,7 @@ import (
 )
 
 func rosterCapAllows(seed *RawNativeSnapshot, rules leaguerules.RuleSet, franchise string,
-	facts nativecheck.Facts, zone *time.Location) error {
+	facts nativecheck.Facts, zone *time.Location, exceptions ...nativecheck.DecisionException) error {
 	roster := []nativecheck.RosterPlayer{}
 	players := []nativecheck.CapPlayer{}
 	charges := []domain.Money{}
@@ -28,12 +28,12 @@ func rosterCapAllows(seed *RawNativeSnapshot, rules leaguerules.RuleSet, franchi
 			charges = append(charges, c.Amount)
 		}
 	}
-	verdict := nativecheck.CheckRoster(rules.Roster, franchise, roster, facts)
+	verdict := nativecheck.CheckRoster(rules.Roster, franchise, roster, facts, exceptions...)
 	if !verdict.Fits {
 		return fmt.Errorf("roster would not be legal: %s", strings.Join(append([]string{verdict.Words},
 			append(verdict.Problems, verdict.Notes...)...), "; "))
 	}
-	capState, err := nativecheck.CheckCap(rules.Cap, players, charges, zone)
+	capState, err := nativecheck.CheckCap(rules.Cap, players, charges, zone, exceptions...)
 	if err != nil {
 		return fmt.Errorf("check waiver salary: %w", err)
 	}
@@ -44,7 +44,7 @@ func rosterCapAllows(seed *RawNativeSnapshot, rules leaguerules.RuleSet, franchi
 }
 
 func waiverClaimAllows(seed *RawNativeSnapshot, rules leaguerules.RuleSet, w *waiverWindow,
-	franchise string, facts nativecheck.Facts, zone *time.Location) error {
+	franchise string, facts nativecheck.Facts, zone *time.Location, exceptions ...nativecheck.DecisionException) error {
 	if rules.Contracts.ReleaseReSignSameSeason.State != leaguerules.IsKnown {
 		return fmt.Errorf("re-signing a released player needs a ruling")
 	}
@@ -67,7 +67,7 @@ func waiverClaimAllows(seed *RawNativeSnapshot, rules leaguerules.RuleSet, w *wa
 			}
 		}
 	}
-	return rosterCapAllows(&candidate, rules, franchise, facts, zone)
+	return rosterCapAllows(&candidate, rules, franchise, facts, zone, exceptions...)
 }
 
 // Dead money counts each remaining flat paid season after the cut season.

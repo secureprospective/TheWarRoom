@@ -100,7 +100,7 @@ func waitingRollover(records []Record, starts []time.Time, at time.Time) ([]Roll
 // PrepareRollover builds the before-state and the plan for a season.rollover command. It runs under the
 // ledger transaction, after authorization and the version check, and writes nothing. It is nil for every
 // other command. A dry run may return a blocked plan; a real run never does.
-func PrepareRollover(raw RawCommand, records []Record, now time.Time) (*RolloverBefore, *RolloverPlan, error) {
+func PrepareRollover(raw RawCommand, records []Record, now time.Time, champion ...*BracketChampion) (*RolloverBefore, *RolloverPlan, error) {
 	if raw.Command != SeasonRollover {
 		return nil, nil, nil
 	}
@@ -115,6 +115,12 @@ func PrepareRollover(raw RawCommand, records []Record, now time.Time) (*Rollover
 	before, err := rolloverBefore(raw.League, records, at, from)
 	if err != nil {
 		return nil, nil, err
+	}
+	if len(champion) != 0 {
+		before.Assets.Champion = ""
+		if champion[0] != nil {
+			before.Assets.Champion = champion[0].Franchise
+		}
 	}
 	plan, err := before.plan()
 	if err != nil {
@@ -208,6 +214,6 @@ func (b RolloverBefore) matches(plan RolloverPlan) bool {
 // rolloverKind says whether a recorded change is one a rollover captures in its before-state, or one that
 // is made inside the season it opens. Neither can be reversed around the rollover.
 func rolloverKind(command string) bool {
-	return slices.Contains([]string{ContractEdit, CapAdjust, CapRelief, ReserveException, RulesSet,
+	return correctionCommand(command) || slices.Contains([]string{ContractEdit, CapAdjust, CapRelief, ReserveException, RulesSet,
 		WindowSet, WindowMove, WindowRemove, SeasonRollover}, command)
 }

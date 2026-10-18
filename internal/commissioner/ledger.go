@@ -74,6 +74,9 @@ func Replay(records []Record) Projection {
 	}
 	for i := len(records) - 1; i >= 0; i-- {
 		r := records[i]
+		if r.Command.Command == CorrectTransaction && p.Active[r.Receipt.Entry] {
+			p.Active[r.Command.Args.Correction.Entry] = false
+		}
 		if r.Command.Command == Revert && p.Active[r.Receipt.Entry] {
 			p.Active[r.Command.Args.Entry] = !p.Active[r.Command.Args.Entry]
 		}
@@ -156,9 +159,10 @@ type NativeLeague struct {
 
 func entryLabel(records []Record, i int) (string, error) {
 	r := records[i]
+	if correctionCommand(r.Command.Command) {
+		return correctionDescription(records, r), nil
+	}
 	switch r.Command.Command {
-	case ContractEdit, CapAdjust, CapRelief, ReserveException:
-		return overrideLabel(r), nil
 	case PlayerPosition, PlayerPositionClear, ScorePlayer, ScoreFranchise:
 		change, err := DecodeScoreChange(r.Command.Args, r.Command.Command)
 		if err != nil {
@@ -198,6 +202,9 @@ func entryLabel(records []Record, i int) (string, error) {
 }
 
 func recordLabel(r Record) string {
+	if correctionCommand(r.Command.Command) {
+		return correctionLabel(r)
+	}
 	if label, ok := familyLabel(r); ok {
 		return label
 	}

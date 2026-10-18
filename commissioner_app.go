@@ -217,3 +217,15 @@ func (a *App) TargetCommissionerDigests(league string) (commissioner.Digests, er
 	}
 	return reading, nil
 }
+
+// TargetCorrections reads only this app league's public, active corrections and exceptions.
+func (a *App) TargetCorrections(league string) (commissioner.Corrections, error) {
+	if err := a.ready(); err != nil {
+		return commissioner.Corrections{}, fmt.Errorf("corrections startup: %w", err)
+	}
+	out, err := a.history.Corrections(a.ctx, league)
+	if err != nil {
+		return commissioner.Corrections{}, fmt.Errorf("read corrections: %w", err)
+	}
+	return out, nil
+}

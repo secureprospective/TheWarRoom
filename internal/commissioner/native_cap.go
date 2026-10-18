@@ -25,6 +25,7 @@ type NativeCapFranchise struct {
 }
 
 type NativeCapCheck struct {
+	Corrections  []Correction         `json:"corrections,omitempty"`
 	League       string               `json:"league"`
 	Name         string               `json:"name"`
 	Revision     int64                `json:"revision"`
@@ -79,6 +80,11 @@ func NativeCapCheckReading(scope RawNativeCapScope, records []Record, now time.T
 		return out, nil
 	}
 	out.RosterSeason = base.assets.Snapshot.Season
+	changes, err := CorrectionsReading(league, records, now)
+	if err != nil {
+		return NativeCapCheck{}, err
+	}
+	out.Corrections = changes.Items
 	players := map[string][]nativecheck.CapPlayer{}
 	charges := map[string][]domain.Money{}
 	details := map[string][]NativeCharge{}
@@ -93,7 +99,7 @@ func NativeCapCheckReading(scope RawNativeCapScope, records []Record, now time.T
 		details[c.Franchise] = append(details[c.Franchise], c)
 	}
 	for _, seat := range base.directory.Franchises {
-		state, err := nativecheck.CheckCap(base.rules.Cap, players[seat.Franchise], charges[seat.Franchise], zone)
+		state, err := nativecheck.CheckCap(base.rules.Cap, players[seat.Franchise], charges[seat.Franchise], zone, scopedDecisionExceptions(records, ExceptionScope{Franchise: seat.Franchise}, now)...)
 		if err != nil {
 			return NativeCapCheck{}, fmt.Errorf("judge salary cap for %s: %w", seat.Name, err)
 		}

@@ -215,7 +215,7 @@ func (x *bidExecution) rosterAllowsContract(player, franchise string, salary dom
 	candidate.Players = append(slices.Clone(candidate.Players), NativePlayer{ID: player, Franchise: franchise,
 		Status: domain.RosterActive, Salary: salary, ExpirationYear: x.rules.Season + years - 1,
 		ContractStatus: domain.CStatusUFA})
-	return rosterCapAllows(&candidate, x.rules, franchise, x.facts, x.zone)
+	return rosterCapAllows(&candidate, x.rules, franchise, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: franchise, Player: player}, x.now)...)
 }
 
 // experienceYears is the player's NFL seasons so far. Without a real draft year the player is a rookie.

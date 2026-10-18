@@ -71,7 +71,7 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G2"}, nil
 	case ContractEdit, CapAdjust, CapRelief:
 		return Definition{Gravity: "G2"}, nil
-	case ReserveException:
+	case ReserveException, CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException:
 		return Definition{Gravity: "G3"}, nil
 	case Create, Revert, NativeSeed, SeasonRollover:
 		return Definition{Gravity: "G3"}, nil
@@ -102,6 +102,7 @@ func DefinitionFor(command string) (Definition, error) {
 }
 
 type RawArgs struct {
+	Correction     *RawCorrection      `json:"correction,omitempty"`
 	Draft          *RawDraftArgs       `json:"draft,omitempty"`
 	Waiver         *RawWaiverArgs      `json:"waiver,omitempty"`
 	WaiverOutcome  *WaiverOutcome      `json:"waiverOutcome,omitempty"`
@@ -144,7 +145,7 @@ func (a RawArgs) validateDetails(command string) error {
 
 // decodedDetails says whether any argument that only a typed decoder may read is present here.
 func (a RawArgs) decodedDetails() bool {
-	return a.scoringDetails() || a.marketDetails() || a.Schedule != nil || a.Window != nil || a.Override != nil ||
+	return a.Correction != nil || a.scoringDetails() || a.marketDetails() || a.Schedule != nil || a.Window != nil || a.Override != nil ||
 		a.Draft != nil || a.ContractAction != nil
 }
 
@@ -169,6 +170,8 @@ func (a RawArgs) ownedDetails(command string) bool {
 // validateDecoded checks the commands that decode their own typed argument; handled is false for any other.
 func (a RawArgs) validateDecoded(command string) (handled bool, err error) {
 	switch {
+	case correctionCommand(command):
+		_, err = decodeCorrection(a, command)
 	case isScoreCommand(command):
 		_, err = DecodeScoreChange(a, command)
 	case isStandingsCommand(command):
@@ -367,6 +370,8 @@ func (r RawCommand) validatePlacement() error {
 // ownPlacement is the placement check of a command family that sets its own timing and audience.
 func (r RawCommand) ownPlacement() (func() error, bool) {
 	switch {
+	case correctionCommand(r.Command):
+		return r.validateOverridePlacement, true
 	case overrideCommand(r.Command):
 		return r.validateOverridePlacement, true
 	case isScoreCommand(r.Command):

@@ -99,15 +99,11 @@ func CalendarReading(league string, records []Record, at time.Time, year int,
 	if err != nil {
 		return Calendar{}, err
 	}
-	active := Replay(records).Active
-	exceptions := []leagueclock.WindowException{}
-	for _, r := range records {
-		if r.Command.Command == CalendarException && active[r.Receipt.Entry] {
-			e := r.Command.Args.Exception
-			exceptions = append(exceptions, leagueclock.WindowException{Action: e.Action, Franchise: e.Franchise,
-				Start: r.Receipt.RecordedAt, Until: e.Until, Reason: r.Command.Reason})
-		}
+	exceptions, err := readCalendarExceptions(records)
+	if err != nil {
+		return Calendar{}, err
 	}
+
 	clock, err := leagueclock.Calendar(at, year, rules.Calendar, exceptions)
 	if err != nil {
 		return Calendar{}, fmt.Errorf("read league calendar: %w", err)
@@ -122,4 +118,38 @@ func CalendarReading(league string, records []Record, at time.Time, year int,
 	}
 	clock.Localize(local)
 	return Calendar{League: league, Revision: int64(len(records)), Clock: clock, Decision: decision}, nil
+}
+
+func readCalendarExceptions(records []Record) ([]leagueclock.WindowException, error) {
+	active := Replay(records).Active
+	exceptions := []leagueclock.WindowException{}
+	for _, r := range records {
+		if !active[r.Receipt.Entry] {
+			continue
+		}
+		if r.Command.Command == CalendarException {
+			e := r.Command.Args.Exception
+			exceptions = append(exceptions, leagueclock.WindowException{Action: e.Action, Franchise: e.Franchise,
+				Start: r.Receipt.RecordedAt, Until: e.Until, Reason: r.Command.Reason})
+		}
+		if r.Command.Command != RuleException {
+			continue
+		}
+		c, err := decodeCorrection(r.Command.Args, r.Command.Command)
+		if err != nil {
+			return nil, err
+		}
+		if !strings.HasPrefix(c.Rule, "calendar.") {
+			continue
+		}
+		e := leagueclock.WindowException{Action: leaguerules.Action(strings.TrimPrefix(c.Rule, "calendar.")),
+			Franchise: c.Scope.Franchise, Start: r.Receipt.RecordedAt, Permanent: c.Until == "", Reason: "Commissioner exception: " + r.Command.Reason}
+		if c.Until != "" {
+			if e.Until, err = time.Parse(time.RFC3339Nano, c.Until); err != nil {
+				return nil, fmt.Errorf("read calendar exception expiry: %w", err)
+			}
+		}
+		exceptions = append(exceptions, e)
+	}
+	return exceptions, nil
 }

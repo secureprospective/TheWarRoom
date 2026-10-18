@@ -8,8 +8,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-// projectNativeOverrides starts from cloned seed slices; neither ledger bodies nor held inputs mutate.
-func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *waiverState) error {
+// projectNativeOverrides starts from cloned seed slices; neither ledger bodies nor held inputs mutate. visit, when
+// given, sees the assets after each entry is applied.
+func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *waiverState, visit func(*NativeAssets)) error {
 	active := Replay(records).Active
 	for i, record := range records {
 		if !active[record.Receipt.Entry] {
@@ -17,6 +18,9 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *wai
 		}
 		if err := projectNativeEntry(assets, records, i, waivers); err != nil {
 			return err
+		}
+		if visit != nil {
+			visit(assets)
 		}
 	}
 	return nil
@@ -38,6 +42,8 @@ func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *
 		return projectBid(assets.Snapshot, waivers, record)
 	}
 	switch record.Command.Command {
+	case CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException:
+		return applyAssetCorrection(assets.Snapshot, records[:i], record)
 	case SeasonRollover:
 		return applyNativeRollover(assets, record)
 	case DraftPick:

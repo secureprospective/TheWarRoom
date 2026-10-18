@@ -26,6 +26,7 @@ type NativeWaiverClaim struct {
 }
 
 type NativeWaivers struct {
+	Corrections []Correction         `json:"corrections,omitempty"`
 	League      string               `json:"league"`
 	Franchise   string               `json:"franchise"`
 	Revision    int64                `json:"revision"`
@@ -42,7 +43,7 @@ func NativeWaiversReading(league, franchise, principal string, records []Record,
 	if err := AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
 		return NativeWaivers{}, err
 	}
-	assets, state, err := nativeAssetsState(league, records)
+	assets, state, err := nativeAssetsState(league, records, at)
 	if err != nil {
 		return NativeWaivers{}, err
 	}
@@ -50,7 +51,11 @@ func NativeWaiversReading(league, franchise, principal string, records []Record,
 	if err != nil {
 		return NativeWaivers{}, err
 	}
-	out := NativeWaivers{League: league, Franchise: franchise, Revision: int64(len(records)), Season: rules.Season,
+	changes, err := CorrectionsReading(league, records, at)
+	if err != nil {
+		return NativeWaivers{}, err
+	}
+	out := NativeWaivers{Corrections: changes.Items, League: league, Franchise: franchise, Revision: int64(len(records)), Season: rules.Season,
 		Players: []NativeWaiverPlayer{}, Claims: []NativeWaiverClaim{}, Order: []string{},
 		Method: fieldWords(rules, "waivers.method")}
 	if !assets.Seeded {
@@ -120,7 +125,7 @@ func appendOwnWaiverClaims(out []NativeWaiverClaim, w waiverWindow, franchise, p
 
 // DueWaiverWindows is shared by the clock worker and the explicit processing command.
 func DueWaiverWindows(league string, records []Record, at time.Time) ([]string, error) {
-	_, state, err := nativeAssetsState(league, records)
+	_, state, err := nativeAssetsState(league, records, at)
 	if err != nil {
 		return nil, err
 	}

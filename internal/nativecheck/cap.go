@@ -18,6 +18,7 @@ type CapPlayer struct {
 // CapState keeps unknown amounts absent rather than presenting them as zero. Reserve amounts are
 // the counted shares; salary is the full contracted salary before reserve shares and adjustments.
 type CapState struct {
+	Exception       string              `json:"exception,omitempty"`
 	CapCents        *domain.Money       `json:"capCents"`
 	SalaryCents     *domain.Money       `json:"salaryCents"`
 	ActiveCents     *domain.Money       `json:"activeCents"`
@@ -36,8 +37,11 @@ type CapState struct {
 // CheckCap counts each salary at its squad's share, rounds percentage math to cents, then snaps each
 // resulting salary or signed charge. Already-rounded entries are summed, never rounded as one pool.
 func CheckCap(rules leaguerules.CapRules, players []CapPlayer, charges []domain.Money,
-	viewer *time.Location) (CapState, error) {
+	viewer *time.Location, exceptions ...DecisionException) (CapState, error) {
 	out := CapState{Words: "Needs a ruling: salary cap, reserve salary shares or money rounding increment"}
+	if why, allowed := ExceptionReason(exceptions, "cap.enforcement"); allowed {
+		out.Exception = why
+	}
 	if rules.Enforcement.State == leaguerules.IsKnown {
 		out.Mode = rules.Enforcement.Value
 	}
@@ -164,6 +168,9 @@ func CountedChange(before, after CapState) (domain.Money, bool, error) {
 // CapAllows takes the net change in counted salary and charges, including any conditional drop.
 // Soft enforcement never refuses an over-cap move, even while its deadline needs a ruling.
 func CapAllows(state CapState, delta domain.Money, zone *time.Location) (bool, string) {
+	if state.Exception != "" {
+		return true, state.Exception
+	}
 	if zone == nil {
 		zone = time.UTC
 	}
