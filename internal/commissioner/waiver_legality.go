@@ -12,7 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-func waiverRosterAllows(seed *RawNativeSnapshot, rules leaguerules.RuleSet, franchise string,
+func rosterCapAllows(seed *RawNativeSnapshot, rules leaguerules.RuleSet, franchise string,
 	facts nativecheck.Facts, zone *time.Location) error {
 	roster := []nativecheck.RosterPlayer{}
 	players := []nativecheck.CapPlayer{}
@@ -67,7 +67,7 @@ func waiverClaimAllows(seed *RawNativeSnapshot, rules leaguerules.RuleSet, w *wa
 			}
 		}
 	}
-	return waiverRosterAllows(&candidate, rules, franchise, facts, zone)
+	return rosterCapAllows(&candidate, rules, franchise, facts, zone)
 }
 
 // Dead money counts each remaining flat paid season after the cut season.

@@ -31,6 +31,12 @@ func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *
 		}
 		return projectWaiver(assets.Snapshot, waivers, record)
 	}
+	if BidCommand(record.Command.Command) {
+		if !assets.Seeded {
+			return fmt.Errorf("record starting assets before bid actions")
+		}
+		return projectBid(assets.Snapshot, waivers, record)
+	}
 	switch record.Command.Command {
 	case SeasonRollover:
 		return applyNativeRollover(assets, record)

@@ -132,7 +132,7 @@ func (r RawCommand) validateWaiverPlacement() error {
 	return nil
 }
 
-func AuthorizeWaiverOwner(records []Record, principal, franchise string) error {
+func AuthorizeFranchiseOwner(records []Record, principal, franchise string) error {
 	state, err := GovernanceState(records)
 	if err != nil {
 		return err
@@ -165,6 +165,9 @@ func waiverLabel(command string) string {
 func (r RawCommand) nativePlacement() (bool, error) {
 	if WaiverCommand(r.Command) {
 		return true, r.validateWaiverPlacement()
+	}
+	if BidCommand(r.Command) {
+		return true, r.validateBidPlacement()
 	}
 	if overrideCommand(r.Command) {
 		return true, r.validateOverridePlacement()

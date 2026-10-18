@@ -29,7 +29,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Layer 1 | `internal/normalize` | Raw records → domain types: the players lookup and roster join. |
 | Leaf | `internal/domain`, `internal/playerid`, `internal/numeric`, `internal/scouting` | Value types. `playerid.New` is the only way to build a `PlayerID`. `scouting` holds the Layer 4 input types. |
 | Leaf | `internal/measures` | The measure registry: `measures.csv`, `sources.csv`, `source_fields.csv` and `feeds.csv`, embedded and validated. Generates `docs/data-layer/Measure_Dictionary.md` (`make measure-dictionary`). Adding a source is a CSV row, not code. |
-| Leaf | `internal/nativecheck` | Pure native active-roster limits, per-position/group lineup checks, constrained best-lineup selection, invalid-lineup penalty, missed flag, IR/taxi verdicts and salary-cap counting. Cap counting applies season rules, reserve shares and signed recorded charges with the league's money increment; `CapAllows` judges a net counted move delta (including conditional drops), refusing hard-cap overages and flagging soft-cap overages with a plain-word deadline in a supplied viewer zone or Needs a ruling. `NewWaiverPolicy` consumes resolved CM-012 settings without inventing missing values; `Close` dates an unprocessed window from its original cut and `Award` chooses among already-eligible franchises using a supplied priority-first standings or rolling order (rolling moves the winner last). The native commissioner ledger consumes this policy for cuts, private claims and atomic awards; no imported league or hand-off state is changed. Rules and held football facts arrive as values; no MFL policy, I/O or stores. |
+| Leaf | `internal/nativecheck` | Pure native active-roster limits, per-position/group lineup checks, constrained best-lineup selection, invalid-lineup penalty, missed flag, IR/taxi verdicts and salary-cap counting. Cap counting applies season rules, reserve shares and signed recorded charges with the league's money increment; `CapAllows` judges a net counted move delta (including conditional drops), refusing hard-cap overages and flagging soft-cap overages with a plain-word deadline in a supplied viewer zone or Needs a ruling. `NewWaiverPolicy` consumes resolved CM-012 settings without inventing missing values; `Close` dates an unprocessed window from its original cut and `Award` chooses among already-eligible franchises using a supplied priority-first standings or rolling order (rolling moves the winner last). The native commissioner ledger consumes this policy for cuts, private claims and atomic awards; no imported league or hand-off state is changed. `NewBidPolicy` does the same for CM-013 free-agent bids (points, limits, steps, phase rules, tie-aware winner). Rules and held football facts arrive as values; no MFL policy, I/O or stores. |
 | Leaf | `internal/leaguerules` | Typed commissioner-owned season rules, explicit unset values, cited Legacy NFL preset, pure ordered change resolver and preview diffs. `catalogue.go` exports the read-only field catalogue (label, section, value schema, competitive), plain-JSON `DecodeSetting`, whole-value stored encoding for durable seeds, and plain-words rendering. Imports only the standard library and pure domain value types; no store, transport, ingestion or I/O. |
 | Store | `internal/db` | SQLite pools: one write connection, many read-only ones, one WAL file. |
 | Store | `internal/store/rulebook` | League rules from MFL as immutable versions with one active pointer, plus commissioner overrides. |
@@ -739,3 +739,29 @@ processing through that same path. The cancellable `nativeWaiverClock` runs with
 background workers and resumes held windows after restart; no network feed is involved.
 `native_waivers_app.go` exposes `TargetNativeWaiverAction(RawCommand)` and
 `TargetNativeWaivers(league, franchise, at)`. Neither port migrates the imported owner screens.
+
+## Native free-agent bids
+
+`internal/nativecheck/bids.go` is the pure CM-013 policy: `NewBidPolicy` reads the resolved rules (modes, year
+multipliers, limits, tiers, steps, late-bid mark, phase weeks, point decimals, minimum salaries, money
+increment) and refuses any value still waiting for a ruling. `Check` judges one proposal in a fixed order and
+returns the first refusal as one plain sentence; `ChooseBidWinner` takes the most points and reports equal top
+bids as a tie, because the rules name no tie-break. In open bidding the bid to beat is the leader and a bid
+placed after the late mark must beat it by the late step; in blind bidding it is the owner's own earlier bid
+and there is no visible clock, so nothing about another owner's bid is revealed by a refusal.
+`internal/commissioner/bid_command.go` holds the five commands: `bid.place`, `bid.raise` and `bid.withdraw` are
+owner actions (calendar action `ufa_bid`, private in the ledger); `bids.process` and `bids.award.override` are
+CM-036 commissioner commands at G2 for a co-commissioner or above. `bid_execute.go` judges them inside the append
+transaction (`PrepareBidAppend`): bid rules, then roster and cap legality through the same check a waiver claim
+uses, a player on waivers or released this season by the bidder is refused, and `bids.process` judges every bid
+again at the decision. `bid_projector.go` replays bids and decisions with the native assets (the winner signs the
+contract his live bid named, flat, expiring in `season + years - 1`), so a compensating revert undoes a decision
+and a reopen replays it. `bid_reading.go` gives `TargetNativeBids(league, franchise)`: blind bids are visible only
+to their owner (even their existence), open bids show the leader and the late-bid countdown, awards are public and
+a losing bid is shown only to its owner; the mode read is the rule in force now. A bid's closing time needs a
+league rule for how long a bid must stand, which the catalogue does not yet hold, so every closing time reads
+"Needs a ruling" (`bidStandFor`). `internal/store/history/native_bids.go` takes the NFL week and playoff field from
+a `BidEnvironmentSource` (the app supplies the week from held NFL week dates and no playoff standing); without
+a week a bid is refused in words. `native_bids_app.go` exposes `TargetNativeBidAction(RawCommand)` and
+`TargetNativeBids(league, franchise)`, and registers all three owner actions with the native gate.
+Restricted free-agent bids wait for the tender step, which the app does not yet record.

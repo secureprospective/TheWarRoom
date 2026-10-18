@@ -48,6 +48,8 @@ type Store struct {
 	statWeeks func(context.Context, int) ([]commissioner.StatWeek, error)
 	lineups   LineupSource
 	lineupEnv LineupEnvironment
+	// bidEnv says which week of the NFL season it is and who is in the playoffs when a bid is judged.
+	bidEnv BidEnvironmentSource
 
 	wmu sync.Mutex
 }

@@ -129,25 +129,6 @@ func (s *Store) statWeekFor(ctx context.Context, raw commissioner.RawCommand) (c
 	return commissioner.StatWeek{Player: player, Week: week, Evidence: evidence}, nil
 }
 
-// appendFacts is what the held files and the football environment add to the ledger when a change is checked.
-type appendFacts struct {
-	lineup commissioner.LineupFacts
-	stat   commissioner.StatFacts
-}
-
-// appendFactsFor gathers a change's facts before the write begins; most commands need none.
-func (s *Store) appendFactsFor(ctx context.Context, raw commissioner.RawCommand) (appendFacts, error) {
-	lineup, err := s.lineupFactsFor(ctx, raw)
-	if err != nil || !commissioner.IsStatCommand(raw.Command) {
-		return appendFacts{lineup: lineup}, err
-	}
-	week, err := s.statWeekFor(ctx, raw)
-	if err != nil {
-		return appendFacts{}, err
-	}
-	return appendFacts{stat: commissioner.StatFacts{Versions: week.Evidence.Versions()}}, nil
-}
-
 // statChangePreview describes a stat command ahead of recording it.
 func (s *Store) statChangePreview(ctx context.Context, records []commissioner.Record,
 	raw commissioner.RawCommand) (commissioner.ScorePreview, error) {

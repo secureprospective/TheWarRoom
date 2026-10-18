@@ -358,6 +358,7 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 	a.params, a.rulebook, a.league, a.whatif, a.coordinator, a.history = pstore, rb, mirror, whatif, coord, hist
 	a.moves = moveStore
 	hist.SetLineupEnvironment(appLineupEnv{app: a})
+	hist.SetBidEnvironment(appBidEnv{app: a})
 	a.seedClockSchedules(ctx)
 	return refreshed, nil
 }

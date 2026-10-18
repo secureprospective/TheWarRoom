@@ -95,6 +95,7 @@ func commandControls() map[string]string {
 		DraftStart: "CM-042", DraftOrderAuto: "CM-041", DraftOrderSet: "CM-041",
 		DraftOrderPattern: "CM-041", DraftOrderTiebreak: "CM-041",
 		WaiverProcess: "CM-035", WaiverOrderSet: "CM-035", WaiverOrderAuto: "CM-035", WaiverOverride: "CM-035",
+		BidsProcess: "CM-036", BidsOverride: "CM-036",
 		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039", ContractActionSet: "CM-009",
 		ContractEdit: "CM-034", CapAdjust: "CM-034", CapRelief: "CM-034", ReserveException: "CM-038",
 		PlayerPosition: "CM-030", PlayerPositionClear: "CM-030",
@@ -127,7 +128,13 @@ func AuthorizeRecords(raw RawCommand, principal string, records []Record) (strin
 		return "commissioner", nil
 	}
 	if OwnerWaiverAction(raw.Command) != "" {
-		if err := AuthorizeWaiverOwner(records, principal, raw.Args.Waiver.Franchise); err != nil {
+		if err := AuthorizeFranchiseOwner(records, principal, raw.Args.Waiver.Franchise); err != nil {
+			return "", err
+		}
+		return "owner", nil
+	}
+	if OwnerBidAction(raw.Command) != "" {
+		if err := AuthorizeFranchiseOwner(records, principal, raw.Args.Bid.Franchise); err != nil {
 			return "", err
 		}
 		return "owner", nil
@@ -205,6 +212,8 @@ func authorizeReversal(auth GovernanceAuthorizer, entry, principal string, recor
 			return nil // reversing needs only the reversal permission itself; the owner's seat is not asked for
 		case OwnerWaiverAction(r.Command.Command) != "":
 			_, err = auth.Allow(r.Command.League, principal, WaiverProcess)
+		case OwnerBidAction(r.Command.Command) != "":
+			_, err = auth.Allow(r.Command.League, principal, BidsProcess)
 		case r.Command.Command == RulesSet:
 			_, err = authorizeRule(auth, r.Command, principal)
 		default:

@@ -76,11 +76,11 @@ func (x *waiverExecution) prepare(raw *RawCommand) error {
 			return err
 		}
 		if w.Winner != "" && w.Winner != raw.Args.WaiverOutcome.Winner {
-			return waiverRosterAllows(assets.Snapshot, x.rules, w.Winner, x.facts, x.zone)
+			return rosterCapAllows(assets.Snapshot, x.rules, w.Winner, x.facts, x.zone)
 		}
 	}
 	if raw.Command == RosterCut {
-		return waiverRosterAllows(assets.Snapshot, x.rules, raw.Args.Waiver.Franchise, x.facts, x.zone)
+		return rosterCapAllows(assets.Snapshot, x.rules, raw.Args.Waiver.Franchise, x.facts, x.zone)
 	}
 	return nil
 }

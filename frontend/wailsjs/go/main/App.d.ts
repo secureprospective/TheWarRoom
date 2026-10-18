@@ -184,6 +184,10 @@ export function TargetNFLDraft():Promise<main.Report>;
 
 export function TargetNativeAssets(arg1:string):Promise<commissioner.NativeAssets>;
 
+export function TargetNativeBidAction(arg1:commissioner.RawCommand):Promise<commissioner.Receipt>;
+
+export function TargetNativeBids(arg1:string,arg2:string):Promise<commissioner.NativeBids>;
+
 export function TargetNativeBracket(arg1:string,arg2:number):Promise<commissioner.NativeBracket>;
 
 export function TargetNativeCapCheck(arg1:string,arg2:string):Promise<commissioner.NativeCapCheck>;

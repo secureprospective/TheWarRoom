@@ -2,43 +2,29 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
+
+func waiverFamily() ownerFamily {
+	return ownerFamily{choose: "a native cut or waiver claim", label: "native waiver action",
+		seat: func(raw commissioner.RawCommand) (string, leaguerules.Action, bool) {
+			if raw.Args.Waiver == nil {
+				return "", "", false
+			}
+			return raw.Args.Waiver.Franchise, commissioner.OwnerWaiverAction(raw.Command), true
+		}}
+}
 
 // waiverAction is the registered owner action for a native cut or waiver claim; native_gate_test.go holds
 // both to the gate with the rest.
 func waiverAction(command string) NativeOwnerAction {
-	return NativeOwnerAction{Name: command, Opens: commissioner.OwnerWaiverAction(command), Run: runWaiverAction}
-}
-
-// runWaiverAction records a cut or claim cleared by the gate. The store re-asks the gate inside its own
-// transaction and makes the waiver decision there.
-func runWaiverAction(ctx context.Context, a *App, permit commissioner.Permit,
-	input json.RawMessage) (commissioner.Receipt, error) {
-	var raw commissioner.RawCommand
-	if err := json.Unmarshal(input, &raw); err != nil || raw.Args.Waiver == nil {
-		return commissioner.Receipt{}, fmt.Errorf("choose a native cut or waiver claim")
-	}
-	if permit.League() != raw.League || permit.Franchise() != raw.Args.Waiver.Franchise ||
-		permit.Action() != commissioner.OwnerWaiverAction(raw.Command) {
-		return commissioner.Receipt{}, fmt.Errorf("ask the league calendar before acting")
-	}
-	principal, err := a.commissionerPrincipal()
-	if err != nil {
-		return commissioner.Receipt{}, err
-	}
-	ctx, cancel := context.WithTimeout(ctx, refreshTimeout)
-	defer cancel()
-	receipt, err := a.history.ExecuteCommissionerWithFacts(ctx, raw, principal, nil, a.nativeFacts(), a.ownerZone())
-	if err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("record native waiver action: %w", err)
-	}
-	return receipt, nil
+	return NativeOwnerAction{Name: command, Opens: commissioner.OwnerWaiverAction(command),
+		Run: recordOwnerAction(waiverFamily())}
 }
 
 // TargetNativeWaiverAction is the owner door; identity comes from the local session, not the request.
@@ -46,28 +32,7 @@ func (a *App) TargetNativeWaiverAction(raw commissioner.RawCommand) (commissione
 	if commissioner.OwnerWaiverAction(raw.Command) == "" || raw.Args.WaiverOutcome != nil {
 		return commissioner.Receipt{}, fmt.Errorf("choose a native cut or waiver claim")
 	}
-	if err := raw.Validate(); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("native action input: %w", err)
-	}
-	if err := a.ready(); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("native action startup: %w", err)
-	}
-	principal, err := a.commissionerPrincipal()
-	if err != nil {
-		return commissioner.Receipt{}, err
-	}
-	if receipt, retried, err := a.nativeWaiverRetry(raw, principal); retried || err != nil {
-		return receipt, err
-	}
-	body, err := json.Marshal(raw)
-	if err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("native action input: %w", err)
-	}
-	receipt, err := a.runNativeAction(nativeOwnerActions(), raw.League, raw.Args.Waiver.Franchise, raw.Command, body)
-	if err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("native waiver action: %w", err)
-	}
-	return receipt, nil
+	return a.submitOwnerAction(raw, waiverFamily())
 }
 
 func (a *App) TargetNativeWaivers(league, franchise string, at time.Time) (commissioner.NativeWaivers, error) {
@@ -117,7 +82,7 @@ func (a *App) processNativeWaiversDue(ctx context.Context) {
 }
 
 // A replay does not mutate a roster, so a closed calendar does not discard a recorded receipt.
-func (a *App) nativeWaiverRetry(raw commissioner.RawCommand, principal string) (commissioner.Receipt, bool, error) {
+func (a *App) nativeActionRetry(raw commissioner.RawCommand, principal string) (commissioner.Receipt, bool, error) {
 	_, found, err := a.history.NativeSeedRetry(a.ctx, raw.League, raw.Request)
 	if err != nil {
 		return commissioner.Receipt{}, false, fmt.Errorf("read native action retry: %w", err)

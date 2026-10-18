@@ -70,3 +70,17 @@ func (s *Store) ProcessDueWaivers(ctx context.Context, league string, facts nati
 	}
 	return nil
 }
+
+// NativeBids reads the open and decided bids as one franchise's owner is allowed to see them.
+func (s *Store) NativeBids(ctx context.Context, league, franchise, principal string, at time.Time,
+	zone *time.Location, facts nativecheck.Facts) (commissioner.NativeBids, error) {
+	records, err := s.nativeRecords(ctx, league)
+	if err != nil {
+		return commissioner.NativeBids{}, err
+	}
+	reading, err := commissioner.NativeBidsReading(league, franchise, principal, records, at, zone, facts)
+	if err != nil {
+		return commissioner.NativeBids{}, fmt.Errorf("read native bids: %w", err)
+	}
+	return reading, nil
+}

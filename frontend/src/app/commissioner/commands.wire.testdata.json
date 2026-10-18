@@ -156,6 +156,18 @@
     "safeguard": "reason"
   },
   {
+    "command": "bids.award.override",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "bids.process",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
     "command": "bracket.advance",
     "effective": "now",
     "field": "",
