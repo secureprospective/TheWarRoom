@@ -35,7 +35,8 @@
       "lateAt": "2026-10-14T01:00:00-07:00",
       "lateWords": "A bid placed after Oct 14, 2026 at 1:00 AM PDT must beat the leader by 1.000 points.",
       "lateNow": false,
-      "closes": "Needs a ruling: how long a bid must stand to win"
+      "closesAt": "2026-10-14T05:00:00-07:00",
+      "closes": "Closes Oct 14, 2026 at 5:00 AM PDT"
     }
   ],
   "awards": [

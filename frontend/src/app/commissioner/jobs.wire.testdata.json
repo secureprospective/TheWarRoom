@@ -36,6 +36,28 @@
         ]
       },
       {
+        "id": "waivers",
+        "name": "Waiver processing",
+        "state": "blocked",
+        "words": "Record starting assets first.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-035"
+        ]
+      },
+      {
+        "id": "bids",
+        "name": "Bid processing",
+        "state": "blocked",
+        "words": "Record starting assets first.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-036"
+        ]
+      },
+      {
         "id": "rollover",
         "name": "Rollover",
         "state": "unbuilt",
@@ -112,8 +134,6 @@
           "CM-030",
           "CM-033",
           "CM-034",
-          "CM-035",
-          "CM-036",
           "CM-038",
           "CM-039"
         ]
@@ -143,7 +163,7 @@
         "id": "setup",
         "name": "League setup",
         "state": "live",
-        "words": "111 league rules still need a ruling.",
+        "words": "112 league rules still need a ruling.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -197,6 +217,28 @@
         ]
       },
       {
+        "id": "waivers",
+        "name": "Waiver processing",
+        "state": "blocked",
+        "words": "Record starting assets first.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-035"
+        ]
+      },
+      {
+        "id": "bids",
+        "name": "Bid processing",
+        "state": "blocked",
+        "words": "Record starting assets first.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-036"
+        ]
+      },
+      {
         "id": "rookie_draft",
         "name": "Rookie draft",
         "state": "unbuilt",
@@ -262,8 +304,6 @@
           "CM-030",
           "CM-033",
           "CM-034",
-          "CM-035",
-          "CM-036",
           "CM-038",
           "CM-039"
         ]
@@ -333,6 +373,28 @@
         ]
       },
       {
+        "id": "waivers",
+        "name": "Waiver processing",
+        "state": "blocked",
+        "words": "Record starting assets first.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-035"
+        ]
+      },
+      {
+        "id": "bids",
+        "name": "Bid processing",
+        "state": "blocked",
+        "words": "Record starting assets first.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-036"
+        ]
+      },
+      {
         "id": "rookie_draft",
         "name": "Rookie draft",
         "state": "unbuilt",
@@ -398,8 +460,6 @@
           "CM-030",
           "CM-033",
           "CM-034",
-          "CM-035",
-          "CM-036",
           "CM-038",
           "CM-039"
         ]
@@ -454,6 +514,28 @@
           "CM-024",
           "CM-025",
           "CM-041"
+        ]
+      },
+      {
+        "id": "waivers",
+        "name": "Waiver processing",
+        "state": "blocked",
+        "words": "Record starting assets first.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-035"
+        ]
+      },
+      {
+        "id": "bids",
+        "name": "Bid processing",
+        "state": "blocked",
+        "words": "Record starting assets first.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-036"
         ]
       },
       {
@@ -533,8 +615,6 @@
           "CM-030",
           "CM-033",
           "CM-034",
-          "CM-035",
-          "CM-036",
           "CM-038",
           "CM-039"
         ]

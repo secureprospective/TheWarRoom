@@ -6464,6 +6464,7 @@ export namespace leaguerules {
 	    // Go type: Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_BidTier_
 	    Tiers: any;
 	    MinimumIncrement: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
+	    StandFor: Value_time_Duration_;
 	    SnipeAfter: Value_time_Duration_;
 	    SnipeIncrement: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_;
 	    MultiYearEndWeek: Value_int_;
@@ -6485,6 +6486,7 @@ export namespace leaguerules {
 	        this.OneYearMaximum = this.convertValues(source["OneYearMaximum"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Money_);
 	        this.Tiers = this.convertValues(source["Tiers"], null);
 	        this.MinimumIncrement = this.convertValues(source["MinimumIncrement"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
+	        this.StandFor = this.convertValues(source["StandFor"], Value_time_Duration_);
 	        this.SnipeAfter = this.convertValues(source["SnipeAfter"], Value_time_Duration_);
 	        this.SnipeIncrement = this.convertValues(source["SnipeIncrement"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
 	        this.MultiYearEndWeek = this.convertValues(source["MultiYearEndWeek"], Value_int_);

@@ -189,9 +189,9 @@ func draftCheckpoints(records []Record, season int, facts nativecheck.Facts) []D
 
 // draftSeasonNext is the season of the first rookie draft nobody has closed that this league has yet to run:
 // one with a pick still waiting to be ordered. The picks of a draft run before the league began are history.
-func draftSeasonNext(records []Record, at time.Time) (int, error) {
+func draftSeasonNext(league string, records []Record, at time.Time) (int, error) {
 	through := recordsThrough(records, at)
-	assets, err := NativeAssetsReading("", through)
+	assets, err := NativeAssetsReading(league, through)
 	if err != nil {
 		return 0, err
 	}

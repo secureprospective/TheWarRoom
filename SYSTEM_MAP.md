@@ -787,11 +787,16 @@ again at the decision. `bid_projector.go` replays bids and decisions with the na
 contract his live bid named, flat, expiring in `season + years - 1`), so a compensating revert undoes a decision
 and a reopen replays it. `bid_reading.go` gives `TargetNativeBids(league, franchise)`: blind bids are visible only
 to their owner (even their existence), open bids show the leader and the late-bid countdown, awards are public and
-a losing bid is shown only to its owner; the mode read is the rule in force now. A bid's closing time needs a
-league rule for how long a bid must stand, which the catalogue does not yet hold, so every closing time reads
-"Needs a ruling" (`bidStandFor`). `internal/store/history/native_bids.go` takes the NFL week and playoff field from
-a `BidEnvironmentSource` (the app supplies the week from held NFL week dates and no playoff standing); without
-a week a bid is refused in words. `native_bids_app.go` exposes `TargetNativeBidAction(RawCommand)` and
+a losing bid is shown only to its owner; the mode read is the rule in force now. `bids.standFor` dates each
+open auction's close in the viewer's zone; every new bid restarts it.
+`commissioner.DueBids` uses the same decision policy as manual processing, leaving ties and players on
+waivers undecided. `internal/store/history/native_bid_clock.go` submits due awards through the append
+transaction with a process-only authorizer and rechecks eligibility under its lock. The managed waiver
+clock also runs the bid worker, resuming persisted auctions on startup. `BidEnvironmentSource` supplies
+the held NFL week and the native bracket's playoff field. Before the first held kickoff, or after a held
+rollover and before September when no schedule is held, week-specific limits do not apply; other missing
+weeks remain refused. The jobs reading reports the native waiver and bid queues as built without exposing
+blind auction counts or times. `native_bids_app.go` exposes `TargetNativeBidAction(RawCommand)` and
 `TargetNativeBids(league, franchise)`, and registers all three owner actions with the native gate.
 Restricted free-agent bids wait for the tender step, which the app does not yet record.
 

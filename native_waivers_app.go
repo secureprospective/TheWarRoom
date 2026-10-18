@@ -56,13 +56,14 @@ func (a *App) TargetNativeWaivers(league, franchise string, at time.Time) (commi
 // draftLookEvery is how often the clock looks for a rookie draft that has used its last pick.
 const draftLookEvery = 15 * time.Second
 
-// nativeWaiverClock resumes persisted windows on startup and checks them without any network feed.
+// nativeWaiverClock resumes persisted waiver windows, bid clocks and finished drafts without any network feed.
 func (a *App) nativeWaiverClock(ctx context.Context) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	var lastDrafts time.Time
 	for {
 		a.processNativeWaiversDue(ctx)
+		a.processNativeBidsDue(ctx)
 		// A finished draft is found by reading each draft, so that look is taken every few seconds.
 		if time.Since(lastDrafts) >= draftLookEvery {
 			lastDrafts = time.Now()

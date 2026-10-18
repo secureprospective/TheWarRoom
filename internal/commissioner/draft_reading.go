@@ -152,7 +152,7 @@ func NativeDraftReading(scope RawNativeDraftScope, records []Record, local *time
 		return NativeDraft{}, fmt.Errorf("choose a franchise in this app league")
 	}
 	if scope.Season == 0 {
-		season, err := draftSeasonNext(records, scope.At)
+		season, err := draftSeasonNext(scope.League, records, scope.At)
 		if err != nil {
 			return NativeDraft{}, err
 		}
