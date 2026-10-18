@@ -37,6 +37,13 @@ type NativePlayerScore struct {
 
 func NativePlayerScoreReading(league string, scope source.RawNativeScope, records []Record,
 	evidence source.NativeEvidence, now time.Time) (NativePlayerScore, error) {
+	return NativePlayerScoreWith(league, scope, records, evidence, now, RulesInForce)
+}
+
+// NativePlayerScoreWith reads a player's score with the given resolver, so a reading that scores many players
+// can resolve the season's rules once. The resolver is called only when the player's rules are needed.
+func NativePlayerScoreWith(league string, scope source.RawNativeScope, records []Record,
+	evidence source.NativeEvidence, now time.Time, resolve RulesFunc) (NativePlayerScore, error) {
 	out := NativePlayerScore{League: league, Player: scope.Player, Season: scope.Season, Week: scope.Week,
 		Status: "Unavailable", Missing: []string{}, Items: []NativeScoreItem{}, Changes: []ScoreChange{}}
 	if err := scope.Validate(); err != nil {
@@ -49,7 +56,7 @@ func NativePlayerScoreReading(league string, scope source.RawNativeScope, record
 		out.Words = "Record the starting snapshot first"
 		return out, nil
 	}
-	rules, err := RulesInForce(records, scope.Season, ReadingInstant(records, now))
+	rules, err := resolve(records, scope.Season, ReadingInstant(records, now))
 	if err != nil {
 		return out, err
 	}

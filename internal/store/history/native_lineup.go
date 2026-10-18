@@ -105,8 +105,8 @@ func (s *Store) lineupCorrectionPreview(ctx context.Context, records []commissio
 	if err != nil {
 		return commissioner.ScorePreview{}, err
 	}
-	out, err := commissioner.LineupCorrectionPreview(ctx, raw.League, records, s.nativeSources(raw.League, change.Season),
-		raw, env, s.now())
+	src := s.nativeSources(raw.League, change.Season)
+	out, err := commissioner.LineupCorrectionPreview(ctx, raw.League, records, src, raw, env, src.now)
 	if err != nil {
 		return commissioner.ScorePreview{}, fmt.Errorf("preview lineup correction: %w", err)
 	}

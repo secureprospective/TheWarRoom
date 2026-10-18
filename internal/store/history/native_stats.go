@@ -97,7 +97,7 @@ func (s *Store) StatQueue(ctx context.Context, league string, season int) (commi
 	for _, week := range weeks {
 		sources.held[source.RawNativeScope{Player: week.Player, Season: season, Week: week.Week}] = week.Evidence
 	}
-	out, err := commissioner.StatQueueReading(ctx, league, records, held{weeks, feed}, sources, season, s.now())
+	out, err := commissioner.StatQueueReading(ctx, league, records, held{weeks, feed}, sources, season, sources.now)
 	if err != nil {
 		return commissioner.StatQueue{}, fmt.Errorf("read statistics queue: %w", err)
 	}
@@ -141,8 +141,9 @@ func (s *Store) statChangePreview(ctx context.Context, records []commissioner.Re
 		return commissioner.ScorePreview{}, fmt.Errorf("read the statistic change: %w", err)
 	}
 	_, season, _ := change.Scope()
-	out, err := commissioner.StatChangePreview(ctx, raw.League, records, s.nativeSources(raw.League, season),
-		seasonStatFeed{store: s, season: season}, week, raw, s.now())
+	src := s.nativeSources(raw.League, season)
+	out, err := commissioner.StatChangePreview(ctx, raw.League, records, src,
+		seasonStatFeed{store: s, season: season}, week, raw, src.now)
 	if err != nil {
 		return commissioner.ScorePreview{}, fmt.Errorf("preview statistic change: %w", err)
 	}

@@ -3,6 +3,7 @@ package history
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
@@ -38,18 +39,22 @@ func (s *Store) SetNativeLineups(lineups LineupSource) {
 }
 
 // nativeSources is one reading's view of lineups and player scores. Held evidence does not depend on the
-// ledger, so a player's week is read once however many ledgers it is scored under.
+// ledger, so a player's week is read once however many ledgers it is scored under. The reading's clock is
+// taken once and its rules are resolved once per ledger, however many players are scored; a ledger with a
+// proposed change in it is a different ledger and resolves for itself.
 type nativeSources struct {
 	store  *Store
 	league string
 	season int
+	now    time.Time
 	held   map[source.RawNativeScope]source.NativeEvidence
+	rules  *commissioner.RulesMemo
 	facts  nativecheck.Facts
 }
 
 func (s *Store) nativeSources(league string, season int) *nativeSources {
-	return &nativeSources{store: s, league: league, season: season,
-		held: map[source.RawNativeScope]source.NativeEvidence{}}
+	return &nativeSources{store: s, league: league, season: season, now: s.now(),
+		held: map[source.RawNativeScope]source.NativeEvidence{}, rules: commissioner.NewRulesMemo()}
 }
 
 func (n *nativeSources) Lineup(ctx context.Context, records []commissioner.Record, franchise string,
@@ -90,7 +95,7 @@ func (n *nativeSources) PlayerScore(ctx context.Context, records []commissioner.
 		}
 		evidence = held
 	}
-	reading, err := commissioner.NativePlayerScoreReading(n.league, scope, records, evidence, n.store.now())
+	reading, err := commissioner.NativePlayerScoreWith(n.league, scope, records, evidence, n.now, n.rules.InForce)
 	if err != nil {
 		return commissioner.NativePlayerScore{}, fmt.Errorf("read native score: %w", err)
 	}
@@ -103,7 +108,8 @@ func (s *Store) NativeResults(ctx context.Context, league string, season, week i
 	if err != nil {
 		return commissioner.NativeResults{}, err
 	}
-	out, err := commissioner.NativeResultsReading(ctx, league, records, s.nativeSources(league, season), season, week, s.now())
+	src := s.nativeSources(league, season)
+	out, err := commissioner.NativeResultsReading(ctx, league, records, src, season, week, src.now)
 	if err != nil {
 		return commissioner.NativeResults{}, fmt.Errorf("read native results: %w", err)
 	}
@@ -116,7 +122,8 @@ func (s *Store) NativeStandings(ctx context.Context, league string, season int) 
 	if err != nil {
 		return commissioner.NativeStandings{}, err
 	}
-	out, err := commissioner.NativeStandingsReading(ctx, league, records, s.nativeSources(league, season), season, s.now())
+	src := s.nativeSources(league, season)
+	out, err := commissioner.NativeStandingsReading(ctx, league, records, src, season, src.now)
 	if err != nil {
 		return commissioner.NativeStandings{}, fmt.Errorf("read native standings: %w", err)
 	}
@@ -139,8 +146,8 @@ func (s *Store) NativeScorePreview(ctx context.Context, raw commissioner.RawComm
 	if raw.Args.Score == nil {
 		return commissioner.ScorePreview{}, fmt.Errorf("preview a score change")
 	}
-	out, err := commissioner.ScoreChangePreview(ctx, raw.League, records, s.nativeSources(raw.League, raw.Args.Score.Season),
-		raw, s.now())
+	src := s.nativeSources(raw.League, raw.Args.Score.Season)
+	out, err := commissioner.ScoreChangePreview(ctx, raw.League, records, src, raw, src.now)
 	if err != nil {
 		return commissioner.ScorePreview{}, fmt.Errorf("preview score change: %w", err)
 	}
@@ -160,7 +167,8 @@ func (s *Store) NativeBracket(ctx context.Context, league string, season int) (c
 			return commissioner.NativeBracket{}, err
 		}
 	}
-	out, err := commissioner.NativeBracketReading(ctx, league, records, s.nativeSources(league, season), season, s.now(), facts)
+	src := s.nativeSources(league, season)
+	out, err := commissioner.NativeBracketReading(ctx, league, records, src, season, src.now, facts)
 	if err != nil {
 		return commissioner.NativeBracket{}, fmt.Errorf("read native bracket: %w", err)
 	}
