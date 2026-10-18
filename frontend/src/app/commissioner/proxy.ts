@@ -100,6 +100,7 @@ export function formOf(body: string): string {
     if (sent.command === 'commish.correction.revert') return `undo:${sent.args?.entry ?? ''}`;
     if (sent.command === 'commish.notice.publish') return 'notice';
     if (sent.command === 'commish.whatsnew.post') return 'note';
+    if (sent.command?.startsWith('draft.')) return sent.command;
     return sent.command?.startsWith('commish.role.') ? 'role' : 'other';
   } catch {
     return 'other';

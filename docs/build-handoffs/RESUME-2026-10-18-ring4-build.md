@@ -1,3 +1,34 @@
+# UPDATE 2026-10-18 16:05 CT: compact-safe point (READ THIS FIRST; supersedes the 15:45 update and the 14:45 block's in-flight/next/ledger)
+
+## State
+- integ2 (`~/work/TheWarRoom/.worktrees/ring-4-integ2`, branch session/ring-4-integ2) tip **d792e394** (c8b merged). On top of it a **c9c merge is STAGED, UNCOMMITTED**: conflicts resolved (command.go union of G3 cases + Correction/Trade/TradeOutcome args; native_seed NativePick has Compensatory + Correction; draft_reading kept HEAD's "draft was run before the league began" guard; SYSTEM_MAP union; models.ts regenerated), runtime modes restored to HEAD, wire fixtures refreshed. `make verify` running → `integ2/verify27.log` (started 15:30, nohup; at 16:01 in the root race run). Waiter task bybobh9ee.
+- Phase branches committed: c8b 070e17a8 (merged), c9c 7fa65ca9, **c10b 963e4f77** (Tom done 15:58; reviewed; my mutant restore-set-aside red→green). c10b WT base is f709bc39 (old): expect conflicts with c9b/c-perf/c8b/c9c. Known one: native_reading.go — integ2 has `seedNativeAssets` (my c8b refactor); c10b adds `seed.Pool = slices.Clone(seed.Pool)` → put it inside seedNativeAssets.
+- **Sol c9b2-bids running** since 15:37 in WT ring-4-c9b2 (from d792e394). Liveness: mtime of `c9b2-bids/sessions/*.jsonl`. Done: non-empty `c9b2-bids/sentinel` (waiter b5pqwi1c3). Brief par/c9b2-bids.full.md (note at top).
+- go-build clear job bmrej1pzx: still waiting for an idle box (no go processes). If lost after compaction: run `/usr/local/go/bin/go clean -cache` by hand when no builder/verify runs, then log in MOVED/MANIFEST/CT105.
+- Caches of c8b, c9c, c10b deleted and logged (15:40, 16:01). /home 185 GB free.
+
+## Next actions, in order
+1. When verify27 shows VERIFY_EXIT=0: commit the c9c merge in integ2 with -F ("Integrate chunk 9c native trades…", note the review fixes: stalled DOT review → commissioner override; PendingTradeCapCheck real). If it fails: read the FAIL, fix, rerun. If verify27 has no exit and no make process (session restarted): rerun verify.
+2. Merge session/ring-4-c10b into integ2 (`--no-ff --no-commit`), resolve, `wails generate module`, `git checkout HEAD -- frontend/wailsjs/runtime`, `TWR_WRITE_WIRE=1 go test -count=1 -timeout 45m -run 'Wire|TestScheduleEditOwnerRevertRestart' . ./internal/commissioner/`, also rerun Tom's draft wires (`TestTheDraftRoomWireIsWhatGoSends|TestDraftReadingSurvivesReopeningAndFixesTheWire|TestNativeDraftEngineWire`), make verify, commit.
+3. When Sol c9b2 lands: review REPORT + diff, plant one mutant, fix, commit on its branch, merge onto integ2, verify, commit, delete caches + log.
+4. Fix the jobs list (`internal/commissioner/jobs.go`): rookie draft, stat queue, playoffs (and anything else built in ring 4) still say "Not built yet"; c9b2 handles CM-035/036. Show built ones with their real state; test + mutant.
+5. Final: verify, `make build VERSION=dev COMMIT=ring4 BUILD_DATE=ring4`, deploy to Claude-OS (scp to `claudeos:warroom-ring1/thewarroom.new`, `~/warroom-ring1/deploy.sh <old-sha>`), walk the commissioner screens (draft room, trades, corrections, bids) live, PR body from integ2/PR-notes.md (kept current through c10b), ask Christopher one plain question, squash-merge on his go, update Hermes T434.
+
+## Refuted (do not retest)
+- Root tests too slow for 45m: it was CPU contention. Fixed by the catalogue cache + c-perf.
+- A planted `false && a || b` mutant "surviving" was my mutant's precedence, not a weak test; plant mutants as separate assignments.
+
+## Honest status
+c8b merged; c9c merged pending verify27; c10b committed, not merged; c9b2 building. Then jobs-list fix, final verify, live walk, PR. Nothing pushed. Nothing walked live yet.
+
+# UPDATE 2026-10-18 15:45 CT (supersedes the in-flight table, next action 2, ledger and status below)
+- **c8b corrections: merged** as d792e394 (verify26 failed only on the stale safeguards wire fixture, refreshed; wire + commissioner vitest pass). Review fix: the roster-add contract lookup is now one pass (it was quadratic).
+- **c9c trades: committed** 7fa65ca9 on session/ring-4-c9c. Review fixes: a DOT review that can't reach the vote count goes to the commissioner's override; PendingTradeCapCheck is real (corrections wait for a pending trade). **Merge into integ2 is staged, uncommitted** (5 union conflicts resolved, bindings regenerated, runtime modes restored, wires refreshed); `make verify` → integ2/verify27.log. On VERIFY_EXIT=0: commit the merge with -F. If the session restarted: check `git -C ~/work/TheWarRoom/.worktrees/ring-4-integ2 status`, rerun verify if verify27 has no exit.
+- **c9b2 bids: dispatched to Sol 15:37** in NEW WT ring-4-c9b2 (from d792e394, so it needs a merge onto the c9c merge). Transcript c9b2-bids/sessions/*.jsonl. Brief has a continuation note.
+- **c10b draft room: Tom still running** (WT from f709bc39).
+- Caches of c8b, c9c deleted and logged (15:40). go-build clear: still pending an idle moment (no go processes); run `go clean -cache` by hand when builders are quiet.
+- Remaining: c10b, c9b2 → final verify, build, Claude-OS walk, PR.
+
 # RING 4 BUILD: CURRENT STATE 2026-10-18 14:45 CT (read this block first; history below)
 
 **Goal:** "finish ring 4", the commissioner side, native and app-owned (spec §16). Repo `~/work/TheWarRoom`. The main checkout is Christopher's Lab branch: NEVER touch it. The integration branch `session/ring-4-integ2` is in WT `.worktrees/ring-4-integ2`, tip **c150325a** (verify25 exit 0, 26 min, root race 1461s). Nothing is pushed.

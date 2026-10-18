@@ -49,6 +49,10 @@ type NativeStandings struct {
 	Computed []StandingRow          `json:"computed"`
 	Override *StandingsOverrideView `json:"override,omitempty"`
 	Changes  []ScoreChange          `json:"changes"`
+	// level and overrideLevel are the teams left level by the computed ranking and by the ranking under the
+	// commissioner's records; the draft's first round reads them to apply its own tie rule.
+	level, overrideLevel [][]string
+	regularWeeks         int
 }
 
 // seasonGames is every decided game and complete score of the counted weeks.
@@ -107,6 +111,7 @@ func NativeStandingsReading(ctx context.Context, league string, records []Record
 	if err != nil {
 		return out, err
 	}
+	out.regularWeeks = rules.Schedule.RegularWeeks.Value
 	out.Through = min(rules.Schedule.RegularWeeks.Value, len(published))
 	counted, err := countSeason(ctx, league, records, src, rules.Lineup, directory, published[:out.Through], season)
 	if err != nil {
@@ -175,7 +180,7 @@ func (out NativeStandings) rank(rules leaguerules.RuleSet, directory NativeDirec
 	input := rankInput{teams: teams, games: counted.games, allPlay: counted.allPlay, points: counted.points,
 		criteria: rules.Standings.Criteria.Value}
 	computed := rankStandings(input)
-	out.Computed = standingRows(computed, teams, counted.points, nil)
+	out.Computed, out.level = standingRows(computed, teams, counted.points, nil), computed.level
 	out.NoData = computed.skipped
 	out.Decided, out.Pending, out.Status = counted.decided, counted.pending, "Ranked"
 	out.Words = fmt.Sprintf("Standings through week %d: %d games have a result, %d do not yet", out.Through,
@@ -199,7 +204,7 @@ func (out NativeStandings) rank(rules leaguerules.RuleSet, directory NativeDirec
 		view.Rows = overrideOrderRows(view.Rows, *adjustments.Order)
 		view.Words = "The commissioner set the order by hand: " + adjustments.Order.Reason
 	}
-	out.Override = view
+	out.Override, out.overrideLevel = view, stands.level
 	return out, nil
 }
 

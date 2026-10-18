@@ -76,6 +76,7 @@ func seedNativeAssets(league string, records []Record) (NativeAssets, error) {
 		seed.Players = slices.Clone(seed.Players)
 		seed.Picks = slices.Clone(seed.Picks)
 		seed.Adjustments = slices.Clone(seed.Adjustments)
+		seed.Pool = slices.Clone(seed.Pool)
 		out.Seeded, out.Entry, out.Snapshot = true, r.Receipt.Entry, &seed
 		out.Source = "App league; starting snapshot recorded from held data, never synced with MFL"
 	}

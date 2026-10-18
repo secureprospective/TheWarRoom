@@ -741,20 +741,20 @@
         },
         {
           "id": "CM-043",
-          "built": false,
-          "note": "",
+          "built": true,
+          "note": "Work the live draft from Trade Floor › Draft room: skip, choose, add or change a pick, and pause or set the clock.",
           "fields": []
         },
         {
           "id": "CM-044",
-          "built": false,
-          "note": "",
+          "built": true,
+          "note": "Restore a draft to an earlier point from Trade Floor › Draft room. Nothing is erased.",
           "fields": []
         },
         {
           "id": "CM-045",
-          "built": false,
-          "note": "",
+          "built": true,
+          "note": "A draft closes itself at its last pick; the Draft room can close it sooner.",
           "fields": []
         }
       ]

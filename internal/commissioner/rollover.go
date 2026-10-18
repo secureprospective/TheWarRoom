@@ -106,6 +106,7 @@ func cloneRolloverAssets(seed RawNativeSnapshot) RawNativeSnapshot {
 	seed.Players = slices.Clone(seed.Players)
 	seed.Picks = slices.Clone(seed.Picks)
 	seed.Adjustments = slices.Clone(seed.Adjustments)
+	seed.Pool = slices.Clone(seed.Pool)
 	return seed
 }
 

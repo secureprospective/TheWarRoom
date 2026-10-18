@@ -40,12 +40,20 @@ type resultsFixture struct {
 	incomplete bool
 }
 
-func resultsTest(t *testing.T) *resultsFixture {
+func resultsTest(t *testing.T) *resultsFixture { return resultsTestSeeded(t, nil) }
+
+// resultsTestSeeded is resultsTest with the starting snapshot changed by seed before it is recorded.
+func resultsTestSeeded(t *testing.T, seed func(*commissioner.NativeAssets)) *resultsFixture {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "results.db")
 	s, pools := statStore(t, path)
 	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
-	runScoreCommand(t, s, heldSeedCommand(t), "creator")
+	held := heldSeedCommand(t)
+	if seed != nil {
+		assets := commissioner.NativeAssets{Snapshot: held.Args.Native}
+		seed(&assets)
+	}
+	runScoreCommand(t, s, held, "creator")
 	runScoreCommand(t, s, ruleCommand("schedule.regularWeeks", "3", "now", "Choose the season length", 2), "creator")
 	// These fixtures start one player per franchise, which is not a legal lineup, so the invalid-lineup
 	// penalty would zero every score. The lineup tests below keep the penalty and use legal lineups.

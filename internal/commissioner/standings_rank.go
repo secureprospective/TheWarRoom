@@ -43,6 +43,8 @@ type ranking struct {
 	records map[string]tally
 	why     map[string][]string
 	skipped []string
+	// level lists each group of teams every tie-breaker left level, which the order only keeps in league order.
+	level [][]string
 }
 
 // rankKey is a comparable value: a fraction, so a record compares exactly.
@@ -257,6 +259,7 @@ func (r *ranker) rank(group []string, depth int) []string {
 		return ordered
 	}
 	if len(group) > 1 {
+		r.out.level = append(r.out.level, append([]string{}, group...))
 		r.note(group, strings.Join(seen.skippedLines(), " ")+fmt.Sprintf(
 			" %s remain level on the available tie-breakers, so they are listed in the league's franchise order.",
 			capital(r.namesOf(group))))

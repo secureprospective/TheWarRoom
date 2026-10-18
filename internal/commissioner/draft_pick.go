@@ -34,7 +34,7 @@ func (i DraftPickInput) Validate() error {
 // turn, the player an unowned rookie of the season, and the contract must fit the roster and the cap. It
 // returns the command to record, carrying the slot and the contract fixed now. Every refusal is in words.
 func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts, at time.Time,
-	local *time.Location) (RawCommand, error) {
+	local *time.Location, standings DraftStandings) (RawCommand, error) {
 	if err := in.Validate(); err != nil {
 		return RawCommand{}, Refused(err)
 	}
@@ -45,12 +45,18 @@ func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts,
 	if err != nil || id.String() != in.Player {
 		return RawCommand{}, Refused(fmt.Errorf("choose a rookie from this season's player pool"))
 	}
-	basis, err := readDraft(records, in.Season, at)
+	basis, err := readDraft(records, in.Season, at, standings)
 	if err != nil {
 		return RawCommand{}, err
 	}
 	if basis.words != "" {
 		return RawCommand{}, Refused(fmt.Errorf("the draft is not ready: %s", strings.TrimSuffix(basis.words, ".")))
+	}
+	if basis.closed != nil {
+		return RawCommand{}, Refused(fmt.Errorf("the %d rookie draft is closed", in.Season))
+	}
+	if basis.draft.OnClock != nil && basis.draft.OnClock.Paused {
+		return RawCommand{}, Refused(fmt.Errorf("the draft clock is paused; wait for the commissioner to resume it"))
 	}
 	assets, err := NativeAssetsReading(in.League, recordsThrough(records, at))
 	if err != nil {
@@ -99,17 +105,55 @@ func pickBasis(assets NativeAssets, basis draftBasis, in DraftPickInput, facts n
 func applyDraftPick(seed *RawNativeSnapshot, record Record) {
 	d := record.Command.Args.Draft
 	p := d.Pick
+	signRookie(seed, d.Season, p.Player, p.Franchise, p.Round, p.Slot, p.Terms)
+	markPick(seed, d.Season, p.Round, p.Original, p.Slot, p.Player)
+}
+
+// signRookie puts a drafted rookie on a roster under the contract his slot fixed.
+func signRookie(seed *RawNativeSnapshot, season int, player, franchise string, round, slot int, terms rookiedraft.Terms) {
 	status := domain.CStatusUFA
-	if p.Terms.RFAAfter {
+	if terms.RFAAfter {
 		status = domain.CStatusRFA
 	}
-	seed.Players = append(seed.Players, NativePlayer{ID: p.Player, Franchise: p.Franchise,
-		Status: domain.RosterActive, Salary: p.Terms.Salary, ExpirationYear: d.Season + p.Terms.Years - 1,
+	seed.Players = append(seed.Players, NativePlayer{ID: player, Franchise: franchise, RookieRound: round,
+		Status: domain.RosterActive, Salary: terms.Salary, ExpirationYear: season + terms.Years - 1,
 		ContractStatus: status, ContractInfo: fmt.Sprintf("Rookie contract, round %d pick %d of the %d draft",
-			p.Round, p.Slot, d.Season)})
+			round, slot, season)})
+}
+
+// markPick records which rookie a scheduled pick was used on, and where it fell.
+func markPick(seed *RawNativeSnapshot, season, round int, original string, slot int, player string) {
 	for i, pick := range seed.Picks {
-		if pick.Season == d.Season && pick.Round == p.Round && pick.Original == p.Original {
-			seed.Picks[i].Slot, seed.Picks[i].Player = p.Slot, p.Player
+		if pick.Season == season && pick.Round == round && pick.Original == original {
+			seed.Picks[i].Slot, seed.Picks[i].Player = slot, player
+		}
+	}
+}
+
+// applyDraftTray gives the rookie a commissioner chose, or added, his contract; a chosen pick is marked used.
+func applyDraftTray(seed *RawNativeSnapshot, record Record) {
+	d, o := record.Command.Args.Draft, record.Command.Args.DraftOutcome
+	if o == nil || o.Terms == nil {
+		return
+	}
+	signRookie(seed, d.Season, d.Act.Player, o.Franchise, d.Act.Round, o.Slot, *o.Terms)
+	if record.Command.Command == DraftAssign && d.Act.Extra == 0 {
+		markPick(seed, d.Season, d.Act.Round, d.Act.Original, o.Slot, d.Act.Player)
+	}
+}
+
+// applyDraftChange swaps the rookie a pick holds: the new one takes the contract, and the old one leaves the
+// roster to be undrafted.
+func applyDraftChange(seed *RawNativeSnapshot, record Record) {
+	d := record.Command.Args.Draft
+	for i := range seed.Players {
+		if seed.Players[i].ID == d.Act.Replaces {
+			seed.Players[i].ID = d.Act.Player
+		}
+	}
+	for i := range seed.Picks {
+		if seed.Picks[i].Player == d.Act.Replaces {
+			seed.Picks[i].Player = d.Act.Player
 		}
 	}
 }

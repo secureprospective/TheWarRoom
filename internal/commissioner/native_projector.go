@@ -52,8 +52,8 @@ func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *
 		return applyAssetCorrection(assets.Snapshot, records[:i], record)
 	case SeasonRollover:
 		return applyNativeRollover(assets, record)
-	case DraftPick:
-		applyDraftPick(assets.Snapshot, record)
+	case DraftPick, DraftAssign, DraftInsert, DraftChange, DraftArchive:
+		projectDraftEntry(assets.Snapshot, record)
 	case ContractEdit, CapAdjust, CapRelief, ReserveException:
 		if !assets.Seeded {
 			return fmt.Errorf("a native correction has no starting assets")
@@ -69,6 +69,20 @@ func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *
 		return applyNativeOverride(assets.Snapshot, record, value, rules.Season)
 	}
 	return nil
+}
+
+// projectDraftEntry applies a live draft entry: a pick, a commissioner's tray move or the draft's close.
+func projectDraftEntry(seed *RawNativeSnapshot, record Record) {
+	switch record.Command.Command {
+	case DraftPick:
+		applyDraftPick(seed, record)
+	case DraftAssign, DraftInsert:
+		applyDraftTray(seed, record)
+	case DraftChange:
+		applyDraftChange(seed, record)
+	case DraftArchive:
+		applyDraftClose(seed, record)
+	}
 }
 
 func applyNativeOverride(seed *RawNativeSnapshot, record Record, value RawNativeOverride, season int) error {

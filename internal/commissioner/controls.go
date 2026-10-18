@@ -56,15 +56,18 @@ func partlyThere() map[string]string {
 	}
 }
 
-// otherwiseBuilt are rows with a working screen that owns no rule: roles, notices, league notes, data
-// refresh and the ledger.
+// otherwiseBuilt are rows with a working screen that owns no rule: roles, the live draft, notices, league
+// notes, data refresh and the ledger.
 func otherwiseBuilt() []string {
-	return []string{"CM-021", "CM-052", "CM-053", "CM-054", "CM-056"}
+	return []string{"CM-021", "CM-043", "CM-044", "CM-045", "CM-052", "CM-053", "CM-054", "CM-056"}
 }
 
 // builtNotes are what a person should know about a row that works, so it never promises more.
 func builtNotes() map[string]string {
 	return map[string]string{
+		"CM-043": "Work the live draft from Trade Floor › Draft room: skip, choose, add or change a pick, and pause or set the clock.",
+		"CM-044": "Restore a draft to an earlier point from Trade Floor › Draft room. Nothing is erased.",
+		"CM-045": "A draft closes itself at its last pick; the Draft room can close it sooner.",
 		"CM-051": "The app tells owners inside the app only. It sends no email and no messages.",
 		"CM-052": "Notices are shown to owners in the app. The app sends no email and no messages.",
 		"CM-054": "Refresh and re-read live in Control Room › Data and sources.",

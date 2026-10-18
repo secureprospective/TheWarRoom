@@ -484,9 +484,38 @@ the commissioner stream without commissioner permission: root `native_draft_app.
 checks the franchise's seated owner, replays the draft, judges roster and cap and appends in one immediate
 transaction. Go fixes the slot and contract in the record; `TargetCommissionerExecute` refuses `draft.pick`.
 `native_projector.go` gives a drafted rookie his contract in the native assets. `TargetNativeDraft` reads
-the order, picks, clock and the viewer's next pick in the viewer's time zone. Final standings are not built:
-round one's automatic order says so until a commissioner sets it. The live tray, draft revert and close
-(CM-043..045) are not built.
+the order, picks, clock and the viewer's next pick in the viewer's time zone; a season of zero reads the
+first draft nobody has closed (`draftSeasonNext`).
+
+Round one follows the final standings of the season before the draft's season. `readDraft` takes a
+`DraftStandings` seam (`draft_standings.go`) because the standings need the result sources only the store
+holds: `history.draftStandings` (`internal/store/history/draft.go`) builds it over
+`NativeStandingsReading`, read once per season and instant. It refuses in words while any regular-season game
+of that season has no result, orders worst first, and applies the draft's tie rule (`draft.order.tiebreak`,
+"League franchise order" or its reverse) only to franchises the standings leave level, refusing with "Needs a
+ruling" when the rule is unset and a tie exists. Once the draft starts, round one is read as the standings
+stood at the start, so a result corrected later cannot move it.
+
+The live draft (CM-043..045) is recorded acts replayed by `rookiedraft.ReplayActs` (`acts.go`): `draft.skip`,
+`.assign`, `.insert`, `.change` and `.timer` (pause, resume, set) at G3 with a typed reason, `draft.revert to`
+at G3 and `draft.archive` at G2 (`draft_tray.go`). An expired clock skips its pick when the draft is read, at
+that pick's own deadline, and a commissioner may still give it a rookie; an insertion is always a person's;
+`change` names the rookie the commissioner saw, so a pick that moved is refused rather than retargeted. Go
+fixes each rookie's contract in `DraftOutcome` when the act is recorded. A restore (`draft_revert.go`) marks
+inactive the live entries after its checkpoint; nothing is deleted, and reading the ledger as it stood before
+the restore gives the other state. A close (`draft_close.go`) records the undrafted rookies, who join the
+native free-agent pool, and the picks issued for the next two seasons (every franchise, the draft's rounds,
+tradable at once). The app closes a draft that has used its last pick, as `native.draft.clock`, from the
+waiver clock (`processNativeDraftsDue`); a person may close it sooner. `checkLiveDraft` tries every live
+change against the draft as it would stand, so the replay that reads it later is the one that refuses it
+now, and `DraftPreview` (`draft_preview.go`) words each change for the tray.
+
+`frontend/src/app/draftroom/` is the lazy Draft room above the Draft lab in Trade Floor › Draft room: the
+clock with a countdown and the pick's close in the viewer's own time (`DraftClock`), the board by round
+(`DraftBoard`), the owner's own pick (`YourPick`, `TargetNativeDraftPick`), what a close did
+(`DraftOutcome`) and, for a co-commissioner or above, the shared side tray (`DraftTray`, `trayAction.ts`).
+`draftRoom` (`state.ts`) holds the reading; `draft.wire.testdata.json` is Go-written
+(`TestTheDraftRoomWireIsWhatGoSends`).
 
 ## Native contract action settings
 

@@ -93,9 +93,6 @@ func firstRound(r leaguerules.DraftRules, franchises []string, standings FinalSt
 	if err != nil {
 		return nil, err.Error()
 	}
-	if r.TieRule.State != leaguerules.IsKnown {
-		return nil, "Needs a ruling: draft order tie breaker"
-	}
 	if err := validateOrder(teams, franchises); err != nil {
 		return nil, err.Error()
 	}

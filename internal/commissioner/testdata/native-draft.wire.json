@@ -194,7 +194,7 @@
     "order": [
       {
         "round": 1,
-        "words": "The draft order needs the final standings, which are not built yet.",
+        "words": "The draft order needs the final standings of season 2026. The league schedule is not published yet, so there are no games to rank.",
         "picks": []
       },
       {
@@ -218,7 +218,7 @@
         "picks": []
       }
     ],
-    "words": "The draft order needs the final standings, which are not built yet.",
+    "words": "The draft order needs the final standings of season 2026. The league schedule is not published yet, so there are no games to rank.",
     "draft": {
       "start": "0001-01-01T00:00:00Z",
       "started": false,
@@ -226,7 +226,11 @@
       "picks": [],
       "onClock": null
     },
-    "nextOwnedPick": null
+    "nextOwnedPick": null,
+    "closed": null,
+    "players": {},
+    "available": [],
+    "checkpoints": []
   },
   "running": {
     "league": "native.seed",
@@ -279,7 +283,7 @@
       },
       {
         "label": "Draft order overrides",
-        "words": "1: franchise.03; franchise.02; franchise.01; franchise.04; franchise.05; franchise.06; franchise.07; franchise.08; franchise.09; franchise.10; franchise.11; franchise.12; franchise.13; franchise.14; franchise.15; franchise.16; franchise.17; franchise.18; franchise.19; franchise.20; franchise.21; franchise.22; franchise.23; franchise.24; franchise.25; franchise.26; franchise.27; franchise.28; franchise.29; franchise.30; franchise.31; franchise.32; 2: franchise.03; franchise.02; franchise.01; franchise.04; franchise.05; franchise.06; franchise.07; franchise.08; franchise.09; franchise.10; franchise.11; franchise.12; franchise.13; franchise.14; franchise.15; franchise.16; franchise.17; franchise.18; franchise.19; franchise.20; franchise.21; franchise.22; franchise.23; franchise.24; franchise.25; franchise.26; franchise.27; franchise.28; franchise.29; franchise.30; franchise.31; franchise.32; 3: franchise.03; franchise.02; franchise.01; franchise.04; franchise.05; franchise.06; franchise.07; franchise.08; franchise.09; franchise.10; franchise.11; franchise.12; franchise.13; franchise.14; franchise.15; franchise.16; franchise.17; franchise.18; franchise.19; franchise.20; franchise.21; franchise.22; franchise.23; franchise.24; franchise.25; franchise.26; franchise.27; franchise.28; franchise.29; franchise.30; franchise.31; franchise.32; 4: franchise.03; franchise.02; franchise.01; franchise.04; franchise.05; franchise.06; franchise.07; franchise.08; franchise.09; franchise.10; franchise.11; franchise.12; franchise.13; franchise.14; franchise.15; franchise.16; franchise.17; franchise.18; franchise.19; franchise.20; franchise.21; franchise.22; franchise.23; franchise.24; franchise.25; franchise.26; franchise.27; franchise.28; franchise.29; franchise.30; franchise.31; franchise.32; 5: franchise.03; franchise.02; franchise.01; franchise.04; franchise.05; franchise.06; franchise.07; franchise.08; franchise.09; franchise.10; franchise.11; franchise.12; franchise.13; franchise.14; franchise.15; franchise.16; franchise.17; franchise.18; franchise.19; franchise.20; franchise.21; franchise.22; franchise.23; franchise.24; franchise.25; franchise.26; franchise.27; franchise.28; franchise.29; franchise.30; franchise.31; franchise.32"
+        "words": "1: Held team 3; Held team 2; Held team 1; Held team 4; Held team 5; Held team 6; Held team 7; Held team 8; Held team 9; Held team 10; Held team 11; Held team 12; Held team 13; Held team 14; Held team 15; Held team 16; Held team 17; Held team 18; Held team 19; Held team 20; Held team 21; Held team 22; Held team 23; Held team 24; Held team 25; Held team 26; Held team 27; Held team 28; Held team 29; Held team 30; Held team 31; Held team 32; 2: Held team 3; Held team 2; Held team 1; Held team 4; Held team 5; Held team 6; Held team 7; Held team 8; Held team 9; Held team 10; Held team 11; Held team 12; Held team 13; Held team 14; Held team 15; Held team 16; Held team 17; Held team 18; Held team 19; Held team 20; Held team 21; Held team 22; Held team 23; Held team 24; Held team 25; Held team 26; Held team 27; Held team 28; Held team 29; Held team 30; Held team 31; Held team 32; 3: Held team 3; Held team 2; Held team 1; Held team 4; Held team 5; Held team 6; Held team 7; Held team 8; Held team 9; Held team 10; Held team 11; Held team 12; Held team 13; Held team 14; Held team 15; Held team 16; Held team 17; Held team 18; Held team 19; Held team 20; Held team 21; Held team 22; Held team 23; Held team 24; Held team 25; Held team 26; Held team 27; Held team 28; Held team 29; Held team 30; Held team 31; Held team 32; 4: Held team 3; Held team 2; Held team 1; Held team 4; Held team 5; Held team 6; Held team 7; Held team 8; Held team 9; Held team 10; Held team 11; Held team 12; Held team 13; Held team 14; Held team 15; Held team 16; Held team 17; Held team 18; Held team 19; Held team 20; Held team 21; Held team 22; Held team 23; Held team 24; Held team 25; Held team 26; Held team 27; Held team 28; Held team 29; Held team 30; Held team 31; Held team 32; 5: Held team 3; Held team 2; Held team 1; Held team 4; Held team 5; Held team 6; Held team 7; Held team 8; Held team 9; Held team 10; Held team 11; Held team 12; Held team 13; Held team 14; Held team 15; Held team 16; Held team 17; Held team 18; Held team 19; Held team 20; Held team 21; Held team 22; Held team 23; Held team 24; Held team 25; Held team 26; Held team 27; Held team 28; Held team 29; Held team 30; Held team 31; Held team 32"
       },
       {
         "label": "Later round draft pattern",
@@ -1431,7 +1435,8 @@
             "salaryCents": 300000000,
             "years": 5,
             "rfaAfter": false
-          }
+          },
+          "how": "owner"
         },
         {
           "round": 1,
@@ -1440,7 +1445,8 @@
           "slot": 2,
           "skipped": true,
           "forfeited": false,
-          "madeAt": "2027-07-14T16:00:00-07:00"
+          "madeAt": "2027-07-14T16:00:00-07:00",
+          "how": "expired"
         },
         {
           "round": 1,
@@ -2718,7 +2724,9 @@
           "salaryCents": 300000000,
           "years": 5,
           "rfaAfter": false
-        }
+        },
+        "paused": false,
+        "remaining": 19800000000000
       }
     },
     "nextOwnedPick": {
@@ -2726,6 +2734,89 @@
       "original": "franchise.01",
       "owner": "franchise.01",
       "slot": 3
-    }
+    },
+    "closed": null,
+    "players": {
+      "5001": {
+        "id": "5001",
+        "name": "Player, 5001",
+        "position": "WR",
+        "team": "AAA"
+      },
+      "5002": {
+        "id": "5002",
+        "name": "Player, 5002",
+        "position": "WR",
+        "team": "AAA"
+      },
+      "5003": {
+        "id": "5003",
+        "name": "Player, 5003",
+        "position": "WR",
+        "team": "AAA"
+      },
+      "5004": {
+        "id": "5004",
+        "name": "Player, 5004",
+        "position": "WR",
+        "team": "AAA"
+      },
+      "5005": {
+        "id": "5005",
+        "name": "Player, 5005",
+        "position": "WR",
+        "team": "AAA"
+      },
+      "5006": {
+        "id": "5006",
+        "name": "Player, 5006",
+        "position": "WR",
+        "team": "AAA"
+      }
+    },
+    "available": [
+      {
+        "id": "5002",
+        "name": "Player, 5002",
+        "position": "WR",
+        "team": "AAA"
+      },
+      {
+        "id": "5003",
+        "name": "Player, 5003",
+        "position": "WR",
+        "team": "AAA"
+      },
+      {
+        "id": "5004",
+        "name": "Player, 5004",
+        "position": "WR",
+        "team": "AAA"
+      },
+      {
+        "id": "5005",
+        "name": "Player, 5005",
+        "position": "WR",
+        "team": "AAA"
+      },
+      {
+        "id": "5006",
+        "name": "Player, 5006",
+        "position": "WR",
+        "team": "AAA"
+      }
+    ],
+    "checkpoints": [
+      {
+        "entry": "act.8da50596f320d2c9dfea55baad79e52ad1c4118c1f03870163761bbc4a8f81e8",
+        "words": "Picked Player, 5001 for round 1, pick 1 of the 2027 rookie draft",
+        "at": "2027-07-14T17:00:00Z"
+      },
+      {
+        "entry": "act.c4783c24c1e94b1ef1f03f4ac389436249e89e7121b9ec1897f24829c5ef1615",
+        "words": "Set the 2027 rookie draft to start at 2027-07-14T16:00:00Z",
+        "at": "2027-06-01T12:00:00Z"
+      }
+    ]
   }
 }

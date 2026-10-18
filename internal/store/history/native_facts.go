@@ -35,6 +35,7 @@ type appendFacts struct {
 	lineup commissioner.LineupFacts
 	stat   commissioner.StatFacts
 	bid    commissioner.BidEnvironment
+	draft  commissioner.DraftStandings
 }
 
 // appendFactsFor gathers a change's facts before the write begins; most commands need none.
@@ -47,7 +48,7 @@ func (s *Store) appendFactsFor(ctx context.Context, raw commissioner.RawCommand)
 	if err != nil {
 		return appendFacts{}, err
 	}
-	facts := appendFacts{lineup: lineup, bid: bid}
+	facts := appendFacts{lineup: lineup, bid: bid, draft: s.draftStandings(ctx, raw.League)}
 	if !commissioner.IsStatCommand(raw.Command) {
 		return facts, nil
 	}

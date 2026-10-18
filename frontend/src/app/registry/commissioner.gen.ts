@@ -1228,7 +1228,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "sh.draft.change commish.draft.timer",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "Expired clock skips automatically but can be overridden; humans in" +
       "sert picks and changed selections warn rather than silently retarg" +
       "et (triage take #4; Sol tray anatomy).",
@@ -1250,11 +1250,11 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Which draft checkpoint must we restore?",
     gravity: "G3",
     clock: "draft",
-    placement: places[18],
+    placement: places[12],
     verb: "commish.draft.revert",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "No restore until granted, with both draft states preserved in hist" +
       "ory (census CM-044).",
     merged_into: Object.freeze([] as const),
@@ -1274,11 +1274,11 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Is the draft done? Seal it and issue new picks.",
     gravity: "G2",
     clock: "draft",
-    placement: places[18],
+    placement: places[12],
     verb: "commish.draft.archive",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "Close automatically at the last pick, place undrafted rookies in U" +
       "FA and issue immediately tradable picks for two seasons ahead (fac" +
       "ts 13, 9c).",

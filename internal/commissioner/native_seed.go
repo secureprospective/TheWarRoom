@@ -35,6 +35,8 @@ type RawNativeSnapshot struct {
 	Players     []NativePlayer    `json:"players"`
 	Picks       []NativePick      `json:"picks"`
 	Adjustments []NativeCharge    `json:"adjustments"`
+	// Pool is the rookies nobody drafted, released to the free-agent pool when a rookie draft closed.
+	Pool []NativePoolEntry `json:"pool,omitempty"`
 }
 
 type NativeFranchise struct {

@@ -65,32 +65,21 @@ func DefinitionFor(command string) (Definition, error) {
 	switch command {
 	case TradeOffer, TradeAccept, TradeDecline, TradeWithdraw, TradeRecuse, DraftStart, DraftPick, TitleSet:
 		return Definition{Gravity: "G1"}, nil
-	case DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak,
-		RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
-		BidPlace, BidRaise, BidWithdraw, BidsProcess, BidsOverride:
-		return Definition{Gravity: "G2"}, nil
-	case ContractEdit, CapAdjust, CapRelief:
-		return Definition{Gravity: "G2"}, nil
-	case ReserveException, CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException,
+	case DraftSkip, DraftAssign, DraftInsert, DraftChange, DraftTimer, DraftRevert,
+		ReserveException, Create, Revert, NativeSeed, SeasonRollover, CalendarException,
+		ScoreFranchise, StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear,
+		LineupCorrect, BracketAdvance,
+		CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException,
 		TradeReview, TradeAppeal, TradeAppealRule, TradeOverride:
 		return Definition{Gravity: "G3"}, nil
-	case Create, Revert, NativeSeed, SeasonRollover:
-		return Definition{Gravity: "G3"}, nil
-	case CalendarException:
-		return Definition{Gravity: "G3"}, nil
-	case WindowSet, WindowMove, WindowRemove, ContractActionSet:
+	case DraftArchive, DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak,
+		RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
+		BidPlace, BidRaise, BidWithdraw, BidsProcess, BidsOverride,
+		ContractEdit, CapAdjust, CapRelief, WindowSet, WindowMove, WindowRemove, ContractActionSet,
+		ScheduleGenerate, ScheduleEdit, SchedulePublish, BracketBuild, BracketEdit, BracketSeed,
+		BracketPresetSave, HistoryLink, PlayerPosition, PlayerPositionClear, ScorePlayer, StatApprove,
+		StatReject, StatCorrect, LineupSet:
 		return Definition{Gravity: "G2"}, nil
-	case ScheduleGenerate, ScheduleEdit, SchedulePublish, BracketBuild, BracketEdit, BracketSeed, BracketPresetSave,
-		HistoryLink:
-		return Definition{Gravity: "G2"}, nil
-	case PlayerPosition, PlayerPositionClear, ScorePlayer, StatApprove, StatReject, StatCorrect:
-		return Definition{Gravity: "G2"}, nil
-	case ScoreFranchise, StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear:
-		return Definition{Gravity: "G3"}, nil
-	case LineupSet:
-		return Definition{Gravity: "G2"}, nil
-	case LineupCorrect, BracketAdvance:
-		return Definition{Gravity: "G3"}, nil
 	default:
 		if d, ok := peopleDefinitionFor(command); ok {
 			return Definition{Gravity: d.gravity}, nil
@@ -111,6 +100,7 @@ type RawArgs struct {
 	WaiverOutcome  *WaiverOutcome      `json:"waiverOutcome,omitempty"`
 	Bid            *RawBidArgs         `json:"bid,omitempty"`
 	BidOutcome     *BidOutcome         `json:"bidOutcome,omitempty"`
+	DraftOutcome   *DraftOutcome       `json:"draftOutcome,omitempty"`
 	Name           string              `json:"name,omitempty"`
 	Entry          string              `json:"entry,omitempty"`
 	Franchises     []string            `json:"franchises,omitempty"`
@@ -149,7 +139,7 @@ func (a RawArgs) validateDetails(command string) error {
 // decodedDetails says whether any argument that only a typed decoder may read is present here.
 func (a RawArgs) decodedDetails() bool {
 	return a.Correction != nil || a.scoringDetails() || a.marketDetails() || a.Schedule != nil || a.Window != nil || a.Override != nil ||
-		a.Draft != nil || a.ContractAction != nil
+		a.Draft != nil || a.DraftOutcome != nil || a.ContractAction != nil
 }
 
 // scoringDetails covers the arguments of the score, standings, statistics, lineup and playoff commands.
@@ -432,6 +422,9 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 	if raw.Args.WaiverOutcome != nil || raw.Args.BidOutcome != nil || raw.Args.TradeOutcome != nil {
 		return raw, fmt.Errorf("waiver and bid decisions are made by the app")
 	}
+	if raw.Args.DraftOutcome != nil {
+		return raw, fmt.Errorf("draft contracts and releases are fixed by the app")
+	}
 	raw, err := raw.Prepared()
 	if err != nil {
 		return raw, err
@@ -443,7 +436,7 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 }
 
 func (r RawCommand) Canonical(principal string) (string, error) {
-	r.Args.WaiverOutcome, r.Args.BidOutcome, r.Args.TradeOutcome = nil, nil, nil
+	r.Args.WaiverOutcome, r.Args.BidOutcome, r.Args.TradeOutcome, r.Args.DraftOutcome = nil, nil, nil, nil
 	definition, err := r.EffectiveDefinition()
 	if err != nil {
 		return "", err

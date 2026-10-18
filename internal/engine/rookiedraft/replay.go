@@ -2,11 +2,9 @@ package rookiedraft
 
 import (
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
-	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
 // Selection is an accepted owner selection, supplied in ledger order. The writer authorizes the owner
@@ -24,19 +22,28 @@ type Selection struct {
 
 type Result struct {
 	Pick
+	// Extra counts the picks a person inserted after this pick's place in the order; 0 is a scheduled pick.
+	Extra     int        `json:"extra,omitempty"`
 	Player    string     `json:"player,omitempty"`
 	Skipped   bool       `json:"skipped"`
 	Forfeited bool       `json:"forfeited"`
 	MadeAt    *time.Time `json:"madeAt,omitempty"`
 	Contract  *Terms     `json:"contract,omitempty"`
+	// How says how the pick was used: by its owner, by the commissioner, inserted, run out, skipped, or
+	// chosen by the commissioner after the clock skipped it. Changed says the rookie was later swapped.
+	How     string `json:"how,omitempty"`
+	Changed bool   `json:"changed,omitempty"`
 }
 
-// Clock is the pick on the clock, with the contract it would sign at its slot's current terms.
+// Clock is the pick on the clock, with the contract it would sign at its slot's current terms. Remaining
+// is the time left at the instant read, and while Paused it is the time the clock holds.
 type Clock struct {
 	Pick
-	OpenedAt time.Time `json:"openedAt"`
-	Deadline time.Time `json:"deadline"`
-	Contract Terms     `json:"contract"`
+	OpenedAt  time.Time     `json:"openedAt"`
+	Deadline  time.Time     `json:"deadline"`
+	Contract  Terms         `json:"contract"`
+	Paused    bool          `json:"paused"`
+	Remaining time.Duration `json:"remaining"`
 }
 
 type Draft struct {
@@ -47,11 +54,22 @@ type Draft struct {
 	OnClock   *Clock    `json:"onClock"`
 }
 
-// Replay uses the supplied instant, never wall time. Expiry is inclusive: at the deadline the pick
-// has already skipped. Successive overdue clocks start at the prior deadline, not at the read time.
-// Exhausted does not seal the draft or issue new picks; closing is a separate commissioner phase.
+// Replay applies owner selections only; ReplayActs applies every kind of act.
 func Replay(r leaguerules.DraftRules, order []RoundOrder, start, at time.Time,
 	selections []Selection) (Draft, error) {
+	acts := make([]Act, len(selections))
+	for i, s := range selections {
+		acts[i] = Act{Kind: Select, At: s.At, Pick: PickRef{Round: s.Round, Original: s.Original}, Owner: s.Owner,
+			Player: s.Player, Terms: s.Terms}
+	}
+	return ReplayActs(r, order, start, at, acts)
+}
+
+// ReplayActs uses the supplied instant, never wall time. Expiry is inclusive: at the deadline the pick
+// has already skipped. Successive overdue clocks start at the prior deadline, not at the read time. A
+// Restart is the one act that does not first let the clock run out: it puts the draft back as it stood.
+// Exhausted does not seal the draft or issue new picks; closing is a separate commissioner phase.
+func ReplayActs(r leaguerules.DraftRules, order []RoundOrder, start, at time.Time, acts []Act) (Draft, error) {
 	setup, err := ResolveSetup(r)
 	if err != nil {
 		return Draft{}, err
@@ -62,7 +80,7 @@ func Replay(r leaguerules.DraftRules, order []RoundOrder, start, at time.Time,
 	}
 	out := Draft{Start: start, Started: !start.IsZero() && !at.Before(start), Picks: picks}
 	if !out.Started {
-		if len(selections) > 0 {
+		if len(acts) > 0 {
 			return Draft{}, fmt.Errorf("a selection cannot precede the draft start")
 		}
 		for i := range out.Picks {
@@ -70,32 +88,20 @@ func Replay(r leaguerules.DraftRules, order []RoundOrder, start, at time.Time,
 		}
 		return out, nil
 	}
-	cursor, opened := 0, start
-	for _, selection := range selections {
-		if selection.At.Before(opened) || selection.At.After(at) {
+	line := newTimeline(out.Picks, start, setup.Clock)
+	for _, act := range acts {
+		if act.At.After(at) {
 			return Draft{}, fmt.Errorf("draft selections must follow their clock in time order")
 		}
-		cursor, _ = advance(out.Picks, cursor, opened, selection.At, setup.Clock)
-		if cursor == len(out.Picks) {
-			return Draft{}, fmt.Errorf("there is no pick on the clock for this selection")
-		}
-		if err := applySelection(r, &out.Picks[cursor], selection, out.Picks); err != nil {
+		if err := line.apply(r, act); err != nil {
 			return Draft{}, err
 		}
-		cursor++
-		opened = selection.At
 	}
-	cursor, opened = advance(out.Picks, cursor, opened, at, setup.Clock)
-	out.Exhausted = cursor == len(out.Picks)
-	if out.Exhausted {
-		return out, nil
-	}
-	terms, err := SlotTerms(r, out.Picks[cursor].Round, out.Picks[cursor].Slot)
-	if err != nil {
+	line.advance(at)
+	out.Picks, out.Exhausted = line.picks, !line.onClock()
+	if out.OnClock, err = line.clockAt(r, at); err != nil {
 		return Draft{}, err
 	}
-	out.OnClock = &Clock{Pick: out.Picks[cursor].Pick, OpenedAt: opened, Deadline: opened.Add(setup.Clock),
-		Contract: terms}
 	return out, nil
 }
 
@@ -143,47 +149,6 @@ func validateRound(round, first RoundOrder) error {
 		teams = append(teams, pick.Original)
 	}
 	return validateOrder(teams, originals)
-}
-
-func advance(picks []Result, cursor int, opened, at time.Time, duration time.Duration) (int, time.Time) {
-	for cursor < len(picks) {
-		if picks[cursor].Forfeited {
-			cursor++
-			continue
-		}
-		deadline := opened.Add(duration)
-		if at.Before(deadline) {
-			break
-		}
-		picks[cursor].Skipped = true
-		picks[cursor].MadeAt = &deadline
-		cursor++
-		opened = deadline
-	}
-	return cursor, opened
-}
-
-func applySelection(r leaguerules.DraftRules, result *Result, selection Selection, picks []Result) error {
-	if selection.Round != result.Round || selection.Original != result.Original || selection.Owner != result.Owner {
-		return fmt.Errorf("only the current owner may select for the pick on the clock")
-	}
-	id, err := playerid.New(selection.Player)
-	if err != nil || id.String() != selection.Player {
-		return fmt.Errorf("choose a valid rookie player")
-	}
-	if slices.ContainsFunc(picks, func(p Result) bool { return p.Player == selection.Player }) {
-		return fmt.Errorf("this player has already been drafted")
-	}
-	terms := selection.Terms
-	if terms == nil {
-		slot, err := SlotTerms(r, result.Round, result.Slot)
-		if err != nil {
-			return err
-		}
-		terms = &slot
-	}
-	result.Player, result.MadeAt, result.Contract = selection.Player, &selection.At, terms
-	return nil
 }
 
 // NextPick follows ownership, including traded picks, and excludes picks already used or forfeited.
