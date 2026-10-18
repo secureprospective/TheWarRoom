@@ -11,8 +11,11 @@ import (
 )
 
 const (
-	standingsWords = "The draft order needs the final standings, which are not built yet."
-	laterRound     = "Needs a ruling: later round draft pattern"
+	// standingsWords is what round one reads in a league whose previous season has no schedule: the
+	// standings are built, and say why they cannot rank anyone yet.
+	standingsWords = "The draft order needs the final standings of season 2026. The league schedule is not " +
+		"published yet, so there are no games to rank."
+	laterRound = "Needs a ruling: later round draft pattern"
 )
 
 // governs is the survey's round trip for one setting of the draft: read, set through the real command,

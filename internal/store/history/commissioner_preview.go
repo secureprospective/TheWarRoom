@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // PreviewCommissioner uses a read-only snapshot and the execute checks, without the append.
@@ -44,7 +45,7 @@ func (s *Store) PreviewCommissioner(ctx context.Context, raw commissioner.RawCom
 	if retry != nil {
 		blockers = append(blockers, "This change is already recorded in the league ledger.")
 	}
-	preview, err := commissioner.CommandPreview(raw, records, catalogue, s.now())
+	preview, err := s.describeChange(raw, records, catalogue, facts)
 	if err != nil {
 		if len(blockers) > 0 {
 			return blockedPreview(blockers), nil
@@ -77,4 +78,26 @@ func blockedPreview(blockers []string) commissioner.Preview {
 	return commissioner.Preview{Fields: []commissioner.PreviewField{},
 		Affects:  commissioner.PreviewAffects{Readings: []string{}, Words: "Not known yet"},
 		Blockers: blockers}
+}
+
+// describeChange is the preview of one change. A live draft change is described with the standings and the
+// player names the draft room shows, where the store holds them.
+func (s *Store) describeChange(raw commissioner.RawCommand, records []commissioner.Record,
+	catalogue commissioner.PreviewCatalogue, facts appendFacts) (commissioner.Preview, error) {
+	if !commissioner.DraftTrayCommand(raw.Command) {
+		preview, err := commissioner.CommandPreview(raw, records, catalogue, s.now())
+		if err != nil {
+			return commissioner.Preview{}, fmt.Errorf("describe change: %w", err)
+		}
+		return preview, nil
+	}
+	var names nativecheck.Facts
+	if s.lineupEnv != nil {
+		names = s.lineupEnv.PlayerFacts()
+	}
+	preview, err := commissioner.DraftPreview(raw, records, catalogue, s.now(), facts.draft, names)
+	if err != nil {
+		return commissioner.Preview{}, fmt.Errorf("describe draft change: %w", err)
+	}
+	return preview, nil
 }

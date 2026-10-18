@@ -1,5 +1,6 @@
 export type SurfaceAction = {
-  screen: string; action: 'view' | 'find' | 'clear' | 'open' | 'group' | 'close' | 'tray'; value: string;
+  screen: string; value: string;
+  action: 'view' | 'find' | 'clear' | 'open' | 'group' | 'close' | 'tray' | 'pick';
 };
 type Handler = (args: SurfaceAction) => void;
 

@@ -539,7 +539,8 @@ it('keeps commissioner rows out of owner indexes, lookups, counts and command se
   expect(commissionerControls).toHaveLength(56);
   expect(endpoints).toHaveLength(270);
   const ownerIds = new Set<string>(endpoints.map(row => row.id));
-  const builtRows = new Set(['CM-051', 'CM-052', 'CM-053', 'CM-054', 'CM-056']);
+  const builtRows = new Set(['CM-043', 'CM-044', 'CM-045', 'CM-051', 'CM-052', 'CM-053', 'CM-054',
+    'CM-056']);
   const places = new Set(commissionerControls.map(row => row.placement));
   for (const place of places) {
     const indexed = endpointsAt(place);

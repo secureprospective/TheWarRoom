@@ -55,7 +55,8 @@
           "salaryCents": 300000000,
           "years": 5,
           "rfaAfter": false
-        }
+        },
+        "how": "owner"
       },
       {
         "round": 1,
@@ -64,7 +65,8 @@
         "slot": 2,
         "skipped": true,
         "forfeited": false,
-        "madeAt": "2031-07-14T17:00:00Z"
+        "madeAt": "2031-07-14T17:00:00Z",
+        "how": "expired"
       },
       {
         "round": 2,
@@ -94,7 +96,9 @@
         "salaryCents": 142000000,
         "years": 3,
         "rfaAfter": true
-      }
+      },
+      "paused": false,
+      "remaining": 18000000000000
     }
   },
   "nextOwnedPick": {

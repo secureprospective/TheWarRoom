@@ -65,6 +65,7 @@
     ],
     "succession": "The commissioner is serving; no succession is pending",
     "yourRole": "Commissioner",
+    "yourFranchise": "",
     "mayChangeRules": true,
     "mayGrantRoles": true,
     "mayPostNotices": true
@@ -123,6 +124,7 @@
     ],
     "succession": "The commissioner is serving; no succession is pending",
     "yourRole": "Owner",
+    "yourFranchise": "franchise.01",
     "mayChangeRules": false,
     "mayGrantRoles": false,
     "mayPostNotices": false

@@ -20,6 +20,8 @@ describe('Commissioner people wire', () => {
     expect(people.invites).toEqual([]);
     expect(people.votes[0].votedFranchises).toEqual([]);
     expect(people.mayChangeRules).toBe(false);
+    expect(people.yourFranchise).toBe('franchise.01');
+    expect(parsePeople(wire.commissioner).yourFranchise).toBe('');
     expect(JSON.stringify(wire.owner)).not.toContain('private-deputy');
   });
   it('refuses a reading Go did not send', () => {

@@ -312,6 +312,30 @@
     "safeguard": "hold"
   },
   {
+    "command": "draft.archive",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "draft.assign",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "draft.change",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "draft.insert",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
     "command": "draft.order.auto",
     "effective": "now",
     "field": "",
@@ -336,10 +360,28 @@
     "safeguard": "hold"
   },
   {
+    "command": "draft.revert",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "draft.skip",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
     "command": "draft.start",
     "effective": "now",
     "field": "",
     "safeguard": "confirm"
+  },
+  {
+    "command": "draft.timer",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
   },
   {
     "command": "history.link",

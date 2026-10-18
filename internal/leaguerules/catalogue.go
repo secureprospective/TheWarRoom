@@ -529,6 +529,9 @@ func renderDecimal(n int64) string {
 	return sign + strconv.FormatInt(n/10000, 10) + "." + fraction
 }
 
+// DurationWords writes a length of time the way a rule shows it: "1 hour 30 minutes".
+func DurationWords(d time.Duration) string { return renderDuration(d) }
+
 func renderDuration(d time.Duration) string {
 	parts := []string{}
 	for _, unit := range []struct {

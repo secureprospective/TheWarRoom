@@ -94,6 +94,8 @@ func commandControls() map[string]string {
 	return map[string]string{
 		DraftStart: "CM-042", DraftOrderAuto: "CM-041", DraftOrderSet: "CM-041",
 		DraftOrderPattern: "CM-041", DraftOrderTiebreak: "CM-041",
+		DraftSkip: "CM-043", DraftAssign: "CM-043", DraftInsert: "CM-043", DraftChange: "CM-043",
+		DraftTimer: "CM-043", DraftRevert: "CM-044", DraftArchive: "CM-045",
 		WaiverProcess: "CM-035", WaiverOrderSet: "CM-035", WaiverOrderAuto: "CM-035", WaiverOverride: "CM-035",
 		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039", ContractActionSet: "CM-009",
 		ContractEdit: "CM-034", CapAdjust: "CM-034", CapRelief: "CM-034", ReserveException: "CM-038",
@@ -201,7 +203,7 @@ func authorizeReversal(auth GovernanceAuthorizer, entry, principal string, recor
 		}
 		var err error
 		switch {
-		case r.Command.Command == LineupSet:
+		case r.Command.Command == LineupSet || r.Command.Command == DraftPick:
 			return nil // reversing needs only the reversal permission itself; the owner's seat is not asked for
 		case OwnerWaiverAction(r.Command.Command) != "":
 			_, err = auth.Allow(r.Command.League, principal, WaiverProcess)

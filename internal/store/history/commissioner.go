@@ -87,6 +87,9 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 	if err := commissioner.PrepareWaiverAppend(&raw, records, now, facts, zone); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("check waiver action: %w", commissioner.Refused(err))
 	}
+	if err := commissioner.PrepareDraftAppend(&raw, records, now, facts, gathered.draft); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("check draft change: %w", commissioner.Refused(err))
+	}
 	before, plan, err := commissioner.PrepareRollover(raw, records, now)
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("prepare season rollover: %w", err)
@@ -162,7 +165,7 @@ func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, recor
 		{"starting snapshot", func() error { return commissioner.CheckNativeAppend(raw, records) }},
 		{"league change", func() error { return commissioner.CheckGovernanceAppend(raw, principal, records, s.now()) }},
 		{"league calendar", func() error { return commissioner.CheckCalendarAppend(raw, records, s.now()) }},
-		{"rookie draft", func() error { return commissioner.CheckDraftAppend(raw, records, s.now()) }},
+		{"rookie draft", func() error { return commissioner.CheckDraftAppend(raw, records, s.now(), facts.draft) }},
 		{"league schedule", func() error { return commissioner.CheckScheduleAppend(raw, records) }},
 		{"season rollover", func() error { return commissioner.CheckRolloverAppend(raw, records) }},
 		{"league rules", func() error { return commissioner.CheckRulesAppend(raw, records, s.now()) }},

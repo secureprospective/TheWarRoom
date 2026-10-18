@@ -65,30 +65,18 @@ func DefinitionFor(command string) (Definition, error) {
 	switch command {
 	case DraftStart, DraftPick, TitleSet:
 		return Definition{Gravity: "G1"}, nil
-	case DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak,
-		RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride:
-		return Definition{Gravity: "G2"}, nil
-	case ContractEdit, CapAdjust, CapRelief:
-		return Definition{Gravity: "G2"}, nil
-	case ReserveException:
+	case DraftSkip, DraftAssign, DraftInsert, DraftChange, DraftTimer, DraftRevert,
+		ReserveException, Create, Revert, NativeSeed, SeasonRollover, CalendarException,
+		ScoreFranchise, StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear,
+		LineupCorrect, BracketAdvance:
 		return Definition{Gravity: "G3"}, nil
-	case Create, Revert, NativeSeed, SeasonRollover:
-		return Definition{Gravity: "G3"}, nil
-	case CalendarException:
-		return Definition{Gravity: "G3"}, nil
-	case WindowSet, WindowMove, WindowRemove, ContractActionSet:
+	case DraftArchive, DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak,
+		RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
+		ContractEdit, CapAdjust, CapRelief, WindowSet, WindowMove, WindowRemove, ContractActionSet,
+		ScheduleGenerate, ScheduleEdit, SchedulePublish, BracketBuild, BracketEdit, BracketSeed,
+		BracketPresetSave, HistoryLink, PlayerPosition, PlayerPositionClear, ScorePlayer, StatApprove,
+		StatReject, StatCorrect, LineupSet:
 		return Definition{Gravity: "G2"}, nil
-	case ScheduleGenerate, ScheduleEdit, SchedulePublish, BracketBuild, BracketEdit, BracketSeed, BracketPresetSave,
-		HistoryLink:
-		return Definition{Gravity: "G2"}, nil
-	case PlayerPosition, PlayerPositionClear, ScorePlayer, StatApprove, StatReject, StatCorrect:
-		return Definition{Gravity: "G2"}, nil
-	case ScoreFranchise, StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear:
-		return Definition{Gravity: "G3"}, nil
-	case LineupSet:
-		return Definition{Gravity: "G2"}, nil
-	case LineupCorrect, BracketAdvance:
-		return Definition{Gravity: "G3"}, nil
 	default:
 		if d, ok := peopleDefinitionFor(command); ok {
 			return Definition{Gravity: d.gravity}, nil
@@ -104,6 +92,7 @@ type RawArgs struct {
 	Draft          *RawDraftArgs       `json:"draft,omitempty"`
 	Waiver         *RawWaiverArgs      `json:"waiver,omitempty"`
 	WaiverOutcome  *WaiverOutcome      `json:"waiverOutcome,omitempty"`
+	DraftOutcome   *DraftOutcome       `json:"draftOutcome,omitempty"`
 	Name           string              `json:"name,omitempty"`
 	Entry          string              `json:"entry,omitempty"`
 	Franchises     []string            `json:"franchises,omitempty"`
@@ -143,6 +132,7 @@ func (a RawArgs) validateDetails(command string) error {
 func (a RawArgs) decodedDetails() bool {
 	return a.Schedule != nil || a.Window != nil || a.Override != nil || a.Score != nil || a.Standings != nil ||
 		a.Stat != nil || a.Lineup != nil || a.Draft != nil || a.Waiver != nil || a.WaiverOutcome != nil || a.ContractAction != nil ||
+		a.DraftOutcome != nil ||
 		a.Bracket != nil || a.Title != nil || a.Link != nil
 }
 
@@ -407,6 +397,9 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 	if raw.Args.WaiverOutcome != nil {
 		return raw, fmt.Errorf("waiver decisions are made by the app")
 	}
+	if raw.Args.DraftOutcome != nil {
+		return raw, fmt.Errorf("draft contracts and releases are fixed by the app")
+	}
 	raw, err := raw.Prepared()
 	if err != nil {
 		return raw, err
@@ -418,7 +411,7 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 }
 
 func (r RawCommand) Canonical(principal string) (string, error) {
-	r.Args.WaiverOutcome = nil
+	r.Args.WaiverOutcome, r.Args.DraftOutcome = nil, nil
 	definition, err := r.EffectiveDefinition()
 	if err != nil {
 		return "", err

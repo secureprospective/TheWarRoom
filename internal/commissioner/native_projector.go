@@ -36,6 +36,12 @@ func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *
 		return applyNativeRollover(assets, record)
 	case DraftPick:
 		applyDraftPick(assets.Snapshot, record)
+	case DraftAssign, DraftInsert:
+		applyDraftTray(assets.Snapshot, record)
+	case DraftChange:
+		applyDraftChange(assets.Snapshot, record)
+	case DraftArchive:
+		applyDraftClose(assets.Snapshot, record)
 	case ContractEdit, CapAdjust, CapRelief, ReserveException:
 		if !assets.Seeded {
 			return fmt.Errorf("a native correction has no starting assets")

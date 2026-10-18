@@ -591,6 +591,191 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class DraftCheckpoint {
+	    entry: string;
+	    words: string;
+	    at: time.Time;
+	
+	    static createFrom(source: any = {}) {
+	        return new DraftCheckpoint(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.entry = source["entry"];
+	        this.words = source["words"];
+	        this.at = this.convertValues(source["at"], time.Time);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class DraftIssued {
+	    season: number;
+	    rounds: number;
+	    picks: number;
+	    tradable: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new DraftIssued(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.rounds = source["rounds"];
+	        this.picks = source["picks"];
+	        this.tradable = source["tradable"];
+	    }
+	}
+	export class DraftPlayer {
+	    id: string;
+	    name: string;
+	    position: string;
+	    team: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DraftPlayer(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.position = source["position"];
+	        this.team = source["team"];
+	    }
+	}
+	export class DraftClosed {
+	    at: time.Time;
+	    automatic: boolean;
+	    pool: DraftPlayer[];
+	    issued: DraftIssued[];
+	
+	    static createFrom(source: any = {}) {
+	        return new DraftClosed(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.at = this.convertValues(source["at"], time.Time);
+	        this.automatic = source["automatic"];
+	        this.pool = this.convertValues(source["pool"], DraftPlayer);
+	        this.issued = this.convertValues(source["issued"], DraftIssued);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class NativePick {
+	    season: number;
+	    round: number;
+	    slot: number;
+	    original: string;
+	    owner: string;
+	    player: string;
+	    skipped: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativePick(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.round = source["round"];
+	        this.slot = source["slot"];
+	        this.original = source["original"];
+	        this.owner = source["owner"];
+	        this.player = source["player"];
+	        this.skipped = source["skipped"];
+	    }
+	}
+	export class NativePoolEntry {
+	    player: string;
+	    name?: string;
+	    season: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativePoolEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.player = source["player"];
+	        this.name = source["name"];
+	        this.season = source["season"];
+	    }
+	}
+	export class DraftOutcome {
+	    terms?: rookiedraft.Terms;
+	    franchise?: string;
+	    slot?: number;
+	    pool?: NativePoolEntry[];
+	    issued?: NativePick[];
+	
+	    static createFrom(source: any = {}) {
+	        return new DraftOutcome(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.terms = this.convertValues(source["terms"], rookiedraft.Terms);
+	        this.franchise = source["franchise"];
+	        this.slot = source["slot"];
+	        this.pool = this.convertValues(source["pool"], NativePoolEntry);
+	        this.issued = this.convertValues(source["issued"], NativePick);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class DraftOwner {
 	    id: string;
 	    name: string;
@@ -627,6 +812,7 @@ export namespace commissioner {
 	        this.expected = source["expected"];
 	    }
 	}
+	
 	export class Entry {
 	    id: string;
 	    who: string;
@@ -1237,30 +1423,6 @@ export namespace commissioner {
 	        this.description = source["description"];
 	    }
 	}
-	export class NativePick {
-	    season: number;
-	    round: number;
-	    slot: number;
-	    original: string;
-	    owner: string;
-	    player: string;
-	    skipped: boolean;
-	
-	    static createFrom(source: any = {}) {
-	        return new NativePick(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.season = source["season"];
-	        this.round = source["round"];
-	        this.slot = source["slot"];
-	        this.original = source["original"];
-	        this.owner = source["owner"];
-	        this.player = source["player"];
-	        this.skipped = source["skipped"];
-	    }
-	}
 	export class NativePlayer {
 	    name?: string;
 	    rookieRound?: number;
@@ -1340,6 +1502,7 @@ export namespace commissioner {
 	    players: NativePlayer[];
 	    picks: NativePick[];
 	    adjustments: NativeCharge[];
+	    pool?: NativePoolEntry[];
 	
 	    static createFrom(source: any = {}) {
 	        return new RawNativeSnapshot(source);
@@ -1359,6 +1522,7 @@ export namespace commissioner {
 	        this.players = this.convertValues(source["players"], NativePlayer);
 	        this.picks = this.convertValues(source["picks"], NativePick);
 	        this.adjustments = this.convertValues(source["adjustments"], NativeCharge);
+	        this.pool = this.convertValues(source["pool"], NativePoolEntry);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -1745,6 +1909,10 @@ export namespace commissioner {
 	    words: string;
 	    draft: rookiedraft.Draft;
 	    nextOwnedPick?: rookiedraft.Pick;
+	    closed?: DraftClosed;
+	    players: Record<string, DraftPlayer>;
+	    available: DraftPlayer[];
+	    checkpoints: DraftCheckpoint[];
 	
 	    static createFrom(source: any = {}) {
 	        return new NativeDraft(source);
@@ -1761,6 +1929,10 @@ export namespace commissioner {
 	        this.words = source["words"];
 	        this.draft = this.convertValues(source["draft"], rookiedraft.Draft);
 	        this.nextOwnedPick = this.convertValues(source["nextOwnedPick"], rookiedraft.Pick);
+	        this.closed = this.convertValues(source["closed"], DraftClosed);
+	        this.players = this.convertValues(source["players"], DraftPlayer, true);
+	        this.available = this.convertValues(source["available"], DraftPlayer);
+	        this.checkpoints = this.convertValues(source["checkpoints"], DraftCheckpoint);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -2072,6 +2244,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	export class NativeReserveFranchise {
 	    franchise: string;
 	    name: string;
@@ -2710,6 +2883,7 @@ export namespace commissioner {
 	    votes: PeopleVote[];
 	    succession: string;
 	    yourRole: string;
+	    yourFranchise: string;
 	    mayChangeRules: boolean;
 	    mayGrantRoles: boolean;
 	    mayPostNotices: boolean;
@@ -2731,6 +2905,7 @@ export namespace commissioner {
 	        this.votes = this.convertValues(source["votes"], PeopleVote);
 	        this.succession = source["succession"];
 	        this.yourRole = source["yourRole"];
+	        this.yourFranchise = source["yourFranchise"];
 	        this.mayChangeRules = source["mayChangeRules"];
 	        this.mayGrantRoles = source["mayGrantRoles"];
 	        this.mayPostNotices = source["mayPostNotices"];
@@ -3367,6 +3542,34 @@ export namespace commissioner {
 	        this.order = source["order"];
 	    }
 	}
+	export class RawDraftAct {
+	    round?: number;
+	    original?: string;
+	    extra?: number;
+	    player?: string;
+	    replaces?: string;
+	    franchise?: string;
+	    timer?: string;
+	    seconds?: number;
+	    to?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawDraftAct(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.round = source["round"];
+	        this.original = source["original"];
+	        this.extra = source["extra"];
+	        this.player = source["player"];
+	        this.replaces = source["replaces"];
+	        this.franchise = source["franchise"];
+	        this.timer = source["timer"];
+	        this.seconds = source["seconds"];
+	        this.to = source["to"];
+	    }
+	}
 	export class RawDraftSelection {
 	    franchise: string;
 	    player: string;
@@ -3418,6 +3621,7 @@ export namespace commissioner {
 	    tie?: string;
 	    at?: time.Time;
 	    pick?: RawDraftSelection;
+	    act?: RawDraftAct;
 	    running?: boolean;
 	
 	    static createFrom(source: any = {}) {
@@ -3434,6 +3638,7 @@ export namespace commissioner {
 	        this.tie = source["tie"];
 	        this.at = this.convertValues(source["at"], time.Time);
 	        this.pick = this.convertValues(source["pick"], RawDraftSelection);
+	        this.act = this.convertValues(source["act"], RawDraftAct);
 	        this.running = source["running"];
 	    }
 	
@@ -3459,6 +3664,7 @@ export namespace commissioner {
 	    draft?: RawDraftArgs;
 	    waiver?: RawWaiverArgs;
 	    waiverOutcome?: WaiverOutcome;
+	    draftOutcome?: DraftOutcome;
 	    name?: string;
 	    entry?: string;
 	    franchises?: string[];
@@ -3494,6 +3700,7 @@ export namespace commissioner {
 	        this.draft = this.convertValues(source["draft"], RawDraftArgs);
 	        this.waiver = this.convertValues(source["waiver"], RawWaiverArgs);
 	        this.waiverOutcome = this.convertValues(source["waiverOutcome"], WaiverOutcome);
+	        this.draftOutcome = this.convertValues(source["draftOutcome"], DraftOutcome);
 	        this.name = source["name"];
 	        this.entry = source["entry"];
 	        this.franchises = source["franchises"];
@@ -3615,6 +3822,7 @@ export namespace commissioner {
 	        this.reason = source["reason"];
 	    }
 	}
+	
 	
 	
 	
@@ -14669,6 +14877,8 @@ export namespace rookiedraft {
 	    openedAt: time.Time;
 	    deadline: time.Time;
 	    contract: Terms;
+	    paused: boolean;
+	    remaining: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new Clock(source);
@@ -14683,6 +14893,8 @@ export namespace rookiedraft {
 	        this.openedAt = this.convertValues(source["openedAt"], time.Time);
 	        this.deadline = this.convertValues(source["deadline"], time.Time);
 	        this.contract = this.convertValues(source["contract"], Terms);
+	        this.paused = source["paused"];
+	        this.remaining = source["remaining"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -14708,11 +14920,14 @@ export namespace rookiedraft {
 	    original: string;
 	    owner: string;
 	    slot: number;
+	    extra?: number;
 	    player?: string;
 	    skipped: boolean;
 	    forfeited: boolean;
 	    madeAt?: time.Time;
 	    contract?: Terms;
+	    how?: string;
+	    changed?: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Result(source);
@@ -14724,11 +14939,14 @@ export namespace rookiedraft {
 	        this.original = source["original"];
 	        this.owner = source["owner"];
 	        this.slot = source["slot"];
+	        this.extra = source["extra"];
 	        this.player = source["player"];
 	        this.skipped = source["skipped"];
 	        this.forfeited = source["forfeited"];
 	        this.madeAt = this.convertValues(source["madeAt"], time.Time);
 	        this.contract = this.convertValues(source["contract"], Terms);
+	        this.how = source["how"];
+	        this.changed = source["changed"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

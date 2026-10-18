@@ -115,7 +115,9 @@ func TestCommissionerPeopleWire(t *testing.T) {
 		views[principal] = people
 	}
 	if !views["creator"].MayGrantRoles || views["private-deputy"].MayGrantRoles ||
-		views["owner-one"].YourRole != "Owner" || views["stranger"].YourRole != "Visitor" {
+		views["owner-one"].YourRole != "Owner" || views["stranger"].YourRole != "Visitor" ||
+		views["owner-one"].YourFranchise != "franchise.01" || views["creator"].YourFranchise != "" ||
+		views["stranger"].YourFranchise != "" {
 		t.Fatalf("the reading does not say what each principal may start: %+v", views)
 	}
 	app.commissionerSession = testCommissionerSession{"creator"}

@@ -10,8 +10,11 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/engine/rookiedraft"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
+// RawNativeDraftScope asks for one franchise's view of a draft. A season of zero asks for the draft that is
+// next: the first one nobody has closed.
 type RawNativeDraftScope struct {
 	League    string    `json:"league"`
 	Season    int       `json:"season"`
@@ -21,7 +24,7 @@ type RawNativeDraftScope struct {
 
 func (r RawNativeDraftScope) Validate() error {
 	if !strings.HasPrefix(r.League, "native.") || r.League == "native." || strings.TrimSpace(r.League) != r.League ||
-		r.Season < 1 || r.Season > 9999 || blank(r.Franchise) || r.At.IsZero() {
+		r.Season < 0 || r.Season > 9999 || blank(r.Franchise) || r.At.IsZero() {
 		return fmt.Errorf("choose an app league, draft season, franchise and reading time")
 	}
 	return nil
@@ -39,6 +42,12 @@ type NativeDraft struct {
 	Words    string                   `json:"words"`
 	Draft    rookiedraft.Draft        `json:"draft"`
 	Next     *rookiedraft.Pick        `json:"nextOwnedPick"`
+	// Closed is set once the draft is sealed. Players names every rookie the reading mentions, Available
+	// lists those still undrafted, and Checkpoints are the points the commissioner may restore the draft to.
+	Closed      *DraftClosed           `json:"closed"`
+	Players     map[string]DraftPlayer `json:"players"`
+	Available   []DraftPlayer          `json:"available"`
+	Checkpoints []DraftCheckpoint      `json:"checkpoints"`
 }
 
 type DraftOwner struct {
@@ -56,11 +65,15 @@ type draftBasis struct {
 	started bool
 	draft   rookiedraft.Draft
 	words   string
+	closed  *Record
 }
 
 // readDraft replays the ledger up to an instant. A draft that cannot be read yet is explained in words; an
 // error means the ledger holds a pick that contradicts the draft's own order or clock.
-func readDraft(records []Record, season int, at time.Time) (draftBasis, error) {
+func readDraft(records []Record, season int, at time.Time, standings DraftStandings) (draftBasis, error) {
+	if standings == nil {
+		standings = NoDraftStandings{}
+	}
 	records = recordsThrough(records, at)
 	if len(records) == 0 {
 		return draftBasis{}, fmt.Errorf("this app league has not been created")
@@ -84,8 +97,14 @@ func readDraft(records []Record, season int, at time.Time) (draftBasis, error) {
 	owned = slices.DeleteFunc(owned, func(p rookiedraft.OwnedPick) bool {
 		return rules.Draft.Rounds.State == leaguerules.IsKnown && p.Round > rules.Draft.Rounds.Value
 	})
+	// A first round that begins reads the standings as they stood when it began, so a result corrected
+	// afterwards cannot move it; before then it follows the results as they are recorded.
+	through := at
+	if basis.started {
+		through = basis.start
+	}
 	basis.order, err = rookiedraft.Order(rules.Draft, records[0].Command.Args.Franchises, owned,
-		rookiedraft.MissingFinalStandings{})
+		standings.Final(records, season-1, through))
 	if err != nil {
 		basis.words = draftWords(err)
 		return basis, nil
@@ -96,16 +115,19 @@ func readDraft(records []Record, season int, at time.Time) (draftBasis, error) {
 			return basis, nil
 		}
 	}
-	basis.draft, err = rookiedraft.Replay(rules.Draft, basis.order, basis.start, at, draftSelections(records, season))
+	basis.draft, err = rookiedraft.ReplayActs(rules.Draft, basis.order, basis.start, at, draftActs(records, season))
 	if err != nil {
 		return basis, fmt.Errorf("replay the rookie draft: %w", err)
+	}
+	if closed, ok := closeRecord(records, season); ok {
+		basis.closed = &closed
 	}
 	return basis, nil
 }
 
 // draftClockRuns says whether the draft's start has passed, so its clock is counting.
-func draftClockRuns(records []Record, season int, at time.Time) bool {
-	basis, err := readDraft(records, season, at)
+func draftClockRuns(records []Record, season int, at time.Time, standings DraftStandings) bool {
+	basis, err := readDraft(records, season, at, standings)
 	return err == nil && basis.started
 }
 
@@ -115,8 +137,10 @@ func draftWords(err error) string {
 	return string(unicode.ToUpper(first)) + text[size:] + "."
 }
 
-// NativeDraftReading is public: every owner may read the order, the picks and the clock.
-func NativeDraftReading(scope RawNativeDraftScope, records []Record, local *time.Location) (NativeDraft, error) {
+// NativeDraftReading is public: every owner may read the order, the picks and the clock. The facts name the
+// rookies; without them a rookie reads as his number.
+func NativeDraftReading(scope RawNativeDraftScope, records []Record, local *time.Location,
+	standings DraftStandings, facts nativecheck.Facts) (NativeDraft, error) {
 	if err := scope.Validate(); err != nil {
 		return NativeDraft{}, err
 	}
@@ -126,13 +150,22 @@ func NativeDraftReading(scope RawNativeDraftScope, records []Record, local *time
 	if len(records) == 0 || !leagueFranchise(records, scope.Franchise) {
 		return NativeDraft{}, fmt.Errorf("choose a franchise in this app league")
 	}
-	basis, err := readDraft(records, scope.Season, scope.At)
+	if scope.Season == 0 {
+		season, err := draftSeasonNext(records, scope.At)
+		if err != nil {
+			return NativeDraft{}, err
+		}
+		scope.Season = season
+	}
+	basis, err := readDraft(records, scope.Season, scope.At, standings)
 	if err != nil {
 		return NativeDraft{}, err
 	}
-	out := NativeDraft{League: scope.League, Season: scope.Season, Revision: int64(len(recordsThrough(records, scope.At))),
-		Rules: ruleLines(basis.rules, draftReadingFields()...), Owners: basis.owners, Order: basis.order,
-		Words: basis.words, Draft: basis.draft}
+	through := recordsThrough(records, scope.At)
+	out := NativeDraft{League: scope.League, Season: scope.Season, Revision: int64(len(through)),
+		Rules: namedRules(ruleLines(basis.rules, draftReadingFields()...), basis.owners), Owners: basis.owners, Order: basis.order,
+		Words: basis.words, Draft: basis.draft, Players: map[string]DraftPlayer{}, Available: []DraftPlayer{},
+		Checkpoints: []DraftCheckpoint{}}
 	if out.Order == nil {
 		out.Order = []rookiedraft.RoundOrder{}
 	}
@@ -140,18 +173,44 @@ func NativeDraftReading(scope RawNativeDraftScope, records []Record, local *time
 		out.Draft.Picks = []rookiedraft.Result{}
 		return out, nil
 	}
-	out.Words = "The rookie draft is waiting to start."
-	switch {
-	case out.Draft.Exhausted:
-		out.Words = "Every pick has been used; the draft has not been closed."
-	case out.Draft.Started:
-		out.Words = "The rookie draft is running."
-	}
+	out.Words = draftStatusWords(basis)
 	if pick, ok := out.Draft.NextPick(scope.Franchise); ok {
 		out.Next = &pick
 	}
+	if err := out.addRoom(basis, through, facts); err != nil {
+		return NativeDraft{}, err
+	}
 	localizeDraft(&out.Draft, local)
 	return out, nil
+}
+
+// namedRules writes a franchise's name wherever a rule's words give its id, so the draft room never shows
+// a code. The longest ids go first, so one id is never read as the start of another.
+func namedRules(lines []RuleLine, owners []DraftOwner) []RuleLine {
+	byLength := slices.SortedFunc(slices.Values(owners), func(a, b DraftOwner) int {
+		return len(b.ID) - len(a.ID)
+	})
+	for i := range lines {
+		for _, o := range byLength {
+			lines[i].Words = strings.ReplaceAll(lines[i].Words, o.ID, o.Name)
+		}
+	}
+	return lines
+}
+
+// draftStatusWords says where a readable draft stands.
+func draftStatusWords(basis draftBasis) string {
+	switch {
+	case basis.closed != nil:
+		return "The rookie draft is closed."
+	case basis.draft.Exhausted:
+		return "Every pick has been used; the draft has not been closed."
+	case basis.draft.OnClock != nil && basis.draft.OnClock.Paused:
+		return "The rookie draft is running, and its clock is paused."
+	case basis.draft.Started:
+		return "The rookie draft is running."
+	}
+	return "The rookie draft is waiting to start."
 }
 
 func draftReadingFields() []string {
@@ -196,20 +255,42 @@ func draftOwnership(season int, records []Record) ([]rookiedraft.OwnedPick, erro
 	return owned, nil
 }
 
-// draftSelections are the picks in force for one draft, in ledger order.
-func draftSelections(records []Record, season int) []rookiedraft.Selection {
+// draftActs are the happenings in force for one draft, in ledger order: the picks, the tray, the restores
+// and the close. A restore's checkpoint has set aside what came after it (see setAsideByDraftRestores).
+func draftActs(records []Record, season int) []rookiedraft.Act {
 	active := Replay(records).Active
-	out := []rookiedraft.Selection{}
+	out := []rookiedraft.Act{}
 	for _, r := range records {
-		if r.Command.Command != DraftPick || !active[r.Receipt.Entry] || r.Command.Args.Draft.Season != season {
+		if !liveDraftEntry(r.Command.Command) || !active[r.Receipt.Entry] || r.Command.Args.Draft.Season != season {
 			continue
 		}
-		p := r.Command.Args.Draft.Pick
-		terms := p.Terms
-		out = append(out, rookiedraft.Selection{Round: p.Round, Original: p.Original, Owner: p.Franchise,
-			Player: p.Player, At: r.Receipt.RecordedAt, Terms: &terms})
+		if r.Command.Command == DraftPick {
+			p := r.Command.Args.Draft.Pick
+			terms := p.Terms
+			out = append(out, rookiedraft.Act{Kind: rookiedraft.Select, At: r.Receipt.RecordedAt,
+				Pick: rookiedraft.PickRef{Round: p.Round, Original: p.Original}, Owner: p.Franchise, Player: p.Player,
+				Terms: &terms})
+			continue
+		}
+		if act, ok := trayAct(r); ok {
+			if act.Kind == rookiedraft.Restart {
+				act.Since = checkpointTime(records, r.Command.Args.Draft.Act.To)
+			}
+			out = append(out, act)
+		}
 	}
 	return out
+}
+
+// closeRecord is the close in force for one draft, if there is one.
+func closeRecord(records []Record, season int) (Record, bool) {
+	active := Replay(records).Active
+	for _, r := range records {
+		if r.Command.Command == DraftArchive && active[r.Receipt.Entry] && r.Command.Args.Draft.Season == season {
+			return r, true
+		}
+	}
+	return Record{}, false
 }
 
 func localizeDraft(d *rookiedraft.Draft, local *time.Location) {
@@ -223,4 +304,14 @@ func localizeDraft(d *rookiedraft.Draft, local *time.Location) {
 			d.Picks[i].MadeAt = &at
 		}
 	}
+}
+
+// checkpointTime is when the entry a restore names was recorded.
+func checkpointTime(records []Record, entry string) time.Time {
+	for _, r := range records {
+		if r.Receipt.Entry == entry {
+			return r.Receipt.RecordedAt
+		}
+	}
+	return time.Time{}
 }

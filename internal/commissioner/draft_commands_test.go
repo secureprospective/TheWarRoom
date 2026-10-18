@@ -129,6 +129,13 @@ func TestEveryDraftControlGovernsSomething(t *testing.T) {
 		{"CM-041", DraftOrderTiebreak, "TestDraftTieRuleIsRecordedAndReverted"},
 		{"CM-041", DraftOrderAuto, "TestDraftOrderAutoAsksForTheFinalStandings"},
 		{"CM-042", DraftStart, "TestDraftStartAndTheCalendarNeverDisagree"},
+		{"CM-043", DraftSkip, "TestTheTraySkipsAndAssignsAndGovernsTheClockCM043"},
+		{"CM-043", DraftAssign, "TestTheTraySkipsAndAssignsAndGovernsTheClockCM043"},
+		{"CM-043", DraftInsert, "TestTheTrayInsertsAndChangesAPickWithoutRetargetingCM043"},
+		{"CM-043", DraftChange, "TestTheTrayInsertsAndChangesAPickWithoutRetargetingCM043"},
+		{"CM-043", DraftTimer, "TestTheTrayWorksTheClockAndOverridesAnExpiredPickCM043"},
+		{"CM-044", DraftRevert, "TestARestoreKeepsBothStatesAndTheLedgerCM044"},
+		{"CM-045", DraftArchive, "TestClosingTheDraftReleasesRookiesAndIssuesPicksCM045"},
 	}
 	sources := rootTestSource(t)
 	proven := map[string]bool{}
@@ -149,7 +156,7 @@ func TestEveryDraftControlGovernsSomething(t *testing.T) {
 		}
 		proven[e.row] = true
 	}
-	for _, row := range []string{"CM-040", "CM-041", "CM-042"} {
+	for _, row := range []string{"CM-040", "CM-041", "CM-042", "CM-043", "CM-044", "CM-045"} {
 		if !proven[row] {
 			t.Fatalf("%s governs nothing the tests prove", row)
 		}
@@ -179,4 +186,15 @@ func rootTestSource(t *testing.T) string {
 		t.Fatal("the round-trip helper is missing")
 	}
 	return all.String()
+}
+
+// The tray prints what a change affects only for a count it knows, so a warning has to travel with one,
+// even for a change whose readings the catalogue does not list.
+func TestAWarningTravelsWithACountTheTrayWillShow(t *testing.T) {
+	for _, known := range [][]string{nil, {"Draft Status", "Rosters"}} {
+		got := warned(PreviewAffects{Readings: known, Words: "Not known yet"}, "This swaps the rookie a pick holds.")
+		if got.Count == nil || *got.Count != len(known) || got.Words != "This swaps the rookie a pick holds." {
+			t.Fatalf("a warning over %d readings: %+v", len(known), got)
+		}
+	}
 }

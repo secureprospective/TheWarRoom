@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -66,6 +67,7 @@ func (a *App) TargetNativeDraftPick(input commissioner.DraftPickInput) (commissi
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("rookie pick: %w", err)
 	}
+	a.closeFinishedDrafts(input.League)
 	return receipt, nil
 }
 
@@ -83,9 +85,35 @@ func (a *App) TargetNativeDraft(scope commissioner.RawNativeDraftScope) (commiss
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.NativeDraft(ctx, scope, a.ownerZone())
+	reading, err := a.history.NativeDraft(ctx, scope, a.ownerZone(), a.nativeFacts())
 	if err != nil {
 		return commissioner.NativeDraft{}, fmt.Errorf("rookie draft: %w", err)
 	}
 	return reading, nil
+}
+
+// closeFinishedDrafts closes a draft whose last pick has just been used, so it does not wait for the clock's
+// next look. A failure is logged and the pick that led to it stands.
+func (a *App) closeFinishedDrafts(league string) {
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	if err := a.history.CloseFinishedDrafts(ctx, league, a.nativeFacts()); err != nil {
+		log.Printf("the war room: close finished rookie drafts for %s: %v", league, err)
+	}
+}
+
+// processNativeDraftsDue closes every league's finished drafts: the last pick can be used up by the pick
+// clock running out, which no one records.
+func (a *App) processNativeDraftsDue(ctx context.Context) {
+	leagues, err := a.history.NativeLeagues(ctx)
+	if err != nil {
+		log.Printf("the war room: read native draft leagues: %v", err)
+		return
+	}
+	facts := a.nativeFacts()
+	for _, league := range leagues {
+		if err := a.history.CloseFinishedDrafts(ctx, league.ID, facts); err != nil {
+			log.Printf("the war room: close native drafts for %s: %v", league.ID, err)
+		}
+	}
 }

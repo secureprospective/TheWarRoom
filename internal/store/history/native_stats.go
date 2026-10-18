@@ -133,10 +133,17 @@ func (s *Store) statWeekFor(ctx context.Context, raw commissioner.RawCommand) (c
 type appendFacts struct {
 	lineup commissioner.LineupFacts
 	stat   commissioner.StatFacts
+	draft  commissioner.DraftStandings
 }
 
 // appendFactsFor gathers a change's facts before the write begins; most commands need none.
 func (s *Store) appendFactsFor(ctx context.Context, raw commissioner.RawCommand) (appendFacts, error) {
+	facts, err := s.heldFactsFor(ctx, raw)
+	facts.draft = s.draftStandings(ctx, raw.League)
+	return facts, err
+}
+
+func (s *Store) heldFactsFor(ctx context.Context, raw commissioner.RawCommand) (appendFacts, error) {
 	lineup, err := s.lineupFactsFor(ctx, raw)
 	if err != nil || !commissioner.IsStatCommand(raw.Command) {
 		return appendFacts{lineup: lineup}, err

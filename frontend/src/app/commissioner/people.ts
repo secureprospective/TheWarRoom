@@ -12,7 +12,8 @@ export type People = {
   roles: { person: string; role: string }[];
   invites: { id: string; franchise: string; person: string; status: string }[];
   dotCount: number; dotStatus: string; votes: PeopleVote[]; succession: string;
-  yourRole: string; mayChangeRules: boolean; mayGrantRoles: boolean; mayPostNotices: boolean;
+  yourRole: string; yourFranchise: string; mayChangeRules: boolean; mayGrantRoles: boolean;
+  mayPostNotices: boolean;
 };
 
 function flag(v: unknown, path: string): boolean {
@@ -38,7 +39,7 @@ function parseVote(v: unknown, p: string): PeopleVote {
 }
 export function parsePeople(v: unknown): People {
   const keys = ['league', 'name', 'revision', 'seats', 'roles', 'invites', 'dotCount', 'dotStatus', 'votes',
-    'succession', 'yourRole', 'mayChangeRules', 'mayGrantRoles', 'mayPostNotices'];
+    'succession', 'yourRole', 'yourFranchise', 'mayChangeRules', 'mayGrantRoles', 'mayPostNotices'];
   const r = object(v, 'League people', keys);
   return {
     league: text(r.league, 'League'), name: text(r.name, 'League name'),
@@ -59,7 +60,8 @@ export function parsePeople(v: unknown): People {
     }),
     dotCount: integer(r.dotCount, 'DOT seats'), dotStatus: text(r.dotStatus, 'DOT status'),
     votes: array(r.votes, 'Votes', parseVote), succession: text(r.succession, 'Succession'),
-    yourRole: text(r.yourRole, 'Your role'), mayChangeRules: flag(r.mayChangeRules, 'May change rules'),
+    yourRole: text(r.yourRole, 'Your role'), yourFranchise: text(r.yourFranchise, 'Your franchise'),
+    mayChangeRules: flag(r.mayChangeRules, 'May change rules'),
     mayGrantRoles: flag(r.mayGrantRoles, 'May give roles'),
     mayPostNotices: flag(r.mayPostNotices, 'May post notices'),
   };

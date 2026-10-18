@@ -39,7 +39,9 @@ type People struct {
 	Votes      []PeopleVote   `json:"votes"`
 	Succession string         `json:"succession"`
 	// YourRole and the two flags say what this principal may start, so the forms can stay out of the way.
-	YourRole       string `json:"yourRole"`
+	YourRole string `json:"yourRole"`
+	// YourFranchise is the franchise this principal owns, or empty when they own none.
+	YourFranchise  string `json:"yourFranchise"`
 	MayChangeRules bool   `json:"mayChangeRules"`
 	MayGrantRoles  bool   `json:"mayGrantRoles"`
 	MayPostNotices bool   `json:"mayPostNotices"`
@@ -84,6 +86,7 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 		out.Invites = readInvites(state, invites)
 	}
 	out.YourRole = yourRole(state, p, out.Seats)
+	out.YourFranchise = yourFranchise(p, out.Seats)
 	out.MayChangeRules = private
 	_, grantErr := GovernanceAuthorizer{State: state}.Allow(league, principal, "commish.role.grant")
 	out.MayGrantRoles = grantErr == nil
@@ -107,6 +110,15 @@ func yourRole(state governance.State, p governance.Principal, seats []PeopleSeat
 		}
 	}
 	return "Visitor"
+}
+
+func yourFranchise(p governance.Principal, seats []PeopleSeat) string {
+	for _, seat := range seats {
+		if seat.Owner == string(p) {
+			return seat.Franchise
+		}
+	}
+	return ""
 }
 
 func peopleInventory(records []Record) ([]string, []string) {

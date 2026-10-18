@@ -62,7 +62,7 @@ type Projection struct {
 	Active  map[string]bool
 }
 
-// Replay walks compensation links backwards: a reversed reversal no longer
+// Replay walks compensation links backwards, then sets aside what a draft restore compensated: a reversed reversal no longer
 // compensates its target. Originals and every correction remain in the ledger.
 func Replay(records []Record) Projection {
 	p := Projection{Active: make(map[string]bool)}
@@ -78,6 +78,7 @@ func Replay(records []Record) Projection {
 			p.Active[r.Command.Args.Entry] = !p.Active[r.Command.Args.Entry]
 		}
 	}
+	setAsideByDraftRestores(records, p.Active)
 	return p
 }
 
@@ -156,35 +157,16 @@ type NativeLeague struct {
 
 func entryLabel(records []Record, i int) (string, error) {
 	r := records[i]
+	if label, ok, err := changeLabel(r); ok || err != nil {
+		return label, err
+	}
 	switch r.Command.Command {
 	case ContractEdit, CapAdjust, CapRelief, ReserveException:
 		return overrideLabel(r), nil
-	case PlayerPosition, PlayerPositionClear, ScorePlayer, ScoreFranchise:
-		change, err := DecodeScoreChange(r.Command.Args, r.Command.Command)
-		if err != nil {
-			return "", err
-		}
-		return scoreChangeLabel(r.Command.Command, change), nil
-	case StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear:
-		change, err := DecodeStandingsChange(r.Command.Args, r.Command.Command)
-		if err != nil {
-			return "", err
-		}
-		return standingsLabel(r.Command.Command, change), nil
-	case StatApprove, StatReject, StatCorrect:
-		change, err := DecodeStatChange(r.Command.Args, r.Command.Command)
-		if err != nil {
-			return "", err
-		}
-		return statChangeLabel(r.Command.Command, change), nil
-	case LineupSet, LineupCorrect:
-		change, err := DecodeLineupChange(r.Command.Args, r.Command.Command)
-		if err != nil {
-			return "", err
-		}
-		return lineupLabel(r.Command.Command, change), nil
 	case RulesSet, ContractActionSet:
 		return ruleLabel(r, records[:i])
+	case DraftRevert:
+		return draftRestoreLabel(records, i), nil
 	case Revert:
 		label, ok, err := revertRuleLabel(records, i)
 		if err != nil || ok {
@@ -195,6 +177,38 @@ func entryLabel(records []Record, i int) (string, error) {
 		}
 	}
 	return recordLabel(r), nil
+}
+
+// changeLabel words the entries whose arguments decode into a typed change; ok is false for any other.
+func changeLabel(r Record) (label string, ok bool, err error) {
+	command := r.Command.Command
+	switch command {
+	case PlayerPosition, PlayerPositionClear, ScorePlayer, ScoreFranchise:
+		change, err := DecodeScoreChange(r.Command.Args, command)
+		if err != nil {
+			return "", true, err
+		}
+		return scoreChangeLabel(command, change), true, nil
+	case StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear:
+		change, err := DecodeStandingsChange(r.Command.Args, command)
+		if err != nil {
+			return "", true, err
+		}
+		return standingsLabel(command, change), true, nil
+	case StatApprove, StatReject, StatCorrect:
+		change, err := DecodeStatChange(r.Command.Args, command)
+		if err != nil {
+			return "", true, err
+		}
+		return statChangeLabel(command, change), true, nil
+	case LineupSet, LineupCorrect:
+		change, err := DecodeLineupChange(r.Command.Args, command)
+		if err != nil {
+			return "", true, err
+		}
+		return lineupLabel(command, change), true, nil
+	}
+	return "", false, nil
 }
 
 func recordLabel(r Record) string {
@@ -265,7 +279,8 @@ func scheduleLabel(r Record) string {
 // It asks the same checks a submitted reversal meets; Go still decides when it is sent.
 func undoPlacement(records []Record, i int, p Projection, principal string, auth Authorizer) string {
 	r := records[i]
-	if r.Command.Command == Create || r.Command.Command == NativeSeed || r.Command.Command == DraftPick || !p.Active[r.Receipt.Entry] {
+	if r.Command.Command == Create || r.Command.Command == NativeSeed || liveDraftEntry(r.Command.Command) ||
+		!p.Active[r.Receipt.Entry] {
 		return ""
 	}
 	if _, err := auth.Allow(r.Command.League, principal, Revert); err != nil {
