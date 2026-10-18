@@ -294,6 +294,9 @@ func checkDraftReversal(raw RawCommand, records []Record, at time.Time) error {
 			continue
 		}
 		c := r.Command
+		if TradeCommand(c.Command) {
+			return draftReadable(withProposed(raw, records, at), draftsWithPicks(records), at)
+		}
 		if draftCommand(c.Command) && c.Command != DraftPick {
 			return draftReadable(withProposed(raw, records, at), draftSeasons(c, records), at)
 		}

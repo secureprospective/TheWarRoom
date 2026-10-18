@@ -63,7 +63,7 @@ type Definition struct{ Gravity string }
 
 func DefinitionFor(command string) (Definition, error) {
 	switch command {
-	case DraftStart, DraftPick, TitleSet:
+	case TradeOffer, TradeAccept, TradeDecline, TradeWithdraw, TradeRecuse, DraftStart, DraftPick, TitleSet:
 		return Definition{Gravity: "G1"}, nil
 	case DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak,
 		RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
@@ -71,7 +71,7 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G2"}, nil
 	case ContractEdit, CapAdjust, CapRelief:
 		return Definition{Gravity: "G2"}, nil
-	case ReserveException:
+	case TradeReview, TradeAppeal, TradeAppealRule, TradeOverride, ReserveException:
 		return Definition{Gravity: "G3"}, nil
 	case Create, Revert, NativeSeed, SeasonRollover:
 		return Definition{Gravity: "G3"}, nil
@@ -102,6 +102,8 @@ func DefinitionFor(command string) (Definition, error) {
 }
 
 type RawArgs struct {
+	Trade          *RawTradeArgs       `json:"trade,omitempty"`
+	TradeOutcome   *TradeState         `json:"tradeOutcome,omitempty"`
 	Draft          *RawDraftArgs       `json:"draft,omitempty"`
 	Waiver         *RawWaiverArgs      `json:"waiver,omitempty"`
 	WaiverOutcome  *WaiverOutcome      `json:"waiverOutcome,omitempty"`
@@ -156,7 +158,7 @@ func (a RawArgs) scoringDetails() bool {
 
 // marketDetails covers the arguments of the waiver and bid commands, including the decisions the app writes.
 func (a RawArgs) marketDetails() bool {
-	return a.Waiver != nil || a.WaiverOutcome != nil || a.Bid != nil || a.BidOutcome != nil
+	return a.Waiver != nil || a.WaiverOutcome != nil || a.Bid != nil || a.BidOutcome != nil || a.Trade != nil || a.TradeOutcome != nil
 }
 
 // ownedDetails says whether an argument that belongs to one command is sent with another.
@@ -181,6 +183,8 @@ func (a RawArgs) validateDecoded(command string) (handled bool, err error) {
 		err = a.validateDraft(command)
 	case WaiverCommand(command):
 		err = a.validateWaiver(command)
+	case TradeCommand(command):
+		err = a.validateTrade(command)
 	case BidCommand(command):
 		err = a.validateBid(command)
 	case command == ContractActionSet:
@@ -419,7 +423,7 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 	if err := decoder.Decode(&struct{}{}); err != io.EOF {
 		return raw, fmt.Errorf("send exactly one commissioner command")
 	}
-	if raw.Args.WaiverOutcome != nil || raw.Args.BidOutcome != nil {
+	if raw.Args.WaiverOutcome != nil || raw.Args.BidOutcome != nil || raw.Args.TradeOutcome != nil {
 		return raw, fmt.Errorf("waiver and bid decisions are made by the app")
 	}
 	raw, err := raw.Prepared()
@@ -433,7 +437,7 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 }
 
 func (r RawCommand) Canonical(principal string) (string, error) {
-	r.Args.WaiverOutcome, r.Args.BidOutcome = nil, nil
+	r.Args.WaiverOutcome, r.Args.BidOutcome, r.Args.TradeOutcome = nil, nil, nil
 	definition, err := r.EffectiveDefinition()
 	if err != nil {
 		return "", err

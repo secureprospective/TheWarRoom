@@ -181,11 +181,15 @@ func draftOwnership(season int, records []Record) ([]rookiedraft.OwnedPick, erro
 		return nil, fmt.Errorf("record the starting snapshot's draft picks before ordering the draft")
 	}
 	owned := []rookiedraft.OwnedPick{}
-	for _, p := range records[idx].Command.Args.Native.Picks {
+	assets, err := NativeAssetsReading(records[idx].Command.League, records)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range assets.Snapshot.Picks {
 		if p.Season != season {
 			continue
 		}
-		if p.Slot != 0 || p.Original == "" {
+		if p.Original == "" {
 			return nil, fmt.Errorf("this draft was run before the league began; it cannot be run again here")
 		}
 		owned = append(owned, rookiedraft.OwnedPick{Round: p.Round, Original: p.Original, Owner: p.Owner})

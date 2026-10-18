@@ -434,6 +434,14 @@ export function TargetNativeStandings(arg1, arg2) {
   return window['go']['main']['App']['TargetNativeStandings'](arg1, arg2);
 }
 
+export function TargetNativeTradeAction(arg1) {
+  return window['go']['main']['App']['TargetNativeTradeAction'](arg1);
+}
+
+export function TargetNativeTrades(arg1, arg2) {
+  return window['go']['main']['App']['TargetNativeTrades'](arg1, arg2);
+}
+
 export function TargetNativeWaiverAction(arg1) {
   return window['go']['main']['App']['TargetNativeWaiverAction'](arg1);
 }

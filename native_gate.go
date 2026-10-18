@@ -32,7 +32,8 @@ var errActionClosed = errors.New("league action closed")
 func nativeOwnerActions() []NativeOwnerAction {
 	registry := []NativeOwnerAction{lineupSetAction(), draftPickAction(), waiverAction(commissioner.RosterCut),
 		waiverAction(commissioner.WaiverClaim), bidAction(commissioner.BidPlace), bidAction(commissioner.BidRaise),
-		bidAction(commissioner.BidWithdraw)}
+		bidAction(commissioner.BidWithdraw), tradeAction(commissioner.TradeOffer), tradeAction(commissioner.TradeAccept),
+		tradeAction(commissioner.TradeDecline), tradeAction(commissioner.TradeWithdraw)}
 	for _, action := range nativecheck.ContractActions() {
 		window, gated := commissioner.OwnerContractWindow(action)
 		if !gated {
