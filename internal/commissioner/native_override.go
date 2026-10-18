@@ -3,6 +3,7 @@ package commissioner
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
@@ -118,16 +119,32 @@ func (r RawCommand) validateOverridePlacement() error {
 	return nil
 }
 
-// PendingTradeCapCheck is the escalation seam for native trade review. No trade ledger exists yet.
-func PendingTradeCapCheck(_ RawCommand, _ []Record) (bool, string) {
+// PendingTradeCapCheck says whether a contract or cap correction would change the money in a trade still waiting
+// for acceptance, review or an appeal ruling. That trade was judged on the old figures, so it must be settled first.
+func PendingTradeCapCheck(raw RawCommand, records []Record, now time.Time) (bool, string) {
+	o := raw.Args.Override
+	if o == nil || len(records) == 0 {
+		return false, "No pending trades"
+	}
+	_, book, err := nativeAssetsState(raw.League, records)
+	if err != nil {
+		return false, "No pending trades"
+	}
+	for _, t := range book.Trades {
+		pending := t.Status == "review" || t.Status == "appealed" || (t.Status == "offered" && now.Before(t.ExpiresAt))
+		if pending && (slices.Contains(t.Parties, o.Franchise) ||
+			slices.ContainsFunc(t.Assets, func(a TradeAsset) bool { return a.Player != "" && a.Player == o.Player })) {
+			return true, "Trade " + t.ID + " is waiting on these figures"
+		}
+	}
 	return false, "No pending trades"
 }
 
 func CheckOverrideAppend(raw RawCommand, records []Record, now time.Time) error {
 	switch raw.Command {
 	case ContractEdit, CapAdjust, CapRelief, ReserveException:
-		if changed, _ := PendingTradeCapCheck(raw, records); changed {
-			return Refused(fmt.Errorf("this correction changes a pending trade; trade review is required"))
+		if changed, words := PendingTradeCapCheck(raw, records, now); changed {
+			return Refused(fmt.Errorf("this correction changes a pending trade; settle the trade first (%s)", words))
 		}
 		if err := checkOverrideTarget(raw, records, now); err != nil {
 			return Refused(err)

@@ -65,14 +65,15 @@ type NativePlayer struct {
 }
 
 type NativePick struct {
-	Correction string `json:"correction,omitempty"`
-	Season     int    `json:"season"`
-	Round      int    `json:"round"`
-	Slot       int    `json:"slot"`
-	Original   string `json:"original"`
-	Owner      string `json:"owner"`
-	Player     string `json:"player"`
-	Skipped    bool   `json:"skipped"`
+	Compensatory bool   `json:"compensatory,omitempty"`
+	Correction   string `json:"correction,omitempty"`
+	Season       int    `json:"season"`
+	Round        int    `json:"round"`
+	Slot         int    `json:"slot"`
+	Original     string `json:"original"`
+	Owner        string `json:"owner"`
+	Player       string `json:"player"`
+	Skipped      bool   `json:"skipped"`
 }
 
 type NativeCharge struct {

@@ -29,6 +29,12 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *wai
 // projectNativeEntry applies one active ledger entry to the native assets.
 func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *waiverState) error {
 	record := records[i]
+	if TradeCommand(record.Command.Command) {
+		if !assets.Seeded {
+			return fmt.Errorf("record starting assets before trading")
+		}
+		return projectTrade(assets.Snapshot, waivers, record)
+	}
 	if WaiverCommand(record.Command.Command) {
 		if !assets.Seeded {
 			return fmt.Errorf("record starting assets before waiver actions")

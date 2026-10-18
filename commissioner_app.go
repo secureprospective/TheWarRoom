@@ -42,6 +42,9 @@ func (a *App) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("league change: %w", err)
 	}
+	if commissioner.OwnerTradeAction(raw.Command) != "" {
+		return commissioner.Receipt{}, fmt.Errorf("use the native trade action to offer, accept, decline or withdraw")
+	}
 	if commissioner.OwnerWaiverAction(raw.Command) != "" {
 		return commissioner.Receipt{}, fmt.Errorf("use the native owner action for cuts and claims")
 	}

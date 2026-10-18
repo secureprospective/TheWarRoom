@@ -1,0 +1,120 @@
+{
+  "league": "native.seed",
+  "viewer": "franchise.01",
+  "revision": 23,
+  "rules": [
+    {
+      "label": "Trade review",
+      "words": "DOT"
+    },
+    {
+      "label": "Trade review seats",
+      "words": "4"
+    },
+    {
+      "label": "Votes to approve or veto",
+      "words": "3"
+    },
+    {
+      "label": "Future pick trading years",
+      "words": "2"
+    },
+    {
+      "label": "Tradable pick rounds",
+      "words": "1 to 5"
+    },
+    {
+      "label": "Refuse invalid rosters",
+      "words": "On"
+    },
+    {
+      "label": "Trade offer lifetime",
+      "words": "7 days"
+    },
+    {
+      "label": "Maximum trade parties",
+      "words": "3"
+    }
+  ],
+  "offers": [
+    {
+      "vetoNumber": 0,
+      "appealedVetoNumber": 0,
+      "assetDetails": [
+        {
+          "fromTeam": "Held team 2",
+          "toTeam": "Held team 1",
+          "label": "Player, 1000",
+          "contract": "3 years at $1,000,000 a year",
+          "yearlySalaryCents": 100000000,
+          "contractEndsInSeason": 2028
+        },
+        {
+          "fromTeam": "Held team 1",
+          "toTeam": "Held team 2",
+          "label": "Player, 4000",
+          "contract": "3 years at $10,000 a year",
+          "yearlySalaryCents": 1000000,
+          "contractEndsInSeason": 2028
+        }
+      ],
+      "id": "trade.wire",
+      "proposer": "franchise.02",
+      "parties": [
+        "franchise.02",
+        "franchise.01"
+      ],
+      "assets": [
+        {
+          "from": "franchise.02",
+          "to": "franchise.01",
+          "player": "1000"
+        },
+        {
+          "from": "franchise.01",
+          "to": "franchise.02",
+          "player": "4000"
+        }
+      ],
+      "accepted": [
+        "franchise.02",
+        "franchise.01"
+      ],
+      "policy": {
+        "route": "dot",
+        "seats": 4,
+        "votesToDecide": 3,
+        "futureYears": 2,
+        "minimumRound": 1,
+        "maximumRound": 5,
+        "refuseIllegalRoster": true,
+        "offerLifetimeNanoseconds": 604800000000000,
+        "maximumParties": 3
+      },
+      "offeredAt": "2026-10-13T05:00:00-07:00",
+      "expiresAt": "2026-10-20T05:00:00-07:00",
+      "status": "review",
+      "words": "Waiting for trade review",
+      "votes": [
+        {
+          "who": "dot.a",
+          "decision": "approve",
+          "at": "2026-10-13T05:00:00-07:00",
+          "reason": "Our league's recorded change"
+        }
+      ],
+      "recusals": [
+        {
+          "who": "owner.two",
+          "decision": "trade.recuse",
+          "at": "2026-10-13T05:00:00-07:00",
+          "reason": "A trade party cannot review its own trade"
+        }
+      ],
+      "appeals": [],
+      "overrides": [],
+      "expires": "Oct 20, 2026 at 5:00 AM PDT"
+    }
+  ],
+  "notes": []
+}

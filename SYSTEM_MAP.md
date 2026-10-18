@@ -793,3 +793,18 @@ individual corrected players and picks also carry their reason. Go owns
 `internal/commissioner/testdata/corrections-wire.json`; Wails generates the binding.
 The rollover append lock resolves `NativeBracketReading` through history links before preparing its
 frozen plan, so the archived champion is the decided season winner, not an unset snapshot field.
+## Native trades
+
+`native_trades_app.go` exposes `TargetNativeTradeAction` (offer, accept, decline, withdraw) through the native
+owner registry and calendar gate, and `TargetNativeTrades(league, viewer)` (viewer is the seated franchise).
+`internal/commissioner/trade_rules.go` resolves CM-014 without defaulting unset settings; an offer records
+its review policy and expiry. `trade_execute.go` checks ownership, future-pick eligibility, all-party roster
+and cap legality under the append lock, again at acceptance and approval. `trade_projector.go` folds offers,
+votes, automatic party recusals, one appeal, commissioner/co-commissioner rulings and public reasoned
+overrides into the same native assets as cuts, bids and draft picks. Compensation checks the prior trade
+state and asset dependencies; replay never votes or re-decides an old trade. Compensatory picks are marked
+on `NativePick` and never transferable. `draft_reading.go` reads projected pick ownership; reversing a trade
+cannot strand a made draft selection. `trade_reading.go` gives all seated owners the public review trail,
+frozen offered contract details and viewer-local times; expiry lapses an unaccepted offer at its instant.
+The Go-written fixture is `internal/commissioner/testdata/native-trades-wire.json`. No imported MFL reading
+or frontend screen is migrated.

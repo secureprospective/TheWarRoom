@@ -163,6 +163,9 @@ func waiverLabel(command string) string {
 }
 
 func (r RawCommand) nativePlacement() (bool, error) {
+	if TradeCommand(r.Command) {
+		return true, r.validateTradePlacement()
+	}
 	if WaiverCommand(r.Command) {
 		return true, r.validateWaiverPlacement()
 	}

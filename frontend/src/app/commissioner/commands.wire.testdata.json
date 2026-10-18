@@ -420,6 +420,36 @@
     "safeguard": "confirm"
   },
   {
+    "command": "trade.appeal",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "trade.appeal.rule",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "trade.override",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
+    "command": "trade.recuse",
+    "effective": "now",
+    "field": "",
+    "safeguard": "confirm"
+  },
+  {
+    "command": "trade.review",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
     "command": "waivers.award.override",
     "effective": "now",
     "field": "",

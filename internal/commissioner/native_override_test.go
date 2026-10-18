@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
@@ -63,7 +64,7 @@ func TestNativeOverrideBoundary(t *testing.T) {
 			t.Fatalf("accepted invalid value: %s", tc.value)
 		}
 	}
-	if changed, words := PendingTradeCapCheck(RawCommand{}, nil); changed || words != "No pending trades" {
+	if changed, words := PendingTradeCapCheck(RawCommand{}, nil, time.Time{}); changed || words != "No pending trades" {
 		t.Fatalf("unexpected pending trade ruling: %t %s", changed, words)
 	}
 }

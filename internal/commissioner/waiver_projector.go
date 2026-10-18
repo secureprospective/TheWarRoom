@@ -31,7 +31,8 @@ type waiverState struct {
 	OrderSeason int
 	Source      string
 	// Bids rides with the waiver state because both fold the same ledger into the same rosters.
-	Bids bidBook
+	Bids   bidBook
+	Trades []TradeState
 }
 
 func (s *waiverState) window(id string) (*waiverWindow, error) {

@@ -56,8 +56,8 @@ func GovernanceState(records []Record) (governance.State, error) {
 type GovernanceAuthorizer struct{ State governance.State }
 
 func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string, error) {
-	if command == ContractActionSet && !a.State.HasRole(governance.Principal(principal), governance.Commissioner) {
-		return "", fmt.Errorf("only this league's commissioner may set contract actions")
+	if (command == ContractActionSet || command == TradeOverride) && !a.State.HasRole(governance.Principal(principal), governance.Commissioner) {
+		return "", fmt.Errorf("only this league's commissioner may make this change")
 	}
 	if d, ok := successionDefinitionFor(command); ok {
 		return successionPermission(a.State, principal, d)
@@ -92,6 +92,7 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 // commandControls names the census control that governs each commissioner command.
 func commandControls() map[string]string {
 	return map[string]string{
+		TradeReview: "CM-037", TradeRecuse: "CM-037", TradeAppeal: "CM-037", TradeAppealRule: "CM-037", TradeOverride: "CM-037",
 		DraftStart: "CM-042", DraftOrderAuto: "CM-041", DraftOrderSet: "CM-041",
 		DraftOrderPattern: "CM-041", DraftOrderTiebreak: "CM-041",
 		WaiverProcess: "CM-035", WaiverOrderSet: "CM-035", WaiverOrderAuto: "CM-035", WaiverOverride: "CM-035",
@@ -126,17 +127,14 @@ func ledgerReader(state governance.State, principal string) string {
 }
 
 func AuthorizeRecords(raw RawCommand, principal string, records []Record) (string, error) {
+	if TradeCommand(raw.Command) {
+		return authorizeTrade(raw, principal, records)
+	}
 	if len(records) == 0 && raw.Command == Create {
 		return "commissioner", nil
 	}
-	if OwnerWaiverAction(raw.Command) != "" {
-		if err := AuthorizeFranchiseOwner(records, principal, raw.Args.Waiver.Franchise); err != nil {
-			return "", err
-		}
-		return "owner", nil
-	}
-	if OwnerBidAction(raw.Command) != "" {
-		if err := AuthorizeFranchiseOwner(records, principal, raw.Args.Bid.Franchise); err != nil {
+	if franchise := marketOwnerFranchise(raw); franchise != "" {
+		if err := AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
 			return "", err
 		}
 		return "owner", nil
@@ -214,6 +212,8 @@ func authorizeReversal(auth GovernanceAuthorizer, entry, principal string, recor
 			return nil // reversing needs only the reversal permission itself; the owner's seat is not asked for
 		case OwnerWaiverAction(r.Command.Command) != "":
 			_, err = auth.Allow(r.Command.League, principal, WaiverProcess)
+		case OwnerTradeAction(r.Command.Command) != "" || TradeCommand(r.Command.Command):
+			_, err = auth.Allow(r.Command.League, principal, TradeOverride)
 		case OwnerBidAction(r.Command.Command) != "":
 			_, err = auth.Allow(r.Command.League, principal, BidsProcess)
 		case r.Command.Command == RulesSet:
@@ -281,4 +281,14 @@ func CheckGovernanceAppend(raw RawCommand, principal string, records []Record, a
 		return Refused(fmt.Errorf("people change refused: %w", err))
 	}
 	return nil
+}
+
+func marketOwnerFranchise(raw RawCommand) string {
+	if OwnerWaiverAction(raw.Command) != "" {
+		return raw.Args.Waiver.Franchise
+	}
+	if OwnerBidAction(raw.Command) != "" {
+		return raw.Args.Bid.Franchise
+	}
+	return ""
 }

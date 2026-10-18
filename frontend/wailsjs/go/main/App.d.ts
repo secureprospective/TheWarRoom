@@ -226,6 +226,10 @@ export function TargetNativeSeed(arg1:main.RawNativeSeedRequest):Promise<commiss
 
 export function TargetNativeStandings(arg1:string,arg2:number):Promise<commissioner.NativeStandings>;
 
+export function TargetNativeTradeAction(arg1:commissioner.RawCommand):Promise<commissioner.Receipt>;
+
+export function TargetNativeTrades(arg1:string,arg2:string):Promise<commissioner.NativeTrades>;
+
 export function TargetNativeWaiverAction(arg1:commissioner.RawCommand):Promise<commissioner.Receipt>;
 
 export function TargetNativeWaivers(arg1:string,arg2:string,arg3:time.Time):Promise<commissioner.NativeWaivers>;
