@@ -67,10 +67,8 @@ type NativeBids struct {
 	Notes       []string          `json:"notes"`
 }
 
-// bidStandFor is how long a bid must stand, unbeaten, to win. The league's rules do not set it yet, so a
-// closing time is a ruling still owed rather than a number the app invents.
-func bidStandFor(leaguerules.RuleSet) leaguerules.Value[time.Duration] {
-	return leaguerules.Needs[time.Duration]("how long a bid must stand to win")
+func bidStandFor(rules leaguerules.RuleSet) leaguerules.Value[time.Duration] {
+	return rules.Bids.StandFor
 }
 
 // bidClose dates the end of an auction from its standing bid, or says the rule is missing.
@@ -187,7 +185,7 @@ func (v bidViewer) player(a *bidAuction, at time.Time, policy nativecheck.BidPol
 			row.LateNow = at.After(row.LateAt)
 			row.LateWords = lateWords(policy, row.LateAt, row.LateNow)
 		}
-		row.ClosesAt, row.Closes = bidClose(stand, lead.PlacedAt, v.zone)
+		row.ClosesAt, row.Closes = bidClose(stand, a.standingAt(), v.zone)
 	} else {
 		row.Closes = "Closing time is not shown in blind bidding"
 	}

@@ -82,5 +82,14 @@ func (s *Store) NativeBids(ctx context.Context, league, franchise, principal str
 	if err != nil {
 		return commissioner.NativeBids{}, fmt.Errorf("read native bids: %w", err)
 	}
+	if s.bidEnv != nil {
+		env, err := s.bidEnv.BidEnvironment(ctx, league, at)
+		if err != nil {
+			return commissioner.NativeBids{}, fmt.Errorf("read bidding season: %w", err)
+		}
+		if env.Season.Offseason {
+			reading.Notes = append(reading.Notes, "It is the offseason: the week limits on multi-year and playoff-only bidding do not apply.")
+		}
+	}
 	return reading, nil
 }

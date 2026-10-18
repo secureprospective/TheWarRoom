@@ -53,12 +53,13 @@ func (a *App) TargetNativeWaivers(league, franchise string, at time.Time) (commi
 	return reading, nil
 }
 
-// nativeWaiverClock resumes persisted windows on startup and checks them without any network feed.
+// nativeWaiverClock resumes persisted waiver windows and bid clocks without any network feed.
 func (a *App) nativeWaiverClock(ctx context.Context) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
 		a.processNativeWaiversDue(ctx)
+		a.processNativeBidsDue(ctx)
 		select {
 		case <-ctx.Done():
 			return

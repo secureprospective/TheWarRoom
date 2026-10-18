@@ -84,11 +84,8 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 		return *retry, nil
 	}
 	now := s.now().UTC().Truncate(time.Microsecond)
-	if err := commissioner.PrepareWaiverAppend(&raw, records, now, facts, zone); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("check waiver action: %w", commissioner.Refused(err))
-	}
-	if err := commissioner.PrepareBidAppend(&raw, records, now, facts, zone, gathered.bid); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("check bid action: %w", commissioner.Refused(err))
+	if err := gathered.prepareNative(&raw, records, now, facts, zone, principal); err != nil {
+		return commissioner.Receipt{}, err
 	}
 	before, plan, err := s.prepareRollover(ctx, raw, records, now)
 	if err != nil {

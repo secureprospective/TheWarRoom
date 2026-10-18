@@ -1,7 +1,7 @@
 {
   "from": 2026,
   "to": 2027,
-  "beforeDigest": "491a342ba1d39b12abf249a5ecf7ddcc37e1bbdf34c332361351bbdb94632a4e",
+  "beforeDigest": "566a3da3118f4a0cad3f5564588faa3646a7f00f72ef19bc9c95f66ed932b659",
   "blocked": false,
   "reasons": [],
   "lines": [
@@ -3569,6 +3569,11 @@
         "State": 1,
         "Value": 1000,
         "Citation": "Rulebook §6"
+      },
+      "StandFor": {
+        "State": 1,
+        "Value": 86400000000000,
+        "Citation": "docs/league-history/League_History_v1.md:36: the 24-hour clock reset on every new bid"
       },
       "SnipeAfter": {
         "State": 1,

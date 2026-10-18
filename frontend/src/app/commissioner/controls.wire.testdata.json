@@ -322,6 +322,10 @@
               "label": "Minimum bid increase"
             },
             {
+              "field": "bids.standFor",
+              "label": "Time a bid must stand to win"
+            },
+            {
               "field": "bids.snipeAfter",
               "label": "Late bid threshold"
             },

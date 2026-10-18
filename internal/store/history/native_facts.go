@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // BidEnvironmentSource says where the NFL season stands and which franchises are in the playoffs when an
@@ -57,4 +58,21 @@ func (s *Store) appendFactsFor(ctx context.Context, raw commissioner.RawCommand)
 	}
 	facts.stat = commissioner.StatFacts{Versions: week.Evidence.Versions()}
 	return facts, nil
+}
+
+// prepareNative runs under the append lock, sharing the same held facts and current ledger.
+func (f appendFacts) prepareNative(raw *commissioner.RawCommand, records []commissioner.Record,
+	now time.Time, facts nativecheck.Facts, zone *time.Location, principal string) error {
+	if err := commissioner.PrepareWaiverAppend(raw, records, now, facts, zone); err != nil {
+		return fmt.Errorf("check waiver action: %w", commissioner.Refused(err))
+	}
+	if principal == "native.bid.clock" {
+		if err := commissioner.CheckDueBid(*raw, records, now, facts); err != nil {
+			return fmt.Errorf("check automatic bid award: %w", commissioner.Refused(err))
+		}
+	}
+	if err := commissioner.PrepareBidAppend(raw, records, now, facts, zone, f.bid); err != nil {
+		return fmt.Errorf("check bid action: %w", commissioner.Refused(err))
+	}
+	return nil
 }

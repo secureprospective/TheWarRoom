@@ -34,6 +34,7 @@ const (
 type BidSeason struct {
 	Week      int
 	WeekKnown bool
+	Offseason bool
 }
 
 // StandingBid is the bid a new bid must beat.
@@ -237,6 +238,9 @@ func (p BidPolicy) minimumFor(years int) (domain.Money, bool) {
 
 // seasonRefusal applies the phase rules: when multi year bids stop, and who may bid late in the season.
 func (p BidPolicy) seasonRefusal(in BidProposal, f BidFacts, _ *BidVerdict) string {
+	if f.Season.Offseason {
+		return ""
+	}
 	if !f.Season.WeekKnown {
 		return "The app holds no NFL week for this season, so it cannot tell which bidding limits apply."
 	}
@@ -262,7 +266,7 @@ func (p BidPolicy) seasonRefusal(in BidProposal, f BidFacts, _ *BidVerdict) stri
 // lengthRefusal holds a bid to the one year limit and to the years its salary tier requires. In the
 // playoffs the league may lift both, because only short bids are left.
 func (p BidPolicy) lengthRefusal(in BidProposal, f BidFacts, _ *BidVerdict) string {
-	if p.capLifted && f.Season.Week >= p.playoffStart {
+	if !f.Season.Offseason && p.capLifted && f.Season.Week >= p.playoffStart {
 		return ""
 	}
 	if in.Years == 1 && in.Salary > p.oneYearMax {

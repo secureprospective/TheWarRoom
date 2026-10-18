@@ -3252,6 +3252,11 @@
       "Value": 1000,
       "Citation": "Rulebook §6"
     },
+    "StandFor": {
+      "State": 1,
+      "Value": 86400000000000,
+      "Citation": "docs/league-history/League_History_v1.md:36: the 24-hour clock reset on every new bid"
+    },
     "SnipeAfter": {
       "State": 1,
       "Value": 72000000000000,

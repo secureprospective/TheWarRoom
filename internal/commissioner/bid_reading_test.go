@@ -12,11 +12,11 @@ import (
 func TestBidCloseIsARulingUntilTheLeagueSetsHowLongABidStands(t *testing.T) {
 	zone := time.FixedZone("PDT", -7*60*60)
 	placed := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
-	if at, words := bidClose(bidStandFor(leaguerules.LegacyNFL()), placed, zone); at != nil ||
+	if at, words := bidClose(bidStandFor(leaguerules.RuleSet{}), placed, zone); at != nil ||
 		!strings.HasPrefix(words, "Needs a ruling") {
 		t.Fatalf("a closing time was invented: %v %q", at, words)
 	}
-	at, words := bidClose(leaguerules.Known(24*time.Hour), placed, zone)
+	at, words := bidClose(bidStandFor(leaguerules.LegacyNFL()), placed, zone)
 	if at == nil || !at.Equal(placed.Add(24*time.Hour)) || at.Location() != zone ||
 		words != "Closes Oct 14, 2026 at 5:00 AM PDT" {
 		t.Fatalf("a set stand time did not date the close: %v %q", at, words)

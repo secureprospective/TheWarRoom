@@ -446,7 +446,7 @@ func TestNFLWeekInPlayComesFromTheHeldWeekDates(t *testing.T) {
 	}{
 		{"nothing held", nil, kick(20), nativecheck.BidSeason{}},
 		{"a week with no games is not held", []leagueweek.Week{{Number: 1}}, kick(20), nativecheck.BidSeason{}},
-		{"before the first kickoff", held, kick(1), nativecheck.BidSeason{Week: 1, WeekKnown: true}},
+		{"before the first kickoff", held, kick(1), nativecheck.BidSeason{Offseason: true}},
 		{"between weeks", held, kick(20), nativecheck.BidSeason{Week: 3, WeekKnown: true}},
 		{"after every held week", held[:2], kick(28), nativecheck.BidSeason{Week: 2, WeekKnown: true}},
 	} {

@@ -59,8 +59,14 @@ func JobsReading(league string, records []Record, at time.Time) (Jobs, error) {
 	if err != nil {
 		return Jobs{}, err
 	}
-	return Jobs{League: league, Name: Replay(records).Name, Revision: int64(len(records)),
-		Jobs: jobsFor(rules, ruleCalendar{rules.Calendar}, at)}, nil
+	jobs := jobsFor(rules, ruleCalendar{rules.Calendar}, at)
+	transactions, err := transactionJobs(league, records, rules, at)
+	if err != nil {
+		return Jobs{}, err
+	}
+	jobs = append(jobs, transactions...)
+	sortJobs(jobs)
+	return Jobs{League: league, Name: Replay(records).Name, Revision: int64(len(records)), Jobs: jobs}, nil
 }
 
 // jobsFor works every job out from the rules and the calendar, then puts them in the order the
@@ -77,8 +83,13 @@ func jobsFor(rules leaguerules.RuleSet, cal JobCalendar, at time.Time) []Job {
 		unbuilt("dot_review", "DOT review and appeal", "CM-014", "CM-037"),
 		unbuilt("playoffs", "Playoffs", "CM-016", "CM-046", "CM-047"),
 		unbuilt("in_season", "In-season operations",
-			"CM-028", "CM-029", "CM-030", "CM-033", "CM-034", "CM-035", "CM-036", "CM-038", "CM-039"),
+			"CM-028", "CM-029", "CM-030", "CM-033", "CM-034", "CM-038", "CM-039"),
 		unbuilt("communications", "Communications", "CM-051", "CM-052", "CM-053", "CM-054"))
+	sortJobs(jobs)
+	return jobs
+}
+
+func sortJobs(jobs []Job) {
 	rank := map[string]int{JobLive: 0, JobUpcoming: 1, JobBlocked: 2, JobUnbuilt: 3}
 	slices.SortStableFunc(jobs, func(a, b Job) int {
 		if c := cmp.Compare(rank[a.State], rank[b.State]); c != 0 {
@@ -96,7 +107,6 @@ func jobsFor(rules leaguerules.RuleSet, cal JobCalendar, at time.Time) []Job {
 		}
 		return 0
 	})
-	return jobs
 }
 
 // setupJob is live while any rule still Needs a ruling; open is false once every rule is set.

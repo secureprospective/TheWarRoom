@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -53,9 +54,7 @@ func (a *App) TargetNativeBids(league, franchise string) (commissioner.NativeBid
 	return reading, nil
 }
 
-// appBidEnv tells the store which NFL week a bid is made in, from the NFL week dates the app holds. The app
-// reads no playoff field, so every franchise's playoff standing is unknown and a limit that depends on it is
-// refused in words rather than guessed.
+// appBidEnv reads the season and playoff field from held native data, never from an imported league.
 type appBidEnv struct{ app *App }
 
 func (e appBidEnv) BidEnvironment(ctx context.Context, league string, at time.Time) (commissioner.BidEnvironment, error) {
@@ -71,7 +70,26 @@ func (e appBidEnv) BidEnvironment(ctx context.Context, league string, at time.Ti
 	if err != nil {
 		return commissioner.BidEnvironment{}, err
 	}
-	return commissioner.BidEnvironment{Season: nflWeekAt(weeks, at), Playoff: map[string]nativecheck.PlayoffStanding{}}, nil
+	phase := nflWeekAt(weeks, at)
+	if !phase.WeekKnown && !phase.Offseason {
+		phase.Offseason, err = commissioner.BidOffseasonAt(records, at, season)
+		if err != nil {
+			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding offseason: %w", err)
+		}
+	}
+	field := map[string]nativecheck.PlayoffStanding{}
+	if phase.WeekKnown {
+		bracket, err := e.app.history.NativeBracket(ctx, league, season)
+		if err != nil {
+			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding playoff field: %w", err)
+		}
+		directory, err := commissioner.NativeDirectoryReading(league, records, at)
+		if err != nil {
+			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding franchises: %w", err)
+		}
+		field = bidPlayoffField(bracket, directory)
+	}
+	return commissioner.BidEnvironment{Season: phase, Playoff: field}, nil
 }
 
 // nflWeekAt is the week in play: the first held week not yet finished, or the last held week once every one
@@ -86,6 +104,15 @@ func nflWeekAt(weeks []leagueweek.Week, at time.Time) nativecheck.BidSeason {
 	if len(played) == 0 {
 		return nativecheck.BidSeason{}
 	}
+	first := leagueweek.FirstLock(played[0])
+	for _, w := range played[1:] {
+		if kickoff := leagueweek.FirstLock(w); kickoff.Before(first) {
+			first = kickoff
+		}
+	}
+	if at.Before(first) {
+		return nativecheck.BidSeason{Offseason: true}
+	}
 	if current, found := leagueweek.LineupWeek(at, played...); found {
 		return nativecheck.BidSeason{Week: current.Number, WeekKnown: true}
 	}
@@ -94,4 +121,35 @@ func nflWeekAt(weeks []leagueweek.Week, at time.Time) nativecheck.BidSeason {
 		last = max(last, w.Number)
 	}
 	return nativecheck.BidSeason{Week: last, WeekKnown: true}
+}
+
+// bidPlayoffField treats absence as unknown until the native reading has a complete field.
+func bidPlayoffField(bracket commissioner.NativeBracket, directory commissioner.NativeDirectory) map[string]nativecheck.PlayoffStanding {
+	field := map[string]nativecheck.PlayoffStanding{}
+	if len(bracket.Fields) == 0 {
+		return field
+	}
+	for _, franchise := range directory.Franchises {
+		field[franchise.Franchise] = nativecheck.PlayoffOut
+	}
+	for _, conference := range bracket.Fields {
+		for _, seed := range conference.Seeds {
+			field[seed.Franchise] = nativecheck.PlayoffIn
+		}
+	}
+	return field
+}
+
+func (a *App) processNativeBidsDue(ctx context.Context) {
+	leagues, err := a.history.NativeLeagues(ctx)
+	if err != nil {
+		log.Printf("the war room: read native bid leagues: %v", err)
+		return
+	}
+	facts := a.nativeFacts()
+	for _, league := range leagues {
+		if err := a.history.ProcessDueBids(ctx, league.ID, facts); err != nil {
+			log.Printf("the war room: award native bids for %s: %v", league.ID, err)
+		}
+	}
 }

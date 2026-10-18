@@ -139,3 +139,36 @@ func TestSettingWords(t *testing.T) {
 		}
 	}
 }
+
+func TestBidStandForIsCommissionerOwnedDuration(t *testing.T) {
+	const path FieldPath = "bids.standFor"
+	found := false
+	for _, field := range Catalogue() {
+		if field.Path == path {
+			found = true
+			if field.Schema.Kind != "nanoseconds" || !field.Competitive {
+				t.Fatalf("stand time schema: %+v", field)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("stand time missing from catalogue")
+	}
+	legacy := LegacyNFL().Bids.StandFor
+	if legacy.State != IsKnown || legacy.Value != 24*time.Hour || !strings.Contains(legacy.Citation, "League_History_v1.md:36") {
+		t.Fatalf("Legacy stand time: %+v", legacy)
+	}
+	if (RuleSet{}).Bids.StandFor.State != NeedsRuling {
+		t.Fatal("empty league borrowed Legacy's clock")
+	}
+	setting, err := DecodeSetting(path, json.RawMessage(`172800000000000`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := setting.(Value[time.Duration]); !ok || got.Value != 48*time.Hour {
+		t.Fatalf("decoded duration: %+v", setting)
+	}
+	if _, err := DecodeSetting(path, json.RawMessage(`-1`)); err == nil {
+		t.Fatal("negative stand time accepted")
+	}
+}
