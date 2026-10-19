@@ -91,6 +91,7 @@ func readStatPort(t *testing.T, s *Store) []source.HeldWeek {
 }
 
 func TestPlayerWeekStatsArchiveRevisions(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "history.db")
 	s, pools := statStore(t, path)
 	if weeks := readStatPort(t, s); len(weeks) != 0 {
@@ -131,6 +132,7 @@ func TestPlayerWeekStatsArchiveRevisions(t *testing.T) {
 }
 
 func TestPlayerWeekStatsMissingDoesNotReuseOldLine(t *testing.T) {
+	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
 	putStatBody(t, s, statBody(t, "244", true), "", t0())
 	latest := putStatBody(t, s, statBody(t, "0", false), "", t0().Add(time.Hour))
@@ -141,6 +143,7 @@ func TestPlayerWeekStatsMissingDoesNotReuseOldLine(t *testing.T) {
 }
 
 func TestPlayerWeekStatsRejectsMalformedHeldFile(t *testing.T) {
+	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
 	putStatBody(t, s, statBody(t, "244", true), "", t0())
 	putStatBody(t, s, statBody(t, "not a number", true), "", t0().Add(time.Hour))
@@ -152,6 +155,7 @@ func TestPlayerWeekStatsRejectsMalformedHeldFile(t *testing.T) {
 }
 
 func TestPlayerWeekStatsScope(t *testing.T) {
+	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
 	for _, scope := range []source.RawStatScope{
 		{}, {GSIS: "00-0023459", Season: 2020, Week: 1},

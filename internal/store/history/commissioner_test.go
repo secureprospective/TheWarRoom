@@ -33,6 +33,7 @@ func (a *refusingAuthorizer) Allow(_, _, _ string) (string, error) {
 }
 
 func TestCommissionerDirectValidation(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	for _, reason := range []string{"", " \t\n"} {
 		raw := createCommand()
@@ -66,6 +67,7 @@ func TestCommissionerDirectValidation(t *testing.T) {
 }
 
 func TestCommissionerRetryConflictAndAuthorization(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	raw := createCommand()
 	first, err := s.ExecuteCommissioner(t.Context(), raw, "creator", nil)
@@ -100,6 +102,7 @@ func TestCommissionerRetryConflictAndAuthorization(t *testing.T) {
 }
 
 func TestCommissionerCompensationAndRestart(t *testing.T) {
+	t.Parallel()
 	s, _, pools := newStore(t)
 	first, err := s.ExecuteCommissioner(t.Context(), createCommand(), "creator", nil)
 	if err != nil {
@@ -186,6 +189,7 @@ func TestCommissionerCompensationAndRestart(t *testing.T) {
 }
 
 func TestCommissionerConcurrentRetryAcrossStores(t *testing.T) {
+	t.Parallel()
 	s, _, pools := newStore(t)
 	second := New(pools, s.Registry())
 	var wg sync.WaitGroup
@@ -216,6 +220,7 @@ func TestCommissionerConcurrentRetryAcrossStores(t *testing.T) {
 }
 
 func TestCommissionerLedgerRejectsDamagedRecord(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createCommand(), "creator", nil); err != nil {
 		t.Fatal(err)

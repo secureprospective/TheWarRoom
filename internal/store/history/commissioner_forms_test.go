@@ -8,6 +8,7 @@ import (
 )
 
 func TestRuleRowsCarryWhatTheFormNeeds(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
 		t.Fatal(err)
@@ -28,6 +29,7 @@ func TestRuleRowsCarryWhatTheFormNeeds(t *testing.T) {
 }
 
 func TestRuleRowsOfAnEmptyLeagueSendNoCurrentValue(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetEmpty, 4), "creator", nil); err != nil {
 		t.Fatal(err)
@@ -51,6 +53,7 @@ func undoOf(t *testing.T, s *Store, principal string) map[string]string {
 }
 
 func TestLedgerSaysWhichEntriesThisPrincipalMayUndo(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	created, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil)
 	if err != nil {
@@ -86,6 +89,7 @@ func TestLedgerSaysWhichEntriesThisPrincipalMayUndo(t *testing.T) {
 }
 
 func TestPeopleReadingSaysWhatYouMayStart(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetEmpty, 4), "creator", nil); err != nil {
 		t.Fatal(err)

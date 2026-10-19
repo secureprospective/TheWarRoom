@@ -10,6 +10,7 @@ import (
 )
 
 func TestRolloverArchivesDecidedFinalThroughHistoryLinkAndReopens(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
 	if c := f.bracket(t).Champion; c == nil || c.Franchise != franchiseID(32) {
@@ -70,6 +71,7 @@ func assertArchivedChampion(t *testing.T, f *bracketFixture, franchise string) {
 }
 
 func TestRolloverUndecidedFinalSaysNoChampion(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	prepareChampionRollover(t, f)
 	raw := commissioner.RawCommand{League: bracketLeague, Command: commissioner.SeasonRollover,

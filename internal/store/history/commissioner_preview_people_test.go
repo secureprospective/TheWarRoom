@@ -9,6 +9,7 @@ import (
 )
 
 func TestEveryBuiltPeopleCommandHasARealPreview(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	raw := createCommand()
 	proveStorePreview(t, s, raw, "creator")
@@ -43,6 +44,7 @@ func previewSuccession(t *testing.T, f *successionFixture, principal, command st
 }
 
 func TestEveryBuiltSuccessionCommandHasARealPreview(t *testing.T) {
+	t.Parallel()
 	t.Run("inactivity", func(t *testing.T) {
 		f := newSuccession(t, 2, true)
 		previewSuccession(t, f, "creator", "commish.succession.inactivity.set", commissioner.RawPeople{InSeasonDays: 3, OffseasonDays: 2})

@@ -10,6 +10,7 @@ import (
 )
 
 func TestNativeEvidenceUsesDirectoryAndNewestHeldRevision(t *testing.T) {
+	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "identity.db"))
 	if _, err := s.LinkPlayerIDs(t.Context(), "dynastyprocess", []PlayerIDLink{
 		{IDType: "gsis", IDValue: "00-0023459", PlayerID: "0099"},
@@ -35,6 +36,7 @@ func TestNativeEvidenceUsesDirectoryAndNewestHeldRevision(t *testing.T) {
 }
 
 func TestNativeEvidenceMissingIdentityIsNotAZeroWeek(t *testing.T) {
+	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "missing.db"))
 	putStatBody(t, s, statBody(t, "245", true), "", t0())
 	evidence, err := source.ReadNativeEvidence(t.Context(), s, s,
@@ -46,6 +48,7 @@ func TestNativeEvidenceMissingIdentityIsNotAZeroWeek(t *testing.T) {
 }
 
 func TestNativeEvidenceScopeAndUnloadedSeason(t *testing.T) {
+	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "scope.db"))
 	for _, scope := range []source.RawNativeScope{{Player: "99", Season: 2025, Week: 1},
 		{Player: "0099", Season: 1919, Week: 1}, {Player: "0099", Season: 2025, Week: 0}} {

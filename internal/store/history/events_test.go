@@ -14,6 +14,7 @@ func eventFixture(id string) LeagueEvent {
 }
 
 func TestLeagueEventAppendReadAndTriggers(t *testing.T) {
+	t.Parallel()
 	s, _, p := newStore(t)
 	e, err := s.AppendEvent(t.Context(), eventFixture("first"), 0)
 	if err != nil || e.Revision != 1 || !e.RecordedAt.Equal(t0()) {
@@ -53,6 +54,7 @@ func TestLeagueEventAppendReadAndTriggers(t *testing.T) {
 }
 
 func TestLeagueEventConcurrentExpectedRevision(t *testing.T) {
+	t.Parallel()
 	s, _, p := newStore(t)
 	second := New(p, s.Registry())
 	var wg sync.WaitGroup
@@ -82,6 +84,7 @@ func TestLeagueEventConcurrentExpectedRevision(t *testing.T) {
 }
 
 func TestAuthorityDefaultsToMFLUntilCutover(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	for _, at := range []time.Time{t0(), t0().AddDate(100, 0, 0)} {
 		authority, err := s.Authority(t.Context(), "legacy", "contracts", at)
@@ -108,6 +111,7 @@ func TestAuthorityDefaultsToMFLUntilCutover(t *testing.T) {
 }
 
 func TestLeagueEventRejectsInvalidInput(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	for _, mutate := range []func(*LeagueEvent){func(e *LeagueEvent) { e.ID = "" }, func(e *LeagueEvent) { e.InputHash = "bad" }, func(e *LeagueEvent) { e.Payload.Version = 0 }, func(e *LeagueEvent) { e.EffectiveAt = time.Time{} }} {
 		e := eventFixture("bad")

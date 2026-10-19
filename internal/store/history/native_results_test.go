@@ -126,6 +126,7 @@ func (f *resultsFixture) standings(t *testing.T) commissioner.NativeStandings {
 }
 
 func TestNativeStandingsCM007GovernsAndReopens(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	for pass := 0; pass < 2; pass++ {
 		baseline := f.standings(t)
@@ -162,6 +163,7 @@ func standingsCommand(command string, change commissioner.RawStandingsChange, re
 }
 
 func TestNativeStandingsCM033BesideComputedAndReopen(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	for pass := 0; pass < 2; pass++ {
 		baseline := f.standings(t)
@@ -193,6 +195,7 @@ func TestNativeStandingsCM033BesideComputedAndReopen(t *testing.T) {
 }
 
 func TestNativeStandingsOrderClearAndCompensation(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	baseline := f.standings(t)
 	order := make([]string, len(baseline.Computed))
@@ -230,6 +233,7 @@ func TestNativeStandingsOrderClearAndCompensation(t *testing.T) {
 }
 
 func TestNativeStandingsStopsAtRegularSeason(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	runScoreCommand(t, f.s, ruleCommand("schedule.regularWeeks", "1", "now", "Finish after week one", revision(t, f.s)), "creator")
 	got := f.standings(t)
@@ -239,6 +243,7 @@ func TestNativeStandingsStopsAtRegularSeason(t *testing.T) {
 }
 
 func TestNativeResultsAndFlipPreview(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	before, err := f.s.NativeResults(t.Context(), "native.test", 2026, 2)
 	if err != nil || before.Games[0].Winner != f.b {
@@ -299,6 +304,7 @@ func TestNativeResultsAndFlipPreview(t *testing.T) {
 // TestResultFlipWarningNamesOnlyTheGameTheChangeTouches pins the sentence an owner reads when a score change
 // cannot be called: one game, named once by franchise name, and why - never every game of the week, never an id.
 func TestResultFlipWarningNamesOnlyTheGameTheChangeTouches(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	change := func(kind string) commissioner.RawCommand {
 		c := commissioner.RawScoreChange{Season: 2026, Week: 2, Delta: pointsDelta(15001)}
@@ -350,6 +356,7 @@ func TestResultFlipWarningNamesOnlyTheGameTheChangeTouches(t *testing.T) {
 }
 
 func TestNativeStandingsPermissionsAndRefusals(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	grant := commissioner.RawCommand{League: "native.test", Command: "commish.role.grant", Args: commissioner.RawArgs{
 		People: &commissioner.RawPeople{Principal: "cc", Role: governance.CoCommissioner}}, Expected: revision(t, f.s),
@@ -391,6 +398,7 @@ func TestNativeStandingsPermissionsAndRefusals(t *testing.T) {
 }
 
 func TestNativeResultsStandingsWire(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	results, err := f.s.NativeResults(t.Context(), "native.test", 2026, 2)
 	if err != nil {
@@ -435,6 +443,7 @@ func TestNativeResultsStandingsWire(t *testing.T) {
 }
 
 func TestNativeResultsPastSeasonKeepsPublishedSchedule(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	before, err := f.s.NativeResults(t.Context(), "native.test", 2026, 1)
 	if err != nil {
@@ -465,6 +474,7 @@ func TestNativeResultsPastSeasonKeepsPublishedSchedule(t *testing.T) {
 }
 
 func TestNativeStandingsClearRecordsAndInvalidOrders(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	for _, order := range [][]string{nil, {f.a}, {f.a, f.a}} {
 		raw := standingsCommand(commissioner.StandingsOverride, commissioner.RawStandingsChange{Season: 2026, Order: order}, revision(t, f.s))

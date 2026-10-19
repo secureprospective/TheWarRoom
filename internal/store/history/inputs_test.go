@@ -54,6 +54,7 @@ func fetchOf(t *testing.T, url, source, body string, at time.Time) archive.Fetch
 }
 
 func TestImportedFetchesKeepTheirSourceAndStayOutOfFallbacks(t *testing.T) {
+	t.Parallel()
 	s, _ := importStore(t)
 	ctx := context.Background()
 	const u = "https://beta.example.com/2013/export?TYPE=rosters"
@@ -87,6 +88,7 @@ func TestImportedFetchesKeepTheirSourceAndStayOutOfFallbacks(t *testing.T) {
 }
 
 func TestManifestsPublishOncePerSHAAndSnapshotsAppend(t *testing.T) {
+	t.Parallel()
 	s, c := importStore(t)
 	ctx := context.Background()
 	m := ManifestRecord{SHA256: "m1", Name: "frozen", Entries: []byte(`[]`)}
@@ -132,6 +134,7 @@ func TestManifestsPublishOncePerSHAAndSnapshotsAppend(t *testing.T) {
 }
 
 func TestFetchHealthSaysWhenEachURLLastAnsweredAndFailed(t *testing.T) {
+	t.Parallel()
 	s, _ := importStore(t)
 	ctx := context.Background()
 	const u = "https://beta.example.com/2026/export?TYPE=rosters"

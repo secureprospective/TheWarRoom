@@ -9,6 +9,7 @@ import (
 )
 
 func TestBidClockAuthorityIsOnlyAutomaticProcessing(t *testing.T) {
+	t.Parallel()
 	auth := clockBidAuthorizer{}
 	for _, c := range []struct {
 		principal string
@@ -46,6 +47,7 @@ func TestBidClockAuthorityIsOnlyAutomaticProcessing(t *testing.T) {
 }
 
 func TestBidClockAuthorizerDoesNotDependOnLeagueIdentity(t *testing.T) {
+	t.Parallel()
 	for _, league := range []string{"native.one", "native.two"} {
 		role, err := (clockBidAuthorizer{}).Allow(league, "native.bid.clock", commissioner.BidsProcess)
 		if err != nil || role != "automatic" {
@@ -55,6 +57,7 @@ func TestBidClockAuthorizerDoesNotDependOnLeagueIdentity(t *testing.T) {
 }
 
 func TestBidClockCancellationStopsBeforeReading(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 	if err := (&Store{}).ProcessDueBids(ctx, "native.test", nil); !errors.Is(err, context.Canceled) {

@@ -15,6 +15,7 @@ import (
 )
 
 func TestLineupSetMustBeLegalUnderTheNativeCheck(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	was := revision(t, f.s)
 	short := f.lineup(f.a, map[leaguerules.Position]int{leaguerules.QB: 1, leaguerules.RB: 1, leaguerules.WR: 2,
@@ -50,6 +51,7 @@ func TestLineupSetMustBeLegalUnderTheNativeCheck(t *testing.T) {
 }
 
 func TestLineupBelongsToItsOwnerAndTheAbilityToSetIt(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	for _, principal := range []string{f.ownerOfB, "creator", "stranger"} {
 		_, err := f.s.ExecuteCommissioner(t.Context(),
@@ -67,6 +69,7 @@ func TestLineupBelongsToItsOwnerAndTheAbilityToSetIt(t *testing.T) {
 }
 
 func TestLockedPlayerCannotBeMovedInOrOutAfterKickoff(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	qb2 := f.roster[f.a][leaguerules.QB][1]
 	f.mustSet(t, f.a, f.legal(f.a))
@@ -107,6 +110,7 @@ func TestLockedPlayerCannotBeMovedInOrOutAfterKickoff(t *testing.T) {
 }
 
 func TestLockUnknownWhenKickoffTimesAreNotHeld(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	raw := f.command(t, commissioner.LineupSet, f.a, 2, f.legal(f.a))
 	_, err := f.s.ExecuteCommissioner(t.Context(), raw, f.ownerOfA, nil)
@@ -116,6 +120,7 @@ func TestLockUnknownWhenKickoffTimesAreNotHeld(t *testing.T) {
 }
 
 func TestByeAndTeamlessPlayersNeverLock(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	rb3, qb2 := f.roster[f.a][leaguerules.RB][2], f.roster[f.a][leaguerules.QB][1]
 	base := f.legal(f.a)
@@ -136,6 +141,7 @@ func TestByeAndTeamlessPlayersNeverLock(t *testing.T) {
 }
 
 func TestCorrectionLockedOutOwnersAndCorrectionIsFinal(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	f.mustSet(t, f.a, f.legal(f.a))
 	f.at = f.dallas.Add(time.Hour)
@@ -160,6 +166,7 @@ func TestCorrectionLockedOutOwnersAndCorrectionIsFinal(t *testing.T) {
 }
 
 func TestMissedLineupIsFlaggedNeverPenalised(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	got := f.results(t)
 	flagged := map[string]bool{}
@@ -197,6 +204,7 @@ func TestMissedLineupIsFlaggedNeverPenalised(t *testing.T) {
 }
 
 func TestRecordedLineupsDecideTheResultAndReopen(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	f.points[f.roster[f.a][leaguerules.QB][0]] = 300000
 	f.points[f.roster[f.b][leaguerules.WR][0]] = 20000
@@ -219,6 +227,7 @@ func TestRecordedLineupsDecideTheResultAndReopen(t *testing.T) {
 }
 
 func TestInvalidLineupLosesItsTopStarterAndNothingElse(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	grantDeputy(t, f)
 	f.points[f.roster[f.a][leaguerules.QB][0]] = 300000
@@ -242,6 +251,7 @@ func TestInvalidLineupLosesItsTopStarterAndNothingElse(t *testing.T) {
 }
 
 func TestLineupCorrectionGovernsAndRescoresTheWeek(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	grantDeputy(t, f)
 	qb1, qb2 := f.roster[f.a][leaguerules.QB][0], f.roster[f.a][leaguerules.QB][1]
@@ -290,6 +300,7 @@ func TestLineupCorrectionGovernsAndRescoresTheWeek(t *testing.T) {
 }
 
 func TestCorrectionGivesAMissedLineupItsResult(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	grantDeputy(t, f)
 	f.mustSet(t, f.b, f.legal(f.b))
@@ -306,6 +317,7 @@ func TestCorrectionGivesAMissedLineupItsResult(t *testing.T) {
 }
 
 func TestCorrectionPreviewWarnsOfThePenalty(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	grantDeputy(t, f)
 	raw := f.correct(t, f.a, f.legal(f.a)[:20])
@@ -320,6 +332,7 @@ func TestCorrectionPreviewWarnsOfThePenalty(t *testing.T) {
 }
 
 func TestNativeLineupReadingNamesLocksInTheOwnersTime(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	f.mustSet(t, f.a, f.legal(f.a))
 	read := f.reading(t, f.a)
@@ -363,6 +376,7 @@ func TestNativeLineupReadingNamesLocksInTheOwnersTime(t *testing.T) {
 // TestNativeLineupWire pins the Go-written shape of the lineup reading, the correction preview and a week
 // scored from recorded lineups, so the screens that read them cannot drift from it.
 func TestNativeLineupWire(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	grantDeputy(t, f)
 	f.points[f.roster[f.a][leaguerules.QB][0]] = 300000
@@ -407,6 +421,7 @@ func TestNativeLineupWire(t *testing.T) {
 // shows each one reach recorded lineups: what an owner may set, what an invalid lineup costs, whether a
 // missed lineup is flagged. Each is then reversed, and the database reopened.
 func TestCM004GovernsTheLineupsTheLeagueRecords(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	f.points[f.roster[f.a][leaguerules.QB][0]] = 300000
 	f.mustSet(t, f.b, f.legal(f.b))
@@ -472,6 +487,7 @@ func TestCM004GovernsTheLineupsTheLeagueRecords(t *testing.T) {
 }
 
 func TestLineupsNeedTheAppsFootballFacts(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	f.s.SetLineupEnvironment(nil)
 	_, err := f.set(t, f.a, f.legal(f.a))
@@ -486,6 +502,7 @@ func TestLineupsNeedTheAppsFootballFacts(t *testing.T) {
 // TestOwnersLineupCanBeCompensatedPrivatelyAndNeedsTheReversalPermission reverses an owner's private lineup:
 // the one before it stands again, only a commissioner may do it, and it must be sent privately.
 func TestOwnersLineupCanBeCompensatedPrivatelyAndNeedsTheReversalPermission(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	grantDeputy(t, f)
 	first := f.legal(f.a)

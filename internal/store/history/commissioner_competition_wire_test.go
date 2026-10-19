@@ -33,6 +33,7 @@ func competitionEntry(t *testing.T, s *Store, raw commissioner.RawCommand) compe
 }
 
 func TestCommissionerCompetitionWire(t *testing.T) {
+	t.Parallel()
 	entries := []competitionWire{}
 	f := bracketTest(t)
 	shape := f.bracket(t).Rules.Shape
