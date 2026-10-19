@@ -207,13 +207,6 @@ func (f *fakeTxWriter) AppendCalendarEvent(_ context.Context, e state.CalendarEv
 	return f.maybeFail()
 }
 
-// AppendCorrection records a Session-2 correction append (keyed by tx_id) so handler-level tests
-// can assert a CORRECT op reached the store, honoring the maybeFail hook like the others.
-func (f *fakeTxWriter) AppendCorrection(_ context.Context, e state.CorrectionEntry) error {
-	f.calls = append(f.calls, recordedMove{op: "correction", target: e.TxID})
-	return f.maybeFail()
-}
-
 func (f *fakeTxWriter) MoveCellMoney(_ context.Context, mflID string, _, _ int, _ domain.Money, _ string) error {
 	f.calls = append(f.calls, recordedMove{op: "movecell", mflID: mflID})
 	return f.maybeFail()

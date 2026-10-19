@@ -2,7 +2,6 @@ package transactions
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -38,12 +37,6 @@ type rosterAware interface {
 type errRosterLimit struct{ detail string }
 
 func (e *errRosterLimit) Error() string { return e.detail }
-
-// isRosterLimitReject reports whether err is a roster-limit rejection.
-func isRosterLimitReject(err error) bool {
-	var r *errRosterLimit
-	return errors.As(err, &r)
-}
 
 // checkRosterSize fails if adding `adding` players would exceed the roster cap.
 func checkRosterSize(p RosterPolicy, franchiseID string, current, adding int) error {

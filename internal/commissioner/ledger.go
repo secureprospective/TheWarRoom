@@ -85,15 +85,6 @@ func Replay(records []Record) Projection {
 	return p
 }
 
-type CreatorAuthorizer struct{ Creator string }
-
-func (a CreatorAuthorizer) Allow(_ string, principal, _ string) (string, error) {
-	if a.Creator != "" && a.Creator == principal {
-		return "commissioner", nil
-	}
-	return "", fmt.Errorf("only this league's commissioner may make this change")
-}
-
 type Entry struct {
 	ID      string    `json:"id"`
 	Who     string    `json:"who"`

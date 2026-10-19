@@ -3,6 +3,7 @@ package livegame
 import (
 	"encoding/json"
 	"os"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -174,9 +175,17 @@ func TestYahooReadsAGameInProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 	games := board["service"].(map[string]any)["scoreboard"].(map[string]any)["games"].(map[string]any)
-	for _, g := range games {
-		g.(map[string]any)["status_type"] = "status.type.in_progress"
-		break
+	// Flip the first finished game by ID: the pregame game has no points yet, and map order is random.
+	ids := make([]string, 0, len(games))
+	for id := range games {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		if g := games[id].(map[string]any); g["status_type"] == "status.type.final" {
+			g["status_type"] = "status.type.in_progress"
+			break
+		}
 	}
 	b, err := json.Marshal(board)
 	if err != nil {

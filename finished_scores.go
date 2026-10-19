@@ -37,11 +37,6 @@ func finishedScoreCutoff(schedule heldSeasonFeed[[]nflschedule.RawWeek], now tim
 	return end, !end.IsZero()
 }
 
-func finishedScoresDue(fetched time.Time, schedule heldSeasonFeed[[]nflschedule.RawWeek], now time.Time) bool {
-	end, finished := finishedScoreCutoff(schedule, now)
-	return finished && fetched.Before(end)
-}
-
 func (a *App) refreshFinishedScores(ctx context.Context) {
 	a.refreshMu.Lock()
 	defer a.refreshMu.Unlock()

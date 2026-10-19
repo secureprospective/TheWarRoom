@@ -27,18 +27,6 @@ type Source interface {
 	Fetch(ctx context.Context) (RawConfig, error)
 }
 
-// APISource is the live Source for one season and league.
-type APISource struct {
-	Client   *mfl.Client
-	Year     string
-	LeagueID string
-}
-
-// Fetch implements Source against the live MFL API.
-func (s APISource) Fetch(ctx context.Context) (RawConfig, error) {
-	return Fetch(ctx, s.Client, s.Year, s.LeagueID)
-}
-
 // Fetch discovers the host, pulls both exports, checks each for MFL's error envelope and
 // returns a shape-validated RawConfig.
 func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) (RawConfig, error) {

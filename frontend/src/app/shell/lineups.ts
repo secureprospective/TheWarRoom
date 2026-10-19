@@ -3,7 +3,6 @@ import type { LineupReading, Snapshot } from '../data/contract';
 import type { Provider } from '../data/provider';
 
 export type ReadingState<T> = { reading?: T; error?: string };
-export type LineupState = ReadingState<LineupReading>;
 export function createReadings<T>(provider: Provider, read: (id: string) => Promise<T>) {
   const entries = new Map<string, ReadingState<T>>();
   const requests = new Map<string, number>();

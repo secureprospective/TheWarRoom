@@ -149,3 +149,9 @@ func TestParityScalarRules(t *testing.T) {
 		}
 	}
 }
+
+// Compile derives the complete Lab document from checked facts and audit evidence.
+func Compile(ctx context.Context, f facts.Facts, in Evidence) ([]byte, error) {
+	_, body, err := Build(ctx, f, in)
+	return body, err
+}

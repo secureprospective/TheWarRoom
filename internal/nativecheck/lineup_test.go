@@ -158,3 +158,12 @@ func TestOtherPenaltiesDoNotZeroAnyone(t *testing.T) {
 		t.Fatalf("%+v", got)
 	}
 }
+
+// Total adds up the points of a lineup.
+func Total(starters []Starter) leaguerules.Decimal {
+	var sum leaguerules.Decimal
+	for _, s := range starters {
+		sum += s.Points
+	}
+	return sum
+}

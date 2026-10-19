@@ -148,14 +148,10 @@ func multipliersUsable(list leaguerules.Value[[]leaguerules.Value[leaguerules.De
 	})
 }
 
-// MaxYears is the longest bid: one year for each multiplier the league sets.
-func (p BidPolicy) MaxYears() int { return len(p.multipliers) }
-
 // LateAfter is how long after the standing bid a new bid counts as late.
 func (p BidPolicy) LateAfter() time.Duration { return p.lateAfter }
 
-// Increment and LateIncrement are the steps a bid must add to the bid it beats.
-func (p BidPolicy) Increment() leaguerules.Decimal     { return p.increment }
+// LateIncrement is the step a late bid must add to the bid it beats.
 func (p BidPolicy) LateIncrement() leaguerules.Decimal { return p.lateIncrement }
 
 // Points is the annual salary in millions times the year's multiplier, rounded half up to the league's

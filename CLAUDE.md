@@ -21,8 +21,9 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   generates `registry/endpoints.gen.ts` from it (never hand-edit the generated file).
   Ring 1 merged 2026-10-10 (PR #15). Ring 2, the decision layer, merged 2026-10-11 (PR #17,
   `main` b4b3418): contract Acts, the Lab screens, the free-agent bid pool, held IR/taxi
-  eligibility, exact-cents money. Ring 3, breadth and depth, is next; it belongs to Christopher
-  and Tom, on `session/ring-3`.
+  eligibility, exact-cents money. Ring 3, breadth and depth, merged 2026-10-13; ring 4, the
+  commissioner side, merged 2026-10-19 (PR #38, PR #39 `main` 5739c5c9). `SYSTEM_MAP.md` § Built but
+  not wired lists what is tested but not yet reachable from a screen.
 
 ## Session start
 

@@ -129,3 +129,12 @@ func TestNewestWaitingRuleWinsAndUndoRestores(t *testing.T) {
 		Receipt: Receipt{Entry: "undo-third", RecordedAt: at.Add(5 * time.Minute)}})
 	assertWaiting("second", map[string]string{"first": second})
 }
+
+type CreatorAuthorizer struct{ Creator string }
+
+func (a CreatorAuthorizer) Allow(_ string, principal, _ string) (string, error) {
+	if a.Creator != "" && a.Creator == principal {
+		return "commissioner", nil
+	}
+	return "", fmt.Errorf("only this league's commissioner may make this change")
+}

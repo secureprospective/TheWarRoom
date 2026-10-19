@@ -306,3 +306,6 @@ func TestPipelineConcurrentScore(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+// IdentityLayer4 returns the no-op Layer 4.
+func IdentityLayer4() Layer4 { return identityLayer4{} }

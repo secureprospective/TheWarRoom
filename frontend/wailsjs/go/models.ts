@@ -10920,11 +10920,6 @@ export namespace main {
 	    tradeRationale?: string;
 	    tradePicksNote?: string;
 	    txID: string;
-	    correctionStatus?: string;
-	    correctionReason?: string;
-	    correctionNote?: string;
-	    correctedBy?: string;
-	    correctedAt?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new FeedEventDTO(source);
@@ -10948,11 +10943,6 @@ export namespace main {
 	        this.tradeRationale = source["tradeRationale"];
 	        this.tradePicksNote = source["tradePicksNote"];
 	        this.txID = source["txID"];
-	        this.correctionStatus = source["correctionStatus"];
-	        this.correctionReason = source["correctionReason"];
-	        this.correctionNote = source["correctionNote"];
-	        this.correctedBy = source["correctedBy"];
-	        this.correctedAt = source["correctedAt"];
 	    }
 	}
 	export class FeedResult {

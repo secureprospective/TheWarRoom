@@ -95,3 +95,8 @@ func TestBackgroundFinishedScoresRereadsOnce(t *testing.T) {
 		t.Fatal(held)
 	}
 }
+
+func finishedScoresDue(fetched time.Time, schedule heldSeasonFeed[[]nflschedule.RawWeek], now time.Time) bool {
+	end, finished := finishedScoreCutoff(schedule, now)
+	return finished && fetched.Before(end)
+}
