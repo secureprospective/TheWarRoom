@@ -201,7 +201,7 @@ func (s *Store) prepareRollover(ctx context.Context, raw commissioner.RawCommand
 	}
 	before, plan, err := commissioner.PrepareRollover(raw, records, now, champion)
 	if err != nil {
-		return nil, nil, fmt.Errorf("prepare season rollover: %w", err)
+		return before, plan, fmt.Errorf("prepare season rollover: %w", err)
 	}
 	return before, plan, nil
 }

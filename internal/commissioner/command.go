@@ -301,6 +301,10 @@ func (r RawCommand) validate(requireReason bool) error {
 			return err
 		}
 	}
+	// Placement checks can require the same reason; a dry run still describes the proposed act.
+	if !requireReason {
+		r = r.withPreviewReason(definition)
+	}
 	if err := r.validatePlacement(); err != nil {
 		return err
 	}
@@ -474,4 +478,11 @@ func (r RawCommand) EffectiveDefinition() (Definition, error) {
 		definition.Gravity = "G3"
 	}
 	return definition, nil
+}
+
+func (r RawCommand) withPreviewReason(definition Definition) RawCommand {
+	if definition.Gravity == "G3" && strings.TrimSpace(r.Reason) == "" {
+		r.Reason = "Awaiting your reason"
+	}
+	return r
 }

@@ -42,24 +42,15 @@ func TestEveryCensusRowSitsInExactlyOneLandingGroup(t *testing.T) {
 }
 
 func TestOnlyControlsAPersonCanUseAreBuilt(t *testing.T) {
-	all := entries(ControlsReading())
-	for _, id := range []string{"CM-001", "CM-006", "CM-017", "CM-021", "CM-023", "CM-024", "CM-025",
-		"CM-040", "CM-041", "CM-043", "CM-044", "CM-045", "CM-051", "CM-052", "CM-053", "CM-054", "CM-056"} {
-		if !all[id].Built {
-			t.Errorf("%s is usable today and must say so", id)
+
+	unbuilt := []string{"CM-048", "CM-049", "CM-050", "CM-055"}
+	for id, entry := range entries(ControlsReading()) {
+		want := !slices.Contains(unbuilt, id)
+		if entry.Built != want {
+			t.Errorf("%s built = %t; want %t", id, entry.Built, want)
 		}
 	}
-	for _, id := range []string{"CM-018", "CM-019", "CM-020", "CM-022", "CM-026", "CM-028", "CM-031", "CM-037",
-		"CM-042", "CM-046", "CM-055"} {
-		if all[id].Built {
-			t.Errorf("%s is not built and must not claim to be", id)
-		}
-	}
-	for id, words := range partlyThere() {
-		if all[id].Built || all[id].Note != words || words == "" {
-			t.Errorf("%s is only partly there: %+v", id, all[id])
-		}
-	}
+
 }
 
 func TestEveryBuiltRuleRowOwnsItsFieldsAndNoOtherRowDoes(t *testing.T) {

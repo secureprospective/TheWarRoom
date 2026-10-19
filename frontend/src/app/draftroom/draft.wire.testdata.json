@@ -5534,7 +5534,7 @@
           "Draft Status"
         ],
         "count": 5,
-        "words": "You choose for the franchise. A pick the clock skipped is given back; the clock does not move."
+        "words": "All 32 franchises affected. You choose for the franchise. A pick the clock skipped is given back; the clock does not move."
       },
       "blockers": [],
       "safeguard": "reason"
@@ -5565,7 +5565,7 @@
           "Draft Status"
         ],
         "count": 5,
-        "words": "This swaps the rookie a pick already made holds: Player, 5001 goes back to the undrafted rookies and Player, 5004 takes the same contract. The draft is running; picks made after this one are not changed."
+        "words": "All 32 franchises affected. This swaps the rookie a pick already made holds: Player, 5001 goes back to the undrafted rookies and Player, 5004 takes the same contract. The draft is running; picks made after this one are not changed."
       },
       "blockers": [],
       "safeguard": "reason"
@@ -5596,7 +5596,7 @@
           "Future Draft Picks"
         ],
         "count": 5,
-        "words": "Every rookie nobody took goes to the free-agent pool. Picks for two seasons out are issued to every franchise and can be traded at once. A closed draft can only be reopened by restoring it."
+        "words": "All 32 franchises affected. Every rookie nobody took goes to the free-agent pool. Picks for two seasons out are issued to every franchise and can be traded at once. A closed draft can only be reopened by restoring it."
       },
       "blockers": [],
       "safeguard": "hold"
@@ -5627,7 +5627,7 @@
           "Draft Status"
         ],
         "count": 5,
-        "words": "An extra pick takes no turn on the clock and does not move anyone else's pick."
+        "words": "All 32 franchises affected. An extra pick takes no turn on the clock and does not move anyone else's pick."
       },
       "blockers": [],
       "safeguard": "reason"
@@ -5658,7 +5658,7 @@
           "Draft Status"
         ],
         "count": 5,
-        "words": "Only the pick on the clock is affected. A paused clock lets no one pick and skips no one."
+        "words": "All 32 franchises affected. Only the pick on the clock is affected. A paused clock lets no one pick and skips no one."
       },
       "blockers": [],
       "safeguard": "reason"
@@ -5688,7 +5688,7 @@
           "Rosters"
         ],
         "count": 4,
-        "words": "0 later changes are set aside, not erased: the ledger keeps both states. The pick that comes back on the clock gets a fresh clock."
+        "words": "All 32 franchises affected. 0 later changes are set aside, not erased: the ledger keeps both states. The pick that comes back on the clock gets a fresh clock."
       },
       "blockers": [],
       "safeguard": "reason"
@@ -5719,7 +5719,7 @@
           "Draft Status"
         ],
         "count": 5,
-        "words": "Only the pick on the clock is affected. A paused clock lets no one pick and skips no one."
+        "words": "All 32 franchises affected. Only the pick on the clock is affected. A paused clock lets no one pick and skips no one."
       },
       "blockers": [],
       "safeguard": "reason"
@@ -5750,7 +5750,7 @@
           "Draft Status"
         ],
         "count": 5,
-        "words": "The pick is passed over at once. The franchise does not get it back unless you choose a player for it later."
+        "words": "All 32 franchises affected. The pick is passed over at once. The franchise does not get it back unless you choose a player for it later."
       },
       "blockers": [],
       "safeguard": "reason"

@@ -408,8 +408,8 @@
         },
         {
           "id": "CM-015",
-          "built": false,
-          "note": "The number of regular season weeks and the schedule pattern can be set now.",
+          "built": true,
+          "note": "",
           "fields": [
             {
               "field": "schedule.regularWeeks",
@@ -487,19 +487,19 @@
       "controls": [
         {
           "id": "CM-018",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-019",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-020",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
@@ -511,7 +511,7 @@
         },
         {
           "id": "CM-022",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         }
@@ -564,7 +564,7 @@
         },
         {
           "id": "CM-026",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         }
@@ -576,8 +576,8 @@
       "controls": [
         {
           "id": "CM-027",
-          "built": false,
-          "note": "The rollover date can be set now.",
+          "built": true,
+          "note": "",
           "fields": [
             {
               "field": "calendar.rollover",
@@ -591,74 +591,74 @@
         },
         {
           "id": "CM-028",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-029",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-030",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-031",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-032",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-033",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-034",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-035",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-036",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-037",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-038",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-039",
-          "built": false,
-          "note": "A recorded change can be undone now, from the ledger.",
+          "built": true,
+          "note": "",
           "fields": []
         }
       ]
@@ -739,14 +739,14 @@
         },
         {
           "id": "CM-042",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-043",
           "built": true,
-          "note": "Work the live draft from Trade Floor › Draft room: skip, choose, add or change a pick, and pause or set the clock.",
+          "note": "Draft room: skip, choose, add or change picks; pause or set the clock.",
           "fields": []
         },
         {
@@ -769,13 +769,13 @@
       "controls": [
         {
           "id": "CM-046",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },
         {
           "id": "CM-047",
-          "built": false,
+          "built": true,
           "note": "",
           "fields": []
         },

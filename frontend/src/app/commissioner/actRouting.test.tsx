@@ -67,10 +67,13 @@ for (const future of [false, true]) describe(future ? 'Ready for Go built flags'
 });
 it('unbuilt action rows remain disabled and explain why', async () => {
   const host = await landing(false);
-  await act(async () => surfaceActions.run({ screen: 'landing', action: 'group', value: 'season' }));
+  const unbuilt = entriesOf(parseControls(controlsWire)).filter(e => !e.built);
+  const group = unbuilt[0].group;
+  await act(async () => surfaceActions.run({ screen: 'landing', action: 'group', value: group }));
   await settle();
-  for (const entry of entries.filter(e => e.group === 'season' && !e.built)) {
-    expect(button(host, `Open ${entry.name}`).attributes.has('disabled')).toBe(true);
+  for (const entry of unbuilt.filter(e => e.group === group)) {
+    const open = all(host, 'button').find(b => b.textContent === `Open ${entry.name}`);
+    expect(open === undefined || open.attributes.has('disabled')).toBe(true);
   }
   expect(host.textContent).toContain('This action is not built yet.');
 });

@@ -143,3 +143,11 @@ func (s State) requireCreated() error {
 	}
 	return nil
 }
+
+// SuccessionPeriods returns the inactivity and voting periods currently in force.
+func (s State) SuccessionPeriods() (time.Duration, time.Duration, time.Duration, time.Duration) {
+	return s.inSeason, s.offseason, s.electionPeriod, s.runoffPeriod
+}
+
+// LastActivity is the recorded activity evidence, never a wall-clock guess.
+func (s State) LastActivity(p Principal) time.Time { return s.activity[p] }

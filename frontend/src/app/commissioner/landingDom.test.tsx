@@ -37,13 +37,13 @@ describe('League landing interactions', () => {
   it('opens the searched control group and focuses its question, including an unbuilt control', async () => {
     const host = await show();
     const search = all(host, 'input').find(e => e.getAttribute('id') === 'control-search')!;
-    const target = entries.find(e => e.id === 'CM-031')!;
+    const target = entries.find(e => e.id === 'CM-050')!;
     await type(search, target.question);
     const hit = all(host, 'button').find(b => b.getAttribute('aria-label')?.startsWith(target.name + '.'))!;
     expect(hit.textContent).toContain('Not built yet');
     await click(hit);
     await settle();
-    const group = all(host, 'section').find(s => s.getAttribute('aria-label') === 'Season ops')!;
+    const group = all(host, 'section').find(s => s.getAttribute('aria-label') === 'Playoffs')!;
     expect(group.getAttribute('data-open')).toBe('true');
     const row = all(group, 'li').find(e => e.textContent.includes(target.question))!;
     expect(row.textContent).toContain('Not built yet');

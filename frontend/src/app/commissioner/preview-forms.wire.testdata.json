@@ -65,7 +65,7 @@
         "League feed"
       ],
       "count": 2,
-      "words": "2 owner readings use this rule"
+      "words": "All 32 franchises affected"
     },
     "blockers": [],
     "safeguard": "confirm"
@@ -94,7 +94,7 @@
         "League feed"
       ],
       "count": 3,
-      "words": "3 owner readings use this rule"
+      "words": "All 32 franchises affected"
     },
     "blockers": [],
     "safeguard": "confirm"
@@ -121,7 +121,7 @@
         "League Settings"
       ],
       "count": 1,
-      "words": "1 owner reading uses this rule"
+      "words": "All 32 franchises affected"
     },
     "blockers": [],
     "safeguard": "reason"
@@ -148,7 +148,7 @@
         "League Settings"
       ],
       "count": 1,
-      "words": "1 owner reading uses this rule"
+      "words": "All 32 franchises affected"
     },
     "blockers": [
       "This person already holds that role. Nothing would change"
@@ -180,7 +180,7 @@
         "Drop Players"
       ],
       "count": 4,
-      "words": "4 owner readings use this rule"
+      "words": "All 32 franchises affected"
     },
     "blockers": [
       "This change is already waiting for the next rollover. Nothing would change"
@@ -253,7 +253,7 @@
         "Drop Players"
       ],
       "count": 4,
-      "words": "4 owner readings use this rule"
+      "words": "All 32 franchises affected"
     },
     "blockers": [],
     "safeguard": "reason"
