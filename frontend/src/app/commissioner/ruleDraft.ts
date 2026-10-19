@@ -41,7 +41,7 @@ export function scaled(n: number, digits: number): string {
   return sign + whole + (fraction ? `.${fraction}` : '');
 }
 // unscale reads a typed decimal as an integer count of 10^-digits; null when it is not that.
-function unscale(text: string, digits: number): number | null {
+export function unscale(text: string, digits: number): number | null {
   const m = /^(-?)(\d+)(?:\.(\d*))?$/.exec(text.trim());
   if (!m || (m[3] ?? '').length > digits) return null;
   const n = Number(m[2] + (m[3] ?? '').padEnd(digits, '0'));

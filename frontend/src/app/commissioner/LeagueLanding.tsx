@@ -3,6 +3,8 @@ import { ControlGroupView } from './ControlGroupView';
 import { ControlSearch } from './ControlSearch';
 import { entriesOf } from './controls';
 import { DensityScreen } from './DensityScreen';
+import { actsFor, liveDraftControls } from './actTable';
+import { commands } from '../commands/registry';
 import { JobsStrip } from './JobsStrip';
 import { parseOpen, parseTray, scopedRules, type ActionKind, type LandingView } from './landing';
 import { LeaguePicker } from './LeaguePicker';
@@ -13,11 +15,14 @@ import { revealWorkSection } from '../shell/workScroll';
 import './commissioner.css';
 
 const RuleTray = lazy(() => import('./RuleTray'));
+const CommissionerActTray = lazy(() => import('./CommissionerActTray'));
+const SeedTray = lazy(() => import('./SeedTray'));
 const ActionTray = lazy(() => import('./ActionTray'));
 
 // Which change is open in the tray, and the control that opened it (focus goes back there).
 type Tray = { opener: HTMLElement } & (
-  { kind: 'rule'; field: string; group: string } | ActionKind);
+  { kind: 'rule'; field: string; group: string } | { kind: 'act'; control: string }
+  | { kind: 'seed' } | ActionKind);
 
 // Go says what this person may start; a launcher the person cannot use opens nothing.
 function mayOpen(action: ActionKind, people?: People): boolean {
@@ -47,6 +52,10 @@ export default function LeagueLanding() {
       return;
     }
     const opener = document.activeElement as HTMLElement;
+    if (args.action === 'tray' && args.value === 'seed' && selected) {
+      setTray({ kind: 'seed', opener });
+      return;
+    }
     const action = args.action === 'tray' ? parseTray(args.value) : null;
     if (action && mayOpen(action, people)) {
       setTray({ ...action, opener });
@@ -57,9 +66,28 @@ export default function LeagueLanding() {
       setTray({ kind: 'rule', field: found.field, group: found.control.group, opener });
       return;
     }
+    if (found?.control.built && !found.field) {
+      if (found.control.id === 'CM-040' && rules && people?.mayChangeRules) {
+        setTray({ kind: 'rule', field: found.control.fields[0]?.field ?? '',
+          group: found.control.group, opener });
+        return;
+      }
+      if (liveDraftControls.has(found.control.id)) {
+        commands.dispatch('nav.open', { node: 'trade', workspace: 'draft-room' });
+        return;
+      }
+      if (found.control.id === 'CM-021' && people?.mayGrantRoles) {
+        setTray({ kind: 'role', opener });
+        return;
+      }
+      if (actsFor(found.control.id).length && selected) {
+        setTray({ kind: 'act', control: found.control.id, opener });
+        return;
+      }
+    }
     if (found) setView(v => ({ open: found.control.group,
       reveal: { control: found.control.id, field: found.field, n: (v.reveal?.n ?? 0) + 1 } }));
-  }), [entries, rules, people]);
+  }), [entries, rules, people, selected]);
   // Starting a league moves the picker to the new league; the tray stays, to show what was recorded.
   useEffect(() => { setTray(t => (t?.kind === 'start' ? t : undefined)); }, [selected]);
   // Once the opened group is drawn, move to the control it was opened for.
@@ -94,7 +122,16 @@ export default function LeagueLanding() {
           rules={scopedRules(rules, new Set(entries
             .filter(e => e.group === tray.group).flatMap(e => e.fields.map(f => f.field))))} />
       </Suspense>}
-      {tray && tray.kind !== 'rule' && <Suspense fallback={<p role="status">Opening the change…</p>}>
+      {tray?.kind === 'act' && <Suspense fallback={<p role="status">Opening the league action…</p>}>
+        <CommissionerActTray key={`${selected}:${tray.control}`} control={tray.control} league={selected}
+          opener={tray.opener} background={background.current} onClose={() => setTray(undefined)} />
+      </Suspense>}
+      {tray?.kind === 'seed' && <Suspense fallback={<p role="status">Opening starting assets…</p>}>
+        <SeedTray key={selected} league={selected} opener={tray.opener}
+          background={background.current} onClose={() => setTray(undefined)} />
+      </Suspense>}
+      {tray && tray.kind !== 'rule' && tray.kind !== 'act' && tray.kind !== 'seed' &&
+        <Suspense fallback={<p role="status">Opening the change…</p>}>
         <ActionTray action={tray} opener={tray.opener} background={background.current}
           onClose={() => setTray(undefined)} />
       </Suspense>}

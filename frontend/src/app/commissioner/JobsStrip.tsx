@@ -1,3 +1,4 @@
+import { actsFor } from './actTable';
 import { useEffect, useRef } from 'react';
 import { connectClock } from '../clock/ticker';
 import type { Deadline } from '../data/contract';
@@ -34,12 +35,14 @@ export function JobsStrip({ jobs, clock = Date.now }: { jobs: Jobs; clock?: () =
         {jobs.jobs.map(job => {
           const when = timing(job);
           const due = when ? `. ${when.text}: ${localTime(when.at)}` : '';
+          const seed = job.words === 'Record starting assets first.';
+          const target = job.controls.find(id => actsFor(id).length > 0) ?? job.controls[0] ?? '';
           const lines = [stateWords[job.state], ...(job.state === 'unbuilt' ? [] : [job.words]),
             ...(job.state === 'live' && !job.closes ? ['No deadline'] : [])];
           return (
             <li key={job.id} className={`job job-${job.state}`} data-state={job.state} data-deadline={job.id}>
               <Act verb="commissioner.surface" variant="card"
-                args={{ screen: 'landing', action: 'open', value: job.controls[0] ?? '' }}
+                args={{ screen: 'landing', action: seed ? 'tray' : 'open', value: seed ? 'seed' : target }}
                 label={`${job.name}. ${lines.join('. ')}${due}`}>
                 <strong>{job.name}</strong>
                 {lines.map(line => <span key={line} className="job-line">{line}</span>)}

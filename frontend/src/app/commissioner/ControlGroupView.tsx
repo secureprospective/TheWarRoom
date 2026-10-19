@@ -26,6 +26,7 @@ function Existing({ id }: { id: string }) {
       <p>A league run in this app. You become its commissioner.</p>
       <TrayLauncher tray="start" label={choices.length === 0 && !pending ? 'Start an app league'
         : 'Start another app league'} />
+      <TrayLauncher tray="seed" label="Record starting assets" />
       <LeagueRules />
     </>
   );
