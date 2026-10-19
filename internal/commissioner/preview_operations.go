@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"cmp"
 	"fmt"
 	"maps"
 	"slices"
@@ -77,7 +78,7 @@ func ChangedPreviewFields(before, after map[string]string) []PreviewField {
 			keys = append(keys, key)
 		}
 	}
-	slices.Sort(keys)
+	slices.SortFunc(keys, labelOrder)
 	fields := []PreviewField{}
 	for _, key := range keys {
 		was, became := before[key], after[key]
@@ -94,6 +95,36 @@ func ChangedPreviewFields(before, after map[string]string) []PreviewField {
 			After: became, AfterSource: proposed, When: "now"})
 	}
 	return fields
+}
+
+// labelOrder sorts preview labels as a person reads them: each run of digits compares as a number, so
+// "week 2" comes before "week 10"; labels that read the same fall back to plain text order.
+func labelOrder(a, b string) int {
+	x, y := a, b
+	for x != "" && y != "" {
+		dx, dy := digitRun(x), digitRun(y)
+		if dx > 0 && dy > 0 {
+			nx, ny := strings.TrimLeft(x[:dx], "0"), strings.TrimLeft(y[:dy], "0")
+			if c := cmp.Or(cmp.Compare(len(nx), len(ny)), strings.Compare(nx, ny)); c != 0 {
+				return c
+			}
+			x, y = x[dx:], y[dy:]
+			continue
+		}
+		if x[0] != y[0] {
+			return cmp.Compare(x[0], y[0])
+		}
+		x, y = x[1:], y[1:]
+	}
+	return cmp.Or(cmp.Compare(len(x), len(y)), strings.Compare(a, b))
+}
+
+func digitRun(s string) int {
+	n := 0
+	for n < len(s) && s[n] >= '0' && s[n] <= '9' {
+		n++
+	}
+	return n
 }
 
 func operationReadings(control string) []string {

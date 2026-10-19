@@ -54,6 +54,9 @@ func safeguardOf(raw RawCommand) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if reasonByPlacement(raw.Command) {
+		return "reason", nil
+	}
 	return safeguardFor(definition.Gravity), nil
 }
 

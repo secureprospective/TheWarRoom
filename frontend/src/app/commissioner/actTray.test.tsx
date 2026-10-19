@@ -335,6 +335,40 @@ it('changing a reviewed draft cancels its approval and changes its request key',
   expect(calls.sent).toEqual([current]);
 });
 
+it('an act keeps its last preview on screen while the next one is read', async () => {
+  const { host, app, calls } = await show('correct.roster');
+  await fill(host, cases[0].fields);
+  let release: (value: object) => void = () => {};
+  app.TargetCommissionerPreview = body => new Promise(resolve => {
+    previewBodies.push(JSON.parse(body));
+    release = resolve;
+  });
+  await type(control(host, 'Reason'), 'The recorded facts were wrong twice');
+  expect(host.textContent).toContain('Before value → After value');
+  expect(host.textContent).toContain('Checking the change again');
+  expect(disabled(button(host, 'Record this change'))).toBe(true);
+  const current = previewBodies[previewBodies.length - 1];
+  await act(async () => release(answer(current)));
+  await settle();
+  expect(host.textContent).not.toContain('Checking the change again');
+  await fire(host);
+  expect(calls.sent).toEqual([current]);
+});
+
+it('a form opened after a receipt does not show the earlier receipt', async () => {
+  const { host, app } = await show('correct.roster');
+  await fill(host, cases[0].fields);
+  await fire(host);
+  expect(host.textContent).toContain('Recorded in the league ledger.');
+  await unmount();
+  const again = await mount(
+    render(CommissionerActForm, { definition: definition('correct.roster'), league }),
+    app,
+  );
+  await settle();
+  expect(again.textContent).not.toContain('Recorded in the league ledger.');
+});
+
 it('a mismatched preview version cannot confirm a frozen target', async () => {
   const { host, app, calls } = await show('correct.roster');
   app.TargetCommissionerPreview = async body => {

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Act } from '../commands/Act';
 import type { Safeguard } from './rules';
 import { bodyOf, noReasonWords, safeguardWords, useRequestKey, type Change } from './forms';
@@ -16,6 +17,10 @@ type Props = {
 export function ChangeBar({ form, change, safeguard, reason, onReason, confirmLabel,
   blocked, note, request }: Props) {
   const outcome = leagueState.use().outcome;
+  // A receipt or refusal belongs to the form that was confirmed, not to the next one opened with its name.
+  useEffect(() => {
+    if (leagueState.peek().outcome.status !== 'sending') leagueState.forget();
+  }, []);
   const typed = reason.trim();
   const sent = change && { ...change, reason: typed };
   const key = useRequestKey(sent);

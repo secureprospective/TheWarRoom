@@ -186,6 +186,9 @@ func TestCommissionerPreviewShowsNativeContractAndCapValues(t *testing.T) {
 			raw := overrideCommand(t, f, tc.command, tc.value)
 			preview := mustPreview(t, f.app, raw)
 			assertPreviewTransition(t, preview, tc.label, tc.before, tc.after)
+			if preview.Safeguard != "reason" {
+				t.Fatalf("Go refuses a blank reason, but the preview asks for %q", preview.Safeguard)
+			}
 			if !strings.Contains(preview.Affects.Words, "1 franchise affected") {
 				t.Fatalf("affected teams: %+v", preview.Affects)
 			}

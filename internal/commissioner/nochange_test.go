@@ -175,3 +175,17 @@ func TestAPreviewDecodeLeavesOutOnlyTheReason(t *testing.T) {
 		t.Fatal("a dry run skipped a check other than the reason")
 	}
 }
+
+func TestCommandsWhosePlacementNeedsAReasonAskForOne(t *testing.T) {
+	listed := map[string]string{}
+	for _, row := range CommandSafeguards() {
+		listed[row.Command] = row.Safeguard
+	}
+	for _, command := range []string{CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick,
+		RuleException, ContractEdit, CapAdjust, CapRelief, ReserveException, PlayerPosition, PlayerPositionClear,
+		ScorePlayer, ScoreFranchise, LineupCorrect} {
+		if got, ok := listed[command]; !ok || got != "reason" {
+			t.Errorf("%s refuses a blank reason but is listed with %q", command, got)
+		}
+	}
+}

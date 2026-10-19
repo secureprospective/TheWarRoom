@@ -366,6 +366,13 @@ func (r RawCommand) validatePlacement() error {
 	return r.validatePeoplePlacement()
 }
 
+// reasonByPlacement says whether a command's own placement refuses a blank reason whatever its gravity, so
+// the person confirming it is asked for one from the start rather than told it is optional.
+func reasonByPlacement(command string) bool {
+	return correctionCommand(command) || overrideCommand(command) || isScoreCommand(command) ||
+		command == LineupCorrect
+}
+
 // ownPlacement is the placement check of a command family that sets its own timing and audience.
 func (r RawCommand) ownPlacement() (func() error, bool) {
 	switch {

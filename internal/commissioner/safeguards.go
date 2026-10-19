@@ -46,7 +46,11 @@ func CommandSafeguards() []CommandSafeguard {
 		if err != nil {
 			continue
 		}
-		out = append(out, CommandSafeguard{Command: command, Effective: "now", Safeguard: safeguardFor(d.Gravity)})
+		safeguard := safeguardFor(d.Gravity)
+		if reasonByPlacement(command) {
+			safeguard = "reason"
+		}
+		out = append(out, CommandSafeguard{Command: command, Effective: "now", Safeguard: safeguard})
 	}
 	return append(out, ruleSafeguards()...)
 }

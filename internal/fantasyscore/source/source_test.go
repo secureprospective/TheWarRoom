@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -190,5 +191,44 @@ func TestKickRecoveryTDIsNotAReturnAndAttachesOnce(t *testing.T) {
 			weeks[0].Line.Quantities["kickoff_return_td"] != 0 {
 			t.Fatalf("credits changed: %+v", weeks[0].Line)
 		}
+	}
+}
+
+func TestReadWeeksLeavesOutTeamRowsThatNameNoPlayer(t *testing.T) {
+	body, err := os.ReadFile("testdata/weeks.csv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows, err := csv.NewReader(strings.NewReader(string(body))).ReadAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	held, err := ReadWeeks(strings.NewReader(string(body)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	withRow := func(id string) string {
+		team := slices.Clone(rows[1])
+		for i, name := range rows[0] {
+			switch name {
+			case "player_id":
+				team[i] = id
+			case "player_name", "player_display_name", "position", "position_group", "headshot_url":
+				team[i] = ""
+			}
+		}
+		var out strings.Builder
+		w := csv.NewWriter(&out)
+		if err := w.WriteAll(append(slices.Clone(rows), team)); err != nil {
+			t.Fatal(err)
+		}
+		return out.String()
+	}
+	weeks, err := ReadWeeks(strings.NewReader(withRow("")))
+	if err != nil || len(weeks) != len(held) {
+		t.Fatalf("a team row that names no player: %d weeks, %v", len(weeks), err)
+	}
+	if _, err := ReadWeeks(strings.NewReader(withRow("00-abcdefg"))); err == nil {
+		t.Fatal("a malformed player id entered the scorer")
 	}
 }

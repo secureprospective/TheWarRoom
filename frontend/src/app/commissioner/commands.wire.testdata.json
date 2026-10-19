@@ -225,19 +225,19 @@
     "command": "commish.cap.adjust",
     "effective": "now",
     "field": "",
-    "safeguard": "hold"
+    "safeguard": "reason"
   },
   {
     "command": "commish.cap.relief",
     "effective": "now",
     "field": "",
-    "safeguard": "hold"
+    "safeguard": "reason"
   },
   {
     "command": "commish.contract.edit",
     "effective": "now",
     "field": "",
-    "safeguard": "hold"
+    "safeguard": "reason"
   },
   {
     "command": "commish.league.seed_held",
@@ -255,13 +255,13 @@
     "command": "commish.player.position",
     "effective": "now",
     "field": "",
-    "safeguard": "hold"
+    "safeguard": "reason"
   },
   {
     "command": "commish.player.position.clear",
     "effective": "now",
     "field": "",
-    "safeguard": "hold"
+    "safeguard": "reason"
   },
   {
     "command": "commish.reserve.exception",
@@ -279,7 +279,7 @@
     "command": "commish.score.player",
     "effective": "now",
     "field": "",
-    "safeguard": "hold"
+    "safeguard": "reason"
   },
   {
     "command": "commish.standings.override",

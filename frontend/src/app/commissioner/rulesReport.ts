@@ -21,7 +21,7 @@ export function rulesReport(rules: Rules): Report {
       r.pending.map(p => `${p.value}: ${pendingWhen(p)}`).join('\n') || 'Nothing waiting'],
   }));
   return { ...base, id: 'league-rules', title: 'League rules',
-    source: `${rules.name} · League version ${rules.revision}`,
+    source: rules.name,
     how: 'Each setting is read from this league’s ledger. A change set to take effect from the next '
       + 'rollover waits in the last column and is not in force yet.',
     columns: ['Rule', 'Setting', 'Where it comes from', 'Waiting'], rows };

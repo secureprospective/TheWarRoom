@@ -188,6 +188,11 @@ func ReadWeeks(input io.Reader) ([]PlayerWeek, error) {
 	var result []PlayerWeek
 	seen := make(map[string]bool)
 	err := readRecords(input, func(fields map[string]string) error {
+		// nflverse also carries team rows (team penalties, a team safety) that name no player. They credit no
+		// player, so they are not player weeks; a row that names a malformed player is still refused.
+		if fields["player_id"] == "" {
+			return nil
+		}
 		row, err := (RawWeek{Fields: fields}).Convert()
 		if err != nil {
 			return err
