@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -106,5 +107,43 @@ func TestCloseIsSafe(t *testing.T) {
 	}
 	if err := pools.Close(); err != nil {
 		t.Errorf("Close: %v", err)
+	}
+}
+
+func TestEveryPooledConnectionEnforcesPragmas(t *testing.T) {
+	t.Parallel()
+	pools := tempPools(t)
+	for _, pool := range []struct {
+		name string
+		db   *sql.DB
+	}{{"read", pools.Read()}, {"write", pools.Write()}} {
+		t.Run(pool.name, func(t *testing.T) {
+			// Force replacement of the connection Open already checked.
+			pool.db.SetMaxIdleConns(0)
+			pool.db.SetMaxIdleConns(10)
+			count := 1
+			if pool.name == "read" {
+				count = 3
+			}
+			for range count {
+				conn, err := pool.db.Conn(t.Context())
+				if err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() { _ = conn.Close() })
+				for _, pragma := range []struct {
+					query string
+					want  int
+				}{{"PRAGMA foreign_keys", 1}, {"PRAGMA recursive_triggers", 1}, {"PRAGMA synchronous", 2}} {
+					var got int
+					if err := conn.QueryRowContext(t.Context(), pragma.query).Scan(&got); err != nil {
+						t.Fatal(err)
+					}
+					if got != pragma.want {
+						t.Errorf("%s = %d, want %d", pragma.query, got, pragma.want)
+					}
+				}
+			}
+		})
 	}
 }

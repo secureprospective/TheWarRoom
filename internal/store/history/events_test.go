@@ -121,3 +121,34 @@ func TestLeagueEventRejectsInvalidInput(t *testing.T) {
 		}
 	}
 }
+
+func TestLeagueEventRejectsReplacementAndUpsert(t *testing.T) {
+	t.Parallel()
+	for _, query := range []string{
+		`INSERT OR REPLACE INTO league_event SELECT id,league,'other',1,effective_at,recorded_at,'wrong',scope,kind,payload,input_hash,correlation_id,NULL FROM league_event WHERE id='first'`,
+		`INSERT INTO league_event SELECT id,league,'other',1,effective_at,recorded_at,'wrong',scope,kind,payload,input_hash,correlation_id,NULL FROM league_event WHERE id='first' ON CONFLICT(id) DO UPDATE SET actor=excluded.actor`,
+		`INSERT OR REPLACE INTO league_event SELECT 'replacement',league,stream,2,effective_at,recorded_at,'wrong',scope,kind,payload,input_hash,correlation_id,NULL FROM league_event WHERE id='request'`,
+	} {
+		t.Run(query, func(t *testing.T) {
+			s, _, p := newStore(t)
+			if _, err := s.AppendEvent(t.Context(), eventFixture("first"), 0); err != nil {
+				t.Fatal(err)
+			}
+			request := eventFixture("request")
+			request.Stream = "commissioner"
+			if _, err := s.AppendEvent(t.Context(), request, 0); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := p.Write().ExecContext(t.Context(), query); err == nil {
+				t.Fatal("ledger replacement accepted")
+			}
+			var count int
+			if err := p.Read().QueryRowContext(t.Context(), `SELECT COUNT(*) FROM league_event WHERE actor='commissioner' AND id IN ('first','request')`).Scan(&count); err != nil {
+				t.Fatal(err)
+			}
+			if count != 2 {
+				t.Fatalf("unchanged events = %d, want 2", count)
+			}
+		})
+	}
+}

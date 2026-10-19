@@ -17,6 +17,8 @@ import (
 // never hit it.
 const busyTimeoutMS = 5000
 
+const connectionPragmas = "&_pragma=foreign_keys(ON)&_pragma=recursive_triggers(ON)&_pragma=synchronous(FULL)"
+
 // Pools is the read/write pool pair for one database. Construct with Open.
 type Pools struct {
 	read  *sql.DB
@@ -29,7 +31,7 @@ func Open(ctx context.Context, path string) (*Pools, error) {
 	writeDSN := fmt.Sprintf(
 		"file:%s?_pragma=busy_timeout(%d)&_pragma=journal_mode(WAL)&_txlock=immediate",
 		path, busyTimeoutMS,
-	)
+	) + connectionPragmas
 	write, err := sql.Open("sqlite", writeDSN)
 	if err != nil {
 		return nil, fmt.Errorf("db: open write pool: %w", err)
@@ -54,7 +56,7 @@ func Open(ctx context.Context, path string) (*Pools, error) {
 	readDSN := fmt.Sprintf(
 		"file:%s?_pragma=busy_timeout(%d)&mode=ro",
 		path, busyTimeoutMS,
-	)
+	) + connectionPragmas
 	read, err := sql.Open("sqlite", readDSN)
 	if err != nil {
 		_ = write.Close()
