@@ -1,6 +1,7 @@
 import type { commissioner } from '../../../wailsjs/go/models';
 import type * as Bindings from '../../../wailsjs/go/main/App';
 import type { FieldKind } from './actTable';
+import { readCompetitionOptions } from './competitionReadings';
 import { leagueState } from './proxy';
 
 export const nativeBindings = () => {
@@ -11,13 +12,13 @@ export const nativeBindings = () => {
 export type Option = { value: string; label: string };
 export type ActReadings = {
   league: string; revision: number; season: number; options: Partial<Record<FieldKind, Option[]>>;
-  assets: commissioner.NativeAssets;
+  assets: commissioner.NativeAssets; principal?: string;
 };
 const unique = (items: Option[]) => Array.from(new Map(items.map(item => [item.value, item])).values());
 
 // Only the readings a command needs are opened. A private reading's refusal cannot disable an unrelated act.
 export async function readActData(league: string, kinds: readonly FieldKind[], season?: number,
-  franchise = ''): Promise<ActReadings> {
+  franchise = '', command = ''): Promise<ActReadings> {
   const app = nativeBindings();
   const people = leagueState.peek().people;
   const viewer = franchise || (people?.league === league ? people.yourFranchise : '');
@@ -48,17 +49,31 @@ export async function readActData(league: string, kinds: readonly FieldKind[], s
     ...(options.entry ?? []).map(o => ({ value: JSON.stringify({ transaction: o.value }),
       label: `Transaction: ${o.label}` })),
   ];
-  if (kinds.includes('trade')) {
+  const marketCommands = ['waivers.process', 'waivers.award.override', 'bids.process',
+    'bids.award.override', 'trade.review', 'trade.appeal.rule', 'trade.override'];
+  const market = marketCommands.includes(command);
+  if (market) {
+    const reading = await app.TargetCommissionerMarket(league, command);
+    if (reading.league !== league || reading.revision !== assets.revision)
+      throw new Error('The league changed while reading its market. Reopen the change.');
+    const choices = (rows: commissioner.MarketChoice[]) => rows.map(r => ({ value: r.id, label: r.words }));
+    options.window = choices(reading.windows);
+    options.claim = choices(reading.claims);
+    options.bidPlayer = choices(reading.players);
+    options.bid = choices(reading.bids);
+    options.trade = choices(reading.trades);
+  }
+  if (!market && kinds.includes('trade')) {
     const trades = await app.TargetNativeTrades(league, viewer);
     options.trade = trades.offers.map(t => ({ value: t.id, label: t.words }));
   }
-  if (kinds.includes('bid') || kinds.includes('bidPlayer')) {
+  if (!market && (kinds.includes('bid') || kinds.includes('bidPlayer'))) {
     const bids = await app.TargetNativeBids(league, viewer);
     options.bidPlayer = bids.players.map(p => ({ value: p.player, label: p.name }));
     options.bid = unique(bids.players.flatMap(p => [p.yourBid, p.leader].flatMap(b =>
       b ? [{ value: b.id, label: `${p.name} — ${b.team}: ${b.contract}` }] : [])));
   }
-  if (kinds.includes('window') || kinds.includes('claim')) {
+  if (!market && (kinds.includes('window') || kinds.includes('claim'))) {
     const waivers = await app.TargetNativeWaivers(league, viewer, new Date().toISOString());
     options.window = waivers.players.map(p => ({ value: p.window, label: `${p.name} — ${p.closes}` }));
     options.claim = waivers.claims.map(c => ({ value: c.id,
@@ -68,5 +83,7 @@ export async function readActData(league: string, kinds: readonly FieldKind[], s
     const queue = await app.TargetStatQueue(league, year);
     options.item = queue.open.map(i => ({ value: i.id, label: `${i.name}, week ${i.week}: ${i.words}` }));
   }
-  return { league, revision: assets.revision, season: year, options, assets };
+  await readCompetitionOptions(app, league, kinds, year, assets.revision, options);
+  const principal = kinds.includes('self') ? await app.TargetCommissionerActor() : undefined;
+  return { league, revision: assets.revision, season: year, options, assets, principal };
 }

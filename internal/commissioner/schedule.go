@@ -327,3 +327,32 @@ func (w ScheduleWeek) validateFrozenGames(ids map[string]bool) error {
 	}
 	return nil
 }
+
+// ManagedSchedule includes the unpublished draft, which must never replace an owner's publication.
+type ManagedSchedule struct {
+	League    string         `json:"league"`
+	Revision  int64          `json:"revision"`
+	Draft     []ScheduleWeek `json:"draft"`
+	Published []ScheduleWeek `json:"published"`
+}
+
+func ManagedScheduleReading(league, principal string, records []Record) (ManagedSchedule, error) {
+	out := ManagedSchedule{League: league, Draft: []ScheduleWeek{}, Published: []ScheduleWeek{}}
+	held := make([]Record, 0, len(records))
+	for _, record := range records {
+		if record.Command.League == league {
+			held = append(held, record)
+		}
+	}
+	if _, err := AuthorizeRecords(RawCommand{League: league, Command: ScheduleEdit}, principal, held); err != nil {
+		return out, err
+	}
+	draft, published, err := replaySchedule(held)
+	if err != nil {
+		return out, fmt.Errorf("read commissioner schedule: %w", err)
+	}
+	out.Revision = int64(len(held))
+	out.Draft = cloneSchedule(draft)
+	out.Published = cloneSchedule(published)
+	return out, nil
+}

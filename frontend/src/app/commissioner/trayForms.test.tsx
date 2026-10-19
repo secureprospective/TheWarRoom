@@ -124,7 +124,7 @@ describe.each(forms)('The $name form', form => {
     await form.fill(panel);
     await settle();
     const text = panel.textContent;
-    const ordered = [form.preview.question, 'League version:', 'Values and sources', 'Before → after',
+    const ordered = [form.preview.question, 'Values and sources', 'Before → after',
       'Affects', form.preview.affects.words, 'Before you confirm', form.confirm];
     const at = ordered.map(word => text.lastIndexOf(word));
     expect(at.every(n => n >= 0)).toBe(true);

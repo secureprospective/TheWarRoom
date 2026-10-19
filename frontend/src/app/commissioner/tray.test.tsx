@@ -84,12 +84,12 @@ describe('Commissioner tray', () => {
   });
   it('presents Go fields in order and the review stages in order, with unknown counts honest', async () => {
     const p = parsePreview(previewWire.hold);
-    p.fields.push({ ...p.fields[0], label: 'Second field' });
+    p.fields.push({ ...p.fields[0], label: 'Second field', beforeSource: 'Another reading' });
     p.affects.count = null;
     const host = await mount(render(PreviewReview, { preview: p, confirm: render('button', null, 'Confirm'),
       children: render('p', null, 'Edit fields') }));
     const text = host.textContent;
-    const ordered = [p.question, 'League version: 1', 'Values and sources',
+    const ordered = [p.question, 'Values and sources',
       'Active roster size — in force now',
       'Second field — in force now', 'Edit fields', 'Before → after',
       'Active roster size: 18 to 80 → 20 to 70',
@@ -99,6 +99,18 @@ describe('Commissioner tray', () => {
     ordered.forEach(word => expect(text).toContain(word));
     expect(text).toContain('Legacy NFL rules');
     expect(text).toContain('Your proposed change');
+    expect(text).not.toContain('League version');
+  });
+  it('names shared sources once instead of on every row, and still shows every value', async () => {
+    const p = parsePreview(previewWire.hold);
+    for (const label of ['Second field', 'Third field']) p.fields.push({ ...p.fields[0], label });
+    const host = await mount(render(PreviewReview, { preview: p, confirm: render('button', null, 'Confirm'),
+      children: render('p', null, 'Edit fields') }));
+    const text = host.textContent;
+    expect(text).not.toContain('— in force now');
+    expect(text.split(p.fields[0].beforeSource).length - 1).toBe(1);
+    expect(text).toContain(`Every value in force now${p.fields[0].beforeSource}`);
+    for (const f of p.fields) expect(text).toContain(`${f.label}: ${f.before} → ${f.after}`);
   });
   it('keeps Go blockers verbatim and disables confirmation', async () => {
     const words = 'Your league role does not permit this action';

@@ -35,9 +35,10 @@ describe('Commissioner spine', () => {
     expect(reading.entries[0].what)
       .toBe('Created league “Our league” with 2 franchises and every rule waiting for a ruling');
     const html = renderToStaticMarkup(createElement(LedgerEntries, { reading }));
-    for (const label of ['League version: 2', 'By creator', 'Reason:', 'Safeguard:', 'Start our own league'])
+    for (const label of ['By creator', 'Reason:', 'Safeguard:', 'Start our own league'])
       expect(html).toContain(label);
     expect(html).not.toContain('G3');
+    expect(html).not.toContain('League version');
   });
   it('passes the exact command to Go and returns its receipt, never choosing gravity or role', async () => {
     let sent = '';

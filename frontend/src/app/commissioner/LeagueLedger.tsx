@@ -8,7 +8,6 @@ import './commissioner.css';
 export function LedgerEntries({ reading, filtered = false }: { reading: Ledger; filtered?: boolean }) {
   return (
     <>
-      <p>League version: {reading.revision}</p>
       {reading.entries.length === 0 && <p>{filtered ? 'No changes match these filters.'
         : 'No changes are visible to you in this league yet.'}</p>}
       <ol className="league-ledger-entries">

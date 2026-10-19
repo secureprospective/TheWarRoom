@@ -20,13 +20,19 @@ export function CommissionerActForm({ definition, league }: { definition: ActDef
   const [dry, setDry] = useState('');
   const [dryError, setDryError] = useState('');
   const [readingDry, setReadingDry] = useState(false);
+  const readingSeason = definition.root === 'bracket' ? values.season : undefined;
   useEffect(() => {
     let active = true;
-    void readActData(league, definition.fields.map(f => f.kind)).then(data => {
+    setHeld(undefined);
+    setError('');
+    const season = Number(readingSeason);
+    const year = season >= 1920 && season <= 9999 ? season : undefined;
+    void readActData(league, definition.fields.map(f => f.kind), year, '',
+      definition.command).then(data => {
       if (active) setHeld(data);
     }).catch(cause => { if (active) setError(refusalText(cause)); });
     return () => { active = false; };
-  }, [league, definition]);
+  }, [league, definition, readingSeason]);
   const change = held ? actChange(definition, values, held, reason) : null;
   const request = useRequestKey(change);
   const { preview, wait, safeguard } = useChangePreview(change, request);
@@ -66,9 +72,9 @@ export function CommissionerActForm({ definition, league }: { definition: ActDef
         blocked={blocked} />
     </>}>
       {held && <>
-        <p className="tray-target">League version: {held.revision}</p>
         <ActFields fields={definition.fields} values={values} held={held}
-          onChange={(path, value) => setValues(v => ({ ...v, [path]: value }))} />
+          onChange={(path, value) => setValues(v => path === 'season' && definition.root === 'bracket'
+            ? { season: value } : { ...v, [path]: value })} />
       </>}
     </PreviewReview>
   </section>;

@@ -861,3 +861,15 @@ is the identical `{league, expected, request, reason}` sent to `TargetNativeSeed
 retry identity. No new Wails binding or client-supplied starting assets are needed. Every other act
 uses the normal execute command body. Controls A–E and G (except CM-055), plus the built bracket and
 advance commands (CM-046/047), are marked built; the rest of F keeps its prior flags.
+
+## Commissioner market and competition pickers
+
+`commissioner_market_app.go` exposes `TargetCommissionerMarket(league, command)` over held ledger
+records. `commissioner.MarketReading` uses the exact command permission and emits only named target
+choices: unprocessed waiver windows, processed claims, anonymous undecided auction targets, decided
+bids and eligible trade reviews/appeals/overrides. Private claims and undecided bid identities or
+amounts never travel. `TargetCommissionerSchedule` exposes authorized draft and published games
+separately; owners retain publication-only readings. `TargetCommissionerActor` returns the local
+session identity for self-only people acts. The lazy commissioner tray uses those doors, and the
+existing `TargetNativeBracket`, for schedule and bracket acts with named game/round/seed/team pickers.
+Go-authored market and competition wire fixtures pin the frontend bodies and previews.

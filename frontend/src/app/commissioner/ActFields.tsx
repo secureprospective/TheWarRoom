@@ -3,6 +3,8 @@ import type { ActValues } from './actBody';
 import type { ActReadings, Option } from './actReadings';
 
 const words: Record<string, string> = {
+  division_weighted: 'More division matchups', league_rules: 'League playoff rules',
+  legacy_nfl: 'Legacy NFL playoff layout',
   approve: 'Approve', veto: 'Veto', add: 'Add', remove: 'Remove', ir: 'IR', taxi: 'Taxi',
   held: 'Starting roster', draft: 'Draft', waiver: 'Waivers', trade: 'Trade',
   free_agent: 'Free agent', commissioner: 'Commissioner', all: 'Everyone', commish: 'Commissioners only',
@@ -25,6 +27,7 @@ export function ActFields({ fields, values, held, onChange }: {
   onChange(path: string, value: ActValues[string]): void;
 }) {
   return <>{fields.map(field => {
+    if (field.kind === 'self') return null;
     const raw = values[field.path];
     const options = held.options[field.kind];
     if (field.kind === 'order') {

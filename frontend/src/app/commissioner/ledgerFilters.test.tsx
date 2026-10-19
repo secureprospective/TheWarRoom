@@ -60,7 +60,7 @@ describe('Ledger filters over Go readings', () => {
     } }]);
     expect(host.textContent).toContain(wire.rules.entries[0].what);
     expect(host.textContent).not.toContain(wire.setup.entries[0].what);
-    expect(host.textContent).toContain('League version: 4');
+    expect(host.textContent).not.toContain('League version');
     await click(button(host, 'Clear filters'));
     expect(host.textContent).toContain(wire.setup.entries[0].what);
     expect(control(host, 'Person').props().value).toBe('');

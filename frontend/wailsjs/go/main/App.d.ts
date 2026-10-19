@@ -102,6 +102,8 @@ export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
 
+export function TargetCommissionerActor():Promise<string>;
+
 export function TargetCommissionerControls():Promise<commissioner.Controls>;
 
 export function TargetCommissionerDigests(arg1:string):Promise<commissioner.Digests>;
@@ -116,6 +118,8 @@ export function TargetCommissionerLedger(arg1:string):Promise<commissioner.Ledge
 
 export function TargetCommissionerLedgerFiltered(arg1:string,arg2:string):Promise<commissioner.Ledger>;
 
+export function TargetCommissionerMarket(arg1:string,arg2:string):Promise<commissioner.Market>;
+
 export function TargetCommissionerNotices(arg1:string):Promise<commissioner.LeagueNotes>;
 
 export function TargetCommissionerPeople(arg1:string):Promise<commissioner.People>;
@@ -123,6 +127,8 @@ export function TargetCommissionerPeople(arg1:string):Promise<commissioner.Peopl
 export function TargetCommissionerPreview(arg1:string):Promise<commissioner.Preview>;
 
 export function TargetCommissionerRules(arg1:string):Promise<commissioner.Rules>;
+
+export function TargetCommissionerSchedule(arg1:string):Promise<commissioner.ManagedSchedule>;
 
 export function TargetComms(arg1:main.RawCommsScope):Promise<main.CommsBoard>;
 
