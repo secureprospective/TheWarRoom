@@ -1,4 +1,3 @@
-import { EndpointIndex } from '../registry/EndpointIndex';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import type { Snapshot } from '../data/contract';
 import { commands } from './registry';
@@ -80,8 +79,6 @@ export function CommandBar({ snapshot }: { snapshot?: Snapshot }) {
           Preset: Admin · unavailable: commissioner or admin role required
         </p>
       )}
-      {/* The bar's own map rows only on an empty query; typed results are the point. */}
-      {!query.trim() && <EndpointIndex placement="Command bar" />}
       <Act variant="button" verb="commandbar.close" args={{}}>
         Close · Escape
       </Act>

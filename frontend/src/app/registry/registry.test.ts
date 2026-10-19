@@ -72,20 +72,6 @@ describe('Endpoint map', () => {
             a.ring - b.ring || b.gravity.localeCompare(a.gravity) || a.id.localeCompare(b.id),
         ),
       );
-      const html = renderToStaticMarkup(createElement(EndpointIndex, { placement: place }));
-      for (const row of rows) {
-        const item = html.split('<li').find((part) => part.includes(`<b>${row.id} ·`));
-        if (row.status === 'landed') {
-          expect(item, `${row.id} landed, so it leaves the index`).toBeUndefined();
-          continue;
-        }
-        const labels: Record<string, string> = {
-          landed: 'landed live',
-          built: 'built, not yet landed live',
-          spec: 'not wired',
-        };
-        expect(item).toContain(`${labels[row.status]} · ring ${row.ring}`);
-      }
     }
     for (const node of nodeKeys) {
       for (const w of nodes[node].workspaces) {
@@ -132,8 +118,6 @@ describe('Endpoint map', () => {
       'M-080', 'M-182', 'M-114', 'M-104', 'M-105', 'M-023', 'M-110', 'M-019', 'M-083', 'M-084', 'M-085',
       'M-086', 'M-082', 'M-073', 'M-079', 'M-089', 'M-111', 'M-112', 'M-113', 'M-174', 'M-200', 'M-201',
       'C-01',
-      // Ring 4 league ops: League notices, the mail log and the app's own read-again tools.
-      'M-093', 'M-095', 'M-137',
     ];
     // Seen working on Claude-OS against the live snapshot during the 10-12 landing walk.
     const landed = [
@@ -169,36 +153,14 @@ describe('Endpoint map', () => {
       'M-033', 'M-034',
       // After batch8: one estimated posted time, one newest-first scratchpad, the Report drawer's shortcuts.
       'M-060', 'M-118', 'S-11', 'M-159',
+      // Ring 4 (#38), walked on Claude-OS and merged 10-19: League notices, the mail log, read-again tools.
+      'M-093', 'M-095', 'M-137',
     ];
     for (const row of endpoints) {
       let status = 'spec';
       if (built.includes(row.id)) status = 'built';
       if (landed.includes(row.id)) status = 'landed';
       expect(row.status).toBe(status);
-    }
-    const checks: [EndpointId, string][] = [
-      ['M-027', 'landed live'],
-      ['C-03', 'landed live'],
-      ['M-028', 'landed live'],
-      ['M-029', 'landed live'],
-      ['M-033', 'landed live'],
-      ['X-04', 'built, not yet landed live'],
-      ['M-034', 'landed live'],
-    ];
-    for (const [id, label] of checks) {
-      const row = endpointById(id);
-      const html = renderToStaticMarkup(
-        createElement(EndpointIndex, {
-          placement: row.placement as Placement,
-        }),
-      );
-      const item = html.split('<li').find((part) => part.includes(`<b>${id} ·`));
-      if (row.status === 'landed') {
-        expect(item).toBeUndefined();
-        continue;
-      }
-      expect(item).toContain(`<small>${label} · ring ${row.ring}</small>`);
-      if (row.status !== 'spec') expect(item).not.toContain('not wired');
     }
   });
   it('gives every kept row two real routes; merged rows reach kept targets or a reachable place', () => {
@@ -227,9 +189,6 @@ describe('Endpoint map', () => {
           const place = `${nodes[node].label} › ${w.label}`;
           const html = await renderSettledApp();
           expect(html).toContain(`${place} endpoint index`);
-          for (const row of endpointsAt(place as Placement)) {
-            if (row.status !== 'landed') expect(html).toContain(row.id);
-          }
           // Rendered before the snapshot arrives: a snapshot workspace reads as loading, never unwired.
           if (['lineup-and-roster', 'contracts-and-cap', 'my-moves', 'trade-desk'].includes(w.slug)) {
             expect(html).toContain('Reading the league…');
@@ -245,7 +204,8 @@ describe('Endpoint map', () => {
           expect(html).toContain(endpointById('C-02').name.replaceAll('"', '&quot;'));
           expect(html).toContain('League Pulse › Race');
           expect(html).not.toContain('Report drawer endpoint index');
-        } else expect(html).toContain(`${place} endpoint index`);
+        } else if (place === 'Command bar') expect(html).not.toContain('Command bar endpoint index');
+        else expect(html).toContain(`${place} endpoint index`);
       }
       expect(() => assertEndpointRoutes(endpoints, searchCandidates(executor))).not.toThrow();
       commands.dispatch('overlays.close', {});
@@ -514,24 +474,14 @@ it('retires M-025 without a placement or route', () => {
   expect(() => createCommands().dispatch('endpoint.open', { id: 'M-025' })).toThrow('retired');
 });
 
-it('removes landed endpoints from every index and hides an index with nothing left to land', () => {
-  let emptied = 0;
+it('lists no endpoint rows on any screen; the index is only the reveal anchor', () => {
   for (const node of nodeKeys) {
     for (const w of nodes[node].workspaces) {
       const place = `${nodes[node].label} › ${w.label}` as Placement;
-      const rows = endpointsAt(place);
       const html = renderToStaticMarkup(createElement(EndpointIndex, { placement: place }));
-      const cards = html.split('<ul>')[1] ?? '';
-      expect(cards).not.toContain('<small>landed live');
-      expect(html).not.toContain('finished');
-      for (const row of rows) expect(html.includes(`<b>${row.id} ·`), row.id).toBe(row.status !== 'landed');
-      if (rows.every((r) => r.status === 'landed')) {
-        expect(html).toMatch(/^<section class="endpoint-index"[^>]* hidden=""><\/section>$/);
-        emptied++;
-      }
+      expect(html).toMatch(/^<section class="endpoint-index"[^>]* hidden=""><\/section>$/);
     }
   }
-  expect(emptied).toBeGreaterThan(0);
 });
 
 it('keeps commissioner rows out of owner indexes, lookups, counts and command search', async () => {
@@ -539,8 +489,8 @@ it('keeps commissioner rows out of owner indexes, lookups, counts and command se
   expect(commissionerControls).toHaveLength(56);
   expect(endpoints).toHaveLength(270);
   const ownerIds = new Set<string>(endpoints.map(row => row.id));
-  const builtRows = new Set(['CM-043', 'CM-044', 'CM-045', 'CM-051', 'CM-052', 'CM-053', 'CM-054',
-    'CM-056']);
+  // Ring 4 (#38) built every control but these (ring 6); see ControlsReading in internal/commissioner.
+  const unbuilt = new Set(['CM-048', 'CM-049', 'CM-050', 'CM-055']);
   const places = new Set(commissionerControls.map(row => row.placement));
   for (const place of places) {
     const indexed = endpointsAt(place);
@@ -553,7 +503,7 @@ it('keeps commissioner rows out of owner indexes, lookups, counts and command se
     expect(() => endpointById(row.id as unknown as EndpointId)).toThrow('Unknown endpoint');
     expect(candidates.some(result => result.label.includes(row.id))).toBe(false);
     expect(row).toMatchObject({ source: 'K4 census', disposition: 'kept',
-      status: builtRows.has(row.id) ? 'built' : 'spec' });
+      status: unbuilt.has(row.id) ? 'spec' : 'landed' });
     expect(Object.isFrozen(row)).toBe(true);
     expect(Object.isFrozen(row.governs)).toBe(true);
     for (const target of row.governs) {
