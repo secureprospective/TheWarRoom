@@ -2,8 +2,11 @@ package commissioner
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
 
 func nativePreviewValues(raw RawCommand, records []Record, now time.Time, out map[string]string) error {
@@ -20,7 +23,11 @@ func nativePreviewValues(raw RawCommand, records []Record, now time.Time, out ma
 		for _, f := range directory.Franchises {
 			names[f.Franchise] = f.Name
 		}
-		snapshotPreviewValues(assets.Snapshot, names, out)
+		if raw.Command == NativeSeed {
+			seedPreviewValues(assets.Snapshot, names, out)
+		} else {
+			snapshotPreviewValues(assets.Snapshot, names, out)
+		}
 	}
 	if assets.Seeded {
 		capView, capErr := NativeCapCheckReading(RawNativeCapScope{League: raw.League, ViewerZone: "UTC"}, records, now)
@@ -71,6 +78,73 @@ func pickPreviewWords(p NativePick) string {
 		return "; skipped"
 	}
 	return "; not used"
+}
+
+// seedPreviewValues sums up starting assets per franchise. Recording them adds every rostered player at
+// once, and a row per player would bury the reason under thousands of lines.
+func seedPreviewValues(seed *RawNativeSnapshot, names map[string]string, out map[string]string) {
+	statusWords := []struct {
+		status domain.RosterStatus
+		words  string
+	}{{domain.RosterActive, "on the active roster"}, {domain.RosterIR, "on IR"}, {domain.RosterTaxi, "on the taxi squad"}}
+	for _, f := range seed.Franchises {
+		counts := map[domain.RosterStatus]int{}
+		players := 0
+		var salary domain.Money
+		for _, p := range seed.Players {
+			if p.Franchise == f.ID {
+				players++
+				counts[p.Status]++
+				salary += p.Salary
+			}
+		}
+		parts := []string{}
+		for _, s := range statusWords {
+			if counts[s.status] > 0 {
+				parts = append(parts, fmt.Sprintf("%d %s", counts[s.status], s.words))
+			}
+		}
+		roster := "No rostered players"
+		if players > 0 {
+			roster = fmt.Sprintf("%d players: %s; %s salary", players, strings.Join(parts, ", "), salary)
+		}
+		out[names[f.ID]+" starting roster"] = roster
+		out[names[f.ID]+" draft picks"] = seedPickWords(seed.Picks, f.ID)
+		charges := []string{}
+		for _, c := range seed.Adjustments {
+			if c.Franchise == f.ID {
+				charges = append(charges, fmt.Sprintf("%s: %s", c.Description, c.Amount))
+			}
+		}
+		if len(charges) == 0 {
+			charges = append(charges, "No cap charges")
+		}
+		out[names[f.ID]+" cap charges"] = strings.Join(charges, "; ")
+	}
+}
+
+// seedPickWords lists a franchise's starting draft picks by season, such as "2027 rounds 1, 2, 2, 3".
+func seedPickWords(picks []NativePick, franchise string) string {
+	rounds := map[int][]string{}
+	seasons := []int{}
+	for _, p := range picks {
+		if p.Owner != franchise {
+			continue
+		}
+		if rounds[p.Season] == nil {
+			seasons = append(seasons, p.Season)
+		}
+		rounds[p.Season] = append(rounds[p.Season], fmt.Sprint(p.Round))
+	}
+	if len(seasons) == 0 {
+		return "No draft picks"
+	}
+	slices.Sort(seasons)
+	words := []string{}
+	for _, season := range seasons {
+		words = append(words, fmt.Sprintf("%d rounds %s", season, strings.Join(rounds[season], ", ")))
+	}
+	return strings.Join(words, "; ")
 }
 
 func snapshotPreviewValues(seed *RawNativeSnapshot, names map[string]string, out map[string]string) {

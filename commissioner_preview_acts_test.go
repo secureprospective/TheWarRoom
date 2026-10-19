@@ -123,6 +123,40 @@ func TestStartingAssetsPreviewShowsBeforeTheReasonIsTyped(t *testing.T) {
 	}
 }
 
+// Recording starting assets adds every rostered player at once. The preview sums them up per franchise, so
+// the commissioner can read it and reach the reason, rather than listing each player three times.
+func TestStartingAssetsPreviewSumsUpEachFranchise(t *testing.T) {
+	app := nativeSeedTestApp(t)
+	input := createNativeSeedLeague(t, app, commissioner.PresetLegacy)
+	body, err := json.Marshal(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	preview, err := app.TargetCommissionerPreview(string(body))
+	if err != nil || len(preview.Blockers) != 0 {
+		t.Fatalf("starting assets: %+v %v", preview, err)
+	}
+	rosters, populated := 0, 0
+	for _, field := range preview.Fields {
+		if strings.Contains(field.After, " players: ") {
+			populated++
+		}
+		if strings.HasSuffix(field.Label, " acquisition") || strings.HasSuffix(field.Label, " contract") {
+			t.Fatalf("per-player row in the starting assets preview: %+v", field)
+		}
+		if strings.HasSuffix(field.Label, " starting roster") {
+			rosters++
+			if field.After != "No rostered players" && (!strings.Contains(field.After, " players: ") ||
+				!strings.Contains(field.After, " salary") || strings.Contains(field.After, ": ;")) {
+				t.Fatalf("roster summary %q", field.After)
+			}
+		}
+	}
+	if rosters == 0 || populated == 0 {
+		t.Fatalf("no franchise roster summaries: %+v", preview.Fields)
+	}
+}
+
 func assertPreviewTransition(t *testing.T, preview commissioner.Preview, label, before, after string) {
 	t.Helper()
 	for _, field := range preview.Fields {
