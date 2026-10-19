@@ -1,6 +1,6 @@
 # Command Protocol — Direction Notes and Audit, 2026-10-19
 
-**Status:** notes and audit only. Nothing built. Waiting for Christopher's go on the track plan.
+**Status:** evidence for `Hardening_Plan_2026-10.md` (phases 8–12). Nothing built.
 **Read by Claude from source:** `internal/commissioner/command.go`, `ledger.go`; root
 `commissioner_app.go`; `frontend/src/app/commands/registry.ts`, `search.ts`, `CommandBar.tsx`;
 `internal/governance/census.go`.
@@ -83,18 +83,9 @@ is one catalog, as data, that every surface reads (G1, G2, G5, G6), and moving p
 IPC doors (G3). The MFL-side commands (G4) and server identity and clock (G8, G9) are bigger and
 belong to later tracks.
 
-## 4. Proposed track (after the store plan's Phase 3)
-
-| Step | What | Fixes | Size |
-|---|---|---|---|
-| C0 | Impact map + panel brief on the protocol shape (versioning, transports, identity) | — | ½ day |
-| C1 | Catalog as data in Go: each command declares args schema, version, permission, gravity, undo, facts needed, preview/execute/read | G1, G6 | 2–3 days |
-| C2 | Engine gathers declared facts; the six special doors collapse into the one path | G3 | 1–2 days |
-| C3 | Catalog reads for native readings, privacy-filtered | G5 | 1–2 days |
-| C4 | Frontend registry generated from the Go catalog (one truth) + typed grammar in the bar | G2, G7 | 2 days |
-| C5 | `twr` CLI/REPL over a local socket (needs Christopher's ruling: exception to "no inbound server"); AI tool schemas generated, preview by default | — | 2–3 days |
-| C6 | MFL-side commands, starting with free-agent pools and bids (the solo-owner path) | G4 | ring-sized |
-| — | Server: identity, clock, per-league storage, transport | G8, G9 | separate campaign, panel first |
+## 4. Track
+Scheduled as phases 8–12 of `Hardening_Plan_2026-10.md`. That plan is the single source for order
+and ETA.
 
 ## 5. Christopher's rulings (2026-10-19)
 1. **CLI local socket:** undecided; it goes to the expert panel in C0.
