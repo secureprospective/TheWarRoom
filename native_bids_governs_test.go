@@ -67,6 +67,7 @@ func (f *bidFixture) governs(t *testing.T, field, value string, was, now func())
 }
 
 func TestNativeBidOneYearLimitGovernsRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.governs(t, "bids.oneYearMaximum", `1000000000`,
 		func() { f.accepted(t, "franchise.01", "5002", 11*million, 1) },
@@ -74,6 +75,7 @@ func TestNativeBidOneYearLimitGovernsRevertAndReopen(t *testing.T) {
 }
 
 func TestNativeBidTierYearsGovernRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	tiers := `[{"Salary":{"MaximumUnlimited":true,"Min":1200000000},"MinimumYears":4,"LowerInclusive":false}]`
 	f.governs(t, "bids.tiers", tiers,
@@ -82,6 +84,7 @@ func TestNativeBidTierYearsGovernRevertAndReopen(t *testing.T) {
 }
 
 func TestNativeBidStepGovernsRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.two", "franchise.02", "5001", 5*million, 1)
 	f.governs(t, "bids.minimumIncrement", `5000`,
@@ -90,6 +93,7 @@ func TestNativeBidStepGovernsRevertAndReopen(t *testing.T) {
 }
 
 func TestNativeBidSnipeMarkGovernsRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.two", "franchise.02", "5001", 5*million, 1)
 	f.advance(10 * time.Hour)
@@ -99,6 +103,7 @@ func TestNativeBidSnipeMarkGovernsRevertAndReopen(t *testing.T) {
 }
 
 func TestNativeBidSnipeStepGovernsRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.two", "franchise.02", "5001", 5*million, 1)
 	f.advance(21 * time.Hour)
@@ -108,6 +113,7 @@ func TestNativeBidSnipeStepGovernsRevertAndReopen(t *testing.T) {
 }
 
 func TestNativeBidYearMultipliersGovernPoints(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.governs(t, "bids.yearMultipliers", `[10000,15000,14000,16000]`,
 		func() {
@@ -123,6 +129,7 @@ func TestNativeBidYearMultipliersGovernPoints(t *testing.T) {
 }
 
 func TestNativeBidPointDecimalsGovernTheReading(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.governs(t, "bids.pointDecimals", `1`,
 		func() { f.accepted(t, "franchise.01", "5002", 5*million, 1) },
@@ -134,6 +141,7 @@ func TestNativeBidPointDecimalsGovernTheReading(t *testing.T) {
 }
 
 func TestNativeBidActiveLimitGovernsRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.one", "franchise.01", "5001", 5*million, 1)
 	f.governs(t, "bids.maximumActive", `1`,
@@ -142,6 +150,7 @@ func TestNativeBidActiveLimitGovernsRevertAndReopen(t *testing.T) {
 }
 
 func TestNativeBidModeGovernsWhatOtherOwnersSee(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.two", "franchise.02", "5001", 5*million, 1)
 	seen := func() bool {
@@ -162,6 +171,7 @@ func TestNativeBidModeGovernsWhatOtherOwnersSee(t *testing.T) {
 }
 
 func TestNativeBidMultiYearCloseGovernsRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.season.week = 11
 	f.governs(t, "bids.multiYearEndWeek", `10`,
@@ -170,6 +180,7 @@ func TestNativeBidMultiYearCloseGovernsRevertAndReopen(t *testing.T) {
 }
 
 func TestNativeBidPlayoffOnlyWeekGovernsRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.season.week = 13
 	f.season.playoff = map[string]nativecheck.PlayoffStanding{"franchise.02": nativecheck.PlayoffOut}
@@ -179,6 +190,7 @@ func TestNativeBidPlayoffOnlyWeekGovernsRevertAndReopen(t *testing.T) {
 }
 
 func TestNativeBidPlayoffYearsGovernRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.season.week = 13
 	f.season.playoff = map[string]nativecheck.PlayoffStanding{"franchise.01": nativecheck.PlayoffIn}
@@ -188,6 +200,7 @@ func TestNativeBidPlayoffYearsGovernRevertAndReopen(t *testing.T) {
 }
 
 func TestNativeBidPlayoffCapLiftGovernsRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.season.week = 14
 	f.season.playoff = map[string]nativecheck.PlayoffStanding{"franchise.01": nativecheck.PlayoffIn}

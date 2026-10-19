@@ -10,6 +10,7 @@ import (
 
 // A franchise plays one head-to-head game a week.
 func TestWeeksScoredReadsHeadToHeadGames(t *testing.T) {
+	t.Parallel()
 	standings := []leaguestandings.RawStanding{{H2HW: "2"}, {H2HW: "1", H2HL: "1"}, {H2HL: "2", H2HT: " "}}
 	if got := weeksScored(standings); got != 2 {
 		t.Errorf("weeks = %d, want 2", got)
@@ -20,6 +21,7 @@ func TestWeeksScoredReadsHeadToHeadGames(t *testing.T) {
 }
 
 func TestPowerRowsMoveAgainstThePreviousRun(t *testing.T) {
+	t.Parallel()
 	rows := powerRows([]m2service.Row{{Rank: 1, FranchiseID: "0002"}, {Rank: 2, FranchiseID: "0001"}},
 		map[string]int{"0002": 2}, nil)
 	if !rows[0].DeltaOK || rows[0].RankDelta != 1 {
@@ -33,6 +35,7 @@ func TestPowerRowsMoveAgainstThePreviousRun(t *testing.T) {
 // This season's weight follows the weeks played unless the slider sets it; the franchise ranks on
 // the roster and its age, and each view counts the roster its own way by default.
 func TestBoardWeightsAndDefaultsPerView(t *testing.T) {
+	t.Parallel()
 	if w := boardWeights(ViewSeason, 0.3, true, 4); w.Roster != 0.5 || w.Age != 0 {
 		t.Errorf("auto after 4 weeks: %+v, want roster 0.5", w)
 	}

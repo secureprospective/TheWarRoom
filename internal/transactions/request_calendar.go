@@ -27,7 +27,7 @@ func schedulableKind(k string) bool {
 	case KindAdvancePhase, KindRolloverSeason, KindSetSigningWindow, KindSetTradeDeadline, KindRetirement, KindDeath, KindCapRelief:
 		return true
 	case KindTrade, KindRosterStatus, KindWaiver, KindRestructure, KindTag, KindExtension, KindBuyout, KindSign,
-		KindScheduleEvent, KindRescheduleEvent, KindCancelEvent, KindCorrect:
+		KindScheduleEvent, KindRescheduleEvent, KindCancelEvent:
 		return false
 	default:
 		return false

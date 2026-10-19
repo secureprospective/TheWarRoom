@@ -264,6 +264,7 @@ func (f *legalityFixture) governs(t *testing.T, field, value string, read func(*
 }
 
 func TestRosterLimitGovernsTheRosterVerdict(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	read := func(t *testing.T, f *legalityFixture) string { return f.roster(t, "franchise.02").Words }
 	f.governs(t, "roster.limits", `{"min":18,"max":90}`, read, "Active roster 82 of 80: 2 over", "Within 18 to 90")
@@ -271,6 +272,7 @@ func TestRosterLimitGovernsTheRosterVerdict(t *testing.T) {
 }
 
 func TestRosterVerdictIgnoresReservesUntilTheLeagueCountsThem(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	row := f.roster(t, "franchise.02")
 	if row.Counted != 82 || row.Fits {
@@ -285,6 +287,7 @@ func TestRosterVerdictIgnoresReservesUntilTheLeagueCountsThem(t *testing.T) {
 }
 
 func TestRosterPositionLimitsGovernTheRosterVerdict(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	f.governs(t, "roster.positionBounds", `{"QB":{"min":2,"max":3}}`,
 		func(t *testing.T, f *legalityFixture) string {
@@ -294,6 +297,7 @@ func TestRosterPositionLimitsGovernTheRosterVerdict(t *testing.T) {
 }
 
 func TestLineupRulesGovernTheLineupVerdict(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	read := func(t *testing.T, f *legalityFixture) string { return f.lineup(t, firstStarters(21)).Verdict.Words }
 	f.governs(t, "lineup.groups", `{"offense":{"min":0,"max":8},"defense":{"min":13,"max":13},"total":{"min":21,"max":21}}`,
@@ -309,6 +313,7 @@ func TestLineupRulesGovernTheLineupVerdict(t *testing.T) {
 }
 
 func TestInvalidLineupPenaltyAndMissedFlagAreTheLeaguesChoice(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	penalty := func(t *testing.T, f *legalityFixture) string { return f.lineup(t, firstStarters(20)).Verdict.Penalty }
 	f.governs(t, "lineup.invalidPenalty", `"none"`, penalty,
@@ -321,6 +326,7 @@ func TestInvalidLineupPenaltyAndMissedFlagAreTheLeaguesChoice(t *testing.T) {
 }
 
 func TestInjuredReserveRulesGovernWhoMustLeave(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	standing := func(id string) func(*testing.T, *legalityFixture) string {
 		return func(t *testing.T, f *legalityFixture) string {
@@ -340,6 +346,7 @@ func TestInjuredReserveRulesGovernWhoMustLeave(t *testing.T) {
 }
 
 func TestTaxiRulesGovernWhoMustLeave(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	standing := func(id string) func(*testing.T, *legalityFixture) string {
 		return func(t *testing.T, f *legalityFixture) string {
@@ -362,6 +369,7 @@ func TestTaxiRulesGovernWhoMustLeave(t *testing.T) {
 }
 
 func TestHouseRulesAreReadOnlyTextTheCommissionerWrites(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	read := func(t *testing.T, f *legalityFixture) string {
 		h, err := f.app.TargetNativeHouseRules(legalityLeague)
@@ -376,6 +384,7 @@ func TestHouseRulesAreReadOnlyTextTheCommissionerWrites(t *testing.T) {
 }
 
 func TestNativeLegalityWire(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	roster, err := f.app.TargetNativeRosterCheck(legalityLeague)
 	if err != nil {
@@ -414,6 +423,7 @@ func legalityJSON[T commissioner.NativeRosterCheck | commissioner.NativeReserveC
 }
 
 func TestNativeLineupRefusesForeignReserveAndDuplicateStarters(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	for _, ids := range [][]string{{"4000"}, {"2001"}, {"3001"}, {"1000", "1000"}, {"missing"}} {
 		_, err := f.app.TargetNativeLineupCheck(commissioner.RawNativeLineup{League: legalityLeague,
@@ -425,6 +435,7 @@ func TestNativeLineupRefusesForeignReserveAndDuplicateStarters(t *testing.T) {
 }
 
 func TestNativeRosterWaitsForRolloverAndRulesShareSeedAlignment(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	f.set(t, "calendar.rollover", `"2027-03-01T05:00:00Z"`, "now")
 	pending := f.set(t, "roster.limits", `{"min":18,"max":90}`, "next_rollover")
@@ -472,6 +483,7 @@ func TestNativeRosterWaitsForRolloverAndRulesShareSeedAlignment(t *testing.T) {
 }
 
 func TestNativeGovernedCatalogueHasNoOrphanedFields(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	roster, err := f.app.TargetNativeRosterCheck(legalityLeague)
 	if err != nil {

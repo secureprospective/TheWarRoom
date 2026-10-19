@@ -10,6 +10,7 @@ import (
 )
 
 func TestPoolMarketLines(t *testing.T) {
+	t.Parallel()
 	id, err := playerid.New("13589")
 	if err != nil {
 		t.Fatal(err)
@@ -38,6 +39,7 @@ func TestPoolMarketLines(t *testing.T) {
 }
 
 func TestPoolMarketSortsMissingLast(t *testing.T) {
+	t.Parallel()
 	for _, key := range []string{"projected", "rank", "adp", "aav"} {
 		for _, desc := range []bool{false, true} {
 			t.Run(key+map[bool]string{false: " ascending", true: " descending"}[desc], func(t *testing.T) {
@@ -72,6 +74,7 @@ func TestPoolMarketSortsMissingLast(t *testing.T) {
 }
 
 func TestMarketReportPlayerContext(t *testing.T) {
+	t.Parallel()
 	id, err := playerid.New("13593")
 	if err != nil {
 		t.Fatal(err)

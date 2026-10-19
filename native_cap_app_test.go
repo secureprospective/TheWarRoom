@@ -59,6 +59,7 @@ func capTeam(t *testing.T, f *legalityFixture) commissioner.NativeCapFranchise {
 }
 
 func TestNativeCapReadingUsesRecordedAssetsAndSignedDeadMoney(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	before := readCap(t, f)
 	team := capTeam(t, f)
@@ -90,6 +91,7 @@ func TestNativeCapReadingUsesRecordedAssetsAndSignedDeadMoney(t *testing.T) {
 }
 
 func TestNativeCapAmountAndSharesGovernActualReading(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	f.governs(t, "cap.amount", `2000000000`,
 		func(t *testing.T, f *legalityFixture) string { return capTeam(t, f).Words },
@@ -104,6 +106,7 @@ func TestNativeCapAmountAndSharesGovernActualReading(t *testing.T) {
 }
 
 func TestNativeCapEnforcementAndDeadlineGovernActualReading(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	f.set(t, "cap.amount", `2000000000`, "now")
 	read := func(t *testing.T, f *legalityFixture) string {
@@ -124,6 +127,7 @@ func TestNativeCapEnforcementAndDeadlineGovernActualReading(t *testing.T) {
 }
 
 func TestNativeCapRulesAndCompensationSurviveReopen(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	before := capTeam(t, f).Words
 	receipt := f.set(t, "cap.amount", `2000000000`, "now")
@@ -139,6 +143,7 @@ func TestNativeCapRulesAndCompensationSurviveReopen(t *testing.T) {
 }
 
 func TestNativeCapWaitsForSeasonEffectiveRules(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	f.set(t, "calendar.rollover", `"2027-03-01T05:00:00Z"`, "now")
 	f.set(t, "cap.amount", `2000000000`, "next_rollover")
@@ -154,6 +159,7 @@ func TestNativeCapWaitsForSeasonEffectiveRules(t *testing.T) {
 }
 
 func TestNativeCapUnseededAndInvalidScope(t *testing.T) {
+	t.Parallel()
 	a := nativeSeedTestApp(t)
 	createNativeSeedLeague(t, a, commissioner.PresetEmpty)
 	reading, err := a.TargetNativeCapCheck(legalityLeague, "UTC")
@@ -171,6 +177,7 @@ func TestNativeCapUnseededAndInvalidScope(t *testing.T) {
 }
 
 func TestNativeCapWire(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	f.set(t, "cap.amount", `2000000000`, "now")
 	f.set(t, "cap.enforcement", `"soft"`, "now")
@@ -203,6 +210,7 @@ func capDeadlineInZone(t *testing.T, f *legalityFixture, zone string) string {
 }
 
 func TestNativeCapViewerDeadlineGovernsActualReading(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	f.set(t, "cap.amount", `2000000000`, "now")
 	f.set(t, "cap.enforcement", `"soft"`, "now")
@@ -226,6 +234,7 @@ func TestNativeCapViewerDeadlineGovernsActualReading(t *testing.T) {
 }
 
 func TestNativeCapViewerZoneAndDaylightSaving(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	f.set(t, "cap.amount", `2000000000`, "now")
 	f.set(t, "cap.enforcement", `"soft"`, "now")
@@ -250,6 +259,7 @@ func TestNativeCapViewerZoneAndDaylightSaving(t *testing.T) {
 }
 
 func TestNativeCapLocalDeadlineWire(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	f.set(t, "cap.amount", `2000000000`, "now")
 	f.set(t, "cap.enforcement", `"soft"`, "now")

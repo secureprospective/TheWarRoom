@@ -62,9 +62,6 @@ function Photo({ player }: { player: Spine['player'] }) {
       <path d="M7 38V31C7 19 33 19 33 31V38Z" fill="currentColor" />
     </svg>;
 }
-export function orderedSpine(entries: Spine[]) {
-  return [...entries].sort((a, b) => b.play.sequence - a.play.sequence);
-}
 export function spineEmpty(mine: boolean, held: boolean) {
   if (!mine) return 'Choose your franchise to see your matchup’s plays.';
   if (!held) return 'No plays held for this game yet.';

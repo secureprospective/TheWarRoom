@@ -105,6 +105,7 @@ func nativeSeedWhatIf(t *testing.T, a *App) *db.Pools {
 }
 
 func TestNativeSeedCapturesHeldAssetsWithoutChangingMirror(t *testing.T) {
+	t.Parallel()
 	a := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
 	before, stamp, used := a.league.ContractsView()
@@ -155,6 +156,7 @@ func TestNativeSeedCapturesHeldAssetsWithoutChangingMirror(t *testing.T) {
 }
 
 func TestNativeSeedOnceAndRetryAfterMirrorRefresh(t *testing.T) {
+	t.Parallel()
 	a := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
 	first := seedNativeTest(t, a, input)
@@ -189,6 +191,7 @@ func TestNativeSeedOnceAndRetryAfterMirrorRefresh(t *testing.T) {
 }
 
 func TestNativeSeedRefusesMissingAndMixedHeldInputs(t *testing.T) {
+	t.Parallel()
 	for name, breakInput := range map[string]func(*App){
 		"rosters": func(a *App) { a.league = nil },
 		"results": func(a *App) { a.seasonDraftResults.fetchedAt = time.Time{} },
@@ -197,6 +200,7 @@ func TestNativeSeedRefusesMissingAndMixedHeldInputs(t *testing.T) {
 		"owner":   func(a *App) { a.seasonFuturePicks.value[0].Owner = "missing" },
 	} {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			a := nativeSeedTestApp(t)
 			input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
 			breakInput(a)
@@ -211,6 +215,7 @@ func TestNativeSeedRefusesMissingAndMixedHeldInputs(t *testing.T) {
 }
 
 func TestEmptyNativeLeagueHasNoSeed(t *testing.T) {
+	t.Parallel()
 	a := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, a, commissioner.PresetEmpty)
 	if _, err := a.TargetNativeSeed(input); err == nil {
@@ -222,6 +227,7 @@ func TestEmptyNativeLeagueHasNoSeed(t *testing.T) {
 }
 
 func TestNativeSeedCannotBeSuppliedByGenericIPC(t *testing.T) {
+	t.Parallel()
 	a := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
 	raw, err := a.nativeSeedCommand(t.Context(), input)
@@ -241,6 +247,7 @@ func TestNativeSeedCannotBeSuppliedByGenericIPC(t *testing.T) {
 }
 
 func TestNativeAssetsWire(t *testing.T) {
+	t.Parallel()
 	a := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
 	seedNativeTest(t, a, input)
@@ -255,6 +262,7 @@ func TestNativeAssetsWire(t *testing.T) {
 }
 
 func TestHeldConferencesNameEachDivisionsConference(t *testing.T) {
+	t.Parallel()
 	config := league.RawConfig{
 		Conferences: []league.Conference{{ID: "00", Name: "AFC"}, {ID: "01", Name: " "}},
 		Divisions:   []league.Division{{ID: "00", Conference: "00"}, {ID: "01", Conference: "01"}, {ID: "02"}}}

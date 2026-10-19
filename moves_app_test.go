@@ -69,6 +69,7 @@ func storedMove(t *testing.T, a *App) envelope.Envelope {
 }
 
 func TestTargetHandOffSaveBeforeOpen(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	at := time.Now().UTC().Add(-time.Minute)
 	e := constructedMove(t, at, moveSpec(t), false)
@@ -95,8 +96,10 @@ func TestTargetHandOffSaveBeforeOpen(t *testing.T) {
 }
 
 func TestTargetHandOffRefused(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{"blocked", "unmapped", "expired", "unknown", "foreign", "repeated"} {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			a := targetTestApp(t)
 			at := time.Now().UTC().Add(-time.Minute)
 			spec := moveSpec(t)
@@ -137,6 +140,7 @@ func TestTargetHandOffRefused(t *testing.T) {
 }
 
 func TestMoveURLSecondLock(t *testing.T) {
+	t.Parallel()
 	for _, target := range []string{
 		"https://example.com/", "http://myfantasyleague.com/",
 		"https://owner@myfantasyleague.com/", "https://myfantasyleague.com.evil.test/",
@@ -164,6 +168,7 @@ func TestMoveURLSecondLock(t *testing.T) {
 }
 
 func TestMoveBindingsNotReady(t *testing.T) {
+	t.Parallel()
 	a := NewApp()
 	a.startupErr = errors.New("not ready")
 	close(a.started)
@@ -198,8 +203,10 @@ func irMirror(t *testing.T, a *App) {
 }
 
 func TestWatcherIRFreshnessAndDeclaredSources(t *testing.T) {
+	t.Parallel()
 	for _, stale := range []bool{false, true} {
 		t.Run(map[bool]string{false: "fresh", true: "old"}[stale], func(t *testing.T) {
+			t.Parallel()
 			a := targetTestApp(t)
 			at := time.Now().Add(-time.Minute)
 			if stale {
@@ -236,6 +243,7 @@ func TestWatcherIRFreshnessAndDeclaredSources(t *testing.T) {
 }
 
 func TestWatcherEmptyMakesNoRequests(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	a.movesRefresh = func(context.Context, envelope.Source) error {
 		t.Fatal("idle refresh")
@@ -249,6 +257,7 @@ func TestWatcherEmptyMakesNoRequests(t *testing.T) {
 }
 
 func TestWatcherRestart(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "restart.db")
 	first := targetTestAppAt(t, path)
 	awaitingMove(t, first, time.Now().Add(-time.Minute))
@@ -321,6 +330,7 @@ func receiveMoveTimer(t *testing.T, c *manualMoveClock) manualMoveTimer {
 }
 
 func TestWatcherFastModeAndCoalescedWakes(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	at := time.Now().Add(time.Minute)
 	awaitingMove(t, a, at)
@@ -389,6 +399,7 @@ func TestWatcherFastModeAndCoalescedWakes(t *testing.T) {
 }
 
 func TestWatcherCancellationStopsBlockedRefresh(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	awaitingMove(t, a, time.Now().Add(-time.Minute))
 	entered := make(chan struct{})
@@ -426,6 +437,7 @@ func TestWatcherCancellationStopsBlockedRefresh(t *testing.T) {
 }
 
 func TestWatcherUnknownIntentLoggedOnce(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	at := time.Now().Add(-time.Minute)
 	spec := moveSpec(t)
@@ -475,6 +487,7 @@ func (m *moveFeedTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 }
 
 func TestWatcherIRRefreshThroughRealAdapters(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	transport := &moveFeedTransport{}
 	var err error
@@ -505,6 +518,7 @@ func TestWatcherIRRefreshThroughRealAdapters(t *testing.T) {
 }
 
 func TestSeasonRefreshWakesMoves(t *testing.T) {
+	t.Parallel()
 	a, _, _, _ := seasonTestApp(t)
 	a.refreshSeason(a.ctx)
 	select {
@@ -515,6 +529,7 @@ func TestSeasonRefreshWakesMoves(t *testing.T) {
 }
 
 func TestWatcherUnchangedStateDoesNotAppendIdleAudit(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	awaitingMove(t, a, time.Now().Add(-time.Minute))
 	_, err := a.league.Replace(a.ctx, state.MirrorSnapshot{
@@ -542,6 +557,7 @@ func TestWatcherUnchangedStateDoesNotAppendIdleAudit(t *testing.T) {
 }
 
 func TestWatcherUnchangedRosterCountsAsObserved(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	// The roster content dates from before the hand-off; a later successful refresh confirms it.
 	_, err := a.league.Replace(a.ctx, state.MirrorSnapshot{
@@ -569,6 +585,7 @@ func TestWatcherUnchangedRosterCountsAsObserved(t *testing.T) {
 }
 
 func TestHandOffDoesNotWaitForWatcherRefresh(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	awaitingMove(t, a, time.Now().Add(-time.Minute))
 	at := time.Now().UTC().Add(-time.Minute)

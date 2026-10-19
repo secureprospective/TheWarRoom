@@ -152,6 +152,7 @@ func TestReleaseInvalidationAndRebaseEngine(t *testing.T) {
 	t.Parallel()
 	for _, trigger := range []string{"contract", "adjustment", "dead-cap", "left", "window"} {
 		t.Run(trigger, func(t *testing.T) {
+			t.Parallel()
 			a := releaseTestApp(t)
 			action := "cut"
 			if trigger == "window" {
@@ -289,6 +290,7 @@ func TestReleaseWithdrawPathsFreePlayerSlot(t *testing.T) {
 	t.Parallel()
 	for _, stage := range []string{"ready", "blocked", "handed_off", "not_yet_done"} {
 		t.Run(stage, func(t *testing.T) {
+			t.Parallel()
 			a := releaseTestApp(t)
 			if stage == "blocked" {
 				releasePhase(t, a, domain.PhaseRegularSeason)
@@ -344,6 +346,7 @@ func TestReleaseViewWordsAndPostKeepIDsOnlyInFacts(t *testing.T) {
 	t.Parallel()
 	for _, action := range []string{"cut", "buyout"} {
 		t.Run(action, func(t *testing.T) {
+			t.Parallel()
 			a := releaseTestApp(t)
 			plan := planRelease(t, a, action, "0042")
 			if strings.Contains(strings.ReplaceAll(plan.Post, plan.Player, "Example"), "0042") || strings.Contains(plan.Post, "— player") || !strings.Contains(plan.Post, "annual salary") || !strings.Contains(plan.Post, plan.Charge) {

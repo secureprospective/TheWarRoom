@@ -101,6 +101,7 @@ func fixtureStarters(from, to int) []string {
 }
 
 func TestNativeLineupSetThroughTheGateReadingAndRestart(t *testing.T) {
+	t.Parallel()
 	f := lineupAppTest(t)
 	legal := fixtureStarters(0, 21)
 	f.execute(t, commissioner.RawCommand{Command: commissioner.RulesSet,
@@ -159,6 +160,7 @@ func TestNativeLineupSetThroughTheGateReadingAndRestart(t *testing.T) {
 }
 
 func TestNativeLineupCorrectionPreviewsAndRecordsThroughTheCommand(t *testing.T) {
+	t.Parallel()
 	f := lineupAppTest(t)
 	f.at = f.kickoff.Add(time.Hour)
 	wrs := []string{}
@@ -206,6 +208,7 @@ func TestNativeLineupCorrectionPreviewsAndRecordsThroughTheCommand(t *testing.T)
 // TestLineupSetIsRegisteredWithTheGate holds lineup.set to the registry the gate guard test walks: an
 // action left out of it would escape that guard.
 func TestLineupSetIsRegisteredWithTheGate(t *testing.T) {
+	t.Parallel()
 	for _, action := range nativeOwnerActions() {
 		if action.Name == "lineup.set" && action.Opens == "lineup" && action.Run != nil {
 			return

@@ -80,3 +80,9 @@ func TestIsRosterLimitReject_DistinguishesOtherErrors(t *testing.T) {
 		t.Fatal("a nil error must not be misread as a roster-limit rejection")
 	}
 }
+
+// isRosterLimitReject reports whether err is a roster-limit rejection.
+func isRosterLimitReject(err error) bool {
+	var r *errRosterLimit
+	return errors.As(err, &r)
+}

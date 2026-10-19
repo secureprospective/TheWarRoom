@@ -64,6 +64,7 @@ func datedWindows(t *testing.T, app *App, league string) string {
 }
 
 func TestCommissionerJobsWire(t *testing.T) {
+	t.Parallel()
 	app := commissionerTestApp(t)
 	at := func(rfc string) {
 		parsed, err := time.Parse(time.RFC3339, rfc)
@@ -137,6 +138,7 @@ func TestCommissionerJobsWire(t *testing.T) {
 }
 
 func TestCommissionerControlsWire(t *testing.T) {
+	t.Parallel()
 	app := commissionerTestApp(t)
 	reading := app.TargetCommissionerControls()
 	body, err := json.MarshalIndent(reading, "", "  ")

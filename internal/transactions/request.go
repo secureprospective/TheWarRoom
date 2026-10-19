@@ -33,7 +33,6 @@ const (
 	KindScheduleEvent    Kind = "SCHEDULE_EVENT"
 	KindRescheduleEvent  Kind = "RESCHEDULE_EVENT"
 	KindCancelEvent      Kind = "CANCEL_EVENT"
-	KindCorrect          Kind = "CORRECT"
 )
 
 // Request is a transaction the Coordinator can execute. The types live in this package so callers

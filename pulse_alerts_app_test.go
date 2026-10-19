@@ -21,6 +21,7 @@ func alertKinds(r AlertReading) (alerts, unavailable []string) {
 }
 
 func TestTargetAlerts(t *testing.T) {
+	t.Parallel()
 	a, _, _ := tradeDraftApp(t)
 	a.refreshMu.Lock()
 	defer a.refreshMu.Unlock()

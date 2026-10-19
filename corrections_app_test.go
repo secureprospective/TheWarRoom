@@ -29,6 +29,7 @@ func correctionAssets(t *testing.T, f *draftFixture) commissioner.NativeAssets {
 }
 
 func TestAssetCorrectionsGovernRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	for pass := range 2 {
 		if pass == 1 {
@@ -124,6 +125,7 @@ func checkCorrectionReadings(t *testing.T, f *draftFixture, count int) {
 }
 
 func TestCorrectedPickGovernsDraftOrderAndReplay(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t)
 	for pass := range 2 {
@@ -163,6 +165,7 @@ func TestCorrectedPickGovernsDraftOrderAndReplay(t *testing.T) {
 }
 
 func TestCorrectionsRequireReasonAndPermission(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	p := correctionAssets(t, f).Snapshot.Players[0]
 	c := commissioner.RawCorrection{Player: p.ID, Via: "draft"}
@@ -180,6 +183,7 @@ func TestCorrectionsRequireReasonAndPermission(t *testing.T) {
 }
 
 func TestRuleExceptionGovernsRealCalendarAndExpiresExactly(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.setRule(t, "calendar.windows", `{}`)
 	until := f.now.Add(time.Hour)
@@ -229,6 +233,7 @@ func assertExceptionGate(t *testing.T, f *draftFixture, at time.Time, open bool)
 }
 
 func TestCorrectionsWireMatchesGo(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	p := correctionAssets(t, f).Snapshot.Players[0]
 	assetCorrection(t, f, commissioner.CorrectProvenance, commissioner.RawCorrection{Player: p.ID, Via: "waiver"})
@@ -265,6 +270,7 @@ func TestCorrectionsWireMatchesGo(t *testing.T) {
 }
 
 func TestCorrectionUsesSharedVersionRetryAndCoPermission(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	p := correctionAssets(t, f).Snapshot.Players[0]
 	executeCommissionerTest(t, f.app, commissioner.RawCommand{League: draftLeague, Command: "commish.role.grant",

@@ -37,6 +37,7 @@ func poolNames(r Reading[Pool]) string {
 }
 
 func TestPoolNeverFetchedIsFailedNotEmpty(t *testing.T) {
+	t.Parallel()
 	a, transport := poolApp(t)
 	r := a.TargetPool(RawPoolScope{Sort: "name"})
 	if r.Status != ReadingFailed || r.AbsenceReason == nil || !strings.Contains(*r.AbsenceReason, "have not been fetched") ||
@@ -46,6 +47,7 @@ func TestPoolNeverFetchedIsFailedNotEmpty(t *testing.T) {
 }
 
 func TestPoolReadsEveryFreeAgentWithGoFigures(t *testing.T) {
+	t.Parallel()
 	a, transport := poolApp(t)
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
@@ -80,6 +82,7 @@ func TestPoolReadsEveryFreeAgentWithGoFigures(t *testing.T) {
 }
 
 func TestPoolFiltersAndSorts(t *testing.T) {
+	t.Parallel()
 	a, _ := poolApp(t)
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
@@ -112,6 +115,7 @@ func TestPoolFiltersAndSorts(t *testing.T) {
 }
 
 func TestPoolRefreshSkipsAFreshCopyUnlessForced(t *testing.T) {
+	t.Parallel()
 	a, transport := poolApp(t)
 	for _, force := range []bool{false, false, true, false} {
 		if err := a.TargetPoolRefresh(force); err != nil {
@@ -124,6 +128,7 @@ func TestPoolRefreshSkipsAFreshCopyUnlessForced(t *testing.T) {
 }
 
 func TestPoolEmptyAndOfflineStates(t *testing.T) {
+	t.Parallel()
 	a, transport := poolApp(t)
 	transport.failure = "freeAgents"
 	if err := a.TargetPoolRefresh(true); err != nil {
@@ -158,6 +163,7 @@ func TestPoolEmptyAndOfflineStates(t *testing.T) {
 }
 
 func TestPoolWithoutNamesIsFailed(t *testing.T) {
+	t.Parallel()
 	a, transport := poolApp(t)
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
@@ -171,6 +177,7 @@ func TestPoolWithoutNamesIsFailed(t *testing.T) {
 }
 
 func TestPoolRowShowsTheOwnersOpenBidPlan(t *testing.T) {
+	t.Parallel()
 	a, _ := poolApp(t)
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
@@ -196,6 +203,7 @@ func TestPoolRowShowsTheOwnersOpenBidPlan(t *testing.T) {
 }
 
 func TestAgeTextCountsBirthdays(t *testing.T) {
+	t.Parallel()
 	born := time.Date(1999, 3, 15, 0, 0, 0, 0, time.UTC).Unix()
 	facts := normalize.PlayerFacts{Birthdate: born, HasBirthdate: true}
 	for now, want := range map[time.Time]string{
@@ -213,6 +221,7 @@ func TestAgeTextCountsBirthdays(t *testing.T) {
 }
 
 func TestFreeAgentChangesAreHonestAcrossLaunches(t *testing.T) {
+	t.Parallel()
 	a, transport := poolApp(t)
 	recordSeasonArchive(t, a, "freeAgents", "", freeAgentBody, time.Now().Add(-time.Hour))
 	if err := a.TargetPoolRefresh(true); err != nil {
@@ -245,6 +254,7 @@ func TestFreeAgentChangesAreHonestAcrossLaunches(t *testing.T) {
 }
 
 func TestPoolNamesEngineRunInLocalTime(t *testing.T) {
+	t.Parallel()
 	a, _ := poolApp(t)
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)

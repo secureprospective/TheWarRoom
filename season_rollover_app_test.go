@@ -105,6 +105,7 @@ func (f *legalityFixture) rolloverCommand(t *testing.T, to int, dry bool) commis
 // the new season under rulings 9a, 9b and 9c; the compensating revert brings every reading back; and the
 // same holds after the database is physically reopened.
 func TestSeasonRolloverGovernsEveryReading(t *testing.T) {
+	t.Parallel()
 	f := rolloverAppFixture(t)
 	var first rolloverView
 	for pass, name := range []string{"live", "after reopening the database"} {
@@ -183,6 +184,7 @@ func assertAfterRollover(t *testing.T, name string, before, after rolloverView, 
 }
 
 func TestSeasonRolloverRefusalsThroughTheApp(t *testing.T) {
+	t.Parallel()
 	f := rolloverAppFixture(t)
 	for _, to := range []int{2026, 2028} {
 		body, err := json.Marshal(f.rolloverCommand(t, to, false))

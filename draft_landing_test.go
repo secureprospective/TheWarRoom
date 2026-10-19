@@ -10,6 +10,7 @@ import (
 )
 
 func TestDraftLandingCompletionAndClock(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 5, 1, 10, 0, 0, 0, time.UTC)
 	picks := []draftreports.Pick{draftFixturePick(t, 1, 1, "0001", "0531", at.Unix()),
 		draftFixturePick(t, 1, 2, "0001", "0532", at.Add(time.Hour).Unix())}
@@ -52,6 +53,7 @@ func TestDraftLandingCompletionAndClock(t *testing.T) {
 }
 
 func TestDraftLandingEngineLabel(t *testing.T) {
+	t.Parallel()
 	r := reportByID(t, testDraftBoard(t), "M-065")
 	if r.Columns[2] != "Engine points per game" || !strings.Contains(r.Note, "Engine run: October 11, 2026") {
 		t.Fatal(r)

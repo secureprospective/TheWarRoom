@@ -14,7 +14,7 @@
 // forty time or 0 vertical is nonsense, and a z-score over a phantom 0 would be
 // corrupt). Each measurable is therefore a *float64: nil means "did not perform",
 // distinct from a real value. (This is why the fetcher does not use the shared
-// missing-is-zero FloatCell — that rule is correct for counting stats, wrong here.)
+// missing-is-zero IntCell rule — that rule is correct for counting stats, wrong here.)
 //
 // ID RESOLUTION: combine.csv keys on pfr_id, NOT gsis_id (verified live). The
 // scouting layer keys on gsis, so Fetch takes an injected pfr->gsis map (built by the

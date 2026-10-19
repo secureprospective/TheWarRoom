@@ -574,6 +574,7 @@ func TestNowRowsNeverShowIDs(t *testing.T) {
 }
 
 func TestNowParsesOnlyValidWeeklyResults(t *testing.T) {
+	t.Parallel()
 	bodies := archivedCopies(struct {
 		src  string
 		body string
@@ -589,6 +590,7 @@ func TestNowParsesOnlyValidWeeklyResults(t *testing.T) {
 }
 
 func TestNowBindingReadsHeldAndRefreshReadsTheWeek(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	transport.bodies["nflSchedule"] = seasonFixture(t, "nflschedule", "nflSchedule-w5.json")
 	transport.bodies["nflByeWeeks"] = seasonFixture(t, "nflschedule", "nflByeWeeks-2025.json")
@@ -656,6 +658,7 @@ func TestNowBindingReadsHeldAndRefreshReadsTheWeek(t *testing.T) {
 // Just after launch the league's weeks may not be held yet; the current NFL week's schedule is still
 // fetched, because it does not depend on them. Another unlisted week is still refused.
 func TestNowRefreshFetchesTheCurrentWeekBeforeLeagueWeeksAreHeld(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	transport.bodies["nflSchedule"] = seasonFixture(t, "nflschedule", "nflSchedule-w5.json")
 	transport.bodies["nflByeWeeks"] = seasonFixture(t, "nflschedule", "nflByeWeeks-2025.json")
@@ -675,6 +678,7 @@ func TestNowRefreshFetchesTheCurrentWeekBeforeLeagueWeeksAreHeld(t *testing.T) {
 }
 
 func TestNowWireMatchesGo(t *testing.T) {
+	t.Parallel()
 	board := nowBoard(t, realNow(t, 5))
 	board.Matchup.Rows = board.Matchup.Rows[:3]
 	for i := range board.Board.Reports {

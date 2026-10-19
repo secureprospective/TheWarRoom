@@ -40,6 +40,7 @@ func seedScheduleTest(t *testing.T, app *App) commissioner.RawCommand {
 }
 
 func TestSchedulePublicationOwnerRevertRestart(t *testing.T) {
+	t.Parallel()
 	app, restart := calendarTestApp(t, time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC))
 	raw := seedScheduleTest(t, app)
 	generated := executeCommissionerTest(t, app, raw)
@@ -76,6 +77,7 @@ func TestSchedulePublicationOwnerRevertRestart(t *testing.T) {
 }
 
 func TestScheduleEditOwnerRevertRestart(t *testing.T) {
+	t.Parallel()
 	app, restart := calendarTestApp(t, time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC))
 	raw := seedScheduleTest(t, app)
 	executeCommissionerTest(t, app, raw)
@@ -153,6 +155,7 @@ func writeScheduleWire(t *testing.T, reading commissioner.Schedule) {
 }
 
 func TestScheduleCommandSafety(t *testing.T) {
+	t.Parallel()
 	app, _ := calendarTestApp(t, time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC))
 	raw := seedScheduleTest(t, app)
 	refuse := func(command commissioner.RawCommand) {
@@ -197,6 +200,7 @@ func TestScheduleCommandSafety(t *testing.T) {
 }
 
 func TestSmallerScheduleRequiresCommissionerPattern(t *testing.T) {
+	t.Parallel()
 	app, _ := calendarTestApp(t, time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC))
 	raw := seedScheduleTest(t, app)
 	raw.Command, raw.Args = commissioner.Revert, commissioner.RawArgs{Entry: ""}
@@ -230,6 +234,7 @@ func TestSmallerScheduleRequiresCommissionerPattern(t *testing.T) {
 }
 
 func TestScheduleGenerationArgumentsSurviveRuleReversal(t *testing.T) {
+	t.Parallel()
 	app, restart := calendarTestApp(t, time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC))
 	raw := seedScheduleTest(t, app)
 	ledger, err := app.TargetCommissionerLedger(raw.League)

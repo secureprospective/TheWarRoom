@@ -12,6 +12,7 @@ import (
 )
 
 func TestCrosswalkReportRatesAndReasons(t *testing.T) {
+	t.Parallel()
 	const dp = "mfl_id,gsis_id,espn_id,name\n" +
 		"13294,00-0011000,1,Pat Veteran\n" +
 		"816,,2,Dre' Bly\n" +

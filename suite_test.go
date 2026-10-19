@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -18,6 +19,13 @@ import (
 
 // Disk snapshots avoid package globals and give each caller its own decoded, mutable copy.
 func TestMain(m *testing.M) {
+	// The wire goldens were recorded in the league's zone; pin it so CI (UTC) renders the same text.
+	loc, err := time.LoadLocation("America/Chicago")
+	if err != nil {
+		log.Printf("load test time zone: %v", err)
+		os.Exit(1)
+	}
+	time.Local = loc
 	dir, err := os.MkdirTemp("", "warroom-test-fixtures-")
 	if err != nil {
 		log.Printf("create test fixtures: %v", err)
@@ -49,6 +57,7 @@ func suiteFixturePath(t *testing.T, name string) string {
 }
 
 func TestReducedArchiveCopiesAreIndependent(t *testing.T) {
+	t.Parallel()
 	first := reducedArchive(t)
 	if first.facts.Fingerprint() != first.sha {
 		t.Fatal("archive snapshot serialization changed its facts")

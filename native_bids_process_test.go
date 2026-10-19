@@ -29,6 +29,7 @@ func awardOf(reading commissioner.NativeBids, player string) *commissioner.Nativ
 }
 
 func TestNativeBidProcessingAwardsMostPointsAndSignsTheBidContract(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	three := f.place(t, "owner.three", "franchise.03", "5004", 4*million, 3)
@@ -73,6 +74,7 @@ func TestNativeBidProcessingAwardsMostPointsAndSignsTheBidContract(t *testing.T)
 }
 
 func TestNativeBidProcessingJudgesEachBidAgainAtTheDecision(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.three", "franchise.03", "5004", 4*million, 1)
 	f.place(t, "owner.one", "franchise.01", "5004", 9*million, 1)
@@ -88,6 +90,7 @@ func TestNativeBidProcessingJudgesEachBidAgainAtTheDecision(t *testing.T) {
 }
 
 func TestNativeBidProcessingNeverBreaksATie(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.set(t, "bids.ufa", `"blind"`, "now")
 	f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
@@ -110,6 +113,7 @@ func TestNativeBidProcessingNeverBreaksATie(t *testing.T) {
 }
 
 func TestNativeBidProcessingRefusals(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	if err := f.tryDecide(t, "creator", "5004"); err == nil || !strings.Contains(err.Error(), "no bids waiting") {
 		t.Fatalf("a player with no bids was decided: %v", err)
@@ -139,6 +143,7 @@ func TestNativeBidProcessingRefusals(t *testing.T) {
 }
 
 func TestNativeBidsWaitForWaiversToClear(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	cut := f.cut(t, "1000")
 	f.advance(24 * time.Hour)
@@ -161,6 +166,7 @@ func TestNativeBidsWaitForWaiversToClear(t *testing.T) {
 }
 
 func TestNativeBidAwardOverrideGovernsCompensationAndReplay(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	one := f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	f.place(t, "owner.three", "franchise.03", "5004", 6*million, 2)
@@ -199,6 +205,7 @@ func TestNativeBidAwardOverrideGovernsCompensationAndReplay(t *testing.T) {
 }
 
 func TestNativeBidOverrideRefusals(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	one := f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	f.place(t, "owner.three", "franchise.03", "5004", 6*million, 1)
@@ -232,6 +239,7 @@ func TestNativeBidOverrideRefusals(t *testing.T) {
 }
 
 func TestNativeBidProcessGovernsDecisionCompensationAndReplay(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	f.place(t, "owner.three", "franchise.03", "5004", 6*million, 1)
@@ -270,6 +278,7 @@ func (f *bidFixture) tryRevert(t *testing.T, principal string, receipt commissio
 }
 
 func TestNativeBidReversalsCannotStrandALaterChange(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	first := f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	raised, err := f.raise(t, "owner.one", "franchise.01", first, 6*million, 1)

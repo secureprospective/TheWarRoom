@@ -48,6 +48,7 @@ func assertQueue(t *testing.T, f *legalityFixture, open, decided int, newest str
 }
 
 func TestNativeStatQueueCM031ApprovalGovernsScoreAndQueue(t *testing.T) {
+	t.Parallel()
 	f := scoreApp(t)
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	for pass := 0; pass < 2; pass++ {
@@ -81,6 +82,7 @@ func TestNativeStatQueueCM031ApprovalGovernsScoreAndQueue(t *testing.T) {
 }
 
 func TestNativeStatQueueCM031CorrectionGovernsScoreAndQueue(t *testing.T) {
+	t.Parallel()
 	f := scoreApp(t)
 	for pass := 0; pass < 2; pass++ {
 		assertNativePoints(t, f, 15000)
@@ -106,6 +108,7 @@ func TestNativeStatQueueCM031CorrectionGovernsScoreAndQueue(t *testing.T) {
 }
 
 func TestNativeStatFeedRevisionNeverMovesTheScoreOnItsOwn(t *testing.T) {
+	t.Parallel()
 	f := scoreApp(t)
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	holdNativeStats(t, f, true, "DT", "3", 3)
@@ -124,6 +127,7 @@ func TestNativeStatFeedRevisionNeverMovesTheScoreOnItsOwn(t *testing.T) {
 }
 
 func TestNativeStatRejectedItemSurvivesTheFeedReturningToWhatWasCounted(t *testing.T) {
+	t.Parallel()
 	f := scoreApp(t)
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	item := readStatQueue(t, f).Open[0]
@@ -143,6 +147,7 @@ func TestNativeStatRejectedItemSurvivesTheFeedReturningToWhatWasCounted(t *testi
 }
 
 func TestNativeStatPreviewStatesPointsAndFlipBeforeItFires(t *testing.T) {
+	t.Parallel()
 	f := scoreApp(t)
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	item := readStatQueue(t, f).Open[0]
@@ -165,6 +170,7 @@ func TestNativeStatPreviewStatesPointsAndFlipBeforeItFires(t *testing.T) {
 }
 
 func TestNativeStatQueueScopeAndStartingSnapshot(t *testing.T) {
+	t.Parallel()
 	a := nativeSeedTestApp(t)
 	createNativeSeedLeague(t, a, commissioner.PresetLegacy)
 	q, err := a.TargetStatQueue(legalityLeague, 2026)
@@ -182,6 +188,7 @@ func TestNativeStatQueueScopeAndStartingSnapshot(t *testing.T) {
 }
 
 func TestNativeStatQueueWireFixtureMatchesGo(t *testing.T) {
+	t.Parallel()
 	f := scoreApp(t)
 	at := func(hour int) {
 		f.app.history.SetClock(func() time.Time { return time.Date(2026, 10, 13, hour, 0, 0, 0, time.UTC) })

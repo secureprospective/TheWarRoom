@@ -18,6 +18,7 @@ import (
 )
 
 func TestResearchColdOpenReadsArchiveBeforeFetch(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	a := targetTestApp(t)
 	a.lookup, a.hasLookup = in.lookup, true
@@ -88,6 +89,7 @@ func TestResearchColdOpenReadsArchiveBeforeFetch(t *testing.T) {
 }
 
 func TestResearchNewsNewestFirstAndUnknownLastStable(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	rows := []researchfeeds.News{
 		{Article: "unknown1", Headline: "first unknown", Published: "recently"},
@@ -121,6 +123,7 @@ func TestResearchNewsNewestFirstAndUnknownLastStable(t *testing.T) {
 }
 
 func TestResearchPlayerHeldFactsAndMissingPieces(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	in.injuries.value = []leaguefeed.Injury{{ID: in.held.news["16162"].value[0].ID, Status: "Questionable", Details: "Knee", ExpReturn: "Week 6"}}
 	v := researchView{researchInput: in}
@@ -167,6 +170,7 @@ func TestResearchPlayerHeldFactsAndMissingPieces(t *testing.T) {
 }
 
 func TestResearchSourcesFoldWeeksAndUseWords(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	out := buildResearch(in, RawResearchScope{})
 	r := reportByID(t, out.Board, "M-038")
@@ -206,6 +210,7 @@ func (f researchCrosswalkFixture) RoundTrip(r *http.Request) (*http.Response, er
 	return &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(bytes.NewReader(f.body)), Request: r}, nil
 }
 func TestResearchDepthMissingIdentityBreakdown(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	gz, err := gzip.NewReader(bytes.NewReader(researchSample(t, "crosswalk.csv.gz")))
 	if err != nil {
@@ -270,6 +275,7 @@ func TestResearchDepthMissingIdentityBreakdown(t *testing.T) {
 }
 
 func TestResearchStatusWhileWaitingForLaunchRefresh(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	a.seasonPause = func(context.Context, time.Duration) error { return context.Canceled }
 	a.refreshMu.Lock()
@@ -293,6 +299,7 @@ func TestResearchStatusWhileWaitingForLaunchRefresh(t *testing.T) {
 }
 
 func TestResearchWeekRunsNameEachDifferingRunOnce(t *testing.T) {
+	t.Parallel()
 	got := weekRuns([]string{"", "as of A · Archived copy", "as of A · Archived copy", "as of A · Archived copy", "as of B"})
 	if got != " Weeks 2–4 · as of A · Archived copy. Week 5 · as of B." {
 		t.Fatal(got)
@@ -303,6 +310,7 @@ func TestResearchWeekRunsNameEachDifferingRunOnce(t *testing.T) {
 }
 
 func TestInspectorNewsPostedLocalMinute(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	in.zone = time.FixedZone("CDT", -5*60*60)
 	at := time.Date(2026, 10, 13, 5, 48, 37, 0, time.UTC)
@@ -330,6 +338,7 @@ func TestInspectorNewsPostedLocalMinute(t *testing.T) {
 }
 
 func TestNewsPostedPrecision(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 10, 13, 5, 48, 37, 0, time.UTC)
 	zone := time.FixedZone("CDT", -5*60*60)
 	for _, tc := range []struct{ wording, want string }{
@@ -357,6 +366,7 @@ func TestNewsPostedPrecision(t *testing.T) {
 }
 
 func TestHeldNewsPostedSameOnEverySurface(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	in.zone = time.FixedZone("CDT", -5*60*60)
 	out := buildResearch(in, RawResearchScope{Mine: "0001"})
@@ -382,6 +392,7 @@ func TestHeldNewsPostedSameOnEverySurface(t *testing.T) {
 }
 
 func TestNewsNewestFirstAcrossOwners(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	at := in.held.news["16162"].fetchedAt
 	in.held.news["13589"] = heldSeasonFeed[[]researchfeeds.News]{fetchedAt: at, value: []researchfeeds.News{

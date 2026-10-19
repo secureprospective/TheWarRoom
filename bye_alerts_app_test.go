@@ -36,6 +36,7 @@ func onlyByeAlerts(r AlertReading) []Alert {
 }
 
 func TestByeAlertsHeldWeekSixAndUnavailable(t *testing.T) {
+	t.Parallel()
 	a, transport := byeFixtureApp(t)
 	r, err := a.TargetAlerts("0025")
 	if err != nil {
@@ -61,6 +62,7 @@ func TestByeAlertsHeldWeekSixAndUnavailable(t *testing.T) {
 }
 
 func TestByeAlertsHorizonAndMissingRoster(t *testing.T) {
+	t.Parallel()
 	a, _ := byeFixtureApp(t)
 	for _, week := range []int{5, 7, 8, 10} {
 		a.week.Number = week
@@ -93,6 +95,7 @@ func TestByeAlertsHorizonAndMissingRoster(t *testing.T) {
 }
 
 func TestByeAlertsMissingIdentityAndLock(t *testing.T) {
+	t.Parallel()
 	a, _ := byeFixtureApp(t)
 	a.week = leagueweek.Week{Number: 6}
 	r, err := a.TargetAlerts("0025")
@@ -111,6 +114,7 @@ func TestByeAlertsMissingIdentityAndLock(t *testing.T) {
 }
 
 func TestByeAlertNextWeekHeldLock(t *testing.T) {
+	t.Parallel()
 	a, _ := byeFixtureApp(t)
 	a.week.Number = 5
 	lock := a.movesNow().Add(48 * time.Hour)

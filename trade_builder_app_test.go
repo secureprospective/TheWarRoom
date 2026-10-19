@@ -345,6 +345,7 @@ func TestTradeExitDirectionsAndAmbiguity(t *testing.T) {
 
 // A second withdrawal plan for the same offer supersedes the first, so one offer never carries two live plans.
 func TestTradeExitPlanSupersedesTheLastForTheSameOffer(t *testing.T) {
+	t.Parallel()
 	a, _, offer := tradeDraftApp(t)
 	_, held, err := a.tradeState("0001")
 	if err != nil {
@@ -616,6 +617,7 @@ func TestTradeExitPlanRemovalIsLocal(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct{ mine, action string }{{"0025", "reject"}, {"0001", "revoke"}} {
 		t.Run(tc.action, func(t *testing.T) {
+			t.Parallel()
 			a, transport, offer := tradeDraftApp(t)
 			opened := 0
 			a.openURL = func(context.Context, string) { opened++ }

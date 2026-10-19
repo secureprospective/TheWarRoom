@@ -80,20 +80,6 @@ func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string, scoreYear 
 	return Batch(scores, scoreYear, sum), nil
 }
 
-// FetchWeek returns one week's scores for season, read from that season's league host.
-func FetchWeek(ctx context.Context, c *mfl.Client, leagueID string, season, week int) (measures.Batch, error) {
-	w := strconv.Itoa(week)
-	scores, sum, err := fetch(ctx, c, strconv.Itoa(season), leagueID, map[string]string{"W": w}, w)
-	if err != nil {
-		return measures.Batch{}, err
-	}
-	b := measures.Batch{Source: Source, BodySHA256: sum, Facts: make([]measures.Fact, len(scores))}
-	for i, r := range scores {
-		b.Facts[i] = measures.Fact{IDType: measures.IDTypeMFL, ID: r.ID, Season: season, Week: week, Field: WeekField, Raw: r.Score}
-	}
-	return b, nil
-}
-
 func fetch(ctx context.Context, c *mfl.Client, year, leagueID string, params map[string]string, want string) ([]RawScore, string, error) {
 	if err := c.DiscoverHost(ctx, year, leagueID); err != nil {
 		return nil, "", fmt.Errorf("playerscores: discover host: %w", err)

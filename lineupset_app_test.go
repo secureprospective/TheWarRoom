@@ -43,6 +43,7 @@ func changedStarters(ids []string) []string {
 }
 
 func TestTargetCheckLineupLocal(t *testing.T) {
+	t.Parallel()
 	a, transport, ids := lineupDraftApp(t)
 	a.refreshMu.Lock()
 	defer a.refreshMu.Unlock()
@@ -83,6 +84,7 @@ func TestTargetCheckLineupLocal(t *testing.T) {
 }
 
 func TestTargetCheckLineupRulesAndUnknown(t *testing.T) {
+	t.Parallel()
 	a, _, ids := lineupDraftApp(t)
 	a.targetSnapshot.Players.Value = nil
 	result, err := a.TargetCheckLineup("0025", ids)
@@ -108,6 +110,7 @@ func TestTargetCheckLineupRulesAndUnknown(t *testing.T) {
 }
 
 func TestTargetDraftLineupLanding(t *testing.T) {
+	t.Parallel()
 	for _, outcome := range []struct {
 		name  string
 		state envelope.State
@@ -115,6 +118,7 @@ func TestTargetDraftLineupLanding(t *testing.T) {
 		{"drafted", envelope.Landed}, {"baseline", envelope.NotYetDone}, {"third", envelope.NotVerified},
 	} {
 		t.Run(outcome.name, func(t *testing.T) {
+			t.Parallel()
 			a, transport, ids := lineupDraftApp(t)
 			drafted := changedStarters(ids)
 			r, err := a.TargetDraftLineup("0025", drafted)
@@ -206,10 +210,12 @@ func lineupFeedBody(t *testing.T, ids []string) string {
 }
 
 func TestTargetDraftLineupBlocks(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{
 		"same", "week", "baseline", "absent feed", "lock", "locked", "host", "IR", "rules",
 	} {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			a, transport, ids := lineupDraftApp(t)
 			starters, note := changedStarters(ids), ""
 			switch name {
@@ -260,8 +266,10 @@ func TestTargetDraftLineupBlocks(t *testing.T) {
 }
 
 func TestLineupSupersedeLivePlansOnly(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{"ready", "awaiting", "blocked", "unmapped"} {
 		t.Run(kind, func(t *testing.T) {
+			t.Parallel()
 			a, _, ids := lineupDraftApp(t)
 			if kind == "unmapped" {
 				a.mflClient = nil
@@ -304,6 +312,7 @@ func TestLineupSupersedeLivePlansOnly(t *testing.T) {
 }
 
 func TestKnownEmptyLineupBaseline(t *testing.T) {
+	t.Parallel()
 	a, _, ids := lineupDraftApp(t)
 	a.seasonLineups.value.Franchises = nil
 	r, err := a.TargetDraftLineup("0025", ids)
@@ -313,6 +322,7 @@ func TestKnownEmptyLineupBaseline(t *testing.T) {
 }
 
 func TestMoveSeasonFeedSkip(t *testing.T) {
+	t.Parallel()
 	a, _, ids := lineupDraftApp(t)
 	r, err := a.TargetDraftLineup("0025", changedStarters(ids))
 	if err != nil {
@@ -380,6 +390,7 @@ func TestMoveSeasonFeedSkip(t *testing.T) {
 }
 
 func TestSupersedeSavedBeforeNewEnvelope(t *testing.T) {
+	t.Parallel()
 	a, _, ids := lineupDraftApp(t)
 	first, err := a.TargetDraftLineup("0025", changedStarters(ids))
 	if err != nil {

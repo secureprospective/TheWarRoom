@@ -36,6 +36,7 @@ func marketPreview(t *testing.T, f *waiverFixture, command string, args commissi
 }
 
 func TestCommissionerMarketPermissionAndSession(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	f.app.commissionerSession = testCommissionerSession{"owner.one"}
 	for _, command := range []string{commissioner.WaiverProcess, commissioner.WaiverOverride,
@@ -73,6 +74,7 @@ func TestCommissionerMarketPermissionAndSession(t *testing.T) {
 }
 
 func TestCommissionerMarketWaiversRoundTrip(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
 	claim := f.claim(t, cut.Entry, "owner.one", "franchise.01")
@@ -106,6 +108,7 @@ func TestCommissionerMarketWaiversRoundTrip(t *testing.T) {
 }
 
 func TestCommissionerMarketBidsRoundTripAndBlindPrivacy(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.set(t, "bids.ufa", `"blind"`, "now")
 	first := f.place(t, "owner.one", "franchise.01", "5001", million, 2)
@@ -146,6 +149,7 @@ func TestCommissionerMarketBidsRoundTripAndBlindPrivacy(t *testing.T) {
 }
 
 func TestCommissionerMarketTradesRoundTrip(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
 	if got := marketOf(t, f.waiverFixture, commissioner.TradeReview, "dot.a"); len(got.Trades) != 0 {
@@ -182,6 +186,7 @@ func TestCommissionerMarketTradesRoundTrip(t *testing.T) {
 }
 
 func TestCommissionerMarketWire(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	cut := f.cut(t, "1000")
 	f.claim(t, cut.Entry, "owner.one", "franchise.01")
@@ -217,6 +222,7 @@ func TestCommissionerMarketWire(t *testing.T) {
 }
 
 func TestCommissionerMarketIgnoresForeignLedgerAndPermission(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	cut := f.cut(t, "1000")
 	f.claim(t, cut.Entry, "owner.one", "franchise.01")
@@ -263,6 +269,7 @@ func TestCommissionerMarketIgnoresForeignLedgerAndPermission(t *testing.T) {
 }
 
 func TestCommissionerScheduleDraftAndPublishedRoundTrip(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	f.command(t, commissioner.ScheduleGenerate, commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Weeks: 2}}, "league")
 	f.app.commissionerSession = testCommissionerSession{"owner.one"}
@@ -294,6 +301,7 @@ func TestCommissionerScheduleDraftAndPublishedRoundTrip(t *testing.T) {
 }
 
 func TestCommissionerMarketExcludesBidAwardsSupersededByANewAuction(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.set(t, "bids.ufa", `"blind"`, "now")
 	f.place(t, "owner.one", "franchise.01", "5001", million, 2)

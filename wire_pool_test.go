@@ -38,6 +38,7 @@ func normalizeWire(raw []byte) []byte {
 // TestPoolWireFixtureMatchesGo keeps the frontend's wire fixture honest: the frontend parsers
 // are tested against exactly what these bindings return. Regenerate with TWR_WRITE_WIRE=1.
 func TestPoolWireFixtureMatchesGo(t *testing.T) {
+	t.Parallel()
 	a, _ := poolApp(t)
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)

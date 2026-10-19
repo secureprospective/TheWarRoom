@@ -109,6 +109,7 @@ func realResearch(t *testing.T) researchInput {
 	return in
 }
 func TestResearchRealPointsActivityAndScales(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	board := buildResearch(in, RawResearchScope{Mine: "0001"})
 	stats := reportByID(t, board.Board, "M-037")
@@ -158,6 +159,7 @@ func TestResearchRealPointsActivityAndScales(t *testing.T) {
 	}
 }
 func TestResearchDepthInjuriesAndScopedNews(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	d := in.held.depth.value[0]
 	in.held.links["gsis:"+*d.GSIS] = "16162"
@@ -213,6 +215,7 @@ func TestResearchDepthInjuriesAndScopedNews(t *testing.T) {
 	}
 }
 func TestResearchScopeAndFeedLoss(t *testing.T) {
+	t.Parallel()
 	for _, raw := range []RawResearchScope{{Mine: "1"}, {Group: "grades"}, {Team: "../../"}, {Depth: "old"}, {Trend: "unknown"}, {Search: strings.Repeat("x", 101)}} {
 		if raw.Validate() == nil {
 			t.Fatal(raw)
@@ -234,6 +237,7 @@ func TestResearchScopeAndFeedLoss(t *testing.T) {
 	}
 }
 func TestResearchWireFixtureMatchesGo(t *testing.T) {
+	t.Parallel()
 	out := buildResearch(realResearch(t), RawResearchScope{Mine: "0001", Search: "Gibbs"})
 	for i := range out.Board.Reports {
 		r := &out.Board.Reports[i]
@@ -262,6 +266,7 @@ func TestResearchWireFixtureMatchesGo(t *testing.T) {
 }
 
 func TestResearchHeldIPCAndArticleHandOff(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	a := targetTestApp(t)
 	if err := a.rulebook.Initialize(a.ctx, lineupRulesSource{cfg: league.RawConfig{Source: "research fixture", Franchises: []league.Franchise{{ID: "0001", Name: "My franchise"}, {ID: "0002", Name: "Other franchise"}}}}); err != nil {
@@ -307,6 +312,7 @@ func TestResearchHeldIPCAndArticleHandOff(t *testing.T) {
 }
 
 func TestResearchAliasesAndHiddenFilters(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	leaders := reportByID(t, buildResearch(in, RawResearchScope{Position: "QB", Group: "IDP", Team: "BUF"}).Board, "M-040")
 	if len(leaders.Rows) == 0 {
@@ -375,6 +381,7 @@ func (f researchFixtureTransport) RoundTrip(request *http.Request) (*http.Respon
 	return &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(bytes.NewReader(body)), Request: request}, nil
 }
 func TestResearchRefreshArchiveAndRosteredNewsEndToEnd(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	a := targetTestApp(t)
 	if err := a.rulebook.Initialize(a.ctx, lineupRulesSource{cfg: league.RawConfig{Source: "research fixture", Franchises: []league.Franchise{{ID: "0001", Name: "Mine"}, {ID: "0002", Name: "Other"}}}}); err != nil {
@@ -466,6 +473,7 @@ func TestResearchRefreshArchiveAndRosteredNewsEndToEnd(t *testing.T) {
 }
 
 func TestPlayerFormAndCutUseHeldWeeksAndSharedRule(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	in.mirror.Season = 2026
 	in.mirror.Players = []state.MirrorPlayer{{MFLID: "16162", FranchiseID: "0002", Salary: 100_000_000, ContractYear: 2028}}

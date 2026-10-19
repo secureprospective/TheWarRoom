@@ -23,6 +23,7 @@ func previewDraft(t *testing.T, f *draftFixture, command string, args commission
 }
 
 func TestEveryBuiltDraftCommandHasARealPreview(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	for _, tc := range []struct {
 		command string

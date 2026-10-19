@@ -12,6 +12,7 @@ import (
 // TestDBFileName_DevBuildSeparateFile proves the Tier 3 dev-build guard: a dev
 // binary resolves to a SEPARATE -dev database, never the real ledger filename.
 func TestDBFileName_DevBuildSeparateFile(t *testing.T) {
+	t.Parallel()
 	if got := dbFileName("thewarroom", false); got != "thewarroom.db" {
 		t.Fatalf("release dbFileName = %q, want thewarroom.db", got)
 	}
@@ -30,6 +31,7 @@ func TestDBFileName_DevBuildSeparateFile(t *testing.T) {
 // lock is held, a second acquire on the same DB path is refused; after release a
 // fresh acquire succeeds.
 func TestInstanceLock_SecondAcquireFails(t *testing.T) {
+	t.Parallel()
 	dbPath := filepath.Join(t.TempDir(), "thewarroom.db")
 
 	first, err := acquireInstanceLock(dbPath)
@@ -54,6 +56,7 @@ func TestInstanceLock_SecondAcquireFails(t *testing.T) {
 // TestInstanceLock_DevAndRealDoNotContend proves the lock is keyed to the DB path,
 // so a dev build and a real build (different DB files) never falsely block.
 func TestInstanceLock_DevAndRealDoNotContend(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	realLock, err := acquireInstanceLock(filepath.Join(dir, "thewarroom.db"))
 	if err != nil {
@@ -71,6 +74,7 @@ func TestInstanceLock_DevAndRealDoNotContend(t *testing.T) {
 // TestSetupLogging_PrunesToMax proves disk logging creates the logs dir and keeps
 // at most maxLogFiles files.
 func TestSetupLogging_PrunesToMax(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	logDir := filepath.Join(dir, "logs")
 	if err := os.MkdirAll(logDir, 0o750); err != nil {
@@ -98,6 +102,7 @@ func TestSetupLogging_PrunesToMax(t *testing.T) {
 // TestRunFlag_UnknownArgumentNeverOpensAWindow: an unknown argument exits 2 with usage instead
 // of falling through to a window on the real database; -version prints the build label.
 func TestRunFlag_UnknownArgumentNeverOpensAWindow(t *testing.T) {
+	t.Parallel()
 	for _, args := range [][]string{{"-version", "x"}, {"--version"}, {"-probe", "-version"}, {"run"}} {
 		var out, errOut bytes.Buffer
 		if code := runFlag(args, &out, &errOut); code != 2 || !strings.Contains(errOut.String(), "usage") {

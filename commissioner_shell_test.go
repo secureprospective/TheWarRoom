@@ -34,6 +34,7 @@ func shellLedgerApp(t *testing.T) (*App, string) {
 }
 
 func TestCommissionerLedgerFiltersWire(t *testing.T) {
+	t.Parallel()
 	app, league := shellLedgerApp(t)
 	views := make(map[string]commissioner.Ledger)
 	for _, test := range []struct {
@@ -74,6 +75,7 @@ func TestCommissionerLedgerFiltersWire(t *testing.T) {
 }
 
 func TestCommissionerLedgerFiltersRejectBadInput(t *testing.T) {
+	t.Parallel()
 	app, league := shellLedgerApp(t)
 	for _, body := range []string{
 		`{"kind":"unknown"}`, `{"person":4}`, `{"principal":"creator"}`, `{} {}`,

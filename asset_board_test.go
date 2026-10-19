@@ -15,6 +15,7 @@ func (f fakeAssets) player(pid string, _ time.Time) dynastyValue { return f[pid]
 func (fakeAssets) pick(int, int, string, time.Time) dynastyValue { return dynastyValue{} }
 
 func TestAssetBoardOnFieldNowFromHeldWeeks(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t) // week 5: weeks 1-4 are finished
 	v := researchView{researchInput: in}
 	b := buildAssetBoard(v, nil, time.Now(), []string{"99999"})
@@ -65,6 +66,7 @@ func TestAssetBoardOnFieldNowFromHeldWeeks(t *testing.T) {
 }
 
 func TestAssetBoardDynastyCellsInWords(t *testing.T) {
+	t.Parallel()
 	price, low, high := 3.1, 2.4, 3.9
 	filler, fillerLow, fillerHigh := -0.03, -0.04, -0.01
 	model := fakeAssets{
@@ -96,6 +98,7 @@ func TestAssetBoardDynastyCellsInWords(t *testing.T) {
 }
 
 func TestSignedPricesNeverReadMinusZero(t *testing.T) {
+	t.Parallel()
 	for v, want := range map[float64]string{-0.03: "−0.03", -0.001: "0.00", 0: "0.00", 0.114: "0.11", -1.5: "−1.50"} {
 		if got := signed(v); got != want {
 			t.Errorf("signed(%v) = %q, want %q", v, got, want)
@@ -104,6 +107,7 @@ func TestSignedPricesNeverReadMinusZero(t *testing.T) {
 }
 
 func TestTopPercentRoundsUp(t *testing.T) {
+	t.Parallel()
 	for _, c := range [][3]int{{1, 50, 2}, {14, 54, 26}, {54, 54, 100}, {1, 1, 100}, {3, 200, 2}} {
 		if got := topPercent(c[0], c[1]); got != c[2] {
 			t.Errorf("topPercent(%d, %d) = %d, want %d", c[0], c[1], got, c[2])
@@ -112,6 +116,7 @@ func TestTopPercentRoundsUp(t *testing.T) {
 }
 
 func TestDynastyFromKeepsTheLabAnswer(t *testing.T) {
+	t.Parallel()
 	price := 3.1
 	d := dynastyFrom(labcompile.AssetValue{Forecast: []float64{1, 1, 1, 1, 1}, Discounted: 2.314, Class: "WR:prime",
 		Label: "Wide receiver, 25 to 27", Price: &price, Range: &labcompile.Interval{Low: 2.4, High: 3.9}, Valued: true})
@@ -128,6 +133,7 @@ func TestDynastyFromKeepsTheLabAnswer(t *testing.T) {
 }
 
 func TestDynastyDisplayNeverShowsMinusZero(t *testing.T) {
+	t.Parallel()
 	for _, v := range []float64{-0.0001, -0.004, 0} {
 		cell, _, raw := dynastyCells(fakeAssets{"1": {Valued: true, Discounted: v, Seasons: 5}}, "1", time.Now())
 		if cell.Text != "0.00 wins" || raw != v {

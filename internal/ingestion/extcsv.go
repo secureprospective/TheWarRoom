@@ -89,59 +89,6 @@ func fetchCSV(ctx context.Context, client *http.Client, url string, maxBytes int
 	return records, nil
 }
 
-// StreamCSV calls fn once per data row instead of buffering the file, for sources too large
-// to hold (play-by-play is hundreds of MB). It keeps FetchCSV's status check and cap and binds
-// the required columns by name once. An error from fn stops the stream.
-//
-// The rec slice is reused between calls: fn may keep cell strings but not the slice.
-func StreamCSV(ctx context.Context, client *http.Client, url string, maxBytes int64,
-	required []string, fn func(cols map[string]int, rec []string) error) error {
-	return streamCSV(ctx, client, url, maxBytes, false, required, fn)
-}
-
-// StreamCSVGz is StreamCSV for a gzipped source; maxBytes caps the decompressed bytes.
-func StreamCSVGz(ctx context.Context, client *http.Client, url string, maxBytes int64,
-	required []string, fn func(cols map[string]int, rec []string) error) error {
-	return streamCSV(ctx, client, url, maxBytes, true, required, fn)
-}
-
-func streamCSV(ctx context.Context, client *http.Client, url string, maxBytes int64, gz bool,
-	required []string, fn func(cols map[string]int, rec []string) error) error {
-	r, lr, cleanup, err := openCappedCSV(ctx, client, url, maxBytes, gz)
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-	r.ReuseRecord = true
-
-	header, err := r.Read()
-	if err != nil {
-		return fmt.Errorf("ingestion: read CSV %s header: %w", url, err)
-	}
-	cols, err := CSVColumns(header, required...)
-	if err != nil {
-		return fmt.Errorf("ingestion: %w", err)
-	}
-
-	for {
-		rec, err := r.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("ingestion: read CSV %s: %w", url, err)
-		}
-		if err := fn(cols, rec); err != nil {
-			return err
-		}
-	}
-
-	if lr.N == 0 {
-		return fmt.Errorf("ingestion: CSV %s exceeds %d-byte cap", url, maxBytes)
-	}
-	return nil
-}
-
 // CSVColumns maps each required column name to its header index, stripping a leading UTF-8
 // BOM. New or reordered columns are fine; a missing required one is an error.
 func CSVColumns(header []string, names ...string) (map[string]int, error) {
@@ -178,19 +125,6 @@ func IntCell(rec []string, idx int, label string) (int, error) {
 		return 0, fmt.Errorf("ingestion: column %q value %q: %w", label, v, err)
 	}
 	return n, nil
-}
-
-// FloatCell is IntCell for fractional values.
-func FloatCell(rec []string, idx int, label string) (float64, error) {
-	v := strings.TrimSpace(rec[idx])
-	if IsMissing(v) {
-		return 0, nil
-	}
-	f, err := strconv.ParseFloat(v, 64)
-	if err != nil {
-		return 0, fmt.Errorf("ingestion: column %q value %q: %w", label, v, err)
-	}
-	return f, nil
 }
 
 // Get fetches url and returns its body, failing on a status other than 200 and on a body over

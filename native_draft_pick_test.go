@@ -54,6 +54,7 @@ func (f *draftFixture) committed(t *testing.T, franchise string) int64 {
 }
 
 func TestOwnerPickGetsTheSlotContractAndMovesTheClock(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.seated(t, 1, 2, 3)
@@ -101,6 +102,7 @@ func TestOwnerPickGetsTheSlotContractAndMovesTheClock(t *testing.T) {
 }
 
 func TestExpiredClockSkipsAndLaterRoundPaysItsOwnPrice(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.seated(t, 1, 3)
@@ -135,6 +137,7 @@ func TestExpiredClockSkipsAndLaterRoundPaysItsOwnPrice(t *testing.T) {
 }
 
 func TestPickRefusalsLeaveTheDraftUntouched(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.seated(t, 1, 3)
@@ -170,6 +173,7 @@ func TestPickRefusalsLeaveTheDraftUntouched(t *testing.T) {
 }
 
 func TestPickIsRefusedWhenItBreaksRosterOrCap(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 4, 3, 2)
 	f.seated(t, 2, 3, 1)
@@ -196,6 +200,7 @@ func (f *draftFixture) skipTo(t *testing.T, n int) {
 }
 
 func TestPickRetryLandsOnceAndTwoPicksCannotBothLand(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.seated(t, 3)
@@ -241,6 +246,7 @@ func TestPickRetryLandsOnceAndTwoPicksCannotBothLand(t *testing.T) {
 }
 
 func TestDraftPickCannotBeSentThroughTheCommissionerDoor(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.now = draftStartAt().Add(time.Hour)
@@ -254,6 +260,7 @@ func TestDraftPickCannotBeSentThroughTheCommissionerDoor(t *testing.T) {
 }
 
 func TestDraftChangesNeedRolesAndTheRunningDraftNeedsAReason(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.seated(t, 3)
 	f.asOwner(3)
@@ -302,6 +309,7 @@ func TestDraftChangesNeedRolesAndTheRunningDraftNeedsAReason(t *testing.T) {
 }
 
 func TestDraftPickIsRefusedOnceTheCalendarClosesTheWindow(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.command(t, commissioner.WindowSet, commissioner.RawArgs{Window: &commissioner.RawWindowArgs{ID: "rookie_draft",
 		Start: date(7, 14), End: date(7, 20), Opens: []leaguerules.Action{"draft_pick"}}}, "")
@@ -326,6 +334,7 @@ func TestDraftPickIsRefusedOnceTheCalendarClosesTheWindow(t *testing.T) {
 }
 
 func TestDraftReadingSurvivesReopeningAndFixesTheWire(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	waiting := f.read(t, "franchise.01")
 	f.scheduled(t, 3, 2, 1)

@@ -162,6 +162,7 @@ func scoreCatalogue(t *testing.T, points leaguerules.Value[leaguerules.Decimal])
 }
 
 func TestNativeScoreCM006GovernsReading(t *testing.T) {
+	t.Parallel()
 	f := scoreApp(t)
 	for pass := 0; pass < 2; pass++ {
 		if pass == 1 {
@@ -180,6 +181,7 @@ func TestNativeScoreCM006GovernsReading(t *testing.T) {
 }
 
 func TestNativeScoreCM030AndCM032GovernReading(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, command string
 		args          commissioner.RawScoreChange
@@ -190,6 +192,7 @@ func TestNativeScoreCM030AndCM032GovernReading(t *testing.T) {
 			Week: 1, Delta: scoreDelta(12500)}, 27500},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			f := scoreApp(t)
 			for pass := 0; pass < 2; pass++ {
 				if pass == 1 {
@@ -226,6 +229,7 @@ func TestNativeScoreCM030AndCM032GovernReading(t *testing.T) {
 func scoreDelta(n leaguerules.Decimal) *leaguerules.Decimal { return &n }
 
 func TestNativeScoreHonestAbsenceAndNeedsRuling(t *testing.T) {
+	t.Parallel()
 	f := scoreApp(t)
 	assertNativePoints(t, f, 15000)
 	out, err := f.app.TargetNativePlayerScore(legalityLeague, "1001", 2026, 1)
@@ -253,6 +257,7 @@ func TestNativeScoreHonestAbsenceAndNeedsRuling(t *testing.T) {
 }
 
 func TestNativeScorePastSeasonKeepsItsRules(t *testing.T) {
+	t.Parallel()
 	f := scoreApp(t)
 	f.set(t, "calendar.rollover", `"2027-03-01T05:00:00Z"`, "now")
 	future := time.Date(2027, 3, 2, 12, 0, 0, 0, time.UTC)
@@ -265,6 +270,7 @@ func TestNativeScorePastSeasonKeepsItsRules(t *testing.T) {
 }
 
 func TestNativeScoreScopeAndStartingSnapshot(t *testing.T) {
+	t.Parallel()
 	a := nativeSeedTestApp(t)
 	createNativeSeedLeague(t, a, commissioner.PresetLegacy)
 	out, err := a.TargetNativePlayerScore(legalityLeague, "1000", 2026, 1)
@@ -285,6 +291,7 @@ func TestNativeScoreScopeAndStartingSnapshot(t *testing.T) {
 }
 
 func TestNativeScoreWireFixtureMatchesGo(t *testing.T) {
+	t.Parallel()
 	f := scoreApp(t)
 	readings := []commissioner.NativePlayerScore{readNativeScore(t, f)}
 	missing, err := f.app.TargetNativePlayerScore(legalityLeague, "1001", 2026, 1)
@@ -332,6 +339,7 @@ func TestNativeScoreWireFixtureMatchesGo(t *testing.T) {
 }
 
 func TestNativeScoreKeepsTheCountedVersionUntilTheLeagueApprovesTheNewest(t *testing.T) {
+	t.Parallel()
 	f := scoreApp(t)
 	counted := readNativeScore(t, f).SHA256
 	holdNativeScore(t, f, true, "DT", 2)
@@ -348,6 +356,7 @@ func TestNativeScoreKeepsTheCountedVersionUntilTheLeagueApprovesTheNewest(t *tes
 }
 
 func TestNativeScoreNoHeldFilesAndUnboundIdentity(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	if _, err := f.app.history.LinkPlayerIDs(t.Context(), "dynastyprocess", []history.PlayerIDLink{
 		{IDType: "gsis", IDValue: "00-0023459", PlayerID: "1000"},

@@ -7,6 +7,7 @@ import (
 )
 
 func TestPhotoViewIsGoWordedAndOffMeansNoAddress(t *testing.T) {
+	t.Parallel()
 	on := photoView("0501", "Kayden McDonald", false)
 	if on.Src != "/headshot/0501" || on.Alt != "Photo of Kayden McDonald" {
 		t.Fatalf("photos on: %+v", on)
@@ -17,6 +18,7 @@ func TestPhotoViewIsGoWordedAndOffMeansNoAddress(t *testing.T) {
 }
 
 func TestPhotoRouteWaitsForStartup(t *testing.T) {
+	t.Parallel()
 	a := &App{}
 	rec := httptest.NewRecorder()
 	a.photoHandler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/headshot/0501", nil))

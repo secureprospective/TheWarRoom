@@ -15,6 +15,7 @@ import (
 )
 
 func TestTradePartyRecusedAndThreeVotesDecide(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
 	f.accept(t, offer)
@@ -42,6 +43,7 @@ func TestTradePartyRecusedAndThreeVotesDecide(t *testing.T) {
 }
 
 func TestTradeAppealOnceAndPartyCommissionerSitsOut(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	f.command(t, "commish.seat.replace", commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.02", Principal: "creator"}}, "league")
 	offer := f.mustAction(t, "creator", commissioner.TradeOffer, tradePlayerOffer())
@@ -66,6 +68,7 @@ func TestTradeAppealOnceAndPartyCommissionerSitsOut(t *testing.T) {
 }
 
 func TestTradeOverridePublicMovesAssetsAndCompensates(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
 	f.accept(t, offer)
@@ -100,6 +103,7 @@ func TestTradeOverridePublicMovesAssetsAndCompensates(t *testing.T) {
 }
 
 func TestTradeOfferAndAcceptRefuseIllegalRosterOrCap(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	f.set(t, "roster.limits", `{"min":0,"max":40}`, "now")
 	if _, err := f.action(t, "owner.two", commissioner.TradeOffer, tradePlayerOffer()); err == nil || !strings.Contains(err.Error(), "roster") {
@@ -122,6 +126,7 @@ func TestTradeOfferAndAcceptRefuseIllegalRosterOrCap(t *testing.T) {
 }
 
 func TestTradeExpiryInstantAndCalendarDeadline(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
 	expires := f.only(t).ExpiresAt
@@ -146,6 +151,7 @@ func TestTradeExpiryInstantAndCalendarDeadline(t *testing.T) {
 }
 
 func TestNativeTradeWire(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
 	f.accept(t, offer)
@@ -177,6 +183,7 @@ func TestNativeTradeWire(t *testing.T) {
 }
 
 func TestTradeTheDOTCannotDecideGoesToTheCommissioner(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	f.set(t, "trades.dotSeats", `5`, "now")
 	f.set(t, "trades.decideAt", `4`, "now")
@@ -196,6 +203,7 @@ func TestTradeTheDOTCannotDecideGoesToTheCommissioner(t *testing.T) {
 }
 
 func TestTradeCommissionerCannotOverrideADecidableReview(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
 	f.accept(t, offer)
@@ -205,6 +213,7 @@ func TestTradeCommissionerCannotOverrideADecidableReview(t *testing.T) {
 }
 
 func TestCapCorrectionWaitsForAPendingTrade(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
 	salary, years := domain.Money(200000000), 2

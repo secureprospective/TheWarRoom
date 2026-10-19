@@ -27,15 +27,7 @@ type FeedEventDTO struct {
 	Provenance     string   `json:"provenance"`
 	TradeRationale string   `json:"tradeRationale,omitempty"`
 	TradePicksNote string   `json:"tradePicksNote,omitempty"`
-	// Correction state: TxID keys the entry to the corrections ledger. CorrectionStatus is the
-	// latest correction (CORRECTED or REVERSED), or empty. Both the original and the correction are
-	// shown; the original is never hidden.
-	TxID             string `json:"txID"`
-	CorrectionStatus string `json:"correctionStatus,omitempty"`
-	CorrectionReason string `json:"correctionReason,omitempty"`
-	CorrectionNote   string `json:"correctionNote,omitempty"`
-	CorrectedBy      string `json:"correctedBy,omitempty"`
-	CorrectedAt      string `json:"correctedAt,omitempty"`
+	TxID           string   `json:"txID"`
 }
 
 // FeedResult carries the events, newest first. A directory failure doesn't fail the read: the
@@ -65,11 +57,6 @@ func (a *App) GetFeed() FeedResult {
 		return FeedResult{Detail: err.Error()}
 	}
 
-	// Stamp each event with its latest correction. A read failure leaves the feed uncorrected,
-	// with a warning.
-	corr, corrErr := a.whatif.Corrections(ctx)
-	latest := latestCorrectionByTxID(corr)
-
 	dir, dirWarning := a.resolveDirectory(ctx)
 	var franchiseNames map[string]string
 	if a.rulebook != nil {
@@ -78,25 +65,17 @@ func (a *App) GetFeed() FeedResult {
 
 	out := make([]FeedEventDTO, len(events))
 	for i, e := range events {
-		out[i] = feedEventDTO(e, latest, dir, franchiseNames)
+		out[i] = feedEventDTO(e, dir, franchiseNames)
 	}
 	res := FeedResult{OK: true, Events: out}
 	if dirWarning != "" {
 		res.DirectoryWarning = dirWarning
 	}
-	if corrErr != nil {
-		w := "correction ledger unreadable: " + corrErr.Error()
-		if res.DirectoryWarning != "" {
-			res.DirectoryWarning += " · " + w
-		} else {
-			res.DirectoryWarning = w
-		}
-	}
 	return res
 }
 
-// feedEventDTO builds one event with names and correction state joined.
-func feedEventDTO(e state.FeedEvent, latest map[string]state.CorrectionRow, dir normalize.Lookup, franchiseNames map[string]string) FeedEventDTO {
+// feedEventDTO builds one event with player and franchise names joined.
+func feedEventDTO(e state.FeedEvent, dir normalize.Lookup, franchiseNames map[string]string) FeedEventDTO {
 	txID := e.Source + ":" + e.ID
 	dto := FeedEventDTO{
 		StableKey:      txID,
@@ -113,14 +92,6 @@ func feedEventDTO(e state.FeedEvent, latest map[string]state.CorrectionRow, dir 
 		TradePicksNote: e.TradePicksNote,
 		TxID:           txID,
 	}
-	// An entry with no correction row stays zero (POSTED).
-	if c, ok := latest[txID]; ok {
-		dto.CorrectionStatus = c.Status
-		dto.CorrectionReason = c.Reason
-		dto.CorrectionNote = c.Note
-		dto.CorrectedBy = c.Commissioner
-		dto.CorrectedAt = c.CreatedAt
-	}
 	// A stale commissioner-created id resolves ok=false and shows as PlayerUnknown, not an error.
 	if e.MFLID != "" {
 		if facts, ok := dir.Facts(e.MFLID); ok {
@@ -131,15 +102,6 @@ func feedEventDTO(e state.FeedEvent, latest map[string]state.CorrectionRow, dir 
 		}
 	}
 	return dto
-}
-
-// latestCorrectionByTxID keeps the newest correction per tx_id from a seq-ascending slice.
-func latestCorrectionByTxID(rows []state.CorrectionRow) map[string]state.CorrectionRow {
-	out := make(map[string]state.CorrectionRow, len(rows))
-	for _, r := range rows {
-		out[r.TxID] = r
-	}
-	return out
 }
 
 // resolveFranchiseNames labels each id. Nil for no ids, so the JSON is [].

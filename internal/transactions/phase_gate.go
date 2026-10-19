@@ -16,7 +16,7 @@ func phasePolicy(kind Kind) ([]domain.Phase, bool) {
 	switch kind {
 	case KindTrade, KindRosterStatus, KindWaiver, KindRestructure, KindTag, KindExtension, KindAdvancePhase,
 		KindRetirement, KindDeath, KindCapRelief, KindSetSigningWindow, KindSetTradeDeadline,
-		KindScheduleEvent, KindRescheduleEvent, KindCancelEvent, KindCorrect:
+		KindScheduleEvent, KindRescheduleEvent, KindCancelEvent:
 		// §13 events happen whenever, and the commissioner sets calendar directives whenever. The
 		// directives themselves restrict SIGN and TRADE, inside gatePhase.
 		return allPhases(), true

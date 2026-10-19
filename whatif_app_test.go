@@ -197,6 +197,7 @@ func TestWhatIfStaleEmptyRebasesBeforeReadOrCut(t *testing.T) {
 	t.Parallel()
 	for _, action := range []string{"read", "cut"} {
 		t.Run(action, func(t *testing.T) {
+			t.Parallel()
 			a := whatIfTestApp(t)
 			before := whatIfCall(t, a, "read", "", "")
 			replaceWhatIfMirror(t, a, 11*100_000_000)

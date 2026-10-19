@@ -52,11 +52,6 @@ type Checks struct {
 	BirthdateCoverage float64   `json:"birthdateCoverage"`
 }
 
-// Compile derives the complete Lab document from checked facts and audit evidence.
-func Compile(ctx context.Context, f facts.Facts, in Evidence) ([]byte, error) {
-	_, body, err := Build(ctx, f, in)
-	return body, err
-}
 func compile(ctx context.Context, f facts.Facts, in Evidence, analyse Analyse) ([]byte, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("compile lab: %w", err)

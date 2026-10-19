@@ -12,6 +12,7 @@ import (
 )
 
 func TestRosterDraftTargetsAndDirections(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name   string
 		intent string
@@ -24,6 +25,7 @@ func TestRosterDraftTargetsAndDirections(t *testing.T) {
 		{"promote", "roster.taxi", domain.RosterTaxi, domain.RosterActive, "98"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			a, transport, _ := lineupDraftApp(t)
 			player, err := playerid.New("0042")
 			if err != nil {
@@ -58,6 +60,7 @@ func TestRosterDraftTargetsAndDirections(t *testing.T) {
 }
 
 func TestRosterDraftUnknownHost(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	down := targetOfflineClient(t, a)
 	if _, err := a.TargetSnapshot(); err != nil {
@@ -77,6 +80,7 @@ func TestRosterDraftUnknownHost(t *testing.T) {
 }
 
 func TestTaxiPredicateRegistered(t *testing.T) {
+	t.Parallel()
 	predicate := movePredicate("roster.taxi")
 	if _, ok := predicate.(envelope.TaxiPredicate); !ok {
 		t.Fatalf("taxi registry: %T", predicate)
@@ -84,6 +88,7 @@ func TestTaxiPredicateRegistered(t *testing.T) {
 }
 
 func TestTargetDraftTaxiValidation(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	if _, err := a.TargetDraftTaxi("0001", "0042"); err == nil {
 		t.Fatal("draft without snapshot")

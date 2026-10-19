@@ -35,9 +35,6 @@ func (s *Store) initSchema(ctx context.Context) error {
 	if err := s.initTradeNotesSchema(ctx); err != nil {
 		return err
 	}
-	if err := s.initCorrectionSchema(ctx); err != nil {
-		return err
-	}
 	return s.runMigrations(ctx)
 }
 

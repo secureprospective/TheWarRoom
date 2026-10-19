@@ -22,6 +22,7 @@ func noNewsArchive(context.Context, string, func(string, []byte, time.Time) bool
 }
 
 func TestResearchNewsBatchSplittingAndPacing(t *testing.T) {
+	t.Parallel()
 	ids := []string{}
 	for n := 10000; n < 10250; n++ {
 		ids = append(ids, strconv.Itoa(n))
@@ -55,6 +56,7 @@ func TestResearchNewsBatchSplittingAndPacing(t *testing.T) {
 }
 
 func TestResearchNewsBatchDailyArchiveAndExactMembership(t *testing.T) {
+	t.Parallel()
 	at := time.Now()
 	always := func(time.Time) bool { return true }
 	body := researchSample(t, "playerProfile-batch2.json")
@@ -80,6 +82,7 @@ func TestResearchNewsBatchDailyArchiveAndExactMembership(t *testing.T) {
 // The daily cache reads the archive once per refresh, newest first, and stops at the first body from an earlier
 // day: the cost does not grow with the number of players or with the archive's age.
 func TestResearchNewsDailyCacheIsOneArchivePass(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	body := researchSample(t, "playerProfile-batch2.json")
 	scans, read := 0, 0
@@ -115,6 +118,7 @@ func TestResearchNewsDailyCacheIsOneArchivePass(t *testing.T) {
 }
 
 func TestResearchNewsMissingPlayerIsHeldNoNews(t *testing.T) {
+	t.Parallel()
 	at := time.Now().Truncate(time.Second)
 	parsed, err := researchfeeds.ParseNews(researchSample(t, "playerProfile-batch2.json"), []string{"13116", "15761", "16162"})
 	if err != nil {
@@ -142,6 +146,7 @@ func TestResearchNewsMissingPlayerIsHeldNoNews(t *testing.T) {
 }
 
 func TestResearchNewsBatchArchiveFallbackPreservesProvenance(t *testing.T) {
+	t.Parallel()
 	at := time.Now().AddDate(0, 0, -1).Truncate(time.Second)
 	archive := func(_ context.Context, _ string, accept func(string, []byte, time.Time) bool) (bool, error) {
 		return accept("/2026/export?TYPE=playerProfile&P=13116,15761", researchSample(t, "playerProfile-batch2.json"), at), nil
@@ -177,6 +182,7 @@ func (f blockingNewsTransport) RoundTrip(r *http.Request) (*http.Response, error
 }
 
 func TestResearchNewsDoesNotBlockNowAndRejectsConcurrentNews(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	f := blockingNewsTransport{entered: make(chan struct{}), release: make(chan struct{})}
 	defer close(f.release)
@@ -223,6 +229,7 @@ func TestResearchNewsDoesNotBlockNowAndRejectsConcurrentNews(t *testing.T) {
 }
 
 func TestOmittedProfilesLogOnceAndSurviveArchive(t *testing.T) {
+	t.Parallel()
 	now := time.Now().Truncate(time.Second)
 	ids := []string{}
 	for n := 10000; n < 10101; n++ {

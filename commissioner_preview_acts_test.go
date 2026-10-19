@@ -68,6 +68,7 @@ func previewExecuteReason(err error) string {
 }
 
 func TestStartingAssetsPreviewUsesTheSeedRequestAndRecordsNothing(t *testing.T) {
+	t.Parallel()
 	app := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, app, commissioner.PresetLegacy)
 	body, err := json.Marshal(input)
@@ -98,6 +99,7 @@ func TestStartingAssetsPreviewUsesTheSeedRequestAndRecordsNothing(t *testing.T) 
 // The tray opens before a reason is typed: the preview must still show the starting assets and the
 // league version, and owe only the reason.
 func TestStartingAssetsPreviewShowsBeforeTheReasonIsTyped(t *testing.T) {
+	t.Parallel()
 	app := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, app, commissioner.PresetLegacy)
 	input.Reason = ""
@@ -126,6 +128,7 @@ func TestStartingAssetsPreviewShowsBeforeTheReasonIsTyped(t *testing.T) {
 // Recording starting assets adds every rostered player at once. The preview sums them up per franchise, so
 // the commissioner can read it and reach the reason, rather than listing each player three times.
 func TestStartingAssetsPreviewSumsUpEachFranchise(t *testing.T) {
+	t.Parallel()
 	app := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, app, commissioner.PresetLegacy)
 	body, err := json.Marshal(input)
@@ -173,6 +176,7 @@ func assertPreviewTransition(t *testing.T, preview commissioner.Preview, label, 
 }
 
 func TestCommissionerPreviewShowsNativeContractAndCapValues(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ command, value, label, before, after string }{
 		{commissioner.ContractEdit, `{"player":"0099","years":4,"salaryCents":2000000000}`,
 			"contract", "$10,987,000", "$20,000,000"},
@@ -182,6 +186,7 @@ func TestCommissionerPreviewShowsNativeContractAndCapValues(t *testing.T) {
 			"counted salary", "$21,180,000", "$18,180,000"},
 	} {
 		t.Run(tc.command, func(t *testing.T) {
+			t.Parallel()
 			f := capApp(t)
 			raw := overrideCommand(t, f, tc.command, tc.value)
 			preview := mustPreview(t, f.app, raw)
@@ -198,6 +203,7 @@ func TestCommissionerPreviewShowsNativeContractAndCapValues(t *testing.T) {
 }
 
 func TestCommissionerPreviewRefusalsUseTheAppendPreparation(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name  string
 		setup func(*testing.T) (*App, commissioner.RawCommand)
@@ -252,6 +258,7 @@ func TestCommissionerPreviewRefusalsUseTheAppendPreparation(t *testing.T) {
 }
 
 func TestReservePreviewShowsTheCurrentEligibilityAndAsksForTheReason(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	raw := overrideCommand(t, f, commissioner.ReserveException, `{"player":"2002","bucket":"ir"}`)
 	raw.Reason = ""
@@ -274,6 +281,7 @@ func TestReservePreviewShowsTheCurrentEligibilityAndAsksForTheReason(t *testing.
 }
 
 func TestRunningDraftPreviewUsesTheRaisedSafeguard(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.now = draftStartAt().Add(time.Hour)
@@ -308,6 +316,7 @@ func proveRefusedAct(t *testing.T, app *App, raw commissioner.RawCommand) {
 }
 
 func TestStartingAssetsPreviewRejectsClientSuppliedAssets(t *testing.T) {
+	t.Parallel()
 	app := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, app, commissioner.PresetLegacy)
 	raw, err := app.nativeSeedCommand(t.Context(), input)
@@ -336,6 +345,7 @@ func TestStartingAssetsPreviewRejectsClientSuppliedAssets(t *testing.T) {
 }
 
 func TestPreviewUsesTheCurrentFranchiseName(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	assets := readNativeTest(t, f.app, legalityLeague)
 	executeCommissionerTest(t, f.app, commissioner.RawCommand{League: legalityLeague, Command: "commish.franchise.edit",

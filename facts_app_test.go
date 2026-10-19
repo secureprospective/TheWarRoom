@@ -76,6 +76,7 @@ func weekResults(bills string) string {
 // in words; the same inputs are not compiled twice; fixed inputs compile, publish and pass; a later
 // failure keeps the good snapshot, marked stale.
 func TestCheckedFactsCompileFailKeepAndCache(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	a.dataDir = t.TempDir()
 	ctx := context.Background()

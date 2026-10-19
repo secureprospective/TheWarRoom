@@ -83,6 +83,7 @@ func fullArchive(t *testing.T) archiveCache {
 // and writes every Archive report as text, for reading real lines against MFL's own pages.
 // Opt-in: TWR_ARCHIVE_PARITY=1 TWR_FACTS_ARCHIVE=<raw dir> TWR_ARCHIVE_SMOKE=<out file>.
 func TestArchiveReportsOnTheFullArchive(t *testing.T) {
+	t.Parallel()
 	out := os.Getenv("TWR_ARCHIVE_SMOKE")
 	if out == "" {
 		t.Skip("opt-in")
@@ -125,6 +126,7 @@ func hexSum(b []byte) string {
 // adjustment); they are listed, so a fifth fails. Opt-in as fullArchive, plus TWR_MFL_PAGES=<dir> holding
 // standings_<year>.html.
 func TestArchiveMatchesMFLStandingsPages(t *testing.T) {
+	t.Parallel()
 	dir := os.Getenv("TWR_MFL_PAGES")
 	if dir == "" {
 		t.Skip("opt-in")

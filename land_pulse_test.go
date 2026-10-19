@@ -31,6 +31,7 @@ func pulseLive(t *testing.T) leaguefeed.Lineups {
 }
 
 func TestPulsePlayerKickoffAndStableSlots(t *testing.T) {
+	t.Parallel()
 	in := realNow(t, 5)
 	v, err := newNowView(in)
 	if err != nil {
@@ -76,6 +77,7 @@ func TestPulsePlayerKickoffAndStableSlots(t *testing.T) {
 }
 
 func TestPulseSlotsIgnoreFeedShuffle(t *testing.T) {
+	t.Parallel()
 	v, err := newNowView(realNow(t, 5))
 	if err != nil {
 		t.Fatal(err)
@@ -101,6 +103,7 @@ func TestPulseSlotsIgnoreFeedShuffle(t *testing.T) {
 }
 
 func TestPulseRaceLiveSchedule(t *testing.T) {
+	t.Parallel()
 	in := realRace(t, "2026")
 	live := pulseLive(t)
 	in.team = live.Matchups[0].Home
@@ -136,6 +139,7 @@ func TestPulseRaceLiveSchedule(t *testing.T) {
 }
 
 func TestPulseLiveWeekUnplayedFollowsKickoffs(t *testing.T) {
+	t.Parallel()
 	now := realNow(t, 5)
 	games := nflGames(now.held.schedules[5].value, now.at)
 	first := time.Time{}
@@ -157,6 +161,7 @@ func TestPulseLiveWeekUnplayedFollowsKickoffs(t *testing.T) {
 }
 
 func TestPulsePluralAndProjectedBracket(t *testing.T) {
+	t.Parallel()
 	if countText(1, "NFL game") != "1 NFL game" || pluralNoun(1, "game") != "game" ||
 		pluralNoun(1.5, "game") != "games" {
 		t.Fatal("incorrect singular/plural")
@@ -198,6 +203,7 @@ func TestPulsePluralAndProjectedBracket(t *testing.T) {
 }
 
 func TestPulseReportsDefaultLastScored(t *testing.T) {
+	t.Parallel()
 	in := nowInput{race: realRace(t, "2026"), current: 5, at: raceHeldAt}
 	for i := range in.race.held.weeks.value {
 		w := &in.race.held.weeks.value[i]
@@ -237,6 +243,7 @@ func TestPulseReportsDefaultLastScored(t *testing.T) {
 }
 
 func TestPulseSeriesUsesCurrentOpponent(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	a.week.Number = 5
 	a.seasonLineups = held(pulseLive(t))
@@ -259,6 +266,7 @@ func TestPulseSeriesUsesCurrentOpponent(t *testing.T) {
 }
 
 func TestPulseArchiveNamesTotalsAndFirstChampion(t *testing.T) {
+	t.Parallel()
 	cache := reducedArchive(t)
 	board, err := buildArchive(cache, false, 2026, "", "")
 	if err != nil {
@@ -292,6 +300,7 @@ func TestPulseArchiveNamesTotalsAndFirstChampion(t *testing.T) {
 }
 
 func TestPulseClockKeepsWeekAfterLastKickoff(t *testing.T) {
+	t.Parallel()
 	a, _, _ := weekTestApp(t, "17")
 	at := time.Date(2026, 10, 13, 1, 0, 0, 0, time.UTC)
 	a.clockNow = func() time.Time { return at }
@@ -318,6 +327,7 @@ func TestPulseClockKeepsWeekAfterLastKickoff(t *testing.T) {
 }
 
 func TestPulseStartupDatesWindowsWithoutRefresh(t *testing.T) {
+	t.Parallel()
 	a, transport, _ := weekTestApp(t, "17")
 	a.clockNow = func() time.Time { return time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC) }
 	body := weekFixture(t, "nflSchedule-w5.json")
@@ -361,6 +371,7 @@ func TestPulseStartupDatesWindowsWithoutRefresh(t *testing.T) {
 // Before the week's first kickoff a held live matchup is not in progress, and a starter whose NFL
 // team has no game that week reads bye (or no NFL team), never 0.00.
 func TestPulseByeAndNotStartedWeek(t *testing.T) {
+	t.Parallel()
 	v, err := newNowView(realNow(t, 5))
 	if err != nil {
 		t.Fatal(err)

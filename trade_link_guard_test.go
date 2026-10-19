@@ -12,6 +12,7 @@ import (
 // or withdrawing an offer with no confirmation. The app hands every trade off to the trade desk
 // (O=05) and must never build that link. The needle is assembled so this file does not match.
 func TestNoSourceBuildsMFLsTradeActionLink(t *testing.T) {
+	t.Parallel()
 	needle := "trade_" + "response"
 	var hits []string
 	for _, root := range []string{".", "frontend/src"} {

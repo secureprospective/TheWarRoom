@@ -11,6 +11,7 @@ import (
 )
 
 func TestPoolLandingValuesAndSorting(t *testing.T) {
+	t.Parallel()
 	rows := []PoolRow{{ID: "missing", Name: "A"}, {ID: "zero", Name: "B"}, {ID: "best", Name: "Z"}}
 	assets := map[string]AssetValue{"best": {Now: AssetCell{Text: "4.00 PPG", Held: true}, NowValue: 4,
 		Dynasty: AssetCell{Text: "0.12 wins", Held: true}, DynastyValue: 0.12}}
@@ -36,6 +37,7 @@ func TestPoolLandingValuesAndSorting(t *testing.T) {
 }
 
 func TestPoolLandingNoTeamToggle(t *testing.T) {
+	t.Parallel()
 	a, _ := poolApp(t)
 	lookup, err := normalize.NewLookup([]players.RawPlayer{
 		{ID: "13593", Name: "A", Position: "WR", Team: "FA"},

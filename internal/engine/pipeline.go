@@ -84,9 +84,6 @@ func (identityLayer4) Apply(Layer4Input) Layer4Output {
 	}
 }
 
-// IdentityLayer4 returns the no-op Layer 4.
-func IdentityLayer4() Layer4 { return identityLayer4{} }
-
 // BuildTiebreaker is Layer 6: the key that orders exact score ties
 // (Backend_Architecture:268). It uses the cleaned RAS, so an imputed one sorts consistently.
 func BuildTiebreaker(p PlayerInput, cleanedRAS float64, scarcityRank int) TiebreakerKey {

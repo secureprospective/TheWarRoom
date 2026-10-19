@@ -15,6 +15,7 @@ import (
 )
 
 func TestInspectorPointsAgreeWithCardHeldWeeks(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	delete(in.held.feeds, researchKey("playerScores", "YTD"))
 	v := researchView{researchInput: in}
@@ -51,6 +52,7 @@ func TestInspectorPointsAgreeWithCardHeldWeeks(t *testing.T) {
 }
 
 func TestInspectorOpenReadsDepthThroughFixtureClient(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	a := targetTestApp(t)
 	a.lookup, a.hasLookup, a.week = in.lookup, true, leagueweek.Week{Number: 5}
@@ -84,6 +86,7 @@ func TestInspectorOpenReadsDepthThroughFixtureClient(t *testing.T) {
 }
 
 func TestNowNamesCarryHeldInspectorIdentities(t *testing.T) {
+	t.Parallel()
 	in := realNow(t, 5)
 	in.race.mine = "0001"
 	board, err := buildNow(in)
@@ -110,6 +113,7 @@ func TestNowNamesCarryHeldInspectorIdentities(t *testing.T) {
 }
 
 func TestInspectorWaitsForHeldArchivePublication(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	a := targetTestApp(t)
 	a.lookup, a.hasLookup, a.week = in.lookup, true, leagueweek.Week{Number: 5}
@@ -157,6 +161,7 @@ func TestInspectorWaitsForHeldArchivePublication(t *testing.T) {
 }
 
 func TestLiveBoxKeepsCrosswalkIdentity(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	v := liveWire(t)
 	var name, source string
@@ -183,6 +188,7 @@ func TestLiveBoxKeepsCrosswalkIdentity(t *testing.T) {
 }
 
 func TestInspectorMissingFeedsGiveCompletedReadReasons(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	v := researchView{researchInput: researchInput{lookup: in.lookup, zone: time.UTC, week: 5}}
 	p := v.playerReading("16162", nil, "How")

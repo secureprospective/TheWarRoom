@@ -101,9 +101,6 @@ type AuditWriter interface {
 	// LogTradeNote appends the audit row for an executed trade. picksNote is unvalidated free text
 	// (no pick-ownership ledger yet); rationale is already validated non-empty.
 	LogTradeNote(ctx context.Context, picksNote, rationale string, involvedFranchises []string) error
-	// AppendCorrection appends a correction (CORRECTED note or REVERSED marker) tied to the original
-	// by tx_id. The original row is never updated or deleted.
-	AppendCorrection(ctx context.Context, e CorrectionEntry) error
 }
 
 // CalendarWriter appends to the commissioner calendar. Scheduling, rescheduling, cancelling and

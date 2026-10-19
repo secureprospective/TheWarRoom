@@ -47,6 +47,7 @@ func nativeOwnerRead(t *testing.T, app *App, at time.Time) (commissioner.NativeW
 }
 
 func TestNativeScheduleOwnerCommandsRevertRestart(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 9, 10, 18, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
 	raw := seedScheduleTest(t, app)
@@ -127,6 +128,7 @@ func writeNativeScheduleWire(t *testing.T, reading commissioner.NativeWeek) {
 }
 
 func TestNativeScheduleMissingDatesAndScope(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 9, 10, 18, 0, 0, 0, time.UTC)
 	app, _ := calendarTestApp(t, at)
 	raw := seedScheduleTest(t, app)
@@ -159,6 +161,7 @@ func TestNativeScheduleMissingDatesAndScope(t *testing.T) {
 }
 
 func TestNativeScheduleRegenerationChangesOwnerOpponentRevertRestart(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 9, 10, 18, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
 	raw := commissioner.RawCommand{League: "native.calendar", Command: commissioner.Create,

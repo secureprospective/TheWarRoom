@@ -16,6 +16,7 @@ import (
 )
 
 func TestFinishedScoresDue(t *testing.T) {
+	t.Parallel()
 	kickoff := time.Now().Add(-5 * time.Hour).Truncate(time.Second)
 	end := kickoff.Add(finishedGameAllowance)
 	h := heldSeasonFeed[[]nflschedule.RawWeek]{fetchedAt: end, value: []nflschedule.RawWeek{{Week: "5", Matchups: []nflschedule.RawMatchup{
@@ -64,6 +65,7 @@ func (f finishedScoresTransport) RoundTrip(r *http.Request) (*http.Response, err
 }
 
 func TestBackgroundFinishedScoresRereadsOnce(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	a.seasonChanged = func(context.Context) {}
 	now := time.Now().Truncate(time.Second)
@@ -94,4 +96,9 @@ func TestBackgroundFinishedScoresRereadsOnce(t *testing.T) {
 	if len(held.value) != 1 || !held.fetchedAt.Equal(now) || held.refreshError != "" {
 		t.Fatal(held)
 	}
+}
+
+func finishedScoresDue(fetched time.Time, schedule heldSeasonFeed[[]nflschedule.RawWeek], now time.Time) bool {
+	end, finished := finishedScoreCutoff(schedule, now)
+	return finished && fetched.Before(end)
 }

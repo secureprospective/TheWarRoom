@@ -56,8 +56,8 @@ func TestBidPointsFollowTheLeagueMultipliersAndDecimals(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err := p.Points(5*million, 2)
-	if err != nil || p.PointsText(got) != "7.5" || p.MaxYears() != 2 {
-		t.Fatalf("league multipliers ignored: %v %v years %d", p.PointsText(got), err, p.MaxYears())
+	if err != nil || p.PointsText(got) != "7.5" {
+		t.Fatalf("league multipliers ignored: %v %v", p.PointsText(got), err)
 	}
 	if _, err := p.Points(5*million, 3); err == nil {
 		t.Fatal("a third year was priced under a two year table")

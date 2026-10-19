@@ -31,6 +31,7 @@ func realMarketHeld(t *testing.T) map[string]heldSeasonFeed[[]marketfeeds.Feed] 
 }
 
 func TestMarketReportsFactsAndMissing(t *testing.T) {
+	t.Parallel()
 	held := realMarketHeld(t)
 	names := map[string]string{"16162": "Bijan Robinson", "16161": "Jahmyr Gibbs", "13589": "Josh Allen"}
 	board := buildMarketReports(held, names, 6, time.UTC)
@@ -99,6 +100,7 @@ func TestMarketReportsFactsAndMissing(t *testing.T) {
 }
 
 func TestMarketEmptyADPAndIndependentFailures(t *testing.T) {
+	t.Parallel()
 	held := realMarketHeld(t)
 	feed, err := marketfeeds.Parse(marketfeeds.ADP, []byte(`{"adp":{"totalDrafts":"0","totalPicks":"0"}}`))
 	if err != nil {
@@ -119,6 +121,7 @@ func TestMarketEmptyADPAndIndependentFailures(t *testing.T) {
 }
 
 func TestMarketRefreshDailyWeekAndHeldReads(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	a.week = leagueweek.Week{Number: 6}
 	transport.bodies[marketfeeds.Projections] = seasonFixture(t, "marketfeeds", "projectedScores.json")
@@ -170,6 +173,7 @@ func TestMarketRefreshDailyWeekAndHeldReads(t *testing.T) {
 }
 
 func TestMarketArchiveScopeAndFallback(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	a.week.Number = 6
 	at := time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
@@ -216,6 +220,7 @@ func TestMarketArchiveScopeAndFallback(t *testing.T) {
 }
 
 func TestMarketReportWireMatchesGo(t *testing.T) {
+	t.Parallel()
 	held := realMarketHeld(t)
 	for kind, feed := range held {
 		feed.value[0].Players = feed.value[0].Players[:3]
@@ -248,6 +253,7 @@ func TestMarketReportWireMatchesGo(t *testing.T) {
 }
 
 func TestMarketFeedCancelledDoesNotFetch(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	ctx, cancel := context.WithCancel(a.ctx)
 	cancel()
@@ -258,6 +264,7 @@ func TestMarketFeedCancelledDoesNotFetch(t *testing.T) {
 }
 
 func TestPoolMarketColumnsMissingFeedDoesNotBlock(t *testing.T) {
+	t.Parallel()
 	a, _ := poolApp(t)
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
@@ -294,6 +301,7 @@ func TestPoolMarketColumnsMissingFeedDoesNotBlock(t *testing.T) {
 }
 
 func TestMarketNamesLabelTeamUnits(t *testing.T) {
+	t.Parallel()
 	lookup, err := normalize.NewLookup([]players.RawPlayer{
 		{ID: "16162", Name: "Robinson, Bijan", Position: "RB", Team: "ATL"},
 		{ID: "0513", Name: "Broncos, Denver", Position: "Def", Team: "DEN"},

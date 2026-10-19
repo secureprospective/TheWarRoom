@@ -43,6 +43,7 @@ func probeTrade(t *testing.T, f *tradeFixture, args commissioner.RawTradeArgs, v
 }
 
 func TestTradeRulesGovernNativeDeskRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	for _, proof := range []tradeRuleProof{
 		{"trades.review", `"none"`, func(t *testing.T, f *tradeFixture) string { return probeTrade(t, f, tradePlayerOffer(), 0) }},
 		{"trades.dotSeats", `5`, func(t *testing.T, f *tradeFixture) string { return probeTrade(t, f, tradePlayerOffer(), 0) }},
@@ -57,6 +58,7 @@ func TestTradeRulesGovernNativeDeskRevertAndReopen(t *testing.T) {
 		{"trades.rosterGate", `false`, func(t *testing.T, f *tradeFixture) string { return probeTrade(t, f, tradePlayerOffer(), -1) }},
 	} {
 		t.Run(proof.field, func(t *testing.T) {
+			t.Parallel()
 			f := tradeApp(t)
 			if proof.field == "trades.rosterGate" {
 				f.set(t, "roster.limits", `{"min":0,"max":40}`, "now")
@@ -93,8 +95,10 @@ func tradePickOffer() commissioner.RawTradeArgs {
 }
 
 func TestTradePickRulesGovernNativeDeskRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	for _, proof := range []struct{ field, value string }{{"trades.futureYears", `0`}, {"trades.rounds", `{"min":2,"max":5}`}} {
 		t.Run(proof.field, func(t *testing.T) {
+			t.Parallel()
 			f := tradePickApp(t)
 			probe := func() string { return probeTrade(t, f, tradePickOffer(), -1) }
 			for cycle := 0; cycle < 2; cycle++ {
@@ -124,6 +128,7 @@ func TestTradePickRulesGovernNativeDeskRevertAndReopen(t *testing.T) {
 }
 
 func TestTradeReviewAndAppealGovernNativeDeskRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
 	f.accept(t, offer)

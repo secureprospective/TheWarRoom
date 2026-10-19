@@ -71,6 +71,7 @@ func draftRuleWords(d commissioner.NativeDraft, label string) string {
 }
 
 func TestDraftClockAndRoundsGovernTheDraft(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.now = draftStartAt().Add(time.Hour)
@@ -88,6 +89,7 @@ func TestDraftClockAndRoundsGovernTheDraft(t *testing.T) {
 }
 
 func TestDraftOrderCommandsGovernWhoIsOnTheClock(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.draftCommand(t, commissioner.DraftStart, commissioner.RawDraftArgs{Season: draftSeason, At: draftStartAt()})
 	round := func(n int) string {
@@ -129,6 +131,7 @@ func TestDraftOrderCommandsGovernWhoIsOnTheClock(t *testing.T) {
 }
 
 func TestDraftTieRuleIsRecordedAndReverted(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	tie := func() string { return draftRuleWords(f.read(t, "franchise.01"), "Draft order tie breaker") }
 	f.governs(t, tie, func() commissioner.Receipt {
@@ -137,6 +140,7 @@ func TestDraftTieRuleIsRecordedAndReverted(t *testing.T) {
 }
 
 func TestDraftOrderAutoAsksForTheFinalStandings(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.draftCommand(t, commissioner.DraftOrderSet, commissioner.RawDraftArgs{Season: draftSeason,
 		Round: 1, Order: draftOrder(3, 2, 1)})
@@ -165,6 +169,7 @@ func calendarDraftStart(t *testing.T, f *draftFixture) string {
 }
 
 func TestDraftStartAndTheCalendarNeverDisagree(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.draftCommand(t, commissioner.DraftOrderSet, commissioner.RawDraftArgs{Season: draftSeason,
 		Order: draftOrder(3, 2, 1)})
@@ -202,6 +207,7 @@ func TestDraftStartAndTheCalendarNeverDisagree(t *testing.T) {
 }
 
 func TestDraftStartRefusals(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.draftCommand(t, commissioner.DraftOrderSet, commissioner.RawDraftArgs{Season: draftSeason,
 		Order: draftOrder(3, 2, 1)})
@@ -234,6 +240,7 @@ func onClockContract(d commissioner.NativeDraft) string {
 }
 
 func TestDraftPricingAndLengthsGovernTheContractOnTheClock(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.now = draftStartAt().Add(time.Hour)
@@ -253,6 +260,7 @@ func TestDraftPricingAndLengthsGovernTheContractOnTheClock(t *testing.T) {
 }
 
 func TestDraftMaximumPicksForfeitsTheExtrasWithoutAClock(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.now = draftStartAt().Add(time.Hour)

@@ -50,6 +50,7 @@ func offerOutcomeCount(r Reading[OffersView], id string) int {
 }
 
 func TestLiveOfferHistoryRestartAndDedup(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "league.db")
 	a := liveOffersTestApp(t, path)
 	ctx := context.Background()
@@ -114,6 +115,7 @@ func TestLiveOfferHistoryRestartAndDedup(t *testing.T) {
 }
 
 func TestLiveOfferEndingEvidenceAndFailedRead(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, kind, sender, receiver string
 		delta                        time.Duration
@@ -128,6 +130,7 @@ func TestLiveOfferEndingEvidenceAndFailedRead(t *testing.T) {
 		{"not completed", "TRADE_PROPOSAL", "0025", "0001", time.Minute, "unknown"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			a := liveOffersTestApp(t, filepath.Join(t.TempDir(), "league.db"))
 			ctx := context.Background()
 			ts := time.Date(2026, 10, 12, 13, 0, 0, 0, time.UTC)
@@ -162,6 +165,7 @@ func TestLiveOfferEndingEvidenceAndFailedRead(t *testing.T) {
 }
 
 func TestPendingRefreshRecordsHistory(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	if err := personal.New(a.pools).Initialize(a.ctx); err != nil {
 		t.Fatal(err)
@@ -188,6 +192,7 @@ func TestPendingRefreshRecordsHistory(t *testing.T) {
 }
 
 func TestLiveOfferCalendarMatchesArchive(t *testing.T) {
+	t.Parallel()
 	d, err := lab.Load()
 	if err != nil {
 		t.Fatal(err)
@@ -219,6 +224,7 @@ func TestLiveOfferCalendarMatchesArchive(t *testing.T) {
 }
 
 func TestLiveOfferCutoffAndOwnerScope(t *testing.T) {
+	t.Parallel()
 	a := liveOffersTestApp(t, filepath.Join(t.TempDir(), "league.db"))
 	d, err := a.lab()
 	if err != nil {
@@ -262,6 +268,7 @@ func TestLiveOfferCutoffAndOwnerScope(t *testing.T) {
 }
 
 func TestLiveOfferAfterDeadlineRemainsVisible(t *testing.T) {
+	t.Parallel()
 	a := liveOffersTestApp(t, filepath.Join(t.TempDir(), "league.db"))
 	at := time.Date(2026, 11, 3, 12, 0, 0, 0, time.UTC)
 	p := leaguefeed.PendingTrade{ID: "9001", Offering: "0025", OfferedTo: "0001", Proposed: at}
@@ -280,6 +287,7 @@ func TestLiveOfferAfterDeadlineRemainsVisible(t *testing.T) {
 }
 
 func TestLiveOfferFromUnheldYearKeepsHistoryOnScreen(t *testing.T) {
+	t.Parallel()
 	a := liveOffersTestApp(t, filepath.Join(t.TempDir(), "league.db"))
 	ctx := context.Background()
 	ts := time.Date(2027, 3, 2, 15, 0, 0, 0, time.UTC)
@@ -296,6 +304,7 @@ func TestLiveOfferFromUnheldYearKeepsHistoryOnScreen(t *testing.T) {
 }
 
 func TestOfferHistorySaveFailureLeavesDeskRead(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	if err := a.keyStore.Set(a.ctx, "synthetic-stored-key"); err != nil {
 		t.Fatal(err)

@@ -7,6 +7,7 @@ import (
 )
 
 func TestBuildLabel(t *testing.T) {
+	t.Parallel()
 	saved := commit
 	t.Cleanup(func() { commit = saved })
 
@@ -23,6 +24,7 @@ func TestBuildLabel(t *testing.T) {
 // Wails on Linux loads the page while startup runs, so an IPC call can arrive first. It must
 // wait and report how startup ended, not answer from half-built state.
 func TestIPCWaitsForStartup(t *testing.T) {
+	t.Parallel()
 	a := NewApp()
 	got := make(chan AppInfo, 1)
 	go func() { got <- a.AppInfo() }()

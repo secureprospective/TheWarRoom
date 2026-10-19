@@ -63,6 +63,7 @@ func readyIRPlan(t *testing.T, a *App, at time.Time) envelope.Envelope {
 }
 
 func TestRevalidateReadyRosterMovesOnIneligibility(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	targetOfflineClient(t, a)
 	events := 0
@@ -103,6 +104,7 @@ func TestRevalidateReadyRosterMovesOnIneligibility(t *testing.T) {
 }
 
 func TestRevalidateKeepsPlansWhenEligibilityUnknown(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	targetOfflineClient(t, a)
 	a.movesChanged = func(context.Context) { t.Fatal("no event expected") }
