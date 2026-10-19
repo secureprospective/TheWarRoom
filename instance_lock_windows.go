@@ -1,13 +1,16 @@
+//go:build windows
+
 package main
 
 import (
 	"fmt"
 	"os"
-	"syscall"
+
+	"golang.org/x/sys/windows"
 )
 
-// acquireInstanceLock takes a non-blocking flock on a lockfile beside the database, so a
-// second copy of the app cannot open the same ledger. Keep the file open for the life of the
+// acquireInstanceLock takes a non-blocking exclusive LockFileEx on a lockfile beside the database,
+// the Windows twin of the flock in instance_lock_unix.go. Keep the file open for the life of the
 // process: closing it releases the lock.
 func acquireInstanceLock(dbPath string) (*os.File, error) {
 	path := dbPath + ".lock"
@@ -15,7 +18,9 @@ func acquireInstanceLock(dbPath string) (*os.File, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open lockfile %q: %w", path, err)
 	}
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+	ol := new(windows.Overlapped)
+	if err := windows.LockFileEx(windows.Handle(f.Fd()),
+		windows.LOCKFILE_EXCLUSIVE_LOCK|windows.LOCKFILE_FAIL_IMMEDIATELY, 0, 1, 0, ol); err != nil {
 		_ = f.Close()
 		return nil, fmt.Errorf(
 			"another instance of The War Room is already running (lock %q is held): %w", path, err)
@@ -28,6 +33,6 @@ func releaseInstanceLock(f *os.File) {
 	if f == nil {
 		return
 	}
-	_ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+	_ = windows.UnlockFileEx(windows.Handle(f.Fd()), 0, 1, 0, new(windows.Overlapped))
 	_ = f.Close()
 }
