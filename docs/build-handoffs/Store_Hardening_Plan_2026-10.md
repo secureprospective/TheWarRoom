@@ -1,7 +1,7 @@
 # Store Hardening Plan — 2026-10
 
-**Status:** proposed, waiting for Christopher's go (2026-10-19). Nothing built yet.
-**Goal:** make the SQLite store layer correct first, robust second and efficient third, for the
+**Status:** revised 2026-10-19 with Christopher's answers; waiting for his go. Nothing built yet.
+**Goal:** make the SQLite store layer correct first, efficient second and robust third, for the
 MFL harness side and the native league side.
 **Picture:** `http://192.168.1.105:8765/store.html` (today → target, while the CT105 page server runs).
 **Evidence:** Claude's map of all four databases and Sol 6.1's adversarial review
@@ -32,6 +32,16 @@ checked in the code or reproduced in memory before it was listed.
 never edit history · integer cents · the gzipped content-addressed archive · what-if
 publish-after-success · full frozen seeds · the modernc driver.
 
+## Christopher's answers (2026-10-19)
+
+1. **Real people want to run native leagues.** That's why this week is a cleanup before any new
+   direction. Native correctness is now real, not future-proofing.
+2. **This runs alongside the ring work,** as small branches merged between ring phases. Only one
+   push or verify runs at a time on the Beelink.
+3. **A client app plus a server install is the likely native future; don't dig into it yet.** So:
+   no `native.db` file split and no off-machine backup design. Keep every fix storage-agnostic, and
+   keep the native ledger behind its store interface so a later move to a server stays clean.
+
 ## Phases, in build order
 
 Each phase is its own `session/store-*` branch. Sol builds at medium; Claude reviews every line,
@@ -46,11 +56,23 @@ Run first; it may change the order and ETAs below.
 3. Upgrade path: new build on old files, old build on new files.
 4. Screens: readings whose shape changes (for example, "cap total invalid").
 5. Tests and fixtures that assume current behaviour.
-6. Wider project: ring roadmap, `SYSTEM_MAP.md`, the endpoint registry, `cmd/fit`, CT105 backups.
+6. Wider project: ring roadmap, `SYSTEM_MAP.md`, the endpoint registry, `cmd/fit`.
 **Output:** one page per phase (what it touches, what could break, how each risk is tested),
 plus the corrected order and ETA.
 
-### Phase 1 — Migration standard (all four files) · 1 day
+### Phase 1 — Faster test suite · 1 day
+Comes early because every later phase pays the ~45-minute verify on each push.
+- Today: 1,993 Go tests, about 74k lines. The root package has 28k lines and takes **40 minutes**
+  under `-race`, about 80% of the wait. Next slowest: `store/history` (6 min) and `labcompile`
+  (2 min).
+- Profile the root package (`go test -json` timings) and find the slowest tests.
+- Speed them up without losing coverage: shared fixtures, no repeated full app/database builds,
+  slow live-style checks kept out of the race run.
+- Then measure coverage overlap. A test is removed only with evidence it covers nothing unique
+  ("deleting tests is not improvement").
+**Gate:** same coverage, push verify about 10–15 minutes.
+
+### Phase 2 — Migration standard (all four files) · 1 day
 Comes before the fixes, because the JSON and foreign-key fixes change schemas.
 - One migration runner per file using `user_version`: refuse newer → back up (`VACUUM INTO`) →
   migrate, with each step and its marker in one transaction → integrity + FK check.
@@ -59,7 +81,7 @@ Comes before the fixes, because the JSON and foreign-key fixes change schemas.
   `synchronous=FULL` (F3, F4).
 **Gate:** an old database opens and upgrades; a database from a newer build is refused untouched.
 
-### Phase 2 — Stop wrong state · 1–1.5 days
+### Phase 3 — Stop wrong state, both sides · 1–1.5 days
 - Mirror: persist, then publish (F1). Refresh: stage rules and rosters, publish together (F2).
 - NULL-safe JSON checks on the ledger and other JSON columns, as migrations (F5).
 - An approved stat line is never silently ignored (F6).
@@ -69,50 +91,48 @@ Comes before the fixes, because the JSON and foreign-key fixes change schemas.
 **Gate:** each fix has a test that fails without it; an injected mirror-write failure leaves memory,
 disk and revision unchanged.
 
-### Phase 3 — Backups and checks · 1 day
-- Daily and pre-upgrade backups via the SQLite backup API, with a manifest (schema versions, ledger
-  revision); off-machine copy to CT105 by deliberate sync, never rsync.
+### Phase 4 — Pinned native evidence · 1.5–2 days
+Moved up because real native leagues are likely. This is logic, not storage, so it carries over
+to a future server.
+- Record the exact stat line, identity and source digest each native result used (F9), and make
+  the initial baseline durable.
+- Native results rebuild from the ledger plus pinned evidence, with no network and no dependence on
+  which archive copies remain.
+**Gate:** delete the archived stat copies in a test database; past native results don't change.
+
+### Phase 5 — Local backups and checks · ½ day
+- Backup-API copies daily and before every upgrade, with a manifest (schema versions, ledger
+  revision).
 - Weekly `integrity_check` + `foreign_key_check`, shown in Data Sources.
-- Restore drill on a clean profile.
-**Gate:** restore on a clean profile reproduces the league and native results.
+**Gate:** a restore on a clean profile reproduces the league and native results.
 
-### Phase 4 — `native.db` and pinned evidence · 3–4 days · expert panel first
-Hard to undo, so the panel reviews the design before any code (½ day).
-- Record the exact stat line, identity and source digest each native result used (F9).
-- Move `league_event`, the authority policy, seed documents (stored once, by hash), pinned
-  evidence and projections into `native.db`.
-- Copy, verify (counts, revisions, IDs, payload hashes, replay results), and keep the old copy
-  until everything matches. No cross-file move-and-delete.
-**Why now:** only test leagues exist today, so the move is cheap. After a real native season it
-needs a careful data migration.
-**Gate:** native results rebuild offline from `native.db` alone.
-
-### Phase 5 — Fast reads · 2 days
+### Phase 6 — Fast reads · 1.5 days
 - Archive: exact-URL index, metadata first, bodies by hash (F14).
 - Parse each stats file once, cached by body hash and parser version (F13).
-- Native projection cache keyed by revision; full replay stays as the check (F12). Reversals can
-  reach back before a snapshot, so the cache rebuilds from a safe point, never blindly patches.
 - Previews in memory; prune unpublished what-if copies (F15).
 - Benchmark `observations` indexes and `WITHOUT ROWID` before changing them.
-**Gate:** a full native week scores within a stated budget; projection and replay hashes agree,
-including through reversal-of-reversal, rollover and draft restore.
+**Gate:** a full native week scores within a stated budget, with results unchanged.
+
+## Deferred to the client/server decision
+- A separate native ledger store (`native.db` or a server database).
+- A heavy projection cache for native reads (F12); the full-replay cost is acceptable at today's
+  league sizes.
+- Off-machine backups.
+- The expert panel, which reviews the client/server storage design when that door opens.
 
 ## ETA
-About **8–11 working days** in total:
+About **7–8 working days** in total:
 
 | Phase | Days |
 |---|---|
-| 0 | 0.5 |
-| 1 | 1 |
-| 2 | 1–1.5 |
-| 3 | 1 |
-| 4 | 3.5–4.5 |
-| 5 | 2 |
+| 0 Impact map | 0.5 |
+| 1 Faster tests | 1 |
+| 2 Migration standard | 1 |
+| 3 Stop wrong state | 1–1.5 |
+| 4 Pinned evidence | 1.5–2 |
+| 5 Local backups | 0.5 |
+| 6 Fast reads | 1.5 |
 
-- **Earliest protected point:** after Phase 3, about 4 days in.
-- **Paced by:** the ~45-minute verify on every push, and Christopher's click-throughs.
-
-## Open questions for Christopher
-1. When does a real native league start? That sets how urgent Phase 4 is.
-2. Where does this fit against the ring roadmap: before ring 5, or alongside it?
-3. Off-machine backups: CT105 only, or somewhere else too?
+- **Calendar time is longer,** because the work interleaves with the ring work.
+- **Paced by:** the push verify (shorter after Phase 1), and Christopher's click-throughs.
+- **Earliest protected point:** after Phase 5.
