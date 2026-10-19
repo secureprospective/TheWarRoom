@@ -177,3 +177,52 @@ The databases are three files in `~/.config/TheWarRoom/`:
 - A heavy projection cache for native reads (F12); the full-replay cost is fine at today's sizes
 - Off-machine backups
 - Transport, version negotiation between clients and servers, live push to clients
+
+## Plan v2: the deep audit folded in (2026-10-19)
+
+Inputs: `Deep_Audit_2026-10-19.md`, `Audit_Recommendations_2026-10-19.md` (A1–A16), Sol 6.1 medium
+review (`~/fleet/runs/sol61-warroom-audit-triage/stdout.log`, Beelink). Claude triaged Sol's points:
+
+**Accepted from Sol:**
+- Identity migration keeps the old principals through an alias, and never rewrites history.
+- Recovery needs a proof of authority, not just a high gravity level.
+- The deadline check is "at", not "after", and it covers withdrawals too.
+- A downgrade must be refused before `db.Open` changes the file.
+- Backups are restored as a matched set.
+- A clock scheduler must cover catch-up and lost wake-ups.
+- Owner screens are built as whole workflows, after phases 9–10.
+- Platform work means packaged builds, not just compiling.
+
+**Rejected:**
+- A9's 8k-line target. The package is split only where profiling shows the tests cost time.
+
+**Corrections to the audit:**
+- Locks are nested in two places (`whatif_app.go:87`, `target_app.go:26/36`). No deadlock shown.
+- Kicker code has three cases, not one. The missing baseline fallback still stands.
+
+| Phase | Action | Days |
+|---|---|---|
+| 0 | Merge the sweep (Christopher's go) | 0 |
+| 1 | Impact map + CPU profiles + a baseline UX walk + record the native-league boundary (ruling 8) | 1 |
+| 1b | Go 1.26.9 + govulncheck in verify; CSP, MFL host pin, body limits, 0600 files; frontend tool upgrade; hooks lint (separate branches) | 1.5–2 |
+| 2 | Faster tests: profile, share immutable fixtures, isolate mutable state, shuffled + race runs | 1.5–2 |
+| 3 | Migration standard (F3, F4, F10) + refuse newer files before open + stored identity with alias + recovery design | 3–4 |
+| 4 | Stop wrong state (F1, F2, F5–F8) + bid deadline (place/raise/withdraw) + screens read a published snapshot + clean shutdown | 3–4 |
+| 5 | Pinned native evidence (F9) + distance bonuses + kicker fallback check | 2–3 |
+| 6 | Backups as matched sets + integrity checks + a restore onto a different home folder keeps commissioner rights (F11) | 1–1.5 |
+| 7 | Fast reads (F13–F15) + clock wakes when something is due + hourly work skipped when its inputs are unchanged + command latency benchmark | 3–4 |
+| 8 | Panel + catalog as data (G1, G6) | 3–3.5 |
+| 9 | One command path, reads as commands (G3, G5) | 3–4 |
+| 10 | Frontend from the catalog + typed grammar (G2, G7) | 2–3 |
+| 7b | Native owner workflows: lineup, bids, trades, waivers, results | 4–6 |
+| 7c | Windows/macOS lock + packaged builds + CI (serialised) + install/update decision | 2–3 |
+| 11 | `twr` CLI + AI tools | 2–3 |
+| 12 | MFL-side commands, solo owner first (G4) | 3–5 |
+| UX gate | Full click-through + failure states, then fixes | 1–1.5 |
+
+**Gates:**
+- **Safe for the MFL side:** after phase 6.
+- **A real native league:** after phases 3–7, 9–10 and 7b.
+- **Other owners install the app:** after 7c.
+
+**Total:** about 37–50 working days of effort. Calendar time is longer.
