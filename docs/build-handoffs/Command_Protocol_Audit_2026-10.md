@@ -96,7 +96,9 @@ belong to later tracks.
 | C6 | MFL-side commands, starting with free-agent pools and bids (the solo-owner path) | G4 | ring-sized |
 | — | Server: identity, clock, per-league storage, transport | G8, G9 | separate campaign, panel first |
 
-## 5. Rulings needed from Christopher
-1. A local-only socket for the CLI: an exception to "no inbound HTTP server"?
-2. Order: does C6 (MFL-side commands for the solo owner) go before C5 (CLI), given who is asking today?
-3. Should the protocol panel (C0) also cover the client/server shape, or wait?
+## 5. Christopher's rulings (2026-10-19)
+1. **CLI local socket:** undecided; it goes to the expert panel in C0.
+2. **Order:** C5 before C6 is fine. The MFL-side commands must exist by the time a real owner other
+   than Christopher uses the app, which will be near a real Alpha release.
+3. **Panel scope:** keep C0 small. It covers the protocol shape and the socket question now, not
+   the full client/server design ("no need to launch the space shuttle now").
