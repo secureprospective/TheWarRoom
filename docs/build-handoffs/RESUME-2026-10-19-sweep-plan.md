@@ -49,3 +49,12 @@
     - The plan is agreed but nothing in it is built.
     - The ETAs are estimates: about 7–8 days for phases 1–7 and 9–13 for phases 8–11.
     - Nothing from the sweep has been walked in the live app on Claude-OS.
+
+## Update (2026-10-19, evening)
+- Deep audit and plan v3 (blocks A–E) are in `Hardening_Plan_2026-10.md`.
+- **Block A** (fast push) is on `session/fast-push` (stacked on `session/code-sweep`):
+  - parallel root tests
+  - changed-only pre-push
+  - GitHub CI with the full race gate
+- **Timings (measured):** root race tests 40 min → 10–11 min; root tests without race 2 min; a full-gate push 15 min.
+- **Merge:** a no-click merge once CI is green (Christopher's ruling). Merge the sweep first (it holds the docs).
