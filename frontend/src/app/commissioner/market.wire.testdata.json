@@ -1,0 +1,81 @@
+{
+  "bids": {
+    "league": "native.seed",
+    "revision": 19,
+    "windows": [],
+    "claims": [],
+    "players": [
+      {
+        "id": "5002",
+        "words": "Player, 5002 — Ready for a decision"
+      }
+    ],
+    "bids": [
+      {
+        "id": "act.fcfd2d2860f609f3afc7bff2c49746ea06f8966702431c255b5bc27f65a07c90",
+        "words": "Player, 5001 — Held team 1 — 2 years at $1,000,000 a year"
+      }
+    ],
+    "trades": []
+  },
+  "claims": {
+    "league": "native.seed",
+    "revision": 19,
+    "windows": [],
+    "claims": [
+      {
+        "id": "act.e83c57813b224f20384af560d7bfb08c25b60924eae85f4fda606abd99a5adf8",
+        "words": "Player, 1000 — claim by Held team 1 — Awarded to Held team 1"
+      }
+    ],
+    "players": [],
+    "bids": [],
+    "trades": []
+  },
+  "pending": {
+    "league": "native.seed",
+    "revision": 17,
+    "windows": [
+      {
+        "id": "act.044300220b2abd8e57d3cc6d5927c46402c2e26cbd06be9df6fec4fad6dee816",
+        "words": "Player, 1000 — cut by Held team 2 — closes Oct 14, 2026 at 5:00 AM PDT — Ready to process"
+      }
+    ],
+    "claims": [],
+    "players": [],
+    "bids": [],
+    "trades": []
+  },
+  "trades": {
+    "league": "native.seed",
+    "revision": 22,
+    "windows": [],
+    "claims": [],
+    "players": [],
+    "bids": [],
+    "trades": [
+      {
+        "id": "act.fe88644e6e23300b7a67a165d834457bbb495571f17c29f7441c754a7fc3dfc9",
+        "words": "Held team 2 / Held team 1 — Waiting for trade review"
+      }
+    ]
+  },
+  "waitingBids": {
+    "league": "native.seed",
+    "revision": 17,
+    "windows": [],
+    "claims": [],
+    "players": [
+      {
+        "id": "5001",
+        "words": "Player, 5001 — Ready for a decision"
+      },
+      {
+        "id": "5002",
+        "words": "Player, 5002 — Ready for a decision"
+      }
+    ],
+    "bids": [],
+    "trades": []
+  }
+}

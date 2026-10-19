@@ -21,6 +21,13 @@ const assets = { league, revision: 3, seeded: true, snapshot: { season: 2026,
     { season: 2027, round: 1, original: franchise, owner: franchise }], franchises: [{ id: franchise }] } };
 const native = {
   TargetNativeAssets: async () => assets,
+  TargetCommissionerMarket: async () => ({ league, revision: 3,
+    windows: [{ id: 'window.one', words: 'Player One — Tomorrow' }],
+    claims: [{ id: 'claim.one', words: 'Player One — Awarded' }],
+    players: [{ id: player, words: 'Player One' }],
+    bids: [{ id: 'bid.one', words: 'Player One — First franchise' }],
+    trades: [{ id: 'trade.one', words: 'First trade' }],
+  }),
   TargetNativeDirectory: async () => ({ league, revision: 3, rosterSeason: 2026,
     franchises: [{ franchise, name: 'First franchise' },
       { franchise: 'franchise.02', name: 'Second franchise' }] }),
@@ -117,7 +124,7 @@ const cases: { family: string; command: string; fields: Record<string, string | 
     fields: { Season: '2027', 'Starts at': '2027-07-14T12:00' },
     args: { draft: { season: 2027, at: new Date('2027-07-14T12:00').toISOString() } } },
   { family: 'owner seats', command: 'commish.seat.replace',
-    fields: { Franchise: franchise, 'Sign-in': 'new-owner' },
+    fields: { Franchise: franchise, 'Owner account': 'new-owner' },
     args: { people: { franchise, principal: 'new-owner' } } },
   { family: 'owner abilities', command: 'commish.abilities.set',
     fields: { Franchise: '*', Ability: 'lineups', 'Allow this ability': true },
@@ -229,6 +236,7 @@ it('every table field is a field on its Go Raw argument, including nested pick a
     stat: ['stat_commands.go', 'RawStatChange'], standings: ['standings_commands.go', 'RawStandingsChange'],
     override: ['native_override.go', 'RawNativeOverride'], waiver: ['waiver_command.go', 'RawWaiverArgs'],
     bid: ['bid_command.go', 'RawBidArgs'], trade: ['trade_command.go', 'RawTradeArgs'],
+    schedule: ['schedule.go', 'RawScheduleArgs'], bracket: ['bracket_commands.go', 'RawBracketChange'],
     draft: ['draft_commands.go', 'RawDraftArgs'], '': ['command.go', 'RawArgs'],
   };
   for (const def of actTable) {
@@ -236,8 +244,11 @@ it('every table field is a field on its Go Raw argument, including nested pick a
     const source = readFileSync(new URL(file, root), 'utf8');
     const struct = source.split(`type ${name} struct {`)[1]?.split('\n}')[0];
     expect(struct, `${def.command}: Go struct`).toBeDefined();
-    for (const field of def.fields) expect(struct, `${def.command}: ${field.path}`)
-      .toMatch(new RegExp(`json:"${field.path.split('.')[0]}(?:,|")`));
+    for (const field of def.fields) {
+      const key = def.command === 'schedule.edit' && ['game', 'home', 'away'].includes(field.path)
+        ? 'games' : field.path.split('.')[0];
+      expect(struct, `${def.command}: ${field.path}`).toMatch(new RegExp(`json:"${key}(?:,|")`));
+    }
   }
 });
 
@@ -304,13 +315,13 @@ it('sends invitations and ballots private and every other act to the league, as 
   // and the private column of succession.go.
   const privateActs = ['commish.seat.invite', 'commish.seat.invite.revoke', 'commish.seat.invite.redeem',
     'commish.vote.cast'];
-  const held = { league, revision: 3 } as Parameters<typeof actChange>[2];
+  const held = { league, revision: 3, principal: 'creator' } as Parameters<typeof actChange>[2];
   const sample = (kind: string): string | boolean | string[] => {
     if (kind === 'boolean') return true;
     if (kind === 'order' || kind === 'starters') return ['a'];
-    if (kind === 'pick' || kind === 'scope') return '{}';
+    if (['pick', 'scope', 'shape', 'scheduleGame'].includes(kind)) return '{}';
     if (kind === 'instant') return '2026-10-18T12:00';
-    return ['number', 'money', 'decimal'].includes(kind) ? '1' : 'x';
+    return ['number', 'money', 'decimal', 'bracketSlot'].includes(kind) ? '1' : 'x';
   };
   for (const def of actTable) {
     const values = Object.fromEntries(def.fields.map(field => [field.path, sample(field.kind)]));

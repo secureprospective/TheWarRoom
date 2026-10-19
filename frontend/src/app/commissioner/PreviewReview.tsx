@@ -2,14 +2,15 @@ import type { ReactNode } from 'react';
 import type { Preview } from './preview';
 
 // The shared review order stays the same for every commissioner action.
-export function PreviewReview({ preview: p, children, confirm }: {
-  preview?: Preview; children: ReactNode; confirm: ReactNode;
+export function PreviewReview({ preview: p, children, confirm, hideVersion = false }: {
+  preview?: Preview; children: ReactNode; confirm: ReactNode; hideVersion?: boolean;
 }) {
   return (
     <>
       {p && <>
         <h4>{p.question}</h4>
-        <p className="tray-target">{p.target.name} · League version: {p.target.version}</p>
+        <p className="tray-target">{p.target.name}
+          {!hideVersion && <> · League version: {p.target.version}</>}</p>
         <section aria-label="Values and sources">
           <h5>Values and sources</h5>
           {p.fields.map((f, i) => <dl key={i} className="rule-current">

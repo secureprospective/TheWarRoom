@@ -1,5 +1,6 @@
 export type FieldKind = 'text' | 'number' | 'money' | 'decimal' | 'instant' | 'boolean'
   | 'franchise' | 'player' | 'bidPlayer' | 'pick' | 'entry' | 'window' | 'claim' | 'bid' | 'trade' | 'item'
+  | 'self' | 'scheduleGame' | 'bracketNode' | 'bracketGame' | 'bracketSlot' | 'preset' | 'shape'
   | 'order' | 'starters' | 'choice' | 'scope' | 'franchiseOrAll';
 export type Field = {
   path: string; label: string; kind: FieldKind; choices?: readonly string[]; optional?: boolean;
@@ -14,7 +15,8 @@ const player = f('player', 'Player', 'player');
 const season = f('season', 'Season', 'number');
 const week = f('week', 'Week', 'number');
 const order = f('order', 'Franchises, first to last', 'order');
-const principal = f('principal', 'Sign-in');
+const principal = f('principal', 'Owner account');
+const self = f('principal', 'You', 'self');
 const id = f('id', 'Invitation or vote name');
 const running = f('running', 'The draft clock is already running', 'boolean');
 const until = f('until', 'Expires at (your local time)', 'instant');
@@ -27,11 +29,32 @@ const def = (control: string, command: string, label: string, root: string, fiel
 
 // Paths mirror the hand-written Raw* boundary types; no server-computed outcome is sent by a form.
 export const actTable: readonly ActDefinition[] = [
+  def('CM-015', 'schedule.generate', 'Generate a schedule', 'schedule',
+    [f('weeks', 'Regular-season weeks', 'number'),
+    choice('pattern', 'Matchup pattern', ['division_weighted'])]),
+  def('CM-015', 'schedule.edit', 'Edit a scheduled game', 'schedule',
+    [f('game', 'Game and week', 'scheduleGame'), f('home', 'Home team', 'franchise'),
+    f('away', 'Away team', 'franchise')]),
+  def('CM-015', 'schedule.publish', 'Publish the schedule', 'schedule', []),
+  def('CM-046', 'bracket.build', 'Build the playoff bracket', 'bracket',
+    [season, f('preset', 'Bracket layout', 'preset'),
+    f('started', 'The playoffs have already begun', 'boolean')]),
+  def('CM-046', 'bracket.preset.save', 'Save a playoff layout', 'bracket',
+    [season, f('name', 'Layout name (lowercase letters, numbers, hyphens or underscores)'),
+    f('shape', 'Layout to save', 'shape'), f('started', 'The playoffs have already begun', 'boolean')]),
+  def('CM-046', 'bracket.edit', 'Change a playoff matchup', 'bracket',
+    [season, f('node', 'Round and place', 'bracketNode'), f('team', 'Team', 'franchise'),
+    f('started', 'The playoffs have already begun', 'boolean')]),
+  def('CM-046', 'bracket.seed', 'Set a playoff seed', 'bracket',
+    [season, f('slot', 'Playoff seed', 'bracketSlot'), f('team', 'Team', 'franchise'),
+    f('started', 'The playoffs have already begun', 'boolean')]),
+  def('CM-047', 'bracket.advance', 'Advance a playoff team', 'bracket',
+    [season, f('game', 'Playoff game', 'bracketGame'), f('team', 'Team', 'franchise')]),
   def('CM-018', 'commish.franchise.edit', 'Rename a franchise', 'people',
     [franchise, f('name', 'Franchise name'), f('abbreviation', 'Abbreviation')]),
   def('CM-019', 'commish.seat.invite', 'Invite an owner', 'people', [id, franchise, principal], true),
   def('CM-019', 'commish.seat.invite.revoke', 'Revoke an invitation', 'people', [id], true),
-  def('CM-019', 'commish.seat.invite.redeem', 'Accept an invitation', 'people', [id, principal], true),
+  def('CM-019', 'commish.seat.invite.redeem', 'Accept an invitation', 'people', [id, self], true),
   def('CM-019', 'commish.seat.remove', 'Remove an owner', 'people', [franchise]),
   def('CM-019', 'commish.seat.replace', 'Replace an owner', 'people', [franchise, principal]),
   def('CM-020', 'commish.abilities.set', 'Change an owner ability', 'people',
@@ -42,26 +65,26 @@ export const actTable: readonly ActDefinition[] = [
   def('CM-020', 'commish.visibility.set', 'Change who can read a report', 'people',
     [f('report', 'Report name'), choice('audience', 'Who can read it', ['all', 'commish'])]),
   def('CM-022', 'commish.succession.stepdown', 'Step down as commissioner', 'people',
-    [principal, f('successor', 'Successor sign-in')]),
+    [self, { ...f('successor', 'Successor account (optional)'), optional: true }]),
   ...['accept', 'decline', 'activity'].map(action =>
     def('CM-022', `commish.succession.${action}`, {
       accept: 'Accept the commissioner seat', decline: 'Decline the commissioner seat',
       activity: 'Record commissioner activity',
-    }[action]!, 'people', [principal])),
+    }[action]!, 'people', [self])),
   def('CM-022', 'commish.succession.takeover', 'Take over after inactivity', 'people',
-    [principal, f('commissioner', 'Current commissioner sign-in')]),
+    [self, f('commissioner', 'Current commissioner account')]),
   def('CM-022', 'commish.succession.voteout.open', 'Open a removal vote', 'people',
-    [id, principal, f('commissioner', 'Current commissioner sign-in')]),
-  def('CM-022', 'commish.succession.election.open', 'Open an election', 'people', [id, principal]),
+    [id, self, f('commissioner', 'Current commissioner account')]),
+  def('CM-022', 'commish.succession.election.open', 'Open an election', 'people', [id, self]),
   def('CM-022', 'commish.succession.inactivity.set', 'Set inactivity periods', 'people',
     [f('inSeasonDays', 'In-season days', 'number'), f('offseasonDays', 'Offseason days', 'number')]),
   def('CM-022', 'commish.succession.periods.set', 'Set voting periods', 'people',
     [f('electionDays', 'Election days', 'number'), f('runoffDays', 'Runoff days', 'number')]),
   def('CM-022', 'commish.vote.cast', 'Cast a ballot', 'people',
-    [id, principal, f('choice', 'Your choice')], true),
+    [id, self, f('choice', 'Your choice')], true),
   def('CM-022', 'commish.vote.close', 'Close a vote', 'people', [id]),
   def('CM-022', 'commish.vote.tiebreak', 'Decide a tied runoff', 'people',
-    [id, principal, f('choice', 'Winning choice')]),
+    [id, self, f('choice', 'Winning choice')]),
   def('CM-026', 'commish.calendar.exception', 'Allow an action outside its window', 'exception',
     [choice('action', 'Action', ['lineup', 'trade', 'ufa_bid', 'rfa_bid', 'draft_pick',
       'cut', 'waiver_claim', 'ir', 'taxi', 'extension', 'restructure', 'buyout', 'tag',
@@ -103,7 +126,7 @@ export const actTable: readonly ActDefinition[] = [
   def('CM-034', 'commish.contract.edit', 'Correct a contract', 'override',
     [player, f('years', 'Contract years', 'number'), f('salaryCents', 'Annual salary (dollars)', 'money')]),
   def('CM-034', 'commish.cap.adjust', 'Adjust a franchise cap charge', 'override',
-    [franchise, season, f('amountCents', 'Cap charge (dollars, signed)', 'money')]),
+    [franchise, season, f('amountCents', 'Cap charge (dollars; negative reduces it)', 'money')]),
   def('CM-034', 'commish.cap.relief', 'Grant player cap relief', 'override',
     [player, f('amountCents', 'Cap relief (dollars)', 'money')]),
   def('CM-035', 'waivers.process', 'Process a waiver window', 'waiver',
@@ -131,7 +154,7 @@ export const actTable: readonly ActDefinition[] = [
   def('CM-041', 'draft.order.auto', 'Use the final standings for draft order', 'draft',
     [season, choice('source', 'Order source', ['standings']), running]),
   def('CM-041', 'draft.order.set', 'Set draft order', 'draft',
-    [season, f('round', 'Round (zero means all rounds)', 'number'), order, running]),
+    [season, f('round', 'Round (enter 0 for every round)', 'number'), order, running]),
   def('CM-041', 'draft.order.pattern', 'Set later-round draft order', 'draft',
     [choice('pattern', 'Later rounds', ['linear', 'snake']), running]),
   def('CM-041', 'draft.order.tiebreak', 'Set the draft tie breaker', 'draft',
