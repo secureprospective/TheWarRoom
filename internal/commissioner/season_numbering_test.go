@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 func TestCreationNeedsTheNFLSeasonItStartsIn(t *testing.T) {
@@ -47,6 +49,13 @@ func TestLedgerRecordedWithoutASeasonRefusesToGuessOne(t *testing.T) {
 	}
 	if _, err := SeasonAt(b.records, seasonMoment(5)); err == nil {
 		t.Fatal("a season was guessed for a league with none recorded")
+	}
+	// The clocks run every second for every league: an unseeded one has nothing due and is not an error.
+	if due, err := DueWaiverWindows("native.test", b.records, seasonMoment(5)); err != nil || len(due) != 0 {
+		t.Fatalf("the waiver clock failed on a league with nothing to process: %v %v", due, err)
+	}
+	if due, err := DueBids("native.test", b.records, seasonMoment(5), nativecheck.Facts{}); err != nil || len(due) != 0 {
+		t.Fatalf("the bid clock failed on a league with nothing to process: %v %v", due, err)
 	}
 	b.seed(2026, nil, seasonMoment(2))
 	if season, err := SeasonAt(b.records, seasonMoment(5)); err != nil || season != 2026 {

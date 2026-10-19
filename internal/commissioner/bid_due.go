@@ -27,13 +27,17 @@ func DueBids(league string, records []Record, at time.Time, facts nativecheck.Fa
 	if err != nil {
 		return nil, err
 	}
+	// A league with no starting assets has no bids; its season may not even be named yet.
+	due := []string{}
+	if !assets.Seeded {
+		return due, nil
+	}
 	rules, err := RulesNow(records, at)
 	if err != nil {
 		return nil, err
 	}
 	stand := bidStandFor(rules)
-	due := []string{}
-	if !assets.Seeded || stand.State != leaguerules.IsKnown || stand.Value <= 0 {
+	if stand.State != leaguerules.IsKnown || stand.Value <= 0 {
 		return due, nil
 	}
 	x := bidExecution{assets: assets, state: state, rules: rules, records: records, now: at, facts: facts, zone: time.UTC}

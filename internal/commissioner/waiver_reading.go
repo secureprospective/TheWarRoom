@@ -125,17 +125,18 @@ func appendOwnWaiverClaims(out []NativeWaiverClaim, w waiverWindow, franchise, p
 
 // DueWaiverWindows is shared by the clock worker and the explicit processing command.
 func DueWaiverWindows(league string, records []Record, at time.Time) ([]string, error) {
-	_, state, err := nativeAssetsState(league, records, at)
+	assets, state, err := nativeAssetsState(league, records, at)
 	if err != nil {
 		return nil, err
+	}
+	// A league with no starting assets has no waivers; its season may not even be named yet.
+	due := []string{}
+	if !assets.Seeded || len(state.Windows) == 0 {
+		return due, nil
 	}
 	rules, err := RulesNow(records, at)
 	if err != nil {
 		return nil, err
-	}
-	due := []string{}
-	if len(state.Windows) == 0 {
-		return due, nil
 	}
 	policy, err := nativecheck.NewWaiverPolicy(rules.Waivers)
 	if err != nil {
