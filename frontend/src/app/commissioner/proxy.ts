@@ -101,7 +101,7 @@ export function formOf(body: string): string {
     if (sent.command === 'commish.notice.publish') return 'notice';
     if (sent.command === 'commish.whatsnew.post') return 'note';
     if (sent.command?.startsWith('draft.')) return sent.command;
-    return sent.command?.startsWith('commish.role.') ? 'role' : 'other';
+    return sent.command?.startsWith('commish.role.') ? 'role' : sent.command ?? 'other';
   } catch {
     return 'other';
   }
@@ -213,7 +213,9 @@ export function createLeagueState(proxy = createProxy(live)) {
       return receipt;
     } catch (cause) {
       const stale = isStale(refusalText(cause));
-      const message = stale ? staleWords : refusalText(cause);
+      const existingForm = ['rule', 'role', 'create', 'notice', 'note'].includes(form) ||
+        form.startsWith('undo:');
+      const message = stale && existingForm ? staleWords : refusalText(cause);
       store.setState({ outcome: { status: 'refused', form, message } });
       if (stale) await choose();
       throw new Error(message);
@@ -231,3 +233,6 @@ export async function readLedgerFiltered(league: string, filter: LedgerFilter): 
 }
 
 export const readPreview = createProxy(live).preview;
+
+// A rollover dry run returns a plan, not a ledger receipt. It must never enter the receipt refresh path.
+export const nativeRolloverDryRun = (body: string) => live.execute(body);

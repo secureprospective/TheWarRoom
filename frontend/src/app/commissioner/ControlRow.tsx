@@ -1,3 +1,4 @@
+import { actsFor, liveDraftControls } from './actTable';
 import { Act } from '../commands/Act';
 import { GovernedGlyph } from '../governed/GovernedGlyph';
 import type { Entry } from './controls';
@@ -16,6 +17,12 @@ export function ControlRow({ entry, rules, mayChange, refer }: Props) {
       <h6>{entry.name}</h6>
       <p>{entry.question}</p>
       <p className="control-status">{entry.built ? 'Available now' : 'Not built yet'}</p>
+      {(actsFor(entry.id).length > 0 || liveDraftControls.has(entry.id) || entry.id === 'CM-021'
+        || entry.id === 'CM-040') &&
+        <Act verb="commissioner.surface" variant="button" disabled={!entry.built}
+          args={{ screen: 'landing', action: 'open', value: entry.id }}
+          label={`Open ${entry.name}`}>Open {entry.name}</Act>}
+      {!entry.built && !entry.note && <p>This action is not built yet.</p>}
       {entry.note && <p className="change-note">{entry.note}</p>}
       {entry.fields.length > 0 && rules.size > 0 && (
         <ul className="control-rules">

@@ -3,15 +3,18 @@ import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { createHold, holdMs } from './hold';
 
-type Props = { label: string; body: string; disabled?: boolean; ms?: number; answer?: string };
+type Props = { label: string; body: string; disabled?: boolean; ms?: number; answer?: string;
+  onConfirm?(): void }; 
 const holdKey = (key: string) => key === ' ' || key === 'Enter';
 
 // HoldToFire confirms a change that needs a deliberate act: hold the pointer, Space or Enter for about
 // 700 ms. Releasing early cancels. Held long enough it sends `body` through commissioner.execute, once.
 // It is self-contained so chunk 4 can move it to the shared shell.
-export function HoldToFire({ label, body, disabled = false, ms = holdMs, answer = '' }: Props) {
+export function HoldToFire({ label, body, disabled = false, ms = holdMs, answer = '', onConfirm }: Props) {
   const latest = useRef(body);
   latest.current = body;
+  const confirm = useRef(onConfirm);
+  confirm.current = onConfirm;
   const help = useId();
   const [said, setSaid] = useState('');
   const [holding, setHolding] = useState(false);
@@ -20,7 +23,8 @@ export function HoldToFire({ label, body, disabled = false, ms = holdMs, answer 
     hold.current = createHold(() => {
       setHolding(false);
       setSaid('Confirmed. Sending the change.');
-      commands.dispatch('commissioner.execute', { body: latest.current });
+      if (confirm.current) confirm.current();
+      else commands.dispatch('commissioner.execute', { body: latest.current });
     }, ms);
   }
   const start = () => {
