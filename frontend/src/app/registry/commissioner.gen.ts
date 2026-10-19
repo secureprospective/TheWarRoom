@@ -144,7 +144,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "isions commish.league.format commish.league.initial_rosters",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "32 teams, 2 conferences, 8 divisions, head-to-head competition, in" +
       "itial rosters by draft (brief §5).",
     merged_into: Object.freeze([] as const),
@@ -170,7 +170,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.league.alignment",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Carry the current division alignment at setup (census CM-002).",
     merged_into: Object.freeze([] as const),
     merged_place: "",
@@ -194,7 +194,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.roster.limits commish.roster.position_bounds",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "18–80 players excluding IR and taxi, with no position bounds (fact" +
       " R).",
     merged_into: Object.freeze([] as const),
@@ -219,7 +219,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "nvalid_penalty commish.lineup.missed_flag",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "21 starters: QB 1, RB 1–3, WR 2–5, TE 1–3, offense at most 8 plus " +
       "PK 1, each IDP position 2–4 and 12 IDP total; invalid lineups lose" +
       " the highest-scoring starter’s points, missed lineups flag the com" +
@@ -246,7 +246,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.league.dynasty commish.league.carry",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Dynasty with full roster carry (brief §5).",
     merged_into: Object.freeze([] as const),
     merged_place: "",
@@ -270,7 +270,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "mmish.scoring.preset.apply",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Legacy NFL scoring preset, including true-position tackle splits, " +
       "direct TFL points and stacking long-play bonuses (rulebook §4; Mat" +
       "h §13).",
@@ -300,7 +300,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.standings.criteria",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Rank by win percentage, head-to-head, division percentage, confere" +
       "nce percentage, all-play percentage, points, then power rank, thro" +
       "ugh the last regular-season week, Legacy week 13 (brief §5; Q-A2).",
@@ -326,7 +326,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.cap.set commish.cap.enforcement commish.cap.reserve_counts",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "$125M hard cap, IR and taxi salaries count fully, money rounds to " +
       "$10k, with conditional drops available under either hard or soft e" +
       "nforcement (rulebook §1; Math §0; Q-A3).",
@@ -352,7 +352,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.contract.action.set",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Legacy contract actions and editable values: dead cap 35% or 50% a" +
       "fter restructure; tag top-5 average with 120% floor and 2 consecut" +
       "ive years; extension 150% with position floors, 1 per season and a" +
@@ -384,7 +384,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "althy",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "12 IR spots for NFL IR, PUP, NFI, Out or suspended players, who mu" +
       "st leave when healthy (fact 4a).",
     merged_into: Object.freeze([] as const),
@@ -408,7 +408,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.taxi.slots commish.taxi.eligible",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "8 taxi spots for players with at most 3 calendar years of experien" +
       "ce (fact 4b; rulebook §2 uses career games).",
     merged_into: Object.freeze([] as const),
@@ -433,7 +433,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "ethod",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Cut players enter waivers for 24 hours, with reverse-standings pri" +
       "ority (brief §6; fact 2).",
     merged_into: Object.freeze([] as const),
@@ -461,7 +461,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       ".bids.increment commish.bids.phase_rules",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "UFA and RFA bid modes chosen separately, UDFA follows UFA; bid poi" +
       "nts use salary × 1.0/1.2/1.4/1.6, 30 active bids, $12M 1-year maxi" +
       "mum, $12–24M needs 2 years and above $24M needs 3 years, +0.1 step" +
@@ -490,7 +490,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "es",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "DOT has 4–10 seats and 3 approvals or vetoes decide; up to 3 parti" +
       "es, picks 2 years ahead in rounds 1–5, no compensatory pick trades" +
       ", invalid rosters refused and offers expire after 7 days (rulebook" +
@@ -519,7 +519,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "ublish",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Division-weighted head-to-head schedule through regular-season wee" +
       "k 13 (rulebook §5).",
     merged_into: Object.freeze([] as const),
@@ -546,7 +546,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "eding commish.playoffs.weeks commish.playoffs.home_bonus",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "7 teams per conference, 4 division winners and 3 wild cards, top s" +
       "eed bye, NFL-style reseeding, weeks 14–17 and 3 home-field points " +
       "(facts 11a–b; brief §5; rulebook §5).",
@@ -570,7 +570,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.rules.text.add commish.rules.text.remove",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Import the rulebook as a read-only text reference (census CM-017).",
     merged_into: Object.freeze([] as const),
     merged_place: "",
@@ -591,7 +591,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.franchise.edit",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Carry the current 32 franchise identities at setup (census CM-018)" +
       ".",
     merged_into: Object.freeze([] as const),
@@ -616,7 +616,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       " commish.seat.replace",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Private single-use invites bound to a franchise; removing an owner" +
       " keeps the franchise, contracts and picks (ruling 5).",
     merged_into: Object.freeze([] as const),
@@ -639,7 +639,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.abilities.set commish.visibility.set",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Identical owner access: lineups, add/drop, drop-only, trades, pick" +
       " trades, IR, taxi, articles, board, chat and polls on; franchise a" +
       "nd home-page customisation off; native pools deferred (brief §5).",
@@ -664,7 +664,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.role.grant commish.role.revoke",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Creator is first commissioner, last commissioner cannot be revoked" +
       ", role grants stay private, DOT has 4–10 seats and trades wait bel" +
       "ow 4 (fact 8a; fact 7a; rulings 5–6).",
@@ -689,7 +689,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "sion.election.open commish.vote.cast",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Co-commissioner succeeds first, otherwise owners elect; inactivity" +
       " is 14 days in season or 30 offseason with all owners notified, vo" +
       "te-out needs two-thirds of franchises, and only a co-commissioner " +
@@ -714,7 +714,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "alendar.window.remove",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Contract options Mar 1–Apr 30, RFA tenders May 1–3, UFA May 3–10, " +
       "re-sign May 10–15, open FA May 19, draft Jul 14, cuts and buyouts " +
       "Aug 25–Sep 1; commissioner chooses each window’s actions and rollo" +
@@ -742,7 +742,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.calendar.timezone commish.calendar.boundary",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "US Eastern with daylight saving, midnight league boundaries chosen" +
       " by the commissioner and local times for owners (facts 12a–b).",
     merged_into: Object.freeze([] as const),
@@ -765,7 +765,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.calendar.trade_deadline",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Week 9 at a commissioner-set moment, shown on the calendar with a " +
       "countdown (rulebook §14; fact 12c).",
     merged_into: Object.freeze([] as const),
@@ -788,7 +788,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.calendar.exception",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "No exception until granted for one action and franchise, time-limi" +
       "ted with a typed reason visible to all owners (rulings 5, 8).",
     merged_into: Object.freeze([] as const),
@@ -810,7 +810,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.season.rollover",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Preview and preserve before/after at rollover: age contracts, mark" +
       " expiring players pending, return IR/taxi to active, reset cap and" +
       " carry dead cap, re-date calendar, apply waiting rules and archive" +
@@ -849,7 +849,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       ".provenance commish.correct.pick",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Corrections add balancing recorded changes and never delete histor" +
       "y (triage settled #4).",
     merged_into: Object.freeze([] as const),
@@ -875,7 +875,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.lineup.correct",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "No lineup correction until granted, then recompute scores (census " +
       "CM-029).",
     merged_into: Object.freeze([] as const),
@@ -898,7 +898,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.player.position commish.player.position.clear",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Use the feed position unless the commissioner corrects a feed erro" +
       "r (census CM-030).",
     merged_into: Object.freeze([] as const),
@@ -925,7 +925,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "correct",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Feed stat changes await approval in the alert tray, manual correct" +
       "ions remain available and previews flag changed winners (ruling 7)" +
       ".",
@@ -950,7 +950,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.score.player commish.score.franchise",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Adjust scores by differences and undo with the opposite difference" +
       " (census CM-032).",
     merged_into: Object.freeze([] as const),
@@ -978,7 +978,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       ".standings.override.clear",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Always show computed standings beside any reasoned record or full-" +
       "order override (brief §6).",
     merged_into: Object.freeze([] as const),
@@ -1001,7 +1001,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.contract.edit commish.cap.adjust commish.cap.relief",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "No override until granted; cap relief may be appealed for career-e" +
       "nding or recurring injury or suspension (rulebook §13).",
     merged_into: Object.freeze([] as const),
@@ -1026,7 +1026,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "order.auto commish.waivers.award.override",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Automatically resolve every claim at window close, with manual pro" +
       "cessing, order and award overrides retained (brief §6).",
     merged_into: Object.freeze([] as const),
@@ -1052,7 +1052,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.bids.process commish.bids.award.override",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Automatically resolve bids after waivers clear, with manual proces" +
       "sing and award overrides retained (brief §6).",
     merged_into: Object.freeze([] as const),
@@ -1076,7 +1076,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "mish.trade.appeal.rule commish.trade.override",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "3 approvals or vetoes decide, parties sit out automatically, trade" +
       "s wait without eligible reviewers, and one appeal goes to a non-pa" +
       "rty commissioner or co-commissioner (rulebook §14; ruling 4; fact " +
@@ -1103,7 +1103,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.reserve.exception",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "No reserve placement exception until granted (census CM-038).",
     merged_into: Object.freeze([] as const),
     merged_place: "",
@@ -1125,7 +1125,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.rule.exception commish.correction.revert",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Every automated rule allows a manual override, and reversal adds a" +
       " balancing recorded change (full-control ruling; census CM-039).",
     merged_into: Object.freeze([] as const),
@@ -1148,7 +1148,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "ommish.draft.pricing",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Slow draft, 6-hour clock, expiry skips, unlimited timeouts, 5 roun" +
       "ds, 15 picks per team with extras forfeited, rulebook slot prices," +
       " round 1 contracts 5 years and rounds 2–5 contracts 3 years plus R" +
@@ -1177,7 +1177,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "er.pattern commish.draft.order.tiebreak",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Worst team first in round 1; later-round pattern and tie rule need" +
       " a commissioner ruling before use (brief §3; Q-E1).",
     merged_into: Object.freeze([] as const),
@@ -1202,7 +1202,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.draft.start",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "landed",
     disposition_note: "Draft begins from Jul 14, sharing one event with the calendar (bri" +
       "ef §1; census CM-042).",
     merged_into: Object.freeze([] as const),
@@ -1228,7 +1228,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "sh.draft.change commish.draft.timer",
     disposition: "kept",
     ring: 4,
-    status: "built",
+    status: "landed",
     disposition_note: "Expired clock skips automatically but can be overridden; humans in" +
       "sert picks and changed selections warn rather than silently retarg" +
       "et (triage take #4; Sol tray anatomy).",
@@ -1254,7 +1254,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.draft.revert",
     disposition: "kept",
     ring: 4,
-    status: "built",
+    status: "landed",
     disposition_note: "No restore until granted, with both draft states preserved in hist" +
       "ory (census CM-044).",
     merged_into: Object.freeze([] as const),
@@ -1278,7 +1278,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.draft.archive",
     disposition: "kept",
     ring: 4,
-    status: "built",
+    status: "landed",
     disposition_note: "Close automatically at the last pick, place undrafted rookies in U" +
       "FA and issue immediately tradable picks for two seasons ahead (fac" +
       "ts 13, 9c).",
@@ -1305,7 +1305,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "mmish.bracket.preset.save",
     disposition: "kept",
     ring: 6,
-    status: "spec",
+    status: "landed",
     disposition_note: "Build from CM-016: 7 per conference, top seed bye, final-standings" +
       " seeds and NFL-style reseeding, with manual slot overrides (triage" +
       " settled #8; facts 11a–b).",
@@ -1330,7 +1330,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.bracket.advance",
     disposition: "kept",
     ring: 6,
-    status: "spec",
+    status: "landed",
     disposition_note: "No advancement override until granted (census CM-047).",
     merged_into: Object.freeze([] as const),
     merged_place: "",
@@ -1422,7 +1422,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.notify.set commish.notify.route",
     disposition: "kept",
     ring: 4,
-    status: "built",
+    status: "landed",
     disposition_note: "Transaction digests and calendar deadline reminders on, with a pla" +
       "in-sentence digest for every G2/G3 change (§16.9).",
     merged_into: Object.freeze([] as const),
@@ -1447,7 +1447,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.notice.publish commish.newsletter.publish",
     disposition: "kept",
     ring: 4,
-    status: "built",
+    status: "landed",
     disposition_note: "Weekly newsletter in season, with official notices and mail histor" +
       "y on the owner surfaces (§15 ring-4 carry; census CM-052).",
     merged_into: Object.freeze([] as const),
@@ -1470,7 +1470,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.whatsnew.post",
     disposition: "kept",
     ring: 4,
-    status: "built",
+    status: "landed",
     disposition_note: "App release notes post automatically and the commissioner may pin " +
       "league notes (census CM-053).",
     merged_into: Object.freeze([] as const),
@@ -1492,7 +1492,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.data.refresh commish.cache.clear",
     disposition: "kept",
     ring: 4,
-    status: "built",
+    status: "landed",
     disposition_note: "Refresh on schedule and show data health on the status strip (cens" +
       "us CM-054).",
     merged_into: Object.freeze([] as const),
@@ -1542,7 +1542,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.ledger.read",
     disposition: "kept",
     ring: 4,
-    status: "built",
+    status: "landed",
     disposition_note: "Append-only history of every league-state change with who, what an" +
       "d why, excluding private role grants and invites from owner reads " +
       "(ruling 5).",

@@ -1,26 +1,16 @@
 import { revealWorkSection, scrollWorkIntoView } from '../shell/workScroll';
 import { useEffect, useRef } from 'react';
-import { endpointsAt, endpointById, type Placement } from './index';
+import { endpointById, type Placement } from './index';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
-import { gravityClasses } from '../look/channels';
-import { assertShortList } from '../shell/shortList';
 import './registry.css';
 
-function statusLabel(status: string): string {
-  switch (status) {
-    case 'landed': return 'landed live';
-    case 'built': return 'built, not yet landed live';
-    default: return 'not wired';
-  }
-}
-
+// The endpoint map is planning data (docs/ui/endpoint-registry.csv), not something owners read (Christopher,
+// 10-19: remove the index from the app). What stays is the anchor that reveals an endpoint opened from the
+// command bar, and the chooser when one id opens several places.
 export function EndpointIndex({ placement }: { placement: Placement }) {
   const s = commands.use();
   const root = useRef<HTMLElement>(null);
-  const rows = endpointsAt(placement);
-  assertShortList(rows.length);
-  const open = unfinishedRows(rows);
   useEffect(() => {
     const index = root.current;
     if (!index) return;
@@ -34,15 +24,11 @@ export function EndpointIndex({ placement }: { placement: Placement }) {
     const expire = setTimeout(() => observer?.disconnect(), lazySurfaceWait);
     return () => { clearTimeout(expire); observer?.disconnect(); };
   }, [s.endpointIds, placement]);
-  const merged = s.endpointIds.map(endpointById).filter((e) => e.merged_place === placement);
-  // A screen whose endpoints have all landed has no index left to show. The empty section stays mounted
-  // (hidden) because it is what reveals an endpoint opened from the command bar.
-  const empty = !open.length && !merged.length && s.endpointIds.length < 2;
+  const choose = s.endpointIds.length > 1;
   return (
     <section ref={root} className="endpoint-index" aria-label={`${placement} endpoint index`}
-      hidden={empty}>
-      {!empty && <h4>Endpoint index</h4>}
-      {s.endpointIds.length > 1 && (
+      hidden={!choose}>
+      {choose && (
         <div className="endpoint-targets" aria-label="Merged endpoint targets">
           {s.endpointIds.map((id) => (
             <Act variant="text"
@@ -50,36 +36,7 @@ export function EndpointIndex({ placement }: { placement: Placement }) {
           ))}
         </div>
       )}
-      {merged.map((e) => (
-        <p key={e.id} data-selected="true" tabIndex={-1}>
-          {e.id} · {e.name} → {placement} · {statusLabel(e.status)} · ring {e.ring}
-        </p>
-      ))}
-      {open.length > 0 && (
-        <ul>{open.map((row) => <IndexRow key={row.id} row={row} selected={s.endpointIds} />)}</ul>
-      )}
     </section>
-  );
-}
-
-type Row = ReturnType<typeof endpointsAt>[number];
-
-// The index is the list of what is still to land (Christopher, 10-13: "if they are finished they need to be
-// removed"). A landed endpoint leaves it; its screen is the endpoint now.
-export function unfinishedRows(rows: readonly Row[]) {
-  return rows.filter((row) => row.status !== 'landed');
-}
-
-function IndexRow({ row, selected }: { row: Row; selected: readonly string[] }) {
-  return (
-    <li className={gravityClasses[row.gravity]} data-selected={selected.includes(row.id)} tabIndex={-1}>
-      <div className="endpoint-heading">
-        <b>{row.id} · {row.name}</b>
-        <span>{row.kind} · {row.gravity} · ring {row.ring}</span>
-      </div>
-      {row.gm_question && row.gm_question !== '—' && <p>{row.gm_question}</p>}
-      <small>{statusLabel(row.status)} · ring {row.ring}</small>
-    </li>
   );
 }
 
