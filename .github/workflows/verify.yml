@@ -38,6 +38,6 @@ jobs:
           go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
       - name: Frontend install
-        run: cd frontend && pnpm install --frozen-lockfile
+        run: cd frontend && pnpm install --frozen-lockfile && pnpm build
       - name: Verify
         run: make verify
