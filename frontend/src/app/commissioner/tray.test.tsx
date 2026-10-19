@@ -112,6 +112,19 @@ describe('Commissioner tray', () => {
     expect(text).toContain(`Every value in force now${p.fields[0].beforeSource}`);
     for (const f of p.fields) expect(text).toContain(`${f.label}: ${f.before} → ${f.after}`);
   });
+  it('names each repeated pair of sources once with how many values it covers', async () => {
+    const p = parsePreview(previewWire.hold);
+    const other = { ...p.fields[0], afterSource: 'Held draft reports' };
+    p.fields.push({ ...p.fields[0], label: 'Second' },
+      { ...other, label: 'Picks A' }, { ...other, label: 'Picks B' });
+    const host = await mount(render(PreviewReview, { preview: p, confirm: render('button', null, 'Confirm'),
+      children: render('p', null, 'Edit fields') }));
+    const text = host.textContent;
+    expect(text).not.toContain('— proposed');
+    expect(text).toContain(`2 values proposed${p.fields[0].afterSource}`);
+    expect(text).toContain('2 values proposedHeld draft reports');
+    expect(text.split('Held draft reports').length - 1).toBe(1);
+  });
   it('keeps Go blockers verbatim and disables confirmation', async () => {
     const words = 'Your league role does not permit this action';
     const { host, calls } = await mountForm({ TargetCommissionerPreview: async () => ({ ...previewWire.hold,
