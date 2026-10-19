@@ -13,7 +13,8 @@ export function PreviewReview({ preview: p, children, confirm }: {
     pairs.set(key, { ...pair, count: pair.count + 1 });
   }
   const shared = !!p && pairs.size < p.fields.length;
-  const covers = (count: number) => pairs.size === 1 ? 'Every value' : `${count} values`;
+  const covers = (count: number) =>
+    pairs.size === 1 ? 'Every value' : count === 1 ? '1 value' : `${count} values`;
   return (
     <>
       {p && <>

@@ -116,7 +116,8 @@ describe('Commissioner tray', () => {
     const p = parsePreview(previewWire.hold);
     const other = { ...p.fields[0], afterSource: 'Held draft reports' };
     p.fields.push({ ...p.fields[0], label: 'Second' },
-      { ...other, label: 'Picks A' }, { ...other, label: 'Picks B' });
+      { ...other, label: 'Picks A' }, { ...other, label: 'Picks B' },
+      { ...p.fields[0], label: 'Ledger', afterSource: 'Recorded league ledger' });
     const host = await mount(render(PreviewReview, { preview: p, confirm: render('button', null, 'Confirm'),
       children: render('p', null, 'Edit fields') }));
     const text = host.textContent;
@@ -124,6 +125,7 @@ describe('Commissioner tray', () => {
     expect(text).toContain(`2 values proposed${p.fields[0].afterSource}`);
     expect(text).toContain('2 values proposedHeld draft reports');
     expect(text.split('Held draft reports').length - 1).toBe(1);
+    expect(text).toContain('1 value proposedRecorded league ledger');
   });
   it('keeps Go blockers verbatim and disables confirmation', async () => {
     const words = 'Your league role does not permit this action';

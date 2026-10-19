@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { actTable, type ActDefinition } from './actTable';
 import { actChange } from './actBody';
 import { CommissionerActForm } from './CommissionerActTray';
-import { SeedForm } from './SeedTray';
+import { SeedForm, seedPreviewPause } from './SeedTray';
 import { all, button, check, click, control, disabled, holder, mount, render, settle, type, unmount }
   from './commissionerDom';
 import { open, receipt, stub, type Sent } from './commissionerStub';
@@ -210,7 +210,7 @@ it('starting assets previews the request, confirms by keyboard and uses only the
   Object.assign(app, { TargetNativeSeed: async (body: object) => { seeds.push(body); return receipt(); } });
   const host = await mount(render(SeedForm, { league }), app);
   await type(control(host, 'Reason'), 'Held rosters are the agreed starting point');
-  await settle();
+  await pause();
   expect(host.textContent).toContain('Before value → After value');
   const sent = previews[previews.length - 1];
   expect(sent).toEqual({ league, expected: leagueState.peek().ledger?.revision ?? 0,
@@ -224,6 +224,32 @@ it('starting assets previews the request, confirms by keyboard and uses only the
   expect(seeds).toEqual([sent]);
   expect(calls.sent).toEqual([]);
   expect(host.textContent).toContain('Recorded in the league ledger.');
+});
+
+const pause = async () => {
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, seedPreviewPause + 50)); });
+  await settle();
+};
+
+it('starting assets keeps its preview while the reason is typed, asking Go again after a pause', async () => {
+  const previews: { reason: string }[] = [];
+  const { app } = stub({ TargetCommissionerPreview: async body => {
+    const sent = JSON.parse(body);
+    previews.push(sent);
+    return answer(sent, sent.reason ? [] : ['Give a reason for this change'], 'hold');
+  } });
+  Object.assign(app, { TargetNativeSeed: async () => receipt() });
+  const host = await mount(render(SeedForm, { league }), app);
+  await settle();
+  expect(previews.map(p => p.reason)).toEqual(['']);
+  for (const reason of ['H', 'He', 'Held']) await type(control(host, 'Reason'), reason);
+  expect(host.textContent).toContain('Before value → After value');
+  expect(host.textContent).not.toContain('Reading the held starting assets preview');
+  expect(host.textContent).toContain('Checking the change again');
+  expect(disabled(button(host, 'Record starting assets'))).toBe(true);
+  await pause();
+  expect(previews.map(p => p.reason)).toEqual(['', 'Held']);
+  expect(disabled(button(host, 'Record starting assets'))).toBe(false);
 });
 
 it('every table field is a field on its Go Raw argument, including nested pick and scope', () => {

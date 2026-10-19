@@ -144,6 +144,10 @@ func TestStartingAssetsPreviewSumsUpEachFranchise(t *testing.T) {
 		if strings.HasSuffix(field.Label, " acquisition") || strings.HasSuffix(field.Label, " contract") {
 			t.Fatalf("per-player row in the starting assets preview: %+v", field)
 		}
+		if strings.HasSuffix(field.Label, " cap charges") && field.After != "No cap charges" &&
+			!strings.Contains(field.After, " totalling ") {
+			t.Fatalf("cap charges are not summed up: %q", field.After)
+		}
 		if strings.HasSuffix(field.Label, " starting roster") {
 			rosters++
 			if field.After != "No rostered players" && (!strings.Contains(field.After, " players: ") ||

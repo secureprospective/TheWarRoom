@@ -7,6 +7,11 @@ import type { Preview } from './preview';
 import { leagueState, readPreview, refusalText } from './proxy';
 import SideTray from './SideTray';
 
+// Reading the starting assets preview takes seconds on a full league, so the reason is not re-read on every
+// keystroke: Go is asked again once typing pauses, and the last preview stays on screen meanwhile. Confirming
+// still waits for the preview of the exact request that will be sent.
+export const seedPreviewPause = 400;
+
 export function SeedForm({ league }: { league: string }) {
   const [reason, setReason] = useState('');
   const [target] = useState(() => ({ league, expected: leagueState.peek().ledger?.revision ?? 0 }));
@@ -16,17 +21,19 @@ export function SeedForm({ league }: { league: string }) {
   const [receipt, setReceipt] = useState('');
   const [sending, setSending] = useState(false);
   const body = JSON.stringify({ ...target, request, reason: reason.trim() });
+  const first = review === undefined;
   useEffect(() => {
     let active = true;
-    setReview(undefined);
     setError('');
-    void readPreview(body).then(p => {
+    const read = () => void readPreview(body).then(p => {
       const stale = p.target.league !== target.league || p.target.version !== target.expected;
       if (p.blockers.length === 0 && stale)
         throw new Error('The preview does not match this league version. Reopen the change.');
       if (active) setReview({ body, preview: p });
     }).catch(cause => { if (active) setError(refusalText(cause)); });
-    return () => { active = false; };
+    const timer = first ? undefined : setTimeout(read, seedPreviewPause);
+    if (first) read();
+    return () => { active = false; clearTimeout(timer); };
   }, [body]);
   const preview = review?.body === body ? review.preview : undefined;
   const record = async () => {
@@ -43,16 +50,17 @@ export function SeedForm({ league }: { league: string }) {
   return <section className="league-form" aria-label="Record starting assets">
     <p>Record the held franchises, rostered players and draft picks as this league’s starting assets.</p>
     <p>No MFL changes are made.</p>
-    <PreviewReview preview={preview} confirm={<>
+    <PreviewReview preview={review?.preview} confirm={<>
       <label>Reason (required)<textarea value={reason} rows={2} onChange={e => {
         setReason(e.target.value); setRequest(newKey());
       }} /></label>
       <HoldToFire label="Record starting assets" body={body} disabled={!ready}
         onConfirm={() => void record()} answer={sending ? 'sending' : receipt} />
+      {review && !preview && !error && !receipt && <p role="status">Checking the change again…</p>}
       {error && <p role="alert">{error}</p>}
       {receipt && <p role="status">{receipt}</p>}
     </>}>
-      {!preview && !error && <p role="status">Reading the held starting assets preview…</p>}
+      {!review && !error && <p role="status">Reading the held starting assets preview…</p>}
     </PreviewReview>
   </section>;
 }

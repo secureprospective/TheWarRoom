@@ -110,17 +110,27 @@ func seedPreviewValues(seed *RawNativeSnapshot, names map[string]string, out map
 		}
 		out[names[f.ID]+" starting roster"] = roster
 		out[names[f.ID]+" draft picks"] = seedPickWords(seed.Picks, f.ID)
-		charges := []string{}
-		for _, c := range seed.Adjustments {
-			if c.Franchise == f.ID {
-				charges = append(charges, fmt.Sprintf("%s: %s", c.Description, c.Amount))
-			}
-		}
-		if len(charges) == 0 {
-			charges = append(charges, "No cap charges")
-		}
-		out[names[f.ID]+" cap charges"] = strings.Join(charges, "; ")
+		out[names[f.ID]+" cap charges"] = seedChargeWords(seed.Adjustments, f.ID)
 	}
+}
+
+// seedChargeWords totals a franchise's starting cap charges; each charge's own words stay in the ledger.
+func seedChargeWords(charges []NativeCharge, franchise string) string {
+	count := 0
+	var total domain.Money
+	for _, c := range charges {
+		if c.Franchise == franchise {
+			count++
+			total += c.Amount
+		}
+	}
+	switch count {
+	case 0:
+		return "No cap charges"
+	case 1:
+		return fmt.Sprintf("1 cap charge totalling %s", total)
+	}
+	return fmt.Sprintf("%d cap charges totalling %s", count, total)
 }
 
 // seedPickWords lists a franchise's starting draft picks by season, such as "2027 rounds 1, 2, 2, 3".
