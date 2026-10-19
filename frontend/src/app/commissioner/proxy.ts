@@ -161,6 +161,22 @@ export function createLeagueState(proxy = createProxy(live)) {
     if (failed.length > 0) ops.opsError = `The league page could not read ${failed.join(' or ')}.`;
     return ops;
   }
+  async function readCore(selected: string) {
+    type Core = Pick<LeagueState, 'ledger' | 'rules' | 'people' | 'error'>;
+    const core: Core = { ledger: undefined, rules: undefined, people: undefined, error: '' };
+    if (!selected) return core;
+    const [ledger, rules, people] = await Promise.allSettled([
+      proxy.ledger(selected), proxy.rules(selected), proxy.people(selected)]);
+    const failed: string[] = [];
+    if (ledger.status === 'fulfilled') core.ledger = ledger.value;
+    else failed.push(`the ledger (${refusalText(ledger.reason)})`);
+    if (rules.status === 'fulfilled') core.rules = rules.value;
+    else failed.push(`the league rules (${refusalText(rules.reason)})`);
+    if (people.status === 'fulfilled') core.people = people.value;
+    else failed.push(`the people (${refusalText(people.reason)})`);
+    if (failed.length > 0) core.error = `This league could not be read: ${failed.join(', ')}.`;
+    return core;
+  }
   async function choose(league = '') {
     const request = ++generation;
     const was = store.getState().selected;
@@ -172,11 +188,13 @@ export function createLeagueState(proxy = createProxy(live)) {
       const selected = league || was || choices[0]?.id || '';
       if (selected && !choices.some(choice => choice.id === selected))
         throw new Error('This app league is no longer available. Choose another league.');
-      const [ledger, rules, people] = selected ? await Promise.all([
-        proxy.ledger(selected), proxy.rules(selected), proxy.people(selected)]) : [];
-      const [landing, ops] = await Promise.all([readLanding(selected), readOps(selected)]);
+      // The picker is kept even when one league cannot be read, so the commissioner can still choose another
+      // league or fix this one; each reading that failed is named.
+      if (request === generation) store.setState({ choices, selected });
+      const [core, landing, ops] = await Promise.all([
+        readCore(selected), readLanding(selected), readOps(selected)]);
       if (request === generation)
-        store.setState({ choices, selected, ledger, rules, people, ...landing, ...ops });
+        store.setState({ choices, selected, ...core, ...landing, ...ops });
     } catch (cause) {
       if (request === generation)
         store.setState({ error: String(cause), ledger: undefined, rules: undefined, people: undefined,

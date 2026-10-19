@@ -41,6 +41,20 @@ describe('League state', () => {
     expect([calls.ledger, calls.rules, calls.people]).toEqual(Array(3).fill(['native.one']));
     expect(state.peek().people?.league).toBe('native.one');
   });
+  it('keeps the picker and the other readings when one league cannot be read', async () => {
+    const { state } = port({ rules: async () => {
+      throw new Error('league rules: this league was started before its first season was recorded');
+    } });
+    await state.choose();
+    const now = state.peek();
+    expect(now.choices.map(c => c.id)).toEqual(['native.one', 'native.two']);
+    expect(now.selected).toBe('native.one');
+    expect(now.rules).toBeUndefined();
+    expect(now.ledger?.league).toBe('native.one');
+    expect(now.people?.league).toBe('native.one');
+    expect(now.error).toBe('This league could not be read: the league rules (league rules: this league was '
+      + 'started before its first season was recorded).');
+  });
   it('keeps the readings while the same league reloads, and drops them for another league', async () => {
     let release: () => void = () => undefined;
     const slow = new Promise<void>(resolve => { release = resolve; });
