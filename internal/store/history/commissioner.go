@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 func commissionerRecords(events []LeagueEvent) ([]commissioner.Record, error) {
@@ -49,10 +50,22 @@ func transactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commi
 // immediate SQLite transaction, including across independently opened stores.
 func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer) (commissioner.Receipt, error) {
-	raw, canonical, err := preparedCommand(raw, principal)
+	return s.ExecuteCommissionerWithFacts(ctx, raw, principal, auth, nil, time.UTC)
+}
+
+// ExecuteCommissionerWithFacts keeps held football facts inside the same atomic native append path: the
+// app's waiver decision is made under the ledger transaction, after every shared check.
+func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commissioner.RawCommand,
+	principal string, auth commissioner.Authorizer, facts nativecheck.Facts, zone *time.Location) (commissioner.Receipt, error) {
+	raw, canonical, err := preparedCommand(raw, principal, true)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
+	gathered, err := s.appendFactsFor(ctx, raw)
+	if err != nil {
+		return commissioner.Receipt{}, err
+	}
+	gathered.players = facts
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	tx, err := s.pools.Write().BeginTx(ctx, nil)
@@ -64,30 +77,28 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
-	role, err := commandRole(raw, principal, auth, records)
+	role, retry, err := s.checkCommissionerCommand(raw, principal, auth, records, canonical, gathered)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
-	for _, r := range records {
-		if r.Command.Request != raw.Request {
-			continue
-		}
-		if r.Canonical != canonical {
-			return commissioner.Receipt{}, fmt.Errorf("league change refused: %w",
-				commissioner.Refused(errors.New("this request was already used for a different change")))
-		}
-		return r.Receipt, nil
+	if retry != nil {
+		return *retry, nil
 	}
-	if err := checkCommissionerAppend(raw, records); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("check league version: %w", commissioner.Refused(err))
+	now := s.now().UTC().Truncate(time.Microsecond)
+	before, plan, err := s.prepareCommissionerTrial(ctx, &raw, principal, records, now, facts, zone, gathered)
+	if err != nil {
+		return commissioner.Receipt{}, err
 	}
-	if err := commissioner.CheckGovernanceAppend(raw, principal, records, s.now()); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("check league change: %w", err)
+
+	if raw.Command == commissioner.SeasonRollover && raw.Args.Rollover.DryRun {
+		return commissioner.Receipt{League: raw.League, Revision: raw.Expected, RecordedAt: before.At,
+			Message: "Preview only; nothing was recorded.", Plan: plan}, nil
 	}
-	if err := commissioner.CheckRulesAppend(raw, records, s.now()); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("check league rules: %w", err)
+	if before != nil {
+		now = before.At
 	}
-	receipt, err := s.appendCommissioner(ctx, tx, raw, principal, role, canonical)
+	receipt, err := s.appendCommissioner(ctx, tx, appendRequest{raw: raw, principal: principal, role: role,
+		canonical: canonical, at: now, before: before, plan: plan, records: records})
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
@@ -97,13 +108,92 @@ func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCom
 	return receipt, nil
 }
 
-// preparedCommand fills what Go owns on the command, validates it and fixes its retry identity.
-func preparedCommand(raw commissioner.RawCommand, principal string) (commissioner.RawCommand, string, error) {
+// checkCommissionerCommand is every check a league change must pass, shared by execute and the dry-run
+// preview so the two can never disagree. A retried request returns its stored receipt.
+func (s *Store) checkCommissionerCommand(raw commissioner.RawCommand, principal string,
+	auth commissioner.Authorizer, records []commissioner.Record, canonical string,
+	facts appendFacts) (string, *commissioner.Receipt, error) {
+	role, err := commandRole(raw, principal, auth, records)
+	if err != nil {
+		return "", nil, err
+	}
+	prior, retried, err := retriedReceipt(raw, canonical, records)
+	if err != nil {
+		return "", nil, err
+	}
+	if retried {
+		return role, &prior, nil
+	}
+	if err := s.checkAppend(raw, principal, records, facts); err != nil {
+		return role, nil, err
+	}
+	return role, nil, nil
+}
+
+// retriedReceipt returns the stored receipt when this request was already recorded, and refuses a
+// request key reused for a different change.
+func retriedReceipt(raw commissioner.RawCommand, canonical string,
+	records []commissioner.Record) (commissioner.Receipt, bool, error) {
+	for _, r := range records {
+		if r.Command.Request != raw.Request {
+			continue
+		}
+		if r.Canonical != canonical {
+			return commissioner.Receipt{}, false, fmt.Errorf("league change refused: %w",
+				commissioner.Refused(errors.New("this request was already used for a different change")))
+		}
+		return r.Receipt, true, nil
+	}
+	return commissioner.Receipt{}, false, nil
+}
+
+// checkAppend runs every check a league change must pass before it is recorded, in order.
+func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, records []commissioner.Record,
+	facts appendFacts) error {
+	if err := checkCommissionerAppend(raw, records); err != nil {
+		return fmt.Errorf("check league version: %w", commissioner.Refused(err))
+	}
+	checks := []struct {
+		what  string
+		check func() error
+	}{
+		{"asset correction", func() error { return commissioner.CheckCorrectionAppend(raw, records, s.now()) }},
+		{"native correction", func() error { return commissioner.CheckOverrideAppend(raw, records, s.now()) }},
+		{"starting snapshot", func() error { return commissioner.CheckNativeAppend(raw, records) }},
+		{"league change", func() error { return commissioner.CheckGovernanceAppend(raw, principal, records, s.now()) }},
+		{"league calendar", func() error { return commissioner.CheckCalendarAppend(raw, records, s.now()) }},
+		{"rookie draft", func() error { return commissioner.CheckDraftAppend(raw, records, s.now(), facts.draft) }},
+		{"league schedule", func() error { return commissioner.CheckScheduleAppend(raw, records) }},
+		{"season rollover", func() error { return commissioner.CheckRolloverAppend(raw, records) }},
+		{"league rules", func() error { return commissioner.CheckRulesAppend(raw, records, s.now()) }},
+		{"lineup", func() error { return commissioner.CheckLineupAppend(raw, records, s.now(), facts.lineup) }},
+		{"playoffs", func() error { return commissioner.CheckPlayoffAppend(raw, records, s.now(), facts.lineup) }},
+		{"statistic", func() error { return commissioner.CheckStatAppend(raw, records, facts.stat, s.now()) }},
+	}
+	for _, c := range checks {
+		if err := c.check(); err != nil {
+			return fmt.Errorf("check %s: %w", c.what, err)
+		}
+	}
+	return nil
+}
+
+// preparedCommand fills what Go owns on the command, validates it and fixes its retry identity. A dry run
+// passes requireReason false and reports the missing reason itself.
+func preparedCommand(raw commissioner.RawCommand, principal string,
+	requireReason bool) (commissioner.RawCommand, string, error) {
+	if raw.Args.WaiverOutcome != nil || raw.Args.BidOutcome != nil || raw.Args.TradeOutcome != nil {
+		return raw, "", fmt.Errorf("waiver and bid decisions are made by the app")
+	}
 	raw, err := raw.Prepared()
 	if err != nil {
 		return raw, "", fmt.Errorf("validate league change: %w", commissioner.Refused(err))
 	}
-	if err := raw.Validate(); err != nil {
+	validate := raw.ValidatePreview
+	if requireReason {
+		validate = raw.Validate
+	}
+	if err := validate(); err != nil {
 		return raw, "", fmt.Errorf("validate league change: %w", commissioner.Refused(err))
 	}
 	if strings.TrimSpace(principal) == "" {
@@ -118,7 +208,7 @@ func preparedCommand(raw commissioner.RawCommand, principal string) (commissione
 
 func commandRole(raw commissioner.RawCommand, principal string, auth commissioner.Authorizer,
 	records []commissioner.Record) (string, error) {
-	if auth == nil {
+	if commissioner.TradeCommand(raw.Command) || auth == nil || commissioner.OwnerWaiverAction(raw.Command) != "" || commissioner.OwnerBidAction(raw.Command) != "" {
 		role, err := commissioner.AuthorizeRecords(raw, principal, records)
 		if err != nil {
 			return "", fmt.Errorf("league change refused: %w", commissioner.Refused(err))
@@ -174,20 +264,36 @@ func checkCommissionerAppend(raw commissioner.RawCommand, records []commissioner
 	return fmt.Errorf("that recorded change is not in this league")
 }
 
-func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, raw commissioner.RawCommand,
-	principal, role, canonical string) (commissioner.Receipt, error) {
-	hash := sha256.Sum256([]byte(canonical))
+// appendRequest is one league change ready to be recorded, with the instant it is recorded at, the ledger
+// it is appended to and, for a season rollover, its before-state and plan.
+type appendRequest struct {
+	raw                        commissioner.RawCommand
+	principal, role, canonical string
+	at                         time.Time
+	before                     *commissioner.RolloverBefore
+	plan                       *commissioner.RolloverPlan
+	records                    []commissioner.Record
+}
+
+func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, req appendRequest) (commissioner.Receipt, error) {
+	raw, principal, now := req.raw, req.principal, req.at
+	hash := sha256.Sum256([]byte(req.canonical))
 	identity := sha256.Sum256([]byte(raw.League + "\x00" + raw.Request))
-	now := s.now().UTC().Truncate(time.Microsecond)
 	receipt := commissioner.Receipt{Entry: "act." + hex.EncodeToString(identity[:]), League: raw.League,
-		Revision: raw.Expected + 1, RecordedAt: now, Message: "Recorded in the league ledger."}
-	definition, err := raw.Definition()
+		Revision: raw.Expected + 1, RecordedAt: now, Plan: req.plan, Message: "Recorded in the league ledger."}
+	definition, err := raw.EffectiveDefinition()
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("define league change: %w", err)
 	}
 	raw.Gravity = definition.Gravity
-	record := commissioner.Record{Command: raw, Principal: principal, Role: role,
-		Gravity: definition.Gravity, Canonical: canonical, Receipt: receipt}
+	record := commissioner.Record{Command: raw, Principal: principal, Role: req.role,
+		Gravity: definition.Gravity, Canonical: req.canonical, Receipt: receipt, Before: req.before}
+	if raw.Command == commissioner.ScheduleGenerate {
+		record.GeneratedSchedule, err = commissioner.FreezeSchedule(raw, req.records)
+		if err != nil {
+			return commissioner.Receipt{}, fmt.Errorf("freeze league schedule: %w", err)
+		}
+	}
 	effective := now
 	if raw.Effective != "now" && raw.Effective != "next_rollover" {
 		parsed, err := time.Parse(time.RFC3339Nano, raw.Effective)
@@ -208,6 +314,14 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, raw commissi
 
 func (s *Store) CommissionerLedger(ctx context.Context, league, principal string,
 	auth commissioner.Authorizer) (commissioner.Ledger, error) {
+	return s.CommissionerLedgerFiltered(ctx, league, principal, auth, commissioner.RawLedgerFilter{})
+}
+
+func (s *Store) CommissionerLedgerFiltered(ctx context.Context, league, principal string,
+	auth commissioner.Authorizer, filter commissioner.RawLedgerFilter) (commissioner.Ledger, error) {
+	if err := filter.Validate(); err != nil {
+		return commissioner.Ledger{}, fmt.Errorf("validate ledger filters: %w", err)
+	}
 	events, err := s.Events(ctx, league, commissioner.Stream, 0)
 	if err != nil {
 		return commissioner.Ledger{}, err
@@ -223,7 +337,7 @@ func (s *Store) CommissionerLedger(ctx context.Context, league, principal string
 		}
 		auth = commissioner.GovernanceAuthorizer{State: state}
 	}
-	reading, err := commissioner.Reading(league, principal, records, auth)
+	reading, err := commissioner.FilteredReading(league, principal, records, auth, filter)
 	if err != nil {
 		return commissioner.Ledger{}, fmt.Errorf("read league ledger: %w", err)
 	}
@@ -275,9 +389,101 @@ func (s *Store) CommissionerRules(ctx context.Context, league string) (commissio
 	if err != nil {
 		return commissioner.Rules{}, err
 	}
-	reading, err := commissioner.RulesReading(league, records)
+	reading, err := commissioner.RulesReading(league, records, s.now())
 	if err != nil {
 		return commissioner.Rules{}, fmt.Errorf("read league rules: %w", err)
 	}
 	return reading, nil
+}
+
+// CommissionerJobs reads the league's jobs as of the store's clock.
+func (s *Store) CommissionerJobs(ctx context.Context, league string) (commissioner.Jobs, error) {
+	events, err := s.Events(ctx, league, commissioner.Stream, 0)
+	if err != nil {
+		return commissioner.Jobs{}, err
+	}
+	records, err := commissionerRecords(events)
+	if err != nil {
+		return commissioner.Jobs{}, err
+	}
+	reading, err := commissioner.JobsReading(league, records, s.now())
+	if err != nil {
+		return commissioner.Jobs{}, fmt.Errorf("read league jobs: %w", err)
+	}
+	return reading, nil
+}
+
+// CommissionerNotes reads the posted notices and league notes from the ledger.
+func (s *Store) CommissionerNotes(ctx context.Context, league string) (commissioner.LeagueNotes, error) {
+	records, err := s.leagueRecords(ctx, league)
+	if err != nil {
+		return commissioner.LeagueNotes{}, err
+	}
+	reading, err := commissioner.NotesReading(league, records)
+	if err != nil {
+		return commissioner.LeagueNotes{}, fmt.Errorf("read league notices: %w", err)
+	}
+	return reading, nil
+}
+
+// CommissionerDigests writes the digest sentences for the changes this principal may read about.
+func (s *Store) CommissionerDigests(ctx context.Context, league, principal string,
+	auth commissioner.Authorizer) (commissioner.Digests, error) {
+	records, err := s.leagueRecords(ctx, league)
+	if err != nil {
+		return commissioner.Digests{}, err
+	}
+	if auth == nil {
+		state, err := commissioner.GovernanceState(records)
+		if err != nil {
+			return commissioner.Digests{}, fmt.Errorf("read league permissions: %w", err)
+		}
+		auth = commissioner.GovernanceAuthorizer{State: state}
+	}
+	reading, err := commissioner.DigestsReading(league, principal, records, auth)
+	if err != nil {
+		return commissioner.Digests{}, fmt.Errorf("read league digests: %w", err)
+	}
+	return reading, nil
+}
+
+func (s *Store) leagueRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
+	events, err := s.Events(ctx, league, commissioner.Stream, 0)
+	if err != nil {
+		return nil, err
+	}
+	return commissionerRecords(events)
+}
+
+func prepareMarketAppend(raw *commissioner.RawCommand, principal string, records []commissioner.Record, now time.Time,
+	facts nativecheck.Facts, zone *time.Location, env commissioner.BidEnvironment) error {
+	if err := commissioner.PrepareWaiverAppend(raw, records, now, facts, zone); err != nil {
+		return fmt.Errorf("check waiver action: %w", commissioner.Refused(err))
+	}
+	// The bid clock's scan is repeated here, under the append lock, against the current ledger.
+	if principal == bidClockPrincipal {
+		if err := commissioner.CheckDueBid(*raw, records, now, facts); err != nil {
+			return fmt.Errorf("check automatic bid award: %w", commissioner.Refused(err))
+		}
+	}
+	if err := commissioner.PrepareBidAppend(raw, records, now, facts, zone, env); err != nil {
+		return fmt.Errorf("check bid action: %w", commissioner.Refused(err))
+	}
+	if err := commissioner.PrepareTradeAppend(raw, principal, records, now, facts, zone); err != nil {
+		return fmt.Errorf("check trade action: %w", commissioner.Refused(err))
+	}
+	return nil
+}
+
+// prepareCommissionerTrial prepares a private command copy with exactly the append decisions, without writing.
+func (s *Store) prepareCommissionerTrial(ctx context.Context, raw *commissioner.RawCommand, principal string,
+	records []commissioner.Record, now time.Time, facts nativecheck.Facts, zone *time.Location,
+	gathered appendFacts) (*commissioner.RolloverBefore, *commissioner.RolloverPlan, error) {
+	if err := prepareMarketAppend(raw, principal, records, now, facts, zone, gathered.bid); err != nil {
+		return nil, nil, err
+	}
+	if err := commissioner.PrepareDraftAppend(raw, records, now, facts, gathered.draft); err != nil {
+		return nil, nil, fmt.Errorf("check draft change: %w", commissioner.Refused(err))
+	}
+	return s.prepareRollover(ctx, *raw, records, now)
 }

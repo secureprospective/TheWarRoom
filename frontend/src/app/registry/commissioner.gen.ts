@@ -1228,7 +1228,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "sh.draft.change commish.draft.timer",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "Expired clock skips automatically but can be overridden; humans in" +
       "sert picks and changed selections warn rather than silently retarg" +
       "et (triage take #4; Sol tray anatomy).",
@@ -1250,11 +1250,11 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Which draft checkpoint must we restore?",
     gravity: "G3",
     clock: "draft",
-    placement: places[18],
+    placement: places[12],
     verb: "commish.draft.revert",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "No restore until granted, with both draft states preserved in hist" +
       "ory (census CM-044).",
     merged_into: Object.freeze([] as const),
@@ -1274,11 +1274,11 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Is the draft done? Seal it and issue new picks.",
     gravity: "G2",
     clock: "draft",
-    placement: places[18],
+    placement: places[12],
     verb: "commish.draft.archive",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "Close automatically at the last pick, place undrafted rookies in U" +
       "FA and issue immediately tradable picks for two seasons ahead (fac" +
       "ts 13, 9c).",
@@ -1422,7 +1422,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.notify.set commish.notify.route",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "Transaction digests and calendar deadline reminders on, with a pla" +
       "in-sentence digest for every G2/G3 change (§16.9).",
     merged_into: Object.freeze([] as const),
@@ -1447,7 +1447,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.notice.publish commish.newsletter.publish",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "Weekly newsletter in season, with official notices and mail histor" +
       "y on the owner surfaces (§15 ring-4 carry; census CM-052).",
     merged_into: Object.freeze([] as const),
@@ -1470,7 +1470,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.whatsnew.post",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "App release notes post automatically and the commissioner may pin " +
       "league notes (census CM-053).",
     merged_into: Object.freeze([] as const),
@@ -1492,7 +1492,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.data.refresh commish.cache.clear",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "Refresh on schedule and show data health on the status strip (cens" +
       "us CM-054).",
     merged_into: Object.freeze([] as const),
@@ -1542,7 +1542,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     verb: "commish.ledger.read",
     disposition: "kept",
     ring: 4,
-    status: "spec",
+    status: "built",
     disposition_note: "Append-only history of every league-state change with who, what an" +
       "d why, excluding private role grants and invites from owner reads " +
       "(ruling 5).",

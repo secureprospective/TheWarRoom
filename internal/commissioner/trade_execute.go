@@ -1,0 +1,282 @@
+package commissioner
+
+import (
+	"fmt"
+	"slices"
+	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/governance"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
+)
+
+type tradeExecution struct {
+	records   []Record
+	seed      *RawNativeSnapshot
+	state     governance.State
+	rules     leaguerules.RuleSet
+	now       time.Time
+	facts     nativecheck.Facts
+	zone      *time.Location
+	principal string
+}
+
+func PrepareTradeAppend(raw *RawCommand, principal string, records []Record, now time.Time,
+	facts nativecheck.Facts, zone *time.Location) error {
+	if !TradeCommand(raw.Command) {
+		return checkTradeReplay(*raw, records, now)
+	}
+	assets, book, err := nativeAssetsState(raw.League, records)
+	if err != nil {
+		return err
+	}
+	if !assets.Seeded {
+		return fmt.Errorf("record starting rosters and picks before trading")
+	}
+	state, err := GovernanceState(records)
+	if err != nil {
+		return err
+	}
+	rules, err := RulesNow(records, now)
+	if err != nil {
+		return err
+	}
+	x := tradeExecution{records: records, seed: assets.Snapshot, state: state, rules: rules, now: now, facts: facts, zone: zone, principal: principal}
+	if action := OwnerTradeAction(raw.Command); action != "" {
+		gate, gateErr := NativeActionGate(raw.League, records, raw.Args.Trade.Franchise, action, now, zone)
+		if gateErr != nil {
+			return gateErr
+		}
+		if !gate.Open {
+			return fmt.Errorf("%s", gate.Sentence)
+		}
+	}
+	var t TradeState
+	if raw.Command == TradeOffer {
+		t, err = x.offer(*raw)
+	} else {
+		t, err = tradeByID(book.Trades, raw.Args.Trade.ID)
+		if err == nil {
+			prior := tradeDigest(t)
+			err = x.act(*raw, &t)
+			t.Previous = prior
+		}
+	}
+	if err != nil {
+		return err
+	}
+	raw.Args.TradeOutcome = &t
+	trial := append(slices.Clone(records), Record{Command: *raw, Principal: principal, Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: now}})
+	if _, err := NativeAssetsReading(raw.League, trial); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (x tradeExecution) offer(raw RawCommand) (TradeState, error) {
+	args := raw.Args.Trade
+	policy, err := resolveTradePolicy(x.rules.Trades)
+	if err != nil {
+		return TradeState{}, err
+	}
+	t := TradeState{Details: x.describeAssets(args.Assets), Proposer: args.Franchise, Parties: slices.Clone(args.Parties), Assets: slices.Clone(args.Assets),
+		Accepted: []string{args.Franchise}, Policy: policy, OfferedAt: x.now, ExpiresAt: x.now.Add(policy.Expiry),
+		Status: "offered", Words: "Waiting for every party to accept", Votes: []TradeVote{}, Recusals: []TradeVote{}, Appeals: []TradeVote{}, Overrides: []TradeVote{}}
+	if len(t.Parties) > policy.MaximumParties {
+		return t, fmt.Errorf("this league permits at most %d trade parties", policy.MaximumParties)
+	}
+	for _, id := range t.Parties {
+		if _, ok := x.state.Franchise(governance.FranchiseID(id)); !ok {
+			return t, fmt.Errorf("choose franchises in this league")
+		}
+		if !slices.ContainsFunc(t.Assets, func(a TradeAsset) bool { return a.From == id || a.To == id }) {
+			return t, fmt.Errorf("each party must send or receive an asset")
+		}
+	}
+	if err := x.legal(t); err != nil {
+		return t, err
+	}
+	return t, nil
+}
+
+func (x tradeExecution) act(raw RawCommand, t *TradeState) error {
+	a := raw.Args.Trade
+	switch raw.Command {
+	case TradeAccept, TradeDecline, TradeWithdraw:
+		return x.ownerAct(raw, t)
+	case TradeReview, TradeRecuse:
+		return x.review(raw, t)
+	case TradeAppeal:
+		if t.Status != "vetoed" || t.AppealedVeto == t.VetoNumber {
+			return fmt.Errorf("a party may appeal this veto only once")
+		}
+		if !slices.Contains(t.Parties, a.Franchise) {
+			return fmt.Errorf("only a trade party may appeal")
+		}
+		t.AppealedVeto = t.VetoNumber
+		t.Appeals = append(t.Appeals, TradeVote{Who: x.principal, Decision: "appeal", At: x.now, Reason: raw.Reason})
+		t.Status, t.Words = "appealed", "Waiting for the eligible commissioner to rule on the appeal"
+	case TradeAppealRule:
+		return x.ruleAppeal(raw, t)
+	case TradeOverride:
+		return x.override(raw, t)
+	}
+	return nil
+}
+
+func (x tradeExecution) ownerAct(raw RawCommand, t *TradeState) error {
+	a := raw.Args.Trade
+	if t.Status != "offered" {
+		return fmt.Errorf("this offer is no longer waiting for acceptance")
+	}
+	if !x.now.Before(t.ExpiresAt) {
+		return fmt.Errorf("this offer has expired")
+	}
+	if !slices.Contains(t.Parties, a.Franchise) {
+		return fmt.Errorf("only a trade party may answer this offer")
+	}
+	switch raw.Command {
+	case TradeWithdraw:
+		if t.Proposer != a.Franchise {
+			return fmt.Errorf("only the offering team may withdraw")
+		}
+		t.Status, t.Words = "withdrawn", "The offering team withdrew this offer"
+	case TradeDecline:
+		t.Status, t.Words = "declined", "A party declined this offer"
+	case TradeAccept:
+		if slices.Contains(t.Accepted, a.Franchise) {
+			return fmt.Errorf("this team already accepted")
+		}
+		if err := x.legal(*t); err != nil {
+			return err
+		}
+		t.Accepted = append(t.Accepted, a.Franchise)
+		if len(t.Accepted) == len(t.Parties) {
+			return x.beginReview(t)
+		}
+	}
+	return nil
+}
+
+func (x tradeExecution) beginReview(t *TradeState) error {
+	t.Status, t.Words = "review", "Waiting for trade review"
+	switch t.Policy.Route {
+	case leaguerules.NoReview:
+		return x.decide(t, "approve")
+	case leaguerules.DOTReview:
+		eligible, err := tradeReviewers(t, x.state, x.records, x.now)
+		if err != nil && t.Status != "failed" {
+			t.Words = err.Error()
+		}
+		if err == nil && t.Status == "review" && len(eligible) < t.Policy.DecideAt {
+			t.Words = fmt.Sprintf("Only %d DOT members are not trade parties, fewer than the %d votes needed; "+
+				"the commissioner decides this trade", len(eligible), t.Policy.DecideAt)
+		}
+	case leaguerules.CommissionerReview:
+		if _, err := governance.AppealJudge(x.state, tradeParties(x.state, t.Parties)); err != nil {
+			t.Status, t.Words = "failed", "No eligible commissioner remains; this trade cannot proceed"
+		}
+	}
+	return nil
+}
+
+func (x tradeExecution) decide(t *TradeState, decision string) error {
+	if decision == "approve" {
+		if t.Status != "approved" {
+			if err := x.legal(*t); err != nil {
+				return err
+			}
+		}
+		t.Status, t.Words = "approved", "Approved; the assets have changed teams"
+	} else {
+		if t.VetoNumber == 0 {
+			t.VetoNumber = 1
+		}
+		t.Status, t.Words = "vetoed", "Vetoed; the assets stay with their original teams"
+	}
+	return nil
+}
+
+func (x tradeExecution) review(raw RawCommand, t *TradeState) error {
+	if t.Status != "review" {
+		return fmt.Errorf("this trade is not waiting for review")
+	}
+	if t.Policy.Route == leaguerules.CommissionerReview {
+		judge, err := governance.AppealJudge(x.state, tradeParties(x.state, t.Parties))
+		if err != nil {
+			return fmt.Errorf("trade judge: %w", err)
+		}
+		if string(judge) != x.principal {
+			return fmt.Errorf("only the eligible commissioner may review this trade")
+		}
+		if raw.Command == TradeRecuse {
+			return fmt.Errorf("party commissioners are recused automatically")
+		}
+		t.Votes = append(t.Votes, TradeVote{Who: x.principal, Decision: raw.Args.Trade.Decision, At: x.now, Reason: raw.Reason})
+		return x.decide(t, raw.Args.Trade.Decision)
+	}
+	eligible, err := tradeReviewers(t, x.state, x.records, x.now)
+	if err != nil {
+		return err
+	}
+	if !slices.Contains(eligible, governance.Principal(x.principal)) {
+		return fmt.Errorf("a trade party cannot review its own trade")
+	}
+	if raw.Command == TradeRecuse {
+		return fmt.Errorf("party DOT members are recused automatically")
+	}
+	if slices.ContainsFunc(t.Votes, func(v TradeVote) bool { return v.Who == x.principal }) {
+		return fmt.Errorf("each DOT member may vote once")
+	}
+	t.Votes = append(t.Votes, TradeVote{Who: x.principal, Decision: raw.Args.Trade.Decision, At: x.now, Reason: raw.Reason})
+	counts := map[string]int{}
+	for _, v := range t.Votes {
+		if slices.Contains(eligible, governance.Principal(v.Who)) {
+			counts[v.Decision]++
+		}
+	}
+	if counts[raw.Args.Trade.Decision] >= t.Policy.DecideAt {
+		return x.decide(t, raw.Args.Trade.Decision)
+	}
+	return nil
+}
+
+func (x tradeExecution) ruleAppeal(raw RawCommand, t *TradeState) error {
+	if t.Status != "appealed" {
+		return fmt.Errorf("this trade has no appeal waiting for a ruling")
+	}
+	judge, err := governance.AppealJudge(x.state, tradeParties(x.state, t.Parties))
+	if err != nil {
+		return fmt.Errorf("appeal judge: %w", err)
+	}
+	if string(judge) != x.principal {
+		return fmt.Errorf("only the eligible commissioner, or co-commissioner when the commissioner is a party, may rule")
+	}
+	t.Appeals = append(t.Appeals, TradeVote{Who: x.principal, Decision: raw.Args.Trade.Decision, At: x.now, Reason: raw.Reason})
+	return x.decide(t, raw.Args.Trade.Decision)
+}
+
+func (x tradeExecution) override(raw RawCommand, t *TradeState) error {
+	a := raw.Args.Trade
+	if t.Status != "approved" && t.Status != "vetoed" && t.Status != "appealed" && !x.stalled(t) {
+		return fmt.Errorf("override a decided trade, or one the DOT cannot decide")
+	}
+	if t.Status == "approved" && a.Decision == "approve" {
+		return fmt.Errorf("this trade is already approved")
+	}
+	if t.Status == "approved" && a.Decision == "veto" {
+		t.VetoNumber++
+	}
+	t.Overrides = append(t.Overrides, TradeVote{Who: x.principal, Decision: a.Decision, At: x.now, Reason: raw.Reason})
+	return x.decide(t, a.Decision)
+}
+
+// stalled says a DOT review can never reach its decision count because too many DOT members are trade parties,
+// so only the commissioner's override can decide it.
+func (x tradeExecution) stalled(t *TradeState) bool {
+	if t.Status != "review" || t.Policy.Route != leaguerules.DOTReview {
+		return false
+	}
+	eligible, err := tradeReviewers(t, x.state, x.records, x.now)
+	return err == nil && t.Status == "review" && len(eligible) < t.Policy.DecideAt
+}

@@ -16,6 +16,8 @@ const keyHandlerAllowlist = {
   'shell/MFLConnection.tsx': 'Password field Enter dispatches Connect without copying the key.',
   'commands/CommandBar.tsx':
     'Search input needs arrows, Enter and Escape; execution remains dispatch.',
+  'commissioner/SideTray.tsx':
+    'The tray dialog traps Tab focus and closes on Escape; its Close control is an Act.',
   'commissioner/HoldToFire.tsx':
     'Hold-to-fire times a held Space or Enter; the held button then dispatches commissioner.execute.',
 } as const;
@@ -47,6 +49,7 @@ describe('Controls are verbs (§M2/§M3)', () => {
     expect(Object.keys(keyHandlerAllowlist)).toEqual([
       'shell/MFLConnection.tsx',
       'commands/CommandBar.tsx',
+      'commissioner/SideTray.tsx',
       'commissioner/HoldToFire.tsx',
     ]);
     expect(keyHandlerAllowlist['commands/CommandBar.tsx']).toContain('dispatch');

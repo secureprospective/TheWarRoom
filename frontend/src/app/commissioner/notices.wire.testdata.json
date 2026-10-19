@@ -1,0 +1,262 @@
+{
+  "commissioner": {
+    "league": "native.ops",
+    "revision": 4,
+    "notices": [
+      {
+        "id": "act.b9b5e146fd2cd30b75bb02af62f4226b9c4f3797367b15a56cb80f91d207e2e9",
+        "kind": "notice",
+        "text": "Rookie draft is Saturday",
+        "pinned": true,
+        "who": "creator",
+        "when": "2026-10-14T11:00:00Z",
+        "withdrawn": false,
+        "change": "Posted an official notice, pinned: “Rookie draft is Saturday”"
+      },
+      {
+        "id": "act.e4c6a0aca7afe508268be7ffc394e76c7e780bafbbd84fd0d9b1531c8d1590ee",
+        "kind": "notice",
+        "text": "Waivers run Tuesday",
+        "pinned": false,
+        "who": "creator",
+        "when": "2026-10-14T10:00:00Z",
+        "withdrawn": false,
+        "change": "Posted an official notice: “Waivers run Tuesday”"
+      }
+    ],
+    "notes": [
+      {
+        "id": "act.fa368f732f59048c1c4e43326ab17d693b6a956cbcf69dee89e6a091fd3fd9ed",
+        "kind": "note",
+        "text": "House rule: no trades in week 18",
+        "pinned": true,
+        "who": "creator",
+        "when": "2026-10-14T12:00:00Z",
+        "withdrawn": false,
+        "change": "Posted a league note, pinned: “House rule: no trades in week 18”"
+      }
+    ],
+    "releases": [
+      {
+        "date": "2026-10-14",
+        "title": "Commissioner tools",
+        "words": "Start a league of your own in the app, set its rules, give and take roles, and see every change in the league ledger."
+      },
+      {
+        "date": "2026-10-13",
+        "title": "Trade desk and reports",
+        "words": "The trade desk keeps exit plans, countdowns tick live, reports open in a drawer and news times say when they are estimates."
+      },
+      {
+        "date": "2026-10-12",
+        "title": "Franchise HQ and the home page",
+        "words": "Try a what-if on your roster, use the row menus, and read league dates straight from the rulebook."
+      },
+      {
+        "date": "2026-10-11",
+        "title": "Contracts, the Lab and the bid pool",
+        "words": "Contract moves, the Lab screens and the free-agent bid pool arrive, with money kept to the exact cent."
+      },
+      {
+        "date": "2026-10-10",
+        "title": "The first target screens",
+        "words": "The trade desk, the home seasonal card and alerts, League Pulse Now, and IR and taxi moves arrive."
+      }
+    ],
+    "mail": {
+      "words": "This app sends no email and no messages to anyone. A notice is recorded in the league ledger and shown to owners inside the app. These are the notices it recorded.",
+      "recorded": [
+        {
+          "id": "act.b9b5e146fd2cd30b75bb02af62f4226b9c4f3797367b15a56cb80f91d207e2e9",
+          "kind": "notice",
+          "text": "Rookie draft is Saturday",
+          "pinned": true,
+          "who": "creator",
+          "when": "2026-10-14T11:00:00Z",
+          "withdrawn": false,
+          "change": "Posted an official notice, pinned: “Rookie draft is Saturday”"
+        },
+        {
+          "id": "act.e4c6a0aca7afe508268be7ffc394e76c7e780bafbbd84fd0d9b1531c8d1590ee",
+          "kind": "notice",
+          "text": "Waivers run Tuesday",
+          "pinned": false,
+          "who": "creator",
+          "when": "2026-10-14T10:00:00Z",
+          "withdrawn": false,
+          "change": "Posted an official notice: “Waivers run Tuesday”"
+        }
+      ]
+    }
+  },
+  "owner": {
+    "league": "native.ops",
+    "revision": 4,
+    "notices": [
+      {
+        "id": "act.b9b5e146fd2cd30b75bb02af62f4226b9c4f3797367b15a56cb80f91d207e2e9",
+        "kind": "notice",
+        "text": "Rookie draft is Saturday",
+        "pinned": true,
+        "who": "creator",
+        "when": "2026-10-14T11:00:00Z",
+        "withdrawn": false,
+        "change": "Posted an official notice, pinned: “Rookie draft is Saturday”"
+      },
+      {
+        "id": "act.e4c6a0aca7afe508268be7ffc394e76c7e780bafbbd84fd0d9b1531c8d1590ee",
+        "kind": "notice",
+        "text": "Waivers run Tuesday",
+        "pinned": false,
+        "who": "creator",
+        "when": "2026-10-14T10:00:00Z",
+        "withdrawn": false,
+        "change": "Posted an official notice: “Waivers run Tuesday”"
+      }
+    ],
+    "notes": [
+      {
+        "id": "act.fa368f732f59048c1c4e43326ab17d693b6a956cbcf69dee89e6a091fd3fd9ed",
+        "kind": "note",
+        "text": "House rule: no trades in week 18",
+        "pinned": true,
+        "who": "creator",
+        "when": "2026-10-14T12:00:00Z",
+        "withdrawn": false,
+        "change": "Posted a league note, pinned: “House rule: no trades in week 18”"
+      }
+    ],
+    "releases": [
+      {
+        "date": "2026-10-14",
+        "title": "Commissioner tools",
+        "words": "Start a league of your own in the app, set its rules, give and take roles, and see every change in the league ledger."
+      },
+      {
+        "date": "2026-10-13",
+        "title": "Trade desk and reports",
+        "words": "The trade desk keeps exit plans, countdowns tick live, reports open in a drawer and news times say when they are estimates."
+      },
+      {
+        "date": "2026-10-12",
+        "title": "Franchise HQ and the home page",
+        "words": "Try a what-if on your roster, use the row menus, and read league dates straight from the rulebook."
+      },
+      {
+        "date": "2026-10-11",
+        "title": "Contracts, the Lab and the bid pool",
+        "words": "Contract moves, the Lab screens and the free-agent bid pool arrive, with money kept to the exact cent."
+      },
+      {
+        "date": "2026-10-10",
+        "title": "The first target screens",
+        "words": "The trade desk, the home seasonal card and alerts, League Pulse Now, and IR and taxi moves arrive."
+      }
+    ],
+    "mail": {
+      "words": "This app sends no email and no messages to anyone. A notice is recorded in the league ledger and shown to owners inside the app. These are the notices it recorded.",
+      "recorded": [
+        {
+          "id": "act.b9b5e146fd2cd30b75bb02af62f4226b9c4f3797367b15a56cb80f91d207e2e9",
+          "kind": "notice",
+          "text": "Rookie draft is Saturday",
+          "pinned": true,
+          "who": "creator",
+          "when": "2026-10-14T11:00:00Z",
+          "withdrawn": false,
+          "change": "Posted an official notice, pinned: “Rookie draft is Saturday”"
+        },
+        {
+          "id": "act.e4c6a0aca7afe508268be7ffc394e76c7e780bafbbd84fd0d9b1531c8d1590ee",
+          "kind": "notice",
+          "text": "Waivers run Tuesday",
+          "pinned": false,
+          "who": "creator",
+          "when": "2026-10-14T10:00:00Z",
+          "withdrawn": false,
+          "change": "Posted an official notice: “Waivers run Tuesday”"
+        }
+      ]
+    }
+  },
+  "withdrawn": {
+    "league": "native.ops",
+    "revision": 5,
+    "notices": [
+      {
+        "id": "act.e4c6a0aca7afe508268be7ffc394e76c7e780bafbbd84fd0d9b1531c8d1590ee",
+        "kind": "notice",
+        "text": "Waivers run Tuesday",
+        "pinned": false,
+        "who": "creator",
+        "when": "2026-10-14T10:00:00Z",
+        "withdrawn": false,
+        "change": "Posted an official notice: “Waivers run Tuesday”"
+      }
+    ],
+    "notes": [
+      {
+        "id": "act.fa368f732f59048c1c4e43326ab17d693b6a956cbcf69dee89e6a091fd3fd9ed",
+        "kind": "note",
+        "text": "House rule: no trades in week 18",
+        "pinned": true,
+        "who": "creator",
+        "when": "2026-10-14T12:00:00Z",
+        "withdrawn": false,
+        "change": "Posted a league note, pinned: “House rule: no trades in week 18”"
+      }
+    ],
+    "releases": [
+      {
+        "date": "2026-10-14",
+        "title": "Commissioner tools",
+        "words": "Start a league of your own in the app, set its rules, give and take roles, and see every change in the league ledger."
+      },
+      {
+        "date": "2026-10-13",
+        "title": "Trade desk and reports",
+        "words": "The trade desk keeps exit plans, countdowns tick live, reports open in a drawer and news times say when they are estimates."
+      },
+      {
+        "date": "2026-10-12",
+        "title": "Franchise HQ and the home page",
+        "words": "Try a what-if on your roster, use the row menus, and read league dates straight from the rulebook."
+      },
+      {
+        "date": "2026-10-11",
+        "title": "Contracts, the Lab and the bid pool",
+        "words": "Contract moves, the Lab screens and the free-agent bid pool arrive, with money kept to the exact cent."
+      },
+      {
+        "date": "2026-10-10",
+        "title": "The first target screens",
+        "words": "The trade desk, the home seasonal card and alerts, League Pulse Now, and IR and taxi moves arrive."
+      }
+    ],
+    "mail": {
+      "words": "This app sends no email and no messages to anyone. A notice is recorded in the league ledger and shown to owners inside the app. These are the notices it recorded.",
+      "recorded": [
+        {
+          "id": "act.b9b5e146fd2cd30b75bb02af62f4226b9c4f3797367b15a56cb80f91d207e2e9",
+          "kind": "notice",
+          "text": "Rookie draft is Saturday",
+          "pinned": true,
+          "who": "creator",
+          "when": "2026-10-14T11:00:00Z",
+          "withdrawn": true,
+          "change": "Posted an official notice, pinned: “Rookie draft is Saturday”"
+        },
+        {
+          "id": "act.e4c6a0aca7afe508268be7ffc394e76c7e780bafbbd84fd0d9b1531c8d1590ee",
+          "kind": "notice",
+          "text": "Waivers run Tuesday",
+          "pinned": false,
+          "who": "creator",
+          "when": "2026-10-14T10:00:00Z",
+          "withdrawn": false,
+          "change": "Posted an official notice: “Waivers run Tuesday”"
+        }
+      ]
+    }
+  }
+}

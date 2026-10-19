@@ -1,3 +1,8 @@
+import previewWire from './preview.wire.testdata.json';
+import jobsWire from './jobs.wire.testdata.json';
+import controlsWire from './controls.wire.testdata.json';
+import noticesWire from './notices.wire.testdata.json';
+import digestsWire from './digests.wire.testdata.json';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -15,7 +20,9 @@ const receipt = {
   message: 'Recorded in the league ledger.',
 };
 const port = (over: Partial<Port> = {}): Port => ({
-  execute: async () => receipt, ledger: async () => wire,
+  execute: async () => receipt, preview: async () => previewWire.hold, ledger: async () => wire,
+  jobs: async () => jobsWire.fresh, controls: async () => controlsWire,
+  notices: async () => noticesWire.commissioner, digests: async () => digestsWire.creator,
   leagues: async () => [{ id: wire.league, name: wire.name }],
   rules: async () => rulesWire, people: async () => peopleWire.owner, ...over,
 });
@@ -28,9 +35,10 @@ describe('Commissioner spine', () => {
     expect(reading.entries[0].what)
       .toBe('Created league “Our league” with 2 franchises and every rule waiting for a ruling');
     const html = renderToStaticMarkup(createElement(LedgerEntries, { reading }));
-    for (const label of ['League version: 2', 'By creator', 'Reason:', 'Safeguard:', 'Start our own league'])
+    for (const label of ['By creator', 'Reason:', 'Safeguard:', 'Start our own league'])
       expect(html).toContain(label);
     expect(html).not.toContain('G3');
+    expect(html).not.toContain('League version');
   });
   it('passes the exact command to Go and returns its receipt, never choosing gravity or role', async () => {
     let sent = '';
@@ -70,8 +78,10 @@ describe('Commissioner spine', () => {
     const room = readFileSync(new URL('../control/LeagueRoom.tsx', import.meta.url), 'utf8');
     expect(registry).toContain("import('../commissioner/proxy')");
     expect(registry).not.toMatch(/import .* from ['"].*commissioner/);
-    for (const screen of ['LeagueDesk', 'LeagueLedger', 'LeagueRules', 'LeaguePeople'])
-      expect(room).toContain(`lazy(() => import('../commissioner/${screen}'))`);
+    expect(room).toContain("lazy(() => import('../commissioner/LeagueLanding'))");
+    const groups = readFileSync(new URL('./ControlGroupView.tsx', import.meta.url), 'utf8');
+    for (const screen of ['LeagueLedger', 'LeagueRules', 'LeaguePeople'])
+      expect(groups).toContain(`lazy(() => import('./${screen}'))`);
     expect(room).not.toMatch(/import [^l].* from ['"]\.\.\/commissioner/);
     const budget = readFileSync(new URL('../../../scripts/bundle-budget.mjs', import.meta.url), 'utf8');
     expect(budget).toContain('Commissioner proxy in owner entry');

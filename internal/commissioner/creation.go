@@ -18,8 +18,9 @@ const (
 	legacyTeams   = 32
 	minFranchises = 2
 	maxFranchises = 32
-	// ledgerSeason is the one season the ledger holds until the rollover Act numbers seasons.
-	ledgerSeason = 1
+	// firstNFLSeason is the NFL's first season; a league cannot start before it.
+	firstNFLSeason = 1920
+	lastSeason     = 9999
 )
 
 // SeedValue is one preset value, stored whole (state and citation) so replay never depends on later code.
@@ -36,11 +37,11 @@ func franchiseIDs(count int) []string {
 	return ids
 }
 
-func presetSeed(preset string) ([]SeedValue, error) {
+func presetSeed(preset string, count, season int) ([]SeedValue, error) {
 	if preset != PresetLegacy {
 		return nil, nil
 	}
-	changes := leaguerules.SeedChanges(leaguerules.LegacyNFL(), "preset", ledgerSeason, time.Unix(1, 0).UTC())
+	changes := leaguerules.SeedChanges(leaguerules.LegacyNFLForTeams(count), "preset", season, time.Unix(1, 0).UTC())
 	seed := make([]SeedValue, len(changes))
 	for i, c := range changes {
 		body, err := leaguerules.EncodeStored(c.New)
@@ -79,8 +80,11 @@ func (r RawCommand) Prepared() (RawCommand, error) {
 	if err := a.validatePreset(); err != nil {
 		return r, err
 	}
+	if a.Season == 0 {
+		return r, fmt.Errorf("choose the NFL season this league starts in")
+	}
 	ids := franchiseIDs(a.FranchiseCount)
-	seed, err := presetSeed(a.Preset)
+	seed, err := presetSeed(a.Preset, a.FranchiseCount, a.Season)
 	if err != nil {
 		return r, err
 	}
@@ -94,11 +98,7 @@ func (r RawCommand) Prepared() (RawCommand, error) {
 
 func (a RawArgs) validatePreset() error {
 	switch a.Preset {
-	case PresetLegacy:
-		if a.FranchiseCount != legacyTeams {
-			return fmt.Errorf("the Legacy NFL preset is for 32 franchises; start an empty league for another size")
-		}
-	case PresetEmpty:
+	case PresetLegacy, PresetEmpty:
 		if a.FranchiseCount < minFranchises || a.FranchiseCount > maxFranchises {
 			return fmt.Errorf("choose between 2 and 32 franchises")
 		}
@@ -108,9 +108,21 @@ func (a RawArgs) validatePreset() error {
 	return nil
 }
 
+// validateCreationSeason accepts 0, a league recorded before seasons were numbered; Prepared refuses it
+// for a new league.
+func (a RawArgs) validateCreationSeason() error {
+	if a.Season != 0 && (a.Season < firstNFLSeason || a.Season > lastSeason) {
+		return fmt.Errorf("choose the NFL season this league starts in")
+	}
+	return nil
+}
+
 func (a RawArgs) validateCreation() error {
 	if strings.TrimSpace(a.Name) == "" || a.Entry != "" || a.People != nil {
 		return fmt.Errorf("give the new league a name")
+	}
+	if err := a.validateCreationSeason(); err != nil {
+		return err
 	}
 	if err := a.validatePreset(); err != nil {
 		return err
@@ -152,7 +164,7 @@ func creationEvents(r Record) []governance.Event {
 	return events
 }
 
-func seedChanges(r Record) ([]leaguerules.Change, error) {
+func seedChanges(r Record, season int) ([]leaguerules.Change, error) {
 	changes := make([]leaguerules.Change, 0, len(r.Command.Args.Seed))
 	for _, s := range r.Command.Args.Seed {
 		setting, err := leaguerules.DecodeStored(leaguerules.FieldPath(s.Field), s.Value)
@@ -161,7 +173,7 @@ func seedChanges(r Record) ([]leaguerules.Change, error) {
 		}
 		changes = append(changes, leaguerules.Change{LeagueID: r.Command.League, Field: leaguerules.FieldPath(s.Field),
 			New: setting, Effective: leaguerules.Effective{Kind: leaguerules.Now},
-			RecordedAt: r.Receipt.RecordedAt, Season: ledgerSeason})
+			RecordedAt: r.Receipt.RecordedAt, Season: season})
 	}
 	return changes, nil
 }

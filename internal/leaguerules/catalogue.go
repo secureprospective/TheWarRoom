@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 )
@@ -46,16 +48,24 @@ type SettingReading struct {
 	Citation string `json:"citation"`
 }
 
-func Catalogue() []CatalogueField {
+// catalogue is built once: every field, label and schema in it is fixed by the code, and rebuilding it by
+// reflection on each rule check was a third of a native command's time.
+var catalogue = sync.OnceValue(buildCatalogue) //nolint:gochecknoglobals // fixed by the code, built once, read-only
+
+// Catalogue lists every rule a commissioner can set. Each call gets its own list; the schemas inside are
+// shared and read-only.
+func Catalogue() []CatalogueField { return slices.Clone(catalogue()) }
+
+func buildCatalogue() []CatalogueField {
 	result := make([]CatalogueField, 0, len(ruleFields()))
 	for _, f := range ruleFields() {
 		section, _, _ := strings.Cut(string(f.pathName()), ".")
 		value := reflect.ValueOf(f.read(RuleSet{})).FieldByName("Value")
 		schema := schemaFor(value.Type())
 		fieldBounds(f.pathName(), &schema)
-		// House rules are reference text; every other registered field changes competition.
+		// Reference text and the display timezone do not change competitive rules.
 		result = append(result, CatalogueField{f.pathName(), f.labelText(), sectionLabels()[section], schema,
-			section != "house"})
+			section != "house" && section != "notify" && f.pathName() != "calendar.timezone"})
 	}
 	return result
 }
@@ -65,7 +75,7 @@ func sectionLabels() map[string]string {
 		"scoring": "Scoring", "standings": "Standings", "cap": "Salary cap", "contracts": "Contracts",
 		"ir": "IR", "taxi": "Taxi squad", "waivers": "Waivers", "bids": "Free-agent bids", "trades": "Trades",
 		"schedule": "Schedule", "playoffs": "Playoffs", "house": "House rules", "calendar": "Calendar",
-		"draft": "Draft"}
+		"draft": "Draft", "notify": "Notifications"}
 }
 
 // percentFields hold a share of one, which a GM reads as a percentage.
@@ -528,6 +538,9 @@ func renderDecimal(n int64) string {
 	}
 	return sign + strconv.FormatInt(n/10000, 10) + "." + fraction
 }
+
+// DurationWords writes a length of time the way a rule shows it: "1 hour 30 minutes".
+func DurationWords(d time.Duration) string { return renderDuration(d) }
 
 func renderDuration(d time.Duration) string {
 	parts := []string{}

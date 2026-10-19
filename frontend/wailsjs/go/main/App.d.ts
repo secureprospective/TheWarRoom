@@ -5,6 +5,7 @@ import {lineup} from '../models';
 import {snapshot} from '../models';
 import {commissioner} from '../models';
 import {envelope} from '../models';
+import {time} from '../models';
 import {personal} from '../models';
 
 export function AppInfo():Promise<main.AppInfo>;
@@ -91,21 +92,43 @@ export function TargetBidWithdraw(arg1:string):Promise<main.BidPlan>;
 
 export function TargetBylaws():Promise<Array<main.BylawSection>>;
 
+export function TargetCacheClear(arg1:string):Promise<main.DataActResult>;
+
+export function TargetCacheScopes():Promise<Array<main.DataScope>>;
+
 export function TargetCheckLineup(arg1:string,arg2:Array<string>):Promise<lineup.Result>;
 
 export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
 
+export function TargetCommissionerActor():Promise<string>;
+
+export function TargetCommissionerControls():Promise<commissioner.Controls>;
+
+export function TargetCommissionerDigests(arg1:string):Promise<commissioner.Digests>;
+
 export function TargetCommissionerExecute(arg1:string):Promise<commissioner.Receipt>;
+
+export function TargetCommissionerJobs(arg1:string):Promise<commissioner.Jobs>;
 
 export function TargetCommissionerLeagues():Promise<Array<commissioner.NativeLeague>>;
 
 export function TargetCommissionerLedger(arg1:string):Promise<commissioner.Ledger>;
 
+export function TargetCommissionerLedgerFiltered(arg1:string,arg2:string):Promise<commissioner.Ledger>;
+
+export function TargetCommissionerMarket(arg1:string,arg2:string):Promise<commissioner.Market>;
+
+export function TargetCommissionerNotices(arg1:string):Promise<commissioner.LeagueNotes>;
+
 export function TargetCommissionerPeople(arg1:string):Promise<commissioner.People>;
 
+export function TargetCommissionerPreview(arg1:string):Promise<commissioner.Preview>;
+
 export function TargetCommissionerRules(arg1:string):Promise<commissioner.Rules>;
+
+export function TargetCommissionerSchedule(arg1:string):Promise<commissioner.ManagedSchedule>;
 
 export function TargetComms(arg1:main.RawCommsScope):Promise<main.CommsBoard>;
 
@@ -114,6 +137,8 @@ export function TargetCommsRefresh(arg1:boolean):Promise<void>;
 export function TargetContractActs(arg1:main.RawContractAct):Promise<main.Reading___main_ContractActView_>;
 
 export function TargetContracts(arg1:snapshot.RawContractScope):Promise<main.ContractsReadings>;
+
+export function TargetCorrections(arg1:string):Promise<commissioner.Corrections>;
 
 export function TargetCounterpartTeam(arg1:main.RawCounterpartTeam):Promise<main.Reading_main_TeamCounterpart_>;
 
@@ -141,6 +166,10 @@ export function TargetDraftTradeAccept(arg1:string,arg2:string):Promise<envelope
 
 export function TargetHandOff(arg1:string):Promise<envelope.Receipt>;
 
+export function TargetLeagueCalendar(arg1:main.RawLeagueCalendarScope):Promise<commissioner.Calendar>;
+
+export function TargetLeagueSchedule(arg1:main.RawLeagueScheduleScope):Promise<commissioner.Schedule>;
+
 export function TargetLeagueSettings():Promise<main.Report>;
 
 export function TargetLineup(arg1:string):Promise<main.LineupReading>;
@@ -160,6 +189,58 @@ export function TargetMarketStretches(arg1:main.RawMarketScope):Promise<main.Rea
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 
 export function TargetNFLDraft():Promise<main.Report>;
+
+export function TargetNativeAssets(arg1:string):Promise<commissioner.NativeAssets>;
+
+export function TargetNativeBidAction(arg1:commissioner.RawCommand):Promise<commissioner.Receipt>;
+
+export function TargetNativeBids(arg1:string,arg2:string):Promise<commissioner.NativeBids>;
+
+export function TargetNativeBracket(arg1:string,arg2:number):Promise<commissioner.NativeBracket>;
+
+export function TargetNativeCapCheck(arg1:string,arg2:string):Promise<commissioner.NativeCapCheck>;
+
+export function TargetNativeContractQuote(arg1:commissioner.RawContractQuote):Promise<commissioner.ContractQuote>;
+
+export function TargetNativeDirectory(arg1:string):Promise<commissioner.NativeDirectory>;
+
+export function TargetNativeDraft(arg1:commissioner.RawNativeDraftScope):Promise<commissioner.NativeDraft>;
+
+export function TargetNativeDraftPick(arg1:commissioner.DraftPickInput):Promise<commissioner.Receipt>;
+
+export function TargetNativeFranchiseSchedule(arg1:main.RawNativeScheduleScope):Promise<commissioner.FranchiseSchedule>;
+
+export function TargetNativeHouseRules(arg1:string):Promise<commissioner.NativeHouseRules>;
+
+export function TargetNativeLineup(arg1:string,arg2:string,arg3:number,arg4:string):Promise<commissioner.NativeLineup>;
+
+export function TargetNativeLineupCheck(arg1:commissioner.RawNativeLineup):Promise<commissioner.NativeLineupCheck>;
+
+export function TargetNativeLineupSet(arg1:string):Promise<commissioner.Receipt>;
+
+export function TargetNativePlayerScore(arg1:string,arg2:string,arg3:number,arg4:number):Promise<commissioner.NativePlayerScore>;
+
+export function TargetNativeReserveCheck(arg1:string):Promise<commissioner.NativeReserveCheck>;
+
+export function TargetNativeResults(arg1:string,arg2:number,arg3:number):Promise<commissioner.NativeResults>;
+
+export function TargetNativeRosterCheck(arg1:string):Promise<commissioner.NativeRosterCheck>;
+
+export function TargetNativeScorePreview(arg1:string):Promise<commissioner.ScorePreview>;
+
+export function TargetNativeSeed(arg1:main.RawNativeSeedRequest):Promise<commissioner.Receipt>;
+
+export function TargetNativeStandings(arg1:string,arg2:number):Promise<commissioner.NativeStandings>;
+
+export function TargetNativeTradeAction(arg1:commissioner.RawCommand):Promise<commissioner.Receipt>;
+
+export function TargetNativeTrades(arg1:string,arg2:string):Promise<commissioner.NativeTrades>;
+
+export function TargetNativeWaiverAction(arg1:commissioner.RawCommand):Promise<commissioner.Receipt>;
+
+export function TargetNativeWaivers(arg1:string,arg2:string,arg3:time.Time):Promise<commissioner.NativeWaivers>;
+
+export function TargetNativeWeek(arg1:main.RawNativeWeekScope):Promise<commissioner.NativeWeek>;
 
 export function TargetNow(arg1:number,arg2:number,arg3:string):Promise<main.NowBoard>;
 
@@ -218,6 +299,8 @@ export function TargetShellStatus():Promise<main.ShellStatus>;
 export function TargetSiteNews():Promise<main.Report>;
 
 export function TargetSnapshot():Promise<snapshot.Snapshot>;
+
+export function TargetStatQueue(arg1:string,arg2:number):Promise<commissioner.StatQueue>;
 
 export function TargetTradeBuilder(arg1:main.RawTradeBuilder):Promise<main.Reading_main_TradeBuilderView_>;
 

@@ -272,6 +272,13 @@ export function createCommands(
       ...ambient, id: 'refresh.run', label: 'Refresh data', gravity: 'G1', args: ['scope'],
       run: ({ scope }: { scope: string }) => dataRun({ kind: 'refresh', scope }),
     }),
+    'cache.run': command({
+      ...ambient, id: 'cache.run', label: 'Read data again', gravity: 'G1', args: ['scope'],
+      run: ({ scope }: { scope: string }) => {
+        void import('../datasources/cacheState').then(m => m.cacheState.run(scope))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     'data.run': command({
       ...ambient, id: 'data.run', label: 'Data settings', gravity: 'G1', args: ['kind'],
       run: (action: import('../datasources/state').DataAction) => dataRun(action),
@@ -429,6 +436,14 @@ export function createCommands(
         if (!['refresh', 'team', 'kind', 'more', 'open'].includes(args.action))
           throw new Error('Comms: invalid action');
         void import('../comms/state').then(m => m.commsState.choose(args.action, args.value))
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
+    'commissioner.surface': command({
+      ...ambient, id: 'commissioner.surface', label: 'Change the league view',
+      args: ['screen', 'action', 'value'],
+      run: (args: import('../commissioner/surfaceActions').SurfaceAction) => {
+        void import('../commissioner/surfaceActions').then(m => m.surfaceActions.run(args))
           .catch(cause => state.write({ notice: String(cause) }));
       },
     }),

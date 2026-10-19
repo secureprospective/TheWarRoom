@@ -1,17 +1,20 @@
 package leaguerules
 
 type ScoringRules struct {
-	Catalogue Value[map[StatID]Stat]
+	Catalogue       Value[map[StatID]Stat]
+	RoundStatPoints Value[bool]
 }
 
 func legacyScoring() ScoringRules {
 	return ScoringRules{
-		Catalogue: cited[map[StatID]Stat](legacyCatalogue(), "Rulebook §4; Math §13"),
+		Catalogue:       cited[map[StatID]Stat](legacyCatalogue(), "MFL league scoring settings"),
+		RoundStatPoints: cited(true, "MFL league scoring settings"),
 	}
 }
 
 func scoringFields() []ruleField {
 	return []ruleField{
+		field[bool]{path: "scoring.roundStatPoints", label: "Round each stat’s points to the cent", access: func(r *RuleSet) *Value[bool] { return &r.Scoring.RoundStatPoints }},
 		field[map[StatID]Stat]{path: "scoring.catalogue", label: "Scoring values", access: func(r *RuleSet) *Value[map[StatID]Stat] { return &r.Scoring.Catalogue }},
 	}
 }
@@ -27,6 +30,7 @@ type Stat struct {
 	Points    Value[Decimal]
 	Bonuses   Value[[]Bonus]
 	Positions Value[[]Position]
+	Once      Value[bool]
 }
 
 func legacyCatalogue() map[StatID]Stat {
@@ -50,21 +54,25 @@ func legacyCatalogue() map[StatID]Stat {
 		{"fg_made_0_39", "Field goal made from 0 to 39 yards", "Kicking", 30000},
 		{"fg_made_40_49", "Field goal made from 40 to 49 yards", "Kicking", 40000},
 		{"fg_made_50_59", "Field goal made from 50 to 59 yards", "Kicking", 50000},
-		{"fg_made_60_69", "Field goal made from 60 to 69 yards", "Kicking", 60000},
+		{"fg_made_60_99", "Field goal made from 60 to 99 yards", "Kicking", 60000},
 		{"fg_missed_0_29", "Field goal missed from 0 to 29 yards", "Kicking", -30000},
 		{"fg_missed_30_99", "Field goal missed from 30 yards or longer", "Kicking", -10000},
 		{"punt_return_td", "Punt return touchdown", "Returns", 60000},
 		{"punt_return_yards", "Punt return yards", "Returns", 250},
 		{"kickoff_return_td", "Kickoff return touchdown", "Returns", 100000},
 		{"kickoff_return_yards", "Kickoff return yards", "Returns", 250},
-		{"fumble_lost", "Fumble lost", "Fumbles", -20000},
+		{"fumbles_total", "All fumbles", "Fumbles", -20000},
+		{"fumble_recovery_tds", "Fumble recovery touchdown", "Fumbles", 60000},
+		{"pat_made", "Extra point made", "Kicking", 10000},
+		{"pat_missed", "Extra point missed", "Kicking", -10000},
+		{"pat_blocked", "Extra point blocked", "Kicking", -10000},
 		{"own_fumble_recovery", "Own fumble recovery", "Fumbles", 20000},
 		{"opponent_fumble_recovery", "Opponent fumble recovery", "Fumbles", 30000},
-		{"opponent_fumble_recovery_yards", "Opponent fumble recovery yards", "Fumbles", 250},
+		{"opponent_fumble_recovery_yards", "Opponent fumble recovery yards", "Fumbles", 1000},
 		{"forced_fumble", "Forced fumble", "Fumbles", 40000},
 		{"interception_return_td", "Interception return touchdown", "Defense", 60000},
 		{"interception_caught", "Interception caught", "Defense", 50000},
-		{"interception_return_yards", "Interception return yards", "Defense", 250},
+		{"interception_return_yards", "Interception return yards", "Defense", 1000},
 		{"pass_defensed", "Pass defensed", "Defense", 25000},
 		{"qb_hit", "Quarterback hit", "Defense", 10000},
 		{"blocked_fg", "Blocked field goal", "Defense", 70000},
@@ -84,12 +92,13 @@ func legacyCatalogue() map[StatID]Stat {
 	}
 	installLongPlays(result)
 	installPositionSplit(result)
+	installCountingRules(result)
 	return result
 }
 func scoringStat(label, group string, points Decimal) Stat {
-	return Stat{Label: cited(label, "Rulebook §4"), Group: cited(group, "Rulebook §4"),
-		Used: cited(true, "Rulebook §4"), Points: cited(points, "Rulebook §4"),
-		Bonuses: cited([]Bonus{}, "Rulebook §4"), Positions: cited([]Position{}, "Rulebook §4")}
+	return Stat{Label: cited(label, "MFL league scoring settings"), Group: cited(group, "MFL league scoring settings"),
+		Used: cited(true, "MFL league scoring settings"), Points: cited(points, "MFL league scoring settings"),
+		Once: cited(false, "MFL league scoring settings"), Bonuses: cited([]Bonus{}, "MFL league scoring settings"), Positions: cited([]Position{}, "MFL league scoring settings")}
 }
 func installLongPlays(catalogue map[StatID]Stat) {
 	rows := []struct {
@@ -105,33 +114,52 @@ func installLongPlays(catalogue map[StatID]Stat) {
 		stat := scoringStat(row.label, row.group, 0)
 		bonuses := make([]Bonus, len(row.thresholds))
 		for i, at := range row.thresholds {
-			bonuses[i] = Bonus{At: cited(at, "Rulebook §4"), Points: cited(Decimal(10000), "Rulebook §4; Math §13: stacking")}
+			bonuses[i] = Bonus{At: cited(at, "MFL league scoring settings"), Points: cited(Decimal(10000), "MFL league scoring settings")}
 		}
-		stat.Bonuses = cited(bonuses, "Rulebook §4; Math §13: stacking")
+		stat.Bonuses = cited(bonuses, "MFL league scoring settings")
 		catalogue[row.id] = stat
 	}
 }
 func installPositionSplit(catalogue map[StatID]Stat) {
 	for _, id := range []StatID{"tackle_line", "assist_line"} {
 		stat := catalogue[id]
-		stat.Positions = cited([]Position{DT, DE}, "Math §13: true-position base rate")
+		stat.Positions = cited([]Position{DT, DE}, "MFL league scoring settings")
 		catalogue[id] = stat
 	}
 	for _, id := range []StatID{"tackle", "assist"} {
 		stat := catalogue[id]
-		stat.Positions = cited([]Position{LB, CB, S, QB, RB, WR, TE, PK}, "Math §13: all except DT/DE")
+		stat.Positions = cited([]Position{LB, CB, S, QB, RB, WR, TE, PK}, "MFL league scoring settings")
 		catalogue[id] = stat
 	}
-	// Rulebook §4 gives -3 / -1; the league's decoded scoring sets the 30-yard split (OQ-002).
-	for _, id := range []StatID{"fg_missed_0_29", "fg_missed_30_99"} {
+	for _, id := range []StatID{"tackle", "pass_defensed", "interception_caught"} {
 		stat := catalogue[id]
-		stat.Label = cited(stat.Label.Value, "Rulebook §4; MFL_Scoring_Rules_Decode OQ-002")
+		if id == "tackle" {
+			stat.Positions = cited([]Position{LB, QB, RB, WR, TE, PK}, "MFL league scoring settings")
+		} else {
+			stat.Positions = cited([]Position{DT, DE, LB, QB, RB, WR, TE, PK}, "MFL league scoring settings")
+		}
 		catalogue[id] = stat
+		stat.Label = cited(stat.Label.Value+" (cornerbacks and safeties)", "MFL league scoring settings")
+		stat.Positions = cited([]Position{CB, S}, "MFL league scoring settings")
+		stat.Points.Value += 5000
+		if id == "interception_caught" {
+			stat.Points.Value += 5000
+		}
+		catalogue[id+"_secondary"] = stat
 	}
 }
 
 // UnusedStat keeps a recorded stat available without treating it as zero-point scoring.
 func UnusedStat(label, group string) Stat {
 	return Stat{Label: Known(label), Group: Known(group), Used: Known(false),
-		Points: Needs[Decimal]("No scoring value chosen"), Bonuses: Known([]Bonus{}), Positions: Known([]Position{})}
+		Once: Known(false), Points: Needs[Decimal]("No scoring value chosen"), Bonuses: Known([]Bonus{}), Positions: Known([]Position{})}
+}
+
+func installCountingRules(catalogue map[StatID]Stat) {
+	stat := catalogue["own_fumble_recovery"]
+	stat.Once = cited(true, "MFL league scoring settings")
+	catalogue["own_fumble_recovery"] = stat
+	lost := scoringStat("Fumbles lost", "Fumbles", -20000)
+	lost.Used = cited(false, "MFL league scoring settings")
+	catalogue["fumble_lost"] = lost
 }

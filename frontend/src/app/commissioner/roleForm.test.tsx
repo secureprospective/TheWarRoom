@@ -30,6 +30,7 @@ describe('Give or take a role', () => {
     await type(control(host, 'Franchise'), 'franchise.02');
     expect(disabled(button(host, give))).toBe(true);
     await type(control(host, 'Reason'), 'Owner two will help run the league');
+    await settle();
     expect(disabled(button(host, give))).toBe(false);
     await click(host, give);
     await settle();
@@ -46,6 +47,7 @@ describe('Give or take a role', () => {
     await type(control(host, 'What to do'), 'revoke');
     await type(control(host, 'Role'), 'DOT');
     await type(control(host, 'Reason'), 'Stepping down from trade review');
+    await settle();
     await click(host, 'Take this role away');
     await settle();
     expect(calls.sent[0]).toMatchObject({ command: 'commish.role.revoke',
@@ -59,6 +61,7 @@ describe('Give or take a role', () => {
     calls.ledger.length = calls.rules.length = calls.people.length = 0;
     await type(control(host, 'Franchise'), 'franchise.02');
     await type(control(host, 'Reason'), 'A second deputy');
+    await settle();
     await click(host, give);
     await settle();
     expect(refusal).toContain('already has a co-commissioner');

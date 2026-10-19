@@ -17,7 +17,8 @@ func TestCatalogueDescribesEveryField(t *testing.T) {
 		if f.Label == "" || f.Section == "" || f.Schema.Kind == "" {
 			t.Fatalf("incomplete catalogue entry: %+v", f)
 		}
-		if f.Competitive != !strings.HasPrefix(string(f.Path), "house.") {
+		if f.Competitive != (!strings.HasPrefix(string(f.Path), "house.") &&
+			!strings.HasPrefix(string(f.Path), "notify.") && f.Path != "calendar.timezone") {
 			t.Fatalf("%s competitive = %v", f.Path, f.Competitive)
 		}
 	}
@@ -36,6 +37,19 @@ func TestCatalogueDescribesEveryField(t *testing.T) {
 	}
 	if byPath["ir.slots"].Section != "IR" || byPath["bids.rfa"].Section != "Free-agent bids" {
 		t.Fatal("section labels are not plain words")
+	}
+}
+
+// The catalogue is built once and shared, so one caller's edits to its list must not reach the next.
+func TestCatalogueCallersCannotChangeEachOthersList(t *testing.T) {
+	first := Catalogue()
+	if !reflect.DeepEqual(first, buildCatalogue()) {
+		t.Fatal("the remembered catalogue differs from a fresh build")
+	}
+	label := first[0].Label
+	first[0].Label = "changed by a caller"
+	if got := Catalogue()[0].Label; got != label {
+		t.Fatalf("a caller's edit reached the shared catalogue: %q", got)
 	}
 }
 
@@ -123,5 +137,38 @@ func TestSettingWords(t *testing.T) {
 		if !free && (strings.Contains(text, "_") || strings.Contains(text, "<")) {
 			t.Fatalf("%s shows an internal term: %s", path, text)
 		}
+	}
+}
+
+func TestBidStandForIsCommissionerOwnedDuration(t *testing.T) {
+	const path FieldPath = "bids.standFor"
+	found := false
+	for _, field := range Catalogue() {
+		if field.Path == path {
+			found = true
+			if field.Schema.Kind != "nanoseconds" || !field.Competitive {
+				t.Fatalf("stand time schema: %+v", field)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("stand time missing from catalogue")
+	}
+	legacy := LegacyNFL().Bids.StandFor
+	if legacy.State != IsKnown || legacy.Value != 24*time.Hour || !strings.Contains(legacy.Citation, "League_History_v1.md:36") {
+		t.Fatalf("Legacy stand time: %+v", legacy)
+	}
+	if (RuleSet{}).Bids.StandFor.State != NeedsRuling {
+		t.Fatal("empty league borrowed Legacy's clock")
+	}
+	setting, err := DecodeSetting(path, json.RawMessage(`172800000000000`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := setting.(Value[time.Duration]); !ok || got.Value != 48*time.Hour {
+		t.Fatalf("decoded duration: %+v", setting)
+	}
+	if _, err := DecodeSetting(path, json.RawMessage(`-1`)); err == nil {
+		t.Fatal("negative stand time accepted")
 	}
 }

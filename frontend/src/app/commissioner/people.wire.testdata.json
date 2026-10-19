@@ -65,8 +65,10 @@
     ],
     "succession": "The commissioner is serving; no succession is pending",
     "yourRole": "Commissioner",
+    "yourFranchise": "",
     "mayChangeRules": true,
-    "mayGrantRoles": true
+    "mayGrantRoles": true,
+    "mayPostNotices": true
   },
   "owner": {
     "league": "native.people",
@@ -122,8 +124,10 @@
     ],
     "succession": "The commissioner is serving; no succession is pending",
     "yourRole": "Owner",
+    "yourFranchise": "franchise.01",
     "mayChangeRules": false,
-    "mayGrantRoles": false
+    "mayGrantRoles": false,
+    "mayPostNotices": false
   },
   "secondCoCommissionerRefusal": "This league already has a co-commissioner: revoke them first"
 }

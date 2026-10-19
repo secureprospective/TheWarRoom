@@ -89,7 +89,7 @@ func TestRuleGravityComesFromTheCensus(t *testing.T) {
 
 func TestCreationIsExpandedByGo(t *testing.T) {
 	legacy, err := RawCommand{League: "native.test", Command: Create, Args: RawArgs{Name: "Ours",
-		Preset: PresetLegacy}, Reason: "start", Request: "create", Effective: "now", Visibility: "league"}.Prepared()
+		Preset: PresetLegacy, Season: 2026}, Reason: "start", Request: "create", Effective: "now", Visibility: "league"}.Prepared()
 	if err != nil || legacy.Args.FranchiseCount != 32 || len(legacy.Args.Franchises) != 32 ||
 		legacy.Args.Franchises[0] != "franchise.01" || legacy.Args.Franchises[31] != "franchise.32" ||
 		len(legacy.Args.Seed) != len(leaguerules.Catalogue()) {
@@ -113,7 +113,7 @@ func TestCreationIsExpandedByGo(t *testing.T) {
 		t.Fatal("caller-chosen preset value accepted")
 	}
 	for _, args := range []RawArgs{
-		{Name: "Ours", Preset: PresetLegacy, FranchiseCount: 12}, {Name: "Ours", Preset: PresetEmpty},
+		{Name: "Ours", Preset: PresetEmpty},
 		{Name: "Ours", Preset: PresetEmpty, FranchiseCount: 1}, {Name: "Ours", Preset: PresetEmpty, FranchiseCount: 33},
 		{Name: "Ours", Preset: "mfl", FranchiseCount: 12}, {Name: "Ours", FranchiseCount: 12},
 	} {
@@ -143,6 +143,16 @@ func TestStartingRuleSourcesArePlainWords(t *testing.T) {
 			"Needs a ruling: only for keeper leagues"},
 		{PresetLegacy, "Needs a ruling", "Census CM-041 Q-E1", "Needs a ruling"},
 		{PresetEmpty, "Needs a ruling", "", "Needs a ruling"},
+		{PresetEmpty, "Needs a ruling", "Needs a ruling; the commissioner sets the exact trade deadline.",
+			"Needs a ruling; the commissioner sets the exact trade deadline."},
+		{PresetLegacy, "Needs a ruling", "The commissioner sets the exact trade deadline.",
+			"Needs a ruling: The commissioner sets the exact trade deadline."},
+		{PresetLegacy, "Needs a ruling", "fact 12c: exact instant chosen by commissioner",
+			"Needs a ruling: exact instant chosen by commissioner"},
+		{PresetLegacy, "Needs a ruling", "fact 12c", "Needs a ruling"},
+		{PresetEmpty, "Needs a ruling", "  Needs a ruling; the commissioner sets it.  ",
+			"Needs a ruling; the commissioner sets it."},
+		{PresetEmpty, "Needs a ruling", "  ", "Needs a ruling"},
 	} {
 		if got := startingSource(c.preset, c.state, c.citation); got != c.want {
 			t.Errorf("%s %s %q: got %q, want %q", c.preset, c.state, c.citation, got, c.want)

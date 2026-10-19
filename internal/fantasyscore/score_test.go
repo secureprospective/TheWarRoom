@@ -16,19 +16,23 @@ func TestLegacyRatesAndTruePositions(t *testing.T) {
 		"rushing_attempt": 1500, "rushing_two_point": 20000, "receiving_td": 60000,
 		"receiving_yards": 1000, "reception": 10000, "receiving_two_point": 20000,
 		"fg_made_0_39": 30000, "fg_made_40_49": 40000, "fg_made_50_59": 50000,
-		"fg_made_60_69": 60000, "fg_missed_0_29": -30000, "fg_missed_30_99": -10000,
+		"fg_made_60_99": 60000, "fg_missed_0_29": -30000, "fg_missed_30_99": -10000,
 		"punt_return_td": 60000, "punt_return_yards": 250, "kickoff_return_td": 100000,
-		"kickoff_return_yards": 250, "fumble_lost": -20000, "own_fumble_recovery": 20000,
-		"opponent_fumble_recovery": 30000, "opponent_fumble_recovery_yards": 250,
+		"kickoff_return_yards": 250, "fumbles_total": -20000, "own_fumble_recovery": 20000,
+		"opponent_fumble_recovery": 30000, "opponent_fumble_recovery_yards": 1000,
 		"forced_fumble": 40000, "interception_return_td": 60000, "interception_caught": 50000,
-		"interception_return_yards": 250, "pass_defensed": 25000, "qb_hit": 10000,
+		"interception_return_yards": 1000, "pass_defensed": 25000, "qb_hit": 10000,
 		"blocked_fg": 70000, "blocked_punt": 70000, "blocked_extra_point": 70000,
 		"sack": 45000, "tackle_for_loss": 25000, "safety": 100000,
 	}
 	for id, rate := range rates {
 		t.Run(string(id), func(t *testing.T) {
 			line := StatLine{Quantities: map[leaguerules.StatID]leaguerules.Decimal{id: 20000}}
-			assertScore(t, leaguerules.LegacyNFL().Scoring, leaguerules.QB, line, 2*rate)
+			want := 2 * rate
+			if id == "own_fumble_recovery" {
+				want = rate
+			}
+			assertScore(t, leaguerules.LegacyNFL().Scoring, leaguerules.QB, line, want)
 		})
 	}
 	for _, pos := range []leaguerules.Position{leaguerules.QB, leaguerules.RB, leaguerules.WR,
@@ -37,6 +41,9 @@ func TestLegacyRatesAndTruePositions(t *testing.T) {
 			"tackle": 20000, "assist": 10000,
 			"tackle_for_loss": 10000, "sack": 5000}}
 		want := leaguerules.Decimal(87500)
+		if pos == leaguerules.CB || pos == leaguerules.S {
+			want = 97500
+		}
 		if pos == leaguerules.DT || pos == leaguerules.DE {
 			want = 112500
 		}
@@ -186,5 +193,81 @@ func assertScore(t *testing.T, rules leaguerules.ScoringRules, pos leaguerules.P
 	points, _, err := Score(rules, pos, line)
 	if err != nil || points.State != leaguerules.IsKnown || points.Value != want {
 		t.Fatalf("points %+v error %v, want %d", points, err, want)
+	}
+}
+
+func TestScoringRulingsRemainCommissionerSettings(t *testing.T) {
+	for _, tc := range []struct {
+		id             leaguerules.StatID
+		position       leaguerules.Position
+		quantity, want leaguerules.Decimal
+	}{
+		{"fumbles_total", leaguerules.RB, 20000, -40000},
+		{"pat_made", leaguerules.PK, 20000, 20000},
+		{"pat_missed", leaguerules.PK, 20000, -20000},
+		{"pat_blocked", leaguerules.PK, 20000, -20000},
+		{"fumble_recovery_tds", leaguerules.DE, 10000, 60000},
+		{"tackle", leaguerules.CB, 10000, 20000},
+		{"pass_defensed", leaguerules.S, 10000, 30000},
+		{"interception_caught", leaguerules.CB, 10000, 60000},
+		{"interception_return_yards", leaguerules.LB, 130000, 13000},
+		{"opponent_fumble_recovery_yards", leaguerules.DE, 130000, 13000},
+		{"fg_made_60_99", leaguerules.PK, 10000, 60000},
+	} {
+		t.Run(string(tc.id), func(t *testing.T) {
+			rules := leaguerules.LegacyNFL().Scoring
+			line := StatLine{Quantities: map[leaguerules.StatID]leaguerules.Decimal{tc.id: tc.quantity}}
+			assertScore(t, rules, tc.position, line, tc.want)
+			id, reason := positionStat(tc.id, tc.position, rules.Catalogue.Value)
+			if reason != "" {
+				t.Fatal(reason)
+			}
+			stat := rules.Catalogue.Value[id]
+			stat.Points = leaguerules.Known(leaguerules.Decimal(20000))
+			rules.Catalogue.Value[id] = stat
+			assertScore(t, rules, tc.position, line, tc.quantity*2)
+			stat.Used = leaguerules.Known(false)
+			rules.Catalogue.Value[id] = stat
+			assertScore(t, rules, tc.position, line, 0)
+		})
+	}
+}
+
+func TestOwnRecoveryCanScoreOnceOrEach(t *testing.T) {
+	rules := leaguerules.LegacyNFL().Scoring
+	line := StatLine{Quantities: map[leaguerules.StatID]leaguerules.Decimal{"own_fumble_recovery": 30000}}
+	assertScore(t, rules, leaguerules.QB, line, 20000)
+	stat := rules.Catalogue.Value["own_fumble_recovery"]
+	stat.Once = leaguerules.Known(false)
+	rules.Catalogue.Value["own_fumble_recovery"] = stat
+	assertScore(t, rules, leaguerules.QB, line, 60000)
+	stat.Once = leaguerules.Needs[bool]("Choose once or each")
+	rules.Catalogue.Value["own_fumble_recovery"] = stat
+	points, _, err := Score(rules, leaguerules.QB, line)
+	if err != nil || points.State != leaguerules.NeedsRuling {
+		t.Fatalf("unset counting guessed: %+v %v", points, err)
+	}
+}
+
+func TestRoundEachStatToCentIsOptional(t *testing.T) {
+	rules := leaguerules.LegacyNFL().Scoring
+	line := StatLine{Quantities: map[leaguerules.StatID]leaguerules.Decimal{
+		"punt_return_yards": 10000, "kickoff_return_yards": 10000}}
+	assertScore(t, rules, leaguerules.WR, line, 600)
+	rules.RoundStatPoints = leaguerules.Known(false)
+	assertScore(t, rules, leaguerules.WR, line, 500)
+	rules.RoundStatPoints = leaguerules.Needs[bool]("Choose rounding")
+	points, _, err := Score(rules, leaguerules.WR, line)
+	if err != nil || points.State != leaguerules.NeedsRuling {
+		t.Fatalf("unset rounding guessed: %+v %v", points, err)
+	}
+	for _, tc := range [][2]leaguerules.Decimal{{250, 300}, {-250, -300}, {249, 200}, {-249, -200}} {
+		got, err := roundCent(tc[0])
+		if err != nil || got != tc[1] {
+			t.Fatalf("round %d: %d %v", tc[0], got, err)
+		}
+	}
+	if got, err := roundCent(math.MaxInt64); err != nil || got != math.MaxInt64-7 {
+		t.Fatalf("range edge rounding: %d %v", got, err)
 	}
 }

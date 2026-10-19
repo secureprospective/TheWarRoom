@@ -59,7 +59,7 @@ func executeCommissionerTest(t *testing.T, app *App, raw commissioner.RawCommand
 func peopleWireLeague(t *testing.T, app *App) commissioner.RawCommand {
 	t.Helper()
 	raw := commissioner.RawCommand{League: "native.people", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "People league", Preset: commissioner.PresetEmpty, FranchiseCount: 4},
+		Args:   commissioner.RawArgs{Name: "People league", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 4},
 		Reason: "Create our league", Request: "create", Effective: "now", Visibility: "league"}
 	executeCommissionerTest(t, app, raw)
 	raw.Command, raw.Visibility = "commish.seat.replace", "league"
@@ -115,7 +115,9 @@ func TestCommissionerPeopleWire(t *testing.T) {
 		views[principal] = people
 	}
 	if !views["creator"].MayGrantRoles || views["private-deputy"].MayGrantRoles ||
-		views["owner-one"].YourRole != "Owner" || views["stranger"].YourRole != "Visitor" {
+		views["owner-one"].YourRole != "Owner" || views["stranger"].YourRole != "Visitor" ||
+		views["owner-one"].YourFranchise != "franchise.01" || views["creator"].YourFranchise != "" ||
+		views["stranger"].YourFranchise != "" {
 		t.Fatalf("the reading does not say what each principal may start: %+v", views)
 	}
 	app.commissionerSession = testCommissionerSession{"creator"}
@@ -180,7 +182,7 @@ func TestCommissionerStaleVersionIsRefusedWithTheWordsTheFormWatchesFor(t *testi
 func TestCommissionerWire(t *testing.T) {
 	app := commissionerTestApp(t)
 	raw := commissioner.RawCommand{League: "native.wire", Command: commissioner.Create,
-		Args: commissioner.RawArgs{Name: "Our league", Preset: commissioner.PresetEmpty, FranchiseCount: 2}, Reason: "Start our own league", Request: "create",
+		Args: commissioner.RawArgs{Name: "Our league", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 2}, Reason: "Start our own league", Request: "create",
 		Effective: "now", Visibility: "league"}
 	first := executeCommissionerTest(t, app, raw)
 	raw.Command, raw.Args = commissioner.Revert, commissioner.RawArgs{Entry: first.Entry}
@@ -256,7 +258,7 @@ func TestLocalCommissionerSessionStableAndNotFranchise(t *testing.T) {
 func TestCommissionerRulesWire(t *testing.T) {
 	app := commissionerTestApp(t)
 	raw := commissioner.RawCommand{League: "native.rules", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Rules league", Preset: commissioner.PresetEmpty, FranchiseCount: 4},
+		Args:   commissioner.RawArgs{Name: "Rules league", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 4},
 		Reason: "Start our own league", Request: "create", Effective: "now", Visibility: "league"}
 	executeCommissionerTest(t, app, raw)
 	raw.Command, raw.Reason, raw.Visibility = commissioner.RulesSet, "Owners agreed the roster size", "league"
@@ -312,7 +314,7 @@ func TestCommissionerRulesWire(t *testing.T) {
 func TestCommissionerLegacyRulesWire(t *testing.T) {
 	app := commissionerTestApp(t)
 	executeCommissionerTest(t, app, commissioner.RawCommand{League: "native.legacy", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Legacy league", Preset: commissioner.PresetLegacy},
+		Args:   commissioner.RawArgs{Name: "Legacy league", Preset: commissioner.PresetLegacy, Season: 2026},
 		Reason: "Start from the Legacy NFL rules", Request: "create", Effective: "now", Visibility: "league"})
 	reading, err := app.TargetCommissionerRules("native.legacy")
 	if err != nil {
@@ -323,4 +325,40 @@ func TestCommissionerLegacyRulesWire(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkWire(t, "frontend/src/app/commissioner/rules.legacy.wire.testdata.json", body, "legacy rules")
+}
+
+func TestCommissionerReplacedRulesWire(t *testing.T) {
+	app := commissionerTestApp(t)
+	raw := commissioner.RawCommand{League: "native.replaced", Command: commissioner.Create,
+		Args:   commissioner.RawArgs{Name: "Waiting rules", Preset: commissioner.PresetLegacy, Season: 2026, FranchiseCount: 6},
+		Reason: "Start", Request: "create", Effective: "now", Visibility: "league"}
+	executeCommissionerTest(t, app, raw)
+	raw.Command, raw.Effective, raw.Reason = commissioner.RulesSet, "next_rollover", ""
+	for i, value := range []string{`{"min":20,"max":70}`, `{"min":22,"max":75}`, `{"min":24,"max":78}`} {
+		at := time.Date(2026, 10, 14, 4, 17+i, 3, 0, time.UTC)
+		app.history.SetClock(func() time.Time { return at })
+		raw.Args = commissioner.RawArgs{Field: "roster.limits", Value: json.RawMessage(value)}
+		raw.Expected, raw.Request = int64(i+1), fmt.Sprintf("waiting.%d", i)
+		executeCommissionerTest(t, app, raw)
+	}
+	rules, err := app.TargetCommissionerRules(raw.League)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ledger, err := app.TargetCommissionerLedger(raw.League)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ledger.Entries[0].ReplacedAt != "" || ledger.Entries[1].ReplacedAt != "2026-10-14T04:19:03Z" ||
+		ledger.Entries[2].ReplacedAt != ledger.Entries[1].ReplacedAt {
+		t.Fatalf("ledger winners %+v", ledger)
+	}
+	body, err := json.Marshal(struct {
+		Rules  commissioner.Rules  `json:"rules"`
+		Ledger commissioner.Ledger `json:"ledger"`
+	}{rules, ledger})
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkWire(t, "frontend/src/app/commissioner/replaced.wire.testdata.json", body, "replaced rules")
 }

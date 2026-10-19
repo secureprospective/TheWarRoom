@@ -15,7 +15,7 @@ import (
 
 func createWith(preset string, count int) commissioner.RawCommand {
 	raw := createCommand()
-	raw.Args = commissioner.RawArgs{Name: "Rules league", Preset: preset, FranchiseCount: count}
+	raw.Args = commissioner.RawArgs{Name: "Rules league", Preset: preset, Season: 2026, FranchiseCount: count}
 	return raw
 }
 

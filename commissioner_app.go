@@ -42,6 +42,24 @@ func (a *App) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("league change: %w", err)
 	}
+	if commissioner.OwnerTradeAction(raw.Command) != "" {
+		return commissioner.Receipt{}, fmt.Errorf("use the native trade action to offer, accept, decline or withdraw")
+	}
+	if commissioner.OwnerWaiverAction(raw.Command) != "" {
+		return commissioner.Receipt{}, fmt.Errorf("use the native owner action for cuts and claims")
+	}
+	if commissioner.OwnerBidAction(raw.Command) != "" {
+		return commissioner.Receipt{}, fmt.Errorf("use the native owner action to place, raise or withdraw a bid")
+	}
+	if raw.Command == commissioner.NativeSeed {
+		return commissioner.Receipt{}, fmt.Errorf("record the starting snapshot through the held-data action")
+	}
+	if raw.Command == commissioner.LineupSet {
+		return commissioner.Receipt{}, fmt.Errorf("set a lineup from the lineup screen, which asks the league calendar first")
+	}
+	if raw.Command == commissioner.DraftPick {
+		return commissioner.Receipt{}, fmt.Errorf("a rookie pick is made by the franchise on the clock, in the draft room")
+	}
 	if err := a.ready(); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("league change startup: %w", err)
 	}
@@ -51,7 +69,7 @@ func (a *App) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
 	defer cancel()
-	receipt, err := a.history.ExecuteCommissioner(ctx, raw, principal, a.commissionerAuthorizer)
+	receipt, err := a.history.ExecuteCommissionerWithFacts(ctx, raw, principal, a.commissionerAuthorizer, a.nativeFacts(), a.ownerZone())
 	var refused *commissioner.Refusal
 	if errors.As(err, &refused) {
 		return commissioner.Receipt{}, errors.New(refused.Reason())
@@ -63,6 +81,18 @@ func (a *App) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 }
 
 func (a *App) TargetCommissionerLedger(league string) (commissioner.Ledger, error) {
+	return a.commissionerLedger(league, commissioner.RawLedgerFilter{})
+}
+
+func (a *App) TargetCommissionerLedgerFiltered(league, body string) (commissioner.Ledger, error) {
+	filter, err := commissioner.DecodeLedgerFilter(body)
+	if err != nil {
+		return commissioner.Ledger{}, fmt.Errorf("league ledger filters: %w", err)
+	}
+	return a.commissionerLedger(league, filter)
+}
+
+func (a *App) commissionerLedger(league string, filter commissioner.RawLedgerFilter) (commissioner.Ledger, error) {
 	if !strings.HasPrefix(league, "native.") {
 		return commissioner.Ledger{}, fmt.Errorf("choose an app league")
 	}
@@ -75,7 +105,7 @@ func (a *App) TargetCommissionerLedger(league string) (commissioner.Ledger, erro
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.CommissionerLedger(ctx, league, principal, a.commissionerAuthorizer)
+	reading, err := a.history.CommissionerLedgerFiltered(ctx, league, principal, a.commissionerAuthorizer, filter)
 	if err != nil {
 		return commissioner.Ledger{}, fmt.Errorf("league ledger: %w", err)
 	}
@@ -129,4 +159,76 @@ func (a *App) TargetCommissionerRules(league string) (commissioner.Rules, error)
 		return commissioner.Rules{}, fmt.Errorf("league rules: %w", err)
 	}
 	return reading, nil
+}
+
+func (a *App) TargetCommissionerJobs(league string) (commissioner.Jobs, error) {
+	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
+		return commissioner.Jobs{}, fmt.Errorf("choose an app league")
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.Jobs{}, fmt.Errorf("league jobs startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.CommissionerJobs(ctx, league)
+	if err != nil {
+		return commissioner.Jobs{}, fmt.Errorf("league jobs: %w", err)
+	}
+	return reading, nil
+}
+
+// TargetCommissionerControls lists every commissioner control, grouped, and whether it is built yet.
+func (a *App) TargetCommissionerControls() commissioner.Controls {
+	return commissioner.ControlsReading()
+}
+
+// TargetCommissionerNotices reads the posted notices, league notes, release notes and the mail log. Every
+// owner may read it.
+func (a *App) TargetCommissionerNotices(league string) (commissioner.LeagueNotes, error) {
+	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
+		return commissioner.LeagueNotes{}, fmt.Errorf("choose an app league")
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.LeagueNotes{}, fmt.Errorf("league notices startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.CommissionerNotes(ctx, league)
+	if err != nil {
+		return commissioner.LeagueNotes{}, fmt.Errorf("league notices: %w", err)
+	}
+	return reading, nil
+}
+
+// TargetCommissionerDigests writes a plain sentence for each change that took a hold or a typed reason.
+func (a *App) TargetCommissionerDigests(league string) (commissioner.Digests, error) {
+	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
+		return commissioner.Digests{}, fmt.Errorf("choose an app league")
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.Digests{}, fmt.Errorf("league digests startup: %w", err)
+	}
+	principal, err := a.commissionerPrincipal()
+	if err != nil {
+		return commissioner.Digests{}, err
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.CommissionerDigests(ctx, league, principal, a.commissionerAuthorizer)
+	if err != nil {
+		return commissioner.Digests{}, fmt.Errorf("league digests: %w", err)
+	}
+	return reading, nil
+}
+
+// TargetCorrections reads only this app league's public, active corrections and exceptions.
+func (a *App) TargetCorrections(league string) (commissioner.Corrections, error) {
+	if err := a.ready(); err != nil {
+		return commissioner.Corrections{}, fmt.Errorf("corrections startup: %w", err)
+	}
+	out, err := a.history.Corrections(a.ctx, league)
+	if err != nil {
+		return commissioner.Corrections{}, fmt.Errorf("read corrections: %w", err)
+	}
+	return out, nil
 }

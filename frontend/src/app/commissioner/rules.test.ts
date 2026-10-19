@@ -28,6 +28,8 @@ describe('Commissioner rules wire', () => {
     expect(all.find(r => r.field === 'roster.limits')).toMatchObject({
       unit: '', current: { Min: 18, Max: 80 }, safeguards: { nextRollover: 'hold', now: 'reason' } });
     expect(all.find(r => r.field === 'calendar.tradeDeadline')?.current).toBeNull();
+    expect(all.find(r => r.field === 'calendar.timezone')).toMatchObject({
+      competitive: false, safeguards: { nextRollover: 'confirm', now: 'confirm' } });
     expect(all.find(r => r.field === 'scoring.catalogue')?.value.length).toBeGreaterThan(2000);
   });
   it('refuses a reading Go did not send', () => {

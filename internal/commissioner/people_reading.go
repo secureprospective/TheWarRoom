@@ -3,6 +3,7 @@ package commissioner
 import (
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
@@ -38,9 +39,12 @@ type People struct {
 	Votes      []PeopleVote   `json:"votes"`
 	Succession string         `json:"succession"`
 	// YourRole and the two flags say what this principal may start, so the forms can stay out of the way.
-	YourRole       string `json:"yourRole"`
+	YourRole string `json:"yourRole"`
+	// YourFranchise is the franchise this principal owns, or empty when they own none.
+	YourFranchise  string `json:"yourFranchise"`
 	MayChangeRules bool   `json:"mayChangeRules"`
 	MayGrantRoles  bool   `json:"mayGrantRoles"`
+	MayPostNotices bool   `json:"mayPostNotices"`
 }
 
 func PeopleReading(league, principal string, records []Record) (People, error) {
@@ -53,10 +57,13 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 	p := governance.Principal(principal)
 	private := state.HasRole(p, governance.Commissioner) || state.HasRole(p, governance.CoCommissioner)
 	persons, invites := peopleInventory(records)
-	for _, r := range records {
-		if r.Command.Command == Create {
-			out.Seats = readSeats(state, r.Command.Args.Franchises)
-		}
+	// Seats and names do not depend on the clock, only the alignment beside them does.
+	directory, err := nativeDirectory(league, records, state, time.Time{})
+	if err != nil {
+		return People{}, err
+	}
+	for _, f := range directory.Franchises {
+		out.Seats = append(out.Seats, f.PeopleSeat)
 	}
 	for _, person := range persons {
 		for _, role := range []governance.Role{governance.Commissioner, governance.CoCommissioner, governance.DOT} {
@@ -79,9 +86,12 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 		out.Invites = readInvites(state, invites)
 	}
 	out.YourRole = yourRole(state, p, out.Seats)
+	out.YourFranchise = yourFranchise(p, out.Seats)
 	out.MayChangeRules = private
 	_, grantErr := GovernanceAuthorizer{State: state}.Allow(league, principal, "commish.role.grant")
 	out.MayGrantRoles = grantErr == nil
+	_, postErr := GovernanceAuthorizer{State: state}.Allow(league, principal, NoticePublish)
+	out.MayPostNotices = postErr == nil
 	out.Votes = readVotes(state, records, len(out.Seats), private)
 	out.Succession = successionStatus(state, records)
 	return out, nil
@@ -100,6 +110,15 @@ func yourRole(state governance.State, p governance.Principal, seats []PeopleSeat
 		}
 	}
 	return "Visitor"
+}
+
+func yourFranchise(p governance.Principal, seats []PeopleSeat) string {
+	for _, seat := range seats {
+		if seat.Owner == string(p) {
+			return seat.Franchise
+		}
+	}
+	return ""
 }
 
 func peopleInventory(records []Record) ([]string, []string) {
@@ -138,7 +157,7 @@ func readSeats(state governance.State, ids []string) []PeopleSeat {
 		if owner == "" {
 			owner = "Vacant"
 		}
-		seats = append(seats, PeopleSeat{id, f.Name, f.Abbreviation, owner})
+		seats = append(seats, PeopleSeat{Franchise: id, Name: f.Name, Abbreviation: f.Abbreviation, Owner: owner})
 	}
 	return seats
 }

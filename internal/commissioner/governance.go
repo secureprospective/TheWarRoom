@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -55,26 +56,21 @@ func GovernanceState(records []Record) (governance.State, error) {
 type GovernanceAuthorizer struct{ State governance.State }
 
 func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string, error) {
+	if (command == ContractActionSet || command == TradeOverride) && !a.State.HasRole(governance.Principal(principal), governance.Commissioner) {
+		return "", fmt.Errorf("only this league's commissioner may make this change")
+	}
 	if d, ok := successionDefinitionFor(command); ok {
 		return successionPermission(a.State, principal, d)
 	}
-	control := ""
-	switch command {
-	case Create:
-		control = "CM-001"
-	case Revert:
-		control = "CM-039"
-	case "commish.ledger.read":
-		p := governance.Principal(principal)
-		if a.State.HasRole(p, governance.Commissioner) {
-			return "commissioner", nil
+	if command == "commish.ledger.read" {
+		return ledgerReader(a.State, principal), nil
+	}
+	control, ok := commandControls()[command]
+	if !ok {
+		if d, isPeople := peopleDefinitionFor(command); isPeople {
+			control = d.control
 		}
-		if a.State.HasRole(p, governance.CoCommissioner) {
-			return "cocommissioner", nil
-		}
-		return "owner", nil
-	default:
-		if d, ok := peopleDefinitionFor(command); ok {
+		if d, ok := noteDefinitionFor(command); ok {
 			control = d.control
 		}
 	}
@@ -93,9 +89,57 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 	return string(role), nil
 }
 
+// commandControls names the census control that governs each commissioner command.
+func commandControls() map[string]string {
+	return map[string]string{
+		TradeReview: "CM-037", TradeRecuse: "CM-037", TradeAppeal: "CM-037", TradeAppealRule: "CM-037", TradeOverride: "CM-037",
+		DraftStart: "CM-042", DraftOrderAuto: "CM-041", DraftOrderSet: "CM-041",
+		DraftOrderPattern: "CM-041", DraftOrderTiebreak: "CM-041",
+		DraftSkip: "CM-043", DraftAssign: "CM-043", DraftInsert: "CM-043", DraftChange: "CM-043",
+		DraftTimer: "CM-043", DraftRevert: "CM-044", DraftArchive: "CM-045",
+		WaiverProcess: "CM-035", WaiverOrderSet: "CM-035", WaiverOrderAuto: "CM-035", WaiverOverride: "CM-035",
+		BidsProcess: "CM-036", BidsOverride: "CM-036",
+		CorrectRoster: "CM-028", CorrectTransaction: "CM-028", CorrectProvenance: "CM-028",
+		CorrectPick: "CM-028", RuleException: "CM-039",
+		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039", ContractActionSet: "CM-009",
+		ContractEdit: "CM-034", CapAdjust: "CM-034", CapRelief: "CM-034", ReserveException: "CM-038",
+		PlayerPosition: "CM-030", PlayerPositionClear: "CM-030",
+		ScorePlayer: "CM-032", ScoreFranchise: "CM-032",
+		StatApprove: "CM-031", StatReject: "CM-031", StatCorrect: "CM-031",
+		WindowSet: "CM-023", WindowMove: "CM-023", WindowRemove: "CM-023",
+		CalendarException: "CM-026", SeasonRollover: "CM-027",
+		StandingsRecordAdjust: "CM-033", StandingsOverride: "CM-033", StandingsOverrideClear: "CM-033",
+		ScheduleGenerate: "CM-015", ScheduleEdit: "CM-015", SchedulePublish: "CM-015",
+		LineupCorrect: "CM-029",
+		BracketBuild:  "CM-046", BracketEdit: "CM-046", BracketSeed: "CM-046", BracketPresetSave: "CM-046",
+		BracketAdvance: "CM-047", TitleSet: "CM-048", HistoryLink: "CM-049",
+	}
+}
+
+// ledgerReader says how much of the ledger a principal may read.
+func ledgerReader(state governance.State, principal string) string {
+	p := governance.Principal(principal)
+	switch {
+	case state.HasRole(p, governance.Commissioner):
+		return "commissioner"
+	case state.HasRole(p, governance.CoCommissioner):
+		return "cocommissioner"
+	}
+	return "owner"
+}
+
 func AuthorizeRecords(raw RawCommand, principal string, records []Record) (string, error) {
+	if TradeCommand(raw.Command) {
+		return authorizeTrade(raw, principal, records)
+	}
 	if len(records) == 0 && raw.Command == Create {
 		return "commissioner", nil
+	}
+	if franchise := marketOwnerFranchise(raw); franchise != "" {
+		if err := AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
+			return "", err
+		}
+		return "owner", nil
 	}
 	state, err := GovernanceState(records)
 	if err != nil {
@@ -111,6 +155,9 @@ func AuthorizeRecords(raw RawCommand, principal string, records []Record) (strin
 	if raw.Command == RulesSet {
 		return authorizeRule(auth, raw, principal)
 	}
+	if raw.Command == LineupSet {
+		return authorizeLineupSet(state, raw, principal)
+	}
 	role, err := auth.Allow(raw.League, principal, raw.Command)
 	if err != nil {
 		return "", err
@@ -121,6 +168,23 @@ func AuthorizeRecords(raw RawCommand, principal string, records []Record) (strin
 		}
 	}
 	return role, nil
+}
+
+// authorizeLineupSet lets an owner set the lineup of the franchise they hold and no other: a commissioner
+// changes someone else's lineup only by the CM-029 correction, which is recorded with a reason.
+func authorizeLineupSet(state governance.State, raw RawCommand, principal string) (string, error) {
+	change, err := DecodeLineupChange(raw.Args, raw.Command)
+	if err != nil {
+		return "", err
+	}
+	seat, ok := state.Franchise(governance.FranchiseID(change.Franchise))
+	if !ok || principal == "" || seat.Seat != governance.Principal(principal) {
+		return "", fmt.Errorf("you may set a lineup only for your own franchise")
+	}
+	if !seat.Abilities["lineups"] {
+		return "", fmt.Errorf("the commissioner has turned off lineup changes for your franchise")
+	}
+	return "owner", nil
 }
 
 func authorizeRedemption(state governance.State, raw RawCommand, principal string) (string, error) {
@@ -145,9 +209,18 @@ func authorizeReversal(auth GovernanceAuthorizer, entry, principal string, recor
 			continue
 		}
 		var err error
-		if r.Command.Command == RulesSet {
+		switch {
+		case r.Command.Command == LineupSet || r.Command.Command == DraftPick:
+			return nil // reversing needs only the reversal permission itself; the owner's seat is not asked for
+		case OwnerWaiverAction(r.Command.Command) != "":
+			_, err = auth.Allow(r.Command.League, principal, WaiverProcess)
+		case OwnerTradeAction(r.Command.Command) != "" || TradeCommand(r.Command.Command):
+			_, err = auth.Allow(r.Command.League, principal, TradeOverride)
+		case OwnerBidAction(r.Command.Command) != "":
+			_, err = auth.Allow(r.Command.League, principal, BidsProcess)
+		case r.Command.Command == RulesSet:
 			_, err = authorizeRule(auth, r.Command, principal)
-		} else {
+		default:
 			_, err = auth.Allow(r.Command.League, principal, r.Command.Command)
 		}
 		if err != nil {
@@ -158,7 +231,40 @@ func authorizeReversal(auth GovernanceAuthorizer, entry, principal string, recor
 	return fmt.Errorf("that recorded change is not in this league")
 }
 
+// checkRoleChangesSomething refuses to give a role the person already holds or take one they do not.
+// Preview and execute share it, so a change that changes nothing is never offered.
+func checkRoleChangesSomething(raw RawCommand, records []Record) error {
+	if (raw.Command != roleGrant && raw.Command != roleRevoke) || raw.Args.People == nil {
+		return nil
+	}
+	state, err := GovernanceState(records)
+	if err != nil {
+		return err
+	}
+	held := state.HasRole(governance.Principal(raw.Args.People.Principal), raw.Args.People.Role)
+	if held && raw.Command == roleGrant {
+		return Refused(errors.New("this person already holds that role. Nothing would change"))
+	}
+	if !held && raw.Command == roleRevoke {
+		return Refused(errors.New("this person does not hold that role. Nothing would change"))
+	}
+	return nil
+}
+
 func CheckGovernanceAppend(raw RawCommand, principal string, records []Record, at time.Time) error {
+	if err := checkRoleChangesSomething(raw, records); err != nil {
+		return err
+	}
+	switch raw.Command {
+	case Revert:
+		if err := checkScoreCompensation(raw, records); err != nil {
+			return err
+		}
+	case PlayerPosition, PlayerPositionClear, ScorePlayer, ScoreFranchise:
+		return checkScoreAppend(raw, records)
+	case StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear:
+		return checkStandingsAppend(raw, records)
+	}
 	trial := make([]Record, len(records), len(records)+1)
 	copy(trial, records)
 	trial = append(trial, Record{Command: raw, Principal: principal,
@@ -177,4 +283,14 @@ func CheckGovernanceAppend(raw RawCommand, principal string, records []Record, a
 		return Refused(fmt.Errorf("people change refused: %w", err))
 	}
 	return nil
+}
+
+func marketOwnerFranchise(raw RawCommand) string {
+	if OwnerWaiverAction(raw.Command) != "" {
+		return raw.Args.Waiver.Franchise
+	}
+	if OwnerBidAction(raw.Command) != "" {
+		return raw.Args.Bid.Franchise
+	}
+	return ""
 }

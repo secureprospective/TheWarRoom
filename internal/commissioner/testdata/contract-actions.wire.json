@@ -1,0 +1,138 @@
+{
+  "rule": {
+    "field": "contracts.buyout",
+    "label": "Contract buyout rules",
+    "value": "Enabled: Off; Annual limit: 4; Offseason only: Needs a ruling; One year allowed: Needs a ruling; Rates: Needs a ruling; Rebid next offseason: Needs a ruling",
+    "state": "Set",
+    "citation": "Changed in the league ledger",
+    "changedAt": "2027-03-01T05:00:00Z",
+    "schema": {
+      "kind": "record",
+      "choices": [],
+      "fields": [
+        {
+          "name": "Enabled",
+          "label": "Enabled",
+          "schema": {
+            "kind": "boolean",
+            "choices": [],
+            "fields": []
+          }
+        },
+        {
+          "name": "AnnualLimit",
+          "label": "Annual limit",
+          "schema": {
+            "kind": "count",
+            "minimum": 0,
+            "choices": [],
+            "fields": []
+          }
+        },
+        {
+          "name": "OffseasonOnly",
+          "label": "Offseason only",
+          "schema": {
+            "kind": "boolean",
+            "choices": [],
+            "fields": []
+          }
+        },
+        {
+          "name": "OneYearAllowed",
+          "label": "One year allowed",
+          "schema": {
+            "kind": "boolean",
+            "choices": [],
+            "fields": []
+          }
+        },
+        {
+          "name": "Rates",
+          "label": "Rates",
+          "schema": {
+            "kind": "map",
+            "choices": [],
+            "fields": [],
+            "key": {
+              "kind": "count",
+              "minimum": 0,
+              "choices": [],
+              "fields": []
+            },
+            "element": {
+              "kind": "ten_thousandths",
+              "choices": [],
+              "fields": []
+            }
+          }
+        },
+        {
+          "name": "RebidNextOffseason",
+          "label": "Rebid next offseason",
+          "schema": {
+            "kind": "boolean",
+            "choices": [],
+            "fields": []
+          }
+        }
+      ]
+    },
+    "competitive": true,
+    "pending": [],
+    "current": {
+      "AnnualLimit": 4,
+      "Enabled": false
+    },
+    "unit": "",
+    "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+    },
+    "governed": null
+  },
+  "ledger": {
+    "league": "native.seed",
+    "name": "Native contracts",
+    "revision": 4,
+    "entries": [
+      {
+        "id": "act.790fd4630be7f84b5e257c203c1af6c683f6cf015e7d66fff262ca89a1e86c45",
+        "who": "creator",
+        "what": "Season rollover instant: Needs a ruling → 1 Mar 2027 05:00 UTC, in force now",
+        "why": "Our league's ruling",
+        "when": "2026-10-13T12:00:00Z",
+        "gravity": "Recorded reason required",
+        "undo": "league"
+      },
+      {
+        "id": "act.8373f6cab5e40bdb471799d92d79236cd24e2c9faea15fffaf107cb6904caeea",
+        "who": "creator",
+        "what": "Contract buyout rules: Enabled: On; Annual limit: 2; Offseason only: On; One year allowed: Off; Rates: 2: 0.6; 3: 0.75; 4: 0.9; Rebid next offseason: On → Enabled: Off; Annual limit: 4; Offseason only: Needs a ruling; One year allowed: Needs a ruling; Rates: Needs a ruling; Rebid next offseason: Needs a ruling, from the next rollover",
+        "why": "Our league's ruling",
+        "when": "2026-10-13T12:00:00Z",
+        "gravity": "Confirmation required",
+        "undo": "league"
+      },
+      {
+        "id": "act.619de78f5b361ffd25cd7da0070b6d269bac96dec38d6ab62101ea796bcdc0f8",
+        "who": "creator",
+        "what": "Contract buyout rules: Enabled: On; Annual limit: 2; Offseason only: On; One year allowed: Off; Rates: 2: 0.6; 3: 0.75; 4: 0.9; Rebid next offseason: On → Enabled: On; Annual limit: 3; Offseason only: Needs a ruling; One year allowed: Needs a ruling; Rates: Needs a ruling; Rebid next offseason: Needs a ruling",
+        "why": "Our league's contract ruling",
+        "when": "2026-10-13T12:00:00Z",
+        "gravity": "Confirmation required",
+        "undo": "league",
+        "replacedAt": "2026-10-13T12:00:00Z"
+      },
+      {
+        "id": "act.2851b5e01e5805eb3f8c8ac1ab3c24b1aec46acffe83c43fc9879cfbc0497852",
+        "who": "creator",
+        "what": "Created league “Native contracts” with 32 franchises and the Legacy NFL rules",
+        "why": "Start this league",
+        "when": "2026-10-13T12:00:00Z",
+        "gravity": "Recorded reason required",
+        "undo": ""
+      }
+    ]
+  }
+}

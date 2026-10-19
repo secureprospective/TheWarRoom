@@ -13,6 +13,7 @@ afterEach(async () => { await unmount(); vi.useRealTimers(); });
 
 const confirm = 'Record this rule change';
 const hold = async (host: Element, label = confirm) => {
+  await settle();
   vi.useFakeTimers();
   const b = holder(host, label);
   await act(async () => { (b.props().onKeyDown as (e: object) => void)({ key: 'Enter', repeat: false,

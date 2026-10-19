@@ -106,6 +106,7 @@ func AttachPlays(weeks []PlayerWeek, plays []RawPlay) error {
 	index := make(map[string]int, len(weeks))
 	for i, week := range weeks {
 		index[playKey(week.GSIS, week.Season, week.Week)] = i
+		week.Line.Quantities["fumble_recovery_tds"] = week.RecoveryTDs
 		for _, id := range []leaguerules.StatID{"long_pass", "long_rush", "long_reception"} {
 			week.Line.Events[id] = []leaguerules.Decimal{}
 		}
@@ -121,6 +122,7 @@ func AttachPlays(weeks []PlayerWeek, plays []RawPlay) error {
 		week, _ := strconv.Atoi(play.Week)
 		attachDistances(weeks, index, play, season, week)
 		attachTouchdown(weeks, index, play, season, week)
+		attachKickRecovery(weeks, index, play, season, week)
 	}
 	return nil
 }
@@ -193,4 +195,15 @@ func attachTouchdown(weeks []PlayerWeek, index map[string]int, play RawPlay, sea
 
 func playKey(player string, season, week int) string {
 	return fmt.Sprintf("%s/%d/%d", player, season, week)
+}
+
+func attachKickRecovery(weeks []PlayerWeek, index map[string]int, play RawPlay, season, week int) {
+	if play.Touchdown != "1" || play.ScoringTeam == "" || play.ScoringTeam == play.ReturnTeam ||
+		(play.Kickoff != "1" && play.Punt != "1") {
+		return
+	}
+	i, exists := index[playKey(play.Scorer, season, week)]
+	if exists && weeks[i].GameID == play.GameID && weeks[i].SeasonType == play.SeasonType {
+		weeks[i].Line.Quantities["fumble_recovery_tds"] += 10000
+	}
 }

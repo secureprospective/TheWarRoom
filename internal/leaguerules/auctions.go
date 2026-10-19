@@ -10,6 +10,7 @@ type BidsRules struct {
 	OneYearMaximum       Value[Money]
 	Tiers                Value[[]BidTier]
 	MinimumIncrement     Value[Decimal]
+	StandFor             Value[time.Duration]
 	SnipeAfter           Value[time.Duration]
 	SnipeIncrement       Value[Decimal]
 	MultiYearEndWeek     Value[int]
@@ -28,6 +29,7 @@ func legacyBids() BidsRules {
 		OneYearMaximum:       cited[Money](1200000000, "Rulebook §6"),
 		Tiers:                cited[[]BidTier](legacyBidTiers(), "Rulebook §6"),
 		MinimumIncrement:     cited[Decimal](1000, "Rulebook §6"),
+		StandFor:             cited[time.Duration](24*time.Hour, "docs/league-history/League_History_v1.md:36: the 24-hour clock reset on every new bid"),
 		SnipeAfter:           cited[time.Duration](20*time.Hour, "Rulebook §6"),
 		SnipeIncrement:       cited[Decimal](10000, "Rulebook §6"),
 		MultiYearEndWeek:     cited[int](13, "Rulebook §6"),
@@ -47,6 +49,7 @@ func bidsFields() []ruleField {
 		field[Money]{path: "bids.oneYearMaximum", label: "One year bid limit", access: func(r *RuleSet) *Value[Money] { return &r.Bids.OneYearMaximum }},
 		field[[]BidTier]{path: "bids.tiers", label: "Bid salary length limits", access: func(r *RuleSet) *Value[[]BidTier] { return &r.Bids.Tiers }},
 		field[Decimal]{path: "bids.minimumIncrement", label: "Minimum bid increase", access: func(r *RuleSet) *Value[Decimal] { return &r.Bids.MinimumIncrement }},
+		field[time.Duration]{path: "bids.standFor", label: "Time a bid must stand to win", access: func(r *RuleSet) *Value[time.Duration] { return &r.Bids.StandFor }},
 		field[time.Duration]{path: "bids.snipeAfter", label: "Late bid threshold", access: func(r *RuleSet) *Value[time.Duration] { return &r.Bids.SnipeAfter }},
 		field[Decimal]{path: "bids.snipeIncrement", label: "Late bid minimum increase", access: func(r *RuleSet) *Value[Decimal] { return &r.Bids.SnipeIncrement }},
 		field[int]{path: "bids.multiYearEndWeek", label: "Last multi year bidding week", access: func(r *RuleSet) *Value[int] { return &r.Bids.MultiYearEndWeek }},

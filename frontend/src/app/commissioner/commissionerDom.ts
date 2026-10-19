@@ -9,7 +9,12 @@ import type { KeyInputElement } from '../shell/mflKeyTestDom';
 export type Element = KeyInputElement;
 type Binding = (...args: string[]) => Promise<unknown>;
 export type App = Record<'TargetCommissionerExecute' | 'TargetCommissionerLedger'
-  | 'TargetCommissionerLeagues' | 'TargetCommissionerRules' | 'TargetCommissionerPeople', Binding>;
+  | 'TargetCommissionerLeagues' | 'TargetCommissionerRules' | 'TargetCommissionerPeople'
+  | 'TargetCommissionerPreview' | 'TargetCommissionerLedgerFiltered' | 'TargetCommissionerJobs'
+  | 'TargetNativeAssets' | 'TargetNativeDirectory' | 'TargetNativeBracket' | 'TargetNativeTrades'
+  | 'TargetNativeWaivers' | 'TargetNativeBids' | 'TargetCommissionerActor' | 'TargetCommissionerMarket'
+  | 'TargetCommissionerSchedule' | 'TargetCommissionerControls' | 'TargetCommissionerNotices'
+  | 'TargetCommissionerDigests', Binding>;
 
 const globals = ['window', 'document', 'IS_REACT_ACT_ENVIRONMENT'];
 const held = globals.map(key => ({ key, descriptor: Object.getOwnPropertyDescriptor(globalThis, key) }));

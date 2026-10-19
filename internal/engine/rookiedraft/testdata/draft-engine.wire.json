@@ -1,0 +1,111 @@
+{
+  "order": [
+    {
+      "round": 1,
+      "words": "Draft order set",
+      "picks": [
+        {
+          "round": 1,
+          "original": "a",
+          "owner": "b",
+          "slot": 1
+        },
+        {
+          "round": 1,
+          "original": "b",
+          "owner": "b",
+          "slot": 2
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "words": "Draft order set",
+      "picks": [
+        {
+          "round": 2,
+          "original": "b",
+          "owner": "a",
+          "slot": 1
+        },
+        {
+          "round": 2,
+          "original": "a",
+          "owner": "a",
+          "slot": 2
+        }
+      ]
+    }
+  ],
+  "draft": {
+    "start": "2031-07-14T10:00:00Z",
+    "started": true,
+    "exhausted": false,
+    "picks": [
+      {
+        "round": 1,
+        "original": "a",
+        "owner": "b",
+        "slot": 1,
+        "player": "0001",
+        "skipped": false,
+        "forfeited": false,
+        "madeAt": "2031-07-14T11:00:00Z",
+        "contract": {
+          "salaryCents": 300000000,
+          "years": 5,
+          "rfaAfter": false
+        },
+        "how": "owner"
+      },
+      {
+        "round": 1,
+        "original": "b",
+        "owner": "b",
+        "slot": 2,
+        "skipped": true,
+        "forfeited": false,
+        "madeAt": "2031-07-14T17:00:00Z",
+        "how": "expired"
+      },
+      {
+        "round": 2,
+        "original": "b",
+        "owner": "a",
+        "slot": 1,
+        "skipped": false,
+        "forfeited": false
+      },
+      {
+        "round": 2,
+        "original": "a",
+        "owner": "a",
+        "slot": 2,
+        "skipped": false,
+        "forfeited": false
+      }
+    ],
+    "onClock": {
+      "round": 2,
+      "original": "b",
+      "owner": "a",
+      "slot": 1,
+      "openedAt": "2031-07-14T17:00:00Z",
+      "deadline": "2031-07-14T23:00:00Z",
+      "contract": {
+        "salaryCents": 142000000,
+        "years": 3,
+        "rfaAfter": true
+      },
+      "paused": false,
+      "remaining": 18000000000000
+    }
+  },
+  "nextOwnedPick": {
+    "round": 2,
+    "original": "b",
+    "owner": "a",
+    "slot": 1
+  },
+  "hasNextOwnedPick": true
+}

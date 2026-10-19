@@ -1,0 +1,47 @@
+{
+  "creator": {
+    "league": "native.ops",
+    "digests": [
+      {
+        "id": "act.df123bfdd8e7eee09100d31306fc111fcf9cc15aef13d604fc2c10e1897c71b7",
+        "sentence": "creator recorded this change: Granted Co-commissioner to secret-deputy. The reason given: Needs a second pair of hands.",
+        "when": "2026-10-14T13:00:00Z"
+      },
+      {
+        "id": "act.b0a65b48c6a7ab4925a8d211f60ae7d0dbfb6b8e91a425d44eefb0735e304ada",
+        "sentence": "creator recorded this change: Unrestricted free agent bidding: Open → Blind, in force now. The reason given: Agreed at the owners meeting.",
+        "when": "2026-10-14T11:00:00Z"
+      },
+      {
+        "id": "act.1617341c795c9e9574d1aa3d21f9681e1f5a237c2e6a306e89a5070964f1f0ab",
+        "sentence": "creator recorded this change: Active roster size: 18 to 80 → 20 to 70, from the next rollover.",
+        "when": "2026-10-14T10:00:00Z"
+      },
+      {
+        "id": "act.070d6042326146cfa72aeb21b85a4e7170fa017e0458ee720563834e90b86987",
+        "sentence": "creator recorded this change: Created league “Ops league” with 32 franchises and the Legacy NFL rules. The reason given: Start our league.",
+        "when": "2026-10-14T09:00:00Z"
+      }
+    ]
+  },
+  "owner": {
+    "league": "native.ops",
+    "digests": [
+      {
+        "id": "act.b0a65b48c6a7ab4925a8d211f60ae7d0dbfb6b8e91a425d44eefb0735e304ada",
+        "sentence": "creator recorded this change: Unrestricted free agent bidding: Open → Blind, in force now. The reason given: Agreed at the owners meeting.",
+        "when": "2026-10-14T11:00:00Z"
+      },
+      {
+        "id": "act.1617341c795c9e9574d1aa3d21f9681e1f5a237c2e6a306e89a5070964f1f0ab",
+        "sentence": "creator recorded this change: Active roster size: 18 to 80 → 20 to 70, from the next rollover.",
+        "when": "2026-10-14T10:00:00Z"
+      },
+      {
+        "id": "act.070d6042326146cfa72aeb21b85a4e7170fa017e0458ee720563834e90b86987",
+        "sentence": "creator recorded this change: Created league “Ops league” with 32 franchises and the Legacy NFL rules. The reason given: Start our league.",
+        "when": "2026-10-14T09:00:00Z"
+      }
+    ]
+  }
+}

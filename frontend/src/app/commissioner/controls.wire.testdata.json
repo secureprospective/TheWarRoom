@@ -1,0 +1,860 @@
+{
+  "groups": [
+    {
+      "id": "constitution",
+      "label": "Constitution",
+      "controls": [
+        {
+          "id": "CM-001",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "league.teams",
+              "label": "Teams"
+            },
+            {
+              "field": "league.conferences",
+              "label": "Conferences"
+            },
+            {
+              "field": "league.divisions",
+              "label": "Divisions"
+            },
+            {
+              "field": "league.format",
+              "label": "Competition format"
+            },
+            {
+              "field": "league.initialRosters",
+              "label": "First rosters"
+            }
+          ]
+        },
+        {
+          "id": "CM-002",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "league.alignment",
+              "label": "Division alignment"
+            }
+          ]
+        },
+        {
+          "id": "CM-003",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "roster.limits",
+              "label": "Active roster size"
+            },
+            {
+              "field": "roster.reserveExcluded",
+              "label": "Reserves excluded from roster size"
+            },
+            {
+              "field": "roster.positionBounds",
+              "label": "Roster position limits"
+            }
+          ]
+        },
+        {
+          "id": "CM-004",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "lineup.positions",
+              "label": "Starting position limits"
+            },
+            {
+              "field": "lineup.groups",
+              "label": "Starting group limits"
+            },
+            {
+              "field": "lineup.invalidPenalty",
+              "label": "Invalid lineup penalty"
+            },
+            {
+              "field": "lineup.missedFlag",
+              "label": "Flag missed lineups"
+            }
+          ]
+        },
+        {
+          "id": "CM-005",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "league.dynasty",
+              "label": "Dynasty league"
+            },
+            {
+              "field": "league.carry",
+              "label": "Roster carry policy"
+            },
+            {
+              "field": "league.keepers",
+              "label": "Keepers"
+            }
+          ]
+        },
+        {
+          "id": "CM-006",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "scoring.roundStatPoints",
+              "label": "Round each stat’s points to the cent"
+            },
+            {
+              "field": "scoring.catalogue",
+              "label": "Scoring values"
+            }
+          ]
+        },
+        {
+          "id": "CM-007",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "standings.criteria",
+              "label": "Standings tie breakers"
+            }
+          ]
+        },
+        {
+          "id": "CM-008",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "cap.amount",
+              "label": "Salary cap"
+            },
+            {
+              "field": "cap.enforcement",
+              "label": "Cap enforcement"
+            },
+            {
+              "field": "cap.irShare",
+              "label": "IR salary share"
+            },
+            {
+              "field": "cap.taxiShare",
+              "label": "Taxi salary share"
+            },
+            {
+              "field": "cap.quantum",
+              "label": "Money rounding increment"
+            },
+            {
+              "field": "cap.complianceDeadline",
+              "label": "Soft cap compliance deadline"
+            }
+          ]
+        },
+        {
+          "id": "CM-009",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "contracts.maximumYears",
+              "label": "Maximum new contract years"
+            },
+            {
+              "field": "contracts.flatSalaries",
+              "label": "Flat annual salaries"
+            },
+            {
+              "field": "contracts.minimumSalaries",
+              "label": "Minimum bidding salaries"
+            },
+            {
+              "field": "contracts.deadCap",
+              "label": "Release dead cap rate"
+            },
+            {
+              "field": "contracts.restructuredDeadCap",
+              "label": "Restructured release dead cap rate"
+            },
+            {
+              "field": "contracts.claimClearsDeadCap",
+              "label": "Waiver claim clears dead cap"
+            },
+            {
+              "field": "contracts.releaseReSignSameSeason",
+              "label": "Re-sign a released player this season"
+            },
+            {
+              "field": "contracts.tag",
+              "label": "Franchise tag rules"
+            },
+            {
+              "field": "contracts.extension",
+              "label": "Contract extension rules"
+            },
+            {
+              "field": "contracts.restructure",
+              "label": "Contract restructure rules"
+            },
+            {
+              "field": "contracts.buyout",
+              "label": "Contract buyout rules"
+            },
+            {
+              "field": "contracts.tender",
+              "label": "Restricted free agent tender rules"
+            },
+            {
+              "field": "contracts.reSign",
+              "label": "Restricted free agent re-sign rules"
+            },
+            {
+              "field": "contracts.retirement",
+              "label": "Retirement rules"
+            },
+            {
+              "field": "contracts.death",
+              "label": "Player death rules"
+            },
+            {
+              "field": "contracts.capRelief",
+              "label": "Cap relief appeals"
+            }
+          ]
+        },
+        {
+          "id": "CM-010",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "ir.slots",
+              "label": "IR spots"
+            },
+            {
+              "field": "ir.eligible",
+              "label": "IR eligible designations"
+            },
+            {
+              "field": "ir.mustLeaveHealthy",
+              "label": "Leave IR when healthy"
+            }
+          ]
+        },
+        {
+          "id": "CM-011",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "taxi.slots",
+              "label": "Taxi spots"
+            },
+            {
+              "field": "taxi.maximumYears",
+              "label": "Taxi experience limit"
+            },
+            {
+              "field": "taxi.basis",
+              "label": "Taxi experience measure"
+            }
+          ]
+        },
+        {
+          "id": "CM-012",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "waivers.trigger",
+              "label": "Waiver trigger"
+            },
+            {
+              "field": "waivers.duration",
+              "label": "Waiver period"
+            },
+            {
+              "field": "waivers.method",
+              "label": "Waiver priority"
+            }
+          ]
+        },
+        {
+          "id": "CM-013",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "bids.ufa",
+              "label": "Unrestricted free agent bidding"
+            },
+            {
+              "field": "bids.rfa",
+              "label": "Restricted free agent bidding"
+            },
+            {
+              "field": "bids.yearMultipliers",
+              "label": "Bid year multipliers"
+            },
+            {
+              "field": "bids.maximumActive",
+              "label": "Maximum active bids"
+            },
+            {
+              "field": "bids.oneYearMaximum",
+              "label": "One year bid limit"
+            },
+            {
+              "field": "bids.tiers",
+              "label": "Bid salary length limits"
+            },
+            {
+              "field": "bids.minimumIncrement",
+              "label": "Minimum bid increase"
+            },
+            {
+              "field": "bids.standFor",
+              "label": "Time a bid must stand to win"
+            },
+            {
+              "field": "bids.snipeAfter",
+              "label": "Late bid threshold"
+            },
+            {
+              "field": "bids.snipeIncrement",
+              "label": "Late bid minimum increase"
+            },
+            {
+              "field": "bids.multiYearEndWeek",
+              "label": "Last multi year bidding week"
+            },
+            {
+              "field": "bids.playoffOnlyAfterWeek",
+              "label": "Playoff only bidding after week"
+            },
+            {
+              "field": "bids.playoffMaximumYears",
+              "label": "Playoff bid maximum years"
+            },
+            {
+              "field": "bids.playoffCapLifted",
+              "label": "Lift one year bid cap in playoffs"
+            },
+            {
+              "field": "bids.pointDecimals",
+              "label": "Bid point decimal places"
+            }
+          ]
+        },
+        {
+          "id": "CM-014",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "trades.review",
+              "label": "Trade review"
+            },
+            {
+              "field": "trades.dotSeats",
+              "label": "Trade review seats"
+            },
+            {
+              "field": "trades.decideAt",
+              "label": "Votes to approve or veto"
+            },
+            {
+              "field": "trades.futureYears",
+              "label": "Future pick trading years"
+            },
+            {
+              "field": "trades.rounds",
+              "label": "Tradable pick rounds"
+            },
+            {
+              "field": "trades.rosterGate",
+              "label": "Refuse invalid rosters"
+            },
+            {
+              "field": "trades.offerExpiry",
+              "label": "Trade offer lifetime"
+            },
+            {
+              "field": "trades.maximumParties",
+              "label": "Maximum trade parties"
+            },
+            {
+              "field": "trades.compensatoryPicks",
+              "label": "Trade compensatory picks"
+            },
+            {
+              "field": "trades.capSpace",
+              "label": "Trade salary cap space"
+            },
+            {
+              "field": "trades.acceptedWithdrawal",
+              "label": "Withdraw accepted trades"
+            }
+          ]
+        },
+        {
+          "id": "CM-015",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "schedule.regularWeeks",
+              "label": "Regular season weeks"
+            },
+            {
+              "field": "schedule.pattern",
+              "label": "Schedule pattern"
+            }
+          ]
+        },
+        {
+          "id": "CM-016",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "playoffs.perConference",
+              "label": "Playoff teams per conference"
+            },
+            {
+              "field": "playoffs.divisionWinners",
+              "label": "Division winners per conference"
+            },
+            {
+              "field": "playoffs.wildCards",
+              "label": "Wild cards per conference"
+            },
+            {
+              "field": "playoffs.byeSeed",
+              "label": "First round bye seed"
+            },
+            {
+              "field": "playoffs.seeding",
+              "label": "Playoff seeding"
+            },
+            {
+              "field": "playoffs.reseed",
+              "label": "Reseed playoff rounds"
+            },
+            {
+              "field": "playoffs.startWeek",
+              "label": "First playoff week"
+            },
+            {
+              "field": "playoffs.finalWeek",
+              "label": "Final playoff week"
+            },
+            {
+              "field": "playoffs.homeBonus",
+              "label": "Home field points"
+            },
+            {
+              "field": "playoffs.graph",
+              "label": "Playoff bracket"
+            }
+          ]
+        },
+        {
+          "id": "CM-017",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "house.texts",
+              "label": "House rules"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "people",
+      "label": "People",
+      "controls": [
+        {
+          "id": "CM-018",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-019",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-020",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-021",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-022",
+          "built": true,
+          "note": "",
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "calendar",
+      "label": "Calendar",
+      "controls": [
+        {
+          "id": "CM-023",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "calendar.windows",
+              "label": "League action windows"
+            }
+          ]
+        },
+        {
+          "id": "CM-024",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "calendar.timezone",
+              "label": "League timezone"
+            },
+            {
+              "field": "calendar.boundary",
+              "label": "Shared date boundary"
+            }
+          ]
+        },
+        {
+          "id": "CM-025",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "calendar.tradeDeadline",
+              "label": "Trade deadline"
+            },
+            {
+              "field": "calendar.tradeDeadlineWeek",
+              "label": "Trade deadline week"
+            }
+          ]
+        },
+        {
+          "id": "CM-026",
+          "built": true,
+          "note": "",
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "season",
+      "label": "Season ops",
+      "controls": [
+        {
+          "id": "CM-027",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "calendar.rollover",
+              "label": "Season rollover instant"
+            },
+            {
+              "field": "calendar.rolloverDate",
+              "label": "Annual rollover date"
+            }
+          ]
+        },
+        {
+          "id": "CM-028",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-029",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-030",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-031",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-032",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-033",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-034",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-035",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-036",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-037",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-038",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-039",
+          "built": true,
+          "note": "",
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "draft",
+      "label": "Draft",
+      "controls": [
+        {
+          "id": "CM-040",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "draft.mode",
+              "label": "Draft pace"
+            },
+            {
+              "field": "draft.clock",
+              "label": "Draft pick clock"
+            },
+            {
+              "field": "draft.onExpire",
+              "label": "Expired draft clock"
+            },
+            {
+              "field": "draft.timeouts",
+              "label": "Draft timeouts"
+            },
+            {
+              "field": "draft.rounds",
+              "label": "Draft rounds"
+            },
+            {
+              "field": "draft.maximumPicks",
+              "label": "Maximum rookie picks per team"
+            },
+            {
+              "field": "draft.forfeitExtra",
+              "label": "Forfeit extra rookie picks"
+            },
+            {
+              "field": "draft.pricing",
+              "label": "Rookie draft salaries"
+            },
+            {
+              "field": "draft.lengths",
+              "label": "Rookie contract years"
+            },
+            {
+              "field": "draft.rfaAfter",
+              "label": "Rookie restricted free agency"
+            }
+          ]
+        },
+        {
+          "id": "CM-041",
+          "built": true,
+          "note": "",
+          "fields": [
+            {
+              "field": "draft.orderSource",
+              "label": "First round draft order"
+            },
+            {
+              "field": "draft.order",
+              "label": "Draft order overrides"
+            },
+            {
+              "field": "draft.laterPattern",
+              "label": "Later round draft pattern"
+            },
+            {
+              "field": "draft.tieRule",
+              "label": "Draft order tie breaker"
+            }
+          ]
+        },
+        {
+          "id": "CM-042",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-043",
+          "built": true,
+          "note": "Draft room: skip, choose, add or change picks; pause or set the clock.",
+          "fields": []
+        },
+        {
+          "id": "CM-044",
+          "built": true,
+          "note": "Restore a draft to an earlier point from Trade Floor › Draft room. Nothing is erased.",
+          "fields": []
+        },
+        {
+          "id": "CM-045",
+          "built": true,
+          "note": "A draft closes itself at its last pick; the Draft room can close it sooner.",
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "playoffs",
+      "label": "Playoffs",
+      "controls": [
+        {
+          "id": "CM-046",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-047",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-048",
+          "built": false,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-049",
+          "built": false,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-050",
+          "built": false,
+          "note": "",
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "ops",
+      "label": "League ops",
+      "controls": [
+        {
+          "id": "CM-051",
+          "built": true,
+          "note": "The app tells owners inside the app only. It sends no email and no messages.",
+          "fields": [
+            {
+              "field": "notify.transactions",
+              "label": "Tell the league about transactions"
+            },
+            {
+              "field": "notify.reminders",
+              "label": "Remind owners of deadlines"
+            }
+          ]
+        },
+        {
+          "id": "CM-052",
+          "built": true,
+          "note": "Notices are shown to owners in the app. The app sends no email and no messages.",
+          "fields": []
+        },
+        {
+          "id": "CM-053",
+          "built": true,
+          "note": "",
+          "fields": []
+        },
+        {
+          "id": "CM-054",
+          "built": true,
+          "note": "Refresh and re-read live in Control Room › Data and sources.",
+          "fields": []
+        },
+        {
+          "id": "CM-055",
+          "built": false,
+          "note": "",
+          "fields": []
+        }
+      ]
+    },
+    {
+      "id": "ledger",
+      "label": "Ledger",
+      "controls": [
+        {
+          "id": "CM-056",
+          "built": true,
+          "note": "",
+          "fields": []
+        }
+      ]
+    }
+  ]
+}

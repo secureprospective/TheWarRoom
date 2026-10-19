@@ -1,0 +1,2822 @@
+{
+  "waiting": {
+    "league": "native.seed",
+    "season": 2027,
+    "revision": 3,
+    "rules": [
+      {
+        "label": "Draft pace",
+        "words": "Slow"
+      },
+      {
+        "label": "Draft pick clock",
+        "words": "6 hours"
+      },
+      {
+        "label": "Expired draft clock",
+        "words": "Skip"
+      },
+      {
+        "label": "Draft timeouts",
+        "words": "Unlimited: On; Count: Needs a ruling"
+      },
+      {
+        "label": "Draft rounds",
+        "words": "5"
+      },
+      {
+        "label": "Maximum rookie picks per team",
+        "words": "15"
+      },
+      {
+        "label": "Forfeit extra rookie picks",
+        "words": "On"
+      },
+      {
+        "label": "Rookie draft salaries",
+        "words": "1: Slots: 1 to 10; Salary: $3,000,000; Slots: 11 to 15; Salary: $2,400,000; Slots: 16 to 20; Salary: $2,000,000; Slots: 21 to 32; Salary: $1,500,000; 2: Slots: 1 to 12; Salary: $1,420,000; Slots: 13 to 24; Salary: $1,250,000; Slots: 25 to 32; Salary: $1,080,000; 3: Slots: 1 to 16; Salary: $830,000; Slots: 17 to 32; Salary: $670,000; 4: Slots: 1 to 32; Salary: $600,000; 5: Slots: 1 to 32; Salary: $500,000"
+      },
+      {
+        "label": "Rookie contract years",
+        "words": "1: 5; 2: 3; 3: 3; 4: 3; 5: 3"
+      },
+      {
+        "label": "Rookie restricted free agency",
+        "words": "1: Off; 2: On; 3: On; 4: On; 5: On"
+      },
+      {
+        "label": "First round draft order",
+        "words": "Standings"
+      },
+      {
+        "label": "Draft order overrides",
+        "words": "None"
+      },
+      {
+        "label": "Later round draft pattern",
+        "words": "Needs a ruling"
+      },
+      {
+        "label": "Draft order tie breaker",
+        "words": "Needs a ruling"
+      }
+    ],
+    "owners": [
+      {
+        "id": "franchise.01",
+        "name": "Held team 1"
+      },
+      {
+        "id": "franchise.02",
+        "name": "Held team 2"
+      },
+      {
+        "id": "franchise.03",
+        "name": "Held team 3"
+      },
+      {
+        "id": "franchise.04",
+        "name": "Held team 4"
+      },
+      {
+        "id": "franchise.05",
+        "name": "Held team 5"
+      },
+      {
+        "id": "franchise.06",
+        "name": "Held team 6"
+      },
+      {
+        "id": "franchise.07",
+        "name": "Held team 7"
+      },
+      {
+        "id": "franchise.08",
+        "name": "Held team 8"
+      },
+      {
+        "id": "franchise.09",
+        "name": "Held team 9"
+      },
+      {
+        "id": "franchise.10",
+        "name": "Held team 10"
+      },
+      {
+        "id": "franchise.11",
+        "name": "Held team 11"
+      },
+      {
+        "id": "franchise.12",
+        "name": "Held team 12"
+      },
+      {
+        "id": "franchise.13",
+        "name": "Held team 13"
+      },
+      {
+        "id": "franchise.14",
+        "name": "Held team 14"
+      },
+      {
+        "id": "franchise.15",
+        "name": "Held team 15"
+      },
+      {
+        "id": "franchise.16",
+        "name": "Held team 16"
+      },
+      {
+        "id": "franchise.17",
+        "name": "Held team 17"
+      },
+      {
+        "id": "franchise.18",
+        "name": "Held team 18"
+      },
+      {
+        "id": "franchise.19",
+        "name": "Held team 19"
+      },
+      {
+        "id": "franchise.20",
+        "name": "Held team 20"
+      },
+      {
+        "id": "franchise.21",
+        "name": "Held team 21"
+      },
+      {
+        "id": "franchise.22",
+        "name": "Held team 22"
+      },
+      {
+        "id": "franchise.23",
+        "name": "Held team 23"
+      },
+      {
+        "id": "franchise.24",
+        "name": "Held team 24"
+      },
+      {
+        "id": "franchise.25",
+        "name": "Held team 25"
+      },
+      {
+        "id": "franchise.26",
+        "name": "Held team 26"
+      },
+      {
+        "id": "franchise.27",
+        "name": "Held team 27"
+      },
+      {
+        "id": "franchise.28",
+        "name": "Held team 28"
+      },
+      {
+        "id": "franchise.29",
+        "name": "Held team 29"
+      },
+      {
+        "id": "franchise.30",
+        "name": "Held team 30"
+      },
+      {
+        "id": "franchise.31",
+        "name": "Held team 31"
+      },
+      {
+        "id": "franchise.32",
+        "name": "Held team 32"
+      }
+    ],
+    "order": [
+      {
+        "round": 1,
+        "words": "The draft order needs the final standings of season 2026. The league schedule is not published yet, so there are no games to rank.",
+        "picks": []
+      },
+      {
+        "round": 2,
+        "words": "Needs a ruling: later round draft pattern",
+        "picks": []
+      },
+      {
+        "round": 3,
+        "words": "Needs a ruling: later round draft pattern",
+        "picks": []
+      },
+      {
+        "round": 4,
+        "words": "Needs a ruling: later round draft pattern",
+        "picks": []
+      },
+      {
+        "round": 5,
+        "words": "Needs a ruling: later round draft pattern",
+        "picks": []
+      }
+    ],
+    "words": "The draft order needs the final standings of season 2026. The league schedule is not published yet, so there are no games to rank.",
+    "draft": {
+      "start": "0001-01-01T00:00:00Z",
+      "started": false,
+      "exhausted": false,
+      "picks": [],
+      "onClock": null
+    },
+    "nextOwnedPick": null,
+    "closed": null,
+    "players": {},
+    "available": [],
+    "checkpoints": []
+  },
+  "running": {
+    "league": "native.seed",
+    "season": 2027,
+    "revision": 8,
+    "rules": [
+      {
+        "label": "Draft pace",
+        "words": "Slow"
+      },
+      {
+        "label": "Draft pick clock",
+        "words": "6 hours"
+      },
+      {
+        "label": "Expired draft clock",
+        "words": "Skip"
+      },
+      {
+        "label": "Draft timeouts",
+        "words": "Unlimited: On; Count: Needs a ruling"
+      },
+      {
+        "label": "Draft rounds",
+        "words": "5"
+      },
+      {
+        "label": "Maximum rookie picks per team",
+        "words": "15"
+      },
+      {
+        "label": "Forfeit extra rookie picks",
+        "words": "On"
+      },
+      {
+        "label": "Rookie draft salaries",
+        "words": "1: Slots: 1 to 10; Salary: $3,000,000; Slots: 11 to 15; Salary: $2,400,000; Slots: 16 to 20; Salary: $2,000,000; Slots: 21 to 32; Salary: $1,500,000; 2: Slots: 1 to 12; Salary: $1,420,000; Slots: 13 to 24; Salary: $1,250,000; Slots: 25 to 32; Salary: $1,080,000; 3: Slots: 1 to 16; Salary: $830,000; Slots: 17 to 32; Salary: $670,000; 4: Slots: 1 to 32; Salary: $600,000; 5: Slots: 1 to 32; Salary: $500,000"
+      },
+      {
+        "label": "Rookie contract years",
+        "words": "1: 5; 2: 3; 3: 3; 4: 3; 5: 3"
+      },
+      {
+        "label": "Rookie restricted free agency",
+        "words": "1: Off; 2: On; 3: On; 4: On; 5: On"
+      },
+      {
+        "label": "First round draft order",
+        "words": "Standings"
+      },
+      {
+        "label": "Draft order overrides",
+        "words": "1: Held team 3; Held team 2; Held team 1; Held team 4; Held team 5; Held team 6; Held team 7; Held team 8; Held team 9; Held team 10; Held team 11; Held team 12; Held team 13; Held team 14; Held team 15; Held team 16; Held team 17; Held team 18; Held team 19; Held team 20; Held team 21; Held team 22; Held team 23; Held team 24; Held team 25; Held team 26; Held team 27; Held team 28; Held team 29; Held team 30; Held team 31; Held team 32; 2: Held team 3; Held team 2; Held team 1; Held team 4; Held team 5; Held team 6; Held team 7; Held team 8; Held team 9; Held team 10; Held team 11; Held team 12; Held team 13; Held team 14; Held team 15; Held team 16; Held team 17; Held team 18; Held team 19; Held team 20; Held team 21; Held team 22; Held team 23; Held team 24; Held team 25; Held team 26; Held team 27; Held team 28; Held team 29; Held team 30; Held team 31; Held team 32; 3: Held team 3; Held team 2; Held team 1; Held team 4; Held team 5; Held team 6; Held team 7; Held team 8; Held team 9; Held team 10; Held team 11; Held team 12; Held team 13; Held team 14; Held team 15; Held team 16; Held team 17; Held team 18; Held team 19; Held team 20; Held team 21; Held team 22; Held team 23; Held team 24; Held team 25; Held team 26; Held team 27; Held team 28; Held team 29; Held team 30; Held team 31; Held team 32; 4: Held team 3; Held team 2; Held team 1; Held team 4; Held team 5; Held team 6; Held team 7; Held team 8; Held team 9; Held team 10; Held team 11; Held team 12; Held team 13; Held team 14; Held team 15; Held team 16; Held team 17; Held team 18; Held team 19; Held team 20; Held team 21; Held team 22; Held team 23; Held team 24; Held team 25; Held team 26; Held team 27; Held team 28; Held team 29; Held team 30; Held team 31; Held team 32; 5: Held team 3; Held team 2; Held team 1; Held team 4; Held team 5; Held team 6; Held team 7; Held team 8; Held team 9; Held team 10; Held team 11; Held team 12; Held team 13; Held team 14; Held team 15; Held team 16; Held team 17; Held team 18; Held team 19; Held team 20; Held team 21; Held team 22; Held team 23; Held team 24; Held team 25; Held team 26; Held team 27; Held team 28; Held team 29; Held team 30; Held team 31; Held team 32"
+      },
+      {
+        "label": "Later round draft pattern",
+        "words": "Needs a ruling"
+      },
+      {
+        "label": "Draft order tie breaker",
+        "words": "Needs a ruling"
+      }
+    ],
+    "owners": [
+      {
+        "id": "franchise.01",
+        "name": "Held team 1"
+      },
+      {
+        "id": "franchise.02",
+        "name": "Held team 2"
+      },
+      {
+        "id": "franchise.03",
+        "name": "Held team 3"
+      },
+      {
+        "id": "franchise.04",
+        "name": "Held team 4"
+      },
+      {
+        "id": "franchise.05",
+        "name": "Held team 5"
+      },
+      {
+        "id": "franchise.06",
+        "name": "Held team 6"
+      },
+      {
+        "id": "franchise.07",
+        "name": "Held team 7"
+      },
+      {
+        "id": "franchise.08",
+        "name": "Held team 8"
+      },
+      {
+        "id": "franchise.09",
+        "name": "Held team 9"
+      },
+      {
+        "id": "franchise.10",
+        "name": "Held team 10"
+      },
+      {
+        "id": "franchise.11",
+        "name": "Held team 11"
+      },
+      {
+        "id": "franchise.12",
+        "name": "Held team 12"
+      },
+      {
+        "id": "franchise.13",
+        "name": "Held team 13"
+      },
+      {
+        "id": "franchise.14",
+        "name": "Held team 14"
+      },
+      {
+        "id": "franchise.15",
+        "name": "Held team 15"
+      },
+      {
+        "id": "franchise.16",
+        "name": "Held team 16"
+      },
+      {
+        "id": "franchise.17",
+        "name": "Held team 17"
+      },
+      {
+        "id": "franchise.18",
+        "name": "Held team 18"
+      },
+      {
+        "id": "franchise.19",
+        "name": "Held team 19"
+      },
+      {
+        "id": "franchise.20",
+        "name": "Held team 20"
+      },
+      {
+        "id": "franchise.21",
+        "name": "Held team 21"
+      },
+      {
+        "id": "franchise.22",
+        "name": "Held team 22"
+      },
+      {
+        "id": "franchise.23",
+        "name": "Held team 23"
+      },
+      {
+        "id": "franchise.24",
+        "name": "Held team 24"
+      },
+      {
+        "id": "franchise.25",
+        "name": "Held team 25"
+      },
+      {
+        "id": "franchise.26",
+        "name": "Held team 26"
+      },
+      {
+        "id": "franchise.27",
+        "name": "Held team 27"
+      },
+      {
+        "id": "franchise.28",
+        "name": "Held team 28"
+      },
+      {
+        "id": "franchise.29",
+        "name": "Held team 29"
+      },
+      {
+        "id": "franchise.30",
+        "name": "Held team 30"
+      },
+      {
+        "id": "franchise.31",
+        "name": "Held team 31"
+      },
+      {
+        "id": "franchise.32",
+        "name": "Held team 32"
+      }
+    ],
+    "order": [
+      {
+        "round": 1,
+        "words": "Draft order set",
+        "picks": [
+          {
+            "round": 1,
+            "original": "franchise.03",
+            "owner": "franchise.03",
+            "slot": 1
+          },
+          {
+            "round": 1,
+            "original": "franchise.02",
+            "owner": "franchise.01",
+            "slot": 2
+          },
+          {
+            "round": 1,
+            "original": "franchise.01",
+            "owner": "franchise.01",
+            "slot": 3
+          },
+          {
+            "round": 1,
+            "original": "franchise.04",
+            "owner": "franchise.02",
+            "slot": 4
+          },
+          {
+            "round": 1,
+            "original": "franchise.05",
+            "owner": "franchise.05",
+            "slot": 5
+          },
+          {
+            "round": 1,
+            "original": "franchise.06",
+            "owner": "franchise.06",
+            "slot": 6
+          },
+          {
+            "round": 1,
+            "original": "franchise.07",
+            "owner": "franchise.07",
+            "slot": 7
+          },
+          {
+            "round": 1,
+            "original": "franchise.08",
+            "owner": "franchise.08",
+            "slot": 8
+          },
+          {
+            "round": 1,
+            "original": "franchise.09",
+            "owner": "franchise.09",
+            "slot": 9
+          },
+          {
+            "round": 1,
+            "original": "franchise.10",
+            "owner": "franchise.10",
+            "slot": 10
+          },
+          {
+            "round": 1,
+            "original": "franchise.11",
+            "owner": "franchise.11",
+            "slot": 11
+          },
+          {
+            "round": 1,
+            "original": "franchise.12",
+            "owner": "franchise.12",
+            "slot": 12
+          },
+          {
+            "round": 1,
+            "original": "franchise.13",
+            "owner": "franchise.13",
+            "slot": 13
+          },
+          {
+            "round": 1,
+            "original": "franchise.14",
+            "owner": "franchise.14",
+            "slot": 14
+          },
+          {
+            "round": 1,
+            "original": "franchise.15",
+            "owner": "franchise.15",
+            "slot": 15
+          },
+          {
+            "round": 1,
+            "original": "franchise.16",
+            "owner": "franchise.16",
+            "slot": 16
+          },
+          {
+            "round": 1,
+            "original": "franchise.17",
+            "owner": "franchise.17",
+            "slot": 17
+          },
+          {
+            "round": 1,
+            "original": "franchise.18",
+            "owner": "franchise.18",
+            "slot": 18
+          },
+          {
+            "round": 1,
+            "original": "franchise.19",
+            "owner": "franchise.19",
+            "slot": 19
+          },
+          {
+            "round": 1,
+            "original": "franchise.20",
+            "owner": "franchise.20",
+            "slot": 20
+          },
+          {
+            "round": 1,
+            "original": "franchise.21",
+            "owner": "franchise.21",
+            "slot": 21
+          },
+          {
+            "round": 1,
+            "original": "franchise.22",
+            "owner": "franchise.22",
+            "slot": 22
+          },
+          {
+            "round": 1,
+            "original": "franchise.23",
+            "owner": "franchise.23",
+            "slot": 23
+          },
+          {
+            "round": 1,
+            "original": "franchise.24",
+            "owner": "franchise.24",
+            "slot": 24
+          },
+          {
+            "round": 1,
+            "original": "franchise.25",
+            "owner": "franchise.25",
+            "slot": 25
+          },
+          {
+            "round": 1,
+            "original": "franchise.26",
+            "owner": "franchise.26",
+            "slot": 26
+          },
+          {
+            "round": 1,
+            "original": "franchise.27",
+            "owner": "franchise.27",
+            "slot": 27
+          },
+          {
+            "round": 1,
+            "original": "franchise.28",
+            "owner": "franchise.28",
+            "slot": 28
+          },
+          {
+            "round": 1,
+            "original": "franchise.29",
+            "owner": "franchise.29",
+            "slot": 29
+          },
+          {
+            "round": 1,
+            "original": "franchise.30",
+            "owner": "franchise.30",
+            "slot": 30
+          },
+          {
+            "round": 1,
+            "original": "franchise.31",
+            "owner": "franchise.31",
+            "slot": 31
+          },
+          {
+            "round": 1,
+            "original": "franchise.32",
+            "owner": "franchise.32",
+            "slot": 32
+          }
+        ]
+      },
+      {
+        "round": 2,
+        "words": "Draft order set",
+        "picks": [
+          {
+            "round": 2,
+            "original": "franchise.03",
+            "owner": "franchise.03",
+            "slot": 1
+          },
+          {
+            "round": 2,
+            "original": "franchise.02",
+            "owner": "franchise.02",
+            "slot": 2
+          },
+          {
+            "round": 2,
+            "original": "franchise.01",
+            "owner": "franchise.01",
+            "slot": 3
+          },
+          {
+            "round": 2,
+            "original": "franchise.04",
+            "owner": "franchise.04",
+            "slot": 4
+          },
+          {
+            "round": 2,
+            "original": "franchise.05",
+            "owner": "franchise.05",
+            "slot": 5
+          },
+          {
+            "round": 2,
+            "original": "franchise.06",
+            "owner": "franchise.06",
+            "slot": 6
+          },
+          {
+            "round": 2,
+            "original": "franchise.07",
+            "owner": "franchise.07",
+            "slot": 7
+          },
+          {
+            "round": 2,
+            "original": "franchise.08",
+            "owner": "franchise.08",
+            "slot": 8
+          },
+          {
+            "round": 2,
+            "original": "franchise.09",
+            "owner": "franchise.09",
+            "slot": 9
+          },
+          {
+            "round": 2,
+            "original": "franchise.10",
+            "owner": "franchise.10",
+            "slot": 10
+          },
+          {
+            "round": 2,
+            "original": "franchise.11",
+            "owner": "franchise.11",
+            "slot": 11
+          },
+          {
+            "round": 2,
+            "original": "franchise.12",
+            "owner": "franchise.12",
+            "slot": 12
+          },
+          {
+            "round": 2,
+            "original": "franchise.13",
+            "owner": "franchise.13",
+            "slot": 13
+          },
+          {
+            "round": 2,
+            "original": "franchise.14",
+            "owner": "franchise.14",
+            "slot": 14
+          },
+          {
+            "round": 2,
+            "original": "franchise.15",
+            "owner": "franchise.15",
+            "slot": 15
+          },
+          {
+            "round": 2,
+            "original": "franchise.16",
+            "owner": "franchise.16",
+            "slot": 16
+          },
+          {
+            "round": 2,
+            "original": "franchise.17",
+            "owner": "franchise.17",
+            "slot": 17
+          },
+          {
+            "round": 2,
+            "original": "franchise.18",
+            "owner": "franchise.18",
+            "slot": 18
+          },
+          {
+            "round": 2,
+            "original": "franchise.19",
+            "owner": "franchise.19",
+            "slot": 19
+          },
+          {
+            "round": 2,
+            "original": "franchise.20",
+            "owner": "franchise.20",
+            "slot": 20
+          },
+          {
+            "round": 2,
+            "original": "franchise.21",
+            "owner": "franchise.21",
+            "slot": 21
+          },
+          {
+            "round": 2,
+            "original": "franchise.22",
+            "owner": "franchise.22",
+            "slot": 22
+          },
+          {
+            "round": 2,
+            "original": "franchise.23",
+            "owner": "franchise.23",
+            "slot": 23
+          },
+          {
+            "round": 2,
+            "original": "franchise.24",
+            "owner": "franchise.24",
+            "slot": 24
+          },
+          {
+            "round": 2,
+            "original": "franchise.25",
+            "owner": "franchise.25",
+            "slot": 25
+          },
+          {
+            "round": 2,
+            "original": "franchise.26",
+            "owner": "franchise.26",
+            "slot": 26
+          },
+          {
+            "round": 2,
+            "original": "franchise.27",
+            "owner": "franchise.27",
+            "slot": 27
+          },
+          {
+            "round": 2,
+            "original": "franchise.28",
+            "owner": "franchise.28",
+            "slot": 28
+          },
+          {
+            "round": 2,
+            "original": "franchise.29",
+            "owner": "franchise.29",
+            "slot": 29
+          },
+          {
+            "round": 2,
+            "original": "franchise.30",
+            "owner": "franchise.30",
+            "slot": 30
+          },
+          {
+            "round": 2,
+            "original": "franchise.31",
+            "owner": "franchise.31",
+            "slot": 31
+          },
+          {
+            "round": 2,
+            "original": "franchise.32",
+            "owner": "franchise.32",
+            "slot": 32
+          }
+        ]
+      },
+      {
+        "round": 3,
+        "words": "Draft order set",
+        "picks": [
+          {
+            "round": 3,
+            "original": "franchise.03",
+            "owner": "franchise.03",
+            "slot": 1
+          },
+          {
+            "round": 3,
+            "original": "franchise.02",
+            "owner": "franchise.02",
+            "slot": 2
+          },
+          {
+            "round": 3,
+            "original": "franchise.01",
+            "owner": "franchise.01",
+            "slot": 3
+          },
+          {
+            "round": 3,
+            "original": "franchise.04",
+            "owner": "franchise.04",
+            "slot": 4
+          },
+          {
+            "round": 3,
+            "original": "franchise.05",
+            "owner": "franchise.05",
+            "slot": 5
+          },
+          {
+            "round": 3,
+            "original": "franchise.06",
+            "owner": "franchise.06",
+            "slot": 6
+          },
+          {
+            "round": 3,
+            "original": "franchise.07",
+            "owner": "franchise.07",
+            "slot": 7
+          },
+          {
+            "round": 3,
+            "original": "franchise.08",
+            "owner": "franchise.08",
+            "slot": 8
+          },
+          {
+            "round": 3,
+            "original": "franchise.09",
+            "owner": "franchise.09",
+            "slot": 9
+          },
+          {
+            "round": 3,
+            "original": "franchise.10",
+            "owner": "franchise.10",
+            "slot": 10
+          },
+          {
+            "round": 3,
+            "original": "franchise.11",
+            "owner": "franchise.11",
+            "slot": 11
+          },
+          {
+            "round": 3,
+            "original": "franchise.12",
+            "owner": "franchise.12",
+            "slot": 12
+          },
+          {
+            "round": 3,
+            "original": "franchise.13",
+            "owner": "franchise.13",
+            "slot": 13
+          },
+          {
+            "round": 3,
+            "original": "franchise.14",
+            "owner": "franchise.14",
+            "slot": 14
+          },
+          {
+            "round": 3,
+            "original": "franchise.15",
+            "owner": "franchise.15",
+            "slot": 15
+          },
+          {
+            "round": 3,
+            "original": "franchise.16",
+            "owner": "franchise.16",
+            "slot": 16
+          },
+          {
+            "round": 3,
+            "original": "franchise.17",
+            "owner": "franchise.17",
+            "slot": 17
+          },
+          {
+            "round": 3,
+            "original": "franchise.18",
+            "owner": "franchise.18",
+            "slot": 18
+          },
+          {
+            "round": 3,
+            "original": "franchise.19",
+            "owner": "franchise.19",
+            "slot": 19
+          },
+          {
+            "round": 3,
+            "original": "franchise.20",
+            "owner": "franchise.20",
+            "slot": 20
+          },
+          {
+            "round": 3,
+            "original": "franchise.21",
+            "owner": "franchise.21",
+            "slot": 21
+          },
+          {
+            "round": 3,
+            "original": "franchise.22",
+            "owner": "franchise.22",
+            "slot": 22
+          },
+          {
+            "round": 3,
+            "original": "franchise.23",
+            "owner": "franchise.23",
+            "slot": 23
+          },
+          {
+            "round": 3,
+            "original": "franchise.24",
+            "owner": "franchise.24",
+            "slot": 24
+          },
+          {
+            "round": 3,
+            "original": "franchise.25",
+            "owner": "franchise.25",
+            "slot": 25
+          },
+          {
+            "round": 3,
+            "original": "franchise.26",
+            "owner": "franchise.26",
+            "slot": 26
+          },
+          {
+            "round": 3,
+            "original": "franchise.27",
+            "owner": "franchise.27",
+            "slot": 27
+          },
+          {
+            "round": 3,
+            "original": "franchise.28",
+            "owner": "franchise.28",
+            "slot": 28
+          },
+          {
+            "round": 3,
+            "original": "franchise.29",
+            "owner": "franchise.29",
+            "slot": 29
+          },
+          {
+            "round": 3,
+            "original": "franchise.30",
+            "owner": "franchise.30",
+            "slot": 30
+          },
+          {
+            "round": 3,
+            "original": "franchise.31",
+            "owner": "franchise.31",
+            "slot": 31
+          },
+          {
+            "round": 3,
+            "original": "franchise.32",
+            "owner": "franchise.32",
+            "slot": 32
+          }
+        ]
+      },
+      {
+        "round": 4,
+        "words": "Draft order set",
+        "picks": [
+          {
+            "round": 4,
+            "original": "franchise.03",
+            "owner": "franchise.03",
+            "slot": 1
+          },
+          {
+            "round": 4,
+            "original": "franchise.02",
+            "owner": "franchise.02",
+            "slot": 2
+          },
+          {
+            "round": 4,
+            "original": "franchise.01",
+            "owner": "franchise.01",
+            "slot": 3
+          },
+          {
+            "round": 4,
+            "original": "franchise.04",
+            "owner": "franchise.04",
+            "slot": 4
+          },
+          {
+            "round": 4,
+            "original": "franchise.05",
+            "owner": "franchise.05",
+            "slot": 5
+          },
+          {
+            "round": 4,
+            "original": "franchise.06",
+            "owner": "franchise.06",
+            "slot": 6
+          },
+          {
+            "round": 4,
+            "original": "franchise.07",
+            "owner": "franchise.07",
+            "slot": 7
+          },
+          {
+            "round": 4,
+            "original": "franchise.08",
+            "owner": "franchise.08",
+            "slot": 8
+          },
+          {
+            "round": 4,
+            "original": "franchise.09",
+            "owner": "franchise.09",
+            "slot": 9
+          },
+          {
+            "round": 4,
+            "original": "franchise.10",
+            "owner": "franchise.10",
+            "slot": 10
+          },
+          {
+            "round": 4,
+            "original": "franchise.11",
+            "owner": "franchise.11",
+            "slot": 11
+          },
+          {
+            "round": 4,
+            "original": "franchise.12",
+            "owner": "franchise.12",
+            "slot": 12
+          },
+          {
+            "round": 4,
+            "original": "franchise.13",
+            "owner": "franchise.13",
+            "slot": 13
+          },
+          {
+            "round": 4,
+            "original": "franchise.14",
+            "owner": "franchise.14",
+            "slot": 14
+          },
+          {
+            "round": 4,
+            "original": "franchise.15",
+            "owner": "franchise.15",
+            "slot": 15
+          },
+          {
+            "round": 4,
+            "original": "franchise.16",
+            "owner": "franchise.16",
+            "slot": 16
+          },
+          {
+            "round": 4,
+            "original": "franchise.17",
+            "owner": "franchise.17",
+            "slot": 17
+          },
+          {
+            "round": 4,
+            "original": "franchise.18",
+            "owner": "franchise.18",
+            "slot": 18
+          },
+          {
+            "round": 4,
+            "original": "franchise.19",
+            "owner": "franchise.19",
+            "slot": 19
+          },
+          {
+            "round": 4,
+            "original": "franchise.20",
+            "owner": "franchise.20",
+            "slot": 20
+          },
+          {
+            "round": 4,
+            "original": "franchise.21",
+            "owner": "franchise.21",
+            "slot": 21
+          },
+          {
+            "round": 4,
+            "original": "franchise.22",
+            "owner": "franchise.22",
+            "slot": 22
+          },
+          {
+            "round": 4,
+            "original": "franchise.23",
+            "owner": "franchise.23",
+            "slot": 23
+          },
+          {
+            "round": 4,
+            "original": "franchise.24",
+            "owner": "franchise.24",
+            "slot": 24
+          },
+          {
+            "round": 4,
+            "original": "franchise.25",
+            "owner": "franchise.25",
+            "slot": 25
+          },
+          {
+            "round": 4,
+            "original": "franchise.26",
+            "owner": "franchise.26",
+            "slot": 26
+          },
+          {
+            "round": 4,
+            "original": "franchise.27",
+            "owner": "franchise.27",
+            "slot": 27
+          },
+          {
+            "round": 4,
+            "original": "franchise.28",
+            "owner": "franchise.28",
+            "slot": 28
+          },
+          {
+            "round": 4,
+            "original": "franchise.29",
+            "owner": "franchise.29",
+            "slot": 29
+          },
+          {
+            "round": 4,
+            "original": "franchise.30",
+            "owner": "franchise.30",
+            "slot": 30
+          },
+          {
+            "round": 4,
+            "original": "franchise.31",
+            "owner": "franchise.31",
+            "slot": 31
+          },
+          {
+            "round": 4,
+            "original": "franchise.32",
+            "owner": "franchise.32",
+            "slot": 32
+          }
+        ]
+      },
+      {
+        "round": 5,
+        "words": "Draft order set",
+        "picks": [
+          {
+            "round": 5,
+            "original": "franchise.03",
+            "owner": "franchise.03",
+            "slot": 1
+          },
+          {
+            "round": 5,
+            "original": "franchise.02",
+            "owner": "franchise.02",
+            "slot": 2
+          },
+          {
+            "round": 5,
+            "original": "franchise.01",
+            "owner": "franchise.01",
+            "slot": 3
+          },
+          {
+            "round": 5,
+            "original": "franchise.04",
+            "owner": "franchise.04",
+            "slot": 4
+          },
+          {
+            "round": 5,
+            "original": "franchise.05",
+            "owner": "franchise.05",
+            "slot": 5
+          },
+          {
+            "round": 5,
+            "original": "franchise.06",
+            "owner": "franchise.06",
+            "slot": 6
+          },
+          {
+            "round": 5,
+            "original": "franchise.07",
+            "owner": "franchise.07",
+            "slot": 7
+          },
+          {
+            "round": 5,
+            "original": "franchise.08",
+            "owner": "franchise.08",
+            "slot": 8
+          },
+          {
+            "round": 5,
+            "original": "franchise.09",
+            "owner": "franchise.09",
+            "slot": 9
+          },
+          {
+            "round": 5,
+            "original": "franchise.10",
+            "owner": "franchise.10",
+            "slot": 10
+          },
+          {
+            "round": 5,
+            "original": "franchise.11",
+            "owner": "franchise.11",
+            "slot": 11
+          },
+          {
+            "round": 5,
+            "original": "franchise.12",
+            "owner": "franchise.12",
+            "slot": 12
+          },
+          {
+            "round": 5,
+            "original": "franchise.13",
+            "owner": "franchise.13",
+            "slot": 13
+          },
+          {
+            "round": 5,
+            "original": "franchise.14",
+            "owner": "franchise.14",
+            "slot": 14
+          },
+          {
+            "round": 5,
+            "original": "franchise.15",
+            "owner": "franchise.15",
+            "slot": 15
+          },
+          {
+            "round": 5,
+            "original": "franchise.16",
+            "owner": "franchise.16",
+            "slot": 16
+          },
+          {
+            "round": 5,
+            "original": "franchise.17",
+            "owner": "franchise.17",
+            "slot": 17
+          },
+          {
+            "round": 5,
+            "original": "franchise.18",
+            "owner": "franchise.18",
+            "slot": 18
+          },
+          {
+            "round": 5,
+            "original": "franchise.19",
+            "owner": "franchise.19",
+            "slot": 19
+          },
+          {
+            "round": 5,
+            "original": "franchise.20",
+            "owner": "franchise.20",
+            "slot": 20
+          },
+          {
+            "round": 5,
+            "original": "franchise.21",
+            "owner": "franchise.21",
+            "slot": 21
+          },
+          {
+            "round": 5,
+            "original": "franchise.22",
+            "owner": "franchise.22",
+            "slot": 22
+          },
+          {
+            "round": 5,
+            "original": "franchise.23",
+            "owner": "franchise.23",
+            "slot": 23
+          },
+          {
+            "round": 5,
+            "original": "franchise.24",
+            "owner": "franchise.24",
+            "slot": 24
+          },
+          {
+            "round": 5,
+            "original": "franchise.25",
+            "owner": "franchise.25",
+            "slot": 25
+          },
+          {
+            "round": 5,
+            "original": "franchise.26",
+            "owner": "franchise.26",
+            "slot": 26
+          },
+          {
+            "round": 5,
+            "original": "franchise.27",
+            "owner": "franchise.27",
+            "slot": 27
+          },
+          {
+            "round": 5,
+            "original": "franchise.28",
+            "owner": "franchise.28",
+            "slot": 28
+          },
+          {
+            "round": 5,
+            "original": "franchise.29",
+            "owner": "franchise.29",
+            "slot": 29
+          },
+          {
+            "round": 5,
+            "original": "franchise.30",
+            "owner": "franchise.30",
+            "slot": 30
+          },
+          {
+            "round": 5,
+            "original": "franchise.31",
+            "owner": "franchise.31",
+            "slot": 31
+          },
+          {
+            "round": 5,
+            "original": "franchise.32",
+            "owner": "franchise.32",
+            "slot": 32
+          }
+        ]
+      }
+    ],
+    "words": "The rookie draft is running.",
+    "draft": {
+      "start": "2027-07-14T09:00:00-07:00",
+      "started": true,
+      "exhausted": false,
+      "picks": [
+        {
+          "round": 1,
+          "original": "franchise.03",
+          "owner": "franchise.03",
+          "slot": 1,
+          "player": "5001",
+          "skipped": false,
+          "forfeited": false,
+          "madeAt": "2027-07-14T10:00:00-07:00",
+          "contract": {
+            "salaryCents": 300000000,
+            "years": 5,
+            "rfaAfter": false
+          },
+          "how": "owner"
+        },
+        {
+          "round": 1,
+          "original": "franchise.02",
+          "owner": "franchise.01",
+          "slot": 2,
+          "skipped": true,
+          "forfeited": false,
+          "madeAt": "2027-07-14T16:00:00-07:00",
+          "how": "expired"
+        },
+        {
+          "round": 1,
+          "original": "franchise.01",
+          "owner": "franchise.01",
+          "slot": 3,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.04",
+          "owner": "franchise.02",
+          "slot": 4,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.05",
+          "owner": "franchise.05",
+          "slot": 5,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.06",
+          "owner": "franchise.06",
+          "slot": 6,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.07",
+          "owner": "franchise.07",
+          "slot": 7,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.08",
+          "owner": "franchise.08",
+          "slot": 8,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.09",
+          "owner": "franchise.09",
+          "slot": 9,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.10",
+          "owner": "franchise.10",
+          "slot": 10,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.11",
+          "owner": "franchise.11",
+          "slot": 11,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.12",
+          "owner": "franchise.12",
+          "slot": 12,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.13",
+          "owner": "franchise.13",
+          "slot": 13,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.14",
+          "owner": "franchise.14",
+          "slot": 14,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.15",
+          "owner": "franchise.15",
+          "slot": 15,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.16",
+          "owner": "franchise.16",
+          "slot": 16,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.17",
+          "owner": "franchise.17",
+          "slot": 17,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.18",
+          "owner": "franchise.18",
+          "slot": 18,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.19",
+          "owner": "franchise.19",
+          "slot": 19,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.20",
+          "owner": "franchise.20",
+          "slot": 20,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.21",
+          "owner": "franchise.21",
+          "slot": 21,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.22",
+          "owner": "franchise.22",
+          "slot": 22,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.23",
+          "owner": "franchise.23",
+          "slot": 23,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.24",
+          "owner": "franchise.24",
+          "slot": 24,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.25",
+          "owner": "franchise.25",
+          "slot": 25,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.26",
+          "owner": "franchise.26",
+          "slot": 26,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.27",
+          "owner": "franchise.27",
+          "slot": 27,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.28",
+          "owner": "franchise.28",
+          "slot": 28,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.29",
+          "owner": "franchise.29",
+          "slot": 29,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.30",
+          "owner": "franchise.30",
+          "slot": 30,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.31",
+          "owner": "franchise.31",
+          "slot": 31,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 1,
+          "original": "franchise.32",
+          "owner": "franchise.32",
+          "slot": 32,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.03",
+          "owner": "franchise.03",
+          "slot": 1,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.02",
+          "owner": "franchise.02",
+          "slot": 2,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.01",
+          "owner": "franchise.01",
+          "slot": 3,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.04",
+          "owner": "franchise.04",
+          "slot": 4,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.05",
+          "owner": "franchise.05",
+          "slot": 5,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.06",
+          "owner": "franchise.06",
+          "slot": 6,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.07",
+          "owner": "franchise.07",
+          "slot": 7,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.08",
+          "owner": "franchise.08",
+          "slot": 8,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.09",
+          "owner": "franchise.09",
+          "slot": 9,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.10",
+          "owner": "franchise.10",
+          "slot": 10,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.11",
+          "owner": "franchise.11",
+          "slot": 11,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.12",
+          "owner": "franchise.12",
+          "slot": 12,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.13",
+          "owner": "franchise.13",
+          "slot": 13,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.14",
+          "owner": "franchise.14",
+          "slot": 14,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.15",
+          "owner": "franchise.15",
+          "slot": 15,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.16",
+          "owner": "franchise.16",
+          "slot": 16,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.17",
+          "owner": "franchise.17",
+          "slot": 17,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.18",
+          "owner": "franchise.18",
+          "slot": 18,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.19",
+          "owner": "franchise.19",
+          "slot": 19,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.20",
+          "owner": "franchise.20",
+          "slot": 20,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.21",
+          "owner": "franchise.21",
+          "slot": 21,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.22",
+          "owner": "franchise.22",
+          "slot": 22,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.23",
+          "owner": "franchise.23",
+          "slot": 23,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.24",
+          "owner": "franchise.24",
+          "slot": 24,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.25",
+          "owner": "franchise.25",
+          "slot": 25,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.26",
+          "owner": "franchise.26",
+          "slot": 26,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.27",
+          "owner": "franchise.27",
+          "slot": 27,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.28",
+          "owner": "franchise.28",
+          "slot": 28,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.29",
+          "owner": "franchise.29",
+          "slot": 29,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.30",
+          "owner": "franchise.30",
+          "slot": 30,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.31",
+          "owner": "franchise.31",
+          "slot": 31,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 2,
+          "original": "franchise.32",
+          "owner": "franchise.32",
+          "slot": 32,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.03",
+          "owner": "franchise.03",
+          "slot": 1,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.02",
+          "owner": "franchise.02",
+          "slot": 2,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.01",
+          "owner": "franchise.01",
+          "slot": 3,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.04",
+          "owner": "franchise.04",
+          "slot": 4,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.05",
+          "owner": "franchise.05",
+          "slot": 5,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.06",
+          "owner": "franchise.06",
+          "slot": 6,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.07",
+          "owner": "franchise.07",
+          "slot": 7,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.08",
+          "owner": "franchise.08",
+          "slot": 8,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.09",
+          "owner": "franchise.09",
+          "slot": 9,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.10",
+          "owner": "franchise.10",
+          "slot": 10,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.11",
+          "owner": "franchise.11",
+          "slot": 11,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.12",
+          "owner": "franchise.12",
+          "slot": 12,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.13",
+          "owner": "franchise.13",
+          "slot": 13,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.14",
+          "owner": "franchise.14",
+          "slot": 14,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.15",
+          "owner": "franchise.15",
+          "slot": 15,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.16",
+          "owner": "franchise.16",
+          "slot": 16,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.17",
+          "owner": "franchise.17",
+          "slot": 17,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.18",
+          "owner": "franchise.18",
+          "slot": 18,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.19",
+          "owner": "franchise.19",
+          "slot": 19,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.20",
+          "owner": "franchise.20",
+          "slot": 20,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.21",
+          "owner": "franchise.21",
+          "slot": 21,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.22",
+          "owner": "franchise.22",
+          "slot": 22,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.23",
+          "owner": "franchise.23",
+          "slot": 23,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.24",
+          "owner": "franchise.24",
+          "slot": 24,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.25",
+          "owner": "franchise.25",
+          "slot": 25,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.26",
+          "owner": "franchise.26",
+          "slot": 26,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.27",
+          "owner": "franchise.27",
+          "slot": 27,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.28",
+          "owner": "franchise.28",
+          "slot": 28,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.29",
+          "owner": "franchise.29",
+          "slot": 29,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.30",
+          "owner": "franchise.30",
+          "slot": 30,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.31",
+          "owner": "franchise.31",
+          "slot": 31,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 3,
+          "original": "franchise.32",
+          "owner": "franchise.32",
+          "slot": 32,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.03",
+          "owner": "franchise.03",
+          "slot": 1,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.02",
+          "owner": "franchise.02",
+          "slot": 2,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.01",
+          "owner": "franchise.01",
+          "slot": 3,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.04",
+          "owner": "franchise.04",
+          "slot": 4,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.05",
+          "owner": "franchise.05",
+          "slot": 5,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.06",
+          "owner": "franchise.06",
+          "slot": 6,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.07",
+          "owner": "franchise.07",
+          "slot": 7,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.08",
+          "owner": "franchise.08",
+          "slot": 8,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.09",
+          "owner": "franchise.09",
+          "slot": 9,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.10",
+          "owner": "franchise.10",
+          "slot": 10,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.11",
+          "owner": "franchise.11",
+          "slot": 11,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.12",
+          "owner": "franchise.12",
+          "slot": 12,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.13",
+          "owner": "franchise.13",
+          "slot": 13,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.14",
+          "owner": "franchise.14",
+          "slot": 14,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.15",
+          "owner": "franchise.15",
+          "slot": 15,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.16",
+          "owner": "franchise.16",
+          "slot": 16,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.17",
+          "owner": "franchise.17",
+          "slot": 17,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.18",
+          "owner": "franchise.18",
+          "slot": 18,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.19",
+          "owner": "franchise.19",
+          "slot": 19,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.20",
+          "owner": "franchise.20",
+          "slot": 20,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.21",
+          "owner": "franchise.21",
+          "slot": 21,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.22",
+          "owner": "franchise.22",
+          "slot": 22,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.23",
+          "owner": "franchise.23",
+          "slot": 23,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.24",
+          "owner": "franchise.24",
+          "slot": 24,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.25",
+          "owner": "franchise.25",
+          "slot": 25,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.26",
+          "owner": "franchise.26",
+          "slot": 26,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.27",
+          "owner": "franchise.27",
+          "slot": 27,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.28",
+          "owner": "franchise.28",
+          "slot": 28,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.29",
+          "owner": "franchise.29",
+          "slot": 29,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.30",
+          "owner": "franchise.30",
+          "slot": 30,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.31",
+          "owner": "franchise.31",
+          "slot": 31,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 4,
+          "original": "franchise.32",
+          "owner": "franchise.32",
+          "slot": 32,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.03",
+          "owner": "franchise.03",
+          "slot": 1,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.02",
+          "owner": "franchise.02",
+          "slot": 2,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.01",
+          "owner": "franchise.01",
+          "slot": 3,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.04",
+          "owner": "franchise.04",
+          "slot": 4,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.05",
+          "owner": "franchise.05",
+          "slot": 5,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.06",
+          "owner": "franchise.06",
+          "slot": 6,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.07",
+          "owner": "franchise.07",
+          "slot": 7,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.08",
+          "owner": "franchise.08",
+          "slot": 8,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.09",
+          "owner": "franchise.09",
+          "slot": 9,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.10",
+          "owner": "franchise.10",
+          "slot": 10,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.11",
+          "owner": "franchise.11",
+          "slot": 11,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.12",
+          "owner": "franchise.12",
+          "slot": 12,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.13",
+          "owner": "franchise.13",
+          "slot": 13,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.14",
+          "owner": "franchise.14",
+          "slot": 14,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.15",
+          "owner": "franchise.15",
+          "slot": 15,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.16",
+          "owner": "franchise.16",
+          "slot": 16,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.17",
+          "owner": "franchise.17",
+          "slot": 17,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.18",
+          "owner": "franchise.18",
+          "slot": 18,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.19",
+          "owner": "franchise.19",
+          "slot": 19,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.20",
+          "owner": "franchise.20",
+          "slot": 20,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.21",
+          "owner": "franchise.21",
+          "slot": 21,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.22",
+          "owner": "franchise.22",
+          "slot": 22,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.23",
+          "owner": "franchise.23",
+          "slot": 23,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.24",
+          "owner": "franchise.24",
+          "slot": 24,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.25",
+          "owner": "franchise.25",
+          "slot": 25,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.26",
+          "owner": "franchise.26",
+          "slot": 26,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.27",
+          "owner": "franchise.27",
+          "slot": 27,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.28",
+          "owner": "franchise.28",
+          "slot": 28,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.29",
+          "owner": "franchise.29",
+          "slot": 29,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.30",
+          "owner": "franchise.30",
+          "slot": 30,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.31",
+          "owner": "franchise.31",
+          "slot": 31,
+          "skipped": false,
+          "forfeited": false
+        },
+        {
+          "round": 5,
+          "original": "franchise.32",
+          "owner": "franchise.32",
+          "slot": 32,
+          "skipped": false,
+          "forfeited": false
+        }
+      ],
+      "onClock": {
+        "round": 1,
+        "original": "franchise.01",
+        "owner": "franchise.01",
+        "slot": 3,
+        "openedAt": "2027-07-14T16:00:00-07:00",
+        "deadline": "2027-07-14T22:00:00-07:00",
+        "contract": {
+          "salaryCents": 300000000,
+          "years": 5,
+          "rfaAfter": false
+        },
+        "paused": false,
+        "remaining": 19800000000000
+      }
+    },
+    "nextOwnedPick": {
+      "round": 1,
+      "original": "franchise.01",
+      "owner": "franchise.01",
+      "slot": 3
+    },
+    "closed": null,
+    "players": {
+      "5001": {
+        "id": "5001",
+        "name": "Player, 5001",
+        "position": "WR",
+        "team": "AAA"
+      },
+      "5002": {
+        "id": "5002",
+        "name": "Player, 5002",
+        "position": "WR",
+        "team": "AAA"
+      },
+      "5003": {
+        "id": "5003",
+        "name": "Player, 5003",
+        "position": "WR",
+        "team": "AAA"
+      },
+      "5004": {
+        "id": "5004",
+        "name": "Player, 5004",
+        "position": "WR",
+        "team": "AAA"
+      },
+      "5005": {
+        "id": "5005",
+        "name": "Player, 5005",
+        "position": "WR",
+        "team": "AAA"
+      },
+      "5006": {
+        "id": "5006",
+        "name": "Player, 5006",
+        "position": "WR",
+        "team": "AAA"
+      }
+    },
+    "available": [
+      {
+        "id": "5002",
+        "name": "Player, 5002",
+        "position": "WR",
+        "team": "AAA"
+      },
+      {
+        "id": "5003",
+        "name": "Player, 5003",
+        "position": "WR",
+        "team": "AAA"
+      },
+      {
+        "id": "5004",
+        "name": "Player, 5004",
+        "position": "WR",
+        "team": "AAA"
+      },
+      {
+        "id": "5005",
+        "name": "Player, 5005",
+        "position": "WR",
+        "team": "AAA"
+      },
+      {
+        "id": "5006",
+        "name": "Player, 5006",
+        "position": "WR",
+        "team": "AAA"
+      }
+    ],
+    "checkpoints": [
+      {
+        "entry": "act.8da50596f320d2c9dfea55baad79e52ad1c4118c1f03870163761bbc4a8f81e8",
+        "words": "Picked Player, 5001 for round 1, pick 1 of the 2027 rookie draft",
+        "at": "2027-07-14T17:00:00Z"
+      },
+      {
+        "entry": "act.c4783c24c1e94b1ef1f03f4ac389436249e89e7121b9ec1897f24829c5ef1615",
+        "words": "Set the 2027 rookie draft to start at 2027-07-14T16:00:00Z",
+        "at": "2027-06-01T12:00:00Z"
+      }
+    ]
+  }
+}

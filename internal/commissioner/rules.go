@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +11,10 @@ import (
 )
 
 const RulesSet = "commish.rules.set"
+
+func ruleCommand(command string) bool {
+	return command == RulesSet || command == ContractActionSet
+}
 
 // ruleOwner maps a rule field (exact path, or a section ending in ".") to the census row that owns it.
 type ruleOwner struct{ prefix, control, gravity string }
@@ -28,14 +33,14 @@ func ruleOwners() []ruleOwner {
 		{"bids.", "CM-013", "G2"}, {"trades.", "CM-014", "G2"},
 		{"schedule.", "CM-015", "G2"}, {"playoffs.", "CM-016", "G2"},
 		{"house.", "CM-017", "G1"}, {"calendar.windows", "CM-023", "G2"},
-		{"calendar.timezone", "CM-024", "G2"}, {"calendar.boundary", "CM-024", "G2"},
+		{"calendar.timezone", "CM-024", "G1"}, {"calendar.boundary", "CM-024", "G2"},
 		{"calendar.rollover", "CM-027", "G3"}, {"calendar.rolloverDate", "CM-027", "G3"},
 		{"calendar.tradeDeadline", "CM-025", "G2"}, {"calendar.tradeDeadlineWeek", "CM-025", "G2"},
 		{"draft.mode", "CM-040", "G2"}, {"draft.clock", "CM-040", "G2"},
 		{"draft.onExpire", "CM-040", "G2"}, {"draft.timeouts", "CM-040", "G2"},
 		{"draft.rounds", "CM-040", "G2"}, {"draft.maximumPicks", "CM-040", "G2"},
 		{"draft.forfeitExtra", "CM-040", "G2"}, {"draft.pricing", "CM-040", "G2"},
-		{"draft.lengths", "CM-040", "G2"}, {"draft.rfaAfter", "CM-040", "G2"},
+		{"notify.", "CM-051", "G1"}, {"draft.lengths", "CM-040", "G2"}, {"draft.rfaAfter", "CM-040", "G2"},
 		{"draft.orderSource", "CM-041", "G2"}, {"draft.order", "CM-041", "G2"},
 		{"draft.laterPattern", "CM-041", "G2"}, {"draft.tieRule", "CM-041", "G2"},
 	}
@@ -73,8 +78,19 @@ func catalogueField(path string) (leaguerules.CatalogueField, error) {
 
 // Definition derives gravity from the command and, for rules, from the field's census row and timing.
 func (r RawCommand) Definition() (Definition, error) {
-	if r.Command != RulesSet {
+	if !ruleCommand(r.Command) {
 		return DefinitionFor(r.Command)
+	}
+	if r.Command == ContractActionSet {
+		if r.Args.ContractAction == nil {
+			return Definition{}, fmt.Errorf("choose a contract action")
+		}
+		field, err := r.Args.ContractAction.field()
+		if err != nil {
+			return Definition{}, err
+		}
+		return (RawCommand{Command: RulesSet, Effective: r.Effective,
+			Args: RawArgs{Field: string(field)}}).Definition()
 	}
 	field, err := catalogueField(r.Args.Field)
 	if err != nil {
@@ -131,51 +147,10 @@ func authorizeRule(auth GovernanceAuthorizer, raw RawCommand, principal string) 
 	return string(role), nil
 }
 
-// ruleChanges feeds Resolve only what is in force: the creation preset and active "now" changes.
-// A next-rollover change waits on the ledger until the rollover Act exists.
-func ruleChanges(records []Record) ([]leaguerules.Change, error) {
-	projection := Replay(records)
-	changes := []leaguerules.Change{}
-	for _, r := range records {
-		if r.Command.Command == Create {
-			seeded, err := seedChanges(r)
-			if err != nil {
-				return nil, err
-			}
-			changes = append(changes, seeded...)
-			continue
-		}
-		if r.Command.Command != RulesSet || !projection.Active[r.Receipt.Entry] || r.Command.Effective != "now" {
-			continue
-		}
-		setting, err := leaguerules.DecodeSetting(leaguerules.FieldPath(r.Command.Args.Field), r.Command.Args.Value)
-		if err != nil {
-			return nil, fmt.Errorf("read recorded rule: %w", err)
-		}
-		changes = append(changes, leaguerules.Change{LeagueID: r.Command.League,
-			Field: leaguerules.FieldPath(r.Command.Args.Field), New: setting,
-			Effective: leaguerules.Effective{Kind: leaguerules.Now}, RecordedAt: r.Receipt.RecordedAt,
-			Season: ledgerSeason})
-	}
-	return changes, nil
-}
-
+// resolveRecords reads the rules in force at the ledger's last entry. Readings that run on the
+// clock call RulesNow instead.
 func resolveRecords(records []Record) (leaguerules.RuleSet, error) {
-	changes, err := ruleChanges(records)
-	if err != nil {
-		return leaguerules.RuleSet{}, err
-	}
-	at := time.Unix(1, 0).UTC()
-	for _, r := range records {
-		if r.Receipt.RecordedAt.After(at) {
-			at = r.Receipt.RecordedAt
-		}
-	}
-	rules, err := leaguerules.Resolve(changes, ledgerSeason, at)
-	if err != nil {
-		return leaguerules.RuleSet{}, fmt.Errorf("read league rules: %w", err)
-	}
-	return rules, nil
+	return RulesNow(records, time.Time{})
 }
 
 // CheckRulesAppend refuses a change whose result the league's rules could not hold together.
@@ -186,7 +161,77 @@ func CheckRulesAppend(raw RawCommand, records []Record, at time.Time) error {
 	if _, err := resolveRecords(trial); err != nil {
 		return Refused(fmt.Errorf("rule change refused: %w", err))
 	}
-	return nil
+	return checkRuleChangesSomething(raw, records, at)
+}
+
+// ruleValue reads one rule as the plain JSON a change is sent in; "null" while it needs a ruling.
+func ruleValue(records []Record, field string) (string, error) {
+	rules, err := resolveRecords(records)
+	if err != nil {
+		return "", err
+	}
+	current := leaguerules.Current(rules)
+	for i, f := range leaguerules.Catalogue() {
+		if string(f.Path) == field {
+			return string(current[i]), nil
+		}
+	}
+	return "", fmt.Errorf("choose a recognised league rule")
+}
+
+// withWaitingInForce counts the newest change waiting on the next rollover for field as already in force.
+// That is what a second change from the next rollover has to differ from.
+func withWaitingInForce(records []Record, field string) ([]Record, bool) {
+	active := Replay(records).Active
+	for i := len(records) - 1; i >= 0; i-- {
+		r := records[i]
+		if r.Command.Command != RulesSet || r.Command.Args.Field != field || !active[r.Receipt.Entry] ||
+			r.Command.Effective != "next_rollover" {
+			continue
+		}
+		counted := append([]Record(nil), records...)
+		r.Command.Effective = "now"
+		r.Receipt.Entry = "waiting." + r.Receipt.Entry
+		// Rules resolve by recorded instant, so the waiting change is counted at the newest one:
+		// an immediate change recorded after it must not shadow it.
+		for _, later := range records[i+1:] {
+			if later.Receipt.RecordedAt.After(r.Receipt.RecordedAt) {
+				r.Receipt.RecordedAt = later.Receipt.RecordedAt
+			}
+		}
+		return append(counted, r), true
+	}
+	return records, false
+}
+
+// checkRuleChangesSomething refuses a rule change that leaves the rule exactly as it already is, whether
+// it is in force or already waiting for the next rollover. Preview and execute share it.
+func checkRuleChangesSomething(raw RawCommand, records []Record, at time.Time) error {
+	if raw.Command != RulesSet {
+		return nil
+	}
+	base, waiting := records, false
+	if raw.Effective == "next_rollover" {
+		base, waiting = withWaitingInForce(records, raw.Args.Field)
+	}
+	before, err := ruleValue(base, raw.Args.Field)
+	if err != nil {
+		return Refused(fmt.Errorf("rule change refused: %w", err))
+	}
+	trial := raw
+	trial.Effective = "now"
+	after, err := ruleValue(append(append([]Record(nil), base...), Record{Command: trial,
+		Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: at}}), raw.Args.Field)
+	if err != nil {
+		return Refused(fmt.Errorf("rule change refused: %w", err))
+	}
+	if before != after {
+		return nil
+	}
+	if waiting {
+		return Refused(errors.New("this change is already waiting for the next rollover. Nothing would change"))
+	}
+	return Refused(errors.New("this is already the rule. Nothing would change"))
 }
 
 func fieldWords(rules leaguerules.RuleSet, path string) string {
@@ -208,6 +253,10 @@ func timingWords(effective string) string {
 
 // ruleLabel says, for the ledger, label: before → after and when it takes effect.
 func ruleLabel(r Record, before []Record) (string, error) {
+	r, err := ruleRecord(r)
+	if err != nil {
+		return "", err
+	}
 	field, err := catalogueField(r.Command.Args.Field)
 	if err != nil {
 		return "", err
@@ -238,6 +287,11 @@ func revertRuleLabel(records []Record, i int) (string, bool, error) {
 		if !found {
 			return "", false, nil
 		}
+	}
+	var err error
+	target, err = ruleRecord(target)
+	if err != nil {
+		return "", false, err
 	}
 	if target.Command.Command != RulesSet {
 		return "", false, nil

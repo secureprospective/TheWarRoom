@@ -134,7 +134,7 @@ func TestLegacyCensusDefaults(t *testing.T) {
 }
 func TestCompleteScoring(t *testing.T) {
 	catalogue := LegacyNFL().Scoring.Catalogue.Value
-	if len(catalogue) != 45 {
+	if len(catalogue) != 53 {
 		t.Fatalf("scoring catalogue has %d entries", len(catalogue))
 	}
 	for id, want := range map[StatID]Decimal{
