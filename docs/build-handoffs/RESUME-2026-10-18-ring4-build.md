@@ -1,3 +1,17 @@
+## UPDATE 2026-10-18 19:45 CT (read this first)
+- integ2 tip 3697be49. Since 18:00: d9d26ec3 jobs list fix (verify28 VERIFY_EXIT=0), 80956366 waiver/bid clocks skip unseeded leagues (was 2 log errors/league/second on Claude-OS), 3697be49 league page keeps picker when one league can't be read (Claude-OS old unnumbered leagues blanked the page). Targeted gates passed on the last two; full verify not rerun since d9d26ec3.
+- Deployed 3697be49 build to Claude-OS (sha bb50fb77..., backup tags r4h/r4i). New league "Ring 4 walk 10-18" created there; jobs strip renders correctly (shots r4-80..93).
+- FOUND: ring 4 not done per spec 16.8/16.11. Only rules/create/role/notice/undo have preview+tray. Season ops CM-027..039, CM-018/19/20/22, CM-026, CM-042, starting assets: Go commands + bindings exist, no preview, no tray. Controls reading says season ops 0 of 13 built.
+- DISPATCHED 19:41 (two Sols): c11a-preview (Go: preview for every act via shared prepare path; honest built flags; seed preview) WT ring-4-c11a; c11b-acttray (frontend: table-driven act tray for every ring 4 control + starting assets tray) WT ring-4-c11b. Briefs par/c11a.full.md, par/c11b.full.md. Liveness: mtime of <phase>/sessions/*.jsonl; done = <phase>/sentinel. Waiter bmymoa4k0.
+- NEXT: review each (diff, mutant), commit in WT, merge c11a then c11b into integ2, wails generate + runtime restore, wires, make verify, build, deploy, walk with "Ring 4 walk 10-18": record starting assets, a correction, trade review, bids, stat queue, rollover dry run, draft room. Then go clean -cache (31 GB watcher was stopped: its pgrep self-matched), PR body from integ2/PR-notes.md, ask Christopher, squash-merge on go, Hermes T434.
+- Claude-OS input: if clicks stop registering, run ./unstick-pointer.sh (spice tablet holds button 1).
+
+## UPDATE 2026-10-18 ~18:00 CT (usage limit hit; read this first)
+- integ2 commits: b7ac028b (c9c trades merge, verify27 VERIFY_EXIT=0), d8d708e5 (c10b draft room merge), 329e6a00 (c9b2 bid clock merge; includes fix: draftSeasonNext now takes the league). c9b2 branch commit 905de5f0 (my mutant: offseason ignores September cutoff -> red).
+- d8d708e5 and 329e6a00 were committed after targeted gates only (pkg tests, vitest 1205, tsc, lint 0, guards). FULL make verify NOT yet run on them.
+- UNCOMMITTED in integ2: jobs-list fix. Files: internal/commissioner/jobs.go (rollover job now upcoming/live/blocked; ruleCalendar has records, rolloverRunSinceDated; unbuilt list now only "notifications" CM-051,CM-054), jobs_league.go (NEW: ledgerJobs, draftJob, tradeReviewJob, playoffJob, stat_queue/in_season/communications live), jobs_transactions.go (takes assets,state), draft_room.go (draftSeasonPending split). Compiles.
+- NEXT: 1) update internal/commissioner/jobs_test.go (TestRolloverIsBlocked..., TestJobsNotBuiltYetNeverClaimToWork, ordering test expects jobs[2]==rollover) and commissioner_jobs_test.go (expects dated rollover JobUnbuilt -> now live/upcoming); add tests for draftJob/tradeReviewJob/playoffJob/rolloverRunSinceDated; plant a mutant. 2) TWR_WRITE_WIRE=1 jobs wire. 3) lint + make verify (log verify28). 4) commit. 5) clear phase caches c9b2-bids/cache, lint-cache, tmp; remove ring-4-c9b2/frontend/node_modules (copied dir, gitignored); log in 3 logs. 6) go-build clear job bmrej1pzx may be gone. 7) Final steps as before.
+
 # UPDATE 2026-10-18 16:05 CT: compact-safe point (READ THIS FIRST; supersedes the 15:45 update and the 14:45 block's in-flight/next/ledger)
 
 ## State
