@@ -60,8 +60,9 @@ vet:
 # -race is non-negotiable (failure mode #2: concurrent map access from Wails IPC
 # goroutines hitting B3c). Never make this optional.
 # The root package's race run passed 10 minutes (Go's default) as the commissioner side grew; the limit
-# is explicit so a slow package fails as a timeout we chose, not one we inherited.
-GO_TEST_TIMEOUT := 45m
+# is explicit so a slow package fails as a timeout we chose, not one we inherited. Raised to 60m
+# on 2026-10-19: the root package took 39.5 minutes, too close to 45.
+GO_TEST_TIMEOUT := 60m
 test:
 	go test -race -timeout $(GO_TEST_TIMEOUT) ./...
 
