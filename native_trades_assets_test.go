@@ -11,6 +11,7 @@ import (
 )
 
 func TestTradePickOwnershipGovernsDraftOrderAndCompensation(t *testing.T) {
+	t.Parallel()
 	f := tradePickApp(t)
 	f.command(t, commissioner.DraftStart, commissioner.RawArgs{Draft: &commissioner.RawDraftArgs{Season: 2027, At: draftStartAt()}}, "league")
 	f.command(t, commissioner.DraftOrderSet, commissioner.RawArgs{Draft: &commissioner.RawDraftArgs{Season: 2027, Order: draftOrder(4, 1, 2, 3)}}, "league")
@@ -94,6 +95,7 @@ func TestTradePickOwnershipGovernsDraftOrderAndCompensation(t *testing.T) {
 }
 
 func TestTradeActionsIdentityRetryVersionAndTerminalStates(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	if _, err := f.action(t, "owner.one", commissioner.TradeOffer, tradePlayerOffer()); err == nil {
 		t.Fatal("foreign owner offered assets")
@@ -142,6 +144,7 @@ func TestTradeActionsIdentityRetryVersionAndTerminalStates(t *testing.T) {
 }
 
 func TestTradeCommissionerRouteAndNoEligibleJudge(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	f.set(t, "trades.review", `"commissioner"`, "now")
 	offer := f.offer(t)
@@ -165,6 +168,7 @@ func TestTradeCommissionerRouteAndNoEligibleJudge(t *testing.T) {
 }
 
 func TestTradeMovesContractSalaryIntoNativeCap(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	f.set(t, "trades.review", `"none"`, "now")
 	committed := func(team string) int64 {
@@ -215,6 +219,7 @@ func TestTradeMovesContractSalaryIntoNativeCap(t *testing.T) {
 }
 
 func TestTradeDecisionRechecksCurrentRoster(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
 	f.accept(t, offer)
@@ -230,6 +235,7 @@ func TestTradeDecisionRechecksCurrentRoster(t *testing.T) {
 }
 
 func TestTradeNewVetoHasOneNewAppeal(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
 	f.accept(t, offer)
@@ -248,6 +254,7 @@ func TestTradeNewVetoHasOneNewAppeal(t *testing.T) {
 }
 
 func TestTradeThreePartiesMustAllAccept(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	args := tradePlayerOffer()
 	args.Parties = append(args.Parties, "franchise.03")
@@ -267,6 +274,7 @@ func TestTradeThreePartiesMustAllAccept(t *testing.T) {
 }
 
 func TestTradeConcurrentAcceptanceAppendsExactlyOnce(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
 	f.app.commissionerSession = testCommissionerSession{"owner.one"}
@@ -303,6 +311,7 @@ func TestTradeConcurrentAcceptanceAppendsExactlyOnce(t *testing.T) {
 }
 
 func TestTradeCompensationCannotEraseEarlierVoteOrOffer(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
 	f.accept(t, offer)

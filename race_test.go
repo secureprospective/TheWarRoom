@@ -123,6 +123,7 @@ func assertStandingsMatchMFL(t *testing.T, year string) raceView {
 }
 
 func TestRace2025StandingsMatchMFLExactly(t *testing.T) {
+	t.Parallel()
 	v := assertStandingsMatchMFL(t, "2025")
 	if v.table.RegularWeeks != 13 {
 		t.Fatal(v.table.RegularWeeks)
@@ -145,6 +146,7 @@ func TestRace2025StandingsMatchMFLExactly(t *testing.T) {
 }
 
 func TestRace2026StandingsInProgressMatchMFLExactly(t *testing.T) {
+	t.Parallel()
 	v := assertStandingsMatchMFL(t, "2026")
 	if v.table.RegularWeeks != 3 || v.week != 3 {
 		t.Fatal(v.table.RegularWeeks, v.week)
@@ -493,6 +495,7 @@ func TestRacePowerRankingsNameTheBlend(t *testing.T) {
 }
 
 func TestRaceBindingReadsHeldAndRefreshFallsBack(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	board, err := a.TargetRace(0, "", "")
 	if err != nil || len(transport.requests) != 0 || board.Standings.Status != "failed" {
@@ -525,6 +528,7 @@ func TestRaceBindingReadsHeldAndRefreshFallsBack(t *testing.T) {
 }
 
 func TestRaceWireMatchesGo(t *testing.T) {
+	t.Parallel()
 	in := realRace(t, "2026")
 	in.held.power = map[string]PowerRankingsResult{ViewSeason: testPower()}
 	board, err := buildRace(in)

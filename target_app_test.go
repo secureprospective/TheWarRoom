@@ -119,6 +119,7 @@ func targetTestAppAt(t *testing.T, path string) *App {
 }
 
 func TestTargetDirectoryReusesLiveCacheAndOriginalTime(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	lk, err := normalize.NewLookup([]players.RawPlayer{
 		{ID: "0042", Name: "Cached", Position: "QB", Team: "BUF"},
@@ -164,6 +165,7 @@ func recordTargetPlayers(t *testing.T, hs *history.Store) {
 }
 
 func TestTargetDirectoryFallsBackAfterCancelledLiveFetch(t *testing.T) {
+	t.Parallel()
 	for _, archived := range []bool{true, false} {
 		a := targetTestApp(t)
 		down := &directoryDown{}
@@ -206,6 +208,7 @@ func targetOfflineClient(t *testing.T, a *App) *directoryDown {
 }
 
 func TestTargetDraftIRAndMoves(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	if _, err := a.TargetDraftIR("0001", "0042"); err == nil ||
 		err.Error() != "target draft: no snapshot loaded" {
@@ -255,6 +258,7 @@ func TestTargetDraftIRAndMoves(t *testing.T) {
 }
 
 func TestTargetDraftIRConcurrent(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	down := targetOfflineClient(t, a)
 	if _, err := a.TargetSnapshot(); err != nil {
@@ -287,6 +291,7 @@ func TestTargetDraftIRConcurrent(t *testing.T) {
 }
 
 func TestTargetSnapshotFailureKeepsCache(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	targetOfflineClient(t, a)
 	if _, err := a.TargetSnapshot(); err != nil {
@@ -309,6 +314,7 @@ func TestTargetSnapshotFailureKeepsCache(t *testing.T) {
 }
 
 func TestTargetMovesSurviveRestart(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "league.db")
 	first := targetTestAppAt(t, path)
 	targetOfflineClient(t, first)

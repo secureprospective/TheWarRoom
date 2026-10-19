@@ -57,7 +57,7 @@ fmt:
 vet:
 	go vet ./...
 
-# -race is non-negotiable (failure mode #2: concurrent map access from Wails IPC
+# -race is non-negotiable in the full gate (make verify, run by GitHub CI before every merge) (failure mode #2: concurrent map access from Wails IPC
 # goroutines hitting B3c). Never make this optional.
 # The root package's race run passed 10 minutes (Go's default) as the commissioner side grew; the limit
 # is explicit so a slow package fails as a timeout we chose, not one we inherited. Raised to 60m

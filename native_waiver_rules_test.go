@@ -57,6 +57,7 @@ func readWaiverPolicy(t *testing.T, app *App) (nativecheck.WaiverPolicy, []commi
 }
 
 func TestWaiverDurationCommandDatesPolicyRevertReopen(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
 	app, reopen := calendarTestApp(t, at)
 	raw := createWaiverPolicyLeague(t, app, commissioner.PresetLegacy)
@@ -87,6 +88,7 @@ func TestWaiverDurationCommandDatesPolicyRevertReopen(t *testing.T) {
 }
 
 func TestWaiverMethodCommandChangesPolicyAwardRevertReopen(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
 	app, reopen := calendarTestApp(t, at)
 	raw := createWaiverPolicyLeague(t, app, commissioner.PresetLegacy)
@@ -119,6 +121,7 @@ func TestWaiverMethodCommandChangesPolicyAwardRevertReopen(t *testing.T) {
 }
 
 func TestEmptyLeagueDoesNotBorrowLegacyWaiverPolicy(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
 	app, reopen := calendarTestApp(t, at)
 	createWaiverPolicyLeague(t, app, commissioner.PresetEmpty)
@@ -139,6 +142,7 @@ func TestEmptyLeagueDoesNotBorrowLegacyWaiverPolicy(t *testing.T) {
 }
 
 func TestNativeWaiverPolicyWire(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
 	app, _ := calendarTestApp(t, at)
 	createWaiverPolicyLeague(t, app, commissioner.PresetLegacy)

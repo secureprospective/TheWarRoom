@@ -124,6 +124,7 @@ func (f *waiverFixture) process(t *testing.T, window string) commissioner.Receip
 }
 
 func TestNativeCutOpensWaiversAndCountsDeadMoney(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
 	assert := func() {
@@ -159,6 +160,7 @@ func TestNativeCutOpensWaiversAndCountsDeadMoney(t *testing.T) {
 }
 
 func TestNativeClaimRefusesRosterAndCapBreaks(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
 	f.set(t, "roster.limits", `{"min":0,"max":40}`, "now")
@@ -180,6 +182,7 @@ func TestNativeClaimRefusesRosterAndCapBreaks(t *testing.T) {
 }
 
 func TestNativeClaimsArePrivateAcrossReadingsAndLedger(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
 	claim := f.claim(t, cut.Entry, "owner.one", "franchise.01")
@@ -211,8 +214,10 @@ func TestNativeClaimsArePrivateAcrossReadingsAndLedger(t *testing.T) {
 }
 
 func TestNativeWaiverPriorityAndRollingThroughProcessing(t *testing.T) {
+	t.Parallel()
 	for _, method := range []string{"reverse_standings", "rolling"} {
 		t.Run(method, func(t *testing.T) {
+			t.Parallel()
 			f := waiverApp(t)
 			if method != "reverse_standings" { // reverse standings is the Legacy method already in force
 				f.set(t, "waivers.method", `"`+method+`"`, "now")
@@ -263,6 +268,7 @@ func TestNativeWaiverPriorityAndRollingThroughProcessing(t *testing.T) {
 }
 
 func TestNativeOwnerActionsCannotSkipGateOrIdentity(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
 	f.set(t, "calendar.windows", `{}`, "now")
@@ -307,6 +313,7 @@ func TestNativeOwnerActionsCannotSkipGateOrIdentity(t *testing.T) {
 }
 
 func TestNativeWaiverDurationGovernsWindowRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	f.cut(t, "1000")
 	change := f.set(t, "waivers.duration", `172800000000000`, "now")
@@ -334,6 +341,7 @@ func TestNativeWaiverDurationGovernsWindowRevertAndReopen(t *testing.T) {
 }
 
 func TestNativeWaiverMethodGovernsAwardRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	f.set(t, "waivers.method", `"rolling"`, "now")
 	first := f.cut(t, "1000")
@@ -372,6 +380,7 @@ func TestNativeWaiverMethodGovernsAwardRevertAndReopen(t *testing.T) {
 }
 
 func TestNativeWaiverOverrideGovernsCompensationAndReplay(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
 	f.claim(t, cut.Entry, "owner.one", "franchise.01")
@@ -399,6 +408,7 @@ func TestNativeWaiverOverrideGovernsCompensationAndReplay(t *testing.T) {
 }
 
 func TestNativeWaiverClockProcessesUnclaimedAtClose(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
 	if err := f.app.history.ProcessDueWaivers(t.Context(), legalityLeague, f.app.nativeFacts()); err != nil {
@@ -434,6 +444,7 @@ func TestNativeWaiverClockProcessesUnclaimedAtClose(t *testing.T) {
 }
 
 func TestNativeWaiverProcessingRechecksEligibility(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
 	f.claim(t, cut.Entry, "owner.one", "franchise.01")
@@ -449,6 +460,7 @@ func TestNativeWaiverProcessingRechecksEligibility(t *testing.T) {
 }
 
 func TestNativeWaiverCommandsPermissionVersionRetry(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
 	f.now = f.now.Add(24 * time.Hour)
@@ -489,6 +501,7 @@ func TestNativeWaiverCommandsPermissionVersionRetry(t *testing.T) {
 }
 
 func TestNativeWaiversWire(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
 	f.claim(t, cut.Entry, "owner.one", "franchise.01")
@@ -514,6 +527,7 @@ func TestNativeWaiversWire(t *testing.T) {
 }
 
 func TestNativeWaiverStandingsSeamDoesNotInventPriority(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	if _, err := f.app.history.StandingsOrder(t.Context(), legalityLeague, 2026, f.now); err == nil ||
 		!strings.Contains(err.Error(), "Waiver order needs the standings, which are not built yet.") {

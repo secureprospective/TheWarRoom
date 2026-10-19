@@ -110,6 +110,7 @@ func lineupTestSnapshot(t *testing.T, a *App) []string {
 }
 
 func TestTargetLineupHeldReading(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	lineupTestRules(t, a, false)
 	ids := lineupTestSnapshot(t, a)
@@ -189,6 +190,7 @@ func TestTargetLineupHeldReading(t *testing.T) {
 }
 
 func TestTargetLineupBadRulesAndAbsentFeed(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	lineupTestRules(t, a, true)
 	lineupTestSnapshot(t, a)
@@ -217,6 +219,7 @@ func TestTargetLineupBadRulesAndAbsentFeed(t *testing.T) {
 }
 
 func TestTargetLineupStaleAndUnknownPosition(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	lineupTestRules(t, a, false)
 	lineupTestSnapshot(t, a)
@@ -252,6 +255,7 @@ func TestTargetLineupStaleAndUnknownPosition(t *testing.T) {
 }
 
 func TestTargetLineupNotReady(t *testing.T) {
+	t.Parallel()
 	a := NewApp()
 	a.startupErr = errors.New("synthetic startup failure")
 	close(a.started)

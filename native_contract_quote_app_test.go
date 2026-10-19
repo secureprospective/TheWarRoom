@@ -213,6 +213,7 @@ func quoteCases() []quoteCase {
 // action's number and the quote's price follows; turning the action off refuses the quote; the compensating
 // reverts bring each price back; and after a real reopen of the database the same round trip repeats.
 func TestNativeContractActionSettingsGovernTheQuote(t *testing.T) {
+	t.Parallel()
 	f := quoteApp(t)
 	parent := t // a reopened database must outlive the case that reopened it
 	for _, tc := range quoteCases() {
@@ -251,6 +252,7 @@ func TestNativeContractActionSettingsGovernTheQuote(t *testing.T) {
 // TestNativeReleaseChargeFollowsTheDeadMoneyRates covers the release, which has no switch of its own: the
 // league's two dead-money rates are plain rules, and the quote follows both doors.
 func TestNativeReleaseChargeFollowsTheDeadMoneyRates(t *testing.T) {
+	t.Parallel()
 	f := quoteApp(t)
 	read := func(t *testing.T, f *legalityFixture) string {
 		q := f.quote(t, "0099", "cut", nil)
@@ -263,6 +265,7 @@ func TestNativeReleaseChargeFollowsTheDeadMoneyRates(t *testing.T) {
 // TestNativeQuoteFollowsWhicheverDoorSetTheRuleLast shows the rules desk and the named command write one
 // setting: whichever came last prices the quote, a compensation exposes the other, and a reopen agrees.
 func TestNativeQuoteFollowsWhicheverDoorSetTheRuleLast(t *testing.T) {
+	t.Parallel()
 	f := quoteApp(t)
 	read := func() string {
 		q := f.quote(t, "0098", "tag", nil)
@@ -302,6 +305,7 @@ func TestNativeQuoteFollowsWhicheverDoorSetTheRuleLast(t *testing.T) {
 // TestNativeQuoteAsksTheCalendarGate keeps a priced action refused until the league's window opens it, and
 // names the window in the owner's time.
 func TestNativeQuoteAsksTheCalendarGate(t *testing.T) {
+	t.Parallel()
 	f := quoteApp(t)
 	open := f.quote(t, "0099", "buyout", nil)
 	if !open.Allowed || deadCents(open) != "750000000" {
@@ -326,6 +330,7 @@ func TestNativeQuoteAsksTheCalendarGate(t *testing.T) {
 // while the league has the action on and the window is open, and is refused once the commissioner turns it
 // off, by the same sentence the quote gives.
 func TestNativeOwnerStartFollowsTheSameSwitch(t *testing.T) {
+	t.Parallel()
 	f := quoteApp(t)
 	f.app.clockNow = quoteClock
 	f.app.localZone = time.UTC
@@ -352,6 +357,7 @@ func TestNativeOwnerStartFollowsTheSameSwitch(t *testing.T) {
 }
 
 func TestNativeQuoteRefusesWhatItCannotPrice(t *testing.T) {
+	t.Parallel()
 	f := quoteApp(t)
 	for _, tc := range []struct {
 		player, action, reason string
@@ -382,6 +388,7 @@ func TestNativeQuoteRefusesWhatItCannotPrice(t *testing.T) {
 // TestNativeQuoteNeedsARulingNotAGuess keeps an unruled parameter out of the price: the named command
 // replaces all of an action's parameters, so one it leaves out is a ruling still to make.
 func TestNativeQuoteNeedsARulingNotAGuess(t *testing.T) {
+	t.Parallel()
 	f := quoteApp(t)
 	for pass := range 2 {
 		if pass == 1 {
@@ -401,6 +408,7 @@ func TestNativeQuoteNeedsARulingNotAGuess(t *testing.T) {
 }
 
 func TestNativeContractQuoteWire(t *testing.T) {
+	t.Parallel()
 	f := quoteApp(t)
 	f.setAction(t, "extension", legacyParams(t, "contracts.extension", nil), false)
 	readings := map[string]commissioner.ContractQuote{

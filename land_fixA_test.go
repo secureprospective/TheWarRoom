@@ -13,6 +13,7 @@ import (
 )
 
 func TestLandingAAVScale(t *testing.T) {
+	t.Parallel()
 	r := reportByID(t, buildMarketReports(realMarketHeld(t), nil, 5, time.UTC), "M-069")
 	for _, want := range []string{"MFL-wide", "many leagues", "$1,000", "across all", "not this league's dollars", "average marked", "one scale"} {
 		if !strings.Contains(r.How, want) {
@@ -35,6 +36,7 @@ func TestLandingAAVScale(t *testing.T) {
 }
 
 func TestLandingOfferHeadlines(t *testing.T) {
+	t.Parallel()
 	d := &lab.Data{Franchises: map[string]lab.RawFranchise{"a": {Name: "Team A"}}}
 	for _, tc := range []struct {
 		known []int
@@ -57,6 +59,7 @@ func TestLandingOfferHeadlines(t *testing.T) {
 }
 
 func TestLandingFutureReports(t *testing.T) {
+	t.Parallel()
 	in := nowInput{race: realRace(t, "2026"), current: 5, at: raceHeldAt,
 		held: nowHeld{schedules: map[int]heldSeasonFeed[[]nflschedule.RawWeek]{}}}
 	in.current, in.reportWeek = 5, 9
@@ -91,6 +94,7 @@ func TestLandingFutureReports(t *testing.T) {
 }
 
 func TestLandingColdWeekMatchesRefresh(t *testing.T) {
+	t.Parallel()
 	a, transport, _ := weekTestApp(t, "17", weekFixture(t, "nflSchedule-w5.json"))
 	at := time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)
 	a.clockNow = func() time.Time { return at }
@@ -115,6 +119,7 @@ func TestLandingColdWeekMatchesRefresh(t *testing.T) {
 }
 
 func TestLandingRefusedProfileLoggedOnce(t *testing.T) {
+	t.Parallel()
 	now := time.Now().Truncate(time.Second)
 	held := map[string]heldSeasonFeed[[]researchfeeds.News]{}
 	lines, asked := []string{}, 0
@@ -142,6 +147,7 @@ func TestLandingRefusedProfileLoggedOnce(t *testing.T) {
 // Finding 96: just after launch the league's weeks are not read yet; Now says so instead of drawing week 0,
 // and a failed read is shown as the failure it is, never as waiting.
 func TestLandingNowWaitsForTheLeaguesWeeks(t *testing.T) {
+	t.Parallel()
 	a, _, _, _ := seasonTestApp(t)
 	board, err := a.TargetNow(0, 0, "")
 	if err != nil || board.Waiting != "Reading the league's weeks from MFL…" {

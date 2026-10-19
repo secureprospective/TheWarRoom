@@ -17,6 +17,7 @@ func (nativeResultLineups) WeekLineup(context.Context, []commissioner.Record, st
 }
 
 func TestNativeResultsIPCUsesHeldIncompleteScores(t *testing.T) {
+	t.Parallel()
 	f := scoreApp(t)
 	f.app.history.SetNativeLineups(nativeResultLineups{})
 	raw := commissioner.RawCommand{League: legalityLeague, Command: commissioner.ScheduleGenerate,
@@ -65,6 +66,7 @@ func TestNativeResultsIPCUsesHeldIncompleteScores(t *testing.T) {
 }
 
 func TestNativeResultsIPCScopeAndStartup(t *testing.T) {
+	t.Parallel()
 	a := &App{started: make(chan struct{}), startupErr: errors.New("startup failed")}
 	close(a.started)
 	for _, scope := range []RawNativeResultsScope{
@@ -95,6 +97,7 @@ func TestNativeResultsIPCScopeAndStartup(t *testing.T) {
 }
 
 func TestNativeBracketIPCSaysWhyTheBracketIsNotBuiltYet(t *testing.T) {
+	t.Parallel()
 	f := scoreApp(t)
 	f.app.history.SetNativeLineups(nativeResultLineups{})
 	raw := commissioner.RawCommand{League: legalityLeague, Command: commissioner.ScheduleGenerate,
@@ -120,6 +123,7 @@ func TestNativeBracketIPCSaysWhyTheBracketIsNotBuiltYet(t *testing.T) {
 }
 
 func TestNativeBracketIPCScopeAndStartup(t *testing.T) {
+	t.Parallel()
 	a := &App{started: make(chan struct{}), startupErr: errors.New("startup failed")}
 	close(a.started)
 	for _, scope := range []RawNativeResultsScope{{League: "native.", Season: 2026}, {League: "imported", Season: 2026},

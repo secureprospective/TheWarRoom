@@ -10,8 +10,10 @@ import (
 )
 
 func TestTransactionCorrectionReversesNativeCutAndAward(t *testing.T) {
+	t.Parallel()
 	for _, award := range []bool{false, true} {
 		t.Run(map[bool]string{false: "cut", true: "award"}[award], func(t *testing.T) {
+			t.Parallel()
 			f := waiverApp(t)
 			cut := f.cut(t, "1000")
 			target := cut
@@ -63,6 +65,7 @@ func TestTransactionCorrectionReversesNativeCutAndAward(t *testing.T) {
 }
 
 func TestTransactionCorrectionReversesNativeDraftSelection(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t)
 	f.seat(t, draftTeam(1), "owner.one")
@@ -96,8 +99,10 @@ func TestTransactionCorrectionReversesNativeDraftSelection(t *testing.T) {
 }
 
 func TestRuleExceptionGovernsWaiverEligibilityAndReopen(t *testing.T) {
+	t.Parallel()
 	for _, rule := range []string{"roster.limits", "cap.enforcement"} {
 		t.Run(rule, func(t *testing.T) {
+			t.Parallel()
 			f := waiverApp(t)
 			cut := f.cut(t, "1000")
 			if rule == "roster.limits" {
@@ -143,6 +148,7 @@ func draftStillShowsPlayer(reading commissioner.NativeDraft, player string) bool
 }
 
 func TestRuleExceptionPlayerScopeExpiresInReserveRule(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	until := f.now.Add(time.Hour)
 	for pass := range 2 {
@@ -189,6 +195,7 @@ func assertReserveException(t *testing.T, f *waiverFixture, allowed bool) {
 }
 
 func TestRuleExceptionTransactionScopeGovernsAwardDecision(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
 	claim := f.claim(t, cut.Entry, "owner.one", "franchise.01")

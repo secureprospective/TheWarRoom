@@ -124,6 +124,7 @@ func weekTestApp(t *testing.T, end string, bodies ...string) (*App, *weekTranspo
 }
 
 func TestRefreshWeekAndClock(t *testing.T) {
+	t.Parallel()
 	a, transport, recorder := weekTestApp(t, "17", weekFixture(t, "nflSchedule-w5.json"))
 	// Inside week 5, before its first kickoff: the wall clock passed the fixture's last kickoff on
 	// 2026-10-12, after which no lineup lock is left and the reading has no week.
@@ -180,6 +181,7 @@ func TestRefreshWeekAndClock(t *testing.T) {
 }
 
 func TestRefreshWeekAdvancesPastFinalDefault(t *testing.T) {
+	t.Parallel()
 	a, transport, _ := weekTestApp(t, "17",
 		weekFixture(t, "nflSchedule.json"), weekFixture(t, "nflSchedule-w5.json"))
 	a.refreshWeek(a.ctx)
@@ -190,6 +192,7 @@ func TestRefreshWeekAdvancesPastFinalDefault(t *testing.T) {
 }
 
 func TestRefreshWeekDoesNotAppendBeyondBounds(t *testing.T) {
+	t.Parallel()
 	a, _, recorder := weekTestApp(t, "17", weekFixture(t, "nflSchedule-w5.json"))
 	cfg := a.rulebook.ActiveConfig()
 	cfg.LastRegularSeasonWeek, cfg.EndWeek = "3", "4"
@@ -204,6 +207,7 @@ func TestRefreshWeekDoesNotAppendBeyondBounds(t *testing.T) {
 }
 
 func TestRefreshWeekNoLineupAndBadBounds(t *testing.T) {
+	t.Parallel()
 	body := strings.Replace(weekFixture(t, "nflSchedule.json"), `"week":"4"`, `"week":"18"`, 1)
 	a, transport, recorder := weekTestApp(t, "17", body)
 	a.refreshWeek(a.ctx)
@@ -223,6 +227,7 @@ func TestRefreshWeekNoLineupAndBadBounds(t *testing.T) {
 }
 
 func TestRefreshWeekSerializesAndCancels(t *testing.T) {
+	t.Parallel()
 	a, transport, recorder := weekTestApp(t, "17", weekFixture(t, "nflSchedule-w5.json"))
 	var wg sync.WaitGroup
 	for range 4 {
@@ -241,6 +246,7 @@ func TestRefreshWeekSerializesAndCancels(t *testing.T) {
 }
 
 func TestWeekWorkerStopsOnShutdown(t *testing.T) {
+	t.Parallel()
 	a, transport, recorder := weekTestApp(t, "17", weekFixture(t, "nflSchedule-w5.json"))
 	refreshed := make(chan struct{}, 1)
 	a.clockChanged = func(context.Context) { refreshed <- struct{}{} }

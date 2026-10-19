@@ -22,6 +22,7 @@ import (
 
 // This opt-in benchmark reads disposable offline copies, never the app's live databases.
 func TestOfflineEngineSnapshotTiming(t *testing.T) {
+	t.Parallel()
 	dir := os.Getenv("TWR_ENGINE_BENCH_DIR")
 	if dir == "" {
 		t.Skip("requires disposable offline snapshot")

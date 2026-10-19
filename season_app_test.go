@@ -84,9 +84,8 @@ func seasonGzFixture(t *testing.T, feed, name string) string {
 
 func seasonTestApp(t *testing.T) (*App, *seasonTransport, *[]time.Duration, *int) {
 	t.Helper()
-	keyring.MockInit()
 	a, transport, pauses, events := isolatedSeasonTestApp(t)
-	a.keyStore = mflkey.New(ingestion.LeagueID, "2026")
+	a.keyStore = mflkey.NewMemory(ingestion.LeagueID, "2026")
 	a.mflClient = a.mflClient.WithKeySource(a.keyStore.Get)
 	return a, transport, pauses, events
 }

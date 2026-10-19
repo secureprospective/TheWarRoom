@@ -13,6 +13,7 @@ import (
 )
 
 func TestNativeWaiverOrderCommandGovernsAwardRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
 	f.claim(t, cut.Entry, "owner.one", "franchise.01")
@@ -87,6 +88,7 @@ func recordedStandingsApp(t *testing.T) *waiverFixture {
 }
 
 func TestNativeWaiverAutomaticOrderGovernsRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := recordedStandingsApp(t)
 	order := waiverOrder()
 	slices.Reverse(order)
@@ -122,6 +124,7 @@ func TestNativeWaiverAutomaticOrderGovernsRevertAndReopen(t *testing.T) {
 }
 
 func TestNativeWaiverRecordedStandingsPrioritySurvivesProcessing(t *testing.T) {
+	t.Parallel()
 	f := recordedStandingsApp(t)
 	for _, player := range []string{"1000", "1001"} {
 		cut := f.cut(t, player)
@@ -137,6 +140,7 @@ func TestNativeWaiverRecordedStandingsPrioritySurvivesProcessing(t *testing.T) {
 }
 
 func TestNativeWaiverRollingOverrideRestoresPriorityAndReplays(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	f.set(t, "waivers.method", `"rolling"`, "now")
 	cut := f.cut(t, "1000")
@@ -165,6 +169,7 @@ func TestNativeWaiverRollingOverrideRestoresPriorityAndReplays(t *testing.T) {
 }
 
 func TestNativeWaiverAllCommissionerCommandsRetryAfterReopen(t *testing.T) {
+	t.Parallel()
 	f := recordedStandingsApp(t)
 	cut := f.cut(t, "1000")
 	claim := f.claim(t, cut.Entry, "owner.one", "franchise.01")
@@ -210,6 +215,7 @@ func TestNativeWaiverAllCommissionerCommandsRetryAfterReopen(t *testing.T) {
 }
 
 func TestNativeWaiverOwnerRetriesAfterCalendarCloses(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	f.app.commissionerSession = testCommissionerSession{"owner.two"}
 	raw := f.raw(t, commissioner.RosterCut, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
@@ -230,6 +236,7 @@ func TestNativeWaiverOwnerRetriesAfterCalendarCloses(t *testing.T) {
 }
 
 func TestNativeWaiverClockAwardsClaimsAtExactClose(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	f.set(t, "waivers.method", `"rolling"`, "now")
 	cut := f.cut(t, "1000")
@@ -274,6 +281,7 @@ func TestNativeWaiverClockAwardsClaimsAtExactClose(t *testing.T) {
 }
 
 func TestNativeWaiverCompensationCannotStrandWinningClaimOrCut(t *testing.T) {
+	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
 	claim := f.claim(t, cut.Entry, "owner.one", "franchise.01")

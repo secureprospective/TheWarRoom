@@ -17,6 +17,7 @@ import (
 )
 
 func TestEngineDueAfterLaunchAndHourly(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	for _, tc := range []struct {
 		name                  string
@@ -38,6 +39,7 @@ func TestEngineDueAfterLaunchAndHourly(t *testing.T) {
 }
 
 func TestEngineRunsWithLoadedInputsAndEmitsOnce(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	if err := a.rulebook.Initialize(a.ctx, weekRules{end: "17"}); err != nil {
 		t.Fatal(err)
@@ -107,6 +109,7 @@ func TestEngineRunsWithLoadedInputsAndEmitsOnce(t *testing.T) {
 }
 
 func TestBackgroundEngineCannotOverlapManualRun(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	a.params = params.New(a.pools)
 	a.modelMu.Lock()
@@ -133,6 +136,7 @@ func TestBackgroundEngineCannotOverlapManualRun(t *testing.T) {
 }
 
 func TestC07ListsEngineRunAndAge(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	nr := history.NewModelRun{Season: a.season, AsOf: time.Now().Add(-2 * time.Hour), Engine: "fixture",
 		InputsHash: "fixture", Params: history.ParamSet{Params: params.DefaultSet().Model()},
@@ -158,6 +162,7 @@ func TestC07ListsEngineRunAndAge(t *testing.T) {
 }
 
 func TestEngineRefreshIsWiredAfterInputs(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		path  string
 		calls []string
@@ -182,6 +187,7 @@ func TestEngineRefreshIsWiredAfterInputs(t *testing.T) {
 }
 
 func TestSourceHealthEventOnFailedManualRefresh(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	events := 0
 	a.seasonChanged = func(context.Context) { events++ }

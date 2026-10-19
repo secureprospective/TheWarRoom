@@ -31,6 +31,7 @@ func previewApp(t *testing.T) *App {
 }
 
 func TestCommissionerPreviewRecordsNothing(t *testing.T) {
+	t.Parallel()
 	app := previewApp(t)
 	before, err := app.TargetCommissionerLedger("native.preview")
 	if err != nil {
@@ -56,6 +57,7 @@ func TestCommissionerPreviewRecordsNothing(t *testing.T) {
 }
 
 func TestCommissionerPreviewChecksMatchExecute(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, principal, field, value, effective, reason string
 		expected                                         int64
@@ -68,6 +70,7 @@ func TestCommissionerPreviewChecksMatchExecute(t *testing.T) {
 		{"unchanged", "creator", "roster.limits", `{"min":18,"max":80}`, "next_rollover", "", 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			app := previewApp(t)
 			app.commissionerSession = testCommissionerSession{tc.principal}
 			body := previewRuleBody(t, tc.field, tc.value, tc.effective, tc.reason, tc.expected)
@@ -89,6 +92,7 @@ func TestCommissionerPreviewChecksMatchExecute(t *testing.T) {
 }
 
 func TestCommissionerPreviewWire(t *testing.T) {
+	t.Parallel()
 	app := previewApp(t)
 	views := map[string]commissioner.Preview{}
 	for _, tc := range []struct{ name, field, value, effective, reason string }{
@@ -143,6 +147,7 @@ func assertPreviewAffects(t *testing.T, preview commissioner.Preview) {
 }
 
 func TestCommissionerPreviewDoesNotBypassRequestChecks(t *testing.T) {
+	t.Parallel()
 	app := previewApp(t)
 	body := previewRuleBody(t, "roster.limits", `{"min":20,"max":70}`, "next_rollover", "", 1)
 	if _, err := app.TargetCommissionerExecute(body); err != nil {

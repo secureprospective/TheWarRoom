@@ -70,6 +70,7 @@ func windowCommandFrom(raw commissioner.RawCommand, command, request string, exp
 func date(month, day int) *commissioner.RawDate { return &commissioner.RawDate{Month: month, Day: day} }
 
 func TestWindowMoveRedatesTheGateRevertRestart(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 5, 5, 12, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
 	app.localZone = westCoast(t)
@@ -102,6 +103,7 @@ func TestWindowMoveRedatesTheGateRevertRestart(t *testing.T) {
 }
 
 func TestWindowSetAndRemoveGateAnAction(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 6, 2, 12, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
 	app.localZone = westCoast(t)
@@ -156,6 +158,7 @@ func rulesWindows(t *testing.T, app *App, league string) json.RawMessage {
 }
 
 func TestWindowCommandsAndRulesSetNeverDisagree(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 5, 5, 12, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
 	raw := seedCalendarTest(t, app)
@@ -221,6 +224,7 @@ func TestWindowCommandsAndRulesSetNeverDisagree(t *testing.T) {
 }
 
 func TestWindowCommandAuthorityAndSafety(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 5, 5, 12, 0, 0, 0, time.UTC)
 	app, _ := calendarTestApp(t, at)
 	raw := seedCalendarTest(t, app)
@@ -282,6 +286,7 @@ func TestWindowCommandAuthorityAndSafety(t *testing.T) {
 }
 
 func TestReversalCannotOrphanALaterWindowChange(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 5, 5, 12, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
 	raw := seedCalendarTest(t, app)
@@ -325,6 +330,7 @@ func writeWindowWire(t *testing.T, reading commissioner.Calendar) {
 }
 
 func TestWindowMoveKeepsNoStaleDatedStart(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 5, 5, 12, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
 	app.localZone = westCoast(t)

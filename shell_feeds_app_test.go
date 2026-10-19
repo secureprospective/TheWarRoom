@@ -10,6 +10,7 @@ import (
 )
 
 func TestDailyShellArchiveReadStatus(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 10, 13, 12, 0, 0, 0, time.Local)
 	for _, export := range []string{"calendar", "tradeBait"} {
 		for _, test := range []struct {
@@ -24,6 +25,7 @@ func TestDailyShellArchiveReadStatus(t *testing.T) {
 			{"failed", now.Add(-time.Hour), "offline", "stale", false},
 		} {
 			t.Run(export+"/"+test.name, func(t *testing.T) {
+				t.Parallel()
 				a, transport, _, _ := seasonTestApp(t)
 				a.clockNow = func() time.Time { return now }
 				body := `{"calendar":{"event":{"id":"one","type":"TRADE","title":"Event"}}}`

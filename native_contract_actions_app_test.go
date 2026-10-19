@@ -72,6 +72,7 @@ func assertActionCurrent(t *testing.T, f *legalityFixture, field, value string) 
 }
 
 func TestNativeContractActionCommandsReplayAndCompensate(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ action, field, params string }{
 		{"tag", "contracts.tag", `{"AnnualLimit":3}`},
 		{"extension", "contracts.extension", `{"AddedYears":2}`},
@@ -84,6 +85,7 @@ func TestNativeContractActionCommandsReplayAndCompensate(t *testing.T) {
 		{"cap_relief", "contracts.capRelief", `{"Reasons":["Career-ending injury"]}`},
 	} {
 		t.Run(tc.action, func(t *testing.T) {
+			t.Parallel()
 			f := contractActionApp(t)
 			before := contractActionRow(t, f, tc.field).Current
 			for pass := 0; pass < 2; pass++ {
@@ -125,6 +127,7 @@ func actionNatural(t *testing.T, params string, on bool) string {
 }
 
 func TestNativeContractActionAndRulesSetCannotDisagree(t *testing.T) {
+	t.Parallel()
 	f := contractActionApp(t)
 	for pass := 0; pass < 2; pass++ {
 		first := executeCommissionerTest(t, f.app,
@@ -145,6 +148,7 @@ func TestNativeContractActionAndRulesSetCannotDisagree(t *testing.T) {
 }
 
 func TestNativeContractActionRefusalsAreAtomic(t *testing.T) {
+	t.Parallel()
 	f := contractActionApp(t)
 	raw := nativeActionCommand(t, f, "buyout", `{"AnnualLimit":3}`, "now", true)
 	receipt := executeCommissionerTest(t, f.app, raw)
@@ -173,6 +177,7 @@ func TestNativeContractActionRefusalsAreAtomic(t *testing.T) {
 }
 
 func TestNativeContractActionPendingHistoryAndWire(t *testing.T) {
+	t.Parallel()
 	f := contractActionApp(t)
 	first := executeCommissionerTest(t, f.app,
 		nativeActionCommand(t, f, "buyout", `{"AnnualLimit":3}`, "next_rollover", true))

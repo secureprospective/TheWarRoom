@@ -84,6 +84,7 @@ func calendarOwnerRead(t *testing.T, app *App) commissioner.Calendar {
 }
 
 func TestCalendarCommandOwnerRevertRestart(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 5, 3, 4, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
 	raw := seedCalendarTest(t, app)
@@ -113,6 +114,7 @@ func TestCalendarCommandOwnerRevertRestart(t *testing.T) {
 }
 
 func TestCalendarExceptionCommandOwnerExpiryRevertRestart(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
 	raw := seedCalendarTest(t, app)
@@ -150,6 +152,7 @@ func TestCalendarExceptionCommandOwnerExpiryRevertRestart(t *testing.T) {
 }
 
 func TestCalendarExceptionSafety(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC)
 	app, _ := calendarTestApp(t, at)
 	raw := seedCalendarTest(t, app)
@@ -210,6 +213,7 @@ func writeCalendarWire(t *testing.T, reading commissioner.Calendar) {
 }
 
 func TestCalendarTimezoneCommandRevertRestart(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 3, 8, 5, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
 	raw := seedCalendarTest(t, app)
@@ -238,6 +242,7 @@ func TestCalendarTimezoneCommandRevertRestart(t *testing.T) {
 }
 
 func TestCalendarDeadlineCommandRevertRestart(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 5, 3, 4, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
 	raw := seedCalendarTest(t, app)

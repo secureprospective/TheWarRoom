@@ -36,6 +36,7 @@ func tradeDraftApp(t *testing.T) (*App, *seasonTransport, leaguefeed.PendingTrad
 }
 
 func TestTargetTradesLocalReading(t *testing.T) {
+	t.Parallel()
 	a, transport, offer := tradeDraftApp(t)
 	other := offer
 	other.ID, other.Offering, other.OfferedTo = "88", "0003", "0004"
@@ -86,6 +87,7 @@ func TestTargetTradesLocalReading(t *testing.T) {
 }
 
 func TestTradeDraftHandOffWatcher(t *testing.T) {
+	t.Parallel()
 	a, transport, offer := tradeDraftApp(t)
 	r, err := a.TargetDraftTradeAccept("0025", offer.ID)
 	if err != nil || r.State != envelope.Ready || r.Spec.Deadline == nil ||
@@ -154,8 +156,10 @@ func TestTradeDraftHandOffWatcher(t *testing.T) {
 }
 
 func TestTradeBindingBlocks(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{"failed", "stale failed", "unowned", "expired", "host", "offerer", "gone"} {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			a, transport, offer := tradeDraftApp(t)
 			note := ""
 			switch name {
@@ -197,8 +201,10 @@ func TestTradeBindingBlocks(t *testing.T) {
 }
 
 func TestTradeSupersede(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{"ready", "handed", "dot", "blocked"} {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			a, _, offer := tradeDraftApp(t)
 			if name == "blocked" {
 				a.mflClient = nil

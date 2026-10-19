@@ -92,6 +92,7 @@ func peopleWireLeague(t *testing.T, app *App) commissioner.RawCommand {
 }
 
 func TestCommissionerPeopleWire(t *testing.T) {
+	t.Parallel()
 	app := commissionerTestApp(t)
 	raw := peopleWireLeague(t, app)
 	views := map[string]commissioner.People{}
@@ -163,6 +164,7 @@ func checkWire(t *testing.T, path string, body []byte, name string) {
 }
 
 func TestCommissionerStaleVersionIsRefusedWithTheWordsTheFormWatchesFor(t *testing.T) {
+	t.Parallel()
 	app := commissionerTestApp(t)
 	raw := peopleWireLeague(t, app)
 	raw.Command, raw.Visibility = commissioner.RulesSet, "league"
@@ -180,6 +182,7 @@ func TestCommissionerStaleVersionIsRefusedWithTheWordsTheFormWatchesFor(t *testi
 }
 
 func TestCommissionerWire(t *testing.T) {
+	t.Parallel()
 	app := commissionerTestApp(t)
 	raw := commissioner.RawCommand{League: "native.wire", Command: commissioner.Create,
 		Args: commissioner.RawArgs{Name: "Our league", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 2}, Reason: "Start our own league", Request: "create",
@@ -237,6 +240,7 @@ func TestCommissionerWire(t *testing.T) {
 }
 
 func TestLocalCommissionerSessionStableAndNotFranchise(t *testing.T) {
+	t.Parallel()
 	first, err := (localCommissionerSession{"installation"}).Principal()
 	if err != nil {
 		t.Fatal(err)
@@ -256,6 +260,7 @@ func TestLocalCommissionerSessionStableAndNotFranchise(t *testing.T) {
 }
 
 func TestCommissionerRulesWire(t *testing.T) {
+	t.Parallel()
 	app := commissionerTestApp(t)
 	raw := commissioner.RawCommand{League: "native.rules", Command: commissioner.Create,
 		Args:   commissioner.RawArgs{Name: "Rules league", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 4},
@@ -312,6 +317,7 @@ func TestCommissionerRulesWire(t *testing.T) {
 }
 
 func TestCommissionerLegacyRulesWire(t *testing.T) {
+	t.Parallel()
 	app := commissionerTestApp(t)
 	executeCommissionerTest(t, app, commissioner.RawCommand{League: "native.legacy", Command: commissioner.Create,
 		Args:   commissioner.RawArgs{Name: "Legacy league", Preset: commissioner.PresetLegacy, Season: 2026},
@@ -328,6 +334,7 @@ func TestCommissionerLegacyRulesWire(t *testing.T) {
 }
 
 func TestCommissionerReplacedRulesWire(t *testing.T) {
+	t.Parallel()
 	app := commissionerTestApp(t)
 	raw := commissioner.RawCommand{League: "native.replaced", Command: commissioner.Create,
 		Args:   commissioner.RawArgs{Name: "Waiting rules", Preset: commissioner.PresetLegacy, Season: 2026, FranchiseCount: 6},

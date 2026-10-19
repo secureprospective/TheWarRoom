@@ -25,6 +25,7 @@ func (f *bidFixture) closeAt(t *testing.T, player string, want time.Time) {
 }
 
 func TestNativeBidStandForGovernsClockRevertAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	placed := f.now
 	bid := f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
@@ -87,6 +88,7 @@ func TestNativeBidStandForGovernsClockRevertAndReopen(t *testing.T) {
 }
 
 func TestNativeBidNewBidRestartsTheClock(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	f.advance(12 * time.Hour)
@@ -108,6 +110,7 @@ func TestNativeBidNewBidRestartsTheClock(t *testing.T) {
 }
 
 func TestNativeBidClockLeavesTiesUndecided(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.set(t, "bids.ufa", `"blind"`, "now")
 	f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
@@ -127,6 +130,7 @@ func TestNativeBidClockLeavesTiesUndecided(t *testing.T) {
 }
 
 func TestNativeBidClockWaitsForWaivers(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	cut := f.cut(t, "1000")
 	f.advance(24 * time.Hour)
@@ -146,6 +150,7 @@ func TestNativeBidClockWaitsForWaivers(t *testing.T) {
 }
 
 func TestNativeBidJobsShowBuiltQueues(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	f.cut(t, "1000")
@@ -174,6 +179,7 @@ type clockTestAuthority struct{}
 func (clockTestAuthority) Allow(string, string, string) (string, error) { return "automatic", nil }
 
 func TestNativeBidClockRechecksDueInsideTransaction(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	bid := f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	try := func(want string) {
@@ -202,6 +208,7 @@ func TestNativeBidClockRechecksDueInsideTransaction(t *testing.T) {
 }
 
 func TestNativeBidEveryNewBidResetsEvenWhenNotLeadingOrWithdrawn(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.set(t, "bids.ufa", `"blind"`, "now")
 	f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
@@ -225,6 +232,7 @@ func TestNativeBidEveryNewBidResetsEvenWhenNotLeadingOrWithdrawn(t *testing.T) {
 }
 
 func TestNativeBidJobsDoNotRevealBlindAuctionCountsOrTimes(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.set(t, "bids.ufa", `"blind"`, "now")
 	read := func() commissioner.Job {
@@ -250,6 +258,7 @@ func TestNativeBidJobsDoNotRevealBlindAuctionCountsOrTimes(t *testing.T) {
 }
 
 func TestNativeBidClockRechecksLegalityAndClosesUnawardableBids(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.three", "franchise.03", "5004", 4*million, 1)
 	f.place(t, "owner.one", "franchise.01", "5004", 9*million, 1)

@@ -36,22 +36,15 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
 
-  # verify: the full pre-push gate — everything `make lint` covers plus the
-  # race-enabled test suite and the frontend build. Direct-to-main has no PR/CI
-  # backstop, so this is the last local check before a commit reaches origin.
-  # Runs at the pre-push stage, not pre-commit, so small WIP commits between
-  # pushes stay fast — `make setup` wires both hook types per clone (see
-  # CLAUDE.md dev setup). always_run: true (GLM 5.2 review, B1): a hook with
-  # no files/types filter is NOT guaranteed to fire on every push without it —
-  # pre-commit can skip a file-scoped hook when the push's computed file delta
-  # is empty (e.g. a tag-only push, or a merge/rebase that lands an identical
-  # tree). This gate exists precisely for the no-PR/no-CI corner cases, so it
-  # must not have a corner case of its own where it silently no-ops.
+  # verify: the pre-push gate. scripts/prepush.sh runs only what the pushed commits change (lint and
+  # shuffled tests on the touched packages and their importers, the frontend checks if the frontend changed);
+  # GitHub's verify workflow runs the full make verify on every push, and the merge waits for it.
+  # always_run: a hook with no file filter can be skipped when the computed delta is empty.
   - repo: local
     hooks:
       - id: verify
-        name: verify (full gate — lint, race tests, frontend build)
-        entry: make verify
+        name: verify (changed packages; full suite in CI)
+        entry: scripts/prepush.sh
         language: system
         pass_filenames: false
         always_run: true

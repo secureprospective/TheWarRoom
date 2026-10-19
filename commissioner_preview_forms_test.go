@@ -45,6 +45,7 @@ func mustPreview(t *testing.T, app *App, raw commissioner.RawCommand) commission
 }
 
 func TestCommissionerPreviewDescribesStartingALeague(t *testing.T) {
+	t.Parallel()
 	app := commissionerTestApp(t)
 	preview := mustPreview(t, app, createCommand("Move our league here"))
 	if len(preview.Blockers) != 0 || preview.Safeguard != "reason" || preview.Target.Version != 0 ||
@@ -60,6 +61,7 @@ func TestCommissionerPreviewDescribesStartingALeague(t *testing.T) {
 }
 
 func TestCommissionerPreviewAsksForTheReasonAndStillDescribes(t *testing.T) {
+	t.Parallel()
 	app := commissionerTestApp(t)
 	preview := mustPreview(t, app, createCommand("  "))
 	if preview.Safeguard != "reason" || len(preview.Fields) != 3 ||
@@ -73,6 +75,7 @@ func TestCommissionerPreviewAsksForTheReasonAndStillDescribes(t *testing.T) {
 }
 
 func TestCommissionerPreviewDescribesARoleChangeAndRefusesOneThatChangesNothing(t *testing.T) {
+	t.Parallel()
 	app := previewApp(t)
 	grant := roleCommand("commish.role.grant", "owner-two", governance.CoCommissioner, "Owner two will help")
 	preview := mustPreview(t, app, grant)
@@ -107,6 +110,7 @@ func TestCommissionerPreviewDescribesARoleChangeAndRefusesOneThatChangesNothing(
 }
 
 func TestCommissionerPreviewDescribesUndoingAChange(t *testing.T) {
+	t.Parallel()
 	app := previewApp(t)
 	made := executeCommissionerTest(t, app, commissioner.RawCommand{League: "native.preview",
 		Command: commissioner.RulesSet, Args: commissioner.RawArgs{Field: "roster.limits",
@@ -136,6 +140,7 @@ func previewNotice(command, text string, pin bool) commissioner.RawCommand {
 }
 
 func TestCommissionerPreviewFormsWire(t *testing.T) {
+	t.Parallel()
 	app := previewApp(t)
 	made := executeCommissionerTest(t, app, commissioner.RawCommand{League: "native.preview",
 		Command: commissioner.RulesSet, Args: commissioner.RawArgs{Field: "roster.limits",
@@ -173,6 +178,7 @@ func TestCommissionerPreviewFormsWire(t *testing.T) {
 }
 
 func TestCommissionerCommandSafeguardsWire(t *testing.T) {
+	t.Parallel()
 	body, err := json.MarshalIndent(commissioner.CommandSafeguards(), "", "  ")
 	if err != nil {
 		t.Fatal(err)

@@ -14,6 +14,7 @@ import (
 
 // This is the engine's wire shape, not a claim that the native draft IPC is wired.
 func TestNativeDraftEngineWire(t *testing.T) {
+	t.Parallel()
 	rules := leaguerules.LegacyNFL().Draft
 	rules.Rounds = leaguerules.Known(2)
 	rules.Order = leaguerules.Known(map[int][]string{1: {"a", "b"}, 2: {"b", "a"}})

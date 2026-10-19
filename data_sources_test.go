@@ -58,6 +58,7 @@ func archiveTree(t *testing.T) string {
 }
 
 func TestArchiveImportIsIdempotentAndPinsTheLabsInputs(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	a.dataDir = t.TempDir()
 	dir := archiveTree(t)
@@ -111,6 +112,7 @@ func TestArchiveImportIsIdempotentAndPinsTheLabsInputs(t *testing.T) {
 }
 
 func TestArchiveImportRefusesAMalformedFileAndRecordsTheFailure(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	a.dataDir = t.TempDir()
 	dir := archiveTree(t)
@@ -157,6 +159,7 @@ func cell(r Report, key string) string {
 }
 
 func TestHealthReportSaysWhatFailedAndWhetherTheBoardRunsReduced(t *testing.T) {
+	t.Parallel()
 	reg, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
@@ -212,6 +215,7 @@ func TestHealthReportSaysWhatFailedAndWhetherTheBoardRunsReduced(t *testing.T) {
 }
 
 func TestFactsReportIsHonestBeforeAndAfterTheManifest(t *testing.T) {
+	t.Parallel()
 	in := factsInput{zone: time.UTC, labBuilt: "2026-10-06T15:57:20+00:00", labThrough: "2026-10-06T01:42:57+00:00"}
 	r := factsReport(in)
 	if r.Status != "empty" || !strings.Contains(r.Note, "import the league archive") ||
@@ -245,6 +249,7 @@ func TestFactsReportIsHonestBeforeAndAfterTheManifest(t *testing.T) {
 }
 
 func TestRefreshSummariesSayWhatHappened(t *testing.T) {
+	t.Parallel()
 	r := SignalsReport{Loads: []SignalLoad{{Status: loadDone, Added: 1200}, {Status: loadCurrent}, {Status: loadFailed},
 		{Status: loadSkipped}, {Status: loadDone, Added: 34}}}
 	if got := signalsSummary(r); got != "Looked at 5 files: 2 loaded, 1 already current, 1 skipped, 1 failed; 1,234 new values." {
@@ -267,6 +272,7 @@ func TestRefreshSummariesSayWhatHappened(t *testing.T) {
 }
 
 func TestCrosswalkReportKeepsLeadingZeroIDsAndGoWording(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	if r := a.TargetCrosswalk(); r.Status != "empty" || !strings.Contains(r.Note, "No crosswalk loaded") {
 		t.Fatalf("empty crosswalk = %+v", r)
@@ -283,6 +289,7 @@ func TestCrosswalkReportKeepsLeadingZeroIDsAndGoWording(t *testing.T) {
 }
 
 func TestDataSourcesWireMatchesGo(t *testing.T) {
+	t.Parallel()
 	reg, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
@@ -341,6 +348,7 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 }
 
 func TestCheckedFactsNamesOnlyExactApprovedGaps(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	a.dataDir = t.TempDir()
 	if r := a.SetLeagueArchiveDir(archiveTree(t)); !r.OK {
@@ -370,6 +378,7 @@ func TestCheckedFactsNamesOnlyExactApprovedGaps(t *testing.T) {
 }
 
 func TestEveryEngineParameterHasGoPlainWordsAndOrderedAreas(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	a.params = params.New(a.pools)
 	if err := a.params.Initialize(a.ctx); err != nil {
@@ -399,6 +408,7 @@ func TestEveryEngineParameterHasGoPlainWordsAndOrderedAreas(t *testing.T) {
 }
 
 func TestSignalTableKeepsAllFactsInFourColumns(t *testing.T) {
+	t.Parallel()
 	r := signalFilesReport(SignalsView{Feeds: []FeedView{{Feed: "stats_player_week", Source: "nflverse",
 		LastLoaded: "2026-10-11T18:00:00Z", Fresh: true, CoverageSeason: 2026,
 		Seasons:  []SeasonCount{{Season: 2026, Players: 1300, Waiting: 37}},
@@ -411,6 +421,7 @@ func TestSignalTableKeepsAllFactsInFourColumns(t *testing.T) {
 }
 
 func TestSignalResultExplainsCrosswalkTimeAndRelinkFailure(t *testing.T) {
+	t.Parallel()
 	for _, note := range []string{
 		"Player crosswalk reloaded and relinked before signals; its Loaded time records that relink.",
 		"Player crosswalk relink failed; its last Loaded time is kept: held failure",
@@ -423,6 +434,7 @@ func TestSignalResultExplainsCrosswalkTimeAndRelinkFailure(t *testing.T) {
 }
 
 func TestPhotoHealthRowSaysWhatIsHeldAndWhenOff(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 10, 11, 21, 0, 0, 0, time.UTC)
 	got := photoCells(photoHealth{held: 412, bytes: 3 << 20, fetched: 40, missing: 2, lastFail: at,
 		lastError: "headshot: a.espncdn.com answered HTTP 503"}, time.UTC)
@@ -443,6 +455,7 @@ func TestPhotoHealthRowSaysWhatIsHeldAndWhenOff(t *testing.T) {
 // board running reduced or a board source lost or never read; a source the board does not read,
 // such as the league archive, never raises it.
 func TestSourceStandingAlarmsOnlyForTheBoard(t *testing.T) {
+	t.Parallel()
 	reg, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
@@ -503,6 +516,7 @@ func TestSourceStandingAlarmsOnlyForTheBoard(t *testing.T) {
 }
 
 func TestCheckDifferencesSharingAnExplanationAreListedOnce(t *testing.T) {
+	t.Parallel()
 	why := "MFL counted playoff games in the 2013 standings."
 	c := facts.CheckResult{Name: "Win-loss records match MFL standings", Items: []facts.CheckItem{
 		{Words: "2013 Buffalo Bills: standings 11-3-0, games 11-2-0", Reason: why, Class: facts.ClassExplained},

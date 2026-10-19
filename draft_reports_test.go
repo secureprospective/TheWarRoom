@@ -44,6 +44,7 @@ func testDraftBoard(t *testing.T) ReportBoard {
 }
 
 func TestDraftReportsOrderGridAndOwnership(t *testing.T) {
+	t.Parallel()
 	b := testDraftBoard(t)
 	rows := reportByID(t, b, "M-063").Rows
 	if !reflect.DeepEqual(rows[0].Cells[:3], []string{"1.01", "Two", "First"}) || rows[1].Cells[0] != "1.02" || rows[2].Cells[0] != "2.01" {
@@ -66,6 +67,7 @@ func TestDraftReportsOrderGridAndOwnership(t *testing.T) {
 }
 
 func TestDraftAverageTimeKnownTimestamps(t *testing.T) {
+	t.Parallel()
 	b := testDraftBoard(t)
 	r := reportByID(t, b, "M-179")
 	if !reflect.DeepEqual(r.Rows[0].Cells, []string{"One", "1", "under 1 min", "under 1 min", "Mostly pre-queued picks"}) || !reflect.DeepEqual(r.Rows[1].Cells, []string{"Two", "1", "under 1 min", "under 1 min", "Mostly pre-queued picks"}) {
@@ -87,6 +89,7 @@ func TestDraftAverageTimeKnownTimestamps(t *testing.T) {
 }
 
 func TestDraftValueDistanceAndMissingValues(t *testing.T) {
+	t.Parallel()
 	r := reportByID(t, testDraftBoard(t), "M-065")
 	if r.Rows[0].Range == nil || r.Rows[0].Range.Value != 1.5 || r.Rows[1].Range.Value != 0.5 || r.Rows[2].Range != nil {
 		t.Fatal(r.Rows)
@@ -97,6 +100,7 @@ func TestDraftValueDistanceAndMissingValues(t *testing.T) {
 }
 
 func TestDraftEmptyUnavailableAndStale(t *testing.T) {
+	t.Parallel()
 	b := buildDraftReports(2026, heldSeasonFeed[[]draftreports.Pick]{}, heldSeasonFeed[[]draftreports.FuturePick]{}, nil, nil, nil, "No model", "Next unknown", time.UTC)
 	for _, r := range b.Reports {
 		if r.Status != "failed" || !strings.Contains(r.Note, "Report data unavailable") || r.How == "" || r.Source == "" {
@@ -123,6 +127,7 @@ func TestDraftEmptyUnavailableAndStale(t *testing.T) {
 }
 
 func TestDraftWireFixtureMatchesGo(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join("frontend", "src", "app", "draftreports", "wire.testdata.json")
 	body, err := json.MarshalIndent(testDraftBoard(t), "", "  ")
 	if err != nil {
@@ -144,6 +149,7 @@ func TestDraftWireFixtureMatchesGo(t *testing.T) {
 }
 
 func TestDraftHeldReadingRefreshCacheAndMFLLink(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	if err := a.TargetOpenMFLDraftRoom(); err == nil {
 		t.Fatal("opened undiscovered host")
@@ -175,6 +181,7 @@ func TestDraftHeldReadingRefreshCacheAndMFLLink(t *testing.T) {
 }
 
 func TestDraftArchiveFallbackKeepsOriginalAsOf(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	at := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
 	recordSeasonArchive(t, a, "draftResults", "", transport.bodies["draftResults"], at)
@@ -192,6 +199,7 @@ func TestDraftArchiveFallbackKeepsOriginalAsOf(t *testing.T) {
 }
 
 func TestDraftExplicitUnmadeStatusAndLocalTime(t *testing.T) {
+	t.Parallel()
 	p := draftFixturePick(t, 1, 1, "0001", "0531", 100)
 	pending := draftreports.Pick{Round: 1, Slot: 2, Franchise: "0002"}
 	feed := heldSeasonFeed[[]draftreports.Pick]{value: []draftreports.Pick{p, pending}, fetchedAt: time.Unix(100, 0)}
@@ -206,6 +214,7 @@ func TestDraftExplicitUnmadeStatusAndLocalTime(t *testing.T) {
 }
 
 func TestDraftCellLinesAndNameFallback(t *testing.T) {
+	t.Parallel()
 	picks := []draftreports.Pick{draftFixturePick(t, 1, 1, "0001", "0531", 100), draftFixturePick(t, 1, 2, "0001", "0532", 130)}
 	feed := heldSeasonFeed[[]draftreports.Pick]{value: picks, fetchedAt: time.Unix(100, 0)}
 	b := buildDraftReports(2026, feed, heldSeasonFeed[[]draftreports.FuturePick]{}, map[string]string{"0531": "First"}, nil, nil, "", "", time.UTC)
@@ -222,6 +231,7 @@ func TestDraftCellLinesAndNameFallback(t *testing.T) {
 }
 
 func TestDraftAllDatesUseAppStyle(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 10, 11, 12, 0, 51, 0, time.UTC)
 	zone := time.FixedZone("LOCAL", -5*3600)
 	p := draftFixturePick(t, 1, 1, "0001", "0531", at.Unix())
@@ -237,6 +247,7 @@ func TestDraftAllDatesUseAppStyle(t *testing.T) {
 }
 
 func TestDraftValueNotePlainWords(t *testing.T) {
+	t.Parallel()
 	a, _, _, _ := seasonTestApp(t)
 	at := time.Date(2026, 10, 5, 13, 44, 0, 0, time.Local)
 	run := history.Run{ID: 3, AsOf: at, Engine: "secret-version"}
@@ -252,6 +263,7 @@ func TestDraftValueNotePlainWords(t *testing.T) {
 }
 
 func TestDraftReportLanguage(t *testing.T) {
+	t.Parallel()
 	b := testDraftBoard(t)
 	for _, r := range b.Reports {
 		for _, bad := range []string{"held", "export", "sentinel", "UTC instants", "consumed", "draftResults", "futureDraftPick", "originalPickFor", "DynastyPPG"} {
@@ -270,6 +282,7 @@ func TestDraftReportLanguage(t *testing.T) {
 }
 
 func TestDraftDurationAndMedian(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		d    time.Duration
 		want string
@@ -298,6 +311,7 @@ func TestDraftDurationAndMedian(t *testing.T) {
 }
 
 func TestDraftLiveRecentPicksAndStatus(t *testing.T) {
+	t.Parallel()
 	picks := []draftreports.Pick{}
 	for i := 1; i <= 20; i++ {
 		picks = append(picks, draftFixturePick(t, 1, i, "0001", "0531", int64(i)*100))

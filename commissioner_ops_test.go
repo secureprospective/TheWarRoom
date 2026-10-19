@@ -51,6 +51,7 @@ func readAs(app *App, principal string) func() {
 }
 
 func TestCommissionerNoticesWire(t *testing.T) {
+	t.Parallel()
 	app := opsApp(t)
 	opsClock(app, 10)
 	plain := executeCommissionerTest(t, app, noticeCommand(commissioner.NoticePublish, 1, "n1", "Waivers run Tuesday", false))
@@ -99,6 +100,7 @@ func TestCommissionerNoticesWire(t *testing.T) {
 }
 
 func TestAPreviewPostsNothingAndOwnersCannotPost(t *testing.T) {
+	t.Parallel()
 	app := opsApp(t)
 	raw := noticeCommand(commissioner.NoticePublish, 1, "p1", "Draft moved to Sunday", true)
 	preview := mustPreview(t, app, raw)
@@ -134,6 +136,7 @@ func TestAPreviewPostsNothingAndOwnersCannotPost(t *testing.T) {
 }
 
 func TestCommissionerDigestsWire(t *testing.T) {
+	t.Parallel()
 	app := opsApp(t)
 	opsClock(app, 10)
 	executeCommissionerTest(t, app, ruleCommand(1, "r1", "roster.limits", `{"min":20,"max":70}`, "next_rollover", ""))
@@ -189,6 +192,7 @@ func TestCommissionerDigestsWire(t *testing.T) {
 }
 
 func TestNotificationSettingsAreRulesThatNeedOnlyAConfirm(t *testing.T) {
+	t.Parallel()
 	app := opsApp(t)
 	rules, err := app.TargetCommissionerRules(opsLeague)
 	if err != nil {
@@ -211,6 +215,7 @@ func TestNotificationSettingsAreRulesThatNeedOnlyAConfirm(t *testing.T) {
 }
 
 func TestACommissionerSetRuleCarriesWhoWhenAndWhichChange(t *testing.T) {
+	t.Parallel()
 	app := opsApp(t)
 	opsClock(app, 15)
 	receipt := executeCommissionerTest(t, app,
@@ -241,6 +246,7 @@ func TestACommissionerSetRuleCarriesWhoWhenAndWhichChange(t *testing.T) {
 
 // The ledger is filtered after Go decides what a person may read, so no filter finds a private row.
 func TestNoLedgerFilterShowsAnOwnerARoleGrant(t *testing.T) {
+	t.Parallel()
 	app, league := shellLedgerApp(t)
 	restore := readAs(app, "owner")
 	defer restore()
@@ -269,6 +275,7 @@ func TestNoLedgerFilterShowsAnOwnerARoleGrant(t *testing.T) {
 }
 
 func TestPostedNoticesAreFindableInTheLedgerByKind(t *testing.T) {
+	t.Parallel()
 	app := opsApp(t)
 	opsClock(app, 10)
 	executeCommissionerTest(t, app, noticeCommand(commissioner.NoticePublish, 1, "n1", "Waivers run Tuesday", true))

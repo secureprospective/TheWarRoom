@@ -47,6 +47,7 @@ func nativeContract(t *testing.T, f *legalityFixture, id string) commissioner.Na
 }
 
 func TestNativeOverrideCommandsGovernCapAndReplay(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		command, value string
 		committed      domain.Money
@@ -58,6 +59,7 @@ func TestNativeOverrideCommandsGovernCapAndReplay(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.command, func(t *testing.T) {
+			t.Parallel()
 			f := capApp(t)
 			baseline := *capTeam(t, f).CommittedCents
 			mirror, stamp, used := f.app.league.ContractsView()
@@ -115,8 +117,10 @@ func reserveVerdict(t *testing.T, f *legalityFixture, id string) nativecheck.Res
 }
 
 func TestNativeReserveExceptionGovernsAndReplay(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ player, bucket string }{{"2002", "ir"}, {"3003", "taxi"}} {
 		t.Run(tc.bucket, func(t *testing.T) {
+			t.Parallel()
 			f := legalityApp(t)
 			before := reserveVerdict(t, f, tc.player)
 			if before.Standing != nativecheck.MustLeave {
@@ -151,6 +155,7 @@ func assertException(t *testing.T, f *legalityFixture, player string) {
 }
 
 func TestNativeReserveExceptionExpiryAndScope(t *testing.T) {
+	t.Parallel()
 	f := legalityApp(t)
 	baseline := f.reserves(t)
 	value := `{"player":"2002","bucket":"ir","until":"2026-10-14T12:00:00Z"}`
@@ -176,6 +181,7 @@ func TestNativeReserveExceptionExpiryAndScope(t *testing.T) {
 }
 
 func TestNativeOverridesLedgerOrderAndCompensatedCompensation(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	first := executeCommissionerTest(t, f.app, overrideCommand(t, f, commissioner.ContractEdit,
 		`{"player":"0099","years":2,"salaryCents":1000000000}`))
@@ -208,6 +214,7 @@ func TestNativeOverridesLedgerOrderAndCompensatedCompensation(t *testing.T) {
 }
 
 func TestNativeOverrideWire(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	executeCommissionerTest(t, f.app, overrideCommand(t, f, commissioner.ContractEdit,
 		`{"player":"0099","years":4,"salaryCents":2000000000}`))
@@ -234,6 +241,7 @@ func TestNativeOverrideWire(t *testing.T) {
 }
 
 func TestNativeOverrideRefusalsLeaveAssetsUntouched(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	before := readCap(t, f)
 	for _, tc := range []struct{ command, value string }{
@@ -280,6 +288,7 @@ func TestNativeOverrideRefusalsLeaveAssetsUntouched(t *testing.T) {
 }
 
 func TestNativeCapAdjustmentSeasonGovernsActualReading(t *testing.T) {
+	t.Parallel()
 	f := capApp(t)
 	f.set(t, "calendar.rollover", `"2027-03-01T05:00:00Z"`, "now")
 	before := *capTeam(t, f).CommittedCents

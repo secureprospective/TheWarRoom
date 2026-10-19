@@ -34,6 +34,7 @@ func playerRow(reading commissioner.NativeBids, player string) *commissioner.Nat
 }
 
 func TestNativeBidPlaceRaiseAndWithdrawThroughReopen(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	first := f.place(t, "owner.one", "franchise.01", "5001", 5*million, 1)
 	f.place(t, "owner.two", "franchise.02", "5001", 6*million, 1)
@@ -79,6 +80,7 @@ func TestNativeBidPlaceRaiseAndWithdrawThroughReopen(t *testing.T) {
 }
 
 func TestNativeBlindBidIsHiddenFromOtherOwners(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.set(t, "bids.ufa", `"blind"`, "now")
 	bid := f.place(t, "owner.one", "franchise.01", "5001", 5*million, 1)
@@ -114,6 +116,7 @@ func TestNativeBlindBidIsHiddenFromOtherOwners(t *testing.T) {
 }
 
 func TestNativeBlindBidIsNotHeldToAnotherOwnersHiddenBid(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.set(t, "bids.ufa", `"blind"`, "now")
 	f.place(t, "owner.one", "franchise.01", "5001", 5*million, 1)
@@ -129,6 +132,7 @@ func TestNativeBlindBidIsNotHeldToAnotherOwnersHiddenBid(t *testing.T) {
 }
 
 func TestNativeOpenBidShowsLeaderAndSnipeCountdown(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	placed := f.now
 	f.place(t, "owner.two", "franchise.02", "5001", 5*million, 1)
@@ -151,6 +155,7 @@ func TestNativeOpenBidShowsLeaderAndSnipeCountdown(t *testing.T) {
 }
 
 func TestNativeSnipeBidNeedsAFullPoint(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.two", "franchise.02", "5001", 5*million, 1)
 	f.advance(20*time.Hour + time.Minute)
@@ -168,6 +173,7 @@ func TestNativeSnipeBidNeedsAFullPoint(t *testing.T) {
 }
 
 func TestNativeBidStepWithinTheDayIsATenthOfAPoint(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.two", "franchise.02", "5001", 5*million, 1)
 	if err := f.tryPlace(t, "owner.one", "franchise.01", "5001", 509*million/100, 1); err == nil ||
@@ -180,6 +186,7 @@ func TestNativeBidStepWithinTheDayIsATenthOfAPoint(t *testing.T) {
 }
 
 func TestNativeBidLimitsOnLengthAndSalary(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	for _, c := range []struct {
 		salary int64
@@ -205,6 +212,7 @@ func TestNativeBidLimitsOnLengthAndSalary(t *testing.T) {
 }
 
 func TestNativeBidActiveLimitCountsPlayersNotRaises(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.set(t, "bids.maximumActive", `2`, "now")
 	first := f.place(t, "owner.one", "franchise.01", "5001", 5*million, 1)
@@ -223,6 +231,7 @@ func TestNativeBidActiveLimitCountsPlayersNotRaises(t *testing.T) {
 }
 
 func TestNativeBidPhaseRules(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	out := map[string]nativecheck.PlayoffStanding{"franchise.01": nativecheck.PlayoffIn, "franchise.02": nativecheck.PlayoffOut}
 	f.season.playoff = out
@@ -271,6 +280,7 @@ func TestNativeBidPhaseRules(t *testing.T) {
 }
 
 func TestNativeBidRefusesWhatTheRostersAndWaiversForbid(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	if err := f.tryPlace(t, "owner.one", "franchise.01", "1000", 5*million, 1); err == nil ||
 		!strings.Contains(err.Error(), "on a roster") {
@@ -297,6 +307,7 @@ func TestNativeBidRefusesWhatTheRostersAndWaiversForbid(t *testing.T) {
 }
 
 func TestNativeBidRefusesWhatTheRosterAndCapForbid(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.set(t, "roster.limits", `{"min":0,"max":40}`, "now")
 	if err := f.tryPlace(t, "owner.one", "franchise.01", "5001", 5*million, 1); err == nil ||
@@ -315,6 +326,7 @@ func TestNativeBidRefusesWhatTheRosterAndCapForbid(t *testing.T) {
 }
 
 func TestNativeBidActionsCannotSkipTheGateOrTheOwnerSeat(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	standing := f.place(t, "owner.one", "franchise.01", "5001", 5*million, 1)
 	f.set(t, "calendar.windows", `{}`, "now")
@@ -359,6 +371,7 @@ func TestNativeBidActionsCannotSkipTheGateOrTheOwnerSeat(t *testing.T) {
 }
 
 func TestNativeBidDecisionsCannotBeSuppliedByTheRequest(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	args := commissioner.RawBidArgs{Player: "5001", Franchise: "franchise.01", Salary: moneyOf(5 * million), Years: 1}
 	raw := f.raw(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &args,
@@ -377,6 +390,7 @@ func TestNativeBidDecisionsCannotBeSuppliedByTheRequest(t *testing.T) {
 }
 
 func TestNativeBidRetryReturnsTheRecordedReceipt(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	args := commissioner.RawBidArgs{Player: "5001", Franchise: "franchise.01", Salary: moneyOf(5 * million), Years: 1}
 	raw := f.raw(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &args}, "private")
@@ -405,6 +419,7 @@ func TestNativeBidRetryReturnsTheRecordedReceipt(t *testing.T) {
 }
 
 func TestNativeBidsWire(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	f.place(t, "owner.three", "franchise.03", "5004", 4*million, 3)
@@ -433,6 +448,7 @@ func TestNativeBidsWire(t *testing.T) {
 }
 
 func TestNFLWeekInPlayComesFromTheHeldWeekDates(t *testing.T) {
+	t.Parallel()
 	kick := func(day int) time.Time { return time.Date(2026, 9, day, 17, 0, 0, 0, time.UTC) }
 	week := func(n, day int, final bool) leagueweek.Week {
 		return leagueweek.Week{Number: n, Games: []leagueweek.Game{{Teams: [2]string{"AAA", "BBB"}, Kickoff: kick(day), Final: final}}}

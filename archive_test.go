@@ -107,6 +107,7 @@ func archiveReport(t *testing.T, b ArchiveBoard, id string) Report {
 }
 
 func TestArchiveBeforeImportSaysHowToImport(t *testing.T) {
+	t.Parallel()
 	b, err := buildArchive(archiveCache{}, false, 0, "", "")
 	if err != nil {
 		t.Fatal(err)
@@ -122,6 +123,7 @@ func TestArchiveBeforeImportSaysHowToImport(t *testing.T) {
 }
 
 func TestArchiveReportsOnTheReducedArchive(t *testing.T) {
+	t.Parallel()
 	cache := reducedArchive(t)
 	b, err := buildArchive(cache, false, 0, "", "")
 	if err != nil {
@@ -178,6 +180,7 @@ func TestArchiveReportsOnTheReducedArchive(t *testing.T) {
 }
 
 func TestArchiveLineupInWords(t *testing.T) {
+	t.Parallel()
 	raw := `{"count":"21","iop_starters":"8","position":[{"name":"QB","limit":"1"},{"limit":"1-3","name":"RB"}]}`
 	if got := archiveLineup(raw); got != "QB 1 · RB 1–3 · 21 starters · 8 offensive" {
 		t.Fatal(got)
@@ -188,6 +191,7 @@ func TestArchiveLineupInWords(t *testing.T) {
 }
 
 func TestTrophyTitleNamesATrophyOnce(t *testing.T) {
+	t.Parallel()
 	for _, c := range [][3]string{
 		{"NFC", "NFC Conference Champ", "NFC Conference Champ"},
 		{"2015 Legacy Superbowl III", "2015 Legacy Champions", "2015 Legacy Superbowl III · 2015 Legacy Champions"},
@@ -200,6 +204,7 @@ func TestTrophyTitleNamesATrophyOnce(t *testing.T) {
 }
 
 func TestArchiveRetainsEveryNonPoolReport(t *testing.T) {
+	t.Parallel()
 	b, err := buildArchive(archiveCache{}, false, 0, "", "")
 	if err != nil {
 		t.Fatal(err)
@@ -219,6 +224,7 @@ func TestArchiveRetainsEveryNonPoolReport(t *testing.T) {
 }
 
 func TestChampionsLatestUnplayedAndOldMissing(t *testing.T) {
+	t.Parallel()
 	cache := reducedArchive(t)
 	cache.facts.Season.Year = []int64{2013, 2026}
 	r := (archiveView{cache: cache}).champions()

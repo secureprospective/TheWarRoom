@@ -8,6 +8,7 @@ import (
 )
 
 func TestEveryBuiltAssetCorrectionHasARealPreview(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	assets := correctionAssets(t, f)
 	p := assets.Snapshot.Players[0]

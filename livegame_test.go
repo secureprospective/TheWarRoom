@@ -32,6 +32,7 @@ func (liveCrosswalkTransport) RoundTrip(*http.Request) (*http.Response, error) {
 	return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(csv)), Header: http.Header{}}, nil
 }
 func TestSpineCrosswalkOnlyAndNewestFirst(t *testing.T) {
+	t.Parallel()
 	cw, err := crosswalk.Fetch(context.Background(), &http.Client{Transport: liveCrosswalkTransport{}}, "https://fixture.invalid/crosswalk.csv")
 	if err != nil {
 		t.Fatal(err)
@@ -72,6 +73,7 @@ func TestSpineCrosswalkOnlyAndNewestFirst(t *testing.T) {
 	}
 }
 func TestMatchupStartersExcludeBench(t *testing.T) {
+	t.Parallel()
 	id := func(s string) playerid.PlayerID {
 		p, e := playerid.New(s)
 		if e != nil {
@@ -125,6 +127,7 @@ func liveWire(t *testing.T) LiveGameView {
 	return view
 }
 func TestLiveWireMatchesGo(t *testing.T) {
+	t.Parallel()
 	view := liveWire(t)
 	// Keep the IPC proof small: the adapter fixtures hold the complete game.
 	view.Games[0].Plays = []livegame.Play{}
@@ -150,6 +153,7 @@ func TestLiveWireMatchesGo(t *testing.T) {
 	}
 }
 func TestLivePregameWireMatchesGo(t *testing.T) {
+	t.Parallel()
 	g, e := livegame.ParseSummary(liveFixture(t, "espn-summary-401872994"))
 	if e != nil {
 		t.Fatal(e)
@@ -179,6 +183,7 @@ func TestLivePregameWireMatchesGo(t *testing.T) {
 }
 
 func TestHeldLiveReadingKeepsTimesAndFailure(t *testing.T) {
+	t.Parallel()
 	view := liveWire(t)
 	g := *view.Followed
 	old := time.Date(2026, 10, 11, 21, 0, 0, 0, time.UTC)
@@ -191,6 +196,7 @@ func TestHeldLiveReadingKeepsTimesAndFailure(t *testing.T) {
 }
 
 func TestMFLDemandPollingAndBackoff(t *testing.T) {
+	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	a.week.Number = 5
 	if err := a.keyStore.Set(a.ctx, "synthetic-stored-key"); err != nil {

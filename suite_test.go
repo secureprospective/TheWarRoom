@@ -49,6 +49,7 @@ func suiteFixturePath(t *testing.T, name string) string {
 }
 
 func TestReducedArchiveCopiesAreIndependent(t *testing.T) {
+	t.Parallel()
 	first := reducedArchive(t)
 	if first.facts.Fingerprint() != first.sha {
 		t.Fatal("archive snapshot serialization changed its facts")

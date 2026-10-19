@@ -8,6 +8,7 @@ import (
 )
 
 func TestEveryBuiltWaiverAndBidCommandHasARealPreview(t *testing.T) {
+	t.Parallel()
 	f := recordedStandingsApp(t)
 	apply := func(command string, args commissioner.RawWaiverArgs) {
 		t.Helper()
@@ -39,6 +40,7 @@ func previewTrade(t *testing.T, f *tradeFixture, who, command string, args commi
 }
 
 func TestEveryBuiltTradeCommandHasARealPreview(t *testing.T) {
+	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
 	f.accept(t, offer)

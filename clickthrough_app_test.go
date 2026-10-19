@@ -13,6 +13,7 @@ import (
 )
 
 func TestContractPendingCanBeWithdrawn(t *testing.T) {
+	t.Parallel()
 	a := releaseTestApp(t)
 	raw := RawContractAct{Mine: "0001", Player: "0042", Action: "draft", Intent: "contract.restructure", Level: 1, Years: 1, Source: 2026, Destination: 2028, Move: "1"}
 	kept := a.TargetContractActs(raw)
@@ -42,6 +43,7 @@ func TestContractPendingCanBeWithdrawn(t *testing.T) {
 }
 
 func TestEveryPlanViewOffersAnExit(t *testing.T) {
+	t.Parallel()
 	for _, state := range []envelope.State{envelope.Draft, envelope.Blocked, envelope.Ready, envelope.HandedOff, envelope.NotYetDone, envelope.NotVerified, envelope.Stale, envelope.BidPending} {
 		if !contractActView(envelope.Receipt{State: state}, envelope.ContractFacts{}).CanWithdraw {
 			t.Fatal("contract", state)
@@ -67,6 +69,7 @@ func TestEveryPlanViewOffersAnExit(t *testing.T) {
 }
 
 func TestContractFigureWordsPerAct(t *testing.T) {
+	t.Parallel()
 	for _, intent := range []string{"contract.restructure", "contract.extend", "contract.tag", "fa.resign", "rfa.tender"} {
 		f := envelope.ContractFacts{Intent: intent, Source: 2026, Destination: 2028}
 		want := "Price: $1,000,000"
@@ -80,8 +83,10 @@ func TestContractFigureWordsPerAct(t *testing.T) {
 }
 
 func TestRosterPlanWithdrawalIsLocalAndPersisted(t *testing.T) {
+	t.Parallel()
 	for _, intent := range []string{"roster.ir", "roster.taxi"} {
 		t.Run(intent, func(t *testing.T) {
+			t.Parallel()
 			a := releaseTestApp(t)
 			at := time.Now().UTC().Add(-time.Minute)
 			spec := moveSpec(t)
@@ -113,6 +118,7 @@ func TestRosterPlanWithdrawalIsLocalAndPersisted(t *testing.T) {
 }
 
 func TestRemovalWordsAgreeAcrossKinds(t *testing.T) {
+	t.Parallel()
 	const want = "Removed by you before it was handed off."
 	for _, action := range []string{"cut", "buyout"} {
 		a := releaseTestApp(t)
@@ -152,6 +158,7 @@ func TestRemovalWordsAgreeAcrossKinds(t *testing.T) {
 }
 
 func TestTenderPostUsesLeagueRoundAtEveryLevel(t *testing.T) {
+	t.Parallel()
 	for i, level := range contractacts.TenderLevels() {
 		facts := envelope.ContractFacts{Intent: "rfa.tender", Level: i + 1, Season: 2026,
 			Terms: contractacts.Flat(2027, 1, level.Price, "")}
@@ -164,6 +171,7 @@ func TestTenderPostUsesLeagueRoundAtEveryLevel(t *testing.T) {
 }
 
 func TestJoinedNotesDoNotDoublePunctuate(t *testing.T) {
+	t.Parallel()
 	if got := joinNote("First.", "Second."); got != "First; Second" {
 		t.Fatal(got)
 	}

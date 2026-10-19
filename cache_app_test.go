@@ -6,6 +6,7 @@ import (
 )
 
 func TestEveryHeldCopyIsWiredToARefreshTheAppAlreadyHas(t *testing.T) {
+	t.Parallel()
 	seen := map[string]bool{}
 	for _, c := range cacheScopes() {
 		if c.run == nil || c.ID == "" || seen[c.ID] || c.Label == "" || c.Note == "" || c.Action == "" ||
@@ -27,6 +28,7 @@ func TestEveryHeldCopyIsWiredToARefreshTheAppAlreadyHas(t *testing.T) {
 }
 
 func TestReadingAnUnknownHeldCopyAgainIsRefusedWithoutAskingAnySource(t *testing.T) {
+	t.Parallel()
 	app := commissionerTestApp(t)
 	for _, scope := range []string{"", "everything", "league"} {
 		result := app.TargetCacheClear(scope)

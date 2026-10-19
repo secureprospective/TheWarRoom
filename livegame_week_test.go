@@ -11,6 +11,7 @@ import (
 
 // A final kept through the real history archive is read back after a restart with no fetch.
 func TestHeldFinalsSurviveRestartThroughHistory(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	var endpoints livegame.Endpoints
 	if err := json.Unmarshal(liveGameSources, &endpoints); err != nil {
@@ -49,6 +50,7 @@ func TestHeldFinalsSurviveRestartThroughHistory(t *testing.T) {
 }
 
 func TestWeekSpineNewestFirstMarkedAndCounted(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 10, 11, 18, 0, 0, 0, time.UTC)
 	play := func(id string, minutes int, who string) livegame.Play {
 		return livegame.Play{ID: id, Sequence: minutes, At: at.Add(time.Duration(minutes) * time.Minute), Participants: []string{who}}

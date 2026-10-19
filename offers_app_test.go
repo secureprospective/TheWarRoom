@@ -83,6 +83,7 @@ func TestOfferWords(t *testing.T) {
 	}
 }
 func TestOffersWireFixture(t *testing.T) {
+	t.Parallel()
 	if os.Getenv("TWR_WRITE_OFFERS_WIRE") != "1" {
 		t.Skip("opt-in frontend IPC fixture generation")
 	}

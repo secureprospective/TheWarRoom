@@ -226,3 +226,29 @@ review (`~/fleet/runs/sol61-warroom-audit-triage/stdout.log`, Beelink). Claude t
 - **Other owners install the app:** after 7c.
 
 **Total:** about 37–50 working days of effort. Calendar time is longer.
+
+## Plan v3: test in blocks (Christopher, 2026-10-19)
+
+Replaces the phase-by-phase gating in v2. The work items stay the same; what changes is how they are tested and merged.
+
+**Rules**
+- **Work moves in blocks, not phases.** A block is one branch holding several items.
+- **Items inside a block** get only their own targeted test (the one that fails without the fix), run locally in seconds.
+- **No full gate per item.**
+- **Each block gets, once:**
+  - the full CI suite
+  - one live gate on Claude-OS
+  - one click from Christopher, or none if the block has no visible change
+- **New tests extend existing table tests where one fits.** A new test file needs a new behaviour behind it.
+- **Overlap is measured once** (per-test coverage) at the start of block B. Duplicates are removed with that evidence.
+- **Sol builds the next block's items while Claude reviews the current block.**
+
+| Block | Items | Gate (once) | Click | Days |
+|---|---|---|---|---|
+| **A: Fast gate** (now) | changed-only pre-push, parallel root tests, GitHub CI | push under 5 min, CI green, 3 shuffled race runs clean | none | 0.5 |
+| **B: Safe today** (MFL side) | security quick wins (1b); test overlap cut and test speed (2); migrations, newer files refused, stored identity (3); wrong-state fixes, bid deadline, published snapshot, shutdown (4); backups and restore (6); idle CPU, hourly skip, fast reads (7) | one CI run + one live gate + restore drill | one | 6–8 |
+| **C: Native ready** | pinned native evidence and kickers (5); catalog, one command path, frontend from the catalog (8–10); owner workflows (7b) | one CI run + a native league walked end to end | one | 12–15 |
+| **D: Others install** | Windows/macOS builds and an install path (7c); UX walk and fixes; `twr` CLI (11) | packaged builds launch on 3 OSes + a UX walk | one | 4–6 |
+| **E: MFL commands** | solo-owner pools and bids (12) | one CI run + a live walk | one | 3–5 |
+
+**Total:** about 26–35 days, with 4 clicks in all (was 17 gated phases).

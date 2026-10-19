@@ -13,6 +13,7 @@ import (
 )
 
 func TestTargetSetWindowRoundTrip(t *testing.T) {
+	t.Parallel()
 	a, transport, _ := weekTestApp(t, "17")
 	emitted := 0
 	a.clockChanged = func(context.Context) { emitted++ }
@@ -68,6 +69,7 @@ func TestTargetSetWindowRoundTrip(t *testing.T) {
 }
 
 func TestTradeDeadlineReasonsUsesEffectiveWindow(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
 	past, future := now.Add(-time.Hour), now.Add(time.Hour)
 	for _, tc := range []struct {
@@ -101,6 +103,7 @@ func TestTradeDeadlineReasonsUsesEffectiveWindow(t *testing.T) {
 }
 
 func TestWindowInputsUsesHeldSchedules(t *testing.T) {
+	t.Parallel()
 	a, transport, _ := weekTestApp(t, "17")
 	raw, err := nflschedule.Parse([]byte(weekFixture(t, "nflSchedule-w5.json")))
 	if err != nil {

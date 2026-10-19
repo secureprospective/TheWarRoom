@@ -59,6 +59,7 @@ func checkHeldDirectory(t *testing.T, a *App) {
 }
 
 func TestNativeDirectoryNamesAndAlignmentRoundTrip(t *testing.T) {
+	t.Parallel()
 	a := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
 	before := readDirectoryTest(t, a)
@@ -118,6 +119,7 @@ func openDirectoryHistory(t *testing.T, path string) (*history.Store, *db.Pools)
 }
 
 func TestNativeDirectoryReopenWithoutMirror(t *testing.T) {
+	t.Parallel()
 	a := nativeSeedTestApp(t)
 	path := filepath.Join(t.TempDir(), "directory.db")
 	store, pools := openDirectoryHistory(t, path)
@@ -149,6 +151,7 @@ func TestNativeDirectoryReopenWithoutMirror(t *testing.T) {
 }
 
 func TestNativeDirectoryWire(t *testing.T) {
+	t.Parallel()
 	a := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
 	seedNativeTest(t, a, input)

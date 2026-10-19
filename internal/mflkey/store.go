@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/zalando/go-keyring"
@@ -93,4 +94,37 @@ func (s *Store) Delete(ctx context.Context) error {
 		return nil
 	}
 	return err
+}
+
+// NewMemory is a Store held in this process only, for tests that run in parallel: the go-keyring mock
+// is one unguarded process-wide map, so tests cannot share it.
+func NewMemory(league, season string) *Store {
+	var mu sync.Mutex
+	keys := map[string]string{}
+	return &Store{
+		account: "mfl-apikey:" + league + ":" + season,
+		get: func(service, user string) (string, error) {
+			mu.Lock()
+			defer mu.Unlock()
+			if v, ok := keys[service+"\x00"+user]; ok {
+				return v, nil
+			}
+			return "", keyring.ErrNotFound
+		},
+		set: func(service, user, pass string) error {
+			mu.Lock()
+			defer mu.Unlock()
+			keys[service+"\x00"+user] = pass
+			return nil
+		},
+		delete: func(service, user string) error {
+			mu.Lock()
+			defer mu.Unlock()
+			if _, ok := keys[service+"\x00"+user]; !ok {
+				return keyring.ErrNotFound
+			}
+			delete(keys, service+"\x00"+user)
+			return nil
+		},
+	}
 }

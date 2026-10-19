@@ -15,6 +15,7 @@ import (
 
 // Opt-in, offline measurement over a disposable SQLite backup, never the live database.
 func TestArchiveMeasurement(t *testing.T) {
+	t.Parallel()
 	dir, path := os.Getenv("TWR_ARCHIVE_MEASURE_DIR"), os.Getenv("TWR_ARCHIVE_MEASURE_DB")
 	if dir == "" || path == "" {
 		t.Skip("archive measurement not requested")

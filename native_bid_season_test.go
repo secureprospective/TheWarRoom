@@ -29,6 +29,7 @@ func (bidBracketScores) PlayerScore(_ context.Context, _ []commissioner.Record, 
 }
 
 func TestNativeBidPlayoffStandingComesFromNativeBracket(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	for _, rule := range []struct{ field, value string }{
 		{"league.conferences", "1"}, {"schedule.regularWeeks", "1"}, {"lineup.invalidPenalty", `"none"`},
@@ -89,6 +90,7 @@ func TestNativeBidPlayoffStandingComesFromNativeBracket(t *testing.T) {
 }
 
 func TestNativeBidOffseasonAndMissingInSeasonWeek(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	// The first recorded rollover starts 2027; absent schedules are not permission to bid in October.
 	f.set(t, "calendar.rollover", `"2027-03-01T00:00:00Z"`, "now")
@@ -127,6 +129,7 @@ func TestNativeBidOffseasonAndMissingInSeasonWeek(t *testing.T) {
 }
 
 func TestNativeBidOffseasonBeforeHeldKickoffAndUnknownPlayoffField(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	kickoff := f.now.Add(time.Hour)
 	heldNativeWeek(t, f.app, 14, kickoff, false)
@@ -144,6 +147,7 @@ func TestNativeBidOffseasonBeforeHeldKickoffAndUnknownPlayoffField(t *testing.T)
 }
 
 func TestNativeBidUndatedOffseasonUsesHeldRolloverAndLeagueZone(t *testing.T) {
+	t.Parallel()
 	f := bidApp(t)
 	f.set(t, "calendar.rollover", `"2027-03-01T00:00:00Z"`, "now")
 	records, err := f.app.leagueRecords(t.Context(), legalityLeague)

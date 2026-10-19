@@ -22,6 +22,7 @@ import (
 )
 
 func TestLandingDropUsesLastHeldWeekNotMirror(t *testing.T) {
+	t.Parallel()
 	in := realComms(t)
 	in.mirror.Players = nil
 	id, err := playerid.New("16162")
@@ -51,6 +52,7 @@ func TestLandingDropUsesLastHeldWeekNotMirror(t *testing.T) {
 }
 
 func TestLandingNewsTodayCacheNormalOldCacheOneNotice(t *testing.T) {
+	t.Parallel()
 	for _, days := range []int{0, 2} {
 		t.Run(strconv.Itoa(days), func(t *testing.T) {
 			in := realResearch(t)
@@ -81,6 +83,7 @@ func TestLandingNewsTodayCacheNormalOldCacheOneNotice(t *testing.T) {
 }
 
 func TestLandingNewsRefreshFailureOneNotice(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	for _, id := range []string{"16162", "13589"} {
 		h := in.held.news[id]
@@ -94,6 +97,7 @@ func TestLandingNewsRefreshFailureOneNotice(t *testing.T) {
 }
 
 func TestLandingNewsOrderUsesFetchTimeRegardlessOfOwner(t *testing.T) {
+	t.Parallel()
 	in := realResearch(t)
 	in.held.news["16162"] = heldSeasonFeed[[]researchfeeds.News]{fetchedAt: in.now.AddDate(0, 0, -2),
 		value: []researchfeeds.News{{Article: "older", Headline: "older", Published: "1 hour"}}}
@@ -118,6 +122,7 @@ func (f *landingNewsTransport) RoundTrip(r *http.Request) (*http.Response, error
 }
 
 func TestLandingTeamPositionsNeverEnterNewsBatch(t *testing.T) {
+	t.Parallel()
 	a := targetTestApp(t)
 	positions := []string{"RB", "Def", "ST", "Off", "TMDL", "TMQB"}
 	ids := []string{"16162", "0501", "0532", "17400", "17401", "17402"}
@@ -157,6 +162,7 @@ func TestLandingTeamPositionsNeverEnterNewsBatch(t *testing.T) {
 }
 
 func TestLandingRejectedNewsIDCannotLoseGoodPlayers(t *testing.T) {
+	t.Parallel()
 	ids := []string{"16162", "13589", "17400"}
 	calls, pauses := 0, 0
 	fetch := func(_ context.Context, ids []string) (map[string][]researchfeeds.News, error) {
@@ -192,6 +198,7 @@ func TestLandingRejectedNewsIDCannotLoseGoodPlayers(t *testing.T) {
 }
 
 func TestLandingShellFeedsDailyLiveOrArchive(t *testing.T) {
+	t.Parallel()
 	for _, offline := range []bool{false, true} {
 		a := targetTestApp(t)
 		transport := &seasonTransport{bodies: map[string]string{
@@ -237,6 +244,7 @@ func TestLandingShellFeedsDailyLiveOrArchive(t *testing.T) {
 }
 
 func TestLandingAlertOrderUrgencyGravityID(t *testing.T) {
+	t.Parallel()
 	alerts := []Alert{
 		{Kind: "lineup", Urgency: "U2", At: time.Unix(10, 0)},
 		{Kind: "ir", Urgency: "U2", PlayerID: "16162", At: time.Unix(1, 0)},

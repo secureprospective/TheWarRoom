@@ -237,6 +237,7 @@ func TestBidPreviewSaysWhatTheClosingTimeDoes(t *testing.T) {
 }
 
 func TestPoolRowOffersTheOpenPlan(t *testing.T) {
+	t.Parallel()
 	a, _ := poolApp(t)
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)

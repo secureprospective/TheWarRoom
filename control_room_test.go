@@ -45,6 +45,7 @@ func realSettingsReport(t *testing.T) Report {
 }
 
 func TestLeagueSettingsReadTheReal2026ExportsInPlainWords(t *testing.T) {
+	t.Parallel()
 	r := realSettingsReport(t)
 	got := rows(r)
 	for k, want := range map[string]string{
@@ -82,6 +83,7 @@ func TestLeagueSettingsReadTheReal2026ExportsInPlainWords(t *testing.T) {
 }
 
 func TestScoringTextReadsMFLPointsAndRanges(t *testing.T) {
+	t.Parallel()
 	for rule, want := range map[league.ScoringRule]string{
 		{Points: "6", Range: "0-99"}:       "6 points (when it is 0 to 99)",
 		{Points: "3", Range: "0-39"}:       "3 points (when it is 0 to 39)",
@@ -103,6 +105,7 @@ func TestScoringTextReadsMFLPointsAndRanges(t *testing.T) {
 }
 
 func TestSiteNewsReportAndAccountingHandOff(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 10, 8, 3, 32, 0, 0, time.UTC)
 	r := siteNewsReport([]sitenews.Item{{Headline: "Week 4 Strange Plays", Published: at, Lines: []string{"One.", "Two."}}},
 		"As of: now", "", time.UTC)
@@ -125,6 +128,7 @@ func TestSiteNewsReportAndAccountingHandOff(t *testing.T) {
 }
 
 func TestBylawsReadTheRulebookBySection(t *testing.T) {
+	t.Parallel()
 	sections := bylawSections(rulebookMarkdown)
 	if len(sections) < 13 || sections[0].Title != "1. SALARY CAP" {
 		t.Fatalf("%d sections, first %q", len(sections), sections[0].Title)
@@ -148,6 +152,7 @@ func TestBylawsReadTheRulebookBySection(t *testing.T) {
 // TestControlRoomWire writes the Control Room's real Go output for the frontend's tests: League
 // settings, the first by-laws sections and accounting from the app, and MFL's real site news.
 func TestControlRoomWire(t *testing.T) {
+	t.Parallel()
 	raw, err := sitenews.Parse(readTestdata(t, "internal/ingestion/sitenews/testdata/siteNews.json"))
 	if err != nil {
 		t.Fatal(err)

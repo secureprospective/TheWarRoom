@@ -26,6 +26,7 @@ func archiveOf(bodies ...archived) func(context.Context, string, func(string, []
 }
 
 func TestLiveOrArchive(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	down := errors.New("mfl down")
 	parse := func(b []byte) ([]string, error) {
@@ -83,6 +84,7 @@ func TestLiveOrArchive(t *testing.T) {
 // feed needs: a copy fetched without L (the api-host request) matches, and another league's
 // league-scoped copy still does not.
 func TestLiveOrArchiveLeaguelessFallback(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	down := errors.New("mfl down")
 	const bare = "https://api.myfantasyleague.com/2026/export?TYPE=injuries&JSON=1"

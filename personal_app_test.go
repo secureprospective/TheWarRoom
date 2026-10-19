@@ -41,6 +41,7 @@ func holdPersonalBody(t *testing.T, a *App, export, body string) {
 }
 
 func TestIRViolationAndHeldEligibilityBacklog(t *testing.T) {
+	t.Parallel()
 	a, transport, _ := tradeDraftApp(t)
 	a.targetSnapshot.Rosters.Provenance.Freshness.State = domain.FreshLive
 	a.seasonInjuries.fetchedAt = a.movesNow()
@@ -93,6 +94,7 @@ func TestIRViolationAndHeldEligibilityBacklog(t *testing.T) {
 }
 
 func TestPersonalHeldReportsAndReadOnlyHandOff(t *testing.T) {
+	t.Parallel()
 	a, transport, _ := tradeDraftApp(t)
 	a.targetSnapshot.Franchises.Value[0].Name = "My franchise"
 	if err := personal.New(a.pools).Initialize(a.ctx); err != nil {
@@ -141,6 +143,7 @@ func TestPersonalHeldReportsAndReadOnlyHandOff(t *testing.T) {
 }
 
 func TestCalendarMergeHeldImport(t *testing.T) {
+	t.Parallel()
 	a, transport, _ := tradeDraftApp(t)
 	now := a.movesNow()
 	next := strconv.FormatInt(now.Add(72*time.Hour).Unix(), 10)
@@ -171,6 +174,7 @@ func TestCalendarMergeHeldImport(t *testing.T) {
 }
 
 func TestRosterPointsFromHeldPeriods(t *testing.T) {
+	t.Parallel()
 	a, transport, _ := tradeDraftApp(t)
 	id := a.targetSnapshot.Players.Value[0].ID.String()
 	holdPersonalBody(t, a, "playerScores", `{"playerScores":{"week":"YTD","playerScore":{"id":"`+id+`","score":"134.80"}}}`)
@@ -196,6 +200,7 @@ func TestRosterPointsFromHeldPeriods(t *testing.T) {
 }
 
 func TestNFLDraftFromDetailedPlayers(t *testing.T) {
+	t.Parallel()
 	a, transport, _ := tradeDraftApp(t)
 	holdPersonalBody(t, a, "players", `{"players":{"player":[
  {"id":"17462","name":"Mendoza, Fernando","position":"QB","team":"LVR","draft_year":"2026","draft_round":"1","draft_pick":"1"},
@@ -212,6 +217,7 @@ func TestNFLDraftFromDetailedPlayers(t *testing.T) {
 }
 
 func TestRosterMissingPointsSayNoScore(t *testing.T) {
+	t.Parallel()
 	if got := personalScoreText(map[string]string{}, "0042"); got != "No score" {
 		t.Fatalf("missing score = %q", got)
 	}

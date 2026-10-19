@@ -31,6 +31,7 @@ func revertEntry(t *testing.T, app *App, raw commissioner.RawCommand, entry, req
 // TestEveryRegisteredNativeActionAsksTheGate runs each registered native owner action with its window
 // shut and then open: a shut gate must stop it, an open one must run it for that franchise only.
 func TestEveryRegisteredNativeActionAsksTheGate(t *testing.T) {
+	t.Parallel()
 	shut := time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC)
 	app, _ := calendarTestApp(t, shut)
 	app.localZone = westCoast(t)
@@ -75,6 +76,7 @@ func TestEveryRegisteredNativeActionAsksTheGate(t *testing.T) {
 }
 
 func TestTradeDeadlineClosesTheGateAtTheChosenInstant(t *testing.T) {
+	t.Parallel()
 	recorded := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, recorded)
 	app.localZone = westCoast(t)
@@ -119,6 +121,7 @@ func TestTradeDeadlineClosesTheGateAtTheChosenInstant(t *testing.T) {
 }
 
 func TestWindowExceptionOpensOneFranchiseUntilItExpires(t *testing.T) {
+	t.Parallel()
 	recorded := time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, recorded)
 	app.localZone = westCoast(t)

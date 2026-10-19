@@ -102,6 +102,7 @@ func pickLine(d commissioner.NativeDraft, index int) string {
 }
 
 func TestTheTraySkipsAndAssignsAndGovernsTheClockCM043(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.now = draftStartAt().Add(time.Hour)
@@ -120,6 +121,7 @@ func TestTheTraySkipsAndAssignsAndGovernsTheClockCM043(t *testing.T) {
 }
 
 func TestTheTrayInsertsAndChangesAPickWithoutRetargetingCM043(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.now = draftStartAt().Add(time.Hour)
@@ -157,6 +159,7 @@ func TestTheTrayInsertsAndChangesAPickWithoutRetargetingCM043(t *testing.T) {
 }
 
 func TestTheTrayWorksTheClockAndOverridesAnExpiredPickCM043(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	// Read at the instant the clock opens, so a restore (which gives the pick a fresh clock) reads the same.
@@ -184,6 +187,7 @@ func TestTheTrayWorksTheClockAndOverridesAnExpiredPickCM043(t *testing.T) {
 }
 
 func TestTheClockSkipsAnExpiredPickAndTheCommissionerOverridesItCM043(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.now = draftStartAt().Add(7 * time.Hour)
@@ -202,6 +206,7 @@ func TestTheClockSkipsAnExpiredPickAndTheCommissionerOverridesItCM043(t *testing
 }
 
 func TestTheTrayRefusesWhatItShouldNotAndNeedsARoleAndAReasonCM043(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.seated(t, 3)
 	f.scheduled(t, 3, 2, 1)
@@ -287,6 +292,7 @@ func (f *draftFixture) made(t *testing.T) string {
 }
 
 func TestARestoreKeepsBothStatesAndTheLedgerCM044(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.seated(t, 1, 3)
@@ -333,6 +339,7 @@ func TestARestoreKeepsBothStatesAndTheLedgerCM044(t *testing.T) {
 }
 
 func TestARestoreIsRefusedWhereItWouldBreakTheDraftCM044(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	order, start := f.scheduled(t, 3, 2, 1)
 	f.seated(t, 3)
@@ -405,6 +412,7 @@ func (f *draftFixture) closedWords(t *testing.T) string {
 }
 
 func TestClosingTheDraftReleasesRookiesAndIssuesPicksCM045(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.seated(t, 1, 3)
@@ -455,6 +463,7 @@ func TestClosingTheDraftReleasesRookiesAndIssuesPicksCM045(t *testing.T) {
 }
 
 func TestACommissionerCanCloseTheDraftEarlyAndNothingMoreIsPicked(t *testing.T) {
+	t.Parallel()
 	f := draftApp(t)
 	f.scheduled(t, 3, 2, 1)
 	f.seated(t, 1, 3)
