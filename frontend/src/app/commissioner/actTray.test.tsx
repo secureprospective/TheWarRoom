@@ -266,6 +266,17 @@ it('the seed preview blocker is word for word and prevents any starting assets w
   expect(calls.sent).toEqual([]);
 });
 
+it('a seed preview refused before Go named the league shows the refusal, not a mismatch', async () => {
+  const refusal = 'Hold the league rosters and settings before seeding.';
+  const { app } = stub({ TargetCommissionerPreview: async body => ({
+    ...answer(JSON.parse(body), [refusal], 'reason'), target: { league: '', name: '', version: 0 } }) });
+  const host = await mount(render(SeedForm, { league }), app);
+  await settle();
+  expect(host.textContent).toContain(refusal);
+  expect(host.textContent).not.toContain('does not match this league version');
+  expect(disabled(button(host, 'Record starting assets'))).toBe(true);
+});
+
 it('changing a reviewed draft cancels its approval and changes its request key', async () => {
   const { host, app, calls } = await show('correct.roster');
   await fill(host, cases[0].fields);

@@ -71,7 +71,7 @@ func (a *App) decodeCommissionerPreview(body string) (commissioner.RawCommand, e
 	if decodeErr := decoder.Decode(&struct{}{}); decodeErr != io.EOF {
 		return raw, fmt.Errorf("decode preview: %w", err)
 	}
-	if validateErr := input.Validate(); validateErr != nil {
+	if validateErr := input.ValidatePreview(); validateErr != nil {
 		return raw, validateErr
 	}
 	if readyErr := a.ready(); readyErr != nil {

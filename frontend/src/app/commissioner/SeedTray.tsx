@@ -21,7 +21,8 @@ export function SeedForm({ league }: { league: string }) {
     setReview(undefined);
     setError('');
     void readPreview(body).then(p => {
-      if (p.target.league !== target.league || p.target.version !== target.expected)
+      const stale = p.target.league !== target.league || p.target.version !== target.expected;
+      if (p.blockers.length === 0 && stale)
         throw new Error('The preview does not match this league version. Reopen the change.');
       if (active) setReview({ body, preview: p });
     }).catch(cause => { if (active) setError(refusalText(cause)); });

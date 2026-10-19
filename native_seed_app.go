@@ -22,9 +22,15 @@ type RawNativeSeedRequest struct {
 	Reason   string `json:"reason"`
 }
 
-func (r RawNativeSeedRequest) Validate() error {
+func (r RawNativeSeedRequest) Validate() error { return r.validate(true) }
+
+// ValidatePreview is Validate without the typed reason, so the tray can show the starting assets before
+// the reason is written; the preview then owes the reason as its blocker.
+func (r RawNativeSeedRequest) ValidatePreview() error { return r.validate(false) }
+
+func (r RawNativeSeedRequest) validate(requireReason bool) error {
 	if !strings.HasPrefix(r.League, "native.") || r.League == "native." || strings.TrimSpace(r.League) != r.League ||
-		r.Expected < 1 || strings.TrimSpace(r.Request) == "" || strings.TrimSpace(r.Reason) == "" {
+		r.Expected < 1 || strings.TrimSpace(r.Request) == "" || (requireReason && strings.TrimSpace(r.Reason) == "") {
 		return fmt.Errorf("choose an app league, its version, a request and a reason for recording its starting snapshot")
 	}
 	return nil

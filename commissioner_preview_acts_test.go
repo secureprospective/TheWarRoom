@@ -95,6 +95,34 @@ func TestStartingAssetsPreviewUsesTheSeedRequestAndRecordsNothing(t *testing.T) 
 	}
 }
 
+// The tray opens before a reason is typed: the preview must still show the starting assets and the
+// league version, and owe only the reason.
+func TestStartingAssetsPreviewShowsBeforeTheReasonIsTyped(t *testing.T) {
+	app := nativeSeedTestApp(t)
+	input := createNativeSeedLeague(t, app, commissioner.PresetLegacy)
+	input.Reason = ""
+	body, err := json.Marshal(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	preview, err := app.TargetCommissionerPreview(string(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if preview.Target.League != input.League || preview.Target.Version != input.Expected {
+		t.Fatalf("preview target %+v, want %s at %d", preview.Target, input.League, input.Expected)
+	}
+	if len(preview.Fields) < 4 {
+		t.Fatalf("starting roster and contracts absent: %+v", preview)
+	}
+	if len(preview.Blockers) != 1 || preview.Blockers[0] != "Give a reason for this change" {
+		t.Fatalf("blockers %q, want only the reason", preview.Blockers)
+	}
+	if _, err := app.TargetNativeSeed(input); err == nil {
+		t.Fatal("recorded starting assets without a reason")
+	}
+}
+
 func assertPreviewTransition(t *testing.T, preview commissioner.Preview, label, before, after string) {
 	t.Helper()
 	for _, field := range preview.Fields {
