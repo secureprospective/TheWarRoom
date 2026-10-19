@@ -24,6 +24,29 @@
         ]
       },
       {
+        "id": "communications",
+        "name": "League notices and news",
+        "state": "live",
+        "words": "Official notices and What's New posts go to the league from here.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-052",
+          "CM-053"
+        ]
+      },
+      {
+        "id": "rollover",
+        "name": "Rollover",
+        "state": "upcoming",
+        "words": "The rollover is dated; preview it before it runs.",
+        "opens": "2027-03-01T05:00:00Z",
+        "closes": "",
+        "controls": [
+          "CM-027"
+        ]
+      },
+      {
         "id": "contract_season",
         "name": "Contract season",
         "state": "upcoming",
@@ -58,21 +81,10 @@
         ]
       },
       {
-        "id": "rollover",
-        "name": "Rollover",
-        "state": "unbuilt",
-        "words": "Not built yet",
-        "opens": "",
-        "closes": "",
-        "controls": [
-          "CM-027"
-        ]
-      },
-      {
         "id": "rookie_draft",
         "name": "Rookie draft",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -87,8 +99,8 @@
       {
         "id": "stat_queue",
         "name": "Stat approval queue",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -99,8 +111,8 @@
       {
         "id": "dot_review",
         "name": "DOT review and appeal",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -111,8 +123,8 @@
       {
         "id": "playoffs",
         "name": "Playoffs",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Needs a ruling: which weeks the playoffs are.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -124,8 +136,8 @@
       {
         "id": "in_season",
         "name": "In-season operations",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -139,16 +151,14 @@
         ]
       },
       {
-        "id": "communications",
-        "name": "Communications",
+        "id": "notifications",
+        "name": "Notifications and refresh schedule",
         "state": "unbuilt",
         "words": "Not built yet",
         "opens": "",
         "closes": "",
         "controls": [
           "CM-051",
-          "CM-052",
-          "CM-053",
           "CM-054"
         ]
       }
@@ -194,6 +204,18 @@
         ]
       },
       {
+        "id": "communications",
+        "name": "League notices and news",
+        "state": "live",
+        "words": "Official notices and What's New posts go to the league from here.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-052",
+          "CM-053"
+        ]
+      },
+      {
         "id": "rollover",
         "name": "Rollover",
         "state": "blocked",
@@ -241,8 +263,8 @@
       {
         "id": "rookie_draft",
         "name": "Rookie draft",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -257,8 +279,8 @@
       {
         "id": "stat_queue",
         "name": "Stat approval queue",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -269,8 +291,8 @@
       {
         "id": "dot_review",
         "name": "DOT review and appeal",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -281,8 +303,8 @@
       {
         "id": "playoffs",
         "name": "Playoffs",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Needs a ruling: which weeks the playoffs are.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -294,8 +316,8 @@
       {
         "id": "in_season",
         "name": "In-season operations",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -309,16 +331,14 @@
         ]
       },
       {
-        "id": "communications",
-        "name": "Communications",
+        "id": "notifications",
+        "name": "Notifications and refresh schedule",
         "state": "unbuilt",
         "words": "Not built yet",
         "opens": "",
         "closes": "",
         "controls": [
           "CM-051",
-          "CM-052",
-          "CM-053",
           "CM-054"
         ]
       }
@@ -350,6 +370,18 @@
         ]
       },
       {
+        "id": "communications",
+        "name": "League notices and news",
+        "state": "live",
+        "words": "Official notices and What's New posts go to the league from here.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-052",
+          "CM-053"
+        ]
+      },
+      {
         "id": "rollover",
         "name": "Rollover",
         "state": "blocked",
@@ -397,8 +429,8 @@
       {
         "id": "rookie_draft",
         "name": "Rookie draft",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -413,8 +445,8 @@
       {
         "id": "stat_queue",
         "name": "Stat approval queue",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -425,8 +457,8 @@
       {
         "id": "dot_review",
         "name": "DOT review and appeal",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -437,8 +469,8 @@
       {
         "id": "playoffs",
         "name": "Playoffs",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Needs a ruling: which weeks the playoffs are.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -450,8 +482,8 @@
       {
         "id": "in_season",
         "name": "In-season operations",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -465,16 +497,14 @@
         ]
       },
       {
-        "id": "communications",
-        "name": "Communications",
+        "id": "notifications",
+        "name": "Notifications and refresh schedule",
         "state": "unbuilt",
         "words": "Not built yet",
         "opens": "",
         "closes": "",
         "controls": [
           "CM-051",
-          "CM-052",
-          "CM-053",
           "CM-054"
         ]
       }
@@ -517,6 +547,29 @@
         ]
       },
       {
+        "id": "rollover",
+        "name": "Rollover",
+        "state": "live",
+        "words": "The rollover date has passed; preview the rollover and run it.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-027"
+        ]
+      },
+      {
+        "id": "communications",
+        "name": "League notices and news",
+        "state": "live",
+        "words": "Official notices and What's New posts go to the league from here.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-052",
+          "CM-053"
+        ]
+      },
+      {
         "id": "waivers",
         "name": "Waiver processing",
         "state": "blocked",
@@ -539,21 +592,10 @@
         ]
       },
       {
-        "id": "rollover",
-        "name": "Rollover",
-        "state": "unbuilt",
-        "words": "Not built yet",
-        "opens": "",
-        "closes": "",
-        "controls": [
-          "CM-027"
-        ]
-      },
-      {
         "id": "rookie_draft",
         "name": "Rookie draft",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -568,8 +610,8 @@
       {
         "id": "stat_queue",
         "name": "Stat approval queue",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -580,8 +622,8 @@
       {
         "id": "dot_review",
         "name": "DOT review and appeal",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -592,8 +634,8 @@
       {
         "id": "playoffs",
         "name": "Playoffs",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Needs a ruling: which weeks the playoffs are.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -605,8 +647,8 @@
       {
         "id": "in_season",
         "name": "In-season operations",
-        "state": "unbuilt",
-        "words": "Not built yet",
+        "state": "blocked",
+        "words": "Record starting assets first.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -620,16 +662,14 @@
         ]
       },
       {
-        "id": "communications",
-        "name": "Communications",
+        "id": "notifications",
+        "name": "Notifications and refresh schedule",
         "state": "unbuilt",
         "words": "Not built yet",
         "opens": "",
         "closes": "",
         "controls": [
           "CM-051",
-          "CM-052",
-          "CM-053",
           "CM-054"
         ]
       }

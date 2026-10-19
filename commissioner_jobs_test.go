@@ -120,8 +120,8 @@ func TestCommissionerJobsWire(t *testing.T) {
 		live.Jobs[0].ID != "contract_season" {
 		t.Fatalf("inside the RFA window the season is live and leads: %+v", live.Jobs)
 	}
-	if j := state(live, "rollover"); j.State != commissioner.JobUnbuilt {
-		t.Fatalf("a dated rollover is still not built: %+v", j)
+	if j := state(live, "rollover"); j.State != commissioner.JobLive {
+		t.Fatalf("a rollover whose date has passed is the commissioner's to run: %+v", j)
 	}
 	if _, err := app.TargetCommissionerJobs("mfl.123"); err == nil || !strings.Contains(err.Error(), "choose an app league") {
 		t.Fatalf("an imported league has no commissioner jobs: %v", err)

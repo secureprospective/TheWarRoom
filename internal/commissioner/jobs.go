@@ -17,7 +17,8 @@ const (
 	JobBlocked  = "blocked"
 	JobUnbuilt  = "unbuilt"
 
-	unbuiltWords = "Not built yet"
+	unbuiltWords     = "Not built yet"
+	rolloverRunWords = "This season's rollover has been run; the next one has no date yet."
 )
 
 // Job is one thing the commissioner works through. Opens and Closes are RFC 3339 instants, empty when
@@ -59,12 +60,12 @@ func JobsReading(league string, records []Record, at time.Time) (Jobs, error) {
 	if err != nil {
 		return Jobs{}, err
 	}
-	jobs := jobsFor(rules, ruleCalendar{rules.Calendar}, at)
-	transactions, err := transactionJobs(league, records, rules, at)
+	jobs := jobsFor(rules, ruleCalendar{rules: rules.Calendar, records: records}, at)
+	recorded, err := ledgerJobs(league, records, rules, at)
 	if err != nil {
 		return Jobs{}, err
 	}
-	jobs = append(jobs, transactions...)
+	jobs = append(jobs, recorded...)
 	sortJobs(jobs)
 	return Jobs{League: league, Name: Replay(records).Name, Revision: int64(len(records)), Jobs: jobs}, nil
 }
@@ -76,15 +77,9 @@ func jobsFor(rules leaguerules.RuleSet, cal JobCalendar, at time.Time) []Job {
 	if setup, open := setupJob(rules); open {
 		jobs = append(jobs, setup)
 	}
-	jobs = append(jobs, rolloverJob(cal),
+	jobs = append(jobs, rolloverJob(cal, at),
 		contractSeasonJob(cal, at),
-		unbuilt("rookie_draft", "Rookie draft", "CM-040", "CM-041", "CM-042", "CM-043", "CM-044", "CM-045"),
-		unbuilt("stat_queue", "Stat approval queue", "CM-031", "CM-032"),
-		unbuilt("dot_review", "DOT review and appeal", "CM-014", "CM-037"),
-		unbuilt("playoffs", "Playoffs", "CM-016", "CM-046", "CM-047"),
-		unbuilt("in_season", "In-season operations",
-			"CM-028", "CM-029", "CM-030", "CM-033", "CM-034", "CM-038", "CM-039"),
-		unbuilt("communications", "Communications", "CM-051", "CM-052", "CM-053", "CM-054"))
+		unbuilt("notifications", "Notifications and refresh schedule", "CM-051", "CM-054"))
 	sortJobs(jobs)
 	return jobs
 }
@@ -145,12 +140,19 @@ func setupFor(missing []leaguerules.FieldPath) (job Job, open bool) {
 		Words: fmt.Sprintf("%d league %s a ruling.", len(missing), noun)}, true
 }
 
-// rolloverJob is blocked until the commissioner dates the rollover; once dated, the rollover itself is
-// not built, so it is never offered as work.
-func rolloverJob(cal JobCalendar) Job {
-	job := unbuilt("rollover", "Rollover", "CM-027")
-	if _, reason := cal.RolloverAt(); reason != "" {
+// rolloverJob is blocked until the commissioner dates the rollover, upcoming until that date, and live
+// once it has passed: the commissioner previews the rollover and runs it.
+func rolloverJob(cal JobCalendar, at time.Time) Job {
+	job := Job{ID: "rollover", Name: "Rollover", Controls: []string{"CM-027"}}
+	date, reason := cal.RolloverAt()
+	switch {
+	case reason != "":
 		job.State, job.Words = JobBlocked, reason
+	case at.Before(date):
+		job.State, job.Words, job.Opens = JobUpcoming, "The rollover is dated; preview it before it runs.",
+			date.UTC().Format(time.RFC3339)
+	default:
+		job.State, job.Words = JobLive, "The rollover date has passed; preview the rollover and run it."
 	}
 	return job
 }
@@ -215,14 +217,38 @@ type JobCalendar interface {
 }
 
 // ruleCalendar reads the resolved rules' calendar values: only an exact recorded instant counts as a
-// date, because a month and day alone do not say which season they belong to.
-type ruleCalendar struct{ rules leaguerules.CalendarRules }
+// date, because a month and day alone do not say which season they belong to. The records say whether
+// the dated rollover has already been run.
+type ruleCalendar struct {
+	rules   leaguerules.CalendarRules
+	records []Record
+}
 
 func (c ruleCalendar) RolloverAt() (time.Time, string) {
 	if c.rules.Rollover.State != leaguerules.IsKnown {
 		return time.Time{}, rolloverWords
 	}
+	if rolloverRunSinceDated(c.records) {
+		return time.Time{}, rolloverRunWords
+	}
 	return c.rules.Rollover.Value.UTC(), ""
+}
+
+// rolloverRunSinceDated says whether a rollover was run after the rollover date in force was set.
+func rolloverRunSinceDated(records []Record) bool {
+	active := Replay(records).Active
+	var dated time.Time
+	ran := false
+	for _, r := range records {
+		switch {
+		case !active[r.Receipt.Entry]:
+		case r.Command.Command == RulesSet && r.Command.Args.Field == rolloverField:
+			dated, ran = r.Receipt.RecordedAt, false
+		case recordedRollover(r) && r.Receipt.RecordedAt.After(dated):
+			ran = true
+		}
+	}
+	return ran
 }
 
 func (c ruleCalendar) Window(id string) (WindowDates, bool) {

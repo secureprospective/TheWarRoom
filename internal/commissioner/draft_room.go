@@ -198,6 +198,14 @@ func draftSeasonNext(league string, records []Record, at time.Time) (int, error)
 	if !assets.Seeded {
 		return 0, fmt.Errorf("record the starting snapshot's draft picks before opening the draft room")
 	}
+	if season, ok := draftSeasonPending(assets, through); ok {
+		return season, nil
+	}
+	return 0, fmt.Errorf("this league has no rookie draft left to run")
+}
+
+// draftSeasonPending is the earliest season with a pick still waiting to be ordered and no close recorded.
+func draftSeasonPending(assets NativeAssets, through []Record) (int, bool) {
 	seasons := []int{}
 	for _, p := range assets.Snapshot.Picks {
 		if p.Slot == 0 && !slices.Contains(seasons, p.Season) {
@@ -207,8 +215,8 @@ func draftSeasonNext(league string, records []Record, at time.Time) (int, error)
 	slices.Sort(seasons)
 	for _, season := range seasons {
 		if _, closed := closeRecord(through, season); !closed {
-			return season, nil
+			return season, true
 		}
 	}
-	return 0, fmt.Errorf("this league has no rookie draft left to run")
+	return 0, false
 }

@@ -8,21 +8,17 @@ import (
 )
 
 // transactionJobs reports the native queues, not an imported league's pending moves.
-func transactionJobs(league string, records []Record, rules leaguerules.RuleSet, at time.Time) ([]Job, error) {
-	assets, state, err := nativeAssetsState(league, records)
-	if err != nil {
-		return nil, err
-	}
+func transactionJobs(assets NativeAssets, state waiverState, rules leaguerules.RuleSet, at time.Time) []Job {
 	waivers := Job{ID: "waivers", Name: "Waiver processing", State: JobLive, Controls: []string{"CM-035"}}
 	bids := Job{ID: "bids", Name: "Bid processing", State: JobLive, Controls: []string{"CM-036"}}
 	if !assets.Seeded {
 		waivers.State, bids.State = JobBlocked, JobBlocked
 		waivers.Words, bids.Words = "Record starting assets first.", "Record starting assets first."
-		return []Job{waivers, bids}, nil
+		return []Job{waivers, bids}
 	}
 	fillWaiverJob(&waivers, state.Windows, rules.Waivers, at)
 	fillBidJob(&bids, state.Bids, rules.Bids, at)
-	return []Job{waivers, bids}, nil
+	return []Job{waivers, bids}
 }
 
 func fillWaiverJob(job *Job, windows []waiverWindow, rules leaguerules.WaiversRules, at time.Time) {

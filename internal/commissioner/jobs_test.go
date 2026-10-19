@@ -89,25 +89,32 @@ func TestContractSeasonBlockedSaysWhichWindowsHaveNoDates(t *testing.T) {
 	}
 }
 
-func TestRolloverIsBlockedWithoutADateAndNeverOfferedAsWork(t *testing.T) {
+func TestRolloverIsBlockedUntilDatedThenUpcomingThenLive(t *testing.T) {
 	rules := leaguerules.LegacyNFL()
 	none := byID(t, jobsFor(rules, fakeCalendar{}, day(1, 1)), "rollover")
 	if none.State != JobBlocked || none.Words != "The next rollover has no date yet; the commissioner sets it." {
 		t.Fatalf("an undated rollover is blocked in the commissioner's words: %+v", none)
 	}
-	dated := byID(t, jobsFor(rules, fakeCalendar{rollover: day(3, 1)}, day(1, 1)), "rollover")
-	if dated.State != JobUnbuilt || dated.Words != unbuiltWords || dated.Opens != "" || dated.Closes != "" {
-		t.Fatalf("the rollover is not built, so a dated one is not work: %+v", dated)
+	soon := byID(t, jobsFor(rules, fakeCalendar{rollover: day(3, 1)}, day(1, 1)), "rollover")
+	if soon.State != JobUpcoming || soon.Opens != "2027-03-01T05:00:00Z" {
+		t.Fatalf("a dated rollover still to come is upcoming from its date: %+v", soon)
+	}
+	due := byID(t, jobsFor(rules, fakeCalendar{rollover: day(3, 1)}, day(3, 1)), "rollover")
+	if due.State != JobLive || due.Opens != "" {
+		t.Fatalf("at its date the rollover is work for the commissioner: %+v", due)
 	}
 }
 
-func TestJobsNotBuiltYetNeverClaimToWork(t *testing.T) {
+func TestOnlyNotificationsAreNotBuiltYet(t *testing.T) {
 	jobs := jobsFor(leaguerules.LegacyNFL(), fakeCalendar{windows: springWindows()}, day(5, 2))
-	for _, id := range []string{"rookie_draft", "stat_queue", "dot_review", "playoffs", "in_season", "communications"} {
-		job := byID(t, jobs, id)
-		if job.State != JobUnbuilt || job.Words != "Not built yet" || job.Opens != "" || job.Closes != "" {
-			t.Fatalf("%s must say it is not built: %+v", id, job)
+	for _, j := range jobs {
+		if (j.State == JobUnbuilt) != (j.ID == "notifications") {
+			t.Fatalf("only notifications and the refresh schedule are unbuilt: %+v", j)
 		}
+	}
+	job := byID(t, jobs, "notifications")
+	if job.Words != "Not built yet" || job.Opens != "" || job.Closes != "" {
+		t.Fatalf("an unbuilt job never claims to work: %+v", job)
 	}
 }
 
@@ -183,7 +190,7 @@ func TestEveryJobOpensRealCensusRows(t *testing.T) {
 
 func TestRuleCalendarCountsOnlyRecordedInstants(t *testing.T) {
 	calendar := leaguerules.LegacyNFL().Calendar
-	cal := ruleCalendar{calendar}
+	cal := ruleCalendar{rules: calendar}
 	if _, reason := cal.RolloverAt(); reason != rolloverWords {
 		t.Fatalf("an unset rollover is the commissioner's to date: %q", reason)
 	}
@@ -196,7 +203,7 @@ func TestRuleCalendarCountsOnlyRecordedInstants(t *testing.T) {
 	w.DatedEnd = leaguerules.Known(day(4, 30))
 	windows["contracts"] = w
 	calendar.Rollover = leaguerules.Known(day(3, 1))
-	cal = ruleCalendar{calendar}
+	cal = ruleCalendar{rules: calendar}
 	if dates, ok := cal.Window("contracts"); !ok || !dates.Start.Equal(day(3, 1)) || !dates.Close.Equal(day(4, 30)) {
 		t.Fatalf("a dated window reads back: %+v %v", dates, ok)
 	}
@@ -207,7 +214,7 @@ func TestRuleCalendarCountsOnlyRecordedInstants(t *testing.T) {
 		t.Fatal("a window the league does not have has no dates")
 	}
 	calendar.Windows = leaguerules.Needs[map[string]leaguerules.Window]("test")
-	if _, ok := (ruleCalendar{calendar}).Window("contracts"); ok {
+	if _, ok := (ruleCalendar{rules: calendar}).Window("contracts"); ok {
 		t.Fatal("windows that need a ruling have no dates")
 	}
 }
