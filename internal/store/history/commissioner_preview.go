@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -13,14 +14,22 @@ import (
 // It never opens the writer pool, reserves a request key or records a trial event.
 func (s *Store) PreviewCommissioner(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer, catalogue commissioner.PreviewCatalogue) (commissioner.Preview, error) {
+	return s.PreviewCommissionerWithFacts(ctx, raw, principal, auth, catalogue, nil, time.UTC)
+}
+
+// PreviewCommissionerWithFacts uses the same held football facts and owner time zone as execution.
+func (s *Store) PreviewCommissionerWithFacts(ctx context.Context, raw commissioner.RawCommand,
+	principal string, auth commissioner.Authorizer, catalogue commissioner.PreviewCatalogue,
+	playerFacts nativecheck.Facts, zone *time.Location) (commissioner.Preview, error) {
 	raw, canonical, err := preparedCommand(raw, principal, false)
 	if err != nil {
 		return previewRefusal(err)
 	}
 	facts, err := s.appendFactsFor(ctx, raw)
 	if err != nil {
-		return commissioner.Preview{}, err
+		return previewRefusal(err)
 	}
+	facts.players = playerFacts
 	tx, err := s.pools.Read().BeginTx(ctx, nil)
 	if err != nil {
 		return commissioner.Preview{}, fmt.Errorf("begin league preview: %w", err)
@@ -30,28 +39,33 @@ func (s *Store) PreviewCommissioner(ctx context.Context, raw commissioner.RawCom
 	if err != nil {
 		return commissioner.Preview{}, err
 	}
-	_, retry, checkErr := s.checkCommissionerCommand(raw, principal, auth, records, canonical, facts)
-	var refusal *commissioner.Refusal
-	if checkErr != nil && !errors.As(checkErr, &refusal) {
-		return commissioner.Preview{}, fmt.Errorf("check league preview: %w", checkErr)
+	role, retry, checkErr := s.checkCommissionerCommand(raw, principal, auth, records, canonical, facts)
+	if role == "" && checkErr != nil {
+		return previewRefusal(checkErr)
 	}
-	blockers := []string{}
-	if missing := raw.MissingReason(); missing != nil {
-		blockers = append(blockers, reasonOf(missing))
+	var before *commissioner.RolloverBefore
+	var plan *commissioner.RolloverPlan
+	if checkErr == nil && retry == nil {
+		before, plan, checkErr = s.prepareCommissionerTrial(ctx, &raw, principal, records,
+			s.now().UTC().Truncate(time.Microsecond), playerFacts, zone, facts)
 	}
-	if refusal != nil {
-		blockers = append(blockers, refusal.Reason())
+	blockers, err := previewBlockers(raw, checkErr)
+	if err != nil {
+		return commissioner.Preview{}, err
 	}
+
 	if retry != nil {
-		blockers = append(blockers, "This change is already recorded in the league ledger.")
+		return recordedPreview(raw, records, *retry), nil
 	}
-	preview, err := s.describeChange(raw, records, catalogue, facts)
+
+	preview, err := s.describePreparedChange(ctx, raw, records, catalogue, facts, before, plan, checkErr == nil)
 	if err != nil {
 		if len(blockers) > 0 {
 			return blockedPreview(blockers), nil
 		}
 		return commissioner.Preview{}, fmt.Errorf("describe league preview: %w", err)
 	}
+
 	preview.Blockers = append(preview.Blockers, blockers...)
 	return preview, nil
 }
@@ -98,6 +112,66 @@ func (s *Store) describeChange(raw commissioner.RawCommand, records []commission
 	preview, err := commissioner.DraftPreview(raw, records, catalogue, s.now(), facts.draft, names)
 	if err != nil {
 		return commissioner.Preview{}, fmt.Errorf("describe draft change: %w", err)
+	}
+	warning := preview.Affects.Words
+	preview.Affects, err = commissioner.PreviewAffectedFranchises(raw, records, s.now(), preview.Affects)
+	if err != nil {
+		return commissioner.Preview{}, fmt.Errorf("describe affected draft franchises: %w", err)
+	}
+	preview.Affects.Words += "; " + warning
+	return preview, nil
+}
+
+func previewBlockers(raw commissioner.RawCommand, checkErr error) ([]string, error) {
+	var refusal *commissioner.Refusal
+	if checkErr != nil && !errors.As(checkErr, &refusal) {
+		return nil, fmt.Errorf("check league preview: %w", checkErr)
+	}
+	blockers := []string{}
+	if missing := raw.MissingReason(); missing != nil {
+		blockers = append(blockers, reasonOf(missing))
+	}
+	if refusal != nil {
+		blockers = append(blockers, refusal.Reason())
+	}
+	return blockers, nil
+}
+
+func recordedPreview(raw commissioner.RawCommand, records []commissioner.Record,
+	receipt commissioner.Receipt) commissioner.Preview {
+	return commissioner.Preview{Fields: []commissioner.PreviewField{{Label: "League ledger",
+		Before: receipt.Message, BeforeSource: "Recorded league ledger", After: receipt.Message,
+		AfterSource: "Recorded league ledger", When: "Already recorded"}},
+		Target:   commissioner.PreviewTarget{League: raw.League, Name: commissioner.Replay(records).Name, Version: raw.Expected},
+		Blockers: []string{}, Affects: commissioner.PreviewAffects{Readings: []string{}, Words: "Already recorded; nothing changes"}}
+}
+
+func (s *Store) describePreparedChange(ctx context.Context, raw commissioner.RawCommand,
+	records []commissioner.Record, catalogue commissioner.PreviewCatalogue, facts appendFacts,
+	before *commissioner.RolloverBefore, plan *commissioner.RolloverPlan, accepted bool) (commissioner.Preview, error) {
+	preview, err := s.describeChange(raw, records, catalogue, facts)
+	if err != nil {
+		return preview, err
+	}
+	if plan != nil {
+		preview.Fields = commissioner.RolloverPreviewFields(before, plan)
+		return preview, nil
+	}
+	if accepted {
+		fields, err := s.previewReadingFields(ctx, raw, records, facts)
+		if err != nil {
+			return commissioner.Preview{}, err
+		}
+		preview.Fields = append(preview.Fields, fields...)
+		commissioner.PreviewFieldSources(raw, preview.Fields)
+		draftFields, err := commissioner.DraftSetupFields(raw, records, s.now(), facts.draft)
+		if err != nil {
+			return commissioner.Preview{}, fmt.Errorf("describe draft order: %w", err)
+		}
+		preview.Fields = append(preview.Fields, draftFields...)
+		if err := commissioner.NamePreviewFields(preview.Fields, records, s.now()); err != nil {
+			return commissioner.Preview{}, fmt.Errorf("name preview franchises: %w", err)
+		}
 	}
 	return preview, nil
 }

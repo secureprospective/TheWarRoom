@@ -65,6 +65,7 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
+	gathered.players = facts
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	tx, err := s.pools.Write().BeginTx(ctx, nil)
@@ -84,13 +85,7 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 		return *retry, nil
 	}
 	now := s.now().UTC().Truncate(time.Microsecond)
-	if err := prepareMarketAppend(&raw, principal, records, now, facts, zone, gathered.bid); err != nil {
-		return commissioner.Receipt{}, err
-	}
-	if err := commissioner.PrepareDraftAppend(&raw, records, now, facts, gathered.draft); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("check draft change: %w", commissioner.Refused(err))
-	}
-	before, plan, err := s.prepareRollover(ctx, raw, records, now)
+	before, plan, err := s.prepareCommissionerTrial(ctx, &raw, principal, records, now, facts, zone, gathered)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
@@ -130,7 +125,7 @@ func (s *Store) checkCommissionerCommand(raw commissioner.RawCommand, principal 
 		return role, &prior, nil
 	}
 	if err := s.checkAppend(raw, principal, records, facts); err != nil {
-		return "", nil, err
+		return role, nil, err
 	}
 	return role, nil, nil
 }
@@ -478,4 +473,17 @@ func prepareMarketAppend(raw *commissioner.RawCommand, principal string, records
 		return fmt.Errorf("check trade action: %w", commissioner.Refused(err))
 	}
 	return nil
+}
+
+// prepareCommissionerTrial prepares a private command copy with exactly the append decisions, without writing.
+func (s *Store) prepareCommissionerTrial(ctx context.Context, raw *commissioner.RawCommand, principal string,
+	records []commissioner.Record, now time.Time, facts nativecheck.Facts, zone *time.Location,
+	gathered appendFacts) (*commissioner.RolloverBefore, *commissioner.RolloverPlan, error) {
+	if err := prepareMarketAppend(raw, principal, records, now, facts, zone, gathered.bid); err != nil {
+		return nil, nil, err
+	}
+	if err := commissioner.PrepareDraftAppend(raw, records, now, facts, gathered.draft); err != nil {
+		return nil, nil, fmt.Errorf("check draft change: %w", commissioner.Refused(err))
+	}
+	return s.prepareRollover(ctx, *raw, records, now)
 }

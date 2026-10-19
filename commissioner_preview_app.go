@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
@@ -14,9 +17,10 @@ var commissionerPreviewRegistry string
 
 // TargetCommissionerPreview checks the execute body without recording the change.
 func (a *App) TargetCommissionerPreview(body string) (commissioner.Preview, error) {
-	raw, err := commissioner.DecodePreview(body)
+	raw, err := a.decodeCommissionerPreview(body)
 	if err != nil {
 		var refusal *commissioner.Refusal
+		err = commissioner.Refused(err)
 		words := err.Error()
 		if errors.As(err, &refusal) {
 			words = refusal.Reason()
@@ -38,9 +42,42 @@ func (a *App) TargetCommissionerPreview(body string) (commissioner.Preview, erro
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
 	defer cancel()
-	preview, err := a.history.PreviewCommissioner(ctx, raw, principal, a.commissionerAuthorizer, catalogue)
+	preview, err := a.history.PreviewCommissionerWithFacts(ctx, raw, principal, a.commissionerAuthorizer,
+		catalogue, a.nativeFacts(), a.ownerZone())
 	if err != nil {
 		return commissioner.Preview{}, fmt.Errorf("league preview: %w", err)
 	}
 	return preview, nil
+}
+
+// A seed preview accepts the exact TargetNativeSeed request, never client-supplied starting assets.
+func (a *App) decodeCommissionerPreview(body string) (commissioner.RawCommand, error) {
+	raw, err := commissioner.DecodePreview(body)
+	if err == nil {
+		if raw.Command == commissioner.NativeSeed {
+			return raw, fmt.Errorf("preview starting assets through the held-data request")
+		}
+		return raw, nil
+	}
+	if raw.Command != "" {
+		return raw, fmt.Errorf("decode preview: %w", err)
+	}
+	var input RawNativeSeedRequest
+	decoder := json.NewDecoder(bytes.NewBufferString(body))
+	decoder.DisallowUnknownFields()
+	if decodeErr := decoder.Decode(&input); decodeErr != nil {
+		return raw, fmt.Errorf("decode preview: %w", err)
+	}
+	if decodeErr := decoder.Decode(&struct{}{}); decodeErr != io.EOF {
+		return raw, fmt.Errorf("decode preview: %w", err)
+	}
+	if validateErr := input.Validate(); validateErr != nil {
+		return raw, validateErr
+	}
+	if readyErr := a.ready(); readyErr != nil {
+		return raw, readyErr
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	return a.nativeSeedCommand(ctx, input)
 }

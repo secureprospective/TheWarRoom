@@ -129,7 +129,7 @@ func assertPreviewAffects(t *testing.T, preview commissioner.Preview) {
 	t.Helper()
 	// These four registry rows govern roster limits, not four players or four franchises.
 	if preview.Affects.Count == nil || *preview.Affects.Count != 4 || len(preview.Affects.Readings) != 4 ||
-		preview.Affects.Words != "4 owner readings use this rule" {
+		preview.Affects.Words != "All 32 franchises; the league readings and ledger change" {
 		t.Fatalf("affected catalogue rows: %+v", preview.Affects)
 	}
 	if strings.Join(preview.Affects.Readings, ";") != "Rosters;Roster w/Stats;Submit Lineup;Drop Players" {
@@ -148,9 +148,9 @@ func TestCommissionerPreviewDoesNotBypassRequestChecks(t *testing.T) {
 	if _, err := app.TargetCommissionerExecute(body); err != nil {
 		t.Fatal(err)
 	}
-	for _, candidate := range []string{body, strings.Replace(body, `"max":70`, `"max":71`, 1)} {
+	for index, candidate := range []string{body, strings.Replace(body, `"max":70`, `"max":71`, 1)} {
 		preview, err := app.TargetCommissionerPreview(candidate)
-		if err != nil || len(preview.Blockers) != 1 {
+		if err != nil || len(preview.Blockers) != index {
 			t.Fatalf("used request must not offer another write: %+v %v", preview, err)
 		}
 	}

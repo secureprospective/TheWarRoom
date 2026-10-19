@@ -12,7 +12,23 @@ import (
 // CommandPreview describes the proposed change for a GM. The checks that may refuse it run elsewhere and
 // are added as blockers by the caller; a description is still returned when they refuse.
 func CommandPreview(raw RawCommand, records []Record, catalogue PreviewCatalogue, now time.Time) (Preview, error) {
+	preview, err := commandPreview(raw, records, catalogue, now)
+	if err != nil {
+		return preview, err
+	}
+	preview.Affects, err = PreviewAffectedFranchises(raw, records, now, preview.Affects)
+	return preview, err
+}
+
+func commandPreview(raw RawCommand, records []Record, catalogue PreviewCatalogue, now time.Time) (Preview, error) {
 	switch raw.Command {
+	case ContractActionSet:
+		field, value, err := raw.Args.ContractAction.ruleValue()
+		if err != nil {
+			return Preview{}, err
+		}
+		raw.Command, raw.Args = RulesSet, RawArgs{Field: string(field), Value: value}
+		return RulePreview(raw, records, catalogue, now)
 	case RulesSet:
 		return RulePreview(raw, records, catalogue, now)
 	case Create:
@@ -24,7 +40,7 @@ func CommandPreview(raw RawCommand, records []Record, catalogue PreviewCatalogue
 	case NoticePublish, NotePost:
 		return notePreview(raw, records, catalogue)
 	}
-	return Preview{}, fmt.Errorf("a preview is not available for this change yet")
+	return operationPreview(raw, records, catalogue, now)
 }
 
 const (
@@ -34,7 +50,7 @@ const (
 )
 
 func safeguardOf(raw RawCommand) (string, error) {
-	definition, err := raw.Definition()
+	definition, err := raw.EffectiveDefinition()
 	if err != nil {
 		return "", err
 	}

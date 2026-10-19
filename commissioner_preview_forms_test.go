@@ -81,7 +81,7 @@ func TestCommissionerPreviewDescribesARoleChangeAndRefusesOneThatChangesNothing(
 		preview.Fields[0].Before != "Does not hold the role" || preview.Fields[0].After != "Holds the role" ||
 		preview.Target.Name != "Preview league" || preview.Target.Version != 1 ||
 		preview.Affects.Count == nil || *preview.Affects.Count != 1 ||
-		preview.Affects.Words != "1 owner reading uses this rule" {
+		preview.Affects.Words != "All 32 franchises; the league readings and ledger change" {
 		t.Fatalf("grant preview: %+v", preview)
 	}
 	for _, tc := range []struct{ name, command, person, want string }{

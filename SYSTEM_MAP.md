@@ -842,3 +842,22 @@ cannot strand a made draft selection. `trade_reading.go` gives all seated owners
 frozen offered contract details and viewer-local times; expiry lapses an unaccepted offer at its instant.
 The Go-written fixture is `internal/commissioner/testdata/native-trades-wire.json`. No imported MFL reading
 or frontend screen is migrated.
+
+## Commissioner act previews
+
+`history.PreviewCommissionerWithFacts` uses the execute checks plus the shared
+`prepareCommissionerTrial` (waivers, bids, trades, draft and rollover), with the app's held player
+facts and owner zone. It holds a read-only ledger transaction and never appends a trial event.
+`commissioner/preview_operations.go` compares typed owner readings over a private trial ledger;
+`history/commissioner_preview_readings.go` adds held scores, queue decisions, results and standings.
+Ledger labels supply the proposed act; roster/contract/cap/pick, people, schedule, calendar and draft
+readings supply current values. Operational affected words name franchises; `affects.count` retains
+its existing reading-count meaning. Permission refusals return blockers only, never private fields.
+An already-recorded request previews its unchanged receipt, without a blocker or another write.
+
+Starting assets use **`TargetCommissionerPreview(JSON.stringify(seedRequest))`**, where `seedRequest`
+is the identical `{league, expected, request, reason}` sent to `TargetNativeSeed`. No `command` or
+`args` is sent for this case. Go captures the same held snapshot through `nativeSeedCommand`, including
+retry identity. No new Wails binding or client-supplied starting assets are needed. Every other act
+uses the normal execute command body. Controls A–E and G (except CM-055), plus the built bracket and
+advance commands (CM-046/047), are marked built; the rest of F keeps its prior flags.

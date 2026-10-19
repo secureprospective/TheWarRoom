@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // BidEnvironmentSource says where the NFL season stands and which franchises are in the playoffs when an
@@ -32,10 +33,11 @@ func (s *Store) bidEnvironmentFor(ctx context.Context, raw commissioner.RawComma
 
 // appendFacts is what the held files and the football environment add to the ledger when a change is checked.
 type appendFacts struct {
-	lineup commissioner.LineupFacts
-	stat   commissioner.StatFacts
-	bid    commissioner.BidEnvironment
-	draft  commissioner.DraftStandings
+	players nativecheck.Facts
+	lineup  commissioner.LineupFacts
+	stat    commissioner.StatFacts
+	bid     commissioner.BidEnvironment
+	draft   commissioner.DraftStandings
 }
 
 // appendFactsFor gathers a change's facts before the write begins; most commands need none.

@@ -127,7 +127,7 @@ func PrepareRollover(raw RawCommand, records []Record, now time.Time, champion .
 		return nil, nil, err
 	}
 	if plan.Blocked && !raw.Args.Rollover.DryRun {
-		return nil, nil, Refused(fmt.Errorf("the rollover is blocked. %s", strings.Join(plan.Reasons, " ")))
+		return before, &plan, Refused(fmt.Errorf("the rollover is blocked. %s", strings.Join(plan.Reasons, " ")))
 	}
 	return before, &plan, nil
 }

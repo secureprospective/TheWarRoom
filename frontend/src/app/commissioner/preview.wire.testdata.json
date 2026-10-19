@@ -23,7 +23,7 @@
         "Calendar summon/collapse from any screen"
       ],
       "count": 3,
-      "words": "3 owner readings use this rule"
+      "words": "All 32 franchises; the league readings and ledger change"
     },
     "blockers": [],
     "safeguard": "confirm"
@@ -53,7 +53,7 @@
         "Drop Players"
       ],
       "count": 4,
-      "words": "4 owner readings use this rule"
+      "words": "All 32 franchises; the league readings and ledger change"
     },
     "blockers": [],
     "safeguard": "hold"
@@ -83,7 +83,7 @@
         "Drop Players"
       ],
       "count": 4,
-      "words": "4 owner readings use this rule"
+      "words": "All 32 franchises; the league readings and ledger change"
     },
     "blockers": [],
     "safeguard": "reason"
@@ -113,7 +113,7 @@
         "Drop Players"
       ],
       "count": 4,
-      "words": "4 owner readings use this rule"
+      "words": "All 32 franchises; the league readings and ledger change"
     },
     "blockers": [
       "League version is 1; reread before changing it (expected 0)"

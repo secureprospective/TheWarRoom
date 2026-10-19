@@ -46,26 +46,18 @@ func controlGroups() []struct {
 	}
 }
 
-// partlyThere are rows that own rules a person can set today although the thing the row asks about is
-// not built. They are not built, and say what does work.
-func partlyThere() map[string]string {
-	return map[string]string{
-		"CM-015": "The number of regular season weeks and the schedule pattern can be set now.",
-		"CM-027": "The rollover date can be set now.",
-		"CM-039": "A recorded change can be undone now, from the ledger.",
-	}
-}
-
-// otherwiseBuilt are rows with a working screen that owns no rule: roles, the live draft, notices, league
-// notes, data refresh and the ledger.
+// otherwiseBuilt lists controls with recorded acts or app operations as well as rule settings.
 func otherwiseBuilt() []string {
-	return []string{"CM-021", "CM-043", "CM-044", "CM-045", "CM-052", "CM-053", "CM-054", "CM-056"}
+	return []string{"CM-015", "CM-018", "CM-019", "CM-020", "CM-021", "CM-022", "CM-026", "CM-027",
+		"CM-028", "CM-029", "CM-030", "CM-031", "CM-032", "CM-033", "CM-034", "CM-035", "CM-036", "CM-037",
+		"CM-038", "CM-039", "CM-042", "CM-043", "CM-044", "CM-045", "CM-046", "CM-047", "CM-052", "CM-053",
+		"CM-054", "CM-056"}
 }
 
 // builtNotes are what a person should know about a row that works, so it never promises more.
 func builtNotes() map[string]string {
 	return map[string]string{
-		"CM-043": "Work the live draft from Trade Floor › Draft room: skip, choose, add or change a pick, and pause or set the clock.",
+		"CM-043": "Draft room: skip, choose, add or change picks; pause or set the clock.",
 		"CM-044": "Restore a draft to an earlier point from Trade Floor › Draft room. Nothing is erased.",
 		"CM-045": "A draft closes itself at its last pick; the Draft room can close it sooner.",
 		"CM-051": "The app tells owners inside the app only. It sends no email and no messages.",
@@ -86,9 +78,6 @@ func ownedFields(control string) []ControlField {
 
 // controlBuilt says whether a person can do, today, what the row's question asks.
 func controlBuilt(id string, fields []ControlField) bool {
-	if _, partly := partlyThere()[id]; partly {
-		return false
-	}
 	return len(fields) > 0 || slices.Contains(otherwiseBuilt(), id)
 }
 
@@ -103,10 +92,7 @@ func ControlsReading() Controls {
 				continue
 			}
 			fields := ownedFields(row.ID)
-			note := partlyThere()[row.ID]
-			if note == "" {
-				note = builtNotes()[row.ID]
-			}
+			note := builtNotes()[row.ID]
 			group.Controls = append(group.Controls, ControlEntry{ID: row.ID, Built: controlBuilt(row.ID, fields),
 				Note: note, Fields: fields})
 		}
