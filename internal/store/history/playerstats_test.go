@@ -175,3 +175,22 @@ func TestPlayerWeekStatsScope(t *testing.T) {
 		t.Fatal("ignored cancelled reading")
 	}
 }
+
+func TestExactArchiveLookupExcludesSimilarURLs(t *testing.T) {
+	t.Parallel()
+	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
+	putStatBody(t, s, statBody(t, "244", true), "", t0())
+	putStatBody(t, s, statBody(t, "999", true), ".backup", t0().Add(time.Hour))
+	feed, _ := s.reg.Feed("stats_player_week")
+	calls := 0
+	found, err := s.ExactArchivedBodies(t.Context(), feed.URLFor(2025), func(url string, _ []byte, _ time.Time) bool {
+		calls++
+		if url != feed.URLFor(2025) {
+			t.Errorf("substring URL admitted: %s", url)
+		}
+		return false
+	})
+	if err != nil || found || calls != 1 {
+		t.Fatalf("exact archive: %d calls, found %v, %v", calls, found, err)
+	}
+}

@@ -28,7 +28,7 @@ func (s *Store) heldWeeklyFiles(ctx context.Context, season int,
 	wanted := feed.URLFor(season)
 	var parseErr error
 	var previous string
-	_, err := s.ArchivedBodies(ctx, wanted, func(fetchedURL string, body []byte, at time.Time) bool {
+	_, err := s.ExactArchivedBodies(ctx, wanted, func(fetchedURL string, body []byte, at time.Time) bool {
 		if fetchedURL != wanted {
 			return false
 		}
