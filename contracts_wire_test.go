@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"reflect"
 	"regexp"
+	"slices"
+	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -347,5 +350,43 @@ func TestContractsWireTwinsMatch(t *testing.T) {
 		if !bytes.Equal(want, got) {
 			t.Errorf("%s: wire twin encodes differently\n built %s\n wire  %s", c.name, want, got)
 		}
+	}
+}
+
+// TestContractsSimultaneousPlansLandOnce races two drafts of one contract Act and two what-if cuts of
+// one player: the plan-ledger and what-if locks still hold across the service calls, so exactly one of
+// each lands and the other reads the refusal.
+func TestContractsSimultaneousPlansLandOnce(t *testing.T) {
+	t.Parallel()
+	a := contractsWireApp(t, domain.PhaseOffseason)
+	act := RawContractAct{Mine: "0001", Action: "draft", Player: "0043", Intent: "contract.extend", Level: 1, Years: 2}
+	cut := RawWhatIfRequest{Mine: "0001", Action: "cut", Player: "0044"}
+	acts := make([]Reading[[]ContractActView], 2)
+	cuts := make([]Reading[WhatIfView], 2)
+	var wg sync.WaitGroup
+	for i := range 2 {
+		wg.Go(func() { acts[i] = a.TargetContractActs(act) })
+		wg.Go(func() { cuts[i] = a.TargetWhatIf(cut) })
+	}
+	wg.Wait()
+	landed, refused := 0, 0
+	for _, r := range acts {
+		switch {
+		case r.Status == ReadingOK && len(r.Value) == 1:
+			landed++
+		case r.AbsenceReason != nil && strings.Contains(*r.AbsenceReason, "is already an open plan in My moves"):
+			refused++
+		}
+	}
+	if landed != 1 || refused != 1 {
+		t.Fatalf("contract drafts: %d landed, %d refused: %+v", landed, refused, acts)
+	}
+	notices := []string{cuts[0].Value.Notice, cuts[1].Value.Notice}
+	slices.Sort(notices)
+	if notices[0] != "" || notices[1] != "what-if: player already removed; Undo first" {
+		t.Fatalf("what-if cuts: %q", notices)
+	}
+	if final := a.TargetWhatIf(RawWhatIfRequest{Mine: "0001", Action: "read"}); len(final.Value.Moves) != 1 {
+		t.Fatalf("what-if moves %+v", final.Value.Moves)
 	}
 }
