@@ -1,8 +1,10 @@
 # Quarantine
 
-Files the purge (2026-10-20, branch `session/purge`) judged stale but did not delete outright.
+Files the purge (2026-10-20, PRs #44–#47) judged stale but did not delete outright.
 Each file keeps its original path under `quarantine/`. Nothing here is built, tested or linked
 from live docs. Christopher reviews; whatever survives review moves back, the rest is deleted.
+The purge branches are deleted; every "recover from" commit below is on `main`. A bundle of all
+former branches is at `~/archive/2026-10-warroom-branches/` on the Beelink.
 
 ## Docs: process history (moved 2026-10-20)
 
@@ -35,7 +37,7 @@ Kept on purpose: `internal/store/history/replay_bench_test.go` (Block C replay f
 `*_live_test.go` feed checks (the only drift check against real MFL/CFBD/nflverse data), and files
 that mix opt-in and always-on tests.
 
-## Alpha harness UI (moved 2026-10-20, branch `session/purge-harness`)
+## Alpha harness UI (moved 2026-10-20, PR #45)
 
 The original Alpha UI, reached from the target shell's "Harness" button, and the Go bindings only
 it called. The target UI replaced every screen it had.
@@ -53,7 +55,7 @@ Go, under `go/` (whole files with no live code left; original content, bindings 
 - `leagueschedule_app.go` (`GetLeagueSchedule`), `m1_player_score_app.go` (`GetPlayerScore`),
   `rulebook_app.go` (`GetLeagueSetting`, `SetLeagueSettingOverride`), `transactions_feed_app.go` (`GetFeed`).
 
-Deleted from live files (recover them from git, `session/purge-tom`): `AppInfo` (`version.go`);
+Deleted from live files (recover them from git, `c16116c6` (main after PR #44; `git show c16116c6:<path>`)): `AppInfo` (`version.go`);
 `ExecuteTransaction`, `PreviewTransaction`, `GetCurrentPhase`, `runTransaction` and their DTOs
 (`transactions_app.go`); `GetCalendarEvents` (`transactions_calendar_app.go`); `GetRoster`,
 `GetFreeAgentPool`, `GetFranchises`, `GetLegalOps`, `capDeltaDTOs`, `resolveDirectory`
@@ -70,10 +72,10 @@ tiny-file count stays at its baseline.
 `ScoreLeague`, kept by this pass, went in the next one (below).
 
 To bring the harness back: move `frontend/src/` and the Go files back to their old paths, restore the
-deleted methods from `session/purge-tom`, run `make bindings`, and restore `TargetMount.tsx`,
+deleted methods from `c16116c6` (main after PR #44; `git show c16116c6:<path>`), run `make bindings`, and restore `TargetMount.tsx`,
 `state.ts` (`harness`), the two registry commands and the buttons from the same branch.
 
-## Layer 1–4 engine (moved 2026-10-20, branch `session/purge-engine`)
+## Layer 1–4 engine (moved 2026-10-20, PR #46)
 
 `ScoreLeague` was the only writer of the board run, and no screen called it once the harness left.
 Power rankings, Race, the pool, Lab and the draft reports read the model run, which
@@ -88,7 +90,7 @@ content:
   `capscaling.go` (L5). `internal/engine/pipeline_test.go` here is the original less five tests that
   stayed live in `internal/engine/decay_test.go` (`approxEq`, decay, cushion, tie order, peak ages).
 
-Deleted from live files (recover them from git, `session/purge-harness`): `ScoreLeague`,
+Deleted from live files (recover them from git, `9d16c9be` (main after PR #45; `git show 9d16c9be:<path>`)): `ScoreLeague`,
 `ScoreLeagueResult`, `proxyLabel` (`m1_app.go`); `runModel` (`model_app.go`, whose `runModelLocked`
 moved into `engine_refresh.go`); `ingestion.Share`, `ingestion.IntCell`, `model.CollegeMeasures`;
 the board-run read in source health (`healthInput.boardRun`, `missing`, the "Board running reduced"
@@ -104,10 +106,10 @@ Data and sources parameter editor lists, R7; the rubric math in it is unreached)
 
 To bring the engine back: move the `go/` paths above back (drop the `quarantine/go/` prefix), delete
 `engine.PeakLimit` or point composition at it, restore the deleted functions and the source-health
-board read from `session/purge-harness`, and run `make bindings`. The `rasFetchTimeout` and
+board read from `9d16c9be` (main after PR #45; `git show 9d16c9be:<path>`), and run `make bindings`. The `rasFetchTimeout` and
 `cfbdEnvVar` constants now live in `signals_app.go`; drop them from the restored `m1_scouting.go`.
 
-## Leftovers (moved 2026-10-20, branch `session/purge-leftovers`)
+## Leftovers (moved 2026-10-20, PR #47)
 
 What the engine pass kept but nothing reached. Under `go/`, original content unless noted.
 
@@ -131,7 +133,7 @@ To bring the rubric back: move the two files and their tests back, drop the type
 
 ### History's board-run store side
 
-Deleted from live files (recover them from git, `session/purge-engine`), not quarantined, since the
+Deleted from live files (recover them from git, `c7f39785` (main after PR #46; `git show c7f39785:<path>`)), not quarantined, since the
 files keep live code: `history.WriteRun`, `prepareRun`, `validScores`, `scoreArgs`, `insertScoreSQL`,
 `scoreCols`, `insertBoardRunSQL`, `runTable`, `Runs`, `RunScores`, `RunScore`, `scores`, the `Score`
 and `NewRun` types and the `RunBoard` / `RunRebalance` kinds (`internal/store/history/runs.go`).
@@ -144,12 +146,12 @@ triggers and the JSON-column migration, and existing databases keep their board-
 migration was added and no table dropped.
 
 With `engine.Result` unread, `internal/engine/types.go` had no live code left: it is under
-`go/internal/engine/types.go` as it was on `session/purge-engine` (`CushionGuard.Slow` included), and
+`go/internal/engine/types.go` as it was on `c7f39785` (main after PR #46; `git show c7f39785:<path>`) (`CushionGuard.Slow` included), and
 `TestTiebreakerRanksAbove` joined `TestCushionGuardSlow` in the quarantined `pipeline_test.go`. The
 package doc moved to `decay.go`.
 
 To bring the board run's store side back: restore `runs.go`, `modelruns.go` and
-`history_test.go` in `internal/store/history` from `session/purge-engine`, and move `types.go` back.
+`history_test.go` in `internal/store/history` from `c7f39785` (main after PR #46; `git show c7f39785:<path>`), and move `types.go` back.
 
 ### Kept on purpose
 
