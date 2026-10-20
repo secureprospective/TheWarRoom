@@ -37,9 +37,3 @@ func staleFreshness(fetchedAt time.Time, cause error) Freshness {
 		Note:      fmt.Sprintf("live fetch failed, showing last known data: %v", cause),
 	}
 }
-
-// localFreshness marks a result read only from SQLite. It is live: stored engine output is
-// the last scoring run's result, not stale data.
-func localFreshness() Freshness {
-	return Freshness{State: FreshLive, Note: "local data"}
-}

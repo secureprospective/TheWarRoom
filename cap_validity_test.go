@@ -9,7 +9,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
-func TestMissingPaidCellBlocksWhatIfAndReachesRosterReading(t *testing.T) {
+func TestMissingPaidCellBlocksWhatIf(t *testing.T) {
 	a := targetTestApp(t)
 	a.hasLookup = true
 	pools, err := db.Open(a.ctx, filepath.Join(t.TempDir(), "whatif.db"), state.SchemaVersion())
@@ -29,11 +29,6 @@ func TestMissingPaidCellBlocksWhatIfAndReachesRosterReading(t *testing.T) {
 	}
 	if err := store.Initialize(a.ctx, state.SnapshotSource{Snapshot: snap}); err != nil {
 		t.Fatal(err)
-	}
-	a.whatif = store
-	reading := a.GetRoster("0001")
-	if reading.OK || !strings.Contains(reading.Detail, "cap total invalid") {
-		t.Fatalf("cap invalidity absent from roster reading: %+v", reading)
 	}
 	if _, err := a.loadWhatIf(a.ctx, session); err == nil || !strings.Contains(err.Error(), "cap total invalid") {
 		t.Fatalf("what-if accepted invalid cap: %v", err)

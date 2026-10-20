@@ -196,7 +196,7 @@ func TestSourceHealthEventOnFailedManualRefresh(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.RefreshLeague()
+	a.TargetDataRefresh("league")
 	if events != 1 {
 		t.Fatal("failed refresh did not notify source health", events)
 	}
