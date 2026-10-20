@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -58,7 +57,7 @@ func (c *Client) doKeyed(ctx context.Context, req Request) (out Response, err er
 		return out, fmt.Errorf("mfl: execute keyed request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
-	body, err := io.ReadAll(resp.Body)
+	body, err := readBody(resp.Body)
 	if err != nil {
 		return out, fmt.Errorf("mfl: read keyed response: %w", err)
 	}
