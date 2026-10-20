@@ -3,7 +3,7 @@
 The recipe the Archive extraction followed (reorg PR 3). Wails keeps binding one `App`; a
 feature's root files shrink to adapters and its logic moves to `internal/app/<feature>/`.
 
-Shared view models live in `internal/app/season`, wording in `internal/app/report`. A feature
+Shared season snapshot/view lives in `internal/app/season`, and Race and Now both read it; wording lives in `internal/app/report`. A feature
 never imports a sibling; root adapters compose features through the shared contracts.
 
 ## Steps, one commit each
@@ -248,7 +248,7 @@ The native league extraction (reorg PR 12) added the owner side.
   using Now's existing helper rather than copying another feature's calculation. The service's
   `Snapshot`, `Held` and `Feed[T]` own no locks, timers, callbacks or goroutines.
 - A feature may already expose package-private construction to another feature. Keep a small
-  root facade until that consumer moves: Now delegates the shared season view to `race.View` inside its service; the root keeps only
+  root facade until that consumer moves: Now delegates the shared season view to `season.View` inside its service; the root keeps only
   the Race facade still used by integration tests. Remove obsolete helpers when the last production
   consumer moves, without changing the other feature's bindings. Retain test-only wrappers for
   unrelated root integration scenarios.

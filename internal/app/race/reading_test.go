@@ -11,22 +11,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/race/racetest"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
+	"github.com/secureprospective/TheWarRoom/internal/app/season/seasontest"
 	"github.com/secureprospective/TheWarRoom/internal/engine/race"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
 var raceHeldAt = time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC) //nolint:gochecknoglobals // a fixed test clock
 
-func held[T any](v T) Feed[T] {
-	return Feed[T]{Value: v, FetchedAt: raceHeldAt}
+func held[T any](v T) season.Feed[T] {
+	return season.Feed[T]{Value: v, FetchedAt: raceHeldAt}
 }
 
-func realRace(t *testing.T, year string) Snapshot {
-	d := racetest.Load(t, year)
-	return Snapshot{Held: Held{Weeks: held(d.Weeks), Brackets: held(d.Brackets), Standings: held(d.Standings)}, Config: d.Config, Lookup: d.Lookup, HasLookup: true, Team: "0001", Mine: "0001", Zone: time.UTC}
+func realRace(t *testing.T, year string) season.Snapshot {
+	d := seasontest.Load(t, year)
+	return season.Snapshot{Held: season.Held{Weeks: held(d.Weeks), Brackets: held(d.Brackets), Standings: held(d.Standings)}, Config: d.Config, Lookup: d.Lookup, HasLookup: true, Team: "0001", Mine: "0001", Zone: time.UTC}
 }
 
 // mflStandings is MFL's own standings export, the numbers the app's must equal.
@@ -37,7 +37,7 @@ func mflStandings(t *testing.T, year string) []map[string]string {
 			Franchise []map[string]string `json:"franchise"`
 		} `json:"leagueStandings"`
 	}
-	if err := json.Unmarshal([]byte(racetest.Sample(t, "leaguestandings", "leagueStandings-"+year+".json")), &env); err != nil {
+	if err := json.Unmarshal([]byte(seasontest.Sample(t, "leaguestandings", "leagueStandings-"+year+".json")), &env); err != nil {
 		t.Fatal(err)
 	}
 	return env.LeagueStandings.Franchise
@@ -45,9 +45,9 @@ func mflStandings(t *testing.T, year string) []map[string]string {
 
 func wlt(r race.Record) string { return fmt.Sprintf("%d-%d-%d", r.W, r.L, r.T) }
 
-func assertStandingsMatchMFL(t *testing.T, year string) View {
+func assertStandingsMatchMFL(t *testing.T, year string) season.View {
 	t.Helper()
-	v, err := NewView(realRace(t, year))
+	v, err := season.NewView(realRace(t, year))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func assertStandingsMatchMFL(t *testing.T, year string) View {
 			t.Fatal(s["id"])
 		}
 		got := []string{wlt(l.Overall), wlt(l.InDivision), wlt(l.InConference), wlt(l.AllPlay),
-			strings.ReplaceAll(scoreText(l.For), ",", ""), strings.ReplaceAll(scoreText(l.Against), ",", ""),
+			strings.ReplaceAll(report.ScoreText(l.For), ",", ""), strings.ReplaceAll(report.ScoreText(l.Against), ",", ""),
 			string(l.Streak.Result) + strconv.Itoa(l.Streak.Count)}
 		want := []string{s["h2hw"] + "-" + s["h2hl"] + "-" + s["h2ht"], s["divw"] + "-" + s["divl"] + "-" + s["divt"],
 			s["confw"] + "-" + s["confl"] + "-" + s["conft"], s["all_play_wlt"], s["pf"], s["pa"], s["strk"]}
@@ -132,7 +132,7 @@ func BracketSeeds(b leaguefeed.Bracket) []string {
 
 func TestRace2025SeedsAndOpeningRoundMatchMFLBrackets(t *testing.T) {
 	t.Parallel()
-	v, err := NewView(realRace(t, "2025"))
+	v, err := season.NewView(realRace(t, "2025"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func TestRace2025SeedsAndOpeningRoundMatchMFLBrackets(t *testing.T) {
 
 func TestRace2025BracketReportIsMFLsBracket(t *testing.T) {
 	t.Parallel()
-	v, err := NewView(realRace(t, "2025"))
+	v, err := season.NewView(realRace(t, "2025"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +200,7 @@ func TestRace2025BracketReportIsMFLsBracket(t *testing.T) {
 
 func TestRace2025TiebreakersShowEachStep(t *testing.T) {
 	t.Parallel()
-	v, err := NewView(realRace(t, "2025"))
+	v, err := season.NewView(realRace(t, "2025"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -236,7 +236,7 @@ func TestRace2025TiebreakersShowEachStep(t *testing.T) {
 // MFL's points for, less the +3 home-field points MFL adds to ten 2025 playoff scores.
 func TestRaceStarterPointsAddUpToPointsFor(t *testing.T) {
 	t.Parallel()
-	v, err := NewView(realRace(t, "2025"))
+	v, err := season.NewView(realRace(t, "2025"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -261,7 +261,7 @@ func TestRaceStarterPointsAddUpToPointsFor(t *testing.T) {
 					positions += hundredths(cell)
 				}
 				if positions != hundredths(row.Cells[1]) || int64(l.For)-positions < 0 || (int64(l.For)-positions)%300 != 0 {
-					t.Fatal(row.Cells, scoreText(l.For))
+					t.Fatal(row.Cells, report.ScoreText(l.For))
 				}
 				gap += int64(l.For) - positions
 			}
@@ -275,11 +275,11 @@ func TestRaceStarterPointsAddUpToPointsFor(t *testing.T) {
 func TestRaceChoicesAreCheckedInGo(t *testing.T) {
 	t.Parallel()
 	in := realRace(t, "2026")
-	for name, change := range map[string]func(*Snapshot){
-		"unscored week": func(in *Snapshot) { in.Week = 4 },
-		"unknown week":  func(in *Snapshot) { in.Week = 40 },
-		"unknown team":  func(in *Snapshot) { in.Team = "0099" },
-		"unknown mine":  func(in *Snapshot) { in.Mine = "x" },
+	for name, change := range map[string]func(*season.Snapshot){
+		"unscored week": func(in *season.Snapshot) { in.Week = 4 },
+		"unknown week":  func(in *season.Snapshot) { in.Week = 40 },
+		"unknown team":  func(in *season.Snapshot) { in.Team = "0099" },
+		"unknown mine":  func(in *season.Snapshot) { in.Mine = "x" },
 	} {
 		bad := in
 		change(&bad)
@@ -343,7 +343,7 @@ func TestRaceRowsNeverShowIDs(t *testing.T) {
 func TestRaceMissingFeedsAreLabelledNotBlank(t *testing.T) {
 	t.Parallel()
 	in := realRace(t, "2026")
-	in.Held = Held{}
+	in.Held = season.Held{}
 	in.Config.StandingsSort = ""
 	board, err := Build(in)
 	if err != nil {
@@ -355,7 +355,7 @@ func TestRaceMissingFeedsAreLabelledNotBlank(t *testing.T) {
 		}
 	}
 	in = realRace(t, "2026")
-	in.Held.Brackets = Feed[[]leaguefeed.Bracket]{}
+	in.Held.Brackets = season.Feed[[]leaguefeed.Bracket]{}
 	in.Config.StandingsSort = ""
 	board, err = Build(in)
 	if err != nil {
@@ -376,7 +376,7 @@ func TestRaceMissingFeedsAreLabelledNotBlank(t *testing.T) {
 
 func TestRace2026BubbleAndUnseededBrackets(t *testing.T) {
 	t.Parallel()
-	v, err := NewView(realRace(t, "2026"))
+	v, err := season.NewView(realRace(t, "2026"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -398,7 +398,7 @@ func TestRace2026BubbleAndUnseededBrackets(t *testing.T) {
 
 func TestRaceWeeklyPointsShareOneScale(t *testing.T) {
 	t.Parallel()
-	v, err := NewView(realRace(t, "2025"))
+	v, err := season.NewView(realRace(t, "2025"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -420,14 +420,14 @@ func TestRaceWeeklyPointsShareOneScale(t *testing.T) {
 	}
 }
 
-func testPower() season.PowerRankingsResult { return racetest.Power() }
+func testPower() season.PowerRankingsResult { return seasontest.Power() }
 
 func TestRacePowerRankingsNameTheBlend(t *testing.T) {
 	t.Parallel()
 	in := realRace(t, "2026")
 	in.Held.Power = map[string]season.PowerRankingsResult{season.ViewSeason: testPower(),
 		season.ViewFranchise: {OK: true, View: season.ViewFranchise, AgeWeight: 0.5, ModelRunID: 3, AggMode: "sum", Rows: []season.PowerRow{}}}
-	v, err := NewView(in)
+	v, err := season.NewView(in)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -443,7 +443,7 @@ func TestRacePowerRankingsNameTheBlend(t *testing.T) {
 		t.Fatal(franchise.Status, franchise.Note)
 	}
 	in.Held.Power = nil
-	v, _ = NewView(in)
+	v, _ = season.NewView(in)
 	if r := v.Power(season.ViewSeason); r.Status != "failed" {
 		t.Fatal(r.Status)
 	}

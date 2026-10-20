@@ -1,33 +1,33 @@
 package now
 
 import (
-	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/engine/race"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
-// raceView keeps Now's existing season-view seam while construction belongs to Race.
+// raceView keeps Now's existing season-view seam while construction belongs to season.
 type raceView struct {
 	names   map[string]string
-	service raceapp.View
-	in      raceapp.Snapshot
+	service season.View
+	in      season.Snapshot
 	table   race.Table
 	weeks   []leaguefeed.WeekResult
 	week    int
 	team    string
 }
 
-func newRaceView(in raceapp.Snapshot) (raceView, error) {
-	v, err := raceapp.NewView(in)
+func newRaceView(in season.Snapshot) (raceView, error) {
+	v, err := season.NewView(in)
 	return raceView{names: v.Names, service: v, in: in, table: v.Table, weeks: v.Weeks, week: v.Week, team: v.Team}, err //nolint:wrapcheck // preserve race validation text
 }
-func (v raceView) view() raceapp.View          { s := v.service; s.Week = v.week; s.Team = v.team; return s }
-func weekScored(w leaguefeed.WeekResult) bool  { return raceapp.WeekScored(w) }
-func weekLabel(w leaguefeed.WeekResult) string { return raceapp.WeekLabel(w) }
+func (v raceView) view() season.View           { s := v.service; s.Week = v.week; s.Team = v.team; return s }
+func weekScored(w leaguefeed.WeekResult) bool  { return season.WeekScored(w) }
+func weekLabel(w leaguefeed.WeekResult) string { return season.WeekLabel(w) }
 func findGame(w leaguefeed.WeekResult, team string) (leaguefeed.Game, bool) {
-	return raceapp.FindGame(w, team)
+	return season.FindGame(w, team)
 }
 func scoreText(p leaguefeed.Points) string { return report.ScoreText(p) }
 func (v raceView) name(id string) string   { return v.view().Name(id) }

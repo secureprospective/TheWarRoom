@@ -3,7 +3,8 @@ package main
 import (
 	"time"
 
-	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
@@ -24,7 +25,7 @@ func (a *App) nowReadInput(week, reportWeek int, mine string) nowapp.Snapshot {
 	for k, v := range a.now.firsts.weeks {
 		firsts[k] = nowapp.FirstScore{At: v.at, Week: v.week}
 	}
-	in := nowapp.Snapshot{Race: raceapp.Snapshot{Held: raceapp.Held{Weeks: raceFeed(a.race.weeks), Brackets: raceFeed(a.race.brackets), Standings: raceFeed(a.race.standings)}}, Held: nowapp.Held{Schedules: schedules, Byes: nowFeed(a.now.byes), Firsts: nowapp.FirstScores{Weeks: firsts, Copies: a.now.firsts.copies}}, Live: nowFeed(a.seasonLineups), Projections: nowFeed(projections), At: a.timeNow(), Current: current, Week: week, ReportWeek: reportWeek}
+	in := nowapp.Snapshot{Race: season.Snapshot{Held: season.Held{Weeks: raceFeed(a.race.weeks), Brackets: raceFeed(a.race.brackets), Standings: raceFeed(a.race.standings)}}, Held: nowapp.Held{Schedules: schedules, Byes: nowFeed(a.now.byes), Firsts: nowapp.FirstScores{Weeks: firsts, Copies: a.now.firsts.copies}}, Live: nowFeed(a.seasonLineups), Projections: nowFeed(projections), At: a.timeNow(), Current: current, Week: week, ReportWeek: reportWeek}
 	a.seasonMu.Unlock()
 	a.lookupMu.Lock()
 	in.Race.Lookup, in.Race.HasLookup = a.lookup, a.hasLookup

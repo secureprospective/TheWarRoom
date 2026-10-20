@@ -42,7 +42,7 @@ type raceInput struct {
 	hasLookup    bool
 }
 
-func (in raceInput) snapshot() raceapp.Snapshot {
+func (in raceInput) snapshot() season.Snapshot {
 	power := make(map[string]season.PowerRankingsResult, len(in.held.power))
 	for key, p := range in.held.power {
 		rows := make([]season.PowerRow, len(p.Rows))
@@ -57,10 +57,10 @@ func (in raceInput) snapshot() raceapp.Snapshot {
 			liveWeeks[w.Week] = liveWeek(in.live.value, w)
 		}
 	}
-	return raceapp.Snapshot{LiveWeeks: liveWeeks, Held: raceapp.Held{Weeks: raceFeed(in.held.weeks), Brackets: raceFeed(in.held.brackets), Standings: raceFeed(in.held.standings), Power: power}, Live: raceFeed(in.live), LiveUnplayed: in.liveUnplayed, Config: in.config, Lookup: in.lookup, HasLookup: in.hasLookup, Week: in.week, Team: in.team, Mine: in.mine, Zone: in.zone}
+	return season.Snapshot{LiveWeeks: liveWeeks, Held: season.Held{Weeks: raceFeed(in.held.weeks), Brackets: raceFeed(in.held.brackets), Standings: raceFeed(in.held.standings), Power: power}, Live: raceFeed(in.live), LiveUnplayed: in.liveUnplayed, Config: in.config, Lookup: in.lookup, HasLookup: in.hasLookup, Week: in.week, Team: in.team, Mine: in.mine, Zone: in.zone}
 }
-func raceFeed[T any](h heldSeasonFeed[T]) raceapp.Feed[T] {
-	return raceapp.Feed[T]{Value: h.value, FetchedAt: h.fetchedAt, RefreshError: h.refreshError, ReadPending: h.readPending}
+func raceFeed[T any](h heldSeasonFeed[T]) season.Feed[T] {
+	return season.Feed[T]{Value: h.value, FetchedAt: h.fetchedAt, RefreshError: h.refreshError, ReadPending: h.readPending}
 }
 func buildRace(in raceInput) (RaceBoard, error) {
 	b, err := raceapp.Build(in.snapshot())
@@ -70,10 +70,10 @@ func wireRace(b raceapp.Board) RaceBoard {
 	return RaceBoard{Standings: wireReport(b.Standings), Board: wireBoard(b.Board), Week: b.Week, Weeks: wireChoices(b.Weeks), Team: b.Team, Teams: wireChoices(b.Teams)}
 }
 
-// raceView keeps Now's existing season-view seam while construction belongs to Race.
+// raceView keeps Now's existing season-view seam while construction belongs to season.
 type raceView struct {
 	names   map[string]string
-	service raceapp.View
+	service season.View
 	in      raceInput
 	table   race.Table
 	weeks   []leaguefeed.WeekResult
@@ -82,13 +82,13 @@ type raceView struct {
 }
 
 func newRaceView(in raceInput) (raceView, error) {
-	v, err := raceapp.NewView(in.snapshot())
+	v, err := season.NewView(in.snapshot())
 	return raceView{names: v.Names, service: v, in: in, table: v.Table, weeks: v.Weeks, week: v.Week, team: v.Team}, err //nolint:wrapcheck // preserve race validation text
 }
-func (v raceView) view() raceapp.View         { s := v.service; s.Week = v.week; s.Team = v.team; return s }
-func weekScored(w leaguefeed.WeekResult) bool { return raceapp.WeekScored(w) }
+func (v raceView) view() season.View          { s := v.service; s.Week = v.week; s.Team = v.team; return s }
+func weekScored(w leaguefeed.WeekResult) bool { return season.WeekScored(w) }
 func findGame(w leaguefeed.WeekResult, team string) (leaguefeed.Game, bool) {
-	return raceapp.FindGame(w, team)
+	return season.FindGame(w, team)
 }
 func (v raceView) name(id string) string  { return v.view().Name(id) }
 func (v raceView) scheduleByTeam() Report { return wireReport(v.view().ScheduleByTeam()) }

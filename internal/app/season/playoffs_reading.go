@@ -1,4 +1,4 @@
-package race
+package season
 
 import (
 	"cmp"

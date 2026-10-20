@@ -4,7 +4,8 @@ package now
 import (
 	"time"
 
-	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
@@ -37,7 +38,7 @@ type FirstScore struct {
 
 // Snapshot has no references to root locks, refreshers or scheduling state.
 type Snapshot struct {
-	Race        raceapp.Snapshot
+	Race        season.Snapshot
 	Held        Held
 	Live        Feed[leaguefeed.Lineups]
 	Projections Feed[[]marketfeeds.Feed]

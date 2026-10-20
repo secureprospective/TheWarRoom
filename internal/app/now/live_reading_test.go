@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/race/racetest"
+	"github.com/secureprospective/TheWarRoom/internal/app/season/seasontest"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
@@ -90,7 +90,7 @@ func TestMatchupStartersExcludeBench(t *testing.T) {
 }
 
 func liveFixture(t *testing.T, name string) []byte {
-	return []byte(racetest.Sample(t, "livegame", name+".json"))
+	return []byte(seasontest.Sample(t, "livegame", name+".json"))
 }
 func TestWeekSpineNewestFirstMarkedAndCounted(t *testing.T) {
 	t.Parallel()

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
-	"github.com/secureprospective/TheWarRoom/internal/app/race/racetest"
+	"github.com/secureprospective/TheWarRoom/internal/app/season/seasontest"
 	"github.com/secureprospective/TheWarRoom/internal/engine/race"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
@@ -19,10 +19,10 @@ import (
 var raceHeldAt = time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC) //nolint:gochecknoglobals // fixed fixture clock
 func held[T any](v T) heldSeasonFeed[T]                         { return heldSeasonFeed[T]{value: v, fetchedAt: raceHeldAt} }
 func realRace(t *testing.T, year string) raceInput {
-	d := racetest.Load(t, year)
+	d := seasontest.Load(t, year)
 	return raceInput{held: raceHeld{weeks: held(d.Weeks), brackets: held(d.Brackets), standings: held(d.Standings)}, config: d.Config, lookup: d.Lookup, hasLookup: true, team: "0001", mine: "0001", zone: time.UTC}
 }
-func testPower() PowerRankingsResult { return wirePower(racetest.Power()) }
+func testPower() PowerRankingsResult { return wirePower(seasontest.Power()) }
 func TestRaceBindingReadsHeldAndRefreshFallsBack(t *testing.T) {
 	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)

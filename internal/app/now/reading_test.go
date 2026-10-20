@@ -13,10 +13,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/now/nowtest"
-	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
-	"github.com/secureprospective/TheWarRoom/internal/app/race/racetest"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/app/season/seasontest"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livescoring"
@@ -326,7 +327,7 @@ func TestNowWeekIsCheckedInGo(t *testing.T) {
 
 func TestNowUnscoredWeekShowsHeldLiveScores(t *testing.T) {
 	t.Parallel()
-	raw, err := livescoring.Parse([]byte(racetest.Sample(t, "livescoring", "liveScoring-w5.json")))
+	raw, err := livescoring.Parse([]byte(seasontest.Sample(t, "livescoring", "liveScoring-w5.json")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -652,9 +653,9 @@ func TestPulseByeAndNotStartedWeek(t *testing.T) {
 
 func fixtureAt() time.Time    { return time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC) }
 func held[T any](v T) Feed[T] { return Feed[T]{Value: v, FetchedAt: fixtureAt()} }
-func realRace(t *testing.T, year string) raceapp.Snapshot {
-	d := racetest.Load(t, year)
-	return raceapp.Snapshot{Held: raceapp.Held{Weeks: raceapp.Feed[[]leaguefeed.WeekResult]{Value: d.Weeks, FetchedAt: fixtureAt()}, Brackets: raceapp.Feed[[]leaguefeed.Bracket]{Value: d.Brackets, FetchedAt: fixtureAt()}, Standings: raceapp.Feed[[]leaguestandings.RawStanding]{Value: d.Standings, FetchedAt: fixtureAt()}}, Config: d.Config, Lookup: d.Lookup, HasLookup: true, Team: "0001", Mine: "0001", Zone: time.UTC}
+func realRace(t *testing.T, year string) season.Snapshot {
+	d := seasontest.Load(t, year)
+	return season.Snapshot{Held: season.Held{Weeks: season.Feed[[]leaguefeed.WeekResult]{Value: d.Weeks, FetchedAt: fixtureAt()}, Brackets: season.Feed[[]leaguefeed.Bracket]{Value: d.Brackets, FetchedAt: fixtureAt()}, Standings: season.Feed[[]leaguestandings.RawStanding]{Value: d.Standings, FetchedAt: fixtureAt()}}, Config: d.Config, Lookup: d.Lookup, HasLookup: true, Team: "0001", Mine: "0001", Zone: time.UTC}
 }
 func realNow(t *testing.T, week int) Snapshot {
 	d := nowtest.Load(t)
