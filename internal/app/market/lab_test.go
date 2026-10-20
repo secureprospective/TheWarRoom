@@ -67,7 +67,7 @@ func TestMarketListsEngineParity(t *testing.T) {
 		t.Fatal("empty wire arrays narrowed scope")
 	}
 	winter := a.Lists(Scope{From: 2017, To: 2026, Phases: []string{"winter"}})
-	if winter.Status != report.Thin || winter.Count == 0 {
+	if winter.Status != report.ReadingThin || winter.Count == 0 {
 		t.Fatal("stretch scope ignored")
 	}
 }
@@ -126,7 +126,7 @@ func TestAssetProfileEngineParityAndStates(t *testing.T) {
 	got := a.Profile(raw.Scope, raw.Kind)
 	s := LabScope(raw.Scope)
 	want := lab.AssetProfile(d, s, raw.Kind, lab.StretchPrices(d, s, Phases()))
-	if got.Status != report.OK || !reflect.DeepEqual(got.Value.Sections, profileSections(want, profileDeliveryCount(d, s, raw.Kind))) {
+	if got.Status != report.ReadingOK || !reflect.DeepEqual(got.Value.Sections, profileSections(want, profileDeliveryCount(d, s, raw.Kind))) {
 		t.Fatal("profile differs from engine")
 	}
 	if len(got.Value.Sections) != 5 {
@@ -139,7 +139,7 @@ func TestAssetProfileEngineParityAndStates(t *testing.T) {
 		}
 	}
 	thin := a.Profile(Scope{From: 2100, To: 2101}, "LB")
-	if thin.Status != report.Thin || thin.AbsenceReason == nil || len(thin.Value.Sections) != 0 {
+	if thin.Status != report.ReadingThin || thin.AbsenceReason == nil || len(thin.Value.Sections) != 0 {
 		t.Fatal("thin profile invented data")
 	}
 	for _, bad := range []asset{{Scope: raw.Scope, Kind: "unknown"}, {Scope: raw.Scope, Kind: "LB:prime"}, {Scope: raw.Scope, Kind: "pick4:next"}} {
@@ -149,7 +149,7 @@ func TestAssetProfileEngineParityAndStates(t *testing.T) {
 	}
 	raw.Scope.ByAge = true
 	raw.Kind = "LB:prime"
-	if ValidateAsset(raw.Scope, raw.Kind) != nil || a.Profile(raw.Scope, raw.Kind).Status != report.OK {
+	if ValidateAsset(raw.Scope, raw.Kind) != nil || a.Profile(raw.Scope, raw.Kind).Status != report.ReadingOK {
 		t.Fatal("valid age profile rejected")
 	}
 }

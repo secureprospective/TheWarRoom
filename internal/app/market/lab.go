@@ -139,17 +139,17 @@ func RangeOf(r *lab.Interval) *report.Range {
 // FailedMarket is the reading of a market that could not be read, saying why.
 func FailedMarket(err error) report.Reading[lab.Market] {
 	reason := err.Error()
-	return report.Reading[lab.Market]{Status: report.Failed, AbsenceReason: &reason, Threshold: lab.MinWhole, Method: "ridge market fit; frozen compiled facts", InputSHA: lab.DataSHA}
+	return report.Reading[lab.Market]{Status: report.ReadingFailed, AbsenceReason: &reason, Threshold: lab.MinWhole, Method: "ridge market fit; frozen compiled facts", InputSHA: lab.DataSHA}
 }
 
 // Market is the league market for a scope, with the evidence it rests on; thin below 80 trades.
 func (l Lab) Market(s lab.Scope) report.Reading[lab.Market] {
 	d := l.Data
 	value := lab.LeagueMarket(d, s)
-	r := report.Reading[lab.Market]{Sourced: snapshot.Sourced[lab.Market]{Value: value, Provenance: snapshot.Provenance{Source: "Lab compiled facts sha256:" + lab.DataSHA, Kind: "archive", Freshness: domain.Freshness{State: domain.FreshStale, FetchedAt: d.Built, Note: "Frozen historical input; not current league truth"}}}, Status: report.OK, Count: value.Trades, Threshold: lab.MinWhole, Baseline: "Median traded position or pick cost per delivered win; age splits keep this yardstick", Cutoff: d.ArchiveThrough, Method: "ridge least-squares with partial-pivot Gauss and sandwich covariance", InputSHA: lab.DataSHA, BuildStamp: l.Stamp, HowCounted: "Valued two-sided trades in the selected seasons and league-year stretches. Prices are anchored to a next-draft first-round pick. At least 80 trades for the whole view, 60 per half or window, and 8 delivery records with at least 0.5 forecast wins. Delivered wins are compared with the forecast at trade time. Ranges carry price and delivery uncertainty. The going rate is the asset-count-weighted median across positions and picks, never a live quote."}
+	r := report.Reading[lab.Market]{Sourced: snapshot.Sourced[lab.Market]{Value: value, Provenance: snapshot.Provenance{Source: "Lab compiled facts sha256:" + lab.DataSHA, Kind: "archive", Freshness: domain.Freshness{State: domain.FreshStale, FetchedAt: d.Built, Note: "Frozen historical input; not current league truth"}}}, Status: report.ReadingOK, Count: value.Trades, Threshold: lab.MinWhole, Baseline: "Median traded position or pick cost per delivered win; age splits keep this yardstick", Cutoff: d.ArchiveThrough, Method: "ridge least-squares with partial-pivot Gauss and sandwich covariance", InputSHA: lab.DataSHA, BuildStamp: l.Stamp, HowCounted: "Valued two-sided trades in the selected seasons and league-year stretches. Prices are anchored to a next-draft first-round pick. At least 80 trades for the whole view, 60 per half or window, and 8 delivery records with at least 0.5 forecast wins. Delivered wins are compared with the forecast at trade time. Ranges carry price and delivery uncertainty. The going rate is the asset-count-weighted median across positions and picks, never a live quote."}
 	if value.Rows == nil {
 		reason := "Fewer than 80 valued trades in this scope"
-		r.Status = report.Thin
+		r.Status = report.ReadingThin
 		r.AbsenceReason = &reason
 	}
 	return r
@@ -157,9 +157,9 @@ func (l Lab) Market(s lab.Scope) report.Reading[lab.Market] {
 
 func (l Lab) surfaceReading(raw Scope, value Surface, count int, reason string) report.Reading[Surface] {
 	base := l.Market(LabScope(raw))
-	r := report.Reading[Surface]{Sourced: snapshot.Sourced[Surface]{Value: value, Provenance: base.Provenance}, Status: report.OK, Count: count, Threshold: lab.MinWhole, Baseline: base.Baseline, Cutoff: base.Cutoff, Method: base.Method, InputSHA: base.InputSHA, BuildStamp: base.BuildStamp, HowCounted: base.HowCounted}
+	r := report.Reading[Surface]{Sourced: snapshot.Sourced[Surface]{Value: value, Provenance: base.Provenance}, Status: report.ReadingOK, Count: count, Threshold: lab.MinWhole, Baseline: base.Baseline, Cutoff: base.Cutoff, Method: base.Method, InputSHA: base.InputSHA, BuildStamp: base.BuildStamp, HowCounted: base.HowCounted}
 	if reason != "" {
-		r.Status = report.Thin
+		r.Status = report.ReadingThin
 		r.AbsenceReason = &reason
 	}
 	return r
