@@ -1,0 +1,23 @@
+{
+  "ok": true,
+  "error": "",
+  "label": "",
+  "season": 2026,
+  "view": "franchise",
+  "weight": 1,
+  "weightAuto": false,
+  "ageWeight": 0.5,
+  "modelRunID": 0,
+  "previousRunID": 0,
+  "aggMode": "sum",
+  "starterN": 0,
+  "freshness": {
+    "state": "",
+    "fetchedAt": "",
+    "note": ""
+  },
+  "performance": "",
+  "weeksScored": 3,
+  "seasonWeeks": 0,
+  "rows": []
+}
