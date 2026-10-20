@@ -1,0 +1,98 @@
+{
+ "": [
+  {
+   "label": "Projected points",
+   "text": "—",
+   "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL does not list this player.",
+   "range": null
+  },
+  {
+   "label": "MFL rank · weekly change",
+   "text": "—",
+   "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL does not list this player.",
+   "range": null
+  },
+  {
+   "label": "ADP · min–max pick",
+   "text": "—",
+   "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league · MFL does not list this player.",
+   "range": null
+  },
+  {
+   "label": "AAV · min–max dollars on MFL’s $1,000 scale",
+   "text": "—",
+   "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league · MFL does not list this player.",
+   "range": null
+  }
+ ],
+ "13589": [
+  {
+   "label": "Projected points",
+   "text": "32.21",
+   "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring",
+   "range": null
+  },
+  {
+   "label": "MFL rank · weekly change",
+   "text": "—",
+   "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL does not list this player.",
+   "range": null
+  },
+  {
+   "label": "ADP · min–max pick",
+   "text": "Pick 6.9 · picks 1–94",
+   "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league",
+   "range": {
+    "max": 155,
+    "value": 6.88,
+    "lo": 1,
+    "hi": 94,
+    "text": "Pick 6.9 · picks 1–94"
+   }
+  },
+  {
+   "label": "AAV · min–max dollars on MFL’s $1,000 scale",
+   "text": "—",
+   "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league · MFL does not list this player.",
+   "range": null
+  }
+ ],
+ "16162": [
+  {
+   "label": "Projected points",
+   "text": "—",
+   "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL does not list this player.",
+   "range": null
+  },
+  {
+   "label": "MFL rank · weekly change",
+   "text": "1 · No change",
+   "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM",
+   "range": null
+  },
+  {
+   "label": "ADP · min–max pick",
+   "text": "Pick 1.9 · picks 1–34",
+   "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league",
+   "range": {
+    "max": 155,
+    "value": 1.85,
+    "lo": 1,
+    "hi": 34,
+    "text": "Pick 1.9 · picks 1–34"
+   }
+  },
+  {
+   "label": "AAV · min–max dollars on MFL’s $1,000 scale",
+   "text": "$30.1 of a $1,000 league pool · $3.4–$113.6",
+   "reason": "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league",
+   "range": {
+    "max": 113.64,
+    "value": 30.1,
+    "lo": 3.44,
+    "hi": 113.64,
+    "text": "$30.1 of a $1,000 league pool · $3.4–$113.6"
+   }
+  }
+ ]
+}

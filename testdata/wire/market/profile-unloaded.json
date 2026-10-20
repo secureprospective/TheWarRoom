@@ -1,0 +1,25 @@
+{
+ "value": {
+  "summary": "",
+  "sections": null
+ },
+ "provenance": {
+  "source": "",
+  "freshness": {
+   "state": "",
+   "fetchedAt": "",
+   "note": ""
+  },
+  "kind": ""
+ },
+ "status": "failed",
+ "absenceReason": "fingerprint mismatch",
+ "count": 0,
+ "threshold": 80,
+ "baseline": "",
+ "cutoff": "",
+ "method": "ridge market fit; frozen compiled facts",
+ "inputSHA": "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
+ "buildStamp": "",
+ "howCounted": ""
+}

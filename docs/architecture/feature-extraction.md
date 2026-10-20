@@ -11,6 +11,8 @@ feature's root files shrink to adapters and its logic moves to `internal/app/<fe
    before anything moves; it must pass unchanged after every later step. Keep clocks and the
    time zone out of the goldens: call bound methods on a fresh app and build held states in UTC.
    A new root test file counts against the root ratchet until the move deletes emptied files.
+   Compare with the shared `checkGolden(t, feature, name, v)` (`draft_wire_test.go`), not a new
+   copy; sample large fixtures (a dozen players per feed) so each golden stays reviewable.
 2. **Shared types.** Reports are built as `internal/app/report` values (`report.Board`,
    `report.Report`, `report.Row`, `report.Choice`, `report.Cells`, `report.ScoreText`). Add what
    the feature needs there; never change a field name or JSON tag. A root helper the service
@@ -20,7 +22,9 @@ feature's root files shrink to adapters and its logic moves to `internal/app/<fe
 3. **Move the construction.** `git mv` the reading files into `internal/app/<feature>/` so review
    sees renames, then change only the package, the type names and the exported entry point
    (`archive.Build`). Implementation tests move in the same commit, because they call unexported
-   helpers that no longer exist at root.
+   helpers that no longer exist at root. Git's rename detection is by similarity, so a file whose
+   identifiers all change (Market's `heldSeasonFeed` fields becoming `market.Held`) shows as a
+   delete and an add; say so in the commit message rather than claiming a rename.
 4. **Move the read.** Data access becomes a function that takes its dependencies explicitly: a
    small interface over the store (`archive.History`), a `Source` struct of names and readers,
    and the value the caller already holds. No globals, no goroutines, no opening databases. What
@@ -42,6 +46,14 @@ feature's root files shrink to adapters and its logic moves to `internal/app/<fe
   archive snapshot, under `factsMu`). The caller passes it in and stores what comes back.
 - Anything that reads another feature's held state (`archiveOpponent` reads the season feeds
   under `seasonMu`). It moves when that state has one owner, not before.
+- **Shared wire envelopes.** `Reading[T]` and its statuses, used by many features, stay at root;
+  the service twin is `report.Reading[T]` and `wireReading(r, convert)` maps one to the other. A
+  request type such as `RawMarketScope` stays too; its service twin (`market.Scope`) has the
+  same fields in the same order, so `market.Scope(raw)` converts it directly, and the root
+  `Validate` delegates.
+- A non-wire root type other features use (`assetModel`, `dynastyValue`) may become an alias of
+  the service type, so callers keep compiling; its interface methods become exported, and every
+  implementation (test fakes included) changes in the same commit.
 - Code built on another feature's wire types that have no shared contract yet (the Draft Lab
   returns `Reading[MarketSurface]` through Market's helpers). It moves after that feature's
   extraction adds the contract; twins written early would be copies the later move must undo.
@@ -72,6 +84,12 @@ feature's root files shrink to adapters and its logic moves to `internal/app/<fe
 - **Parallel lanes.** The pre-commit hook runs golangci-lint, which refuses to start while
   another lane's lint holds its lock ("parallel golangci-lint is running"). A private
   `GOLANGCI_LINT_CACHE` alone did not clear it; a private `TMPDIR` as well did.
+- **Staging and the hook.** The pre-commit hook stashes unstaged changes and lints the staged
+  tree. A `git mv` stages the old content at the new path, so stage the rewritten file (or
+  unstage the rename) before committing an unrelated earlier step, or the hook sees a
+  `package main` file inside the service directory.
+- **fillWire** handles strings, floats, bools and ints; a twin with another scalar kind needs a
+  case added there.
 - **Tiny files.** Each new non-test file needs at least 40 lines of code, or it counts against
   the bloat ratchet's `tiny_files` (baseline 22). Put the package doc in a real file.
 - **Store the held value as before.** `archive.Read` returns the zero `Snapshot` when nothing is

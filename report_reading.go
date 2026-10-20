@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 type ReportRow struct {
@@ -94,12 +95,18 @@ func wireRows(rows []report.Row) []ReportRow {
 	out := make([]ReportRow, len(rows))
 	for i, r := range rows {
 		out[i] = ReportRow{Sort: r.Sort, Titles: r.Titles, Cells: r.Cells, Mine: r.Mine, Bars: r.Bars, Group: r.Group}
-		if r.Range != nil {
-			rng := MarketRange(*r.Range)
-			out[i].Range = &rng
-		}
+		out[i].Range = wireRange(r.Range)
 	}
 	return wireSlice(rows, out)
+}
+
+// wireRange converts a service range to its wire twin, MarketRange; nil stays nil.
+func wireRange(r *report.Range) *MarketRange {
+	if r == nil {
+		return nil
+	}
+	rng := MarketRange(*r)
+	return &rng
 }
 
 func wireChoices(choices []report.Choice) []RaceChoice {
@@ -108,6 +115,15 @@ func wireChoices(choices []report.Choice) []RaceChoice {
 		out[i] = RaceChoice(c)
 	}
 	return wireSlice(choices, out)
+}
+
+// wireReading converts a reading built by a feature service to its wire twin, its value through
+// value.
+func wireReading[S, T any](r report.Reading[S], value func(S) T) Reading[T] {
+	return Reading[T]{Sourced: snapshot.Sourced[T]{Value: value(r.Value), Provenance: r.Provenance},
+		Status: ReadingStatus(r.Status), AbsenceReason: r.AbsenceReason, Count: r.Count, Threshold: r.Threshold,
+		Baseline: r.Baseline, Cutoff: r.Cutoff, Method: r.Method, InputSHA: r.InputSHA, BuildStamp: r.BuildStamp,
+		HowCounted: r.HowCounted}
 }
 
 // wireSlice keeps a nil slice nil, so it still encodes as null rather than [].

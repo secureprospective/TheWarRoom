@@ -305,7 +305,7 @@ func (a *App) builderPickValue(year, round int, original string, at time.Time) *
 	if held == nil {
 		return &AssetCell{Text: "Not valued", Sub: "Lab model not compiled"}
 	}
-	cell, _, _ := dynastyValueCells((*held).pick(year, round, original, at))
+	cell, _, _ := dynastyValueCells((*held).Pick(year, round, original, at))
 	return &cell
 }
 

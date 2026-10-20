@@ -535,8 +535,8 @@ func TestTradeBuilderLandingRichAssets(t *testing.T) {
 
 type landingPickModel struct{}
 
-func (landingPickModel) player(string, time.Time) dynastyValue { return dynastyValue{} }
-func (landingPickModel) pick(year, round int, orig string, at time.Time) dynastyValue {
+func (landingPickModel) Player(string, time.Time) dynastyValue { return dynastyValue{} }
+func (landingPickModel) Pick(year, round int, orig string, at time.Time) dynastyValue {
 	if year != 2027 || round != 1 || orig != "0001" || at.IsZero() {
 		return dynastyValue{}
 	}

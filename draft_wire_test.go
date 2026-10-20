@@ -89,14 +89,22 @@ func reportByID(t *testing.T, board ReportBoard, id string) Report {
 
 func checkDraftWire(t *testing.T, name string, v any) {
 	t.Helper()
+	checkGolden(t, "draft", name, v)
+}
+
+// checkGolden compares v, JSON-encoded, with testdata/wire/<feature>/<name>.json, the frozen wire
+// contract of a feature's bindings; TWR_WRITE_WIRE=1 rewrites the golden instead.
+func checkGolden(t *testing.T, feature, name string, v any) {
+	t.Helper()
 	got, err := json.MarshalIndent(v, "", " ")
 	if err != nil {
 		t.Fatal(err)
 	}
 	got = append(got, '\n')
-	path := "testdata/wire/draft/" + name + ".json"
+	dir := "testdata/wire/" + feature
+	path := dir + "/" + name + ".json"
 	if os.Getenv("TWR_WRITE_WIRE") == "1" {
-		if err := os.MkdirAll("testdata/wire/draft", 0o750); err != nil {
+		if err := os.MkdirAll(dir, 0o750); err != nil {
 			t.Fatal(err)
 		}
 		if err := os.WriteFile(path, got, 0o644); err != nil { //nolint:gosec // a test fixture
@@ -109,7 +117,7 @@ func checkDraftWire(t *testing.T, name string, v any) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(want, got) {
-		t.Errorf("%s differs from the Draft binding's output; the wire contract changed", path)
+		t.Errorf("%s differs from the %s binding's output; the wire contract changed", path, feature)
 	}
 }
 

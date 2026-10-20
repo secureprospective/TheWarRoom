@@ -1,0 +1,694 @@
+{
+ "value": {
+  "summary": "Wide receivers, 25 to 27",
+  "sections": [
+   {
+    "id": "L-09",
+    "title": "Why cheap or dear",
+    "note": "Paid forecast wins and delivered wins are kept separate.",
+    "rows": [
+     {
+      "key": "",
+      "label": "Paid",
+      "detail": "Relative to the typical asset's forecast-win price",
+      "count": 430,
+      "range": {
+       "value": 0.8699854108464742,
+       "lo": 0.731628567630056,
+       "hi": 1.0083422540628924,
+       "text": "87.0%; likely 73.2% to 100.8%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Delivered",
+      "detail": "Wins delivered relative to the forecast at trade time",
+      "count": 164,
+      "range": {
+       "value": 1.0024372561953514,
+       "lo": 0.868618180222557,
+       "hi": 1.1362563321681458,
+       "text": "100.2%; likely 86.9% to 113.6%"
+      },
+      "mark": ""
+     }
+    ]
+   },
+   {
+    "id": "L-10",
+    "title": "Cheapest / dearest stretches",
+    "note": "Only beyond-chance extremes are marked. All stretches of the chosen seasons are compared.",
+    "rows": [
+     {
+      "key": "",
+      "label": "After the season",
+      "detail": "41 valued trades in this stretch; too few or too uncertain to price",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Before the NFL draft",
+      "detail": "Against the typical asset in this stretch; no beyond-chance extreme",
+      "count": 116,
+      "range": {
+       "value": 0.8909787630398956,
+       "lo": 0.691741410705553,
+       "hi": 1.0902161153742385,
+       "text": "89.1%; likely 69.2% to 109.0%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "NFL draft to rookie draft",
+      "detail": "Against the typical asset in this stretch; no beyond-chance extreme",
+      "count": 44,
+      "range": {
+       "value": 0.6452417636691097,
+       "lo": 0.4428221216125979,
+       "hi": 0.8476614057256214,
+       "text": "64.5%; likely 44.3% to 84.8%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "During the rookie draft",
+      "detail": "Against the typical asset in this stretch; no beyond-chance extreme",
+      "count": 35,
+      "range": {
+       "value": 0.7881849330788686,
+       "lo": 0.6134188538136855,
+       "hi": 0.9629510123440516,
+       "text": "78.8%; likely 61.3% to 96.3%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Rookie draft to kickoff",
+      "detail": "Against the typical asset in this stretch; no beyond-chance extreme",
+      "count": 82,
+      "range": {
+       "value": 0.8865751861206204,
+       "lo": 0.5167464504783995,
+       "hi": 1.2564039217628413,
+       "text": "88.7%; likely 51.7% to 125.6%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Weeks 1–4",
+      "detail": "Against the typical asset in this stretch; no beyond-chance extreme",
+      "count": 65,
+      "range": {
+       "value": 0.9476315001961287,
+       "lo": 0.5467118754283716,
+       "hi": 1.3485511249638857,
+       "text": "94.8%; likely 54.7% to 134.9%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Midseason",
+      "detail": "Against the typical asset in this stretch; no beyond-chance extreme",
+      "count": 22,
+      "range": {
+       "value": 0.7110446478640177,
+       "lo": 0.23432819740714203,
+       "hi": 1.1877610983208933,
+       "text": "71.1%; likely 23.4% to 118.8%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Deadline run-in",
+      "detail": "Against the typical asset in this stretch; no beyond-chance extreme",
+      "count": 50,
+      "range": {
+       "value": 1.371950082723825,
+       "lo": 1.0062108735735642,
+       "hi": 1.7376892918740856,
+       "text": "137.2%; likely 100.6% to 173.8%"
+      },
+      "mark": ""
+     }
+    ]
+   },
+   {
+    "id": "L-11",
+    "title": "Against every other asset",
+    "note": "100% means the same cost. Forecast comparison is labelled when delivery is unavailable. Other assets with fewer than 25 legs cannot be compared.",
+    "rows": [
+     {
+      "key": "pick3:later",
+      "label": "Later-draft 3rds and later",
+      "detail": "even · delivered wins",
+      "count": 954,
+      "range": {
+       "value": 0.1426730058581163,
+       "lo": 0.01378584356126352,
+       "hi": 1.4765572023308542,
+       "text": "14.3%; likely 1.4% to 147.7%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "pick1:next",
+      "label": "Next-draft 1sts",
+      "detail": "cheaper · delivered wins",
+      "count": 346,
+      "range": {
+       "value": 0.3261914990194637,
+       "lo": 0.255326580444336,
+       "hi": 0.41672470546309365,
+       "text": "32.6%; likely 25.5% to 41.7%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "pick3:next",
+      "label": "Next-draft 3rds and later",
+      "detail": "cheaper · delivered wins",
+      "count": 1299,
+      "range": {
+       "value": 0.43479889741290917,
+       "lo": 0.3031221373387877,
+       "hi": 0.6236762608340535,
+       "text": "43.5%; likely 30.3% to 62.4%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "QB:young",
+      "label": "Quarterbacks, 24 or younger",
+      "detail": "cheaper · delivered wins",
+      "count": 52,
+      "range": {
+       "value": 0.43969107751382724,
+       "lo": 0.204208579230076,
+       "hi": 0.9467194981433812,
+       "text": "44.0%; likely 20.4% to 94.7%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "DB:young",
+      "label": "Defensive backs, 24 or younger",
+      "detail": "even · delivered wins",
+      "count": 228,
+      "range": {
+       "value": 0.617117708429173,
+       "lo": 0.36053545131004716,
+       "hi": 1.056301855124284,
+       "text": "61.7%; likely 36.1% to 105.6%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "PK:prime",
+      "label": "Kickers, 25 to 27",
+      "detail": "even · delivered wins",
+      "count": 40,
+      "range": {
+       "value": 0.6445840477101673,
+       "lo": 0.36216586648007215,
+       "hi": 1.1472328924881856,
+       "text": "64.5%; likely 36.2% to 114.7%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "RB:older",
+      "label": "Running backs, 28 or older",
+      "detail": "even · delivered wins",
+      "count": 140,
+      "range": {
+       "value": 0.6738417006778211,
+       "lo": 0.370680006298248,
+       "hi": 1.22494504655598,
+       "text": "67.4%; likely 37.1% to 122.5%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "pick1:later",
+      "label": "Later-draft 1sts",
+      "detail": "even · delivered wins",
+      "count": 231,
+      "range": {
+       "value": 0.6760836402637634,
+       "lo": 0.3796348989427547,
+       "hi": 1.2040228385357863,
+       "text": "67.6%; likely 38.0% to 120.4%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "WR:young",
+      "label": "Wide receivers, 24 or younger",
+      "detail": "even · delivered wins",
+      "count": 236,
+      "range": {
+       "value": 0.7046118176032085,
+       "lo": 0.49631109524085665,
+       "hi": 1.0003359148462307,
+       "text": "70.5%; likely 49.6% to 100.0%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "QB:older",
+      "label": "Quarterbacks, 28 or older",
+      "detail": "even · delivered wins",
+      "count": 195,
+      "range": {
+       "value": 0.7046478969822193,
+       "lo": 0.459750025794063,
+       "hi": 1.0799970219988104,
+       "text": "70.5%; likely 46.0% to 108.0%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "DB:older",
+      "label": "Defensive backs, 28 or older",
+      "detail": "even · delivered wins",
+      "count": 351,
+      "range": {
+       "value": 0.7116208819000414,
+       "lo": 0.46472125194811126,
+       "hi": 1.0896946878012275,
+       "text": "71.2%; likely 46.5% to 109.0%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "RB:young",
+      "label": "Running backs, 24 or younger",
+      "detail": "even · delivered wins",
+      "count": 129,
+      "range": {
+       "value": 0.7247237620533904,
+       "lo": 0.4085524240145703,
+       "hi": 1.2855743851028725,
+       "text": "72.5%; likely 40.9% to 128.6%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "TE:prime",
+      "label": "Tight ends, 25 to 27",
+      "detail": "even · delivered wins",
+      "count": 147,
+      "range": {
+       "value": 0.8123220523447718,
+       "lo": 0.5278010286544187,
+       "hi": 1.2502194594199525,
+       "text": "81.2%; likely 52.8% to 125.0%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "QB:prime",
+      "label": "Quarterbacks, 25 to 27",
+      "detail": "even · delivered wins",
+      "count": 146,
+      "range": {
+       "value": 0.8225630828323836,
+       "lo": 0.528097356112851,
+       "hi": 1.2812221409685063,
+       "text": "82.3%; likely 52.8% to 128.1%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "TE:young",
+      "label": "Tight ends, 24 or younger",
+      "detail": "even · delivered wins",
+      "count": 69,
+      "range": {
+       "value": 0.82965560708859,
+       "lo": 0.45150053640198107,
+       "hi": 1.5245351242743654,
+       "text": "83.0%; likely 45.2% to 152.5%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "pick2:next",
+      "label": "Next-draft 2nds",
+      "detail": "even · delivered wins",
+      "count": 429,
+      "range": {
+       "value": 0.9039615803718192,
+       "lo": 0.6322730204580009,
+       "hi": 1.292395076728719,
+       "text": "90.4%; likely 63.2% to 129.2%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "PK:older",
+      "label": "Kickers, 28 or older",
+      "detail": "even · delivered wins",
+      "count": 82,
+      "range": {
+       "value": 0.9088858004577945,
+       "lo": 0.5775749297629214,
+       "hi": 1.430244554785102,
+       "text": "90.9%; likely 57.8% to 143.0%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "WR:older",
+      "label": "Wide receivers, 28 or older",
+      "detail": "even · delivered wins",
+      "count": 314,
+      "range": {
+       "value": 0.9181327952639556,
+       "lo": 0.6925456768636205,
+       "hi": 1.2172017787430447,
+       "text": "91.8%; likely 69.3% to 121.7%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "pick2:later",
+      "label": "Later-draft 2nds",
+      "detail": "even · delivered wins",
+      "count": 331,
+      "range": {
+       "value": 0.9471892714474374,
+       "lo": 0.5401944314495087,
+       "hi": 1.660823332698468,
+       "text": "94.7%; likely 54.0% to 166.1%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "RB:prime",
+      "label": "Running backs, 25 to 27",
+      "detail": "even · delivered wins",
+      "count": 237,
+      "range": {
+       "value": 0.9555979713486698,
+       "lo": 0.6538763552620794,
+       "hi": 1.3965445844569309,
+       "text": "95.6%; likely 65.4% to 139.7%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "DL:young",
+      "label": "Defensive linemen, 24 or younger",
+      "detail": "even · delivered wins",
+      "count": 163,
+      "range": {
+       "value": 1.0711196175742572,
+       "lo": 0.559546049300099,
+       "hi": 2.050407176652404,
+       "text": "107.1%; likely 56.0% to 205.0%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "DL:older",
+      "label": "Defensive linemen, 28 or older",
+      "detail": "even · delivered wins",
+      "count": 353,
+      "range": {
+       "value": 1.0779897812488142,
+       "lo": 0.7474111157164035,
+       "hi": 1.5547828284076488,
+       "text": "107.8%; likely 74.7% to 155.5%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "TE:older",
+      "label": "Tight ends, 28 or older",
+      "detail": "even · delivered wins",
+      "count": 157,
+      "range": {
+       "value": 1.1791243048739262,
+       "lo": 0.8163183529147215,
+       "hi": 1.7031763666468291,
+       "text": "117.9%; likely 81.6% to 170.3%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "DL:prime",
+      "label": "Defensive linemen, 25 to 27",
+      "detail": "even · delivered wins",
+      "count": 321,
+      "range": {
+       "value": 1.50165933330416,
+       "lo": 0.894134266751945,
+       "hi": 2.5219710698383087,
+       "text": "150.2%; likely 89.4% to 252.2%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "DB:prime",
+      "label": "Defensive backs, 25 to 27",
+      "detail": "dearer · delivered wins",
+      "count": 363,
+      "range": {
+       "value": 1.6160665454418246,
+       "lo": 1.0968466910440606,
+       "hi": 2.381072123042363,
+       "text": "161.6%; likely 109.7% to 238.1%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "LB:young",
+      "label": "Linebackers, 24 or younger",
+      "detail": "dearer · delivered wins",
+      "count": 142,
+      "range": {
+       "value": 2.1809597985831415,
+       "lo": 1.3533203947593835,
+       "hi": 3.514752058311752,
+       "text": "218.1%; likely 135.3% to 351.5%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "LB:older",
+      "label": "Linebackers, 28 or older",
+      "detail": "dearer · delivered wins",
+      "count": 292,
+      "range": {
+       "value": 2.204116653655898,
+       "lo": 1.3872764888286755,
+       "hi": 3.501919236752262,
+       "text": "220.4%; likely 138.7% to 350.2%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "LB:prime",
+      "label": "Linebackers, 25 to 27",
+      "detail": "dearer · delivered wins",
+      "count": 277,
+      "range": {
+       "value": 2.3372933928337716,
+       "lo": 1.6179223850084699,
+       "hi": 3.3765157431552595,
+       "text": "233.7%; likely 161.8% to 337.7%"
+      },
+      "mark": ""
+     }
+    ]
+   },
+   {
+    "id": "L-12",
+    "title": "What came back",
+    "note": "Opposite-side forecast wins across 366 trades moving this asset. These are not realised returns.",
+    "rows": [
+     {
+      "key": "WR",
+      "label": "Wide receivers",
+      "detail": "21.6% of returned forecast wins · 58.618 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "RB",
+      "label": "Running backs",
+      "detail": "10.3% of returned forecast wins · 28.040 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "LB",
+      "label": "Linebackers",
+      "detail": "10.1% of returned forecast wins · 27.460 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "QB",
+      "label": "Quarterbacks",
+      "detail": "10.1% of returned forecast wins · 27.449 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "pick1:next",
+      "label": "Next-draft 1sts",
+      "detail": "8.7% of returned forecast wins · 23.520 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "DL",
+      "label": "Defensive linemen",
+      "detail": "7.9% of returned forecast wins · 21.465 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "pick1:later",
+      "label": "Later-draft 1sts",
+      "detail": "7.4% of returned forecast wins · 20.073 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "DB",
+      "label": "Defensive backs",
+      "detail": "5.1% of returned forecast wins · 13.825 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "pick3:next",
+      "label": "Next-draft 3rds and later",
+      "detail": "4.8% of returned forecast wins · 13.072 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "TE",
+      "label": "Tight ends",
+      "detail": "4.8% of returned forecast wins · 12.923 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "pick2:next",
+      "label": "Next-draft 2nds",
+      "detail": "4.0% of returned forecast wins · 10.849 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "pick2:later",
+      "label": "Later-draft 2nds",
+      "detail": "2.8% of returned forecast wins · 7.731 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "pick3:later",
+      "label": "Later-draft 3rds and later",
+      "detail": "1.5% of returned forecast wins · 4.066 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "PK",
+      "label": "Kickers",
+      "detail": "1.0% of returned forecast wins · 2.695 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "player:unknown",
+      "label": ", ",
+      "detail": "0.0% of returned forecast wins · 0.023 wins",
+      "count": 0,
+      "range": null,
+      "mark": ""
+     }
+    ]
+   },
+   {
+    "id": "L-13",
+    "title": "Who buys it",
+    "note": "Shares by standing at the time; the whole league is the baseline, not a claim of statistical significance.",
+    "rows": [
+     {
+      "key": "",
+      "label": "Contenders · ranks 1–10",
+      "detail": "40.7% of this asset; 39.4% of all traded assets",
+      "count": 430,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Middle · ranks 11–22",
+      "detail": "29.1% of this asset; 29.4% of all traded assets",
+      "count": 430,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Rebuilders · ranks 23–32",
+      "detail": "30.2% of this asset; 31.2% of all traded assets",
+      "count": 430,
+      "range": null,
+      "mark": ""
+     }
+    ]
+   }
+  ]
+ },
+ "provenance": {
+  "source": "Lab compiled facts sha256:6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
+  "freshness": {
+   "state": "stale",
+   "fetchedAt": "2026-10-06T15:57:20+00:00",
+   "note": "Frozen historical input; not current league truth"
+  },
+  "kind": "archive"
+ },
+ "status": "ok",
+ "absenceReason": null,
+ "count": 1905,
+ "threshold": 80,
+ "baseline": "Median traded position or pick cost per delivered win; age splits keep this yardstick",
+ "cutoff": "2026-10-06T01:42:57+00:00",
+ "method": "ridge least-squares with partial-pivot Gauss and sandwich covariance",
+ "inputSHA": "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
+ "buildStamp": "dev ",
+ "howCounted": "Valued two-sided trades in the selected seasons and league-year stretches. Prices are anchored to a next-draft first-round pick. At least 80 trades for the whole view, 60 per half or window, and 8 delivery records with at least 0.5 forecast wins. Delivered wins are compared with the forecast at trade time. Ranges carry price and delivery uncertainty. The going rate is the asset-count-weighted median across positions and picks, never a live quote. Asset comparisons need 25 legs of the other kind. Stretch prices need 60 trades, 12 legs of this kind, and a bounded price error; only a stretch beating every other known stretch beyond chance is marked. Returns are the opposite side's forecast wins, not realised delivery. Buyers are franchise standing at trade time, not today's owner identity."
+}
