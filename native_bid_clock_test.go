@@ -32,6 +32,7 @@ func TestNativeBidStandForGovernsClockRevertAndReopen(t *testing.T) {
 	salary := int64(5 * million)
 	for cycle := range 2 {
 		if cycle > 0 {
+			reopened := f.set(t, "bids.standFor", `259200000000000`, "now")
 			salary += million
 			var err error
 			bid, err = f.raise(t, "owner.one", "franchise.01", bid, salary, 1)
@@ -39,6 +40,7 @@ func TestNativeBidStandForGovernsClockRevertAndReopen(t *testing.T) {
 				t.Fatal(err)
 			}
 			placed = f.now
+			f.revert(t, reopened)
 		}
 		f.closeAt(t, "5004", placed.Add(24*time.Hour))
 		rule := f.set(t, "bids.standFor", `172800000000000`, "now")

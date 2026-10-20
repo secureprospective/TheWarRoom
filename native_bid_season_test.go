@@ -106,7 +106,7 @@ func TestNativeBidOffseasonAndMissingInSeasonWeek(t *testing.T) {
 		t.Fatal("reading does not explain offseason limits")
 	}
 	f.now = time.Date(2027, 10, 1, 12, 0, 0, 0, time.UTC)
-	f.refused(t, "franchise.01", "5004", 5*million, 2, "holds no NFL week")
+	f.refused(t, "franchise.01", "5002", 5*million, 2, "holds no NFL week")
 	kickoff := time.Date(2027, 9, 10, 17, 0, 0, 0, time.UTC)
 	held := []leagueweek.Week{{Number: 1, Games: []leagueweek.Game{{Kickoff: kickoff}}}}
 	phase := nflWeekAt(held, kickoff.Add(-time.Microsecond))
