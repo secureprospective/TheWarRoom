@@ -5,8 +5,9 @@ import { report, type Report } from '../reports/contract';
 import type { main } from '../../../wailsjs/go/models';
 
 export type Scope = { id: string; label: string; note: string; action: string; progress: string };
-export type Sources = { health: Report; signals: Report; facts: Report; checks: Report; databaseChecks: Report;
-  archiveDir: string; photosOn: boolean; scopes: Scope[]; words: Record<string, string> };
+export type Sources = { health: Report; signals: Report; facts: Report; checks: Report;
+  databaseChecks: Report; archiveDir: string; photosOn: boolean; scopes: Scope[];
+  words: Record<string, string> };
 export type Outcome = { ok: boolean; error: string; summary: string };
 function flag(v: unknown, p: string): boolean {
   if (typeof v !== 'boolean') throw new Error(`${p}: photosOn is not true or false`);
@@ -31,8 +32,8 @@ export function parseSources(v: unknown): Sources {
   const rawWords = object(r.words, p, keys);
   const words = Object.fromEntries(keys.map(k => [k, text(rawWords[k], `${p}.${k}`)]));
   return { health: report(r.health, p), signals: report(r.signals, p), facts: report(r.facts, p),
-    checks: report(r.checks, p), databaseChecks: report(r.databaseChecks, p), archiveDir: text(r.archiveDir, p), photosOn: flag(r.photosOn, p),
-    scopes, words };
+    checks: report(r.checks, p), databaseChecks: report(r.databaseChecks, p),
+    archiveDir: text(r.archiveDir, p), photosOn: flag(r.photosOn, p), scopes, words };
 }
 export function parseOutcome(v: unknown): Outcome {
   const r = object(v, 'Data Act', ['ok', 'error', 'summary']);

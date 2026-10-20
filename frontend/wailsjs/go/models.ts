@@ -10860,6 +10860,7 @@ export namespace main {
 	    }
 	}
 	export class DataSources {
+	    databaseChecks?: Report;
 	    health: Report;
 	    signals: Report;
 	    facts: Report;
@@ -10875,6 +10876,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.databaseChecks = this.convertValues(source["databaseChecks"], Report);
 	        this.health = this.convertValues(source["health"], Report);
 	        this.signals = this.convertValues(source["signals"], Report);
 	        this.facts = this.convertValues(source["facts"], Report);
