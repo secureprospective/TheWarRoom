@@ -232,3 +232,58 @@ func TestChampionsLatestUnplayedAndOldMissing(t *testing.T) {
 		t.Fatal(r.Rows)
 	}
 }
+
+// TestArchiveWireMatchesGolden freezes the Archive wire contract in testdata/wire/archive: what
+// the frontend receives, field for field. The bound method opens on a fresh history (no compiled
+// snapshot); the rest build on the reduced archive, before and after a franchise is chosen.
+// Regenerate with TWR_WRITE_WIRE=1 go test -run TestArchiveWireMatchesGolden . and review the diff.
+func TestArchiveWireMatchesGolden(t *testing.T) {
+	a := targetTestApp(t)
+	bound, err := a.TargetArchive(0, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkArchiveWire(t, "unimported", bound)
+	cache := reducedArchive(t)
+	for _, c := range []struct {
+		name, team, other string
+		season            int
+		stale             bool
+	}{
+		{name: "league"},
+		{name: "season-stale", season: 2015, stale: true},
+		{name: "franchise", team: "0001", other: "0002"},
+	} {
+		b, err := buildArchive(cache, c.stale, c.season, c.team, c.other)
+		if err != nil {
+			t.Fatal(c.name, err)
+		}
+		checkArchiveWire(t, c.name, b)
+	}
+}
+
+func checkArchiveWire(t *testing.T, name string, b ArchiveBoard) {
+	t.Helper()
+	got, err := json.MarshalIndent(b, "", " ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = append(got, '\n')
+	path := "testdata/wire/archive/" + name + ".json"
+	if os.Getenv("TWR_WRITE_WIRE") == "1" {
+		if err := os.MkdirAll("testdata/wire/archive", 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, got, 0o644); err != nil { //nolint:gosec // a test fixture
+			t.Fatal(err)
+		}
+		return
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(want, got) {
+		t.Errorf("%s differs from the Archive binding's output; the wire contract changed", path)
+	}
+}

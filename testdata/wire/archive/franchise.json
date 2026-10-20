@@ -1,0 +1,4287 @@
+{
+ "board": {
+  "title": "Archive",
+  "loading": "Reading the league archive…",
+  "refresh": "Reread the imported archive",
+  "howLabel": "How this is counted",
+  "mflLabel": "",
+  "mflUrl": "",
+  "reports": [
+   {
+    "id": "M-080",
+    "title": "League history",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Champions and runners-up are the two scored sides of the final round of the league's Super Bowl, exactly as the reference season cards count them. Unplayed, tied or missing finals are not assigned a winner. Regular-season leaders have the best win percentage; tied leaders are all named, not resolved by an invented tiebreak.",
+    "columns": [
+     "Season",
+     "Champion",
+     "Runner-up",
+     "Regular-season leader",
+     "Final"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "2013",
+       "Final not recorded",
+       "Final not recorded",
+       "New York Giants (13-0-0)",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2017",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2018",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2019",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2020",
+       "Tennessee Titans",
+       "New York Giants",
+       "Los Angeles Rams (12-0-0)",
+       "234.80–201.65"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2021",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2022",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2023",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2024",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026",
+       "Season in progress",
+       "Season in progress",
+       "Buffalo Bills (3-0-0)\nIndianapolis Colts (3-0-0)\nCincinnati Bengals (3-0-0)\nTampa Bay Buccaneers (3-0-0)\nDetroit Lions (3-0-0)\nLos Angeles Rams (3-0-0)\nWashington Commanders (3-0-0)",
+       "Not played yet"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-114",
+    "title": "League champions",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Each season's Super Bowl winner, from the final round of MFL's recorded playoff bracket. A season without a scored, untied final has no champion here.",
+    "columns": [
+     "Season",
+     "Champion",
+     "Final"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "2013",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2017",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2018",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2019",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2020",
+       "Tennessee Titans",
+       "234.80–201.65 over New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2021",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2022",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2023",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2024",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026",
+       "Season under way",
+       "Its championship final has not been played yet"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-182",
+    "title": "League rules by season",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "The reference season cards name regular-season weeks, salary cap, roster size, taxi squad, injured reserve and starting lineup. Rules are shown as recorded for each season; repeated setups are grouped. Stale bracket titles are kept as MFL recorded them, not used to change a season's date.",
+    "columns": [
+     "Seasons",
+     "Regular season",
+     "Salary cap",
+     "Roster size",
+     "Taxi / injured reserve",
+     "Starting lineup"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "2013",
+       "Weeks 1–13",
+       "Not recorded",
+       "53",
+       "0 / 5",
+       "QB 0–1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 0–1 · DT 1–3 · DE 1–3 · LB 3–4 · CB 0–4 · S 0–3 · 15–20 starters · 11 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014",
+       "Not recorded",
+       "Not recorded",
+       "53",
+       "0 / 5",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–2 · PK 1 · DT 1–2 · DE 2–3 · LB 3–4 · CB 2–4 · S 1–3 · 15–20 starters · 11 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015",
+       "Not recorded",
+       "$100.00M",
+       "53",
+       "0 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 1–2 · DE 2–3 · LB 3–4 · CB 2–4 · S 1–3 · 15–20 starters · 11 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016",
+       "Not recorded",
+       "$100.00M",
+       "53",
+       "0 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–3 · DE 2–3 · LB 3–4 · CB 2–4 · S 1–3 · 16–21 starters · 11 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2017",
+       "Not recorded",
+       "$100.00M",
+       "60",
+       "0 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–3 · DE 2–3 · LB 3–4 · CB 2–4 · S 1–3 · 16–21 starters · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2018, 2019",
+       "Not recorded",
+       "$100.00M",
+       "60",
+       "0 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 1–2 · DE 2–3 · LB 3–4 · CB 2–4 · S 1–3 · 16–21 starters · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2020",
+       "Weeks 1–12",
+       "$100.00M",
+       "75",
+       "0 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–3 · DE 2–3 · LB 3–4 · CB 2–3 · S 2–3 · 21 starters · 8 offensive · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2021, 2022",
+       "Not recorded",
+       "$105.00M",
+       "75",
+       "8 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–3 · DE 2–3 · LB 3–4 · CB 2–3 · S 2–3 · 21 starters · 8 offensive · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2023",
+       "Not recorded",
+       "$110.00M",
+       "75",
+       "8 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–3 · DE 2–3 · LB 3–4 · CB 2–3 · S 2–3 · 21 starters · 8 offensive · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2024",
+       "Not recorded",
+       "$115.00M",
+       "48",
+       "8 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–4 · DE 2–4 · LB 2–4 · CB 2–4 · S 2–4 · 21 starters · 8 offensive · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025",
+       "Not recorded",
+       "$120.00M",
+       "80",
+       "8 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–4 · DE 2–4 · LB 2–4 · CB 2–4 · S 2–4 · 21 starters · 8 offensive · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026",
+       "Weeks 1–13",
+       "$125.00M",
+       "80",
+       "8 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–4 · DE 2–4 · LB 2–4 · CB 2–4 · S 2–4 · 21 starters · 8 offensive · 12 defensive"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-104",
+    "title": "Trophy case",
+    "note": "Buffalo Bills has no recorded bracket championship.",
+    "status": "empty",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Every bracket final the franchise won, as MFL's playoff brackets record it. A final needs two scored sides and no tie; unplayed or tied finals award nothing.",
+    "columns": [
+     "Season",
+     "Title",
+     "Final"
+    ],
+    "rows": [],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-105",
+    "title": "All-time franchise record",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Regular records come from the reference's season reading. Playoff records count scored head-to-head games outside the regular weeks; byes and unscored placeholders never count. All-play includes every scored week, including playoff weeks, with MFL's published all-play taking precedence. Trophy winners require a scored, untied two-team final.",
+    "columns": [
+     "Season",
+     "Franchise",
+     "Regular W-L-T",
+     "Playoff W-L-T",
+     "Points · all weeks",
+     "All-play W-L-T"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "2013",
+       "Buffalo Bills",
+       "11-2-0",
+       "0-1-0",
+       "4,057.00",
+       "409-116-2"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014",
+       "Buffalo Bills",
+       "Not recorded",
+       "0-0-0",
+       "Not recorded",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015",
+       "Buffalo Bills",
+       "Not recorded",
+       "0-0-0",
+       "Not recorded",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016",
+       "Buffalo Bills",
+       "Not recorded",
+       "0-0-0",
+       "Not recorded",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2017",
+       "Buffalo Bills",
+       "Not recorded",
+       "0-0-0",
+       "Not recorded",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2018",
+       "Buffalo Bills",
+       "Not recorded",
+       "0-0-0",
+       "Not recorded",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2019",
+       "Buffalo Bills",
+       "Not recorded",
+       "0-0-0",
+       "Not recorded",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2020",
+       "Buffalo Bills",
+       "3-9-0",
+       "0-0-0",
+       "2,681.12",
+       "213-314-0"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2021",
+       "Buffalo Bills",
+       "Not recorded",
+       "0-0-0",
+       "Not recorded",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2022",
+       "Buffalo Bills",
+       "Not recorded",
+       "0-0-0",
+       "Not recorded",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2023",
+       "Buffalo Bills",
+       "Not recorded",
+       "0-0-0",
+       "Not recorded",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2024",
+       "Buffalo Bills",
+       "Not recorded",
+       "0-0-0",
+       "Not recorded",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025",
+       "Buffalo Bills",
+       "Not recorded",
+       "0-0-0",
+       "Not recorded",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026",
+       "Buffalo Bills",
+       "3-0-0",
+       "0-0-0",
+       "855.20",
+       "88-5-0"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [
+     {
+      "cells": [
+       "All-time regular record",
+       "17-11-0"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "All-time playoff record",
+       "0-1-0"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Highest weekly score",
+       "347.00 · 2013 week 2"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Trophy case",
+       "No scored bracket championship recorded"
+      ],
+      "range": null
+     }
+    ],
+    "link": null
+   },
+   {
+    "id": "M-023",
+    "title": "Franchise records",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "The franchise's own highs and lows across every recorded season: scored weeks (playoffs included) and regular seasons. Ties for a record are all shown.",
+    "columns": [
+     "Record",
+     "When",
+     "Value"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "Highest weekly score",
+       "2013 week 2",
+       "347.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Lowest weekly score",
+       "2020 week 11",
+       "89.58"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most regular-season wins",
+       "2013 · 11-2-0",
+       "11"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most regular-season losses",
+       "2020 · 3-9-0",
+       "9"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most season points · all weeks",
+       "2013",
+       "4,057.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Fewest season points · all weeks",
+       "2020",
+       "2,681.12"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-110",
+    "title": "Franchise summary",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "One franchise at a glance: its seasons and names, all-time records and titles. The full season table is the All-time franchise record.",
+    "columns": [
+     "Fact",
+     "Value"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "Seasons",
+       "14 · 2013–2026"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Names",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "All-time regular record",
+       "17-11-0"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "All-time playoff record",
+       "0-1-0"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Titles",
+       "None recorded"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-019",
+    "title": "All-time series",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Every scored meeting, in season and week order. The selected franchise is shown first. Unscored placeholders are not ties.",
+    "columns": [
+     "Season",
+     "Week",
+     "Franchise",
+     "Opponent",
+     "Score",
+     "Result"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "2013",
+       "1",
+       "Buffalo Bills",
+       "New England Patriots",
+       "205.00–245.00",
+       "L"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2013",
+       "10",
+       "Buffalo Bills",
+       "New England Patriots",
+       "210.00–270.00",
+       "L"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2020",
+       "2",
+       "Buffalo Bills",
+       "New England Patriots",
+       "208.95–218.43",
+       "L"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2020",
+       "8",
+       "Buffalo Bills",
+       "New England Patriots",
+       "94.65–187.60",
+       "L"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026",
+       "2",
+       "Buffalo Bills",
+       "New England Patriots",
+       "306.95–214.60",
+       "W"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [
+     {
+      "cells": [
+       "Series W-L-T",
+       "1-4-0"
+      ],
+      "range": null
+     }
+    ],
+    "link": null
+   },
+   {
+    "id": "M-083",
+    "title": "Matchup records",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Highest weekly franchise score, highest combined game score and largest winning margin. Opponents are paired by season and week. A game is counted once, on the winning side (or one side of a tie). Every tied record holder is shown.",
+    "columns": [
+     "Record",
+     "Who",
+     "When",
+     "Points"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "Highest weekly score",
+       "New York Giants",
+       "2013 week 1",
+       "415.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Highest combined game",
+       "St. Louis Rams vs Atlanta Falcons",
+       "2013 week 15",
+       "665.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Largest winning margin",
+       "San Francisco 49ers over Seattle Seahawks",
+       "2026 week 3",
+       "229.93"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-084",
+    "title": "Single-season records",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Regular-season wins and losses use the reference season definition. Points include all weeks MFL scored. A partial season is labelled and is not extrapolated. Every tied holder is shown.",
+    "columns": [
+     "Record",
+     "Who",
+     "When",
+     "Value"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "Most regular-season wins",
+       "New York Giants",
+       "2013",
+       "13"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most regular-season losses",
+       "Miami Dolphins",
+       "2013",
+       "13"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most regular-season losses",
+       "Cincinnati Bengals",
+       "2013",
+       "13"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most season points · all weeks",
+       "St. Louis Rams",
+       "2013",
+       "4,508.00"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-085",
+    "title": "Career franchise records",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Franchise identity is MFL's id across seasons, not its changing name. Regular wins, losses and points are summed over recorded seasons. No unplayed games count. Every tied record holder is shown.",
+    "columns": [
+     "Record",
+     "Who",
+     "When",
+     "Value"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "Most regular-season wins",
+       "Los Angeles Rams",
+       "2013–2026 · through cutoff",
+       "27"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most regular-season losses",
+       "Cincinnati Bengals",
+       "2013–2026 · through cutoff",
+       "24"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most career points · all weeks",
+       "Los Angeles Rams",
+       "2013–2026 · through cutoff",
+       "9,203.84"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-086",
+    "title": "Winning and losing streaks",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Consecutive scored head-to-head games, regular season and playoffs, across season boundaries. A tie ends both streaks; a bye or an unscored game does not extend or end one. Every tied longest streak is shown with its starting and ending game.",
+    "columns": [
+     "Record",
+     "Who",
+     "When",
+     "Games"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "Longest losing streak",
+       "Cincinnati Bengals",
+       "2013 week 1 → 2020 week 11",
+       "24"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Longest winning streak",
+       "New York Giants",
+       "2013 week 1 → 2013 week 13",
+       "13"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Longest winning streak",
+       "Los Angeles Rams",
+       "2020 week 1 → 2020 week 14",
+       "13"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Longest winning streak",
+       "Tennessee Titans",
+       "2020 week 6 → 2026 week 2",
+       "13"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-082",
+    "title": "Player scoring records",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "MFL's recorded weekly player scores under this league's scoring, not NFL statistics or a rescoring formula. Season and career totals include every recorded scored week; missing scores are not zero. Every tied record holder is shown.",
+    "columns": [
+     "Record",
+     "Player",
+     "When",
+     "Points"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "Highest single game",
+       "Charles, Jamaal",
+       "2013 week 15",
+       "78.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most season points",
+       "Manning, Peyton",
+       "2013 · recorded weeks",
+       "586.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most career points",
+       "Wilson, Russell",
+       "All archived seasons · through cutoff",
+       "834.85"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-073",
+    "title": "Scoring history",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Points are the sum of franchise weekly scores, all weeks MFL scored. A partial season is not extrapolated. Era boundaries follow a change in the recorded scoring rules; the reference's regular-season calendar changes separately from 12 to 13 weeks.",
+    "columns": [
+     "Season",
+     "Scoring era",
+     "League points",
+     "Scored franchise weeks",
+     "Regular season"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "2013",
+       "2013 scoring rules",
+       "104,583.00",
+       "544",
+       "Weeks 1–13"
+      ],
+      "range": null,
+      "group": "2013 scoring rules"
+     },
+     {
+      "cells": [
+       "2014",
+       "2014 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2014 scoring rules"
+     },
+     {
+      "cells": [
+       "2015",
+       "2014 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2014 scoring rules"
+     },
+     {
+      "cells": [
+       "2016",
+       "2014 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2014 scoring rules"
+     },
+     {
+      "cells": [
+       "2017",
+       "2014 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2014 scoring rules"
+     },
+     {
+      "cells": [
+       "2018",
+       "2014 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2014 scoring rules"
+     },
+     {
+      "cells": [
+       "2019",
+       "2014 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2014 scoring rules"
+     },
+     {
+      "cells": [
+       "2020",
+       "2020 scoring rules",
+       "93,008.57",
+       "544",
+       "Weeks 1–12"
+      ],
+      "range": null,
+      "group": "2020 scoring rules"
+     },
+     {
+      "cells": [
+       "2021",
+       "2021 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2021 scoring rules"
+     },
+     {
+      "cells": [
+       "2022",
+       "2021 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2021 scoring rules"
+     },
+     {
+      "cells": [
+       "2023",
+       "2021 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2021 scoring rules"
+     },
+     {
+      "cells": [
+       "2024",
+       "2021 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2021 scoring rules"
+     },
+     {
+      "cells": [
+       "2025",
+       "2021 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2021 scoring rules"
+     },
+     {
+      "cells": [
+       "2026",
+       "2026 scoring rules",
+       "18,910.61",
+       "96",
+       "Weeks 1–13"
+      ],
+      "range": null,
+      "group": "2026 scoring rules"
+     }
+    ],
+    "summary": [
+     {
+      "cells": [
+       "2013 · all scored weeks · total points",
+       "104,583.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014, 2015, 2016, 2017, 2018, 2019 · all scored weeks · total points",
+       "0.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2020 · all scored weeks · total points",
+       "93,008.57"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2021, 2022, 2023, 2024, 2025 · all scored weeks · total points",
+       "0.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026 · all scored weeks · total points",
+       "18,910.61"
+      ],
+      "range": null
+     }
+    ],
+    "link": null
+   },
+   {
+    "id": "M-079",
+    "title": "Player additions and position changes",
+    "note": "",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "The selected season only. Additions are the reference's roster moves with an add role (free agents, waivers and roster loads). Position changes compare consecutive recorded seasonal player positions; a missing year is not assigned a date. Transaction dates are MFL's recorded dates.",
+    "columns": [
+     "When",
+     "Change",
+     "Player",
+     "Franchise / positions"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "2026-10-01",
+       "Player added",
+       "Evans, Akayleb",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-10-01",
+       "Player added",
+       "Adkins, Nate",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-10-01",
+       "Player added",
+       "Ingle, Tanner",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-10-01",
+       "Player added",
+       "Finley, AJ",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-10-01",
+       "Player added",
+       "Fulton, Kristian",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-27",
+       "Player added",
+       "Fulton, Kristian",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-27",
+       "Player added",
+       "Hooper, Austin",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-27",
+       "Player added",
+       "White, Cody",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-27",
+       "Player added",
+       "Keenum, Case",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-27",
+       "Player added",
+       "Moreau, Foster",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Whiteheart, Blake",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Treadwell, Laquon",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Ekeler, Austin",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Woods, Charles",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Henderson, CJ",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Hamlin, Damar",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Rudolph, Mason",
+       "Kansas City Chiefs"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Hodge, KhaDarel",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Sanders, Drew",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Murray, Kenneth",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Fatukasi, Foley",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Ford, Jonathan",
+       "Las Vegas Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Brooks, British",
+       "Las Vegas Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Barnes, Zaire",
+       "Las Vegas Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Gifford, Luke",
+       "Las Vegas Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Juszczyk, Kyle",
+       "Las Vegas Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-24",
+       "Player added",
+       "Bates, John",
+       "Las Vegas Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Wallow, Garret",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Moon, Jeremiah",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Dallas, DeeJay",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Gipson, Trevis",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Thompson Jr., James",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Phillips, Del'Shawn",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Russell, Brady",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Oliver, Josh",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Melton, Bo",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Martin, Keyon",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Moore, Chris",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Thomas II, Rodney",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Morton, Behren",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-19",
+       "Player added",
+       "Abanikanda, Israel",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-13",
+       "Player added",
+       "Rush, Cooper",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-13",
+       "Player added",
+       "Lock, Drew",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-12",
+       "Player added",
+       "DeVito, Tommy",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-12",
+       "Player added",
+       "Wright, Brock",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-09",
+       "Player added",
+       "McKee, Tanner",
+       "Seattle Seahawks"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-09",
+       "Player added",
+       "Nwangwu, Kene",
+       "Seattle Seahawks"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-09",
+       "Player added",
+       "Harrison, Ronnie",
+       "Seattle Seahawks"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-09",
+       "Player added",
+       "Davis, Derius",
+       "Seattle Seahawks"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-09",
+       "Player added",
+       "Ringo, Kelee",
+       "Seattle Seahawks"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-09",
+       "Player added",
+       "Street, Kentavius",
+       "Seattle Seahawks"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-09",
+       "Player added",
+       "Austin III, Calvin",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-09",
+       "Player added",
+       "Meyers, Dohnte",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-09",
+       "Player added",
+       "Krieg, Lenny",
+       "Kansas City Chiefs"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-09",
+       "Player added",
+       "Garnes, Ayden",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-09",
+       "Player added",
+       "Martin, Tay",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-09",
+       "Player added",
+       "McLaughlin, Jaleel",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-09",
+       "Player added",
+       "Nwankpa, Xavier",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-06",
+       "Player added",
+       "Brooks, Jalen",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-06",
+       "Player added",
+       "White, Zamir",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-06",
+       "Player added",
+       "Hemby, Roman",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-06",
+       "Player added",
+       "Donaldson, CJ",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-06",
+       "Player added",
+       "Gill-Howard, Skyler",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-06",
+       "Player added",
+       "Fagnano, Joe",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-06",
+       "Player added",
+       "Van Noy, Kyle",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-06",
+       "Player added",
+       "Wood, Julius",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-06",
+       "Player added",
+       "Muasau, Darius",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-06",
+       "Player added",
+       "Abdullah, Ameer",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-06",
+       "Player added",
+       "Saylors, Jacob",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-06",
+       "Player added",
+       "Tart, Teair",
+       "Las Vegas Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-06",
+       "Player added",
+       "Thomas, Jacob",
+       "Las Vegas Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-02",
+       "Player added",
+       "Bailey, Wesley",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-02",
+       "Player added",
+       "Long, Hunter",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-02",
+       "Player added",
+       "Daniels, Jalon",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-02",
+       "Player added",
+       "Beckham, Odell",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-02",
+       "Player added",
+       "Sharp, Bauer",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-02",
+       "Player added",
+       "Thompson, James",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-02",
+       "Player added",
+       "Bredeson, Max",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-02",
+       "Player added",
+       "Brown, Sydney",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-02",
+       "Player added",
+       "Kiner, Corey",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-02",
+       "Player added",
+       "Jackson, Donte",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-02",
+       "Player added",
+       "Carter, Michael",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-02",
+       "Player added",
+       "Pettus, Dell",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-09-02",
+       "Player added",
+       "Brents, Julius",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-25",
+       "Player added",
+       "Strand, Jack",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-25",
+       "Player added",
+       "Mascarenas-Arnold, Easton",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-25",
+       "Player added",
+       "Jones, D.J.",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-25",
+       "Player added",
+       "Hamilton, Davon",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-25",
+       "Player added",
+       "Rumph, Chris",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-25",
+       "Player added",
+       "van den Berg, Jordan",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-25",
+       "Player added",
+       "Hutchins, Quintayvious",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-25",
+       "Player added",
+       "Joseph, Greg",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-20",
+       "Player added",
+       "Jarrett, Grady",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-20",
+       "Player added",
+       "Walker, Jahdae",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-20",
+       "Player added",
+       "Waller, Darren",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-20",
+       "Player added",
+       "Brown, Camden",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-20",
+       "Player added",
+       "Smith, Za'Darius",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-20",
+       "Player added",
+       "Williams, C.J.",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-20",
+       "Player added",
+       "Prunty, Karon",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-20",
+       "Player added",
+       "Connors, Dean",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-16",
+       "Player added",
+       "Woods, Xavier",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-16",
+       "Player added",
+       "King, Haynes",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-16",
+       "Player added",
+       "Rivers, Eric",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-16",
+       "Player added",
+       "Roberts, Chase",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-16",
+       "Player added",
+       "Christiansen, Cole",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-06",
+       "Player added",
+       "Montgomery, Myles",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-06",
+       "Player added",
+       "Moore, David",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-06",
+       "Player added",
+       "Forbes, Emmanuel",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-02",
+       "Player added",
+       "Robinson, Demarcus",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-02",
+       "Player added",
+       "Burks, Oren",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-02",
+       "Player added",
+       "Ya-Sin, Rock",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-02",
+       "Player added",
+       "Fowler, Dante",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-02",
+       "Player added",
+       "Curry, Caden",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-02",
+       "Player added",
+       "Lindenberg, Cody",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-02",
+       "Player added",
+       "Brosmer, Max",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-02",
+       "Player added",
+       "Floyd, Leonard",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-02",
+       "Player added",
+       "Wentz, Carson",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-08-02",
+       "Player added",
+       "Reid, Winston",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-29",
+       "Player added",
+       "McCulley, Donaven",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-29",
+       "Player added",
+       "Payne, VJ",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-29",
+       "Player added",
+       "Lawson, Deontae",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-29",
+       "Player added",
+       "Matsuzawa, Kansei",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-29",
+       "Player added",
+       "Henderson, Emmanuel",
+       "Kansas City Chiefs"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-29",
+       "Player added",
+       "Demmings, Charles",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-29",
+       "Player added",
+       "Smith, Anthony",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-29",
+       "Player added",
+       "Pavia, Diego",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-28",
+       "Player added",
+       "Law, Kendrick",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-28",
+       "Player added",
+       "Spears-Jennings, Robert",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-28",
+       "Player added",
+       "Taylor, J'Mari",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-28",
+       "Player added",
+       "Styles, Lorenzo",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-28",
+       "Player added",
+       "Jackson, Darrell",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-28",
+       "Player added",
+       "Sharar, Karson",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-28",
+       "Player added",
+       "Cuevas, Josh",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-28",
+       "Player added",
+       "Proctor, Kaleb",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-28",
+       "Player added",
+       "Rivers, Chandler",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-28",
+       "Player added",
+       "Cameron, Josh",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-28",
+       "Player added",
+       "Masses, Hezekiah",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-28",
+       "Player added",
+       "Kanak, Jaren",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-28",
+       "Player added",
+       "Law, Kendrick",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-27",
+       "Player added",
+       "Henry, Robert",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-27",
+       "Player added",
+       "Stevens, Drew",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-27",
+       "Player added",
+       "Fisher, Aiden",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-27",
+       "Player added",
+       "Adams, Jamal",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-27",
+       "Player added",
+       "Nowakowski, Riley",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-27",
+       "Player added",
+       "Sturdivant, J Michael",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-27",
+       "Player added",
+       "Altmyer, Luke",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-27",
+       "Player added",
+       "Traore, Seydou",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-27",
+       "Player added",
+       "Durfee, Zach",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-27",
+       "Player added",
+       "Gumbs, George",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-27",
+       "Player added",
+       "Whittington, Noah",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-26",
+       "Player added",
+       "White, Tre'Davious",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-26",
+       "Player added",
+       "McNichols, Jeremy",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-26",
+       "Player added",
+       "Adebawore, Adetomiwa",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-26",
+       "Player added",
+       "Ogbongbemiga, Amen",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-26",
+       "Player added",
+       "Melifonwu, Ifeatu",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-15",
+       "Player added",
+       "McGuire, Isaiah",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-15",
+       "Player added",
+       "Turner, Kobie",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-15",
+       "Player added",
+       "Childress, Zion",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-14",
+       "Player added",
+       "Hopkins, DeAndre",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-12",
+       "Player added",
+       "Hopkins, DeAndre",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-07-12",
+       "Player added",
+       "Brown, Tanner",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-24",
+       "Player added",
+       "Chandler, Ty",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Johnson, Lonnie",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Donald, Aaron",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Ward, Jay",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Sauls, Ben",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Rankins, Sheldon",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Steward, Reddy",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Davis, Jalen",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Stuard, Grant",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Hobbs, Nate",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Combs, Branson",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Tinsley, Mitchell",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Tavai, Jahlani",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Gardeck, Dennis",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Murray, Eric",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-06-19",
+       "Player added",
+       "Ford, Poona",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Muma, Chad",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Davis, Malik",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Jackson, Landon",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Strnad, Justin",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Oliver, Collin",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Folk, Nick",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Jordan, Jawhar",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Fields, Justin",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Reaves, Jeremy",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Hollins, Mack",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Jordan, Cameron",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Paye, Kwity",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Clark, Kenny",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Smyth, Charlie",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-29",
+       "Player added",
+       "Scott, Nick",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-28",
+       "Player added",
+       "Tonges, Jake",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-28",
+       "Player added",
+       "McDonald, Cooper",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-28",
+       "Player added",
+       "Cashman, Blake",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-28",
+       "Player added",
+       "Huntley, Tyler",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-28",
+       "Player added",
+       "Bosa, Joey",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-28",
+       "Player added",
+       "Tranquill, Drue",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-28",
+       "Player added",
+       "Clark, Damone",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-28",
+       "Player added",
+       "Chubb, Nick",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Bresee, Bryan",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Smith, Geno",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Zaccheaus, Olamide",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Slayton, Darius",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Owusu-Koramoah, Jeremiah",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Owusu-Koramoah, Jeremiah",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Spector, Baylon",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Davis, Demario",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Slaton, Tedarrell",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Phillips, Harrison",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Moore, Skyy",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Marshall, Terrace",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Westbrook-Ikhine, Nick",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-27",
+       "Player added",
+       "Harris, Najee",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-26",
+       "Player added",
+       "Collins, Zaven",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-26",
+       "Player added",
+       "Briggs, Jowon",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-26",
+       "Player added",
+       "Fitzpatrick, Minkah",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-26",
+       "Player added",
+       "Gardner-Johnson, Chauncey",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-26",
+       "Player added",
+       "Gay, Willie",
+       "Los Angeles Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-25",
+       "Player added",
+       "Palmer, Joshua",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-25",
+       "Player added",
+       "Patterson, Riley",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-25",
+       "Player added",
+       "Diggs, Stefon",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-25",
+       "Player added",
+       "Holcomb, Cole",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-25",
+       "Player added",
+       "Perine, Samaje",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-25",
+       "Player added",
+       "Dugger, Kyle",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-25",
+       "Player added",
+       "Gary, Rashan",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-24",
+       "Player added",
+       "Roland-Wallace, Chris",
+       "Washington Commanders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-24",
+       "Player added",
+       "Maddox, Avonte",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-24",
+       "Player added",
+       "Phillips, Clark",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-24",
+       "Player added",
+       "Campbell, Calais",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-24",
+       "Player added",
+       "Brooks, Jordyn",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-24",
+       "Player added",
+       "Raymond, Kalif",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-24",
+       "Player added",
+       "Minshew, Gardner",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-23",
+       "Player added",
+       "Knox, Dawson",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-23",
+       "Player added",
+       "Kelce, Travis",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-23",
+       "Player added",
+       "Kancey, Calijah",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-23",
+       "Player added",
+       "Douglas, Rasul",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-23",
+       "Player added",
+       "Murphy, Byron",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-23",
+       "Player added",
+       "Epps, Marcus",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-23",
+       "Player added",
+       "Chubb, Bradley",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-23",
+       "Player added",
+       "Okereke, Bobby",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-23",
+       "Player added",
+       "Harris, Will",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-23",
+       "Player added",
+       "Sutton, Courtland",
+       "Los Angeles Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-23",
+       "Player added",
+       "Lance, Trey",
+       "Las Vegas Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-23",
+       "Player added",
+       "Perryman, Denzel",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-23",
+       "Player added",
+       "Grupe, Blake",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-22",
+       "Player added",
+       "Engram, Evan",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-22",
+       "Player added",
+       "Wonnum, D.J.",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-22",
+       "Player added",
+       "Buckner, DeForest",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-22",
+       "Player added",
+       "Gainwell, Kenneth",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-22",
+       "Player added",
+       "Bates, Jessie",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-22",
+       "Player added",
+       "Brissett, Jacoby",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-22",
+       "Player added",
+       "Flacco, Joe",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-22",
+       "Player added",
+       "Mariota, Marcus",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-22",
+       "Player added",
+       "Smith, Roquan",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-22",
+       "Player added",
+       "Love, Julian",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-22",
+       "Player added",
+       "Hendrickson, Trey",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Kamara, Alvin",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Simmons, Jeffery",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Al-Shaair, Azeez",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Oliver, Ed",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Thompson, Jalen",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Franklin, Zaire",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Wilson, Mack",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Burks, Treylon",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Edwards, T.J.",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Henry, Derrick",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Evans, Mike",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Greenlaw, Dre",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Moss, Riley",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-21",
+       "Player added",
+       "Allen, Josh",
+       "Las Vegas Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-20",
+       "Player added",
+       "Johnson, Jaylon",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-20",
+       "Player added",
+       "Togiai, Tommy",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-20",
+       "Player added",
+       "Edmunds, Tremaine",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-20",
+       "Player added",
+       "Hooker, Amani",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-20",
+       "Player added",
+       "Moore, Elijah",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-20",
+       "Player added",
+       "Szmyt, Andre",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-20",
+       "Player added",
+       "Chaisson, K'Lavon",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-05-20",
+       "Player added",
+       "Barton, Cody",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-04-29",
+       "Player added",
+       "Moore, D.J.",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-04-15",
+       "Player added",
+       "Burns, Brian",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-04-15",
+       "Player added",
+       "Jackson, Michael",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-04-10",
+       "Player added",
+       "Allen, Keenan",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-03-26",
+       "Player added",
+       "Etienne, Travis",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-03-26",
+       "Player added",
+       "Jackson, Lamar",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-03-26",
+       "Player added",
+       "Garrett, Myles",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026-02-28",
+       "Player added",
+       "Jackson, Courtney",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2019 → 2026",
+       "Position changed",
+       "Jackson, Courtney",
+       "LB → WR"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2019 → 2026",
+       "Position changed",
+       "Thompson, James",
+       "S → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2020 → 2026",
+       "Position changed",
+       "Wood, Julius",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025 → 2026",
+       "Position changed",
+       "Jordan, Cameron",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025 → 2026",
+       "Position changed",
+       "Maddox, Avonte",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025 → 2026",
+       "Position changed",
+       "Gill, Cam",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025 → 2026",
+       "Position changed",
+       "Moore, Rondale",
+       "WR → XX"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025 → 2026",
+       "Position changed",
+       "Melton, Bo",
+       "CB → WR"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025 → 2026",
+       "Position changed",
+       "Harrison, Zach",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025 → 2026",
+       "Position changed",
+       "Liufau, Marist",
+       "LB → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025 → 2026",
+       "Position changed",
+       "Johnson, Emany",
+       "S → LB"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-081",
+    "title": "Awards",
+    "note": "Deferred to ring 4: the pinned archive has no awards report. This is not evidence that the league has no awards; MFL's awards page still needs an archived capture.",
+    "status": "empty",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Only awards recorded by MFL qualify; bracket championships appear in the Trophy case, not as invented awards.",
+    "columns": [
+     "Award",
+     "Recipient",
+     "Season"
+    ],
+    "rows": [],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-089",
+    "title": "Recorded oddities",
+    "note": "These are recorded results, not explanations of why they happened.",
+    "status": "ok",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "The selected season only. This is not league lore. Only facts already flagged by the archived results are shown: scored ties and zero-point starters. A zero score does not say whether the player was injured, benched or simply scored zero.",
+    "columns": [
+     "When",
+     "Recorded oddity",
+     "Who"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "2026 week 1",
+       "Zero-point starter · 41",
+       "Atlanta Falcons: Fitzpatrick, Minkah\nBaltimore Ravens: Bond, Isaiah\nCarolina Panthers: Barnett, Derek; McFadden, Micah; Miller, Von\nChicago Bears: Arroyo, Elijah\nDallas Cowboys: Fowler, Dante; Hill, B.J.\nDenver Broncos: Vidal, Kimani\nGreen Bay Packers: Clemons, Micheal; Ferguson, Terrance; Jennings, Jauan\nHouston Texans: Addison, Jordan; Tonges, Jake\nIndianapolis Colts: Ivey, DJ\nKansas City Chiefs: Banks, Caleb; Young, Colbie\nLas Vegas Raiders: Taylor, Leonard\nMiami Dolphins: Alexander, Darius; All, Erick; Felton, Tai; Hawes, Jackson; Hood, Colton\nMinnesota Vikings: Garrett, Myles\nNew England Patriots: Doubs, Romeo\nNew Orleans Saints: Ward, Jay\nNew York Giants: Roberts, Elijah\nNew York Jets: Bateman, Rashod; Ford, Poona; Stribling, De'Zhaun; TeSlaa, Isaac\nPhiladelphia Eagles: Josephs, Joshua; Loveland, Colston; Valentine, Carrington\nPittsburgh Steelers: Green, Mike; Pitts, Kyle; Simon, Cody\nSan Francisco 49ers: Browning, Baron; Halton, Gracen\nSeattle Seahawks: Harrison, Ronnie\nTampa Bay Buccaneers: Brown, Dyami"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026 week 2",
+       "Zero-point starter · 32",
+       "Atlanta Falcons: Fant, Noah\nCarolina Panthers: Adams, Tony\nCincinnati Bengals: Jeudy, Jerry\nCleveland Browns: Melton, Bo\nDallas Cowboys: Fowler, Dante; Mingo, Jonathan\nDenver Broncos: Hibner, Matthew; Johnson, Roschon\nHouston Texans: Harrison Jr., Marvin\nIndianapolis Colts: McCreary, Roger\nJacksonville Jaguars: Hamilton, Ty; Horton, Tory\nKansas City Chiefs: Trautman, Adam\nLas Vegas Raiders: Andreessen, Joe; Bain Jr., Rueben; Davis, Tyler; Epenesa, A.J.; Smith, Jonnu\nLos Angeles Chargers: McDonald, Will\nLos Angeles Rams: Hunter, Lee\nMiami Dolphins: Bell, Chris; Felton, Tai; Hawes, Jackson\nNew York Giants: Klein, Marlin\nNew York Jets: Gray, Noah\nPhiladelphia Eagles: Josephs, Joshua; Valentine, Carrington\nTampa Bay Buccaneers: Gesicki, Mike; Pettus, Dell; Rozeboom, Christian\nTennessee Titans: Carter, Michael\nWashington Commanders: Bullock, Calen"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026 week 3",
+       "Zero-point starter · 47",
+       "Arizona Cardinals: Stevenson, Tyrique\nCarolina Panthers: Jordan, Cameron; Slye, Joey\nChicago Bears: Arroyo, Elijah; Orange, Domonique\nCincinnati Bengals: Hoecht, Michael; Jeudy, Jerry\nDallas Cowboys: Fowler, Dante; Johnson, Theo; Lewis, Jourdan; Mingo, Jonathan; Muasau, Darius\nDenver Broncos: Johnson, Roschon\nGreen Bay Packers: Rumph, Chris\nHouston Texans: Carter, Abdul; Walker, Devontez\nIndianapolis Colts: Caldwell, Jamaree; Engram, Evan\nJacksonville Jaguars: James, Jordan\nKansas City Chiefs: Allen, CJ; Ferrell, Clelin; Igbinoghene, Noah; McCoy, Jermod; Trautman, Adam\nLas Vegas Raiders: Tart, Teair\nLos Angeles Chargers: Morrison, Benjamin; Taylor-Britt, Cam\nMiami Dolphins: Alexander, Darius; All, Erick; Felton, Tai; Hawes, Jackson; Obiazor, Namdi\nNew England Patriots: Parkinson, Colby\nNew Orleans Saints: Bech, Jack\nNew York Giants: Klein, Marlin; Laulu, Jonah\nNew York Jets: Sweat, Josh; Williams, Tyleik\nPhiladelphia Eagles: McMillian, Ja'Quan\nPittsburgh Steelers: James, Shemar; Palmer, Joshua\nSeattle Seahawks: Highsmith, Alex; Richardson, Decamerion; Street, Kentavius\nTampa Bay Buccaneers: Brown, Dyami\nTennessee Titans: Anderson, Zayne; Martin, Jake"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   }
+  ]
+ },
+ "season": 2026,
+ "seasons": [
+  {
+   "value": "2013",
+   "label": "2013"
+  },
+  {
+   "value": "2014",
+   "label": "2014"
+  },
+  {
+   "value": "2015",
+   "label": "2015"
+  },
+  {
+   "value": "2016",
+   "label": "2016"
+  },
+  {
+   "value": "2017",
+   "label": "2017"
+  },
+  {
+   "value": "2018",
+   "label": "2018"
+  },
+  {
+   "value": "2019",
+   "label": "2019"
+  },
+  {
+   "value": "2020",
+   "label": "2020"
+  },
+  {
+   "value": "2021",
+   "label": "2021"
+  },
+  {
+   "value": "2022",
+   "label": "2022"
+  },
+  {
+   "value": "2023",
+   "label": "2023"
+  },
+  {
+   "value": "2024",
+   "label": "2024"
+  },
+  {
+   "value": "2025",
+   "label": "2025"
+  },
+  {
+   "value": "2026",
+   "label": "2026"
+  }
+ ],
+ "team": "0001",
+ "other": "0002",
+ "teams": [
+  {
+   "value": "0025",
+   "label": "Arizona Cardinals"
+  },
+  {
+   "value": "0017",
+   "label": "Atlanta Falcons"
+  },
+  {
+   "value": "0013",
+   "label": "Baltimore Ravens"
+  },
+  {
+   "value": "0001",
+   "label": "Buffalo Bills"
+  },
+  {
+   "value": "0018",
+   "label": "Carolina Panthers"
+  },
+  {
+   "value": "0021",
+   "label": "Chicago Bears"
+  },
+  {
+   "value": "0014",
+   "label": "Cincinnati Bengals"
+  },
+  {
+   "value": "0015",
+   "label": "Cleveland Browns"
+  },
+  {
+   "value": "0029",
+   "label": "Dallas Cowboys"
+  },
+  {
+   "value": "0008",
+   "label": "Denver Broncos"
+  },
+  {
+   "value": "0022",
+   "label": "Detroit Lions"
+  },
+  {
+   "value": "0023",
+   "label": "Green Bay Packers"
+  },
+  {
+   "value": "0009",
+   "label": "Houston Texans"
+  },
+  {
+   "value": "0010",
+   "label": "Indianapolis Colts"
+  },
+  {
+   "value": "0011",
+   "label": "Jacksonville Jaguars"
+  },
+  {
+   "value": "0006",
+   "label": "Kansas City Chiefs"
+  },
+  {
+   "value": "0007",
+   "label": "Las Vegas Raiders"
+  },
+  {
+   "value": "0005",
+   "label": "Los Angeles Chargers"
+  },
+  {
+   "value": "0027",
+   "label": "Los Angeles Rams"
+  },
+  {
+   "value": "0004",
+   "label": "Miami Dolphins"
+  },
+  {
+   "value": "0024",
+   "label": "Minnesota Vikings"
+  },
+  {
+   "value": "0002",
+   "label": "New England Patriots"
+  },
+  {
+   "value": "0019",
+   "label": "New Orleans Saints"
+  },
+  {
+   "value": "0030",
+   "label": "New York Giants"
+  },
+  {
+   "value": "0003",
+   "label": "New York Jets"
+  },
+  {
+   "value": "0031",
+   "label": "Philadelphia Eagles"
+  },
+  {
+   "value": "0016",
+   "label": "Pittsburgh Steelers"
+  },
+  {
+   "value": "0026",
+   "label": "San Francisco 49ers"
+  },
+  {
+   "value": "0028",
+   "label": "Seattle Seahawks"
+  },
+  {
+   "value": "0020",
+   "label": "Tampa Bay Buccaneers"
+  },
+  {
+   "value": "0012",
+   "label": "Tennessee Titans"
+  },
+  {
+   "value": "0032",
+   "label": "Washington Commanders"
+  }
+ ]
+}
