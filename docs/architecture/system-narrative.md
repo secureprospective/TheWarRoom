@@ -486,8 +486,15 @@ through held gsis/ESPN crosswalk links, and caches rostered-player profiles per 
 one-second spacing. `TargetResearch`, `TargetResearchRefresh`, `TargetResearchNewsRefresh`,
 `TargetResearchPlayer` and `TargetOpenResearchArticle` validate the IPC surface; article links
 use the discovered MFL host and require an article held for that player.
-`research_reading.go` and `research_context_reading.go` author all Research reports through the
-shared Report shell. `frontend/src/app/research` is lazy, with one screen for research, a news
+`internal/app/research` constructs all Research reports and player readings through the shared
+report shell from an explicit `research.Snapshot`; root `research_reading.go` keeps the wire
+types, converters and Market's existing reading facade. `heldResearchInput` copies mutable
+feed/news/link/schedule indexes under `seasonMu` and releases it before construction. Published
+payload slices and directory lookups are immutable; roster/config readers return detached values.
+Finished-week scores and shared cut charges enter the snapshot as values from their root owners.
+Archive hydration, depth/network refresh, cache publication and every refresh/status binding stay
+at root; the service takes no locks and starts no goroutines. Root wire/twin and refresh-versus-read
+race tests complement the package's pure construction tests; `researchtest` shares raw fixtures. `frontend/src/app/research` is lazy, with one screen for research, a news
 section on Home › Digests, and a read-only player Inspector for directory search results.
 M-050 is explicitly ring 4: weekly NFL team box-score totals require an nflverse team-stat
 adapter; fantasy points and NFL game scores are not those statistics. M-055 resolves to the

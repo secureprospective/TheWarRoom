@@ -1,3 +1,5 @@
+// Package research constructs display-only Research readings from detached held inputs.
+// Cache publication, refresh coordination and the season lock belong to the composition root.
 package research
 
 import (

@@ -199,3 +199,30 @@ The native league extraction (reorg PR 12) added the owner side.
   on each other. Placement references to deleted paths and the lowered ratchet accompany it;
   narrative and recipe notes can follow separately. A feature-specific result needs wire twins,
   not a duplicate of the shared report contracts when it does not return report tables.
+
+## Stateful features
+
+- `App` owns `seasonMu`, refresh/news/archive coordination, held caches, status, timers and
+  goroutines. A feature service never acquires the season lock or starts background work.
+  Keep refresh/status bindings at root when they depend on that ownership.
+- Reading adapter: lock → copy the mutable indexes and read metadata into a detached input →
+  unlock → build the service snapshot → call the synchronous pure constructor → convert the
+  result to the root-declared wire types. Copy payloads too if their owner mutates them in place;
+  immutable published payloads may be borrowed. If a copy is too expensive or a call must retain
+  the lock, leave that operation at root and report the exception rather than hiding the lock.
+- Research's `researchInput` captures feed/news indexes, depth links, injuries and schedule
+  indexes under `seasonMu`; directory lookup, detached roster view and copied rulebook config
+  come from their existing owners. `research.Snapshot`, `Held` and `Feed[T]` have no live `App`
+  references. Published feed slices and the lookup are immutable; refresh replaces them.
+  `Now` is captured by the adapter, not read by the service.
+- Keep a shared calculation with its existing owner. Research's snapshot receives finished-week
+  scores from the Market-owned root aggregation and cut charges from the shared bid rule;
+  neither implementation is copied into the service. Archive hydration, fallback and batched
+  news refresh remain root because they coordinate cache publication and refresh state.
+- Root race tests must exercise refresh versus reading, not only parallel constructors.
+  Research reads while a news fetch is blocked, then reads through publication; a detached-index
+  guard checks feed/news/link/schedule maps and builds with the root season lock held. Package
+  tests run parallel constructors against one snapshot and assert that its inputs are unchanged.
+  Run both root and service under `go test -race`; plant a missing copy or wrong refresh lock to
+  prove the guards reject it. Keep wire goldens and populated converter twins at root, pure
+  construction assertions beside the service, and shared raw fixtures in `researchtest`.
