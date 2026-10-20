@@ -1,4 +1,5 @@
-package main
+// Package control builds readings from caller-owned snapshots without locks or workers.
+package control
 
 import (
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -15,22 +17,22 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/sitenews"
 )
 
-// leagueSettingsReport is M-091 (with M-097 merged in): the league's settings and scoring rules in
+// LeagueSettingsReport is M-091 (with M-097 merged in): the league's settings and scoring rules in
 // plain words, from the held league and rules exports and MFL's scoring-event dictionary.
-func leagueSettingsReport(cfg league.RawConfig, names map[string]string, dictionaryNote string) Report {
+func LeagueSettingsReport(cfg league.RawConfig, names map[string]string, dictionaryNote string) report.Report {
 	source := "Source: MFL league and rules exports"
 	if cfg.Source != "" {
 		source += " (" + cfg.Source + ")"
 	}
-	r := Report{ID: "M-091", Title: "League settings", Status: "ok", Source: source,
-		AsOf: "As of: the held league settings", Columns: []string{"Setting", "Value"}, Rows: []ReportRow{},
+	r := report.Report{ID: "M-091", Title: "League settings", Status: "ok", Source: source,
+		AsOf: "As of: the held league settings", Columns: []string{"Setting", "Value"}, Rows: []report.Row{},
 		How: "Read from MFL's own league and rules exports, unchanged. Scoring events use MFL's own names for its codes."}
 	if cfg.RosterSize == "" && len(cfg.ScoringRules) == 0 {
 		r.Status, r.Note = "empty", "No league settings held yet: they arrive with the next league refresh."
 		return r
 	}
 	r.Note = dictionaryNote
-	row := func(group, k, v string) { r.Rows = append(r.Rows, ReportRow{Group: group, Cells: []string{k, v}}) }
+	row := func(group, k, v string) { r.Rows = append(r.Rows, report.Row{Group: group, Cells: []string{k, v}}) }
 	row("Season", "Scoring weeks", fmt.Sprintf("Weeks %s to %s; the regular season ends after week %s", cfg.StartWeek, cfg.EndWeek, cfg.LastRegularSeasonWeek))
 	row("Season", "Standings order", tiebreakText(cfg.StandingsSort))
 	row("Roster", "Roster size", cfg.RosterSize+" players")
@@ -160,13 +162,11 @@ func scoringText(r league.ScoringRule) string {
 		return scoringPoints(each) + " for each"
 	}
 	text := scoringPoints(p)
-	if m := scoringRange.FindStringSubmatch(strings.TrimSpace(r.Range)); m != nil {
+	if m := regexp.MustCompile(`^(-?[0-9]+)-(-?[0-9]+)$`).FindStringSubmatch(strings.TrimSpace(r.Range)); m != nil {
 		text += fmt.Sprintf(" (when it is %s to %s)", m[1], m[2])
 	}
 	return text
 }
-
-var scoringRange = regexp.MustCompile(`^(-?[0-9]+)-(-?[0-9]+)$`)
 
 // scoringPoints is MFL's points in words: ".05" is "0.05 points", "1" is "1 point".
 func scoringPoints(p string) string {
@@ -187,10 +187,10 @@ func scoresNothing(r league.ScoringRule) bool {
 	return err == nil && v == 0
 }
 
-// siteNewsReport is M-141: MFL's What's New, newest first, in plain sentences.
-func siteNewsReport(items []sitenews.Item, fresh, refreshError string, zone *time.Location) Report {
-	r := Report{ID: "M-141", Title: "What's New on MFL", Status: "ok", Source: "Source: MFL site news (MFL-wide, not this league)",
-		AsOf: fresh, Columns: []string{"Published", "Article"}, Rows: []ReportRow{},
+// SiteNewsReport is M-141: MFL's What's New, newest first, in plain sentences.
+func SiteNewsReport(items []sitenews.Item, fresh, refreshError string, zone *time.Location) report.Report {
+	r := report.Report{ID: "M-141", Title: "What's New on MFL", Status: "ok", Source: "Source: MFL site news (MFL-wide, not this league)",
+		AsOf: fresh, Columns: []string{"Published", "Article"}, Rows: []report.Row{},
 		How: "MFL's site news feed, newest first. Its articles are written for every MFL league; the text is MFL's, with the formatting removed and its paragraphs kept."}
 	if refreshError != "" {
 		r.Note = "The latest refresh failed: " + refreshError
@@ -203,15 +203,15 @@ func siteNewsReport(items []sitenews.Item, fresh, refreshError string, zone *tim
 		return r
 	}
 	for _, it := range items {
-		r.Rows = append(r.Rows, ReportRow{Group: it.Headline, Cells: []string{it.Published.In(zone).Format("Jan 2, 2006"), strings.Join(it.Lines, "\n")}})
+		r.Rows = append(r.Rows, report.Row{Group: it.Headline, Cells: []string{it.Published.In(zone).Format("Jan 2, 2006"), strings.Join(it.Lines, "\n")}})
 	}
 	return r
 }
 
-// accountingURL is MFL's accounting report for the league's season on its own host (found in the
+// AccountingURL is MFL's accounting report for the league's season on its own host (found in the
 // captured MFL league pages: claudeos ~/mflmap-runs/bee-mfl-ui-map-2026-10-04/nav.log).
-func accountingURL(host string, season int) (string, error) {
-	if !validHost.MatchString(host) {
+func AccountingURL(host string, season int) (string, error) {
+	if !regexp.MustCompile(`^www[0-9]{1,3}$`).MatchString(host) {
 		return "", fmt.Errorf("accounting: the league's MFL host is not known yet")
 	}
 	u := url.URL{Scheme: "https", Host: host + ".myfantasyleague.com", Path: fmt.Sprintf("/%d/accounting_report", season),
@@ -219,12 +219,10 @@ func accountingURL(host string, season int) (string, error) {
 	return u.String(), nil
 }
 
-var validHost = regexp.MustCompile(`^www[0-9]{1,3}$`)
-
-// accountingReport is M-098 and M-197: MFL's accounting export holds nothing for this league.
-func accountingReport() Report {
-	return Report{ID: "M-098", Title: "Accounting", Status: "empty", Source: "Source: MFL accounting export, every archived season",
-		AsOf: "As of: the league archive", Columns: []string{"Fact", "Value"}, Rows: []ReportRow{},
+// AccountingReport is M-098 and M-197: MFL's accounting export holds nothing for this league.
+func AccountingReport() report.Report {
+	return report.Report{ID: "M-098", Title: "Accounting", Status: "empty", Source: "Source: MFL accounting export, every archived season",
+		AsOf: "As of: the league archive", Columns: []string{"Fact", "Value"}, Rows: []report.Row{},
 		Note: "MFL's accounting export holds no entries for this league in any season from 2013 to 2026. " +
 			"MFL's own accounting page opens from here.",
 		How: "Checked against every archived accounting.json in the league archive."}

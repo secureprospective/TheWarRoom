@@ -991,3 +991,19 @@ returns both check passes; startup logs them, including unresolved unrelated FKs
 Repeated initialization at the same file version reuses completed checks within that
 pool; `db.Check` is the explicit fresh-check path.
 Existing backup paths are never overwritten: a collision blocks the pending upgrade.
+
+### Control readings and root-owned refresh state
+
+`internal/app/control` builds league settings, site news, accounting and bylaw readings,
+parameter labels, alert ordering/bye-alert wording, and week/window/gameday readings. Its
+`WeekSnapshot` and `WindowSnapshot` contain detached values copied by root adapters under
+`weekMu` and `seasonMu`; construction runs after those locks are released. Settings/news
+adapters likewise copy their held map/slice before presentation. All bound wire declarations
+stay in `main`, including alert and bylaw types.
+
+`App` still owns credentials, feed caches, refresh serialization, workers, timers, feed
+publication, phase transitions and calendar writes. Alert input acquisition continues to
+coordinate the existing lineup/trade/roster/injury/archive readers at root. The service owns
+no lock or worker. Root tests retain binding goldens, populated wire-twin comparisons,
+concurrent refresh/read coverage and nested-copy detachment checks; pure calculation tests
+live beside the service. See `feature-extraction.md`'s stateful-features recipe.

@@ -1,11 +1,11 @@
-package main
+package control
 
 import (
 	"fmt"
 	"strings"
 )
 
-func parameterWords(key, description string) (label, group string) {
+func ParameterWords(key, description string) (label, group string) {
 	fixed := map[string][2]string{
 		"captier.cold_ceiling_pct":    {"Cold salary tier ceiling (% of cap)", "Salary tiers"},
 		"captier.hot_floor_pct":       {"Hot salary tier floor (% of cap)", "Salary tiers"},

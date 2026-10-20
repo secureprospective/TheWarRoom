@@ -1,0 +1,16 @@
+{
+  "id": "M-098",
+  "title": "Accounting",
+  "note": "MFL's accounting export holds no entries for this league in any season from 2013 to 2026. MFL's own accounting page opens from here.",
+  "status": "empty",
+  "source": "Source: MFL accounting export, every archived season",
+  "asOf": "As of: the league archive",
+  "how": "Checked against every archived accounting.json in the league archive.",
+  "columns": [
+    "Fact",
+    "Value"
+  ],
+  "rows": [],
+  "summary": null,
+  "link": null
+}

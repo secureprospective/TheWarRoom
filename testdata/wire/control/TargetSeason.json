@@ -1,0 +1,45 @@
+{
+  "value": {
+    "transactions": {
+      "value": null,
+      "provenance": {
+        "source": "",
+        "freshness": {
+          "state": "",
+          "fetchedAt": "",
+          "note": ""
+        },
+        "kind": ""
+      }
+    },
+    "lineups": {
+      "value": {
+        "matchups": null,
+        "week": 0,
+        "franchises": null
+      },
+      "provenance": {
+        "source": "",
+        "freshness": {
+          "state": "",
+          "fetchedAt": "",
+          "note": ""
+        },
+        "kind": ""
+      }
+    },
+    "pendingTrades": {
+      "value": null,
+      "provenance": {
+        "source": "",
+        "freshness": {
+          "state": "",
+          "fetchedAt": "",
+          "note": ""
+        },
+        "kind": ""
+      }
+    }
+  },
+  "error": "target season: startup: fixture startup failed"
+}
