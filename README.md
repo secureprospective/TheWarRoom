@@ -511,7 +511,7 @@ The first phases ran with a full **council** of AIs, each in the seat it was bes
 
 ## 🛠️ Running It
 
-TheWarRoom is built for one league today: the league id is `LeagueID` in `internal/ingestion/schema.go`. To build from source you need **Go 1.26**, **Node with pnpm**, and the **[Wails v2 CLI](https://wails.io/docs/gettingstarted/installation)**.
+TheWarRoom is built for one league today: the league id is `LeagueID` in `internal/ingestion/schema.go`. To build from source you need **Go 1.26**, **Node with pnpm**, and the **[Wails v2 CLI](https://wails.io/docs/gettingstarted/installation)** matching `go.mod` (currently **v2.13.0**). Install it with `go install github.com/wailsapp/wails/v2/cmd/wails@$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2)`. `make verify` rejects a mismatched CLI.
 
 ```sh
 make setup     # once per clone: the commit and push hooks
