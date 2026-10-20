@@ -4,7 +4,7 @@ A feature directory: find any feature in two hops. Current as of 2026-10-20 (`ma
 
 **How to find things**
 1. Find the feature in the table below; the slug in the first column is its name everywhere else.
-2. The backend entry is a root file in `package main`, where the Wails-bound `App` methods live. Logic sits in the `internal/` packages beside it.
+2. The backend entry is a root file in `package main`, where the Wails-bound `App` methods live. Logic sits in the `internal/` packages beside it; an extracted feature keeps only adapters at root and its logic in `internal/app/<feature>/` (`docs/architecture/feature-extraction.md`).
 3. Frontend code is under `frontend/src/app/<dir>/`, with its tests colocated as `*.test.ts(x)`.
 4. To find a file's feature, look it up in `docs/architecture/placement.tsv` (every root `*.go` file and every `internal/` package, one row each).
 5. Layers, the IPC surface, data, external services and the native league are written up at length in `docs/architecture/system-narrative.md`.
