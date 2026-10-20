@@ -238,3 +238,28 @@ The native league extraction (reorg PR 12) added the owner side.
   Run both root and service under `go test -race`; plant a missing copy or wrong refresh lock to
   prove the guards reject it. Keep wire goldens and populated converter twins at root, pure
   construction assertions beside the service, and shared raw fixtures in `researchtest`.
+## Stateful features: Control, refresh and clock
+
+- `App` remains the owner of `seasonMu`, `weekMu`, refresh serialization, cached feeds,
+  credentials, timers and goroutine lifetimes. Services never acquire these locks or start
+  workers. Keep refresh/status bindings at root when they schedule, publish or access a store.
+- Take the owning lock, copy the reading's inputs, release it, then invoke the synchronous
+  service. Copy nested slices and maps, not just their headers. Control's `WeekSnapshot` owns
+  its game slice; `WindowSnapshot` owns its schedule map, week slices and matchup slices.
+  The settings adapter clones the scoring-name map under `seasonMu`; `ActiveConfig` already
+  returns a deep copy under the rulebook's own lock. Site news copies its raw item slice under
+  `seasonMu` (each raw item contains only value strings).
+- Keep publication and archive/network fallback in the original order at root. Control's
+  settings/news adapters may refresh on demand before constructing a reading. Its service
+  owns only report construction, bylaw/parameter wording, alert ordering/bye wording and
+  week/window/gameday calculations. Wire declarations remain in `main`.
+- Alert acquisition and cross-feature coordination stay at root: lineup/trade bindings,
+  roster/injury reads, archive-only byes and schedule fallback. Only their independent
+  presentation functions move. Likewise, week fetching/phase transitions and window writes
+  remain with their existing root coordinators. Do not move a callback that still needs the
+  lock or a transaction just to make the adapter look smaller.
+- Keep root binding goldens and wire-twin checks. Run a concurrent refresh-versus-read test
+  under `go test -race`; the Control test drives real week refresh and season schedule
+  publication while multiple readers build clock/window snapshots. Also mutate held nested
+  data after capture to prove detachment, and evaluate the service while the root locks are
+  held to prove it does not acquire them. Removing either slice clone must fail the test.
