@@ -48,7 +48,6 @@ contract_acts_cap_test.go	contracts
 contracts_app.go	contracts
 contracts_app_test.go	contracts
 control_room_app.go	control
-control_room_reading.go	control
 control_room_test.go	control
 corrections_app_test.go	commissioner
 corrections_transactions_test.go	commissioner
@@ -155,7 +154,6 @@ now_test.go	now
 offers_app.go	offers
 offers_app_test.go	offers
 offers_live_app_test.go	offers
-parameter_words.go	control
 personal_app.go	offers
 personal_app_test.go	offers
 photos_app.go	platform
@@ -316,3 +314,4 @@ internal/app/bids	offers
 internal/app/race	race
 internal/app/race/racetest	race
 control_wire_test.go	control
+internal/app/control	control

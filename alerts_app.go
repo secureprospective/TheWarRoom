@@ -1,16 +1,15 @@
 package main
 
 import (
-	"cmp"
 	"fmt"
 	"slices"
 	"strings"
 	"time"
 
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
-	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -54,24 +53,8 @@ func (a *App) TargetAlerts(franchiseID string) (AlertReading, error) {
 	a.lineupAlert(&r, saved, now)
 	a.byeAlerts(&r, franchiseID, now)
 	r.tradeAlert(trades, now)
-	slices.SortFunc(r.Alerts, compareAlerts)
+	slices.SortFunc(r.Alerts, func(a, b Alert) int { return controlapp.CompareAlerts(controlapp.Alert(a), controlapp.Alert(b)) })
 	return r, nil
-}
-
-func compareAlerts(a, b Alert) int {
-	if order := cmp.Compare(b.Urgency, a.Urgency); order != 0 {
-		return order
-	}
-	gravity := func(alert Alert) int {
-		if alert.Kind == "ir" {
-			return 2
-		}
-		return 1
-	}
-	if order := cmp.Compare(gravity(b), gravity(a)); order != 0 {
-		return order
-	}
-	return cmp.Compare(a.Kind+":"+a.PlayerID, b.Kind+":"+b.PlayerID)
 }
 
 func (a *App) lineupAlert(r *AlertReading, saved LineupReading, now time.Time) {
@@ -106,7 +89,7 @@ func (a *App) lineupAlert(r *AlertReading, saved LineupReading, now time.Time) {
 		problems = append(problems, strings.TrimRight(problem.Message, ".; "))
 	}
 	r.Alerts = append(r.Alerts, Alert{
-		Kind: "lineup", Urgency: alertUrgency(now, lock), Title: "Check your lineup",
+		Kind: "lineup", Urgency: controlapp.AlertUrgency(now, lock), Title: "Check your lineup",
 		Detail: strings.Join(problems, "; "), Node: "hq", Workspace: "lineup-and-roster",
 		At: lock, Provenance: saved.Provenance,
 	})
@@ -132,24 +115,10 @@ func (r *AlertReading) tradeAlert(trades TradeReading, now time.Time) {
 		return
 	}
 	r.Alerts = append(r.Alerts, Alert{
-		Kind: "trades", Urgency: alertUrgency(now, soonest), Title: offersTitle(count),
+		Kind: "trades", Urgency: controlapp.AlertUrgency(now, soonest), Title: controlapp.OffersTitle(count),
 		Detail: "Review pending trade offers", Node: "trade", Workspace: "trade-desk",
 		At: soonest, Provenance: trades.Provenance,
 	})
-}
-
-func offersTitle(count int) string {
-	if count == 1 {
-		return "1 offer to you"
-	}
-	return fmt.Sprintf("%d offers to you", count)
-}
-
-func alertUrgency(now, at time.Time) string {
-	reading := leagueclock.Clock(now, leagueclock.Inputs{Events: []leagueclock.Event{{
-		Status: "PLANNED", At: at,
-	}}})
-	return string(reading.Deadlines[0].Urgency)
 }
 
 func (a *App) irAlerts(r *AlertReading, franchiseID string) {

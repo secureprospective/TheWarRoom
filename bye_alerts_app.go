@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
+
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
@@ -53,8 +54,8 @@ func (a *App) byeAlerts(r *AlertReading, mine string, now time.Time) {
 			r.Unavailable = append(r.Unavailable, Unavailable{Kind: "bye",
 				Note: fmt.Sprintf("Week %d lineup lock unavailable; check Franchise HQ for bye shortfalls.", short.Week)})
 		}
-		r.Alerts = append(r.Alerts, byeAlert(short, players, names, byeMap, now, lock,
-			byes.provenance("MFL nflByeWeeks", "Bye weeks")))
+		r.Alerts = append(r.Alerts, Alert(controlapp.ByeAlert(short, players, names, byeMap, now, lock,
+			byes.provenance("MFL nflByeWeeks", "Bye weeks"))))
 	}
 }
 
@@ -114,33 +115,4 @@ func (a *App) byeWeekLock(ctx context.Context, current leagueweek.Week, week int
 	}
 	lock, _ := leagueweek.NextLock(now, current)
 	return lock
-}
-
-func byeAlert(short lineup.ByeShortfall, players []lineup.ByePlayer, names []string, byes map[string]int,
-	now, lock time.Time, provenance snapshot.Provenance) Alert {
-	positions := map[domain.Position]string{domain.PosQB: "quarterback", domain.PosRB: "running back",
-		domain.PosWR: "wide receiver", domain.PosTE: "tight end", domain.PosK: "kicker",
-		domain.PosDE: "defensive end", domain.PosDT: "defensive tackle", domain.PosLB: "linebacker",
-		domain.PosCB: "cornerback", domain.PosS: "safety"}
-	position := positions[short.Position]
-	title := fmt.Sprintf("Week %d: %s shortfall", short.Week, position)
-	if short.Available == 0 {
-		title = fmt.Sprintf("Week %d: no %s available", short.Week, position)
-	}
-	onBye := []string{}
-	for i, p := range players {
-		if p.Active && p.Position == short.Position && byes[p.Team] == short.Week {
-			name := names[i]
-			if name == "" {
-				name = "Player name unavailable"
-			}
-			onBye = append(onBye, name)
-		}
-	}
-	detail := fmt.Sprintf("%d available; needs %d. Checks position minimums only.", short.Available, short.Required)
-	if len(onBye) > 0 {
-		detail += " On bye: " + strings.Join(onBye, ", ") + "."
-	}
-	return Alert{Kind: "bye", Urgency: alertUrgency(now, lock), Title: title, Detail: detail,
-		Node: "hq", Workspace: "lineup-and-roster", At: lock, Provenance: provenance}
 }
