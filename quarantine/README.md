@@ -63,6 +63,10 @@ folded into `refreshScope("league")`); `localFreshness` (`freshness.go`). The re
 `harness.open` / `target.open` commands, the shell `harness` field, the two buttons, and the lazy
 mount in `frontend/src/TargetMount.tsx`.
 
+What was left of `m4_app.go` (`m4Timeout`) moved into `m2_app.go`, and of
+`transactions_calendar_app.go` (`calendarEvent`) into `transactions_app.go`, so the bloat ratchet's
+tiny-file count stays at its baseline.
+
 Kept on purpose: `ScoreLeague`, the only writer of the board run; see `SYSTEM_MAP.md`, Built but not wired.
 
 To bring the harness back: move `frontend/src/` and the Go files back to their old paths, restore the

@@ -15,8 +15,13 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
-// m2Timeout bounds GetPowerRankings: one MFL standings fetch plus a read of two model runs.
+// m2Timeout bounds the power-rankings read behind the race board (one MFL standings fetch plus a
+// read of two model runs) and the Target acts that borrowed it.
 const m2Timeout = 120 * time.Second
+
+// m4Timeout bounds the Target reads whose first call after a cold start may fetch the players
+// directory.
+const m4Timeout = 120 * time.Second
 
 // PowerRow is one franchise's power-ranking row: the blended score, its two components, and
 // MFL's report columns from the same standings call. Display values only. RankDelta is the move

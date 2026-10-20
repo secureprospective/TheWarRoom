@@ -137,3 +137,14 @@ func buildContractRequest(req TransactionRequest) (transactions.Request, error) 
 		return nil, fmt.Errorf("unknown transaction kind %q", req.Kind)
 	}
 }
+
+// calendarEvent maps the DTO's calendar fields. The payload stays opaque here; the operation's
+// own builder parses it when the event fires.
+func calendarEvent(req TransactionRequest) transactions.CalendarEvent {
+	return transactions.CalendarEvent{
+		EventID:     req.EventID,
+		EventKind:   req.EventKind,
+		ScheduledAt: req.ScheduledAt,
+		Payload:     req.Payload,
+	}
+}

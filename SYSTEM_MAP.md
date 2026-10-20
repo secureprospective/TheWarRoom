@@ -147,7 +147,7 @@ are still pending.
 | `crosswalk_app.go` | `LoadCrosswalk`, `GetCrosswalkReport` (the player directory and its match rates) |
 | `m1_app.go`, `model_app.go` | `ScoreLeague` (board run and model run; no screen calls it, see Built but not wired) |
 | `m2_app.go` | `powerRankings`, behind the race readings; no binding |
-| `transactions_app.go`, `transactions_calendar_app.go` | `TransactionRequest` and `buildRequest`, shared by the what-if ledger and release rebase; no binding |
+| `transactions_app.go` | `TransactionRequest` and `buildRequest`, shared by the what-if ledger and release rebase; no binding |
 | `admin_app.go` | `GetParams`, `SetParam`, `ResetParam` (the Engine Admin console; reset returns a parameter to its shipped default) |
 | `control_room_app.go` | `TargetLeagueSettings` (M-091, M-097), `TargetAccounting` and `TargetOpenMFLAccounting` (M-098, M-197; the app only opens MFL's page), `TargetBylaws` (M-185, the league rulebook by section), `TargetSiteNews` (M-141, refreshed when an hour old) |
 | `data_sources_app.go`, `league_archive_app.go` | `TargetDataSources` (what history holds about every source and the checked facts), `TargetDataRefresh(scope)` (renews one scope and says what it did), `TargetCrosswalk` (C-08 match rates), `SetLeagueArchiveDir(dir)` (the archive's `raw/` folder, one folder per season) |
