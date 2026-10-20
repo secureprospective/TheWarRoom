@@ -31,7 +31,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Layer 1 | `internal/ingestion/salaryadjustments` | MFL's dead-cap ledger. An empty reply is valid (no dead cap), so MFL's error envelope is checked first. |
 | Layer 1 | `internal/ingestion/playerscores` | Season fantasy-point totals for the last completed season as a history batch (`outcome.fantasy_points`), the M1 base-points proxy. |
 | Layer 1 | `internal/ingestion/sitenews` | MFL's site news (What's New) RSS from the api host. |
-| Layer 1 | `internal/ingestion/crosswalk` | MFL id → nflverse gsis from DynastyProcess `db_playerids.csv`, with espn and pfr indexes for CFBD and PFR sources. One MFL id with two gsis fails the fetch. |
+| Layer 1 | `internal/ingestion/crosswalk` | MFL id → nflverse gsis from DynastyProcess `db_playerids.csv`, with a pfr index for PFR sources. One MFL id with two gsis fails the fetch. |
 | Layer 1 | `internal/ingestion/ras`, `pfrcoverage`, `schooltier` | Scouting signals: RAS combine scores and PFR coverage stats keyed through the crosswalk (a pfr id two players share is dropped), and CFBD school tiers keyed by school. None carries fantasy points. |
 | Layer 1 | `internal/normalize` | Raw records → domain types: the players lookup and roster join. |
 | Leaf | `internal/domain`, `internal/playerid`, `internal/numeric`, `internal/scouting` | Value types. `playerid.New` is the only way to build a `PlayerID`. `scouting` holds the Layer 4 input types. |
