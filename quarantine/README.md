@@ -20,3 +20,17 @@ stay in `docs/`. Selection rule: a record of how a decision was reached, not the
 - `docs/roadmap/FILM_Calibration_Planning.md`, `Versioning_and_Releases_Planning.md`: superseded by the DECIDED docs.
 
 Deleted outright, not quarantined: `docs/ui/registry/__pycache__/` (committed Python bytecode).
+
+## Go: opt-in harness tests (moved 2026-10-20)
+
+Whole test files that run only when a TWR_* environment variable points at a local archive or
+snapshot; CI never runs them. `quarantine/go.mod` keeps them out of `go build ./...` and `go test ./...`.
+To bring one back, move it to its old path (drop the `quarantine/go/` prefix).
+
+- `archive_smoke_test.go` (TWR_ARCHIVE_PARITY, TWR_ARCHIVE_SMOKE, TWR_MFL_PAGES)
+- `data_sources_measure_test.go` (TWR_ARCHIVE_MEASURE_DIR/DB)
+- `engine_benchmark_test.go` (TWR_ENGINE_BENCH_DIR)
+
+Kept on purpose: `internal/store/history/replay_bench_test.go` (Block C replay fix yardstick), the
+`*_live_test.go` feed checks (the only drift check against real MFL/CFBD/nflverse data), and files
+that mix opt-in and always-on tests.
