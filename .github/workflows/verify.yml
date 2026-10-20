@@ -41,7 +41,7 @@ jobs:
           go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
       - name: Frontend install
         run: cd frontend && pnpm install --frozen-lockfile && pnpm build
-      - name: Lint, bindings, frontend checks
+      - name: Lint (with placement and root ratchet), bindings, frontend checks
         run: |
           make lint
           govulncheck ./...
